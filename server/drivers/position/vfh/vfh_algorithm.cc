@@ -1,12 +1,20 @@
 #include "vfh_algorithm.h"
 
+#include <assert.h>
+#include <playertime.h>
 #include <math.h>
+
+// Sentinel value
+#define VFH_TOTALLY_BLOCKED -9999
+
+extern PlayerTime *GlobalTime;
 
 VFH_Algorithm::VFH_Algorithm( double cell_size,
                               int window_diameter,
                               int sector_angle,
                               double safety_dist,
                               int max_speed,
+                              int max_acceleration,
                               int min_turnrate,
                               int max_turnrate,
                               double free_space_cutoff,
@@ -18,6 +26,7 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
       SECTOR_ANGLE(sector_angle),
       SAFETY_DIST(safety_dist),
       MAX_SPEED(max_speed),
+      MAX_ACCELERATION(max_acceleration),
       MIN_TURNRATE(min_turnrate),
       MAX_TURNRATE(max_turnrate),
       Binary_Hist_Low(free_space_cutoff),
@@ -26,14 +35,40 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
       U2(weight_current_dir),
       Desired_Angle(90),
       Picked_Angle(90),
-      Last_Picked_Angle(Picked_Angle)
-
+      Last_Picked_Angle(Picked_Angle),
+      last_chosen_speed(0)
 {
 }
 
 VFH_Algorithm::~VFH_Algorithm()
 {
 }
+
+void
+VFH_Algorithm::SetMaxSpeed( int max_speed )
+{
+    this->MAX_SPEED = max_speed;
+    this->Min_Turning_Radius.resize( MAX_SPEED+1 );
+
+    // small chunks of forward movements and turns-in-place used to
+    // estimate turning radius
+    double dx, dtheta;
+
+    dtheta = ((M_PI/180)*(double)MAX_TURNRATE) / 1000.0; // dTheta in radians/millisec
+    
+    //
+    // Calculate the turning radius, indexed by speed.
+    //
+    // WARNING: This assumes that the max_turnrate that has been set for VFH is
+    //          both accurate and independent of speed.
+    //
+    for(int x=0;x<=MAX_SPEED;x++) 
+    {
+        dx = (double) x / 1e6; // dx in m/millisec
+        Min_Turning_Radius[x] = (int) ((dx / tan( dtheta ))*1000.0); // in mm
+    }
+}
+
 
 int VFH_Algorithm::Init()
 {
@@ -43,31 +78,9 @@ int VFH_Algorithm::Init()
   float neg_sector_to_neg_dir, neg_sector_to_plus_dir;
   float plus_sector_to_neg_dir, plus_sector_to_plus_dir;
 
-  Goal_Behind = 0;
-
-  /*
-  CELL_WIDTH = cell_width;
-  WINDOW_DIAMETER = window_diameter;
-  SECTOR_ANGLE = sector_angle;
-  ROBOT_RADIUS = robot_radius;
-  SAFETY_DIST = safety_dist;
-  */
-
   CENTER_X = (int)floor(WINDOW_DIAMETER / 2.0);
   CENTER_Y = CENTER_X;
   HIST_SIZE = (int)rint(360.0 / SECTOR_ANGLE);
-
-  /*
-  MAX_SPEED = max_speed;
-  MAX_TURNRATE = max_turnrate;
-  MIN_TURNRATE = min_turnrate;
-
-  Binary_Hist_Low = binary_hist_low;
-  Binary_Hist_High = binary_hist_high;
-
-  U1 = u1;
-  U2 = u2;
-  */
 
   // it works now; let's leave the verbose debug statement out
   /*
@@ -79,11 +92,6 @@ int VFH_Algorithm::Init()
   for(x=0;x<HIST_SIZE;x++) {
     Hist[x] = 0;
     Last_Binary_Hist[x] = 1;
-  }
-
-  for(x=0;x<=MAX_SPEED;x++) {
-//    Min_Turning_Radius[x] = (int)rint(150.0 * x / 200.0);
-    Min_Turning_Radius[x] = 150;
   }
 
   for(x=0;x<WINDOW_DIAMETER;x++) {
@@ -205,6 +213,8 @@ int VFH_Algorithm::Init()
       }
     }
   }
+  assert( GlobalTime->GetTime( &last_update_time ) == 0 );
+
   return(1);
 }
 
@@ -244,24 +254,17 @@ int VFH_Algorithm::VFH_Allocate()
 
   Hist = new float[HIST_SIZE];
   Last_Binary_Hist = new float[HIST_SIZE];
-  Min_Turning_Radius = new int[MAX_SPEED+1];
+  this->SetMaxSpeed( MAX_SPEED );
 
   return(1);
 }
 
-int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int &speed, int &turnrate ) 
+int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], 
+                               int current_speed, 
+                               int &chosen_speed, 
+                               int &chosen_turnrate ) 
 {
   int print = 0;
-
-/*
-  if ((Goal_Behind == 1) || (Desired_Angle > 180)) {
-//  if (Desired_Angle > 90 && Desired_Angle < 270) {
-    speed = 1;
-    Goal_Behind = 1;
-    Set_Motion();
-    return(1);
-  }
-  */
 
   Build_Primary_Polar_Histogram(laser_ranges);
   if (print) {
@@ -275,12 +278,20 @@ int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2],
     Print_Hist();
   }
 
-  speed += 20;
-  if (speed > MAX_SPEED) {
-    speed = MAX_SPEED;
-  }
+  // Work out how much time has elapsed since the last update,
+  // so we know how much to increase speed by, given MAX_ACCELERATION.
+  timeval now;
+  timeval diff;
+  double  diffSeconds;
+  assert( GlobalTime->GetTime( &now ) == 0 );
+  
+  TIMESUB( &now, &last_update_time, &diff );
+  diffSeconds = diff.tv_sec + ( (double)diff.tv_usec / 1000000 );
 
-  Build_Masked_Polar_Histogram(speed);
+  last_update_time.tv_sec = now.tv_sec;
+  last_update_time.tv_usec = now.tv_usec;
+
+  Build_Masked_Polar_Histogram(current_speed);
   if (print) {
     printf("Masked Histogram\n");
     Print_Hist();
@@ -290,16 +301,44 @@ int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2],
 
 //  printf("Picked Angle: %f\n", Picked_Angle);
 
-  if (Picked_Angle != -9999) {
-      Set_Motion( speed, turnrate );
-  } else {
-    speed = 0;
-    Set_Motion( speed, turnrate );
-    return(1);
+  if (Picked_Angle != VFH_TOTALLY_BLOCKED) 
+  {
+      // Life is good, we have a clear path.
+      // Accelerate if we're not already at MAX_SPEED.
+
+      int speed_incr;
+      if ( (diffSeconds > 0.3) || (diffSeconds < 0) )
+      {
+          // Either this is the first time we've been updated, or something's a bit screwy and
+          // update hasn't been called for a while.  Don't want a sudden burst of acceleration,
+          // so better to just pick a small value this time, calculate properly next time.
+          speed_incr = 10;
+      }
+      else
+      {
+          speed_incr = (int) (MAX_ACCELERATION * diffSeconds);
+      }
+      
+      chosen_speed = last_chosen_speed + speed_incr;
+      if (chosen_speed > MAX_SPEED) 
+      {
+          chosen_speed = MAX_SPEED;
+      }
+
+      Set_Motion( chosen_speed, chosen_turnrate );
+  } 
+  else 
+  {
+      // Blocked in all directions: hit the brakes.
+
+      chosen_speed = 0;
+      Set_Motion( chosen_speed, chosen_turnrate );
   }
 
+  last_chosen_speed = chosen_speed;
+
   if (print)
-    printf("SPEED: %d\t TURNRATE: %d\n", speed, turnrate);
+    printf("CHOSEN: SPEED: %d\t TURNRATE: %d\n", chosen_speed, chosen_turnrate);
 
   return(1);
 }
@@ -349,21 +388,25 @@ int VFH_Algorithm::Select_Candidate_Angle()
   unsigned int i;
   float weight, min_weight;
 
-  if (Candidate_Angle.size() == 0) {
-    Picked_Angle = -9999;
-    return(1);
+  if (Candidate_Angle.size() == 0) 
+  {
+      // We're hemmed in by obstacles -- nowhere to go
+      Picked_Angle = VFH_TOTALLY_BLOCKED;
+      return(1);
   }
 
   Picked_Angle = 90;
   min_weight = 10000000;
-  for(i=0;i<Candidate_Angle.size();i++) {
-//printf("CANDIDATE: %f\n", Candidate_Angle[i]);
-    weight = U1 * fabs(Delta_Angle(Desired_Angle, Candidate_Angle[i])) +
-    	U2 * fabs(Delta_Angle(Last_Picked_Angle, Candidate_Angle[i]));
-    if (weight < min_weight) {
-      min_weight = weight;
-      Picked_Angle = Candidate_Angle[i];
-    }
+  for(i=0;i<Candidate_Angle.size();i++) 
+  {
+      //printf("CANDIDATE: %f\n", Candidate_Angle[i]);
+      weight = U1 * fabs(Delta_Angle(Desired_Angle, Candidate_Angle[i])) +
+          U2 * fabs(Delta_Angle(Last_Picked_Angle, Candidate_Angle[i]));
+      if (weight < min_weight) 
+      {
+          min_weight = weight;
+          Picked_Angle = Candidate_Angle[i];
+      }
   }
 
   Last_Picked_Angle = Picked_Angle;
@@ -381,18 +424,29 @@ int VFH_Algorithm::Select_Direction()
 
   Candidate_Angle.clear();
 
+  //
+  // set start to sector of first obstacle
+  //
   start = -1; 
-  for(i=0;i<HIST_SIZE;i++) {
-    if (Hist[i] == 1) {
-      start = i;
-      break;
-    }
+  for(i=0;i<HIST_SIZE;i++) 
+  {
+      if (Hist[i] == 1) 
+      {
+          start = i;
+          break;
+      }
   }
 
-  if (start == -1) {
-    Candidate_Angle.push_back(Desired_Angle);
-    return(1);
+  if (start == -1) 
+  {
+      // No obstacles detected
+      Candidate_Angle.push_back(Desired_Angle);
+      return(1);
   }
+
+  //
+  // Find the left and right borders of each opening
+  //
 
   border.clear();
 
@@ -414,36 +468,49 @@ int VFH_Algorithm::Select_Direction()
     }
   }
 
-  for(i=0;i<(int)border.size();i++) {
+  //
+  // Consider each opening
+  //
+  for(i=0;i<(int)border.size();i++) 
+  {
 //printf("BORDER: %f %f\n", border[i].first, border[i].second);
     angle = Delta_Angle(border[i].first, border[i].second);
 
-    if (fabs(angle) < 10) {
-      continue;
+    if (fabs(angle) < 10) 
+    {
+        // ignore very narrow openings
+        continue;
     }
 
-    if (fabs(angle) < 80) {
-      new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
+    if (fabs(angle) < 80) 
+    {
+        // narrow opening: aim for the centre
 
-      Candidate_Angle.push_back(new_angle);
-    } else {
-      new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
+        new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
 
-      Candidate_Angle.push_back(new_angle);
+        Candidate_Angle.push_back(new_angle);
+    } 
+    else 
+    {
+        // wide opening: consider the centre, and 40deg from each border
 
-      new_angle = (float)((border[i].first + 40) % 360);
-      Candidate_Angle.push_back(new_angle);
+        new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
 
-      new_angle = (float)(border[i].second - 40);
-      if (new_angle < 0) 
-        new_angle += 360;
-      Candidate_Angle.push_back(new_angle);
+        Candidate_Angle.push_back(new_angle);
 
-      // See if candidate dir is in this opening
-      if ((Delta_Angle(Desired_Angle, Candidate_Angle[Candidate_Angle.size()-2]) < 0) && 
-		(Delta_Angle(Desired_Angle, Candidate_Angle[Candidate_Angle.size()-1]) > 0)) {
-        Candidate_Angle.push_back(Desired_Angle);
-      }
+        new_angle = (float)((border[i].first + 40) % 360);
+        Candidate_Angle.push_back(new_angle);
+
+        new_angle = (float)(border[i].second - 40);
+        if (new_angle < 0) 
+            new_angle += 360;
+        Candidate_Angle.push_back(new_angle);
+        
+        // See if candidate dir is in this opening
+        if ((Delta_Angle(Desired_Angle, Candidate_Angle[Candidate_Angle.size()-2]) < 0) && 
+            (Delta_Angle(Desired_Angle, Candidate_Angle[Candidate_Angle.size()-1]) > 0)) {
+            Candidate_Angle.push_back(Desired_Angle);
+        }
     }
   }
 
@@ -623,59 +690,82 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
 {
   int x, y;
   float center_x_right, center_x_left, center_y, dist_r, dist_l;
-  float theta, phi_b, phi_l, phi_r, total_dist, angle;
+  float angle_ahead, phi_left, phi_right, total_dist, angle;
 
+  // center_x_[left|right] is the centre of the circles on either side that
+  // are blocked due to the robot's dynamics.  Units are in cells, in the robot's
+  // local coordinate system (+y is forward).
   center_x_right = CENTER_X + (Min_Turning_Radius[speed] / (float)CELL_WIDTH);
   center_x_left = CENTER_X - (Min_Turning_Radius[speed] / (float)CELL_WIDTH);
   center_y = CENTER_Y;
 
-  theta = 90;
-  phi_b = theta + 180;
-  phi_l = phi_b;
-  phi_r = phi_b;
+  angle_ahead = 90;
+  phi_left  = 180;
+  phi_right = 0;
 
-  phi_l = 180;
-  phi_r = 0;
-
-  if (speed > 0) {
-    total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS + SAFETY_DIST;
-  } else {
-    total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS;
+  if (speed > 0) 
+  {
+      total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS + SAFETY_DIST;
+  } 
+  else 
+  {
+      total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS;
   }
 
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      if (Cell_Mag[x][y] == 0) 
-        continue;
+  //
+  // This loop fixes phi_left and phi_right so that they go through the inside-most
+  // non-empty cells inside the left/right circles.  These circles are centred at the 
+  // left/right centres of rotation, and are of radius total_dist.
+  //
+  for(y=0;y<WINDOW_DIAMETER;y++) 
+  {
+    for(x=0;x<WINDOW_DIAMETER;x++) 
+    {
+        if (Cell_Mag[x][y] == 0) 
+            continue;
 
-      if ((Delta_Angle(Cell_Direction[x][y], theta) > 0) && 
-		(Delta_Angle(Cell_Direction[x][y], phi_r) <= 0)) {
-        dist_r = sqrt(pow((center_x_right - x), 2) + pow((center_y - y), 2)) * CELL_WIDTH;
-        if (dist_r < total_dist) { 
-          phi_r = Cell_Direction[x][y];
+        if ((Delta_Angle(Cell_Direction[x][y], angle_ahead) > 0) && 
+            (Delta_Angle(Cell_Direction[x][y], phi_right) <= 0)) 
+        {
+            // The cell is between phi_right and angle_ahead
+
+            dist_r = hypot(center_x_right - x, center_y - y) * CELL_WIDTH;
+            if (dist_r < total_dist) 
+            { 
+                phi_right = Cell_Direction[x][y];
+            }
+        } 
+        else if ((Delta_Angle(Cell_Direction[x][y], angle_ahead) <= 0) && 
+                 (Delta_Angle(Cell_Direction[x][y], phi_left) > 0)) 
+        {
+            // The cell is between phi_left and angle_ahead
+
+            dist_l = hypot(center_x_left - x, center_y - y) * CELL_WIDTH;
+            if (dist_l < total_dist) 
+            { 
+                phi_left = Cell_Direction[x][y];
+            }
         }
-      } else {
-        if ((Delta_Angle(Cell_Direction[x][y], theta) <= 0) && 
-		(Delta_Angle(Cell_Direction[x][y], phi_l) > 0)) {
-          dist_l = sqrt(pow((center_x_left - x), 2) + pow((center_y - y), 2)) * CELL_WIDTH;
-          if (dist_l < total_dist) { 
-            phi_l = Cell_Direction[x][y];
-          }
-        }
+    }
+  }
+
+  //
+  // Mask out everything outside phi_left and phi_right
+  //
+  for(x=0;x<HIST_SIZE;x++) 
+  {
+      angle = x * SECTOR_ANGLE;
+      if ((Hist[x] == 0) && (((Delta_Angle((float)angle, phi_right) <= 0) && 
+                              (Delta_Angle((float)angle, angle_ahead) >= 0)) || 
+                             ((Delta_Angle((float)angle, phi_left) >= 0) &&
+                              (Delta_Angle((float)angle, angle_ahead) <= 0)))) 
+      {
+          Hist[x] = 0;
+      } 
+      else 
+      {
+          Hist[x] = 1;
       }
-    }
-  }
-
-  for(x=0;x<HIST_SIZE;x++) {
-    angle = x * SECTOR_ANGLE;
-    if ((Hist[x] == 0) && (((Delta_Angle((float)angle, phi_r) <= 0) && 
-	(Delta_Angle((float)angle, theta) >= 0)) || 
-      	((Delta_Angle((float)angle, phi_l) >= 0) &&
-	(Delta_Angle((float)angle, theta) <= 0)))) {
-      Hist[x] = 0;
-    } else {
-      Hist[x] = 1;
-    }
   }
 
   return(1);
@@ -684,29 +774,15 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
 
 int VFH_Algorithm::Set_Motion( int &speed, int &turnrate ) 
 {
-  //int i;
-
   // This happens if all directions blocked, so just spin in place
-  if (speed <= 0) {
+  if (speed <= 0) 
+  {
     //printf("stop\n");
     turnrate = MAX_TURNRATE;
     speed = 0;
   }
-/*
-  // goal behind robot, turn toward it
-  else if (speed == 1) { 
-    //printf("turn %f\n", Desired_Angle);
-    speed = 0;
-    if ((Desired_Angle > 270) && (Desired_Angle < 60)) {
-      turnrate = -40;
-    } else if ((Desired_Angle > 120) && (Desired_Angle < 270)) {
-      turnrate = 40;
-    } else {
-      turnrate = MAX_TURNRATE;
-    }
-  }
-*/
-  else {
+  else 
+  {
     //printf("Picked %f\n", Picked_Angle);
     if ((Picked_Angle > 270) && (Picked_Angle < 360)) {
       turnrate = -1 * MAX_TURNRATE;

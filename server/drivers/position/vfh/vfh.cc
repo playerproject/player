@@ -850,7 +850,9 @@ void VFH_Class::Main()
 
       // Get new laser data.
       this->GetLaser();
-      vfh_Algorithm->Update_VFH( this->laser_ranges, this->speed, this->turnrate );
+      vfh_Algorithm->Update_VFH( this->laser_ranges, 
+                                 (int)ntohl(this->odom_vel_be[0]),
+                                 this->speed, this->turnrate );
       PutCommand( this->speed, this->turnrate );
     }
     else
@@ -961,6 +963,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   double cell_size, safety_dist, free_space_cutoff, obs_cutoff;
   double weight_desired_dir, weight_current_dir;
   int window_diameter, sector_angle, max_speed, max_turnrate, min_turnrate;
+  int max_acceleration;
 
   this->speed = 0;
   this->turnrate = 0;
@@ -992,6 +995,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   //robot_radius = cf->ReadLength(section, "robot_radius", 0.25) * 1000.0;
   safety_dist = cf->ReadLength(section, "safety_dist", 0.1) * 1000.0;
   max_speed = (int) rint(1000 * cf->ReadLength(section, "max_speed", 0.2));
+  max_acceleration = (int) rint(1000 * cf->ReadLength(section, "max_acceleration", 0.2));
   max_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate", DTOR(40))));
   min_turnrate = (int) rint(RTOD(cf->ReadAngle(section, "min_turnrate", DTOR(10))));
   free_space_cutoff = cf->ReadFloat(section, "free_space_cutoff", 2000000.0);
@@ -1009,6 +1013,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
                                            sector_angle,
                                            safety_dist,
                                            max_speed,
+                                           max_acceleration,
                                            min_turnrate,
                                            max_turnrate,
                                            free_space_cutoff,
