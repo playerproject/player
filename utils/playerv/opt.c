@@ -36,7 +36,10 @@
 
 
 // Parse options from a command line argument.
-int opt_parse_args(opt_t *opt, const char *arg1, const char *arg2);
+int opt_parse_short_args(opt_t *opt, const char *arg1, const char *arg2);
+
+// Parse options from a command line argument.
+int opt_parse_long_args(opt_t *opt, const char *arg1, const char *arg2);
 
 // Add an item
 void opt_add_item(opt_t *opt, const char *section, const char *key,
@@ -52,9 +55,7 @@ opt_t *opt_init(int argc, char **argv, const char *filename)
 {
   opt_t *opt;
   int i;
-  const char *section, *key, *value;
-  char *dot, *tmp;
-  
+
   opt = malloc(sizeof(opt_t));
   
   // Initialise the option list
@@ -94,30 +95,18 @@ opt_t *opt_init(int argc, char **argv, const char *filename)
     if (strncmp(argv[i], "--", 2) == 0)
     {
       if (i + 1 < argc && argv[i + 1][0] != '-')
-          opt_parse_args(opt, argv[i] + 2, argv[i + 1]);
+          opt_parse_long_args(opt, argv[i] + 2, argv[i + 1]);
       else
-          opt_parse_args(opt, argv[i] + 2, NULL);
+          opt_parse_long_args(opt, argv[i] + 2, NULL);
     }
 
     // Look for short-form arguments
-    else if (argv[i][0] == '-' && i + 1 < argc)
+    else if (argv[i][0] == '-')
     {
-      tmp = strdup(argv[i] + 1);
-      dot = strchr(tmp, '.');
-      if (dot)
-      {
-        dot[0] = 0;
-        section = tmp;
-        key = dot + 1;
-      }
+      if (i + 1 < argc && argv[i + 1][0] != '-')
+          opt_parse_short_args(opt, argv[i] + 1, argv[i + 1]);
       else
-      {
-        section = "";      
-        key = tmp;
-      }
-      value = argv[i + 1];
-      opt_add_item(opt, section, key, value, NULL, 0);
-      free(tmp);
+          opt_parse_short_args(opt, argv[i] + 1, NULL);
     }
   }
 
@@ -141,11 +130,28 @@ void opt_term(opt_t *opt)
 }
 
 
-// Parse options from a command line argument.
-// The second arg may be blank, in which case we will add an item
-// with a blank key and a value of 1.  This allows for options of the
-// form '--foobar' as opposed to '--foobar "enable 1"'.
-int opt_parse_args(opt_t *opt, const char *arg1, const char *arg2)
+// Parse short form options from the command line.
+int opt_parse_short_args(opt_t *opt, const char *arg1, const char *arg2)
+{
+  const char *key, *value;
+
+  key = arg1;
+  value = arg2;
+
+  if (value)
+    opt_add_item(opt, "", key, value, NULL, 0);
+  else
+    opt_add_item(opt, "", key, "1", NULL, 0);
+  
+  return 0;
+}
+
+
+// Parse long form options from the command line.
+// arg2 may be NULL, in which case we will add an item with a blank
+// key and a value of 1.  This allows for options of the form
+// '--foobar' as opposed to '--foobar "enable 1"'.
+int opt_parse_long_args(opt_t *opt, const char *arg1, const char *arg2)
 {
   const char *section, *key, *value;
   char *tmp;

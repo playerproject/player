@@ -119,13 +119,13 @@ int main(int argc, char **argv)
   
   while (!quit)
   {
-    // Update the main window
-    if (mainwnd_update(mainwnd))
-      break;
-
     // Wait for some data.  We rely on getting the sync messages if no
     // devices are subscribed.
     playerc_client_read(client);
+
+    // Update the main window
+    if (mainwnd_update(mainwnd) != 0)
+      break;
 
     // Update devices
     position_update(position);
