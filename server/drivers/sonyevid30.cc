@@ -88,7 +88,11 @@ class SonyEVID30:public CDevice
 
   int ptz_fd; // ptz device file descriptor
   /* device used to communicate with the ptz */
-  char ptz_serial_port[MAX_FILENAME_SIZE]; 
+  char ptz_serial_port[MAX_FILENAME_SIZE];
+
+  // Min and max values for camera field of view (degrees).
+  // These are used to compute appropriate zoom values.
+  int maxfov, minfov;
 
   SonyEVID30(char* interface, ConfigFile* cf, int section);
 
@@ -125,6 +129,10 @@ SonyEVID30::SonyEVID30(char* interface, ConfigFile* cf, int section) :
   player_ptz_data_t data;
   player_ptz_cmd_t cmd;
 
+  // TODO: check field of view values.
+  this->minfov = (int) cf->ReadTupleAngle(section, "fov", 0, 6);
+  this->maxfov = (int) cf->ReadTupleAngle(section, "fov", 1, 60);
+  
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
@@ -144,7 +152,8 @@ SonyEVID30::Setup()
   int flags;
 
   player_ptz_cmd_t cmd;
-  cmd.pan = cmd.tilt = cmd.zoom = 0;
+  cmd.pan = cmd.tilt = 0;
+  cmd.zoom = this->maxfov;
 
   printf("PTZ connection initializing (%s)...", ptz_serial_port);
   fflush(stdout);
@@ -659,13 +668,19 @@ SonyEVID30::Main()
     }
     if(zoomdemand != (short)ntohs((unsigned short)(command.zoom)))
     {
-      zoomdemand = (short)ntohs((unsigned short)(command.zoom));
+      zoomdemand = (short) ntohs((unsigned short)(command.zoom));
       newzoom = true;
     }
 
+    // Do some coordinate transformatiopns.  Pan value must be
+    // negated.  The zoom value must be converted from a field of view
+    // (in degrees) into arbitrary Sony PTZ units.
+    pandemand = -pandemand;
+    zoomdemand = (1024 * (zoomdemand - this->maxfov)) / (this->minfov - this->maxfov);
+
     if(newpantilt)
     {
-      if(SendAbsPanTilt(-pandemand,tiltdemand))
+      if(SendAbsPanTilt(pandemand,tiltdemand))
       {
         fputs("SonyEVID30:Main():SendAbsPanTilt() errored. bailing.\n", stderr);
         pthread_exit(NULL);
@@ -693,9 +708,15 @@ SonyEVID30::Main()
       pthread_exit(NULL);
     }
 
-    // camera's natural pan coordinates increase clockwise;
-    // we want them the other way, so we negate pan here.
-    data.pan = htons((unsigned short)-pan);
+    // Do the necessary coordinate conversions.  Camera's natural pan
+    // coordinates increase clockwise; we want them the other way, so
+    // we negate pan here.  Zoom values are converted from arbitrary
+    // units to a field of view (in degrees).
+    pan = -pan;
+    zoom = this->maxfov + (zoom * (this->minfov - this->maxfov)) / 1024; 
+
+    // Copy the data.
+    data.pan = htons((unsigned short)pan);
     data.tilt = htons((unsigned short)tilt);
     data.zoom = htons((unsigned short)zoom);
 
