@@ -54,6 +54,9 @@ class PlayerMultiClient
 
     // add a client to our watch list
     void AddClient(PlayerClient* client);
+    
+    // remove a client from the watch list
+    void RemoveClient(PlayerClient* client);
 
     // read from one client (the first available)
     //

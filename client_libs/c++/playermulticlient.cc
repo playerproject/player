@@ -133,6 +133,44 @@ void PlayerMultiClient::AddClient(PlayerClient* client)
   ufds[num_ufds++].events = POLLIN;
 }
 
+// remove client from our watch list - DOES NOT DELETE THE CLIENT!
+void PlayerMultiClient::RemoveClient(PlayerClient* client)
+{
+  if( !client ) return;
+
+  if( num_clients != num_ufds )
+    {
+      printf( "\nMultiClient warning: clients != ufds." );
+      fflush( stdout );
+    }
+
+  // find the client* in the client* array
+  int c;
+  for( c=0; c<num_clients; c++ )
+    if( clients[c] == client ) break;
+  
+  if( c == num_clients ) return; // it wasn't in the array!
+  
+  // we have one less client now.
+  num_clients--;
+  num_ufds--;
+  
+  // shift everything after client one slot left
+  int d = c;
+  while( d < num_clients )
+    clients[d] = clients[d++ +1];
+  
+  // do the same for the ufds
+  int e = c;
+  while( e < num_ufds )
+    ufds[e] = ufds[e++ +1];
+  
+  // nullify the last entries just in case
+  clients[d] = 0;
+  memset( &(ufds[e]), 0, sizeof( pollfd ) );
+  
+  //done!
+}
 
 // read from one client (the first available)
 //
