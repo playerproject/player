@@ -67,7 +67,10 @@ class PositionProxy : public ClientProxy
         respectively.\\
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SetSpeed(short speed, short turnrate);
+    int SetSpeed(short speed, short sidespeed, short turnrate);
+
+    int SetSpeed(short speed, short turnrate)
+       { return(SetSpeed(speed,0,turnrate));}
 
     /** Enable/disable the motors.
         Set {\tt state} to 0 to disable (default) or 1 to enable.

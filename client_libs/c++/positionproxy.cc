@@ -38,7 +38,7 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SetSpeed(short speed, short turnrate)
+int PositionProxy::SetSpeed(short speed, short sidespeed, short turnrate)
 {
   if(!client)
     return(-1);
@@ -46,6 +46,7 @@ int PositionProxy::SetSpeed(short speed, short turnrate)
   player_position_cmd_t cmd;
 
   cmd.speed = htons(speed);
+  cmd.sidespeed = htons(sidespeed);
   cmd.turnrate = htons(turnrate);
 
   return(client->Write(PLAYER_POSITION_CODE,index,
