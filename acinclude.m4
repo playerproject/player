@@ -107,13 +107,14 @@ else
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by user"
   fi
 fi        
+
 AC_SUBST(name_caps[_LIB])
 PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
 PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
 AC_SUBST(name_caps[_EXTRA_CPPFLAGS])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
-])        
 
+])        
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
@@ -174,20 +175,17 @@ if test "x$disable_playerclient_thread" = "xno"; then
 fi
 
 
-PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[no],[],[],[])
+PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
-dnl AH: this should be converted to use the multi-interface API
-PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[no],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[no],[],[],[])
+PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
 
 PLAYER_ADD_DRIVER([simpleshape],[drivers/blobfinder],[yes],
                     [],[],[],[OPENCV],[opencv])
-
-PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
 
@@ -293,7 +291,7 @@ if test "x$enable_camera1394" = "xyes"; then
 fi
 
 PLAYER_ADD_DRIVER([cameracompress],[drivers/camera/compress],[yes],[jpeglib.h],[],[-ljpeg])
-PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],["gdal_priv.h jpeglib.h"],[],[-lgdal])
+PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],[],[],[],[OPENCV],[opencv])
 
 dnl Service Discovery with libservicediscovery
 AC_LANG_SAVE
@@ -345,6 +343,9 @@ AC_SUBST(AMCL_PF_LIB)
 AC_SUBST(AMCL_MAP_LIB)
 AC_SUBST(AMCL_MODELS_LIB)
 AC_SUBST(GSL_CFLAGS)
+
+dnl Add results from driver tests to compiler and link lines
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 AC_SUBST(PLAYER_DRIVER_LIBS)
 AC_SUBST(PLAYER_DRIVER_LIBPATHS)
@@ -445,3 +446,5 @@ GAZEBO_TEST_DRIVER([sonars],[sonars])
 GAZEBO_TEST_DRIVER([hud],[hud])
 
 ])
+
+

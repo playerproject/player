@@ -72,7 +72,6 @@
 #define PLAYER_TRUTH_CODE          ((uint16_t)15)  // ground-truth (via Stage)
 #define PLAYER_IDARTURRET_CODE     ((uint16_t)16)  // ranging + comms
 #define PLAYER_IDAR_CODE           ((uint16_t)17)  // ranging + comms
-// Descartes should be subsumed by position
 #define PLAYER_DESCARTES_CODE      ((uint16_t)18)  // the Descartes platform
 #define PLAYER_DIO_CODE            ((uint16_t)20)  // digital I/O
 #define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
@@ -90,7 +89,6 @@
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
 #define PLAYER_NOMAD_CODE          ((uint16_t)34)  // Nomad robot
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
-#define PLAYER_CMUCAM2_CODE        ((uint16_t)41)  // cmucam2 device 
 #define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
 #define PLAYER_HUD_CODE            ((uint16_t)43)  // get a HUD interface
 #define PLAYER_PLANNER_CODE        ((uint16_t)44)  // 2D motion planner
@@ -100,8 +98,6 @@
 #define PLAYER_POSITION2D_CODE     ((uint16_t)48)  // 2-D position
 #define PLAYER_JOYSTICK_CODE       ((uint16_t)49)  // Joytstick
 
-// no interface has yet been defined for BPS-like things
-//#define PLAYER_BPS_CODE            ((uint16_t)16)
 
 /* the currently assigned device strings */
 #define PLAYER_NULL_STRING           "null"
@@ -139,15 +135,12 @@
 #define PLAYER_SERVICE_ADV_STRING    "service_adv"
 #define PLAYER_SIMULATION_STRING     "simulation"
 #define PLAYER_BLINKENLIGHT_STRING   "blinkenlight"
-#define PLAYER_CMUCAM2_STRING        "cmucam2"
 #define PLAYER_NOMAD_STRING          "nomad"
 #define PLAYER_ENERGY_STRING         "energy"
 #define PLAYER_MAP_STRING            "map"
 #define PLAYER_HUD_STRING            "hud"
 #define PLAYER_PLANNER_STRING        "planner"
 #define PLAYER_LOG_STRING            "log"
-// no interface has yet been defined for BPS-like things
-//#define PLAYER_BPS_STRING            "bps"
 #define PLAYER_CAMERA_STRING          "camera"
 #define PLAYER_JOYSTICK_STRING        "joystick"
 
@@ -1549,29 +1542,8 @@ tells you which blob to start with and how many blobs there are.
 @{
 */
 
-/** The maximum number of unique color classes. */
-// REMOVE #define PLAYER_BLOBFINDER_MAX_CHANNELS 32
-
-/** The maximum number of blobs for each color class. */
-// REMOVE #define PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL 10
-
 /** The maximum number of blobs in total. */
 #define PLAYER_BLOBFINDER_MAX_BLOBS 256
-
-// REMOVE PLAYER_BLOBFINDER_MAX_CHANNELS * PLAYER_BLOBFINDER_MAX_BLOBS_PER_CHANNEL
-
-/// @todo Remove header array
-/** @brief Blob index entry. */
-typedef struct player_blobfinder_header_elt
-{
-  /** Offset of the first blob for this channel. */
-  uint16_t index;
-
-  /** Number of blobs for this channel. */
-  uint16_t num;
-  
-} __PACKED__ player_blobfinder_header_elt_t;
-
 
 /** @brief Structure describing a single blob. */
 typedef struct player_blobfinder_blob
@@ -1604,22 +1576,11 @@ typedef struct player_blobfinder_data
   /** The image dimensions. */
   uint16_t width, height;
 
-  /** An index into the list of blobs (blobs are indexed by channel). */
-  // REMOVE player_blobfinder_header_elt_t header[PLAYER_BLOBFINDER_MAX_CHANNELS];
-
   /** The list of blobs. */
   uint16_t blob_count;
   player_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
   
 } __PACKED__ player_blobfinder_data_t;
-
-
-/* REMOVE (these dont belong in the player header)
-#define PLAYER_BLOBFINDER_HEADER_SIZE \
-  (2*sizeof(uint16_t) + sizeof(player_blobfinder_header_elt_t)*PLAYER_BLOBFINDER_MAX_CHANNELS)
-
-#define PLAYER_BLOBFINDER_BLOB_SIZE sizeof(player_blobfinder_blob_elt_t)
-*/
 
 
 /** Config request codes */
@@ -2817,66 +2778,6 @@ typedef struct player_aio_data
 /*************************************************************************
  ** end section
  *************************************************************************/
-
-/*************************************************************************/
-/*
- * BPS Device
- *
- *   A global positioning device using laser beacons (hence *B*PS)
- *   Dont forget to specify the beacon positions (using the setbeacon request).
- */
-
-/* BPS data packet */
-typedef struct
-{
-  /* (px, py, pa): current global pose (mm, mm, degrees).  */
-  int32_t px, py, pa;
-
-  /* (ux, uy, ua): uncertainty (mm, mm, degrees). */
-  int32_t ux, uy, ua;
-
-  /* (err): residual error in estimate (x 1e6) */
-  int32_t err;
-
-} __PACKED__ player_bps_data_t;
-
-
-/* Request packet subtypes */
-#define PLAYER_BPS_SET_CONFIG 1
-#define PLAYER_BPS_GET_CONFIG 2
-#define PLAYER_BPS_SET_BEACON 3
-#define PLAYER_BPS_GET_BEACON 4
-
-
-/* BPS configuration packet.  This structure is currently empty. */
-typedef struct
-{
-  /* subtype : set PLAYER_BPS_SET_CONFIG to set the configuration or
-   * PLAYER_BPS_GET_CONFIG to get the configuration. */
-  uint8_t subtype;
-
-} __PACKED__ player_bps_config_t;
-
-
-/* BPS beacon packet. */
-typedef struct
-{
-  /* Packet subtype : set to PLAYER_BPS_SET_BEACON to set the pose of
-   * a beacon.  Set to PLAYER_BPS_GET_BEACON to get the pose of a
-   * beacon, and set id to the id of the beacon to get.. */
-  uint8_t subtype;
-
-  /* Beacon id : must be non-zero. */
-  uint8_t id;
-
-  /* Beacon pose (mm, mm, degrees) in the world cs. */
-  int32_t px, py, pa;
-
-  /* Uncertainty in the beacon pose (mm, mm, degrees). */
-  int32_t ux, uy, ua;
-  
-} __PACKED__ player_bps_beacon_t;
-/*************************************************************************/
 
 /*************************************************************************/
 /** @addtogroup interfaces */
