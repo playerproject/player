@@ -96,6 +96,9 @@ class WriteLog: public CDevice
   // Write position3d data to file
   private: void WritePosition3d(player_position3d_data_t *data);
 
+  // Write power data to file
+  private: void WritePower(player_power_data_t *data);
+
   // Write wifi data to file
   private: void WriteWiFi(player_wifi_data_t *data);
 
@@ -485,6 +488,9 @@ void WriteLog::Write(void *data, size_t size,
     case PLAYER_POSITION3D_CODE:
       this->WritePosition3d((player_position3d_data_t*) data);
       break;
+    case PLAYER_POWER_CODE:
+      this->WritePower((player_power_data_t*) data);
+      break;
     case PLAYER_LASER_CODE:
       this->WriteLaser((player_laser_data_t*) data);
       break;
@@ -598,6 +604,15 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
           DEG_RAD(HINT32(data->yawspeed) / 3600.0),
           data->stall);
 
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Write power data to file
+void WriteLog::WritePower(player_power_data_t *data)
+{
+  fprintf(this->file, "%.1f ", HUINT16(data->charge) / 10.0);
   return;
 }
 
