@@ -31,6 +31,9 @@ int test_lbd(playerc_client_t *client, int index);
 // Basic test for position device.
 int test_position(playerc_client_t *client, int index);
 
+// Basic test for ptz device.
+int test_ptz(playerc_client_t *client, int index);
+
 // Basic vision test.
 int test_vision(playerc_client_t *client, int index);
 

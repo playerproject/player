@@ -10,7 +10,7 @@ include ../../../Makefile.common
 
 TEST = test
 OBS = test.o test_broadcast.o test_laser.o test_lbd.o  \
-			test_position.o test_vision.o
+			test_position.o test_ptz.o test_vision.o
 
 INCLUDES = -I. -I.. -I../../../include
 CFLAGS = -g3 -Wall $(INCLUDES)
@@ -51,6 +51,9 @@ test_lbd.o: ../../../include/defaults.h
 test_position.o: test.h ../playerc.h ../../../include/player.h
 test_position.o: ../../../include/messages.h ../../../include/playercommon.h
 test_position.o: ../../../include/defaults.h
+test_ptz.o: test.h ../playerc.h ../../../include/player.h
+test_ptz.o: ../../../include/messages.h ../../../include/playercommon.h
+test_ptz.o: ../../../include/defaults.h
 test_vision.o: test.h ../playerc.h ../../../include/player.h
 test_vision.o: ../../../include/messages.h ../../../include/playercommon.h
 test_vision.o: ../../../include/defaults.h

@@ -15,6 +15,7 @@ int test_lbd(playerc_client_t *client, int index)
 {
   int t, i;
   int bit_count; double bit_width;
+  void *rdevice;
   playerc_lbd_t *device;
 
   printf("device [lbd] index [%d]\n", index);
@@ -50,19 +51,27 @@ int test_lbd(playerc_client_t *client, int index)
   for (t = 0; t < 10; t++)
   {
     TEST1("reading data (attempt %d)", t);
-    if (playerc_client_read(client) != 0)
+
+    do
+      rdevice = playerc_client_read(client);
+    while (rdevice == client);
+    
+    if (rdevice == device)
+    {
+      PASS();
+
+      printf("lbd: [%d] ", device->beacon_count);
+      for (i = 0; i < MIN(3, device->beacon_count); i++)
+        printf("[%d %6.3f, %6.3f, %6.3f] ", device->beacons[i].id,
+               device->beacons[i].range, device->beacons[i].bearing,
+               device->beacons[i].orient);
+      printf("\n");
+    }
+    else
     {
       FAIL();
-      return -1;
+      break;
     }
-    PASS();
-
-    printf("lbd: [%d] ", device->beacon_count);
-    for (i = 0; i < MIN(3, device->beacon_count); i++)
-      printf("[%d %6.3f, %6.3f, %6.3f] ", device->beacons[i].id,
-             device->beacons[i].range, device->beacons[i].bearing,
-             device->beacons[i].orient);
-    printf("\n");
   }
   
   TEST("unsubscribing");
