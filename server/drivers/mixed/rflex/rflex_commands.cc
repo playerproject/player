@@ -398,10 +398,10 @@ static void parseMotReport( unsigned char *buffer )
    // but dont know what they do so we throw them away
 
 	// check if the dio packet came from a bumper packet
-	if ((address < rflex_configs.bumper_address) || (address >= rflex_configs.power_offset+status.num_bumpers))
+	if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+status.num_bumpers)))
 	{
     	// not bumper
-		fprintf(stderr,"(dio)");
+		fprintf(stderr,"(dio) address = 0x%02x ",address);
     	break;
 	}
 	else
@@ -647,7 +647,7 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
       parseSonarReport( buffer );
       break;
     case DIO_PORT:
-	    fprintf( stderr, "(dio)" );
+	    //fprintf( stderr, "(dio)" );
 		parseDioReport( buffer );
         break;
     case IR_PORT:
