@@ -168,9 +168,9 @@ int player_request(player_connection_t* conn,
 
   bzero(replyhdr,sizeof(player_msghdr_t));
   /* eat data until the response comes back */
-  while((ntohs(replyhdr->type) != PLAYER_MSGTYPE_RESP) || 
-        (ntohs(replyhdr->device) != device) ||
-        (ntohs(replyhdr->device_index) != device_index))
+  while((replyhdr->type != PLAYER_MSGTYPE_RESP) || 
+        (replyhdr->device != device) ||
+        (replyhdr->device_index != device_index))
   {
     if(player_read(conn, replyhdr, reply, replylen) == -1)
       return(-1);

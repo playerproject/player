@@ -234,9 +234,9 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   if(request)
   {
     reply_hdr.stx = PLAYER_STX;
-    reply_hdr.type = PLAYER_MSGTYPE_RESP;
-    reply_hdr.device = hdr.device;
-    reply_hdr.device_index = hdr.device_index;
+    reply_hdr.type = htons(PLAYER_MSGTYPE_RESP);
+    reply_hdr.device = htons(hdr.device);
+    reply_hdr.device_index = htons(hdr.device_index);
     reply_hdr.reserved = (uint32_t)0;
     reply_hdr.size = htonl(payload_size);
 

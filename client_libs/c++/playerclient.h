@@ -79,18 +79,19 @@ class PlayerClient
      char host[MAX_FILENAME_SIZE];
      int port;
 
-     // data structures to hold commands going TO robot
-     //  they actually point into the command buffer areas of the appropriate
-     //  devices in the devicedatatable
+     // these are for backward compatibility
+     //  they actually point into the command/data buffer areas of the 
+     //  appropriate devices in the devicedatatable
      short* newspeed;
      short* newturnrate;
      short* newpan;
      short* newtilt;
      unsigned short* newzoom;
-     
-     // data structures to hold sensor readings FROM robot
+
      unsigned short *sonar;
      unsigned short *laser;
+     
+     // data structures to hold sensor readings FROM robot
      player_position_data_t* position;
      player_ptz_data_t* ptz;
      player_misc_data_t* misc;
