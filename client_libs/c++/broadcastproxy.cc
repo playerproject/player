@@ -50,7 +50,7 @@ BroadcastProxy::BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned 
 // Read a message from the incoming queue
 // Returns the number of bytes read
 // Returns -1 if there are no available messages
-int BroadcastProxy::Read(uint8_t *msg, uint16_t len)
+int BroadcastProxy::Read(char *msg, int len)
 {
     if (this->data.len <= 0)
         return -1; 
@@ -82,7 +82,7 @@ int BroadcastProxy::Read(uint8_t *msg, uint16_t len)
 // Write a message to the outgoing queue
 // Returns the number of bytes written
 // Returns -1 if the queue is full
-int BroadcastProxy::Write(uint8_t *msg, uint16_t len)
+int BroadcastProxy::Write(char *msg, int len)
 {
     // Check for overflow
     if (this->cmd.len + len + sizeof(len) > sizeof(this->cmd.buffer))
