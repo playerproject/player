@@ -87,10 +87,10 @@ class UPCBarcode : public Driver
   private: void ProcessImage();
 
   // Extract a bit string from the image.  
-  private: int ExtractSymbols(int x, int symbol_max_count, int symbols[]);
+  private: int ExtractSymbols(int x, int symbol_max_count, int symbols[][2]);
 
   // Extract a code from a symbol string.
-  private: int ExtractCode(int symbol_count, int symbols[]);
+  private: int ExtractCode(int symbol_count, int symbols[][2], int *min, int *max);
   
   // Write the device data (the data going back to the client).
   private: void WriteBlobfinderData();
@@ -353,9 +353,9 @@ int UPCBarcode::ReadCamera()
 void UPCBarcode::ProcessImage()
 {
   int x, step_x;
-  int id;
+  int id, min, max;
   int symbol_count;
-  int symbols[PLAYER_CAMERA_IMAGE_HEIGHT];
+  int symbols[PLAYER_CAMERA_IMAGE_HEIGHT][2];
   blob_t *blob;
 
   int width, height;
@@ -397,9 +397,6 @@ void UPCBarcode::ProcessImage()
   {
     cvSetZero(this->outImage);
     cvCopy(this->inpImage, this->outSubImages + 0);
-
-    // TESTING
-    cvSaveImage("out.pgm", this->outImage);
   }
 
   step_x = 16;
@@ -414,10 +411,10 @@ void UPCBarcode::ProcessImage()
     symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
 
     // Identify barcode
-    id = this->ExtractCode(symbol_count, symbols);
+    id = this->ExtractCode(symbol_count, symbols, &min, &max);
 
     if (id >= 0)
-      printf("%d %d\n", x, id);
+      printf("%d %d %d\n", x, min, id);
 
     // If we have an open blob, and didnt get the same id, close the blob
     if (blob != NULL && id != blob->id)
@@ -434,8 +431,18 @@ void UPCBarcode::ProcessImage()
       blob->id = id;
       blob->ax = x;
       blob->bx = x + 1;
-      blob->ay = 0;
-      blob->by = this->cameraData.height;
+      blob->ay = min;
+      blob->by = this->cameraData.height - 2;
+
+      if (this->out_camera_id.port)
+      {
+        /*
+        cvRectangle(this->outSubImages + 0, cvPoint(blob->ax, blob->ay),
+                    cvPoint(blob->bx, blob->by), CV_RGB(0, 0, 0), 1);
+        cvRectangle(this->outSubImages + 1, cvPoint(blob->ax, blob->ay),
+                    cvPoint(blob->bx, blob->by), CV_RGB(255, 255, 255), 1);
+        */
+      }
     }
 
     // If we have an open blob, and got an id, continue the blob
@@ -445,8 +452,6 @@ void UPCBarcode::ProcessImage()
     }
   }
 
-  printf("\n");
-
   return;
 }
 
@@ -454,7 +459,7 @@ void UPCBarcode::ProcessImage()
 ////////////////////////////////////////////////////////////////////////////////
 // Extract a bit string from the image.  Takes a vertical column in
 // the image and applies an edge detector
-int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
+int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[][2])
 {
   int i, j, off, inc, pix;
   double fn, fv;
@@ -474,9 +479,9 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
   {
    // Run an edge detector
     fn = fv = 0.0;
-    for (j = -2; j <= 2; j++)
+    for (j = -1; j <= 1; j++)
     {
-      fv += kernel[j + 2] * this->inpImage->imageData[pix + j * inc];
+      fv += kernel[j + 2] * (*cvPtr2D(this->inpImage, i + j, x));
       fn += fabs(kernel[j + 2]);
     }
     fv /= fn;
@@ -499,7 +504,8 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     {
       if (fv > +this->edgeThresh)
       {
-        symbols[symbol_count++] = -(i - start);
+        symbols[symbol_count][0] = i;
+        symbols[symbol_count++][1] = -(i - start);
         state = 1;
         start = i;
       }
@@ -508,19 +514,29 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
     {
       if (fv < -this->edgeThresh)
       {
-        symbols[symbol_count++] = +(i - start);
+        symbols[symbol_count][0] = i;
+        symbols[symbol_count++][1] = +(i - start);
         state = 0;
         start = i;
       }
     }
 
+    // TESTING
+    *cvPtr2D(this->outSubImages + 1, i, x) = 127 + 127 * state;;
+    
     //fprintf(file, "%d %d %f %f %d\n", i, this->cameraData.image[pix], fv, fn, state);
   }
 
   if (state == 0)
-    symbols[symbol_count++] = -(i - start);
+  {
+    symbols[symbol_count][0] = i;
+    symbols[symbol_count++][1] = -(i - start);
+  }
   else if (state == 1)
-    symbols[symbol_count++] = +(i - start);
+  {
+    symbols[symbol_count][0] = i;
+    symbols[symbol_count++][1] = +(i - start);
+  }
 
   //fprintf(file, "\n\n");
   //fclose(file);
@@ -531,12 +547,12 @@ int UPCBarcode::ExtractSymbols(int x, int symbol_max_count, int symbols[])
 
 ////////////////////////////////////////////////////////////////////////////////
 // Extract a code from a symbol string.
-int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
+int UPCBarcode::ExtractCode(int symbol_count, int symbols[][2], int *miny, int *maxy)
 {
   int i, j, k;
   double a, b, c;
   double mean, min, max, wm, wo;
-  int best_digit;
+  int best_digit, best_miny;
   double best_err;
   double err[10];
 
@@ -557,7 +573,8 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
     };
 
   best_digit = -1;
-  
+  best_miny = INT_MAX;
+      
   // Note that each code has seven symbols in it, not counting the
   // initial space.
   for (i = 0; i < symbol_count - 7; i++)
@@ -568,9 +585,9 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
     printf("\n");
     */
 
-    a = symbols[i];
-    b = symbols[i + 1];
-    c = symbols[i + 2];
+    a = symbols[i][1];
+    b = symbols[i + 1][1];
+    c = symbols[i + 2][1];
 
     // Look for a start guard: +N-N+N
     if (a > this->guardMin && b < -this->guardMin && c > this->guardMin)
@@ -589,6 +606,7 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
 
       best_err = this->errFirst;
       best_digit = -1;
+      best_miny = INT_MAX;
       
       // Read the code digit (4 symbols) and compare against the known
       // digit patterns
@@ -598,7 +616,7 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
         for (j = 0; j < 4; j++)
         {
           wm = digits[k][j];
-          wo = symbols[i + 3 + j] / mean;
+          wo = symbols[i + 3 + j][1] / mean;
           err[k] += fabs(wo - wm);
           //printf("digit %d = %.3f %.3f\n", k, wm, wo);
         }
@@ -608,6 +626,7 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
         {
           best_err = err[k];
           best_digit = k;
+          best_miny = symbols[i][0];
         }
       }
 
@@ -633,6 +652,8 @@ int UPCBarcode::ExtractCode(int symbol_count, int symbols[])
   //if (best_digit >= 0)
   //  printf("best = %d\n", best_digit);
 
+  *miny = best_miny;
+  
   return best_digit;
 }
 
