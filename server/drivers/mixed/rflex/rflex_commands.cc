@@ -368,61 +368,62 @@ static void parseMotReport( unsigned char *buffer )
   }
 }
 
- //processes a dio packet from the rflex - and saves the data in the
- //struct for later use, dio report includes bump sensors...
- static void parseDioReport( unsigned char *buffer )
- {
-   unsigned long timeStamp;
-   unsigned char opcode, length, address;
-   unsigned short data;
+//processes a dio packet from the rflex - and saves the data in the
+//struct for later use, dio report includes bump sensors...
+static void parseDioReport( unsigned char *buffer )
+{
+	unsigned long timeStamp;
+	unsigned char opcode, length, address;
+	unsigned short data;
 
-   opcode = buffer[4];
-   length = buffer[5];
+	opcode = buffer[4];
+	length = buffer[5];
 
 	// allocate bumper storage if we havent already
 	// must be a better place to do this but it works
-   if (status.num_bumpers== 0 && rflex_configs.bumper_count > 0)
-   {
-       status.bumpers = new char[rflex_configs.bumper_count];
-       if (status.bumpers != NULL)
-           status.num_bumpers = rflex_configs.bumper_count;
-   }
-
-   switch(opcode) {
-   case DIO_REPORT:
-       if (length < 6)
-   {
-       fprintf(stderr, "Bump Data Packet too small\n");
-       break;
-   }
-   timeStamp = convertBytes2UInt32(&(buffer[6]));
-   address = buffer[10];
-   data = convertBytes2UInt16(&(buffer[11]));
-
-   // on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
-   // but dont know what they do so we throw them away
-
-	// check if the dio packet came from a bumper packet
-	if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+status.num_bumpers)))
+	// *** watch out this is duplicated ***
+	if (status.num_bumpers != rflex_configs.bumper_count)
 	{
-    	// not bumper
-		fprintf(stderr,"(dio) address = 0x%02x ",address);
-    	break;
-	}
-	else
-	{
-		// is bumper
-		// assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
-	 	status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
-
+   		delete status.bumpers;
+		status.bumpers = new char[rflex_configs.bumper_count];
+		if (status.bumpers != NULL)
+			status.num_bumpers = rflex_configs.bumper_count;
 	}
 
+	switch(opcode) 
+	{
+		case DIO_REPORT:
+			if (length < 6)
+   			{
+       			fprintf(stderr, "DIO Data Packet too small\n");
+       			break;
+   			}
+   			timeStamp = convertBytes2UInt32(&(buffer[6]));
+   			address = buffer[10];
+   			data = convertBytes2UInt16(&(buffer[11]));
 
-     break;
-   default:
-     break;
-   }
- }
+			// on the b21r the bump packets are address 0x40 -> 0x4D, there are some other dio packets
+   			// but dont know what they do so we throw them away
+
+			// check if the dio packet came from a bumper packet
+			if ((address < rflex_configs.bumper_address) || (address >= (rflex_configs.bumper_address+status.num_bumpers)))
+			{
+    			// not bumper
+				fprintf(stderr,"(dio) address = 0x%02x ",address);
+    			break;
+			}
+			else
+			{
+				// is bumper
+				fprintf(stderr,"(bump) address = 0x%02x ",address);
+				// assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
+	 			status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
+			}
+    		break;
+   		default:
+     		break;
+   	}
+}
 
 // Processes the IR sensor report
  static void parseIrReport( unsigned char *buffer )
@@ -439,7 +440,7 @@ static void parseMotReport( unsigned char *buffer )
 		//printf("\n");
 
 
-	// allocate bumper storage if we havent already
+	// allocate ir storage if we havent already
 	// must be a better place to do this but it works
    if (status.num_ir== 0 && rflex_configs.ir_poses.pose_count > 0)
    {
@@ -782,17 +783,27 @@ int rflex_update_sonar(int fd,int num_sonars, int * ranges){
 }
 
 // copies data from internal bumper list to the proper rflex bumper list
-void rflex_update_bumpers(int fd, int num_bumpers, 
-			    char *values)
+void rflex_update_bumpers(int fd, int num_bumpers, char *values)
 {
-  clear_incoming_data(fd);
+	clear_incoming_data(fd);
+	// allocate bumper storage if we havent already
+	// must be a better place to do this but it works
+	// *** watch out this is duplicated ***
+	if (status.num_bumpers != rflex_configs.bumper_count)
+	{
+   		delete status.bumpers;
+		status.bumpers = new char[rflex_configs.bumper_count];
+		if (status.bumpers != NULL)
+			status.num_bumpers = rflex_configs.bumper_count;
+	}
 
-  if (num_bumpers > status.num_bumpers) {
-    fprintf(stderr,"Requested more bumpers than available.\n");
-    num_bumpers = status.num_bumpers;
-  }
+	if (num_bumpers > status.num_bumpers) 
+	{
+    	fprintf(stderr,"Requested more bumpers than available.\n");
+    	num_bumpers = status.num_bumpers;
+  	}
 
-  memcpy(values, status.bumpers, num_bumpers*sizeof(char));
+	memcpy(values, status.bumpers, num_bumpers*sizeof(char));
 }
 
 

@@ -89,6 +89,14 @@ extern unsigned char*    RFLEX::reqqueue;
 extern unsigned char*    RFLEX::repqueue;
 extern int               RFLEX::joy_control;
 
+CDevice *		RFLEX::PositionDev = NULL;
+CDevice *		RFLEX::SonarDev = NULL;
+CDevice *		RFLEX::IrDev = NULL;
+CDevice *		RFLEX::BumperDev = NULL;
+CDevice *		RFLEX::PowerDev = NULL;
+CDevice *		RFLEX::AIODev = NULL;
+CDevice *		RFLEX::DIODev = NULL;
+
 //NOTE - this is accessed as an extern variable by the other RFLEX objects
 rflex_config_t rflex_configs;
 
@@ -282,7 +290,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_SONAR_CODE;
   pthread_testcancel();
-  CDevice* sonarp = deviceTable->GetDevice(id);
+  //CDevice* sonarp = deviceTable->GetDevice(id);
+  CDevice* sonarp = SonarDev;
   pthread_testcancel();
   if(sonarp)
   {
@@ -292,7 +301,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_POWER_CODE;
   pthread_testcancel();
-  CDevice* powerp = deviceTable->GetDevice(id);
+  //CDevice* powerp = deviceTable->GetDevice(id);
+  CDevice* powerp = PowerDev;
   pthread_testcancel();
   if(powerp)
   {
@@ -302,7 +312,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_BUMPER_CODE;
   pthread_testcancel();
-  CDevice* bumperp = deviceTable->GetDevice(id);
+  //CDevice* bumperp = deviceTable->GetDevice(id);
+  CDevice* bumperp = BumperDev;
   pthread_testcancel();
   if(bumperp)
   {
@@ -312,7 +323,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_IR_CODE;
   pthread_testcancel();
-  CDevice* ir = deviceTable->GetDevice(id);
+  //CDevice* ir = deviceTable->GetDevice(id);
+  CDevice* ir = IrDev;
   pthread_testcancel();
   if(ir)
   {
@@ -322,7 +334,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_AIO_CODE;
   pthread_testcancel();
-  CDevice* aio = deviceTable->GetDevice(id);
+  //CDevice* aio = deviceTable->GetDevice(id);
+  CDevice* aio = AIODev;
   pthread_testcancel();
   if(aio)
   {
@@ -332,7 +345,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_DIO_CODE;
   pthread_testcancel();
-  CDevice* dio = deviceTable->GetDevice(id);
+  //CDevice* dio = deviceTable->GetDevice(id);
+  CDevice* dio = DIODev;
   pthread_testcancel();
   if(dio)
   {
@@ -342,7 +356,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_POSITION_CODE;
   pthread_testcancel();
-  CDevice* positionp = deviceTable->GetDevice(id);
+  //CDevice* positionp = deviceTable->GetDevice(id);
+  CDevice * positionp = PositionDev;
   pthread_testcancel();
   if(positionp)
   {
@@ -356,8 +371,7 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 void 
 RFLEX::Main()
 {
-	printf("Waiting for rflex_done=1 in config file...");
-	fflush(stdout);
+	printf("Waiting for rflex_done=1 in config file...\n");
 	while (rflex_configs.run == false) pthread_testcancel();
 	printf("Rflex Thread Started\n");
 	
@@ -375,10 +389,11 @@ RFLEX::Main()
 	int last_bumper_subscrcount;
 	int last_ir_subscrcount;
 
-	player_device_id_t id;
+/*	player_device_id_t id;
 
 	id.port = global_playerport;
 	id.index = 0;
+
 
 	id.code = PLAYER_SONAR_CODE;
 	CDevice* sonarp = deviceTable->GetDevice(id);
@@ -387,8 +402,13 @@ RFLEX::Main()
 	id.code = PLAYER_BUMPER_CODE;
 	CDevice* bumperp = deviceTable->GetDevice(id);
 	id.code = PLAYER_IR_CODE;
-	CDevice* irp = deviceTable->GetDevice(id);
-
+	CDevice* irp = deviceTable->GetDevice(id);*/
+	
+	CDevice* sonarp = SonarDev;
+	CDevice* positionp = PositionDev;
+	CDevice* bumperp = BumperDev;
+	CDevice* irp = IrDev;
+	
 	last_sonar_subscrcount = 0;
 	last_position_subscrcount = 0;
 	last_bumper_subscrcount = 0;
@@ -754,7 +774,7 @@ RFLEX::Main()
 		/* read the clients' commands from the common buffer */
 		GetCommand((unsigned char*)&command, sizeof(command));
 		
-		if(positionp->subscriptions || rflex_configs.use_joystick)
+		if(positionp && (positionp->subscriptions || rflex_configs.use_joystick))
 		{
 			newmotorspeed = false;
 			newmotorturn = false;

@@ -49,7 +49,7 @@ CDevice* RFLEXSonar_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXSonar* tmp=new RFLEXSonar(interface, cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
-    return (CDevice*)tmp;
+    return RFLEX::SonarDev = (CDevice*)tmp;
   }
 }
 

@@ -42,8 +42,7 @@ CDevice* RFLEXdio_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else{
-    CDevice* tmp=((CDevice*)(new RFLEXdio(interface, cf, section)));
-    return tmp;
+    return RFLEX::DIODev=((CDevice*)(new RFLEXdio(interface, cf, section)));
   }
 }
 
