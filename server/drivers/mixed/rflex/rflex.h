@@ -70,6 +70,7 @@ typedef struct
   player_bumper_data_t bumper;
   player_dio_data_t dio;
   player_aio_data_t aio;
+  player_ir_data ir;
 } __attribute__ ((packed)) player_rflex_data_t;
 
 typedef struct
@@ -122,7 +123,7 @@ class RFLEX:public CDevice
     int initialize_robot();
     void reset_odometry();
     void set_odometry(long,long,short);
-    void update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice* bumperp);    
+    void update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice* bumperp, CDevice* irp);    
 
     void set_config_defaults();
   protected:

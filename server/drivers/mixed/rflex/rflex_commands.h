@@ -6,6 +6,9 @@
   void rflex_sonars_on(int fd);
   void rflex_sonars_off(int fd);
 
+  void rflex_ir_on(int fd);
+  void rflex_ir_off(int fd);
+
   void rflex_brake_on(int fd);
   void rflex_brake_off(int fd);
 
@@ -31,12 +34,12 @@
   void rflex_update_bumpers(int fd, int num_bumpers,
 				   char *values);
   void rflex_update_ir(int fd, int num_irs,
-			     int *ranges);
+			     unsigned char *ranges);
 
   void rflex_set_velocity(int fd, long t_vel, long r_vel, 
 				 long acceleration);
   void rflex_stop_robot(int fd, int deceleration);
 
-	static int clear_incoming_data(int fd);
+//int clear_incoming_data(int fd);
 
 #endif

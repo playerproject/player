@@ -16,6 +16,7 @@ libplayerc_a_SOURCES = playerc.h \
 								       dev_localize.c \
                        dev_gps.c \
                        dev_sonar.c \
+                       dev_ir.c \
                        dev_bumper.c \
                        dev_position.c dev_position3d.c \
                        dev_power.c \

@@ -33,6 +33,8 @@ typedef struct {
   int lcd_x;
   int lcd_y;
   unsigned char * lcd_data;
+  int num_ir;
+  unsigned char * ir_ranges;
 } rflex_status_t;
 
 
@@ -199,9 +201,32 @@ void rflex_digital_io_off( int fd )
 {
   unsigned char data[MAX_COMMAND_LENGTH];
   convertUInt32( (long) 0, &(data[0]) );
-  cmdSend( fd, SONAR_PORT, 4, DIO_REPORTS_REQ, 4, data );
+  cmdSend( fd, DIO_PORT, 4, DIO_REPORTS_REQ, 4, data );
 }
 
+void rflex_ir_on( int fd )
+{
+  unsigned char data[MAX_COMMAND_LENGTH];
+  convertUInt32( (long) 0, &(data[0]) );
+  convertUInt32( (long) 70, &(data[4]) );
+  convertUInt32( (long) 10, &(data[8]) );
+  convertUInt32( (long) 20, &(data[12]) );
+  convertUInt32( (long) 150, &(data[16]) );
+  convertUInt8( (unsigned char) 2, &(data[20]) );
+  cmdSend( fd, IR_PORT, 0, IR_RUN, 21, data );
+}
+
+void rflex_ir_off( int fd )
+{
+  unsigned char data[MAX_COMMAND_LENGTH];
+  convertUInt32( (long) 0, &(data[0]) );
+  convertUInt32( (long) 0, &(data[4]) );
+  convertUInt32( (long) 0, &(data[8]) );
+  convertUInt32( (long) 0, &(data[12]) );
+  convertUInt32( (long) 0, &(data[16]) );
+  convertUInt8( (unsigned char) 0, &(data[20]) );
+  cmdSend( fd, IR_PORT, 0, IR_RUN, 21, data );
+}
 void rflex_brake_on( int fd )
 {
   cmdSend( fd, MOT_PORT, 0, MOT_BRAKE_SET, 0, NULL );
@@ -394,6 +419,79 @@ static void parseMotReport( unsigned char *buffer )
    }
  }
 
+// Processes the IR sensor report
+ static void parseIrReport( unsigned char *buffer )
+ {
+  // unsigned long timeStamp;
+   unsigned char opcode, length;//, address;
+   //unsigned short data;
+
+   opcode = buffer[4];
+   length = buffer[5];
+
+//	for (int i = 0; i < length; ++i)
+	//	printf("%02x",buffer[i+6]);
+		//printf("\n");
+
+
+	// allocate bumper storage if we havent already
+	// must be a better place to do this but it works
+   if (status.num_ir== 0 && rflex_configs.ir_poses.pose_count > 0)
+   {
+       status.ir_ranges = new unsigned char[rflex_configs.ir_poses.pose_count];
+       if (status.ir_ranges != NULL)
+           status.num_ir = rflex_configs.ir_poses.pose_count;
+	else
+		fprintf(stderr,"Error allocating ir range storage in rflex status\n");
+   }
+
+   switch(opcode) 
+   {
+   case IR_REPORT:
+   {
+	   if (length < 1)
+	   {
+    	   fprintf(stderr, "IR Data Packet too small\n");
+	       break;
+	   }
+   
+		// get number of IR readings to make
+	   	unsigned char pckt_ir_count = buffer[6];  
+	   	if (pckt_ir_count < rflex_configs.ir_base_bank)
+   			pckt_ir_count = 0;
+		else
+			pckt_ir_count -= rflex_configs.ir_base_bank;
+   
+		if (pckt_ir_count > rflex_configs.ir_bank_count)
+   			pckt_ir_count = rflex_configs.ir_bank_count;
+		
+
+		// now actually read the ir data
+		int ir_data_index = 0;
+		for (int i=0; i < rflex_configs.ir_bank_count && ir_data_index < status.num_ir; ++i)
+		{
+			for (int j = 0; j < rflex_configs.ir_count[i] && ir_data_index < status.num_ir; ++j,++ir_data_index)
+			{
+				// work out the actual offset in teh packet 
+				//(current bank + bank offfset) * bank data block size + current ir sensor + constant offset
+				int data_index = (rflex_configs.ir_base_bank + i) * 13 + j + 11;
+				status.ir_ranges[ir_data_index] = buffer[data_index];
+			}
+		}
+
+    	break;
+	}
+   default:
+	    break;
+   }
+   
+   // debug print
+/*   for (int i = 0; i < status.num_ir ; ++i)
+   	printf("%02x ", status.ir_ranges[i]);
+	printf("\n");*/
+}
+
+
 //processes a sys packet from the rflex - and saves the data in the
 //struct for later use, sys is primarily used for bat voltage & brake status
 static void parseSysReport( unsigned char *buffer )
@@ -553,7 +651,8 @@ static int parseBuffer( unsigned char *buffer, unsigned int len )
 		parseDioReport( buffer );
         break;
     case IR_PORT:
-      fprintf( stderr, "(ir)" );
+		parseIrReport( buffer);
+//      fprintf( stderr, "(ir)" );
       break;
     default:
       break;
@@ -645,6 +744,21 @@ void rflex_update_bumpers(int fd, int num_bumpers,
   }
 
   memcpy(values, status.bumpers, num_bumpers*sizeof(char));
+}
+
+
+// copies data from internal bumper list to the proper rflex bumper list
+void rflex_update_ir(int fd, int num_irs, 
+			    unsigned char *values)
+{
+  clear_incoming_data(fd);
+
+  if (num_irs > status.num_ir) {
+    fprintf(stderr,"Requested more ir readings than available. %d of %d\n", num_irs,status.num_ir );
+    num_irs = status.num_ir;
+  }
+
+  memcpy(values, status.ir_ranges, num_irs*sizeof(char));
 }
 
 
