@@ -137,6 +137,8 @@ test_fiducial(PlayerClient* client, int index)
 
     int id = fp.GetId();
 
+    printf( " (%d) ", id );
+
     if( id > 0 )
       PASS();
     else
