@@ -121,7 +121,7 @@ array set sonar_positions [list\
 # saves lots of time later
 array set sonar_angles {}
 set i 0
-while {$i < $PLAYER_NUM_SONAR_SAMPLES}  {
+while {$i < [expr [array size sonar_positions] / 3]} {
   set sonar_angles($i,cos) \
     [expr cos((($sonar_positions($i,theta) * $PI)/180.0))]
   set sonar_angles($i,sin) \
@@ -137,41 +137,41 @@ proc toggle_ptz {} {
   global display_ptz
   if {$display_ptz} {
     player_req_dev robot ptz a
-    .vision_panel.left configure -state normal
-    .vision_panel.right configure -state normal
-    .vision_panel.up configure -state normal
-    .vision_panel.down configure -state normal
-    .vision_panel.in configure -state normal
-    .vision_panel.out configure -state normal
+    .blobfinder_panel.left configure -state normal
+    .blobfinder_panel.right configure -state normal
+    .blobfinder_panel.up configure -state normal
+    .blobfinder_panel.down configure -state normal
+    .blobfinder_panel.in configure -state normal
+    .blobfinder_panel.out configure -state normal
 
-    .vision_panel.data_frame.pan configure -state normal
-    .vision_panel.data_frame.pan_value configure -state normal
-    .vision_panel.data_frame.tilt configure -state normal
-    .vision_panel.data_frame.tilt_value configure -state normal
-    .vision_panel.data_frame.zoom configure -state normal
-    .vision_panel.data_frame.zoom_value configure -state normal
+    .blobfinder_panel.data_frame.pan configure -state normal
+    .blobfinder_panel.data_frame.pan_value configure -state normal
+    .blobfinder_panel.data_frame.tilt configure -state normal
+    .blobfinder_panel.data_frame.tilt_value configure -state normal
+    .blobfinder_panel.data_frame.zoom configure -state normal
+    .blobfinder_panel.data_frame.zoom_value configure -state normal
   } else {
     player_req_dev robot ptz c
-    .vision_panel.left configure -state disabled
-    .vision_panel.right configure -state disabled
-    .vision_panel.up configure -state disabled
-    .vision_panel.down configure -state disabled
-    .vision_panel.in configure -state disabled
-    .vision_panel.out configure -state disabled
-    .vision_panel.data_frame.pan configure -state disabled
-    .vision_panel.data_frame.pan_value configure -state disabled
-    .vision_panel.data_frame.tilt configure -state disabled
-    .vision_panel.data_frame.tilt_value configure -state disabled
-    .vision_panel.data_frame.zoom configure -state disabled
-    .vision_panel.data_frame.zoom_value configure -state disabled
+    .blobfinder_panel.left configure -state disabled
+    .blobfinder_panel.right configure -state disabled
+    .blobfinder_panel.up configure -state disabled
+    .blobfinder_panel.down configure -state disabled
+    .blobfinder_panel.in configure -state disabled
+    .blobfinder_panel.out configure -state disabled
+    .blobfinder_panel.data_frame.pan configure -state disabled
+    .blobfinder_panel.data_frame.pan_value configure -state disabled
+    .blobfinder_panel.data_frame.tilt configure -state disabled
+    .blobfinder_panel.data_frame.tilt_value configure -state disabled
+    .blobfinder_panel.data_frame.zoom configure -state disabled
+    .blobfinder_panel.data_frame.zoom_value configure -state disabled
   }
 }
-proc toggle_vision {} {
-  global display_vision
-  if {$display_vision} {
-    player_req_dev robot vision r
+proc toggle_blobfinder {} {
+  global display_blobfinder
+  if {$display_blobfinder} {
+    player_req_dev robot blobfinder r
   } else {
-    player_req_dev robot vision c
+    player_req_dev robot blobfinder c
   }
 }
 proc toggle_sonar {} {
@@ -185,20 +185,19 @@ proc toggle_sonar {} {
   }
 }
 proc toggle_laser {} {
-  global display_laser display_lb
+  global display_laser display_fiducial
   if {$display_laser} {
     player_req_dev robot laser r
   } else {
     player_req_dev robot laser c
   }
 }
-proc toggle_lb {} {
-  global display_lb display_laser
-  if {$display_lb} {
-    player_req_dev robot laserbeacon r
-    player_config_laserbeacon robot 5 102 60 60
+proc toggle_fiducial {} {
+  global display_fiducial display_laser
+  if {$display_fiducial} {
+    player_req_dev robot fiducial r
   } else {
-    player_req_dev robot laserbeacon c
+    player_req_dev robot fiducial c
   }
 }
 proc toggle_motor_state {} {
@@ -215,9 +214,6 @@ proc config_laser {wide_or_narrow} {
   }
 }
 
-proc config_lbd {numbits} {
-  player_set_laserbeacon_bits robot $numbits
-}
 #########################################################################
 
 #########################################################################
@@ -352,74 +348,74 @@ proc checkCameraLimits {} {
 }
 
 proc createVisionPanel {} {
-  global display_vision leftarrow rightarrow uparrow downarrow
+  global display_blobfinder leftarrow rightarrow uparrow downarrow
   global newpan newtilt newzoom
   global robot
 
-  frame .vision_panel
+  frame .blobfinder_panel
 
-  canvas .vision_panel.canvas -width 160 -height 120 -bg black
+  canvas .blobfinder_panel.canvas -width 160 -height 120 -bg black
 
-  checkbutton .vision_panel.vision_check -command toggle_vision\
-    -variable display_vision -text "Display Vision"
+  checkbutton .blobfinder_panel.blobfinder_check -command toggle_blobfinder\
+    -variable display_blobfinder -text "Display Vision"
 
-  set display_vision 0
+  set display_blobfinder 0
 
-  button .vision_panel.left -image $leftarrow -state disabled \
+  button .blobfinder_panel.left -image $leftarrow -state disabled \
     -command {catch {set newpan [expr $robot(ptz,pan) + 10];checkCameraLimits;player_set_camera robot $newpan $robot(ptz,tilt) $robot(ptz,zoom)}}
-  button .vision_panel.right -image $rightarrow -state disabled \
+  button .blobfinder_panel.right -image $rightarrow -state disabled \
     -command {catch {set newpan [expr $robot(ptz,pan) -10];checkCameraLimits;player_set_camera robot $newpan $robot(ptz,tilt) $robot(ptz,zoom)}}
-  button .vision_panel.up -image $uparrow -state disabled \
+  button .blobfinder_panel.up -image $uparrow -state disabled \
     -command {catch {set newtilt [expr $robot(ptz,tilt) + 5]; checkCameraLimits;player_set_camera robot $robot(ptz,pan) $newtilt $robot(ptz,zoom)}}
-  button .vision_panel.down -image $downarrow  -state disabled \
+  button .blobfinder_panel.down -image $downarrow  -state disabled \
     -command {catch {set newtilt [expr $robot(ptz,tilt) -5];checkCameraLimits;player_set_camera robot $robot(ptz,pan) $newtilt $robot(ptz,zoom)}}
-  button .vision_panel.in -text + -state disabled \
+  button .blobfinder_panel.in -text + -state disabled \
     -command {catch {set newzoom [expr $robot(ptz,zoom) + 100];checkCameraLimits;player_set_camera robot $robot(ptz,pan) $robot(ptz,tilt) $newzoom}}
-  button .vision_panel.out -text - -state disabled \
+  button .blobfinder_panel.out -text - -state disabled \
     -command {catch {set newzoom [expr $robot(ptz,zoom) -100];checkCameraLimits;player_set_camera robot $robot(ptz,pan) $robot(ptz,tilt) $newzoom}}
 
-  frame .vision_panel.data_frame
-  label .vision_panel.data_frame.pan -text Pan: -state disabled
-  label .vision_panel.data_frame.pan_value -textvariable robot(ptz,pan) -width 8 -anchor e -state disabled
-  label .vision_panel.data_frame.tilt -text Tilt: -state disabled
-  label .vision_panel.data_frame.tilt_value -textvariable robot(ptz,tilt) -width 8 -anchor e -state disabled
-  label .vision_panel.data_frame.zoom -text Zoom: -state disabled
-  label .vision_panel.data_frame.zoom_value -textvariable robot(ptz,zoom) -width 8 -anchor e -state disabled
-  checkbutton .vision_panel.ptz_check -command toggle_ptz\
+  frame .blobfinder_panel.data_frame
+  label .blobfinder_panel.data_frame.pan -text Pan: -state disabled
+  label .blobfinder_panel.data_frame.pan_value -textvariable robot(ptz,pan) -width 8 -anchor e -state disabled
+  label .blobfinder_panel.data_frame.tilt -text Tilt: -state disabled
+  label .blobfinder_panel.data_frame.tilt_value -textvariable robot(ptz,tilt) -width 8 -anchor e -state disabled
+  label .blobfinder_panel.data_frame.zoom -text Zoom: -state disabled
+  label .blobfinder_panel.data_frame.zoom_value -textvariable robot(ptz,zoom) -width 8 -anchor e -state disabled
+  checkbutton .blobfinder_panel.ptz_check -command toggle_ptz\
     -variable display_ptz -text "Display PTZ"
 
 
-  grid configure .vision_panel.canvas -column 0 -row 0 -columnspan 5
-  grid configure .vision_panel.vision_check -column 0 -row 1 -columnspan 5
+  grid configure .blobfinder_panel.canvas -column 0 -row 0 -columnspan 5
+  grid configure .blobfinder_panel.blobfinder_check -column 0 -row 1 -columnspan 5
 
-  grid configure .vision_panel.left -column 0 -row 3
-  grid configure .vision_panel.right -column 2 -row 3
-  grid configure .vision_panel.up -column 1 -row 2
-  grid configure .vision_panel.down -column 1 -row 4
+  grid configure .blobfinder_panel.left -column 0 -row 3
+  grid configure .blobfinder_panel.right -column 2 -row 3
+  grid configure .blobfinder_panel.up -column 1 -row 2
+  grid configure .blobfinder_panel.down -column 1 -row 4
 
-  grid configure .vision_panel.in -column 3 -row 3
-  grid configure .vision_panel.out -column 4 -row 3
+  grid configure .blobfinder_panel.in -column 3 -row 3
+  grid configure .blobfinder_panel.out -column 4 -row 3
 
-  grid configure .vision_panel.data_frame -column 0 -row 5 -columnspan 5
-  grid configure .vision_panel.data_frame.pan -column 0 -row 0 
-  grid configure .vision_panel.data_frame.pan_value -column 1 -row 0
-  grid configure .vision_panel.data_frame.tilt -column 0 -row 1
-  grid configure .vision_panel.data_frame.tilt_value -column 1 -row 1
-  grid configure .vision_panel.data_frame.zoom -column 0 -row 2
-  grid configure .vision_panel.data_frame.zoom_value -column 1 -row 2
-  grid configure .vision_panel.data_frame.zoom_value -column 1 -row 2
-  grid configure .vision_panel.ptz_check -column 0 -row 6 -columnspan 5
+  grid configure .blobfinder_panel.data_frame -column 0 -row 5 -columnspan 5
+  grid configure .blobfinder_panel.data_frame.pan -column 0 -row 0 
+  grid configure .blobfinder_panel.data_frame.pan_value -column 1 -row 0
+  grid configure .blobfinder_panel.data_frame.tilt -column 0 -row 1
+  grid configure .blobfinder_panel.data_frame.tilt_value -column 1 -row 1
+  grid configure .blobfinder_panel.data_frame.zoom -column 0 -row 2
+  grid configure .blobfinder_panel.data_frame.zoom_value -column 1 -row 2
+  grid configure .blobfinder_panel.data_frame.zoom_value -column 1 -row 2
+  grid configure .blobfinder_panel.ptz_check -column 0 -row 6 -columnspan 5
 }
 
 set display_sonar 0
 set display_laser 0
 set display_bumpers 0
-set display_lb 0
+set display_fiducial 0
 
 proc createRobotPanel {} {
   global display_sonar display_laser CANVAS_WIDTH CANVAS_HEIGHT
   global display_bumpers MAX_RANGE CANVAS_CONV_FACTOR sonar_positions
-  global display_lb
+  global display_fiducial
 
   frame .robot_panel
 
@@ -483,8 +479,8 @@ proc createRobotPanel {} {
     -variable display_sonar -text "Display Sonars"
   checkbutton .robot_panel.laser_check -command toggle_laser\
     -variable display_laser -text "Display Laser"
-  checkbutton .robot_panel.lb_check -command toggle_lb \
-    -variable display_lb -text "Display Laserbeacons"
+  checkbutton .robot_panel.lb_check -command toggle_fiducial \
+    -variable display_fiducial -text "Display Fiducials"
   checkbutton .robot_panel.bumper_check \
     -variable display_bumpers -text "Display Bumpers"
 
@@ -492,11 +488,6 @@ proc createRobotPanel {} {
     -command "config_laser wide"
   button .robot_panel.laser_narrow -text "Narrow Laser" \
     -command "config_laser narrow"
-
-  button .robot_panel.lbd_fivebit -text "5-bit beacon" \
-    -command "config_lbd 5"
-  button .robot_panel.lbd_eightbit -text "8-bit beacon" \
-    -command "config_lbd 8"
 
   button .robot_panel.exit_button -text "Exit" -command {exit 0}
  
@@ -507,10 +498,8 @@ proc createRobotPanel {} {
   grid configure .robot_panel.lb_check -column 2 -row 1
   grid configure .robot_panel.bumper_check -column 3 -row 1
 
-  grid configure .robot_panel.laser_wide -column 0 -row 2
-  grid configure .robot_panel.laser_narrow -column 1 -row 2
-  grid configure .robot_panel.lbd_fivebit -column 2 -row 2
-  grid configure .robot_panel.lbd_eightbit -column 3 -row 2
+  grid configure .robot_panel.laser_wide -column 0 -row 2 -columnspan 2
+  grid configure .robot_panel.laser_narrow -column 2 -row 2 -columnspan 2
 
   grid configure .robot_panel.exit_button -column 0 -row 3 -columnspan 4
 }
@@ -519,7 +508,7 @@ proc gridAll {} {
   grid configure .robot_panel -column 0 -row 0 -rowspan 3
   grid configure .control_panel -column 1 -row 0
   grid configure .status_panel -column 1 -row 1 
-  grid configure .vision_panel -column 1 -row 2 
+  grid configure .blobfinder_panel -column 1 -row 2 
 }
 
 #
@@ -575,21 +564,21 @@ proc sort_readings {first second} {
 }
 
 set obslist {}
-set vision_obslist {}
+set blobfinder_obslist {}
 #
 # this proc reads and displays one round of data.  an alarm goes off
 # every 100ms or so and calls the proc
 #
 proc displayData {} {
   global sonar_positions display_sonar 
-  global display_laser display_lb
+  global display_laser display_fiducial
   global display_bumpers 
-  global display_vision
-  global obslist vision_obslist
+  global display_blobfinder
+  global obslist blobfinder_obslist
   global CANVAS_CONV_FACTOR PI
   global laser_angles sonar_angles
   global robot
-  global PI VISION_NUM_CHANNELS
+  global PI BLOBFINDER_NUM_CHANNELS
 
   # read one round of data
   if {[catch {player_read robot} err]} {
@@ -599,42 +588,42 @@ proc displayData {} {
 
   # delete the old data from the display
   eval .robot_panel.canvas delete $obslist
-  eval .vision_panel.canvas delete $vision_obslist
+  eval .blobfinder_panel.canvas delete $blobfinder_obslist
 
   set obslist {}
-  set vision_obslist {}
+  set blobfinder_obslist {}
 
   # length in mm from activmedia specs
   set BUMPER_LENGTH 100.838
 
   #
-  # display the vision device data
+  # display the blobfinder device data
   #
-  if {$display_vision && [llength [array names robot vision,0,numblobs]]} {
+  if {$display_blobfinder && [llength [array names robot blobfinder,0,numblobs]]} {
     # draw the first n channels.
     set j 0
-    while {$j < $VISION_NUM_CHANNELS} {
+    while {$j < $BLOBFINDER_NUM_CHANNELS} {
       set i 0
-      while {$i < $robot(vision,$j,numblobs)} {
-        #puts "$j:$i: (x,y) : ($robot(vision,$j,$i,x),$robot(vision,$j,$i,y))"
-        set vision_obslist [concat $vision_obslist \
-          [.vision_panel.canvas create line \
-                 $robot(vision,$j,$i,left)  $robot(vision,$j,$i,top)\
-                 $robot(vision,$j,$i,right) $robot(vision,$j,$i,top)\
-                 $robot(vision,$j,$i,right) $robot(vision,$j,$i,bottom)\
-                 $robot(vision,$j,$i,left)  $robot(vision,$j,$i,bottom)\
-                 $robot(vision,$j,$i,left)  $robot(vision,$j,$i,top) \
-                 -width 2 -fill $robot(vision,$j,$i,color)]\
-          [.vision_panel.canvas create polygon \
-                 [expr $robot(vision,$j,$i,x) - 2] \
-                 [expr $robot(vision,$j,$i,y) - 2] \
-                 [expr $robot(vision,$j,$i,x) + 2] \
-                 [expr $robot(vision,$j,$i,y) - 2] \
-                 [expr $robot(vision,$j,$i,x) + 2] \
-                 [expr $robot(vision,$j,$i,y) + 2] \
-                 [expr $robot(vision,$j,$i,x) - 2] \
-                 [expr $robot(vision,$j,$i,y) + 2] \
-                 -fill $robot(vision,$j,$i,color)]]
+      while {$i < $robot(blobfinder,$j,numblobs)} {
+        #puts "$j:$i: (x,y) : ($robot(blobfinder,$j,$i,x),$robot(blobfinder,$j,$i,y))"
+        set blobfinder_obslist [concat $blobfinder_obslist \
+          [.blobfinder_panel.canvas create line \
+                 $robot(blobfinder,$j,$i,left)  $robot(blobfinder,$j,$i,top)\
+                 $robot(blobfinder,$j,$i,right) $robot(blobfinder,$j,$i,top)\
+                 $robot(blobfinder,$j,$i,right) $robot(blobfinder,$j,$i,bottom)\
+                 $robot(blobfinder,$j,$i,left)  $robot(blobfinder,$j,$i,bottom)\
+                 $robot(blobfinder,$j,$i,left)  $robot(blobfinder,$j,$i,top) \
+                 -width 2 -fill $robot(blobfinder,$j,$i,color)]\
+          [.blobfinder_panel.canvas create polygon \
+                 [expr $robot(blobfinder,$j,$i,x) - 2] \
+                 [expr $robot(blobfinder,$j,$i,y) - 2] \
+                 [expr $robot(blobfinder,$j,$i,x) + 2] \
+                 [expr $robot(blobfinder,$j,$i,y) - 2] \
+                 [expr $robot(blobfinder,$j,$i,x) + 2] \
+                 [expr $robot(blobfinder,$j,$i,y) + 2] \
+                 [expr $robot(blobfinder,$j,$i,x) - 2] \
+                 [expr $robot(blobfinder,$j,$i,y) + 2] \
+                 -fill $robot(blobfinder,$j,$i,color)]]
         incr i
       }
       incr j
@@ -738,14 +727,14 @@ proc displayData {} {
   }
 
   # display the laser beacons
-  if {$display_lb && [llength [array names robot laserbeacon,*]]} {
+  if {$display_fiducial && [llength [array names robot fiducial,*]]} {
     set i 0
-    if {[info exists robot(laserbeacon,numbeacons)]} {
-    while {$i < $robot(laserbeacon,numbeacons)} {
+    if {[info exists robot(fiducial,numbeacons)]} {
+    while {$i < $robot(fiducial,numbeacons)} {
       # draw each beaon
-      set bearing [expr (-$robot(laserbeacon,$i,bearing)-90.0)*$PI/180.0]
-      set orient [expr (-$robot(laserbeacon,$i,orient)-90.0)*$PI/180.0]
-      set dist [expr $robot(laserbeacon,$i,range) * $CANVAS_CONV_FACTOR]
+      set bearing [expr (-$robot(fiducial,$i,bearing)-90.0)*$PI/180.0]
+      set orient [expr (-$robot(fiducial,$i,orient)-90.0)*$PI/180.0]
+      set dist [expr $robot(fiducial,$i,range) * $CANVAS_CONV_FACTOR]
       set x [expr $dist * cos($bearing)]
       set y [expr $dist * sin($bearing)]
       set xoff [expr 5.0 * cos($orient)]
@@ -756,7 +745,7 @@ proc displayData {} {
             [expr $x + 4.0] [expr $y + 4.0] \
             -outline red] \
         [.robot_panel.canvas create text [expr $x+4] [expr $y+4] -anchor w \
-            -text $robot(laserbeacon,$i,id) -fill red] \
+            -text $robot(fiducial,$i,id) -fill red] \
         [.robot_panel.canvas create line [expr $x-$xoff] [expr $y-$yoff] \
                                          [expr $x+$xoff] [expr $y+$yoff] \
                                          -fill green]]
@@ -771,12 +760,9 @@ proc startRobot {} {
 
   player_connect -reqrep robot $host $port
 
-  # always try to connect to the position and misc devices
+  # always try to connect to the position device
   if {[string compare [player_req_dev robot position a] a]} {
     puts "WARNING: unable to get access to the position device"
-  }
-  if {[string compare [player_req_dev robot misc r] r]} {
-    puts "WARNING: unable to get access to the misc device"
   }
 
   # -restart is VERY important....
