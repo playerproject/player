@@ -54,12 +54,13 @@ void Acts_Register(DriverTable* table);
 void Festival_Register(DriverTable* table);
 #endif 
 
-#ifdef INCLUDE_LASER
-void LaserCSpace_Register(DriverTable* table);
+#ifdef INCLUDE_LASERFIDUCIAL
 void LaserBar_Register(DriverTable* table);
 void LaserBarcode_Register(DriverTable* table);
 void LaserVisualBarcode_Register(DriverTable* table);
 #endif
+
+//void LaserCSpace_Register(DriverTable* table);
 
 #ifdef INCLUDE_SONY
 void SonyEVID30_Register(DriverTable* table);
@@ -187,12 +188,13 @@ register_devices()
   Festival_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_LASER
-  LaserCSpace_Register(driverTable);
+#ifdef INCLUDE_LASERFIDUCIAL
   LaserBar_Register(driverTable);
   LaserBarcode_Register(driverTable);
   LaserVisualBarcode_Register(driverTable);
 #endif
+
+// LaserCSpace_Register(driverTable);
 
 #ifdef INCLUDE_SONY
   SonyEVID30_Register(driverTable);

@@ -620,11 +620,7 @@ void UDPBroadcast::SendPacket(void *packet, size_t size)
 // Receive a packet
 int UDPBroadcast::RecvPacket(void *packet, size_t size)
 {
-#if PLAYER_SOLARIS
-  int addr_len = sizeof(this->read_addr);    
-#else
   socklen_t addr_len = sizeof(this->read_addr);    
-#endif
   int packet_len = recvfrom(this->read_socket, (char*)packet, size,
                             0, (sockaddr*) &this->read_addr, &addr_len);
   if (packet_len < 0)

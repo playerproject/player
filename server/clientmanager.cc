@@ -317,11 +317,7 @@ int ClientManager::Accept()
 {
   int num_connects;
   CClientData *clientData;
-#if PLAYER_SOLARIS
-  int sender_len;
-#else
   socklen_t sender_len;
-#endif
 
   if((num_connects = poll(accept_ufds,num_accept_ufds,0)) < 0)
   {
