@@ -35,7 +35,7 @@ set PLAYER_DEFAULT_HOST "localhost"
 set PLAYER_STX 0x5878
 # length of indentifier string that Player will send
 set PLAYER_IDENT_STRLEN 32
-# length of Player message header (minus the STX
+# length of Player message header (minus the STX)
 set PLAYER_HEADER_LEN 30
 
 # message types
@@ -43,6 +43,7 @@ set PLAYER_MSGTYPE_DATA 1
 set PLAYER_MSGTYPE_CMD  2
 set PLAYER_MSGTYPE_REQ  3
 set PLAYER_MSGTYPE_RESP 4
+set PLAYER_MSGTYPE_SYNCH 5
 
 # device codes
 set PLAYER_PLAYER_CODE         1
@@ -396,7 +397,7 @@ proc player_req_dev {obj device access {index 0}} {
 
 proc player_read {obj} {
   global PLAYER_STX PLAYER_READ_MODE PLAYER_ALL_MODE PLAYER_HEADER_LEN 
-  global PLAYER_PLAYER_DATA_REQ
+  global PLAYER_PLAYER_DATA_REQ PLAYER_MSGTYPE_SYNCH PLAYER_MSGTYPE_DATA
 
   upvar #0 $obj arr
 
@@ -419,17 +420,16 @@ proc player_read {obj} {
   }
 
   # how many devices are we reading from?
-  set numdevices 0
-  foreach dev [array names arr "*,access"] {
-    if {![string compare $arr($dev) $PLAYER_READ_MODE] ||
-        ![string compare $arr($dev) $PLAYER_ALL_MODE]} {
-     incr numdevices
-    }
-  }
+  #set numdevices 0
+  #foreach dev [array names arr "*,access"] {
+    #if {![string compare $arr($dev) $PLAYER_READ_MODE] ||
+        #![string compare $arr($dev) $PLAYER_ALL_MODE]} {
+     #incr numdevices
+    #}
+  #}
 
-  #puts "reading from $numdevices"
-  set i 0
-  while {$i < $numdevices} {
+  # read until we hit the SYNCH packet
+  while {1} {
 
     # wait for the STX
     while {1} {
@@ -457,10 +457,16 @@ proc player_read {obj} {
     if {[string length $data] != $size} {
       error "expected $size bytes, but only got [string length $data]"
     }
-  
-    # get the data out and put it in global vars
-    player_parse_data $obj $device $device_index $data $size
-    incr i
+
+    # if we get the SYNCH packet, then stop reading
+    if {$type == $PLAYER_MSGTYPE_SYNCH} {
+      break
+    } elseif {$type == $PLAYER_MSGTYPE_DATA} {
+      # get the data out and put it in global vars
+      player_parse_data $obj $device $device_index $data $size
+    } else {
+      error "player_read: received packet of unexpected type: $type"
+    }
   }
 }
 

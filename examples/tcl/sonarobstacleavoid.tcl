@@ -131,8 +131,10 @@ while {1} {
     } else {
       set newturnrate 0
     }
+    #parray robot
 
     # write commands to robot
+    #puts "$newspeed $newturnrate"
     player_set_speed robot $newspeed $newturnrate
   }
 }

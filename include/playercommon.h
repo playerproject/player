@@ -59,7 +59,12 @@ typedef char int8_t;
 
 
 /* debug malloc(3) */
-#define MALLOC_CHECK_ 2
+/* this should *not* be defined by default, because, as the man page says,
+ * it causes "a special (less  efficient) implementation" of malloc() to be
+ * used - BPG
+ */
+//#define MALLOC_CHECK_ 2
+
 /* now, then.  we'll all use the following (ISO-endorsed) types:
  *
  * int8_t  : signed 1 byte  (char)

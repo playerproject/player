@@ -117,6 +117,8 @@ int main(int argc, char **argv)
     /* this blocks until new data comes; 10Hz by default */
     if(player_read_laser(&conn,&laser))
       exit(1);
+    if(player_read_synch(&conn))
+      exit(1);
 
     /* print current sensor data to console */
     /*player_print_laser(laser);*/

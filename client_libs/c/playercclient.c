@@ -392,7 +392,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
   if(hdr->size > payloadlen)
     if(player_debug_level(-1) >= 2)
       fprintf(stderr,"WARNING: server's message is too big (%d bytes). "
-              "Truncating data.", hdr->size);
+              "Truncating data.\n", hdr->size);
 
   mincnt = min(hdr->size, payloadlen);
 

@@ -44,12 +44,14 @@
 #define PLAYER_STXX ((uint16_t) 0x5878)
 
 /* the player message types */
-#define PLAYER_MSGTYPE_DATA  ((uint16_t)1)
-#define PLAYER_MSGTYPE_CMD   ((uint16_t)2)
-#define PLAYER_MSGTYPE_REQ   ((uint16_t)3)
-#define PLAYER_MSGTYPE_RESP  ((uint16_t)4)
+#define PLAYER_MSGTYPE_DATA   ((uint16_t)1)
+#define PLAYER_MSGTYPE_CMD    ((uint16_t)2)
+#define PLAYER_MSGTYPE_REQ    ((uint16_t)3)
+#define PLAYER_MSGTYPE_RESP   ((uint16_t)4)
+#define PLAYER_MSGTYPE_SYNCH  ((uint16_t)5)
 
-/* the currently assigned device codes */
+/* strings to match the currently assigned devices (used for pretty-printing 
+ * and command-line parsing) */
 #define PLAYER_PLAYER_STRING         "player"
 #define PLAYER_MISC_STRING           "misc"
 #define PLAYER_GRIPPER_STRING        "gripper"
@@ -64,9 +66,9 @@
 #define PLAYER_SPEECH_STRING         "speech"
 #define PLAYER_GPS_STRING            "gps"
 #define PLAYER_BPS_STRING            "bps"
-#define PLAYER_DESCARTES_STRING       "descartes"
+#define PLAYER_DESCARTES_STRING      "descartes"
 #define PLAYER_IDAR_STRING           "idar"
-#define PLAYER_MOTE_STRING             "mote"
+#define PLAYER_MOTE_STRING           "mote"
 
 /* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
@@ -78,16 +80,16 @@
 #define PLAYER_VISION_CODE         ((uint16_t)7)
 #define PLAYER_PTZ_CODE            ((uint16_t)8)
 #define PLAYER_AUDIO_CODE          ((uint16_t)9)
-#define PLAYER_LASERBEACON_CODE   ((uint16_t)10)
-#define PLAYER_BROADCAST_CODE     ((uint16_t)11)
-#define PLAYER_SPEECH_CODE        ((uint16_t)12)
-#define PLAYER_GPS_CODE           ((uint16_t)13)
-#define PLAYER_OCCUPANCY_CODE     ((uint16_t)14) // broken?
-#define PLAYER_TRUTH_CODE         ((uint16_t)15)
-#define PLAYER_BPS_CODE           ((uint16_t)16) // broken?
-#define PLAYER_IDAR_CODE          ((uint16_t)17)
+#define PLAYER_LASERBEACON_CODE    ((uint16_t)10)
+#define PLAYER_BROADCAST_CODE      ((uint16_t)11)
+#define PLAYER_SPEECH_CODE         ((uint16_t)12)
+#define PLAYER_GPS_CODE            ((uint16_t)13)
+#define PLAYER_OCCUPANCY_CODE      ((uint16_t)14) // broken?
+#define PLAYER_TRUTH_CODE          ((uint16_t)15)
+#define PLAYER_BPS_CODE            ((uint16_t)16) // broken?
+#define PLAYER_IDAR_CODE           ((uint16_t)17)
 #define PLAYER_DESCARTES_CODE      ((uint16_t)18)
-#define PLAYER_MOTE_CODE          ((uint16_t)19)
+#define PLAYER_MOTE_CODE           ((uint16_t)19)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -98,7 +100,6 @@
 /* the largest possible message that the server will currently send
  * or receive */
 #define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
-//#define PLAYER_MAX_MESSAGE_SIZE 1048575 /*1MB*/
 
 /* maxium size of the devices incoming and outgoing configuration queues */
 #define PLAYER_MAX_CONFIG_QUEUE_LENGTH 4
@@ -364,7 +365,7 @@ typedef struct
  */
 
 /*
- * vision data packet (it's just an ACTS v1.2 packet):
+ * vision data packet (it's more or less an ACTS v1.2 packet):
  *   128 - 5248 bytes of ACTS data, which is:
  *     128 bytes of header (4 bytes per channel)
  *     sequence of 16-byte blob data (maximum 10 per channel), which is:

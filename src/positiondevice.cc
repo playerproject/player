@@ -53,7 +53,10 @@ size_t CPositionDevice::GetData( unsigned char *dest, size_t maxsize )
 void CPositionDevice::PutCommand( unsigned char *src, size_t size ) 
 {
   if(size != sizeof( player_position_cmd_t ) )
+  {
     puts("CPositionDevice::PutCommand(): command wrong size. ignoring.");
+    printf("expected %d; got %d\n", sizeof(player_position_cmd_t),size);
+  }
   else
     command->position = *((player_position_cmd_t*)src);
     

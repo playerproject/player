@@ -4,7 +4,7 @@
 
 (load "playerclient.lisp")
 
-(setq client (player-connect "ant"))
+(setq client (player-connect "localhost"))
 (player-open-sonar client)
 (player-open-position client)
 (player-set-motorpower client 1)

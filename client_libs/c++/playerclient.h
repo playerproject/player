@@ -69,9 +69,6 @@ class PlayerClient
     ClientProxyNode* proxies;
     int num_proxies;
 
-    // count devices with access 'r' or 'a'
-    int CountReadProxies();
-
     int reserved;
     
     // get the pointer to the proxy for the given device and index

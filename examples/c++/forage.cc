@@ -111,7 +111,7 @@ int main(int argc, char** argv)
   // seed the RNG
   srand( (unsigned int)time(0) );
 
-  int newturnrate,newspeed;
+  int newturnrate=0,newspeed=0;
   //int lastdir = 1;
   /* go into read-think-act loop */
   for(;;)

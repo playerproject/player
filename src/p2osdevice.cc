@@ -67,9 +67,6 @@ extern int global_playerport; // used to get at devices
 #define MOTOR_MAX_SPEED 500
 #define MOTOR_MAX_TURNRATE 100
 
-//extern bool experimental;
-extern bool player_gerkey;
-
 /* these are necessary to make the static fields visible to the linker */
 extern pthread_t      CP2OSDevice::thread;
 extern player_p2os_data_t* CP2OSDevice::data;
@@ -622,17 +619,6 @@ void *RunPsosThread( void *p2osdevice )
 
     /* read the clients' commands from the common buffer */
     pd->GetLock()->GetCommand(pd,(unsigned char*)&command, sizeof(command));
-
-    if(player_gerkey)
-    {
-      struct timeval curr;
-      gettimeofday(&curr,NULL);
-      fprintf(stderr,"%f %d\n", curr.tv_sec + curr.tv_usec / 1000000.0,
-              pd->last_client_id);
-      //fprintf(stderr,"%d %d\n", 
-              //(short)ntohs(command.position.speed),
-              //(short)ntohs(command.position.turnrate));
-    }
 
     newmotorspeed = false;
     if( speedDemand != (short) ntohs(command.position.speed));

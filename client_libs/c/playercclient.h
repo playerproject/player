@@ -182,6 +182,9 @@ int player_write_ptz(player_connection_t* conn, player_ptz_cmd_t cmd);
  */
 int player_read_laser(player_connection_t* conn, player_laser_data_t* data);
 
+/* consumes the synch packet */
+int player_read_synch(player_connection_t* conn);
+
 /*
  * read sonar data into designated buffer.
  *

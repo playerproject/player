@@ -58,8 +58,6 @@ extern pthread_mutex_t clients_mutex;
 extern ClientManager* clientmanager;
 extern char playerversion[];
 
-extern bool player_gerkey;
-
 extern int global_playerport; // used to generate useful output & debug
 
 CClientData::CClientData(char* key, int myport) 
@@ -186,7 +184,6 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   }
 #endif
 
-  
   if(auth_pending)
   {
     if(CheckAuth(hdr,payload,payload_size))
@@ -345,24 +342,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           //puts( "got permissions" );
 
           // check if we can write to this device
-          if((deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) == 'w') ||
-             (deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) == 'a'))
+          if((deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) == PLAYER_WRITE_MODE) ||
+             (deviceTable->GetDeviceAccess(port,hdr.device,hdr.device_index) == PLAYER_ALL_MODE))
 
           {
             //puts( "got access" );
             // make sure we've got a non-NULL pointer
             if((devicep = deviceTable->GetDevice(port,hdr.device,hdr.device_index)))
             {
-              //puts( "got device" );
-              if(player_gerkey && (hdr.device == PLAYER_POSITION_CODE))
-              {
-                devicep->GetLock()->LockDataMutex();
-                ((CP2OSDevice*)devicep)->last_client_id = hdr.reserved;
-                devicep->PutCommand(payload,payload_size);
-                devicep->GetLock()->UnlockDataMutex();
-              }
-              else
-                devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+              devicep->GetLock()->PutCommand(devicep,payload,payload_size);
             }
             else
             {
@@ -482,12 +470,12 @@ void CClientData::RemoveRequests()
   {
     switch(thissub->access) 
     {
-      case 'a':
+      case PLAYER_ALL_MODE:
         Unsubscribe(thissub->code, thissub->index);
         Unsubscribe(thissub->code, thissub->index);
         break;
-      case 'r':
-      case 'w':
+      case PLAYER_READ_MODE:
+      case PLAYER_WRITE_MODE:
         Unsubscribe(thissub->code, thissub->index);
         break;
       default:
@@ -504,14 +492,14 @@ void CClientData::RemoveRequests()
 
 void CClientData::MotorStop() 
 {
-  unsigned char command[4];
+  player_position_cmd_t command;
   CDevice* devicep;
 
-  *( short *)&command[0]=0;
-  *( short *)&command[sizeof(short)]=0;
+  command.speed = command.sidespeed = command.turnrate = 0;
 
   if((devicep = deviceTable->GetDevice(port,PLAYER_POSITION_CODE,0)))
-    devicep->GetLock()->PutCommand(devicep, command, 4);
+    devicep->GetLock()->PutCommand(devicep, (unsigned char*)&command, 
+                                   sizeof(command));
 }
 
 void CClientData::UpdateRequested(player_device_req_t req)
@@ -550,44 +538,44 @@ void CClientData::UpdateRequested(player_device_req_t req)
 
   /* UPDATE */
   
-  // go from either 'r' or 'w' to 'a'
-  if(((thisub->access=='w') || (thisub->access=='r')) && (req.access=='a'))
+  // go from either PLAYER_READ_MODE or PLAYER_WRITE_MODE to PLAYER_ALL_MODE
+  if(((thisub->access==PLAYER_WRITE_MODE) || (thisub->access==PLAYER_READ_MODE)) && (req.access==PLAYER_ALL_MODE))
   {
     // subscribe once more
     if(Subscribe(req.code,req.index) == 0)
-      thisub->access = 'a';
+      thisub->access = PLAYER_ALL_MODE;
     else 
       thisub->access='e';
   }
-  // go from 'a' to either 'r' or 'w'
-  else if(thisub->access=='a' && (req.access=='r' || req.access=='w')) 
+  // go from PLAYER_ALL_MODE to either PLAYER_READ_MODE or PLAYER_WRITE_MODE
+  else if(thisub->access==PLAYER_ALL_MODE && (req.access==PLAYER_READ_MODE || req.access==PLAYER_WRITE_MODE)) 
   {
     // unsubscribe once
     Unsubscribe(req.code,req.index);
     thisub->access=req.access;
   }
-  // go from either 'r' to 'w' or 'w' to 'r'
-  else if(((thisub->access=='r') && (req.access=='w')) ||
-          ((thisub->access=='w') && (req.access=='r')))
+  // go from either PLAYER_READ_MODE to PLAYER_WRITE_MODE or PLAYER_WRITE_MODE to PLAYER_READ_MODE
+  else if(((thisub->access==PLAYER_READ_MODE) && (req.access==PLAYER_WRITE_MODE)) ||
+          ((thisub->access==PLAYER_WRITE_MODE) && (req.access==PLAYER_READ_MODE)))
   {
     // no subscription change necessary
     thisub->access=req.access;
   }
 
   /* CLOSE */
-  else if(req.access=='c') 
+  else if(req.access==PLAYER_CLOSE_MODE) 
   {
     // close 
     switch(thisub->access)
     {
-      case 'a':
+      case PLAYER_ALL_MODE:
         Unsubscribe(req.code,req.index);   // we want to unsubscribe two times
-      case 'w':
-      case 'r':
+      case PLAYER_WRITE_MODE:
+      case PLAYER_READ_MODE:
         Unsubscribe(req.code,req.index);
-        thisub->access = 'c';
+        thisub->access = PLAYER_CLOSE_MODE;
         break;
-      case 'c':
+      case PLAYER_CLOSE_MODE:
       case 'e':
         printf("Device \"%x:%x\" already closed\n", req.code,req.index);
         break;
@@ -597,26 +585,26 @@ void CClientData::UpdateRequested(player_device_req_t req)
     }
   }
   /* OPEN */
-  else if((thisub->access == 'e') || (thisub->access=='c'))
+  else if((thisub->access == 'e') || (thisub->access==PLAYER_CLOSE_MODE))
   {
     switch(req.access) 
     {
-      case 'a':
+      case PLAYER_ALL_MODE:
         if((Subscribe(req.code,req.index)==0) && 
            (Subscribe(req.code,req.index) == 0))
-          thisub->access='a';
+          thisub->access=PLAYER_ALL_MODE;
         else
           thisub->access='e';
         break;
-      case 'w':
+      case PLAYER_WRITE_MODE:
         if(Subscribe(req.code,req.index)==0)
-          thisub->access='w';
+          thisub->access=PLAYER_WRITE_MODE;
         else 
           thisub->access='e';
         break;
-      case 'r':
+      case PLAYER_READ_MODE:
         if(Subscribe(req.code,req.index) == 0)
-          thisub->access='r';
+          thisub->access=PLAYER_READ_MODE;
         else
           thisub->access='e';
         break;
@@ -659,13 +647,13 @@ bool CClientData::CheckPermissions(unsigned short code, unsigned short index)
   unsigned char letter;
 
   letter = FindPermission(code,index);
-  if((letter=='a') || ('w'==letter)) 
+  if((letter==PLAYER_ALL_MODE) || (PLAYER_WRITE_MODE==letter)) 
     permission = true;
 
   return(permission);
 }
 
-int CClientData::BuildMsg( unsigned char *data, size_t maxsize) 
+int CClientData::BuildMsg(unsigned char *data, size_t maxsize) 
 {
   unsigned short size, totalsize=0;
   CDevice* devicep;
@@ -679,45 +667,42 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   hdr.type = htons(PLAYER_MSGTYPE_DATA);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
-    if(thisub->access=='a' || thisub->access=='r') 
+    if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
     {
       char access = 
-	deviceTable->GetDeviceAccess(port,thisub->code,thisub->index);
-      
-      if( (access == 'a') || (access == 'r') ) 
-	{
-	  if((devicep = 
-	      deviceTable->GetDevice(port,thisub->code,thisub->index)))
-	    {
-	      hdr.device = htons(thisub->code);
-	      hdr.device_index = htons(thisub->index);
-	      hdr.reserved = 0;
+              deviceTable->GetDeviceAccess(port,thisub->code,thisub->index);
 
-	      
-	      //if( thisub->consume )
-	      //size = devicep->
-	      //  GetLock()->ConsumeData(devicep, 
-	      //			 data+totalsize+sizeof(hdr),
-	      //			 maxsize-totalsize-sizeof(hdr),
-	      //			 &(hdr.timestamp_sec), 
-	      //			 &(hdr.timestamp_usec));
-	      //
-	      // else
-		size = devicep->
-		  GetLock()->GetData(devicep, 
-				     data+totalsize+sizeof(hdr),
-				     maxsize-totalsize-sizeof(hdr),
-				     &(hdr.timestamp_sec), 
-				     &(hdr.timestamp_usec));
+      if((access == PLAYER_ALL_MODE) || (access == PLAYER_READ_MODE)) 
+      {
+        if((devicep = deviceTable->GetDevice(port,thisub->code,thisub->index)))
+        {
+          hdr.device = htons(thisub->code);
+          hdr.device_index = htons(thisub->index);
+          hdr.reserved = 0;
 
-	  // if we're in UPDATE mode, we only want this data if it is new
-	  if( mode == UPDATE )
+          //if( thisub->consume )
+          //size = devicep->
+          //  GetLock()->ConsumeData(devicep, 
+          //			 data+totalsize+sizeof(hdr),
+          //			 maxsize-totalsize-sizeof(hdr),
+          //			 &(hdr.timestamp_sec), 
+          //			 &(hdr.timestamp_usec));
+          //
+          // else
+          size = devicep-> GetLock()->GetData(devicep, 
+                                              data+totalsize+sizeof(hdr),
+                                              maxsize-totalsize-sizeof(hdr),
+                                              &(hdr.timestamp_sec), 
+                                              &(hdr.timestamp_usec));
+
+          // if we're in UPDATE mode, we only want this data if it is new
+          if( mode == UPDATE )
           {
             //printf( "last_sec: %u\tlast_usec: %u\n", 
             //      thisub->last_sec, thisub->last_usec );
 
             // if the data has the same timestamp as last time then
-            // we don;t want it - just send back an empty
+            // we don't want it - just send back an empty
             // packet. (Byte order doesn't matter for the equality
             // check)
             if( hdr.timestamp_sec == thisub->last_sec && 
@@ -746,7 +731,6 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
 
           memcpy(data+totalsize,&hdr,sizeof(hdr));
           totalsize += sizeof(hdr) + size; 
-
         }
         else
         {
@@ -762,6 +746,22 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
     }
   }
   //pthread_mutex_unlock( &access );
+
+  // now add a zero-length SYNCH packet to the end of the buffer
+  hdr.stx = htons(PLAYER_STXX);
+  hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
+  hdr.device = htons(PLAYER_PLAYER_CODE);
+  hdr.device_index = htons(0);
+  hdr.reserved = 0;
+  hdr.size = 0;
+
+  if(GlobalTime->GetTime(&curr) == -1)
+    fputs("CLock::PutData(): GetTime() failed!!!!\n", stderr);
+  hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
+  hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
+
+  memcpy(data+totalsize,&hdr,sizeof(hdr));
+  totalsize += sizeof(hdr);
 
   return(totalsize);
 }
@@ -993,7 +993,7 @@ CClientData::Write()
   {
     if(errno != EAGAIN)
     {
-      perror("CClientData::Write: write()");
+      //perror("CClientData::Write: write()");
       pthread_mutex_unlock(&socketwrite);
       return(-1);
     }

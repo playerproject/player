@@ -118,7 +118,7 @@ int main(int argc, char** argv)
   if(turnOnMotors && pp.SetMotorState(1))
     exit(1);
 
-  int newturnrate,newspeed;
+  int newturnrate=0,newspeed=0;
   /* go into read-think-act loop */
   for(;;)
   {
