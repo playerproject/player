@@ -252,6 +252,7 @@ int StageDevice::Setup()
 //
 int StageDevice::Shutdown()
 {
+  PRINT_WARN1( "SHUTDOWN model %d",  stage_model.id );
   // unsubscribe
   stage_buffer_t* props;
   assert(props = SIOCreateBuffer());
@@ -349,6 +350,8 @@ StageDevice::HandleLostConnection2(int conn)
   //       need some other mechanism to kill the Stage interaction thread
   // DONE - (but it doesn't seem to work...?) rtv)
 
+  PRINT_WARN( "lost connection2" );
+
   StageDevice* sdev = stageDeviceMap[conn];
   assert( sdev );
   sdev->StopThread();
@@ -360,6 +363,7 @@ StageDevice::HandleLostConnection2(int conn)
 int
 StageDevice::HandleLostConnection(int conn)
 {
+  PRINT_WARN( "lost connection" );
   pthread_exit(NULL);
   return(0);
 }
