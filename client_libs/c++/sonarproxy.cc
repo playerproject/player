@@ -76,7 +76,8 @@ void SonarProxy::Print()
 {
   printf("#Sonar(%d:%d) - %c\n", device, index, access);
   for(size_t i=0;i<PLAYER_NUM_SONAR_SAMPLES;i++)
-    printf("%u\n", ranges[i]);
+    printf("%u ", ranges[i]);
+  puts("");
 }
 
 void SonarProxy::GetSonarPose(int s, double* px, double* py, double* pth)

@@ -444,11 +444,14 @@ int CBpsDevice::PutConfig(void *client, void *data, size_t len)
     return(0);
   }
 
+  */
+  
+  // until it's fixed, push a dummy reply - BPG
+
   // everything's cool; send the client an ACK
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
     PLAYER_ERROR("PutReply() failed");
-  */
-  
+
   return(0);
 }
 

@@ -682,8 +682,8 @@ proc player_parse_data {obj device device_index data size} {
       }
       set j 0
       while {$j < $arr($name,$device_index,$l,numblobs)} {
-        if {[binary scan $data "x${bufptr}ISSSSSS" \
-                  area x y left right top bottom] != 7} {
+        if {[binary scan $data "x${bufptr}IISSSSSS" \
+                  color area x y left right top bottom] != 8} {
           puts "Warning: failed to get blob info for ${j}th blob on ${l}th channel"
           return
         }
@@ -696,6 +696,7 @@ proc player_parse_data {obj device device_index data size} {
         set top [expr $top & 0xFFFF]
         set bottom [expr $bottom & 0xFFFF]
 
+        set arr($name,$device_index,$l,$j,color) $color
         set arr($name,$device_index,$l,$j,area) $area
         set arr($name,$device_index,$l,$j,x) $x
         set arr($name,$device_index,$l,$j,y) $y
@@ -705,6 +706,7 @@ proc player_parse_data {obj device device_index data size} {
         set arr($name,$device_index,$l,$j,bottom) $bottom
 
         if {!$device_index} {
+          set arr($name,$l,$j,color) $arr($name,$device_index,$l,$j,color)
           set arr($name,$l,$j,area) $arr($name,$device_index,$l,$j,area)
           set arr($name,$l,$j,x) $arr($name,$device_index,$l,$j,x)
           set arr($name,$l,$j,y) $arr($name,$device_index,$l,$j,y)

@@ -107,8 +107,7 @@ class PlayerClient
     PlayerClient(const char* hostname=NULL, const int port=PLAYER_PORTNUM);
 
     // use a binary IP instead of a hostname
-    PlayerClient(const struct in_addr* hostaddr = NULL, 
-		 const int port=PLAYER_PORTNUM);
+    PlayerClient(const struct in_addr* hostaddr, const int port);
 
     // destructor
     ~PlayerClient();
@@ -163,12 +162,12 @@ class PlayerClient
                 player_msghdr_t* replyhdr,
                 char* reply, size_t replylen);
 
-    // use this one if you don't want the reply
+    // use this one if you don't want the reply. it will return -1 if 
+    // the request failed outright or if the response type is not ACK
     int Request(unsigned short device,
                 unsigned short index,
                 const char* payload,
-                size_t payloadlen)
-    { return(Request(device,index,payload,payloadlen,NULL,NULL,0)); }
+                size_t payloadlen);
     
     // request access to a device, meant for use by client-side device
     // proxy constructors

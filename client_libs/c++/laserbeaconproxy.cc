@@ -34,39 +34,49 @@
 #endif
 
 // Set the bit properties
-int LaserbeaconProxy::SetBits(unsigned char bit_count, unsigned short bit_size)
+int LaserbeaconProxy::SetBits(unsigned char tmp_bit_count, 
+                              unsigned short tmp_bit_size)
 {
   if(!client)
     return(-1);
 
   player_laserbeacon_config_t config;
 
-  // TODO: read existing config.
+  // read existing config.
+  if(GetConfig() < 0)
+    return(-1);
+  
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
+  config.bit_count = tmp_bit_count;
+  config.bit_size = htons(tmp_bit_size);
+  config.zero_thresh = htons(zero_thresh);
+  config.one_thresh = htons(one_thresh);
+  
+  return(client->Request(PLAYER_LASERBEACON_CODE,index,
+                         (const char*)&config, sizeof(config)));
+}
+
+// Set the bit thresholds
+int LaserbeaconProxy::SetThresh(unsigned short tmp_zero_thresh, 
+                                unsigned short tmp_one_thresh)
+{
+  if(!client)
+    return(-1);
+
+  player_laserbeacon_config_t config;
+
+  // read existing config.
+  if(GetConfig() < 0)
+    return(-1);
   
   config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
   config.bit_count = bit_count;
   config.bit_size = htons(bit_size);
-  
-  return(client->Request(PLAYER_LASERBEACON_CODE,index,(const char*)&config,
-                         sizeof(config)));
-}
+  config.zero_thresh = htons(tmp_zero_thresh);
+  config.one_thresh = htons(tmp_one_thresh);
 
-// Set the bit thresholds
-int LaserbeaconProxy::SetThresh(unsigned short zero_thresh, unsigned short one_thresh)
-{
-  if(!client)
-    return(-1);
-
-  player_laserbeacon_config_t config;
-
-  // TODO: read existing config.
-  
-  config.subtype = PLAYER_LASERBEACON_SUBTYPE_SETCONFIG;
-  config.zero_thresh = htons(zero_thresh);
-  config.one_thresh = htons(one_thresh);
-
-  return(client->Request(PLAYER_LASERBEACON_CODE,index,(const char*)&config,
-                         sizeof(config)));
+  return(client->Request(PLAYER_LASERBEACON_CODE,index,
+                         (const char*)&config, sizeof(config)));
 }
 
 void LaserbeaconProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -103,5 +113,30 @@ void LaserbeaconProxy::Print()
   for(unsigned short i=0;i<count && i<PLAYER_MAX_LASERBEACONS;i++)
     printf("%u\t%u\t%d\t%d\n", beacons[i].id, beacons[i].range, 
            beacons[i].bearing, beacons[i].orient);
+}
+
+/** Get the current configuration.
+  Fills the current device configuration into the corresponding
+  class attributes.\\
+  Returns the 0 on success, or -1 of there is a problem.
+ */
+int LaserbeaconProxy::GetConfig()
+{
+  player_laserbeacon_config_t config;
+  player_msghdr_t hdr;
+
+  config.subtype = PLAYER_LASERBEACON_SUBTYPE_GETCONFIG;
+
+  if(client->Request(PLAYER_LASERBEACON_CODE,index,
+                         (const char*)&config, sizeof(config),
+                         &hdr, (char*)&config,sizeof(config)) < 0)
+    return(-1);
+
+  bit_count = config.bit_count;
+  bit_size = ntohs(config.bit_size);
+  zero_thresh = ntohs(config.zero_thresh);
+  one_thresh = ntohs(config.one_thresh);
+
+  return(0);
 }
 

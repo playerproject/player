@@ -57,6 +57,10 @@ class LaserProxy : public ClientProxy
     */
     unsigned short resolution;
 
+    /** Whether or not reflectance values are returned.
+      */
+    bool intensity;
+
     /// The number of range measurements in the latest set of data.
     unsigned short range_count;
 
@@ -97,6 +101,12 @@ class LaserProxy : public ClientProxy
     */
     int Configure(short min_angle, short max_angle, 
                   unsigned short resolution, bool intensity);
+
+    /** Get the current laser configuration; it is read into the
+        relevant class attributes.\\
+        Returns the 0 on success, or -1 of there is a problem.
+      */
+    int GetConfigure();
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.

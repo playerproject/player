@@ -35,21 +35,54 @@
   #include <strings.h>
 #endif
 
-int LaserProxy::Configure(short min_angle, short max_angle, 
-                      unsigned short resolution, bool intensity)
+int LaserProxy::Configure(short tmp_min_angle, short tmp_max_angle, 
+                      unsigned short tmp_resolution, bool tmp_intensity)
 {
   if(!client)
     return(-1);
 
   player_laser_config_t config;
 
-  config.min_angle = htons(min_angle);
-  config.max_angle = htons(max_angle);
-  config.resolution = htons(resolution);
-  config.intensity = intensity ? 1 : 0;
+  config.subtype = PLAYER_LASER_SET_CONFIG;
+  config.min_angle = htons(tmp_min_angle);
+  config.max_angle = htons(tmp_max_angle);
+  config.resolution = htons(tmp_resolution);
+  config.intensity = tmp_intensity ? 1 : 0;
+
+  // copy them locally
+  min_angle = tmp_min_angle;
+  max_angle = tmp_max_angle;
+  resolution = tmp_resolution;
+  intensity = tmp_intensity;
 
   return(client->Request(PLAYER_LASER_CODE,index,(const char*)&config,
                          sizeof(config)));
+}
+
+/** Get the current laser configuration; it is read into the
+  relevant class attributes.\\
+  Returns the 0 on success, or -1 of there is a problem.
+ */
+int LaserProxy::GetConfigure()
+{
+  if(!client)
+    return(-1);
+
+  player_laser_config_t config;
+  player_msghdr_t hdr;
+
+  config.subtype = PLAYER_LASER_GET_CONFIG;
+
+  if(client->Request(PLAYER_LASER_CODE,index,
+                     (const char*)&config, sizeof(config),
+                     &hdr, (char*)&config, sizeof(config)) < 0)
+    return(-1);
+
+  min_angle = ntohs(config.min_angle);
+  max_angle = ntohs(config.max_angle);
+  resolution = ntohs(config.resolution);
+  intensity = config.intensity;
+  return(0);
 }
 
 void LaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
@@ -116,6 +149,7 @@ void LaserProxy::Print()
   printf("%d\t%d\t%u\t%u\n", min_angle,max_angle,resolution,range_count);
   puts("#range\tintensity");
   for(unsigned short i=0;i<range_count && i<PLAYER_NUM_LASER_SAMPLES;i++)
-    printf("%u %u\n", ranges[i],intensities[i]);
+    printf("%u %u ", ranges[i],intensities[i]);
+  puts("");
 }
 

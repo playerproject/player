@@ -41,10 +41,11 @@ class CSIP
   int param_idx; // index of our robot's data in the parameter table
 
  public:
+  // these values are returned in every standard SIP
   bool lwstall, rwstall;
-  
   unsigned char status, battery, sonarreadings, analog, digin, digout;
-  unsigned short ptu, compass, timer, rawxpos, rawypos, frontbumpers, rearbumpers;
+  unsigned short ptu, compass, timer, rawxpos; 
+  unsigned short rawypos, frontbumpers, rearbumpers;
   short angle, lvel, rvel, control;
   short sonars[PLAYER_NUM_SONAR_SAMPLES];
   int xpos, ypos;

@@ -69,8 +69,7 @@ PlayerClient::PlayerClient(const char* hostname = NULL, int port=PLAYER_PORTNUM)
 
 // alternate constructor using a binary IP instead of a hostname
 // just make a client, and connect, if instructed
-PlayerClient::PlayerClient(const struct in_addr* hostaddr = NULL, 
-			   const int port=PLAYER_PORTNUM)
+PlayerClient::PlayerClient(const struct in_addr* hostaddr, const int port)
 {
   destroyed = false;
   // so we know we're not connected
@@ -281,6 +280,23 @@ int PlayerClient::Request(unsigned short device,
     return(-1);
   return(player_request(&conn, device, index, payload, payloadlen,
                         replyhdr, reply, replylen));
+}
+    
+// use this one if you don't want the reply. it will return -1 if 
+// the request failed outright or if the response type is not ACK
+int PlayerClient::Request(unsigned short device,
+                          unsigned short index,
+                          const char* payload,
+                          size_t payloadlen)
+{ 
+  int retval;
+  player_msghdr_t hdr;
+  retval = Request(device,index,payload,payloadlen,&hdr,NULL,0);
+
+  if(retval < 0 || hdr.type != PLAYER_MSGTYPE_RESP_ACK)
+    return(-1);
+  else
+    return(retval);
 }
 
 // request access to a device, meant for use by client-side device

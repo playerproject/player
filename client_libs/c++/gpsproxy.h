@@ -32,24 +32,34 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+/** The {\tt GpsProxy} class is used to control the {\tt gps} device.
+    The latest pose data is stored in three class attributes.  The robot
+    can be ``teleported'' with the {\tt Warp()} method
+  */
 class GpsProxy : public ClientProxy
 {
 
   public:
     // the latest GPS data
-    //
-    // global position
-  int xpos,ypos,heading;
+
+    /** The latest global pose (in mm, mm, and degrees, respectively)
+     */
+    int xpos,ypos,heading;
    
-    // the client calls this method to make a new proxy
-    //   leave access empty to start unconnected
+    /** Constructor.
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
+    */
     GpsProxy(PlayerClient* pc, unsigned short index, 
               unsigned char access='c') :
             ClientProxy(pc,PLAYER_GPS_CODE,index,access) {}
 
     // these methods are the user's interface to this device
 
-    // warp the robot
+    /** Warp the robot to a new location (in mm, mm, and degrees,
+        respectively).
+      */
     int Warp(int x, int y, int heading);
 
     // interface that all proxies must provide
