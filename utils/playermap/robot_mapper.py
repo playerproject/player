@@ -43,11 +43,11 @@ class RobotMapper:
         self.root_fig = root_fig
 
         self.laser_pose = (0.05, 0, 0)
-        self.update_dist = 0.20
-        self.update_angle = float(options.get('--odom-angle', 15)) * math.pi / 180
-        self.patch_dist = float(options.get('--patch-dist', '4.0'))
-        self.outlier_dist = float(options.get('--outlier-dist', '0.20'))
-        self.odom_w = float(options.get('--odom-w', '0.50'))
+        self.update_dist = float(options.get('--update-dist', 0.20))
+        self.update_angle = float(options.get('--update-angle', 10)) * math.pi / 180
+        self.patch_dist = float(options.get('--patch-dist', '2.0'))
+        self.outlier_dist = float(options.get('--outlier-dist', '0.40'))
+        self.odom_w = float(options.get('--odom-w', '0.10'))
         self.no_scan_match = '--disable-scan-match' in options
     
         self.curr_odom_pose = None
@@ -223,7 +223,7 @@ class RobotMapper:
             if not self.no_scan_match:
                 old_err = 1e6
                 base_pose = pose
-                for i in range(5):
+                for i in range(20):
                     (pose, err, consts) = self.fit(npatches, base_pose, pose, laser_scan)
                     if abs(err - old_err) / (old_err + 1e-16) < 1e-3:  # Magic
                         break

@@ -271,6 +271,23 @@ static PyObject *pygrid_test_occ_dist(pygrid_t *self, PyObject *args)
 }
 
 
+// Draw the grid to an image
+static PyObject *pygrid_draw(pygrid_t *self, PyObject *args)
+{
+  PyObject *pypixels;
+
+  if (!PyArg_ParseTuple(args, ""))
+    return NULL;
+
+  grid_draw(self->grid);
+  
+  pypixels = PyBuffer_FromMemory(self->grid->pixels,
+                                 self->grid->size_x * self->grid->size_y * sizeof(uint32_t));
+
+  return Py_BuildValue("(ii)O", self->grid->size_x, self->grid->size_y, pypixels);
+}
+
+
 // Assemble python grid type
 static PyTypeObject grid_type = 
 {
@@ -303,6 +320,7 @@ static PyMethodDef grid_methods[] =
   {"get_occ", (PyCFunction) pygrid_get_occ, METH_VARARGS},
   {"test_free", (PyCFunction) pygrid_test_free, METH_VARARGS},
   {"test_occ_dist", (PyCFunction) pygrid_test_occ_dist, METH_VARARGS},
+  {"draw", (PyCFunction) pygrid_draw, METH_VARARGS},
   {NULL, NULL}
 };
 

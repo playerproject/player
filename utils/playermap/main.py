@@ -201,7 +201,8 @@ def main(gladepath):
     (opts, args) = getopt.getopt(sys.argv[1:], 'p',
                                  ['nogui',
                                   'disable-scan-match',
-                                  'odom-angle=',
+                                  'update-dist=',
+                                  'update-angle=',
                                   'patch-dist=',
                                   'outlier-dist=',
                                   'odom-w='])

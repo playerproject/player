@@ -125,3 +125,49 @@ int grid_test_free(grid_t *self, double ox, double oy)
   return 0;
 }
 
+
+///////////////////////////////////////////////////////////////////////////
+// Image manipulation macros
+#define GRID_RGBA(r, g, b, a) ((r) | (g << 8) | (b << 16) | (a << 24))
+
+
+///////////////////////////////////////////////////////////////////////////
+// Generate an image (diagnostics)
+void grid_draw(grid_t *self)
+{
+  int i, j;
+  grid_cell_t *cell;
+  uint32_t *pixel;
+  int col;
+
+  if (self->pixels == NULL)
+    self->pixels = (uint32_t*) calloc(self->size_x * self->size_y, sizeof(uint32_t));
+  
+  for (j = 0; j < self->size_y; j++)
+  {
+    for (i = 0; i < self->size_x; i++)
+    {
+      cell = self->cells + GRID_INDEX(self, i, j);
+      pixel = self->pixels + GRID_INDEX(self, i, j);
+
+      *pixel = GRID_RGBA(0, 0, 0, 0);
+
+      if (cell->occ_value > 0)
+      {
+        col = 127 - cell->occ_value * 127 / self->model_occ_thresh;
+        if (col < 0)
+          col = 0;
+        *pixel = GRID_RGBA(col, col, col, 128);
+      }
+      else if (cell->occ_value < 0)
+      {
+        col = 127 + cell->occ_value * 127 / self->model_emp_thresh;
+        if (col > 255)
+          col = 255;
+        *pixel = GRID_RGBA(col, col, col, 128);
+      }
+    }
+  }
+
+  return;
+}

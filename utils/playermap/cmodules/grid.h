@@ -74,6 +74,9 @@ typedef struct
   // The grid data
   grid_cell_t *cells;
 
+  // The grid image (diagnostics)
+  uint32_t *pixels;
+
 } grid_t;
 
 
@@ -115,20 +118,11 @@ void grid_add_ranges_slow(grid_t *self, double ox, double oy, double oa,
 
 
 /**************************************************************************
- * CSpace functions
+ * Diagnostics
  **************************************************************************/
 
-// Update cspace
-void grid_update_cspace(grid_t *self);
-
-
-/**************************************************************************
- * Frontier functions
- **************************************************************************/
-
-// Find frontiers
-void grid_update_fronts(grid_t *self);
-
+// Generate an image (diagnostics)
+void grid_draw(grid_t *self);
 
 
 /**************************************************************************
