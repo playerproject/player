@@ -4,6 +4,7 @@ bin_PROGRAMS = playerv
 
 playerv_SOURCES = playerv.c \
                   playerv.h \
+									registry.c \
                   mainwnd.c \
                   dev_blobfinder.c \
                   dev_fiducial.c \
