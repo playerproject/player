@@ -535,8 +535,10 @@ void CClientData::RemoveRequests()
 
   while(thissub)
   {
-    if(thissub->id.code == PLAYER_POSITION_CODE)
+    // Stop position devices if they havent already been shutdown (safety)
+    if(thissub->access != PLAYER_CLOSE_MODE && thissub->id.code == PLAYER_POSITION_CODE)
       MotorStop();
+    
     switch(thissub->access) 
     {
       case PLAYER_ALL_MODE:
