@@ -19,29 +19,8 @@ BINARIES = randomwalk \
 
 all: $(BINARIES)
 
-say: say.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ say.cc $(LIBS)
-
-example_from_manual: example_from_manual.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ example_from_manual.cc $(LIBS)
-
-randomwalk: randomwalk.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ randomwalk.cc $(LIBS)
-
-sonarobstacleavoid: sonarobstacleavoid.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ sonarobstacleavoid.cc $(LIBS)
-
-laserobstacleavoid: laserobstacleavoid.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ laserobstacleavoid.cc $(LIBS)
-
-goto: goto.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ goto.cc $(LIBS) -lpthread
-
-ptz: ptz.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ ptz.cc $(LIBS)
-
-test: test.cc
-	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ test.cc $(LIBS)
+%: %.cc
+	$(CPP) $(CFLAGS) $(INCLUDES) -o $@ $< $(LIBS) -lpthread
 
 install: $(BINARIES)
 	$(MKDIR) -p $(INSTALL_EXAMPLES)/c++
