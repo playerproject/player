@@ -98,7 +98,7 @@ PSDevice::StageUnlock(void)
 }
 
 void 
-PSDevice::PutStageCommand(void* client, unsigned char* command, size_t len)
+PSDevice::PutStageCommand(void* client, void* command, size_t len)
 {
   StageLock();
 
@@ -133,7 +133,7 @@ PSDevice::PutStageCommand(void* client, unsigned char* command, size_t len)
 }
 
 size_t 
-PSDevice::GetStageData(void* client, unsigned char* data, size_t size,
+PSDevice::GetStageData(void* client, void* data, size_t size,
                        uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   StageLock();
