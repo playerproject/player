@@ -31,8 +31,6 @@
 
 #include "playertime.h"
 
-class ReadLogManager;
-
 // Incremental navigation driver
 class ReadLogTime : public PlayerTime
 {
@@ -44,9 +42,12 @@ class ReadLogTime : public PlayerTime
 
   // Get the simulator time
   public: int GetTime(struct timeval* time);
-
-  // Pointer to the read manager
-  private: ReadLogManager *manager;
 };
+
+
+// Some readlog related global vars
+extern char *ReadLog_filename;
+extern double ReadLog_speed;
+extern struct timeval ReadLogTime_time;
 
 #endif
