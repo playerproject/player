@@ -1,0 +1,133 @@
+\documentclass[11pt]{report}
+\usepackage{fullpage}
+
+\def\VERSION {1.2}
+\def\DEFAULTPORT {6665}
+\def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
+\def\libplayerc {{\tt libplayerc} }
+
+\begin{document}
+\setcounter{page}{0}
+\pagenumbering{roman}
+
+\titlepage
+
+\begin{flushright}
+\begin{tabular}{r}
+{\bf USC Robotics Laboratory}\\
+University of Southern California\\
+Los Angeles, California, USA\\
+\end{tabular}
+\end{flushright}
+
+\vspace{5cm}
+\centerline{\huge{libplayerc}}
+\vspace{0.5cm}
+\centerline{\large{Version \VERSION\ Reference Manual}}
+\vspace{2cm}
+
+\centerline{\large Andrew Howard}
+\centerline{\sl ahoward@usc.edu}
+\vspace{5cm}
+\centerline{\today}
+
+\newpage
+\tableofcontents
+
+\newpage
+\setcounter{page}{0}
+\pagenumbering{arabic}
+
+\chapter{Introduction}
+
+\section{Licence}
+
+\section{Bugs}
+
+\section{Acknowledgements}
+
+\chapter{General Usage}
+
+Like the C++ client, \libplayerc is based on a ``proxy'' model in
+which the client maintains a local proxy for each of the remote
+devices on the server.  Thus, for example, one can create proxies for
+the {\tt position} and {\tt laser} devices.  There is also a special
+{\tt client} proxy, used to interact with the server itself.  Programs
+using \libplayerc will generally have the following structure.
+
+\begin{quote}
+\scriptsize
+\begin{verbatim}
+#include <stdio.h>
+#include "playerc.h"
+
+int main(int argc, const char **argv)
+{
+  int i;
+  playerc_client_t *client;
+  playerc_position_t *position;
+
+  client = playerc_client_create(NULL, "localhost", 6665);
+  if (playerc_client_connect(client) != 0)
+    return -1;
+
+  position = playerc_position_create(client, 0);
+  if (playerc_position_subscribe(position, PLAYER_ALL_MODE))
+    return -1;
+  if (playerc_position_enable(position, 1) != 0)
+    return -1;
+  if (playerc_position_setspeed(position, 0, 0, 0.1) != 0)
+    return -1;
+  
+  for (i = 0; i < 200; i++)
+  {
+    playerc_client_read(client);
+    printf("position : %f %f %f\n",
+           position->px, position->py, position->pa);
+  } 
+
+  playerc_position_unsubscribe(position);
+  playerc_position_destroy(position);
+  playerc_client_disconnect(client);
+  playerc_client_destroy(client);
+
+  return 0;
+}
+\end{verbatim}
+\end{quote}
+BEWARE: this program will cause the robot to spin in circles!
+
+\begin{itemize}
+\item The client proxy is created using:
+\begin{quote}\begin{verbatim}
+client = playerc_client_create(NULL, "localhost", 6665);
+\end{verbatim}\end{quote}
+where \verb+"localhost"+ is the host name 
+
+\item 
+\begin{quote}\begin{verbatim}
+playerc_client_connect(client)
+\end{verbatim}\end{quote}
+
+\end{itemize}
+
+
+\chapter{Device Proxy Reference}
+
+\section{{\tt playerc\_client\_t} : the client proxy}
+
+
+
+
+\section{{\tt playerc\_position\_t} : the position device proxy}
+
+
+
+
+\appendix
+
+\chapter{Source Listing : \tt playerc.h}
+
+\end{document}
+
+
