@@ -81,6 +81,9 @@ SegwayIO::SegwayIO()
 {
   canio = new DualCANIO();
   canioInit = false;
+  canioShutdown = true;
+
+  usageCount = 0;
 
   pthread_mutex_init(&latestData_mutex, NULL);
   pthread_mutex_init(&command_queue_mutex, NULL);
@@ -115,7 +118,10 @@ SegwayIO::Init()
       return -1;
     }
     canioInit = true;
+    canioShutdown = false;
   }
+
+  usageCount++;
 
   return 0;
 }
@@ -129,14 +135,21 @@ SegwayIO::Shutdown()
 {
   void *unused;
 
-  pthread_cancel(read_write_thread);
-  
-  if (pthread_join(read_write_thread, &unused)) {
-    return -1;
-  }
+  usageCount--;
 
-  // shutdown the CAN
-  canio->Shutdown();
+  // shutdown if started and no one else is using...
+  if (!canioShutdown && !usageCount) {
+    pthread_cancel(read_write_thread);
+    
+    if (pthread_join(read_write_thread, &unused)) {
+      return -1;
+    }
+    
+    // shutdown the CAN
+    canio->Shutdown();
+
+    canioShutdown = true;
+  }
 
   return 0;
 }

@@ -121,6 +121,8 @@ protected:
   DualCANIO *canio;
 
   bool canioInit;
+  bool canioShutdown;
+  int usageCount;
 
   pthread_t read_write_thread;
 
