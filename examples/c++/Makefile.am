@@ -14,8 +14,7 @@ noinst_PROGRAMS = rsn \
 	          forage \
 	          multilogger \
                   stress \
-                  pherobot \
-	          joystick 
+                  pherobot
 	          #multirandom multiphero
 
 rsn_SOURCES = rsn.cc
@@ -32,7 +31,5 @@ forage_SOURCES = forage.cc
 multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
-joystick_SOURCES = joystick.cc
 
 goto_LDADD = $(LDADD) -lpthread
-joystick_LDADD = $(LDADD) -lpthread
