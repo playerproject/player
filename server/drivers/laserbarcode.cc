@@ -38,6 +38,8 @@
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0
 
+#include "player.h"
+
 #include <errno.h>
 #include <string.h>
 #include <math.h>
@@ -48,7 +50,6 @@
 #include "drivertable.h"
 #include "devicetable.h"
 #include "device.h"
-#include "player.h"
 
 
 // The laser barcode detector.
