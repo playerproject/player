@@ -1,5 +1,7 @@
 // TODO:
 //
+//   * Speed up screenshot dumps.
+//
 //   * Make initial window size / zoom fit the whole map.
 //
 //   * Make the zoom work better / look nicer
@@ -134,7 +136,7 @@ player_read_func(gpointer* arg)
   double diff;
 
   // read new data
-  if(playerc_mclient_read(gui_data->mclient,10) < 0)
+  if(playerc_mclient_read(gui_data->mclient,0) < 0)
   {
     fprintf(stderr, "Error on read\n");
     gtk_main_quit();

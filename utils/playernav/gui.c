@@ -897,36 +897,29 @@ void
 dump_screenshot(gui_data_t* gui_data)
 {
   static int idx = 0;
+  static GdkPixbuf* screenshot = NULL;
   GdkWindow* win;
-  GdkPixbuf* screenshot;
   char fname[PATH_MAX];
   gint width, height;
-  struct timeval last;
-  struct timeval curr;
-  double diff;
   
   g_assert((win = ((GtkWidget*)gui_data->main_window)->window));
   if(gdk_window_is_viewable(win))
   {
     gtk_window_get_size(gui_data->main_window, &width, &height);
-    gettimeofday(&last,NULL);
-    g_assert((screenshot = gdk_pixbuf_get_from_drawable(NULL,(GdkDrawable*)win,
-                                                        gdk_colormap_get_system(),
-                                                        0,0,0,0,
-                                                        width,height)));
-    gettimeofday(&curr,NULL);
-    diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
-    printf("time to get pixbuf: %lf\n", diff);
-    last = curr;
-    sprintf(fname,"playernav-img-%04d.png",idx);
-    printf("writing screenshot to %s\n", fname);
-    if(!(gdk_pixbuf_save(screenshot, fname, "png", NULL, NULL)))
-      puts("FAILED");
-    gettimeofday(&curr,NULL);
-    diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
-    printf("time to save pixbuf: %lf\n", diff);
 
-    g_object_unref(screenshot);
+    g_assert((screenshot = 
+              gdk_pixbuf_get_from_drawable(screenshot,
+                                           (GdkDrawable*)win,
+                                           gdk_colormap_get_system(),
+                                           0,0,0,0,
+                                           width,height)));
+
+    sprintf(fname,"playernav-img-%04d.jpg",idx);
+    printf("writing screenshot to %s\n", fname);
+
+    if(!(gdk_pixbuf_save(screenshot, fname, "jpeg", NULL, NULL)))
+      puts("FAILED");
+
     idx++;
   }
 }
