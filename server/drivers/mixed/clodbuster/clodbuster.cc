@@ -22,12 +22,56 @@
 
 /*
  * $Id$
- *
- *   the clodbuster device.  there's a thread here that
- *   actually interacts with grasp board via the serial line.  the other
- *   "devices" communicate with this thread by putting into and getting
- *   data out of shared buffers.
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_clodbuster clodbuster
+
+The clodbuster driver controls the Clodbuster robot.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position
+
+@par Requires
+
+- none
+
+@par Supported configuration requests
+
+- PLAYER_POSITION_SET_ODOM_REQ
+- PLAYER_POSITION_GET_GEOM_REQ
+- PLAYER_POSITION_MOTOR_POWER_REQ
+- PLAYER_POSITION_VELOCITY_MODE_REQ
+- PLAYER_POSITION_RESET_ODOM_REQ
+- PLAYER_POSITION_SPEED_PID_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: ""/dev/ttyUSB0" 
+  - Serial port used to communicate with the robot.
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "clodbuster"
+  provides ["position:0"]
+)
+@endverbatim
+
+@par Authors
+
+Ben Grocholsky
+*/
+/** @} */
 
 #if HAVE_CONFIG_H
 #include <config.h>
@@ -56,6 +100,7 @@ extern PlayerTime* GlobalTime;
 #include <driver.h>
 #include <drivertable.h>
 #include <devicetable.h>
+#include "error.h"
 
 // initialization function
 Driver* ClodBuster_Init( ConfigFile* cf, int section)
@@ -79,7 +124,7 @@ ClodBuster::ClodBuster( ConfigFile* cf, int section)
   clodbuster_fd = -1;
   
   strncpy(clodbuster_serial_port,
-          cf->ReadString(section, "port", clodbuster_serial_port),
+          cf->ReadString(section, "port", DEFAULT_CLODBUSTER_PORT),
           sizeof(clodbuster_serial_port));
 
   // set parameters

@@ -29,6 +29,43 @@
  * 
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_nomad_sonar nomad_sonar
+
+The nomad_sonar driver controls the sonars of the Nomadics
+NOMAD200 robot.  This driver is a thin wrapper that exchanges data and
+commands with the @ref player_driver_nomad driver; look there for more
+information and an example.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_sonar
+
+@par Requires
+
+- @ref player_interface_nomad
+
+@par Configuration requests
+
+- PLAYER_POSITION_GET_GEOM_REQ
+  
+@par Configuration file options
+
+- none
+
+
+@par Authors
+
+Richard Vaughan, Pawel Zebrowski
+
+*/
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -50,6 +87,7 @@
 // and sonar objects
 #include <drivertable.h>
 #include <devicetable.h>
+#include "error.h"
 
 class NomadSonar:public Driver 
 {
@@ -90,9 +128,13 @@ NomadSonar::NomadSonar( ConfigFile* cf, int section)
   : Driver(cf, section,  PLAYER_SONAR_CODE, PLAYER_READ_MODE,
            sizeof(player_sonar_data_t), 0, 1, 1 )
 {
-  this->nomad_id.code = PLAYER_NOMAD_CODE;
-  this->nomad_id.port = cf->ReadInt(section, "nomad_port", 0 );
-  this->nomad_id.index = cf->ReadInt(section, "nomad_index", 0 );
+  // Must have a nomad
+  if (cf->ReadDeviceId(&this->nomad_id, section, "requires",
+                       PLAYER_NOMAD_CODE, -1, NULL) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 }
 
 NomadSonar::~NomadSonar()

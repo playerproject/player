@@ -129,6 +129,7 @@ Richard Vaughan, Pawel Zebrowski
 #include <netinet/in.h>
 #include <termios.h>
 
+#include "error.h"
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 

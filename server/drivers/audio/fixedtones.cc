@@ -87,6 +87,7 @@ want to try the @ref player_driver_audio driver instead.
 
 #include <driver.h>
 #include <drivertable.h>
+#include "error.h"
 
 #define AUDIO_SLEEP_TIME_USEC 100000
 
@@ -285,13 +286,13 @@ FixedTones::Main()
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
   PutData(data, sizeof(data),NULL);
-  PutCommand(zero, sizeof(zero),NULL);
+  PutCommand(this->device_id,zero, sizeof(zero),NULL);
 
   while(1) 
   {
     pthread_testcancel();
     GetCommand(command, sizeof(command),NULL);
-    PutCommand(zero, sizeof(zero),NULL);
+    PutCommand(this->device_id,zero, sizeof(zero),NULL);
     
     if(command[0]!=255) 
     {

@@ -43,10 +43,105 @@
  * Our robots use a StrongARM SA110 for the compute power, so we have
  * to minimize the use of floating point, since the ARM can only emulate
  * it.
- * 
- * Note that this device came from copying p2osdevice.cc and then editing
- * to taste, so thanks to the writers of p2osdevice.cc!
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_reb reb
+
+The reb driver is used to control robots using the K-Team Kameleon
+376SBC with Robotics Extension Board (REB).  The Kameleon, (or Kam),
+has a Motorola MC68376 microcontroller that can perform velocity and
+position control and odometry for up to four motors, using the REB.
+It can also access a number of A/D inputs, which we have connected to
+Sharp GP2D12 IR proximity detectors.
+
+In its default setting, a host computer can communicate with the Kam
+using the K-Team SerCom program, which uses a simple protocol to send
+commands and read data back.  At UMass, we found that the default
+SerCom did not offer enough performance, so we developed our own,
+LPRSerCom, which uses the same protocol, but with some enhancements,
+such as letting the Kam do the odometry updates and IR synchronization.
+The bottom line is that you need to modifiy these drivers to work with the
+K-Team SerCom, which is not very difficult (mainly removing the LPRSerCom
+specific code).  We can also send you a copy of LPRSerCom if you'd like.
+Email John Sweeney (sweeney (at) cs.umass.edu) for information.
+
+The reb driver sets some default PID parameters and resets the
+odometry to (0,0,0) when the first client subscribes to the @ref
+player_interface_position interface.  Likewise, the IR sensors are only
+turned on when an @ref player_interface_ir client has subscribed.
+
+Position mode is very finicky.  This seems to be a problem with the
+REB itself, which may lose bytes on the serial port while performing
+position mode actions.  This causes the driver to time out, and quite
+possibly lose a connection to the REB.
+
+The LPRSerCom protocol running on the REB will sometimes lose a byte
+over the port, which can cause the driver to time out on a read call to
+the port.  The driver will attempt to retry the call, but there is no
+guarantee that the REB will be able to handle it.  The best solution is
+to reset the REB.  Hopefully this should be a relatively rare occurrence.
+
+As mentioned above, for this driver to function properly, the REB needs
+to be running the LPRSerCom program.  
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+The reb driver provides the following device interfaces:
+
+- @ref player_interface_position : This interface returns odometry data,
+  and accepts velocity commands.
+
+- @ref player_interface_ir : This interface returns IR range data.
+
+- @ref player_interface_power : This interface returns power data.
+
+@par Supported configuration requests
+
+- The @ref player_interface_position interface supports:
+  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION_MOTOR_POWER_REQ
+  - PLAYER_POSITION_VELOCITY_MODE_REQ
+  - PLAYER_POSITION_RESET_ODOM_REQ
+  - PLAYER_POSITION_POSITION_MODE_REQ
+  - PLAYER_POSITION_SET_ODOM_REQ
+  - PLAYER_POSITION_SPEED_PID_REQ
+  - PLAYER_POSITION_POSITION_PID_REQ
+  - PLAYER_POSITION_SPEED_PROF_REQ
+- The @ref player_interface_ir interface supports:
+  - PLAYER_IR_POWER_REQ
+  - PLAYER_IR_POSE_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttySA1"
+  - Serial port used to communicate with the robot.
+- subclass (string)
+  - Default: "slow"
+  - The type of robot; should be "slow" or "fast"
+
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "reb"
+  provides ["position:0" "ir:0" "power:0"]
+)
+@endverbatim
+
+@par Authors
+
+John Sweeney
+*/
+/** @} */
 
 #include <fcntl.h>
 #include <signal.h>

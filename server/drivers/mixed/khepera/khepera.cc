@@ -22,14 +22,84 @@
 
 /* Copyright (C) 2004
  *   Toby Collett, University of Auckland Robotics Group
- *
- * Header for the khepera robot.  The
- * architecture is similar to the P2OS device, in that the position, IR and
- * power services all need to go through a single serial port and
- * base device class.  So this code was copied from p2osdevice and
- * modified to taste.
- * 
  */
+
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_khepera khepera
+
+The khepera driver is used to interface to the K-Team khepera robot. 
+
+This driver is experimental and should be treated with caution. At
+this point it supports the @ref player_interface_position and 
+@ref player_interface_ir interfaces.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref player_interface_position
+- @ref player_interface_ir
+
+@par Requires
+
+- none
+
+@par Supported configuration requests
+
+- The @ref player_interface_position interface supports:
+  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION_MOTOR_POWER_REQ
+  - PLAYER_POSITION_VELOCITY_MODE_REQ
+  - PLAYER_POSITION_RESET_ODOM_REQ
+  - PLAYER_POSITION_SET_ODOM_REQ
+- The @ref player_interface_ir interface supports:
+  - PLAYER_IR_POSE_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyUSB0"
+  - Serial port used to communicate with the robot.
+- scale_factor (float)
+  - Default: 10
+  - As the khepera is so small the actual geometry doesnt make much sense
+    with many of the existing defaults so the geometries can all be scaled
+    by this factor.
+- encoder_res (float)
+  - Default: 1.0/12.0
+  - The wheel encoder resolution.
+- position_pose (float tuple)
+  - Default: [0 0 0]
+  - The pose of the robot in player coordinates (mm, mm, deg).
+- position_size (float tuple)
+  - Default: [57 57]
+  - The size of the robot approximated to a rectangle (mm, mm).
+- ir_pose_count (integer)
+  - Default: 8
+  - The number of ir poses.
+- ir_poses (float tuple)
+  - Default: [10 24 90 19 17 45 25 6 0 25 -6 0 19 -17 -45 10 -24 -90 -24 -10 180 -24 10 180]
+  - Poses of the IRs (mm mm deg for each one)
+
+@par Example 
+
+@verbatim
+driver
+(
+  name "khepera"
+  provides ["position:0" "ir:0"]
+)
+@endverbatim
+
+@par Authors
+
+Toby Collett
+*/
+/** @} */
 
 #include <fcntl.h>
 #include <signal.h>
