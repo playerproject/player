@@ -437,6 +437,19 @@ structure, which has the following elements.
 
 
 \newpage
+\section{The {\tt truth} proxy}
+
+The {\tt truth} proxy can be used to get and set the pose of
+objects in the Stage simulator.  The
+proxy supports the following functions:
+\begin{quote}
+\lstinputlisting{truth.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_truth\_t}
+structure; this structure is opaque and should not be manipulated directly.
+
+
+\newpage
 \section{The {\tt vision} proxy}
 
 The {\tt vision} proxy provides an interface to the ACTS vision system

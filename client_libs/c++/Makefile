@@ -12,9 +12,9 @@ INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
-      laserbeaconproxy.o visionproxy.o truthproxy.o occupancyproxy.o \
+      laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o
-      #idarproxy.o descartesproxy.o
+      #occupancyproxy.o truthproxy.o idarproxy.o descartesproxy.o
 
 all: $(LIBNAME)
 

@@ -55,13 +55,6 @@ class GpsProxy : public ClientProxy
               unsigned char access='c') :
             ClientProxy(pc,PLAYER_GPS_CODE,index,access) {}
 
-    // these methods are the user's interface to this device
-
-    /** Warp the robot to a new location (in mm, mm, and degrees,
-        respectively).
-      */
-    int Warp(int x, int y, int heading);
-
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
     
