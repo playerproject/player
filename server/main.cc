@@ -668,7 +668,17 @@ int main( int argc, char *argv[] )
   // parse args
   for( int i = 1; i < argc; i++ ) 
   {
-    if(!strcmp(argv[i],"-s"))
+    if(!strcmp(argv[i],"-h") || !strcmp(argv[i],"--help"))
+    {
+      Usage();
+      exit(0);
+    }
+    else if(!strcmp(argv[i],"-v") || !strcmp(argv[i],"--version"))
+    {
+      puts("");
+      exit(0);
+    }
+    else if(!strcmp(argv[i],"-s"))
     {
       if(++i<argc) 
       {
