@@ -269,7 +269,7 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test x$enable_rtkgui = xyes)
 # -----------------------------------------------------------------------
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h termio.h linux/joystick.h)
+AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 

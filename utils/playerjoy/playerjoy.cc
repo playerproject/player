@@ -11,12 +11,8 @@
   #include <config.h>
 #endif
 
-#if HAVE_TERMIO_H
-  #include <termio.h>
-  #define KEYBOARD_SUPPORT 1
-#else
-  #define KEYBOARD_SUPPORT 0
-#endif
+#include <termios.h>
+#define KEYBOARD_SUPPORT 1
 
 #if HAVE_LINUX_JOYSTICK_H
   #include <linux/joystick.h>
@@ -230,7 +226,7 @@ keyboard_handler(void* arg)
   char c;
   double max_tv = max_speed;
   double max_rv = max_turn;
-  struct termio cooked, raw;
+  struct termios cooked, raw;
 
   int speed=0;
   int turn=0;
@@ -239,12 +235,12 @@ keyboard_handler(void* arg)
   struct controller* cont = (struct controller*)arg;
 
   // get the console in raw mode
-  ioctl(kfd, TCGETA, &cooked);
+  tcgetattr(kfd, &cooked);
   memcpy(&raw, &cooked, sizeof(struct termio));
   raw.c_lflag &=~ (ICANON | ECHO);
   raw.c_cc[VEOL] = 1;
   raw.c_cc[VEOF] = 2;
-  ioctl(kfd, TCSETA, &raw);
+  tcsetattr(kfd, TCSANOW, &raw);
   
   puts("Reading from keyboard");
   puts("---------------------------");
