@@ -42,8 +42,10 @@ mainwnd_t *mainwnd_create(rtk_app_t *app)
   rtk_canvas_size(wnd->canvas, 300, 300);
   rtk_canvas_scale(wnd->canvas, 0.02, 0.02);
   rtk_canvas_origin(wnd->canvas, 0, 0);
+
+  // Create a figure representing the robot
   wnd->robot_fig = rtk_fig_create(wnd->canvas, NULL, 0);
-  
+
   // Create file menu
   wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
   wnd->exit_item = rtk_menuitem_create(wnd->file_menu, "Exit", 0);
@@ -73,10 +75,14 @@ void mainwnd_destroy(mainwnd_t *wnd)
 }
 
 
-// Update the window
-void mainwnd_update(mainwnd_t *wnd)
+// Update the window.
+// Returns 1 if the program should quit.
+int mainwnd_update(mainwnd_t *wnd)
 {
-
+  // See if we should quit
+  if (rtk_menuitem_isactivated(wnd->exit_item))
+    return 1;
+  return 0;
 }
 
 

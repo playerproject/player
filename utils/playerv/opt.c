@@ -35,6 +35,9 @@
 #include "opt.h"
 
 
+// Parse options from a command line argument.
+int opt_parse_args(opt_t *opt, const char *arg1, const char *arg2);
+
 // Add an item
 void opt_add_item(opt_t *opt, const char *section, const char *key,
                   const char *value, const char *comment, int save);
@@ -88,24 +91,12 @@ opt_t *opt_init(int argc, char **argv, const char *filename)
   for (i = 1; i < argc; i++)
   {
     // Look for long-form arguments
-    if (strncmp(argv[i], "--", 2) == 0 && i + 1 < argc)
+    if (strncmp(argv[i], "--", 2) == 0)
     {
-      tmp = strdup(argv[i] + 2);
-      dot = strchr(tmp, '.');
-      if (dot)
-      {
-        dot[0] = 0;
-        section = tmp;
-        key = dot + 1;
-      }
+      if (i + 1 < argc && argv[i + 1][0] != '-')
+          opt_parse_args(opt, argv[i] + 2, argv[i + 1]);
       else
-      {
-        section = "";      
-        key = tmp;
-      }
-      value = argv[i + 1];
-      opt_add_item(opt, section, key, value, NULL, 0);
-      free(tmp);
+          opt_parse_args(opt, argv[i] + 2, NULL);
     }
 
     // Look for short-form arguments
@@ -147,6 +138,37 @@ opt_t *opt_init(int argc, char **argv, const char *filename)
 void opt_term(opt_t *opt)
 {
   // TODO: free mem here
+}
+
+
+// Parse options from a command line argument.
+// The second arg may be blank, in which case we will add an item
+// with a blank key and a value of 1.  This allows for options of the
+// form '--foobar' as opposed to '--foobar "enable 1"'.
+int opt_parse_args(opt_t *opt, const char *arg1, const char *arg2)
+{
+  const char *section, *key, *value;
+  char *tmp;
+  
+  section = arg1;
+
+  opt_add_item(opt, section, "", "1", NULL, 0);
+  if (!arg2)
+    return 0;
+
+  // Extract all the <key, value> pairs from the argument.
+  tmp = strdup(arg2);
+  key = strtok(tmp, " \t");
+  value = strtok(NULL, " \t");
+  while (key && value)
+  {
+    opt_add_item(opt, section, key, value, NULL, 0);
+    key = strtok(NULL, " \t");
+    value = strtok(NULL, " \t");
+  }
+  free(tmp);
+  
+  return 0;
 }
 
 

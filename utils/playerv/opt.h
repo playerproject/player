@@ -65,6 +65,9 @@ int opt_load(opt_t *opt, const char *filename);
 // Set filename to NULL to save it back with the same name.
 int opt_save(opt_t *opt, const char *filename);
 
+// Issue a warning about unrecognized options
+int opt_warn_unused(opt_t *opt);
+
 // Write a string
 void opt_set_string(opt_t *opt, const char *section,
                     const char *key, const char *value);
