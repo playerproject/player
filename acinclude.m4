@@ -11,7 +11,7 @@ dnl This macro can be used to setup the testing and associated autoconf
 dnl variables and C defines for a device driver.
 dnl
 dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd],
-dnl                   [pkgvar],[pkg])
+dnl                   [pkgvar],[pkg],[default-includes])
 dnl
 dnl Args:
 dnl   name:    name; driver library should take the name lib<name>.a
@@ -27,6 +27,11 @@ dnl            is found, pkgvar_CFLAGS and pkgvar_LIBS will be set
 dnl            appropriately
 dnl   pkg:     name of package that is required to build the driver; it
 dnl            should be a valid pkg-config spec, like [gtk+-2.0 >= 2.1]
+dnl   default-includes: A chunk of code to insert in a test program when
+dnl                     checking for each of the headers listed in <header>.
+dnl                     For example, if one of the headers that you need in 
+dnl                     turn requires <foo.h>, then supply 
+dnl                     [[#include <foo.h>]] here.
 dnl
 dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
 dnl <name> capitalized) will be conditionally defined to be 1 and 
@@ -58,7 +63,7 @@ dnl in the form of 'for' over an empty list.
     AC_CHECK_HEADER($header, 
                     enable_$1=yes,
                     enable_$1=no
-                    failed_header_check=yes,)
+                    failed_header_check=yes,$9)
   done
   if test "x$failed_header_check" = "xyes"; then
     enable_$1=no
@@ -194,7 +199,8 @@ PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],[],[])
+PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],
+                  [],[],[],[],[[#include <netinet/in.h>]])
 
 PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[no],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
