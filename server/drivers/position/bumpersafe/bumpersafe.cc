@@ -292,7 +292,6 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	}
 	MSG_END_ACK;
 
-	
 	return -1;
 }
 

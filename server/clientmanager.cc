@@ -205,11 +205,11 @@ ClientManager::AddClient(ClientData* client)
     unsigned char data[PLAYER_IDENT_STRLEN];
     player_msghdr_t hdr = {0};
     hdr.stx = PLAYER_STXX;
-    hdr.device = PLAYER_PLAYER_CODE;
+    hdr.device = htons(PLAYER_PLAYER_CODE);
     hdr.device_index = 0;
     hdr.type = PLAYER_MSGTYPE_REQ;
     hdr.subtype = PLAYER_PLAYER_IDENT;
-    hdr.size = PLAYER_IDENT_STRLEN;
+    hdr.size = htonl(PLAYER_IDENT_STRLEN);
     
     // write back an identifier string
     if(use_stage)
