@@ -199,7 +199,8 @@ class AdaptiveMCL : public PSDevice
 
   // Laser sensor model
   private: laser_t *laser_model;
-  private: int laser_max_ranges;
+  private: int laser_max_samples;
+  private: double laser_map_err;
 
   // Odometric pose of last used sensor reading
   private: pf_vector_t odom_pose;
@@ -276,7 +277,8 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Laser model settings
   this->laser_model = NULL;
-  this->laser_max_ranges = 9;
+  this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 5);
+  this->laser_map_err = cf->ReadLength(section, "laser_map_err", 0.05);
 
   // Particle filter settings
   this->pf = NULL;
@@ -360,6 +362,7 @@ int AdaptiveMCL::Setup(void)
 
   // Create the laser model
   this->laser_model = laser_alloc(this->map, this->laser_pose);
+  this->laser_model->range_cov = this->laser_map_err * this->laser_map_err;
 
   // Create the particle filter
   assert(this->pf == NULL);
@@ -880,7 +883,7 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   
   // Update the laser sensor model with the latest laser measurements
   laser_clear_ranges(this->laser_model);
-  for (i = 0; i < data->range_count; i += data->range_count / this->laser_max_ranges)
+  for (i = 0; i < data->range_count; i += data->range_count / this->laser_max_samples)
     laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
 
   // Apply the laser sensor model
