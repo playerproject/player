@@ -287,15 +287,24 @@ struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
         fflush( stdout );
 #endif	  
 
-
-#ifdef INCLUDE_BROADCAST
+        break;
+        
       case PLAYER_BROADCAST_CODE:   
+#ifdef INCLUDE_BROADCAST
         // Create broadcast device as per normal
         if( info->local )
+        {
+          int argc = 0;
+          char *argv[2];
+          // Broadcast through the loopback device; note that this
+          // wont work with distributed Stage.
+          argv[argc++] = "addr";
+          argv[argc++] = "127.255.255.255";
           deviceTable->AddDevice(info->player_id.port,
                                  info->player_id.type,
                                  info->player_id.index, 
-                                 PLAYER_ALL_MODE, new CBroadcastDevice(0, NULL));
+                                 PLAYER_ALL_MODE, new CBroadcastDevice(argc, argv));
+        }
 #endif
         break;
 
