@@ -32,204 +32,275 @@
 #include "player.h"
 
 
-/** @addtogroup player_classes */
-/** @{ */
+/// @brief Class for loading configuration file information.
+///
+/// This class is used to load settings from a configuration text
+/// file.  Ths file is dividing into sections, with section having a
+/// set of key/value fields.
+/// Example file format is as follows:
+/// @verbatim
+/// # This is a comment
+/// section_name
+/// (
+///   key1  0             
+///   key2 "foo"          
+///   key3 ["foo" "bar"]  
+/// )
+/// @endverbatim
 
-/** Class for loading/saving config file.
- */
 class ConfigFile
 {
-  // Standard constructors/destructors
+  /// @brief Standard constructor
   public: ConfigFile();
+
+  /// @brief Standard destructor
   public: ~ConfigFile();
 
-  // Load config from file
+  /// @brief Load config from file
+  /// @param filename Name of file; can be relative or fully qualified path.
+  /// @returns Returns true on success.
   public: bool Load(const char *filename);
 
   // Save config back into file
   // Set filename to NULL to save back into the original file
-  public: bool Save(const char *filename);
+  private: bool Save(const char *filename);
 
-  // Check for unused fields and print warnings
+  /// @brief Check for unused fields and print warnings.
+  /// @returns Returns true if there are unused fields.
   public: bool WarnUnused();
 
-  // Read a string
+  /// @brief Read a string value
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the field value.
   public: const char *ReadString(int section, 
                                  const char *name, 
                                  const char *value);
 
   // Write a string
-  public: void WriteString(int section, 
-                           const char *name, 
-                           const char *value);
+  private: void WriteString(int section, 
+                            const char *name, 
+                            const char *value);
 
-  // Read an integer 
+  /// @brief Read an integer value
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the field value.
   public: int ReadInt(int section, 
                       const char *name, 
                       int value);
 
   // Write an integer
-  public: void WriteInt(int section, 
-                        const char *name, 
-                        int value);
+  private: void WriteInt(int section, 
+                         const char *name, 
+                         int value);
 
-  // Read a float 
+  /// @brief Read a floating point (double) value.
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the field value.
   public: double ReadFloat(int section, 
                            const char *name, 
                            double value);
 
   // Write a float
-  public: void WriteFloat(int section, 
-                          const char *name, 
-                          double value);
+  private: void WriteFloat(int section, 
+                           const char *name, 
+                           double value);
 
-  // Read a length (includes unit conversion)
+  /// @brief Read a length (includes unit conversion, if any).
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the field value.
   public: double ReadLength(int section, 
                             const char *name, 
                             double value);
 
   // Write a length (includes units conversion)
-  public: void WriteLength(int section, 
-                           const char *name, 
-                           double value);
+  private: void WriteLength(int section, 
+                            const char *name, 
+                            double value);
   
-  // Read an angle (includes unit conversion)
+  /// @brief Read an angle (includes unit conversion).
+  ///
+  /// In the configuration file, angles are specified in degrees; this
+  /// method will convert them to radians.
+  ///
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file (radians).
+  /// @returns Returns the field value.
   public: double ReadAngle(int section, const char *name, double value);
 
-  // Read a color (includes text to RGB conversion)
+  /// @brief Read a color (includes text to RGB conversion)
+  ///
+  /// In the configuration file colors may be specified with sybolic
+  /// names; e.g., "blue" and "red".  This function will convert them
+  /// to an RGB value using the X11 rgb.txt file.
+  ///
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file (RGB).
+  /// @returns Returns the field value.
   public: uint32_t ReadColor(int section, 
                              const char *name, 
                              uint32_t value);
 
-  // Read a file name.  Always returns an absolute path.  If the
-  // filename is entered as a relative path, we prepend the config
-  // file's path to it.
+  /// @brief Read a filename.
+  ///
+  /// Always returns an absolute path.  If the filename is entered as
+  /// a relative path, we prepend the config file's path to it.
+  ///
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the field value.
   public: const char *ReadFilename(int section, 
                                    const char *name, 
                                    const char *value);
 
-  // Get the number of values in a tuple
+  /// @brief Get the number of values in a tuple.
+  /// @param section Section to read.
+  /// @param name Field name.
   public: int GetTupleCount(int section, const char *name);
 
-  // Read a string from a tuple
+  /// @brief Read a string from a tuple field
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param index Tuple index (zero-based)
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the tuple element value.
   public: const char *ReadTupleString(int section, 
                                       const char *name,
                                       int index, 
                                       const char *value);
   
   // Write a string to a tuple
-  public: void WriteTupleString(int section, 
+  private: void WriteTupleString(int section, 
                                 const char *name,
                                 int index, 
                                 const char *value);
   
-  // Read a int from a tuple
+  /// @brief Read an integer from a tuple field
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param index Tuple index (zero-based)
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the tuple element value.
   public: int ReadTupleInt(int section, 
                            const char *name,
                            int index, 
                            int value);
 
   // Write a int to a tuple
-  public: void WriteTupleInt(int section, 
+  private: void WriteTupleInt(int section, 
                              const char *name,
                              int index, 
                              int value);
   
-  // Read a float from a tuple
+
+  /// @brief Read a float (double) from a tuple field
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param index Tuple index (zero-based)
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the tuple element value.
   public: double ReadTupleFloat(int section, 
                                 const char *name,
                                 int index, 
                                 double value);
 
   // Write a float to a tuple
-  public: void WriteTupleFloat(int section, 
+  private: void WriteTupleFloat(int section, 
                                const char *name,
                                int index, 
                                double value);
 
-  // Read a length from a tuple (includes units conversion)
+  /// @brief Read a length from a tuple (includes units conversion)
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param index Tuple index (zero-based)
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the tuple element value.
   public: double ReadTupleLength(int section, 
                                  const char *name,
                                  int index, 
                                  double value);
 
   // Write a to a tuple length (includes units conversion)
-  public: void WriteTupleLength(int section, 
+  private: void WriteTupleLength(int section, 
                                 const char *name,
                                 int index, 
                                 double value);
 
-  // Read an angle form a tuple (includes units conversion)
+  /// @brief Read an angle form a tuple (includes units conversion)
+  ///
+  /// In the configuration file, angles are specified in degrees; this
+  /// method will convert them to radians.
+  ///
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param index Tuple index (zero-based)
+  /// @param value Default value if the field is not present in the file.
+  /// @returns Returns the tuple element value.
   public: double ReadTupleAngle(int section, 
                                 const char *name,
                                 int index, 
                                 double value);
 
   // Write an angle to a tuple (includes units conversion)
-  public: void WriteTupleAngle(int section, 
+  private: void WriteTupleAngle(int section, 
                                const char *name,
                                int index, 
                                double value);
 
-  // Read a color (includes text to RGB conversion)
+  /// @brief Read a color (includes text to RGB conversion)
+  ///
+  /// In the configuration file colors may be specified with sybolic
+  /// names; e.g., "blue" and "red".  This function will convert them
+  /// to an RGB value using the X11 rgb.txt file.
+  ///
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param index Tuple index (zero-based)  
+  /// @param value Default value if the field is not present in the file (RGB).
+  /// @returns Returns the field value.
   public: uint32_t ReadTupleColor(int section, 
                                   const char *name,
                                   int index, 
                                   uint32_t value); 
-
-  /// @deprecated
-  /// Parse the "devices" option in the given section.  On success,
-  /// returns the number of device ids found; on error, returns -1.
-  /// @arg ids will point to a malloc()ed list of the parsed ids
-  /// (which the caller should free()), in the order they were given.
-  //public: int ParseDeviceIds(int section, player_device_id_t** ids);
-
-  /// @deprecated
-  /// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
-  /// num_ids, if there exists an i'th id with the given code, fills in id
-  /// appropriately, and returns 0.
-  ///
-  /// "Consumes" the selected id in the list, by setting the code to 0.  Thus,
-  /// after calling ReadDeviceId() for each supported interface, you can call
-  /// UnusedIds() to determine whether the user gave any extra interfaces.
-  ///
-  /// Returns -1 if no such id can be found.
-  //public: int ReadDeviceId(player_device_id_t* id, player_device_id_t* ids,
-  //                         int num_ids, int code, int i);
-
-  /// @deprecated
-  /// Given a list of ids (e.g., one returned by ParseDeviceIds()) of length
-  /// num_ids, tells whether there remain any "unused" ids.  An id is unused
-  /// if its code is nonzero.
-  //public:  int UnusedIds(int section, player_device_id_t* ids, int num_ids);
 
   /// @brief Read a device id.
   ///
   /// Reads a device id from the named field of the given section.
   /// The returned id will match the given code, index and key values.
   //
-  /// @param[out] id ID field to be filled in.
-  /// @param[in] section File section.
-  /// @param[in] name Field name.
-  /// @param[in] code Interface type code (use 0 to match all interface types).
-  /// @param[in] index Tuple index (use -1 to match all indices).
-  /// @param[in] key Device key value (use NULL to match all key vales).
+  /// @param id ID field to be filled in.
+  /// @param section File section.
+  /// @param name Field name.
+  /// @param code Interface type code (use 0 to match all interface types).
+  /// @param index Tuple index (use -1 to match all indices).
+  /// @param key Device key value (use NULL to match all key vales).
   /// @return Non-zero on error.
   public: int ReadDeviceId(player_device_id_t *id, int section, const char *name,
                            int code, int index, const char *key);
 
-  // Get the number of sections.
+  /// @brief Get the number of sections.
   public: int GetSectionCount();
 
-  // Get a section (returns the section type value)
+  /// @brief Get a section type name.
   public: const char *GetSectionType(int section);
 
-  // Lookup a section number by type name
-  // Returns -1 if there is section with this type
+  /// @brief Lookup a section number by section type name.
+  /// @return Returns -1 if there is no section with this type.
   public: int LookupSection(const char *type);
   
-  // Get a section's parent section.
-  // Returns -1 if there is no parent.
+  /// @brief Get a section's parent section.
+  /// @returns Returns -1 if there is no parent.
   public: int GetSectionParent(int section);
 
 
@@ -348,15 +419,18 @@ class ConfigFile
   // Look up the color in a data based (transform color name -> color value).
   private: uint32_t LookupColor(const char *name);
 
+  /// Name of the file we loaded
+  public: char *filename;
+
   // Token types.
-  public: enum
-  {
-    TokenComment,
-    TokenWord, TokenNum, TokenString,
-    TokenOpenSection, TokenCloseSection,
-    TokenOpenTuple, TokenCloseTuple,
-    TokenSpace, TokenEOL
-  };
+  private: enum
+    {
+      TokenComment,
+      TokenWord, TokenNum, TokenString,
+      TokenOpenSection, TokenCloseSection,
+      TokenOpenTuple, TokenCloseTuple,
+      TokenSpace, TokenEOL
+    };
 
   // Token structure.
   private: struct Token
@@ -437,14 +511,10 @@ class ConfigFile
   private: int field_count;
   private: Field *fields;
 
-  // Name of the file we loaded
-  public: char *filename;
-
   // Conversion units
   private: double unit_length;
   private: double unit_angle;
 };
 
-/** @} */
 
 #endif
