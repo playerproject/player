@@ -183,6 +183,16 @@ typedef char int8_t;
 #define PLAYER_ERROR2(m, a, b)  printf("error : %s %s\n        "m"\n", __FILE__, __FUNCTION__, a, b)
 //#define PLAYER_ERROR(m) 
 
+// Warning macros
+#define PRINT_WARN(m)         printf("\nplayer warning : %s %s "m"\n", \
+                                     __FILE__, __FUNCTION__)
+#define PRINT_WARN1(m, a)     printf("\nplayer warning : %s %s "m"\n", \
+                                     __FILE__, __FUNCTION__, a)
+#define PRINT_WARN2(m, a, b)  printf("\nplayer warning : %s %s "m"\n", \
+                                     __FILE__, __FUNCTION__, a, b)
+#define PRINT_WARN3(m, a, b, c) printf("\nplayer warning : %s %s "m"\n", \
+                                     __FILE__, __FUNCTION__, a, b, c)
+
 
 #if PLAYER_ENABLE_MSG
 
