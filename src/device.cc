@@ -75,6 +75,8 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
   assert(device_reqqueue);
   assert(device_repqueue);
 
+  subscriptions = 0;
+
   pthread_mutex_init(&accessMutex,NULL);
 }
     
@@ -120,8 +122,7 @@ void CDevice::PutConfig(unsigned char * data, size_t len)
 }
 
 size_t CDevice::GetData(unsigned char* dest, size_t len,
-                        uint32_t* timestamp_sec = NULL, 
-                        uint32_t* timestamp_usec = NULL)
+                        uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   int size;
   puts("CDevice::GetData");
@@ -131,17 +132,16 @@ size_t CDevice::GetData(unsigned char* dest, size_t len,
   memcpy(dest,device_data,device_datasize);
   size = device_datasize;
   if(timestamp_sec)
-    *timestamp_sec = htonl(data_timestamp_sec);
+    *timestamp_sec = data_timestamp_sec;
   if(timestamp_usec)
-    *timestamp_usec = htonl(data_timestamp_usec);
+    *timestamp_usec = data_timestamp_usec;
 
   Unlock();
   return(size);
 }
 
 void CDevice::PutData(unsigned char* src, size_t len,
-                      uint32_t timestamp_sec = 0, 
-                      uint32_t timestamp_usec = 0)
+                      uint32_t timestamp_sec, uint32_t timestamp_usec)
 {
   if (timestamp_sec == 0)
   {
@@ -181,14 +181,11 @@ void CDevice::PutCommand( unsigned char* src, size_t len)
 void CDevice::Lock()
 {
   pthread_mutex_lock(&accessMutex);
-  //puts("done");
 }
 
 void CDevice::Unlock()
 {
-  //puts("CDevice::UnLock()");
   pthread_mutex_unlock(&accessMutex);
-  //puts("done");
 }
 
 int CDevice::Subscribe()
@@ -201,15 +198,11 @@ int CDevice::Subscribe()
   {
     setupResult = Setup();
     if (setupResult == 0 ) 
-    {
       subscriptions++; 
-      subscrcount++; // this one is non-static, and so will be per-device
-    }
   }
   else 
   {
     subscriptions++;
-    subscrcount++; // this one is non-static, and so will be per-device
     setupResult = 0;
   }
   
@@ -224,22 +217,17 @@ int CDevice::Unsubscribe()
   Lock();
   
   if(subscriptions == 0) 
-  {
     shutdownResult = -1;
-  }
   else if ( subscriptions == 1) 
   {
     shutdownResult = Shutdown();
     if (shutdownResult == 0 ) 
-    { 
       subscriptions--;
-      subscrcount--;
-    }
     /* do we want to unsubscribe even though the shutdown went bad? */
   }
-  else {
+  else 
+  {
     subscriptions--;
-    subscrcount--;
     shutdownResult = 0;
   }
   

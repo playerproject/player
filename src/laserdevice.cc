@@ -284,12 +284,15 @@ int CLaserDevice::Setup()
 //
 int CLaserDevice::Shutdown()
 {
-    /* shutdown laser device */
-    pthread_cancel(m_thread);
-    CloseTerm();
-    puts("Laser has been shutdown");
+  void* dummy;
+  /* shutdown laser device */
+  pthread_cancel(m_thread);
+  if(pthread_join(m_thread,&dummy))
+    perror("CLaserDevice::Shutdown:pthread_join()");
+  CloseTerm();
+  puts("Laser has been shutdown");
 
-    return(0);
+  return(0);
 }
 
 
@@ -298,11 +301,7 @@ int CLaserDevice::Shutdown()
 //
 void CLaserDevice::Run() 
 {
-  pthread_attr_t attr;
-
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  pthread_create( &m_thread, &attr, &DummyMain, this );
+  pthread_create( &m_thread, NULL, &DummyMain, this );
 }
 
 

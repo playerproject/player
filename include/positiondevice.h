@@ -37,7 +37,8 @@ class CPositionDevice: public CP2OSDevice
  public:
     ~CPositionDevice();
     CPositionDevice(int argc, char** argv):CP2OSDevice(argc,argv){}
-    virtual size_t GetData( unsigned char *, size_t maxsize);
+    virtual size_t GetData(unsigned char *, size_t maxsize,
+                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
     void PutCommand( unsigned char *, size_t maxsize);
 };
 

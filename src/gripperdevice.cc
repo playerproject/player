@@ -35,11 +35,17 @@ CGripperDevice::~CGripperDevice()
   ((player_p2os_cmd_t*)device_command)->gripper.arg = 0x00;
 }
 
-size_t CGripperDevice::GetData( unsigned char *dest, size_t maxsize ) 
+size_t CGripperDevice::GetData(unsigned char *dest, size_t maxsize,
+                 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
+  Lock();
   *((player_gripper_data_t*)dest) = 
           ((player_p2os_data_t*)device_data)->gripper;
-  return( sizeof( player_gripper_data_t) );
+  *timestamp_sec = data_timestamp_sec;
+  *timestamp_usec = data_timestamp_usec;
+  Unlock();
+
+  return(sizeof( player_gripper_data_t));
 }
 
 void CGripperDevice::PutCommand(unsigned char *src, size_t size) 

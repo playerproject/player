@@ -36,6 +36,7 @@
 // keep a linked list of these
 class CDeviceSubscription
 {
+
   public:
     unsigned short code;
     unsigned short index;

@@ -87,7 +87,8 @@ class CVisionDevice:public CDevice
     int Setup();
     int Shutdown();
 
-    size_t GetData(unsigned char *, size_t maxsize);
+    size_t GetData(unsigned char *, size_t maxsize,
+                   uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
 #endif

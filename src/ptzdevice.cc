@@ -88,7 +88,6 @@ int
 CPtzDevice::Setup()
 {
   struct termios term;
-  pthread_attr_t attr;
   short pan,tilt;
   int flags;
 
@@ -162,9 +161,7 @@ CPtzDevice::Setup()
   puts("Done.");
 
   // start the thread to talk with the camera
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  pthread_create( &thread, &attr, &RunPtzThread, this );
+  pthread_create( &thread, NULL, &RunPtzThread, this );
 
   return(0);
 }
@@ -177,6 +174,7 @@ CPtzDevice::~CPtzDevice()
 int 
 CPtzDevice::Shutdown()
 {
+  void* dummy;
   player_ptz_cmd_t cmd;
 
   if(ptz_fd == -1)
@@ -193,6 +191,8 @@ CPtzDevice::Shutdown()
     perror("CPtzDevice::Shutdown():close():");
   ptz_fd = -1;
   pthread_cancel( thread );
+  if(pthread_join(thread,&dummy))
+    perror("CPtzDevice::Shutdown():pthread_join()");
   puts("PTZ camera has been shutdown");
   return(0);
 }
@@ -594,6 +594,7 @@ void *RunPtzThread(void *ptzdevice)
   CPtzDevice *zd = (CPtzDevice *) ptzdevice;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
+
 #ifdef PLAYER_LINUX
   sigblock(SIGINT);
   sigblock(SIGALRM);
@@ -661,7 +662,7 @@ void *RunPtzThread(void *ptzdevice)
 
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    zd->PutData((unsigned char*)&data, sizeof(player_ptz_data_t));
+    zd->PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
 
     newpantilt = false;
     newzoom = false;

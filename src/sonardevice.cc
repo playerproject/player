@@ -29,9 +29,15 @@
 #include <stdio.h>
 #include <netinet/in.h>
 
-size_t CSonarDevice::GetData( unsigned char *dest, size_t maxsize)
+size_t CSonarDevice::GetData(unsigned char *dest, size_t maxsize,
+                             uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
+  Lock();
   *((player_sonar_data_t*)dest) = ((player_p2os_data_t*)device_data)->sonar;
+  *timestamp_sec = data_timestamp_sec;
+  *timestamp_usec = data_timestamp_usec;
+  Unlock();
+
   return( sizeof(player_sonar_data_t) );
 }
 
