@@ -139,7 +139,7 @@
 #define PLAYER_CAMERA_STRING          "camera"
 
 /* The maximum number of devices the server will support. */
-#define PLAYER_MAX_DEVICES 64
+#define PLAYER_MAX_DEVICES 256
 
 /* the largest possible message that the server will currently send
  * or receive */

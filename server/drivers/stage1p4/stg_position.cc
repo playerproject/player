@@ -91,7 +91,7 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
     {      
       stg_pose_t* pose = (stg_pose_t*)prop->data;
 
-      PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
+      //PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
 
       player_position_data_t position_data;
       memset( &position_data, 0, sizeof(position_data) );
@@ -100,7 +100,7 @@ size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
       position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
       position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
 
-      printf( "getdata called at %lu ms\n", stage_client->stagetime );
+      //printf( "getdata called at %lu ms\n", stage_client->stagetime );
       
       // publish this data
       CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); 
