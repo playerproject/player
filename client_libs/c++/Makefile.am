@@ -9,6 +9,8 @@ libplayerclient_la_LIBADD = $(srcdir)/../c/playercclient.lo $(top_builddir)/repl
 
 libplayerclient_la_DEPENDENCIES = $(srcdir)/../c/playercclient.lo  $(srcdir)/../libplayerpacket/playerpacket.lo 
 
+libplayerclient_la_LDFLAGS =   -version-info 1:0:0
+
 libplayerclient_la_SOURCES =   commsproxy.cc \
                               clientproxy.cc \
                               descartesproxy.cc \
