@@ -85,16 +85,14 @@ class BumperSafe : public Driver
     // Underlying devices
     int SetupPosition();
     int ShutdownPosition();
-	//int GetPosition();
+    //int GetPosition();
 	
     int SetupBumper();
     int ShutdownBumper();
-	//int GetBumper();
-
+    //int GetBumper();
 
     // Main function for device thread.
     virtual void Main();
-
 
   private:
     // Write the pose data (the data going back to the client).
@@ -105,10 +103,10 @@ class BumperSafe : public Driver
 
     // Check for new commands from server
     //void GetCommand();
-    
-	// Process incoming messages from clients 
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
-	
+
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
     // state info
     bool Blocked;
     player_bumper_data_t CurrentState;
@@ -121,17 +119,16 @@ class BumperSafe : public Driver
     player_position_cmd_t cmd;
     player_position_data_t data;
     double position_time;
-	bool position_subscribed;
+    bool position_subscribed;
 
     // Bumper device info
     Driver *bumper;
     player_device_id_t bumper_id;
     double bumper_time;
     player_bumper_geom_t bumper_geom;
-	bool bumper_subscribed;
+    bool bumper_subscribed;
 	
-	ClientDataInternal BaseClient;
-		
+    ClientDataInternal BaseClient;
 };
 
 // Initialization function
@@ -332,11 +329,11 @@ int BumperSafe::ShutdownPosition()
 // Shutdown the underlying position device.
 void BumperSafe::PutPositionCommand() 
 {
-	player_position_cmd_t NullCmd = {0};
-	if (Blocked)
-		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&NullCmd, sizeof(cmd));
-	else
-		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&cmd, sizeof(cmd));
+  player_position_cmd_t NullCmd = {0};
+  if (Blocked)
+    BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&NullCmd, sizeof(cmd));
+  else
+    BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&cmd, sizeof(cmd));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

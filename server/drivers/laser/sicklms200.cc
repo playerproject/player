@@ -165,9 +165,11 @@ class SickLMS200 : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
-
-
+    int ProcessMessage(ClientData * client, 
+		       player_msghdr * hdr, 
+		       uint8_t * data, 
+		       uint8_t * resp_data, 
+		       int * resp_len);
   private:
 
     // Main function for device thread.
@@ -579,7 +581,7 @@ void SickLMS200::Main()
     return;
   }
 
-  while (true)
+  while(true)
   {
     // test if we are supposed to cancel
     pthread_testcancel();

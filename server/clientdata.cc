@@ -34,18 +34,17 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <stdlib.h>
-
 #include <assert.h>
-#include <error.h>
-#include <device.h>
-#include <devicetable.h>
 
-#include <deviceregistry.h>
-#include <clientdata.h>
-#include <clientmanager.h>
-
-#include <playertime.h>
+#include "error.h"
+#include "device.h"
+#include "devicetable.h"
+#include "deviceregistry.h"
+#include "clientdata.h"
+#include "clientmanager.h"
+#include "playertime.h"
 #include "message.h"
+
 extern PlayerTime* GlobalTime;
 
 //extern DeviceTable* deviceTable;
@@ -53,43 +52,24 @@ extern ClientData* clients[];
 extern ClientManager* clientmanager;
 extern char playerversion[];
 
-extern int global_playerport; // used to generate useful output & debug
-// true if we're connecting to Stage instead of a real robot
-extern bool use_stage;
-
 void PrintHeader(player_msghdr_t hdr);
 
 ClientData::ClientData(char* key, int myport)
 {
   requested = NULL;
   numsubs = 0;
-  socket = 0;
   mode = PLAYER_DATAMODE_PUSH_NEW;
   frequency = 10;
 
   port = myport;
+  socket = -1;
 
   assert(readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
   assert(replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
-  assert(writebuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
-
-  leftover_size=0;
-  //totalwritebuffersize = PLAYER_MAX_MESSAGE_SIZE;
-  // totalwritebuffer is being malloc()ed, instead of new[]ed, so that it can 
-  // be realloc()ed later on (for some reason, C++ does not provide a builtin 
-  // equivalent of realloc()).  for consistency, we should probably pick either
-  // new[] or malloc() throughout this file.
-  //assert(totalwritebuffer = (unsigned char*)malloc(totalwritebuffersize));
-  //memset(totalwritebuffer,0,totalwritebuffersize);
 
   memset((char*)readbuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
-  memset((char*)writebuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
   memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
-  //memset((char*)totalwritebuffer, 0, totalwritebuffersize);
   memset((char*)&hdrbuffer, 0, sizeof(player_msghdr_t));
-
-  readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-  readcnt = 0;
 
   last_write = 0.0;
 
@@ -145,16 +125,11 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                                 size_t payload_size) 
 {
   unsigned short requesttype = 0;
-//  bool devlistrequest=false;
-//  bool driverinforequest=false;
-//  bool nameservicerequest=false;
-//  bool devicerequest=false;
   Driver* driver;
   player_device_req_t req;
   player_device_resp_t resp;
   player_device_datamode_req_t datamode;
   player_device_datafreq_req_t datafreq;
-//  player_msghdr_t reply_hdr;
   size_t replysize = 0;
   struct timeval curr;
 
@@ -163,28 +138,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
   // clean the buffer every time for all-day freshness
   memset((char*)replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
-
-  // debug output; leave it here
-#if 0
-  printf("type:%u subtype:%u device:%u index:%u\n", 
-         hdr.type,hdr.subtype,hdr.device,hdr.device_index);
-  printf("Request(%d):",payload_size);
-  /*
-  for(unsigned int i=0;i<payload_size;i++)
-    printf("%c",payload[i]);
-  printf("\t");
-  */
-
-  for(unsigned int i=0;i<payload_size;i++)
-    printf("%x ",payload[i]);
-  puts("");
-  if(hdr.device == PLAYER_POSITION_CODE)
-  {
-    player_position_cmd_t* cmd = (player_position_cmd_t*)payload;
-    printf("speeds: %d %d\n", 
-           (int)ntohl(cmd->xspeed), (int)ntohl(cmd->yawspeed));
-  }
-#endif
 
   if(auth_pending)
   {
@@ -215,7 +168,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       {
         // Process device list requests.
         case PLAYER_PLAYER_DEVLIST:
-          //devlistrequest = true;
           HandleListRequest((player_device_devlist_t*) payload,
                             (player_device_devlist_t*) replybuffer);
           requesttype = PLAYER_MSGTYPE_RESP_ACK;
@@ -224,7 +176,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
         // Process driver info requests.
         case PLAYER_PLAYER_DRIVERINFO:
-          //driverinforequest = true;
           HandleDriverInfoRequest((player_device_driverinfo_t*) payload,
                                   (player_device_driverinfo_t*) replybuffer);
           requesttype = PLAYER_MSGTYPE_RESP_ACK;
@@ -232,7 +183,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           break;
 
         case PLAYER_PLAYER_DEV:
-          //devicerequest = true;
           if(payload_size < sizeof(player_device_req_t))
           {
             PLAYER_WARN1("got small player_device_req_t: %d", payload_size);
@@ -351,7 +301,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           requesttype = PLAYER_MSGTYPE_RESP_NACK;
           break;
         case PLAYER_PLAYER_NAMESERVICE:
-//          nameservicerequest = true;
           HandleNameserviceRequest((player_device_nameservice_req_t*)payload,
                                    (player_device_nameservice_req_t*)replybuffer);
           requesttype = PLAYER_MSGTYPE_RESP_ACK;
@@ -370,15 +319,17 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     {
       // it's for another device.  hand it off.
       // make sure we've opened this one, in any mode
-      if((CheckOpenPermissions(id) && !(hdr.type == PLAYER_MSGTYPE_CMD)) || CheckWritePermissions(id))
+      if((CheckOpenPermissions(id) && 
+          !(hdr.type == PLAYER_MSGTYPE_CMD)) || 
+         CheckWritePermissions(id))
       {
         // pass the config request on the proper device
         // make sure we've got a non-NULL pointer
         if((driver = deviceTable->GetDriver(id)))
         {
-          // create the 'message' class and pass onto driver
+          // create a message and enqueue it to driver
           Message New(hdr,payload,hdr.size, this);
-          driver->InQueue.AddMessage(New);
+          driver->InQueue.Push(New);
           requesttype = 0;
         }
         else
@@ -390,7 +341,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       }
       else
       {
-      	PrintHeader(hdr);
         PLAYER_WARN2("No permissions to configure %x:%x",
                      id.code,id.index);
         requesttype = PLAYER_MSGTYPE_RESP_ERR;
@@ -405,10 +355,10 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       PLAYER_ERROR("GetTime() failed!!!!");
 
     PutMsg(requesttype, hdr.subtype, hdr.device, hdr.device_index, 
-           curr.tv_sec, curr.tv_usec,replysize,replybuffer);
+           &curr,replysize,replybuffer);
 
     // write data to the client immediately
-    if(Write() < 0)
+    if(this->Write() < 0)
       return(-1);
   }
   return(0);
@@ -416,45 +366,29 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
 
 ClientData::~ClientData() 
 {
-  RemoveRequests();
+  this->RemoveRequests();
 
-  if(socket >= 0) 
+  if(this->socket >= 0) 
   {
-    close(socket);
+    close(this->socket);
     printf("** Player [port %d] killing client on socket %d **\n", 
-           port, socket);
+           this->port, this->socket);
   }
 
-  if(readbuffer)
-    delete[] readbuffer;
+  if(this->readbuffer)
+    delete[] this->readbuffer;
 
-  if(writebuffer)
-    delete[] writebuffer;
-
-//  if(totalwritebuffer)
-//    free(totalwritebuffer);
-
-  if(replybuffer)
-    delete[] replybuffer;
+  if(this->replybuffer)
+    delete[] this->replybuffer;
 }
 
 void ClientData::RemoveRequests() 
 {
-  CDeviceSubscription* thissub = requested;
-  CDeviceSubscription* tmpsub;
+  DeviceSubscription* thissub = requested;
+  DeviceSubscription* tmpsub;
 
   while(thissub)
   {
-  	// Remove...this should be done in the driver
-    // Stop position devices if we're the last one to use it (safety)
-/*    if(((thissub->access != PLAYER_CLOSE_MODE) &&
-        (thissub->access != PLAYER_ERROR_MODE)) && 
-       (thissub->id.code == PLAYER_POSITION_CODE) &&
-       (((thissub->access == PLAYER_ALL_MODE) &&
-         (thissub->driver->subscriptions == 2)) ||
-        (thissub->driver->subscriptions == 1)))
-      MotorStop();*/
-    
     switch(thissub->access) 
     {
       case PLAYER_ALL_MODE:
@@ -557,8 +491,8 @@ void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
 unsigned char 
 ClientData::UpdateRequested(player_device_req_t req)
 {
-  CDeviceSubscription* thissub;
-  CDeviceSubscription* prevsub;
+  DeviceSubscription* thissub;
+  DeviceSubscription* prevsub;
 
   // find place to put the update
   for(thissub=requested,prevsub=NULL;thissub;
@@ -570,14 +504,11 @@ ClientData::UpdateRequested(player_device_req_t req)
 
   if(!thissub)
   {
-    thissub = new CDeviceSubscription;
+    thissub = new DeviceSubscription;
     thissub->id.code = req.code;
     thissub->id.index = req.index;
     thissub->id.port = port;
     thissub->driver = deviceTable->GetDriver(thissub->id);
-
-    thissub->last_sec = 0; // init the freshness timer
-    thissub->last_usec = 0;
 
     thissub->access = PLAYER_ERROR_MODE;
 
@@ -668,7 +599,9 @@ unsigned char
 ClientData::FindPermission(player_device_id_t id)
 {
   unsigned char tmpaccess;
-  for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
+  for(DeviceSubscription* thisub=requested;
+      thisub;
+      thisub=thisub->next)
   {
     if((thisub->id.code == id.code) && (thisub->id.index == id.index))
     {
@@ -707,109 +640,6 @@ bool ClientData::CheckWritePermissions(player_device_id_t id)
   return(permission);
 }
 
-// Loop through all devices currently open for this client, get data from
-// them, and assemble the results into totalwritebuffer.  Returns the
-// total size of the data that was written into that buffer.
-/*size_t
-ClientData::BuildMsg(bool include_sync)
-{
-  size_t size, totalsize=0;
-  Driver* driver;
-  player_msghdr_t hdr;
-  struct timeval curr;
-  struct timeval datatime;
-  
-  hdr.stx = htons(PLAYER_STXX);
-  hdr.type = htons(PLAYER_MSGTYPE_DATA);
-  for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
-  {
-    // does the client want data from this device?
-    if(thisub->access==PLAYER_ALL_MODE || thisub->access==PLAYER_READ_MODE) 
-    {
-      char access = deviceTable->GetDeviceAccess(thisub->id);
-
-      if((access == PLAYER_ALL_MODE) || (access == PLAYER_READ_MODE)) 
-      {
-        // make sure we've got a good pointer
-        if(!(driver = deviceTable->GetDriver(thisub->id)))
-        {
-          PLAYER_WARN2("found NULL pointer for device \"%x:%x\"",
-                       thisub->id.code, thisub->id.index);
-          continue;
-        }
-
-        // Prepare the header
-        hdr.device = htons(thisub->id.code);
-        hdr.device_index = htons(thisub->id.index);
-        hdr.sequence = 0;
-
-        // Get the data
-        size = driver->GetData(thisub->id,
-                               writebuffer+sizeof(hdr),
-                               PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
-                               &datatime);
-
-        hdr.timestamp_sec = htonl(datatime.tv_sec);
-        hdr.timestamp_usec = htonl(datatime.tv_usec);
-
-        // if we're in an UPDATE mode, we only want this data if it is new
-        if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
-           (mode == PLAYER_DATAMODE_PULL_NEW) ||
-           (mode == PLAYER_DATAMODE_PUSH_ASYNC))
-        {
-          // if the data has the same timestamp as last time then
-          // we don't want it, so skip it 
-          // (Byte order doesn't matter for the equality check)
-          if(hdr.timestamp_sec == thisub->last_sec && 
-             hdr.timestamp_usec == thisub->last_usec)  
-          {
-            continue;
-          }
-
-          // record the time we got data for this device
-          // keep 'em in network byte order - it doesn't matter
-          // as long as we remember to swap them for printing
-          thisub->last_sec = hdr.timestamp_sec;
-          thisub->last_usec = hdr.timestamp_usec;
-        }
-
-        hdr.size = htonl(size);
-
-        if(GlobalTime->GetTime(&curr) == -1)
-          PLAYER_ERROR("GetTime() failed!!!!");
-        hdr.time_sec = htonl(curr.tv_sec);
-        hdr.time_usec = htonl(curr.tv_usec);
-
-        memcpy(writebuffer,&hdr,sizeof(hdr));
-
-        FillWriteBuffer(writebuffer,totalsize,sizeof(hdr)+size);
-
-        totalsize += sizeof(hdr) + size;
-      }
-    }
-  }
-
-  if(include_sync)
-  {
-    // now add a zero-length SYNCH packet to the end of the buffer
-    hdr.stx = htons(PLAYER_STXX);
-    hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
-    hdr.device = htons(PLAYER_PLAYER_CODE);
-    hdr.device_index = htons(0);
-    hdr.sequence = 0;
-    hdr.size = 0;
-
-    if(GlobalTime->GetTime(&curr) == -1)
-      PLAYER_ERROR("GetTime() failed!!!!");
-    hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
-    hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
-
-
-
-  }
-}
-*/
-
 int ClientData::Subscribe(player_device_id_t id)
 {
   Driver* driver;
@@ -844,67 +674,64 @@ void ClientData::Unsubscribe(player_device_id_t id)
   }
 }
 
-void
-ClientData::PrintRequested(char* str)
+void 
+ClientData::PutMsg(uint8_t type, 
+		   uint8_t subtype, 
+		   uint16_t device, 
+		   uint16_t device_index, 
+		   struct timeval* timestamp,
+		   uint32_t size, 
+		   unsigned char * data)
 {
-  printf("%s:requested: ",str);
-  for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
-    printf("%x:%x:%d ", thissub->id.code,thissub->id.index,thissub->access);
-  puts("");
-}
+  player_msghdr hdr;
+  hdr.stx = htons(PLAYER_STXX);
+  hdr.type=type;
+  hdr.subtype=subtype;
+  hdr.device=htons(device);
+  hdr.device_index=htons(device_index);
+  hdr.timestamp_sec=htonl(timestamp->tv_sec);
+  hdr.timestamp_usec=htonl(timestamp->tv_usec);
+  hdr.size=htonl(size); // size of message data
 
-// Copy len bytes of src to totalwritebuffer+offset.  Will realloc()
-// totalwritebuffer to make room, if necessary.
-/*void 
-ClientData::FillWriteBuffer(unsigned char* src, size_t offset, size_t len)
-{
-  size_t totalsize = offset + len;
-
-  while(totalsize > totalwritebuffersize)
-  {
-    // need more memory
-    totalwritebuffersize *= 2;
-    assert(totalwritebuffer = 
-           (unsigned char*)realloc(totalwritebuffer, 
-                                   totalwritebuffersize));
-  }
-
-  memcpy(totalwritebuffer + offset, src, len);
-}*/
-
-void ClientData::PutMsg(uint8_t type, uint8_t subtype, uint16_t device, uint16_t device_index, 
-                uint32_t timestamp_sec, uint32_t timestamp_usec,
-		uint32_t size, unsigned char * data)
-{
-	player_msghdr hdr;
-	hdr.stx = htons(PLAYER_STXX);
-	hdr.type=type;
-	hdr.subtype=subtype;
-	hdr.device=htons(device);
-	hdr.device_index=htons(device_index);
-	hdr.timestamp_sec=htonl(timestamp_sec);
-	hdr.timestamp_usec=htonl(timestamp_usec);
-	hdr.size=htonl(size); // size of message data
-
-	Message New(hdr,data,size);
-	OutQueue.AddMessage(New);
+  Message New(hdr,data,size);
+  OutQueue.Push(New);
 }
 
 /*************************************************************************
  * ClientDataTCP
  *************************************************************************/
+ClientDataTCP::ClientDataTCP(char* key, int port) : ClientData(key, port) 
+{
+  this->totalwritebuffersize = PLAYER_MAX_MESSAGE_SIZE;
+  // totalwritebuffer is being malloc()ed, instead of new[]ed, so that it can 
+  // be realloc()ed later on (for some reason, C++ does not provide a builtin 
+  // equivalent of realloc()).  for consistency, we should probably pick either
+  // new[] or malloc() throughout this file.
+  assert(this->totalwritebuffer = 
+         (uint8_t*)calloc(1,this->totalwritebuffersize));
+  this->usedwritebuffersize = 0;
+  this->warned = false;
+  this->readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+  this->readcnt = 0;
+  this->leftover_size=0;
+};
+
+ClientDataTCP::~ClientDataTCP()
+{
+  if(this->totalwritebuffer)
+    free(this->totalwritebuffer);
+}
+
 int 
 ClientDataTCP::Read()
 {
   int thisreadcnt;
   bool msgready = false;
-
   char c;
 
-  switch(readstate)
+  switch(this->readstate)
   {
     case PLAYER_AWAITING_FIRST_BYTE_STX:
-      //puts("PLAYER_AWAITING_FIRST_BYTE_STX");
       readcnt = 0;
 
       if(read(socket,&c,1) <= 0)
@@ -912,51 +739,36 @@ ClientDataTCP::Read()
         if(errno == EAGAIN)
           break;
         else
-        {
-          // client must be gone. fuck 'em
-          //perror("client_reader(): read() while waiting for first "
-                 //"byte of STX");
           return(-1);
-        }
       }
-
       // This should be the high byte (we're in network byte order)
       if(c == PLAYER_STXX >> 8)
       {
         readcnt = 1;
-        readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
+        this->readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
       }
       break;
     case PLAYER_AWAITING_SECOND_BYTE_STX:
-      //puts("PLAYER_AWAITING_SECOND_BYTE_STX");
-      
       if(read(socket,&c,1) <= 0)
       {
         if(errno == EAGAIN)
           break;
         else
-        {
-          // client must be gone. fuck 'em
-          //perror("client_reader(): read() while waiting for second "
-                 //"byte of STX");
           return(-1);
-        }
       }
       if(c == (char)(PLAYER_STXX & 0x00FF))
       {
         hdrbuffer.stx = PLAYER_STXX;
         readcnt += 1;
-        readstate = PLAYER_AWAITING_REST_OF_HEADER;
+        this->readstate = PLAYER_AWAITING_REST_OF_HEADER;
       }
       else
       {
         readcnt = 0;
-        readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+        this->readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
       }
       break;
     case PLAYER_AWAITING_REST_OF_HEADER:
-      //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
-             //readcnt,sizeof(player_msghdr_t));
       /* get the rest of the header */
       if((thisreadcnt = read(socket, (char*)(&hdrbuffer)+readcnt, 
                              sizeof(player_msghdr_t)-readcnt)) <= 0)
@@ -964,10 +776,7 @@ ClientDataTCP::Read()
         if(errno == EAGAIN)
           break;
         else
-        {
-          //perror("client_reader(): read() while reading header");
           return(-1);
-        }
       }
       readcnt += thisreadcnt;
       if(readcnt == sizeof(player_msghdr_t))
@@ -991,24 +800,22 @@ ClientDataTCP::Read()
           PLAYER_WARN1("client's message is too big (%d bytes). Ignoring",
                  hdrbuffer.size);
           readcnt = 0;
-          readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+          this->readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
         }
         else if(hdrbuffer.size == 0)
         {
           readcnt = 0;
-          readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+          this->readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
           msgready = true;
         }
         else
         {
           readcnt = 0;
-          readstate = PLAYER_AWAITING_REST_OF_BODY;
+          this->readstate = PLAYER_AWAITING_REST_OF_BODY;
         }
       }
       break;
     case PLAYER_AWAITING_REST_OF_BODY:
-  
-      //printf("PLAYER_AWAITING_REST_OF_BODY: %d bytes read so far\n",readcnt);
       /* get the payload */
       if((thisreadcnt = read(socket,readbuffer+readcnt,
                              hdrbuffer.size-readcnt))<=0)
@@ -1016,32 +823,23 @@ ClientDataTCP::Read()
         if(!errno || errno == EAGAIN)
           break;
         else
-        {
-          //perror("ClientData::Read(): read() errored");
           return(-1);
-        }
       }
       readcnt += thisreadcnt;
       if(readcnt == hdrbuffer.size)
       {
         readcnt = 0;
-        readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+        this->readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
         msgready = true;
       }
-      break;
-    case PLAYER_READ_ERROR:
-      PLAYER_ERROR("in an error read state!");
       break;
     default:
       PLAYER_ERROR("in an unknown read state!");
       break;
   }
- 
 
   if(msgready)
-  {
-    return(HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size));
-  }
+    return(HandleRequests(hdrbuffer,readbuffer,hdrbuffer.size));
   else
     return(0);
 }
@@ -1055,65 +853,69 @@ ClientDataTCP::Read()
 int 
 ClientDataTCP::Write()
 {
-	//printf("Write called: usedwritebuffersize=%d\n",usedwritebuffersize);
-	if (usedwritebuffersize==0)
-	{
-		// Loop through waiting messages and write them to buffer
-		MessageQueueElement * el;
-		while ((el=OutQueue.Pop()))
-		{
-			size_t totalsize = usedwritebuffersize + el->msg.GetSize();
+  int byteswritten;
 
-			while(totalsize > totalwritebuffersize)
-			{
-				// need more memory
-				totalwritebuffersize *= 2;
-				totalwritebuffer = (unsigned char*)realloc(totalwritebuffer, totalwritebuffersize);
-				assert(totalwritebuffer);
-			}
+  if(this->usedwritebuffersize==0)
+  {
+    // Loop through waiting messages and write them to buffer
+    MessageQueueElement * el;
+    while((el=this->OutQueue.Pop()))
+    {
+      size_t totalsize = this->usedwritebuffersize + el->msg.GetSize();
 
-  			memcpy(totalwritebuffer + usedwritebuffersize, el->msg.GetData(), el->msg.GetSize());	
-			usedwritebuffersize += el->msg.GetSize();
-
-			delete el;
-		}	
-	
-	}
-
-	int byteswritten;
-	// if we have any data then
-	if (usedwritebuffersize > 0)
-	{
-		//printf("Write data to client\n");
-    	if((byteswritten = ::write(socket, totalwritebuffer, usedwritebuffersize)) < 0) 
-    	{
-      		if(errno == EAGAIN)
-				byteswritten = 0;
-			else
-				return errno;
-		}
-		usedwritebuffersize -= byteswritten;	
-	}
-	
-	static bool warned=false;
-
-	// data remaining from previous write
-	if (usedwritebuffersize)
-	{
-      // didn't get all the data out; move the remaining data to the front of
-      // the buffer and record how much is left.
-      memmove(totalwritebuffer, 
-              totalwritebuffer+byteswritten, 
-              usedwritebuffersize);
-
-      if(!warned)
+      while(totalsize > this->totalwritebuffersize)
       {
-        PLAYER_WARN1("%d bytes leftover on write() to client", usedwritebuffersize);
-        warned = true;
+	// need more memory
+	this->totalwritebuffersize *= 2;
+	assert(this->totalwritebuffer = 
+               (unsigned char*)realloc(this->totalwritebuffer, 
+                                       this->totalwritebuffersize));
       }
+
+      memcpy(this->totalwritebuffer + this->usedwritebuffersize, 
+	     el->msg.GetData(), el->msg.GetSize());	
+      this->usedwritebuffersize += el->msg.GetSize();
+
+      delete el;
+    }	
+  }
+
+  // if we have any data then write it
+  if(this->usedwritebuffersize > 0)
+  {
+    if((byteswritten = ::write(this->socket, 
+			       this->totalwritebuffer, 
+			       this->usedwritebuffersize)) < 0) 
+    {
+      // EAGAIN is ok; just means the send/receive buffers are filling up
+      if(errno == EAGAIN)
+	byteswritten = 0;
+      else
+	return(-1);
     }
-  
-	return(usedwritebuffersize);
+    this->usedwritebuffersize -= byteswritten;	
+  }
+
+  // data remaining from previous write
+  if(this->usedwritebuffersize)
+  {
+    // didn't get all the data out; move the remaining data to the front of
+    // the buffer and record how much is left.
+    memmove(this->totalwritebuffer, 
+	    this->totalwritebuffer+byteswritten, 
+     	    this->usedwritebuffersize);
+
+    if(!this->warned)
+    {
+      PLAYER_WARN1("%d bytes leftover on write() to client", 
+                   usedwritebuffersize);
+      this->warned = true;
+    }
+  }
+  else
+    this->warned = false;
+
+  return(0);
 }
 
 /*************************************************************************
@@ -1165,36 +967,36 @@ ClientDataUDP::Read()
 int 
 ClientDataUDP::Write()
 {
-	// Loop through waiting messages and write them to buffer
-	MessageQueueElement * el;
-	while ((el=OutQueue.Pop()))
-	{
-		int byteswritten;
-  
-		// Assume that all data can be written in a single datagram.  Need to
-		// make this smarter later.
-		if((byteswritten = sendto(socket, el->msg.GetData(), el->msg.GetSize(), 0, 
-                            (struct sockaddr*)&clientaddr, 
-                            (socklen_t)clientaddr_len)) < 0)
-  		{
-    		PLAYER_ERROR1("%s", strerror(errno));
-    		return(-1);
-		}
-		delete el;
-	}
+  // Loop through waiting messages and write them to buffer
+  MessageQueueElement * el;
+  while ((el=OutQueue.Pop()))
+  {
+    int byteswritten;
 
-	return(0);
+    // Assume that all data can be written in a single datagram.  Need to
+    // make this smarter later.
+    if((byteswritten = sendto(socket, el->msg.GetData(), el->msg.GetSize(), 0, 
+                              (struct sockaddr*)&clientaddr, 
+                              (socklen_t)clientaddr_len)) < 0)
+    {
+      PLAYER_ERROR1("%s", strerror(errno));
+      return(-1);
+    }
+    delete el;
+  }
+
+  return(0);
 }
-
 
 /*************************************************************************
  * ClientDataInternal
  *************************************************************************/
-ClientDataInternal::ClientDataInternal(Driver * _driver, char * key, int port) : ClientData(key, port) 
+ClientDataInternal::ClientDataInternal(Driver * _driver, 
+                                       char * key, 
+                                       int port) : ClientData(key, port) 
 {
-	socket=0;
-	assert(_driver); 
-	driver=_driver;
+  assert(_driver); 
+  driver=_driver;
 }
 
 ClientDataInternal::~ClientDataInternal()
@@ -1204,153 +1006,157 @@ ClientDataInternal::~ClientDataInternal()
 int 
 ClientDataInternal::Read()
 {
-	//printf("client internal read called\n");
+  // this is a 'psuedo read' basically we take messages from the InQueue and
+  // Dispatch them to the drivers
+  MessageQueueElement * el;
+  while ((el=InQueue.Pop()))
+    driver->InQueue.Push(el->msg);
 
-	// this is a 'psuedo read' basically we take messages from the InQueue and
-	// Dispatch them to the drivers
-	MessageQueueElement * el;
-	while ((el=InQueue.Pop()))
-	{
-		driver->InQueue.AddMessage(el->msg);
-   	}
-
-	return(0);
+  return(0);
 }
 
 int 
 ClientDataInternal::Write()
 {
-	//printf("client internal write called\n");
-	// This doesnt actually need to do anything as any messages set to this client
-	// will just be queued immediately
-	MessageQueueElement * el;
-	while ((el=OutQueue.Pop()))
-	{
-		player_msghdr * hdr = el->msg.GetHeader();
-		uint8_t * data = el->msg.GetPayload();
-		if (HandleRequests(*hdr, data, hdr->size) < 0)
-			return -1;
-	}	
-	return(0);	
+  // This doesnt actually need to do anything as any messages set to 
+  // this client will just be queued immediately
+  MessageQueueElement * el;
+  while ((el=OutQueue.Pop()))
+  {
+    player_msghdr * hdr = el->msg.GetHeader();
+    uint8_t * data = el->msg.GetPayload();
+    if(HandleRequests(*hdr, data, hdr->size) < 0)
+      return -1;
+  }	
+  return(0);	
 }
 
 
 // Called by client manager for messages heading for client
-void ClientDataInternal::PutMsg(uint8_t type, uint8_t subtype, uint16_t device, uint16_t device_index, 
-                uint32_t timestamp_sec, uint32_t timestamp_usec,
-		uint32_t size, unsigned char * data)
+void 
+ClientDataInternal::PutMsg(uint8_t type, 
+                           uint8_t subtype, 
+                           uint16_t device, 
+                           uint16_t device_index, 
+                           struct timeval* timestamp,
+                           uint32_t size, 
+                           unsigned char * data)
 {
-	//printf("client internal putmsg called\n");
-	player_msghdr hdr;
-	hdr.stx = PLAYER_STXX;
-	hdr.type=(type);
-	hdr.subtype=(subtype);
-	hdr.device=(device);
-	hdr.device_index=(device_index);
-	hdr.timestamp_sec=(timestamp_sec);
-	hdr.timestamp_usec=(timestamp_usec);
-	hdr.size=(size); // size of message data
+  player_msghdr hdr;
+  hdr.stx = PLAYER_STXX;
+  hdr.type = type;
+  hdr.subtype = subtype;
+  hdr.device = device;
+  hdr.device_index = device_index;
+  hdr.timestamp_sec = timestamp->tv_sec;
+  hdr.timestamp_usec = timestamp->tv_usec;
+  hdr.size = size; // size of message data
 
-	Message New(hdr,data,size,this);	
-	assert(*New.RefCount);
-	InQueue.AddMessage(New);
+  Message New(hdr,data,size,this);	
+  assert(*New.RefCount);
+  InQueue.Push(New);
 }
 
-// called by client driver to send a message to another driver
-int ClientDataInternal::SendMsg(player_device_id_t device, uint8_t type, uint8_t subtype, 
-                uint8_t * data, size_t size,struct timeval* timestamp)
+// Called by client driver to send a message to another driver
+int 
+ClientDataInternal::SendMsg(player_device_id_t device, 
+                            uint8_t type, 
+                            uint8_t subtype, 
+                            uint8_t * data, 
+                            size_t size,
+                            struct timeval* timestamp)
 {
-	
-	struct timeval ts;
-	if (timestamp == NULL)
-		GlobalTime->GetTime(&ts);
-	else
-		ts = *timestamp;
-	
+  struct timeval ts;
+  if (timestamp == NULL)
+    GlobalTime->GetTime(&ts);
+  else
+    ts = *timestamp;
 
-	player_msghdr hdr;
-	hdr.stx = PLAYER_STXX;
-	hdr.type=(type);
-	hdr.subtype=(subtype);
-	hdr.device=(device.code);
-	hdr.device_index=(device.index);
-	hdr.timestamp_sec=(ts.tv_sec);
-	hdr.timestamp_usec=(ts.tv_usec);
-	hdr.size=(size); // size of message data
+  player_msghdr hdr;
+  hdr.stx = PLAYER_STXX;
+  hdr.type = type;
+  hdr.subtype = subtype;
+  hdr.device = device.code;
+  hdr.device_index = device.index;
+  hdr.timestamp_sec = ts.tv_sec;
+  hdr.timestamp_usec = ts.tv_usec;
+  hdr.size = size; // size of message data
 
-	Message New(hdr,data,size,this);
-	OutQueue.AddMessage(New);
-	
-	return 0;
+  Message New(hdr,data,size,this);
+  OutQueue.Push(New);
+
+  return 0;
 }
 
-int ClientDataInternal::Subscribe(player_device_id_t device, char access)
+int 
+ClientDataInternal::Subscribe(player_device_id_t device, char access)
 {
-	player_device_req_t req;
+  player_device_req_t req;
 
-	player_msghdr hdr;
-	hdr.stx = PLAYER_STXX;
-	hdr.type=PLAYER_MSGTYPE_REQ;
-	hdr.subtype=PLAYER_PLAYER_DEV;
-	hdr.device=PLAYER_PLAYER_CODE;
-	hdr.device_index=0;
-	hdr.timestamp_sec=0;
-	hdr.timestamp_usec=0;
-	hdr.size=sizeof(req); // size of message data
+  player_msghdr hdr;
+  hdr.stx = PLAYER_STXX;
+  hdr.type = PLAYER_MSGTYPE_REQ;
+  hdr.subtype = PLAYER_PLAYER_DEV;
+  hdr.device = PLAYER_PLAYER_CODE;
+  hdr.device_index = 0;
+  hdr.timestamp_sec = 0;
+  hdr.timestamp_usec = 0;
+  hdr.size = sizeof(req); // size of message data
 
-//	req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-	req.code = htons(device.code);
-	req.index = htons(device.index);
-	req.access = access;
-	
-	if (HandleRequests(hdr, (unsigned char *) &req, hdr.size) < 0)
-		return -1;
-	return 0;
+  //	req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  req.code = htons(device.code);
+  req.index = htons(device.index);
+  req.access = access;
 
+  if (HandleRequests(hdr, (unsigned char *) &req, hdr.size) < 0)
+    return -1;
+  return 0;
 }
 
-int ClientDataInternal::Unsubscribe(player_device_id_t device)
+int
+ClientDataInternal::Unsubscribe(player_device_id_t device)
 {
-	player_device_req_t req;
+  player_device_req_t req;
 
-	player_msghdr hdr;
-	hdr.stx = PLAYER_STXX;
-	hdr.type=PLAYER_MSGTYPE_REQ;
-	hdr.subtype = PLAYER_PLAYER_DEV;
-	hdr.device=PLAYER_PLAYER_CODE;
-	hdr.device_index=0;
-	hdr.timestamp_sec=0;
-	hdr.timestamp_usec=0;
-	hdr.size=sizeof(req); // size of message data
+  player_msghdr hdr;
+  hdr.stx = PLAYER_STXX;
+  hdr.type = PLAYER_MSGTYPE_REQ;
+  hdr.subtype = PLAYER_PLAYER_DEV;
+  hdr.device = PLAYER_PLAYER_CODE;
+  hdr.device_index = 0;
+  hdr.timestamp_sec = 0;
+  hdr.timestamp_usec = 0;
+  hdr.size = sizeof(req); // size of message data
 
-//	req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-	req.code = htons(device.code);
-	req.index = htons(device.index);
-	req.access = 'c';
-	
-	if (HandleRequests(hdr, (unsigned char *) &req, hdr.size) < 0)
-		return -1;
-	return 0;
+  //	req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  req.code = htons(device.code);
+  req.index = htons(device.index);
+  req.access = 'c';
+
+  if (HandleRequests(hdr, (unsigned char *) &req, hdr.size) < 0)
+    return -1;
+  return 0;
 }
 
-int ClientDataInternal::SetDataMode(uint8_t datamode)
+int
+ClientDataInternal::SetDataMode(uint8_t datamode)
 {
-	player_device_datamode_req req;
+  player_device_datamode_req req;
 
-	player_msghdr hdr;
-	hdr.stx = PLAYER_STXX;
-	hdr.type=PLAYER_MSGTYPE_REQ;
-	hdr.subtype=PLAYER_PLAYER_DATAMODE;
-	hdr.device=PLAYER_PLAYER_CODE;
-	hdr.device_index=0;
-	hdr.timestamp_sec=0;
-	hdr.timestamp_usec=0;
-	hdr.size=sizeof(req); // size of message data
+  player_msghdr hdr;
+  hdr.stx = PLAYER_STXX;
+  hdr.type = PLAYER_MSGTYPE_REQ;
+  hdr.subtype = PLAYER_PLAYER_DATAMODE;
+  hdr.device = PLAYER_PLAYER_CODE;
+  hdr.device_index = 0;
+  hdr.timestamp_sec = 0;
+  hdr.timestamp_usec = 0;
+  hdr.size = sizeof(req); // size of message data
 
-//	req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
-	req.mode = datamode;
-	
-	if (HandleRequests(hdr, (unsigned char *) &req, hdr.size) < 0)
-		return -1;
-	return 0;
+  //	req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
+  req.mode = datamode;
+
+  if (HandleRequests(hdr, (unsigned char *) &req, hdr.size) < 0)
+    return -1;
+  return 0;
 }

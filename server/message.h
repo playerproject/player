@@ -31,6 +31,8 @@
 #include <player.h>
 #include <pthread.h>
 
+class ClientData;
+
 /**
 The message class provides reference counting for a message that is 
 to be delivered to several clients. This should save some data copying
@@ -45,77 +47,105 @@ which will take header, data and target client(can be set to all subscribed).
 This function will then create the message object and put it on the 
 appropriate client queue/queues
 */
-class ClientData;
-
 class Message
 {
   public:
-    /// create a NULL message
+    /// Create a NULL message.
     Message(); 
-    /// create a new message
-    Message(const struct player_msghdr & Header, const unsigned char * data,unsigned int data_size, ClientData * client = NULL); 
-    /// create raw message
-    //Message(const unsigned char * data,unsigned int data_size, ClientData * client = NULL);
-    /// copy pointers from existing message and increment refcounts
+    /// Create a new message.
+    Message(const struct player_msghdr & Header, 
+            const unsigned char * data,
+            unsigned int data_size, 
+            ClientData * client = NULL); 
+
+    /// Copy pointers from existing message and increment refcount.
     Message(const Message & rhs); 
-    /// destroy message, dec ref counts and delete data if ref count == 0
+
+    /// Destroy message, dec ref counts and delete data if ref count == 0
     ~Message(); 
 
-    /// GetData from message
+    /// GetData from message.
     unsigned char * GetData() {return Data;};
-    /// Get pointer to header
+    /// Get pointer to header.
     player_msghdr_t * GetHeader() {return reinterpret_cast<player_msghdr_t *> (Data);};
-    /// Get pointer to payload
+    /// Get pointer to payload.
     uint8_t * GetPayload() {return (&Data[sizeof(player_msghdr_t)]);};
-    /// Get Payload size
+    /// Get Payload size.
     size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
 
-    /// Size of message data
+    /// Size of message data.
     unsigned int GetSize() {return Size;};
 
-    ClientData * Client;
+    /// ???
+    ClientData* Client;
 
+    /// Reference count.
     unsigned int * RefCount;
   private:
+    /// Pointer to the message data.
     uint8_t * Data;
+    /// Length (in bytes) of Data.
     unsigned int Size;
+    /// Used to lock access to Data.
     pthread_mutex_t * Lock;
 };
 
+/**
+ This class is a helper for maintaining doubly-linked queues of Messages.
+*/
 class MessageQueueElement
 {
   public:
+    /// Create a queue element with NULL prev and next pointers.
     MessageQueueElement();
+    /// Create a queue element with prev pointing to Parent and next
+    /// pointing to Parent.next. I.e., insert Msg after Parent.
     MessageQueueElement(MessageQueueElement & Parent, Message & Msg);
+    /// Destroy a queue element.
     ~MessageQueueElement();
 
+    /// The message stored in this queue element.
     Message msg;
   private:
+    /// Pointer to previous queue element.
     MessageQueueElement * prev;
+    /// Pointer to next queue element.
     MessageQueueElement * next;
 
     friend class MessageQueue;
 };
 
+/**
+ A doubly-linked queue of messages.
+*/
 class MessageQueue
 {
   public:
+    /// Create an empty message queue.
     MessageQueue();
+    /// Destroy a message queue.
     ~MessageQueue();
-
-    /// should we replace messages with newer ones from same device
+    /// Should we replace messages with newer ones from same device?
     bool Replace;
-
-    MessageQueueElement * AddMessage(Message & msg);
+    /// Push a message onto the queue.  Returns a pointer to the new last
+    /// element in the queue.
+    MessageQueueElement * Push(Message & msg);
+    /// Pop a message from the queue.  Returns pointer to said message, or
+    /// NULL if the queue is empty.
     MessageQueueElement * Pop();
   private:
+    /// Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(lock);};
+    /// Unlock the mutex associated with this queue.
     void Unlock() {pthread_mutex_unlock(lock);};
-
+    /// Head of the queue.
     MessageQueueElement Head;
+    /// Tail of the queue.
     MessageQueueElement * pTail;
-
+    /// Mutex to control access to the queue, via Lock() and Unlock().
     pthread_mutex_t * lock;
+    /// Maximum length of queue.
+    size_t maxlen;
 };
 
 #endif

@@ -68,20 +68,20 @@ class ClientData;
 class Driver
 {
   private:
-    // this mutex is used to lock data, command, and req/rep buffers/queues
-    // TODO: could implement different mutexes for each data structure, but
-    // is it worth it?
-    //
-    // NOTE: StageDevice won't use this; it declares its own inter-process
-    // locking mechanism (and overrides locking methods)
+    /// This mutex is used to lock data, command, and req/rep buffers/queues,
+    /// via Lock() and Unlock().
     pthread_mutex_t accessMutex;
 
-    // the driver's thread
+    /// The driver's thread, when managed by StartThread() and
+    /// StopThread().
     pthread_t driverthread;
 
-    // A condition variable (and accompanying mutex) that can be used to
-    // signal other drivers that are waiting on this one.
+    /// A condition variable that can be used to signal, via
+    /// DataAvailable(), other drivers that are Wait()ing on this
+    /// driver.
     pthread_cond_t cond;
+
+    /// Mutex to go with condition variable cond.
     pthread_mutex_t condMutex;
     
   public:
@@ -103,11 +103,11 @@ class Driver
     bool alwayson;
 
     /// Last error value; useful for returning error codes from
-    /// constructors
+    /// constructors.
     int error;
 
     /// Queue for all incoming messages for this driver
-    MessageQueue InQueue; // queue for all incoming requests
+    MessageQueue InQueue;
 
   public:
 
@@ -289,16 +289,13 @@ class Driver
     virtual void Update() {}
 
     /// Put Msg to Client
-    virtual int PutMsg(player_device_id_t id, ClientData* client, 
-                         uint8_t type, uint8_t subtype,
-                         void* src, size_t len = 0,
-                         struct timeval* timestamp = NULL);
-
-    /// Put reply to client using given header
-    virtual int PutMsg(player_msghdr * hdr, ClientData* client, 
-                         uint8_t type, 
-                         void* src, size_t len = 0,
-                         struct timeval* timestamp = NULL);
+    virtual void PutMsg(player_device_id_t id, 
+                        ClientData* client, 
+                        uint8_t type, 
+                        uint8_t subtype,
+                        void* src, 
+                        size_t len = 0,
+                        struct timeval* timestamp = NULL);
 
   protected:
     // these methods are used to lock and unlock the various buffers and

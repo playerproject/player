@@ -30,10 +30,6 @@
 #include "devicetable.h"
 #include "deviceregistry.h"
 
-// true if we're connecting to Stage instead of a real robot
-extern bool use_stage;
-
-
 // initialize the table
 DeviceTable::DeviceTable()
 {
@@ -64,7 +60,9 @@ DeviceTable::~DeviceTable()
     
 // this is the 'base' AddDevice method, which sets all the fields
 int 
-DeviceTable::AddDevice(player_device_id_t id, unsigned char access, Driver* driver)
+DeviceTable::AddDevice(player_device_id_t id, 
+                       unsigned char access, 
+                       Driver* driver)
 {
   Device* thisentry;
   Device* preventry;
@@ -125,8 +123,6 @@ DeviceTable::GetDriverName(player_device_id_t id)
   Device* thisentry;
   char* driver = NULL;
 
-  //printf( "Looking up ID %u.%u.%u\n", id.port, id.code, id.index );
-
   if((thisentry = GetDevice(id)))
     driver = thisentry->drivername;
 
@@ -139,24 +135,12 @@ DeviceTable::GetDriverName(player_device_id_t id)
 Device* 
 DeviceTable::GetDevice(player_device_id_t id)
 {
-//	int i = 0;
   Device* thisentry;
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    // if we're not in Stage, then we're only listening on one port,
-    // so we don't need to match the port.  actually, this is a hack to
-    // get around the fact that, given arbitrary ordering of command-line
-    // arguments, devices can get added to the devicetable with an incorrect
-    // port.
     if((thisentry->id.code == id.code) && 
        (thisentry->id.index == id.index) &&
-
-       // Player now uses multiple ports if multiple robots are
-       // specified in the config file, with or without Stage, so we
-       // do need to match port too - rtv.  
-       //(!use_stage || (thisentry->id.port == id.port)))
-
        (thisentry->id.port == id.port))
       break;
   }

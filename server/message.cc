@@ -25,64 +25,43 @@
  * Author: Toby Collett - Jan 2005
  */
  
-#include "message.h"
-#include <player.h>
 #include <pthread.h>
 #include <assert.h>
 #include <string.h>
-#include <netinet/in.h>
-
 #include <stdio.h>
+
+#include "message.h"
+#include "player.h"
 
 Message::Message()
 {
-  Lock = new pthread_mutex_t;
-  assert(Lock);
+  assert(Lock = new pthread_mutex_t);
   pthread_mutex_init(Lock,NULL);
   Size = sizeof(struct player_msghdr);
-  Data = new unsigned char [Size];
-  assert (Data);
-  RefCount = new unsigned int;
-  assert (RefCount);
+  assert(Data = new unsigned char [Size]);
+  assert(RefCount = new unsigned int);
   *RefCount = 1;
   Client = NULL;
 }
 
  
-Message::Message(const struct player_msghdr & Header, const unsigned char * data, unsigned int data_size, ClientData * _client)
+Message::Message(const struct player_msghdr & Header, 
+                 const unsigned char * data, 
+                 unsigned int data_size, 
+                 ClientData * _client)
 {
   Client = _client;
-  Lock = new pthread_mutex_t;
-  assert(Lock);
+  assert(Lock = new pthread_mutex_t);
   pthread_mutex_init(Lock,NULL);
-  Size = sizeof(struct player_msghdr)+data_size;
-  Data = new unsigned char [Size];
-  assert (Data);
-  assert (Header.type);
+  assert(Size = sizeof(struct player_msghdr)+data_size);
+  assert(Data = new unsigned char [Size]);
 
   // copy the header and then the data into out message data buffer
   memcpy(Data,&Header,sizeof(struct player_msghdr));
   memcpy(&Data[sizeof(struct player_msghdr)],data,data_size);
-  RefCount = new unsigned int;
-  assert (RefCount);
+  assert(RefCount = new unsigned int);
   *RefCount = 1;
 }
-
-/*Message::Message(const unsigned char * data, unsigned int data_size, ClientData * _client)
-{
-  Client = _client;
-  Lock = new pthread_mutex_t;
-  assert(Lock);
-  pthread_mutex_init(Lock,NULL);
-  Size = data_size;
-  Data = new unsigned char [Size];
-  assert (Data);
-  // copy the header and then the data into out message data buffer
-  memcpy(Data,&data,Size);
-  RefCount = new unsigned int;
-  assert (RefCount);
-  *RefCount = 1;
-}*/
 
 Message::Message(const Message & rhs)
 {
@@ -122,7 +101,8 @@ MessageQueueElement::MessageQueueElement()
   next = NULL;
 }
 
-MessageQueueElement::MessageQueueElement(MessageQueueElement & Parent, Message & Msg) : msg(Msg)
+MessageQueueElement::MessageQueueElement(MessageQueueElement & Parent, 
+                                         Message & Msg) : msg(Msg)
 {
   assert(*(msg.RefCount));
   prev = &Parent;
@@ -141,7 +121,6 @@ MessageQueue::MessageQueue()
   lock = new pthread_mutex_t;
   assert(lock);
   pthread_mutex_init(lock,NULL);
-
 }
 
 MessageQueue::~MessageQueue()
@@ -150,7 +129,8 @@ MessageQueue::~MessageQueue()
   while (Pop());
 }
 
-MessageQueueElement * MessageQueue::AddMessage(Message & msg)
+MessageQueueElement* 
+MessageQueue::Push(Message & msg)
 {
   assert(pTail);
   assert(*msg.RefCount);
@@ -158,10 +138,10 @@ MessageQueueElement * MessageQueue::AddMessage(Message & msg)
   pTail = new MessageQueueElement(*pTail,msg);
   Unlock();
   return pTail;
-
 }
 
-MessageQueueElement * MessageQueue::Pop()
+MessageQueueElement*
+MessageQueue::Pop()
 {
   Lock();
   if (pTail == &Head)

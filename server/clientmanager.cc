@@ -130,85 +130,74 @@ ClientManager::~ClientManager()
 }
 
 // add a client to our watch list
-void ClientManager::AddClient(ClientData* client)
+void
+ClientManager::AddClient(ClientData* client)
 {
-  int retval;
   if(!client)
     return;
 
   // First, add it to the array of clients
 
   // do we need more room?
-  if(num_clients >= size_clients)
+  if(this->num_clients >= this->size_clients)
   {
+    this->size_clients *= 2;
+
     //puts("allocating more room for clients");
     ClientData** tmp_clients;
 
     // allocate twice as much space
-    if(!(tmp_clients = new ClientData*[2*size_clients]))
-    {
-      fputs("ClientManager::AddClient(): new failed. Out of memory? bailing",
-            stderr);
-      exit(1);
-    }
+    assert(tmp_clients = new ClientData*[this->size_clients]);
 
     // zero it
-    memset((char*)tmp_clients,0,sizeof(ClientData*)*2*size_clients);
+    memset((char*)tmp_clients,0,sizeof(ClientData*)*this->size_clients);
 
     // copy existing data
-    memcpy(tmp_clients,clients,sizeof(ClientData*)*num_clients);
+    memcpy(tmp_clients,this->clients,sizeof(ClientData*)*this->num_clients);
 
     // kill the old array
-    delete clients;
+    delete[] clients;
 
     // swap pointers
     clients = tmp_clients;
 
-    //puts("allocating more room for ufds");
     struct pollfd* tmp_ufds;
 
     // allocate twice as much space
-    if(!(tmp_ufds = new struct pollfd[2*size_clients]))
-    {
-      fputs("ClientManager::AddClient(): new failed. Out of memory? bailing",
-            stderr);
-      exit(1);
-    }
+    assert(tmp_ufds = new struct pollfd[this->size_clients]);
     
     // zero it
-    memset((char*)tmp_ufds,0,sizeof(struct pollfd)*2*size_clients);
+    memset((char*)tmp_ufds,0,sizeof(struct pollfd)*this->size_clients);
 
     // copy existing data
-    memcpy(tmp_ufds,ufds,sizeof(struct pollfd)*num_clients);
+    memcpy(tmp_ufds,this->ufds,sizeof(struct pollfd)*this->num_clients);
 
     // kill the old array
-    delete ufds;
+    delete[] this->ufds;
 
     // swap pointers
-    ufds = tmp_ufds;
-
-    size_clients *= 2;
+    this->ufds = tmp_ufds;
   }
   
   // add it to the array
-  clients[num_clients]= client;
+  this->clients[this->num_clients]= client;
 
   // add it to the array
-  ufds[num_clients].fd = client->socket;
-  if(!(client->socket))
+  this->ufds[this->num_clients].fd = client->socket;
+  if(client->socket < 0)
   {
     // it's a dummy, representing an internal subscription, so don't set the
     // events field.
-    ufds[num_clients++].events = 0;
+    this->ufds[num_clients++].events = 0;
   }
   else
   {
     // we're interested in read/accept events.
-    ufds[num_clients++].events = POLLIN;
+    this->ufds[num_clients++].events = POLLIN;
   }
     
   // If the client's socket fd is < 0, then there's not really a client; this
-  // devices is alwayson.  So don't send the ident string.
+  // device is alwayson.  So don't send the ident string.
   if(client->socket >= 0)
   {
     // Try to write the ident string to the client, and kill the client if
@@ -222,22 +211,23 @@ void ClientManager::AddClient(ClientData* client)
     hdr.subtype = PLAYER_PLAYER_IDENT;
     hdr.size = PLAYER_IDENT_STRLEN;
     
- 
     // write back an identifier string
     if(use_stage)
       sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
     else
       sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
     memset(((char*)data)+strlen((char*)data),0,
-           PLAYER_IDENT_STRLEN-strlen((char*)data));
+	   PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-	Message New(hdr, data, PLAYER_IDENT_STRLEN, client);
-//	Message New(data,PLAYER_IDENT_STRLEN,client);
-	client->OutQueue.AddMessage(New);
-    //client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
-    while((retval= client->Write()) > 0);
+    // Make a message with the reply string
+    Message ident_msg(hdr, data, PLAYER_IDENT_STRLEN, client);
+    // Push it onto the new client's queue
+    puts("pushing");
+    client->OutQueue.Push(ident_msg);
+    puts("done pushing");
 
-    if(retval < 0)
+    // Write to the client.
+    if(client->Write() < 0)
     {
       if(errno != EAGAIN)
       {
@@ -284,7 +274,8 @@ extern double totalwritetime;
 extern int totalwritenum;
 
 // Update the ClientManager
-int ClientManager::Update()
+int 
+ClientManager::Update()
 {
   int retval;
 
@@ -321,7 +312,8 @@ ClientManager::MarkClientForDeletion(int idx)
 }
     
 // shift the clients and ufds down so that they're contiguous
-void ClientManager::RemoveBlanks()
+void 
+ClientManager::RemoveBlanks()
 {
   int i,j;
 
@@ -365,7 +357,8 @@ void ClientManager::RemoveBlanks()
 }
 
 // get the index corresponding to a ClientData pointer
-int ClientManager::GetIndex(ClientData* ptr)
+int 
+ClientManager::GetIndex(ClientData* ptr)
 {
   int retval = -1;
   for(int i=0;i<num_clients;i++)
@@ -415,31 +408,39 @@ ClientManager::DataAvailable(void)
   pthread_mutex_unlock(&this->condMutex);
 }
 
-
 void
-ClientManager::PutMsg(uint8_t type, uint8_t subtype, uint16_t device, uint16_t device_index, 
-                uint32_t timestamp_sec, uint32_t timestamp_usec,
-		uint32_t size, unsigned char * data, ClientData * client)
+ClientManager::PutMsg(uint8_t type, 
+                      uint8_t subtype, 
+                      uint16_t device, 
+                      uint16_t device_index, 
+                      struct timeval* timestamp,
+                      uint32_t size, 
+                      unsigned char * data, 
+                      ClientData * client)
 {
-	// if client != Null we just send to that client
-	if (client)
-	{
-		client->PutMsg(type, subtype, device, device_index, timestamp_sec, timestamp_usec, size, data);
-	}
-	else if (clients)
-	{
-		for (int i =0; i < num_clients; ++i)
-		{
-			for(CDeviceSubscription* thissub=clients[i]->requested;thissub;thissub=thissub->next)
-			{
-				if(thissub->id.code == device && thissub->id.index == device_index)
-				{
-					clients[i]->PutMsg(type, subtype, device, device_index, timestamp_sec, timestamp_usec, size, data);
-					break;
-				}
-			}
-		}
-	}
+  // if client != Null we just send to that client
+  if(client)
+  {
+    client->PutMsg(type, subtype, device, 
+                   device_index, timestamp, size, data);
+  }
+  else if(this->clients)
+  {
+    for(int i=0; i < this->num_clients; i++)
+    {
+      for(DeviceSubscription* thissub=this->clients[i]->requested;
+          thissub;
+          thissub=thissub->next)
+      {
+        if(thissub->id.code == device && thissub->id.index == device_index)
+        {
+          this->clients[i]->PutMsg(type, subtype, device, device_index, 
+                                   timestamp, size, data);
+          break;
+        }
+      }
+    }
+  }
 }
 
 /*************************************************************************
@@ -515,6 +516,7 @@ ClientManagerTCP::Accept()
   }
   return(0);
 }
+
 int
 ClientManagerTCP::Read()
 {
@@ -564,122 +566,83 @@ ClientManagerTCP::Read()
 int
 ClientManagerTCP::Write()
 {
-	struct timeval curr;
-  
-	if(GlobalTime->GetTime(&curr) == -1)
-    		fputs("ClientManager::Write(): GetTime() failed!!!!\n", stderr);
-	
-	for(int i=0;i<num_clients;i++)
-	{
-    	// if this is a dummy, skip it.
-		//if(clients[i]->socket < 0)
-		//	continue;
+  struct timeval curr;
+  ClientDataTCP* cl;
 
-		// if we're waiting for an authorization on this client, then skip it
-		if(clients[i]->auth_pending)
-			continue;
+  if(GlobalTime->GetTime(&curr) == -1)
+    fputs("ClientManager::Write(): GetTime() failed!!!!\n", stderr);
 
-		if(clients[i]->leftover_size)
-		{
-			clients[i]->leftover_size = clients[i]->Write();
-			if (clients[i]->leftover_size < 0)
-				MarkClientForDeletion(i);
-			// dont add any more data if we still have leftover from previous
-			else if (clients[i]->leftover_size > 0)
-				continue;
-		}
+  for(int i=0; i < this->num_clients; i++)
+  {
+    // FIXME: is it ok to comment out this check?
+    // if this is a dummy, skip it.
+    //if(clients[i]->socket < 0)
+    //	continue;
 
-		// Call the clients write method, let the client check if it has
-		// left over data etc
+    cl = (ClientDataTCP*)clients[i];
 
-		// if this client has data waiting to be sent, try to send it
-    	/*if(clients[i]->leftover_size)
-    	{
-      		if(clients[i]->Write() < 0)
-        		MarkClientForDeletion(i);
+    // if we're waiting for an authorization on this client, then skip it
+    if(cl->auth_pending)
+      continue;
 
-      		// even if the Write() succeeded, skip this client for this round
-      		continue;
-    	}
+    if(cl->leftover_size)
+    {
+      cl->leftover_size = cl->Write();
+      if(cl->leftover_size < 0)
+	MarkClientForDeletion(i);
+      // dont add any more data if we still have leftover from previous
+      else if(cl->leftover_size > 0)
+	continue;
+    }
 
-		// Process all outgoing messages for client
-		unsigned int MessageSize = 0;
-		MessageQueueElement * el;
-		while ((el=clients[i]->OutQueue.Pop()))
-		{
-			clients[i]->Write(el->msg.GetData(),el->msg.GetSize());
-			//MessageSize += el->msg.GetSize();
-			delete el;
-		}
+    // rtv - had to fix a dumb rounding error here. This code is
+    // producing intervals like 0.09999-recurring seconds instead of
+    // 0.1 second, so updates were being skipped. I added a
+    // microsecond (*) when testing the elapsed interval. The bug was
+    // probably not a problem when using the real-time clock, but
+    // shows up when working with a simulator where time comes in
+    // discrete chunks. This was a beast to figure out since printf
+    // was rounding up the numbers to print them out!
 
-       	if(MessageSize > 0 && clients[i]->Write(MessageSize) < 0)
-        {
-			printf("error Writing data to client\n");
-        	// dump this client
-            MarkClientForDeletion(i);
-            // break out of device loop
-            break;
-      	}
+    double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
 
-		// if this client has built up leftover outgoing data as a result of a
-    	// reply not getting sent, don't add any data
-    	if(clients[i]->leftover_size)
-      		continue;
-		*/
-    	// rtv - had to fix a dumb rounding error here. This code is
-    	// producing intervals like 0.09999-recurring seconds instead of
-    	// 0.1 second, so updates were being skipped. I added a
-    	// microsecond (*) when testing the elapsed interval. The bug was
-    	// probably not a problem when using the real-time clock, but
-    	// shows up when working with a simulator where time comes in
-    	// discrete chunks. This was a beast to figure out since printf
-    	// was rounding up the numbers to print them out!
+    // is it time to write?
+    bool time_to_write = 
+	    ((curr_seconds + 0.000001) - cl->last_write) >=  // *
+   	    (1.0/cl->frequency);
 
-    	double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
+    if((cl->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
+       (((cl->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+	 (cl->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
+	time_to_write) ||
+       (((cl->mode == PLAYER_DATAMODE_PULL_ALL) ||
+	 (cl->mode == PLAYER_DATAMODE_PULL_NEW)) &&
+	(cl->datarequested)))
+    {
+      if (time_to_write || cl->datarequested)
+      {
+	// Put sync message into clients outgoing queue
+	cl->PutMsg(PLAYER_MSGTYPE_SYNCH, 0, PLAYER_PLAYER_CODE, 
+                   0,&curr,0,NULL);
+      }
 
-		
+      if(cl->Write() < 0)
+	MarkClientForDeletion(i);
+      else
+      {
+	if((cl->mode == PLAYER_DATAMODE_PUSH_ALL) || 
+	   (cl->mode == PLAYER_DATAMODE_PUSH_NEW))
+	  cl->last_write = curr_seconds;
+	else
+	  cl->datarequested = false;
+      }
+    }
+  }
 
-    	// is it time to write?
-    	bool time_to_write = 
-            	((curr_seconds + 0.000001) - clients[i]->last_write) >=  // *
-            	(1.0/clients[i]->frequency);
+  // remove any clients that we marked
+  RemoveBlanks();
 
-    	if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
-    	   (((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-        	 (clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
-        	time_to_write) ||
-    	   (((clients[i]->mode == PLAYER_DATAMODE_PULL_ALL) ||
-        	 (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
-        	(clients[i]->datarequested)))
-    	{
-			if (time_to_write || clients[i]->datarequested)
-			{
-			    // Put sync message into clients outgoing queue
-				//printf("Generate Sync\n");
-    			clients[i]->PutMsg(PLAYER_MSGTYPE_SYNCH, 0, PLAYER_PLAYER_CODE, 0, 
-                curr.tv_sec, curr.tv_usec,0,NULL);
-			}
-
-			//size_t msglen = clients[i]->BuildMsg(time_to_write || 
-            //                    			   clients[i]->datarequested);
-			if(clients[i]->Write() <0)
-				MarkClientForDeletion(i);
-			else
-			{
-				if((clients[i]->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-			   		(clients[i]->mode == PLAYER_DATAMODE_PUSH_NEW))
-			  		clients[i]->last_write = curr_seconds;
-				else
-			  		clients[i]->datarequested = false;
-			}
-    	}
-
-  	}
-
-	// remove any clients that we marked
-  	RemoveBlanks();
-
-  	return(0);
+  return(0);
 }
 
 /*************************************************************************
@@ -778,9 +741,8 @@ ClientManagerUDP::Read()
         hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
         hdr.conid = htons(clientData->client_id);
 
-		Message New(hdr,NULL,0);
-		clientData->OutQueue.AddMessage(New);
-        //clientData->FillWriteBuffer((unsigned char*)&hdr,0,sizeof(hdr));
+        Message New(hdr,NULL,0);
+        clientData->OutQueue.Push(New);
         if(clientData->Write() < 0)
         {
           PLAYER_ERROR1("%s", strerror(errno));
@@ -801,7 +763,7 @@ ClientManagerUDP::Read()
       {
         if(clients[j]->client_id == ntohs(hdr.conid))
         {
-          clientData=clients[j];
+          clientData = clients[j];
           break;
         }
       }
@@ -820,10 +782,7 @@ ClientManagerUDP::Read()
       }
       
       if((clientData->Read()) == -1)
-      {
-        //MarkClientForDeletion(i);
         clientData->markedfordeletion = true;
-      }
     }
     else if(accept_ufds[i].revents)
     {
@@ -840,7 +799,7 @@ ClientManagerUDP::Read()
 // need to fix this once TCP version is all go
 int ClientManagerUDP::Write()
 {
-	return 0;
+  return 0;
 }
 
 #if 0
@@ -864,7 +823,7 @@ ClientManagerUDP::Write()
     // look for pending replies intended for this client.  we only need to 
     // look in the devices to which this client is subscribed, thus we
     // iterate through the client's own subscription list.
-    for(CDeviceSubscription* thisub = clients[i]->requested;
+    for(DeviceSubscription* thisub = clients[i]->requested;
         thisub;
         thisub = thisub->next)
     {

@@ -158,6 +158,8 @@
  */
 #define PLAYER_MAX_REQREP_SIZE 4096 /*4KB*/
 
+#define PLAYER_DEFAULT_QUEUE_MAXLEN 32
+
 /* the default player port */
 #define PLAYER_PORTNUM 6665
 
