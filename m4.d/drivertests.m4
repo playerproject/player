@@ -1,9 +1,10 @@
 dnl Here are the tests for inclusion of Player's various device drivers
 
+PLAYER_DRIVERS=
 PLAYER_DRIVER_LIBS=
 PLAYER_DRIVER_LIBPATHS=
 PLAYER_DRIVER_EXTRA_LIBS=
-PLAYER_NODRIVER_LIBS=
+PLAYER_NODRIVERS=
 
 dnl This macro can be used to setup the testing and associated autoconf 
 dnl variables and C defines for a device driver.
@@ -36,8 +37,9 @@ if test "x$enable_$1" = "xyes"; then
   name_caps[_LIB]=[lib]$1[.a]
   name_caps[_LIBPATH]=$2/$name_caps[_LIB]
   name_caps[_EXTRA_LIB]=$4
+  PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
 else
-  PLAYER_NODRIVER_LIBS="$PLAYER_NODRIVER_LIBS [lib]$1[.a]"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS $1"
 fi
 AC_SUBST(name_caps[_LIB])
 PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
@@ -108,8 +110,9 @@ if test "x$enable_laser" = "xyes"; then
   AC_DEFINE(INCLUDE_LASERFIDUCIAL, 1, [[include the LASER-based fiducial drivers]])
   LASERFIDUCIAL_LIBS="liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
   LASERFIDUCIAL_LIBSPATH="drivers/fiducial/liblaserbar.a drivers/fiducial/liblaserbarcode.a drivers/fiducial/liblaservisualbarcode.a"
+  PLAYER_DRIVERS="$PLAYER_DRIVERS laserbar laserbarcode laservisualbarcode"
 else
-  PLAYER_NODRIVER_LIBS="$PLAYER_NODRIVER_LIBS liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS laserbar laserbarcode laservisualbarcode"
 fi
 AC_SUBST(LASERFIDUCIAL_LIBS)
 AC_SUBST(LASERFIDUCIAL_LIBSPATH)
@@ -131,8 +134,9 @@ if test "x$enable_amcl" = "xyes"; then
   AMCL_MAP_LIB="libmap.a"
   AMCL_MODELS_LIB="libmodels.a"
   AMCL_EXTRA_LIB="-lgsl -lgslcblas"
+  PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
 else
-  PLAYER_NODRIVER_LIBS="$PLAYER_NODRIVER_LIBS libamcl.a"
+  PLAYER_NODRIVERS="$PLAYER_NODRIVERS amcl"
 fi
 AC_SUBST(AMCL_LIB)
 AC_SUBST(AMCL_LIBPATH)
