@@ -141,8 +141,6 @@ class CP2OSDevice:public CDevice
     static char psos_serial_port[MAX_FILENAME_SIZE]; 
     static bool radio_modemp; // are we using a radio modem?
 
-    static int last_client_id;
-
     static struct timeval timeBegan_tv;
 
     // did we initialize the common data segments yet?
