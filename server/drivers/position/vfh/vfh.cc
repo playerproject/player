@@ -776,9 +776,9 @@ void VFH_Class::Main()
       */
 
       angdiff = this->goal_t - this->odom_pose[2];
-      if(angdiff > 180)
+      while (angdiff > 180)
         angdiff -= 360.0;
-      else if(angdiff < -180)
+      while (angdiff < -180)
         angdiff += 360.0;
 
       speed = 0;
