@@ -99,6 +99,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_device_id_t));
   memset(&this->sonar_id, 0, sizeof(player_device_id_t));
+  memset(&this->sonar_id_2, 0, sizeof(player_device_id_t));
   memset(&this->ir_id, 0, sizeof(player_device_id_t));
   memset(&this->bumper_id, 0, sizeof(player_device_id_t));
   memset(&this->power_id, 0, sizeof(player_device_id_t));
@@ -143,6 +144,20 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
       return;
     }
   }
+
+  // Do we create a second sonar interface?
+  if(cf->ReadDeviceId(&(this->sonar_id_2), ids, 
+                      num_ids, PLAYER_SONAR_CODE,1) == 0)
+  {
+    if(this->AddInterface(this->sonar_id_2, PLAYER_READ_MODE,
+                          sizeof(player_sonar_data_t), 0, 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
 
   // Do we create an ir interface?
   if(cf->ReadDeviceId(&(this->ir_id), ids, 
@@ -296,7 +311,8 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
     rflex_configs.mmrad_sonar_poses[x].t=
             cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x,0.0);
   }
-
+  rflex_configs.sonar_2nd_bank_start=cf->ReadInt(section, "sonar_2nd_bank_start", 0);
+  rflex_configs.sonar_1st_bank_end=rflex_configs.sonar_2nd_bank_start>0?rflex_configs.sonar_2nd_bank_start:rflex_configs.num_sonars;
   ////////////////////////////////////////////////////////////////////////
   // IR-related options
 
@@ -569,8 +585,8 @@ RFLEX::Main()
 
           player_sonar_geom_t geom;
           geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-          geom.pose_count = htons((short) rflex_configs.num_sonars);
-          for (i = 0; i < rflex_configs.num_sonars; i++)
+          geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
+          for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
           {
             geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i].x);
             geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i].y);
@@ -589,6 +605,72 @@ RFLEX::Main()
           break;
       }
     }
+
+    // check if there is a new sonar 2 config
+    if((config_size = GetConfig(this->sonar_id_2, &client, 
+                                (void*)config, sizeof(config), NULL)))
+    {
+      switch(config[0])
+      {
+        case PLAYER_SONAR_POWER_REQ:
+          /*
+           * 1 = enable sonars
+           * 0 = disable sonar
+           */
+          if(config_size != sizeof(player_sonar_power_config_t))
+          {
+            puts("Arg to sonar state change request wrong size; ignoring");
+            if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("failed to PutReply");
+            break;
+          }
+
+          player_sonar_power_config_t sonar_config;
+          sonar_config = *((player_sonar_power_config_t*)config);
+
+          if(sonar_config.value==0)
+            rflex_sonars_off(rflex_fd);
+          else
+            rflex_sonars_on(rflex_fd);
+
+          if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+
+        case PLAYER_SONAR_GET_GEOM_REQ:
+          /* Return the sonar geometry. */
+
+          if(config_size != 1)
+          {
+            puts("Arg get sonar geom is wrong size; ignoring");
+            if(PutReply(this->sonar_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+              PLAYER_ERROR("failed to PutReply");
+            break;
+          }
+
+          player_sonar_geom_t geom;
+          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+          geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+          for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
+          {
+            geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].x);
+            geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y);
+            geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t));
+          }
+
+          if(PutReply(this->sonar_id_2, client, PLAYER_MSGTYPE_RESP_ACK, 
+                      &geom, sizeof(geom), NULL))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+
+        default:
+          puts("Sonar got unknown config request");
+          if(PutReply(this->sonar_id_2, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
+            PLAYER_ERROR("failed to PutReply");
+          break;
+      }
+    }
+
 
     // check if there is a new bumper config
     if((config_size = GetConfig(this->bumper_id, &client, 
@@ -882,6 +964,10 @@ RFLEX::Main()
             (void*)&rflex_data.sonar,
             sizeof(player_sonar_data_t),
             NULL);
+    PutData(this->sonar_id_2,
+            (void*)&rflex_data.sonar2,
+            sizeof(player_sonar_data_t),
+            NULL);
     PutData(this->ir_id,
             (void*)&rflex_data.ir,
             sizeof(player_ir_data_t),
@@ -1016,9 +1102,13 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     rflex_update_sonar(rflex_fd, a_num_sonars,
 		       arb_ranges);
     pthread_testcancel();
-    d->sonar.range_count=htons(a_num_sonars);
-    for (i = 0; i < a_num_sonars; i++){
+    d->sonar.range_count=htons(rflex_configs.sonar_1st_bank_end);
+    for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++){
       d->sonar.ranges[i] = htons((uint16_t) ARB2MM_RANGE_CONV(arb_ranges[i]));
+    }
+    d->sonar2.range_count=htons(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+    for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++){
+      d->sonar2.ranges[i] = htons((uint16_t) ARB2MM_RANGE_CONV(arb_ranges[rflex_configs.sonar_2nd_bank_start+i]));
     }
   }
 
