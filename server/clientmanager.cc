@@ -53,12 +53,15 @@ make_dotted_ip_address(char* dest, int len, uint32_t addr)
 {
   char tmp[512];
   int mask = 0xff;
+  int swappedaddr;
 
+  swappedaddr = htonl(addr);
+  
   sprintf(tmp, "%u.%u.%u.%u",
-                  addr>>0 & mask,
-                  addr>>8 & mask,
-                  addr>>16 & mask,
-                  addr>>24 & mask);
+                  swappedaddr>>24 & mask,
+                  swappedaddr>>16 & mask,
+                  swappedaddr>>8 & mask,
+                  swappedaddr>>0 & mask);
 
   if((strlen(tmp) + 1) > (unsigned int)len)
   {
