@@ -49,10 +49,10 @@ None
 @par Example 
 
 @verbatim
-device
+driver
 (
   driver gz_laser
-  interfaces ["laser:0"]
+  devices ["laser:0"]
   gz_id "laser1"
 )
 @endverbatim

@@ -249,7 +249,7 @@ PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[no],)
+PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[yes],)
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])

@@ -1733,14 +1733,11 @@ int ConfigFile::ReadDeviceId(int section, int index,
   CEntity *entity;
 
   // Look for interfaces tag
-  str = this->ReadTupleString(section, "interfaces", index, NULL);
+  str = this->ReadTupleString(section, "devices", index, NULL);
   if (str == NULL)
   {
-    // Look for interface:index block
-    entity = this->entities + section;
-    assert(entity);
-    str = entity->type;
-    PLAYER_WARN1("section [%d]: missing interface field (deprecated syntax)", section);
+    PLAYER_ERROR1("section [%d]: missing device entry", section);
+    return -1;
   } 
   
   // Look for port:interface:index

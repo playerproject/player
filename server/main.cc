@@ -157,11 +157,11 @@ where [options] is one or more of the following:
 
 - -h             : Print usage message.
 - -t {tcp | udp} : transport protocol to use.  Default: tcp.
-- -p <port>      : port where Player will listen. Default: 6665.
-- -s <path>      : use memory-mapped IO with Stage through the devices in this directory.
-- -g <id>        : connect to Gazebo server with id <id>.
-- -r <logfile>   : read data from <logfile> (readlog driver).
-- -k <key>       : require client authentication with the given key.
+- -p &lt;port&gt;      : port where Player will listen. Default: 6665.
+- -s &lt;path&gt;      : use memory-mapped IO with Stage through the devices in this directory.
+- -g &lt;id&gt;        : connect to Gazebo server with id &lt;id&gt;.
+- -r &lt;logfile&gt;   : read data from &lt;logfile&gt; (readlog driver).
+- -k &lt;key&gt;       : require client authentication with the given key.
 
 Note that only one of -s, -g and -r can be specified at any given time.
 
@@ -946,20 +946,35 @@ bool ParseDeviceEx(ConfigFile *cf, int section)
 // Display the driver/interface map
 void PrintDeviceTable()
 {
+  Driver *last_driver;
   Device *device;
   player_interface_t interface;
 
+  last_driver = NULL;
+  printf("------------------------------------------------------------\n");
+  
   // Step through the device table
   for (device = deviceTable->GetFirstDevice(); device != NULL;
        device = deviceTable->GetNextDevice(device))
   {
     assert(lookup_interface_code(device->id.code, &interface) == 0);
     
-    fprintf(stdout, "device %d driver %s id %d:%s:%d\n",
-            device->index, device->drivername,
-            device->id.port, interface.name, device->id.index);
+    if (device->driver != last_driver)
+    {
+      fprintf(stdout, "%d driver %s id %d:%s:%d\n",
+              device->index, device->drivername,
+              device->id.port, interface.name, device->id.index);
+    }
+    else
+    {
+      fprintf(stdout, "%d        %*s id %d:%s:%d\n",
+              device->index, strlen(device->drivername), "",
+              device->id.port, interface.name, device->id.index);
+    }
+    last_driver = device->driver;
   }
 
+  printf("------------------------------------------------------------\n");
   return;
 }
 
@@ -1007,7 +1022,7 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
       continue;
 
     // Check for new-style device block
-    //if (strcmp(configFile.GetEntityType(i), "device") == 0)
+    if (strcmp(configFile.GetEntityType(i), "driver") == 0)
     {
       if (!ParseDeviceEx(&configFile, i))
         return false;

@@ -18,6 +18,92 @@
  *
  */
 
+/*
+  Desc: Driver for the Segway RMP
+  Author: John Sweeny and Brian Gerkey
+  Date:
+  CVS: $Id$
+*/
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_segwayrmp SegwayRMP driver
+
+The segwayrmp driver provides control of a Segway RMP (Robotic
+Mobility Platform), which is an experimental robotic version of the
+Segway HT (Human Transport), a kind of two-wheeled, self-balancing
+electric scooter.
+
+@par Notes
+
+- Because of its power, weight, height, and dynamics, the Segway RMP is
+a potentially dangerous machine.  Be @e very careful with it.
+
+- Although the RMP does not actually support motor power control from 
+software, for safety you must explicitly enable the motors using a
+@p PLAYER_POSITION_MOTOR_POWER_REQ or @p PLAYER_POSITION3D_MOTOR_POWER_REQ
+(depending on which interface you are using).  You must @e also enable
+the motors in the command packet, by setting the @p state field to 1.
+
+- For safety, this driver will stop the RMP (i.e., send zero velocities)
+if no new command has been received from a client in the previous 400ms or so.
+Thus, even if you want to continue moving at a constant velocity, you must
+continuously send your desired velocities.
+
+- Most of the configuration requests have not been tested.
+
+- Currently, the only supported type of CAN I/O is "kvaser",
+which uses Kvaser, Inc.'s CANLIB interface library.  This library provides
+access to CAN cards made by Kvaser, such as the LAPcan II.  However, the CAN 
+I/O subsystem within this driver is modular, so that it should be pretty
+straightforward to add support for other CAN cards.
+
+
+@par Interfaces
+
+- @ref player_interface_position
+  - This interface returns odometry data, and accepts velocity commands.
+
+- @ref player_interface_position3d
+  - This interface returns odometry data (x, y and yaw) from the wheel
+  encoders, and attitude data (pitch and roll) from the IMU.  The
+  driver accepts velocity commands (x vel and yaw vel).
+
+- @ref player_interface_power
+  - Returns the current battery voltage (72 V when fully charged).
+
+@par Supported configuration requests
+
+- position interface
+  - PLAYER_POSITION_POWER_REQ
+
+- position3d interface
+  - PLAYER_POSITION_POWER_REQ
+
+@par Configuration file options
+
+- canio "kvaser"
+  - Type of CANbus driver.
+
+- max_xspeed 0.5
+  - Maximum linear speed (m/sec)
+
+- max_yawspeed 40
+  - Maximum angular speed (deg/sec)
+      
+@par Example 
+
+@verbatim
+driver
+(
+  driver segwayrmp
+  devices ["position:0" "position3d:0" "power:0"]
+)
+@endverbatim
+*/
+/** @} */
+
+  
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -34,11 +120,6 @@
 #include "rmp_frame.h"
 #include "segwayrmp.h"
 
-
-// Both of these can be changed via the configuration file; please do NOT
-// change them here!
-#define RMP_DEFAULT_MAX_XSPEED 500   // mm/sec
-#define RMP_DEFAULT_MAX_YAWSPEED 40  // deg/sec
 
 // Number of RMP read cycles, without new speed commands from clients,
 // after which we'll stop the robot (for safety).  The read loop
@@ -112,15 +193,11 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   this->canio = NULL;
-  this->caniotype = "kvaser";
-  this->max_xspeed = RMP_DEFAULT_MAX_XSPEED;
-  this->max_yawspeed = RMP_DEFAULT_MAX_YAWSPEED;
-
-  this->caniotype = cf->ReadString(section, "canio", this->caniotype);
-  this->max_xspeed = cf->ReadInt(section, "max_xspeed", this->max_xspeed);
+  this->caniotype = cf->ReadString(section, "canio", "kvaser");
+  this->max_xspeed = (int) (1000 * cf->ReadLength(section, "max_xspeed", 0.5));
   if(this->max_xspeed < 0)
     this->max_xspeed = -this->max_xspeed;
-  this->max_yawspeed = cf->ReadInt(section, "max_yawspeed", this->max_yawspeed);
+  this->max_yawspeed = (int) (RTOD(cf->ReadAngle(section, "max_yawspeed", 40)));
   if(this->max_yawspeed < 0)
     this->max_yawspeed = -this->max_yawspeed;
   
@@ -557,8 +634,6 @@ SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 int
 SegwayRMP::HandlePosition3DConfig(void* client, unsigned char* buffer, size_t len)
 {
-  CanPacket pkt;
-  
   switch(buffer[0]) 
   {
     case PLAYER_POSITION3D_MOTOR_POWER_REQ:

@@ -44,8 +44,11 @@ extern bool experimental;
 class CLock;
 class ConfigFile;
 
+/** @addtogroup player_classes */
+/** @{ */
 
-
+/** Base class for all drivers.  This class manages driver subscriptions,
+threads, and data marshalling to/from device interfaces. */
 class Driver
 {
   private:
@@ -101,39 +104,44 @@ class Driver
 
   public:
 
-    // Default constructor for single-interface drivers.  Specify the
-    // buffer sizes.
+    /** Constructor for single-interface drivers.  Specify the
+        interface code, allowed access mode and buffer/queue sizes.
+     */
     Driver(ConfigFile *cf, int section, int interface, uint8_t access,
            size_t datasize, size_t commandsize, 
            int reqqueuelen, int repqueuelen);
 
-    // Default constructor for multi-interface drivers; call
-    // AddInterface() to add interfaces.
+    /** Constructor for multiple-interface drivers.  Use
+        AddInterface() to specify interfaces.
+     */
     Driver(ConfigFile *cf, int section);
 
     // Destructor
     virtual ~Driver();
-
-    // Set/reset error code
-    void SetError(int code) {this->error = code;}
     
-    // Add a new-style interface; returns 0 on success
+    /** Add a new-style interface.  Specify the interface code,
+        allowed access mode and buffer/queue sizes.  Returns 0 on
+        success
+     */
     int AddInterface(player_device_id_t id, unsigned char access,
                      size_t datasize, size_t commandsize,
                      size_t reqqueuelen, size_t repqueuelen);
-    
-    // these are used to control subscriptions to the driver; a driver MAY
-    // override them, but usually won't (P2OS being the main exception).
-    // The client pointer acts an identifier for drivers that need to maintain
-    // their own client lists (such as the broadcast driver).  It's a void*
-    // since it may refer to another driver (such as when the laserbeacon driver
-    // subscribes to the laser driver).
+
+    /// Set/reset error code
+    void SetError(int code) {this->error = code;}
+
+    /// these are used to control subscriptions to the driver; a driver MAY
+    /// override them, but usually won't (P2OS being the main exception).
+    /// The client pointer acts an identifier for drivers that need to maintain
+    /// their own client lists (such as the broadcast driver).  It's a void*
+    /// since it may refer to another driver (such as when the laserbeacon driver
+    /// subscribes to the laser driver).
     virtual int Subscribe(void *client);
     virtual int Unsubscribe(void *client);
 
-    // these are called when the first client subscribes, and when the last
-    // client unsubscribes, respectively.
-    // these two MUST be implemented by the driver itself
+    /// these are called when the first client subscribes, and when the last
+    /// client unsubscribes, respectively.
+    /// these two MUST be implemented by the driver itself
     virtual int Setup() = 0;
     virtual int Shutdown() = 0;
 
@@ -145,56 +153,56 @@ class Driver
     // WANRING: this feature is experimental and may be removed in the future
     virtual void Prepare() {}
 
-    // This method is called once per loop (in Linux, probably either 50Hz or 
-    // 100Hz) by the server.  Threaded drivers can use the default
-    // implementation, which does nothing.  Drivers which don't have their
-    // own threads and do all their work in an overridden GetData() should 
-    // also override Update(), in order to call DataAvailable(), allowing
-    // other drivers to Wait() on this driver.
+    /// This method is called once per loop (in Linux, probably either 50Hz or 
+    /// 100Hz) by the server.  Threaded drivers can use the default
+    /// implementation, which does nothing.  Drivers which don't have their
+    /// own threads and do all their work in an overridden GetData() should 
+    /// also override Update(), in order to call DataAvailable(), allowing
+    /// other drivers to Wait() on this driver.
     virtual void Update() {}
 
     // Note: the Get* and Put* functions MAY be overridden by the
     // driver itself, but then the driver is reponsible for Lock()ing
     // and Unlock()ing appropriately
 
-    // New-style PutData; [id] specifies the interface to be written
+    /// Write data to the driver; @a id specifies the interface to write to.
     virtual void PutData(player_device_id_t id,
                          void* src, size_t len,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
 
-    // New-style GetData; [id] specifies the interface to be read
-    virtual size_t GetNumData(player_device_id_t id, void* client);
+        
+    /// Read data from the driver; @a id specifies the interface to be read.
     virtual size_t GetData(player_device_id_t id, void* client,  
                            void* dest, size_t len,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
-    // New-style: Write a new command to the driver
+    /// Write a new command to the driver; @a id specifies the interface to be written.
     virtual void PutCommand(player_device_id_t id, void* client,
                             void* src, size_t len);
 
-    // New-style: Read the current command for the driver
+    /// Read the current command for the driver; @a id specifies the interface to be read.
     virtual size_t GetCommand(player_device_id_t id, void* dest, size_t len);
 
-    // New-style: Clear the current command buffer
+    /// Clear the current command buffer for interface @id.
     virtual void ClearCommand(player_device_id_t id);
 
-    // New-style: Write configuration request to driver
-    // The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
+    /// Write configuration request to driver.
+    /// The @a src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
     virtual int PutConfig(player_device_id_t id, player_device_id_t *src_id,
                           void *client, void *data, size_t len);
 
-    // New-style: Get next configuration request for driver
-    // The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.    
+    /// Get next configuration request for driver.
+    /// The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.    
     virtual size_t GetConfig(player_device_id_t id, player_device_id_t *src_id,
                              void **client, void *data, size_t len);
 
-    // New-style: Write configuration reply to driver
+    /// Write configuration reply to driver.
     virtual int PutReply(player_device_id_t id, player_device_id_t *src_id,
                          void* client, unsigned short type, struct timeval* ts, 
                          void* data, size_t len);
 
-    // New-style: Read configuration reply from driver;
-    // The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
+    /// Read configuration reply from driver;
+    /// The src_id field is a legacy hack for p2os-syle request/reply tom-foolery.
     virtual int GetReply(player_device_id_t id, player_device_id_t *src_id, void* client, 
                          unsigned short* type, struct timeval* ts, 
                          void* data, size_t len);
@@ -291,5 +299,7 @@ class Driver
     virtual void Unlock();
 
 };
+
+/** @} */
 
 #endif

@@ -19,33 +19,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-
-///////////////////////////////////////////////////////////////////////////
-//
-// File: laserdevice.cc
-// Author: Andrew Howard
-// Date: 7 Nov 2000
-// Desc: Driver for the SICK laser
-//
-// CVS info:
-//  $Source$
-//  $Author$
-//  $Revision$
-//
-// Usage:
-//  (empty)
-//
-// Theory of operation:
-//  (empty)
-//
-// Known bugs:
-//  (empty)
-//
-// Possible enhancements:
-//  (empty)
-//
-///////////////////////////////////////////////////////////////////////////
-
+/*
+ Desc: Driver for the SICK laser
+ Author: Andrew Howard
+ Date: 7 Nov 2000
+ CVS: $Id$
+*/
 
 /** @addtogroup drivers Drivers */
 /** @{ */
@@ -91,10 +70,10 @@ Driver for the SICK LMS200 scanning laser range-finder.
 @par Example 
 
 @verbatim
-device
+driver
 (
   driver sicklms200
-  interfaces ["laser:0"]
+  devices ["laser:0"]
   port "/dev/ttyS0"
   resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
   range_res 10     # Range resolution 1 cm (maximum range 81.92m)

@@ -32,16 +32,16 @@ be instantiated; for example, if you have an ActivMedia Pioneer and a
 SICKLMS200 scanning laser range finder:
 
 @verbatim
-device
+driver
 (
   driver "p2os_position"
-  interfaces ["position:0"]
+  devices ["position:0"]
 )
 
-device
+driver
 (
   driver "sicklms200"
-  interfaces ["laser:0"]
+  devices ["laser:0"]
   port "/dev/ttyS1"
 )
 @endverbatim

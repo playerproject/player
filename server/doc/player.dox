@@ -58,7 +58,7 @@ USE_WINDOWS_ENCODING   = NO
 # the file and class documentation (similar to JavaDoc). 
 # Set to NO to disable this.
 
-BRIEF_MEMBER_DESC      = YES
+BRIEF_MEMBER_DESC      = NO
 
 # If the REPEAT_BRIEF tag is set to YES (the default) Doxygen will prepend 
 # the brief description of a member or function before the detailed description. 
@@ -167,7 +167,7 @@ ALIASES                =
 # For instance, some of the names that are used will be different. The list 
 # of all members will be omitted, etc.
 
-OPTIMIZE_OUTPUT_FOR_C  = YES
+OPTIMIZE_OUTPUT_FOR_C  = NO
 
 # Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java sources 
 # only. Doxygen will then generate output that is more tailored for Java. 
@@ -391,7 +391,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.html ../main.cc ../player.h ../drivers/laser/sicklms200.cc
+INPUT                  = mainpage.html classes.html ../main.cc ../player.h ../driver.h #../drivers/
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -400,13 +400,13 @@ INPUT                  = mainpage.html ../main.cc ../player.h ../drivers/laser/s
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp 
 # *.h++ *.idl *.odl *.cs *.php *.php3 *.inc
 
-FILE_PATTERNS          = 
+FILE_PATTERNS          = *.cc
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 
 # If left blank NO is used.
 
-RECURSIVE              = NO
+RECURSIVE              = YES
 
 # The EXCLUDE tag can be used to specify files and/or directories that should 
 # excluded from the INPUT source files. This way you can easily exclude a 
