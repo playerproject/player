@@ -183,6 +183,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/p2os/Makefile 
           server/drivers/mixed/rwi/Makefile 
           server/drivers/stage/Makefile 
+          server/drivers/gazebo/Makefile 
           server/drivers/mixed/reb/Makefile 
           server/drivers/position/isense/Makefile 
           server/drivers/position/microstrain/Makefile 
