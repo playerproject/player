@@ -56,7 +56,10 @@ class IDARTurretProxy : public ClientProxy
 
   // pretty print a message
   void PrintMessages( player_idarturret_reply_t* reply ); 
-};
+
+  void PrintMessage( idarrx_t* msg );
+} 
+;
 
 #endif
 

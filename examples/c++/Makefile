@@ -23,7 +23,8 @@ BINARIES = rsn \
 	   forage \
 	   multilogger \
            stress \
-           pherobot
+           pherobot\
+	  joystick
 	   #multirandom multiphero
 
 all: $(BINARIES)
@@ -55,6 +56,7 @@ install: $(BINARIES)
 	$(INSTALL) -m 644 forage.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 multilogger.cc $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 644 rsn.cc $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 644 joystick.cc $(INSTALL_EXAMPLES)/c++
 	@echo "Installing C++ example binaries"
 	$(INSTALL) -m 755 randomwalk $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 visualservo $(INSTALL_EXAMPLES)/c++
@@ -68,6 +70,7 @@ install: $(BINARIES)
 	$(INSTALL) -m 755 forage $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 multilogger $(INSTALL_EXAMPLES)/c++
 	$(INSTALL) -m 755 rsn $(INSTALL_EXAMPLES)/c++
+	$(INSTALL) -m 755 joystick $(INSTALL_EXAMPLES)/c++
 
 uninstall: 
 	@echo "Uninstalling example source files"
@@ -84,6 +87,7 @@ uninstall:
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/forage.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/multilogger.cc
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/rsn.cc
+	$(RM) -f  $(INSTALL_EXAMPLES)/c++/joystick.cc
 	@echo "Uninstalling example binaries"
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/randomwalk
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/visualservo
@@ -97,6 +101,7 @@ uninstall:
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/forage
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/multilogger
 	$(RM) -f  $(INSTALL_EXAMPLES)/c++/rsn
+	$(RM) -f  $(INSTALL_EXAMPLES)/c++/joystick
 
 clean:
 	$(RM) -f *.o $(BINARIES) test

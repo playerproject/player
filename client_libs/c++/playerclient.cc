@@ -205,7 +205,6 @@ int PlayerClient::Read()
       // mark this client as having fresh data
       fresh = true;
 
-
       // update timestamp
       if ((int) hdr.timestamp_usec > this->timestamp.tv_usec ||
           (int) hdr.timestamp_sec > this->timestamp.tv_sec)

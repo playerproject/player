@@ -15,8 +15,8 @@ OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
       rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
-      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o 
-#     idarturretproxy.o
+      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o \
+     idarturretproxy.o
 
 all: $(LIBNAME)
 
@@ -128,6 +128,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 rwi_bumperproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 rwi_powerproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 idarproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 idarturretproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 descartesproxy.h $(INSTALL_INCLUDE)
 
 uninstall:
@@ -157,6 +158,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/rwi_powerproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/idarturretproxy.h
 
 
 clean:
@@ -189,4 +191,5 @@ clean:
 	$(RM) -f ../../include/rwi_powerproxy.h
 	$(RM) -f ../../include/descartesproxy.h 
 	$(RM) -f ../../include/idarproxy.h 
+	$(RM) -f ../../include/idarturretproxy.h 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
