@@ -2,6 +2,7 @@
 /**
 @page plugin_driver HOWTO: Creating a Plugin Driver
 
+
 The are two distinct type of drivers in Player:
 
 - <i>Static</i> drivers have their code in the main Player
@@ -290,5 +291,8 @@ $ g++ -Wall -g3 `pkg-config --cflags player` -c exampledriver.cc
 $ g++ -shared -nostartfiles -o exampledriver.so exampledriver.o
 @endverbatim
 
+@todo
+- Add example of building plugin using libtool.
+- Add "theory" from Architecture Chapter of the old manual.
 
 */
