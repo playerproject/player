@@ -109,6 +109,10 @@ class CLaserBeaconDevice : public CDevice
     // Filter array (beacons must appear in multiple frames to be accepted
     //
     private: double m_filter[256];
+
+    // The current data
+    //
+    player_laserbeacon_data_t m_beacon_data;
 };
 
 
