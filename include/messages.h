@@ -408,10 +408,6 @@ typedef struct
   uint8_t string[SPEECH_MAX_STRING_LEN];
 } __attribute__ ((packed)) player_speech_cmd_t;
 
-#define SPEECH_DATA_BUFFER_SIZE sizeof(player_speech_data_t)
-#define SPEECH_COMMAND_BUFFER_SIZE sizeof(player_speech_cmd_t)
-#define SPEECH_CONFIG_BUFFER_SIZE 0
-
 /*************************************************************************/
 
 /*************************************************************************/
@@ -432,10 +428,6 @@ typedef struct
 {
   int32_t xpos,ypos;
 } __attribute__ ((packed)) player_gps_data_t;
-
-#define GPS_DATA_BUFFER_SIZE sizeof(player_gps_data_t)
-#define GPS_COMMAND_BUFFER_SIZE 0
-#define GPS_CONFIG_BUFFER_SIZE 0
 
 /*************************************************************************/
 
