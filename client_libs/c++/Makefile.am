@@ -37,7 +37,8 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
 			      irproxy.cc \
 			      powerproxy.cc \
                               bumperproxy.cc \
-			      dioproxy.cc
+			      dioproxy.cc \
+                              audioproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 

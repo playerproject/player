@@ -1415,6 +1415,46 @@ class PowerProxy : public ClientProxy
  *****************************************************************************/
 
 /*****************************************************************************
+ ** begin section AudioProxy
+ *****************************************************************************/
+
+/// The {\tt AudioProxy} class controls an {\tt audio} device.
+class AudioProxy : public ClientProxy 
+{
+
+  public:
+    /** Hz, db ? */
+    uint16_t frequency0, amplitude0;
+    /** Hz, db ? */
+    uint16_t frequency1, amplitude1;
+    /** Hz, db ? */
+    uint16_t frequency2, amplitude2;
+    /** Hz, db ? */
+    uint16_t frequency3, amplitude3;
+    /** Hz, db ? */
+    uint16_t frequency4, amplitude4;
+
+    /** Constructor.
+      Leave the access field empty to start unconnected.
+     */
+    AudioProxy (PlayerClient* pc, unsigned short index,
+                unsigned char access ='c')
+            : ClientProxy(pc,PLAYER_AUDIO_CODE,index,access) {}
+
+    // interface that all proxies must provide
+    void FillData (player_msghdr_t hdr, const char* buffer);
+
+    /// Play a fixed-frequency tone
+    int PlayTone(unsigned short freq, unsigned short amp, unsigned short dur);
+
+    /// Print the current data.
+    void Print ();
+};
+/*****************************************************************************
+ ** end section
+ *****************************************************************************/
+
+/*****************************************************************************
  ** begin section BumperProxy
  *****************************************************************************/
 
