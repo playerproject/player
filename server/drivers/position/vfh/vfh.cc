@@ -416,9 +416,9 @@ int VFH_Class::GetOdom() {
   data.ypos = ntohl(data.ypos);
   data.yaw = ntohl(data.yaw);
 
-  this->odom_pose[0] = (double)data.xpos;
-  this->odom_pose[1] = (double)data.ypos;
-  this->odom_pose[2] = (double)data.yaw;
+  this->odom_pose[0] = (double)((int32_t)data.xpos);
+  this->odom_pose[1] = (double)((int32_t)data.ypos);
+  this->odom_pose[2] = (double)((int32_t)data.yaw);
 
   // don't byteswap velocities, we're just passing them through
   this->odom_vel_be[0] = data.xspeed;
@@ -648,7 +648,7 @@ void VFH_Class::Main()
 
   // Wait till we get new odometry data; this may block indefinitely
   // on older versions of Stage and Gazebo.
-  this->odom->Wait();
+  //this->odom->Wait();
 
   this->GetOdom();
   if(this->truth)
@@ -658,10 +658,10 @@ void VFH_Class::Main()
   {
     // Wait till we get new odometry data; this may block indefinitely
     // on older versions of Stage and Gazebo.
-    this->odom->Wait();
+   // this->odom->Wait();
 
     // Sleep for 1ms (will actually take longer than this).
-    //nanosleep(&sleeptime, NULL);
+    nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
@@ -806,6 +806,7 @@ void VFH_Class::GetCommand()
     x = (int)ntohl(cmd.xpos);
     y = (int)ntohl(cmd.ypos);
     t = (int)ntohl(cmd.yaw);
+    printf("Got Command: %f %d %d",x,y,t);
     if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
     {
       this->active_goal = true;
