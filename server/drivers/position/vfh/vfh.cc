@@ -723,7 +723,7 @@ void VFH_Class::Main()
     if((dist < (this->dist_eps * 1e3)) && 
        (fabs(NORMALIZE(DTOR(goal_t)-DTOR(this->odom_pose[2]))) < this->ang_eps))
     {
-      puts("VFH: goal reached");
+      //puts("VFH: goal reached");
       this->active_goal = false;
       this->speed = this->turnrate = 0;
       PutCommand();
@@ -742,7 +742,7 @@ void VFH_Class::Main()
         Desired_Angle += 360.0;
       }
 
-      //printf("dist %.3f angle %.3f\n", dist, Desired_Angle);
+      //printf("vfh dist %.3f angle %.3f\n", dist, Desired_Angle);
 
       // Get new laser data.
       this->GetLaser();
