@@ -353,6 +353,10 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 void 
 RFLEX::Main()
 {
+	printf("Waiting for rflex_done=1 in config file\n");
+	while (rflex_configs.run == false);
+	
+
 	player_rflex_cmd_t command;
 	unsigned char config[RFLEX_CONFIG_BUFFER_SIZE];
 	
@@ -409,7 +413,7 @@ RFLEX::Main()
 
 		// we want to turn on the ir if someone just subscribed, and turn
 		// it off if the last subscriber just unsubscribed.
-		if(sonarp)
+		if(irp)
 		{
 			if(!last_ir_subscrcount && irp->subscriptions)
 				rflex_ir_on(rflex_fd);
@@ -883,7 +887,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
   arb_last_bearing_position = arb_new_bearing_position;
 
    //note - sonar mappings are strange - look in rflex_commands.c
-  if(sonarp->subscriptions){
+  if(sonarp && sonarp->subscriptions){
     // TODO - currently bad sonar data is sent back to clients 
     // (not enough data buffered, so sonar sent in wrong order - missing intermittent sonar values - fix this
     a_num_sonars=rflex_configs.num_sonars;
@@ -899,7 +903,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
   }
 
   // if someone is subscribed to bumpers copy internal data to device
-   if(bumperp->subscriptions)
+   if(bumperp && bumperp->subscriptions)
    {
        a_num_bumpers=rflex_configs.bumper_count;
 
@@ -914,7 +918,7 @@ void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *
 
 
   // if someone is subscribed to irs copy internal data to device
-   if(irp->subscriptions)
+   if(irp && irp->subscriptions)
    {
        a_num_ir=rflex_configs.ir_poses.pose_count;
 
@@ -966,11 +970,19 @@ void RFLEX::set_config_defaults(){
   rflex_configs.num_sonars_possible_per_bank=0;
   rflex_configs.num_sonars_in_bank=NULL;
   rflex_configs.mmrad_sonar_poses=NULL;
-  rflex_configs.ir_poses.pose_count = 0;
+  
+  rflex_configs.bumper_count = 0;
+  rflex_configs.bumper_address = 0;
+  rflex_configs.bumper_def = NULL;
+  
   rflex_configs.ir_poses.pose_count = 0;
   rflex_configs.ir_base_bank = 0;
   rflex_configs.ir_bank_count = 0;
   rflex_configs.ir_count = NULL;
+  rflex_configs.ir_a = NULL;
+  rflex_configs.ir_b = NULL;
+  
+  rflex_configs.run = false; 
 }
 
 

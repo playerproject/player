@@ -91,6 +91,9 @@ void RFLEXIr::GetOptions(ConfigFile *cf,int section,rflex_config_t * rflex_confi
 	rflex_configs->ir_a[x] = cf->ReadTupleFloat(section, "rflex_ir_calib",x*2,1);
 	rflex_configs->ir_b[x] = cf->ReadTupleFloat(section, "rflex_ir_calib",x*2+1,1);	
   }
+  
+	rflex_configs->run |= cf->ReadInt(section, "rflex_done",0);
+  
   Unlock();
 }  
 
