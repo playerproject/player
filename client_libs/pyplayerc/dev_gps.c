@@ -37,23 +37,23 @@ static void gps_onread(gps_object_t *pygps);
 /* Initialise (type function) */
 PyObject *gps_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   gps_object_t *pygps;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   pygps = PyObject_New(gps_object_t, &gps_type);
-  pygps->client = clientob->client;
-  pygps->gps = playerc_gps_create(clientob->client, index);
+  pygps->client = pyclient->client;
+  pygps->gps = playerc_gps_create(pyclient->client, index);
   pygps->gps->info.user_data = pygps;
   pygps->px = PyFloat_FromDouble(0);
   pygps->py = PyFloat_FromDouble(0);
   pygps->pa = PyFloat_FromDouble(0);
 
   /* Add callback for post-processing incoming data */
-  playerc_client_addcallback(clientob->client, (playerc_device_t*) pygps->gps,
+  playerc_client_addcallback(pyclient->client, (playerc_device_t*) pygps->gps,
                              (playerc_callback_fn_t) gps_onread,
                              (void*) pygps);
     

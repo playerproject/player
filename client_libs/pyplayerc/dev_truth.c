@@ -35,16 +35,16 @@ staticforward PyMethodDef truth_methods[];
 /* Initialise (type function) */
 PyObject *truth_new(PyObject *self, PyObject *args)
 {
-  client_object_t *clientob;
+  pyclient_t *pyclient;
   truth_object_t *pytruth;
   int index;
 
-  if (!PyArg_ParseTuple(args, "Oi", &clientob, &index))
+  if (!PyArg_ParseTuple(args, "Oi", &pyclient, &index))
     return NULL;
 
   pytruth = PyObject_New(truth_object_t, &truth_type);
-  pytruth->client = clientob->client;
-  pytruth->truth = playerc_truth_create(clientob->client, index);
+  pytruth->client = pyclient->client;
+  pytruth->truth = playerc_truth_create(pyclient->client, index);
     
   return (PyObject*) pytruth;
 }
