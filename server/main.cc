@@ -128,7 +128,7 @@ PlayerTime* GlobalTime;
 
 // keep track of the pointers to our various clients.
 // that way we can cancel them at Shutdown
-ClientManager* clientmanager;
+ClientManager* clientmanager = NULL;
 
 // use this object to parse config files and command line args
 ConfigFile configFile;
@@ -1004,22 +1004,9 @@ void PrintDeviceTable()
 
 
 bool
-ParseConfigFile(char* fname, int** ports, int* num_ports, 
-                  ClientData*** alwayson_devices, int* num_alwayson_devices)
+ParseConfigFile(char* fname, int** ports, int* num_ports)
 {
-  //DriverEntry* entry;
-  //Driver* tmpdriver;
-  //char interface[PLAYER_MAX_DEVICE_STRING_LEN];
-  //char* colon;
-  //char* colon2;
-  //int index;
-  //char* driver;
-  //const char *pluginname;  
-  //void* handle;
-  //int code = 0;
-  int port = global_playerport;
   char robotname[PLAYER_MAX_DEVICE_STRING_LEN];
-  //bool firstdevice=true;
 
   robotname[0]='\0';
 
@@ -1034,7 +1021,6 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
   // entities in the config file (yes, i'm too lazy to dynamically
   // reallocate this buffer for a tighter bound).
   assert(*ports = new int[configFile.GetEntityCount()]);
-  assert(*alwayson_devices = new ClientData*[configFile.GetEntityCount()]);
   // we'll increment this counter as we go
   *num_ports=0;
 
@@ -1078,42 +1064,6 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
       (*ports)[(*num_ports)++] = device->id.port;
   }
 
-  // Poll the device table for alwayson devices
-  for (device = deviceTable->GetFirstDevice(); device != NULL;
-       device = deviceTable->GetNextDevice(device))
-  {
-    if (!device->driver->alwayson)
-      continue;
-    
-    // In order to allow safe shutdown, we need to create a dummy
-    // clientdata object and add it to the clientmanager.  It will then
-    // form a root for this subscription tree and allow it to be torn
-    // down.
-    ClientData* clientdata;
-    player_device_req_t req;
-
-    assert((clientdata = (ClientData*)new ClientDataTCP("",port)));
-        
-    // to indicate that this one is a dummy
-    clientdata->socket = -1;
-
-    // don't add it to the client manager here, because it hasn't been
-    // created yet.  instead, queue them up for later addition.
-    //clientmanager->AddClient(clientdata);
-    (*alwayson_devices)[(*num_alwayson_devices)++] = clientdata;
-
-    // What does this do?
-    req.code = device->id.code;
-    req.index = device->id.index;
-    req.access = PLAYER_READ_MODE;
-    if(clientdata->UpdateRequested(req) != PLAYER_READ_MODE)
-    {
-      PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
-                    device->drivername, lookup_interface_name(0, device->id.code));
-      return(false);
-    }
-  }
-
   return(true);
 }
 
@@ -1132,8 +1082,6 @@ int main( int argc, char *argv[] )
   double update_rate = DEFAULT_SERVER_UPDATE_RATE;
   
   int *ports = NULL;
-  ClientData** alwayson_devices = NULL;
-  int num_alwayson_devices = 0;
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
@@ -1394,8 +1342,7 @@ int main( int argc, char *argv[] )
   {
     // Parse the config file and instantiate drivers.  It builds up a list
     // of ports that we need to listen on.
-    if (!ParseConfigFile(configfile, &ports, &num_ufds,
-                         &alwayson_devices, &num_alwayson_devices))
+    if(!ParseConfigFile(configfile, &ports, &num_ufds))
       exit(-1);
   }
 
@@ -1443,9 +1390,42 @@ int main( int argc, char *argv[] )
     exit(-1);
   }
 
-  // now that we've create the clientmanager, add any "alwayson" devices
-  for(int i=0;i<num_alwayson_devices;i++)
-    clientmanager->AddClient(alwayson_devices[i]);
+  delete[] ports;
+
+  // Poll the device table for alwayson devices
+  for(Device* device = deviceTable->GetFirstDevice(); 
+      device;
+      device = deviceTable->GetNextDevice(device))
+  {
+    if (!device->driver->alwayson)
+      continue;
+    
+    // In order to allow safe shutdown, we need to create a dummy
+    // clientdata object and add it to the clientmanager.  It will then
+    // form a root for this subscription tree and allow it to be torn
+    // down.
+    ClientData* clientdata;
+    player_device_req_t req;
+
+    assert((clientdata = (ClientData*)new ClientDataTCP("",device->id.port)));
+        
+    // to indicate that this one is a dummy
+    clientdata->socket = -1;
+
+    // add the dummy clients to the clientmanager
+    clientmanager->AddClient(clientdata);
+
+    req.code = device->id.code;
+    req.index = device->id.index;
+    // TODO: should allow user to specify desired alwayson mode in the .cfg
+    req.access = device->access;
+    if(clientdata->UpdateRequested(req) != device->access)
+    {
+      PLAYER_ERROR2("Initial subscription failed to driver \"%s\" as interface \"%s\"\n",
+                    device->drivername, lookup_interface_name(0, device->id.code));
+      return(false);
+    }
+  }
 
   // check for empty device table
   if(!(deviceTable->Size()))
