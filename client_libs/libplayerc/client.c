@@ -460,16 +460,20 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
 int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
                               char *data, int len)
 {
-  int bytes, total_bytes;
+  int nbytes, bytes, total_bytes;
 
-  // Look for STX 
-  bytes = recv(client->sock, header, 2, 0);
-  if (bytes < 0)
+  // Look for STX
+  for (bytes = 0; bytes < 2;)
   {
-    PLAYERC_ERR1("recv on stx failed with error [%s]", strerror(errno));
-    return -1;
+    nbytes = recv(client->sock, (char*) header + bytes, 2 - bytes, 0);    
+    if (nbytes < 0)
+    {
+      PLAYERC_ERR1("recv on stx failed with error [%s]", strerror(errno));
+      return -1;
+    }
+    bytes += nbytes;
   }
-  else if (bytes < 2)
+  if (bytes < 2)
   {
     PLAYERC_ERR2("got incomplete stx, %d of %d bytes", bytes, 2);
     return -1;
@@ -480,13 +484,19 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
     return -1;
   }
 
-  bytes = recv(client->sock, ((char*) header) + 2, sizeof(player_msghdr_t) - 2, 0);
-  if (bytes < 0)
+  // Read packet
+  for (bytes = 0; bytes < sizeof(player_msghdr_t) - 2;)
   {
-    PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
-    return -1;
+    nbytes = recv(client->sock, (char*) header + 2 + bytes,
+                  sizeof(player_msghdr_t) - 2 - bytes, 0);
+    if (nbytes < 0)
+    {
+      PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
+      return -1;
+    }
+    bytes += nbytes;
   }
-  else if (bytes < sizeof(player_msghdr_t) - 2)
+  if (bytes < sizeof(player_msghdr_t) - 2)
   {
     PLAYERC_ERR2("got incomplete header, %d of %d bytes", bytes, sizeof(player_msghdr_t) - 2);
     return -1;
