@@ -2724,27 +2724,20 @@ typedef struct player_ir_data
   uint16_t ranges[PLAYER_IR_MAX_SAMPLES];
 } __PACKED__ player_ir_data_t;
 
-/** @brief A set of IR poses. */
+/** @brief Configuration request: Query pose.
+
+To query the pose of the IRs, use this request, filling in only
+the subtype.  The server will respond with the other fields filled in. */
 typedef struct player_ir_pose
 {
+  /** subtype; must be PLAYER_IR_POSE_REQ */
+  uint8_t subtype; 
   /** the number of ir samples returned by this robot */
   uint16_t pose_count;
   /** the pose of each IR detector on this robot (mm, mm, degrees) */
   int16_t poses[PLAYER_IR_MAX_SAMPLES][3];
 } __PACKED__ player_ir_pose_t;
 
-
-/** @brief Configuration request: Query pose.
-
-To query the pose of the IRs, use this request, filling in only
-the subtype.  The server will respond with the other fields filled in. */
-typedef struct player_ir_pose_req
-{
-  /** subtype; must be PLAYER_IR_POSE_REQ */
-  uint8_t subtype; 
-  /** the poses */
-  player_ir_pose_t poses;
-} __PACKED__ player_ir_pose_req_t;
 
 /** @brief Configuration request: IR power.
 

@@ -25,4 +25,5 @@ playerv_SOURCES = playerv.c \
                   opt.c \
                   opt.h
 
+playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.a
 playerv_LDADD = -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc -L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@

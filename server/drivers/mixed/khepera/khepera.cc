@@ -167,9 +167,9 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 	// ir pose request
 	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
 	{
-		player_ir_pose_req_t irpose;
+		player_ir_pose_t irpose;
+		irpose = geometry->ir;
 		irpose.subtype = PLAYER_IR_POSE_REQ;
-		irpose.poses = geometry->ir;
 
 		if(PutMsg(this->ir_id, client, PLAYER_MSGTYPE_GEOM, 
             		&irpose, sizeof(irpose),NULL)) 

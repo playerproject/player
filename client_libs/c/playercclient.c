@@ -251,7 +251,7 @@ int player_connect_sockaddr(player_connection_t* conn,
     hdr.type = htons(PLAYER_MSGTYPE_REQ);
     hdr.device = htons(PLAYER_PLAYER_CODE);
     hdr.device_index = 0;
-    hdr.reserved = 0;
+    hdr.sequence = 0;
     hdr.size = 0;
     if(sendto(sock,(unsigned char*)&hdr,sizeof(hdr),0,
               (struct sockaddr*)server,sizeof(*server)) < 0)
@@ -279,7 +279,7 @@ int player_connect_sockaddr(player_connection_t* conn,
         perror("player_connect(): recvfrom() failed");
       return(-1);
     }
-    conn->id = ntohs(hdr.reserved >> 16);
+    conn->id = ntohs(hdr.sequence >> 16);
   }
   else
   {
@@ -353,9 +353,9 @@ int player_request(player_connection_t* conn,
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
   if(conn->protocol == PLAYER_TRANSPORT_UDP)
-    hdr.reserved = htons(conn->id) << 16;
+    hdr.sequence = htons(conn->id) << 16;
   else
-    hdr.reserved = 0;
+    hdr.sequence = 0;
   hdr.size = htonl(payloadlen);
 
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
@@ -777,9 +777,9 @@ int player_write(player_connection_t* conn,
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
   if(conn->protocol == PLAYER_TRANSPORT_UDP)
-    hdr.reserved = htons(conn->id) << 16;
+    hdr.sequence = htons(conn->id) << 16;
   else
-    hdr.reserved = 0;
+    hdr.sequence = 0;
   hdr.size = htonl(commandlen);
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
   memcpy(buffer+sizeof(player_msghdr_t),command,commandlen);

@@ -668,6 +668,7 @@ void Driver::ProcessMessages()
 			PutMsg(hdr, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, NULL, 0, NULL);
 		else if (ret > 0)
 			PutMsg(hdr, el->msg.Client, PLAYER_MSGTYPE_RESP_ACK, NULL, 0, NULL);
+		pthread_testcancel();
 	}
 }
 

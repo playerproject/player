@@ -184,4 +184,24 @@ class ClientDataUDP : public ClientData
     virtual int Write(size_t len);
 };
 
+// This class is used for drivers that are a client of other drivers within 
+// the server
+class ClientDataInternal : public ClientData
+{
+	public:
+		ClientDataInternal(char * key, int port) : ClientData(key, port) {};
+    	virtual int Read();
+    	virtual int Write(size_t len);
+
+		// send a message to a subscribed device
+		SendMsg(player_device_id_t id,
+                         unsigned short type, 
+                         void* src, size_t len = 0,
+                         struct timeval* timestamp = NULL,
+						 ClientData * ReplyTo = NULL);
+
+	protected:
+		MessageQueue InQueue;
+
+}
 #endif

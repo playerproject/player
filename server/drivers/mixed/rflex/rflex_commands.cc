@@ -875,7 +875,7 @@ void rflex_update_ir(int fd, int num_irs,
   clear_incoming_data(fd);
 
   if (num_irs > status.num_ir) {
-    fprintf(stderr,"Requested more ir readings than available. %d of %d\n", num_irs,status.num_ir );
+    //fprintf(stderr,"Requested more ir readings than available. %d of %d\n", num_irs,status.num_ir );
     num_irs = status.num_ir;
   }
 

@@ -39,11 +39,6 @@ software fails in its object avoidance.
 @verbatim
 driver
 (
-  name "p2os"
-  provides ["odometry::position:1" "bumper:0"]
-)
-driver
-(
   name "bumpersafe"
   provides ["position:0"]
   requires ["position:1" "bumper:0"]
@@ -100,9 +95,6 @@ class BumperSafe : public Driver
 
 
   private:
-    // Process requests.  Returns 1 if the configuration has changed.
-    int HandleRequests();
-
     // Write the pose data (the data going back to the client).
     void PutPose();
 
@@ -112,6 +104,9 @@ class BumperSafe : public Driver
     // Check for new commands from server
     void GetCommand();
     
+	// Process incoming messages from clients and underlying drivers
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data);
+	
     // state info
     bool Blocked;
     player_bumper_data_t CurrentState;
@@ -150,11 +145,7 @@ void BumperSafe_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int BumperSafe::Setup() 
 {
-  player_position_cmd_t cmd;
-
-  cmd.xpos = cmd.ypos = cmd.yaw = 0;
-  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-  Driver::PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
+  player_position_cmd_t cmd = {0};
 
   // Initialise the underlying device s.
   if (this->SetupPosition() != 0)
@@ -181,6 +172,33 @@ int BumperSafe::Shutdown() {
   this->ShutdownBumper();
   
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
+{
+	if (Blocked)
+	{
+		MSG(device_id, PLAYER_MESSAGE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+		{
+			// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
+	  		if (((player_position_power_config_t *) data)->value == 1)
+			{
+				SafeState = CurrentState;
+				Blocked = false;
+    			cmd.xspeed = 0;
+    			cmd.yspeed = 0;
+    			cmd.yawspeed = 0;
+			}
+		}
+		MSG_END;
+	}
+	
+	// set reply to value so the reply for this message goes straight to the given client
+	BaseClient->SendMsg(position_id, hdr->type, data, hdr->size, NULL, client);
+
+	return -1;
 }
 
 

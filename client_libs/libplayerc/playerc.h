@@ -388,6 +388,19 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
                                 
+/** @brief Wait for response from server (blocking).
+
+@param client Pointer to client object.
+@param device
+@param index
+@param sequence
+
+@returns Will return data size for ack, -1 for nack and -2 for failure
+
+*/
+int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
+		uint16_t  index, uint16_t sequence, uint8_t * resp_data, int resp_len);
+
 /** @brief Test to see if there is pending data.
 
 @param client Pointer to client object.
@@ -410,6 +423,8 @@ on error, will return NULL.
 
 */
 void *playerc_client_read(playerc_client_t *client);
+
+
 
 /** @brief Write data to the server.  @internal
 */

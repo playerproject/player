@@ -110,7 +110,7 @@ IRProxy::GetIRPose()
   }
 
   player_msghdr_t hdr;
-  player_ir_pose_req_t req;
+  player_ir_pose_t req;
 
   req.subtype = PLAYER_IR_POSE_REQ;
   
@@ -121,7 +121,7 @@ IRProxy::GetIRPose()
     return -1;
   }
 
-   ir_pose = req.poses;
+   ir_pose = req;
 
 	ir_pose.pose_count = ntohs(ir_pose.pose_count);
 

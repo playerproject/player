@@ -359,8 +359,6 @@ RFLEX_Register(DriverTable *table)
 
 int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
 {
-	//printf("Got Message: %d %d %d %d \n", hdr->type, hdr->device, hdr->device_index, data ? data[0] : 0);
-
 	// Sonar bank 1 power request
 	MSG(sonar_id, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
 	{
@@ -441,14 +439,13 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
 	{
 		// Assemble geometry structure for sending
-		//printf("sending geometry to client, posecount = %d\n", rflex_configs.ir_poses.pose_count);
-		player_ir_pose_req geom;
+		player_ir_pose_t geom;
 		geom.subtype = PLAYER_IR_POSE_REQ;
-		geom.poses.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
+		geom.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
 		for (int i = 0; i < rflex_configs.ir_poses.pose_count; i++){
-			geom.poses.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
-			geom.poses.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
-			geom.poses.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
+			geom.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
+			geom.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
+			geom.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
 		}
 
 		// Send

@@ -140,7 +140,7 @@ void playerc_ir_putgeom(playerc_ir_t *device, player_msghdr_t *header,
 int playerc_ir_get_geom(playerc_ir_t *device)
 {
   int i, len;
-  player_ir_pose_req_t config;
+  player_ir_pose_t config;
 
   config.subtype = PLAYER_IR_POSE_REQ;
 
