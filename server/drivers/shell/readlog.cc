@@ -69,6 +69,7 @@ The readlog driver can provide the following device interfaces.
 
 - @ref player_interface_blobfinder
 - @ref player_interface_camera
+- @ref player_interface_fiducial
 - @ref player_interface_gps
 - @ref player_interface_joystick
 - @ref player_interface_laser
@@ -181,6 +182,10 @@ class ReadLog: public Driver
 
   // Parse camera data
   private: int ParseCamera(player_device_id_t id, int linenum,
+                          int token_count, char **tokens, struct timeval time);
+
+  // Parse fiducial data
+  private: int ParseFiducial(player_device_id_t id, int linenum,
                           int token_count, char **tokens, struct timeval time);
 
   // Parse gps data
@@ -769,6 +774,8 @@ int ReadLog::ParseData(player_device_id_t id, int linenum,
     return this->ParseBlobfinder(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_CAMERA_CODE)
     return this->ParseCamera(id, linenum, token_count, tokens, time);
+  else if (id.code == PLAYER_FIDUCIAL_CODE)
+    return this->ParseFiducial(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_GPS_CODE)
     return this->ParseGps(id, linenum, token_count, tokens, time);
   else if (id.code == PLAYER_JOYSTICK_CODE)
@@ -873,6 +880,46 @@ int ReadLog::ParseCamera(player_device_id_t id, int linenum,
 
   free(data);
   
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse fiducial data
+int ReadLog::ParseFiducial(player_device_id_t id, int linenum,
+                               int token_count, char **tokens, struct timeval time)
+{
+  player_fiducial_data_t data;
+  int fiducial_count;
+
+  if (token_count < 7)
+  {
+    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  fiducial_count = atoi( tokens[6] );
+  data.count = NUINT16( fiducial_count );
+  
+  for( int i = 0; i < fiducial_count; i++ )
+  {
+    data.fiducials[i].id = NINT16( atof(tokens[13*i + 7]) );
+	data.fiducials[i].pos[0] = NINT32(M_MM(atof(tokens[13*i+ 8])));
+	data.fiducials[i].pos[1] = NINT32(M_MM(atof(tokens[13*i+ 9])));
+	data.fiducials[i].pos[2] = NINT32(M_MM(atof(tokens[13*i+10])));
+	data.fiducials[i].rot[0] = NINT32(M_MM(atof(tokens[13*i+11])));
+	data.fiducials[i].rot[1] = NINT32(M_MM(atof(tokens[13*i+12])));
+	data.fiducials[i].rot[2] = NINT32(M_MM(atof(tokens[13*i+13])));
+	data.fiducials[i].upos[0] = NINT32(M_MM(atof(tokens[13*i+14])));
+	data.fiducials[i].upos[1] = NINT32(M_MM(atof(tokens[13*i+15])));
+	data.fiducials[i].upos[2] = NINT32(M_MM(atof(tokens[13*i+16])));
+	data.fiducials[i].urot[0] = NINT32(M_MM(atof(tokens[13*i+17])));
+	data.fiducials[i].urot[1] = NINT32(M_MM(atof(tokens[13*i+18])));
+	data.fiducials[i].urot[2] = NINT32(M_MM(atof(tokens[13*i+19])));
+  }
+              
+  this->PutData(id, &data, sizeof(data), &time);
+
   return 0;
 }
 
