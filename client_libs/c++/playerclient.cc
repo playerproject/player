@@ -37,7 +37,7 @@
 #endif
 
 // just make a client, and connect, if instructed
-PlayerClient::PlayerClient(const char* hostname = NULL, int port=PLAYER_PORTNUM)
+PlayerClient::PlayerClient(const char* hostname, int port )
 {
   destroyed = false;
   // so we know we're not connected

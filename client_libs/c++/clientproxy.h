@@ -62,7 +62,7 @@ class ClientProxy
     ClientProxy(PlayerClient* pc, 
 		unsigned short req_device,
 		unsigned short req_index,
-		unsigned char req_access = 'c' );
+		unsigned char req_access );
 
     // destructor will try to close access to the device
     virtual ~ClientProxy();
