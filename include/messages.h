@@ -339,7 +339,7 @@ typedef struct
 typedef struct 
 {
     uint16_t count;
-    struct player_laserbeacon_item_t beacon[32]; 
+    player_laserbeacon_item_t beacon[32]; 
 } __attribute__ ((packed)) player_laserbeacon_data_t;
 
 
