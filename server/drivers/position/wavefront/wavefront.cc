@@ -527,6 +527,7 @@ void Wavefront::Main()
 
     if(this->new_goal)
     {
+      goal_hack = false;
       // compute costs to the new goal
       plan_update_plan(this->plan, this->target_x, this->target_y);
       
@@ -594,6 +595,8 @@ void Wavefront::Main()
                        (this->target_x - this->waypoint_x)) +
                       ((this->target_y - this->waypoint_y) *
                        (this->target_y - this->waypoint_y)));
+          printf("dist from last waypoint to target: %f\n", 
+                 dist);
           if(!goal_hack && (dist > 2.0))
           {
             printf("Goal hack: setting %f,%f,%f\n",
