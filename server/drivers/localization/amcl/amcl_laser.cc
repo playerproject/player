@@ -33,6 +33,7 @@
 
 #define PLAYER_ENABLE_MSG 1
 
+#include <sys/types.h> // required by Darwin
 #include <netinet/in.h>
 #include <math.h>
 #include <stdlib.h>

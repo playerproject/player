@@ -48,7 +48,10 @@
 /////////////////////////////////////////////////////////////////////
 // this is the event structure from the linux joystick driver v2.0.0
 // I have blind-copied this from Brian's playerjoy, but shouldnt this
-// be in header file somewhere?
+// be in header file somewhere? - ahoward
+
+// indeed there is - rtv
+// #include <linux/joystick.h>
 
 struct js_event
 {

@@ -246,7 +246,8 @@ PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[yes],)
+dnl - added a header check to stop this building on OS X - rtv
+PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[yes],[linux/joystick.h],[],[])
 
 dnl Camera drivers
 PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
