@@ -60,21 +60,21 @@ int main(int argc, const char *argv[])
     sindex = strtok(NULL, "");
     index = (sindex ? atoi(sindex) : 0);
 
-    // Position device
-    if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
-      test_position(client, index);
+    // Broadcast device
+    if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
+      test_broadcast(client, index);
 
     // Laser device
     if (strcmp(device, "laser") == 0 || strcmp(device, "all") == 0)
       test_laser(client, index);
 
-    // Laser beacon device
-    if (strcmp(device, "laserbeacon") == 0 || strcmp(device, "all") == 0)
-      test_laserbeacon(client, index);
+    // LBD (laser beacon detector) device
+    if (strcmp(device, "lbd") == 0 || strcmp(device, "all") == 0)
+      test_lbd(client, index);
 
-    // Broadcast device
-    if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
-      test_broadcast(client, index);
+    // Position device
+    if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
+      test_position(client, index);
 
     // Vision device
     if (strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)

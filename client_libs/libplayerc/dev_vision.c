@@ -77,5 +77,33 @@ int playerc_vision_unsubscribe(playerc_vision_t *device)
 void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
                            player_vision_data_t *data, size_t len)
 {
+  int i, ch;
+  int offset, count;
+  player_vision_blob_elt_t *src;
+  playerc_vision_blob_t *dest;
+
+  device->blob_count = 0;
+  for (ch = 0; ch < VISION_NUM_CHANNELS; ch++)
+  {
+    offset = ntohs(data->header[ch].index);
+    count = ntohs(data->header[ch].num);
+    
+    for (i = 0; i < count; i++)
+    {
+      src = data->blobs + i + offset;
+      if (device->blob_count >= PLAYERC_VISION_MAX_BLOBS)
+        break;
+      dest = device->blobs + device->blob_count++;
+
+      dest->channel = ch;
+      dest->x = ntohs(src->x);
+      dest->y = ntohs(src->y);
+      dest->area = ntohl(src->area);
+      dest->left = ntohs(src->left);
+      dest->right = ntohs(src->right);
+      dest->top = ntohs(src->top);
+      dest->bottom = ntohs(src->bottom);      
+    }
+  }
 }
 

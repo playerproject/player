@@ -18,7 +18,7 @@
  *
  */
 /***************************************************************************
- * Desc: LaserBeacon device proxy
+ * Desc: LBD (laser beacon detector) device proxy
  * Author: Andrew Howard
  * Date: 15 May 2002
  * CVS: $Id$
@@ -34,48 +34,48 @@
 
 
 // Local declarations
-void playerc_laserbeacon_putdata(playerc_laserbeacon_t *device, player_msghdr_t *header,
-                                 player_laserbeacon_data_t *data, size_t len);
+void playerc_lbd_putdata(playerc_lbd_t *device, player_msghdr_t *header,
+                         player_laserbeacon_data_t *data, size_t len);
 
-// Create a new laserbeacon proxy
-playerc_laserbeacon_t *playerc_laserbeacon_create(playerc_client_t *client, int index)
+// Create a new lbd proxy
+playerc_lbd_t *playerc_lbd_create(playerc_client_t *client, int index)
 {
-  playerc_laserbeacon_t *device;
+  playerc_lbd_t *device;
 
-  device = malloc(sizeof(playerc_laserbeacon_t));
-  memset(device, 0, sizeof(playerc_laserbeacon_t));
+  device = malloc(sizeof(playerc_lbd_t));
+  memset(device, 0, sizeof(playerc_lbd_t));
   playerc_device_init(&device->info, client, PLAYER_LASERBEACON_CODE, index,
-                      (playerc_putdata_fn_t) playerc_laserbeacon_putdata);
+                      (playerc_putdata_fn_t) playerc_lbd_putdata);
 
   return device;
 }
 
 
-// Destroy a laserbeacon proxy
-void playerc_laserbeacon_destroy(playerc_laserbeacon_t *device)
+// Destroy a lbd proxy
+void playerc_lbd_destroy(playerc_lbd_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
 
-// Subscribe to the laserbeacon device
-int playerc_laserbeacon_subscribe(playerc_laserbeacon_t *device, int access)
+// Subscribe to the lbd device
+int playerc_lbd_subscribe(playerc_lbd_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
-// Un-subscribe from the laserbeacon device
-int playerc_laserbeacon_unsubscribe(playerc_laserbeacon_t *device)
+// Un-subscribe from the lbd device
+int playerc_lbd_unsubscribe(playerc_lbd_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_laserbeacon_putdata(playerc_laserbeacon_t *device, player_msghdr_t *header,
-                                 player_laserbeacon_data_t *data, size_t len)
+void playerc_lbd_putdata(playerc_lbd_t *device, player_msghdr_t *header,
+                         player_laserbeacon_data_t *data, size_t len)
 {
   int i;
 
@@ -92,8 +92,8 @@ void playerc_laserbeacon_putdata(playerc_laserbeacon_t *device, player_msghdr_t 
 
 
 // Set the device configuration
-int playerc_laserbeacon_set_config(playerc_laserbeacon_t *device,
-                                   int bit_count, double bit_width)
+int playerc_lbd_set_config(playerc_lbd_t *device,
+                           int bit_count, double bit_width)
 {
   int len;
   player_laserbeacon_config_t config;
@@ -130,8 +130,8 @@ int playerc_laserbeacon_set_config(playerc_laserbeacon_t *device,
 
 
 // Get the device configuration
-int playerc_laserbeacon_get_config(playerc_laserbeacon_t *device,
-                                   int *bit_count, double *bit_width)
+int playerc_lbd_get_config(playerc_lbd_t *device,
+                           int *bit_count, double *bit_width)
 {
   int len;
   player_laserbeacon_config_t config;

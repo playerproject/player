@@ -13,17 +13,18 @@
 int test_laser(playerc_client_t *client, int index)
 {
   int t, i;
-  playerc_laser_t *laser;
+  playerc_laser_t *device;
+  void *read;
 
   double min, max;
   int resolution, intensity;
 
   printf("device [laser] index [%d]\n", index);
 
-  laser = playerc_laser_create(client, index);
+  device = playerc_laser_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_laser_subscribe(laser, PLAYER_READ_MODE) == 0)
+  if (playerc_laser_subscribe(device, PLAYER_READ_MODE) == 0)
     PASS();
   else
     FAIL();
@@ -33,13 +34,13 @@ int test_laser(playerc_client_t *client, int index)
   max = +M_PI/2;
   resolution = 100;
   intensity = 1;
-  if (playerc_laser_set_config(laser, min, max, resolution, intensity) == 0)
+  if (playerc_laser_set_config(device, min, max, resolution, intensity) == 0)
     PASS();
   else
     FAIL();
 
   TEST("get configuration");
-  if (playerc_laser_get_config(laser, &min, &max, &resolution, &intensity) == 0)
+  if (playerc_laser_get_config(device, &min, &max, &resolution, &intensity) == 0)
     PASS();
   else
     FAIL();
@@ -55,26 +56,33 @@ int test_laser(playerc_client_t *client, int index)
   for (t = 0; t < 10; t++)
   {
     TEST1("reading data (attempt %d)", t);
-    if (playerc_client_read(client) != 0)
+
+    do
+      read = playerc_client_read(client);
+    while (read == client);
+    
+    if (read == device)
+    {
+      PASS();
+      printf("laser: [%d] ", device->scan_count);
+      for (i = 0; i < 3; i++)
+        printf("[%6.3f, %6.3f] ", device->scan[i][0], device->scan[i][1]);
+      printf("\n");
+    }
+    else
     {
       FAIL();
       break;
     }
-    PASS();
-
-    printf("laser: [%d] ", laser->scan_count);
-    for (i = 0; i < 3; i++)
-      printf("[%6.3f, %6.3f] ", laser->scan[i][0], laser->scan[i][1]);
-    printf("\n");
   }
   
   TEST("unsubscribing");
-  if (playerc_laser_unsubscribe(laser) == 0)
+  if (playerc_laser_unsubscribe(device) == 0)
     PASS();
   else
     FAIL();
   
-  playerc_laser_destroy(laser);
+  playerc_laser_destroy(device);
   
   return 0;
 }

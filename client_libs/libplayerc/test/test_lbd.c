@@ -1,5 +1,5 @@
 /***************************************************************************
- * Desc: Tests for the position device
+ * Desc: Tests for the LBD (laser beacon detector) device
  * Author: Andrew Howard
  * Date: 23 May 2002
  # CVS: $Id$
@@ -11,18 +11,18 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 // Basic test for the laser beacon device.
-int test_laserbeacon(playerc_client_t *client, int index)
+int test_lbd(playerc_client_t *client, int index)
 {
   int t, i;
   int bit_count; double bit_width;
-  playerc_laserbeacon_t *laserbeacon;
+  playerc_lbd_t *device;
 
-  printf("device [laserbeacon] index [%d]\n", index);
+  printf("device [lbd] index [%d]\n", index);
 
-  laserbeacon = playerc_laserbeacon_create(client, index);
+  device = playerc_lbd_create(client, index);
 
   TEST("subscribing (read/write)");
-  if (playerc_laserbeacon_subscribe(laserbeacon, PLAYER_ALL_MODE) < 0)
+  if (playerc_lbd_subscribe(device, PLAYER_ALL_MODE) < 0)
   {
     FAIL();
     return -1;
@@ -30,13 +30,13 @@ int test_laserbeacon(playerc_client_t *client, int index)
   PASS();
     
   TEST("set configuration");
-  if (playerc_laserbeacon_set_config(laserbeacon, 5, 0.05) == 0)
+  if (playerc_lbd_set_config(device, 5, 0.05) == 0)
     PASS();
   else
     FAIL();
 
   TEST("get configuration");
-  if (playerc_laserbeacon_get_config(laserbeacon, &bit_count, &bit_width) == 0)
+  if (playerc_lbd_get_config(device, &bit_count, &bit_width) == 0)
     PASS();
   else
     FAIL();
@@ -57,23 +57,23 @@ int test_laserbeacon(playerc_client_t *client, int index)
     }
     PASS();
 
-    printf("laserbeacon: [%d] ", laserbeacon->beacon_count);
-    for (i = 0; i < MIN(3, laserbeacon->beacon_count); i++)
-      printf("[%d %6.3f, %6.3f, %6.3f] ", laserbeacon->beacons[i].id,
-             laserbeacon->beacons[i].range, laserbeacon->beacons[i].bearing,
-             laserbeacon->beacons[i].orient);
+    printf("lbd: [%d] ", device->beacon_count);
+    for (i = 0; i < MIN(3, device->beacon_count); i++)
+      printf("[%d %6.3f, %6.3f, %6.3f] ", device->beacons[i].id,
+             device->beacons[i].range, device->beacons[i].bearing,
+             device->beacons[i].orient);
     printf("\n");
   }
   
   TEST("unsubscribing");
-  if (playerc_laserbeacon_unsubscribe(laserbeacon) != 0)
+  if (playerc_lbd_unsubscribe(device) != 0)
   {
     FAIL();
     return -1;
   }
   PASS();
   
-  playerc_laserbeacon_destroy(laserbeacon);
+  playerc_lbd_destroy(device);
   
   return 0;
 }
