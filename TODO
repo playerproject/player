@@ -10,6 +10,20 @@ NEXT RELEASE:
 
 - decide which drivers are "stable" and which are "experimental"
 
+- add player-side record locking to stage device
+
+- add power, bumper, AIO DIO client support
+
+(stage) Add cmdline flag to start with clock stopped.
+
+(stage) add a means to start/stop clock from a remote client
+	(perhaps toggled in response to SIGUSR1?). Could add start/stop
+	scripts to distro. 
+
+(stage) user docs - check cmdline options are correct & complete
+
+(stage) misc device -> power, bumper, etc devices
+
 
 NOW:
 ----
@@ -17,6 +31,9 @@ NOW:
 
 - Generalize gripper control to allow for any gripper, and modify command
     and data specifications to be more natural
+
+
+(stage) fix client mode, at least for remote viewing functionality
 
 LATER:
 ------
@@ -40,6 +57,18 @@ LATER:
       versions.  
         + hopefully fixed, because of tcflush().
         + much more robust startup now
+
+ - website - FAQ? 
+
+(stage) move to pyramid repn for matrix for increased raytrace efficiency
+
+(stage) add GNOME2 GUI device visualizations
+
+(stage) pull RTK2 code into library through GUI hooks
+
+(stage) audit for fixed-size buffers, etc. that limit populations
+
+(stage) developer docs - GUI interface, server interface
 
 LATENT:
 -------
