@@ -125,11 +125,11 @@ inline double laser_sensor_prob(laser_t *sensor, double obs_range, double map_ra
 
   assert(i >= 0);
   if (i >= sensor->lut_size)
-    return sensor->lut_size - 1;
+    i = sensor->lut_size - 1;
 
   assert(j >= 0);
   if (j >= sensor->lut_size)
-    return sensor->lut_size - 1;
+    j = sensor->lut_size - 1;
 
   return sensor->lut_probs[i + j * sensor->lut_size];
 }
