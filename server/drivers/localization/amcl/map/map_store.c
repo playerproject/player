@@ -15,7 +15,7 @@
 #include "map.h"
 
 // Load a map file (occupancy grid)
-int map_load_occ(map_t *map, const char *filename)
+int map_load_occ(map_t *map, const char *filename, int negate)
 {
   FILE *file;
   char magic[3];
@@ -62,12 +62,27 @@ int map_load_occ(map_t *map, const char *filename)
     {
       ch = fgetc(file);
 
-      if (ch < depth / 4)
-        occ = +1;
-      else if (ch > 3 * depth / 4)
-        occ = -1;
+      // Black-on-white images
+      if (!negate)
+      {
+        if (ch < depth / 4)
+          occ = +1;
+        else if (ch > 3 * depth / 4)
+          occ = -1;
+        else
+          occ = 0;
+      }
+
+      // White-on-black images
       else
-        occ = 0;
+      {
+        if (ch < depth / 4)
+          occ = -1;
+        else if (ch > 3 * depth / 4)
+          occ = +1;
+        else
+          occ = 0;
+      }
 
       cell = map->cells + MAP_INDEX(map, i, j);
       cell->occ_state = occ;

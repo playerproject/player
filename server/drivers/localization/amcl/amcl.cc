@@ -270,6 +270,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   // Get the map settings
   this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
   this->map_file = cf->ReadFilename(section, "map_file", NULL);
+  this->map_negate = cf->ReadInt(section, "map_negate", 0);
   this->map = NULL;
   
   // Odometry model settings
