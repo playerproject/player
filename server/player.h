@@ -2074,9 +2074,13 @@ typedef struct player_localize_hypoth
     an array of hypotheses, defined as follows: */
 typedef struct player_localize_data
 {
-  /** the number of pose hypothesis */
+  /** The number of pending (unprocessed observations) */
+  uint16_t pending_count;
+  /** The time stamp of the last observation processed. */
+  uint32_t pending_time_sec, pending_time_usec;
+  /** The number of pose hypotheses. */
   uint32_t hypoth_count;
-  /** the array of the hypothesis */
+  /** The array of the hypotheses. */
   player_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 } __attribute__ ((packed)) player_localize_data_t;
 
