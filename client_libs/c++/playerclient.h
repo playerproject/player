@@ -924,8 +924,11 @@ class LaserProxy : public ClientProxy
 
     unsigned short range_count;
 
-    /// The range values (in mm).
-    unsigned short ranges[PLAYER_LASER_MAX_SAMPLES];
+    /// Range resolution.  All ranges should be multiplied by this number.
+    unsigned short range_res;
+
+    /// The range values: to be multiplied by range_res
+    unsigned int ranges[PLAYER_LASER_MAX_SAMPLES];
 
     // TODO: haven't verified that intensities work yet:
     /// The reflected intensity values (arbitrary units in range 0-7).
@@ -964,7 +967,8 @@ class LaserProxy : public ClientProxy
         enable intensity measurements, or {\tt false} to disable.\\
         Returns the 0 on success, or -1 of there is a problem.  */
     int Configure(short min_angle, short max_angle, 
-                  unsigned short resolution, bool intensity);
+                  unsigned short resolution, unsigned short range_res,
+		  bool intensity);
 
     /** Get the current laser configuration; it is read into the
         relevant class attributes. Returns the 0 on success, or -1

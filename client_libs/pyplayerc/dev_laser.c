@@ -270,18 +270,20 @@ static PyObject *laser_ignore(PyObject *self, PyObject *args)
 static PyObject *laser_set_config(PyObject *self, PyObject *args)
 {
   double min_angle, max_angle, resolution;
-  int intensity;
+  int intensity, range_res;
   laser_object_t *laserob;
   int result;
     
-  if (!PyArg_ParseTuple(args, "dddi", &min_angle, &max_angle, &resolution, &intensity))
+  if (!PyArg_ParseTuple(args, "dddii", &min_angle, &max_angle, &resolution, 
+			&range_res, &intensity))
     return NULL;
   laserob = (laser_object_t*) self;
 
   thread_release();
   result = playerc_laser_set_config(laserob->laser,
                                     min_angle, max_angle,
-                                    resolution, intensity);
+                                    resolution, range_res, 
+				    intensity);
   thread_acquire();
 
   if (result < 0)

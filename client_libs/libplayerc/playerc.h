@@ -663,6 +663,9 @@ typedef struct _playerc_laser_t
   /** Angular resolution of the scan (radians). */
   double scan_res;
 
+  /** Range resolution multiplier */
+  int range_res;
+
   /** Scan data; range (m) and bearing (radians). */
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];
 
@@ -694,16 +697,20 @@ int playerc_laser_unsubscribe(playerc_laser_t *device);
 /** Configure the laser.
     min_angle, max_angle : Start and end angles for the scan.
     resolution : Resolution in 0.01 degree increments.  Valid values are 25, 50, 100.
+    range_res : Range resolution.  Valid: 1, 10, 100.
     intensity : Intensity flag; set to 1 to enable reflection intensity data. */
 int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
-                            double max_angle, int resolution, int intensity);
+			      double max_angle, int resolution, 
+			      int range_res, int intensity);
 
 /** Get the laser configuration
     min_angle, max_angle : Start and end angles for the scan.
     resolution : Resolution is in 0.01 degree increments.
+    range_res : Range Resolution.  Valid: 1, 10, 100.
     intensity : Intensity flag; set to 1 to enable reflection intensity data. */
 int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
-                            double *max_angle, int *resolution, int *intensity);
+			      double *max_angle, int *resolution, 
+			      int *range_res, int *intensity);
 
 /** Get the laser geometry.  The writes the result into the proxy
     rather than returning it to the caller. */

@@ -180,7 +180,7 @@ typedef struct
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *res025_item, *res050_item, *res100_item;
-
+  rtk_menuitem_t *range_mm_item, *range_cm_item, *range_dm_item;
   // Figure for drawing the scan
   rtk_fig_t *scan_fig;
   
