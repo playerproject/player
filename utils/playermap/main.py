@@ -162,8 +162,7 @@ def makemap(gladepath, logfilename, options):
                     break
 
             if data == None:
-                #continue
-                break
+                continue
 
             # Monitor time
             logtime = data.ctime
