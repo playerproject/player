@@ -17,9 +17,9 @@
 #define Deg_U16(A) (htons((uint16_t)(RTOD(A))))
 
 // convert Player degrees in various sizes to local radians
-#define Rad_32(A) (DTOR(ntohl((int32_t)A)))
-#define Rad_16(A) (DTOR(ntohs((int16_t)A)))
-#define Rad_U16(A) (DTOR(ntohs((uint16_t)A)))
+#define Rad_32(A) (DTOR((int)ntohl((int32_t)A)))
+#define Rad_16(A) (DTOR((short)ntohs((int16_t)A)))
+#define Rad_U16(A) (DTOR((unsigned short)ntohs((uint16_t)A)))
 
 //#define PACK_INT_32(A) (htonl((int32_t)A)
 //#define PACK_UINT_32(A) (htonl((uint32_t)A)
