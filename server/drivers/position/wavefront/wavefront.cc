@@ -447,6 +447,8 @@ Wavefront::PutPositionCommand(double x, double y, double a)
   cmd.xpos = htonl((int)rint(x*1e3));
   cmd.ypos = htonl((int)rint(y*1e3));
   cmd.yaw = htonl((int)rint(RTOD(a)));
+  cmd.type=1;
+  cmd.state=1;
 
   this->position->PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 }
