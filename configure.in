@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Start autoconf with this file.  Not really sure why it needs a filename.
 AC_INIT(server/main.cc)
 
-AC_PREREQ(2.51)
+AC_PREREQ(2.54)
 
 AC_CANONICAL_SYSTEM
 
@@ -20,7 +20,7 @@ dnl
 dnl Also create playercommon.h, replacing a couple of C defines with the right
 dnl values.  That way, playercommon.h will be installed in a good working
 dnl state.
-AM_CONFIG_HEADER(config.h server/playercommon.h)
+AC_CONFIG_HEADERS(config.h server/playercommon.h)
 
 
 dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
