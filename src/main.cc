@@ -180,10 +180,12 @@ void *client_reader(void* arg)
 
   while(1) 
   {
-    short c;
+    char c;
     hdr.stx = 0;
+
     /* wait for the STX */
-    while(ntohs(hdr.stx) != PLAYER_STXX)
+    // Fixed to support big-endian machines. ahoward
+    while(hdr.stx != PLAYER_STXX)
     {
       //puts("looking for STX");
 
@@ -194,10 +196,11 @@ void *client_reader(void* arg)
         //perror("client_reader(): read() while waiting for STX");
         delete cd;
       }
-
       //printf("c:%x\n", c);
 
-      hdr.stx = c;
+      // This should be the high byte
+      hdr.stx = ((short) c) << 8;
+
       if(read(cd->socket,&c,1) <= 0)
       {
         // client must be gone. fuck 'em
@@ -205,8 +208,9 @@ void *client_reader(void* arg)
         delete cd;
       }
       //printf("c:%x\n", c);
-      c = c << 8;
-      hdr.stx |= c;
+
+      // This should be the low byte
+      hdr.stx |= ((short) c);
 
       //printf("got:%x:\n",ntohs(hdr.stx));
       readcnt = sizeof(hdr.stx);
