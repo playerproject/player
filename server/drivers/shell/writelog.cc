@@ -607,17 +607,32 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
 void WriteLog::WriteWiFi(player_wifi_data_t *data)
 {
   int i;
+  char *mac, *ip, *essid;
   
   fprintf(this->file, "%04d ", HUINT16(data->link_count));
 
   for (i = 0; i < ntohs(data->link_count); i++)
+  {
+    mac = data->links[i].mac;
+    if (strlen(mac) == 0)
+      mac = "(none)";
+
+    ip = data->links[i].ip;
+    if (strlen(ip) == 0)
+      ip = "(none)";
+
+    essid = data->links[i].essid;
+    if (strlen(essid) == 0)
+      essid = "(none)";
+
     fprintf(this->file, "%s %s %s %d %d %d %d %d %d ",
-            data->links[i].mac, data->links[i].ip, data->links[i].essid,
+            mac, ip, essid,
             data->links[i].mode, HUINT16(data->links[i].freq),
             data->links[i].encrypt,
             HINT16(data->links[i].qual),
             HINT16(data->links[i].level),
             HINT16(data->links[i].noise));
+  }
 
   return;
 }
