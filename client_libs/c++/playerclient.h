@@ -2099,7 +2099,10 @@ public:
 //#include "player_mcom_types.h"
 
 /** The {\tt MComProxy} class is used to exchange data with other clients
-    connected with the same server, through a set of named "channels". */
+    connected with the same server, through a set of named "channels". 
+    For some useful (but optional) type and constant definitions that you
+    can use in your clients, see <playermcomtypes.h>.
+ */
 class MComProxy : public ClientProxy 
 {
 
@@ -2116,18 +2119,20 @@ public:
             ClientProxy(pc,PLAYER_MCOM_CODE,index,access){}
 
     /** Read and remove the most recent buffer in 'channel' with type 'type'.
-        The result can be read with LastData(). */
+        The result can be read with LastData() after the next call to 
+        PlayerClient::Read().
+        @return 0 if no error
+        @return -1 on error, the channel does not exist, or the channel is empty.
+    */
     int Pop(int type, char channel[MCOM_CHANNEL_LEN]);
 
     /** Read the most recent buffer in 'channel' with type 'type'.
         The result can be read with LastData() after the next call to
-        PlayerClient::Read().  */
+        PlayerClient::Read().
+        @return 0 if no error
+        @return -1 on error, the channel does not exist, or the channel is empty.
+    */
     int Read(int type, char channel[MCOM_CHANNEL_LEN]);
-
-    /* Read the most recent buffer in 'channel' with type 'type'.
-       The result is placed in 'result'
-    int Read(int type, char channel[MCOM_CHANNEL_LEN], char result[MCOM_DATA_LEN]);
-     */
 
     /** Push a message 'dat' into channel 'channel' with message type 'type'. */
     int Push(int type, char channel[MCOM_CHANNEL_LEN], char dat[MCOM_DATA_LEN]);
@@ -2138,10 +2143,12 @@ public:
     /** Get the results of the last command (Pop or Read). Call
         PlayerClient::Read() before using.  */
     char* LastData() { return data.data; }
+
     /** Get the results of the last command (Pop or Read). Call
         PlayerClient::Read() before using.  */
     int LastMsgType() { return type; }
-    /** Get the results of the last command (Pop or Read). Call
+
+    /** Get the channel of the last command (Pop or Read). Call
         PlayerClient::Read() before using.  */
     char* LastChannel() { return channel; }
 
