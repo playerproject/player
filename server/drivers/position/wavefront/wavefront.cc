@@ -100,6 +100,7 @@ class Wavefront : public CDevice
     void StopPosition();
     void LocalizeToPosition(double* px, double* py, double* pa,
                             double lx, double ly, double la);
+    void SetWaypoint(double wx, double wy, double wa);
 
   public:
     // Constructor
@@ -434,13 +435,25 @@ Wavefront::StopPosition()
   }
 }
 
+void
+Wavefront::SetWaypoint(double wx, double wy, double wa)
+{
+  double wx_odom, wy_odom, wa_odom;
+ 
+  // transform to odometric frame
+  LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, wx, wy, wa);
+  // hand down waypoint
+  PutPositionCommand(wx_odom, wy_odom, wa_odom);
+  this->stopped = false;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void Wavefront::Main() 
 {
   int curr_waypoint;
   double dist, angle;
-  double wx_odom, wy_odom, wa_odom;
   double lag;
   static bool rotate_waypoint=false;
 
@@ -471,8 +484,7 @@ void Wavefront::Main()
       //plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
-      curr_waypoint = 0;
-      if(!plan_get_waypoint(this->plan,curr_waypoint++,
+      if(!plan_get_waypoint(this->plan,0,
                             &this->waypoint_x,&this->waypoint_y))
       {
         PLAYER_WARN("no waypoints!");
@@ -480,45 +492,12 @@ void Wavefront::Main()
       }
       else
       {
-        this->waypoint_a = this->target_a;
-        dist = sqrt((this->waypoint_x - this->localize_x) *
-                    (this->waypoint_x - this->localize_x) +
-                    (this->waypoint_y - this->localize_y) *
-                    (this->waypoint_y - this->localize_y));
-        angle = atan2(this->waypoint_y - this->localize_y, 
-                      this->waypoint_x - this->localize_x);
-        if((dist > this->dist_eps) &&
-           fabs(NORMALIZE(angle - this->localize_a)) > M_PI/2.0)
-        {
-          this->waypoint_x = this->localize_x;
-          this->waypoint_y = this->localize_y;
-          this->waypoint_a = angle;
-          printf("1:adding rotational waypoint: %f,%f,%f\n",
-                 this->waypoint_x,
-                 this->waypoint_y,
-                 this->waypoint_a);
-          curr_waypoint--;
-          rotate_waypoint=true;
-        }
-        else
-          rotate_waypoint=false;
+        curr_waypoint = 0;
 
-        // transform to odometric frame
-        LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, 
-                           this->waypoint_x, 
-                           this->waypoint_y, 
-                           this->waypoint_a);
-        
-        // hand down next waypoint
-        PutPositionCommand(wx_odom, wy_odom, wa_odom);
-        this->stopped = false;
+        double wx,wy;
+        for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
+          printf("waypoint %d: %f,%f\n", i, wx, wy);
       }
-
-      double wx,wy;
-      for(int i=0;plan_get_waypoint(this->plan,i++,&wx,&wy);)
-        printf("waypoint %d: %f,%f\n", i, wx, wy);
-      
-      this->new_goal = false;
     }
       
     dist = sqrt(((this->localize_x - this->target_x) *
@@ -526,50 +505,37 @@ void Wavefront::Main()
                 ((this->localize_y - this->target_y) *
                  (this->localize_y - this->target_y)));
     angle = fabs(NORMALIZE(this->localize_a - this->target_a));
-    //printf("angle: %f\teps:%f\n", angle, this->ang_eps);
-    //printf("dist: %f\teps:%f\n", dist, this->dist_eps);
     if(dist < this->dist_eps && angle < this->ang_eps)
     {
       // we're at the final target, so stop
-      //puts("at target");
       StopPosition();
       curr_waypoint = -1;
     }
     else if(curr_waypoint < 0)
     {
       // no more waypoints, so stop
-      //puts("no waypoints");
       StopPosition();
     }
     else
     {
-      /*
-      printf("current pose: %f,%f,%f\n",
-             this->localize_x,
-             this->localize_y,
-             this->localize_a);
-      printf("pursuing waypoint %f,%f,%f\n", 
-             this->waypoint_x,
-             this->waypoint_y,
-             this->waypoint_a);
-             */
       // are we there yet?  ignore angle, cause this is just a waypoint
       dist = sqrt(((this->localize_x - this->waypoint_x) * 
                    (this->localize_x - this->waypoint_x)) +
                   ((this->localize_y - this->waypoint_y) *
                    (this->localize_y - this->waypoint_y)));
-      if((dist < this->dist_eps) &&
-         (!rotate_waypoint ||
-          (fabs(NORMALIZE(this->localize_a - this->waypoint_a))
-           < this->ang_eps)))
+      if(this->new_goal ||
+         ((dist < this->dist_eps) &&
+          (!rotate_waypoint ||
+           (fabs(NORMALIZE(this->localize_a - this->waypoint_a))
+            < this->ang_eps))))
       {
+        this->new_goal = false;
+
         // get next waypoint
         if(!plan_get_waypoint(this->plan,curr_waypoint,
                               &this->waypoint_x,&this->waypoint_y))
         {
           // no more waypoints, so wait for target achievement
-          //StopPosition();
-          //curr_waypoint = -1;
           usleep(CYCLE_TIME_US);
           continue;
         }
@@ -583,35 +549,24 @@ void Wavefront::Main()
         angle = atan2(this->waypoint_y - this->localize_y, 
                       this->waypoint_x - this->localize_x);
         if((dist > this->dist_eps) &&
-           fabs(NORMALIZE(angle - this->localize_a)) > M_PI/2.0)
+           fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
         {
+          puts("adding rotational waypoint");
           this->waypoint_x = this->localize_x;
           this->waypoint_y = this->localize_y;
           this->waypoint_a = angle;
-          /*
-          printf("2:adding rotational waypoint: %f,%f,%f\n",
-                 this->waypoint_x,
-                 this->waypoint_y,
-                 this->waypoint_a);
-                 */
           curr_waypoint--;
           rotate_waypoint=true;
         }
         else
           rotate_waypoint=false;
-      
+
+        SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
       }
-      //printf("waypoint: %f, %f\n", this->waypoint_x,this->waypoint_y);
-      // transform to odometric frame
-      LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, 
-                         this->waypoint_x, 
-                         this->waypoint_y, 
-                         this->waypoint_a);
-      //printf("*****w_odom: %f, %f, %f\n", wx_odom, wy_odom, RTOD(wa_odom));
-      // hand down next waypoint
-      PutPositionCommand(wx_odom, wy_odom, wa_odom);
-      this->stopped = false;
+      if(!rotate_waypoint)
+        SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
     }
+
 
     usleep(CYCLE_TIME_US);
   }
