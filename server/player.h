@@ -1279,8 +1279,11 @@ typedef struct player_ptz_controlmode_config
  ** begin section camera
  *************************************************************************/
 
-// Allow for 640x480 32-bit images 
-#define PLAYER_CAMERA_IMAGE_SIZE (640 * 480 * 4)
+// Allow for 640x480 32-bit images
+#define PLAYER_CAMERA_IMAGE_WIDTH 640
+#define PLAYER_CAMERA_IMAGE_HEIGHT 480
+#define PLAYER_CAMERA_IMAGE_SIZE (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
+
 
 /** [Synopsis]
 EXPERIMENTAL.  The {\tt camera} interface is used to see what the camera sees. */

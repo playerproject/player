@@ -8,6 +8,7 @@ AC_ARG_ENABLE(gazebo,
 disable_reason="disabled by user",
 enable_gazebo=yes)
 
+dnl What version do we support?
 GAZEBO_MIN_VERSION="0.3.0"
 
 dnl Where is Gazebo?
@@ -27,30 +28,8 @@ GAZEBO_EXTRA_CPPFLAGS=$GAZEBO_CFLAGS
 GAZEBO_EXTRA_LDFLAGS=$GAZEBO_LIBS
 AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
 AC_SUBST(GAZEBO_EXTRA_LDFLAGS)
+
 ])
-
-dnl if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
-dnl   GAZEBO_HEADER=gazebo.h
-dnl   GAZEBO_EXTRA_CPPFLAGS=
-dnl   GAZEBO_EXTRA_LDFLAGS=-lgazebo
-dnl elif test "x$GAZEBO_DIR" = "xyes"; then
-dnl   GAZEBO_HEADER=$prefix/include/gazebo.h
-dnl   GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include"
-dnl   GAZEBO_EXTRA_LDFLAGS="-L$prefix/lib -lgazebo"
-dnl else
-dnl   GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
-dnl   GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include"
-dnl   GAZEBO_EXTRA_LDFLAGS="-L$GAZEBO_DIR/lib -lgazebo"
-dnl fi
-dnl else 
-dnl GAZEBO_EXTRA_CPPFLAGS=
-dnl GAZEBO_EXTRA_LDFLAGS=
-dnl fi
-dnl AC_SUBST(GAZEBO_HEADER)
-dnl AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
-dnl AC_SUBST(GAZEBO_EXTRA_LDFLAGS)
-dnl ])
-
 
 dnl Test to see if a particular Gazebo driver is available
 AC_DEFUN([GAZEBO_TEST_DRIVER], [
