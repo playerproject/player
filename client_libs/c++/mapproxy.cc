@@ -72,7 +72,6 @@ int MapProxy::GetMap()
   int si,sj;
   char *cell;
 
-  printf("1a\n");
   player_map_info_t infoReq;
   player_msghdr_t hdr;
   player_map_data_t dataReq;
@@ -80,7 +79,6 @@ int MapProxy::GetMap()
   memset( &infoReq, 0, sizeof(infoReq));
   infoReq.subtype = PLAYER_MAP_GET_INFO_REQ;
 
-  printf("1b\n");
   if (client->Request( m_device_id, (const char*)&infoReq,
         sizeof(infoReq.subtype), &hdr, (char*)&infoReq, sizeof(infoReq)) <0)
   {
@@ -88,18 +86,15 @@ int MapProxy::GetMap()
     return -1;
   }
 
-  printf("1c\n");
   this->resolution = 1/(ntohl(infoReq.scale) / 1e3);
   this->width = ntohl(infoReq.width);
   this->height = ntohl(infoReq.height);
 
-  printf("1d\n");
 
   // allocate space for cells
   if (this->cells!=NULL)
     delete [] this->cells;
 
-  printf("1e\n");
   assert( this->cells = new char[this->width * this->height] );
 
 
@@ -111,7 +106,6 @@ int MapProxy::GetMap()
   assert(sx * sy < (int)sizeof(dataReq.data));
   oi = oj = 0;
 
-  printf("1f\n");
   while ((oi < this->width) && (oj < this->height))
   {
     si = MIN( sx, this->width - oi );
@@ -153,7 +147,6 @@ int MapProxy::GetMap()
     }
   }
 
-  printf("1g\n");
   return 0;
 }
 
