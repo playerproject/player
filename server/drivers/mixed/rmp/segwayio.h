@@ -47,7 +47,7 @@ using namespace std;
 #define RMP_MAX_TRANS_VEL_COUNT		1176
 #define RMP_MAX_ROT_VEL_COUNT		1024
 
-#define RMP_READ_WRITE_PERIOD		1	// 100Hz = 10 ms period
+#define RMP_READ_WRITE_PERIOD		10	// 10 ms period = 100 Hz
 
 // this holds all the RMP data it gives us
 struct rmp_frame_t
@@ -114,9 +114,11 @@ public:
   // a CAN packet and put it on the queue
 protected:
   SegwayIO();
-  static void * DummyMain(void *);
+  static void * DummyReadLoop(void *);
+  static void * DummyWriteLoop(void *);
 
-  void ReadWriteLoop();
+  void ReadLoop();
+  void WriteLoop();
 
 protected:
 
@@ -126,7 +128,8 @@ protected:
   bool canioShutdown;
   int usageCount;
 
-  pthread_t read_write_thread;
+  pthread_t read_thread;
+  pthread_t write_thread;
 
   queue<can_packet_t> command_queue;
   pthread_mutex_t command_queue_mutex;
