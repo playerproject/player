@@ -110,7 +110,7 @@ if test x$PYTHON_INTERP != xno; then
     with_python=no
   fi
 fi 2>/dev/null
-AM_CONDITIONAL(WITH_PYTHON, test x$PYTHON_INTERP != xno)
+AM_CONDITIONAL(WITH_PYTHON, test "x$with_python" = "xyes")
 AC_SUBST(PYTHON_INTERP)
 
 dnl Do we have pkg-config?
