@@ -154,6 +154,10 @@ void MicroStrain3DMG_Register(DriverTable* table);
 void INav_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_VFH
+void VFH_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_WAVEAUDIO
 void Waveaudio_Register(DriverTable* table);
 #endif
@@ -343,6 +347,10 @@ register_devices()
   
 #ifdef INCLUDE_INAV
   INav_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_VFH
+  VFH_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_WAVEAUDIO

@@ -186,6 +186,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/isense/Makefile 
           server/drivers/position/microstrain/Makefile 
           server/drivers/position/inav/Makefile 
+          server/drivers/position/vfh/Makefile 
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile

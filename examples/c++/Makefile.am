@@ -18,7 +18,8 @@ noinst_PROGRAMS = randomwalk \
 		  audiowrite \
                   waveformread \
                   audiodspread \
-		  lookupport
+		  lookupport \
+	          vfh
 
 waveformread_SOURCES = waveformread.cc
 audioread_SOURCES = audioread.cc
@@ -38,3 +39,4 @@ stress_SOURCES = stress.cc
 pherobot_SOURCES = pherobot.cc
 lookupport_SOURCES = lookupport.cc
 audiodspread_SOURCES = audiodspread.cc
+vfh_SOURCES = vfh.cc
