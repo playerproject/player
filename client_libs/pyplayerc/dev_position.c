@@ -83,54 +83,54 @@ static void position_del(PyObject *self)
 /* Get attributes (type function) */
 static PyObject *position_getattr(PyObject *self, char *attrname)
 {
-    PyObject *result;
-    position_object_t *positionob;
+  PyObject *result;
+  position_object_t *positionob;
 
-    positionob = (position_object_t*) self;
+  positionob = (position_object_t*) self;
 
-    result = NULL;
-    if (strcmp(attrname, "datatime") == 0)
-    {
-        result = PyFloat_FromDouble(positionob->position->info.datatime);
-    }
-    else if (strcmp(attrname, "px") == 0)
-    {
-        Py_INCREF(positionob->px);
-        result = positionob->px;
-    }
-    else if (strcmp(attrname, "py") == 0)
-    {
-        Py_INCREF(positionob->py);
-        result = positionob->py;
-    }
-    else if (strcmp(attrname, "pa") == 0)
-    {
-        Py_INCREF(positionob->pa);
-        result = positionob->pa;
-    }
-    else if (strcmp(attrname, "vx") == 0)
-    {
-        Py_INCREF(positionob->vx);
-        result = positionob->vx;
-    }
-    else if (strcmp(attrname, "vy") == 0)
-    {
-        Py_INCREF(positionob->vy);
-        result = positionob->vy;
-    }
-    else if (strcmp(attrname, "va") == 0)
-    {
-        Py_INCREF(positionob->va);
-        result = positionob->va;
-    }
-    else if (strcmp(attrname, "stall") == 0)
-    {
-        result = PyInt_FromLong(positionob->position->stall);
-    }
-    else
-        result = Py_FindMethod(position_methods, self, attrname);
+  result = NULL;
+  if (strcmp(attrname, "datatime") == 0)
+  {
+    result = PyFloat_FromDouble(positionob->position->info.datatime);
+  }
+  else if (strcmp(attrname, "px") == 0)
+  {
+    Py_INCREF(positionob->px);
+    result = positionob->px;
+  }
+  else if (strcmp(attrname, "py") == 0)
+  {
+    Py_INCREF(positionob->py);
+    result = positionob->py;
+  }
+  else if (strcmp(attrname, "pa") == 0)
+  {
+    Py_INCREF(positionob->pa);
+    result = positionob->pa;
+  }
+  else if (strcmp(attrname, "vx") == 0)
+  {
+    Py_INCREF(positionob->vx);
+    result = positionob->vx;
+  }
+  else if (strcmp(attrname, "vy") == 0)
+  {
+    Py_INCREF(positionob->vy);
+    result = positionob->vy;
+  }
+  else if (strcmp(attrname, "va") == 0)
+  {
+    Py_INCREF(positionob->va);
+    result = positionob->va;
+  }
+  else if (strcmp(attrname, "stall") == 0)
+  {
+    result = PyInt_FromLong(positionob->position->stall);
+  }
+  else
+    result = Py_FindMethod(position_methods, self, attrname);
 
-    return result;
+  return result;
 }
 
 
@@ -140,7 +140,6 @@ static PyObject *position_str(PyObject *self)
   char str[128];
   position_object_t *positionob;
   positionob = (position_object_t*) self;
-
 
   snprintf(str, sizeof(str),
            "position %02d %013.3f"
@@ -161,19 +160,19 @@ static PyObject *position_str(PyObject *self)
 /* Callback for post-processing incoming data */
 static void position_onread(position_object_t *positionob)
 {
-    thread_acquire();
+  thread_acquire();
     
-    Py_DECREF(positionob->px);
-    Py_DECREF(positionob->py);
-    Py_DECREF(positionob->pa);
-    positionob->px = PyFloat_FromDouble(positionob->position->px);
-    positionob->py = PyFloat_FromDouble(positionob->position->py);
-    positionob->pa = PyFloat_FromDouble(positionob->position->pa);    
-    positionob->vx = PyFloat_FromDouble(positionob->position->vx);
-    positionob->vy = PyFloat_FromDouble(positionob->position->vy);
-    positionob->va = PyFloat_FromDouble(positionob->position->va);    
+  Py_DECREF(positionob->px);
+  Py_DECREF(positionob->py);
+  Py_DECREF(positionob->pa);
+  positionob->px = PyFloat_FromDouble(positionob->position->px);
+  positionob->py = PyFloat_FromDouble(positionob->position->py);
+  positionob->pa = PyFloat_FromDouble(positionob->position->pa);    
+  positionob->vx = PyFloat_FromDouble(positionob->position->vx);
+  positionob->vy = PyFloat_FromDouble(positionob->position->vy);
+  positionob->va = PyFloat_FromDouble(positionob->position->va);    
     
-    thread_release();
+  thread_release();
 }
 
 
@@ -182,17 +181,24 @@ static PyObject *position_subscribe(PyObject *self, PyObject *args)
 {
   char access;
   position_object_t *positionob;
-  PyObject *result;
+  int result;
     
   if (!PyArg_ParseTuple(args, "c", &access))
     return NULL;
   positionob = (position_object_t*) self;
 
   thread_release();
-  result = PyInt_FromLong(playerc_position_subscribe(positionob->position, access));
+  result = playerc_position_subscribe(positionob->position, access);
   thread_acquire();
 
-  return result;
+  if (result < 0)
+  {
+    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    return NULL;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 
@@ -200,17 +206,24 @@ static PyObject *position_subscribe(PyObject *self, PyObject *args)
 static PyObject *position_unsubscribe(PyObject *self, PyObject *args)
 {
   position_object_t *positionob;
-  PyObject *result;
+  int result;
     
   if (!PyArg_ParseTuple(args, ""))
     return NULL;
   positionob = (position_object_t*) self;
 
   thread_release();
-  result = PyInt_FromLong(playerc_position_unsubscribe(positionob->position));
+  result = playerc_position_unsubscribe(positionob->position);
   thread_acquire();
 
-  return result;
+  if (result < 0)
+  {
+    PyErr_Format(errorob, "libplayerc: %s", playerc_errorstr);
+    return NULL;
+  }
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 
@@ -241,14 +254,14 @@ static PyObject *position_enable(PyObject *self, PyObject *args)
 */
 static PyObject *position_set_speed(PyObject *self, PyObject *args)
 {
-    double vx, vy, va;
-    position_object_t *positionob;
+  double vx, vy, va;
+  position_object_t *positionob;
     
-    if (!PyArg_ParseTuple(args, "ddd", &vx, &vy, &va))
-        return NULL;
-    positionob = (position_object_t*) self;
+  if (!PyArg_ParseTuple(args, "ddd", &vx, &vy, &va))
+    return NULL;
+  positionob = (position_object_t*) self;
 
-    return PyInt_FromLong(playerc_position_set_speed(positionob->position, vx, vy, va));
+  return PyInt_FromLong(playerc_position_set_speed(positionob->position, vx, vy, va));
 }
 
 
@@ -256,23 +269,23 @@ static PyObject *position_set_speed(PyObject *self, PyObject *args)
  */
 PyTypeObject position_type = 
 {
-    PyObject_HEAD_INIT(NULL)
-    0,
-    "position",
-    sizeof(position_object_t),
-    0,
-    position_del, /*tp_dealloc*/
-    0,          /*tp_print*/
-    position_getattr, /*tp_getattr*/
-    0,          /*tp_setattr*/
-    0,          /*tp_compare*/
-    0,          /*tp_repr*/
-    0,          /*tp_as_number*/
-    0,          /*tp_as_sequence*/
-    0,          /*tp_as_mapping*/
-    0,          /*tp_hash*/
-    0,          /*tp_call*/
-    position_str, /*tp_string*/
+  PyObject_HEAD_INIT(NULL)
+  0,
+  "position",
+  sizeof(position_object_t),
+  0,
+  position_del, /*tp_dealloc*/
+  0,          /*tp_print*/
+  position_getattr, /*tp_getattr*/
+  0,          /*tp_setattr*/
+  0,          /*tp_compare*/
+  0,          /*tp_repr*/
+  0,          /*tp_as_number*/
+  0,          /*tp_as_sequence*/
+  0,          /*tp_as_mapping*/
+  0,          /*tp_hash*/
+  0,          /*tp_call*/
+  position_str, /*tp_string*/
 };
 
 

@@ -24,14 +24,14 @@
 #
 ###########################################################################
 
-.SUFFIXES: .cc .o
-
-include ../../Makefile.common
+.SUFFIXES: .c .o
 
 # Paths
-PYTHON_INC = /usr/local/include/python2.1
-PLAYER_INC = ../../include/
-PLAYER_LIB = ../../lib/
+PYTHON_INC = -I/usr/local/include/python2.1
+PLAYER_INC = -I../../server -I../libplayerc
+PLAYER_LIB = ../libplayerc
+
+DEFINES = -DHAVE_SYS_TYPES_H=1 -DHAVE_STDINT_H=1
 
 LIB = playerc.so
 OBS = pyplayerc.o \
@@ -40,7 +40,7 @@ OBS = pyplayerc.o \
 			dev_ptz.o \
 			dev_vision.o
 
-CFLAGS = -g3 -Wall -fPIC -I$(PYTHON_INC) -I$(PLAYER_INC)
+CFLAGS = -g3 -Wall -fPIC $(DEFINES) $(PYTHON_INC) $(PLAYER_INC)
 LFLAGS = -shared -lm -L$(PLAYER_LIB) -lplayerc
 
 
