@@ -138,7 +138,7 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 	      //printf( "range %d %d\n", i, samples[i].range);
 	      
 	      pdata.ranges[i] = htons( (uint16_t)(samples[i].range) );
-	      pdata.intensity[i] = 0;
+	      pdata.intensity[i] = (uint8_t)samples[i].reflectance;
 	    }
 	  
 	  // publish this data

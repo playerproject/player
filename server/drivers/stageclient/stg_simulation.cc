@@ -152,7 +152,9 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
   //assert(root);
   
   int zero = 0;
-  stg_model_t* dummy = g_hash_table_lookup( Stage1p4::world->models_id, &zero );
+  stg_model_t* dummy = 
+    (stg_model_t*)g_hash_table_lookup( Stage1p4::world->models_id, &zero );
+
   assert(dummy);
   stg_model_subscribe( dummy, STG_PROP_TIME, 100 ); //100ms
   
