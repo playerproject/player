@@ -93,11 +93,13 @@ int CPacket::Receive( int fd )
   //int skipped=0;
   int cnt;
 
-  memset( packet, 0, 256 );
+  bzero(packet,256);
+  //memset( packet, 0, 256 );
 
   do 
   {
-    memset( prefix, 0, 3);
+    bzero(prefix,sizeof(prefix));
+    //memset( prefix, 0, 3);
 
     while(1) 
     {

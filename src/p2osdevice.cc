@@ -69,13 +69,13 @@ extern player_p2os_data_t* CP2OSDevice::data;
 extern player_p2os_cmd_t* CP2OSDevice::command;
 extern unsigned char* CP2OSDevice::config;
 extern int            CP2OSDevice::config_size;
-extern CLock          CP2OSDevice::lock;
+extern CLock*         CP2OSDevice::lock;
 extern struct timeval CP2OSDevice::timeBegan_tv;
 extern bool           CP2OSDevice::direct_wheel_vel_control;
 extern int            CP2OSDevice::psos_fd; 
 extern char           CP2OSDevice::psos_serial_port[];
 extern char           CP2OSDevice::num_loops_since_rvel;
-extern pthread_mutex_t CP2OSDevice::serial_mutex;
+//extern pthread_mutex_t CP2OSDevice::serial_mutex;
 extern CSIP*           CP2OSDevice::sippacket;
 extern bool           CP2OSDevice::arena_initialized_data_buffer;
 extern bool           CP2OSDevice::arena_initialized_command_buffer;
@@ -84,12 +84,19 @@ void *RunPsosThread( void *p2osdevice );
 
 CP2OSDevice::CP2OSDevice(char *port) 
 {
-  //puts("CP2OSDevice::CP2OSDevice()");
-  data = new player_p2os_data_t;
-  command = new player_p2os_cmd_t;
-  config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
+  if(!data)
+    data = new player_p2os_data_t;
+  if(!command)
+    command = new player_p2os_cmd_t;
+  if(!config)
+  {
+    config = new unsigned char[P2OS_CONFIG_BUFFER_SIZE];
+    config_size = 0;
+  }
 
-  config_size = 0;
+  if(!lock)
+    lock = new CLock;
+
   arena_initialized_command_buffer = false;
   arena_initialized_data_buffer = false;
 
@@ -106,13 +113,13 @@ CP2OSDevice::CP2OSDevice(char *port)
   psos_fd = -1;
   strcpy( psos_serial_port, port );
 
-  pthread_mutex_init(&serial_mutex,NULL);
+  //pthread_mutex_init(&serial_mutex,NULL);
 }
 
 CP2OSDevice::~CP2OSDevice()
 {
   GetLock()->Shutdown( this );
-  pthread_mutex_destroy(&serial_mutex);
+  //pthread_mutex_destroy(&serial_mutex);
 }
 
 int CP2OSDevice::Setup()
@@ -276,11 +283,13 @@ int CP2OSDevice::Setup()
   printf("Done.  Connected to %s, a %s %s\n", name, type, subtype);
   direct_wheel_vel_control = true;
   num_loops_since_rvel = 2;
-  pthread_mutex_unlock(&serial_mutex);
+  //pthread_mutex_unlock(&serial_mutex);
 
   // first, receive a packet so we know we're connected.
-  sippacket = new CSIP();
-  SendReceive((CPacket*)NULL,false);
+  if(!sippacket)
+    sippacket = new CSIP();
+  SendReceive((CPacket*)NULL);//,false);
+
 
   /* now spawn reading thread */
   if(pthread_attr_init(&attr) ||
@@ -295,6 +304,8 @@ int CP2OSDevice::Setup()
 
 int CP2OSDevice::Shutdown()
 {
+  //puts("CP2OSDevice::Shutdown()");
+  //return(0);
   unsigned char command[20],buffer[20];
   CPacket packet; 
 
@@ -324,8 +335,9 @@ int CP2OSDevice::Shutdown()
   close(psos_fd);
   psos_fd = -1;
   puts("P2OS has been shutdown");
-  pthread_mutex_unlock(&serial_mutex);
+  //pthread_mutex_unlock(&serial_mutex);
   delete sippacket;
+  sippacket = NULL;
   return(0);
 }
 
@@ -388,6 +400,7 @@ void *RunPsosThread( void *p2osdevice )
 
   int config_size;
 
+
   sigblock(SIGINT);
   sigblock(SIGALRM);
 
@@ -415,7 +428,7 @@ void *RunPsosThread( void *p2osdevice )
           motorcommand[2] = config[1];
           motorcommand[3] = 0;
           motorpacket.Build(motorcommand, 4);
-          pd->SendReceive(&motorpacket,false);
+          pd->SendReceive(&motorpacket);//,false);
           break;
         case 'v':
           /* velocity control mode:
@@ -563,7 +576,7 @@ void *RunPsosThread( void *p2osdevice )
     }
     //printf("motorpacket[0]: %d\n", motorcommand[0]);
     motorpacket.Build( motorcommand, 4);
-    pd->SendReceive(&motorpacket,false);
+    pd->SendReceive(&motorpacket);//,false);
 
     /*
     if(newgrippercommand)
@@ -592,7 +605,7 @@ void *RunPsosThread( void *p2osdevice )
 
 /* send the packet, then receive and parse an SIP */
 int
-CP2OSDevice::SendReceive(CPacket* pkt, bool already_have_lock)
+CP2OSDevice::SendReceive(CPacket* pkt) //, bool already_have_lock)
 {
   CPacket packet;
   //static CSIP sippacket;
@@ -601,8 +614,8 @@ CP2OSDevice::SendReceive(CPacket* pkt, bool already_have_lock)
   if((psos_fd >= 0) && sippacket)
   {
     //printf("psos_fd: %d\n", psos_fd);
-    if(!already_have_lock)
-      pthread_mutex_lock(&serial_mutex);
+    //if(!already_have_lock)
+      //pthread_mutex_lock(&serial_mutex);
     if(pkt)
     {
       if(!direct_wheel_vel_control)
@@ -645,7 +658,7 @@ CP2OSDevice::SendReceive(CPacket* pkt, bool already_have_lock)
       puts("got non-SIP packet");
     }
 
-    pthread_mutex_unlock(&serial_mutex);
+    //pthread_mutex_unlock(&serial_mutex);
   }
   return(0);
 }
@@ -658,7 +671,7 @@ CP2OSDevice::ResetRawPositions()
 
   if(sippacket)
   {
-    pthread_mutex_lock(&serial_mutex);
+    //pthread_mutex_lock(&serial_mutex);
     sippacket->rawxpos = 0;
     sippacket->rawypos = 0;
     sippacket->xpos = 0;
@@ -666,7 +679,7 @@ CP2OSDevice::ResetRawPositions()
     p2oscommand[0] = SETO;
     p2oscommand[1] = 0x3B;
     pkt.Build(p2oscommand, 2);
-    SendReceive(&pkt,true);
+    SendReceive(&pkt);//,true);
   }
 }
 
