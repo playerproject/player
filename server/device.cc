@@ -40,6 +40,7 @@
 
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
+//extern pid_t g_server_pid;
 
 // this is the main constructor, used by most non-Stage devices.
 // storage will be allocated by this constructor
@@ -429,6 +430,7 @@ CDevice::DummyMain(void *devicep)
   sigblock(SIGINT);
   sigblock(SIGHUP);
   sigblock(SIGTERM);
+  sigblock(SIGUSR1);
 #endif
 
   // Install a cleanup function
@@ -502,6 +504,10 @@ CDevice::DataAvailable(void)
   pthread_mutex_lock(&condMutex);
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&condMutex);
+
+  // also wake up the server thread
+  //if(kill(g_server_pid,SIGUSR1) < 0)
+    //perror("kill(2) failed while waking up server thread");
 }
 
 // Waits on the condition variable associated with this device.
