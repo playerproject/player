@@ -60,8 +60,9 @@ CDeviceTable::~CDeviceTable()
 // devicep is the controlling object (e.g., sonarDevice for sonar)
 //  
 // returns 0 on success, non-zero on failure (device not added)
-int CDeviceTable::AddDevice(unsigned short code, unsigned short index, 
-                            unsigned char access, CDevice* devicep)
+int CDeviceTable::AddDevice(int port, unsigned short code, 
+                            unsigned short index, unsigned char access, 
+                            CDevice* devicep)
 {
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;
@@ -71,7 +72,9 @@ int CDeviceTable::AddDevice(unsigned short code, unsigned short index,
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
   {
-    if((thisentry->code == code) && (thisentry->index == index))
+    if((thisentry->port == port) && 
+       (thisentry->code == code) && 
+       (thisentry->index == index))
     {
       if(thisentry->devicep)
         delete thisentry->devicep;
@@ -89,6 +92,7 @@ int CDeviceTable::AddDevice(unsigned short code, unsigned short index,
     numdevices++;
   }
 
+  thisentry->port = port;
   thisentry->code = code;
   thisentry->index = index;
   thisentry->access = access;
@@ -99,14 +103,17 @@ int CDeviceTable::AddDevice(unsigned short code, unsigned short index,
 
 // returns the controlling object for the given code (or NULL
 // on failure)
-CDevice* CDeviceTable::GetDevice(unsigned short code, unsigned index)
+CDevice* CDeviceTable::GetDevice(int port, unsigned short code, 
+                                 unsigned short index)
 {
   CDeviceEntry* thisentry;
   CDevice* devicep = NULL;
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    if((thisentry->code == code) && (thisentry->index == index))
+    if((thisentry->port == port) && 
+       (thisentry->code == code) && 
+       (thisentry->index == index))
     {
       devicep = thisentry->devicep;
       break;
@@ -118,7 +125,7 @@ CDevice* CDeviceTable::GetDevice(unsigned short code, unsigned index)
 
 // returns the code for access ('r', 'w', or 'a') for the given 
 // device, or 'e' on failure
-unsigned char CDeviceTable::GetDeviceAccess(unsigned short code, 
+unsigned char CDeviceTable::GetDeviceAccess(int port, unsigned short code, 
                                             unsigned short index)
 {
   CDeviceEntry* thisentry;
@@ -127,7 +134,9 @@ unsigned char CDeviceTable::GetDeviceAccess(unsigned short code,
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    if((thisentry->code == code) && (thisentry->index == index))
+    if((thisentry->port == port) && 
+       (thisentry->code == code) && 
+       (thisentry->index == index))
     {
       access = thisentry->access;
       break;

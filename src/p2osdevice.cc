@@ -50,6 +50,7 @@
 // and position objects
 #include <devicetable.h>
 extern CDeviceTable* deviceTable;
+extern int global_playerport; // used to get at devices
 
 /* here we calculate our conversion factors.
  *  0x370 is max value for the PTZ pan command, and in the real
@@ -446,8 +447,8 @@ void *RunPsosThread( void *p2osdevice )
   int last_sonar_subscrcount;
   int last_position_subscrcount;
 
-  CDevice* sonarp = deviceTable->GetDevice(PLAYER_SONAR_CODE,0);
-  CDevice* positionp = deviceTable->GetDevice(PLAYER_POSITION_CODE,0);
+  CDevice* sonarp = deviceTable->GetDevice(global_playerport,PLAYER_SONAR_CODE,0);
+  CDevice* positionp = deviceTable->GetDevice(global_playerport,PLAYER_POSITION_CODE,0);
 
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;

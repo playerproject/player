@@ -61,6 +61,7 @@
 #include "devicetable.h"
 
 extern CDeviceTable* deviceTable;
+extern int global_playerport; // used to get at devices
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -112,7 +113,7 @@ CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
 int CLaserBeaconDevice::Setup()
 {
     // get the pointer to the laser
-    this->laser = deviceTable->GetDevice(PLAYER_LASER_CODE,index);
+    this->laser = deviceTable->GetDevice(global_playerport,PLAYER_LASER_CODE,index);
     ASSERT(this->laser != NULL);
     
     // Subscribe to the laser device

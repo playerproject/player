@@ -39,6 +39,7 @@
 #include <unistd.h>  /* for close(2) */
 #include <sys/types.h>  /* for accept(2) */
 #include <sys/socket.h>  /* for accept(2) */
+#include <sys/poll.h>  /* for poll(2) */
 
 #include <pubsub_util.h> /* for create_and_bind_socket() */
 
@@ -86,7 +87,8 @@
 #include <clientdata.h>
 #include <clientmanager.h>
 #include <devicetable.h>
-#include <nodevice.h>
+// don't think we need this one anymore. bpg
+//#include <nodevice.h>
 
 #include <sys/mman.h> // for mmap
 #include <fcntl.h>
@@ -160,16 +162,20 @@ Usage()
 /* sighandler to shut everything down properly */
 void Interrupt( int dummy ) 
 {
-  // delete the manager; it will delete the clients
-  delete clientmanager;
+  if(dummy != SIGTERM)
+  {
+    // delete the manager; it will delete the clients
+    delete clientmanager;
 
-  // next, delete the deviceTable; it will delete all the devices internally
-  delete deviceTable;
+    // next, delete the deviceTable; it will delete all the devices internally
+    delete deviceTable;
+  }
 
   printf("** Player [port %d] quitting **\n", global_playerport );
 
   exit(0);
 }
+
 
 /* for debugging */
 void PrintHeader(player_msghdr_t hdr)
@@ -185,7 +191,7 @@ void PrintHeader(player_msghdr_t hdr)
 }
 
 #ifdef INCLUDE_STAGE
-bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
+bool CreateStageDevices( player_stage_info_t *arenaIO)
 {
   player_stage_info_t *end = (player_stage_info_t*)((char*)arenaIO + ioSize);
   
@@ -195,9 +201,9 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
        info = (player_stage_info_t*)((char*)info + (size_t)(info->len) ))
     {      
 #ifdef DEBUG
-      printf( "[%d] Processing mmap at base: %p info: %p (len: %d total: %d)" 
+      printf( "[] Processing mmap at base: %p info: %p (len: %d total: %d)" 
 	      "next: %p end: %p\n", 
-	      playerport,arenaIO, info, info->len, ioSize, 
+	      arenaIO, info, info->len, ioSize, 
 	      (char*)info + info->len , end );
       fflush( stdout );
 #endif	  
@@ -224,18 +230,22 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	  // Create a StageDevice with this IO base address
 	  dev = new CStageDevice( info );
 	  
+          // took out this check, since now we'll handle all ports - BPG
+          //
 	  // only devices on the my port or the global port are
 	  // available to clients
+          /*
 	  if( info->player_id.port == playerport || 
 	      info->player_id.port == GLOBALPORT )
-	    deviceTable->AddDevice( info->player_id.type, 
-				    info->player_id.index, 
-				    PLAYER_ALL_MODE, dev );
+              */
+          deviceTable->AddDevice( info->player_id.port,
+                                  info->player_id.type, 
+                                  info->player_id.index, 
+                                  PLAYER_ALL_MODE, dev );
 	  
 
 #ifdef DEBUG
-      printf( "Player [port %d] created StageDevice (%d,%d,%d)\n", 
-	      playerport,
+      printf( "Player created StageDevice (%d,%d,%d)\n", 
 	      info->player_id.port, 
 	      info->player_id.type, 
 	      info->player_id.index ); 
@@ -272,10 +282,13 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
     }
 
 #ifdef INCLUDE_BPS
+  // DOUBLE-HACK -- now this won't work in stage, because we don't know to 
+  //                which port to tie the device - BPG
+  //
   // HACK -- Create BPS as per normal; it will use other simulated devices
   // The stage versus non-stage initialization needs some re-thinking.
   // ahoward
-  deviceTable->AddDevice(PLAYER_BPS_CODE, 0, 
+  deviceTable->AddDevice(global_playerport,PLAYER_BPS_CODE, 0, 
                          PLAYER_READ_MODE, new CBpsDevice(0, NULL));
 #endif
   
@@ -336,7 +349,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_MISC
     tmpdevice = new CMiscDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_MISC_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_MISC_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for misc device was not included at compile time.\n",stderr);
@@ -347,7 +360,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_GRIPPER
     tmpdevice = new CGripperDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_GRIPPER_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_GRIPPER_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for gripper device was not included at compile time.\n",
@@ -360,7 +373,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_POSITION
     tmpdevice = new CPositionDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_POSITION_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_POSITION_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for position device was not included at compile time.\n",
@@ -372,7 +385,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_SONAR
     tmpdevice = new CSonarDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_SONAR_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_SONAR_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for sonar device was not included at compile time.\n",
@@ -387,7 +400,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_LASERBEACON
     tmpdevice = new CLaserBeaconDevice(argc,argv); 
-    deviceTable->AddDevice(PLAYER_LASERBEACON_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_LASERBEACON_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for laserbeacon device was not included at compile time.\n",
@@ -399,7 +412,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_LASER
     tmpdevice = new CLaserDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_LASER_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_LASER_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for laser device was not included at compile time.\n",
@@ -411,7 +424,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_VISION
     tmpdevice = new CVisionDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_VISION_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_VISION_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for vision device was not included at compile time.\n",
@@ -423,7 +436,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_PTZ
     tmpdevice = new CPtzDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_PTZ_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_PTZ_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for ptz device was not included at compile time.\n",
@@ -435,7 +448,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_AUDIO
     tmpdevice = new CAudioDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_AUDIO_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_AUDIO_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for audio device was not included at compile time.\n",
@@ -448,7 +461,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_BROADCAST
     tmpdevice = new CBroadcastDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_BROADCAST_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_BROADCAST_CODE, index, 
                            PLAYER_ALL_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for broadcast device was not included at compile time.\n",
@@ -460,7 +473,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_SPEECH
     tmpdevice = new CSpeechDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_SPEECH_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_SPEECH_CODE, index, 
                            PLAYER_WRITE_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for speech device was not included at compile time.\n",
@@ -477,7 +490,7 @@ parse_device_string(char* str1, char* str2)
   {
 #ifdef INCLUDE_BPS
     tmpdevice = new CBpsDevice(argc,argv);
-    deviceTable->AddDevice(PLAYER_BPS_CODE, index, 
+    deviceTable->AddDevice(global_playerport,PLAYER_BPS_CODE, index, 
                            PLAYER_READ_MODE, tmpdevice);
 #else
     fputs("\nWarning: Support for bps device was not included at compile time.\n",
@@ -507,7 +520,12 @@ int main( int argc, char *argv[] )
   int sender_len;
 #endif
   CClientData *clientData;
-  int player_sock = 0;
+  //int player_sock = 0;
+  
+  // use these to keep track of many sockets in stage mode
+  struct pollfd* ufds;
+  int* ports;
+  int num_ufds;
 
   char arenaFile[MAX_FILENAME_SIZE]; // filename for mapped memory
 
@@ -553,7 +571,7 @@ int main( int argc, char *argv[] )
     }
     else if(!strcmp(new_argv[i], "-gerkey"))
     {
-      puts("Gerkey extensions enabled....");
+      puts("Gerkey extensions enabled (good luck)....");
       player_gerkey = true;
     }
     else if(!strcmp(new_argv[i], "-port"))
@@ -640,6 +658,31 @@ int main( int argc, char *argv[] )
   */
 
   puts( "" ); // newline, flush
+
+  /* set up to handle SIGPIPE (happens when the client dies) */
+  if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGPIPE");
+    exit(1);
+  }
+
+  if(signal(SIGINT, Interrupt ) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGINT");
+    exit(1);
+  }
+
+  if(signal(SIGHUP, Interrupt ) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGHUP");
+    exit(1);
+  }
+
+  if(signal(SIGTERM, Interrupt) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGTERM");
+    exit(1);
+  }
   
 #ifdef INCLUDE_STAGE
   if( use_stage )
@@ -679,37 +722,58 @@ int main( int argc, char *argv[] )
     close( tfd ); // can close fd once mapped
 
     // make all the stage devices, scan
-    CreateStageDevices( arenaIO, global_playerport );
+    CreateStageDevices( arenaIO);
+
+    // make room to store all the sockets
+    //  (when in stage mode, the command-line given port is the number of
+    //   ports that will come in on stdin)
+    num_ufds = global_playerport;
+    if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
+    {
+      perror("new failed for pollfds or ports");
+      exit(-1);
+    }
+
+    // read in the ports
+    for(int i=0;i<global_playerport;i++)
+    {
+      if(scanf("%d", ports+i) != 1)
+        printf("scanf failed to get port %d\n", i);
+      
+      // setup the socket to listen on
+      if((ufds[i].fd = create_and_bind_socket(&listener,1, ports[i], 
+                                              SOCK_STREAM,200)) == -1)
+      {
+        fputs("create_and_bind_socket() failed; quitting", stderr);
+        exit(-1);
+      }
+
+      ufds[i].events = POLLIN;
+    }
   }  
 
 #endif // INCLUDE_STAGE  
 
-  /* set up to handle SIGPIPE (happens when the client dies) */
-  if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+  if(!use_stage)
   {
-    perror("signal(2) failed while setting up for SIGPIPE");
-    exit(1);
-  }
+    num_ufds = 1;
+    if(!(ufds = new struct pollfd[num_ufds]) || !(ports = new int[num_ufds]))
+    {
+      perror("new failed for pollfds or ports");
+      exit(-1);
+    }
 
-  if(signal(SIGINT, Interrupt ) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGINT");
-    exit(1);
-  }
+    // setup the socket to listen on
+    if((ufds[0].fd = create_and_bind_socket(&listener,1,
+                                            global_playerport,
+                                            SOCK_STREAM,200)) == -1)
+    {
+      fputs("create_and_bind_socket() failed; quitting", stderr);
+      exit(-1);
+    }
 
-  if(signal(SIGHUP, Interrupt ) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGHUP");
-    exit(1);
-  }
-
-  // setup the socket to listen on
-  if((player_sock = 
-      create_and_bind_socket(&listener,1,global_playerport,SOCK_STREAM,200)) 
-     == -1)
-  {
-    fputs("create_and_bind_socket() failed; quitting", stderr);
-    exit(-1);
+    ufds[0].events = POLLIN;
+    ports[0] = global_playerport;
   }
 
   // create the client manager object.
@@ -721,30 +785,46 @@ int main( int argc, char *argv[] )
   // manager.
   for(;;) 
   {
-    clientData = new CClientData(auth_key);
+    int num_connects;
 
-    /* block here */
-    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL, 
-                                    &sender_len)) == -1)
+    if((num_connects = poll(ufds,num_ufds,100)) < 0)
     {
-      perror("accept(2) failed: ");
+      perror("poll() failed.");
       exit(-1);
     }
 
-    // make the socket non-blocking
-    if(fcntl(clientData->socket, F_SETFL, O_NONBLOCK) == -1)
+    if(!num_connects)
+      continue;
+
+    for(int i=0;i<num_ufds;i++)
     {
-      perror("fcntl() failed while making socket non-blocking. quitting.");
-      exit(-1);
+      if(ufds[i].revents & POLLIN)
+      {
+        clientData = new CClientData(auth_key,ports[i]);
+
+        /* shouldn't block here */
+        if((clientData->socket = accept(ufds[i].fd,(struct sockaddr *)NULL, 
+                                        &sender_len)) == -1)
+        {
+          perror("accept(2) failed: ");
+          exit(-1);
+        }
+
+        // make the socket non-blocking
+        if(fcntl(clientData->socket, F_SETFL, O_NONBLOCK) == -1)
+        {
+          perror("fcntl() failed while making socket non-blocking. quitting.");
+          exit(-1);
+        }
+
+        /* got conn */
+        printf("** Player [port %d] client accepted on socket %d **\n", 
+               global_playerport, clientData->socket);
+
+        /* add it to the manager's list */
+        clientmanager->AddClient(clientData);
+      }
     }
-
-    /* got conn */
-    printf("** Player [port %d] client accepted on socket %d **\n", 
-           global_playerport, clientData->socket);
-
-    /* add it to the manager's list */
-    clientmanager->AddClient(clientData);
-
   }
 
   /* don't get here */
