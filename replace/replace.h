@@ -90,6 +90,14 @@ int scandir(const char *dir, struct dirent ***namelist,
   #include <libgen.h> // for dirname(3)
 #endif // !HAVE_DIRNAME
 
+#if !HAVE_ALPHASORT
+  int alphasort (const void *a, const void *b);
+#else
+  #include <sys/types.h>
+  #include <dirent.h>
+  #include <sys/dir.h>
+#endif
+
 #ifdef __cplusplus
 }
 #endif

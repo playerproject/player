@@ -27,10 +27,26 @@
  */
 #include <devicetable.h>
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
 #include <string.h> // for strncpy(3)
+
 
 // true if we're connecting to Stage instead of a real robot
 extern bool use_stage;
+
+CDeviceEntry::CDeviceEntry()
+{ 
+  devicep = NULL; 
+  next = NULL;
+  bzero(drivername, sizeof(drivername));
+  bzero(robotname, sizeof(robotname));
+}
+
 
 // initialize the table
 CDeviceTable::CDeviceTable()
