@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,6 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
@@ -26,13 +28,14 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
-#ifndef VISIONDEVICE
-#define VISIONDEVICE
+#ifndef _VISIONDEVICE_H
+#define _VISIONDEVICE_H
 
 #include <pthread.h>
 
-#include "lock.h"
-#include "device.h"
+#include <lock.h>
+#include <device.h>
+#include <messages.h>
 
 class CVisionDevice:public CDevice 
 {
@@ -41,19 +44,17 @@ class CVisionDevice:public CDevice
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
     int pid;      // ACTS's pid so we can kill it later
 
-    // RTV - access to lock through GetLock()
     CLock lock;
-    // !RTV
 
   public:
     bool useoldacts;    // whether or not we use old ACTS
     int sock;               // laser device file descriptor
     int portnum;  // port number where we'll run ACTS
-    char configfilepath[VISION_CONFIGFILE_NAME_SIZE];  // path to configfile
-    unsigned char* command;
+    char configfilepath[MAX_FILENAME_SIZE];  // path to configfile
     // array holding the most recent blob data; plus two bytes for size
     //   sizeof(unsigned short)+ACTS_TOTAL_MAX_SIZE
-    unsigned char* data;
+    player_internal_vision_data_t* data;
+    //unsigned char* data;
 
     // constructor 
     //    num is the port number for ACTS to listen on.  use zero for

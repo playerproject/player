@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,17 +19,19 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
  *   the P2 sonar device.  takes no commands.  return sonar readings.
  */
-#ifndef SONARDEVICE
-#define SONARDEVICE
+#ifndef _SONARDEVICE_H
+#define _SONARDEVICE_H
 
-#include "p2osdevice.h"
+#include <p2osdevice.h>
 
-class CSonarDevice: public CP2OSDevice {
+class CSonarDevice: public CP2OSDevice 
+{
  public:
   size_t GetData( unsigned char *, size_t maxsize);
   CSonarDevice::CSonarDevice(char* port):CP2OSDevice(port){}

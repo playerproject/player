@@ -1,7 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,18 +19,22 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
  *
  * part of the P2OS parser.  methods for filling and parsing server
  * information packets (SIPs)
  */
-#ifndef SIP
-#define SIP
+#ifndef _SIP_H
+#define _SIP_H
 
 #include <values.h>
+#include <messages.h>
+#include <p2osdevice.h>
 
-class CSIP {
+class CSIP 
+{
  private:
   int PositionChange( unsigned short, unsigned short );
 
@@ -38,17 +43,17 @@ class CSIP {
   
   unsigned char status, battery, sonarreadings, analog, digin, digout;
   unsigned short ptu, compass, timer, rawxpos, rawypos, frontbumpers, rearbumpers;
-  short angle, lvel, rvel, control, sonars[16];
+  short angle, lvel, rvel, control, sonars[PLAYER_NUM_SONAR_SAMPLES];
   int xpos, ypos;
 
   /* returns 0 if Parsed correctly otherwise 1 */
   void Parse( unsigned char *buffer );
   void Print();
   void PrintSonars();
-  void Fill( unsigned char data[],  struct timeval timeBegan_tv);
+  void Fill( player_p2os_data_t* data,  struct timeval timeBegan_tv);
 
   CSIP() {
-    for(int i=0;i<16;i++) sonars[i] = 0;
+    for(int i=0;i<(int)sizeof(sonars);i++) sonars[i] = 0;
 
     xpos = MAXINT;
     ypos = MAXINT;
