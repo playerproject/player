@@ -1,0 +1,108 @@
+this driver communicates directly with the RFLEX in an RWI robot
+(instead of going through mobility), this saves processing, as well as allowing for direct control over the breaks, sonar configuration etc.
+
+These devices act exactly as the p2os devices - at least theoretically
+and thus any client that works with stage or p2os should work with these devices as 
+well thanks to the virtual device system now supported by player
+
+unfortunatly, as we only have partial documentation on the rflex serial protocol (as documented in rflex-protocol.txt, thanks to the developers of CARMEN) the configuration file is quite extensive.
+
+if you take a look at umass_ATRVJr.cfg or umass_ATRVMini.cfg in player/config both of these configuration files use the rflex drivers. Both of these robots have some constum components - namely the sonar layout on the ATRVJr and the drive train on the ATRVMini, thus these configuration files will probobly not work for you out of the box.
+
+***************************
+the position driver takes 8 arguments:
+rflex_serial_port tells the driver what serial port the rflex is connected to
+
+driver this is the same as described in the general documentation
+
+mm_length and mm_width 
+	are the length and width of the robot in mm
+	these are for return in the "get_geometry" call
+
+odo_distance_conversion 
+	is an obnoxious conversion factor
+	as is the units used for robot odometry appear to be completrly arbitrary
+	thus this conversion factor is necicary to convert to mm from these
+	arbitrary units, mm*odo_distance_conversion=arbitrary robot units
+
+	the units seem to be different on each robot model - and of course
+	can also be used to adjust for different tire inflations etc.
+	to configure these I simply had a client spit out the current position
+	of the robot, moved the robot a few meters forward, and computed the
+	conversion factor
+
+odo_angle_conversion 
+	same as the number above but for rotation
+	NOTE - the rflex actually returns odometry data in X,Y,Theta coordinates
+	, but we turn this into distance heading and reintigrate the data
+	the original conversions used in the RFLEX are not very accurate
+	and on our ATRVMini just plain wrong (by a pretty large factor)
+
+default_trans_acceleration 
+	sets the translational acceleration
+	currently there is no way to set translational acceleration
+	during runtime - but presumably eventually this feature will be added
+	to the standard interface, and thus this will become the "default" setting
+	this should be in mm/sec
+
+default_rot_acceleration 
+	same as above but for rotational acceleration
+	in rad/sec
+
+
+****************
+the sonar driver takes 9 arguments:
+
+driver	
+	same as described in general documentation
+
+range_distance_conversion
+	as in the position driver the units are arbitrary, and diferent for
+	different robots, thus this must be configured through testing
+	mm*range_distance_conversion=arbitrary robot range units
+	
+sonar_age
+	this is a prefiltering technique, the standard poloroid sensors
+	mounted on RWI robots never return values that are closer than the
+	closest obstacle - thus we can buffer locally looking for the cloasest
+	reading in the last "sonar_age" readings. since one servo tick here is
+	quite small, you can still get as recent or nearly as recent data at the
+	client end
+
+max_num_sonars, num_sonars, num_sonar_banks, 
+num_sonars_possible_per_bank, num_sonars_in_bank
+	these values are all used for remapping the sonar
+	sonars are enumerated 0-15 on each sonar board, but at least my sonar
+	boards only have between 5 and 8 sonar attached to each
+	thus we need to remap all these values so that we get a contiguous
+	array of n sonar
+	max_num_sonars is the maximum enumeration value+1 of all sonar
+	meaning if we have 4 sonar boards this number is 64
+	num_sonars is the number of physical sonar sensors - meaning the number
+	of ranges that will be returned by player
+	num_sonar_banks is the number of sonar boards you have
+	num_sonars_possible_per_bank is probobly 16 for all robots, but I
+	included it here just in case. this is the number of sonar that can
+	be attached to each sonar board, meaning the maximum enumeration value
+	mapped to each board
+	num_sonars_in_bank is the nubmer of physical sonar attached to each board
+	in order - you'll notice if you look at the physical sonar boards
+	each one has a set of dip switches, these switches configure the enumeration
+	of the boards (ours are 0-3)
+	
+mmrad_sonar_poses
+	this is about the ugliest way possible of telling the robot where each
+	of it's sensors is mounted
+	the position is in player standard mapping X,Y,Theta coordinates
+	in mm,mm,radians
+	by player standard I mean the X axis points towards the front of the robot
+	the direction the robot would move forwards, and the y coordinate
+	points to the left of the robot, within the plane of motion 90 degrees
+	from the X axis
+
+*********************
+rflex_power
+	to be honest I forget if this does anything at all - I don't think it's
+	ever been tested except in that it's been instantiated
+
+other devices are suported, but untested, such aio and dio
