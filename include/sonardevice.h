@@ -34,7 +34,7 @@ class CSonarDevice: public CP2OSDevice
 {
  public:
   size_t GetData( unsigned char *, size_t maxsize);
-  CSonarDevice::CSonarDevice(char* port):CP2OSDevice(port){}
+  CSonarDevice(char* port):CP2OSDevice(port){}
 };
 
 #endif

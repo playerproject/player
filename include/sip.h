@@ -43,7 +43,8 @@ class CSIP
   
   unsigned char status, battery, sonarreadings, analog, digin, digout;
   unsigned short ptu, compass, timer, rawxpos, rawypos, frontbumpers, rearbumpers;
-  short angle, lvel, rvel, control, sonars[PLAYER_NUM_SONAR_SAMPLES];
+  short angle, lvel, rvel, control;
+  short sonars[PLAYER_NUM_SONAR_SAMPLES];
   int xpos, ypos;
 
   /* returns 0 if Parsed correctly otherwise 1 */
@@ -53,7 +54,8 @@ class CSIP
   void Fill( player_p2os_data_t* data,  struct timeval timeBegan_tv);
 
   CSIP() {
-    for(int i=0;i<(int)sizeof(sonars);i++) sonars[i] = 0;
+    for(int i=0;i<(int)PLAYER_NUM_SONAR_SAMPLES;i++) 
+      sonars[i] = 0;
 
     xpos = MAXINT;
     ypos = MAXINT;

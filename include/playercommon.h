@@ -37,6 +37,8 @@
   #include <stdint.h>      // linux puts them here
 #endif
 
+/* debug malloc(3) */
+#define MALLOC_CHECK_ 2
 /* now, then.  we'll all use the following (ISO-endorsed) types:
  *
  * int8_t  : signed 1 byte  (char)
