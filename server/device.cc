@@ -207,6 +207,11 @@ int CDevice::PutConfig(player_device_id_t* device, void* client,
   return(0);
 }
 
+size_t CDevice::GetNumData(void* client)
+{
+  return(1);
+}
+
 size_t CDevice::GetData(void* client, unsigned char* dest, size_t len,
                         uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
