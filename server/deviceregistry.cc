@@ -153,7 +153,7 @@ void SonyEVID30_Register(DriverTable* table);
 void PTU46_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_CANNONVCC4
+#ifdef INCLUDE_CANONVCC4
 void canonvcc4_Register(DriverTable* table);
 #endif
 
@@ -599,7 +599,7 @@ register_devices()
   PTU46_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_CANNONVCC4
+#ifdef INCLUDE_CANONVCC4
   canonvcc4_Register(driverTable);
 #endif
 
