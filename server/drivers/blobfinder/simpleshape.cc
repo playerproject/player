@@ -263,6 +263,8 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
     this->SetError(-1);    
     return;
   }
+  this->cameraTime.tv_sec = 0;
+  this->cameraTime.tv_usec = 0;
 
   this->inpImage = NULL;
   this->outImage = NULL;
@@ -308,7 +310,6 @@ int SimpleShape::Setup()
   // Start the driver thread.
   this->StartThread();
 
-  //cvNamedWindow(winName,1);
   return 0;
 }
 
@@ -390,15 +391,20 @@ int SimpleShape::HandleRequests()
 bool SimpleShape::UpdateCamera()
 {
   size_t size;
+  struct timeval time;
   
   // Get the camera data.
   size = this->camera->GetData(this->camera_id, &this->cameraData,
-                               sizeof(this->cameraData), &this->cameraTime);
+                               sizeof(this->cameraData), &time);
   if (size == 0)
     return false;
+
+  if (time.tv_sec == this->cameraTime.tv_sec &&
+      time.tv_usec == this->cameraTime.tv_usec)
+    return false;
+
+  this->cameraTime = time;
   
-  printf("%d %d %d\n", size, this->cameraTime.tv_sec, this->cameraTime.tv_usec);
-           
   // Do some byte swapping
   this->cameraData.width = ntohs(this->cameraData.width);
   this->cameraData.height = ntohs(this->cameraData.height);
@@ -470,14 +476,6 @@ int SimpleShape::LoadModel()
   // recognise it later.
   this->ExtractFeatureSet((CvContour*) this->modelContour, &this->modelFeatureSet);
 
-  /* REMOVE
-  // TESTING
-  CvHuMoments hu;
-  cvGetHuMoments(&this->modelFeatureSet.moments, &hu);
-  printf("model hu %f %f %f %f %f %f %f\n",
-         hu.hu1, hu.hu2, hu.hu3, hu.hu4, hu.hu5, hu.hu6, hu.hu7);
-  */
-
   // Free the image
   cvReleaseImage(&work);
   cvReleaseImage(&img);
@@ -492,12 +490,10 @@ void SimpleShape::ProcessImage()
 {
   CvSize size;
   int width, height;
-
+  
   width = this->cameraData.width;
   height = this->cameraData.height;
-
-  printf("format %d %d %d\n", this->cameraData.width, this->cameraData.height,
-         this->cameraData.format);
+  assert(width > 0 && height > 0);
     
   // Create input and output image if it doesnt exist
   size = cvSize(width, height);
