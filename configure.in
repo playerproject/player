@@ -259,8 +259,18 @@ for player_lib in $PLAYER_DRIVER_LIBS; do
   fi
 done
 AC_MSG_RESULT([])
+AC_MSG_RESULT([The following device drivers will NOT be included:])
+for player_lib in $PLAYER_NODRIVER_LIBS; do
+  if test -n $player_lib; then
+    AC_MSG_RESULT([[    ${player_lib:3:${#player_lib}-5}]])
+  fi
+done
+AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
 AC_MSG_RESULT([    $prefix])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([If you're happy with this configuration, do 'make install'])
+AC_MSG_RESULT([to build and install Player.])
 AC_MSG_RESULT([])
 
 foo=bar
