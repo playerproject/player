@@ -184,18 +184,36 @@ void *client_reader(void* arg)
 
   while(1) 
   {
+    short c;
     hdr.stx = 0;
     /* wait for the STX */
     while(ntohs(hdr.stx) != PLAYER_STXX)
     {
-      //printf("looking for STX:%x:\n",PLAYER_STX);
-      if((readcnt = read(cd->socket,&(hdr.stx),sizeof(hdr.stx))) <= 0)
+      //puts("looking for STX");
+
+      //printf("read %d bytes; reading now\n", readcnt);
+      if(read(cd->socket,&c,1) <= 0)
       {
         // client must be gone. fuck 'em
         //perror("client_reader(): read() while waiting for STX");
         delete cd;
       }
-      //printf("got:%x:\n",hdr.stx);
+
+      //printf("c:%x\n", c);
+
+      hdr.stx = c;
+      if(read(cd->socket,&c,1) <= 0)
+      {
+        // client must be gone. fuck 'em
+        //perror("client_reader(): read() while waiting for STX");
+        delete cd;
+      }
+      //printf("c:%x\n", c);
+      c = c << 8;
+      hdr.stx |= c;
+
+      //printf("got:%x:\n",ntohs(hdr.stx));
+      readcnt = 2;
     }
     //puts("got STX");
 
