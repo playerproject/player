@@ -20,6 +20,7 @@ player_DEPENDENCIES = drivers/p2os/libp2os.a drivers/stage/libstage.a \
 							drivers/libsicklms200.a drivers/libfestival.a \
 							drivers/libacts.a drivers/libsonyevid30.a \
 							drivers/libudpbroadcast.a drivers/liblaserreflector.a \
+							drivers/liblaservisualbarcode.a \
 							drivers/liblaserbarcode.a @RWI_LIBPATH@ @FIXEDTONES_LIBPATH@
 
 player_LDADD   = -lpthread -lm -ldl \
@@ -28,6 +29,7 @@ player_LDADD   = -lpthread -lm -ldl \
 							drivers/libacts.a drivers/libsonyevid30.a \
 							drivers/libudpbroadcast.a drivers/liblaserbarcode.a \
 							drivers/liblaserreflector.a \
+							drivers/liblaservisualbarcode.a \
 							@RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@
 
 include_HEADERS = playercommon.h \

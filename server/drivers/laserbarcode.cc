@@ -407,10 +407,10 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
   //
   for (int i = 0; i < laser_data->range_count; i++)
   {
-    int intensity = (int) (laser_data->ranges[i] >> 13);
-    double range = (double) (laser_data->ranges[i] & 0x1FFF) / 1000;
+    double range = (double) (laser_data->ranges[i]) / 1000;
     double bearing = (double) (laser_data->min_angle + i * laser_data->resolution)
       / 100.0 * M_PI / 180;
+    int intensity = (int) (laser_data->intensity[i]);
 
     double px = range * cos(bearing);
     double py = range * sin(bearing);
