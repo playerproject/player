@@ -230,7 +230,7 @@ int ReadLog::Setup()
   }
 
   // Clear the data buffer
-  this->PutData(NULL, 0, NULL);
+  // TODO: reinstate? this->PutData(NULL, 0, NULL);
   
   return 0;
 }

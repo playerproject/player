@@ -30,7 +30,9 @@
 /** @{ */
 /** @defgroup player_driver_camerav4l Video4Linux camera driver
 
-The camerav4l driver captures images from V4l-compatible cameras.
+The camerav4l driver captures images from V4l-compatible cameras.  See
+below for notes on specific cameras/frame grabbers.
+
 
 @par Interfaces
 - @ref player_interface_camera
@@ -38,7 +40,6 @@ The camerav4l driver captures images from V4l-compatible cameras.
 @par Supported configuration requests
 
 None
-
 
 
 @par Configuration file options
@@ -76,6 +77,32 @@ driver
   devices ["camera:0"]
 )
 @endverbatim
+
+
+
+@par Logitech QuickCam Pro 4000
+
+For the Logitech QuickCam Pro 4000, use:
+@verbatim
+driver
+(
+  name "camerav4l"
+  devices ["camera:0"]
+  port "/dev/video0"
+  source 0
+  size [160 120]
+  palette "YUV420P"
+)
+@endverbatim
+
+Kernel notes: with a little bit of tweaking, this camera will work with the pwc
+(Phillips Web-Cam) driver in the Linux 2.4.20 kernel.  The stock driver recognizes
+the QC Pro 3000, but not the QC Pro 4000; to support the latter, you must modify
+the kernel source (add a product id in a couple of places in pwc-if.c).  Milage may
+vary for other kernel versions.  Also, the binary-only pwcx.o module is needed to
+access frame sizes larger than 160x120; good luck finding this and/or getting
+it to work (the developer spat the dummy and took down his website).
+
 */
 /** @} */
   

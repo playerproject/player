@@ -102,7 +102,11 @@ class ShapeTracker : public Driver
 
   private: void ContrastStretch( IplImage *src, IplImage *gray );
 
-  // Camera stuff
+  // Output devices
+  private: player_device_id_t blobfinder_id;
+  private: player_device_id_t out_camera_id;
+
+  // Input camera stuff
   private: int cameraIndex;
   private: player_device_id_t camera_id;
   private: Driver *camera;
@@ -155,9 +159,45 @@ void ShapeTracker_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ShapeTracker::ShapeTracker( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
-             sizeof(player_blobfinder_data_t), 0, 10, 10)
+    : Driver(cf, section)
 {
+  player_device_id_t* ids;
+  int num_ids;
+
+  memset(&this->blobfinder_id.code, 0, sizeof(player_device_id_t));
+  memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
+  // Must have a blobfinder interface
+  if (cf->ReadDeviceId(&(this->blobfinder_id), ids, num_ids, PLAYER_BLOBFINDER_CODE, 0) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+  if (this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE,
+                         sizeof(player_blobfinder_data_t), 0, 1, 1) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
+  // Optionally have a camera interface
+  if (cf->ReadDeviceId(&(this->out_camera_id), ids, num_ids, PLAYER_CAMERA_CODE, 0) == 0)
+  {
+    if (this->AddInterface(this->out_camera_id, PLAYER_READ_MODE,
+                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
+  }
+
   this->cameraIndex = cf->ReadInt(section, "camera", 0);
   this->camera = NULL;
   this->cameraTime = 0;
@@ -194,7 +234,6 @@ int ShapeTracker::Setup()
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
   }
-
 
   // Start the driver thread.
   this->StartThread();
@@ -291,7 +330,9 @@ int ShapeTracker::UpdateCamera()
   this->cameraData.width = ntohs(this->cameraData.width);
   this->cameraData.height = ntohs(this->cameraData.height); 
   this->cameraData.depth = ntohs(this->cameraData.depth);
-  this->cameraData.image_size = ntohl(this->cameraData.image_size); 
+  this->cameraData.image_size = ntohl(this->cameraData.image_size);
+
+  printf("camera image %f\n", time);
 
   return 1;
 }
@@ -313,12 +354,13 @@ void ShapeTracker::FindShapes()
       CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 
   for(; contour != 0; contour = contour->h_next)
-  {
-
+  {    
     // Approximates polygonal curves with desired precision
     result = cvApproxPoly(contour, sizeof(CvContour), storage, 
         CV_POLY_APPROX_DP, cvContourPerimeter(contour)*0.02, 0);
 
+    printf("contour %p %d\n", contour, result->total);
+    
   
     if ( result->total > 4 &&
         (result->total/2.0 == (int)(result->total/2)) &&
