@@ -183,6 +183,9 @@ int main(int argc, char **argv)
     // devices are subscribed.
     proxy = playerc_client_read(client);
 
+    // Let gui process messages
+    rtk_app_main_loop(app);
+
     // Update everything on the sync packet.
     if (proxy == client)
     {      
@@ -193,9 +196,6 @@ int main(int argc, char **argv)
         if (device->proxy)
           (*(device->fnupdate)) (device->proxy);
       }
-
-      // Let gui process messages
-      rtk_app_main_loop(app);
 
       // Update the main window
       if (mainwnd_update(mainwnd) != 0)
