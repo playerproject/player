@@ -6,4 +6,4 @@ all:
 	doxygen libplayerc.dox
 
 upload_cvs: all
-	./upload_www.sh cvs
+	./upload_www.sh $(NAME)
