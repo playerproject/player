@@ -477,7 +477,6 @@ proc createRobotPanel {} {
   button .robot_panel.lbd_eightbit -text "8-bit beacon" \
     -command "config_lbd 8"
 
-
   grid configure .robot_panel.canvas -column 0 -row 0 -columnspan 4
   grid configure .robot_panel.sonar_check -column 0 -row 1
   grid configure .robot_panel.laser_check -column 1 -row 1

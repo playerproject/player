@@ -704,6 +704,23 @@ proc player_parse_data {obj device device_index data size} {
   } elseif {$device == $PLAYER_AUDIO_CODE} {
     # audio goes here...
   } elseif {$device == $PLAYER_LASERBEACON_CODE} {
+    # kill the old ones
+    if {[info exists arr($name,$device_index,numbeacons)]} {
+      set i 0
+      while {$i < $arr($name,$device_index,numbeacons)} {
+        unset arr($name,$device_index,$i,id)
+        unset arr($name,$device_index,$i,range)
+        unset arr($name,$device_index,$i,bearing)
+        unset arr($name,$device_index,$i,orient)
+        if {!$device_index} {
+          unset arr($name,$i,id)
+          unset arr($name,$i,range)
+          unset arr($name,$i,bearing)
+          unset arr($name,$i,orient)
+        }
+        incr i
+      }
+    }
     # first get the count
     if {[binary scan $data S arr($name,$device_index,numbeacons)] != 1} {
       puts "Warning: failed to get laserbeacon count"
