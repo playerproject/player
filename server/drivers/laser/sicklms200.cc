@@ -170,6 +170,9 @@ class SickLMS200 : public CDevice
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
 
+    // Range resolution (1 = 1mm, 10 = 1cm, 100 = 10cm).
+    int range_res;
+
     // Turn intensity data on/off
     bool intensity;
 };
@@ -231,9 +234,12 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
   this->scan_min_segment = 0;
   this->scan_max_segment = 360;
   this->intensity = true;
+  this->range_res = cf->ReadInt(section, "range_res", 1);
 
   if (this->CheckScanConfig() != 0)
     PLAYER_ERROR("invalid scan configuration");
+
+  return;
 }
 
 
@@ -353,7 +359,7 @@ void SickLMS200::Main()
     // This will be a pretty good estimate of when the phenomena occured
     struct timeval time;
     GlobalTime->GetTime(&time);
-        
+    
     // Process incoming data
     player_laser_data_t data;
     if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
@@ -366,7 +372,7 @@ void SickLMS200::Main()
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
         data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-        data.ranges[i] = htons((data.ranges[i] & 0x1FFF));
+        data.ranges[i] = htons(((data.ranges[i] & 0x1FFF) * this->range_res) & 0xFFFF);
       }
 
       // Make data available
@@ -518,6 +524,10 @@ int SickLMS200::CheckScanConfig()
 
     return 0;
   }
+
+  if (!(this->range_res == 1 || this->range_res == 10 || this->range_res == 100))
+    return -1;
+  
   return -1;
 }
 
@@ -774,10 +784,23 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
   PLAYER_TRACE0("get configuration request ok");
 
+  PLAYER_TRACE1("laser units [%d]", (int) packet[7]);
+
   // Modify the configuration and send it back
-  //
   packet[0] = 0x77;
-  packet[6] = (intensity ? 0x01 : 0x00); // Return intensity in top 3 data bits
+
+  // Return intensity in top 3 data bits
+  packet[6] = (intensity ? 0x01 : 0x00); 
+
+  // Set the units for the range reading
+  if (this->range_res == 1)
+    packet[7] = 0x01;
+  else if (this->range_res == 10)
+    packet[7] = 0x00;
+  else if (this->range_res == 100)
+    packet[7] = 0x02;
+  else
+    packet[7] = 0x01;
 
   PLAYER_TRACE0("sending set configuration request to laser");
   if (WriteToLaser(packet, len) < 0)
@@ -959,7 +982,7 @@ int SickLMS200::ReadLaserData(uint16_t *data, size_t datalen)
   }
   else
     RETURN_ERROR(1, "unexpected packet type");
-
+  
   return 0;
 }
 
