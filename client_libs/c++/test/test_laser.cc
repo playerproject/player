@@ -17,7 +17,7 @@ test_laser(PlayerClient* client, int index)
   unsigned char access;
   LaserProxy lp(client,index,'c');
   int min, max;
-  int resolution, intensity;
+  int resolution, intensity, range_res;
 
   printf("device [laser] index [%d]\n", index);
 
@@ -37,11 +37,12 @@ test_laser(PlayerClient* client, int index)
     client->Read();
 
   TEST("set configuration");
-  min = -90*100;
-  max = +90*100;
+  min = -90;
+  max = +90;
   resolution = 100;
+  range_res = 1;
   intensity = 1;
-  if(lp.Configure(min, max, resolution, 1, intensity) >= 0)
+  if(lp.Configure(DTOR(min), DTOR(max), resolution, range_res, intensity) >= 0)
     PASS();
   else
   {
@@ -61,13 +62,14 @@ test_laser(PlayerClient* client, int index)
   lp.PrintConfig();
 
   TEST("check configuration sanity");
-  if(abs(lp.min_angle + (90*100)) || 
-     abs(lp.max_angle - (90*100)))
+  if((((int)rint(RTOD(lp.min_angle))) != min) ||
+     (((int)rint(RTOD(lp.max_angle))) != max))
   {
     FAIL();
     return(-1);
   }
-  else if(lp.resolution != 100 || lp.intensity != 1)
+  else if((((int)rint(RTOD(lp.scan_res)*100.0)) != resolution) ||
+          (lp.intensity != intensity))
   {
     FAIL();
     return(-1);

@@ -57,8 +57,8 @@ parse_args(int argc, char** argv)
 
 int main(int argc, char **argv)
 {
-  unsigned short min_front_dist = 500;
-  unsigned short really_min_front_dist = 300;
+  double min_front_dist = 0.500;
+  double really_min_front_dist = 0.300;
   char avoid;
 
   parse_args(argc,argv);
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
   if(turnOnMotors && pp.SetMotorState(1))
     exit(1);
 
-  int newspeed, newturnrate;
+  double newspeed, newturnrate;
   /* go into read-think-act loop */
   for(;;)
   {
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
      *       stop and turn away;
      */
     avoid = 0;
-    newspeed = 200;
+    newspeed = 0.200;
 
     if (avoid == 0)
     {
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
            (sp[5] < really_min_front_dist))
         {
             avoid = 50;
-            newspeed = -100;
+            newspeed = -0.100;
         }
         else if((sp[2] < min_front_dist) ||
                 (sp[3] < min_front_dist) ||
@@ -118,9 +118,9 @@ int main(int argc, char **argv)
     {  
       if((sp[0] + sp[1]) < 
          (sp[6] + sp[7]))
-        newturnrate = 30;
+        newturnrate = DTOR(30);
       else
-        newturnrate = -30;
+        newturnrate = DTOR(-30);
       avoid--;
     }
     else

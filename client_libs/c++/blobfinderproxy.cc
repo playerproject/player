@@ -137,7 +137,7 @@ void BlobfinderProxy::FillData(player_msghdr_t hdr, const char* buffer)
         blobs[i][j].bottom = 
                 ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].bottom);
         blobs[i][j].range = 
-                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].range);
+                ntohs(((player_blobfinder_data_t*)buffer)->blobs[tmp_index+j].range) / 1e3;
       }
       num_blobs[i] = tmp_numblobs;
     }

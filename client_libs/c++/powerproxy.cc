@@ -58,7 +58,7 @@ PowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
               sizeof(player_power_data_t),hdr.size);
   }
 
-  charge = ntohs(((player_power_data_t *)buffer)->charge);
+  charge = ntohs(((player_power_data_t *)buffer)->charge) / 1e1;
 }
 
 // interface that all proxies SHOULD provide
@@ -67,6 +67,6 @@ PowerProxy::Print()
 {
   printf("#Power(%d:%d) - %c\n", m_device_id.code, 
          m_device_id.index, access);
-  printf("%u\n", charge);
+  printf("%.1f\n", charge);
 }
 

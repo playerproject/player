@@ -50,10 +50,13 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <math.h>
+#include <limits.h>
 
-int LaserProxy::Configure(short tmp_min_angle, short tmp_max_angle, 
-			  unsigned short tmp_resolution, 
-			  unsigned short tmp_range_res, bool tmp_intensity)
+int LaserProxy::Configure(double tmp_min_angle, 
+                          double tmp_max_angle, 
+			  unsigned int tmp_scan_res,
+			  unsigned int tmp_range_res, 
+                          bool tmp_intensity)
 {
   if(!client)
     return(-1);
@@ -61,18 +64,18 @@ int LaserProxy::Configure(short tmp_min_angle, short tmp_max_angle,
   player_laser_config_t config;
 
   config.subtype = PLAYER_LASER_SET_CONFIG;
-  config.min_angle = htons(tmp_min_angle);
-  config.max_angle = htons(tmp_max_angle);
-  config.resolution = htons(tmp_resolution);
+  config.min_angle = htons((int16_t)rint(RTOD(tmp_min_angle)*1e2));
+  config.max_angle = htons((int16_t)rint(RTOD(tmp_max_angle)*1e2));
+  config.resolution = htons(tmp_scan_res);
   config.range_res = htons(tmp_range_res);
   config.intensity = tmp_intensity ? 1 : 0;
 
   // copy them locally
   min_angle = tmp_min_angle;
   max_angle = tmp_max_angle;
-  resolution = tmp_resolution;
+  scan_res = DTOR(tmp_scan_res / 1e2);
   intensity = tmp_intensity;
-  range_res = tmp_range_res;
+  range_res = (double)tmp_range_res;
 
   return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
@@ -97,10 +100,10 @@ int LaserProxy::GetConfigure()
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
 
-  min_angle = ntohs(config.min_angle);
-  max_angle = ntohs(config.max_angle);
-  resolution = ntohs(config.resolution);
-  range_res = ntohs(config.range_res);
+  min_angle = DTOR(((int16_t)ntohs(config.min_angle)) / 1e2);
+  max_angle = DTOR(((int16_t)ntohs(config.max_angle)) / 1e2);
+  scan_res = DTOR(((int16_t)ntohs(config.resolution)) / 1e2);
+  range_res = (double)ntohs(config.range_res);
   intensity = config.intensity;
   return(0);
 }
@@ -115,51 +118,36 @@ void LaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_laser_data_t),hdr.size);
   }
 
-  min_angle = (short)ntohs(((player_laser_data_t*)buffer)->min_angle);
-  max_angle = (short)ntohs(((player_laser_data_t*)buffer)->max_angle);
-  resolution = ntohs(((player_laser_data_t*)buffer)->resolution);
-  range_count = ntohs(((player_laser_data_t*)buffer)->range_count);
-  range_res = ntohs(((player_laser_data_t*)buffer)->range_res);
+  min_angle = DTOR(((int16_t)ntohs(((player_laser_data_t*)buffer)->min_angle))/1e2);
+  max_angle = DTOR(((int16_t)ntohs(((player_laser_data_t*)buffer)->max_angle))/1e2);
+  scan_res = DTOR(ntohs(((player_laser_data_t*)buffer)->resolution)/1e2);
+  scan_count = ntohs(((player_laser_data_t*)buffer)->range_count);
+  range_res = (double)ntohs(((player_laser_data_t*)buffer)->range_res);
 
-  memset(ranges,0,sizeof(ranges));
+  memset(scan,0,sizeof(scan));
+  memset(point,0,sizeof(point));
   memset(intensities,0,sizeof(intensities));
-  min_left = 10000;
-  min_right = 10000;
-  for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
+  min_left = 1e9;
+  min_right = 1e9;
+  for(int i=0;i<scan_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
   {
-    ranges[i] = ntohs(((player_laser_data_t*)buffer)->ranges[i]);
-    // convert to mm according to given range resolution
-    ranges[i] *= range_res;
+    // convert to mm, then m, according to given range resolution
+    scan[i][0] = ntohs(((player_laser_data_t*)buffer)->ranges[i]) * 
+            range_res / 1e3;
+    // compute bearing
+    scan[i][1] = min_angle + (i * scan_res);
+
+    // compute Cartesian coords
+    point[i][0] = scan[i][0] * cos(scan[i][1]);
+    point[i][1] = scan[i][0] * sin(scan[i][1]);
 
     intensities[i] = 
             (unsigned char)(((player_laser_data_t*)buffer)->intensity[i]);
-    if(i>(range_count/2) && ranges[i] < min_left)
-      min_left = ranges[i];
-    else if(i<(range_count/2) && ranges[i] < min_right)
-      min_right = ranges[i];
+    if(i>(scan_count/2) && scan[i][0] < min_left)
+      min_left = scan[i][0];
+    else if(i<(scan_count/2) && scan[i][0] < min_right)
+      min_right = scan[i][0];
   }
-}
-
-// returns coords in mm of laser hit relative to sensor position
-// x axis is forwards
-int LaserProxy::CartesianCoordinate( int i, int *x, int *y )
-{
-  // bounds check
-  if( i < 0 || i > range_count ) return false;
-
-  double min = DTOR(min_angle / 100.0);
-  double max = DTOR(max_angle / 100.0);
-  double fov = (double)( max - min );
-  double angle_per_ray = fov /(double)range_count; 
-  double angle = min + i * angle_per_ray; 
-  int range = ranges[i];
- 
-  *x = (int)(range * cos( angle ));
-  *y = (int)(range * sin( angle ));
-
-  //printf( "x: %.2f   y: %.2f\n", x, y );
-
-  return true;
 }
 
 // enable/disable the laser
@@ -188,8 +176,8 @@ void LaserProxy::PrintConfig()
   printf("#LASER(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#min\tmax\tres\tcount\trange_res");
-  printf("%d\t%d\t%u\t%u\t%d\n", min_angle,max_angle,resolution,range_count,
-	 range_res);
+  printf("%.3f\t%.3f\t%.2f\t%u\t%.3f\n", 
+         RTOD(min_angle),RTOD(max_angle),RTOD(scan_res),scan_count, range_res);
 }
 
 // interface that all proxies SHOULD provide
@@ -197,9 +185,9 @@ void LaserProxy::Print()
 {
   this->PrintConfig();
 
-  puts("#range\tintensity");
-  for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
-    printf("%u %u ", ranges[i],intensities[i]);
+  puts("#range\tbearing\tintensity");
+  for(int i=0;i<scan_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
+    printf("%.3f\t%.3f\t%u", scan[i][0],RTOD(scan[i][1]),intensities[i]);
   puts("");
 }
 

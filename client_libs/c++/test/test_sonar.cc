@@ -39,12 +39,12 @@ test_sonar(PlayerClient* client, int index)
   }
   sleep(1);
   PASS();
-  for(int i=0;i<sp.sonar_pose.pose_count;i++)
+  for(int i=0;i<sp.pose_count;i++)
   {
-    printf("Sonar[%d]: (%d,%d,%d)\n", i, 
-           sp.sonar_pose.poses[i][0],
-           sp.sonar_pose.poses[i][1],
-           sp.sonar_pose.poses[i][2]);
+    printf("Sonar[%d]: (%.3f,%.3f,%.3f)\n", i, 
+           sp.poses[i][0],
+           sp.poses[i][1],
+           RTOD(sp.poses[i][2]));
   }
 
   for(int t = 0; t < 3; t++)

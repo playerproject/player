@@ -43,7 +43,7 @@ test_ptz(PlayerClient* client, int index)
   }
 
   TEST("panning left");
-  if(zp.SetCam(90,0,0) < 0)
+  if(zp.SetCam(DTOR(90),0,0) < 0)
   {
     FAIL();
     return(-1);
@@ -52,7 +52,7 @@ test_ptz(PlayerClient* client, int index)
   PASS();
 
   TEST("panning right");
-  if(zp.SetCam(-90,0,0) < 0)
+  if(zp.SetCam(DTOR(-90),0,0) < 0)
   {
     FAIL();
     return(-1);
@@ -61,7 +61,7 @@ test_ptz(PlayerClient* client, int index)
   PASS();
 
   TEST("tilting up");
-  if(zp.SetCam(0,25,0) < 0)
+  if(zp.SetCam(0,DTOR(25),0) < 0)
   {
     FAIL();
     return(-1);
@@ -70,7 +70,7 @@ test_ptz(PlayerClient* client, int index)
   PASS();
 
   TEST("tilting down");
-  if(zp.SetCam(0,-25,0) < 0)
+  if(zp.SetCam(0,DTOR(-25),0) < 0)
   {
     FAIL();
     return(-1);
@@ -79,7 +79,7 @@ test_ptz(PlayerClient* client, int index)
   PASS();
 
   TEST("zooming in");
-  if(zp.SetCam(0,0,1024) < 0)
+  if(zp.SetCam(0,0,DTOR(10)) < 0)
   {
     FAIL();
     return(-1);
@@ -88,7 +88,7 @@ test_ptz(PlayerClient* client, int index)
   PASS();
 
   TEST("zooming out");
-  if(zp.SetCam(0,0,0) < 0)
+  if(zp.SetCam(0,0,DTOR(60)) < 0)
   {
     FAIL();
     return(-1);

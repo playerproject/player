@@ -819,9 +819,18 @@ class IDARTurretProxy : public ClientProxy
  ** begin section FiducialProxy
  *****************************************************************************/
 
+class FiducialItem
+{
+  public:
+    int id;
+    double pose[3];
+    double upose[3];
+};
+
 /** The {\tt FiducialProxy} class is used to control {\tt fiducial}
     devices.  The latest set of detected beacons is stored in the {\tt
     beacons} array.  */
+
 class FiducialProxy : public ClientProxy
 {
 
@@ -832,11 +841,11 @@ class FiducialProxy : public ClientProxy
    */
   unsigned short count;
 
-  /** The pose of the sensor [x,y,theta]
+  /** The pose of the sensor [x,y,theta] in [m,m,rad]
    */
   double pose[3];
 
-  /** The size of the sensor [x,y]
+  /** The size of the sensor [x,y] in [m,m]
    */
   double size[2];
 
@@ -859,17 +868,17 @@ class FiducialProxy : public ClientProxy
   /** The latest laser beacon data.  Each beacon has the following
       information: 
       \begin{itemize} 
-      \item int16_t id  (-1 for unidentified)
-      \item int16_t pose[3] (pose of the beacon)
-      \item int16_t upose[3] (uncertainty in the pose of the beacon)
+      \item int id  (-1 for unidentified)
+      \item double pose[3] (pose of the beacon)
+      \item double upose[3] (uncertainty in the pose of the beacon)
       \end{itemize} 
       Where each pose array is composed of:
       \begin{itemize} 
-      \item range (mm)
-      \item bearing (degrees)
-      \item orient (degrees)
+      \item range (m)
+      \item bearing (radians)
+      \item orient (radians)
       \end{itemize}  */
-  player_fiducial_item_t beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
+  FiducialItem beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
    
   /** Constructor.  Leave the access field empty to start
       unconnected. */
@@ -946,32 +955,34 @@ class LaserProxy : public ClientProxy
 
   public:
 
-    /** Scan range for the latest set of data.  Angles are measured in
-        units of $0.01^{\circ}$, in the range -9000 ($-90^{\circ}$) to
-        +9000 ($+90^{\circ}$).  */
-    short min_angle, max_angle;
+    /// Number of points in scan
+    int scan_count;
 
-    /** Scan resolution for the latest set of data.  Resolution is
-        measured in units of $0.01^{\circ}$.  Valid values are: 25,
-        50, and 100.  */
-    unsigned short resolution;
+    /** Angular resolution of scan (radians)
+     */
+    double scan_res;
+
+    /** Scan range for the latest set of data (radians)
+     */
+    double min_angle, max_angle;
+    
+    /// Range resolution of scan (mm)
+    double range_res;
 
     /// Whether or not reflectance (i.e., intensity) values are being returned.
     bool intensity;
 
-    unsigned short range_count;
+    /// Scan data (polar): range (m) and bearing (radians)
+    double scan[PLAYER_LASER_MAX_SAMPLES][2];
 
-    /// Range resolution.  All ranges should be multiplied by this number.
-    unsigned short range_res;
-
-    /// The range values: to be multiplied by range_res
-    unsigned int ranges[PLAYER_LASER_MAX_SAMPLES];
+    /// Scan data (Cartesian): x,y (m)
+    double point[PLAYER_LASER_MAX_SAMPLES][2];
 
     // TODO: haven't verified that intensities work yet:
     /// The reflected intensity values (arbitrary units in range 0-7).
     unsigned char intensities[PLAYER_LASER_MAX_SAMPLES];
 
-    unsigned short min_right,min_left;
+    double min_right,min_left;
    
     /** Constructor.  Leave the access field empty to start
         unconnected. */
@@ -990,22 +1001,22 @@ class LaserProxy : public ClientProxy
       {\bf Note}: The {\tt sicklms200} driver currently does not implement
       this feature.
      */
-    int SetLaserState (const unsigned char state);
-
-    /// Compute the local rectangular coordinate of the i'th beam strike.
-    int CartesianCoordinate( int i, int *x, int *y );
+    int SetLaserState(const unsigned char state);
 
     /** Configure the laser scan pattern.  Angles {\tt min\_angle} and
-        {\tt max\_angle} are measured in units of $0.1^{\circ}$, in
-        the range -9000 ($-90^{\circ}$) to +9000 ($+90^{\circ}$).
-        {\tt resolution} is also measured in units of $0.1^{\circ}$;
+        {\tt max\_angle} are measured in radians.
+        {\tt scan_res} is measured in units of $0.01^{\circ}$;
         valid values are: 25 ($0.25^{\circ}$), 50 ($0.5^{\circ}$) and
-        $100 (1^{\circ}$).  Set {\tt intensity} to {\tt true} to
-        enable intensity measurements, or {\tt false} to disable.\\
-        Returns the 0 on success, or -1 of there is a problem.  */
-    int Configure(short min_angle, short max_angle, 
-                  unsigned short resolution, unsigned short range_res,
-		  bool intensity);
+        $100 (1^{\circ}$).  {\tt range_res} is measured in mm; valid values
+        are: 1, 10, 100.  Set {\tt intensity} to {\tt true} to
+        enable intensity measurements, or {\tt false} to disable.
+        Returns the 0 on success, or -1 of there is a problem.  
+     */
+    int Configure(double min_angle, 
+                  double max_angle, 
+                  unsigned int scan_res,
+                  unsigned int range_res, 
+                  bool intensity);
 
     /** Get the current laser configuration; it is read into the
         relevant class attributes. Returns the 0 on success, or -1
@@ -1013,25 +1024,25 @@ class LaserProxy : public ClientProxy
     int GetConfigure();
 
     /// Get the number of range/intensity readings.
-    int  RangeCount () { return range_count; }
+    int RangeCount() { return scan_count; }
 
     /// An alternate way to access the range data.
-    uint16_t Ranges (const unsigned int index)
+    double Ranges (const unsigned int index)
     {
-    	if (index < range_count)
-    		return ranges[index];
-    	else
-    		return 0;
+      if (index < scan_count)
+        return scan[index][0];
+      else
+        return 0;
     }
-    uint16_t MinLeft () { return min_left; }
-    uint16_t MinRight () { return min_right; }
+    double MinLeft () { return min_left; }
+    double MinRight () { return min_right; }
 
     /** Range access operator.  This operator provides an alternate
         way of access the range data.  For example, given an {\tt
         LaserProxy} named {\tt lp}, the following expressions are
         equivalent: \verb+lp.ranges[0]+, \verb+lp.Ranges(0)+, 
         and \verb+lp[0]+.  */
-    uint32_t operator [] (unsigned int index)
+    double operator [] (unsigned int index)
     {
       return Ranges(index);
     }
@@ -1060,9 +1071,9 @@ class LaserProxy : public ClientProxy
 class localize_hypoth
 {
   public:
-    // Pose estimate (mm, mm, degrees)
+    // Pose estimate (m, m, radians)
     double mean[3];
-    // Covariance (mm^2, degrees^2)
+    // Covariance (m^2, radians^2)
     double cov[3][3];
     // Weight associated with this hypothesis
     double weight;
@@ -1093,8 +1104,8 @@ class LocalizeProxy : public ClientProxy
     /** Array of possible poses.  Each pose contains the following
         information:
         \begin{itemize}
-        \item {\tt double mean[3]} (pose estimate, in m, m, degrees)
-        \item {\tt double cov[3][3]} (covariance, in m$^{2}$ and degrees$^{2}$)
+        \item {\tt double mean[3]} (pose estimate, in m, m, radians)
+        \item {\tt double cov[3][3]} (covariance, in m$^{2}$ and radians$^{2}$)
         \item {\tt double weight} (weight associated with this estimate)
         \end{itemize}
      */
@@ -1116,7 +1127,7 @@ class LocalizeProxy : public ClientProxy
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
 
-    /** Set the current pose hypothesis (m, m, degrees).  Returns 0 on 
+    /** Set the current pose hypothesis (m, m, radians).  Returns 0 on 
         success, -1 on error.
      */
     int SetPose(double pose[3], double cov[3][3]);
@@ -1151,11 +1162,11 @@ class PositionProxy : public ClientProxy
 {
 
   public:
-  /// Robot pose (according to odometry) in mm, mm, degrees.
-  int xpos,ypos,theta;
+  /// Robot pose (according to odometry) in m, m, radians.
+  double xpos,ypos,theta;
 
-  /// Robot speeds in mm/sec, mm/sec, degrees/sec.
-  int speed, sidespeed, turnrate;
+  /// Robot speeds in m/sec, m/sec, radians/sec.
+  double speed, sidespeed, turnrate;
 
   /// Stall flag: 1 if the robot is stalled and 0 otherwise.
   unsigned char stall;
@@ -1169,23 +1180,23 @@ class PositionProxy : public ClientProxy
   // these methods are the user's interface to this device
 
   /** Send a motor command for velocity control mode.
-      Specify the forward, sideways, and angular speeds in mm/s, mm/s,
-      and degrees/sec, respectively.  Returns: 0 if everything's ok, 
+      Specify the forward, sideways, and angular speeds in m/sec, m/sec,
+      and radians/sec, respectively.  Returns: 0 if everything's ok, 
       -1 otherwise.
   */
-  int SetSpeed(int speed, int sidespeed, int turnrate);
-
-  /** Send a motor command for position control mode.  Specify the
-      desired pose of the robot in mm, mm, degrees. Returns: 0 if
-      everything's ok, -1 otherwise.  
-  */
-  int GoTo(int x, int y, int t);
-
+  int SetSpeed(double speed, double sidespeed, double turnrate);
 
   /** Same as the previous SetSpeed(), but doesn't take the sideways speed 
       (so use this one for non-holonomic robots). */
-  int SetSpeed(int speed, int turnrate)
-      { return(SetSpeed(speed,0,turnrate));}
+  int SetSpeed(double speed, double turnrate)
+      { return(SetSpeed(speed,0.0,turnrate));}
+
+  /** Send a motor command for position control mode.  Specify the
+      desired pose of the robot in m, m, radians. Returns: 0 if
+      everything's ok, -1 otherwise.  
+  */
+  int GoTo(double x, double y, double t);
+
 
   /** Enable/disable the motors.
       Set {\tt state} to 0 to disable or 1 to enable.
@@ -1221,10 +1232,10 @@ class PositionProxy : public ClientProxy
   int SelectPositionMode(unsigned char mode);
 
   /** Sets the odometry to the pose {\tt (x, y, theta)}.
-      Note that {\tt x} and {\tt y} are in mm and {\tt theta} is in degrees.
+      Note that {\tt x} and {\tt y} are in m and {\tt theta} is in radians.
       Returns: 0 if OK, -1 else
   */
-  int SetOdometry(int x, int y, unsigned short t);
+  int SetOdometry(double x, double y, double t);
 
   /// Only supported by the reb_position driver.
   int SetSpeedPID(int kp, int ki, int kd);
@@ -1251,19 +1262,22 @@ class PositionProxy : public ClientProxy
   int PlatformShutdown();
 
   /// Accessor method
-  int32_t  Xpos () const { return xpos; }
+  double  Xpos () const { return xpos; }
   
   /// Accessor method
-  int32_t  Ypos () const { return ypos; }
+  double  Ypos () const { return ypos; }
   
   /// Accessor method
-  int32_t Theta () const { return theta; }
+  double Theta () const { return theta; }
   
   /// Accessor method
-  int32_t  Speed () const { return speed; }
+  double  Speed () const { return speed; }
 
   /// Accessor method
-  int32_t  TurnRate () const { return turnrate; }
+  double  SideSpeed () const { return sidespeed; }
+
+  /// Accessor method
+  double  TurnRate () const { return turnrate; }
   
   /// Accessor method
   unsigned char Stall () const { return stall; }
@@ -1291,13 +1305,13 @@ class Position3DProxy : public ClientProxy
 {
 
   public:
-  /// Robot pose (according to odometry) in mm, degrees.
-  int xpos,ypos,zpos;
+  /// Robot pose (according to odometry) in m, radians.
+  double xpos,ypos,zpos;
   double roll,pitch,yaw;
 
-  /// Robot speeds in mm/sec, deg/sec
-  int xspeed, yspeed, zspeed;
-  int rollspeed, pitchspeed, yawspeed;
+  /// Robot speeds in m/sec, rad/sec
+  double xspeed, yspeed, zspeed;
+  double rollspeed, pitchspeed, yawspeed;
 
   /// Stall flag: 1 if the robot is stalled and 0 otherwise.
   unsigned char stall;
@@ -1315,12 +1329,12 @@ class Position3DProxy : public ClientProxy
       and degrees/sec, respectively.  Returns: 0 if everything's ok, 
       -1 otherwise.
   */
-  int SetSpeed(int xspeed, int yspeed, int yawspeed);
-  int SetSpeed(int xspeed, int yspeed,int zspeed, int yawspeed);
+  int SetSpeed(double xspeed, double yspeed, double yawspeed);
+  int SetSpeed(double xspeed, double yspeed, double zspeed, double yawspeed);
   /** Same as the previous SetSpeed(), but doesn't take the sideways speed 
       (so use this one for non-holonomic robots). */
-  int SetSpeed(int xspeed, int yawspeed)
-      { return(SetSpeed(xspeed,0,yawspeed));}
+  int SetSpeed(double xspeed, double yawspeed)
+      { return(SetSpeed(xspeed,0.0,yawspeed));}
 
   /** Enable/disable the motors */
   int SetMotorState(unsigned char state);
@@ -1332,13 +1346,13 @@ class Position3DProxy : public ClientProxy
   void Print();
 
   /// Accessor method
-  int32_t  Xpos() const { return xpos; }
+  double  Xpos() const { return xpos; }
   
   /// Accessor method
-  int32_t  Ypos() const { return ypos; }
+  double  Ypos() const { return ypos; }
   
   /// Accessor method
-  int32_t  Zpos() const { return zpos; }
+  double  Zpos() const { return zpos; }
   
   /// Accessor method
   double  Roll() const { return roll; }
@@ -1350,13 +1364,13 @@ class Position3DProxy : public ClientProxy
   double  Yaw() const { return yaw; }
   
   /// Accessor method
-  int32_t  XSpeed() const { return xspeed; }
+  double  XSpeed() const { return xspeed; }
 
   /// Accessor method
-  int32_t  YSpeed() const { return yspeed; }
+  double  YSpeed() const { return yspeed; }
 
   /// Accessor method
-  int32_t  ZSpeed() const { return zspeed; }
+  double  ZSpeed() const { return zspeed; }
 
   /// Accessor method
   double  RollSpeed() const { return rollspeed; }
@@ -1387,10 +1401,10 @@ class PtzProxy : public ClientProxy
 {
   public:
     
-    /// Pan, tilt, and field of view values (all degrees).
-    short pan, tilt, zoom;
-    /// Pan and tilt speeds (deg/sec)
-    short panspeed, tiltspeed;
+    /// Pan, tilt, and field of view values (all radians).
+    double pan, tilt, zoom;
+    /// Pan and tilt speeds (rad/sec)
+    double panspeed, tiltspeed;
 
     /** Constructor.
         Leave the access field empty to start unconnected.
@@ -1406,10 +1420,10 @@ class PtzProxy : public ClientProxy
         (all degrees).
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    int SetCam(short pan, short tilt, short zoom);
+    int SetCam(double pan, double tilt, double zoom);
 
     /** Specify new target velocities */
-    int SetSpeed(short panspeed, short tiltspeed);
+    int SetSpeed(double panspeed, double tiltspeed);
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
@@ -1447,18 +1461,17 @@ class SonarProxy : public ClientProxy
     unsigned short range_count;
 
     /** The latest sonar scan data.
-        Range is measured in mm.
+        Range is measured in m.
      */
-    unsigned short ranges[PLAYER_SONAR_MAX_SAMPLES];
+    double ranges[PLAYER_SONAR_MAX_SAMPLES];
 
-    /** Positions of sonars.  Contains:
-        \begin{itemize}
-        \item uint16_t pose_count (number of valid poses)
-        \item int16_t poses[PLAYER_SONAR_MAX_SAMPLES][3] (the poses)
-        \end{itemize}
-        Where each pose in the array is: (x,y,theta) (mm,mm,degrees).
+    /** Number of valid sonar poses
      */
-    player_sonar_geom_t sonar_pose;
+    unsigned int pose_count;
+
+    /** Sonar poses (m,m,radians)
+     */
+    double poses[PLAYER_SONAR_MAX_SAMPLES][3];
    
     /** Constructor.
         Leave the access field empty to start unconnected.
@@ -1467,8 +1480,8 @@ class SonarProxy : public ClientProxy
                unsigned char access = 'c') :
             ClientProxy(pc,PLAYER_SONAR_CODE,index,access)
     { 
-      memset(&sonar_pose,0,sizeof(sonar_pose)); 
-      range_count=0;
+      memset(&poses,0,sizeof(poses)); 
+      range_count=pose_count=0;
     }
 
     // these methods are the user's interface to this device
@@ -1490,7 +1503,7 @@ class SonarProxy : public ClientProxy
         For example, given a {\tt SonarProxy} named {\tt sp}, the following
         expressions are equivalent: \verb+sp.ranges[0]+ and \verb+sp[0]+.
      */
-    unsigned short operator [](unsigned int index) 
+    double operator [](unsigned int index) 
     { 
       if(index < sizeof(ranges))
         return(ranges[index]);
@@ -1629,7 +1642,7 @@ class Blob
     unsigned short right;
     unsigned short top;
     unsigned short bottom;
-    unsigned short range;
+    double range;
 };
 
 
@@ -1658,7 +1671,7 @@ class BlobfinderProxy : public ClientProxy
         \item {\tt unsigned short x, y} (blob center, in pixels)
         \item {\tt unsigned short left, right, top, bottom} (blob bounding box,
         in pixels)
-        \item {\tt unsigned short range} (range to blob center, in mm)
+        \item {\tt double range} (range to blob center, in m)
         \end{itemize}
         For example, to access the area of the $0^{th}$ blob on channel 2, you
         would refer to: {\tt blobs[2][0].area}.
@@ -1869,7 +1882,7 @@ class PowerProxy : public ClientProxy
             : ClientProxy(pc,PLAYER_POWER_CODE,index,access) {}
 
     /// Returns the current charge.
-    uint16_t Charge () const { return charge; }
+    double Charge () const { return charge; }
 
     // interface that all proxies must provide
     void FillData (player_msghdr_t hdr, const char* buffer);
@@ -1878,8 +1891,8 @@ class PowerProxy : public ClientProxy
     void Print ();
 
   private:
-    // Remaining power in centivolts
-    uint16_t charge;
+    // Remaining power in volts
+    double charge;
 };
 /*****************************************************************************
  ** end section

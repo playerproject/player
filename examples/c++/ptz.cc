@@ -66,7 +66,7 @@ int main(int argc, char **argv)
   //VisionProxy* vp = new VisionProxy(robot,0,'r');
 
   int dir = 1;
-  int newpan;
+  double newpan;
   for(;;)
   {
     if(robot.Read())
@@ -74,11 +74,10 @@ int main(int argc, char **argv)
 
     zp.Print();
 
-    if(zp.pan > 80 || zp.pan < -80)
+    if(zp.pan > DTOR(80) || zp.pan < DTOR(-80))
     {
-      newpan = dir*70;
-    //  zp.SetCam(newpan,zp.tilt,zp.zoom);
-    zp.SetCam(zp.pan,newpan,zp.zoom);
+      newpan = DTOR(dir*70);
+      zp.SetCam(newpan,zp.tilt,zp.zoom);
       for(int i=0;i<10;i++)
       {
         if(robot.Read())
@@ -87,8 +86,8 @@ int main(int argc, char **argv)
       zp.Print();
       dir = -dir;
     }
-    newpan = zp.pan + dir * 5;
-    zp.SetCam(zp.pan,newpan,zp.zoom);
+    newpan = zp.pan + dir * DTOR(5);
+    zp.SetCam(newpan,zp.tilt,zp.zoom);
   }
 
   return(0);

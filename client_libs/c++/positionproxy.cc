@@ -49,13 +49,14 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <math.h>
     
 // send a motor command
 //
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SetSpeed(int speed, int sidespeed, int turnrate)
+int PositionProxy::SetSpeed(double speed, double sidespeed, double turnrate)
 {
   if(!client)
     return(-1);
@@ -63,9 +64,9 @@ int PositionProxy::SetSpeed(int speed, int sidespeed, int turnrate)
   player_position_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
 
-  cmd.xspeed = (int)htonl(speed);
-  cmd.yspeed = (int)htonl(sidespeed);
-  cmd.yawspeed = (int)htonl(turnrate);
+  cmd.xspeed = (int32_t)htonl((int)rint(speed*1e3));
+  cmd.yspeed = (int32_t)htonl((int)rint(sidespeed*1e3));
+  cmd.yawspeed = (int32_t)htonl((int)rint(RTOD(turnrate)));
 
   return(client->Write(m_device_id,
                        (const char*)&cmd,sizeof(cmd)));
@@ -232,7 +233,7 @@ int PositionProxy::ResetOdometry()
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int PositionProxy::SetOdometry( int x, int y, unsigned short theta   )
+int PositionProxy::SetOdometry( double x, double y, double theta)
 {
   if(!client)
     return(-1);
@@ -241,9 +242,10 @@ int PositionProxy::SetOdometry( int x, int y, unsigned short theta   )
   memset( &config, 0, sizeof(config) );
 
   config.subtype = PLAYER_POSITION_SET_ODOM_REQ;
-  config.x = htonl((int32_t)x);
-  config.y = htonl((int32_t)y);
-  config.theta= htons((uint16_t)theta);
+  config.x = (int32_t)htonl((int)rint(x*1e3));
+  config.y = (int32_t)htonl((int)rint(y*1e3));
+  config.theta = (int32_t)htonl((int)rint(RTOD(theta)));
+  printf("theta: %d\n", (int)ntohl(config.theta));
   
   return(client->Request(m_device_id,(const char*)&config,
                          sizeof(config)));
@@ -272,13 +274,13 @@ PositionProxy::SelectPositionMode(unsigned char mode)
 			 (const char *)&req, sizeof(req));
 }
 
-/* goto the specified location (x mm, y mm, t degrees)
+/* goto the specified location (m, m, radians)
  * this only works if the robot supports position control.
  *
  * returns: 0 if ok, -1 else
  */
 int
-PositionProxy::GoTo(int x, int y, int t)
+PositionProxy::GoTo(double x, double y, double t)
 {
   if (!client) {
     return -1;
@@ -287,9 +289,9 @@ PositionProxy::GoTo(int x, int y, int t)
   player_position_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
 
-  cmd.xpos = (int32_t)htonl(x);
-  cmd.ypos = (int32_t)htonl(y);
-  cmd.yaw  = (int32_t)htonl(t);
+  cmd.xpos = (int32_t)htonl((int)rint(x*1e3));
+  cmd.ypos = (int32_t)htonl((int)rint(y*1e3));
+  cmd.yaw  = (int32_t)htonl((int)rint(RTOD(t)));
   cmd.state = 1;
   cmd.type = 1;
 
@@ -425,12 +427,12 @@ void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
               sizeof(player_position_data_t),hdr.size);
   }
 
-  xpos = (int)ntohl(((player_position_data_t*)buffer)->xpos);
-  ypos = (int)ntohl(((player_position_data_t*)buffer)->ypos);
-  theta = (int)ntohl(((player_position_data_t*)buffer)->yaw);
-  speed = (int)ntohl(((player_position_data_t*)buffer)->xspeed);
-  sidespeed = (int)ntohl(((player_position_data_t*)buffer)->yspeed);
-  turnrate = (int)ntohl(((player_position_data_t*)buffer)->yawspeed);
+  xpos = ((int)ntohl(((player_position_data_t*)buffer)->xpos)) / 1e3;
+  ypos = ((int)ntohl(((player_position_data_t*)buffer)->ypos)) / 1e3;
+  theta = DTOR((double)(int)ntohl(((player_position_data_t*)buffer)->yaw));
+  speed = ((int)ntohl(((player_position_data_t*)buffer)->xspeed)) / 1e3;
+  sidespeed = ((int)ntohl(((player_position_data_t*)buffer)->yspeed)) / 1e3;
+  turnrate = DTOR((double)(int)ntohl(((player_position_data_t*)buffer)->yawspeed));
   stall = ((player_position_data_t*)buffer)->stall;
 }
 
@@ -440,7 +442,7 @@ void PositionProxy::Print()
   printf("#Position(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
-  printf("%5d\t%5d\t%5u\t%5d\t%9d\t%5d\t%5u\n", 
-         xpos,ypos,theta,speed,sidespeed,turnrate,stall);
+  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%5u\n", 
+         xpos,ypos,RTOD(theta),speed,sidespeed,RTOD(turnrate),stall);
 }
 
