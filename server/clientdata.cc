@@ -56,6 +56,8 @@ extern ClientManager* clientmanager;
 extern char playerversion[];
 
 extern int global_playerport; // used to generate useful output & debug
+// true if we're connecting to Stage instead of a real robot
+extern bool use_stage;
 
 CClientData::CClientData(char* key, int myport) 
 {
@@ -1060,7 +1062,10 @@ CClientData::WriteIdentString()
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
   // write back an identifier string
-  sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
+  if(use_stage)
+    sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
+  else
+    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
   bzero(((char*)data)+strlen((char*)data),
         PLAYER_IDENT_STRLEN-strlen((char*)data));
 
