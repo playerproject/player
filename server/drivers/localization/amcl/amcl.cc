@@ -42,7 +42,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -257,7 +257,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   // Particle filter settings
   this->pf = NULL;
   this->pf_min_samples = cf->ReadInt(section, "pf_min_samples", 100);
-  this->pf_max_samples = cf->ReadInt(section, "pf_max_samples", 200000);
+  this->pf_max_samples = cf->ReadInt(section, "pf_max_samples", 10000);
 
   // Adaptive filter parameters
   this->pf_err = cf->ReadFloat(section, "pf_err", 0.01);
