@@ -70,37 +70,39 @@ PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],)
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],)
 
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],,)
-dnl Check for video-related headers, to see which support can be compiled into
-dnl the CMVision driver.
-AC_CHECK_HEADER(libraw1394/raw1394.h, have_raw1394=yes, have_raw1394=no)
-AC_CHECK_HEADER(libdc1394/dc1394_control.h, have_dc1394=yes, have_dc1394=no)
-if test "x$have_raw1394" = "xyes" -a "x$have_dc1394" = "xyes"; then
-  AC_MSG_RESULT([***************************************************])
-  AC_MSG_RESULT([Found the 1394 (firewire) headers. 1394 camera])
-  AC_MSG_RESULT([support will be included in the CMVision driver])
-  AC_MSG_RESULT([***************************************************])
-  AC_DEFINE(HAVE_1394, 1, [do we have the low-level 1394 libs?])
-  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lraw1394 -ldc1394_control"
-else
-  AC_MSG_RESULT([***************************************************])
-  AC_MSG_RESULT([Couldn't find the 1394 (firewire) headers. 1394])
-  AC_MSG_RESULT([camera support will *NOT* be included in the])
-  AC_MSG_RESULT([CMVision driver])
-  AC_MSG_RESULT([***************************************************])
-fi
-
-AC_CHECK_HEADER(linux/videodev2, have_videodev2=yes, have_videodev2=no)
-if test "x$have_videodev2" = "xyes"; then
-  AC_MSG_RESULT([***************************************************])
-  AC_MSG_RESULT([Found the Video4Linux2 headers. V4L2 camera support])
-  AC_MSG_RESULT([will be included in the CMVision driver])
-  AC_MSG_RESULT([***************************************************])
-  AC_DEFINE(HAVE_V4L2, 1, [do we have the V4L2 libs?])
-else
-  AC_MSG_RESULT([***************************************************])
-  AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
-  AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
-  AC_MSG_RESULT([***************************************************])
+if test "x$enable_cmvision" = "xyes"; then
+  dnl Check for video-related headers, to see which support can be compiled into
+  dnl the CMVision driver.
+  AC_CHECK_HEADER(libraw1394/raw1394.h, have_raw1394=yes, have_raw1394=no)
+  AC_CHECK_HEADER(libdc1394/dc1394_control.h, have_dc1394=yes, have_dc1394=no)
+  if test "x$have_raw1394" = "xyes" -a "x$have_dc1394" = "xyes"; then
+    AC_MSG_RESULT([***************************************************])
+    AC_MSG_RESULT([Found the 1394 (firewire) headers. 1394 camera])
+    AC_MSG_RESULT([support will be included in the CMVision driver])
+    AC_MSG_RESULT([***************************************************])
+    AC_DEFINE(HAVE_1394, 1, [do we have the low-level 1394 libs?])
+    PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lraw1394 -ldc1394_control"
+  else
+    AC_MSG_RESULT([***************************************************])
+    AC_MSG_RESULT([Couldn't find the 1394 (firewire) headers. 1394])
+    AC_MSG_RESULT([camera support will *NOT* be included in the])
+    AC_MSG_RESULT([CMVision driver])
+    AC_MSG_RESULT([***************************************************])
+  fi
+  
+  AC_CHECK_HEADER(linux/videodev2, have_videodev2=yes, have_videodev2=no)
+  if test "x$have_videodev2" = "xyes"; then
+    AC_MSG_RESULT([***************************************************])
+    AC_MSG_RESULT([Found the Video4Linux2 headers. V4L2 camera support])
+    AC_MSG_RESULT([will be included in the CMVision driver])
+    AC_MSG_RESULT([***************************************************])
+    AC_DEFINE(HAVE_V4L2, 1, [do we have the V4L2 libs?])
+  else
+    AC_MSG_RESULT([***************************************************])
+    AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
+    AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
+    AC_MSG_RESULT([***************************************************])
+  fi
 fi
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],)
