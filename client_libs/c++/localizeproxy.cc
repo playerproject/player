@@ -141,11 +141,10 @@ LocalizeProxy::GetNumParticles()
 int
 LocalizeProxy::GetMap()
 {
-  int i, j;
+  size_t i, j;
   int ni, nj;
-  int sx, sy;
+  size_t sx, sy;
   int si, sj;
-  int len;
   size_t reqlen;
   player_localize_map_info_t inforeq,inforep;
   player_localize_map_data_t datareq,datarep;
