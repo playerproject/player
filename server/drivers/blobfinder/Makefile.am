@@ -1,7 +1,8 @@
+SUBDIRS = cmvision
+
 noinst_LIBRARIES = @ACTS_LIB@ 
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
-
 
 EXTRA_LIBRARIES = libacts.a 
 
