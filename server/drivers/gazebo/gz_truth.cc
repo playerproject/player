@@ -234,13 +234,13 @@ int GzTruth::PutConfig(player_device_id_t* device, void* client, void* data, siz
       
       gz_truth_lock(this->iface, 1);
 
-      this->iface->data->cmd_pos[0] = ntohl(req->px) / 1000.0;
-      this->iface->data->cmd_pos[1] = ntohl(req->py) / 1000.0;
+      this->iface->data->cmd_pos[0] = ((int32_t) ntohl(req->px)) / 1000.0;
+      this->iface->data->cmd_pos[1] = ((int32_t) ntohl(req->py)) / 1000.0;
       this->iface->data->cmd_pos[2] = this->iface->data->pos[2];
 
       this->iface->data->cmd_rot[0] = this->iface->data->rot[0];
       this->iface->data->cmd_rot[1] = this->iface->data->rot[1];
-      this->iface->data->cmd_rot[2] = ntohl(req->pa) / 180.0 * M_PI;
+      this->iface->data->cmd_rot[2] = ((int32_t) ntohl(req->pa)) / 180.0 * M_PI;
 
       this->iface->data->cmd_new = 1;
 
