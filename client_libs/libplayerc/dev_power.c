@@ -86,35 +86,3 @@ void playerc_power_putdata(playerc_power_t *device, player_msghdr_t *header,
   return;
 }
 
-
-/* REMOVE?
-// Get the power geometry.  The writes the result into the proxy
-// rather than returning it to the caller.
-int playerc_power_get_geom(playerc_power_t *device)
-{
-  int len;
-  player_power_geom_t config;
-  memset( &config, 0, sizeof(config) );
-
-  config.subtype = PLAYER_POWER_GET_GEOM_REQ;
-
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-
-  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
-  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
-  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
-  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
-  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
-
-  return 0;
-}
-*/
-
