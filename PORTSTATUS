@@ -13,9 +13,9 @@ x86            Linux 2.2, 2.4       Y           Y           Y           Y
 Sparc          SunOS 5.6, 5.8       Y           U           Y           Y
 Sparc64        Linux 2.4            Y           U           Y           U
 SA1110 (Bitsy) Linux 2.4.19	    U		Y	    N		N
-SA1110 (iPAQ)  Linux ??
+SA1110 (iPAQ)  Linux 2.4.??         Y           Y           N           N
 Alpha          Linux 2.2            Y           U           Y           U
-x86            FreeBSD 4.7          Y           U           Y           U
+x86            FreeBSD 4.7          Y           U           Y           Y
 PowerPC        OS X.2               Y           U           Y           Y
 -------------------------------------------------------------------------------
 
