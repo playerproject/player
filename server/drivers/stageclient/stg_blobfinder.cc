@@ -35,33 +35,30 @@ class StgBlobfinder:public Stage1p4
 public:
   StgBlobfinder( ConfigFile* cf, int section );
 
-  virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
-  virtual int PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len);
-
+   /// Read data from the driver; @a id specifies the interface to be read.
+  virtual size_t GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp);
+ 
+  /// override PutConfig to Write configuration request to driver.
+  virtual int PutConfig(player_device_id_t id, void *client, 
+			void* src, size_t len,
+			struct timeval* timestamp);
 private:
 
 
 };
 
 StgBlobfinder::StgBlobfinder( ConfigFile* cf, int section ) 
-  : Stage1p4( interface, cf, section, sizeof(player_blobfinder_data_t), 0, 1, 1 )
+  : Stage1p4( cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
+	      sizeof(player_blobfinder_data_t), 0, 1, 1 )
 {
-  PLAYER_TRACE1( "constructing StgBlobfinder with interface %s", interface );
+  PLAYER_TRACE0( "constructing StgBlobfinder" );
 }
 
 Driver* StgBlobfinder_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_BLOBFINDER_STRING))
-    {
-      PLAYER_ERROR1("driver \"stg_blobfinder\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else 
-    return((Driver*)(new StgBlobfinder( cf, section)));
+  return((Driver*)(new StgBlobfinder( cf, section)));
 }
 
 
@@ -72,8 +69,9 @@ void StgBlobfinder_Register(DriverTable* table)
 
 // override GetData to get data from Stage on demand, rather than the
 // standard model of the source filling a buffer periodically
-size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+size_t StgBlobfinder::GetData(player_device_id_t id,
+			      void* dest, size_t len,
+			      struct timeval* timestamp )
 {  
   
   stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
@@ -186,25 +184,26 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
       bfd.width = htons((uint16_t)cfg->scan_width);
       bfd.height = htons((uint16_t)cfg->scan_height);
       
-      Driver::PutData( &bfd, sizeof(bfd), 0,0 ); // time gets filled in
+      Driver::PutData( id, &bfd, sizeof(bfd), NULL); // time gets filled in
     }
   
   // now inherit the standard data-getting behavior 
-  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(id,dest,len,timestamp);
 }
 
 
-int StgBlobfinder::PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len)
+int StgBlobfinder::PutConfig(player_device_id_t id, void *client, 
+			     void* src, size_t len,
+			     struct timeval* timestamp )
 {
   // switch on the config type (first byte)
-  uint8_t* buf = (uint8_t*)data;
+  uint8_t* buf = (uint8_t*)src;
   switch( buf[0] )
     {  
     default:
       {
 	printf( "Warning: stg_blobfinder doesn't support config id %d\n", buf[0] );
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	if (PutReply(id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
 	  PLAYER_ERROR("PutReply() failed");
 	break;
       }

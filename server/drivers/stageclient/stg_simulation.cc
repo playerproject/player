@@ -55,11 +55,12 @@ public:
 
 
 StgSimulation::StgSimulation( ConfigFile* cf, int section ) 
-  : Stage1p4( interface, cf, section, 
+  : Stage1p4( cf, section, 
+	      PLAYER_SIMULATION_CODE, PLAYER_ALL_MODE,
 	      sizeof(player_simulation_data_t), 
 	      sizeof(player_simulation_cmd_t), 1, 1 )
 {
-  PLAYER_MSG1( "constructing StgSimulation with interface %s", interface );
+  PLAYER_MSG0( "constructing StgSimulation device" );
   
   if( Stage1p4::stage_client != NULL )
     {
@@ -146,20 +147,17 @@ StgSimulation::StgSimulation( ConfigFile* cf, int section )
   puts( " done." );
   
   // subscribe to something so we get the clock updates 
-  // (there's always a model called "root" )
-  //stg_model_t* root = 
-  //stg_world_model_name_lookup( Stage1p4::world, "root" );
-  //assert(root);
-  
   int zero = 0;
   stg_model_t* dummy = 
     (stg_model_t*)g_hash_table_lookup( Stage1p4::world->models_id, &zero );
 
+  printf( "    Subscribing to world clock..." );  fflush(stdout);
   assert(dummy);
   stg_model_subscribe( dummy, STG_PROP_TIME, 100 ); //100ms
-  
+  puts( " done." );
+
   // start the simulation
-  printf( "    Stage driver starting world clock... " ); fflush(stdout);
+  printf( "    Starting world clock... " ); fflush(stdout);
   stg_world_resume( world );
   puts( "done." );
 
@@ -185,14 +183,7 @@ StgSimulation::~StgSimulation()
 
 Driver* StgSimulation_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_SIMULATION_STRING))
-    {
-      PLAYER_ERROR1("driver \"stg_simulation\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else 
-    return((Driver*)(new StgSimulation( cf, section)));
+  return((Driver*)(new StgSimulation( cf, section)));
 }
 
 
@@ -204,6 +195,7 @@ void StgSimulation_Register(DriverTable* table)
 
 void StgSimulation::Update( void )
 {
+  //puts( "UPDATE" );
   // poll the client for new data, sleeping not at all
-  stg_client_read( stage_client, 0 );
+  stg_client_read( stage_client, 0 );//&client->time );
 }

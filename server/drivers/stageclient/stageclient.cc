@@ -57,9 +57,9 @@ void Interrupt( int dummy );
 				   
 // constructor
 //
-Stage1p4::Stage1p4( ConfigFile* cf, int section, 
-		   size_t datasz, size_t cmdsz, int rqlen, int rplen) :
-  Driver(cf, section, datasz,cmdsz,1,1)//rqlen,rplen)
+Stage1p4::Stage1p4( ConfigFile* cf, int section, int interface, uint8_t access,
+		    size_t datasz, size_t cmdsz, int rqlen, int rplen) :
+  Driver(cf, section, interface, access, datasz, cmdsz, rqlen, rplen )
 {
   PLAYER_TRACE1( "Stage1p4 device created for interface %s\n", interface );
   
@@ -67,9 +67,9 @@ Stage1p4::Stage1p4( ConfigFile* cf, int section,
     
   //this->subscribe_list = NULL;
 
-  const char *enttype = config->GetEntityType(section);
+  //const char *enttype = config->GetEntityType(section);
 
-  if( strcmp( enttype, "simulation" ) == 0 )
+  if( this->device_id.code == PLAYER_SIMULATION_CODE )
     {
       printf( "Initializing Stage simulation device\n" );
     }
@@ -78,8 +78,8 @@ Stage1p4::Stage1p4( ConfigFile* cf, int section,
       char* model_name = 
 	(char*)config->ReadString(section, "model", NULL );
       
-      printf( "    connecting Stage model \"%s\" with interface \"%s\" \n", 
-	      model_name, enttype );
+      printf( "    connecting Stage model \"%s\" \n", 
+	      model_name  );
       
       if( model_name == NULL )
 	PLAYER_ERROR1( "device \"%s\" uses the Stage1p4 driver but has "
@@ -111,11 +111,6 @@ int Stage1p4::Setup()
 { 
   PRINT_DEBUG( "SETUP" );
 
-  //if( this->model && this->subscribe_list )
-  //g_list_foreach( this->subscribe_list, 
-  //	    subscribe_to_property_cb, 
-  //	    (gpointer)this->model );
-
   if( this->model )
     stg_model_subscribe( this->model, STG_PROP_DATA, 100 ); // 100ms  - fix this
   
@@ -128,11 +123,6 @@ int Stage1p4::Shutdown()
 
   if( this->model )
     stg_model_unsubscribe( model, STG_PROP_DATA );
-
-  //if( this->model && this->subscribe_list )
-  // g_list_foreach( this->subscribe_list, 
-  //	    unsubscribe_to_property_cb, 
-  //	    (gpointer)this->model );
 
   return 0;
 };

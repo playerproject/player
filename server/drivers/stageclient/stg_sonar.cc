@@ -34,13 +34,16 @@ class StgSonar:public Stage1p4
 {
 public:
   StgSonar( ConfigFile* cf, int section );
-
-  virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-
-  virtual int PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len);
-
+ 
+  /// Read data from the driver; @a id specifies the interface to be read.
+  virtual size_t GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp);
+ 
+  /// override PutConfig to Write configuration request to driver.
+  virtual int PutConfig(player_device_id_t id, void *client, 
+			void* src, size_t len,
+			struct timeval* timestamp);
 private:
   // stage has no concept of sonar off/on, so we implement that here
   // to support the sonar power config.
@@ -48,7 +51,8 @@ private:
 };
 
 StgSonar::StgSonar( ConfigFile* cf, int section ) 
-  : Stage1p4( interface, cf, section, sizeof(player_sonar_data_t), 0, 1, 1 )
+  : Stage1p4( cf, section, PLAYER_SONAR_CODE, PLAYER_READ_MODE, 
+	      sizeof(player_sonar_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgSonar with interface %s", interface );
   
@@ -57,14 +61,7 @@ StgSonar::StgSonar( ConfigFile* cf, int section )
 
 Driver* StgSonar_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_SONAR_STRING))
-    {
-      PLAYER_ERROR1("driver \"stg_sonar\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else 
-    return((Driver*)(new StgSonar( cf, section)));
+  return((Driver*)(new StgSonar( cf, section)));
 }
 
 
@@ -75,8 +72,9 @@ void StgSonar_Register(DriverTable* table)
 
 // override GetData to get data from Stage on demand, rather than the
 // standard model of the source filling a buffer periodically
-size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
-			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
+size_t StgSonar::GetData(player_device_id_t id,
+			 void* dest, size_t len,
+			 struct timeval* timestamp )
 {  
   
   stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
@@ -104,19 +102,20 @@ size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 	    sonar.ranges[i] = htons((uint16_t)(1000.0*rangers[i].range));
 	}
       
-      Driver::PutData( &sonar, sizeof(sonar), 0,0 ); // time gets filled in
+      Driver::PutData( id, &sonar, sizeof(sonar), NULL); // time gets filled in
     }
   
   // now inherit the standard data-getting behavior 
-  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(id,dest,len,timestamp);
 }
 
 
-int StgSonar::PutConfig(player_device_id_t* device, void* client, 
-			void* data, size_t len)
+int StgSonar::PutConfig(player_device_id_t id, void *client, 
+			void* src, size_t len,
+			struct timeval* timestamp )
 {
   // switch on the config type (first byte)
-  uint8_t* buf = (uint8_t*)data;
+  uint8_t* buf = (uint8_t*)src;
   switch( buf[0] )
     {  
     case PLAYER_SONAR_GET_GEOM_REQ:
@@ -128,8 +127,7 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 	  {
 	    PLAYER_ERROR( "error requesting STG_PROP_CONFIG" );
 	    
-	    if(PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 
-			 NULL, 0) )
+	    if(PutReply( id, client, PLAYER_MSGTYPE_RESP_NACK, NULL ))
 	      PLAYER_ERROR("failed to PutReply for NACK");
 	  }
 	else
@@ -162,8 +160,8 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 	      = ntohs((uint16_t)RTOD( cfgs[i].pose.a));	    
 	  }
 
-	  if(PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-	  &pgeom, sizeof(pgeom) ) )
+	  if(PutReply( id, client, PLAYER_MSGTYPE_RESP_ACK, 
+	  &pgeom, sizeof(pgeom), NULL ) )
 	  PLAYER_ERROR("failed to PutReply");
       }
       break;
@@ -179,15 +177,13 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 			  "request wrong size (%d/%d bytes); ignoring",
 			  (int)len,(int)sizeof(player_sonar_power_config_t) );
 	    
-	    if(PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, 
-			NULL, NULL, 0))
+	    if(PutReply( id, client, PLAYER_MSGTYPE_RESP_NACK, NULL ))
 	      PLAYER_ERROR("failed to PutReply");
 	  }
 	
-	this->power_on = ((player_sonar_power_config_t*)data)->value;
+	this->power_on = ((player_sonar_power_config_t*)src)->value;
 	
-	if(PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		     NULL, 0 ) )
+	if(PutReply( id, client, PLAYER_MSGTYPE_RESP_ACK, NULL ))
 	  PLAYER_ERROR("failed to PutReply");
 	
 	break;
@@ -195,7 +191,7 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
     default:
       {
 	printf( "Warning: stg_sonar doesn't support config id %d\n", buf[0] );
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	if (PutReply( id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
 	  PLAYER_ERROR("PutReply() failed");
 	break;
       }

@@ -942,9 +942,12 @@ bool ParseDeviceEx(ConfigFile *cf, int section)
       strncpy(device->drivername, drivername, sizeof(device->drivername));
   }
   
-  // Should this device be "always on"?
+  // Should this device be "always on"?  
   if (driver)
-    driver->alwayson = cf->ReadInt(section, "alwayson", 0);
+    //driver->alwayson = cf->ReadInt(section, "alwayson", 0 );
+    // rtv - tweaked this to allow drivers to set their default alwayson
+    // state in their constructor
+    driver->alwayson = cf->ReadInt(section, "alwayson", driver->alwayson);
 
   return true;
 }
