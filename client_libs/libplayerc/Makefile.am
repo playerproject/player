@@ -18,7 +18,6 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_blobfinder.c \
                        dev_bumper.c \
                        dev_camera.c \
-                       dev_comms.c \
                        dev_fiducial.c \
                        dev_gps.c \
                        dev_ir.c \

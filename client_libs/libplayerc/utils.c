@@ -62,8 +62,6 @@ const char *playerc_lookup_name(int code)
       return PLAYER_BUMPER_STRING;
     case PLAYER_CAMERA_CODE:
       return PLAYER_CAMERA_STRING;
-    case PLAYER_COMMS_CODE:
-      return PLAYER_COMMS_STRING;
     case PLAYER_DIO_CODE:
       return PLAYER_DIO_STRING;
     case PLAYER_FIDUCIAL_CODE:
@@ -119,8 +117,6 @@ int playerc_lookup_code(const char *name)
     return PLAYER_BUMPER_CODE;
   if (strcmp(name, PLAYER_CAMERA_STRING) == 0)
     return PLAYER_CAMERA_CODE;
-  if (strcmp(name, PLAYER_COMMS_STRING) == 0)
-    return PLAYER_COMMS_CODE;
   if (strcmp(name, PLAYER_DIO_STRING) == 0)
     return PLAYER_DIO_CODE;
   if (strcmp(name, PLAYER_FIDUCIAL_STRING) == 0)

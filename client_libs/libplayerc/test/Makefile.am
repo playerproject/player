@@ -14,7 +14,6 @@ test_SOURCES = test.c \
                test.h \
                test_blobfinder.c \
                test_camera.c \
-               test_comms.c \
                test_fiducial.c \
                test_gps.c \
 							 test_joystick.c \

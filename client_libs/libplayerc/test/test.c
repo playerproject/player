@@ -110,11 +110,6 @@ int main(int argc, const char *argv[])
         test_camera(client, client->devinfos[i].index);
         break;
 
-      // Broadcast device
-      case PLAYER_COMMS_CODE:
-        test_comms(client, client->devinfos[i].index);
-        break;
-
       // Fiducial detector
       case PLAYER_FIDUCIAL_CODE:
         test_fiducial(client, client->devinfos[i].index);
