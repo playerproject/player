@@ -159,6 +159,9 @@ typedef struct
   // Poll info 
   struct pollfd* pollfd;
 
+  // Latest time received from any server
+  double time;
+
 } playerc_mclient_t;
 
 // Create a multi-client object
@@ -247,7 +250,7 @@ typedef struct _playerc_client_t
   /** @internal Temp buffer for incoming packets. */
   char *data;
 
-  /** Data time stamp on the last SYNC packet. */
+  /** Server time stamp on the last packet. */
   double datatime;
 
 } playerc_client_t;

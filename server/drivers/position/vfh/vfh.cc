@@ -19,10 +19,6 @@
 
 extern PlayerTime *GlobalTime;
 
-// HACK: these backup params should be made configurable.
-#define BACKUP_TIME 2.5
-#define BACKUP_SPEED 100
-
 /** @addtogroup drivers Drivers */
 /** @{ */
 /** @defgroup player_driver_vfh vfh
@@ -92,6 +88,12 @@ or sector_angle.
 - max_speed (length / sec)
   - Default: 0.2 m/sec
   - The maximum allowable speed of the robot.
+- max_acceleration (length / sec / sec)
+  - Default: 0.2 m/sec/sec
+  - The maximum allowable acceleration of the robot.
+- min_turnrate (angle / sec)
+  - Default: 10 deg/sec
+  - The minimum allowable turnrate of the robot.
 - max_turnrate (angle / sec)
   - Default: 40 deg/sec
   - The maximum allowable turnrate of the robot.
@@ -216,6 +218,10 @@ class VFH_Class : public Driver
     double odom_time;
     double dist_eps;
     double ang_eps;
+
+    // how fast and how long to back up to escape from a stall
+    double escape_speed;
+    double escape_time;
 
     // Odometric geometry (robot size and pose in robot cs)
     double odom_geom_pose[3];
@@ -753,8 +759,8 @@ void VFH_Class::Main()
   struct timespec sleeptime;
   float dist;
   double angdiff;
-  struct timeval startbackup, curr;
-  bool backingup = false;
+  struct timeval startescape, curr;
+  bool escaping = false;
   double timediff;
 
   // bookkeeping to implement hysteresis when rotating at the goal
@@ -820,24 +826,27 @@ void VFH_Class::Main()
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
                 pow((goal_y - this->odom_pose[1]),2));
 
-    if(backingup)
+    if(escaping)
     {
       GlobalTime->GetTime(&curr);
       timediff = (curr.tv_sec + curr.tv_usec/1e6) -
-              (startbackup.tv_sec + startbackup.tv_usec/1e6);
-      if(timediff > BACKUP_TIME)
-        backingup = false;
+              (startescape.tv_sec + startescape.tv_usec/1e6);
+      if(timediff > this->escape_time)
+        escaping = false;
     }
 
-    if(this->odom_stall || backingup)
+    if(escaping || 
+       (this->escape_speed && this->escape_time && this->odom_stall))
     {
-      this->speed = -BACKUP_SPEED;
+      /// @todo Make the post-stall esape strategy smarter (e.g., sometimes
+      //        go forward, and maybe turn).
+      this->speed = (int)rint(this->escape_speed * 1e3);
       this->turnrate = 0;
       PutCommand( this->speed, this->turnrate );
       if(this->odom_stall)
       {
-        GlobalTime->GetTime(&startbackup);
-        backingup = true;
+        GlobalTime->GetTime(&startescape);
+        escaping = true;
       }
       atgoal = false;
     }
@@ -1014,6 +1023,9 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   this->dist_eps = cf->ReadLength(section, "distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section, "angle_epsilon", DTOR(10.0));
+
+  this->escape_speed = cf->ReadLength(section, "escape_speed", 0.0);
+  this->escape_time = cf->ReadFloat(section, "escape_time", 0.0);
 
   // Instantiate the classes that handles histograms
   // and chooses directions

@@ -65,6 +65,7 @@ playerc_mclient_t *playerc_mclient_create()
   mclient = malloc(sizeof(playerc_mclient_t));
   memset(mclient, 0, sizeof(playerc_mclient_t));
   mclient->pollfd = calloc(128,sizeof(struct pollfd));
+  mclient->time = 0.0;
 
   return mclient;
 }
@@ -145,7 +146,14 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout)
   for (i = 0; i < mclient->client_count; i++)
   {
     if ((mclient->pollfd[i].revents & POLLIN) > 0)
-      playerc_client_read(mclient->client[i]);
+    {
+      if(playerc_client_read(mclient->client[i]))
+      {
+        // cache the latest timestamp
+        if(mclient->client[i]->datatime > mclient->time)
+          mclient->time = mclient->client[i]->datatime;
+      }
+    }
   }
   return count;
 }
