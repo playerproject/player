@@ -53,7 +53,9 @@ StgLaser::StgLaser(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgLaser with interface %s", interface );
   
-  this->subscribe_prop = STG_PROP_LASERDATA;
+  //this->subscribe_prop = STG_PROP_LASERDATA;
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_LASERDATA));
+
 }
 
 CDevice* StgLaser_Init(char* interface, ConfigFile* cf, int section)
@@ -95,7 +97,7 @@ int StgLaser::Shutdown()
 size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_property_t* prop = stg_model_get_prop_cached( model, this->subscribe_prop);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_LASERDATA);
   
   player_laser_data_t pdata;
   memset( &pdata, 0, sizeof(pdata) );

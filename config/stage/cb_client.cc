@@ -83,6 +83,7 @@ int main(int argc, char **argv)
   PlayerClient robot(host,port);
   PositionProxy pp(&robot,device_index,'a');
   SonarProxy sp(&robot,device_index,'r');
+  EnergyProxy ep(&robot,device_index,'r');
   
   printf("%s\n",robot.conn.banner);
 

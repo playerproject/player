@@ -3510,9 +3510,11 @@ typedef struct player_energy_data
       aquisition (positive values), in milliWatts (milliJoules/sec). */
   int32_t mwatts; 
   
-  /** charging flag: if TRUE, device is currently charging, else
-      FALSE.*/
-  uint8_t charging;
+  /** charge exchange status: if 1, the device is currently receiving
+      charge from another energy device. If -1 the device is currently
+      providing charge to another energy device. If 0, the device is
+      not exchanging charge with an another device. */
+  int8_t charging;
   
 } __PACKED__ player_energy_data_t;
 
@@ -3530,7 +3532,7 @@ typedef struct player_energy_command
   uint8_t enable_input;
   
   /** boolean controlling whether others can recharge from this
-      device. If FALSE, charging others is disabled. */  
+      device. If FALSE, charging others is disabled. Defaults to TRUE.*/  
   uint8_t enable_output; 
   
 } __PACKED__ player_energy_chargepolicy_config_t;
