@@ -48,6 +48,9 @@ PlayerClient::PlayerClient(const char* hostname = NULL, int port=PLAYER_PORTNUM)
   memset( this->hostname, 0, 256 );
   this->port = 0;
 
+  this->timestamp.tv_sec = 0;
+  this->timestamp.tv_usec = 0;
+  
   reserved = 0;
 
   if(hostname)
@@ -117,6 +120,14 @@ int PlayerClient::Read()
       return(-1);
     }
     gettimeofday(&curr,NULL);
+
+    // update timestamp
+    if ((int) hdr.timestamp_usec > this->timestamp.tv_usec ||
+        (int) hdr.timestamp_sec > this->timestamp.tv_sec)
+    {
+        this->timestamp.tv_sec = hdr.timestamp_sec;
+        this->timestamp.tv_usec = hdr.timestamp_usec;
+    }
 
     //printf( "PlayerClient::Read() %d reads: (X,%d,%d)\n",
     //    numreads, hdr.device, hdr.device_index );
