@@ -120,6 +120,8 @@ protected:
 
   DualCANIO *canio;
 
+  bool canioInit;
+
   pthread_t read_write_thread;
 
   queue<can_packet_t> command_queue;

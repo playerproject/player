@@ -80,6 +80,7 @@ SegwayIO::Instance()
 SegwayIO::SegwayIO() 
 {
   canio = new DualCANIO();
+  canioInit = false;
 
   pthread_mutex_init(&latestData_mutex, NULL);
   pthread_mutex_init(&command_queue_mutex, NULL);
@@ -101,16 +102,19 @@ SegwayIO::~SegwayIO()
 int
 SegwayIO::Init()
 {
-  // start the CAN at 500 kpbs
-  if (canio->Init(BAUD_500K) < 0) {
-    fprintf(stderr, "SEGWAYIO: error on CAN Init\n");
-    return -1;
-  }
-  
-  // start the read/write thread...
-  if (pthread_create(&read_write_thread, NULL, &DummyMain, this)) {
-    fprintf(stderr, "SEGWAYIO: error creating read/write thread.\n");
-    return -1;
+  if (!canioInit) {
+    // start the CAN at 500 kpbs
+    if (canio->Init(BAUD_500K) < 0) {
+      fprintf(stderr, "SEGWAYIO: error on CAN Init\n");
+      return -1;
+    }
+    
+    // start the read/write thread...
+    if (pthread_create(&read_write_thread, NULL, &DummyMain, this)) {
+      fprintf(stderr, "SEGWAYIO: error creating read/write thread.\n");
+      return -1;
+    }
+    canioInit = true;
   }
 
   return 0;
