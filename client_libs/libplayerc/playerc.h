@@ -741,6 +741,59 @@ int playerc_map_get_map(playerc_map_t* device);
  ** end section
  **************************************************************************/
 
+/***************************************************************************
+ ** begin section log
+ **************************************************************************/
+
+/** [Synopsis] The {\tt log} proxy provides start/stop control of data
+               logging
+ */
+
+/** [Data] */
+
+/** Log proxy data. */
+typedef struct _playerc_log_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** What kind of log device is this? Either PLAYER_LOG_TYPE_READ or
+      PLAYER_LOG_TYPE_WRITE. Call playerc_log_get_state() to fill it. */
+  int type;
+
+  /** Is logging/playback enabled? Call playerc_log_get_state() to 
+      fill it. */
+  int state;
+} playerc_log_t;
+
+/** [Methods] */
+
+/** Create a log proxy. */
+playerc_log_t *playerc_log_create(playerc_client_t *client, int index);
+
+/** Destroy a log proxy. */
+void playerc_log_destroy(playerc_log_t *device);
+
+/** Subscribe to the log device. */
+int playerc_log_subscribe(playerc_log_t *device, int access);
+
+/** Un-subscribe from the log device. */
+int playerc_log_unsubscribe(playerc_log_t *device);
+
+/** Start/stop logging */
+int playerc_log_set_write_state(playerc_log_t* device, int state);
+
+/** Start/stop playback */
+int playerc_log_set_read_state(playerc_log_t* device, int state);
+
+/** Get logging/playback state; the result is written into the proxy */
+int playerc_log_get_state(playerc_log_t* device);
+
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
+
 
 /***************************************************************************
  ** begin section laser

@@ -130,6 +130,11 @@ int main(int argc, const char *argv[])
         test_map(client, client->ids[i].index);
         break;
 
+      // log device
+      case PLAYER_LOG_CODE:
+        test_log(client, client->ids[i].index);
+        break;
+
       // Laser device
       case PLAYER_LASER_CODE:
         test_laser(client, client->ids[i].index);

@@ -125,6 +125,9 @@ int ReadLogManager::Startup()
     return -1;
   }
 
+  // Playback enabled by default
+  this->enable = true;
+
   return 0;
 }
 
@@ -229,6 +232,13 @@ void ReadLogManager::Main()
   while (true)
   {
     pthread_testcancel();
+
+    // If we're not supposed to playback data, sleep and loop
+    if(!this->enable)
+    {
+      usleep(10000);
+      continue;
+    }
 
     // Read a line from the file
     if (gzgets(this->file, line, sizeof(line)) == NULL)

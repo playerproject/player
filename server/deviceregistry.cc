@@ -348,7 +348,8 @@ void NomadSonar_Register(DriverTable *driverTable);
  * NOTE: the last element *must* be NULL
  */
 player_interface_t interfaces[] = {
-  {PLAYER_NULL_CODE, PLAYER_NULL_STRING, "writelog"},
+  {PLAYER_NULL_CODE, PLAYER_NULL_STRING, ""},
+  {PLAYER_LOG_CODE, PLAYER_LOG_STRING, "writelog"},
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING, "sicklms200"},
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING, "acts"},
   {PLAYER_SPEECH_CODE, PLAYER_SPEECH_STRING, "festival"},

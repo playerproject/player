@@ -62,7 +62,7 @@ class WriteLogDevice
 class WriteLog: public CDevice 
 {
   // Constructor
-  public: WriteLog(int code, ConfigFile* cf, int section);
+  public: WriteLog(ConfigFile* cf, int section);
 
   // Destructor
   public: ~WriteLog();
@@ -115,6 +115,10 @@ class WriteLog: public CDevice
 
   // Device we are waiting on
   private: int wait_index;
+
+  // Is writing enabled? (client can start/stop)
+  private: bool enable;
+  private: bool enable_default;
 };
 
 
@@ -128,14 +132,14 @@ extern int global_playerport;
 // Create a driver for reading log files
 CDevice* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
 {
-  player_interface_t interface;
-
-  if (lookup_interface(name, &interface) != 0)
+  //if (lookup_interface(name, &interface) != 0)
+  if(strcmp(name,PLAYER_LOG_STRING))
   {
-    PLAYER_ERROR1("interface \"%s\" is not supported", name);
+    PLAYER_ERROR1("driver \"writelog\" does not support interface \"%s\"\n",
+                  name);
     return NULL;
   }
-  return ((CDevice*) (new WriteLog(interface.code, cf, section)));
+  return ((CDevice*) (new WriteLog(cf, section)));
 }
 
 
@@ -150,7 +154,7 @@ void WriteLog_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
-WriteLog::WriteLog(int code, ConfigFile* cf, int section)
+WriteLog::WriteLog(ConfigFile* cf, int section)
     : CDevice(PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
   int i, index;
@@ -161,6 +165,10 @@ WriteLog::WriteLog(int code, ConfigFile* cf, int section)
   
   this->file = NULL;
   this->filename = cf->ReadString(section, "filename", "writelog.log");
+  if(cf->ReadInt(section, "enable", 1) > 0)
+    this->enable_default = true;
+  else
+    this->enable_default = false;
 
   this->device_count = 0;
 
@@ -200,7 +208,7 @@ WriteLog::WriteLog(int code, ConfigFile* cf, int section)
 
   // See which device we should wait on
   this->wait_index = cf->ReadInt(section, "wait_device", -1);
-    
+
   return;
 }
 
@@ -250,6 +258,9 @@ int WriteLog::Setup()
   fprintf(this->file, "## Player version %s \n", VERSION);
   fprintf(this->file, "## File version %s \n", "0.0.0");
 
+  // Enable/disable logging, according to default set in config file
+  this->enable = this->enable_default;
+
   // Start device thread
   this->StartThread();
   
@@ -291,8 +302,69 @@ int WriteLog::Shutdown()
 int WriteLog::PutConfig(player_device_id_t* device, void* client,
                        void* data, size_t len)
 {
-  if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-    PLAYER_ERROR("PutReply() failed");
+  player_log_set_write_state_t sreq;
+  player_log_get_state_t greq;
+  uint8_t subtype;
+
+  if(len < sizeof(sreq.subtype))
+  {
+    PLAYER_WARN2("request was too small (%d < %d)",
+                  len, sizeof(sreq.subtype));
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  subtype = ((player_log_set_write_state_t*)data)->subtype;
+  switch(subtype)
+  {
+    case PLAYER_LOG_SET_WRITE_STATE_REQ:
+      if(len != sizeof(sreq))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      sreq = *((player_log_set_write_state_t*)data);
+      if(sreq.state)
+      {
+        puts("WriteLog: start logging");
+        this->enable = true;
+      }
+      else
+      {
+        puts("WriteLog: stop logging");
+        this->enable = false;
+      }
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    case PLAYER_LOG_GET_STATE_REQ:
+      if(len != sizeof(greq.subtype))
+      {
+        PLAYER_WARN2("request wrong size (%d != %d)", 
+                     len, sizeof(greq.subtype));
+        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+      greq = *((player_log_get_state_t*)data);
+      greq.type = PLAYER_LOG_TYPE_WRITE;
+      if(this->enable)
+        greq.state = 1;
+      else
+        greq.state = 0;
+
+      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
+                        &greq, sizeof(greq)) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+    default:
+      PLAYER_WARN1("got request of unknown subtype %u", subtype);
+      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        PLAYER_ERROR("PutReply() failed");
+      break;
+  }
 
   return 0;
 }
@@ -308,7 +380,7 @@ void WriteLog::Main(void)
   void *data;
   WriteLogDevice *device;
   
-  maxsize = 8192;
+  maxsize = PLAYER_MAX_MESSAGE_SIZE;
   data = malloc(maxsize);
   
   while (1)
@@ -327,6 +399,10 @@ void WriteLog::Main(void)
       // Default 10Hz data rate
       usleep(100000);
     }
+
+    // If logging is stopped, then don't log
+    if(!this->enable)
+      continue;
 
     // Walk the device list
     for (i = 0; i < this->device_count; i++)

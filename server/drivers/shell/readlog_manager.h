@@ -117,6 +117,10 @@ class ReadLogManager
   // Playback speed (1 = real time)
   private: double speed;
 
+  // Playback enabled?  It's public, so that an instance of ReaLog can
+  // get/set it.
+  public: bool enable;
+
   // Subscribed device list
   private: int device_count;
   private: CDevice *devices[1024];
