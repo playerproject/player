@@ -50,6 +50,13 @@
 #include "cmvision.h"
 #include "capture.h"
 
+#if HAVE_1394
+  #include "capture1394.h"
+#endif
+#if HAVE_V4L2
+  #include "captureV4L2.h"
+#endif
+
 #define CMV_NUM_CHANNELS CMV_MAX_COLORS
 #define CMV_HEADER_SIZE 4*CMV_NUM_CHANNELS  
 #define CMV_BLOB_SIZE 16
@@ -65,7 +72,8 @@ private:
   int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
   
   int width, height;  // the image dimensions
-  char colorfile[MAX_FILENAME_SIZE];
+  const char* colorfile;
+  const char* capturetype;
 
   
   int header_len; // length of incoming packet header
@@ -117,9 +125,8 @@ CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
   width = cf->ReadInt(section, "width", DEFAULT_CMV_WIDTH);
   height = cf->ReadInt(section, "height", DEFAULT_CMV_HEIGHT);
   
-  strncpy(colorfile,
-          cf->ReadString(section, "colorfile", ""),
-          sizeof(colorfile));
+  colorfile = cf->ReadString(section, "colorfile", "");
+  capturetype = cf->ReadString(section, "capture", "1394");
 
   header_len = CMV_HEADER_SIZE;
   blob_size = CMV_BLOB_SIZE;
@@ -132,7 +139,32 @@ CMVisionBF::Setup()
 {
   printf("CMVision server initializing...");
   vision = new CMVision;
-  cap = new capture;
+
+  if(!strcmp(capturetype, "1394"))
+  {
+#if HAVE_1394
+    cap = new capture1394;
+#else
+    PLAYER_ERROR("Sorry, support for capture from a 1394 camera was not "
+                 "included at compile-time");
+    return(-1);
+#endif
+  }
+  else if(!strcmp(capturetype, "V4L2"))
+  {
+#if HAVE_V4L2
+    cap = new captureV4L2;
+#else
+    PLAYER_ERROR("Sorry, support for capture from a V4L2 camera was not "
+                 "included at compile-time");
+    return(-1);
+#endif
+  }
+  else
+  {
+    PLAYER_ERROR1("Unknown video capture type: \"%s\"", capturetype);
+    return(-1);
+  }
   
   if(!cap->initialize(width,height) ||
      !vision->initialize(width,height))
@@ -143,7 +175,7 @@ CMVisionBF::Setup()
 
   if (colorfile[0])
   {
-    if (!vision->loadOptions(colorfile))
+    if (!vision->loadOptions((char*)colorfile))
     {
       PLAYER_ERROR("Error loading color file");
       return(-1);

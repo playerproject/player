@@ -1,9 +1,15 @@
-#include "capture.h"
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
+#if HAVE_1394
+
+#include "capture1394.h"
 
 //#define QPRINT(x) {printf(x);fflush(stdout);}
 #define QPRINT(x)
 
-bool capture::initialize(int nwidth,int nheight)
+bool capture1394::initialize(int nwidth,int nheight)
 {
   // Set defaults if not given
   if(!nwidth || !nheight){
@@ -136,7 +142,7 @@ bool capture::initialize(int nwidth,int nheight)
   return true;
 }
 
-void capture::close()
+void capture1394::close()
 {
   current=NULL;
   if (camera_nodes==NULL) return; //we did not initialize
@@ -147,7 +153,8 @@ void capture::close()
 }
 
 
-unsigned char *capture::captureFrame(int &index,int &field)
+/*
+unsigned char *capture1394::captureFrame(int &index,int &field)
 {
   field = 0;
   index = 0;
@@ -155,13 +162,16 @@ unsigned char *capture::captureFrame(int &index,int &field)
   captured_frame = true; 
   return captureFrame();
 }
+*/
 
-void capture::releaseFrame(unsigned char* frame, int index)
+/*
+void capture1394::releaseFrame(unsigned char* frame, int index)
 {
   captured_frame = false;
 }
+*/
 
-unsigned char *capture::captureFrame()
+unsigned char *capture1394::captureFrame()
 {
   if (dc1394_single_capture(handle,&camera)!=DC1394_SUCCESS) 
     {
@@ -174,3 +184,5 @@ unsigned char *capture::captureFrame()
 
   return current;
 }
+
+#endif // HAVE_1394

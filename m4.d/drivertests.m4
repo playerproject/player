@@ -16,7 +16,8 @@ dnl   name:    name; driver library should take the name lib<name>.a
 dnl   path:    path, relative to server, to where driver library will be built
 dnl   default: should this driver be included by default? ("yes" or "no")
 dnl   ldadd:   link flags to be added to Player (e.g., "-lgsl -lcblas")
-dnl   header:  a single header file that is required to build the driver
+dnl   header:  a whitespace-separated list of header files that are required 
+dnl            to build the driver
 dnl
 dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
 dnl <name> capitalized) will be conditionally defined to be 1 and 
@@ -30,7 +31,9 @@ ifelse($3,[yes],
   [AC_ARG_ENABLE($1, [  --enable-$1	  Compile the $1 driver],,
                  enable_$1=no)])
 if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
-  AC_CHECK_HEADER($5, enable_$1=yes, enable_$1=no,)
+  for header in $5; do
+    AC_CHECK_HEADER($header, enable_$1=yes, enable_$1=no,)
+  done
 fi
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
@@ -62,7 +65,38 @@ PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],)
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],)
 
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],
-                  ["-lraw1394 -ldc1394_control"],[libraw1394/raw1394.h])
+                  ["-lraw1394 -ldc1394_control"],[])
+dnl Check for video-related headers, to see which support can be compiled into
+dnl the CMVision driver.
+AC_CHECK_HEADER(libraw1394/raw1394.h, have_raw1394=yes, have_raw1394=no)
+AC_CHECK_HEADER(libdc1394/dc1394_control.h, have_dc1394=yes, have_dc1394=no)
+if test "x$have_raw1394" = "xyes" -a "x$have_dc1394" = "xyes"; then
+  AC_MSG_RESULT([***************************************************])
+  AC_MSG_RESULT([Found the 1394 (firewire) headers. 1394 camera])
+  AC_MSG_RESULT([support will be included in the CMVision driver])
+  AC_MSG_RESULT([***************************************************])
+  AC_DEFINE(HAVE_1394, 1, [do we have the low-level 1394 libs?])
+else
+  AC_MSG_RESULT([***************************************************])
+  AC_MSG_RESULT([Couldn't find the 1394 (firewire) headers. 1394])
+  AC_MSG_RESULT([camera support will *not* be included in the])
+  AC_MSG_RESULT([CMVision driver])
+  AC_MSG_RESULT([***************************************************])
+fi
+
+AC_CHECK_HEADER(linux/videodev2, have_videodev2=yes, have_videodev2=no)
+if test "x$have_videodev2" = "xyes"; then
+  AC_MSG_RESULT([***************************************************])
+  AC_MSG_RESULT([Found the Video4Linux2 headers. V4L2 camera support])
+  AC_MSG_RESULT([will be included in the CMVision driver])
+  AC_MSG_RESULT([***************************************************])
+  AC_DEFINE(HAVE_V4L2, 1, [do we have the V4L2 libs?])
+else
+  AC_MSG_RESULT([***************************************************])
+  AC_MSG_RESULT([Couldn't find the Video4Linux2 headers. V4L2 camera])
+  AC_MSG_RESULT([support will *not* be included in the CMVision driver])
+  AC_MSG_RESULT([***************************************************])
+fi
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],)
 

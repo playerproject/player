@@ -13,6 +13,8 @@
 #include <string.h>
 #include "playerclient.h"
 
+extern bool use_stage;
+
 // Message macros
 #define TEST(msg) (1 ? printf(msg " ... "), fflush(stdout) : 0)
 #define TEST1(msg, a) (1 ? printf(msg " ... ", a), fflush(stdout) : 0)
