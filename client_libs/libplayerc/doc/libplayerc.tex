@@ -1,14 +1,13 @@
 \documentclass[11pt]{report}
 \usepackage{fullpage}
 \usepackage{graphics}
+\usepackage{tabularx}
 
 \usepackage{times}
 \usepackage{listings}
 \lstset{language=C,basicstyle=\footnotesize,frame=tb}
 
-\usepackage{tabularx}
-
-\def\VERSION {1.4}
+\def\VERSION {1.3.2}
 \def\DEFAULTPORT {6665}
 \def\HOMEPAGE {{\tt http://playerstage.sourceforge.net}}
 \def\libplayerc {{\tt libplayerc} }
@@ -293,44 +292,51 @@ This chapter contains information on the various non-device and
 generic proxies offered by \libplayerc; see Chapter \ref{chap.devices}
 for information on specific device proxies.
 
+%\section{The {\tt client} proxy}
+%
+%The client proxy provides an interface to the Player server itself,
+%and therefore has somewhat different functionality from the {\em
+%device} proxies.  The client proxy supports the following functions:
+%\begin{quote}
+%\lstinputlisting{client.f.tex}
+%\end{quote}
+%Note that the {\tt create} function returns a pointer to an {\tt
+%playerc\_client\_t} structure to be used in other function calls.
+%This structure is opaque and should not be manipulated directly.
 
-\section{Error handling}
+%\newpage
+\input{proxies/client}
 
-Most functions in \libplayerc will return 0 on success and non-zero
-value on error.  A descriptive error message will also be written into
-the error variable:
-\begin{quote}
-\begin{lstlisting}{}
-char *playerc_errorstr;
-\end{lstlisting}
-\end{quote}
+%\section{The {\tt device} proxy}
+%
+%The {\tt device} proxy provides a `generic' interface to the
+%functionality that is shared by all devices (i.e., a base class, in
+%OOP parlance).  This proxy can be accessed through the {\tt info}
+%element present in each of the device proxies; {\tt info} is of type
+%{\tt playerc\_device\_t}, and has the following elements:
+%\begin{quote}
+%\lstinputlisting{device.t.tex}
+%\end{quote}
+%The elements that are marked are ``private'' should are reserved for 
+%internal use and should not be manipulated directly.
+
+%\newpage
+\input{proxies/device}
+
+%\section{Error handling}
+%
+%Most functions in \libplayerc will return 0 on success and non-zero
+%value on error.  A descriptive error message will also be written into
+%the error variable:
+%\begin{quote}
+%\begin{lstlisting}{}
+%char *playerc_errorstr;
+%\end{lstlisting}
+%\end{quote}
 
 
-\section{The {\tt client} proxy}
-
-The client proxy provides an interface to the Player server itself,
-and therefore has somewhat different functionality from the {\em
-device} proxies.  The client proxy supports the following functions:
-\begin{quote}
-\lstinputlisting{client.f.tex}
-\end{quote}
-Note that the {\tt create} function returns a pointer to an {\tt
-playerc\_client\_t} structure to be used in other function calls.
-This structure is opaque and should not be manipulated directly.
-
-
-\section{The {\tt device} proxy}
-
-The {\tt device} proxy provides a `generic' interface to the
-functionality that is shared by all devices (i.e., a base class, in
-OOP parlance).  This proxy can be accessed through the {\tt info}
-element present in each of the device proxies; {\tt info} is of type
-{\tt playerc\_device\_t}, and has the following elements:
-\begin{quote}
-\lstinputlisting{device.t.tex}
-\end{quote}
-The elements that are marked are ``private'' should are reserved for 
-internal use and should not be manipulated directly.
+%\newpage
+\input{proxies/Errors}
 
 
 \chapter{Device Reference}
@@ -356,8 +362,6 @@ seconds) for all measurements.
 \noindent
 \begin{tabularx}{\columnwidth}{lX}
 \hline
-%{\tt bps} & Beacon-based positioning system: determines the absolute pose
-%of the robot using pre-placed beacons.  {\bf Experimental.}\\
 {\tt blobfinder} & Color-blob detector: an interface to a color blob detectors such as the
 ACTS vision system.\\
 {\tt comms} & Broadcast communications device: sends and receives packets between Player
@@ -368,6 +372,7 @@ such as the SICK LMS200.\\
 {\tt fiducial} & Fiducial detector: detects fiducials (beacons) placed in the
 environment.\\
 {\tt position} & Position device: for control of a mobile robot platform.\\
+{\tt power} & Power device: query batter levels.\\
 {\tt ptz} & Pan-tilt-zoom device: an interface to a pan-tilt-zoom camera
 head such as the Sony EVID30 \\
 {\tt sonar} & Sonar device: an interface to an array of sonar range finders, 
@@ -378,217 +383,43 @@ objects in the Stage simulator.  {\bf Simulator only.}\\
 \hline
 \end{tabularx}
 
+\newpage
+\input{proxies/blobfinder}
+
+\newpage
+\input{proxies/comms}
+
+\newpage
+\input{proxies/fiducial}
 
 %\newpage
-%\section{The {\tt bps} proxy}
-%
-%{\bf *** This device is experimental and is subject to change. ***}
-%
-%\noindent The {\tt bps} proxy provides an interface to the beacon positioning
-%system.  This device attempts to localize the robot with respect to
-%beacons that have been emplaced in the environment.  See the Player
-%User Manual for a complete description of this device.  The proxy
-%supports the following functions:
-%\begin{quote}
-%\lstinputlisting{bps.f.tex}
-%\end{quote}
-%The {\tt create} function returns a pointer to a {\tt playerc\_bps\_t}
-%structure, which has the following elements.
-%\begin{quote}
-%\lstinputlisting{bps.t.tex}
-%\end{quote}
-
+%\input{proxies/gps}
 
 \newpage
-\section{The {\tt blobfinder} proxy}
-
-The {\tt blobfinder} proxy provides an interface to color blob
-detectors such as the ACTS vision system.  See the Player User Manual
-for a complete description of the drivers that support this interface.
-The proxy has the following functions:
-\begin{quote}
-\lstinputlisting{blobfinder.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_blobfinder\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{blobfinder.t.tex}
-\end{quote}
-
+\input{proxies/laser}
 
 \newpage
-\section{The {\tt comms} proxy}
-
-The {\tt comms} proxy provides an interface to the network broadcast
-device.  This device broadcasts any message sent to it onto the local
-network, and returns the messages broadcast by other robots.  This
-device use broadcast UDP sockets, and therefore offers no guarantee
-that messages will be delivered, or that they will be delivered in the
-order in which they are transmitted.  The comms proxy supports the
-following functions:
-\begin{quote}
-\lstinputlisting{comms.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_comms\_t}
-structure; this structure is opaque and should not be manipulated directly.
-
+\input{proxies/localize}
 
 \newpage
-\section{The {\tt fiducial} proxy}
-
-The {\tt fiducial} proxy provides an interface to a fiducial detector.
-This device looks for fiducials (markers or beacons) in the laser
-scan, and determines their identity, range, bearing and orientation.
-See the Player User Manual for a complete description of the various
-drivers that support the fiducial interface.
-\begin{quote}
-\lstinputlisting{fiducial.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_lbd\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{fiducial.t.tex}
-\end{quote}
-
+\input{proxies/position}
 
 \newpage
-\section{The {\tt gps} proxy}
-
-\noindent The {\tt gps} proxy provides an interface to a GPS-receiver;
-currently, GPS devices are implemented in the Stage simulator only.
-\begin{quote}
-\lstinputlisting{gps.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_gps\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{gps.t.tex}
-\end{quote}
-
+\input{proxies/power}
 
 \newpage
-\section{The {\tt laser} proxy}
-
-The {\tt laser} proxy provides an interface to a scanning laser range
-finder such as the SICK LMS200.  See the Player User Manual for a
-complete description of this device.  The proxy supports the
-following functions:
-\begin{quote}
-\lstinputlisting{laser.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_laser\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{laser.t.tex}
-\end{quote}
-Note that the intensity values will only be filled if intensity information
-is enabled (using the {\tt set\_config} function).
-
+\input{proxies/ptz}
 
 \newpage
-\section{The {\tt localize} proxy}
-
-The {\tt localize} proxy provides an interface to localization
-drivers.  Generally speaking, these are abstract drivers that attempt
-to localize the robot by matching sensor observations (odometry, laser
-and/or sonar) against a prior map of the environment (such as an
-occupancy grid).  Since the pose may be ambiguous, multiple hypotheses
-may returned; each hypothesis specifies one possible pose estimate for
-the robot.
-
-The proxy supports the following functions:
-\begin{quote}
-\lstinputlisting{localize.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_localize\_t}
-structure, which has the following elements:
-\begin{quote}
-\lstinputlisting{localize.t.tex}
-\end{quote}
-
-TODO: more documentation please....
-
+\input{proxies/sonar}
 
 \newpage
-\section{The {\tt position} proxy}
-
-The {\tt position} proxy provides an interface to a mobile robot base,
-such as the ActiveMedia Pioneer series.  The proxy supports both
-differential drive robots (which are capable of forward motion and
-rotation) and omni-drive robots (which are capable of forward,
-sideways and rotational motion).  The proxy supports the following
-functions:
-\begin{quote}
-\lstinputlisting{position.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_position\_t}
-structure, which has the following elements:
-\begin{quote}
-\lstinputlisting{position.t.tex}
-\end{quote}
-
+\input{proxies/truth}
 
 \newpage
-\section{The {\tt ptz} proxy}
-
-The {\tt ptz} proxy provides an interface to the Sony pan-tilt-zoom
-camera.  The proxy supports the following
-functions:
-\begin{quote}
-\lstinputlisting{ptz.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_ptz\_t}
-structure, which has the following elements:
-\begin{quote}
-\lstinputlisting{ptz.t.tex}
-\end{quote}
+\input{proxies/wifi}
 
 
-\newpage
-\section{The {\tt sonar} proxy}
-
-The {\tt sonar} proxy provides an interface to the sonar range sensors
-built into robots such as the ActiveMedia Pioneer series.  See the
-Player User Manual for a complete description of this device.  The
-proxy supports the following functions:
-\begin{quote}
-\lstinputlisting{sonar.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_sonar\_t}
-structure, which has the following elements.
-\begin{quote}
-\lstinputlisting{sonar.t.tex}
-\end{quote}
-
-
-\newpage
-\section{The {\tt truth} proxy}
-
-The {\tt truth} proxy can be used to get and set the pose of objects
-in the Stage simulator.  The proxy supports the following functions:
-\begin{quote}
-\lstinputlisting{truth.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_truth\_t}
-structure, which has the following elements:
-\begin{quote}
-\lstinputlisting{truth.t.tex}
-\end{quote}
-
-\newpage
-\section{The {\tt wifi} proxy}
-
-The {\tt wifi} proxy is used to query the state of a wireless network.
-It returns information such as the link quality and signal strength of
-access points or of other wireless NIC's on an ad-hoc network.
-\begin{quote}
-\lstinputlisting{wifi.f.tex}
-\end{quote}
-The {\tt create} function returns a pointer to a {\tt playerc\_wifi\_t}
-structure, which has the following elements:
-\begin{quote}
-\lstinputlisting{wifi.t.tex}
-\end{quote}
 
 \appendix
 

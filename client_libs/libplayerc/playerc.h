@@ -112,78 +112,20 @@ typedef struct
 } playerc_mclient_t;
 
 
-// Single client data
-typedef struct _playerc_client_t
-{
-  // Server address
-  char *host;
-  int port;
-    
-  // Socket descriptor
-  int sock;
-
-  // List of ids for available devices.  This list is filled in by
-  // playerc_client_get_devlist().
-  int id_count;
-  player_device_id_t ids[PLAYER_MAX_DEVICES];
-  char drivernames[PLAYER_MAX_DEVICES][PLAYER_MAX_DEVICE_STRING_LEN];
-    
-  // List of subscribed devices
-  int device_count;
-  struct _playerc_device_t *device[32];
-
-  // A circular queue used to buffer incoming data packets.
-  int qfirst, qlen, qsize;
-  playerc_client_item_t qitems[128];
-
-  // Data time stamp on the last SYNC packet
-  double datatime;
-    
-} playerc_client_t;
-
-
-// Player device proxy info; basically a base class for devices.
-typedef struct _playerc_device_t
-{
-  // Pointer to the client proxy.
-  playerc_client_t *client;
-
-  // Device code, index
-  int code, index;
-
-  // The driver name
-  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
-  
-  // The subscribe flag is non-zero if the device has been
-  // successfully subscribed.
-  int subscribed;
-
-  // Data timestamp, i.e., the time at which the data was generated (s).
-  double datatime;
-
-  // Standard callbacks for this device (private).
-  playerc_putdata_fn_t putdata;
-
-  // Extra user data for this device (private).
-  void *user_data;
-  
-  // Extra callbacks for this device (private).
-  int callback_count;
-  playerc_callback_fn_t callback[4];
-  void *callback_data[4];
-
-} playerc_device_t;
-
-
 /***************************************************************************
- * Error handling
+ ** begin section Errors
  **************************************************************************/
 
-// Errors get written here
-extern char playerc_errorstr[];
+/** [Synopsis] Most functions in \libplayerc will return 0 on success
+and non-zero value on error.  A descriptive error message will also be
+written into the error string. */
 
-// Use this function to read the error string
+/** Retrieve the last error (as a descriptive string). */
 extern const char *playerc_error_str(void);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
 
 
 /***************************************************************************
@@ -208,7 +150,7 @@ playerc_mclient_t *playerc_mclient_create(void);
 void playerc_mclient_destroy(playerc_mclient_t *mclient);
 
 // Add a client to the multi-client (private).
-int playerc_mclient_addclient(playerc_mclient_t *mclient, playerc_client_t *client);
+int playerc_mclient_addclient(playerc_mclient_t *mclient, struct _playerc_client_t *client);
 
 // Test to see if there is pending data.
 // Returns -1 on error, 0 or 1 otherwise.
@@ -220,36 +162,72 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
 
 
 /***************************************************************************
- * proxy : client : Single-client functions
+ ** begin section client
  **************************************************************************/
 
-// Create a single-client object.
-// Set mclient to NULL if this is a stand-alone client.
+/** The client proxy provides an interface to the Player server
+    itself, and therefore has somewhat different functionality from
+    the {\em device} proxies. The {\tt create} function returns a
+    pointer to an {\tt playerc\_client\_t} structure to be used in
+    other function calls.  */
+
+/** Client data. */
+typedef struct _playerc_client_t
+{
+  /** Server address. */
+  char *host;
+  int port;
+    
+  // Socket descriptor
+  int sock;
+
+  // List of ids for available devices.  This list is filled in by
+  // playerc_client_get_devlist().
+  int id_count;
+  player_device_id_t ids[PLAYER_MAX_DEVICES];
+  char drivernames[PLAYER_MAX_DEVICES][PLAYER_MAX_DEVICE_STRING_LEN];
+    
+  /** List of subscribed devices */
+  int device_count;
+  struct _playerc_device_t *device[32];
+
+  // A circular queue used to buffer incoming data packets.
+  int qfirst, qlen, qsize;
+  playerc_client_item_t qitems[128];
+
+  /** Data time stamp on the last SYNC packet */
+  double datatime;
+    
+} playerc_client_t;
+
+
+/** Create a single-client object.
+    Set mclient to NULL if this is a stand-alone client.*/
 playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
                                         const char *host, int port);
 
-// Destroy a single-client object.
+/** Destroy a single-client object. */
 void playerc_client_destroy(playerc_client_t *client);
 
-// Connect/disconnect to the server.
+/** Connect/disconnect to the server. */
 int playerc_client_connect(playerc_client_t *client);
 int playerc_client_disconnect(playerc_client_t *client);
 
-// Change the server's data delivery mode
+// Change the server's data delivery mode.
 int playerc_client_datamode(playerc_client_t *client, int mode);
 
 // Add/remove a device proxy (private)
-int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device);
-int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device);
+int playerc_client_adddevice(playerc_client_t *client, struct _playerc_device_t *device);
+int playerc_client_deldevice(playerc_client_t *client, struct _playerc_device_t *device);
 
 // Add/remove user callbacks (called when new data arrives).
-int  playerc_client_addcallback(playerc_client_t *client, playerc_device_t *device,
+int  playerc_client_addcallback(playerc_client_t *client, struct _playerc_device_t *device,
                                 playerc_callback_fn_t callback, void *data);
-int  playerc_client_delcallback(playerc_client_t *client, playerc_device_t *device,
+int  playerc_client_delcallback(playerc_client_t *client, struct _playerc_device_t *device,
                                 playerc_callback_fn_t callback, void *data);
 
-// Get the list of available device ids.  The data is written into the
-// proxy structure rather than returned to the caller.
+/** Get the list of available device ids.  The data is written into the
+    proxy structure rather than returned to the caller. */
 int playerc_client_get_devlist(playerc_client_t *client);
 
 // Subscribe/unsubscribe a device from the sever (private)
@@ -258,8 +236,8 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
 int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 // Issue a request to the server and await a reply (blocking).
-// Returns -1 on error and -2 on NACK.
-int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
+// Returns -1 on error and -2 on NACK. (private)
+int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
 
 /* Enable these if Brian changes to server to accept multiple requests.
@@ -276,94 +254,156 @@ int playerc_client_request_recv(playerc_client_t *client, playerc_device_t *devi
                                 void *rep_data, int rep_len);
 */
                                 
-// Test to see if there is pending data.
-// Returns -1 on error, 0 or 1 otherwise.
+/** Test to see if there is pending data.
+    Returns -1 on error, 0 or 1 otherwise. */
 int playerc_client_peek(playerc_client_t *client, int timeout);
 
-// Read data from the server (blocking).  For data packets, will
-// return a pointer to the device proxy that got the data; for synch
-// packets, will return a pointer to the client itself; on error, will
-// return NULL.
+/** Read data from the server (blocking).  For data packets, will
+    return a pointer to the device proxy that got the data; for synch
+    packets, will return a pointer to the client itself; on error, will
+    return NULL. */
 void *playerc_client_read(playerc_client_t *client);
 
 // Write data to the server (private).
-int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
+int playerc_client_write(playerc_client_t *client, struct _playerc_device_t *device,
                          void *cmd, int len);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
 
 
 /***************************************************************************
- * proxy : base : Base device interface
+ ** begin section device
  **************************************************************************/
 
-// Initialise the device 
+/** The {\tt device} proxy provides a `generic' interface to the
+    functionality that is shared by all devices (i.e., a base class,
+    in OOP parlance).  This proxy can be accessed through the {\tt
+    info} element present in each of the device proxies.   In general, this
+    proxy should not be used directly. */
+
+/** Generic device info. */
+typedef struct _playerc_device_t
+{
+  /** Pointer to the client proxy. */
+  playerc_client_t *client;
+
+  /** Device code, index. */
+  int code, index;
+
+  /** The driver name. */
+  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+  
+  /** The subscribe flag is non-zero if the device has been
+      successfully subscribed (read-only). */
+  int subscribed;
+
+  /** Data timestamp, i.e., the time at which the data was generated (s). */
+  double datatime;
+
+  // Standard callbacks for this device (private).
+  playerc_putdata_fn_t putdata;
+
+  // Extra user data for this device (private).
+  void *user_data;
+  
+  // Extra callbacks for this device (private).
+  int callback_count;
+  playerc_callback_fn_t callback[4];
+  void *callback_data[4];
+
+} playerc_device_t;
+
+
+/* Initialise the device (private). */
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
                          int code, int index, playerc_putdata_fn_t putdata);
 
-// Finalize the device
+/* Finalize the device (private). */
 void playerc_device_term(playerc_device_t *device);
 
-// Subscribe/unsubscribe the device
+/* Subscribe the device (private). */
 int playerc_device_subscribe(playerc_device_t *device, int access);
+
+/* Unsubscribe the device (private). */
 int playerc_device_unsubscribe(playerc_device_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
 
 
 /***************************************************************************
- * proxy : blobfinder (visual color blob detector)
+ ** begin section blobfinder
  **************************************************************************/
 
-// Description of a single blob.
-typedef struct
+/** [Synopsis] The {\tt blobfinder} proxy provides an interface to
+ color blob detectors such as the ACTS vision system.  See the Player
+ User Manual for a complete description of the drivers that support
+ this interface. */
+
+/** [Data] */
+
+/** Description of a single blob. */
+typedef struct _playerc_blobfinder_blob_t
 {  
-  // The blob "channel"; i.e. the color class this blob belongs to.
+  /** The blob "channel"; i.e. the color class this blob belongs to. */
   int channel;
 
-  // A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
-  // 0x00RRGGBB.
+  /** A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
+      0x00RRGGBB. */
   uint32_t color;
 
-  // Blob centroid (image coordinates).
+  /** Blob centroid (image coordinates). */
   int x, y;
 
-  // Blob area (pixels).
+  /** Blob area (pixels). */
   int area;
 
-  // Bounding box for blob (image coordinates).
+  /** Bounding box for blob (image coordinates). */
   int left, top, right, bottom;
   
 } playerc_blobfinder_blob_t;
 
 
-// Blobfinder device data
-typedef struct
+/** Blobfinder device data. */
+typedef struct _playerc_blobfinder_t
 {
-  // Device info; must be at the start of all device structures.
+  /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  // Image dimensions
+  /** Image dimensions (pixels). */
   int width, height;
   
-  // A list of detected blobs
+  /** A list of detected blobs. */
   int blob_count;
   playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
   
 } playerc_blobfinder_t;
 
 
-// Create a blobfinder proxy
+/** [Functions] */
+
+/** Create a blobfinder proxy. */
 playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index);
 
-// Destroy a blobfinder proxy
+/** Destroy a blobfinder proxy. */
 void playerc_blobfinder_destroy(playerc_blobfinder_t *device);
 
-// Subscribe to the blobfinder device
+/** Subscribe to the blobfinder device. */
 int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
 
-// Un-subscribe from the blobfinder device
+/** Un-subscribe from the blobfinder device. */
 int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
 
 
 /***************************************************************************
- * proxy : bps (beacon positioning system) device
+ ** begin section bps
  **************************************************************************/
 
 // BPS device data
@@ -412,518 +452,649 @@ int  playerc_bps_get_beacon(playerc_bps_t *device, int id,
                             double *px, double *py, double *pa,
                             double *ux, double *uy, double *ua);
 
-
 /***************************************************************************
- * proxy : comms (broadcast UDP nework communications)
+ ** end section
  **************************************************************************/
 
-// Comms proxy.
-typedef struct
+
+/***************************************************************************
+ ** begin section comms
+ **************************************************************************/
+
+/** [Synposis] The {\tt comms} proxy provides an interface to the
+network broadcast device.  This device broadcasts any message sent to
+it onto the local network, and returns the messages broadcast by other
+robots.  This device use broadcast UDP sockets, and therefore offers
+no guarantee that messages will be delivered, or that they will be
+delivered in the order in which they are transmitted. */
+
+/** [Data] */
+
+/** Comms proxy data. */
+typedef struct _playerc_comms_t
 {
-  // Device info; must be at the start of all device structures.
+  /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  // The most recent incoming message
+  /** The most recent incoming messages. */
   size_t msg_len;
   uint8_t msg[PLAYER_MAX_MESSAGE_SIZE];
     
 } playerc_comms_t;
 
+/** [Methods] */
 
-// Create a comms proxy
+/** Create a comms proxy. */
 playerc_comms_t *playerc_comms_create(playerc_client_t *client, int index);
 
-// Destroy a comms proxy
+/** Destroy a comms proxy. */
 void playerc_comms_destroy(playerc_comms_t *device);
 
-// Subscribe to the comms device
+/** Subscribe to the comms device. */
 int playerc_comms_subscribe(playerc_comms_t *device, int access);
 
-// Un-subscribe from the comms device
+/** Un-subscribe from the comms device. */
 int playerc_comms_unsubscribe(playerc_comms_t *device);
 
-// Send a comms message.
+/** Send a comms message. */
 int playerc_comms_send(playerc_comms_t *device, void *msg, int len);
 
-
 /***************************************************************************
- * proxy : gps (global positioning system)
+ ** end section
  **************************************************************************/
 
-// GPS device data
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-    
-  // GPS pose estimate (in global coordinates).
-  double px, py, pa;
-    
-} playerc_gps_t;
-
-
-// Create a gps proxy.
-playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
-
-// Destroy a gps proxy.
-void playerc_gps_destroy(playerc_gps_t *device);
-
-// Subscribe to the gps device
-int playerc_gps_subscribe(playerc_gps_t *device, int access);
-
-// Un-subscribe from the gps device
-int playerc_gps_unsubscribe(playerc_gps_t *device);
-
-// Teleport the robot to a new pose.  Works in simulation only.
-// px, py, pa : the new pose (global coordinates).
-int playerc_gps_teleport(playerc_gps_t *device, double px, double py, double pa);
-
 
 /***************************************************************************
- * proxy : laser (scanning range-finder)
+ ** begin section fiducial
  **************************************************************************/
 
-// Laser proxy.
-typedef struct
+/** [Synopsis] The {\tt fiducial} proxy provides an interface to a
+fiducial detector.  This device looks for fiducials (markers or
+beacons) in the laser scan, and determines their identity, range,
+bearing and orientation.  See the Player User Manual for a complete
+description of the various drivers that support the fiducial
+interface. */
+
+/** [Data] */
+
+/** Description for a single fiducial. */
+typedef struct _playerc_fiducial_item_t
 {
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // laser geometry in robot cs: pose gives the position and
-  // orientation, size gives the extent.  These values are filled in by
-  // playerc_laser_get_geom().
-  double pose[3];
-  double size[2];
-  
-  // Number of points in the scan.
-  int scan_count;
-
-  // Angular resolution of the scan.
-  double scan_res;
-
-  // Scan data; range (m) and bearing (radians).
-  double scan[PLAYERC_LASER_MAX_SAMPLES][2];
-
-  // Scan data; x, y position (m).
-  double point[PLAYERC_LASER_MAX_SAMPLES][2];
-
-  // Scan reflection intensity values (0-3).
-  int intensity[PLAYERC_LASER_MAX_SAMPLES];
-  
-} playerc_laser_t;
-
-
-// Create a laser proxy
-playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index);
-
-// Destroy a laser proxy
-void playerc_laser_destroy(playerc_laser_t *device);
-
-// Subscribe to the laser device
-int playerc_laser_subscribe(playerc_laser_t *device, int access);
-
-// Un-subscribe from the laser device
-int playerc_laser_unsubscribe(playerc_laser_t *device);
-
-// Configure the laser.
-// min_angle, max_angle : Start and end angles for the scan.
-// resolution : Resolution in 0.01 degree increments.  Valid values
-//              are 25, 50, 100.
-// intensity : Intensity flag; set to 1 to enable reflection intensity data.
-int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
-                            double max_angle, int resolution, int intensity);
-
-// Get the laser configuration
-// min_angle, max_angle : Start and end angles for the scan.
-// resolution : Resolution is in 0.01 degree increments.
-// intensity : Intensity flag; set to 1 to enable reflection intensity data.
-int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
-                            double *max_angle, int *resolution, int *intensity);
-
-// Get the laser geometry.  The writes the result into the proxy
-// rather than returning it to the caller.
-int playerc_laser_get_geom(playerc_laser_t *device);
-
-
-/***************************************************************************
- * proxy : fiducial (fiducial detector)
- **************************************************************************/ 
-
-// Description for a single fiducial
-typedef struct
-{
-  // Id (0 if fiducial cannot be identified).
+  /** Id (0 if fiducial cannot be identified). */
   int id;
 
-  // Beacon range, bearing and orientation.
+  /** Beacon range, bearing and orientation. */
   double range, bearing, orient;
   
 } playerc_fiducial_item_t;
 
 
-// Laser beacon data
+/** Fiducial finder data. */
 typedef struct
 {
-  // Device info; must be at the start of all device structures.
+  /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  // Geometry in robot cs.  These values are filled in by
-  // playerc_fiducial_get_geom().  [pose] is the detector pose in the
-  // robot cs, [size] is the detector size, [fiducial_size] is the
-  // fiducial size.
+  /** Geometry in robot cs.  These values are filled in by
+      playerc_fiducial_get_geom().  [pose] is the detector pose in the
+      robot cs, [size] is the detector size, [fiducial_size] is the
+      fiducial size. */
   double pose[3];
   double size[2];
   double fiducial_size[2];
   
-  // List of detected beacons.
+  /** List of detected beacons. */
   int fiducial_count;
   playerc_fiducial_item_t fiducials[PLAYERC_FIDUCIAL_MAX_SAMPLES];
     
 } playerc_fiducial_t;
 
+/** [Methods] */
 
-// Create a fiducial proxy
+/** Create a fiducial proxy. */
 playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index);
 
-// Destroy a fiducial proxy
+/** Destroy a fiducial proxy. */
 void playerc_fiducial_destroy(playerc_fiducial_t *device);
 
-// Subscribe to the fiducial device
+/** Subscribe to the fiducial device. */
 int playerc_fiducial_subscribe(playerc_fiducial_t *device, int access);
 
-// Un-subscribe from the fiducial device
+/** Un-subscribe from the fiducial device. */
 int playerc_fiducial_unsubscribe(playerc_fiducial_t *device);
 
-// Get the laser geometry.  The writes the result into the proxy
-// rather than returning it to the caller.
+/** Get the fiducial geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
 int playerc_fiducial_get_geom(playerc_fiducial_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
 
 
 /***************************************************************************
- * proxy : position device
+ ** begin section gps
  **************************************************************************/
 
-// Position device
-typedef struct
+/** [Synopsis] The {\tt gps} proxy provides an interface to a
+GPS-receiver. */
+
+/** [Data] */
+
+/** GPS proxy data. */
+typedef struct _playerc_gps_t
 {
-  // Device info; must be at the start of all device structures.
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+    
+  /** GPS pose estimate (in global coordinates). */
+  double px, py, pa;
+    
+} playerc_gps_t;
+
+/** [Methods] */
+
+/** Create a gps proxy. */
+playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
+
+/** Destroy a gps proxy. */
+void playerc_gps_destroy(playerc_gps_t *device);
+
+/** Subscribe to the gps device. */
+int playerc_gps_subscribe(playerc_gps_t *device, int access);
+
+/** Un-subscribe from the gps device. */
+int playerc_gps_unsubscribe(playerc_gps_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/
+
+
+/***************************************************************************
+ ** begin section laser
+ **************************************************************************/
+
+/** [Synopsis] The {\tt laser} proxy provides an interface to a
+    scanning laser range finder such as the SICK LMS200.  See the
+    Player User Manual for a complete description of this device. */
+
+/** [Data] */
+
+/** Laser proxy data. */
+typedef struct _playerc_laser_t
+{
+  /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  // Robot geometry in robot cs: pose gives the position and
-  // orientation, size gives the extent.  These values are filled in by
-  // playerc_position_get_geom().
+  /** Laser geometry in the robot cs: pose gives the position and
+      orientation, size gives the extent.  These values are filled in by
+      playerc_laser_get_geom(). */
   double pose[3];
   double size[2];
   
-  // Odometric pose (m, m, radians)
-  double px, py, pa;
-
-  // Odometric velocity (m, m, radians)
-  double vx, vy, va;
-  
-  // Stall flag [0, 1]
-  int stall;
-
-} playerc_position_t;
-
-
-// Create a position device proxy.
-playerc_position_t *playerc_position_create(playerc_client_t *client, int index);
-
-// Destroy a position device proxy.
-void playerc_position_destroy(playerc_position_t *device);
-
-// Subscribe to the position device
-int playerc_position_subscribe(playerc_position_t *device, int access);
-
-// Un-subscribe from the position device
-int playerc_position_unsubscribe(playerc_position_t *device);
-
-// Enable/disable the motors
-int playerc_position_enable(playerc_position_t *device, int enable);
-
-// Get the position geometry.  The writes the result into the proxy
-// rather than returning it to the caller.
-int playerc_position_get_geom(playerc_position_t *device);
-
-// Set the target speed.
-// vx : forward speed (m/s).
-// vy : sideways speed (m/s); this field is used by omni-drive robots only.
-// va : rotational speed (radians/s).
-// All speeds are defined in the robot coordinate system.
-int  playerc_position_set_speed(playerc_position_t *device,
-                                double vx, double vy, double va);
-
-// Set the target pose
-// (gx, gy, ga) is the target pose in the odometric coordinate system.
-int playerc_position_set_cmd_pose(playerc_position_t *device,
-                                  double gx, double gy, double ga);
-
-
-/***************************************************************************
- * proxy : power device
- **************************************************************************/
-
-// Power device
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // Battery charge (volts)
-  double charge;
-  
-} playerc_power_t;
-
-
-// Create a power device proxy.
-playerc_power_t *playerc_power_create(playerc_client_t *client, int index);
-
-// Destroy a power device proxy.
-void playerc_power_destroy(playerc_power_t *device);
-
-// Subscribe to the power device
-int playerc_power_subscribe(playerc_power_t *device, int access);
-
-// Un-subscribe from the power device
-int playerc_power_unsubscribe(playerc_power_t *device);
-
-
-/***************************************************************************
- * proxy : ptz (pan-tilt-zoom camera) device
- **************************************************************************/
-
-// PTZ device data
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // The current ptz pan and tilt angles.
-  // pan : pan angle (+ve to the left, -ve to the right).
-  // tilt : tilt angle (+ve upwrds, -ve downwards).
-  double pan, tilt;
-
-  // The current zoom value (field of view angle).
-  double zoom;
-  
-} playerc_ptz_t;
-
-
-// Create a ptz proxy
-playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index);
-
-// Destroy a ptz proxy
-void playerc_ptz_destroy(playerc_ptz_t *device);
-
-// Subscribe to the ptz device
-int playerc_ptz_subscribe(playerc_ptz_t *device, int access);
-
-// Un-subscribe from the ptz device
-int playerc_ptz_unsubscribe(playerc_ptz_t *device);
-
-// Set the pan, tilt and zoom values.
-int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
-
-
-/***************************************************************************
- * proxy : sonar (fixed range-finder)
- **************************************************************************/
-
-// Sonar proxy.
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // Number of pose values.
-  int pose_count;
-  
-  // Pose of each sonar relative to robot (m, m, radians).  This
-  // structure is filled by calling playerc_sonar_get_geom().
-  double poses[PLAYERC_SONAR_MAX_SAMPLES][3];
-  
-  // Number of points in the scan.
+  /** Number of points in the scan. */
   int scan_count;
 
-  // Scan data: range (m)
-  double scan[PLAYERC_SONAR_MAX_SAMPLES];
+  /** Angular resolution of the scan (radians). */
+  double scan_res;
+
+  /** Scan data; range (m) and bearing (radians). */
+  double scan[PLAYERC_LASER_MAX_SAMPLES][2];
+
+  /** Scan data; x, y position (m). */
+  double point[PLAYERC_LASER_MAX_SAMPLES][2];
+
+  /** Scan reflection intensity values (0-3).  Note that the intensity
+      values will only be filled if intensity information is enabled
+      (using the {\tt set\_config} function). */
+  int intensity[PLAYERC_LASER_MAX_SAMPLES];
   
-} playerc_sonar_t;
+} playerc_laser_t;
 
 
-// Create a sonar proxy
-playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
+/** [Methods] */
 
-// Destroy a sonar proxy
-void playerc_sonar_destroy(playerc_sonar_t *device);
+/** Create a laser proxy. */
+playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index);
 
-// Subscribe to the sonar device
-int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
+/** Destroy a laser proxy. */
+void playerc_laser_destroy(playerc_laser_t *device);
 
-// Un-subscribe from the sonar device
-int playerc_sonar_unsubscribe(playerc_sonar_t *device);
+/** Subscribe to the laser device. */
+int playerc_laser_subscribe(playerc_laser_t *device, int access);
 
-// Get the sonar geometry.  The writes the result into the proxy
-// rather than returning it to the caller.
-int playerc_sonar_get_geom(playerc_sonar_t *device);
+/** Un-subscribe from the laser device. */
+int playerc_laser_unsubscribe(playerc_laser_t *device);
 
+/** Configure the laser.
+    min_angle, max_angle : Start and end angles for the scan.
+    resolution : Resolution in 0.01 degree increments.  Valid values are 25, 50, 100.
+    intensity : Intensity flag; set to 1 to enable reflection intensity data. */
+int  playerc_laser_set_config(playerc_laser_t *device, double min_angle,
+                            double max_angle, int resolution, int intensity);
 
-/***************************************************************************
- * proxy : truth (simulator ground truth) device
- **************************************************************************/
+/** Get the laser configuration
+    min_angle, max_angle : Start and end angles for the scan.
+    resolution : Resolution is in 0.01 degree increments.
+    intensity : Intensity flag; set to 1 to enable reflection intensity data. */
+int  playerc_laser_get_config(playerc_laser_t *device, double *min_angle,
+                            double *max_angle, int *resolution, int *intensity);
 
-// Truth device proxy
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // The object pose (world cs)
-  double px, py, pa;
-    
-} playerc_truth_t;
-
-
-// Create a truth proxy.
-playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index);
-
-// Destroy a truth proxy.
-void playerc_truth_destroy(playerc_truth_t *device);
-
-// Subscribe to the truth device
-int playerc_truth_subscribe(playerc_truth_t *device, int access);
-
-// Un-subscribe from the truth device
-int playerc_truth_unsubscribe(playerc_truth_t *device);
-
-// Get the object pose.
-// px, py, pa : the pose (global coordinates).
-int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, double *pa);
-
-// Set the object pose.
-// px, py, pa : the new pose (global coordinates).
-int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double pa);
-
+/** Get the laser geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_laser_get_geom(playerc_laser_t *device);
 
 /***************************************************************************
- * proxy : wifi (wireless info) device
- **************************************************************************/
-
-// Individual link info
-typedef struct
-{
-  // Destination IP address
-  char ip[32];
- 
-  // Link properties
-  int qual, level, noise;
- 
-} playerc_wifi_link_t;
-
-
-// Wifi device proxy
-typedef struct
-{
-  // Device info; must be at the start of all device structures.
-  playerc_device_t info;
-
-  // A list containing info for each link
-  int link_count;
-  playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
-  
-} playerc_wifi_t;
-
-
-// Create a wifi proxy.
-playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index);
-
-// Destroy a wifi proxy.
-void playerc_wifi_destroy(playerc_wifi_t *device);
-
-// Subscribe to the wifi device
-int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
-
-// Un-subscribe from the wifi device
-int playerc_wifi_unsubscribe(playerc_wifi_t *device);
+ ** end section
+ **************************************************************************/ 
 
 
 
 /***************************************************************************
- * proxy : localize interface
+ ** begin section localize
  **************************************************************************/
 
-// Hypothesis data
-typedef struct
+/** [Synopsis] The {\tt localize} proxy provides an interface to
+    localization drivers.  Generally speaking, these are abstract
+    drivers that attempt to localize the robot by matching sensor
+    observations (odometry, laser and/or sonar) against a prior map of
+    the environment (such as an occupancy grid).  Since the pose may
+    be ambiguous, multiple hypotheses may returned; each hypothesis
+    specifies one possible pose estimate for the robot.  See the
+    Player manual for details of the {\tt localize interface}, and and
+    drivers that support it (such as the {\tt amcl} driver). */
+
+/** [Data] */
+
+/** Hypothesis data. */
+typedef struct _playerc_localize_hypoth_t
 {
-  // Pose estimate (m, m, radians)
+  /** Pose estimate (x, y, theta) in (m, m, radians). */
   double mean[3];
 
-  // Covariance
+  /** Covariance. */
   double cov[3][3];
 
-  // Weight associated with this hypothesis
+  /** Weight associated with this hypothesis. */
   double weight;
   
 } playerc_localize_hypoth_t;
 
 
-// Localize device data
-typedef struct
+/** Localization device data. */
+typedef struct _playerc_localize_t
 {
-  // Device info; must be at the start of all device structures.
+  /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  // Map dimensions (cells)
+  /** Map dimensions (cells). */
   int map_size_x, map_size_y;
 
-  // Map scale (m/cell)
+  /** Map scale (m/cell). */
   double map_scale;
 
-  // Map data (empty = -1, unknown = 0, occupied = +1)
+  /** Map data (empty = -1, unknown = 0, occupied = +1). */
   int8_t *map_cells;
 
-  // The number of pending (unprocessed) sensor readings
+  /** The number of pending (unprocessed) sensor readings. */
   int pending_count;
 
-  // The timestamp on the last reading processed
+  /** The timestamp on the last reading processed. */
   double pending_time;
 
-  // List of possible poses
+  /** List of possible poses. */
   int hypoth_count;
   playerc_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 
 } playerc_localize_t;
 
+/** [Methods] */
 
-// Create a localize proxy
+/** Create a localize proxy. */
 playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index);
 
-// Destroy a localize proxy
+/** Destroy a localize proxy. */
 void playerc_localize_destroy(playerc_localize_t *device);
 
-// Subscribe to the localize device
+/** Subscribe to the localize device. */
 int playerc_localize_subscribe(playerc_localize_t *device, int access);
 
-// Un-subscribe from the localize device
+/** Un-subscribe from the localize device. */
 int playerc_localize_unsubscribe(playerc_localize_t *device);
 
-// Set the the robot pose (mean and covariance)
+/** Set the the robot pose (mean and covariance). */
 int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3]);
 
-// Retrieve the occupancy map.  The map is written into the proxy
-// structure.
+/** Retrieve the occupancy map.  The map is written into the proxy
+   structure. */
 int playerc_localize_get_map(playerc_localize_t *device);
 
-// Get the current configuration.
+/** Get the current configuration. */
 int playerc_localize_get_config(playerc_localize_t *device, player_localize_config_t *config);
 
-// Modify the current configuration.
+/** Modify the current configuration. */
 int playerc_localize_set_config(playerc_localize_t *device, player_localize_config_t config);
 
 /***************************************************************************
- * proxy : end (this is just here so the auto-documentation works.
+ ** end section
+ **************************************************************************/ 
+
+
+
+/***************************************************************************
+ ** begin section position
  **************************************************************************/
+
+/** [Synopsis] The {\tt position} proxy provides an interface to a
+mobile robot base, such as the ActiveMedia Pioneer series.  The proxy
+supports both differential drive robots (which are capable of forward
+motion and rotation) and omni-drive robots (which are capable of
+forward, sideways and rotational motion). */
+
+/** [Data] */
+
+/** Position device data. */
+typedef struct _playerc_position_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Robot geometry in robot cs: pose gives the position and
+      orientation, size gives the extent.  These values are filled in
+      by playerc_position_get_geom(). */
+  double pose[3];
+  double size[2];
+  
+  /** Odometric pose (m, m, radians). */
+  double px, py, pa;
+
+  /** Odometric velocity (m, m, radians). */
+  double vx, vy, va;
+  
+  /** Stall flag [0, 1]. */
+  int stall;
+
+} playerc_position_t;
+
+/** [Methods] */
+
+/** Create a position device proxy. */
+playerc_position_t *playerc_position_create(playerc_client_t *client, int index);
+
+/** Destroy a position device proxy. */
+void playerc_position_destroy(playerc_position_t *device);
+
+/** Subscribe to the position device */
+int playerc_position_subscribe(playerc_position_t *device, int access);
+
+/** Un-subscribe from the position device */
+int playerc_position_unsubscribe(playerc_position_t *device);
+
+/** Enable/disable the motors */
+int playerc_position_enable(playerc_position_t *device, int enable);
+
+/** Get the position geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_position_get_geom(playerc_position_t *device);
+
+/** Set the target speed.  vx : forward speed (m/s).  vy : sideways
+    speed (m/s); this field is used by omni-drive robots only.  va :
+    rotational speed (radians/s).  All speeds are defined in the robot
+    coordinate system. */
+int  playerc_position_set_speed(playerc_position_t *device,
+                                double vx, double vy, double va);
+
+/** Set the target pose (gx, gy, ga) is the target pose in the
+    odometric coordinate system. */
+int playerc_position_set_cmd_pose(playerc_position_t *device,
+                                  double gx, double gy, double ga);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section power
+ **************************************************************************/
+
+/** [Synopsis] The {\tt power} proxy provides an interface through
+    which battery levels can be monitored. */
+
+/** [Data] */
+
+/** Power device data. */
+typedef struct _playerc_power_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Battery charge (volts). */
+  double charge;
+  
+} playerc_power_t;
+
+/** [Methods] */
+
+/** Create a power device proxy. */
+playerc_power_t *playerc_power_create(playerc_client_t *client, int index);
+
+/** Destroy a power device proxy. */
+void playerc_power_destroy(playerc_power_t *device);
+
+/** Subscribe to the power device. */
+int playerc_power_subscribe(playerc_power_t *device, int access);
+
+/** Un-subscribe from the power device. */
+int playerc_power_unsubscribe(playerc_power_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section ptz
+ **************************************************************************/
+
+/** [Synopsis] The {\tt ptz} proxy provides an interface to pan-tilt
+    units such as the Sony PTZ camera. */
+
+/** [Data] */
+
+/** PTZ device data. */
+typedef struct _playerc_ptz_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** The current ptz pan and tilt angles.  pan : pan angle (+ve to
+      the left, -ve to the right).  tilt : tilt angle (+ve upwrds, -ve
+      downwards). */
+  double pan, tilt;
+
+  /** The current zoom value (field of view angle). */
+  double zoom;
+  
+} playerc_ptz_t;
+
+/** [Methods] */
+
+/** Create a ptz proxy. */
+playerc_ptz_t *playerc_ptz_create(playerc_client_t *client, int index);
+
+/** Destroy a ptz proxy. */
+void playerc_ptz_destroy(playerc_ptz_t *device);
+
+/** Subscribe to the ptz device. */
+int playerc_ptz_subscribe(playerc_ptz_t *device, int access);
+
+/** Un-subscribe from the ptz device. */
+int playerc_ptz_unsubscribe(playerc_ptz_t *device);
+
+/** Set the pan, tilt and zoom values. */
+int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section sonar
+ **************************************************************************/
+
+/** [Synopsis] The {\tt sonar} proxy provides an interface to the
+sonar range sensors built into robots such as the ActiveMedia Pioneer
+series. */
+
+/** [Data] */
+
+/** Sonar proxy data. */
+typedef struct _playerc_sonar_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Number of pose values. */
+  int pose_count;
+  
+  /** Pose of each sonar relative to robot (m, m, radians).  This
+      structure is filled by calling playerc_sonar_get_geom(). */
+  double poses[PLAYERC_SONAR_MAX_SAMPLES][3];
+  
+  /** Number of points in the scan. */
+  int scan_count;
+
+  /** Scan data: range (m). */
+  double scan[PLAYERC_SONAR_MAX_SAMPLES];
+  
+} playerc_sonar_t;
+
+/** [Methods] */
+
+/** Create a sonar proxy. */
+playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index);
+
+/** Destroy a sonar proxy. */
+void playerc_sonar_destroy(playerc_sonar_t *device);
+
+/** Subscribe to the sonar device. */
+int playerc_sonar_subscribe(playerc_sonar_t *device, int access);
+
+/** Un-subscribe from the sonar device. */
+int playerc_sonar_unsubscribe(playerc_sonar_t *device);
+
+/** Get the sonar geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_sonar_get_geom(playerc_sonar_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section truth
+ **************************************************************************/
+
+/** [Synposis] The {\tt truth} proxy can be used to get and set the
+    pose of objects in the Stage simulator. */
+
+/** [Data] */
+
+/** Truth proxy data. */
+typedef struct _playerc_truth_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** The object pose (world cs). */
+  double px, py, pa;
+    
+} playerc_truth_t;
+
+
+/** [Methods] */
+
+/** Create a truth proxy. */
+playerc_truth_t *playerc_truth_create(playerc_client_t *client, int index);
+
+/** Destroy a truth proxy. */
+void playerc_truth_destroy(playerc_truth_t *device);
+
+/** Subscribe to the truth device. */
+int playerc_truth_subscribe(playerc_truth_t *device, int access);
+
+/** Un-subscribe from the truth device. */
+int playerc_truth_unsubscribe(playerc_truth_t *device);
+
+/** Get the object pose.
+    px, py, pa : the pose (global coordinates). */
+int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, double *pa);
+
+/** Set the object pose.  px, py, pa : the new pose (global
+    coordinates). */
+int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double pa);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
+
+
+/***************************************************************************
+ ** begin section wifi
+ **************************************************************************/
+
+/** [Synopsis] The {\tt wifi} proxy is used to query the state of a
+wireless network.  It returns information such as the link quality and
+signal strength of access points or of other wireless NIC's on an
+ad-hoc network. */
+
+/** [Data] */
+
+/** Individual link info. */
+typedef struct _playerc_wifi_link_t
+{
+  /** Destination IP address. */
+  char ip[32];
+ 
+  /** Link properties. */
+  int qual, level, noise;
+ 
+} playerc_wifi_link_t;
+
+
+/** Wifi device proxy. */
+typedef struct _player_wifi_t
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** A list containing info for each link. */
+  int link_count;
+  playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
+  
+} playerc_wifi_t;
+
+/** [Methods] */
+
+/** Create a wifi proxy. */
+playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index);
+
+/** Destroy a wifi proxy. */
+void playerc_wifi_destroy(playerc_wifi_t *device);
+
+/** Subscribe to the wifi device. */
+int playerc_wifi_subscribe(playerc_wifi_t *device, int access);
+
+/** Un-subscribe from the wifi device. */
+int playerc_wifi_unsubscribe(playerc_wifi_t *device);
+
+/***************************************************************************
+ ** end section
+ **************************************************************************/ 
 
 #ifdef __cplusplus
 }
