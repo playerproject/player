@@ -90,7 +90,7 @@ void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
   {
     offset = ntohs(data->header[ch].index);
     count = ntohs(data->header[ch].num);
-    
+
     for (i = 0; i < count; i++)
     {
       src = data->blobs + i + offset;
@@ -106,7 +106,7 @@ void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
       dest->left = ntohs(src->left);
       dest->right = ntohs(src->right);
       dest->top = ntohs(src->top);
-      dest->bottom = ntohs(src->bottom);      
+      dest->bottom = ntohs(src->bottom);
     }
   }
 }

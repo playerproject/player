@@ -107,6 +107,9 @@ typedef struct _playerc_device_t
   // Standard callbacks for this device (private).
   playerc_putdata_fn_t putdata;
 
+  // Extra user data for this device (private).
+  void *user_data;
+  
   // Extra callbacks for this device (private).
   int callback_count;
   playerc_callback_fn_t callback[4];
@@ -183,9 +186,10 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
                            void *req_data, int req_len, void *rep_data, int rep_len);
 
-// Read data from the server (blocking).
-// Returns a pointer to the device that got the data, or NULL if there
-// is an error.
+// Read data from the server (blocking).  For data packets, will
+// return a pointer to the device proxy that got the data; for synch
+// packets, will return a pointer to the client itself; on error, will
+// return NULL.
 void *playerc_client_read(playerc_client_t *client);
 
 // Write data to the server (private).
