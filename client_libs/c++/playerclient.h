@@ -1082,9 +1082,9 @@ class PositionProxy : public ClientProxy
 class localize_hypoth
 {
   public:
-    // Pose estimate (mm, mm, degrees)
+    // Pose estimate (m, m, degrees)
     double mean[3];
-    // Covariance (mm^2, degrees^2)
+    // Covariance (m^2, degrees^2)
     double cov[3][3];
     // Weight associated with this hypothesis
     double weight;
@@ -1105,6 +1105,9 @@ class LocalizeProxy : public ClientProxy
 
     /// Map data (empty = -1, unknown = 0, occupied = +1)
     int8_t *map_cells;
+    
+    /// Number of pending (unprocessed) sensor readings
+    int pending_count;
 
     /// Number of possible poses
     int hypoth_count;
