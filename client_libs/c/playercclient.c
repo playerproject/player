@@ -236,6 +236,7 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
                 char* payload, size_t payloadlen)
 {
   /*time_t timesec;*/
+  int mincnt; 
   int readcnt;
   char dummy[PLAYER_MAX_MESSAGE_SIZE];
 
@@ -275,13 +276,18 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
     fprintf(stderr,"WARNING: server's message is too big (%d bytes). "
                     "Truncating data.", hdr->size);
 
-  for(readcnt  = read((*conn).sock,payload,payloadlen);
-      readcnt != payloadlen;
-      readcnt += read((*conn).sock,payload+readcnt,payloadlen-readcnt));
+  mincnt = min(hdr->size, payloadlen);
 
-  for(readcnt += read((*conn).sock,dummy,hdr->size-readcnt);
-      readcnt != hdr->size;
-      readcnt += read((*conn).sock,dummy,hdr->size-readcnt));
+  for(readcnt  = read((*conn).sock,payload,mincnt);
+      readcnt != mincnt;
+      readcnt += read((*conn).sock,payload+readcnt,mincnt-readcnt));
+
+  if (readcnt < hdr->size)
+  {
+      for(readcnt += read((*conn).sock,dummy,hdr->size-readcnt);
+          readcnt != hdr->size;
+          readcnt += read((*conn).sock,dummy,hdr->size-readcnt));
+  }
 
   //if((readcnt = read((*conn).sock,payload,min(hdr->size,payloadlen)))
                   //!= min(hdr->size,payloadlen))
