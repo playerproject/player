@@ -50,12 +50,16 @@ typedef struct
 
 
 // Local functions
-void *playerc_client_dispatch(playerc_client_t *client,
-                              player_msghdr_t *header, void *data, int len);
 int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
-                              char *data, int len);
+                              char *data, int *len);
 int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header,
                                char *data, int len);
+void playerc_client_push(playerc_client_t *client,
+                         player_msghdr_t *header, void *data, int len);
+int playerc_client_pop(playerc_client_t *client,
+                       player_msghdr_t *header, void *data, int *len);
+void *playerc_client_dispatch(playerc_client_t *client,
+                              player_msghdr_t *header, void *data, int len);
 
 
 // Create a player client
@@ -70,6 +74,10 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   if (mclient)
     playerc_mclient_addclient(mclient, client);
+
+  client->qfirst = 0;
+  client->qlen = 0;
+  client->qsize = sizeof(client->qitems, client->qitems[0]);
 
   return client;
 }
@@ -125,7 +133,6 @@ int playerc_client_connect(playerc_client_t *client)
   }
 
   // PLAYERC_MSG3("[%s] connected on [%s:%d]", banner, client->hostname, client->port);
-  
   return 0;
 }
 
@@ -151,10 +158,13 @@ void *playerc_client_read(playerc_client_t *client)
 
   len = sizeof(data);
 
-  // Read a packet (header and data) 
-  len = playerc_client_readpacket(client, &header, data, len);
-  if (len < 0)
-    return NULL;
+  // See if there is any queued data.
+  if (playerc_client_pop(client, &header, data, &len) < 0)
+  {
+    // If there is no queued data, read a packet (blocking).
+    if (playerc_client_readpacket(client, &header, data, &len) < 0)
+      return NULL;
+  }
 
   // Catch and ignore sync messages
   if (header.type == PLAYER_MSGTYPE_SYNCH)
@@ -169,41 +179,6 @@ void *playerc_client_read(playerc_client_t *client)
 
   // Dispatch
   return playerc_client_dispatch(client, &header, data, len);
-}
-
-
-// Dispatch a packet
-void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
-                              void *data, int len)
-{
-  int i, j;
-  playerc_device_t *device;
-
-  // We get zero-length packets sometimes
-  if (len == 0)
-    return NULL;
-  
-  // Look for a device proxy to handle this data 
-  for (i = 0; i < client->device_count; i++)
-  {
-    device = client->device[i];
-        
-    if (device->code == header->device && device->index == header->device_index)
-    {
-      // Fill out timing info 
-      device->datatime = header->timestamp_sec + header->timestamp_usec * 1e-6;
-
-      // Call the registerd handler for this device 
-      (*device->putdata) (device, (char*) header, data, len);
-
-      // Call any additional registered callbacks 
-      for (j = 0; j < device->callback_count; j++)
-        (*device->callback[j]) (device->callback_data[j]);
-
-      return device;
-    }
-  }
-  return NULL;
 }
 
 
@@ -223,6 +198,87 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
   header.size = len;
 
   return playerc_client_writepacket(client, &header, cmd, len);
+}
+
+
+// Issue request and await reply (blocking).
+int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo,
+                           void *req_data, int req_len, void *rep_data, int rep_len)
+{
+  int i, len;
+  char data[8192];
+  player_msghdr_t req_header, rep_header;
+
+  if (deviceinfo == NULL)
+  {
+    req_header.stx = PLAYER_STXX;
+    req_header.type = PLAYER_MSGTYPE_REQ;
+    req_header.device = PLAYER_PLAYER_CODE;
+    req_header.device_index = 0;
+    req_header.size = req_len;
+  }
+  else
+  {
+    req_header.stx = PLAYER_STXX;
+    req_header.type = PLAYER_MSGTYPE_REQ;
+    req_header.device = deviceinfo->code;
+    req_header.device_index = deviceinfo->index;
+    req_header.size = req_len;
+  }
+
+  if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
+    return -1;
+
+  // Read packets until we get a reply.  Data packets get queued up
+  // for later processing.
+  for (i = 0; i < 1000; i++)
+  {
+    len = sizeof(data);
+    if (playerc_client_readpacket(client, &rep_header, data, &len) < 0)
+      return -1;
+
+    if (rep_header.type == PLAYER_MSGTYPE_DATA)
+    {
+      //playerc_client_dispatch(client, &rep_header, data, len);
+      playerc_client_push(client, &rep_header, data, len);
+    }
+    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
+    {
+      if (rep_header.device != req_header.device ||
+          rep_header.device_index != req_header.device_index ||
+          rep_header.size > rep_len)
+      {
+        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
+      memcpy(rep_data, data, rep_len);
+      break;
+    }
+    else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
+    {
+      if (rep_header.device != req_header.device ||
+          rep_header.device_index != req_header.device_index ||
+          rep_header.size > rep_len)
+      {
+        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
+      break;
+    }
+    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
+    {
+      PLAYERC_ERR("got ERR from request");
+      return -1;
+    }
+  }
+
+  if (i == 1000)
+  {
+    PLAYERC_ERR("timed out waiting for server reply to request");
+    return -1;
+  }
+    
+  return len;
 }
 
 
@@ -380,88 +436,9 @@ int playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devic
 }
 
 
-// Issue request and await reply (blocking).
-int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinfo,
-                           void *req_data, int req_len, void *rep_data, int rep_len)
-{
-  int i, len;
-  char data[8192];
-  player_msghdr_t req_header, rep_header;
-
-  if (deviceinfo == NULL)
-  {
-    req_header.stx = PLAYER_STXX;
-    req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = PLAYER_PLAYER_CODE;
-    req_header.device_index = 0;
-    req_header.size = req_len;
-  }
-  else
-  {
-    req_header.stx = PLAYER_STXX;
-    req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = deviceinfo->code;
-    req_header.device_index = deviceinfo->index;
-    req_header.size = req_len;
-  }
-
-  if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
-    return -1;
-
-  // Read and dispatch regular data packets until we get a reply to our request.
-  for (i = 0; i < 1000; i++)
-  {
-    len = playerc_client_readpacket(client, &rep_header, data, sizeof(data));
-    if (len  < 0)
-      return -1;
-
-    if (rep_header.type == PLAYER_MSGTYPE_DATA)
-    {
-      playerc_client_dispatch(client, &rep_header, data, len);
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
-    {
-      if (rep_header.device != req_header.device ||
-          rep_header.device_index != req_header.device_index ||
-          rep_header.size > rep_len)
-      {
-        PLAYERC_ERR("got the wrong kind of reply (not good).");
-        return -1;
-      }
-      memcpy(rep_data, data, rep_len);
-      break;
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
-    {
-      if (rep_header.device != req_header.device ||
-          rep_header.device_index != req_header.device_index ||
-          rep_header.size > rep_len)
-      {
-        PLAYERC_ERR("got the wrong kind of reply (not good).");
-        return -1;
-      }
-      break;
-    }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
-    {
-      PLAYERC_ERR("got ERR from request");
-      return -1;
-    }
-  }
-
-  if (i == 1000)
-  {
-    PLAYERC_ERR("timed out waiting for server reply to request");
-    return -1;
-  }
-    
-  return len;
-}
-
-
 // Read a raw packet
 int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
-                              char *data, int len)
+                              char *data, int *len)
 {
   int nbytes, bytes, total_bytes;
 
@@ -514,7 +491,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   header->timestamp_sec = ntohl(header->timestamp_sec);
   header->timestamp_usec = ntohl(header->timestamp_usec);
 
-  if (header->size > len)
+  if (header->size > *len)
   {
     PLAYERC_ERR1("packet is too large, %d bytes", ntohl(header->size));
     return -1;
@@ -532,8 +509,9 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
     }
     total_bytes += bytes;
   }
-    
-  return total_bytes;
+
+  *len = total_bytes;
+  return 0;
 }
 
 
@@ -582,4 +560,93 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   }
 
   return 0;
+}
+
+
+// Push a packet onto the incoming queue.
+void playerc_client_push(playerc_client_t *client,
+                         player_msghdr_t *header, void *data, int len)
+{
+  playerc_client_item_t *item;
+
+  // Check for queue overflow; this will leak mem.
+  if (client->qlen == client->qsize)
+  {
+    PLAYERC_ERR("queue overflow; discarding packets");
+    client->qfirst = (client->qfirst + 1) % client->qsize;
+    client->qlen -=1;
+  }
+
+  item = client->qitems + (client->qfirst + client->qlen) % client->qsize;
+  item->header = *header;
+  item->data = malloc(len);
+  memcpy(item->data, data, len);
+  item->len = len;
+
+  client->qlen +=1;
+
+  //printf("push: %d\n", client->qlen);
+
+  return;
+}
+
+
+// Pop a packet from the incoming queue.  Returns non-zero if the
+// queue is empty.
+int playerc_client_pop(playerc_client_t *client,
+                       player_msghdr_t *header, void *data, int *len)
+{
+  playerc_client_item_t *item;
+
+  if (client->qlen == 0)
+    return -1;
+
+  item = client->qitems + client->qfirst;
+  *header = item->header;
+  assert(*len >= item->len);
+  memcpy(data, item->data, item->len);
+  free(item->data);
+  *len = item->len;
+  
+  client->qfirst = (client->qfirst + 1) % client->qsize;
+  client->qlen -= 1;
+
+  //printf("pop : %d\n", client->qlen);
+  
+  return -1;
+}
+
+
+// Dispatch a packet
+void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
+                              void *data, int len)
+{
+  int i, j;
+  playerc_device_t *device;
+
+  // We get zero-length packets sometimes
+  if (len == 0)
+    return NULL;
+  
+  // Look for a device proxy to handle this data 
+  for (i = 0; i < client->device_count; i++)
+  {
+    device = client->device[i];
+        
+    if (device->code == header->device && device->index == header->device_index)
+    {
+      // Fill out timing info 
+      device->datatime = header->timestamp_sec + header->timestamp_usec * 1e-6;
+
+      // Call the registerd handler for this device 
+      (*device->putdata) (device, (char*) header, data, len);
+
+      // Call any additional registered callbacks 
+      for (j = 0; j < device->callback_count; j++)
+        (*device->callback[j]) (device->callback_data[j]);
+
+      return device;
+    }
+  }
+  return NULL;
 }
