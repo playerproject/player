@@ -7,9 +7,9 @@
 #define MM_U16(A) (htons((uint16_t)(A * 1000.0)))
 
 // convert mm of various sizes in NBO to local meters
-#define M_32(A)  ((double)(int)ntohl((int32_t)A) / 1000.0)
-#define M_16(A)  ((double)(int)ntohs((int16_t)A) / 1000.0)
-#define M_U16(A) ((double)(int)ntohs((uint16_t)A) / 1000.0)
+#define M_32(A)  ((int)ntohl((int32_t)A) / 1000.0)
+#define M_16(A)  ((int)ntohs((int16_t)A) / 1000.0)
+#define M_U16(A) ((unsigned short)ntohs((uint16_t)A) / 1000.0)
 
 // convert local radians to Player degrees in various sizes
 #define Deg_32(A) (htonl((int32_t)(RTOD(A))))
@@ -21,7 +21,13 @@
 #define Rad_16(A) (DTOR(ntohs((int16_t)A)))
 #define Rad_U16(A) (DTOR(ntohs((uint16_t)A)))
 
-#define P_8(A) 
+//#define PACK_INT_32(A) (htonl((int32_t)A)
+//#define PACK_UINT_32(A) (htonl((uint32_t)A)
+
+//#define PACK_INT_16(A) (htons((int16_t)A)
+//#define PACK_UINT_16(A) (htons((uint16_t)A)
+
+//#define P_8(A) 
 
 void SonarDataPack( player_sonar_data_t* data, 
 		    int num_samples, double ranges[])
@@ -33,13 +39,11 @@ void SonarDataPack( player_sonar_data_t* data,
   // Check bounds
   assert( num_samples <= PLAYER_SONAR_MAX_SAMPLES );
   
-  data->range_count = htons(num_samples);
+  data->range_count = htons((uint16_t)num_samples);
   
   // Store range in mm
   for (s = 0; s < num_samples; s++)
     data->ranges[s] = MM_U16(ranges[s]);
-  
-  //  data->ranges[s] = htons((uint16_t)(1000.0 * ranges[s]));
 }
 
 
@@ -51,7 +55,7 @@ void SonarDataUnpack( player_sonar_data_t* data,
   assert( data );
   assert( ranges );
   
-  *num_samples = ntohs(data->range_count);
+  *num_samples = htons((uint16_t)data->range_count);
   
   assert( *num_samples <= PLAYER_SONAR_MAX_SAMPLES );
   
@@ -102,15 +106,18 @@ void PositionDataPack( player_position_data_t* data,
   // Compute odometric pose
   // Convert to mm and degrees (0 - 360)
   // commands for velocity control
-  data->xspeed = M_32(xspeed);
-  data->yspeed = M_32(yspeed);
+  data->xspeed = MM_32(xspeed);
+  data->yspeed = MM_32(yspeed);
   data->yawspeed = Deg_32(yawspeed);  
   
   // commands for position control
-  data->xpos = M_32(xpos);
-  data->ypos = M_32(ypos);
+  data->xpos = MM_32(xpos);
+  data->ypos = MM_32(ypos);
   data->yaw = Deg_32(yaw);
   
+  //printf( "DATA RAW %.2f %.2f %.2f\n", xpos, ypos, yaw );
+  //printf( "DATA PACKED %d %d %d\n", data->xpos, data->ypos, data->yaw );
+
   data->stall = (uint8_t)(stall ? 1 : 0 );  
 }
 
@@ -120,23 +127,16 @@ void PositionDataUnpack( player_position_data_t* data,
 			 int* stall )
 { 
   assert( data );
-  assert( xpos );
-  assert( ypos );
-  assert( yaw );
-  assert( xspeed );
-  assert( yspeed);
-  assert( yawspeed );
-  assert( stall );
 
-  *xpos = M_32(data->xpos);
-  *ypos = M_32(data->ypos);
-  *yaw  = Rad_32(data->yaw);
+  if(xpos) *xpos = M_32(data->xpos);
+  if(xpos) *ypos = M_32(data->ypos);
+  if(xpos) *yaw  = Rad_32(data->yaw);
   
-  *xspeed = M_32(data->xspeed);
-  *yspeed = M_32(data->yspeed);
-  *yawspeed =Rad_32(data->yawspeed);
+  if(xpos) *xspeed = M_32(data->xspeed);
+  if(xpos) *yspeed = M_32(data->yspeed);
+  if(xpos) *yawspeed =Rad_32(data->yawspeed);
   
-  *stall = data->stall ? 1 : 0;
+  if(stall) *stall = data->stall ? 1 : 0;
 }
 
 void PositionCmdUnpack( player_position_cmd_t* cmd,
@@ -178,6 +178,9 @@ void PositionSetOdomReqUnpack( player_position_set_odom_req_t* req,
 }
 
       
+
+
+
 
 
 
