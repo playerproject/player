@@ -44,6 +44,8 @@
 
 #define COMMAND_TIMEOUT_SEC 0.2
 
+int idx = 0;
+
 // flag to control the level of output - the -v arg sets this
 int g_verbose = false;
 
@@ -376,7 +378,7 @@ Client::Client(char* host, int port )
   assert( player = new PlayerClient(host,port,protocol) );  
   if(!threed)
   {
-    assert( pp = new PositionProxy(player,0,'a') );
+    assert( pp = new PositionProxy(player,idx,'a') );
     if(pp->GetAccess() == 'e') 
     {
       puts("Error getting position device access!");
@@ -433,6 +435,7 @@ void Client::Read( void )
 void Client::Update( struct controller* cont )
 {
   struct timeval curr;
+  static bool stopped = false;
 
   if(g_verbose)
   {
@@ -446,6 +449,7 @@ void Client::Update( struct controller* cont )
   
   if(cont->dirty || always_command) // if the joystick sent a command
   {
+    stopped = false;
     // send the speed commands
     if(!threed)
     {
@@ -460,11 +464,15 @@ void Client::Update( struct controller* cont )
            (lastcommand.tv_sec + (lastcommand.tv_usec / 1e6))) > 
           COMMAND_TIMEOUT_SEC)
   {
-    if(!threed)
-      pp->SetSpeed(0,0);
-    else
-      pp3->SetSpeed(0,0);
-    cont->speed = cont->turnrate = 0;
+    if(!stopped)
+    {
+      if(!threed)
+        pp->SetSpeed(0,0);
+      else
+        pp3->SetSpeed(0,0);
+      cont->speed = cont->turnrate = 0;
+      stopped = true;
+    }
   }
 }
 
@@ -486,6 +494,16 @@ int main(int argc, char** argv)
 	  clients.push_front( new Client( argv[i], atoi( colon+1 ) ));
 	}
       // otherwise look for the verbose flag
+      else if( strcmp( argv[i], "-i" ) == 0 )
+      {
+        if(i++ < argc)
+          idx = atoi(argv[i]);
+        else
+        {
+          puts(USAGE);
+          exit(-1);
+        }
+      }
       else if( strcmp( argv[i], "-v" ) == 0 )
 	g_verbose = true;
       else if( strcmp( argv[i], "-3d" ) == 0 )
