@@ -21,7 +21,7 @@
  */
 
 /*
- * $Id: 
+ * $Id$
  *
  * client-side IDAR Turret interface
  */
