@@ -19,6 +19,8 @@ INCLUDE = ../playerc.h
 # Destination for the manual when its done (for distribution)
 MANPATH = ../../../doc
 
+all: dvi ps pdf
+
 dvi: $(NAME).dvi
 
 $(NAME).dvi: $(NAME).tex \
