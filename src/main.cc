@@ -414,6 +414,7 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	case PLAYER_TRUTH_CODE:
 	case PLAYER_OCCUPANCY_CODE:
 	case PLAYER_GPS_CODE:
+	case PLAYER_GRIPPER_CODE:
 	   
 	  // Create a StageDevice with this IO base address
 	  dev = new CStageDevice( info );
@@ -440,7 +441,6 @@ bool CreateStageDevices( player_stage_info_t *arenaIO, int playerport )
 	      
 	  // devices not implemented
 	case PLAYER_AUDIO_CODE:   
-	case PLAYER_GRIPPER_CODE:
 #ifdef VERBOSE
 	  printf( "Device type %d not yet implemented in Stage\n", 
 		  info->player_id.type);

@@ -88,6 +88,7 @@ set PLAYER_PLAYER_DEV_REQ      1
 set PLAYER_PLAYER_DATA_REQ     2
 set PLAYER_PLAYER_DATAMODE_REQ 3
 set PLAYER_PLAYER_DATAFREQ_REQ 4
+set PLAYER_PLAYER_AUTH_REQ     5
 
 # the position device
 set PLAYER_POSITION_MOTOR_POWER_REQ       1
@@ -216,7 +217,7 @@ proc player_name_to_code {name} {
 #
 # returns an object identifier for this client
 proc player_connect {args} {
-  global PLAYER_IDENT_STRLEN PLAYER_PLAYER_CODE \
+  global PLAYER_IDENT_STRLEN \
          PLAYER_PLAYER_DATAMODE_REQ PLAYER_DEFAULT_HOST \
          PLAYER_DEFAULT_PORT player_base_varname player_base_varnum
 
@@ -270,7 +271,7 @@ proc player_connect {args} {
 
   # make it request/reply
   if {$reqrep} {
-    player_req $varname $PLAYER_PLAYER_CODE 0 \
+    player_req $varname player 0 \
              "[binary format Sc $PLAYER_PLAYER_DATAMODE_REQ 1]"
   }
 
@@ -366,13 +367,13 @@ proc player_req {obj device index req} {
 #
 # returns access that was granted
 proc player_req_dev {obj device access {index 0}} {
-  global PLAYER_PLAYER_CODE PLAYER_PLAYER_DEV_REQ
+  global PLAYER_PLAYER_DEV_REQ
   upvar #0 $obj arr
 
   # first get the code
   set code [player_name_to_code $device]
   set req "[binary format SSSa $PLAYER_PLAYER_DEV_REQ $code $index $access]"
-  set rep [player_req $obj $PLAYER_PLAYER_CODE 0 $req]
+  set rep [player_req $obj player 0 $req]
   if {[binary scan $rep SSSa ioctl_rep device_rep index_rep access_rep] != 4} { 
     error "scan failed on reply"
   }
@@ -385,7 +386,7 @@ proc player_req_dev {obj device access {index 0}} {
 
 proc player_read {obj} {
   global PLAYER_STX PLAYER_READ_MODE PLAYER_ALL_MODE PLAYER_HEADER_LEN 
-  global PLAYER_PLAYER_CODE PLAYER_PLAYER_DATA_REQ
+  global PLAYER_PLAYER_DATA_REQ
 
   upvar #0 $obj arr
 
@@ -403,7 +404,7 @@ proc player_read {obj} {
   # request a data packet
   if {$arr(reqrep)} {
     #puts "requesting packet"
-    player_req $obj $PLAYER_PLAYER_CODE 0 \
+    player_req $obj player 0 \
       [binary format S $PLAYER_PLAYER_DATA_REQ]
   }
 
@@ -456,7 +457,7 @@ proc player_read {obj} {
 # get the data out and put it in arr vars
 proc player_parse_data {obj device device_index data size} {
   global ACTS_BLOB_SIZE ACTS_NUM_CHANNELS ACTS_HEADER_SIZE 
-  global PLAYER_PLAYER_CODE PLAYER_MISC_CODE PLAYER_GRIPPER_CODE
+  global PLAYER_MISC_CODE PLAYER_GRIPPER_CODE
   global PLAYER_POSITION_CODE PLAYER_SONAR_CODE PLAYER_LASER_CODE
   global PLAYER_VISION_CODE PLAYER_PTZ_CODE PLAYER_AUDIO_CODE
   global PLAYER_LASERBEACON_CODE PLAYER_BROADCAST_CODE PLAYER_SPEECH_CODE
@@ -765,6 +766,12 @@ proc player_set_camera {obj p t z {index 0}} {
   set zb [binary format S [expr round($z)]]
 
   player_write $obj ptz $index "${pb}${tb}${zb}"
+}
+
+proc player_authenticate {obj key} {
+  global PLAYER_PLAYER_AUTH_REQ
+  player_req $obj player 0 \
+       "[binary format S $PLAYER_PLAYER_AUTH_REQ]$key"
 }
 
 proc player_change_motor_state {obj state} {
