@@ -75,8 +75,10 @@ ClientProxy::ClientProxy(PlayerClient* pc,
   receivedtime.tv_usec = 0;
   valid = false;
 
+  /*
   memset(&last_data,0,sizeof(last_data));
   memset(&last_header,0,sizeof(last_header));
+  */
 
   // start out with no access
   unsigned char grant_access = 'e';
@@ -178,6 +180,8 @@ void ClientProxy::FillData(player_msghdr_t hdr, const char* buffer)
   //fputs("WARNING: virtual FillData() was called.\n",stderr);
 }
 
+// functionality currently disabled, until it is fixed to handle big messages.
+#if 0
 // This method is used internally to keep a copy of the last message from
 // the device
 void ClientProxy::StoreData(player_msghdr_t hdr, const char* buffer)
@@ -188,6 +192,7 @@ void ClientProxy::StoreData(player_msghdr_t hdr, const char* buffer)
   // store the header, too.
   memcpy(&last_header, &hdr, sizeof(hdr));
 }
+#endif
 
 // interface that all proxies SHOULD provide
 void ClientProxy::Print()
