@@ -86,6 +86,7 @@ class AdaptiveMCL : public CDevice
   // Check for updated sensor data
   public: virtual void Update(void);
 
+  /* REMOVE
   // Process configuration requests
   public: virtual int PutConfig(player_device_id_t* device, void* client, 
                                 void* data, size_t len);
@@ -95,6 +96,7 @@ class AdaptiveMCL : public CDevice
 
   // Handle map data request
   private: void HandleGetMapData(void *client, void *request, int len);
+  */
 
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top
@@ -126,8 +128,11 @@ class AdaptiveMCL : public CDevice
   // Update/initialize the filter with new sensor data
   private: bool UpdateFilter();
 
-  // Put new data
-  private: void PutData(uint32_t tsec, uint32_t tusec);
+  // Put new localization data
+  private: void PutDataLocalize(uint32_t tsec, uint32_t tusec);
+
+  // Put new position data
+  private: void PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t delta);
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests(void);
@@ -156,6 +161,9 @@ class AdaptiveMCL : public CDevice
   // Properties
   ///////////////////////////////////////////////////////////////////////////
 
+  // Which interface we are using
+  private: char *interface;
+  
   // List of all sensors
   private: int sensor_count;
   private: AMCLSensor *sensors[16];
@@ -185,6 +193,9 @@ class AdaptiveMCL : public CDevice
   // Initial pose estimate; used for filter initialization
   private: pf_vector_t pf_init_pose_mean;
   private: pf_matrix_t pf_init_pose_cov;
+
+  // Last odometric pose value used to update filter
+  private: pf_vector_t pf_odom_pose;
 
 #ifdef INCLUDE_RTKGUI
   // RTK stuff; for testing only

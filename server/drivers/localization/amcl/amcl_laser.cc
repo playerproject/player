@@ -75,8 +75,9 @@ int AMCLLaser::Load(ConfigFile* cf, int section)
   this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
   this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
   this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
-  
+
   this->max_beams = cf->ReadInt(section, "laser_max_beams", 6);
+  this->range_max = cf->ReadLength(section, "laser_range_max", 8.192);
   this->range_var = cf->ReadLength(section, "laser_range_var", 0.01);
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
 
@@ -260,18 +261,22 @@ double AMCLLaser::SensorModel(AMCLLaserData *data, pf_vector_t pose)
     obs_range = data->ranges[i][0];
     obs_bearing = data->ranges[i][1];
 
-    // HACK; fix
-    map_range = map_calc_range(self->map,
-                               pose.v[0], pose.v[1], pose.v[2] + obs_bearing, 8.0);
+    // Compute the range according to the map
+    map_range = map_calc_range(self->map, pose.v[0], pose.v[1],
+                               pose.v[2] + obs_bearing, self->range_max + 1.0);
 
-    // TODO: proper sensor model (using Kolmagorov?)
-    // Simple gaussian model
-    c = self->range_var;
-    z = obs_range - map_range;
-    pz = self->range_bad + \
-      (1 - self->range_bad) * exp(-(z * z) / (2 * c * c)) / (sqrt(2 * M_PI) * c);
-
-    // TODO: consider laser max range (infinity)
+    if (obs_range >= self->range_max && map_range >= self->range_max)
+    {
+      pz = 1.0;
+    }
+    else
+    {
+      // TODO: proper sensor model (using Kolmagorov?)
+      // Simple gaussian model
+      c = self->range_var;
+      z = obs_range - map_range;
+      pz = self->range_bad + (1 - self->range_bad) * exp(-(z * z) / (2 * c * c));
+    }
 
     /*
     if (obs->range >= 8.0 && map_range >= 8.0)
@@ -283,7 +288,6 @@ double AMCLLaser::SensorModel(AMCLLaserData *data, pf_vector_t pose)
     else
       p *= laser_sensor_prob(self, obs->range, map_range);
     */
-
     
     p *= pz;
   }
