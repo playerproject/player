@@ -1086,38 +1086,6 @@ typedef struct
 
 /*************************************************************************/
 /*
- * The laserbarcode driver
- */
-
-#define PLAYER_LASERBARCODE_SET_CONFIG 0x02
-#define PLAYER_LASERBARCODE_GET_CONFIG 0x03
-
-/* laserbarcode configuration packet. */
-typedef struct
-{
-  /* Packet subtype.  Set to PLAYER_LASERBARCODE_SET_CONFIG to set the
-   *  device configuration.  Set to PLAYER_LASERBARCODE_GET_CONFIG to
-   *  get the device configuration. */
-  uint8_t subtype;
-
-  /* The number of bits in the beacon, including start and end
-   * markers. */
-  uint8_t bit_count;
-
-  /* The width of each bit, in mm. */
-  uint16_t bit_size;
-
-  /* Bit detection thresholds.  <zero_thresh> is the minimum threshold
-   * for declaring a bit is zero (0-100).  <one_thresh> is the minimum
-   * threshold for declaring a bit is one (0-100). */
-  uint16_t zero_thresh;
-  uint16_t one_thresh;
-} __attribute__ ((packed)) player_laserbarcode_config_t;
-/*************************************************************************/
-
-
-/*************************************************************************/
-/*
  * WiFi interface
  */
 typedef struct
