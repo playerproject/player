@@ -29,9 +29,10 @@ manual:
 	./docker.py $(MANFILES)
 	latex $(MANNAME)
 	dvips -t letter -f $(MANNAME).dvi > $(MANNAME).ps	
-	ps2pdf $(MANNAME).ps
+	#ps2pdf $(MANNAME).ps
 	$(MKDIR) -p $(MANPATH)
-	cp $(MANNAME).pdf $(MANPATH)
+	#cp $(MANNAME).pdf $(MANPATH)
+	cp $(MANNAME).ps $(MANPATH)
 
 # Clean up everything
 clean:
