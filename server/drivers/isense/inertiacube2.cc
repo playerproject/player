@@ -267,6 +267,10 @@ int InertiaCube2::SetupImu()
     return -1;
   }
 
+  printf("compass %d enhancement %d sensitivity %d prediction %d format %d\n",
+         sinfo.Compass, sinfo.Enhancement, sinfo.Sensitivity,
+         sinfo.Prediction, sinfo.AngleFormat);
+
   // Turn off the compass.
   sinfo.Compass = 0;
 
@@ -386,11 +390,21 @@ void InertiaCube2::Main()
     // new pose estimate.
     if (UpdatePosition())
     {
-      printf("%0.3f\n", this->imu_new_orient * 180 / M_PI);
-          
       // Generate a new pose estimate.
       UpdatePose();
 
+      /*
+      // TESTING
+      printf("%.3f %.3f %.0f  :  ",
+             this->position_new_pose[0],
+             this->position_new_pose[1],
+             this->position_new_pose[2] * 180 / M_PI);
+      printf("%.3f %.3f %.0f\n",
+             this->pose[0],
+             this->pose[1],
+             this->pose[2] * 180 / M_PI);
+      */
+      
       // Expose the new estimate to the server.
       UpdateData();
     }
@@ -488,14 +502,12 @@ void InertiaCube2::UpdateImu()
   }
 
   // Pick out the yaw value.
-  this->imu_new_orient = data.Station[0].Orientation[0] * M_PI / 180;
+  this->imu_new_orient = -data.Station[0].Orientation[0] * M_PI / 180;
 
-  /*
-  printf("orientation %f %f %f\n",
+  printf("orientation %f %f %f\r",
          data.Station[0].Orientation[0],
          data.Station[0].Orientation[1],
          data.Station[0].Orientation[2]);
-  */
 
   return;
 }
@@ -514,9 +526,9 @@ int InertiaCube2::UpdatePosition()
   // Get the position device data.
   size = this->position->GetData((unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
-  
+
   // Dont do anything if this is old data.
-  if (time == this->position_time)
+  if (time - this->position_time < 0.001)
     return 0;
   this->position_time = time;
 
@@ -572,7 +584,7 @@ void InertiaCube2::UpdateData()
 
   data.xpos = (int32_t) (this->pose[0] * 1000);
   data.ypos = (int32_t) (this->pose[1] * 1000);
-  data.yaw = (int32_t) (this->pose[2] * M_PI / 180);
+  data.yaw = (int32_t) (this->pose[2] * 180 / M_PI);
 
   // Byte swap
   data.xpos = htonl(data.xpos);
