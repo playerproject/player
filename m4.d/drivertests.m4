@@ -79,7 +79,7 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
 dnl Where's CANLIB??
-AC_ARG_WITH(canlib, [  --with-canlib=dir     Location of CANLIB],
+AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],
 CANLIB_DIR=$with_canlib,CANLIB_DIR=$prefix)
 if test "x$CANLIB_DIR" = "xNONE" -o "x$CANLIB_DIR" = "xno"; then
   SEGWAYRMP_HEADER=canlib.h
@@ -199,7 +199,7 @@ PLAYER_ADD_DRIVER([inav],[drivers/position/inav],[no],[gsl/gsl_version.h],[],
 PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[no],)
 
 dnl Where is Gazebo?
-AC_ARG_WITH(gazebo, [  --with-gazebo=dir     Location of Gazebo],
+AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],
             GAZEBO_DIR=$with_gazebo,GAZEBO_DIR=$prefix)
 if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
   GAZEBO_HEADER=gazebo.h
