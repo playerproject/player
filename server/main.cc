@@ -34,12 +34,12 @@
   #include <config.h>
 #endif
 
+#include <sys/types.h>  /* for accept(2) */
 #include <dirent.h>
 #if HAVE_LIB_DL
   #include <dlfcn.h>
 #endif
 
-#include <sys/types.h>  /* for accept(2) */
 #include <stdio.h>
 #include <errno.h>
 #include <string.h> // for bzero()
