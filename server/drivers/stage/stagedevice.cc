@@ -208,7 +208,8 @@ void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
 
   // Check for overflows
   if (len > device_commandsize)
-    PLAYER_ERROR("invalid command length; ignoring command");
+    PLAYER_ERROR2("invalid command length (%d > %d); ignoring command", 
+                  len, device_commandsize);
     
   // Copy the command
   memcpy(device_command, command, len);
