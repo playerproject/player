@@ -54,7 +54,7 @@ clean_dep:
 	cd test && make clean_dep
 
 clean: clean_dep
-	rm -f *~ *.o *.a ../../lib/libplayerc.a
+	rm -f *~ *.o *.a ../../lib/libplayerc.a ../../include/playerc.h
 	cd test && make clean
 
 
