@@ -806,7 +806,6 @@ void VFH_Class::GetCommand()
     x = (int)ntohl(cmd.xpos);
     y = (int)ntohl(cmd.ypos);
     t = (int)ntohl(cmd.yaw);
-    printf("Got Command: %f %d %d",x,y,t);
     if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
     {
       this->active_goal = true;
