@@ -1,3 +1,3 @@
 
-SUBDIRS = playerv playerjoy playernav playervcr
+SUBDIRS = playerv playerjoy playernav playervcr playerprint
 #playermap

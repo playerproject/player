@@ -563,7 +563,7 @@ PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
   cmd.pan = cmd.tilt = cmd.zoom = cmd.panspeed = data.tiltspeed = 0;
 
   PutData((void*)&data,sizeof(data),NULL);
-  PutCommand((void*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
 	MoveMode = PLAYER_PTZ_POSITION_CONTROL;
 
@@ -598,7 +598,7 @@ PTU46_Device::Setup()
   
 
   // zero the command buffer
-  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();

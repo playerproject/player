@@ -32,10 +32,18 @@
 // Forward declarations
 struct pollfd;
 
+#include <pthread.h>
+
 #include "clientdata.h"   
 
 class ClientManager
 {
+  private:
+    // A condition variable (and accompanying mutex) that can be used to
+    // signal the clientmanager that new data is available
+    pthread_cond_t cond;
+    pthread_mutex_t condMutex;
+    
   protected:
     // dynamically managed array of structs that we'll give to poll(2)
     // when trying to read from clients
@@ -59,6 +67,9 @@ class ClientManager
     // authorization key to be used for clients
     char client_auth_key[PLAYER_KEYLEN];
 
+    // wait on the condition variable
+    void Wait(void);
+
   public:
     // constructor
     ClientManager(struct pollfd* listen_ufds, int* ports,
@@ -79,6 +90,10 @@ class ClientManager
     void RemoveBlanks();
     // call Update() on all subscribed devices
     void UpdateDevices();
+
+    // Signal that new data is available (calls pthread_cond_broadcast()
+    // on the clientmanager's condition variable, which will wake it up.
+    void DataAvailable(void);
 
     // These 3 methods are the primary interface to the ClientManager.
     // They must be implemented by any subclass.

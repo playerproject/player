@@ -144,7 +144,7 @@ PassThrough::Setup()
 
   // zero out the buffers
   //PutData(NULL,0,0,0);
-  PutCommand(NULL,0,NULL);
+  PutCommand(this->device_id,NULL,0,NULL);
 
   printf("Passthrough connecting to server at %s:%d...", this->remote_hostname,
          this->remote_id.port);

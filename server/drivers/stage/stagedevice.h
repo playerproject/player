@@ -94,9 +94,8 @@ class StageDevice : public Driver
                                   void* src, size_t len,
                                   struct timeval* timestamp);
 
-  // Write configuration to the device
-  //
-  //public: virtual int PutConfig(CClientData*,unsigned char *, size_t maxsize);
+  // Give the device a chance to update
+  public: virtual void Update(void);
     
   // Simulator lock bookkeeping data and init method
   //

@@ -179,7 +179,7 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
   PutData((void*)&data,sizeof(data),NULL);
-  PutCommand((void*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   strncpy(ptz_serial_port,
           cf->ReadString(section, "port", DEFAULT_PTZ_PORT),
@@ -269,7 +269,7 @@ SonyEVID30::Setup()
   puts("Done.");
 
   // zero the command buffer
-  PutCommand((void*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();

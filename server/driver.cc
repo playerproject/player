@@ -42,13 +42,14 @@
 #include "playertime.h"
 #include "driver.h"
 #include "devicetable.h"
+#include "clientmanager.h"
 
 #include "configfile.h"
 #include "deviceregistry.h"
 
 extern PlayerTime* GlobalTime;
 extern DeviceTable* deviceTable;
-
+extern ClientManager* clientmanager;
 
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.
@@ -625,9 +626,12 @@ Driver::DataAvailable(void)
   pthread_cond_broadcast(&cond);
   pthread_mutex_unlock(&condMutex);
 
+  // testing
+#if 0
   // also wake up the server thread
-  //if(kill(g_server_pid,SIGUSR1) < 0)
-    //perror("kill(2) failed while waking up server thread");
+  puts("releasing server thread");
+  clientmanager->DataAvailable();
+#endif
 }
 
 // Waits on the condition variable associated with this device.

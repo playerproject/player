@@ -176,7 +176,7 @@ AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) :
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
   PutData((unsigned char*)&data,sizeof(data),NULL);
-  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
 
   this->serial_port = cf->ReadString(section, "port", AMTEC_DEFAULT_PORT);
   this->return_to_home = cf->ReadInt(section, "home", 0);
@@ -381,7 +381,7 @@ AmtecPowerCube::Setup()
   puts("Done.");
 
   // zero the command buffer
-  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
 
   // reset and home the unit.
   if(Reset() < 0)
@@ -1108,7 +1108,7 @@ AmtecPowerCube::HandleConfig(void *client, unsigned char *buf, size_t len)
           // consequences.
           controlmode = cfg->mode;
           memset(&cmd,0,sizeof(cmd));
-          PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+          PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
           if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
             PLAYER_ERROR("Failed to PutReply\n");
         }

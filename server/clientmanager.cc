@@ -103,6 +103,9 @@ ClientManager::ClientManager(struct pollfd* listen_ufds, int* ports,
   memset((char*)ufds,0,sizeof(struct pollfd)*initial_size);
   size_clients = initial_size;
   num_clients = 0;
+
+  pthread_mutex_init(&this->condMutex,NULL);
+  pthread_cond_init(&this->cond,NULL);
 }
 
 // destructor
@@ -353,6 +356,31 @@ ClientManager::ResetClientTimestamps(void)
   int i;
   for(i=0;i<num_clients;i++)
     clients[i]->last_write = 0.0;
+}
+
+// Waits on the condition variable associated with this device.
+void 
+ClientManager::Wait(void)
+{
+  // need to push this cleanup function, cause if a thread is cancelled while
+  // in pthread_cond_wait(), it will immediately relock the mutex.  thus we
+  // need to unlock ourselves before exiting.
+  pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock,
+                       (void*)&this->condMutex);
+  pthread_mutex_lock(&this->condMutex);
+  pthread_cond_wait(&this->cond,&this->condMutex);
+  pthread_mutex_unlock(&this->condMutex);
+  pthread_cleanup_pop(1);
+}
+
+// Signal that new data is available (calls pthread_cond_broadcast()
+// on the clientmanager's condition variable, which will wake it up.
+void 
+ClientManager::DataAvailable(void)
+{
+  pthread_mutex_lock(&this->condMutex);
+  pthread_cond_broadcast(&this->cond);
+  pthread_mutex_unlock(&this->condMutex);
 }
 
 /*************************************************************************
