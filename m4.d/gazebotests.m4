@@ -9,7 +9,7 @@ disable_reason="disabled by user",
 enable_gazebo=yes)
 
 dnl What version do we support?
-GAZEBO_MIN_VERSION="0.3.0"
+GAZEBO_MIN_VERSION="0.4.0"
 
 dnl Where is Gazebo?
 if test "x$enable_gazebo" = "xyes"; then
@@ -52,17 +52,12 @@ GAZEBO_TEST_DRIVER([fiducial])
 GAZEBO_TEST_DRIVER([gps])
 GAZEBO_TEST_DRIVER([laser])
 GAZEBO_TEST_DRIVER([position])
-GAZEBO_TEST_DRIVER([position3d])
 GAZEBO_TEST_DRIVER([power])
 GAZEBO_TEST_DRIVER([ptz])
 GAZEBO_TEST_DRIVER([truth])
 GAZEBO_TEST_DRIVER([gripper])
 GAZEBO_TEST_DRIVER([sonars])
 
-dnl This is a complete bogus test because I cant get AC_CHECK_MEMBER to work
-if test "x$include_gazebo_power" = "xyes"; then
-  AC_DEFINE(HAS_GAZEBO_LASER_MAX_RANGE,1,[laser data has max range member])
-fi
 
 dnl The call to AC_CHECK_LIB above *should* append the gazebo linker flags
 dnl to LIBS, but for some reason it doesn't, so we'll manually add them to

@@ -83,7 +83,7 @@ class GzPosition3d : public CDevice
   private: gz_client_t *client;
   
   // Gazebo Interface
-  private: gz_position3d_t *iface;
+  private: gz_position_t *iface;
 
   // Timestamp on last data update
   private: double datatime;
@@ -130,7 +130,7 @@ GzPosition3d::GzPosition3d(char* interface, ConfigFile* cf, int section)
   strcat(this->gz_id, cf->ReadString(section, "gz_id", ""));
   
   // Create an interface
-  this->iface = gz_position3d_alloc();
+  this->iface = gz_position_alloc();
 
   this->datatime = -1;
 
@@ -142,7 +142,7 @@ GzPosition3d::GzPosition3d(char* interface, ConfigFile* cf, int section)
 // Destructor
 GzPosition3d::~GzPosition3d()
 {
-  gz_position3d_free(this->iface); 
+  gz_position_free(this->iface); 
   return;
 }
 
@@ -152,7 +152,7 @@ GzPosition3d::~GzPosition3d()
 int GzPosition3d::Setup()
 {
   // Open the interface
-  if (gz_position3d_open(this->iface, this->client, this->gz_id) != 0)
+  if (gz_position_open(this->iface, this->client, this->gz_id) != 0)
     return -1;
 
   return 0;
@@ -163,7 +163,7 @@ int GzPosition3d::Setup()
 // Shutdown the device (called by server thread).
 int GzPosition3d::Shutdown()
 {
-  gz_position3d_close(this->iface);
+  gz_position_close(this->iface);
   
   return 0;
 }
@@ -176,7 +176,7 @@ void GzPosition3d::Update()
   player_position3d_data_t data;
   uint32_t tsec, tusec;
 
-  gz_position3d_lock(this->iface, 1);
+  gz_position_lock(this->iface, 1);
 
   if (this->iface->data->time > this->datatime)
   {
@@ -185,22 +185,28 @@ void GzPosition3d::Update()
     tsec = (int) (this->iface->data->time);
     tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
-    data.xpos = htonl((int) (this->iface->data->xpos));
-    data.ypos = htonl((int) (this->iface->data->ypos));
-    data.zpos = htonl((int) (this->iface->data->zpos));
-    data.yaw = htonl((int) (this->iface->data->yaw * 180 / M_PI));
+    data.xpos = htonl((int) (this->iface->data->pos[0]));
+    data.ypos = htonl((int) (this->iface->data->pos[1]));
+    data.zpos = htonl((int) (this->iface->data->pos[2]));
 
-    data.xspeed = htonl((int) (this->iface->data->xspeed));
-    data.yspeed = htonl((int) (this->iface->data->yspeed));
-    data.zspeed = htonl((int) (this->iface->data->zspeed));
-    data.yawspeed = htonl((int) (this->iface->data->yawspeed * 180 / M_PI));
+    data.roll = htonl((int) (this->iface->data->rot[0] * 180 / M_PI));
+    data.pitch = htonl((int) (this->iface->data->rot[1] * 180 / M_PI));
+    data.yaw = htonl((int) (this->iface->data->rot[2] * 180 / M_PI));
+
+    data.xspeed = htonl((int) (this->iface->data->vel_pos[0]));
+    data.yspeed = htonl((int) (this->iface->data->vel_pos[1]));
+    data.zspeed = htonl((int) (this->iface->data->vel_pos[2]));
+
+    data.rollspeed = htonl((int) (this->iface->data->vel_rot[0] * 180 / M_PI));
+    data.pitchspeed = htonl((int) (this->iface->data->vel_rot[1] * 180 / M_PI));
+    data.yawspeed = htonl((int) (this->iface->data->vel_rot[2] * 180 / M_PI));
 
     data.stall = (uint8_t) this->iface->data->stall;
 
     this->PutData(&data, sizeof(data), tsec, tusec);    
   }
 
-  gz_position3d_unlock(this->iface);
+  gz_position_unlock(this->iface);
 
   return;
 }
@@ -215,14 +221,14 @@ void GzPosition3d::PutCommand(void* client, unsigned char* src, size_t len)
   assert(len >= sizeof(player_position3d_cmd_t));
   cmd = (player_position3d_cmd_t*) src;
 
-  gz_position3d_lock(this->iface, 1);
-  this->iface->data->xspeed = ((int) ntohl(cmd->xspeed)) ;
-  this->iface->data->yspeed = ((int) ntohl(cmd->yspeed)) ;
-  this->iface->data->zspeed = ((int) ntohl(cmd->zspeed)) ;
-  this->iface->data->yawspeed = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
-  this->iface->data->rollspeed = 0;
-  this->iface->data->pitchspeed=0;
-  gz_position3d_unlock(this->iface);
+  gz_position_lock(this->iface, 1);
+  this->iface->data->cmd_vel_pos[0] = ((int) ntohl(cmd->xspeed));
+  this->iface->data->cmd_vel_pos[1] = ((int) ntohl(cmd->yspeed));
+  this->iface->data->cmd_vel_pos[2] = ((int) ntohl(cmd->zspeed));
+  this->iface->data->cmd_vel_rot[0] = ((int) ntohl(cmd->rollspeed)) * M_PI / 180;
+  this->iface->data->cmd_vel_rot[1] = ((int) ntohl(cmd->pitchspeed)) * M_PI / 180;
+  this->iface->data->cmd_vel_rot[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;  
+  gz_position_unlock(this->iface);
     
   return;
 }
@@ -282,9 +288,9 @@ void GzPosition3d::HandleMotorPower(void *client, void *req, int reqlen)
   assert((size_t) reqlen >= sizeof(player_position_power_config_t));
   power = (player_position_power_config_t*) req;
 
-  gz_position3d_lock(this->iface, 1);
+  gz_position_lock(this->iface, 1);
   this->iface->data->cmd_enable_motors = power->value;
-  gz_position3d_unlock(this->iface);
+  gz_position_unlock(this->iface);
 
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
     PLAYER_ERROR("PutReply() failed");

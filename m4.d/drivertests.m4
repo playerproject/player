@@ -189,18 +189,19 @@ if test "x$enable_cmvision" = "xyes"; then
     AC_MSG_RESULT([***************************************************])
   fi
 
-  if test "x$enable_gazebo" = "xyes"; then
-    AC_MSG_RESULT([***************************************************])
-    AC_MSG_RESULT([Found Gazebo. Gazebo camera support])
-    AC_MSG_RESULT([will be included in the CMVision driver])
-    AC_MSG_RESULT([***************************************************])
-    PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LDFLAGS"
-  else
-    AC_MSG_RESULT([***************************************************])
-    AC_MSG_RESULT([Couldn't find Gazebo. Gazebo camera])
-    AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
-    AC_MSG_RESULT([***************************************************])
-  fi
+dnl REMOVE
+dnl  if test "x$enable_gazebo" = "xyes"; then
+dnl    AC_MSG_RESULT([***************************************************])
+dnl    AC_MSG_RESULT([Found Gazebo. Gazebo camera support])
+dnl    AC_MSG_RESULT([will be included in the CMVision driver])
+dnl    AC_MSG_RESULT([***************************************************])
+dnl    PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LDFLAGS"
+dnl  else
+dnl    AC_MSG_RESULT([***************************************************])
+dnl    AC_MSG_RESULT([Couldn't find Gazebo. Gazebo camera])
+dnl    AC_MSG_RESULT([support will *NOT* be included in the CMVision driver])
+dnl    AC_MSG_RESULT([***************************************************])
+dnl  fi
 fi
 
 PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
