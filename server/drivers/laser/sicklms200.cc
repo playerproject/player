@@ -46,6 +46,65 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup sicklms200 SickLMS200 driver
+
+Driver for the SICK LMS200 scanning laser range-finder.
+
+@par Interfaces
+- @ref laser
+
+@par Supported configuration requests
+
+- PLAYER_LASER_GET_GEOM
+- PLAYER_LASER_GET_CONFIG
+- PLAYER_LASER_SET_CONFIG
+  
+@par Configuration file options
+
+- port "/dev/ttyS1"
+  - Serial port to which laser is attached.  If you are using a
+    USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
+
+- rate 38400
+  - Default baud rate.  Valid values are 38400 (RS232 or RS422) and
+    500000 (RS422 only).
+  
+- delay 0
+  - Delay (in seconds) before laser is initialized (set this to 35 if
+    you have a newer generation Pioneer whose laser is switched on
+    when the serial port is open).
+
+- resolution 50
+  - Angular resolution.  Valid values are:
+    - resolution 50 : 0.5 degree increments, 361 readings @ 5Hz (38400) or 32Hz (500000).
+    - resolution 100 : 1 degree increments, 181 readings @ 10Hz (38400) or 75Hz (500000).
+
+- range_res 1
+  - Range resolution.  Valid valies are:
+    - range_res 1 : 1mm precision, 8.192m max range.
+    - range_res 10 : 10mm precision, 81.92m max range.
+    - range_res 100 : 100mm precision, 819.2m max range.
+      
+@par Example 
+
+@verbatim
+device
+(
+  driver sicklms200
+  interfaces ["laser:0"]
+  port "/dev/ttyS0"
+  resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
+  range_res 10     # Range resolution 1 cm (maximum range 81.92m)
+)
+@endverbatim
+*/
+/** @} */
+  
+
+  
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -235,63 +294,6 @@ void SickLMS200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Error macros
 #define RETURN_ERROR(erc, m) {PLAYER_ERROR(m); return erc;}
-
-/** @addtogroup drivers Drivers */
-/** @{ */
-/** @defgroup sicklms200 SickLMS200 driver
-
-Driver for the SICK LMS200 scanning laser range-finder.
-
-@par Interfaces
-- @ref laser
-
-@par Supported configuration requests
-
-- PLAYER_LASER_GET_GEOM
-- PLAYER_LASER_GET_CONFIG
-- PLAYER_LASER_SET_CONFIG
-  
-@par Configuration file options
-
-- port "/dev/ttyS1"
-  - Serial port to which laser is attached.  If you are using a
-    USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
-
-- rate 38400
-  - Default baud rate.  Valid values are 38400 (RS232 or RS422) and
-    500000 (RS422 only).
-  
-- delay 0
-  - Delay (in seconds) before laser is initialized (set this to 35 if
-    you have a newer generation Pioneer whose laser is switched on
-    when the serial port is open).
-
-- resolution 50
-  - Angular resolution.  Valid values are:
-    - resolution 50 : 0.5 degree increments, 361 readings @ 5Hz (38400) or 32Hz (500000).
-    - resolution 100 : 1 degree increments, 181 readings @ 10Hz (38400) or 75Hz (500000).
-
-- range_res 1
-  - Range resolution.  Valid valies are:
-    - range_res 1 : 1mm precision, 8.192m max range.
-    - range_res 10 : 10mm precision, 81.92m max range.
-    - range_res 100 : 100mm precision, 819.2m max range.
-      
-@par Example 
-
-@verbatim
-device
-(
-  driver sicklms200
-  interfaces ["laser:0"]
-  port "/dev/ttyS0"
-  resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
-  range_res 10     # Range resolution 1 cm (maximum range 81.92m)
-)
-@endverbatim
-*/
-/** @} */
-  
  
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor

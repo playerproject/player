@@ -145,9 +145,7 @@ extern player_interface_t interfaces[];
 // Returns true on success and false on failure.
 bool LoadPlugin(const char* pluginname, const char* cfgfile);
 
-/** @addtogroup userguide */
-/** @{ */
-/** @defgroup commandline Command line options
+/** @page commandline Command line options
 
 The Player server is run as follows:
 
@@ -168,12 +166,7 @@ where [options] is one or more of the following:
 Note that only one of -s, -g and -r can be specified at any given time.
 
 */
-/** @} */
-
- 
-/* Usage statement */
-void
-Usage()
+void Usage()
 {
   int maxlen=66;
   char** sortedlist;
