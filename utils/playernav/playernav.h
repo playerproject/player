@@ -41,6 +41,7 @@ typedef struct
   char* hostnames[MAX_NUM_ROBOTS];
   int ports[MAX_NUM_ROBOTS];
   double initial_zoom;
+  int aa;
   pose_t robot_poses[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_items[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_labels[MAX_NUM_ROBOTS];
@@ -87,7 +88,8 @@ void fini_player(playerc_mclient_t* mclient,
                  int num_bots);
 
 /* Parse command line arguments, of the form host:port */
-int parse_args(int argc, char** argv, int* num_bots, char** hostnames,
-               int* ports, double* zoom);
+int parse_args(int argc, char** argv,
+               int* num_bots, char** hostnames, int* ports, double*
+               zoom, int* aa);
 
 #endif
