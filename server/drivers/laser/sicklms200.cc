@@ -890,16 +890,22 @@ int SickLMS200::SetLaserMode()
   PLAYER_TRACE0("waiting for acknowledge");
   len = ReadFromLaser(packet, sizeof(packet), true, 1000);
   if (len < 0)
-    RETURN_ERROR(1, "error reading from laser")
-      else if (len < 1)
-      {
-        PLAYER_TRACE0("no reply from laser");
-        return 1;
-      }
+  {
+    RETURN_ERROR(1, "error reading from laser");
+  }
+  else if (len < 1)
+  {
+    PLAYER_TRACE0("no reply from laser");
+    return 1;
+  }
   else if (packet[0] == NACK)
-    RETURN_ERROR(1, "request denied by laser")
-      else if (packet[0] != ACK)
-        RETURN_ERROR(1, "unexpected packet type");
+  {
+    RETURN_ERROR(1, "request denied by laser");
+  }
+  else if (packet[0] != ACK)
+  {
+    RETURN_ERROR(1, "unexpected packet type");
+  }
 
   PLAYER_TRACE0("configuration mode request ok");
 
@@ -935,11 +941,17 @@ int SickLMS200::SetLaserSpeed(int speed)
   if (len < 0)
     return 1;
   else if (len < 1)
-    RETURN_ERROR(1, "no reply from laser")
-      else if (packet[0] == NACK)
-        RETURN_ERROR(1, "request denied by laser")
-          else if (packet[0] != ACK)
-            RETURN_ERROR(1, "unexpected packet type");
+  {
+    RETURN_ERROR(1, "no reply from laser");
+  }
+  else if (packet[0] == NACK)
+  {
+    RETURN_ERROR(1, "request denied by laser");
+  }
+  else if (packet[0] != ACK)
+  {
+    RETURN_ERROR(1, "unexpected packet type");
+  }
 
   //PLAYER_TRACE0("baud rate request ok");
   //printf("LASER: SLS: request OK\n");
