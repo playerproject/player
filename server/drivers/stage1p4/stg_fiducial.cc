@@ -22,6 +22,9 @@
 
 #include <stdlib.h>
 
+#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_MSG 1
+
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
@@ -38,6 +41,7 @@ public:
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
   virtual int Setup(){ this->StageSubscribe( STG_MOD_NEIGHBORS ); return 0;};
+  virtual int Shutdown(){ this->StageUnsubscribe( STG_MOD_NEIGHBORS ); return 0;};
 };
 
 StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section ) 
@@ -69,13 +73,15 @@ void StgFiducial_Register(DriverTable* table)
 size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  PLAYER_MSG2(" STG_FIDUCIAL GETDATA section %d -> model %d",
-	      this->section, this->stage_id );
+  stg_model_t* model = &Stage1p4::models[this->section];
 
-  this->WaitForData( this->stage_id, STG_MOD_NEIGHBORS );
+  PLAYER_TRACE2(" STG_FIDUCIAL GETDATA section %d -> model %d",
+		this->section, model->stage_id );
+  
+  this->WaitForData( model->stage_id, STG_MOD_NEIGHBORS );
   
   // copy sonar data from Stage    
-  stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_NEIGHBORS];
+  stg_property_t* prop = model->props[STG_MOD_NEIGHBORS];
   
   stg_neighbor_t *nbors = (stg_neighbor_t*)prop->data;
   
@@ -108,7 +114,7 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
     msg.id = 2; // sonarbot?
     memcpy( &msg.bytes, str, strlen(str));
     msg.len = strlen(str);
-    stg_model_send_los_msg( this->stage_client, this->stage_id, &msg );
+    stg_model_send_los_msg( this->stage_client, this->model->stage_id, &msg );
   */
 
   // now inherit the standard data-getting behavior 
@@ -118,7 +124,8 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
 int StgFiducial::PutConfig(player_device_id_t* device, void* client, 
 				    void* data, size_t len)
 {
-  
+  stg_model_t* model = &Stage1p4::models[this->section];
+
   // rather than push the request onto the request queue, we'll handle
   // it right away
   
@@ -131,13 +138,13 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	stg_pose_t org;
 	stg_size_t sz;	
 	size_t len;
-	/*	assert( stg_get_property( this->stage_client, this->stage_id, 
+	/*	assert( stg_get_property( this->stage_client, model->stage_id, 
 				  STG_MOD_ORIGIN,
 				  (void**)&org, &len ) == 0 );
 	
 	assert( len == sizeof(stg_pose_t) );
 	
-	assert( stg_get_property( this->stage_client, this->stage_id, 
+	assert( stg_get_property( this->stage_client, this->model->stage_id, 
 				  STG_MOD_SIZE,
 				  (void**)&sz, &len ) == 0 );
 	
@@ -196,11 +203,11 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	else
 	  propid = STG_MOD_LOS_MSG;
 	
-	if( stg_set_property(  this->stage_client, this->stage_id,
+	if( stg_set_property(  this->stage_client, model->stage_id,
 			       propid, (void*)&s_msg, sizeof(s_msg))
 	    < 0 )
 	  {
-	    puts( "failed to send fiducial message" );
+	    PLAYER_ERROR( "failed to send fiducial message" );
 	    return -1;
 	  }
 	
@@ -228,7 +235,7 @@ int StgFiducial::PutConfig(player_device_id_t* device, void* client,
 	  
 	//puts( "GETTING MESSAGE" );
 
-	assert( stg_get_property( this->stage_client, this->stage_id, 
+	assert( stg_get_property( this->stage_client, model->stage_id, 
 				  prop, 
 				  (void**)&s_msg, &len ) == 0 );
 

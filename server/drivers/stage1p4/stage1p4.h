@@ -33,25 +33,21 @@ x *  You should have received a copy of the GNU General Public License
 
 class Stage1p4 : public CDevice
 {
-public:
-  stg_id_t stage_id; // associates this device with a Stage model
-  int section; // worldfile section
-
+ public:
+  int section; // world file section and model identifier
+  
   static ConfigFile* config;
-  static char* world_file;
-  static stg_client_t* stage_client;
-  static stg_client_t* stage_config_client;
-  static stg_name_id_t* created_models;
-  static int created_models_count;
   static CWorldFile wf;
+  static char* world_file; // filename
+  static stg_client_t* stage_client;
+  static stg_model_t* models;
+  static int models_count;
   static stg_id_t world_id;
   static double time;
   static int stage_port;
-  static char* stage_host;
-
-  static stg_property_t* prop_buffer[];
-  static char subs[];
-
+  static char* stage_host; 
+  static stg_property_t *stage_time;
+  
   Stage1p4(char* interface, ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen);
   virtual ~Stage1p4();
@@ -62,9 +58,10 @@ public:
   void CheckForData( void );
   void WaitForData( stg_id_t model, stg_prop_id_t datatype );
   void StageSubscribe( stg_prop_id_t data );
+  void StageUnsubscribe( stg_prop_id_t data );
+  
+  // most subclasses should override these - see stg_sonar for example
+  virtual int Setup(){ return 0; };
+  virtual int Shutdown(){ return 0; };
 
-  virtual int Setup() = 0; // pure virtual - subclasses must provide this
-  virtual int Shutdown();
-  virtual void Main();
 };
-

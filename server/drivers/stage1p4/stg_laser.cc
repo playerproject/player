@@ -19,6 +19,9 @@
  * $Id$
  */
 
+#define PLAYER_ENABLE_TRACE 0
+#define PLAYER_ENABLE_MSG 1
+
 #include "playercommon.h"
 #include "drivertable.h"
 #include "player.h"
@@ -37,7 +40,9 @@ public:
 
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
-  virtual int Setup();
+
+  virtual int Setup(){ this->StageSubscribe( STG_MOD_LASER_DATA ); return 0;};
+  virtual int Shutdown(){ this->StageUnsubscribe( STG_MOD_LASER_DATA ); return 0;};
 };
 
 StgLaser::StgLaser(char* interface, ConfigFile* cf, int section ) 
@@ -64,26 +69,21 @@ void StgLaser_Register(DriverTable* table)
   table->AddDriver("stg_laser", PLAYER_ALL_MODE, StgLaser_Init);
 }
 
-int StgLaser::Setup()
-{  
-  puts( "STG_LASERSONAR setup" );
-  this->StageSubscribe( STG_MOD_LASER_DATA );
-  puts( "STG_LASER setup done" );
 
-  return 0;
-}
 // override GetData to get data from Stage on demand, rather than the
 // standard model of the source filling a buffer periodically
 size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  PLAYER_MSG2(" STG_LASER GETDATA section %d -> model %d",
-	      this->section, this->stage_id );
+  stg_model_t* model = &Stage1p4::models[this->section];
+
+  PLAYER_TRACE2(" STG_LASER GETDATA section %d -> model %d",
+		this->section, this->model->stage_id );
   
-  this->WaitForData( this->stage_id, STG_MOD_LASER_DATA );
+  this->WaitForData( model->stage_id, STG_MOD_LASER_DATA );
 
   // copy data from Stage    
-  stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_LASER_DATA];
+  stg_property_t* prop = model->props[STG_MOD_LASER_DATA];
 
   stg_laser_data_t* sdata = (stg_laser_data_t*)prop->data;
   size_t slen = prop->len;
@@ -122,6 +122,7 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 			void* data, size_t len)
 {
   assert( data );
+  stg_model_t* model = &Stage1p4::models[this->section];
 
   // rather than push the request onto the request queue, we'll handle
   // it right away
@@ -132,18 +133,18 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_LASER_GET_GEOM:
       {
-	puts( "waiting for laser geom from Stage" );
+	//puts( "waiting for laser geom from Stage" );
 
 	// get one laser packet, as it contains all the info we need
-	this->WaitForData( this->stage_id, STG_MOD_LASER_DATA );
+	this->WaitForData( model->stage_id, STG_MOD_LASER_DATA );
 
-	puts( "getting laser geom from Stage" );
+	//puts( "getting laser geom from Stage" );
 
-	printf( "i see %d bytes of laser data\n", 
-		Stage1p4::prop_buffer[STG_MOD_LASER_DATA]->len );
+	//printf( "i see %d bytes of laser data\n", 
+	//model->props[STG_MOD_LASER_DATA]->len );
 
 	// copy data from Stage    
-	stg_property_t* prop = Stage1p4::prop_buffer[STG_MOD_LASER_DATA];
+	stg_property_t* prop = model->props[STG_MOD_LASER_DATA];
 	
 	stg_laser_data_t* sdata = (stg_laser_data_t*)prop->data;
 	size_t slen = prop->len;
