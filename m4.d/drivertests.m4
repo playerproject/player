@@ -179,6 +179,8 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $other_name_caps[_EXTRA_LIB]
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
+PLAYER_ADD_DRIVER([segwayrmp],[drivers/position],[no],)
+
 PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],)
 
 PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],
