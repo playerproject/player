@@ -16,6 +16,13 @@
    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
    Boston, MA 02111-1307, USA.  */
 
+/*
+ * $Id$
+ *
+ * taken from glibc, modified slightly for standalone compilation, and used as
+ * a fallback implementation when scandir() is not available. - BPG
+ */
+
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
