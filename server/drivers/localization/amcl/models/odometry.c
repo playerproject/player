@@ -1,3 +1,23 @@
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
+ *                      gerkey@usc.edu    kaspers@robotics.usc.edu
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
 /**************************************************************************
  * Desc: Sensor/action model odometry.
  * Author: Andrew Howard
@@ -12,10 +32,6 @@
 #include "odometry.h"
 
 
-// Build a list of all empty cells in c-space
-void odometry_init_cspace(odometry_t *self);
-
-
 // Create an sensor model
 odometry_t *odometry_alloc(map_t *map, double robot_radius)
 {
@@ -25,8 +41,6 @@ odometry_t *odometry_alloc(map_t *map, double robot_radius)
 
   self->map = map;
   self->robot_radius = robot_radius;
-  
-  odometry_init_cspace(self);
   
   return self;
 }
@@ -42,7 +56,7 @@ void odometry_free(odometry_t *self)
 
 
 // Build a list of all empty cells in c-space
-void odometry_init_cspace(odometry_t *self)
+int odometry_init_cspace(odometry_t *self)
 {
   int i, j;
   map_cell_t *cell;
@@ -69,8 +83,10 @@ void odometry_init_cspace(odometry_t *self)
       ccell->v[2] = 0.0;
     }
   }
-  
-  return;
+
+  if (self->ccell_count == 0)
+    return -1;
+  return 0;
 }
 
 // Prepare to initialize the distribution; pose is the robot's initial
@@ -78,7 +94,7 @@ void odometry_init_cspace(odometry_t *self)
 void odometry_init_init(odometry_t *self, pf_vector_t pose, pf_matrix_t pose_cov)
 {
   int i;
-  pf_pdf_gaussian_t *gpdf;
+  //pf_pdf_gaussian_t *gpdf;
   double *weights;
   pf_vector_t *ccell;
   

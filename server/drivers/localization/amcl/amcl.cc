@@ -42,7 +42,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
-#define PLAYER_ENABLE_TRACE 1
+#define PLAYER_ENABLE_TRACE 0
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -50,41 +50,18 @@
 
 #include "player.h"
 #include "device.h"
-#include "psdevice.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 #include "pf/pf.h"
 #include "map/map.h"
 #include "models/odometry.h"
+#include "models/sonar.h"
 #include "models/laser.h"
 
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
 #endif
-
-// More awful hack
-extern bool use_stage;
-
-// This is a god-awful hack; this structure must be duplicated in both
-// Player and Stage.
-// Shared Player/Stage configuration info
-typedef struct
-{
-  char map_file[PATH_MAX];
-  double map_scale;
-  
-} amcl_stage_data_t;
-
-
-// TESTING
-// Time function used for profiling
-uint64_t gettime(void)
-{
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return ((uint64_t) tv.tv_sec) * 1000 + (uint64_t) (tv.tv_usec / 1000);
-}
 
 
 // Combined sensor data
@@ -96,6 +73,10 @@ typedef struct
   // Odometric pose
   pf_vector_t odom_pose;
 
+  // Sonar ranges
+  int srange_count;
+  double sranges[PLAYER_SONAR_MAX_SAMPLES];
+
   // Laser ranges
   int range_count;
   double ranges[PLAYER_LASER_MAX_SAMPLES][2];
@@ -104,8 +85,12 @@ typedef struct
 
 
 // Incremental navigation driver
-class AdaptiveMCL : public PSDevice
+class AdaptiveMCL : public CDevice
 {
+  ///////////////////////////////////////////////////////////////////////////
+  // Top half methods; these methods run in the server thread
+  ///////////////////////////////////////////////////////////////////////////
+
   // Constructor
   public: AdaptiveMCL(char* interface, ConfigFile* cf, int section);
 
@@ -116,25 +101,27 @@ class AdaptiveMCL : public PSDevice
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
 
-#ifdef INCLUDE_STAGE
-  // Get the config settings specified in Stage.
-  private: int LoadStageConfig(void);
-#endif
-
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
   private: int SetupGUI(void);
   private: int ShutdownGUI(void);
 #endif
 
-  // Set up the odometry device.
+  // Set up the odometry device
   private: int SetupOdom(void);
   private: int ShutdownOdom(void);
 
   // Get the current odometric pose
   private: void GetOdomData(amcl_sensor_data_t *data);
-  
-  // Set up the laser device.
+
+  // Set up the sonar device
+  private: int SetupSonar(void);
+  private: int ShutdownSonar(void);
+
+  // Check for new sonar data
+  private: void GetSonarData(amcl_sensor_data_t *data);
+
+  // Set up the laser device
   private: int SetupLaser(void);
   private: int ShutdownLaser(void);
 
@@ -145,12 +132,21 @@ class AdaptiveMCL : public PSDevice
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                                   uint32_t* time_sec, uint32_t* time_usec);
 
+  ///////////////////////////////////////////////////////////////////////////
+  // Middle methods: these methods facilitate communication between the top
+  // and bottom halfs.
+  ///////////////////////////////////////////////////////////////////////////
+
   // Push data onto the filter queue
   private: void Push(amcl_sensor_data_t *data);
 
   // Pop data from the filter queue
   private: int Pop(amcl_sensor_data_t *data);
 
+  ///////////////////////////////////////////////////////////////////////////
+  // Bottom half methods; these methods run in the device thread
+  ///////////////////////////////////////////////////////////////////////////
+  
   // Main function for device thread.
   private: virtual void Main(void);
 
@@ -159,6 +155,14 @@ class AdaptiveMCL : public PSDevice
 
   // Update the filter with new sensor data
   private: void UpdateFilter(amcl_sensor_data_t *data);
+
+#ifdef INCLUDE_RTKGUI
+  // Draw the current best pose estimate
+  private: void DrawPoseEst();
+
+  // Draw the sonar values
+  private: void DrawSonarData(amcl_sensor_data_t *data);
+#endif
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests(void);
@@ -175,10 +179,22 @@ class AdaptiveMCL : public PSDevice
   // Handle map data request
   private: void HandleGetMapData(void *client, void *request, int len);
 
+  ///////////////////////////////////////////////////////////////////////////
+  // Properties
+  ///////////////////////////////////////////////////////////////////////////
+
   // Odometry device info
   private: CDevice *odom;
   private: int odom_index;
 
+  // Sonar device info
+  private: CDevice *sonar;
+  private: int sonar_index;
+
+  // Sonar poses relative to robot
+  private: int sonar_pose_count;
+  private: pf_vector_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
+  
   // Laser device info
   private: CDevice *laser;
   private: int laser_index;
@@ -192,10 +208,14 @@ class AdaptiveMCL : public PSDevice
   // Occupancy map
   private: const char *map_file;
   private: double map_scale;
+  private: int map_negate;
   private: map_t *map;
 
-  // Odometry sensor model
+  // Odometry sensor/action model
   private: odometry_t *odom_model;
+
+  // Sonar sensor model
+  private: sonar_t *sonar_model;
 
   // Laser sensor model
   private: laser_t *laser_model;
@@ -211,7 +231,8 @@ class AdaptiveMCL : public PSDevice
   
   // Particle filter
   private: pf_t *pf;
-  private: int min_samples, max_samples;
+  private: int pf_min_samples, pf_max_samples;
+  private: double pf_err, pf_z;
 
   // Last odometric pose estimates used by filter
   private: pf_vector_t pf_odom_pose;
@@ -222,10 +243,13 @@ class AdaptiveMCL : public PSDevice
 
 #ifdef INCLUDE_RTKGUI
   // RTK stuff; for testing only
+  private: int enable_gui;
   private: rtk_app_t *app;
   private: rtk_canvas_t *canvas;
   private: rtk_fig_t *map_fig;
   private: rtk_fig_t *pf_fig;
+  private: rtk_fig_t *robot_fig;
+  private: rtk_fig_t *sonar_fig;
 #endif
 };
 
@@ -253,23 +277,26 @@ void AdaptiveMCL_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : PSDevice(sizeof(player_localize_data_t), 0, 100, 100)
+    : CDevice(sizeof(player_localize_data_t), 0, 100, 100)
 {
-  double size;
+  //double size;
   double u[3];
   
   this->odom = NULL;
   this->odom_index = cf->ReadInt(section, "position_index", 0);
 
+  this->sonar = NULL;
+  this->sonar_index = cf->ReadInt(section, "sonar_index", -1);
+
   this->laser = NULL;
-  this->laser_index = cf->ReadInt(section, "laser_index", 0);
+  this->laser_index = cf->ReadInt(section, "laser_index", -1);
 
   // C-space info
   this->robot_radius = cf->ReadLength(section, "robot_radius", 0.20);
   
   // Get the map settings
-  this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
   this->map_file = cf->ReadFilename(section, "map_file", NULL);
+  this->map_scale = cf->ReadLength(section, "map_scale", 0.05);
   this->map_negate = cf->ReadInt(section, "map_negate", 0);
   this->map = NULL;
   
@@ -283,9 +310,13 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Particle filter settings
   this->pf = NULL;
-  this->min_samples = cf->ReadInt(section, "min_samples", 100);
-  this->max_samples = cf->ReadInt(section, "max_samples", 200000);
+  this->pf_min_samples = cf->ReadInt(section, "pf_min_samples", 100);
+  this->pf_max_samples = cf->ReadInt(section, "pf_max_samples", 10000);
 
+  // Adaptive filter parameters
+  this->pf_err = cf->ReadFloat(section, "pf_err", 0.01);
+  this->pf_z = cf->ReadFloat(section, "pf_z", 3);
+  
   // Initial pose estimate
   this->pf_pose_mean = pf_vector_zero();
   this->pf_pose_mean.v[0] = cf->ReadTupleLength(section, "init_pose", 0, 0);
@@ -302,8 +333,14 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_pose_cov.m[2][2] = u[2] * u[2];
 
   // Create the sensor queue
+  this->q_len = 0;
   this->q_size = 100;
   this->q_data = new amcl_sensor_data_t[this->q_size];
+
+#ifdef INCLUDE_RTKGUI
+  // Enable debug gui
+  this->enable_gui = cf->ReadInt(section, "enable_gui", 0);
+#endif
   
   return;
 }
@@ -313,7 +350,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 // Destructor
 AdaptiveMCL::~AdaptiveMCL(void)
 {
-  delete this->q_data;
+  delete[] this->q_data;
   return;
 }
 
@@ -324,19 +361,17 @@ int AdaptiveMCL::Setup(void)
 {
   amcl_sensor_data_t sdata;
     
-  PLAYER_TRACE("setup");
-
-#ifdef INCLUDE_STAGE
-  if (use_stage)
-    if (this->LoadStageConfig() != 0)
-      return -1;
-#endif
+  PLAYER_TRACE0("setup");
   
-  // Initialise the underlying position device.
+  // Initialise the underlying position device
   if (this->SetupOdom() != 0)
     return -1;
   
-  // Initialise the laser.
+  // Initialise the sonar
+  if (this->SetupSonar() != 0)
+    return -1;
+
+  // Initialise the laser
   if (this->SetupLaser() != 0)
     return -1;
 
@@ -352,22 +387,32 @@ int AdaptiveMCL::Setup(void)
   this->map = map_alloc(this->map_scale);
 
   // Load the map
-  if (map_load_occ(this->map, this->map_file) != 0)
+  if (map_load_occ(this->map, this->map_file, this->map_negate) != 0)
     return -1;
 
   // Compute the c-space
   map_update_cspace(this->map, 2 * this->robot_radius);
-
+  
   // Create the odometry model
   this->odom_model = odometry_alloc(this->map, this->robot_radius);
+  if (odometry_init_cspace(this->odom_model))
+  {
+    PLAYER_ERROR("error generating free space map (this could be a bad map)");
+    return -1;
+  }
 
+  // Create the sonar model
+  this->sonar_model = sonar_alloc(this->map, this->sonar_pose_count, this->sonar_poses);
+  
   // Create the laser model
   this->laser_model = laser_alloc(this->map, this->laser_pose);
   this->laser_model->range_cov = this->laser_map_err * this->laser_map_err;
 
   // Create the particle filter
   assert(this->pf == NULL);
-  this->pf = pf_alloc(this->min_samples, this->max_samples);
+  this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
+  this->pf->pop_err = this->pf_err;
+  this->pf->pop_z = this->pf_z;
 
   // Set the initial odometric poses
   this->GetOdomData(&sdata);
@@ -376,7 +421,8 @@ int AdaptiveMCL::Setup(void)
 
 #ifdef INCLUDE_RTKGUI
   // Start the GUI
-  this->SetupGUI();
+  if (this->enable_gui)
+    this->SetupGUI();
 #endif
 
   // Start the driver thread.
@@ -395,7 +441,8 @@ int AdaptiveMCL::Shutdown(void)
     
 #ifdef INCLUDE_RTKGUI
   // Stop the GUI
-  this->ShutdownGUI();
+  if (this->enable_gui)
+    this->ShutdownGUI();
 #endif
 
   // Delete the particle filter
@@ -405,6 +452,10 @@ int AdaptiveMCL::Shutdown(void)
   // Delete the odometry model
   odometry_free(this->odom_model);
   this->odom_model = NULL;
+
+  // Delete the sonar model
+  sonar_free(this->sonar_model);
+  this->sonar_model = NULL;
 
   // Delete the laser model
   laser_free(this->laser_model);
@@ -417,40 +468,15 @@ int AdaptiveMCL::Shutdown(void)
   // Stop the laser
   this->ShutdownLaser();
 
-  // Stop the odom device.
+  // Stop the sonar
+  this->ShutdownSonar();
+
+  // Stop the odom device
   this->ShutdownOdom();
 
-  PLAYER_TRACE("shutdown");
+  PLAYER_TRACE0("shutdown");
   return 0;
 }
-
-
-#ifdef INCLUDE_STAGE
-
-// Get the config settings specified in Stage.  This function will
-// disappear in future versions.
-int AdaptiveMCL::LoadStageConfig(void)
-{
-  amcl_stage_data_t data;
-  size_t data_len;
-    
-  data_len = this->GetStageData(this, &data, sizeof(data), NULL, NULL);
-  if (data_len != sizeof(data))
-  {
-    PLAYER_ERROR("no configuration data");
-    return -1;
-  }
-
-  // This will leak mem (but this function will go away, so who cares)
-  this->map_file = strdup(data.map_file);
-  this->map_scale = data.map_scale;
-
-  PLAYER_TRACE2("map file [%s] map scale [%f]", this->map_file, this->map_scale);
-  
-  return 0;
-}
-
-#endif
 
 
 #ifdef INCLUDE_RTKGUI
@@ -470,11 +496,18 @@ int AdaptiveMCL::SetupGUI(void)
   rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
 
   this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
-  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 0);
-  
+  this->pf_fig = rtk_fig_create(this->canvas, this->map_fig, 5);
+
   // Draw the map
   map_draw_occ(this->map, this->map_fig);
   //map_draw_cspace(this->map, this->map_fig);
+
+  this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
+  this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
+
+  // Draw the robot
+  rtk_fig_color(this->robot_fig, 0.7, 0, 0);
+  rtk_fig_rectangle(this->robot_fig, 0, 0, 0, 0.40, 0.20, 0);
 
   rtk_app_main_init(this->app);
 
@@ -486,6 +519,8 @@ int AdaptiveMCL::SetupGUI(void)
 // Shut down the GUI
 int AdaptiveMCL::ShutdownGUI(void)
 {
+  rtk_fig_destroy(this->sonar_fig);
+  rtk_fig_destroy(this->robot_fig);
   rtk_fig_destroy(this->map_fig);
   rtk_fig_destroy(this->pf_fig);
   rtk_canvas_destroy(this->canvas);
@@ -504,7 +539,6 @@ int AdaptiveMCL::SetupOdom(void)
 {
   player_device_id_t id;
     
-  id.robot = this->device_id.robot;
   id.code = PLAYER_POSITION_CODE;
   id.index = this->odom_index;
 
@@ -559,6 +593,106 @@ void AdaptiveMCL::GetOdomData(amcl_sensor_data_t *data)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Set up the sonar
+int AdaptiveMCL::SetupSonar(void)
+{
+  int i;
+  uint8_t req;
+  uint16_t reptype;
+  player_device_id_t id;
+  player_sonar_geom_t geom;
+  struct timeval tv;
+
+  // If there is no sonar device...
+  if (this->sonar_index < 0)
+    return 0;
+  
+  id.code = PLAYER_SONAR_CODE;
+  id.index = this->sonar_index;
+
+  this->sonar = deviceTable->GetDevice(id);
+  if (!this->sonar)
+  {
+    PLAYER_ERROR("unable to locate suitable sonar device");
+    return -1;
+  }
+  if (this->sonar->Subscribe(this) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to sonar device");
+    return -1;
+  }
+
+  // Get the sonar geometry
+  req = PLAYER_SONAR_GET_GEOM_REQ;
+  if (this->sonar->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
+  {
+    PLAYER_ERROR("unable to get sonar geometry");
+    return -1;
+  }
+
+  this->sonar_pose_count = (int16_t) ntohs(geom.pose_count);
+  assert(this->sonar_pose_count < sizeof(this->sonar_poses) / sizeof(this->sonar_poses[0]));
+  
+  for (i = 0; i < this->sonar_pose_count; i++)
+  {
+    this->sonar_poses[i].v[0] = ((int16_t) ntohs(geom.poses[i][0])) / 1000.0;
+    this->sonar_poses[i].v[1] = ((int16_t) ntohs(geom.poses[i][1])) / 1000.0;
+    this->sonar_poses[i].v[2] = ((int16_t) ntohs(geom.poses[i][2])) * M_PI / 180.0;
+  }
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the sonar
+int AdaptiveMCL::ShutdownSonar(void)
+{
+  // If there is no sonar device...
+  if (this->sonar_index < 0)
+    return 0;
+
+  this->sonar->Unsubscribe(this);
+  this->sonar = NULL;
+  
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Check for new sonar data
+void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
+{
+  int i;
+  size_t size;
+  player_sonar_data_t ndata;
+  double r; //b, db;
+
+  // If there is no sonar device...
+  if (this->sonar_index < 0)
+  {
+    data->srange_count = 0;
+    return;
+  }
+  
+  // Get the sonar device data.
+  size = this->sonar->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+
+  data->srange_count = ntohs(ndata.range_count);
+  assert(data->srange_count < sizeof(data->sranges) / sizeof(data->sranges[0]));
+
+  // Read and byteswap the range data
+  for (i = 0; i < data->srange_count; i++)
+  {
+    r = ((int16_t) ntohs(ndata.ranges[i])) / 1000.0;
+    data->sranges[i] = r;
+  }
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
 int AdaptiveMCL::SetupLaser(void)
 {
@@ -567,8 +701,11 @@ int AdaptiveMCL::SetupLaser(void)
   player_device_id_t id;
   player_laser_geom_t geom;
   struct timeval tv;
-  
-  id.robot = this->device_id.robot;
+
+  // If there is no laser device...
+  if (this->laser_index < 0)
+    return 0;
+
   id.code = PLAYER_LASER_CODE;
   id.index = this->laser_index;
 
@@ -585,7 +722,7 @@ int AdaptiveMCL::SetupLaser(void)
   }
 
   // Get the laser geometry
-  req = PLAYER_POSITION_GET_GEOM_REQ;
+  req = PLAYER_LASER_GET_GEOM;
   if (this->laser->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
   {
     PLAYER_ERROR("unable to get laser geometry");
@@ -594,7 +731,7 @@ int AdaptiveMCL::SetupLaser(void)
 
   this->laser_pose.v[0] = ((int16_t) ntohl(geom.pose[0])) / 1000.0;
   this->laser_pose.v[1] = ((int16_t) ntohl(geom.pose[1])) / 1000.0;
-  this->laser_pose.v[2] = ((int16_t) ntohl(geom.pose[0])) * M_PI / 180.0;
+  this->laser_pose.v[2] = ((int16_t) ntohl(geom.pose[2])) * M_PI / 180.0;
 
   return 0;
 }
@@ -604,7 +741,13 @@ int AdaptiveMCL::SetupLaser(void)
 // Shut down the laser
 int AdaptiveMCL::ShutdownLaser(void)
 {
+  // If there is no laser device...
+  if (this->laser_index < 0)
+    return 0;
+  
   this->laser->Unsubscribe(this);
+  this->laser = NULL;
+  
   return 0;
 }
 
@@ -618,6 +761,13 @@ void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
   player_laser_data_t ndata;
   double r, b, db;
   
+  // If there is no laser device...
+  if (this->laser_index < 0)
+  {
+    data->range_count = 0;
+    return;
+  }
+
   // Get the laser device data.
   size = this->laser->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
 
@@ -669,7 +819,10 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
       fabs(odom_diff.v[2]) > M_PI / 6)
   {
     this->odom_pose = sdata.odom_pose;
-        
+
+    // Get the current sonar data; we assume it is new data
+    this->GetSonarData(&sdata);
+
     // Get the current laser data; we assume it is new data
     this->GetLaserData(&sdata);
 
@@ -807,7 +960,8 @@ void AdaptiveMCL::Main(void)
   while (true)
   {
 #ifdef INCLUDE_RTKGUI
-    rtk_app_main_loop(this->app);
+    if (this->enable_gui)
+      rtk_app_main_loop(this->app);
 #endif
 
     // Sleep for 1ms (will actually take longer than this).
@@ -841,15 +995,6 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   pf_init(this->pf, (pf_init_model_fn_t) odometry_init_model, this->odom_model);
   
   odometry_init_term(this->odom_model);
-
-#ifdef INCLUDE_RTKGUI
-  // Draw the samples
-  rtk_fig_clear(this->pf_fig);
-  rtk_fig_color(this->pf_fig, 1, 0, 0);
-  pf_draw_samples(this->pf, this->pf_fig, 1000);
-  pf_draw_stats(this->pf, this->pf_fig);
-  rtk_canvas_render(this->canvas);
-#endif
   
   this->Lock();
   
@@ -857,9 +1002,26 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
   pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov);
 
   PLAYER_TRACE3("pf: %f %f %f",
-               this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
+                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
   
   this->Unlock();
+
+#ifdef INCLUDE_RTKGUI
+  // Draw the samples
+  if (this->enable_gui)
+  {
+    DrawPoseEst();
+    
+    rtk_fig_clear(this->pf_fig);
+    rtk_fig_color(this->pf_fig, 1, 0, 0);
+    pf_draw_samples(this->pf, this->pf_fig, 1000);
+    pf_draw_stats(this->pf, this->pf_fig);
+
+    pf_draw_hist(this->pf, this->pf_fig);
+        
+    rtk_canvas_render(this->canvas);
+  }
+#endif
 
   return;
 }
@@ -883,6 +1045,14 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
   odometry_sensor_term(this->odom_model);
   odometry_action_term(this->odom_model);
+
+  // Update the sonar sensor model with the latest sonar measurements
+  sonar_clear_ranges(this->sonar_model);
+  for (i = 0; i < data->srange_count; i++)
+    sonar_add_range(this->sonar_model, data->sranges[i]);
+
+  // Apply the sonar sensor model
+  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) sonar_sensor_model, this->sonar_model);  
   
   // Update the laser sensor model with the latest laser measurements
   laser_clear_ranges(this->laser_model);
@@ -911,15 +1081,67 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
-  rtk_fig_clear(this->pf_fig);
-  rtk_fig_color(this->pf_fig, 1, 0, 0);
-  pf_draw_samples(this->pf, this->pf_fig, 1000);
-  pf_draw_stats(this->pf, this->pf_fig);
-  rtk_canvas_render(this->canvas);
+  if (this->enable_gui)
+  {
+    DrawPoseEst();
+    DrawSonarData(data);
+    
+    rtk_fig_clear(this->pf_fig);
+    rtk_fig_color(this->pf_fig, 1, 0, 0);
+    pf_draw_samples(this->pf, this->pf_fig, 1000);
+    pf_draw_stats(this->pf, this->pf_fig);
+
+    pf_draw_hist(this->pf, this->pf_fig);
+    
+    rtk_canvas_render(this->canvas);
+  }
 #endif
 
   return;
 }
+
+
+#ifdef INCLUDE_RTKGUI
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the current best pose estimate
+void AdaptiveMCL::DrawPoseEst()
+{
+  this->Lock();
+  rtk_fig_origin(this->robot_fig, this->pf_pose_mean.v[0],
+                 this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
+  this->Unlock();
+  
+  return;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the sonar values
+void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
+{
+  int i;
+  double r, b, ax, ay, bx, by;
+  
+  rtk_fig_clear(this->sonar_fig);
+  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
+  
+  for (i = 0; i < data->srange_count; i++)
+  {
+    r = data->sranges[i];
+    b = this->sonar_poses[i].v[2];
+
+    ax = this->sonar_poses[i].v[0];
+    ay = this->sonar_poses[i].v[1];
+
+    bx = ax + r * cos(b);
+    by = ay + r * sin(b);
+    
+    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
+  }
+  return;
+}
+
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
