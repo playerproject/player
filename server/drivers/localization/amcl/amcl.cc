@@ -182,9 +182,6 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 #ifdef INCLUDE_RTKGUI
   // Enable debug gui
   this->enable_gui = cf->ReadInt(section, "enable_gui", 0);
-#else
-  // Disable debug gui
-  this->enable_gui = 0;
 #endif
 
   
