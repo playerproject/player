@@ -266,8 +266,6 @@ dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
-dnl socklen_t should be used with functions like getpeername and
-dnl recvfrom because some platforms use int*'s and some use size_t*'s. 
 dnl Note that we can't simply dnl use AC_CHECK_TYPE because socklen_t 
 dnl isn't in the standard headers (until we move to autoconf-2.5)
 AC_MSG_CHECKING(if socklen_t is defined)
