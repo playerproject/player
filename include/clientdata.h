@@ -63,7 +63,7 @@ class CClientData
 
  public:
   int client_index;
-  int writeThreadId, readThreadId;
+  //int writeThreadId, readThreadId;
   pthread_t writeThread, readThread;
 
   server_mode_t mode;

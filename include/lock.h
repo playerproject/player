@@ -47,7 +47,6 @@ private:
   pthread_mutex_t commandAccessMutex;
   pthread_mutex_t configAccessMutex;
   pthread_mutex_t subscribeMutex;
-  pthread_mutex_t setupDataMutex;
 
   bool firstdata;
 
@@ -55,6 +54,7 @@ private:
   int subscriptions;
 
 public:
+  pthread_mutex_t setupDataMutex;
   CLock();
   virtual ~CLock();
 
