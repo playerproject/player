@@ -5,9 +5,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#ifdef PLAYER_SOLARIS 
-#include <strings.h>
-#endif
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor

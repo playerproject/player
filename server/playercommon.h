@@ -30,33 +30,29 @@
 #ifndef _PLAYERCOMMON_H
 #define _PLAYERCOMMON_H
 
-/* make sure we get the various types like 'uint8_t' */
-#if defined PLAYER_SOLARIS
-
-#include <sys/types.h>   // solaris puts them here
-
-#elif defined PLAYER_CYGWIN
-
-#include <sys/types.h>   // so does cygwin
-
-//cygwin doesn't appear to have them 
-typedef unsigned int size_t; 
-typedef unsigned int uint32_t;
-typedef unsigned short uint16_t;
-typedef unsigned char uint8_t;
-typedef int int32_t;
-typedef short int16_t;
-typedef char int8_t;
-
-// INT_MAX is more portable - limits.h
-#define MAXINT INT_MAX 
-
-#else
-
-#include <stdint.h>      // linux puts them here
-
+#if HAVE_CONFIG_H
+  #include <config.h>
 #endif
 
+/* make sure we get the various types like 'uint8_t' */
+#if HAVE_SYS_TYPES_H
+  #include <sys/types.h>
+#endif
+#if HAVE_STDINT_H
+  #include <stdint.h>
+#endif
+
+//cygwin doesn't appear to have them 
+//typedef unsigned int size_t; 
+//typedef unsigned int uint32_t;
+//typedef unsigned short uint16_t;
+//typedef unsigned char uint8_t;
+//typedef int int32_t;
+//typedef short int16_t;
+//typedef char int8_t;
+
+// INT_MAX is more portable - limits.h
+//#define MAXINT INT_MAX 
 
 /* debug malloc(3) */
 /* this should *not* be defined by default, because, as the man page says,

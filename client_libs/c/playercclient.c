@@ -34,10 +34,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 /*
  * use this to turn off debug ouput.
  *

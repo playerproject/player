@@ -32,6 +32,10 @@
 #include <player.h>       /* from the server; gives message types */
 #include <playercclient.h>  /* pure C networking building blocks */
 
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <sys/time.h>
 #include <sys/poll.h>
 #include <string.h>

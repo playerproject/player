@@ -36,11 +36,11 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 #include <math.h>
 #include <stdlib.h>  /* for abs() */
 #include <netinet/in.h>
+#include <termios.h>
 
 #include <p2os.h>
 #include <packet.h>
@@ -202,7 +202,9 @@ int P2OS::Setup()
     return(1);
   }
   
+#if HAVE_CFMAKERAW
   cfmakeraw( &term );
+#endif
   cfsetispeed( &term, B9600 );
   cfsetospeed( &term, B9600 );
   

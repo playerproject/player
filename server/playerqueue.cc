@@ -31,6 +31,10 @@
 #include <stdlib.h> // for exit(3)
 #include <string.h> // for bzero(3)
 
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 //#include <playertime.h>
 //extern PlayerTime* GlobalTime;
     

@@ -28,6 +28,12 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
+#include <player.h>
+
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
@@ -43,7 +49,7 @@
 #include <socket_util.h>
 
 #include <drivertable.h>
-#include <player.h>
+
 
 // note: acts_version_t is declared in defaults.h
 

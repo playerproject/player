@@ -32,10 +32,6 @@
 #include <math.h>
 #include "playerclient.h"
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 #define DEBUG
 
 IDARTurretProxy::IDARTurretProxy(PlayerClient* pc, unsigned short index, 

@@ -30,7 +30,6 @@
 #define PLAYER_H
 
 #include <playercommon.h>
-#include <stdint.h>
 
 /*********************************************************/
 

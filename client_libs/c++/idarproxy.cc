@@ -31,10 +31,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 #define DEBUG
 
 IDARProxy::IDARProxy(PlayerClient* pc, unsigned short index, 

@@ -31,10 +31,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 int LaserProxy::Configure(short tmp_min_angle, short tmp_max_angle, 
                       unsigned short tmp_resolution, bool tmp_intensity)
 {

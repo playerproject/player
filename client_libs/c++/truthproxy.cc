@@ -31,10 +31,6 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
-
 
 void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {

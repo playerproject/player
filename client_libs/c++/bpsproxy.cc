@@ -29,9 +29,6 @@
 #include <bpsproxy.h>
 #include <netinet/in.h>
 #include <string.h>
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
 
 int BpsProxy::AddBeacon(char id, int px, int py, int pa)
 {

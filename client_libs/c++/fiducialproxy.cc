@@ -29,9 +29,6 @@
 #include <playerclient.h>
 #include <netinet/in.h>
 #include <string.h>
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
 
 // Set the bit properties
 int FiducialProxy::SetBits(unsigned char tmp_bit_count, 

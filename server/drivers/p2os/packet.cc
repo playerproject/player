@@ -27,6 +27,13 @@
  *
  */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -37,9 +44,6 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
 extern bool debug;
 
 void P2OSPacket::Print() {

@@ -31,7 +31,7 @@
 //#define DEBUG
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+  #include <config.h>
 #endif
 
 #include <dirent.h>
@@ -51,10 +51,6 @@
 #include <socket_util.h> /* for create_and_bind_socket() */
 #include <deviceregistry.h> /* for register_devices() */
 #include <configfile.h> /* for config file parser */
-
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
 
 #include <clientdata.h>
 #include <clientmanager.h>
@@ -246,7 +242,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 #endif
 
   struct dirent **namelist;
-  int n;
+  int n = -1;
   
   int tfd = 0;
   
@@ -271,7 +267,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
   } 
  
   // open all the files in the IO directory
+#if HAVE_SCANDIR
   n = scandir( directory, &namelist, MatchDeviceName, 0);
+#endif
   if (n < 0)
     perror("scandir");
   else
