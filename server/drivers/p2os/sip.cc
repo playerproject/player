@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <sip.h>
 #include <stdlib.h> /* for abs() */
+#include <unistd.h>
 
 void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv) 
 {
@@ -45,11 +46,11 @@ void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   
   /* time and position */
   //data->position.time = htonl((unsigned int)timeNow);
-  data->position.xpos = htonl((unsigned int)xpos); 
-  data->position.ypos = htonl((unsigned int)ypos); 
-  data->position.yaw = htons((unsigned short)angle);
-  data->position.xspeed = htons((unsigned short) (((lvel) + (rvel) ) / 2));
-  data->position.yawspeed = htons((unsigned short)
+  data->position.xpos = htonl((int32_t)xpos); 
+  data->position.ypos = htonl((int32_t)ypos); 
+  data->position.yaw = htonl((int32_t)angle);
+  data->position.xspeed = htonl((int32_t) (((lvel) + (rvel) ) / 2));
+  data->position.yawspeed = htonl((int32_t)
      (180*((double)(rvel - lvel) /
            (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
            M_PI));
