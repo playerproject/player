@@ -29,6 +29,20 @@
 #include <math.h>
 #include "inav_vector.h"
 
+
+// Return a zero vector
+inav_vector_t inav_vector_zero()
+{
+  inav_vector_t c;
+
+  c.v[0] = 0.0;
+  c.v[1] = 0.0;
+  c.v[2] = 0.0;
+  
+  return c;
+}
+
+
 // Normalize an angle
 double inav_vector_normalize(double a)
 {

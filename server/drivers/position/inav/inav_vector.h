@@ -41,6 +41,9 @@ typedef struct
   
 } inav_vector_t;
 
+  
+// Return a zero vector
+inav_vector_t inav_vector_zero();
 
 // Transform from local to global coords (a + b)
 inav_vector_t inav_vector_cs_add(inav_vector_t a, inav_vector_t b);
