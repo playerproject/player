@@ -77,6 +77,8 @@ extern int             P2OS::psos_fd;
 extern char            P2OS::psos_serial_port[];
 extern int             P2OS::radio_modemp;
 extern int             P2OS::joystickp;
+extern int             P2OS::motor_max_speed;
+extern int             P2OS::motor_max_turnspeed;
 extern bool            P2OS::use_vel_band;
 extern int             P2OS::cmucam;
 extern bool            P2OS::initdone;
