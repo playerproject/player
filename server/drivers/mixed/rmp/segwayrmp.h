@@ -61,6 +61,8 @@ typedef struct
   player_position3d_cmd_t position3d_cmd;
 } __attribute__ ((packed)) player_segwayrmp_cmd_t;
 
+class rmp_frame_t;
+
 // Driver for robotic Segway
 class SegwayRMP : public CDevice
 {
@@ -68,8 +70,6 @@ class SegwayRMP : public CDevice
     // instantiation method.  use this instead of the constructor
     static CDevice* Instance(ConfigFile* cf, int section);
 
-    // Constructor	  
-    SegwayRMP();
     ~SegwayRMP();
 
     // Setup/shutdown routines.
@@ -78,6 +78,9 @@ class SegwayRMP : public CDevice
 
   protected:
     player_segwayrmp_data_t data;
+
+    // Constructor is protected to force use of Instance
+    SegwayRMP();
 
   private:
 
@@ -129,6 +132,8 @@ class SegwayRMP : public CDevice
     void MakeVelocityCommand(CanPacket* pkt, int32_t xspeed, int32_t yawspeed);
     
     void MakeShutdownCommand(CanPacket* pkt);
+
+    void UpdateData(rmp_frame_t *);
 };
 
 
