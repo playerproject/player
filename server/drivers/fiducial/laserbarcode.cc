@@ -63,15 +63,11 @@ class LaserBarcode : public CDevice
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Client interface
-  public: virtual size_t GetData(void*, unsigned char *, size_t maxsize,
-                                 uint32_t* timestamp_sec,
-                                 uint32_t* timestamp_usec);
-  public: virtual int PutConfig(player_device_id_t* device, void *client, 
-                                void *data, size_t len);
-
-  // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *request, int len);
+  // Main function for device thread
+  private: virtual void Main(void);
+  
+  // Get the laser data
+  private: int ReadLaser();
 
   // Analyze the laser data and return beacon data
   private: void FindBeacons(const player_laser_data_t *laser_data,
@@ -80,6 +76,15 @@ class LaserBarcode : public CDevice
   // Analyze the candidate beacon and return its id (0 == none)
   private: int IdentBeacon(int a, int b, double ox, double oy, double oth,
                            const player_laser_data_t *laser_data);
+
+  // Write fidicual data 
+  private: void WriteFiducial();
+
+  // Process configuration requests
+  private: int HandleConfig();
+
+  // Handle geometry requests.
+  private: void HandleGetGeom(void *client, void *request, size_t len);
 
   // Pointer to laser to get data from
   private: int laser_index;
@@ -91,7 +96,11 @@ class LaserBarcode : public CDevice
   private: double max_depth;
   private: double accept_thresh, zero_thresh, one_thresh;
 
-  // The current data
+  // Current laser data
+  private: player_laser_data_t laser_data;
+  private: uint32_t laser_tsec, laser_tusec;
+  
+  // Current fiducial data
   private: player_fiducial_data_t data;
 };
 
@@ -162,7 +171,10 @@ int LaserBarcode::Setup()
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
-    
+
+  // Start our own thread
+  this->StartThread();
+  
   PLAYER_MSG2("laserbarcode device: bitcount [%d] bitwidth [%fm]",
               this->bit_count, this->bit_width);
   return 0;
@@ -174,6 +186,9 @@ int LaserBarcode::Setup()
 //
 int LaserBarcode::Shutdown()
 {
+  // Stop the driver thread.
+  this->StopThread();
+
   // Unsubscribe from the laser device
   this->laser_device->Unsubscribe(this);
 
@@ -181,134 +196,63 @@ int LaserBarcode::Shutdown()
   return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by client thread)
-//
-size_t LaserBarcode::GetData(void* client, unsigned char *dest, size_t maxsize,
-                             uint32_t* time_sec, uint32_t* time_usec)
-{
-  size_t laser_size;
-  player_laser_data_t laser_data;
-  uint32_t laser_time_sec, laser_time_usec;
-  
-  // Get the laser data.
-  laser_size = this->laser_device->GetData(this, (uint8_t*) &laser_data, sizeof(laser_data),
-                                           &laser_time_sec, &laser_time_usec);
-  assert(laser_size <= sizeof(laser_data));
-  
-  // If the laser doesnt have new data, just return a copy of our old
-  // data.
-  if (laser_time_sec != this->data_timestamp_sec ||
-      laser_time_usec != this->data_timestamp_usec)
-  {
-    // Do some byte swapping
-    laser_data.resolution = ntohs(laser_data.resolution);
-    laser_data.min_angle = ntohs(laser_data.min_angle);
-    laser_data.max_angle = ntohs(laser_data.max_angle);
-    laser_data.range_count = ntohs(laser_data.range_count);
-    for (int i = 0; i < laser_data.range_count; i++)
-      laser_data.ranges[i] = ntohs(laser_data.ranges[i]);
 
+////////////////////////////////////////////////////////////////////////////////
+// Device thread
+void LaserBarcode::Main(void)
+{
+  while (true)
+  {
+    // Wait for new data from the laser
+    this->laser_device->Wait();
+
+    // Test for thread cancellation
+    pthread_testcancel();
+
+    // Read the new laser data
+    this->ReadLaser();
+    
     // Analyse the laser data
-    FindBeacons(&laser_data, &this->data);
+    this->FindBeacons(&this->laser_data, &this->data);
 
-    // Do some byte-swapping
-    for (int i = 0; i < this->data.count; i++)
-    {
-      this->data.fiducials[i].id = htons(this->data.fiducials[i].id);
-      this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
-      this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
-      this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
-    }
-    PLAYER_TRACE1("setting beacon count: %u",this->data.count);
-    this->data.count = htons(this->data.count);
-  }
-
-  // Copy results
-  assert(maxsize >= sizeof(this->data));
-  memcpy(dest, &this->data, sizeof(this->data));
-
-  // Copy the laser timestamp
-  *time_sec = laser_time_sec;
-  *time_usec = laser_time_usec;
-
-  return (sizeof(this->data));
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called by client thread)
-int LaserBarcode::PutConfig(player_device_id_t* device, void *client, 
-                                  void *data, size_t len) 
-{
-  int subtype;
-
-  if (len < 1)
-  {
-    PLAYER_ERROR("empty requestion; ignoring");
-    return 0;
+    // Write out the fiducials
+    this->WriteFiducial();
   }
   
-  subtype = ((uint8_t*) data)[0];
-  switch (subtype)
-  {
-    case PLAYER_FIDUCIAL_GET_GEOM:
-    {
-      HandleGetGeom(client, data, len);
-      break;
-    }
-    default:
-    {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-  }
-    
-  return(0);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-void LaserBarcode::HandleGetGeom(void *client, void *request, int len)
-{
-  unsigned short reptype;
-  struct timeval ts;
-  int replen;
-  player_laser_geom_t lgeom;
-  player_fiducial_geom_t fgeom;
-    
-  // Get the geometry from the laser
-  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
-                                       &reptype, &ts, &lgeom, sizeof(lgeom));
-  if (replen <= 0 || replen != sizeof(lgeom))
-  {
-    PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  fgeom.pose[0] = lgeom.pose[0];
-  fgeom.pose[1] = lgeom.pose[1];
-  fgeom.pose[2] = lgeom.pose[2];
-  fgeom.size[0] = lgeom.size[0];
-  fgeom.size[1] = lgeom.size[1];
-  fgeom.fiducial_size[0] = ntohs((int) (0.05 * 1000));
-  fgeom.fiducial_size[1] = ntohs((int) (this->bit_count * this->bit_width * 1000));
-    
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
   return;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Get the laser data
+int LaserBarcode::ReadLaser()
+{
+  size_t size;
+  
+  // Get the laser data.
+  size = this->laser_device->GetData(this, (uint8_t*) &this->laser_data, sizeof(this->laser_data),
+                                     &this->laser_tsec, &this->laser_tusec);
+  assert(size <= sizeof(this->laser_data));
+  
+  // Do some byte swapping
+  this->laser_data.resolution = ntohs(this->laser_data.resolution);
+  this->laser_data.min_angle = ntohs(this->laser_data.min_angle);
+  this->laser_data.max_angle = ntohs(this->laser_data.max_angle);
+  this->laser_data.range_count = ntohs(this->laser_data.range_count);
+  for (int i = 0; i < this->laser_data.range_count; i++)
+    this->laser_data.ranges[i] = ntohs(this->laser_data.ranges[i]);
+
+  return 0;
+}
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data and return beacon data
 //
 void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
-                                     player_fiducial_data_t *data)
+                               player_fiducial_data_t *data)
 {
   data->count = 0;
 
@@ -404,7 +348,7 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
 // Will return  0 if this is a beacon, but it cannot be identified.
 // Will return beacon id otherwise.
 int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
-                                    const player_laser_data_t *laser_data)
+                              const player_laser_data_t *laser_data)
 {
   // Compute pose of laser relative to beacon
   double lx = -ox * cos(-oth) + oy * sin(-oth);
@@ -503,5 +447,96 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
     id = 0;
     
   return id;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Write fidicual data 
+void LaserBarcode::WriteFiducial()
+{
+  int i;
+  
+  // Do some byte-swapping
+  for (i = 0; i < this->data.count; i++)
+  {
+    this->data.fiducials[i].id = htons(this->data.fiducials[i].id);
+    this->data.fiducials[i].pose[0] = htons(this->data.fiducials[i].pose[0]);
+    this->data.fiducials[i].pose[1] = htons(this->data.fiducials[i].pose[1]);
+    this->data.fiducials[i].pose[2] = htons(this->data.fiducials[i].pose[2]);
+  }
+  this->data.count = htons(this->data.count);
+
+  // Write the data with the laser timestamp
+  this->PutData(&this->data, sizeof(this->data), this->laser_tsec, this->laser_tusec);
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Process configuration requests
+int LaserBarcode::HandleConfig() 
+{
+  int subtype;
+  size_t len;
+  void *client;
+  char req[PLAYER_MAX_REQREP_SIZE];
+
+  while ((len = this->GetConfig(&client, req, sizeof(req))) > 0)
+  {
+    subtype = ((uint8_t*) req)[0];
+    
+    switch (subtype)
+    {
+      case PLAYER_FIDUCIAL_GET_GEOM:
+      {
+        HandleGetGeom(client, req, len);
+        break;
+      }
+      default:
+      {
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          PLAYER_ERROR("PutReply() failed");
+        break;
+      }
+    }
+  }
+    
+  return(0);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Handle geometry requests.
+void LaserBarcode::HandleGetGeom(void *client, void *request, size_t len)
+{
+  unsigned short reptype;
+  struct timeval ts;
+  int replen;
+  player_laser_geom_t lgeom;
+  player_fiducial_geom_t fgeom;
+    
+  // Get the geometry from the laser
+  replen = this->laser_device->Request(&this->laser_device->device_id, this, request, len,
+                                       &reptype, &ts, &lgeom, sizeof(lgeom));
+  if (replen <= 0 || replen != sizeof(lgeom))
+  {
+    PLAYER_ERROR("unable to get geometry from laser device");
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+
+  fgeom.pose[0] = lgeom.pose[0];
+  fgeom.pose[1] = lgeom.pose[1];
+  fgeom.pose[2] = lgeom.pose[2];
+  fgeom.size[0] = lgeom.size[0];
+  fgeom.size[1] = lgeom.size[1];
+  fgeom.fiducial_size[0] = ntohs((int) (0.05 * 1000));
+  fgeom.fiducial_size[1] = ntohs((int) (this->bit_count * this->bit_width * 1000));
+    
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
+    PLAYER_ERROR("PutReply() failed");
+
+  return;
 }
 
