@@ -200,6 +200,8 @@
                                      __FILE__, __FUNCTION__, a, b)
 #define PLAYER_WARN3(m, a, b, c) printf("\nplayer warning : %s:%s():\n    "m"\n",\
                                      __FILE__, __FUNCTION__, a, b, c)
+#define PLAYER_WARN4(m, a, b, c, d) printf("\nplayer warning : %s:%s():\n    "m"\n",\
+                                       __FILE__, __FUNCTION__, a, b, c, d)
 
 
 #if PLAYER_ENABLE_MSG

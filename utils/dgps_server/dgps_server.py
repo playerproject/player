@@ -48,7 +48,8 @@ class DGPSServer:
             self.udp_write(data)
 
             counter += 1
-            print 'sending data on %s %d -- %d\r' % (self.udp_ip, self.udp_port, counter),
+            print 'sending data on %s %d -- %d %d   \r' % \
+                  (self.udp_ip, self.udp_port, counter, len(data)),
             sys.stdout.flush()
 
         return
