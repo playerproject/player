@@ -47,6 +47,7 @@ extern CCounter num_threads;
 extern CClientData* clients[];
 extern pthread_mutex_t clients_mutex;
 extern bool SHUTTING_DOWN;
+extern int playerport;
 
 
 CClientData::CClientData() 
@@ -314,7 +315,7 @@ CClientData::~CClientData()
   if (writeThread) num_threads-=1;
 
   if (socket) close(socket);
-  printf("** Killing client on socket %d **\n", socket);
+  printf("** Killing client on socket %d ** [Port %d]\n", socket,playerport);
 
   if (readThread && writeThread) 
   {
@@ -574,8 +575,8 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
           //
           if(size == 0)
           {
-              puts("BuldMsg(): got zero length data; continuing");
-              //continue;
+              //puts("BuldMsg(): got zero length data; continuing");
+              continue;
           }
           
           gettimeofday(&curr,NULL);
