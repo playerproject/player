@@ -137,6 +137,17 @@ void icon_get_control(icon_t *icon, double control[3])
     param_count++;
   }
 
+  // Make some random parameter sets
+  for (i = 0; i < 4; i++)
+  {
+    params[param_count].id = i;
+    params[param_count].kg = 10.0 * ((double) rand() / RAND_MAX);
+    params[param_count].ko = 5.0 * ((double) rand() / RAND_MAX);
+    params[param_count].pd[0][0] = 5.0 * ((double) rand() / RAND_MAX);
+    params[param_count].pd[2][0] = 5.0 * ((double) rand() / RAND_MAX);
+    param_count++;
+  }
+
   icon->best_path = NULL;
   icon->path_count = 0;
     

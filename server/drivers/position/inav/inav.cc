@@ -188,7 +188,6 @@ class INav : public CDevice
   private: rtk_fig_t *robot_fig;
   private: rtk_fig_t *path_fig;
 #endif
- 
 };
 
 
@@ -278,6 +277,8 @@ INav::~INav()
 // Set up the device (called by server thread).
 int INav::Setup()
 {
+  player_position_cmd_t cmd;
+  
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
     return -1;
@@ -292,6 +293,19 @@ int INav::Setup()
     this->SetupGUI();
 #endif
 
+  // Reset poses
+  this->inc_pose = inav_vector_zero();
+  this->map_pose = inav_vector_zero();
+    
+  // Set the goal pose the where we are
+  this->goal_pose = this->inc_pose;
+
+  // Initialize the command buffer
+  cmd.xpos = htonl((int32_t) (this->inc_pose.v[0] * 1000));
+  cmd.ypos = htonl((int32_t) (this->inc_pose.v[1] * 1000));
+  cmd.yaw = htonl((int32_t) (this->inc_pose.v[2] * 180 / M_PI)); 
+  CDevice::PutCommand(NULL, (unsigned char*) &cmd, sizeof(cmd));
+  
   // Start the driver thread.
   this->StartThread();
   
@@ -534,7 +548,7 @@ void INav::Main()
 
     // Check for new commands
     this->GetCommand();
-    
+
     // Check for new odometric data.  If there is new data, update the
     // controller.
     if (this->GetOdom())
