@@ -138,7 +138,7 @@ PassThrough::CloseConnection()
 
 PassThrough::~PassThrough()
 {
-  CloseConnection();
+  //CloseConnection();
   free(this->remote_data);
   free(this->remote_command);
   free(this->remote_config);

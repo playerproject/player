@@ -54,6 +54,10 @@ void AmtecPowerCube_Register(DriverTable* table);
 void Trogdor_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_WAVEFRONT
+void Wavefront_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SEGWAYRMP
 void SegwayRMPPosition_Register(DriverTable* table);
 void SegwayRMPPower_Register(DriverTable* table);
@@ -335,6 +339,10 @@ register_devices()
 
 #ifdef INCLUDE_TROGDOR
   Trogdor_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_WAVEFRONT
+  Wavefront_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SEGWAYRMP

@@ -211,6 +211,12 @@ PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[yes],
 PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
+dnl TODO: should really use Magick-config to get the cflags and libs for
+dnl       ImageMagick, but I can't be bothered right now
+PLAYER_ADD_DRIVER([wavefront],[drivers/position/wavefront],[no],[],
+                  ["-I/usr/include/freetype2 -D_FILE_OFFSET_BITS=64 -D_REENTRANT -I/usr/X11R6/include -I/usr/X11R6/include/X11 -I/usr/include/libxml2"],
+                  ["-L/usr/lib -L/usr/X11R6/lib -L/usr/lib -L/usr/lib -lMagick -ljbig -lfreetype -ljpeg -lpng -ldpstk -ldps -lXext -lSM -lICE -lX11 -lbz2 -lxml2 -lz -lpthread -lm"])
+
 PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[yes],[sys/soundcard.h],[],[])
 
 PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],[],[],[])
