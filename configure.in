@@ -21,7 +21,8 @@ dnl
 dnl Also create playercommon.h, replacing a couple of C defines with the right
 dnl values.  That way, playercommon.h will be installed in a good working
 dnl state.
-AM_CONFIG_HEADER(config.h server/playercommon.h server/prefix.h)
+AM_CONFIG_HEADER(config.h server/playercommon.h)
+AC_CONFIG_FILES(server/prefix.h)
 
 dnl Find basic tools
 AC_PROG_CC
@@ -363,8 +364,7 @@ AC_OUTPUT(Makefile
           utils/playernav/Makefile
           utils/playervcr/Makefile
           config/Makefile
-          config/stage/Makefile
-	  server/prefix.h)
+          config/stage/Makefile)
 
 
 # -----------------------------------------------------------------------
