@@ -431,14 +431,6 @@ int main( int argc, char *argv[] )
     puts( "ok.\n" );
     fflush( stdout );
 #endif
-
-    //laserDevice = new CArenaLaserDevice(laserserialport);
-    //sonarDevice =    new CArenaSonarDevice(p2osport);
-    //positionDevice = new CArenaPositionDevice(p2osport);
-    //visionDevice =  new CArenaVisionDevice( visionport,visionconfigfile,useoldacts);
-    //ptzDevice =    new CArenaPtzDevice(ptzserialport);
-        
-    // use the stage type devicesc
     positionDevice = new CStageDevice( arenaIO + SPOSITION_DATA_START,
                                    SPOSITION_DATA_BUFFER_SIZE,
                                    SPOSITION_COMMAND_BUFFER_SIZE,
