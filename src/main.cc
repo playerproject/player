@@ -162,7 +162,7 @@ void PrintHeader(player_msghdr_t hdr)
 void
 delete_func(void* ptr)
 {
-  delete ptr;
+  delete (char*)ptr;
 }
 
 void *client_reader(void* arg)
