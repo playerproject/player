@@ -1,4 +1,15 @@
 
+dnl HACK:
+dnl
+dnl We really should not invoke this macro here, because aclocal will
+dnl automatically do it, with the right version, when it creates
+dnl aclocal.m4.  The later, automatic, invocation will presumably
+dnl override this one.
+dnl 
+dnl The reason we invoke it here is to trick the am-wrapper Perl script
+dnl into executing the correct version of automake/aclocal.
+AM_AUTOMAKE_VERSION([1.7])
+
 dnl Here are the tests for inclusion of Player's various device drivers
 
 PLAYER_DRIVERS=
