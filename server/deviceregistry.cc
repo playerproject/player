@@ -83,6 +83,10 @@ void Acts_Register(DriverTable* table);
 void CMVision_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_CMUCAM2
+void Cmucam2_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_UPCBARCODE
 void UPCBarcode_Register(DriverTable* table);
 #endif
@@ -444,6 +448,10 @@ register_devices()
 
 #ifdef INCLUDE_CMVISION
   CMVision_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CMUCAM2
+  Cmucam2_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_UPCBARCODE
