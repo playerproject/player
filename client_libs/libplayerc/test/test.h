@@ -19,6 +19,9 @@
 #define PASS() (1 ? printf("pass\n"), fflush(stdout) : 0)
 #define FAIL() (1 ? printf("\033[41mfail\033[0m\n%s\n", playerc_errorstr), fflush(stdout) : 0)
 
+// Basic test for BPS device.
+int test_bps(playerc_client_t *client, int index);
+
 // Basic broadcast test
 int test_broadcast(playerc_client_t *client, int index);
 

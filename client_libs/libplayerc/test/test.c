@@ -60,6 +60,10 @@ int main(int argc, const char *argv[])
     sindex = strtok(NULL, "");
     index = (sindex ? atoi(sindex) : 0);
 
+    // BPS device
+    if (strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
+      test_bps(client, index);
+
     // Broadcast device
     if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
       test_broadcast(client, index);

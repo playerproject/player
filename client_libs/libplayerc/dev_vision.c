@@ -96,6 +96,7 @@ void playerc_vision_putdata(playerc_vision_t *device, player_msghdr_t *header,
       dest = device->blobs + device->blob_count++;
 
       dest->channel = ch;
+      dest->color = ntohl(src->color);
       dest->x = ntohs(src->x);
       dest->y = ntohs(src->y);
       dest->area = ntohl(src->area);
