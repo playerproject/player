@@ -60,8 +60,7 @@ StgPosition::StgPosition(char* interface, ConfigFile* cf, int section )
   
   PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
 
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_POSE));
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_VELOCITY));
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
 }
 
 CDevice* StgPosition_Init(char* interface, ConfigFile* cf, int section)
@@ -86,73 +85,57 @@ void StgPosition_Register(DriverTable* table)
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_property_t* prop_pose = 
-    stg_model_get_prop_cached( model,  STG_PROP_POSE );
-
-  stg_property_t* prop_speed = 
-    stg_model_get_prop_cached( model,  STG_PROP_VELOCITY );
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA );
   
-  if( prop_pose && prop_pose->len == sizeof(stg_pose_t) && 
-      prop_speed && prop_speed->len == sizeof(stg_velocity_t) ) 
+  if( prop && prop->len == sizeof(stg_position_data_t) )      
     {      
-      stg_pose_t* pose = (stg_pose_t*)prop_pose->data;
-      stg_velocity_t* vel = (stg_velocity_t*)prop_speed->data;
-
-      //PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
+      stg_position_data_t* posdat = (stg_position_data_t*)prop->data;
+      
+      //PLAYER_MSG3( "get data posdat %.2f %.2f %.2f", posdat->x, posdat->y, posdat->a );
       player_position_data_t position_data;
       memset( &position_data, 0, sizeof(position_data) );
       // pack the data into player format
-      position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
-      position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
-      position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
-
+      position_data.xpos = ntohl((int32_t)(1000.0 * posdat->pose.x));
+      position_data.ypos = ntohl((int32_t)(1000.0 * posdat->pose.y));
+      position_data.yaw = ntohl((int32_t)(RTOD(posdat->pose.a)));
+      
       // speeds
-      position_data.xspeed= ntohl((int32_t)(1000.0 * vel->x)); // mm/sec
-      position_data.yspeed = ntohl((int32_t)(1000.0 * vel->y));// mm/sec
-      position_data.yawspeed = ntohl((int32_t)(RTOD(vel->a))); // deg/sec
-
-      position_data.stall = pose->stall ? 1 : 0;
-
+      position_data.xspeed= ntohl((int32_t)(1000.0 * posdat->velocity.x)); // mm/sec
+      position_data.yspeed = ntohl((int32_t)(1000.0 * posdat->velocity.y));// mm/sec
+      position_data.yawspeed = ntohl((int32_t)(RTOD(posdat->velocity.a))); // deg/sec
+      
+      position_data.stall = posdat->stall;// ? 1 : 0;
+      
       //printf( "getdata called at %lu ms\n", stage_client->stagetime );
       
       // publish this data
       CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); 
     }
   
-  // now inherit the standard data-getting behavior 
+      // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
-
+  
 void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
 {
   if( len == sizeof(player_position_cmd_t) )
     {
       // convert from Player to Stage format
       player_position_cmd_t* pcmd = (player_position_cmd_t*)src;
-      
-      stg_velocity_t vel; 
-      vel.x = ((double)((int32_t)ntohl(pcmd->xspeed))) / 1000.0;
-      vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
-      vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
-      
-      //printf( "sending vel\n" );
-      
-      stg_model_prop_delta( this->model, STG_PROP_VELOCITY, 
-			    &vel, sizeof(vel) ) ;
-      //stg_client_write_msg ( this->stage_client, 
-      //			STG_PROP_VELOCITY, 
-      //			&vel, sizeof(vel) ) ;
+
+      // only velocity control mode works yet
+      stg_position_cmd_t cmd; 
+      cmd.x = ((double)((int32_t)ntohl(pcmd->xspeed))) / 1000.0;
+      cmd.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
+      cmd.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
+      cmd.mode = STG_POSITION_CONTROL_VELOCITY;
+
+      stg_model_prop_delta( this->model, STG_PROP_COMMAND, 
+			    &cmd, sizeof(cmd) ) ;
     }
   else
     PLAYER_ERROR2( "wrong size position command packet (%d/%d bytes)",
 		   (int)len, (int)sizeof(player_position_cmd_t) );
-
-
-  // we ignore position for now.
-
-    // int32_t xpos, ypos;
-  /** Yaw, in degrees */
-  //int32_t yaw; 
 }
 
 
