@@ -1210,11 +1210,11 @@ class Position3DProxy : public ClientProxy
   public:
   /// Robot pose (according to odometry) in mm, degrees.
   int xpos,ypos,zpos;
-  unsigned int roll,pitch,yaw;
+  double roll,pitch,yaw;
 
-  /// Robot speeds in mm/sec;
+  /// Robot speeds in mm/sec, deg/sec
   int xspeed, yspeed, zspeed;
-  int rollspeed, pitchspeed, yawspeed;
+  double rollspeed, pitchspeed, yawspeed;
 
   /// Stall flag: 1 if the robot is stalled and 0 otherwise.
   unsigned char stall;
@@ -1238,6 +1238,9 @@ class Position3DProxy : public ClientProxy
       (so use this one for non-holonomic robots). */
   int SetSpeed(int xspeed, int yawspeed)
       { return(SetSpeed(xspeed,0,yawspeed));}
+
+  /** Enable/disable the motors */
+  int SetMotorState(unsigned char state);
 
   // interface that all proxies must provide
   void FillData(player_msghdr_t hdr, const char* buffer);
