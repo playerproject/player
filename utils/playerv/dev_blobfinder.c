@@ -103,13 +103,13 @@ void blobfinder_update(blobfinder_t *blobfinder)
   {
     if (!blobfinder->proxy->info.subscribed)
       if (playerc_blobfinder_subscribe(blobfinder->proxy, PLAYER_READ_MODE) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   else
   {
     if (blobfinder->proxy->info.subscribed)
       if (playerc_blobfinder_unsubscribe(blobfinder->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   rtk_menuitem_check(blobfinder->subscribe_item, blobfinder->proxy->info.subscribed);
 

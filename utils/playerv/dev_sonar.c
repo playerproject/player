@@ -104,11 +104,11 @@ void sonar_update(sonar_t *sonar)
     if (!sonar->proxy->info.subscribed)
     {
       if (playerc_sonar_subscribe(sonar->proxy, PLAYER_READ_MODE) != 0)
-        PRINT_ERR1("subscribe failed : %s", playerc_errorstr);
+        PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
       // Get the sonar geometry
       if (playerc_sonar_get_geom(sonar->proxy) != 0)
-        PRINT_ERR1("get_geom failed : %s", playerc_errorstr);    
+        PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
 
       for (i = 0; i < sonar->proxy->pose_count; i++)
         rtk_fig_origin(sonar->scan_fig[i],
@@ -121,7 +121,7 @@ void sonar_update(sonar_t *sonar)
   {
     if (sonar->proxy->info.subscribed)
       if (playerc_sonar_unsubscribe(sonar->proxy) != 0)
-        PRINT_ERR1("unsubscribe failed : %s", playerc_errorstr);
+        PRINT_ERR1("unsubscribe failed : %s", playerc_error_str());
   }
   rtk_menuitem_check(sonar->subscribe_item, sonar->proxy->info.subscribed);
 

@@ -147,9 +147,8 @@ typedef struct _playerc_device_t
  * Error handling
  **************************************************************************/
 
-// Errors get written here
-//extern char playerc_errorstr[];
-char* playerc_errorstr;
+// Use this function to read the error string
+extern const char *playerc_error_str(void);
 
 
 /***************************************************************************

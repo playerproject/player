@@ -108,80 +108,80 @@ void localization_destroy(localization_t *localization)
 // Update a localization device
 void localization_update(localization_t *localization)
 {
-    // Update the device subscription
-    if (rtk_menuitem_ischecked(localization->subscribe_item))
+  // Update the device subscription
+  if (rtk_menuitem_ischecked(localization->subscribe_item))
+  {
+    if (!localization->proxy->info.subscribed)
     {
-        if (!localization->proxy->info.subscribed)
-        {
 	    if (playerc_localization_subscribe(localization->proxy, PLAYER_READ_MODE) != 0)
-		PRINT_ERR1("subscribe failed : %s", playerc_errorstr);
+        PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
 	    // Get the localization map header
 	    if (playerc_localization_get_map_header(localization->proxy, 1,
-						    &localization->map_header) != 0)
-                PRINT_ERR1("get_map_header failed : %s", playerc_errorstr);    
+                                              &localization->map_header) != 0)
+        PRINT_ERR1("get_map_header failed : %s", playerc_error_str());    
 
 	    // Determine a proper scale factor to build (50x??) size map
 	    localization->map_scale = localization->map_header.width / 50;
 
 	    // retrieve the map header
 	    if (playerc_localization_get_map_header(localization->proxy, localization->map_scale,
-			                            &(localization->map_header)) != 0)
-                PRINT_ERR1("get_map_header failed : %s", playerc_errorstr);    
-        }
+                                              &(localization->map_header)) != 0)
+        PRINT_ERR1("get_map_header failed : %s", playerc_error_str());    
+    }
 
-	// retrieve the map data if neccessary
-	if (rtk_menuitem_ischecked(localization->showmap_item) && localization->map_data==NULL)
-	{
+    // retrieve the map data if neccessary
+    if (rtk_menuitem_ischecked(localization->showmap_item) && localization->map_data==NULL)
+    {
 	    // allocate a memory block for the map
 	    localization->map_data = (unsigned char*)malloc(localization->map_header.width *
-		    				            localization->map_header.height);
+                                                      localization->map_header.height);
 
 	    // Get the localization map data
 	    if (playerc_localization_get_map(localization->proxy, localization->map_scale,
-					&(localization->map_header), localization->map_data) != 0)
-		PRINT_ERR1("get_map failed : %s", playerc_errorstr);    
-	}
+                                       &(localization->map_header), localization->map_data) != 0)
+        PRINT_ERR1("get_map failed : %s", playerc_error_str());    
     }
-    else
-    {
-	if (localization->proxy->info.subscribed)
-	{
-	    if (playerc_localization_unsubscribe(localization->proxy) != 0)
-		PRINT_ERR1("unsubscribe failed : %s", playerc_errorstr);
-	}
-	// turn off the 'showmap' checkbutton
-	if (rtk_menuitem_ischecked(localization->showmap_item))
-	    rtk_menuitem_check(localization->showmap_item, 0);
-	// free memory
-	if (localization->map_data) {
-	    free(localization->map_data);
-	    localization->map_data = NULL;
-	}
-    }
-    rtk_menuitem_check(localization->subscribe_item, localization->proxy->info.subscribed);
-
-    // See if the reset button has been pressed
-    if (rtk_menuitem_isactivated(localization->reset_item))
-    {
-	if (playerc_localization_reset(localization->proxy) != 0)
-	    PRINT_ERR1("get_map failed : %s", playerc_errorstr);    
-    }
-
-    // update the screen
+  }
+  else
+  {
     if (localization->proxy->info.subscribed)
     {
-	// Draw in the localization hypothesis if it has been changed.
-	if (localization->proxy->info.datatime != localization->datatime)
+	    if (playerc_localization_unsubscribe(localization->proxy) != 0)
+        PRINT_ERR1("unsubscribe failed : %s", playerc_error_str());
+    }
+    // turn off the 'showmap' checkbutton
+    if (rtk_menuitem_ischecked(localization->showmap_item))
+	    rtk_menuitem_check(localization->showmap_item, 0);
+    // free memory
+    if (localization->map_data) {
+	    free(localization->map_data);
+	    localization->map_data = NULL;
+    }
+  }
+  rtk_menuitem_check(localization->subscribe_item, localization->proxy->info.subscribed);
+
+  // See if the reset button has been pressed
+  if (rtk_menuitem_isactivated(localization->reset_item))
+  {
+    if (playerc_localization_reset(localization->proxy) != 0)
+	    PRINT_ERR1("get_map failed : %s", playerc_error_str());    
+  }
+
+  // update the screen
+  if (localization->proxy->info.subscribed)
+  {
+    // Draw in the localization hypothesis if it has been changed.
+    if (localization->proxy->info.datatime != localization->datatime)
 	    localization_draw(localization);
-	localization->datatime = localization->proxy->info.datatime;
-    }
-    else
-    {
-        // Dont draw the localization.
-	rtk_fig_show(localization->map_fig, 0);
-	localization->datatime = 0;
-    }
+    localization->datatime = localization->proxy->info.datatime;
+  }
+  else
+  {
+    // Dont draw the localization.
+    rtk_fig_show(localization->map_fig, 0);
+    localization->datatime = 0;
+  }
 }
 
 
