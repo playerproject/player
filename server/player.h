@@ -88,6 +88,7 @@
 #define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
 #define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
+#define PLAYER_CAMERA_CODE         ((uint16_t)31)  // camera device (gazebo)
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -127,6 +128,7 @@
 #define PLAYER_BLINKENLIGHT_STRING  "blinkenlight"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
+#define PLAYER_CAMERA_STRING          "camera"
 
 /* The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES 64
@@ -1264,6 +1266,25 @@ typedef struct player_ptz_controlmode_config
   uint8_t mode;
 } __attribute__ ((packed)) player_ptz_velocitymode_config_t;
 
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section camera
+ *************************************************************************/
+
+/** [Synopsis]
+The {\tt camera} interface is used to see what the camera sees. */
+
+/** [Data] */
+/** The {\tt camera} interface returns the image seen by the camera; the format is: */
+typedef struct player_camera_data
+{
+  unsigned char *image;
+
+} __attribute__ ((packed)) player_camera_data_t;
 
 /*************************************************************************
  ** end section
