@@ -15,7 +15,6 @@ noinst_PROGRAMS = rsn \
 	          multilogger \
                   stress \
                   pherobot
-	          #multirandom multiphero
 
 rsn_SOURCES = rsn.cc
 randomwalk_SOURCES =  randomwalk.cc

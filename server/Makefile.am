@@ -35,11 +35,9 @@ bin_PROGRAMS = player
 
 
 lib_LIBRARIES = libplayerqueue.a 
-#libserialize.a
 
 
 libplayerqueue_a_SOURCES = playerqueue.cc
-#libserialize_a_SOURCES = serialize.c serialize.h
 
 player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  deviceregistry.cc clientmanager.cc wallclocktime.cc main.cc \
@@ -48,7 +46,6 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
                  drivertable.h 
-		 #serialize.c serialize.h
 
 
 
@@ -56,5 +53,4 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
 include_HEADERS = playercommon.h \
                   player.h \
                   playerqueue.h
-		  #serialize.h
 
