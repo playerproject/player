@@ -93,12 +93,14 @@ void pf_draw_stats(pf_t *pf, rtk_fig_t *fig)
   // Compute unitary representation S = R D R^T
   pf_matrix_unitary(&r, &d, cov);
 
+  /*
   printf("cov = \n");
   pf_matrix_fprintf(cov, stdout, "%f");
   printf("r = \n");
   pf_matrix_fprintf(r, stdout, "%f");
   printf("d = \n");
   pf_matrix_fprintf(d, stdout, "%f");
+  */
   
   // Compute the orientation of the error ellipse (first eigenvector)
   o = atan2(r.m[1][0], r.m[0][0]);

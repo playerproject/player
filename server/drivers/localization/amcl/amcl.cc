@@ -63,6 +63,8 @@
 #include "rtk.h"
 #endif
 
+// More awful hack
+extern bool use_stage;
 
 // This is a god-awful hack; this structure must be duplicated in both
 // Player and Stage.
@@ -74,9 +76,6 @@ typedef struct
   
 } amcl_stage_data_t;
 
-// More awful hack
-extern bool use_stage;
-
 
 // TESTING
 // Time function used for profiling
@@ -86,6 +85,22 @@ uint64_t gettime(void)
   gettimeofday(&tv, NULL);
   return ((uint64_t) tv.tv_sec) * 1000 + (uint64_t) (tv.tv_usec / 1000);
 }
+
+
+// Combined sensor data
+typedef struct
+{
+  // Data time-stamp (odometric)
+  uint32_t time_sec, time_usec;
+    
+  // Odometric pose
+  pf_vector_t odom_pose;
+
+  // Laser ranges
+  int range_count;
+  double ranges[PLAYER_LASER_MAX_SAMPLES][2];
+  
+} amcl_sensor_data_t;
 
 
 // Incremental navigation driver
@@ -116,28 +131,34 @@ class AdaptiveMCL : public PSDevice
   private: int SetupOdom(void);
   private: int ShutdownOdom(void);
 
+  // Get the current odometric pose
+  private: void GetOdomData(amcl_sensor_data_t *data);
+  
   // Set up the laser device.
   private: int SetupLaser(void);
   private: int ShutdownLaser(void);
+
+  // Check for new laser data
+  private: void GetLaserData(amcl_sensor_data_t *data);
 
   // Get the current pose
   private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
                                   uint32_t* time_sec, uint32_t* time_usec);
 
+  // Push data onto the filter queue
+  private: void Push(amcl_sensor_data_t *data);
+
+  // Pop data from the filter queue
+  private: int Pop(amcl_sensor_data_t *data);
+
   // Main function for device thread.
   private: virtual void Main(void);
-
-  // Get the current odometric pose
-  private: void GetOdom(pf_vector_t *pose, uint32_t *time_sec, uint32_t *time_usec);
-
-  // Check for new laser data
-  private: int GetLaser(void);
 
   // Initialize the filter
   private: void InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov);
 
   // Update the filter with new sensor data
-  private: void UpdateFilter(void);
+  private: void UpdateFilter(amcl_sensor_data_t *data);
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests(void);
@@ -161,14 +182,9 @@ class AdaptiveMCL : public PSDevice
   // Laser device info
   private: CDevice *laser;
   private: int laser_index;
-  private: int laser_time_sec, laser_time_usec;
 
   // Laser pose relative to robot
   private: pf_vector_t laser_pose;
-
-  // Laser range and bearing values
-  private: int laser_range_count;
-  private: double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2];
 
   // Effective robot radius (used for c-space tests)
   private: double robot_radius;
@@ -185,13 +201,19 @@ class AdaptiveMCL : public PSDevice
   private: laser_t *laser_model;
   private: int laser_max_ranges;
 
+  // Odometric pose of last used sensor reading
+  private: pf_vector_t odom_pose;
+
+  // Sensor data queue
+  private: int q_size, q_start, q_len;
+  private: amcl_sensor_data_t *q_data;
+  
   // Particle filter
   private: pf_t *pf;
   private: int min_samples, max_samples;
 
-  // Current and previous odometric pose estimates used by filter
-  private: pf_vector_t curr_odom_pose;
-  private: pf_vector_t last_odom_pose;
+  // Last odometric pose estimates used by filter
+  private: pf_vector_t pf_odom_pose;
 
   // Current particle filter pose estimate
   private: pf_vector_t pf_pose_mean;
@@ -240,8 +262,6 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   this->laser = NULL;
   this->laser_index = cf->ReadInt(section, "laser_index", 0);
-  this->laser_time_sec = -1;
-  this->laser_time_usec = -1;
 
   // C-space info
   this->robot_radius = cf->ReadLength(section, "robot_radius", 0.20);
@@ -256,12 +276,12 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Laser model settings
   this->laser_model = NULL;
-  this->laser_max_ranges = 3;
+  this->laser_max_ranges = 9;
 
   // Particle filter settings
   this->pf = NULL;
   this->min_samples = cf->ReadInt(section, "min_samples", 100);
-  this->max_samples = cf->ReadInt(section, "max_samples", 100000);
+  this->max_samples = cf->ReadInt(section, "max_samples", 200000);
 
   // Initial pose estimate
   this->pf_pose_mean = pf_vector_zero();
@@ -278,6 +298,10 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   this->pf_pose_cov.m[1][1] = u[1] * u[1];
   this->pf_pose_cov.m[2][2] = u[2] * u[2];
 
+  // Create the sensor queue
+  this->q_size = 100;
+  this->q_data = new amcl_sensor_data_t[this->q_size];
+  
   return;
 }
 
@@ -286,6 +310,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 // Destructor
 AdaptiveMCL::~AdaptiveMCL(void)
 {
+  delete this->q_data;
   return;
 }
 
@@ -294,7 +319,7 @@ AdaptiveMCL::~AdaptiveMCL(void)
 // Set up the device (called by server thread).
 int AdaptiveMCL::Setup(void)
 {
-  uint32_t time_sec, time_usec;
+  amcl_sensor_data_t sdata;
     
   PLAYER_TRACE("setup");
 
@@ -340,9 +365,10 @@ int AdaptiveMCL::Setup(void)
   assert(this->pf == NULL);
   this->pf = pf_alloc(this->min_samples, this->max_samples);
 
-  // Set initial filter values
-  this->GetOdom(&this->last_odom_pose, &time_sec, &time_usec);
-  this->GetOdom(&this->curr_odom_pose, &time_sec, &time_usec);
+  // Set the initial odometric poses
+  this->GetOdomData(&sdata);
+  this->odom_pose = sdata.odom_pose;
+  this->pf_odom_pose = sdata.odom_pose;
 
 #ifdef INCLUDE_RTKGUI
   // Start the GUI
@@ -405,7 +431,6 @@ int AdaptiveMCL::LoadStageConfig(void)
   size_t data_len;
     
   data_len = this->GetStageData(this, &data, sizeof(data), NULL, NULL);
-  printf("%d\n", data_len);
   if (data_len != sizeof(data))
   {
     PLAYER_ERROR("no configuration data");
@@ -504,6 +529,30 @@ int AdaptiveMCL::ShutdownOdom(void)
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Get the current odometry reading
+void AdaptiveMCL::GetOdomData(amcl_sensor_data_t *data)
+{
+  size_t size;
+  player_position_data_t ndata;
+
+  // Get the odom device data.
+  size = this->odom->GetData(this, (uint8_t*) &ndata, sizeof(ndata),
+                             &data->time_sec, &data->time_usec);
+
+  // Byte swap
+  ndata.xpos = ntohl(ndata.xpos);
+  ndata.ypos = ntohl(ndata.ypos);
+  ndata.yaw = ntohl(ndata.yaw);
+
+  data->odom_pose.v[0] = (double) ((int32_t) ndata.xpos) / 1000.0;
+  data->odom_pose.v[1] = (double) ((int32_t) ndata.ypos) / 1000.0;
+  data->odom_pose.v[2] = (double) ((int32_t) ndata.yaw) * M_PI / 180;
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
 int AdaptiveMCL::SetupLaser(void)
 {
@@ -555,7 +604,38 @@ int AdaptiveMCL::ShutdownLaser(void)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Get the current pose
+// Check for new laser data
+void AdaptiveMCL::GetLaserData(amcl_sensor_data_t *data)
+{
+  int i;
+  size_t size;
+  player_laser_data_t ndata;
+  double r, b, db;
+  
+  // Get the laser device data.
+  size = this->laser->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+
+  b = ((int16_t) ntohs(ndata.min_angle)) / 100.0 * M_PI / 180.0;
+  db = ((int16_t) ntohs(ndata.resolution)) / 100.0 * M_PI / 180.0;
+
+  data->range_count = ntohs(ndata.range_count);
+  assert(data->range_count < sizeof(data->ranges) / sizeof(data->ranges[0]));
+
+  // Read and byteswap the range data
+  for (i = 0; i < data->range_count; i++)
+  {
+    r = ((int16_t) ntohs(ndata.ranges[i])) / 1000.0;
+    data->ranges[i][0] = r;
+    data->ranges[i][1] = b;
+    b += db;
+  }
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Get the current pose.  This function is called by the server thread.
 size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
                             uint32_t* time_sec, uint32_t* time_usec)
 {
@@ -565,20 +645,38 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   pf_vector_t odom_pose, odom_diff;
   pf_vector_t pose;
   pf_matrix_t pose_cov;
+  amcl_sensor_data_t sdata;
   
   this->Lock();
 
+  // See if there is new odometry data.  If there is, push it and all
+  // the rest of the sensor data onto the sensor queue.
+  this->GetOdomData(&sdata);
+
+  // See how far the robot has moved
+  odom_pose = sdata.odom_pose;
+  odom_diff = pf_vector_coord_sub(odom_pose, this->odom_pose);
+
+  // Make sure we have moved a reasonable distance
+  if (fabs(odom_diff.v[0]) > 0.20 ||
+      fabs(odom_diff.v[1]) > 0.20 ||
+      fabs(odom_diff.v[2]) > M_PI / 6)
+  {
+    this->odom_pose = sdata.odom_pose;
+        
+    // Get the current laser data; we assume it is new data
+    this->GetLaserData(&sdata);
+
+    // Push the data
+    this->Push(&sdata);
+  }
+  
   // Get the current estimate
   pose = this->pf_pose_mean;
   pose_cov = this->pf_pose_cov;
 
-  // Get the current odometric pose
-  this->GetOdom(&odom_pose, time_sec, time_usec);
-
-  // Compute the change in pose 
-  odom_diff = pf_vector_coord_sub(odom_pose, this->last_odom_pose);
-  
-  this->Unlock();
+  // Compute the change in pose
+  odom_diff = pf_vector_coord_sub(odom_pose, this->pf_odom_pose);
 
   // Translate/rotate the hypotheses to take account of latency in filter
   pose = pf_vector_coord_add(odom_diff, pose);
@@ -594,6 +692,8 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
     pf_matrix_fprintf(pose_cov, stderr, "%e");
     assert(0);
   }
+
+  this->Unlock();
     
   // Encode the one-and-only hypothesis
   data.hypoth_count = 1;
@@ -635,17 +735,61 @@ size_t AdaptiveMCL::GetData(void* client, unsigned char* dest, size_t len,
   // Copy data to server
   assert(len >= datalen);
   memcpy(dest, &data, datalen);
-  
+
+  // Set the timestamp
+  if (time_sec)
+    *time_sec = sdata.time_sec;
+  if (time_usec)
+    *time_usec = sdata.time_usec;
+
   return datalen;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Push data onto the filter queue.
+void AdaptiveMCL::Push(amcl_sensor_data_t *data)
+{
+  int i;
+  
+  if (this->q_len >= this->q_size)
+  {
+    PLAYER_ERROR("queue overflow");
+    return;
+  }
+
+  i = (this->q_start + this->q_len++) % this->q_size;
+  this->q_data[i] = *data;
+  
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Pop data from the filter queue
+int AdaptiveMCL::Pop(amcl_sensor_data_t *data)
+{
+  int i;
+  
+  if (this->q_len == 0)
+    return 0;
+
+  PLAYER_TRACE1("q len %d\n", this->q_len);
+  
+  i = this->q_start++ % this->q_size;
+  this->q_len--;
+  *data = this->q_data[i];
+  
+  return 1;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void AdaptiveMCL::Main(void) 
-{
-  uint32_t time_sec, time_usec;
+{  
   struct timespec sleeptime;
+  amcl_sensor_data_t data;
   
   // WARNING: this only works for Linux
   // Run at a lower priority
@@ -670,77 +814,13 @@ void AdaptiveMCL::Main(void)
 
     // Process any pending requests.
     this->HandleRequests();
-    
-    // Get the current odometric pose
-    this->GetOdom(&this->curr_odom_pose, &time_sec, &time_usec);
 
-    // Get current laser values; if we have a new set, update the
-    // filter
-    if (this->GetLaser())
-      this->UpdateFilter();
+    // Process any queued data
+    if (this->Pop(&data))
+      this->UpdateFilter(&data);
   }
 
   return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get the current odometry reading
-void AdaptiveMCL::GetOdom(pf_vector_t *pose, uint32_t *time_sec, uint32_t *time_usec)
-{
-  size_t size;
-  player_position_data_t data;
-
-  // Get the odom device data.
-  size = this->odom->GetData(this, (unsigned char*) &data, sizeof(data), time_sec, time_usec);
-
-  // Byte swap
-  data.xpos = ntohl(data.xpos);
-  data.ypos = ntohl(data.ypos);
-  data.yaw = ntohl(data.yaw);
-
-  pose->v[0] = (double) ((int32_t) data.xpos) / 1000.0;
-  pose->v[1] = (double) ((int32_t) data.ypos) / 1000.0;
-  pose->v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
-
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Check for new laser data
-int AdaptiveMCL::GetLaser(void)
-{
-  int i;
-  size_t size;
-  player_laser_data_t data;
-  uint32_t time_sec, time_usec;
-  double r, b, db;
-  
-  // Get the laser device data.
-  size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &time_sec, &time_usec);
-
-  // Dont do anything if this is old data.
-  if (time_sec == this->laser_time_sec && time_usec == this->laser_time_usec)
-    return 0;
-  this->laser_time_sec = time_sec;
-  this->laser_time_usec = time_usec;
-
-  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
-  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
-  this->laser_range_count = ntohs(data.range_count);
-  assert(this->laser_range_count < sizeof(this->laser_ranges) / sizeof(this->laser_ranges[0]));
-
-  // Read and byteswap the range data
-  for (i = 0; i < this->laser_range_count; i++)
-  {
-    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
-    this->laser_ranges[i][0] = r;
-    this->laser_ranges[i][1] = b;
-    b += db;
-  }
-  
-  return 1;
 }
 
 
@@ -781,26 +861,12 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the filter with new sensor data
-void AdaptiveMCL::UpdateFilter(void)
+void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 {
   int i;
-  pf_vector_t diff;
-  
-  // Compute change in pose since last update
-  diff = pf_vector_coord_sub(this->curr_odom_pose, this->last_odom_pose);
-
-  // Make sure we have moved a reasonable distance
-  if (fabs(diff.v[0]) < 0.20 && fabs(diff.v[1]) < 0.20 && fabs(diff.v[2]) < M_PI / 6)
-    return;
-
-  // TESTING
-  printf("update: samples %d\n", this->pf->sets[this->pf->current_set].sample_count);
-  
-  // TESTING
-  uint64_t time = gettime();
   
   // Update the odometry sensor model with the latest odometry measurements
-  odometry_action_init(this->odom_model, this->last_odom_pose, this->curr_odom_pose);
+  odometry_action_init(this->odom_model, this->pf_odom_pose, data->odom_pose);
   odometry_sensor_init(this->odom_model);
 
   // Apply the odometry action model
@@ -811,26 +877,32 @@ void AdaptiveMCL::UpdateFilter(void)
 
   odometry_sensor_term(this->odom_model);
   odometry_action_term(this->odom_model);
-
-  // TESTING
-  printf("update: odom     %d\n", (uint32_t) (gettime() - time));
   
   // Update the laser sensor model with the latest laser measurements
   laser_clear_ranges(this->laser_model);
-  for (i = 0; i < this->laser_range_count; i += this->laser_range_count / this->laser_max_ranges)
-    laser_add_range(this->laser_model, this->laser_ranges[i][0], this->laser_ranges[i][1]);
+  for (i = 0; i < data->range_count; i += data->range_count / this->laser_max_ranges)
+    laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
 
   // Apply the laser sensor model
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);  
 
-  printf("update: laser    %d\n", (uint32_t) (gettime() - time));
-  
   // Resample
   pf_update_resample(this->pf);
-
-  // TESTING
-  printf("update: resample %d\n", (uint32_t) (gettime() - time));
     
+  this->Lock();
+  
+  // Re-compute the pose estimate
+  pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov); 
+
+  this->pf_odom_pose = data->odom_pose;
+
+  this->Unlock();
+
+  PLAYER_TRACE4("pf: %d %f %f %f",
+                this->pf->sets[this->pf->current_set].sample_count,
+                this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
+
+
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   rtk_fig_clear(this->pf_fig);
@@ -840,18 +912,6 @@ void AdaptiveMCL::UpdateFilter(void)
   rtk_canvas_render(this->canvas);
 #endif
 
-  this->Lock();
-  
-  // Re-compute the pose estimate
-  pf_calc_stats(this->pf, &this->pf_pose_mean, &this->pf_pose_cov);
-
-  PLAYER_TRACE3("pf: %f %f %f",
-               this->pf_pose_mean.v[0], this->pf_pose_mean.v[1], this->pf_pose_mean.v[2]);
-  
-  this->last_odom_pose = this->curr_odom_pose;
-
-  this->Unlock();
-  
   return;
 }
 
@@ -871,15 +931,12 @@ int AdaptiveMCL::HandleRequests(void)
       case PLAYER_LOCALIZE_SET_POSE_REQ:
         HandleSetPose(client, request, len);
         break;
-      
       case PLAYER_LOCALIZE_GET_MAP_INFO_REQ:
         HandleGetMapInfo(client, request, len);
         break;
-
       case PLAYER_LOCALIZE_GET_MAP_DATA_REQ:
         HandleGetMapData(client, request, len);
         break;
-
       default:
         if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
           PLAYER_ERROR("PutReply() failed");
@@ -954,7 +1011,8 @@ void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
     return;
   }
 
-  PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y, this->map->scale, ntohl(info.scale));
+  PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y,
+                this->map->scale, ntohl(info.scale));
   
   info.scale = htonl((int32_t) (1000.0 / this->map->scale + 0.5));
   info.width = htonl((int32_t) (this->map->size_x));
