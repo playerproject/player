@@ -29,7 +29,7 @@
 
 #include <string.h> // for memcpy()
 #include <stagedevice.h>
-#include <stage.h>
+#include <stage1p3.h>
 #include <sys/file.h> //for flock
 
 #include <playertime.h>

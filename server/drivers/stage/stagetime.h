@@ -32,7 +32,7 @@
 
 #include <sys/time.h>
 #include "playertime.h"
-#include "stage.h"
+#include "stage1p3.h"
 
 class StageTime : public PlayerTime
 {
