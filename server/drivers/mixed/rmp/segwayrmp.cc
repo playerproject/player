@@ -440,7 +440,8 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
       }
 
       odom_x = odom_y = odom_yaw = 0.0;
-      
+      firstread = true;
+
       // return 1 to indicate that we wrote to the CAN bus this time
       return(1);
 
