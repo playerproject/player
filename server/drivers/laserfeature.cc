@@ -25,11 +25,11 @@
 // Date: 29 Aug 2002
 // CVS: $Id$
 //
-// Theory of operation:
-//  TODO
+// Theory of operation - Uses an EKF to segment the scan into line
+// segments, the does a best-fit for each segment.  The EKF is based
+// on the approach by Stergios Romelioutis.
 //
-// Requires:
-//   Laser device.
+// Requires - Laser device.
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -84,6 +84,9 @@ class LaserFeature : public CDevice
   // Fit lines to the segments.
   private: void FitSegments();
 
+  // Merge overlapping segments with similar properties.
+  private: void MergeSegments();
+
   // Update the device data (the data going back to the client).
   private: void UpdateData();
 
@@ -106,6 +109,10 @@ class LaserFeature : public CDevice
   private: double line_noise;
   private: double range_noise;
   private: double line_thresh;
+
+  // Thresholds for merging.
+  private: double angle_thresh;
+  private: double length_thresh;
 
   // Segment mask.
   private: int mask[PLAYER_LASER_MAX_SAMPLES];
@@ -169,10 +176,15 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
   this->laser_timeusec = 0;
 
   // Line filter settings.
-  this->line_noise = cf->ReadLength(section, "line_noise", 0.010);
+  this->line_noise = cf->ReadLength(section, "line_noise", 0.02);
   this->range_noise = cf->ReadLength(section, "range_noise", 0.05);
-  this->line_thresh = cf->ReadFloat(section, "line_thresh", 2.00);
+  this->line_thresh = cf->ReadLength(section, "line_thresh", 0.05);
 
+  // Segment merging settings.
+  this->angle_thresh = cf->ReadAngle(section, "angle_thresh", 10 * M_PI / 180);
+  this->length_thresh = cf->ReadLength(section, "length_thresh", 1.00);
+
+  // Initialise segment list.
   this->segment_count = 0;
   
   // Fiducial data.
@@ -289,6 +301,12 @@ int LaserFeature::UpdateLaser()
   // Fit lines to the segments.
   this->FitSegments();
 
+  // Merge similar segments.
+  this->MergeSegments();
+
+  // Re-do the fit for the merged segments.
+  this->FitSegments();
+
   return 1;
 }
 
@@ -347,8 +365,7 @@ void LaserFeature::SegmentLaser()
   double x[2], P[2][2];
   double Q[2][2], R;
   double err;
-  int count;
-  int mask[PLAYER_LASER_MAX_SAMPLES];
+  int mask;
   
   // Angle between successive laser readings.
   res = (double) (this->laser_data.resolution) / 100.0 * M_PI / 180;
@@ -371,10 +388,10 @@ void LaserFeature::SegmentLaser()
   P[1][1] = 100;
 
   // Initialise the segments.
-  count = 0;
-  memset(mask, 0, sizeof(mask));
+  this->segment_count = 0;
   
   // Apply filter anti-clockwise.
+  mask = 0;
   for (i = 0; i < this->laser_data.range_count; i++)
   {
     r = (double) (this->laser_data.ranges[i]) / 1000;
@@ -382,15 +399,23 @@ void LaserFeature::SegmentLaser()
     
     err = this->UpdateFilter(x, P, Q, R, r, res);
 
+    if (err < this->line_thresh)
+    {
+      if (mask == 0)
+        this->segments[this->segment_count++].first = i;        
+      this->segments[this->segment_count - 1].last = i;
+      mask = 1;
+    }
+    else
+      mask = 0;
+      
     fprintf(stderr, "%f %f ", r, b);
     fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
-
-    if (err < this->line_thresh)
-      mask[i] = 1;
   }
   fprintf(stderr, "\n\n");
   
   // Apply filter clockwise.
+  mask = 0;
   for (i = this->laser_data.range_count - 1; i >= 0; i--)
   {
     r = (double) (this->laser_data.ranges[i]) / 1000;
@@ -398,31 +423,40 @@ void LaserFeature::SegmentLaser()
         
     err = this->UpdateFilter(x, P, Q, R, r, -res);
 
-    fprintf(stderr, "%f %f ", r, b);
-    fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
-
     if (err < this->line_thresh)
-      mask[i] = 1;
-  }
-  fprintf(stderr, "\n\n");
+    {
+      if (mask == 0)
+        this->segments[this->segment_count++].last = i;        
+      this->segments[this->segment_count - 1].first = i;
+      mask = 1;
+    }
+    else
+      mask = 0;
 
-  // Extract the segments.
-  this->segment_count = 0;
-  for (i = 0; i < this->laser_data.range_count; i++)
-  {
+    //fprintf(stderr, "%f %f ", r, b);
+    //fprintf(stderr, "%f %f %f\n", x[0], x[1], err);
+  }
+  //fprintf(stderr, "\n\n");
+
+  /*
+    // Extract the segments.
+    this->segment_count = 0;
+    for (i = 0; i < this->laser_data.range_count; i++)
+    {
     r = (double) (this->laser_data.ranges[i]) / 1000;
     b = (double) (this->laser_data.min_angle) / 100.0 * M_PI / 180 + i * res;
 
     if (mask[i] == 1)
     {
-      if (i == 0 || (i > 0 && mask[i - 1] == 0))
-        this->segments[this->segment_count++].first = i;
-      this->segments[this->segment_count - 1].last = i;
+    if (i == 0 || (i > 0 && mask[i - 1] == 0))
+    this->segments[this->segment_count++].first = i;
+    this->segments[this->segment_count - 1].last = i;
 
-      fprintf(stderr, "%f %f %d\n", r, b, mask[i]);
+    //fprintf(stderr, "%f %f %d\n", r, b, mask[i]);
     }   
-  }
-  fprintf(stderr, "\n\n");
+    }
+    //fprintf(stderr, "\n\n");
+  */
 
   return;
 }
@@ -481,7 +515,7 @@ double LaserFeature::UpdateFilter(double x[2], double P[2][2], double Q[2][2],
     for (j = 0; j < 2; j++)
       P[i][j] = P_[i][j] - K[i] * S * K[j];
 
-  return r * r / S;
+  return fabs(r); //r * r / S;
 }
 
 
@@ -534,10 +568,10 @@ void LaserFeature::FitSegments()
     py = sy / n;
     pa = atan2((n * sxy  - sy * sx), (n * sxx - sx * sx));
 
-    if (sin(pa) > 0)
-      pa = NORMALIZE(pa + M_PI / 2);
-    else
-      pa = NORMALIZE(pa - M_PI / 2);
+    // Make sure the orientation is normal to surface.
+    pa += M_PI / 2;
+    if (fabs(NORMALIZE(pa - atan2(py, px))) < M_PI / 2)
+      pa += M_PI;
 
     segment->count = (int) n;
     segment->pose[0] = px;
@@ -552,6 +586,39 @@ void LaserFeature::FitSegments()
   return;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Merge overlapping segments with similar properties.
+void LaserFeature::MergeSegments()
+{
+  int i, j;
+  segment_t *sa, *sb;
+  double da;
+  
+  for (i = 0; i < this->segment_count; i++)
+  {
+    for (j = i + 1; j < this->segment_count; j++)
+    {
+      sa = this->segments + i;
+      sb = this->segments + j;
+
+      // See if segments overlap...
+      if (sb->first <= sa->last && sa->first <= sb->last)
+      {
+        // See if the segments have the same orientation...
+        da = NORMALIZE(sb->pose[2] - sa->pose[2]);
+        if (fabs(da) < this->angle_thresh)
+        {
+          sa->first = min(sa->first, sb->first);
+          sa->last = max(sa->last, sb->last);
+          sb->first = 0;
+          sb->last = -1;
+        }
+      }
+    }
+  }
+  return;
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -569,7 +636,7 @@ void LaserFeature::UpdateData()
   {
     segment = this->segments + i;
 
-    if (segment->count >= 4 && segment->length >= 0.50)
+    if (segment->count >= 4 && segment->length >= this->length_thresh)
     {
       px = segment->pose[0];
       py = segment->pose[1];
