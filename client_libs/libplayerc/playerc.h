@@ -1438,17 +1438,18 @@ int playerc_position3d_get_geom(playerc_position3d_t *device);
     vp : pitch speed (rad/s) . vt : theta speed (rad/s).
     All speeds are defined in the robot coordinate system. */
 int playerc_position3d_set_velocity(playerc_position3d_t *device,
-				    double vx, double vy, double vz,
-				    double vr, double vp, double vt);
+                                    double vx, double vy, double vz,
+                                    double vr, double vp, double vt, int state);
+
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_speed(playerc_position3d_t *device,
-                                 double vx, double vy, double vz);
+                                 double vx, double vy, double vz, int state);
 
 /** Set the target pose (gx, gy, ga, gr, gp, gt) is the target pose in the
     odometric coordinate system. */
 int playerc_position3d_set_pose(playerc_position3d_t *device,
-                                    double gx, double gy, double gz,
-                                    double gr, double gp, double gt);
+                                double gx, double gy, double gz,
+                                double gr, double gp, double gt);
 
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,

@@ -68,6 +68,11 @@ class SegwayRMP : public Driver
 
     int16_t last_xspeed, last_yawspeed;
 
+    // Flag set if motors can be enabled (i.e., enable them to be
+    // enabled).  Set by a config request.
+    bool motor_allow_enable;
+
+    // Flag set if motors are currently enabled
     bool motor_enabled;
 
     // For handling rollover
@@ -77,7 +82,10 @@ class SegwayRMP : public Driver
     double odom_x, odom_y, odom_yaw;
 
     // helper to handle config requests
-    int HandleConfig(void* client, unsigned char* buffer, size_t len);
+    int HandlePositionConfig(void* client, unsigned char* buffer, size_t len);
+
+    // helper to handle config requests
+    int HandlePosition3DConfig(void* client, unsigned char* buffer, size_t len);
 
     // helper to read a cycle of data from the RMP
     int Read();

@@ -21,13 +21,10 @@
  */
 
 /*
- * Desc: Uses iwlist scanning facility to identify access points.
+ * Desc: Read data from a standard linux joystick
  * Author: Andrew Howard
  * Date: 25 July 2004
  * CVS: $Id$
- *
- * Note: Must be run as user **ROOT** (otherwise just reports stale
- * values).
  *
  */
 
@@ -43,7 +40,7 @@
 
 #include "playercommon.h"
 #include "drivertable.h"
-#include "deviceregistry.h"
+#include "driver.h"
 #include "player.h"
 
 
@@ -130,7 +127,7 @@ Driver* LinuxJoystick_Init(ConfigFile* cf, int section)
 // driver can support and how to create a driver instance.
 void LinuxJoystick_Register(DriverTable* table)
 {
-  table->AddDriverEx("linuxjoystick", LinuxJoystick_Init);
+  table->AddDriver("linuxjoystick", LinuxJoystick_Init);
 }
 
 
@@ -138,7 +135,7 @@ void LinuxJoystick_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
-    : Driver(cf, section, 0, 0, 10, 10)
+    : Driver(cf, section)
 {
   // Create wifi interface
   if (cf->ReadDeviceId(section, 0, PLAYER_JOYSTICK_CODE, &this->joy_id) != 0)
@@ -146,8 +143,8 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }  
-  if (this->AddInterfaceEx(this->joy_id, "linuxjoystick", PLAYER_READ_MODE,
-                           sizeof(player_joystick_data_t), 0, 10, 10) != 0)
+  if (this->AddInterface(this->joy_id, PLAYER_READ_MODE,
+                         sizeof(player_joystick_data_t), 0, 10, 10) != 0)
   {
     this->SetError(-1);    
     return;
@@ -280,7 +277,7 @@ void LinuxJoystick::RefreshData()
   this->joy_data.xscale = htons(AXIS_MAX);
   this->joy_data.yscale = htons(AXIS_MAX);
   this->joy_data.buttons = htons(this->buttons);
-  this->PutDataEx(this->joy_id, &this->joy_data, sizeof(this->joy_data), 0, 0);
+  this->PutData(this->joy_id, &this->joy_data, sizeof(this->joy_data), 0, 0);
 
   return;
 }
@@ -291,11 +288,12 @@ void LinuxJoystick::RefreshData()
 void LinuxJoystick::CheckConfig()
 {
   void *client;
+  player_device_id_t dummy;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while (this->GetConfigEx(this->joy_id, &client, &buffer, sizeof(buffer)) > 0)
+  while (this->GetConfig(this->joy_id, &dummy, &client, &buffer, sizeof(buffer)) > 0)
   {
-    if (this->PutReplyEx(this->joy_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+    if (this->PutReply(this->joy_id, &dummy, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 

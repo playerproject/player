@@ -70,7 +70,7 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
 {
 
   // Create a position interface
-  if (cf->ReadDeviceId(section, 0, -1, &this->position_id) != 0)
+  if (cf->ReadDeviceId(section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
   {
     this->SetError(-1);
     return;
@@ -84,7 +84,7 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   // Create a position3d interface
-  if (cf->ReadDeviceId(section, 1, -1, &this->position3d_id) != 0)
+  if (cf->ReadDeviceId(section, 1, PLAYER_POSITION3D_CODE, &this->position3d_id) != 0)
   {
     this->SetError(-1);
     return;
@@ -98,7 +98,7 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   // Create a power interface
-  if (cf->ReadDeviceId(section, 1, -1, &this->power_id) != 0)
+  if (cf->ReadDeviceId(section, 2, PLAYER_POWER_CODE, &this->power_id) != 0)
   {
     this->SetError(-1);
     return;
@@ -123,7 +123,7 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   this->max_yawspeed = cf->ReadInt(section, "max_yawspeed", this->max_yawspeed);
   if(this->max_yawspeed < 0)
     this->max_yawspeed = -this->max_yawspeed;
-
+  
   return;
 }
 
@@ -162,6 +162,7 @@ SegwayRMP::Setup()
   this->odom_x = this->odom_y = this->odom_yaw = 0.0;
 
   this->last_xspeed = this->last_yawspeed = 0;
+  this->motor_allow_enable = false;
   this->motor_enabled = false;
   this->firstread = true;
   this->timeout_counter = 0;
@@ -215,6 +216,7 @@ SegwayRMP::Main()
   size_t buffer_len;
   player_position_cmd_t position_cmd;
   player_position3d_cmd_t position3d_cmd;
+  player_device_id_t dummy;
   void *client;
   CanPacket pkt;
   int32_t xspeed,yawspeed;
@@ -232,7 +234,7 @@ SegwayRMP::Main()
       PLAYER_ERROR("Read() errored; bailing");
       pthread_exit(NULL);
     }
-    
+
     // TODO: report better timestamps, possibly using time info from the RMP
 
     // Send data to clients
@@ -240,13 +242,23 @@ SegwayRMP::Main()
     PutData(this->position3d_id, &this->position3d_data, sizeof(this->position3d_data), 0, 0);
     PutData(this->power_id, &this->power_data, sizeof(this->power_data), 0, 0);
     
-    // check for config requests
-    if((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0)
+    // check for config requests from the position interface
+    if((buffer_len = GetConfig(this->position_id, &dummy, &client, buffer, sizeof(buffer))) > 0)
     {
       // if we write to the CAN bus as a result of the config, don't write
       // a velocity command (may need to make this smarter if we get slow
       // velocity control).
-      if(HandleConfig(client,buffer,buffer_len) > 0)
+      if(HandlePositionConfig(client,buffer,buffer_len) > 0)
+        continue;
+    }
+
+    // check for config requests from the position3d interface
+    if((buffer_len = GetConfig(this->position3d_id, &dummy, &client, buffer, sizeof(buffer))) > 0)
+    {
+      // if we write to the CAN bus as a result of the config, don't write
+      // a velocity command (may need to make this smarter if we get slow
+      // velocity control).
+      if(HandlePosition3DConfig(client,buffer,buffer_len) > 0)
         continue;
     }
 
@@ -264,6 +276,7 @@ SegwayRMP::Main()
       // convert to host order; let MakeVelocityCommand do the rest
       xspeed = ntohl(position_cmd.xspeed);
       yawspeed = ntohl(position_cmd.yawspeed);
+      motor_enabled = position_cmd.state && motor_allow_enable;
       timeout_counter=0;
     }
 
@@ -279,7 +292,7 @@ SegwayRMP::Main()
       // degrees/sec
       xspeed = ntohl(position3d_cmd.xspeed);
       yawspeed = (int32_t) (((double) (int32_t) ntohl(position3d_cmd.yawspeed)) / 1000 * 180 / M_PI);
-      motor_enabled = position3d_cmd.state;
+      motor_enabled = position3d_cmd.state && motor_allow_enable;
       timeout_counter=0;
     }
 
@@ -317,7 +330,7 @@ SegwayRMP::Main()
 // returns 1 to indicate we wrote to the CAN bus
 // returns 0 to indicate we did NOT write to CAN bus
 int
-SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
+SegwayRMP::HandlePositionConfig(void* client, unsigned char* buffer, size_t len)
 {
   uint16_t rmp_cmd,rmp_val;
   player_rmp_config_t *rmp;
@@ -331,11 +344,11 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
       // set the commands to 0... think it will automatically
       // do this for us.  
       if(buffer[1]) 
-        this->motor_enabled = true;
+        this->motor_allow_enable = true;
       else
-        this->motor_enabled = false;
+        this->motor_allow_enable = false;
 
-      printf("SEGWAYRMP: motors state: %d\n", this->motor_enabled);
+      printf("SEGWAYRMP: motors state: %d\n", this->motor_allow_enable);
 
       if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
@@ -368,13 +381,13 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
       else
       {
 
-	if (Write(pkt) < 0) {
-	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
-	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
-	} else {
-	  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
-	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
-	}
+        if (Write(pkt) < 0) {
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+            PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+        } else {
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+            PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+        }
       }
 
       odom_x = odom_y = odom_yaw = 0.0;
@@ -499,13 +512,13 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
       }
       else
       {
-	if (Write(pkt) < 0) {
-	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
-	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
-	} else {
-	  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
-	    PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
-	}
+        if (Write(pkt) < 0) {
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+            PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+        } else {
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+            PLAYER_ERROR("SEGWAY: Failed to PutReply\n");
+        }
       }
       // return 1 to indicate that we wrote to the CAN bus this time
       return(1);
@@ -537,6 +550,45 @@ SegwayRMP::HandleConfig(void* client, unsigned char* buffer, size_t len)
   // return 0, to indicate that we did NOT write to the CAN bus this time
   return(0);
 }
+
+// helper to handle config requests
+// returns 1 to indicate we wrote to the CAN bus
+// returns 0 to indicate we did NOT write to CAN bus
+int
+SegwayRMP::HandlePosition3DConfig(void* client, unsigned char* buffer, size_t len)
+{
+  CanPacket pkt;
+  
+  switch(buffer[0]) 
+  {
+    case PLAYER_POSITION3D_MOTOR_POWER_REQ:
+      // just set a flag telling us whether we should
+      // act on motor commands
+      // set the commands to 0... think it will automatically
+      // do this for us.  
+      if(buffer[1]) 
+        this->motor_allow_enable = true;
+      else
+        this->motor_allow_enable = false;
+
+      printf("SEGWAYRMP: motors state: %d\n", this->motor_allow_enable);
+
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+        PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
+      break;
+
+    default:
+      printf("segwayrmp received unknown config request %d\n", 
+             buffer[0]);
+      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+        PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
+      break;
+  }
+
+  // return 0, to indicate that we did NOT write to the CAN bus this time
+  return(0);
+}
+
 
 int
 SegwayRMP::Read()

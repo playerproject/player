@@ -4,6 +4,11 @@
 #include "playerc.h"
 %}
 
+// Integer types
+%typemap(out) uint16_t
+{
+  $result = PyInt_FromLong((long) (unsigned long) $1);
+}
 
 // Provide array access
 %typemap(out) double [ANY] 
@@ -50,12 +55,12 @@
 
 // Include Player header so we can pick up some constants
 #define __PACKED__
-%import "player.h"
+%import "../../../../server/player.h"
 
 
 // Use this for regular c-bindings;
 // e.g. playerc_client_connect(client, ...)
-%include "playerc.h"
+%include "../../playerc.h"
 
 // Use this for object-oriented bindings;
 // e.g., client.connect(...)
