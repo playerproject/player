@@ -76,14 +76,22 @@ class LaserVisualBarcode : public CDevice
   private: void FindLaserFiducials(double time, player_laser_data_t *data);
     
   // Find the line of best fit for the given segment of the laser
-  // scan.  Fills in the pose and pose uncertainty of the reflector
-  // (range, bearing, orientation).
-  private: void FitLaserFiducial(player_laser_data_t *data, int first, int last,
-                                 double pose[3], double upose[3]);
+  // scan.  Fills in the pose of the reflector relative to the laser.
+  private: void FitLaserFiducial(player_laser_data_t *data, int first, int last, double pose[3]);
 
-  // Match a new laser fiducial against the ones we are already tracking.
-  private: void MatchLaserFiducial(double time, double pose[3], double upose[3]);
+  // Match a new laser fiducial against the ones we are already
+  // tracking.  The pose is relative to the laser.
+  private: void MatchLaserFiducial(double time, double pose[3]);
 
+  // Update the PTZ to point at one of the laser reflectors.
+  private: int UpdatePtz();
+
+  // Select a target fiducial for the PTZ to inspect.
+  private: int SelectPtzTarget(double time, player_ptz_data_t *data);
+
+  // Servo the PTZ to a target fiducial.
+  private: void ServoPtz(player_ptz_data_t *data, int target);
+  
   // Update the device data (the data going back to the client).
   private: void UpdateData();
 
@@ -94,13 +102,18 @@ class LaserVisualBarcode : public CDevice
   private: double width;
 
   // Subscribed devices (laser, ptz, blobfinder)
-  private: int pindex, bindex;
-  private: CDevice *pdevice, *bdevice;
+  private: int bindex;
+  private: CDevice *bdevice;
 
   // Laser stuff.
   private: int laser_index;
   private: CDevice *laser;
   private: double laser_time;
+
+  // PTZ stuff
+  private: int ptz_index;
+  private: CDevice *ptz;
+  private: double ptz_time;
 
   // Info on potential fiducials.
   private: struct fiducial_t
@@ -116,6 +129,12 @@ class LaserVisualBarcode : public CDevice
 
     // Time at which fiducial was last seen by the laser.
     double laser_time;
+
+    // Time at which fiducial was last seen by the ptz.
+    double ptz_time;
+
+    // Time at which ficuial was last seen by the blobfinder.
+    double blobfind_time;
   };
 
   // List of currently tracked fiducials.
@@ -163,7 +182,10 @@ LaserVisualBarcode::LaserVisualBarcode(char* interface, ConfigFile* cf, int sect
   this->laser = NULL;
   this->laser_time = 0;
 
-  this->pindex = cf->ReadInt(section, "ptz_index", -1);
+  this->ptz_index = cf->ReadInt(section, "ptz_index", -1);
+  this->ptz = NULL;
+  this->ptz_time = 0;
+
   this->bindex = cf->ReadInt(section, "blobfinder_index", -1);
 
   // Default fiducial properties.
@@ -204,15 +226,15 @@ int LaserVisualBarcode::Setup()
   
   // Subscribe to the PTZ.
   id.code = PLAYER_PTZ_CODE;
-  id.index = (this->pindex > 0 ? this->pindex : this->device_id.index);
+  id.index = (this->ptz_index > 0 ? this->ptz_index : this->device_id.index);
   id.port = this->device_id.port;
   
-  if (!(this->pdevice = deviceTable->GetDevice(id)))
+  if (!(this->ptz = deviceTable->GetDevice(id)))
   {
     PLAYER_ERROR("unable to locate suitable PTZ device");
     return(-1);
   }
-  if (this->pdevice->Subscribe(this) != 0)
+  if (this->ptz->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to PTZ device");
     return(-1);
@@ -233,7 +255,7 @@ int LaserVisualBarcode::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->pdevice->Unsubscribe(this);
+  this->ptz->Unsubscribe(this);
   this->laser->Unsubscribe(this);
 
   return 0;
@@ -260,7 +282,9 @@ void LaserVisualBarcode::Main()
     {
       // Update the device data (the data going back to the client).
       UpdateData();
-    }    
+    }
+
+    UpdatePtz();
   }
 }
 
@@ -359,7 +383,7 @@ void LaserVisualBarcode::FindLaserFiducials(double time, player_laser_data_t *da
   double r, b;
   double db, dr;
   double mn, mr, mb, mrr, mbb;
-  double pose[3], upose[3];
+  double pose[3];
 
   // Empty the fiducial list.
   this->fdata.count = 0;
@@ -408,10 +432,10 @@ void LaserVisualBarcode::FindLaserFiducials(double time, player_laser_data_t *da
       if (valid)
       {
         // Do a best fit to determine the pose of the reflector.
-        this->FitLaserFiducial(data, i - (int) mn, i - 1, pose, upose);
+        this->FitLaserFiducial(data, i - (int) mn, i - 1, pose);
 
         // Match this fiducial against the ones we are already tracking.
-        this->MatchLaserFiducial(time, pose, upose);
+        this->MatchLaserFiducial(time, pose);
       }
       
       mn = 0.0;
@@ -427,10 +451,9 @@ void LaserVisualBarcode::FindLaserFiducials(double time, player_laser_data_t *da
 
 ////////////////////////////////////////////////////////////////////////////////
 // Find the line of best fit for the given segment of the laser scan.
-// Fills in the pose and pose uncertainty of the reflector (range,
-// bearing, orientation).  
-void LaserVisualBarcode::FitLaserFiducial(player_laser_data_t *data, int first, int last,
-                                          double pose[3], double upose[3])
+// Fills in the pose and pose of the reflector relative to the laser.
+void LaserVisualBarcode::FitLaserFiducial(player_laser_data_t *data,
+                                          int first, int last, double pose[3])
 {
   int i;
   double r, b;
@@ -454,22 +477,18 @@ void LaserVisualBarcode::FitLaserFiducial(player_laser_data_t *data, int first, 
   mr += this->width / 2;
   mb /= mn;
 
-  pose[0] = mr;
-  pose[1] = mb;
-  pose[2] = 0.0;
+  pose[0] = mr * cos(mb);
+  pose[1] = mr * sin(mb);
+  pose[2] = mb;
 
-  // TODO: put in proper uncertainty estimates.
-  upose[0] = 0.02;  
-  upose[1] = data->resolution / 100.0 * M_PI / 180;
-  upose[2] = 1e6;
-  
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Match a new laser fiducial against the ones we are already tracking.
-void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3], double upose[3])
+// Match a new laser fiducial against the ones we are already
+// tracking.  The pose is relative to the laser.
+void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3])
 {
   int i;
   double k;
@@ -493,8 +512,8 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3], double 
   {
     fiducial = this->fiducials + i;
 
-    dx = pose[0] * cos(pose[1]) - fiducial->pose[0] * cos(fiducial->pose[1]);
-    dy = pose[0] * sin(pose[1]) - fiducial->pose[0] * sin(fiducial->pose[1]);
+    dx = pose[0] - fiducial->pose[0];
+    dy = pose[1] - fiducial->pose[1];
     dr = sqrt(dx * dx + dy * dy);
     if (dr < mindr)
     {
@@ -514,6 +533,8 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3], double 
       minfiducial->pose[1] = pose[1];
       minfiducial->pose[2] = pose[2];
       minfiducial->laser_time = time;
+      minfiducial->ptz_time = 0.0;
+      minfiducial->blobfind_time = 0.0;
     }
   }
 
@@ -544,6 +565,97 @@ void LaserVisualBarcode::MatchLaserFiducial(double time, double pose[3], double 
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Update the PTZ to point at one of the laser reflectors.
+int LaserVisualBarcode::UpdatePtz()
+{
+  int i;
+  player_ptz_data_t data;
+  size_t size;
+  uint32_t timesec, timeusec;
+  double time;
+  int target;
+  
+  // Get the ptz data.
+  size = this->ptz->GetData((unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  time = (double) timesec + ((double) timeusec) * 1e-6;
+  
+  // Dont do anything if this is old data.
+  if (time == this->ptz_time)
+    return 0;
+  this->ptz_time = time;
+  
+  // Do some byte swapping on the ptz data.
+  data.pan = ntohs(data.pan);
+  data.tilt = ntohs(data.tilt);
+  data.zoom = ntohs(data.zoom);
+
+  // Pick a fiducial to look at.
+  target = this->SelectPtzTarget(time, &data);
+
+  printf("ptz target %d\n", target);
+
+  // Point the fiducial
+  this->ServoPtz(&data, target);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Select a target fiducial for the PTZ to inspect.
+// This algorithm picks the one that we havent looked at for a long time.
+int LaserVisualBarcode::SelectPtzTarget(double time, player_ptz_data_t *data)
+{
+  int i, maxi;
+  double t, maxt;
+  fiducial_t *fiducial;
+    
+  maxi = -1;
+  maxt = 0.0;
+  
+  for (i = 0; i < this->fiducial_count; i++)
+  {
+    fiducial = this->fiducials + i;
+
+    if (fiducial->id >= 0)
+      continue;
+    t = time - fiducial->blobfind_time;
+    if (t > maxt)
+    {
+      maxi = i;
+      maxt = t;
+    }
+  }
+
+  return maxi;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Servo the PTZ to a target fiducial.
+void LaserVisualBarcode::ServoPtz(player_ptz_data_t *data, int target)
+{
+  double dx, dy, r, b;
+  fiducial_t *fiducial;
+  player_ptz_cmd_t cmd;
+
+  fiducial = this->fiducials + target;
+  
+  // Compute range and bearing of fiducial relative to camera.
+  // TODO: account for camera geometry.
+  dx = fiducial->pose[0];
+  dy = fiducial->pose[1];
+  r = sqrt(dx * dx + dy * dy);
+  b = atan2(dy, dx);
+
+  cmd.pan = htons(((int16_t) (b * 180 / M_PI)));
+  cmd.tilt = 0;
+  cmd.zoom = 0;
+  this->ptz->PutCommand((unsigned char*) &cmd, sizeof(cmd));
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
 void LaserVisualBarcode::UpdateData()
 {
@@ -559,11 +671,15 @@ void LaserVisualBarcode::UpdateData()
   {
     fiducial = this->fiducials + i;
 
-    //r = sqrt(fiducial->pose[0] * fiducial->pose[0] + fiducial->pose[1] * fiducial->pose[1]);
-    //b = atan2(fiducial->pose[1], fiducial->pose[0]);
+    r = sqrt(fiducial->pose[0] * fiducial->pose[0] + fiducial->pose[1] * fiducial->pose[1]);
+    b = atan2(fiducial->pose[1], fiducial->pose[0]);
+    o = fiducial->pose[2];
+    
+    /* REMOVE
     r = fiducial->pose[0];
     b = fiducial->pose[1];    
     o = fiducial->pose[2];
+    */
     
     data.fiducials[i].id = htons(((int16_t) fiducial->id));
     data.fiducials[i].pose[0] = htons(((int16_t) (1000 * r)));
