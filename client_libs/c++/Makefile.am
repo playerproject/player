@@ -1,3 +1,5 @@
+SUBDIRS = . test
+
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(srcdir)/../c
 
 lib_LIBRARIES = libplayerclient.a

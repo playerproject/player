@@ -51,7 +51,6 @@ install-data-hook:
 	mkdir -p $(top_srcdir)/doc
 	cp -a --remove-destination $(top_srcdir)/doc $(DESTDIR)$(prefix) 
 
-uninstall-hook:
+uninstall-local:
 	rm -f $(DESTDIR)$(docdir)/*
-	rmdir --ignore-fail-on-non-empty $(DESTDIR)$(docdir)
 

@@ -124,6 +124,10 @@ if test "x$with_stage" = "xyes"; then
 fi
 AC_SUBST(STAGE_OBJ)
 
+AC_ARG_WITH(tests, [  --with-tests          Build tests],,
+with_tests=no)
+AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
@@ -152,7 +156,9 @@ AC_OUTPUT(Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
+          client_libs/c++/test/Makefile
           client_libs/libplayerc/Makefile
+          client_libs/libplayerc/test/Makefile
           client_libs/tcl/Makefile
           examples/Makefile
           examples/c/Makefile
