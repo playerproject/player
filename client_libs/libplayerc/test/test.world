@@ -15,8 +15,22 @@ bitmap
 position
 (
   port 0
-  name "robot"  
+  name "robot 0"  
   pose [4.990 2.090 90.000]
+
+  broadcast ()
+  gps () truth ()
+  sonar ()
+  laser (lbd()) 
+  ptz (vision())
+)
+
+
+position
+(
+  port 1
+  name "robot 1"  
+  pose [5.990 2.090 90.000]
 
   broadcast ()
   gps () truth ()

@@ -46,6 +46,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   laser_t *laser;
   
   laser = malloc(sizeof(laser_t));
+
   laser->proxy = playerc_laser_create(client, robot, index);
   laser->drivername = strdup(drivername);
   laser->datatime = 0;
