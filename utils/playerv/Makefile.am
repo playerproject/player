@@ -1,11 +1,7 @@
 if WITH_RTK_GUI
 if HAVE_GTK
 PLAYERV = playerv
-else
-PLAYERV =
 endif
-else
-PLAYERV =
 endif
 
 AM_CPPFLAGS = -I$(top_srcdir)/rtk2 -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server `gtk-config --cflags`

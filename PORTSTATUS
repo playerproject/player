@@ -16,7 +16,7 @@ SA110          Linux ??
 SA1110 (iPAQ)  Linux ??
 Alpha          Linux 2.2            Y           U           Y           U
 PowerPC        OS X.2
-x86            FreeBSD 4.7
+x86            FreeBSD 4.7          Y           U           Y           U
 -------------------------------------------------------------------------------
 
 
@@ -24,6 +24,9 @@ x86            FreeBSD 4.7
 Notes
 -------------------------------------------------------------------------------
 Sparc/SunOS:
+   - udpbroadcast driver causes Player to hang.
+
+x86/FreeBSD:
    - udpbroadcast driver causes Player to hang.
 
 Alpha/Linux:
