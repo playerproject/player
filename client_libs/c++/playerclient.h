@@ -41,13 +41,13 @@
 #include <speechproxy.h>  /* support for the speech device */
 #include <laserbeaconproxy.h>  /* support for the laserbeacon device */
 #include <visionproxy.h>  /* support for the vision device */
-//BROKEN #include <truthproxy.h>  /* support for the truth device */
-//REMOVE? #include <occupancyproxy.h>  /* support for guess which device */
+#include <truthproxy.h>  /* support for the truth device */
 #include <gpsproxy.h>  /* support for the GPS device */
 #include <bpsproxy.h>  /* support for the BPS device */
 #include <broadcastproxy.h> /* support for the broadcast device */
 #include <moteproxy.h> /* support for the broadcast device */
 
+//REMOVE? #include <occupancyproxy.h>  /* support for guess which device */
 //#include <idarproxy.h>  /* support for the IDAR device */
 //#include <descartesproxy.h>  /* support for the IDAR device */
 
@@ -112,7 +112,7 @@ class PlayerClient
         If {\tt hostname} is omitted (or NULL) then the client will {\em not}
         be connected.  In that cast, call {\tt Connect()} yourself later.
      */
-    PlayerClient(const char* hostname=NULL, const int port=PLAYER_PORTNUM);
+    PlayerClient(const char* hostname =NULL, int port =PLAYER_PORTNUM);
 
     /** Make a client and connect it as indicated, using a binary IP instead 
         of a hostname
@@ -125,7 +125,7 @@ class PlayerClient
     /** Connect to the indicated host and port.\\
         Returns 0 on success; -1 on error.
      */
-    int Connect(const char* hostname="localhost", int port=PLAYER_PORTNUM);
+    int Connect(const char* hostname, int port);
 
     /** Connect to the indicated host and port, using a binary IP.\\
         Returns 0 on success; -1 on error.

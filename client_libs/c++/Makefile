@@ -12,9 +12,9 @@ INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
-      laserbeaconproxy.o visionproxy.o  \
-      gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o
-      #occupancyproxy.o truthproxy.o idarproxy.o descartesproxy.o
+      laserbeaconproxy.o visionproxy.o gpsproxy.o playermulticlient.o \
+      bpsproxy.o broadcastproxy.o moteproxy.o truthproxy.o 
+      #occupancyproxy.o idarproxy.o descartesproxy.o
 
 all: $(LIBNAME)
 
@@ -133,7 +133,7 @@ uninstall:
 
 clean:
 	cd test && make clean
-	$(RM) -f $(LIBNAME) *.o
+	$(RM) -f $(LIBNAME) *.o *~
 	$(RM) -f ../../lib/$(LIBNAME)
 	$(RM) -f ../../include/playercclient.h 
 	$(RM) -f ../../include/playerclient.h 

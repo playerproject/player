@@ -38,7 +38,7 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
   if(hdr.size != sizeof(player_gps_data_t))
   {
     if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of misc data, but "
+      fprintf(stderr,"WARNING: expected %d bytes of GPS data, but "
               "received %d. Unexpected results may ensue.\n",
               sizeof(player_gps_data_t),hdr.size);
   }
@@ -54,7 +54,7 @@ void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 void GpsProxy::Print()
 {
   printf("#GPS(%d:%d) - %c\n", device, index, access);
-  puts("#(X,Y,DEG)");
+  puts("#(Xmm,Ymm,THdeg)");
   printf("%d\t%d\t%d\n", xpos,ypos,heading);
 }
 

@@ -46,14 +46,15 @@ class LaserProxy : public ClientProxy
     // the latest laser scan data
     
     /** Scan range for the latest set of data.
-        Angles are measured in units of $0.1^{\circ}$,
+        Angles are measured in units of $0.01^{\circ}$,
         in the range -9000 ($-90^{\circ}$) to
         +9000 ($+90^{\circ}$).
     */
     short min_angle; short max_angle;
 
     /** Scan resolution for the latest set of data.
-        Resolution is measured in units of $0.1^{\circ}$.
+        Resolution is measured in units of $0.01^{\circ}$.
+        Valid choices are: 25, 50, and 100.
     */
     unsigned short resolution;
 

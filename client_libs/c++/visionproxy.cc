@@ -30,7 +30,7 @@
 #include <netinet/in.h>
 
 VisionProxy::VisionProxy(PlayerClient* pc, unsigned short index, 
-            unsigned char access='c'):
+            unsigned char access ):
             ClientProxy(pc,PLAYER_VISION_CODE,index,access)
 {
   // zero everything

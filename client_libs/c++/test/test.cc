@@ -118,6 +118,10 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "gripper") == 0 || strcmp(device, "all") == 0)
       test_gripper(&client, index);
 
+    // Ground truth device
+    if(strcmp(device, "truth") == 0 || strcmp(device, "all") == 0)
+      test_truth(&client, index);
+
     free(arg);
   }
     
