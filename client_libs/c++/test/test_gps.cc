@@ -20,9 +20,11 @@ test_gps(PlayerClient* client, int index)
      (access != PLAYER_READ_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", gp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", gp.driver_name);
 
   /*
   TEST("warping position");

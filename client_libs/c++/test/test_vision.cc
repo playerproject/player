@@ -23,9 +23,11 @@ test_vision(PlayerClient* client, int index)
      (access != PLAYER_READ_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", vp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", vp.driver_name);
 
   if(!use_stage)
   {

@@ -21,9 +21,11 @@ test_ptz(PlayerClient* client, int index)
      (access != PLAYER_ALL_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", zp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", zp.driver_name);
 
   for(int t = 0; t < 3; t++)
   {

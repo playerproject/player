@@ -49,6 +49,71 @@ int PositionProxy::SetSpeed(short speed, short turnrate)
                        (const char*)&cmd,sizeof(cmd)));
 }
 
+/* if the robot is in position mode, this will make it perform
+ * a straightline translation by trans mm. (negative values will be backwards)
+ * undefined effect if in velocity mode
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::DoStraightLine(int trans)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_cmd_t cmd;
+
+  // we send a no movement pos command first so that 
+  // the real pos command will look new.  sort of a hack FIX
+  cmd.xspeed = 0;
+  cmd.yawspeed = 0;
+  cmd.yaw = 0;
+
+  client->Write(PLAYER_POSITION_CODE, index, 
+		(const char *)&cmd, sizeof(cmd));
+
+  // now we send the real pos command
+
+  short t = (short) trans;
+  cmd.xspeed = htons(t);
+
+  return client->Write(PLAYER_POSITION_CODE, index, 
+			 (const char *)&cmd, sizeof(cmd));
+}
+
+/* if in position mode, this will cause a turn in place rotation of
+ * rot degrees.  
+ * undefined effect in velocity mode
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::DoRotation(int rot)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_cmd_t cmd;
+
+  // as before, send a fake pos command first so the
+  // real one will be flagged as new
+
+  cmd.xspeed = 0;
+  cmd.yawspeed = 0;
+  cmd.yaw = 0;
+
+  client->Write(PLAYER_POSITION_CODE, index,
+		(const char *)&cmd, sizeof(cmd));
+
+  short r = (short) rot;
+  cmd.yawspeed = htons(r);
+
+  return client->Write(PLAYER_POSITION_CODE, index, 
+			 (const char *)&cmd, sizeof(cmd));
+}
+
 // enable/disable the motors
 //
 // Returns:
@@ -106,6 +171,117 @@ int PositionProxy::ResetOdometry()
 
   return(client->Request(PLAYER_POSITION_CODE,index,(const char*)&config,
                          sizeof(config)));
+}
+
+/* select the kind of velocity control to perform
+ * 1 for position mode
+ * 0 for velocity mode
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::SelectPositionMode(unsigned char mode)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_position_mode_req_t req;
+
+  req.subtype = PLAYER_POSITION_POSITION_MODE_REQ;
+  req.state = mode;
+
+  return client->Request(PLAYER_POSITION_CODE, index, 
+			 (const char *)&req, sizeof(req));
+}
+
+/* Set odometry to the gicen pose.  
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::SetOdometry(long x, long y,int t)
+{
+  if (!client) {
+    return -1;
+  }
+  player_position_set_odom_req_t req;
+
+  req.subtype = PLAYER_POSITION_SET_ODOM_REQ;
+  req.x = htonl( x);
+  req.y = htonl( y);
+  t %= 360;
+  t=(uint16_t) (t < 0 ? t+360 : t);
+  req.theta = htons(t);
+  return client->Request(PLAYER_POSITION_CODE, index, 
+			 (const char *)&req, sizeof(req));
+}
+
+/* set the PID for the speed controller
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::SetSpeedPID(int kp, int ki, int kd)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_speed_pid_req_t req;
+
+  req.subtype = PLAYER_POSITION_SPEED_PID_REQ;
+  req.kp = htonl((unsigned int)kp);
+  req.ki = htonl((unsigned int)ki);
+  req.kd = htonl((unsigned int)kd);
+
+  return client->Request(PLAYER_POSITION_CODE, index, 
+			 (const char *)&req, sizeof(req));
+}
+
+/* set the constants for the position PID
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::SetPositionPID(short kp, short ki, short kd)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_position_pid_req_t req;
+
+  req.subtype = PLAYER_POSITION_POSITION_PID_REQ;
+  req.kp = htonl(kp);
+  req.ki = htonl(ki);
+  req.kd = htonl(kd);
+
+  return client->Request(PLAYER_POSITION_CODE, index, 
+			 (const char *)&req, sizeof(req));
+}
+
+/* set the speed profile values used during position mode
+ * spd is max speed in mm/s
+ * acc is acceleration to use in mm/s^2
+ *
+ * returns: 0 if ok, -1 else
+ */
+int
+PositionProxy::SetPositionSpeedProfile(short spd, short acc)
+{
+  if (!client) {
+    return -1;
+  }
+
+  player_position_speed_prof_req_t req;
+
+  req.subtype = PLAYER_POSITION_SPEED_PROF_REQ;
+  req.speed = htons(spd);
+  req.acc = htons(acc);
+
+  return client->Request(PLAYER_POSITION_CODE, index, 
+			 (const char *)&req, sizeof(req));
 }
 
 void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)

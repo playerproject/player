@@ -21,9 +21,11 @@ test_sonar(PlayerClient* client, int index)
      (access != PLAYER_READ_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", sp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", sp.driver_name);
 
   // wait for P2OS to start up
   for(int i=0; i < 20; i++)

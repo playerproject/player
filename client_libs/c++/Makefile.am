@@ -26,20 +26,10 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
                               blobfinderproxy.cc \
-				reb_positionproxy.cc \
-				reb_irproxy.cc \
-				reb_powerproxy.cc \
-				wifiproxy.cc
-                              #rwi_bumperproxy.cc \
-                              #rwi_bumperproxy.h \
-                              #rwi_laserproxy.cc \
-                              #rwi_laserproxy.h \
-                              #rwi_positionproxy.cc \
-                              #rwi_positionproxy.h \
-                              #rwi_powerproxy.cc \
-                              #rwi_powerproxy.h \
-                              #rwi_sonarproxy.cc \
-                              #rwi_sonarproxy.h
+                              wifiproxy.cc \
+			      irproxy.cc \
+			      powerproxy.cc \
+                              bumperproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 

@@ -25,7 +25,7 @@
  *
  * $Id$
  * 
- * implementation of REBIRProxy.
+ * implementation of IRProxy.
  *
  */
 
@@ -33,14 +33,14 @@
 #include <math.h>
 #include <netinet/in.h>
 
-REBIRProxy::REBIRProxy(PlayerClient *pc, unsigned short index,
-		       unsigned char access) :
-  ClientProxy(pc, PLAYER_REB_IR_CODE, index, access) 
+IRProxy::IRProxy(PlayerClient *pc, unsigned short index,
+                 unsigned char access) :
+  ClientProxy(pc, PLAYER_IR_CODE, index, access) 
 {
   memset(&ir_pose, 0, sizeof(ir_pose));
 
   // now set up default M & B values for the IRs
-  for (int i =0;i < PLAYER_REB_NUM_IR_SENSORS; i++) {
+  for (int i =0;i < PLAYER_IR_MAX_SAMPLES; i++) {
     params[i][IRPROXY_M_PARAM] = IRPROXY_DEFAULT_DIST_M_VALUE;
     params[i][IRPROXY_B_PARAM] = IRPROXY_DEFAULT_DIST_B_VALUE;
 
@@ -60,18 +60,18 @@ REBIRProxy::REBIRProxy(PlayerClient *pc, unsigned short index,
  * returns: 0 if ok, -1 else
  */
 int
-REBIRProxy::SetIRState(unsigned char state)
+IRProxy::SetIRState(unsigned char state)
 {
   if (!client) {
     return -1;
   }
 
-  player_reb_ir_power_req_t req;
+  player_ir_power_req_t req;
 
-  req.subtype = PLAYER_REB_IR_POWER_REQ;
+  req.subtype = PLAYER_IR_POWER_REQ;
   req.state = state;
 
-  return client->Request(PLAYER_REB_IR_CODE, index, 
+  return client->Request(PLAYER_IR_CODE, index, 
 			 (const char *)&req, sizeof(req));
 }
 
@@ -81,18 +81,18 @@ REBIRProxy::SetIRState(unsigned char state)
  * returns: 0 if ok, -1 else
  */
 int
-REBIRProxy::GetIRPose()
+IRProxy::GetIRPose()
 {
   if (!client) {
     return -1;
   }
 
   player_msghdr_t hdr;
-  player_reb_ir_pose_req_t req;
+  player_ir_pose_req_t req;
 
-  req.subtype = PLAYER_REB_IR_POSE_REQ;
+  req.subtype = PLAYER_IR_POSE_REQ;
   
-  if ((client->Request(PLAYER_REB_IR_CODE, index, (const char *)&req,
+  if ((client->Request(PLAYER_IR_CODE, index, (const char *)&req,
 		       sizeof(req), &hdr, (char *)&ir_pose,
 		       sizeof(ir_pose)) < 0) ||
       hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
@@ -100,7 +100,7 @@ REBIRProxy::GetIRPose()
   }
 
   // now change the byte ordering
-  for (int i =0; i < PLAYER_REB_NUM_IR_SENSORS; i++) {
+  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     ir_pose.poses[i][0] = ntohs(ir_pose.poses[i][0]);
     ir_pose.poses[i][1] = ntohs(ir_pose.poses[i][1]);
     ir_pose.poses[i][2] = ntohs(ir_pose.poses[i][2]);
@@ -118,7 +118,7 @@ REBIRProxy::GetIRPose()
  * returns: 
  */
 void
-REBIRProxy::SetRangeParams(int which, double m, double b)
+IRProxy::SetRangeParams(int which, double m, double b)
 {
   params[which][IRPROXY_M_PARAM] = m;
   params[which][IRPROXY_B_PARAM] = b;
@@ -132,7 +132,7 @@ REBIRProxy::SetRangeParams(int which, double m, double b)
  * returns: 
  */
 void
-REBIRProxy::SetStdDevParams(int which, double m, double b)
+IRProxy::SetStdDevParams(int which, double m, double b)
 {
   sparams[which][IRPROXY_M_PARAM] = m;
   sparams[which][IRPROXY_B_PARAM] = b;
@@ -143,17 +143,17 @@ REBIRProxy::SetStdDevParams(int which, double m, double b)
  * returns:
  */
 void
-REBIRProxy::FillData(player_msghdr_t hdr, const char *buffer)
+IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
   unsigned short new_range;
 
-  if (hdr.size != sizeof(player_reb_ir_data_t)) {
+  if (hdr.size != sizeof(player_ir_data_t)) {
     fprintf(stderr, "REBIRPROXY: expected %d bytes but only got %d\n",
-	    sizeof(player_reb_ir_data_t), hdr.size);
+	    sizeof(player_ir_data_t), hdr.size);
   }
 
-  for (int i =0; i < PLAYER_REB_NUM_IR_SENSORS; i++) {
-    voltages[i] = ntohs( ((player_reb_ir_data_t *)buffer)->voltages[i] );
+  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
+    voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
     // calc range in mm
     new_range = (unsigned short) rint(exp( (log( (double)voltages[i] ) - params[i][IRPROXY_B_PARAM] ) /
 		     params[i][IRPROXY_M_PARAM]));
@@ -176,7 +176,7 @@ REBIRProxy::FillData(player_msghdr_t hdr, const char *buffer)
  * returns: the estimated standard deviation
  */
 double
-REBIRProxy::CalcStdDev(int w, unsigned  short range)
+IRProxy::CalcStdDev(int w, unsigned  short range)
 {
   double ret = exp( log( (double)range ) * sparams[w][IRPROXY_M_PARAM] +
 		     sparams[w][IRPROXY_B_PARAM] );
@@ -189,10 +189,10 @@ REBIRProxy::CalcStdDev(int w, unsigned  short range)
  * returns:
  */
 void
-REBIRProxy::Print()
+IRProxy::Print()
 {
   printf("#REB IR(%d:%d) - %c\n", device, index, access);
-  for (int i = 0;i < PLAYER_REB_NUM_IR_SENSORS; i++) {
+  for (int i = 0;i < PLAYER_IR_MAX_SAMPLES; i++) {
     printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i], 
 	   stddev[i]);
   }

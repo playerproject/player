@@ -21,9 +21,11 @@ test_speech(PlayerClient* client, int index)
      (access != PLAYER_WRITE_MODE))
   {
     FAIL();
+    printf("DRIVER: %s\n", sp.driver_name);
     return -1;
   }
   PASS();
+  printf("DRIVER: %s\n", sp.driver_name);
 
   for(int t = 0; t < 3; t++)
   {
