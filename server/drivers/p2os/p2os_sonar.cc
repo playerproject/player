@@ -26,6 +26,7 @@
  *   the P2 sonar device.  takes no commands.  return sonar readings.
  */
 #include <stdio.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <p2os.h>
 
