@@ -110,6 +110,15 @@ thinks it has already achieved it.
   - Angular difference from target angle that will considered acceptable.
     Set this to be GREATER than the corresponding threshold of the
     underlying position device!
+- replan_cycle (float)
+  - Default: 2.0
+  - Time in seconds between replanning (i.e., constructing a new best path to 
+    the current goal from the current position).  Set to 0 (zero) for no 
+    replanning (i.e, make a plan one time and then stick with it until the 
+    goal is reached).  Replanning is pretty cheap computationally and can 
+    *really* help in dynamic environments.  Note that no changes are made 
+    to the map in order to replan; support is forthcoming for explicitly 
+    replanning around obstacles that were not in the map.
 
 @par Example 
 
@@ -197,12 +206,12 @@ Brian Gerkey, Andrew Howard
 // time to sleep between loops (us)
 #define CYCLE_TIME_US 50000
 // number of past poses to use when low-pass filtering localize data
-#define LOCALIZE_WINDOW_SIZE 20
+#define LOCALIZE_WINDOW_SIZE 10
 // skip poses that are more than this far away from the current window avg
 // (meters)
 #define LOCALIZE_WINDOW_EPSILON 3.0
 // if localize gets more than this far behind, stop the robot to let it
-// catch up (seconds)
+// catch up (seconds) - CURRENTLY UNUSED (but probably should be)
 #define LOCALIZE_MAX_LAG 2.0
 
 extern PlayerTime *GlobalTime;
@@ -268,6 +277,8 @@ class Wavefront : public Driver
     // passing through.
     int32_t localize_x_be, localize_y_be, localize_a_be;
     bool stopped;
+    // replan this often
+    double replan_cycle;
 
     // methods for internal use
     int SetupLocalize();
@@ -346,6 +357,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->dist_penalty = cf->ReadFloat(section,"dist_penalty",1.0);
   this->dist_eps = cf->ReadLength(section,"distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section,"angle_epsilon",DTOR(10));
+  this->replan_cycle = cf->ReadFloat(section,"replan_cycle",2.0);
 }
 
 
@@ -666,7 +678,9 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
 void Wavefront::Main() 
 {
   double dist, angle;
-  //double lag;
+  struct timeval curr;
+  struct timeval last_replan = {INT_MAX, INT_MAX};
+  double timediff;
   static bool rotate_waypoint=false;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
@@ -698,8 +712,14 @@ void Wavefront::Main()
 
     this->newData = false;
 
-    if(this->new_goal)
+    GlobalTime->GetTime(&curr);
+    timediff = (curr.tv_sec + curr.tv_usec/1e6) -
+            (last_replan.tv_sec + last_replan.tv_usec/1e6);
+
+    if(this->new_goal || 
+       (this->replan_cycle && (timediff > this->replan_cycle)))
     {
+
       this->newData = true;
 
       // compute costs to the new goal
@@ -724,6 +744,8 @@ void Wavefront::Main()
       }
       else
         this->curr_waypoint = 0;
+
+      last_replan = curr;
     }
 
 
