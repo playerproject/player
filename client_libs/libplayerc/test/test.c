@@ -15,6 +15,7 @@ int main(int argc, const char *argv[])
   playerc_client_t *client;
   const char *host;
   int port;
+  int all;
   int i;
   char *arg;
   const char *opt, *val;
@@ -23,19 +24,27 @@ int main(int argc, const char *argv[])
   // Default host, port
   host = "localhost";
   port = 6665;
+  all = 1;
 
-  // Read program options
+  // Read program options (host and port).
   for (i = 1; i < argc - 1; i += 2)
   {
     opt = argv[i];
     val = argv[i + 1];
-    
     if (strcmp(opt, "-h") == 0)
       host = val;
     else if (strcmp(opt, "-p") == 0)
       port = atoi(val);
   }
-  
+
+  // If there are individual device arguments, dont do all tests.
+  for (i = 1; i < argc; i++)
+  {
+    opt = argv[i];
+    if (strncmp(opt, "--", 2) == 0)
+      all = 0;
+  }
+
   printf("host [%s:%d]\n", host, port);
   
   client = playerc_client_create(NULL, host, port);
@@ -48,74 +57,99 @@ int main(int argc, const char *argv[])
   }
   PASS();
 
-  // Get the available device list from the server.
-  TEST("querying interface list");
-  if (playerc_client_get_devlist(client) < 0)
+  if (all)
   {
-    FAIL();
-    return -1;
+    // Get the available device list from the server.
+    TEST("querying interface list");
+    if (playerc_client_get_devlist(client) < 0)
+    {
+      FAIL();
+      return -1;
+    }
+    PASS();
   }
-  PASS();
-  printf("interfaces:\n", host, port);
+  else
+  {
+    // Override the auto-detected stuff with command line directives.
+    for (i = 1; i < argc; i++)
+    {
+      if (strncmp(argv[i], "--", 2) != 0)
+        continue;
+
+      // Get device name and index
+      arg = strdup(argv[i]);
+      device = strtok(arg + 2, ":");
+      sindex = strtok(NULL, "");
+      index = (sindex ? atoi(sindex) : 0);
+
+      client->ids[client->id_count].code = playerc_lookup_code(device);
+      client->ids[client->id_count].index = index;
+      client->id_count++;
+
+      free(arg);
+    }
+  }
+
+  // Print interface list.
+  printf("selected interfaces:\n", host, port);
+  for (i = 0; i < client->id_count; i++)
+    printf("  %s:%d \n", playerc_lookup_name(client->ids[i].code), client->ids[i].index);
+
+  // Run all tests
   for (i = 0; i < client->id_count; i++)
   {
-    printf("  %s:%d \n", playerc_lookup_name(client->ids[i].code), client->ids[i].index);
-  }
+    switch (client->ids[i].code)
+    {
+      // Broadcast device
+      case PLAYER_COMMS_CODE:
+        test_comms(client, client->ids[i].index);
+        break;
 
+      // GPS device
+      case PLAYER_GPS_CODE:
+        test_gps(client, client->ids[i].index);
+        break;
 
-  // Run the tests
-  for (i = 1; i < argc; i++)
-  {
-    if (strncmp(argv[i], "--", 2) != 0)
-      continue;
+      // SRF device
+      case PLAYER_SRF_CODE:
+        test_srf(client, client->ids[i].index);
+        break;
 
-    // Get device name and index
-    arg = strdup(argv[i]);
-    device = strtok(arg + 2, ":");
-    sindex = strtok(NULL, "");
-    index = (sindex ? atoi(sindex) : 0);
+      // Fiducial detector
+      case PLAYER_FIDUCIAL_CODE:
+        test_fiducial(client, client->ids[i].index);
+        break;
 
-    // BPS device
-    //if (strcmp(device, "bps") == 0 || strcmp(device, "all") == 0)
-    //  test_bps(client, index);
+      // Position device
+      case PLAYER_POSITION_CODE:
+        test_position(client, client->ids[i].index);
+        break;
 
-    // Broadcast device
-    if (strcmp(device, "broadcast") == 0 || strcmp(device, "all") == 0)
-      test_broadcast(client, index);
+      // PTZ device
+      case PLAYER_PTZ_CODE:
+        test_ptz(client, client->ids[i].index);
+        break;
 
-    // GPS device
-    if (strcmp(device, "gps") == 0 || strcmp(device, "all") == 0)
-      test_gps(client, index);
+      // FRF device
+      case PLAYER_FRF_CODE:
+        test_frf(client, client->ids[i].index);
+        break;
 
-    // SRF device
-    if (strcmp(device, "srf") == 0 || strcmp(device, "all") == 0)
-      test_srf(client, index);
+      // Truth device
+      case PLAYER_TRUTH_CODE:
+        test_truth(client, client->ids[i].index);
+        break;
 
-    // Fiducial detector
-    if (strcmp(device, "fiducial") == 0 || strcmp(device, "all") == 0)
-      test_fiducial(client, index);
+      // Blobfinder device
+      case PLAYER_BLOBFINDER_CODE:
+        test_blobfinder(client, client->ids[i].index);
+        break;
 
-    // Position device
-    if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
-      test_position(client, index);
-
-    // PTZ device
-    if (strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
-      test_ptz(client, index);
-
-    // FRF device
-    if (strcmp(device, "frf") == 0 || strcmp(device, "all") == 0)
-      test_frf(client, index);
-
-    // Truth device
-    if (strcmp(device, "truth") == 0 || strcmp(device, "stage") == 0)
-      test_truth(client, index);
-
-    // Blobfinder device
-    if (strcmp(device, "blobfinder") == 0 || strcmp(device, "all") == 0)
-      test_blobfinder(client, index);
-    
-    free(arg);
+      default:
+        printf("no test for interface [%s]\n",
+               playerc_lookup_name(client->ids[i].code));
+        break;
+    }
   }
     
   TEST("disconnecting");

@@ -136,7 +136,10 @@ extern char playerc_errorstr[];
  **************************************************************************/
 
 // Get the name for a given device code.
-const char *playerc_lookup_name(int code);
+extern const char *playerc_lookup_name(int code);
+
+// Get the device code for a give name.
+extern int playerc_lookup_code(const char *name);
 
 
 /***************************************************************************
