@@ -127,8 +127,12 @@ install: all
 
 uninstall:
 	$(RM) -f $(INSTALL_BIN)/$(SERVERNAME)
+	$(RM) -f $(INSTALL_INCLUDE)/player.h
+	$(RM) -f $(INSTALL_INCLUDE)/playerqueue.h
 	$(RM) -f $(INSTALL_INCLUDE)/playercommon.h
 	$(RM) -f $(INSTALL_INCLUDE)/messages.h
 	$(RM) -f $(INSTALL_INCLUDE)/defaults.h
 	$(RM) -f $(INSTALL_INCLUDE)/stage.h
+	$(RM) -f $(INSTALL_LIB)/libplayerqueue.a
+
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
