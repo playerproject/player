@@ -1,3 +1,5 @@
+SUBDIRS = recognition
+
 noinst_LIBRARIES = @FESTIVAL_LIB@
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server

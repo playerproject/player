@@ -77,7 +77,6 @@ int main(int argc, char **argv)
   //CameraProxy cp(&robot,0,'r');
 
   BlobfinderProxy bp(&robot, 0, 'r');
-  HUDProxy hp(&robot, 0, 'w');
 
   int i,j;
   float red[3];
@@ -105,23 +104,6 @@ int main(int argc, char **argv)
     {
       for (j=0; j < 5/*bp.num_blobs[i]*/; j++)
       {
-        if (j < bp.blob_count)
-        {
-          hp.SetColor( red );
-          hp.SetStyle(0);
-          hp.DrawBox( i*10+j, bp.blobs[j].left,
-              bp.blobs[j].bottom,
-              bp.blobs[j].right, 
-              bp.blobs[j].top);
-
-          hp.SetColor(blue);
-          hp.SetStyle(1);
-          hp.DrawCircle( -i*10+j, bp.blobs[j].x, bp.blobs[j].y, 8 );
-
-        } else {
-          hp.Remove(i*10+j);
-          hp.Remove(-i*10+j);
-        }
       }
     }
   }

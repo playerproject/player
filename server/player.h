@@ -90,13 +90,13 @@
 #define PLAYER_NOMAD_CODE          ((uint16_t)34)  // Nomad robot
 #define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo)
 #define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
-#define PLAYER_HUD_CODE            ((uint16_t)43)  // get a HUD interface
 #define PLAYER_PLANNER_CODE        ((uint16_t)44)  // 2D motion planner
 #define PLAYER_LOG_CODE            ((uint16_t)45)  // log read/write control
 #define PLAYER_ENERGY_CODE         ((uint16_t)46)  // energy consumption & charging
 #define PLAYER_MOTOR_CODE          ((uint16_t)47)  // motor interface
 #define PLAYER_POSITION2D_CODE     ((uint16_t)48)  // 2-D position
 #define PLAYER_JOYSTICK_CODE       ((uint16_t)49)  // Joytstick
+#define PLAYER_SPEECH_RECOGNITION_CODE  ((uint16_t)50)  // speech recognitionI/O
 
 
 /* the currently assigned device strings */
@@ -112,6 +112,7 @@
 #define PLAYER_AUDIO_STRING          "audio"
 #define PLAYER_FIDUCIAL_STRING       "fiducial"
 #define PLAYER_SPEECH_STRING         "speech"
+#define PLAYER_SPEECH_RECOGNITION_STRING   "speech_recognition"
 #define PLAYER_GPS_STRING            "gps"
 #define PLAYER_BUMPER_STRING         "bumper"
 #define PLAYER_TRUTH_STRING          "truth"
@@ -137,7 +138,6 @@
 #define PLAYER_NOMAD_STRING          "nomad"
 #define PLAYER_ENERGY_STRING         "energy"
 #define PLAYER_MAP_STRING            "map"
-#define PLAYER_HUD_STRING            "hud"
 #define PLAYER_PLANNER_STRING        "planner"
 #define PLAYER_LOG_STRING            "log"
 #define PLAYER_CAMERA_STRING          "camera"
@@ -3033,50 +3033,6 @@ typedef struct player_sound_cmd
 
 /** @addtogroup interfaces */
 /** @{ */
-/** @defgroup player_interface_hud hud
-
-The @p hud interface provides an drawing interface for simulators for the
-purpose of creating a Heads Up Display. This is currently only supported
-by Gazebo.
-
-This interface provides no data and accepts no commands.
-@{
-*/
-
-/* Drawable subtypes. */
-#define PLAYER_HUD_BOX 0x00
-#define PLAYER_HUD_LINE 0x01
-#define PLAYER_HUD_TEXT 0x02
-#define PLAYER_HUD_CIRCLE 0x03
-
-/** @brief Configuration request: Draw element
-
-Request the HUD to draw a new element to the screen. */
-typedef struct player_hud_config
-{
-  /** Packet subtype. */
-  uint8_t subtype;
-  /** Id of this drawing element */
-  uint32_t id;
-  /** Two points */
-  int16_t pt1[2], pt2[2];
-  /** Single values */
-  int16_t value1;
-  /** A text string to render */
-  char text[PLAYER_MAX_DEVICE_STRING_LEN];
-  /** Color to render at */
-  int16_t color[3];
-  /** Remove this element? */
-  int8_t remove;
-  /** Draw this element filled in? */
-  int8_t filled;
-} __PACKED__ player_hud_config_t;
-
-/** @} */
-/** @} */
-
-/** @addtogroup interfaces */
-/** @{ */
 /** @defgroup player_interface_energy energy
 
 The @p energy interface provides data about energy storage, consumption
@@ -3252,5 +3208,32 @@ typedef struct player_log_get_state
 
 /** @} */
 /** @} */
+
+
+/*************************************************************************/
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_speech_recognition speech_recognition
+
+The speech recognition interface provides access to a speech recognition
+server.
+
+@{
+*/
+
+#define SPEECH_RECOGNITION_TEXT_LEN 256
+
+/** @brief Data
+
+The speech recognition data packet.  */
+typedef struct player_speech_recognition_data
+{
+  char text[SPEECH_RECOGNITION_TEXT_LEN];
+} __PACKED__ player_speech_recognition_data_t;
+
+
+/** @} */
+/** @} */
+
 
 #endif /* PLAYER_H */

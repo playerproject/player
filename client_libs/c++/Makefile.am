@@ -45,9 +45,9 @@ libplayerclient_a_SOURCES =   clientproxy.cc \
                               blinkenlightproxy.cc \
                               cameraproxy.cc \
                               aioproxy.cc \
-                              hudproxy.cc \
                               plannerproxy.cc \
                               mapproxy.cc \
-                              energyproxy.cc
+                              energyproxy.cc \
+															speechrecognitionproxy.cc
 
 include_HEADERS = playerclient.h playermcomtypes.h
