@@ -401,6 +401,7 @@ ClientWriterThread(void* arg)
             // write must have errored. dump it
             cr->RemoveClient(i);
           }
+          cr->clients[i]->last_write = curr.tv_sec + curr.tv_usec / 1000000.0;
         }
       }
       else if(cr->clients[i]->mode == REQUESTREPLY && 
