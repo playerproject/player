@@ -1,1 +1,1 @@
-SUBDIRS = p2os rwi reb rmp rflex
+SUBDIRS = p2os rwi reb rmp rflex botrics
