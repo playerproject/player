@@ -544,9 +544,8 @@ typedef struct
   // tilt : tilt angle (+ve upwrds, -ve downwards).
   double pan, tilt;
 
-  // The current zoom value.
-  // 0 is wide angle; > 0 is telephoto.
-  int zoom;
+  // The current zoom value (field of view angle).
+  double zoom;
   
 } playerc_ptz_t;
 
@@ -564,7 +563,7 @@ int playerc_ptz_subscribe(playerc_ptz_t *device, int access);
 int playerc_ptz_unsubscribe(playerc_ptz_t *device);
 
 // Set the pan, tilt and zoom values.
-int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, int zoom);
+int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
 
 
 /***************************************************************************

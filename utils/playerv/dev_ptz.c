@@ -36,11 +36,6 @@ void ptz_draw(ptz_t *ptz);
 // Move the ptz
 void ptz_move(ptz_t *ptz);
 
-// Camera field of view at min and max zoom
-// TODO: get these from somewhere
-#define FMIN (6 * M_PI / 180)
-#define FMAX (60 * M_PI / 180)
-
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
@@ -153,7 +148,7 @@ void ptz_draw(ptz_t *ptz)
   double fx, fd;
 
   // Camera field of view in x-direction (radians)
-  fx = FMAX + (double) ptz->proxy->zoom / 1024 * (FMIN - FMAX);
+  fx = ptz->proxy->zoom;
   fd = 1.0 / tan(fx/2);
   
   rtk_fig_show(ptz->data_fig, 1);      
@@ -185,16 +180,12 @@ void ptz_move(ptz_t *ptz)
 {
   double ox, oy, oa;
   double pan, tilt, zoom;
-  double fx;
     
   rtk_fig_get_origin(ptz->cmd_fig, &ox, &oy, &oa);
 
   pan = atan2(oy, ox);
   tilt = 0;
-
-  fx = 2 * atan2(1.0, sqrt(ox * ox + oy * oy));
-  zoom = 1024 * (fx - FMAX) / (FMIN - FMAX);
-  //zoom = 1024 * sqrt(ox * ox + oy * oy) / 4.0;
+  zoom = 2 * atan2(1.0, sqrt(ox * ox + oy * oy));
   
   if (playerc_ptz_set(ptz->proxy, pan, tilt, zoom) != 0)
     PRINT_ERR1("libplayerc error: %s", playerc_errorstr);
