@@ -97,6 +97,7 @@ int main(int argc, char** argv)
   if(turnOnMotors && pp.SetMotorState(1))
     exit(1);
 
+//  vp.SetTrackingColor(47,100,95,118,20,66);
   int newturnrate=0,newspeed=0;
   //int lastdir = 1;
   /* go into read-think-act loop */

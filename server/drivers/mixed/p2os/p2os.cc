@@ -81,9 +81,10 @@ extern int             P2OS::psos_fd;
 extern char            P2OS::psos_serial_port[];
 extern int             P2OS::radio_modemp;
 extern int             P2OS::joystickp;
+extern int             P2OS::cmucam;
 extern bool            P2OS::initdone;
 extern char            P2OS::num_loops_since_rvel;
-extern SIP*           P2OS::sippacket;
+extern SIP*            P2OS::sippacket;
 extern int             P2OS::param_idx;
 extern pthread_mutex_t P2OS::p2os_accessMutex;
 extern pthread_mutex_t P2OS::p2os_setupMutex;
@@ -109,6 +110,7 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
     psos_fd = -1;
     radio_modemp = 0;
     joystickp = 0;
+    cmucam = 0;		// If p2os_cmucam is used, this will be overridden
   
     data = new player_p2os_data_t;
     command = new player_p2os_cmd_t;
@@ -483,7 +485,7 @@ int P2OS::Setup()
 
   // turn off the sonars at first
   sonarcommand[0] = SONAR;
-  sonarcommand[1] = 0x3B;
+  sonarcommand[1] = ARGINT;
   sonarcommand[2] = 0;
   sonarcommand[3] = 0;
   sonarpacket.Build(sonarcommand, 4);
@@ -495,12 +497,15 @@ int P2OS::Setup()
     P2OSPacket js_packet;
     unsigned char js_command[4];
     js_command[0] = JOYDRIVE;
-    js_command[1] = 0x3B;
+    js_command[1] = ARGINT;
     js_command[2] = 1;
     js_command[3] = 0;
     js_packet.Build(js_command, 4);
     SendReceive(&js_packet);
   }
+
+  if (cmucam)
+    CMUcamReset();
 
   /* now spawn reading thread */
   StartThread();
@@ -700,6 +705,7 @@ P2OS::Main()
 
   int last_sonar_subscrcount;
   int last_position_subscrcount;
+  int last_cmucam_subscrcount;
 
   player_device_id_t id;
   id.port = global_playerport;
@@ -711,9 +717,12 @@ P2OS::Main()
   CDevice* positionp = deviceTable->GetDevice(id);
   id.code = PLAYER_SOUND_CODE;
   CDevice* soundp = deviceTable->GetDevice(id);
+  id.code = PLAYER_BLOBFINDER_CODE;
+  CDevice* cmucamp = deviceTable->GetDevice(id);
   
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
+  last_cmucam_subscrcount = 0;
 
   if(sippacket)
     sippacket->x_offset = sippacket->y_offset = sippacket->angle_offset = 0;
@@ -723,7 +732,7 @@ P2OS::Main()
   // request the current configuration
   /*
     configreq[0] = 18;
-    configreq[1] = 0x3B;
+    configreq[1] = ARGINT;
     configpacket.Build(configreq,2);
     puts("sending CONFIGpac");
     SendReceive(&configpacket);
@@ -738,7 +747,7 @@ P2OS::Main()
       if(!last_sonar_subscrcount && sonarp->subscriptions)
       {
         motorcommand[0] = SONAR;
-        motorcommand[1] = 0x3B;
+        motorcommand[1] = ARGINT;
         motorcommand[2] = 1;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
@@ -747,7 +756,7 @@ P2OS::Main()
       else if(last_sonar_subscrcount && !(sonarp->subscriptions))
       {
         motorcommand[0] = SONAR;
-        motorcommand[1] = 0x3B;
+        motorcommand[1] = ARGINT;
         motorcommand[2] = 0;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
@@ -766,7 +775,7 @@ P2OS::Main()
       {
         // disable motor power
         motorcommand[0] = ENABLE;
-        motorcommand[1] = 0x3B;
+        motorcommand[1] = ARGINT;
         motorcommand[2] = 0;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
@@ -779,7 +788,7 @@ P2OS::Main()
       {
         // command motors to stop
         motorcommand[0] = VEL2;
-        motorcommand[1] = 0x3B;
+        motorcommand[1] = ARGINT;
         motorcommand[2] = 0;
         motorcommand[3] = 0;
 
@@ -793,7 +802,7 @@ P2OS::Main()
       
         // disable motor power
         motorcommand[0] = ENABLE;
-        motorcommand[1] = 0x3B;
+        motorcommand[1] = ARGINT;
         motorcommand[2] = 0;
         motorcommand[3] = 0;
         motorpacket.Build(motorcommand, 4);
@@ -803,7 +812,53 @@ P2OS::Main()
       last_position_subscrcount = positionp->subscriptions;
     }
 
+    // we want to turn on the cmucam blob tracking if someone just subscribed, 
+    // and turn them off (reset) if the last subscriber just unsubscribed.
+    if(cmucamp)
+    {
+/*
+      if(!last_cmucam_subscrcount && cmucamp->subscriptions)
+      {
+         // First subscription
+         CMUcamTrack();
+      }
+      else if(last_cmucam_subscrcount && !(cmucamp->subscriptions))
+      {
+         CMUcamReset();
+      }
+*/
+      
+      last_cmucam_subscrcount = cmucamp->subscriptions;
+
+      // The Amigo board seems to drop commands once in a while.  This is
+      // a hack to restart the serial reads if that happens.
+      struct timeval now_tv;
+      GlobalTime->GetTime(&now_tv);
+      if (now_tv.tv_sec > lastblob_tv.tv_sec) 
+      {
+//         printf(".");  fflush(stdout);
+         P2OSPacket cam_packet;
+         unsigned char cam_command[4];
+
+         cam_command[0] = GETAUX2;
+         cam_command[1] = ARGINT;
+         cam_command[2] = 0;
+         cam_command[3] = 0;
+         cam_packet.Build(cam_command, 4);
+         SendReceive(&cam_packet);
+
+         cam_command[0] = GETAUX2;
+         cam_command[1] = ARGINT;
+         cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
+         cam_command[3] = 0;
+         cam_packet.Build(cam_command, 4);
+         SendReceive(&cam_packet);
+         GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
+      }
+    }
     
+    
+    /** New configuration commands **/
     void* client;
     player_device_id_t id;
     // first, check if there is a new config command
@@ -811,6 +866,103 @@ P2OS::Main()
     {
       switch(id.code)
       {
+        case PLAYER_BLOBFINDER_CODE:
+          switch(config[0])
+          {
+            case PLAYER_BLOBFINDER_SET_COLOR_REQ:
+              // Set the tracking color (RGB max/min values)
+
+              if(config_size != sizeof(player_blobfinder_color_config_t))
+              {
+                puts("Arg to blobfinder color request wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+              player_blobfinder_color_config_t color_config;
+              color_config = *((player_blobfinder_color_config_t*)config);
+
+              CMUcamTrack( (short)ntohs(color_config.rmin),
+                           (short)ntohs(color_config.rmax), 
+                           (short)ntohs(color_config.gmin),
+                           (short)ntohs(color_config.gmax),
+                           (short)ntohs(color_config.bmin),
+                           (short)ntohs(color_config.bmax) );
+
+              //printf("Color Tracking parameter updated.\n");
+
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
+            case PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ:
+              // Set the imager control params
+              if(config_size != sizeof(player_blobfinder_imager_config_t))
+              {
+                puts("Arg to blobfinder imager request wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+              player_blobfinder_imager_config_t imager_config;
+              imager_config = *((player_blobfinder_imager_config_t*)config);
+
+              P2OSPacket cam_packet;
+              unsigned char cam_command[50];
+              int np = 3;
+              
+              CMUcamStopTracking();	// Stop the current tracking.
+
+              cam_command[0] = TTY3;
+              cam_command[1] = ARGSTR;
+              np += sprintf((char*)&cam_command[np], "CR ");
+
+              if ((short)ntohs(imager_config.brightness) >= 0)
+                 np += sprintf((char*)&cam_command[np], " 6 %d",
+                            ntohs(imager_config.brightness));
+
+              if ((short)ntohs(imager_config.contrast) >= 0)
+                 np += sprintf((char*)&cam_command[np], " 5 %d",
+                            ntohs(imager_config.contrast));
+
+              if (imager_config.autogain >= 0)
+                 if (imager_config.autogain == 0)
+                    np += sprintf((char*)&cam_command[np], " 19 32");
+                 else
+                    np += sprintf((char*)&cam_command[np], " 19 33");
+
+              if (imager_config.colormode >= 0)
+                 if (imager_config.colormode == 3)
+                    np += sprintf((char*)&cam_command[np], " 18 36");
+                 else if (imager_config.colormode == 2)
+                    np += sprintf((char*)&cam_command[np], " 18 32");
+                 else if (imager_config.colormode == 1)
+                    np += sprintf((char*)&cam_command[np], " 18 44");
+                 else
+                    np += sprintf((char*)&cam_command[np], " 18 40");
+
+              if (np > 6)
+              {
+                 sprintf((char*)&cam_command[np], "\r");
+                 cam_command[2] = strlen((char *)&cam_command[3]);
+                 cam_packet.Build(cam_command, (int)cam_command[2]+3);
+                 SendReceive(&cam_packet);
+
+                 printf("Blobfinder imager parameters updated.\n");
+                 printf("       %s\n", &cam_command[3]);
+              } else
+                 printf("Blobfinder imager parameters NOT updated.\n");
+
+              CMUcamTrack(); 	// Restart tracking
+ 
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+          }
+          break;
+
         case PLAYER_SONAR_CODE:
           switch(config[0])
           {
@@ -831,7 +983,7 @@ P2OS::Main()
               sonar_config = *((player_sonar_power_config_t*)config);
 
               motorcommand[0] = SONAR;
-              motorcommand[1] = 0x3B;
+              motorcommand[1] = ARGINT;
               motorcommand[2] = sonar_config.value;
               motorcommand[3] = 0;
               motorpacket.Build(motorcommand, 4);
@@ -923,7 +1075,7 @@ P2OS::Main()
               power_config = *((player_position_power_config_t*)config);
 
               motorcommand[0] = ENABLE;
-              motorcommand[1] = 0x3B;
+              motorcommand[1] = ARGINT;
               motorcommand[2] = power_config.value;
               motorcommand[3] = 0;
               motorpacket.Build(motorcommand, 4);
@@ -1094,7 +1246,7 @@ P2OS::Main()
       //printf("leftvel: %d\trightvel:%d\n", 
       //(char)(leftvel/20.0), (char)(rightvel/20.0));
       motorcommand[0] = VEL2;
-      motorcommand[1] = 0x3B;
+      motorcommand[1] = ARGINT;
       motorcommand[2] = (char)(rightvel /
                                PlayerRobotParams[param_idx].Vel2Divisor);
       motorcommand[3] = (char)(leftvel /
@@ -1111,9 +1263,9 @@ P2OS::Main()
       {
         motorcommand[0] = VEL;
         if(speedDemand >= 0)
-          motorcommand[1] = 0x3B;
+          motorcommand[1] = ARGINT;
         else
-          motorcommand[1] = 0x1B;
+          motorcommand[1] = ARGNINT;
 
         absspeedDemand = (unsigned short)abs(speedDemand);
         if(absspeedDemand < MOTOR_MAX_SPEED) {
@@ -1131,9 +1283,9 @@ P2OS::Main()
       {
         motorcommand[0] = RVEL;
         if(turnRateDemand >= 0)
-          motorcommand[1] = 0x3B;
+          motorcommand[1] = ARGINT;
         else
-          motorcommand[1] = 0x1B;
+          motorcommand[1] = ARGNINT;
 
         absturnRateDemand = (unsigned short)abs(turnRateDemand);
         if(absturnRateDemand < MOTOR_MAX_TURNRATE) {
@@ -1157,7 +1309,7 @@ P2OS::Main()
       //puts("sending gripper command");
       // gripper command 
       gripcommand[0] = GRIPPER;
-      gripcommand[1] = 0x3B;
+      gripcommand[1] = ARGINT;
       gripcommand[2] = gripperCmd & 0x00FF;
       gripcommand[3] = (gripperCmd & 0xFF00) >> 8;
       grippacket.Build( gripcommand, 4);
@@ -1167,7 +1319,7 @@ P2OS::Main()
       if(gripperCmd == GRIPpress || gripperCmd == LIFTcarry ) 
       {
         gripcommand[0] = GRIPPERVAL;
-        gripcommand[1] = 0x3B;
+        gripcommand[1] = ARGINT;
         gripcommand[2] = gripperArg & 0x00FF;
 	gripcommand[3] = (gripperArg & 0xFF00) >> 8;
         grippacket.Build( gripcommand, 4);
@@ -1178,7 +1330,7 @@ P2OS::Main()
     // send sound play command down
     if (newsoundplay) {
       soundcommand[0] = SOUND;
-      soundcommand[1] = 0x3B;
+      soundcommand[1] = ARGINT;
       soundcommand[2] = soundindex & 0x00FF;
       soundcommand[3] = (soundindex & 0xFF00) >> 8;
       soundpacket.Build(soundcommand,4);
@@ -1245,6 +1397,7 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
        (packet.packet[3] == 0x32 || packet.packet[3] == 0x33) ||
        (packet.packet[3] == 0x34))
     {
+
       /* It is a server packet, so process it */
       sippacket->Parse( &packet.packet[3] );
       //sippacket->Print();
@@ -1252,9 +1405,66 @@ P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
 
       PutData((unsigned char*)&data, sizeof(data),0,0);
     }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
+            packet.packet[3] == SERAUX)
+    {
+       // This is an AUX serial packet
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
+            packet.packet[3] == SERAUX2)
+    {
+       // This is an AUX2 serial packet
+       if (cmucam)
+       {
+          /* It is an extended SIP (blobfinder) packet, so process it */
+          /* Be sure to pass data size too (packet[2])! */
+          sippacket->ParseSERAUX( &packet.packet[2] );
+          //sippacket->Print();
+          sippacket->Fill(&data, timeBegan_tv );
+ 
+          PutData((unsigned char*)&data, sizeof(data),0,0);
+//          packet.Print();
+ 
+/*
+          printf("----> ");
+          for (int ix=4; ix<((int)packet.packet[2]+1); ix++)
+             printf("%c", packet.packet[ix]);
+          printf("\n");
+*/
+
+          P2OSPacket cam_packet;
+          unsigned char cam_command[4];
+
+          /* We cant get the entire contents of the buffer,
+          ** and we cant just have P2OS send us the buffer on a regular basis.
+          ** My solution is to flush the buffer and then request exactly
+          ** CMUCAM_MESSAGE_LEN * 2 -1 bytes of data.  This ensures that
+          ** we will get exactly one full message, and it will be "current"
+          ** within the last 2 messages.  Downside is that we end up pitching
+          ** every other CMUCAM message.  Tradeoffs... */
+          // Flush
+          cam_command[0] = GETAUX2;
+          cam_command[1] = ARGINT;
+          cam_command[2] = 0;
+          cam_command[3] = 0;
+          cam_packet.Build(cam_command, 4);
+          SendReceive(&cam_packet);
+
+          // Reqest next packet
+          cam_command[0] = GETAUX2;
+          cam_command[1] = ARGINT;
+	  // Guarantee exactly 1 full message
+          cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
+          cam_command[3] = 0;
+          cam_packet.Build(cam_command, 4);
+          SendReceive(&cam_packet);
+          GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
+       }
+    }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
             (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
-            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
+//            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
+            (packet.packet[3] == 0xC0) ||
             (packet.packet[3] == 0xD0 || packet.packet[3] == 0xE0))
     {
       /* It is a vision packet from the old Cognachrome system*/
@@ -1291,7 +1501,7 @@ P2OS::ResetRawPositions()
     sippacket->xpos = 0;
     sippacket->ypos = 0;
     p2oscommand[0] = SETO;
-    p2oscommand[1] = 0x3B;
+    p2oscommand[1] = ARGINT;
     pkt.Build(p2oscommand, 2);
     SendReceive(&pkt);//,true);
   }
@@ -1315,3 +1525,122 @@ P2OS::StopThread()
 }
 
 
+/****************************************************************
+** Reset the CMUcam.  This includes flushing the buffer and
+** setting interface output mode to raw.  It also restarts
+** tracking output (current mode)
+****************************************************************/
+void P2OS::CMUcamReset()
+{
+  CMUcamStopTracking();	// Stop the current tracking.
+
+  P2OSPacket cam_packet;
+  unsigned char cam_command[8];
+
+  printf("Resetting the CMUcam...\n");
+  cam_command[0] = TTY3;
+  cam_command[1] = ARGSTR;
+  sprintf((char*)&cam_command[3], "RS\r");
+  cam_command[2] = strlen((char *)&cam_command[3]);
+  cam_packet.Build(cam_command, (int)cam_command[2]+3);
+  SendReceive(&cam_packet);
+
+  // Set for raw output + no ACK/NACK
+  printf("Setting raw mode...\n");
+  cam_command[0] = TTY3;
+  cam_command[1] = ARGSTR;
+  sprintf((char*)&cam_command[3], "RM 3\r");
+  cam_command[2] = strlen((char *)&cam_command[3]);
+  cam_packet.Build(cam_command, (int)cam_command[2]+3);
+  SendReceive(&cam_packet);
+  usleep(100000);
+
+  printf("Flushing serial buffer...\n");
+  cam_command[0] = GETAUX2;
+  cam_command[1] = ARGINT;
+  cam_command[2] = 0;
+  cam_command[3] = 0;
+  cam_packet.Build(cam_command, 4);
+  SendReceive(&cam_packet);
+
+  sleep(1);
+  // (Re)start tracking
+  CMUcamTrack();
+}
+
+
+/****************************************************************
+** Start CMUcam blob tracking.  This method can be called 3 ways:
+**   1) with a set of 6 color arguments (RGB min and max)
+**   2) with auto tracking (-1 argument)
+**   3) with current values (0 or no arguments)
+****************************************************************/
+void P2OS::CMUcamTrack(int rmin, int rmax,
+                       int gmin, int gmax,
+                       int bmin, int bmax)
+{
+  CMUcamStopTracking();	// Stop the current tracking.
+
+  P2OSPacket cam_packet;
+  unsigned char cam_command[50];
+
+  if (!rmin && !rmax && !gmin && !gmax && !bmin && !bmax)
+  {
+    // Then start it up with current values.
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TC\r");
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    SendReceive(&cam_packet);
+  }
+  else if (rmin<0 || rmax<0 || gmin<0 || gmax<0 || bmin<0 || bmax<0)
+  {
+    printf("Activating CMUcam color tracking (AUTO-mode)...\n");
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TW\r");
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    SendReceive(&cam_packet);
+  }
+  else
+  {
+    printf("Activating CMUcam color tracking (MANUAL-mode)...\n");
+    //printf("      RED: %d %d    GREEN: %d %d    BLUE: %d %d\n",
+    //                   rmin, rmax, gmin, gmax, bmin, bmax);
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TC %d %d %d %d %d %d\r", 
+             rmin, rmax, gmin, gmax, bmin, bmax);
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    SendReceive(&cam_packet);
+  }
+
+  cam_command[0] = GETAUX2;
+  cam_command[1] = ARGINT;
+  cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;	// Guarantee 1 full message
+  cam_command[3] = 0;
+  cam_packet.Build(cam_command, 4);
+  SendReceive(&cam_packet);
+}
+
+
+/****************************************************************
+** Stop Tracking - This should be done before any new command
+** are issued to the CMUcam.
+****************************************************************/
+void P2OS::CMUcamStopTracking()
+{
+  P2OSPacket cam_packet;
+  unsigned char cam_command[50];
+
+  // First we must STOP tracking.  Just send a return.
+  cam_command[0] = TTY3;
+  cam_command[1] = ARGSTR;
+  sprintf((char*)&cam_command[3], "\r");
+  cam_command[2] = strlen((char *)&cam_command[3]);
+  cam_packet.Build(cam_command, (int)cam_command[2]+3);
+  SendReceive(&cam_packet);
+}

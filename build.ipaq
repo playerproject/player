@@ -1,0 +1,2 @@
+#Configure of ipaq - strips lots of unused stuff to make a small image
+./configure --disable-tests --without-python --disable-lifomcom --disable-passthrough --disable-sicklms200 --disable-acts --disable-cmvision --disable-festival --disable-sonyevid30 --disable-stage --disable-udpbroadcast --disable-lasercspace --disable-linuxwifi --disable-fixedtones --disable-acoustics --disable-mixer --disable-rwi --disable-isense --disable-laser --without-rtk

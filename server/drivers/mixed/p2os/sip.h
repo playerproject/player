@@ -50,8 +50,16 @@ class SIP
   int xpos, ypos;
   int x_offset,y_offset,angle_offset;
 
+  // these values are returned in a CMUcam serial string extended SIP
+  // (in host byte-order)
+  unsigned short blobmx, blobmy;	// Centroid
+  unsigned short blobx1, blobx2, bloby1, bloby2;	// Bounding box
+  unsigned short blobarea, blobconf;	// Area and confidence
+  unsigned int	 blobcolor;
+
   /* returns 0 if Parsed correctly otherwise 1 */
   void Parse( unsigned char *buffer );
+  void ParseSERAUX( unsigned char *buffer );
   void Print();
   void PrintSonars();
   void Fill( player_p2os_data_t* data,  struct timeval timeBegan_tv);

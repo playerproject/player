@@ -1541,6 +1541,17 @@ class BlobfinderProxy : public ClientProxy
     
     /// Print out current blob information.
     void Print();
+
+    int SetTrackingColor();
+    int SetTrackingColor(int rmin, int rmax, int gmin,
+                         int gmax, int bmin, int bmax);
+    int SetImagerParams(int contrast, int brightness,
+                         int autogain, int colormode);
+    int SetContrast(int c);
+    int SetColorMode(int m);
+    int SetBrightness(int b);
+    int SetAutoGain(int g);
+;
 };
 
 

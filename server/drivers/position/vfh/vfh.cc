@@ -334,6 +334,10 @@ int VFH_Class::GetOdom() {
   if (time - this->odom_time < 0.001)
     return 0;
   this->odom_time = time;
+  /*
+  this->odom->Wait();
+  this->odom->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
+  */
 
   // Byte swap
   data.xpos = ntohl(data.xpos);
@@ -375,6 +379,10 @@ int VFH_Class::GetLaser() {
   if (time - this->laser_time < 0.001)
     return 0;
   this->laser_time = time;
+  /*
+  this->laser->Wait();
+  this->laser->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
+  */
 
 //  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
 //  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
@@ -537,6 +545,7 @@ void VFH_Class::Main() {
 //    gettimeofday(&stime, 0);
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
+    puts("foo");
 
 //    gettimeofday(&time, 0);
 //    printf("After sleep Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);

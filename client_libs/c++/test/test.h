@@ -47,6 +47,7 @@ int test_lookup(PlayerClient* client, int index);
 int test_localize(PlayerClient* client, int index);
 int test_audiodsp(PlayerClient* client, int index);
 int test_audiomixer(PlayerClient* client, int index);
+int test_blobfinder(PlayerClient* client, int index);
 
 //int test_bps(PlayerClient* client, int index);
 
