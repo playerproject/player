@@ -45,10 +45,12 @@
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
 #include <socket_util.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 #include <math.h>
-#include "camera.c"
+
+#include "camera.h"
 
 class Cmucam2:public Driver 
 {
@@ -78,25 +80,19 @@ class Cmucam2:public Driver
 // a factory creation function
 Driver* Cmucam2_Init( ConfigFile* cf, int section)
 {
-  if(strcmp( PLAYER_CMUCAM2_STRING))
-  {
-    PLAYER_ERROR1("driver \"cmucam2\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((Driver*)(new Cmucam2( cf, section)));
+  return((Driver*)(new Cmucam2( cf, section)));
 }
 
 // a driver registration function
 void 
 Cmucam2_Register(DriverTable* table)
 {
-  table->AddDriver("cmucam2", PLAYER_READ_MODE, Cmucam2_Init);
+  table->AddDriver("cmucam2", Cmucam2_Init);
 }
 
 Cmucam2::Cmucam2( ConfigFile* cf, int section)
-  : Driver(cf, section, sizeof(player_cmucam2_data_t),sizeof(player_cmucam2_cmd_t), 5, 5)
+  : Driver(cf, section, PLAYER_CMUCAM2_CODE, PLAYER_ALL_MODE,
+           sizeof(player_cmucam2_data_t),sizeof(player_cmucam2_cmd_t), 5, 5)
 {
   num_of_blobs = cf->ReadInt(section, "num_blobs", 1);
   strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), sizeof(devicepath)-1);
@@ -123,7 +119,7 @@ Cmucam2::Setup()
 
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
-  //PutData((unsigned char*)&dummy, sizeof(dummy), 0, 0);
+  //PutData((unsigned char*)&dummy, sizeof(dummy), NULL);
 
   fd = open_port(devicepath);        // opening the serial port
   if(fd<0)                           // if not successful, stop
@@ -186,7 +182,7 @@ Cmucam2::Main()
   {      
     // handle commands --------------------------------------------------------
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
     pthread_testcancel();    
    
     if(pan_position != (short)ntohs((unsigned short)(command.pan)))
@@ -198,9 +194,8 @@ Cmucam2::Main()
 
     // handle configs --------------------------------------------------------            
     void* client;
-    player_device_id_t id;
     size_t config_size = 0; 
-    if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+    if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
     {	      
       switch(config[0])
       {
@@ -211,7 +206,7 @@ Cmucam2::Main()
 	  {
 	    // complain!
 	    puts("Cmucam2_ptz autoservo request is wrong size!");
-	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 	      PLAYER_ERROR("failed to PutReply");
 	  }
 	  else
@@ -223,7 +218,7 @@ Cmucam2::Main()
 	    else
 	      printf("Auto servoing is disabled.\n");
 	    // reply OK
-	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
 		  PLAYER_ERROR("failed to PutReply");
 	  }
     	  break;
@@ -231,7 +226,7 @@ Cmucam2::Main()
 	default:
 	{
 	  puts("Cmucam2_ptz got unknown config request");
-	  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 	    PLAYER_ERROR("failed to PutReply");
 	  break;
 	}
@@ -272,7 +267,7 @@ Cmucam2::Main()
     }     
 
     /* got the data. now fill it in */
-    PutData((unsigned char*)&cmucam_data, sizeof(cmucam_data), 0, 0);    
+    PutData((unsigned char*)&cmucam_data, sizeof(cmucam_data), NULL);
   }
  
   pthread_exit(NULL);
