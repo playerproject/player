@@ -68,6 +68,7 @@ CWorldFile Stage1p4::wf;
 // signal cacher - when Player gets a SIG_USR2 we save the worldfile
 void catch_sigusr2( int signum )
 {
+  puts( "PLAYER SAVE" );
   Stage1p4::wf.DownloadAndSave( Stage1p4::stage_client, 
 				Stage1p4::created_models,
 				Stage1p4::created_models_count );
@@ -155,10 +156,12 @@ int Stage1p4::Setup()
       PLAYER_ERROR1( "stage1p4: device name \"%s\" doesn't match a Stage model", name );
       return -1; // fail
     }
+#ifdef DEBUG
   else
     PLAYER_MSG2( "stage1p4: device name \"%s\" matches stage model %d",
 		   name, this->stage_id );    
-  
+#endif
+
   return 0; //ok
 }
 

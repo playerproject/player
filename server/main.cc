@@ -82,6 +82,10 @@
 #include "readlog_time.h"
 #endif
 
+#if INCLUDE_STAGE1P4
+#include "stg_time.h"
+#endif
+
 //#define VERBOSE
 //#define DEBUG
 

@@ -13,6 +13,7 @@ noinst_PROGRAMS = randomwalk \
 	          grip \
                   stress \
                   swarmbot \
+                  swarmbot_target \
 		  audioread \
 		  audiowrite \
                   waveformread \
@@ -43,3 +44,4 @@ lookupport_SOURCES = lookupport.cc
 audiodspread_SOURCES = audiodspread.cc
 vfh_SOURCES = vfh.cc
 swarmbot_SOURCES = swarmbot.cc
+swarmbot_target_SOURCES = swarmbot_target.cc
