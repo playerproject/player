@@ -71,6 +71,28 @@ TODO
 - port "/dev/ttyS0"
   - Serial port used to communicate with the robot.
 
+- max_xspeed 500
+  - Maximum translational velocity, in mm/sec.
+
+- max_yawspeed 100
+  - Maximum rotational velocity, in deg/sec.
+
+- max_xaccel 0
+  - Maximum translational acceleration, in mm/sec/sec; nonnegative.  
+    Zero means use the robot's default value.
+
+- max_xdecel 0
+  - Maximum translational deceleration, in mm/sec/sec; nonpositive.  
+    Zero means use the robot's default value.
+
+- max_yawaccel 0
+  - Maximum rotational acceleration, in deg/sec/sec; nonnegative.  
+    Zero means use the robot's default value.
+
+- max_yawdecel 0
+  - Maximum rotational deceleration, in deg/sec/sec; nonpositive.  
+    Zero means use the robot's default value.
+
 TODO
   
 @par Example 
@@ -285,6 +307,11 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
                                       MOTOR_DEF_MAX_SPEED);
   this->motor_max_turnspeed = cf->ReadInt(section, "max_yawspeed", 
                                           MOTOR_DEF_MAX_TURNSPEED);
+  this->motor_max_trans_accel = (short)cf->ReadInt(section, "max_xaccel", 0);
+  this->motor_max_trans_decel = (short)cf->ReadInt(section, "max_xdecel", 0);
+  this->motor_max_rot_accel = (short)cf->ReadInt(section, "max_yawaccel", 0);
+  this->motor_max_rot_decel = (short)cf->ReadInt(section, "max_yawdecel", 0);
+
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
 
   this->psos_fd = -1;
@@ -609,6 +636,46 @@ int P2OS::Setup()
     gyro_command[3] = 0;
     gyro_packet.Build(gyro_command, 4);
     this->SendReceive(&gyro_packet);
+  }
+
+  // if requested, set max accel/decel limits
+  P2OSPacket accel_packet;
+  unsigned char accel_command[4];
+  if(this->motor_max_trans_accel > 0)
+  {
+    accel_command[0] = SETA;
+    accel_command[1] = ARGINT;
+    accel_command[2] = this->motor_max_trans_accel & 0x00FF;
+    accel_command[3] = (this->motor_max_trans_accel & 0x00FF) >> 8;
+    accel_packet.Build(accel_command, 4);
+    this->SendReceive(&accel_packet);
+  }
+  if(this->motor_max_trans_decel < 0)
+  {
+    accel_command[0] = SETA;
+    accel_command[1] = ARGNINT;
+    accel_command[2] = abs(this->motor_max_trans_decel) & 0x00FF;
+    accel_command[3] = (abs(this->motor_max_trans_decel) & 0x00FF) >> 8;
+    accel_packet.Build(accel_command, 4);
+    this->SendReceive(&accel_packet);
+  }
+  if(this->motor_max_rot_accel > 0)
+  {
+    accel_command[0] = SETRA;
+    accel_command[1] = ARGINT;
+    accel_command[2] = this->motor_max_rot_accel & 0x00FF;
+    accel_command[3] = (this->motor_max_rot_accel & 0x00FF) >> 8;
+    accel_packet.Build(accel_command, 4);
+    this->SendReceive(&accel_packet);
+  }
+  if(this->motor_max_rot_decel < 0)
+  {
+    accel_command[0] = SETRA;
+    accel_command[1] = ARGNINT;
+    accel_command[2] = abs(this->motor_max_rot_decel) & 0x00FF;
+    accel_command[3] = (abs(this->motor_max_rot_decel) & 0x00FF) >> 8;
+    accel_packet.Build(accel_command, 4);
+    this->SendReceive(&accel_packet);
   }
 
   // zero position command buffer
