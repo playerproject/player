@@ -22,8 +22,8 @@
 
 /*
  * $Id$
- *   part of the P2OS parser.  this class has methods for building,
- *   printing, sending and receiving P2OS packets.
+ *   GRASP version of the P2OS packet class.  this class has methods 
+ *   for building, printing, sending and receiving GRASP Board packets.
  *
  */
 
