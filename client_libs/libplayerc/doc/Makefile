@@ -31,6 +31,7 @@ $(NAME).dvi: $(NAME).tex \
 						position.t.tex position.f.tex \
 						ptz.t.tex ptz.f.tex \
 						sonar.t.tex sonar.f.tex \
+						truth.t.tex truth.f.tex \
 						vision.t.tex vision.f.tex
 	$(LATEX) $< && $(LATEX) $<
 
