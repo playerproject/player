@@ -295,20 +295,20 @@ int playerc_client_get_devlist(playerc_client_t *client)
 // Subscribe to a device
 int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access)
 {
-  playerc_msg_subscribe_t body;
+  player_device_req_t req;
+  player_device_resp_t rep;
 
-  body.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  body.device = htons(code);
-  body.index = htons(index);
-  body.access = access;
+  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  req.code = htons(code);
+  req.index = htons(index);
+  req.access = access;
 
-  if (playerc_client_request(client, NULL,
-                             (char*) &body, sizeof(body), (char*) &body, sizeof(body)) < 0)
+  if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
     return -1;
 
-  if (body.access != access)
+  if (rep.access != access)
   {
-    PLAYERC_ERR2("requested [%d] access, but got [%d] access", access, body.access);
+    PLAYERC_ERR2("requested [%d] access, but got [%d] access", access, rep.access);
     return -1;
   }
 
@@ -319,19 +319,22 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index, int 
 // Unsubscribe from a device
 int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
 {
-  playerc_msg_subscribe_t body;
+  player_device_req_t req;
+  player_device_resp_t rep;
 
-  body.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  body.device = htons(code);
-  body.index = htons(index);
-  body.access = PLAYER_CLOSE_MODE;
+  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  req.code = htons(code);
+  req.index = htons(index);
+  req.access = PLAYER_CLOSE_MODE;
 
-  if (playerc_client_request(client, NULL,
-                             (char*) &body, sizeof(body), (char*) &body, sizeof(body)) < 0)
+  if (playerc_client_request(client, NULL, &req, sizeof(req), &rep, sizeof(rep)) < 0)
     return -1;
 
-  if (body.access != PLAYER_CLOSE_MODE)
-    PLAYERC_WARN2("requested [%d] access, but got [%d] access", PLAYER_CLOSE_MODE, body.access);
+  if (rep.access != PLAYER_CLOSE_MODE)
+  {
+    PLAYERC_ERR2("requested [%d] access, but got [%d] access", PLAYER_CLOSE_MODE, rep.access);
+    return -1;
+  }
 
   return 0;
 }
