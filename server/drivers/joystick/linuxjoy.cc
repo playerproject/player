@@ -153,7 +153,7 @@ int LinuxJoystick::Setup()
   {
     PLAYER_ERROR2("unable to open joystick [%s]; %s",
                   this->dev, strerror(errno));
-    return 0;
+    return -1;
   }
   
   // Start the device thread; spawns a new thread and executes
