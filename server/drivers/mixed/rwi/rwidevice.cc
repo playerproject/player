@@ -21,6 +21,17 @@
  *
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_rwi rwi
+
+The rwi driver controls RWI robots by way of Mobility.  This driver
+is currently disabled and will likely be removed soon.  Try the @ref
+player_driver_rflex driver instead.
+
+*/
+/** @} */
+
 /* $Id */
 
 #include <rwidevice.h>

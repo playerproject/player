@@ -185,7 +185,7 @@ void Usage()
   fprintf(stderr, "Where [options] can be:\n");
   fprintf(stderr, "  -h             : print this message.\n");
   fprintf(stderr, "  -u <rate>      : set server update rate to <rate> in Hz\n");
-  fprintf(stderr, "  -d <level>      : debug message level (0 = none, 1 = default, 9 = all).\n");
+  fprintf(stderr, "  -d <level>     : debug message level (0 = none, 1 = default, 9 = all).\n");
   fprintf(stderr, "  -t {tcp | udp} : transport protocol to use.  Default: tcp\n");
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
@@ -193,7 +193,7 @@ void Usage()
           "through the devices in\n                   this directory\n");
   fprintf(stderr, "  -g <path>      : connect to Gazebo instance at <path> \n");
   fprintf(stderr, "  -r <logfile>   : read data from <logfile> (readlog driver)\n");
-  fprintf(stderr, "  -f <speed>     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).");
+  fprintf(stderr, "  -f <speed>     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).\n");
   fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
@@ -216,7 +216,7 @@ void Usage()
 #endif
   fprintf(stderr,"included.\n");
   fprintf(stderr,"\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
-  fprintf(stderr, "Copyright (C) 2000 - 2003 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
+  fprintf(stderr, "Copyright (C) 2000 - 2004 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
   fprintf(stderr,"\nReleased under the GNU General Public License.\n");
   fprintf(stderr,"\nPlayer comes with ABSOLUTELY NO WARRANTY.  This is free software, and you are\nwelcome to redistribute it under certain conditions; see COPYING for details.\n\n");
 }

@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+USAGE="USAGE: upload_www.sh <dest> <name>"
+
+if [ $# -ne 2 ]; then
+  echo $USAGE
+  exit
+fi
+
 # Figure out the SF user name; define SFUSER in your startup scripts
 # is this is different from your username.
 if [ -n "$SFUSER" ]; then 

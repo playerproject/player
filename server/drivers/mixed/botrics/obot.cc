@@ -32,7 +32,7 @@
 /** @{ */
 /** @defgroup player_driver_obot obot
 
-The obot driver controls for the Obot robot, made by Botrics.  It's a
+The obot driver controls the Obot robot, made by Botrics.  It's a
 small, very fast robot that can carry a SICK laser (talk to the laser
 over a normal serial port using the @ref player_driver_sicklms200 driver).
 
@@ -43,6 +43,10 @@ over a normal serial port using the @ref player_driver_sicklms200 driver).
 @par Provides
 
 - @ref player_interface_position
+
+@par Requires
+
+- none
 
 @par Supported configuration requests
 

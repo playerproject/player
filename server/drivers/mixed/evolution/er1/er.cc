@@ -29,6 +29,74 @@
  * module of trogdor; thanks to the author of that module.
  */
 
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_er1 er1
+
+The er1 driver provides position control of the Evolution Robotics'
+ER1 and ERSDK robots.
+
+This driver is new and not thoroughly tested.  The odometry cannot be
+trusted to give accurate readings.
+
+You will need a kernel driver to allow the serial port to be seen.
+This driver, and news about the player driver can be found <a
+href="http://www-robotics.usc.edu/~dfseifer/project-erplayer.php">here</a>.
+
+@todo Implement IR and power interfaces.
+
+NOT DOING: I don't have a gripper, if someone has code for a gripper,
+by all means contribute it.  It would be welcome to the mix.
+
+@par Compile-time dependencies
+
+- &lt;asm/ioctls.h&gt;
+
+@par Provides
+
+- @ref player_interface_position
+
+@par Requires
+
+- none
+
+@par Supported configuration requests
+
+- PLAYER_POSITION_GET_GEOM_REQ
+- PLAYER_POSITION_MOTOR_POWER_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/usb/ttyUSB0"
+  - Serial port used to communicate with the robot.
+- axle (length)
+  - Default: 0.38 m
+  - The distance between the motorized wheels
+- motor_dir (integer)
+  - Default: 1
+  - Direction of the motors; should be 1 or -1.  If the left motor is
+    plugged in to the motor 1 port on the RCM, put -1 here instead
+- debug (integer)
+  - Default: 0
+  - Should the driver print out debug messages?
+  
+@par Example 
+
+@verbatim
+driver
+(
+  name "er1"
+  provides ["position:0"]
+)
+@endverbatim
+
+@par Authors
+
+David Feil-Seifer
+*/
+/** @} */
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
@@ -54,6 +122,7 @@
 
 #include <sys/ioctl.h>
 #include <asm/ioctls.h> /* not portable - fails in OS X  - rtv*/
+#include "error.h"
 #include "er_constants.h"
 
 static void StopRobot(void* erdev);
@@ -145,7 +214,7 @@ ER::ER(ConfigFile* cf, int section)
 	need_to_set_speed = true;
 	
   //read in axle radius
-	axle_length = cf->ReadFloat( section, "axle", ER_DEFAULT_AXLE_LENGTH );
+	axle_length = cf->ReadLength( section, "axle", ER_DEFAULT_AXLE_LENGTH );
 
   //read in left motor and right motor direction
   	int dir = cf->ReadInt(section,"motor_dir", 1);

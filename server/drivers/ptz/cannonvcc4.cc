@@ -77,9 +77,8 @@ driver
 @endverbatim
 
 @todo
-
- - Add more functionalities. Actually Only pan, tilt and zoom
-   values can be set up.
+Add more functionalities. Actually Only pan, tilt and zoom
+values can be set up.
 
 @par Authors
 

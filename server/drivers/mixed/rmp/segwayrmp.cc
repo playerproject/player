@@ -20,7 +20,7 @@
 
 /*
   Desc: Driver for the Segway RMP
-  Author: John Sweeny and Brian Gerkey
+  Author: John Sweeney and Brian Gerkey
   Date:
   CVS: $Id$
 */
@@ -111,6 +111,10 @@ driver
   provides ["position:0" "position3d:0" "power:0"]
 )
 @endverbatim
+
+@par Authors
+
+- John Sweeney, Brian Gerkey, Andrew Howard
 */
 /** @} */
 

@@ -19,19 +19,6 @@
  *
  */
 
-/*
- *   This file modified from the original P2OS device to communicate directly
- *   with the RFLEX on an RWI robot - specifically all testing was done on
- *   an ATRV-Junior, although except for encoder conversion factors, 
- *   everything else should be the same.
- *
- *   the RFLEX device.  it's the parent device for all the RFLEX 'sub-devices',
- *   like position, sonar, etc.  there's a thread here that
- *   actually interacts with RFLEX via the serial line.  the other
- *   "devices" communicate with this thread by putting into and getting
- *   data out of shared buffers.
- */
-
 /* notes:
  * the Main thread continues running when no-one is connected
  * this we retain our odometry data, whether anyone is connected or not
@@ -40,6 +27,272 @@
 /* Modified by Toby Collett, University of Auckland 2003-02-25
  * Added support for bump sensors for RWI b21r robot, uses DIO
  */
+
+/** @addtogroup drivers Drivers */
+/** @{ */
+/** @defgroup player_driver_rflex rflex
+
+The rflex driver is used to control RWI robots by directly communicating
+with RFLEX onboard the robot (i.e., Mobility is bypassed).  To date,
+these drivers have been tested on an ATRV-Jr, but they should
+work with other RFLEX-controlled robots: you will have to determine some
+parameters to set in the config file, however.
+
+As of March 2003 these drivers have been modified to support the
+b21r robot, Currently additional support has been added for the @ref
+player_interface_power interface and @ref player_interface_bumper
+interface. For the pan tilt unit on the b21r please refer to
+the @ref player_driver_ptu46 driver.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+The rflex driver provides the following device interfaces, some of them named:
+
+- @ref player_interface_position : This interface returns odometry data,
+  and accepts velocity commands.
+- "sonar" @ref player_interface_sonar : Range data from the sonar array
+- "sonar2" @ref player_interface_sonar : Range data from the second sonar array
+- @ref player_interface_ir
+- @ref player_interface_bumper
+- @ref player_interface_power
+- @ref player_interface_aio
+- @ref player_interface_dio
+
+@par Supported configuration requests
+
+- The @ref player_interface_position interface supports:
+  - PLAYER_POSITION_SET_ODOM_REQ
+  - PLAYER_POSITION_MOTOR_POWER_REQ
+  - PLAYER_POSITION_VELOCITY_MODE_REQ
+  - PLAYER_POSITION_RESET_ODOM_REQ
+  - PLAYER_POSITION_GET_GEOM_REQ
+- The @ref player_interface_ir interface supports:
+  - PLAYER_IR_POWER_REQ
+  - PLAYER_IR_POSE_REQ
+- The "sonar" @ref player_interface_sonar interface supports:
+  - PLAYER_SONAR_POWER_REQ
+  - PLAYER_SONAR_GET_GEOM_REQ
+- The "sonar2" @ref player_interface_sonar interface supports:
+  - PLAYER_SONAR_POWER_REQ
+  - PLAYER_SONAR_GET_GEOM_REQ
+- The @ref player_interface_bumper interface supports:
+  - PLAYER_BUMPER_GET_GEOM_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyR0"
+  - Serial port used to communicate with the robot.
+- mm_length (float)
+  - Default: 0.5
+  - Length of the robot in millimeters
+- mm_width (float)
+  - Default: 0.5
+  - Width of the robot in millimeters
+- odo_distance_conversion (float)
+  - Default: 0
+  - Odometry conversion. See Note 1.
+- odo_angle_conversion (float)
+  - Default: 0
+  - Odometry conversion. See Note 2.
+- default_trans_acceleration (float)
+  - Default: 0.1
+  - Set translational acceleration, in mm.
+- default_rot_acceleration (float)
+  - Default: 0.1
+  - Set rotational acceleration, in radians.
+- rflex_joystick (integer)
+  - Default: 0
+  - Do we use a joystick?
+- rflex_joy_pos_ratio (float)
+  - Default: 0
+  - ???
+- rflex_joy_ang_ratio (float)
+  - Default: 0
+  - ???
+- range_distance_conversion (float)
+  - Default: 1
+  - Sonar range conversion factor. See Note 7.
+- max_num_sonars (integer)
+  - Default: 64
+  - See Note 4
+- num_sonars (integer)
+  - Default: 24
+  - See Note 4
+- sonar_age (integer)
+  - Default: 1
+  - Prefiltering parameter. See Note 3.
+- num_sonar_banks (integer)
+  - Default: 8
+  - See Note 4
+- num_sonars_possible_per_bank (integer)
+  - Default: 16
+  - See Note 4
+- num_sonars_in_bank (integer tuple)
+  - Default: [ 8 8 8 ... ]
+  - See Note 4
+- sonar_echo_delay (integer)
+  - Default: 3000
+  - ???
+- sonar_ping_delay (integer)
+  - Default: 0
+  - ???
+- sonar_set_delay (integer)
+  - Default: 0
+  - ???
+- mmrad_sonar_poses (tuple float)
+  - Default: [ 0 0 0 ... ]
+  - Sonar positions and directions.  See Note 6.
+- sonar_2nd_bank_start (integer)
+  - Default: 0
+  - ???
+- pose_count (integer)
+  - Default: 8
+  - Total Number of IR sensors
+- rflex_base_bank (integer)
+  - Default: 0
+  - Base IR Bank
+- rflex_bank_count (integer)
+  - Default: 0
+  - Number of banks in use
+- ir_min_range (integer)
+  - Default: 100
+  - Min range of ir sensors (mm) (Any range below this is returned as 0)
+- ir_max_range (integer)
+  - Default: 800
+  - Max range of ir sensors (mm) (Any range above this is returned as max)
+- rflex_banks (float tuple)
+  - Default: [ 0 0 0 ... ]
+  - Number of IR sensors in each bank
+- poses (float tuple)
+  - Default: [ 0 0 0 ... ]
+  - x,y,theta of IR sensors (mm, mm, deg)
+- rflex_ir_calib (float tuple)
+  - Default: [ 1 1 ... ]
+  - IR Calibration data (see Note 8)
+- bumper_count (integer)
+  - Default: 0
+  - Number of bumper panels
+- bumper_def (float tuple)
+  - Default: [ 0 0 0 0 0 ... ]
+  - x,y,theta,length,radius (mm,mm,deg,mm,mm) for each bumper 
+- rflex_bumper_address (integer)
+  - Default: 0x40
+  - The base address of first bumper in the DIO address range
+- rflex_bumper_style (string)
+  - Default: "addr"
+  - ???
+- rflex_power_offset (integer)
+  - Default: 0
+  - The calibration constant for the power calculation in decivolts
+
+@par Notes
+-# Since the units used by the Rflex for odometry appear to be completely
+   arbitrary, this coefficient is needed to convert to millimeters: mm =
+   (rflex units) / (odo\_distance\_conversion).  These arbitrary units
+   also seem to be different on each robot model. I'm afraid you'll
+   have to determine your robot's conversion factor by driving a known
+   distance and observing the output of the RFlex.
+-# Conversion coefficient
+   for rotation odometry: see odo_distance_conversion. Note that
+   heading is re-calculated by the Player driver since the RFlex is not
+   very accurate in this respect. See also Note 1.
+-# Used for prefiltering:
+   the standard Polaroid sensors never return values that are closer
+   than the closest obstacle, thus we can buffer locally looking for the
+   closest reading in the last "sonar\_age" readings. Since the servo
+   tick here is quite small, you can still get pretty recent data in
+   the client.
+-# These values are all used for remapping the sonars from Rflex indexing
+   to player indexing. Individual sonars are enumerated 0-15 on each
+   board, but at least on my robots each only has between 5 and 8 sonar
+   actually attached.  Thus we need to remap all of these indexes to
+   get a contiguous array of N sonars for Player.
+     - max_num_sonars is the maximum enumeration value+1 of
+       all sonar meaning if we have 4 sonar boards this number is 64.
+     - num_sonars is the number of physical sonar sensors -
+       meaning the number of ranges that will be returned by Player.  -
+       num_sonar_banks is the number of sonar boards you have.
+     - num_sonars_possible_per_bank is probobly 16 for all
+       robots, but I included it here just in case. this is the number of
+       sonar that can be attached to each sonar board, meaning the maximum
+       enumeration value mapped to each board.  - num_sonars_in_bank
+       is the nubmer of physical sonar attached to each board in order -
+       you'll notice on each the sonar board a set of dip switches, these
+       switches configure the enumeration of the boards (ours are 0-3)
+-# The first RFlex device (position, sonar or power) in the config file
+   must include this option, and only the first device's value will be used.
+-# This is about the ugliest way possible of telling Player where each
+   sonar is mounted.  Include in the string groups of three values: "x1
+   y1 th1 x2 y2 th2 x3 y3 th3 ...".  x and y are mm and theta is radians,
+in Player's robot coordinate system.
+-# Used to convert between arbitrary sonar units to millimeters: mm =
+   sonar units / range\_distance\_conversion.
+-# Calibration is in the form Range = (Voltage/a)^b and stored in the
+   tuple as [a1 b1 a2 b2 ...] etc for each ir sensor.
+
+@par Example 
+
+@verbatim
+driver
+(
+  name "rflex" 
+  provides ["position:1" "bumper:0" "sonar:0" "sonar:1" "power:0" "ir:0"]
+
+  rflex_serial_port 		"/dev/ttyR0" 
+  mm_length 			500.0
+  mm_width 			500.0 
+  odo_distance_conversion 	103
+  odo_angle_conversion 		35000
+  default_trans_acceleration 	500.0
+  default_rot_acceleration 	10.0
+  rflex_joystick			1
+  rflex_joy_pos_ratio		6
+  rflex_joy_ang_ratio		-0.01
+
+
+  bumper_count		14
+  bumper_def		[   -216.506351 125.000000 -210.000000 261.799388 250.000000 -0.000000 250.000000 -270.000000 261.799388 250.000000 216.506351 125.000000 -330.000000 261.799388 250.000000 216.506351 -125.000000 -390.000000 261.799388 250.000000 0.000000 -250.000000 -450.000000 261.799388 250.000000 -216.506351 -125.000000 -510.000000 261.799388 250.000000 -240.208678 -99.497692 -157.500000 204.203522 260.000000 -240.208678 99.497692 -202.500000 204.203522 260.000000 -99.497692 240.208678 -247.500000 204.203522 260.000000 99.497692 240.208678 -292.500000 204.203522 260.000000 240.208678 99.497692 -337.500000 204.203522 260.000000 240.208678 -99.497692 -382.500000 204.203522 260.000000 99.497692 -240.208678 -427.500000 204.203522 260.000000 -99.497692 -240.208678 -472.500000 204.203522 260.000000 ]
+  rflex_bumper_address	64 # 0x40
+
+  range_distance_conversion 	1.476
+  sonar_age 			1
+  sonar_echo_delay		30000
+  sonar_ping_delay		0
+  sonar_set_delay			0
+  max_num_sonars 			224
+  num_sonars 				48
+  num_sonar_banks 		14
+  num_sonars_possible_per_bank	16
+  num_sonars_in_bank 		[4 4 4 4 4 4 3 3 3 3 3 3 3 3]
+  # theta (rads), x, y (mm) in robot coordinates (x is forward)
+  mmrad_sonar_poses 	[     3.01069  -247.86122    32.63155     2.74889  -230.96988    95.67086     2.48709  -198.33834   152.19036     2.22529  -152.19036   198.33834     1.96350   -95.67086   230.96988     1.70170   -32.63155   247.86122     1.43990    32.63155   247.86122     1.17810    95.67086   230.96988     0.91630   152.19036   198.33834     0.65450   198.33834   152.19036     0.39270   230.96988    95.67086     0.13090   247.86122    32.63155    -0.13090   247.86122   -32.63155    -0.39270   230.96988   -95.67086    -0.65450   198.33834  -152.19036    -0.91630   152.19036  -198.33834    -1.17810    95.67086  -230.96988    -1.43990    32.63155  -247.86122    -1.70170   -32.63155  -247.86122    -1.96350   -95.67086  -230.96988    -2.22529  -152.19036  -198.33834    -2.48709  -198.33834  -152.19036    -2.74889  -230.96988   -95.67086    -3.01069  -247.86122   -32.63155       4.18879  -130.00000  -225.16660     3.92699  -183.84776  -183.84776     3.66519  -225.16660  -130.00000     3.40339  -251.14071   -67.29295     3.14159  -260.00000     0.00000     2.87979  -251.14071    67.29295     2.61799  -225.16660   130.00000     2.35619  -183.84776   183.84776     2.09440  -130.00000   225.16660     1.83260   -67.29295   251.14071     1.57080     0.00000   260.00000     1.30900    67.29295   251.14071     1.04720   130.00000   225.16660     0.78540   183.84776   183.84776     0.52360   225.16660   130.00000     0.26180   251.14071    67.29295     0.00000   260.00000     0.00000    -0.26180   251.14071   -67.29295    -0.52360   225.16660  -130.00000    -0.78540   183.84776  -183.84776    -1.04720   130.00000  -225.16660    -1.30900    67.29295  -251.14071    -1.57080     0.00000  -260.00000    -1.83260   -67.29295  -251.14071    -2.09440  -130.00000  -225.16660    -2.35619  -183.84776  -183.84776]
+  sonar_2nd_bank_start	24
+	
+  rflex_power_offset		12 # deci volts?
+
+  rflex_base_bank 0
+  rflex_bank_count 6
+  rflex_banks	[4 4 4 4 4 4]
+  pose_count	24
+  ir_min_range	100
+  ir_max_range	800
+  rflex_ir_calib	[ 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 0.0005456 -2.086 ]
+  poses		[ -247 32 532 -230 95 517 -198 152 502 -152 198 487 -95 230 472 -32 247 457 32 247 442 95 230 427 152 198 412 198 152 397 230 95 382 247 32 367 247 -32 352 230 -95 337 198 -152 322 152 -198 307 95 -230 292 32 -247 277 -32 -247 262 -95 -230 247 -152 -198 232 -198 -152 217 -230 -95 202 -247 -32 187 ]
+)
+@endverbatim
+
+@par Authors
+
+Matthew Brewer, Toby Collett
+*/
+/** @} */
+
+
 
 #include <fcntl.h>
 #include <signal.h>
