@@ -280,6 +280,8 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(rt, sem_wait)
 AC_CHECK_LIB(posix4, sem_wait)
+dnl How many args does setpgrp() take?
+AC_FUNC_SETPGRP
 #AC_FUNC_MMAP
 #AC_FUNC_SETPGRP
 #AC_TYPE_SIGNAL
