@@ -228,11 +228,11 @@ Wavefront::Setup()
     return(-1);
   }
 
+  if(SetupMap() < 0)
+    return(-1);
   if(SetupPosition() < 0)
     return(-1);
   if(SetupLocalize() < 0)
-    return(-1);
-  if(SetupMap() < 0)
     return(-1);
 
   // Start the driver thread.
