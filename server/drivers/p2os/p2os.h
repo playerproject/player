@@ -36,9 +36,9 @@
 #include <sys/time.h>
 
 #include <device.h>
+#include <drivertable.h>
 #include <packet.h>
-#include <playercommon.h>
-#include <messages.h>
+#include <player.h>
 #include <robot_params.h>
    
 #define P2OS_MOTORS_REQUEST_ON 0
@@ -139,7 +139,7 @@ class P2OS:public CDevice
     
     // device used to communicate with p2os
     static char psos_serial_port[MAX_FILENAME_SIZE]; 
-    static bool radio_modemp; // are we using a radio modem?
+    static int radio_modemp; // are we using a radio modem?
 
     static struct timeval timeBegan_tv;
 
@@ -157,7 +157,7 @@ class P2OS:public CDevice
 
   public:
 
-    P2OS(int argc, char** argv);
+    P2OS(char* interface, ConfigFile* cf, int section);
 
     /* the main thread */
     virtual void Main();

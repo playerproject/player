@@ -36,16 +36,30 @@ class P2OSMisc: public P2OS
 {
  public:
 
-   P2OSMisc(int argc, char** argv):P2OS(argc,argv){}
+   P2OSMisc(char* interface, ConfigFile* cf, int section) : 
+           P2OS(interface, cf, section){}
    size_t GetData( unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSMisc_Init(int argc, char** argv)
+CDevice* P2OSMisc_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new P2OSMisc(argc,argv)));
+  if(strcmp(interface, PLAYER_MISC_STRING))
+  {
+    PLAYER_ERROR1("driver \"p2os_misc\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new P2OSMisc(interface, cf, section)));
 }
 
+// a driver registration function
+void 
+P2OSMisc_Register(DriverTable* table)
+{
+  table->AddDriver("p2os_misc", PLAYER_READ_MODE, P2OSMisc_Init);
+}
 
 size_t P2OSMisc::GetData(unsigned char *dest, size_t maxsize,
                             uint32_t* timestamp_sec, uint32_t* timestamp_usec)

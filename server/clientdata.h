@@ -29,7 +29,7 @@
 #ifndef _CLIENTDATA_H
 #define _CLIENTDATA_H
 
-#include <messages.h>
+#include <player.h>
 
 // get around circular inclusion;
 class CDevice;

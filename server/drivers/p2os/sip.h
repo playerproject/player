@@ -31,7 +31,6 @@
 
 #include <limits.h>
 
-#include <messages.h>
 #include <p2os.h>
 
 class SIP 

@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 
-#include <messages.h>
+#include <player.h>
 #include <netinet/in.h> /* for struct in_addr */
 
 typedef struct

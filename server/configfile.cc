@@ -160,7 +160,7 @@ bool ConfigFile::Load(const char *filename)
   else if (strcmp(unit, "radians") == 0)
     this->unit_angle = 1;
   
-  DumpTokens();
+  //DumpTokens();
   return true;
 }
 
@@ -208,7 +208,7 @@ bool ConfigFile::WarnUnused()
     if (!property->used)
     {
       unused = true;
-      PLAYER_WARN3("worldfile %s:%d : property [%s] is defined but not used",
+      PLAYER_WARN3("configfile %s:%d : property [%s] is defined but not used",
                   this->filename, property->line, property->name);
     }
   }
@@ -948,7 +948,6 @@ bool ConfigFile::ParseTokenEntity(int entity, int *index, int *line)
     }
     PARSE_ERR("missing ')'", *line);
   }
-  
   // If the entity name is not a macro...
   else
   {
@@ -1293,7 +1292,7 @@ int ConfigFile::AddProperty(int entity, const char *name, int line)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Add an property value
+// Add a property value
 void ConfigFile::AddPropertyValue(int property, int index, int value_token)
 {
   assert(property >= 0);
@@ -1312,7 +1311,7 @@ void ConfigFile::AddPropertyValue(int property, int index, int value_token)
 
 
 ///////////////////////////////////////////////////////////////////////////
-// Get an property 
+// Get a property 
 int ConfigFile::GetProperty(int entity, const char *name)
 {
   // Find first instance of property

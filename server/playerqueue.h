@@ -31,7 +31,7 @@
 #define _PLAYERQUEUE_H
 
 //#include <clientdata.h>
-#include <messages.h>
+#include <player.h>
 #include <sys/time.h>
 
 // a queue contains elements of the following type.

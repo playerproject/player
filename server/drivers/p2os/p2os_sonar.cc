@@ -32,17 +32,31 @@
 class P2OSSonar: public P2OS
 {
  public:
-   P2OSSonar(int argc, char** argv):P2OS(argc, argv){}
+   P2OSSonar(char* interface, ConfigFile* cf, int section) :
+           P2OS(interface, cf, section){}
    
    virtual size_t GetData( unsigned char *, size_t maxsize,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSSonar_Init(int argc, char** argv)
+CDevice* P2OSSonar_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new P2OSSonar(argc,argv)));
+  if(strcmp(interface, PLAYER_SONAR_STRING))
+  {
+    PLAYER_ERROR1("driver \"p2os_sonar\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new P2OSSonar(interface, cf, section)));
 }
 
+// a driver registration function
+void 
+P2OSSonar_Register(DriverTable* table)
+{
+  table->AddDriver("p2os_sonar", PLAYER_READ_MODE, P2OSSonar_Init);
+}
 
 size_t P2OSSonar::GetData(unsigned char *dest, size_t maxsize,
                              uint32_t* timestamp_sec, uint32_t* timestamp_usec)

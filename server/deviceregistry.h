@@ -27,15 +27,3 @@
 
 /* this function registers available devices */
 void register_devices();
-
-/*
- * parses strings that look like "-laser:2"
- *   <str1> is the device string; <str2> is the argument string for the device
- *
- * if the string can be parsed, then the appropriate device will be created, 
- *    and 0 will be returned.
- * otherwise, -1 is retured
- */
-int parse_device_string(char* str1, char* str2);
-
-

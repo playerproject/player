@@ -29,7 +29,6 @@
 #ifndef OGPROXY_H
 #define OGPROXY_H
 
-#include <messages.h>
 #include <clientproxy.h>
 #include <playerclient.h>
 

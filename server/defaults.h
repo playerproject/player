@@ -41,32 +41,6 @@
 /********************************************************************/
 
 /********************************************************************
- * SICK laser
- */
-#define DEFAULT_LASER_PORT "/dev/ttyS1"
-/********************************************************************/
-
-/********************************************************************
- * ACTS vision system
- */
-/* this enum shouldn't really go here, but...*/
-/* a variable of this type tells the vision device how to interact with ACTS */
-typedef enum
-{
-  ACTS_VERSION_UNKNOWN = 0,
-  ACTS_VERSION_1_0 = 1,
-  ACTS_VERSION_1_2 = 2
-} acts_version_t;
-#define DEFAULT_ACTS_PORT 5001
-/* default is to use older ACTS (until we change our robots) */
-#define DEFAULT_ACTS_VERSION ACTS_VERSION_1_0
-#define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
-/* default is to give no path for the binary; in this case, use execvp() 
- * and user's PATH */
-#define DEFAULT_ACTS_PATH ""
-/********************************************************************/
-
-/********************************************************************
  * Sony PTZ camera
  */
 #define DEFAULT_PTZ_PORT "/dev/ttyS2"
@@ -76,18 +50,6 @@ typedef enum
  * P2OS robot interface
  */
 #define DEFAULT_P2OS_PORT "/dev/ttyS0"
-/********************************************************************/
-
-/********************************************************************
- * Festival speech synthesis system.
- */
-/* don't change this unless you change the Festival init scripts as well*/
-#define DEFAULT_FESTIVAL_PORTNUM 1314
-/* change this if Festival is installed somewhere else*/
-#define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
-/* queue size */
-#define SPEECH_MAX_STRING_LEN 256
-#define SPEECH_MAX_QUEUE_LEN 4
 /********************************************************************/
 
 /********************************************************************

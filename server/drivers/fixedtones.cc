@@ -43,6 +43,7 @@
 #include <pthread.h>
 
 #include <device.h>
+#include <drivertable.h>
 
 #define AUDIO_SLEEP_TIME_USEC 100000
 
@@ -77,8 +78,7 @@ class FixedTones:public CDevice
 
  public:
 
-  FixedTones(int argc, char** argv);
-  ~FixedTones();
+  FixedTones(char* interface, ConfigFile* cf, int section);
 
   virtual void Main();
 
@@ -86,11 +86,24 @@ class FixedTones:public CDevice
   virtual int Shutdown();
 };
 
-CDevice* FixedTones_Init(int argc, char** argv)
+CDevice* FixedTones_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new FixedTones(argc,argv)));
+  if(strcmp(interface, PLAYER_AUDIO_STRING))
+  {
+    PLAYER_ERROR1("driver \"fixedtones\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new FixedTones(interface, cf, section)));
 }
 
+// a driver registration function
+void 
+FixedTones_Register(DriverTable* table)
+{
+  table->AddDriver("fixedtones", PLAYER_ALL_MODE, FixedTones_Init);
+}
 
 rfftw_plan p;
 int fd;       /* sound device file descriptor */
@@ -106,7 +119,7 @@ int peakAmp[nHighestPeaks];
 
 unsigned char buf[(LENGTH*RATE*SIZE*CHANNELS/8)/10];
 
-FixedTones::FixedTones(int argc, char** argv) :
+FixedTones::FixedTones(char* interface, ConfigFile* cf, int section) :
   CDevice(AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
 
@@ -367,18 +380,12 @@ void FixedTones::insertPeak(int f,int a) {
   peakFrq[i]=f;
 }
 
-FixedTones::~FixedTones()
-{  
-  Shutdown();
-}
-
 int 
 FixedTones::Shutdown()
 {
   StopThread();
   if (fd>0) close(fd);
-  printf("Audio-device has been shutdown\n");
-
+  //printf("Audio-device has been shutdown\n");
   return 0;
 }
 

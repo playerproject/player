@@ -34,15 +34,30 @@ class P2OSPosition: public P2OS
 {
  public:
    ~P2OSPosition();
-   P2OSPosition(int argc, char** argv):P2OS(argc,argv){}
+   P2OSPosition(char* interface, ConfigFile* cf, int section) :
+           P2OS(interface, cf, section){}
    virtual size_t GetData(unsigned char *, size_t maxsize,
                           uint32_t* timestamp_sec, uint32_t* timestamp_usec);
    void PutCommand( unsigned char *, size_t maxsize);
 };
 
-CDevice* P2OSPosition_Init(int argc, char** argv)
+CDevice* P2OSPosition_Init(char* interface, ConfigFile* cf, int section)
 {
-  return((CDevice*)(new P2OSPosition(argc,argv)));
+  if(strcmp(interface, PLAYER_POSITION_STRING))
+  {
+    PLAYER_ERROR1("driver \"p2os_position\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new P2OSPosition(interface, cf, section)));
+}
+
+// a driver registration function
+void 
+P2OSPosition_Register(DriverTable* table)
+{
+  table->AddDriver("p2os_position", PLAYER_ALL_MODE, P2OSPosition_Init);
 }
 
 P2OSPosition::~P2OSPosition()

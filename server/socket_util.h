@@ -51,7 +51,7 @@
  *  On success, the fd of the new socket is returned.  Otherwise, -1 
  *  is returned and an explanatory note is dumped to stderr.
  */
-extern int create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
-                int portnum, int socktype, int backlog);
+int create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
+                           int portnum, int socktype, int backlog);
 
 #endif

@@ -64,8 +64,10 @@ extern PlayerTime* GlobalTime;
 #define PLAYER_ENABLE_TRACE 0
 
 #include "playercommon.h"
-#include "device.h"
-#include "messages.h"
+#include "drivertable.h"
+#include "player.h"
+
+#define DEFAULT_LASER_PORT "/dev/ttyS1"
 
 // The laser device class.
 class SickLMS200 : public CDevice
@@ -73,7 +75,7 @@ class SickLMS200 : public CDevice
   public:
     
     // Constructor
-    SickLMS200(int argc, char** argv);
+    SickLMS200(char* interface, ConfigFile* cf, int section);
 
     int Setup();
     int Shutdown();
@@ -165,12 +167,24 @@ class SickLMS200 : public CDevice
 };
 
 // a factory creation function
-CDevice* SickLMS200_Init(int argc, char** argv)
+CDevice* SickLMS200_Init(char* interface, ConfigFile* cf, int section)
 {
-  return ((CDevice*)(new SickLMS200(argc,argv)));
+  if(strcmp(interface, PLAYER_LASER_STRING))
+  {
+    PLAYER_ERROR1("driver \"sicklms200\" does not support interface \"%s\"\n",
+                  interface);
+    return(NULL);
+  }
+  else
+    return((CDevice*)(new SickLMS200(interface, cf, section)));
 }
 
-
+// a driver registration function
+void 
+SickLMS200_Register(DriverTable* table)
+{
+  table->AddDriver("sicklms200", PLAYER_READ_MODE, SickLMS200_Init);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Device codes
@@ -189,8 +203,8 @@ CDevice* SickLMS200_Init(int argc, char** argv)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-SickLMS200::SickLMS200(int argc, char** argv) :
-    CDevice(sizeof(player_laser_data_t),0,10,10)
+SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
+  : CDevice(sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry; should read from config file or command line.
   this->pose[0] = 0.10;
@@ -199,22 +213,9 @@ SickLMS200::SickLMS200(int argc, char** argv) :
   this->size[0] = 0.15;
   this->size[1] = 0.15;
   
-  strncpy(this->device_name,DEFAULT_LASER_PORT,sizeof(this->device_name));
-  for(int i=0;i<argc;i++)
-  {
-    if(!strcmp(argv[i],"port"))
-    {
-      if(++i<argc)
-      {
-        strncpy(this->device_name, argv[i],sizeof(this->device_name));
-        this->device_name[sizeof(this->device_name)-1] = '\0';
-      }
-      else
-        PLAYER_ERROR1("missing port; using default: \"%s\"", this->device_name);
-    }
-    else
-      PLAYER_ERROR1("ignoring unknown parameter \"%s\"\n", argv[i]);
-  }
+  strncpy(this->device_name,
+          cf->ReadString(section, "port", DEFAULT_LASER_PORT),
+          sizeof(this->device_name));
 }
 
 

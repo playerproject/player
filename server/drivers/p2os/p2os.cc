@@ -75,7 +75,7 @@ extern struct timeval  P2OS::timeBegan_tv;
 extern bool            P2OS::direct_wheel_vel_control;
 extern int             P2OS::psos_fd; 
 extern char            P2OS::psos_serial_port[];
-extern bool            P2OS::radio_modemp;
+extern int             P2OS::radio_modemp;
 extern bool            P2OS::initdone;
 extern char            P2OS::num_loops_since_rvel;
 extern SIP*           P2OS::sippacket;
@@ -89,7 +89,7 @@ extern unsigned char*    P2OS::reqqueue;
 extern unsigned char*    P2OS::repqueue;
 
 
-P2OS::P2OS(int argc, char** argv)
+P2OS::P2OS(char* interface, ConfigFile* cf, int section)
 {
   int reqqueuelen = 1;
   int repqueuelen = 1;
@@ -102,7 +102,7 @@ P2OS::P2OS(int argc, char** argv)
     // also, install default parameter values.
     strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
     psos_fd = -1;
-    radio_modemp = false;
+    radio_modemp = 0;
   
     data = new player_p2os_data_t;
     command = new player_p2os_cmd_t;
@@ -142,38 +142,10 @@ P2OS::P2OS(int argc, char** argv)
 
 
 
-  // parse command-line args
-  for(int i=0;i<argc;i++)
-  {
-    if(!strcmp(argv[i],"port"))
-    {
-      if(++i<argc)
-      {
-        strncpy(psos_serial_port, argv[i], sizeof(psos_serial_port));
-        psos_serial_port[sizeof(psos_serial_port)-1] = '\0';
-      }
-      else
-        fprintf(stderr, "P2OS: missing port; using default: \"%s\"\n",
-                psos_serial_port);
-    }
-    else if(!strcmp(argv[i],"radio"))
-    {
-      if(++i<argc)
-      {
-        // any non-zero value will do for true
-        if(atoi(argv[i]))
-          radio_modemp = true;
-        else
-          radio_modemp = false;
-      }
-      else
-        fprintf(stderr, "P2OS: missing value for radio; using default: "
-                "\"%d\"\n", (int)radio_modemp);
-    }
-    else
-      fprintf(stderr, "P2OS: ignoring unknown parameter \"%s\"\n",
-              argv[i]);
-  }
+  strncpy(psos_serial_port,
+          cf->ReadString(section, "port", psos_serial_port),
+          sizeof(psos_serial_port));
+  radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
 
   // zero the subscription counter.
   subscriptions = 0;

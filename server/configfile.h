@@ -197,7 +197,7 @@ class ConfigFile
   private: void ClearTokens();
 
   // Add a token to the token list
-  private: bool AddToken(int type, const char *value, int include);
+  public: bool AddToken(int type, const char *value, int include);
 
   // Set a token in the token list
   private: bool SetTokenValue(int index, const char *value);
@@ -206,7 +206,7 @@ class ConfigFile
   private: const char *GetTokenValue(int index);
 
   // Dump the token list (for debugging).
-  private: void DumpTokens();
+  public: void DumpTokens();
 
   // Parse a line
   private: bool ParseTokens();
@@ -248,7 +248,7 @@ class ConfigFile
   private: void ClearEntities();
 
   // Add a entity
-  private: int AddEntity(int parent, const char *type);
+  public: int AddEntity(int parent, const char *type);
 
   // Dump the entity list for debugging
   private: void DumpEntities();
@@ -257,10 +257,10 @@ class ConfigFile
   private: void ClearProperties();
 
   // Add an property
-  private: int AddProperty(int entity, const char *name, int line);
+  public: int AddProperty(int entity, const char *name, int line);
 
   // Add an property value.
-  private: void AddPropertyValue(int property, int index, int value_token);
+  public: void AddPropertyValue(int property, int index, int value_token);
   
   // Get an property
   private: int GetProperty(int entity, const char *name);
@@ -275,7 +275,7 @@ class ConfigFile
   private: void DumpProperties();
 
   // Token types.
-  private: enum
+  public: enum
   {
     TokenComment,
     TokenWord, TokenNum, TokenString,

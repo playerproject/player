@@ -60,6 +60,7 @@
 #include <clientdata.h>
 #include <clientmanager.h>
 #include <devicetable.h>
+#include <drivertable.h>
 
 // the base class and two derived classes for timefeeds:
 #include <playertime.h>
@@ -68,12 +69,10 @@
 #include <sys/mman.h> // for mmap
 #include <fcntl.h>
 
-#ifdef INCLUDE_STAGE
 #include <stagetime.h>
 #include <stagedevice.h>
 player_stage_info_t *arenaIO; //address for memory mapped IO to Stage
 char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
-#endif
 
 // true if we're connecting to Stage instead of a real robot
 bool use_stage = false;
@@ -86,8 +85,8 @@ size_t ioSize = 0; // size of the IO buffer
 
 // this table holds all the currently *instantiated* devices
 CDeviceTable* deviceTable = new CDeviceTable();
-// this table holds all the currently *available* device types
-CDeviceTable* availableDeviceTable = new CDeviceTable();
+// this table holds all the currently *available* drivers
+DriverTable* driverTable = new DriverTable();
 
 // the global PlayerTime object has a method 
 //   int GetTime(struct timeval*)
@@ -109,33 +108,24 @@ bool debug = false;
 
 int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
 
-// declared in deviceregistry.cc
-extern char* sane_spec[];
+extern player_interface_t interfaces[];
 
 /* Usage statement */
 void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-port <port>] [-stage <path>] "
+  fprintf(stderr, "USAGE: player [-c <file>] [-p <port>] [-s <path>] "
           "[-dl <shlib>] \n");
-  fprintf(stderr, "              [-key <key>] [-sane] [DEVICE]...\n");
-  fprintf(stderr, "  -port <port>  : TCP port where Player will listen. "
+  fprintf(stderr, "              [-k <key>]  [DEVICE]...\n");
+  fprintf(stderr, "  -c <file>     : load the the indicated config file\n");
+  fprintf(stderr, "  -p <port>     : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
-  fprintf(stderr, "  -stage <path> : use memory-mapped IO with Stage "
+  fprintf(stderr, "  -s <path>     : use memory-mapped IO with Stage "
           "through the devices in\n                  this directory\n");
-  fprintf(stderr, "  -dl <shlib>   : load the the indicated shared library\n");
-  fprintf(stderr, "  -key <key>    : require client authentication with the "
+  fprintf(stderr, "  -d <shlib>    : load the the indicated shared library\n");
+  fprintf(stderr, "  -k <key>      : require client authentication with the "
           "given key\n");
-  fprintf(stderr, "  -sane         : use the compiled-in device defaults:\n");
-  for(int i=0;sane_spec[i];i++)
-    fprintf(stderr, "                      %s\n",sane_spec[i]);
-  fprintf(stderr, "\n  Each [DEVICE] should be of the form:\n");
-  fprintf(stderr, "    -<name>:<index> [options]\n");
-  fprintf(stderr, "  If omitted, <index> is assumed to be 0.\n");
-  fprintf(stderr, "  [options] is a string of device-specific options.\n");
-  fprintf(stderr, "  For example:\n");
-  fprintf(stderr, "    -laser:0 \"port /dev/ttyS0\"\n");
 }
 
 /* just so we know when we've segfaulted, even when running under stage */
@@ -219,7 +209,6 @@ void PrintHeader(player_msghdr_t hdr)
 }
 
 
-#ifdef INCLUDE_STAGE
 // a simple function to conditionally add a port (if is new) to 
 // a list of ports
 void 
@@ -339,6 +328,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
       
       StageDevice *dev = 0; // declare outside switch statement
 
+      // prime the configFile parser
+      int globalparent = configFile.AddEntity(-1,"");
+
       // get the player type and index from the header
       // NOT from the filename
       switch(deviceIO->player_id.code)
@@ -378,17 +370,20 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // by Stage...
           if(deviceIO->local || !deviceIO->local)
           {
-            int argc = 0;
-            char *argv[2];
             // Broadcast through the loopback device; note that this
             // wont work with distributed Stage.
-            argv[argc++] = "addr";
-            argv[argc++] = "127.255.255.255";
+
+            // the following code is required to load settings into the
+            // ConfigFile object.  should be cleaned up.
+            int section = configFile.AddEntity(globalparent,"broadcast");
+            int value = configFile.AddProperty(section, "addr", 0);
+            configFile.AddPropertyValue(value, 0, 0);
+            configFile.AddToken(0, "", 0);
+            configFile.WriteString(section, "addr", "127.255.255.255");
 
             // find the broadcast device in the available device table
-            CDeviceEntry* entry;
-            if(!(entry = 
-                 availableDeviceTable->GetDeviceEntry(PLAYER_BROADCAST_STRING)))
+            DriverEntry* entry;
+            if(!(entry = driverTable->GetDriverEntry("udpbroadcast")))
             {
               puts("WARNING: Player support for broadcast device unavailable.");
             }
@@ -396,9 +391,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             {
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-                                     (*(entry->initfunc))(argc,argv));
+                              (*(entry->initfunc))(PLAYER_BROADCAST_STRING,
+                                                   &configFile, section));
  
-
               // add this port to our listening list
               StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             }
@@ -412,25 +407,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // by Stage...
           if(deviceIO->local || !deviceIO->local)
           {
-            // We make the assumption that this bps device should read from 
-            // the laser and position devices that are identified by the same 
-            // index as itself.
-            // 
-            // Yes, but this assumption is now executed in the bps's Setup(),
-            // where it knows its own index
-            /*
-            int argc = 0;
-            char *argv[2];
-            char tmpindex[32];
-            argv[argc++] = "index";
-            sprintf(tmpindex,"%d",deviceIO->player_id.index);
-            argv[argc++] = tmpindex;
-            */
-
             // find the bps device in the available device table
-            CDeviceEntry* entry;
-            if(!(entry = 
-                 availableDeviceTable->GetDeviceEntry(PLAYER_BPS_STRING)))
+            DriverEntry* entry;
+            if(!(entry = driverTable->GetDriverEntry("bps")))
             {
               puts("WARNING: Player support for bps device unavailable.");
             }
@@ -438,9 +417,9 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             {
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-                                     (*(entry->initfunc))(0,NULL));
+                           (*(entry->initfunc))(PLAYER_BPS_STRING,
+                                                &configFile,0));
  
-
               // add this port to our listening list
               StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
             }
@@ -536,20 +515,23 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
 
   return( clock );
 }
-#endif // INCLUDE_STAGE
 
 bool
 parse_config_file(char* fname)
 {
-  CDeviceEntry* entry;
+  DriverEntry* entry;
   CDevice* tmpdevice;
-  char* devname;
+  char interface[PLAYER_MAX_DEVICE_STRING_LEN];
   char* colon;
   int index;
+  char* driver;
+  int code = 0;
   
   // parse the file
   if(!configFile.Load(fname))
     return(false);
+
+  puts("");
 
   // load each device specified in the file
   for(int i = 1; i < configFile.GetEntityCount(); i++)
@@ -558,43 +540,66 @@ parse_config_file(char* fname)
       continue;
 
     // get the interface name
-    devname = strdup((const char*)(configFile.entities[i].type));
+    strncpy(interface, (const char*)(configFile.entities[i].type), 
+            sizeof(interface));
+    interface[sizeof(interface)-1] = '\0';
 
     // look for a colon and trailing index
-    if((colon = strchr(devname,':')) && strlen(colon) >= 2)
+    if((colon = strchr(interface,':')) && strlen(colon) >= 2)
     {
       // get the index out
       index = atoi(colon+1);
       // strip the index off the end
-      devname[colon-devname] = '\0';
+      interface[colon-interface] = '\0';
     }
     else
       index = 0;
 
-    /* look for the indicated device in the available device table */
-    if(!(entry = availableDeviceTable->GetDeviceEntry(devname)))
+    driver = NULL;
+    // find the default driver for this interface
+    for(int j = 0; interfaces[j].code; j++)
     {
-      fprintf(stderr,"\nError: couldn't instantiate requested device \"%s\";\n"
-              "  Perhaps support for it was not compiled into this binary?\n", 
-              devname);
-      free(devname);
+      if(!strcmp(interface, interfaces[j].name))
+      {
+        driver = interfaces[j].default_driver;
+        code = interfaces[j].code;
+        break;
+      }
+    }
+    if(!driver)
+    {
+      PLAYER_ERROR1("couldn't find interface \"%s\"", interface);
+      exit(-1);
+    }
+
+    // did the user specify a different driver?
+    driver = (char*)configFile.ReadString(i, "driver", driver);
+
+    printf("loading driver \"%s\" for interface \"%s\"\n", driver, interface);
+    /* look for the indicated driver in the available device table */
+    if(!(entry = driverTable->GetDriverEntry(driver)))
+    {
+      PLAYER_ERROR1("couldn't instantiate requested device \"%s\"", interface);
       return(false);
     }
     else
     {
       player_device_id_t id;
-      id = entry->id;
+      id.code = code;
       id.port = global_playerport;
       id.index = index;
 
-      //tmpdevice = (*(entry->initfunc))(argc,argv);
-      tmpdevice = (*(entry->initfunc))(0,NULL);
+      if(!(tmpdevice = (*(entry->initfunc))(interface,&configFile,i)))
+      {
+        PLAYER_ERROR2("couldn't instantiate driver \"%s\" for interface \"%s\"\n",
+                      driver, interface);
+        exit(-1);
+      }
       deviceTable->AddDevice(id, entry->access, tmpdevice);
-
-      free(devname);
     }
   }
 
+  configFile.WarnUnused();
   return(true);
 }
 
@@ -608,7 +613,7 @@ int main( int argc, char *argv[] )
   // and reassign it
   assert(GlobalTime = (PlayerTime*)(new WallclockTime()));
 
-  // Register the default available devices in the availableDeviceTable.  
+  // Register the available drivers in the driverTable.  
   //
   // Although most of these devices are only used with physical devices, 
   // some (e.g., broadcast, bps) are used with Stage, and so we always call 
@@ -620,24 +625,17 @@ int main( int argc, char *argv[] )
   int* ports = 0;
   int num_ufds = 0;
 
-  // make a copy of argv, so that strtok in parse_device_string
-  // doesn't screw with it 
-  char *new_argv[argc];
-  for(int i=0;i<argc;i++)
-    new_argv[i] = strdup(argv[i]);
-
   printf("** Player v%s ** ", playerversion);
   fflush(stdout);
 
   // parse args
   for( int i = 1; i < argc; i++ ) 
   {
-    if(!strcmp(new_argv[i],"-stage"))
+    if(!strcmp(argv[i],"-s"))
     {
-#ifdef INCLUDE_STAGE
       if(++i<argc) 
       {
-        strncpy(stage_io_directory, new_argv[i], sizeof(stage_io_directory));
+        strncpy(stage_io_directory, argv[i], sizeof(stage_io_directory));
         use_stage = true;
         printf("[Stage %s]", stage_io_directory );
       }
@@ -646,18 +644,14 @@ int main( int argc, char *argv[] )
         Usage();
         exit(-1);
       }
-#else
-      puts("\nSorry, Stage support was disabled at compile-time.");
-      exit(-1);
-#endif
     }
-    else if(!strcmp(new_argv[i], "-key"))
+    else if(!strcmp(argv[i], "-k"))
     {
       if(++i<argc) 
       { 
-        strncpy(auth_key,new_argv[i],sizeof(auth_key));
-        // just in case...
+        strncpy(auth_key,argv[i],sizeof(auth_key));
         auth_key[sizeof(auth_key)-1] = '\0';
+        printf("[Key %s]", auth_key);
       }
       else 
       {
@@ -665,18 +659,18 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(!strcmp(new_argv[i], "-gerkey"))
+    else if(!strcmp(argv[i], "-gerkey"))
     {
-      puts("Gerkey extensions enabled (good luck)....");
+      printf("[gerkey]");
       player_gerkey = true;
     }
-    else if(!strcmp(new_argv[i], "-dl"))
+    else if(!strcmp(argv[i], "-d"))
     {
       if(++i<argc) 
       { 
         void* handle;
-        fprintf(stderr,"Opening shared object %s...", new_argv[i]);
-        if(!(handle = dlopen(new_argv[i], RTLD_NOW)))
+        fprintf(stderr,"Opening shared object %s...", argv[i]);
+        if(!(handle = dlopen(argv[i], RTLD_NOW)))
         {
           fprintf(stderr,"\n  %s\n",dlerror());
           Interrupt(SIGINT);
@@ -690,11 +684,11 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(!strcmp(new_argv[i], "-port"))
+    else if(!strcmp(argv[i], "-p"))
     {
       if(++i<argc) 
       { 
-        global_playerport = atoi(new_argv[i]);
+        global_playerport = atoi(argv[i]);
 	    
         printf("[Port %d]", global_playerport);
       }
@@ -704,7 +698,7 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(!strcmp(new_argv[i], "-config"))
+    else if(!strcmp(argv[i], "-c"))
     {
       if(++i<argc)
       {
@@ -718,63 +712,17 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(!strcmp(new_argv[i], "-sane"))
-    {
-      for(int i=0;sane_spec[i];i++)
-      {
-        if(parse_device_string(sane_spec[i],NULL) < 0)
-        {
-          fprintf(stderr, "Warning: got error while creating sane "
-                  "device \"%s\"\n", sane_spec[i]);
-        }
-      }
-      special_config = true;
-    }
-    else if((i+1)<argc && new_argv[i+1][0] != '-')
-    {
-      if(parse_device_string(new_argv[i],new_argv[i+1]) < 0)
-      {
-        Usage();
-        exit(-1);
-      }
-      i++;
-      special_config = true;
-    }
     else
     {
-      if(parse_device_string(new_argv[i],NULL) < 0)
-      {
-        Usage();
-        exit(-1);
-      }
-      special_config = true;
+      Usage();
+      exit(-1);
     }
-  }
-  for(int i=0;i<argc;i++)
-    free(new_argv[i]);
-
-  // default behavior is to try to use the global config file; if that 
-  // doesn't work use the sane spec
-  if(!special_config && !use_stage)
-  {
-    //if(!parse_config_file(DEFAULT_PLAYER_CONFIGFILE))
-    //{
-      for(int i=0;sane_spec[i];i++)
-      {
-        if(parse_device_string(sane_spec[i],NULL) < 0)
-        {
-          fprintf(stderr, "Warning: got error while creating sane "
-                  "device \"%s\"\n", sane_spec[i]);
-        }
-      }
-    //}
   }
 
   puts( "" ); // newline, flush
 
   SetupSignalHandlers();
   
-#ifdef INCLUDE_STAGE
   if( use_stage )
   {
     // create the shared memory connection to Stage
@@ -817,7 +765,6 @@ int main( int argc, char *argv[] )
 #endif
 
   }  
-#endif // INCLUDE_STAGE  
 
   if(!use_stage)
   {

@@ -2,8 +2,6 @@
 # $Id$
 #
 
-include ../../../Makefile.common
-
 # How it works :
 # The manual is built when we are creating a distro, then copied to
 # the player/doc directory.  The top-level distro script will then
