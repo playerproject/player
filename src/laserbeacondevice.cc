@@ -89,11 +89,14 @@ CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
 //
 size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize) 
 {
-    // Dont do anything if the laser doesnt have new data
+    // If the laser doesnt have new data,
+    // just return a copy of our old data.
     //
     if (m_laser->data_timestamp_sec == this->data_timestamp_sec &&
         m_laser->data_timestamp_usec == this->data_timestamp_usec)
     {
+        ASSERT(maxsize >= sizeof(beacon_data));
+        memcpy(dest, &beacon_data, sizeof(beacon_data));
         return sizeof(player_laserbeacon_data_t);
     }
     

@@ -26,7 +26,7 @@
 #  a simple demo to do (dumb) sonarobstacleavoidance
 #
 
-set PLAYER_VERSION 1.0-beta
+set PLAYER_VERSION 1.0-gamma
 
 #
 # get the robot client utilities
