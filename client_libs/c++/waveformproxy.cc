@@ -158,7 +158,7 @@ int WaveformProxy::ConfigureDSP()
 
   //close(fd);
 #else
-  PLAYER_ERROR("no soundcard support compiled in");
+  fprintf(stderr, "no soundcard support compiled in\n");
   r=1;
 #endif
  
