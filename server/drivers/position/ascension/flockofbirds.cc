@@ -25,7 +25,7 @@
 #define FOB_DEFAULT_PORT "/dev/ttyS0"
 #define FOB_DEFAULT_RATE B115200
 
-#define FOB_DATAMODE_POSITION_ANGLE 0
+#define FOB_DATAMODE_POSITION_ANGLE 0x0
 
 #define FOB_SLEEP_TIME_USEC 10000
 
@@ -43,6 +43,9 @@ public:
 	int StopStream() {Stream = false;return WriteCommand(0x42);};
 	
 	double * GetPosition();
+	double GetRange();
+	
+	int SetRange(int);
 
 protected:
 	// serial port descriptor
@@ -54,10 +57,12 @@ protected:
 	double SafePosition[6];
 	
 	int WriteCommand(char command, int Count = 0, char * Values = NULL);
+	int ReadShorts(int Count = 0, short * Values = NULL);
 
 	bool Stream;
 	char LastCommand;
 	int DataMode;
+	double Range;
 
 	void Lock();
 	void Unlock();
@@ -125,6 +130,8 @@ FlockOfBirdsSerial::FlockOfBirdsSerial(char * port, int rate)
 		close(fd);
 		fd = -1;
 	}
+	
+	Range = GetRange();
 }
 
 
@@ -196,6 +203,30 @@ int FlockOfBirdsSerial::WriteCommand(char command, int length, char * data)
 	return 0;
 }
 
+int FlockOfBirdsSerial::ReadShorts(int Count, short * Values)
+{
+	for (int i = 0; i < Count; ++i)
+	{
+		int ret;
+		char temp;
+		while((ret = read(fd,&temp,1)) < 1)
+		{
+			if (ret == -1 && errno != EAGAIN)
+				return -1;
+		}
+		Values[i] = temp;
+
+		while((ret = read(fd,&temp,1)) < 1)
+		{
+			if (ret == -1 && errno != EAGAIN)
+				return -1;
+		}
+		Values[i] |= temp << 8;
+	}
+	return 0;
+}		
+		
+	
 
 //Process waiting data for FOB
 int FlockOfBirdsSerial::ProcessData()
@@ -213,9 +244,9 @@ int FlockOfBirdsSerial::ProcessData()
 		case FOB_DATAMODE_POSITION_ANGLE:
 		{
 			// set up a sort of state machine so that we just process data as it arrives
+			static bool Done = true;
 			static short Data[6];
 			static int NextValue = 0;
-			static bool Done = true;
 			static bool FirstByte = true;
 			
 			char temp;
@@ -243,7 +274,7 @@ int FlockOfBirdsSerial::ProcessData()
 				}
 				else
 				{
-					Data[NextValue] |= temp << 10;
+					Data[NextValue] |= temp << 9;
 					FirstByte = true;
 					NextValue++;
 					Count++;
@@ -252,10 +283,10 @@ int FlockOfBirdsSerial::ProcessData()
 						Done = true;
 						// convert 16 bit position to mm
 						for (int i = 0;i< 3;++i)
-							Position[i] = 25.4 * 36.0 * static_cast<double> (Data[i])/32768.0;
+							Position[i] = Range * static_cast<double> (Data[i])/0x7FFF;
 						// convert 16 bit angle to degrees
 						for (int i = 3;i< 6;++i)
-							Position[i] = 360.0 * static_cast<double> (Data[i])/32768.0;		
+							Position[i] = 180.0 * static_cast<double> (Data[i])/0x7FFF;		
 					}
 				}
 			
@@ -283,6 +314,28 @@ double * FlockOfBirdsSerial::GetPosition()
 	return SafePosition;
 }
 
+int FlockOfBirdsSerial::SetRange(int Range)
+{
+	short Temp = htons(Range);
+	if (WriteCommand(0x50) < 0)
+		return -1;
+	return WriteCommand(0x03,2,reinterpret_cast<char *> (&Temp));
+}
+
+//return the range of the sensor in mm
+double FlockOfBirdsSerial::GetRange()
+{
+	
+	if (WriteCommand(0x4F) < 0)
+		return -1;
+	if (WriteCommand(0x03) < 0)
+		return -1;
+	short Range;
+	if (ReadShorts(1,&Range) < 0)
+		return -1;
+	return Range == 0 ? 25.4 * 36 : 25.4 * 72;
+	
+}
 
 ///////////////////////////////////////////////////////////////
 // Player Driver Class                                       //
@@ -379,9 +432,9 @@ FlockOfBirds_Device::Shutdown()
 	puts("FlockOfBirds_Device::Shutdown");
 
 
+	fob->StopStream();
 	StopThread();
 
-	fob->StopStream();
 	delete fob;
 	fob=NULL;
 
