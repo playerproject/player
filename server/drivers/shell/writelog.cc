@@ -44,28 +44,27 @@ sensors).
 
 The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
-The writelog driver can will log data from the following interfaces.
+The writelog driver can will log data from the following interfaces:
 
-- @ref player_inteface_camera
-- @ref player_inteface_fiducial
-- @ref player_inteface_gps
-- @ref player_inteface_joystick
-- @ref player_inteface_laser
-- @ref player_inteface_position
-- @ref player_inteface_position3d
-- @ref player_inteface_power
-- @ref player_inteface_truth
-- @ref player_inteface_wifi
+- @ref player_interface_camera
+- @ref player_interface_fiducial
+- @ref player_interface_gps
+- @ref player_interface_joystick
+- @ref player_interface_laser
+- @ref player_interface_position
+- @ref player_interface_position3d
+- @ref player_interface_power
+- @ref player_interface_truth
+- @ref player_interface_wifi
 
 
 @par Outputs
 
-- @ref player_interface_log
+- @ref player_interface_log : turn logging on/off.  The following
+  requests are supported:
+  - PLAYER_LOG_SET_WRITE_STATE
+  - PLAYER_LOG_GET_STATE
 
-@par Supported configuration requests
-
-- PLAYER_LOG_SET_WRITE_STATE
-- PLAYER_LOG_GET_STATE
   
 @par Configuration file options
 

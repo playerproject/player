@@ -204,12 +204,12 @@ class ConfigFile
   /// Reads a device id from the named field of the given section.
   /// The returned id will match the given code, index and key values.
   //
-  /// @param id[out] ID field to be filled in.
-  /// @param section[in] File section.
-  /// @param name[in] Field name.
-  /// @param code[in] Interface type code (use 0 to match all interface types).
-  /// @param index[in] Tuple index (use -1 to match all indices).
-  /// @param key[in] Device key value (use NULL to match all key vales).
+  /// @param[out] id ID field to be filled in.
+  /// @param[in] section File section.
+  /// @param[in] name Field name.
+  /// @param[in] code Interface type code (use 0 to match all interface types).
+  /// @param[in] index Tuple index (use -1 to match all indices).
+  /// @param[in] key Device key value (use NULL to match all key vales).
   /// @return Non-zero on error.
   public: int ReadDeviceId(player_device_id_t *id, int section, const char *name,
                            int code, int index, const char *key);
