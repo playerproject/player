@@ -492,10 +492,12 @@ ClientData::~ClientData()
 {
   RemoveRequests();
 
-  if (socket) close(socket);
-
-  printf("** Player [port %d] killing client on socket %d **\n", 
-	 port, socket);
+  if(socket) 
+  {
+    close(socket);
+    printf("** Player [port %d] killing client on socket %d **\n", 
+           port, socket);
+  }
 
   if(readbuffer)
     delete[] readbuffer;
