@@ -48,7 +48,7 @@
 extern PlayerTime* GlobalTime;
 extern CDeviceTable* deviceTable;
 //extern pid_t g_server_pid;
-extern int global_playerport;
+
 
 // this is the main constructor, used by most non-Stage devices.
 // storage will be allocated by this constructor
@@ -188,61 +188,6 @@ void CDevice::SetupBuffers(unsigned char* data, size_t datasize,
   device_commandsize = device_used_commandsize = commandsize;
   device_reqqueue = new PlayerQueue(reqqueue, reqqueuelen);
   device_repqueue = new PlayerQueue(repqueue, repqueuelen);
-}
-
-
-// Read a device id from a tuple; there are no defaults for tuples;
-// they must be supplied
-int CDevice::ReadDeviceId(ConfigFile *cf, int section, int index,
-                          int code, player_device_id_t *id)
-{
-  player_interface_t interface;
-  const char *str;
-  char s[128];
-  int port, ind;
-
-  str = cf->ReadTupleString(section, "interfaces", index, NULL);
-  if (str == NULL)
-  {
-    PLAYER_ERROR1("section [%d]: missing interface field", section);
-    return -1;
-  } 
-  
-  // Look for port:interface:index
-  if (sscanf(str, "%d:%127[^:]:%d", &port, s, &ind) < 3)
-  {
-    port = global_playerport;
-    
-    // Look for interface:index
-    if (sscanf(str, "%127[^:]:%d", s, &ind) < 2)
-    {
-      PLAYER_ERROR1("section [%d]: syntax error in interface field", section);
-      return -1;
-    }
-  }
-
-  // Find the interface
-  if (::lookup_interface(s, &interface) != 0)
-  {
-    PLAYER_ERROR2("section [%d]: unknown interface: [%s]", section, s);
-    return -1;
-  }
-
-  // Make sure the code is correct
-  if (interface.code != code)
-  {
-    PLAYER_ERROR3("config file section [%d]: mismatched interface: [%s] should be [%s]",
-                  section,
-                  ::lookup_interface_name(0, interface.code),
-                  ::lookup_interface_name(0, code));
-    return -1;
-  }
-
-  id->port = port;
-  id->code = interface.code;
-  id->index = ind;
- 
-  return 0;
 }
 
 

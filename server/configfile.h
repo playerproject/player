@@ -27,7 +27,10 @@
 #ifndef CONFFILE_H
 #define CONFFILE_H
 
-#include <playercommon.h>
+#include "playercommon.h"
+#include "player.h"
+
+
 
 // Class for loading/saving config file.  
 class ConfigFile
@@ -154,6 +157,14 @@ class ConfigFile
                                   const char *name,
                                   int index, 
                                   uint32_t value);
+
+
+  
+  // Read a device id from the config file (helper function for
+  // new-style drivers).  Note that code is the *expected* interface
+  // type; returns 0 if a suitable device id is found.
+  public: int ReadDeviceId(int entity, int index,
+                           int expected_code, player_device_id_t *id);
 
   // Get the number of entities.
   public: int GetEntityCount();
