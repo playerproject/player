@@ -417,7 +417,7 @@ void Driver::Unlock()
   pthread_mutex_unlock(&accessMutex);
 }
     
-int Driver::Subscribe(void *client)
+int Driver::Subscribe(player_device_id_t id)
 {
   int setupResult;
 
@@ -436,7 +436,7 @@ int Driver::Subscribe(void *client)
   return( setupResult );
 }
 
-int Driver::Unsubscribe(void *client) 
+int Driver::Unsubscribe(player_device_id_t id)
 {
   int shutdownResult;
 

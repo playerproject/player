@@ -55,62 +55,67 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern int global_playerport; // used to get at devices
 
-/* these are necessary to make the static fields visible to the linker */
-extern pthread_t       P2OS::thread;
-//extern struct timeval  P2OS::timeBegan_tv;
-extern bool            P2OS::direct_wheel_vel_control;
-extern int             P2OS::psos_fd; 
-extern char            P2OS::psos_serial_port[];
-extern int             P2OS::radio_modemp;
-extern int             P2OS::joystickp;
-extern int             P2OS::motor_max_speed;
-extern int             P2OS::motor_max_turnspeed;
-extern bool            P2OS::use_vel_band;
-extern int             P2OS::cmucam;
-extern int             P2OS::gyro;
-extern bool            P2OS::initdone;
-extern char            P2OS::num_loops_since_rvel;
-extern SIP*            P2OS::sippacket;
-extern int             P2OS::param_idx;
-extern pthread_mutex_t P2OS::p2os_accessMutex;
-extern pthread_mutex_t P2OS::p2os_setupMutex;
-extern int             P2OS::p2os_subscriptions;
-extern player_p2os_data_t*  P2OS::data;
-extern player_p2os_cmd_t*  P2OS::command;
-extern unsigned char*    P2OS::reqqueue;
-extern unsigned char*    P2OS::repqueue;
-
-
-P2OS::P2OS( ConfigFile* cf, int section)
+Driver*
+P2OS_Init(ConfigFile* cf, int section)
 {
-  int reqqueuelen = 1;
-  int repqueuelen = 1;
+  return (Driver*)(new P2OS(cf,section));
+}
 
-  if(!initdone)
+P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
+{
+  // Create a position interface
+  if(cf->ReadDeviceId(section, 0, PLAYER_POSITION_CODE, &this->position_id) != 0)
   {
-    // build the table of robot parameters.
-    initialize_robot_params();
-  
-    // also, install default parameter values.
-    strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
-    psos_fd = -1;
-    radio_modemp = 0;
-    joystickp = 0;
-    cmucam = 0;		// If p2os_cmucam is used, this will be overridden
-    gyro = 0;		// If p2os_gyro is used, this will be overridden
-  
-    data = new player_p2os_data_t;
-    command = new player_p2os_cmd_t;
+    this->SetError(-1);
+    return;
+  }
+  if (this->AddInterface(this->position_id, PLAYER_ALL_MODE,
+                         sizeof(player_position_data_t),
+                         sizeof(player_position_cmd_t), 1, 1) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 
-    reqqueue = (unsigned char*)(new playerqueue_elt_t[reqqueuelen]);
-    repqueue = (unsigned char*)(new playerqueue_elt_t[repqueuelen]);
+  // Create a sonar interface
+  if(cf->ReadDeviceId(section, 0, PLAYER_SONAR_CODE, &this->sonar_id) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
+  if (this->AddInterface(this->sonar_id, PLAYER_READ_MODE,
+                         sizeof(player_sonar_data_t),0,1,1) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
 
-    SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
-                 (unsigned char*)command, sizeof(player_p2os_cmd_t),
-                 reqqueue, reqqueuelen,
-                 repqueue, repqueuelen);
+  // build the table of robot parameters.
+  ::initialize_robot_params();
+  
+  // Read config file options
+  this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
+  this->radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
+  this->joystickp = cf->ReadInt(section, "joystick", joystickp);
+  this->direct_wheel_vel_control = 
+          cf->ReadInt(section, "direct_wheel_vel_control", 1);
+  this->motor_max_speed = cf->ReadInt(section, "max_xspeed", 
+                                      MOTOR_DEF_MAX_SPEED);
+  this->motor_max_turnspeed = cf->ReadInt(section, "max_yawspeed", 
+                                          MOTOR_DEF_MAX_TURNSPEED);
+  this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
+
+  this->cmucamp = 0;		// If p2os_cmucam is used, this will be overridden
+  this->gyrop = 0;		// If p2os_gyro is used, this will be overridden
+  
+  this->psos_fd = -1;
+
+#if 0
+  SetupBuffers((unsigned char*)data, sizeof(player_p2os_data_t),
+               (unsigned char*)command, sizeof(player_p2os_cmd_t),
+               reqqueue, reqqueuelen,
+               repqueue, repqueuelen);
 
     ((player_p2os_cmd_t*)device_command)->position.xspeed = 0;
     ((player_p2os_cmd_t*)device_command)->position.yawspeed = 0;
@@ -125,10 +130,6 @@ P2OS::P2OS( ConfigFile* cf, int section)
     pthread_mutex_init(&p2os_accessMutex,NULL);
     pthread_mutex_init(&p2os_setupMutex,NULL);
 
-    initdone = true; 
-  }
-  else
-  {
     // every sub-device gets its own queue object (but they all point to the
     // same chunk of memory)
     
@@ -137,59 +138,21 @@ P2OS::P2OS( ConfigFile* cf, int section)
                  (unsigned char*)command, sizeof(player_p2os_cmd_t),
                  reqqueue, reqqueuelen,
                  repqueue, repqueuelen);
-  }
-
-
 
   strncpy(psos_serial_port,
           cf->ReadString(section, "port", psos_serial_port),
           sizeof(psos_serial_port));
   radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
   joystickp = cf->ReadInt(section, "joystick", joystickp);
-
-  // zero the subscription counter.
-  subscriptions = 0;
+#endif
 }
 
 P2OS::~P2OS()
 {
-  if(reqqueue)
-  {
-    delete[] reqqueue;
-    reqqueue=NULL;
-  }
-  if(repqueue)
-  {
-    delete[] repqueue;
-    repqueue=NULL;
-  }
-  if(data)
-  {
-    delete data;
-    data = NULL;
-    device_data = NULL;
-  }
-  if(command)
-  {
-    delete command;
-    command = NULL;
-    device_command = NULL;
-  }
-}
-
-void P2OS::Lock()
-{
-  pthread_mutex_lock(&p2os_accessMutex);
-}
-void P2OS::Unlock()
-{
-  pthread_mutex_unlock(&p2os_accessMutex);
 }
 
 int P2OS::Setup()
 {
-  unsigned char sonarcommand[4];
-  P2OSPacket sonarpacket; 
   int i;
   // this is the order in which we'll try the possible baud rates. we try 9600
   // first because most robots use it, and because otherwise the radio modem
@@ -217,72 +180,70 @@ int P2OS::Setup()
   char name[20], type[20], subtype[20];
   int cnt;
 
-  printf("P2OS connection initializing (%s)...",psos_serial_port);
+  printf("P2OS connection initializing (%s)...",this->psos_serial_port);
   fflush(stdout);
 
-  if((psos_fd = open(psos_serial_port, 
+  if((this->psos_fd = open(this->psos_serial_port, 
                      O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     perror("P2OS::Setup():open():");
     return(1);
   }  
  
-  if( tcgetattr( psos_fd, &term ) < 0 )
+  if(tcgetattr( this->psos_fd, &term ) < 0 )
   {
     perror("P2OS::Setup():tcgetattr():");
-    close(psos_fd);
-    psos_fd = -1;
+    close(this->psos_fd);
+    this->psos_fd = -1;
     return(1);
   }
 
 #if HAVE_CFMAKERAW
   cfmakeraw( &term );
 #endif
-  //cfsetispeed( &term, B9600 );
-  //cfsetospeed( &term, B9600 );
   cfsetispeed(&term, bauds[currbaud]);
   cfsetospeed(&term, bauds[currbaud]);
   
-  if( tcsetattr( psos_fd, TCSAFLUSH, &term ) < 0 )
+  if(tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0)
   {
     perror("P2OS::Setup():tcsetattr():");
-    close(psos_fd);
-    psos_fd = -1;
+    close(this->psos_fd);
+    this->psos_fd = -1;
     return(1);
   }
 
-  if( tcflush( psos_fd, TCIOFLUSH ) < 0 )
+  if(tcflush(this->psos_fd, TCIOFLUSH ) < 0)
   {
     perror("P2OS::Setup():tcflush():");
-    close(psos_fd);
-    psos_fd = -1;
+    close(this->psos_fd);
+    this->psos_fd = -1;
     return(1);
   }
 
-  if((flags = fcntl(psos_fd, F_GETFL)) < 0)
+  if((flags = fcntl(this->psos_fd, F_GETFL)) < 0)
   {
     perror("P2OS::Setup():fcntl()");
-    close(psos_fd);
-    psos_fd = -1;
+    close(this->psos_fd);
+    this->psos_fd = -1;
     return(1);
   }
 
   // radio modem initialization code, courtesy of Kim Jinsuck 
   //   <jinsuckk@cs.tamu.edu>
-  if(radio_modemp)
+  if(this->radio_modemp)
   {
     puts("Initializing radio modem...");
-    write(psos_fd, "WMS2\r", 5);
+    write(this->psos_fd, "WMS2\r", 5);
 
     usleep(50000);
     char modem_buf[50];
-    int buf_len = read(psos_fd, modem_buf, 5);          // get "WMS2"
+    int buf_len = read(this->psos_fd, modem_buf, 5);          // get "WMS2"
     modem_buf[buf_len]='\0';
     printf("wireless modem response = %s\n", modem_buf);
 
     usleep(10000);
     // get "\n\rConnecting..." --> \n\r is my guess
-    buf_len = read(psos_fd, modem_buf, 14); 
+    buf_len = read(this->psos_fd, modem_buf, 14); 
     modem_buf[buf_len]='\0';
     printf("wireless modem response = %s\n", modem_buf);
 
@@ -291,7 +252,7 @@ int P2OS::Setup()
     while(strstr(modem_buf, "ected to addres") == NULL)
     {
       usleep(300000);
-      buf_len = read(psos_fd, modem_buf, 40);
+      buf_len = read(this->psos_fd, modem_buf, 40);
       modem_buf[buf_len]='\0';
       printf("wireless modem response = %s\n", modem_buf);
       // if "Partner busy!"
@@ -317,31 +278,30 @@ int P2OS::Setup()
   int num_sync_attempts = 3;
   while(psos_state != READY)
   {
-    //printf("psos_state: %d\n", psos_state);
     switch(psos_state)
     {
       case NO_SYNC:
         command = SYNC0;
-        packet.Build( &command, 1);
-        packet.Send( psos_fd );
+        packet.Build(&command, 1);
+        packet.Send(this->psos_fd);
         usleep(P2OS_CYCLETIME_USEC);
         break;
       case AFTER_FIRST_SYNC:
-        if(fcntl(psos_fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
+        if(fcntl(this->psos_fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
         {
           perror("P2OS::Setup():fcntl()");
-          close(psos_fd);
-          psos_fd = -1;
+          close(this->psos_fd);
+          this->psos_fd = -1;
           return(1);
         }
         command = SYNC1;
-        packet.Build( &command, 1);
-        packet.Send( psos_fd );
+        packet.Build(&command, 1);
+        packet.Send(this->psos_fd);
         break;
       case AFTER_SECOND_SYNC:
         command = SYNC2;
-        packet.Build( &command, 1);
-        packet.Send( psos_fd );
+        packet.Build(&command, 1);
+        packet.Send(this->psos_fd);
         break;
       default:
         puts("P2OS::Setup():shouldn't be here...");
@@ -349,7 +309,7 @@ int P2OS::Setup()
     }
     usleep(P2OS_CYCLETIME_USEC);
 
-    if(receivedpacket.Receive( psos_fd ))
+    if(receivedpacket.Receive(this->psos_fd))
     {
       if((psos_state == NO_SYNC) && (num_sync_attempts >= 0))
       {
@@ -359,24 +319,24 @@ int P2OS::Setup()
       }
       else
       {
-        // couldn't connect; try lower speed.
+        // couldn't connect; try different speed.
         if(++currbaud < numbauds)
         {
           cfsetispeed(&term, bauds[currbaud]);
           cfsetospeed(&term, bauds[currbaud]);
-          if( tcsetattr( psos_fd, TCSAFLUSH, &term ) < 0 )
+          if( tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0 )
           {
             perror("P2OS::Setup():tcsetattr():");
-            close(psos_fd);
-            psos_fd = -1;
+            close(this->psos_fd);
+            this->psos_fd = -1;
             return(1);
           }
 
-          if( tcflush( psos_fd, TCIOFLUSH ) < 0 )
+          if(tcflush(this->psos_fd, TCIOFLUSH ) < 0 )
           {
             perror("P2OS::Setup():tcflush():");
-            close(psos_fd);
-            psos_fd = -1;
+            close(this->psos_fd);
+            this->psos_fd = -1;
             return(1);
           }
           num_sync_attempts = 3;
@@ -389,7 +349,7 @@ int P2OS::Setup()
         }
       }
     }
-    //receivedpacket.PrintHex();
+    
     switch(receivedpacket.packet[3])
     {
       case SYNC0:
@@ -409,10 +369,10 @@ int P2OS::Setup()
           //puts("sending CLOSE");
           command = CLOSE;
           packet.Build( &command, 1);
-          packet.Send( psos_fd );
+          packet.Send(this->psos_fd);
           sent_close = true;
           usleep(2*P2OS_CYCLETIME_USEC);
-          tcflush(psos_fd,TCIFLUSH);
+          tcflush(this->psos_fd,TCIFLUSH);
           psos_state = NO_SYNC;
         }
         break;
@@ -424,9 +384,9 @@ int P2OS::Setup()
   {
     printf("Couldn't synchronize with P2OS.\n"  
            "  Most likely because the robot is not connected to %s\n", 
-           psos_serial_port);
-    close(psos_fd);
-    psos_fd = -1;
+           this->psos_serial_port);
+    close(this->psos_fd);
+    this->psos_fd = -1;
     return(1);
   }
 
@@ -440,13 +400,13 @@ int P2OS::Setup()
 
 
   command = OPEN;
-  packet.Build( &command, 1);
-  packet.Send( psos_fd );
+  packet.Build(&command, 1);
+  packet.Send(this->psos_fd);
   usleep(P2OS_CYCLETIME_USEC);
 
   command = PULSE;
-  packet.Build( &command, 1);
-  packet.Send( psos_fd );
+  packet.Build(&command, 1);
+  packet.Send(this->psos_fd);
   usleep(P2OS_CYCLETIME_USEC);
 
   printf("Done.\n   Connected to %s, a %s %s\n", name, type, subtype);
@@ -468,24 +428,20 @@ int P2OS::Setup()
     param_idx = 0;
   }
   
-  direct_wheel_vel_control = true;
-  num_loops_since_rvel = 2;
-  //pthread_mutex_unlock(&serial_mutex);
-
   // first, receive a packet so we know we're connected.
-  if(!sippacket)
-    sippacket = new SIP(param_idx);
-  SendReceive((P2OSPacket*)NULL);//,false);
+  if(!this->sippacket)
+    this->sippacket = new SIP(param_idx);
+
+  this->sippacket->x_offset = 0;
+  this->sippacket->y_offset = 0;
+  this->sippacket->angle_offset = 0;
+
+  SendReceive((P2OSPacket*)NULL);
 
   // turn off the sonars at first
-  sonarcommand[0] = SONAR;
-  sonarcommand[1] = ARGINT;
-  sonarcommand[2] = 0;
-  sonarcommand[3] = 0;
-  sonarpacket.Build(sonarcommand, 4);
-  SendReceive(&sonarpacket);
+  this->ToggleSonarPower(0);
 
-  if(joystickp)
+  if(this->joystickp)
   {
     // enable joystick control
     P2OSPacket js_packet;
@@ -495,13 +451,13 @@ int P2OS::Setup()
     js_command[2] = 1;
     js_command[3] = 0;
     js_packet.Build(js_command, 4);
-    SendReceive(&js_packet);
+    this->SendReceive(&js_packet);
   }
 
-  if (cmucam)
+  if(this->cmucamp)
     CMUcamReset();
 
-  if(gyro)
+  if(this->gyrop)
   {
     // request that gyro data be sent each cycle
     P2OSPacket gyro_packet;
@@ -511,11 +467,11 @@ int P2OS::Setup()
     gyro_command[2] = 1;
     gyro_command[3] = 0;
     gyro_packet.Build(gyro_command, 4);
-    SendReceive(&gyro_packet);
+    this->SendReceive(&gyro_packet);
   }
 
   /* now spawn reading thread */
-  StartThread();
+  this->StartThread();
   return(0);
 }
 
@@ -526,315 +482,145 @@ int P2OS::Shutdown()
 
   memset(buffer,0,20);
 
-  if(psos_fd == -1)
-  {
+  if(this->psos_fd == -1)
     return(0);
-  }
 
-  StopThread();
+  this->StopThread();
 
   command[0] = STOP;
   packet.Build(command, 1);
-  packet.Send(psos_fd);
+  packet.Send(this->psos_fd);
   usleep(P2OS_CYCLETIME_USEC);
 
   command[0] = CLOSE;
-  packet.Build( command, 1);
-  packet.Send( psos_fd );
+  packet.Build(command, 1);
+  packet.Send(this->psos_fd);
   usleep(P2OS_CYCLETIME_USEC);
 
-  close(psos_fd);
-  psos_fd = -1;
+  close(this->psos_fd);
+  this->psos_fd = -1;
   puts("P2OS has been shutdown");
-  delete sippacket;
-  sippacket = NULL;
+  delete this->sippacket;
+  this->sippacket = NULL;
 
   return(0);
 }
 
-int P2OS::Subscribe(void *client)
+int 
+P2OS::Subscribe(player_device_id_t id)
 {
   int setupResult;
 
-  if(p2os_subscriptions == 0) 
+  // do the subscription
+  if((setupResult = Driver::Subscribe(id)) == 0)
   {
-    setupResult = Setup();
-    if (setupResult == 0 ) 
+    // also increment the appropriate subscription counter
+    switch(id.code)
     {
-      p2os_subscriptions++;  // increment the static p2os-wide subscr counter
-      subscriptions++;       // increment the per-device subscr counter
+      case PLAYER_POSITION_CODE:
+        this->position_subscriptions++;
+        break;
+      case PLAYER_SONAR_CODE:
+        this->sonar_subscriptions++;
+        break;
+      default:
+        PLAYER_ERROR1("got subscription for unknown interface %d", id.code);
+        assert(false);
     }
   }
-  else 
-  {
-    p2os_subscriptions++;  // increment the static p2os-wide subscr counter
-    subscriptions++;       // increment the per-device subscr counter
-    setupResult = 0;
-  }
-  
-  return( setupResult );
+
+  return(setupResult);
 }
 
-int P2OS::Unsubscribe(void *client)
+int 
+P2OS::Unsubscribe(player_device_id_t id)
 {
   int shutdownResult;
 
-  if(p2os_subscriptions == 0) 
+  // do the unsubscription
+  if((shutdownResult = Driver::Unsubscribe(id)) == 0)
   {
-    shutdownResult = -1;
-  }
-  else if(p2os_subscriptions == 1) 
-  {
-    shutdownResult = Shutdown();
-    if (shutdownResult == 0 ) 
-    { 
-      p2os_subscriptions--;  // decrement the static p2os-wide subscr counter
-      subscriptions--;       // decrement the per-device subscr counter
+    // also decrement the appropriate subscription counter
+    switch(id.code)
+    {
+      case PLAYER_POSITION_CODE:
+        assert(--this->position_subscriptions >= 0);
+        break;
+      case PLAYER_SONAR_CODE:
+        assert(--this->sonar_subscriptions >= 0);
+        break;
+      default:
+        PLAYER_ERROR1("got unsubscription for unknown interface %d", id.code);
+        assert(false);
     }
-    /* do we want to unsubscribe even though the shutdown went bad? */
   }
-  else 
-  {
-    p2os_subscriptions--;  // decrement the static p2os-wide subscr counter
-    subscriptions--;       // decrement the per-device subscr counter
-    shutdownResult = 0;
-  }
-  
-  return( shutdownResult );
+
+  return(shutdownResult);
 }
 
-
-void P2OS::PutData( unsigned char* src, size_t maxsize,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec)
+void 
+P2OS::PutData(void)
 {
-  Lock();
 
-  *((player_p2os_data_t*)device_data) = *((player_p2os_data_t*)src);
+  // TODO: something smarter about timestamping.
 
-  if(timestamp_sec == 0)
-  {
-    struct timeval curr;
-    GlobalTime->GetTime(&curr);
-    timestamp_sec = curr.tv_sec;
-    timestamp_usec = curr.tv_usec;
-  }
+  // put position data
+  Driver::PutData(this->position_id, 
+                  (void*)&(this->p2os_data.position), 
+                  sizeof(player_position_data_t),
+                  NULL);
 
-  data_timestamp_sec = timestamp_sec;
-  data_timestamp_usec = timestamp_usec;
-  
-  // need to fill in the timestamps on all P2OS devices, both so that they
-  // can read it, but also because other devices may want to read it
-  player_device_id_t id = device_id;
-
-  id.code = PLAYER_SONAR_CODE;
-  Driver* sonarp = deviceTable->GetDriver(id);
-  if(sonarp)
-  {
-    sonarp->data_timestamp_sec = this->data_timestamp_sec;
-    sonarp->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_POWER_CODE;
-  Driver* powerp = deviceTable->GetDriver(id);
-  if(powerp)
-  {
-    powerp->data_timestamp_sec = this->data_timestamp_sec;
-    powerp->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_BUMPER_CODE;
-  Driver* bumperp = deviceTable->GetDriver(id);
-  if(bumperp)
-  {
-    bumperp->data_timestamp_sec = this->data_timestamp_sec;
-    bumperp->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_AIO_CODE;
-  Driver* aio = deviceTable->GetDriver(id);
-  if(aio)
-  {
-    aio->data_timestamp_sec = this->data_timestamp_sec;
-    aio->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_DIO_CODE;
-  Driver* dio = deviceTable->GetDriver(id);
-  if(dio)
-  {
-    dio->data_timestamp_sec = this->data_timestamp_sec;
-    dio->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_POSITION_CODE;
-  Driver* positionp = deviceTable->GetDriver(id);
-  if(positionp)
-  {
-    positionp->data_timestamp_sec = this->data_timestamp_sec;
-    positionp->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  id.code = PLAYER_GRIPPER_CODE;
-  Driver* gripperp = deviceTable->GetDriver(id);
-  if(gripperp)
-  {
-    gripperp->data_timestamp_sec = this->data_timestamp_sec;
-    gripperp->data_timestamp_usec = this->data_timestamp_usec;
-  }
-
-  Unlock();
+  // put sonar data
+  Driver::PutData(this->sonar_id, 
+                  (void*)&(this->p2os_data.sonar), 
+                  sizeof(player_sonar_data_t),
+                  NULL);
 }
 
 void 
 P2OS::Main()
 {
-  player_p2os_cmd_t command;
-  unsigned char config[P2OS_CONFIG_BUFFER_SIZE];
-  unsigned char motorcommand[4];
-  unsigned char gripcommand[4];
-  unsigned char soundcommand[4];
-  P2OSPacket motorpacket; 
-  P2OSPacket grippacket;
-  P2OSPacket soundpacket;
-  
-  short speedDemand=0, turnRateDemand=0;
-  char gripperCmd=0,gripperArg=0;
-  bool newmotorspeed, newmotorturn;
-  bool newgrippercommand;
-  bool newsoundplay;
-  unsigned short soundindex=0;
-  
-  double leftvel, rightvel;
-  double rotational_term;
-  unsigned short absspeedDemand, absturnRateDemand;
-
-  int config_size;
-
-  int last_sonar_subscrcount;
-  int last_position_subscrcount;
-  int last_cmucam_subscrcount;
-
-  player_device_id_t id;
-  id.port = global_playerport;
-  id.index = 0;
-
-  id.code = PLAYER_SONAR_CODE;
-  Driver* sonarp = deviceTable->GetDriver(id);
-  id.code = PLAYER_POSITION_CODE;
-  Driver* positionp = deviceTable->GetDriver(id);
-  id.code = PLAYER_SOUND_CODE;
-  Driver* soundp = deviceTable->GetDriver(id);
-  id.code = PLAYER_BLOBFINDER_CODE;
-  Driver* cmucamp = deviceTable->GetDriver(id);
-  
-  last_sonar_subscrcount = 0;
-  last_position_subscrcount = 0;
-  last_cmucam_subscrcount = 0;
-
-  if(sippacket)
-    sippacket->x_offset = sippacket->y_offset = sippacket->angle_offset = 0;
-
-  //GlobalTime->GetTime(&timeBegan_tv);
-
-  // request the current configuration
-  /*
-    configreq[0] = 18;
-    configreq[1] = ARGINT;
-    configpacket.Build(configreq,2);
-    puts("sending CONFIGpac");
-    SendReceive(&configpacket);
-  */
+  int last_sonar_subscrcount=0;
+  int last_position_subscrcount=0;
+  //int last_cmucam_subscrcount=0;
 
   for(;;)
   {
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
-    if(sonarp)
-    {
-      if(!last_sonar_subscrcount && sonarp->subscriptions)
-      {
-        motorcommand[0] = SONAR;
-        motorcommand[1] = ARGINT;
-        motorcommand[2] = 1;
-        motorcommand[3] = 0;
-        motorpacket.Build(motorcommand, 4);
-        SendReceive(&motorpacket);
-      }
-      else if(last_sonar_subscrcount && !(sonarp->subscriptions))
-      {
-        motorcommand[0] = SONAR;
-        motorcommand[1] = ARGINT;
-        motorcommand[2] = 0;
-        motorcommand[3] = 0;
-        motorpacket.Build(motorcommand, 4);
-        SendReceive(&motorpacket);
-      }
-      
-      last_sonar_subscrcount = sonarp->subscriptions;
-    }
+    if(!last_sonar_subscrcount && this->sonar_subscriptions)
+      this->ToggleSonarPower(1);
+    else if(last_sonar_subscrcount && !(this->sonar_subscriptions))
+      this->ToggleSonarPower(0);
+    last_sonar_subscrcount = this->sonar_subscriptions;
     
     // we want to reset the odometry and enable the motors if the first 
     // client just subscribed to the position device, and we want to stop 
     // and disable the motors if the last client unsubscribed.
-    if(positionp)
+    if(!last_position_subscrcount && this->position_subscriptions)
     {
-      if(!last_position_subscrcount && positionp->subscriptions)
-      {
-        // disable motor power
-        motorcommand[0] = ENABLE;
-        motorcommand[1] = ARGINT;
-        motorcommand[2] = 0;
-        motorcommand[3] = 0;
-        motorpacket.Build(motorcommand, 4);
-        SendReceive(&motorpacket);//,false);
-
-        // reset odometry
-        ResetRawPositions();
-      }
-      else if(last_position_subscrcount && !(positionp->subscriptions))
-      {
-        // command motors to stop
-        motorcommand[0] = VEL2;
-        motorcommand[1] = ARGINT;
-        motorcommand[2] = 0;
-        motorcommand[3] = 0;
-
-        // overwrite existing motor commands to be zero
-        player_position_cmd_t position_cmd;
-        position_cmd.xspeed = 0;
-        position_cmd.yawspeed = 0;
-        // TODO: who should really be the client here?
-        positionp->PutCommand(this,(unsigned char*)(&position_cmd), 
-                              sizeof(position_cmd));
-      
-        // disable motor power
-        motorcommand[0] = ENABLE;
-        motorcommand[1] = ARGINT;
-        motorcommand[2] = 0;
-        motorcommand[3] = 0;
-        motorpacket.Build(motorcommand, 4);
-        SendReceive(&motorpacket);//,false);
-      }
-
-      last_position_subscrcount = positionp->subscriptions;
+      this->ToggleMotorPower(0);
+      this->ResetRawPositions();
     }
+    else if(last_position_subscrcount && !(this->position_subscriptions))
+    {
+      // overwrite existing motor commands to be zero
+      player_position_cmd_t position_cmd;
+      position_cmd.xspeed = 0;
+      position_cmd.yawspeed = 0;
+      this->PutCommand(this->position_id,(void*)(&position_cmd), 
+                       sizeof(player_position_cmd_t),NULL);
 
+      // enable motor power
+      this->ToggleMotorPower(1);
+    }
+    last_position_subscrcount = this->position_subscriptions;
+
+#if 0
     // we want to turn on the cmucam blob tracking if someone just subscribed, 
     // and turn them off (reset) if the last subscriber just unsubscribed.
     if(cmucamp)
     {
-/*
-  if(!last_cmucam_subscrcount && cmucamp->subscriptions)
-  {
-  // First subscription
-  CMUcamTrack();
-  }
-  else if(last_cmucam_subscrcount && !(cmucamp->subscriptions))
-  {
-  CMUcamReset();
-  }
-*/
-      
       last_cmucam_subscrcount = cmucamp->subscriptions;
 
       // The Amigo board seems to drop commands once in a while.  This is
@@ -843,7 +629,6 @@ P2OS::Main()
       GlobalTime->GetTime(&now_tv);
       if (now_tv.tv_sec > lastblob_tv.tv_sec) 
       {
-//         printf(".");  fflush(stdout);
         P2OSPacket cam_packet;
         unsigned char cam_command[4];
 
@@ -863,17 +648,489 @@ P2OS::Main()
         GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
       }
     }
+#endif
     
-    
-    /** New configuration commands **/
-    void* client;
-    player_device_id_t id;
-    // first, check if there is a new config command
-    if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+    // handle pending config requests
+    this->HandleConfig();
+
+    // process latest commands
+    this->GetCommand();
+        
+  }
+  pthread_exit(NULL);
+}
+
+/* send the packet, then receive and parse an SIP */
+int
+P2OS::SendReceive(P2OSPacket* pkt)
+{
+  P2OSPacket packet;
+
+  // zero the combined data buffer.  it will be filled with the latest data
+  // by SIP::Fill()
+  memset(&(this->p2os_data),0,sizeof(player_p2os_data_t));
+
+  if((this->psos_fd >= 0) && this->sippacket)
+  {
+    if(pkt)
+      pkt->Send(this->psos_fd);
+
+    /* receive a packet */
+    pthread_testcancel();
+    if(packet.Receive(this->psos_fd))
     {
-      switch(id.code)
+      puts("RunPsosThread(): Receive errored");
+      pthread_exit(NULL);
+    }
+
+    if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+       (packet.packet[3] == 0x30 || packet.packet[3] == 0x31) ||
+       (packet.packet[3] == 0x32 || packet.packet[3] == 0x33) ||
+       (packet.packet[3] == 0x34))
+    {
+
+      /* It is a server packet, so process it */
+      this->sippacket->Parse( &packet.packet[3] );
+      this->sippacket->Fill(&(this->p2os_data));
+
+      this->PutData();
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
+            packet.packet[3] == SERAUX)
+    {
+       // This is an AUX serial packet
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
+            packet.packet[3] == SERAUX2)
+    {
+      // This is an AUX2 serial packet
+      if(this->cmucamp)
       {
-        case PLAYER_BLOBFINDER_CODE:
+        /* It is an extended SIP (blobfinder) packet, so process it */
+        /* Be sure to pass data size too (packet[2])! */
+        this->sippacket->ParseSERAUX( &packet.packet[2] );
+        this->sippacket->Fill(&(this->p2os_data));
+
+        this->PutData();
+
+        P2OSPacket cam_packet;
+        unsigned char cam_command[4];
+
+        /* We cant get the entire contents of the buffer,
+        ** and we cant just have P2OS send us the buffer on a regular basis.
+        ** My solution is to flush the buffer and then request exactly
+        ** CMUCAM_MESSAGE_LEN * 2 -1 bytes of data.  This ensures that
+        ** we will get exactly one full message, and it will be "current"
+        ** within the last 2 messages.  Downside is that we end up pitching
+        ** every other CMUCAM message.  Tradeoffs... */
+        // Flush
+        cam_command[0] = GETAUX2;
+        cam_command[1] = ARGINT;
+        cam_command[2] = 0;
+        cam_command[3] = 0;
+        cam_packet.Build(cam_command, 4);
+        this->SendReceive(&cam_packet);
+
+        // Reqest next packet
+        cam_command[0] = GETAUX2;
+        cam_command[1] = ARGINT;
+        // Guarantee exactly 1 full message
+        cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
+        cam_command[3] = 0;
+        cam_packet.Build(cam_command, 4);
+        this->SendReceive(&cam_packet);
+        GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
+      }
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+            (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
+//            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
+            (packet.packet[3] == 0xC0) ||
+            (packet.packet[3] == 0xD0 || packet.packet[3] == 0xE0))
+    {
+      /* It is a vision packet from the old Cognachrome system*/
+
+      /* we don't understand these yet, so ignore */
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
+            packet.packet[3] == GYROPAC)
+    {
+      /* It's a set of gyro measurements */
+      this->sippacket->ParseGyro(&packet.packet[2]);
+      this->sippacket->Fill(&(this->p2os_data));
+      this->PutData();
+
+      /* Now, the manual says that we get one gyro packet each cycle,
+       * right before the standard SIP.  So, we'll call SendReceive() 
+       * again (with no packet to send) to get the standard SIP.  There's 
+       * a definite danger of infinite recursion here if the manual
+       * is wrong.
+       */
+      this->SendReceive(NULL);
+    }
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+            (packet.packet[3] == 0x20))
+    {
+      //printf("got a CONFIGpac:%d\n",packet.size);
+    }
+    else 
+    {
+      PLAYER_WARN("got unknown packet:");
+      packet.PrintHex();
+    }
+  }
+  return(0);
+}
+
+void
+P2OS::ResetRawPositions()
+{
+  P2OSPacket pkt;
+  unsigned char p2oscommand[4];
+
+  if(this->sippacket)
+  {
+    this->sippacket->rawxpos = 0;
+    this->sippacket->rawypos = 0;
+    this->sippacket->xpos = 0;
+    this->sippacket->ypos = 0;
+    p2oscommand[0] = SETO;
+    p2oscommand[1] = ARGINT;
+    pkt.Build(p2oscommand, 2);
+    this->SendReceive(&pkt);
+  }
+}
+
+
+/****************************************************************
+** Reset the CMUcam.  This includes flushing the buffer and
+** setting interface output mode to raw.  It also restarts
+** tracking output (current mode)
+****************************************************************/
+void P2OS::CMUcamReset()
+{
+  CMUcamStopTracking();	// Stop the current tracking.
+
+  P2OSPacket cam_packet;
+  unsigned char cam_command[8];
+
+  printf("Resetting the CMUcam...\n");
+  cam_command[0] = TTY3;
+  cam_command[1] = ARGSTR;
+  sprintf((char*)&cam_command[3], "RS\r");
+  cam_command[2] = strlen((char *)&cam_command[3]);
+  cam_packet.Build(cam_command, (int)cam_command[2]+3);
+  this->SendReceive(&cam_packet);
+
+  // Set for raw output + no ACK/NACK
+  printf("Setting raw mode...\n");
+  cam_command[0] = TTY3;
+  cam_command[1] = ARGSTR;
+  sprintf((char*)&cam_command[3], "RM 3\r");
+  cam_command[2] = strlen((char *)&cam_command[3]);
+  cam_packet.Build(cam_command, (int)cam_command[2]+3);
+  this->SendReceive(&cam_packet);
+  usleep(100000);
+
+  printf("Flushing serial buffer...\n");
+  cam_command[0] = GETAUX2;
+  cam_command[1] = ARGINT;
+  cam_command[2] = 0;
+  cam_command[3] = 0;
+  cam_packet.Build(cam_command, 4);
+  this->SendReceive(&cam_packet);
+
+  sleep(1);
+  // (Re)start tracking
+  this->CMUcamTrack();
+}
+
+
+/****************************************************************
+** Start CMUcam blob tracking.  This method can be called 3 ways:
+**   1) with a set of 6 color arguments (RGB min and max)
+**   2) with auto tracking (-1 argument)
+**   3) with current values (0 or no arguments)
+****************************************************************/
+void P2OS::CMUcamTrack(int rmin, int rmax,
+                       int gmin, int gmax,
+                       int bmin, int bmax)
+{
+  this->CMUcamStopTracking();	// Stop the current tracking.
+
+  P2OSPacket cam_packet;
+  unsigned char cam_command[50];
+
+  if (!rmin && !rmax && !gmin && !gmax && !bmin && !bmax)
+  {
+    // Then start it up with current values.
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TC\r");
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    this->SendReceive(&cam_packet);
+  }
+  else if (rmin<0 || rmax<0 || gmin<0 || gmax<0 || bmin<0 || bmax<0)
+  {
+    printf("Activating CMUcam color tracking (AUTO-mode)...\n");
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TW\r");
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    this->SendReceive(&cam_packet);
+  }
+  else
+  {
+    printf("Activating CMUcam color tracking (MANUAL-mode)...\n");
+    //printf("      RED: %d %d    GREEN: %d %d    BLUE: %d %d\n",
+    //                   rmin, rmax, gmin, gmax, bmin, bmax);
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TC %d %d %d %d %d %d\r", 
+             rmin, rmax, gmin, gmax, bmin, bmax);
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    this->SendReceive(&cam_packet);
+  }
+
+  cam_command[0] = GETAUX2;
+  cam_command[1] = ARGINT;
+  cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;	// Guarantee 1 full message
+  cam_command[3] = 0;
+  cam_packet.Build(cam_command, 4);
+  this->SendReceive(&cam_packet);
+}
+
+
+/****************************************************************
+** Stop Tracking - This should be done before any new command
+** are issued to the CMUcam.
+****************************************************************/
+void P2OS::CMUcamStopTracking()
+{
+  P2OSPacket cam_packet;
+  unsigned char cam_command[50];
+
+  // First we must STOP tracking.  Just send a return.
+  cam_command[0] = TTY3;
+  cam_command[1] = ARGSTR;
+  sprintf((char*)&cam_command[3], "\r");
+  cam_command[2] = strlen((char *)&cam_command[3]);
+  cam_packet.Build(cam_command, (int)cam_command[2]+3);
+  this->SendReceive(&cam_packet);
+}
+
+/* toggle sonars on/off, according to val */
+void
+P2OS::ToggleSonarPower(unsigned char val)
+{
+  unsigned char command[4];
+  P2OSPacket packet; 
+
+  command[0] = SONAR;
+  command[1] = ARGINT;
+  command[2] = val;
+  command[3] = 0;
+  packet.Build(command, 4);
+  SendReceive(&packet);
+}
+
+/* toggle motors on/off, according to val */
+void
+P2OS::ToggleMotorPower(unsigned char val)
+{
+  unsigned char command[4];
+  P2OSPacket packet; 
+
+  command[0] = ENABLE;
+  command[1] = ARGINT;
+  command[2] = val;
+  command[3] = 0;
+  packet.Build(command, 4);
+  SendReceive(&packet);
+}
+
+void
+P2OS::HandleConfig(void)
+{
+  void* client;
+  unsigned char config[PLAYER_MAX_REQREP_SIZE];
+  int config_size;
+
+  // check for position config requests
+  if((config_size = this->GetConfig(this->position_id, &client, 
+                                    (void*)config, sizeof(config),NULL)) > 0)
+  {
+    switch(config[0])
+    {
+      case PLAYER_POSITION_SET_ODOM_REQ:
+        if(config_size != sizeof(player_position_set_odom_req_t))
+        {
+          PLAYER_WARN("Arg to odometry set requests wrong size; ignoring");
+          this->PutReply(this->position_id, client,
+                         PLAYER_MSGTYPE_RESP_NACK, NULL);
+        }
+        else
+        {
+          player_position_set_odom_req_t set_odom_req;
+          set_odom_req = *((player_position_set_odom_req_t*)config);
+
+          this->sippacket->x_offset = ((int)ntohl(set_odom_req.x)) -
+                  this->sippacket->xpos;
+          this->sippacket->y_offset = ((int)ntohl(set_odom_req.y)) -
+                  this->sippacket->ypos;
+          this->sippacket->angle_offset = ((int)ntohl(set_odom_req.theta)) -
+                  this->sippacket->angle;
+
+          this->PutReply(this->position_id, client, 
+                         PLAYER_MSGTYPE_RESP_ACK, NULL);
+        }
+        break;
+
+      case PLAYER_POSITION_MOTOR_POWER_REQ:
+        /* motor state change request 
+         *   1 = enable motors
+         *   0 = disable motors (default)
+         */
+        if(config_size != sizeof(player_position_power_config_t))
+        {
+          PLAYER_WARN("Arg to motor state change request wrong size; ignoring");
+          this->PutReply(this->position_id, client, 
+                         PLAYER_MSGTYPE_RESP_NACK, NULL);
+        }
+        else
+        {
+          player_position_power_config_t power_config;
+          power_config = *((player_position_power_config_t*)config);
+          this->ToggleMotorPower(power_config.value);
+
+          this->PutReply(this->position_id, client, 
+                         PLAYER_MSGTYPE_RESP_ACK, NULL);
+        }
+        break;
+
+      case PLAYER_POSITION_RESET_ODOM_REQ:
+        /* reset position to 0,0,0: no args */
+        if(config_size != sizeof(player_position_resetodom_config_t))
+        {
+          PLAYER_WARN("Arg to reset position request is wrong size; ignoring");
+          this->PutReply(this->position_id, client, 
+                         PLAYER_MSGTYPE_RESP_NACK, NULL);
+        }
+        else
+        {
+          ResetRawPositions();
+
+          this->PutReply(this->position_id, client, 
+                         PLAYER_MSGTYPE_RESP_ACK, NULL);
+        }
+        break;
+
+      case PLAYER_POSITION_GET_GEOM_REQ:
+        /* Return the robot geometry. */
+        if(config_size != 1)
+        {
+          PLAYER_WARN("Arg get robot geom is wrong size; ignoring");
+          this->PutReply(this->position_id, client, 
+                   PLAYER_MSGTYPE_RESP_NACK, NULL);
+        }
+        else
+        {
+          player_position_geom_t geom;
+          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+          // TODO: Figure out this rotation offset somehow; it's not 
+          //       given in the Saphira parameters.  For now, -100 is 
+          //       about right for a Pioneer 2DX.
+          geom.pose[0] = htons((short) (-100));
+          geom.pose[1] = htons((short) (0));
+          geom.pose[2] = htons((short) (0));
+          // get dimensions from the parameter table
+          //geom.size[0] = htons((short) (2 * 250));
+          //geom.size[1] = htons((short) (2 * 225));
+          geom.size[0] = 
+                  htons((short)PlayerRobotParams[param_idx].RobotLength);
+          geom.size[1] = 
+                  htons((short)PlayerRobotParams[param_idx].RobotWidth);
+
+          this->PutReply(this->position_id, client, 
+                         PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL);
+        }
+        break;
+      default:
+        PLAYER_WARN("Position got unknown config request");
+        this->PutReply(this->position_id, client, 
+                       PLAYER_MSGTYPE_RESP_NACK, NULL);
+        break;
+    }
+  }
+
+  // check for sonar config requests
+  if((config_size = this->GetConfig(this->sonar_id, &client, 
+                                    (void*)config, sizeof(config),NULL)) > 0)
+  {
+    switch(config[0])
+    {
+      case PLAYER_SONAR_POWER_REQ:
+        /*
+         * 1 = enable sonars
+         * 0 = disable sonar
+         */
+        if(config_size != sizeof(player_sonar_power_config_t))
+        {
+          PLAYER_WARN("Arg to sonar state change request wrong size; ignoring");
+          this->PutReply(this->sonar_id, client, 
+                         PLAYER_MSGTYPE_RESP_NACK, NULL);
+        }
+        else
+        {
+          player_sonar_power_config_t sonar_config;
+          sonar_config = *((player_sonar_power_config_t*)config);
+          this->ToggleSonarPower(sonar_config.value);
+
+          this->PutReply(this->sonar_id, client, 
+                         PLAYER_MSGTYPE_RESP_ACK, NULL);
+        }
+        break;
+
+      case PLAYER_SONAR_GET_GEOM_REQ:
+        /* Return the sonar geometry. */
+        if(config_size != 1)
+        {
+          PLAYER_WARN("Arg get sonar geom is wrong size; ignoring");
+          this->PutReply(this->sonar_id, client, 
+                         PLAYER_MSGTYPE_RESP_NACK, NULL);
+        }
+        else
+        {
+          player_sonar_geom_t geom;
+          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+          geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
+          for(int i = 0; i < PLAYER_SONAR_MAX_SAMPLES; i++)
+          {
+            sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
+            geom.poses[i][0] = htons((short) (pose.x));
+            geom.poses[i][1] = htons((short) (pose.y));
+            geom.poses[i][2] = htons((short) (pose.th));
+          }
+
+          this->PutReply(this->sonar_id, client, 
+                         PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL);
+        }
+        break;
+
+      default:
+        PLAYER_WARN("Sonar got unknown config request");
+        this->PutReply(this->sonar_id, client, 
+                       PLAYER_MSGTYPE_RESP_NACK, NULL);
+        break;
+    }
+  }
+
+#if 0
+  // check for blobfinder requests
+      case PLAYER_BLOBFINDER_CODE:
           switch(config[0])
           {
             case PLAYER_BLOBFINDER_SET_COLOR_REQ:
@@ -977,297 +1234,68 @@ P2OS::Main()
               break;
           }
           break;
+#endif
 
-        case PLAYER_SONAR_CODE:
-          switch(config[0])
-          {
-            case PLAYER_SONAR_POWER_REQ:
-              /*
-               * 1 = enable sonars
-               * 0 = disable sonar
-               */
-              if(config_size != sizeof(player_sonar_power_config_t))
-              {
-                puts("Arg to sonar state change request wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-              player_sonar_power_config_t sonar_config;
-              sonar_config = *((player_sonar_power_config_t*)config);
+}
 
-              motorcommand[0] = SONAR;
-              motorcommand[1] = ARGINT;
-              motorcommand[2] = sonar_config.value;
-              motorcommand[3] = 0;
-              motorpacket.Build(motorcommand, 4);
-              SendReceive(&motorpacket);
+void
+P2OS::GetCommand(void)
+{
+  // get and send the latest motor command (always send it)
+  player_position_cmd_t position_cmd;
+  if(Driver::GetCommand(this->position_id,(void*)&position_cmd,
+                        sizeof(player_position_cmd_t),NULL) > 0)
+  {
+    int speedDemand, turnRateDemand;
+    double leftvel, rightvel;
+    double rotational_term;
+    unsigned short absspeedDemand, absturnRateDemand;
+    unsigned char motorcommand[4];
+    P2OSPacket motorpacket; 
 
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
+    speedDemand = (int)ntohl(position_cmd.xspeed);
+    turnRateDemand = (int) ntohl(position_cmd.yawspeed);
 
-            case PLAYER_SONAR_GET_GEOM_REQ:
-              /* Return the sonar geometry. */
-              if(config_size != 1)
-              {
-                puts("Arg get sonar geom is wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-
-              player_sonar_geom_t geom;
-              geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-              geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
-              for (int i = 0; i < PLAYER_SONAR_MAX_SAMPLES; i++)
-              {
-                sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
-                geom.poses[i][0] = htons((short) (pose.x));
-                geom.poses[i][1] = htons((short) (pose.y));
-                geom.poses[i][2] = htons((short) (pose.th));
-              }
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-                          sizeof(geom)))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-            default:
-              puts("Sonar got unknown config request");
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-                          NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-          }
-          break;
-        case PLAYER_POSITION_CODE:
-          switch(config[0])
-          {
-            case PLAYER_POSITION_SET_ODOM_REQ:
-              if(config_size != sizeof(player_position_set_odom_req_t))
-              {
-                puts("Arg to odometry set requests wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-
-              player_position_set_odom_req_t set_odom_req;
-              set_odom_req = *((player_position_set_odom_req_t*)config);
-
-              if(sippacket)
-              {
-                sippacket->x_offset = ((int)ntohl(set_odom_req.x)) -
-                  sippacket->xpos;
-                sippacket->y_offset = ((int)ntohl(set_odom_req.y)) -
-                  sippacket->ypos;
-                sippacket->angle_offset = ((int)ntohl(set_odom_req.theta)) -
-                  sippacket->angle;
-              }
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-
-            case PLAYER_POSITION_MOTOR_POWER_REQ:
-              /* motor state change request 
-               *   1 = enable motors
-               *   0 = disable motors (default)
-               */
-              if(config_size != sizeof(player_position_power_config_t))
-              {
-                puts("Arg to motor state change request wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-
-              player_position_power_config_t power_config;
-              power_config = *((player_position_power_config_t*)config);
-
-              motorcommand[0] = ENABLE;
-              motorcommand[1] = ARGINT;
-              motorcommand[2] = power_config.value;
-              motorcommand[3] = 0;
-              motorpacket.Build(motorcommand, 4);
-              SendReceive(&motorpacket);
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-
-            case PLAYER_POSITION_VELOCITY_MODE_REQ:
-              /* velocity control mode:
-               *   0 = direct wheel velocity control (default)
-               *   1 = separate translational and rotational control
-               */
-              if(config_size != sizeof(player_position_velocitymode_config_t))
-              {
-                puts("Arg to velocity control mode change request is wrong "
-                     "size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-
-              player_position_velocitymode_config_t velmode_config;
-              velmode_config = 
-                *((player_position_velocitymode_config_t*)config);
-
-              if(velmode_config.value)
-                direct_wheel_vel_control = false;
-              else
-                direct_wheel_vel_control = true;
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-
-            case PLAYER_POSITION_RESET_ODOM_REQ:
-              /* reset position to 0,0,0: no args */
-              if(config_size != sizeof(player_position_resetodom_config_t))
-              {
-                puts("Arg to reset position request is wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-              ResetRawPositions();
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-
-            case PLAYER_POSITION_GET_GEOM_REQ:
-            {
-              /* Return the robot geometry. */
-              if(config_size != 1)
-              {
-                puts("Arg get robot geom is wrong size; ignoring");
-                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-                            NULL, NULL, 0))
-                  PLAYER_ERROR("failed to PutReply");
-                break;
-              }
-
-              player_position_geom_t geom;
-              geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-              // TODO: Figure out this rotation offset somehow; it's not 
-              //       given in the Saphira parameters.  For now, -100 is 
-              //       about right for a Pioneer 2DX.
-              geom.pose[0] = htons((short) (-100));
-              geom.pose[1] = htons((short) (0));
-              geom.pose[2] = htons((short) (0));
-              // get dimensions from the parameter table
-              //geom.size[0] = htons((short) (2 * 250));
-              //geom.size[1] = htons((short) (2 * 225));
-              geom.size[0] = 
-                      htons((short)PlayerRobotParams[param_idx].RobotLength);
-              geom.size[1] = 
-                      htons((short)PlayerRobotParams[param_idx].RobotWidth);
-
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-                          sizeof(geom)))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-            }
-            default:
-              puts("Position got unknown config request");
-              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-                          NULL, NULL, 0))
-                PLAYER_ERROR("failed to PutReply");
-              break;
-          }
-          break;
-
-        default:
-          printf("RunPsosThread: got unknown config request \"%c\"\n",
-                 config[0]);
-
-          if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-      }
-    }
-
-    /* read the clients' commands from the common buffer */
-    GetCommand((unsigned char*)&command, sizeof(command));
-
-    newmotorspeed = false;
-    if( speedDemand != (int) ntohl(command.position.xspeed));
-    newmotorspeed = true;
-    speedDemand = (int) ntohl(command.position.xspeed);
-
-    newmotorturn = false;
-    if(turnRateDemand != (int) ntohl(command.position.yawspeed));
-    newmotorturn = true;
-    turnRateDemand = (int) ntohl(command.position.yawspeed);
-
-    newgrippercommand = false;
-    if(gripperCmd != command.gripper.cmd || 
-       gripperArg != command.gripper.arg)
+    if(this->direct_wheel_vel_control)
     {
-      newgrippercommand = true;
-    }
-    gripperCmd = command.gripper.cmd;
-    gripperArg = command.gripper.arg;
-
-    /* check for sound play command */
-    newsoundplay = false;
-    if (soundp && command.sound.index) {
-      newsoundplay = true;
-      soundindex = ntohs(command.sound.index);
-    }
-    
-    /* NEXT, write commands */
-    if(direct_wheel_vel_control)
-    {
-      // do direct wheel velocity control here
-      //printf("speedDemand: %d\t turnRateDemand: %d\n",
-      //speedDemand, turnRateDemand);
+      // convert xspeed and yawspeed into wheelspeeds
       rotational_term = (M_PI/180.0) * turnRateDemand /
         PlayerRobotParams[param_idx].DiffConvFactor;
       leftvel = (speedDemand - rotational_term);
       rightvel = (speedDemand + rotational_term);
 
       // Apply wheel speed bounds
-      if(fabs(leftvel) > motor_max_speed)
+      if(fabs(leftvel) > this->motor_max_speed)
       {
         if(leftvel > 0)
         {
-          leftvel = motor_max_speed;
-          rightvel *= motor_max_speed/leftvel;
+          leftvel = this->motor_max_speed;
+          rightvel *= this->motor_max_speed/leftvel;
           puts("Left wheel velocity threshholded!");
         }
         else
         {
-          leftvel = -motor_max_speed;
-          rightvel *= -motor_max_speed/leftvel;
+          leftvel = -this->motor_max_speed;
+          rightvel *= -this->motor_max_speed/leftvel;
         }
       }
-      if(fabs(rightvel) > motor_max_speed)
+      if(fabs(rightvel) > this->motor_max_speed)
       {
         if(rightvel > 0)
         {
-          rightvel = motor_max_speed;
-          leftvel *= motor_max_speed/rightvel;
+          rightvel = this->motor_max_speed;
+          leftvel *= this->motor_max_speed/rightvel;
           puts("Right wheel velocity threshholded!");
         }
         else
         {
-          rightvel = -motor_max_speed;
-          leftvel *= -motor_max_speed/rightvel;
+          rightvel = -this->motor_max_speed;
+          leftvel *= -this->motor_max_speed/rightvel;
         }
       }
 
       // Apply control band bounds
-      if (use_vel_band)
+      if(this->use_vel_band)
       {
         // This band prevents the wheels from turning in opposite
         // directions
@@ -1300,70 +1328,84 @@ P2OS::Main()
       if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
         rightvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
       
-      // left and right velocities are in 2cm/sec 
-      //printf("leftvel: %d\trightvel:%d\n", 
-      //       (char)(leftvel/20.0), (char)(rightvel/20.0));
-      
+      // send the speed command
       motorcommand[0] = VEL2;
       motorcommand[1] = ARGINT;
       motorcommand[2] = (char)(rightvel /
                                PlayerRobotParams[param_idx].Vel2Divisor);
       motorcommand[3] = (char)(leftvel /
                                PlayerRobotParams[param_idx].Vel2Divisor);
+
+      motorpacket.Build(motorcommand, 4);
+      this->SendReceive(&motorpacket);
     }
     else
     {
       // do separate trans and rot vels
-      //
-      // if trans vel is new, write it;
-      // if just rot vel is new, write it;
-      // if neither are new, write trans.
-      if((newmotorspeed || !newmotorturn) && (num_loops_since_rvel < 2))
-      {
-        motorcommand[0] = VEL;
-        if(speedDemand >= 0)
-          motorcommand[1] = ARGINT;
-        else
-          motorcommand[1] = ARGNINT;
 
-        absspeedDemand = (unsigned short)abs(speedDemand);
-        if(absspeedDemand < motor_max_speed)
-        {
-          motorcommand[2] = absspeedDemand & 0x00FF;
-          motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
-        }
-        else
-        {
-          puts("Speed demand threshholded!");
-          motorcommand[2] = motor_max_speed & 0x00FF;
-          motorcommand[3] = (motor_max_speed & 0xFF00) >> 8;
-        }
+      motorcommand[0] = VEL;
+      if(speedDemand >= 0)
+        motorcommand[1] = ARGINT;
+      else
+        motorcommand[1] = ARGNINT;
+
+      absspeedDemand = (unsigned short)abs(speedDemand);
+      if(absspeedDemand < this->motor_max_speed)
+      {
+        motorcommand[2] = absspeedDemand & 0x00FF;
+        motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
       }
       else
       {
-        motorcommand[0] = RVEL;
-        if(turnRateDemand >= 0)
-          motorcommand[1] = ARGINT;
-        else
-          motorcommand[1] = ARGNINT;
-
-        absturnRateDemand = (unsigned short)abs(turnRateDemand);
-        if(absturnRateDemand < motor_max_turnspeed)
-        {
-          motorcommand[2] = absturnRateDemand & 0x00FF;
-          motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
-        }
-        else
-        {
-          puts("Turn rate demand threshholded!");
-          motorcommand[2] = motor_max_turnspeed & 0x00FF;
-          motorcommand[3] = (motor_max_turnspeed & 0xFF00) >> 8;
-        }
+        puts("Speed demand threshholded!");
+        motorcommand[2] = this->motor_max_speed & 0x00FF;
+        motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
       }
+      motorpacket.Build(motorcommand, 4);
+      this->SendReceive(&motorpacket);
+
+      motorcommand[0] = RVEL;
+      if(turnRateDemand >= 0)
+        motorcommand[1] = ARGINT;
+      else
+        motorcommand[1] = ARGNINT;
+
+      absturnRateDemand = (unsigned short)abs(turnRateDemand);
+      if(absturnRateDemand < this->motor_max_turnspeed)
+      {
+        motorcommand[2] = absturnRateDemand & 0x00FF;
+        motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
+      }
+      else
+      {
+        puts("Turn rate demand threshholded!");
+        motorcommand[2] = this->motor_max_turnspeed & 0x00FF;
+        motorcommand[3] = (this->motor_max_turnspeed & 0xFF00) >> 8;
+      }
+
+      motorpacket.Build(motorcommand, 4);
+      this->SendReceive(&motorpacket);
+
     }
-    //printf("motorpacket[0]: %d\n", motorcommand[0]);
-    motorpacket.Build( motorcommand, 4);
-    SendReceive(&motorpacket);//,false);
+  }
+
+#if 0
+    newgrippercommand = false;
+    if(gripperCmd != command.gripper.cmd || 
+       gripperArg != command.gripper.arg)
+    {
+      newgrippercommand = true;
+    }
+    gripperCmd = command.gripper.cmd;
+    gripperArg = command.gripper.arg;
+
+    /* check for sound play command */
+    newsoundplay = false;
+    if (soundp && command.sound.index) {
+      newsoundplay = true;
+      soundindex = ntohs(command.sound.index);
+    }
+    
 
     if(newgrippercommand)
     {
@@ -1406,318 +1448,5 @@ P2OS::Main()
                          sizeof(sound_cmd));
       soundindex = 0;
     }
-      
-        
-  }
-  pthread_exit(NULL);
-}
-
-/* send the packet, then receive and parse an SIP */
-int
-P2OS::SendReceive(P2OSPacket* pkt) //, bool already_have_lock)
-{
-  P2OSPacket packet;
-  //static SIP sippacket;
-  player_p2os_data_t data;
-  memset(&data,0,sizeof(data));
-
-  if((psos_fd >= 0) && sippacket)
-  {
-    //printf("psos_fd: %d\n", psos_fd);
-    //if(!already_have_lock)
-      //pthread_mutex_lock(&serial_mutex);
-    if(pkt)
-    {
-      if(!direct_wheel_vel_control)
-      {
-        if(pkt->packet[3] == RVEL)
-          num_loops_since_rvel = 0;
-        else
-          num_loops_since_rvel++;
-      }
-      pkt->Send(psos_fd);
-    }
-
-    /* receive a packet */
-    pthread_testcancel();
-    if(packet.Receive(psos_fd))
-    {
-      puts("RunPsosThread(): Receive errored");
-      // should probably just exit, although we could try to
-      // reconnect...
-      //tcflush(pd->psos_fd,TCIFLUSH);
-      //close(pd->psos_fd);
-      //pd->psos_fd = -1;
-      //usleep(2*P2OS_CYCLETIME_USEC);
-      //pd->Setup();
-      pthread_exit(NULL);
-    }
-
-    if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
-       (packet.packet[3] == 0x30 || packet.packet[3] == 0x31) ||
-       (packet.packet[3] == 0x32 || packet.packet[3] == 0x33) ||
-       (packet.packet[3] == 0x34))
-    {
-
-      /* It is a server packet, so process it */
-      sippacket->Parse( &packet.packet[3] );
-      //sippacket->Print();
-      sippacket->Fill(&data);
-
-      PutData((unsigned char*)&data, sizeof(data),0,0);
-    }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
-            packet.packet[3] == SERAUX)
-    {
-       // This is an AUX serial packet
-    }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
-            packet.packet[3] == SERAUX2)
-    {
-       // This is an AUX2 serial packet
-       if (cmucam)
-       {
-          /* It is an extended SIP (blobfinder) packet, so process it */
-          /* Be sure to pass data size too (packet[2])! */
-          sippacket->ParseSERAUX( &packet.packet[2] );
-          //sippacket->Print();
-          sippacket->Fill(&data);
- 
-          PutData((unsigned char*)&data, sizeof(data),0,0);
-//          packet.Print();
- 
-/*
-          printf("----> ");
-          for (int ix=4; ix<((int)packet.packet[2]+1); ix++)
-             printf("%c", packet.packet[ix]);
-          printf("\n");
-*/
-
-          P2OSPacket cam_packet;
-          unsigned char cam_command[4];
-
-          /* We cant get the entire contents of the buffer,
-          ** and we cant just have P2OS send us the buffer on a regular basis.
-          ** My solution is to flush the buffer and then request exactly
-          ** CMUCAM_MESSAGE_LEN * 2 -1 bytes of data.  This ensures that
-          ** we will get exactly one full message, and it will be "current"
-          ** within the last 2 messages.  Downside is that we end up pitching
-          ** every other CMUCAM message.  Tradeoffs... */
-          // Flush
-          cam_command[0] = GETAUX2;
-          cam_command[1] = ARGINT;
-          cam_command[2] = 0;
-          cam_command[3] = 0;
-          cam_packet.Build(cam_command, 4);
-          SendReceive(&cam_packet);
-
-          // Reqest next packet
-          cam_command[0] = GETAUX2;
-          cam_command[1] = ARGINT;
-	  // Guarantee exactly 1 full message
-          cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
-          cam_command[3] = 0;
-          cam_packet.Build(cam_command, 4);
-          SendReceive(&cam_packet);
-          GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
-       }
-    }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
-            (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
-//            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
-            (packet.packet[3] == 0xC0) ||
-            (packet.packet[3] == 0xD0 || packet.packet[3] == 0xE0))
-    {
-      /* It is a vision packet from the old Cognachrome system*/
-
-      /* we don't understand these yet, so ignore */
-    }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
-            packet.packet[3] == GYROPAC)
-    {
-      /* It's a set of gyro measurements */
-      sippacket->ParseGyro(&packet.packet[2]);
-      sippacket->Fill(&data);
-      PutData((unsigned char*)&data, sizeof(data),0,0);
-
-      /* Now, the manual says that we get one gyro packet each cycle,
-       * right before the standard SIP.  So, we'll call SendReceive() 
-       * again (with no packet to send) to get the standard SIP.  There's 
-       * a definite danger of infinite recursion here if the manual
-       * is wrong.
-       */
-      SendReceive(NULL);
-    }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
-            (packet.packet[3] == 0x20))
-    {
-      //printf("got a CONFIGpac:%d\n",packet.size);
-    }
-    else 
-    {
-      PLAYER_WARN("got unknown packet:");
-      packet.PrintHex();
-    }
-
-    //pthread_mutex_unlock(&serial_mutex);
-  }
-  return(0);
-}
-
-void
-P2OS::ResetRawPositions()
-{
-  P2OSPacket pkt;
-  unsigned char p2oscommand[4];
-
-  if(sippacket)
-  {
-    //pthread_mutex_lock(&serial_mutex);
-    sippacket->rawxpos = 0;
-    sippacket->rawypos = 0;
-    sippacket->xpos = 0;
-    sippacket->ypos = 0;
-    p2oscommand[0] = SETO;
-    p2oscommand[1] = ARGINT;
-    pkt.Build(p2oscommand, 2);
-    SendReceive(&pkt);//,true);
-  }
-}
-
-/* start a thread that will invoke Main() */
-void 
-P2OS::StartThread()
-{
-  pthread_create(&thread, NULL, &DummyMain, this);
-}
-
-/* cancel (and wait for termination) of the thread */
-void 
-P2OS::StopThread()
-{
-  void* dummy;
-  pthread_cancel(thread);
-  if(pthread_join(thread,&dummy))
-    perror("P2OS::StopThread:pthread_join()");
-}
-
-
-/****************************************************************
-** Reset the CMUcam.  This includes flushing the buffer and
-** setting interface output mode to raw.  It also restarts
-** tracking output (current mode)
-****************************************************************/
-void P2OS::CMUcamReset()
-{
-  CMUcamStopTracking();	// Stop the current tracking.
-
-  P2OSPacket cam_packet;
-  unsigned char cam_command[8];
-
-  printf("Resetting the CMUcam...\n");
-  cam_command[0] = TTY3;
-  cam_command[1] = ARGSTR;
-  sprintf((char*)&cam_command[3], "RS\r");
-  cam_command[2] = strlen((char *)&cam_command[3]);
-  cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  SendReceive(&cam_packet);
-
-  // Set for raw output + no ACK/NACK
-  printf("Setting raw mode...\n");
-  cam_command[0] = TTY3;
-  cam_command[1] = ARGSTR;
-  sprintf((char*)&cam_command[3], "RM 3\r");
-  cam_command[2] = strlen((char *)&cam_command[3]);
-  cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  SendReceive(&cam_packet);
-  usleep(100000);
-
-  printf("Flushing serial buffer...\n");
-  cam_command[0] = GETAUX2;
-  cam_command[1] = ARGINT;
-  cam_command[2] = 0;
-  cam_command[3] = 0;
-  cam_packet.Build(cam_command, 4);
-  SendReceive(&cam_packet);
-
-  sleep(1);
-  // (Re)start tracking
-  CMUcamTrack();
-}
-
-
-/****************************************************************
-** Start CMUcam blob tracking.  This method can be called 3 ways:
-**   1) with a set of 6 color arguments (RGB min and max)
-**   2) with auto tracking (-1 argument)
-**   3) with current values (0 or no arguments)
-****************************************************************/
-void P2OS::CMUcamTrack(int rmin, int rmax,
-                       int gmin, int gmax,
-                       int bmin, int bmax)
-{
-  CMUcamStopTracking();	// Stop the current tracking.
-
-  P2OSPacket cam_packet;
-  unsigned char cam_command[50];
-
-  if (!rmin && !rmax && !gmin && !gmax && !bmin && !bmax)
-  {
-    // Then start it up with current values.
-    cam_command[0] = TTY3;
-    cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TC\r");
-    cam_command[2] = strlen((char *)&cam_command[3]);
-    cam_packet.Build(cam_command, (int)cam_command[2]+3);
-    SendReceive(&cam_packet);
-  }
-  else if (rmin<0 || rmax<0 || gmin<0 || gmax<0 || bmin<0 || bmax<0)
-  {
-    printf("Activating CMUcam color tracking (AUTO-mode)...\n");
-    cam_command[0] = TTY3;
-    cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TW\r");
-    cam_command[2] = strlen((char *)&cam_command[3]);
-    cam_packet.Build(cam_command, (int)cam_command[2]+3);
-    SendReceive(&cam_packet);
-  }
-  else
-  {
-    printf("Activating CMUcam color tracking (MANUAL-mode)...\n");
-    //printf("      RED: %d %d    GREEN: %d %d    BLUE: %d %d\n",
-    //                   rmin, rmax, gmin, gmax, bmin, bmax);
-    cam_command[0] = TTY3;
-    cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TC %d %d %d %d %d %d\r", 
-             rmin, rmax, gmin, gmax, bmin, bmax);
-    cam_command[2] = strlen((char *)&cam_command[3]);
-    cam_packet.Build(cam_command, (int)cam_command[2]+3);
-    SendReceive(&cam_packet);
-  }
-
-  cam_command[0] = GETAUX2;
-  cam_command[1] = ARGINT;
-  cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;	// Guarantee 1 full message
-  cam_command[3] = 0;
-  cam_packet.Build(cam_command, 4);
-  SendReceive(&cam_packet);
-}
-
-
-/****************************************************************
-** Stop Tracking - This should be done before any new command
-** are issued to the CMUcam.
-****************************************************************/
-void P2OS::CMUcamStopTracking()
-{
-  P2OSPacket cam_packet;
-  unsigned char cam_command[50];
-
-  // First we must STOP tracking.  Just send a return.
-  cam_command[0] = TTY3;
-  cam_command[1] = ARGSTR;
-  sprintf((char*)&cam_command[3], "\r");
-  cam_command[2] = strlen((char *)&cam_command[3]);
-  cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  SendReceive(&cam_packet);
+#endif
 }

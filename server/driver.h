@@ -132,8 +132,8 @@ class Driver
     /// their own client lists (such as the broadcast driver).  It's a void*
     /// since it may refer to another driver (such as when the laserbeacon driver
     /// subscribes to the laser driver).
-    virtual int Subscribe(void *client);
-    virtual int Unsubscribe(void *client);
+    virtual int Subscribe(player_device_id_t id);
+    virtual int Unsubscribe(player_device_id_t id);
 
     /// these are called when the first client subscribes, and when the last
     /// client unsubscribes, respectively.

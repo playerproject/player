@@ -35,76 +35,68 @@
 #include <stdlib.h> /* for abs() */
 #include <unistd.h>
 
-//void SIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv) 
 void SIP::Fill(player_p2os_data_t* data)
 {
-  //struct timeval timeNow_tv;
-  //unsigned int timeNow;
-  
-  //gettimeofday(&timeNow_tv, NULL );
-  //timeNow = 
-    //(unsigned int) ((timeNow_tv.tv_sec - timeBegan_tv.tv_sec ) * 1000 + 
-		    //( timeNow_tv.tv_usec - timeBegan_tv.tv_usec ) / 1000.0);
-  
-  /* time and position */
-  //data->position.time = htonl((unsigned int)timeNow);
   // initialize position to current offset
-  data->position.xpos = x_offset;
-  data->position.ypos = y_offset;
+  data->position.xpos = this->x_offset;
+  data->position.ypos = this->y_offset;
   // now transform current position by rotation if there is one
   // and add to offset
-  if (angle_offset != 0) 
+  if(this->angle_offset != 0) 
   {
-    double rot = DTOR(angle_offset);    // convert rotation to radians
-    //puts("angle correction");
-    data->position.xpos += (int32_t) (xpos * cos(rot) - ypos * sin(rot));
-    data->position.ypos += (int32_t) (xpos * sin(rot) + ypos * cos(rot));
-    data->position.yaw = (angle_offset + angle) % 360;
+    double rot = DTOR(this->angle_offset);    // convert rotation to radians
+    data->position.xpos += (int32_t) (this->xpos * cos(rot) - 
+                                      this->ypos * sin(rot));
+    data->position.ypos += (int32_t) (this->xpos * sin(rot) + 
+                                      this->ypos * cos(rot));
+    data->position.yaw = (this->angle_offset + angle) % 360;
   }
   else 
   {
-    data->position.xpos += xpos;
-    data->position.ypos += ypos;
-    data->position.yaw = angle;
+    data->position.xpos += this->xpos;
+    data->position.ypos += this->ypos;
+    data->position.yaw = this->angle;
   }
   // now byteswap fields
   data->position.xpos = htonl(data->position.xpos);
   data->position.ypos = htonl(data->position.ypos);
   data->position.yaw = htonl(data->position.yaw);
-  data->position.xspeed = htonl((int32_t) (((lvel) + (rvel) ) / 2));
+  data->position.xspeed = htonl((int32_t) (((this->lvel) + (this->rvel) ) / 2));
   data->position.yawspeed = htonl((int32_t)
-     (180*((double)(rvel - lvel) /
+     (180*((double)(this->rvel - this->lvel) /
            (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
            M_PI));
-  data->position.stall = (unsigned char)(lwstall || rwstall);
+  data->position.stall = (unsigned char)(this->lwstall || this->rwstall);
 
   // compass
   memset(&(data->compass),0,sizeof(data->compass));
-  data->compass.yaw = htonl(compass);
+  data->compass.yaw = htonl(this->compass);
 
   // gyro
   memset(&(data->gyro),0,sizeof(data->gyro));
-  data->gyro.yawspeed = htonl(gyro_rate);
+  data->gyro.yawspeed = htonl(this->gyro_rate);
 
   data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
   for(int i=0;i<min(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
-    data->sonar.ranges[i] = htons((unsigned short)sonars[i]);
+    data->sonar.ranges[i] = htons((unsigned short)this->sonars[i]);
 
-  data->gripper.state = (unsigned char)(timer >> 8);
-  data->gripper.beams = (unsigned char)digin;
+  data->gripper.state = (unsigned char)(this->timer >> 8);
+  data->gripper.beams = (unsigned char)this->digin;
 
   data->bumper.bumper_count = 10;
   int j = 0;
   for(int i=4;i>=0;i--)
-    data->bumper.bumpers[j++] = (unsigned char)((frontbumpers >> i) & 0x01);
+    data->bumper.bumpers[j++] = 
+            (unsigned char)((this->frontbumpers >> i) & 0x01);
   for(int i=4;i>=0;i--)
-    data->bumper.bumpers[j++] = (unsigned char)((rearbumpers >> i) & 0x01);
-  data->power.charge = htons((unsigned short)battery);
+    data->bumper.bumpers[j++] = 
+            (unsigned char)((this->rearbumpers >> i) & 0x01);
+  data->power.charge = htons((unsigned short)this->battery);
   data->dio.count = (unsigned char)8;
-  data->dio.digin = htonl((unsigned int)digin);
+  data->dio.digin = htonl((unsigned int)this->digin);
   //TODO: should do this smarter, based on which analog input is selected
   data->aio.count = (unsigned char)1;
-  data->aio.anin[0] = (unsigned char)analog;
+  data->aio.anin[0] = (unsigned char)this->analog;
 
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob
   ** (and therefore one channel too), so everything else is zero.  All
@@ -123,15 +115,15 @@ void SIP::Fill(player_p2os_data_t* data)
      data->blobfinder.header[0].num = htons(1);	// One channel, one blob
   else
      data->blobfinder.header[0].num = htons(0);
-  data->blobfinder.blobs[0].color = htonl(blobcolor);
-  data->blobfinder.blobs[0].x = htons(blobmx);
-  data->blobfinder.blobs[0].y = htons(blobmy);
-  data->blobfinder.blobs[0].left = htons(blobx1);
-  data->blobfinder.blobs[0].right = htons(blobx2);
-  data->blobfinder.blobs[0].top = htons(bloby1);
-  data->blobfinder.blobs[0].bottom = htons(bloby2);
-  data->blobfinder.blobs[0].area = htonl(blobarea);
-  data->blobfinder.blobs[0].range = htons(blobconf);
+  data->blobfinder.blobs[0].color = htonl(this->blobcolor);
+  data->blobfinder.blobs[0].x = htons(this->blobmx);
+  data->blobfinder.blobs[0].y = htons(this->blobmy);
+  data->blobfinder.blobs[0].left = htons(this->blobx1);
+  data->blobfinder.blobs[0].right = htons(this->blobx2);
+  data->blobfinder.blobs[0].top = htons(this->bloby1);
+  data->blobfinder.blobs[0].bottom = htons(this->bloby2);
+  data->blobfinder.blobs[0].area = htonl(this->blobarea);
+  data->blobfinder.blobs[0].range = htons(this->blobconf);
 }
 
 int SIP::PositionChange( unsigned short from, unsigned short to ) 
@@ -334,9 +326,9 @@ void SIP::ParseSERAUX( unsigned char *buffer )
   unsigned char type = buffer[1];
   if (type != SERAUX && type != SERAUX2)
   {
-     // Really should never get here...
-     printf("ERROR: Attempt to parse non SERAUX packet as serial data.\n");
-     return;
+    // Really should never get here...
+    printf("ERROR: Attempt to parse non SERAUX packet as serial data.\n");
+    return;
   }
 
   int len  = (int)buffer[0]-3;		// Get the string length
@@ -350,11 +342,11 @@ void SIP::ParseSERAUX( unsigned char *buffer )
   */
   int ix;
   for (ix = (len>18 ? len-17 : 2); ix<=len-8; ix++)
-     if (buffer[ix] == 255)
-        break;		// Got it!
+    if (buffer[ix] == 255)
+      break;		// Got it!
   if (len < 10 || ix > len-8) {
-     printf("ERROR: Failed to get a full blob tracking packet.\n");
-     return;
+    printf("ERROR: Failed to get a full blob tracking packet.\n");
+    return;
   }
 
   // There is a special 'S' message containing the tracking color info
