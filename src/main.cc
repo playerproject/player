@@ -28,7 +28,7 @@
 
 //#define VERBOSE
 
-#define PLAYER_VERSION "0.8"
+#include "../VERSION"
 #define READ_BUFFER_SIZE 128
 
 #include <stdio.h>
