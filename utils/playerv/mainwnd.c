@@ -75,14 +75,16 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   wnd->view_menu = rtk_menu_create(wnd->canvas, "View");
   wnd->view_item_rotate = rtk_menuitem_create(wnd->view_menu, "Rotate", 1);
   wnd->view_item_1m = rtk_menuitem_create(wnd->view_menu, "Grid 1 m", 1);
+  wnd->view_item_10m = rtk_menuitem_create(wnd->view_menu, "Grid 10 m", 1);
   wnd->view_item_2f = rtk_menuitem_create(wnd->view_menu, "Grid 2 feet", 1);
-
+  wnd->view_item_ego = rtk_menuitem_create(wnd->view_menu, "Frame egocentric", 1); 
+  
   // Create device menu
   wnd->device_menu = rtk_menu_create(wnd->canvas, "Devices");
 
   // Create figure to draw the grid on
-  wnd->grid_fig = rtk_fig_create(wnd->canvas, NULL, -99);
-    
+  wnd->grid_fig = rtk_fig_create(wnd->canvas, NULL, -90);
+  
   // Create a figure to attach everything else to
   wnd->robot_fig = rtk_fig_create(wnd->canvas, NULL, 0);
 
@@ -90,7 +92,10 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   // it duplicated the code in update()).
   rtk_menuitem_check(wnd->view_item_rotate, 0);
   rtk_menuitem_check(wnd->view_item_1m, 1);
+  rtk_menuitem_check(wnd->view_item_10m, 0);
   rtk_menuitem_check(wnd->view_item_2f, 0);
+  rtk_menuitem_check(wnd->view_item_ego, 1);
+  
   rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
   rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
   rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
@@ -139,7 +144,11 @@ int mainwnd_update(mainwnd_t *wnd)
 
   // Handle export stuff
   mainwnd_update_export(wnd);
-  
+
+  // Center the robot
+  if (rtk_menuitem_ischecked(wnd->view_item_ego))
+    rtk_fig_origin(wnd->robot_fig, 0, 0, 0);
+      
   // Rotate the display
   if (rtk_menuitem_isactivated(wnd->view_item_rotate))
   {
@@ -159,6 +168,22 @@ int mainwnd_update(mainwnd_t *wnd)
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 1);
+      rtk_menuitem_check(wnd->view_item_10m, 0);
+      rtk_menuitem_check(wnd->view_item_2f, 0);
+    }
+  }
+
+  // Draw in the grid, perhaps
+  if (rtk_menuitem_isactivated(wnd->view_item_10m))
+  {
+    rtk_fig_clear(wnd->grid_fig);
+    if (rtk_menuitem_ischecked(wnd->view_item_10m))
+    {
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 2);
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 10);
+      rtk_menuitem_check(wnd->view_item_1m, 0);
       rtk_menuitem_check(wnd->view_item_2f, 0);
     }
   }
@@ -173,6 +198,7 @@ int mainwnd_update(mainwnd_t *wnd)
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 4 * 0.0254);
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 2 * 12 * 0.0254);
+      rtk_menuitem_check(wnd->view_item_10m, 0);
       rtk_menuitem_check(wnd->view_item_1m, 0);
     }
   }
