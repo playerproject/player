@@ -485,6 +485,8 @@ int AdaptiveMCL::SetupGUI(void)
 // Shut down the GUI
 int AdaptiveMCL::ShutdownGUI(void)
 {
+  rtk_fig_destroy(this->map_fig);
+  rtk_fig_destroy(this->pf_fig);
   rtk_canvas_destroy(this->canvas);
   rtk_app_main_term(this->app);
   rtk_app_destroy(this->app);

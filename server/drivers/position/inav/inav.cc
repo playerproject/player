@@ -47,6 +47,10 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "player.h"
 #include "device.h"
 #include "devicetable.h"
@@ -54,6 +58,10 @@
 
 #include "imap/imap.h"
 #include "inav_vector.h"
+
+#ifdef INCLUDE_RTKGUI
+#include "rtk.h"
+#endif
 
 
 // Incremental navigation driver
@@ -72,6 +80,18 @@ class INav : public CDevice
   // Set the driver command
   public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
   
+#ifdef INCLUDE_RTKGUI
+  // Set up the GUI
+  private: int SetupGUI();
+  private: int ShutdownGUI();
+
+  // Draw the map
+  private: void DrawMap();
+
+  // Draw the robot
+  private: void DrawRobot();
+#endif
+
   // Set up the odometry device.
   private: int SetupOdom();
   private: int ShutdownOdom();
@@ -134,6 +154,15 @@ class INav : public CDevice
   private: imap_t *map;
   private: double map_scale;
   private: inav_vector_t map_pose;
+  
+#ifdef INCLUDE_RTKGUI
+  // RTK stuff; for testing only
+  private: rtk_app_t *app;
+  private: rtk_canvas_t *canvas;
+  private: rtk_fig_t *map_fig;
+  private: rtk_fig_t *robot_fig;
+#endif
+
 };
 
 
@@ -176,6 +205,9 @@ INav::INav(char* interface, ConfigFile* cf, int section)
   this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
   this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
   this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
+
+  // Laser settings
+  //TODO this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 10);
   
   this->inc_pose.v[0] = 0.0;
   this->inc_pose.v[1] = 0.0;
@@ -220,6 +252,11 @@ int INav::Setup()
   if (this->SetupLaser() != 0)
     return -1;
   
+#ifdef INCLUDE_RTKGUI
+  // Start the GUI
+  this->SetupGUI();
+#endif
+
   // Start the driver thread.
   this->StartThread();
   
@@ -233,6 +270,11 @@ int INav::Shutdown()
 {
   // Stop the driver thread.
   this->StopThread();
+
+#ifdef INCLUDE_RTKGUI
+  // Stop the GUI
+  this->ShutdownGUI();
+#endif
 
   // Stop the laser
   this->ShutdownLaser();
@@ -253,6 +295,47 @@ void INav::PutCommand(void* client, unsigned char* src, size_t len)
   this->odom->PutCommand(client, src, len);
   return;
 }
+
+
+#ifdef INCLUDE_RTKGUI
+
+////////////////////////////////////////////////////////////////////////////////
+// Set up the GUI
+int INav::SetupGUI()
+{
+  // Initialize RTK
+  rtk_init(NULL, NULL);
+
+  this->app = rtk_app_create();
+
+  this->canvas = rtk_canvas_create(this->app);
+  rtk_canvas_title(this->canvas, "IncrementalNav");
+  rtk_canvas_size(this->canvas, this->map->size_x, this->map->size_y);
+  rtk_canvas_scale(this->canvas, this->map->scale, this->map->scale);
+
+  this->map_fig = rtk_fig_create(this->canvas, NULL, -1);
+  this->robot_fig = rtk_fig_create(this->canvas, NULL, 0);
+  
+  rtk_app_main_init(this->app);
+
+  return 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the GUI
+int INav::ShutdownGUI()
+{
+  rtk_fig_destroy(this->map_fig);
+  rtk_fig_destroy(this->robot_fig);
+  rtk_canvas_destroy(this->canvas);
+  rtk_app_main_term(this->app);
+  rtk_app_destroy(this->app);
+  
+  return 0;
+}
+  
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -336,8 +419,15 @@ int INav::ShutdownLaser()
 // Main function for device thread
 void INav::Main() 
 {
+  int update;
+  int map_update, robot_update;
   struct timespec sleeptime;
 
+  // Clear the update counter
+  update = 0;
+  map_update = 0;
+  robot_update = 0;
+  
   // Clear the map
   imap_reset(this->map);
 
@@ -351,18 +441,39 @@ void INav::Main()
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
+#ifdef INCLUDE_RTKGUI
+    // Re-draw the map occasionally
+    if (update - map_update >= 10)
+    {
+      this->DrawMap();
+      map_update = update;
+      rtk_canvas_render(this->canvas);      
+    }
+                     
+    // Re-draw the robot frequently
+    if (update - robot_update >= 1)
+    {
+      this->DrawRobot();
+      robot_update = update;
+      rtk_canvas_render(this->canvas);
+    }
+
+    rtk_app_main_loop(this->app);
+#endif
+
     // Process any pending requests.
-    HandleRequests();
+    this->HandleRequests();
 
     // Check for new odometric data
-    GetOdom();
+    this->GetOdom();
     
     // Check for new laser data.  If there is new data, update the
     // incremental pose estimate.
-    if (GetLaser())
+    if (this->GetLaser())
     {
-      UpdatePoseLaser();
-      PutPose();
+      this->UpdatePoseLaser();
+      this->PutPose();
+      update++;
     }
   }
   return;
@@ -517,6 +628,53 @@ int INav::GetLaser()
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Update the incremental pose in response to new laser data.
+void INav::UpdatePoseLaser()
+{
+  int di, dj;
+  inav_vector_t d, pose;
+
+  // Compute new incremental pose
+  d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
+  this->inc_pose = inav_vector_cs_add(d, this->inc_pose);
+  this->inc_odom_pose = this->odom_pose;
+
+  // Translate the map if we stray from the center
+  d = inav_vector_cs_sub(this->inc_pose, this->map_pose);
+  di = (int) (d.v[0] / this->map_scale);
+  dj = (int) (d.v[1] / this->map_scale);
+  if (abs(di) > 0 || abs(dj) > 0)
+  {
+    imap_translate(this->map, di, dj);
+    this->map_pose.v[0] += di * this->map_scale;
+    this->map_pose.v[1] += dj * this->map_scale;
+  }
+
+  // TODO: dont use all laser values
+  
+  // Compute the best fit between the laser scan and the map.
+  pose = this->inc_pose;
+  imap_fit_ranges(this->map, pose.v, this->laser_pose.v,
+                  this->laser_count, this->laser_ranges);
+  this->inc_pose = pose;
+    
+  // Update the map with the current range readings
+  imap_add_ranges(this->map, this->inc_pose.v, this->laser_pose.v,
+                  this->laser_count, this->laser_ranges);
+
+  /*
+  // TESTING
+  static int count;
+  char filename[64];
+  snprintf(filename, sizeof(filename), "imap_%04d.pgm", count++);
+  imap_save_occ(this->map, filename);
+  */
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
 void INav::PutPose()
 {
@@ -552,46 +710,34 @@ void INav::PutPose()
 }
 
 
+#ifdef INCLUDE_RTKGUI
+
 ////////////////////////////////////////////////////////////////////////////////
-// Update the incremental pose in response to new laser data.
-void INav::UpdatePoseLaser()
+// Draw the map
+void INav::DrawMap()
 {
-  int di, dj;
-  inav_vector_t d, pose;
-
-  // Compute new incremental pose
-  d = inav_vector_cs_sub(this->odom_pose, this->inc_odom_pose);
-  this->inc_pose = inav_vector_cs_add(d, this->inc_pose);
-  this->inc_odom_pose = this->odom_pose;
-
-  // Translate the map if we stray from the center
-  d = inav_vector_cs_sub(this->inc_pose, this->map_pose);
-  di = (int) (d.v[0] / this->map_scale);
-  dj = (int) (d.v[1] / this->map_scale);
-  if (abs(di) > 0 || abs(dj) > 0)
-  {
-    imap_translate(this->map, di, dj);
-    this->map_pose.v[0] += di * this->map_scale;
-    this->map_pose.v[1] += dj * this->map_scale;
-  }
-
-  // Compute the best fit between the laser scan and the map.
-  pose = this->inc_pose;
-  imap_fit_ranges(this->map, pose.v, this->laser_pose.v,
-                  this->laser_count, this->laser_ranges);
-  this->inc_pose = pose;
-    
-  // Update the map with the current range readings
-  imap_add_ranges(this->map, this->inc_pose.v, this->laser_pose.v,
-                  this->laser_count, this->laser_ranges);
-
-  /*
-  // TESTING
-  static int count;
-  char filename[64];
-  snprintf(filename, sizeof(filename), "imap_%04d.pgm", count++);
-  imap_save_occ(this->map, filename);
-  */
-
+  rtk_fig_clear(this->map_fig);
+  imap_draw_occ(this->map, this->map_fig);
   return;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Draw the robot
+void INav::DrawRobot()
+{
+  inav_vector_t pose;
+    
+  rtk_fig_clear(this->robot_fig);
+  rtk_fig_color(this->robot_fig, 0.7, 0, 0);
+  
+  pose = this->inc_pose;
+  rtk_fig_origin(this->robot_fig, pose.v[0], pose.v[1], pose.v[2]);
+  
+  // TODO use geometry
+  rtk_fig_rectangle(this->robot_fig, -0.05, 0, 0, 0.45, 0.38, 0);
+  
+  return;
+}
+
+#endif
