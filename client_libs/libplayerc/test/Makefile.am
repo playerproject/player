@@ -6,7 +6,7 @@ endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir)/server
 LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm
-EXTRA_DIST = test.world test.cfg
+EXTRA_DIST = test.world test.cfg cave.pnm
 
 noinst_PROGRAMS = $(BUILDTEST)
 
