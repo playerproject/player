@@ -75,7 +75,7 @@ Toby Collett
 #include <player.h>
 #include <driver.h>
 #include <drivertable.h>
-//#include "error.h"
+#include <error.h>
 
 // Flock of Birds Serial device interface...
 // two classes, the first to do the access, the second to interface with player
