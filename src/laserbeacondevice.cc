@@ -66,17 +66,31 @@ extern CDeviceTable* deviceTable;
 //
 CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
 {
-  index = 0;
+  this->index = 0;
+
+#if PLAYER_SELFTEST
+  this->test_filename = NULL;
+#endif
+  
   for(int i=0;i<argc;i++)
   {
     if(!strcmp(argv[i],"index"))
     {
       if(++i<argc)
-        index = atoi(argv[i]);
+        this->index = atoi(argv[i]);
       else
         fprintf(stderr, "CLaserBeaconDevice: missing index; "
                 "using default: %d\n", index);
     }
+#if PLAYER_SELFTEST
+    else if (!strcmp(argv[i], "test"))
+    {
+      if (++i < argc)
+        this->test_filename = strdup(argv[i]);
+      else
+        fprintf(stderr, "CLaserBeaconDevice: missing filename\n");
+    }
+#endif
     else
       fprintf(stderr, "CLaserBeaconDevice: ignoring unknown parameter \"%s\"\n",
               argv[i]);
@@ -92,18 +106,18 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
     // If the laser doesnt have new data,
     // just return a copy of our old data.
     //
-    if (m_laser->data_timestamp_sec == this->data_timestamp_sec &&
-        m_laser->data_timestamp_usec == this->data_timestamp_usec)
+    if (this->laser->data_timestamp_sec == this->data_timestamp_sec &&
+        this->laser->data_timestamp_usec == this->data_timestamp_usec)
     {
-        ASSERT(maxsize >= sizeof(m_beacon_data));
-        memcpy(dest, &m_beacon_data, sizeof(m_beacon_data));
-        return sizeof(m_beacon_data);
+        ASSERT(maxsize >= sizeof(this->beacon_data));
+        memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
+        return sizeof(this->beacon_data);
     }
     
     // Get the laser data
     //
     player_laser_data_t laser_data;
-    m_laser->GetLock()->GetData(m_laser,
+    this->laser->GetLock()->GetData(this->laser,
                                 (uint8_t*) &laser_data, sizeof(laser_data),
                                 NULL, NULL);
 
@@ -118,30 +132,30 @@ size_t CLaserBeaconDevice::GetData(unsigned char *dest, size_t maxsize)
 
     // Analyse the laser data
     //
-    FindBeacons(&laser_data, &m_beacon_data);
+    FindBeacons(&laser_data, &this->beacon_data);
     
     // Do some byte-swapping
     //
-    for (int i = 0; i < m_beacon_data.count; i++)
+    for (int i = 0; i < this->beacon_data.count; i++)
     {
-        m_beacon_data.beacon[i].range = htons(m_beacon_data.beacon[i].range);
-        m_beacon_data.beacon[i].bearing = htons(m_beacon_data.beacon[i].bearing);
-        m_beacon_data.beacon[i].orient = htons(m_beacon_data.beacon[i].orient);
+        this->beacon_data.beacon[i].range = htons(this->beacon_data.beacon[i].range);
+        this->beacon_data.beacon[i].bearing = htons(this->beacon_data.beacon[i].bearing);
+        this->beacon_data.beacon[i].orient = htons(this->beacon_data.beacon[i].orient);
     }
-    PLAYER_TRACE1("setting beacon count: %u",m_beacon_data.count);
-    m_beacon_data.count = htons(m_beacon_data.count);
+    PLAYER_TRACE1("setting beacon count: %u",this->beacon_data.count);
+    this->beacon_data.count = htons(this->beacon_data.count);
     
     // Copy results
     //
-    ASSERT(maxsize >= sizeof(m_beacon_data));
-    memcpy(dest, &m_beacon_data, sizeof(m_beacon_data));
+    ASSERT(maxsize >= sizeof(this->beacon_data));
+    memcpy(dest, &this->beacon_data, sizeof(this->beacon_data));
 
     // Copy the laser timestamp
     //
-    this->data_timestamp_sec = m_laser->data_timestamp_sec;
-    this->data_timestamp_usec  = m_laser->data_timestamp_usec;
+    this->data_timestamp_sec = this->laser->data_timestamp_sec;
+    this->data_timestamp_usec  = this->laser->data_timestamp_usec;
     
-    return sizeof(m_beacon_data);
+    return sizeof(this->beacon_data);
 }
 
 
@@ -190,14 +204,14 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
 
     // Number of bits and size of each bit
     //
-    m_max_bits = beacon_config->bit_count;
-    m_max_bits = max(m_max_bits, 3);
-    m_max_bits = min(m_max_bits, 8);
-    m_bit_width = ntohs(beacon_config->bit_size) / 1000.0;
-    m_zero_thresh = ntohs(beacon_config->zero_thresh) / 100.0;
-    m_one_thresh = ntohs(beacon_config->one_thresh) / 100.0;
+    this->max_bits = beacon_config->bit_count;
+    this->max_bits = max(this->max_bits, 3);
+    this->max_bits = min(this->max_bits, 8);
+    this->bit_width = ntohs(beacon_config->bit_size) / 1000.0;
+    this->zero_thresh = ntohs(beacon_config->zero_thresh) / 100.0;
+    this->one_thresh = ntohs(beacon_config->one_thresh) / 100.0;
 
-    PLAYER_TRACE2("bits %d, width %f", m_max_bits, m_bit_width);
+    PLAYER_TRACE2("bits %d, width %f", this->max_bits, this->bit_width);
 }
 
 
@@ -207,36 +221,42 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
 int CLaserBeaconDevice::Setup()
 {
     // get the pointer to the laser
-    m_laser = deviceTable->GetDevice(PLAYER_LASER_CODE,index);
-    ASSERT(m_laser != NULL);
+    this->laser = deviceTable->GetDevice(PLAYER_LASER_CODE,index);
+    ASSERT(this->laser != NULL);
     
     // Subscribe to the laser device
     //
-    m_laser->GetLock()->Subscribe(m_laser);
+    this->laser->GetLock()->Subscribe(this->laser);
 
     // Maximum variance in the flatness of the beacon
     //
-    m_max_depth = 0.05;
+    this->max_depth = 0.05;
 
     // Number of bits and size of each bit
     //
-    m_max_bits = 8;
-    m_bit_width = 0.05;
+    this->max_bits = 8;
+    this->bit_width = 0.05;
 
     // Default thresholds
     //
-    m_zero_thresh = 0.10;
-    m_one_thresh = 0.95;
+    this->zero_thresh = 0.10;
+    this->one_thresh = 0.95;
 
     // Zero the filters
     //
-    for (int i = 0; i < ARRAYSIZE(m_filter); i++)
-        m_filter[i] = 0;
+    for (int i = 0; i < ARRAYSIZE(this->filter); i++)
+        this->filter[i] = 0;
     
     // Hack to get around mutex on GetData
     //
-    m_beacon_data.count = 0;
-    GetLock()->PutData(this, (uint8_t*) &m_beacon_data, sizeof(m_beacon_data));
+    this->beacon_data.count = 0;
+    GetLock()->PutData(this, (uint8_t*) &this->beacon_data, sizeof(this->beacon_data));
+
+#if PLAYER_SELFTEST
+    // Run the self test
+    if (this->test_filename)
+        SelfTest();
+#endif
     
     PLAYER_MSG0("laser beacon device: setup");
     return 0;
@@ -250,7 +270,7 @@ int CLaserBeaconDevice::Shutdown()
 {
     // Unsubscribe from the laser device
     //
-    m_laser->GetLock()->Unsubscribe(m_laser);
+    this->laser->GetLock()->Unsubscribe(this->laser);
 
     PLAYER_MSG0("laser beacon device: shutdown");
     return 0;
@@ -272,16 +292,16 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
 
     // Expected width of beacon
     //
-    double min_width = (m_max_bits - 1) * m_bit_width;
-    double max_width = (m_max_bits + 1) * m_bit_width;
+    double min_width = (this->max_bits - 1) * this->bit_width;
+    double max_width = (this->max_bits + 1) * this->bit_width;
     
     // Update the filters
     // We filter ids across multiple frames.
     //
     double filter_gain = 0.50;
     double filter_thresh = 0.80;
-    for (int i = 0; i < ARRAYSIZE(m_filter); i++)
-        m_filter[i] *= (1 - filter_gain);
+    for (int i = 0; i < ARRAYSIZE(this->filter); i++)
+        this->filter[i] *= (1 - filter_gain);
 
     // Find the beacons in this scan
     //
@@ -339,9 +359,9 @@ void CLaserBeaconDevice::FindBeacons(const player_laser_data_t *laser_data,
         //
         if (id > 0)
         {
-            assert(id >= 0 && id < ARRAYSIZE(m_filter));
-            m_filter[id] += filter_gain;
-            if (m_filter[id] < filter_thresh)
+            assert(id >= 0 && id < ARRAYSIZE(this->filter));
+            this->filter[id] += filter_gain;
+            if (this->filter[id] < filter_thresh)
                 id = 0;
         }
         
@@ -417,21 +437,21 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
         // Discard candidate points are not close to x-axis
         // (ie candidate is not flat).
         //
-        if (fabs(tcy) > m_max_depth)
+        if (fabs(tcy) > this->max_depth)
             return -1;
 
         // Update our probability distribution
         // Use Bayes law
         //
-        for (int bit = 0; bit < m_max_bits; bit++)
+        for (int bit = 0; bit < this->max_bits; bit++)
         {
             // Assume a simple gaussian for the sensor model
             // The width of the gaussian is determined by the laser resolution
             // and the orientation of the beacon wrt the laser.
             //
             double x = bit + 0.5;
-            double m = tcx / m_bit_width;
-            double s = fabs(tbx - tax) / m_bit_width / 2;
+            double m = tcx / this->bit_width;
+            double s = fabs(tbx - tax) / this->bit_width / 2;
             double pa = 0.90 * exp(-(x - m) * (x - m) / (2 * s * s)) / 2 + 0.5;
             double pb = 1 - pa;
 
@@ -460,12 +480,12 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
 
     // Now assign the id
     //
-    for (int bit = 0; bit < m_max_bits; bit++)
+    for (int bit = 0; bit < this->max_bits; bit++)
     {
         //printf("%f ", (double) prob[bit][1]);
-        if (prob[bit][1] > m_one_thresh)
+        if (prob[bit][1] > this->one_thresh)
             id |= (1 << bit);
-        else if (prob[bit][1] > m_zero_thresh)
+        else if (prob[bit][1] > this->zero_thresh)
         {
             id = 0;
             break;
@@ -477,3 +497,48 @@ int CLaserBeaconDevice::IdentBeacon(int a, int b, double ox, double oy, double o
 }
 
 
+#ifdef PLAYER_SELF_TEST
+
+////////////////////////////////////////////////////////////////////////////////
+// Beacon detector self-test
+int CLaserBeaconDevice::SelfTest()
+{
+    char *filename = "b25_050.log";
+    
+    FILE *file = fopen(filename, "r");
+
+    while (TRUE)
+    {
+        if (!fgets(line, sizeof(line), file))
+            break;
+
+        char *type = strtok(line, " ");
+        if (strcmp(type, "laser") != 0)
+            continue;
+
+        player_laser_data_t laser_data;
+        strtok(NULL, " ");
+        strtok(NULL, " ");
+        laser_data.range_count = atoi(strtok(NULL, " "));
+        laser_data.resolution = atoi(strtok(NULL, " "));
+        laser_data.min_angle = atoi(strtok(NULL, " "));
+        laser_data.max_angle = atoi(strtok(NULL, " "));        
+        for (int i = 0; i < laser.range_count; i++)
+            laser_data.ranges[i] = atoi(strtok(NULL, " "));
+
+        player_beacon_data_t *beacon_data;
+        FindBeacons(&laser_data, &beacon_data);
+
+        for (int i = 0; i < beacon_data.count; i++)
+        {
+            printf("beacon %d %d %d %d\n", beacon_data.beacon[i].id,
+                   beacon_data.beacon[i].range, beacon_data.beacon[i].bearing,
+                   beacon_data.beacon[i].orient);
+        }
+    }
+    
+
+    fclose(file);
+}
+
+#endif
