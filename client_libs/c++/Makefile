@@ -6,7 +6,7 @@ include ../../Makefile.common
 
 LIBNAME = libplayerclient.a
 
-CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
+CFLAGS = -O3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
@@ -15,8 +15,14 @@ OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
 
 all: $(LIBNAME)
 
-$(LIBNAME): $(OBS)
+C_CLIENT_DIR = ../c
+C_CLIENT_OBJ = playercclient.o
+
+$(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	ar cr $@ $(OBS) ../c/playercclient.o
+
+$(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
+	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
 
 dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.cc 2>/dev/null
