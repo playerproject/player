@@ -1,7 +1,8 @@
 \documentclass[11pt]{report}
 \usepackage{fullpage}
+
 \usepackage{listings}
-\lstset{language=C, basicstyle=\footnotesize, frame=tb}
+\lstset{language=C,basicstyle=\footnotesize,frame=tb}
 
 \def\VERSION {1.2}
 \def\DEFAULTPORT {6665}
@@ -43,30 +44,48 @@ Los Angeles, California, USA\\
 \chapter{Introduction}
 
 \libplayerc is a client library for the Player robot device server.
-It is written in ANSI-C to maximize portability.
+It is written in C to maximize portability, and in the expectation
+that users will write bindings for other languages (such as Java)
+against this library; Python bindings for \libplayerc are already
+available.
 
-Users should read the {\em Player User Manual} included in the standard
-Player distribution.  
+Users reading this manual this manual should also read the {\em Player
+User Manual} included in the standard Player distribution.
 
-The latest version  manual can also be found on the
 
 \section{Getting \libplayerc}
 
 \libplayerc is included with the standard Player distribution, starting with
-version 1.2.  The Player homepage is:\\
-\indent \HOMEPAGE\\
-Check there for the latest versions of the server and this
-document.
+version 1.2.  The Player homepage is:
+\begin{quote}
+\HOMEPAGE
+\end{quote}
+Check there for the latest versions of the Player distributon and this
+document.  The default Player installation will build and install the
+following files:
+\begin{quote}
+\begin{verbatim}
+$(HOME)/player-1.2/include/playerc/playerc.h
+$(HOME)/player-1.2/lib/playerc/libplayerc.a
+\end{verbatim}
+\end{quote}
+Make sure these directories are in your include and library paths,
+respectively.
+
 
 \section{Bugs}
 
 This software is provided WITHOUT WARRANTY.  Nevertheless, if you find
 something that doesn't work, or there is some feature you would like
 to see, you can submit a bug report/feature request through the
-Player/Stage homepage:\\ \indent \HOMEPAGE\\ Include a detailed
-description of you problem and/or feature request, and information
-such as the Player version and operating system.  Make sure you also
-select the ``\libplayerc'' category when reporting bugs.
+Player/Stage homepage:
+\begin{quote} 
+\HOMEPAGE
+\end{quote}
+Include a detailed description of you problem and/or feature request,
+and information such as the Player version and operating system.  Make
+sure you also select the ``\libplayerc'' category when reporting bugs.
+
 
 \section{Licence}
 
@@ -114,7 +133,7 @@ int main(int argc, const char **argv)
   playerc_position_subscribe(position, PLAYER_ALL_MODE);
 
   playerc_position_enable(position, 1);
-  playerc_position_setspeed(position, 0, 0, 0.1);
+  playerc_position_set_speed(position, 0, 0, 0.1);
   
   for (i = 0; i < 200; i++)
   {
@@ -133,9 +152,19 @@ int main(int argc, const char **argv)
 \end{lstlisting}
 \end{quote}
 Note that error checking has been omitted from this example for the
-sake of clarity.  For an example with full error checking, see {\tt
-simple.c} in the {\tt examples/libplayerc} directory.  This program
-can be broken into six steps, as follows.
+sake of clarity (for an example with full error checking, see {\tt
+simple.c} in the {\tt examples/libplayerc} directory).  This example
+can be built using the commands:
+\begin{quote}
+\begin{verbatim}
+$ gcc -c simple.c -o simple.o
+$ gcc -lm -lplayerc simple.o -o simple
+\end{verbatim}
+\end{quote}
+Make sure that {\tt playerc.h} is in you include path, and that {\tt
+libplayerc.a} is in your library path.
+
+The above program can be broken into six steps, as follows.
 
 \subsection*{Create and connect a client proxy.}
 
@@ -165,7 +194,7 @@ commands and recieve data ({\tt PLAYER\_MODE\_ALL}).
 
 \begin{quote}\begin{verbatim}
 playerc_position_enable(position, 1);
-playerc_position_setspeed(position, 0, 0, 0.1);
+playerc_position_set_speed(position, 0, 0, 0.1);
 \end{verbatim}\end{quote}
 The {\tt enable} function sends a configuration request to the server,
 changing the robot's motor state from {\tt off} to {\tt on}, thereby
@@ -222,32 +251,205 @@ invalid and should be not be re-used.
 
 
 
+\chapter{Library Reference}
 
-\chapter{Device Proxy Reference}
+This chapter contains information on the various non-device and
+generic proxies offered by \libplayerc; see Chapter \ref{chap.devices}
+for information on specific device proxies.
 
-\section{The {\tt laser} proxy}
 
-The {\tt laser} proxy has the following structure.
+\section{Error handling}
+
+Most functions in \libplayerc will return 0 on success and non-zero
+value on error.  A descriptive error message will also be written into
+the error variable:
 \begin{quote}
-\lstinputlisting{laser.t.tex}
+\begin{lstlisting}{}
+char *playerc\_errorstr;
+\end{lstlisting}
 \end{quote}
 
-\noindent The {\tt laser} proxy supports the following functions.
+
+\section{The {\tt client} proxy}
+
+The client proxy provides an interface to the Player server itself,
+and therefore has somewhat different functionality from the {\em
+device} proxies.  The client proxy supports the following functions:
+\begin{quote}
+\lstinputlisting{client.f.tex}
+\end{quote}
+Note that the {\tt create} function returns a pointer to an {\tt
+playerc\_client\_t} structure to be used in other function calls.
+This structure is opaque and should not be manipulated directly.
+
+
+\section{The {\tt device} proxy}
+
+The {\tt device} proxy provides a `generic' interface to the
+functionality that is shared by all devices (i.e., a base class, in
+OOP parlance).  This proxy can be accessed through the {\tt info}
+element present in each of the device proxies; {\tt info} is of type
+{\tt playerc\_device\_t}, and has the following elements:
+\begin{quote}
+\lstinputlisting{device.t.tex}
+\end{quote}
+The elements that are marked are ``private'' should are reserved for 
+internal use and should not be manipulated directly.
+
+
+\chapter{Device Reference}
+\label{chap.devices}
+
+\section{How to read this reference}
+
+This chapter contains information on the various proxies offered by
+\libplayerc.  It is not intended to provide a complete reference for
+all of the devices offered by Player, and should be read in
+conjunction with the Player User Manual.
+
+Device proxies are listed in alphabetical order.
+
+
+\newpage
+\section{The {\tt bps} proxy}
+
+{\bf *** This device is experimental and is subject to change. ***}
+
+\noindent The {\tt bps} proxy provides an interface to the beacon positioning
+system.  This device attempts to localize the robot with respect to
+beacons that have been emplaced in the environment.  See the Player
+User Manual for a complete description of this device.  The proxy
+supports the following functions:
+\begin{quote}
+\lstinputlisting{bps.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_bps\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{bps.t.tex}
+\end{quote}
+
+
+\newpage
+\section{The {\tt broadcast} proxy}
+
+The {\tt broadcast} proxy provides an interface to the network
+broadcast device.  This device broadcasts messages any message sent to
+it onto the local network, and returns the messages broadcast by other
+robots.  Note that this device use broadcast UDP sockets, and
+therefore offers no guarantee that messages will be delivered, or that
+they will be delivered in the order in which they are transmitted.
+The broadcast proxy supports the following functions:
+\begin{quote}
+\lstinputlisting{broadcast.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_broadcast\_t}
+structure; this structure is opaque and should not be manipulated directly.
+
+
+\newpage
+\section{The {\tt laser} proxy}
+
+The {\tt laser} proxy provides an interface to a scanning laser range
+finder such as the SICK LMS200.  See the Player User Manual for a
+complete description of this device.  The proxy supports the
+following functions:
 \begin{quote}
 \lstinputlisting{laser.f.tex}
 \end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_laser\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{laser.t.tex}
+\end{quote}
+Note that the intensity values will only be filled if intensity information
+is enabled (using the {\tt set\_config} function).
 
 
+\newpage
+\section{The {\tt lbd} proxy}
+
+The {\tt lbd} proxy provides an interface to the laser beacon
+detector.  This device looks for retro-reflective barcodes in the
+laser scan, and determines their identity, range, bearing and
+orientation.  See the Player User Manual for a complete description of
+this device.  The proxy supports the following functions:
+\begin{quote}
+\lstinputlisting{lbd.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_lbd\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{lbd.t.tex}
+\end{quote}
+
+
+\newpage
 \section{The {\tt position} proxy}
 
-The {\tt position} proxy has the following structure.
+The {\tt position} proxy provides an interface to a mobile robot base,
+such as the ActiveMedia Pioneer series.  The proxy supports both
+differential drive robots (which are capable of forward motion and
+rotation) and omni-drive robots (which are capable of forward,
+sideways and rotational motion).  The proxy supports the following
+functions:
+\begin{quote}
+\lstinputlisting{position.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_position\_t}
+structure, which has the following elements:
 \begin{quote}
 \lstinputlisting{position.t.tex}
 \end{quote}
 
-\noindent The {\tt position} proxy supports the following functions.
+
+\newpage
+\section{The {\tt ptz} proxy}
+
+The {\tt ptz} proxy provides an interface to the Sony pan-tilt-zoom
+camera.  The proxy supports the following
+functions:
 \begin{quote}
-\lstinputlisting{position.f.tex}
+\lstinputlisting{ptz.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_ptz\_t}
+structure, which has the following elements:
+\begin{quote}
+\lstinputlisting{ptz.t.tex}
+\end{quote}
+
+
+\newpage
+\section{The {\tt sonar} proxy}
+
+The {\tt sonar} proxy provides an interface to the sonar range sensors
+built into robots such as the ActiveMedia Pioneer series.  See the
+Player User Manual for a complete description of this device.  The
+proxy supports the following functions:
+\begin{quote}
+\lstinputlisting{sonar.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_sonar\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{sonar.t.tex}
+\end{quote}
+
+
+\newpage
+\section{The {\tt vision} proxy}
+
+The {\tt vision} proxy provides an interface to the ACTS vision system
+(a color blob detector).  See the Player User Manual for a complete
+description of this device.  The proxy supports the following
+functions:
+\begin{quote}
+\lstinputlisting{vision.f.tex}
+\end{quote}
+The {\tt create} function returns a pointer to a {\tt playerc\_vision\_t}
+structure, which has the following elements.
+\begin{quote}
+\lstinputlisting{vision.t.tex}
 \end{quote}
 
 

@@ -106,7 +106,7 @@ int playerc_position_enable(playerc_position_t *device, int enable)
 
 
 // Set the robot speed
-int playerc_position_setspeed(playerc_position_t *device, double vx, double vy, double va)
+int playerc_position_set_speed(playerc_position_t *device, double vx, double vy, double va)
 {
   player_position_cmd_t cmd;
 
