@@ -356,7 +356,7 @@ int SickLMS200::Setup()
   }
 
   // Try connecting at 38400
-  if (rate == 0 && this->port_rate != 38400)
+  if (rate == 0 && this->port_rate >= 38400)
   {
     PLAYER_MSG0("connecting at 38400");
     if (ChangeTermSpeed(38400))
@@ -366,7 +366,7 @@ int SickLMS200::Setup()
   }
   
   // Try connecting at 500000
-  if (rate == 0 && this->port_rate != 500000 && this->can_do_hi_speed)
+  if (rate == 0 && this->port_rate >= 500000 && this->can_do_hi_speed)
   {
     PLAYER_MSG0("connecting at 500000");
     if (ChangeTermSpeed(500000))
@@ -735,12 +735,14 @@ int SickLMS200::OpenTerm()
 //
 int SickLMS200::CloseTerm()
 {
+  /* REMOVE
 #ifdef HAVE_HI_SPEED_SERIAL
   if (ioctl(this->laser_fd, TIOCSSERIAL, &this->old_serial) < 0) {
     //RETURN_ERROR(1, "error trying to reset serial to old state");
     PLAYER_WARN("ioctl() failed while trying to reset serial to old state");
   }
 #endif
+  */
 
   ::close(this->laser_fd);
   return 0;
