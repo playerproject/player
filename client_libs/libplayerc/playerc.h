@@ -78,6 +78,7 @@ extern "C" {
  * Array sizes
  **************************************************************************/
 
+#define PLAYERC_MAX_DEVICES             PLAYER_MAX_DEVICES
 #define PLAYERC_LASER_MAX_SAMPLES       PLAYER_LASER_MAX_SAMPLES
 #define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
 #define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
@@ -95,6 +96,18 @@ extern "C" {
 struct _playerc_client_t;
 struct _playerc_device_t;
 
+/** Info about an available (but not necessarily subscribed) device. */
+typedef struct
+{
+  /** Player id of the device. */
+  int port, code, index;
+
+  /** The driver name. */
+  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+  
+} playerc_device_info_t;
+
+  
 // Items in incoming data queue.
 typedef struct
 {
@@ -102,6 +115,9 @@ typedef struct
   int len;
   void *data;
 } playerc_client_item_t;
+
+
+
 
   
 // Typedefs for proxy callback functions
@@ -194,11 +210,10 @@ typedef struct _playerc_client_t
   // Socket descriptor
   int sock;
 
-  // List of ids for available devices.  This list is filled in by
-  // playerc_client_get_devlist().
-  int id_count;
-  player_device_id_t ids[PLAYER_MAX_DEVICES];
-  char drivernames[PLAYER_MAX_DEVICES][PLAYER_MAX_DEVICE_STRING_LEN];
+  /** List of available (but not necessarily subscribed) devices.
+      This list is filled in by playerc_client_get_devlist(). */
+  int devinfo_count;
+  playerc_device_info_t devinfos[PLAYERC_MAX_DEVICES];
     
   /** List of subscribed devices */
   int device_count;

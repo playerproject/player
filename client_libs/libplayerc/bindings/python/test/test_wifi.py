@@ -4,7 +4,7 @@
 # Date: 1 Aug 2004
 # CVS: $Id$
 
-from libplayerc import *
+from playerc import *
 
 
 def test_wifi(client, index):

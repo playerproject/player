@@ -1,7 +1,7 @@
+#!/bin/env python
 
 import string
 import sys
-from pyparsing import *
 
 
 class DefineDef:
@@ -90,12 +90,13 @@ def parse_file(filename):
 
 
 
-def write_swig(defines, structs, functions):
+def write_swig(filename, defines, structs, functions):
     # Create swig .i file with shadow classes
 
-    file = sys.stdout
+    file = open(filename, 'w+')
     
     classes = {}
+    sorted = []
 
     for struct in structs:
         tokens = string.split(struct.name, '_')
@@ -106,6 +107,7 @@ def write_swig(defines, structs, functions):
         nclass.body = struct.body
         nclass.methods = []
         classes[nclass.name] = nclass
+        sorted += [nclass]
 
     for function in functions:
         tokens = string.split(function.name, '_')
@@ -155,9 +157,7 @@ def write_swig(defines, structs, functions):
         file.write('%s %s %s;\n' % (function.ret, function.name, function.args))
 
     # Write out the classes in the same order as the original file
-    classlist = classes.values()
-    classlist.sort()
-    for nclass in classlist:
+    for nclass in sorted:
 
         file.write('%header\n%{\n')
         file.write('typedef %s_t %s;\n' % (nclass.name, nclass.name))
@@ -177,12 +177,18 @@ def write_swig(defines, structs, functions):
 
 if __name__ == '__main__':
 
-    filename = sys.argv[1]
+    infilename = sys.argv[1]
+    outfilename = sys.argv[2]
+
+    try:
+        from pyparsing import *
+    except:
+        print 'warning: pyparsing not found; skipping build of [%s]' % outfile
 
     # Suck out functions and elements
-    (defines, structs, functions) = parse_file(filename)
+    (defines, structs, functions) = parse_file(infilename)
 
     # Create swig .i file with shadow classes
-    write_swig(defines, structs, functions)
+    write_swig(outfilename, defines, structs, functions)
     
 
