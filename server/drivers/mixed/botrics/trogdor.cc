@@ -453,6 +453,7 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
   int bytesperwrite = 1;
   unsigned char ack[1];
 
+  // TODO: see about writing more than one byte at a time
   // apparently the underlying PIC gets overwhelmed if we write too fast
   for(size_t i=0;i<len;i++)
   {
@@ -464,7 +465,7 @@ Trogdor::WriteBuf(unsigned char* s, size_t len)
     }
     if(numwritten != bytesperwrite)
       PLAYER_WARN("short write");
-    usleep(10);
+    //usleep(10);
   }
 
   // get acknowledgement
@@ -529,7 +530,7 @@ Trogdor::GetOdom(int *ltics, int *rtics, int *lvel, int *rvel)
     PLAYER_ERROR("failed to send command to retrieve odometry");
     return(-1);
   }
-  usleep(TROGDOR_DELAY_US);
+  //usleep(TROGDOR_DELAY_US);
   
   // read 4 int32's, 1 error byte, and 1 checksum
   if(ReadBuf(buf, 18) < 0)
