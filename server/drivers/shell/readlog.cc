@@ -92,7 +92,7 @@ The driver also provides an interface for controlling the playback:
 
 @par Configuration file options
 
-- enable (integer)
+- autoplay (integer)
   - Default: 1
   - Begin playing back log data when first client subscribes
     (as opposed to waiting for the client to tell the @ref 
@@ -138,6 +138,10 @@ driver
 #include "encode.h"
 #include "readlog_time.h"
   
+// we use this pointer to reset timestamps in the client objects when the
+// log gets rewound
+#include "clientmanager.h"
+extern ClientManager* clientmanager;
 
 // The logfile driver
 class ReadLog: public Driver 
@@ -311,7 +315,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   }
 
   // Get replay options
-  this->enable = cf->ReadInt(section, "enable", 1);
+  this->enable = cf->ReadInt(section, "autoplay", 1);
   this->autorewind = cf->ReadInt(section, "autorewind", 0);
 
   // Initialize other stuff
@@ -422,16 +426,16 @@ void ReadLog::Main()
     // If a client has requested that we rewind, then do so
     if(this->rewind_requested)
     {
+      // back up to the beginning of the file
       if (this->gzfile)
         ret = gzseek(this->file,0,SEEK_SET);
       else
         ret = fseek(this->file,0,SEEK_SET);
         
-      // back up to the beginning of the file
-      if(gzseek(this->file,0,SEEK_SET) < 0)
+      if(ret < 0)
       {
         // oh well, warn the user and keep going
-        PLAYER_WARN1("while rewinding logfile, gzseek() failed: %s",
+        PLAYER_WARN1("while rewinding logfile, gzseek()/fseek() failed: %s",
                      strerror(errno));
       }
       else
@@ -448,7 +452,7 @@ void ReadLog::Main()
         //        writes to a bunch of fields that are also being read and/or
         //        written in the server thread.  But I'll be damned if I'm
         //        going to add a mutex just for this.
-        // TODO: clientmanager->ResetClientTimestamps();
+        clientmanager->ResetClientTimestamps();
 
         // reset the flag
         this->rewind_requested = false;
@@ -546,7 +550,7 @@ void ReadLog::Main()
     // Use sync messages to regulate replay
     if (header_id.code == PLAYER_PLAYER_CODE)
     {
-      //printf("reading %d %d\n", stime.tv_sec, stime.tv_usec);
+      //printf("reading %ld %ld\n", stime.tv_sec, stime.tv_usec);
           
       // TODO: this needs a radical re-design
       usleep((int) (100000 / this->speed));
@@ -589,7 +593,7 @@ int ReadLog::ProcessLogConfig()
   {
     PLAYER_WARN2("request was too small (%d < %d)",
                   len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+    if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -600,7 +604,7 @@ int ReadLog::ProcessLogConfig()
       if(len != sizeof(sreq))
       {
         PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+        if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -615,7 +619,7 @@ int ReadLog::ProcessLogConfig()
         puts("ReadLog: stop playback");
         this->enable = false;
       }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
+      if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     case PLAYER_LOG_GET_STATE_REQ:
@@ -623,7 +627,7 @@ int ReadLog::ProcessLogConfig()
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+        if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -634,7 +638,7 @@ int ReadLog::ProcessLogConfig()
       else
         greq.state = 0;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+      if(this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_ACK,
                         &greq, sizeof(greq),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
@@ -643,7 +647,7 @@ int ReadLog::ProcessLogConfig()
       {
         PLAYER_WARN2("request wrong size (%d != %d)", 
                      len, sizeof(rreq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+        if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -651,13 +655,13 @@ int ReadLog::ProcessLogConfig()
       // set the appropriate flag in the manager
       this->rewind_requested = true;
 
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
+      if(this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
 
     default:
       PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
+      if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
