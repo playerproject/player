@@ -105,8 +105,7 @@ void CameraProxy::SaveFrame(const char *prefix)
 {
   FILE *file;
 
-//  snprintf(this->filename, sizeof(this->filename), "%s-%04d.jpg", prefix, this->frameNo++);
-  snprintf(this->filename, sizeof(this->filename), "%s.jpg", prefix);
+  snprintf(this->filename, sizeof(this->filename), "%s-%04d.jpg", prefix, this->frameNo++);
 
   file = fopen(this->filename, "w+");
 
