@@ -78,8 +78,11 @@ int AMCLLaser::Load(ConfigFile* cf, int section)
 
   this->max_beams = cf->ReadInt(section, "laser_max_beams", 6);
   this->range_max = cf->ReadLength(section, "laser_range_max", 8.192);
-  this->range_var = cf->ReadLength(section, "laser_range_var", 0.01);
+  this->range_var = cf->ReadLength(section, "laser_range_var", 0.10);
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
+
+  this->tsec = 0;
+  this->tusec = 0;
 
   return 0;
 }
@@ -173,6 +176,11 @@ AMCLSensorData *AMCLLaser::GetData(void)
   if (tsec == this->tsec && tusec == this->tusec)
     return NULL;
 
+  double ta = (double) tsec + ((double) tusec) * 1e-6;
+  double tb = (double) this->tsec + ((double) this->tusec) * 1e-6;  
+  if (ta - tb < 0.100)  // HACK
+    return NULL;
+
   this->tsec = tsec;
   this->tusec = tusec;
   
@@ -212,24 +220,8 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
   if (this->max_beams < 2)
     return false;
 
-  /* REMOVE
-  // Update the laser sensor model with the latest laser measurements
-  laser_clear_ranges(this->model);
-    
-  step = (this->range_count - 1) / (this->max_ranges - 1);
-  for (i = 0; i < this->range_count; i += step)
-    laser_add_range(this->model, this->ranges[i][0], this->ranges[i][1]);
-
-  // Apply the laser sensor model
-  pf_update_sensor(pf, (pf_sensor_model_fn_t) laser_sensor_model, this->model);
-  */
-
   // Apply the laser sensor model
   pf_update_sensor(pf, (pf_sensor_model_fn_t) SensorModel, data);
-
-#ifdef INCLUDE_RTKGUI
-  this->UpdateGUI(ndata);
-#endif
   
   return true;
 }
@@ -248,8 +240,6 @@ double AMCLLaser::SensorModel(AMCLLaserData *data, pf_vector_t pose)
   
   self = (AMCLLaser*) data->sensor;
 
-  //printf("laser model\n");
-  
   // Take account of the laser pose relative to the robot
   pose = pf_vector_coord_add(self->laser_pose, pose);
 
@@ -331,19 +321,22 @@ void AMCLLaser::ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Draw the laser values
-void AMCLLaser::UpdateGUI(AMCLLaserData *data)
+void AMCLLaser::UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig, AMCLSensorData *data)
 {
   int i, step;
   double r, b, ax, ay, bx, by;
+  AMCLLaserData *ndata;
 
+  ndata = (AMCLLaserData*) data;
+  
   rtk_fig_clear(this->fig);
 
   // Draw the complete scan
   rtk_fig_color_rgb32(this->fig, 0x8080FF);
-  for (i = 0; i < data->range_count; i++)
+  for (i = 0; i < ndata->range_count; i++)
   {
-    r = data->ranges[i][0];
-    b = data->ranges[i][1];
+    r = ndata->ranges[i][0];
+    b = ndata->ranges[i][1];
 
     ax = 0;
     ay = 0;
@@ -357,11 +350,11 @@ void AMCLLaser::UpdateGUI(AMCLLaserData *data)
     return;
 
   // Draw the significant part of the scan
-  step = (data->range_count - 1) / (this->max_beams - 1);
-  for (i = 0; i < data->range_count; i += step)
+  step = (ndata->range_count - 1) / (this->max_beams - 1);
+  for (i = 0; i < ndata->range_count; i += step)
   {
-    r = data->ranges[i][0];
-    b = data->ranges[i][1];
+    r = ndata->ranges[i][0];
+    b = ndata->ranges[i][1];
     //m = map_calc_range(this->map, pose.v[0], pose.v[1], pose.v[2] + b, 8.0);
 
     ax = 0;

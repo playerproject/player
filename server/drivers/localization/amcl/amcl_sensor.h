@@ -58,9 +58,6 @@ class AMCLSensor
 
   // Get new sensor data (non-blocking)
   public: virtual AMCLSensorData *GetData(void);
-
-  // Initialize the action model; returns true if the model has been initialized.
-  // REMOVE public: virtual bool InitAction(pf_t *pf, uint32_t *tsec, uint32_t *tusec);
   
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.
@@ -76,7 +73,9 @@ class AMCLSensor
 
   // Flag is true if this is the action sensor
   public: bool is_action;
-  
+
+  // Action pose (action sensors only)
+  public: pf_vector_t pose;
 
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
@@ -86,7 +85,7 @@ class AMCLSensor
   public: virtual void ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
 
   // Draw sensor data
-  public: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
+  public: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig, AMCLSensorData *data);
 #endif
 };
 

@@ -62,15 +62,15 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
 
   this->drift.m[0][0] = cf->ReadTupleFloat(section, "odom_drift[0]", 0, 0.20);
   this->drift.m[0][1] = cf->ReadTupleFloat(section, "odom_drift[0]", 1, 0.00);
-  this->drift.m[0][2] = cf->ReadTupleFloat(section, "odom_drift[0]", 2, 0.00);  
+  this->drift.m[0][2] = cf->ReadTupleFloat(section, "odom_drift[0]", 2, 0.00); 
 
   this->drift.m[1][0] = cf->ReadTupleFloat(section, "odom_drift[1]", 0, 0.00);
   this->drift.m[1][1] = cf->ReadTupleFloat(section, "odom_drift[1]", 1, 0.20);
-  this->drift.m[1][2] = cf->ReadTupleFloat(section, "odom_drift[1]", 2, 0.00);  
+  this->drift.m[1][2] = cf->ReadTupleFloat(section, "odom_drift[1]", 2, 0.00);
 
   this->drift.m[2][0] = cf->ReadTupleFloat(section, "odom_drift[2]", 0, 0.20);
   this->drift.m[2][1] = cf->ReadTupleFloat(section, "odom_drift[2]", 1, 0.00);
-  this->drift.m[2][2] = cf->ReadTupleFloat(section, "odom_drift[2]", 2, 0.20);  
+  this->drift.m[2][2] = cf->ReadTupleFloat(section, "odom_drift[2]", 2, 0.20);
 
   return 0;
 }
@@ -135,10 +135,15 @@ AMCLSensorData *AMCLOdom::GetData(void)
   // Get the odom device data.
   size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
   if (size == 0)
-    return false;
+    return NULL;
 
   // See if this is a new reading
   if (tsec == this->tsec && tusec == this->tusec)
+    return NULL;
+
+  double ta = (double) tsec + ((double) tusec) * 1e-6;
+  double tb = (double) this->tsec + ((double) this->tusec) * 1e-6;  
+  if (ta - tb < 0.100)  // HACK
     return NULL;
 
   // Byte swap
@@ -150,6 +155,9 @@ AMCLSensorData *AMCLOdom::GetData(void)
   pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
   pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
   pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
+
+  //printf("getdata %.3f %.3f %.3f\n", 
+  //	 pose.v[0], pose.v[1], pose.v[2]);
 
   ndata = new AMCLOdomData;
 

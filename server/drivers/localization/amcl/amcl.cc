@@ -119,7 +119,11 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Create laser sensor
   if (cf->ReadInt(section, "laser_index", -1) >= 0)
-    this->sensors[this->sensor_count++] = new AMCLLaser();
+  {
+    sensor = new AMCLLaser();
+    sensor->is_action = 0;
+    this->sensors[this->sensor_count++] = sensor;
+  }
 
   /*
   // Create GPS sensor
@@ -141,7 +145,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   
   // Create the sensor data queue
   this->q_len = 0;
-  this->q_size = 2000;
+  this->q_size = 20000;
   this->q_data = new (AMCLSensorData*)[this->q_size];
 
   // Particle filter settings
@@ -170,7 +174,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Update distances
   this->min_dr = cf->ReadTupleLength(section, "update_thresh", 0, 0.20);
-  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 1, 30 * M_PI / 180);
+  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 0, 30 * M_PI / 180);
 
   // Initial hypothesis list
   this->hyp_count = 0;
@@ -178,7 +182,11 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 #ifdef INCLUDE_RTKGUI
   // Enable debug gui
   this->enable_gui = cf->ReadInt(section, "enable_gui", 0);
+#else
+  // Disable debug gui
+  this->enable_gui = 0;
 #endif
+
   
   return;
 }
@@ -225,6 +233,8 @@ int AdaptiveMCL::Setup(void)
   for (i = 0; i < this->sensor_count; i++)
     if (this->sensors[i]->Setup() < 0)
       return -1;
+
+  this->q_len = 0;
 
   // No data has yet been pushed, and the
   // filter has not yet been initialized
@@ -278,6 +288,9 @@ void AdaptiveMCL::Update(void)
   data = this->sensors[this->action_sensor]->GetData();
   if (data == NULL)
     return;
+
+  //printf("push odom pos\n");
+  //pf_vector_fprintf(((AMCLOdomData*) data)->pose, stdout, "%.3f");
 
   // Flag this as action data and push onto queue
   this->Push(data);
@@ -426,15 +439,20 @@ void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
 void AdaptiveMCL::Push(AMCLSensorData *data)
 {
   int i;
-  
+
+  this->Lock();
+
   if (this->q_len >= this->q_size)
   {
+    this->Unlock();
     PLAYER_ERROR("queue overflow");
     return;
   }
   i = (this->q_start + this->q_len++) % this->q_size;
+
   this->q_data[i] = data;
-  
+
+  this->Unlock();  
   return;
 }
 
@@ -444,11 +462,17 @@ void AdaptiveMCL::Push(AMCLSensorData *data)
 AMCLSensorData *AdaptiveMCL::Peek(void)
 {
   int i;
+
+  this->Lock();
   
   if (this->q_len == 0)
+  {
+    this->Unlock();  
     return NULL;
+  }
   i = this->q_start % this->q_size;
 
+  this->Unlock();  
   return this->q_data[i];
 }
 
@@ -458,12 +482,18 @@ AMCLSensorData *AdaptiveMCL::Peek(void)
 AMCLSensorData *AdaptiveMCL::Pop(void)
 {
   int i;
+
+  this->Lock();
   
   if (this->q_len == 0)
+  {
+    this->Unlock();  
     return NULL;
+  }
   i = this->q_start++ % this->q_size;
   this->q_len--;
 
+  this->Unlock();  
   return this->q_data[i];
 }
 
@@ -541,9 +571,6 @@ void AdaptiveMCL::Main(void)
       fflush(this->outfile);
 #endif
     }
-
-    // Filter must now be initialized
-    this->pf_init = true;
   }
   return;
 }
@@ -590,6 +617,9 @@ bool AdaptiveMCL::UpdateFilter(void)
   pf_matrix_t pose_cov;
   amcl_hyp_t *hyp;
   AMCLSensorData *data;
+  bool update;
+
+  //printf("q len %d\n", this->q_len);
 
   // Get the action data
   data = this->Pop();
@@ -604,16 +634,49 @@ bool AdaptiveMCL::UpdateFilter(void)
 
   // HACK
   pose = ((AMCLOdomData*) data)->pose;
+  delta = pf_vector_zero();
+  update = false;
+
+  //printf("odom pose\n");
+  //pf_vector_fprintf(pose, stdout, "%.3f");
 
   // Compute change in pose
-  delta = pf_vector_coord_sub(pose, this->pf_odom_pose);
+  if (this->pf_init)
+  {
+    // Compute change in pose
+    delta = pf_vector_coord_sub(pose, this->pf_odom_pose);
+
+    // See if we should update the filter
+    update = fabs(delta.v[0]) > this->min_dr ||
+      fabs(delta.v[1]) > this->min_dr ||   
+      fabs(delta.v[2]) > this->min_da;
+  }
+
+  // If the filter has not been initialized
+  if (!this->pf_init)
+  {
+    // Discard this action data
+    delete data; data = NULL;
+
+    // Pose at last filter update
+    this->pf_odom_pose = pose;
+
+    // Filter is now initialized
+    this->pf_init = true;
+
+    // Should update sensor data
+    update = true;
+
+    //printf("init\n");
+    //pf_vector_fprintf(pose, stdout, "%.3f");
+  }
 
   // If the robot has moved, update the filter
-  if (!this->pf_init || fabs(delta.v[0]) > this->min_dr ||
-      fabs(delta.v[1]) > this->min_dr || fabs(delta.v[2]) > this->min_da)
+  else if (this->pf_init && update)
   {
-    //pf_vector_fprintf(delta, stdout, "%.3f");
-    
+    //printf("pose\n");
+    //pf_vector_fprintf(pose, stdout, "%.3f");
+
     // HACK
     // Modify the delta in the action data so the filter gets
     // updated correctly
@@ -622,7 +685,19 @@ bool AdaptiveMCL::UpdateFilter(void)
     // Use the action data to update the filter
     data->sensor->UpdateAction(this->pf, data);
     delete data; data = NULL;
-  
+
+    // Pose at last filter update
+    this->pf_odom_pose = pose;
+  }
+  else
+  {
+    // Discard this action data
+    delete data; data = NULL;
+  }
+
+  // If the robot has moved, update the filter
+  if (update)
+  {
     // Process the remaining sensor data up to the next action data
     while (1)
     {
@@ -636,6 +711,14 @@ bool AdaptiveMCL::UpdateFilter(void)
 
       // Use the data to update the filter
       data->sensor->UpdateSensor(this->pf, data);
+
+#ifdef INCLUDE_RTKGUI
+      // Draw the current sensor data
+      if (this->enable_gui)
+        data->sensor->UpdateGUI(this->canvas, this->robot_fig, data);
+#endif
+
+      // Discard data
       delete data; data = NULL;
     }
     
@@ -648,22 +731,21 @@ bool AdaptiveMCL::UpdateFilter(void)
     {
       if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
         break;
+
+      //pf_vector_fprintf(pose_mean, stdout, "%.3f");
+
       hyp = this->hyps + this->hyp_count++;
       hyp->weight = weight;
       hyp->pf_pose_mean = pose_mean;
       hyp->pf_pose_cov = pose_cov;
     }
-    
+
 #ifdef INCLUDE_RTKGUI
     // Update the GUI
     if (this->enable_gui)
       this->UpdateGUI();
 #endif
     
-    // Change in pose since last filter update
-    this->pf_odom_pose = pose;
-    delta = pf_vector_zero();
-
     // Encode data to send to server
     if (strcmp(this->interface, PLAYER_LOCALIZE_STRING) == 0)
       this->PutDataLocalize(tsec, tusec);
@@ -674,9 +756,6 @@ bool AdaptiveMCL::UpdateFilter(void)
   }
   else
   {
-    // Delete action data
-    delete data; data = NULL;
-
     // Process the remaining sensor data up to the next action data
     while (1)
     {
@@ -699,21 +778,6 @@ bool AdaptiveMCL::UpdateFilter(void)
   }
 }
 
-// this function will be passed to qsort(3) to sort the hypoths before
-// sending them out.  the idea is to sort them in descending order of
-// weight.
-int
-hypoth_compare(const void* h1, const void* h2)
-{
-  const player_localize_hypoth_t* hyp1 = (const player_localize_hypoth_t*)h1;
-  const player_localize_hypoth_t* hyp2 = (const player_localize_hypoth_t*)h2;
-  if(hyp1->alpha < hyp2->alpha)
-    return(1);
-  else if(hyp1->alpha == hyp2->alpha)
-    return(0);
-  else
-    return(-1);
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the localize interface
@@ -776,10 +840,6 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
     data.hypoths[i].cov[2][1] = 0;
     data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * scale[2] * scale[2]);
   }
-
-  // sort according to weight
-  qsort((void*)data.hypoths,data.hypoth_count,
-        sizeof(player_localize_hypoth_t),&hypoth_compare);
 
   // Compute the length of the data packet
   datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
@@ -1037,8 +1097,6 @@ int AdaptiveMCL::ShutdownGUI(void)
 // Update the GUI
 void AdaptiveMCL::UpdateGUI(void)
 {
-  int i;
-  
   rtk_fig_clear(this->pf_fig);
   rtk_fig_color(this->pf_fig, 0, 0, 1);
   pf_draw_samples(this->pf, this->pf_fig, 1000);
@@ -1050,9 +1108,7 @@ void AdaptiveMCL::UpdateGUI(void)
   // Draw the best pose estimate
   this->DrawPoseEst();
 
-  // Draw the current sensor data
-  for (i = 0; i < this->sensor_count; i++)
-    this->sensors[i]->UpdateGUI(this->canvas, this->robot_fig);
+  return;
 }
 
 

@@ -104,10 +104,7 @@ class AMCLLaser : public AMCLSensor
   private: virtual void ShutdownGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
 
   // Draw sensor data
-  //private: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
-
-  // Draw sensor data
-  private: void UpdateGUI(AMCLLaserData *data);
+  public: virtual void UpdateGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig, AMCLSensorData *data);
 
   // Figures
   private: rtk_fig_t *fig, *map_fig;
