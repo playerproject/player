@@ -1,4 +1,4 @@
-SUBDIRS = . test
+SUBDIRS = . test bindings
 
 AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
@@ -18,7 +18,7 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_fiducial.c \
                        dev_gps.c \
                        dev_ir.c \
-											 dev_joystick.c \
+                       dev_joystick.c \
                        dev_laser.c \
                        dev_localize.c \
                        dev_log.c \

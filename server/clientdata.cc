@@ -563,7 +563,7 @@ void ClientData::MotorStop()
 
   if((devicep = deviceTable->GetDevice(id)))
   {
-    devicep->PutCommand(this,(unsigned char*)&command, sizeof(command));
+    devicep->PutCommandEx(id, this, (unsigned char*)&command, sizeof(command));
   }
 }
 

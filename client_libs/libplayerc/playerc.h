@@ -415,6 +415,8 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
  ** begin section bps
  **************************************************************************/
 
+/* DEPRECATED
+   
 // BPS device data
 typedef struct
 {
@@ -460,6 +462,7 @@ int  playerc_bps_set_beacon(playerc_bps_t *device, int id,
 int  playerc_bps_get_beacon(playerc_bps_t *device, int id,
                             double *px, double *py, double *pa,
                             double *ux, double *uy, double *ua);
+*/
 
 /***************************************************************************
  ** end section
@@ -874,6 +877,8 @@ typedef struct _playerc_laser_t
   /** Scan data; range (m) and bearing (radians). */
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];
 
+  //double test[10][2]; // TESTING
+  
   /** Scan data; x, y position (m). */
   double point[PLAYERC_LASER_MAX_SAMPLES][2];
 
@@ -1206,9 +1211,6 @@ int playerc_position2d_unsubscribe(playerc_position2d_t *device);
 
 /** Enable/disable the motors */
 int playerc_position2d_enable(playerc_position2d_t *device, int enable);
-
-/** Change position control 0=velocity;1=position */
-int playerc_motor_position_control(playerc_motor_t *device, int type);
 
 /** Get the position2d geometry.  The writes the result into the proxy
     rather than returning it to the caller. */
