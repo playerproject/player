@@ -6,6 +6,8 @@ include ../../Makefile.common
 
 LIBNAME = libplayerclient.a
 
+PWD=$(shell pwd)
+
 #CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
 CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
@@ -23,6 +25,27 @@ C_CLIENT_OBJ = playercclient.o
 
 $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	ar cr $@ $(OBS) ../c/playercclient.o
+	$(MKDIR) -p ../../lib
+	$(LN) -fs $(PWD)/$@ ../../lib
+	$(MKDIR) -p ../../include
+	$(LN) -fs $(PWD)/../c/playercclient.h ../../include
+	$(LN) -fs $(PWD)/playerclient.h ../../include
+	$(LN) -fs $(PWD)/clientproxy.h ../../include
+	$(LN) -fs $(PWD)/gripperproxy.h ../../include
+	$(LN) -fs $(PWD)/laserbeaconproxy.h ../../include
+	$(LN) -fs $(PWD)/laserproxy.h ../../include
+	$(LN) -fs $(PWD)/miscproxy.h ../../include
+	$(LN) -fs $(PWD)/positionproxy.h ../../include
+	$(LN) -fs $(PWD)/ptzproxy.h ../../include
+	$(LN) -fs $(PWD)/sonarproxy.h ../../include
+	$(LN) -fs $(PWD)/speechproxy.h ../../include
+	$(LN) -fs $(PWD)/visionproxy.h ../../include
+	$(LN) -fs $(PWD)/truthproxy.h ../../include
+	$(LN) -fs $(PWD)/occupancyproxy.h ../../include
+	$(LN) -fs $(PWD)/gpsproxy.h ../../include
+	$(LN) -fs $(PWD)/bpsproxy.h ../../include
+	$(LN) -fs $(PWD)/broadcastproxy.h ../../include
+	$(LN) -fs $(PWD)/playermulticlient.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
@@ -79,6 +102,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/occupancyproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/gpsproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/bpsproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/broadcastproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/playermulticlient.h
 #	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
 #	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
@@ -86,4 +110,23 @@ uninstall:
 
 clean:
 	$(RM) -f $(LIBNAME) *.o
+	$(RM) -f ../../lib/$(LIBNAME)
+	$(RM) -f ../../include/playercclient.h 
+	$(RM) -f ../../include/playerclient.h 
+	$(RM) -f ../../include/clientproxy.h 
+	$(RM) -f ../../include/gripperproxy.h 
+	$(RM) -f ../../include/laserbeaconproxy.h 
+	$(RM) -f ../../include/laserproxy.h 
+	$(RM) -f ../../include/miscproxy.h 
+	$(RM) -f ../../include/positionproxy.h 
+	$(RM) -f ../../include/ptzproxy.h 
+	$(RM) -f ../../include/sonarproxy.h 
+	$(RM) -f ../../include/speechproxy.h 
+	$(RM) -f ../../include/visionproxy.h 
+	$(RM) -f ../../include/truthproxy.h 
+	$(RM) -f ../../include/occupancyproxy.h 
+	$(RM) -f ../../include/gpsproxy.h 
+	$(RM) -f ../../include/bpsproxy.h 
+	$(RM) -f ../../include/broadcastproxy.h 
+	$(RM) -f ../../include/playermulticlient.h 
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND

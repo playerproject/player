@@ -49,6 +49,9 @@ uninstall:
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_BIN) 
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_INCLUDE)
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
+	$(RM) -f $(INSTALL_DOC)/*
+	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_DOC)
+	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
 
 distro: clean
 	$(MKDIR) doc
