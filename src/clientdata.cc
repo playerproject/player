@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <sys/time.h>
@@ -757,7 +758,7 @@ CClientData::PrintRequested(char* str)
 int CClientData::Read()
 {
   unsigned int readcnt;
-  unsigned int thisreadcnt;
+  int thisreadcnt;
   player_msghdr_t hdr;
 
   char c;
@@ -770,6 +771,7 @@ int CClientData::Read()
 
     // make sure we don't get garbage
     c = 0;
+    readcnt = 0;
 
     //printf("read %d bytes; reading now\n", readcnt);
     if(read(socket,&c,1) <= 0)
@@ -808,7 +810,7 @@ int CClientData::Read()
     readcnt = sizeof(hdr.stx);
   }
   //puts("got STX");
-
+ 
   /* get the rest of the header */
   while(readcnt < sizeof(player_msghdr_t))
   {
@@ -846,11 +848,19 @@ int CClientData::Read()
     return(0);
   }
 
+  // *** HACK -- just a work-around for now. ahoward
+  // Set the socket to blocking so we will get the rest of the message
+  int flags = fcntl(socket, F_GETFL);
+  assert(flags >= 0);
+  flags = fcntl(socket, F_SETFL, flags & ~O_NONBLOCK );
+  assert(flags >= 0);
+  
   /* get the payload */
   readcnt = 0;
   while(readcnt != hdr.size)
   {
-    if((thisreadcnt = read(socket,readbuffer+readcnt,hdr.size-readcnt)) <= 0)
+    thisreadcnt = read(socket,readbuffer+readcnt,hdr.size-readcnt);
+    if(thisreadcnt <= 0)
     {
       if(thisreadcnt < 0 && errno != EAGAIN)
       {
@@ -862,6 +872,13 @@ int CClientData::Read()
     readcnt += thisreadcnt;
   }
 
+  // *** HACK -- just a work-around for now. ahoward
+  // OK - back to non-blocking
+  flags = fcntl(socket, F_GETFL);
+  assert(flags >= 0);
+  flags = fcntl(socket, F_SETFL, flags | O_NONBLOCK );
+  assert(flags >= 0);
+  
   if(readcnt != hdr.size)
   {
     printf("CClientData::Read(): tried to read client-specified %d bytes, but "
