@@ -484,12 +484,13 @@ Obot::Main()
             break;
           }
 
-          // TODO : get values from somewhere.
           player_position_geom_t geom;
           geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
           geom.pose[0] = htons((short) (0));
           geom.pose[1] = htons((short) (0));
           geom.pose[2] = htons((short) (0));
+          // The obot base is 390mm, and we've got about 30cm of foam 
+          // wrapped around it
           geom.size[0] = htons((short) (450));
           geom.size[1] = htons((short) (450));
 
