@@ -26,7 +26,7 @@ test_gps(PlayerClient* client, int index)
   PASS();
   printf("DRIVER: %s\n", gp.driver_name);
 
-  for(int t = 0; t < 300; t++)
+  for(int t = 0; t < 300;t++)
   {
     TEST1("reading data (attempt %d)", t);
 
