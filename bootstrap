@@ -2,9 +2,7 @@
 
 # Run the player bootstrap
 set -x
-./mkacinclude.sh
 aclocal
 autoheader
 automake --gnu --add-missing
 autoconf
-./configure "$@"

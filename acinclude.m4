@@ -261,7 +261,7 @@ dnl of libdc1394 needs to be checked?)
 PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
 PLAYER_ADD_DRIVER([cameracompress],[drivers/camera/compress],[yes],[jpeglib.h],[],[-ljpeg])
-PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],[gdal_priv.h],[],[-lgdal])
+PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],["gdal_priv.h jpeglib.h"],[],[-lgdal])
 
 dnl Service Discovery with libservicediscovery
 AC_LANG_SAVE
