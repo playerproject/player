@@ -4,4 +4,9 @@ noinst_LIBRARIES = @STAGE_LIB@
 
 EXTRA_LIBRARIES = libstage.a
 
-libstage_a_SOURCES = stagedevice.cc stagetime.cc stagetime.h
+libstage_a_SOURCES = \
+	stagedevice.cc \
+	playerpacket.c \
+	playerpacket.h \
+	stagetime.cc \
+	stagetime.h

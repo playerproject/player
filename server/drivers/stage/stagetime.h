@@ -41,7 +41,7 @@ class StageTime : public PlayerTime
 
   public:
     StageTime() {};
-    ~StageTime() { } // empty destructor
+    ~StageTime() { }; // empty destructor
 
     int GetTime(struct timeval* time);
     int SetTime(struct timeval* time);

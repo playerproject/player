@@ -81,7 +81,8 @@ int main(int argc, char **argv)
       exit(1);
 
     /* print current sensor data to console */
-    //sp.Print();
+    sp.Print();
+    pp.Print();
 
     /*
      * sonar avoid.
