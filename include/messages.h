@@ -52,6 +52,7 @@
 /* need to put this stuff somewhere else? maybe run-time config? */
 #define PLAYER_NUM_SONAR_SAMPLES 16
 #define PLAYER_NUM_LASER_SAMPLES 401
+#define PLAYER_NUM_IDAR_SAMPLES  8 
 
 /* the message start signifier */
 #define PLAYER_STXX ((uint16_t) 0x5878)
@@ -95,6 +96,7 @@
 #define PLAYER_OCCUPANCY_CODE     ((uint16_t)14) // broken?
 #define PLAYER_TRUTH_CODE         ((uint16_t)15)
 #define PLAYER_BPS_CODE           ((uint16_t)16) // broken?
+#define PLAYER_IDAR_CODE          ((uint16_t)17)
 
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
@@ -598,6 +600,30 @@ typedef struct
     uint8_t  buffer[4096];
 } __attribute ((packed)) player_broadcast_data_t;
 
+/*************************************************************************/
+/*
+ * IDAR device - HRL's infrared data and ranging turret
+ */
+
+// IDRAR command packet - contains messages to transmit
+//
+
+
+typedef struct
+{
+  uint16_t values[PLAYER_NUM_IDAR_SAMPLES];
+  uint16_t ranges[PLAYER_NUM_IDAR_SAMPLES]; // mm
+} __attribute ((packed)) player_idar_command_t;
+
+
+// IDAR data packet - contains messages to received
+//
+typedef struct
+{
+  uint16_t values[PLAYER_NUM_IDAR_SAMPLES];
+  uint16_t ranges[PLAYER_NUM_IDAR_SAMPLES]; // mm    
+} __attribute ((packed)) player_idar_data_t;
+
 
 /*************************************************************************/
 
@@ -645,4 +671,5 @@ typedef struct
 
 
 #endif
+
 

@@ -248,8 +248,8 @@ struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
     CStageDevice *dev = 0; // declare outside switch statement
 
     switch( info->player_id.type )
-    {
-      //create a generic stage IO device for these types:
+      {
+	//create a generic stage IO device for these types:
       case PLAYER_PLAYER_CODE: 
       case PLAYER_MISC_CODE:
       case PLAYER_POSITION_CODE:
@@ -263,7 +263,8 @@ struct timeval* CreateStageDevices( player_stage_info_t *arenaIO)
       case PLAYER_OCCUPANCY_CODE:
       case PLAYER_GPS_CODE:
       case PLAYER_GRIPPER_CODE:
-
+      case PLAYER_IDAR_CODE:
+	
         // Create a StageDevice with this IO base address
         dev = new CStageDevice( info );
 
