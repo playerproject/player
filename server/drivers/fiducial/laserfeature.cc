@@ -41,16 +41,16 @@
 #include <unistd.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for detecting features in laser scan.
-class LaserFeature : public CDevice
+class LaserFeature : public Driver
 {
   // Constructor
-  public: LaserFeature(char* interface, ConfigFile* cf, int section);
+  public: LaserFeature( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -102,7 +102,7 @@ class LaserFeature : public CDevice
   
   // Laser stuff.
   private: int laser_index;
-  private: CDevice *laser_device;
+  private: Driver *laser_device;
   private: player_laser_data_t laser_data;
   private: uint32_t laser_timesec, laser_timeusec;
 
@@ -145,29 +145,29 @@ class LaserFeature : public CDevice
 
 
 // Initialization function
-CDevice* LaserFeature_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserFeature_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
+  if (strcmp( PLAYER_FIDUCIAL_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"laserfeature\" does not support interface \"%s\"\n",
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new LaserFeature(interface, cf, section)));
+  return ((Driver*) (new LaserFeature( cf, section)));
 }
 
 
 // a driver registration function
 void LaserFeature_Register(DriverTable* table)
 {
-  table->AddDriver("laserfeature", PLAYER_READ_MODE, LaserFeature_Init);
+  table->AddDriver("laserfeature", LaserFeature_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
-    : CDevice(0, 0, 0, 1)
+LaserFeature::LaserFeature( ConfigFile* cf, int section)
+    : Driver(cf, section, 0, 0, 0, 1)
 {
   // Device pose relative to robot.
   this->pose[0] = 0;
@@ -177,7 +177,7 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
   // If laser_index is not overridden by an argument here, then we'll
   // use the device's own index, which we can get in Setup() below.
   this->laser_index = cf->ReadInt(section, "laser", -1);
-  this->laser_device = NULL;
+  this->laser_driver = NULL;
   this->laser_timesec = 0;
   this->laser_timeusec = 0;
 
@@ -218,7 +218,7 @@ int LaserFeature::Setup()
   id.code = PLAYER_LASER_CODE;
   id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
   id.port = this->device_id.port;
-  this->laser_device = deviceTable->GetDevice(id);
+  this->laser_driver = deviceTable->GetDriver(id);
   if (!this->laser_device)
   {
     PLAYER_ERROR("unable to locate suitable laser device");

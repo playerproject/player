@@ -74,10 +74,11 @@ class AMCLOdom : public AMCLSensor
   
   // Device info
   private: int odom_index;
-  private: CDevice *device;
+  private: player_device_id_t odom_id;
+  private: Driver *driver;
 
   // Current data timestamp
-  private: uint32_t tsec, tusec;
+  private: struct timeval time;
   
   // Drift model
   private: pf_matrix_t drift;

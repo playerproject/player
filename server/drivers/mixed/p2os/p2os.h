@@ -35,23 +35,21 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <packet.h>
 #include <player.h>
 #include <robot_params.h>
    
-#define P2OS_MOTORS_REQUEST_ON 0
-#define P2OS_MOTORS_ON 1
-#define P2OS_MOTORS_REQUEST_OFF 2
-#define P2OS_MOTORS_OFF 3
+// Default max speeds
+#define MOTOR_DEF_MAX_SPEED 500
+#define MOTOR_DEF_MAX_TURNSPEED 100
 
-/* data for the p2-dx robot from p2 operation manual */
-//#define P2OS_CYCLETIME_USEC 100000
-//#define P2OS_CYCLETIME_USEC 50000
-/* Apparently, newer kernel require a larger value (200000) here.  It only 
+/* 
+ * Apparently, newer kernel require a large value (200000) here.  It only 
  * makes the initialization phase take a bit longer, and doesn't have any 
- * impact on the speed at which packets are received from P2OS */
+ * impact on the speed at which packets are received from P2OS 
+ */
 #define P2OS_CYCLETIME_USEC 200000
 
 /* p2os constants */
@@ -115,9 +113,6 @@
 #define CMUCAM_IMAGE_HEIGHT	143
 #define CMUCAM_MESSAGE_LEN	10
 
-
-#define P2OS_CONFIG_BUFFER_SIZE 256
-
 #define DEFAULT_P2OS_PORT "/dev/ttyS0"
 
 typedef struct
@@ -134,99 +129,82 @@ typedef struct
   player_position_data_t gyro;
 } __attribute__ ((packed)) player_p2os_data_t;
 
-typedef struct
-{
-  player_position_cmd_t position;
-  player_gripper_cmd_t gripper;
-  player_sound_cmd_t sound;
-} __attribute__ ((packed)) player_p2os_cmd_t;
-
 // this is here because we need the above typedef's before including it.
 #include <sip.h>
 
 class SIP;
 
-class P2OS:public CDevice 
+class P2OS : public Driver 
 {
   private:
-    static pthread_t thread;
-    //static pthread_mutex_t serial_mutex;
-    static SIP* sippacket;
+    player_p2os_data_t p2os_data;
+    
+    player_device_id_t position_id;
+    player_device_id_t sonar_id;
+    player_device_id_t aio_id;
+    player_device_id_t dio_id;
+    player_device_id_t gripper_id;
+    player_device_id_t bumper_id;
+    player_device_id_t power_id;
+    player_device_id_t compass_id;
+    player_device_id_t gyro_id;
+    player_device_id_t blobfinder_id;
+    player_device_id_t sound_id;
+
+    // bookkeeping to only send new gripper I/O commands
+    bool sent_gripper_cmd;
+    player_gripper_cmd_t last_gripper_cmd;
+
+    // bookkeeping to only send new sound I/O commands
+    bool sent_sound_cmd;
+    player_sound_cmd_t last_sound_cmd;
+
+    int position_subscriptions;
+    int sonar_subscriptions;
+
+    SIP* sippacket;
   
-    // since we have several child classes that must use the same lock, we 
-    // declare our own static mutex here and override Lock() and Unlock() to 
-    // use this mutex instead of the one declared in CDevice.
-    static pthread_mutex_t p2os_accessMutex;
-
-    // and this one protects calls to Setup and Shutdown
-    static pthread_mutex_t p2os_setupMutex;
-
-    // likewise, we need one P2OS-wide subscription count to manage calls to
-    // Setup() and Shutdown()
-    static int p2os_subscriptions;
-
-    static unsigned char* reqqueue;
-    static unsigned char* repqueue;
-
     int SendReceive(P2OSPacket* pkt);
     void ResetRawPositions();
+    /* toggle sonars on/off, according to val */
+    void ToggleSonarPower(unsigned char val);
+    /* toggle motors on/off, according to val */
+    void ToggleMotorPower(unsigned char val);
+    void HandleConfig(void);
+    void GetCommand(void);
+    void PutData(void);
+    void HandlePositionCommand(player_position_cmd_t position_cmd);
+    void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
+    void HandleSoundCommand(player_sound_cmd_t sound_cmd);
 
-    static int param_idx;  // index in the RobotParams table for this robot
-    static bool direct_wheel_vel_control; // false -> separate trans and rot vel
-    static char num_loops_since_rvel;  
-    static int psos_fd;               // p2os device file descriptor
-    
-    // device used to communicate with p2os
-    static char psos_serial_port[MAX_FILENAME_SIZE]; 
-    static int radio_modemp; // are we using a radio modem?
-    static int joystickp; // are we using a joystick?
-
-    //static struct timeval timeBegan_tv;
+    int param_idx;  // index in the RobotParams table for this robot
+    int direct_wheel_vel_control; // false -> separate trans and rot vel
+    int psos_fd;               // p2os device file descriptor
+    const char* psos_serial_port;
     struct timeval lastblob_tv;
 
-    // did we initialize the common data segments yet?
-    static bool initdone;
-
-  protected:
-    static player_p2os_data_t* data;
-    static player_p2os_cmd_t* command;
-
     // Max motor speeds
-    static int motor_max_speed;
-    static int motor_max_turnspeed;
-    
+    int motor_max_speed;
+    int motor_max_turnspeed;
+
     // Bound the command velocities
-    static bool use_vel_band; 
-        
-    static int cmucam; // is the cmucam driver active (used in the cfg file)?
+    bool use_vel_band; 
 
-    static int gyro; // is the gyro driver active (used in the cfg file)?
-
-    void Lock();
-    void Unlock();
-
-    /* start a thread that will invoke Main() */
-    virtual void StartThread();
-    /* cancel (and wait for termination) of the thread */
-    virtual void StopThread();
+    int radio_modemp; // are we using a radio modem?
+    int joystickp; // are we using a joystick?
 
   public:
 
-    P2OS(char* interface, ConfigFile* cf, int section);
-    virtual ~P2OS();
+    P2OS(ConfigFile* cf, int section);
+
+    int Subscribe(player_device_id_t id);
+    int Unsubscribe(player_device_id_t id);
 
     /* the main thread */
-    virtual void Main();
+    void Main();
 
-    // we override these, because we will maintain our own subscription count
-    virtual int Subscribe(void *client);
-    virtual int Unsubscribe(void *client);
-
-    virtual int Setup();
-    virtual int Shutdown();
-
-    virtual void PutData(unsigned char *, size_t maxsize,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec);
+    int Setup();
+    int Shutdown();
 
     void CMUcamReset();
     void CMUcamTrack(int rmin=0, int rmax=0, int gmin=0,

@@ -43,6 +43,7 @@
 #include <socket_util.h>
 
 #include <drivertable.h>
+#include <driver.h>
 #include <player.h>
 
 #define ACTS_NUM_CHANNELS 32
@@ -76,7 +77,7 @@ typedef enum
 #define DEFAULT_ACTS_HEIGHT 120
 /********************************************************************/
 
-class Acts:public CDevice 
+class Acts:public Driver 
 {
   private:
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
@@ -126,7 +127,7 @@ class Acts:public CDevice
 
     // constructor 
     //
-    Acts(char* interface, ConfigFile* cf, int section);
+    Acts( ConfigFile* cf, int section);
 
     virtual void Main();
 
@@ -137,23 +138,16 @@ class Acts:public CDevice
 };
 
 // a factory creation function
-CDevice* Acts_Init(char* interface, ConfigFile* cf, int section)
+Driver* Acts_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
-  {
-    PLAYER_ERROR1("driver \"acts\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new Acts(interface, cf, section)));
+  return((Driver*)(new Acts( cf, section)));
 }
 
 // a driver registration function
 void 
 Acts_Register(DriverTable* table)
 {
-  table->AddDriver("acts", PLAYER_READ_MODE, Acts_Init);
+  table->AddDriver("acts", Acts_Init);
 }
 
 #define ACTS_REQUEST_QUIT '1'
@@ -169,8 +163,9 @@ Acts_Register(DriverTable* table)
 void QuitACTS(void* visiondevice);
 
 
-Acts::Acts(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
+Acts::Acts( ConfigFile* cf, int section)
+  : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_ALL_MODE,
+           sizeof(player_blobfinder_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;
@@ -328,7 +323,7 @@ Acts::Setup()
   memset(&dummy,0,sizeof(dummy));
   // zero the data buffer
   PutData((unsigned char*)&dummy,
-          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),0,0);
+          sizeof(dummy.width)+sizeof(dummy.height)+sizeof(dummy.header),NULL);
 
   i = 0;
   acts_args[i++] = acts_bin_name;
@@ -805,7 +800,7 @@ Acts::Main()
     /* got the data. now fill it in */
     PutData((unsigned char*)&local_data, 
                 (PLAYER_BLOBFINDER_HEADER_SIZE + 
-                 num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),0,0);
+                 num_blobs*PLAYER_BLOBFINDER_BLOB_SIZE),NULL);
   }
 
   pthread_cleanup_pop(1);

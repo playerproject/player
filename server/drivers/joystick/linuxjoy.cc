@@ -21,13 +21,10 @@
  */
 
 /*
- * Desc: Uses iwlist scanning facility to identify access points.
+ * Desc: Read data from a standard linux joystick
  * Author: Andrew Howard
  * Date: 25 July 2004
  * CVS: $Id$
- *
- * Note: Must be run as user **ROOT** (otherwise just reports stale
- * values).
  *
  */
 
@@ -43,7 +40,7 @@
 
 #include "playercommon.h"
 #include "drivertable.h"
-#include "deviceregistry.h"
+#include "driver.h"
 #include "player.h"
 
 
@@ -78,7 +75,7 @@ struct js_event
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class LinuxJoystick : public CDevice
+class LinuxJoystick : public Driver
 {
   // Constructor; need that
   public: LinuxJoystick(ConfigFile* cf, int section);
@@ -106,7 +103,6 @@ class LinuxJoystick : public CDevice
   private: uint16_t buttons;
 
   // Joystick
-  private: player_device_id_t joy_id;
   private: player_joystick_data_t joy_data;
 };
 
@@ -115,11 +111,11 @@ class LinuxJoystick : public CDevice
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
 // declare it static in the class).  In this function, we create and return
-// (as a generic CDevice*) a pointer to a new instance of this driver.
-CDevice* LinuxJoystick_Init(ConfigFile* cf, int section)
+// (as a generic Driver*) a pointer to a new instance of this driver.
+Driver* LinuxJoystick_Init(ConfigFile* cf, int section)
 {
   // Create and return a new instance of this driver
-  return ((CDevice*) (new LinuxJoystick(cf, section)));
+  return ((Driver*) (new LinuxJoystick(cf, section)));
 }
 
 
@@ -130,7 +126,7 @@ CDevice* LinuxJoystick_Init(ConfigFile* cf, int section)
 // driver can support and how to create a driver instance.
 void LinuxJoystick_Register(DriverTable* table)
 {
-  table->AddDriverEx("linuxjoystick", LinuxJoystick_Init);
+  table->AddDriver("linuxjoystick", LinuxJoystick_Init);
 }
 
 
@@ -138,21 +134,9 @@ void LinuxJoystick_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
-    : CDevice(0, 0, 10, 10)
+    : Driver(cf, section, PLAYER_JOYSTICK_CODE, PLAYER_READ_MODE,
+             sizeof(player_joystick_data_t), 0, 10, 10)
 {
-  // Create wifi interface
-  if (cf->ReadDeviceId(section, 0, PLAYER_JOYSTICK_CODE, &this->joy_id) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }  
-  if (this->AddInterfaceEx(this->joy_id, "linuxjoystick", PLAYER_READ_MODE,
-                           sizeof(player_joystick_data_t), 0, 10, 10) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
   // Ethernet interface to monitor
   this->dev = cf->ReadString(section, "port", "/dev/js0");
 
@@ -169,7 +153,7 @@ int LinuxJoystick::Setup()
   {
     PLAYER_ERROR2("unable to open joystick [%s]; %s",
                   this->dev, strerror(errno));
-    return 0;
+    return -1;
   }
   
   // Start the device thread; spawns a new thread and executes
@@ -280,7 +264,7 @@ void LinuxJoystick::RefreshData()
   this->joy_data.xscale = htons(AXIS_MAX);
   this->joy_data.yscale = htons(AXIS_MAX);
   this->joy_data.buttons = htons(this->buttons);
-  this->PutDataEx(this->joy_id, &this->joy_data, sizeof(this->joy_data), 0, 0);
+  this->PutData(&this->joy_data, sizeof(this->joy_data), NULL);
 
   return;
 }
@@ -293,9 +277,9 @@ void LinuxJoystick::CheckConfig()
   void *client;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while (this->GetConfigEx(this->joy_id, &client, &buffer, sizeof(buffer)) > 0)
+  while(this->GetConfig(&client, &buffer, sizeof(buffer), NULL) > 0)
   {
-    if (this->PutReplyEx(this->joy_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0) != 0)
+    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 

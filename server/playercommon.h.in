@@ -218,16 +218,11 @@
 
 #if PLAYER_ENABLE_MSG
 
-#define PLAYER_MSG0(m)             fprintf(stderr, "player msg   : %s:%s():\n    "m"\n", \
-                                          __FILE__, __FUNCTION__)   
-#define PLAYER_MSG1(m, a)          fprintf(stderr, "player msg   : %s:%s():\n    "m"\n", \
-                                          __FILE__, __FUNCTION__, a)
-#define PLAYER_MSG2(m, a, b)       fprintf(stderr, "player msg   : %s:%s():\n    "m"\n", \
-                                          __FILE__, __FUNCTION__, a, b)
-#define PLAYER_MSG3(m, a, b, c)    fprintf(stderr, "player msg   : %s:%s():\n    "m"\n", \
-                                          __FILE__, __FUNCTION__, a, b, c) 
-#define PLAYER_MSG4(m, a, b, c, d) fprintf(stderr, "player msg   : %s:%s():\n    "m"\n", \
-                                          __FILE__, __FUNCTION__, a, b, c, d)
+#define PLAYER_MSG0(m)             fprintf(stderr, "%s : "m"\n", __FILE__)   
+#define PLAYER_MSG1(m, a)          fprintf(stderr, "%s : "m"\n", __FILE__, a)
+#define PLAYER_MSG2(m, a, b)       fprintf(stderr, "%s : "m"\n", __FILE__, a, b)
+#define PLAYER_MSG3(m, a, b, c)    fprintf(stderr, "%s : "m"\n", __FILE__, a, b, c) 
+#define PLAYER_MSG4(m, a, b, c, d) fprintf(stderr, "%s : "m"\n", __FILE__, a, b, c, d)
 #else
 
 #define PLAYER_MSG0(m)

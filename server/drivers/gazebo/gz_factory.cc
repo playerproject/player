@@ -44,7 +44,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzFactory : public CDevice
+class GzFactory : public Driver
 {
   // Constructor
-  public: GzFactory(char* interface, ConfigFile* cf, int section);
+  public: GzFactory(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzFactory();
@@ -68,11 +68,14 @@ class GzFactory : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client,
-                                void* req, size_t reqlen);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo id
   private: char *gz_id;
@@ -89,34 +92,30 @@ class GzFactory : public CDevice
 
 
 // Initialization function
-CDevice* GzFactory_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzFactory_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_SPEECH_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_factory\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzFactory(interface, cf, section)));
+  return ((Driver*) (new GzFactory(cf, section)));
 }
 
 
 // a driver registration function
 void GzFactory_Register(DriverTable* table)
 {
-  table->AddDriver("gz_factory", PLAYER_ALL_MODE, GzFactory_Init);
+  table->AddDriver("gz_factory", GzFactory_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzFactory::GzFactory(char* interface, ConfigFile* cf, int section)
-  : CDevice(0, sizeof(player_speech_cmd_t), 10, 10)
+GzFactory::GzFactory(ConfigFile* cf, int section)
+  : Driver(cf, section, PLAYER_SPEECH_CODE, PLAYER_ALL_MODE,
+           0, sizeof(player_speech_cmd_t), 10, 10)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -183,7 +182,9 @@ void GzFactory::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzFactory::PutCommand(void* client, unsigned char* src, size_t len)
+void GzFactory::PutCommand(player_device_id_t id,
+                           void* src, size_t len,
+                           struct timeval* timestamp)
 {
   player_speech_cmd_t *cmd;
     
@@ -200,12 +201,14 @@ void GzFactory::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzFactory::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzFactory::PutConfig(player_device_id_t id, void *client, 
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {
-  switch (((char*) req)[0])
+  switch (((char*) src)[0])
   {
     default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }

@@ -47,7 +47,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -56,10 +56,10 @@
 #include "jpegcompress.h"
 
 // Incremental navigation driver
-class GzCamera : public CDevice
+class GzCamera : public Driver
 {
   // Constructor
-  public: GzCamera(char* interface, ConfigFile* cf, int section);
+  public: GzCamera(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzCamera();
@@ -99,34 +99,30 @@ class GzCamera : public CDevice
 
 
 // Initialization function
-CDevice* GzCamera_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzCamera_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_camera\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzCamera(interface, cf, section)));
+  return ((Driver*) (new GzCamera(cf, section)));
 }
 
 
 // a driver registration function
 void GzCamera_Register(DriverTable* table)
 {
-  table->AddDriver("gz_camera", PLAYER_ALL_MODE, GzCamera_Init);
+  table->AddDriver("gz_camera", GzCamera_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzCamera::GzCamera(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_camera_data_t), 0, 10, 10)
+GzCamera::GzCamera(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
+             sizeof(player_camera_data_t), 0, 10, 10)
 {
   // Get the id of the device in Gazebo.
   // TODO: fix potential buffer overflow
@@ -190,7 +186,7 @@ int GzCamera::Shutdown()
 void GzCamera::Update()
 {
   size_t size;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   char filename[256];
   
   gz_camera_lock(this->iface, 1);
@@ -198,8 +194,8 @@ void GzCamera::Update()
   if (this->iface->data->time > this->datatime)
   {
     this->datatime = this->iface->data->time;
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     // Set the image properties
     this->data.width = htons(this->iface->data->width);
@@ -219,8 +215,17 @@ void GzCamera::Update()
           this->iface->data->image_size);
     }
 
+// multiple_interface merge resulted in the following conflict:
+#if 0
+<<<<<<< gz_camera.cc
     size = sizeof(this->data) - sizeof(this->data.image) + 
       ntohl(this->data.image_size);
+=======
+    // Send data to server
+    size = sizeof(this->data) - sizeof(this->data.image) + this->iface->data->image_size;
+    this->PutData(&this->data, size, &ts);
+>>>>>>> 1.7.2.2
+#endif
 
     // Save frames
     if (this->save)
@@ -231,7 +236,7 @@ void GzCamera::Update()
       this->SaveFrame(filename);
     }
 
-    this->PutData(&this->data, size, tsec, tusec);
+    this->PutData(&this->data, size, &ts);
   }
 
   gz_camera_unlock(this->iface);

@@ -47,7 +47,7 @@
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -55,7 +55,7 @@
 
 static void StopRobot(void* trogdordev);
 
-class Trogdor : public CDevice 
+class Trogdor : public Driver 
 {
   private:
     // this function will be run in a separate thread
@@ -89,7 +89,7 @@ class Trogdor : public CDevice
     // public, so that it can be called from pthread cleanup function
     int SetVelocity(int lvel, int rvel);
 
-    Trogdor(char* interface, ConfigFile* cf, int section);
+    Trogdor( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -97,29 +97,23 @@ class Trogdor : public CDevice
 
 
 // initialization function
-CDevice* Trogdor_Init(char* interface, ConfigFile* cf, int section)
+Driver* Trogdor_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
-  {
-    PLAYER_ERROR1("driver \"trogdor\" does not support interface "
-                  "\"%s\"\n", interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new Trogdor(interface, cf, section)));
+  return((Driver*)(new Trogdor( cf, section)));
 }
 
 // a driver registration function
 void 
 Trogdor_Register(DriverTable* table)
 {
-  table->AddDriver("trogdor", PLAYER_ALL_MODE, Trogdor_Init);
+  table->AddDriver("trogdor",  Trogdor_Init);
 }
 
-Trogdor::Trogdor(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
+Trogdor::Trogdor( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
+         sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
 {
-  fd = -1;
+  this->fd = -1;
   this->serial_port = cf->ReadString(section, "port", TROGDOR_DEFAULT_PORT);
 }
 
@@ -256,8 +250,8 @@ Trogdor::Setup()
   }
 
   // zero the command buffer
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
-  PutData((unsigned char*)&data,sizeof(data),0,0);
+  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  PutData((unsigned char*)&data,sizeof(data),NULL);
 
   // start the thread to talk with the robot
   StartThread();
@@ -323,7 +317,7 @@ Trogdor::Main()
   {
     pthread_testcancel();
     
-    GetCommand((unsigned char*)&command, sizeof(player_position_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_position_cmd_t),NULL);
     command.yawspeed = ntohl(command.yawspeed);
     command.xspeed = ntohl(command.xspeed);
 
@@ -427,13 +421,13 @@ Trogdor::Main()
     data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
                                              TROGDOR_AXLE_LENGTH)));
 
-    PutData((unsigned char*)&data,sizeof(data),0,0);
+    PutData((unsigned char*)&data,sizeof(data),NULL);
 
     player_position_power_config_t* powercfg;
 
     // handle configs
     // TODO: break this out into a separate method
-    if((config_size = GetConfig(&client,(void*)config,sizeof(config))) > 0)
+    if((config_size = GetConfig(&client,(void*)config,sizeof(config),NULL)) > 0)
     {
       switch(config[0])
       {
@@ -442,7 +436,7 @@ Trogdor::Main()
           if(config_size != 1)
           {
             PLAYER_WARN("Get robot geom config is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
               PLAYER_ERROR("failed to PutReply");
             break;
           }
@@ -456,8 +450,8 @@ Trogdor::Main()
           geom.size[0] = htons((short) (450));
           geom.size[1] = htons((short) (450));
 
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-                      sizeof(geom)))
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                      &geom, sizeof(geom),NULL))
             PLAYER_ERROR("failed to PutReply");
           break;
         case PLAYER_POSITION_MOTOR_POWER_REQ:
@@ -465,7 +459,7 @@ Trogdor::Main()
           if(config_size != sizeof(player_position_power_config_t))
           {
             PLAYER_WARN("Motor state change request wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
               PLAYER_ERROR("failed to PutReply");
             break;
           }
@@ -473,19 +467,19 @@ Trogdor::Main()
           printf("got motor power req: %d\n", powercfg->value);
           if(ChangeMotorState(powercfg->value) < 0)
           {
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK))
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
               PLAYER_ERROR("failed to PutReply");
           }
           else
           {
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK))
+            if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
               PLAYER_ERROR("failed to PutReply");
           }
           break;
 
         default:
           PLAYER_WARN1("received unknown config type %d\n", config[0]);
-          PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
+          PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL);
       }
     }
     

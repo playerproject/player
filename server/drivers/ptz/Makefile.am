@@ -1,6 +1,6 @@
 noinst_LIBRARIES = @SONYEVID30_LIB@ @AMTECPOWERCUBE_LIB@ @PTU46_LIB@
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
 EXTRA_LIBRARIES = libsonyevid30.a libamtecpowercube.a libptu46.a
 

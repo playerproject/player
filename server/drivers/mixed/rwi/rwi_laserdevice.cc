@@ -29,9 +29,9 @@
   #include <strings.h>
 #endif
 
-CDevice* RWILaser_Init(char* interface, ConfigFile* cf, int section)
+Driver* RWILaser_Init( ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWILaserDevice(interface, cf, section)));
+  return((Driver *)(new CRWILaserDevice( cf, section)));
 }
 
 void 

@@ -315,7 +315,7 @@ void rflex_stop_robot( int fd, int deceleration)
 
 int rflex_open_connection(char *device_name, int *fd)
 {
-  Device   rdev;
+  RFLEX_Device   rdev;
 
   strncpy( rdev.ttyport, device_name, MAX_NAME_LENGTH);
   rdev.baud           = 115200;

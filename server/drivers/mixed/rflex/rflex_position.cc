@@ -38,27 +38,27 @@ class RFLEXPosition: public RFLEX
 {
  public:
    ~RFLEXPosition();
-  RFLEXPosition(char* interface, ConfigFile* cf, int section) :
-    RFLEX(interface, cf, section){}
+  RFLEXPosition( ConfigFile* cf, int section) :
+    RFLEX( cf, section){}
   virtual size_t GetData(void*,unsigned char *, size_t maxsize,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
   void PutCommand(void*, unsigned char *, size_t maxsize);
   void GetOptions(ConfigFile * cf, int section, rflex_config_t* rflex_config);
 };
 
-CDevice* RFLEXPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXPosition_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
+  if(strcmp( PLAYER_POSITION_STRING))
   {
     PLAYER_ERROR1("driver \"rfflex_position\" does not support interface \"%s\"\n",
                   interface);
     return(NULL);
   }
   else{
-    RFLEXPosition* tmp=new RFLEXPosition(interface, cf, section);
+    RFLEXPosition* tmp=new RFLEXPosition( cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
-	RFLEX::PositionDev =(CDevice*) tmp;
-    return (CDevice*) tmp;
+	RFLEX::PositionDev =(Driver*) tmp;
+    return (Driver*) tmp;
   }
 }
 
@@ -99,7 +99,7 @@ void RFLEXPosition::GetOptions(ConfigFile * cf,int section, rflex_config_t *rfle
 void 
 RFLEXPosition_Register(DriverTable* table)
 {
-  table->AddDriver("rflex_position", PLAYER_ALL_MODE, RFLEXPosition_Init);
+  table->AddDriver("rflex_position",  RFLEXPosition_Init);
 }
 
 RFLEXPosition::~RFLEXPosition()

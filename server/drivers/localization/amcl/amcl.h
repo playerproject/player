@@ -66,7 +66,7 @@ typedef struct
 
 
 // Incremental navigation driver
-class AdaptiveMCL : public CDevice
+class AdaptiveMCL : public Driver
 {
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread (except for
@@ -74,7 +74,7 @@ class AdaptiveMCL : public CDevice
   ///////////////////////////////////////////////////////////////////////////
 
   // Constructor
-  public: AdaptiveMCL(char* interface, ConfigFile* cf, int section);
+  public: AdaptiveMCL(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~AdaptiveMCL(void);
@@ -85,19 +85,7 @@ class AdaptiveMCL : public CDevice
 
   // Check for updated sensor data
   public: virtual void Update(void);
-
-  /* REMOVE
-  // Process configuration requests
-  public: virtual int PutConfig(player_device_id_t* device, void* client, 
-                                void* data, size_t len);
-
-  // Handle map info request
-  private: void HandleGetMapInfo(void *client, void *request, int len);
-
-  // Handle map data request
-  private: void HandleGetMapData(void *client, void *request, int len);
-  */
-
+  
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top
   // and bottom halfs.
@@ -161,8 +149,9 @@ class AdaptiveMCL : public CDevice
   // Properties
   ///////////////////////////////////////////////////////////////////////////
 
-  // Which interface we are using
-  private: char *interface;
+  // interfaces we might be using
+  private: player_device_id_t position_id;
+  private: player_device_id_t localize_id;
   
   // List of all sensors
   private: int sensor_count;

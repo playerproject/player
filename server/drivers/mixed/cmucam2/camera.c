@@ -1,8 +1,3 @@
-#ifdef _cplusplus
-extern "C"
-{
-#endif
-
 #include "camera.h"
 #include <poll.h>
 

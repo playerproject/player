@@ -72,11 +72,11 @@
 
 // Includes needed for player
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
-#include <replace/replace.h>
+#include <replace.h>
 
 #define DEFAULT_PTZ_PORT "/dev/ttyR1"
 #define PTZ_SLEEP_TIME_USEC 100000
@@ -514,7 +514,7 @@ char PTU46::GetMode()
 // Player Driver Class                                       //
 ///////////////////////////////////////////////////////////////
 
-class PTU46_Device:public CDevice 
+class PTU46_Device:public Driver 
 {
 	protected:
 		// this function will be run in a separate thread
@@ -532,22 +532,16 @@ class PTU46_Device:public CDevice
 		unsigned char MoveMode;
 
 
-		PTU46_Device(char* interface, ConfigFile* cf, int section);
+		PTU46_Device( ConfigFile* cf, int section);
 
 		virtual int Setup();
 		virtual int Shutdown();
 };
   
 // initialization function
-CDevice* PTU46_Init(char* interface, ConfigFile* cf, int section)
+Driver* PTU46_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_PTZ_STRING))
-  {
-    PLAYER_ERROR1("driver \"ptu46\" does not support interface \"%s\"\n", interface);
-    return(NULL);
-  }
-  else
-    return static_cast<CDevice*> (new PTU46_Device(interface, cf, section));
+  return static_cast<Driver*> (new PTU46_Device( cf, section));
 }
 
 
@@ -555,11 +549,12 @@ CDevice* PTU46_Init(char* interface, ConfigFile* cf, int section)
 void 
 PTU46_Register(DriverTable* table)
 {
-  table->AddDriver("ptu46", PLAYER_ALL_MODE, PTU46_Init);
+  table->AddDriver("ptu46",  PTU46_Init);
 }
 
-PTU46_Device::PTU46_Device(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
+         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   player_ptz_data_t data;
   player_ptz_cmd_t cmd;
@@ -567,8 +562,8 @@ PTU46_Device::PTU46_Device(char* interface, ConfigFile* cf, int section) :
   data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;
   cmd.pan = cmd.tilt = cmd.zoom = cmd.panspeed = data.tiltspeed = 0;
 
-  PutData((unsigned char*)&data,sizeof(data),0,0);
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutData((void*)&data,sizeof(data),NULL);
+  PutCommand((void*)&cmd,sizeof(cmd),NULL);
 
 	MoveMode = PLAYER_PTZ_POSITION_CONTROL;
 
@@ -603,7 +598,7 @@ PTU46_Device::Setup()
   
 
   // zero the command buffer
-  PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();
@@ -640,7 +635,7 @@ PTU46_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
 	// could be usig in future to set power mode etc of pan tilt unit
 	// and acceleration etc, for now respond NACK to any request
 
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 	  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 	}
 	break;
@@ -664,13 +659,13 @@ PTU46_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
 
 	if (success)
 	{
-		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK)) {
+		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL)) {
 		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 		}
 	}
 	else
 	{
-		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK)) {
+		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
 		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
 		}
 	}
@@ -697,7 +692,7 @@ PTU46_Device::Main()
   
   while(1) {
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t));
+    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
     pthread_testcancel();
 
 
@@ -770,11 +765,13 @@ PTU46_Device::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),0,0);
+    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
     
 
     // check for config requests 
-    if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer))) > 0) {
+    if((buffer_len = 
+        GetConfig(&client, (void *)buffer, sizeof(buffer), NULL)) > 0) 
+    {
       
       if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) {
 		fprintf(stderr, "PTU46: error handling config request\n");

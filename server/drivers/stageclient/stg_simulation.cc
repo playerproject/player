@@ -44,7 +44,7 @@ extern char** global_argv;
 class StgSimulation:public Stage1p4
 {
 public:
-  StgSimulation(char* interface, ConfigFile* cf, int section);
+  StgSimulation( ConfigFile* cf, int section);
   ~StgSimulation();
   
   // TODO - implement some simulator interface things - pause, resume,
@@ -54,7 +54,7 @@ public:
 };
 
 
-StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section ) 
+StgSimulation::StgSimulation( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, 
 	      sizeof(player_simulation_data_t), 
 	      sizeof(player_simulation_cmd_t), 1, 1 )
@@ -183,22 +183,22 @@ StgSimulation::~StgSimulation()
 
 // Player registration ----------------------------------------------------
 
-CDevice* StgSimulation_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgSimulation_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SIMULATION_STRING))
+  if(strcmp( PLAYER_SIMULATION_STRING))
     {
       PLAYER_ERROR1("driver \"stg_simulation\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgSimulation(interface, cf, section)));
+    return((Driver*)(new StgSimulation( cf, section)));
 }
 
 
 void StgSimulation_Register(DriverTable* table)
 {
-  table->AddDriver("stg_simulation", PLAYER_ALL_MODE, StgSimulation_Init);
+  table->AddDriver("stg_simulation",  StgSimulation_Init);
 }
 
 

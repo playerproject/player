@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/stage1p4 -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_builddir)/replace @STAGECLIENT_CFLAGS@
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/stage1p4 -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace @STAGECLIENT_CFLAGS@
 
 player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 
@@ -21,18 +21,21 @@ lib_LIBRARIES = libplayerqueue.a
 
 libplayerqueue_a_SOURCES = playerqueue.cc
 
-player_SOURCES = clientdata.cc socket_util.cc devicetable.cc deviceentry.cc device.cc \
-                 deviceregistry.cc clientmanager.cc wallclocktime.cc main.cc \
+player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h device.cc device.h \
+								 drivertable.cc drivertable.h devicetable.cc devicetable.h \
+                 deviceregistry.cc deviceregistry.h \
+								 clientmanager.cc wallclocktime.cc main.cc \
                  playerqueue.cc configfile.cc playercommon.h \
-                 player.h playerqueue.h deviceentry.h device.h deviceregistry.h \
-                 devicetable.h clientdata.h clientmanager.h socket_util.h \
-                 wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h # prefix.h
+                 player.h playerqueue.h  \
+                 clientdata.h clientmanager.h socket_util.h \
+                 wallclocktime.h playertime.h configfile.h
 
 
-include_HEADERS = playercommon.h \
-                  player.h \
-                  playerqueue.h
+# Install these to $prefix/include so clients can use them
+include_HEADERS = playercommon.h player.h playerqueue.h
+
+# Install these to $prefix/include/player/ so plugin drivers can use them
+pkginclude_HEADERS = driver.h drivertable.h devicetable.h clientdata.h device.h configfile.h
 
 
 #

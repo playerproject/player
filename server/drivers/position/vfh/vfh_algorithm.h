@@ -67,17 +67,21 @@ private:
 
     bool Goal_Behind;
 
-    float CELL_WIDTH;           // millimeters
-    int SECTOR_ANGLE;           // degrees
     float ROBOT_RADIUS;         // millimeters
-    float SAFETY_DIST;          // millimeters
-    int WINDOW_DIAMETER;        // cells
     int CENTER_X;
     int CENTER_Y;
     int HIST_SIZE;
+
+    float CELL_WIDTH;           // millimeters
+    int WINDOW_DIAMETER;        // cells
+    int SECTOR_ANGLE;           // degrees
+    float SAFETY_DIST;          // millimeters
     int MAX_SPEED;
-    int MAX_TURNRATE;
     int MIN_TURNRATE;
+    int MAX_TURNRATE;
+    float Binary_Hist_Low, Binary_Hist_High;
+    float U1, U2;
+    float Desired_Angle, Picked_Angle, Last_Picked_Angle;
 
     std::vector<std::vector<float> > Cell_Direction;
     std::vector<std::vector<float> > Cell_Base_Mag;
@@ -86,12 +90,9 @@ private:
     std::vector<std::vector<float> > Cell_Enlarge;
     std::vector<std::vector<std::vector<int> > > Cell_Sector;
     std::vector<float> Candidate_Angle;
-    float Desired_Angle, Picked_Angle, Last_Picked_Angle;
 
     double dist_eps;
     double ang_eps;
-    float U1, U2;
-    float Binary_Hist_Low, Binary_Hist_High;
 
     float *Hist, *Last_Binary_Hist;
 

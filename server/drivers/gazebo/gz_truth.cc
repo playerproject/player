@@ -44,7 +44,7 @@
 #include <stdlib.h>       // for atoi(3)
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -52,10 +52,10 @@
 
 
 // Incremental navigation driver
-class GzTruth : public CDevice
+class GzTruth : public Driver
 {
   // Constructor
-  public: GzTruth(char* interface, ConfigFile* cf, int section);
+  public: GzTruth(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzTruth();
@@ -68,10 +68,14 @@ class GzTruth : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Gazebo device id
   private: char *gz_id;
@@ -88,34 +92,30 @@ class GzTruth : public CDevice
 
 
 // Initialization function
-CDevice* GzTruth_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzTruth_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_TRUTH_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_truth\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzTruth(interface, cf, section)));
+  return ((Driver*) (new GzTruth(cf, section)));
 }
 
 
 // a driver registration function
 void GzTruth_Register(DriverTable* table)
 {
-  table->AddDriver("gz_truth", PLAYER_ALL_MODE, GzTruth_Init);
+  table->AddDriver("gz_truth", GzTruth_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzTruth::GzTruth(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_truth_data_t), 0, 10, 10)
+GzTruth::GzTruth(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_TRUTH_CODE, PLAYER_ALL_MODE,
+             sizeof(player_truth_data_t), 0, 10, 10)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -172,21 +172,21 @@ int GzTruth::Shutdown()
 void GzTruth::Update()
 {
   player_truth_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
   
   gz_truth_lock(this->iface, 1);
 
   if (this->iface->data->time > this->datatime)
   {
     this->datatime = this->iface->data->time;
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     data.px = htonl((int32_t) (1000 * this->iface->data->pos[0]));
     data.py = htonl((int32_t) (1000 * this->iface->data->pos[1]));
     data.pa = htonl((int32_t) (180 * this->iface->data->rot[2] / M_PI));
     
-    this->PutData(&data, sizeof(data), tsec, tusec);
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_truth_unlock(this->iface);
@@ -197,7 +197,9 @@ void GzTruth::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzTruth::PutCommand(void* client, unsigned char* src, size_t len)
+void GzTruth::PutCommand(player_device_id_t id,
+                         void* src, size_t len,
+                         struct timeval* timestamp)
 {  
   return;
 }
@@ -205,11 +207,13 @@ void GzTruth::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzTruth::PutConfig(player_device_id_t* device, void* client, void* data, size_t len)
+int GzTruth::PutConfig(player_device_id_t id, void *client, 
+                       void* src, size_t len,
+                       struct timeval* timestamp)
 {
   uint8_t subtype;
 
-  subtype = ((uint8_t*) data)[0];
+  subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
     case PLAYER_TRUTH_GET_POSE:
@@ -224,13 +228,13 @@ int GzTruth::PutConfig(player_device_id_t* device, void* client, void* data, siz
 
       gz_truth_unlock(this->iface);
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, (void*) &rep, sizeof(rep)) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, (void*) &rep, sizeof(rep),NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
     case PLAYER_TRUTH_SET_POSE:
     {
-      player_truth_pose_t *req = (player_truth_pose_t*) data;
+      player_truth_pose_t *req = (player_truth_pose_t*) src;
       
       gz_truth_lock(this->iface, 1);
 
@@ -246,13 +250,13 @@ int GzTruth::PutConfig(player_device_id_t* device, void* client, void* data, siz
 
       gz_truth_unlock(this->iface);
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
     }

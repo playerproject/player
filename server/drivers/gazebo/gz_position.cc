@@ -40,7 +40,7 @@
 #include <netinet/in.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 
 #include "gazebo.h"
@@ -48,10 +48,10 @@
 
 
 // Incremental navigation driver
-class GzPosition : public CDevice
+class GzPosition : public Driver
 {
   // Constructor
-  public: GzPosition(char* interface, ConfigFile* cf, int section);
+  public: GzPosition(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~GzPosition();
@@ -64,11 +64,14 @@ class GzPosition : public CDevice
   public: virtual void Update();
 
   // Commands
-  public: virtual void PutCommand(void* client, unsigned char* src, size_t len);
+  public: virtual void PutCommand(player_device_id_t id,
+                                  void* src, size_t len,
+                                  struct timeval* timestamp);
 
   // Request/reply
-  public: virtual int PutConfig(player_device_id_t* device, void* client,
-                                void* req, size_t reqlen);
+  public: virtual int PutConfig(player_device_id_t id, void *client, 
+                                void* src, size_t len,
+                                struct timeval* timestamp);
 
   // Handle geometry requests
   private: void HandleGetGeom(void *client, void *req, int reqlen);
@@ -91,34 +94,30 @@ class GzPosition : public CDevice
 
 
 // Initialization function
-CDevice* GzPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* GzPosition_Init(ConfigFile* cf, int section)
 {
   if (GzClient::client == NULL)
   {
     PLAYER_ERROR("unable to instantiate Gazebo driver; did you forget the -g option?");
     return (NULL);
   }
-  if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"gz_position\" does not support interface \"%s\"\n", interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new GzPosition(interface, cf, section)));
+  return ((Driver*) (new GzPosition(cf, section)));
 }
 
 
 // a driver registration function
 void GzPosition_Register(DriverTable* table)
 {
-  table->AddDriver("gz_position", PLAYER_ALL_MODE, GzPosition_Init);
+  table->AddDriver("gz_position", GzPosition_Init);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+GzPosition::GzPosition(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
+             sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -174,7 +173,7 @@ int GzPosition::Shutdown()
 void GzPosition::Update()
 {
   player_position_data_t data;
-  uint32_t tsec, tusec;
+  struct timeval ts;
 
   gz_position_lock(this->iface, 1);
 
@@ -182,8 +181,8 @@ void GzPosition::Update()
   {
     this->datatime = this->iface->data->time;
     
-    tsec = (int) (this->iface->data->time);
-    tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+    ts.tv_sec = (int) (this->iface->data->time);
+    ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
     data.xpos = htonl((int) (this->iface->data->pos[0] * 1000));
     data.ypos = htonl((int) (this->iface->data->pos[1] * 1000));
@@ -195,7 +194,7 @@ void GzPosition::Update()
 
     data.stall = (uint8_t) this->iface->data->stall;
 
-    this->PutData(&data, sizeof(data), tsec, tusec);    
+    this->PutData(&data, sizeof(data), &ts);
   }
 
   gz_position_unlock(this->iface);
@@ -206,7 +205,9 @@ void GzPosition::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPosition::PutCommand(void* client, unsigned char* src, size_t len)
+void GzPosition::PutCommand(player_device_id_t id,
+                            void* src, size_t len,
+                            struct timeval* timestamp)
 {
   player_position_cmd_t *cmd;
     
@@ -225,20 +226,22 @@ void GzPosition::PutCommand(void* client, unsigned char* src, size_t len)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzPosition::PutConfig(player_device_id_t* device, void* client, void* req, size_t req_len)
+int GzPosition::PutConfig(player_device_id_t id, void *client, 
+                          void* src, size_t len,
+                          struct timeval* timestamp)
 {
-  switch (((char*) req)[0])
+  switch (((char*) src)[0])
   {
     case PLAYER_POSITION_GET_GEOM_REQ:
-      HandleGetGeom(client, req, req_len);
+      HandleGetGeom(client, src, len);
       break;
 
     case PLAYER_POSITION_MOTOR_POWER_REQ:
-      HandleMotorPower(client, req, req_len);
+      HandleMotorPower(client, src, len);
       break;
 
     default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
       break;
   }
@@ -261,7 +264,7 @@ void GzPosition::HandleGetGeom(void *client, void *req, int reqlen)
   geom.size[0] = htons((int) (0.53 * 1000));
   geom.size[1] = htons((int) (0.38 * 1000));
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   
   return;
@@ -281,7 +284,7 @@ void GzPosition::HandleMotorPower(void *client, void *req, int reqlen)
   this->iface->data->cmd_enable_motors = power->value;
   gz_position_unlock(this->iface);
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
   
   return;

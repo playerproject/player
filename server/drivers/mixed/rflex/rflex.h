@@ -35,7 +35,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
    
@@ -83,101 +83,67 @@ typedef struct
   player_ir_data ir;
 } __attribute__ ((packed)) player_rflex_data_t;
 
+/*
 typedef struct
 {
   player_position_cmd_t position;
   player_gripper_cmd_t gripper;
   player_sound_cmd_t sound;
 } __attribute__ ((packed)) player_rflex_cmd_t;
+*/
 
 // this is here because we need the above typedef's before including it.
 
-class RFLEX:public CDevice 
+class RFLEX : public Driver 
 {
   private:
-    static pthread_t thread;
-    //static pthread_mutex_t serial_mutex;
-  
-    // since we have several child classes that must use the same lock, we 
-    // declare our own static mutex here and override Lock() and Unlock() to 
-    // use this mutex instead of the one declared in CDevice.
-    static pthread_mutex_t rflex_accessMutex;
+    player_device_id_t position_id;
+    player_device_id_t sonar_id;
+    player_device_id_t ir_id;
+    player_device_id_t bumper_id;
+    player_device_id_t power_id;
+    player_device_id_t aio_id;
+    player_device_id_t dio_id;
 
-    // and this one protects calls to Setup and Shutdown
-    static pthread_mutex_t rflex_setupMutex;
+    int position_subscriptions;
+    int sonar_subscriptions;
+    int ir_subscriptions;
+    int bumper_subscriptions;
 
-    // likewise, we need one RFLEX-wide subscription count to manage calls to
-    // Setup() and Shutdown()
-    static int rflex_subscriptions;
-
-    static player_rflex_data_t* data;
-    static player_rflex_cmd_t* command;
-
-    static unsigned char* reqqueue;
-    static unsigned char* repqueue;
-
-    static int rflex_fd;               // rflex device file descriptor
+    int rflex_fd;               // rflex device file descriptor
     
     // device used to communicate with rflex
-    static char rflex_serial_port[MAX_FILENAME_SIZE]; 
-    static double mm_odo_x;
-    static double mm_odo_y;
-    static double rad_odo_theta;
-
-    static struct timeval timeBegan_tv;
-
-    // did we initialize the common data segments yet?
-    static bool initdone;
+    char rflex_serial_port[MAX_FILENAME_SIZE]; 
+    double mm_odo_x;
+    double mm_odo_y;
+    double rad_odo_theta;
 
     void ResetRawPositions();
     int initialize_robot();
     void reset_odometry();
     void set_odometry(long,long,short);
-    void update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice* bumperp, CDevice* irp);    
+    void update_everything(player_rflex_data_t* d);
 
     void set_config_defaults();
-  protected:
-    void Lock();
-    void Unlock();
-
-    /* start a thread that will invoke Main() */
-    virtual void StartThread();
-    /* cancel (and wait for termination) of the thread */
-    virtual void StopThread();
 
   public:
-
-    RFLEX(char* interface, ConfigFile* cf, int section);
+    RFLEX(ConfigFile* cf, int section);
 
     //override this in subclass, and fill with code to load options from
     //config file, default is just an empty dummy
     virtual void GetOptions(ConfigFile* cf,int section,rflex_config_t *rflex_configs);
-    virtual ~RFLEX();
 
     /* the main thread */
     virtual void Main();
 
     // we override these, because we will maintain our own subscription count
-    virtual int Subscribe(void *client);
-    virtual int Unsubscribe(void *client);
+    virtual int Subscribe(player_device_id_t id);
+    virtual int Unsubscribe(player_device_id_t id);
 
     virtual int Setup();
     virtual int Shutdown();
 
-    virtual void PutData(unsigned char *, size_t maxsize,
-                         uint32_t timestamp_sec, uint32_t timestamp_usec);
-
-	static int joy_control;
-
-	static CDevice * PositionDev;
-	static CDevice * SonarDev;
-	static CDevice * IrDev;
-	static CDevice * BumperDev;
-	static CDevice * PowerDev;
-	static CDevice * AIODev;
-	static CDevice * DIODev;
-
-
+    static int joy_control;
 };
 
 

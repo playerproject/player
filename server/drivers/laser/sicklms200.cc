@@ -19,42 +19,21 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-
-///////////////////////////////////////////////////////////////////////////
-//
-// File: laserdevice.cc
-// Author: Andrew Howard
-// Date: 7 Nov 2000
-// Desc: Driver for the SICK laser
-//
-// CVS info:
-//  $Source$
-//  $Author$
-//  $Revision$
-//
-// Usage:
-//  (empty)
-//
-// Theory of operation:
-//  (empty)
-//
-// Known bugs:
-//  (empty)
-//
-// Possible enhancements:
-//  (empty)
-//
-///////////////////////////////////////////////////////////////////////////
-
+/*
+ Desc: Driver for the SICK laser
+ Author: Andrew Howard
+ Date: 7 Nov 2000
+ CVS: $Id$
+*/
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup sicklms200 SickLMS200 driver
+/** @defgroup player_driver_sicklms200 SickLMS200 driver
 
 Driver for the SICK LMS200 scanning laser range-finder.
 
 @par Interfaces
-- @ref laser
+- @ref player_interface_laser
 
 @par Supported configuration requests
 
@@ -91,10 +70,10 @@ Driver for the SICK LMS200 scanning laser range-finder.
 @par Example 
 
 @verbatim
-device
+driver
 (
   driver sicklms200
-  interfaces ["laser:0"]
+  devices ["laser:0"]
   port "/dev/ttyS0"
   resolution 100   # Angular resolution 1 degree (181 readings @ 10Hz)
   range_res 10     # Range resolution 1 cm (maximum range 81.92m)
@@ -132,11 +111,12 @@ device
 
 extern PlayerTime* GlobalTime;
 
-#define PLAYER_ENABLE_MSG 0
+#define PLAYER_ENABLE_MSG 1
 #define PLAYER_ENABLE_TRACE 0
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -144,12 +124,12 @@ extern PlayerTime* GlobalTime;
 
 
 // The laser device class.
-class SickLMS200 : public CDevice
+class SickLMS200 : public Driver
 {
   public:
     
     // Constructor
-    SickLMS200(char* interface, ConfigFile* cf, int section);
+    SickLMS200(ConfigFile* cf, int section);
 
     int Setup();
     int Shutdown();
@@ -263,22 +243,15 @@ class SickLMS200 : public CDevice
 };
 
 // a factory creation function
-CDevice* SickLMS200_Init(char* interface, ConfigFile* cf, int section)
+Driver* SickLMS200_Init(ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_LASER_STRING))
-  {
-    PLAYER_ERROR1("driver \"sicklms200\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new SickLMS200(interface, cf, section)));
+  return((Driver*)(new SickLMS200(cf, section)));
 }
 
 // a driver registration function
 void SickLMS200_Register(DriverTable* table)
 {
-  table->AddDriver("sicklms200", PLAYER_READ_MODE, SickLMS200_Init);
+  table->AddDriver("sicklms200", SickLMS200_Init);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -297,8 +270,9 @@ void SickLMS200_Register(DriverTable* table)
  
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_laser_data_t),0,10,10)
+SickLMS200::SickLMS200(ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE,
+             sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -350,7 +324,7 @@ SickLMS200::SickLMS200(char* interface, ConfigFile* cf, int section)
 // Set up the device
 int SickLMS200::Setup()
 {   
-  printf("Laser initialising (%s)\n", this->device_name);
+  PLAYER_MSG1("Laser initialising (%s)\n", this->device_name);
     
   // Open the terminal
   if (OpenTerm())
@@ -402,9 +376,9 @@ int SickLMS200::Setup()
   }
 
   // Jump up to 38400
-  if (rate < 38400)
+  if (rate < 38400 && this->port_rate == 38400)
   {
-    PLAYER_MSG0("laser operating at 9600; changing to 38400");
+    PLAYER_MSG2("laser operating at %d; changing to %d", rate, this->port_rate);
     if (SetLaserSpeed(38400))
       return 1;
     sleep(1);
@@ -414,37 +388,36 @@ int SickLMS200::Setup()
   }
 
   // Jump up to 500000
-  else if (rate < this->port_rate)
+  else if (rate < 500000 && this->port_rate == 500000)
   {
-    printf("LASER: trying hi speed\n");
+    PLAYER_MSG2("laser operating at %d; changing to %d", rate, this->port_rate);
     if (SetLaserSpeed(this->port_rate))
       return 1;
     sleep(1);
     if (ChangeTermSpeed(this->port_rate))
       return 1;
     sleep(1);
-    printf("LASER: changing term to hi speed\n");
   }
 
-  printf("LASER: Get Type\n");
+  //printf("LASER: Get Type\n");
   // Display the laser type
   char type[64];
   if (GetLaserType(type, sizeof(type)))
     return 1;
   PLAYER_MSG1("SICK laser type [%s]", (char*) type);
-  printf("LASER: type: %s\n", type);
+  //printf("LASER: type: %s\n", type);
 
 
-  printf("LASER: set res\n");
+  //printf("LASER: set res\n");
   // Configure the laser
   if (SetLaserRes(this->scan_width, this->scan_res))
     return 1;
 
-  printf("LASER: laser config\n");
+  //printf("LASER: laser config\n");
   if (SetLaserConfig(this->intensity))
     return 1;
 
-  puts("laser ready");
+  PLAYER_MSG0("laser ready");
 
   // Start the device thread
   StartThread();
@@ -467,8 +440,9 @@ int SickLMS200::Shutdown()
   */
 
   CloseTerm();
-  puts("Laser has been shutdown");
 
+  PLAYER_MSG0("laser shutdown");
+  
   return(0);
 }
 
@@ -552,9 +526,9 @@ void SickLMS200::Main()
           data.intensity[this->scan_max_segment-this->scan_min_segment-i] = tmp;
         }
       }
-
+      
       // Make data available
-      PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
+      PutData((uint8_t*) &data, sizeof(data), &time);
     }
   }
 }
@@ -570,7 +544,7 @@ int SickLMS200::UpdateConfig()
   player_laser_config_t config;
   player_laser_geom_t geom;
   
-  while ((len = GetConfig(&client, &buffer, sizeof(buffer))) > 0)
+  while ((len = GetConfig(&client, &buffer, sizeof(buffer),NULL)) > 0)
   {
     switch (buffer[0])
     {
@@ -579,7 +553,7 @@ int SickLMS200::UpdateConfig()
         if (len != sizeof(player_laser_config_t))
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -593,13 +567,14 @@ int SickLMS200::UpdateConfig()
 
         if (this->CheckScanConfig() == 0)
         {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, sizeof(config)) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                      &config, sizeof(config), NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           return 1;
         }
         else
         {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
         }
         break;
@@ -610,7 +585,7 @@ int SickLMS200::UpdateConfig()
         if (len != 1)
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -621,8 +596,8 @@ int SickLMS200::UpdateConfig()
         config.max_angle = htons((short) this->max_angle);
         config.range_res = htons(this->range_res);
 
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config, 
-                    sizeof(config)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                    &config, sizeof(config), NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -632,7 +607,7 @@ int SickLMS200::UpdateConfig()
         if (len != 1)
         {
           PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
             PLAYER_ERROR("PutReply() failed");
           continue;
         }
@@ -643,15 +618,15 @@ int SickLMS200::UpdateConfig()
         geom.size[0] = htons((short) (this->size[0] * 1000));
         geom.size[1] = htons((short) (this->size[1] * 1000));
         
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-                    sizeof(geom)) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                    &geom, sizeof(geom), NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
 
       default:
       {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
       }
@@ -803,7 +778,7 @@ int SickLMS200::ChangeTermSpeed(int speed)
   }
 #endif  
 
-  printf("LASER: change TERM speed: %d\n", speed);
+  //printf("LASER: change TERM speed: %d\n", speed);
 
   switch(speed) {
   case 9600:
@@ -946,16 +921,16 @@ int SickLMS200::SetLaserSpeed(int speed)
   packet[1] = (speed == 9600 ? 0x42 : (speed == 38400 ? 0x40 : 0x48));
   len = 2;
 
-  printf("LASER: SLS: sending bps rate request\n");
-  PLAYER_TRACE0("sending baud rate request to laser");
+  //printf("LASER: SLS: sending bps rate request\n");
+  //PLAYER_TRACE0("sending baud rate request to laser");
   if (WriteToLaser(packet, len) < 0)
     return 1;
             
   // Wait for laser to return ack
   // This could take a while...
   //
-  PLAYER_TRACE0("waiting for acknowledge");
-  printf("LASER: SLS: waiting for ACK\n");
+  //PLAYER_TRACE0("waiting for acknowledge");
+  //printf("LASER: SLS: waiting for ACK\n");
   len = ReadFromLaser(packet, sizeof(packet), true, 2000);
   if (len < 0)
     return 1;
@@ -966,8 +941,8 @@ int SickLMS200::SetLaserSpeed(int speed)
           else if (packet[0] != ACK)
             RETURN_ERROR(1, "unexpected packet type");
 
-  PLAYER_TRACE0("baud rate request ok");
-  printf("LASER: SLS: request OK\n");
+  //PLAYER_TRACE0("baud rate request ok");
+  //printf("LASER: SLS: request OK\n");
   return 0;
 }
 
@@ -983,16 +958,16 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
   packet[0] = 0x3A;
   len = 1;
 
-  PLAYER_TRACE0("sending get type request to laser");
-  printf("LASER: GLT: sending get type request\n");
+  //PLAYER_TRACE0("sending get type request to laser");
+  //printf("LASER: GLT: sending get type request\n");
   if (WriteToLaser(packet, len) < 0)
     return 1;
 
   // Wait for laser to return data
   // This could take a while...
   //
-  PLAYER_TRACE0("waiting for reply");
-  printf("LASER: GLT: waiting for ACK\n");
+  //PLAYER_TRACE0("waiting for reply");
+  //printf("LASER: GLT: waiting for ACK\n");
   len = ReadFromLaser(packet, sizeof(packet), false, -1);
   if (len < 0)
     return 1;
@@ -1003,7 +978,7 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
   else if (packet[0] != 0xBA)
     RETURN_ERROR(1, "unexpected packet type");
 
-  printf("LASER: GLT: reply OK\n");
+  //printf("LASER: GLT: reply OK\n");
   // NULL terminate the return string
   //
   assert((size_t) len + 1 < sizeof(packet));
@@ -1030,16 +1005,16 @@ int SickLMS200::SetLaserConfig(bool intensity)
   packet[0] = 0x74;
   len = 1;
 
-  PLAYER_TRACE0("sending get configuration request to laser");
-  printf("LASER: SLC: getting config info\n");
+  //PLAYER_TRACE0("sending get configuration request to laser");
+  //printf("LASER: SLC: getting config info\n");
   if (WriteToLaser(packet, len) < 0)
     return 1;
 
   // Wait for laser to return data
   // This could take a while...
   //
-  PLAYER_TRACE0("waiting for reply");
-  printf("LASER: SLC: waiting for reply\n");
+  //PLAYER_TRACE0("waiting for reply");
+  //printf("LASER: SLC: waiting for reply\n");
   len = ReadFromLaser(packet, sizeof(packet), false, -1);
   if (len < 0)
     return 1;
@@ -1050,10 +1025,9 @@ int SickLMS200::SetLaserConfig(bool intensity)
   else if (packet[0] != 0xF4)
     RETURN_ERROR(1, "unexpected packet type");
 
-  PLAYER_TRACE0("get configuration request ok");
-  printf("LASER: SLC: got config OK units %d\n", (int)packet[7]);
-
-  PLAYER_TRACE1("laser units [%d]", (int) packet[7]);
+  //PLAYER_TRACE0("get configuration request ok");
+  //printf("LASER: SLC: got config OK units %d\n", (int)packet[7]);
+  //PLAYER_TRACE1("laser units [%d]", (int) packet[7]);
 
   // Modify the configuration and send it back
   packet[0] = 0x77;
@@ -1071,15 +1045,15 @@ int SickLMS200::SetLaserConfig(bool intensity)
   else
     packet[7] = 0x01;
 
-  PLAYER_TRACE0("sending set configuration request to laser");
-  printf("LASER: SLC: sending set config request range_res: %d\n", this->range_res);
+  //PLAYER_TRACE0("sending set configuration request to laser");
+  //printf("LASER: SLC: sending set config request range_res: %d\n", this->range_res);
   if (WriteToLaser(packet, len) < 0)
     return 1;
 
   // Wait for the change to "take"
   //
-  PLAYER_TRACE0("waiting for acknowledge");
-  printf("LASER: SLC: waiting for ACK\n");
+  //PLAYER_TRACE0("waiting for acknowledge");
+  //printf("LASER: SLC: waiting for ACK\n");
   len = ReadFromLaser(packet, sizeof(packet), false, -1);
   if (len < 0)
     return 1;
@@ -1090,8 +1064,8 @@ int SickLMS200::SetLaserConfig(bool intensity)
   else if (packet[0] != 0xF7)
     RETURN_ERROR(1, "unexpected packet type");
 
-  printf("LASER: SLC: set config request OK\n");
-  PLAYER_TRACE0("set configuration request ok");
+  //printf("LASER: SLC: set config request OK\n");
+  //PLAYER_TRACE0("set configuration request ok");
 
   return 0;
 }
@@ -1114,16 +1088,16 @@ int SickLMS200::SetLaserRes(int width, int res)
   packet[len++] = (res & 0xFF);
   packet[len++] = (res >> 8);
 
-  PLAYER_TRACE0("sending set variant request to laser");
-  printf("LASER: SLR: sending variant request\n");
+  //PLAYER_TRACE0("sending set variant request to laser");
+  //printf("LASER: SLR: sending variant request\n");
   if (WriteToLaser(packet, len) < 0)
     return 1;
 
   // Wait for laser to return data
   // This could take a while...
   //
-  PLAYER_TRACE0("waiting for reply");
-  printf("LASER: SLR: waiting for ACK\n");
+  //PLAYER_TRACE0("waiting for reply");
+  //printf("LASER: SLR: waiting for ACK\n");
   len = ReadFromLaser(packet, sizeof(packet), false, -1);
   if (len < 0)
     return 1;
@@ -1139,7 +1113,7 @@ int SickLMS200::SetLaserRes(int width, int res)
   if (packet[1] == 0)
     RETURN_ERROR(1, "variant request ignored");
         
-  printf("LASER: SLR: req OK\n");
+  //printf("LASER: SLR: req OK\n");
   return 0;
 }
 
@@ -1174,16 +1148,16 @@ int SickLMS200::RequestLaserData(int min_segment, int max_segment)
     packet[len++] = (last >> 8);
   }
 
-  PLAYER_TRACE0("sending scan data request to laser");
-  printf("LASER: RLD: writing scan data\n");
+  //PLAYER_TRACE0("sending scan data request to laser");
+  //printf("LASER: RLD: writing scan data\n");
   if (WriteToLaser(packet, len) < 0)
     return 1;
 
   // Wait for laser to return ack
   // This should be fairly prompt
   //
-  PLAYER_TRACE0("waiting for acknowledge");
-  printf("LASER: RLD: waiting for ACK\n");
+  //PLAYER_TRACE0("waiting for acknowledge");
+  //printf("LASER: RLD: waiting for ACK\n");
   len = ReadFromLaser(packet, sizeof(packet), true, -1);
   if (len < 0)
     return 1;
@@ -1194,8 +1168,8 @@ int SickLMS200::RequestLaserData(int min_segment, int max_segment)
   else if (packet[0] != ACK)
     RETURN_ERROR(1, "unexpected packet type");
 
-  PLAYER_TRACE0("scan data request ok");
-  printf("LASER: RLD: scan data OK\n");
+  //PLAYER_TRACE0("scan data request ok");
+  //printf("LASER: RLD: scan data OK\n");
    
   return 0;
 }

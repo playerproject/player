@@ -36,18 +36,19 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class ExampleDriver : public CDevice
+class ExampleDriver : public Driver
 {
   public:
     
     // Constructor; need that
-    ExampleDriver(char* interface, ConfigFile* cf, int section);
+    ExampleDriver(ConfigFile* cf, int section);
 
     // Must implement the following methods.
     int Setup();
@@ -64,23 +65,12 @@ class ExampleDriver : public CDevice
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
 // declare it static in the class).  In this function, we create and return
-// (as a generic CDevice*) a pointer to a new instance of this driver.
-CDevice* 
-ExampleDriver_Init(char* interface, ConfigFile* cf, int section)
+// (as a generic Driver*) a pointer to a new instance of this driver.
+Driver* 
+ExampleDriver_Init(ConfigFile* cf, int section)
 {
-  // Check whether we can support the requested interface; return NULL to
-  // indicate that we can't.
-  if(strcmp(interface, PLAYER_POSITION_STRING))
-  {
-    PLAYER_ERROR1("driver \"exampledriver\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-  {
-    // Create and return a new instance of this driver
-    return((CDevice*)(new ExampleDriver(interface, cf, section)));
-  }
+  // Create and return a new instance of this driver
+  return((Driver*)(new ExampleDriver(cf, section)));
 }
 
 // A driver registration function, again declared outside of the class so
@@ -89,14 +79,15 @@ ExampleDriver_Init(char* interface, ConfigFile* cf, int section)
 // driver can support and how to create a driver instance.
 void ExampleDriver_Register(DriverTable* table)
 {
-  table->AddDriver("exampledriver", PLAYER_READ_MODE, ExampleDriver_Init);
+  table->AddDriver("exampledriver", ExampleDriver_Init);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-ExampleDriver::ExampleDriver(char* interface, ConfigFile* cf, int section)
-: CDevice(sizeof(player_position_data_t),sizeof(player_position_cmd_t),10,10)
+ExampleDriver::ExampleDriver(ConfigFile* cf, int section)
+: Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_READ_MODE,
+         sizeof(player_position_data_t),sizeof(player_position_cmd_t),10,10)
 {
   // Read an option from the configuration file
   this->foop = cf->ReadInt(section, "foo", 0);
@@ -153,12 +144,12 @@ void ExampleDriver::Main()
     // test if we are supposed to cancel
     pthread_testcancel();
 
-    // Check for and handle configuration requests, using CDevice::GetConfig()
+    // Check for and handle configuration requests, using Driver::GetConfig()
 
-    // Check for and execute commands, using CDevice::GetCommand()
+    // Check for and execute commands, using Driver::GetCommand()
 
     // Interact with the device, and push out the resulting data, using
-    // CDevice::PutData()
+    // Driver::PutData()
 
     // Sleep (you might, for example, block on a read() instead)
     usleep(100000);

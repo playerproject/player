@@ -32,6 +32,9 @@
 #include <stage1p3.h>
 #include <sys/file.h> //for flock
 
+#include <devicetable.h>
+extern DeviceTable* deviceTable;
+
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
@@ -43,7 +46,9 @@ extern PlayerTime* GlobalTime;
 // buffer points to a single buffer containing the data, command and configuration buffers.
 //
 StageDevice::StageDevice(player_stage_info_t* info, 
-			   int lockfd, int lockbyte )
+                         int lockfd, int lockbyte )
+: Driver(NULL, 0)
+
 {
 #ifdef DEBUG
   printf( "P: Creating Stage device (%d,%d,%d) locking %d:%d\n", 
@@ -73,10 +78,14 @@ StageDevice::StageDevice(player_stage_info_t* info,
   reply_buffer = (uint8_t*)((caddr_t)config_buffer + 
                             (m_info->config_len * sizeof(playerqueue_elt_t)));
 
-  SetupBuffers((unsigned char*)data_buffer, data_len,
-               (unsigned char*)command_buffer, command_len,
-               (unsigned char*)config_buffer, m_info->config_len,
-               (unsigned char*)reply_buffer, m_info->reply_len);
+  this->AddInterface(m_info->player_id,PLAYER_ALL_MODE,
+                     (void*)data_buffer, data_len,
+                     (void*)command_buffer, command_len,
+                     (void*)config_buffer, m_info->config_len,
+                     (void*)reply_buffer, m_info->reply_len);
+
+  // cache a pointer to my device, so that I can get at these buffers later
+  assert(this->device = deviceTable->GetDevice(m_info->player_id));
   
   next = 0; // initialize linked list pointer
 
@@ -116,9 +125,9 @@ int StageDevice::Shutdown()
 ///////////////////////////////////////////////////////////////////////////
 // Read data from the device
 //
-size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
-                        uint32_t* timestamp_sec, 
-                        uint32_t* timestamp_usec)
+size_t StageDevice::GetData(player_device_id_t id,
+                            void* dest, size_t size,
+                            struct timeval* timestamp)
 {
   Lock();
   
@@ -151,9 +160,9 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
 
   // Check for overflows 2
   //
-  if (data_avail > device_datasize )
+  if (data_avail > this->device->data_size )
   {
-    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, device_datasize );
+    printf("warning: available data (%d bytes) > buffer size (%d bytes); ignoring data\n", data_avail, this->device->data_size );
     Unlock();
     return 0;
     //data_avail = m_data_len;
@@ -169,18 +178,16 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
   }
     
   // Copy the data
-  memcpy(data, device_data, data_avail);
+  memcpy(dest, this->device->data, data_avail);
 
   // store the timestamp in the device, because other devices may
   // wish to read it
-  data_timestamp_sec = m_info->data_timestamp_sec;
-  data_timestamp_usec = m_info->data_timestamp_usec;
+  this->device->data_timestamp.tv_sec = m_info->data_timestamp_sec;
+  this->device->data_timestamp.tv_usec = m_info->data_timestamp_usec;
 
   // also return the timestamp to the caller
-  if(timestamp_sec)
-    *timestamp_sec = data_timestamp_sec;
-  if(timestamp_usec)
-    *timestamp_usec = data_timestamp_usec;
+  if(timestamp)
+    *timestamp = this->device->data_timestamp;
     
   Unlock();
 
@@ -191,7 +198,9 @@ size_t StageDevice::GetData(void* client,unsigned char *data, size_t size,
 ///////////////////////////////////////////////////////////////////////////
 // Write a command to the device
 //
-void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
+void StageDevice::PutCommand(player_device_id_t id,
+                             void* src, size_t len,
+                             struct timeval* timestamp)
 {
 
   Lock();
@@ -202,17 +211,17 @@ void StageDevice::PutCommand(void* client,unsigned char *command, size_t len)
           m_info->player_id.robot, 
           m_info->player_id.code, 
           m_info->player_id.index, 
-          m_info, command);
+          m_info, src);
   fflush( stdout );
 #endif
 
   // Check for overflows
-  if (len > device_commandsize)
+  if (len > this->device->command_size)
     PLAYER_ERROR2("invalid command length (%d > %d); ignoring command", 
-                  len, device_commandsize);
+                  len, this->device->command_size);
     
   // Copy the command
-  memcpy(device_command, command, len);
+  memcpy(this->device->command, src, len);
 
   // Set flag to indicate command has been set
   m_info->command_avail = len;

@@ -62,7 +62,7 @@
 //#include <sys/poll.h>
 #include <replace.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 #include <player.h>
 
@@ -118,7 +118,7 @@
 #define UTM_EP2		(UTM_E2/(1-UTM_E2))	// e'^2
 
 
-class GarminNMEA:public CDevice 
+class GarminNMEA:public Driver 
 {
   private:
 
@@ -178,7 +178,7 @@ class GarminNMEA:public CDevice
 
 
   public:
-    GarminNMEA(char* interface, ConfigFile* cf, int section);
+    GarminNMEA( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -188,16 +188,9 @@ class GarminNMEA:public CDevice
 
 ///////////////////////////////////////////////////////////////////////////
 // initialization function
-CDevice* GarminNMEA_Init(char* interface, ConfigFile* cf, int section)
+Driver* GarminNMEA_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_GPS_STRING))
-  {
-    PLAYER_ERROR1("driver \"garminnmea\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new GarminNMEA(interface, cf, section)));
+  return((Driver*)(new GarminNMEA( cf, section)));
 }
 
 
@@ -206,13 +199,14 @@ CDevice* GarminNMEA_Init(char* interface, ConfigFile* cf, int section)
 void 
 GarminNMEA_Register(DriverTable* table)
 {
-  table->AddDriver("garminnmea", PLAYER_ALL_MODE, GarminNMEA_Init);
+  table->AddDriver("garminnmea",  GarminNMEA_Init);
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
-GarminNMEA::GarminNMEA(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_gps_data_t),0,0,0)
+GarminNMEA::GarminNMEA( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_GPS_CODE, PLAYER_READ_MODE,
+         sizeof(player_gps_data_t),0,0,0)
 {
   memset(&data,0,sizeof(data));
 
@@ -932,7 +926,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   data.utm_e = htonl((int32_t) rint(utm_e * 100));
   data.utm_n = htonl((int32_t) rint(utm_n * 100));
 
-  PutData(&data,sizeof(player_gps_data_t),0,0);
+  PutData(&data,sizeof(player_gps_data_t),NULL);
 
   return 0;
 }

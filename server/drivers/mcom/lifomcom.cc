@@ -38,45 +38,42 @@
 
 
 /*
-LifoMCom(int argc, char** argv):CDevice(1,1,20,20),Data(){
+LifoMCom(int argc, char** argv):Driver(1,1,20,20),Data(){
 }
 */
 
-LifoMCom::LifoMCom(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_mcom_data_t), 0, 20, 20)
+LifoMCom::LifoMCom( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_MCOM_CODE, PLAYER_ALL_MODE,
+         sizeof(player_mcom_data_t), 0, 20, 20)
 {
 }
 
 
-CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section)
+Driver* LifoMCom_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_MCOM_STRING))
-  {
-    PLAYER_ERROR2("the mcom device driver does not support interface \"%s\" (use \"%s\")\n",
-                  interface, PLAYER_MCOM_STRING);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new LifoMCom(interface, cf, section)));
+  return((Driver*)(new LifoMCom( cf, section)));
 }
 
 
 void LifoMCom_Register(DriverTable* t) {
-    t->AddDriver("lifomcom", PLAYER_ALL_MODE, LifoMCom_Init);
+    t->AddDriver("lifomcom",  LifoMCom_Init);
 }
 
 // called by player with config requests
-int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, size_t len) {
-
+int 
+LifoMCom::PutConfig(player_device_id_t id, void *client, 
+                    void* src, size_t len,
+                    struct timeval* timestamp)
+{
     assert(len == sizeof(player_mcom_config_t));
-    player_mcom_config_t* cfg = (player_mcom_config_t*)data;
+    player_mcom_config_t* cfg = (player_mcom_config_t*)src;
     cfg->type = ntohs(cfg->type);
 
     // arguments to PutReply are: (void* client, ushort replytype, struct timeval* ts, void* data, size_t datalen)
     switch(cfg->command) {
         case PLAYER_MCOM_PUSH_REQ:
             Data.Push(cfg->data, cfg->type, cfg->channel);
-            PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+            PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL);
             return 0;
         case PLAYER_MCOM_POP_REQ:
             player_mcom_return_t ret;
@@ -84,10 +81,10 @@ int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, si
             if(ret.data.full) {
                 ret.type = htons(cfg->type);
                 strcpy(ret.channel, cfg->channel);
-                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &ret ,sizeof(ret));
+                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ret ,sizeof(ret), NULL);
                 return 0;
             } else {
-                PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+                PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL);
                 return 0;
             }
             break;
@@ -97,28 +94,28 @@ int LifoMCom::PutConfig(player_device_id_t* device, void* client, void* data, si
                 ret.type = htons(cfg->type);
                 strcpy(ret.channel, cfg->channel);
                 Unlock();
-                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &ret ,sizeof(ret));
+                PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ret ,sizeof(ret),NULL);
                 return 0;
             } else {
                 Unlock();
-                PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0);
+                PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL);
                 return 0;
             }
             break;
          case PLAYER_MCOM_CLEAR_REQ:
 	    Data.Clear(cfg->type, cfg->channel);
-            PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL ,0);
+            PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL);
             return 0;
 	    
     case PLAYER_MCOM_SET_CAPACITY_REQ:
       
       Data.SetCapacity(cfg->type, cfg->channel, cfg->data.data[0]);
-      PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0);
+      PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL);
       return 0;
 
         default:
             printf("Error: message %d to MCOM Device not recognized\n", cfg->command);
-            PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL,0);	
+            PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL);
             return 0;
     }
     return 0;

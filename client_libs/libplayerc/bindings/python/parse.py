@@ -1,181 +1,217 @@
-#!/bin/env python
+#!/usr/bin/env python
 
+import re
 import string
 import sys
 
 
-class DefineDef:
-    pass
+class Rule:
 
-class StructDef:
-    pass
+    def __init__(self):
 
-class FunctionDef:
-    pass
-
-class ClassDef:
-    pass
-
-
-
-def parse_file(filename):
-    """Parse the file to extract symbols."""
-
-    cpp = Literal('#') + Word('_' + alphanums) + restOfLine 
-    cpp_comment = Literal('//') + restOfLine
-    extern_c = Literal('extern') + Literal('"C"') + Literal('{')
-
-    # struct foo;
-    forward = Literal('struct') + Word('_' + alphanums) + Literal(';')
-
-    # typedef void (*fn) (...);
-    typedef_fn = Literal('typedef') + Word('_' + alphanums) + \
-                 Literal('(') + Word('*_' + alphanums) + Literal(')') + \
-                 CharsNotIn(';') + Literal(';')
-
-    # typedef struct foo {...} foo_t;
-    typedef = Literal('typedef') + Literal('struct') + \
-              ZeroOrMore(Word('_' + alphanums)).suppress() + Literal('{').suppress() + \
-              CharsNotIn('}') + Literal('}').suppress() + \
-              Word('_' + alphanums) + Literal(';').suppress()
-
-    # void function(...);
-    fn = Group(OneOrMore(Word('_' + alphas, '_' + alphanums) | Literal('*'))) + \
-         Combine(Literal('(') + CharsNotIn(';')) + Literal(';').suppress()
-
-    cpp = Group(cpp).setResultsName('cpp')
-    typedef = Group(typedef).setResultsName('typedef')
-    fn = Group(fn).setResultsName('function')
-
-    #fn.setDebug()
-
-    all = ZeroOrMore(cpp | typedef | fn)
-    #all.ignore(fn)
-    #all.ignore(typedef)
-    #all.ignore(cpp)
-    #all.ignore(cStyleComment)
-    #all.ignore(cpp_comment)
-    all.ignore(extern_c)
-    all.ignore(forward)
-    all.ignore(typedef_fn)
-
-
-    all.setDebug()
+        self.patterns = []
+        self.replacements = []
+        self.head = ''
+        self.foot = ''
+        return
     
+
+class Replace:
+    pass
     
-    tokens = all.parseFile(filename)
 
-    # Suck out different entities.  This is horrible, but I cant get
-    # the parser to do this right
-    defines = []
-    structs = []
-    functions = []
-    for group in tokens:
-        if group[0] == 'typedef':
-            struct = StructDef()
-            struct.name = group[3]
-            struct.body = group[2]
-            structs += [struct]
-        elif group[0] == '#':
-            if group[1] == 'define':
-                define = DefineDef()
-                define.body = group[2]
-                defines += [define]
-        else:
-            function = FunctionDef()
-            function.name = group.asList()[0][-1]
-            function.args = group.asList()[1]
-            function.ret = string.join(group.asList()[0][0:-1], ' ')
-            #print function.ret, function.name, function.args
-            #print
-            functions += [function]
 
-    return (defines, structs, functions)
+def compile_comment():
+    """Compile comment rule."""
+
+    rule = Rule()
+    rule.type = 'comment'
+    rule.patterns += [re.compile('/\*.*?\*/', re.DOTALL)]
+    rule.patterns += [re.compile('//.*')]
+
+    return [rule]
 
 
 
-def write_swig(filename, defines, structs, functions):
-    # Create swig .i file with shadow classes
+def compile(prefix):
+    """Compute the grammar."""
 
-    file = open(filename, 'w+')
+    rules = []
+
+    # Create rule for typedefs
+    #rule = Rule()
+    #rule.type = 'typedef'
+    #rule.patterns += [re.compile('\s*\}\s*%s_t\s*;' % prefix)]
+    #rules += [rule]
+
+    # Create rule for constructor
+    rule = Rule()
+    rule.type = 'constructor'
+    rule.patterns += [re.compile('%s_t\s*\*\s*%s_create\s*\(.*?;' % (prefix, prefix), re.DOTALL)]
+
+    rule.head = '\n%%extend %s\n{\n' % prefix
+    rule.foot = '\n}\n'
+
+    rep = Replace()
+    rep.src = re.compile('\s*%s_create\s*' % (prefix))
+    rep.dst = '%s' % prefix
+    rule.replacements += [rep]
+
+    rep = Replace()
+    rep.src = re.compile('\(*\s*%s_t\s*\*\w*\s*\)' % prefix)
+    rep.dst = '()'
+    rule.replacements += [rep]
+
+    rep = Replace()
+    rep.src = re.compile('\(*\s*%s_t\s*\*\w*\s*,\s*' % prefix)
+    rep.dst = '('
+    rule.replacements += [rep]
+
+    rules += [rule]
+
+    # Create rule for destructor
+    rule = Rule()
+    rule.type = 'destructor'
+    rule.patterns += [re.compile('\w*\s*%s_destroy\s*\(.*?;' % (prefix), re.DOTALL)]
+
+    rule.head = '\n%%extend %s\n{\n' % prefix
+    rule.foot = '\n}\n'
+
+    rep = Replace()
+    rep.src = re.compile('\w*\s*%s_destroy\s*' % (prefix))
+    rep.dst = '~%s' % prefix
+    rule.replacements += [rep]
+
+    rep = Replace()
+    rep.src = re.compile('\(*\s*%s_t\s*\*\w*\s*\)' % prefix)
+    rep.dst = '()'
+    rule.replacements += [rep]
+
+    rep = Replace()
+    rep.src = re.compile('\(*\s*%s_t\s*\*\w*\s*,\s*' % prefix)
+    rep.dst = '('
+    rule.replacements += [rep]
+
+    rules += [rule]
+
+    # Create rule for regular functions
+    rule = Rule()
+    rule.type = 'method'
+    rule.patterns += [re.compile('\w*\s*%s_\w*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*\w*\s*%s_\w*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*\*%s_\w*\(.*?;' % prefix, re.DOTALL)]
+
+    rule.head = '\n%%extend %s\n{\n' % prefix
+    rule.foot = '\n}\n'
+
+    rep = Replace()
+    rep.src = re.compile('%s_*' % prefix)
+    rep.dst = ''
+    rule.replacements += [rep]
+
+    rep = Replace()
+    rep.src = re.compile('\(*\s*%s_t\s*\*\s*\w*\s*\)' % prefix)
+    rep.dst = '()'
+    rule.replacements += [rep]
+
+    rep = Replace()
+    rep.src = re.compile('\(*\s*%s_t\s*\*\s*\w*\s*,\s*' % prefix)
+    rep.dst = '('
+    rule.replacements += [rep]
+
+    rules += [rule]
+
+    return rules
+
+
+def extract_prefixes(instream):
+    """Extract class prefixes."""
+
+    src = re.compile('playerc_\w*_create')
+    constructors = src.findall(instream)
+
+    prefixes = []
+    for c in constructors:
+        prefixes += [c[:-7]]
+
+    return prefixes
+
+
+def parse_file(instream, rules):
+    """Apply replacement rules."""
+
+    outstream = ''
+    current_struct = None
     
-    classes = {}
-    sorted = []
+    while instream:
 
-    for struct in structs:
-        tokens = string.split(struct.name, '_')
-        classname = string.join(tokens[:-1], '_')
-        nclass = ClassDef()
-        nclass.index = structs.index(struct)
-        nclass.name = classname
-        nclass.body = struct.body
-        nclass.methods = []
-        classes[nclass.name] = nclass
-        sorted += [nclass]
-
-    for function in functions:
-        tokens = string.split(function.name, '_')
-
-        # Divide function name into class/method names
-        classname = '%s_%s' % (tokens[0], tokens[1])
-        methodname = string.join(tokens[2:], '_')
-        methodret = function.ret
-            
-        # Handle connstructor
-        if methodname == 'create':
-            methodname = classname
-            methodargs = function.args
-            methodret = ''
-
-        # Handle destructor
-        elif methodname == 'destroy':
-            methodname = '~' + classname
-            methodargs = '(void)'
-            methodret = ''
-
-        # Handle regular methods (suck out self pointer)
-        else:
-            tokens = string.split(function.args, ',')
-            if len(tokens) == 1:
-                methodargs = '(void)'
-            else:
-                methodargs = '(' + string.join(tokens[1:], ',')
+        line = instream
+        m = None
         
-        nclass = classes.get(classname, None)
-        if nclass:
-            function.sname = methodname
-            function.sargs = methodargs
-            function.sret = methodret
-            nclass.methods += [function]
-        else:
-            function.sname = None
+        for rule in rules:
 
-    # Write out any pre-processor stuff
-    for define in defines:
-        file.write('#define %s\n' % (define.body))
+            # See if this line matches the rule
+            for pattern in rule.patterns:
+                m = pattern.match(line)
+                if m:
+                    break
+            if not m:
+                continue
 
-    # Write out any 'naked' functions
-    for function in functions:
-        if function.sname != None:
-            continue
-        file.write('%s %s %s;\n' % (function.ret, function.name, function.args))
+            func = line[m.start():m.end()]
+            
+            # Parse comment blocks
+            if rule.type == 'comment':
+                #print instream[m.start():m.end()]
+                instream = instream[m.end():]
+                outstream += func
+                break
 
-    # Write out the classes in the same order as the original file
-    for nclass in sorted:
+            # Parse function name and args
+            (name, sig) = string.split(func, '(', 1)
+            sig = '(' + sig
+            tokens = string.split(name)
+            (rval, name) = (string.join(tokens[:-1]), tokens[-1])
+            if name[0] == '*':
+                name = name[1:]
+                rval = rval + ' *'
+            #print '%s | %s | %s' % (rval, name, sig)
 
-        file.write('%header\n%{\n')
-        file.write('typedef %s_t %s;\n' % (nclass.name, nclass.name))
-        file.write('#define new_%s %s_create\n' % (nclass.name, nclass.name))
-        file.write('#define delete_%s %s_destroy\n' % (nclass.name, nclass.name))
-        file.write('%}\n')
-        file.write('typedef struct\n{\n%s\n' % nclass.body)
-        file.write('  %extend\n  {\n')
-        for method in nclass.methods:
-            file.write('    %s %s%s;\n' % (method.sret, method.sname, method.sargs))
-        file.write('  }\n')
-        file.write('\n} %s;\n\n\n' % nclass.name)
+            # Apply replacement rules to return type
+            if rule.type == 'constructor':
+                rval = ''
 
-    return
+            # Apply replacement rules to name
+            for rep in rule.replacements:
+                mm = rep.src.search(name)
+                if not mm:
+                    continue
+                name = name[:mm.start()] + rep.dst + name[mm.end():]
+
+            # Apply replacement rules to signature
+            for rep in rule.replacements:
+                mm = rep.src.match(sig)
+                if not mm:
+                    continue
+                sig = sig[:mm.start()] + rep.dst + sig[mm.end():]
+                
+            print rval, name, sig
+
+            outstream += rule.head
+            outstream += '%s %s %s' % (rval, name, sig)
+            outstream += rule.foot
+            
+            instream = instream[m.end():]
+            
+            break
+
+        # If no rule matches
+        if not m:
+            outstream += instream[:1]
+            instream = instream[1:]
+
+    return outstream
+    
 
 
 
@@ -184,15 +220,37 @@ if __name__ == '__main__':
     infilename = sys.argv[1]
     outfilename = sys.argv[2]
 
-    try:
-        from pyparsing import *
-    except:
-        print 'warning: pyparsing not found; skipping build of [%s]' % outfile
+    # Read in the entire file
+    file = open(infilename, 'r')
+    instream = file.read()
 
-    # Suck out functions and elements
-    (defines, structs, functions) = parse_file(infilename)
+    # Extract "class prefixes" from the header
+    prefixes = extract_prefixes(instream)
 
-    # Create swig .i file with shadow classes
-    write_swig(outfilename, defines, structs, functions)
-    
+    #prefixes = ['playerc_log']
+
+    # Compute the grammar
+    rules = []
+    rules += compile_comment()
+    for prefix in prefixes:
+        print 'prefix: %s' % prefix
+        rules += compile(prefix)
+
+    # Parse the file and appy replacement rules
+    outstream = parse_file(instream, rules)
+
+    # Do some final replacements
+    for prefix in prefixes:
+        outstream = string.replace(outstream, '%s_t' % prefix, '%s' % prefix)
+
+    guff = ''
+    for prefix in prefixes:
+        guff += '%%header\n %%{\ntypedef %s_t %s;\n' % (prefix, prefix)
+        guff += '#define new_%s %s_create\n' % (prefix, prefix)
+        guff += '#define del_%s %s_destroy\n%%}\n' % (prefix, prefix)
+
+    outstream = guff + outstream
+
+    file = open(outfilename, 'w+')
+    file.write(outstream)
 

@@ -44,7 +44,7 @@
 
 #include <pthread.h>
 
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 
 #define AUDIO_SLEEP_TIME_USEC 100000
@@ -60,7 +60,7 @@
 #define MIN_FREQUENCY 800
 #define nIterations 10000
 
-class FixedTones:public CDevice 
+class FixedTones:public Driver 
 {
  private:
   bool command_pending1;  // keep track of how many commands are pending;
@@ -95,7 +95,7 @@ class FixedTones:public CDevice
 
  public:
 
-  FixedTones(char* interface, ConfigFile* cf, int section);
+  FixedTones( ConfigFile* cf, int section);
 
   virtual void Main();
 
@@ -103,27 +103,21 @@ class FixedTones:public CDevice
   virtual int Shutdown();
 };
 
-CDevice* FixedTones_Init(char* interface, ConfigFile* cf, int section)
+Driver* FixedTones_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AUDIO_STRING))
-  {
-    PLAYER_ERROR1("driver \"fixedtones\" does not support interface \"%s\"\n",
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new FixedTones(interface, cf, section)));
+  return((Driver*)(new FixedTones( cf, section)));
 }
 
 // a driver registration function
 void 
 FixedTones_Register(DriverTable* table)
 {
-  table->AddDriver("fixedtones", PLAYER_ALL_MODE, FixedTones_Init);
+  table->AddDriver("fixedtones",  FixedTones_Init);
 }
 
-FixedTones::FixedTones(char* interface, ConfigFile* cf, int section) :
-  CDevice(AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
+FixedTones::FixedTones( ConfigFile* cf, int section) :
+  Driver(cf, section, PLAYER_AUDIO_CODE, PLAYER_ALL_MODE, 
+         AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
   fd=-1;
 }
@@ -249,14 +243,14 @@ FixedTones::Main()
   memset( command, 0, AUDIO_COMMAND_BUFFER_SIZE);
   memset( zero, 255, AUDIO_COMMAND_BUFFER_SIZE);
   memset(data,0,AUDIO_DATA_BUFFER_SIZE);
-  PutData(data, sizeof(data),0,0);
-  PutCommand(this,zero, sizeof(zero));
+  PutData(data, sizeof(data),NULL);
+  PutCommand(zero, sizeof(zero),NULL);
 
   while(1) 
   {
     pthread_testcancel();
-    GetCommand(command, sizeof(command));
-    PutCommand(this,zero, sizeof(zero));
+    GetCommand(command, sizeof(command),NULL);
+    PutCommand(zero, sizeof(zero),NULL);
     
     if(command[0]!=255) 
     {
@@ -276,7 +270,7 @@ FixedTones::Main()
           {
 	    data[i]=0;
 	  }	
-	  PutData(data, sizeof(data),0,0);
+	  PutData(data, sizeof(data),NULL);
 	  
 	  openDSPforWrite();
 	  pthread_testcancel();
@@ -337,7 +331,7 @@ FixedTones::Main()
 	cnt += sizeof(short);
       }
       
-      PutData(data, sizeof(data),0,0);
+      PutData(data, sizeof(data),NULL);
       usleep(100000);
     }
   }

@@ -7,11 +7,11 @@
 
 long  bytesWaiting( int sd );
 
-void  DEVICE_set_params( Device dev );
+void  DEVICE_set_params( RFLEX_Device dev );
 
-void  DEVICE_set_baudrate( Device dev, int brate );
+void  DEVICE_set_baudrate( RFLEX_Device dev, int brate );
 
-int   DEVICE_connect_port( Device *dev );
+int   DEVICE_connect_port( RFLEX_Device *dev );
 
 #define BUFFER_LENGTH         512
 

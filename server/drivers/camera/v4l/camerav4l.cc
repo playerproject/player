@@ -35,7 +35,7 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "playertime.h"
@@ -48,10 +48,10 @@ extern PlayerTime *GlobalTime;
 
 
 // Driver for detecting laser retro-reflectors.
-class CameraV4L : public CDevice
+class CameraV4L : public Driver
 {
   // Constructor
-  public: CameraV4L(char* interface, ConfigFile* cf, int section);
+  public: CameraV4L( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -102,29 +102,24 @@ class CameraV4L : public CDevice
 
 
 // Initialization function
-CDevice* CameraV4L_Init(char* interface, ConfigFile* cf, int section)
+Driver* CameraV4L_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"camerav4l\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new CameraV4L(interface, cf, section)));
+  return ((Driver*) (new CameraV4L( cf, section)));
 }
 
 
 // a driver registration function
 void CameraV4L_Register(DriverTable* table)
 {
-  table->AddDriver("camerav4l", PLAYER_READ_MODE, CameraV4L_Init);
+  table->AddDriver("camerav4l", CameraV4L_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-CameraV4L::CameraV4L(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_camera_data_t), 0, 10, 10)
+CameraV4L::CameraV4L( ConfigFile* cf, int section)
+  : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
+           sizeof(player_camera_data_t), 0, 10, 10)
 {
   const char *snorm;
   
@@ -278,7 +273,7 @@ int CameraV4L::HandleRequests()
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -287,7 +282,7 @@ int CameraV4L::HandleRequests()
         break;
 
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -303,7 +298,7 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 
   // TODO
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -330,7 +325,10 @@ void CameraV4L::WriteData()
   
   // Copy data to server.
   size = sizeof(this->data) - sizeof(this->data.image) + this->frame->size;
-  PutData((void*) &this->data, size, this->tsec, this->tusec);
+  struct timeval timestamp;
+  timestamp.tv_sec = this->tsec;
+  timestamp.tv_usec = this->tusec;
+  PutData((void*) &this->data, size, &timestamp);
 
   return;
 }

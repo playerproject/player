@@ -30,26 +30,26 @@
 class RFLEXSonar: public RFLEX
 {
  public:
-  RFLEXSonar(char* interface, ConfigFile* cf, int section) :
-    RFLEX(interface, cf, section){}
+  RFLEXSonar( ConfigFile* cf, int section) :
+    RFLEX( cf, section){}
   
   virtual size_t GetData(void*, unsigned char *, size_t maxsize,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
   void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
 };
 
-CDevice* RFLEXSonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXSonar_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SONAR_STRING))
+  if(strcmp( PLAYER_SONAR_STRING))
     {
       PLAYER_ERROR1("driver \"rflex_sonar\" does not support interface \"%s\"\n",
 		    interface);
       return(NULL);
     }
   else{
-    RFLEXSonar* tmp=new RFLEXSonar(interface, cf, section);
+    RFLEXSonar* tmp=new RFLEXSonar( cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
-    return RFLEX::SonarDev = (CDevice*)tmp;
+    return RFLEX::SonarDev = (Driver*)tmp;
   }
 }
 

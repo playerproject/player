@@ -1,10 +1,10 @@
 #ifndef CAMERA_H_
 #define CAMERA_H_
 
-/*#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C"
 {
-#endif*/
+#endif
 
 #include <fcntl.h>
 #include <termios.h>
@@ -125,8 +125,8 @@ void make_command(char *cmd, int *n, size_t size, char *fullCommand);
 int  auto_servoing(int fd, int on);
 void track_blob(int fd, color_config cc);
 
-/*#ifdef _cplusplus
-{
-#endif*/
+#ifdef __cplusplus
+}
+#endif
 
 #endif

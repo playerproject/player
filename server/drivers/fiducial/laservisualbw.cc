@@ -45,16 +45,16 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for detecting laser retro-reflectors.
-class LaserVisualBW : public CDevice
+class LaserVisualBW : public Driver
 {
   // Constructor
-  public: LaserVisualBW(char* interface, ConfigFile* cf, int section);
+  public: LaserVisualBW( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -152,17 +152,20 @@ class LaserVisualBW : public CDevice
 
   // Laser stuff
   private: int laser_index;
-  private: CDevice *laser;
+  private: Driver *laser;
+  private: player_device_id_t laser_id;
   private: double laser_time;
 
   // PTZ stuff
   private: int ptz_index;
-  private: CDevice *ptz;
+  private: Driver *ptz;
+  private: player_device_id_t ptz_id;
   private: double ptz_time;
 
   // Camera stuff
   private: int camera_index;
-  private: CDevice *camera;
+  private: Driver *camera;
+  private: player_device_id_t camera_id;
   private: double camera_time;
   private: player_camera_data_t camera_data;
 
@@ -183,29 +186,24 @@ class LaserVisualBW : public CDevice
 
 
 // Initialization function
-CDevice* LaserVisualBW_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserVisualBW_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"laservisualbarcode\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
-  return ((CDevice*) (new LaserVisualBW(interface, cf, section)));
+  return ((Driver*) (new LaserVisualBW( cf, section)));
 }
 
 
 // a driver registration function
 void LaserVisualBW_Register(DriverTable* table)
 {
-  table->AddDriver("laservisualbw", PLAYER_READ_MODE, LaserVisualBW_Init);
+  table->AddDriver("laservisualbw", LaserVisualBW_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserVisualBW::LaserVisualBW(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
+LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
+    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
+             sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   this->laser_index = cf->ReadInt(section, "laser", 0);
   this->laser = NULL;
@@ -252,51 +250,49 @@ LaserVisualBW::LaserVisualBW(char* interface, ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserVisualBW::Setup()
 {
-  player_device_id_t id;
-  
   // Subscribe to the laser.
-  id.code = PLAYER_LASER_CODE;
-  id.index = this->laser_index;
-  id.port = this->device_id.port;
-  this->laser = deviceTable->GetDevice(id);
+  this->laser_id.code = PLAYER_LASER_CODE;
+  this->laser_id.index = this->laser_index;
+  this->laser_id.port = this->device_id.port;
+  this->laser = deviceTable->GetDriver(this->laser_id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
-  if (this->laser->Subscribe(this) != 0)
+  if (this->laser->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
 
   // Subscribe to the PTZ.
-  id.code = PLAYER_PTZ_CODE;
-  id.index = this->ptz_index;
-  id.port = this->device_id.port;
-  this->ptz = deviceTable->GetDevice(id);
+  this->ptz_id.code = PLAYER_PTZ_CODE;
+  this->ptz_id.index = this->ptz_index;
+  this->ptz_id.port = this->device_id.port;
+  this->ptz = deviceTable->GetDriver(this->ptz_id);
   if (!this->ptz)
   {
     PLAYER_ERROR("unable to locate suitable PTZ device");
     return(-1);
   }
-  if (this->ptz->Subscribe(this) != 0)
+  if (this->ptz->Subscribe(this->ptz_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to PTZ device");
     return(-1);
   }
 
   // Subscribe to the camera.
-  id.code = PLAYER_CAMERA_CODE;
-  id.index = this->camera_index;
-  id.port = this->device_id.port;
-  this->camera = deviceTable->GetDevice(id);
+  this->camera_id.code = PLAYER_CAMERA_CODE;
+  this->camera_id.index = this->camera_index;
+  this->camera_id.port = this->device_id.port;
+  this->camera = deviceTable->GetDriver(this->camera_id);
   if (!this->camera)
   {
     PLAYER_ERROR("unable to locate suitable camera device");
     return(-1);
   }
-  if (this->camera->Subscribe(this) != 0)
+  if (this->camera->Subscribe(this->camera_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
@@ -317,9 +313,9 @@ int LaserVisualBW::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->camera->Unsubscribe(this);
-  this->ptz->Unsubscribe(this);
-  this->laser->Unsubscribe(this);
+  this->camera->Unsubscribe(this->camera_id);
+  this->ptz->Unsubscribe(this->ptz_id);
+  this->laser->Unsubscribe(this->laser_id);
 
   return 0;
 }
@@ -364,7 +360,7 @@ int LaserVisualBW::HandleRequests()
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -373,7 +369,7 @@ int LaserVisualBW::HandleRequests()
         break;
 
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -393,12 +389,13 @@ void LaserVisualBW::HandleGetGeom(void *client, void *request, int len)
   player_fiducial_geom_t fgeom;
     
   // Get the geometry from the laser
-  replen = this->laser->Request(&this->laser->device_id, this, request, len,
-                                &reptype, &ts, &lgeom, sizeof(lgeom));
+  replen = this->laser->Request(this->laser_id, this, 
+                                request, len, NULL,
+                                &reptype, &lgeom, sizeof(lgeom), &ts);
   if (replen <= 0 || replen != sizeof(lgeom))
   {
     PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -410,7 +407,7 @@ void LaserVisualBW::HandleGetGeom(void *client, void *request, int len)
   fgeom.fiducial_size[0] = ntohs((int) (this->barwidth * 1000));
   fgeom.fiducial_size[1] = ntohs((int) (this->barwidth * 1000));
     
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &ts, &fgeom, sizeof(fgeom)) != 0)
+  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &fgeom, sizeof(fgeom), &ts) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;
@@ -424,12 +421,13 @@ int LaserVisualBW::UpdateLaser()
   int i;
   player_laser_data_t data;
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   
   // Get the laser data.
-  size = this->laser->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->laser->GetData(this->laser_id,(void*)&data, 
+                              sizeof(data), &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
   
   // Dont do anything if this is old data.
   if (time == this->laser_time)
@@ -663,12 +661,13 @@ int LaserVisualBW::UpdatePtz()
 {
   player_ptz_data_t data;
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   
   // Get the ptz data.
-  size = this->ptz->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->ptz->GetData(this->ptz_id,(void*) &data,
+                            sizeof(data), &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
   
   // Dont do anything if this is old data.
   if (time == this->ptz_time)
@@ -798,7 +797,7 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
   cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
   cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
   cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-  this->ptz->PutCommand(this,(unsigned char*) &cmd, sizeof(cmd));
+  this->ptz->PutCommand(this->ptz_id,(void*)&cmd, sizeof(cmd), NULL);
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
@@ -813,7 +812,7 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 int LaserVisualBW::UpdateCamera()
 {
   size_t size;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   double time;
   int id, best_id;
   int x;
@@ -821,9 +820,9 @@ int LaserVisualBW::UpdateCamera()
   int symbols[480];
 
   // Get the camera data.
-  size = this->camera->GetData(this, (unsigned char*) &this->camera_data,
-                               sizeof(this->camera_data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
+  size = this->camera->GetData(this->camera_id, (void*) &this->camera_data,
+                               sizeof(this->camera_data), &timestamp);
+  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
 
   // Dont do anything if this is old data.
   if (fabs(time - this->camera_time) < 0.001)
@@ -1094,7 +1093,7 @@ void LaserVisualBW::WriteData()
 {
   int i;
   double r, b, o;
-  uint32_t timesec, timeusec;
+  struct timeval timestamp;
   fiducial_t *fiducial;
   player_fiducial_data_t data;
 
@@ -1114,19 +1113,19 @@ void LaserVisualBW::WriteData()
     o = fiducial->pose[2];
 
     data.fiducials[data.count].id = htons(((int16_t) fiducial->id));
-    data.fiducials[data.count].pose[0] = htons(((int16_t) (1000 * r)));
-    data.fiducials[data.count].pose[1] = htons(((int16_t) (180 * b / M_PI)));
-    data.fiducials[data.count].pose[2] = htons(((int16_t) (180 * o / M_PI)));
+    data.fiducials[data.count].pos[0] = htonl(((int32_t) (1000 * r * cos(b))));
+    data.fiducials[data.count].pos[1] = htonl(((int32_t) (1000 * r * sin(b))));
+    data.fiducials[data.count].rot[2] = htonl(((int32_t) (1000 * o)));
     data.count++;
   }
   data.count = htons(data.count);
   
   // Compute the data timestamp (from laser).
-  timesec = (uint32_t) this->laser_time;
-  timeusec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
+  timestamp.tv_sec = (uint32_t) this->laser_time;
+  timestamp.tv_usec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
   
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  PutData((void*) &data, sizeof(data), &timestamp);
 
   return;
 }

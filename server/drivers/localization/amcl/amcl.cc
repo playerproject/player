@@ -54,6 +54,7 @@
 //#define INCLUDE_OUTFILE 1
 extern PlayerTime* GlobalTime;
 
+#include "deviceregistry.h"
 #include "amcl.h"
 
 // Sensors
@@ -65,15 +66,9 @@ extern PlayerTime* GlobalTime;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create an instance of the driver
-CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
+Driver* AdaptiveMCL_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_LOCALIZE_STRING) == 0)
-    return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
-  else if (strcmp(interface, PLAYER_POSITION_STRING) == 0)
-    return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
-
-  PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n", interface);
-  return (NULL);
+  return ((Driver*) (new AdaptiveMCL(cf, section)));
 }
 
 
@@ -81,7 +76,7 @@ CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
 // Register the driver
 void AdaptiveMCL_Register(DriverTable* table)
 {
-  table->AddDriver("amcl", PLAYER_ALL_MODE, AdaptiveMCL_Init);
+  table->AddDriver("amcl", AdaptiveMCL_Init);
   return;
 }
 
@@ -92,16 +87,62 @@ void AdaptiveMCL_Register(DriverTable* table)
   
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : CDevice(AMCL_DATASIZE, 0, 100, 100)
+AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
+    : Driver(cf, section)
 {
+  player_device_id_t* ids;
+  int num_ids;
+
+  memset(&this->localize_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
+
+  // Parse devices section
+  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
   int i;
   double u[3];
   AMCLSensor *sensor;
 
-  // Remember which interface we go opened for
-  this->interface = strdup(interface);
-  
+  // Do we create a localize interface?
+  if(cf->ReadDeviceId(&(this->localize_id), ids, num_ids,
+                      PLAYER_LOCALIZE_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->localize_id, PLAYER_READ_MODE, 
+                          sizeof(player_localize_data_t), 0, 100, 100) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // Do we create a position interface?
+  if(cf->ReadDeviceId(&(this->position_id), ids, num_ids,
+                      PLAYER_POSITION_CODE, 0) == 0)
+  {
+    if(this->AddInterface(this->position_id, PLAYER_READ_MODE, 
+                          sizeof(player_position_data_t), 0, 100, 100) != 0)
+    {
+      this->SetError(-1);    
+      free(ids);
+      return;
+    }
+  }
+
+  // check for unused ids
+  if(cf->UnusedIds(section,ids,num_ids))
+  {
+    this->SetError(-1);
+    free(ids);
+    return;
+  }
+
+  free(ids);
+
   this->init_sensor = -1;
   this->action_sensor = -1;
   this->sensor_count = 0;
@@ -206,8 +247,6 @@ AdaptiveMCL::~AdaptiveMCL(void)
   }
   this->sensor_count = 0;
 
-  free(this->interface);
-
   return;
 }
 
@@ -302,133 +341,6 @@ void AdaptiveMCL::Update(void)
 
   return;
 }
-
-
-/* TODO: fix
-////////////////////////////////////////////////////////////////////////////////
-// Process configuration requests
-int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
-                           void* data, size_t len)
-{
-  // Discard bogus empty packets
-  if (len < 1)
-  {
-    PLAYER_WARN("got zero length configuration request; ignoring");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return 0;
-  }
-
-  // Process some of the requests immediately
-  switch (((char*) data)[0])
-  {
-    case PLAYER_LOCALIZE_GET_MAP_INFO_REQ:
-      HandleGetMapInfo(client, data, len);
-      return 0;
-    case PLAYER_LOCALIZE_GET_MAP_DATA_REQ:
-      HandleGetMapData(client, data, len);
-      return 0;
-  }
-
-  // Let the device thread get the rest
-  return CDevice::PutConfig(device, client, data, len);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle map info request
-void AdaptiveMCL::HandleGetMapInfo(void *client, void *request, int len)
-{
-  int reqlen;
-  player_localize_map_info_t info;
-
-  // Expected length of request
-  reqlen = sizeof(info.subtype);
-  
-  // check if the config request is valid
-  if (len != reqlen)
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  if (this->map == NULL)
-  {
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  //PLAYER_TRACE4("%d %d %f %d\n", this->map->size_x, this->map->size_y,
-  //              this->map->scale, ntohl(info.scale));
-  
-  info.scale = htonl((int32_t) (1000.0 / this->map->scale + 0.5));
-  info.width = htonl((int32_t) (this->map->size_x));
-  info.height = htonl((int32_t) (this->map->size_y));
-
-  // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &info, sizeof(info)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle map data request
-void AdaptiveMCL::HandleGetMapData(void *client, void *request, int len)
-{
-  int i, j;
-  int oi, oj, si, sj;
-  int reqlen;
-  map_cell_t *cell;
-  player_localize_map_data_t data;
-
-  // Expected length of request
-  reqlen = sizeof(data) - sizeof(data.data);
-
-  // check if the config request is valid
-  if (len != reqlen)
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  // Construct reply
-  memcpy(&data, request, len);
-
-  oi = ntohl(data.col);
-  oj = ntohl(data.row);
-  si = ntohl(data.width);
-  sj = ntohl(data.height);
-
-  //PLAYER_TRACE4("%d %d %d %d\n", oi, oj, si, sj);
-
-  // Grab the pixels from the map
-  for (j = 0; j < sj; j++)
-  {
-    for (i = 0; i < si; i++)
-    {
-      if (MAP_VALID(this->map, i + oi, j + oj))
-      {
-        cell = this->map->cells + MAP_INDEX(this->map, i + oi, j + oj);
-        data.data[i + j * si] = cell->occ_state;
-      }
-      else
-        data.data[i + j * si] = 0;
-    }
-  }
-    
-  // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &data, sizeof(data)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  return;
-}
-
-*/  
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -744,10 +656,8 @@ bool AdaptiveMCL::UpdateFilter(void)
 #endif
     
     // Encode data to send to server
-    if (strcmp(this->interface, PLAYER_LOCALIZE_STRING) == 0)
-      this->PutDataLocalize(tsec, tusec);
-    else if (strcmp(this->interface, PLAYER_POSITION_STRING) == 0)
-      this->PutDataPosition(tsec, tusec, delta);
+    this->PutDataLocalize(tsec, tusec);
+    this->PutDataPosition(tsec, tusec, delta);
 
     return true;
   }
@@ -768,8 +678,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     
     // Encode data to send to server; only the position interface
     // gets updates every cycle
-    if (strcmp(this->interface, PLAYER_POSITION_STRING) == 0)
-      this->PutDataPosition(tsec, tusec, delta);
+    this->PutDataPosition(tsec, tusec, delta);
 
     return false;
   }
@@ -879,8 +788,11 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
   }
   data.hypoth_count = htonl(data.hypoth_count);
 
+  struct timeval timestamp;
+  timestamp.tv_sec = tsec;
+  timestamp.tv_usec = tusec;
   // Copy data to server
-  ((CDevice*) this)->PutData((char*) &data, datalen, tsec, tusec);
+  ((Driver*) this)->PutData(this->localize_id, (char*) &data, datalen, &timestamp);
   
   return;
 }
@@ -941,8 +853,11 @@ void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t del
   data.ypos = htonl(data.ypos);
   data.yaw = htonl(data.yaw);
   
+  struct timeval timestamp;
+  timestamp.tv_sec = tsec;
+  timestamp.tv_usec = tusec;
   // Copy data to server
-  ((CDevice*) this)->PutData((char*) &data, sizeof(data), tsec, tusec);
+  ((Driver*) this)->PutData(this->position_id, (char*) &data, sizeof(data), &timestamp);
   
   return;
 }
@@ -956,7 +871,8 @@ int AdaptiveMCL::HandleRequests(void)
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
   
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  while ((len = GetConfig(this->localize_id, &client, 
+                          &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
     {
@@ -964,7 +880,7 @@ int AdaptiveMCL::HandleRequests(void)
         HandleSetPose(client, request, len);
         break;
       default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         break;
     }
@@ -989,7 +905,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   if (len != reqlen)
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
     return;
   }
@@ -1013,7 +929,7 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
   this->pf_init = false;
 
   // Give them an ack
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0) != 0)
+  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
     PLAYER_ERROR("PutReply() failed");
 
   return;

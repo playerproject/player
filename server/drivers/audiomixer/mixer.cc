@@ -31,20 +31,19 @@
 
 #include "playercommon.h"
 #include "drivertable.h"
+#include "driver.h"
 #include "player.h"
 
 #define DEFAULT_DEVICE "/dev/mixer"
 
-class Mixer : public CDevice
+class Mixer : public Driver
 {
   public:
     // Constructor
-    Mixer(char* interface, ConfigFile* cf, int section);
+    Mixer( ConfigFile* cf, int section);
 
     int Setup();
     int Shutdown();
-
-    size_t GetCommand(void* dest, size_t maxsize);
 
   private:
 
@@ -62,27 +61,21 @@ class Mixer : public CDevice
     const char* deviceName; // Name of the device( ex: "/dev/mixer" )
 };
 
-Mixer::Mixer(char* interface, ConfigFile* cf, int section)
-  : CDevice(0,sizeof(player_audiomixer_cmd_t),1,1)
+Mixer::Mixer( ConfigFile* cf, int section)
+  : Driver(cf, section, PLAYER_AUDIOMIXER_CODE, PLAYER_ALL_MODE,
+           0,sizeof(player_audiomixer_cmd_t),1,1)
 {
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
 }
 
-CDevice* Mixer_Init(char* interface, ConfigFile* cf, int section)
+Driver* Mixer_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_AUDIOMIXER_STRING))
-  {
-    PLAYER_ERROR1("driver \"mixer\" does not support interface \"%s\"\n", 
-                  interface);
-    return(NULL);
-  }
-  else
-    return((CDevice*)(new Mixer(interface, cf, section)));
+  return((Driver*)(new Mixer(cf, section)));
 }
 
 void Mixer_Register(DriverTable* table)
 {
-  table->AddDriver("mixer", PLAYER_ALL_MODE, Mixer_Init );
+  table->AddDriver("mixer", Mixer_Init );
 }
 
 int Mixer::Setup()
@@ -105,18 +98,6 @@ int Mixer::Shutdown()
   return 0;
 }
 
-size_t Mixer::GetCommand(void* dest, size_t maxsize)
-{
-  int retval = device_used_commandsize;
-
-  if(device_used_commandsize)
-  {
-    memcpy(dest,device_command,device_used_commandsize);
-    device_used_commandsize = 0;
-  }
-  return(retval);
-}
-
 void Mixer::Main()
 {
   void* client;
@@ -133,14 +114,15 @@ void Mixer::Main()
     pthread_testcancel();
 
     // Set/Get the configuration
-    while((len = GetConfig(&client, &configBuffer, sizeof(configBuffer))) > 0)
+    while((len = GetConfig(&client, &configBuffer, 
+                           sizeof(configBuffer),NULL)) > 0)
     {
       player_audiomixer_config_t config;
 
       if( len != 1 )
       {
         PLAYER_ERROR2("config request len is invalid (%d != %d)",len,1);
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
           PLAYER_ERROR("PutReply() failed");
         continue;
       }
@@ -167,14 +149,15 @@ void Mixer::Main()
       this->Read(SOUND_MIXER_OGAIN,vol);
       config.oGain= htons( vol );
 
-      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &config,
-            sizeof(config)) != 0)
+      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                   &config, sizeof(config), NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
     }
 
     // Get the next command
     memset(&cmdBuffer,0,sizeof(cmdBuffer));
-    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer));
+    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer),NULL);
+    this->ClearCommand();
 
     // Process the command
     switch(cmdBuffer[0])

@@ -26,7 +26,7 @@
 #include "configfile.h"
 #include "stage.h"
 
-class Stage1p4 : public CDevice
+class Stage1p4 : public Driver
 {
  public:
   Stage1p4(char* interface, ConfigFile* cf, int section, 

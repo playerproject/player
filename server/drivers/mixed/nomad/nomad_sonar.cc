@@ -50,14 +50,12 @@
 // and sonar objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
 
-
-class NomadSonar:public CDevice 
+class NomadSonar:public Driver 
 {
   public:
 
-  NomadSonar(char* interface, ConfigFile* cf, int section);
+  NomadSonar( ConfigFile* cf, int section);
   virtual ~NomadSonar();
   
   /* the main thread */
@@ -68,35 +66,29 @@ class NomadSonar:public CDevice
   virtual void Update();
   
 protected:
-  CDevice* nomad;
+  Driver* nomad;
   player_device_id_t nomad_id;
   
 };
 
 // a factory creation function
-CDevice* NomadSonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* NomadSonar_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_SONAR_STRING))
-    {
-      PLAYER_ERROR1("driver \"nomad_sonar\" does not support interface \"%s\"\n",
-		    interface);
-      return(NULL);
-    }
-  else
-    return((CDevice*)(new NomadSonar(interface, cf, section)));
+  return((Driver*)(new NomadSonar( cf, section)));
 }
 
 // a driver registration function
 void NomadSonar_Register(DriverTable* table)
 {
-  table->AddDriver( "nomad_sonar", PLAYER_ALL_MODE, NomadSonar_Init);
+  table->AddDriver( "nomad_sonar",  NomadSonar_Init);
 }
 
 
 
 
-NomadSonar::NomadSonar(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_sonar_data_t), 0, 1, 1 )
+NomadSonar::NomadSonar( ConfigFile* cf, int section)
+  : Driver(cf, section,  PLAYER_SONAR_CODE, PLAYER_READ_MODE,
+           sizeof(player_sonar_data_t), 0, 1, 1 )
 {
   this->nomad_id.code = PLAYER_NOMAD_CODE;
   this->nomad_id.port = cf->ReadInt(section, "nomad_port", 0 );
@@ -124,7 +116,7 @@ int NomadSonar::Setup()
 	  this->nomad_id.index ); fflush(stdout);
 
   // get the pointer to the Nomad
-  this->nomad = deviceTable->GetDevice(nomad_id);
+  this->nomad = deviceTable->GetDriver(nomad_id);
 
   if(!this->nomad)
   {
@@ -135,7 +127,7 @@ int NomadSonar::Setup()
   else printf( " OK.\n" );
  
   // Subscribe to the nomad device, but fail if it fails
-  if(this->nomad->Subscribe(this) != 0)
+  if(this->nomad->Subscribe(this->nomad_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to nomad device");
     return(-1);
@@ -153,7 +145,7 @@ int NomadSonar::Shutdown()
   StopThread(); 
 
   // Unsubscribe from the laser device
-  this->nomad->Unsubscribe(this);
+  this->nomad->Unsubscribe(this->nomad_id);
 
   puts("NomadSonar has been shutdown");
   return(0);
@@ -164,11 +156,10 @@ void NomadSonar::Update()
   unsigned char config[NOMAD_CONFIG_BUFFER_SIZE];
   
   void* client;
-  player_device_id_t id;
   size_t config_size = 0;
   
   // first, check if there is a new config command
-  if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+  if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
     {
       switch(config[0])
 	{
@@ -178,8 +169,7 @@ void NomadSonar::Update()
 	    if(config_size != 1)
 	      {
 		puts("Arg get sonar geom is wrong size; ignoring");
-		if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-			    NULL, NULL, 0))
+		if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 		  PLAYER_ERROR("failed to PutReply");
 		break;
 	      }
@@ -201,15 +191,14 @@ void NomadSonar::Update()
 	    
 	    puts( "returned Nomad sonar geometry" );
 	    
-	    if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-			sizeof(geom)))
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                        &geom, sizeof(geom),NULL))
 	      PLAYER_ERROR("failed to PutReply");
 	  }
 	  break;
 	default:
 	  puts("Sonar got unknown config request");
-	  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-		      NULL, NULL, 0))
+	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 	    PLAYER_ERROR("failed to PutReply");
 	  break;
 	}
@@ -230,8 +219,8 @@ NomadSonar::Main()
       this->nomad->Wait();
       
       // Get the Nomad data.
-      size_t len = this->nomad->
-	GetData(this, (uint8_t*)&nomad_data, sizeof(nomad_data), NULL, NULL );
+      size_t len = this->nomad->GetData(this->nomad_id,(void*)&nomad_data, 
+                                        sizeof(nomad_data), NULL);
       
       assert( len == sizeof(nomad_data) );
       
@@ -245,7 +234,7 @@ NomadSonar::Main()
 	      &nomad_data.sonar, 
 	      NOMAD_SONAR_COUNT * sizeof(uint16_t) );
       
-      PutData((uint8_t*)&player_data, sizeof(player_data), 0,0 );
+      PutData((void*)&player_data, sizeof(player_data), NULL);
     }
   pthread_exit(NULL);
 }

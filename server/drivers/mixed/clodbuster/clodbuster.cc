@@ -53,134 +53,34 @@ extern PlayerTime* GlobalTime;
 
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
+#include <driver.h>
+#include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
-extern int global_playerport; // used to get at devices
-
-/* here we calculate our conversion factors.
- *  0x370 is max value for the PTZ pan command, and in the real
- *    world, it has +- 25.0 range.
- *  0x12C is max value for the PTZ tilt command, and in the real
- *    world, it has +- 100.0 range.
- 
- #define PTZ_PAN_MAX 100.0
- #define PTZ_TILT_MAX 25.0
- #define PTZ_PAN_CONV_FACTOR (0x370 / PTZ_PAN_MAX)
- #define PTZ_TILT_CONV_FACTOR (0x12C / PTZ_TILT_MAX)
-*/
-
-/* these are necessary to make the static fields visible to the linker 
-   extern pthread_t       P2OS::thread;
-   extern struct timeval  P2OS::timeBegan_tv;
-   extern bool            P2OS::direct_wheel_vel_control;
-   extern int             P2OS::motor_max_speed;
-   extern int             P2OS::motor_max_turnspeed;
-   extern bool            P2OS::use_vel_band;
-   extern bool            P2OS::initdone;
-   extern pthread_mutex_t P2OS::p2os_accessMutex;
-   extern pthread_mutex_t P2OS::p2os_setupMutex;
-   extern int             P2OS::p2os_subscriptions;
-   extern player_p2os_data_t*  P2OS::data;
-   extern player_p2os_cmd_t*  P2OS::command;
-   extern unsigned char*    P2OS::reqqueue;
-   extern unsigned char*    P2OS::repqueue;
-*/ // Don't know what i need of this .. so nothing included for now.
-
- extern int            ClodBuster::clodbuster_subscriptions;
-extern bool            ClodBuster::direct_command_control;
-extern struct timeval  ClodBuster::timeBegan_tv;
-extern bool            ClodBuster::initdone;
-extern int             ClodBuster::clodbuster_fd;
-extern char            ClodBuster::clodbuster_serial_port[];
-extern pthread_t       ClodBuster::thread;
-extern pthread_mutex_t ClodBuster::clodbuster_accessMutex;
-extern pthread_mutex_t ClodBuster::clodbuster_setupMutex;
-extern unsigned char*    ClodBuster::reqqueue;
-extern unsigned char*    ClodBuster::repqueue;
-  extern player_clodbuster_data_t*  ClodBuster::data;
-   extern player_clodbuster_cmd_t*  ClodBuster::command;
 
 // initialization function
-CDevice* ClodBuster_Init(char* interface, ConfigFile* cf, int section)
+Driver* ClodBuster_Init( ConfigFile* cf, int section)
 {
-  if(strcmp(interface, PLAYER_POSITION_STRING))
-    {
-      PLAYER_ERROR1("driver \"clodbuster\" does not support interface "
-		    "\"%s\"\n", interface);
-      return(NULL);
-    }
-  else
-    return((CDevice*)(new ClodBuster(interface, cf, section)));
+  return((Driver*)(new ClodBuster( cf, section)));
 }
 
 // a driver registration function
 void 
 ClodBuster_Register(DriverTable* table)
 {
-  table->AddDriver("clodbuster", PLAYER_ALL_MODE, ClodBuster_Init);
+  table->AddDriver("clodbuster",  ClodBuster_Init);
 }
 
 
-ClodBuster::ClodBuster(char* interface, ConfigFile* cf, int section):
-  CDevice(sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
+ClodBuster::ClodBuster( ConfigFile* cf, int section)
+        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
+                 sizeof(player_position_data_t),
+                 sizeof(player_position_cmd_t),1,1)
 {
-  int reqqueuelen = 1;
-  int repqueuelen = 1;
-
-  if(!initdone)
-    {
-      // build the table of robot parameters.
-      //   initialize_robot_params(); // THis is specific to the P2OS coz of the Saphira 
+  clodbuster_fd = -1;
   
-      // also, install default parameter values.
-      strncpy(clodbuster_serial_port,DEFAULT_CLODBUSTER_PORT,sizeof(clodbuster_serial_port));
-      clodbuster_fd = -1;
-      //  radio_modemp = 0;
-      //joystickp = 0;
-      //cmucam = 0;		// If p2os_cmucam is used, this will be overridden
-  
-      data = new player_clodbuster_data_t;
-      command = new player_clodbuster_cmd_t;
-      ResetRawPositions();
-
-      reqqueue = (unsigned char*)(new playerqueue_elt_t[reqqueuelen]);
-      repqueue = (unsigned char*)(new playerqueue_elt_t[repqueuelen]);
-
-      SetupBuffers((unsigned char*)data, sizeof(player_clodbuster_data_t),
-		   (unsigned char*)command, sizeof(player_clodbuster_cmd_t),
-		   reqqueue, reqqueuelen,
-		   repqueue, repqueuelen);
-
-      ((player_clodbuster_cmd_t*)device_command)->position.xspeed = 0;
-      ((player_clodbuster_cmd_t*)device_command)->position.yawspeed = 0;
-
-      clodbuster_subscriptions = 0;
-
-      pthread_mutex_init(&clodbuster_accessMutex,NULL);
-      pthread_mutex_init(&clodbuster_setupMutex,NULL);
-
-      initdone = true; 
-    }
-  else
-    {
-      // every sub-device gets its own queue object (but they all point to the
-      // same chunk of memory)
-    
-      // every sub-device needs to get its various pointers set up
-      SetupBuffers((unsigned char*)data, sizeof(player_clodbuster_data_t),
-		   (unsigned char*)command, sizeof(player_clodbuster_cmd_t),
-		   reqqueue, reqqueuelen,
-		   repqueue, repqueuelen);
-    }
-
-
-
   strncpy(clodbuster_serial_port,
           cf->ReadString(section, "port", clodbuster_serial_port),
           sizeof(clodbuster_serial_port));
-
-  // zero the subscription counter.
-  subscriptions = 0;
 
   // set parameters
   CountsPerRev = 408;
@@ -195,45 +95,12 @@ ClodBuster::ClodBuster(char* interface, ConfigFile* cf, int section):
   //  Kw = new PIDGains(-0.5112,-1.5,0.0,LoopFreq);
   Kv = new PIDGains(-10,-20.0,0.0,LoopFreq);
   Kw = new PIDGains(-5,-20.0,0.0,LoopFreq);
-  
-
 }
 
 ClodBuster::~ClodBuster()
 {
-  if(reqqueue)
-    {
-      delete[] reqqueue;
-      reqqueue=NULL;
-    }
-  if(repqueue)
-    {
-      delete[] repqueue;
-      repqueue=NULL;
-    }
-  if(data)
-    {
-      delete data;
-      data = NULL;
-      device_data = NULL;
-    }
-  if(command)
-    {
-      delete command;
-      command = NULL;
-      device_command = NULL;
-    }
   delete Kv;
   delete Kw;
-}
-
-void ClodBuster::Lock()
-{
-  pthread_mutex_lock(&clodbuster_accessMutex);
-}
-void ClodBuster::Unlock()
-{
-  pthread_mutex_unlock(&clodbuster_accessMutex);
 }
 
 int ClodBuster::Setup()
@@ -321,6 +188,19 @@ int ClodBuster::Setup()
   
   usleep(CLODBUSTER_CYCLETIME_USEC);
   
+  GRASPPacket packet; 
+  // disable motor power
+  packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
+  packet.Send(clodbuster_fd);
+  // reset odometry
+  ResetRawPositions();
+
+  player_position_cmd_t zero_cmd;
+  memset(&zero_cmd,0,sizeof(player_position_cmd_t));
+  memset(&this->position_data,0,sizeof(player_position_data_t));
+  this->PutCommand((void*)&zero_cmd,sizeof(player_position_cmd_t),NULL);
+  this->PutData((void*)&this->position_data,
+                sizeof(player_position_data_t),NULL);
   
   direct_command_control = true;
   
@@ -351,97 +231,10 @@ int ClodBuster::Shutdown()
   return(0);
 }
 
-int ClodBuster::Subscribe(void *client)
-{
-  int setupResult;
-
-  if(clodbuster_subscriptions == 0) 
-    {
-      setupResult = Setup();
-      if (setupResult == 0 ) 
-	{
-	  clodbuster_subscriptions++;  // increment the static p2os-wide subscr counter
-	  subscriptions++;       // increment the per-device subscr counter
-	}
-    }
-  else 
-    {
-      clodbuster_subscriptions++;  // increment the static p2os-wide subscr counter
-      subscriptions++;       // increment the per-device subscr counter
-      setupResult = 0;
-    }
-  
-  return( setupResult );
-}
-
-int ClodBuster::Unsubscribe(void *client)
-{
-  int shutdownResult;
-
-  if(clodbuster_subscriptions == 0) 
-    {
-      shutdownResult = -1;
-    }
-  else if(clodbuster_subscriptions == 1) 
-    {
-      shutdownResult = Shutdown();
-      if (shutdownResult == 0 ) 
-	{ 
-	  clodbuster_subscriptions--;  // decrement the static p2os-wide subscr counter
-	  subscriptions--;       // decrement the per-device subscr counter
-	}
-      /* do we want to unsubscribe even though the shutdown went bad? */
-    }
-  else 
-    {
-      clodbuster_subscriptions--;  // decrement the static p2os-wide subscr counter
-      subscriptions--;       // decrement the per-device subscr counter
-      shutdownResult = 0;
-    }
-  
-  return( shutdownResult );
-}
-
-
-void ClodBuster::PutData( unsigned char* src, size_t maxsize,
-			  uint32_t timestamp_sec, uint32_t timestamp_usec)
-{
-  Lock();
-
-  *((player_clodbuster_data_t*)device_data) = *((player_clodbuster_data_t*)src);
-
-  if(timestamp_sec == 0)
-    {
-      struct timeval curr;
-      GlobalTime->GetTime(&curr);
-      timestamp_sec = curr.tv_sec;
-      timestamp_usec = curr.tv_usec;
-    }
-
-  data_timestamp_sec = timestamp_sec;
-  data_timestamp_usec = timestamp_usec;
-  
-  // need to fill in the timestamps on all ClodBuster devices, both so that they
-  // can read it, but also because other devices may want to read it
-  player_device_id_t id = device_id;
-
-
-  id.code = PLAYER_POSITION_CODE;
-  CDevice* positionp = deviceTable->GetDevice(id);
-  if(positionp)
-    {
-      positionp->data_timestamp_sec = this->data_timestamp_sec;
-      positionp->data_timestamp_usec = this->data_timestamp_usec;
-    }
-
-
-  Unlock();
-}
-
 void 
 ClodBuster::Main()
 {
-  player_clodbuster_cmd_t command;
+  player_position_cmd_t command;
   player_position_speed_pid_req_t pid;
   unsigned char config[CLODBUSTER_CONFIG_BUFFER_SIZE];
   GRASPPacket packet; 
@@ -449,20 +242,8 @@ ClodBuster::Main()
   short speedDemand=0, turnRateDemand=0;
   bool newmotorspeed, newmotorturn;
   
-   int config_size;
+  int config_size;
 
-  int last_position_subscrcount;
- 
-  player_device_id_t id;
-  id.port = global_playerport;
-  id.index = 0;
-
-  id.code = PLAYER_POSITION_CODE;
-  CDevice* positionp = deviceTable->GetDevice(id);
-
-  last_position_subscrcount = 0;
-
-  GlobalTime->GetTime(&timeBegan_tv);
   GetGraspBoardParams();
 
   // memory for PID
@@ -479,68 +260,31 @@ ClodBuster::Main()
 
   for(;;)
     {
-    
-      // we want to reset the odometry and enable the motors if the first 
-      // client just subscribed to the position device, and we want to stop 
-      // and disable the motors if the last client unsubscribed.
-      if(positionp)
-	{
-	  if(!last_position_subscrcount && positionp->subscriptions)
-	    {
-	      // disable motor power
-	      packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
-	      packet.Send(clodbuster_fd);
-	      // reset odometry
-	      ResetRawPositions();
-	    }
-	  else if(last_position_subscrcount && !(positionp->subscriptions))
-	    {
-	      packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
-	      packet.Send(clodbuster_fd);
- 
-	      // overwrite existing motor commands to be zero
-	      player_position_cmd_t position_cmd;
-	      position_cmd.xspeed = 0;
-	      position_cmd.yawspeed = 0;
-	      // TODO: who should really be the client here?
-	      positionp->PutCommand(this,(unsigned char*)(&position_cmd), 
-				    sizeof(position_cmd));
-            }
-
-	  last_position_subscrcount = positionp->subscriptions;
-	}
-
-    
       /** New configuration commands **/
       void* client;
-      player_device_id_t id;
       // first, check if there is a new config command
-      if((config_size = GetConfig(&id, &client, (void*)config, sizeof(config))))
+      if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
 	{
-	  switch(id.code)
-	    {
-	      
-	    case PLAYER_POSITION_CODE:
 	      switch(config[0])
 		{ 
 		case PLAYER_POSITION_SET_ODOM_REQ:
 		  if(config_size != sizeof(player_position_set_odom_req_t))
 		    {
 		      puts("Arg to odometry set requests wrong size; ignoring");
-		      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				  NULL, NULL, 0))
+		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 			PLAYER_ERROR("failed to PutReply");
 		      break;
 		    }
 		  player_position_set_odom_req_t set_odom_req;
 		  set_odom_req = *((player_position_set_odom_req_t*)config);
 		  
-		  this->data->position.xpos=(set_odom_req.x);
-		  this->data->position.ypos=(set_odom_req.y);
-		  this->data->position.yaw= set_odom_req.theta>>8;
+		  this->position_data.xpos=(set_odom_req.x);
+		  this->position_data.ypos=(set_odom_req.y);
+		  this->position_data.yaw= set_odom_req.theta>>8;
 		 
-		  printf("command yaw: %d , actual %d",set_odom_req.theta,data->position.yaw);
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+		  printf("command yaw: %d , actual %d",set_odom_req.theta,
+                         this->position_data.yaw);
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
 		     PLAYER_ERROR("failed to PutReply");
 		   break;
 		  case PLAYER_POSITION_GET_GEOM_REQ:
@@ -549,8 +293,7 @@ ClodBuster::Main()
 		      if(config_size != 1)
 			{
 			  puts("Arg get robot geom is wrong size; ignoring");
-			  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				      NULL, NULL, 0))
+			  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 			    PLAYER_ERROR("failed to PutReply");
 			  break;
 			}
@@ -564,8 +307,8 @@ ClodBuster::Main()
 		      geom.size[0] = htons((short) (2 * 250));
 		      geom.size[1] = htons((short) (2 * 225));
 		      
-		      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, 
-				  sizeof(geom)))
+		      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
+                                  &geom, sizeof(geom),NULL))
 			PLAYER_ERROR("failed to PutReply");
 		      break;
 		    }
@@ -577,8 +320,7 @@ ClodBuster::Main()
 		  if(config_size != sizeof(player_position_power_config_t))
 		    {
 		      puts("Arg to motor state change request wrong size; ignoring");
-		      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				  NULL, NULL, 0))
+		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 			PLAYER_ERROR("failed to PutReply");
 		      break;
 		    }
@@ -591,7 +333,7 @@ ClodBuster::Main()
 		  
 		  packet.Send(clodbuster_fd);
 		  
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
 		    PLAYER_ERROR("failed to PutReply");
 		  break;
 		  
@@ -604,8 +346,7 @@ ClodBuster::Main()
 		    {
 		      puts("Arg to velocity control mode change request is wrong "
 			   "size; ignoring");
-		      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				  NULL, NULL, 0))
+		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 			PLAYER_ERROR("failed to PutReply");
 		      break;
 		    }
@@ -619,7 +360,7 @@ ClodBuster::Main()
 		  else
 		    direct_command_control = true;
 
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
 		    PLAYER_ERROR("failed to PutReply");
 		  break;
 
@@ -628,14 +369,13 @@ ClodBuster::Main()
 		  if(config_size != sizeof(player_position_resetodom_config_t))
 		    {
 		      puts("Arg to reset position request is wrong size; ignoring");
-		      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
-				  NULL, NULL, 0))
+		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 			PLAYER_ERROR("failed to PutReply");
 		      break;
 		    }
 		  ResetRawPositions();
 
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
 		    PLAYER_ERROR("failed to PutReply");
 		  break;
 
@@ -645,7 +385,7 @@ ClodBuster::Main()
 		  // kp, ki, kd are used
 		  if (config_size != sizeof(player_position_speed_pid_req_t)) {
 		    fprintf(stderr, "CB: pos speed PID req got wrong size (%d)\n", config_size);
-		    if (PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0)) {
+		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL)) {
 		      PLAYER_ERROR("CB: failed to put reply");
 		      break;
 		    }
@@ -656,42 +396,30 @@ ClodBuster::Main()
 		  ki = ntohl(pid.ki);
 		  kd = ntohl(pid.kd);
 		
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-			      NULL, NULL, 0))
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 		    PLAYER_ERROR("failed to PutReply");
 		  break;
 		  
 		default:
 		  puts("Position got unknown config request");
 		  printf("The config command was %d\n",config[0]);
-		  if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK,
-			      NULL, NULL, 0))
+		  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
 		    PLAYER_ERROR("failed to PutReply");
 		  break;
 		}
-	      break;
-	 
-	    default:
-	      printf("RunPsosThread: got unknown config request \"%c\"\n",
-		     config[0]);
-	  
-	      if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, NULL, 0))
-		PLAYER_ERROR("failed to PutReply");
-	      break;
-	    }
 	}
       /* read the clients' commands from the common buffer */
-      GetCommand((unsigned char*)&command, sizeof(command));
+      GetCommand((void*)&command, sizeof(command),NULL);
 
       newmotorspeed = false;
-      if( speedDemand != (int) ntohl(command.position.xspeed));
+      if( speedDemand != (int) ntohl(command.xspeed));
       newmotorspeed = true;
-      speedDemand = (int) ntohl(command.position.xspeed);
+      speedDemand = (int) ntohl(command.xspeed);
       
       newmotorturn = false;
-      if(turnRateDemand != (int) ntohl(command.position.yawspeed));
+      if(turnRateDemand != (int) ntohl(command.yawspeed));
       newmotorturn = true;
-      turnRateDemand = (int) ntohl(command.position.yawspeed);
+      turnRateDemand = (int) ntohl(command.yawspeed);
       
       // read encoders & update pose and velocity
       encoder_measurement = ReadEncoders();
@@ -702,7 +430,8 @@ ClodBuster::Main()
       // remember old values
       old_encoder_measurement = encoder_measurement;
       
-      PutData((unsigned char*)data,sizeof(player_clodbuster_data_t),0,0);
+      this->PutData((void*)&this->position_data,
+                    sizeof(player_position_data_t),NULL);
       //      printf("left: %d , right %d count: %u\n",encoder_measurement.left,encoder_measurement.right,encoder_measurement.time_count);
       //      printf("left: %d , right %d\n",encoder_measurement.left-encoder_offset.left,encoder_measurement.right-encoder_offset.right);
 
@@ -826,23 +555,6 @@ clodbuster_encoder_data_t  ClodBuster::ReadEncoders()
  return temp;
 
 }
-/* start a thread that will invoke Main() */
-void 
-ClodBuster::StartThread()
-{
-  pthread_create(&thread, NULL, &DummyMain, this);
-}
-
-/* cancel (and wait for termination) of the thread */
-void 
-ClodBuster::StopThread()
-{
-  void* dummy;
-  pthread_cancel(thread);
-  if(pthread_join(thread,&dummy))
-    perror("ClodBuster::StopThread:pthread_join()");
-}
-
 
 void ClodBuster::GetGraspBoardParams()
 {
@@ -915,16 +627,16 @@ ClodBuster::SetServo(unsigned char chan, unsigned char cmd)
 
 void ClodBuster::IntegrateEncoders()
 {
-  // assign something to data-> xpos,ypos, theta
+  // assign something to xpos,ypos, theta
   float dEr = encoder_measurement.right-old_encoder_measurement.right; 
   float dEl = encoder_measurement.left-old_encoder_measurement.left; 
   float L = Kenc*(dEr+dEl)*.5;
   float D = Kenc*(dEr-dEl)/WheelSeparation;
-  float Phi = M_PI/180.0*data->position.yaw+0.5*D;
+  float Phi = M_PI/180.0*this->position_data.yaw+0.5*D;
 
-  data->position.xpos += (int32_t) (L*cos(Phi)*1.0e3);
-  data->position.ypos += (int32_t) (L*sin(Phi)*1.0e3);
-  data->position.yaw += (int32_t) (D*180.0/M_PI);
+  this->position_data.xpos += (int32_t) (L*cos(Phi)*1.0e3);
+  this->position_data.ypos += (int32_t) (L*sin(Phi)*1.0e3);
+  this->position_data.yaw += (int32_t) (D*180.0/M_PI);
 }
 
 void ClodBuster::DifferenceEncoders()
@@ -950,29 +662,3 @@ void ClodBuster::DifferenceEncoders()
   printf("EncV = %f, EncW = %f, dt = %f\n",EncV,EncOmega*180/M_PI,dt);
 
 }
-
-size_t ClodBuster::GetData(void* client, unsigned char *dest, size_t maxsize,
-                                 uint32_t* timestamp_sec, 
-                                 uint32_t* timestamp_usec)
-{
-  Lock();
-  *((player_position_data_t*)dest) = 
-          ((player_clodbuster_data_t*)device_data)->position;
-  *timestamp_sec = data_timestamp_sec;
-  *timestamp_usec = data_timestamp_usec;
-  Unlock();
-  return( sizeof( player_position_data_t) );
-}
-
-void ClodBuster::PutCommand(void* client, unsigned char *src, size_t size ) 
-{
-  if(size != sizeof( player_position_cmd_t ) )
-  {
-    puts("ClodBuster::PutCommand(): command wrong size. ignoring.");
-    printf("expected %d; got %d\n", sizeof(player_position_cmd_t),size);
-  }
-  else
-    ((player_clodbuster_cmd_t*)device_command)->position = 
-            *((player_position_cmd_t*)src);
-}
-

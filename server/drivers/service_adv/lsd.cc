@@ -58,7 +58,7 @@ using namespace LSD;
 #include "player.h"
 
 
-class SrvAdv_LSD : public CDevice {
+class SrvAdv_LSD : public Driver {
   private:
     // LSD objects
     ServiceDirectory* serviceDir;
@@ -71,7 +71,7 @@ class SrvAdv_LSD : public CDevice {
   public:
     
     // Constructor
-    SrvAdv_LSD(char* interface, ConfigFile* cf, int section);
+    SrvAdv_LSD( ConfigFile* cf, int section);
 
     // Destructor
     virtual ~SrvAdv_LSD();
@@ -97,12 +97,8 @@ class SrvAdv_LSD : public CDevice {
 
 
 
-CDevice* SrvAdv_LSD_Init(char* interface, ConfigFile* cf, int section) {
-    if(strcmp(interface, PLAYER_SERVICE_ADV_STRING)) {
-        PLAYER_ERROR1("driver \"service_adv_lsd\" does not support interface \"%s\"\n", interface);
-        return(0);
-    }
-    SrvAdv_LSD* dev = new SrvAdv_LSD(interface, cf, section);
+Driver* SrvAdv_LSD_Init( ConfigFile* cf, int section) {
+    SrvAdv_LSD* dev = new SrvAdv_LSD( cf, section);
     return dev;
 }
 
@@ -110,7 +106,7 @@ CDevice* SrvAdv_LSD_Init(char* interface, ConfigFile* cf, int section) {
 void ServiceAdvLSD_Register(DriverTable* table)
 {
   printf("player: service_adv_lsd register function called.\n");
-  table->AddDriver("service_adv_lsd", PLAYER_ALL_MODE, SrvAdv_LSD_Init);
+  table->AddDriver("service_adv_lsd",  SrvAdv_LSD_Init);
 }
 
 
@@ -119,9 +115,9 @@ SrvAdv_LSD::~SrvAdv_LSD() {
 }
 
 // Constructor
-SrvAdv_LSD::SrvAdv_LSD(char* interface, ConfigFile* configFile, int configSection)
-    : 
-    CDevice(0,0,0,0)
+SrvAdv_LSD::SrvAdv_LSD( ConfigFile* configFile, int configSection)
+    : Driver(configFile, configSection, 
+             PLAYER_SERVICE_ADV_CODE, PLAYER_READ_MODE, 0,0,0,0)
 {
     alwayson = true;      // since there is no client interface
 
@@ -141,7 +137,7 @@ SrvAdv_LSD::SrvAdv_LSD(char* interface, ConfigFile* configFile, int configSectio
 void SrvAdv_LSD::Prepare() {
 
     // add a tag for each device in the device table
-    for(CDeviceEntry* dev = deviceTable->GetFirstEntry(); dev != 0; dev = deviceTable->GetNextEntry(dev)) {
+    for(Device* dev = deviceTable->GetFirstDevice(); dev != 0; dev = deviceTable->GetNextDevice(dev)) {
         char* devname = lookup_interface_name(0, dev->id.code);
         if(devname) {
             char deviceTag[512];

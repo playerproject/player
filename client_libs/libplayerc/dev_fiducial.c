@@ -37,7 +37,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /***************************************************************************
- * Desc: LBD (laser beacon detector) device proxy
+ * Desc: Fiducial device proxy
  * Author: Andrew Howard
  * Date: 15 May 2002
  * CVS: $Id$
@@ -106,9 +106,24 @@ void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *heade
   {
     fiducial = data->fiducials + i;
     device->fiducials[i].id = (int16_t) ntohs(fiducial->id);
-    device->fiducials[i].range = (int16_t) ntohs(fiducial->pose[0]) / 1000.0;
-    device->fiducials[i].bearing = (int16_t) ntohs(fiducial->pose[1]) * M_PI / 180;
-    device->fiducials[i].orient = (int16_t) ntohs(fiducial->pose[2]) * M_PI / 180;
+
+    device->fiducials[i].pos[0] = ((int32_t) ntohl(fiducial->pos[0])) / 1000.0;
+    device->fiducials[i].pos[1] = ((int32_t) ntohl(fiducial->pos[1])) / 1000.0;
+    device->fiducials[i].pos[2] = ((int32_t) ntohl(fiducial->pos[2])) / 1000.0;
+    device->fiducials[i].rot[0] = ((int32_t) ntohl(fiducial->rot[0])) / 1000.0;
+    device->fiducials[i].rot[1] = ((int32_t) ntohl(fiducial->rot[1])) / 1000.0;
+    device->fiducials[i].rot[2] = ((int32_t) ntohl(fiducial->rot[2])) / 1000.0;
+    device->fiducials[i].upos[0] = ((int32_t) ntohl(fiducial->upos[0])) / 1000.0;
+    device->fiducials[i].upos[1] = ((int32_t) ntohl(fiducial->upos[1])) / 1000.0;
+    device->fiducials[i].upos[2] = ((int32_t) ntohl(fiducial->upos[2])) / 1000.0;
+    device->fiducials[i].urot[0] = ((int32_t) ntohl(fiducial->urot[0])) / 1000.0;
+    device->fiducials[i].urot[1] = ((int32_t) ntohl(fiducial->urot[1])) / 1000.0;
+    device->fiducials[i].urot[2] = ((int32_t) ntohl(fiducial->urot[2])) / 1000.0;
+
+    device->fiducials[i].range = sqrt(device->fiducials[i].pos[0] * device->fiducials[i].pos[0] +
+                                      device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
+    device->fiducials[i].bearing = atan2(device->fiducials[i].pos[1], device->fiducials[i].pos[0]);
+    device->fiducials[i].orient = device->fiducials[i].rot[2];
   }
 }
 

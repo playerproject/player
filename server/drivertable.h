@@ -29,65 +29,70 @@
 #ifndef _DRIVERTABLE_H
 #define _DRIVERTABLE_H
 
-#include <device.h>
 #include <pthread.h>
-#include <configfile.h>
+#include "device.h"
+#include "configfile.h"
 
-typedef CDevice* (*DriverInitFn) (char *interface, ConfigFile *cf, int section);
-typedef CDevice* (*DriverInitFnEx) (ConfigFile *cf, int section);
 
-// one element in a linked list
+// Forward declarations
+class DriverTable;
+class ConfigFile;
+
+
+// Function signature for driver factory functions
+typedef Driver* (*DriverInitFn) (ConfigFile *cf, int section);
+
+// Function signature for plugin initialization functions
+typedef int (*PluginInitFn) (DriverTable* table);
+
+
+// Info about a driver
 class DriverEntry
 {
   public:
-    char name[PLAYER_MAX_DEVICE_STRING_LEN]; // the string name for the driver
-    unsigned char access;   // allowed access mode: 'r', 'w', or 'a'
 
-    // factory creation function
-    DriverInitFn initfunc;
-    //CDevice* (*initfunc)(char*,ConfigFile*,int);
-    
-    // factory creation function (new-style)
-    DriverInitFnEx initfuncEx;
+  // factory creation function
+  DriverInitFn initfunc;
 
-    // next in list
-    DriverEntry* next;  
+  // the string name for the driver
+  char name[PLAYER_MAX_DEVICE_STRING_LEN]; 
 
-    DriverEntry() { name[0]='\0'; next = NULL; }
+  // next in list
+  DriverEntry* next;  
+
+  DriverEntry() { name[0]='\0'; next = NULL; }
 };
 
+
+// List of available drivers
 class DriverTable
 {
   private:
-    // we'll keep the driver info here.
-    DriverEntry* head;
-    int numdrivers;
+
+  // we'll keep the driver info here.
+  DriverEntry* head;
+  int numdrivers;
 
   public:
-    DriverTable();
-    ~DriverTable();
 
-    // how many drivers we have
-    int Size() { return(numdrivers); }
-    
-    // add a new driver to the table
-    int AddDriver(char* name, char access, DriverInitFn initfunc);
-                  //CDevice* (*initfunc)(char*,ConfigFile*,int));
+  DriverTable();
+  ~DriverTable();
 
-    // add a new driver to the table (new-style)
-    int AddDriverEx(char* name, DriverInitFnEx initfuncEx);
+  // how many drivers we have
+  int Size() { return(numdrivers); }
 
-    // sort drivers, based on name.  the return value points at newly
-    // malloc()ed memory, which the user should free().
-    char** SortDrivers();
+  // add a new driver to the table (new-style)
+  int AddDriver(char* name, DriverInitFn initfunc);
 
-    // matches on the driver name
-    DriverEntry* GetDriverEntry(const char* name);
+  // sort drivers, based on name.  the return value points at newly
+  // malloc()ed memory, which the user should free().
+  char** SortDrivers();
+
+  // matches on the driver name
+  DriverEntry* GetDriverEntry(const char* name);
    
-    // get the ith driver name; returns NULL if there is no such driver
-    char* GetDriverName(int idx);
+  // get the ith driver name; returns NULL if there is no such driver
+  char* GetDriverName(int idx);
 };
-
-typedef int (*PluginInitFn) (DriverTable* table);
 
 #endif

@@ -28,7 +28,7 @@
 #define _MCOMDEVICE_HH_
 
 #include <player.h>
-#include <device.h>
+#include <driver.h>
 #include <drivertable.h>
 
 
@@ -48,7 +48,7 @@
 
 
 
-class LifoMCom : public CDevice 
+class LifoMCom : public Driver 
 {
 private:
 
@@ -96,12 +96,14 @@ private:
 public:
 
     // Constructor
-    LifoMCom(char* interface, ConfigFile* cf, int section);
+    LifoMCom(ConfigFile* cf, int section);
 
-    // Called when we recieve a config request; overrides CDevice::PutConfig
-    virtual int PutConfig(player_device_id_t* device, void* client, void* data, size_t len);
+    // Called when we recieve a config request; overrides Driver::PutConfig
+    virtual int PutConfig(player_device_id_t id, void *client, 
+                          void* src, size_t len,
+                          struct timeval* timestamp);
 
-    // These do nothing but are abstract in CDevice, so here they are
+    // These do nothing but are abstract in Driver, so here they are
     virtual int Setup() {
         printf("startup...\n");
         return 0;
@@ -116,7 +118,7 @@ public:
 
 
 
-CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section);
+Driver* LifoMCom_Init(char* interface, ConfigFile* cf, int section);
 
 // a driver registration function
 void LifoMCom_Register(DriverTable* table);

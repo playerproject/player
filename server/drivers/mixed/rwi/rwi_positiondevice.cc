@@ -36,15 +36,15 @@
 #endif
 #include <math.h>
 
-CDevice* RWIPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* RWIPosition_Init( ConfigFile* cf, int section)
 {
-  return ((CDevice *)(new CRWIPositionDevice(interface, cf, section)));
+  return ((Driver *)(new CRWIPositionDevice( cf, section)));
 }
 
 void 
 RWIPosition_Register(DriverTable* table)
 {
-  table->AddDriver("rwi_position", PLAYER_ALL_MODE, RWIPosition_Init);
+  table->AddDriver("rwi_position",  RWIPosition_Init);
 }
 	
 
