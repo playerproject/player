@@ -92,17 +92,17 @@ void Position3DProxy::FillData(player_msghdr_t hdr, const char* buffer)
   ypos = (int)ntohl(buf->ypos);
   zpos = (int)ntohl(buf->zpos);
 
-  roll = (unsigned int)ntohl(buf->roll);
-  pitch = (unsigned int)ntohl(buf->pitch);
-  yaw = (unsigned int)ntohl(buf->yaw);
+  roll = (unsigned int)ntohl(buf->roll) / 3600.0;
+  pitch = (unsigned int)ntohl(buf->pitch) / 3600.0;
+  yaw = (unsigned int)ntohl(buf->yaw) / 3600.0;
 
   xspeed = (int)ntohl(buf->xspeed);
   yspeed = (int)ntohl(buf->yspeed);
   zspeed = (int)ntohl(buf->zspeed);
 
-  rollspeed = (int)ntohl(buf->rollspeed);
-  pitchspeed = (int)ntohl(buf->pitchspeed);
-  yawspeed = (int)ntohl(buf->yawspeed);
+  rollspeed = (int)ntohl(buf->rollspeed) / 3600.0;
+  pitchspeed = (int)ntohl(buf->pitchspeed) / 3600.0;
+  yawspeed = (int)ntohl(buf->yawspeed) / 3600.0;
 
   stall = buf->stall;
 }
@@ -113,10 +113,25 @@ void Position3DProxy::Print()
   printf("#Position(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#xpos\typos\tzpos\troll\tpitch\tyaw");
-  printf("%4d\t%4d\t%4d\t%4u\t%5u\t%3u\n",
+  printf("%4d\t%4d\t%4d\t%4f\t%5f\t%3f\n",
          xpos,ypos,zpos,roll,pitch,yaw);
   puts("#xspeed\tyspeed\tzspeed\trollspeed\tpitchspeed\tyawspeed");
-  printf("%5d\t%5d\t%5d\t%9d\t%10d\t%8d\n",
+  printf("%5d\t%5d\t%5d\t%9f\t%10f\t%8f\n",
          xspeed,yspeed,zspeed,rollspeed,pitchspeed,yawspeed);
 }
 
+int Position3DProxy::SetMotorState(unsigned char state)
+{
+  if(!client)
+    return(-1);
+
+  player_position_power_config_t config;
+  memset( &config, 0, sizeof(config) );
+
+  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+  config.value = state;
+
+
+  return(client->Request(m_device_id,(const char*)&config,
+                         sizeof(config)));
+}

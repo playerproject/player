@@ -32,6 +32,9 @@
 // flag to control the level of output - the -v arg sets this
 int g_verbose = false;
 
+// are we talking in 3D?
+bool threed = false;
+
 // define a class to do interaction with Player
 class Client
 {
@@ -39,6 +42,7 @@ private:
   // these are the proxies we create to access the devices
   PlayerClient *player;
   PositionProxy *pp;
+  Position3DProxy *pp3;
   /*
   PtzProxy *ptzp;
 
@@ -269,20 +273,29 @@ Client::Client(char* host, int port )
   
   /* Connect to the Player server */
   assert( player = new PlayerClient(host,port) );  
-  assert( pp = new PositionProxy(player,0,'a') );
-  //assert( ptzp = new PtzProxy(player,0,'a' ) );
- 
-  //printf( "p: %p\n", player );
-  
-  if(pp->GetAccess() == 'e') {
-    puts("Error getting position device access!");
-    exit(1);
+  if(!threed)
+  {
+    assert( pp = new PositionProxy(player,0,'a') );
+    if(pp->GetAccess() == 'e') 
+    {
+      puts("Error getting position device access!");
+      exit(1);
+    }
+  }
+  else
+  {
+    assert( pp3 = new Position3DProxy(player,0,'a') );
+    if(pp3->GetAccess() == 'e') 
+    {
+      puts("Error getting position3d device access!");
+      exit(1);
+    }
   }
   
   // try a few reads
   for( int i=0; i<4; i++ )
   {
-    if( player->Read() < 0 )
+    if(player->Read() < 0 )
     {
       puts( " - Failed. Quitting." );
       exit( -1 );
@@ -290,18 +303,20 @@ Client::Client(char* host, int port )
   }
 
   // turn on the motors
-  if(pp->SetMotorState(1))
-    exit(-1);
+  if(!threed)
+  {
+    if(pp->SetMotorState(1))
+      exit(-1);
+  }
+  else
+  {
+    if(pp3->SetMotorState(1))
+      exit(-1);
+  }
   
   // store a local copy of the initial p&t
   //pan = ptzp->pan;
   //tilt = ptzp->tilt;
-
-  if( g_verbose )
-    {
-      pp->Print();
-      //ptzp->Print();
-    }
 
   puts( "Success" );
 }
@@ -314,33 +329,22 @@ void Client::Read( void )
 
 void Client::Update( struct controller* cont )
 {
-  if( g_verbose )
-    /*
-    printf( "Player: %s:%d %.2f "
-	    "- speed: %d turn: %d pan: %d(%d) tilt: %d(%d) zoom: %d \n",
-	    player->hostname, player->port,
-	    player->timestamp.tv_sec+player->timestamp.tv_usec/1000000.0,
-	    pp->speed, pp->turnrate, 
-	    ptzp->pan, cont->pan, ptzp->tilt, cont->tilt, ptzp->zoom );      
-            */
-    pp->Print();
+  if(g_verbose)
+  {
+    if(!threed)
+      pp->Print();
+    else
+      pp3->Print();
+  }
   
   if( cont->dirty ) // if the joystick sent a command
-    {
-      // send the speed commands
-      if( pp ) pp->SetSpeed( cont->speed, cont->turnrate);
-      // send the zoom command to the camera
-      //if( ptzp ) ptzp->SetCam( pan, tilt, cont->zoom ); 
-    }
-  
-  //pan += cont->pan;
-  //tilt += cont->tilt;
-
-  // if we're panning we update the camera position
-  /*
-  if( cont->pan != 0 || cont->tilt != 0 )
-    if( ptzp ) ptzp->SetCam( pan, tilt, cont->zoom );
-    */
+  {
+    // send the speed commands
+    if(!threed)
+      pp->SetSpeed( cont->speed, cont->turnrate);
+    else
+      pp3->SetSpeed( cont->speed, cont->turnrate);
+  }
 }
 
 
@@ -364,6 +368,8 @@ int main(int argc, char** argv)
       // otherwise look for the verbose flag
       else if( strcmp( argv[i], "-v" ) == 0 )
 	g_verbose = true;
+      else if( strcmp( argv[i], "-3d" ) == 0 )
+	threed = true;
       else
 	puts( USAGE ); // malformed arg - print usage hints
     }
