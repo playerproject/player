@@ -364,7 +364,7 @@ MapCspace::CreateCspaceCircle()
   fflush(NULL);
 
   assert(updated = (unsigned char*)calloc(this->size_x * this->size_y,
-                                          sizeof(unsigned char*)));
+                                          sizeof(unsigned char)));
 
   // compute robot radius in map cells
   r = (int)rint(this->robot_radius / this->resolution);
