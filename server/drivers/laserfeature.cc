@@ -57,7 +57,7 @@ class LaserFeature : public CDevice
   public: virtual int Shutdown();
 
   // Client interface (this device has no thread).
-  public: virtual size_t GetData(unsigned char *, size_t maxsize,
+  public: virtual size_t GetData(unsigned char *dest, size_t maxsize,
                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 
   // Client interface (this device has no thread).
@@ -70,6 +70,10 @@ class LaserFeature : public CDevice
 
   // Segment the scan into straight-line segments.
   private: void SegmentLaser();
+
+  // Update the line filter.  Returns an error signal.
+  private: double UpdateFilter(double x[2], double P[2][2], double Q[2][2],
+                               double R, double z, double res);
 
   // Update the device data (the data going back to the client).
   private: void UpdateData();
@@ -119,7 +123,7 @@ void LaserFeature_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
+    : CDevice(sizeof(player_fiducial_data_t), 0, 0, 0)
 {
   // Device pose relative to robot.
   this->pose[0] = 0;
@@ -132,6 +136,8 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
   this->laser_device = NULL;
   this->laser_timesec = 0;
   this->laser_timeusec = 0;
+
+  return;
 }
 
 
@@ -140,7 +146,7 @@ LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
 int LaserFeature::Setup()
 {
   player_device_id_t id;
-  
+
   // Subscribe to the laser.
   id.code = PLAYER_LASER_CODE;
   id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
@@ -186,7 +192,7 @@ size_t LaserFeature::GetData(unsigned char *dest, size_t maxsize,
   // Get the current laser data.
   this->laser_device->GetData((uint8_t*) &this->laser_data, sizeof(this->laser_data),
                               &this->laser_timesec, &this->laser_timeusec);
-
+  
   // If there is new laser data, update our data.  Otherwise, we will
   // just reuse the existing data.
   if (this->laser_timesec != this->timesec || this->laser_timeusec != this->timeusec)
@@ -200,6 +206,8 @@ size_t LaserFeature::GetData(unsigned char *dest, size_t maxsize,
   memcpy(dest, &this->data, sizeof(this->data));
 
   // Copy the laser timestamp
+  this->timesec = this->laser_timesec;
+  this->timeusec = this->laser_timeusec;
   *timesec = this->timesec;
   *timeusec = this->timeusec;
 
@@ -232,6 +240,109 @@ int LaserFeature::UpdateLaser()
 // Segment the scan into straight-line segments.
 void LaserFeature::SegmentLaser()
 {
+  int i;
+  double r, b;
+  double res;
+  double x[2], P[2][2];
+  double Q[2][2], R;
+  double err;
+
+  static int test_count = 0;
+
+  // Angle between successive laser readings.
+  res = (double) (this->laser_data.resolution) / 100.0 * M_PI / 180;
+
+  double n = (test_count++) * 0.0001;
+  
+  // System noise.
+  Q[0][0] = n * n;
+  Q[0][1] = n * n;
+  Q[1][0] = n * n;
+  Q[1][1] = n * n;
+
+  // Sensor noise.
+  R = 0.02 * 0.02;
+
+  // Initial estimate and covariance.
+  x[0] = 0.0;
+  x[1] = 0.0;
+  P[0][0] = 100;
+  P[0][1] = 0.0;
+  P[1][0] = 0.0;
+  P[1][1] = 100;
+
+  printf("# Q = %f\n", n);
+  
+  for (i = 0; i < this->laser_data.range_count; i++)
+  {
+    r = (double) (this->laser_data.ranges[i]) / 1000;
+    b = (double) (this->laser_data.min_angle) / 100.0 * M_PI / 180 + i * res;
+    
+    err = this->UpdateFilter(x, P, Q, R, r, res);
+
+    printf("%f %f %f %f %f\n", r, b, x[0], x[1], err);
+  }
+
+  printf("\n\n");
+
+  return;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Update the line filter.  Returns an error signal.
+double LaserFeature::UpdateFilter(double x[2], double P[2][2], double Q[2][2],
+                                  double R, double z, double res)
+{
+  int i, j, k, l;
+  double x_[2], P_[2][2];
+  double F[2][2];
+  double r, S;
+  double K[2];
+
+  // A priori state estimate.
+  x_[0] = sin(x[1]) / sin(x[1] + res) * x[0];
+  x_[1] = x[1] + res;
+
+  // Jacobian for the system function.
+  F[0][0] = sin(x[1]) / sin(x[1] + res);
+  F[0][1] = sin(x[1]) / (sin(x[1] + res) * sin(x[1] + res)) * x[0];
+  F[1][0] = 0;
+  F[1][1] = 1;
+  
+  // Covariance of a priori state estimate.
+  for (i = 0; i < 2; i++)
+  {
+    for (j = 0; j < 2; j++)
+    {
+      P_[i][j] = 0.0;
+      for (k = 0; k < 2; k++)
+        for (l = 0; l < 2; l++)
+          P_[i][j] += F[i][k] * P[k][l] * F[j][l];
+      P_[i][j] += Q[i][j];
+    }
+  }
+
+  // Residual (difference between prediction and measurement).
+  r = z - x_[0];
+
+  // Covariance of the residual.
+  S = P_[0][0] + R;
+
+  // Kalman gain.
+  K[0] = P_[0][0] / S;
+  K[1] = P_[1][0] / S;
+
+  // Posterior state estimate.
+  x[0] = x_[0] + K[0] * r;
+  x[1] = x_[1] + K[1] * r;    
+
+  // Posterior state covariance.
+  for (i = 0; i < 2; i++)
+    for (j = 0; j < 2; j++)
+      P[i][j] = P_[i][j] - K[i] * S * K[j];
+
+  return r * r / S;
 }
 
 
@@ -264,7 +375,7 @@ void LaserFeature::UpdateData()
   }
   */
   
-  this->data.count = htons(data.count);
+  this->data.count = htons(this->data.count);
   
   return;
 }
