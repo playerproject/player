@@ -247,10 +247,13 @@ AM_CONDITIONAL(WITH_RTK3, test "x$enable_rtk3" = "xyes")
 dnl Build the playermap utility; requires RTK3 components to work
 AC_ARG_ENABLE(playermap,
 [  --enable-playermap          Build PlayerMap],, enable_playermap=yes)
-if test "x$enable_rtk3" = "xno"; then
+if test "x$enable_rtk3" != "xyes"; then
   enable_playermap=no
 fi
-AM_CONDITIONAL(WITH_PLAYERMAP, test "x$enable_playermap = xyes")
+if test "x$with_python" != "xyes"; then
+  enable_playermap=no
+fi
+AM_CONDITIONAL(WITH_PLAYERMAP, test "x$enable_playermap" = "xyes")
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h)
