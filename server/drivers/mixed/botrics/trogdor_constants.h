@@ -50,8 +50,7 @@
 #define TROGDOR_MAX_TICS 2147483648U
 
 /* for safety */
-#define TROGDOR_MAX_XSPEED       1.0
-#define TROGDOR_MAX_YAWSPEED     DTOR(60.0)
+#define TROGDOR_MAX_WHEELSPEED   1.0
 
 /************************************************************************/
 /* Comm protocol values */
