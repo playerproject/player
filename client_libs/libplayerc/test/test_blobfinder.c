@@ -8,7 +8,9 @@
 #include "test.h"
 #include "playerc.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
 
 // Basic blobfinder test
 int test_blobfinder(playerc_client_t *client, int index)
@@ -39,7 +41,7 @@ int test_blobfinder(playerc_client_t *client, int index)
     {
       PASS();
       printf("blobfinder: [%d, %d] [%d] ", device->width, device->height, device->blob_count);
-      for (i = 0; i < MIN(3, device->blob_count); i++)
+      for (i = 0; i < min(3, device->blob_count); i++)
         printf("[%d : (%d %d) (%d %d %d %d) : %d] ", device->blobs[i].channel,
                device->blobs[i].x, device->blobs[i].y,
                device->blobs[i].left, device->blobs[i].top,

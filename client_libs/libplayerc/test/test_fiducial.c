@@ -8,7 +8,9 @@
 #include "test.h"
 #include "playerc.h"
 
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#ifndef min
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#endif
 
 // Basic test for the laser beacon device.
 int test_fiducial(playerc_client_t *client, int index)
@@ -43,7 +45,7 @@ int test_fiducial(playerc_client_t *client, int index)
       PASS();
 
       printf("fiducial: [%d] ", device->fiducial_count);
-      for (i = 0; i < MIN(3, device->fiducial_count); i++)
+      for (i = 0; i < min(3, device->fiducial_count); i++)
         printf("[%d %6.3f, %6.3f, %6.3f] ", device->fiducials[i].id,
                device->fiducials[i].range, device->fiducials[i].bearing,
                device->fiducials[i].orient);
