@@ -910,8 +910,8 @@ void LaserVisualBarcode::UpdateData()
   }
 
   // Compute the data timestamp (from laser).
-  timesec = (int) this->laser_time;
-  timeusec = (int) (fmod(this->laser_time, 1.0) * 1e6);
+  timesec = (uint32_t) this->laser_time;
+  timeusec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
   
   // Copy data to server.
   PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);

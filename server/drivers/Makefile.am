@@ -1,8 +1,11 @@
-SUBDIRS = p2os rwi stage
+SUBDIRS = p2os rwi stage isense
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
-noinst_LIBRARIES = libacts.a libfestival.a liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a libsicklms200.a libsonyevid30.a libudpbroadcast.a @FIXEDTONES_LIB@
+noinst_LIBRARIES = libacts.a libfestival.a \
+									 liblaserreflector.a liblaserbarcode.a liblaservisualbarcode.a \
+									 libsicklms200.a libsonyevid30.a libudpbroadcast.a \
+									 @FIXEDTONES_LIB@
 
 EXTRA_LIBRARIES = libfixedtones.a
 
@@ -15,3 +18,4 @@ liblaserreflector_a_SOURCES = laserreflector.cc
 liblaservisualbarcode_a_SOURCES = laservisualbarcode.cc
 liblaserbarcode_a_SOURCES = laserbarcode.cc
 libfixedtones_a_SOURCES = fixedtones.cc
+

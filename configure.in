@@ -60,6 +60,17 @@ AC_CHECK_HEADER(mobilitycomponents_i.h,
 AC_SUBST(RWI_LIB)
 AC_SUBST(RWI_LIBPATH)
 
+dnl check for the isense library (by way of one of its headers) and compile
+dnl the Intersense drivers if foune.
+AC_CHECK_HEADER(isense/isense.h, 
+  AC_DEFINE(INCLUDE_ISENSE,1,[include the InterSense driver])
+  ISENSE_LIB="libisense.a"
+  ISENSE_LIBPATH="drivers/isense/libisense.a"
+  ISENSE_EXTRA_LIB="-lisense",,)
+AC_SUBST(ISENSE_LIB)
+AC_SUBST(ISENSE_LIBPATH)
+AC_SUBST(ISENSE_EXTRA_LIB)
+
 dnl Checks for header files.
 #AC_HEADER_DIRENT
 #AC_HEADER_STDC
@@ -82,6 +93,7 @@ AC_OUTPUT(Makefile
           server/drivers/Makefile 
           server/drivers/p2os/Makefile 
           server/drivers/rwi/Makefile 
+          server/drivers/isense/Makefile 
           server/drivers/stage/Makefile 
           client_libs/Makefile 
           client_libs/c/Makefile
@@ -99,3 +111,8 @@ AC_OUTPUT(Makefile
           utils/playerv/Makefile
           utils/tkviewer/Makefile
           config/Makefile)
+
+
+
+
+
