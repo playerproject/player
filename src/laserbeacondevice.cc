@@ -84,19 +84,18 @@ CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
     {
       if (i + 5 < argc)
       {
-          this->max_depth = 0.05;
-          this->max_bits = atoi(argv[i + 1]);
-          this->bit_width = atof(argv[i + 2]);
-          this->zero_thresh = atof(argv[i + 3]);
-          this->one_thresh = atof(argv[i + 4]);
-          SelfTest(argv[i + 5]);
-          i += 5;
-          exit(0);
+        this->max_depth = 0.05;
+        this->max_bits = atoi(argv[i + 1]);
+        this->bit_width = atof(argv[i + 2]);
+        this->zero_thresh = atof(argv[i + 3]);
+        this->one_thresh = atof(argv[i + 4]);
+        SelfTest(argv[i + 5]);
+        exit(0);
       }
       else
       {
         fprintf(stderr, "CLaserBeaconDevice: missing parameters\n");
-        i = argc;
+        exit(0);
       }
     }
 #endif
