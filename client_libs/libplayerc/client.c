@@ -507,11 +507,11 @@ int playerc_client_get_devlist(playerc_client_t *client)
   config.device_count = ntohs(config.device_count);
   for (i = 0; i < config.device_count; i++)
   {
-    client->ids[i].code = ntohs(config.devices[i].code);
-    client->ids[i].index = ntohs(config.devices[i].index);
-    client->ids[i].port = ntohs(config.devices[i].port);
+    client->devinfos[i].port = ntohs(config.devices[i].port);
+    client->devinfos[i].code = ntohs(config.devices[i].code);
+    client->devinfos[i].index = ntohs(config.devices[i].index);
   }
-  client->id_count = config.device_count;
+  client->devinfo_count = config.device_count;
 
   // Now get the driver info
   return playerc_client_get_driverinfo(client);
@@ -526,12 +526,12 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
   player_device_driverinfo_t req;
   player_device_driverinfo_t rep;
 
-  for (i = 0; i < client->id_count; i++)
+  for (i = 0; i < client->devinfo_count; i++)
   {
     req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
-    req.id.code = htons(client->ids[i].code);
-    req.id.index = htons(client->ids[i].index);
-    req.id.port = htons(client->ids[i].port);
+    req.id.port = htons(client->devinfos[i].port);
+    req.id.code = htons(client->devinfos[i].code);
+    req.id.index = htons(client->devinfos[i].index);
 
     len = playerc_client_request(client, NULL,
                                  &req, sizeof(req), &rep, sizeof(rep));
@@ -544,7 +544,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
       return -1;
     }
 
-    strcpy(client->drivernames[i], rep.driver_name);
+    strcpy(client->devinfos[i].drivername, rep.driver_name);
   }
 
   return 0;

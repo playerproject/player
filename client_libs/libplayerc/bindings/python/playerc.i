@@ -1,5 +1,5 @@
 
-%module libplayerc
+%module playerc
 %{
 #include "playerc.h"
 %}
@@ -8,6 +8,7 @@
 // Include Player header so we can pick up some constants
 #define __PACKED__
 %import "player.h"
+
 
 // Provide array access
 %typemap(out) double [ANY] 
@@ -39,9 +40,23 @@
   }
 }
 
-// Regular c-bindings
+%typemap(out) playerc_device_info_t [ANY]
+{
+  int i;
+  $result = PyTuple_New(arg1->devinfo_count);
+  for (i = 0; i < arg1->devinfo_count; i++) 
+  {
+    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_device_info, 0);
+    PyTuple_SetItem($result,i,o);
+  }
+}
+
+// Use this for regular c-bindings;
+// e.g. playerc_client_connect(client, ...)
 //%include "playerc.h"
 
-// Object-oriented bindings
-%include "test.i"
+// Use this for object-oriented bindings;
+// e.g., client.connect(...)
+// This file is created by running ../parse_header.py
+%include "playerc_oo.i"
 
