@@ -304,6 +304,8 @@ proc player_req {obj device index req} {
 
   upvar #0 $obj arr
 
+  puts "entered player_req"
+
   set device [player_name_to_code $device]
 
   if {![array exists arr]} {
@@ -354,6 +356,7 @@ proc player_req {obj device index req} {
     }
   }
   set reply [read $arr(sock) $size]
+  puts "leaving player_req"
   return $reply
 }
 
@@ -385,6 +388,7 @@ proc player_read {obj} {
   global PLAYER_STX PLAYER_READ_MODE PLAYER_ALL_MODE PLAYER_HEADER_LEN 
   global PLAYER_PLAYER_CODE PLAYER_PLAYER_DATA_REQ
 
+  puts "entering player_read"
   upvar #0 $obj arr
 
   if {![array exists arr]} {
@@ -445,6 +449,7 @@ proc player_read {obj} {
     player_parse_data $obj $device $device_index $data $size
     incr i
   }
+  puts "leaving player_read"
 }
 
 # get the data out and put it in arr vars
@@ -723,7 +728,6 @@ proc player_parse_data {obj device device_index data size} {
     }
   } else {
     puts "Warning: got unexpected message \"$data\""
-    return
   }
 }
 

@@ -202,7 +202,7 @@ set moving 0
 # move the robot
 proc moveRobot {x y} {
   global moving
-  set maxtv 300.0
+  set maxtv 500.0
   set maxrv 80.0
 
   if {$moving} {
