@@ -6,7 +6,6 @@ include ../../Makefile.common
 
 LIBNAME = liboldplayerclient.a
 
-CFLAGS = -g -O2 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o devicedatatable.o

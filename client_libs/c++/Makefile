@@ -8,8 +8,6 @@ LIBNAME = libplayerclient.a
 
 PWD=$(shell pwd)
 
-#CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
-CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \

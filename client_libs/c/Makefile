@@ -6,8 +6,6 @@ include ../../Makefile.common
 
 LIBNAME = libplayercclient.a
 
-CFLAGS = -O2 -Wall $(PLAYER_PLATFORM)
-#CFLAGS = -g3 -Wall $(PLAYER_PLATFORM)
 INCLUDES = -I. -I../../include
 
 OBJECTS = playercclient.o print.o helpers.o
