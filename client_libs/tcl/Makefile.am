@@ -1,7 +1,7 @@
 tcllibdir = $(libdir)/tclPlayer
-tcllib_DATA = playerclient.tcl pkgIndex.tcl
+tcllib_DATA = playerclient.tcl @TCLPKGFILE@
 
-EXTRA_DIST = playerclient.tcl pkgIndex.tcl
+EXTRA_DIST = playerclient.tcl @TCLPKGFILE@
 
 
 pkgIndex.tcl: playerclient.tcl

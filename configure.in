@@ -25,6 +25,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+AC_CHECK_PROG([TCLPKGFILE], [tclsh], [pkgIndex.tcl], [])
 
 dnl should we include the RTK GUI?
 AC_ARG_WITH(gui,    [  --without-gui           Don't include the GUI],,
@@ -104,6 +105,8 @@ AC_CHECK_LIB(socket, connect)
 #AC_FUNC_SETPGRP
 #AC_TYPE_SIGNAL
 #AC_CHECK_FUNCS(getcwd gethostname gettimeofday socket strdup strerror)
+
+AC_SUBST(LIBOBJS)
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile 
