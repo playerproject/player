@@ -243,7 +243,7 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
 
   // Figures for drawing the sonar scan
-  rtk_fig_t *scan_fig[16];
+  rtk_fig_t *scan_fig[PLAYERC_SONAR_MAX_SCAN];
   
   // Sonar device proxy
   playerc_sonar_t *proxy;

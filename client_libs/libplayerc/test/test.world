@@ -6,14 +6,14 @@
 
 environment
 (
-  file "cave.pnm"
+  file "cave.pnm.gz"
   scale 0.03
   resolution 0.03
 )
 
 position
 (
-  name "robot" port 6665 pose [1 2 90]
+  name "robot" port 6665 pose [4.990 2.090 90.000]
   player ()
   broadcast ()
   gps () truth ()
@@ -21,3 +21,9 @@ position
   laser (lbd()) 
   ptz (vision())
 )
+
+define visionbeacon box (color "red" shape "circle" size [0.2 0.2])
+
+visionbeacon (color "red" pose [4.490 3.030 0.000])
+visionbeacon (color "green" pose [5.060 2.990 0.000])
+visionbeacon (color "blue" pose [5.630 2.980 0.000])
