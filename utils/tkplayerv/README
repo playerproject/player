@@ -1,0 +1,66 @@
+---------
+tkplayerv
+---------
+
+--------------------------------------------------------------------------
+Overview
+--------------------------------------------------------------------------
+tkplayerv is a somewhat general graphical remote control client for Player
+devices.  It allows you to subscribe to and visualize the data from a variety
+of sensors, as well as send commands to a variety of actuators.  
+
+--------------------------------------------------------------------------
+Requirements
+--------------------------------------------------------------------------
+tkplayerv is implemented in Tcl/Tk.  To use it, you need to have installed
+relatively recent versions of Tcl and Tk, as well as TclX, because tkplayerv
+uses UNIX-style signals for timing.
+
+tkplayerv also depends on Tclplayer, a Tcl package that provides client
+routines for interacting with Player servers.  Tclplayer is included (and
+installed) with the Player distribution.  In order for Tcl to find Tclplayer,
+your TCLLIBPATH environment variable must be set appropriately.  See
+Section 2 of "Tclplayer Reference Manual" (also included with Player) for 
+details.
+
+--------------------------------------------------------------------------
+Starting tkplayerv
+--------------------------------------------------------------------------
+You start tkplayerv by executing 'viewer.tk' (if it's not currently executable, 
+make it so now):
+
+  $ ./viewer.tk -- [-h <host>] [-p <port>] [-s <size>]
+
+Note that if you pass any arguments, you must precede them with a double-dash
+(i.e., '--').  Unless <host> or <port> are specified, tkplayerv will connect
+to a Player server on localhost:6665.  <size> is not exactly a general
+size specifier, but it will allow you to make the GUI bigger or smaller.
+As a hint, the default size is 400.
+
+--------------------------------------------------------------------------
+Using tkplayerv
+--------------------------------------------------------------------------
+Once you've got it running, the GUI should be pretty self-explanatory.
+Several checkbuttons allow to you turn on and off the display and control of
+many common devices.  
+
+The main canvas (the one that looks like a radar screen) displays laser, sonar,
+laserbeacon, and bumper data, relative to the robot, which is pictured in the
+center, facing upward along the positive Y-axis.
+
+The upper-right canavs (with the cross-hairs) gives you control over the
+robot's motors.  Click and hold (and possibly drag) to move the robot.  The
+Y-axis is translational velocity and the X-axis is rotational velocity.  Note
+that you may have to select "Activate Motors" to make a real robot move.
+
+The middle-right canvas displays vision data by reconstructing the detected
+color blob data from the robot's camera perspective.
+
+The bottom-right set of widgets give you control of the PTZ camera.  The
+arrows pan and tilt, and the + and - button zoom.
+
+
+--------------------------------------------------------------------------
+comments/questions/bugs to brian gerkey gerkey@robotics.usc.edu
+--------------------------------------------------------------------------
+
