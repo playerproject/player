@@ -397,7 +397,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     pthread_mutex_lock(&socketwrite);
     if(write(socket, replybuffer, payload_size+sizeof(player_msghdr_t)) < 0) 
     {
-      if(errno != EAGAIN && errno != EINTR)
+      if(errno != EAGAIN)
       {
         perror("HandleRequests: write()");
         pthread_mutex_unlock(&socketwrite);
@@ -774,12 +774,12 @@ int CClientData::Read()
     //printf("read %d bytes; reading now\n", readcnt);
     if(read(socket,&c,1) <= 0)
     {
-      if(errno == EAGAIN || errno == EINTR)
+      if(errno == EAGAIN)
         return(0);
       else
       {
         // client must be gone. fuck 'em
-        perror("client_reader(): read() while waiting for STX");
+        //perror("client_reader(): read() while waiting for first byte of STX");
         return(-1);
       }
     }
@@ -790,12 +790,12 @@ int CClientData::Read()
 
     if(read(socket,&c,1) <= 0)
     {
-      if(errno == EAGAIN || errno == EINTR)
+      if(errno == EAGAIN)
         return(0);
       else
       {
         // client must be gone. fuck 'em
-        perror("client_reader(): read() while waiting for STX");
+        //perror("client_reader(): read() while waiting for second byte of STX");
         return(-1);
       }
     }
@@ -815,7 +815,7 @@ int CClientData::Read()
     if((thisreadcnt = read(socket, &(hdr.type), 
                            sizeof(player_msghdr_t)-readcnt)) <= 0)
     {
-      if(errno == EAGAIN || errno == EINTR)
+      if(errno == EAGAIN)
         return(0);
       else
       {
@@ -852,7 +852,7 @@ int CClientData::Read()
   {
     if((thisreadcnt = read(socket,readbuffer+readcnt,hdr.size-readcnt)) <= 0)
     {
-      if(thisreadcnt < 0 && errno != EAGAIN && errno != EINTR)
+      if(thisreadcnt < 0 && errno != EAGAIN)
       {
         perror("CClientData::Read(): read() errored");
         return(-1);
@@ -884,7 +884,7 @@ CClientData::WriteIdentString()
   pthread_mutex_lock(&socketwrite);
   if(write(socket, data, PLAYER_IDENT_STRLEN) < 0 ) 
   {
-    if(errno != EAGAIN && errno != EINTR)
+    if(errno != EAGAIN)
     {
       perror("ClientManager::Write():write()");
       pthread_mutex_unlock(&socketwrite);
@@ -905,7 +905,7 @@ CClientData::Write()
   pthread_mutex_lock(&socketwrite);
   if(size>0 && write(socket, writebuffer, size) < 0 ) 
   {
-    if(errno != EAGAIN && errno != EINTR)
+    if(errno != EAGAIN)
     {
       perror("CClientData::Write: write()");
       pthread_mutex_unlock(&socketwrite);
