@@ -119,6 +119,18 @@ class ConfigFile
                                 int index, 
                                 const char *value);
   
+  // Read a int from a tuple
+  public: int ReadTupleInt(int entity, 
+                           const char *name,
+                           int index, 
+                           int value);
+
+  // Write a int to a tuple
+  public: void WriteTupleInt(int entity, 
+                             const char *name,
+                             int index, 
+                             int value);
+  
   // Read a float from a tuple
   public: double ReadTupleFloat(int entity, 
                                 const char *name,

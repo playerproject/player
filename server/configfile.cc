@@ -1579,6 +1579,30 @@ void ConfigFile::WriteTupleString(int entity, const char *name,
 
 
 ///////////////////////////////////////////////////////////////////////////
+// Read a int from a tuple
+int ConfigFile::ReadTupleInt(int entity, const char *name,
+                             int index, int value)
+{
+  int property = GetProperty(entity, name);
+  if (property < 0)
+    return value;
+  return atoi(GetPropertyValue(property, index));
+  
+}
+
+
+///////////////////////////////////////////////////////////////////////////
+// Write a int to a tuple
+void ConfigFile::WriteTupleInt(int entity, const char *name,
+                                 int index, int value)
+{
+  char default_str[64];
+  snprintf(default_str, sizeof(default_str), "%d", value);
+  WriteTupleString(entity, name, index, default_str);
+}
+
+
+///////////////////////////////////////////////////////////////////////////
 // Read a float from a tuple
 double ConfigFile::ReadTupleFloat(int entity, const char *name,
                                   int index, double value)

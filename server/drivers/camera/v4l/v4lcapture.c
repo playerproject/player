@@ -62,116 +62,122 @@
 
 FRAMEGRABBER* fg_open( const char* dev )
 {
-    FRAMEGRABBER* fg = malloc( sizeof( FRAMEGRABBER ) );
-    int i;
+  FRAMEGRABBER* fg = malloc( sizeof( FRAMEGRABBER ) );
+  int i;
 
-    // Use default device if none specified
-    if ( dev != NULL )
-    {
-        fg->device = strdup( dev );
-    }
-    else
-    {
-        fg->device = strdup( FG_DEFAULT_DEVICE );
-    }
+  // Use default device if none specified
+  if ( dev != NULL )
+  {
+    fg->device = strdup( dev );
+  }
+  else
+  {
+    fg->device = strdup( FG_DEFAULT_DEVICE );
+  }
 
-    // Open the video device
-    fg->fd = open( fg->device, O_RDONLY );
-    if ( fg->fd == -1 )
-    {
-        perror( "fg_open(): open video device failed" );
-        free( fg->device );
-        free( fg );
-        return NULL;
-    }
+  // Open the video device
+  fg->fd = open( fg->device, O_RDONLY );
+  if ( fg->fd == -1 )
+  {
+    perror( "fg_open(): open video device failed" );
+    free( fg->device );
+    free( fg );
+    return NULL;
+  }
 
-    // Make sure child processes don't inherit video (close on exec)
-    fcntl( fg->fd, F_SETFD, FD_CLOEXEC );
+  // Make sure child processes don't inherit video (close on exec)
+  fcntl( fg->fd, F_SETFD, FD_CLOEXEC );
 
-    // For n-ary buffering
-    fg->cur_frame = -1;
+  // For n-ary buffering
+  fg->cur_frame = -1;
 
-    // Get the device capabilities
-    if( ioctl( fg->fd, VIDIOCGCAP, &(fg->caps) ) < 0 )
-    {
-        perror( "fg_open(): query capabilities failed" );
-        free( fg->device );
-        free( fg );
-        return NULL;
-    }
+  // Get the device capabilities
+  if( ioctl( fg->fd, VIDIOCGCAP, &(fg->caps) ) < 0 )
+  {
+    perror( "fg_open(): query capabilities failed" );
+    free( fg->device );
+    free( fg );
+    return NULL;
+  }
 
-    // Read info for all input sources
-    fg->source = 0;
-    fg->sources = malloc( sizeof( struct video_channel )*fg->caps.channels );
-    for ( i = 0; i < fg->caps.channels; i++ )
-    {
-        fg->sources[i].channel = i;
-        ioctl( fg->fd, VIDIOCGCHAN, &(fg->sources[i]) );
-    }
+  // Read info for all input sources
+  fg->source = 0;
+  fg->sources = malloc( sizeof( struct video_channel )*fg->caps.channels );
+  for ( i = 0; i < fg->caps.channels; i++ )
+  {
+    fg->sources[i].channel = i;
+    ioctl( fg->fd, VIDIOCGCHAN, &(fg->sources[i]) );
 
     // Read info about tuner
-    fg->tuner.tuner = 0;
-    if ( ioctl( fg->fd, VIDIOCGTUNER, &(fg->tuner) ) < 0 )
+    // TODO: multiple tuners?
+    if (fg->sources[i].tuners > 0)
     {
+      fg->tuner.tuner = 0;
+      if ( ioctl( fg->fd, VIDIOCGTUNER, &(fg->tuner) ) < 0 )
+      {
         perror( "fg_open(): warning: cannot get tuner info (not present?)" );
+      }
     }
+  }
 
-    // Set default picture attributes (50%)
-    fg->picture.brightness = FG_50PC;
-    fg->picture.hue        = FG_50PC;
-    fg->picture.colour     = FG_50PC;
-    fg->picture.contrast   = FG_50PC;
-    fg->picture.whiteness  = FG_50PC;
-    fg->picture.depth      = 32;
-    fg->picture.palette    = VIDEO_PALETTE_RGB32;
+  /* MOVE or REMOVE; we may not know the valid palette yet
+  // Set default picture attributes (50%)
+  fg->picture.brightness = FG_50PC;
+  fg->picture.hue        = FG_50PC;
+  fg->picture.colour     = FG_50PC;
+  fg->picture.contrast   = FG_50PC;
+  fg->picture.whiteness  = FG_50PC;
+  fg->picture.depth      = 32;
+  fg->picture.palette    = VIDEO_PALETTE_RGB32;
 
-    if ( ioctl( fg->fd, VIDIOCSPICT, &(fg->picture) ) < 0 )
-    {
-        perror( "fg_open(): set picture attributes failed" );
-        free( fg->device );
-        free( fg->sources );
-        free( fg );
-        return NULL;
-    }
+  if ( ioctl( fg->fd, VIDIOCSPICT, &(fg->picture) ) < 0 )
+  {
+    perror( "fg_open(): warning: set picture attributes failed" );
+    free( fg->device );
+    free( fg->sources );
+    free( fg );
+    return NULL;
+  }
+  */
 
-    // Get frame buffer info
-    if ( ioctl( fg->fd, VIDIOCGFBUF, &(fg->fbuffer) ) < 0 )
-    {
-        perror( "fg_open(): get framebuffer failed" );
-        free( fg->device );
-        free( fg->sources );
-        free( fg );
-        return NULL;
-    }
+  // Get frame buffer info
+  if ( ioctl( fg->fd, VIDIOCGFBUF, &(fg->fbuffer) ) < 0 )
+  {
+    perror( "fg_open(): get framebuffer failed" );
+    free( fg->device );
+    free( fg->sources );
+    free( fg );
+    return NULL;
+  }
 
-    // Get the memory buffer info
-    if ( ioctl( fg->fd, VIDIOCGMBUF, &(fg->mbuf) ) < 0 )
-    {
-        perror( "fg_open(): get memory buffer" );
-        free( fg->device );
-        free( fg->sources );
-        free( fg );
-        return NULL;
-    }
+  // Get the memory buffer info
+  if ( ioctl( fg->fd, VIDIOCGMBUF, &(fg->mbuf) ) < 0 )
+  {
+    perror( "fg_open(): get memory buffer" );
+    free( fg->device );
+    free( fg->sources );
+    free( fg );
+    return NULL;
+  }
 
-    // Memory map the video buffer
-    fg->mb_map = mmap( 0,                       // Start addr
-                       fg->mbuf.size,           // Buffer length
-                       PROT_READ,               // Protections
-                       MAP_SHARED,              // Mapping flags
-                       fg->fd,                  // File handle
-                       0 );                     // Offset
+  // Memory map the video buffer
+  fg->mb_map = mmap( 0,                       // Start addr
+                     fg->mbuf.size,           // Buffer length
+                     PROT_READ,               // Protections
+                     MAP_SHARED,              // Mapping flags
+                     fg->fd,                  // File handle
+                     0 );                     // Offset
 
-    if ( (int)fg->mb_map < 0 )
-    {
-        perror( "fg_open(): mmap buffer" );
-        free( fg->device );
-        free( fg->sources );
-        free( fg );
-        return NULL;
-    }
+  if ( (int)fg->mb_map < 0 )
+  {
+    perror( "fg_open(): mmap buffer" );
+    free( fg->device );
+    free( fg->sources );
+    free( fg );
+    return NULL;
+  }
 
-    return fg;
+  return fg;
 }
 
 //--------------------------------------------------------------------------
@@ -383,7 +389,7 @@ FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
         // Start capture
         if ( ioctl( fg->fd, VIDIOCMCAPTURE, &(fg->mmap) ) < 0 )
         {
-            perror( "fg_grab(): failed to capture frame" );
+            perror( "fg_grab(): failed to capture initial frame" );
             return NULL;
         }
     }
@@ -494,108 +500,110 @@ FRAME* fg_new_compatible_frame( FRAMEGRABBER* fg )
 
 void fg_dump_info(FRAMEGRABBER* fg)
 {
-    int i;
-    int type = fg->caps.type;
+  int i;
+  int type = fg->caps.type;
 
-    if ( fg->fd < 1 )
-    {
-        fprintf( stderr, "fg_dump_info(): device not open/initialised!" );
-        return;
-    }
+  if ( fg->fd < 1 )
+  {
+    fprintf( stderr, "fg_dump_info(): device not open/initialised!" );
+    return;
+  }
 
-    // Dump out the contents of the capabilities structure
-    printf( "\nFrame Grabber Details\n" );
-    printf( "=====================\n" );
+  // Dump out the contents of the capabilities structure
+  printf( "\nFrame Grabber Details\n" );
+  printf( "=====================\n" );
 
-    printf( "  device    = %s\n", fg->device );
-    printf( "  fd handle = 0x%08xd\n", fg->fd );
+  printf( "  device    = %s\n", fg->device );
+  printf( "  fd handle = 0x%08xd\n", fg->fd );
 
-    // Capabilities
-    printf( "  caps.name      = %s\n", fg->caps.name );
-    printf( "  caps.channels  = %d\n", fg->caps.channels );
-    printf( "  caps.audio chs = %d\n", fg->caps.audios );
-    printf( "  caps.maxwidth  = %d\n", fg->caps.maxwidth );
-    printf( "  caps.maxheight = %d\n", fg->caps.maxheight );
-    printf( "  caps.minwidth  = %d\n", fg->caps.minwidth );
-    printf( "  caps.minheight = %d\n", fg->caps.minheight );
+  // Capabilities
+  printf( "  caps.name      = %s\n", fg->caps.name );
+  printf( "  caps.channels  = %d\n", fg->caps.channels );
+  printf( "  caps.audio chs = %d\n", fg->caps.audios );
+  printf( "  caps.maxwidth  = %d\n", fg->caps.maxwidth );
+  printf( "  caps.maxheight = %d\n", fg->caps.maxheight );
+  printf( "  caps.minwidth  = %d\n", fg->caps.minwidth );
+  printf( "  caps.minheight = %d\n", fg->caps.minheight );
 
-    printf( "  caps.type = \n" );
-    printf( "\t%s:    VID_TYPE_CAPTURE"
-            "\tCan capture to memory\n",
-            TEST_FLAG(type, VID_TYPE_CAPTURE) );
-    printf( "\t%s:    VID_TYPE_TUNER"
-            "\t\tHas a tuner of some form\n",
-            TEST_FLAG( type, VID_TYPE_TUNER ) );
-    printf( "\t%s:    VID_TYPE_TELETEXT"
-            "\tHas teletext capability\n",
-            TEST_FLAG( type, VID_TYPE_TELETEXT ) );
-    printf( "\t%s:    VID_TYPE_OVERLAY"
-            "\tCan overlay images onto the frame buffer\n",
-            TEST_FLAG( type, VID_TYPE_OVERLAY ) );
-    printf( "\t%s:    VID_TYPE_CHROMAKEY"
-            "\tOverlay is Chromakeyed\n",
-            TEST_FLAG( type, VID_TYPE_CHROMAKEY ) );
-    printf( "\t%s:    VID_TYPE_CLIPPING"
-            "\tOverlay clipping is supported\n",
-            TEST_FLAG( type, VID_TYPE_CLIPPING ) );
-    printf( "\t%s:    VID_TYPE_FRAMERAM"
-            "\tOverlay overwrites frame buffer memory\n",
-            TEST_FLAG( type, VID_TYPE_FRAMERAM ) );
-    printf( "\t%s:    VID_TYPE_SCALES"
-            "\t\tThe hardware supports image scaling\n",
-            TEST_FLAG( type, VID_TYPE_SCALES ) );
-    printf( "\t%s:    VID_TYPE_MONOCHROME"
-            "\tImage capture is grey scale only\n",
-            TEST_FLAG( type, VID_TYPE_MONOCHROME ) );
-    printf( "\t%s:    VID_TYPE_SUBCAPTURE"
-            "\tCapture can be of only part of the image\n",
-            TEST_FLAG( type, VID_TYPE_SUBCAPTURE ) );
+  printf( "  caps.type = \n" );
+  printf( "\t%s:    VID_TYPE_CAPTURE"
+          "\tCan capture to memory\n",
+          TEST_FLAG(type, VID_TYPE_CAPTURE) );
+  printf( "\t%s:    VID_TYPE_TUNER"
+          "\t\tHas a tuner of some form\n",
+          TEST_FLAG( type, VID_TYPE_TUNER ) );
+  printf( "\t%s:    VID_TYPE_TELETEXT"
+          "\tHas teletext capability\n",
+          TEST_FLAG( type, VID_TYPE_TELETEXT ) );
+  printf( "\t%s:    VID_TYPE_OVERLAY"
+          "\tCan overlay images onto the frame buffer\n",
+          TEST_FLAG( type, VID_TYPE_OVERLAY ) );
+  printf( "\t%s:    VID_TYPE_CHROMAKEY"
+          "\tOverlay is Chromakeyed\n",
+          TEST_FLAG( type, VID_TYPE_CHROMAKEY ) );
+  printf( "\t%s:    VID_TYPE_CLIPPING"
+          "\tOverlay clipping is supported\n",
+          TEST_FLAG( type, VID_TYPE_CLIPPING ) );
+  printf( "\t%s:    VID_TYPE_FRAMERAM"
+          "\tOverlay overwrites frame buffer memory\n",
+          TEST_FLAG( type, VID_TYPE_FRAMERAM ) );
+  printf( "\t%s:    VID_TYPE_SCALES"
+          "\t\tThe hardware supports image scaling\n",
+          TEST_FLAG( type, VID_TYPE_SCALES ) );
+  printf( "\t%s:    VID_TYPE_MONOCHROME"
+          "\tImage capture is grey scale only\n",
+          TEST_FLAG( type, VID_TYPE_MONOCHROME ) );
+  printf( "\t%s:    VID_TYPE_SUBCAPTURE"
+          "\tCapture can be of only part of the image\n",
+          TEST_FLAG( type, VID_TYPE_SUBCAPTURE ) );
 
-    // Dump input sources
-    for ( i = 0; i < fg_get_source_count(fg); i++ )
-    {
-        printf( "  sources[%d].name = %s\n", i, fg_get_source_name(fg, i ) );
-        printf( "  sources[%d].norm = ...\n", i );
-    }
+  // Dump input sources
+  for ( i = 0; i < fg_get_source_count(fg); i++ )
+  {
+    printf( "  sources[%d].name = %s\n", i, fg_get_source_name(fg, i ) );
+    printf( "  sources[%d].norm = ...\n", i );
 
     // Tuner info
-    printf( "  tuner[0].name = %s\n", fg->tuner.name );
+    // TODO: multiple tuners?
+    if (fg->sources[i].tuners > 0)
+      printf( "  tuner[0].name = %s\n", fg->tuner.name );
+  }
 
-    // Capture window
-    printf( "  window.x         = %u\n", fg->window.x );
-    printf( "  window.y         = %u\n", fg->window.y );
-    printf( "  window.width     = %u\n", fg->window.width );
-    printf( "  window.height    = %u\n", fg->window.height );
-    printf( "  window.chromakey = 0x%08x\n", fg->window.chromakey );
-    printf( "  window.flags     = %u\n", fg->window.flags );
+  // Capture window
+  printf( "  window.x         = %u\n", fg->window.x );
+  printf( "  window.y         = %u\n", fg->window.y );
+  printf( "  window.width     = %u\n", fg->window.width );
+  printf( "  window.height    = %u\n", fg->window.height );
+  printf( "  window.chromakey = 0x%08x\n", fg->window.chromakey );
+  printf( "  window.flags     = %u\n", fg->window.flags );
 
-    // Picture
-    printf( "  picture.brightness = %u%%\n", FROM_PC(fg->picture.brightness ));
-    printf( "  picture.hue        = %u%%\n", FROM_PC(fg->picture.hue ));
-    printf( "  picture.colour     = %u%%\n", FROM_PC(fg->picture.colour ));
-    printf( "  picture.contrast   = %u%%\n", FROM_PC(fg->picture.contrast ));
-    printf( "  picture.whiteness  = %u%%\n", FROM_PC(fg->picture.whiteness ));
-    printf( "  picture.depth      = %u\n", fg->picture.depth );
-    printf( "  picture.palette    = %u\n", fg->picture.palette );
+  // Picture
+  printf( "  picture.brightness = %u%%\n", FROM_PC(fg->picture.brightness ));
+  printf( "  picture.hue        = %u%%\n", FROM_PC(fg->picture.hue ));
+  printf( "  picture.colour     = %u%%\n", FROM_PC(fg->picture.colour ));
+  printf( "  picture.contrast   = %u%%\n", FROM_PC(fg->picture.contrast ));
+  printf( "  picture.whiteness  = %u%%\n", FROM_PC(fg->picture.whiteness ));
+  printf( "  picture.depth      = %u\n", fg->picture.depth );
+  printf( "  picture.palette    = %u\n", fg->picture.palette );
 
-    // mmap
+  // mmap
 
-    // Dump out frame buffer setup
+  // Dump out frame buffer setup
 	printf( "  fbuffer.base         = 0x%08x\n", (int)fg->fbuffer.base );
-    printf( "  fbuffer.width        = %u\n", fg->fbuffer.width );
+  printf( "  fbuffer.width        = %u\n", fg->fbuffer.width );
 	printf( "  fbuffer.height       = %u\n", fg->fbuffer.height );
 	printf( "  fbuffer.depth        = %u\n", fg->fbuffer.depth );
 	printf( "  fbuffer.bytesperline = %u\n", fg->fbuffer.bytesperline );
 
-    // Dump memory buffer info
-    printf( "  mbuf.size   = %u\n", fg->mbuf.size );
-    printf( "  mbuf.frames = %u\n", fg->mbuf.frames );
-    for ( i = 0; i < fg->mbuf.frames; i++ )
-    {
-        printf( "  mbuf.offsets[%u] = %u\n", i, fg->mbuf.offsets[i] );
-    }
+  // Dump memory buffer info
+  printf( "  mbuf.size   = %u\n", fg->mbuf.size );
+  printf( "  mbuf.frames = %u\n", fg->mbuf.frames );
+  for ( i = 0; i < fg->mbuf.frames; i++ )
+  {
+    printf( "  mbuf.offsets[%u] = %u\n", i, fg->mbuf.offsets[i] );
+  }
 
-    printf( "  mb_map      = 0x%08x\n", (int)(fg->mb_map) );
+  printf( "  mb_map      = 0x%08x\n", (int)(fg->mb_map) );
 }
 
 //==========================================================================
