@@ -379,8 +379,6 @@ int ClientManager::Read()
 {
   int num_to_read;
 
-  for(;;)
-  {
   // poll the fds that we're reading from, without timeout of 0ms, for
   // immediate return
   if((num_to_read = poll(ufds,num_clients,10)) == -1)
@@ -391,9 +389,6 @@ int ClientManager::Read()
       return(-1);
     }
   }
-
-  if(!num_to_read)
-    break;
 
   // call the corresponding Read() for each one that's ready
   for(int i=0;i<num_clients && num_to_read>0;i++)
@@ -422,7 +417,6 @@ int ClientManager::Read()
   }
 
   RemoveBlanks();
-  }
   return(0);
 }
 
