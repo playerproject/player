@@ -132,8 +132,8 @@ struct js_event {
 // define the speed limits for the robot
 
 // at full joystick depression you'll go this fast
-int max_speed = 500; // mm/second
-int max_turn = 60; // degrees/second
+double max_speed = 0.500; // m/second
+double max_turn = DTOR(60); // degrees/second
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -153,7 +153,7 @@ int max_turn = 60; // degrees/second
 
 struct controller
 {
-  int speed, turnrate; //pan, tilt, zoom;
+  double speed, turnrate; //pan, tilt, zoom;
   bool dirty; // use this flag to determine when we need to send commands
 };
 
@@ -224,7 +224,7 @@ void joystick_handler(struct controller* cont)
             //puts( "turn left" );
 
             // set the robot turn rate
-            cont->turnrate = (int)NORMALIZE_TURN(-event.value);
+            cont->turnrate = NORMALIZE_TURN(-event.value);
             cont->dirty = true;
             break;
 
@@ -236,7 +236,7 @@ void joystick_handler(struct controller* cont)
             //puts( "backwards" );
 
             // set the robot velocity
-            cont->speed = (int)NORMALIZE_SPEED(-event.value);
+            cont->speed = NORMALIZE_SPEED(-event.value);
             cont->dirty = true;
 
             break;
@@ -310,8 +310,8 @@ void keyboard_handler(struct controller* cont )
 {
   int kfd = 0;
   char c;
-  double max_tv = 500.0;
-  double max_rv = 10.0;
+  double max_tv = 0.500;
+  double max_rv = DTOR(10.0);
   struct termio cooked, raw;
 
 	int speed,turn;
@@ -352,27 +352,27 @@ void keyboard_handler(struct controller* cont )
     switch(c)
     {
       case KEYCODE_I:
-		speed = 1;
+        speed = 1;
         cont->dirty = true;
         break;
       case KEYCODE_K:
-		speed = -1;
+        speed = -1;
         cont->dirty = true;
         break;
       case KEYCODE_O:
-		speed = 0;
+        speed = 0;
         cont->dirty = true;
         break;
       case KEYCODE_J:
-	  	turn = 1;
+        turn = 1;
         cont->dirty = true;
         break;
       case KEYCODE_L:
-	  	turn = -1;
+        turn = -1;
         cont->dirty = true;
         break;
       case KEYCODE_U:
-	  	turn = 0;
+        turn = 0;
         cont->dirty = true;
         break;
       case KEYCODE_Q:
@@ -412,17 +412,16 @@ void keyboard_handler(struct controller* cont )
           max_rv = 1;
         break;
       default:
-	  	speed = 0;
-		turn = 0;
+        speed = 0;
+        turn = 0;
         cont->dirty = true;
-		
-    }
-	if (cont->dirty == true)
-	{
-        cont->speed = speed * (int)max_tv;
-        cont->turnrate = turn * (int)max_rv;		
-	}
 
+    }
+    if (cont->dirty == true)
+    {
+      cont->speed = speed * max_tv;
+      cont->turnrate = turn * max_rv;		
+    }
   }
 }
       
@@ -582,7 +581,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-speed" ) == 0 )
       {
         if(i++ < argc)
-          max_speed = atoi(argv[i]);
+          max_speed = atof(argv[i]);
         else
         {
           puts(USAGE);
@@ -592,7 +591,7 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-turnspeed" ) == 0 )
       {
         if(i++ < argc)
-          max_turn = atoi(argv[i]);
+          max_turn = DTOR(atof(argv[i]));
         else
         {
           puts(USAGE);
@@ -602,7 +601,10 @@ int main(int argc, char** argv)
       else if( strcmp( argv[i], "-udp" ) == 0 )
         protocol = PLAYER_TRANSPORT_UDP;
       else
-        puts( USAGE ); // malformed arg - print usage hints
+      {
+        puts(USAGE); // malformed arg - print usage hints
+        exit(-1);
+      }
     }
 
   // if no Players were requested, we assume localhost:6665

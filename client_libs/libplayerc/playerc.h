@@ -996,6 +996,10 @@ int playerc_position_set_cmd_vel(playerc_position_t *device,
 int playerc_position_set_cmd_pose(playerc_position_t *device,
                                   double gx, double gy, double ga, int state);
 
+/** Get the list of waypoints (for position devices that plan paths).  
+    Writes the result into the proxy rather than returning it to the caller. */
+int playerc_position_get_waypoints(playerc_position_t *device);
+
 /***************************************************************************
  ** end section
  **************************************************************************/ 
