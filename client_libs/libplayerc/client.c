@@ -418,17 +418,25 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
     {
-      assert(rep_header.device == req_header.device);
-      assert(rep_header.device_index == req_header.device_index);
-      assert(rep_header.size <= rep_len);
+      if (rep_header.device != req_header.device ||
+          rep_header.device_index != req_header.device_index ||
+          rep_header.size > rep_len)
+      {
+        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
       memcpy(rep_data, data, rep_len);
       break;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
     {
-      assert(rep_header.device == req_header.device);
-      assert(rep_header.device_index == req_header.device_index);
-      assert(rep_header.size <= rep_len);
+      if (rep_header.device != req_header.device ||
+          rep_header.device_index != req_header.device_index ||
+          rep_header.size > rep_len)
+      {
+        PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
       break;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
