@@ -98,7 +98,7 @@ ClientManager* clientmanager;
 ConfigFile configFile;
 
 // for use in other places (cliendata.cc, for example)
-char playerversion[] = PLAYER_VERSION;
+char playerversion[] = VERSION;
 
 bool experimental = false;
 bool debug = false;
@@ -608,7 +608,7 @@ int main( int argc, char *argv[] )
   for(int i=0;i<argc;i++)
     new_argv[i] = strdup(argv[i]);
 
-  printf("** Player v%s ** ", PLAYER_VERSION);
+  printf("** Player v%s ** ", playerversion);
   fflush(stdout);
 
   // parse args
