@@ -159,7 +159,6 @@ Usage()
           "through the devices in\n                   this directory\n");
   fprintf(stderr, "  -g <path>      : connect to Gazebo instance at <path> \n");
   fprintf(stderr, "  -r <logfile>   : read data from <logfile> (readlog driver)\n");
-  fprintf(stderr, "  -d <shlib>     : load the the indicated shared library\n");
   fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
@@ -710,16 +709,14 @@ bool ParseDeviceEx(ConfigFile *configFile, int section)
   const char *drivername;
   DriverEntry *entry;
   CDevice *device;
-  void *handle;
 
   // Load any required plugins
-  pluginname = configFile->ReadFilename(section, "plugin", NULL);
+  pluginname = configFile->ReadString(section, "plugin", NULL);
   if (pluginname != NULL)
   {
-    fprintf(stdout, "loading pluging [%s]\n", pluginname);
-    if(!(handle = dlopen(pluginname, RTLD_NOW)))
+    if(!LoadPlugin(pluginname,configFile->filename))
     {
-      PLAYER_ERROR1("failed: [%s]", dlerror());
+      PLAYER_ERROR1("failed to load plugin: %s", pluginname);
       return (false);
     }
   }
@@ -778,10 +775,12 @@ void PrintDeviceTable()
 bool
 LoadPlugin(const char* pluginname, const char* cfgfile)
 {
+#if HAVE_LIBDL
   void* handle;
   char fullpath[PATH_MAX];
   char* playerpath;
   char* tmp;
+  char* cfgdir;
   unsigned int i,j;
 
   // see if we got an absolute path
@@ -807,6 +806,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   // did the user set PLAYERPATH?
   if((playerpath = getenv("PLAYERPATH")))
   {
+    printf("PLAYERPATH: %s\n", playerpath);
     // yep, now parse it, as a colon-separated list of directories
     i=0;
     while(i<strlen(playerpath))
@@ -820,6 +820,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
         }
         j++;
       }
+      memset(fullpath,0,PATH_MAX);
       strncpy(fullpath,playerpath+i,j-i);
       strcat(fullpath,"/");
       strcat(fullpath,pluginname);
@@ -835,27 +836,36 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       i=j+1;
     }
   }
-
+  
   // try to load it from the directory where the config file is
-    
-  // Note that dirname() modifies the contents, so
-  // we need to make a copy of the filename.
-  tmp = strdup(cfgfile);
-  getcwd(fullpath, PATH_MAX);
-  strcat(fullpath,"/");
-  strcat(fullpath,dirname(tmp));
-  strcat(fullpath,"/");
-  strcat(fullpath,pluginname);
-  printf("trying to load %s...", fullpath);
-  fflush(stdout);
-  if((handle = dlopen(fullpath, RTLD_NOW)))
+  if(cfgfile)
   {
-    puts("success");
-    return(true);
+    // Note that dirname() modifies the contents, so
+    // we need to make a copy of the filename.
+    tmp = strdup(cfgfile);
+    memset(fullpath,0,PATH_MAX);
+    cfgdir = dirname(tmp);
+    if(cfgdir[0] != '/' && cfgdir[0] != '~')
+    {
+      getcwd(fullpath, PATH_MAX);
+      strcat(fullpath,"/");
+    }
+    strcat(fullpath,cfgdir);
+    strcat(fullpath,"/");
+    strcat(fullpath,pluginname);
+    free(tmp);
+    printf("trying to load %s...", fullpath);
+    fflush(stdout);
+    if((handle = dlopen(fullpath, RTLD_NOW)))
+    {
+      puts("success");
+      return(true);
+    }
+    puts("failed");
   }
-  puts("failed");
 
   // try to load it from prefix/lib/player/plugins
+  memset(fullpath,0,PATH_MAX);
   strcpy(fullpath,PLAYER_INSTALL_PREFIX);
   strcat(fullpath,"/lib/player/plugins/");
   strcat(fullpath,pluginname);
@@ -869,6 +879,10 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   puts("failed");
 
   return(false);
+#else
+  PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins");
+  exit(-1);
+#endif
 }
 
 
@@ -1010,17 +1024,9 @@ ParseConfigFile(char* fname, int** ports, int* num_ports,
       {
         if(!LoadPlugin(pluginname,configFile.filename))
         {
-          PLAYER_ERROR1("failed to load plugin: [%s]", dlerror());
+          PLAYER_ERROR1("failed to load plugin: %s", pluginname);
           return (false);
         }
-        /*
-        fprintf(stdout, "loading plugin [%s]\n", pluginname);
-        if(!(handle = dlopen(pluginname, RTLD_NOW)))
-        {
-          PLAYER_ERROR1("failed: [%s]", dlerror());
-          return (false);
-        }
-         */
       }
 
       printf("  loading driver \"%s\" as device \"%d:%s:%d\"\n", 
@@ -1300,31 +1306,6 @@ int main( int argc, char *argv[] )
     {
       printf("[gerkey]");
       player_gerkey = true;
-    }
-    else if(!strcmp(argv[i], "-d"))
-    {
-#if HAVE_LIBDL
-      if(++i<argc) 
-      { 
-        void* handle;
-        fprintf(stderr,"Opening shared object %s...", argv[i]);
-        if(!(handle = dlopen(argv[i], RTLD_NOW)))
-        {
-          fprintf(stderr,"\n  %s\n",dlerror());
-          Interrupt(SIGINT);
-        }
-        else
-          puts("Success!");
-      }
-      else 
-      {
-        Usage();
-        exit(-1);
-      }
-#else
-      PLAYER_ERROR("Sorry, no support for shared libraries");
-      exit(-1);
-#endif
     }
     else if(!strcmp(argv[i], "-p"))
     {
