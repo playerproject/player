@@ -397,6 +397,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
       assert(rep_header.device == req_header.device);
       assert(rep_header.device_index == req_header.device_index);
       assert(rep_header.size <= rep_len);
+      PLAYERC_ERR("got NACK from request");
       return -1;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
