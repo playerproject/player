@@ -1,7 +1,7 @@
 
-#include "canio.h"
+#include "canio_kvaser.h"
 
-DualCANIO::DualCANIO()
+CANIOKvaser::CANIOKvaser() : DualCANIO()
 {
   for (int i =0; i < DUALCAN_NR_CHANNELS; i++) 
   {
@@ -9,6 +9,9 @@ DualCANIO::DualCANIO()
   }
 }
 
+CANIOKvaser::~CANIOKvaser()
+{
+}
 
 /* Initializes the class by opening 2 can channels at the given
  * frequency, which should be one of the #defined BAUD_*K values
@@ -16,7 +19,7 @@ DualCANIO::DualCANIO()
  * returns: 0 on success, negative on error
  */
 int
-DualCANIO::Init(long channel_freq)
+CANIOKvaser::Init(long channel_freq)
 {
   int ret;
 
@@ -49,7 +52,7 @@ DualCANIO::Init(long channel_freq)
  * returns: 0 on success, negative otherwise
  */
 int
-DualCANIO::Shutdown()
+CANIOKvaser::Shutdown()
 {
   int ret;
   for(int i =0 ; i < DUALCAN_NR_CHANNELS; i++) 
@@ -68,7 +71,7 @@ DualCANIO::Shutdown()
  * returns: 0 on success, negative error code otherwise
  */
 int
-DualCANIO::WritePacket(CanPacket &pkt)
+CANIOKvaser::WritePacket(CanPacket &pkt)
 {
   int ret;
 
@@ -107,7 +110,7 @@ DualCANIO::WritePacket(CanPacket &pkt)
  * negative on error
  */
 int
-DualCANIO::ReadPacket(CanPacket *pkt, int channel)
+CANIOKvaser::ReadPacket(CanPacket *pkt, int channel)
 {
   int ret=0;
   long unsigned time;

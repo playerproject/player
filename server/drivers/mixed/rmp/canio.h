@@ -12,7 +12,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <canlib.h>
+// Copied this from <canlib.h>. I assume that it's portable across CAN
+// implementations.
+#ifndef canMSG_STD
+  #define canMSG_STD              0x0002
+#endif
 
 class CanPacket
 {
@@ -78,15 +82,12 @@ class CanPacket
 
 class DualCANIO
 {
-  protected:
-    canHandle channels[2];
-    
   public:
-    DualCANIO();
-    virtual int Init(long channel_freq);
-    virtual int ReadPacket(CanPacket *pkt, int channel);
-    virtual int WritePacket(CanPacket &pkt);
-    virtual int Shutdown();
+    DualCANIO() {}
+    virtual int Init(long channel_freq) = 0;
+    virtual int ReadPacket(CanPacket *pkt, int channel) = 0;
+    virtual int WritePacket(CanPacket &pkt) = 0;
+    virtual int Shutdown() = 0;
 };
 
 #endif
