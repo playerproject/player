@@ -283,9 +283,6 @@ AC_CHECK_LIB(socket, connect)
 #AC_TYPE_SIGNAL
 #AC_CHECK_FUNCS(getcwd gethostname gettimeofday socket strdup strerror)
 
-dnl Check for types
-AC_CHECK_TYPE(socklen_t,int)
-
 AC_SUBST(LIBOBJS)
 
 dnl Create the following Makefiles (from the Makefile.ams)
