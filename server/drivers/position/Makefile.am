@@ -1,2 +1,2 @@
-SUBDIRS = isense microstrain inav vfh wavefront ascension
+SUBDIRS = isense microstrain inav vfh ascension
 
