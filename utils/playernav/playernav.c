@@ -201,7 +201,7 @@ player_read_func(gpointer* arg)
   {
     gettimeofday(&curr,NULL);
     diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
-    if(diff > 1.0/dumpfreq)
+    if(diff >= 1.0/dumpfreq)
     {
       dump_screenshot(gui_data);
       last = curr;
