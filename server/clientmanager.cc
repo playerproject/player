@@ -41,6 +41,7 @@
 #include "devicetable.h"
 #include "device.h"
 #include "error.h"
+#include "message.h"
 
 #include "replace.h"  /* for poll(2) */
 
@@ -221,9 +222,10 @@ void ClientManager::AddClient(ClientData* client)
     memset(((char*)data)+strlen((char*)data),0,
            PLAYER_IDENT_STRLEN-strlen((char*)data));
 
-
-    client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
-    retval= client->Write(PLAYER_IDENT_STRLEN);
+	Message New(data,PLAYER_IDENT_STRLEN,client);
+	client->OutQueue.AddMessage(New);
+    //client->FillWriteBuffer(data,0,PLAYER_IDENT_STRLEN);    
+    while((retval= client->Write()) > 0);
 
     if(retval < 0)
     {
@@ -236,7 +238,17 @@ void ClientManager::AddClient(ClientData* client)
     }
   }
 }
-    
+
+// remove a client from our watch list
+// used when we dont want to delete the object (ie it has been allocated elsewhere)
+void ClientManager::RemoveClient(ClientData* client)
+{
+	int ret = GetIndex(client);
+	if (ret < 0)
+		return;
+	clients[ret] = NULL;
+}
+
 // call Update() on all subscribed devices
 void 
 ClientManager::UpdateDevices()
@@ -399,32 +411,20 @@ ClientManager::PutMsg(uint16_t type, uint16_t device, uint16_t device_index,
                 uint32_t timestamp_sec, uint32_t timestamp_usec,
 		uint32_t size, unsigned char * data, ClientData * client)
 {
-
-	player_msghdr hdr;
-	hdr.stx = htons(PLAYER_STXX);
-	hdr.type=htons(type);
-	hdr.device=htons(device);
-	hdr.device_index=htons(device_index);
-	hdr.timestamp_sec=htonl(timestamp_sec);
-	hdr.timestamp_usec=htonl(timestamp_usec);
-	hdr.size=htonl(size); // size of message data
-	
 	// if client != Null we just send to that client
-	if (client != NULL)
+	if (client)
 	{
-		Message New(hdr,data,size);
-		client->OutQueue.AddMessage(New);
+		client->PutMsg(type, device, device_index, timestamp_sec, timestamp_usec, size, data);
 	}
 	else if (clients)
 	{
-		Message NewMessage(hdr,data,size);
 		for (int i =0; i < num_clients; ++i)
 		{
 			for(CDeviceSubscription* thissub=clients[i]->requested;thissub;thissub=thissub->next)
 			{
 				if(thissub->id.code == device && thissub->id.index == device_index)
 				{
-					clients[i]->OutQueue.AddMessage(NewMessage);
+					clients[i]->PutMsg(type, device, device_index, timestamp_sec, timestamp_usec, size, data);
 					break;
 				}
 			}
@@ -562,17 +562,30 @@ ClientManagerTCP::Write()
 	for(int i=0;i<num_clients;i++)
 	{
     	// if this is a dummy, skip it.
-		if(clients[i]->socket < 0)
-			continue;
+		//if(clients[i]->socket < 0)
+		//	continue;
 
 		// if we're waiting for an authorization on this client, then skip it
 		if(clients[i]->auth_pending)
 			continue;
 
+		if(clients[i]->leftover_size)
+		{
+			clients[i]->leftover_size = clients[i]->Write();
+			if (clients[i]->leftover_size < 0)
+				MarkClientForDeletion(i);
+			// dont add any more data if we still have leftover from previous
+			else if (clients[i]->leftover_size > 0)
+				continue;
+		}
+
+		// Call the clients write method, let the client check if it has
+		// left over data etc
+
 		// if this client has data waiting to be sent, try to send it
-    	if(clients[i]->leftover_size)
+    	/*if(clients[i]->leftover_size)
     	{
-      		if(clients[i]->Write(clients[i]->leftover_size) < 0)
+      		if(clients[i]->Write() < 0)
         		MarkClientForDeletion(i);
 
       		// even if the Write() succeeded, skip this client for this round
@@ -584,8 +597,8 @@ ClientManagerTCP::Write()
 		MessageQueueElement * el;
 		while ((el=clients[i]->OutQueue.Pop()))
 		{
-			clients[i]->FillWriteBuffer(el->msg.GetData(),MessageSize,el->msg.GetSize());
-			MessageSize += el->msg.GetSize();
+			clients[i]->Write(el->msg.GetData(),el->msg.GetSize());
+			//MessageSize += el->msg.GetSize();
 			delete el;
 		}
 
@@ -602,7 +615,7 @@ ClientManagerTCP::Write()
     	// reply not getting sent, don't add any data
     	if(clients[i]->leftover_size)
       		continue;
-
+		*/
     	// rtv - had to fix a dumb rounding error here. This code is
     	// producing intervals like 0.09999-recurring seconds instead of
     	// 0.1 second, so updates were being skipped. I added a
@@ -614,6 +627,7 @@ ClientManagerTCP::Write()
 
     	double curr_seconds = curr.tv_sec+(curr.tv_usec/1000000.0);
 
+		
 
     	// is it time to write?
     	bool time_to_write = 
@@ -628,9 +642,17 @@ ClientManagerTCP::Write()
         	 (clients[i]->mode == PLAYER_DATAMODE_PULL_NEW)) &&
         	(clients[i]->datarequested)))
     	{
-			size_t msglen = clients[i]->BuildMsg(time_to_write || 
-                                			   clients[i]->datarequested);
-			if(clients[i]->Write(msglen) == -1)
+			if (time_to_write || clients[i]->datarequested)
+			{
+			    // Put sync message into clients outgoing queue
+				//printf("Generate Sync\n");
+    			clients[i]->PutMsg(PLAYER_MSGTYPE_SYNCH, PLAYER_PLAYER_CODE, 0, 
+                curr.tv_sec, curr.tv_usec,0,NULL);
+			}
+
+			//size_t msglen = clients[i]->BuildMsg(time_to_write || 
+            //                    			   clients[i]->datarequested);
+			if(clients[i]->Write() <0)
 				MarkClientForDeletion(i);
 			else
 			{
@@ -641,6 +663,7 @@ ClientManagerTCP::Write()
 			  		clients[i]->datarequested = false;
 			}
     	}
+
   	}
 
 	// remove any clients that we marked
@@ -745,8 +768,10 @@ ClientManagerUDP::Read()
         hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
         hdr.sequence = htons(clientData->client_id) << 16;
 
-        clientData->FillWriteBuffer((unsigned char*)&hdr,0,sizeof(hdr));
-        if(clientData->Write(sizeof(hdr)) < 0)
+		Message New(hdr,NULL,0);
+		clientData->OutQueue.AddMessage(New);
+        //clientData->FillWriteBuffer((unsigned char*)&hdr,0,sizeof(hdr));
+        if(clientData->Write() < 0)
         {
           PLAYER_ERROR1("%s", strerror(errno));
           return(-1);

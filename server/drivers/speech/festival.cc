@@ -109,6 +109,9 @@ Brian Gerkey
 #define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
 #define DEFAULT_QUEUE_LEN 4
 
+#include <deque>
+using namespace std;
+
 class Festival:public Driver 
 {
   private:
@@ -118,10 +121,10 @@ class Festival:public Driver
     char festival_libdir_value[MAX_FILENAME_SIZE]; // the libdir
 
     /* a queue to hold incoming speech strings */
-    PlayerQueue* queue;
+    deque<char *> queue;
+//    PlayerQueue* queue;
 
     bool read_pending;
-
 
   public:
     int sock;               // socket to Festival
@@ -136,9 +139,10 @@ class Festival:public Driver
     int Setup();
     int Shutdown();
 
-    virtual void PutCommand(player_device_id_t id,
-                            void* src, size_t len,
-                            struct timeval* timestamp);
+    	virtual int Unsubscribe(player_device_id_t id);
+
+		// MessageHandler
+		int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 };
 
 
@@ -177,10 +181,9 @@ Festival_Register(DriverTable* table)
 void QuitFestival(void* speechdevice);
 
 Festival::Festival( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE,
-         0,sizeof(player_speech_cmd_t),0,0)
+  Driver(cf, section, PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE)
 {
-  int queuelen;
+//  int queuelen;
   sock = -1;
   read_pending = false;
 
@@ -188,10 +191,12 @@ Festival::Festival( ConfigFile* cf, int section) :
   strncpy(festival_libdir_value,
           cf->ReadString(section, "libdir", DEFAULT_FESTIVAL_LIBDIR),
           sizeof(festival_libdir_value));
-  queuelen = cf->ReadInt(section, "queuelen", DEFAULT_QUEUE_LEN);
+	
+
+/*  queuelen = cf->ReadInt(section, "queuelen", DEFAULT_QUEUE_LEN);
 
   queue = new PlayerQueue(queuelen);
-  assert(queue);
+  assert(queue);*/
 }
 
 Festival::~Festival()
@@ -199,11 +204,11 @@ Festival::~Festival()
   Shutdown();
   if(sock != -1)
     QuitFestival(this);
-  if(queue)
+/*  if(queue)
   {
     delete queue;
     queue = NULL;
-  }
+  }*/
 }
 
 int
@@ -223,7 +228,7 @@ Festival::Setup()
   struct hostent* entp;
 
   // start out with a clean slate
-  queue->Flush();
+  //queue->Flush();
   read_pending = false;
 
   printf("Festival speech synthesis server connection initializing (%s,%d)...",
@@ -353,6 +358,45 @@ Festival::Shutdown()
   return(0);
 }
 
+
+int
+Festival::Unsubscribe(player_device_id_t device)
+{
+	int retval = Driver::Unsubscribe(device);
+	if (subscriptions == 0)
+		queue.clear();
+	return retval;
+}
+
+
+int Festival::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+{
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+	*resp_len = 0;
+	
+	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
+	
+	MSG(device_id, PLAYER_MSGTYPE_CMD, sizeof(player_speech_cmd_t), 0xFF)
+	{	
+		// make ABSOLUTELY sure we've got one NULL
+		data[hdr->size]='\0';
+		// now strlen() should return the right length
+	  
+		Lock();
+		/* if there's space, put it in the queue */
+		queue.push_back(strdup((char *)data));
+		Unlock();
+	}
+	MSG_END_ACK
+
+	return -1;
+}
+
+
 void 
 Festival::KillFestival()
 {
@@ -361,36 +405,7 @@ Festival::KillFestival()
   sock = -1;
 }
 
-void 
-Festival::PutCommand(player_device_id_t id,
-                     void* src, size_t len,
-                     struct timeval* timestamp)
-{
-  player_speech_cmd_t cmd;
 
-  memset(&cmd,0,sizeof(player_speech_cmd_t));
-
-  if(len > sizeof(player_speech_cmd_t))
-  {
-    PLAYER_WARN("got command too large; ignoring extra bytes");
-    len = sizeof(player_speech_cmd_t);
-  }
-
-  memcpy(&cmd,src,len);
-  
-  // make ABSOLUTELY sure we've got one NULL
-  cmd.string[PLAYER_SPEECH_MAX_STRING_LEN-1] = '\0';
-  // now strlen() should return the right length
-  
-  Lock();
-
-  /* if there's space, put it in the queue */
-  if(this->queue->Push(cmd.string,strlen((const char*)cmd.string)) < 0)
-    PLAYER_WARN1("not enough room in queue; discarding "
-                 "string:\n   \"%s\"\n", (const char*)cmd.string);
-
-  Unlock();
-}
 
 void
 Festival::Main()
@@ -413,9 +428,11 @@ Festival::Main()
     /* test if we are supposed to cancel */
     pthread_testcancel();
 
+	ProcessMessages();
+
     memset(&cmd,0,sizeof(cmd));
     /* do we have a string to send and is there not one pending? */
-    if(!(queue->Empty()) && !(read_pending))
+    if(!(queue.empty()) && !(read_pending))
     {
       /* send prefix to Festival */
       if(write(sock,(const void*)prefix,strlen(prefix)) == -1)
@@ -424,16 +441,18 @@ Festival::Main()
         break;
       }
 
-      unsigned char tmpstr[sizeof(player_speech_cmd_t)];
-      int tmpstrlen;
-      tmpstrlen = queue->Pop(tmpstr,sizeof(tmpstr));
-      /* send the first string from the queue to Festival */
-      if(write(sock,tmpstr,tmpstrlen) == -1)
-      {
-        perror("festival: write() failed sending string; exiting.");
-        break;
-      }
+		char * tempstr = queue.front();
+		queue.pop_front();
+		assert(tempstr);
 
+		/* send the first string from the queue to Festival */
+		if(write(sock,tempstr,strlen(tempstr)) == -1)
+		{
+			delete tempstr;
+			perror("festival: write() failed sending string; exiting.");
+			break;
+		}
+		delete tempstr;
       /* send suffix to Festival */
       if(write(sock,(const void*)suffix,strlen(suffix)) == -1)
       {

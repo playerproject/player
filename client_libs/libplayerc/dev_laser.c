@@ -242,12 +242,15 @@ int playerc_laser_get_geom(playerc_laser_t *device)
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
+  if (len < sizeof(config))
     return -1;
 
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
-
+  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+  
   return 0;
 }
 

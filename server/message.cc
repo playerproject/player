@@ -66,19 +66,35 @@ Message::Message(const struct player_msghdr & Header, const unsigned char * data
 	*RefCount = 1;
 }
 
+Message::Message(const unsigned char * data, unsigned int data_size, ClientData * _client)
+{
+	Client = _client;
+	Lock = new pthread_mutex_t;
+	assert(Lock);
+	pthread_mutex_init(Lock,NULL);
+	Size = data_size;
+	Data = new unsigned char [Size];
+	assert (Data);
+	// copy the header and then the data into out message data buffer
+	memcpy(Data,&data,Size);
+	RefCount = new unsigned int;
+	assert (RefCount);
+	*RefCount = 1;
+}
+
 Message::Message(const Message & rhs)
 {
 	Client = rhs.Client;
 	assert(rhs.Lock);
 	pthread_mutex_lock(rhs.Lock);
-	assert(*(rhs.RefCount));
 	assert(rhs.Data);
 	assert(rhs.RefCount);
+	assert(*(rhs.RefCount));
 	Lock=rhs.Lock;
 	Data=rhs.Data;
 	Size = rhs.Size;
 	RefCount = rhs.RefCount;
-	RefCount++;
+	(*RefCount)++;
 	pthread_mutex_unlock(Lock);
 }
 
@@ -107,6 +123,7 @@ MessageQueueElement::MessageQueueElement()
 MessageQueueElement::MessageQueueElement(MessageQueueElement & Parent, Message & Msg) :
 	msg(Msg)
 {
+	assert(*(msg.RefCount));
 	prev = &Parent;
 	next = Parent.next;
 	Parent.next = this;
@@ -135,6 +152,7 @@ MessageQueue::~MessageQueue()
 MessageQueueElement * MessageQueue::AddMessage(Message & msg)
 {
 	assert(pTail);
+	assert(*msg.RefCount);
 	Lock();
 	pTail = new MessageQueueElement(*pTail,msg);
 	Unlock();

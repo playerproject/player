@@ -357,8 +357,15 @@ RFLEX_Register(DriverTable *table)
 // Message handler functions
 /////////////////////////////// 
 
-int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
+int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
 {
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+	*resp_len = 0;
+	
 	// Sonar bank 1 power request
 	MSG(sonar_id, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
 	{
@@ -367,7 +374,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		else
 			rflex_sonars_on(rflex_fd);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	// Sonar bank 2 power request
 	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, sizeof(player_sonar_power_config_t), PLAYER_SONAR_POWER_REQ)
@@ -377,7 +384,7 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		else
 			rflex_sonars_on(rflex_fd);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	// Sonar bank 1 geom request
 	MSG(sonar_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_SONAR_GET_GEOM_REQ)
@@ -391,11 +398,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i].y);
 			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i].t));
 		}
-		if(PutMsg(this->sonar_id, client, PLAYER_MSGTYPE_GEOM, 
-        	  &geom, sizeof(geom), NULL))
-			PLAYER_ERROR("failed to PutReply");
+		memcpy(resp_data, &geom, sizeof(geom));
+		*resp_len = sizeof(geom);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	// Sonar bank 2 geom request
 	MSG(sonar_id_2, PLAYER_MSGTYPE_REQ, 1, PLAYER_SONAR_GET_GEOM_REQ)
@@ -409,11 +415,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y);
 			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t));
 		}
-		if(PutMsg(this->sonar_id_2, client, PLAYER_MSGTYPE_GEOM, 
-    	    	  &geom, sizeof(geom), NULL))
-			PLAYER_ERROR("failed to PutReply");
+		memcpy(resp_data, &geom, sizeof(geom));
+		*resp_len = sizeof(geom);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(bumper_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_BUMPER_GET_GEOM_REQ)
 	{
@@ -429,12 +434,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.bumper_def[i].radius = htons((short) rflex_configs.bumper_def[i].radius); //mm
 		}
 
-		// Send
-		if(PutMsg(this->bumper_id, client, PLAYER_MSGTYPE_GEOM, 
-            		&geom, sizeof(geom), NULL))
-			PLAYER_ERROR("failed to PutReply");
+		memcpy(resp_data, &geom, sizeof(geom));
+		*resp_len = sizeof(geom);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(ir_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_IR_POSE_REQ)
 	{
@@ -448,12 +451,10 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 			geom.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
 		}
 
-		// Send
-		if(PutMsg(this->ir_id, client, PLAYER_MSGTYPE_GEOM, 
-        		  &geom, sizeof(geom), NULL))
-			PLAYER_ERROR("failed to PutReply");
+		memcpy(resp_data, &geom, sizeof(geom));
+		*resp_len = sizeof(geom);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(ir_id, PLAYER_MSGTYPE_REQ, 2, PLAYER_IR_POWER_REQ)
 	{
@@ -462,14 +463,14 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		else
 			rflex_ir_on(rflex_fd);	
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_set_odom_req_t), PLAYER_POSITION_SET_ODOM_REQ)
 	{
 		player_position_set_odom_req_t * set_odom_req = ((player_position_set_odom_req_t*)data);;
 		set_odometry((long) ntohl(set_odom_req->x),(long) ntohl(set_odom_req->y),(short) ntohs(set_odom_req->theta));	
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
 	{
@@ -478,19 +479,19 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		else
 			rflex_brake_off(rflex_fd);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_velocitymode_config_t), PLAYER_POSITION_VELOCITY_MODE_REQ)
 	{
 		// Does nothing, needs to be implemented
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(position_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_resetodom_config_t), PLAYER_POSITION_RESET_ODOM_REQ)
 	{
 		reset_odometry();
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(position_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_POSITION_GET_GEOM_REQ)
 	{
@@ -506,17 +507,16 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		geom.size[0] = htons((short) (rflex_configs.mm_length));
 		geom.size[1] = htons((short) (rflex_configs.mm_width));
 
-		if(PutMsg(this->position_id, client, 
-        		 PLAYER_MSGTYPE_GEOM, &geom, sizeof(geom), NULL))
-			PLAYER_ERROR("failed to PutReply");
+		memcpy(resp_data, &geom, sizeof(geom));
+		*resp_len = sizeof(geom);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	MSG(position_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
 	{
 		command = *reinterpret_cast<player_position_cmd_t *> (data);
 	}
-	MSG_END;
+	MSG_END_ACK;
 
 	return -1;
 }
@@ -1259,6 +1259,3 @@ void RFLEX::set_config_defaults(){
   rflex_configs.ir_a = NULL;
   rflex_configs.ir_b = NULL;
 }
-
-
-

@@ -440,7 +440,7 @@ static void parseDioReport( unsigned char *buffer )
 			   else
 			   {
 			      // is bumper
-			      fprintf(stderr,"(bump) address = 0x%02x ",address);
+			      //fprintf(stderr,"(bump) address = 0x%02x ",address);
 			      // assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
 			      status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
 			   }

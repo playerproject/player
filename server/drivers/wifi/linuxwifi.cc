@@ -110,14 +110,14 @@ public:
 
   ~LinuxWiFi();
 
-  int PutConfig(player_device_id_t id, void *client, 
-                void* src, size_t len,
-                struct timeval* timestamp);
-
   void Update(void);
 
   int Setup();
   int Shutdown();
+
+	// MessageHandler
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
 
 protected:
   char * PrintEther(char *buf, unsigned char *addr);
@@ -163,8 +163,7 @@ LinuxWiFi_Register(DriverTable *table)
 }
 
 LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
-  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 
-         sizeof(player_wifi_data_t),0,0,1) 
+  Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE) 
 {
   info_fp = NULL;
   
@@ -278,6 +277,24 @@ LinuxWiFi::Shutdown()
   return 0;
 }
 
+int LinuxWiFi::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+{
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+	*resp_len = 0;
+	
+	MSG(device_id, PLAYER_MSGTYPE_REQ, 1, PLAYER_WIFI_MAC_REQ)
+	{	
+  		GetMACAddress((char *)resp_data, *resp_len);
+  		*resp_len = strlen((char*)resp_data);
+	}
+	MSG_END_ACK
+
+	return -1;
+}
 
 /* equivalent of main loop.  just read info from file, and PutData.
  */
@@ -297,6 +314,8 @@ LinuxWiFi::Update(void)
   struct timeval curr;
 
   GlobalTime->GetTime(&curr);
+
+	ProcessMessages();
 
   // check whether we should update...
   if(((curr.tv_sec - last_update.tv_sec)*1000 +
@@ -428,33 +447,9 @@ LinuxWiFi::Update(void)
  
   wifi_data.qual_type = qual_type;
   
-  this->PutData(&wifi_data, sizeof(player_wifi_data_t), NULL);
+  this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, &wifi_data, sizeof(player_wifi_data_t), NULL);
 }
 
-int
-LinuxWiFi::PutConfig(player_device_id_t id, void *client, 
-                     void* src, size_t len,
-                     struct timeval* timestamp)
-{
-  char * config = (char *)src;
-  uint8_t which = config[0];
-  char buf[32];
-
-  switch(which) {
-  case PLAYER_WIFI_MAC_REQ:
-    GetMACAddress(buf, sizeof(buf));
-    break;
-  default:
-    printf("LINUXWIFI: got other REQ\n");
-  }
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, buf, sizeof(buf), NULL)) {
-    PLAYER_ERROR("LinuxWiFi: failed to put reply");
-    return -1;
-  }
-
-  return 0;
-}
 
 /* Taken from iwlib.c in wireless tools which in turn claims to be a
  * cut & paste from net-tools-1.2.0 */

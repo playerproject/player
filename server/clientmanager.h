@@ -81,6 +81,9 @@ class ClientManager
     // add a client to our watch list
     void AddClient(ClientData* client);
 
+    // remove a client from our watch list
+    void RemoveClient(ClientData* client);
+
     // Update the ClientManager
     int Update();
 

@@ -32,9 +32,11 @@
 #include <sys/types.h>  // for sendto(2)
 #include <netinet/in.h>   /* for sockaddr_in type */
 #include <sys/socket.h>  // for sendto(2)
+#include <assert.h>
 
 #include <player.h>
 #include "message.h"
+#include "clientmanager.h"
 
 // Forward declarations
 class Driver;
@@ -116,9 +118,6 @@ class ClientData
     int numsubs;
     MessageQueue OutQueue;
     unsigned char *replybuffer;
-    unsigned char *totalwritebuffer; // data messages are then added here, for
-                                     // one efficient write(2)
-    size_t totalwritebuffersize; // size of currently allocated buffer
     player_msghdr_t hdrbuffer;
     bool auth_pending;
     unsigned char mode;
@@ -144,24 +143,27 @@ class ClientData
     // Loop through all devices currently open for this client, get data from
     // them, and assemble the results into totalwritebuffer.  Returns the
     // total size of the data that was written into that buffer.
-    size_t BuildMsg(bool include_sync);
+    //size_t BuildMsg(bool include_sync);
 
     // Copy len bytes of src to totalwritebuffer+offset.  Will realloc()
     // totalwritebuffer to make room, if necessary.
-    void FillWriteBuffer(unsigned char* src, size_t offset, size_t len);
+    //void FillWriteBuffer(unsigned char* src, size_t offset, size_t len);
 
     int HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                         size_t payload_size);
 
+    // Put message into clients outgoing queue
+    virtual void PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+                uint32_t timestamp_sec, uint32_t timestamp_usec,
+		uint32_t size, unsigned char * data);
+
+
     virtual int Read() = 0;
     
-    // Try to write() len bytes from totalwritebuffer, which should have been
-    // filled with FillWriteBuffer().  If fewer than len bytes are written, 
-    // the remaining bytes are moved up to the front of totalwritebuffer and 
-    // their length is recorded in leftover_size.  Returns 0 on success (which
-    // includes writing fewer than len bytes) and -1 on error (e.g., if the 
-    // other end of the socket was closed).
-    virtual int Write(size_t len) = 0;
+	// write any pending data for the client...generally this involves iterating
+	// over the outoging message queue. If there is any data still to be sent
+	// return a positive value, 0 for success and -ve for error
+	virtual int Write() = 0;
 
     // added this so Player can manage multiple robots in Stage mode
     int port;
@@ -171,9 +173,15 @@ class ClientData
 class ClientDataTCP : public ClientData
 {
   public:
-    ClientDataTCP(char* key, int port) : ClientData(key, port) {};
-    virtual int Read();
-    virtual int Write(size_t len);
+    ClientDataTCP(char* key, int port) : ClientData(key, port) {totalwritebuffer=new uint8_t[PLAYER_MAX_MESSAGE_SIZE];totalwritebuffersize=PLAYER_MAX_MESSAGE_SIZE;  usedwritebuffersize=0;};
+    ~ClientDataTCP() {delete totalwritebuffer;}
+	virtual int Read();
+    virtual int Write();
+    unsigned char *totalwritebuffer; // data messages are then added here, for
+                                     // one efficient write(2)
+    size_t totalwritebuffersize; // size of currently allocated buffer
+	size_t usedwritebuffersize; 
+	
 };
 
 class ClientDataUDP : public ClientData
@@ -181,7 +189,7 @@ class ClientDataUDP : public ClientData
   public:
     ClientDataUDP(char* key, int port) : ClientData(key, port) {};
     virtual int Read();
-    virtual int Write(size_t len);
+    virtual int Write();
 };
 
 // This class is used for drivers that are a client of other drivers within 
@@ -189,19 +197,28 @@ class ClientDataUDP : public ClientData
 class ClientDataInternal : public ClientData
 {
 	public:
-		ClientDataInternal(char * key, int port) : ClientData(key, port) {};
-    	virtual int Read();
-    	virtual int Write(size_t len);
+		ClientDataInternal(Driver * _driver, char * key="", int port=6665);
+    	~ClientDataInternal();
+		virtual int Read();
+    	virtual int Write();
 
 		// send a message to a subscribed device
-		SendMsg(player_device_id_t id,
+		int SendMsg(player_device_id_t id,
                          unsigned short type, 
-                         void* src, size_t len = 0,
-                         struct timeval* timestamp = NULL,
-						 ClientData * ReplyTo = NULL);
+                         uint8_t* src, size_t len = 0,
+                         struct timeval* timestamp = NULL);
 
+		// override this since we dont want to do the host to net transform
+		void PutMsg(uint16_t type, uint16_t device, uint16_t device_index, 
+                uint32_t timestamp_sec, uint32_t timestamp_usec,
+				uint32_t size, unsigned char * data);
+				
+		int Subscribe(player_device_id_t device, char access='a');
+		int Unsubscribe(player_device_id_t device);
+		int SetDataMode(uint8_t datamode);
 	protected:
 		MessageQueue InQueue;
+		Driver * driver;
 
-}
+};
 #endif

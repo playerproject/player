@@ -139,7 +139,7 @@ DeviceTable::GetDriverName(player_device_id_t id)
 Device* 
 DeviceTable::GetDevice(player_device_id_t id)
 {
-	int i = 0;
+//	int i = 0;
   Device* thisentry;
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)

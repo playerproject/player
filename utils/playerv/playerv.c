@@ -276,7 +276,9 @@ int main(int argc, char **argv)
 
     // Wait for some data.  We rely on getting the sync messages if no
     // devices are subscribed.
+	 // printf("Before peek\n");
     count = playerc_client_peek(client, 50);
+	 // printf("after peek\n");
     if (count < 0)
     {
       PRINT_ERR1("%s", playerc_error_str());
@@ -284,6 +286,7 @@ int main(int argc, char **argv)
     }
     if (count > 0)
     {
+		//printf("Got some data\n");
       proxy = playerc_client_read(client);
 
       // Update everything on the sync packet.

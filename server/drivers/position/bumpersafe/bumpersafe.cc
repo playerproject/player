@@ -66,6 +66,8 @@ Toby Collett
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
+#include "clientdata.h"
+#include "clientmanager.h"
 
 class BumperSafe : public Driver 
 {
@@ -83,11 +85,11 @@ class BumperSafe : public Driver
     // Underlying devices
     int SetupPosition();
     int ShutdownPosition();
-	int GetPosition();
+	//int GetPosition();
 	
     int SetupBumper();
     int ShutdownBumper();
-	int GetBumper();
+	//int GetBumper();
 
 
     // Main function for device thread.
@@ -96,16 +98,16 @@ class BumperSafe : public Driver
 
   private:
     // Write the pose data (the data going back to the client).
-    void PutPose();
+    //void PutPose();
 
     // Send commands to underlying position device
-    void PutCommand();
+    void PutPositionCommand();
 
     // Check for new commands from server
-    void GetCommand();
+    //void GetCommand();
     
-	// Process incoming messages from clients and underlying drivers
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data);
+	// Process incoming messages from clients 
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 	
     // state info
     bool Blocked;
@@ -119,12 +121,16 @@ class BumperSafe : public Driver
     player_position_cmd_t cmd;
     player_position_data_t data;
     double position_time;
+	bool position_subscribed;
 
     // Bumper device info
     Driver *bumper;
     player_device_id_t bumper_id;
     double bumper_time;
     player_bumper_geom_t bumper_geom;
+	bool bumper_subscribed;
+	
+	ClientDataInternal BaseClient;
 		
 };
 
@@ -145,8 +151,11 @@ void BumperSafe_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int BumperSafe::Setup() 
 {
-  player_position_cmd_t cmd = {0};
+  	player_position_cmd_t cmd = {0};
+	Blocked = true;
 
+	clientmanager->AddClient(&BaseClient);
+		
   // Initialise the underlying device s.
   if (this->SetupPosition() != 0)
     return -1;
@@ -170,17 +179,73 @@ int BumperSafe::Shutdown() {
 
   // Stop the odom device.
   this->ShutdownBumper();
-  
+
+	clientmanager->RemoveClient(&BaseClient);
+	
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data)
+int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
 {
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+
+	//printf("bumpersafe Got Message: %d %d %d %d %d\n", hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size ? data[0] : 0);
+	
+	if (hdr->type==PLAYER_MSGTYPE_SYNCH)
+	{	
+		*resp_len = 0;
+		return 0;
+	}
+	if (hdr->type==PLAYER_MSGTYPE_RESP_ACK)
+	{	
+		*resp_len = 0;
+		return 0;
+	}	
+	if (hdr->type==PLAYER_MSGTYPE_DATA && hdr->device==bumper_id.code && hdr->device_index==bumper_id.index)
+	{
+		// we got bumper data, we need to deal with this
+		double time = (double) hdr->timestamp_sec + ((double) hdr->timestamp_usec) * 1e-6;
+
+		// Dont do anything if this is old data.
+		if (time - bumper_time < 0.001)
+			return 0;
+		bumper_time = time;
+
+		CurrentState = *reinterpret_cast<player_bumper_data *> (data);
+
+		unsigned char hash = 0;
+		for (int i = 0; i < CurrentState.bumper_count; ++i)
+			hash |= CurrentState.bumpers[i] & ~SafeState.bumpers[i];
+			
+		if (hash)
+		{
+			Blocked = true;
+		}
+		else
+		{
+			Blocked = false;
+			SafeState = CurrentState;
+		}
+		PutPositionCommand();
+		return 0;
+	}
+	
+	/*if(hdr->device==position_id.code && hdr->device_index==position_id.index)
+	{
+		hdr->device_index = device_id.index;
+		PutMsg(hdr, NULL, hdr->type, data, hdr->size);
+		return 0;
+	}*/
+	
 	if (Blocked)
 	{
-		MSG(device_id, PLAYER_MESSAGE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
+		MSG(device_id, PLAYER_MSGTYPE_REQ, sizeof(player_position_power_config_t), PLAYER_POSITION_MOTOR_POWER_REQ)
 		{
 			// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
 	  		if (((player_position_power_config_t *) data)->value == 1)
@@ -192,12 +257,50 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
     			cmd.yawspeed = 0;
 			}
 		}
-		MSG_END;
+		*resp_len = 0;
+		MSG_END_ACK;
 	}
 	
 	// set reply to value so the reply for this message goes straight to the given client
-	BaseClient->SendMsg(position_id, hdr->type, data, hdr->size, NULL, client);
+	if(hdr->device==device_id.code && hdr->device_index==device_id.index && hdr->type == PLAYER_MSGTYPE_REQ)
+	{
+		//printf("send message for Immediate processing by position device\n");
+		hdr->device_index = position_id.index;
+		int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
+		hdr->device_index = device_id.index;
+		return ret;
+	}
+	
+	MSG(position_id, PLAYER_MSGTYPE_GEOM, sizeof(player_position_geom_t),0xFF)
+	{
+		//printf("Got geom message from position device\n");
+		PutMsg(device_id, NULL, PLAYER_MSGTYPE_GEOM, data, sizeof(player_position_geom_t));		
+		*resp_len=0;
+	}
+	MSG_END
 
+	MSG(position_id, PLAYER_MSGTYPE_DATA, sizeof(player_position_data_t),0xFF)
+	{
+		//printf("Got data message from position device\n");
+		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, data, sizeof(player_position_data_t));		
+		*resp_len=0;
+	}
+	MSG_END
+
+	MSG(device_id, PLAYER_MSGTYPE_CMD, sizeof(player_position_cmd_t), 0xFF)
+	{
+		cmd = *reinterpret_cast<player_position_cmd_t *> (data);
+		if (!Blocked)
+		{
+			hdr->device_index = position_id.index;
+			int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
+			hdr->device_index = device_id.index;
+			return ret;
+		}
+	}
+	MSG_END_ACK;
+
+	
 	return -1;
 }
 
@@ -206,20 +309,17 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 // Set up the underlying position device.
 int BumperSafe::SetupPosition() 
 {
-  this->position = deviceTable->GetDriver(this->position_id);
-  if (!this->position)
-  {
-    PLAYER_ERROR("unable to locate suitable position device");
-    return -1;
-  }
+	printf("Setup POsition called\n");
+	uint8_t DataBuffer[PLAYER_MAX_MESSAGE_SIZE];
+	
+	this->position = deviceTable->GetDriver(this->position_id);
+	if (!this->position)
+	{
+		PLAYER_ERROR("unable to locate suitable position device");
+		return -1;
+	}
 
-  if (this->position->Subscribe(this->position_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to position device");
-    return -1;
-  }
-
-  return 0;
+	return BaseClient.Subscribe(position_id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -230,161 +330,51 @@ int BumperSafe::ShutdownPosition()
   // Stop the robot before unsubscribing
   this->speed = 0;
   this->turnrate = 0;
-  this->PutCommand();
+  this->PutPositionCommand();
   
-  this->position->Unsubscribe(this->position_id);
-  return 0;
+  return BaseClient.Unsubscribe(position_id);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Shutdown the underlying position device.
+void BumperSafe::PutPositionCommand() 
+{
+	player_position_cmd_t NullCmd = {0};
+	if (Blocked)
+		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, (uint8_t*)&NullCmd, sizeof(cmd));
+	else
+		BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, (uint8_t*)&cmd, sizeof(cmd));
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
 int BumperSafe::SetupBumper() {
+	printf("Setup bumper called\n");
+	this->bumper = deviceTable->GetDriver(this->bumper_id);
+	if (!this->bumper)
+	{
+		PLAYER_ERROR("unable to locate suitable laser device");
+		return -1;
+	}
 
-  this->bumper = deviceTable->GetDriver(this->bumper_id);
-  if (!this->bumper)
-  {
-    PLAYER_ERROR("unable to locate suitable laser device");
-    return -1;
-  }
-  if (this->bumper->Subscribe(this->bumper_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to laser device");
-    return -1;
-  }
-
-	// get bumper geometry...
-/*	uint8_t req = PLAYER_BUMPER_GET_GEOM_REQ;
-	unsigned short reptype;
-	struct timeval ts;
-	size_t replen = this->bumper->Request(&bumper->device_id, this, &req, sizeof(req), 
-										&reptype, &ts, &bumper_geom, sizeof(bumper_geom));
+	if (BaseClient.Subscribe(bumper_id,'r') != 0)
+	{
+		PLAYER_ERROR("unable to subscribe to bumper device");
+		return -1;
+	}
 	
-*/
-
-  return 0;
+	return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the bumper
 int BumperSafe::ShutdownBumper() {
-  this->bumper->Unsubscribe(this->bumper_id);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Check for new bumper data
-int BumperSafe::GetBumper() {
-  //int i;
-  size_t size;
-  player_bumper_data_t data;
-  struct timeval timestamp;
-  double time;
-
-  // Get the bumper device data.
-  size = this->bumper->GetData(this->bumper_id, 
-                               (void*) &data, sizeof(data), &timestamp);
-  if (size == 0)
-    return 0;
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (time - this->bumper_time < 0.001)
-    return 0;
-  this->bumper_time = time;
-
-  // copy new data to current state
-  memcpy(&CurrentState,&data,sizeof(data));
-  
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Check for new position data
-int BumperSafe::GetPosition() 
-{
-  //int i;
-  size_t size;
-  struct timeval timestamp;
-  double time;
-
-  // Get the bumper device data.
-  size = this->position->GetData(this->position_id,
-                                 (void*) &data, sizeof(data), 
-                                 &timestamp);
-  if (size == 0)
-    return 0;
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (time - this->position_time < 0.001)
-    return 0;
-  this->position_time = time;
-
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Send commands to the underlying position device
-void BumperSafe::PutCommand() 
-{
-	player_position_cmd_t temp_cmd = cmd;
-
-  // in blocked state then stop motors
-  if (Blocked)
-  {
-    temp_cmd.xspeed = 0;
-    temp_cmd.yspeed = 0;
-    temp_cmd.yawspeed = 0;
-  }
-
-  this->position->PutCommand(this->position_id, 
-                             (void*) &temp_cmd, 
-                             sizeof(temp_cmd),NULL);
-
-  return;
+	return BaseClient.Unsubscribe(bumper_id);
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-int BumperSafe::HandleRequests()
-{
-	int len;
-	void *client;
-	char request[PLAYER_MAX_REQREP_SIZE], response[PLAYER_MAX_REQREP_SIZE];
-	unsigned short reptype;
-	struct timeval ts;
-	size_t resp_length = PLAYER_MAX_REQREP_SIZE;
 
-	while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
-  	{
-    	if (request[0] == PLAYER_POSITION_MOTOR_POWER_REQ && Blocked)
-		{
-			// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
-	  		if (((player_position_power_config_t *) request)->value == 1)
-			{
-				SafeState = CurrentState;
-				Blocked = false;
-    			cmd.xspeed = 0;
-    			cmd.yspeed = 0;
-    			cmd.yawspeed = 0;
-				PutCommand();
-			}
-		}
-		else
-		{
-                  // all other requests pass request onto position device
-                  this->position->Request(this->position_id, 
-                                          this, request, len, NULL,
-                                          &reptype, response, resp_length, &ts);
-                  if(PutReply(client, reptype, response, resp_length, &ts) != 0)
-                    PLAYER_ERROR("PutReply() failed");
-		}
-  	}
-  	return 0;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
@@ -395,69 +385,34 @@ void BumperSafe::Main()
   sleeptime.tv_nsec = 1000000L;
 
   // Wait till we get new odometry data; this may block indefinitely
-  this->GetPosition();
-  this->GetBumper();
+  // this->GetPosition();
+  // this->GetBumper();
 
+	// need to do geom request first
+	printf("Main Bumper thread started\n");
+  
   while (true)
   {
+	// check base client for messages
+	BaseClient.Read();	  
+	  
     // Process any pending requests.
-    this->HandleRequests();
+    this->ProcessMessages();
 
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
-
-    // Get new odometric data
-    if (this->GetPosition() != 0)
-	{
-	    // Write odometric data (so we emulate the underlying odometric device)
-    	this->PutPose();
-    }
-
-    // Get new bumper data
-    if (this->GetBumper() != 0)
-	{
-		unsigned char hash = 0;
-		for (int i = 0; i < CurrentState.bumper_count; ++i)
-			hash |= CurrentState.bumpers[i] & ~SafeState.bumpers[i];
-			
-		if (hash)
-		{
-			Blocked = true;
-			PutCommand();
-		}
-		else
-		{
-			Blocked = false;
-			PutCommand();
-			SafeState = CurrentState;
-		}
-    }
-
-    // Read client command
-    this->GetCommand();
-
   }
   return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Check for new commands from the server
-void BumperSafe::GetCommand() 
-{
-  if(Driver::GetCommand(&cmd, sizeof(cmd),NULL) != 0) 
-  {
-  	PutCommand();
-  }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 BumperSafe::BumperSafe( ConfigFile* cf, int section)
-        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
+        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE), BaseClient(this)
 {
 	Blocked = false;
 
@@ -488,22 +443,3 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
 BumperSafe::~BumperSafe() {
   return;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Update the device data (the data going back to the client).
-void BumperSafe::PutPose()
-{
-  struct timeval timestamp;
-
-  // Compute timestamp
-  timestamp.tv_sec = (uint32_t) this->position_time;
-  timestamp.tv_usec = (uint32_t) (fmod(this->position_time, 1.0) * 1e6);
-
-  // Copy data to server.
-  PutData((void*) &data, sizeof(data), &timestamp);
-
-  return;
-}
-
-

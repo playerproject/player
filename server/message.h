@@ -54,6 +54,8 @@ class Message
 		Message(); 
 		/// create a new message
 		Message(const struct player_msghdr & Header, const unsigned char * data,unsigned int data_size, ClientData * client = NULL); 
+		/// create raw message
+		Message(const unsigned char * data,unsigned int data_size, ClientData * client = NULL);
 		/// copy pointers from existing message and increment refcounts
 		Message(const Message & rhs); 
 		/// destroy message, dec ref counts and delete data if ref count == 0
@@ -61,14 +63,21 @@ class Message
 		
 		/// GetData from message
 		unsigned char * GetData() {return Data;};
+		/// Get pointer to header
+		player_msghdr_t * GetHeader() {return reinterpret_cast<player_msghdr_t *> (Data);};
+		/// Get pointer to payload
+		uint8_t * GetPayload() {return (&Data[sizeof(player_msghdr_t)]);};
+		/// Get Payload size
+		size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
+		
 		/// Size of message data
 		unsigned int GetSize() {return Size;};
 		
 		ClientData * Client;
 		
-	private:
-		unsigned char * Data;
 		unsigned int * RefCount;
+	private:
+		uint8_t * Data;
 		unsigned int Size;
 		pthread_mutex_t * Lock;
 };

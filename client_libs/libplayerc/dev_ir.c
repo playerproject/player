@@ -146,10 +146,17 @@ int playerc_ir_get_geom(playerc_ir_t *device)
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
-    return -1;
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
+  if (len < sizeof(config))
+  	return -1;
+
+  device->poses.pose_count = htons(config.pose_count);
+  for (i = 0; i < device->poses.pose_count; i++)
+  {
+    device->poses.poses[i][0] = ((int16_t) ntohs(config.poses[i][0])); //mm
+    device->poses.poses[i][1] = ((int16_t) ntohs(config.poses[i][1])); //mm
+    device->poses.poses[i][2] = ((int16_t) ntohs(config.poses[i][2])); //deg
+  }
+
 
   return 0;
 }

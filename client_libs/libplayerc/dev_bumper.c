@@ -140,17 +140,24 @@ void playerc_bumper_putgeom(playerc_bumper_t *device, player_msghdr_t *header,
 int playerc_bumper_get_geom(playerc_bumper_t *device)
 {
   int len;
+  int i;
   player_bumper_geom_t config;
 
   config.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
+  if (len < sizeof(config))
     return -1;
-
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
+  device->pose_count = htons(config.bumper_count);
+  for (i = 0; i < device->pose_count; i++)
+  {
+    device->poses[i][0] = ((int16_t) ntohs(config.bumper_def[i].x_offset)); //mm
+    device->poses[i][1] = ((int16_t) ntohs(config.bumper_def[i].y_offset)); //mm
+    device->poses[i][2] = ((int16_t) ntohs(config.bumper_def[i].th_offset)); //deg
+    device->poses[i][3] = ((int16_t) ntohs(config.bumper_def[i].length)); //mm
+    device->poses[i][4] = ((int16_t) ntohs(config.bumper_def[i].radius)); //mm
+  }
 		
 
   return 0;

@@ -146,13 +146,16 @@ int playerc_sonar_get_geom(playerc_sonar_t *device)
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
+  if (len < sizeof(config))
     return -1;
 
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
-
-  return 0;
+ device->pose_count = htons(config.pose_count);
+  for (i = 0; i < device->pose_count; i++)
+  {
+    device->poses[i][0] = ((int16_t) ntohs(config.poses[i][0])) / 1000.0;
+    device->poses[i][1] = ((int16_t) ntohs(config.poses[i][1])) / 1000.0;
+    device->poses[i][2] = ((int16_t) ntohs(config.poses[i][2])) * M_PI / 180;
+  }
+  
+   return 0;
 }
-
-

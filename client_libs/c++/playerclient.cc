@@ -272,7 +272,7 @@ int PlayerClient::Read(bool await_sync, ClientProxy** dev)
       delete[] buffer;
       return(-1);
     }
-    printf("Player Header type: %d\n",hdr.type);
+    //printf("Player Header type: %d\n",hdr.type);
     gettimeofday(&curr,NULL);
     // is this the SYNCH packet?
     if(hdr.type == PLAYER_MSGTYPE_SYNCH)
@@ -382,11 +382,22 @@ int PlayerClient::Read(bool await_sync, ClientProxy** dev)
 	  thisproxy->FreshConfig = true;
 
       thisproxy->Unlock();
-
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_RESP_ACK)
+    {
+		// dont need to do anything		
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_RESP_NACK)
+    {
+		// dont need to do anything		
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_RESP_ERR)
+    {
+		// dont need to do anything		
     }
     else
     {
-      printf("else\n");
+      //printf("else\n");
       if(player_debug_level(-1)>=3)
       {
         fprintf(stderr,"PlayerClient::Read(): received unexpected message"

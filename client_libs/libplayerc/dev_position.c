@@ -123,7 +123,7 @@ void playerc_position_putgeom(playerc_position_t *device, player_msghdr_t *heade
   if (len != sizeof(player_position_geom_t))
   {
     PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_position_geom_t));
-    return -1;
+    return;
   }
 
   device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
@@ -162,11 +162,14 @@ int playerc_position_get_geom(playerc_position_t *device)
 
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
+  if (len < sizeof(player_position_geom_t))
     return -1;
 
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
+  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
 
   return 0;
 }
@@ -204,4 +207,3 @@ int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double 
 
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
-
