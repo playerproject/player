@@ -106,11 +106,10 @@ void LaserProxy::FillData(player_msghdr_t hdr, const char* buffer)
   min_right = 10000;
   for(unsigned short i=0;i<range_count && i<PLAYER_LASER_MAX_SAMPLES;i++)
   {
-    // only want the lower 13 bits for range info
-    ranges[i] = ntohs(((player_laser_data_t*)buffer)->ranges[i]) & 0x1FFF;
-    // only want the higher 3 bits for intensity info
+    ranges[i] = ntohs(((player_laser_data_t*)buffer)->ranges[i]);
+    
     intensities[i] = 
-      (unsigned char)((ntohs(((player_laser_data_t*)buffer)->ranges[i])) >> 13);
+            (unsigned char)(((player_laser_data_t*)buffer)->intensity[i]);
     if(i>(range_count/2) && ranges[i] < min_left)
       min_left = ranges[i];
     else if(i<(range_count/2) && ranges[i] < min_right)

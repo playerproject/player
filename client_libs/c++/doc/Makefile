@@ -13,11 +13,7 @@
 MANNAME = cppclient
 
 # Header files to scan
-MANFILES = ../positionproxy.h ../sonarproxy.h ../miscproxy.h \
-           ../ptzproxy.h ../visionproxy.h ../laserproxy.h \
-           ../laserbeaconproxy.h ../speechproxy.h \
-           ../broadcastproxy.h ../bpsproxy.h ../gpsproxy.h \
-	   ../gripperproxy.h ../playerclient.h ../truthproxy.h
+MANFILES = ../playerclient.h
 
 
 # Build the manual

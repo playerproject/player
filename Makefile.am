@@ -1,4 +1,4 @@
-SUBDIRS = server client_libs examples rtk2 utils
+SUBDIRS = server client_libs examples rtk2 utils config
 
 dist-hook:
 	mkdir -p $(top_distdir)/doc

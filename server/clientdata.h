@@ -70,7 +70,10 @@ class CClientData
   private:
     char auth_key[PLAYER_KEYLEN];
     unsigned char *readbuffer;
-    unsigned char *writebuffer;
+    unsigned char *writebuffer;  // individual data messages are written here
+    unsigned char *totalwritebuffer; // data messages are then added here, for
+                                     // one efficient write(2)
+    int totalwritebuffersize;
     player_msghdr_t hdrbuffer;
     
     // added this so Player can manage multiple robots in Stage mode
@@ -99,7 +102,7 @@ class CClientData
     unsigned char FindPermission(player_device_id_t id);
     void Unsubscribe(player_device_id_t id);
     int Subscribe(player_device_id_t id);
-    int BuildMsg(unsigned char *data, size_t maxsize);
+    int BuildMsg();
 
  public:
     CDeviceSubscription* requested;
