@@ -29,7 +29,7 @@ int test_gps(playerc_client_t *client, int index)
   }
   PASS();
 
-  for (t = 0; 1; t++)
+  for (t = 0; t < 10; t++)
   {
     TEST1("reading data (attempt %d)", t);
 
@@ -40,12 +40,12 @@ int test_gps(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("gps: [%+14.3f] [%+14.3f] [%+11.6f] [%+11.6f] [%+7.3f] "
-             "[%.3f %.3f] [%.3f %.3f] [%d %2d]\n",
+      printf("gps: [%+14.3f] utc [%+14.3f] lon/lat [%+11.7f %+11.7f] alt [%+7.3f] "
+             "utm [%.3f %.3f] hdop [%.3f] sats [%d %2d]\n",
              device->info.datatime, device->utc_time,
-             device->lat, device->lon, device->alt,
+             device->lon, device->lat, device->alt,
              device->utm_e, device->utm_n,
-             device->err_horz, device->err_vert,
+             device->hdop, 
              device->quality, device->sat_count);
     }
     else

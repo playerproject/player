@@ -5,6 +5,7 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <math.h>
 #include "test.h"
 #include "playerc.h"
 
@@ -46,8 +47,9 @@ int test_fiducial(playerc_client_t *client, int index)
 
       printf("fiducial: [%d] ", device->fiducial_count);
       for (i = 0; i < min(3, device->fiducial_count); i++)
-        printf("[%d %6.3f, %6.3f, %6.3f] ", device->fiducials[i].id,
-               device->fiducials[i].range, device->fiducials[i].bearing,
+        printf("[%d %6.3f %6.3f %6.3f %6.3f %6.3f] ", device->fiducials[i].id,
+               device->fiducials[i].pos[0], device->fiducials[i].pos[1],
+               device->fiducials[i].range, device->fiducials[i].bearing * 180 / M_PI,
                device->fiducials[i].orient);
       printf("\n");
     }

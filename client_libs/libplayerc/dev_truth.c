@@ -100,14 +100,22 @@ void playerc_truth_putdata(playerc_truth_t *device, player_msghdr_t *header,
 {
   assert(sizeof(*data) <= len);
 
-  device->px = ((int32_t) ntohl(data->px)) / 1000.0;
-  device->py = ((int32_t) ntohl(data->py)) / 1000.0;
-  device->pa = ((int32_t) ntohl(data->pa)) * M_PI / 180;
+  device->pos[0] = ((int32_t) ntohl(data->pos[0])) / 1000.0;
+  device->pos[1] = ((int32_t) ntohl(data->pos[1])) / 1000.0;
+  device->pos[2] = ((int32_t) ntohl(data->pos[2])) / 1000.0;
+
+  device->rot[0] = ((int32_t) ntohl(data->rot[0])) / 1000.0;
+  device->rot[1] = ((int32_t) ntohl(data->rot[1])) / 1000.0;
+  device->rot[2] = ((int32_t) ntohl(data->rot[2])) / 1000.0;
+
+  return;
 }
 
 
 // Get the object pose.
-int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, double *pa)
+int playerc_truth_get_pose(playerc_truth_t *device,
+                           double *px, double *py, double *pz,
+                           double *rx, double *ry, double *rz)
 {
   int len;
   player_truth_pose_t config;
@@ -124,24 +132,35 @@ int playerc_truth_get_pose(playerc_truth_t *device, double *px, double *py, doub
     return -1;
   }
 
-  *px = ((int32_t) ntohl(config.px)) / 1000.0;
-  *py = ((int32_t) ntohl(config.py)) / 1000.0;
-  *pa = ((int32_t) ntohl(config.pa)) * M_PI / 180;
+  *px = ((int32_t) ntohl(config.pos[0])) / 1000.0;
+  *py = ((int32_t) ntohl(config.pos[1])) / 1000.0;
+  *pz = ((int32_t) ntohl(config.pos[2])) / 1000.0;
+
+  *rx = ((int32_t) ntohl(config.rot[0])) / 1000.0;
+  *ry = ((int32_t) ntohl(config.rot[1])) / 1000.0;
+  *rz = ((int32_t) ntohl(config.rot[2])) / 1000.0;
 
   return 0;
 }
 
 
 // Set the object pose.
-int playerc_truth_set_pose(playerc_truth_t *device, double px, double py, double pa)
+int playerc_truth_set_pose(playerc_truth_t *device, 
+                           double px, double py, double pz,
+                           double rx, double ry, double rz)
 {
   int len;
   player_truth_pose_t config;
 
   config.subtype = PLAYER_TRUTH_SET_POSE;
-  config.px = htonl((uint32_t) (int32_t) (px * 1000));
-  config.py = htonl((uint32_t) (int32_t) (py * 1000));
-  config.pa = htonl((uint32_t) (int32_t) (pa * 180 / M_PI)); 
+
+  config.pos[0] = htonl((uint32_t) (int32_t) (px * 1000));
+  config.pos[1] = htonl((uint32_t) (int32_t) (py * 1000));
+  config.pos[2] = htonl((uint32_t) (int32_t) (pz * 1000));
+
+  config.rot[0] = htonl((uint32_t) (int32_t) (rx * 1000));
+  config.rot[1] = htonl((uint32_t) (int32_t) (ry * 1000));
+  config.rot[2] = htonl((uint32_t) (int32_t) (rz * 1000));
   
   len = playerc_client_request(device->info.client, &device->info,
                                &config, sizeof(config), &config, sizeof(config));

@@ -319,8 +319,13 @@ void GzTruth_Register(DriverTable *table);
 void GzGripper_Register(DriverTable *table);
 #endif
 
+// Deprecated; for Gazebo 0.4 compatability
 #ifdef INCLUDE_GAZEBO_SONARS
 void GzSonars_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_GAZEBO_SONAR
+void GzSonar_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_GAZEBO_HUD
@@ -763,8 +768,13 @@ register_devices()
   GzGripper_Register(driverTable);
 #endif
 
+// Deprecated; for Gazebo 0.4 compatability
 #ifdef INCLUDE_GAZEBO_SONARS
   GzSonars_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GAZEBO_SONAR
+  GzSonar_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GAZEBO_HUD

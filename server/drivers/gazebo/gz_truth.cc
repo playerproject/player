@@ -189,9 +189,13 @@ void GzTruth::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-    data.px = htonl((int32_t) (1000 * this->iface->data->pos[0]));
-    data.py = htonl((int32_t) (1000 * this->iface->data->pos[1]));
-    data.pa = htonl((int32_t) (180 * this->iface->data->rot[2] / M_PI));
+    data.pos[0] = htonl((int32_t) (1000 * this->iface->data->pos[0]));
+    data.pos[1] = htonl((int32_t) (1000 * this->iface->data->pos[1]));
+    data.pos[2] = htonl((int32_t) (1000 * this->iface->data->pos[2]));
+
+    data.rot[0] = htonl((int32_t) (1000 * this->iface->data->rot[0]));
+    data.rot[1] = htonl((int32_t) (1000 * this->iface->data->rot[1]));
+    data.rot[2] = htonl((int32_t) (1000 * this->iface->data->rot[2]));
     
     this->PutData(&data, sizeof(data), &ts);
   }
@@ -229,9 +233,13 @@ int GzTruth::PutConfig(player_device_id_t id, void *client,
 
       gz_truth_lock(this->iface, 1);
             
-      rep.px = htonl((int32_t) (1000 * this->iface->data->pos[0]));
-      rep.py = htonl((int32_t) (1000 * this->iface->data->pos[1]));
-      rep.pa = htonl((int32_t) (180 * this->iface->data->rot[2] / M_PI));
+      rep.pos[0] = htonl((int32_t) (1000 * this->iface->data->pos[0]));
+      rep.pos[1] = htonl((int32_t) (1000 * this->iface->data->pos[1]));
+      rep.pos[2] = htonl((int32_t) (1000 * this->iface->data->pos[2]));
+
+      rep.rot[0] = htonl((int32_t) (1000 * this->iface->data->rot[0]));
+      rep.rot[1] = htonl((int32_t) (1000 * this->iface->data->rot[1]));
+      rep.rot[2] = htonl((int32_t) (1000 * this->iface->data->rot[2]));
 
       gz_truth_unlock(this->iface);
 
@@ -245,13 +253,13 @@ int GzTruth::PutConfig(player_device_id_t id, void *client,
       
       gz_truth_lock(this->iface, 1);
 
-      this->iface->data->cmd_pos[0] = ((int32_t) ntohl(req->px)) / 1000.0;
-      this->iface->data->cmd_pos[1] = ((int32_t) ntohl(req->py)) / 1000.0;
-      this->iface->data->cmd_pos[2] = this->iface->data->pos[2];
+      this->iface->data->cmd_pos[0] = ((int32_t) ntohl(req->pos[0])) / 1000.0;
+      this->iface->data->cmd_pos[1] = ((int32_t) ntohl(req->pos[1])) / 1000.0;
+      this->iface->data->cmd_pos[2] = ((int32_t) ntohl(req->pos[2])) / 1000.0;
 
-      this->iface->data->cmd_rot[0] = this->iface->data->rot[0];
-      this->iface->data->cmd_rot[1] = this->iface->data->rot[1];
-      this->iface->data->cmd_rot[2] = ((int32_t) ntohl(req->pa)) / 180.0 * M_PI;
+      this->iface->data->cmd_rot[0] = ((int32_t) ntohl(req->rot[0])) / 1000.0;
+      this->iface->data->cmd_rot[1] = ((int32_t) ntohl(req->rot[1])) / 1000.0;
+      this->iface->data->cmd_rot[2] = ((int32_t) ntohl(req->rot[2])) / 1000.0;
 
       this->iface->data->cmd_new = 1;
 

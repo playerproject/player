@@ -901,11 +901,12 @@ int ReadLog::ParseGps(player_device_id_t id, int linenum,
   data.utm_n = NINT32(CM_MM(atof(tokens[11])));
 
   data.hdop = NINT16((int) (10 * atof(tokens[12])));
-  data.err_horz = NUINT32(M_MM(atof(tokens[13])));
-  data.err_vert = NUINT32(M_MM(atof(tokens[14])));
+  data.hdop = NINT16((int) (10 * atof(tokens[13])));
+  data.err_horz = NUINT32(M_MM(atof(tokens[14])));
+  data.err_vert = NUINT32(M_MM(atof(tokens[15])));
 
-  data.quality = atoi(tokens[15]);
-  data.num_sats = atoi(tokens[16]);
+  data.quality = atoi(tokens[16]);
+  data.num_sats = atoi(tokens[17]);
 
   this->PutData(id, &data, sizeof(data), &time);
 

@@ -111,6 +111,8 @@ void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
   device->utm_n = (int32_t) ntohl(data->utm_n) / 100.0;
 
   device->hdop = (uint16_t) ntohs(data->hdop) / 10.0;
+  device->vdop = (uint16_t) ntohs(data->vdop) / 10.0;
+  
   device->err_horz = (uint32_t) ntohl(data->err_horz) / 1000.0;
   device->err_vert = (uint32_t) ntohl(data->err_vert) / 1000.0;
 

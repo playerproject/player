@@ -349,7 +349,7 @@ int WriteLog::Setup()
 
   // Write the file header
   fprintf(this->file, "## Player version %s \n", VERSION);
-  fprintf(this->file, "## File version %s \n", "0.1.0");
+  fprintf(this->file, "## File version %s \n", "0.2.0");
 
   // Enable/disable logging, according to default set in config file
   this->enable = this->enable_default;
@@ -775,16 +775,17 @@ void WriteLog::WriteGps(player_gps_data_t *data)
           "%.3f "
           "%.6f %.6f %.6f "
           "%.3f %.3f "
-          "%.3f %.3f %.3f "
+          "%.3f %.3f %.3f %.3f "
           "%d %d",
           (double) (uint32_t) HINT32(data->time_sec) +
           (double) (uint32_t) HINT32(data->time_sec) * 1e-6,
-          (double) HINT32(data->latitude) / (60 * 60 * 60),
-          (double) HINT32(data->longitude) / (60 * 60 * 60),
+          (double) HINT32(data->latitude) / (1e7),
+          (double) HINT32(data->longitude) / (1e7),
           MM_M(HINT32(data->altitude)),
           CM_M(HINT32(data->utm_e)),
           CM_M(HINT32(data->utm_n)), 
           (double) HINT16(data->hdop) / 10,
+          (double) HINT16(data->vdop) / 10,
           MM_M(HINT32(data->err_horz)),
           MM_M(HINT32(data->err_vert)),
           (int) data->quality,
@@ -925,10 +926,13 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
 // Write truth data to file
 void WriteLog::WriteTruth(player_truth_data_t *data)
 {
-  fprintf(this->file, "%+07.3f %+07.3f %+04.3f",
-          MM_M(HINT32(data->px)),
-          MM_M(HINT32(data->py)),
-          DEG_RAD(HINT32(data->pa)));
+  fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
+          MM_M(HINT32(data->pos[0])),
+          MM_M(HINT32(data->pos[1])),
+          MM_M(HINT32(data->pos[2])),
+          MM_M(HINT32(data->rot[0])),
+          MM_M(HINT32(data->rot[1])),
+          MM_M(HINT32(data->rot[2])));
   
   return;
 }

@@ -100,6 +100,7 @@ void playerc_ptz_putdata(playerc_ptz_t *device, player_msghdr_t *header,
   device->pan = ((short) ntohs(data->pan)) * M_PI / 180;
   device->tilt = ((short) ntohs(data->tilt)) * M_PI / 180;
   device->zoom = ((short) ntohs(data->zoom)) * M_PI / 180;
+  return;
 }
 
 

@@ -40,9 +40,3 @@ libplayerc_a_SOURCES = playerc.h \
 libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
 
 include_HEADERS = playerc.h
-
-# REMOVE
-#dist-hook:
-#	mkdir -p $(top_distdir)/doc
-#	cd $(srcdir)/doc && make
-#	cp -p $(srcdir)/doc/libplayerc.ps $(top_distdir)/doc

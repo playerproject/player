@@ -66,10 +66,14 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
 
   // convert pos from NBO integer mm to double meters
-  x = ((int32_t)ntohl(((player_truth_data_t*)buffer)->px)) / 1e3;
-  y = ((int32_t)ntohl(((player_truth_data_t*)buffer)->py)) / 1e3;
+  px = ((int32_t)ntohl(((player_truth_data_t*)buffer)->pos[0])) / 1e3;
+  py = ((int32_t)ntohl(((player_truth_data_t*)buffer)->pos[1])) / 1e3;
+  pz = ((int32_t)ntohl(((player_truth_data_t*)buffer)->pos[2])) / 1e3;
+  
   // heading in NBO integer degrees to double radians
-  a = DTOR((double)(int32_t)ntohl(((player_truth_data_t*)buffer)->pa));
+  rx = ((int32_t)ntohl(((player_truth_data_t*)buffer)->rot[0])) / 1e3;
+  ry = ((int32_t)ntohl(((player_truth_data_t*)buffer)->rot[1])) / 1e3;
+  rz = ((int32_t)ntohl(((player_truth_data_t*)buffer)->rot[2])) / 1e3;
 }
 
 // interface that all proxies SHOULD provide
@@ -78,11 +82,12 @@ void TruthProxy::Print()
   printf("#GROUND TRUTH POSE (%d:%d) - %c\n", 
          m_device_id.code, m_device_id.index, access);
   puts("#(Xm,Ym,THradians)");
-  printf("%.3f\t%.3f\t%.3f\n", x,y,a);
+  printf("%.3f\t%.3f\t%.3f\n", px,py,pz);
 }
 
 // Get the object pose - sends a request and waits for a reply
-int TruthProxy::GetPose( double *px, double *py, double *pa )
+int TruthProxy::GetPose( double *px, double *py, double *pz,
+                         double *rx, double *ry, double *rz )
 {
   player_truth_pose_t config;
   player_msghdr_t hdr;
@@ -94,28 +99,39 @@ int TruthProxy::GetPose( double *px, double *py, double *pa )
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
   
-  *px = ((int32_t)ntohl(config.px)) / 1e3;
-  *py = ((int32_t)ntohl(config.py)) / 1e3;
-  *pa = DTOR((double)(int32_t)ntohl(config.pa));
-  
-  // update the internal pose record too.
-  x = *px;
-  y = *py;
-  a = *pa;
+  *px = ((int32_t)ntohl(config.pos[0])) / 1e3;
+  *py = ((int32_t)ntohl(config.pos[1])) / 1e3;
+  *pz = ((int32_t)ntohl(config.pos[2])) / 1e3;
 
+  *rx = ((int32_t)ntohl(config.rot[0])) / 1e3;
+  *ry = ((int32_t)ntohl(config.rot[1])) / 1e3;
+  *rz = ((int32_t)ntohl(config.rot[2])) / 1e3;
+
+  // update the internal pose record too.
+  this->px = *px;
+  this->py = *py;
+  this->pz = *pz;
+  this->rx = *rx;
+  this->ry = *ry;
+  this->rz = *rz;
+  
   return 0;
 }
 
 // Set the object pose by sending a config request
-int TruthProxy::SetPose( double px, double py, double pa )
+int TruthProxy::SetPose(double px, double py, double pz,
+                        double rx, double ry, double rz)
 {
   int len;
   player_truth_pose_t config;
   
   config.subtype = PLAYER_TRUTH_SET_POSE;
-  config.px = htonl((int32_t)(px * 1000));
-  config.py = htonl((int32_t)(py * 1000));
-  config.pa = htonl(RAD_TO_POS_DEG(pa));
+  config.pos[0] = htonl((int32_t)(px * 1000));
+  config.pos[1] = htonl((int32_t)(py * 1000));
+  config.pos[2] = htonl((int32_t)(pz * 1000));
+  config.rot[0] = htonl((int32_t)(rx * 1000));
+  config.rot[1] = htonl((int32_t)(ry * 1000));
+  config.rot[2] = htonl((int32_t)(rz * 1000));
   
   len = client->Request(m_device_id,
 			 (const char*)&config, sizeof(config));
@@ -128,15 +144,19 @@ int TruthProxy::SetPose( double px, double py, double pa )
 }
 
 // Set the object pose by sending a config request
-int TruthProxy::SetPoseOnRoot( double px, double py, double pa )
+int TruthProxy::SetPoseOnRoot(double px, double py, double pz,
+                              double rx, double ry, double rz)
 {
   int len;
   player_truth_pose_t config;
   
   config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
-  config.px = htonl((int32_t)(px * 1000));
-  config.py = htonl((int32_t)(py * 1000));
-  config.pa = htonl(RAD_TO_POS_DEG(pa));
+  config.pos[0] = htonl((int32_t)(px * 1000));
+  config.pos[1] = htonl((int32_t)(py * 1000));
+  config.pos[2] = htonl((int32_t)(pz * 1000));
+  config.rot[0] = htonl((int32_t)(rx * 1000));
+  config.rot[1] = htonl((int32_t)(ry * 1000));
+  config.rot[2] = htonl((int32_t)(rz * 1000));
   
   len = client->Request( m_device_id,
 			 (const char*)&config, sizeof(config));

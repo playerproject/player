@@ -36,47 +36,63 @@ int test_position3d(playerc_client_t *client, int index)
     FAIL();
   printf("position3d geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
          device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
+
+  TEST("enabling motors");
+  if (playerc_position3d_enable(device, 1) == 0)
+    PASS();
+  else
+    FAIL();
   
-  for (t = 0; t < 3000; t++)
+  for (t = 0; t < 30; t++)
   {
     TEST1("reading data (attempt %d)", t);
 
-    while (1)
-    {
+    do
       rdevice = playerc_client_read(client);
+    while (rdevice == client);
 
-      if (rdevice == client)
-      {
-        printf("sync\n");
-        break;
-      }
-
-      if (rdevice == device)
-      {
-        PASS();
-        printf("position3d: [%14.3f] [%+7.3f %+7.3f %+7.3f] [%+7.3f %+7.3f %+7.3f]\n",
-               device->info.datatime,
-               device->pos_x, device->pos_y, device->pos_z,
-               device->pos_roll * 180/M_PI,
-               device->pos_pitch * 180/M_PI,
-               device->pos_yaw * 180/M_PI);
-      }
-      else
-      {
-        //printf("error: %s", playerc_error_str());
-        FAIL();
-        break;
-      }
+    if (rdevice == device)
+    {
+      PASS();
+      printf("position3d: [%14.3f] [%+7.3f %+7.3f %+7.3f] [%+7.3f %+7.3f %+7.3f]\n",
+             device->info.datatime,
+             device->pos_x, device->pos_y, device->pos_z,
+             device->pos_roll * 180/M_PI,
+             device->pos_pitch * 180/M_PI,
+             device->pos_yaw * 180/M_PI);
     }
+    else
+    {
+      FAIL();
+      break;
+    }
+
+    TEST1("writing data (attempt %d)", t);
+    if (playerc_position3d_set_velocity(device, 0.10, 0, 0, 0, 0, 0.2, 1) != 0)
+    {
+      FAIL();
+      break;
+    }
+    PASS();
   }
   
+  TEST1("writing data (attempt %d)", t);
+  if (playerc_position3d_set_velocity(device, 0, 0, 0, 0, 0, 0, 1) != 0)
+    FAIL();
+  else
+    PASS();
+
+  TEST("disabling motors");
+  if (playerc_position3d_enable(device, 0) == 0)
+    PASS();
+  else
+    FAIL();
+
   TEST("unsubscribing");
   if (playerc_position3d_unsubscribe(device) != 0)
-  {
     FAIL();
-    return -1;
-  }
-  PASS();
+  else
+    PASS();
   
   playerc_position3d_destroy(device);
   
