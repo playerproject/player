@@ -168,7 +168,8 @@ PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
 PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[])
+PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[],
+                  [OPENCV],[opencv])
 
 dnl Deprecated
 dnl PLAYER_ADD_DRIVER([shapetracker],[drivers/blobfinder/shapetracker],[yes],

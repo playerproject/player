@@ -244,7 +244,7 @@ bool ConfigFile::WarnUnused()
         if (!field->useds[j])
         {
           unused = true;
-          CONFIG_WARN2("field [%s] has unused elements",
+          CONFIG_WARN2("field [%s] has unused element %d",
                        field->line, field->name, j);
         }
       }
