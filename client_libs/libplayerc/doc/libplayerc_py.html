@@ -1,19 +1,22 @@
 
-/** @page libplayerc_py Python bindings (libplayerc_py)
+/** @addtogroup clientlibs Client Libraries */
+/** @{ */
+/** @defgroup player_clientlib_libplayerc_py libplayerc_py
 
-Python bindings for libplayerc are generated automatically using <a
-href="http://swig.com">SWIG</a>.  The bindings are object-oriented,
-using standard Python classes (for those familiar with SWIG, these are
-standard SWIG shadow classes).
+Python bindings for @ref player_clientlib_libplayerc are
+generated automatically using <a href="http://swig.com">SWIG</a>.
+The bindings are object-oriented, using standard Python classes (for
+those familiar with SWIG, these are standard SWIG shadow classes).
 
 
 @section libplayerc_py_usage General usage
 
-libplayerc is based on a device <i>proxy</i> model, in which the client
-maintains a local proxy for each of the devices on the remote server.
-Thus, for example, one can create local proxies for the <tt>position</tt>
-and <tt>laser</tt> devices.  There is also a special <tt>client</tt> proxy,
-used to control the Player server itself.
+@ref player_clientlib_libplayerc is based on a device
+<i>proxy</i> model, in which the client maintains a local proxy for each
+of the devices on the remote server.  Thus, for example, one can create
+local proxies for the <tt>position</tt> and <tt>laser</tt> devices.
+There is also a special <tt>client</tt> proxy, used to control the Player
+server itself.
 
 Programs using the libplayerc Python bindings will generally have the
 following structure:
