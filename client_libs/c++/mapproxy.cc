@@ -157,15 +157,19 @@ int MapProxy::GetCellIndex( int x, int y)
   return y*this->width + x;
 }
 
-/** Return the (x,y) cell */
-char MapProxy::GetCell( int x, int y )
+/** Get the (x,y) cell; returns 0 on success, -1 on failure (i.e., indexes
+ * out of bounds) */
+int MapProxy::GetCell( char* cell, int x, int y )
 {
   int index = this->GetCellIndex(x,y);
 
   if ( index < this->height*this->width)
-    return this->cells[index];
+  {
+    *cell = this->cells[index];
+    return(0);
+  }
   else
-    return NULL;
+    return(-1);
 }
 
 // interface that all proxies must provide

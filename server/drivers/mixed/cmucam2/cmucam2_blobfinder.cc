@@ -190,7 +190,7 @@ Cmucam2blobfinder::Main()
 {  
   player_cmucam2_data_t cmucam2_data; // we get one of these
   player_blobfinder_data_t player_data; // and extract the blob data, copying it into here
-  player_blobfinder_blob_elt_t blob;
+  //player_blobfinder_blob_elt_t blob;
 
   player_data.width = htons((uint16_t)166);
   player_data.height = htons((uint16_t)143);

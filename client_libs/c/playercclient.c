@@ -316,8 +316,11 @@ int player_request(player_connection_t* conn,
                    const char* payload, size_t payloadlen, 
                    player_msghdr_t* replyhdr, char* reply, size_t replylen)
 {
-  unsigned char buffer[PLAYER_MAX_MESSAGE_SIZE];
   player_msghdr_t hdr;
+  unsigned char *buffer;
+
+  // Get memory from the heap, not the stack
+  buffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(payloadlen > (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)))
   {
@@ -382,7 +385,7 @@ int player_request(player_connection_t* conn,
          (hdr.type != PLAYER_MSGTYPE_RESP_NACK) &&
          (hdr.type != PLAYER_MSGTYPE_RESP_ERR))
   {
-    if(player_read(conn, &hdr, buffer, sizeof(buffer)) == -1)
+    if(player_read(conn, &hdr, buffer, PLAYER_MAX_MESSAGE_SIZE) == -1)
       return(-1);
   }
 
@@ -391,6 +394,8 @@ int player_request(player_connection_t* conn,
     *replyhdr = hdr;
   if(reply && replylen >= hdr.size)
     memcpy(reply,buffer,replyhdr->size);
+
+  free(buffer);
 
   return(0);
 }
@@ -410,7 +415,10 @@ int player_request_device_access(player_connection_t* conn,
   player_device_resp_t this_resp;
   unsigned char payload[sizeof(player_device_req_t)];
   player_msghdr_t replyhdr;
-  unsigned char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
+  unsigned char *replybuffer;
+
+  // Get memory from the heap, not the stack
+  replybuffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   this_req.code = htons(device);
@@ -419,9 +427,10 @@ int player_request_device_access(player_connection_t* conn,
 
   memcpy(payload,&this_req,sizeof(player_device_req_t));
 
+  //cannot use sizeof(replybuffer) because we malloc'd the memory.
   if(player_request(conn, PLAYER_PLAYER_CODE, 0, 
                     payload, sizeof(payload),
-                    &replyhdr, replybuffer, sizeof(replybuffer)) == -1)
+                    &replyhdr, replybuffer, PLAYER_MAX_MESSAGE_SIZE) == -1)
     return(-1);
 
   memcpy(&this_resp, replybuffer, sizeof(player_device_resp_t));
@@ -430,6 +439,8 @@ int player_request_device_access(player_connection_t* conn,
     *grant_access = this_resp.access;
   if(driver_name)
     strncpy(driver_name, this_resp.driver_name, driver_name_len);
+
+  free(replybuffer);
 
   return(0);
 }
@@ -550,7 +561,10 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   /*time_t timesec;*/
   int mincnt; 
   int readcnt=0,thisreadcnt;
-  char dummy[PLAYER_MAX_MESSAGE_SIZE];
+  char *dummy;
+
+  // Get memory from the heap, not the stack
+  dummy = malloc(sizeof(char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(conn->sock < 0)
     return(-1);
@@ -592,12 +606,13 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   /*printf("time: %Lu\tts:%Lu\n", hdr->time,hdr->timestamp);*/
   /*timesec = (time_t)(hdr->time / 1000);*/
   /*printf("time: %s\n", ctime(&timesec));*/
+  //printf("hdr->size %d, payloadlen %d\n",hdr->size,payloadlen);
   
   /* get the payload */
   if(hdr->size > payloadlen)
     if(player_debug_level(-1) >= 2)
-      fprintf(stderr,"WARNING: server's message is too big (%d bytes). "
-              "Truncating data.\n", hdr->size);
+      fprintf(stderr,"WARNING: server's message is too big (%d bytes > %d). "
+              "Truncating data.\n", hdr->size, payloadlen);
 
   mincnt = min(hdr->size, payloadlen);
 
@@ -625,19 +640,23 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
     readcnt += thisreadcnt;
   }
 
+  free(dummy);
   return(0);
 }
 
 int player_read_udp(player_connection_t* conn, player_msghdr_t* hdr,
                     char* payload, size_t payloadlen)
 {
-  char buffer[PLAYER_MAX_MESSAGE_SIZE];
+  unsigned char *buffer;
   int numread;
+
+  // Get memory from the heap, not the stack
+  buffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(conn->sock < 0)
     return(-1);
 
-  if((numread = recvfrom(conn->sock,buffer,sizeof(buffer),0,NULL,NULL)) < 0)
+  if((numread = recvfrom(conn->sock,buffer,PLAYER_MAX_MESSAGE_SIZE,0,NULL,NULL)) < 0)
   {
     if(player_debug_level(-1) >= 2)
       perror("player_read_udp():read()");
@@ -701,6 +720,7 @@ int player_read_udp(player_connection_t* conn, player_msghdr_t* hdr,
   }
 
   memcpy(payload,buffer+sizeof(player_msghdr_t),hdr->size);
+  free(buffer);
   return(0);
 }
 
@@ -716,8 +736,11 @@ int player_write(player_connection_t* conn,
                  uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen)
 {
-  char buffer[PLAYER_MAX_MESSAGE_SIZE];
+  unsigned char *buffer;
   player_msghdr_t hdr;
+
+  // Get memory from the heap, not the stack
+  buffer = malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
   if(commandlen > PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
   {
@@ -769,6 +792,8 @@ int player_write(player_connection_t* conn,
       return(-1);
     }
   }
+
+  free(buffer);
   return(0);
 }
 
