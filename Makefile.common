@@ -52,7 +52,11 @@ CC = gcc
 #
 PWD=$(shell pwd)
 
-INSTALL_BASE = /usr/local/player
+# for system-wide install:
+#INSTALL_BASE = /usr/local/player
+
+# for user install
+INSTALL_BASE = $(HOME)/player
 
 INSTALL_PREFIX=$(INSTALL_BASE)-$(PLAYER_VERSION)
 INSTALL_BIN = $(INSTALL_PREFIX)/bin

@@ -16,6 +16,10 @@ all: $(LIBNAME)
 
 $(LIBNAME): $(OBJECTS)
 	ar cr $@ $(OBJECTS)
+	$(MKDIR) -p ../../lib
+	$(LN) -fs $(PWD)/$@ ../../lib
+	$(MKDIR) -p ../../include
+	$(LN) -fs $(PWD)/playercclient.h ../../include
 
 dep:
 	$(MAKEDEP) $(INCLUDES) -Y -s "# DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND" *.c 2>/dev/null
@@ -40,4 +44,6 @@ uninstall:
 
 clean:
 	$(RM) -f $(LIBNAME) $(OBJECTS)
+	$(RM) -f ../../lib/$(LIBNAME)
+	$(RM) -f ../../include/playercclient.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
