@@ -2,7 +2,6 @@ $Id$
 
 TOMORROW:
 --------
-- make STX a short, instead of string "xX"
 
 - add #defines in messages.h that are plain text references for 
      devices, like for in arg parsing
@@ -97,6 +96,8 @@ LATENT:
 
 DONE:
 ------
++ make STX a short, instead of string "xX"
+
 + add method to get timestamp from devices
    - now, CLock::PutData() can take a timestamp, and it will
       store it in CDevice::data_timestamp.  Likewise, CLock::GetData()
