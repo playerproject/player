@@ -199,6 +199,17 @@ fi
 AC_SUBST(AODV_LIB)
 AC_SUBST(AODV_LIBPATH)
 
+AC_ARG_WITH(iwspy, 
+[  --with-iwspy     Compile the iwspy driver],,
+with_iwspy=no)
+if test "x$with_iwspy" = "xyes"; then
+  AC_DEFINE(INCLUDE_IWSPY, 1, [[include the iwspy driver]])
+  IWSPY_LIB="libiwspy.a"
+  IWSPY_LIBPATH="drivers/libiwspy.a"
+fi
+AC_SUBST(IWSPY_LIB)
+AC_SUBST(IWSPY_LIBPATH)
+
 dnl check for the fftw library (by way of one of its headers) and compile
 dnl the fixed tones driver if its found
 AC_ARG_WITH(fixedtones,
