@@ -58,6 +58,9 @@ class CDevice
     pthread_mutex_t setupMutex;
     
     pthread_t devicethread;
+    
+    // did we allocate memory, or did someone else?
+    bool allocp;
 
   protected:
     
@@ -92,7 +95,7 @@ class CDevice
     // number of current subscriptions
     int subscriptions;
 
-    virtual ~CDevice() {};
+    virtual ~CDevice();
 
     // this is the main constructor, used by most non-Stage devices.
     // storage will be allocated by this constructor

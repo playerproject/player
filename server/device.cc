@@ -79,6 +79,9 @@ CDevice::CDevice(size_t datasize, size_t commandsize,
 
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
+  
+  // remember that we allocated the memory, so we can later free it
+  allocp = true;
 }
     
 // this is the other constructor, used mostly by Stage devices.
@@ -102,6 +105,39 @@ CDevice::CDevice()
   // this may be unnecessary, but what the hell...
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&setupMutex,NULL);
+  
+  // remember that we allocated the memory, so we can later free it
+  allocp = false;
+}
+
+// destructor, to free up allocated buffers.  not stricly necessary, since
+// devices are only destroyed when Player exits, but it is cleaner.
+CDevice::~CDevice()
+{
+  // only free memory if we allocated it; otherwise, it up to the driver
+  if(allocp)
+  {
+    if(device_data)
+    {
+      delete[] device_data;
+      device_data=NULL;
+    }
+    if(device_command)
+    {
+      delete[] device_command;
+      device_command=NULL;
+    }
+    if(device_reqqueue)
+    {
+      delete device_reqqueue;
+      device_reqqueue=NULL;
+    }
+    if(device_repqueue)
+    {
+      delete device_repqueue;
+      device_repqueue=NULL;
+    }
+  }
 }
 
 // this method is used by devices that allocate their own storage, but wish to

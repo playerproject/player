@@ -158,6 +158,30 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
   subscriptions = 0;
 }
 
+P2OS::~P2OS()
+{
+  if(reqqueue)
+  {
+    delete[] reqqueue;
+    reqqueue=NULL;
+  }
+  if(repqueue)
+  {
+    delete[] repqueue;
+    repqueue=NULL;
+  }
+  if(data)
+  {
+    delete data;
+    data = NULL;
+  }
+  if(command)
+  {
+    delete command;
+    command = NULL;
+  }
+}
+
 void P2OS::Lock()
 {
   pthread_mutex_lock(&p2os_accessMutex);
