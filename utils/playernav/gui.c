@@ -953,10 +953,10 @@ dump_screenshot(gui_data_t* gui_data)
   char fname[PATH_MAX];
   gint width, height;
   
-  g_assert((win = ((GtkWidget*)gui_data->main_window)->window));
+  g_assert((win = ((GtkWidget*)gui_data->map_canvas)->window));
   if(gdk_window_is_viewable(win))
   {
-    gtk_window_get_size(gui_data->main_window, &width, &height);
+    gdk_window_get_size(win, &width, &height);
 
     g_assert((screenshot = 
               gdk_pixbuf_get_from_drawable(screenshot,
