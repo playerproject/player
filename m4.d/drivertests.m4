@@ -80,13 +80,20 @@ AC_DEFUN([PLAYER_DRIVERTESTS], [
 
 dnl Where's CANLIB??
 AC_ARG_WITH(canlib, [  --with-canlib=dir     Location of CANLIB],
-CANLIB_DIR=$with_canlib,
-CANLIB_DIR="${HOME}/canlib")
+CANLIB_DIR=$with_canlib,CANLIB_DIR=$prefix)
+if test "x$CANLIB_DIR" = "xNONE" -o "x$CANLIB_DIR" = "xno"; then
+  SEGWAYRMP_HEADER=canlib.h
+  SEGWAYRMP_EXTRA_CPPFLAGS=
+  SEGWAYRMP_EXTRA_LDFLAGS=-lcanlib
+else
+  SEGWAYRMP_HEADER=$CANLIB_DIR/include/gazebo.h
+  SEGWAYRMP_EXTRA_CPPFLAGS="-I$CANLIB_DIR/include"
+  SEGWAYRMP_EXTRA_LDFLAGS="-L$CANLIB_DIR/lib -lcanlib"
+fi
 
 PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[no],
-	[$CANLIB_DIR/include/canlib.h],
-	["-I$CANLIB_DIR/include"],
-	["-L$CANLIB_DIR/canlib -lcanlib"])
+	[$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
+	[$SEGWAYRMP_EXTRA_LDFLAGS])
 
 PLAYER_ADD_DRIVER([garminnmea],[drivers/gps],[yes],[],[],[])
 
@@ -99,7 +106,7 @@ PLAYER_ADD_DRIVER([readlog],[drivers/shell],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],)
+PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
 
