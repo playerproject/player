@@ -5,12 +5,13 @@ dist-hook:
 	cd $(srcdir)/player-manual && make manual
 	cp -p $(srcdir)/player-manual/player.ps $(top_distdir)/doc
 
-docdir = $(prefix)/doc
+#docdir = $(prefix)/share/doc
 install-data-hook:
-	mkdir -p $(DESTDIR)$(prefix)/doc
-	cp $(top_srcdir)/doc/*.ps $(DESTDIR)$(prefix)/doc
-	cp $(top_srcdir)/server/drivers/localization/mcl/*.nb $(DESTDIR)$(prefix)/doc
+	mkdir -p $(DESTDIR)$(prefix)/share/doc
+	cp $(top_srcdir)/doc/*.ps $(DESTDIR)$(prefix)/share/doc
+#cp $(top_srcdir)/server/drivers/localization/mcl/*.nb $(DESTDIR)$(prefix)/share/doc
 
-uninstall-local:
-	rm -f $(DESTDIR)$(docdir)/*
+# need to figure out a safe way to do this
+#uninstall-local:
+#	rm -f $(DESTDIR)$(docdir)/*
 
