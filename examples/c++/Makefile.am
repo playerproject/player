@@ -12,7 +12,7 @@ noinst_PROGRAMS = randomwalk \
 	          say \
 	          grip \
                   stress \
-                  pherobot \
+                  swarmbot \
 		  audioread \
 		  audiowrite \
                   waveformread \
@@ -39,7 +39,7 @@ grip_SOURCES = grip.cc
 #forage_SOURCES = forage.cc
 #multilogger_SOURCES = multilogger.cc
 stress_SOURCES = stress.cc
-pherobot_SOURCES = pherobot.cc
 lookupport_SOURCES = lookupport.cc
 audiodspread_SOURCES = audiodspread.cc
 vfh_SOURCES = vfh.cc
+swarmbot_SOURCES = swarmbot.cc
