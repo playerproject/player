@@ -1,5 +1,8 @@
 /*
  * joystick.cc - control position and ptz devices with a joystick
+ *
+ * Author: Richard Vaughan 
+ * Created: 25 July 2002
  * 
  * $Id$
  */
