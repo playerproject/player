@@ -32,9 +32,9 @@ install-data-hook: $(PYTHONINSTALL)
 
 # use distutils to install
 pythoninstall:
-	@PYTHON_INTERP@ setup.py install --install-platlib=$(libdir)/python
+	@PYTHON_INTERP@ setup.py install --prefix=$(prefix)
 
-# seems that distutils doesn't support 'uninstall', so we'll hack it manually
-uninstall-local:
-	rm -rf $(libdir)/python/playerc.so
+# seems that distutils doesn't support 'uninstall', oh well
+#uninstall-local:
+
 

@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# Run the player bootstrap
 set -x
 ./mkacinclude.sh
 aclocal
@@ -7,3 +8,6 @@ autoheader
 automake --gnu --add-missing
 autoconf
 ./configure "$@"
+
+# Run rtk3 boostrap recusively
+cd rtk3 && ./bootstrap
