@@ -583,7 +583,7 @@ REB::Main()
 	  // then we are doing my velocity based heading PD controller
 	  
 	  // calculate difference between desired and current
-	  unsigned short current_theta = (short) ntohs(this->data->position.yaw);
+	  int current_theta =  ntohl(this->data->position.yaw);
 	  int diff = this->desired_heading - current_theta;
 	  
 	  // this will make diff the shortest angle between command and current
@@ -1471,7 +1471,7 @@ REB::UpdatePosData(player_reb_data_t *d)
   printf("REB: l%s=%d r%s=%d x=%d y=%d theta=%d trans=%d rot=%d target=%02x\n",
 	 this->velocity_mode ? "vel" : "pos", lreading,
 	 this->velocity_mode ? "vel" : "pos", rreading, 
-	 rx, ry, rtheta,  rv, rtd, target_status);
+	 x_f, y_f, rtheta,  rv, rtd, target_status);
 #endif
 
   // now write data
