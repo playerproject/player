@@ -71,7 +71,12 @@ CEntity::CEntity( char* name, char* type, char* color, CEntity* parent )
 {
   fig_count = 0;
 
+  assert( name );
+  assert( strlen(name) > 0 );
   strncpy(this->name, name, PLAYER_MAX_DEVICE_STRING_LEN );
+
+  assert(type);
+  assert( strlen(name) > 0 );
   strncpy(this->type, type, PLAYER_MAX_DEVICE_STRING_LEN );
 
   this->m_parent_entity = parent;

@@ -39,9 +39,11 @@
 #include "rtkgui.hh"
 #endif
 
+#define PLAYER_STAGE_ROOT_NAME "root"
+
 // constructor
 CRootEntity::CRootEntity( const stage_libitem_t items[] )
-  : CEntity( 0, "root", "red", NULL )    
+  : CEntity( PLAYER_STAGE_ROOT_NAME, "root", "red", NULL )    
 {
   PRINT_DEBUG( "Creating root model" );
   
@@ -51,6 +53,10 @@ CRootEntity::CRootEntity( const stage_libitem_t items[] )
   // the hash keys will be char strings
   ents =  g_hash_table_new( g_str_hash, g_str_equal );
   
+  // add myself to the hash table
+  
+  g_hash_table_insert( ents, (gpointer)PLAYER_STAGE_ROOT_NAME, this );
+
   size_x = 10.0; // a 10m world by default
   size_y = 10.0;
   ppm = 10; // default 10cm resolution passed into matrix (DEBUG)
@@ -291,7 +297,7 @@ int CRootEntity::CreateEntity( player_stage_model_t* model )
   }
   
   
-  PRINT_DEBUG3( "creating a %s as model %s with parent %s",
+  PRINT_DEBUG3( "creating a %s model with name \"%s\" with parent %s",
 		model->type, model->name, model->parent );
   
   // if it has a valid parent, look up the parent's address

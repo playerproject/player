@@ -65,8 +65,8 @@ int
 CDeviceTable::AddDevice(player_device_id_t id, char* name,
                         unsigned char access, CDevice* devicep, int parent)
 { 
-  PLAYER_TRACE5( "adding device (%d:%d:%d) name %s parent %d", 
-		 id.robot, id.code, id.index, name, parent );
+  PLAYER_TRACE2( "adding device name %s parent %d", name, parent );
+  PLAYER_TRACE3( "player id (%d:%d:%d)", id.robot, id.code, id.index );
   
   CDeviceEntry* thisentry;
   CDeviceEntry* preventry;

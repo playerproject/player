@@ -65,6 +65,14 @@ int StageProxy::CreateModel( char* type, char* name, char* parent,
   if(!client)
     return(-1);
   
+  // idiot check
+  if(!name) { printf( "error: NULL name string" ); return(-1); }
+  if(!parent) { printf( "error: NULL parent string" ); return(-1); }
+  if(!type) { printf( "error: NULL type string" ); return(-1); }
+  if(strlen(name)<1) { printf( "error: empty name string" ); return(-1); }
+  if(strlen(parent)<1) { printf( "error: empty parent string" ); return(-1); }
+  if(strlen(type)<1) { printf( "error: empty type string" ); return(-1); }
+  
   player_stage_model_t model;
   player_msghdr_t hdr;
 
@@ -72,8 +80,9 @@ int StageProxy::CreateModel( char* type, char* name, char* parent,
 
   // set up the model structure
   strncpy(model.type, type, PLAYER_MAX_DEVICE_STRING_LEN );
-  strncpy(model.name, name, PLAYER_MAX_DEVICE_STRING_LEN );
+  strncpy(model.name, name, PLAYER_MAX_DEVICE_STRING_LEN );  
   strncpy(model.parent, parent, PLAYER_MAX_DEVICE_STRING_LEN );
+  
   model.px = x;
   model.py = y;
   model.pa = a;

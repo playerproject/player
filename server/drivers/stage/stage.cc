@@ -59,10 +59,10 @@
 #include "stagetime.h"
 extern PlayerTime* GlobalTime;
 
-#include "models/puck.hh"
-#include "models/sonar.hh"
-#include "models/idar.hh"
-#include "models/position.hh"
+#include "stg_puck.hh"
+#include "stg_sonar.hh"
+#include "stg_idar.hh"
+#include "stg_position.hh"
 
 #ifdef INCLUDE_RTK2
 #include "rtkgui.hh"
@@ -73,20 +73,20 @@ extern rtk_app_t *app; // the RTK/GTK application
 #endif
 
 /*
-#include "models/bumperdevice.hh"
-#include "models/broadcastdevice.hh"
-#include "models/gpsdevice.hh"
-#include "models/gripperdevice.hh"
-#include "models/idarturretdevice.hh"
-#include "models/fiducialfinderdevice.hh"
-#include "models/laserdevice.hh"
-#include "models/motedevice.hh"
-#include "models/powerdevice.hh"
-#include "models/ptzdevice.hh"
-#include "models/truthdevice.hh"
-#include "models/visiondevice.hh"
-#include "models/regularmcldevice.hh"
-//#include "models/bpsdevice.hh"
+#include "stg_bumperdevice.hh"
+#include "stg_broadcastdevice.hh"
+#include "stg_gpsdevice.hh"
+#include "stg_gripperdevice.hh"
+#include "stg_idarturretdevice.hh"
+#include "stg_fiducialfinderdevice.hh"
+#include "stg_laserdevice.hh"
+#include "stg_motedevice.hh"
+#include "stg_powerdevice.hh"
+#include "stg_ptzdevice.hh"
+#include "stg_truthdevice.hh"
+#include "stg_visiondevice.hh"
+#include "stg_regularmcldevice.hh"
+//#include "stg_bpsdevice.hh"
 */
 
 // MODEL INSTALLATION --------------------------------------------

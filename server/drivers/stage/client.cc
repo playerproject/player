@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
     if( create == 0 )
       {
-	if( sp.CreateModel( "box", "my box", NULL, 1.0, 2.0, 0.0 ) != 0 )
+	if( sp.CreateModel( "box", "my box", "root", 1.0, 2.0, 0.0 ) != 0 )
 	  puts( "Error creating model" );
 
 	create = 1;
