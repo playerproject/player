@@ -595,9 +595,7 @@ void Wavefront::Main()
                        (this->target_x - this->waypoint_x)) +
                       ((this->target_y - this->waypoint_y) *
                        (this->target_y - this->waypoint_y)));
-          //printf("dist from last waypoint to target: %f\n", 
-                 //dist);
-          if(!goal_hack && (dist > 2.0))
+          if(!goal_hack && (dist > 1.0))
           {
             printf("Goal hack: setting %f,%f,%f\n",
                    this->target_x,this->target_y,this->target_a);
