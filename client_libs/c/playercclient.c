@@ -297,13 +297,13 @@ int player_request_device_access(player_connection_t* conn,
   unsigned char replybuffer[PLAYER_MAX_MESSAGE_SIZE];
 
   this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  this_req.code = htons(device);
+  this_req.type = htons(device);
   this_req.index = htons(device_index);
   this_req.access = req_access;
 
   memcpy(payload,&this_req,sizeof(player_device_req_t));
 
-  if(player_request(conn, PLAYER_PLAYER_CODE, 0, 
+  if(player_request(conn, PLAYER_PLAYER_TYPE, 0,
                     payload, sizeof(payload),
                     &replyhdr, replybuffer, sizeof(replybuffer)) == -1)
     return(-1);

@@ -94,8 +94,8 @@ typedef struct _playerc_device_t
   // Pointer to the client proxy.
   playerc_client_t *client;
 
-  // Device code, index, etc.
-  int code, index, access;
+  // Device type, index, etc.
+  int type, index, access;
 
   // The subscribe flag is non-zero if the device has been
   // successfully subscribed.
@@ -175,9 +175,10 @@ int  playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devi
                                 playerc_callback_fn_t callback, void *data);
 
 // Subscribe/unsubscribe a device from the sever (private)
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access);
-int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
-
+int playerc_client_subscribe(playerc_client_t *client, int type, int index,
+                             int access);
+int playerc_client_unsubscribe(playerc_client_t *client, int type,
+                               int index);
 
 // Issue a request to the server and await a reply (blocking).
 int playerc_client_request(playerc_client_t *client, playerc_device_t *device,
@@ -198,7 +199,7 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device, voi
 
 // Initialise the device 
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
-                         int code, int index, playerc_putdata_fn_t putdata);
+                         int type, int index, playerc_putdata_fn_t putdata);
 
 // Finalize the device
 void playerc_device_term(playerc_device_t *device);

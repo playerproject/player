@@ -86,8 +86,8 @@ CRWIBumperDevice::Main()
 	bool enabled = true;
 	
 	// Working buffer space
-	player_rwi_config_t  cfg;
-	player_bumper_data_t data;
+	player_bumper_config_t cfg;
+	player_bumper_data_t   data;
 	
 	void *client;
 	

@@ -33,9 +33,9 @@
 #include <playercclient.h>  /* pure C networking building blocks */
 
 #include <laserproxy.h>  /* support for the laser device */
-#include <sonarproxy.h>  /* support for the sonar device */
+#include <sonarproxy.h>  /* support for all sonar devices */
 #include <miscproxy.h>  /* support for the misc device */
-#include <p2_positionproxy.h>  /* support for the P2OS position device */
+#include <positionproxy.h>  /* support for all position devices */
 #include <ptzproxy.h>  /* support for the ptz device */
 #include <gripperproxy.h>  /* support for the gripper device */
 #include <speechproxy.h>  /* support for the speech device */
@@ -47,12 +47,10 @@
 #include <bpsproxy.h>  /* support for the BPS device */
 #include <broadcastproxy.h> /* support for the broadcast device */
 #include <moteproxy.h> /* support for the broadcast device */
-#include <rwi_positionproxy.h> /* support for the RWI position device */
-#include <rwi_sonarproxy.h> /* support for the RWI sonar device */
-#include <rwi_laserproxy.h> /* support for the RWI laser device */
-#include <rwi_bumperproxy.h> /* support for the RWI bumper device */
-//#include <rwi_joystickproxy.h> /* support for the RWI joystick device */
-#include <rwi_powerproxy.h> /* support for the RWI power device */
+
+#include <bumperproxy.h> /* support for all bumper devices */
+//#include <joystickproxy.h> /* support for all joystick devices */
+#include <powerproxy.h> /* support for all power devices */
 
 //#include <idarproxy.h>  /* support for the IDAR device */
 //#include <descartesproxy.h>  /* support for the IDAR device */

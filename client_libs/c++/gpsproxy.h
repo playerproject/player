@@ -53,7 +53,7 @@ class GpsProxy : public ClientProxy
     */
     GpsProxy(PlayerClient* pc, unsigned short index, 
               unsigned char access='c') :
-            ClientProxy(pc,PLAYER_GPS_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_GPS_TYPE,index,access) {}
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);

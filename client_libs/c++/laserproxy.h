@@ -81,7 +81,7 @@ class LaserProxy : public ClientProxy
     */
     LaserProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access='c'):
-        ClientProxy(pc,PLAYER_LASER_CODE,index,access) {}
+        ClientProxy(pc,PLAYER_LASER_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 
@@ -108,6 +108,34 @@ class LaserProxy : public ClientProxy
       */
     int GetConfigure();
 
+    /** Accessors
+        Provided in the hopes that instance variables will
+        one day become private.  -- nam1
+    */
+    int  RangeCount () const { return range_count; }
+    uint16_t MinLeft () const { return min_left; }
+    uint16_t MinRight () const { return min_right; }
+	int16_t MinAngle () const { return min_angle; }
+    int16_t MaxAngle () const { return max_angle; }
+    uint16_t Resolution () const { return resolution; }
+    bool Intensity () const { return intensity; }
+
+    uint16_t Ranges (const unsigned int index) const
+    {
+    	if (index < range_count)
+    		return ranges[index];
+    	else
+    		return 0;
+    }
+
+    uint8_t Intensities (const unsigned int index) const
+    {
+    	if (index < range_count)
+    		return intensities[index];
+    	else
+    		return 0;
+    }
+
     /** Range access operator.
         This operator provides an alternate way of access the range data.
         For example, given a {\tt LaserProxy} named {\tt lp}, the following
@@ -115,7 +143,7 @@ class LaserProxy : public ClientProxy
     */
     unsigned short operator [](unsigned int index)
     { 
-      if(index < sizeof(ranges))
+      if(index < range_count)
         return(ranges[index]);
       else 
         return(0);

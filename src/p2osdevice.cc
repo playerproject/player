@@ -574,7 +574,9 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
   id.port = global_playerport;
   id.index = 0;
 
-  id.code = PLAYER_SONAR_CODE;
+  // Now that all devices of the same type are treated equally, this is a
+  // truly evil hack.  Need to update methods in the devicetable.
+  id.type = PLAYER_SONAR_TYPE;
   CDevice* sonarp = deviceTable->GetDevice(id);
   if(sonarp)
   {
@@ -582,7 +584,7 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
     sonarp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  id.code = PLAYER_MISC_CODE;
+  id.type = PLAYER_MISC_TYPE;
   CDevice* miscp = deviceTable->GetDevice(id);
   if(miscp)
   {
@@ -590,7 +592,7 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
     miscp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  id.code = PLAYER_POSITION_CODE;
+  id.type = PLAYER_POSITION_TYPE;
   CDevice* positionp = deviceTable->GetDevice(id);
   if(positionp)
   {
@@ -598,7 +600,7 @@ void CP2OSDevice::PutData( unsigned char* src, size_t maxsize,
     positionp->data_timestamp_usec = this->data_timestamp_usec;
   }
 
-  id.code = PLAYER_GRIPPER_CODE;
+  id.type = PLAYER_GRIPPER_TYPE;
   CDevice* gripperp = deviceTable->GetDevice(id);
   if(gripperp)
   {

@@ -43,7 +43,7 @@
   //   leave access empty to start unconnected
 OccupancyProxy::OccupancyProxy(PlayerClient* pc, unsigned short index, 
 	   unsigned char access = 'c') :
-  ClientProxy(pc,PLAYER_OCCUPANCY_CODE,index,access)
+  ClientProxy(pc,PLAYER_OCCUPANCY_TYPE,index,access)
 {
   // init the occupancy grid structure
   pixels = NULL;

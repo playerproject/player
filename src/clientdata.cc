@@ -161,7 +161,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   for(unsigned int i=0;i<payload_size;i++)
     printf("%x ",payload[i]);
   puts("");
-  if(hdr.device == PLAYER_POSITION_CODE)
+  if(hdr.device == PLAYER_POSITION_TYPE)
   {
     player_position_cmd_t* cmd = (player_position_cmd_t*)payload;
     printf("speeds: %d %d\n", 
@@ -188,7 +188,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     player_device_id_t id;
     id.port = port;
-    id.code = hdr.device;
+    id.type = hdr.device;
     id.index = hdr.device_index;
 
     switch(hdr.type)
@@ -197,7 +197,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         /* request message */
         //request = true;
         // if it's for us, handle it here
-        if(hdr.device == PLAYER_PLAYER_CODE)
+        if(hdr.device == PLAYER_PLAYER_TYPE)
         {
           // ignore the device_index.  can we have more than one player?
           // is the payload big enough?
@@ -225,7 +225,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                 break;
               }
               req = *((player_device_req_t*)payload);
-              req.code = ntohs(req.code);
+              req.type = ntohs(req.type);
               req.index = ntohs(req.index);
               UpdateRequested(req);
               requesttype = PLAYER_MSGTYPE_RESP_ACK;
@@ -347,14 +347,14 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             else
             {
               printf("HandleRequests(): got REQ for unkown device: %x:%x\n",
-                     id.code,id.index);
+                     id.type,id.index);
               requesttype = PLAYER_MSGTYPE_RESP_ERR;
             }
           }
           else
           {
             printf("No permissions to configure %x:%x\n",
-                   id.code,id.index);
+                   id.type,id.index);
             requesttype = PLAYER_MSGTYPE_RESP_ERR;
           }
         }
@@ -373,15 +373,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               devicep->PutCommand(payload,payload_size);
             else
               printf("HandleRequests(): found NULL pointer for device %x:%x\n",
-                     id.code,id.index);
+                     id.type,id.index);
           }
           else
             printf("You can't send commands to %x:%x\n",
-                   id.code,id.index);
+                   id.type,id.index);
         }
         else 
           printf("No permissions to command %x:%x\n",
-                 id.code,id.index);
+                 id.type,id.index);
         break;
       default:
         printf("HandleRequests(): Unknown message type %x\n", hdr.type);
@@ -407,7 +407,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       req = *((player_device_req_t*)payload);
 
       player_device_id_t id;
-      id.code = ntohs(req.code);
+      id.type = ntohs(req.type);
       id.index = ntohs(req.index);
 
       req.access = FindPermission(id);
@@ -483,7 +483,7 @@ void CClientData::RemoveRequests()
 
   while(thissub)
   {
-    if(thissub->id.code == PLAYER_POSITION_CODE)
+    if(thissub->id.type == PLAYER_POSITION_TYPE)
       MotorStop();
     switch(thissub->access) 
     {
@@ -512,7 +512,7 @@ void CClientData::MotorStop()
   player_device_id_t id;
 
   id.port = port;
-  id.code = PLAYER_POSITION_CODE;
+  id.type = PLAYER_POSITION_TYPE;
   id.index = 0;
 
   command.speed = command.sidespeed = command.turnrate = 0;
@@ -534,14 +534,14 @@ void CClientData::UpdateRequested(player_device_req_t req)
   for(thisub=requested,prevsub=NULL;thisub;
       prevsub=thisub,thisub=thisub->next)
   {
-    if((thisub->id.code == req.code) && (thisub->id.index == req.index))
+    if((thisub->id.type == req.type) && (thisub->id.index == req.index))
       break;
   }
 
   if(!thisub)
   {
     thisub = new CDeviceSubscription;
-    thisub->id.code = req.code;
+    thisub->id.type = req.type;
     thisub->id.index = req.index;
     thisub->id.port = port;
     thisub->devicep = deviceTable->GetDevice(thisub->id);
@@ -603,7 +603,7 @@ void CClientData::UpdateRequested(player_device_req_t req)
         break;
       case PLAYER_CLOSE_MODE:
       case PLAYER_ERROR_MODE:
-        printf("Device \"%x:%x\" already closed\n", req.code,req.index);
+        printf("Device \"%x:%x\" already closed\n", req.type,req.index);
         break;
       default:
         printf("Unknown access permission \"%c\"\n", req.access);
@@ -643,9 +643,9 @@ void CClientData::UpdateRequested(player_device_req_t req)
   else 
   {
     printf("The current access is \"%x:%x:%c\". ",
-                    thisub->id.code, thisub->id.index, thisub->access);
+                    thisub->id.type, thisub->id.index, thisub->access);
     printf("Unknown unused request \"%x:%x:%c\".\n",
-                    req.code, req.index, req.access);
+                    req.type, req.index, req.access);
   }
   pthread_mutex_unlock(&access);
 }
@@ -657,7 +657,7 @@ CClientData::FindPermission(player_device_id_t id)
   //pthread_mutex_lock(&access);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
-    if((thisub->id.code == id.code) && (thisub->id.index == id.index))
+    if((thisub->id.type == id.type) && (thisub->id.index == id.index))
     {
       tmpaccess = thisub->access;
       pthread_mutex_unlock(&access);
@@ -721,7 +721,7 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
       {
         if((devicep = deviceTable->GetDevice(thisub->id)))
         {
-          hdr.device = htons(thisub->id.code);
+          hdr.device = htons(thisub->id.type);
           hdr.device_index = htons(thisub->id.index);
           hdr.reserved = 0;
 
@@ -766,13 +766,13 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
         else
         {
           printf("BuildMsg(): found NULL pointer for device \"%x:%x\"\n",
-                          thisub->id.code, thisub->id.index);
+                          thisub->id.type, thisub->id.index);
         }
       }
       else
       {
         printf("BuildMsg(): Unknown device \"%x:%x\"\n",
-                        thisub->id.code,thisub->id.index);
+                        thisub->id.type,thisub->id.index);
       }
     }
   }
@@ -782,7 +782,7 @@ int CClientData::BuildMsg(unsigned char *data, size_t maxsize)
   {
     hdr.stx = htons(PLAYER_STXX);
     hdr.type = htons(PLAYER_MSGTYPE_SYNCH);
-    hdr.device = htons(PLAYER_PLAYER_CODE);
+    hdr.device = htons(PLAYER_PLAYER_TYPE);
     hdr.device_index = htons(0);
     hdr.reserved = 0;
     hdr.size = 0;
@@ -813,7 +813,7 @@ int CClientData::Subscribe(player_device_id_t id)
   else
   {
     printf("Subscribe(): Unknown device \"%x:%x\" - subscribe cancelled\n", 
-                    id.code,id.index);
+                    id.type,id.index);
     return(1);
   }
 }
@@ -830,7 +830,7 @@ void CClientData::Unsubscribe(player_device_id_t id)
   else
   {
     printf("Unsubscribe(): Unknown device \"%x:%x\" - unsubscribe cancelled\n", 
-                    id.code,id.index);
+                    id.type,id.index);
   }
 }
 
@@ -840,7 +840,7 @@ CClientData::PrintRequested(char* str)
   printf("%s:requested: ",str);
   pthread_mutex_lock(&access);
   for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
-    printf("%x:%x:%d ", thissub->id.code,thissub->id.index,thissub->access);
+    printf("%x:%x:%d ", thissub->id.type,thissub->id.index,thissub->access);
   pthread_mutex_unlock(&access);
   puts("");
 }

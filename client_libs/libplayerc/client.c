@@ -188,7 +188,7 @@ void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
   {
     device = client->device[i];
         
-    if (device->code == header->device && device->index == header->device_index)
+    if (device->type == header->device && device->index == header->device_index)
     {
       // Fill out timing info 
       device->datatime = header->timestamp_sec + header->timestamp_usec * 1e-6;
@@ -218,7 +218,7 @@ int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
     
   header.stx = PLAYER_STXX;
   header.type = PLAYER_MSGTYPE_CMD;
-  header.device = device->code;
+  header.device = device->type;
   header.device_index = device->index;
   header.size = len;
 
@@ -260,12 +260,12 @@ int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device)
 
 
 // Subscribe to a device
-int playerc_client_subscribe(playerc_client_t *client, int code, int index, int access)
-{
+int playerc_client_subscribe(playerc_client_t *client, int type, int index, int
+access) {
   playerc_msg_subscribe_t body;
 
   body.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  body.device = htons(code);
+  body.device = htons(type);
   body.index = htons(index);
   body.access = access;
 
@@ -284,12 +284,12 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index, int 
 
 
 // Unsubscribe from a device
-int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
+int playerc_client_unsubscribe(playerc_client_t *client, int type, int index)
 {
   playerc_msg_subscribe_t body;
 
   body.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  body.device = htons(code);
+  body.device = htons(type);
   body.index = htons(index);
   body.access = PLAYER_CLOSE_MODE;
 
@@ -356,7 +356,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   {
     req_header.stx = PLAYER_STXX;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = PLAYER_PLAYER_CODE;
+    req_header.device = PLAYER_PLAYER_TYPE;
     req_header.device_index = 0;
     req_header.size = req_len;
   }
@@ -364,7 +364,7 @@ int playerc_client_request(playerc_client_t *client, playerc_device_t *deviceinf
   {
     req_header.stx = PLAYER_STXX;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = deviceinfo->code;
+    req_header.device = deviceinfo->type;
     req_header.device_index = deviceinfo->index;
     req_header.size = req_len;
   }

@@ -1,8 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2002
+ *  Copyright (C) 2000  
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *                      
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -21,36 +20,66 @@
  *
  */
 
-#ifndef _POSITIONPROXY_H
-#define _POSITIONPROXY_H
+/*
+ * $Id$
+ *
+ * client-side position device 
+ */
+
+#ifndef POSITIONPROXY_H
+#define POSITIONPROXY_H
 
 #include <clientproxy.h>
+#include <playerclient.h>
 
-/**
- *  $Id$
- *
- * The {\tt PositionProxy} is the super class for all position-related devices.
- *  These devices report odometry information, and accept motor commands.
+/** The {\tt PositionProxy} class is used to control the {\tt position} device.
+    The latest position data is contained in the attributes {\tt xpos, ypos}, etc.
  */
-class PositionProxy : public ClientProxy {
+class PositionProxy : public ClientProxy
+{
 
-public:
+  public:
+    /// Robot pose (according to odometry) in mm, mm, degrees.
+    int xpos,ypos; unsigned short theta;
+
+    /// Robot speed in mm/sec, degrees/sec.
+    short speed, turnrate;
+
+    /// Compass value (only valid if the compass is installed).
+    unsigned short compass;
+
+    /// Stall flag: 1 if the robot is stalled and 0 otherwise.
+    unsigned char stalls;
+   
     /** Constructor.
-        Simply passes arguments along to ClientProxy
+        Leave the access field empty to start unconnected.
+        You can change the access later using
+        {\tt PlayerProxy::RequestDeviceAccess()}.
     */
-    PositionProxy (PlayerClient* pc, uint16_t device_code,
-                   unsigned short index, unsigned char access ='c')
-        : ClientProxy(pc, device_code, index, access) {}
+    PositionProxy(PlayerClient* pc, unsigned short index,
+                  unsigned char access ='c') :
+        ClientProxy(pc,PLAYER_POSITION_TYPE,index,access) {}
 
-				
     // these methods are the user's interface to this device
 
+    /** Proper accessors have been added in the hopes that
+        the member variables will someday become private.
+        -- nam1
+    */
+	int32_t  Xpos () const { return xpos; }
+	int32_t  Ypos () const { return ypos; }
+	uint16_t Theta () const { return theta; }
+	int16_t  Speed () const { return speed; }
+	int16_t  TurnRate () const { return turnrate; }
+	unsigned short Compass () const { return compass; }
+	unsigned char Stalls () const { return stalls; }
+
     /** Send a motor command.
-        Specify the linear and angular speed in m/s and degrees/sec,
+        Specify the linear and angular speed in mm/s and degrees/sec,
         respectively.\\
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    virtual int SetSpeed (const int16_t speed, const int16_t turnrate) = 0;
+    int SetSpeed(short speed, short turnrate);
 
     /** Enable/disable the motors.
         Set {\tt state} to 0 to disable (default) or 1 to enable.
@@ -59,31 +88,26 @@ public:
         
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    virtual int SetMotorState (const unsigned char state) = 0;
-
-    /** Select velocity control mode for robots like the Pioneer 2.
+    int SetMotorState(unsigned char state);
+    
+    /** Select velocity control mode for the Pioneer 2.
         Set {\tt mode} to 0 for direct wheel velocity control (default),
         or 1 for separate translational and rotational control.
-
+        
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    virtual int SelectVelocityControl(unsigned char mode) = 0;
-
-    
+    int SelectVelocityControl(unsigned char mode);
+   
     /** Reset odometry to (0,0,0).
         Returns: 0 if everything's ok, -1 otherwise.
     */
-    virtual int ResetOdometry () = 0;
+    int ResetOdometry();
 
-    /** Accessors
-     */
-    virtual int32_t  Xpos () const = 0;
-    virtual int32_t  Ypos () const = 0;
-    virtual uint16_t Theta () const = 0;
-    virtual int16_t  Speed () const = 0;
-    virtual int16_t  TurnRate () const = 0;
-    virtual unsigned short Compass () const = 0;
-    virtual unsigned char Stalls () const = 0;
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies SHOULD provide
+    void Print();
 };
 
-#endif // _POSITIONPROXY_H
+#endif

@@ -60,7 +60,7 @@ class MiscProxy : public ClientProxy
         You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
     */
     MiscProxy(PlayerClient* pc, unsigned short index, unsigned char access='c') :
-        ClientProxy(pc,PLAYER_MISC_CODE,index,access) {}
+        ClientProxy(pc,PLAYER_MISC_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 

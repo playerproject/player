@@ -89,7 +89,7 @@ class LaserbeaconProxy : public ClientProxy
     */
     LaserbeaconProxy(PlayerClient* pc, unsigned short index,
                      unsigned char access='c'):
-            ClientProxy(pc,PLAYER_LASERBEACON_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_LASERBEACON_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 

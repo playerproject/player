@@ -112,6 +112,30 @@
 #define PLAYER_RWI_JOYSTICK_CODE   ((uint16_t)24)
 #define PLAYER_RWI_POWER_CODE      ((uint16_t)25)
 
+/* the currently known device types */
+#define PLAYER_PLAYER_TYPE         ((uint16_t)1)  // used in msg headers
+#define PLAYER_MISC_TYPE           ((uint16_t)2)  // deprecated
+#define PLAYER_GRIPPER_TYPE        ((uint16_t)3)
+#define PLAYER_POSITION_TYPE       ((uint16_t)4)
+#define PLAYER_SONAR_TYPE          ((uint16_t)5)
+#define PLAYER_LASER_TYPE          ((uint16_t)6)
+#define PLAYER_VISION_TYPE         ((uint16_t)7)
+#define PLAYER_PTZ_TYPE            ((uint16_t)8)
+#define PLAYER_AUDIO_TYPE          ((uint16_t)9)
+#define PLAYER_LASERBEACON_TYPE    ((uint16_t)10)
+#define PLAYER_BROADCAST_TYPE      ((uint16_t)11)
+#define PLAYER_SPEECH_TYPE         ((uint16_t)12)
+#define PLAYER_GPS_TYPE            ((uint16_t)13)
+#define PLAYER_OCCUPANCY_TYPE      ((uint16_t)14) // broken?
+#define PLAYER_TRUTH_TYPE          ((uint16_t)15)
+#define PLAYER_BPS_TYPE            ((uint16_t)16) // broken?
+#define PLAYER_IDAR_TYPE           ((uint16_t)17)
+#define PLAYER_DESCARTES_TYPE      ((uint16_t)18)
+#define PLAYER_MOTE_TYPE           ((uint16_t)19)
+#define PLAYER_BUMPER_TYPE         ((uint16_t)20)
+#define PLAYER_JOYSTICK_TYPE       ((uint16_t)21)
+#define PLAYER_POWER_TYPE          ((uint16_t)22)
+
 /* the access modes */
 #define PLAYER_READ_MODE 'r'
 #define PLAYER_WRITE_MODE 'w'
@@ -145,7 +169,7 @@ typedef struct
 {
   uint16_t stx;     /* always equal to "xX" (0x5878) */
   uint16_t type;    /* message type */
-  uint16_t device;  /* what kind of device */
+  uint16_t device;  /* what type of device */
   uint16_t device_index; /* which device of that kind */
   uint32_t time_sec;  /* server's current time (seconds since epoch) */
   uint32_t time_usec; /* server's current time (microseconds since epoch) */
@@ -161,6 +185,7 @@ typedef struct
 typedef struct
 {
   uint16_t code;
+  uint16_t type;
   uint16_t index;
   uint16_t port;
 } __attribute__ ((packed)) player_device_id_t;
@@ -174,7 +199,7 @@ typedef struct
 typedef struct
 {
   uint16_t subtype;
-  uint16_t code;
+  uint16_t type;
   uint16_t index;
   uint8_t access;
   //uint8_t consume;
@@ -214,7 +239,7 @@ typedef struct
   uint16_t subtype;
 } __attribute__ ((packed)) player_device_data_req_t;
 
-#define PLAYER_PLAYER_DEV_REQ     ((uint16_t)1)
+#define PLAYER_PLAYER_DEV_REQ      ((uint16_t)1)
 #define PLAYER_PLAYER_DATA_REQ     ((uint16_t)2)
 #define PLAYER_PLAYER_DATAMODE_REQ ((uint16_t)3)
 #define PLAYER_PLAYER_DATAFREQ_REQ ((uint16_t)4)
@@ -925,6 +950,12 @@ typedef struct
 #define PLAYER_BUMPER_POWER_REQ             ((uint8_t)13)
 #define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)14)
 
+typedef struct
+{
+  uint8_t request; // one of the device's request types
+  uint8_t value;   // value for the request (usually 0 or 1)
+} __attribute__ ((packed)) player_bumper_config_t;
+
 /*************************************************************************/
 
 
@@ -938,6 +969,13 @@ typedef struct
   uint8_t  xpos, ypos;
   uint8_t  button0, button1;
 } __attribute__ ((packed)) player_joystick_data_t;
+
+typedef struct
+{
+  uint8_t request; // one of the device's request types
+  uint8_t value;   // value for the request (usually 0 or 1)
+} __attribute__ ((packed)) player_joystick_config_t;
+
 /*************************************************************************/
 
 
@@ -953,24 +991,11 @@ typedef struct
 
 #define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
 
-/*************************************************************************/
-/*************************************************************************/
-/*
- * RWI Devices
- *
- * All RWI devices use the same struct for sending config commands.
- * The request numbers are found near the devices to which they
- * pertain.
- */
-
 typedef struct
 {
-  uint8_t   request;
-  uint8_t   value;
-} __attribute__ ((packed)) player_rwi_config_t;
-
+  uint8_t request; // one of the device's request types
+  uint8_t value;   // value for the request (usually 0 or 1)
+} __attribute__ ((packed)) player_power_config_t;
 /*************************************************************************/
 
 #endif
-
-

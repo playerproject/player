@@ -55,7 +55,7 @@ class BpsProxy : public ClientProxy
         You can change the access later using {\tt PlayerProxy::RequestDeviceAccess}.
     */
     BpsProxy(PlayerClient* pc, unsigned short index, unsigned char access='c') :
-            ClientProxy(pc,PLAYER_BPS_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_BPS_TYPE,index,access) {}
 
     /** Add a beacon to the {\tt BPS} device's internal map.
         The beacon pose (global coordinates) must be specified in mm, mm, degrees.

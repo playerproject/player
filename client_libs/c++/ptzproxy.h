@@ -53,7 +53,7 @@ class PtzProxy : public ClientProxy
         {\tt PlayerProxy::RequestDeviceAccess()}.
     */
     PtzProxy(PlayerClient* pc, unsigned short index, unsigned char access='c'):
-            ClientProxy(pc,PLAYER_PTZ_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_PTZ_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 

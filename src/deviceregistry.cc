@@ -135,78 +135,103 @@ void
 register_devices()
 {
 #ifdef INCLUDE_MISC
-  availableDeviceTable->AddDevice(PLAYER_MISC_CODE, PLAYER_READ_MODE,
-                                  PLAYER_MISC_STRING,CMiscDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_MISC_CODE, PLAYER_MISC_TYPE,
+                                  PLAYER_READ_MODE, PLAYER_MISC_STRING,
+                                  CMiscDevice::Init);
 #endif
 #ifdef INCLUDE_GRIPPER
-  availableDeviceTable->AddDevice(PLAYER_GRIPPER_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_GRIPPER_STRING,CGripperDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_GRIPPER_CODE, PLAYER_GRIPPER_TYPE,
+                                  PLAYER_ALL_MODE, PLAYER_GRIPPER_STRING,
+                                  CGripperDevice::Init);
 #endif
 #ifdef INCLUDE_POSITION
-  availableDeviceTable->AddDevice(PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_POSITION_STRING,CPositionDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_POSITION_CODE, PLAYER_POSITION_TYPE,
+                                  PLAYER_ALL_MODE, PLAYER_POSITION_STRING,
+                                  CPositionDevice::Init);
 #endif
 #ifdef INCLUDE_SONAR
-  availableDeviceTable->AddDevice(PLAYER_SONAR_CODE, PLAYER_READ_MODE,
-                                  PLAYER_SONAR_STRING,CSonarDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_SONAR_CODE, PLAYER_SONAR_TYPE,
+                                  PLAYER_READ_MODE, PLAYER_SONAR_STRING,
+                                  CSonarDevice::Init);
 #endif
 #ifdef INCLUDE_LASERBEACON
-  availableDeviceTable->AddDevice(PLAYER_LASERBEACON_CODE, PLAYER_READ_MODE,
+  availableDeviceTable->AddDevice(PLAYER_LASERBEACON_CODE,
+                                  PLAYER_LASERBEACON_TYPE, PLAYER_READ_MODE,
                                   PLAYER_LASERBEACON_STRING,
                                   CLaserBeaconDevice::Init);
 #endif
 #ifdef INCLUDE_LASER
-  availableDeviceTable->AddDevice(PLAYER_LASER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_LASER_STRING,CLaserDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_LASER_CODE, PLAYER_LASER_TYPE,
+                                  PLAYER_READ_MODE, PLAYER_LASER_STRING,
+                                  CLaserDevice::Init);
 #endif
 #ifdef INCLUDE_VISION
-  availableDeviceTable->AddDevice(PLAYER_VISION_CODE, PLAYER_READ_MODE,
-                                  PLAYER_VISION_STRING,CVisionDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_VISION_CODE, PLAYER_VISION_TYPE,
+                                  PLAYER_READ_MODE, PLAYER_VISION_STRING,
+                                  CVisionDevice::Init);
 #endif
 #ifdef INCLUDE_PTZ
-  availableDeviceTable->AddDevice(PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_PTZ_STRING,CPtzDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_PTZ_CODE, PLAYER_PTZ_TYPE,
+                                  PLAYER_ALL_MODE, PLAYER_PTZ_STRING,
+                                  CPtzDevice::Init);
 #endif
 #ifdef INCLUDE_AUDIO
-  availableDeviceTable->AddDevice(PLAYER_AUDIO_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_AUDIO_STRING,CAudioDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_AUDIO_CODE, PLAYER_AUDIO_TYPE
+                                  PLAYER_ALL_MODE, PLAYER_AUDIO_STRING,
+                                  CAudioDevice::Init);
 #endif
 #ifdef INCLUDE_BROADCAST
-  availableDeviceTable->AddDevice(PLAYER_BROADCAST_CODE, PLAYER_ALL_MODE,
+  availableDeviceTable->AddDevice(PLAYER_BROADCAST_CODE,
+                                  PLAYER_BROADCAST_TYPE,
+                                  PLAYER_ALL_MODE,
                                   PLAYER_BROADCAST_STRING,
                                   CBroadcastDevice::Init);
 #endif
 #ifdef INCLUDE_SPEECH
-  availableDeviceTable->AddDevice(PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE,
-                                  PLAYER_SPEECH_STRING, CSpeechDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_SPEECH_CODE, PLAYER_SPEECH_TYPE,
+                                  PLAYER_WRITE_MODE, PLAYER_SPEECH_STRING,
+                                  CSpeechDevice::Init);
 #endif
 #ifdef INCLUDE_BPS
-  availableDeviceTable->AddDevice(PLAYER_BPS_CODE, PLAYER_READ_MODE,
-                                  PLAYER_BPS_STRING, CBpsDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_BPS_CODE, PLAYER_BPS_TYPE,
+                                  PLAYER_READ_MODE, PLAYER_BPS_STRING,
+                                  CBpsDevice::Init);
 #endif
 #ifdef INCLUDE_RWI_POSITION
-  availableDeviceTable->AddDevice(PLAYER_RWI_POSITION_CODE, PLAYER_ALL_MODE,
-                                  PLAYER_RWI_POSITION_STRING, CRWIPositionDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_RWI_POSITION_CODE,
+                                  PLAYER_POSITION_TYPE, PLAYER_ALL_MODE,
+                                  PLAYER_RWI_POSITION_STRING,
+                                  CRWIPositionDevice::Init);
 #endif
 #ifdef INCLUDE_RWI_SONAR
-  availableDeviceTable->AddDevice(PLAYER_RWI_SONAR_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_SONAR_STRING, CRWISonarDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_RWI_SONAR_CODE,
+                                  PLAYER_SONAR_TYPE, PLAYER_READ_MODE,
+                                  PLAYER_RWI_SONAR_STRING,
+                                  CRWISonarDevice::Init);
 #endif
 #ifdef INCLUDE_RWI_LASER
-  availableDeviceTable->AddDevice(PLAYER_RWI_LASER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_LASER_STRING, CRWILaserDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_RWI_LASER_CODE,
+                                  PLAYER_LASER_TYPE, PLAYER_READ_MODE,
+                                  PLAYER_RWI_LASER_STRING,
+                                  CRWILaserDevice::Init);
 #endif
 #ifdef INCLUDE_RWI_BUMPER
-  availableDeviceTable->AddDevice(PLAYER_RWI_BUMPER_CODE, PLAYER_READ_MODE,
-                                  PLAYER_RWI_BUMPER_STRING, CRWIBumperDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_RWI_BUMPER_CODE,
+                                  PLAYER_BUMPER_TYPE, PLAYER_READ_MODE,
+                                  PLAYER_RWI_BUMPER_STRING,
+                                  CRWIBumperDevice::Init);
 #endif
 #ifdef INCLUDE_RWI_JOYSTICK
-  availableDeviceTable->AddDevice(PLAYER_RWI_JOYSTICK_CODE, PLAYER_READ_MODE,
-		                  PLAYER_RWI_JOYSTICK_STRING, CRWIJoystickDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_RWI_JOYSTICK_CODE,
+                                  PLAYER_JOYSTICK_TYPE, PLAYER_READ_MODE,
+		                          PLAYER_RWI_JOYSTICK_STRING,
+		                          CRWIJoystickDevice::Init);
 #endif
 #ifdef INCLUDE_RWI_POWER
-  availableDeviceTable->AddDevice(PLAYER_RWI_POWER_CODE, PLAYER_READ_MODE,
-		                  PLAYER_RWI_POWER_STRING, CRWIPowerDevice::Init);
+  availableDeviceTable->AddDevice(PLAYER_RWI_POWER_CODE,
+                                  PLAYER_POWER_TYPE, PLAYER_READ_MODE,
+		                          PLAYER_RWI_POWER_STRING,
+                                  CRWIPowerDevice::Init);
 #endif
 
     

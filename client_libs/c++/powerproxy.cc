@@ -21,37 +21,32 @@
  *
  */
 
-#ifndef _RWI_POWERPROXY_H
-#define _RWI_POWERPROXY_H
+#include <powerproxy.h>
+#include <netinet/in.h>
+#include <string.h>
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
 
-#include <clientproxy.h>
-#include <playerclient.h>
+void
+PowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
+{
+	if(hdr.size != sizeof(player_power_data_t)) {
+		if(player_debug_level(-1) >= 1)
+			fprintf(stderr,"WARNING: powerproxy expected %d bytes of "
+                    "power data, but received %d. Unexpected results may "
+                    "ensue.\n",
+                    sizeof(player_power_data_t),hdr.size);
+	}
 
-class RWIPowerProxy : public ClientProxy {
+	charge = ntohs(((player_power_data_t *)buffer)->charge);
+}
 
-public:
-    /** Constructor.
-        Leave the access field empty to start unconnected.
-        You can change the access later using
-        {\tt PlayerProxy::RequestDeviceAccess()}.
-    */
-    RWIPowerProxy (PlayerClient* pc, unsigned short index,
-                   unsigned char access ='c')
-        : ClientProxy(pc,PLAYER_RWI_POWER_CODE,index,access) {}
+// interface that all proxies SHOULD provide
+void
+PowerProxy::Print()
+{
+	printf("#Power(%d:%d) - %c\n", device, index, access);
+	printf("%d\n", charge);
+}
 
-    uint8_t Charge () const { return charge; }
-
-    // interface that all proxies must provide
-    void FillData (player_msghdr_t hdr, const char* buffer);
-
-    // interface that all proxies SHOULD provide
-    void Print ();
-
-private:
-
-	// Remaining power in centivolts
-	uint16_t charge;
-
-};
-
-#endif // _RWI_POWERPROXY_H

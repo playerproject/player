@@ -26,7 +26,7 @@
  * client-side position device 
  */
 
-#include <p2_positionproxy.h>
+#include <positionproxy.h>
 #include <netinet/in.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
@@ -38,18 +38,18 @@
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int P2PositionProxy::SetSpeed(short speed, short turnrate)
+int PositionProxy::SetSpeed(short speed, short turnrate)
 {
-  if(!client)
-    return(-1);
+	if(!client)
+		return(-1);
 
-  player_position_cmd_t cmd;
+	player_position_cmd_t cmd;
 
-  cmd.speed = htons(speed);
-  cmd.turnrate = htons(turnrate);
+	cmd.speed = htons(speed);
+	cmd.turnrate = htons(turnrate);
 
-  return(client->Write(PLAYER_POSITION_CODE,index,
-                       (const char*)&cmd,sizeof(cmd)));
+	return(client->Write(PLAYER_POSITION_TYPE,index,
+	                     (const char*)&cmd,sizeof(cmd)));
 }
 
 // enable/disable the motors
@@ -57,19 +57,19 @@ int P2PositionProxy::SetSpeed(short speed, short turnrate)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int P2PositionProxy::SetMotorState(unsigned char state)
+int PositionProxy::SetMotorState(unsigned char state)
 {
-  if(!client)
-    return(-1);
+	if(!client)
+		return(-1);
 
-  char buffer[2];
+	player_position_config_t cfg;
 
-  buffer[0] = PLAYER_POSITION_MOTOR_POWER_REQ;
-  buffer[1] = state;
+	cfg.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+	cfg.value = state;
 
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+	return(client->Request(PLAYER_POSITION_TYPE,index,(const char*) &cfg,
+	                       sizeof(cfg)));
 }
 
 // select velocity control mode for the Pioneer 2
@@ -79,18 +79,18 @@ int P2PositionProxy::SetMotorState(unsigned char state)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int P2PositionProxy::SelectVelocityControl(unsigned char mode)
+int PositionProxy::SelectVelocityControl(unsigned char mode)
 {
-  if(!client)
-    return(-1);
+	if(!client)
+		return(-1);
 
-  char buffer[2];
+	player_position_config_t cfg;
 
-  buffer[0] = PLAYER_POSITION_VELOCITY_CONTROL_REQ;
-  buffer[1] = mode;
+	cfg.request = PLAYER_POSITION_VELOCITY_CONTROL_REQ;
+	cfg.value = mode;
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+	return(client->Request(PLAYER_POSITION_CODE,index,(const char*) &cfg,
+	                       sizeof(cfg)));
 }
 
 // reset odometry to (0,0,0)
@@ -98,40 +98,39 @@ int P2PositionProxy::SelectVelocityControl(unsigned char mode)
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int P2PositionProxy::ResetOdometry()
+int PositionProxy::ResetOdometry()
 {
-  if(!client)
-    return(-1);
+	if(!client)
+		return(-1);
 
-  char buffer[1];
+	player_position_config_t cfg;
 
-  buffer[0] = PLAYER_POSITION_RESET_ODOM_REQ;
+	cfg.request = PLAYER_POSITION_RESET_ODOM_REQ;
 
-  return(client->Request(PLAYER_POSITION_CODE,index,(const char*)buffer,
-                         sizeof(buffer)));
+	return(client->Request(PLAYER_POSITION_CODE,index,(const char*) &cfg,
+	                       sizeof(cfg)));
 }
 
-void P2PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
-  if(hdr.size != sizeof(player_position_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of position data, but "
+	if(hdr.size != sizeof(player_position_data_t)) {
+		if(player_debug_level(-1) >= 1)
+			fprintf(stderr,"WARNING: expected %d bytes of position data, but "
               "received %d. Unexpected results may ensue.\n",
               sizeof(player_position_data_t),hdr.size);
-  }
+	}
 
-  xpos = (int)ntohl(((player_position_data_t*)buffer)->xpos);
-  ypos = (int)ntohl(((player_position_data_t*)buffer)->ypos);
-  theta = ntohs(((player_position_data_t*)buffer)->theta);
-  speed = (short)ntohs(((player_position_data_t*)buffer)->speed);
-  turnrate = (short)ntohs(((player_position_data_t*)buffer)->turnrate);
-  compass = ntohs(((player_position_data_t*)buffer)->compass);
-  stalls = ((player_position_data_t*)buffer)->stalls;
+	xpos = (int)ntohl(((player_position_data_t*)buffer)->xpos);
+	ypos = (int)ntohl(((player_position_data_t*)buffer)->ypos);
+	theta = ntohs(((player_position_data_t*)buffer)->theta);
+	speed = (short)ntohs(((player_position_data_t*)buffer)->speed);
+	turnrate = (short)ntohs(((player_position_data_t*)buffer)->turnrate);
+	compass = ntohs(((player_position_data_t*)buffer)->compass);
+	stalls = ((player_position_data_t*)buffer)->stalls;
 }
 
 // interface that all proxies SHOULD provide
-void P2PositionProxy::Print()
+void PositionProxy::Print()
 {
   printf("#Position(%d:%d) - %c\n", device, index, access);
   puts("#xpos\typos\ttheta\tspeed\tturn\tcompass\tstalls");

@@ -33,7 +33,7 @@
 CRWISonarDevice::CRWISonarDevice(int argc, char **argv)
     : CRWIDevice(argc, argv,
                  sizeof(player_sonar_data_t),
-                 0 /* no commands for sonar */,
+                 0 /* no commands for this sonar */,
 		         1,1)
 {
 	// default to upper ring if none is specified
@@ -95,8 +95,8 @@ CRWISonarDevice::Main()
 	bool enabled = true;
 
 	// Working buffer space
-	player_rwi_config_t cfg;
-	player_sonar_data_t data;
+	player_sonar_config_t cfg;
+	player_sonar_data_t   data;
 	
 	void *client;
 	
@@ -112,11 +112,11 @@ CRWISonarDevice::Main()
 	
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
-		    switch (cfg.request) {
+		    switch (cfg.subtype) {
 			    case PLAYER_SONAR_POWER_REQ:
 		    		// RWI does not turn off sonar power; all we can do is
 		    		// stop updating the data
-		    		if (cfg.value == 0)
+		    		if (cfg.arg == 0)
 		    			enabled = false;
 		    		else
 		    			enabled = true;

@@ -11,11 +11,9 @@ PWD=$(shell pwd)
 INCLUDES = -I. -I../c -I../../include
 
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
-      p2_positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
-      laserbeaconproxy.o visionproxy.o  \
-      gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
-      rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
-      rwi_powerproxy.o
+      positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
+      laserbeaconproxy.o visionproxy.o powerproxy.o bumperproxy.o \
+      gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o
       #occupancyproxy.o truthproxy.o idarproxy.o descartesproxy.o
 
 all: $(LIBNAME)
@@ -43,8 +41,8 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -s $(PWD)/laserproxy.h ../../include
 	$(RM) -f ../../include/miscproxy.h 
 	$(LN) -s $(PWD)/miscproxy.h ../../include
-	$(RM) -f ../../include/p2_positionproxy.h 
-	$(LN) -s $(PWD)/p2_positionproxy.h ../../include
+	$(RM) -f ../../include/positionproxy.h
+	$(LN) -s $(PWD)/positionproxy.h ../../include
 	$(RM) -f ../../include/ptzproxy.h 
 	$(LN) -s $(PWD)/ptzproxy.h ../../include
 	$(RM) -f ../../include/sonarproxy.h 
@@ -67,18 +65,10 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -s $(PWD)/broadcastproxy.h ../../include
 	$(RM) -f ../../include/moteproxy.h 
 	$(LN) -s $(PWD)/moteproxy.h ../../include
-	$(RM) -f ../../include/rwi_positionproxy.h 
-	$(LN) -s $(PWD)/rwi_positionproxy.h ../../include
-	$(RM) -f ../../include/rwi_sonarproxy.h 
-	$(LN) -s $(PWD)/rwi_sonarproxy.h ../../include
-	$(RM) -f ../../include/rwi_laserproxy.h 
-	$(LN) -s $(PWD)/rwi_laserproxy.h ../../include
-	$(RM) -f ../../include/rwi_bumperproxy.h 
-	$(LN) -s $(PWD)/rwi_bumperproxy.h ../../include
-	$(RM) -f ../../include/rwi_powerproxy.h
-	$(LN) -s $(PWD)/rwi_powerproxy.h ../../include
-	$(RM) -f ../../include/positionproxy.h
-	$(LN) -s $(PWD)/positionproxy.h ../../include
+	$(RM) -f ../../include/bumperproxy.h
+	$(LN) -s $(PWD)/bumperproxy.h ../../include
+	$(RM) -f ../../include/powerproxy.h
+	$(LN) -s $(PWD)/powerproxy.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)
@@ -106,7 +96,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 laserbeaconproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 laserproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 miscproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 p2_positionproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 positionproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 ptzproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 sonarproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 speechproxy.h $(INSTALL_INCLUDE)
@@ -118,12 +108,8 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 playermulticlient.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 broadcastproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 moteproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 rwi_positionproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 rwi_sonarproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 rwi_laserproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 rwi_bumperproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 rwi_powerproxy.h $(INSTALL_INCLUDE)
-	$(INSTALL) -m 644 positionproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 bumperproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 powerproxy.h $(INSTALL_INCLUDE)
 #	$(INSTALL) -m 644 idarproxy.h $(INSTALL_INCLUDE)
 #	$(INSTALL) -m 644 descartesproxy.h $(INSTALL_INCLUDE)
 
@@ -135,7 +121,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/laserbeaconproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/laserproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/miscproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/p2_positionproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/positionproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/ptzproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/sonarproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/speechproxy.h
@@ -147,12 +133,8 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/broadcastproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/moteproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/playermulticlient.h
-	$(RM) -f $(INSTALL_INCLUDE)/rwi_positionproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/rwi_sonarproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/rwi_laserproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/rwi_bumperproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/rwi_powerproxy.h
-	$(RM) -f $(INSTALL_INCLUDE)/positionproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/bumperproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/powerproxy.h
 #	$(RM) -f $(INSTALL_INCLUDE)/descartesproxy.h
 #	$(RM) -f $(INSTALL_INCLUDE)/idarproxy.h
 
@@ -168,7 +150,7 @@ clean:
 	$(RM) -f ../../include/laserbeaconproxy.h 
 	$(RM) -f ../../include/laserproxy.h 
 	$(RM) -f ../../include/miscproxy.h 
-	$(RM) -f ../../include/p2_positionproxy.h 
+	$(RM) -f ../../include/positionproxy.h
 	$(RM) -f ../../include/ptzproxy.h 
 	$(RM) -f ../../include/sonarproxy.h 
 	$(RM) -f ../../include/speechproxy.h 
@@ -180,12 +162,8 @@ clean:
 	$(RM) -f ../../include/moteproxy.h 
 	$(RM) -f ../../include/broadcastproxy.h 
 	$(RM) -f ../../include/playermulticlient.h
-	$(RM) -f ../../include/rwi_positionproxy.h
-	$(RM) -f ../../include/rwi_sonarproxy.h
-	$(RM) -f ../../include/rwi_laserproxy.h
-	$(RM) -f ../../include/rwi_bumperproxy.h
-	$(RM) -f ../../include/rwi_powerproxy.h
-	$(RM) -f ../../include/positionproxy.h
+	$(RM) -f ../../include/bumperproxy.h
+	$(RM) -f ../../include/powerproxy.h
 # DO NOT DELETE.  FOLLOWING IS FROM MAKEDEPEND
 
 

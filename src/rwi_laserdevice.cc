@@ -76,8 +76,8 @@ CRWILaserDevice::Main()
 	bool enabled = true;
 	
 	// Working buffer space
-	player_rwi_config_t cfg;
-	player_laser_data_t data;
+	player_laser_config_t cfg;
+	player_laser_data_t   data;
 	
 	void *client;
 	
@@ -93,11 +93,11 @@ CRWILaserDevice::Main()
 	
 		// First, check for a configuration request
 		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
-		    switch (cfg.request) {
+		    switch (cfg.subtype) {
 			    case PLAYER_LASER_POWER_REQ:
 		    		// RWI does not turn off laser power: all we can do is
-		    		// stop updating the data
-		    		if (cfg.value == 0)
+		    		// toggle whether we are updating the data
+		    		if (enabled)
 		    			enabled = false;
 		    		else
 		    			enabled = true;
@@ -107,6 +107,26 @@ CRWILaserDevice::Main()
 		    			PLAYER_ERROR("Failed to PutReply in "
 		    			             "rwi_laserdevice.\n");
 		    		}
+					break;
+				case PLAYER_LASER_SET_CONFIG:
+					// nothing can be changed for RWI lasers
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+		    		             NULL, NULL, 0)) {
+		    			PLAYER_ERROR("Failed to PutReply in "
+		    			             "rwi_laserdevice.\n");
+		    		}
+					break;
+				case PLAYER_LASER_GET_CONFIG:
+					// I don't know of any other valid values for RWI robots
+					cfg.min_angle = 9000;
+					cfg.max_angle = -9000;
+					cfg.resolution = 1000;
+					cfg.intensity = 0;
+					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL,
+					             &cfg, sizeof(cfg))) {
+						PLAYER_ERROR("Failed to PutReply in Get_Config "
+						             " of rwi_laserdevice.\n");
+					}
 					break;
 				case PLAYER_LASER_GET_GEOM:
 					// FIXME: not yet implemented

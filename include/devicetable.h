@@ -76,7 +76,8 @@ class CDeviceTable
 
     // this one sets some different fields; it's used to fill the available
     // device table, instead of the instantiated device table
-    int AddDevice(unsigned short code, char access, char* name,
+    int AddDevice(unsigned short code, unsigned short type,
+                  char access, char* name,
                   CDevice* (*initfunc)(int,char**));
 
 

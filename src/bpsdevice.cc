@@ -141,15 +141,15 @@ int CBpsDevice::Setup()
   else
     id.index = device_id.index;
 
-  id.code = PLAYER_POSITION_CODE;
-  printf("CBpsDevice:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
+  id.type = PLAYER_POSITION_TYPE;
+  printf("CBpsDevice:Setup(%d:%d:%d)\n", id.type,id.index,id.port);
   if(!(this->position = deviceTable->GetDevice(id)))
   {
     fputs("CBpsDevice:Setup(): couldn't find position device\n",stderr);
     return(-1);
   }
-  id.code = PLAYER_LASERBEACON_CODE;
-  printf("CBpsDevice:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
+  id.type = PLAYER_LASERBEACON_TYPE;
+  printf("CBpsDevice:Setup(%d:%d:%d)\n", id.type,id.index,id.port);
   if(!(this->laserbeacon = deviceTable->GetDevice(id)))
   {
     fputs("CBpsDevice:Setup(): couldn't find laserbeacon device\n",stderr);

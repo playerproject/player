@@ -63,7 +63,7 @@ class SonarProxy : public ClientProxy
     */
     SonarProxy(PlayerClient* pc, unsigned short index, 
                unsigned char access = 'c') :
-            ClientProxy(pc,PLAYER_SONAR_CODE,index,access)
+            ClientProxy(pc,PLAYER_SONAR_TYPE,index,access)
     { bzero(&sonar_pose,sizeof(sonar_pose)); }
 
     // these methods are the user's interface to this device
@@ -91,6 +91,15 @@ class SonarProxy : public ClientProxy
       else 
         return(0);
     }
+
+    uint16_t Ranges (const unsigned int index) const
+    {
+    	if (index < range_count)
+    		return ranges[index];
+    	else
+    		return 0;
+    }
+
 
     /** Get the pose of a particular sonar.
         This is a convenience function that returns the pose of any

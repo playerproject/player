@@ -39,7 +39,7 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 BroadcastProxy::BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access)
-    : ClientProxy(pc, PLAYER_BROADCAST_CODE, index, access)
+    : ClientProxy(pc, PLAYER_BROADCAST_TYPE, index, access)
 {
 }
 

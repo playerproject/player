@@ -21,7 +21,7 @@
  *
  */
 
-#include <rwi_bumperproxy.h>
+#include <bumperproxy.h>
 #include <string.h>
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
@@ -33,23 +33,23 @@
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
 int
-RWIBumperProxy::SetBumperState(const unsigned char state) const
+BumperProxy::SetBumperState(const unsigned char state) const
 {
 	if(!client)
 		return(-1);
 
-	player_rwi_config_t cfg;
+	player_bumper_config_t cfg;
 
 	cfg.request = PLAYER_BUMPER_POWER_REQ;
 	cfg.value = state;
 
 
-	return(client->Request(PLAYER_RWI_BUMPER_CODE, index,
+	return(client->Request(PLAYER_BUMPER_TYPE, index,
 	       (const char *) &cfg, sizeof(cfg)));
 }
 
 bool
-RWIBumperProxy::BumpedAny() const
+BumperProxy::BumpedAny() const
 {
 	for (int i=0; (i < bumper_count)&&(i < PLAYER_NUM_BUMPER_SAMPLES); i++) {
 		if (bumpfield & (1 << i))
@@ -60,7 +60,7 @@ RWIBumperProxy::BumpedAny() const
 }
 
 bool
-RWIBumperProxy::Bumped(const unsigned int i) const
+BumperProxy::Bumped(const unsigned int i) const
 {
 	if (i < bumper_count)
 		return (bumpfield & (1 << i)) ? true : false;
@@ -69,11 +69,11 @@ RWIBumperProxy::Bumped(const unsigned int i) const
 }
 
 void
-RWIBumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
+BumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
 	if(hdr.size != sizeof(player_bumper_data_t)) {
 		if(player_debug_level(-1) >= 1)
-			fprintf(stderr,"WARNING: rwi_bumperproxy expected %d bytes of"
+			fprintf(stderr,"WARNING: bumperproxy expected %d bytes of"
 			        " bumper data, but received %d. Unexpected results may"
 			        " ensue.\n",
 			        sizeof(player_bumper_data_t), hdr.size);
@@ -84,9 +84,10 @@ RWIBumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
 }
 
 // interface that all proxies SHOULD provide
-void RWIBumperProxy::Print()
+void
+BumperProxy::Print()
 {
-	printf("#RWIBumper(%d:%d) - %c\n", device, index, access);
+	printf("#Bumper(%d:%d) - %c\n", device, index, access);
 	printf("%d\n", bumper_count);
 	for (int i = min(bumper_count, PLAYER_NUM_BUMPER_SAMPLES); i >= 0; i--)
 		putchar((bumpfield & (1 << i)) ? '1' : '0');

@@ -121,7 +121,7 @@ int CLaserBeaconDevice::Setup()
   // get the pointer to the laser
   player_device_id_t id;
   id.port = device_id.port;
-  id.code = PLAYER_LASER_CODE;
+  id.type = PLAYER_LASER_TYPE;
   // if index was not overridden by an argument in the constructor, then we
   // use the device's own index
   if(this->index >= 0)

@@ -48,7 +48,7 @@ class SpeechProxy : public ClientProxy
     */
     SpeechProxy(PlayerClient* pc, unsigned short index, 
                 unsigned char access='c'):
-            ClientProxy(pc,PLAYER_SPEECH_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_SPEECH_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 

@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef _RWI_BUMPERPROXY_H
-#define _RWI_BUMPERPROXY_H
+#ifndef _BUMPERPROXY_H
+#define _BUMPERPROXY_H
 
 #include <clientproxy.h>
 #include <playerclient.h>
@@ -30,7 +30,7 @@
 /** The {\tt RWIBumperProxy} class is used to read from the {\tt rwi_bumper}
 	device.
  */
-class RWIBumperProxy : public ClientProxy {
+class BumperProxy : public ClientProxy {
 
 public:
     /** Constructor.
@@ -38,9 +38,9 @@ public:
         You can change the access later using
         {\tt PlayerProxy::RequestDeviceAccess}.
     */
-    RWIBumperProxy (PlayerClient* pc, unsigned short index,
-                   unsigned char access = 'c')
-            : ClientProxy(pc,PLAYER_RWI_BUMPER_CODE,index,access) {}
+    BumperProxy (PlayerClient* pc, unsigned short index,
+                 unsigned char access = 'c')
+            : ClientProxy(pc,PLAYER_BUMPER_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 
@@ -75,4 +75,4 @@ private:
     uint32_t bumpfield;
 };
 
-#endif // _RWI_BUMPERPROXY_H
+#endif // _BUMPERPROXY_H

@@ -66,8 +66,8 @@ void
 CRWIPowerDevice::Main()
 {
 	// Working buffer space
-	player_rwi_config_t cfg;
-	player_power_data_t data;
+	player_power_config_t cfg;
+	player_power_data_t   data;
 	
 	void *client;
 	

@@ -41,7 +41,7 @@
   //   leave access empty to start unconnected
 TruthProxy::TruthProxy(PlayerClient* pc, unsigned short index, 
 	   unsigned char access = 'c') :
-  ClientProxy(pc,PLAYER_TRUTH_CODE,index,access)
+  ClientProxy(pc,PLAYER_TRUTH_TYPE,index,access)
 {
   // initialize data
   memset( database, 0, sizeof( database ) );
@@ -57,10 +57,12 @@ void TruthProxy::ImportTruth( truth_t &si, player_generic_truth_t &pl )
 {
   si.id.port = pl.id.port;
   si.id.code = pl.id.code;
+  si.id.type = pl.id.type;
   si.id.index = pl.id.index;
 
   si.parent.port = pl.parent.port;
   si.parent.code = pl.parent.code;
+  si.parent.type = pl.parent.type;
   si.parent.index = pl.parent.index;
 
   pl.x  == 0 ? si.x  = 0 : si.x  = (double)(pl.x  / 1000.0); // mm -> m
@@ -74,10 +76,12 @@ void TruthProxy::ExportTruth( player_generic_truth_t &pl, truth_t &si )
 {
   pl.id.port = si.id.port;
   pl.id.code = si.id.code;
+  pl.id.type = si.id.type;
   pl.id.index = si.id.index;
 
   pl.parent.port = si.parent.port;
   pl.parent.code = si.parent.code;
+  pl.parent.type = si.parent.type;
   pl.parent.index = si.parent.index;
 
   si.x  == 0 ? pl.x  = 0 : pl.x  = (uint32_t)(si.x * 1000.0); // m -> mm
@@ -115,7 +119,7 @@ int TruthProxy::SendModifiedTruthsToStage()
 	  ExportTruth( player_truth, database[i] );
 	  
 	  // and send the truth to stage
-	  res = client->Write( PLAYER_TRUTH_CODE, index,
+	  res = client->Write( PLAYER_TRUTH_TYPE, index,
 			       (const char*)&player_truth,
 			       sizeof(player_truth));
 	  
@@ -145,8 +149,8 @@ int TruthProxy::SendSingleTruthToStage( truth_t& truth )
 
 #ifdef DEBUG
   printf( "TruthProxy: converting "
-	  "(%d,%d,%d) [%.2f,%.2f,%.2f]\n", 
-	  truth.id.port, truth.id.code, truth.id.index,
+	  "(%d,%d,%d,%d) [%.2f,%.2f,%.2f]\n",
+	  truth.id.port, truth.id.code, truth.id.type, truth.id.index,
 	  truth.x, truth.y, truth.th );
 #endif		
 
@@ -156,14 +160,14 @@ int TruthProxy::SendSingleTruthToStage( truth_t& truth )
 
 #ifdef DEBUG
   printf( "                    to "
-	  "(%d,%d,%d) [%u,%u,%u] for sending to Player\n", 
+	  "(%d,%d,%d,%d) [%u,%u,%u] for sending to Player\n",
 	  player_truth.id.port, player_truth.id.code,
-	  player_truth.id.index,
+	  player_truth.id.type, player_truth.id.index,
 	  player_truth.x, player_truth.y, player_truth.th );
 #endif		
 
   // and send the truth to stage
-  res = client->Write( PLAYER_TRUTH_CODE, index,
+  res = client->Write( PLAYER_TRUTH_TYPE, index,
 		       (const char*)&player_truth,
 		       sizeof(player_truth));
   
@@ -209,7 +213,8 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
 	  {
 	    // is this the same object?
 	    if(    database[i].id.port ==  ptruth[t].id.port 
-		&& database[i].id.code ==  ptruth[t].id.code 
+		&& database[i].id.code ==  ptruth[t].id.code
+		&& database[i].id.type ==  ptruth[t].id.type
 		&& database[i].id.index == ptruth[t].id.index )
 	      {
 		// seen it before!
@@ -222,9 +227,10 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
 		
 #ifdef DEBUG
 		printf( "TruthProxy: updating device "
-			"(%d,%d,%d) [%.2f,%.2f,%.2f]\n", 
+			"(%d,%d,%d,%d) [%.2f,%.2f,%.2f]\n",
 			database[i].id.port, 
-			database[i].id.code, 
+			database[i].id.code,
+			database[i].id.type,
 			database[i].id.index,
 			database[i].x, database[i].y, database[i].th );
 #endif		
@@ -243,8 +249,9 @@ void TruthProxy::FillData(player_msghdr_t hdr, const char* buffer)
       if( !found ) // it wasn;t in the database
 	{
 #ifdef DEBUG
-	  printf( "TruthProxy: adding device (%d,%d,%d)\n", 
-		ptruth[t].id.port, ptruth[t].id.code, ptruth[t].id.index );
+	  printf( "TruthProxy: adding device (%d,%d,%d,%d)\n",
+		ptruth[t].id.port, ptruth[t].id.code,
+		ptruth[t].id.type, ptruth[t].id.index );
 #endif
 	  //memcpy( &(database[num_truths]), &(truth[t]), sizeof(truth[t]) );
 	  ImportTruth( database[num_truths], ptruth[t] );
@@ -259,10 +266,11 @@ void TruthProxy::Print()
 {
   puts( "Truth Proxy device database:" );
   for( int i=0; i<num_truths; i++)
-    printf( "[%d] (%d,%d,%d) x:%.2f y:%.2f th:%.2f w:%.2f h:%.2f\n",
+    printf( "[%d] (%d,%d,%d,%d) x:%.2f y:%.2f th:%.2f w:%.2f h:%.2f\n",
 	    i, 
 	    database[i].id.port, 
-	    database[i].id.code, 
+	    database[i].id.code,
+	    databaes[i].id.type,
 	    database[i].id.index, 
 	    //truth[t].desc, 
 	    database[i].x, 
@@ -327,7 +335,7 @@ truth_t* TruthProxy::NearestDevice( double x, double y )
   return nearest; 
 }
 
-// return the nearest device to thge given point
+// return the nearest device to the given point
 truth_t* TruthProxy::GetDeviceByID( player_device_id_t* id )
 {
   for( int i=0; i<num_truths; i++ )
@@ -341,6 +349,7 @@ truth_t* TruthProxy::GetDeviceByID( player_device_id_t* id )
 //  	      database[i].id.index );
 
       if( database[i].id.code == id->code &&
+      database[i].id.type == id->type &&
 	  database[i].id.index == id->index &&
 	  database[i].id.port == id->port )
 	return &(database[i]); // success!

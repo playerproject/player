@@ -67,7 +67,7 @@ class GripperProxy : public ClientProxy
     //   leave access empty to start unconnected
     GripperProxy(PlayerClient* pc, unsigned short index, 
                  unsigned char access='c') :
-            ClientProxy(pc,PLAYER_GRIPPER_CODE,index,access) {}
+            ClientProxy(pc,PLAYER_GRIPPER_TYPE,index,access) {}
 
     // these methods are the user's interface to this device
 

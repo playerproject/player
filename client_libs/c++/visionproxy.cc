@@ -31,7 +31,7 @@
 
 VisionProxy::VisionProxy(PlayerClient* pc, unsigned short index, 
             unsigned char access='c'):
-            ClientProxy(pc,PLAYER_VISION_CODE,index,access)
+            ClientProxy(pc,PLAYER_VISION_TYPE,index,access)
 {
   // zero everything
   bzero(num_blobs,sizeof(num_blobs));

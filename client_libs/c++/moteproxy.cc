@@ -13,7 +13,7 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 MoteProxy::MoteProxy(PlayerClient* pc, unsigned short index, unsigned char access)
-        : ClientProxy(pc, PLAYER_MOTE_CODE, index, access)
+        : ClientProxy(pc, PLAYER_MOTE_TYPE, index, access)
 {
   memset(&this->m_config, 0, sizeof(this->m_config));
   rx_queue = (player_mote_data_t*)malloc(sizeof(player_mote_data_t)
@@ -35,7 +35,7 @@ int MoteProxy::TransmitRaw(char *msg, uint16_t len)
   tx_data.len = len;
   memcpy(tx_data.buf, msg, len);
   
-  return(client->Write(PLAYER_MOTE_CODE,index,(const char*)&tx_data,
+  return(client->Write(PLAYER_MOTE_TYPE,index,(const char*)&tx_data,
                          sizeof(player_mote_data_t)));
 }
 
@@ -47,7 +47,7 @@ int MoteProxy::SetStrength(uint8_t str)
   
   m_config.strength = str;
   
-  return(client->Request(PLAYER_MOTE_CODE,index,(const char*)&m_config,
+  return(client->Request(PLAYER_MOTE_TYPE,index,(const char*)&m_config,
 			 sizeof(player_mote_config_t)));
 }
 

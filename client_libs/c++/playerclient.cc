@@ -349,7 +349,7 @@ int PlayerClient::SetDataMode(unsigned char mode)
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
+  return(Request(PLAYER_PLAYER_TYPE, 0, payload, sizeof(payload),NULL,0,0));
 }
 
 // request a round of data (only valid when in request/reply mode)
@@ -359,7 +359,7 @@ int PlayerClient::RequestData()
 
   this_req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
 
-  return(Request(PLAYER_PLAYER_CODE, 0, (char*)&this_req, sizeof(this_req)));
+  return(Request(PLAYER_PLAYER_TYPE, 0, (char*)&this_req, sizeof(this_req)));
 }
 
 // authenticate
@@ -373,7 +373,7 @@ int PlayerClient::Authenticate(char* key)
 
   memcpy(payload,&this_req,sizeof(this_req));
 
-  return(Request(PLAYER_PLAYER_CODE, 0, payload, sizeof(payload),NULL,0,0));
+  return(Request(PLAYER_PLAYER_TYPE, 0, payload, sizeof(payload),NULL,0,0));
 }
 
 // proxy list management methods

@@ -75,7 +75,8 @@ CDeviceTable::AddDevice(player_device_id_t id, unsigned char access,
       preventry=thisentry, thisentry=thisentry->next)
   {
     if((thisentry->id.port == id.port) && 
-       (thisentry->id.code == id.code) && 
+       (thisentry->id.code == id.code) &&
+       (thisentry->id.type == id.type) &&
        (thisentry->id.index == id.index))
     {
       if(thisentry->devicep)
@@ -126,11 +127,13 @@ CDeviceTable::AddDevice(player_device_id_t id, unsigned char access,
 // this one sets some different fields; it's used to fill the available
 // device table, instead of the instantiated device table
 int 
-CDeviceTable::AddDevice(unsigned short code, char access, char* name,
+CDeviceTable::AddDevice(unsigned short code, unsigned short type,
+                        char access, char* name,
                         CDevice* (*initfunc)(int,char**))
 {
   player_device_id_t id;
   id.code = code;
+  id.type = type;
   id.index = 0;
   id.port = 0;
   return(AddDevice(id,access,name,initfunc,NULL));
@@ -152,7 +155,7 @@ CDeviceTable::GetDevice(player_device_id_t id)
     // get around the fact that, given arbitrary ordering of command-line
     // arguments, devices can get added to the devicetable with an incorrect
     // port.
-    if((thisentry->id.code == id.code) && 
+    if((thisentry->id.type == id.type) &&
        (thisentry->id.index == id.index) &&
        (!use_stage || (thisentry->id.port == id.port)))
     {
@@ -195,7 +198,7 @@ CDeviceTable::GetDeviceAccess(player_device_id_t id)
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
     if((thisentry->id.port == id.port) && 
-       (thisentry->id.code == id.code) && 
+       (thisentry->id.type == id.type) &&
        (thisentry->id.index == id.index))
     {
       access = thisentry->access;
