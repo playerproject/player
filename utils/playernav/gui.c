@@ -19,7 +19,7 @@ static gboolean dragging=FALSE;
 static gboolean setting_theta=FALSE;
 static gboolean setting_goal=FALSE;
 
-extern double dumpfreq;
+extern int dumpp;
 
 /*
  * handle quit events, by setting a flag that will make the main loop exit
@@ -38,10 +38,7 @@ _toggle_dump(GtkWidget *widget,
              GdkEvent *event,
              gpointer data)
 {
-  if(!dumpfreq)
-    dumpfreq = 1.0;
-  else
-    dumpfreq = 0.0;
+  dumpp = !dumpp;
   return(TRUE);
 }
 
@@ -320,8 +317,8 @@ make_menu(gui_data_t* gui_data)
   GtkMenu* file_menu;
   //GtkMenuItem* open_item;
   //GtkMenuItem* save_item;
+  GtkCheckMenuItem* dump_item;
   GtkMenuItem* quit_item;
-  GtkMenuItem* dump_item;
   GtkMenuItem* file_item;
 
   file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
@@ -329,8 +326,8 @@ make_menu(gui_data_t* gui_data)
   /* Create the menu items */
   //open_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Open");
   //save_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Save");
-  dump_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Toggle screenshots");
-  quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Quit");
+  quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Quit");
+  dump_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Capture stills");
 
   /* Add them to the menu */
   //gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)open_item);
