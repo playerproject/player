@@ -146,6 +146,7 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
       stg_bool_t grid;
       grid = wf.ReadInt(section, "grid", 1 );
       stg_model_prop_with_data(root, STG_PROP_GRID, &grid, sizeof(grid) );
+
     // Iterate through sections and create client-side models
   for (int section = 1; section < wf.GetEntityCount(); section++)
     {
@@ -294,7 +295,7 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
       vel.a = wf.ReadTupleAngle(section, "velocity", 2, 0);      
       stg_model_prop_with_data( mod, STG_PROP_VELOCITY, &vel, sizeof(vel) );
 
-
+      
     }
   
   printf( "building client-side models done.\n" );
@@ -318,6 +319,15 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
       // steal the global clock - a bit aggressive, but a simple approach
   if( GlobalTime ) delete GlobalTime;
   assert( (GlobalTime = new StgTime( Stage1p4::stage_client ) ));
+
+  // subscribe to something so we get the clock updates
+  stg_model_subscribe( root, STG_PROP_TIME, 0.1 );
+  
+  // start the simulation
+  //stg_msg_t*  msg = stg_msg_create( STG_MSG_SERVER_RUN, NULL, 0 );
+  //stg_fd_msg_write( this->stage_client->pfd.fd, msg );
+  //stg_msg_destroy( msg );
+  
     } 
   
 }

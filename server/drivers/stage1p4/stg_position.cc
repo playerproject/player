@@ -45,6 +45,9 @@ public:
 protected:
   
   player_position_data_t position_data;
+
+  stg_pose_t geom_pose;
+  stg_size_t geom_size;
 };
 
 
@@ -58,7 +61,7 @@ StgPosition::StgPosition(char* interface, ConfigFile* cf, int section )
   
   PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
 
-  this->subscribe_prop = STG_MOD_POSE;
+  this->subscribe_prop = STG_PROP_POSE;
 }
 
 CDevice* StgPosition_Init(char* interface, ConfigFile* cf, int section)
@@ -83,50 +86,50 @@ void StgPosition_Register(DriverTable* table)
 size_t StgPosition::GetData(void* client, unsigned char* dest, size_t len,
 			    uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  // request position data from Stage
-  stg_model_property_wait( model, STG_MOD_POSE );
+  stg_property_t* prop = stg_model_get_prop( model, this->subscribe_prop);
   
-  // copy data from Stage    
-  stg_property_t* prop = stg_model_property( model, STG_MOD_POSE );
+  if( prop && prop->len == sizeof(stg_pose_t) ) 
+    {      
+      stg_pose_t* pose = (stg_pose_t*)prop->data;
+
+      PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
+
+      memset( &this->position_data, 0, sizeof(position_data) );
+      // pack the data into player format
+      position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
+      position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
+      position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
+      
+      // publish this data
+      CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); 
+    }
   
-  stg_pose_t* pose = (stg_pose_t*)prop->data;
-  size_t plen = prop->len;
-  assert( plen == sizeof(stg_pose_t) );
-  
-  PLAYER_MSG3( "get data pose %.2f %.2f %.2f", pose->x, pose->y, pose->a );
-
-  memset( &position_data, 0, sizeof(position_data) );
-  // pack the data into player format
-  position_data.xpos = ntohl((int32_t)(1000.0 * pose->x));
-  position_data.ypos = ntohl((int32_t)(1000.0 * pose->y));
-  position_data.yaw = ntohl((int32_t)(RTOD(pose->a)));
-
-  // publish this data
-  CDevice::PutData( &position_data, sizeof(position_data), 0,0 ); // time gets filled in
-
   // now inherit the standard data-getting behavior 
   return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
 
 void  StgPosition::PutCommand(void* client, unsigned char* src, size_t len)
 {
-  assert( len == sizeof(player_position_cmd_t) );
-  
-  // convert from Player to Stage format
-  player_position_cmd_t* pcmd = (player_position_cmd_t*)src;
+  if( len == sizeof(player_position_cmd_t) )
+    {
+      // convert from Player to Stage format
+      player_position_cmd_t* pcmd = (player_position_cmd_t*)src;
+      
+      stg_velocity_t vel; 
+      vel.x = ((double)((int32_t)ntohl(pcmd->xspeed))) / 1000.0;
+      vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
+      vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
+      
+      printf( "sending vel\n" );
+      
+      stg_model_property_set( this->model, STG_PROP_VELOCITY, 
+			      &vel, sizeof(vel) ) ;
+    }
+  else
+    PLAYER_ERROR2( "wrong size position command packet (%d/%d bytes)",
+		   len, sizeof(player_position_cmd_t) );
 
-  stg_velocity_t vel; 
-  vel.x = ((double)((int32_t)ntohl(pcmd->xspeed))) / 1000.0;
-  vel.y = ((double)((int32_t)ntohl(pcmd->yspeed))) / 1000.0;
-  vel.a = DTOR((double)((int32_t)ntohl(pcmd->yawspeed)));
-  
-  stg_model_property_set_ex( model, 
-			     0.0,
-			     STG_MOD_VELOCITY, 
-			     STG_PR_NONE,
-			     (void*)&vel, 
-			     sizeof(vel) );
-  
+
   // we ignore position for now.
 
     // int32_t xpos, ypos;
@@ -144,38 +147,27 @@ int StgPosition::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_POSITION_GET_GEOM_REQ:
       {
-	// todo? delete old geom data?
+	this->geom_pose.x = 0.0;
+	this->geom_pose.y = 0.0;
+	this->geom_pose.a = 0.0;
 
-	// request data from Stage
-	stg_model_property_req( model, STG_MOD_ORIGIN );
-	stg_model_property_req( model, STG_MOD_SIZE);
-	
-	// wait for it to show up
-	stg_model_property_wait( model, STG_MOD_ORIGIN);
-	stg_model_property_wait( model, STG_MOD_SIZE);
-  
-	stg_pose_t *org = 
-	  (stg_pose_t*)stg_model_property_data( model, STG_MOD_ORIGIN );
-	stg_size_t *sz = 
-	  (stg_size_t*)stg_model_property_data( model, STG_MOD_SIZE );
-	
+	this->geom_size.x = 0.6;
+	this->geom_size.y = 0.4;
+
 	// fill in the geometry data formatted player-like
 	player_position_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * org->x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * org->y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD(org->a));
+	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * geom_pose.x));
+	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * geom_pose.y));
+	pgeom.pose[2] = ntohs((uint16_t)RTOD(geom_pose.a));
 	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sz->x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sz->y)); 
+	pgeom.size[0] = ntohs((uint16_t)(1000.0 * geom_size.x)); 
+	pgeom.size[1] = ntohs((uint16_t)(1000.0 * geom_size.y)); 
 	
 	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
 		  &pgeom, sizeof(pgeom) );
-
-	free( org );
-	free( sz );
       }
       break;
-      
+
     default:
       {
 	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );

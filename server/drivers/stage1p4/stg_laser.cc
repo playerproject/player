@@ -42,6 +42,11 @@ public:
 
   virtual int PutConfig(player_device_id_t* device, void* client, 
 			void* data, size_t len);
+
+private:
+  // laser parameters
+  int min_angle, max_angle, angle_res, range_res, intensity;
+  
 };
 
 StgLaser::StgLaser(char* interface, ConfigFile* cf, int section ) 
@@ -81,18 +86,14 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
       stg_laser_sample_t* samples = (stg_laser_sample_t*)prop->data;
       int sample_count = prop->len / sizeof(stg_laser_sample_t);
       
-      double angle_min = -M_PI/2.0;
-      double angle_max = M_PI/2.0;
-      double ang_resolution = (angle_max - angle_min) / sample_count;
-      
       player_laser_data_t pdata;
       memset( &pdata, 0, sizeof(pdata) );
       
-      pdata.min_angle = htons( (int16_t)(RTOD(angle_min) * 100) );
-      pdata.max_angle = htons( (int16_t)(RTOD(angle_max) * 100) );
-      pdata.resolution = htons( (uint16_t)(RTOD(ang_resolution) * 100) );
+      pdata.min_angle = htons( (int16_t)this->min_angle );
+      pdata.max_angle = htons( (int16_t)this->max_angle );
+      pdata.resolution = htons( (uint16_t)this->angle_res );
+      pdata.range_res = htons( (uint16_t)this->range_res);
       pdata.range_count = htons( (uint16_t)sample_count );
-      pdata.range_res = htons( (uint16_t)1 );
       
       for( int i=0; i<sample_count; i++ )
 	{
@@ -125,45 +126,82 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
   uint8_t* buf = (uint8_t*)data;
   switch( buf[0] )
     {  
-
-      /*
-    case PLAYER_LASER_GET_GEOM:
+     case PLAYER_LASER_SET_CONFIG:
       {
-	//puts( "waiting for laser geom from Stage" );
+	player_laser_config_t* plc = (player_laser_config_t*)data;
 	
-	// get one laser packet, as it contains all the info we need
-	// (we are subscrribed, so it should come soon enough).
-	stg_model_property_wait( model, STG_MOD_LASER_DATA );
-
-	//puts( "getting laser geom from Stage" );
-
-	//printf( "i see %d bytes of laser data\n", 
-	//model->props[STG_MOD_LASER_DATA]->len );
-
-	// copy data from Stage    
-	stg_property_t* prop = stg_model_property( model, STG_MOD_LASER_DATA);
-	
-	stg_laser_data_t* sdata = (stg_laser_data_t*)prop->data;
-	size_t slen = prop->len;
-
-	assert( sdata );
-	assert( slen == sizeof(stg_laser_data_t) );
-		
-	// fill in the geometry data formatted player-like
-	player_laser_geom_t pgeom;
-	pgeom.pose[0] = ntohs((uint16_t)(1000.0 * sdata->pose.x));
-	pgeom.pose[1] = ntohs((uint16_t)(1000.0 * sdata->pose.y));
-	pgeom.pose[2] = ntohs((uint16_t)RTOD( sdata->pose.a));
-	
-	pgeom.size[0] = ntohs((uint16_t)(1000.0 * sdata->size.x)); 
-	pgeom.size[1] = ntohs((uint16_t)(1000.0 * sdata->size.y)); 
-	
-	PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		  &pgeom, sizeof(pgeom) );
+        if( len == sizeof(player_laser_config_t) )
+	  {
+	    this->intensity = plc->intensity;
+	    this->min_angle = (short) ntohs(plc->min_angle);
+	    this->max_angle = (short) ntohs(plc->max_angle);
+	    this->range_res = ntohs(plc->range_res);
+	    this->angle_res = ntohs(plc->resolution);
+   
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, plc, len) != 0)
+	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_SET_CONFIG");
+	  }
+	else
+	  {
+	    PLAYER_ERROR2("config request len is invalid (%d != %d)", 
+			  (int)len, (int)sizeof(player_laser_config_t));
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_SET_CONFIG");
+	  }
+      }
+      break;
+      
+    case PLAYER_LASER_GET_CONFIG:
+      {   
+	if( len == 1 )
+	  {
+	    player_laser_config_t plc;
+	    memset(&plc,0,sizeof(plc));
+	    plc.min_angle = htons( (int16_t)this->min_angle );
+	    plc.max_angle = htons( (int16_t)this->max_angle );
+	    plc.resolution = htons( (uint16_t)this->angle_res );
+	    plc.range_res = htons( (uint16_t)this->range_res);
+	    plc.intensity = (uint8_t)this->intensity;
+	    
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &plc, 
+			sizeof(plc)) != 0)
+	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_CONFIG");      
+	  }
+	else
+	  {
+	    PLAYER_ERROR2("config request len is invalid (%d != %d)", (int)len, 1);
+	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
+	      PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_CONFIG");
+	  }
       }
       break;
 
-      */
+    case PLAYER_LASER_GET_GEOM:
+      {
+	//puts( "waiting for laser geom from Stage" );
+	stg_pose_t pose;
+	pose.x = 0;
+	pose.y = 0;
+	pose.a = 0;
+	stg_size_t size;
+	size.x = 0.1;
+	size.y = 0.1;
+		
+	// fill in the geometry data formatted player-like
+	player_laser_geom_t pgeom;
+	pgeom.pose[0] = htons((uint16_t)(1000.0 * pose.x));
+	pgeom.pose[1] = htons((uint16_t)(1000.0 * pose.y));
+	pgeom.pose[2] = htons((uint16_t)RTOD( pose.a));
+	
+	pgeom.size[0] = htons((uint16_t)(1000.0 * size.x)); 
+	pgeom.size[1] = htons((uint16_t)(1000.0 * size.y)); 
+	
+	if( PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+		      &pgeom, sizeof(pgeom) ) != 0 )
+	  PLAYER_ERROR("PutReply() failed for PLAYER_LASER_GET_GEOM");      
+      }
+      break;
+
     default:
       {
 	PLAYER_WARN1( "stage1p4 doesn't support config id %d", buf[0] );
