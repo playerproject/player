@@ -202,10 +202,14 @@ _robot_button_callback(GnomeCanvasItem *item,
                                    NULL, event->button.time);
             dragging = TRUE;
 
-            // set these so that the robot's pose won't be updated in the
-            // GUI while we're dragging (that happens in playernav.c)
-            robot_moving_p = 1;
-            robot_moving_idx = idx;
+            // set these so that the robot's pose won't be updated in
+            // the GUI while we're dragging  the robot (that happens
+            // in playernav.c)
+            if(event->button.button == 1)
+            {
+              robot_moving_p = 1;
+              robot_moving_idx = idx;
+            }
           }
           break;
         default:
