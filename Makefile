@@ -74,7 +74,9 @@ distro: clean
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` `awk '{print substr($$3,2,length($$3)-2);}' $(PWD)/VERSION`
 
 
-clean:
+clean_server: 
 	cd src && make clean
+
+clean: clean_server
 	cd client_libs && make clean
 	cd examples && make clean

@@ -52,9 +52,9 @@ private:
   bool firstdata;
 
  protected:
-  int subscriptions;
 
 public:
+  int subscriptions;  // make this public so we can get at it from threads
   CLock();
   virtual ~CLock();
 

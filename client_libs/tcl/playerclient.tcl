@@ -462,6 +462,12 @@ proc writeCameraCommand {p t z} {
 
   writeCommand $PLAYER_PTZ_CODE 0 "${pb}${tb}${zb}"
 }
+
+proc writeSpeechCommand {str} {
+  global PLAYER_SPEECH_CODE
+
+  writeCommand $PLAYER_SPEECH_CODE 0 $str
+}
   
 proc printData {devices} {
   global frontbumpers rearbumpers sonar battery

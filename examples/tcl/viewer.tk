@@ -501,13 +501,13 @@ proc displayData {} {
                $vision(0,$i,right) $vision(0,$i,bottom)\
                $vision(0,$i,left) $vision(0,$i,bottom)\
                $vision(0,$i,left) $vision(0,$i,top) \
-               -width 2 -fill red]\
+               -width 2 -fill yellow]\
         [.vision_panel.canvas create polygon \
                [expr $vision(0,$i,x) - 2] [expr $vision(0,$i,y) - 2]\
                [expr $vision(0,$i,x) + 2] [expr $vision(0,$i,y) - 2]\
                [expr $vision(0,$i,x) + 2] [expr $vision(0,$i,y) + 2]\
                [expr $vision(0,$i,x) - 2] [expr $vision(0,$i,y) + 2]\
-               -fill red]]
+               -fill yellow]]
       incr i
     }
     set i 0
@@ -519,13 +519,13 @@ proc displayData {} {
                $vision(1,$i,right) $vision(1,$i,bottom)\
                $vision(1,$i,left) $vision(1,$i,bottom)\
                $vision(1,$i,left) $vision(1,$i,top) \
-               -width 2 -fill green]\
+               -width 2 -fill pink]\
         [.vision_panel.canvas create polygon \
                [expr $vision(1,$i,x) - 2] [expr $vision(1,$i,y) - 2]\
                [expr $vision(1,$i,x) + 2] [expr $vision(1,$i,y) - 2]\
                [expr $vision(1,$i,x) + 2] [expr $vision(1,$i,y) + 2]\
                [expr $vision(1,$i,x) - 2] [expr $vision(1,$i,y) + 2]\
-               -fill green]]
+               -fill pink]]
       incr i
     }
     set i 0
@@ -537,13 +537,13 @@ proc displayData {} {
                $vision(2,$i,right) $vision(2,$i,bottom)\
                $vision(2,$i,left) $vision(2,$i,bottom)\
                $vision(2,$i,left) $vision(2,$i,top) \
-               -width 2 -fill blue]\
+               -width 2 -fill orange]\
         [.vision_panel.canvas create polygon \
                [expr $vision(2,$i,x) - 2] [expr $vision(2,$i,y) - 2]\
                [expr $vision(2,$i,x) + 2] [expr $vision(2,$i,y) - 2]\
                [expr $vision(2,$i,x) + 2] [expr $vision(2,$i,y) + 2]\
                [expr $vision(2,$i,x) - 2] [expr $vision(2,$i,y) + 2]\
-               -fill blue]]
+               -fill orange]]
       incr i
     }
     set i 0
@@ -555,13 +555,13 @@ proc displayData {} {
                $vision(3,$i,right) $vision(3,$i,bottom)\
                $vision(3,$i,left) $vision(3,$i,bottom)\
                $vision(3,$i,left) $vision(3,$i,top) \
-               -width 2 -fill yellow]\
+               -width 2 -fill green]\
         [.vision_panel.canvas create polygon \
                [expr $vision(3,$i,x) - 2] [expr $vision(3,$i,y) - 2]\
                [expr $vision(3,$i,x) + 2] [expr $vision(3,$i,y) - 2]\
                [expr $vision(3,$i,x) + 2] [expr $vision(3,$i,y) + 2]\
                [expr $vision(3,$i,x) - 2] [expr $vision(3,$i,y) + 2]\
-               -fill yellow]]
+               -fill green]]
       incr i
     }
 
@@ -678,7 +678,7 @@ proc displayData {} {
 proc startRobot {} {
   global host PLAYER_PLAYER_DEV_REQ PLAYER_PLAYER_CODE
   global PLAYER_POSITION_CODE PLAYER_PTZ_CODE PLAYER_MISC_CODE
-  global PLAYER_ALL_MODE
+  global PLAYER_ALL_MODE PLAYER_SPEECH_CODE PLAYER_WRITE_MODE
 
   connectToRobot $host
   ChangeSonarState 0
@@ -686,6 +686,7 @@ proc startRobot {} {
   catch {requestDeviceAccess $PLAYER_POSITION_CODE 0 $PLAYER_ALL_MODE}
   catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
   catch {requestDeviceAccess $PLAYER_MISC_CODE 0 $PLAYER_ALL_MODE}
+  catch {requestDeviceAccess $PLAYER_SPEECH_CODE 0 $PLAYER_WRITE_MODE}
   signal trap SIGALRM {displayData;alarm .1}
   alarm .1
 }
