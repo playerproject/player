@@ -32,6 +32,11 @@
 #include <clientproxy.h>
 #include <playerclient.h>
 
+#include <string.h>
+#ifdef PLAYER_SOLARIS
+  #include <strings.h>
+#endif
+
 class Blob
 {
   public:
@@ -55,8 +60,8 @@ class VisionProxy : public ClientProxy
     // the client calls this method to make a new proxy
     //   leave access empty to start unconnected
     VisionProxy(PlayerClient* pc, unsigned short index, 
-                unsigned char access='c'):
-            ClientProxy(pc,PLAYER_VISION_CODE,index,access) {}
+                unsigned char access='c');
+    ~VisionProxy();
 
     // these methods are the user's interface to this device
 

@@ -114,7 +114,8 @@ int PlayerClient::Read()
     }
 
     // put the data in the object
-    thisproxy->FillData(hdr,buffer);
+    if(hdr.size)
+      thisproxy->FillData(hdr,buffer);
     
     // fill in the timestamps
     thisproxy->timestamp.tv_sec = hdr.timestamp_sec;
@@ -274,13 +275,16 @@ void PlayerClient::RemoveProxy(ClientProxy* proxy)
   {
     ClientProxyNode* thisnode;
     ClientProxyNode* prevnode;
-    for(thisnode = prevnode = proxies; 
+    for(thisnode = proxies, prevnode = (ClientProxyNode*)NULL; 
         thisnode; 
-        thisnode=thisnode->next, prevnode = thisnode)
+        prevnode = thisnode, thisnode=thisnode->next)
     {
       if(thisnode->proxy == proxy)
       {
-        prevnode = thisnode->next;
+        if(prevnode)
+          prevnode->next = thisnode->next;
+        else
+          proxies=(ClientProxyNode*)NULL;
         delete thisnode;
         num_proxies--;
         break;

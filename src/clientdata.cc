@@ -69,6 +69,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
                                  unsigned int payload_size) 
 {
   bool request=false;
+  bool unlock_pending=false;
   bool devicerequest=false;
   unsigned int i,j;
   CDevice* devicep;
@@ -183,7 +184,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
               puts("WARNING: got request for data when not in "
                               "request/reply mode");
             else
-              pthread_mutex_unlock( &datarequested);
+              unlock_pending=true;
             break;
           case PLAYER_PLAYER_DATAFREQ_REQ:
             if(real_payloadsize != sizeof(unsigned short))
@@ -303,6 +304,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     pthread_mutex_unlock(&socketwrite);
   }
 
+  if(unlock_pending)
+    pthread_mutex_unlock( &datarequested);
   //pthread_mutex_unlock( &requesthandling );
 }
 

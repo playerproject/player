@@ -28,10 +28,25 @@
 
 #include <visionproxy.h>
 #include <netinet/in.h>
-#include <string.h>
-#ifdef PLAYER_SOLARIS
-  #include <strings.h>
-#endif
+
+VisionProxy::VisionProxy(PlayerClient* pc, unsigned short index, 
+            unsigned char access='c'):
+            ClientProxy(pc,PLAYER_VISION_CODE,index,access)
+{
+  // zero everything
+  bzero(num_blobs,sizeof(num_blobs));
+  bzero(blobs,sizeof(blobs)); 
+}
+
+VisionProxy::~VisionProxy()
+{
+  // delete Blob structures
+  for(int i=0;i<ACTS_NUM_CHANNELS;i++)
+  {
+    if(blobs[i])
+      delete blobs[i];
+  }
+}
 
 void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
@@ -60,7 +75,7 @@ void VisionProxy::FillData(player_msghdr_t hdr, const char* buffer)
   for(i=0;i<ACTS_NUM_CHANNELS;i++)
   {
     //printf("%d blobs starting at %d on %d\n", buf[2*i+1]-1,buf[2*i]-1,i+1);
-    if(!(buffer[2*i+1]-1))
+    if((buffer[2*i+1]-1)<=0)
     {
       num_blobs[i] = 0;
     }
