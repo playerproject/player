@@ -44,6 +44,8 @@ PlayerClient::PlayerClient(char* hostname = NULL, int port=PLAYER_PORTNUM)
   proxies = (ClientProxyNode*)NULL;
   num_proxies = 0;
 
+  reserved = 0;
+
   if(hostname)
   {
     if(Connect(hostname, port))
@@ -146,7 +148,10 @@ int PlayerClient::Write(unsigned short device, unsigned short index,
   if(!Connected())
     return(-1);
 
-  return(player_write(&conn,device,index,command,commandlen));
+  if(!GetReserved())
+    return(player_write(&conn,device,index,command,commandlen));
+  else
+    return(_player_write(&conn,device,index,command,commandlen,GetReserved()));
 }
 
 int PlayerClient::Request(unsigned short device,

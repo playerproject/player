@@ -12,7 +12,7 @@ INCLUDES = -I. -I../c -I../../include
 OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       positionproxy.o ptzproxy.o gripperproxy.o speechproxy.o \
       laserbeaconproxy.o visionproxy.o truthproxy.o occupancyproxy.o \
-      gpsproxy.o playermulticlient.o
+      gpsproxy.o playermulticlient.o bpsproxy.o
 
 all: $(LIBNAME)
 
@@ -54,6 +54,7 @@ install: $(LIBNAME)
 	$(INSTALL) -m 644 truthproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 occupancyproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 gpsproxy.h $(INSTALL_INCLUDE)
+	$(INSTALL) -m 644 bpsproxy.h $(INSTALL_INCLUDE)
 	$(INSTALL) -m 644 playermulticlient.h $(INSTALL_INCLUDE)
 
 uninstall:
@@ -72,6 +73,7 @@ uninstall:
 	$(RM) -f $(INSTALL_INCLUDE)/truthproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/occupancyproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/gpsproxy.h
+	$(RM) -f $(INSTALL_INCLUDE)/bpsproxy.h
 	$(RM) -f $(INSTALL_INCLUDE)/playermulticlient.h
 
 clean:

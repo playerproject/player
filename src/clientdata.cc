@@ -40,6 +40,9 @@
 #include <clientmanager.h>
 #include <packet.h>
 
+// tmp; for gerkey extensions
+#include <p2osdevice.h>
+
 #include <iostream.h> //some debug output it easier using stream IO
 
 #ifdef PLAYER_SOLARIS
@@ -51,6 +54,8 @@ extern CClientData* clients[];
 extern pthread_mutex_t clients_mutex;
 extern ClientManager* clientmanager;
 extern char playerversion[];
+
+extern bool player_gerkey;
 
 extern int global_playerport; // used to generate useful output & debug
 
@@ -309,6 +314,7 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         else
         {
           // it's for another device.  hand it off.
+          //
 
           // pass the config request on the proper device
           // make sure we've got a non-NULL pointer
@@ -337,7 +343,15 @@ int CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
             if((devicep = deviceTable->GetDevice(hdr.device,hdr.device_index)))
             {
               //puts( "got device" );
-              devicep->GetLock()->PutCommand(devicep,payload,payload_size);
+              if(player_gerkey && (hdr.device == PLAYER_POSITION_CODE))
+              {
+                devicep->GetLock()->LockDataMutex();
+                ((CP2OSDevice*)devicep)->last_client_id = hdr.reserved;
+                devicep->PutCommand(payload,payload_size);
+                devicep->GetLock()->UnlockDataMutex();
+              }
+              else
+                devicep->GetLock()->PutCommand(devicep,payload,payload_size);
             }
             else
             {
@@ -848,6 +862,7 @@ int CClientData::Read()
         hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
         hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
         hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
+        hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
         hdrbuffer.size = ntohl(hdrbuffer.size);
 
         // make sure it's not too big

@@ -128,6 +128,9 @@ int player_read(player_connection_t* conn, player_msghdr_t* hdr,
 int player_write(player_connection_t* conn, 
                  uint16_t device, uint16_t device_index,
                  const char* command, size_t commandlen);
+int _player_write(player_connection_t* conn, 
+                 uint16_t device, uint16_t device_index,
+                 const char* command, size_t commandlen,int reserved);
 
 
 /********************************************************/
