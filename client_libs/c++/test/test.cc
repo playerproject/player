@@ -84,7 +84,8 @@ int main(int argc, const char *argv[])
     // Position device
     if (strcmp(device, "position") == 0 || strcmp(device, "all") == 0)
       test_position(&client, index);
-
+    if (strcmp(device, "position3d") == 0 || strcmp(device, "all") == 0)
+      test_position3d(&client, index);
     // Position device - position control mode
     // not many robots support this mode but Stage's position model does.
     if (strcmp(device, "position_control") == 0 || strcmp(device, "all") == 0)
