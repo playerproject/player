@@ -179,8 +179,11 @@ typedef struct _playerc_device_t
  * Error handling
  **************************************************************************/
 
+// Errors get written here
+extern char playerc_errorstr[];
+
 // Use this function to read the error string
-extern char *playerc_error_str(void);
+extern const char *playerc_error_str(void);
 
 
 /***************************************************************************
@@ -231,9 +234,6 @@ void playerc_client_destroy(playerc_client_t *client);
 // Connect/disconnect to the server.
 int playerc_client_connect(playerc_client_t *client);
 int playerc_client_disconnect(playerc_client_t *client);
-
-// Change the server's data delivery mode
-int playerc_client_datamode(playerc_client_t *client, int mode);
 
 // Change the server's data delivery mode
 int playerc_client_datamode(playerc_client_t *client, int mode);
