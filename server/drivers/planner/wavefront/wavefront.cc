@@ -901,14 +901,13 @@ void Wavefront::Main()
 
         this->waypoint_a = this->target_a;
         dist = sqrt((this->waypoint_x - this->localize_x) *
-            (this->waypoint_x - this->localize_x) +
-            (this->waypoint_y - this->localize_y) *
-            (this->waypoint_y - this->localize_y));
+                    (this->waypoint_x - this->localize_x) +
+                    (this->waypoint_y - this->localize_y) *
+                    (this->waypoint_y - this->localize_y));
         angle = atan2(this->waypoint_y - this->localize_y, 
-            this->waypoint_x - this->localize_x);
-        if(this->new_goal ||
-	   ((dist > this->dist_eps) &&
-            fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0))
+                      this->waypoint_x - this->localize_x);
+        if((dist > this->dist_eps) &&
+           fabs(NORMALIZE(angle - this->localize_a)) > M_PI/4.0)
         {
           this->waypoint_x = this->localize_x;
           this->waypoint_y = this->localize_y;
