@@ -74,7 +74,7 @@
 #define NMEA_PSLIB "PSLIB"
 
 // spec says 82; we'll add 1 for a terminating \0
-#define NMEA_MAX_SENTENCE_LEN 83
+#define NMEA_MAX_SENTENCE_LEN 82
 
 #define NMEA_START_CHAR '$'
 #define NMEA_END_CHAR '\n'
@@ -86,7 +86,7 @@ class GarminNMEA:public CDevice
     int gps_fd;  // file descriptor for the unit
     const char* gps_serial_port; // string name of serial port to use
 
-    char nmea_buf[NMEA_MAX_SENTENCE_LEN];
+    char nmea_buf[NMEA_MAX_SENTENCE_LEN+1];
     size_t nmea_buf_len;
 
     bool gps_fd_blocking;
@@ -140,6 +140,8 @@ GarminNMEA::Setup()
 {
   struct termios term;
   int flags;
+  int attempt;
+  int maxattempts=10;
 
   printf("GPS connection initializing (%s)...", gps_serial_port);
   fflush(stdout);
@@ -186,7 +188,12 @@ GarminNMEA::Setup()
   memset(nmea_buf,0,sizeof(nmea_buf));
   nmea_buf_len=0;
   /* try to read some data, just to make sure we actually have a gps unit */
-  if(FillBuffer())
+  for(attempt=0;attempt<maxattempts;attempt++)
+  {
+    if(!FillBuffer())
+      break;
+  }
+  if(attempt==maxattempts)
   {
     PLAYER_ERROR1("Couldn't connect to GPS unit, most likely because the \n"
                   "unit is not connected or is connected not to %s\n", 
@@ -213,10 +220,6 @@ GarminNMEA::Setup()
   }
 
   gps_fd_blocking = true;
-
-
-  memset(nmea_buf,0,sizeof(nmea_buf));
-  nmea_buf_len=0;
 
   puts("Done.");
   
@@ -290,6 +293,8 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
     {
       // couldn't get an end char and the buffer is full.
       PLAYER_WARN("couldn't find an end character; discarding data");
+      memset(nmea_buf,0,sizeof(nmea_buf));
+      nmea_buf_len=0;
       buf = NULL;
       return(0);
     }
@@ -324,7 +329,8 @@ GarminNMEA::ReadSentence(char* buf, size_t len)
 
     if(oursum != chksum)
     {
-      PLAYER_WARN("checksum mismatch; discarding sentence");
+      PLAYER_WARN2("checksum mismatch (0x%2x != 0x%2x); discarding sentence",
+        oursum, chksum);
       buf=NULL;
     }
     else
