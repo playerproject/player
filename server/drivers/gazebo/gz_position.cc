@@ -84,6 +84,9 @@ class GzPosition : public CDevice
   
   // Gazebo Interface
   private: gz_position_t *iface;
+
+  // Timestamp on last data update
+  private: uint32_t tsec, tusec;
 };
 
 
@@ -129,6 +132,8 @@ GzPosition::GzPosition(char* interface, ConfigFile* cf, int section)
   // Create an interface
   this->iface = gz_position_alloc();
 
+  this->tsec = this->tusec = 0;
+
   return;
 }
 
@@ -170,6 +175,7 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
   player_position_data_t data;
+  uint32_t tsec, tusec;
 
   gz_position_lock(this->iface, 1);
     
@@ -184,12 +190,22 @@ size_t GzPosition::GetData(void* client, unsigned char* dest, size_t len,
   assert(len >= sizeof(data));
   memcpy(dest, &data, sizeof(data));
 
-  if (timestamp_sec)
-    *timestamp_sec = (int) (this->iface->data->time);
-  if (timestamp_usec)
-    *timestamp_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
+  tsec = (int) (this->iface->data->time);
+  tusec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
   gz_position_unlock(this->iface);
+
+  // signal that new data is available
+  if (tsec != this->tsec || tusec != this->tusec)
+    DataAvailable();
+
+  this->tsec = tsec;
+  this->tusec = tusec;
+
+  if (timestamp_sec)
+    *timestamp_sec = tsec;
+  if (timestamp_usec)
+    *timestamp_usec = tusec;
     
   return sizeof(data);
 }

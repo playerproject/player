@@ -335,6 +335,7 @@ int VFH_Class::GetOdom() {
   if (time - this->odom_time < 0.001)
     return 0;
   this->odom_time = time;
+
   /*
   this->odom->Wait();
   this->odom->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
@@ -540,20 +541,27 @@ void VFH_Class::Main() {
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
 
+  //this->odom->Wait();
   this->GetOdom();
 
-  while (true) {
-//    gettimeofday(&stime, 0);
+  while (true)
+  {
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
 
-//    gettimeofday(&time, 0);
-//    printf("After sleep Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
-
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
+    
+    // Block pending new odometric data
+    //this->odom->Wait();
+    //printf("got odom\n");
+    
+    // Get new odometric data
+    if (this->GetOdom() == 0)
+      continue;
 
-    this->GetOdom();
+    // Write odometric data (so we emulate the underlying odometric device)
+    this->PutPose();
 
     // Process any pending requests.
     this->HandleRequests();
@@ -561,39 +569,39 @@ void VFH_Class::Main() {
     // Read client command
     this->GetCommand();
 
-//    gettimeofday(&time, 0);
-//    printf("Before VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
+    // gettimeofday(&time, 0);
+    // printf("Before VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
 
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
                 pow((goal_y - this->odom_pose[1]),2));
     
-    if (dist > 500) {
+    if (dist > 500)
+    {
       Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
         * 180 / M_PI - this->odom_pose[2];
 
-      while (Desired_Angle > 360.0) {
+      while (Desired_Angle > 360.0)
+      {
         Desired_Angle -= 360.0;
       }
-      while (Desired_Angle < 0) {
+      while (Desired_Angle < 0)
+      {
         Desired_Angle += 360.0;
       }
-//Desired_Angle = 90;
-//      printf("ANGLE: %f\tDIST: %f\n", Desired_Angle, dist);
 
       // Get new laser data.
       this->GetLaser();
       Update_VFH();
-    } else {
+    }
+    else
+    {
       // At goal, stop
       speed = 0;
       turnrate = 0;
       this->PutCommand();
     }
-
-//    gettimeofday(&time, 0);
-//    printf("After VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
-
-    this->PutPose();
+    // gettimeofday(&time, 0);
+    // printf("After VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
   }
   return;
 }
@@ -1389,7 +1397,7 @@ void VFH_Class::PutPose()
   uint32_t timesec, timeusec;
   player_position_data_t data;
 
-  this->GetOdom();
+  //REMOVE this->GetOdom();
 
   data.xpos = (int32_t)rint(this->odom_pose[0]);
   data.ypos = (int32_t)rint(this->odom_pose[1]);
@@ -1407,9 +1415,9 @@ void VFH_Class::PutPose()
   data.yspeed = htonl(data.yspeed);
   data.yawspeed = htonl(data.yawspeed);
 
-  // Compute time.  Use the laser device's time.
-  timesec = (uint32_t) this->laser_time;
-  timeusec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
+  // Compute timestamp
+  timesec = (uint32_t) this->odom_time;
+  timeusec = (uint32_t) (fmod(this->odom_time, 1.0) * 1e6);
 
   // Copy data to server.
   PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
