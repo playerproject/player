@@ -203,7 +203,7 @@ AC_SUBST(LASER_LIB)
 AC_SUBST(LASER_LIBPATH)
 
 AC_ARG_WITH(linuxwifi, 
-[  --without-linuxwifi          Don't compile the linuxwifi driver],,
+[  --without-linuxwifi     Don't compile the linuxwifi driver],,
 with_linuxwifi=yes)
 if test "x$with_linuxwifi" = "xyes"; then
   AC_DEFINE(INCLUDE_WIFI, 1, [[include the WiFi driver]])
