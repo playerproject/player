@@ -28,7 +28,6 @@
 #define PLAYERC_H
 
 #include <stdio.h>
-#include <replace.h>
 
 // Get the message structures from Player
 #include "player.h"
@@ -66,6 +65,9 @@ typedef struct
 typedef void (*playerc_putdata_fn_t) (void *device, char *header, char *data, size_t len);
 typedef void (*playerc_callback_fn_t) (void *data);
 
+// forward declaration to avoid including <sys/poll.h>, which may not be
+// available when people are building clients against this lib
+struct pollfd;
 
 // Multi-client data
 typedef struct
@@ -75,7 +77,8 @@ typedef struct
   struct _playerc_client_t *client[128];
 
   // Poll info 
-  struct pollfd pollfd[128];
+  //struct pollfd pollfd[128];
+  struct pollfd* pollfd;
 
 } playerc_mclient_t;
 
@@ -145,7 +148,8 @@ typedef struct _playerc_device_t
  **************************************************************************/
 
 // Errors get written here
-extern char playerc_errorstr[];
+//extern char playerc_errorstr[];
+char* playerc_errorstr;
 
 
 /***************************************************************************
