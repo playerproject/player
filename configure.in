@@ -28,6 +28,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+AC_C_BIGENDIAN
 
 dnl Check for library functions
 AC_CHECK_LIB(z, gzopen)
@@ -69,12 +70,14 @@ AC_SUBST(RTKGUI_EXTRA_LIB)
 AC_SUBST(RTKGUI_EXTRA_LDFLAGS)
 
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
+AC_MSG_CHECKING(for tclsh)
 case $host in
 *-*-freebsd*) AC_CHECK_PROG([TCLPKGFILE], [tclsh8.0], [pkgIndex.tcl], [])
               TCLSH=tclsh8.0;;
 *-*-*) AC_CHECK_PROG([TCLPKGFILE], [tclsh], [pkgIndex.tcl], [])
        TCLSH=tclsh;;
 esac
+AC_MSG_RESULT($TCLSH)
 AC_SUBST(TCLSH)
 
 dnl Change default installation prefix from /usr/local to user's home
