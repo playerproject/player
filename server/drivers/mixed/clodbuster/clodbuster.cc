@@ -442,6 +442,7 @@ void
 ClodBuster::Main()
 {
   player_clodbuster_cmd_t command;
+  player_position_speed_pid_req_t pid;
   unsigned char config[CLODBUSTER_CONFIG_BUFFER_SIZE];
   GRASPPacket packet; 
   
@@ -650,7 +651,7 @@ ClodBuster::Main()
 		    }
 		  }
 		  
-		  player_position_speed_pid_req_t pid =*((player_position_speed_pid_req_t *)config);
+		  pid =*((player_position_speed_pid_req_t *)config);
 		  kp = ntohl(pid.kp);
 		  ki = ntohl(pid.ki);
 		  kd = ntohl(pid.kd);
