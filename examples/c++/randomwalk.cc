@@ -10,10 +10,14 @@
 
 #define USAGE \
   "USAGE: randomwalk [-h <host>] [-p <port>] [-m]\n" \
-  "       -h <host>: connect to Player on this host\n" \
-  "       -p <port>: connect to Player on this TCP port\n" \
-  "       -l       : use laser instead of sonar\n" \
-  "       -m       : turn on motors (be CAREFUL!)"
+  "       -h <host> : connect to Player on this host\n" \
+  "       -p <port> : connect to Player on this TCP port\n" \
+  "       -l        : use laser instead of sonar\n" \
+  "       -m        : turn on motors (be CAREFUL!)\n" \
+  "       -s <speed>: move at this speed (integer)\n" \
+  "       -a <speed>: move to avoid obstacles at this speed (integer)\n" \
+  "       -t <rate> : turn rate when avoiding obstacle (integer)\n" \
+  "       -d <dist> : minimum tolerated sonar distance (integer)\n"  
                
 
 bool turnOnMotors = false;
@@ -21,6 +25,12 @@ bool use_laser = false;
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
 char auth_key[PLAYER_KEYLEN];
+
+unsigned short minfrontdistance = 450;
+short speed = 200;
+short avoidspeed = 0; // -150;
+short turnrate = 40;
+
 
 /* parse command-line args */
 void
@@ -69,6 +79,22 @@ parse_args(int argc, char** argv)
     {
       use_laser = true;
     }
+    else if(!strcmp(argv[i], "-s"))
+    {
+      speed = atoi(argv[++i]);
+    }
+    else if(!strcmp(argv[i], "-a"))
+    {
+      avoidspeed = atoi(argv[++i]);
+    }
+    else if(!strcmp(argv[i], "-d"))
+    {
+      minfrontdistance = atoi(argv[++i]);
+    }
+    else if(!strcmp(argv[i], "-t"))
+    { 
+      minfrontdistance = atoi(argv[++i]);
+    } 
     else
     {
       puts(USAGE);
@@ -84,7 +110,7 @@ int main(int argc, char** argv)
   int randcount = 0;
   int avoidcount = 0;
   bool obs = false;
-  unsigned short minfrontdistance = 450;
+
 
   /* first, parse command line args */
   parse_args(argc,argv);
@@ -103,18 +129,30 @@ int main(int argc, char** argv)
       exit(1);
     }
   }
+
+
   LaserProxy lp(&robot,0);
   SonarProxy sp(&robot,0);
-
-  /* request read access on the sonars and all access to the wheels */
   PositionProxy pp(&robot,0,'a');
 
-  /*
-  if (use_laser)
+  if(pp.GetAccess() == 'e') {
+    puts("Error getting position device access!");
+    exit(1);
+  }
+
+  if (use_laser) {
     lp.ChangeAccess('r');
-  else
+    if(lp.GetAccess() == 'e') {
+      puts("Error getting laser device access!");
+      exit(1);
+    }
+  } else {
     sp.ChangeAccess('r');
-    */
+    if(sp.GetAccess() == 'e') {
+      puts("Error getting sonar device access!.");
+      exit(1);
+    }
+  }
 
   /* maybe turn on the motors */
   if(turnOnMotors && pp.SetMotorState(1))
@@ -140,15 +178,16 @@ int main(int argc, char** argv)
     }
     else
     {
-        obs = (sp.ranges[2] < minfrontdistance ||
-               sp.ranges[3] < minfrontdistance ||
-               sp.ranges[4] < minfrontdistance ||
-               sp.ranges[5] < minfrontdistance);
+        //printf("comparing minfrontdiatance=%d to ranges 2=%d, 3=%d, 4=%d,  5=%d.\n", minfrontdistance, sp.ranges[2], sp.ranges[3], sp.ranges[4], sp.ranges[5]);
+        obs = ( (sp.ranges[2] < minfrontdistance) ||   // 0?
+                (sp.ranges[3] < minfrontdistance) ||   
+                (sp.ranges[4] < minfrontdistance) ||   // 0?
+                (sp.ranges[5] < minfrontdistance) );    
     }
 
     if(obs || avoidcount || pp.stalls)
     {
-      newspeed = 0; //-150;
+      newspeed = avoidspeed; 
 
       /* once we start avoiding, continue avoiding for 2 seconds */
       /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
@@ -160,16 +199,16 @@ int main(int argc, char** argv)
         if(use_laser)
         {
           if(lp.min_left < lp.min_right)
-            newturnrate = -40;
+            newturnrate = -turnrate;
           else
-            newturnrate = 40;
+            newturnrate = turnrate;
         }
         else
         {
           if(sp.ranges[1]+sp.ranges[15] < sp.ranges[7]+sp.ranges[8])
-            newturnrate = -40;
+            newturnrate = -turnrate;
           else
-            newturnrate = 40;
+            newturnrate = turnrate;
         }
       }
       avoidcount--;
@@ -177,7 +216,7 @@ int main(int argc, char** argv)
     else
     {
       avoidcount = 0;
-      newspeed = 200;
+      newspeed = speed;
 
       /* update turnrate every 3 seconds */
       if(!randcount)

@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 
   // VISUAL SERVO / COLLECT
   unsigned int minarea = 1;
-  unsigned int closearea = 1000;
+  unsigned int closearea = 4000;
 
   // HOMING
   int home_x = 7000;

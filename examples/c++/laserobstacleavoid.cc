@@ -113,8 +113,8 @@ int main(int argc, char **argv)
       r=100;
     newspeed = r+l;
     newturnrate = r-l;
-    newturnrate = max(newturnrate,40);
-    newturnrate = min(newturnrate,-40);
+    newturnrate = min(newturnrate,40);
+    newturnrate = max(newturnrate,-40);
                   
     /* write commands to robot */
     pp.SetSpeed(newspeed,newturnrate);
