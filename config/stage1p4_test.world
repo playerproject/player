@@ -20,7 +20,7 @@ gui
 )
 
 # load a bitmapped environment from a file
-define background wall
+define background bg
 (
   # this object should have a bounding box added
   border "true"
@@ -40,28 +40,35 @@ define background wall
 
 )
 
-background 
+background
 (
   bitmap "test.pnm" 
   color "purple"
 ) 
 
 
+ant
+( 
+   pose [ 1.360 0.373 -3.887 ]
+   size [0.5 0.3]
+   bitmap "ant2.pnm"
+   color "black"
+   nose "false"
+)
+
 bug
 ( 
-   name "bug"
+   pose [ 0.554 0.401 0.198 ]
    size [0.8 0.4]
-   pose [ 1 0.5 0 ]
    bitmap "bug.pnm"
    color "orange"
    nose "false"
+   name "orange_bug" # override the default name 
 )
 
 sonarbot
 (
   size [0.4 0.4]
-
-   name "sonarbot"
 
    ranger_count 8
    ranger[0] [0.1 0.0     0.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
@@ -73,30 +80,30 @@ sonarbot
    ranger[6] [0.0 -0.1  270.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
    ranger[7] [0.1 -0.1  315.0 0.02 0.03 0.2 5.0 40.0 0.0 ]
 
-   pose [ 3 3 0 ]
+   pose [ 0.890 2.686 -1.253 ]
 
-)
+) 
 
-define indicatorlight foo
+define indicatorlight light
 (
   nose "no"
   size [0.02 0.02]
   light "blink"
 )
 
-define swarmbot bar
+define swarmbot sb
 (
   size [0.1 0.1]
 
   neighbor 1
 
-  indicatorlight( color "red"    pose [0.03 0 0] light_interval 200 ) 
-  indicatorlight( color "green"  pose [0 0.03 0] light_interval 400 ) 
-  indicatorlight( color "blue"   pose [-0.03 0 0] light_interval 600 ) 
-  indicatorlight( color "yellow" pose [0 -0.03 0] light_interval 800 ) 
+  indicatorlight( color "red"    pose [0.030 0.000 0.000] light_interval 200) 
+  indicatorlight( color "green"  pose [0.000 0.030 0.000] light_interval 400) 
+  indicatorlight( color "blue"   pose [-0.030 0.000 0.000] light_interval 600) 
+  indicatorlight( color "yellow" pose [0.000 -0.030 0.000] light_interval 800) 
 )
-
-swarmbot( name "swarm1" pose [4 3 0] color "red" )
-swarmbot( name "swarm2" pose [4 3.2 0] color "green"  )
-swarmbot( name "swarm3" pose [4 3.5 0] color "blue"  )
-swarmbot( name "swarm4" pose [4 3.8 0] color "magenta" )
+	
+swarmbot( pose [4.238 3.642 0.154] color "red" )
+swarmbot( pose [3.826 3.677 -0.806] color "green"  )
+swarmbot( pose [4.119 4.169 0.290] color "blue"  )
+swarmbot( pose [3.660 4.350 -1.730] color "magenta" )
