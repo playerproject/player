@@ -71,7 +71,7 @@
 #define VISCA_COMMAND_CODE	0x01
 #define VISCA_INQUIRY_CODE	0x09
 
-class SonyEVID30:public CDevice 
+class SonyEVID30:public Driver 
 {
  protected:
   bool command_pending1;  // keep track of how many commands are pending;
@@ -113,14 +113,14 @@ protected:
 
 public:
 
-  SonyEVID30(char* interface, ConfigFile* cf, int section);
+  SonyEVID30( ConfigFile* cf, int section);
 
   virtual int Setup();
   virtual int Shutdown();
 };
   
 // initialization function
-CDevice* SonyEVID30_Init(char* interface, ConfigFile* cf, int section)
+Driver* SonyEVID30_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_PTZ_STRING))
   {
@@ -129,7 +129,7 @@ CDevice* SonyEVID30_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new SonyEVID30(interface, cf, section)));
+    return((Driver*)(new SonyEVID30(interface, cf, section)));
 }
 
 /* how to make this work for multiple cameras...
@@ -162,8 +162,8 @@ SonyEVID30_Register(DriverTable* table)
   table->AddDriver("sonyevid30", PLAYER_ALL_MODE, SonyEVID30_Init);
 }
 
-SonyEVID30::SonyEVID30(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   ptz_fd = -1;
   command_pending1 = false;

@@ -76,7 +76,7 @@ typedef enum
 #define DEFAULT_ACTS_HEIGHT 120
 /********************************************************************/
 
-class Acts:public CDevice 
+class Acts:public Driver 
 {
   private:
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
@@ -126,7 +126,7 @@ class Acts:public CDevice
 
     // constructor 
     //
-    Acts(char* interface, ConfigFile* cf, int section);
+    Acts( ConfigFile* cf, int section);
 
     virtual void Main();
 
@@ -137,7 +137,7 @@ class Acts:public CDevice
 };
 
 // a factory creation function
-CDevice* Acts_Init(char* interface, ConfigFile* cf, int section)
+Driver* Acts_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
   {
@@ -146,7 +146,7 @@ CDevice* Acts_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Acts(interface, cf, section)));
+    return((Driver*)(new Acts(interface, cf, section)));
 }
 
 // a driver registration function
@@ -169,8 +169,8 @@ Acts_Register(DriverTable* table)
 void QuitACTS(void* visiondevice);
 
 
-Acts::Acts(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_blobfinder_data_t),0,0,0)
+Acts::Acts( ConfigFile* cf, int section)
+  : Driver(cf, section, sizeof(player_blobfinder_data_t),0,0,0)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;

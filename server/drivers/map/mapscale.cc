@@ -44,11 +44,11 @@
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
 #define NEW_MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->new_size_x) && (j >= 0) && (j < mf->new_size_y))
 
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 extern int global_playerport;
 
-class MapScale : public CDevice
+class MapScale : public Driver
 {
   private:
     double resolution;
@@ -79,8 +79,8 @@ class MapScale : public CDevice
                           void* data, size_t len);
 };
 
-CDevice*
-MapScale_Init(char* interface, ConfigFile* cf, int section)
+Driver*
+MapScale_Init( ConfigFile* cf, int section)
 {
   int index;
   double resolution;
@@ -103,7 +103,7 @@ MapScale_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((CDevice*)(new MapScale(index, resolution)));
+  return((Driver*)(new MapScale(index, resolution)));
 }
 
 // a driver registration function
@@ -116,7 +116,7 @@ MapScale_Register(DriverTable* table)
 
 // this one has no data or commands, just configs
 MapScale::MapScale(int index, double res) :
-  CDevice(0,0,100,100)
+  Driver(cf, section, 0,0,100,100)
 {
   this->mapdata = this->new_mapdata = NULL;
   this->size_x = this->size_y = 0;
@@ -145,7 +145,7 @@ int
 MapScale::GetMap()
 {
   player_device_id_t map_id;
-  CDevice* mapdevice;
+  Driver* mapdevice;
 
   // Subscribe to the map device
   map_id.port = global_playerport;

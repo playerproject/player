@@ -41,11 +41,11 @@
 // check that given coords are valid (i.e., on the map)
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
 
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 extern int global_playerport;
 
-class MapFile : public CDevice
+class MapFile : public Driver
 {
   private:
     const char* filename;
@@ -68,8 +68,8 @@ class MapFile : public CDevice
                           void* data, size_t len);
 };
 
-CDevice*
-MapFile_Init(char* interface, ConfigFile* cf, int section)
+Driver*
+MapFile_Init( ConfigFile* cf, int section)
 {
   const char* filename;
   double resolution;
@@ -94,7 +94,7 @@ MapFile_Init(char* interface, ConfigFile* cf, int section)
   }
   negate = cf->ReadInt(section,"negate",0);
 
-  return((CDevice*)(new MapFile(filename, resolution, negate)));
+  return((Driver*)(new MapFile(filename, resolution, negate)));
 }
 
 // a driver registration function
@@ -107,7 +107,7 @@ MapFile_Register(DriverTable* table)
 
 // this one has no data or commands, just configs
 MapFile::MapFile(const char* file, double res, int neg) : 
-  CDevice(0,0,100,100)
+  Driver(cf, section, 0,0,100,100)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;

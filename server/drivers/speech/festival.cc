@@ -58,7 +58,7 @@
 /* change this if Festival is installed somewhere else*/
 #define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
 
-class Festival:public CDevice 
+class Festival:public Driver 
 {
   private:
     int pid;      // Festival's pid so we can kill it later (if necessary)
@@ -77,7 +77,7 @@ class Festival:public CDevice
     void KillFestival();
     
     // constructor 
-    Festival(char* interface, ConfigFile* cf, int section);
+    Festival( ConfigFile* cf, int section);
 
     ~Festival();
     virtual void Main();
@@ -91,7 +91,7 @@ class Festival:public CDevice
 
 
 // a factory creation function
-CDevice* Festival_Init(char* interface, ConfigFile* cf, int section)
+Driver* Festival_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_SPEECH_STRING))
   {
@@ -100,7 +100,7 @@ CDevice* Festival_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Festival(interface, cf, section)));
+    return((Driver*)(new Festival(interface, cf, section)));
 }
 
 // a driver registration function
@@ -131,8 +131,8 @@ Festival_Register(DriverTable* table)
 
 void QuitFestival(void* speechdevice);
 
-Festival::Festival(char* interface, ConfigFile* cf, int section) :
-  CDevice(0,sizeof(player_speech_cmd_t),0,0)
+Festival::Festival( ConfigFile* cf, int section) :
+  Driver(cf, section, 0,sizeof(player_speech_cmd_t),0,0)
 {
   int queuelen;
   sock = -1;

@@ -66,7 +66,7 @@ typedef struct
 
 
 // Incremental navigation driver
-class AdaptiveMCL : public CDevice
+class AdaptiveMCL : public Driver
 {
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread (except for
@@ -74,7 +74,7 @@ class AdaptiveMCL : public CDevice
   ///////////////////////////////////////////////////////////////////////////
 
   // Constructor
-  public: AdaptiveMCL(char* interface, ConfigFile* cf, int section);
+  public: AdaptiveMCL(ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~AdaptiveMCL(void);

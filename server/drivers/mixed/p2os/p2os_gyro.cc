@@ -32,18 +32,18 @@ class P2OSGyro: public P2OS
 {
  public:
 
-   P2OSGyro(char* interface, ConfigFile* cf, int section);
+   P2OSGyro( ConfigFile* cf, int section);
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-P2OSGyro::P2OSGyro(char* interface, ConfigFile* cf, int section) : 
+P2OSGyro::P2OSGyro( ConfigFile* cf, int section) : 
   P2OS(interface, cf, section)
 {
   P2OS::gyro = 1;    // Activate the gyro code in p2os.cc
 }
 
-CDevice* P2OSGyro_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSGyro_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
   {
@@ -52,7 +52,7 @@ CDevice* P2OSGyro_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSGyro(interface, cf, section)));
+    return((Driver*)(new P2OSGyro(interface, cf, section)));
 }
 
 // a driver registration function

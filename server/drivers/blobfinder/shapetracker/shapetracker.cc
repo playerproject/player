@@ -45,7 +45,7 @@
 #include <opencv/cv.h>
 //#include <opencv/highgui.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
@@ -68,10 +68,10 @@ class Shape
 
 
 // Driver for detecting laser retro-reflectors.
-class ShapeTracker : public CDevice
+class ShapeTracker : public Driver
 {
   // Constructor
-  public: ShapeTracker(char* interface, ConfigFile* cf, int section);
+  public: ShapeTracker( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -104,7 +104,7 @@ class ShapeTracker : public CDevice
 
   // Camera stuff
   private: int cameraIndex;
-  private: CDevice *camera;
+  private: Driver *camera;
   private: double cameraTime;
   private: player_camera_data_t cameraData;
 
@@ -138,7 +138,7 @@ class ShapeTracker : public CDevice
 
 
 // Initialization function
-CDevice* ShapeTracker_Init(char* interface, ConfigFile* cf, int section)
+Driver* ShapeTracker_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_BLOBFINDER_STRING) != 0)
   {
@@ -147,7 +147,7 @@ CDevice* ShapeTracker_Init(char* interface, ConfigFile* cf, int section)
     return (NULL);
   }
 
-  return ((CDevice*) (new ShapeTracker(interface, cf, section)));
+  return ((Driver*) (new ShapeTracker(interface, cf, section)));
 }
 
 
@@ -160,8 +160,8 @@ void ShapeTracker_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-ShapeTracker::ShapeTracker(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_blobfinder_data_t), 0, 10, 10)
+ShapeTracker::ShapeTracker( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_blobfinder_data_t), 0, 10, 10)
 {
   this->cameraIndex = cf->ReadInt(section, "camera", 0);
   this->camera = NULL;

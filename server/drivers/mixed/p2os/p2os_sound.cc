@@ -33,12 +33,12 @@ class P2OSSound: public P2OS
 {
  public:
    ~P2OSSound();
-   P2OSSound(char* interface, ConfigFile* cf, int section) :
+   P2OSSound( ConfigFile* cf, int section) :
            P2OS(interface, cf, section){}
    void PutCommand(void*, unsigned char *, size_t maxsize);
 };
 
-CDevice* P2OSSound_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSSound_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_SOUND_STRING))
   {
@@ -47,7 +47,7 @@ CDevice* P2OSSound_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSSound(interface, cf, section)));
+    return((Driver*)(new P2OSSound(interface, cf, section)));
 }
 
 // a driver registration function

@@ -36,9 +36,9 @@
 #endif
 #include <math.h>
 
-CDevice* RWIPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* RWIPosition_Init( ConfigFile* cf, int section)
 {
-  return ((CDevice *)(new CRWIPositionDevice(interface, cf, section)));
+  return ((Driver *)(new CRWIPositionDevice(interface, cf, section)));
 }
 
 void 

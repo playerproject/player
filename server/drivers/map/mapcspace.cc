@@ -39,7 +39,7 @@
 // check that given coords are valid (i.e., on the map)
 #define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
 
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 extern int global_playerport;
 
@@ -48,7 +48,7 @@ typedef enum
   CIRCLE,
 } robot_shape_t;
          
-class MapCspace : public CDevice
+class MapCspace : public Driver
 {
   private:
     double resolution;
@@ -77,8 +77,8 @@ class MapCspace : public CDevice
                           void* data, size_t len);
 };
 
-CDevice*
-MapCspace_Init(char* interface, ConfigFile* cf, int section)
+Driver*
+MapCspace_Init( ConfigFile* cf, int section)
 {
   const char* shapestring;
   int index;
@@ -117,7 +117,7 @@ MapCspace_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((CDevice*)(new MapCspace(index, shape, radius)));
+  return((Driver*)(new MapCspace(index, shape, radius)));
 }
 
 // a driver registration function
@@ -130,7 +130,7 @@ MapCspace_Register(DriverTable* table)
 
 // this one has no data or commands, just configs
 MapCspace::MapCspace(int index, robot_shape_t shape, double radius) :
-  CDevice(0,0,100,100)
+  Driver(cf, section, 0,0,100,100)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;
@@ -159,7 +159,7 @@ int
 MapCspace::GetMap()
 {
   player_device_id_t map_id;
-  CDevice* mapdevice;
+  Driver* mapdevice;
 
   // Subscribe to the map device
   map_id.port = global_playerport;

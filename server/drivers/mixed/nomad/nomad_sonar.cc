@@ -50,14 +50,14 @@
 // and sonar objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 
-class NomadSonar:public CDevice 
+class NomadSonar:public Driver 
 {
   public:
 
-  NomadSonar(char* interface, ConfigFile* cf, int section);
+  NomadSonar( ConfigFile* cf, int section);
   virtual ~NomadSonar();
   
   /* the main thread */
@@ -68,13 +68,13 @@ class NomadSonar:public CDevice
   virtual void Update();
   
 protected:
-  CDevice* nomad;
+  Driver* nomad;
   player_device_id_t nomad_id;
   
 };
 
 // a factory creation function
-CDevice* NomadSonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* NomadSonar_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_SONAR_STRING))
     {
@@ -83,7 +83,7 @@ CDevice* NomadSonar_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else
-    return((CDevice*)(new NomadSonar(interface, cf, section)));
+    return((Driver*)(new NomadSonar(interface, cf, section)));
 }
 
 // a driver registration function
@@ -95,8 +95,8 @@ void NomadSonar_Register(DriverTable* table)
 
 
 
-NomadSonar::NomadSonar(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_sonar_data_t), 0, 1, 1 )
+NomadSonar::NomadSonar( ConfigFile* cf, int section)
+  : Driver(cf, section,  sizeof(player_sonar_data_t), 0, 1, 1 )
 {
   this->nomad_id.code = PLAYER_NOMAD_CODE;
   this->nomad_id.port = cf->ReadInt(section, "nomad_port", 0 );

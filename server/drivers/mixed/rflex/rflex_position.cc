@@ -38,7 +38,7 @@ class RFLEXPosition: public RFLEX
 {
  public:
    ~RFLEXPosition();
-  RFLEXPosition(char* interface, ConfigFile* cf, int section) :
+  RFLEXPosition( ConfigFile* cf, int section) :
     RFLEX(interface, cf, section){}
   virtual size_t GetData(void*,unsigned char *, size_t maxsize,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
@@ -46,7 +46,7 @@ class RFLEXPosition: public RFLEX
   void GetOptions(ConfigFile * cf, int section, rflex_config_t* rflex_config);
 };
 
-CDevice* RFLEXPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXPosition_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
   {
@@ -57,8 +57,8 @@ CDevice* RFLEXPosition_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXPosition* tmp=new RFLEXPosition(interface, cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
-	RFLEX::PositionDev =(CDevice*) tmp;
-    return (CDevice*) tmp;
+	RFLEX::PositionDev =(Driver*) tmp;
+    return (Driver*) tmp;
   }
 }
 

@@ -27,15 +27,15 @@
 
 #include "segwayrmp.h"
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
-class SegwayRMPPower : public CDevice
+class SegwayRMPPower : public Driver
 {
   private:
     uint16_t interface_code;
-    CDevice* segwayrmp;
+    Driver* segwayrmp;
 
   public:
     SegwayRMPPower(ConfigFile* cf, int section);
@@ -48,7 +48,7 @@ class SegwayRMPPower : public CDevice
 };
 
 // Initialization function
-CDevice* SegwayRMPPower_Init(char* interface, ConfigFile* cf, int section)
+Driver* SegwayRMPPower_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POWER_STRING))
   {
@@ -57,7 +57,7 @@ CDevice* SegwayRMPPower_Init(char* interface, ConfigFile* cf, int section)
     return (NULL);
   }
 
-  return((CDevice*)(new SegwayRMPPower(cf,section)));
+  return((Driver*)(new SegwayRMPPower(cf,section)));
 }
 
 // a driver registration function
@@ -68,7 +68,7 @@ void SegwayRMPPower_Register(DriverTable* table)
 }
 
 SegwayRMPPower::SegwayRMPPower(ConfigFile* cf, int section)
-        : CDevice(sizeof(player_power_data_t),0, 10, 10)
+        : Driver(cf, section, sizeof(player_power_data_t),0, 10, 10)
 {
   assert(this->segwayrmp = SegwayRMP::Instance(cf,section));
 }

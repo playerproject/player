@@ -40,11 +40,11 @@
 #define DEFAULT_DEVICE "/dev/dsp"
 #define MIN_FREQUENCY 800
 
-class Acoustics : public CDevice
+class Acoustics : public Driver
 {
   public:
     // Constructor
-    Acoustics(char* interface, ConfigFile* cf, int section);
+    Acoustics( ConfigFile* cf, int section);
     // Destructor
     ~Acoustics();
 
@@ -111,8 +111,8 @@ class Acoustics : public CDevice
     double* fft; // reused storage for samples, to be passed into the GSL
 };
 
-Acoustics::Acoustics(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
+Acoustics::Acoustics( ConfigFile* cf, int section)
+  : Driver(cf, section, sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
   audioFD(-1),deviceName(NULL),openFlag(-1),channels(1),sampleFormat(16),
   sampleRate(8000),audioBuffSize(4096),audioBuffer(NULL),bytesPerSample(1),
   peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
@@ -130,7 +130,7 @@ Acoustics::~Acoustics()
   }
 }
 
-CDevice* Acoustics_Init(char* interface, ConfigFile* cf, int section)
+Driver* Acoustics_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_AUDIODSP_STRING))
   {
@@ -139,7 +139,7 @@ CDevice* Acoustics_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Acoustics(interface, cf, section)));
+    return((Driver*)(new Acoustics(interface, cf, section)));
 }
 
 void Acoustics_Register(DriverTable* table)

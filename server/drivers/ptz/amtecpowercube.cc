@@ -92,7 +92,7 @@
 #define AMTEC_STATE_HOME_OK   0x02
 #define AMTEC_STATE_HALTED    0x04
 
-class AmtecPowerCube:public CDevice 
+class AmtecPowerCube:public Driver 
 {
   private:
     // this function will be run in a separate thread
@@ -145,14 +145,14 @@ class AmtecPowerCube:public CDevice
     /* device used to communicate with the ptz */
     const char* serial_port;
 
-    AmtecPowerCube(char* interface, ConfigFile* cf, int section);
+    AmtecPowerCube( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
 };
 
 // initialization function
-CDevice* AmtecPowerCube_Init(char* interface, ConfigFile* cf, int section)
+Driver* AmtecPowerCube_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_PTZ_STRING))
   {
@@ -161,7 +161,7 @@ CDevice* AmtecPowerCube_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new AmtecPowerCube(interface, cf, section)));
+    return((Driver*)(new AmtecPowerCube(interface, cf, section)));
 }
 
 // a driver registration function
@@ -171,8 +171,8 @@ AmtecPowerCube_Register(DriverTable* table)
   table->AddDriver("amtecpowercube", PLAYER_ALL_MODE, AmtecPowerCube_Init);
 }
 
-AmtecPowerCube::AmtecPowerCube(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   fd = -1;
   player_ptz_data_t data;

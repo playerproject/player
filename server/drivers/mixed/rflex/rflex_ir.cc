@@ -30,7 +30,7 @@
 class RFLEXIr: public RFLEX
 {
  public:
-  RFLEXIr(char* interface, ConfigFile* cf, int section) :
+  RFLEXIr( ConfigFile* cf, int section) :
     RFLEX(interface, cf, section){}
   
   virtual size_t GetData(void*, unsigned char *, size_t maxsize,
@@ -38,7 +38,7 @@ class RFLEXIr: public RFLEX
   void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
 };
 
-CDevice* RFLEXIr_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXIr_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_IR_STRING))
     {
@@ -49,8 +49,8 @@ CDevice* RFLEXIr_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXIr* tmp=new RFLEXIr(interface, cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
-	RFLEX::IrDev = (CDevice*)tmp;
-    return (CDevice*)tmp;
+	RFLEX::IrDev = (Driver*)tmp;
+    return (Driver*)tmp;
   }
 }
 

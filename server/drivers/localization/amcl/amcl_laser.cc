@@ -116,7 +116,7 @@ int AMCLLaser::Setup(void)
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->device->Subscribe(this) != 0)
+  if (this->device->driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
@@ -146,7 +146,7 @@ int
 AMCLLaser::SetupMap(void)
 {
   player_device_id_t map_id;
-  CDevice* mapdevice;
+  Device* mapdevice;
 
   // Subscribe to the map device
   map_id.port = global_playerport;
@@ -158,7 +158,7 @@ AMCLLaser::SetupMap(void)
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
   }
-  if(mapdevice->Subscribe(this) != 0)
+  if(mapdevice->driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return -1;
@@ -181,9 +181,9 @@ AMCLLaser::SetupMap(void)
   player_map_info_t info;
   struct timeval ts;
   info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdevice->Request(&map_id, this, &info, 
-                                  sizeof(info.subtype), &reptype, 
-                                  &ts, &info, sizeof(info))) == 0)
+  if((replen = mapdevice->driver->Request(&map_id, this, &info, 
+                                          sizeof(info.subtype), &reptype, 
+                                          &ts, &info, sizeof(info))) == 0)
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -226,9 +226,9 @@ AMCLLaser::SetupMap(void)
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdevice->Request(&map_id, this, &data_req, reqlen,
-                                    &reptype, &ts, &data_req, 
-                                    sizeof(data_req))) == 0)
+    if((replen = mapdevice->driver->Request(&map_id, this, &data_req, reqlen,
+                                            &reptype, &ts, &data_req, 
+                                            sizeof(data_req))) == 0)
     {
       PLAYER_ERROR("failed to get map info");
       return(-1);
@@ -260,7 +260,7 @@ AMCLLaser::SetupMap(void)
   }
 
   // we're done with the map device now
-  if(mapdevice->Unsubscribe(this) != 0)
+  if(mapdevice->driver->Unsubscribe(this) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   return(0);
@@ -271,7 +271,7 @@ AMCLLaser::SetupMap(void)
 // Shut down the laser
 int AMCLLaser::Shutdown(void)
 {  
-  this->device->Unsubscribe(this);
+  this->device->driver->Unsubscribe(this);
   this->device = NULL;
   map_free(this->map);
 
@@ -291,7 +291,7 @@ AMCLSensorData *AMCLLaser::GetData(void)
   AMCLLaserData *ndata;
 
   // Get the laser device data.
-  size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  size = this->device->driver->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
   if (size == 0)
     return NULL;
   if (tsec == this->tsec && tusec == this->tusec)

@@ -33,13 +33,13 @@
 class P2OSCMUcam: public P2OS
 {
  public:
-   P2OSCMUcam(char* interface, ConfigFile* cf, int section);
+   P2OSCMUcam( ConfigFile* cf, int section);
    
    virtual size_t GetData(void*, unsigned char *, size_t maxsize,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSCMUcam_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSCMUcam_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
   {
@@ -48,7 +48,7 @@ CDevice* P2OSCMUcam_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSCMUcam(interface, cf, section)));
+    return((Driver*)(new P2OSCMUcam(interface, cf, section)));
 }
 
 // a driver registration function
@@ -59,7 +59,7 @@ P2OSCMUcam_Register(DriverTable* table)
 }
 
 // Constructor
-P2OSCMUcam::P2OSCMUcam(char* interface, ConfigFile* cf, int section):
+P2OSCMUcam::P2OSCMUcam( ConfigFile* cf, int section):
            P2OS(interface, cf, section)
 {
     P2OS::cmucam = 1;	// Activate the CMUcam code in p2os.cc

@@ -53,17 +53,17 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 #include "player.h"
 
 #define DEFAULT_BROADCAST_IP "10.255.255.255"
 #define DEFAULT_BROADCAST_PORT 6013
 
-class UDPBroadcast : public CDevice
+class UDPBroadcast : public Driver
 {
   // Constructor
-  public: UDPBroadcast(char* interface, ConfigFile* cf, int section);
+  public: UDPBroadcast( ConfigFile* cf, int section);
 
   // Override the subscribe/unsubscribe calls, since we need to
   // maintain our own subscription list.
@@ -157,7 +157,7 @@ class UDPBroadcast : public CDevice
 
 ///////////////////////////////////////////////////////////////////////////
 // Instantiate an instance of this driver
-CDevice* UDPBroadcast_Init(char* interface, ConfigFile* cf, int section)
+Driver* UDPBroadcast_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_COMMS_STRING))
   {
@@ -166,7 +166,7 @@ CDevice* UDPBroadcast_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new UDPBroadcast(interface, cf, section)));
+    return((Driver*)(new UDPBroadcast(interface, cf, section)));
 }
 
 
@@ -180,8 +180,8 @@ void UDPBroadcast_Register(DriverTable* table)
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
-UDPBroadcast::UDPBroadcast(char* interface, ConfigFile* cf, int section)
-    : CDevice(0,0,0,0)
+UDPBroadcast::UDPBroadcast( ConfigFile* cf, int section)
+    : Driver(cf, section, 0,0,0,0)
 {
   this->max_queue_size = 160;
   this->read_socket = 0;
@@ -204,7 +204,7 @@ int UDPBroadcast::Subscribe(void *client)
   int result;
   
   // Do default subscription.
-  result = CDevice::Subscribe(client);
+  result = Driver::Subscribe(client);
   if (result != 0)
     return result;
 
@@ -228,7 +228,7 @@ int UDPBroadcast::Unsubscribe(void *client)
   Unlock();
 
   // Do default unsubscribe
-  return CDevice::Unsubscribe(client);
+  return Driver::Unsubscribe(client);
 }
 
 

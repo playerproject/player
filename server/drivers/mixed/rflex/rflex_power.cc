@@ -28,7 +28,7 @@ class RFLEXPower: public RFLEX
 {
  public:
 
-   RFLEXPower(char* interface, ConfigFile* cf, int section) : 
+   RFLEXPower( ConfigFile* cf, int section) : 
            RFLEX(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
@@ -37,7 +37,7 @@ class RFLEXPower: public RFLEX
 };
 
 
-CDevice* RFLEXPower_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXPower_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POWER_STRING))
   {
@@ -49,7 +49,7 @@ CDevice* RFLEXPower_Init(char* interface, ConfigFile* cf, int section)
     RFLEXPower * tmp= new RFLEXPower(interface, cf, section);
 	tmp->GetOptions(cf,section,&rflex_configs);
 	
-    return RFLEX::PowerDev = static_cast<CDevice *> (tmp);
+    return RFLEX::PowerDev = static_cast<Driver *> (tmp);
   }
 }
 

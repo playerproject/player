@@ -51,9 +51,9 @@
 
 extern PlayerTime *GlobalTime;
 
-class Iwspy : public CDevice
+class Iwspy : public Driver
 {
-  public: Iwspy(char *interface, ConfigFile *cf, int section);
+  public: Iwspy( ConfigFile *cf, int section);
 
   // Initialize driver
   public: virtual int Setup();
@@ -113,7 +113,7 @@ class Iwspy : public CDevice
 
 ////////////////////////////////////////////////////////////////////////////////
 // Instantiate driver for given interface
-CDevice * Iwspy_Init(char *interface, ConfigFile *cf, int section)
+Driver * Iwspy_Init( ConfigFile *cf, int section)
 { 
   if(strcmp(interface, PLAYER_WIFI_STRING))
   {
@@ -123,7 +123,7 @@ CDevice * Iwspy_Init(char *interface, ConfigFile *cf, int section)
   }
   else
   {
-    return ((CDevice*)(new Iwspy(interface, cf, section)));
+    return ((Driver*)(new Iwspy(interface, cf, section)));
   }
 }
 
@@ -139,8 +139,8 @@ void Iwspy_Register(DriverTable *table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Iwspy::Iwspy(char *interface, ConfigFile *cf, int section)
-    : CDevice(sizeof(player_wifi_data_t), 0, 0, 0)
+Iwspy::Iwspy( ConfigFile *cf, int section)
+    : Driver(cf, section, sizeof(player_wifi_data_t), 0, 0, 0)
 {
   int i;
   char key[64];

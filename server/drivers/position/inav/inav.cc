@@ -52,7 +52,7 @@
 #endif
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
@@ -67,14 +67,14 @@
 
 
 // Incremental navigation driver
-class INav : public CDevice
+class INav : public Driver
 {
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread
   ///////////////////////////////////////////////////////////////////////////
 
   // Constructor
-  public: INav(char* interface, ConfigFile* cf, int section);
+  public: INav( ConfigFile* cf, int section);
 
   // Destructor
   public: virtual ~INav();
@@ -143,7 +143,7 @@ class INav : public CDevice
 #endif
 
   // Odometry device info
-  private: CDevice *odom;
+  private: Driver *odom;
   private: int odom_index;
   private: double odom_time;
 
@@ -158,7 +158,7 @@ class INav : public CDevice
   private: inav_vector_t odom_vel;
   
   // Laser device info
-  private: CDevice *laser;
+  private: Driver *laser;
   private: int laser_index;
   private: double laser_time;
 
@@ -202,14 +202,14 @@ class INav : public CDevice
 
 
 // Initialization function
-CDevice* INav_Init(char* interface, ConfigFile* cf, int section)
+Driver* INav_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"inav\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((CDevice*) (new INav(interface, cf, section)));
+  return ((Driver*) (new INav(interface, cf, section)));
 }
 
 
@@ -223,8 +223,8 @@ void INav_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-INav::INav(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+INav::INav( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
   double size;
   
@@ -314,7 +314,7 @@ int INav::Setup()
   cmd.xpos = htonl((int32_t) (this->inc_pose.v[0] * 1000));
   cmd.ypos = htonl((int32_t) (this->inc_pose.v[1] * 1000));
   cmd.yaw = htonl((int32_t) (this->inc_pose.v[2] * 180 / M_PI)); 
-  CDevice::PutCommand(NULL, (unsigned char*) &cmd, sizeof(cmd));
+  Driver::PutCommand(NULL, (unsigned char*) &cmd, sizeof(cmd));
   
   // Start the driver thread.
   this->StartThread();
@@ -754,7 +754,7 @@ void INav::GetServerCmd()
 {
   player_position_cmd_t cmd;
 
-  if (CDevice::GetCommand(&cmd, sizeof(cmd)) == 0)
+  if (Driver::GetCommand(&cmd, sizeof(cmd)) == 0)
   {
     this->goal_pose = this->inc_pose;
   }

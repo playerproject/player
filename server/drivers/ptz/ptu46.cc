@@ -514,7 +514,7 @@ char PTU46::GetMode()
 // Player Driver Class                                       //
 ///////////////////////////////////////////////////////////////
 
-class PTU46_Device:public CDevice 
+class PTU46_Device:public Driver 
 {
 	protected:
 		// this function will be run in a separate thread
@@ -532,14 +532,14 @@ class PTU46_Device:public CDevice
 		unsigned char MoveMode;
 
 
-		PTU46_Device(char* interface, ConfigFile* cf, int section);
+		PTU46_Device( ConfigFile* cf, int section);
 
 		virtual int Setup();
 		virtual int Shutdown();
 };
   
 // initialization function
-CDevice* PTU46_Init(char* interface, ConfigFile* cf, int section)
+Driver* PTU46_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_PTZ_STRING))
   {
@@ -547,7 +547,7 @@ CDevice* PTU46_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return static_cast<CDevice*> (new PTU46_Device(interface, cf, section));
+    return static_cast<Driver*> (new PTU46_Device(interface, cf, section));
 }
 
 
@@ -558,8 +558,8 @@ PTU46_Register(DriverTable* table)
   table->AddDriver("ptu46", PLAYER_ALL_MODE, PTU46_Init);
 }
 
-PTU46_Device::PTU46_Device(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
 {
   player_ptz_data_t data;
   player_ptz_cmd_t cmd;

@@ -33,13 +33,13 @@
 class StgEnergy:public Stage1p4
 {
 public:
-  StgEnergy(char* interface, ConfigFile* cf, int section );
+  StgEnergy( ConfigFile* cf, int section );
   
   virtual size_t GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-StgEnergy::StgEnergy(char* interface, ConfigFile* cf, int section ) 
+StgEnergy::StgEnergy( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, sizeof(player_energy_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgEnergy with interface %s", interface );
@@ -49,7 +49,7 @@ StgEnergy::StgEnergy(char* interface, ConfigFile* cf, int section )
 
 }
 
-CDevice* StgEnergy_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgEnergy_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_ENERGY_STRING))
     {
@@ -58,7 +58,7 @@ CDevice* StgEnergy_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgEnergy(interface, cf, section)));
+    return((Driver*)(new StgEnergy(interface, cf, section)));
 }
 
 
@@ -89,12 +89,12 @@ size_t StgEnergy::GetData(void* client, unsigned char* dest, size_t len,
 	  penergy.mwatts = htonl((int32_t)(senergy->watts*1000.0));
 	  penergy.charging = senergy->charging;
 	  
-	  CDevice::PutData( &penergy, sizeof(penergy), 0,0 ); // time gets filled in
+	  Driver::PutData( &penergy, sizeof(penergy), 0,0 ); // time gets filled in
 	}
     }
   
   // now inherit the standard data-getting behavior 
-  return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
 
 

@@ -49,7 +49,7 @@ public:
   void PutCommand(void*,unsigned char *, size_t maxsize);
 };
 
-CDevice * REBPosition_Init(char *interface, ConfigFile *cf, int section);
+Driver * REBPosition_Init(char *interface, ConfigFile *cf, int section);
 void REBPosition_Register(DriverTable *table);
 
 /* Global initialization function.  Checks whether specified interface
@@ -57,11 +57,11 @@ void REBPosition_Register(DriverTable *table);
  *
  * returns: pointer to new REBPosition object
  */
-CDevice *
+Driver *
 REBPosition_Init(char *interface, ConfigFile *cf, int section)
 {
   if (!strcmp(interface, PLAYER_POSITION_STRING)) {
-    return ( (CDevice *) new REBPosition(interface, cf, section));
+    return ( (Driver *) new REBPosition(interface, cf, section));
   } else {
     PLAYER_ERROR1("driver \"reb_position\" does not support interface \"%s\"\n",
 		  interface);

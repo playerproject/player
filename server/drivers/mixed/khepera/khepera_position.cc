@@ -50,7 +50,7 @@ public:
   void PutCommand(void*,unsigned char *, size_t maxsize);
 };
 
-CDevice * KheperaPosition_Init(char *interface, ConfigFile *cf, int section);
+Driver * KheperaPosition_Init(char *interface, ConfigFile *cf, int section);
 void KheperaPosition_Register(DriverTable *table);
 
 /* Global initialization function.  Checks whether specified interface
@@ -58,11 +58,11 @@ void KheperaPosition_Register(DriverTable *table);
  *
  * returns: pointer to new REBPosition object
  */
-CDevice *
+Driver *
 KheperaPosition_Init(char *interface, ConfigFile *cf, int section)
 {
   if (!strcmp(interface, PLAYER_POSITION_STRING)) {
-    return ( (CDevice *) new KheperaPosition(interface, cf, section));
+    return ( (Driver *) new KheperaPosition(interface, cf, section));
   } else {
     PLAYER_ERROR1("driver \"khepera_position\" does not support interface \"%s\"\n",
 		  interface);

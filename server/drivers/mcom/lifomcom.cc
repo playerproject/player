@@ -38,17 +38,17 @@
 
 
 /*
-LifoMCom(int argc, char** argv):CDevice(1,1,20,20),Data(){
+LifoMCom(int argc, char** argv):Driver(1,1,20,20),Data(){
 }
 */
 
-LifoMCom::LifoMCom(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_mcom_data_t), 0, 20, 20)
+LifoMCom::LifoMCom( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_mcom_data_t), 0, 20, 20)
 {
 }
 
 
-CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section)
+Driver* LifoMCom_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_MCOM_STRING))
   {
@@ -57,7 +57,7 @@ CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new LifoMCom(interface, cf, section)));
+    return((Driver*)(new LifoMCom(interface, cf, section)));
 }
 
 

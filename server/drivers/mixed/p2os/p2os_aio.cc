@@ -30,13 +30,13 @@ class P2OSaio: public P2OS
 {
  public:
 
-   P2OSaio(char* interface, ConfigFile* cf, int section) : 
+   P2OSaio( ConfigFile* cf, int section) : 
            P2OS(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSaio_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSaio_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_AIO_STRING))
   {
@@ -45,7 +45,7 @@ CDevice* P2OSaio_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSaio(interface, cf, section)));
+    return((Driver*)(new P2OSaio(interface, cf, section)));
 }
 
 // a driver registration function

@@ -74,7 +74,7 @@ class AMCLOdom : public AMCLSensor
   
   // Device info
   private: int odom_index;
-  private: CDevice *device;
+  private: Driver *driver;
 
   // Current data timestamp
   private: uint32_t tsec, tusec;

@@ -37,7 +37,7 @@
 #include <libraw1394/raw1394.h>
 #include <libdc1394/dc1394_control.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "playertime.h"
@@ -110,10 +110,10 @@ protected:
 
 
 // Driver for detecting laser retro-reflectors.
-class Camera1394 : public CDevice
+class Camera1394 : public Driver
 {
   // Constructor
-  public: Camera1394(char* interface, ConfigFile* cf, int section);
+  public: Camera1394( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -183,14 +183,14 @@ class Camera1394 : public CDevice
 
 
 // Initialization function
-CDevice* Camera1394_Init(char* interface, ConfigFile* cf, int section)
+Driver* Camera1394_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
   {
     PLAYER_ERROR1("driver \"camera1394\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((CDevice*) (new Camera1394(interface, cf, section)));
+  return ((Driver*) (new Camera1394(interface, cf, section)));
 }
 
 
@@ -203,8 +203,8 @@ void Camera1394_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Camera1394::Camera1394(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_camera_data_t), 0, 10, 10)
+Camera1394::Camera1394( ConfigFile* cf, int section)
+  : Driver(cf, section, sizeof(player_camera_data_t), 0, 10, 10)
 {
   float fps;
   

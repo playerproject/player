@@ -53,7 +53,7 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 // we need to debug different things at different times
@@ -445,7 +445,7 @@ Khepera::PutData( unsigned char* src, size_t maxsize,
   player_device_id_t id = device_id;
 
   id.code = PLAYER_IR_CODE;
-  CDevice* ir = deviceTable->GetDevice(id);
+  Driver* ir = deviceTable->GetDevice(id);
   if(ir)
   {
     ir->data_timestamp_sec = this->data_timestamp_sec;
@@ -453,7 +453,7 @@ Khepera::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_POSITION_CODE;
-  CDevice* position = deviceTable->GetDevice(id);
+  Driver* position = deviceTable->GetDevice(id);
   if(position)
   {
     position->data_timestamp_sec = this->data_timestamp_sec;
@@ -472,10 +472,10 @@ Khepera::Main()
 	player_device_id_t id = device_id;
 
 	id.code = PLAYER_IR_CODE;
-	CDevice *ir = deviceTable->GetDevice(id);
+	Driver *ir = deviceTable->GetDevice(id);
 
 	id.code = PLAYER_POSITION_CODE;
-	CDevice *pos = deviceTable->GetDevice(id);
+	Driver *pos = deviceTable->GetDevice(id);
 
 	this->pos_subscriptions = 0;
 	this->ir_subscriptions = 0;

@@ -36,10 +36,10 @@ extern unsigned int     CRWIDevice::rwi_device_count;
 extern mbyClientHelper *CRWIDevice::helper;
 #endif				// USE_MOBILITY
 
-CRWIDevice::CRWIDevice(char* interface, ConfigFile* cf, int section,
+CRWIDevice::CRWIDevice( ConfigFile* cf, int section,
                        size_t datasize, size_t commandsize,
                        int reqqueuelen, int repqueuelen)
-	: CDevice(datasize, commandsize, reqqueuelen, repqueuelen)
+	: Driver(cf, section, datasize, commandsize, reqqueuelen, repqueuelen)
 {
 	// does not hurt to call this multiple times (I'm told)
 	pthread_mutex_init(&rwi_counter_mutex, NULL);

@@ -45,16 +45,16 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for detecting laser retro-reflectors.
-class LaserVisualBarcode : public CDevice
+class LaserVisualBarcode : public Driver
 {
   // Constructor
-  public: LaserVisualBarcode(char* interface, ConfigFile* cf, int section);
+  public: LaserVisualBarcode( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -158,17 +158,17 @@ class LaserVisualBarcode : public CDevice
 
   // Laser stuff.
   private: int laser_index;
-  private: CDevice *laser;
+  private: Driver *laser;
   private: double laser_time;
 
   // PTZ stuff
   private: int ptz_index;
-  private: CDevice *ptz;
+  private: Driver *ptz;
   private: double ptz_time;
 
   // Blobfinder stuff.
   private: int blobfinder_index;
-  private: CDevice *blobfinder;
+  private: Driver *blobfinder;
   private: double blobfinder_time;
 
   // List of currently tracked fiducials.
@@ -192,7 +192,7 @@ class LaserVisualBarcode : public CDevice
 
 
 // Initialization function
-CDevice* LaserVisualBarcode_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserVisualBarcode_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
   {
@@ -200,7 +200,7 @@ CDevice* LaserVisualBarcode_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new LaserVisualBarcode(interface, cf, section)));
+  return ((Driver*) (new LaserVisualBarcode(interface, cf, section)));
 }
 
 
@@ -213,8 +213,8 @@ void LaserVisualBarcode_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserVisualBarcode::LaserVisualBarcode(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
+LaserVisualBarcode::LaserVisualBarcode( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   this->laser_index = cf->ReadInt(section, "laser", 0);
   this->laser = NULL;

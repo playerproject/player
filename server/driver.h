@@ -69,33 +69,6 @@ class Driver
     pthread_mutex_t condMutex;
     
   protected:
-    
-    /* REMOVE
-    // did we allocate memory, or did someone else?
-    bool allocp;
-
-    // buffers for data and command
-    unsigned char* driver_data;
-    unsigned char* driver_command;
-
-    // maximum sizes of data and command buffers
-    size_t driver_datasize;
-    size_t driver_commandsize;
-
-    // amount at last write into each respective buffer
-    size_t driver_used_datasize;
-    size_t driver_used_commandsize;
-    
-    // queues for incoming requests and outgoing replies
-    PlayerQueue* driver_reqqueue;
-    PlayerQueue* driver_repqueue;
-
-    // to record the time at which the driver gathered the data
-    // these are public because one driver (e.g., P2OS) might need to set the
-    // timestamp of another (e.g., sonar)
-    uint32_t data_timestamp_sec;
-    uint32_t data_timestamp_usec;
-    */
 
     // signal that new data is available (calls pthread_cond_broadcast()
     // on this driver's condition variable, which will release other
@@ -134,7 +107,8 @@ class Driver
            size_t datasize, size_t commandsize, 
            int reqqueuelen, int repqueuelen);
 
-    // Default constructor for multi-interface drivers.
+    // Default constructor for multi-interface drivers; call
+    // AddInterface() to add interfaces.
     Driver(ConfigFile *cf, int section);
 
     // Destructor
@@ -142,15 +116,6 @@ class Driver
 
     // Set/reset error code
     void SetError(int code) {this->error = code;}
-
-    /* REMOVE
-    // this method is used by drivers that allocate their own storage, but wish to
-    // use the default Put/Get methods
-    void SetupBuffers(unsigned char* data, size_t datasize, 
-                      unsigned char* command, size_t commandsize, 
-                      unsigned char* reqqueue, int reqqueuelen, 
-                      unsigned char* repqueue, int repqueuelen);
-    */
     
     // Add a new-style interface; returns 0 on success
     int AddInterface(player_device_id_t id, unsigned char access,
@@ -296,7 +261,7 @@ class Driver
 
     // A helper method for internal use; e.g., when one driver wants to make a
     // request of another driver.
-    virtual int Request(player_device_id_t* driver, void* requester, 
+    virtual int Request(player_device_id_t* device, void* requester, 
                         void* request, size_t reqlen,
                         unsigned short* reptype, struct timeval* ts,
                         void* reply, size_t replen);

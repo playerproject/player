@@ -60,7 +60,7 @@ const int BYTES = SAMPLES*(DEPTH/8);
 #define DEVICE "/dev/dsp"
 
 
-class Waveaudio:public CDevice 
+class Waveaudio:public Driver 
 {
 private:
   
@@ -71,7 +71,7 @@ private:
   
 public:
   
-  Waveaudio(char* interface, ConfigFile* cf, int section);
+  Waveaudio( ConfigFile* cf, int section);
   
   virtual void Main();
   virtual int Setup();
@@ -81,7 +81,7 @@ public:
 
 
 
-CDevice* Waveaudio_Init(char* interface, ConfigFile* cf, int section)
+Driver* Waveaudio_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_WAVEFORM_STRING))
   {
@@ -90,7 +90,7 @@ CDevice* Waveaudio_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Waveaudio(interface, cf, section)));
+    return((Driver*)(new Waveaudio(interface, cf, section)));
 }
 
 // a driver registration function
@@ -100,8 +100,8 @@ Waveaudio_Register(DriverTable* table)
   table->AddDriver("wave_audio", PLAYER_ALL_MODE, Waveaudio_Init);
 }
 
-Waveaudio::Waveaudio(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_waveform_data_t),0,0,0)
+Waveaudio::Waveaudio( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_waveform_data_t),0,0,0)
 {
 }
 

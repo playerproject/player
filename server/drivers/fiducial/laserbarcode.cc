@@ -49,14 +49,14 @@
 
 #include "drivertable.h"
 #include "devicetable.h"
-#include "device.h"
+#include "driver.h"
 
 
 // The laser barcode detector.
-class LaserBarcode : public CDevice
+class LaserBarcode : public Driver
 {
   // Constructor
-  public: LaserBarcode(char* interface, ConfigFile* cf, int section);
+  public: LaserBarcode( ConfigFile* cf, int section);
 
   // Setup/shutdown routines
   //
@@ -88,7 +88,7 @@ class LaserBarcode : public CDevice
 
   // Pointer to laser to get data from
   private: int laser_index;
-  private: CDevice *laser_device;
+  private: Driver *laser_device;
   
   // Magic numbers
   private: int bit_count;
@@ -106,7 +106,7 @@ class LaserBarcode : public CDevice
 
 
 // Initialization function
-CDevice* LaserBarcode_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserBarcode_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_FIDUCIAL_STRING))
   {
@@ -115,7 +115,7 @@ CDevice* LaserBarcode_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new LaserBarcode(interface, cf, section)));
+    return((Driver*)(new LaserBarcode(interface, cf, section)));
 }
 
 // a driver registration function
@@ -127,8 +127,8 @@ void LaserBarcode_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_fiducial_data_t), 0, 10, 10)
+LaserBarcode::LaserBarcode( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_fiducial_data_t), 0, 10, 10)
 {
   // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser", 0);

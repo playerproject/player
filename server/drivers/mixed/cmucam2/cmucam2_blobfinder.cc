@@ -50,14 +50,14 @@
 // and sonar objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 
-class Cmucam2blobfinder:public CDevice 
+class Cmucam2blobfinder:public Driver 
 {
   public:
 
-  Cmucam2blobfinder(char* interface, ConfigFile* cf, int section);
+  Cmucam2blobfinder( ConfigFile* cf, int section);
   virtual ~Cmucam2blobfinder();
   
   /* the main thread */
@@ -68,13 +68,13 @@ class Cmucam2blobfinder:public CDevice
   virtual void Update();
   
 protected:
-  CDevice* cmucam2;
+  Driver* cmucam2;
   player_device_id_t cmucam2_id;
   
 };
 
 // a factory creation function
-CDevice* Cmucam2blobfinder_Init(char* interface, ConfigFile* cf, int section)
+Driver* Cmucam2blobfinder_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
     {
@@ -83,7 +83,7 @@ CDevice* Cmucam2blobfinder_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else
-    return((CDevice*)(new Cmucam2blobfinder(interface, cf, section)));
+    return((Driver*)(new Cmucam2blobfinder(interface, cf, section)));
 }
 
 // a driver registration function
@@ -95,8 +95,8 @@ void Cmucam2blobfinder_Register(DriverTable* table)
 
 
 
-Cmucam2blobfinder::Cmucam2blobfinder(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_blobfinder_data_t), 0, 1, 1 )
+Cmucam2blobfinder::Cmucam2blobfinder( ConfigFile* cf, int section)
+  : Driver(cf, section,  sizeof(player_blobfinder_data_t), 0, 1, 1 )
 {
   this->cmucam2_id.code = PLAYER_CMUCAM2_CODE;
   this->cmucam2_id.port = cf->ReadInt(section, "cmucam2_port", 0 );

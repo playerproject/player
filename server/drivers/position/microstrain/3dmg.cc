@@ -52,7 +52,7 @@ extern PlayerTime* GlobalTime;
 
 
 // MicroStraing 3DM-G IMU driver
-class MicroStrain3DMG : public CDevice
+class MicroStrain3DMG : public Driver
 {
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread
@@ -147,10 +147,10 @@ class MicroStrain3DMG : public CDevice
 
 
 // Factory creation function
-CDevice* MicroStrain3DMG_Init(char* interface, ConfigFile* cf, int section)
+Driver* MicroStrain3DMG_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_POSITION3D_STRING) == 0)
-    return ((CDevice*) (new MicroStrain3DMG(PLAYER_POSITION3D_CODE, cf, section)));
+    return ((Driver*) (new MicroStrain3DMG(PLAYER_POSITION3D_CODE, cf, section)));
 
   PLAYER_ERROR1("driver \"MicroStrain3DMG\" does not support interface \"%s\"\n",
                 interface);
@@ -183,7 +183,7 @@ void MicroStrain3DMG_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 MicroStrain3DMG::MicroStrain3DMG(int code, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position3d_data_t), 0, 0, 0)
+    : Driver(cf, section, sizeof(player_position3d_data_t), 0, 0, 0)
 {
   // Interface to use
   this->code = code;

@@ -342,7 +342,7 @@ double FlockOfBirdsSerial::GetRange()
 // Player Driver Class                                       //
 ///////////////////////////////////////////////////////////////
 
-class FlockOfBirds_Device : public CDevice 
+class FlockOfBirds_Device : public Driver 
 {
 	protected:
 		// this function will be run in a separate thread
@@ -360,14 +360,14 @@ class FlockOfBirds_Device : public CDevice
 		unsigned char MoveMode;
 
 
-		FlockOfBirds_Device(char* interface, ConfigFile* cf, int section);
+		FlockOfBirds_Device( ConfigFile* cf, int section);
 
 		virtual int Setup();
 		virtual int Shutdown();
 };
   
 // initialization function
-CDevice* FlockOfBirds_Init(char* interface, ConfigFile* cf, int section)
+Driver* FlockOfBirds_Init( ConfigFile* cf, int section)
 {
 	if(strcmp(interface, PLAYER_POSITION3D_STRING))
 	{
@@ -375,7 +375,7 @@ CDevice* FlockOfBirds_Init(char* interface, ConfigFile* cf, int section)
     		return(NULL);
   	}
   	else
-    		return static_cast<CDevice*> (new FlockOfBirds_Device(interface, cf, section));
+    		return static_cast<Driver*> (new FlockOfBirds_Device(interface, cf, section));
 }
 
 
@@ -386,8 +386,8 @@ FlockOfBirds_Register(DriverTable* table)
 	table->AddDriver("flockofbirds", PLAYER_ALL_MODE, FlockOfBirds_Init);
 }
 
-FlockOfBirds_Device::FlockOfBirds_Device(char* interface, ConfigFile* cf, int section) :
-	CDevice(sizeof(player_position3d_data_t),sizeof(player_position3d_cmd_t),1,1)
+FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section) :
+	Driver(sizeof(player_position3d_data_t),sizeof(player_position3d_cmd_t),1,1)
 {
 	fob = NULL;
 	

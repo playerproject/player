@@ -8,15 +8,15 @@
 #include <math.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
-class BumperSafe : public CDevice 
+class BumperSafe : public Driver 
 {
   public:
     // Constructor
-    BumperSafe(char* interface, ConfigFile* cf, int section);
+    BumperSafe( ConfigFile* cf, int section);
 
     // Destructor
     virtual ~BumperSafe();
@@ -58,7 +58,7 @@ class BumperSafe : public CDevice
     player_bumper_data_t SafeState;
 
     // Position device info
-    CDevice *position;
+    Driver *position;
     int position_index;
 	int speed,turnrate;
 	player_position_cmd_t cmd;
@@ -66,7 +66,7 @@ class BumperSafe : public CDevice
 	double position_time;
     
     // Bumper device info
-    CDevice *bumper;
+    Driver *bumper;
     int bumper_index;
 	double bumper_time;
 	player_bumper_geom_t bumper_geom;
@@ -74,13 +74,13 @@ class BumperSafe : public CDevice
 };
 
 // Initialization function
-CDevice* BumperSafe_Init(char* interface, ConfigFile* cf, int section) 
+Driver* BumperSafe_Init( ConfigFile* cf, int section) 
 {
   if (strcmp(interface, PLAYER_POSITION_STRING) != 0) { 
     PLAYER_ERROR1("driver \"bumper_safe\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((CDevice*) (new BumperSafe(interface, cf, section)));
+  return ((Driver*) (new BumperSafe(interface, cf, section)));
 } 
 
 // a driver registration function
@@ -98,7 +98,7 @@ int BumperSafe::Setup()
 
   cmd.xpos = cmd.ypos = cmd.yaw = 0;
   cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-  CDevice::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  Driver::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
   // Initialise the underlying device s.
   if (this->SetupPosition() != 0)
@@ -381,7 +381,7 @@ void BumperSafe::Main()
 // Check for new commands from the server
 void BumperSafe::GetCommand() 
 {
-  if(CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) 
+  if(Driver::GetCommand(&cmd, sizeof(cmd)) != 0) 
   {
   	PutCommand();
   }
@@ -390,8 +390,8 @@ void BumperSafe::GetCommand()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-BumperSafe::BumperSafe(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+BumperSafe::BumperSafe( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
 	Blocked = false;
 

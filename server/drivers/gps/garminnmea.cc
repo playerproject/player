@@ -118,7 +118,7 @@
 #define UTM_EP2		(UTM_E2/(1-UTM_E2))	// e'^2
 
 
-class GarminNMEA:public CDevice 
+class GarminNMEA:public Driver 
 {
   private:
 
@@ -178,7 +178,7 @@ class GarminNMEA:public CDevice
 
 
   public:
-    GarminNMEA(char* interface, ConfigFile* cf, int section);
+    GarminNMEA( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -188,7 +188,7 @@ class GarminNMEA:public CDevice
 
 ///////////////////////////////////////////////////////////////////////////
 // initialization function
-CDevice* GarminNMEA_Init(char* interface, ConfigFile* cf, int section)
+Driver* GarminNMEA_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_GPS_STRING))
   {
@@ -197,7 +197,7 @@ CDevice* GarminNMEA_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new GarminNMEA(interface, cf, section)));
+    return((Driver*)(new GarminNMEA(interface, cf, section)));
 }
 
 
@@ -211,8 +211,8 @@ GarminNMEA_Register(DriverTable* table)
 
 
 ///////////////////////////////////////////////////////////////////////////
-GarminNMEA::GarminNMEA(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_gps_data_t),0,0,0)
+GarminNMEA::GarminNMEA( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_gps_data_t),0,0,0)
 {
   memset(&data,0,sizeof(data));
 

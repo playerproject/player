@@ -59,7 +59,7 @@ extern PlayerTime* GlobalTime;
 // and position objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 // this is the old 'official' Nomad interface code from Nomadics
 // released GPL when Nomadics went foom.
@@ -81,11 +81,11 @@ int mmToInches(int mm)
 }
 
 
-class Nomad:public CDevice 
+class Nomad:public Driver 
 {
   public:
 
-  Nomad(char* interface, ConfigFile* cf, int section);
+  Nomad( ConfigFile* cf, int section);
   virtual ~Nomad();
   
   /* the main thread */
@@ -101,7 +101,7 @@ protected:
 
 
 // a factory creation function
-CDevice* Nomad_Init(char* interface, ConfigFile* cf, int section)
+Driver* Nomad_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_NOMAD_STRING))
     {
@@ -110,7 +110,7 @@ CDevice* Nomad_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else
-    return((CDevice*)(new Nomad(interface, cf, section)));
+    return((Driver*)(new Nomad(interface, cf, section)));
 }
 
 // a driver registration function
@@ -122,8 +122,8 @@ void Nomad_Register(DriverTable* table)
 
 
 
-Nomad::Nomad(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_nomad_data_t), 
+Nomad::Nomad( ConfigFile* cf, int section)
+  : Driver(cf, section,  sizeof(player_nomad_data_t), 
 	     sizeof(player_nomad_cmd_t), NOMAD_QLEN, NOMAD_QLEN )
 {
   this->serial_device = (char*)cf->ReadString( section, "serial_device", NOMAD_SERIAL_PORT );

@@ -33,14 +33,14 @@ class P2OSGripper: public P2OS
 {
  public:
    ~P2OSGripper();
-   P2OSGripper(char* interface, ConfigFile* cf, int section) :
+   P2OSGripper( ConfigFile* cf, int section) :
            P2OS(interface, cf, section){}
    size_t GetData(void*,unsigned char *, size_t maxsize,
                   uint32_t* timestamp_sec, uint32_t* timestamp_usec );
    void PutCommand(void*, unsigned char *, size_t maxsize);
 };
 
-CDevice* P2OSGripper_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSGripper_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_GRIPPER_STRING))
   {
@@ -49,7 +49,7 @@ CDevice* P2OSGripper_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSGripper(interface, cf, section)));
+    return((Driver*)(new P2OSGripper(interface, cf, section)));
 }
 
 // a driver registration function

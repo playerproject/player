@@ -38,7 +38,7 @@
 #include <unistd.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
 
@@ -46,7 +46,7 @@
 
 
 // The logfile driver
-class ReadLog: public CDevice 
+class ReadLog: public Driver 
 {
   // Constructor
   public: ReadLog(int code, ConfigFile* cf, int section);
@@ -75,7 +75,7 @@ class ReadLog: public CDevice
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
+Driver* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
 {
   player_interface_t interface;
 
@@ -89,7 +89,7 @@ CDevice* ReadReadLog_Init(char* name, ConfigFile* cf, int section)
     PLAYER_ERROR("no log file specified; did you forget to use -r <filename>?");
     return NULL;
   }
-  return ((CDevice*) (new ReadLog(interface.code, cf, section)));
+  return ((Driver*) (new ReadLog(interface.code, cf, section)));
 }
 
 
@@ -105,7 +105,7 @@ void ReadLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 ReadLog::ReadLog(int code, ConfigFile* cf, int section)
-    : CDevice(PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+    : Driver(cf, section, PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
   // Get our manager
   this->manager = ReadLogManager_Get();

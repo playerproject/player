@@ -30,13 +30,13 @@ class P2OSPower: public P2OS
 {
  public:
 
-   P2OSPower(char* interface, ConfigFile* cf, int section) : 
+   P2OSPower( ConfigFile* cf, int section) : 
            P2OS(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSPower_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSPower_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POWER_STRING))
   {
@@ -45,7 +45,7 @@ CDevice* P2OSPower_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSPower(interface, cf, section)));
+    return((Driver*)(new P2OSPower(interface, cf, section)));
 }
 
 // a driver registration function

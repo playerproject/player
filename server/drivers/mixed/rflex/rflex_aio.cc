@@ -27,13 +27,13 @@ class RFLEXaio: public RFLEX
 {
  public:
 
-   RFLEXaio(char* interface, ConfigFile* cf, int section) : 
+   RFLEXaio( ConfigFile* cf, int section) : 
            RFLEX(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* RFLEXaio_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXaio_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_AIO_STRING))
   {
@@ -42,7 +42,7 @@ CDevice* RFLEXaio_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((RFLEX::AIODev = (CDevice*)new RFLEXaio(interface, cf, section)));
+    return((RFLEX::AIODev = (Driver*)new RFLEXaio(interface, cf, section)));
 }
 
 // a driver registration function

@@ -50,13 +50,13 @@
 // and position objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
-class NomadPosition:public CDevice 
+class NomadPosition:public Driver 
 {
   public:
 
-  NomadPosition(char* interface, ConfigFile* cf, int section);
+  NomadPosition( ConfigFile* cf, int section);
   virtual ~NomadPosition();
   
   /* the main thread */
@@ -67,13 +67,13 @@ class NomadPosition:public CDevice
   virtual void Update();
   
 protected:
-  CDevice* nomad;
+  Driver* nomad;
   player_device_id_t nomad_id;
   
 };
 
 // a factory creation function
-CDevice* NomadPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* NomadPosition_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
     {
@@ -82,7 +82,7 @@ CDevice* NomadPosition_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else
-    return((CDevice*)(new NomadPosition(interface, cf, section)));
+    return((Driver*)(new NomadPosition(interface, cf, section)));
 }
 
 // a driver registration function
@@ -94,8 +94,8 @@ void NomadPosition_Register(DriverTable* table)
 
 
 
-NomadPosition::NomadPosition(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_position_data_t), 
+NomadPosition::NomadPosition( ConfigFile* cf, int section)
+  : Driver(cf, section,  sizeof(player_position_data_t), 
 	     sizeof(player_position_cmd_t), 1, 1 )
 {
   this->nomad_id.code = PLAYER_NOMAD_CODE;

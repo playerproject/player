@@ -84,12 +84,12 @@ extern PlayerTime* GlobalTime;
 #define DEFAULT_LASER_PORT_RATE 9600
 
 // The laser device class.
-class SickPLS : public CDevice
+class SickPLS : public Driver
 {
   public:
     
     // Constructor
-    SickPLS(char* interface, ConfigFile* cf, int section);
+    SickPLS( ConfigFile* cf, int section);
 
     int Setup();
     int Shutdown();
@@ -201,7 +201,7 @@ class SickPLS : public CDevice
 };
 
 // a factory creation function
-CDevice* SickPLS_Init(char* interface, ConfigFile* cf, int section)
+Driver* SickPLS_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_LASER_STRING))
   {
@@ -210,7 +210,7 @@ CDevice* SickPLS_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new SickPLS(interface, cf, section)));
+    return((Driver*)(new SickPLS(interface, cf, section)));
 }
 
 // a driver registration function
@@ -236,8 +236,8 @@ void SickPLS_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-SickPLS::SickPLS(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_laser_data_t),0,10,10)
+SickPLS::SickPLS( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_laser_data_t),0,10,10)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);

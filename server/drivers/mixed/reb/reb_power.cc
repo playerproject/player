@@ -48,11 +48,11 @@ public:
  *
  * returns: pointer to new driver object if supported, null otherwise
  */
-CDevice *
+Driver *
 REBPower_Init(char *interface, ConfigFile *cf, int section) 
 {
   if (!strcmp(interface, PLAYER_POWER_STRING)) {
-    return (CDevice *) new REBPower(interface, cf, section);
+    return (Driver *) new REBPower(interface, cf, section);
   } else {
     PLAYER_ERROR1("driver \"reb_power\" does not support interface \"%s\"\n",
 		  interface);

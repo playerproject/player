@@ -28,9 +28,9 @@
 #include <string.h>
 
 // a factory creation function
-CDevice* RWIBumper_Init(char* interface, ConfigFile* cf, int section)
+Driver* RWIBumper_Init( ConfigFile* cf, int section)
 {
-  return((CDevice *)(new CRWIBumperDevice(interface, cf, section)));
+  return((Driver *)(new CRWIBumperDevice(interface, cf, section)));
 }
 
 void 
@@ -40,7 +40,7 @@ RWIBumper_Register(DriverTable* table)
 }
 	
 
-CRWIBumperDevice::CRWIBumperDevice(char* interface, ConfigFile* cf, int section)
+CRWIBumperDevice::CRWIBumperDevice( ConfigFile* cf, int section)
     : CRWIDevice(interface, cf, section,
                  sizeof(player_bumper_data_t),
                  0 /* no commands for bumpers */,

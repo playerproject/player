@@ -78,7 +78,7 @@ struct js_event
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class LinuxJoystick : public CDevice
+class LinuxJoystick : public Driver
 {
   // Constructor; need that
   public: LinuxJoystick(ConfigFile* cf, int section);
@@ -115,11 +115,11 @@ class LinuxJoystick : public CDevice
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
 // declare it static in the class).  In this function, we create and return
-// (as a generic CDevice*) a pointer to a new instance of this driver.
-CDevice* LinuxJoystick_Init(ConfigFile* cf, int section)
+// (as a generic Driver*) a pointer to a new instance of this driver.
+Driver* LinuxJoystick_Init(ConfigFile* cf, int section)
 {
   // Create and return a new instance of this driver
-  return ((CDevice*) (new LinuxJoystick(cf, section)));
+  return ((Driver*) (new LinuxJoystick(cf, section)));
 }
 
 
@@ -138,7 +138,7 @@ void LinuxJoystick_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
-    : CDevice(0, 0, 10, 10)
+    : Driver(cf, section, 0, 0, 10, 10)
 {
   // Create wifi interface
   if (cf->ReadDeviceId(section, 0, PLAYER_JOYSTICK_CODE, &this->joy_id) != 0)

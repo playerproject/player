@@ -10,7 +10,7 @@
 #include <time.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "vfh_algorithm.h"
@@ -22,11 +22,11 @@
   #define MAX(a,b) ((a > b) ? (a) : (b))
 #endif
 
-class VFH_Class : public CDevice 
+class VFH_Class : public Driver 
 {
   public:
     // Constructor
-    VFH_Class(char* interface, ConfigFile* cf, int section);
+    VFH_Class( ConfigFile* cf, int section);
 
     // Destructor
     virtual ~VFH_Class();
@@ -78,12 +78,12 @@ class VFH_Class : public CDevice
     void GetCommand();
     
     // Truth device info
-    CDevice *truth;
+    Driver *truth;
     int truth_index;
     double truth_time;
 
     // Odometry device info
-    CDevice *odom;
+    Driver *odom;
     int odom_index;
     double odom_time;
     double dist_eps;
@@ -104,7 +104,7 @@ class VFH_Class : public CDevice
     int32_t odom_vel_be[3];
 
     // Laser device info
-    CDevice *laser;
+    Driver *laser;
     int laser_index;
     double laser_time;
 
@@ -126,13 +126,13 @@ class VFH_Class : public CDevice
 };
 
 // Initialization function
-CDevice* VFH_Init(char* interface, ConfigFile* cf, int section) 
+Driver* VFH_Init( ConfigFile* cf, int section) 
 {
   if (strcmp(interface, PLAYER_POSITION_STRING) != 0) { 
     PLAYER_ERROR1("driver \"vfh\" does not support interface \"%s\"\n", interface);
     return (NULL);
   }
-  return ((CDevice*) (new VFH_Class(interface, cf, section)));
+  return ((Driver*) (new VFH_Class(interface, cf, section)));
 } 
 
 // a driver registration function
@@ -149,7 +149,7 @@ int VFH_Class::Setup()
   player_position_cmd_t cmd;
 
   memset(&cmd,0,sizeof(cmd));
-  CDevice::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
+  Driver::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
   this->active_goal = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
@@ -807,7 +807,7 @@ void VFH_Class::GetCommand()
   player_position_cmd_t cmd;
   int x,y,t;
 
-  if(CDevice::GetCommand(&cmd, sizeof(cmd)) != 0) 
+  if(Driver::GetCommand(&cmd, sizeof(cmd)) != 0) 
   {
     // Velocity mode
     if (cmd.type == 0)
@@ -847,8 +847,8 @@ void VFH_Class::GetCommand()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+VFH_Class::VFH_Class( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
 {
   //double size;
   double cell_size, robot_radius, safety_dist, free_space_cutoff, obs_cutoff;

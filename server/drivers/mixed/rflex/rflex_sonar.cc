@@ -30,7 +30,7 @@
 class RFLEXSonar: public RFLEX
 {
  public:
-  RFLEXSonar(char* interface, ConfigFile* cf, int section) :
+  RFLEXSonar( ConfigFile* cf, int section) :
     RFLEX(interface, cf, section){}
   
   virtual size_t GetData(void*, unsigned char *, size_t maxsize,
@@ -38,7 +38,7 @@ class RFLEXSonar: public RFLEX
   void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
 };
 
-CDevice* RFLEXSonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXSonar_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_SONAR_STRING))
     {
@@ -49,7 +49,7 @@ CDevice* RFLEXSonar_Init(char* interface, ConfigFile* cf, int section)
   else{
     RFLEXSonar* tmp=new RFLEXSonar(interface, cf, section);
     tmp->GetOptions(cf,section,&rflex_configs);
-    return RFLEX::SonarDev = (CDevice*)tmp;
+    return RFLEX::SonarDev = (Driver*)tmp;
   }
 }
 

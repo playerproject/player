@@ -42,7 +42,7 @@
 #endif
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "deviceregistry.h"
@@ -53,13 +53,13 @@
 class WriteLogDevice
 {
   public: player_device_id_t id;
-  public: CDevice *device;
+  public: Driver *device;
   public: uint32_t tsec, tusec;
 };
 
 
 // The logfile driver
-class WriteLog: public CDevice 
+class WriteLog: public Driver 
 {
   // Constructor
   public: WriteLog(ConfigFile* cf, int section);
@@ -136,7 +136,7 @@ extern int global_playerport;
 
 ////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
-CDevice* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
+Driver* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
 {
   //if (lookup_interface(name, &interface) != 0)
   if(strcmp(name,PLAYER_LOG_STRING))
@@ -145,7 +145,7 @@ CDevice* ReadWriteLog_Init(char* name, ConfigFile* cf, int section)
                   name);
     return NULL;
   }
-  return ((CDevice*) (new WriteLog(cf, section)));
+  return ((Driver*) (new WriteLog(cf, section)));
 }
 
 
@@ -161,7 +161,7 @@ void WriteLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : CDevice(PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+    : Driver(cf, section, PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
 {
   int i, index;
   const char *desc;

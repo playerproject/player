@@ -41,16 +41,16 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for computing the free c-space from a laser scan.
-class LaserCSpace : public CDevice
+class LaserCSpace : public Driver
 {
   // Constructor
-  public: LaserCSpace(char* interface, ConfigFile* cf, int section);
+  public: LaserCSpace( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -83,7 +83,7 @@ class LaserCSpace : public CDevice
 
   // Laser stuff.
   private: int laser_index;
-  private: CDevice *laser_device;
+  private: Driver *laser_device;
   private: player_laser_data_t laser_data;
   private: uint32_t laser_timesec, laser_timeusec;
 
@@ -103,7 +103,7 @@ class LaserCSpace : public CDevice
 
 
 // Initialization function
-CDevice* LaserCSpace_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserCSpace_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_LASER_STRING) != 0)
   {
@@ -111,7 +111,7 @@ CDevice* LaserCSpace_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new LaserCSpace(interface, cf, section)));
+  return ((Driver*) (new LaserCSpace(interface, cf, section)));
 }
 
 
@@ -124,8 +124,8 @@ void LaserCSpace_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserCSpace::LaserCSpace(char* interface, ConfigFile* cf, int section)
-    : CDevice(0, 0, 0, 1)
+LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
+    : Driver(cf, section, 0, 0, 0, 1)
 {
   // Info for the underlying laser device.
   this->laser_index = cf->ReadInt(section, "laser", 0);

@@ -47,14 +47,14 @@
 // and sonar objects
 #include <drivertable.h>
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 
-class Cmucam2ptz:public CDevice 
+class Cmucam2ptz:public Driver 
 {
   public:
 
-  Cmucam2ptz(char* interface, ConfigFile* cf, int section);
+  Cmucam2ptz( ConfigFile* cf, int section);
   virtual ~Cmucam2ptz();
   
   /* the main thread */
@@ -65,13 +65,13 @@ class Cmucam2ptz:public CDevice
   virtual void Update();
   
 protected:
-  CDevice* cmucam2;
+  Driver* cmucam2;
   player_device_id_t cmucam2_id;
   
 };
 
 // a factory creation function
-CDevice* Cmucam2ptz_Init(char* interface, ConfigFile* cf, int section)
+Driver* Cmucam2ptz_Init( ConfigFile* cf, int section)
 {
 /** [Synopsis]
 The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
@@ -86,7 +86,7 @@ The {\tt ptz} interface is used to control a pan-tilt-zoom unit. */
       return(NULL);
     }
   else
-    return((CDevice*)(new Cmucam2ptz(interface, cf, section)));
+    return((Driver*)(new Cmucam2ptz(interface, cf, section)));
 }
 
 // a driver registration function
@@ -95,8 +95,8 @@ void Cmucam2ptz_Register(DriverTable* table)
   table->AddDriver( "cmucam2_ptz", PLAYER_ALL_MODE, Cmucam2ptz_Init);
 }
 
-Cmucam2ptz::Cmucam2ptz(char* interface, ConfigFile* cf, int section)
-  : CDevice( sizeof(player_ptz_data_t), sizeof(player_ptz_cmd_t), 5, 5)
+Cmucam2ptz::Cmucam2ptz( ConfigFile* cf, int section)
+  : Driver(cf, section,  sizeof(player_ptz_data_t), sizeof(player_ptz_cmd_t), 5, 5)
 {
   this->cmucam2_id.code = PLAYER_CMUCAM2_CODE;
   this->cmucam2_id.port = cf->ReadInt(section, "cmucam2_port", 0 );

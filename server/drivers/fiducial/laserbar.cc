@@ -44,16 +44,16 @@
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for detecting laser retro-reflectors.
-class LaserBar : public CDevice
+class LaserBar : public Driver
 {
   // Constructor
-  public: LaserBar(char* interface, ConfigFile* cf, int section);
+  public: LaserBar( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -88,7 +88,7 @@ class LaserBar : public CDevice
   
   // Pointer to laser to get data from.
   private: int laser_index;
-  private: CDevice *laser_device;
+  private: Driver *laser_device;
 
   // Reflector properties.
   private: double reflector_width;
@@ -103,7 +103,7 @@ class LaserBar : public CDevice
 
 
 // Initialization function
-CDevice* LaserBar_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserBar_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
   {
@@ -111,7 +111,7 @@ CDevice* LaserBar_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new LaserBar(interface, cf, section)));
+  return ((Driver*) (new LaserBar(interface, cf, section)));
 }
 
 
@@ -124,8 +124,8 @@ void LaserBar_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserBar::LaserBar(char* interface, ConfigFile* cf, int section)
-    : CDevice(0, 0, 0, 1)
+LaserBar::LaserBar( ConfigFile* cf, int section)
+    : Driver(cf, section, 0, 0, 0, 1)
 {
   // The default laser device to use
   this->laser_index = cf->ReadInt(section, "laser_index", 0);

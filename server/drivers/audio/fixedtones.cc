@@ -60,7 +60,7 @@
 #define MIN_FREQUENCY 800
 #define nIterations 10000
 
-class FixedTones:public CDevice 
+class FixedTones:public Driver 
 {
  private:
   bool command_pending1;  // keep track of how many commands are pending;
@@ -95,7 +95,7 @@ class FixedTones:public CDevice
 
  public:
 
-  FixedTones(char* interface, ConfigFile* cf, int section);
+  FixedTones( ConfigFile* cf, int section);
 
   virtual void Main();
 
@@ -103,7 +103,7 @@ class FixedTones:public CDevice
   virtual int Shutdown();
 };
 
-CDevice* FixedTones_Init(char* interface, ConfigFile* cf, int section)
+Driver* FixedTones_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_AUDIO_STRING))
   {
@@ -112,7 +112,7 @@ CDevice* FixedTones_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new FixedTones(interface, cf, section)));
+    return((Driver*)(new FixedTones(interface, cf, section)));
 }
 
 // a driver registration function
@@ -122,8 +122,8 @@ FixedTones_Register(DriverTable* table)
   table->AddDriver("fixedtones", PLAYER_ALL_MODE, FixedTones_Init);
 }
 
-FixedTones::FixedTones(char* interface, ConfigFile* cf, int section) :
-  CDevice(AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
+FixedTones::FixedTones( ConfigFile* cf, int section) :
+  Driver(cf, section, AUDIO_DATA_BUFFER_SIZE,AUDIO_COMMAND_BUFFER_SIZE,0,0)
 {
   fd=-1;
 }

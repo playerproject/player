@@ -57,9 +57,9 @@ void Interrupt( int dummy );
 				   
 // constructor
 //
-Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section, 
+Stage1p4::Stage1p4( ConfigFile* cf, int section, 
 		   size_t datasz, size_t cmdsz, int rqlen, int rplen) :
-  CDevice(datasz,cmdsz,1,1)//rqlen,rplen)
+  Driver(cf, section, datasz,cmdsz,1,1)//rqlen,rplen)
 {
   PLAYER_TRACE1( "Stage1p4 device created for interface %s\n", interface );
   

@@ -48,11 +48,11 @@ public:
  *
  * returns: pointer to new REBIR object
  */
-CDevice *
+Driver *
 REBIR_Init(char *interface, ConfigFile *cf, int section)
 {
   if (!strcmp(interface, PLAYER_IR_STRING)) {
-    return (CDevice *) new REBIR(interface, cf, section);
+    return (Driver *) new REBIR(interface, cf, section);
   } else {
     PLAYER_ERROR1("driver \"reb_ir\" does not support interface \"%s\"\n",
 		  interface);

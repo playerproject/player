@@ -50,7 +50,7 @@
 #include <math.h>
 #include "camera.c"
 
-class Cmucam2:public CDevice 
+class Cmucam2:public Driver 
 {
   private:
 
@@ -67,7 +67,7 @@ class Cmucam2:public CDevice
 
     // constructor 
     //
-    Cmucam2(char* interface, ConfigFile* cf, int section);
+    Cmucam2( ConfigFile* cf, int section);
 
     virtual void Main();
   
@@ -76,7 +76,7 @@ class Cmucam2:public CDevice
 };
 
 // a factory creation function
-CDevice* Cmucam2_Init(char* interface, ConfigFile* cf, int section)
+Driver* Cmucam2_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_CMUCAM2_STRING))
   {
@@ -85,7 +85,7 @@ CDevice* Cmucam2_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Cmucam2(interface, cf, section)));
+    return((Driver*)(new Cmucam2(interface, cf, section)));
 }
 
 // a driver registration function
@@ -95,8 +95,8 @@ Cmucam2_Register(DriverTable* table)
   table->AddDriver("cmucam2", PLAYER_READ_MODE, Cmucam2_Init);
 }
 
-Cmucam2::Cmucam2(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_cmucam2_data_t),sizeof(player_cmucam2_cmd_t), 5, 5)
+Cmucam2::Cmucam2( ConfigFile* cf, int section)
+  : Driver(cf, section, sizeof(player_cmucam2_data_t),sizeof(player_cmucam2_cmd_t), 5, 5)
 {
   num_of_blobs = cf->ReadInt(section, "num_blobs", 1);
   strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), sizeof(devicepath)-1);

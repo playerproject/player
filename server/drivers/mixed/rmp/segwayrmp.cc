@@ -28,7 +28,7 @@
 
 #include "segwayrmp.h"
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
@@ -159,11 +159,11 @@ rmp_frame_t::AddPacket(const CanPacket &pkt)
     ready |= (1 << (pkt.id & 0xF));
 }
 
-CDevice* SegwayRMP::instance = NULL;
+Driver* SegwayRMP::instance = NULL;
 
 // instance method.  use it instead of the constructor, to ensure that we only
 // get one instance per CAN interface.
-CDevice* 
+Driver* 
 SegwayRMP::Instance(ConfigFile* cf, int section)
 {
   if(!SegwayRMP::instance)
@@ -175,7 +175,7 @@ SegwayRMP::Instance(ConfigFile* cf, int section)
 }
 
 SegwayRMP::SegwayRMP()
-    : CDevice(sizeof(player_segwayrmp_data_t), 
+    : Driver(cf, section, sizeof(player_segwayrmp_data_t), 
               sizeof(player_segwayrmp_cmd_t), 10, 10)
 {
   this->caniotype = "kvaser";

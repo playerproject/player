@@ -57,7 +57,7 @@
 #define DEFAULT_CMV_HEIGHT CMV_DEFAULT_HEIGHT
 /********************************************************************/
 
-class CMVisionBF:public CDevice 
+class CMVisionBF:public Driver 
 {
   private:
     int debuglevel;             // debuglevel 0=none, 1=basic, 2=everything
@@ -77,7 +77,7 @@ class CMVisionBF:public CDevice
   public:
 
     // constructor 
-    CMVisionBF(char* interface, ConfigFile* cf, int section);
+    CMVisionBF( ConfigFile* cf, int section);
 
     virtual void Main();
 
@@ -86,7 +86,7 @@ class CMVisionBF:public CDevice
 };
 
 // a factory creation function
-CDevice* CMVision_Init(char* interface, ConfigFile* cf, int section)
+Driver* CMVision_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_BLOBFINDER_STRING))
   {
@@ -95,7 +95,7 @@ CDevice* CMVision_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new CMVisionBF(interface, cf, section)));
+    return((Driver*)(new CMVisionBF(interface, cf, section)));
 }
 
 // a driver registration function
@@ -105,8 +105,8 @@ CMVision_Register(DriverTable* table)
   table->AddDriver("cmvision", PLAYER_READ_MODE, CMVision_Init);
 }
 
-CMVisionBF::CMVisionBF(char* interface, ConfigFile* cf, int section)
-  :CDevice(sizeof(player_blobfinder_data_t),0,0,0)
+CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
+  :Driver(sizeof(player_blobfinder_data_t),0,0,0)
 {
   vision=NULL;
   cap=NULL;

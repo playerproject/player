@@ -30,13 +30,13 @@ class P2OSCompass: public P2OS
 {
  public:
 
-   P2OSCompass(char* interface, ConfigFile* cf, int section) : 
+   P2OSCompass( ConfigFile* cf, int section) : 
            P2OS(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSCompass_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSCompass_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
   {
@@ -45,7 +45,7 @@ CDevice* P2OSCompass_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSCompass(interface, cf, section)));
+    return((Driver*)(new P2OSCompass(interface, cf, section)));
 }
 
 // a driver registration function

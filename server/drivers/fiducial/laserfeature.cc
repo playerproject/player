@@ -41,16 +41,16 @@
 #include <unistd.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for detecting features in laser scan.
-class LaserFeature : public CDevice
+class LaserFeature : public Driver
 {
   // Constructor
-  public: LaserFeature(char* interface, ConfigFile* cf, int section);
+  public: LaserFeature( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -102,7 +102,7 @@ class LaserFeature : public CDevice
   
   // Laser stuff.
   private: int laser_index;
-  private: CDevice *laser_device;
+  private: Driver *laser_device;
   private: player_laser_data_t laser_data;
   private: uint32_t laser_timesec, laser_timeusec;
 
@@ -145,7 +145,7 @@ class LaserFeature : public CDevice
 
 
 // Initialization function
-CDevice* LaserFeature_Init(char* interface, ConfigFile* cf, int section)
+Driver* LaserFeature_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_FIDUCIAL_STRING) != 0)
   {
@@ -153,7 +153,7 @@ CDevice* LaserFeature_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new LaserFeature(interface, cf, section)));
+  return ((Driver*) (new LaserFeature(interface, cf, section)));
 }
 
 
@@ -166,8 +166,8 @@ void LaserFeature_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-LaserFeature::LaserFeature(char* interface, ConfigFile* cf, int section)
-    : CDevice(0, 0, 0, 1)
+LaserFeature::LaserFeature( ConfigFile* cf, int section)
+    : Driver(cf, section, 0, 0, 0, 1)
 {
   // Device pose relative to robot.
   this->pose[0] = 0;

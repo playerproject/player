@@ -66,7 +66,7 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 /* these are necessary to make the static fields visible to the linker */
@@ -89,18 +89,18 @@ extern unsigned char*    RFLEX::reqqueue;
 extern unsigned char*    RFLEX::repqueue;
 extern int               RFLEX::joy_control;
 
-CDevice *		RFLEX::PositionDev = NULL;
-CDevice *		RFLEX::SonarDev = NULL;
-CDevice *		RFLEX::IrDev = NULL;
-CDevice *		RFLEX::BumperDev = NULL;
-CDevice *		RFLEX::PowerDev = NULL;
-CDevice *		RFLEX::AIODev = NULL;
-CDevice *		RFLEX::DIODev = NULL;
+Driver *		RFLEX::PositionDev = NULL;
+Driver *		RFLEX::SonarDev = NULL;
+Driver *		RFLEX::IrDev = NULL;
+Driver *		RFLEX::BumperDev = NULL;
+Driver *		RFLEX::PowerDev = NULL;
+Driver *		RFLEX::AIODev = NULL;
+Driver *		RFLEX::DIODev = NULL;
 
 //NOTE - this is accessed as an extern variable by the other RFLEX objects
 rflex_config_t rflex_configs;
 
-RFLEX::RFLEX(char* interface, ConfigFile* cf, int section)
+RFLEX::RFLEX( ConfigFile* cf, int section)
 {
   int reqqueuelen = 1;
   int repqueuelen = 1;
@@ -283,8 +283,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_SONAR_CODE;
   pthread_testcancel();
-  //CDevice* sonarp = deviceTable->GetDevice(id);
-  CDevice* sonarp = SonarDev;
+  //Driver* sonarp = deviceTable->GetDevice(id);
+  Driver* sonarp = SonarDev;
   pthread_testcancel();
   if(sonarp)
   {
@@ -294,8 +294,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_POWER_CODE;
   pthread_testcancel();
-  //CDevice* powerp = deviceTable->GetDevice(id);
-  CDevice* powerp = PowerDev;
+  //Driver* powerp = deviceTable->GetDevice(id);
+  Driver* powerp = PowerDev;
   pthread_testcancel();
   if(powerp)
   {
@@ -305,8 +305,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_BUMPER_CODE;
   pthread_testcancel();
-  //CDevice* bumperp = deviceTable->GetDevice(id);
-  CDevice* bumperp = BumperDev;
+  //Driver* bumperp = deviceTable->GetDevice(id);
+  Driver* bumperp = BumperDev;
   pthread_testcancel();
   if(bumperp)
   {
@@ -316,8 +316,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_IR_CODE;
   pthread_testcancel();
-  //CDevice* ir = deviceTable->GetDevice(id);
-  CDevice* ir = IrDev;
+  //Driver* ir = deviceTable->GetDevice(id);
+  Driver* ir = IrDev;
   pthread_testcancel();
   if(ir)
   {
@@ -327,8 +327,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_AIO_CODE;
   pthread_testcancel();
-  //CDevice* aio = deviceTable->GetDevice(id);
-  CDevice* aio = AIODev;
+  //Driver* aio = deviceTable->GetDevice(id);
+  Driver* aio = AIODev;
   pthread_testcancel();
   if(aio)
   {
@@ -338,8 +338,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_DIO_CODE;
   pthread_testcancel();
-  //CDevice* dio = deviceTable->GetDevice(id);
-  CDevice* dio = DIODev;
+  //Driver* dio = deviceTable->GetDevice(id);
+  Driver* dio = DIODev;
   pthread_testcancel();
   if(dio)
   {
@@ -349,8 +349,8 @@ void RFLEX::PutData( unsigned char* src, size_t maxsize,
 
   id.code = PLAYER_POSITION_CODE;
   pthread_testcancel();
-  //CDevice* positionp = deviceTable->GetDevice(id);
-  CDevice * positionp = PositionDev;
+  //Driver* positionp = deviceTable->GetDevice(id);
+  Driver * positionp = PositionDev;
   pthread_testcancel();
   if(positionp)
   {
@@ -397,18 +397,18 @@ RFLEX::Main()
 
 
 	id.code = PLAYER_SONAR_CODE;
-	CDevice* sonarp = deviceTable->GetDevice(id);
+	Driver* sonarp = deviceTable->GetDevice(id);
 	id.code = PLAYER_POSITION_CODE;
-	CDevice* positionp = deviceTable->GetDevice(id);
+	Driver* positionp = deviceTable->GetDevice(id);
 	id.code = PLAYER_BUMPER_CODE;
-	CDevice* bumperp = deviceTable->GetDevice(id);
+	Driver* bumperp = deviceTable->GetDevice(id);
 	id.code = PLAYER_IR_CODE;
-	CDevice* irp = deviceTable->GetDevice(id);*/
+	Driver* irp = deviceTable->GetDevice(id);*/
 	
-	CDevice* sonarp = SonarDev;
-	CDevice* positionp = PositionDev;
-	CDevice* bumperp = BumperDev;
-	CDevice* irp = IrDev;
+	Driver* sonarp = SonarDev;
+	Driver* positionp = PositionDev;
+	Driver* bumperp = BumperDev;
+	Driver* irp = IrDev;
 	
 	last_sonar_subscrcount = 0;
 	last_position_subscrcount = 0;
@@ -871,7 +871,7 @@ void RFLEX::set_odometry(long mm_x, long mm_y, short deg_theta) {
   rad_odo_theta=DEG2RAD_CONV(deg_theta);
 }
 
-void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *bumperp, CDevice * irp) {
+void RFLEX::update_everything(player_rflex_data_t* d, Driver* sonarp, Driver *bumperp, Driver * irp) {
 
   int arb_ranges[PLAYER_SONAR_MAX_SAMPLES];
   char abumper_ranges[PLAYER_BUMPER_MAX_SAMPLES];

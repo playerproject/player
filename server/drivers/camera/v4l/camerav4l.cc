@@ -35,7 +35,7 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "playertime.h"
@@ -48,10 +48,10 @@ extern PlayerTime *GlobalTime;
 
 
 // Driver for detecting laser retro-reflectors.
-class CameraV4L : public CDevice
+class CameraV4L : public Driver
 {
   // Constructor
-  public: CameraV4L(char* interface, ConfigFile* cf, int section);
+  public: CameraV4L( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -102,7 +102,7 @@ class CameraV4L : public CDevice
 
 
 // Initialization function
-CDevice* CameraV4L_Init(char* interface, ConfigFile* cf, int section)
+Driver* CameraV4L_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_CAMERA_STRING) != 0)
   {
@@ -110,7 +110,7 @@ CDevice* CameraV4L_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new CameraV4L(interface, cf, section)));
+  return ((Driver*) (new CameraV4L(interface, cf, section)));
 }
 
 
@@ -123,8 +123,8 @@ void CameraV4L_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-CameraV4L::CameraV4L(char* interface, ConfigFile* cf, int section)
-  : CDevice(sizeof(player_camera_data_t), 0, 10, 10)
+CameraV4L::CameraV4L( ConfigFile* cf, int section)
+  : Driver(cf, section, sizeof(player_camera_data_t), 0, 10, 10)
 {
   const char *snorm;
   

@@ -39,11 +39,11 @@
 #include <devicetable.h>
 #include <player.h>
 
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 extern int global_playerport;
 
-class PassThrough:public CDevice 
+class PassThrough:public Driver 
 {
   private:
     // info for the server/device to which we will connect
@@ -68,7 +68,7 @@ class PassThrough:public CDevice
 
   public:
     PassThrough(const char* hostname, int port,
-                player_device_id_t id, char* interface, 
+                player_device_id_t id,  
                 ConfigFile* cf, int section);
     ~PassThrough();
     virtual int Setup();
@@ -76,8 +76,8 @@ class PassThrough:public CDevice
 };
 
 // initialization function
-CDevice* 
-PassThrough_Init(char* interface, ConfigFile* cf, int section)
+Driver* 
+PassThrough_Init( ConfigFile* cf, int section)
 {
   player_interface_t interf;
   player_device_id_t id;
@@ -101,7 +101,7 @@ PassThrough_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
 
-  return((CDevice*)(new PassThrough(host, port, id, interface, cf, section)));
+  return((Driver*)(new PassThrough(host, port, id, interface, cf, section)));
 }
 
 // a driver registration function
@@ -112,9 +112,9 @@ PassThrough_Register(DriverTable* table)
 }
 
 PassThrough::PassThrough(const char* hostname, int port,
-                         player_device_id_t id, char* interface, 
+                         player_device_id_t id,  
                          ConfigFile* cf, int section) :
-  CDevice(PLAYER_MAX_PAYLOAD_SIZE,PLAYER_MAX_PAYLOAD_SIZE,1,1)
+  Driver(cf, section, PLAYER_MAX_PAYLOAD_SIZE,PLAYER_MAX_PAYLOAD_SIZE,1,1)
 {
   this->remote_hostname = hostname;
   this->remote_port = port;
@@ -149,7 +149,7 @@ int
 PassThrough::Setup()
 {
   unsigned char grant_access;
-  CDeviceEntry* devp;
+  DriverEntry* devp;
   player_msghdr_t hdr;
 
   // zero out the buffers

@@ -35,11 +35,11 @@
 
 #define DEFAULT_DEVICE "/dev/mixer"
 
-class Mixer : public CDevice
+class Mixer : public Driver
 {
   public:
     // Constructor
-    Mixer(char* interface, ConfigFile* cf, int section);
+    Mixer( ConfigFile* cf, int section);
 
     int Setup();
     int Shutdown();
@@ -62,13 +62,13 @@ class Mixer : public CDevice
     const char* deviceName; // Name of the device( ex: "/dev/mixer" )
 };
 
-Mixer::Mixer(char* interface, ConfigFile* cf, int section)
-  : CDevice(0,sizeof(player_audiomixer_cmd_t),1,1)
+Mixer::Mixer( ConfigFile* cf, int section)
+  : Driver(cf, section, 0,sizeof(player_audiomixer_cmd_t),1,1)
 {
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
 }
 
-CDevice* Mixer_Init(char* interface, ConfigFile* cf, int section)
+Driver* Mixer_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_AUDIOMIXER_STRING))
   {
@@ -77,7 +77,7 @@ CDevice* Mixer_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Mixer(interface, cf, section)));
+    return((Driver*)(new Mixer(interface, cf, section)));
 }
 
 void Mixer_Register(DriverTable* table)

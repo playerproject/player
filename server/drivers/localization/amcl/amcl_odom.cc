@@ -100,7 +100,7 @@ int AMCLOdom::Setup(void)
     PLAYER_ERROR("unable to locate suitable position device");
     return -1;
   }
-  if (this->device->Subscribe(this) != 0)
+  if (this->device->driver->Subscribe(this) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -115,7 +115,7 @@ int AMCLOdom::Setup(void)
 int AMCLOdom::Shutdown(void)
 {
   // Unsubscribe from device
-  this->device->Unsubscribe(this);
+  this->device->driver->Unsubscribe(this);
   this->device = NULL;
   
   return 0;
@@ -133,7 +133,7 @@ AMCLSensorData *AMCLOdom::GetData(void)
   AMCLOdomData *ndata;
 
   // Get the odom device data.
-  size = this->device->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
+  size = this->device->driver->GetData(this, (uint8_t*) &data, sizeof(data), &tsec, &tusec);
   if (size == 0)
     return NULL;
 

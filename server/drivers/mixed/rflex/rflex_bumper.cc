@@ -34,14 +34,14 @@ class RFLEXbumper: public RFLEX
 {
  public:
 
-   RFLEXbumper(char* interface, ConfigFile* cf, int section) : 
+   RFLEXbumper( ConfigFile* cf, int section) : 
            RFLEX(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
    void GetOptions(ConfigFile * cf, int section, rflex_config_t * rflex_configs);
 };
 
-CDevice* RFLEXbumper_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXbumper_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_BUMPER_STRING))
   {
@@ -52,8 +52,8 @@ CDevice* RFLEXbumper_Init(char* interface, ConfigFile* cf, int section)
   else{
   	RFLEXbumper * tmp =new RFLEXbumper(interface, cf, section);
 	tmp->GetOptions(cf,section,&rflex_configs);
-	RFLEX::BumperDev = static_cast<CDevice *> (tmp);
-    return static_cast<CDevice *> (tmp);
+	RFLEX::BumperDev = static_cast<Driver *> (tmp);
+    return static_cast<Driver *> (tmp);
   }
 }
 

@@ -54,7 +54,7 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 /* here we calculate our conversion factors.
@@ -101,7 +101,7 @@ extern unsigned char*    ClodBuster::repqueue;
    extern player_clodbuster_cmd_t*  ClodBuster::command;
 
 // initialization function
-CDevice* ClodBuster_Init(char* interface, ConfigFile* cf, int section)
+Driver* ClodBuster_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
     {
@@ -110,7 +110,7 @@ CDevice* ClodBuster_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else
-    return((CDevice*)(new ClodBuster(interface, cf, section)));
+    return((Driver*)(new ClodBuster(interface, cf, section)));
 }
 
 // a driver registration function
@@ -121,8 +121,8 @@ ClodBuster_Register(DriverTable* table)
 }
 
 
-ClodBuster::ClodBuster(char* interface, ConfigFile* cf, int section):
-  CDevice(sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
+ClodBuster::ClodBuster( ConfigFile* cf, int section):
+  Driver(cf, section, sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
 {
   int reqqueuelen = 1;
   int repqueuelen = 1;
@@ -427,7 +427,7 @@ void ClodBuster::PutData( unsigned char* src, size_t maxsize,
 
 
   id.code = PLAYER_POSITION_CODE;
-  CDevice* positionp = deviceTable->GetDevice(id);
+  Driver* positionp = deviceTable->GetDevice(id);
   if(positionp)
     {
       positionp->data_timestamp_sec = this->data_timestamp_sec;
@@ -458,7 +458,7 @@ ClodBuster::Main()
   id.index = 0;
 
   id.code = PLAYER_POSITION_CODE;
-  CDevice* positionp = deviceTable->GetDevice(id);
+  Driver* positionp = deviceTable->GetDevice(id);
 
   last_position_subscrcount = 0;
 

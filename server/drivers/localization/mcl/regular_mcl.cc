@@ -40,14 +40,14 @@ extern PlayerTime* GlobalTime;
 
 // to access the deviceTable
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 
 // to access the use_stage flag
 extern bool use_stage;
 
 
 // constructor
-RegularMCL::RegularMCL(char* interface, ConfigFile* cf, int section)
+RegularMCL::RegularMCL( ConfigFile* cf, int section)
     : PSDevice(sizeof(player_localization_data_t),0,10,10)
 {
     // load configuration : update speed
@@ -896,7 +896,7 @@ void RegularMCL::StopStageUpdate(void)
 
 
 // a factory create function
-CDevice* RegularMCL_Init(char* interface, ConfigFile* cf, int section)
+Driver* RegularMCL_Init( ConfigFile* cf, int section)
 {
     if (strcmp(interface, PLAYER_LOCALIZATION_STRING)) {
 	PLAYER_ERROR1("driver \"regular_mcl\" does not support interface \"%s\"\n",
@@ -904,7 +904,7 @@ CDevice* RegularMCL_Init(char* interface, ConfigFile* cf, int section)
 	return (NULL);
     }
     else
-	return ((CDevice*)(new RegularMCL(interface, cf, section)));
+	return ((Driver*)(new RegularMCL(interface, cf, section)));
 }
 
 

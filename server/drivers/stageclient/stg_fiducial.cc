@@ -33,7 +33,7 @@
 class StgFiducial:public Stage1p4
 {
 public:
-  StgFiducial(char* interface, ConfigFile* cf, int section );
+  StgFiducial( ConfigFile* cf, int section );
 
   virtual size_t GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec);
@@ -42,7 +42,7 @@ public:
 			void* data, size_t len);
 };
 
-StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section ) 
+StgFiducial::StgFiducial( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, sizeof(player_fiducial_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgFiducial with interface %s", interface );
@@ -53,7 +53,7 @@ StgFiducial::StgFiducial(char* interface, ConfigFile* cf, int section )
 
 }
 
-CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgFiducial_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_FIDUCIAL_STRING))
     {
@@ -62,7 +62,7 @@ CDevice* StgFiducial_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgFiducial(interface, cf, section)));
+    return((Driver*)(new StgFiducial(interface, cf, section)));
 }
 
 
@@ -104,10 +104,10 @@ size_t StgFiducial::GetData(void* client, unsigned char* dest, size_t len,
     }
   
   // publish this data
-  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+  Driver::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
   
   // now inherit the standard data-getting behavior 
-  return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
 }
 
 int StgFiducial::PutConfig(player_device_id_t* device, void* client, 

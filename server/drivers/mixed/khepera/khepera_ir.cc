@@ -50,11 +50,11 @@ public:
  *
  * returns: pointer to new REBIR object
  */
-CDevice *
+Driver *
 KheperaIR_Init(char *interface, ConfigFile *cf, int section)
 {
   if (!strcmp(interface, PLAYER_IR_STRING)) {
-    return (CDevice *) new KheperaIR(interface, cf, section);
+    return (Driver *) new KheperaIR(interface, cf, section);
   } else {
     PLAYER_ERROR1("driver \"khepera_ir\" does not support interface \"%s\"\n",
 		  interface);

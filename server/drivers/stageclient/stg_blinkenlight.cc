@@ -30,7 +30,7 @@
 class StgBlinkenlight:public Stage1p4
 {
 public:
-  StgBlinkenlight(char* interface, ConfigFile* cf, int section );
+  StgBlinkenlight( ConfigFile* cf, int section );
   
   // override GetData
   virtual size_t GetData(void* client, unsigned char* dest, size_t len,
@@ -43,7 +43,7 @@ public:
 
 // METHODS ///////////////////////////////////////////////////////////////
 
-StgBlinkenlight::StgBlinkenlight(char* interface, ConfigFile* cf, int section ) 
+StgBlinkenlight::StgBlinkenlight( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, 
 	      sizeof(player_blinkenlight_data_t), sizeof(player_blinkenlight_cmd_t), 0, 0 )
 {
@@ -54,7 +54,7 @@ StgBlinkenlight::StgBlinkenlight(char* interface, ConfigFile* cf, int section )
   this->subscribe_prop = STG_MOD_BLINKENLIGHT;
 }
 
-CDevice* StgBlinkenlight_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgBlinkenlight_Init( ConfigFile* cf, int section)
 {
   PLAYER_MSG0( "STG_BLINKENLIGHT INIT" );
     
@@ -65,7 +65,7 @@ CDevice* StgBlinkenlight_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgBlinkenlight(interface, cf, section)));
+    return((Driver*)(new StgBlinkenlight(interface, cf, section)));
 }
 	      
 void StgBlinkenlight_Register(DriverTable* table)
@@ -98,10 +98,10 @@ size_t StgBlinkenlight::GetData(void* client, unsigned char* dest, size_t len,
   pdata.period_ms = htons((uint16_t)bl->period_ms);
   
   // publish this data
-  CDevice::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
+  Driver::PutData( &pdata, sizeof(pdata), 0,0 ); // time gets filled in
 
   // now inherit the standard data-getting behavior 
-  return CDevice::GetData(client,dest,len,timestamp_sec,timestamp_usec);
+  return Driver::GetData(client,dest,len,timestamp_sec,timestamp_usec);
   
   //return 0;
 }

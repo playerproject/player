@@ -63,7 +63,7 @@ class AMCLGps : public AMCLSensor
   
   // Device info
   private: int gps_index;
-  private: CDevice *device;
+  private: Driver *device;
 
   // Gpsetry sensor/action model
   private: gps_model_t *model;

@@ -42,7 +42,7 @@
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
@@ -59,10 +59,10 @@ struct blob_t
 
 
 // Driver for detecting laser retro-reflectors.
-class UPCBarcode : public CDevice
+class UPCBarcode : public Driver
 {
   // Constructor
-  public: UPCBarcode(char* interface, ConfigFile* cf, int section);
+  public: UPCBarcode( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -103,7 +103,7 @@ class UPCBarcode : public CDevice
 
   // Camera stuff
   private: int camera_index;
-  private: CDevice *camera;
+  private: Driver *camera;
   private: double camera_time;
   private: player_camera_data_t camera_data;
 
@@ -114,7 +114,7 @@ class UPCBarcode : public CDevice
 
 
 // Initialization function
-CDevice* UPCBarcode_Init(char* interface, ConfigFile* cf, int section)
+Driver* UPCBarcode_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_BLOBFINDER_STRING) != 0)
   {
@@ -122,7 +122,7 @@ CDevice* UPCBarcode_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new UPCBarcode(interface, cf, section)));
+  return ((Driver*) (new UPCBarcode(interface, cf, section)));
 }
 
 
@@ -135,8 +135,8 @@ void UPCBarcode_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-UPCBarcode::UPCBarcode(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_blobfinder_data_t), 0, 10, 10)
+UPCBarcode::UPCBarcode( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_blobfinder_data_t), 0, 10, 10)
 {
   this->camera_index = cf->ReadInt(section, "camera", 0);
   this->camera = NULL;

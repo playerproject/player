@@ -41,9 +41,9 @@ extern PlayerTime *GlobalTime;
 
 #define AODV_INFO_FILE "/proc/aodv/route_table"
 
-class Aodv : public CDevice
+class Aodv : public Driver
 {
-  public: Aodv(char *interface, ConfigFile *cf, int section);
+  public: Aodv( ConfigFile *cf, int section);
 
   // Initialize driver
   public: virtual int Setup();
@@ -61,7 +61,7 @@ class Aodv : public CDevice
 
 
 // Instantiate driver for given interface
-CDevice * Aodv_Init(char *interface, ConfigFile *cf, int section)
+Driver * Aodv_Init( ConfigFile *cf, int section)
 { 
   if(strcmp(interface, PLAYER_WIFI_STRING))
   {
@@ -71,7 +71,7 @@ CDevice * Aodv_Init(char *interface, ConfigFile *cf, int section)
   }
   else
   {
-    return ((CDevice*)(new Aodv(interface, cf, section)));
+    return ((Driver*)(new Aodv(interface, cf, section)));
   }
 }
 
@@ -85,8 +85,8 @@ void Aodv_Register(DriverTable *table)
 
 
 // Constructor
-Aodv::Aodv(char *interface, ConfigFile *cf, int section)
-    : CDevice(0, 0, 0, 1)
+Aodv::Aodv( ConfigFile *cf, int section)
+    : Driver(cf, section, 0, 0, 0, 1)
 {
   return;
 }

@@ -54,6 +54,7 @@
 //#define INCLUDE_OUTFILE 1
 extern PlayerTime* GlobalTime;
 
+#include "deviceregistry.h"
 #include "amcl.h"
 
 // Sensors
@@ -65,15 +66,9 @@ extern PlayerTime* GlobalTime;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create an instance of the driver
-CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
+Driver* AdaptiveMCL_Init( ConfigFile* cf, int section)
 {
-  if (strcmp(interface, PLAYER_LOCALIZE_STRING) == 0)
-    return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
-  else if (strcmp(interface, PLAYER_POSITION_STRING) == 0)
-    return ((CDevice*) (new AdaptiveMCL(interface, cf, section)));
-
-  PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n", interface);
-  return (NULL);
+  return ((Driver*) (new AdaptiveMCL(cf, section)));
 }
 
 
@@ -81,7 +76,7 @@ CDevice* AdaptiveMCL_Init(char* interface, ConfigFile* cf, int section)
 // Register the driver
 void AdaptiveMCL_Register(DriverTable* table)
 {
-  table->AddDriver("amcl", PLAYER_ALL_MODE, AdaptiveMCL_Init);
+  table->AddDriver("amcl", AdaptiveMCL_Init);
   return;
 }
 
@@ -92,15 +87,42 @@ void AdaptiveMCL_Register(DriverTable* table)
   
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
-    : CDevice(AMCL_DATASIZE, 0, 100, 100)
+AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
+    : Driver(cf, section)
 {
   int i;
   double u[3];
   AMCLSensor *sensor;
 
+  // Work out what interface we should use
+  if (cf->ReadDeviceId(section, 0, -1, &this->device_id) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
+
+  // Create an interface 
+  if (this->AddInterface(this->device_id, PLAYER_ALL_MODE,
+                         AMCL_DATASIZE, 0, 100, 100) != 0)
+  {
+    this->SetError(-1);    
+    return;
+  }
+
+  // Check for compatible codes
+  if (!(this->device_id.code == PLAYER_LOCALIZE_CODE ||
+        this->device_id.code == PLAYER_POSITION_CODE))
+  {
+    PLAYER_ERROR1("driver \"amcl\" does not support interface \"%s\"\n",
+                  ::lookup_interface_name(0, this->device_id.code));
+    this->SetError(-1);
+    return;
+  }
+
+  // HACK; fix this later
   // Remember which interface we go opened for
-  this->interface = strdup(interface);
+  this->interface = strdup(::lookup_interface_name(0, this->device_id.code));
+  
   
   this->init_sensor = -1;
   this->action_sensor = -1;
@@ -331,7 +353,7 @@ int AdaptiveMCL::PutConfig(player_device_id_t* device, void* client,
   }
 
   // Let the device thread get the rest
-  return CDevice::PutConfig(device, client, data, len);
+  return Driver::PutConfig(device, client, data, len);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -880,7 +902,7 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
   data.hypoth_count = htonl(data.hypoth_count);
 
   // Copy data to server
-  ((CDevice*) this)->PutData((char*) &data, datalen, tsec, tusec);
+  ((Driver*) this)->PutData((char*) &data, datalen, tsec, tusec);
   
   return;
 }
@@ -942,7 +964,7 @@ void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t del
   data.yaw = htonl(data.yaw);
   
   // Copy data to server
-  ((CDevice*) this)->PutData((char*) &data, sizeof(data), tsec, tusec);
+  ((Driver*) this)->PutData((char*) &data, sizeof(data), tsec, tusec);
   
   return;
 }

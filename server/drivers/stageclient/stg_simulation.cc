@@ -44,7 +44,7 @@ extern char** global_argv;
 class StgSimulation:public Stage1p4
 {
 public:
-  StgSimulation(char* interface, ConfigFile* cf, int section);
+  StgSimulation( ConfigFile* cf, int section);
   ~StgSimulation();
   
   // TODO - implement some simulator interface things - pause, resume,
@@ -54,7 +54,7 @@ public:
 };
 
 
-StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section ) 
+StgSimulation::StgSimulation( ConfigFile* cf, int section ) 
   : Stage1p4( interface, cf, section, 
 	      sizeof(player_simulation_data_t), 
 	      sizeof(player_simulation_cmd_t), 1, 1 )
@@ -175,7 +175,7 @@ StgSimulation::~StgSimulation()
 
 // Player registration ----------------------------------------------------
 
-CDevice* StgSimulation_Init(char* interface, ConfigFile* cf, int section)
+Driver* StgSimulation_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_SIMULATION_STRING))
     {
@@ -184,7 +184,7 @@ CDevice* StgSimulation_Init(char* interface, ConfigFile* cf, int section)
       return(NULL);
     }
   else 
-    return((CDevice*)(new StgSimulation(interface, cf, section)));
+    return((Driver*)(new StgSimulation(interface, cf, section)));
 }
 
 

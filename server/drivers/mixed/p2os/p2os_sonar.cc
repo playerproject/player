@@ -33,14 +33,14 @@
 class P2OSSonar: public P2OS
 {
  public:
-   P2OSSonar(char* interface, ConfigFile* cf, int section) :
+   P2OSSonar( ConfigFile* cf, int section) :
            P2OS(interface, cf, section){}
    
    virtual size_t GetData(void*, unsigned char *, size_t maxsize,
                            uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* P2OSSonar_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSSonar_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_SONAR_STRING))
   {
@@ -49,7 +49,7 @@ CDevice* P2OSSonar_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSSonar(interface, cf, section)));
+    return((Driver*)(new P2OSSonar(interface, cf, section)));
 }
 
 // a driver registration function

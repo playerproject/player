@@ -55,7 +55,7 @@
 
 static void StopRobot(void* trogdordev);
 
-class Trogdor : public CDevice 
+class Trogdor : public Driver 
 {
   private:
     // this function will be run in a separate thread
@@ -89,7 +89,7 @@ class Trogdor : public CDevice
     // public, so that it can be called from pthread cleanup function
     int SetVelocity(int lvel, int rvel);
 
-    Trogdor(char* interface, ConfigFile* cf, int section);
+    Trogdor( ConfigFile* cf, int section);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -97,7 +97,7 @@ class Trogdor : public CDevice
 
 
 // initialization function
-CDevice* Trogdor_Init(char* interface, ConfigFile* cf, int section)
+Driver* Trogdor_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
   {
@@ -106,7 +106,7 @@ CDevice* Trogdor_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new Trogdor(interface, cf, section)));
+    return((Driver*)(new Trogdor(interface, cf, section)));
 }
 
 // a driver registration function
@@ -116,8 +116,8 @@ Trogdor_Register(DriverTable* table)
   table->AddDriver("trogdor", PLAYER_ALL_MODE, Trogdor_Init);
 }
 
-Trogdor::Trogdor(char* interface, ConfigFile* cf, int section) :
-  CDevice(sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
+Trogdor::Trogdor( ConfigFile* cf, int section) :
+  Driver(cf, section, sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
 {
   fd = -1;
   this->serial_port = cf->ReadString(section, "port", TROGDOR_DEFAULT_PORT);

@@ -56,10 +56,10 @@ extern PlayerTime *GlobalTime;
 #define WIFI_INFO_FILE "/proc/net/wireless"
 
 #define WIFI_UPDATE_INTERVAL 1000 // in milliseconds
-class LinuxWiFi : public CDevice
+class LinuxWiFi : public Driver
 {
 public:
-  LinuxWiFi(char *interface, ConfigFile *cf, int section);
+  LinuxWiFi( ConfigFile *cf, int section);
 
   //  virtual void Main();
 
@@ -97,22 +97,22 @@ protected:
   player_wifi_data_t data;
 };
 
-CDevice * LinuxWiFi_Init(char *interface, ConfigFile *cf, int section);
+Driver * LinuxWiFi_Init( ConfigFile *cf, int section);
 void LinuxWiFi_Register(DriverTable *table);
 
 /* check for supported interfaces.
  *
  * returns: pointer to new LinuxWiFi driver if supported, NULL else
  */
-CDevice *
-LinuxWiFi_Init(char *interface, ConfigFile *cf, int section)
+Driver *
+LinuxWiFi_Init( ConfigFile *cf, int section)
 { 
   if(strcmp(interface, PLAYER_WIFI_STRING)) {
     PLAYER_ERROR1("driver \"linuxwifi\" does not support interface \"%s\"\n",
 		  interface);
     return NULL;
   } else {
-    return ((CDevice*)(new LinuxWiFi(interface, cf, section)));
+    return ((Driver*)(new LinuxWiFi(interface, cf, section)));
   }
 }
 
@@ -126,8 +126,8 @@ LinuxWiFi_Register(DriverTable *table)
   table->AddDriver("linuxwifi", PLAYER_READ_MODE, LinuxWiFi_Init);
 }
 
-LinuxWiFi::LinuxWiFi(char *interface, ConfigFile *cf, int section) :
-  CDevice(0,0,0,1) 
+LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
+  Driver(cf, section, 0,0,0,1) 
 {
   info_fp = NULL;
   

@@ -40,13 +40,13 @@ class P2OSPosition: public P2OS
 {
  public:
    ~P2OSPosition();
-   P2OSPosition(char* interface, ConfigFile* cf, int section);
+   P2OSPosition( ConfigFile* cf, int section);
    virtual size_t GetData(void*,unsigned char *, size_t maxsize,
                           uint32_t* timestamp_sec, uint32_t* timestamp_usec);
    void PutCommand(void*, unsigned char *, size_t maxsize);
 };
 
-CDevice* P2OSPosition_Init(char* interface, ConfigFile* cf, int section)
+Driver* P2OSPosition_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_POSITION_STRING))
   {
@@ -55,7 +55,7 @@ CDevice* P2OSPosition_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new P2OSPosition(interface, cf, section)));
+    return((Driver*)(new P2OSPosition(interface, cf, section)));
 }
 
 // a driver registration function
@@ -66,7 +66,7 @@ P2OSPosition_Register(DriverTable* table)
 }
 
 
-P2OSPosition::P2OSPosition(char* interface, ConfigFile* cf, int section)
+P2OSPosition::P2OSPosition( ConfigFile* cf, int section)
     : P2OS(interface, cf, section)
 {
   motor_max_speed = cf->ReadInt(section, "max_xspeed", MOTOR_DEF_MAX_SPEED);

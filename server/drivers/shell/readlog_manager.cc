@@ -38,7 +38,7 @@
 #include <unistd.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "deviceregistry.h"
 #include "clientmanager.h"
 
@@ -161,7 +161,7 @@ int ReadLogManager::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////
 // Subscribe to manager
-int ReadLogManager::Subscribe(player_device_id_t id, CDevice *device)
+int ReadLogManager::Subscribe(player_device_id_t id, Driver *device)
 {
   // Add this id to the list of subscribed device id's
   // TODO: lock
@@ -180,7 +180,7 @@ int ReadLogManager::Subscribe(player_device_id_t id, CDevice *device)
 
 ////////////////////////////////////////////////////////////////////////////
 // Unsubscribe from the manager
-int ReadLogManager::Unsubscribe(player_device_id_t id, CDevice *device)
+int ReadLogManager::Unsubscribe(player_device_id_t id, Driver *device)
 {
   int i;
   
@@ -224,7 +224,7 @@ void ReadLogManager::Main()
   int token_count;
   char *tokens[4096];
 
-  CDevice *device;
+  Driver *device;
   player_device_id_t device_id;
   player_device_id_t header_id;
   uint64_t stime, dtime;
@@ -426,7 +426,7 @@ int ReadLogManager::ParseHeader(int linenum, int token_count, char **tokens,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse data
-int ReadLogManager::ParseData(CDevice *device, int linenum,
+int ReadLogManager::ParseData(Driver *device, int linenum,
                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   if (device->device_id.code == PLAYER_LASER_CODE)
@@ -447,7 +447,7 @@ int ReadLogManager::ParseData(CDevice *device, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse laser data
-int ReadLogManager::ParseLaser(CDevice *device, int linenum,
+int ReadLogManager::ParseLaser(Driver *device, int linenum,
                                int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   int i, count, angle;
@@ -519,7 +519,7 @@ int ReadLogManager::ParseLaser(CDevice *device, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse position data
-int ReadLogManager::ParsePosition(CDevice *device, int linenum,
+int ReadLogManager::ParsePosition(Driver *device, int linenum,
                                   int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   player_position_data_t data;
@@ -546,7 +546,7 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse position3d data
-int ReadLogManager::ParsePosition3d(CDevice *device, int linenum,
+int ReadLogManager::ParsePosition3d(Driver *device, int linenum,
                                     int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
  player_position3d_data_t data;
@@ -583,7 +583,7 @@ int ReadLogManager::ParsePosition3d(CDevice *device, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
-int ReadLogManager::ParseWifi(CDevice *device, int linenum,
+int ReadLogManager::ParseWifi(Driver *device, int linenum,
                               int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   player_wifi_data_t data;
@@ -622,7 +622,7 @@ int ReadLogManager::ParseWifi(CDevice *device, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse GPS data
-int ReadLogManager::ParseGps(CDevice *device, int linenum,
+int ReadLogManager::ParseGps(Driver *device, int linenum,
                              int token_count, char **tokens, uint32_t tsec, uint32_t tusec)
 {
   player_gps_data_t data;

@@ -50,7 +50,7 @@ class Device
   // Initialize the buffers for this interface
   void SetupBuffers(size_t datasize, size_t commandsize,
                     size_t reqqueuelen, size_t repqueuelen);
-  
+
   // Index in the device table
   int index;              
 

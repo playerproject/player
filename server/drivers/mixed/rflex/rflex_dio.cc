@@ -27,13 +27,13 @@ class RFLEXdio: public RFLEX
 {
  public:
 
-   RFLEXdio(char* interface, ConfigFile* cf, int section) : 
+   RFLEXdio( ConfigFile* cf, int section) : 
            RFLEX(interface, cf, section){}
    size_t GetData(void*, unsigned char *, size_t maxsize, 
                    uint32_t* timestamp_sec, uint32_t* timestamp_usec);
 };
 
-CDevice* RFLEXdio_Init(char* interface, ConfigFile* cf, int section)
+Driver* RFLEXdio_Init( ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_DIO_STRING))
   {
@@ -42,7 +42,7 @@ CDevice* RFLEXdio_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else{
-    return RFLEX::DIODev=((CDevice*)(new RFLEXdio(interface, cf, section)));
+    return RFLEX::DIODev=((Driver*)(new RFLEXdio(interface, cf, section)));
   }
 }
 

@@ -63,7 +63,6 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
     return;
   }
 
-  // TODO: driver name and modes
   // Create an interface 
   if (this->AddInterface(this->device_id, access,
                          datasize, commandsize, reqqueuelen, repqueuelen) != 0)

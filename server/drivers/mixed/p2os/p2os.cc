@@ -55,7 +55,7 @@ extern PlayerTime* GlobalTime;
 // so we can access the deviceTable and extract pointers to the sonar
 // and position objects
 #include <devicetable.h>
-extern CDeviceTable* deviceTable;
+extern DriverTable* deviceTable;
 extern int global_playerport; // used to get at devices
 
 /* here we calculate our conversion factors.
@@ -95,7 +95,7 @@ extern unsigned char*    P2OS::reqqueue;
 extern unsigned char*    P2OS::repqueue;
 
 
-P2OS::P2OS(char* interface, ConfigFile* cf, int section)
+P2OS::P2OS( ConfigFile* cf, int section)
 {
   int reqqueuelen = 1;
   int repqueuelen = 1;
@@ -639,7 +639,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   player_device_id_t id = device_id;
 
   id.code = PLAYER_SONAR_CODE;
-  CDevice* sonarp = deviceTable->GetDevice(id);
+  Driver* sonarp = deviceTable->GetDevice(id);
   if(sonarp)
   {
     sonarp->data_timestamp_sec = this->data_timestamp_sec;
@@ -647,7 +647,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_POWER_CODE;
-  CDevice* powerp = deviceTable->GetDevice(id);
+  Driver* powerp = deviceTable->GetDevice(id);
   if(powerp)
   {
     powerp->data_timestamp_sec = this->data_timestamp_sec;
@@ -655,7 +655,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_BUMPER_CODE;
-  CDevice* bumperp = deviceTable->GetDevice(id);
+  Driver* bumperp = deviceTable->GetDevice(id);
   if(bumperp)
   {
     bumperp->data_timestamp_sec = this->data_timestamp_sec;
@@ -663,7 +663,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_AIO_CODE;
-  CDevice* aio = deviceTable->GetDevice(id);
+  Driver* aio = deviceTable->GetDevice(id);
   if(aio)
   {
     aio->data_timestamp_sec = this->data_timestamp_sec;
@@ -671,7 +671,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_DIO_CODE;
-  CDevice* dio = deviceTable->GetDevice(id);
+  Driver* dio = deviceTable->GetDevice(id);
   if(dio)
   {
     dio->data_timestamp_sec = this->data_timestamp_sec;
@@ -679,7 +679,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_POSITION_CODE;
-  CDevice* positionp = deviceTable->GetDevice(id);
+  Driver* positionp = deviceTable->GetDevice(id);
   if(positionp)
   {
     positionp->data_timestamp_sec = this->data_timestamp_sec;
@@ -687,7 +687,7 @@ void P2OS::PutData( unsigned char* src, size_t maxsize,
   }
 
   id.code = PLAYER_GRIPPER_CODE;
-  CDevice* gripperp = deviceTable->GetDevice(id);
+  Driver* gripperp = deviceTable->GetDevice(id);
   if(gripperp)
   {
     gripperp->data_timestamp_sec = this->data_timestamp_sec;
@@ -731,13 +731,13 @@ P2OS::Main()
   id.index = 0;
 
   id.code = PLAYER_SONAR_CODE;
-  CDevice* sonarp = deviceTable->GetDevice(id);
+  Driver* sonarp = deviceTable->GetDevice(id);
   id.code = PLAYER_POSITION_CODE;
-  CDevice* positionp = deviceTable->GetDevice(id);
+  Driver* positionp = deviceTable->GetDevice(id);
   id.code = PLAYER_SOUND_CODE;
-  CDevice* soundp = deviceTable->GetDevice(id);
+  Driver* soundp = deviceTable->GetDevice(id);
   id.code = PLAYER_BLOBFINDER_CODE;
-  CDevice* cmucamp = deviceTable->GetDevice(id);
+  Driver* cmucamp = deviceTable->GetDevice(id);
   
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;

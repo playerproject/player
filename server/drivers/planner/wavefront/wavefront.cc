@@ -35,7 +35,7 @@
 #include <playertime.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "drivertable.h"
 #include "devicetable.h"
 #include "plan.h"
@@ -57,7 +57,7 @@ extern PlayerTime *GlobalTime;
 
 extern int global_playerport;
 
-class Wavefront : public CDevice
+class Wavefront : public Driver
 {
   private: 
     // Main function for device thread.
@@ -88,8 +88,8 @@ class Wavefront : public CDevice
     plan_t* plan;
 
     // pointers to the underlying devices
-    CDevice* position;
-    CDevice* localize;
+    Driver* position;
+    Driver* localize;
 
     // current target (m,m,rad)
     double target_x, target_y, target_a;
@@ -134,7 +134,7 @@ class Wavefront : public CDevice
 
   public:
     // Constructor
-    Wavefront(char* interface, ConfigFile* cf, int section);
+    Wavefront( ConfigFile* cf, int section);
 
     // Setup/shutdown routines.
     virtual int Setup();
@@ -146,7 +146,7 @@ class Wavefront : public CDevice
 
 
 // Initialization function
-CDevice* Wavefront_Init(char* interface, ConfigFile* cf, int section)
+Driver* Wavefront_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_PLANNER_STRING) != 0)
   {
@@ -154,7 +154,7 @@ CDevice* Wavefront_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new Wavefront(interface, cf, section)));
+  return ((Driver*) (new Wavefront(interface, cf, section)));
 }
 
 
@@ -167,8 +167,8 @@ void Wavefront_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Wavefront::Wavefront(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 
+Wavefront::Wavefront( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 
               1, 1)
 {
   this->position_index = cf->ReadInt(section,"position_index",-1);
@@ -277,7 +277,7 @@ Wavefront::GetCommand()
   double new_x, new_y, new_a;
   double eps = 1e-3;
 
-  CDevice::GetCommand((unsigned char*)&cmd,sizeof(cmd));
+  Driver::GetCommand((unsigned char*)&cmd,sizeof(cmd));
 
   new_x = ((int)ntohl(cmd.gx))/1e3;
   new_y = ((int)ntohl(cmd.gy))/1e3;
@@ -753,7 +753,7 @@ int
 Wavefront::SetupMap()
 {
   player_device_id_t map_id;
-  CDevice* mapdevice;
+  Driver* mapdevice;
   plan_cell_t* cell;
 
   // Subscribe to the map device

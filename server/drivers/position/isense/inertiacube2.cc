@@ -46,16 +46,16 @@
 #include <isense/isense.h>
 
 #include "player.h"
-#include "device.h"
+#include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 
 
 // Driver for detecting laser retro-reflectors.
-class InertiaCube2 : public CDevice
+class InertiaCube2 : public Driver
 {
   // Constructor
-  public: InertiaCube2(char* interface, ConfigFile* cf, int section);
+  public: InertiaCube2( ConfigFile* cf, int section);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -107,7 +107,7 @@ class InertiaCube2 : public CDevice
 
   // Position device info (the one we are subscribed to).
   private: int position_index;
-  private: CDevice *position;
+  private: Driver *position;
   private: double position_time;
   private: double position_old_pose[3];
   private: double position_new_pose[3];
@@ -123,7 +123,7 @@ class InertiaCube2 : public CDevice
 
 
 // Initialization function
-CDevice* InertiaCube2_Init(char* interface, ConfigFile* cf, int section)
+Driver* InertiaCube2_Init( ConfigFile* cf, int section)
 {
   if (strcmp(interface, PLAYER_POSITION_STRING) != 0)
   {
@@ -131,7 +131,7 @@ CDevice* InertiaCube2_Init(char* interface, ConfigFile* cf, int section)
                   interface);
     return (NULL);
   }
-  return ((CDevice*) (new InertiaCube2(interface, cf, section)));
+  return ((Driver*) (new InertiaCube2(interface, cf, section)));
 }
 
 
@@ -144,8 +144,8 @@ void InertiaCube2_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-InertiaCube2::InertiaCube2(char* interface, ConfigFile* cf, int section)
-    : CDevice(sizeof(player_position_data_t), 0, 10, 10)
+InertiaCube2::InertiaCube2( ConfigFile* cf, int section)
+    : Driver(cf, section, sizeof(player_position_data_t), 0, 10, 10)
 {
   this->port = cf->ReadString(section, "port", "/dev/ttyS3");
   
