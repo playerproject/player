@@ -197,7 +197,7 @@ int GzHUD::PutConfig(player_device_id_t* device, void* client, void* data, size_
   gz_hud_lock(this->iface,1);
 
   hud = &(this->iface->data->queue[this->iface->data->index]);
-  this->iface->data->index++;
+  this->iface->data->index = (this->iface->data->index +1) % GAZEBO_HUD_MAX_DRAW;
 
   // Id of this element
   hud->id = ((int32_t)ntohl(cfg->id));
@@ -267,7 +267,7 @@ int GzHUD::PutConfig(player_device_id_t* device, void* client, void* data, size_
 
   gz_hud_unlock(this->iface);
 
-  PutReply(client, PLAYER_MSGTYPE_RESP_NACK);
+  PutReply(client, PLAYER_MSGTYPE_RESP_ACK);
 
   return 0;
 }
