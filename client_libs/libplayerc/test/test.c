@@ -130,6 +130,11 @@ int main(int argc, const char *argv[])
         test_position(client, client->ids[i].index);
         break;
 
+      // Power device
+      case PLAYER_POWER_CODE:
+        test_power(client, client->ids[i].index);
+        break;
+
       // PTZ device
       case PLAYER_PTZ_CODE:
         test_ptz(client, client->ids[i].index);
