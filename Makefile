@@ -54,13 +54,13 @@ uninstall:
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
 
 distro: clean
-	$(MKDIR) doc
+	$(MKDIR) -p doc
 	cd client_libs/c++/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` $(PLAYER_VERSION)
 
 distro_bleeding: clean
-	$(MKDIR) doc
+	$(MKDIR) -p doc
 	cd client_libs/c++/doc && make manual
 	cd $(MANUAL_LOCATION) && make ps && cp *.ps $(PWD)/doc
 	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` Bleeding
@@ -70,7 +70,6 @@ clean_server:
 	cd src && make clean
 
 clean: clean_server clean_dep
-	$(RM) -rf doc
 	cd client_libs && make clean
 	cd examples && make clean
 
