@@ -46,6 +46,7 @@
 #define COLOR_LASER              0x0000C0
 #define COLOR_LASER_EMP          0xD0D0FF
 #define COLOR_LASER_OCC          0x0000C0
+#define COLOR_LOCALIZE           0xFF0000
 #define COLOR_FIDUCIAL           0xF000F0
 #define COLOR_POSITION_ROBOT     0xC00000
 #define COLOR_POSITION_CONTROL   0xFF0000
@@ -54,7 +55,7 @@
 #define COLOR_PTZ_CMD            0x00C000
 #define COLOR_SONAR              0xC0C080
 #define COLOR_SONAR_SCAN         0xC0C080
-#define COLOR_LOCALIZE           0xFF0000
+#define COLOR_WIFI               0x000000
 
 
 /***************************************************************************
@@ -183,7 +184,7 @@ typedef struct
 
 // Create a laser device
 laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int index, const char *drivername, int subscribe);
+                      int index,  const char *drivername, int subscribe);
 
 // Destroy a laser device
 void laser_destroy(laser_t *laser);
@@ -220,7 +221,7 @@ typedef struct
 
 // Create a fiducial device
 fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
-                            int index, const char *drivername, int subscribe);
+                            int index,  const char *drivername, int subscribe);
 
 // Destroy a fiducial device
 void fiducial_destroy(fiducial_t *fiducial);
@@ -249,6 +250,7 @@ typedef struct
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *command_item;
+  rtk_menuitem_t *pose_mode_item;
   rtk_menuitem_t *enable_item, *disable_item;
 
   // Figures
@@ -261,13 +263,13 @@ typedef struct
 
 // Create a position device
 position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index, const char *drivername, int subscribe);
+                            int index,  const char *drivername, int subscribe);
 
 // Destroy a position device
-void position_destroy(position_t *position);
+void position_destroy(position_t *self);
 
 // Update a position device
-void position_update(position_t *position);
+void position_update(position_t *self);
 
 
 /***************************************************************************
@@ -337,7 +339,7 @@ typedef struct
 
 // Create a ptz device
 ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                  int index, const char *drivername, int subscribe);
+                  int index,  const char *drivername, int subscribe);
 
 // Destroy a ptz device
 void ptz_destroy(ptz_t *ptz);
@@ -374,7 +376,7 @@ typedef struct
 
 // Create a sonar device
 sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                      int index, const char *drivername, int subscribe);
+                      int index,  const char *drivername, int subscribe);
 
 // Destroy a sonar device
 void sonar_destroy(sonar_t *sonar);
@@ -469,5 +471,43 @@ void localize_destroy(localize_t *localize);
 
 // Update a localize device
 void localize_update(localize_t *localize);
+
+
+
+/***************************************************************************
+ * Wifi device
+ ***************************************************************************/
+
+// Wifi device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Wifi device proxy
+  playerc_wifi_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures
+  rtk_fig_t *fig;
+  
+} wifi_t;
+
+
+// Create a wifi device
+wifi_t *wifi_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                    int index,  const char *drivername, int subscribe);
+
+// Destroy a wifi device
+void wifi_destroy(wifi_t *wifi);
+
+// Update a wifi device
+void wifi_update(wifi_t *wifi);
 
 #endif
