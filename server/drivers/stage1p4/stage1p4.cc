@@ -68,7 +68,9 @@ CWorldFile Stage1p4::wf;
 // signal cacher - when Player gets a SIG_USR2 we save the worldfile
 void catch_sigusr2( int signum )
 {
-  Stage1p4::wf.DownloadAndSave( Stage1p4::stage_client );
+  Stage1p4::wf.DownloadAndSave( Stage1p4::stage_client, 
+				Stage1p4::created_models,
+				Stage1p4::created_models_count );
 }
 
 // constructor
