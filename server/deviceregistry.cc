@@ -149,6 +149,10 @@ void SonyEVID30_Register(DriverTable* table);
 void PTU46_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_CANNONVCC4
+void cannonVCC4_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_FLOCKOFBIRDS
 void FlockOfBirds_Register(DriverTable* table);
 #endif
@@ -589,6 +593,10 @@ register_devices()
 
 #ifdef INCLUDE_PTU46
   PTU46_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CANNONVCC4
+  cannonVCC4_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FLOCKOFBIRDS
