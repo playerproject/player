@@ -30,23 +30,8 @@
 #define _MESSAGES_H
 
 #include <playercommon.h>
+#include <defaults.h>
 
-/*********************************************************/
-/* various device-specific defaults */
-
-#define DEFAULT_LASER_PORT "/dev/ttyS1"
-
-#define DEFAULT_ACTS_PORT 5001
-#define DEFAULT_ACTS_CONFIGFILE "/usr/local/acts/actsconfig"
-
-#define DEFAULT_PTZ_PORT "/dev/ttyS2"
-
-#define DEFAULT_P2OS_PORT "/dev/ttyS0"
-
-// don't change this unless you change the Festival init scripts as well
-#define DEFAULT_FESTIVAL_PORTNUM 1314
-// change this if Festival is installed somewhere else
-#define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
 /*********************************************************/
 
 /* need to put this stuff somewhere else? maybe run-time config? */
@@ -439,13 +424,8 @@ typedef struct
 
 /*
  * Speech command packet:
- *   1-256 byte string: ASCII string to say
+ *   ASCII string to say  (max length is in defaults.h)
  */
-
-/* Festival size stuff */
-#define SPEECH_MAX_STRING_LEN 256
-#define SPEECH_MAX_QUEUE_LEN 1
-
 typedef struct
 {
   uint8_t string[SPEECH_MAX_STRING_LEN];
@@ -769,6 +749,13 @@ typedef struct
   uint16_t x, y, color;
 } __attribute ((packed)) pixel_t;
 
+/**************************************************************************
+ * the Audio device; recognizes and generates fixed-frequency tones with
+ * sound hardware
+ */
+#define AUDIO_DATA_BUFFER_SIZE 20
+#define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
+/**************************************************************************/
 
 
 #endif

@@ -60,17 +60,14 @@
 #include <errno.h>
 #include "broadcastdevice.hh"
 
-#define PLAYER_BROADCAST_IP "10.255.255.255"
-#define PLAYER_BROADCAST_PORT 6013
-
 
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 //
 CBroadcastDevice::CBroadcastDevice(int argc, char** argv)
 {
-    this->addr = PLAYER_BROADCAST_IP;
-    this->port = PLAYER_BROADCAST_PORT;
+    this->addr = DEFAULT_BROADCAST_IP;
+    this->port = DEFAULT_BROADCAST_PORT;
     this->read_socket = 0;
     this->write_socket = 0;
 
@@ -145,7 +142,7 @@ int CBroadcastDevice::Setup()
     memset(&this->read_addr, 0, sizeof(this->read_addr));
     this->read_addr.sin_family = AF_INET;
     this->read_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    this->read_addr.sin_port = htons(PLAYER_BROADCAST_PORT);
+    this->read_addr.sin_port = htons(this->port);
     if (bind(this->read_socket, (sockaddr*) &this->read_addr, sizeof(this->read_addr)) < 0)
     {
         perror(__PRETTY_FUNCTION__);

@@ -37,13 +37,7 @@
 #include <device.h>
 #include <messages.h>
 
-// a variable of this type tells the vision device how to interact with ACTS
-typedef enum
-{
-  ACTS_VERSION_UNKNOWN = 0,
-  ACTS_VERSION_1_0 = 1,
-  ACTS_VERSION_1_2 = 2
-} acts_version_t;
+// note: acts_version_t is declared in defaults.h
 
 #define ACTS_VERSION_1_0_STRING "1.0"
 #define ACTS_VERSION_1_2_STRING "1.2"
