@@ -71,9 +71,9 @@ void WaveformProxy::Print()
   printf("Bitrate: %d bps Depth: %d bits Last samples: %d\n", 
 	 this->bitrate, this->depth, this->last_samples );
 
-  for( int s=0; s< this->last_samples; s++ )
-    printf( "%d ", this->buffer[s] );
-  puts("");
+  //for( int s=0; s< this->last_samples; s++ )
+  // printf( "%d ", this->buffer[s] );
+  //puts("");
 
   PlaybackBuffer();
 }
