@@ -36,6 +36,8 @@ int main(int argc, const char *argv[])
       host = val;
     else if (strcmp(opt, "-p") == 0)
       port = atoi(val);
+    else if (strcmp(opt, "-r") == 0)
+      robot = atoi(val);
   }
 
   // If there are individual device arguments, dont do all tests.
