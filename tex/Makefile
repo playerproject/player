@@ -17,8 +17,5 @@ install: player.ps
 
 clean:
 	rm -f player.ps player.dvi player.log player.aux player.blg \
-	      player.toc missfont.log player.bbl
-
-
-
+	      player.toc missfont.log player.bbl ../doc/player.ps
 
