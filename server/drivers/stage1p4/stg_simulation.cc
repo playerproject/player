@@ -359,10 +359,8 @@ StgSimulation::StgSimulation(char* interface, ConfigFile* cf, int section )
       stg_model_subscribe( root, STG_PROP_TIME, 0.1 );
   
       // start the simulation
-      //stg_msg_t*  msg = stg_msg_create( STG_MSG_SERVER_RUN, NULL, 0 );
-      //stg_fd_msg_write( this->stage_client->pfd.fd, msg );
-      //stg_msg_destroy( msg );
-  
+      stg_world_resume( world );
+
       // THIS IS A HACK TO FORCE UPDATE() TO BE CALLED without a
       // proper subscription. TODO - talk to BPG about this.
       this->subscriptions++;

@@ -52,7 +52,7 @@ StgSonar::StgSonar(char* interface, ConfigFile* cf, int section )
 {
   PLAYER_TRACE1( "constructing StgSonar with interface %s", interface );
 
-  this->subscribe_prop = STG_MOD_RANGERS;
+  this->subscribe_prop = STG_PROP_RANGERDATA;
     
   power_on = 1; // enabled by default
 }
@@ -80,14 +80,12 @@ void StgSonar_Register(DriverTable* table)
 size_t StgSonar::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {  
-  PLAYER_TRACE2(" STG_SONAR GETDATA section %d -> model %d",
-		model->section, model->id );
 
-  stg_model_property_wait( model, this->subscribe_prop );
-  stg_property_t* prop = stg_model_property( model, this->subscribe_prop );
+  stg_property_t* prop = 
+    stg_model_get_prop_cached( model, this->subscribe_prop);
   
-  stg_ranger_t *rangers = (stg_ranger_t*)prop->data;
-  size_t rcount = prop->len / sizeof(stg_ranger_t);
+  stg_ranger_sample_t *rangers = (stg_ranger_sample_t*)prop->data;
+  size_t rcount = prop->len / sizeof(stg_ranger_sample_t);
 
   PLAYER_TRACE2( "i see %d bytes of ranger data: %d ranger readings", 
 		 prop->len, rcount );
@@ -123,26 +121,23 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
     {  
     case PLAYER_SONAR_GET_GEOM_REQ:
       { 
-	stg_model_property_refresh( model, this->subscribe_prop );
+	stg_ranger_config_t* cfgs = NULL;
+	size_t len = 0;
+	if( stg_model_prop_get_var( this->model, STG_PROP_RANGERCONFIG, 
+				    &cfgs, &len ))
+	  {
+	    PLAYER_ERROR( "error requesting STG_PROP_RANGERCONFIG" );
+	    
+	    if(PutReply( device, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 
+			 NULL, 0) )
+	      PLAYER_ERROR("failed to PutReply for NACK");
+	  }
+	else
+	  PLAYER_TRACE0( "got ranger config OK" );
 	
-	stg_property_t* prop = 
-	  stg_model_property( model, this->subscribe_prop );
+	size_t rcount = len / sizeof(stg_ranger_config_t);
 	
-	//while( prop->len < sizeof(stg_ranger_t) )
-	//{
-	//printf( "i see %d bytes of ranger data\n", prop->len );
-	//stg_client_property_wait( Stage1p4::stage_client, model, 
-	//		    this->subscribe_prop );
-	//}	  
-	       
-	stg_ranger_t *rangers = (stg_ranger_t*)prop->data;
-	size_t rcount = prop->len / sizeof(stg_ranger_t);
-	
-	//assert( rangers );
-	//assert( rcount > 0 );
-	  
-	// convert the ranger data into Player-format sonar poses
-	
+	// convert the ranger data into Player-format sonar poses	
 	player_sonar_geom_t pgeom;
 	memset( &pgeom, 0, sizeof(pgeom) );
 	
@@ -158,19 +153,18 @@ int StgSonar::PutConfig(player_device_id_t* device, void* client,
 	  {
 	    // fill in the geometry data formatted player-like
 	    pgeom.poses[i][0] = 
-	      ntohs((uint16_t)(1000.0 * rangers[i].pose.x));
+	      ntohs((uint16_t)(1000.0 * cfgs[i].pose.x));
 	    
 	    pgeom.poses[i][1] = 
-	      ntohs((uint16_t)(1000.0 * rangers[i].pose.y));
+	      ntohs((uint16_t)(1000.0 * cfgs[i].pose.y));
 	    
 	    pgeom.poses[i][2] 
-	      = ntohs((uint16_t)RTOD( rangers[i].pose.a));	    
+	      = ntohs((uint16_t)RTOD( cfgs[i].pose.a));	    
 	  }
 
-	if(PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
-		     &pgeom, sizeof(pgeom) ) )
+	  if(PutReply( device, client, PLAYER_MSGTYPE_RESP_ACK, NULL, 
+	  &pgeom, sizeof(pgeom) ) )
 	  PLAYER_ERROR("failed to PutReply");
-
       }
       break;
       
