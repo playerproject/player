@@ -36,6 +36,7 @@
 #include <errors.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <netinet/in.h>
 
 #define SEMKEY 2000
 
@@ -116,9 +117,9 @@ size_t CArenaLock::GetData( CDevice *obj , unsigned char *dest, size_t maxsize,
   // to the 'data_timestamp' field in the device object.
   size = obj->GetData(dest, maxsize);
   if(timestamp_sec)
-    *timestamp_sec = obj->data_timestamp_sec;
+    *timestamp_sec = htonl(obj->data_timestamp_sec);
   if(timestamp_usec)
-    *timestamp_usec = obj->data_timestamp_usec;
+    *timestamp_usec = htonl(obj->data_timestamp_usec);
   Unlock();
   return(size);
 }

@@ -661,7 +661,7 @@ int main( int argc, char *argv[] )
 
     /* block here */
     //if((clientData->socket = accept(player_sock,(struct sockaddr *)&sender,&sender_len)) == -1)
-    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL,&sender_len)) == -1)
+    if((clientData->socket = accept(player_sock,(struct sockaddr *)NULL,(socklen_t*) &sender_len)) == -1)
     {
       perror("accept(2) failed: ");
       exit(-1);
