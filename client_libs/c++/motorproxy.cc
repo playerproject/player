@@ -52,6 +52,9 @@
 #include <math.h>
 #include <stdio.h>
 
+#define PTOHL(x) static_cast<int32_t>(ntohl(x))/1e3
+#define HTOPL(x) htonl(static_cast<int32_t>(rint(x*1e3)))
+
 // send a motor command
 //
 // Returns:
@@ -65,10 +68,13 @@ int MotorProxy::SetSpeed(double speed)
   player_motor_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
 
-  cmd.thetaspeed = htonl(static_cast<int32_t>(rint(speed*1e3)));
+  // 0 = velocity
+  cmd.type  = 0;
+  cmd.state = 1;
+  cmd.thetaspeed = HTOPL(speed);
 
-  return(client->Write(m_device_id,
-                       reinterpret_cast<char*>(&cmd),sizeof(cmd)));
+  return(
+    client->Write(m_device_id,reinterpret_cast<char*>(&cmd),sizeof(cmd)));
 }
 
 
@@ -86,7 +92,7 @@ int MotorProxy::SetMotorState(unsigned char state)
   memset( &config, 0, sizeof(config) );
 
   config.request = PLAYER_MOTOR_POWER_REQ;
-  config.value = state;
+  config.value   = state;
 
 
   return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
@@ -107,7 +113,7 @@ int MotorProxy::SelectVelocityControl(unsigned char mode)
   memset( &config, 0, sizeof(config) );
 
   config.request = PLAYER_MOTOR_VELOCITY_MODE_REQ;
-  config.value = mode;
+  config.value   = mode;
 
   return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
                          sizeof(config)));
@@ -146,7 +152,7 @@ int MotorProxy::SetOdometry( double theta)
   memset( &config, 0, sizeof(config) );
 
   config.subtype = PLAYER_MOTOR_SET_ODOM_REQ;
-  config.theta = htonl(static_cast<int32_t>(rint(theta*1e3)));
+  config.theta   = HTOPL(theta);
   
   return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
                          sizeof(config)));
@@ -169,7 +175,7 @@ MotorProxy::SelectPositionMode(unsigned char mode)
   memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_MOTOR_POSITION_MODE_REQ;
-  req.state = mode;
+  req.state   = mode;
 
   return client->Request(m_device_id,
                          reinterpret_cast<char*>(&req), sizeof(req));
@@ -190,9 +196,9 @@ MotorProxy::GoTo(double angle)
   player_motor_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
 
-  cmd.theta = htonl(static_cast<int32_t>(rint(angle*1e3)));
+  cmd.theta = HTOPL(angle);
   cmd.state = 1;
-  cmd.type = 1;
+  cmd.type  = 1;
 
   return(client->Write(m_device_id,
                        reinterpret_cast<char*>(&cmd),sizeof(cmd)));
@@ -213,10 +219,10 @@ MotorProxy::SetSpeedPID(double kp, double ki, double kd)
   memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_MOTOR_SPEED_PID_REQ;
-  // * 1e3 to give more precision over the wire
-  req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
-  req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
-  req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
+  
+  req.kp = HTOPL(kp);
+  req.ki = HTOPL(ki);
+  req.kd = HTOPL(kd);
 
   return client->Request(m_device_id,
              reinterpret_cast<char*>(&req), sizeof(req));
@@ -237,10 +243,10 @@ MotorProxy::SetPositionPID(double kp, double ki, double kd)
   memset( &req, 0, sizeof(req) );
 
   req.subtype = PLAYER_MOTOR_POSITION_PID_REQ;
-  // * 1000 to give more precision over the wire
-  req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
-  req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
-  req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
+  
+  req.kp = HTOPL(kp);
+  req.ki = HTOPL(ki);
+  req.kd = HTOPL(kd);
 
   return client->Request(m_device_id,
              reinterpret_cast<char*>(&req), sizeof(req));
@@ -262,11 +268,9 @@ MotorProxy::SetPositionSpeedProfile(double spd, double acc)
   player_motor_speed_prof_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_MOTOR_SPEED_PROF_REQ;
-  // * 1000 to switch the speed into mrad/s
-  req.speed = htonl(static_cast<int32_t>(rint(spd*1e3)));
-  // * 1000 to switch the speed into mrad/s/s
-  req.acc = htonl(static_cast<int32_t>(rint(acc*1e3)));
+  req.subtype = PLAYER_MOTOR_SPEED_PROF_REQ;  
+  req.speed   = HTOPL(spd);  
+  req.acc     = HTOPL(acc);
 
   return client->Request(m_device_id,
              reinterpret_cast<char*>(&req), sizeof(req));
@@ -283,9 +287,9 @@ void MotorProxy::FillData(player_msghdr_t hdr, const char* buffer)
   }
   const player_motor_data_t* lclBuffer = reinterpret_cast<const player_motor_data_t*>(buffer);
 
-  theta = static_cast<int32_t>(ntohl(lclBuffer->theta)) / 1e3;
-  thetaspeed = static_cast<int32_t>(ntohl(lclBuffer->thetaspeed)) / 1e3;
-  stall = lclBuffer->stall;
+  theta      = PTOHL(lclBuffer->theta);
+  thetaspeed = PTOHL(lclBuffer->thetaspeed);
+  stall      = lclBuffer->stall;
 }
 
 // interface that all proxies SHOULD provide
@@ -293,7 +297,7 @@ void MotorProxy::Print()
 {
   printf("#Motor(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
-  printf("#\ttheta\tthetaspeed\tstall");
+  printf("#\ttheta\tthetaspeed\tstall\n");
   printf("%.3f\t%.3f\t%i\t\n", 
          theta, thetaspeed, stall);
 }
