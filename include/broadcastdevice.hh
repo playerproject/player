@@ -38,17 +38,14 @@
 class CBroadcastDevice : public CDevice
 {
     // Constructor
-    //
     public: CBroadcastDevice(int argc, char** argv);
 
     // Setup/shutdown routines
-    //
     public: virtual int Setup();
     public: virtual int Shutdown();
-    public: virtual CLock* GetLock() {return &m_lock;};
+    public: virtual CLock* GetLock() {return &this->lock;};
 
     // Client interface
-    //
     public: virtual size_t GetData(unsigned char *, size_t maxsize);
     public: virtual void PutData(unsigned char *, size_t maxsize);
     public: virtual void GetCommand(unsigned char *, size_t maxsize);
@@ -57,31 +54,25 @@ class CBroadcastDevice : public CDevice
     public: virtual void PutConfig(unsigned char *, size_t maxsize);
     
     // Send a packet
-    //
     public: void SendPacket(unsigned char *packet, size_t size);
 
     // Receive a packet
-    //
     public: size_t RecvPacket(unsigned char *packet, size_t size);
 
     // Lock object
-    //
-    private: CLock m_lock;
+    private: CLock lock;
 
     // Local copy of broadcast data
-    //
-    private: player_broadcast_cmd_t m_cmd;
-    private: player_broadcast_data_t m_data;
+    private: player_broadcast_cmd_t cmd;
+    private: player_broadcast_data_t data;
 
     // Write socket info
-    //
-    private: int m_write_socket;
-    private: sockaddr_in m_write_addr;
+    private: int write_socket;
+    private: sockaddr_in write_addr;
 
     // Read socket info
-    //
-    private: int m_read_socket;
-    private: sockaddr_in m_read_addr;
+    private: int read_socket;
+    private: sockaddr_in read_addr;
 };
 
 #endif

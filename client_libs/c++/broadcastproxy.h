@@ -34,16 +34,16 @@
 
 class BroadcastProxy : public ClientProxy
 {
-
     // Constructor
-    public: BroadcastProxy(PlayerClient* pc, unsigned short index,
-                           unsigned char access ='c');
+    public: BroadcastProxy(PlayerClient* pc, unsigned short index, unsigned char access ='c');
 
     // Read a message from the incoming queue
+    // Returns the number of bytes read
     // Returns -1 if there are no available messages
-    public: int Read(uint8_t *msg, uint16_t *len);
+    public: int Read(uint8_t *msg, uint16_t len);
 
     // Write a message to the outgoing queue
+    // Returns the number of bytes written
     // Returns -1 if the queue is full
     public: int Write(uint8_t *msg, uint16_t len);
 
