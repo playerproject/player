@@ -239,25 +239,18 @@ void pf_update_resample(pf_t *pf)
     // Add sample to histogram
     pf_kdtree_insert(set_b->kdtree, sample_b->pose, sample_b->weight);
 
-    fprintf(stderr, "resample %d %d %d\n", set_b->sample_count, set_b->kdtree->leaf_count,
-            pf_resample_limit(pf, set_b->kdtree->leaf_count));
+    //fprintf(stderr, "resample %d %d %d\n", set_b->sample_count, set_b->kdtree->leaf_count,
+    //        pf_resample_limit(pf, set_b->kdtree->leaf_count));
 
     // See if we have enough samples yet
     if (set_b->sample_count > pf_resample_limit(pf, set_b->kdtree->leaf_count))
       break;
   }
 
-  fprintf(stderr, "\n\n");
+  //fprintf(stderr, "\n\n");
 
   pf_pdf_discrete_free(pdf);
   free(randlist);
-
-  /*
-  // See how many samples we actually need
-  set_b->sample_count = pf_resample_limit(pf, set_b->kdtree->leaf_count);
-  assert(set_b->sample_count >= 0 && set_b->sample_count <= pf->max_samples);
-  total = set_b->sample_count;
-  */
 
   // Normalize weights
   for (i = 0; i < set_b->sample_count; i++)

@@ -335,7 +335,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
 
   // Laser model settings
   this->laser_model = NULL;
-  this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 5);
+  this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 6);
   this->laser_map_err = cf->ReadLength(section, "laser_map_err", 0.05);
 
   // Particle filter settings
@@ -546,6 +546,8 @@ int AdaptiveMCL::SetupGUI(void)
   this->robot_fig = rtk_fig_create(this->canvas, NULL, 9);
   this->laser_fig = rtk_fig_create(this->canvas, this->robot_fig, 10);
   this->sonar_fig = rtk_fig_create(this->canvas, this->robot_fig, 15);
+
+  rtk_fig_movemask(this->robot_fig, RTK_MOVE_TRANS | RTK_MOVE_ROT);
 
   // Draw the robot
   rtk_fig_color(this->robot_fig, 0.7, 0, 0);
@@ -1131,6 +1133,7 @@ void AdaptiveMCL::Main(void)
 {  
   struct timespec sleeptime;
   amcl_sensor_data_t data;
+  int init = 0;
   
   // WARNING: this only works for Linux
   // Run at a lower priority
@@ -1162,7 +1165,20 @@ void AdaptiveMCL::Main(void)
 
     // Process any queued data
     if (this->Pop(&data))
+    {
+      init = 1; // TESTING
       this->UpdateFilter(&data);
+    }
+
+    // TESTING
+    if (this->enable_gui)
+    {
+      if (init)
+      {
+        DrawLaserData(&data);
+        DrawSonarData(&data);
+      }
+    }
   }
 
   return;
@@ -1202,7 +1218,6 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 
   this->Unlock();
 
-  
 #ifdef INCLUDE_RTKGUI
   // Draw the samples
   if (this->enable_gui)
@@ -1212,8 +1227,8 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 0, 0, 1);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
-    rtk_fig_color(this->pf_fig, 0, 1, 0);
-    pf_draw_stats(this->pf, this->pf_fig);
+    //rtk_fig_color(this->pf_fig, 0, 1, 0);
+    //pf_draw_stats(this->pf, this->pf_fig);
     //pf_draw_hist(this->pf, this->pf_fig);
   }
 #endif
@@ -1226,7 +1241,7 @@ void AdaptiveMCL::InitFilter(pf_vector_t pose_mean, pf_matrix_t pose_cov)
 // Update the filter with new sensor data
 void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
 {
-  int i;
+  int i, step;
   double weight;
   pf_vector_t pose_mean;
   pf_matrix_t pose_cov;
@@ -1254,12 +1269,17 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
   pf_update_sensor(this->pf, (pf_sensor_model_fn_t) sonar_sensor_model, this->sonar_model);  
   
   // Update the laser sensor model with the latest laser measurements
-  laser_clear_ranges(this->laser_model);
-  for (i = 0; i < data->range_count; i += data->range_count / this->laser_max_samples)
-    laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
+  if (this->laser_max_samples >= 2)
+  {
+    laser_clear_ranges(this->laser_model);
+    
+    step = (data->range_count - 1) / (this->laser_max_samples - 1);
+    for (i = 0; i < data->range_count; i += step)
+      laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
 
-  // Apply the laser sensor model
-  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);  
+    // Apply the laser sensor model
+    pf_update_sensor(this->pf, (pf_sensor_model_fn_t) laser_sensor_model, this->laser_model);
+  }
 
   // Resample
   pf_update_resample(this->pf);
@@ -1297,8 +1317,8 @@ void AdaptiveMCL::UpdateFilter(amcl_sensor_data_t *data)
     rtk_fig_clear(this->pf_fig);
     rtk_fig_color(this->pf_fig, 0, 0, 1);
     pf_draw_samples(this->pf, this->pf_fig, 1000);
-    rtk_fig_color(this->pf_fig, 0, 1, 0);
-    pf_draw_stats(this->pf, this->pf_fig);
+    //rtk_fig_color(this->pf_fig, 0, 1, 0);
+    //pf_draw_stats(this->pf, this->pf_fig);
     //pf_draw_hist(this->pf, this->pf_fig);
   }
 #endif
@@ -1384,15 +1404,22 @@ void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
 void AdaptiveMCL::DrawPoseEst()
 {
   int i;
+  double max_weight;
   amcl_hyp_t *hyp;
   
   this->Lock();
 
+  max_weight = 0;
   for (i = 0; i < this->hyp_count; i++)
   {
     hyp = this->hyps + i;
-    rtk_fig_origin(this->robot_fig, hyp->pf_pose_mean.v[0],
-                   hyp->pf_pose_mean.v[1], hyp->pf_pose_mean.v[2]);
+
+    if (hyp->weight > max_weight)
+    {
+      max_weight = hyp->weight;
+      rtk_fig_origin(this->robot_fig, hyp->pf_pose_mean.v[0],
+                     hyp->pf_pose_mean.v[1], hyp->pf_pose_mean.v[2]);
+    }
   }
   
   this->Unlock();
@@ -1405,8 +1432,9 @@ void AdaptiveMCL::DrawPoseEst()
 // Draw the laser values
 void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 {
-  int i;
-  double r, b, ax, ay, bx, by;
+  int i, step;
+  pf_vector_t pose;
+  double r, b, m, ax, ay, bx, by;
   
   rtk_fig_clear(this->laser_fig);
 
@@ -1424,21 +1452,41 @@ void AdaptiveMCL::DrawLaserData(amcl_sensor_data_t *data)
 
     rtk_fig_line(this->laser_fig, ax, ay, bx, by);
   }
-
+    
   // Draw the significant part of the scan
-  rtk_fig_color_rgb32(this->laser_fig, 0xFF0000);
-  for (i = 0; i < data->range_count; i += data->range_count / this->laser_max_samples)
+  if (this->laser_max_samples >= 2)
   {
-    r = data->ranges[i][0];
-    b = data->ranges[i][1];
+    // Get the robot figure pose
+    rtk_fig_get_origin(this->robot_fig, pose.v + 0, pose.v + 1, pose.v + 2);
+        
+    step = (data->range_count - 1) / (this->laser_max_samples - 1);
+    for (i = 0; i < data->range_count; i += step)
+    {
+      r = data->ranges[i][0];
+      b = data->ranges[i][1];
+      m = map_calc_range(this->map, pose.v[0], pose.v[1], pose.v[2] + b, 8.0);
 
-    ax = 0;
-    ay = 0;
-    bx = ax + r * cos(b);
-    by = ay + r * sin(b);
+      ax = 0;
+      ay = 0;
 
-    rtk_fig_line(this->laser_fig, ax, ay, bx, by);
+      bx = ax + r * cos(b);
+      by = ay + r * sin(b);
+      rtk_fig_color_rgb32(this->laser_fig, 0xFF0000);
+      rtk_fig_line(this->laser_fig, ax, ay, bx, by);
+
+      bx = ax + m * cos(b);
+      by = ay + m * sin(b);
+      rtk_fig_color_rgb32(this->laser_fig, 0x00FF00);
+      rtk_fig_line(this->laser_fig, ax, ay, bx, by);
+    }
+
+    // TESTING
+    laser_clear_ranges(this->laser_model);
+    for (i = 0; i < data->range_count; i += step)
+      laser_add_range(this->laser_model, data->ranges[i][0], data->ranges[i][1]);
+    //printf("prob = %f\n", laser_sensor_model(this->laser_model, pose));
   }
+
   return;
 }
 

@@ -32,7 +32,7 @@ void pf_draw_statistics(pf_t *pf, rtk_fig_t *fig);
 void pf_draw_samples(pf_t *pf, rtk_fig_t *fig, int max_samples)
 {
   int i;
-  double px, py;
+  double px, py, pa;
   pf_sample_set_t *set;
   pf_sample_t *sample;
 
@@ -45,10 +45,12 @@ void pf_draw_samples(pf_t *pf, rtk_fig_t *fig, int max_samples)
 
     px = sample->pose.v[0];
     py = sample->pose.v[1];
+    pa = sample->pose.v[2];    
 
     //printf("%f %f\n", px, py);
     
     rtk_fig_point(fig, px, py);
+    rtk_fig_arrow(fig, px, py, pa, 0.1, 0.02);
     //rtk_fig_rectangle(fig, px, py, 0, 0.1, 0.1, 0);
   }
   
