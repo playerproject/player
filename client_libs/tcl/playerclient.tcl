@@ -58,6 +58,7 @@ set PLAYER_LASERBEACON_CODE   10
 set PLAYER_BROADCAST_CODE     11
 set PLAYER_SPEECH_CODE        12
 set PLAYER_GPS_CODE           13
+set PLAYER_BPS_CODE           16
 
 set PLAYER_PLAYER_STRING         "player"
 set PLAYER_MISC_STRING           "misc"
@@ -72,6 +73,7 @@ set PLAYER_LASERBEACON_STRING    "laserbeacon"
 set PLAYER_BROADCAST_STRING      "broadcast"
 set PLAYER_SPEECH_STRING         "speech"
 set PLAYER_GPS_STRING            "gps"
+set PLAYER_BPS_STRING            "bps"
 
 # access modes
 set PLAYER_READ_MODE   "r"
@@ -108,6 +110,10 @@ set PLAYER_SONAR_POWER_REQ     4
 set PLAYER_NUM_LASER_SAMPLES  401
 set PLAYER_MAX_LASER_VALUE 8000
 
+set PLAYER_BPS_SUBTYPE_SETGAIN 1
+set PLAYER_BPS_SUBTYPE_SETLASER 2
+set PLAYER_BPS_SUBTYPE_SETBEACON 3
+
 #########################################################################
 
 #
@@ -118,13 +124,13 @@ proc player_code_to_name {code} {
   global PLAYER_POSITION_CODE PLAYER_SONAR_CODE PLAYER_LASER_CODE
   global PLAYER_VISION_CODE PLAYER_PTZ_CODE PLAYER_AUDIO_CODE
   global PLAYER_LASERBEACON_CODE PLAYER_BROADCAST_CODE PLAYER_SPEECH_CODE
-  global PLAYER_GPS_CODE
+  global PLAYER_GPS_CODE PLAYER_BPS_CODE
 
   global PLAYER_PLAYER_STRING PLAYER_MISC_STRING PLAYER_GRIPPER_STRING
   global PLAYER_POSITION_STRING PLAYER_SONAR_STRING PLAYER_LASER_STRING
   global PLAYER_VISION_STRING PLAYER_PTZ_STRING PLAYER_AUDIO_STRING
   global PLAYER_LASERBEACON_STRING PLAYER_BROADCAST_STRING PLAYER_SPEECH_STRING
-  global PLAYER_GPS_STRING
+  global PLAYER_GPS_STRING PLAYER_BPS_STRING
 
   if {$code == $PLAYER_PLAYER_CODE} {
     return $PLAYER_PLAYER_STRING
@@ -152,6 +158,8 @@ proc player_code_to_name {code} {
     return $PLAYER_SPEECH_STRING
   } elseif {$code == $PLAYER_GPS_CODE} {
     return $PLAYER_GPS_STRING
+  } elseif {$code == $PLAYER_BPS_CODE} {
+    return $PLAYER_BPS_STRING
   } else {
     return ""
   }
@@ -165,13 +173,13 @@ proc player_name_to_code {name} {
   global PLAYER_POSITION_CODE PLAYER_SONAR_CODE PLAYER_LASER_CODE
   global PLAYER_VISION_CODE PLAYER_PTZ_CODE PLAYER_AUDIO_CODE
   global PLAYER_LASERBEACON_CODE PLAYER_BROADCAST_CODE PLAYER_SPEECH_CODE
-  global PLAYER_GPS_CODE
+  global PLAYER_GPS_CODE PLAYER_BPS_CODE
 
   global PLAYER_PLAYER_STRING PLAYER_MISC_STRING PLAYER_GRIPPER_STRING
   global PLAYER_POSITION_STRING PLAYER_SONAR_STRING PLAYER_LASER_STRING
   global PLAYER_VISION_STRING PLAYER_PTZ_STRING PLAYER_AUDIO_STRING
   global PLAYER_LASERBEACON_STRING PLAYER_BROADCAST_STRING PLAYER_SPEECH_STRING
-  global PLAYER_GPS_STRING
+  global PLAYER_GPS_STRING PLAYER_BPS_STRING
 
   # is it already an integer code?
   # (crude test...)
@@ -205,6 +213,8 @@ proc player_name_to_code {name} {
     return $PLAYER_SPEECH_CODE
   } elseif {![string compare $name $PLAYER_GPS_STRING]} {
     return $PLAYER_GPS_CODE
+  } elseif {![string compare $name $PLAYER_BPS_STRING]} {
+    return $PLAYER_BPS_CODE
   } else {
     return 0
   }
@@ -461,7 +471,7 @@ proc player_parse_data {obj device device_index data size} {
   global PLAYER_POSITION_CODE PLAYER_SONAR_CODE PLAYER_LASER_CODE
   global PLAYER_VISION_CODE PLAYER_PTZ_CODE PLAYER_AUDIO_CODE
   global PLAYER_LASERBEACON_CODE PLAYER_BROADCAST_CODE PLAYER_SPEECH_CODE
-  global PLAYER_GPS_CODE
+  global PLAYER_GPS_CODE PLAYER_BPS_CODE
   global PLAYER_NUM_SONAR_SAMPLES PLAYER_NUM_LASER_SAMPLES
 
   upvar #0 $obj arr
@@ -577,6 +587,7 @@ proc player_parse_data {obj device device_index data size} {
       incr j
     }
   } elseif {$device == $PLAYER_LASER_CODE} {
+
     if {[binary scan $data SSSS \
            arr($name,$device_index,min_angle) \
            arr($name,$device_index,max_angle) \
@@ -593,6 +604,7 @@ proc player_parse_data {obj device device_index data size} {
     if {[expr ($size-8) / 2] != $PLAYER_NUM_LASER_SAMPLES} {
       puts "Warning: expected $PLAYER_NUM_LASER_SAMPLES laser readings, but received [expr $size/2] readings"
     }
+    #puts "laser: $arr($name,$device_index,min_angle), $arr($name,$device_index,max_angle), $arr($name,$device_index,resolution), $arr($name,$device_index,range_count)"
     set j 0
     while {$j < $arr($name,$device_index,range_count)} {
       if {[binary scan $data "x8x[expr 2 * $j]S" \
@@ -600,12 +612,16 @@ proc player_parse_data {obj device device_index data size} {
         puts "Warning: failed to get laser scan $j"
         return
       }
-      # make it unsigned
+      # make it unsigned (and only use the lower 13 bits)
       set arr($name,$device_index,$j) \
-        [expr $arr($name,$device_index,$j) & 0xFFFF]
+        [expr $arr($name,$device_index,$j) & 0x1FFF]
       # copy into non-indexed spot for convenience
       if {!$device_index} {
         set arr($name,$j) $arr($name,$device_index,$j)
+        set arr($name,min_angle) $arr($name,$device_index,min_angle) 
+        set arr($name,max_angle) $arr($name,$device_index,max_angle)
+        set arr($name,resolution) $arr($name,$device_index,resolution)
+        set arr($name,range_count) $arr($name,$device_index,range_count)
       }
       incr j
     }
@@ -736,6 +752,27 @@ proc player_parse_data {obj device device_index data size} {
       set arr($name,x) $arr($name,$device_index,x)
       set arr($name,y) $arr($name,$device_index,y)
     }
+  } elseif {$device == $PLAYER_BPS_CODE} {
+    if {[binary scan $data IIIIIII \
+          arr($name,$device_index,px)\
+          arr($name,$device_index,py)\
+          arr($name,$device_index,pa)\
+          arr($name,$device_index,ux)\
+          arr($name,$device_index,uy)\
+          arr($name,$device_index,ua)\
+          arr($name,$device_index,err)] != 7} {
+      puts "Warning: failed to get bps data"
+      return
+    }
+    if {!$device_index} {
+      set arr($name,px) $arr($name,$device_index,px)
+      set arr($name,py) $arr($name,$device_index,py)
+      set arr($name,pa) $arr($name,$device_index,pa)
+      set arr($name,ux) $arr($name,$device_index,ux)
+      set arr($name,uy) $arr($name,$device_index,uy)
+      set arr($name,ua) $arr($name,$device_index,ua)
+      set arr($name,err) $arr($name,$device_index,err)
+    }
   } else {
     puts "Warning: got unexpected message \"$data\""
   }
@@ -780,27 +817,57 @@ proc player_authenticate {obj key} {
   global PLAYER_PLAYER_AUTH_REQ
   player_req $obj player 0 \
        "[binary format S $PLAYER_PLAYER_AUTH_REQ]$key"
+  return
 }
 
-proc player_change_motor_state {obj state} {
+proc player_change_motor_state {obj state {index 0}} {
   global PLAYER_POSITION_MOTOR_POWER_REQ
   if {$state == 1} {
-    player_req $obj position 0 \
+    player_req $obj position $index \
        "[binary format cc $PLAYER_POSITION_MOTOR_POWER_REQ 1]"
   } else {
-    player_req $obj position 0 \
+    player_req $obj position $index \
        "[binary format cc $PLAYER_POSITION_MOTOR_POWER_REQ 0]"
   }
+  return
 }
-proc player_change_sonar_state {obj state} {
+proc player_change_sonar_state {obj state {index 0}} {
   global PLAYER_SONAR_POWER_REQ
   if {$state == 1} {
-    player_req $obj sonar 0 \
+    player_req $obj sonar $index \
        "[binary format cc $PLAYER_SONAR_POWER_REQ 1]"
   } else {
-    player_req $obj sonar 0 \
+    player_req $obj sonar $index \
        "[binary format cc $PLAYER_SONAR_POWER_REQ 0]"
   }
+  return
+}
+
+proc player_config_laser {obj min_angle max_angle resolution \
+                          intensity {index 0}} {
+  player_req $obj laser $index \
+       "[binary format SSSc $min_angle $max_angle $resolution $intensity]"
+  return
+}
+
+proc player_config_laserbeacon {obj bit_count bit_size zero_thresh \
+                                one_thresh {index 0}} {
+  player_req $obj laserbeacon $index \
+       "[binary format cSSS $bit_count $bit_size $zero_thresh $one_thresh]"
+  return
+}
+
+proc player_set_bps_beacon {obj id px py pa {index 0}} {
+  global PLAYER_BPS_SUBTYPE_SETBEACON
+  player_req $obj bps $index \
+       "[binary format ccIIIIII $PLAYER_BPS_SUBTYPE_SETBEACON \
+                                $id $px $py $pa 0 0 0]"
+  return
+}
+
+proc player_set_laserbeacon_bits {obj bit_count {index 0}} {
+  player_config_laserbeacon $obj $bit_count 50 10 95 $index
+  return
 }
 
 proc player_stop_robot {obj} {

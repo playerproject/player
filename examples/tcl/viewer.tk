@@ -92,9 +92,9 @@ set CANVAS_CONV_FACTOR [expr ($CANVAS_HEIGHT / 2.0)  / $MAX_RANGE]
 # saves lots of time later
 array set laser_angles {}
 set i 0
-while {$i < $PLAYER_NUM_LASER_SAMPLES}  {
-  set laser_angles($i,cos) [expr cos(((-90 + ($i * 0.5)) * $PI) / 180.0)]
-  set laser_angles($i,sin) [expr sin(((-90 + ($i * 0.5)) * $PI) / 180.0)]
+while {$i < 721} {
+  set laser_angles($i,cos) [expr cos(((-90 + ($i * 0.25)) * $PI) / 180.0)]
+  set laser_angles($i,sin) [expr sin(((-90 + ($i * 0.25)) * $PI) / 180.0)]
   incr i
 }
 
@@ -661,18 +661,20 @@ proc displayData {} {
   #
   # display the laser device data
   #
-  if {$display_laser} {
+  if {$display_laser && [info exists robot(laser,range_count)]} {
     set laser_points [list 0 0]
-    foreach reading [lsort -command sort_readings \
-                                    [array names robot laser,*]] {
-      set index [lindex [split $reading ,] end]
-      # weed out non-integers
-      if {[catch {expr $index + 1}]} {continue}
+    set index 0
+    while {$index < $robot(laser,range_count)} {
+      # correct for non-standard laser config
+      set angle_index [expr round(((($robot(laser,min_angle) * 0.01) + 90)/0.25) + \
+                            $index * (($robot(laser,resolution)*0.01)/0.25))]
+
       set dist [expr $robot(laser,$index) * $CANVAS_CONV_FACTOR]
-      set x [expr -$dist * $laser_angles($index,sin)]
-      set y [expr -$dist * $laser_angles($index,cos)]
+      set x [expr -$dist * $laser_angles($angle_index,sin)]
+      set y [expr -$dist * $laser_angles($angle_index,cos)]
     
       lappend laser_points $x $y
+      incr index
     }
 
     lappend laser_points 0 0
