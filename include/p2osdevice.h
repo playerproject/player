@@ -69,6 +69,7 @@
 #define SETO 7
 #define VEL 11
 #define RVEL 21
+#define SONAR 28
 #define STOP 29
 #define VEL2 32
 #define GRIPPER 33

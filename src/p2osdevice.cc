@@ -413,6 +413,23 @@ void *RunPsosThread( void *p2osdevice )
     {
       switch(config[0])
       {
+        case 's':
+          /*
+           * 1 = enable sonars
+           * 0 = disable sonar
+           */
+	  if(config_size-1 != 1)
+          {
+	    puts("Arg to sonar state change request is wrong size; ignoring");
+	    break;
+	  }
+          motorcommand[0] = SONAR;
+          motorcommand[1] = 0x3B;
+          motorcommand[2] = config[1];
+          motorcommand[3] = 0;
+          motorpacket.Build(motorcommand, 4);
+          pd->SendReceive(&motorpacket);
+          break;
         case 'm':
           /* motor state change request 
            *   1 = enable motors

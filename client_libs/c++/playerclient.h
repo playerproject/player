@@ -170,6 +170,9 @@ class PlayerClient
       */
      int SetFrequency(unsigned short freq);
 
+     /* Enable/disable sonars.*/
+     int ChangeSonarState(unsigned char state);
+
      /*
       * Set the laser configuration
       * Use min_ and max_segment to specify a restricted scan.
