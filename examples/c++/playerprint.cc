@@ -107,6 +107,8 @@ int main(int argc, char **argv)
     assert(cp = (ClientProxy*)new PtzProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_BLOBFINDER_STRING))
     assert(cp = (ClientProxy*)new BlobfinderProxy(&pclient,idx,'r'));
+  else if(!strcmp(dev,PLAYER_IR_STRING))
+    assert(cp = (ClientProxy*)new IRProxy(&pclient,idx,'r'));
   else
   {
     printf("Unknown interface \"%s\"\n", dev);
