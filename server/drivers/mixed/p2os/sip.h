@@ -48,6 +48,7 @@ class SIP
   short angle, lvel, rvel, control;
   unsigned short sonars[PLAYER_SONAR_MAX_SAMPLES];
   int xpos, ypos;
+  int x_offset,y_offset,angle_offset;
 
   /* returns 0 if Parsed correctly otherwise 1 */
   void Parse( unsigned char *buffer );

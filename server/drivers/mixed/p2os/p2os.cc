@@ -640,6 +640,9 @@ P2OS::Main()
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
 
+  if(sippacket)
+    sippacket->x_offset = sippacket->y_offset = sippacket->angle_offset = 0;
+
   GlobalTime->GetTime(&timeBegan_tv);
 
   // request the current configuration
@@ -800,6 +803,33 @@ P2OS::Main()
         case PLAYER_POSITION_CODE:
           switch(config[0])
           {
+            case PLAYER_POSITION_SET_ODOM_REQ:
+              if(config_size != sizeof(player_position_set_odom_req_t))
+              {
+                puts("Arg to odometry set requests wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+
+              player_position_set_odom_req_t set_odom_req;
+              set_odom_req = *((player_position_set_odom_req_t*)config);
+
+              if(sippacket)
+              {
+                sippacket->x_offset = ntohl(set_odom_req.x) -
+                        sippacket->xpos;
+                sippacket->y_offset = ntohl(set_odom_req.y) -
+                        sippacket->ypos;
+                sippacket->angle_offset = ntohs(set_odom_req.theta) -
+                        sippacket->angle;
+              }
+
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
             case PLAYER_POSITION_MOTOR_POWER_REQ:
               /* motor state change request 
                *   1 = enable motors
