@@ -59,7 +59,6 @@ static ReadLogManager *manager = NULL;
 int ReadLogManager_Init(const char *filename, double speed)
 {
   manager = new ReadLogManager(filename, speed);
-  printf("manager 1 %p\n", manager);
   return manager->Init();
 }
 
@@ -80,7 +79,6 @@ int ReadLogManager_Fini()
 int ReadLogManager_Startup()
 {
   assert(manager);
-  printf("manager 2 %p\n", manager);
   return manager->Startup();
 }
 
@@ -478,6 +476,8 @@ int ReadLogManager::ParseData(Driver *device, int linenum,
 {
   if (device->device_id.code == PLAYER_CAMERA_CODE)
     return this->ParseCamera(device, linenum, token_count, tokens, tsec, tusec);
+  else if (device->device_id.code == PLAYER_GPS_CODE)
+    return this->ParseGps(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_LASER_CODE)
     return this->ParseLaser(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_POSITION_CODE)
@@ -486,8 +486,6 @@ int ReadLogManager::ParseData(Driver *device, int linenum,
     return this->ParsePosition3d(device, linenum, token_count, tokens, tsec, tusec);
   else if (device->device_id.code == PLAYER_WIFI_CODE)
     return this->ParseWifi(device, linenum, token_count, tokens, tsec, tusec);
-  else if (device->device_id.code == PLAYER_GPS_CODE)
-    return this->ParseGps(device, linenum, token_count, tokens, tsec, tusec);
 
   PLAYER_WARN("unknown device code");
   return -1;
@@ -510,25 +508,21 @@ int ReadLogManager::ParseCamera(Driver *device, int linenum,
 
   data = (player_camera_data_t*) malloc(sizeof(player_camera_data_t));
   assert(data);
-
-  printf("%s %s %s %s %s %s %d\n",
-         tokens[6], tokens[7], tokens[8], tokens[9],
-         tokens[10], tokens[11], strlen(tokens[12]));
     
   data->width = NUINT16(atoi(tokens[6]));
   data->height = NUINT16(atoi(tokens[7]));
   data->depth = atoi(tokens[8]);
   data->format = atoi(tokens[9]);
   data->compression = atoi(tokens[10]);
-  data->image_size = NUINT16(atoi(tokens[11]));
+  data->image_size = NUINT32(atoi(tokens[11]));
   
   // Check sizes
-  src_size = NUINT16(data->image_size);
-  assert(strlen(tokens[12]) == src_size);
+  src_size = strlen(tokens[12]);
   dst_size = ::DecodeHexSize(src_size);
+  assert(dst_size = NUINT32(data->image_size));
   assert(dst_size < sizeof(data->image));
 
-  printf("%d %d %d\n", strlen(tokens[12]), src_size, dst_size);
+  // REMOVE printf("%d %d\n", src_size, dst_size);
 
   // Decode string
   ::DecodeHex(data->image, dst_size, tokens[12], src_size);

@@ -37,22 +37,28 @@ since users may run their clients against the same data set over and
 over again.  Suitable log files can be generated using the @ref
 player_driver_writelog driver.
 
-Note that, to make use of log file data, Player must be started in a
-special mode:
+To make use of log file data, Player must be started in a special
+mode:
 
 @verbatim
   $ player -r <logfile> <configfile>
 @endverbatim
 
-The <pre>-r</pre> switch instructs Player to load the given log file,
-and replay the data according the configuration specified in the
-configuration file.  See the below for some usage examples of the
-readlog driver.
+The '-r' switch instructs Player to load the given log file, and
+replay the data according the configuration specified in the
+configuration file.  See the below for an example configuration file.
+
 
 
 @par Interfaces
 
 - @ref player_interface_log
+- @ref player_interface_camera
+- @ref player_interface_gps
+- @ref player_interface_laser
+- @ref player_interface_position
+- @ref player_interface_position3d
+- @ref player_interface_wifi
 
 
 @par Supported configuration requests
@@ -70,14 +76,21 @@ readlog driver.
 @par Example 
 
 @verbatim
+# Use this device to get laser data from the log
 driver
 (
   name "readlog"
   devices ["laser:0"]
-  index 0
 )
-@endverbatim
 
+# Use this device to get position data from the log
+driver
+(
+  name "readlog"
+  devices ["position:0"]
+)
+
+# Use this device to control the replay through the log interface.
 driver
 (
   name "readlog"
@@ -217,8 +230,8 @@ int ReadLog::Setup()
   }
 
   // Clear the data buffer
-  //TESTIG this->PutData(NULL, 0, NULL);
-    
+  this->PutData(NULL, 0, NULL);
+  
   return 0;
 }
 
