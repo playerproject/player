@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <math.h>
-#include <fstream.h>
+#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
-#include <vector.h>
+#include <vector>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
@@ -13,6 +13,7 @@
 #include "device.h"
 #include "devicetable.h"
 #include "drivertable.h"
+#include "vfh_algorithm.h"
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? (a) : (b))
@@ -39,8 +40,7 @@ class VFH_Class : public CDevice
 
 
   private:
-    bool Goal_Behind;
-    bool active_goal;
+     bool active_goal;
     
     // Set up the truth device (optional).
     int SetupTruth();
@@ -51,6 +51,10 @@ class VFH_Class : public CDevice
     int SetupOdom();
     int ShutdownOdom();
     int GetOdom();
+
+    // Class to handle the internal VFH algorithm
+    // (like maintaining histograms etc)
+    VFH_Algorithm *vfh_Algorithm;
 
     // Process requests.  Returns 1 if the configuration has changed.
     int HandleRequests();
@@ -68,7 +72,7 @@ class VFH_Class : public CDevice
     void PutPose();
 
     // Send commands to underlying position device
-    void PutCommand();
+    void PutCommand( int speed, int turnrate );
 
     // Check for new commands from server
     void GetCommand();
@@ -119,60 +123,6 @@ class VFH_Class : public CDevice
     int32_t goal_x, goal_y, goal_t;
     int32_t goal_vx, goal_vy, goal_vt;
     int cmd_state, cmd_type;
-
-
-    // VFH Member variables
-    float CELL_WIDTH;           // millimeters
-    int SECTOR_ANGLE;           // degrees
-    float ROBOT_RADIUS;         // millimeters
-    float SAFETY_DIST;          // millimeters
-    int WINDOW_DIAMETER;        // cells
-    int CENTER_X;
-    int CENTER_Y;
-    int HIST_SIZE;
-    int MAX_SPEED;
-    int MAX_TURNRATE;
-    int MIN_TURNRATE;
-
-    vector<vector<float> > Cell_Direction;
-    vector<vector<float> > Cell_Base_Mag;
-    vector<vector<float> > Cell_Mag;
-    vector<vector<float> > Cell_Dist;
-    vector<vector<float> > Cell_Enlarge;
-    vector<vector<vector<int> > > Cell_Sector;
-    vector<float> Candidate_Angle;
-    float Desired_Angle, Picked_Angle, Last_Picked_Angle;
-    float U1, U2;
-
-    float *Hist, *Last_Binary_Hist;
-
-    float Binary_Hist_Low, Binary_Hist_High;
-
-    // Minimum turning radius at different speeds, in millimeters
-    int *Min_Turning_Radius;
-    int Init();
-    int VFH_Allocate();
-    int Update_VFH();
-
-    float Delta_Angle(int a1, int a2);
-    float Delta_Angle(float a1, float a2);
-    int Bisect_Angle(int angle1, int angle2);
-
-    int Calculate_Cells_Mag();
-    int Build_Primary_Polar_Histogram();
-    int Build_Binary_Polar_Histogram();
-    int Build_Masked_Polar_Histogram(int speed);
-    int Read_Min_Turning_Radius_From_File(char *filename);
-    int Select_Candidate_Angle();
-    int Select_Direction();
-    int Set_Motion();
-
-    void Print_Cells_Dir();
-    void Print_Cells_Mag();
-    void Print_Cells_Dist();
-    void Print_Cells_Sector();
-    void Print_Cells_Enlargement_Angle();
-    void Print_Hist();
 };
 
 // Initialization function
@@ -198,8 +148,7 @@ int VFH_Class::Setup()
 {
   player_position_cmd_t cmd;
 
-  cmd.xpos = cmd.ypos = cmd.yaw = 0;
-  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
+  memset(&cmd,0,sizeof(cmd));
   CDevice::PutCommand(this,(unsigned char*)&cmd,sizeof(cmd));
 
   this->active_goal = false;
@@ -220,7 +169,7 @@ int VFH_Class::Setup()
 
   // FIXME
   // Allocate and intialize
-  this->Init();
+  vfh_Algorithm->Init();
 
   // Start the driver thread.
   this->StartThread();
@@ -338,8 +287,10 @@ int VFH_Class::SetupOdom()
   this->odom_geom_size[1] = (int16_t) geom.size[1] / 1000.0;
 
   // take the bigger of the two dimensions and halve to get a radius
-  this->ROBOT_RADIUS = MAX(geom.size[0],geom.size[1]);
-  this->ROBOT_RADIUS /= 2.0;
+  float robot_radius = MAX(geom.size[0],geom.size[1]);
+  robot_radius /= 2.0;
+
+  vfh_Algorithm->SetRobotRadius( robot_radius );
 
   return 0;
 }
@@ -352,7 +303,7 @@ int VFH_Class::ShutdownOdom()
   // Stop the robot before unsubscribing
   this->speed = 0;
   this->turnrate = 0;
-  this->PutCommand();
+  this->PutCommand( speed, turnrate );
   
   this->odom->Unsubscribe(this);
   return 0;
@@ -570,14 +521,14 @@ printf("b: %f\n", b);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Send commands to the underlying position device
-void VFH_Class::PutCommand() {
+void VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) {
   player_position_cmd_t cmd;
 
-//printf("Command: speed: %d turnrate: %d\n", speed, turnrate);
+//printf("Command: speed: %d turnrate: %d\n", cmd_speed, cmd_turnrate);
 
-  this->con_vel[0] = (double)speed;
+  this->con_vel[0] = (double)cmd_speed;
   this->con_vel[1] = 0;
-  this->con_vel[2] = (double)turnrate;
+  this->con_vel[2] = (double)cmd_turnrate;
 
   memset(&cmd, 0, sizeof(cmd));
 
@@ -607,7 +558,7 @@ void VFH_Class::PutCommand() {
     cmd.yawspeed = (int32_t) (this->con_vel[2]);
   }
 
-  if (abs(cmd.yawspeed) > MAX_TURNRATE)
+  if (abs(cmd.yawspeed) > vfh_Algorithm->GetMaxTurnrate())
     PLAYER_WARN1("fast turn %d", cmd.yawspeed);
 
   cmd.xspeed = htonl(cmd.xspeed);
@@ -771,11 +722,11 @@ void VFH_Class::Main()
       //puts("VFH: goal reached");
       this->active_goal = false;
       this->speed = this->turnrate = 0;
-      PutCommand();
+      PutCommand( this->speed, this->turnrate );
     }
     else if (dist > (this->dist_eps * 1e3))
     {
-      Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
+      float Desired_Angle = 90 + atan2((goal_y - this->odom_pose[1]), (goal_x - this->odom_pose[0]))
               * 180 / M_PI - this->odom_pose[2];
 
       while (Desired_Angle > 360.0)
@@ -787,11 +738,14 @@ void VFH_Class::Main()
         Desired_Angle += 360.0;
       }
 
+      vfh_Algorithm->SetDesiredAngle( Desired_Angle );
+
       //printf("vfh dist %.3f angle %.3f\n", dist, Desired_Angle);
 
       // Get new laser data.
       this->GetLaser();
-      Update_VFH();
+      vfh_Algorithm->Update_VFH( this->laser_ranges, this->speed, this->turnrate );
+      PutCommand( this->speed, this->turnrate );
     }
     else
     {
@@ -829,16 +783,16 @@ void VFH_Class::Main()
       speed = 0;
       if(fabs(angdiff) > RTOD(this->ang_eps))
       {
-        turnrate = (int)rint((angdiff/180.0) * MAX_TURNRATE);
+        turnrate = (int)rint((angdiff/180.0) * vfh_Algorithm->GetMaxTurnrate());
         if(turnrate < 0)
-          turnrate = MIN(turnrate,-this->MIN_TURNRATE);
+          turnrate = MIN(turnrate,-this->vfh_Algorithm->GetMinTurnrate());
         else
-          turnrate = MAX(turnrate,this->MIN_TURNRATE);
+          turnrate = MAX(turnrate,this->vfh_Algorithm->GetMinTurnrate());
       }
       else
         turnrate = 0;
 
-      this->PutCommand();
+      this->PutCommand( this->speed, this->turnrate );
     }
     // gettimeofday(&time, 0);
     // printf("After VFH Time: %d %d\n",time.tv_sec - stime.tv_sec, time.tv_usec - stime.tv_usec);
@@ -904,25 +858,26 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   this->speed = 0;
   this->turnrate = 0;
 
-  this->CELL_WIDTH = 200.0;
-  this->WINDOW_DIAMETER = 41;
-  this->SECTOR_ANGLE = 5;
-  this->ROBOT_RADIUS = 200.0;
-  this->SAFETY_DIST = 200.0;
+  // AlexB: This all seems to get over-written just below..
+//   this->CELL_WIDTH = 200.0;
+//   this->WINDOW_DIAMETER = 41;
+//   this->SECTOR_ANGLE = 5;
+//   this->ROBOT_RADIUS = 200.0;
+//   this->SAFETY_DIST = 200.0;
 
-  this->CENTER_X = (int)floor(this->WINDOW_DIAMETER / 2.0);
-  this->CENTER_Y = this->CENTER_X;
-  this->HIST_SIZE = (int)rint(360.0 / this->SECTOR_ANGLE);
+//   this->CENTER_X = (int)floor(this->WINDOW_DIAMETER / 2.0);
+//   this->CENTER_Y = this->CENTER_X;
+//   this->HIST_SIZE = (int)rint(360.0 / this->SECTOR_ANGLE);
 
-  this->MAX_SPEED = 200;
-  this->MAX_TURNRATE = 40;
+//   this->MAX_SPEED = 200;
+//   this->MAX_TURNRATE = 40;
 
-  this->U1 = 5;
-  this->U2 = 3;
+//   this->U1 = 5;
+//   this->U2 = 3;
 
-  this->Desired_Angle = 90;
-  this->Picked_Angle = 90;
-  this->Last_Picked_Angle = this->Picked_Angle;
+//   this->Desired_Angle = 90;
+//   this->Picked_Angle = 90;
+//   this->Last_Picked_Angle = this->Picked_Angle;
 
   cell_size = cf->ReadLength(section, "cell_size", 0.1) * 1000.0;
   window_diameter = cf->ReadInt(section, "window_diameter", 61);
@@ -937,20 +892,22 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
   weight_desired_dir = cf->ReadLength(section, "weight_desired_dir", 5.0);
   weight_current_dir = cf->ReadLength(section, "weight_current_dir", 3.0);
 
-  this->CELL_WIDTH = cell_size;
-  this->WINDOW_DIAMETER = window_diameter;
-  this->SECTOR_ANGLE = sector_angle;
-  this->SAFETY_DIST = safety_dist;
-  this->MAX_SPEED = max_speed;
-  this->MIN_TURNRATE = min_turnrate;
-  this->MAX_TURNRATE = max_turnrate;
-  this->Binary_Hist_Low = free_space_cutoff;
-  this->Binary_Hist_High = obs_cutoff;
-  this->U1 = weight_desired_dir;
-  this->U2 = weight_current_dir;
-  
   this->dist_eps = cf->ReadLength(section, "distance_epsilon", 0.5);
   this->ang_eps = cf->ReadAngle(section, "angle_epsilon", DTOR(10.0));
+
+  // Instantiate the classes that handles histograms
+  // and chooses directions
+  this->vfh_Algorithm = new VFH_Algorithm( cell_size,
+                                           window_diameter,
+                                           sector_angle,
+                                           safety_dist,
+                                           max_speed,
+                                           min_turnrate,
+                                           max_turnrate,
+                                           free_space_cutoff,
+                                           obs_cutoff,
+                                           weight_desired_dir,
+                                           weight_current_dir );
 
   this->truth = NULL;
   this->truth_index = cf->ReadInt(section, "truth_index", -1);
@@ -990,714 +947,9 @@ VFH_Class::VFH_Class(char* interface, ConfigFile* cf, int section)
 
 
 VFH_Class::~VFH_Class() {
+  delete this->vfh_Algorithm;
+
   return;
-}
-
-int VFH_Class::VFH_Allocate() 
-{
-  vector<float> temp_vec;
-  vector<int> temp_vec3;
-  vector<vector<int> > temp_vec2;
-  int x;
-
-  Cell_Direction.clear();
-  Cell_Base_Mag.clear();
-  Cell_Mag.clear();
-  Cell_Dist.clear();
-  Cell_Enlarge.clear();
-  Cell_Sector.clear();
-
-  temp_vec.clear();
-  for(x=0;x<WINDOW_DIAMETER;x++) {
-    temp_vec.push_back(0);
-  }
-
-  temp_vec2.clear();
-  temp_vec3.clear();
-  for(x=0;x<WINDOW_DIAMETER;x++) {
-    temp_vec2.push_back(temp_vec3);
-  }
-
-  for(x=0;x<WINDOW_DIAMETER;x++) {
-    Cell_Direction.push_back(temp_vec);
-    Cell_Base_Mag.push_back(temp_vec);
-    Cell_Mag.push_back(temp_vec);
-    Cell_Dist.push_back(temp_vec);
-    Cell_Enlarge.push_back(temp_vec);
-    Cell_Sector.push_back(temp_vec2);
-  }
-
-  Hist = new float[HIST_SIZE];
-  Last_Binary_Hist = new float[HIST_SIZE];
-  Min_Turning_Radius = new int[MAX_SPEED+1];
-
-  return(1);
-}
-
-int VFH_Class::Init()
-{
-  int x, y, i;
-  float plus_dir, neg_dir, plus_sector, neg_sector;
-  bool plus_dir_bw, neg_dir_bw, dir_around_sector;
-  float neg_sector_to_neg_dir, neg_sector_to_plus_dir;
-  float plus_sector_to_neg_dir, plus_sector_to_plus_dir;
-
-  Goal_Behind = 0;
-
-  /*
-  CELL_WIDTH = cell_width;
-  WINDOW_DIAMETER = window_diameter;
-  SECTOR_ANGLE = sector_angle;
-  ROBOT_RADIUS = robot_radius;
-  SAFETY_DIST = safety_dist;
-  */
-
-  CENTER_X = (int)floor(WINDOW_DIAMETER / 2.0);
-  CENTER_Y = CENTER_X;
-  HIST_SIZE = (int)rint(360.0 / SECTOR_ANGLE);
-
-  /*
-  MAX_SPEED = max_speed;
-  MAX_TURNRATE = max_turnrate;
-  MIN_TURNRATE = min_turnrate;
-
-  Binary_Hist_Low = binary_hist_low;
-  Binary_Hist_High = binary_hist_high;
-
-  U1 = u1;
-  U2 = u2;
-  */
-
-  // it works now; let's leave the verbose debug statement out
-  /*
-  printf("CELL_WIDTH: %1.1f\tWINDOW_DIAMETER: %d\tSECTOR_ANGLE: %d\tROBOT_RADIUS: %1.1f\tSAFETY_DIST: %1.1f\tMAX_SPEED: %d\tMAX_TURNRATE: %d\tFree Space Cutoff: %1.1f\tObs Cutoff: %1.1f\tWeight Desired Dir: %1.1f\tWeight Current_Dir:%1.1f\n", CELL_WIDTH, WINDOW_DIAMETER, SECTOR_ANGLE, ROBOT_RADIUS, SAFETY_DIST, MAX_SPEED, MAX_TURNRATE, Binary_Hist_Low, Binary_Hist_High, U1, U2);
-  */
-
-  VFH_Allocate();
-
-  for(x=0;x<HIST_SIZE;x++) {
-    Hist[x] = 0;
-    Last_Binary_Hist[x] = 1;
-  }
-
-  for(x=0;x<=MAX_SPEED;x++) {
-//    Min_Turning_Radius[x] = (int)rint(150.0 * x / 200.0);
-    Min_Turning_Radius[x] = 150;
-  }
-
-  for(x=0;x<WINDOW_DIAMETER;x++) {
-    for(y=0;y<WINDOW_DIAMETER;y++) {
-      Cell_Mag[x][y] = 0;
-      Cell_Dist[x][y] = sqrt(pow((CENTER_X - x), 2) + pow((CENTER_Y - y), 2)) * CELL_WIDTH;
-
-      Cell_Base_Mag[x][y] = pow((3000.0 - Cell_Dist[x][y]), 4) / 100000000.0;
-
-      if (x < CENTER_X) {
-        if (y < CENTER_Y) {
-          Cell_Direction[x][y] = atan((float)(CENTER_Y - y) / (float)(CENTER_X - x));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-          Cell_Direction[x][y] = 180.0 - Cell_Direction[x][y];
-        } else if (y == CENTER_Y) {
-          Cell_Direction[x][y] = 180.0;
-        } else if (y > CENTER_Y) {
-          Cell_Direction[x][y] = atan((float)(y - CENTER_Y) / (float)(CENTER_X - x));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-          Cell_Direction[x][y] = 180.0 + Cell_Direction[x][y];
-        }
-      } else if (x == CENTER_X) {
-        if (y < CENTER_Y) {
-          Cell_Direction[x][y] = 90.0;
-        } else if (y == CENTER_Y) {
-          Cell_Direction[x][y] = -1.0;
-        } else if (y > CENTER_Y) {
-          Cell_Direction[x][y] = 270.0;
-        }
-      } else if (x > CENTER_X) {
-        if (y < CENTER_Y) {
-          Cell_Direction[x][y] = atan((float)(CENTER_Y - y) / (float)(x - CENTER_X));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-        } else if (y == CENTER_Y) {
-          Cell_Direction[x][y] = 0.0;
-        } else if (y > CENTER_Y) {
-          Cell_Direction[x][y] = atan((float)(y - CENTER_Y) / (float)(x - CENTER_X));
-          Cell_Direction[x][y] *= (360.0 / 6.28);
-          Cell_Direction[x][y] = 360.0 - Cell_Direction[x][y];
-        }
-      }
-
-      if (Cell_Dist[x][y] > 0)
-        Cell_Enlarge[x][y] = (float)atan((ROBOT_RADIUS + SAFETY_DIST) / Cell_Dist[x][y]) * 
-		(360.0 / 6.28);
-      else
-        Cell_Enlarge[x][y] = 0;
-
-      Cell_Sector[x][y].clear();
-      for(i=0;i<(360 / SECTOR_ANGLE);i++) {
-        plus_dir = Cell_Direction[x][y] + Cell_Enlarge[x][y];
-        neg_dir = Cell_Direction[x][y] - Cell_Enlarge[x][y];
-        plus_sector = (i + 1) * (float)SECTOR_ANGLE;
-        neg_sector = i * (float)SECTOR_ANGLE;
-
-        if ((neg_sector - neg_dir) > 180) {
-          neg_sector_to_neg_dir = neg_dir - (neg_sector - 360);
-        } else {
-          if ((neg_dir - neg_sector) > 180) {
-            neg_sector_to_neg_dir = neg_sector - (neg_dir + 360);
-          } else {
-            neg_sector_to_neg_dir = neg_dir - neg_sector;
-          }
-        }
-
-        if ((plus_sector - neg_dir) > 180) {
-          plus_sector_to_neg_dir = neg_dir - (plus_sector - 360);
-        } else {
-          if ((neg_dir - plus_sector) > 180) {
-            plus_sector_to_neg_dir = plus_sector - (neg_dir + 360);
-          } else {
-            plus_sector_to_neg_dir = neg_dir - plus_sector;
-          }
-        }
-
-        if ((plus_sector - plus_dir) > 180) {
-          plus_sector_to_plus_dir = plus_dir - (plus_sector - 360);
-        } else {
-          if ((plus_dir - plus_sector) > 180) {
-            plus_sector_to_plus_dir = plus_sector - (plus_dir + 360);
-          } else {
-            plus_sector_to_plus_dir = plus_dir - plus_sector;
-          }
-        }
-
-        if ((neg_sector - plus_dir) > 180) {
-          neg_sector_to_plus_dir = plus_dir - (neg_sector - 360);
-        } else {
-          if ((plus_dir - neg_sector) > 180) {
-            neg_sector_to_plus_dir = neg_sector - (plus_dir + 360);
-          } else {
-            neg_sector_to_plus_dir = plus_dir - neg_sector;
-          }
-        }
-
-        plus_dir_bw = 0;
-        neg_dir_bw = 0;
-        dir_around_sector = 0;
-
-        if ((neg_sector_to_neg_dir >= 0) && (plus_sector_to_neg_dir <= 0)) {
-          neg_dir_bw = 1; 
-        }
-
-        if ((neg_sector_to_plus_dir >= 0) && (plus_sector_to_plus_dir <= 0)) {
-          plus_dir_bw = 1; 
-        }
-
-        if ((neg_sector_to_neg_dir <= 0) && (neg_sector_to_plus_dir >= 0)) {
-          dir_around_sector = 1; 
-        }
-
-        if ((plus_sector_to_neg_dir <= 0) && (plus_sector_to_plus_dir >= 0)) {
-          plus_dir_bw = 1; 
-        }
-
-        if ((plus_dir_bw) || (neg_dir_bw) || (dir_around_sector)) {
-          Cell_Sector[x][y].push_back(i);
-        }
-      }
-    }
-  }
-  return(1);
-}
-
-int VFH_Class::Update_VFH() 
-{
-  int print = 0;
-
-/*
-  if ((Goal_Behind == 1) || (Desired_Angle > 180)) {
-//  if (Desired_Angle > 90 && Desired_Angle < 270) {
-    speed = 1;
-    Goal_Behind = 1;
-    Set_Motion();
-    return(1);
-  }
-  */
-
-  Build_Primary_Polar_Histogram();
-  if (print) {
-    printf("Primary Histogram\n");
-    Print_Hist();
-  }
-
-  Build_Binary_Polar_Histogram();
-  if (print) {
-    printf("Binary Histogram\n");
-    Print_Hist();
-  }
-
-  speed += 20;
-  if (speed > MAX_SPEED) {
-    speed = MAX_SPEED;
-  }
-
-  Build_Masked_Polar_Histogram(speed);
-  if (print) {
-    printf("Masked Histogram\n");
-    Print_Hist();
-  }
-
-  Select_Direction();
-
-//  printf("Picked Angle: %f\n", Picked_Angle);
-
-  if (Picked_Angle != -9999) {
-    Set_Motion();
-  } else {
-    speed = 0;
-    Set_Motion();
-    return(1);
-  }
-
-  if (print)
-    printf("SPEED: %d\t TURNRATE: %d\n", speed, turnrate);
-
-  return(1);
-}
-
-float VFH_Class::Delta_Angle(int a1, int a2) 
-{
-  return(Delta_Angle((float)a1, (float)a2));
-}
-
-float VFH_Class::Delta_Angle(float a1, float a2) 
-{
-  float diff;
-
-  diff = a2 - a1;
-
-  if (diff > 180) {
-    diff -= 360;
-  } else if (diff < -180) {
-    diff += 360;
-  }
-
-  return(diff);
-}
-
-int VFH_Class::Read_Min_Turning_Radius_From_File(char *filename) 
-{
-  int temp, i;
-
-  ifstream infile(filename);
-
-  i = 0;
-  while (infile >> temp) {
-    Min_Turning_Radius[i++] = temp;
-  }
-
-  infile.close();
-  return(1);
-}
-
-void VFH_Class::Print_Cells_Dir() 
-{
-  int x, y;
-
-  printf("\nCell Directions:\n");
-  printf("****************\n");
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      printf("%1.1f\t", Cell_Direction[x][y]);
-    }
-    printf("\n");
-  }
-}
-
-void VFH_Class::Print_Cells_Mag() 
-{
-  int x, y;
-
-  printf("\nCell Magnitudes:\n");
-  printf("****************\n");
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      printf("%1.1f\t", Cell_Mag[x][y]);
-    }
-    printf("\n");
-  }
-}
-
-void VFH_Class::Print_Cells_Dist() 
-{
-  int x, y;
-
-  printf("\nCell Distances:\n");
-  printf("****************\n");
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      printf("%1.1f\t", Cell_Dist[x][y]);
-    }
-    printf("\n");
-  }
-}
-
-void VFH_Class::Print_Cells_Sector() 
-{
-  int x, y;
-  unsigned int i;
-
-  printf("\nCell Sectors:\n");
-  printf("****************\n");
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      for(i=0;i<Cell_Sector[x][y].size();i++) {
-        if (i < (Cell_Sector[x][y].size() -1 )) {
-          printf("%d,", Cell_Sector[x][y][i]);
-        } else {
-          printf("%d\t", Cell_Sector[x][y][i]);
-        }
-      }
-    }
-    printf("\n");
-  }
-}
-
-void VFH_Class::Print_Cells_Enlargement_Angle() 
-{
-  int x, y;
-
-  printf("\nEnlargement Angles:\n");
-  printf("****************\n");
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      printf("%1.1f\t", Cell_Enlarge[x][y]);
-    }
-    printf("\n");
-  }
-}
-
-void VFH_Class::Print_Hist() 
-{
-  int x;
-  printf("Histogram:\n");
-  printf("****************\n");
-
-  for(x=0;x<=(HIST_SIZE/2);x++) {
-    printf("%d:\t%1.1f\n", (x * SECTOR_ANGLE), Hist[x]);
-  }
-  printf("\n\n");
-}
-
-int VFH_Class::Calculate_Cells_Mag() 
-{
-  int x, y;
-
-/*
-printf("Laser Ranges\n");
-printf("************\n");
-for(x=0;x<=360;x++) {
-   printf("%d: %f\n", x, this->laser_ranges[x][0]);
-}
-*/
-
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      if (Cell_Direction[x][y] >= 180) {	// behind the robot, so cant sense, assume free
-        Cell_Mag[x][y] = 0.0;
-      } else {
-        if ((Cell_Dist[x][y] + CELL_WIDTH / 2.0) > this->laser_ranges[(int)rint(Cell_Direction[x][y] * 2.0)][0]) {
-          Cell_Mag[x][y] = Cell_Base_Mag[x][y];
-        } else {
-          Cell_Mag[x][y] = 0.0;
-        }
-      }
-    }
-  }
-
-  return(1);
-}
-
-int VFH_Class::Build_Primary_Polar_Histogram() 
-{
-  int x, y;
-  unsigned int i;
-
-  for(x=0;x<HIST_SIZE;x++) {
-    Hist[x] = 0;
-  }
-
-  Calculate_Cells_Mag();
-
-//  Print_Cells_Dist();
-//  Print_Cells_Dir();
-//  Print_Cells_Mag();
-//  Print_Cells_Sector();
-//  Print_Cells_Enlargement_Angle();
-
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      for(i=0;i<Cell_Sector[x][y].size();i++) {
-        Hist[Cell_Sector[x][y][i]] += Cell_Mag[x][y];
-      }
-    }
-  }
-
-  return(1);
-}
-
-int VFH_Class::Build_Binary_Polar_Histogram() 
-{
-  int x;
-
-  for(x=0;x<HIST_SIZE;x++) {
-    if (Hist[x] > Binary_Hist_High) {
-      Hist[x] = 1.0;
-    } else if (Hist[x] < Binary_Hist_Low) {
-      Hist[x] = 0.0;
-    } else {
-      Hist[x] = Last_Binary_Hist[x];
-    }
-  }
-
-  for(x=0;x<HIST_SIZE;x++) {
-    Last_Binary_Hist[x] = Hist[x];
-  }
-
-  return(1);
-}
-
-int VFH_Class::Build_Masked_Polar_Histogram(int speed) 
-{
-  int x, y;
-  float center_x_right, center_x_left, center_y, dist_r, dist_l;
-  float theta, phi_b, phi_l, phi_r, total_dist, angle;
-
-  center_x_right = CENTER_X + (Min_Turning_Radius[speed] / (float)CELL_WIDTH);
-  center_x_left = CENTER_X - (Min_Turning_Radius[speed] / (float)CELL_WIDTH);
-  center_y = CENTER_Y;
-
-  theta = 90;
-  phi_b = theta + 180;
-  phi_l = phi_b;
-  phi_r = phi_b;
-
-  phi_l = 180;
-  phi_r = 0;
-
-  if (speed > 0) {
-    total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS + SAFETY_DIST;
-  } else {
-    total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS;
-  }
-
-  for(y=0;y<WINDOW_DIAMETER;y++) {
-    for(x=0;x<WINDOW_DIAMETER;x++) {
-      if (Cell_Mag[x][y] == 0) 
-        continue;
-
-      if ((Delta_Angle(Cell_Direction[x][y], theta) > 0) && 
-		(Delta_Angle(Cell_Direction[x][y], phi_r) <= 0)) {
-        dist_r = sqrt(pow((center_x_right - x), 2) + pow((center_y - y), 2)) * CELL_WIDTH;
-        if (dist_r < total_dist) { 
-          phi_r = Cell_Direction[x][y];
-        }
-      } else {
-        if ((Delta_Angle(Cell_Direction[x][y], theta) <= 0) && 
-		(Delta_Angle(Cell_Direction[x][y], phi_l) > 0)) {
-          dist_l = sqrt(pow((center_x_left - x), 2) + pow((center_y - y), 2)) * CELL_WIDTH;
-          if (dist_l < total_dist) { 
-            phi_l = Cell_Direction[x][y];
-          }
-        }
-      }
-    }
-  }
-
-  for(x=0;x<HIST_SIZE;x++) {
-    angle = x * SECTOR_ANGLE;
-    if ((Hist[x] == 0) && (((Delta_Angle((float)angle, phi_r) <= 0) && 
-	(Delta_Angle((float)angle, theta) >= 0)) || 
-      	((Delta_Angle((float)angle, phi_l) >= 0) &&
-	(Delta_Angle((float)angle, theta) <= 0)))) {
-      Hist[x] = 0;
-    } else {
-      Hist[x] = 1;
-    }
-  }
-
-  return(1);
-}
-
-int VFH_Class::Bisect_Angle(int angle1, int angle2) 
-{
-  float a;
-  int angle;
-
-  a = Delta_Angle((float)angle1, (float)angle2);
-
-  angle = (int)rint(angle1 + (a / 2.0));
-  if (angle < 0) {
-    angle += 360;
-  } else if (angle >= 360) {
-    angle -= 360;
-  }
-
-  return(angle);
-}
-
-int VFH_Class::Select_Candidate_Angle() 
-{
-  unsigned int i;
-  float weight, min_weight;
-
-  if (Candidate_Angle.size() == 0) {
-    Picked_Angle = -9999;
-    return(1);
-  }
-
-  Picked_Angle = 90;
-  min_weight = 10000000;
-  for(i=0;i<Candidate_Angle.size();i++) {
-//printf("CANDIDATE: %f\n", Candidate_Angle[i]);
-    weight = U1 * fabs(Delta_Angle(Desired_Angle, Candidate_Angle[i])) +
-    	U2 * fabs(Delta_Angle(Last_Picked_Angle, Candidate_Angle[i]));
-    if (weight < min_weight) {
-      min_weight = weight;
-      Picked_Angle = Candidate_Angle[i];
-    }
-  }
-
-  Last_Picked_Angle = Picked_Angle;
-
-  return(1);
-}
-
-int VFH_Class::Select_Direction() 
-{
-  int start, i, left;
-  float angle, new_angle;
-  vector<pair<int,int> > border;
-  pair<int,int> new_border;
-
-  Candidate_Angle.clear();
-
-  start = -1; 
-  for(i=0;i<HIST_SIZE;i++) {
-    if (Hist[i] == 1) {
-      start = i;
-      break;
-    }
-  }
-
-  if (start == -1) {
-    Candidate_Angle.push_back(Desired_Angle);
-    return(1);
-  }
-
-  border.clear();
-
-//printf("Start: %d\n", start);
-  left = 1;
-  for(i=start;i<=(start+HIST_SIZE);i++) {
-    if ((Hist[i % HIST_SIZE] == 0) && (left)) {
-      new_border.first = (i % HIST_SIZE) * SECTOR_ANGLE;
-      left = 0;
-    }
-
-    if ((Hist[i % HIST_SIZE] == 1) && (!left)) {
-      new_border.second = ((i % HIST_SIZE) - 1) * SECTOR_ANGLE;
-      if (new_border.second < 0) {
-        new_border.second += 360;
-      }
-      border.push_back(new_border);
-      left = 1;
-    }
-  }
-
-  for(i=0;i<(int)border.size();i++) {
-//printf("BORDER: %f %f\n", border[i].first, border[i].second);
-    angle = Delta_Angle(border[i].first, border[i].second);
-
-    if (fabs(angle) < 10) {
-      continue;
-    }
-
-    if (fabs(angle) < 80) {
-      new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
-
-      Candidate_Angle.push_back(new_angle);
-    } else {
-      new_angle = border[i].first + (border[i].second - border[i].first) / 2.0;
-
-      Candidate_Angle.push_back(new_angle);
-
-      new_angle = (float)((border[i].first + 40) % 360);
-      Candidate_Angle.push_back(new_angle);
-
-      new_angle = (float)(border[i].second - 40);
-      if (new_angle < 0) 
-        new_angle += 360;
-      Candidate_Angle.push_back(new_angle);
-
-      // See if candidate dir is in this opening
-      if ((Delta_Angle(Desired_Angle, Candidate_Angle[Candidate_Angle.size()-2]) < 0) && 
-		(Delta_Angle(Desired_Angle, Candidate_Angle[Candidate_Angle.size()-1]) > 0)) {
-        Candidate_Angle.push_back(Desired_Angle);
-      }
-    }
-  }
-
-  Select_Candidate_Angle();
-
-  return(1);
-}
-
-int VFH_Class::Set_Motion() 
-{
-  //int i;
-
-  // This happens if all directions blocked, so just spin in place
-  if (speed <= 0) {
-    //printf("stop\n");
-    turnrate = MAX_TURNRATE;
-    speed = 0;
-  }
-/*
-  // goal behind robot, turn toward it
-  else if (speed == 1) { 
-    //printf("turn %f\n", Desired_Angle);
-    speed = 0;
-    if ((Desired_Angle > 270) && (Desired_Angle < 60)) {
-      turnrate = -40;
-    } else if ((Desired_Angle > 120) && (Desired_Angle < 270)) {
-      turnrate = 40;
-    } else {
-      turnrate = MAX_TURNRATE;
-    }
-  }
-*/
-  else {
-    //printf("Picked %f\n", Picked_Angle);
-    if ((Picked_Angle > 270) && (Picked_Angle < 360)) {
-      turnrate = -1 * MAX_TURNRATE;
-    } else if ((Picked_Angle < 270) && (Picked_Angle > 180)) {
-      turnrate = MAX_TURNRATE;
-    } else {
-      turnrate = (int)rint(((float)(Picked_Angle - 90) / 75.0) * MAX_TURNRATE);
-
-      if (turnrate > MAX_TURNRATE) {
-        turnrate = MAX_TURNRATE;
-      } else if (turnrate < (-1 * MAX_TURNRATE)) {
-        turnrate = -1 * MAX_TURNRATE;
-      }
-
-//      if (abs(turnrate) > (0.9 * MAX_TURNRATE)) {
-//        speed = 0;
-//      }
-    }
-  }
-
-  this->PutCommand();
-
-  return(1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
