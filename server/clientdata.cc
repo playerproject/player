@@ -850,64 +850,59 @@ ClientData::BuildMsg()
           continue;
         }
 
-        // how many packets are available for this client?
-        numdata = driver->GetNumData(thisub->id, this);
-        while(numdata > 0)
+        // Prepare the header
+        hdr.device = htons(thisub->id.code);
+        hdr.device_index = htons(thisub->id.index);
+        hdr.reserved = 0;
+
+        // Get the data
+        size = driver->GetData(thisub->id, this,
+                               writebuffer+sizeof(hdr),
+                               PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
+                               &(hdr.timestamp_sec), 
+                               &(hdr.timestamp_usec));
+
+        hdr.timestamp_sec = htonl(hdr.timestamp_sec);
+        hdr.timestamp_usec = htonl(hdr.timestamp_usec);
+
+        // if we're in an UPDATE mode, we only want this data if it is new
+        if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
+           (mode == PLAYER_DATAMODE_PULL_NEW))
         {
-          numdata--;
-
-          hdr.device = htons(thisub->id.code);
-          hdr.device_index = htons(thisub->id.index);
-          hdr.reserved = 0;
-
-          size = driver->GetData(thisub->id, this,
-                                    writebuffer+sizeof(hdr),
-                                    PLAYER_MAX_MESSAGE_SIZE-sizeof(hdr),
-                                    &(hdr.timestamp_sec), 
-                                    &(hdr.timestamp_usec));
-
-          hdr.timestamp_sec = htonl(hdr.timestamp_sec);
-          hdr.timestamp_usec = htonl(hdr.timestamp_usec);
-
-          // if we're in an UPDATE mode, we only want this data if it is new
-          if((mode == PLAYER_DATAMODE_PUSH_NEW) || 
-             (mode == PLAYER_DATAMODE_PULL_NEW))
+          // if the data has the same timestamp as last time then
+          // we don't want it, so skip it 
+          // (Byte order doesn't matter for the equality check)
+          if(hdr.timestamp_sec == thisub->last_sec && 
+             hdr.timestamp_usec == thisub->last_usec)  
           {
-            // if the data has the same timestamp as last time then
-            // we don't want it, so skip it 
-            // (Byte order doesn't matter for the equality check)
-            if(hdr.timestamp_sec == thisub->last_sec && 
-               hdr.timestamp_usec == thisub->last_usec)  
-            {
-              continue;
-            }
-
-            // record the time we got data for this device
-            // keep 'em in network byte order - it doesn't matter
-            // as long as we remember to swap them for printing
-            thisub->last_sec = hdr.timestamp_sec;
-            thisub->last_usec = hdr.timestamp_usec;
+            continue;
           }
 
-          hdr.size = htonl(size);
-
-          if(GlobalTime->GetTime(&curr) == -1)
-            PLAYER_ERROR("GetTime() failed!!!!");
-          hdr.time_sec = htonl(curr.tv_sec);
-          hdr.time_usec = htonl(curr.tv_usec);
-
-          memcpy(writebuffer,&hdr,sizeof(hdr));
-
-          FillWriteBuffer(writebuffer,totalsize,sizeof(hdr)+size);
-
-          totalsize += sizeof(hdr) + size;
+          // record the time we got data for this device
+          // keep 'em in network byte order - it doesn't matter
+          // as long as we remember to swap them for printing
+          thisub->last_sec = hdr.timestamp_sec;
+          thisub->last_usec = hdr.timestamp_usec;
         }
+
+        hdr.size = htonl(size);
+
+        if(GlobalTime->GetTime(&curr) == -1)
+          PLAYER_ERROR("GetTime() failed!!!!");
+        hdr.time_sec = htonl(curr.tv_sec);
+        hdr.time_usec = htonl(curr.tv_usec);
+
+        memcpy(writebuffer,&hdr,sizeof(hdr));
+
+        FillWriteBuffer(writebuffer,totalsize,sizeof(hdr)+size);
+
+        totalsize += sizeof(hdr) + size;
       }
-      else
-      {
-        PLAYER_WARN2("Unknown device \"%d:%d\"",
-                     thisub->id.code,thisub->id.index);
-      }
+    }
+    else
+    {
+      PLAYER_WARN2("Unknown device \"%d:%d\"",
+                   thisub->id.code,thisub->id.index);
     }
   }
 

@@ -178,13 +178,6 @@ void Driver::PutData(player_device_id_t id,
 }
 
 
-// New-style GetNumData; [id] specifies the interface to be read
-size_t Driver::GetNumData(player_device_id_t id, void* client)
-{
-  return (1);
-}
-
-
 // New-style GetData; [id] specifies the interface to be read
 size_t Driver::GetData(player_device_id_t id, void* client, 
                        void* dest, size_t len,

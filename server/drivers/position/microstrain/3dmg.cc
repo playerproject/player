@@ -79,27 +79,6 @@ class MicroStrain3DMG : public Driver
   // Returns 0 on success
   private: int ClosePort();
 
-  /* FIX
-  // Get number of pending data packets
-  private: virtual size_t GetNumData(void* client);
-
-  // Get pending data packets
-  private: virtual size_t GetData(void* client, unsigned char* dest, size_t len,
-                                  uint32_t* timestamp_sec, uint32_t* timestamp_usec);
-  */
-                                  
-  ///////////////////////////////////////////////////////////////////////////
-  // Middle methods: these methods facilitate communication between the top
-  // and bottom halfs.
-  ///////////////////////////////////////////////////////////////////////////
-
-  // Push data to the queue
-  private: void Push(player_position3d_data_t *data,
-                     uint32_t time_sec, uint32_t time_usec);
-
-  // Pop data from the queue; returns the number of items popped
-  private: int Pop(player_position3d_data_t *data,
-                   uint32_t *time_sec, uint32_t *time_usec);
   
   ///////////////////////////////////////////////////////////////////////////
   // Bottom half methods; these methods run in the device thread
@@ -136,14 +115,6 @@ class MicroStrain3DMG : public Driver
 
   // Port file descriptor
   private: int fd;
-
-  // Queue of pending data
-  private: int q_count, q_max_count;
-  private: struct QElem
-  {
-    player_position3d_data_t data;
-    uint32_t time_sec, time_usec;
-  } *q_elems;
 };
 
 
@@ -188,11 +159,6 @@ MicroStrain3DMG::MicroStrain3DMG(ConfigFile* cf, int section)
   // Default serial port
   this->port_name = cf->ReadString(section, "port", "/dev/ttyS1");
 
-  // Initialize data queue
-  this->q_max_count = 0;
-  this->q_count = 0;
-  this->q_elems = NULL;
-
   return;
 }
 
@@ -201,12 +167,6 @@ MicroStrain3DMG::MicroStrain3DMG(ConfigFile* cf, int section)
 // Destructor
 MicroStrain3DMG::~MicroStrain3DMG()
 {
-  free(this->q_elems);
-
-  this->q_max_count = 0;
-  this->q_count = 0;
-  this->q_elems = NULL;
-  
   return;
 }
 
@@ -239,85 +199,6 @@ int MicroStrain3DMG::Shutdown()
   ClosePort();
 
   return 0;
-}
-
-/* TODO: this is fundamentally broken for internal device
-access; needs re-thinking.
-
-////////////////////////////////////////////////////////////////////////////////
-// Get number of pending data packets 
-size_t MicroStrain3DMG::GetNumData(void* client)
-{
-  //printf("q_count %d\n", this->q_count);
-  return this->q_count;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get pending data packets
-// TODO: queue doesnt work for internal clients.  Re-thing or remove
-size_t MicroStrain3DMG::GetData(void* client, unsigned char* dest, size_t len,
-                                uint32_t* timestamp_sec, uint32_t* timestamp_usec)
-{
-  assert(len >= sizeof(player_position3d_data_t));
-  if (this->Pop((player_position3d_data_t*) dest, timestamp_sec, timestamp_usec))
-    return sizeof(player_position3d_data_t);
-  return 0;
-}
-*/    
-
-////////////////////////////////////////////////////////////////////////////////
-// Push data to the queue
-void MicroStrain3DMG::Push(player_position3d_data_t *data,
-                           uint32_t time_sec, uint32_t time_usec)
-{
-  this->Lock();
-  
-  // Expand queue as necessary
-  if (this->q_count >= this->q_max_count)
-  {
-    this->q_max_count += 1;
-    this->q_max_count *= 2;
-    this->q_elems = (QElem*) realloc(this->q_elems, this->q_max_count * sizeof(this->q_elems[0]));
-    assert(this->q_elems);
-  }
-
-  // Push the data onto the end of the queue
-  this->q_elems[this->q_count].data = *data;
-  this->q_elems[this->q_count].time_sec = time_sec;
-  this->q_elems[this->q_count].time_usec = time_usec;
-  this->q_count += 1;
-
-  this->Unlock();
-  
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Pop data from the queue; returns the number of items popped
-int MicroStrain3DMG::Pop(player_position3d_data_t *data,
-                         uint32_t *time_sec, uint32_t *time_usec)
-{
-  if (this->q_count == 0)
-    return 0;
-
-  this->Lock();
-  
-  // Grab the data from the front of the queue
-  *data = this->q_elems[0].data;
-  if (time_sec)
-    *time_sec = this->q_elems[0].time_sec;
-  if (time_sec)
-    *time_usec = this->q_elems[0].time_usec;
-  
-  // Shift the remaining elements
-  this->q_count -= 1;
-  memmove(this->q_elems, this->q_elems + 1, this->q_count * sizeof(this->q_elems[0]));
-
-  this->Unlock();
-    
-  return 1;
 }
 
 
@@ -365,9 +246,6 @@ void MicroStrain3DMG::Main()
       data.stall = 0;
 
       this->PutData((uint8_t*) &data, sizeof(data), time.tv_sec, time.tv_usec);
-      
-      // Make data available
-      // REMOVE this->Push(&data, time.tv_sec, time.tv_usec);
     }
     else
       assert(false);

@@ -169,7 +169,6 @@ class Driver
     virtual void PutData(player_device_id_t id,
                          void* src, size_t len,
                          uint32_t timestamp_sec, uint32_t timestamp_usec);
-
         
     /// Read data from the driver; @a id specifies the interface to be read.
     virtual size_t GetData(player_device_id_t id, void* client,  
