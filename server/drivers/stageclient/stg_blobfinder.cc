@@ -77,7 +77,7 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
 {  
   
   stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
-  
+
   if( prop )
     {
       stg_blobfinder_blob_t *blobs = (stg_blobfinder_blob_t*)prop->data;
@@ -173,9 +173,18 @@ size_t StgBlobfinder::GetData(void* client, unsigned char* dest, size_t len,
 	  bfd.header[ch].num = htons(bfd.header[ch].num);
 	}
       
+      // get the configuration
+      stg_property_t* cfg_prop = 
+	stg_model_get_prop_cached( model, STG_PROP_CONFIG);
+      
+      assert( cfg_prop );
+      assert( cfg_prop->data );
+      assert( cfg_prop->len == sizeof(stg_blobfinder_config_t) );
+      stg_blobfinder_config_t* cfg = (stg_blobfinder_config_t*)cfg_prop->data;
+      
       // and set the image width * height
-      bfd.width = htons((uint16_t)160);
-      bfd.height = htons((uint16_t)120);
+      bfd.width = htons((uint16_t)cfg->scan_width);
+      bfd.height = htons((uint16_t)cfg->scan_height);
       
       CDevice::PutData( &bfd, sizeof(bfd), 0,0 ); // time gets filled in
     }
