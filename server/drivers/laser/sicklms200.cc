@@ -187,7 +187,9 @@ class SickLMS200 : public CDevice
 
   bool can_do_hi_speed;
   int port_rate;
-  //struct serial_struct old_serial;
+#ifdef HAVE_HI_SPEED_SERIAL
+  struct serial_struct old_serial;
+#endif
 };
 
 // a factory creation function
@@ -623,7 +625,7 @@ int SickLMS200::OpenTerm()
 //
 int SickLMS200::CloseTerm()
 {
-#ifdef HAV_HI_SPEED_SERIAL
+#ifdef HAVE_HI_SPEED_SERIAL
   if (ioctl(this->laser_fd, TIOCSSERIAL, &this->old_serial) < 0) {
     RETURN_ERROR(1, "error trying to reset serial to old state");
   }
