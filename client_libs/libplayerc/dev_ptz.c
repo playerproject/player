@@ -79,18 +79,18 @@ void playerc_ptz_putdata(playerc_ptz_t *device, player_msghdr_t *header,
 {
   device->pan = ((short) ntohs(data->pan)) * M_PI / 180;
   device->tilt = ((short) ntohs(data->tilt)) * M_PI / 180;
-  device->zoom = ntohs(data->zoom);
+  device->zoom = ((short) ntohs(data->zoom)) * M_PI / 180;
 }
 
 
 // Set the pan, tilt and zoom values.
-int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, int zoom)
+int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom)
 {
   player_ptz_cmd_t cmd;
 
   cmd.pan = htons((short) (pan * 180 / M_PI));
   cmd.tilt = htons((short) (tilt * 180 / M_PI));
-  cmd.zoom = htons(zoom);
+  cmd.zoom = htons((short) (zoom * 180 / M_PI));
 
   return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
 }
