@@ -872,9 +872,17 @@ void RFLEX::set_odometry(long mm_x, long mm_y, short deg_theta) {
 }
 
 void RFLEX::update_everything(player_rflex_data_t* d, CDevice* sonarp, CDevice *bumperp, CDevice * irp) {
-  int arb_ranges[rflex_configs.num_sonars];
-  char abumper_ranges[rflex_configs.bumper_count];
-  unsigned char air_ranges[rflex_configs.ir_poses.pose_count];
+
+  int arb_ranges[PLAYER_SONAR_MAX_SAMPLES];
+  char abumper_ranges[PLAYER_BUMPER_MAX_SAMPLES];
+  unsigned char air_ranges[PLAYER_IR_MAX_SAMPLES];
+
+  // changed these variable-size array declarations to the 
+  // bigger-than-necessary ones above, because older versions of gcc don't
+  // support variable-size arrays.
+  // int arb_ranges[rflex_configs.num_sonars];
+  // char abumper_ranges[rflex_configs.bumper_count];
+  // unsigned char air_ranges[rflex_configs.ir_poses.pose_count];
 
   static int initialized = 0;
 

@@ -985,7 +985,12 @@ REB::ReadAD(int channel)
 int
 Khepera::ReadAllIR()
 {
-	int Values[ntohs(geometry->ir.pose_count)];
+	int Values[PLAYER_IR_MAX_SAMPLES];
+
+        // changed these variable-size array declarations to the 
+        // bigger-than-necessary ones above, because older versions of gcc don't
+        // support variable-size arrays.
+	// int Values[ntohs(geometry->ir.pose_count)];
 
 	if(Serial->KheperaCommand('N',0,NULL,ntohs(geometry->ir.pose_count),Values) < 0)
 		return -1;			

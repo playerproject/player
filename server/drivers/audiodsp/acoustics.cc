@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
@@ -527,13 +528,23 @@ int Acoustics::SetBufferSize(int _size)
 int Acoustics::ListenForTones()
 {
   int result=0;
+  static int* frequency = NULL;
+  static int* amplitude = NULL;
+
+  if(!frequency)
+    assert(frequency = (int*)malloc(sizeof(int)*((this->N/2)+1)));
+  if(!amplitude)
+    assert(amplitude = (int*)malloc(sizeof(int)*(this->N/2)));
 
   if( !Record() )
   {
     int i,k;
 
-    int frequency[(this->N/2)+1];
-    int amplitude[this->N/2];
+    // changed these variable-size array declarations to the dynamically
+    // managed one above, because older versions of gcc don't support
+    // variable-size arrays.
+    /* int frequency[(this->N/2)+1]; */
+    /* int amplitude[this->N/2]; */
 
     // We will just do a Fourer transform over the first 1024 samples.
     //double* fft = new double[this->N];

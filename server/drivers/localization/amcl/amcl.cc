@@ -146,7 +146,7 @@ AdaptiveMCL::AdaptiveMCL(char* interface, ConfigFile* cf, int section)
   // Create the sensor data queue
   this->q_len = 0;
   this->q_size = 20000;
-  this->q_data = new (AMCLSensorData*)[this->q_size];
+  this->q_data = new AMCLSensorData*[this->q_size];
 
   // Particle filter settings
   this->pf = NULL;
