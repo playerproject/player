@@ -15,7 +15,7 @@ OBS = playerclient.o clientproxy.o laserproxy.o sonarproxy.o miscproxy.o \
       laserbeaconproxy.o visionproxy.o  \
       gpsproxy.o playermulticlient.o bpsproxy.o broadcastproxy.o moteproxy.o \
       rwi_positionproxy.o rwi_sonarproxy.o rwi_laserproxy.o rwi_bumperproxy.o \
-      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o 
+      rwi_powerproxy.o truthproxy.o descartesproxy.o idarproxy.o idarturretproxy.o
 
 all: $(LIBNAME)
 
@@ -80,6 +80,8 @@ $(LIBNAME): $(OBS) $(C_CLIENT_DIR)/$(C_CLIENT_OBJ)
 	$(LN) -s $(PWD)/descartesproxy.h ../../include
 	$(RM) -f ../../include/idarproxy.h 
 	$(LN) -s $(PWD)/idarproxy.h ../../include
+	$(RM) -f ../../include/idarturretproxy.h 
+	$(LN) -s $(PWD)/idarturretproxy.h ../../include
 
 $(C_CLIENT_DIR)/$(C_CLIENT_OBJ):
 	cd $(C_CLIENT_DIR) && make $(C_CLIENT_OBJ)

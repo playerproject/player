@@ -54,69 +54,78 @@ parse_args(int argc, char** argv)
   }
 }
 
-#define NUM_IDARS 8
 
 int main(int argc, char **argv)
 {
-  //unsigned short min_front_dist = 500;
-  //unsigned short really_min_front_dist = 300;
-  //char avoid;
-
   parse_args(argc,argv);
-
+  
   PlayerClient robot(host,port);
   robot.SetFrequency( 5 ); // request data at 5Hz
   
   DescartesProxy dp(&robot,0,'a');
-
-  IDARProxy *ip[ NUM_IDARS ];
-
-  for( int i=0; i < NUM_IDARS; i++ )
-    assert( ip[i] = new IDARProxy(&robot,i,'a') );
-
+  IDARTurretProxy ip(&robot,0,'a');
+  
   // try a few reads
   for( int a=0; a<5; a++ )
     if(robot.Read()) exit(1);    
-    
+  
   short speed = 100;     // mm/sec
   short heading = 0;     // degrees
   short distance = 1000; // mm
-
+  
   idartx_t send_msg;
-  idarrx_t recv_msg;
-
+  
   // compose a message
   memcpy( &send_msg.mesg, &MESSAGE_BYTES, MESSAGE_LEN );
   send_msg.len = MESSAGE_LEN;
   send_msg.intensity = 50;
+  
 
+  // assemble some messages
+  player_idarturret_config_t send_msgs;
 
-  for( int g=0; /* loop forever */ ; g++)
-  {
+  // copy the same message into all the send slots
+  for( int i=0; i<PLAYER_IDARTURRET_IDAR_COUNT; i++ )
+    memcpy( &send_msgs.tx[i], &send_msg, sizeof(send_msg) );
+  
+
+  player_idarturret_reply_t recv_msgs;
     
-    // send the message from all idars
-    for( int i=0; i < NUM_IDARS; i++ )
-      if( ip[i]->SendMessage( &send_msg ) < 0 )
+  struct timeval start_tv, end_tv;
+  gettimeofday( &start_tv, NULL );
+
+  int num_loops = 100;
+  //for( int g=0; /* loop forever */ ; g++)
+  for( int g=0; g < num_loops ; g++)
+    {
+      if( ip.SendMessages( &send_msgs ) < 0 )
 	puts( "idar send failed" );
-    
-    // fetch received messages
-    for( int i=0; i < NUM_IDARS; i++ )
-      {
-	if( ip[i]->GetMessage( &recv_msg ) < 0 )
-	  puts( "idar receive failed" );
-	
-	ip[i]->PrintMessage( &recv_msg );
-      }
+      
+      if( ip.GetMessages( &recv_msgs ) < 0 )
+	puts( "idar receive failed" );
+      
+      ip.PrintMessages( &recv_msgs );
+  
+  
+      // wait for the playerclient to get new data
+      if(robot.Read()) exit(1);
+      
+      dp.Print();
+      
+      
+      // write occasional commands to robot
+      if( (g % 15) == 0 )
+	dp.Move( speed, heading=((heading+100)%360), distance );
+      
+    }
+  gettimeofday( &end_tv, NULL );
 
-    // wait for the playerclient to get new data
-    if(robot.Read()) exit(1);
- 
-    dp.Print();
+  double start_time = start_tv.tv_sec + start_tv.tv_usec / 1000000.0;
+  double end_time = end_tv.tv_sec + end_tv.tv_usec / 1000000.0;
 
-    
-    /* write occasional commands to robot */
-    if( (g % 5) == 0 )
-      dp.Move( speed, heading=((heading+100)%360), distance );
-  }
+  printf( "loop time: %.4f - time per config %.4f\n", 
+	  end_time - start_time,
+	  (end_time - start_time) / (double)num_loops );
 }
+
 
