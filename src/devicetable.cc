@@ -119,6 +119,7 @@ int
 CDeviceTable::AddDevice(player_device_id_t id, unsigned char access, 
                         CDevice* devicep)
 {
+  //printf("AddDevice(%d:%d:%d)\n", id.code, id.index, id.port);
   return(AddDevice(id,access,NULL,NULL,devicep));
 }
     

@@ -110,12 +110,16 @@ void
 Usage()
 {
   puts("");
-  fprintf(stderr, "USAGE: player [-port <port>] [-stage <path>] [-sane] "
-          "[DEVICE]...\n");
+  fprintf(stderr, "USAGE: player [-port <port>] [-stage <path>] "
+          "[-dl <shlib>] \n");
+  fprintf(stderr, "              [-key <key>] [-sane] [DEVICE]...\n");
   fprintf(stderr, "  -port <port>  : TCP port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
   fprintf(stderr, "  -stage <path> : use memory-mapped IO with Stage "
-          "through the devices in this directory\n");
+          "through the devices in\n                  this directory\n");
+  fprintf(stderr, "  -dl <shlib>   : load the the indicated shared library\n");
+  fprintf(stderr, "  -key <key>    : require client authentication with the "
+          "given key\n");
   fprintf(stderr, "  -sane         : use the compiled-in device defaults:\n");
   for(int i=0;sane_spec[i];i++)
     fprintf(stderr, "                      %s\n",sane_spec[i]);
@@ -423,15 +427,20 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           // by Stage...
           if(deviceIO->local || !deviceIO->local)
           {
-            int argc = 0;
-            char *argv[2];
-            char tmpindex[32];
             // We make the assumption that this bps device should read from 
             // the laser and position devices that are identified by the same 
             // index as itself.
+            // 
+            // Yes, but this assumption is now executed in the bps's Setup(),
+            // where it knows its own index
+            /*
+            int argc = 0;
+            char *argv[2];
+            char tmpindex[32];
             argv[argc++] = "index";
             sprintf(tmpindex,"%d",deviceIO->player_id.index);
             argv[argc++] = tmpindex;
+            */
 
             // find the bps device in the available device table
             CDeviceEntry* entry;
@@ -444,7 +453,7 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
             {
               // add it to the instantiated device table
               deviceTable->AddDevice(deviceIO->player_id, PLAYER_ALL_MODE, 
-                                     (*(entry->initfunc))(argc,argv));
+                                     (*(entry->initfunc))(0,NULL));
  
 
               // add this port to our listening list

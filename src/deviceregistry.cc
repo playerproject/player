@@ -247,6 +247,7 @@ parse_device_string(char* str1, char* str2)
     player_device_id_t id;
     id = entry->id;
     id.port = global_playerport;
+    id.index = index;
 
     tmpdevice = (*(entry->initfunc))(argc,argv);
     deviceTable->AddDevice(id, entry->access, tmpdevice);

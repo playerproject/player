@@ -90,7 +90,9 @@ struct CBpsObs
 CBpsDevice::CBpsDevice(int argc, char** argv) :
   CDevice(sizeof(player_bps_data_t),0,1,1)
 {
-  this->index = 0;
+  // if index is not overridden by an argument here, then we'll use the
+  // device's own index, which we can get in Setup() below.
+  this->index = -1;
   for(int i=0;i<argc;i++)
   {
     if(!strcmp(argv[i],"index"))
@@ -132,19 +134,34 @@ int CBpsDevice::Setup()
   // Get pointers to other devices
   player_device_id_t id;
   id.port = device_id.port;
-  id.index = this->index;
+  // if index was not overridden by an argument in the constructor, then we
+  // use the device's own index
+  if(this->index >= 0)
+    id.index = index;
+  else
+    id.index = device_id.index;
 
   id.code = PLAYER_POSITION_CODE;
-  this->position = deviceTable->GetDevice(id);
+  printf("CBpsDevice:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
+  if(!(this->position = deviceTable->GetDevice(id)))
+  {
+    fputs("CBpsDevice:Setup(): couldn't find position device\n",stderr);
+    return(-1);
+  }
   id.code = PLAYER_LASERBEACON_CODE;
-  this->laserbeacon = deviceTable->GetDevice(id);
+  printf("CBpsDevice:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
+  if(!(this->laserbeacon = deviceTable->GetDevice(id)))
+  {
+    fputs("CBpsDevice:Setup(): couldn't find laserbeacon device\n",stderr);
+    return(-1);
+  }
 
   // Subscribe to devices, but fail if they do
-  if((this->position == NULL) || (this->laserbeacon == NULL) ||
-     (this->position->Subscribe(this) != 0) || 
+  if((this->position->Subscribe(this) != 0) || 
      (this->laserbeacon->Subscribe(this) != 0))
   {
-    puts("CBpsDevice::Setup(): failed to connect to supporting devices");
+    fputs("CBpsDevice::Setup(): failed to connect to supporting devices\n",
+          stderr);
     return(-1);
   }
     
