@@ -9,6 +9,7 @@ GripperProxy.tex
 FiducialProxy.tex
 LaserProxy.tex
 PositionProxy.tex
+Position3DProxy.tex
 PtzProxy.tex
 SonarProxy.tex
 TruthProxy.tex
