@@ -223,8 +223,10 @@ int
 SegwayRMP::Setup()
 {
   // Clear the command buffers
-  ClearCommand(this->position_id);
-  ClearCommand(this->position3d_id);
+  if (this->position_id.code)
+    ClearCommand(this->position_id);
+  if (this->position3d_id.code)
+    ClearCommand(this->position3d_id);
 
   printf("segwayrmp: CAN bus initializing...");
   fflush(stdout);
@@ -305,6 +307,7 @@ SegwayRMP::Main()
   void *client;
   CanPacket pkt;
   int32_t xspeed,yawspeed;
+  bool got_command;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
@@ -353,41 +356,49 @@ SegwayRMP::Main()
     // start with the last commanded values
     xspeed = this->last_xspeed;
     yawspeed = this->last_yawspeed;
+    got_command = false;
 
     // Check for commands from the position interface
-    if(GetCommand(this->position_id, (void*) &position_cmd, 
-                  sizeof(position_cmd),NULL))
+    if (this->position_id.code)
     {
-      // zero the command buffer, so that we can timeout if a client doesn't
-      // send commands for a while
-      ClearCommand(this->position_id);
+      if(GetCommand(this->position_id, (void*) &position_cmd, 
+                    sizeof(position_cmd),NULL))
+      {
+        // zero the command buffer, so that we can timeout if a client doesn't
+        // send commands for a while
+        ClearCommand(this->position_id);
 
-      // convert to host order; let MakeVelocityCommand do the rest
-      xspeed = ntohl(position_cmd.xspeed);
-      yawspeed = ntohl(position_cmd.yawspeed);
-      motor_enabled = position_cmd.state && motor_allow_enable;
-      timeout_counter=0;
+        // convert to host order; let MakeVelocityCommand do the rest
+        xspeed = ntohl(position_cmd.xspeed);
+        yawspeed = ntohl(position_cmd.yawspeed);
+        motor_enabled = position_cmd.state && motor_allow_enable;
+        timeout_counter=0;
+        got_command = true;
+      }
     }
 
     // Check for commands from the position3d interface
-    else if(GetCommand(this->position3d_id, (void*) &position3d_cmd, 
-                       sizeof(position3d_cmd),NULL))
+    if (this->position3d_id.code)
     {
-      // zero the command buffer, so that we can timeout if a client doesn't
-      // send commands for a while
-      ClearCommand(this->position3d_id);
+      if(GetCommand(this->position3d_id, (void*) &position3d_cmd, 
+                    sizeof(position3d_cmd),NULL))
+      {
+        // zero the command buffer, so that we can timeout if a client doesn't
+        // send commands for a while
+        ClearCommand(this->position3d_id);
 
-      // convert to host order; let MakeVelocityCommand do the rest
-      // Position3d uses milliradians/sec, so convert here to
-      // degrees/sec
-      xspeed = ntohl(position3d_cmd.xspeed);
-      yawspeed = (int32_t) (((double) (int32_t) ntohl(position3d_cmd.yawspeed)) / 1000 * 180 / M_PI);
-      motor_enabled = position3d_cmd.state && motor_allow_enable;
-      timeout_counter=0;
+        // convert to host order; let MakeVelocityCommand do the rest
+        // Position3d uses milliradians/sec, so convert here to
+        // degrees/sec
+        xspeed = ntohl(position3d_cmd.xspeed);
+        yawspeed = (int32_t) (((double) (int32_t) ntohl(position3d_cmd.yawspeed)) / 1000 * 180 / M_PI);
+        motor_enabled = position3d_cmd.state && motor_allow_enable;
+        timeout_counter=0;
+        got_command = true;
+      }
     }
-
     // No commands, so we may timeout soon
-    else
+    if (!got_command)
       timeout_counter++;
 
     if(timeout_counter >= RMP_TIMEOUT_CYCLES)
@@ -660,14 +671,14 @@ SegwayRMP::HandlePosition3DConfig(void* client, unsigned char* buffer, size_t le
 
       printf("SEGWAYRMP: motors state: %d\n", this->motor_allow_enable);
 
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
+      if(PutReply(this->position3d_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
       break;
 
     default:
       printf("segwayrmp received unknown config request %d\n", 
              buffer[0]);
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
+      if(PutReply(this->position3d_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL))
         PLAYER_ERROR("Failed to PutReply in segwayrmp\n");
       break;
   }
