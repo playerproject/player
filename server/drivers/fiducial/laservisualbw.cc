@@ -122,13 +122,20 @@ class LaserVisualBW : public CDevice
 
   // Process any new camera data.
   private: int UpdateCamera();
-    
+
+  // Extract a bit string from the image.  
+  private: int ExtractSymbols(int x, int symbol_max_count, int symbols[]);
+
+  // Extract a code from a symbol string.
+  private: int ExtractCode(int symbol_count, int symbols[]);
+  
   // Write the device data (the data going back to the client).
   private: void WriteData();
   
-  // Fiducial properties.
+  // Barcode tolerances
   private: int barcount;
-  private: double barwidth, barheight;
+  private: double barwidth;
+  private: double guard_min, guard_tol;
 
   // Max time to spend looking at a fiducial.
   private: double max_ptz_attention;
@@ -153,6 +160,7 @@ class LaserVisualBW : public CDevice
   private: int camera_index;
   private: CDevice *camera;
   private: double camera_time;
+  private: player_camera_data_t camera_data;
 
   // List of currently tracked fiducials.
   private: int fiducial_count;
@@ -212,9 +220,12 @@ LaserVisualBW::LaserVisualBW(char* interface, ConfigFile* cf, int section)
   this->max_dist = cf->ReadFloat(section, "max_dist", 0.2);
   
   // Default fiducial properties.
-  this->barcount = cf->ReadInt(section, "bit_count", 3);
   this->barwidth = cf->ReadLength(section, "bit_width", 0.08);
-  this->barheight = cf->ReadLength(section, "bit_height", 0.02);
+  this->barcount = cf->ReadInt(section, "bit_count", 3);
+
+  // Barcode properties: minimum height (pixels), height tolerance (ratio).
+  this->guard_min = cf->ReadInt(section, "guard_min", 4);
+  this->guard_tol = cf->ReadLength(section, "guard_tol", 0.20);
 
   // Reset fiducial list.
   this->fiducial_count = 0;
@@ -483,10 +494,14 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
       // Test moments to see if they are valid.
       valid = 1;
       valid &= (mn >= 1.0);
+
+      // TODO: fix or remove
+      /*
       dr = this->barwidth / 2;
       db = atan2(this->barwidth / 2, mr);
       valid &= (mrr < (dr * dr));
       valid &= (mbb < (db * db));
+      */
       
       if (valid)
       {
@@ -744,9 +759,11 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 
     // See if we have locked on yet.
     if (fiducial->ptz_lockon_time < 0)
+    {
       if (fabs(pan * 180 / M_PI - data->pan) < deadpan &&
           fabs(zoom * 180 / M_PI - data->zoom) < deadzoom)
         fiducial->ptz_lockon_time = time;
+    }
 
     // If we havent locked on yet...
     if (fiducial->ptz_lockon_time < 0)
@@ -774,23 +791,205 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 // Process any new camera data.
 int LaserVisualBW::UpdateCamera()
 {
-  player_camera_data_t data;
   size_t size;
   uint32_t timesec, timeusec;
   double time;
   
   // Get the camera data.
-  size = this->camera->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
+  size = this->camera->GetData(this, (unsigned char*) &this->camera_data,
+                               sizeof(this->camera_data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
 
   // Dont do anything if this is old data.
-  if (time == this->camera_time)
+  if (fabs(time - this->camera_time) < 0.001)
     return 0;
   this->camera_time = time;
 
+  // Do some byte swapping
+  this->camera_data.width = ntohs(this->camera_data.width);
+  this->camera_data.height = ntohs(this->camera_data.height); 
+  this->camera_data.depth = this->camera_data.depth;
+  
+  // TESTING: save the image
+  FILE *fp;
+  fp = fopen( "image.ppm", "wb" );
+  if (!fp)
+  {
+    PLAYER_ERROR1( "unable to open file %s\n for writing", "image.ppm" );
+    return 0;
+  }
+  fprintf( fp, "P6\n# Gazebo\n%d %d\n255\n", this->camera_data.width, this->camera_data.height );
+  for (int i = 0; i < this->camera_data.height; i++)
+    fwrite( this->camera_data.image + i * this->camera_data.width * 3, 1,
+            this->camera_data.width * 3, fp );
+  fclose( fp );
+
+  int i, x;
+  int symbol_count;
+  int symbols[480];
+  int codes[16];
+  
+  // Look for barcodes; we try reading in several columns
+  for (i = 0; i < 1; i++)
+  {
+    x = this->camera_data.width / 2 + (i - 1);
+
+    // Extract raw symbols
+    symbol_count = this->ExtractSymbols(x, sizeof(symbols) / sizeof(symbols[0]), symbols);
+
+    // Look for barcodes
+    codes[i] = this->ExtractCode(symbol_count, symbols);
+  }
+
+  // Look for a consistent set of codes
   // TODO
   
+  
   return 1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Extract a bit string from the image.  Takes a vertical column in
+// the image and thresholds it.
+int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
+{
+  int i, off, inc, pix;
+  uint8_t v, white_thresh, black_thresh;
+  int state, start, symbol_count;
+
+  // RGB24, use G channel
+  if (this->camera_data.depth == 24)
+  {
+    off = x * this->camera_data.depth / 8 + 1;
+    inc = this->camera_data.width * this->camera_data.depth / 8;
+  }
+  else
+  {
+    PLAYER_ERROR1("no support  for image depth %d", this->camera_data.depth);
+    return 0;
+  }
+
+  /* TODO
+  // Construct intensity histogram to determine thresholds
+  for (y = 0; y < this->camera_data.height; y++)
+  {
+  }
+  */
+
+  // TESTING
+  white_thresh = 128 + 20;
+  black_thresh = 128 - 20;
+
+  assert(symbol_max_count >= this->camera_data.height);
+
+  state = -1;
+  start = -1;
+  symbol_count = 0;
+  
+  // Symbols; white pixels are space, black pixels are marks.
+  for (i = 0, pix = off; i < this->camera_data.height; i++, pix += inc)
+  {
+    v = this->camera_data.image[pix];
+
+    if (state == -1)
+    {
+      if (v < black_thresh)
+      {
+        state = 1;
+        start = i;
+      }
+      else if (v > white_thresh)
+      {
+        state = 0;
+        start = i;
+      }
+    }
+    else if (state == 0)
+    {
+      if (v < black_thresh)
+      {
+        symbols[symbol_count++] = -(i - start + 1);
+        state = 1;
+        start = i;
+      }
+    }
+    else if (state == 1)
+    {
+      if (v > white_thresh)
+      {
+        symbols[symbol_count++] = +(i - start + 1);
+        state = 0;
+        start = i;
+      }
+    }
+  }
+
+  return symbol_count;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Extract a code from a symbol string.
+int LaserVisualBW::ExtractCode(int symbol_count, int symbols[])
+{
+  int i, j, k;
+  double a, b, c;
+  double mean, min, max, wm, wo;
+  double err[10];
+  double digits[][4] = {{-3,+2,-1,+1},
+                        {-2,+2,-2,+1},
+                        {-2,+1,-2,+2}};
+
+  // Note that each code has seven symbols in it, not counting the
+  // initial space.
+  
+  for (i = 0; i < symbol_count - 7; i++)
+  {
+    for (j = 0; j < 7; j++)
+      printf("%+d", symbols[i + j]);
+    printf("\n");
+
+    a = symbols[i];
+    b = symbols[i + 1];
+    c = symbols[i + 2];
+
+    // Look for a start guard: +N-N+N
+    if (a > this->guard_min && b < -this->guard_min && c > this->guard_min)
+    {
+      mean = (a - b + c) / 3.0;
+      min = MIN(a, MIN(-b, c));
+      max = MAX(a, MAX(-b, c));
+      assert(mean > 0);
+
+      if ((mean - min) / mean > this->guard_tol)
+        continue;
+      if ((max - mean) / mean > this->guard_tol)
+        continue;
+
+      printf("guard %d %.2f\n", i, mean);
+
+      // Read the code digit (4 symbols) and compare against the know
+      // digit patterns
+      for (k = 0; k < 3; k++)
+      {
+        err[k] = 0;        
+        for (j = 0; j < 4; j++)
+        {
+          wm = digits[k][j];
+          wo = symbols[i + 3 + j] / mean;
+          printf("digit %d %.3f %.3f\n", k, wm, wo);
+          err[k] += fabs(wo - wm);
+        }
+
+        printf("digit %d = %.3f\n", k, err[k]);
+      }
+    }    
+  }
+
+  printf("\n\n");
+
+  return -1;
 }
 
 

@@ -172,7 +172,7 @@ size_t GzCamera::GetData(void* client, unsigned char* dest, size_t len,
   // Get the image properties
   data.width = htons(this->iface->data->width);
   data.height = htons(this->iface->data->height);
-  data.depth = this->iface->data->height;
+  data.depth = this->iface->data->depth;
   data.image_size = htonl(this->iface->data->image_size);
 
   // Get the image pixels
