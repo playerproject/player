@@ -57,7 +57,7 @@ for l in lines:
   if l == '--enable and --with options recognized:':
     go = 1
     continue
-  elif not go or len(l) == 0:
+  elif not go or len(l) == 0 or string.find(l,'dependency-tracking') >= 0:
     continue
   else:
     # Munge the comment strings so that the ask an intuitive positive question
