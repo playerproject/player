@@ -3,7 +3,7 @@
  *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
  *                      gerkey@usc.edu    kaspers@robotics.usc.edu
  *
- *  MCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> and 
+ *  LifoMCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> and 
  *  Reed Hedges <reed@zerohour.net> at the Laboratory for Perceptual 
  *  Robotics, Dept. of Computer Science, University of Massachusetts,
  *  Amherst.
@@ -33,7 +33,7 @@
 
 #include "playercommon.h"
 
-#include "mcomdevice.h"
+#include "lifomcom.h"
 
 #ifdef MCOM_PLUGIN
 // todo dl stuff here
@@ -41,28 +41,28 @@
 
 
 /*
-MCom(int argc, char** argv):CDevice(1,1,20,20),Data(){
+LifoMCom(int argc, char** argv):CDevice(1,1,20,20),Data(){
 }
 */
 
-MCom::MCom(char* interface, ConfigFile* cf, int section) :
+LifoMCom::LifoMCom(char* interface, ConfigFile* cf, int section) :
   CDevice(sizeof(player_mcom_data_t), 0, 20, 20)
 {
 }
 
-int MCom::Setup(){
+int LifoMCom::Setup(){
     StartThread(); 
     return 0;
 }
 
-int MCom::Shutdown(){
+int LifoMCom::Shutdown(){
     StopThread(); 
     return 0;
 }
 
 
 
-CDevice* MCom_Init(char* interface, ConfigFile* cf, int section)
+CDevice* LifoMCom_Init(char* interface, ConfigFile* cf, int section)
 {
   if(strcmp(interface, PLAYER_MCOM_STRING))
   {
@@ -71,15 +71,15 @@ CDevice* MCom_Init(char* interface, ConfigFile* cf, int section)
     return(NULL);
   }
   else
-    return((CDevice*)(new MCom(interface, cf, section)));
+    return((CDevice*)(new LifoMCom(interface, cf, section)));
 }
 
 
-void MCom_Register(DriverTable* t) {
-    t->AddDriver(PLAYER_MCOM_STRING, PLAYER_ALL_MODE, MCom_Init);
+void LifoMCom_Register(DriverTable* t) {
+    t->AddDriver("lifomcom", PLAYER_ALL_MODE, LifoMCom_Init);
 }
 
-void MCom::Main() 
+void LifoMCom::Main() 
 {
     void* client;
     player_mcom_config_t cfg;
@@ -130,7 +130,7 @@ void MCom::Main()
 
 
 
-MCom::Buffer::Buffer() {
+LifoMCom::Buffer::Buffer() {
     top = 0;
     for(int x = 0 ; x < MCOM_N_BUFS; x++) {
         dat[x].full=0;
@@ -138,10 +138,10 @@ MCom::Buffer::Buffer() {
     }
 }
 
-MCom::Buffer::~Buffer(){
+LifoMCom::Buffer::~Buffer(){
 }
 
-void MCom::Buffer::Push(player_mcom_data_t newdat) {
+void LifoMCom::Buffer::Push(player_mcom_data_t newdat) {
     top++;
     if(top>=MCOM_N_BUFS)
         top-=MCOM_N_BUFS;
@@ -149,7 +149,7 @@ void MCom::Buffer::Push(player_mcom_data_t newdat) {
     dat[top].full=1;
 }
 
-player_mcom_data_t MCom::Buffer::Pop(){
+player_mcom_data_t LifoMCom::Buffer::Pop(){
     player_mcom_data_t ret;
     ret=dat[top];
     dat[top].full=0;
@@ -160,19 +160,19 @@ player_mcom_data_t MCom::Buffer::Pop(){
     return ret;
 }
 
-player_mcom_data_t MCom::Buffer::Read(){
+player_mcom_data_t LifoMCom::Buffer::Read(){
     player_mcom_data_t ret;
     ret=dat[top];
     return ret;
 }
 
-void MCom::Buffer::Clear(){
+void LifoMCom::Buffer::Clear(){
     int s;
     for(s=0;s<MCOM_N_BUFS;s++)
           dat[s].full=0;
 }
 
-void MCom::Buffer::print(){
+void LifoMCom::Buffer::print(){
     int x;
     printf("mcom buffer dump of type %i channel %s buffer\n",type,channel);
     for(x=0;x<MCOM_N_BUFS;x++)
@@ -180,10 +180,10 @@ void MCom::Buffer::print(){
 }
 
 
-MCom::LinkList::LinkList() : top(NULL){
+LifoMCom::LinkList::LinkList() : top(NULL){
 }
 
-MCom::LinkList::~LinkList(){
+LifoMCom::LinkList::~LinkList(){
     Link *p=top;
     Link *next=p;
     while(p!=NULL){
@@ -193,7 +193,7 @@ MCom::LinkList::~LinkList(){
     }
 }
 
-void MCom::LinkList::Push(player_mcom_data_t d,int type, char channel[MCOM_CHANNEL_LEN]){
+void LifoMCom::LinkList::Push(player_mcom_data_t d,int type, char channel[MCOM_CHANNEL_LEN]){
     Link * p=top;
     if(p==NULL){
         top=new Link;
@@ -217,7 +217,7 @@ void MCom::LinkList::Push(player_mcom_data_t d,int type, char channel[MCOM_CHANN
     p->buf.Push(d);
 }
 
-player_mcom_data_t MCom::LinkList::Pop(int type, char channel[MCOM_CHANNEL_LEN]){
+player_mcom_data_t LifoMCom::LinkList::Pop(int type, char channel[MCOM_CHANNEL_LEN]){
     Link *p=top;
     Link *last;
     player_mcom_data_t ret;
@@ -252,7 +252,7 @@ delete p;
     return ret;
 }
 
-player_mcom_data_t MCom::LinkList::Read(int type,char channel[MCOM_CHANNEL_LEN]){
+player_mcom_data_t LifoMCom::LinkList::Read(int type,char channel[MCOM_CHANNEL_LEN]){
     Link * p=top;
     player_mcom_data_t ret;
     ret.full=0;
@@ -271,7 +271,7 @@ player_mcom_data_t MCom::LinkList::Read(int type,char channel[MCOM_CHANNEL_LEN])
     }
 }
 
-void MCom::LinkList::Clear(int type, char channel[MCOM_CHANNEL_LEN]) {
+void LifoMCom::LinkList::Clear(int type, char channel[MCOM_CHANNEL_LEN]) {
     Link *p = top;
     Link *last = NULL;
     if(p == NULL)

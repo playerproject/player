@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
-EXTRA_LIBRARIES = libmcom.a
-noinst_LIBRARIES = @MCOM_LIB@
-libmcom_a_SOURCES = mcomdevice.cc mcomdevice.h
+EXTRA_LIBRARIES = liblifomcom.a
+noinst_LIBRARIES = @LIFOMCOM_LIB@
+liblifomcom_a_SOURCES = lifomcom.cc lifomcom.h
 
 # TODO: dl/plugin option
 
