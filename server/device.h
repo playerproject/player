@@ -151,8 +151,15 @@ class CDevice
     // it in your device subclass if you need to do some last minute setup with
     // Player all set up and ready to go
     // WANRING: this feature is experimental and may be removed in the future
-    virtual void Prepare() {
-    }
+    virtual void Prepare() {}
+
+    // This method is called once per loop (in Linux, probably either 50Hz or 
+    // 100Hz) by the server.  Threaded drivers can use the default
+    // implementation, which does nothing.  Drivers which don't have their
+    // own threads and do all their work in an overridden GetData() should 
+    // also override Update(), in order to call DataAvailable(), allowing
+    // other drivers to Wait() on this driver.
+    virtual void Update() {}
     
     // these MAY be overridden by the device itself, but then the device
     // is reponsible for Lock()ing and Unlock()ing appropriately
