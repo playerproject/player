@@ -43,6 +43,7 @@ PlayerClient::PlayerClient(char* hostname = NULL, int port=PLAYER_PORTNUM)
   bzero(conn.banner,sizeof(conn.banner));
   proxies = (ClientProxyNode*)NULL;
   num_proxies = 0;
+  fresh = false;
 
   memset( this->hostname, 0, 256 );
   this->port = 0;

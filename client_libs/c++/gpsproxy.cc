@@ -32,6 +32,12 @@
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
 #endif
+    
+// warp the robot
+int GpsProxy::Warp(int x, int y, int heading)
+{
+  return(0);
+}
 
 void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
