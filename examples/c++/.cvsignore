@@ -1,2 +1,16 @@
 Makefile
 Makefile.in
+rsn
+randomwalk
+visualservo
+sonarobstacleavoid
+goto
+ptz
+laserobstacleavoid
+example_from_manual
+say
+grip
+forage
+multilogger
+stress
+pherobot
