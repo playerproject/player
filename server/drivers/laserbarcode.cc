@@ -78,7 +78,7 @@ class LaserBarcode : public CDevice
                            const player_laser_data_t *laser_data);
 
   // Pointer to laser to get data from
-  private: int index;
+  private: int laser_index;
   private: CDevice *laser;
 
   // Defaults
@@ -124,9 +124,9 @@ extern int global_playerport; // used to get at devices
 LaserBarcode::LaserBarcode(char* interface, ConfigFile* cf, int section) :
   CDevice(0,0,0,1)
 {
-  // if index is not overridden by an argument here, then we'll use the
+  // if laser_index is not overridden by an argument here, then we'll use the
   // device's own index, which we can get in Setup() below.
-  this->index = cf->ReadInt(section, "index", -1);
+  this->laser_index = cf->ReadInt(section, "laser", -1);
 
   // Get beacon settings.
   this->default_bitcount = cf->ReadInt(section, "bitcount", 8);
@@ -144,23 +144,18 @@ int LaserBarcode::Setup()
   player_device_id_t id;
   id.port = device_id.port;
   id.code = PLAYER_LASER_CODE;
-  // if index was not overridden by an argument in the constructor, then we
-  // use the device's own index
-  if(this->index >= 0)
-    id.index = index;
-  else
-    id.index = device_id.index;
-  printf("LaserBarcode:Setup(%d:%d:%d)\n", id.code,id.index,id.port);
-  if(!(this->laser = deviceTable->GetDevice(id)))
+  id.index = (this->laser_index >= 0 ? this->laser_index : this->device_id.index);
+  this->laser = deviceTable->GetDevice(id);
+  if(!this->laser)
   {
-    fputs("LaserBarcode:Setup(): couldn't find laser device\n",stderr);
+    PLAYER_ERROR("unable to find laser device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
   if(this->laser->Subscribe(this) != 0)
   {
-    fputs("LaserBarcode:Setup(): couldn't setup laser device\n",stderr);
+    PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
 
