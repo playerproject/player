@@ -130,13 +130,13 @@ int main(int argc, char **argv)
   
   // Create a list of available devices, with their gui proxies.
   device_count = 0;
-  for (i = 0; i < client->id_count; i++)
+  for (i = 0; i < client->devinfo_count; i++)
   {
     device = devices + device_count;
     
-    device->code = client->ids[i].code;
-    device->index = client->ids[i].index;
-    device->drivername = strdup(client->drivernames[i]);
+    device->code = client->devinfos[i].code;
+    device->index = client->devinfos[i].index;
+    device->drivername = strdup(client->devinfos[i].drivername);
 
     // See if the device should be subscribed immediately.
     snprintf(section, sizeof(section), "%s:%d", playerc_lookup_name(device->code), device->index);
