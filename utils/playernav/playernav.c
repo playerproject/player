@@ -74,7 +74,10 @@ main(int argc, char** argv)
   {
     // non-blocking GTK event servicing
     while(gtk_events_pending())
-      gtk_main_iteration_do(0);
+    {
+      puts("gtk_main_iteration_do");
+      gtk_main_iteration_do(1);
+    }
 
     // read new data
     if(playerc_mclient_read(gui_data.mclient,10) < 0)
@@ -100,15 +103,28 @@ main(int argc, char** argv)
           robot_pose.px = robot_pose.py = 0.0;
         }
 
-        // don't draw the new pose if the user in the middle of moving the
+        // don't draw the new pose if the user is in the middle of moving the
         // robot
         if(!robot_moving_p || (robot_moving_idx != i))
-          move_robot(gui_data.robot_items[i],robot_pose);
+        {
+          // also don't draw it if the pose hasn't changed since last time
+          if((gui_data.robot_poses[i].px != robot_pose.px) ||
+             (gui_data.robot_poses[i].py != robot_pose.py) ||
+             (gui_data.robot_poses[i].pa != robot_pose.pa))
+          {
+            printf("moving robot %d\n", i);
+            move_robot(gui_data.robot_items[i],robot_pose);
+          }
+        }
+
+        // regardless, store this pose for comparison on next iteration
+        gui_data.robot_poses[i] = robot_pose;
+
         gui_data.localizes[i]->info.fresh = 0;
       }
 
       // every once in a while, get the latest path from each robot
-      if(!(count % (DATA_FREQ * 10 * gui_data.num_robots)))
+      if(!(count % (DATA_FREQ * 50 * gui_data.num_robots)))
       {
         if(gui_data.planners[i])
         {
@@ -118,6 +134,7 @@ main(int argc, char** argv)
             quit=1;
             break;
           }
+          puts("drawing waypoints");
           draw_waypoints(&gui_data,i);
         }
       }
