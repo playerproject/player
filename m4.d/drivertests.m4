@@ -78,13 +78,17 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 
 AC_DEFUN([PLAYER_DRIVERTESTS], [
 
-dnl Where's CANLIB??
+dnl Where's CANLIB?
 AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],
 CANLIB_DIR=$with_canlib,CANLIB_DIR=$prefix)
 if test "x$CANLIB_DIR" = "xNONE" -o "x$CANLIB_DIR" = "xno"; then
   SEGWAYRMP_HEADER=canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS=
   SEGWAYRMP_EXTRA_LDFLAGS=-lcanlib
+elif test "x$CANLIB_DIR" = "xyes"; then
+  SEGWAYRMP_HEADER=$prefix/include/canlib.h
+  SEGWAYRMP_EXTRA_CPPFLAGS="-I$prefix/include"
+  SEGWAYRMP_EXTRA_LDFLAGS="-L$prefix/lib -lcanlib"
 else
   SEGWAYRMP_HEADER=$CANLIB_DIR/include/canlib.h
   SEGWAYRMP_EXTRA_CPPFLAGS="-I$CANLIB_DIR/include"
@@ -253,6 +257,10 @@ if test "x$GAZEBO_DIR" = "xNONE" -o "x$GAZEBO_DIR" = "xno"; then
   GAZEBO_HEADER=gazebo.h
   GAZEBO_EXTRA_CPPFLAGS=
   GAZEBO_EXTRA_LDFLAGS=-lgazebo
+elif test "x$GAZEBO_DIR" = "xyes"; then
+  GAZEBO_HEADER=$prefix/include/gazebo.h
+  GAZEBO_EXTRA_CPPFLAGS="-I$prefix/include"
+  GAZEBO_EXTRA_LDFLAGS="-L$prefix/lib -lgazebo"
 else
   GAZEBO_HEADER=$GAZEBO_DIR/include/gazebo.h
   GAZEBO_EXTRA_CPPFLAGS="-I$GAZEBO_DIR/include"
@@ -291,7 +299,7 @@ AC_LANG_RESTORE
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
 AC_ARG_ENABLE(amcl,
-[  --enable-amcl           Compile the amcl driver],,enable_amcl=yes)
+[  --disable-amcl           Don't compile the amcl driver],,enable_amcl=yes)
 if test "x$enable_amcl" = "xyes"; then
   AC_CHECK_HEADER(gsl/gsl_version.h,enable_amcl=yes,enable_amcl=no)
 fi
