@@ -27,7 +27,6 @@ class DGPSServer:
 
         self.udp_open()
         self.serial_open()
-
         return
 
 
@@ -43,7 +42,7 @@ class DGPSServer:
             self.udp_write(data)
 
             counter += 1
-            print 'sending: %d\r' % counter,
+            print 'sending data on %s %d -- %d\r' % (self.udp_ip, self.udp_port, counter),
             sys.stdout.flush()
 
         return
@@ -86,7 +85,7 @@ class DGPSServer:
         # Block until we get one byte
         data = os.read(self.serial_fd, 1)
 
-        # Read following bytes
+        # Read following bytes, allow for a 100ms gap between messages
         while p.poll(100):
             data += os.read(self.serial_fd, 1)
 
@@ -105,7 +104,7 @@ if __name__ == '__main__':
     try:
         server.main()
     except KeyboardInterrupt:
-        pass
+        print 
 
     
     
