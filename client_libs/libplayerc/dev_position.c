@@ -152,7 +152,7 @@ int playerc_position_set_speed(playerc_position_t *device, double vx, double vy,
 
 
 // Set the target pose
-int playerc_position_set_pose(playerc_position_t *device, double gx, double gy, double ga)
+int playerc_position_set_cmd_pose(playerc_position_t *device, double gx, double gy, double ga)
 {
   player_position_cmd_t cmd;
 

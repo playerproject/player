@@ -626,8 +626,8 @@ int  playerc_position_set_speed(playerc_position_t *device,
 
 // Set the target pose
 // (gx, gy, ga) is the target pose in the odometric coordinate system.
-int playerc_position_set_pose(playerc_position_t *device,
-                              double gx, double gy, double ga);
+int playerc_position_set_cmd_pose(playerc_position_t *device,
+                                  double gx, double gy, double ga);
 
 
 /***************************************************************************
