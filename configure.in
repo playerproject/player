@@ -387,6 +387,7 @@ dnl          client_libs/pyplayerc/Makefile
           utils/playerv/Makefile
           utils/playerjoy/Makefile
           utils/playernav/Makefile
+          utils/playerprint/Makefile
           utils/playervcr/Makefile
           config/Makefile)
 

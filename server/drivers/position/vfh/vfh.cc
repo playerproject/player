@@ -148,7 +148,7 @@ int VFH_Class::Setup()
   player_position_cmd_t cmd;
 
   memset(&cmd,0,sizeof(cmd));
-  Driver::PutCommand((void*)&cmd,sizeof(cmd),NULL);
+  Driver::PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   this->active_goal = false;
   this->goal_x = this->goal_y = this->goal_t = 0;

@@ -236,6 +236,25 @@ void StageDevice::PutCommand(player_device_id_t id,
   Unlock();
 }
 
+void StageDevice::Update(void)
+{
+  // testing
+#if 0
+  Lock();
+  
+  // is there new data available?
+  if(m_info->data_avail && 
+     (this->m_info->data_timestamp_sec > 
+      this->device->data_timestamp.tv_sec) ||
+     ((this->m_info->data_timestamp_sec ==
+       this->device->data_timestamp.tv_sec) &&
+      (this->m_info->data_timestamp_usec >
+       this->device->data_timestamp.tv_usec)))
+    this->DataAvailable();
+
+  Unlock();
+#endif
+}
 
 void StageDevice::Lock( void )
 {

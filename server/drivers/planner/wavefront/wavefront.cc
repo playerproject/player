@@ -191,7 +191,7 @@ Wavefront::Setup()
 
   memset(&cmd,0,sizeof(cmd));
   memset(&data,0,sizeof(data));
-  PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
   PutData((unsigned char*)&data,sizeof(data),NULL);
 
   this->stopped = true;
@@ -464,7 +464,8 @@ Wavefront::PutPositionCommand(double x, double y, double a)
   cmd.type=1;
   cmd.state=1;
 
-  this->position->PutCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  this->position->PutCommand(this->position_id,
+                             (unsigned char*)&cmd,sizeof(cmd),NULL);
 }
 
 void

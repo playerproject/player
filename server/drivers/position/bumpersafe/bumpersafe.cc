@@ -96,7 +96,7 @@ int BumperSafe::Setup()
 
   cmd.xpos = cmd.ypos = cmd.yaw = 0;
   cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-  Driver::PutCommand((void*)&cmd,sizeof(cmd),NULL);
+  Driver::PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   // Initialise the underlying device s.
   if (this->SetupPosition() != 0)

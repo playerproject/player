@@ -191,11 +191,6 @@ class Driver
                             void* src, size_t len,
                             struct timeval* timestamp);
 
-    /// Convenient short form, single interface
-    void PutCommand(void* src, size_t len, struct timeval* timestamp)
-    { PutCommand(this->device_id,src,len,timestamp); }
-
-
     /// Read the current command for the driver; @a id specifies the interface to be read.
     virtual size_t GetCommand(player_device_id_t id,
                               void* dest, size_t len,

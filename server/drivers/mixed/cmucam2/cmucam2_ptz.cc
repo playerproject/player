@@ -210,7 +210,9 @@ void Cmucam2ptz::Update()
       this->ClearCommand();
                   
       // CHECK: is this the right syntax?      
-      this->cmucam2->PutCommand((unsigned char*)&command, sizeof(command),&ts); 
+      this->cmucam2->PutCommand(this->cmucam2_id,
+                                (unsigned char*)&command, 
+                                sizeof(command),&ts); 
    }   
 }
 
