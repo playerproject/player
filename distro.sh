@@ -15,7 +15,7 @@ SOFTWARE=$(echo $DIRECTORY | cut -c1-1 | tr [:lower:] [:upper:])$(echo $DIRECTOR
 VERSION=$2
 
 #these are combined to form the distro name
-DISTRO=$SOFTWARE-$VERSION
+DISTRO=$SOFTWARE-$VERSION-src
 
 echo "Creating distribution $DISTRO from directory $DIRECTORY"
 echo "Removing old version link $DISTRO"
