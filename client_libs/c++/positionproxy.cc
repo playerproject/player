@@ -57,7 +57,7 @@ int PositionProxy::SetSpeed(int speed, int sidespeed, int turnrate)
  * returns: 0 if ok, -1 else
  */
 int
-PositionProxy::DoDesiredHeading(short theta, int xspeed, int yawspeed)
+PositionProxy::DoDesiredHeading(int theta, int xspeed, int yawspeed)
 {
   if (!client) {
     return -1;
@@ -67,11 +67,11 @@ PositionProxy::DoDesiredHeading(short theta, int xspeed, int yawspeed)
   memset( &cmd, 0, sizeof(cmd) );
 
   // the desired heading is the yaw member
-  cmd.yaw = htons(theta);
+  cmd.yaw = htonl(theta);
   
   // set velocity constraints
-  cmd.xspeed = htons(xspeed);
-  cmd.yawspeed = htons(yawspeed);
+  cmd.xspeed = htonl(xspeed);
+  cmd.yawspeed = htonl(yawspeed);
 
   return client->Write(PLAYER_POSITION_CODE, index, 
 		       (const char *)&cmd, sizeof(cmd));
