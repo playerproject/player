@@ -35,6 +35,8 @@ init_player(playerc_client_t** clients,
       fprintf(stderr, "Failed to set data frequency\n");
       return(NULL);
     }
+    // request ALL data, rather than just NEW data, because the localizer
+    // may only send out updates occasionally.
     if(playerc_client_datamode(clients[i],PLAYER_DATAMODE_PUSH_ALL) < 0)
     {
       fprintf(stderr, "Failed to set data mode\n");

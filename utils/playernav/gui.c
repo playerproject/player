@@ -275,6 +275,63 @@ meters_to_canvas(gui_data_t* gui_data, int* cx, int* cy, double dx, double dy)
 }
 
 void
+make_menu(gui_data_t* gui_data)
+{
+  GtkMenuBar* menu_bar;
+  GtkMenu* file_menu;
+  GtkMenuItem* open_item;
+  GtkMenuItem* save_item;
+  GtkMenuItem* quit_item;
+  GtkMenuItem* file_item;
+
+  file_menu = (GtkMenu*)gtk_menu_new();    /* Don't need to show menus */
+
+  /* Create the menu items */
+  open_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Open");
+  save_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Save");
+  quit_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("Quit");
+
+  /* Add them to the menu */
+  gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)open_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)save_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
+
+  /* Attach the callback functions to the
+   * activate signal */
+  /*
+  g_signal_connect_swapped (G_OBJECT (open_item), "activate",
+                            G_CALLBACK (menuitem_response),
+                            (gpointer) "file.open");
+  g_signal_connect_swapped (G_OBJECT (save_item), "activate",
+                            G_CALLBACK (menuitem_response),
+                            (gpointer) "file.save");
+                            */
+
+  /* We can attach the Quit menu item to
+   * our exit function */
+  g_signal_connect_swapped (G_OBJECT (quit_item), "activate",
+                            G_CALLBACK(_quit_callback),
+                            (gpointer) "file.quit");
+
+  /* We do need to show menu items */
+  gtk_widget_show((GtkWidget*)open_item);
+  gtk_widget_show((GtkWidget*)save_item);
+  gtk_widget_show((GtkWidget*)quit_item);
+
+  menu_bar = (GtkMenuBar*)gtk_menu_bar_new ();
+  gtk_box_pack_start(gui_data->vbox,
+                     (GtkWidget*)(menu_bar),
+                     FALSE, FALSE, 0);
+  gtk_widget_show((GtkWidget*)menu_bar);
+
+  file_item = (GtkMenuItem*)gtk_menu_item_new_with_label ("File");
+  gtk_widget_show((GtkWidget*)file_item);
+
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), (GtkWidget*)file_menu);
+  gtk_menu_bar_append(GTK_MENU_BAR (menu_bar), (GtkWidget*)file_item);
+}
+
+void
 init_gui(gui_data_t* gui_data, int argc, char** argv)
 {
   //double t[6];
@@ -290,6 +347,10 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
   gtk_window_resize(gui_data->main_window,
                     DEFAULT_DISPLAY_WIDTH,
                     (int)rint(DEFAULT_DISPLAY_WIDTH / gui_data->aspect));
+
+
+  /* a box to hold everything else */
+  g_assert((gui_data->vbox = (GtkBox*)gtk_vbox_new(FALSE, 5)));
 
   /* a box to hold everything else */
   g_assert((gui_data->hbox = (GtkBox*)gtk_hbox_new(FALSE, 5)));
@@ -348,7 +409,12 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
             (GtkVScrollbar*)gtk_vscrollbar_new(gui_data->zoom_adjustment)));
 
   gtk_container_add(GTK_CONTAINER(gui_data->main_window),
-                    (GtkWidget*)(gui_data->hbox));
+                    (GtkWidget*)(gui_data->vbox));
+  make_menu(gui_data);
+
+  gtk_box_pack_start(gui_data->vbox,
+                     (GtkWidget*)(gui_data->hbox), 
+                     TRUE, TRUE, 0);
   gtk_box_pack_start(gui_data->hbox,
                      (GtkWidget*)(gui_data->zoom_scrollbar), 
                      FALSE, FALSE, 0);
@@ -358,6 +424,7 @@ init_gui(gui_data_t* gui_data, int argc, char** argv)
                      (GtkWidget*)(gui_data->map_window), 
                      TRUE, TRUE, 0);
 
+  gtk_widget_show((GtkWidget*)(gui_data->vbox));
   gtk_widget_show((GtkWidget*)(gui_data->hbox));
   gtk_widget_show((GtkWidget*)(gui_data->zoom_scrollbar));
   gtk_widget_show((GtkWidget*)(gui_data->map_window));
