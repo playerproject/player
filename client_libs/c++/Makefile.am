@@ -44,7 +44,8 @@ libplayerclient_a_SOURCES =   commsproxy.cc \
                               audiodspproxy.cc \
                               audiomixerproxy.cc \
 			      position3dproxy.cc \
-                              blinkenlightproxy.cc 
+                              blinkenlightproxy.cc \
+			      aioproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 
