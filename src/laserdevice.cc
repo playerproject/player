@@ -75,6 +75,7 @@
 #define CRC16_GEN_POL 0x8005
 #define MAX_RETRIES 5
 
+#define DEFAULT_LASER_PORT "/dev/ttyS1"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Error macros
@@ -85,14 +86,30 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CLaserDevice::CLaserDevice(char *port) 
+CLaserDevice::CLaserDevice(int argc, char** argv)
 {
-    assert(strlen(port) + 1 < sizeof(m_laser_name));
-    strcpy(m_laser_name, port );
+  strncpy(m_laser_name,DEFAULT_LASER_PORT,sizeof(m_laser_name));
+  for(int i=0;i<argc;i++)
+  {
+    if(!strcmp(argv[i],"port"))
+    {
+      if(++i<argc)
+      {
+        strncpy(m_laser_name, argv[i],sizeof(m_laser_name));
+        m_laser_name[sizeof(m_laser_name)-1] = '\0';
+      }
+      else
+        fprintf(stderr, "CLaserDevice: missing port; using default: \"%s\"\n",
+                m_laser_name);
+    }
+    else
+      fprintf(stderr, "CLaserDevice: ignoring unknown parameter \"%s\"\n",
+              argv[i]);
+  }
 
-    m_config_size = 0;
-    memset(&m_config, 0, sizeof(m_config));
-    memset(&m_data, 0, sizeof(m_data));
+  m_config_size = 0;
+  memset(&m_config, 0, sizeof(m_config));
+  memset(&m_data, 0, sizeof(m_data));
 }
 
 
@@ -229,8 +246,7 @@ int CLaserDevice::Setup()
     m_scan_max_segment = 360;
     m_intensity = true;
 
-    puts("laser initialising");
-    fflush(stdout);
+    printf("Laser initialising (%s)\n", m_laser_name);
     
     // Open the terminal
     if (OpenTerm())

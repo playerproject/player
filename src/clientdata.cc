@@ -61,7 +61,7 @@ CClientData::CClientData()
   frequency = 10;
   pthread_mutex_init( &access, NULL ); 
   pthread_mutex_init( &datarequested, NULL ); 
-  pthread_mutex_init( &requesthandling, NULL ); 
+  //pthread_mutex_init( &requesthandling, NULL ); 
   pthread_mutex_init( &socketwrite, NULL ); 
 }
 
@@ -97,7 +97,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     puts("");
   }
 
-  pthread_mutex_lock( &requesthandling );
+  //pthread_mutex_lock( &requesthandling );
   
   switch(hdr.type)
   {
@@ -113,6 +113,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         {
           printf("HandleRequests(): Player device got small ioctl: %d\n",
                           payload_size);
+          //pthread_mutex_unlock( &requesthandling );
           return;
         }
 
@@ -241,8 +242,8 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       }
       else 
       {
-        printf("No permissions to command %x:%x\n",
-                        hdr.device,hdr.device_index);
+        //printf("No permissions to command %x:%x\n",
+                        //hdr.device,hdr.device_index);
       }
       break;
     default:
@@ -296,12 +297,13 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
     if(write(socket, reply, payload_size+sizeof(player_msghdr_t)) < 0) 
     {
       perror("HandleRequests");
+      pthread_mutex_unlock(&socketwrite);
       delete this;
     }
     pthread_mutex_unlock(&socketwrite);
   }
 
-  pthread_mutex_unlock( &requesthandling );
+  //pthread_mutex_unlock( &requesthandling );
 }
 
 CClientData::~CClientData() 
@@ -341,7 +343,7 @@ CClientData::~CClientData()
   }
 
   pthread_mutex_destroy( &access );
-  pthread_mutex_destroy( &requesthandling );
+  //pthread_mutex_destroy( &requesthandling );
   pthread_mutex_destroy( &socketwrite );
   pthread_mutex_destroy( &datarequested );
      
@@ -352,10 +354,10 @@ CClientData::~CClientData()
 
 void CClientData::RemoveRequests() 
 {
+  pthread_mutex_lock( &access );
   CDeviceSubscription* thissub = requested;
   CDeviceSubscription* tmpsub;
 
-  pthread_mutex_lock( &access );
   while(thissub)
   {
     switch(thissub->access) 
@@ -391,8 +393,6 @@ void CClientData::MotorStop()
 
   if((devicep = deviceTable->GetDevice(PLAYER_POSITION_CODE,0)))
     devicep->GetLock()->PutCommand(devicep, command, 4);
-  else
-    puts("MotorStop(): got NULL for the position device");
 }
 
 void CClientData::UpdateRequested(player_device_req_t req)
@@ -512,11 +512,18 @@ void CClientData::UpdateRequested(player_device_req_t req)
 unsigned char 
 CClientData::FindPermission(unsigned short code, unsigned short index)
 {
+  unsigned char tmpaccess;
+  pthread_mutex_lock(&access);
   for(CDeviceSubscription* thisub=requested;thisub;thisub=thisub->next)
   {
     if((thisub->code == code) && (thisub->index == index))
-      return(thisub->access);
+    {
+      tmpaccess = thisub->access;
+      pthread_mutex_unlock(&access);
+      return(tmpaccess);
+    }
   }
+  pthread_mutex_unlock(&access);
   return('e');
 }
 
@@ -525,13 +532,9 @@ bool CClientData::CheckPermissions(unsigned short code, unsigned short index)
   bool permission = false;
   unsigned char letter;
 
-  pthread_mutex_lock( &access );
- 
   letter = FindPermission(code,index);
   if((letter=='a') || ('w'==letter)) 
     permission = true;
-
-  pthread_mutex_unlock( &access );
 
   return(permission);
 }
@@ -544,7 +547,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
   struct timeval curr;
   
   /* make sure that we are not changing format */
-  pthread_mutex_lock( &requesthandling );
+  //pthread_mutex_lock( &requesthandling );
 
   pthread_mutex_lock( &access );
 
@@ -600,7 +603,7 @@ int CClientData::BuildMsg( unsigned char *data, size_t maxsize)
     }
   }
   pthread_mutex_unlock( &access );
-  pthread_mutex_unlock( &requesthandling );
+  //pthread_mutex_unlock( &requesthandling );
 
   return(totalsize);
 }
@@ -641,8 +644,10 @@ void
 CClientData::PrintRequested(char* str)
 {
   printf("%s:requested: ",str);
+  pthread_mutex_lock(&access);
   for(CDeviceSubscription* thissub=requested;thissub;thissub=thissub->next)
     printf("%x:%x:%d ", thissub->code,thissub->index,thissub->access);
+  pthread_mutex_unlock(&access);
   puts("");
 }
 

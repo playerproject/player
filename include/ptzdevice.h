@@ -81,7 +81,7 @@ class CPtzDevice:public CDevice
   /* device used to communicate with the ptz */
   char ptz_serial_port[MAX_FILENAME_SIZE]; 
 
-  CPtzDevice(char *port);
+  CPtzDevice(int argc, char** argv);
   ~CPtzDevice();
 
   virtual int Setup();

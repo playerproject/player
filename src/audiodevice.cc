@@ -62,7 +62,7 @@ void *RunAudioThread(void *audiodevice);
 // void insertPeak(int f,int a);
 // int playSound(int duration);
 
-CAudioDevice::CAudioDevice() 
+CAudioDevice::CAudioDevice(int argc, char** argv) 
 {
 
 }

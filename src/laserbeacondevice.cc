@@ -54,17 +54,33 @@
 
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>  // for atoi(3)
 #include <netinet/in.h>  /* for htons(3) */
 #include "laserbeacondevice.hh"
+#include "devicetable.h"
 
+extern CDeviceTable* deviceTable;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CLaserBeaconDevice::CLaserBeaconDevice(CDevice *laser) 
+CLaserBeaconDevice::CLaserBeaconDevice(int argc, char** argv)
 {
-    m_laser = laser;
-    ASSERT(m_laser != NULL);
+  index = 0;
+  for(int i=0;i<argc;i++)
+  {
+    if(!strcmp(argv[i],"index"))
+    {
+      if(++i<argc)
+        index = atoi(argv[i]);
+      else
+        fprintf(stderr, "CLaserBeaconDevice: missing index; "
+                "using default: %d\n", index);
+    }
+    else
+      fprintf(stderr, "CLaserBeaconDevice: ignoring unknown parameter \"%s\"\n",
+              argv[i]);
+  }
 }
 
 
@@ -187,6 +203,10 @@ void CLaserBeaconDevice::PutConfig( unsigned char *src, size_t maxsize)
 //
 int CLaserBeaconDevice::Setup()
 {
+    // get the pointer to the laser
+    m_laser = deviceTable->GetDevice(PLAYER_LASER_CODE,index);
+    ASSERT(m_laser != NULL);
+    
     // Subscribe to the laser device
     //
     m_laser->GetLock()->Subscribe(m_laser);

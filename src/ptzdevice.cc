@@ -41,15 +41,16 @@
   #include <strings.h>
 #endif
 
+#define DEFAULT_PTZ_PORT "/dev/ttyS2"
+
 #include <ptzdevice.h>
 
 void *RunPtzThread(void *ptzdevice);
 
-CPtzDevice::CPtzDevice(char *port) 
+CPtzDevice::CPtzDevice(int argc, char** argv)
 {
   data = new player_ptz_data_t;
   command = new player_ptz_cmd_t;
-
 
   ptz_fd = -1;
   command_pending1 = false;
@@ -63,9 +64,24 @@ CPtzDevice::CPtzDevice(char *port)
   command->tilt = 0;
   command->zoom = 0;
 
-  strcpy(ptz_serial_port, port);
-  // just in case...
-  ptz_serial_port[sizeof(ptz_serial_port)-1] = '\0';
+  strncpy(ptz_serial_port,DEFAULT_PTZ_PORT,sizeof(ptz_serial_port));
+  for(int i=0;i<argc;i++)
+  {
+    if(!strcmp(argv[i],"port"))
+    {
+      if(++i<argc)
+      {
+        strncpy(ptz_serial_port, argv[i],sizeof(ptz_serial_port));
+        ptz_serial_port[sizeof(ptz_serial_port)-1] = '\0';
+      }
+      else
+        fprintf(stderr, "CPtzDevice: missing port; using default: \"%s\"\n",
+                ptz_serial_port);
+    }
+    else
+      fprintf(stderr, "CPtzDevice: ignoring unknown parameter \"%s\"\n",
+              argv[i]);
+  }
 }
 
 int 
@@ -76,7 +92,7 @@ CPtzDevice::Setup()
   short pan,tilt;
   int flags;
 
-  printf("PTZ connection initializing...");
+  printf("PTZ connection initializing (%s)...", ptz_serial_port);
   fflush(stdout);
 
   // open it.  non-blocking at first, in case there's no ptz unit.

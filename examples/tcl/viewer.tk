@@ -684,11 +684,11 @@ proc startRobot {} {
          PLAYER_LASER_CODE PLAYER_READ_MODE
 
   connectToRobot $host
-  ChangeSonarState 0
+  #ChangeSonarState 0
   # try to connect to ptz, position, and misc (but ignore errors)
-  #requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
+  requestDeviceAccess $PLAYER_LASER_CODE 0 $PLAYER_READ_MODE
   catch {requestDeviceAccess $PLAYER_POSITION_CODE 0 $PLAYER_ALL_MODE}
-  catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
+  #catch {requestDeviceAccess $PLAYER_PTZ_CODE 0 $PLAYER_ALL_MODE}
   #catch {requestDeviceAccess $PLAYER_MISC_CODE 0 $PLAYER_ALL_MODE}
   #catch {requestDeviceAccess $PLAYER_SPEECH_CODE 0 $PLAYER_WRITE_MODE}
   signal trap SIGALRM {displayData;alarm .1}

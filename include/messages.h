@@ -45,6 +45,21 @@
 #define PLAYER_MSGTYPE_RESP  ((uint16_t)4)
 
 /* the currently assigned device codes */
+#define PLAYER_PLAYER_STRING         "player"
+#define PLAYER_MISC_STRING           "misc"
+#define PLAYER_GRIPPER_STRING        "gripper"
+#define PLAYER_POSITION_STRING       "position"
+#define PLAYER_SONAR_STRING          "sonar"
+#define PLAYER_LASER_STRING          "laser"
+#define PLAYER_VISION_STRING         "vision"
+#define PLAYER_PTZ_STRING            "ptz"
+#define PLAYER_AUDIO_STRING          "audio"
+#define PLAYER_LASERBEACON_STRING    "laserbeacon"
+#define PLAYER_BROADCAST_STRING      "broadcast"
+#define PLAYER_SPEECH_STRING         "speech"
+#define PLAYER_GPS_STRING            "gps"
+
+/* the currently assigned device codes */
 #define PLAYER_PLAYER_CODE         ((uint16_t)1)
 #define PLAYER_MISC_CODE           ((uint16_t)2)
 #define PLAYER_GRIPPER_CODE        ((uint16_t)3)

@@ -66,7 +66,7 @@
 ///////////////////////////////////////////////////////////////////////////
 // Constructor
 //
-CBroadcastDevice::CBroadcastDevice()
+CBroadcastDevice::CBroadcastDevice(int argc, char** argv)
 {
     m_read_socket = 0;
     m_write_socket = 0;

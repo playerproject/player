@@ -36,7 +36,7 @@ class CPositionDevice: public CP2OSDevice
 {
  public:
     ~CPositionDevice();
-    CPositionDevice(char* port):CP2OSDevice(port){}
+    CPositionDevice(int argc, char** argv):CP2OSDevice(argc,argv){}
     virtual size_t GetData( unsigned char *, size_t maxsize);
     void PutCommand( unsigned char *, size_t maxsize);
 };

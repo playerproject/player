@@ -39,7 +39,7 @@ class CBroadcastDevice : public CDevice
 {
     // Constructor
     //
-    public: CBroadcastDevice();
+    public: CBroadcastDevice(int argc, char** argv);
 
     // Setup/shutdown routines
     //

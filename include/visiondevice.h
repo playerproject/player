@@ -65,7 +65,8 @@ class CVisionDevice:public CDevice
     //
     //    oldacts is a boolean that tells whether or not to use
     //    the old ACTS
-    CVisionDevice(int num, char* configfile, bool oldacts);
+    //CVisionDevice(int num, char* configfile, bool oldacts);
+    CVisionDevice(int argc, char** argv);
 
     ~CVisionDevice();
     void KillACTS();

@@ -54,7 +54,8 @@
 #define AUDIO_DATA_BUFFER_SIZE 20
 #define AUDIO_COMMAND_BUFFER_SIZE 3*sizeof(short)
 
-class CAudioDevice:public CDevice {
+class CAudioDevice:public CDevice 
+{
  private:
   pthread_t thread; // the thread that continuously reads/writes from the dsp 
   bool command_pending1;  // keep track of how many commands are pending;
@@ -77,7 +78,7 @@ class CAudioDevice:public CDevice {
   void listenForTones();
   int playSound(int duration);
 
-  CAudioDevice();
+  CAudioDevice(int argc, char** argv);
   ~CAudioDevice();
 
   virtual int Setup();

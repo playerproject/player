@@ -3,6 +3,7 @@
 #include <playerclient.h>  // for player client stuff
 #include <values.h>  // for MAXINT
 #include <string.h> /* for strcmp() */
+#include <unistd.h> /* for usleep() */
 
 #define USAGE \
   "USAGE: laserobstacleavoid [-h <host>] [-p <port>] [-m]\n" \
