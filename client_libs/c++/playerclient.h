@@ -56,6 +56,10 @@
   #include <strings.h>
 #endif
 
+#if PLAYERCLIENT_THREAD
+  #include <pthread.h>
+#endif
+
 #include <sys/time.h>
 struct pollfd;
 #include <string.h>
@@ -175,6 +179,21 @@ class ClientProxy
     /** All proxies SHOULD provide this method, which should print out, in a
         human-readable form, the device's current state. */
     virtual void Print();
+
+
+    /** Methods for providing the ability to achieve thread safety, 
+        the class is not thread safe without additional protection
+	in the client app. 
+	if PLAYERCLIENT_THREAD is not defined then Lock and Unlock
+	do nothing and always succeed 
+	These are called by the playerclient during a read if 
+	data is to be updated */
+	int Lock();
+	int Unlock();
+  protected:
+#ifdef PLAYERCLIENT_THREAD
+    pthread_mutex_t update_lock;
+#endif
 };
 
 // keep a linked list of proxies that we've got open

@@ -151,6 +151,12 @@ if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[[disable 500Kbps comms with SICK]])
 fi
 
+AC_ARG_ENABLE(playerclient_thread, [  --disable-playerclient_thread   Build thread safe c++ client library],,disable_playerclient_thread=no)
+if test "x$disable_playerclient_thread" = "xno"; then
+  AC_DEFINE(PLAYERCLIENT_THREAD,1,[Thread Safe C++ Client Library])
+fi
+
+
 PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])

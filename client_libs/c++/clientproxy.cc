@@ -55,6 +55,11 @@ ClientProxy::ClientProxy(PlayerClient* pc,
             unsigned short req_index,
             unsigned char req_access)
 {
+#ifdef PLAYERCLIENT_THREAD
+	pthread_mutex_create(&update_lock,NULL);
+#endif
+
+
   m_device_id.port = pc->port;
   m_device_id.code = req_device;
   m_device_id.index = req_index;
@@ -111,6 +116,10 @@ ClientProxy::ClientProxy(PlayerClient* pc,
 // destructor will try to close access to the device
 ClientProxy::~ClientProxy()
 {
+#ifdef PLAYERCLIENT_THREAD
+	pthread_mutex_destroy(&update_lock,NULL);
+#endif
+
   if(client)
   {
     if((access != 'c') && (access != 'e'))
@@ -185,3 +194,25 @@ void ClientProxy::Print()
   puts("Don't know how to print this device.");
 }
 
+// thread lock and unlock functions
+#ifdef PLAYERCLIENT_THREAD
+int ClientProxy::Lock()
+{
+	return pthread_mutex_lock(&update_lock);
+}
+
+int ClientProxy::Unlock()
+{
+	return pthread_mutex_unlock(&update_lock);
+}
+#else
+int ClientProxy::Lock()
+{
+	return 0;
+}
+
+int ClientProxy::Unlock()
+{
+	return 0;
+}
+#endif
