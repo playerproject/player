@@ -43,10 +43,6 @@ StgEnergy::StgEnergy(char* interface, ConfigFile* cf, int section )
   : Stage1p4( interface, cf, section, sizeof(player_energy_data_t), 0, 1, 1 )
 {
   PLAYER_TRACE1( "constructing StgEnergy with interface %s", interface );
-  
-  //this->subscribe_prop = STG_PROP_ENERGYDATA;
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_ENERGYDATA));
-
 }
 
 CDevice* StgEnergy_Init(char* interface, ConfigFile* cf, int section)

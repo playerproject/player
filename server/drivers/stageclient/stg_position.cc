@@ -59,8 +59,6 @@ StgPosition::StgPosition(char* interface, ConfigFile* cf, int section )
   PLAYER_MSG0( "STG_POSITION CONSTRUCTOR" );
   
   PLAYER_TRACE1( "constructing StgPosition with interface %s", interface );
-
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
 }
 
 CDevice* StgPosition_Init(char* interface, ConfigFile* cf, int section)

@@ -65,7 +65,7 @@ Stage1p4::Stage1p4(char* interface, ConfigFile* cf, int section,
   
   this->config = cf;
     
-  this->subscribe_list = NULL;
+  //this->subscribe_list = NULL;
 
   const char *enttype = config->GetEntityType(section);
 
@@ -107,49 +107,32 @@ Stage1p4::~Stage1p4()
 {
 }
 
-
-
-void subscribe_to_property_cb( gpointer data, gpointer user )
-{
-  int prop = GPOINTER_TO_INT(data);
-  stg_model_t* model = (stg_model_t*)user; 
-    
-    printf( "subscribing to model %d:%s\n",
-	    model->id_server, 
-	    stg_property_string( prop) );
-  
-  stg_model_subscribe( model, prop, 100 ); // 100ms  - fix this
-}
-
-void unsubscribe_to_property_cb( gpointer data, gpointer user )
-{
-  int prop = GPOINTER_TO_INT(data);
-  stg_model_t* model = (stg_model_t*)user;
-    
-    printf( "unsubscribing to model %d:%s\n",
-	    model->id_server, 
-	    stg_property_string( prop) );
-  
-  stg_model_unsubscribe( model, prop );
-}
-
-
 int Stage1p4::Setup()
 { 
-  printf( "SETUP" );
-  if( this->model && this->subscribe_list )
-    g_list_foreach( this->subscribe_list, 
-		    subscribe_to_property_cb, 
-		    (gpointer)this->model );
+  PRINT_DEBUG( "SETUP" );
+
+  //if( this->model && this->subscribe_list )
+  //g_list_foreach( this->subscribe_list, 
+  //	    subscribe_to_property_cb, 
+  //	    (gpointer)this->model );
+
+  if( this->model )
+    stg_model_subscribe( this->model, STG_PROP_DATA, 100 ); // 100ms  - fix this
+  
   return 0;
 };
 
 int Stage1p4::Shutdown()
 { 
-  printf( "SHUTDOWN" );
-  if( this->model && this->subscribe_list )
-    g_list_foreach( this->subscribe_list, 
-		    unsubscribe_to_property_cb, 
-		    (gpointer)this->model );
+  PRINT_DEBUG( "SHUTDOWN" );
+
+  if( this->model )
+    stg_model_unsubscribe( model, STG_PROP_DATA );
+
+  //if( this->model && this->subscribe_list )
+  // g_list_foreach( this->subscribe_list, 
+  //	    unsubscribe_to_property_cb, 
+  //	    (gpointer)this->model );
+
   return 0;
 };
