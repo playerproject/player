@@ -110,14 +110,6 @@ int main(int argc, const char *argv[])
       test_bps(&client, index);
      */
     
-    // Laserbeacon device
-    if(strcmp(device, "laserbeacon") == 0 || strcmp(device, "all") == 0)
-      test_lbd(&client, index);
-    
-    // Comms device
-    if(strcmp(device, "comms") == 0 || strcmp(device, "all") == 0)
-      test_broadcast(&client, index);
-    
     // GPS device
     if(strcmp(device, "gps") == 0 || strcmp(device, "all") == 0)
       test_gps(&client, index);
@@ -129,6 +121,15 @@ int main(int argc, const char *argv[])
     // Ground truth device
     if(strcmp(device, "truth") == 0 || strcmp(device, "all") == 0)
       test_truth(&client, index);
+
+    // Laserbeacon device
+    if(strcmp(device, "laserbeacon") == 0 || strcmp(device, "all") == 0)
+      test_lbd(&client, index);
+    
+    // Comms device
+    if(strcmp(device, "comms") == 0 || strcmp(device, "all") == 0)
+      test_broadcast(&client, index);
+    
 
     /*
     // IDAR device
