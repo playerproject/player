@@ -9,6 +9,9 @@ TOMORROW:
 
 - Create another device-table (or augment the current one), so as to remove
     as many device-specific #ifdef's from main.cc as possible.
+       - no, use the existing DeviceTable.  just add some more stuff to it,
+         like permissible access modes, string representation, etc., and maybe
+         initialize the device pointer to NULL?
 
 NOW:
 ----

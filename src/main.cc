@@ -168,7 +168,9 @@ Usage()
   fprintf(stderr, "    -laser:0 \"port /dev/ttyS0\"\n");
 }
 
-void printout( int dummy ) 
+/* just so we no when we've segfaulted, when running under stage */
+void 
+printout( int dummy ) 
 {
   puts("got SIGSEGV!");
   exit(-1);
@@ -176,7 +178,8 @@ void printout( int dummy )
 
 
 /* sighandler to shut everything down properly */
-void Interrupt( int dummy ) 
+void 
+Interrupt( int dummy ) 
 {
   if(dummy != SIGTERM)
   {
@@ -193,6 +196,41 @@ void Interrupt( int dummy )
     printf("** Player [port %d] quitting **\n", global_playerport );
   
   exit(0);
+}
+
+void 
+SetupSignalHandlers()
+{
+  if(signal(SIGSEGV, printout) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGSEGV");
+    exit(1);
+  }
+
+  /* set up to handle SIGPIPE (happens when the client dies) */
+  if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGPIPE");
+    exit(1);
+  }
+
+  if(signal(SIGINT, Interrupt ) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGINT");
+    exit(1);
+  }
+
+  if(signal(SIGHUP, Interrupt ) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGHUP");
+    exit(1);
+  }
+
+  if(signal(SIGTERM, Interrupt) == SIG_ERR)
+  {
+    perror("signal(2) failed while setting up for SIGTERM");
+    exit(1);
+  }
 }
 
 /* used to name incoming client connections */
@@ -901,37 +939,7 @@ int main( int argc, char *argv[] )
 
   puts( "" ); // newline, flush
 
-  if(signal(SIGSEGV, printout) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGSEGV");
-    exit(1);
-  }
-
-
-  /* set up to handle SIGPIPE (happens when the client dies) */
-  if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGPIPE");
-    exit(1);
-  }
-
-  if(signal(SIGINT, Interrupt ) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGINT");
-    exit(1);
-  }
-
-  if(signal(SIGHUP, Interrupt ) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGHUP");
-    exit(1);
-  }
-
-  if(signal(SIGTERM, Interrupt) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGTERM");
-    exit(1);
-  }
+  SetupSignalHandlers();
   
 #ifdef INCLUDE_STAGE
   if( use_stage )
@@ -999,8 +1007,6 @@ int main( int argc, char *argv[] )
 
     ufds[0].events = POLLIN;
     ports[0] = global_playerport;
-
-    //GlobalTime = (PlayerTime*)(new WallclockTime());
   }
 
   sigset_t signalset;
@@ -1052,8 +1058,6 @@ int main( int argc, char *argv[] )
         if((clientData->socket = accept(ufds[i].fd, 
                                         (struct sockaddr*)&cliaddr, 
                                         &sender_len)) == -1)
-          //if((clientData->socket = accept(ufds[i].fd, NULL, 
-          //                          &sender_len)) == -1)
         {
           perror("accept(2) failed: ");
           exit(-1);
