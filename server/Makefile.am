@@ -2,8 +2,7 @@ SUBDIRS = drivers
 
 AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(top_builddir)/replace
 
-player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ \
-			drivers/stage/libpsdevice.a
+player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 
 
 #
@@ -11,7 +10,7 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ \
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LIB@ $(top_builddir)/replace/*.o drivers/stage/libpsdevice.a
+player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LIB@ $(top_builddir)/replace/libreplace.a
 
 player_LDFLAGS = @RTKGUI_EXTRA_LDFLAGS@
 
