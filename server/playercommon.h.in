@@ -30,6 +30,14 @@
 #ifndef _PLAYERCOMMON_H
 #define _PLAYERCOMMON_H
 
+/*****************************************************************************/
+/* Don't touch these.  They are replaced during the configure with the right
+ * values for the build system.  That way, the installed version of this
+ * header will be usable by anyone */
+#undef HAVE_SYS_TYPES_H
+#undef HAVE_STDINT_H
+/*****************************************************************************/
+
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif

@@ -1,4 +1,6 @@
 *.log *.dvi *.aux *.ps *.pdf *.h.tex
+AudioProxy.tex
+DIOProxy.tex
 GpsProxy.tex
 ClientProxy.tex
 PlayerClient.tex

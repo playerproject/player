@@ -25,8 +25,11 @@ dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
 
 dnl Generate a configuration header called <config.h> and put all the C
-dnl preprocessor defines in there
-AM_CONFIG_HEADER(config.h)
+dnl preprocessor defines in there.
+dnl Also create playercommon.h, replacing a couple of C defines with the right
+dnl values.  That way, playercommon.h will be installed in a good working
+dnl state.
+AM_CONFIG_HEADER(config.h server/playercommon.h)
 
 AC_PROG_CC
 AC_PROG_CXX
