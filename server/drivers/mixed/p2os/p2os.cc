@@ -1435,185 +1435,148 @@ P2OS::HandleConfig(player_msghdr * hdr,
 
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
+  // check for sonar config requests
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_SONAR_POWER, 
+                             this->sonar_id))
+  {
+    /*
+     * 1 = enable sonars
+     * 0 = disable sonar
+     */
+    if(hdr->size != sizeof(player_sonar_power_config_t))
+    {
+      PLAYER_WARN("Arg to sonar state change request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_sonar_power_config_t sonar_config;
+    sonar_config = *((player_sonar_power_config_t*)data);
+    this->ToggleSonarPower(sonar_config.value);
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_SONAR_GET_GEOM, 
+                             this->sonar_id))
+  {
+    /* Return the sonar geometry. */
+    if(hdr->size != 0)
+    {
+      PLAYER_WARN("Arg get sonar geom is wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_sonar_geom_t geom;
+    size_t geom_len=0;
+    geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
+    geom_len += sizeof(uint16_t);
+    for(int i = 0; i < PlayerRobotParams[param_idx].SonarNum; i++)
+    {
+      sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
+      geom.poses[i][0] = htons((short) (pose.x));
+      geom.poses[i][1] = htons((short) (pose.y));
+      geom.poses[i][2] = htons((short) (pose.th));
+      geom_len += sizeof(uint16_t) * 3;
+    }
+
+    memcpy(resp_data,&geom,geom_len);
+    *resp_len = geom_len;
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  // check for blobfinder requests
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_BLOBFINDER_SET_COLOR, 
+                             this->blobfinder_id))
+  {
+    // Set the tracking color (RGB max/min values)
+
+    if(hdr->size != sizeof(player_blobfinder_color_config_t))
+    {
+      puts("Arg to blobfinder color request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_blobfinder_color_config_t color_config;
+    color_config = *((player_blobfinder_color_config_t*)data);
+
+    CMUcamTrack( (short)ntohs(color_config.rmin),
+                 (short)ntohs(color_config.rmax), 
+                 (short)ntohs(color_config.gmin),
+                 (short)ntohs(color_config.gmax),
+                 (short)ntohs(color_config.bmin),
+                 (short)ntohs(color_config.bmax) );
+
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_BLOBFINDER_SET_IMAGER_PARAMS, 
+                             this->blobfinder_id))
+  {
+    // Set the imager control params
+    if(hdr->size != sizeof(player_blobfinder_imager_config_t))
+    {
+      puts("Arg to blobfinder imager request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_blobfinder_imager_config_t imager_config;
+    imager_config = *((player_blobfinder_imager_config_t*)data);
+
+    P2OSPacket cam_packet;
+    unsigned char cam_command[50];
+    int np;
+
+    np=3;
+
+    CMUcamStopTracking();	// Stop the current tracking.
+
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    np += sprintf((char*)&cam_command[np], "CR ");
+
+    if ((short)ntohs(imager_config.brightness) >= 0)
+      np += sprintf((char*)&cam_command[np], " 6 %d",
+                    ntohs(imager_config.brightness));
+
+    if ((short)ntohs(imager_config.contrast) >= 0)
+      np += sprintf((char*)&cam_command[np], " 5 %d",
+                    ntohs(imager_config.contrast));
+
+    if (imager_config.autogain >= 0)
+      if (imager_config.autogain == 0)
+        np += sprintf((char*)&cam_command[np], " 19 32");
+      else
+        np += sprintf((char*)&cam_command[np], " 19 33");
+
+    if (imager_config.colormode >= 0)
+      if (imager_config.colormode == 3)
+        np += sprintf((char*)&cam_command[np], " 18 36");
+      else if (imager_config.colormode == 2)
+        np += sprintf((char*)&cam_command[np], " 18 32");
+      else if (imager_config.colormode == 1)
+        np += sprintf((char*)&cam_command[np], " 18 44");
+      else
+        np += sprintf((char*)&cam_command[np], " 18 40");
+
+    if (np > 6)
+    {
+      sprintf((char*)&cam_command[np], "\r");
+      cam_command[2] = strlen((char *)&cam_command[3]);
+      cam_packet.Build(cam_command, (int)cam_command[2]+3);
+      SendReceive(&cam_packet);
+
+      printf("Blobfinder imager parameters updated.\n");
+      printf("       %s\n", &cam_command[3]);
+    } else
+      printf("Blobfinder imager parameters NOT updated.\n");
+
+    CMUcamTrack(); 	// Restart tracking
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
   else
   {
-    PLAYER_WARN("Position got unknown config request");
+    PLAYER_WARN("unknown config request to p2os driver");
     return(-1);
   }
-
-#if 0
-  // check for sonar config requests
-  if((config_size = this->GetConfig(this->sonar_id, &client, 
-                                    (void*)config, sizeof(config),NULL)) > 0)
-  {
-    switch(config[0])
-    {
-      case PLAYER_SONAR_POWER_REQ:
-        /*
-         * 1 = enable sonars
-         * 0 = disable sonar
-         */
-        if(config_size != sizeof(player_sonar_power_config_t))
-        {
-          PLAYER_WARN("Arg to sonar state change request wrong size; ignoring");
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_sonar_power_config_t sonar_config;
-          sonar_config = *((player_sonar_power_config_t*)config);
-          this->ToggleSonarPower(sonar_config.value);
-
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, NULL);
-        }
-        break;
-
-      case PLAYER_SONAR_GET_GEOM_REQ:
-        /* Return the sonar geometry. */
-        if(config_size != 1)
-        {
-          PLAYER_WARN("Arg get sonar geom is wrong size; ignoring");
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_sonar_geom_t geom;
-          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-          geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
-          for(int i = 0; i < PLAYER_SONAR_MAX_SAMPLES; i++)
-          {
-            sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
-            geom.poses[i][0] = htons((short) (pose.x));
-            geom.poses[i][1] = htons((short) (pose.y));
-            geom.poses[i][2] = htons((short) (pose.th));
-          }
-
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL);
-        }
-        break;
-
-      default:
-        PLAYER_WARN("Sonar got unknown config request");
-        this->PutReply(this->sonar_id, client, 
-                       PLAYER_MSGTYPE_RESP_NACK, NULL);
-        break;
-    }
-  }
-
-  // check for blobfinder requests
-  if((config_size = this->GetConfig(this->blobfinder_id, &client, 
-                                    (void*)config, sizeof(config),NULL)) > 0)
-  {
-    switch(config[0])
-    {
-      case PLAYER_BLOBFINDER_SET_COLOR_REQ:
-        // Set the tracking color (RGB max/min values)
-
-        if(config_size != sizeof(player_blobfinder_color_config_t))
-        {
-          puts("Arg to blobfinder color request wrong size; ignoring");
-          if(PutReply(this->blobfinder_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        }
-        player_blobfinder_color_config_t color_config;
-        color_config = *((player_blobfinder_color_config_t*)config);
-
-        CMUcamTrack( (short)ntohs(color_config.rmin),
-                     (short)ntohs(color_config.rmax), 
-                     (short)ntohs(color_config.gmin),
-                     (short)ntohs(color_config.gmax),
-                     (short)ntohs(color_config.bmin),
-                     (short)ntohs(color_config.bmax) );
-
-        //printf("Color Tracking parameter updated.\n");
-
-        if(PutReply(this->blobfinder_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
-
-      case PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ:
-        // Set the imager control params
-        if(config_size != sizeof(player_blobfinder_imager_config_t))
-        {
-          puts("Arg to blobfinder imager request wrong size; ignoring");
-          if(PutReply(this->blobfinder_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        }
-        player_blobfinder_imager_config_t imager_config;
-        imager_config = *((player_blobfinder_imager_config_t*)config);
-
-        P2OSPacket cam_packet;
-        unsigned char cam_command[50];
-        int np;
-
-        np=3;
-
-        CMUcamStopTracking();	// Stop the current tracking.
-
-        cam_command[0] = TTY3;
-        cam_command[1] = ARGSTR;
-        np += sprintf((char*)&cam_command[np], "CR ");
-
-        if ((short)ntohs(imager_config.brightness) >= 0)
-          np += sprintf((char*)&cam_command[np], " 6 %d",
-                        ntohs(imager_config.brightness));
-
-        if ((short)ntohs(imager_config.contrast) >= 0)
-          np += sprintf((char*)&cam_command[np], " 5 %d",
-                        ntohs(imager_config.contrast));
-
-        if (imager_config.autogain >= 0)
-          if (imager_config.autogain == 0)
-            np += sprintf((char*)&cam_command[np], " 19 32");
-          else
-            np += sprintf((char*)&cam_command[np], " 19 33");
-
-        if (imager_config.colormode >= 0)
-          if (imager_config.colormode == 3)
-            np += sprintf((char*)&cam_command[np], " 18 36");
-          else if (imager_config.colormode == 2)
-            np += sprintf((char*)&cam_command[np], " 18 32");
-          else if (imager_config.colormode == 1)
-            np += sprintf((char*)&cam_command[np], " 18 44");
-          else
-            np += sprintf((char*)&cam_command[np], " 18 40");
-
-        if (np > 6)
-        {
-          sprintf((char*)&cam_command[np], "\r");
-          cam_command[2] = strlen((char *)&cam_command[3]);
-          cam_packet.Build(cam_command, (int)cam_command[2]+3);
-          SendReceive(&cam_packet);
-
-          printf("Blobfinder imager parameters updated.\n");
-          printf("       %s\n", &cam_command[3]);
-        } else
-          printf("Blobfinder imager parameters NOT updated.\n");
-
-        CMUcamTrack(); 	// Restart tracking
-
-        if(PutReply(this->blobfinder_id, client, 
-                    PLAYER_MSGTYPE_RESP_ACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
-
-      default:
-        PLAYER_WARN("unknown config request to blobfinder interface");
-        if(PutReply(this->blobfinder_id, client, 
-                    PLAYER_MSGTYPE_RESP_NACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
-    }
-  }
-#endif
 }
 
 void

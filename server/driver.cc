@@ -308,17 +308,18 @@ void Driver::ProcessMessages()
     if (el->msg.GetPayloadSize() != hdr->size)
       PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",el->msg.GetSize() - sizeof(player_msghdr),hdr->size);
 
+    player_device_id_t id;
+    id.code = hdr->device;
+    id.index = hdr->device_index;
     int ret = ProcessMessage(el->msg.Client, hdr, data, RespData, &RespLen);
     if(ret > 0)
-    {
-      player_device_id_t id;
-      id.code = hdr->device;
-      id.index = hdr->device_index;
       PutMsg(id, el->msg.Client, ret, hdr->subtype, RespData, RespLen, NULL);
-    }
     else if(ret < 0)
     {
       PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d subtype=%d len=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->subtype, hdr->size);
+      // Put an empty NACK to the client
+      PutMsg(id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, 
+             hdr->subtype, NULL, 0, NULL);
     }
     pthread_testcancel();
   }
