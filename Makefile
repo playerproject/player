@@ -7,7 +7,6 @@
 INSTALL_PREFIX = /usr/local/player
 INSTALL_BIN = $(INSTALL_PREFIX)/bin
 INSTALL_INCLUDE = $(INSTALL_PREFIX)/include
-
 RMDIR = rmdir
 
 all: server client_libs examples
@@ -45,9 +44,21 @@ uninstall:
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_INCLUDE)
 	$(RMDIR) --ignore-fail-on-non-empty $(INSTALL_PREFIX)
 
+
+manual:
+	cd tex && make install
+
+distro: manual
+	cd .. && $(PWD)/distro.sh `echo $(PWD) | awk -F "/" '{print $$NF}'` `awk '{print substr($$3,2,length($$3)-2);}' $(PWD)/VERSION`
+
+
 clean:
 	cd src && make clean
 	cd client_libs && make clean
 	cd examples && make clean
+
+veryclean: clean
+	cd tex && make clean
+	
 
 
