@@ -63,6 +63,8 @@ void CSIP::Fill(player_p2os_data_t* data,  struct timeval timeBegan_tv)
   data->misc.frontbumpers =  (unsigned char)frontbumpers;
   data->misc.rearbumpers =  (unsigned char)rearbumpers;
   data->misc.voltage = (unsigned char)battery;
+  data->misc.digin = (unsigned char)digin;
+  data->misc.analog = (unsigned char)analog;
 }
 
 int CSIP::PositionChange( unsigned short from, unsigned short to ) 

@@ -46,13 +46,15 @@ void MiscProxy::FillData(player_msghdr_t hdr, const char* buffer)
   frontbumpers = ((player_misc_data_t*)buffer)->frontbumpers;
   rearbumpers = ((player_misc_data_t*)buffer)->rearbumpers;
   voltage = ((player_misc_data_t*)buffer)->voltage;
+  digin = ((player_misc_data_t*)buffer)->digin;
+  analog = ((player_misc_data_t*)buffer)->analog;
 }
 
 // interface that all proxies SHOULD provide
 void MiscProxy::Print()
 {
   printf("#Misc(%d:%d) - %c\n", device, index, access);
-  puts("#front\trear\tvoltage");
-  printf("%u\t%u\t%u\n", frontbumpers,rearbumpers,voltage);
+  puts("#front\trear\tvoltage\tdigin\tanalog");
+  printf("%u\t%u\t%u\t%u\t%u\n", frontbumpers,rearbumpers,voltage,digin,analog);
 }
 

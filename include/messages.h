@@ -226,6 +226,12 @@ typedef struct
   uint16_t ranges[16]; /* start at the front left sonar and number clockwise */
 } __attribute__ ((packed)) player_sonar_data_t;
 
+typedef struct
+{
+  uint8_t cmd;
+  uint8_t arg;
+} __attribute__ ((packed)) player_sonar_config_t;
+
 /* the various configuration commands 
  * NOTE: these must not be the same as any other P2OS device! */
 #define PLAYER_SONAR_POWER_REQ      ((uint8_t)4)
@@ -265,6 +271,8 @@ typedef struct
 {
   uint8_t frontbumpers, rearbumpers; /* bitfields; panels number clockwise */
   uint8_t voltage;  /* battery voltage in decivolts */
+  uint8_t analog;
+  uint8_t digin;
 } __attribute__ ((packed)) player_misc_data_t;
 
 

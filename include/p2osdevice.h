@@ -107,6 +107,7 @@
  *       2 chars: frontbumper,rearbumpers
  *       1 char:  voltage
  */
+/*
 #define P2OS_DATA_BUFFER_SIZE POSITION_DATA_BUFFER_SIZE + \
                               SONAR_DATA_BUFFER_SIZE + \
                               GRIPPER_DATA_BUFFER_SIZE + \
@@ -115,6 +116,7 @@
 #define SONAR_DATA_OFFSET POSITION_DATA_OFFSET + POSITION_DATA_BUFFER_SIZE
 #define GRIPPER_DATA_OFFSET SONAR_DATA_OFFSET + SONAR_DATA_BUFFER_SIZE
 #define MISC_DATA_OFFSET GRIPPER_DATA_OFFSET + GRIPPER_DATA_BUFFER_SIZE
+*/
 
 /*
  * the P2OS device 'command' buffer is shared by several devices.
@@ -124,13 +126,15 @@
  *    'gripper' command:
  *       2 chars: gripcommand, optional gripcommand
  */
+/*
 #define P2OS_COMMAND_BUFFER_SIZE POSITION_COMMAND_BUFFER_SIZE + \
                                  GRIPPER_COMMAND_BUFFER_SIZE
-#define P2OS_CONFIG_BUFFER_SIZE 256
 
 #define POSITION_COMMAND_OFFSET 0
 #define GRIPPER_COMMAND_OFFSET POSITION_COMMAND_OFFSET + \
                                POSITION_COMMAND_BUFFER_SIZE
+*/
+#define P2OS_CONFIG_BUFFER_SIZE 256
 
 typedef struct
 {

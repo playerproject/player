@@ -42,6 +42,10 @@ class MiscProxy : public ClientProxy
     unsigned char frontbumpers,rearbumpers;
     // battery voltage in decivolts
     unsigned char voltage;
+    // bitfield of current digital in
+    unsigned char digin;
+    // 0-255 level of whichever analog in is selected
+    unsigned char analog;
    
     // the client calls this method to make a new proxy
     //   leave access empty to start unconnected
