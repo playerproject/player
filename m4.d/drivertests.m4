@@ -31,7 +31,12 @@ ifelse($3,[yes],
   [AC_ARG_ENABLE($1, [  --enable-$1	  Compile the $1 driver],,
                  enable_$1=no)])
 if test "x$enable_$1" = "xyes" -a len($5) -gt 0; then
-  for header in $5; do
+  if test len($5) -gt 0; then
+    header_list=$5
+  else
+    header_list=foo
+  fi
+  for header in $header_list; do
     AC_CHECK_HEADER($header, enable_$1=yes, enable_$1=no,)
   done
 fi
