@@ -72,6 +72,13 @@ parse_args(int argc, char** argv)
 }
 
 
+/*
+typedef struct
+{
+
+}
+*/
+
 int main(int argc, char **argv)
 {
   parse_args(argc,argv);
@@ -153,9 +160,24 @@ int main(int argc, char **argv)
 		}
 	    }
 	  else // we're close to where we want to be, so now point in the 
-	     // average direction
+	    {
+	      // average direction
 	      turnrate_deg_sec = 2 * (int)RTOD(buddy_error_angle);
 
+	      // if we're in just the right place, announce it
+	      if( fabs(buddy_error_angle) < 0.05 ) 
+		{
+		  player_fiducial_msg_t msg;
+		  
+		  msg.target_id = -1;
+		  strcpy( (char*)msg.bytes, "Aligned" );
+		  msg.len = strlen( (char*)msg.bytes );
+		  msg.intensity = 200;
+		  
+		  fps[r]->SendMessage( &msg, true );
+		}
+	    }
+	  
 	  //printf( "position_error_distance %.2f  "
 	  //  " position_error_angle %.2f  buddy_error_angle %.2f\n", 
 	  //  position_error_distance,
