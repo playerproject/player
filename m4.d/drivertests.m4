@@ -211,12 +211,15 @@ if test "$PKG_CONFIG" != "no" ; then
 	[FOUND_STAGE1p4=no]
 )
 	
-  if test "$FOUND_STAGE1P4" = "yes" ; then
-    AC_CHECK_LIB(pnm, pnm_init)
-    PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
-	    [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
-  fi
+dnl  if test "$FOUND_STAGE1P4" = "yes" ; then
+dnl    AC_CHECK_LIB(pnm, pnm_init)
+dnl    PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
+dnl	    [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
+dnl  fi
 fi
+PLAYER_ADD_DRIVER([stage1p4],[drivers/stage1p4],[no],
+                  [],[$STAGE1P4_CFLAGS],[$STAGE1P4_LIBS])
+AC_CHECK_LIB(pnm, pnm_init)
 
 dnl Where is Gazebo?
 AC_ARG_WITH(gazebo, [  --with-gazebo=dir       Location of Gazebo],

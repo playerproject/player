@@ -14,7 +14,7 @@ EXTRA_DIST = playermap.in playermap.glade $(MAPPER_FILES)
 # Use distutils to build the Python stuff
 pythonbuild: $(MAPPER_FILES)
 	sed 's.GLADEFILE.$(prefix)/share/playermap.' playermap.in > playermap
-	@PYTHON_INTERP@ setup.py build
+	@PYTHON_INTERP@ $(srcdir)/setup.py build
 
 # Do our own cleaning
 clean-local:
@@ -24,7 +24,7 @@ install-data-hook: $(PYTHONINSTALL)
 
 # use distutils to install
 pythoninstall:
-	@PYTHON_INTERP@ setup.py install --prefix=$(prefix)
+	@PYTHON_INTERP@ $(srcdir)/setup.py install --prefix=$(prefix)
 
 # seems that distutils doesn't support 'uninstall'; oh well
 uninstall-local:

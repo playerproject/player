@@ -5,9 +5,9 @@ EXTRA_DIST = playerclient.tcl @TCLPKGFILE@
 
 
 pkgIndex.tcl: playerclient.tcl
-	echo "pkg_mkIndex . playerclient.tcl" | @TCLSH@
+	echo "pkg_mkIndex $(srcdir) $(srcdir)/playerclient.tcl" | @TCLSH@
 
-dist-hook:
-	mkdir -p $(top_distdir)/doc
-	cd $(srcdir)/doc && make manual
-	cp -p $(srcdir)/doc/tclplayer.ps $(top_distdir)/doc
+#dist-hook:
+#	mkdir -p $(top_distdir)/doc
+#	cd $(srcdir)/doc && make manual
+#	cp -p $(srcdir)/doc/tclplayer.ps $(top_distdir)/doc
