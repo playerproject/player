@@ -40,7 +40,6 @@
 
 // this is the biggest single incoming message that the server
 // will take.
-#define REQUEST_BUFFER_SIZE 1024
 
 extern CDeviceTable* deviceTable;
 extern CCounter num_threads;
@@ -78,7 +77,7 @@ void CClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   struct timeval curr;
   unsigned int real_payloadsize;
 
-  static unsigned char reply[REQUEST_BUFFER_SIZE];
+  static unsigned char reply[PLAYER_MAX_MESSAGE_SIZE];
 
   bzero(reply,sizeof(reply));
 
