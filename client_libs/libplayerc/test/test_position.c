@@ -47,8 +47,8 @@ int test_position(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("position: [%6.3f] [%6.3f] [%6.3f] [%d]\n",
-             device->px, device->py, device->pa, device->stall);
+      printf("position: [%14.3f] [%6.3f] [%6.3f] [%6.3f] [%d]\n",
+             device->info.datatime, device->px, device->py, device->pa, device->stall);
     }
     else
     {
