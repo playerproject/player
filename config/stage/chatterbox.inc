@@ -1,3 +1,8 @@
+# Define a model based on the Autonomy Lab Chatterbox robot
+#
+# Author: Richard T Vaughan (rtv) 
+# $Id$
+
 define chatterbox model
 (
   ranger.count 8
