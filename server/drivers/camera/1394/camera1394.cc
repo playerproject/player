@@ -78,13 +78,10 @@ class Camera1394 : public Driver
   private: void WriteData();
 
   // Video device
-  private: const char *device;
-
-  private: raw1394handle_t handle;
-  private: dc1394_cameracapture camera;
-
   private: unsigned int port;
   private: unsigned int node;
+  private: raw1394handle_t handle;
+  private: dc1394_cameracapture camera;
 
   // Camera features
   private: dc1394_feature_set features;
@@ -140,10 +137,9 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
 {
   float fps;
   
-  // Camera defaults to /dev/video0 and NTSC
-  this->device = cf->ReadString(section, "device", "/dev/video1394");
   // The port the camera is attached to
   this->port = cf->ReadInt(section, "port", 0);
+
   // The node inside the port
   this->node = cf->ReadInt(section, "node", 0);
 
@@ -162,10 +158,12 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   else
     this->frameRate = FRAMERATE_60;
 
+  // Get uncompressed video
+  this->format = FORMAT_VGA_NONCOMPRESSED;
+    
   // Image size. This determines the capture resolution. There are a limited
   // number of options available. At 640x480, a camera can capture at
   // _RGB or _MONO or _MONO16.  
-  this->format = cf->ReadInt(section, "format", FORMAT_VGA_NONCOMPRESSED);
   const char* str;
   str =  cf->ReadString(section, "camera_mode", "mode_160x120_yuv444");
   if (0==strcmp(str,"mode_160x120_yuv444"))
@@ -217,13 +215,12 @@ int Camera1394::Setup()
 {
   unsigned int channel, speed;
 
-  // Create a raw1394 handle. Port should be 0 unless you have multiple
-  // firewire cards in your system.
+  // Create a handle for the given port (port will be zero on most
+  // machines)
   this->handle = dc1394_create_handle(this->port);
-
   if (this->handle == NULL)
   {
-    PLAYER_ERROR("Unable to acquire a raw1394 handle");
+    PLAYER_ERROR("Unable to acquire a dc1394 handle");
     return -1;
   }
 
@@ -239,6 +236,9 @@ int Camera1394::Setup()
     return -1;
   }
 
+  // TESTING
+  //dc1394_print_feature_set(&this->features);
+
   // Get the ISO channel and speed of the video
   if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node, 
                                                          &channel, &speed))
@@ -246,19 +246,19 @@ int Camera1394::Setup()
     PLAYER_ERROR("Unable to get iso channel and speed");
     return -1;
   }
-  
+      
   // Set camera to use DMA, improves performance.
   // The '1' parameters is the dropFrames parameter.
   if (dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
-                               this->format, this->mode, SPEED_400, this->frameRate, 
-                               NUM_DMA_BUFFERS, 1, this->device, &this->camera) == DC1394_SUCCESS)
+                               this->format, this->mode, speed, this->frameRate, 
+                               NUM_DMA_BUFFERS, 1, NULL, &this->camera) == DC1394_SUCCESS)
   {
     this->method = methodVideo;
   }
   else
   {
     PLAYER_WARN("DMA capture failed; falling back on RAW method");
-
+          
     // Set camera to use RAW method (fallback)
     if (dc1394_setup_capture(this->handle, this->camera.node, channel,
                              this->format, this->mode, SPEED_400, this->frameRate,
@@ -308,7 +308,6 @@ int Camera1394::Shutdown()
     dc1394_dma_unlisten( this->handle, &this->camera );
     dc1394_dma_release_camera( this->handle, &this->camera );
   }
-
   dc1394_destroy_handle(this->handle);
 
   if (this->frame)
