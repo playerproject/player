@@ -501,29 +501,63 @@ typedef struct
  *   Dont forget to specify the beacon positions (using the setbeacon request).
  */
 
-/*
- * PPS data packet:
- *   px, py: current global position (in mm).
- *   pa: current global heading (in degrees).
+/* BPS data packet:
+ *   (px, py, pa): current global pose (mm, mm, degrees).
+ *   (ux, uy, ua): uncertainty (mm, mm, degrees).
+ *   (err): residual error in estimate (x 1e6)
  */
 typedef struct
 {
   int32_t px, py, pa;
+  int32_t ux, uy, ua;
+  int32_t err;
 } __attribute__ ((packed)) player_bps_data_t;
 
 
-/*
- * BPS request packet: set the pose of a beacon.
- * subtype : must by 1
+/* BPS request packet: set gain terms.
+ * subtype : must be PLAYER_BPS_SUBTYPE_GAIN
+ * gain : gain * 1e6
+ */
+typedef struct
+{
+    uint8_t subtype;
+    uint32_t gain;
+} __attribute__ ((packed)) player_bps_setgain_t;
+
+
+/* BPS request packet: set the pose of the laser
+ * (relative to robot origin in odometric cs)
+ * subtype : PLAYER_BPS_SUBTYPE_SETLASER
+ * px, py, pa : laser pose (mm, mm, degrees)
+ */
+typedef struct
+{
+    uint8_t subtype;
+    int32_t px, py, pa;
+} __attribute__ ((packed)) player_bps_setlaser_t;
+
+
+/* BPS request packet: set the pose of a beacon.
+ * subtype : must by PLAYER_BPS_SUBTYPE_SETBEACON
  * id : beacon id
  * px, py, pa : beacon pose (mm, mm, degrees)
+ * ux, uy, ua : unceratinty in beacon pose (mm, mm, degrees)
  */
 typedef struct
 {
   uint8_t subtype;
   uint8_t id;
   int32_t px, py, pa;
+  int32_t ux, uy, ua;
 } __attribute__ ((packed)) player_bps_setbeacon_t;
+
+
+/* Request packet subtypes
+ */
+#define PLAYER_BPS_SUBTYPE_SETGAIN 1
+#define PLAYER_BPS_SUBTYPE_SETLASER 2
+#define PLAYER_BPS_SUBTYPE_SETBEACON 3
+
 
 
 /*************************************************************************/
