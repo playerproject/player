@@ -338,13 +338,67 @@ int ReadLogManager::ParseHeader(int linenum, int token_count, char **tokens,
 int ReadLogManager::ParseData(CDevice *device, int linenum,
                              int token_count, char **tokens, uint64_t dtime)
 {
-  if (device->device_id.code == PLAYER_POSITION_CODE)
-    return this->ParsePosition(device, linenum, token_count, tokens, dtime);
-  else if (device->device_id.code == PLAYER_LASER_CODE)
+  if (device->device_id.code == PLAYER_LASER_CODE)
     return this->ParseLaser(device, linenum, token_count, tokens, dtime);
+  else if (device->device_id.code == PLAYER_POSITION_CODE)
+    return this->ParsePosition(device, linenum, token_count, tokens, dtime);
+  else if (device->device_id.code == PLAYER_WIFI_CODE)
+    return this->ParseWifi(device, linenum, token_count, tokens, dtime);
 
   PLAYER_WARN("unknown device code");
   return -1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse laser data
+int ReadLogManager::ParseLaser(CDevice *device, int linenum,
+                              int token_count, char **tokens, uint64_t dtime)
+{
+  player_laser_data_t data;
+  uint32_t dtime_sec, dtime_usec;
+    
+  int i;
+  double sr, sb;
+  int si;
+
+  if (token_count < 12)
+  {
+    PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+    return -1;
+  }
+
+  data.range_count = 0;
+  for (i = 6; i < token_count; i += 3)
+  {
+    sr = atof(tokens[i + 0]);
+    sb = atof(tokens[i + 1]);
+    si = atoi(tokens[i + 2]);
+
+    if (data.range_count == 0)
+      data.min_angle = (int) (sb * 180 / M_PI * 100);
+    data.max_angle = (int) (sb * 180 / M_PI * 100);
+
+    data.ranges[data.range_count] = htons((int) (sr * 1000));
+    data.intensity[data.range_count] = si;
+    data.range_count += 1;
+  }
+
+  data.resolution = 100; // HACK (int) ((data.max_angle - data.min_angle) / data.range_count);
+
+  //printf("%d %d %d %d\n", data.resolution, data.min_angle, data.max_angle, data.range_count);
+  
+  data.resolution = htons(data.resolution);
+  data.min_angle = htons(data.min_angle);
+  data.max_angle = htons(data.max_angle);
+  data.range_count = htons(data.range_count);
+
+  dtime_sec = dtime / 1000000;
+  dtime_usec = dtime % 1000000;
+
+  device->PutData(&data, sizeof(data), dtime_sec, dtime_usec);
+
+  return 0;
 }
 
 
@@ -393,47 +447,38 @@ int ReadLogManager::ParsePosition(CDevice *device, int linenum,
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Parse laser data
-int ReadLogManager::ParseLaser(CDevice *device, int linenum,
+// Parse wifi data
+int ReadLogManager::ParseWifi(CDevice *device, int linenum,
                               int token_count, char **tokens, uint64_t dtime)
 {
-  player_laser_data_t data;
+  player_wifi_data_t data;
+  player_wifi_link_t *link;
   uint32_t dtime_sec, dtime_usec;
-    
   int i;
-  double sr, sb;
-  int si;
 
-  if (token_count < 12)
+  if (token_count < 6)
   {
     PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
     return -1;
   }
 
-  data.range_count = 0;
-  for (i = 6; i < token_count; i += 3)
+  data.link_count = 0;
+  for (i = 6; i < token_count; i += 4)
   {
-    sr = atof(tokens[i + 0]);
-    sb = atof(tokens[i + 1]);
-    si = atoi(tokens[i + 2]);
-
-    if (data.range_count == 0)
-      data.min_angle = (int) (sb * 180 / M_PI * 100);
-    data.max_angle = (int) (sb * 180 / M_PI * 100);
-
-    data.ranges[data.range_count] = htons((int) (sr * 1000));
-    data.intensity[data.range_count] = si;
-    data.range_count += 1;
-  }
-
-  data.resolution = 100; // HACK (int) ((data.max_angle - data.min_angle) / data.range_count);
-
-  //printf("%d %d %d %d\n", data.resolution, data.min_angle, data.max_angle, data.range_count);
+    link = data.links + data.link_count;
   
-  data.resolution = htons(data.resolution);
-  data.min_angle = htons(data.min_angle);
-  data.max_angle = htons(data.max_angle);
-  data.range_count = htons(data.range_count);
+    strcpy(link->ip, tokens[i + 0]);
+    link->qual = atoi(tokens[i + 1]);
+    link->level = atoi(tokens[i + 2]);
+    link->noise = atoi(tokens[i + 3]);
+
+    link->qual = htons(link->qual);
+    link->level = htons(link->level);
+    link->noise = htons(link->noise);    
+    
+    data.link_count++;
+  }
+  data.link_count = htons(data.link_count);
 
   dtime_sec = dtime / 1000000;
   dtime_usec = dtime % 1000000;
