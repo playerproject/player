@@ -54,7 +54,7 @@ StgLaser::StgLaser(char* interface, ConfigFile* cf, int section )
   PLAYER_TRACE1( "constructing StgLaser with interface %s", interface );
   
   //this->subscribe_prop = STG_PROP_LASERDATA;
-  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_LASERDATA));
+  this->subscribe_list = g_list_append( this->subscribe_list, GINT_TO_POINTER(STG_PROP_DATA));
 
 }
 
@@ -80,7 +80,7 @@ void StgLaser_Register(DriverTable* table)
 int StgLaser::Setup()
 {
   // subscribe to laser config as well as our regular data
-  stg_model_subscribe( this->model, STG_PROP_LASERCONFIG, 100 ); // 100ms    
+  stg_model_subscribe( this->model, STG_PROP_CONFIG, 100 ); // 100ms    
   
   return Stage1p4::Setup();
 }
@@ -88,7 +88,7 @@ int StgLaser::Setup()
 int StgLaser::Shutdown()
 {
   // unsubscribe to laser config
-  stg_model_unsubscribe( this->model, STG_PROP_LASERCONFIG );  
+  stg_model_unsubscribe( this->model, STG_PROP_CONFIG );  
   
   return Stage1p4::Shutdown();
 }
@@ -97,7 +97,7 @@ int StgLaser::Shutdown()
 size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 			 uint32_t* timestamp_sec, uint32_t* timestamp_usec)
 {
-  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_LASERDATA);
+  stg_property_t* prop = stg_model_get_prop_cached( model, STG_PROP_DATA);
   
   player_laser_data_t pdata;
   memset( &pdata, 0, sizeof(pdata) );
@@ -112,7 +112,7 @@ size_t StgLaser::GetData(void* client, unsigned char* dest, size_t len,
 
       // we get the config to stick into Player's packet
       stg_property_t* prop = 
-	stg_model_get_prop_cached( model, STG_PROP_LASERCONFIG );
+	stg_model_get_prop_cached( model, STG_PROP_CONFIG );
       assert( prop );
       
       stg_laser_config_t* cfg = (stg_laser_config_t*)prop->data;
@@ -191,7 +191,7 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	    slc_request.samples = (int)(slc_request.fov / DTOR(ang_res));
 	    	    
 	    int err;
-	    if( (err = stg_model_prop_set( this->model, STG_PROP_LASERCONFIG,
+	    if( (err = stg_model_prop_set( this->model, STG_PROP_CONFIG,
 					   &slc_request, sizeof(slc_request)) ) )
 	      PLAYER_ERROR1( "error %d setting laser config", err );
 	    else
@@ -215,9 +215,9 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	if( len == 1 )
 	  {
 	    stg_laser_config_t slc;
-	    if( stg_model_prop_get( this->model, STG_PROP_LASERCONFIG, &slc,sizeof(slc))
+	    if( stg_model_prop_get( this->model, STG_PROP_CONFIG, &slc,sizeof(slc))
 		!= 0 )
-	      PLAYER_TRACE0( "error requesting STG_PROP_LASERCONFIG" );
+	      PLAYER_TRACE0( "error requesting STG_PROP_CONFIG" );
 	    
 	    //stg_print_laser_config( &slc );
 	    
@@ -259,9 +259,9 @@ int StgLaser::PutConfig(player_device_id_t* device, void* client,
 	PLAYER_TRACE0( "requesting laser geom" );
 
 	stg_laser_config_t slc;
-	if( stg_model_prop_get( this->model, STG_PROP_LASERCONFIG, &slc,sizeof(slc))
+	if( stg_model_prop_get( this->model, STG_PROP_CONFIG, &slc,sizeof(slc))
 	    != 0 )
-	  PLAYER_TRACE0( "error requesting STG_PROP_LASERCONFIG" );
+	  PLAYER_TRACE0( "error requesting STG_PROP_CONFIG" );
 	
       
 	// fill in the geometry data formatted player-like
