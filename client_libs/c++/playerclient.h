@@ -509,8 +509,8 @@ class DescartesProxy : public ClientProxy
     // the client calls this method to make a new proxy
     //   leave access empty to start unconnected
     DescartesProxy(PlayerClient* pc, unsigned short index, 
-                  unsigned char access ='c'):
-            ClientProxy(pc,PLAYER_DESCARTES_CODE,index,access) {}
+                  unsigned char access ='c', unsigned short robot=0 ):
+            ClientProxy(pc,PLAYER_DESCARTES_CODE,index,access,robot ) {}
 
     // these methods are the user's interface to this device
 
@@ -634,8 +634,9 @@ class IDARProxy : public ClientProxy
   // the client calls this method to make a new proxy
   //   leave access empty to start unconnected
   IDARProxy(PlayerClient* pc, unsigned short index, 
-	    unsigned char access = 'c');
-  
+	    unsigned char access = 'c', unsigned short robot=0 ):
+   ClientProxy(pc,PLAYER_IDAR_CODE,index,access,robot) {}
+ 
   // interface that all proxies must provide
   // reads the receive buffers from player
   //void FillData(player_msghdr_t hdr, const char* buffer);

@@ -97,7 +97,7 @@ void fiducial_update(fiducial_t *fiducial)
 
       // Get the geometry
       if (playerc_fiducial_get_geom(fiducial->proxy) != 0)
-        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
+	PRINT_ERR1("libplayerc error: %s", playerc_error_str());
     }
   }
   else
