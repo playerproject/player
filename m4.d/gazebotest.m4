@@ -40,6 +40,7 @@ if test "x$enable_gazebo" = "xyes"; then
   GAZEBO_LIB=libgazebo.a
   GAZEBO_LIB_PATH=gazebo/$GAZEBO_LIB
   GAZEBO_EXTRA_CPPFLAGS=$GAZEBO_CFLAGS
+  GAZEBO_EXTRA_LFLAGS=
   GAZEBO_EXTRA_LIB=$GAZEBO_LIBS
 fi
 
