@@ -59,6 +59,8 @@ class ClientProxy
     // destructor will try to close access to the device
     virtual ~ClientProxy();
 
+    unsigned char GetAccess() { return(access); };  
+
     // methods for changin access mode
     int ChangeAccess(unsigned char req_access, 
                      unsigned char* grant_access=NULL);

@@ -96,18 +96,18 @@ int main(int argc, char **argv)
 
     if (avoid == 0)
     {
-        if((sp.ranges[2] < really_min_front_dist) ||
-           (sp.ranges[3] < really_min_front_dist) ||
-           (sp.ranges[4] < really_min_front_dist) ||
-           (sp.ranges[5] < really_min_front_dist))
+        if((sp[2] < really_min_front_dist) ||
+           (sp[3] < really_min_front_dist) ||
+           (sp[4] < really_min_front_dist) ||
+           (sp[5] < really_min_front_dist))
         {
             avoid = 50;
             newspeed = -100;
         }
-        else if((sp.ranges[2] < min_front_dist) ||
-                (sp.ranges[3] < min_front_dist) ||
-                (sp.ranges[4] < min_front_dist) ||
-                (sp.ranges[5] < min_front_dist))
+        else if((sp[2] < min_front_dist) ||
+                (sp[3] < min_front_dist) ||
+                (sp[4] < min_front_dist) ||
+                (sp[5] < min_front_dist))
         {
             newspeed = 0;
             avoid = 50;
@@ -116,8 +116,8 @@ int main(int argc, char **argv)
 
     if(avoid > 0)
     {  
-      if((sp.ranges[0] + sp.ranges[1]) < 
-         (sp.ranges[6] + sp.ranges[7]))
+      if((sp[0] + sp[1]) < 
+         (sp[6] + sp[7]))
         newturnrate = 30;
       else
         newturnrate = -30;
