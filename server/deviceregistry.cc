@@ -62,9 +62,13 @@ void CMVision_Register(DriverTable* table);
 void Festival_Register(DriverTable* table);
 #endif 
 
-#ifdef INCLUDE_LASERFIDUCIAL
+#ifdef INCLUDE_LASERBAR
 void LaserBar_Register(DriverTable* table);
+#endif
+#ifdef INCLUDE_LASERBARCODE
 void LaserBarcode_Register(DriverTable* table);
+#endif
+#ifdef INCLUDE_LASERVISUALBARCODE
 void LaserVisualBarcode_Register(DriverTable* table);
 #endif
 
@@ -249,9 +253,13 @@ register_devices()
   Festival_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_LASERFIDUCIAL
+#ifdef INCLUDE_LASERBAR
   LaserBar_Register(driverTable);
+#endif
+#ifdef INCLUDE_LASERBARCODE
   LaserBarcode_Register(driverTable);
+#endif
+#ifdef INCLUDE_LASERVISUALBARCODE
   LaserVisualBarcode_Register(driverTable);
 #endif
 
