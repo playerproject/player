@@ -350,7 +350,7 @@ void Wavefront_Register(DriverTable* table)
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
     : Driver(cf, section, PLAYER_PLANNER_CODE, PLAYER_ALL_MODE,
-             sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 1, 1)
+             sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 5, 5)
 {
   // Must have a position device
   if (cf->ReadDeviceId(&this->position_id, section, "requires",
