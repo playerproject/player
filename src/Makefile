@@ -129,7 +129,7 @@ $(SERVERNAME): $(DEVICELIBNAME)
 	$(CPP) -rdynamic $(PROFILE_LINK) -o $@ $(LIBS) $(EXTRA_LIBS) $(PLATFORM_LIBS)
 
 main.o: main.cc
-	$(CPP) $(CFLAGS) -DPLAYER_VERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDE_STAGE) -c $<
+	$(CPP) $(CFLAGS) -DVERSION=\"$(PLAYER_VERSION)\" $(INCLUDES) $(INCLUDE_STAGE) -c $<
 
 deviceregistry.o: deviceregistry.cc
 	$(CPP) $(CFLAGS) $(INCLUDES) $(INCLUDED_DEVICES) -c $<
