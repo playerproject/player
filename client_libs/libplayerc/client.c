@@ -34,6 +34,7 @@
 #include <netinet/in.h>  // for struct sockaddr_in, htons(3)
 #include <errno.h>
 
+#include "replace.h"  // for poll(2)
 #include "playerc.h"
 #include "error.h"
 
@@ -183,12 +184,12 @@ void *playerc_client_read(playerc_client_t *client)
   int len;
   char data[8192];
 
-  len = sizeof(data);
-
   // See if there is any queued data.
+  len = sizeof(data);
   if (playerc_client_pop(client, &header, data, &len) < 0)
   {
     // If there is no queued data, read a packet (blocking).
+    len = sizeof(data);
     if (playerc_client_readpacket(client, &header, data, &len) < 0)
       return NULL;
   }
@@ -547,7 +548,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
     PLAYERC_ERR2("got incomplete header, %d of %d bytes", bytes, sizeof(player_msghdr_t) - 2);
     return -1;
   }
-
+  
   // Do the network byte re-ordering 
   header->stx = ntohs(header->stx);
   header->type = ntohs(header->type);
@@ -559,7 +560,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
 
   if (header->size > *len)
   {
-    PLAYERC_ERR1("packet is too large, %d bytes", ntohl(header->size));
+    PLAYERC_ERR1("packet is too large, %d bytes", header->size);
     return -1;
   }
 

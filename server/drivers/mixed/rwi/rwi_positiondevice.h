@@ -65,14 +65,14 @@ private:
 	
 	// for determining whether we are stalled
 	int32_t old_xpos, old_ypos;
-	uint16_t old_theta;
+	int32_t old_theta;
 	bool moving;
 	
 	// sometimes velocity cannot be read
-	uint16_t last_known_speed;
-	int16_t last_known_turnrate;
+	uint32_t last_known_speed;
+	int32_t last_known_turnrate;
 	
-	void PositionCommand (const int16_t speed, const int16_t rot_speed);
+	void PositionCommand (const int32_t speed, const int32_t rot_speed);
 	void ResetOdometry ();
 };
 

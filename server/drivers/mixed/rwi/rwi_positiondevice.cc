@@ -110,151 +110,171 @@ CRWIPositionDevice::Shutdown()
 void
 CRWIPositionDevice::Main()
 {
-	// start enabled
-	bool enabled = true;
-	
-	// Working buffer space
-	player_rwi_config_t    cfg;
-	player_position_cmd_t  cmd;
-	player_position_data_t data;
-	
-	void *client;
-	
+  // start enabled
+  bool enabled = true;
+  
+  // Working buffer space
+  player_rwi_config_t    cfg;
+  player_position_cmd_t  cmd;
+  player_position_data_t data;
+  player_position_geom_t geom;
+  
+  void *client;
+  
 #ifdef USE_MOBILITY
-	MobilityActuator::ActuatorData_var odo_data;
-	int16_t degrees;
-	double cos_theta, sin_theta, tmp_y, tmp_x;
+  MobilityActuator::ActuatorData_var odo_data;
+  int32_t degrees;
+  double cos_theta, sin_theta, tmp_y, tmp_x;
 #endif // USE_MOBILITY
 	
-    if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
-		perror("rwi_position call to pthread_setcanceltype failed");
+  if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0)
+    {
+      perror("rwi_position call to pthread_setcanceltype failed");
     }
-
-	while (true) {
-	
-		// First, check for a configuration request
-		if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
-		    switch (cfg.request) {
-		    	case PLAYER_P2OS_POSITION_MOTOR_POWER_REQ:
-		    		// RWI does not turn off motor power:
-		    		// the motors are always on when connected.
-		    		// we simply stop processing movement commands
-		    		if (cfg.value == 0)
-		    			enabled = false;
-		    		else
-		    			enabled = true;
-		    		
-		    		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_positiondevice.\n");
-		    		}
-					break;
-			    case PLAYER_P2OS_POSITION_RESET_ODOM_REQ:
-					ResetOdometry();
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_positiondevice.\n");
-		    		}
-					break;
-				case PLAYER_POSITION_GET_GEOM_REQ:
-					// FIXME: not yet implemented
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_positiondevice.\n");
-		    		}
-					break;
-				default:
-					printf("rwi_position device received unknown %s",
-					       "configuration request\n");
-					if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
-		    		             NULL, NULL, 0)) {
-		    			PLAYER_ERROR("Failed to PutReply in "
-		    			             "rwi_positiondevice.\n");
-		    		}
-					break;
-	    	}
-		}
-
-		// Next, process a command
-		GetCommand((unsigned char *) &cmd, sizeof(cmd));
-		
-		if (enabled) {
-			// always apply the latest speed command: RWI stops us otherwise
-    		PositionCommand(ntohs(cmd.xspeed), ntohs(cmd.yawspeed));
+  
+  while (true) 
+    {
+      // First, check for a configuration request
+      if (GetConfig(&client, (void *) &cfg, sizeof(cfg))) {
+	switch (cfg.request) 
+	  {
+	  case PLAYER_POSITION_MOTOR_POWER_REQ:
+	    // RWI does not turn off motor power:
+	    // the motors are always on when connected.
+	    // we simply stop processing movement commands
+	    if (cfg.value == 0)
+	      enabled = false;
+	    else
+	      enabled = true;
+	    
+	    if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+			 NULL, NULL, 0))
+	      {
+		PLAYER_ERROR("Failed to PutReply in "
+			     "rwi_positiondevice.\n");
+	      }
+	    break;
+	  case PLAYER_POSITION_RESET_ODOM_REQ:
+	    ResetOdometry();
+	    if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+			 NULL, NULL, 0))
+	      {
+		PLAYER_ERROR("Failed to PutReply in "
+			     "rwi_positiondevice.\n");
+	      }
+	    break;
+	  case PLAYER_POSITION_GET_GEOM_REQ:
+	    geom.subtype=PLAYER_POSITION_GET_GEOM_REQ;
+	    geom.pose[0]=0;
+	    geom.pose[1]=0;
+	    geom.pose[2]=0;
+	    geom.size[0]=ntohs(500);
+	    geom.size[1]=ntohs(500);
+	    if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
+			 NULL, &geom, sizeof(geom)))
+	      {
+		PLAYER_ERROR("Failed to PutReply in "
+			     "rwi_positiondevice.\n");
+	      }
+	    break;
+	  default:
+	    printf("rwi_position device received unknown %s",
+		   "configuration request\n");
+	    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,
+			 NULL, NULL, 0)) 
+	      {
+		PLAYER_ERROR("Failed to PutReply in "
+			     "rwi_positiondevice.\n");
+	      }
+	    break;
+	  }
+      }
+      
+      // Next, process a command
+      GetCommand((unsigned char *) &cmd, sizeof(cmd));
+      
+      if (enabled)
+	{
+	  // always apply the latest speed command: RWI stops us otherwise
+	  //printf("X: %d Y: %d Yaw: %d\n",ntohl(cmd.xspeed),ntohl(cmd.yspeed),ntohl(cmd.yawspeed));
+	  PositionCommand(ntohl(cmd.xspeed), ntohl(cmd.yawspeed));
     	}
-	
-		// Finally, collect new data
+      
+      // Finally, collect new data
 #ifdef USE_MOBILITY
-		odo_data = odo_state->get_sample(0);
-		
-		// get ready to rotate our coordinate system (remembering that RWI
-		// puts y before x)
-		tmp_y = odo_data->position[0] + odo_correct_y;
-		tmp_x = odo_data->position[1] + odo_correct_x;
-		cos_theta = cos(-odo_correct_theta);
-		sin_theta = sin(-odo_correct_theta);
-		
-		data.xpos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
-		                             * 1000.0));
-		data.ypos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
-		                             * 1000.0));
-		degrees = (int16_t)
-		           RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
-		if (degrees < 0)
-			degrees += 360;
-		data.theta = htons((uint16_t) degrees);
-				
-		// velocity array seems to be flaky... not always there
-		if (odo_data->velocity.length()) {
-			data.speed = htons((uint16_t) (1000.0*
-				sqrt(odo_data->velocity[0]*odo_data->velocity[0] +
-				     odo_data->velocity[1]*odo_data->velocity[1])));
-			degrees = (int16_t) RTOD(odo_data->velocity[2]);
-			data.turnrate = (int16_t) htons(degrees);
-			
-			// just in case we cannot get them next time
-			last_known_speed = data.speed;
-			last_known_turnrate = data.turnrate;
-			
-		} else {
-			PLAYER_TRACE0("MOBILITY SUCKS: Unable to read velocity data!\n");
-			// replay the last valid values
-			data.speed = last_known_speed;
-			data.turnrate = last_known_turnrate;
-		}
-#else
-		data.xpos = data.ypos = 0;
-		data.yaw = data.xspeed = data.yawspeed = 0;
-#endif			// USE_MOBILITY
-
-		// determine stall value
-		if (moving && old_xpos == data.xpos && old_ypos == data.ypos
-		    && old_theta == data.yaw) {
-		    data.stall = 1;
-		} else {
-			data.stall = 0;
-		}
-		
-		// Keep a copy of our new data for stall computation
-		old_xpos = data.xpos;
-		old_ypos = data.ypos;
-		old_theta = data.yaw;
-	
-	    PutData((unsigned char *) &data, sizeof(data), 0, 0);
-	
-	    pthread_testcancel();
+      odo_data = odo_state->get_sample(0);
+      
+      // get ready to rotate our coordinate system (remembering that RWI
+      // puts y before x)
+      tmp_y = odo_data->position[0] + odo_correct_y;
+      tmp_x = odo_data->position[1] + odo_correct_x;
+      cos_theta = cos(-odo_correct_theta);
+      sin_theta = sin(-odo_correct_theta);
+      
+      data.xpos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
+				   * 1000.0));
+      data.ypos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
+				   * 1000.0));
+      degrees = (int32_t)
+	RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
+      if (degrees < 0)
+	degrees += 360;
+      data.yaw = htonl((int32_t) degrees);
+      
+      // velocity array seems to be flaky... not always there
+      if (odo_data->velocity.length()) 
+	{
+	  data.xspeed = htonl((int32_t) (1000.0*
+					 sqrt(odo_data->velocity[0]*odo_data->velocity[0] +
+					      odo_data->velocity[1]*odo_data->velocity[1])));
+	  degrees = (int32_t) RTOD(odo_data->velocity[2]);
+	  data.yawspeed = (int32_t) htonl(degrees);
+	  
+	  // just in case we cannot get them next time
+	  last_known_speed = data.xspeed;
+	  last_known_turnrate = data.yawspeed;
+	  
 	}
-	
-	// should not reach this point
-	pthread_exit(NULL);
+      else
+	{
+	  PLAYER_TRACE0("MOBILITY SUCKS: Unable to read velocity data!\n");
+	  // replay the last valid values
+	  data.xspeed = last_known_speed;
+	  data.yawspeed = last_known_turnrate;
+	}
+#else
+      data.xpos = data.ypos = 0;
+      data.yaw = data.xspeed = data.yawspeed = 0;
+#endif			// USE_MOBILITY
+      
+      // determine stall value
+      if (moving && old_xpos == data.xpos && old_ypos == data.ypos
+	  && old_theta == data.yaw) 
+	{
+	  data.stall = 1;
+	}
+      else
+	{
+	  data.stall = 0;
+	}
+      
+      // Keep a copy of our new data for stall computation
+      old_xpos = data.xpos;
+      old_ypos = data.ypos;
+      old_theta = data.yaw;
+      
+      PutData((unsigned char *) &data, sizeof(data), 0, 0);
+      
+      pthread_testcancel();
+    }
+  
+  // should not reach this point
+  pthread_exit(NULL);
 }
 
 void
-CRWIPositionDevice::PositionCommand(const int16_t speed,
-                                    const int16_t rot_speed)
+CRWIPositionDevice::PositionCommand(const int32_t speed,
+                                    const int32_t rot_speed)
 {
 	if (speed == 0 && rot_speed == 0)
 		moving = false;

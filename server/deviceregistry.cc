@@ -42,12 +42,16 @@ extern DriverTable* driverTable;
 extern PlayerTime* GlobalTime;
 
 /* prototype device-specific init funcs */
-#ifdef INCLUDE_SICK
+#ifdef INCLUDE_SICKLMS200
 void SickLMS200_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_ACTS
 void Acts_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_CMVISION
+void CMVision_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_FESTIVAL
@@ -60,14 +64,20 @@ void LaserBarcode_Register(DriverTable* table);
 void LaserVisualBarcode_Register(DriverTable* table);
 #endif
 
-//void LaserCSpace_Register(DriverTable* table);
+#ifdef INCLUDE_LASERCSPACE
+void LaserCSpace_Register(DriverTable* table);
+#endif
 
-#ifdef INCLUDE_SONY
+#ifdef INCLUDE_SONYEVID30
 void SonyEVID30_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_UDPBCAST
+#ifdef INCLUDE_UDPBROADCAST
 void UDPBroadcast_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_PASSTHROUGH
+void PassThrough_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_P2OS
@@ -80,7 +90,7 @@ void P2OSPosition_Register(DriverTable* table);
 void P2OSSonar_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_WIFI
+#ifdef INCLUDE_LINUXWIFI
 void LinuxWiFi_Register(DriverTable *table);
 #endif
 
@@ -122,10 +132,17 @@ void MicroStrain3DMG_Register(DriverTable* table);
 void Waveaudio_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_LOCALIZATION
+#ifdef INCLUDE_MCL
 void RegularMCL_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_AMCL
+void AdaptiveMCL_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_LIFOMCOM
+void LifoMCom_Register(DriverTable* table);
+#endif
 
 /* this array lists the interfaces that Player knows how to load, along with
  * the default driver for each.
@@ -150,7 +167,8 @@ player_interface_t interfaces[] = {
   {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING, "linuxwifi"},
   {PLAYER_IR_CODE, PLAYER_IR_STRING, "reb_ir"},
   {PLAYER_WAVEFORM_CODE, PLAYER_WAVEFORM_STRING, "wave_audio"},
-  {PLAYER_LOCALIZATION_CODE, PLAYER_LOCALIZATION_STRING, "regular_mcl"},
+  {PLAYER_LOCALIZE_CODE, PLAYER_LOCALIZE_STRING, "adaptive_mcl"},
+  {PLAYER_MCOM_CODE, PLAYER_MCOM_STRING, "lifomcom"},
   {0,NULL,NULL}
 };
 
@@ -181,12 +199,16 @@ lookup_interface(char* name, player_interface_t* interface)
 void
 register_devices()
 {
-#ifdef INCLUDE_SICK
+#ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ACTS
   Acts_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CMVISION
+  CMVision_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_FESTIVAL
@@ -199,14 +221,20 @@ register_devices()
   LaserVisualBarcode_Register(driverTable);
 #endif
 
-// LaserCSpace_Register(driverTable);
+#ifdef INCLUDE_LASERCSPACE
+  LaserCSpace_Register(driverTable);
+#endif
 
-#ifdef INCLUDE_SONY
+#ifdef INCLUDE_SONYEVID30
   SonyEVID30_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_UDPBCAST
+#ifdef INCLUDE_UDPBROADCAST
   UDPBroadcast_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_PASSTHROUGH
+  PassThrough_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_P2OS
@@ -231,7 +259,7 @@ register_devices()
   RWIPower_Register(driverTable);
 #endif
   
-#ifdef INCLUDE_WIFI
+#ifdef INCLUDE_LINUXWIFI
   LinuxWiFi_Register(driverTable);
 #endif
 
@@ -261,8 +289,16 @@ register_devices()
   Waveaudio_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_LOCALIZATION
+#ifdef INCLUDE_MCL
   RegularMCL_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_AMCL
+  AdaptiveMCL_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LIFOMCOM
+  LifoMCom_Register(driverTable);
 #endif
 }
 

@@ -280,7 +280,7 @@ size_t LaserFeature::GetData(void* client,unsigned char *dest, size_t maxsize,
   }
   
   // Copy results
-  ASSERT(maxsize >= sizeof(this->data));
+  assert(maxsize >= sizeof(this->data));
   memcpy(dest, &this->data, sizeof(this->data));
 
   // Copy the laser timestamp

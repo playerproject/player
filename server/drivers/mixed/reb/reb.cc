@@ -1184,7 +1184,7 @@ REB::UpdateData()
 {
   player_reb_data_t d;
     
-    struct timeval curr, end;
+  // struct timeval curr, end;
   //  int timems;
 
   Lock();
@@ -1254,8 +1254,8 @@ REB::UpdateIRData(player_reb_data_t * d)
 {
   // then we can take a reading
   uint16_t volts[PLAYER_IR_MAX_SAMPLES];
-  struct timeval curr;
-  char buf[64];
+  // struct timeval curr;
+  // char buf[64];
 
   ReadAllIR(volts);
   
@@ -1785,7 +1785,7 @@ REB::ReadAllIR(uint16_t *ir)
   sprintf(buf, "W\r");
   ret = write_command(buf, strlen(buf), sizeof(buf));
     
-  int p=0;
+  size_t p=0;
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     // find the first comma
     while (buf[p++] != ',') {

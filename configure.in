@@ -6,11 +6,15 @@ AC_INIT(server/main.cc)
 AC_CANONICAL_SYSTEM
 
 dnl Define this so that we can refer to it twice below
-define(PLAYER_VERSION,1.3)
+dnl PS_VERSION is the major.minor version that is common for Player and
+dnl Stage. All revisions with this major.minor version must be forwards 
+dnl and backwards compatible. This number is used for the install directories.
+define(PS_VERSION,1.3)
+define(PLAYER_VERSION,PS_VERSION.2rc1)
 
 dnl Initialize automake with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AM_INIT_AUTOMAKE(player,PLAYER_VERSION)
+AM_INIT_AUTOMAKE(player-src,PLAYER_VERSION)
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
@@ -26,8 +30,13 @@ AM_CONFIG_HEADER(config.h server/playercommon.h)
 dnl Find basic tools
 AC_PROG_CC
 AC_PROG_CXX
+if test ! $GCC = yes -o ! $GXX = yes; then
+  AC_MSG_ERROR([Player *requires* gcc and g++ to build.])
+fi
+AC_PROG_CPP
 AC_PROG_RANLIB
 AC_PROG_INSTALL
+AC_C_BIGENDIAN
 
 dnl Check for library functions
 AC_CHECK_LIB(z, gzopen)
@@ -44,10 +53,13 @@ AC_CHECK_HEADER(jpeglib.h,
   LIBJPEG="-ljpeg",,)
 AC_SUBST(LIBJPEG)
 
+AC_MSG_CHECKING(for rtk.h)
 if test -f $RTK_DIR/include/rtk.h; then
   with_rtk=yes
+  AC_MSG_RESULT(yes)
 else
   with_rtk=no
+  AC_MSG_RESULT(no)
   AC_MSG_WARN([***************************************************])
   AC_MSG_WARN([Couldn't find RTK, so I won't build RTK-based GUIs])
   AC_MSG_WARN([Maybe you should download and install RTK?])
@@ -55,6 +67,36 @@ else
   AC_MSG_WARN([***************************************************])
 fi
 AM_CONDITIONAL(WITH_RTK, test x$with_rtk = xyes)
+
+dnl Include RTK gui support (for debugging)
+AC_ARG_ENABLE(rtkgui, 
+[  --enable-rtkgui         Include RTK GUI in server (debugging)],, enable_rtkgui=no)
+if test "x$enable_rtkgui" = "xyes"; then
+  AC_DEFINE(INCLUDE_RTKGUI, 1, [[include the RTK GUI in server (debugging)]])
+  RTKGUI_EXTRA_LIB="-L$RTK_DIR/lib -lrtk $LIBJPEG"
+  RTKGUI_EXTRA_LDFLAGS="`gtk-config --libs gtk gthread`"
+fi
+AM_CONDITIONAL(INCLUDE_RTKGUI, test x$enable_rtkgui = xyes)
+AC_SUBST(RTKGUI_EXTRA_LIB)
+AC_SUBST(RTKGUI_EXTRA_LDFLAGS)
+
+dnl where's Mobility?
+AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
+MOBILITY_DIR=$with_mobility,
+MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
+AC_SUBST(MOBILITY_DIR)
+
+dnl if test -f $MOBILITY_DIR/include/mobilityutil.h; then
+dnl   with_mobility=yes
+dnl else
+dnl   with_mobility=no
+dnl   with_rwi=no
+dnl   AC_MSG_WARN([***************************************************])
+dnl   AC_MSG_WARN([Couldn't find Mobility, so I won't build RWI driver])
+dnl   AC_MSG_WARN([If you have Mobility, try --with-mobility=path])
+dnl   AC_MSG_WARN([***************************************************])
+dnl fi
+dnl AM_CONDITIONAL(WITH_MOBILITY, test x$with_mobility = xyes)
 
 dnl FreeBSD always invokes Tcl with a version, so i'll pick a reasonable one
 case $host in
@@ -66,12 +108,12 @@ esac
 AC_SUBST(TCLSH)
 
 dnl Change default installation prefix from /usr/local to user's home
-AC_PREFIX_DEFAULT(${HOME}/player-PLAYER_VERSION)
+AC_PREFIX_DEFAULT(${HOME}/player-PS_VERSION)
 
 dnl client tests are compiled by default
-AC_ARG_WITH(tests, [  --without-tests         Don't build client tests],,
-with_tests=yes)
-AM_CONDITIONAL(WITH_TESTS, test x$with_tests = xyes)
+AC_ARG_ENABLE(tests, [  --enable-tests          Don't build client tests],,
+enable_tests=yes)
+AM_CONDITIONAL(WITH_TESTS, test x$enable_tests = xyes)
 
 dnl use the old compiler
 AC_ARG_WITH(glibc21, [  --with-glibc21          Use the glibc 2.1 compilers],,
@@ -84,8 +126,7 @@ fi
 dnl Optionally build the python client if the header is available
 PYTHON_VERSION=2.2
 AC_ARG_WITH(python,
-[  --without-python        Don't compile the python client libraries],
-with_python=no,
+[  --without-python        Don't compile the python client libraries],,
 [AC_CHECK_HEADER(python$PYTHON_VERSION/Python.h,with_python=yes,with_python=no)])
 AM_CONDITIONAL(WITH_PYTHON, test x$with_python = xyes)
 
@@ -105,7 +146,7 @@ dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
-dnl Note that we can't simply dnl use AC_CHECK_TYPE because socklen_t 
+dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 
 dnl isn't in the standard headers (autoconf-2.5 has better methods for this)
 AC_MSG_CHECKING(if socklen_t is defined)
 AC_TRY_COMPILE(
@@ -118,7 +159,7 @@ AC_TRY_COMPILE(
 
 dnl Test for O_SYNC and define it to 0 if it's not there (it gets ORed with
 dnl flags, so 0 is harmless).
-dnl Note that we can't simply dnl use AC_CHECK_TYPE because O_SYNC
+dnl Note that we can't simply use AC_CHECK_TYPE because O_SYNC
 dnl isn't in the standard headers (autoconf-2.5 has better methods for this)
 AC_MSG_CHECKING(if O_SYNC is defined)
 AC_TRY_COMPILE(
@@ -139,13 +180,25 @@ AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(c_r, pthread_create, 
 [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
+dnl AC_CHECK_LIB(raw1394, raw1394_get_nodecount)
+dnl AC_CHECK_LIB(dc1394_control, dc1394_create_handle)
+
+dnl if test "x$with_mobility" = "xyes"; then
+dnl   LDFLAGS="-L@MOBILITY_DIR@/lib -L@MOBILITY_DIR@/tools/lib $LDFLAGS"
+dnl   AC_SUBST(MOBILITY_DIR)
+dnl   AC_CHECK_LIB(mby,DontKnowAFunction,,[LIBS="-lmby -lidlmby $LIBS"])
+dnl   AC_CHECK_LIB(omniORB2,DontKnowAFunction,,[LIBS="-lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread $LIBS"])
+dnl fi
+
 
 AC_SUBST(LIBOBJS)
 
 dnl Create the following Makefiles (from the Makefile.ams)
-AC_OUTPUT(Makefile 
+AC_OUTPUT(Makefile
+          replace/Makefile 
           server/Makefile 
           server/drivers/Makefile 
+          server/drivers/shell/Makefile 
           server/drivers/mixed/Makefile 
           server/drivers/position/Makefile 
           server/drivers/audio/Makefile 
@@ -155,6 +208,7 @@ AC_OUTPUT(Makefile
           server/drivers/waveform/Makefile 
           server/drivers/comms/Makefile 
           server/drivers/blobfinder/Makefile 
+          server/drivers/blobfinder/cmvision/Makefile 
           server/drivers/wifi/Makefile 
           server/drivers/speech/Makefile 
           server/drivers/mixed/p2os/Makefile 
@@ -163,7 +217,13 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/reb/Makefile 
           server/drivers/position/isense/Makefile 
           server/drivers/position/microstrain/Makefile 
-	  server/drivers/localization/Makefile
+          server/drivers/localization/Makefile
+          server/drivers/localization/mcl/Makefile
+          server/drivers/localization/amcl/Makefile
+          server/drivers/localization/amcl/pf/Makefile
+          server/drivers/localization/amcl/map/Makefile
+          server/drivers/localization/amcl/models/Makefile
+          server/drivers/mcom/Makefile
           client_libs/Makefile 
           client_libs/c/Makefile
           client_libs/c++/Makefile
@@ -182,3 +242,33 @@ AC_OUTPUT(Makefile
           utils/playerjoy/Makefile
           config/Makefile)
 
+dnl should use AC_MSG_NOTICE(), but that's apparently not defined in
+dnl autoconf 2.13.
+AC_MSG_RESULT([])
+AC_MSG_RESULT([*************************************************************])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([Player will be built on a $build system to run])
+AC_MSG_RESULT([on a $host system, with the following tools:])
+AC_MSG_RESULT([    C   compiler: $CC $CFLAGS])
+AC_MSG_RESULT([    C++ compiler: $CXX $CXXFLAGS])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([The following device drivers will be included:])
+for player_lib in $PLAYER_DRIVERS; do
+  if test -n $player_lib; then
+    AC_MSG_RESULT([[    $player_lib]])
+  fi
+done
+AC_MSG_RESULT([])
+AC_MSG_RESULT([The following device drivers will NOT be included:])
+for player_lib in $PLAYER_NODRIVERS; do
+  if test -n $player_lib; then
+    AC_MSG_RESULT([[    $player_lib]])
+  fi
+done
+AC_MSG_RESULT([])
+AC_MSG_RESULT([Player will be installed in:])
+AC_MSG_RESULT([    $prefix])
+AC_MSG_RESULT([])
+AC_MSG_RESULT([If you're happy with this configuration, do 'make install'])
+AC_MSG_RESULT([to build and install Player.])
+AC_MSG_RESULT([])

@@ -126,6 +126,13 @@ Usage()
   fprintf(stderr, "  -k <key>      : require client authentication with the "
           "given key\n");
   fprintf(stderr, "  <configfile>  : load the the indicated config file\n");
+  fprintf(stderr, "\nAvailable drivers:\n");
+  for(int i=0;i<driverTable->Size();i++)
+    fprintf(stderr, "  %s\n", driverTable->GetDriverName(i));
+  fprintf(stderr,"\n\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
+  fprintf(stderr, "Copyright (C) 2000 - 2003 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
+  fprintf(stderr,"\nReleased under the GNU General Public License.\n");
+  fprintf(stderr,"\nPlayer comes with ABSOLUTELY NO WARRANTY.  This is free software, and you are\nwelcome to redistribute it under certain conditions; see COPYING for details.\n\n");
 }
 
 /* just so we know when we've segfaulted, even when running under stage */
@@ -365,12 +372,12 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
         case PLAYER_MOTE_CODE:
         case PLAYER_POWER_CODE:
         case PLAYER_BUMPER_CODE:
-	case PLAYER_LOCALIZATION_CODE:
+  	    case PLAYER_LOCALIZE_CODE:
         {
           // Create a StageDevice with this IO base address and filedes
           dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
 	  
-	  deviceTable->AddDevice(deviceIO->player_id, 
+	      deviceTable->AddDevice(deviceIO->player_id, 
                                  (char*)(deviceIO->drivername),
                                  PLAYER_ALL_MODE, dev);
 	  
@@ -378,6 +385,37 @@ CreateStageDevices( char* directory, int** ports, int* num_ports )
           StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
         }
         break;
+ 
+        case PLAYER_MCOM_CODE:
+          // Create mcom device as per normal
+          //
+          // FIXME: apparently deviceIO->local is *not* currently being set
+          // by Stage?...
+          if(deviceIO->local || !deviceIO->local)
+          {
+            // no options in world file.
+              
+            // find the broadcast device in the available device table
+            DriverEntry* entry;
+            if(!(entry = driverTable->GetDriverEntry("lifomcom")))
+            {
+              puts("WARNING: Player support for mcom device unavailable.");
+            }
+            else
+            {
+              int section = configFile.AddEntity(globalparent, "mcom");
+              // add it to the instantiated device table
+              deviceTable->AddDevice(deviceIO->player_id, "mcom",
+                                     PLAYER_ALL_MODE, 
+                                     (*(entry->initfunc))(PLAYER_MCOM_STRING,
+                                                   &configFile, section));
+ 
+              // add this port to our listening list
+              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
+            }
+          }
+          break;
+
 	  
         case PLAYER_COMMS_CODE:   
           // Create broadcast device as per normal

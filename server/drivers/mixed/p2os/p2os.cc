@@ -80,6 +80,7 @@ extern bool            P2OS::direct_wheel_vel_control;
 extern int             P2OS::psos_fd; 
 extern char            P2OS::psos_serial_port[];
 extern int             P2OS::radio_modemp;
+extern int             P2OS::joystickp;
 extern bool            P2OS::initdone;
 extern char            P2OS::num_loops_since_rvel;
 extern SIP*           P2OS::sippacket;
@@ -107,6 +108,7 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
     strncpy(psos_serial_port,DEFAULT_P2OS_PORT,sizeof(psos_serial_port));
     psos_fd = -1;
     radio_modemp = 0;
+    joystickp = 0;
   
     data = new player_p2os_data_t;
     command = new player_p2os_cmd_t;
@@ -150,6 +152,7 @@ P2OS::P2OS(char* interface, ConfigFile* cf, int section)
           cf->ReadString(section, "port", psos_serial_port),
           sizeof(psos_serial_port));
   radio_modemp = cf->ReadInt(section, "radio", radio_modemp);
+  joystickp = cf->ReadInt(section, "joystick", joystickp);
 
   // zero the subscription counter.
   subscriptions = 0;
@@ -419,6 +422,18 @@ int P2OS::Setup()
   sonarpacket.Build(sonarcommand, 4);
   SendReceive(&sonarpacket);
 
+  if(joystickp)
+  {
+    // enable joystick control
+    P2OSPacket js_packet;
+    unsigned char js_command[4];
+    js_command[0] = JOYDRIVE;
+    js_command[1] = 0x3B;
+    js_command[2] = 1;
+    js_command[3] = 0;
+    js_packet.Build(js_command, 4);
+    SendReceive(&js_packet);
+  }
 
   /* now spawn reading thread */
   StartThread();
@@ -625,6 +640,9 @@ P2OS::Main()
   last_sonar_subscrcount = 0;
   last_position_subscrcount = 0;
 
+  if(sippacket)
+    sippacket->x_offset = sippacket->y_offset = sippacket->angle_offset = 0;
+
   GlobalTime->GetTime(&timeBegan_tv);
 
   // request the current configuration
@@ -785,6 +803,33 @@ P2OS::Main()
         case PLAYER_POSITION_CODE:
           switch(config[0])
           {
+            case PLAYER_POSITION_SET_ODOM_REQ:
+              if(config_size != sizeof(player_position_set_odom_req_t))
+              {
+                puts("Arg to odometry set requests wrong size; ignoring");
+                if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_NACK, 
+                            NULL, NULL, 0))
+                  PLAYER_ERROR("failed to PutReply");
+                break;
+              }
+
+              player_position_set_odom_req_t set_odom_req;
+              set_odom_req = *((player_position_set_odom_req_t*)config);
+
+              if(sippacket)
+              {
+                sippacket->x_offset = ntohl(set_odom_req.x) -
+                        sippacket->xpos;
+                sippacket->y_offset = ntohl(set_odom_req.y) -
+                        sippacket->ypos;
+                sippacket->angle_offset = ntohs(set_odom_req.theta) -
+                        sippacket->angle;
+              }
+
+              if(PutReply(&id, client, PLAYER_MSGTYPE_RESP_ACK, NULL, NULL, 0))
+                PLAYER_ERROR("failed to PutReply");
+              break;
+
             case PLAYER_POSITION_MOTOR_POWER_REQ:
               /* motor state change request 
                *   1 = enable motors

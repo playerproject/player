@@ -102,3 +102,22 @@ DriverTable::GetDriverEntry(char* name)
   return(retval);
 }
 
+// get the ith driver name; returns NULL if there is no such driver
+char* 
+DriverTable::GetDriverName(int idx)
+{
+  DriverEntry* thisentry;
+  char* retval = NULL;
+  int i=0;
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    if(i == idx)
+    {
+      retval = thisentry->name;
+      break;
+    }
+    i++;
+  }
+  return(retval);
+}
+

@@ -76,7 +76,8 @@
 #define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
 #define PLAYER_WIFI_CODE	   ((uint16_t)23)  // wifi card status
 #define PLAYER_WAVEFORM_CODE	   ((uint16_t)24)  // fetch raw waveforms
-#define PLAYER_LOCALIZATION_CODE   ((uint16_t)25)  // localization
+#define PLAYER_LOCALIZE_CODE   ((uint16_t)25)  // localization
+#define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_CODE            ((uint16_t)16)
 
@@ -105,7 +106,8 @@
 #define PLAYER_IR_STRING             "ir"
 #define PLAYER_WIFI_STRING           "wifi"
 #define PLAYER_WAVEFORM_STRING       "waveform"
-#define PLAYER_LOCALIZATION_STRING   "localization"
+#define PLAYER_LOCALIZE_STRING   "localize"
+#define PLAYER_MCOM_STRING           "mcom"
 // no interface has yet been defined for BPS-like things
 //#define PLAYER_BPS_STRING            "bps"
 
@@ -147,6 +149,8 @@ typedef struct
   uint32_t reserved;  /* for extension */
   uint32_t size;  /* size in bytes of the payload to follow */
 } __attribute__ ((packed)) player_msghdr_t;
+
+#define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
 
 /*************************************************************************
  ** begin section Player
@@ -405,7 +409,9 @@ typedef struct player_device_auth_req
 /** what does this do? */
 #define PLAYER_MAIN_POWER_REQ               ((uint8_t)14)
 
-/** [Data] The {\tt power} device returns data in the format: */
+/** [Data] */
+
+/** The {\tt power} device returns data in the format: */
 typedef struct player_power_data
 {
   /** Battery voltage, in decivolts */
@@ -583,7 +589,7 @@ typedef struct player_position_power_config
   uint8_t value; 
 } __attribute__ ((packed)) player_position_power_config_t;
 
-/** [Constants: Change velocity control] */
+/** [Configuration: Change velocity control] */
 /**
 Some robots offer different velocity control modes.
 It can be changed by sending a request with the format given below,
@@ -638,7 +644,7 @@ typedef struct player_position_position_mode_req
 /** To set the robot's odometry to a particular state, use this request: */
 typedef struct player_position_set_odom_req
 {
-  /** subtype; must be PLAYER_SET_ODOM_REQ */
+  /** subtype; must be PLAYER_POSITION_SET_ODOM_REQ */
   uint8_t subtype; 
   /** X and Y (in mm?) */
   int32_t x, y;
@@ -800,7 +806,7 @@ typedef struct player_laser_data
 
   /** Range readings (mm). Note that some drivers can produce negative
       values.  */
-  int16_t ranges[PLAYER_LASER_MAX_SAMPLES];
+  uint16_t ranges[PLAYER_LASER_MAX_SAMPLES];
 
   /** Intensity readings. */
   uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
@@ -1093,13 +1099,13 @@ typedef struct player_audio_cmd
    target device.*/
 typedef struct player_waveform_data
 {
-  /** Bit rate - bits per second **/
+  /** Bit rate - bits per second */
   uint32_t rate;
-  /** Depth - bits per sample **/
+  /** Depth - bits per sample */
   uint16_t depth;
-  /** Samples - the number of bytes of raw data **/
+  /** Samples - the number of bytes of raw data */
   uint32_t samples;
-  /** data - an array of raw data **/
+  /** data - an array of raw data */
   uint8_t data[ PLAYER_WAVEFORM_DATA_MAX ];
 } __attribute__ ((packed)) player_waveform_data_t;
 
@@ -1664,14 +1670,15 @@ typedef struct
 The {\tt wifi} interface provides access to the state of a wireless network
 interface. */
 
+/** [Constants] */
+/** The maximum number of remote hosts to report on */
 #define PLAYER_WIFI_MAX_LINKS 16
 
 /** [Data] */
-/**
-The {\tt wifi} interface returns data regarding the state of a wireless
-network interface; the format is: */
-
-typedef struct
+/** The {\tt wifi} interface returns data regarding the signal characteristics 
+    of remote hosts as perceived through a wireless network interface; the 
+    format of the data for each host is: */
+typedef struct player_wifi_link
 {
   /** IP address of destination. */
   char ip[32];
@@ -1681,6 +1688,7 @@ typedef struct
 } __attribute__ ((packed)) player_wifi_link_t;
 
 
+/** The complete data packet format is: */
 typedef struct player_wifi_data
 {
   /** A list of links */
@@ -1710,8 +1718,7 @@ sensors. */
 #define PLAYER_IR_POWER_REQ  ((uint8_t)2)
 
 /** [Data] */
-/**
-The {\tt ir} interface returns range readings from the IR array; the format 
+/** The {\tt ir} interface returns range readings from the IR array; the format 
 is: */
 typedef struct player_ir_data
 {
@@ -1766,109 +1773,195 @@ typedef struct player_ir_power_req
  *************************************************************************/
 
 /*************************************************************************
- ** begin section localization
+ ** begin section localize
  *************************************************************************/
 
-/** [Synopsis] The {\tt localization} interface provides a pose information
-using probablistic localization algorithms. */
+/** [Synopsis] The {\tt localize} interface provides a pose information
+using probablistic localize algorithms. */
 
 /** [Constants] */
 /** the maximum number of pose hypothesis */
-#define PLAYER_LOCALIZATION_MAX_HYPOTHESIS         10
+#define PLAYER_LOCALIZE_MAX_HYPOTHS            10
 /** the various configuration subtypes */
-#define PLAYER_LOCALIZATION_RESET_REQ              ((uint8_t)1)
-#define PLAYER_LOCALIZATION_GET_CONFIG_REQ         ((uint8_t)2)
-#define PLAYER_LOCALIZATION_SET_CONFIG_REQ         ((uint8_t)3)
-#define PLAYER_LOCALIZATION_GET_MAP_HDR_REQ        ((uint8_t)4)
-#define PLAYER_LOCALIZATION_GET_MAP_DATA_REQ       ((uint8_t)5)
+#define PLAYER_LOCALIZE_SET_POSE_REQ           ((uint8_t)1)
+#define PLAYER_LOCALIZE_GET_CONFIG_REQ         ((uint8_t)2)
+#define PLAYER_LOCALIZE_SET_CONFIG_REQ         ((uint8_t)3)
+#define PLAYER_LOCALIZE_GET_MAP_INFO_REQ       ((uint8_t)4)
+#define PLAYER_LOCALIZE_GET_MAP_DATA_REQ       ((uint8_t)5)
 
 /** [Data] */
 /**
-The {\tt localization} interface returns multiple hypothesis, of which format is: */
-typedef struct player_localization_hypothesis
+The {\tt localize} interface returns multiple hypothesis, of which format is: */
+typedef struct player_localize_hypoth
 {
-    /** the central pose (mean) of a hypothesis */
-    int32_t mean[3];
-    /** the covariance matrix of a hypothesis */
-    int32_t cov[3][3];
-    /** coefficient for linear combination : int(alpha * billion) */
-    uint32_t alpha;
-} __attribute__ ((packed)) player_localization_hypothesis_t;
+  /** the central pose (mean) of a hypothesis (mm, mm, arc-seconds) */
+  int32_t mean[3];
+  /** the covariance matrix of a hypothesis (mm$^2$, arc-seconds$^2$) */
+  int64_t cov[3][3];
+  /** coefficient for linear combination : int(alpha * billion) */
+  uint32_t alpha;
+} __attribute__ ((packed)) player_localize_hypoth_t;
 
 /**
-The {\tt localization} interface returns data regarding the pose of the robot;
+The {\tt localize} interface returns data regarding the pose of the robot;
 the format is: */
-typedef struct player_localization_data
+typedef struct player_localize_data
 {
-    /** the number of pose hypothesis */
-    uint32_t num_hypothesis;
-    /** the array of the hypothesis */
-    player_localization_hypothesis_t hypothesis[PLAYER_LOCALIZATION_MAX_HYPOTHESIS];
-} __attribute__ ((packed)) player_localization_data_t;
+  /** the number of pose hypothesis */
+  uint32_t hypoth_count;
+  /** the array of the hypothesis */
+  player_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
+} __attribute__ ((packed)) player_localize_data_t;
+
 
 /** [Commands] This interface accepts no commands. */
 
-/** [Configuration: Reset particles] */
+
+/** [Configuration: Set the robot pose estimate] */
 /**
-Reset localization algorithm; there is no parameter necessary. */
-typedef struct player_localization_reset
+Set the robot pose estimate.  The server will reply with a zero length
+repsonse packet. */
+typedef struct player_localize_set_pose
 {
-    /** subtype; Must be PLAYER_LOCALIZATION_RESET_REQ. */
-    uint8_t subtype;
-} __attribute__ ((packed)) player_localization_reset_t;
+  /** subtype; Must be PLAYER_LOCALIZE_SET_POSE_REQ. */
+  uint8_t subtype;
+  /** the central pose (mean) of a hypothesis (mm, mm, arc-seconds) */
+  int32_t mean[3];
+  /** the covariance matrix of a hypothesis (mm$^2$, arc-seconds$^2$). */
+  int64_t cov[3][3];
+} __attribute__ ((packed)) player_localize_set_pose_t;
+
 
 /** [Configuration: Get/set configuration] */
 /**
-To retrieve the configuration, set the subtype to PLAYER_LOCALIZATION_GET_CONFIG_REQ
+To retrieve the configuration, set the subtype to PLAYER_LOCALIZE_GET_CONFIG_REQ
 and leave the other fields empty. The server will reply with the following
 configuaration fields filled in.
  
-To change the current configuration, set the subtype to PLAYER_LOCALIZATION_SET_CONFIG_REQ
+To change the current configuration, set the subtype to PLAYER_LOCALIZE_SET_CONFIG_REQ
 and fill the configuration fields. */
-typedef struct player_localization_config
+typedef struct player_localize_config
 { 
-  /** subtype; must be either PLAYER_LOCALIZATION_GET_CONFIG_REQ or
-      PLAYER_LOCALIZATION_SET_CONFIG_REQ */
+  /** subtype; must be either PLAYER_LOCALIZE_GET_CONFIG_REQ or
+      PLAYER_LOCALIZE_SET_CONFIG_REQ */
   uint8_t subtype;
-  /** configuration for particle-based localization algorithms */
+  /** configuration for particle-based localize algorithms */
   uint32_t num_particles;
-} __attribute__ ((packed)) player_localization_config_t;
+} __attribute__ ((packed)) player_localize_config_t;
 
-/** [configuration: Get a map information] */
+
+/** [Configuration: Get map information] */
 /**
-Retrieve the size and scale information of a current map. This request is used
-to get the size information with a given scale before you request the actual
-map data. Set the subtype to PLAYER_LOCALIZATION_GET_MAP_HDR_REQ and set the scale factor,
-then the server will reply with the size information filled in. */
-typedef struct player_localization_map_header
+Retrieve the size and scale information of a current map. This request
+is used to get the size information before you request the actual map
+data. Set the subtype to PLAYER_LOCALIZE_GET_MAP_INFO_REQ; the
+server will reply with the size information filled in. */
+typedef struct player_localize_map_info
 {
-  /** subtype; must be PLAYER_LOCALIZATION_GET_MAP_HDR_REQ */
+  /** subtype; must be PLAYER_LOCALIZE_GET_MAP_INFO_REQ */
   uint8_t subtype; 
-  /** the scale of the map */
-  uint8_t scale; 
+  /** the scale of the map (pixels per kilometer) */
+  uint32_t scale; 
   /** the size of the map */
   uint32_t width, height;
-  /** the number of pixels per kilo-meter */
-  uint32_t ppkm;
-} __attribute__ ((packed)) player_localization_map_header_t;
+} __attribute__ ((packed)) player_localize_map_info_t;
 
 /** [Configuration: Get map data] */
 /**
-Retrieve the (scaled) map data. Since the maximum size of a request-replay message,
-map data should be partitioned and tranfered block by block. Set the subtype to
-PLAYER_LOCALIZATION_GET_MAP_DATA_REQ, set the scale factor, and set the row index of a block.
-Then, the server will replay with the requested block data filled in. */
-typedef struct player_localization_map_data
+Retrieve the map data. Beacause of the limited size of a request-replay messages,
+the map data is tranfered in tiles.  Set the subtype to
+PLAYER_LOCALIZE_GET_MAP_DATA_REQ, and set the column, row index of a tile.
+Then, the server will reply with the requested block data filled in. */
+typedef struct player_localize_map_data
 {
-  /** subtype; must be PLAYER_LOCALIZATION_MAP_DATA_REQ */
+  /** subtype; must be PLAYER_LOCALIZE_MAP_DATA_REQ */
   uint8_t subtype; 
-  /** the scale of the map */
-  uint8_t scale;
-  /** the index row */
-  uint16_t row;
-  /** map data */
-  uint8_t data[PLAYER_MAX_REQREP_SIZE - 4];
-} __attribute__ ((packed)) player_localization_map_data_t;
+  /** the tile origin */
+  uint32_t col, row;
+  /** the size of the tile */
+  uint32_t width, height;
+  /** map data (empty = -1, unknown = 0, occupied = +1) */
+  int8_t data[PLAYER_MAX_REQREP_SIZE - 17];
+} __attribute__ ((packed)) player_localize_map_data_t;
+
+/*************************************************************************
+ ** end section
+ *************************************************************************/
+
+/*************************************************************************
+ ** begin section mcom
+ *************************************************************************/
+
+/*  MCom device by Matthew Brewer <mbrewer@andrew.cmu.edu> (updated for 1.3 by 
+ *  Reed Hedges <reed@zerohour.net>) at the Laboratory for Perceptual 
+ *  Robotics, Dept. of Computer Science, University of Massachusetts,
+ *  Amherst.
+ */
+
+/** [Synopsis] The {\tt mcom} interface is designed for exchanging information 
+ between clients.  A client sends a message of a given "type" and
+ "channel". This device stores adds the message to that channel's stack.
+ A second client can then request data of a given "type" and "channel".
+ Push, Pop, Read, and Clear operations are defined, but their semantics can 
+ vary, based on the stack discipline of the underlying driver.  For example, 
+ the {\tt lifo\_mcom} driver enforces a last-in-first-out stack. */
+
+/** [Constants] */
+/** size of the data field in messages */
+#define MCOM_DATA_LEN           128     
+#define MCOM_COMMAND_BUFFER_SIZE    (sizeof(player_mcom_config_t))
+#define MCOM_DATA_BUFFER_SIZE   0       // we don't actually need any "data", 
+                                        // just "configuration" commands aro used.
+/** number of buffers to keep per channel */
+#define MCOM_N_BUFS             10      
+/** size of channel name */
+#define MCOM_CHANNEL_LEN        8       
+
+/** request ids */
+#define PLAYER_MCOM_PUSH_REQ    0
+#define PLAYER_MCOM_POP_REQ     1
+#define PLAYER_MCOM_READ_REQ    2
+#define PLAYER_MCOM_CLEAR_REQ   3
+
+/** [Data] The {\tt mcom} interface returns no data. */
+
+/** [Command] The {\tt mcom} interface accepts no commands. */
+
+/** [Configuration] */
+
+/** A piece of data. */
+typedef struct player_mcom_data
+{
+    /** a flag */
+    char full;  
+    /** the data */
+    char data[MCOM_DATA_LEN];
+} __attribute__ ((packed)) player_mcom_data_t;
+
+
+/** Config requests sent to server. */
+typedef struct player_mcom_config
+{
+    /** Which request.  Should be one of the defined request ids. */
+    uint16_t command;
+    /** The "type" of the data. */
+    uint16_t type;
+    /** The name of the channel. */
+    char channel[MCOM_CHANNEL_LEN];
+    /** The data. */
+    player_mcom_data_t data;
+} __attribute__ ((packed)) player_mcom_config_t;
+
+/** Config replies from server. */
+typedef struct player_mcom_return
+{
+    /** The "type" of the data */
+    uint16_t type;
+    /** The name of the channel. */
+    char channel[MCOM_CHANNEL_LEN];
+    /** The data. */
+    player_mcom_data_t data;
+} __attribute__ ((packed)) player_mcom_return_t;
 
 /*************************************************************************
  ** end section

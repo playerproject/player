@@ -1,6 +1,6 @@
 SUBDIRS = . test
 
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
 lib_LIBRARIES = libplayerc.a
 
@@ -19,9 +19,11 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_ptz.c \
                        dev_truth.c \
                        dev_wifi.c \
-		       dev_localization.c \
+								       dev_localize.c \
                        error.c \
                        error.h
+
+libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
 
 include_HEADERS = playerc.h
 

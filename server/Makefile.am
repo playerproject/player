@@ -1,38 +1,20 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage
+AM_CPPFLAGS = -Wall -I$(srcdir)/drivers/stage -I$(top_srcdir)/replace
 
-player_DEPENDENCIES =   @STAGE_LIBPATH@ \
-			@P2OS_LIBPATH@ \
-			@REB_LIBPATH@ \
-			@SICK_LIBPATH@ \
-			@FESTIVAL_LIBPATH@ \
-			@ACTS_LIBPATH@ \
-			@SONY_LIBPATH@ \
-		 	@UDPBCAST_LIBPATH@ \
-			@LASERFIDUCIAL_LIBSPATH@ \
-			@LASERCSPACE_LIBPATH@ \
-			@RWI_LIBPATH@ \
-			@LINUXWIFI_LIBPATH@ \
-			@AODV_LIBPATH@ \
-			@IWSPY_LIBPATH@ \
-			@FIXEDTONES_LIBPATH@ \
-			@ISENSE_LIBPATH@ \
-			@MICROSTRAIN_LIBPATH@ \
-			@WAVEAUDIO_LIBPATH@ \
-			@LOCALIZATION_LIBPATH@ \
-			@LIBOBJS@
-
+player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@ \
+			$(top_builddir)/replace/libreplace.a
 
 #
 # Note to everybody: please do NOT break the following assignment onto
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm @STAGE_LIBPATH@  @REB_LIBPATH@ @P2OS_LIBPATH@ @SICK_LIBPATH@ @FESTIVAL_LIBPATH@ @ACTS_LIBPATH@ @SONY_LIBPATH@ @UDPBCAST_LIBPATH@ @LASERFIDUCIAL_LIBSPATH@ @LASERCSPACE_LIBPATH@ @LINUXWIFI_LIBPATH@ @AODV_LIBPATH@ @IWSPY_LIBPATH@  @RWI_LIBPATH@ @FIXEDTONES_LIBPATH@ @FIXEDTONES_EXTRA_LIB@ @ISENSE_LIBPATH@ @ISENSE_EXTRA_LIB@ @MICROSTRAIN_LIBPATH@ @WAVEAUDIO_LIBPATH@ @LOCALIZATION_LIBPATH@ @LIBOBJS@
+player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ @PLAYER_DRIVER_EXTRA_LIBS@ @RTKGUI_EXTRA_LIB@ $(top_builddir)/replace/libreplace.a
+
+player_LDFLAGS = @RTKGUI_EXTRA_LDFLAGS@
 
 bin_PROGRAMS = player
-
 
 lib_LIBRARIES = libplayerqueue.a 
 
@@ -44,7 +26,7 @@ player_SOURCES = clientdata.cc socket_util.cc devicetable.cc device.cc \
                  player.h playerqueue.h device.h deviceregistry.h \
                  devicetable.h clientdata.h clientmanager.h socket_util.h \
                  wallclocktime.h playertime.h configfile.h drivertable.cc \
-                 drivertable.h replace.h
+                 drivertable.h
 
 
 include_HEADERS = playercommon.h \

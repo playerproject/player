@@ -133,7 +133,7 @@ class SickLMS200 : public CDevice
     int RequestLaserData(int min_segment, int max_segment);
 
     // Read range data from laser
-    int ReadLaserData(int16_t *data, size_t datalen);
+    int ReadLaserData(uint16_t *data, size_t datalen);
 
     // Write a packet to the laser
     ssize_t WriteToLaser(uint8_t *data, ssize_t len); 
@@ -903,7 +903,7 @@ int SickLMS200::RequestLaserData(int min_segment, int max_segment)
 ////////////////////////////////////////////////////////////////////////////////
 // Read range data from laser
 //
-int SickLMS200::ReadLaserData(int16_t *data, size_t datalen)
+int SickLMS200::ReadLaserData(uint16_t *data, size_t datalen)
 {
   uint8_t raw_data[1024];
 
