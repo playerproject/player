@@ -67,17 +67,17 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   rtk_menuitem_check(position->subscribe_item, subscribe);
   
   // Create a figure representing the robot
-  position->robot_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  position->robot_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
 
   // Create a figure representing the robot's control speed.
-  position->control_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
+  position->control_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 11);
   rtk_fig_show(position->control_fig, 0);
   rtk_fig_color_rgb32(position->control_fig, COLOR_POSITION_CONTROL);
   rtk_fig_line(position->control_fig, -0.20, 0, +0.20, 0);
   rtk_fig_line(position->control_fig, 0, -0.20, 0, +0.20);
   rtk_fig_ellipse(position->control_fig, 0, 0, 0, 0.20, 0.20, 0);
   rtk_fig_movemask(position->control_fig, RTK_MOVE_TRANS);
-  position->path_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
+  position->path_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 2);
 
   return position;
 }

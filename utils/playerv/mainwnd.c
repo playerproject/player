@@ -169,6 +169,9 @@ int mainwnd_update(mainwnd_t *wnd)
     }
   }
 
+  // Render the canvas
+  rtk_canvas_render(wnd->canvas);
+        
   return 0;
 }
 

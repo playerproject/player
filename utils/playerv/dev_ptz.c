@@ -67,8 +67,8 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt,
   rtk_menuitem_check(ptz->subscribe_item, ptz->proxy->info.subscribed);
 
   // Construct figures
-  ptz->data_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
-  ptz->cmd_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  ptz->data_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 10);
+  ptz->cmd_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 11);
   rtk_fig_movemask(ptz->cmd_fig, RTK_MOVE_TRANS);
   rtk_fig_origin(ptz->cmd_fig, 1, 0, 0);
   rtk_fig_color_rgb32(ptz->cmd_fig, COLOR_PTZ_CMD);
@@ -149,7 +149,7 @@ void ptz_draw(ptz_t *ptz)
 
   // Camera field of view in x-direction (radians)
   fx = ptz->proxy->zoom;
-  fd = 1.0 / tan(fx/2);
+  fd = 0.5 / tan(fx/2);
   
   rtk_fig_show(ptz->data_fig, 1);      
   rtk_fig_clear(ptz->data_fig);
