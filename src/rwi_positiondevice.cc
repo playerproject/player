@@ -34,6 +34,7 @@
 #ifdef PLAYER_SOLARIS
   #include <strings.h>
 #endif
+#include <math.h>
 
 
 int
@@ -111,6 +112,7 @@ CRWIPositionDevice::Main()
 #ifdef USE_MOBILITY
 	MobilityActuator::ActuatorData_var odo_data;
 	int16_t degrees;
+	double cos_theta, sin_theta, tmp_y, tmp_x;
 #endif // USE_MOBILITY
 	
     if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL) != 0) {
@@ -177,10 +179,16 @@ CRWIPositionDevice::Main()
 #ifdef USE_MOBILITY
 		odo_data = odo_state->get_sample(0);
 		
-		// yes, this looks backwards, but RWI puts Y before X
-		data.ypos = htonl((int32_t) ((odo_data->position[0] + odo_correct_y)
+		// get ready to rotate our coordinate system (remembering that RWI
+		// puts y before x)
+		tmp_y = odo_data->position[0] + odo_correct_y;
+		tmp_x = odo_data->position[1] + odo_correct_x;
+		cos_theta = cos(odo_correct_theta);
+		sin_theta = sin(odo_correct_theta);
+		
+		data.ypos = htonl((int32_t) ((cos_theta*tmp_x - sin_theta*tmp_y)
 		                             * 1000.0));
-		data.xpos = htonl((int32_t) ((odo_data->position[1] + odo_correct_x)
+		data.xpos = htonl((int32_t) ((sin_theta*tmp_x + cos_theta*tmp_y)
 		                             * 1000.0));
 		degrees = (int16_t)
 		           RTOD(NORMALIZE(odo_data->position[2] + odo_correct_theta));
@@ -250,7 +258,8 @@ CRWIPositionDevice::PositionCommand(const int16_t speed,
     position.velocity.length(2);
 
     position.velocity[0] = speed / 1000.0;
-    position.velocity[1] = DTOR(rot_speed);
+    // player measures angles mathematically backwards
+    position.velocity[1] = -DTOR(rot_speed);
 
     base_state->new_sample(position, 0);
 #endif				// USE_MOBILITY
@@ -270,6 +279,7 @@ CRWIPositionDevice::ResetOdometry()
     // yes, this looks backwards, but RWI puts Y before X
     odo_correct_y = -odo_data->position[0];
     odo_correct_x = -odo_data->position[1];
-    odo_correct_theta = -odo_data->position[2];
+    // player measures angles mathematically backwards
+    odo_correct_theta = odo_data->position[2];
 #endif				// USE_MOBILITY
 }
