@@ -662,6 +662,7 @@ int VFH_Class::HandleRequests()
 
   while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
   {
+    printf( "VFH Got a request\n");
     switch (request[0])
     {
       case PLAYER_POSITION_GET_GEOM_REQ:
@@ -709,6 +710,10 @@ void VFH_Class::Main()
     // on older versions of Stage and Gazebo.
    // this->odom->Wait();
 
+    // Process any pending requests.
+    this->HandleRequests();
+
+
     // Sleep for 1ms (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
 
@@ -734,8 +739,6 @@ void VFH_Class::Main()
     // Write odometric data (so we emulate the underlying odometric device)
     this->PutPose();
 
-    // Process any pending requests.
-    this->HandleRequests();
 
     // Read client command
     this->GetCommand();
