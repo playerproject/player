@@ -59,8 +59,8 @@ camera unit.
 @verbatim
 driver
 (
-  name sonyevid30
-  devices ["ptz:0"]
+  name "sonyevid30"
+  provides ["ptz:0"]
   port "/dev/ttyS2"
   fov [3 30]
 )
@@ -223,15 +223,15 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
   read_pfd.events = POLLIN;
 
   // TODO: check field of view values.
-  this->minfov = (int) cf->ReadTupleAngle(section, "fov", 0, 3);
-  this->maxfov = (int) cf->ReadTupleAngle(section, "fov", 1, 30);
+  this->minfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 0, 3));
+  this->maxfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 1, 30));
 
   movement_mode = (int) cf->ReadInt(section, "movement", 0);
 
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
-  PutData((void*)&data,sizeof(data),NULL);
+  //PutData((void*)&data,sizeof(data),NULL);
   PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
   strncpy(ptz_serial_port,
