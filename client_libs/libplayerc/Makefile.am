@@ -36,6 +36,7 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_sonar.c \
                        dev_truth.c \
                        dev_wifi.c \
+		       dev_dio.c \
 		       dev_simulation.c
 
 libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
