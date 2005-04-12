@@ -649,7 +649,8 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
 
   // we've discovered all thew ports now, so allocate memory for the
   // required port numbers at the return pointer
-  assert( *ports = new int[ *num_ufds ] );
+  *ports = new int[ *num_ufds ];
+  assert(*ports);
   
   // copy the port numbers in
   memcpy( *ports, portstmp, *num_ufds * sizeof(int) );
@@ -663,7 +664,8 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
   //    num_ufds, ports[0], ports[1] );
     
   // allocate storage for poll structures
-  assert( *ufds = new struct pollfd[*num_ufds] );
+  *ufds = new struct pollfd[*num_ufds];
+  assert( *ufds );
 
 #ifdef VERBOSE
   printf( "[Port ");
@@ -1021,7 +1023,8 @@ void PrintDeviceTable()
   for (device = deviceTable->GetFirstDevice(); device != NULL;
        device = deviceTable->GetNextDevice(device))
   {
-    assert(lookup_interface_code(device->id.code, &interface) == 0);
+  	int ret_temp=lookup_interface_code(device->id.code, &interface);
+    assert(ret_temp == 0);
     
     if (device->driver != last_driver)
     {
@@ -1061,7 +1064,8 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
   // a safe upper bound on the number of ports we'll need is the number of
   // entities in the config file (yes, i'm too lazy to dynamically
   // reallocate this buffer for a tighter bound).
-  assert(*ports = new int[configFile.GetSectionCount()]);
+  *ports = new int[configFile.GetSectionCount()];
+  assert(*ports);
   // we'll increment this counter as we go
   *num_ports=0;
 
@@ -1423,7 +1427,8 @@ int main( int argc, char *argv[] )
   }
   else
   {
-    assert(ufds = new struct pollfd[num_ufds]);
+  	ufds = new struct pollfd[num_ufds];
+    assert(ufds);
 
     struct sockaddr_in listener;
 

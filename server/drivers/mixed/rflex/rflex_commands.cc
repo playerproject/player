@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
+//#include <pthread.h>
 #include <unistd.h>
 #include <rflex.h>
 
@@ -148,7 +148,7 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
   cmd[6+len+1] = 0x1b;
   cmd[6+len+2] = 0x03;
 
-  pthread_testcancel();
+  //pthread_testcancel();
   writeData( fd, cmd, 9+len );
 
 	// Some issues with commands not being recognised if sent too rapidly
@@ -168,7 +168,7 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
 	} while (count < 10000);
 
   
-  pthread_testcancel();
+  //pthread_testcancel();
 }
 
 void rflex_sonars_on( int fd )
@@ -331,13 +331,30 @@ int rflex_open_connection(char *device_name, int *fd)
   } 
 
   *fd = rdev.fd;
-
   rflex_odometry_on(*fd, 100000);
   rflex_digital_io_on(*fd, 100000);
   rflex_motion_set_defaults(*fd);
+  return 0;
+}
+
+int rflex_close_connection(int *fd)
+{
+  assert(fd);
+  if (*fd < 0)
+  	return -1;
+  rflex_motion_set_defaults(*fd);
+  rflex_odometry_off(*fd);
+  rflex_digital_io_off(*fd);
+  rflex_sonars_off(*fd);
+  rflex_ir_off(*fd);
+  
+  printf("Closing rflex serial port\n");
+  close(*fd);
+  *fd=-1;
 
   return 0;
 }
+
 
 //processes a motor packet from the rflex - and saves the data in the
 //struct for later use
@@ -778,9 +795,9 @@ static int clear_incoming_data(int fd)
 
   while ((bytes = bytesWaiting(fd)) > 32) {
   	count ++;
-    pthread_testcancel();
+    //pthread_testcancel();
     waitForAnswer(fd, buffer, &len);
-    pthread_testcancel();
+    //pthread_testcancel();
     parseBuffer(fd, buffer, len);
   }
   return count;

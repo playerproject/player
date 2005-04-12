@@ -61,8 +61,6 @@ Toby Collett
 #include <time.h>
 #include <math.h>
 
-#include <assert.h>
-
 #include "player.h"
 #include "error.h"
 #include "driver.h"
@@ -101,7 +99,7 @@ class BumperSafe : public Driver
     //void PutPose();
 
     // Send commands to underlying position device
-    void PutPositionCommand();
+    //void PutPositionCommand();
 
     // Check for new commands from server
     //void GetCommand();
@@ -118,8 +116,8 @@ class BumperSafe : public Driver
     Driver *position;
     player_device_id_t position_id;
     int speed,turnrate;
-    player_position_cmd_t cmd;
-    player_position_data_t data;
+    //player_position_cmd_t cmd, last_cmd;    
+    //player_position_data_t data;
     double position_time;
     bool position_subscribed;
 
@@ -130,7 +128,7 @@ class BumperSafe : public Driver
     player_bumper_geom_t bumper_geom;
     bool bumper_subscribed;
 	
-    ClientDataInternal BaseClient;
+    ClientDataInternal * BaseClient;
 };
 
 // Initialization function
@@ -150,12 +148,13 @@ void BumperSafe_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int BumperSafe::Setup() 
 {
-  	player_position_cmd_t cmd = {0};
-	Blocked = true;
+  //player_position_cmd_t cmd = {0};
+  Blocked = true;
 
-	clientmanager->AddClient(&BaseClient);
+  BaseClient = new ClientDataInternal(this);
+  clientmanager->AddClient(BaseClient);
 		
-  // Initialise the underlying device s.
+  // Initialise the underlying devices.
   if (this->SetupPosition() != 0)
   {
   	PLAYER_ERROR2("Bumber safe failed to connect to undelying position device %d:%d\n",position_id.code, position_id.index);
@@ -184,7 +183,9 @@ int BumperSafe::Shutdown() {
   // Stop the odom device.
   this->ShutdownBumper();
 
-	clientmanager->RemoveClient(&BaseClient);
+  clientmanager->RemoveClient(BaseClient);
+  delete BaseClient;
+  BaseClient = NULL;
 	
   return 0;
 }
@@ -199,8 +200,6 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	assert(resp_len);
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 
-	printf("Bumbersafe process message called\n");
-
 	if (hdr->type==PLAYER_MSGTYPE_SYNCH)
 	{	
 		*resp_len = 0;
@@ -211,13 +210,14 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		*resp_len = 0;
 		return 0;
 	}	
-	if (hdr->type==PLAYER_MSGTYPE_DATA && hdr->device==bumper_id.code && hdr->device_index==bumper_id.index)
+	
+	if(MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, bumper_id))
+//	if (hdr->type==PLAYER_MSGTYPE_DATA && hdr->device==bumper_id.code && hdr->device_index==bumper_id.index)
 	{
 		// we got bumper data, we need to deal with this
 		double time = (double) hdr->timestamp_sec + ((double) hdr->timestamp_usec) * 1e-6;
 
 		Lock();
-
 		// Dont do anything if this is old data.
 		if (time - bumper_time < 0.001)
 			return 0;
@@ -232,14 +232,23 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		if (hash)
 		{
 			Blocked = true;
+			Unlock();
+			player_position_cmd_t NullCmd = {0};
+			player_msghdr_t NullHdr;
+			NullHdr.stx = PLAYER_STXX;
+			NullHdr.type = PLAYER_MSGTYPE_CMD;
+			NullHdr.subtype = 0;
+			NullHdr.device = PLAYER_POSITION_CODE;
+			NullHdr.device_index = position_id.index;
+			NullHdr.size = sizeof (NullCmd);
+			int ret = position->ProcessMessage(BaseClient, &NullHdr, (unsigned char*)&NullCmd, resp_data, resp_len);
 		}
 		else
 		{
 			Blocked = false;
 			SafeState = CurrentState;
+			Unlock();
 		}
-		PutPositionCommand();
-		Unlock();
 		return 0;
 	}
 	
@@ -252,9 +261,9 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 			Lock();
 			SafeState = CurrentState;
 			Blocked = false;
-			cmd.xspeed = 0;
+			/*cmd.xspeed = 0;
 			cmd.yspeed = 0;
-			cmd.yawspeed = 0;
+			cmd.yawspeed = 0;*/
 			Unlock();
 		}
 		*resp_len = 0;
@@ -264,11 +273,11 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	// set reply to value so the reply for this message goes straight to the given client
 	if(hdr->device==device_id.code && hdr->device_index==device_id.index && hdr->type == PLAYER_MSGTYPE_REQ)
 	{
-		Lock();
+//		Lock();
 		hdr->device_index = position_id.index;
-		int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
+		int ret = position->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
 		hdr->device_index = device_id.index;
-		Unlock();
+//		Unlock();
 		return ret;
 	}
 	
@@ -290,17 +299,18 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 	{
 		assert(hdr->size == sizeof(player_position_cmd_t));
 		Lock();
-		cmd = *reinterpret_cast<player_position_cmd_t *> (data);
+//		player_position_cmd_t cmd = *reinterpret_cast<player_position_cmd_t *> (data);
 		if (!Blocked)
 		{
-			hdr->device_index = position_id.index;
-			int ret = position->ProcessMessage(&BaseClient, hdr, data, resp_data, resp_len);
-			hdr->device_index = device_id.index;
 			Unlock();
+			hdr->device_index = position_id.index;
+			int ret = position->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
+			hdr->device_index = device_id.index;
 			return ret;
 		}
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		*resp_len = 0;
+		return 0;
 	}
 
 	return -1;
@@ -320,7 +330,7 @@ int BumperSafe::SetupPosition()
 		return -1;
 	}
 
-	return BaseClient.Subscribe(position_id);
+	return BaseClient->Subscribe(position_id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -328,23 +338,23 @@ int BumperSafe::SetupPosition()
 int BumperSafe::ShutdownPosition() 
 {
   // Stop the robot before unsubscribing
-  this->speed = 0;
-  this->turnrate = 0;
-  this->PutPositionCommand();
+  //memset(&cmd,0,sizeof(cmd));
+  //this->PutPositionCommand();
   
-  return BaseClient.Unsubscribe(position_id);
+  return BaseClient->Unsubscribe(position_id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying position device.
-void BumperSafe::PutPositionCommand() 
+/*void BumperSafe::PutPositionCommand() 
 {
   player_position_cmd_t NullCmd = {0};
-  if (Blocked)
+  if (Blocked && memcmp(&last_cmd,&cmd,sizeof(cmd)))
     BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&NullCmd, sizeof(cmd));
-  else
+  else if (memcmp(&last_cmd,&cmd,sizeof(cmd)))
     BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&cmd, sizeof(cmd));
-}
+  last_cmd = cmd;
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
@@ -356,7 +366,7 @@ int BumperSafe::SetupBumper() {
 		return -1;
 	}
 
-	if (BaseClient.Subscribe(bumper_id,'r') != 0)
+	if (BaseClient->Subscribe(bumper_id,'r') != 0)
 	{
 		PLAYER_ERROR("unable to subscribe to bumper device");
 		return -1;
@@ -369,11 +379,8 @@ int BumperSafe::SetupBumper() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the bumper
 int BumperSafe::ShutdownBumper() {
-	return BaseClient.Unsubscribe(bumper_id);
+	return BaseClient->Unsubscribe(bumper_id);
 }
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
@@ -381,30 +388,31 @@ void BumperSafe::Main()
 {
   struct timespec sleeptime;
   sleeptime.tv_sec = 0;
-  sleeptime.tv_nsec = 1000000L;
+//  sleeptime.tv_nsec = 1000000L;
+  sleeptime.tv_nsec = 1000L;
 
   // Wait till we get new odometry data; this may block indefinitely
   // this->GetPosition();
   // this->GetBumper();
 
 	// need to do geom request first
+  PLAYER_MSG0(2,"bumpersafe thread started\n");
   
   while (true)
   {
-  	printf("bumpersafe thread started\n");
-  	
 	// check base client for messages
-	BaseClient.Read();	  
+	BaseClient->Read();	  
 	  
     // Process any pending requests.
     this->ProcessMessages();
 
-    // Sleep for 1ms (will actually take longer than this).
+    // Sleep for 1us (will actually take longer than this).
     nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
   }
+  PLAYER_MSG0(2,"bumpersafe thread terminated\n");
   return;
 }
 
@@ -412,9 +420,10 @@ void BumperSafe::Main()
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 BumperSafe::BumperSafe( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE), BaseClient(this)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
 {
-	Blocked = false;
+  Blocked = false;
+  BaseClient = NULL;
 
   this->position = NULL;
   // Must have a position device
@@ -435,11 +444,14 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
     return;
   }
   this->bumper_time = 0.0;
+  
+  //memset(&cmd,0,sizeof(cmd));
+  //memset(&last_cmd,0,sizeof(last_cmd));
 
   return;
 }
 
 
 BumperSafe::~BumperSafe() {
-  return;
+  delete BaseClient;
 }

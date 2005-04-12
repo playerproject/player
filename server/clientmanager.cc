@@ -89,15 +89,19 @@ ClientManager::ClientManager(struct pollfd* listen_ufds, int* ports,
   // just in case...
   client_auth_key[sizeof(client_auth_key)-1] = '\0';
 
-  assert(accept_ports = new int[numfds]);
+  accept_ports = new int[numfds];
+  assert(accept_ports);
   memcpy(accept_ports, ports, sizeof(int)*numfds);
-  assert(accept_ufds = new struct pollfd[numfds]);
+  accept_ufds = new struct pollfd[numfds];
+  assert(accept_ufds);
   memcpy(accept_ufds, listen_ufds, sizeof(struct pollfd)*numfds);
   num_accept_ufds = numfds;
 
-  assert(clients = new ClientData*[initial_size]);
+  clients = new ClientData*[initial_size];
+  assert(clients);
   memset((char*)clients,0,sizeof(ClientData*)*initial_size);
-  assert(ufds = new struct pollfd[initial_size]);
+  ufds = new struct pollfd[initial_size];
+  assert(ufds);
   memset((char*)ufds,0,sizeof(struct pollfd)*initial_size);
   size_clients = initial_size;
   num_clients = 0;
@@ -147,7 +151,8 @@ ClientManager::AddClient(ClientData* client)
     ClientData** tmp_clients;
 
     // allocate twice as much space
-    assert(tmp_clients = new ClientData*[this->size_clients]);
+    tmp_clients = new ClientData*[this->size_clients];
+    assert(tmp_clients);
 
     // zero it
     memset((char*)tmp_clients,0,sizeof(ClientData*)*this->size_clients);
@@ -164,7 +169,8 @@ ClientManager::AddClient(ClientData* client)
     struct pollfd* tmp_ufds;
 
     // allocate twice as much space
-    assert(tmp_ufds = new struct pollfd[this->size_clients]);
+    tmp_ufds = new struct pollfd[this->size_clients];
+    assert(tmp_ufds);
     
     // zero it
     memset((char*)tmp_ufds,0,sizeof(struct pollfd)*this->size_clients);
@@ -349,9 +355,7 @@ ClientManager::RemoveBlanks()
   }
 
   // recount
-  for(i=0;i<size_clients && clients[i];i++);
-
-  num_clients = i;
+  for(num_clients=0;num_clients<size_clients && clients[num_clients];num_clients++);
 }
 
 // get the index corresponding to a ClientData pointer
@@ -572,10 +576,10 @@ ClientManagerTCP::Write()
 
   for(int i=0; i < this->num_clients; i++)
   {
-    // FIXME: is it ok to comment out this check?
+    // FIXME: is it ok to comment out this check? No! needed for so always on devices are not killed
     // if this is a dummy, skip it.
-    //if(clients[i]->socket < 0)
-    //	continue;
+    if(clients[i]->socket < 0)
+    	continue;
 
     cl = (ClientDataTCP*)clients[i];
 

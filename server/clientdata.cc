@@ -63,9 +63,11 @@ ClientData::ClientData(char* key, int myport)
 
   this->port = myport;
   this->socket = -1;
-
-  assert(this->readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
-  assert(this->replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE]);
+  
+  this->readbuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+  assert(readbuffer);
+  this->replybuffer = new unsigned char[PLAYER_MAX_MESSAGE_SIZE];
+  assert(replybuffer);
 
   memset((char*)this->readbuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
   memset((char*)this->replybuffer, 0, PLAYER_MAX_MESSAGE_SIZE);
@@ -88,8 +90,8 @@ ClientData::ClientData(char* key, int myport)
 
   this->datarequested = false;
 
-  assert(this->OutQueue = 
-         new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN));
+  this->OutQueue = new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+  assert(OutQueue);
 }
 
 bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
@@ -342,7 +344,6 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       {
         PLAYER_WARN2("No permissions to configure %x:%x",
                      id.code,id.index);
-        assert(false);
         requesttype = PLAYER_MSGTYPE_RESP_ERR;
       }
     }
@@ -704,8 +705,8 @@ ClientDataTCP::ClientDataTCP(char* key, int port) : ClientData(key, port)
   // be realloc()ed later on (for some reason, C++ does not provide a builtin 
   // equivalent of realloc()).  for consistency, we should probably pick either
   // new[] or malloc() throughout this file.
-  assert(this->totalwritebuffer = 
-         (uint8_t*)calloc(1,this->totalwritebuffersize));
+  this->totalwritebuffer = (uint8_t*)calloc(1,this->totalwritebuffersize);
+  assert(totalwritebuffer);
   this->usedwritebuffersize = 0;
   this->warned = false;
   this->readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
@@ -865,11 +866,10 @@ ClientDataTCP::Write()
 
       while(totalsize > this->totalwritebuffersize)
       {
-	// need more memory
-	this->totalwritebuffersize *= 2;
-	assert(this->totalwritebuffer = 
-               (unsigned char*)realloc(this->totalwritebuffer, 
-                                       this->totalwritebuffersize));
+        // need more memory
+        this->totalwritebuffersize *= 2;
+        totalwritebuffer = (unsigned char*)realloc(totalwritebuffer, totalwritebuffersize);
+        assert(totalwritebuffer);
       }
 
       // Fill in latest server time
@@ -1000,8 +1000,8 @@ ClientDataInternal::ClientDataInternal(Driver * _driver,
 {
   assert(_driver); 
   driver=_driver;
-  assert(this->InQueue = 
-         new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN));
+  this->InQueue = new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+  assert(InQueue);
 }
 
 ClientDataInternal::~ClientDataInternal()
@@ -1023,10 +1023,9 @@ ClientDataInternal::Read()
 int 
 ClientDataInternal::Write()
 {
-  // This doesnt actually need to do anything as any messages set to 
-  // this client will just be queued immediately
+  // Take messages off the queue and give them to the player server for processing
   MessageQueueElement * el;
-  while ((el=OutQueue->Pop()))
+  while ((el=OutQueue->Pop())) 
   {
     player_msghdr * hdr = el->msg.GetHeader();
     uint8_t * data = el->msg.GetPayload();

@@ -80,7 +80,8 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
   this->alwayson = false;
 
-  assert(this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen));
+  this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
+  assert(InQueue);
 
   pthread_mutex_init(&this->accessMutex,NULL);
   pthread_mutex_init(&this->condMutex,NULL);
@@ -98,7 +99,8 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
   this->alwayson = false;
 
-  assert(this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen));
+  this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
+  assert(InQueue);
 
   pthread_mutex_init(&this->accessMutex,NULL);
   pthread_mutex_init(&this->condMutex,NULL);
@@ -109,6 +111,7 @@ Driver::Driver(ConfigFile *cf, int section,
 // drivers are only destroyed when Player exits, but it is cleaner.
 Driver::~Driver()
 {
+  delete InQueue;
 }
 
 // Add an interface

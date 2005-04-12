@@ -69,14 +69,15 @@ class ClientData;
 /// Main() methods.
 class Driver
 {
+  protected:
+    /// The driver's thread, when managed by StartThread() and
+    /// StopThread().
+    pthread_t driverthread;
+
   private:
     /// This mutex is used to lock data, command, and req/rep buffers/queues,
     /// via Lock() and Unlock().
     pthread_mutex_t accessMutex;
-
-    /// The driver's thread, when managed by StartThread() and
-    /// StopThread().
-    pthread_t driverthread;
 
     /// A condition variable that can be used to signal, via
     /// DataAvailable(), other drivers that are Wait()ing on this
@@ -210,13 +211,13 @@ class Driver
     ///
     /// This method is usually called from the overloaded Setup() method to
     /// create the driver thread.  This will call Main().
-    void StartThread(void);
+    virtual void StartThread(void);
 
     /// @brief Cancel (and wait for termination) of the driver thread
     ///
     /// This method is usually called from the overloaded Shutdown() method
     /// to terminate the driver thread.
-    void StopThread(void);
+    virtual void StopThread(void);
 
     /// @brief Main method for driver thread.
     ///

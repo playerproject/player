@@ -397,7 +397,6 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		assert(hdr->size == 0);
 
 		player_sonar_geom_t geom;
-//		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 		Lock();
 		geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
 		for (int i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
@@ -417,7 +416,6 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		assert(hdr->size == 0);
 
 		player_sonar_geom_t geom;
-//		geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
 		Lock();
 		geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
 		for (int i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
@@ -761,7 +759,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   // posecount is actually unnecasary, but for consistancy will juse use it for error checking :)
   if (RunningTotal != rflex_configs.ir_poses.pose_count)
   {
-    fprintf(stderr,"Error in config file, pose_count not equal to total poses in bank description\n");  
+    PLAYER_WARN("Error in config file, pose_count not equal to total poses in bank description\n");  
     rflex_configs.ir_poses.pose_count = RunningTotal;
   }		
 
@@ -834,8 +832,32 @@ int RFLEX::Shutdown()
   rflex_stop_robot(rflex_fd,(int) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));
   //kill that infernal clicking
   rflex_sonars_off(rflex_fd);
+  // release the port
+  rflex_close_connection(&rflex_fd);
 
   return 0;
+}
+
+/* start a thread that will invoke Main() */
+void 
+RFLEX::StartThread(void)
+{
+  ThreadAlive = true;
+  pthread_create(&driverthread, NULL, &DummyMain, this);
+}
+
+/* wait for termination of the thread */
+void 
+RFLEX::StopThread(void)
+{
+  void* dummy;
+  Lock();
+  ThreadAlive = false;
+  Unlock();
+
+  //pthread_cancel(driverthread);
+  if(pthread_join(driverthread,&dummy))
+    perror("Driver::StopThread:pthread_join()");
 }
 
 int 
@@ -879,16 +901,20 @@ RFLEX::Unsubscribe(player_device_id_t id)
     switch(id.code)
     {
       case PLAYER_POSITION_CODE:
-        assert(--this->position_subscriptions >= 0);
+        --this->position_subscriptions;
+        assert(this->position_subscriptions >= 0);
         break;
       case PLAYER_SONAR_CODE:
-        assert(--this->sonar_subscriptions >= 0);
+        sonar_subscriptions--;
+        assert(sonar_subscriptions >= 0);
         break;
       case PLAYER_BUMPER_CODE:
-        assert(--this->bumper_subscriptions >= 0);
+        --this->bumper_subscriptions;
+        assert(this->bumper_subscriptions >= 0);
         break;
       case PLAYER_IR_CODE:
-        assert(--this->ir_subscriptions >= 0);
+        --this->ir_subscriptions;
+        assert(this->ir_subscriptions >= 0);
         break;
     }
   }
@@ -899,25 +925,23 @@ RFLEX::Unsubscribe(player_device_id_t id)
 void 
 RFLEX::Main()
 {
-  printf("Rflex Thread Started\n");
+  PLAYER_MSG1(1,"%s","Rflex Thread Started");
 
   //sets up connection, and sets defaults
   //configures sonar, motor acceleration, etc.
   if(initialize_robot()<0){
-    fprintf(stderr,"ERROR, no connection to RFLEX established\n");
-    exit(1);
+    PLAYER_ERROR("ERROR, no connection to RFLEX established\n");
+    return;
   }
   Lock();
   reset_odometry();
   Unlock();
 
 
-  //unsigned char config[RFLEX_CONFIG_BUFFER_SIZE];
 
   static double mmPsec_speedDemand=0.0, radPsec_turnRateDemand=0.0;
   bool newmotorspeed, newmotorturn;
 
- // int config_size;
   int i;
   int last_sonar_subscrcount = 0;
   int last_position_subscrcount = 0;
@@ -925,10 +949,14 @@ RFLEX::Main()
 
   while(1)
   {
+    int oldstate;    
+    int ret;
+    ret = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,&oldstate);
+
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
     if(!last_sonar_subscrcount && this->sonar_subscriptions)
-    {
+    {    	
     	Lock();
         rflex_sonars_on(rflex_fd);
         Unlock();
@@ -1040,10 +1068,10 @@ RFLEX::Main()
     /* Get data from robot */
 	static long LastYaw = 0;
     player_rflex_data_t rflex_data = {0};
+
 	Lock();
     update_everything(&rflex_data);
     Unlock();
-    pthread_testcancel();
 
     PutMsg(this->position_id,NULL,PLAYER_MSGTYPE_DATA,0,
             (unsigned char*)&rflex_data.position,
@@ -1061,6 +1089,7 @@ RFLEX::Main()
 		double NewGeom[3];
 	
         player_sonar_geom_t geom;
+        
 		Lock();
         geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
         for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
@@ -1101,6 +1130,16 @@ RFLEX::Main()
             (unsigned char*)&rflex_data.dio,
             sizeof(player_dio_data_t),
             NULL);
+            
+    ret=pthread_setcancelstate(oldstate,NULL);
+
+	Lock();
+	if (!ThreadAlive)
+	{
+		Unlock();
+		break;
+	}
+	Unlock();
 
     pthread_testcancel();
   }
@@ -1121,7 +1160,9 @@ int RFLEX::initialize_robot(){
   if (rflex_open_connection(rflex_configs.serial_port, &rflex_fd) < 0)
     return -1;
   
+  printf("Rflex initialisation called\n");
   rflex_initialize(rflex_fd, (int) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration),(int) RAD2ARB_ODO_CONV(rflex_configs.radPsec2_rot_acceleration), 0, 0);
+  printf("RFlex init done\n");
 
   return 0;
 }
@@ -1211,10 +1252,10 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     // (not enough data buffered, so sonar sent in wrong order - missing intermittent sonar values - fix this
     a_num_sonars=rflex_configs.num_sonars;
 
-    pthread_testcancel();
+//    pthread_testcancel();
     rflex_update_sonar(rflex_fd, a_num_sonars,
 		       arb_ranges);
-    pthread_testcancel();
+//    pthread_testcancel();
     d->sonar.range_count=htons(rflex_configs.sonar_1st_bank_end);
     for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++){
       d->sonar.ranges[i] = htons((uint16_t) ARB2MM_RANGE_CONV(arb_ranges[i]));
@@ -1230,10 +1271,10 @@ void RFLEX::update_everything(player_rflex_data_t* d)
   {
     a_num_bumpers=rflex_configs.bumper_count;
 
-    pthread_testcancel();
+//    pthread_testcancel();
     // first make sure our internal state is up to date
     rflex_update_bumpers(rflex_fd, a_num_bumpers, abumper_ranges);
-    pthread_testcancel();
+ //   pthread_testcancel();
 
     d->bumper.bumper_count=(a_num_bumpers);
     memcpy(d->bumper.bumpers,abumper_ranges,a_num_bumpers);
@@ -1244,10 +1285,10 @@ void RFLEX::update_everything(player_rflex_data_t* d)
   {
     a_num_ir=rflex_configs.ir_poses.pose_count;
 
-    pthread_testcancel();
+//    pthread_testcancel();
     // first make sure our internal state is up to date
     rflex_update_ir(rflex_fd, a_num_ir, air_ranges);
-    pthread_testcancel();
+//    pthread_testcancel();
 
     d->ir.range_count = htons(a_num_ir);
     for (int i = 0; i < a_num_ir; ++i)

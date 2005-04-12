@@ -1348,6 +1348,7 @@ void ConfigFile::AddFieldValue(int field, int index, int value_token)
 
   // Set the relevant value
   pfield->values[index] = value_token;
+  pfield->useds[index] = false;
 }
 
 

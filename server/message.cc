@@ -36,12 +36,15 @@
 
 Message::Message()
 {
-  assert(this->Lock = new pthread_mutex_t);
+  this->Lock = new pthread_mutex_t;
+  assert(Lock);
   pthread_mutex_init(this->Lock,NULL);
   this->Size = sizeof(struct player_msghdr);
-  assert(this->Data = new unsigned char [this->Size]);
+  this->Data = new unsigned char [this->Size]
+  assert(Data);
   memset(this->Data,0,this->Size);
-  assert(this->RefCount = new unsigned int);
+  this->RefCount = new unsigned int;
+  assert(RefCount);
   *this->RefCount = 1;
   this->Client = NULL;
 }
@@ -52,16 +55,20 @@ Message::Message(const struct player_msghdr & Header,
                  unsigned int data_size, 
                  ClientData * _client)
 {
-  this->Client = _client;
-  assert(this->Lock = new pthread_mutex_t);
+  Client = _client;
+  this->Lock = new pthread_mutex_t;
+  assert(Lock);
   pthread_mutex_init(this->Lock,NULL);
-  assert(this->Size = sizeof(struct player_msghdr)+data_size);
-  assert(this->Data = new unsigned char[this->Size]);
+  Size = sizeof(struct player_msghdr)+data_size;
+  assert(Size);
+  Data = new unsigned char[Size];
+  assert(Data);
 
   // copy the header and then the data into out message data buffer
   memcpy(this->Data,&Header,sizeof(struct player_msghdr));
   memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
-  assert(this->RefCount = new unsigned int);
+  this->RefCount = new unsigned int;
+  assert(RefCount);
   *this->RefCount = 1;
 }
 
@@ -200,7 +207,10 @@ MessageQueue::Pop(MessageQueueElement* el)
     return NULL;
   }
   if(!el)
-    assert(el = this->Head.next);
+  {
+  	el = this->Head.next;
+    assert(el);
+  }
   this->Remove(el);
   Unlock();
   return(el);

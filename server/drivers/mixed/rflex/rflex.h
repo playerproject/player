@@ -146,11 +146,24 @@ class RFLEX : public Driver
     virtual int Setup();
     virtual int Shutdown();
 
+    /// @brief Start the driver thread
+    ///
+    /// This method is usually called from the overloaded Setup() method to
+    /// create the driver thread.  This will call Main().
+    virtual void StartThread(void);
+
+    /// @brief Cancel (and wait for termination) of the driver thread
+    ///
+    /// This method is usually called from the overloaded Shutdown() method
+    /// to terminate the driver thread.
+    virtual void StopThread(void);
+
     static int joy_control;
 	
 	// MessageHandler
 	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 	
+	bool ThreadAlive;
 };
 
 
