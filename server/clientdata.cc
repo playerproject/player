@@ -89,6 +89,7 @@ ClientData::ClientData(char* key, int myport)
   }
 
   this->datarequested = false;
+  hasrequest = false;
 
   this->OutQueue = new MessageQueue(true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
   assert(OutQueue);
@@ -691,6 +692,10 @@ ClientData::PutMsg(uint8_t type,
   hdr.timestamp_usec=htonl(timestamp->tv_usec);
   hdr.size=htonl(size); // size of message data
 
+  if (type == PLAYER_MSGTYPE_REQ || type == PLAYER_MSGTYPE_RESP_ACK
+    || type == PLAYER_MSGTYPE_RESP_NACK || type == PLAYER_MSGTYPE_RESP_ERR)
+    hasrequest = true;
+
   Message New(hdr,data,size);
   OutQueue->Push(New);
 }
@@ -849,7 +854,7 @@ ClientDataTCP::Read()
 // includes writing fewer than len bytes) and -1 on error (e.g., if the 
 // other end of the socket was closed).
 int 
-ClientDataTCP::Write()
+ClientDataTCP::Write(bool requst_only)
 {
   struct timeval curr;
   int byteswritten;
@@ -968,7 +973,7 @@ ClientDataUDP::Read()
 }
 
 int 
-ClientDataUDP::Write()
+ClientDataUDP::Write(bool request_only)
 {
   // Loop through waiting messages and write them to buffer
   MessageQueueElement * el;
@@ -1021,7 +1026,7 @@ ClientDataInternal::Read()
 }
 
 int 
-ClientDataInternal::Write()
+ClientDataInternal::Write(bool requst_only)
 {
   // Take messages off the queue and give them to the player server for processing
   MessageQueueElement * el;

@@ -229,6 +229,11 @@ This device produces no data and accepts no commands.
 #define PLAYER_CLOSE_MODE 99   // 'c'
 #define PLAYER_ERROR_MODE 101  // 'e'
 
+
+#define PLAYER_DATAMODE_PULL 1
+#define PLAYER_DATAMODE_NEW 2
+#define PLAYER_DATAMODE_ASYNC 4
+
 /** Data delivery mode: Send data at a fixed rate (default 10Hz;
 see PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) from ALL
 subscribed devices , regardless of whether the data is new or old. A
@@ -238,19 +243,19 @@ PLAYER_MSGTYPE_SYNCH packet follows each set of data. Rarely used. */
 request below), send data from ALL subscribed devices, regardless of
 whether the data is new or old.  A PLAYER_MSGTYPE_SYNCH packet follows
 each set of data.  Rarely used. */
-#define PLAYER_DATAMODE_PULL_ALL 1
+#define PLAYER_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL
 /** Data delivery mode: Send data at a fixed rate (default 10Hz; see
 PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) only from those
 subscribed devices that have produced new data since the last time data
 was pushed to this client.  A PLAYER_MSGTYPE_SYNCH packet follows each
 set of data.  This is the default mode. */
-#define PLAYER_DATAMODE_PUSH_NEW 2
+#define PLAYER_DATAMODE_PUSH_NEW PLAYER_DATAMODE_NEW
 /** Data delivery mode: Only on request (see PLAYER_PLAYER_DATA_REQ
 request below), send data only from those subscribed devices that have
 produced new data since the last time data was pushed to this client.
 Use this mode if your client runs slowly or at an upredictable rate
 (e.g., a GUI). A PLAYER_MSGTYPE_SYNCH packet follows each set of data. */
-#define PLAYER_DATAMODE_PULL_NEW 3
+#define PLAYER_DATAMODE_PULL_NEW (PLAYER_DATAMODE_PULL | PLAYER_DATAMODE_NEW)
 /** Data delivery mode: When a subscribed device produces new data, send
 it. This is the lowest-latency delivery mode; when a device produces data,
 the server (almost) immediately sends it on the client.  So the client may
@@ -258,7 +263,7 @@ receive data at an arbitrarily high rate. PLAYER_MSGTYPE_SYNCH packets
 are still sent, but at a fixed rate (see PLAYER_PLAYER_DATAFREQ_REQ to
 change this rate) that is unrelated to rate at which data are delivered
 from devices. */
-#define PLAYER_DATAMODE_PUSH_ASYNC 4
+#define PLAYER_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_ASYNC
 
 /* The request subtypes */
 #define PLAYER_PLAYER_DEVLIST     ((uint8_t)1)

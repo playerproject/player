@@ -392,11 +392,11 @@ ClientManager::Wait(void)
   // need to push this cleanup function, cause if a thread is cancelled while
   // in pthread_cond_wait(), it will immediately relock the mutex.  thus we
   // need to unlock ourselves before exiting.
+  pthread_mutex_lock(&this->condMutex);
   pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock,
                        (void*)&this->condMutex);
-  pthread_mutex_lock(&this->condMutex);
   pthread_cond_wait(&this->cond,&this->condMutex);
-  pthread_mutex_unlock(&this->condMutex);
+//  pthread_mutex_unlock(&this->condMutex);
   pthread_cleanup_pop(1);
 }
 
@@ -613,31 +613,28 @@ ClientManagerTCP::Write()
 	    ((curr_seconds + 0.000001) - cl->last_write) >=  // *
    	    (1.0/cl->frequency);
 
-    if((cl->mode == PLAYER_DATAMODE_PUSH_ASYNC) ||
-       (((cl->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-	 (cl->mode == PLAYER_DATAMODE_PUSH_NEW)) &&
-	time_to_write) ||
-       (((cl->mode == PLAYER_DATAMODE_PULL_ALL) ||
-	 (cl->mode == PLAYER_DATAMODE_PULL_NEW)) &&
-	(cl->datarequested)))
+    bool just_request = false;
+    if((cl->mode & PLAYER_DATAMODE_ASYNC) ||
+       (((cl->mode & PLAYER_DATAMODE_PULL)==0) && time_to_write) ||
+       ((cl->mode & PLAYER_DATAMODE_PULL) && cl->datarequested) ||
+       (just_request = cl->hasrequest)) // if we have a requst call, write anyway, but only for requsts
     {
       if (time_to_write || cl->datarequested)
       {
-	// Put sync message into clients outgoing queue
-	cl->PutMsg(PLAYER_MSGTYPE_SYNCH, 0, PLAYER_PLAYER_CODE, 
-                   0,&curr,0,NULL);
+        // Put sync message into clients outgoing queue
+        cl->PutMsg(PLAYER_MSGTYPE_SYNCH, 0, PLAYER_PLAYER_CODE,0,&curr,0,NULL);
       }
 
-      if(cl->Write() < 0)
-	MarkClientForDeletion(i);
+      if(cl->Write(just_request) < 0)
+        MarkClientForDeletion(i);
       else
       {
-	if((cl->mode == PLAYER_DATAMODE_PUSH_ALL) || 
-	   (cl->mode == PLAYER_DATAMODE_PUSH_NEW))
-	  cl->last_write = curr_seconds;
-	else
-	  cl->datarequested = false;
+        if(!(cl->mode & PLAYER_DATAMODE_PULL))
+	      cl->last_write = curr_seconds;
+        else
+          cl->datarequested = false;
       }
+      cl->hasrequest = false;
     }
   }
 

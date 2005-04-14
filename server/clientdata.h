@@ -137,6 +137,8 @@ class ClientData
     /// Has this client requested data (for use only with PULL data
     /// delivery modes).
     bool datarequested;
+    /// Does the client have a requst in its outgoing queue
+    bool hasrequest;
     /// Has this clien been marked for deletion?  It gets set by various
     /// parts of ClientManager.  Should probably use an accessor function
     /// instead, and make this field private.
@@ -179,7 +181,7 @@ class ClientData
     /// iterating over the outoging message queue. If there is any data still 
     /// to be sent return a positive value, 0 for success and < 0 for
     /// error.
-    virtual int Write() = 0;
+    virtual int Write(bool requestonly = false) = 0;
 };
 
 /**
@@ -196,7 +198,7 @@ class ClientDataTCP : public ClientData
     /// Read incoming messages.
     int Read();
     /// Write outgoing messages.
-    int Write();
+    int Write(bool requestonly = false);
 
     /// Data messages are built up here, for one efficient write(2)
     unsigned char *totalwritebuffer; 
@@ -226,7 +228,7 @@ class ClientDataUDP : public ClientData
   public:
     ClientDataUDP(char* key, int port) : ClientData(key, port) {};
     int Read();
-    int Write();
+    int Write(bool requestonly = false);
 };
 
 /**
@@ -239,7 +241,7 @@ class ClientDataInternal : public ClientData
     ClientDataInternal(Driver * _driver, char * key="", int port=6665);
     ~ClientDataInternal();
     int Read();
-    int Write();
+    int Write(bool requestonly = false);
 
     /// Send a message to a subscribed device.
     int SendMsg(player_device_id_t id,
