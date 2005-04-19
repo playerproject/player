@@ -623,18 +623,17 @@ ClientManagerTCP::Write()
       {
         // Put sync message into clients outgoing queue
         cl->PutMsg(PLAYER_MSGTYPE_SYNCH, 0, PLAYER_PLAYER_CODE,0,&curr,0,NULL);
+        cl->last_write = curr_seconds;
       }
 
       if(cl->Write(just_request) < 0)
         MarkClientForDeletion(i);
       else
       {
-        if(!(cl->mode & PLAYER_DATAMODE_PULL))
-	      cl->last_write = curr_seconds;
-        else
+        if((cl->mode & PLAYER_DATAMODE_PULL))
           cl->datarequested = false;
+        cl->hasrequest = false;
       }
-      cl->hasrequest = false;
     }
   }
 
