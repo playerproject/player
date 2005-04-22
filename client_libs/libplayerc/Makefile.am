@@ -20,6 +20,7 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_camera.c \
                        dev_fiducial.c \
                        dev_gps.c \
+                       dev_gripper.c \
                        dev_ir.c \
                        dev_joystick.c \
                        dev_laser.c \
@@ -37,7 +38,8 @@ libplayerc_a_SOURCES = playerc.h \
                        dev_truth.c \
                        dev_wifi.c \
 		       dev_dio.c \
-		       dev_simulation.c
+		       dev_simulation.c \
+		       dev_gripper.c
 
 libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
 
