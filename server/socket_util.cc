@@ -64,22 +64,20 @@
 
 
 int
-create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
-                int portnum, int playersocktype, int backlog)
+create_and_bind_socket(char blocking, int portnum, 
+                       int playersocktype, int backlog)
 {
   int sock;                   /* socket we're creating */
   int flags;                  /* temp for old socket access flags */
-  int address_size;           /* size of server address struct */
   int one = 1;
+  int retval;
+  struct addrinfo* serverp;
 
   int socktype;
 
   char* first_dot;
-  struct hostent* entp;
   char host[256];
   
-  address_size = sizeof(*((struct sockaddr_in*)serverp));
-
   if(playersocktype == PLAYER_TRANSPORT_TCP)
     socktype = SOCK_STREAM;
   else if(playersocktype == PLAYER_TRANSPORT_UDP)
@@ -102,17 +100,13 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
     *first_dot = '\0';
   }
 
-  if((entp = gethostbyname(host)) == NULL)
+  if((retval = getaddrinfo(host,NULL,NULL,&serverp)))
   {
-    fprintf(stderr, "receive(): \"%s\" is unknown host; "
-	    "probably should quit\n", host);
+    PLAYER_ERROR1("getaddrinfo() failed: %s", gai_strerror(retval));
     return(-1);
   }
 
-  memcpy(&((*serverp).sin_addr), entp->h_addr_list[0], entp->h_length);
-
-
-  (*serverp).sin_port = htons(portnum);
+  ((struct sockaddr_in*)serverp->ai_addr)->sin_port = htons(portnum);
 
   /* 
    * Create the INET socket.  
@@ -121,6 +115,7 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
   if((sock = socket(PF_INET, socktype, 0)) == -1) 
   {
     perror("create_and_bind_socket:socket() failed; socket not created.");
+    freeaddrinfo(serverp);
     return(-1);
   }
 
@@ -149,18 +144,19 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
       perror("create_and_bind_socket():fcntl() while getting socket "
                       "access flags; socket not created.");
       close(sock);
+      freeaddrinfo(serverp);
       return(-1);
     }
     /*
-     * OR the current flags with O_ASYNC (so we'll get SIGIO's) and 
-     * O_NONBLOCK (so we won't block), and write them back
+     * OR the current flags with O_NONBLOCK (so we won't block), 
+     * and write them back
      */
-    //if(fcntl(sock, F_SETFL, flags | O_ASYNC | O_NONBLOCK) == -1)
     if(fcntl(sock, F_SETFL, flags | O_NONBLOCK ) == -1)
     {
       perror("create_and_bind_socket():fcntl() failed while setting socket "
                       "access flags; socket not created.");
       close(sock);
+      freeaddrinfo(serverp);
       return(-1);
     }
   }
@@ -172,6 +168,7 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
                   sizeof(one)))
     {
       perror("create_and_bind_socket(): setsockopt(2) failed");
+      freeaddrinfo(serverp);
       return(-1);
     }
   }
@@ -185,15 +182,19 @@ create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
    */
-  (*serverp).sin_family = PF_INET;
-  (*serverp).sin_addr.s_addr = INADDR_ANY;
+  ((struct sockaddr_in*)serverp->ai_addr)->sin_family = PF_INET;
+  ((struct sockaddr_in*)serverp->ai_addr)->sin_addr.s_addr = INADDR_ANY;
 
-  if(bind(sock, (struct sockaddr*)serverp, sizeof(*serverp)) == -1) 
+  if(bind(sock, serverp->ai_addr, sizeof(*(serverp->ai_addr))) == -1) 
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
     close(sock);
+    freeaddrinfo(serverp);
     return(-1);
   }
+
+  // we're done with the server addr struct now
+  freeaddrinfo(serverp);
 
   /* if it's TCP, go ahead with listen() */
   if(socktype == SOCK_STREAM)

@@ -29,8 +29,6 @@
 #ifndef _PUBSUB_UTIL_H
 #define _PUBSUB_UTIL_H
 
-#include <netinet/in.h>   /* for sockaddr_in type */
-
 /*
  * this function creates a socket of the indicated type and binds it to 
  * the indicated port.
@@ -51,7 +49,7 @@
  *  On success, the fd of the new socket is returned.  Otherwise, -1 
  *  is returned and an explanatory note is dumped to stderr.
  */
-int create_and_bind_socket(struct sockaddr_in* serverp, char blocking,
-                           int portnum, int socktype, int backlog);
+int create_and_bind_socket(char blocking, int portnum, 
+                           int socktype, int backlog);
 
 #endif

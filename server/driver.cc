@@ -67,6 +67,10 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
     return;
   }
 
+  subscriptions = 0;
+  entries = 0;
+  alwayson = false;
+
   // Create an interface 
   if (this->AddInterface(this->device_id, access,
                          datasize, commandsize, reqqueuelen, repqueuelen) != 0)
@@ -74,10 +78,6 @@ Driver::Driver(ConfigFile *cf, int section, int interface, uint8_t access,
     this->SetError(-1);    
     return;
   }
-
-  subscriptions = 0;
-  entries = 0;
-  alwayson = false;
 
   pthread_mutex_init(&accessMutex,NULL);
   pthread_mutex_init(&condMutex,NULL);
