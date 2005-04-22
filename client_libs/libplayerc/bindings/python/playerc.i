@@ -85,6 +85,11 @@
   $1 = temp;
 }
 
+%typemap(in) uint8_t
+{
+  $1 = (uint8_t) PyLong_AsLong($input);
+}
+
 // Integer types
 %typemap(out) uint16_t
 {

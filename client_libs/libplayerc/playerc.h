@@ -1997,6 +1997,50 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 /** @} */
 /***************************************************************************/
 
+/***************************************************************************/
+/** @defgroup playerc_proxy_gripper gripper
+
+The gripper proxy provides an interface to the gripper
+
+@{
+*/
+
+/** @brief Gripper device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  unsigned char state;
+  unsigned char beams;
+  int outer_break_beam;
+  int inner_break_beam;
+  int paddles_open;
+  int paddles_closed;
+  int paddles_moving;
+  int gripper_error;
+  int lift_up;
+  int lift_down;
+  int lift_moving;
+  int lift_error;
+
+} playerc_gripper_t;
+
+
+/** @brief Create a gripper device proxy. */
+playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a gripper device proxy. */
+void playerc_gripper_destroy(playerc_gripper_t *device);
+
+/** @brief Subscribe to the gripper device */
+int playerc_gripper_subscribe(playerc_gripper_t *device, int access);
+
+/** @brief Un-subscribe from the gripper device */
+int playerc_gripper_unsubscribe(playerc_gripper_t *device);
+
+/** @brief Send the gripper a command */
+int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
 
 /**************************************************************************/
 /** @defgroup playerc_proxy_dio dio
