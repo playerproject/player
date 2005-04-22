@@ -2086,6 +2086,42 @@ int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t
 
 
 /**************************************************************************/
+/** @defgroup playerc_proxy_speech speech
+
+The speech proxy provides an interface to a speech synthesis system.
+
+@{
+*/
+
+/** Speech proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+} playerc_speech_t;
+
+
+/** Create a speech proxy. */
+playerc_speech_t *playerc_speech_create(playerc_client_t *client, int index);
+
+/** Destroy a speech proxy. */
+void playerc_speech_destroy(playerc_speech_t *device);
+
+/** Subscribe to the speech device. */
+int playerc_speech_subscribe(playerc_speech_t *device, int access);
+
+/** Un-subscribe from the speech device. */
+int playerc_speech_unsubscribe(playerc_speech_t *device);
+
+/** Set the output for the speech device. */
+int playerc_speech_say (playerc_speech_t *device, char *);
+
+
+/** @} */
+/***************************************************************************/
+
+
+/**************************************************************************/
 /** @} (proxies) */
 /**************************************************************************/
 
