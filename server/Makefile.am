@@ -21,7 +21,8 @@ player_DEPENDENCIES =   @PLAYER_DRIVER_LIBPATHS@
 #
 player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ $(top_builddir)/client_libs/libplayerpacket/libplayerpacket.a @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/libreplace.a 
 
-player_LDFLAGS = -Wl --export-dynamic
+# let libtool handle figuring out the right linker flags
+player_LDFLAGS = -export-dynamic
 
 
 bin_PROGRAMS = player

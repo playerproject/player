@@ -266,16 +266,19 @@ plan_md5(plan_t* plan)
 {
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   MD5_CTX c;
-  short digest;
+  unsigned char digest[MD5_DIGEST_LENGTH];
+  short digest_short;
 
   MD5_Init(&c);
 
   MD5_Update(&c,(unsigned char*)plan->cells,
              (plan->size_x*plan->size_y)*sizeof(plan_cell_t));
 
-  MD5_Final((unsigned char*)&digest,&c);
+  MD5_Final(digest,&c);
 
-  return(digest);
+  // Take the first 2 bytes (out of 16).  Should probably take more...
+  digest_short = *((short*)digest);
+  return(digest_short);
 #else
   PLAYER_ERROR("tried to compute md5 hash, but it's not available");
   return(0);
