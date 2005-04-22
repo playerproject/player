@@ -124,7 +124,7 @@ class Cmucam2:public Driver
     void get_blob(packet_t cam_packet, player_blobfinder_blob_t *blob, color_config range);
     int fd;
     int num_of_blobs;
-    char devicepath[MAX_FILENAME_SIZE];
+    const char* devicepath;
     color_config color[PLAYER_BLOBFINDER_MAX_BLOBS];
     //Camera cam;
 
@@ -179,13 +179,14 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
   else
     memset(&this->blobfinder_id, 0, sizeof(this->blobfinder_id));
 
-  // Outgoing laser fiducual interface
+  // Outgoing ptz interface
   memset(&this->ptz_id, 0, sizeof(this->ptz_id));
   if (cf->ReadDeviceId(&(this->ptz_id), section, "provides",
-                       PLAYER_PTZ_CODE, -1, "laser") == 0)
+                       PLAYER_PTZ_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->ptz_id, PLAYER_ALL_MODE,
-                          sizeof(player_ptz_data_t), 0, 5, 5) != 0)
+                          sizeof(player_ptz_data_t), 
+                          sizeof(player_ptz_cmd_t), 5, 5) != 0)
     {
       this->SetError(-1);    
       return;
@@ -194,7 +195,12 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 
  
   num_of_blobs = cf->ReadInt(section, "num_blobs", 1);
-  strncpy(devicepath, cf->ReadString(section, "devicepath", NULL), sizeof(devicepath)-1);
+  if(!(this->devicepath = (char*)cf->ReadString(section, "devicepath", NULL)))
+  {
+    PLAYER_ERROR("must specify devicepath");
+    this->SetError(-1);
+    return;
+  }
 
   char variable[20];
   
@@ -215,7 +221,7 @@ Cmucam2::Setup()
 {
   fflush(stdout);
 
-  fd = open_port(devicepath);        // opening the serial port
+  fd = open_port((char*)devicepath);        // opening the serial port
   if(fd<0)                           // if not successful, stop
   {
     printf("Camera connection failed!\n");
