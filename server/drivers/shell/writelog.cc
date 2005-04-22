@@ -754,11 +754,27 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
 
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write blobfinder data to file
+/** @addtogroup player_driver_writelog */
+/** @{ */
+/** @defgroup player_driver_writelog_blobfinder Blobfinder format
+ 
+@brief @ref player_interface_blobfinder format 
+
+The format for each @ref player_interface_blobfinder messages is:
+  - width (int): in pixels, of image
+  - height (int): in pixels, of image
+  - count (int): number of blobs to follow
+  - each blob:
+    - id (int): id of blob (if supported)
+    - color (int): packed 24-bit RGB color of blob
+    - area (int): in pixels, of blob
+    - x y (ints): in pixels, of blob center
+    - left right top bottom (ints): in pixels, of bounding box
+    - range (int): in mm, of range to blob (if supported)
+ 
+*/
 void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
 {
-  // format: width height count [id color area x y left right top bottom range] ...
 
   fprintf(this->file, " %d %d %d",
           HUINT16(data->width),
@@ -1082,3 +1098,4 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
 }
 
 
+/** @} */
