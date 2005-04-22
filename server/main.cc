@@ -655,8 +655,6 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
   // clean up
   delete[] portstmp;
 
-  struct sockaddr_in listener;
-  
   //printf( "created %d ports (1: %d 2: %d...)\n",
   //    num_ufds, ports[0], ports[1] );
     
@@ -676,8 +674,8 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
       printf( " %d", (*ports)[i] ); fflush( stdout );
 #endif      
       // setup the socket to listen on
-      if(((*ufds)[i].fd = create_and_bind_socket(&listener,1, (*ports)[i], 
-                                               protocol,200)) == -1)
+      if(((*ufds)[i].fd = create_and_bind_socket(1, (*ports)[i], 
+                                                 protocol,200)) == -1)
       {
         fputs("create_and_bind_socket() failed; quitting", stderr);
         exit(-1);
@@ -1423,13 +1421,10 @@ int main( int argc, char *argv[] )
   {
     assert(ufds = new struct pollfd[num_ufds]);
 
-    struct sockaddr_in listener;
-
     for(int i=0;i<num_ufds;i++)
     {
       // setup the socket to listen on
-      if((ufds[i].fd = create_and_bind_socket(&listener,1,ports[i],
-                                              protocol,200)) == -1)
+      if((ufds[i].fd = create_and_bind_socket(1,ports[i],protocol,200)) == -1)
       {
         PLAYER_ERROR("create_and_bind_socket() failed; quitting");
         exit(-1);
@@ -1453,6 +1448,7 @@ int main( int argc, char *argv[] )
   }
 
   delete[] ports;
+  delete[] ufds;
 
   // Poll the device table for alwayson devices
   for(Device* device = deviceTable->GetFirstDevice(); 
