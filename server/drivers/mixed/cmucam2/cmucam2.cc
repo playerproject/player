@@ -268,6 +268,7 @@ Cmucam2::Main()
 
   int blobs_observed;
   int pan_position = 0;
+  int tilt_position = 0;
   player_ptz_cmd_t command;
   unsigned char config[PLAYER_MAX_REQREP_SIZE];    
 
@@ -284,6 +285,12 @@ Cmucam2::Main()
       if( abs(pan_position) <= 90 )      
         set_servo_position(fd, 0, -1*pan_position);   // Pan value must be negated.      
     }   
+    if(tilt_position != (short)ntohs((unsigned short)(command.tilt)))
+    {
+      tilt_position = (short)ntohs((unsigned short)(command.tilt));
+      if( abs(tilt_position) <= 90 )
+        set_servo_position(fd, 1, -1*tilt_position);   // Tilt value must be negated.
+    }
 
     // handle configs --------------------------------------------------------            
     void* client;
