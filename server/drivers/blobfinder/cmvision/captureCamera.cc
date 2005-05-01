@@ -25,14 +25,19 @@
 // Date: 24 Feb 2004
 // CVS: $Id$
 
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 #include <unistd.h> // for debugging file writes
 #include <fcntl.h>  // for debugging file writes 
 #include <netinet/in.h>
+#include <stddef.h>
 
 #include "error.h"
 #include "conversions.h"
 #include "captureCamera.h"
-
+#include "playerpacket.h"
 
 extern int global_playerport;
 
@@ -88,6 +93,12 @@ captureCamera::captureCamera(int camera_index) : capture()
       cout << "depth " <<depth  <<endl;
       cout << "image_size " <<image_size <<endl;*/
   YUV=(unsigned char *)malloc(width*height*2);
+  if (!YUV)
+  {
+    PLAYER_ERROR("Out of memory");
+    camera_open = false;
+    return;
+  }
  
   camera_open = true;
 }
@@ -95,7 +106,8 @@ captureCamera::captureCamera(int camera_index) : capture()
 captureCamera::~captureCamera()
 {
   this->camera->Unsubscribe(this->camera_id);
-  free(YUV);
+  if (YUV) free(YUV);
+  YUV=NULL;
   current=NULL;
 } 
 
@@ -112,6 +124,11 @@ unsigned char *captureCamera::captureFrame()
      size_t size;
      double t;
      int w,h;
+     unsigned char * ptr = NULL;
+#if HAVE_JPEGLIB_H
+     int dst_size;
+     unsigned char * dst;
+#endif
 
      this->camera->Wait();
      size = this->camera->GetData(this->camera_id, (unsigned char*) &data,
@@ -122,7 +139,7 @@ unsigned char *captureCamera::captureFrame()
      if (0)//(fabs(t - this->camera_time) < 0.001)
 	  {
 	       printf("old camera data %f seconds\n",t - this->camera_time);
-	       return 0;
+	       return NULL;
 	  }
      this->camera_time = t;
      
@@ -137,11 +154,44 @@ unsigned char *captureCamera::captureFrame()
 	       // can't free it as CMVisionBF::Main() might be using it
 	       // free(YUV);
 	       if ((w>width)||(h>height))
+	       {
+	    	    if (YUV) free(YUV);
 		    YUV=(unsigned char *)malloc(w*h*2);
+		    if (!YUV)
+		    {
+			PLAYER_ERROR("Out of memory");
+			return NULL;
+		    }
+	       }
 	       width = w;
 	       height = h;
 	  }
-     return convertImageRgb2Yuv422(data.image,width * height);
+     switch (data.compression)
+     {
+     case PLAYER_CAMERA_COMPRESS_RAW:
+        ptr = convertImageRgb2Yuv422(data.image, width * height);
+        break;
+     case PLAYER_CAMERA_COMPRESS_JPEG:
+#if HAVE_JPEGLIB_H
+	// Create a temp buffer
+	dst_size = width * height * (data.bpp / 8);
+	dst = (unsigned char *)malloc(dst_size);
+
+	// Decompress into temp buffer
+	jpeg_decompress(dst, dst_size, data.image, ntohl(data.image_size));
+
+	ptr = convertImageRgb2Yuv422(dst, width * height);
+	free(dst);
+#else
+	PLAYER_ERROR("JPEG decompression support was not included at compile-time");
+	ptr = NULL;
+#endif
+	break;
+     default:
+	PLAYER_ERROR("Unknown compression type");
+	ptr = NULL;        
+     }
+     return ptr;
 }
 
 

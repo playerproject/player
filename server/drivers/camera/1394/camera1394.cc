@@ -66,15 +66,21 @@ cameras.
   - Requested frame rate (frames/second)
 
 - mode (string)
-  - Default: "320x240_yuv422"
+  - Default: "640x480_yuv422"
   - Capture mode (size and color layour).  Valid modes are:
-    - "320x240_yuv"
-    - "640x480_rgb"
+    - "320x240_yuv422"
     - "640x480_mono"
+    - "640x480_yuv422"
+    - "640x480_rgb"
     - "800x600_mono"
+    - "800x600_yuv422" - will be rescaled to 600x450
     - "1024x768_mono"
-  - Currently, all non-RGB modes will produce 8-bit monochrome images unless 
+    - "1024x768_yuv422" - will be rescaled to 512x384
+    - "1280x960_mono"
+    - "1280x960_yuv422" - will be rescaled to 640x480
+  - Currently, all mono modes will produce 8-bit monochrome images unless 
   a color decoding option is provided (see bayer).
+  - All yuv422 modes are converted to RGB24
   
 - force_raw (integer)
   - Default: 0
@@ -143,6 +149,7 @@ driver
 @par Authors
 
 Nate Koenig, Andrew Howard
+Major code rewrite by Paul Osmialowski, newchief@king.net.pl
 
 */
 /** @} */
@@ -155,6 +162,7 @@ Nate Koenig, Andrew Howard
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
+#include <stddef.h>       // for NULL
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 #include <libraw1394/raw1394.h>
@@ -170,7 +178,7 @@ Nate Koenig, Andrew Howard
 // for color and format conversion
 #include "drivers/blobfinder/cmvision/conversions.h"
 
-#define NUM_DMA_BUFFERS 8
+#define NUM_DMA_BUFFERS 4
 
 // Time for timestamps
 extern PlayerTime *GlobalTime;
@@ -185,6 +193,7 @@ class Camera1394 : public Driver
   // Setup/shutdown routines.
   public: virtual int Setup();
   public: virtual int Shutdown();
+  private: void SafeCleanup();
 
   // Main function for device thread.
   private: virtual void Main();
@@ -195,8 +204,7 @@ class Camera1394 : public Driver
   // Save a frame to memory
   private: int GrabFrame();
 
-  // Convert frame to appropriate output format
-  private: int ConvertFrame();
+  private: unsigned char resized[1280 * 960 * 3];
 
   // Save a frame to disk
   private: int SaveFrame( const char *filename );
@@ -214,7 +222,7 @@ class Camera1394 : public Driver
   private: dc1394_feature_set features;
 
   // Capture method: RAW or VIDEO (DMA)
-  private: enum {methodRaw, methodVideo};
+  private: enum {methodRaw, methodVideo, methodNone};
   private: int method;
   private: bool forceRaw;
 
@@ -225,14 +233,10 @@ class Camera1394 : public Driver
   private: unsigned int format;
   private: unsigned int mode;
 
-  private: unsigned int width;
-  private: unsigned int height;
-
   // Write frames to disk?
   private: int save;
 
-  // Frame capture buffer and size
-  private: unsigned char *frame;
+  // Frame capture size
   private: size_t frameSize;
 
   // Capture timestamp
@@ -245,7 +249,6 @@ class Camera1394 : public Driver
   private: bool DoBayerConversion;
   private: int BayerPattern;
   private: int BayerMethod;
-  private: unsigned char *bayerConvertedFrame;
 
   // Camera settings
   private: bool setBrightness, setExposure, setWhiteBalance, setShutter, setGain;
@@ -276,7 +279,10 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
            sizeof(player_camera_data_t), 0, 10, 10)
 {
   float fps;
-  
+
+  this->handle = NULL;
+  this->method = methodNone;
+
   // The port the camera is attached to
   this->port = cf->ReadInt(section, "port", 0);
 
@@ -305,7 +311,7 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   // number of options available. At 640x480, a camera can capture at
   // _RGB or _MONO or _MONO16.  
   const char* str;
-  str =  cf->ReadString(section, "mode", "320x240_yuv422");
+  str =  cf->ReadString(section, "mode", "640x480_yuv422");
   /*
   if (0==strcmp(str,"160x120_yuv444"))
   {
@@ -316,38 +322,7 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   if (0==strcmp(str,"320x240_yuv422"))
   {
     this->mode = MODE_320x240_YUV422;
-    this->frameSize = 320 * 240 * 2;
-  }
-  /*
-  else if (0==strcmp(str,"640x480_yuv411"))
-  {
-    this->mode = MODE_640x480_YUV411;
-  }
-  else if (0==strcmp(str,"640x480_yuv422"))
-  {
-    this->mode = MODE_640x480_YUV422;
-  }
-  */
-  else if (0==strcmp(str,"640x480_rgb"))
-  {
-    this->mode = MODE_640x480_RGB;
-    this->frameSize = 640 * 480 * 3;
-  }
-  else if (0==strcmp(str,"640x480_mono"))
-  {
-    this->mode = MODE_640x480_MONO;
-    this->frameSize = 640 * 480 * 1;
-  }
-  else if (0==strcmp(str,"800x600_mono"))
-  {
-    this->mode = MODE_800x600_MONO;
-    this->frameSize = 800 * 600 * 1;
-  }
-  else if (0==strcmp(str,"1024x768_mono"))
-  {
-    this->mode = MODE_1024x768_MONO;
-    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
-    this->frameSize = 1024 * 768 * 1;
+    this->frameSize = 320 * 240 * 3;
   }
   /*
   else if (0==strcmp(str,"640x480_mono16"))
@@ -355,7 +330,62 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
     this->mode = MODE_640x480_MONO16;
     assert(false);
   }
+  else if (0==strcmp(str,"640x480_yuv411"))
+  {
+    this->mode = MODE_640x480_YUV411;
+  }
   */
+  else if (0==strcmp(str,"640x480_mono"))
+  {
+    this->mode = MODE_640x480_MONO;
+    this->frameSize = 640 * 480 * 1;
+  }
+  else if (0==strcmp(str,"640x480_yuv422"))
+  {
+    this->mode = MODE_640x480_YUV422;
+    this->frameSize = 640 * 480 * 3;
+  }
+  else if (0==strcmp(str,"640x480_rgb"))
+  {
+    this->mode = MODE_640x480_RGB;
+    this->frameSize = 640 * 480 * 3;
+  }
+  else if (0==strcmp(str,"800x600_mono"))
+  {
+    this->mode = MODE_800x600_MONO;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+    this->frameSize = 800 * 600 * 1;
+  }
+  else if (0==strcmp(str,"800x600_yuv422"))
+  {
+    this->mode = MODE_800x600_YUV422;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+    this->frameSize = 600 * 450 * 3;
+  }
+  else if (0==strcmp(str,"1024x768_mono"))
+  {
+    this->mode = MODE_1024x768_MONO;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+    this->frameSize = 1024 * 768 * 1;
+  }
+  else if (0==strcmp(str,"1024x768_yuv422"))
+  {
+    this->mode = MODE_1024x768_YUV422;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_1;
+    this->frameSize = 512 * 384 * 3;
+  }
+  else if (0==strcmp(str,"1280x960_mono"))
+  {
+    this->mode = MODE_1280x960_MONO;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_2;
+    this->frameSize = 1280 * 960 * 1;
+  }
+  else if (0==strcmp(str,"1280x960_yuv422"))
+  {
+    this->mode = MODE_1280x960_YUV422;
+    this->format = FORMAT_SVGA_NONCOMPRESSED_2;
+    this->frameSize = 640 * 480 * 3;
+  }
   else
   {
     PLAYER_ERROR1("unknown video mode [%s]", str);
@@ -505,6 +535,26 @@ Camera1394::Camera1394( ConfigFile* cf, int section)
   return;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Safe Cleanup
+void Camera1394::SafeCleanup()
+{
+  if (this->handle)
+  {
+    switch (this->method)
+    {
+    case methodRaw:
+      dc1394_release_camera(this->handle, &this->camera);
+      break;
+    case methodVideo:
+      dc1394_dma_unlisten(this->handle, &this->camera);
+      dc1394_dma_release_camera(this->handle, &this->camera);
+      break;
+    }
+    dc1394_destroy_handle(this->handle);
+  }
+  this->handle = NULL;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
@@ -512,17 +562,13 @@ int Camera1394::Setup()
 {
   unsigned int channel, speed;
 
-  // Create a frame buffer
-  this->frame = new unsigned char[this->frameSize];  
-  if (DoBayerConversion)
-       this->bayerConvertedFrame = new unsigned char[this->frameSize*3]; 
- 
   // Create a handle for the given port (port will be zero on most
   // machines)
   this->handle = dc1394_create_handle(this->port);
   if (this->handle == NULL)
   {
     PLAYER_ERROR("Unable to acquire a dc1394 handle");
+    this->SafeCleanup();
     return -1;
   }
 
@@ -536,12 +582,14 @@ int Camera1394::Setup()
 	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_BRIGHTNESS,this->autoBrightness))
 		 {
 		      PLAYER_ERROR("Unable to set Brightness mode");
+		      this->SafeCleanup();
 		      return -1;
 		 }
 	    if (!this->autoBrightness)
 		 if (DC1394_SUCCESS != dc1394_set_brightness(this->handle, this->camera.node,this->brightness))
 		 {
 		      PLAYER_ERROR("Unable to set Brightness value");
+		      this->SafeCleanup();
 		      return -1;
 		 }
        }
@@ -550,12 +598,14 @@ int Camera1394::Setup()
 	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_EXPOSURE,this->autoExposure))
 		 {
 		      PLAYER_ERROR("Unable to set Exposure mode");
+		      this->SafeCleanup();
 		      return -1;
 		 }
 	    if (!this->autoExposure)
 		 if (DC1394_SUCCESS != dc1394_set_exposure(this->handle, this->camera.node,this->exposure))
 		 {
 		      PLAYER_ERROR("Unable to set Exposure value");
+		      this->SafeCleanup();
 		      return -1;
 		 }
        }
@@ -564,12 +614,14 @@ int Camera1394::Setup()
 	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_SHUTTER,this->autoShutter))
 		 {
 		      PLAYER_ERROR("Unable to set Shutter mode");
+		      this->SafeCleanup();
 		      return -1;
 		 }
 	    if (!this->autoShutter)
 		 if (DC1394_SUCCESS != dc1394_set_shutter(this->handle, this->camera.node,this->shutter))
 		 {
 		      PLAYER_ERROR("Unable to set Shutter value");
+		      this->SafeCleanup();
 		      return -1;
 		 }
        }
@@ -578,12 +630,14 @@ int Camera1394::Setup()
 	    if (DC1394_SUCCESS != dc1394_auto_on_off(this->handle, this->camera.node,FEATURE_GAIN,this->autoGain))
 		 {
 		      PLAYER_ERROR("Unable to set Gain mode");
+		      this->SafeCleanup();
 		      return -1;
 		 }
 	    if (!this->autoShutter)
 		 if (DC1394_SUCCESS != dc1394_set_gain(this->handle, this->camera.node,this->gain))
 		 {
 		      PLAYER_ERROR("Unable to Gain value");
+		      this->SafeCleanup();
 		      return -1;
 		 }
        }
@@ -591,6 +645,7 @@ int Camera1394::Setup()
 	    if (DC1394_SUCCESS != dc1394_set_white_balance(this->handle, this->camera.node,this->blueBalance,this->redBalance))
 		 {
 		      PLAYER_ERROR("Unable to set White Balance");
+		      this->SafeCleanup();
 		      return -1;
 		 }
 
@@ -601,6 +656,7 @@ int Camera1394::Setup()
                                                       &this->features))
   {
     PLAYER_ERROR("Unable to get feature set");
+    this->SafeCleanup();
     return -1;
   }
 
@@ -613,6 +669,7 @@ int Camera1394::Setup()
                                                          &channel, &speed))
   {
     PLAYER_ERROR("Unable to get iso data; is the camera plugged in?");
+    this->SafeCleanup();
     return -1;
   }
 
@@ -651,6 +708,7 @@ int Camera1394::Setup()
     else
     {
       PLAYER_ERROR("unable to open camera in VIDE0 or RAW modes");
+      this->SafeCleanup();
       return -1;
     }
   }
@@ -659,6 +717,7 @@ int Camera1394::Setup()
   if (DC1394_SUCCESS != dc1394_start_iso_transmission(this->handle, this->camera.node))
   {
     PLAYER_ERROR("unable to start camera");
+    this->SafeCleanup();
     return -1;
   }
 
@@ -681,21 +740,7 @@ int Camera1394::Shutdown()
     PLAYER_WARN("unable to stop camera");
 
   // Free resources
-  if (this->method == methodRaw)
-  {
-    dc1394_release_camera(this->handle, &this->camera);
-  }
-  else if (this->method == methodVideo)
-  {
-    dc1394_dma_unlisten( this->handle, &this->camera );
-    dc1394_dma_release_camera( this->handle, &this->camera );
-  }
-  dc1394_destroy_handle(this->handle);
-
-  if (this->frame)
-    delete [] this->frame;
-  if (this->bayerConvertedFrame)
-    delete [] this->bayerConvertedFrame;
+  this->SafeCleanup();
 
   return 0;
 }
@@ -728,10 +773,7 @@ void Camera1394::Main()
 
     // Grab the next frame (blocking)
     this->GrabFrame();
-    
-    // Convert frame to appropriate output format
-    this->ConvertFrame();
-       
+
     // Write data to server
     this->WriteData();
 
@@ -775,131 +817,196 @@ int Camera1394::HandleRequests()
   return 0;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Store an image frame into the 'frame' buffer
 int Camera1394::GrabFrame()
 {
-  if (this->method == methodRaw)
+  int f, c, i, j;
+  unsigned char * ptr1, * ptr2, * dst;
+
+  switch (this->method)
   {
+  case methodRaw:
     if (dc1394_single_capture(this->handle, &this->camera) != DC1394_SUCCESS)
     {
       PLAYER_ERROR("Unable to capture frame");
       return -1;
     }
-    memcpy( this->frame, (unsigned char *) this->camera.capture_buffer, 
-            this->frameSize );
-  }
-  else if (this->method == methodVideo)
-  {
+    break;
+  case methodVideo:
     if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
     {
       PLAYER_ERROR("Unable to capture frame");
       return -1;
     }
-    memcpy( this->frame, (unsigned char *)this->camera.capture_buffer, 
-            this->frameSize);
-    dc1394_dma_done_with_buffer(&this->camera);
+    break;
+  default:
+    PLAYER_ERROR("Unknown grab method");
+    return -1;
   }
 
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Convert frame to appropriate output format
-int Camera1394::ConvertFrame()
-{
-  int i;
-  unsigned char *src, *dst;
-  
   switch (this->mode)
   {
-    case MODE_320x240_YUV422:
+  case MODE_320x240_YUV422:
+  case MODE_640x480_YUV422:
+    this->data.bpp = 24;
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data.image_size = this->frameSize;
+    this->data.width = this->camera.frame_width;
+    this->data.height = this->camera.frame_height;
+    assert(this->data.image_size <= sizeof(this->data.image));
+    uyvy2rgb((unsigned char *)this->camera.capture_buffer, this->data.image, (this->camera.frame_width) * (this->camera.frame_height));
+    break;
+  case MODE_1024x768_YUV422:
+  case MODE_1280x960_YUV422:
+    this->data.bpp = 24;
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data.image_size = this->frameSize;
+    this->data.width = this->camera.frame_width / 2;
+    this->data.height = this->camera.frame_height / 2;
+    assert(this->data.image_size <= sizeof(this->data.image));
+    uyvy2rgb((unsigned char *)this->camera.capture_buffer, this->resized, (this->camera.frame_width) * (this->camera.frame_height));
+    ptr1 = this->resized;
+    ptr2 = this->data.image;
+    for (f = 0; f < (this->data.height); f++)
+    {
+      for (c = 0; c < (this->data.width); c++)
+      {
+	ptr2[0] = ptr1[0];
+	ptr2[1] = ptr1[1];
+	ptr2[2] = ptr1[2];
+	ptr1 += (3 * 2);
+	ptr2 += 3;
+      }
+      ptr1 += ((this->camera.frame_width) * 3);
+    }
+    break;
+  case MODE_800x600_YUV422:
+    this->data.bpp = 24;
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data.image_size = this->frameSize;
+    this->data.width = 600;
+    this->data.height = 450;
+    assert(this->data.image_size <= sizeof(this->data.image));
+    uyvy2rgb((unsigned char *)this->camera.capture_buffer, this->resized, (this->camera.frame_width) * (this->camera.frame_height));
+    ptr1 = this->resized;
+    ptr2 = this->data.image;
+    i = 3; j = 3;
+    for (f = 0; f < (this->data.height); f++)
+    {
+      for (c = 0; c < (this->data.width); c++)
+      {
+	ptr2[0] = ptr1[0];
+	ptr2[1] = ptr1[1];
+	ptr2[2] = ptr1[2];
+	j--;
+	if (!j) ptr1 += (3 * 2), j = 3;
+	else ptr1 += 3;
+	ptr2 += 3;
+      }
+      i--;
+      if (!i) ptr1 += ((this->camera.frame_width) * 3), i = 3;
+    }
+    break;  
+  case MODE_640x480_RGB:
+    this->data.bpp = 24;
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->data.image_size = this->frameSize;
+    this->data.width = this->camera.frame_width;
+    this->data.height = this->camera.frame_height;
+    assert(this->data.image_size <= sizeof(this->data.image));
+    memcpy(this->data.image, (unsigned char *)this->camera.capture_buffer, this->data.image_size);
+    break;
+  case MODE_640x480_MONO:
+  case MODE_800x600_MONO:
+  case MODE_1024x768_MONO:
+  case MODE_1280x960_MONO:
+    if (!DoBayerConversion)
     {
       this->data.bpp = 8;
       this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-      this->data.image_size = this->frameSize / 2;
+      this->data.image_size = this->frameSize;
+      this->data.width = this->camera.frame_width;
+      this->data.height = this->camera.frame_height;
       assert(this->data.image_size <= sizeof(this->data.image));
-
-      i = this->frameSize;
-      src = this->frame;
-      dst = this->data.image;
-
-      for (; i > 0; i -= 4, src += 4, dst += 2)
-      {
-        dst[0] = src[1];
-        dst[1] = src[3];
-      }
-      break;
-    }
-
-    case MODE_640x480_MONO:
-    case MODE_800x600_MONO:
-    case MODE_1024x768_MONO:
-    {
-	 if (!DoBayerConversion)
-	      {
-		   this->data.bpp = 8;
-		   this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-		   this->data.image_size = this->frameSize;
-		   assert(this->data.image_size <= sizeof(this->data.image));
-		   memcpy(this->data.image, this->frame, this->data.image_size);
-	      }
-	 else
-	      {
-		   this->data.bpp = 24;
-		   this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-		   switch (this->BayerMethod)
-			{
-			case BAYER_DECODING_DOWNSAMPLE:
-			     // quarter of the image but 3 bytes per pixel
-			     this->data.image_size = this->frameSize/4*3; 
-			     assert(this->data.image_size <= sizeof(this->data.image));
-			     BayerDownsample(this->frame,this->bayerConvertedFrame, 
-					     this->camera.frame_width/2, this->camera.frame_height/2,
-					     (bayer_pattern_t)this->BayerPattern);
-			     break;
-			case BAYER_DECODING_NEAREST:
-			     this->data.image_size = this->frameSize*3;
-			     assert(this->data.image_size <= sizeof(this->data.image));
-			     BayerNearestNeighbor(this->frame,this->bayerConvertedFrame, 
-						  this->camera.frame_width, this->camera.frame_height,
-						  (bayer_pattern_t)this->BayerPattern);
-			     break;
-			case BAYER_DECODING_EDGE_SENSE:
-			     this->data.image_size = this->frameSize*3;
-			     assert(this->data.image_size <= sizeof(this->data.image));
-			     BayerEdgeSense(this->frame,this->bayerConvertedFrame, 
-					    this->camera.frame_width, this->camera.frame_height,
-					    (bayer_pattern_t)this->BayerPattern);
-			     break;
-			default:
-			     PLAYER_ERROR("camera1394: Unknown Bayer Method");
-			     exit(-1);
-			}
-		   memcpy(this->data.image, this->bayerConvertedFrame, this->data.image_size);
-
-	      }
-	 break;
-    }
-
-    case MODE_640x480_RGB:
+      memcpy(this->data.image, (unsigned char *)this->camera.capture_buffer, this->data.image_size);
+    } else
     {
       this->data.bpp = 24;
       this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-      this->data.image_size = this->frameSize;
-      assert(this->data.image_size <= sizeof(this->data.image));
-      memcpy(this->data.image, this->frame, this->data.image_size);
-      break;
+      if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) dst = this->resized;
+      else dst = this->data.image;
+      switch (this->BayerMethod)
+      {
+      case BAYER_DECODING_DOWNSAMPLE:
+        // quarter of the image but 3 bytes per pixel
+	this->data.image_size = this->frameSize/4*3;
+	assert(this->data.image_size <= sizeof(this->data.image));
+	BayerDownsample((unsigned char *)this->camera.capture_buffer, this->data.image,
+					this->camera.frame_width/2, this->camera.frame_height/2,
+					(bayer_pattern_t)this->BayerPattern);
+	break;
+      case BAYER_DECODING_NEAREST:
+        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_size = this->frameSize/4*3;
+	else this->data.image_size = this->frameSize * 3;
+	assert(this->data.image_size <= sizeof(this->data.image));
+	BayerNearestNeighbor((unsigned char *)this->camera.capture_buffer, dst,
+					this->camera.frame_width, this->camera.frame_height,
+					(bayer_pattern_t)this->BayerPattern);
+	break;
+      case BAYER_DECODING_EDGE_SENSE:
+        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_size = this->frameSize/4*3;
+        else this->data.image_size = this->frameSize * 3;
+	assert(this->data.image_size <= sizeof(this->data.image));
+	BayerEdgeSense((unsigned char *)this->camera.capture_buffer, dst,
+					this->camera.frame_width, this->camera.frame_height,
+					(bayer_pattern_t)this->BayerPattern);
+	break;
+      default:
+        PLAYER_ERROR("camera1394: Unknown Bayer Method");
+	return -1;
+      }
+      if (this->BayerMethod != BAYER_DECODING_DOWNSAMPLE)
+      {
+        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH)
+	{
+	  this->data.width = this->camera.frame_width/2;
+	  this->data.height = this->camera.frame_height/2;
+          ptr1 = this->resized;
+          ptr2 = this->data.image;
+          for (f = 0; f < (this->data.height); f++)
+          {
+            for (c = 0; c < (this->data.width); c++)
+            {
+	      ptr2[0] = ptr1[0];
+	      ptr2[1] = ptr1[1];
+	      ptr2[2] = ptr1[2];
+	      ptr1 += (3 * 2);
+	      ptr2 += 3;
+            }
+            ptr1 += ((this->camera.frame_width) * 3);
+          }
+	} else
+	{
+	  this->data.width = this->camera.frame_width;
+	  this->data.height = this->camera.frame_height;
+	}
+      } else
+      {    //image is half the size of grabbed frame
+	this->data.width = this->camera.frame_width/2;
+	this->data.height = this->camera.frame_height/2;
+      }
     }
-
-    default:
-      assert(false);
+    break;
+  default:
+    PLAYER_ERROR("camera1394: Unknown mode");
+    return -1;
   }
-  
+
+  if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
   return 0;
 }
- 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
@@ -910,18 +1017,10 @@ void Camera1394::WriteData()
   // Work out the data size; do this BEFORE byteswapping
   size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_size;
 
-  // Image data and size is filled in ConvertFrame(),
-  // so now we just do the byte-swapping
-  if (this->BayerMethod!=BAYER_DECODING_DOWNSAMPLE)
-       {    
-	    this->data.width = htons(this->camera.frame_width);
-	    this->data.height = htons(this->camera.frame_height);
-       }
-  else
-       {    //image is half the size of grabbed frame
-	    this->data.width = htons(this->camera.frame_width/2);
-	    this->data.height = htons(this->camera.frame_height/2);	    
-       }
+  // now we just do the byte-swapping
+  this->data.width = htons(this->data.width);
+  this->data.height = htons(this->data.height);
+
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   this->data.image_size = htonl(this->data.image_size);
 
