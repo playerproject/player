@@ -231,7 +231,7 @@ CMVisionBF::Shutdown()
   StopThread();
 
   delete vision;
-  delete cap;
+  delete (captureCamera*)cap; 
   vision=NULL;
   cap=NULL;
 
