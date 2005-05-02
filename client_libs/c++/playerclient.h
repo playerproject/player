@@ -2648,19 +2648,23 @@ class LogProxy : public ClientProxy
   /** Is logging/playback enabled? Call GetState() to fill it. */
   int state;
 
-  /** Get the type and current state of the log device */
+  /** Get the type and current state of the log device.  Returns 0 on
+   * success, -1 on error. */
   int LogProxy::GetState();
 
-  /** Start/stop (1/0) writing to the log file */
+  /** Start/stop (1/0) writing to the log file.  Returns 0 on success, -1
+      on error.*/
   int LogProxy::SetWriteState(int state);
 
-  /** Start/stop (1/0) reading from the log file */
+  /** Start/stop (1/0) reading from the log file.  Returns 0 on success, -1
+      on error.*/
   int LogProxy::SetReadState(int state);
 
-  /** Rewind the log file */
+  /** Rewind the log file.  Returns 0 on success, -1 on error. */
   int LogProxy::Rewind();
 
-  /** Set the name of the logfile to write to */
+  /** Set the name of the logfile to write to.  Returns 0 on success, -1 on
+      error.*/
   int LogProxy::SetFilename(const char* fname);
   
   virtual void FillData(player_msghdr_t hdr, const char* buffer);  
