@@ -52,16 +52,22 @@
 #include <math.h>
 #include <limits.h>
 #include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
 
 CameraProxy::CameraProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)
   : ClientProxy(pc, PLAYER_CAMERA_CODE, index, access)
 {
   this->frameNo = 0;
+
+  this->image = (uint8_t*)calloc(1,PLAYER_CAMERA_IMAGE_SIZE);
+  assert(this->image);
 }
 
 CameraProxy::~CameraProxy()
 {
+  free(this->image);
 }
 
 void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)

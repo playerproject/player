@@ -2425,7 +2425,7 @@ public:
    uint32_t imageSize;
 
    // Image data
-   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
+   uint8_t* image;
 
    // interface that all proxies must provide
    void FillData(player_msghdr_t hdr, const char* buffer);
