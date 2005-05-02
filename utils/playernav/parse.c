@@ -8,8 +8,8 @@ extern double dumpfreq;
 
 /* Parse command line arguments, of the form host:port */
 int
-parse_args(int argc, char** argv,
-           int* num_bots, char** hostnames, int* ports, double* zoom, int* aa)
+parse_args(int argc, char** argv, int* num_bots, char** hostnames, 
+           int* ports, double* zoom, int* aa, int* map_idx)
 {
   char* idx;
   int port;
@@ -30,6 +30,13 @@ parse_args(int argc, char** argv,
     {
       if(++i < argc)
         *zoom = atof(argv[i]);
+      else
+        return(-1);
+    }
+    else if(!strcmp(argv[i],"-map"))
+    {
+      if(++i < argc)
+        *map_idx = atoi(argv[i]);
       else
         return(-1);
     }

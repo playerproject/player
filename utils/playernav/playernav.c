@@ -17,8 +17,10 @@ player_interface_localize and @ref player_interface_planner devices.
 It allows you to set your robots' localization hypotheses by dragging
 and dropping them in the map.  You can set global goals the same way,
 and see the planned paths and the robots' progress toward the goals.
-You can think of playernav as an Operator Control Unit (OCU).  playernav
-can also be used just to view a map.
+playernav can also display (a subset of) the localization system's current
+particle set, which may help in debugging localization.  You can think
+of playernav as an Operator Control Unit (OCU).  playernav can also be
+used just to view a map.
 
 playernav requires libgnomecanvas.
 
@@ -27,10 +29,13 @@ playernav requires libgnomecanvas.
 playernav is installed alongside player in $prefix/bin, so if player is
 in your PATH, then playernav should also be.  Command-line usage is:
 @verbatim
-$ playernav [-fps <dumprate>] <host:port> [<host:port>...]
+$ playernav [-fps <dumprate>] [-zoom <zoom>] [-aa {0|1}] [-map <map_idx>] <host:port> [<host:port>...]
 @endverbatim
 Where the options are:
 - -fps &lt;dumprate&gt; : when requested, dump screenshots at this rate in Hz (default: 5Hz)
+- -zoom &lt;zoom&gt; : initial level of zoom in the display (default: 1)
+- -aa {0|1} : whether to use anti-aliased canvas for display; the anti-aliased canvas looks nicer but may require more processor cycles (default: 1)
+- -map  &lt;map_idx&gt; : the index of the map to be requested and displayed (default: 0)
 
 playernav will connect to Player at each host:port combination given on
 the command line.  For each one, playernav will attempt to subscribe to
@@ -40,12 +45,12 @@ the following devices:
 
 Additionally, playernav will attempt to subscribe to the following device
 on the first server:
-- @ref player_interface_map :0
+- @ref player_interface_map :&lt;map_idx&gt; 
 
 If the subscription to the map fails, playernav will exit.  If other
 subscriptions fail, you'll be warned, but playernav will continue.  So,
 for example, if you just want to view a map, point playernav at a server
-with @ref player_interface_map :0 defined.  Of course, if subscription
+with @ref player_interface_map :&lt;map_idx&gt; defined.  Of course, if subscription
 to @ref player_interface_localize :0 or @ref player_interface_planner
 :0 fails for a robot, then you will not be able to localize or command,
 respectively, that robot.
@@ -108,7 +113,7 @@ previous plan, if any.
 
 #include "playernav.h"
 
-#define USAGE "USAGE: playernav [-fps <dumprate>] [-zoom <zoom>] [-aa {0|1}] <host:port> [<host:port>...]"
+#define USAGE "USAGE: playernav [-fps <dumprate>] [-zoom <zoom>] [-aa {0|1}] [-map <map_idx>] <host:port> [<host:port>...]"
 
 // flag and index for robot currently being moved by user (if any)
 int robot_moving_p;
@@ -229,6 +234,7 @@ int
 main(int argc, char** argv)
 {
   int i;
+  int map_idx;
 
   pose_t robot_pose;
 
@@ -240,9 +246,11 @@ main(int argc, char** argv)
 
   gui_data.initial_zoom = 1.0;
   gui_data.aa = 1;
+  map_idx = 0;
 
   if(parse_args(argc-1, argv+1, &(gui_data.num_robots), gui_data.hostnames, 
-                gui_data.ports, &(gui_data.initial_zoom), &(gui_data.aa)) < 0)
+                gui_data.ports, &(gui_data.initial_zoom), &(gui_data.aa),
+                &map_idx) < 0)
   {
     puts(USAGE);
     exit(-1);
@@ -257,7 +265,8 @@ main(int argc, char** argv)
                                         gui_data.num_robots, 
                                         gui_data.hostnames, 
                                         gui_data.ports, 
-                                        DATA_FREQ));
+                                        DATA_FREQ,
+                                        map_idx));
 
   // assume the robots all start enabled (should really get the current
   // enable/disable state for each robot from the server).
@@ -282,7 +291,8 @@ main(int argc, char** argv)
   gtk_widget_show((GtkWidget*)(gui_data.main_window));
 
   // setup read function to be called when idle
-  g_idle_add((GSourceFunc)player_read_func,(gpointer*)&gui_data);
+  g_idle_add((GSourceFunc)player_read_func,
+             (gpointer*)&gui_data);
 
   gtk_main();
 
