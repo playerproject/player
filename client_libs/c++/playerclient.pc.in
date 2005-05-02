@@ -6,5 +6,5 @@ Name: playerclient
 Description: Player robot server and libraries - part of the Player/Stage Project
 Version: @VERSION@
 Requires: playercclient
-Libs: -L${prefix}/lib -lplayerclient
+Libs: -L${prefix}/lib -lplayerclient -lplayerpacket
 Cflags: -I${prefix}/include
