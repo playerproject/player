@@ -89,7 +89,7 @@ _show_particles(GtkWidget *widget,
   {
     for(i=0;i<gui_data->num_robots;i++)
     {
-      if(gui_data->localizes[i]->hypoth_count <= 0)
+      if(!gui_data->localizes[i] || (gui_data->localizes[i]->hypoth_count <= 0))
         continue;
 
       robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];

@@ -14,7 +14,8 @@ init_player(playerc_client_t** clients,
             int num_bots,
             char** hostnames,
             int* ports,
-            int data_freq)
+            int data_freq,
+            int map_idx)
 {
   int i;
   playerc_mclient_t* mclient;
@@ -46,7 +47,7 @@ init_player(playerc_client_t** clients,
     // only subscribe to the first robot's map
     if(i==0)
     {
-      assert(maps[i] = playerc_map_create(clients[i], 0));
+      assert(maps[i] = playerc_map_create(clients[i], map_idx));
       if(playerc_map_subscribe(maps[i],PLAYER_READ_MODE) < 0)
       {
         fprintf(stderr, "Failed to subscribe to map\n");
