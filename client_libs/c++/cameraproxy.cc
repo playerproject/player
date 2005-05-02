@@ -52,19 +52,6 @@
 #include <math.h>
 #include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <sys/types.h>
-
-#include "playerpacket.h"
-
-
-// For some reason, having this before the other includes makes it so 
-// that it does not output any data.  Might want to look into that
-
-#if HAVE_CONFIG_H
-  #include "config.h"
-#endif
 
 CameraProxy::CameraProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)
@@ -100,8 +87,6 @@ void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
   // this->depth = ntohs( ((player_camera_data_t*)buffer)->depth);
   this->depth = ((player_camera_data_t*)buffer)->bpp;
 
-  this->compression = ((player_camera_data_t*)buffer)->compression;
-
   this->imageSize = ntohl( ((player_camera_data_t*)buffer)->image_size);
   memcpy(this->image, ((player_camera_data_t*)buffer)->image, this->imageSize);
 }
@@ -130,42 +115,3 @@ void CameraProxy::SaveFrame(const char *prefix)
   fclose(file);
 }
 
-void CameraProxy::Decompress()
-{
-
-#if HAVE_JPEGLIB_H
-  int dst_size;
-  unsigned char *dst;
-
-  if (this->compression == PLAYER_CAMERA_COMPRESS_RAW)
-    return;
-
-  if (this->depth != 24)
-  {
-    perror("CameraProxy::Decompress() currently only supports "
-           "24-bit images\n");
-    return;
-  }
-
-  // Create a temp buffer
-  dst_size = this->width * this->height * this->depth / 8;
-  dst = static_cast<unsigned char *>(malloc(dst_size));
-
-  // Decompress into temp buffer
-  jpeg_decompress(dst, dst_size, this->image, this->imageSize);
-
-  // Copy uncompress image
-  this->imageSize = dst_size;
-  assert(dst_size < PLAYER_CAMERA_IMAGE_SIZE*sizeof(uint8_t));
-  memcpy(this->image, dst, dst_size);
-
-  // Pixels are now raw
-  this->compression = PLAYER_CAMERA_COMPRESS_RAW;
-
-#else
-
-  perror("JPEG decompression support was not included at compile-time");
-
-#endif
-
-} 
