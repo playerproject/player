@@ -152,6 +152,9 @@ int main(int argc, const char *argv[])
     if(strcmp(device, "wifi") == 0 || strcmp(device, "all") == 0)
       test_wifi(&client, index);
 
+    if(strcmp(device, "log") == 0 || strcmp(device, "all") == 0)
+      test_log(&client, index);
+
     if(strcmp(device, "mcom") == 0 || strcmp(device, "all") == 0)
       test_mcom(&client, index);
 

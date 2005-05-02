@@ -2598,18 +2598,9 @@ class SpeechRecognitionProxy : public ClientProxy
   public: int wordCount;
 };
 
-
-/** @} */
-/** @} */
-/** @} */
-
-/*****************************************************************************
- ** begin section SimulationProxy
- *****************************************************************************/
-
-/** [Synopsis] The @ref player_interface_simulation proxy provides an interface to a simulator.
- */
-
+/** 
+The @p SimulationProxy proxy provides access to a @ref player_interface_simulation device.
+*/
 class SimulationProxy : public ClientProxy
 {
  public: 
@@ -2635,6 +2626,51 @@ class SimulationProxy : public ClientProxy
   virtual void FillData(player_msghdr_t hdr, const char* buffer);  
   virtual void Print();
 };	   
+
+/** 
+The @p LogProxy proxy provides access to a @ref player_interface_log device.
+*/
+class LogProxy : public ClientProxy
+{
+ public: 
+  /** Constructor */
+  LogProxy (PlayerClient* pc, unsigned short index,
+            unsigned char access = 'c')
+          : ClientProxy(pc,PLAYER_LOG_CODE,index,access) {}
+  
+  /** Destructor */
+  ~LogProxy() {}
+
+  /** What kind of log device is this? Either PLAYER_LOG_TYPE_READ or
+      PLAYER_LOG_TYPE_WRITE. Call GetState() to fill it. */
+  int type;
+
+  /** Is logging/playback enabled? Call GetState() to fill it. */
+  int state;
+
+  /** Get the type and current state of the log device */
+  int LogProxy::GetState();
+
+  /** Start/stop (1/0) writing to the log file */
+  int LogProxy::SetWriteState(int state);
+
+  /** Start/stop (1/0) reading from the log file */
+  int LogProxy::SetReadState(int state);
+
+  /** Rewind the log file */
+  int LogProxy::Rewind();
+
+  /** Set the name of the logfile to write to */
+  int LogProxy::SetFilename(const char* fname);
+  
+  virtual void FillData(player_msghdr_t hdr, const char* buffer);  
+  virtual void Print();
+};	   
+
+
+/** @} */
+/** @} */
+/** @} */
 	   
 #endif
 	   

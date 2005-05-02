@@ -30,6 +30,7 @@ test_SOURCES = test_blobfinder.cc \
                test_dio.cc \
                test_bumper.cc \
                test_wifi.cc \
+               test_log.cc \
                test_mcom.cc \
                test_fiducialfinder.cc \
                test_lookup.cc \

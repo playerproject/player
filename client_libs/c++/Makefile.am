@@ -49,7 +49,8 @@ libplayerclient_a_SOURCES =   clientproxy.cc \
                               mapproxy.cc \
                               energyproxy.cc \
                               speechrecognitionproxy.cc \
-                              simulationproxy.cc
+                              simulationproxy.cc \
+                              logproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 
