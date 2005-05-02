@@ -1,7 +1,7 @@
 SUBDIRS = 
 noinst_LIBRARIES = @CMVISION_LIB@ 
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -DUSE_METEOR
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/client_libs/libplayerpacket -DUSE_METEOR
 
 EXTRA_LIBRARIES = libcmvision.a 
 
