@@ -43,7 +43,10 @@ converting joystick positions to velocity commands.
 
 @par Provides
 
-- @ref player_interface_joystick
+- @ref player_interface_joystick : joystick data
+- @ref player_interface_position : joystick data represented as 2-D 
+  position data.  Raw X- and Y-axis values are reported as xpos and ypos in the 
+  position packet (all other fields are zero).
 
 @par Requires
 
@@ -53,7 +56,7 @@ converting joystick positions to velocity commands.
 
 @par Configuration requests
 
-- PLAYER_PTZ_GENERIC_CONFIG_REQ
+- None
 
 @par Configuration file options
 
@@ -98,6 +101,17 @@ driver
 )
 @endverbatim
 
+Provide a position interface, instead of a joystick interface.
+
+@verbatim
+driver
+(
+  name "linuxjoystick"
+  provides ["position:0"]
+  port "/dev/js0"
+)
+@endverbatim
+
 Controlling a Pioneer, plus remapping joystick axes and setting various
 limits.
 
@@ -129,7 +143,7 @@ position devices that use watchdog timers.
 
 @par Authors
 
-Andrew Howard, Brian Gerkey
+Andrew Howard, Brian Gerkey, Paul Osmialowski
 
 */
 /** @} */
