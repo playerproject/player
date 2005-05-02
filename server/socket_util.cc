@@ -26,6 +26,9 @@
  * $Id$
  */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 
 #include <sys/types.h>     /* for socket(2) */
 #include <sys/socket.h>     /* for socket(2) */
@@ -70,8 +73,15 @@ create_and_bind_socket(char blocking, int portnum,
   int sock;                   /* socket we're creating */
   int flags;                  /* temp for old socket access flags */
   int one = 1;
+
+#if HAVE_GETADDRINFO
   int retval;
-  struct addrinfo* serverp;
+  struct addrinfo* addr;
+#else
+  struct sockaddr_in saddr;
+  struct hostent* entp;
+#endif
+  struct sockaddr_in* serverp;
 
   int socktype;
 
@@ -100,13 +110,24 @@ create_and_bind_socket(char blocking, int portnum,
     *first_dot = '\0';
   }
 
-  if((retval = getaddrinfo(host,NULL,NULL,&serverp)))
+#if HAVE_GETADDRINFO
+  if((retval = getaddrinfo(host,NULL,NULL,&addr)))
   {
     PLAYER_ERROR1("getaddrinfo() failed: %s", gai_strerror(retval));
     return(-1);
   }
+  serverp = (struct sockaddr_in*)addr->ai_addr;
+#else
+  if((entp = gethostbyname(host)) == NULL)
+  {
+    PLAYER_ERROR1("gethostbyname() failed: %s", hstrerror(h_errno));
+    return(-1);
+  }
+  memcpy(&(saddr.sin_addr), entp->h_addr_list[0], entp->h_length);
+  serverp = &saddr;
+#endif
 
-  ((struct sockaddr_in*)serverp->ai_addr)->sin_port = htons(portnum);
+  serverp->sin_port = htons(portnum);
 
   /* 
    * Create the INET socket.  
@@ -115,7 +136,9 @@ create_and_bind_socket(char blocking, int portnum,
   if((sock = socket(PF_INET, socktype, 0)) == -1) 
   {
     perror("create_and_bind_socket:socket() failed; socket not created.");
-    freeaddrinfo(serverp);
+#if HAVE_GETADDRINFO
+    freeaddrinfo(addr);
+#endif
     return(-1);
   }
 
@@ -144,7 +167,9 @@ create_and_bind_socket(char blocking, int portnum,
       perror("create_and_bind_socket():fcntl() while getting socket "
                       "access flags; socket not created.");
       close(sock);
-      freeaddrinfo(serverp);
+#if HAVE_GETADDRINFO
+      freeaddrinfo(addr);
+#endif
       return(-1);
     }
     /*
@@ -156,7 +181,9 @@ create_and_bind_socket(char blocking, int portnum,
       perror("create_and_bind_socket():fcntl() failed while setting socket "
                       "access flags; socket not created.");
       close(sock);
-      freeaddrinfo(serverp);
+#if HAVE_GETADDRINFO
+      freeaddrinfo(addr);
+#endif
       return(-1);
     }
   }
@@ -168,7 +195,9 @@ create_and_bind_socket(char blocking, int portnum,
                   sizeof(one)))
     {
       perror("create_and_bind_socket(): setsockopt(2) failed");
-      freeaddrinfo(serverp);
+#if HAVE_GETADDRINFO
+      freeaddrinfo(addr);
+#endif
       return(-1);
     }
   }
@@ -182,19 +211,23 @@ create_and_bind_socket(char blocking, int portnum,
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
    */
-  ((struct sockaddr_in*)serverp->ai_addr)->sin_family = PF_INET;
-  ((struct sockaddr_in*)serverp->ai_addr)->sin_addr.s_addr = INADDR_ANY;
+  serverp->sin_family = PF_INET;
+  serverp->sin_addr.s_addr = INADDR_ANY;
 
-  if(bind(sock, serverp->ai_addr, sizeof(*(serverp->ai_addr))) == -1) 
+  if(bind(sock, (struct sockaddr*)serverp, sizeof(*serverp)) == -1) 
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
     close(sock);
-    freeaddrinfo(serverp);
+#if HAVE_GETADDRINFO
+    freeaddrinfo(addr);
+#endif
     return(-1);
   }
 
   // we're done with the server addr struct now
-  freeaddrinfo(serverp);
+#if HAVE_GETADDRINFO
+  freeaddrinfo(addr);
+#endif
 
   /* if it's TCP, go ahead with listen() */
   if(socktype == SOCK_STREAM)
