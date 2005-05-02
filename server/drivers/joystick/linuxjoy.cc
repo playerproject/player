@@ -194,6 +194,7 @@ class LinuxJoystick : public Driver
   private: void PutPositionCommand();
 
   // Joystick device
+  private: player_device_id_t joystick_id;
   private: const char *dev;
   private: int fd;
   private: int16_t xpos, ypos;
@@ -203,11 +204,14 @@ class LinuxJoystick : public Driver
   private: double timeout;
   private: struct timeval lastread;
 
+  // Position device
+  private: player_device_id_t position_id;
+  private: player_position_data_t pos_data;
+
   // These are used when we send commands to a position device
-  private: bool command_position;
   private: double max_xspeed, max_yawspeed;
   private: int xaxis, yaxis;
-  private: player_device_id_t position_id;
+  private: player_device_id_t cmd_position_id;
   private: Driver* position;
 
   // Joystick
@@ -241,10 +245,36 @@ void LinuxJoystick_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_JOYSTICK_CODE, PLAYER_READ_MODE,
-             sizeof(player_joystick_data_t), 0, 10, 10)
+LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
 {
+  // zero ids, so that we'll know later which interfaces were requested
+  memset(&this->cmd_position_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_device_id_t));
+  memset(&this->joystick_id, 0, sizeof(player_device_id_t));
+
+  // Do we create a position interface?
+  if(cf->ReadDeviceId(&(this->position_id), section, "provides",
+                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->position_id, PLAYER_READ_MODE,
+                          sizeof(player_position_data_t), 0, 5, 5) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
+  }
+  // Do we create a joystick interface?
+  if(cf->ReadDeviceId(&(this->joystick_id), section, "provides",
+                      PLAYER_JOYSTICK_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->joystick_id, PLAYER_READ_MODE,
+                          sizeof(player_joystick_data_t), 0, 5, 5) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
+  }
+
   this->dev = cf->ReadString(section, "port", "/dev/js0");
   this->xaxis = cf->ReadTupleInt(section,"axes", 0, XAXIS);
   this->yaxis = cf->ReadTupleInt(section,"axes", 1, YAXIS);
@@ -253,14 +283,12 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section)
   this->xaxis_min = cf->ReadTupleInt(section, "axis_minima", 0, 0);
   this->yaxis_min = cf->ReadTupleInt(section, "axis_minima", 1, 0);
 
-  this->command_position = false;
   // Do we talk to a position device?
   if(cf->GetTupleCount(section, "requires"))
   {
-    if(cf->ReadDeviceId(&(this->position_id), section, "requires", 
+    if(cf->ReadDeviceId(&(this->cmd_position_id), section, "requires", 
                         PLAYER_POSITION_CODE, -1, NULL) == 0)
     {
-      this->command_position = true;
       this->max_xspeed = cf->ReadLength(section, "max_xspeed", MAX_XSPEED);
       this->max_yawspeed = cf->ReadAngle(section, "max_yawspeed", MAX_YAWSPEED);
       this->timeout = cf->ReadFloat(section, "timeout", 5.0);
@@ -286,18 +314,18 @@ int LinuxJoystick::Setup()
   this->lastread.tv_sec = this->lastread.tv_usec = 0;
 
   // If we're asked, open the position device
-  if(this->command_position)
+  if(this->cmd_position_id.code)
   {
     player_position_power_config_t motorconfig;
     unsigned short reptype;
     player_position_cmd_t cmd;
 
-    if(!(this->position = deviceTable->GetDriver(this->position_id)))
+    if(!(this->position = deviceTable->GetDriver(this->cmd_position_id)))
     {
       PLAYER_ERROR("unable to open position device");
       return(-1);
     }
-    if(this->position->Subscribe(this->position_id) != 0)
+    if(this->position->Subscribe(this->cmd_position_id) != 0)
     {
       PLAYER_ERROR("unable to subscribe to position device");
       return(-1);
@@ -306,7 +334,7 @@ int LinuxJoystick::Setup()
     // Enable the motors
     motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
     motorconfig.value = 1;
-    this->position->Request(this->position_id, this, 
+    this->position->Request(this->cmd_position_id, this, 
                             &motorconfig, sizeof(motorconfig), NULL,
                             &reptype, NULL, 0, NULL);
     if(reptype != PLAYER_MSGTYPE_RESP_ACK)
@@ -314,7 +342,7 @@ int LinuxJoystick::Setup()
 
     // Stop the robot
     memset(&cmd,0,sizeof(cmd));
-    this->position->PutCommand(this->position_id,
+    this->position->PutCommand(this->cmd_position_id,
                                (unsigned char*)&cmd,sizeof(cmd),NULL);
   }
   
@@ -333,8 +361,8 @@ int LinuxJoystick::Shutdown()
   // Stop and join the driver thread
   this->StopThread();
 
-  if(this->command_position)
-    this->position->Unsubscribe(this->position_id);
+  if(this->cmd_position_id.code)
+    this->position->Unsubscribe(this->cmd_position_id);
 
   // Close the joystick
   close(this->fd);
@@ -366,7 +394,7 @@ void LinuxJoystick::Main()
     this->RefreshData();
 
     // Send new commands to position device
-    if(this->command_position)
+    if(this->cmd_position_id.code)
       this->PutPositionCommand();
   }
   return;
@@ -440,15 +468,25 @@ void LinuxJoystick::ReadJoy()
 // Send new data to server
 void LinuxJoystick::RefreshData()
 { 
-  //printf("%d %d\n", this->xpos, this->ypos);
-  
-  // Do byte reordering
-  this->joy_data.xpos = htons(this->xpos);
-  this->joy_data.ypos = htons(this->ypos);
-  this->joy_data.xscale = htons(this->xaxis_max);
-  this->joy_data.yscale = htons(this->yaxis_max);
-  this->joy_data.buttons = htons(this->buttons);
-  this->PutData(&this->joy_data, sizeof(this->joy_data), NULL);
+  if(this->joystick_id.code)
+  {
+    memset(&(this->joy_data),0,sizeof(player_joystick_data_t));
+    // Do byte reordering
+    this->joy_data.xpos = htons(this->xpos);
+    this->joy_data.ypos = htons(this->ypos);
+    this->joy_data.xscale = htons(this->xaxis_max);
+    this->joy_data.yscale = htons(this->yaxis_max);
+    this->joy_data.buttons = htons(this->buttons);
+    this->PutData(this->joystick_id,&this->joy_data,sizeof(this->joy_data),NULL);
+  }
+
+  if(this->position_id.code)
+  {
+    memset(&(this->pos_data),0,sizeof(player_position_data_t));
+    this->pos_data.xpos = htonl((int32_t)this->xpos);
+    this->pos_data.ypos = htonl(-(int32_t)this->ypos);
+    this->PutData(this->position_id,&this->pos_data, sizeof this->pos_data, NULL);
+  }
 
   return;
 }
@@ -461,9 +499,18 @@ void LinuxJoystick::CheckConfig()
   void *client;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
   
-  while(this->GetConfig(&client, &buffer, sizeof(buffer), NULL) > 0)
+  while(this->GetConfig(this->position_id, &client, buffer, 
+                        sizeof(buffer), NULL) > 0)
   {
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+    if(this->PutReply(this->position_id, client, 
+                      PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+      PLAYER_ERROR("PutReply() failed");
+  }
+  while(this->GetConfig(this->joystick_id, &client, buffer, 
+                        sizeof(buffer), NULL) > 0)
+  {
+    if(this->PutReply(this->joystick_id, client, 
+                      PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
       PLAYER_ERROR("PutReply() failed");
   }
 
@@ -520,6 +567,6 @@ void LinuxJoystick::PutPositionCommand()
   cmd.type=0;
   cmd.state=1;
 
-  this->position->PutCommand(this->position_id,
+  this->position->PutCommand(this->cmd_position_id,
                              (unsigned char*)&cmd,sizeof(cmd),NULL);
 }
