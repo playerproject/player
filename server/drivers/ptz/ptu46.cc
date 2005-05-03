@@ -196,7 +196,7 @@ PTU46::PTU46(char * port, int rate)
 	
 	// set up new settings
 	struct termios newtio;
-	bzero(&newtio, sizeof(newtio));
+	memset(&newtio, 0,sizeof(newtio));
 	newtio.c_cflag = /*(rate & CBAUD) |*/ CS8 | CLOCAL | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;

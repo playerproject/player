@@ -394,7 +394,8 @@ CreateStageDevices(char *directory, int **ports, struct pollfd **ufds,
   } 
  
   // open all the files in the IO directory
-  n = scandir( directory, &namelist, MatchDeviceName, alphasort);
+  n = scandir( directory, &namelist, MatchDeviceName, 
+               (int(*)(const struct dirent**, const struct dirent**))alphasort);
   if (n < 0)
     perror("scandir");
   else if(!n)
