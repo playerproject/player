@@ -1,4 +1,4 @@
-SUBDIRS = . test bindings
+SUBDIRS = . test bindings doc
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace -I$(top_srcdir)/client_libs/libplayerpacket
 
