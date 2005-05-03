@@ -84,6 +84,7 @@ The writelog driver can will log data from the following interfaces:
 
 - PLAYER_LOG_SET_WRITE_STATE
 - PLAYER_LOG_GET_STATE
+- PLAYER_LOG_SET_FILENAME
 
 @par Configuration file options
 
