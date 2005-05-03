@@ -120,7 +120,7 @@ create_and_bind_socket(char blocking, int portnum,
 #else
   if((entp = gethostbyname(host)) == NULL)
   {
-    PLAYER_ERROR1("gethostbyname() failed: %s", hstrerror(h_errno));
+    PLAYER_ERROR("gethostbyname() failed");
     return(-1);
   }
   memcpy(&(saddr.sin_addr), entp->h_addr_list[0], entp->h_length);

@@ -152,7 +152,7 @@ FlockOfBirdsSerial::FlockOfBirdsSerial(char * port, int rate)
 
 	// set up new settings
 	struct termios newtio;
-	bzero(&newtio, sizeof(newtio));
+	memset(&newtio, 0,sizeof(newtio));
 	newtio.c_cflag = CS8 | CREAD;
 	newtio.c_iflag = IGNPAR;
 	newtio.c_oflag = 0;
@@ -470,8 +470,8 @@ FlockOfBirds_Device::Setup()
 	player_position3d_data_t data;
 	player_position3d_cmd_t cmd;
 
-	bzero(&data,sizeof(data));
-	bzero(&cmd,sizeof(cmd));
+	memset(&data,0,sizeof(data));
+	memset(&cmd,0,sizeof(cmd));
 
   	PutData((void*)&data,sizeof(data),NULL);
   	PutCommand(device_id,(void*)&cmd,sizeof(cmd),NULL);

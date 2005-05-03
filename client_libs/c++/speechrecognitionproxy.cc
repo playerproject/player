@@ -108,6 +108,6 @@ void SpeechRecognitionProxy::Clear()
 
   for (int i=0; i<20; i++)
   {
-    bzero(this->words[i],30);
+    memset(this->words[i],0,30);
   }
 }

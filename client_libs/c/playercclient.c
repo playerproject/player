@@ -330,6 +330,7 @@ int player_request(player_connection_t* conn,
 {
   player_msghdr_t hdr;
   unsigned char *buffer;
+  int retry = 0;
 
   // Get memory from the heap, not the stack
   buffer = (unsigned char *)
@@ -391,7 +392,6 @@ int player_request(player_connection_t* conn,
     return(-1);
   }
   
-  int retry = 0;
 
   memset(&hdr,0,sizeof(hdr));
   /* eat data until a response comes back (it may not be for the request we

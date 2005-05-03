@@ -719,7 +719,7 @@ canonvcc4::ReceiveCommandAnswer()
   unsigned char byte;
   int err;
 
-  bzero(reply, COMMAND_RESPONSE_BYTES);
+  memset(reply, 0, COMMAND_RESPONSE_BYTES);
 
   for (num = 0; num <= COMMAND_RESPONSE_BYTES + 1; num++)
     {
@@ -795,7 +795,7 @@ canonvcc4::ReceiveRequestAnswer(unsigned char *data)
   unsigned char byte;
   int err = 0;
 
-  bzero(reply, MAX_PTZ_REQUEST_LENGTH);
+  memset(reply, 0, MAX_PTZ_REQUEST_LENGTH);
 
   for (num = 0; num <= COMMAND_RESPONSE_BYTES + 1; num++)
     {

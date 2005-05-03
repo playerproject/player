@@ -62,7 +62,7 @@ int SpeechProxy::Say(char* str)
 
   player_speech_cmd_t cmd;
 
-  bzero(cmd.string,sizeof(cmd.string));
+  memset(cmd.string,0,sizeof(cmd.string));
   if(str)
     strncpy((char*)(cmd.string),str,PLAYER_SPEECH_MAX_STRING_LEN);
 
