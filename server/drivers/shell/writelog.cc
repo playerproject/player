@@ -31,6 +31,9 @@
 /** @defgroup player_driver_writelog writelog
 
 The writelog driver will write data from another device to a log file.
+Each data message is written to a separate line.  The format for each
+supported interface is given below.
+
 The @ref player_driver_readlog driver can be used to replay the data
 (to client programs, the replayed data will appear to come from the
 real sensors).
@@ -64,6 +67,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref player_interface_gps
 - @ref player_interface_joystick
 - @ref player_interface_laser
+- @ref player_interface_sonar
 - @ref player_interface_position
 - @ref player_interface_position3d
 - @ref player_interface_power
@@ -760,11 +764,11 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
  
 @brief @ref player_interface_blobfinder format 
 
-The format for each @ref player_interface_blobfinder messages is:
+The format for each @ref player_interface_blobfinder message is:
   - width (int): in pixels, of image
   - height (int): in pixels, of image
   - count (int): number of blobs to follow
-  - each blob:
+  - list of blobs; for each blob:
     - id (int): id of blob (if supported)
     - color (int): packed 24-bit RGB color of blob
     - area (int): in pixels, of blob
@@ -800,8 +804,18 @@ void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write camera data to file
+/** @defgroup player_driver_writelog_camera Camera format
+ 
+@brief @ref player_interface_camera format 
+
+The format for each @ref player_interface_camera message is:
+  - width (int): in pixels
+  - height (int): in pixels
+  - depth (int): in bits per pixel
+  - format (int): image format
+  - compression (int): image compression
+  - image data, encoded as a string of ASCII hex values
+*/
 void WriteLog::WriteCamera(player_camera_data_t *data)
 {
   char *str;
@@ -872,8 +886,28 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write fiducial data to file
+/** @defgroup player_driver_writelog_fiducial Fiducial format
+ 
+@brief @ref player_interface_fiducial format 
+
+The format for each @ref player_interface_fiducial message is:
+  - count (int): number of fiducials to follow
+  - list of fiducials; for each fiducial:
+    - id (int): fiducial ID
+    - x (float): relative X position, in meters
+    - y (float): relative Y position, in meters
+    - z (float): relative Z position, in meters
+    - roll (float): relative roll orientation, in radians
+    - pitch (float): relative pitch orientation, in radians
+    - yaw (float): relative yaw orientation, in radians
+    - ux (float): uncertainty in relative X position, in meters
+    - uy (float): uncertainty in relative Y position, in meters
+    - uz (float): uncertainty in relative Z position, in meters
+    - uroll (float): uncertainty in relative roll orientation, in radians
+    - upitch (float): uncertainty in relative pitch orientation, in radians
+    - uyaw (float): uncertainty in relative yaw orientation, in radians
+
+*/
 void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 {
   // format: <count> [<id> <x> <y> <z> <roll> <pitch> <yaw> <ux> <uy> <uz> etc] ...
@@ -902,8 +936,24 @@ void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write GPS data to file
+/** @defgroup player_driver_writelog_gps GPS format
+ 
+@brief @ref player_interface_gps format 
+
+The format for each @ref player_interface_gps message is:
+  - time (float): current GPS time, in seconds
+  - latitude (float): in degrees
+  - longitude (float): in degrees
+  - altitude (float): in meters
+  - utm_e (float): UTM WGS84 easting, in meters
+  - utm_n (float): UTM WGS84 northing, in meters
+  - hdop (float): horizontal dilution of position
+  - vdop (float): vertical dilution of position
+  - err_horz (float): horizontal error, in meters
+  - err_vert (float): vertical error, in meters
+  - quality (int): quality of fix (0 = invalid, 1 = GPS fix, 2 = DGPS fix)
+  - num_sats (int): number of satellites in view
+*/
 void WriteLog::WriteGps(player_gps_data_t *data)
 {
   fprintf(this->file,
@@ -930,8 +980,17 @@ void WriteLog::WriteGps(player_gps_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write joystick data to file
+/** @defgroup player_driver_writelog_joystick Joystick format
+ 
+@brief @ref player_interface_joystick format 
+
+The format for each @ref player_interface_joystick message is:
+  - xpos (int): unscaled X position of joystick
+  - ypos (int): unscaled Y position of joystick
+  - xscale (int): maximum X position
+  - yscale (int): maximum Y position
+  - buttons (hex string): bitmask of button states
+*/
 void WriteLog::WriteJoystick(player_joystick_data_t *data)
 {
   fprintf(this->file, "%+d %+d %d %d %X",
@@ -945,8 +1004,19 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write laser data to file
+/** @defgroup player_driver_writelog_laser Laser format
+ 
+@brief @ref player_interface_laser format 
+
+The format for each @ref player_interface_laser message is:
+  - min_angle (float): minimum scan angle, in radians
+  - max_angle (float): maximum scan angle, in radians
+  - resolution (float): angular resolution, in radians
+  - count (int): number of readings to follow
+  - list of readings; for each reading:
+    - range (float): in meters
+    - intensity (int): intensity
+*/
 void WriteLog::WriteLaser(player_laser_data_t *data)
 {
   int i;
@@ -966,8 +1036,20 @@ void WriteLog::WriteLaser(player_laser_data_t *data)
   return;
 }
 
-////////////////////////////////////////////////////////////////////////////
-// Write sonar data to file
+/** @defgroup player_driver_writelog_sonar Sonar format
+ 
+@brief @ref player_interface_sonar format 
+
+The format for each @ref player_interface_sonar message is:
+  - pose_count (int): number of sonar poses to follow
+  - list of tranducer poses; for each pose:
+    - x (float): relative X position of transducer, in meters
+    - y (float): relative Y position of transducer, in meters
+    - a (float): relative yaw orientation of transducer, in radians
+  - range_count (int): number range values to follow
+  - list of readings; for each reading:
+    - range (float): in meters
+*/
 void WriteLog::WriteSonar(player_sonar_data_t *data, WriteLogDevice* device)
 {
   unsigned int i;
@@ -992,8 +1074,19 @@ void WriteLog::WriteSonar(player_sonar_data_t *data, WriteLogDevice* device)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write position data to file
+/** @defgroup player_driver_writelog_position Position format
+ 
+@brief @ref player_interface_position format 
+
+The format for each @ref player_interface_position message is:
+  - xpos (float): in meters
+  - ypos (float): in meters
+  - yaw (float): in radians
+  - xspeed (float): in meters / second
+  - yspeed (float): in meters / second
+  - yawspeed (float): in radians / second
+  - stall (int): motor stall sensor
+*/
 void WriteLog::WritePosition(player_position_data_t *data)
 {
   fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
@@ -1009,8 +1102,25 @@ void WriteLog::WritePosition(player_position_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write position3d data to file
+/** @defgroup player_driver_writelog_position3d Position3d format
+ 
+@brief @ref player_interface_position3d format 
+
+The format for each @ref player_interface_position3d message is:
+  - xpos (float): in meters
+  - ypos (float): in meters
+  - zpos (float): in meters
+  - roll (float): in radians
+  - pitch (float): in radians
+  - yaw (float): in radians
+  - xspeed (float): in meters / second
+  - yspeed (float): in meters / second
+  - zspeed (float): in meters / second
+  - rollspeed(float): in radians / second
+  - pitchspeed(float): in radians / second
+  - yawspeed(float): in radians / second
+  - stall (int): motor stall sensor
+*/
 void WriteLog::WritePosition3d(player_position3d_data_t *data)
 {
   fprintf(this->file,
@@ -1037,8 +1147,13 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write power data to file
+/** @defgroup player_driver_writelog_power Power format
+ 
+@brief @ref player_interface_power format 
+
+The format for each @ref player_interface_power message is:
+  - charge (float): in volts
+*/
 void WriteLog::WritePower(player_power_data_t *data)
 {
   fprintf(this->file, "%.1f ", HUINT16(data->charge) / 10.0);
@@ -1046,8 +1161,23 @@ void WriteLog::WritePower(player_power_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write wifi data to file
+/** @defgroup player_driver_writelog_wifi WiFi format
+ 
+@brief @ref player_interface_wifi format 
+
+The format for each @ref player_interface_wifi message is:
+  - link_count (int): number of nodes to follow
+  - list of nodes; for each node:
+    - mac (string): MAC address
+    - ip (string): IP address
+    - essid (string): ESSID
+    - mode (int): operating mode (master, adhoc, etc.)
+    - freq (int): in MHz
+    - encrypt (int): encrypted?
+    - qual (int): link quality
+    - level (int): link level
+    - noise (int): noise level
+*/
 void WriteLog::WriteWiFi(player_wifi_data_t *data)
 {
   int i;
@@ -1082,8 +1212,18 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Write truth data to file
+/** @defgroup player_driver_writelog_truth Truth format
+ 
+@brief @ref player_interface_truth format 
+
+The format for each @ref player_interface_truth message is:
+  - x (float): in meters
+  - y (float): in meters
+  - z (float): in meters
+  - roll (float): in radians
+  - pitch (float): in radians
+  - yaw (float): in radians
+*/
 void WriteLog::WriteTruth(player_truth_data_t *data)
 {
   fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
