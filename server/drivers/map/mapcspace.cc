@@ -482,6 +482,9 @@ MapCspace::HandleGetMapInfo(void *client, void *request, int len)
     return;
   }
 
+  // copy in subtype
+  info.subtype = ((player_map_info_t*)request)->subtype;
+
   // convert to pixels / kilometer
   info.scale = htonl((uint32_t)rint(1e3 / this->resolution));
 
