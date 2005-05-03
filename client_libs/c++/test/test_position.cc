@@ -34,6 +34,17 @@ test_position(PlayerClient* client, int index)
   for(int i=0;i<20;i++)
     client->Read();
 
+  TEST("getting geometry");
+  if(pp.GetGeometry() < 0)
+    FAIL();
+  else
+  {
+    printf("size: [%.3lf %.3lf] pose: [%.3lf %.3lf %.3lf]\n",
+           pp.size[0], pp.size[1],
+           pp.pose[0], pp.pose[1], RTOD(pp.pose[2]));
+    PASS();
+  }
+
   for(int t = 0; t < 3; t++)
   {
     TEST1("reading data (attempt %d)", t);

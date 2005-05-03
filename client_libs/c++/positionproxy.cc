@@ -422,6 +422,27 @@ PositionProxy::PlatformShutdown()
 			 (const char *)&rmp, sizeof(rmp));
 }
 
+int
+PositionProxy::GetGeometry()
+{
+  player_msghdr_t hdr;
+  player_position_geom_t config;
+
+  config.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+
+  if(client->Request(m_device_id, (const char*)&config, sizeof(config.subtype),
+                     &hdr, (char*)&config, sizeof(config)) < 0)
+    return(-1);
+
+  this->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
+  this->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
+  this->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
+  this->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
+  this->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
+
+  return(0);
+}
+
 void PositionProxy::FillData(player_msghdr_t hdr, const char* buffer)
 {
   if(hdr.size != sizeof(player_position_data_t))

@@ -1152,6 +1152,12 @@ class PositionProxy : public ClientProxy
 {
 
   public:
+  /** Robot geometry in robot cs: pose gives the position and
+      orientation, size gives the extent.  These values are filled in
+      by GetGeometry(). */
+  double pose[3];
+  double size[2];
+
   /// Robot pose (according to odometry) in m, m, radians.
   double xpos,ypos,theta;
 
@@ -1168,6 +1174,11 @@ class PositionProxy : public ClientProxy
     ClientProxy(pc,PLAYER_POSITION_CODE,index,access) {}
 
   // these methods are the user's interface to this device
+
+  /** Get the position geometry. Writes the result into the proxy (pose and
+      size).
+   */
+  int PositionProxy::GetGeometry();
 
   /** Send a motor command for velocity control mode.
       Specify the forward, sideways, and angular speeds in m/sec, m/sec,
