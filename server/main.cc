@@ -856,6 +856,18 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       printf("failed (%s)\n", lt_dlerror() );
   }
 
+  // just pass the libname to lt_dlopenext, to see if it can handle it
+  // (this may work when the plugin is installed in a default system
+  // location).
+  if(!handle)
+  {
+    printf("trying to load %s...", pluginname);
+    if((handle = lt_dlopenext(pluginname)))//, RTLD_NOW)))
+      puts("success");
+    else
+      printf("failed (%s)\n", lt_dlerror() );
+  }
+
 // I can't find a way to do @prefix@ substitution in server/prefix.h that
 // works in more than one version of autotools.  Fix this later.
 #if 0
