@@ -1,8 +1,7 @@
 
-SUBDIRS = replace client_libs rtk2 server utils config examples
+SUBDIRS = replace client_libs rtk2 server utils config examples doc
 
 EXTRA_DIST = config.simulation config.p2os
-
 
 clean-local:
 	rm -f config.cache

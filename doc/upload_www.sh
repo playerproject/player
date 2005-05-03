@@ -22,7 +22,7 @@ NAME=$2
 
 # Create a tarball with the correct name and layout
 rm -rf $NAME
-cp -r html $NAME
+cp -r player $NAME
 tar cvzf $NAME.tgz $NAME
 
 # Copy tarball to website
