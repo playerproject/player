@@ -1,4 +1,5 @@
-html
 player.tag
 player.tgz
 player
+Makefile.in
+Makefile

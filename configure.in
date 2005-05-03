@@ -259,6 +259,7 @@ dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
           rtk2/Makefile 
           replace/Makefile 
+          doc/Makefile 
           server/Makefile 
           server/player.pc
           server/drivers/Makefile 
