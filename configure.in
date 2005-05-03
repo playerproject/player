@@ -322,6 +322,7 @@ dnl DEPRECATED          server/drivers/blobfinder/shapetracker/Makefile
           client_libs/c++/playerclient.pc
           client_libs/c++/test/Makefile
           client_libs/libplayerc/Makefile
+          client_libs/libplayerc/doc/Makefile
           client_libs/libplayerc/libplayerc.pc
           client_libs/libplayerc/test/Makefile
           client_libs/libplayerc/bindings/Makefile
@@ -341,6 +342,8 @@ dnl DEPRECATED          client_libs/pyplayerc/Makefile
           utils/playernav/Makefile
           utils/playerprint/Makefile
           utils/playervcr/Makefile
+          utils/dgps_server/Makefile
+          utils/barcodes/Makefile
           config/Makefile)
 
 
