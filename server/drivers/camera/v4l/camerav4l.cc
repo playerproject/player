@@ -251,7 +251,7 @@ CameraV4L::CameraV4L( ConfigFile* cf, int section)
   else if (strcasecmp(snorm, "pal") == 0)
   {
     this->norm = VIDEO_MODE_PAL;
-    this->width = 786;
+    this->width = 768;
     this->height = 576;
   }
   else
@@ -294,24 +294,28 @@ int CameraV4L::Setup()
     fg_set_format(this->fg, VIDEO_PALETTE_GREY);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_GREY );
     this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+    this->depth = 8;
   }
   else if (strcasecmp(this->palette, "RGB565") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB565 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB565 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB565;
+    this->depth = 16;
   }
   else if (strcasecmp(this->palette, "RGB24") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );    
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB24 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->depth = 24;
   }
   else if (strcasecmp(this->palette, "RGB32") == 0)
   {
     fg_set_format(this->fg, VIDEO_PALETTE_RGB32 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB32 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->depth = 32;
   }
   else if (strcasecmp(this->palette, "YUV420P") == 0)
   {
@@ -443,7 +447,9 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 // Update the device data (the data going back to the client).
 void CameraV4L::WriteData()
 {
+  int i;
   size_t image_size, size;
+  unsigned char * ptr1, * ptr2;
 
   // Compute size of image
   image_size = this->width * this->height * this->depth / 8;
@@ -459,7 +465,34 @@ void CameraV4L::WriteData()
   assert(image_size <= (size_t) this->frame->size);
   
   // Copy the image pixels
-  memcpy(this->data.image, this->frame->data, image_size);
+  ptr1 = (unsigned char *)this->frame->data;
+  ptr2 = this->data.image;
+  switch (this->depth)
+  {
+  case 24:
+    for (i = 0; i < ((this->width) * (this->height)); i++)
+    {
+      ptr2[0] = ptr1[2];
+      ptr2[1] = ptr1[1];
+      ptr2[2] = ptr1[0];
+      ptr1 += 3;
+      ptr2 += 3;
+    }
+    break;
+  case 32:
+    for (i = 0; i < ((this->width) * (this->height)); i++)
+    {
+      ptr2[0] = ptr1[2];
+      ptr2[1] = ptr1[1];
+      ptr2[2] = ptr1[0];
+      ptr2[3] = ptr1[3];
+      ptr1 += 4;
+      ptr2 += 4;
+    }
+    break;
+  default:
+    memcpy(ptr2, ptr1, image_size);
+  }
 
   // Copy data to server
   size = sizeof(this->data) - sizeof(this->data.image) + image_size;

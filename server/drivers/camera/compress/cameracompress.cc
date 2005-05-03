@@ -114,6 +114,7 @@ class CameraCompress : public Driver
   // Acquired camera data
   private: struct timeval camera_time;
   private: player_camera_data_t camera_data;
+  private: char converted[PLAYER_CAMERA_IMAGE_SIZE];
 
   // Output (compressed) camera data
   private: player_camera_data_t data;
@@ -199,6 +200,8 @@ void CameraCompress::Main()
 {
   size_t size;
   char filename[256];
+  char * ptr, * ptr1;
+  int i, l;
 
   while (true)
   {
@@ -211,9 +214,41 @@ void CameraCompress::Main()
     // Get the latest camera data
     if (this->UpdateCamera())
     {
-
+      switch (this->camera_data.bpp)
+      {
+      case 8:
+        l = (this->camera_data.width) * (this->camera_data.height);
+	ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
+	for (i = 0; i < l; i++)
+	{
+	  ptr[0] = *ptr1;
+	  ptr[1] = *ptr1;
+	  ptr[2] = *ptr1;
+	  ptr += 3; ptr1++;
+	}
+	ptr = this->converted;
+	break;
+      case 24:
+        ptr = (char *)(this->camera_data.image);
+	break;
+      case 32:
+        l = (this->camera_data.width) * (this->camera_data.height);
+	ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
+	for (i = 0; i < l; i++)
+	{
+          ptr[0] = ptr1[0];
+          ptr[1] = ptr1[1];
+	  ptr[2] = ptr1[2];
+	  ptr += 3; ptr1 += 4;
+        }
+        ptr = this->converted;
+	break;
+      default:
+        PLAYER_WARN("unsupported image depth (not good)");
+        return;
+      }
       this->data.image_size = jpeg_compress( (char*)this->data.image, 
-                                             (char*)this->camera_data.image,
+                                             ptr,
                                              this->camera_data.width, 
                                              this->camera_data.height,
                                              PLAYER_CAMERA_IMAGE_SIZE, 
@@ -231,7 +266,8 @@ void CameraCompress::Main()
 
       this->data.width = htons(this->camera_data.width);
       this->data.height = htons(this->camera_data.height);
-      this->data.bpp = this->camera_data.bpp;
+      this->data.bpp = 24;
+      this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
       this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
       this->data.image_size = htonl(this->data.image_size);
       
@@ -254,6 +290,7 @@ int CameraCompress::UpdateCamera()
   this->camera_data.width = ntohs(this->camera_data.width);
   this->camera_data.height = ntohs(this->camera_data.height); 
   this->camera_data.bpp = this->camera_data.bpp;
+  this->camera_data.format = this->camera_data.format;
   this->camera_data.image_size = ntohl(this->camera_data.image_size);
 
   if (this->camera_data.compression != PLAYER_CAMERA_COMPRESS_RAW)
