@@ -22,8 +22,8 @@ NAME=$2
 
 # Create a tarball with the correct name and layout
 rm -rf $NAME
-cp -r player $NAME
-tar cvzf $NAME.tgz $NAME
+ln -s player $NAME
+tar chvzf $NAME.tgz $NAME
 
 # Copy tarball to website
 scp $NAME.tgz $SFUSER@shell.sourceforge.net:/home/groups/p/pl/playerstage/htdocs/doc/$DEST
