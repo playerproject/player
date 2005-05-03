@@ -38,6 +38,12 @@ The @ref player_driver_readlog driver can be used to replay the data
 (to client programs, the replayed data will appear to come from the
 real sensors).
 
+The writelog driver logs data independently of any client connections to
+the devices that it is logging.  As long as it's enabled and recording,
+the writelog driver records data from the specified list of devices
+at the rate that new data is produced by the first device in that list
+(so put the fastest one first).  Commands are not logged.
+
 For help in remote-controlling logging, try @ref player_util_playervcr.
 Note that you must declare a @ref player_interface_log device to allow
 logging control.
