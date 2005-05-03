@@ -76,7 +76,7 @@ FRAMEGRABBER* fg_open( const char* dev )
   }
 
   // Open the video device
-  fg->fd = open( fg->device, O_RDONLY );
+  fg->fd = open( fg->device, O_RDWR );
   if ( fg->fd == -1 )
   {
     perror( "fg_open(): open video device failed" );
@@ -161,14 +161,12 @@ FRAMEGRABBER* fg_open( const char* dev )
   }
 
   // Memory map the video buffer
-  fg->mb_map = mmap( 0,                       // Start addr
+  fg->mb_map = mmap( NULL,                    // Start addr
                      fg->mbuf.size,           // Buffer length
-                     PROT_READ,               // Protections
+                     PROT_READ | PROT_WRITE,  // Protections
                      MAP_SHARED,              // Mapping flags
                      fg->fd,                  // File handle
                      0 );                     // Offset
-
-
 
   if ( MAP_FAILED == fg->mb_map )
   {
@@ -199,18 +197,20 @@ void fg_close(FRAMEGRABBER* fg)
 int fg_set_capture_window( FRAMEGRABBER* fg,
                            int x, int y, int width, int height )
 {
+    // Read default fields value
+    if ( ioctl( fg->fd, VIDIOCGWIN, &(fg->window) ) < 0 )
+    {
+        perror( "fg_set_capture_window(): get window failed" );
+        return -1;
+    }
+
     // Set user's desired window
     fg->window.x = x;
     fg->window.y = y;
     fg->window.width  = width;
     fg->window.height = height;
 
-    // Default other fields
-    fg->window.chromakey = 0;
-    fg->window.flags = 0;
-    fg->window.clips = NULL;
-    fg->window.clipcount = 0;
-
+/*
     // Try setting the values
     if ( ioctl( fg->fd, VIDIOCSWIN, &(fg->window) ) < 0 )
     {
@@ -224,6 +224,7 @@ int fg_set_capture_window( FRAMEGRABBER* fg,
         perror( "fg_set_capture_window(): get window failed" );
         return -1;
     }
+*/
 
     return 0;
 }
