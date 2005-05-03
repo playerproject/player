@@ -113,7 +113,7 @@ void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *h
 
     dest = device->blobs + device->blob_count++;
 
-    dest->id = src->id;
+    dest->id = ntohs(src->id);
     dest->color = ntohl(src->color);
     dest->x = ntohs(src->x);
     dest->y = ntohs(src->y);
