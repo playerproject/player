@@ -148,7 +148,7 @@ Andrew Howard
 #include "playertime.h"
 
 #include "v4lcapture.h"  // For Gavin's libfg; should integrate this
-
+#include "ccvt.h"        // For YUV420P-->RGB conversion
 
 // Time for timestamps
 extern PlayerTime *GlobalTime;
@@ -199,6 +199,9 @@ class CameraV4L : public Driver
 
   // The current image (local copy)
   private: FRAME* frame;
+
+  // a place to store rgb image for the yuv grabbers
+  private: FRAME* rgb_converted_frame;
 
   // Write frames to disk?
   private: int save;
@@ -319,14 +322,16 @@ int CameraV4L::Setup()
   }
   else if (strcasecmp(this->palette, "YUV420P") == 0)
   {
-    /// @todo Add support for color (write YUV -> RGB converter)
-    // For YUV cameras, we provide the Y component only (greyscale
-    // image).  At some point, someone should probably write the
-    // planer-to-rgb conversion.
+    // YUV420P is now converted to RGB rather than GREY as in player 
+    // 1.6.2 and earlier
     fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
-    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-    this->depth = 8;
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->depth = 24;    
+    this->rgb_converted_frame = frame_new(this->width, 
+					  this->height, VIDEO_PALETTE_RGB24 );
+    //    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+    //    this->depth = 8;
   }
   else
   {
@@ -353,8 +358,9 @@ int CameraV4L::Shutdown()
 
   // Free resources
   frame_release(this->frame);
+  if (this->frame->format == VIDEO_PALETTE_YUV420P)
+       frame_release(this->rgb_converted_frame);
   fg_close(this->fg);
-  
   return 0;
 }
 
@@ -396,7 +402,13 @@ void CameraV4L::Main()
     {
       //printf("click %d\n", frameno);
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
-      frame_save(this->frame, filename);
+      if (this->frame->format == VIDEO_PALETTE_YUV420P)
+	   {
+		frame_save(this->rgb_converted_frame, filename);
+		printf("saved converted frame\n");
+	   }
+      else
+	   frame_save(this->frame, filename);
     }
   }
 }
@@ -462,10 +474,21 @@ void CameraV4L::WriteData()
   this->data.image_size = htonl(image_size);
 
   assert(image_size <= sizeof(this->data.image));
-  assert(image_size <= (size_t) this->frame->size);
   
   // Copy the image pixels
-  ptr1 = (unsigned char *)this->frame->data;
+  if (this->frame->format == VIDEO_PALETTE_YUV420P)
+       {// do conversion to RGB (which is bgr at the moment for some reason?)
+	    assert(image_size <= (size_t) this->rgb_converted_frame->size);
+	    ccvt_420p_bgr24(this->width, this->height, 
+			    (unsigned char*) this->frame->data,
+			    (unsigned char*) this->rgb_converted_frame->data);
+	    ptr1 = (unsigned char *)this->rgb_converted_frame->data;
+       }
+  else
+       {
+	    assert(image_size <= (size_t) this->frame->size);
+	    ptr1 = (unsigned char *)this->frame->data;
+       }
   ptr2 = this->data.image;
   switch (this->depth)
   {
