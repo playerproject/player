@@ -81,7 +81,7 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
 #include <dirent.h>
 int scandir(const char *dir, struct dirent ***namelist,
             int (*select)(const struct dirent *),
-            int (*compar)(const struct dirent **, const struct dirent **));
+            int (*compar)(const void *, const void *));
 #endif //!HAVE_SCANDIR
 
 #if !HAVE_DIRNAME
