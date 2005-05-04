@@ -2446,6 +2446,12 @@ public:
 
    void SaveFrame(const char *prefix);
 
+   // decompress the image
+   void Decompress();
+
+   // What is the compression type
+   uint8_t compression;
+
 private:
    char filename[256];
    int frameNo;
