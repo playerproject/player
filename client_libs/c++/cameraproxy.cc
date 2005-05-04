@@ -52,29 +52,22 @@
 #include <math.h>
 #include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
-#include <sys/types.h>
-
-#include "playerpacket.h"
-
-
-// For some reason, having this before the other includes makes it so 
-// that it does not output any data.  Might want to look into that
-
-#if HAVE_CONFIG_H
-  #include "config.h"
-#endif
+#include <stdlib.h>
 
 CameraProxy::CameraProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)
   : ClientProxy(pc, PLAYER_CAMERA_CODE, index, access)
 {
   this->frameNo = 0;
+
+  this->image = (uint8_t*)calloc(1,PLAYER_CAMERA_IMAGE_SIZE);
+  assert(this->image);
 }
 
 CameraProxy::~CameraProxy()
 {
+  free(this->image);
 }
 
 void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
@@ -99,8 +92,6 @@ void CameraProxy::FillData( player_msghdr_t hdr, const char *buffer)
   // to keep this short, we need to change the depth datatype, otherwise use the second line
   // this->depth = ntohs( ((player_camera_data_t*)buffer)->depth);
   this->depth = ((player_camera_data_t*)buffer)->bpp;
-
-  this->compression = ((player_camera_data_t*)buffer)->compression;
 
   this->imageSize = ntohl( ((player_camera_data_t*)buffer)->image_size);
   memcpy(this->image, ((player_camera_data_t*)buffer)->image, this->imageSize);
@@ -169,3 +160,4 @@ void CameraProxy::Decompress()
 #endif
 
 } 
+
