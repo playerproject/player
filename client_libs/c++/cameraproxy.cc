@@ -55,6 +55,15 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "playerpacket.h"
+
+// For some reason, having this before the other includes makes it so 
+// that it does not output any data.  Might want to look into that
+
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 CameraProxy::CameraProxy( PlayerClient *pc, unsigned short index,
     unsigned char access)
   : ClientProxy(pc, PLAYER_CAMERA_CODE, index, access)
@@ -123,13 +132,16 @@ void CameraProxy::SaveFrame(const char *prefix)
 
 void CameraProxy::Decompress()
 {
-
+  
 #if HAVE_JPEGLIB_H
   int dst_size;
   unsigned char *dst;
 
-  if (this->compression == PLAYER_CAMERA_COMPRESS_RAW)
-    return;
+  if (this->compression != PLAYER_CAMERA_COMPRESS_JPEG)
+  {
+    perror("CameraProxy::Decompress() not a JPEG image, not good!\n");
+    //return;
+  }
 
   if (this->depth != 24)
   {
