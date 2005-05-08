@@ -54,7 +54,7 @@ test_gripper(PlayerClient* client, int index)
       FAIL();
       return(-1);
     }
-    sleep(1);
+    sleep(3);
     PASS();
 
     TEST("gripper close");
@@ -63,7 +63,7 @@ test_gripper(PlayerClient* client, int index)
       FAIL();
       return(-1);
     }
-    sleep(1);
+    sleep(3);
     PASS();
 
     TEST("gripper open");
@@ -72,7 +72,25 @@ test_gripper(PlayerClient* client, int index)
       FAIL();
       return(-1);
     }
-    sleep(1);
+    sleep(3);
+    PASS();
+
+    TEST("gripper up");
+    if(gp.SetGrip(LIFTup) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(3);
+    PASS();
+
+    TEST("gripper down");
+    if(gp.SetGrip(LIFTdown) < 0)
+    {
+      FAIL();
+      return(-1);
+    }
+    sleep(3);
     PASS();
   }
   else
