@@ -181,6 +181,8 @@ int main(int argc, char **argv)
     assert(cp = (ClientProxy*)new BumperProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_WIFI_STRING))
     assert(cp = (ClientProxy*)new WiFiProxy(&pclient,idx,'r'));
+  else if(!strcmp(dev,PLAYER_GRIPPER_STRING))
+    assert(cp = (ClientProxy*)new GripperProxy(&pclient,idx,'r'));
   else
   {
     printf("Unknown interface \"%s\"\n", dev);
