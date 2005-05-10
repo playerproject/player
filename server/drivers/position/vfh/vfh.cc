@@ -900,13 +900,15 @@ void VFH_Class::Main()
       while (Desired_Angle < 0)
         Desired_Angle += 360.0;
 
-      vfh_Algorithm->SetDesiredAngle( Desired_Angle );
-
       // Get new laser data.
       this->GetLaser();
       vfh_Algorithm->Update_VFH( this->laser_ranges, 
                                  (int)ntohl(this->odom_vel_be[0]),
-                                 this->speed, this->turnrate );
+                                 Desired_Angle,
+                                 dist,
+                                 this->dist_eps * 1e3,
+                                 this->speed, 
+                                 this->turnrate );
       PutCommand( this->speed, this->turnrate );
       this->turninginplace = false;
     }

@@ -1,3 +1,23 @@
+/*
+ *  Orca-Components: Components for robotics.
+ *  
+ *  Copyright (C) 2004
+ *  
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
 #ifndef VFH_ALGORITHM_H
 #define VFH_ALGORITHM_H
 
@@ -33,10 +53,23 @@ public:
     int Init();
     
     // Choose a new speed and turnrate based on the given laser data and current speed.
-    int Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int current_speed, int &chosen_speed, int &chosen_turnrate );
+    //
+    // Units/Senses:
+    //  - goal_direction in degrees, 0deg is to the right.
+    //  - goal_distance  in mm.
+    //  - goal_distance_tolerance in mm.
+    //
+    int Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], 
+                    int current_speed,  
+                    float goal_direction,
+                    float goal_distance,
+                    float goal_distance_tolerance,
+                    int &chosen_speed, 
+                    int &chosen_turnrate );
 
     // Get methods
     int   GetMinTurnrate() { return MIN_TURNRATE; }
+    // Angle to goal, in degrees.  0deg is to our right.
     float GetDesiredAngle() { return Desired_Angle; }
     float GetPickedAngle() { return Picked_Angle; }
 
@@ -46,7 +79,6 @@ public:
 
     // Set methods
     void SetRobotRadius( float robot_radius ) { this->ROBOT_RADIUS = robot_radius; }
-    void SetDesiredAngle( float Desired_Angle ) { this->Desired_Angle = Desired_Angle; }
     void SetMinTurnrate( int min_turnrate ) { MIN_TURNRATE = min_turnrate; }
     void SetCurrentMaxSpeed( int Current_Max_Speed );
 
@@ -65,6 +97,8 @@ private:
     float Delta_Angle(int a1, int a2);
     float Delta_Angle(float a1, float a2);
     int Bisect_Angle(int angle1, int angle2);
+
+    bool Cant_Turn_To_Goal();
 
     // Returns 0 if something got inside the safety distance, else 1.
     int Calculate_Cells_Mag( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed );
@@ -124,8 +158,13 @@ private:
     float Binary_Hist_Low_0ms, Binary_Hist_High_0ms;
     float Binary_Hist_Low_1ms, Binary_Hist_High_1ms;
     float U1, U2;
-    float Desired_Angle, Picked_Angle, Last_Picked_Angle;
+    float Desired_Angle, Dist_To_Goal, Goal_Distance_Tolerance;
+    float Picked_Angle, Last_Picked_Angle;
     int   Max_Speed_For_Picked_Angle;
+
+    // Radius of dis-allowed circles, either side of the robot, which
+    // we can't enter due to our minimum turning radius.
+    float Blocked_Circle_Radius;
 
     std::vector<std::vector<float> > Cell_Direction;
     std::vector<std::vector<float> > Cell_Base_Mag;

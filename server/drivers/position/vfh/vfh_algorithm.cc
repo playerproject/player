@@ -1,3 +1,23 @@
+/*
+ *  Orca-Components: Components for robotics.
+ *  
+ *  Copyright (C) 2004
+ *  
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *  
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
+
 #include "vfh_algorithm.h"
 
 #include <stdio.h>
@@ -52,8 +72,8 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
       Last_Picked_Angle(Picked_Angle),
       last_chosen_speed(0)
 {
-  this->Last_Binary_Hist = NULL;
-  this->Hist = NULL;
+    this->Last_Binary_Hist = NULL;
+    this->Hist = NULL;
     if ( SAFETY_DIST_0MS == SAFETY_DIST_1MS )
     {
         // For the simple case of a fixed safety_dist, keep things simple.
@@ -68,10 +88,10 @@ VFH_Algorithm::VFH_Algorithm( double cell_size,
 
 VFH_Algorithm::~VFH_Algorithm()
 {
-  if(this->Hist)
-    delete[] Hist;
-  if(this->Last_Binary_Hist)
-    delete[] Last_Binary_Hist;
+    if(this->Hist)
+        delete[] Hist;
+    if(this->Last_Binary_Hist)
+        delete[] Last_Binary_Hist;
 }
 
 int 
@@ -385,10 +405,17 @@ int VFH_Algorithm::VFH_Allocate()
 
 int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], 
                                int current_speed, 
+                               float goal_direction,
+                               float goal_distance,
+                               float goal_distance_tolerance,
                                int &chosen_speed, 
                                int &chosen_turnrate ) 
 {
   int print = 0;
+
+  this->Desired_Angle = goal_direction;
+  this->Dist_To_Goal  = goal_distance;
+  this->Goal_Distance_Tolerance = goal_distance_tolerance;
 
   // 
   // Set current_pos_speed to the maximum of 
@@ -461,7 +488,11 @@ int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2],
 
 //  printf("Picked Angle: %f\n", Picked_Angle);
 
-  // Accelerate if we're not already at Max_Speed_For_Picked_Angle.
+  //
+  // OK, so now we've chosen a direction.  Time to choose a speed.
+  //
+
+  // How much can we change our speed by?
   int speed_incr;
   if ( (diffSeconds > 0.3) || (diffSeconds < 0) )
   {
@@ -474,12 +505,16 @@ int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2],
   {
       speed_incr = (int) (MAX_ACCELERATION * diffSeconds);
   }
-      
-  chosen_speed = last_chosen_speed + speed_incr;
-  if (chosen_speed > Max_Speed_For_Picked_Angle) 
+
+  if ( Cant_Turn_To_Goal() )
   {
-      chosen_speed = Max_Speed_For_Picked_Angle;
+      // The goal's too close -- we can't turn tightly enough to get to it,
+      // so slow down.
+      speed_incr = -speed_incr;
   }
+
+  // Accelerate (if we're not already at Max_Speed_For_Picked_Angle).
+  chosen_speed = MIN( last_chosen_speed + speed_incr, Max_Speed_For_Picked_Angle );
 
   // printf("Max Speed for picked angle: %d\n",Max_Speed_For_Picked_Angle);
 
@@ -494,6 +529,52 @@ int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2],
   return(1);
 }
 
+//
+// Are we going too fast, such that we'll overshoot before we can turn to the goal?
+//
+bool VFH_Algorithm::Cant_Turn_To_Goal()
+{
+    // Calculate this by seeing if the goal is inside the blocked circles
+    // (circles we can't enter because we're going too fast).  Radii set
+    // by Build_Masked_Polar_Histogram.
+
+    // Coords of goal in local coord system:
+    float goal_x = this->Dist_To_Goal * cos( DTOR(this->Desired_Angle) );
+    float goal_y = this->Dist_To_Goal * sin( DTOR(this->Desired_Angle) );
+
+// AlexB: Is this useful?
+//     if ( goal_y < 0 )
+//     {
+//         printf("Goal behind\n");
+//         return true;
+//     }
+
+    // This is the distance between the centre of the goal and
+    // the centre of the blocked circle
+    float dist_between_centres;
+
+//     printf("Cant_Turn_To_Goal: Dist_To_Goal = %f\n",Dist_To_Goal);
+//     printf("Cant_Turn_To_Goal: Angle_To_Goal = %f\n",Desired_Angle);
+//     printf("Cant_Turn_To_Goal: Blocked_Circle_Radius = %f\n",Blocked_Circle_Radius);
+
+    // right circle
+    dist_between_centres = hypotf( goal_x - this->Blocked_Circle_Radius, goal_y );
+    if ( dist_between_centres+this->Goal_Distance_Tolerance < this->Blocked_Circle_Radius )
+    {
+//        printf("Goal close & right\n");
+        return true;
+    }
+
+    // left circle
+    dist_between_centres = hypotf( -goal_x - this->Blocked_Circle_Radius, goal_y );
+    if ( dist_between_centres+this->Goal_Distance_Tolerance < this->Blocked_Circle_Radius )
+    {
+//        printf("Goal close & left.\n");
+        return true;
+    }
+
+    return false;
+}
 
 float VFH_Algorithm::Delta_Angle(int a1, int a2) 
 {
@@ -887,11 +968,14 @@ int VFH_Algorithm::Build_Binary_Polar_Histogram( int speed )
   return(1);
 }
 
+//
+// This function also sets Blocked_Circle_Radius.
+//
 int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed) 
 {
   int x, y;
   float center_x_right, center_x_left, center_y, dist_r, dist_l;
-  float angle_ahead, phi_left, phi_right, total_dist, angle;
+  float angle_ahead, phi_left, phi_right, angle;
 
   // center_x_[left|right] is the centre of the circles on either side that
   // are blocked due to the robot's dynamics.  Units are in cells, in the robot's
@@ -904,14 +988,18 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
   phi_left  = 180;
   phi_right = 0;
 
-  total_dist = Min_Turning_Radius[speed] + ROBOT_RADIUS + Get_Safety_Dist(speed);
+  Blocked_Circle_Radius = Min_Turning_Radius[speed] + ROBOT_RADIUS + Get_Safety_Dist(speed);
 
   //
   // This loop fixes phi_left and phi_right so that they go through the inside-most
-  // non-empty cells inside the left/right circles.  These circles are centred at the 
-  // left/right centres of rotation, and are of radius total_dist.
+  // occupied cells inside the left/right circles.  These circles are centred at the 
+  // left/right centres of rotation, and are of radius Blocked_Circle_Radius.
+  // 
+  // We have to go between phi_left and phi_right, due to our minimum turning radius.
   //
-  // Only go through the cells in front of us.
+
+  //
+  // Only loop through the cells in front of us.
   //
   for(y=0;y<(int)ceil(WINDOW_DIAMETER/2.0);y++) 
   {
@@ -926,7 +1014,7 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
             // The cell is between phi_right and angle_ahead
 
             dist_r = hypot(center_x_right - x, center_y - y) * CELL_WIDTH;
-            if (dist_r < total_dist) 
+            if (dist_r < Blocked_Circle_Radius) 
             { 
                 phi_right = Cell_Direction[x][y];
             }
@@ -937,7 +1025,7 @@ int VFH_Algorithm::Build_Masked_Polar_Histogram(int speed)
             // The cell is between phi_left and angle_ahead
 
             dist_l = hypot(center_x_left - x, center_y - y) * CELL_WIDTH;
-            if (dist_l < total_dist) 
+            if (dist_l < Blocked_Circle_Radius) 
             { 
                 phi_left = Cell_Direction[x][y];
             }
