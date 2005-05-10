@@ -1216,7 +1216,7 @@ int ReadLog::ParsePosition(player_device_id_t id, int linenum,
 {
   player_position_data_t data;
 
-  if (token_count < 11) // 12
+  if (token_count < 12)
   {
     PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
     return -1;
@@ -1228,7 +1228,7 @@ int ReadLog::ParsePosition(player_device_id_t id, int linenum,
   data.xspeed = NINT32(M_MM(atof(tokens[9])));
   data.yspeed = NINT32(M_MM(atof(tokens[10])));
   data.yawspeed = NINT32(RAD_DEG(atof(tokens[11])));
-  //data.stall = atoi(tokens[12]);
+  data.stall = atoi(tokens[12]);
 
   this->PutData(id, &data, sizeof(data), &time);
 
