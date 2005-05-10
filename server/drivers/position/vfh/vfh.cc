@@ -827,7 +827,14 @@ void VFH_Class::Main()
     this->GetCommand();
 
     if(!this->active_goal)
+    {
+      if(this->cmd_type == 0)
+      {
+        // velocity mode; pass through commanded velocites
+        this->PutCommand(-1,-1);
+      }
       continue;
+    }
 
     // Figure how far, in distance and orientation, we are from the goal
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
@@ -972,6 +979,7 @@ void VFH_Class::GetCommand()
       this->goal_vx = x;
       this->goal_vy = y;
       this->goal_vt = t;
+      this->active_goal = false;
     }
 
     // Position mode
