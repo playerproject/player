@@ -111,7 +111,7 @@ void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
   device->compression = data->compression;
   device->image_size = ntohl(data->image_size);
 
-  assert(device->image_size < sizeof(device->image));
+  assert(device->image_size <= sizeof device->image);
   memcpy(device->image, data->image, device->image_size);
   
   return;
@@ -137,7 +137,7 @@ void playerc_camera_decompress(playerc_camera_t *device)
 
   // Copy uncompress image
   device->image_size = dst_size;
-  assert(dst_size < sizeof(device->image));
+  assert(dst_size <= sizeof device->image);
   memcpy(device->image, dst, dst_size);
   free(dst);
 
