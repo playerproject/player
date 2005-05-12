@@ -142,6 +142,7 @@ char playerversion[] = VERSION;
 bool experimental = false;
 bool debug = false;
 bool autoassign_ports = false;
+bool quiet_startup = false; // if true, minimize the console output on startup
 
 int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
 
@@ -171,6 +172,7 @@ where [options] is one or more of the following:
 - -r &lt;logfile&gt;   : read data from &lt;logfile&gt; (readlog driver).
 - -f &lt;speed&gt;     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).
 - -k &lt;key&gt;       : require client authentication with the given key.
+- -q             : quiet startup mode: minimizes the console output on startup.
 
 Note that only one of -s, -g and -r can be specified at any given time.
 
@@ -196,6 +198,7 @@ void Usage()
   fprintf(stderr, "  -f <speed>     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).\n");
   fprintf(stderr, "  -k <key>       : require client authentication with the "
           "given key\n");
+  fprintf(stderr, "  -q             : quiet mode: minimizes the console output on startup.\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
   fprintf(stderr, "\nThe following %d drivers were compiled into Player:\n\n    ",
           driverTable->Size());
@@ -799,7 +802,9 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   // did the user set PLAYERPATH?
   if(!handle && (playerpath = getenv("PLAYERPATH")))
   {
-    printf("PLAYERPATH: %s\n", playerpath);
+    if( !quiet_startup )
+      printf("PLAYERPATH: %s\n", playerpath);
+    
     // yep, now parse it, as a colon-separated list of directories
     i=0;
     while(i<strlen(playerpath))
@@ -817,16 +822,25 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       strncpy(fullpath,playerpath+i,j-i);
       strcat(fullpath,"/");
       strcat(fullpath,pluginname);
-      printf("trying to load %s...", fullpath);
-      fflush(stdout);
-      if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
-      {
-        puts("success");
-        break;
-      }
-      else
-        printf("failed (%s)\n", lt_dlerror() );
 
+      if( !quiet_startup )
+	{
+	  printf("trying to load %s...", fullpath);      
+	  fflush(stdout);
+	}
+
+      if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
+	{
+	  if( !quiet_startup )
+	    puts("success");
+	  break;
+	}
+      else
+	if( !quiet_startup )
+	  printf("failed (%s)\n", lt_dlerror() );
+	else
+	  printf("failed to load %s (error %s)\n", fullpath,  lt_dlerror() );
+      
       i=j+1;
     }
   }
@@ -896,9 +910,13 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   
   // Now invoke the initialization function
   if(handle)
-  {
-    printf("invoking player_driver_init()...");
-    fflush(stdout);
+    {
+    if( !quiet_startup )
+    {
+      printf("invoking player_driver_init()...");
+      fflush(stdout);
+    }
+
     initfunc = (PluginInitFn)lt_dlsym(handle,"player_driver_init");
     if( !initfunc )
     {
@@ -916,7 +934,10 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
 		   initfunc_result );
       return(false);
     }
-    puts("success");
+
+    if( !quiet_startup )
+      puts("success");
+
     return(true);
   }
   else
@@ -1061,8 +1082,9 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
 
   
   // parse the file
-  printf("\nParsing configuration file \"%s\"\n", fname);
-
+  if( !quiet_startup )
+    printf("\nParsing configuration file \"%s\"\n", fname);
+  
   if(!configFile.Load(fname))
     return(false);
   
@@ -1092,12 +1114,15 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
   configFile.WarnUnused();
 
   // Print the device table
-  puts("Using device table:");
-  PrintDeviceTable();
-
+  if( !quiet_startup )
+    {
+      puts("Using device table:");
+      PrintDeviceTable();
+    }
+      
   int i;
   Device *device;
-
+  
   // Poll the device table for ports to monitor
   for (device = deviceTable->GetFirstDevice(); device != NULL;
        device = deviceTable->GetNextDevice(device))
@@ -1131,7 +1156,7 @@ int main( int argc, char *argv[] )
   double readlog_speed = 1.0;
   double update_rate = DEFAULT_SERVER_UPDATE_RATE;
   int msg_level = 1;
-  
+
   int *ports = NULL;
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
@@ -1140,6 +1165,8 @@ int main( int argc, char *argv[] )
   char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
 #endif
 
+  printf("** Player v%s **", playerversion);
+  fflush(stdout);
 
   global_argc = argc;
   global_argv = argv;
@@ -1158,9 +1185,6 @@ int main( int argc, char *argv[] )
   SetupErrorHandlers();
 
   //g_server_pid = getpid();
-
-  printf("** Player v%s ** ", playerversion);
-  fflush(stdout);
 
   // parse args
   for( int i = 1; i < argc; i++ ) 
@@ -1346,13 +1370,30 @@ int main( int argc, char *argv[] )
       // assume that this is a config file
       configfile = argv[i];
     }
+    else if(!strcmp(argv[i], "-q"))
+    {
+      quiet_startup = true;
+    }
     else
     {
       Usage();
       exit(-1);
     }
   }
+  
+  // by default print a copyright and license message
+  if( !quiet_startup )
+    {
+      puts("\n* Part of the Player/Stage Project [http://playerstage.sourceforge.net].");
+      puts("* Copyright 2000-2005 Brian Gerkey, Richard Vaughan, Andrew Howard,\n"
+	   "* Nate Koenig and contributors.");
+      puts("* Released under the GNU General Public License.");
 
+      // then output a line of startup options, each in [square braces]
+      printf( "Startup options:" );
+      fflush(stdout);
+    }
+  
   printf(" [%s]", (protocol == PLAYER_TRANSPORT_TCP) ? "TCP" : "UDP");
 
   puts( "" ); // newline, flush
@@ -1442,7 +1483,9 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
       ufds[i].events = POLLIN;
-      printf("listening on port %d\n", ports[i]);
+
+      if( !quiet_startup )
+	printf("listening on port %d\n", ports[i]);
     }
   }
   
