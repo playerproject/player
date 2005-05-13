@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 
+# TODO:
+#  - Handle nested structs (make an xdrproc for each struct + a wrapper for
+#    it; then each xdrproc can just call the right proc for each of its
+#    member)
+#
+#  - Handle variable-length arrays (I keep getting segfaults)
+#
+#  - Handle multi-dimensional arrays (e.g., player_sonar_geom_t::poses)
+
+
 import re
 import string
 import sys
