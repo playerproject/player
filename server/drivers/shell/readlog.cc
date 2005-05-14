@@ -317,7 +317,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   // Register the log device
   if (this->log_id.code == PLAYER_LOG_CODE)
   {
-    if (this->AddInterface(this->log_id, PLAYER_ALL_MODE, 0, 0, 1, 1) != 0)
+    if (this->AddInterface(this->log_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -327,8 +327,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   // Register all the provides devices
   for (i = 0; i < this->provide_count; i++)
   {
-    if (this->AddInterface(this->provide_ids[i], PLAYER_ALL_MODE,
-                           PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1) != 0)
+    if (this->AddInterface(this->provide_ids[i], PLAYER_ALL_MODE) != 0)
     {
       for(j=0;j<this->provide_count;j++)
       {

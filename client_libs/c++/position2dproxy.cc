@@ -186,11 +186,11 @@ int Position2DProxy::SetMotorState(unsigned char state)
   player_position2d_power_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION2D_MOTOR_POWER_REQ;
+//  config.request = PLAYER_POSITION2D_MOTOR_POWER_REQ;
   config.value = state;
 
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id, PLAYER_POSITION2D_MOTOR_POWER,
                          reinterpret_cast<const char*>(&config),
                          sizeof(config)));
 }
@@ -208,10 +208,10 @@ int Position2DProxy::SelectVelocityControl(unsigned char mode)
   player_position2d_velocitymode_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION2D_VELOCITY_MODE_REQ;
+//  config.request = PLAYER_POSITION2D_VELOCITY_MODE_REQ;
   config.value = mode;
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION2D_VELOCITY_MODE,
                          reinterpret_cast<const char*>(&config),
                          sizeof(config)));
 }
@@ -229,9 +229,9 @@ int Position2DProxy::ResetOdometry()
   player_position2d_resetodom_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION2D_RESET_ODOM_REQ;
+//  config.request = PLAYER_POSITION2D_RESET_ODOM_REQ;
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION2D_RESET_ODOM,
                          reinterpret_cast<const char*>(&config),
                          sizeof(config)));
 }
@@ -249,12 +249,12 @@ int Position2DProxy::SetOdometry( double x, double y, double yaw)
   player_position2d_set_odom_req_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.subtype = PLAYER_POSITION2D_SET_ODOM_REQ;
+//  config.subtype = PLAYER_POSITION2D_SET_ODOM_REQ;
   config.x = htonl(static_cast<int32_t>(rint(x*1e3)));
   config.y = htonl(static_cast<int32_t>(rint(y*1e3)));
   config.theta = htonl(static_cast<int32_t>(rint(yaw*1e3)));
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION2D_SET_ODOM,
                          reinterpret_cast<const char*>(&config),
                          sizeof(config)));
 }
@@ -275,10 +275,10 @@ Position2DProxy::SelectPositionMode(unsigned char mode)
   player_position2d_position_mode_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION2D_POSITION_MODE_REQ;
+//  req.subtype = PLAYER_POSITION2D_POSITION_MODE_REQ;
   req.state = mode;
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION2D_POSITION_MODE,
                          reinterpret_cast<const char*>(&req),
                          sizeof(req));
 }
@@ -323,12 +323,12 @@ Position2DProxy::SetSpeedPID(double kp, double ki, double kd)
   player_position2d_speed_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION2D_SPEED_PID_REQ;
+//  req.subtype = PLAYER_POSITION2D_SPEED_PID_REQ;
   req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
   req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
   req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION2D_SPEED_PID,
                          reinterpret_cast<const char*>(&req),
                          sizeof(req));
 }
@@ -347,12 +347,12 @@ Position2DProxy::SetPositionPID(double kp, double ki, double kd)
   player_position2d_position_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION2D_POSITION_PID_REQ;
+//  req.subtype = PLAYER_POSITION2D_POSITION_PID_REQ;
   req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
   req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
   req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION2D_POSITION_PID,
                          reinterpret_cast<const char*>(&req),
                          sizeof(req));
 }
@@ -373,11 +373,11 @@ Position2DProxy::SetPositionSpeedProfile(double spd, double acc)
   player_position2d_speed_prof_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION2D_SPEED_PROF_REQ;
+//  req.subtype = PLAYER_POSITION2D_SPEED_PROF_REQ;
   req.speed   = htonl(static_cast<int32_t>(rint(spd*1e3))); //mrad/s
   req.acc     = htonl(static_cast<int32_t>(rint(acc*1e3))); //mrad/s/s
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION2D_SPEED_PROF,
                          reinterpret_cast<const char*>(&req),
                          sizeof(req));
 }

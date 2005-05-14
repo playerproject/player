@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
+//#include <pthread.h>
 #include <unistd.h>
 #include <rflex.h>
 
@@ -33,6 +33,9 @@ typedef struct {
   unsigned char * lcd_data;
   int num_ir;
   unsigned char * ir_ranges;
+  int home_bearing;
+  int home_bearing_found;
+  
 } rflex_status_t;
 
 
@@ -145,7 +148,7 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
   cmd[6+len+1] = 0x1b;
   cmd[6+len+2] = 0x03;
 
-  pthread_testcancel();
+  //pthread_testcancel();
   writeData( fd, cmd, 9+len );
 
 	// Some issues with commands not being recognised if sent too rapidly
@@ -165,7 +168,7 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
 	} while (count < 10000);
 
   
-  pthread_testcancel();
+  //pthread_testcancel();
 }
 
 void rflex_sonars_on( int fd )
@@ -328,13 +331,30 @@ int rflex_open_connection(char *device_name, int *fd)
   } 
 
   *fd = rdev.fd;
-
   rflex_odometry_on(*fd, 100000);
   rflex_digital_io_on(*fd, 100000);
   rflex_motion_set_defaults(*fd);
+  return 0;
+}
+
+int rflex_close_connection(int *fd)
+{
+  assert(fd);
+  if (*fd < 0)
+  	return -1;
+  rflex_motion_set_defaults(*fd);
+  rflex_odometry_off(*fd);
+  rflex_digital_io_off(*fd);
+  rflex_sonars_off(*fd);
+  rflex_ir_off(*fd);
+  
+  printf("Closing rflex serial port\n");
+  close(*fd);
+  *fd=-1;
 
   return 0;
 }
+
 
 //processes a motor packet from the rflex - and saves the data in the
 //struct for later use
@@ -388,6 +408,39 @@ static void parseDioReport( unsigned char *buffer )
    			address = buffer[10];
    			data = convertBytes2UInt16(&(buffer[11]));
 
+			// Check for the heading home event;
+			if(rflex_configs.heading_home_address == address)
+			{
+				if(status.home_bearing_found)
+					break;
+				static bool found_first = false;
+				static int first_home_bearing = 0;
+				if (found_first)
+				{
+					if ((first_home_bearing - status.bearing) > 0.785* rflex_configs.odo_angle_conversion)
+					{
+						first_home_bearing=static_cast<int> (first_home_bearing-rflex_configs.odo_angle_conversion*2*M_PI);
+					}
+					else if ((first_home_bearing - status.bearing) < 0.785* rflex_configs.odo_angle_conversion)
+					{
+						first_home_bearing=static_cast<int> (first_home_bearing+rflex_configs.odo_angle_conversion*2*M_PI);
+					}
+					if (abs(first_home_bearing - status.bearing) > 0.01 * rflex_configs.odo_angle_conversion)
+					{
+						rflex_configs.home_on_start = false;
+						status.home_bearing=status.bearing > first_home_bearing? status.bearing:first_home_bearing;
+						status.home_bearing_found = true;
+						printf("Home bearing found %d\n",status.home_bearing);
+					}
+				}
+				else
+				{
+						first_home_bearing=status.bearing;
+						found_first = true;		
+				}
+				break;
+			}
+
 
 			if(BUMPER_ADDR == rflex_configs.bumper_style)
 			{
@@ -404,7 +457,7 @@ static void parseDioReport( unsigned char *buffer )
 			   else
 			   {
 			      // is bumper
-			      fprintf(stderr,"(bump) address = 0x%02x ",address);
+			      //fprintf(stderr,"(bump) address = 0x%02x ",address);
 			      // assign low data byte to the bumpers (16 bit DIO data, low 4 bits give which corners or the panel are 'bumped')
 			      status.bumpers[address - rflex_configs.bumper_address] = data & 0x0F;
 			   }
@@ -742,9 +795,9 @@ static int clear_incoming_data(int fd)
 
   while ((bytes = bytesWaiting(fd)) > 32) {
   	count ++;
-    pthread_testcancel();
+    //pthread_testcancel();
     waitForAnswer(fd, buffer, &len);
-    pthread_testcancel();
+    //pthread_testcancel();
     parseBuffer(fd, buffer, len);
   }
   return count;
@@ -757,7 +810,10 @@ void rflex_update_status(int fd, int *distance,  int *bearing,
   clear_incoming_data(fd);
 
   *distance = status.distance;
-  *bearing = status.bearing;
+  if(status.home_bearing_found)
+	  *bearing = status.bearing-status.home_bearing;
+  else
+	  *bearing = status.bearing;
   *t_vel = status.t_vel;
   *r_vel = status.r_vel;
 }
@@ -790,7 +846,12 @@ int rflex_update_sonar(int fd,int num_sonars, int * ranges){
   y=0;
   for(x=0;x<rflex_configs.num_sonar_banks;x++)
     for(y=0;y<rflex_configs.num_sonars_in_bank[x];y++)
-      ranges[i++]=status.ranges[x*rflex_configs.num_sonars_possible_per_bank+y];
+	{
+      ranges[i]=status.ranges[x*rflex_configs.num_sonars_possible_per_bank+y];
+	  if (ranges[i] > rflex_configs.sonar_max_range)
+	  	ranges[i] = rflex_configs.sonar_max_range;
+	  i++;
+	 }
   if (i<num_sonars){
     fprintf(stderr,"Requested %d sonar only %d supported\n",num_sonars,y);
     num_sonars = y;
@@ -831,7 +892,7 @@ void rflex_update_ir(int fd, int num_irs,
   clear_incoming_data(fd);
 
   if (num_irs > status.num_ir) {
-    fprintf(stderr,"Requested more ir readings than available. %d of %d\n", num_irs,status.num_ir );
+    //fprintf(stderr,"Requested more ir readings than available. %d of %d\n", num_irs,status.num_ir );
     num_irs = status.num_ir;
   }
 
@@ -917,6 +978,7 @@ void rflex_initialize(int fd, int trans_acceleration,
 		for (int i = 0; i < status.num_bumpers; ++i)
 			status.bumpers[i] = 0;
 	}
+	status.home_bearing_found=false;
 	
 }
 

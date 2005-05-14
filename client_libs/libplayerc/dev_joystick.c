@@ -61,7 +61,7 @@ playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_joystick_t));
   memset(device, 0, sizeof(playerc_joystick_t));
   playerc_device_init(&device->info, client, PLAYER_JOYSTICK_CODE, index,
-                      (playerc_putdata_fn_t) playerc_joystick_putdata);
+                      (playerc_putdata_fn_t) playerc_joystick_putdata,NULL,NULL);
 
   
   return device;

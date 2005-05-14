@@ -62,7 +62,7 @@ playerc_map_t *playerc_map_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_map_t));
   memset(device, 0, sizeof(playerc_map_t));
   playerc_device_init(&device->info, client, PLAYER_MAP_CODE, index,
-                      (playerc_putdata_fn_t) NULL);
+                      (playerc_putdata_fn_t) NULL,NULL,NULL);
     
   return device;
 }
@@ -102,10 +102,10 @@ int playerc_map_get_map(playerc_map_t* device)
 
   // first, get the map info
   memset(&info_req, 0, sizeof(info_req));
-  info_req.subtype = PLAYER_MAP_GET_INFO_REQ;
+//  info_req.subtype = PLAYER_MAP_GET_INFO_REQ;
 
-  if(playerc_client_request(device->info.client, &device->info,
-                            &info_req, sizeof(info_req.subtype),
+  if(playerc_client_request(device->info.client, &device->info, PLAYER_MAP_GET_INFO,
+                            &info_req, 0,
                             &info_req, sizeof(info_req)) < 0)
   {
     PLAYERC_ERR("failed to get map info");
@@ -123,7 +123,7 @@ int playerc_map_get_map(playerc_map_t* device)
                                        device->width * device->height));
 
   // now, get the map, in tiles
-  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+//  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
 
   // Tile size
   sy = sx = (int)sqrt(sizeof(data_req.data));
@@ -141,7 +141,7 @@ int playerc_map_get_map(playerc_map_t* device)
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = playerc_client_request(device->info.client, &device->info,
+    if((replen = playerc_client_request(device->info.client, &device->info,PLAYER_MAP_GET_DATA,
                                         &data_req, reqlen,
                                         &data_req, sizeof(data_req))) == 0)
     {

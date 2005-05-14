@@ -90,10 +90,10 @@ IRProxy::SetIRState(unsigned char state)
 
   player_ir_power_req_t req;
 
-  req.subtype = PLAYER_IR_POWER_REQ;
+//  req.subtype = PLAYER_IR_POWER_REQ;
   req.state = state;
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_IR_POWER,
 			 (const char *)&req, sizeof(req));
 }
 
@@ -110,18 +110,18 @@ IRProxy::GetIRPose()
   }
 
   player_msghdr_t hdr;
-  player_ir_pose_req_t req;
+  player_ir_pose_t req;
 
-  req.subtype = PLAYER_IR_POSE_REQ;
+//  req.subtype = PLAYER_IR_POSE_REQ;
   
-  if ((client->Request(m_device_id, (const char *)&req,
-		       sizeof(req.subtype), &hdr, (char *)&req,
+  if ((client->Request(m_device_id, PLAYER_IR_POSE, (const char *)&req,
+		       0, &hdr, (char *)&req,
 		       sizeof(req)) < 0) ||
       hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
     return -1;
   }
 
-   ir_pose = req.poses;
+   ir_pose = req;
 
 	ir_pose.pose_count = ntohs(ir_pose.pose_count);
 

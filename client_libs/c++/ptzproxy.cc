@@ -100,11 +100,11 @@ PtzProxy::SendConfig(uint8_t *bytes, size_t len, uint8_t *reply,
     return -1;
   }
 
-  cfg.subtype = PLAYER_PTZ_GENERIC_CONFIG_REQ;
+  //cfg.subtype = PLAYER_PTZ_GENERIC_CONFIG_REQ;
   memcpy(&cfg.config, bytes, len);
   cfg.length = htons((short)len);
   
-  if (client->Request(m_device_id, (const char *)&cfg,
+  if (client->Request(m_device_id, PLAYER_PTZ_GENERIC_CONFIG,(const char *)&cfg,
 		      sizeof(cfg), &hdr,
 		      (char *)&cfg, sizeof(cfg)) < 0) {
     fprintf(stderr, "PTZPROXY: error on SendConfig request\n");
@@ -121,10 +121,10 @@ PtzProxy::SelectControlMode(uint8_t mode)
 {
   player_ptz_controlmode_config cfg;
 
-  cfg.subtype = PLAYER_PTZ_CONTROL_MODE_REQ;
+  //cfg.subtype = PLAYER_PTZ_CONTROL_MODE_REQ;
   cfg.mode = mode;
 
-  return(client->Request(m_device_id,(const char*)&cfg,
+  return(client->Request(m_device_id,PLAYER_PTZ_CONTROL_MODE,(const char*)&cfg,
                          sizeof(cfg)));
 }
   

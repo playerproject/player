@@ -30,7 +30,9 @@
 #define _DEVICE_H
 
 
-#include "playerqueue.h"
+#include <player.h>
+
+
 
 // Forward declarations
 class Driver;
@@ -53,13 +55,14 @@ class Device
 
   // Initialize the buffers for this interface
   void SetupBuffers(size_t datasize, size_t commandsize,
-                    size_t reqqueuelen, size_t repqueuelen);
+                    size_t reqqueuelen, size_t repqueuelen, size_t msgqueuelen);
 
   // Initialize the buffers for this interface, with memory pre-allocated
   void SetupBuffers(void* data, size_t datasize, 
                     void* command, size_t commandsize, 
                     void* reqqueue, int reqqueuelen, 
-                    void* repqueue, int repqueuelen);
+                    void* repqueue, int repqueuelen,
+					void* msgqueue, int msgqueuelen);
 
   // Index in the device table
   int index;              
@@ -99,10 +102,6 @@ class Device
 
   // Timestamp for most recent command
   struct timeval command_timestamp;
-
-  // Queues for incoming requests and outgoing replies
-  PlayerQueue* reqqueue;
-  PlayerQueue* repqueue;
 };
 
 #endif

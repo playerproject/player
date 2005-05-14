@@ -79,10 +79,10 @@ BumperProxy::GetBumperGeom( player_bumper_geom_t* bumper_geom )
 
 
 
-  bumper_geom->subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+//  bumper_geom->subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 
-  if((client->Request(m_device_id,(const char*)bumper_geom,
-                      sizeof(bumper_geom->subtype), &hdr, (char*)bumper_geom, 
+  if((client->Request(m_device_id, PLAYER_BUMPER_GET_GEOM,(const char*)bumper_geom,
+                      0, &hdr, (char*)bumper_geom, 
                       sizeof(*bumper_geom)) < 0) ||
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
     return(-1);

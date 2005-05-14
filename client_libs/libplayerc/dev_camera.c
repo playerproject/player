@@ -70,7 +70,7 @@ playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_camera_t));
   memset(device, 0, sizeof(playerc_camera_t));
   playerc_device_init(&device->info, client, PLAYER_CAMERA_CODE, index, 
-                      (playerc_putdata_fn_t) playerc_camera_putdata); 
+                      (playerc_putdata_fn_t) playerc_camera_putdata,NULL,NULL); 
   return device;
 }
 

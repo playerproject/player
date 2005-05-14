@@ -78,6 +78,9 @@ extern char *playerc_error_set_str(void);
 #define PLAYERC_WARN(msg)        sprintf(playerc_error_set_str(), "warning : " msg)
 #define PLAYERC_WARN1(msg, a)    sprintf(playerc_error_set_str(), "warning : " msg, a)
 #define PLAYERC_WARN2(msg, a, b) sprintf(playerc_error_set_str(), "warning : " msg, a, b)
+#define PLAYERC_WARN3(msg, a, b, c) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c)
+#define PLAYERC_WARN4(msg, a, b, c, d) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c, d)
+#define PLAYERC_WARN5(msg, a, b, c, d, e) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c, d, e)
 
 
 // DEBUG macros

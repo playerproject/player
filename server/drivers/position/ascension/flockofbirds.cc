@@ -422,6 +422,10 @@ class FlockOfBirds_Device : public Driver
 
 		virtual int Setup();
 		virtual int Shutdown();
+		
+		// MessageHandler
+		int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+		
 };
   
 // initialization function
@@ -439,9 +443,7 @@ FlockOfBirds_Register(DriverTable* table)
 }
 
 FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
-        : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE,
-                 sizeof(player_position3d_data_t),
-                 sizeof(player_position3d_cmd_t),1,1)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE)
 {
 	fob = NULL;
 	
@@ -467,14 +469,14 @@ FlockOfBirds_Device::Setup()
 		return -1;
 	}
 
-	player_position3d_data_t data;
-	player_position3d_cmd_t cmd;
+	//player_position3d_data_t data;
+	//player_position3d_cmd_t cmd;
 
-	memset(&data,0,sizeof(data));
-	memset(&cmd,0,sizeof(cmd));
+	//bzero(&data,sizeof(data));
+	//bzero(&cmd,sizeof(cmd));
 
-  	PutData((void*)&data,sizeof(data),NULL);
-  	PutCommand(device_id,(void*)&cmd,sizeof(cmd),NULL);
+  	//PutData((void*)&data,sizeof(data),NULL);
+  	//PutCommand(device_id,(void*)&cmd,sizeof(cmd),NULL);
 
 	// start the thread to talk with the camera
 	StartThread();
@@ -497,23 +499,19 @@ FlockOfBirds_Device::Shutdown()
 	return(0);
 }
 
-
-/* handle a configuration request
- *
- * returns: 0 on success, -1 on error
- */
-int
-FlockOfBirds_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
+int FlockOfBirds_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
 {
-	//bool success = false;
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+	*resp_len = 0;
 
-	// we dont support any config, so just NACK them all
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
-		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
-		  return -1;
-	}
-	return 0;
+	return -1;
 }
+
+
 
 // this function will be run in a separate thread
 void 
@@ -536,52 +534,37 @@ FlockOfBirds_Device::Main()
 	// set up previous data buffer
 	memcpy(LastData, fob->GetPosition(),sizeof(LastData));  
     
-  while(1) 
-  {
-	pthread_testcancel();
-    	GetCommand((void*)&command, sizeof(player_position3d_cmd_t),NULL);
-    	pthread_testcancel();
-
-	// update the position data
-	if (fob->ProcessData()>0)
+	while(1) 
 	{
-		pthread_testcancel();
-		PosData = fob->GetPosition();
-		
-		// check if we switched hemisphere...
-		if (((fabs(PosData[1]) > VoidSize) && (PosData[1]*LastData[1] < 0)) ||
-				((fabs(PosData[2]) > VoidSize) && (PosData[2]*LastData[2] < 0)))
+		ProcessMessages();
+		// update the position data
+		if (fob->ProcessData()>0)
 		{
-			Front *= -1;
-		}
-		memcpy(LastData, PosData,sizeof(LastData));  
+			pthread_testcancel();
+			PosData = fob->GetPosition();
 		
+			// check if we switched hemisphere...
+			if (((fabs(PosData[1]) > VoidSize) && (PosData[1]*LastData[1] < 0)) ||
+				((fabs(PosData[2]) > VoidSize) && (PosData[2]*LastData[2] < 0)))
+			{
+				Front *= -1;
+			}
+			memcpy(LastData, PosData,sizeof(LastData));  
 		
-		data.xpos = htonl(static_cast<long> (Front*PosData[0]));
-		data.ypos = htonl(static_cast<long> (Front*PosData[1]));
-		data.zpos = htonl(static_cast<long> (-Front*PosData[2]));
+			data.xpos = htonl(static_cast<long> (Front*PosData[0]));
+			data.ypos = htonl(static_cast<long> (Front*PosData[1]));
+			data.zpos = htonl(static_cast<long> (-Front*PosData[2]));
 				
-		// translate degerees to milli radians
-		data.yaw = htonl(static_cast<long> (round(DTOR(PosData[3])*1000.0)));
-		data.pitch = htonl(static_cast<long> (round(DTOR(PosData[4])*1000.0)));
-		data.roll = htonl(static_cast<long> (round(DTOR(PosData[5])*1000.0)));
-		// translate degerees to arc seconds
-		/*data.yaw = htonl(static_cast<long> ((PosData[3] < 0 ? (PosData[3] + 360) : PosData[3]) * 3600));
-		data.pitch = htonl(static_cast<long> ((PosData[4] < 0 ? (PosData[4] + 360) : PosData[4]) * 3600));
-		data.roll = htonl(static_cast<long> ((PosData[5] < 0 ? (PosData[5] + 360) : PosData[5]) * 3600));*/
+			// translate degerees to milli radians
+			data.yaw = htonl(static_cast<long> (round(DTOR(PosData[3])*1000.0)));
+			data.pitch = htonl(static_cast<long> (round(DTOR(PosData[4])*1000.0)));
+			data.roll = htonl(static_cast<long> (round(DTOR(PosData[5])*1000.0)));
 
-		PutData((void*)&data, sizeof(player_position3d_data_t),NULL);
-	}    
+			PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_position3d_data_t),NULL);
+		}    
 
-    	// check for config requests 
-    	if ((buffer_len = GetConfig(&client, (void *)buffer, sizeof(buffer),NULL)) > 0) 
-	{
-        	if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) 
-			fprintf(stderr, "FlockOfBirds: error handling config request\n");
-	}
-
-	// repeat frequency (default to 10 Hz)
+		// repeat frequency (default to 10 Hz)
     	usleep(FOB_SLEEP_TIME_USEC);
-   }
+	}
 }
 

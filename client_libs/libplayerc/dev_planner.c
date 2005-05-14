@@ -66,7 +66,7 @@ playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_planner_t));
   memset(device, 0, sizeof(playerc_planner_t));
   playerc_device_init(&device->info, client, PLAYER_PLANNER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_planner_putdata);
+                      (playerc_putdata_fn_t) playerc_planner_putdata,NULL,NULL);
 
   
   return device;
@@ -146,10 +146,10 @@ int playerc_planner_get_waypoints(playerc_planner_t *device)
   player_planner_waypoints_req_t config;
 
   memset(&config, 0, sizeof(config));
-  config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
+//  config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, 
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_PLANNER_GET_WAYPOINTS,
+                               &config, 0, &config, 
                                sizeof(config));
   if (len < 0)
     return -1;
@@ -174,10 +174,10 @@ int playerc_planner_enable(playerc_planner_t *device, int state)
 {
   player_planner_enable_req_t config;
 
-  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
+//  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
   config.state = state;
 
-  if(playerc_client_request(device->info.client, &device->info,
+  if(playerc_client_request(device->info.client, &device->info, PLAYER_PLANNER_ENABLE,
                             &config, sizeof(config), NULL, 0) < 0)
     return(-1);
   else

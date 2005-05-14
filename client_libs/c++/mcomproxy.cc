@@ -51,12 +51,12 @@ int MComProxy::Push(int type, char * channelQ,char* dat){
   if(!client)
     return(-1);
   player_mcom_config_t cfg;
-  cfg.command = PLAYER_MCOM_PUSH_REQ;
+  //cfg.command = PLAYER_MCOM_PUSH_REQ;
   cfg.type=htons(type);
   strcpy(cfg.channel,channelQ);
   cfg.data.full=true;
   memcpy(cfg.data.data,dat,MCOM_DATA_LEN);
-  int r = client->Request(m_device_id, (const char*)&cfg, sizeof(cfg));
+  int r = client->Request(m_device_id, PLAYER_MCOM_PUSH,(const char*)&cfg, sizeof(cfg));
   if(r < 0) {
       printf("mcomproxy: error (%d) sending request\n", r);
       return r;
@@ -69,11 +69,11 @@ int MComProxy::Read(int type, char * channelQ){
     if(!client) 
         return(-1);
     player_mcom_config_t cfg;
-    cfg.command = PLAYER_MCOM_READ_REQ;
+//    cfg.command = PLAYER_MCOM_READ_REQ;
     cfg.type=htons(type);
     strcpy(cfg.channel,channelQ);
     player_mcom_return_t reply;
-    int r = client->Request(m_device_id,
+    int r = client->Request(m_device_id, PLAYER_MCOM_READ,
             (const char*)&cfg, sizeof(cfg), &hdr, 
             (char*)&reply, sizeof(reply));
     if(r < 0)
@@ -96,11 +96,11 @@ int MComProxy::Pop(int type, char* channelQ){
     return(-1);
 
   player_mcom_config_t cfg;
-  cfg.command = PLAYER_MCOM_POP_REQ;
+//  cfg.command = PLAYER_MCOM_POP_REQ;
   cfg.type=htons(type);
   strcpy(cfg.channel,channelQ);
   player_mcom_return_t reply;
-  int r = client->Request(m_device_id,
+  int r = client->Request(m_device_id, PLAYER_MCOM_POP,
 		      (const char*)&cfg, sizeof(cfg), &hdr , 
               (char*)&reply, sizeof(reply));
   if(r < 0)
@@ -122,10 +122,10 @@ int MComProxy::Clear(int type, char * channelQ){
     return(-1);
   
   player_mcom_config_t cfg;
-  cfg.command = PLAYER_MCOM_CLEAR_REQ;
+//  cfg.command = PLAYER_MCOM_CLEAR_REQ;
   cfg.type=htons(type);
   strcpy(cfg.channel,channelQ);
-  return client->Request(m_device_id,
+  return client->Request(m_device_id, PLAYER_MCOM_CLEAR, 
 			 (const char*)&cfg,sizeof(cfg));
 }
 
@@ -138,12 +138,12 @@ MComProxy::SetCapacity(int type, char *channel, unsigned char cap)
 
   player_mcom_config_t cfg;
 
-  cfg.command = PLAYER_MCOM_SET_CAPACITY_REQ;
+//  cfg.command = PLAYER_MCOM_SET_CAPACITY_REQ;
   cfg.type = htons(type);
   strncpy(cfg.channel, channel, MCOM_CHANNEL_LEN);
   cfg.data.data[0] = cap;
 
-  return client->Request(m_device_id, (const char *)&cfg, sizeof(cfg));
+  return client->Request(m_device_id, PLAYER_MCOM_SET_CAPACITY, (const char *)&cfg, sizeof(cfg));
 }
 
 

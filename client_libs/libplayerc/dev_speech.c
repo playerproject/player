@@ -58,7 +58,7 @@ playerc_speech_t *playerc_speech_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_speech_t));
   memset(device, 0, sizeof(playerc_speech_t));
   playerc_device_init(&device->info, client, PLAYER_SPEECH_CODE, index,
-                      (playerc_putdata_fn_t) playerc_speech_putdata);
+                      (playerc_putdata_fn_t) playerc_speech_putdata,NULL,NULL);
     
   return device;
 }

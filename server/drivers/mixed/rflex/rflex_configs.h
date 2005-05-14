@@ -53,12 +53,15 @@ typedef struct rflex_config_t{
   double mmPsec2_trans_acceleration;
   //default rotational acceleration in rad/sec
   double radPsec2_rot_acceleration;
+
+  // absolute heading dio address (if ommited then absolute heading not used)
+  int heading_home_address;
+  // home on startup
+  bool home_on_start;
   
   // use rflex joystick to command robot?
   bool use_joystick;
   double joy_pos_ratio, joy_ang_ratio;
-  
-  
   
   //maximum number of sonar supported by modules
   //(generally 16*number of sonar controller boards, or banks)
@@ -83,6 +86,7 @@ typedef struct rflex_config_t{
   // options to support 2nd sonar bank
   long sonar_2nd_bank_start;
   long sonar_1st_bank_end;
+  long sonar_max_range; // in mm
 
   
   // bumper configs

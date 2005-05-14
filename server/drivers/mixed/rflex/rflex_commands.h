@@ -2,6 +2,7 @@
 #define RFLEX_COMMANDS_H
 
   int rflex_open_connection(char *dev_name, int *fd);
+  int rflex_close_connection(int *fd);
 
   void rflex_sonars_on(int fd);
   void rflex_sonars_off(int fd);

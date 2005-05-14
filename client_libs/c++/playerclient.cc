@@ -266,11 +266,13 @@ int PlayerClient::Read(bool await_sync, ClientProxy** dev)
   {
     if(player_read(&conn, &hdr, buffer, PLAYER_MAX_MESSAGE_SIZE))
     {
+      printf("read error\n");
       if(player_debug_level(-1) >= 2)
         fputs("WARNING: player_read() errored\n", stderr);
       delete[] buffer;
       return(-1);
     }
+    //printf("Player Header type: %d\n",hdr.type);
     gettimeofday(&curr,NULL);
     // is this the SYNCH packet?
     if(hdr.type == PLAYER_MSGTYPE_SYNCH)
@@ -338,9 +340,64 @@ int PlayerClient::Read(bool await_sync, ClientProxy** dev)
       if(dev)
         *dev = thisproxy;
     }
+/*    else if(hdr.type == PLAYER_MSGTYPE_GEOM)
+    {
+      player_device_id_t id;
+      id.code=hdr.device;
+      id.index=hdr.device_index;
+      if(!(thisproxy = GetProxy(id)))
+      {
+        if(player_debug_level(-1) >= 3)
+          fprintf(stderr,"WARNING: read unexpected geometry for device %d:%d\n",
+                  hdr.device,hdr.device_index);
+        continue;
+      }
+
+      thisproxy->Lock();
+
+      // let the device-specific proxy parse it
+      thisproxy->FillGeom(hdr,buffer);
+	  thisproxy->FreshGeom = true;
+
+      thisproxy->Unlock();
+
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_CONFIG)
+    {
+      player_device_id_t id;
+      id.code=hdr.device;
+      id.index=hdr.device_index;
+      if(!(thisproxy = GetProxy(id)))
+      {
+        if(player_debug_level(-1) >= 3)
+          fprintf(stderr,"WARNING: read unexpected geometry for device %d:%d\n",
+                  hdr.device,hdr.device_index);
+        continue;
+      }
+
+      thisproxy->Lock();
+
+      // let the device-specific proxy parse it
+      thisproxy->FillConfig(hdr,buffer);
+	  thisproxy->FreshConfig = true;
+
+      thisproxy->Unlock();
+    }*/
+    else if(hdr.type == PLAYER_MSGTYPE_RESP_ACK)
+    {
+		// dont need to do anything		
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_RESP_NACK)
+    {
+		// dont need to do anything		
+    }
+    else if(hdr.type == PLAYER_MSGTYPE_RESP_ERR)
+    {
+		// dont need to do anything		
+    }
     else
     {
-      printf("else\n");
+      //printf("else\n");
       if(player_debug_level(-1)>=3)
       {
         fprintf(stderr,"PlayerClient::Read(): received unexpected message"
@@ -372,7 +429,7 @@ int PlayerClient::Write(player_device_id_t device_id,
                       command,commandlen));
 }
 
-int PlayerClient::Request(player_device_id_t device_id,
+int PlayerClient::Request(player_device_id_t device_id, uint8_t reqtype,
                           const char* payload,
                           size_t payloadlen,
                           player_msghdr_t* replyhdr,
@@ -380,19 +437,19 @@ int PlayerClient::Request(player_device_id_t device_id,
 {
   if(!Connected())
     return(-1);
-  return(player_request(&conn, device_id.code,device_id.index, payload, payloadlen,
+  return(player_request(&conn, reqtype, device_id.code,device_id.index, payload, payloadlen,
                         replyhdr, reply, replylen));
 }
     
 // use this one if you don't want the reply. it will return -1 if 
 // the request failed outright or if the response type is not ACK
-int PlayerClient::Request(player_device_id_t device_id,
+int PlayerClient::Request(player_device_id_t device_id, uint8_t reqtype, 
                           const char* payload,
                           size_t payloadlen)
 { 
   int retval;
   player_msghdr_t hdr;
-  retval = Request(device_id,payload,payloadlen,&hdr,NULL,0);
+  retval = Request(device_id,reqtype, payload,payloadlen,&hdr,NULL,0);
 
   if((retval < 0) || 
      (hdr.type != PLAYER_MSGTYPE_RESP_ACK) || 
@@ -445,14 +502,14 @@ int PlayerClient::SetFrequency(unsigned short freq)
   char payload[sizeof(this_req)];
   player_device_id_t id;
 
-  this_req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
+//  this_req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
   this_req.frequency = htons(freq);
 
   memcpy(payload,&this_req,sizeof(this_req));
 
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
-  return(Request(id, payload, sizeof(payload),NULL,0,0));
+  return(Request(id, PLAYER_PLAYER_DATAFREQ, payload, sizeof(payload),NULL,0,0));
 }
 
 // change data delivery mode
@@ -463,14 +520,14 @@ int PlayerClient::SetDataMode(unsigned char mode)
   char payload[sizeof(this_req)];
   player_device_id_t id;
 
-  this_req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
+//  this_req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
   this_req.mode = mode;
 
   memcpy(payload,&this_req,sizeof(this_req));
 
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
-  if(Request(id, payload, sizeof(payload),NULL,0,0) < 0)
+  if(Request(id, PLAYER_PLAYER_DATAMODE, payload, sizeof(payload),NULL,0,0) < 0)
     return(-1);
   this->data_delivery_mode = mode;
   return(0);
@@ -482,11 +539,11 @@ int PlayerClient::RequestData()
   player_device_data_req_t this_req;
   player_device_id_t id;
 
-  this_req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
+//  this_req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
 
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
-  return(Request(id,(char*)&this_req, sizeof(this_req)));
+  return(Request(id,PLAYER_PLAYER_DATA, (char*)&this_req, sizeof(this_req)));
 }
 
 // authenticate
@@ -496,14 +553,14 @@ int PlayerClient::Authenticate(char* key)
   char payload[sizeof(this_req)];
   player_device_id_t id;
 
-  this_req.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
+  //this_req.subtype = htons(PLAYER_PLAYER_AUTH_REQ);
   strncpy((char*)this_req.auth_key,key,sizeof(this_req.auth_key));
 
   memcpy(payload,&this_req,sizeof(this_req));
 
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
-  return(Request(id, payload, sizeof(payload),NULL,0,0));
+  return(Request(id, PLAYER_PLAYER_AUTH, payload, sizeof(payload),NULL,0,0));
 }
 
 // use nameservice to get corresponding port for a robot name (only with
@@ -517,13 +574,13 @@ PlayerClient::LookupPort(const char* name)
   memset(&req,0,sizeof(req));
   memset(&rep,0,sizeof(rep));
 
-  req.subtype = htons(PLAYER_PLAYER_NAMESERVICE_REQ);
+//  req.subtype = htons(PLAYER_PLAYER_NAMESERVICE_REQ);
   strncpy((char*)req.name,name,sizeof(req.name));
 
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
 
-  if(Request(id,(char*)&req,sizeof(req),&hdr,(char*)&rep,sizeof(rep)) < 0)
+  if(Request(id,PLAYER_PLAYER_NAMESERVICE, (char*)&req,sizeof(req),&hdr,(char*)&rep,sizeof(rep)) < 0)
     return(-1);
   else
     return(ntohs(rep.port));
@@ -635,12 +692,12 @@ int PlayerClient::GetDeviceList()
   player_device_driverinfo_t rep;
 
 
-  config.subtype = htons(PLAYER_PLAYER_DEVLIST_REQ);
+  //config.subtype = htons(PLAYER_PLAYER_DEVLIST_REQ);
   id.code=PLAYER_PLAYER_CODE;
   id.index=0;
 
   // Request the list of devices
-  this->Request(id, (const char*)&config, sizeof(config), &hdr,
+  this->Request(id, PLAYER_PLAYER_DEVLIST, (const char*)&config, sizeof(config), &hdr,
       (char *)&config, sizeof(config));
 
   if (hdr.size <0)             
@@ -666,13 +723,13 @@ int PlayerClient::GetDeviceList()
    // Get the driver info for all devices. 
   for (i=0; i < this->id_count; i++)
   {
-    req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
+    //req.subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
     req.id.code = htons(this->ids[i].code);
     req.id.index = htons(this->ids[i].index);
     req.id.port = htons(this->ids[i].port);
 
     // Get the device's info
-    this->Request(id, (const char*)&req, sizeof(req), &hdr,
+    this->Request(id, PLAYER_PLAYER_DRIVERINFO, (const char*)&req, sizeof(req), &hdr,
         (char *)&rep, sizeof(rep));
 
     if (hdr.size < 0)

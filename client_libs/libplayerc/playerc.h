@@ -389,8 +389,21 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 */ 
 int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *device,
-                           void *req_data, int req_len, void *rep_data, int rep_len);
+                           uint8_t reqtype, void *req_data, int req_len, void *rep_data, int rep_len);
                                 
+/** @brief Wait for response from server (blocking).
+
+@param client Pointer to client object.
+@param device
+@param index
+@param sequence
+
+@returns Will return data size for ack, -1 for nack and -2 for failure
+
+*/
+int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
+		uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
+
 /** @brief Test to see if there is pending data.
 
 @param client Pointer to client object.
@@ -413,6 +426,8 @@ on error, will return NULL.
 
 */
 void *playerc_client_read(playerc_client_t *client);
+
+
 
 /** @brief Write data to the server.  @internal
 */
@@ -463,9 +478,21 @@ typedef struct _playerc_device_t
       proxy.  Useful with the multi-client, but the user must manually
       set it to 0 after using the data. */
   int fresh;
+  /** Freshness flag.  Set to 1 whenever data is dispatched to this
+      proxy.  Useful with the multi-client, but the user must manually
+      set it to 0 after using the data. */
+  int freshgeom;
+  /** Freshness flag.  Set to 1 whenever data is dispatched to this
+      proxy.  Useful with the multi-client, but the user must manually
+      set it to 0 after using the data. */
+  int freshconfig;
 
   /**  Standard callbacks for this device.  @internal */
   playerc_putdata_fn_t putdata;
+  /**  Standard callbacks for this device.  @internal */
+  playerc_putdata_fn_t putgeom;
+  /**  Standard callbacks for this device.  @internal */
+  playerc_putdata_fn_t putconfig;
 
   /** Extra user data for this device. @internal */
   void *user_data;
@@ -478,9 +505,11 @@ typedef struct _playerc_device_t
 } playerc_device_t;
 
 
-/** @brief Initialise the device. @internal */
+/** @brief Initialise the device. Additional callbacks for geom and config @internal */
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
-                         int code, int index, playerc_putdata_fn_t putdata);
+                         int code, int index, playerc_putdata_fn_t putdata,
+			             playerc_putdata_fn_t putgeom,
+			             playerc_putdata_fn_t putconfig);
 
 /** @brief Finalize the device. @internal */
 void playerc_device_term(playerc_device_t *device);
@@ -956,6 +985,9 @@ typedef struct
   double pose[3];
   double size[2];
   
+  /** Is intesity data returned. */
+  int intensity_on;
+
   /** Number of points in the scan. */
   int scan_count;
 
@@ -1005,6 +1037,14 @@ pointer for all putdata functions and fix.
 */
 void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
                            player_laser_data_t *data, size_t len);
+
+
+void playerc_laser_putgeom(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_geom_t *data, size_t len);
+
+
+void playerc_laser_putconfig(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_config_t *data, size_t len);
 
 /** @brief Configure the laser.
 

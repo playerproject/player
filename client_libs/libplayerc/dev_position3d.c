@@ -53,6 +53,9 @@
 #include "playerc.h"
 #include "error.h"
 
+void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *header,
+                                player_position3d_geom_t *data, size_t len);
+
 
 // Create a new position3d proxy
 playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int index)
@@ -62,7 +65,8 @@ playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int in
   device = malloc(sizeof(playerc_position3d_t));
   memset(device, 0, sizeof(playerc_position3d_t));
   playerc_device_init(&device->info, client, PLAYER_POSITION3D_CODE, index,
-                      (playerc_putdata_fn_t) playerc_position3d_putdata);
+                        (playerc_putdata_fn_t) playerc_position3d_putdata,
+                      (playerc_putdata_fn_t) playerc_position3d_putgeom,NULL);
 
   
   return device;
@@ -116,6 +120,30 @@ void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *h
   device->stall = data->stall;
 }
 
+// Process incoming data
+void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *header,
+                                player_position3d_geom_t *data, size_t len)
+{
+  if (len != sizeof(player_position3d_geom_t))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_position3d_geom_t));
+    return;
+  }
+
+  device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(data->pose[2])) / 1000.0;
+
+  device->pose[3] = ((int16_t) ntohs(data->pose[3]))  / 1000.0;
+  device->pose[4] = ((int16_t) ntohs(data->pose[4])) / 1000.0;
+  device->pose[5] = ((int16_t) ntohs(data->pose[5])) / 1000.0;
+
+  device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0;
+  device->size[2] = ((int16_t) ntohs(data->size[2])) / 1000.0;
+
+
+}
 
 // Enable/disable the motors
 int playerc_position3d_enable(playerc_position3d_t *device, int enable)
@@ -123,10 +151,11 @@ int playerc_position3d_enable(playerc_position3d_t *device, int enable)
   player_position3d_power_config_t config;
 
   memset(&config, 0, sizeof(config));
-  config.request = PLAYER_POSITION3D_MOTOR_POWER_REQ;
+//  config.request = PLAYER_POSITION3D_MOTOR_POWER_REQ;
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
+                                PLAYER_POSITION3D_MOTOR_POWER,
                                 &config, sizeof(config),
                                 &config, sizeof(config));    
 }
@@ -140,29 +169,12 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
   player_position_geom_t config;
 
   memset(&config, 0, sizeof(config));
-  config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
+  //config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_POSITION3D_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
   if (len < 0)
     return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-
-  device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
-  device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
-  device->pose[2] = ((int16_t) ntohs(config.pose[2])) / 1000.0;
-
-  device->pose[3] = ((int16_t) ntohs(config.pose[3]))  / 1000.0;
-  device->pose[4] = ((int16_t) ntohs(config.pose[4])) / 1000.0;
-  device->pose[5] = ((int16_t) ntohs(config.pose[5])) / 1000.0;
-
-  device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
-  device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
-  device->size[2] = ((int16_t) ntohs(config.size[2])) / 1000.0;
 
   return 0;
 }

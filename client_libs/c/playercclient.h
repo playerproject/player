@@ -174,7 +174,7 @@ Returns:
  - 0 if everything went OK
  - -1 if something went wrong (you should probably close the connection!)
 */
-int player_request(player_connection_t* conn, 
+int player_request(player_connection_t* conn, uint8_t reqtype,
                    uint16_t device, uint16_t device_index, 
                    const char* payload, size_t payloadlen, 
                    player_msghdr_t* replyhdr, char* reply, size_t replylen);

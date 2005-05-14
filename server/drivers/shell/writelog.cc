@@ -275,8 +275,7 @@ void WriteLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LOG_CODE, PLAYER_ALL_MODE,
-             PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+    : Driver(cf, section, PLAYER_LOG_CODE, PLAYER_ALL_MODE)
 {
   int i;
   player_device_id_t id;

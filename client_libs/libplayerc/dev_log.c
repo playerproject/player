@@ -61,7 +61,7 @@ playerc_log_t *playerc_log_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_log_t));
   memset(device, 0, sizeof(playerc_log_t));
   playerc_device_init(&device->info, client, PLAYER_LOG_CODE, index,
-                      (playerc_putdata_fn_t) NULL);
+                      (playerc_putdata_fn_t) NULL,NULL,NULL);
     
   return device;
 }
@@ -91,10 +91,10 @@ int playerc_log_get_state(playerc_log_t* device)
 {
   player_log_get_state_t req;
 
-  req.subtype = PLAYER_LOG_GET_STATE_REQ;
+//  req.subtype = PLAYER_LOG_GET_STATE_REQ;
 
-  if(playerc_client_request(device->info.client, &device->info,
-                            &req, sizeof(req.subtype),
+  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_GET_STATE,
+                            &req, 0,
                             &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to get logging/playback state");
@@ -111,10 +111,10 @@ int playerc_log_set_write_state(playerc_log_t* device, int state)
 {
   player_log_set_write_state_t req;
 
-  req.subtype = PLAYER_LOG_SET_WRITE_STATE_REQ;
+//  req.subtype = PLAYER_LOG_SET_WRITE_STATE_REQ;
   req.state = (uint8_t)state;
 
-  if(playerc_client_request(device->info.client, &device->info,
+  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_SET_WRITE_STATE,
                             &req, sizeof(req),
                             &req, sizeof(req)) < 0)
   {
@@ -129,10 +129,10 @@ int playerc_log_set_read_state(playerc_log_t* device, int state)
 {
   player_log_set_read_state_t req;
 
-  req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
+//  req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
   req.state = (uint8_t)state;
 
-  if(playerc_client_request(device->info.client, &device->info,
+  if(playerc_client_request(device->info.client, &device->info, PLAYER_LOG_SET_READ_STATE,
                             &req, sizeof(req),
                             &req, sizeof(req)) < 0)
   {
@@ -147,9 +147,9 @@ int playerc_log_set_read_rewind(playerc_log_t* device)
 {
   player_log_set_read_rewind_t req;
 
-  req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
+//  req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
 
-  if(playerc_client_request(device->info.client, &device->info,
+  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_SET_READ_REWIND,
                             &req, sizeof(req),
                             &req, sizeof(req)) < 0)
   {
@@ -164,7 +164,7 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
 {
   player_log_set_filename_t req;
 
-  req.subtype = PLAYER_LOG_SET_FILENAME;
+//  req.subtype = PLAYER_LOG_SET_FILENAME;
   if(strlen(fname) > (sizeof(req.filename)-1))
   {
     PLAYERC_ERR("filename too long");
@@ -172,7 +172,7 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
   }
   strcpy(req.filename,fname);
 
-  if(playerc_client_request(device->info.client, &device->info,
+  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_SET_FILENAME,
                             &req, sizeof(req), NULL, 0) < 0)
   {
     PLAYERC_ERR("failed to set logfile name");

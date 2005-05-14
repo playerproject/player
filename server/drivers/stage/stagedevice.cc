@@ -79,11 +79,7 @@ StageDevice::StageDevice(player_stage_info_t* info,
   reply_buffer = (uint8_t*)((caddr_t)config_buffer + 
                             (m_info->config_len * sizeof(playerqueue_elt_t)));
 
-  this->AddInterface(m_info->player_id,PLAYER_ALL_MODE,
-                     (void*)data_buffer, data_len,
-                     (void*)command_buffer, command_len,
-                     (void*)config_buffer, m_info->config_len,
-                     (void*)reply_buffer, m_info->reply_len);
+  this->AddInterface(m_info->player_id,PLAYER_ALL_MODE);
 
   // cache a pointer to my device, so that I can get at these buffers later
   assert(this->device = deviceTable->GetDevice(m_info->player_id));

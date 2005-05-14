@@ -479,7 +479,7 @@ bool PTU46::SetSpeed(char type, int pos)
 
 	char cmd[16];
 	snprintf(cmd,16,"%cs%d ",type,Count);
-	
+
 	// set speed
 	int len = 0;
 	Write(cmd);
@@ -554,8 +554,8 @@ class PTU46_Device:public Driver
 		// this function will be run in a separate thread
 		virtual void Main();
 
-		int HandleConfig(void *client, unsigned char *buffer, size_t len);
-
+		player_ptz_data_t data;
+		player_ptz_cmd_t cmd;
 
 	public:
 		PTU46 * pantilt;
@@ -565,11 +565,14 @@ class PTU46_Device:public Driver
 		int Rate;
 		unsigned char MoveMode;
 
-
 		PTU46_Device( ConfigFile* cf, int section);
 
 		virtual int Setup();
 		virtual int Shutdown();
+
+		// MessageHandler
+		int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
 };
   
 // initialization function
@@ -587,17 +590,14 @@ PTU46_Register(DriverTable* table)
 }
 
 PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
-         sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),1,1)
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
 {
-  player_ptz_data_t data;
-  player_ptz_cmd_t cmd;
 
   data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;
   cmd.pan = cmd.tilt = cmd.zoom = cmd.panspeed = data.tiltspeed = 0;
 
   //PutData((void*)&data,sizeof(data),NULL);
-  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
+  //PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
 
 	MoveMode = PLAYER_PTZ_POSITION_CONTROL;
 
@@ -632,7 +632,7 @@ PTU46_Device::Setup()
   
 
   // zero the command buffer
-  PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
+  //PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
 
   // start the thread to talk with the camera
   StartThread();
@@ -653,167 +653,135 @@ PTU46_Device::Shutdown()
 	return(0);
 }
 
-
-/* handle a configuration request
- *
- * returns: 0 on success, -1 on error
- */
-int
-PTU46_Device::HandleConfig(void *client, unsigned char *buffer, size_t len)
+int PTU46_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
 {
-	bool success = false;
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+	*resp_len = 0;
+	
+	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
 
-  switch(buffer[0]) {
-  case PLAYER_PTZ_GENERIC_CONFIG_REQ:
-	// we dont have any generic config at the moment
-	// could be usig in future to set power mode etc of pan tilt unit
-	// and acceleration etc, for now respond NACK to any request
-
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
-	  PLAYER_ERROR("PTU46: Failed to PutReply\n");
-	}
-	break;
-  case PLAYER_PTZ_CONTROL_MODE_REQ:
-	if (buffer[1] != MoveMode && buffer[1] == PLAYER_PTZ_VELOCITY_CONTROL)
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GENERIC_CONFIG, device_id))
 	{
-		if(pantilt->SetMode(PTU46_VELOCITY))
+		assert(hdr->size == 0);
+  		return PLAYER_MSGTYPE_RESP_NACK;
+	}
+
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_CONTROL_MODE, device_id))
+	{
+		assert(hdr->size == 1);
+		if(data[0] != MoveMode)
 		{
-			success = true;
-			MoveMode = PLAYER_PTZ_VELOCITY_CONTROL;
-		}		
+			uint8_t NewMode;
+			if (data[0] == PLAYER_PTZ_VELOCITY_CONTROL)
+				NewMode = PTU46_VELOCITY;
+			else if (data[0] == PLAYER_PTZ_POSITION_CONTROL)
+				NewMode = PTU46_POSITION;		
+			else
+				return PLAYER_MSGTYPE_RESP_NACK;
+					
+			if(pantilt->SetMode(NewMode))
+				MoveMode = NewMode;
+			else
+				return PLAYER_MSGTYPE_RESP_NACK;
+		}
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if (buffer[1] != MoveMode && buffer[1] == PLAYER_PTZ_POSITION_CONTROL)
+
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
 	{
-		if(pantilt->SetMode(PTU46_POSITION))
+		assert(hdr->size == sizeof(player_ptz_cmd_t));
+		player_ptz_cmd_t * new_command = reinterpret_cast<player_ptz_cmd_t *> (data);
+		int16_t pan = ntohs(new_command->pan);
+		int16_t tilt = ntohs(new_command->tilt);
+		//uint16_t zoom = ntohs(new_command->zoom);
+		int16_t panspeed = ntohs(new_command->panspeed);
+		int16_t tiltspeed = ntohs(new_command->tiltspeed);
+	
+		bool success = true;
+		// Different processing depending on movement mode
+		if (MoveMode == PLAYER_PTZ_VELOCITY_CONTROL)
 		{
-			success = true;
-			MoveMode = PLAYER_PTZ_POSITION_CONTROL;
-		}		
-	}
-
-	if (success)
-	{
-		if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL)) {
-		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
+			// ignore pan and tilt, just use velocity
+			if (cmd.panspeed != panspeed)
+			{
+				if(pantilt->SetSpeed(PTU46_PAN,panspeed))
+					cmd.panspeed = panspeed;
+				else
+					success = false;
+			}
+			if (cmd.tiltspeed != tiltspeed)
+			{
+				if(pantilt->SetSpeed(PTU46_TILT,tiltspeed))
+					cmd.tiltspeed = tiltspeed;
+				else
+					success = false;
+			}
 		}
-	}
-	else
-	{
-		if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL)) {
-		  PLAYER_ERROR("PTU46: Failed to PutReply\n");
+		else
+		{
+			// position move mode, ignore zero velocities, set pan tilt pos
+			if (cmd.pan != pan)
+			{
+				if(pantilt->SetPos(PTU46_PAN,pan))
+					cmd.pan = pan;
+				else
+					success = false;
+			}
+			if (cmd.tilt != tilt)
+			{
+				if(pantilt->SetPos(PTU46_TILT,tilt))
+					cmd.tilt = tilt;
+				else
+					success = false;
+			}
+			if (cmd.panspeed != panspeed && panspeed != 0)
+			{
+				if(pantilt->SetSpeed(PTU46_PAN,panspeed))
+					cmd.panspeed = panspeed;
+				else
+					success = false;
+			}
+			if (cmd.tiltspeed != tiltspeed && tiltspeed != 0)
+			{
+				if(pantilt->SetSpeed(PTU46_TILT,tiltspeed))
+					cmd.tiltspeed = tiltspeed;
+				else
+					success = false;
+			}
 		}
+		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-    break;
 
-  default:
-    return -1;
-  }
-
-  return 0;
+	return -1;
 }
+
 
 // this function will be run in a separate thread
 void 
 PTU46_Device::Main()
 {
-  player_ptz_data_t data;
-  player_ptz_cmd_t command;
-  char buffer[256];
-  size_t buffer_len;
-  void *client;
-  short pan=0, tilt=0;
-  short panspeed=0, tiltspeed=0;
-  
-  while(1) {
-    pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
-    pthread_testcancel();
-
-
-	command.pan = ntohs(command.pan);
-	command.tilt = ntohs(command.tilt);
-	command.zoom = ntohs(command.zoom);
-	command.panspeed = ntohs(command.panspeed);
-	command.tiltspeed = ntohs(command.tiltspeed);
-
-	bool success = true;
-	// Different processing depending on movement mode
-	if (MoveMode == PLAYER_PTZ_VELOCITY_CONTROL)
+	for(;;)
 	{
-		// ignore pan and tilt, just use velocity
-		if (command.panspeed != panspeed)
-		{
-			if(pantilt->SetSpeed(PTU46_PAN,command.panspeed))
-				panspeed = command.panspeed;
-			else
-				success = false;
-		}
-		if (command.tiltspeed != tiltspeed)
-		{
-			if(pantilt->SetSpeed(PTU46_TILT,command.tiltspeed))
-				tiltspeed = command.tiltspeed;
-			else
-				success = false;
-		}
+	  	ProcessMessages();
+	  
+	    // Copy the data.
+	    data.pan = htons(pantilt->GetPos(PTU46_PAN));
+	    data.tilt = htons(pantilt->GetPos(PTU46_TILT));
+	    data.zoom = 0;
+		data.panspeed = htons(pantilt->GetSpeed(PTU46_PAN));
+		data.tiltspeed = htons(pantilt->GetSpeed(PTU46_TILT));
+	    
+	    /* test if we are supposed to cancel */
+	    pthread_testcancel();
+	    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
+	    
+		// repeat frequency (default to 10 Hz)
+	    usleep(PTZ_SLEEP_TIME_USEC);
 	}
-	else
-	{
-		// position move mode, ignore zero velocities, set pan tilt pos
-		if (command.pan != pan)
-		{
-			if(pantilt->SetPos(PTU46_PAN,command.pan))
-				pan = command.pan;
-			else
-				success = false;
-		}
-		if (command.tilt != tilt)
-		{
-			if(pantilt->SetPos(PTU46_TILT,command.tilt))
-				tilt = command.tilt;
-			else
-				success = false;
-		}
-		if (command.panspeed != panspeed && command.panspeed != 0)
-		{
-			if(pantilt->SetSpeed(PTU46_PAN,command.panspeed))
-				panspeed = command.panspeed;
-			else
-				success = false;
-		}
-		if (command.tiltspeed != tiltspeed && command.tiltspeed != 0)
-		{
-			if(pantilt->SetSpeed(PTU46_TILT,command.tiltspeed))
-				tiltspeed = command.tiltspeed;
-			else
-				success = false;
-		}
-	}
-    
-  
-    // Copy the data.
-    data.pan = htons(pantilt->GetPos(PTU46_PAN));
-    data.tilt = htons(pantilt->GetPos(PTU46_TILT));
-    data.zoom = 0;
-	data.panspeed = htons(pantilt->GetSpeed(PTU46_PAN));
-	data.tiltspeed = htons(pantilt->GetSpeed(PTU46_TILT));
-    
-    /* test if we are supposed to cancel */
-    pthread_testcancel();
-    PutData((unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
-    
-
-    // check for config requests 
-    if((buffer_len = 
-        GetConfig(&client, (void *)buffer, sizeof(buffer), NULL)) > 0) 
-    {
-      
-      if (HandleConfig(client, (uint8_t *)buffer, buffer_len) < 0) {
-		fprintf(stderr, "PTU46: error handling config request\n");
-      }
-    }
-
-	// repeat frequency (default to 10 Hz)
-    usleep(PTZ_SLEEP_TIME_USEC);
-    }
 }
+
 

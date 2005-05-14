@@ -178,7 +178,7 @@ int player_connect_sockaddr(player_connection_t* conn,
   int sock;
   char banner[PLAYER_IDENT_STRLEN];
   int thisnumread,numread;
-  player_msghdr_t hdr;
+  player_msghdr_t hdr = {0};
   struct sockaddr_in client;
 
   /* pointers must be good */
@@ -250,9 +250,6 @@ int player_connect_sockaddr(player_connection_t* conn,
     hdr.stx = htons(PLAYER_STXX);
     hdr.type = htons(PLAYER_MSGTYPE_REQ);
     hdr.device = htons(PLAYER_PLAYER_CODE);
-    hdr.device_index = 0;
-    hdr.reserved = 0;
-    hdr.size = 0;
     if(sendto(sock,(unsigned char*)&hdr,sizeof(hdr),0,
               (struct sockaddr*)server,sizeof(*server)) < 0)
     {
@@ -279,7 +276,7 @@ int player_connect_sockaddr(player_connection_t* conn,
         perror("player_connect(): recvfrom() failed");
       return(-1);
     }
-    conn->id = ntohs(hdr.reserved >> 16);
+    conn->id = ntohs(hdr.conid);
   }
   else
   {
@@ -323,12 +320,12 @@ int player_disconnect(player_connection_t* conn)
  *      0 if everything's OK
  *     -1 if something went wrong (you should probably close the connection!)
  */
-int player_request(player_connection_t* conn, 
+int player_request(player_connection_t* conn, uint8_t reqtype,
                    uint16_t device, uint16_t device_index, 
                    const char* payload, size_t payloadlen, 
                    player_msghdr_t* replyhdr, char* reply, size_t replylen)
 {
-  player_msghdr_t hdr;
+  player_msghdr_t hdr = {0};
   unsigned char *buffer;
   int retry = 0;
 
@@ -346,17 +343,18 @@ int player_request(player_connection_t* conn,
     return(-1);
   }
   hdr.stx = htons(PLAYER_STXX);
-  hdr.type = htons(PLAYER_MSGTYPE_REQ);
+  hdr.type = PLAYER_MSGTYPE_REQ;
+  hdr.subtype = reqtype;
   hdr.device = htons(device);
   hdr.device_index = htons(device_index);
-  hdr.time_sec = 0;
-  hdr.time_usec = 0;
-  hdr.timestamp_sec = 0;
-  hdr.timestamp_usec = 0;
+//  hdr.time_sec = 0;
+//  hdr.time_usec = 0;
+//  hdr.timestamp_sec = 0;
+//  hdr.timestamp_usec = 0;
   if(conn->protocol == PLAYER_TRANSPORT_UDP)
-    hdr.reserved = htons(conn->id) << 16;
-  else
-    hdr.reserved = 0;
+    hdr.conid = htons(conn->id);
+//  else
+//    hdr.sequence = 0;
   hdr.size = htonl(payloadlen);
 
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
@@ -441,7 +439,7 @@ int player_request_device_access(player_connection_t* conn,
   replybuffer = (unsigned char *)
     malloc(sizeof(unsigned char*)*PLAYER_MAX_MESSAGE_SIZE);
 
-  this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
+  //this_req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
   this_req.code = htons(device);
   this_req.index = htons(device_index);
   this_req.access = req_access;
@@ -449,7 +447,7 @@ int player_request_device_access(player_connection_t* conn,
   memcpy(payload,&this_req,sizeof(player_device_req_t));
 
   //cannot use sizeof(replybuffer) because we malloc'd the memory.
-  if(player_request(conn, PLAYER_PLAYER_CODE, 0, 
+  if(player_request(conn, PLAYER_PLAYER_DEV, PLAYER_PLAYER_CODE, 0, 
                     payload, sizeof(payload),
                     &replyhdr, replybuffer, PLAYER_MAX_MESSAGE_SIZE) == -1)
     return(-1);
@@ -616,7 +614,8 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   }
 
   /* byte-swap as necessary */
-  hdr->type = ntohs(hdr->type);
+  hdr->type = (hdr->type);
+  hdr->subtype = (hdr->subtype);
   hdr->device = ntohs(hdr->device);
   hdr->device_index = ntohs(hdr->device_index);
   hdr->time_sec = ntohl(hdr->time_sec);
@@ -630,37 +629,39 @@ int player_read_tcp(player_connection_t* conn, player_msghdr_t* hdr,
   //printf("hdr->size %d, payloadlen %d\n",hdr->size,payloadlen);
   
   /* get the payload */
-  if(hdr->size > payloadlen)
-    if(player_debug_level(-1) >= 2)
-      fprintf(stderr,"WARNING: server's message is too big (%d bytes > %d). "
-              "Truncating data.\n", hdr->size, payloadlen);
-
-  mincnt = MIN(hdr->size, payloadlen);
-
-  readcnt = 0;
-  while(readcnt < mincnt)
+  if (hdr->size > 0 && payloadlen > 0)
   {
-    if((thisreadcnt = read((*conn).sock,payload+readcnt,mincnt-readcnt)) <= 0)
-    {
+    if(hdr->size > payloadlen)
       if(player_debug_level(-1) >= 2)
-        perror("player_read(): read() errored while reading payload.");
-      return(-1);
-    }
-    readcnt += thisreadcnt;
-  }
+        fprintf(stderr,"WARNING: server's message is too big (%d bytes > %d). "
+                "Truncating data.\n", hdr->size, payloadlen);
 
-  while(readcnt < hdr->size)
-  {
-    if((thisreadcnt = read((*conn).sock,dummy,
+    mincnt = MIN(hdr->size, payloadlen);
+
+    readcnt = 0;
+    while(readcnt < mincnt)
+    {
+      if((thisreadcnt = read((*conn).sock,payload+readcnt,mincnt-readcnt)) <= 0)
+      {
+        if(player_debug_level(-1) >= 2)
+          perror("player_read(): read() errored while reading payload.");
+        return(-1);
+      }
+      readcnt += thisreadcnt;
+    }
+
+    while(readcnt < hdr->size)
+    {
+      if((thisreadcnt = read((*conn).sock,dummy,
                            MIN(PLAYER_MAX_MESSAGE_SIZE,hdr->size-readcnt))) <= 0)
-    {
-      if(player_debug_level(-1) >= 2)
-        perror("player_read(): read() errored while reading excess bytes.");
-      return(-1);
+      {
+        if(player_debug_level(-1) >= 2)
+          perror("player_read(): read() errored while reading excess bytes.");
+        return(-1);
+      }
+      readcnt += thisreadcnt;
     }
-    readcnt += thisreadcnt;
   }
-
   free(dummy);
   return(0);
 }
@@ -759,7 +760,7 @@ int player_write(player_connection_t* conn,
                  const char* command, size_t commandlen)
 {
   unsigned char *buffer;
-  player_msghdr_t hdr;
+  player_msghdr_t hdr = {0};
 
   // Get memory from the heap, not the stack
   buffer = (unsigned char *)
@@ -779,14 +780,14 @@ int player_write(player_connection_t* conn,
   hdr.type = htons(PLAYER_MSGTYPE_CMD);
   hdr.device = htons(device);
   hdr.device_index = htons(device_index);
-  hdr.time_sec = 0;
-  hdr.time_usec = 0;
-  hdr.timestamp_sec = 0;
-  hdr.timestamp_usec = 0;
+//  hdr.time_sec = 0;
+//  hdr.time_usec = 0;
+//  hdr.timestamp_sec = 0;
+//  hdr.timestamp_usec = 0;
   if(conn->protocol == PLAYER_TRANSPORT_UDP)
-    hdr.reserved = htons(conn->id) << 16;
-  else
-    hdr.reserved = 0;
+    hdr.conid = htons(conn->id);
+//  else
+//    hdr.sequence = 0;
   hdr.size = htonl(commandlen);
   memcpy(buffer,&hdr,sizeof(player_msghdr_t));
   memcpy(buffer+sizeof(player_msghdr_t),command,commandlen);
