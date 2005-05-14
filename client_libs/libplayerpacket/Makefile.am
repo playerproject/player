@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -I$(top_srcdir)/server -fPIC -Wall
 
 lib_LIBRARIES = libplayerpacket.a
 

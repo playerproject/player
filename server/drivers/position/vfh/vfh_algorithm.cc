@@ -558,7 +558,7 @@ bool VFH_Algorithm::Cant_Turn_To_Goal()
 //     printf("Cant_Turn_To_Goal: Blocked_Circle_Radius = %f\n",Blocked_Circle_Radius);
 
     // right circle
-    dist_between_centres = hypotf( goal_x - this->Blocked_Circle_Radius, goal_y );
+    dist_between_centres = hypot( goal_x - this->Blocked_Circle_Radius, goal_y );
     if ( dist_between_centres+this->Goal_Distance_Tolerance < this->Blocked_Circle_Radius )
     {
 //        printf("Goal close & right\n");
@@ -566,7 +566,7 @@ bool VFH_Algorithm::Cant_Turn_To_Goal()
     }
 
     // left circle
-    dist_between_centres = hypotf( -goal_x - this->Blocked_Circle_Radius, goal_y );
+    dist_between_centres = hypot( -goal_x - this->Blocked_Circle_Radius, goal_y );
     if ( dist_between_centres+this->Goal_Distance_Tolerance < this->Blocked_Circle_Radius )
     {
 //        printf("Goal close & left.\n");

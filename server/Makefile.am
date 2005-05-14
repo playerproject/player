@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
+AM_CPPFLAGS = -fPIC -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
 
 if INCLUDE_RTKGUI
 RTKGUI_LIBS=-L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
