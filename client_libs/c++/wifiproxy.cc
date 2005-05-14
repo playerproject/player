@@ -255,9 +255,9 @@ WiFiProxy::GetMAC(char *mac, int len)
   player_wifi_mac_req_t req;
   player_msghdr_t hdr;
 
-  req.subtype = PLAYER_WIFI_MAC_REQ;
+//  req.subtype = PLAYER_WIFI_MAC_REQ;
 
-  if (client->Request(m_device_id, (const char *)&req, sizeof(req),
+  if (client->Request(m_device_id, PLAYER_WIFI_MAC, (const char *)&req, sizeof(req),
 		      &hdr, buf, sizeof(buf)) < 0) {
     *mac = '\0';
   } else {
@@ -299,12 +299,12 @@ WiFiProxy::AddSpyHost(char *address)
 {
   player_wifi_iwspy_addr_req_t req;
 
-  req.subtype = PLAYER_WIFI_IWSPY_ADD_REQ;
+  //req.subtype = PLAYER_WIFI_IWSPY_ADD_REQ;
   strncpy(req.address, address, sizeof(req.address));
 
   printf("WIFIPROXY: add host %s\n", address);
 
-  int ret = client->Request(m_device_id, (const char *)&req, sizeof(req));
+  int ret = client->Request(m_device_id, PLAYER_WIFI_IWSPY_ADD, (const char *)&req, sizeof(req));
   printf("WIFIPROXY: ret=%d\n", ret);
   return ret;
 }
@@ -318,10 +318,10 @@ WiFiProxy::RemoveSpyHost(char *address)
 {
   player_wifi_iwspy_addr_req_t req;
   
-  req.subtype = PLAYER_WIFI_IWSPY_DEL_REQ;
+//  req.subtype = PLAYER_WIFI_IWSPY_DEL_REQ;
   strncpy(req.address, address, sizeof(req.address));
 
-  return client->Request(m_device_id, (const char *)&req, sizeof(req));
+  return client->Request(m_device_id, PLAYER_WIFI_IWSPY_DEL, (const char *)&req, sizeof(req));
 }
 
   

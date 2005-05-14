@@ -173,8 +173,10 @@ class P2OS : public Driver
     void ToggleSonarPower(unsigned char val);
     /* toggle motors on/off, according to val */
     void ToggleMotorPower(unsigned char val);
-    void HandleConfig(void);
-    void GetCommand(void);
+    int HandleConfig(player_msghdr * hdr,
+                     uint8_t * data, uint8_t * resp_data,
+                     int * resp_len);
+    int HandleCommand(player_msghdr * hdr, uint8_t * data);
     void PutData(void);
     void HandlePositionCommand(player_position_cmd_t position_cmd);
     void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
@@ -213,6 +215,13 @@ class P2OS : public Driver
 
     int Setup();
     int Shutdown();
+
+    // MessageHandler
+    int ProcessMessage(ClientData * client, 
+                       player_msghdr * hdr, 
+                       uint8_t * data, 
+		       uint8_t * resp_data, 
+		       int * resp_len);
 
     void CMUcamReset();
     void CMUcamTrack(int rmin=0, int rmax=0, int gmin=0,

@@ -196,6 +196,20 @@ void ClientProxy::StoreData(player_msghdr_t hdr, const char* buffer)
 #endif
 
 // interface that all proxies SHOULD provide
+void ClientProxy::FillGeom(player_msghdr_t hdr, const char* buffer)
+{
+  if(player_debug_level(-1) >= 1)
+    fputs("WARNING: Proxy Doesnt support FillGeom\n",stderr);
+}
+
+// interface that all proxies SHOULD provide
+void ClientProxy::FillConfig(player_msghdr_t hdr, const char* buffer)
+{
+  if(player_debug_level(-1) >= 1)
+    fputs("WARNING: Proxy Doesnt support FillConfig\n",stderr);
+}
+
+// interface that all proxies SHOULD provide
 void ClientProxy::Print()
 {
   puts("Don't know how to print this device.");

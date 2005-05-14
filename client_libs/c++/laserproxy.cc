@@ -64,7 +64,7 @@ int LaserProxy::Configure(double tmp_min_angle,
 
   player_laser_config_t config;
 
-  config.subtype = PLAYER_LASER_SET_CONFIG;
+  //config.subtype = PLAYER_LASER_SET_CONFIG;
   config.min_angle = htons((int16_t)rint(RTOD(tmp_min_angle)*1e2));
   config.max_angle = htons((int16_t)rint(RTOD(tmp_max_angle)*1e2));
   config.resolution = htons(tmp_scan_res);
@@ -78,7 +78,7 @@ int LaserProxy::Configure(double tmp_min_angle,
   intensity = tmp_intensity;
   range_res = (double)tmp_range_res;
 
-  return(client->Request(m_device_id,(const char*)&config,
+  return(client->Request(m_device_id,PLAYER_LASER_SET_CONFIG,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -94,10 +94,10 @@ int LaserProxy::GetConfigure()
   player_laser_config_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_LASER_GET_CONFIG;
+ // config.subtype = PLAYER_LASER_GET_CONFIG;
 
-  if(client->Request(m_device_id,
-                     (const char*)&config, sizeof(config.subtype),
+  if(client->Request(m_device_id,PLAYER_LASER_GET_CONFIG,
+                     (const char*)&config, 0,
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
 
@@ -164,10 +164,10 @@ LaserProxy::SetLaserState(const unsigned char state)
 
     player_laser_power_config_t cfg;
 
-    cfg.subtype = PLAYER_LASER_POWER_CONFIG;
+ //   cfg.subtype = PLAYER_LASER_POWER_CONFIG;
     cfg.value = state;
 
-    return (client->Request(m_device_id,
+    return (client->Request(m_device_id,PLAYER_LASER_POWER_CONFIG,
 			(const char *) &cfg, sizeof(cfg)));
 }
 

@@ -42,13 +42,18 @@
 #define PLAYER_TRANSPORT_UDP 2
 
 /* the player message types */
-#define PLAYER_MSGTYPE_DATA      ((uint16_t)1)
-#define PLAYER_MSGTYPE_CMD       ((uint16_t)2)
-#define PLAYER_MSGTYPE_REQ       ((uint16_t)3)
-#define PLAYER_MSGTYPE_RESP_ACK  ((uint16_t)4)
-#define PLAYER_MSGTYPE_SYNCH     ((uint16_t)5)
-#define PLAYER_MSGTYPE_RESP_NACK ((uint16_t)6)
-#define PLAYER_MSGTYPE_RESP_ERR  ((uint16_t)7)
+#define PLAYER_MSGTYPE_DATA      ((uint8_t)1)
+#define PLAYER_MSGTYPE_CMD       ((uint8_t)2)
+#define PLAYER_MSGTYPE_REQ       ((uint8_t)3)
+#define PLAYER_MSGTYPE_RESP_ACK  ((uint8_t)4)
+#define PLAYER_MSGTYPE_SYNCH     ((uint8_t)5)
+#define PLAYER_MSGTYPE_RESP_NACK ((uint8_t)6)
+#define PLAYER_MSGTYPE_RESP_ERR  ((uint8_t)7)
+//#define PLAYER_MSGTYPE_GEOM      ((uint16_t)8)
+//#define PLAYER_MSGTYPE_CONFIG    ((uint16_t)9)
+// use bitwise or of MSGTYPE_USER with your private message code for custom messages
+//#define PLAYER_MSGTYPE_USER      ((uint16_t)128)
+
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
@@ -153,6 +158,8 @@
  */
 #define PLAYER_MAX_REQREP_SIZE 4096 /*4KB*/
 
+#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 32
+
 /* the default player port */
 #define PLAYER_PORTNUM 6665
 
@@ -178,7 +185,9 @@ typedef struct player_msghdr
   /** Start character; always equal to "xX" (0x5878) */
   uint16_t stx;     
   /** Message type; must be one of PLAYER_MSGTYPE_* */
-  uint16_t type;    
+  uint8_t type;    
+  /** Message subtype; interface specific */
+  uint8_t subtype;    
   /** What kind of device; must be one of PLAYER_*_CODE */
   uint16_t device;  
   /** Which device of that kind */
@@ -191,8 +200,10 @@ typedef struct player_msghdr
   uint32_t timestamp_sec;  
   /** Time when the current data/response was generated */
   uint32_t timestamp_usec; 
-  /** For extension */
-  uint32_t reserved;  
+  /** For tracking UDP connections */
+  uint16_t conid;  
+  /** For keeping track of associated messages */
+  uint16_t seq;  
   /** Size in bytes of the payload to follow */
   uint32_t size;  
 } __PACKED__ player_msghdr_t;
@@ -218,6 +229,11 @@ This device produces no data and accepts no commands.
 #define PLAYER_CLOSE_MODE 99   // 'c'
 #define PLAYER_ERROR_MODE 101  // 'e'
 
+
+#define PLAYER_DATAMODE_PULL 1
+#define PLAYER_DATAMODE_NEW 2
+#define PLAYER_DATAMODE_ASYNC 4
+
 /** Data delivery mode: Send data at a fixed rate (default 10Hz;
 see PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) from ALL
 subscribed devices , regardless of whether the data is new or old. A
@@ -227,19 +243,19 @@ PLAYER_MSGTYPE_SYNCH packet follows each set of data. Rarely used. */
 request below), send data from ALL subscribed devices, regardless of
 whether the data is new or old.  A PLAYER_MSGTYPE_SYNCH packet follows
 each set of data.  Rarely used. */
-#define PLAYER_DATAMODE_PULL_ALL 1
+#define PLAYER_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL
 /** Data delivery mode: Send data at a fixed rate (default 10Hz; see
 PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) only from those
 subscribed devices that have produced new data since the last time data
 was pushed to this client.  A PLAYER_MSGTYPE_SYNCH packet follows each
 set of data.  This is the default mode. */
-#define PLAYER_DATAMODE_PUSH_NEW 2
+#define PLAYER_DATAMODE_PUSH_NEW PLAYER_DATAMODE_NEW
 /** Data delivery mode: Only on request (see PLAYER_PLAYER_DATA_REQ
 request below), send data only from those subscribed devices that have
 produced new data since the last time data was pushed to this client.
 Use this mode if your client runs slowly or at an upredictable rate
 (e.g., a GUI). A PLAYER_MSGTYPE_SYNCH packet follows each set of data. */
-#define PLAYER_DATAMODE_PULL_NEW 3
+#define PLAYER_DATAMODE_PULL_NEW (PLAYER_DATAMODE_PULL | PLAYER_DATAMODE_NEW)
 /** Data delivery mode: When a subscribed device produces new data, send
 it. This is the lowest-latency delivery mode; when a device produces data,
 the server (almost) immediately sends it on the client.  So the client may
@@ -247,17 +263,18 @@ receive data at an arbitrarily high rate. PLAYER_MSGTYPE_SYNCH packets
 are still sent, but at a fixed rate (see PLAYER_PLAYER_DATAFREQ_REQ to
 change this rate) that is unrelated to rate at which data are delivered
 from devices. */
-#define PLAYER_DATAMODE_PUSH_ASYNC 4
+#define PLAYER_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_ASYNC
 
 /* The request subtypes */
-#define PLAYER_PLAYER_DEVLIST_REQ     ((uint16_t)1)
-#define PLAYER_PLAYER_DRIVERINFO_REQ  ((uint16_t)2)
-#define PLAYER_PLAYER_DEV_REQ         ((uint16_t)3)
-#define PLAYER_PLAYER_DATA_REQ        ((uint16_t)4)
-#define PLAYER_PLAYER_DATAMODE_REQ    ((uint16_t)5)
-#define PLAYER_PLAYER_DATAFREQ_REQ    ((uint16_t)6)
-#define PLAYER_PLAYER_AUTH_REQ        ((uint16_t)7)
-#define PLAYER_PLAYER_NAMESERVICE_REQ ((uint16_t)8)
+#define PLAYER_PLAYER_DEVLIST     ((uint8_t)1)
+#define PLAYER_PLAYER_DRIVERINFO  ((uint8_t)2)
+#define PLAYER_PLAYER_DEV         ((uint8_t)3)
+#define PLAYER_PLAYER_DATA        ((uint8_t)4)
+#define PLAYER_PLAYER_DATAMODE    ((uint8_t)5)
+#define PLAYER_PLAYER_DATAFREQ    ((uint8_t)6)
+#define PLAYER_PLAYER_AUTH        ((uint8_t)7)
+#define PLAYER_PLAYER_NAMESERVICE ((uint8_t)8)
+#define PLAYER_PLAYER_IDENT       ((uint8_t)9)
 
 /** @brief A device identifier.
 
@@ -284,15 +301,11 @@ typedef struct player_device_id
     with the fields filled in. */
 typedef struct player_device_devlist
 {
-  /** Subtype; must be PLAYER_PLAYER_DEVLIST_REQ. */
-  uint16_t subtype;
-
   /** The number of devices */
   uint16_t device_count;
 
   /** The list of available devices. */
   player_device_id_t devices[PLAYER_MAX_DEVICES];
-  
 } __PACKED__ player_device_devlist_t;
 
 /** @brief Configuration request: Get the driver name for a particular device.
@@ -302,7 +315,7 @@ typedef struct player_device_devlist
 typedef struct player_device_driverinfo
 {
   /** Subtype; must be PLAYER_PLAYER_DRIVERINFO_REQ. */
-  uint16_t subtype;
+  //uint16_t subtype;
 
   /** The device identifier. */
   player_device_id_t id;
@@ -342,7 +355,7 @@ appropriate access.
 typedef struct player_device_req
 {
   /** Subtype; must be PLAYER_PLAYER_DEV_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
   /** The interface for the device */
   uint16_t code;
   /** The index for the device */
@@ -357,7 +370,7 @@ request. */
 typedef struct player_device_resp
 {
   /** Subtype; will be PLAYER_PLAYER_DEV_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
   /** The interface for the device */
   uint16_t code;
   /** The index for the device */
@@ -380,7 +393,7 @@ PLAYER_DATAMODE_PULL_* mode is in use.  */
 typedef struct player_device_data_req
 {
   /** Subtype; must be PLAYER_PLAYER_DATA_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
 } __PACKED__ player_device_data_req_t;
 
 /** @brief Configuration request: Change data delivery mode.
@@ -393,7 +406,7 @@ acknowledgement. */
 typedef struct player_device_datamode_req
 {
   /** Subtype; must be PLAYER_PLAYER_DATAMODE_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
   /** The requested mode */
   uint8_t mode;
 
@@ -410,7 +423,7 @@ The server's reply will be a zero-length acknowledgement. */
 typedef struct player_device_datafreq_req
 {
   /** Subtype; must be PLAYER_PLAYER_DATAFREQ_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
   /** requested frequency in Hz */
   uint16_t frequency;
 } __PACKED__ player_device_datafreq_req_t;
@@ -448,7 +461,7 @@ This mechanism was never really used, and may be removed. */
 typedef struct player_device_auth_req
 {
   /** Subtype; must by PLAYER_PLAYER_AUTH_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
   /** The authentication key */
   uint8_t auth_key[PLAYER_KEYLEN];
 
@@ -459,7 +472,7 @@ typedef struct player_device_auth_req
 typedef struct player_device_nameservice_req
 {
   /** Subtype; must by PLAYER_PLAYER_NAMESERVICE_REQ */
-  uint16_t subtype;
+  //uint16_t subtype;
   /** The robot name */
   uint8_t name[PLAYER_MAX_DEVICE_STRING_LEN];
   /** The corresponding port */
@@ -559,17 +572,17 @@ The @p motor interface is used to control a single motor.
 */
 
 /* The various configuration request types. */
-//#define PLAYER_MOTOR_GET_GEOM_REQ             ((uint8_t)1)
-#define PLAYER_MOTOR_POWER_REQ                ((uint8_t)2)
-#define PLAYER_MOTOR_VELOCITY_MODE_REQ        ((uint8_t)3)
-#define PLAYER_MOTOR_RESET_ODOM_REQ           ((uint8_t)4)
-#define PLAYER_MOTOR_POSITION_MODE_REQ        ((uint8_t)5)
-#define PLAYER_MOTOR_SPEED_PID_REQ            ((uint8_t)6)
-#define PLAYER_MOTOR_POSITION_PID_REQ         ((uint8_t)7)
-#define PLAYER_MOTOR_SPEED_PROF_REQ           ((uint8_t)8)
-#define PLAYER_MOTOR_SET_ODOM_REQ             ((uint8_t)9)
-#define PLAYER_MOTOR_SET_GEAR_REDUCITION_REQ  ((uint8_t)10)
-#define PLAYER_MOTOR_SET_TICS_REQ             ((uint8_t)11)
+#define PLAYER_MOTOR_GET_GEOM             ((uint8_t)1)
+#define PLAYER_MOTOR_POWER                ((uint8_t)2)
+#define PLAYER_MOTOR_VELOCITY_MODE        ((uint8_t)3)
+#define PLAYER_MOTOR_RESET_ODOM           ((uint8_t)4)
+#define PLAYER_MOTOR_POSITION_MODE        ((uint8_t)5)
+#define PLAYER_MOTOR_SPEED_PID            ((uint8_t)6)
+#define PLAYER_MOTOR_POSITION_PID         ((uint8_t)7)
+#define PLAYER_MOTOR_SPEED_PROF           ((uint8_t)8)
+#define PLAYER_MOTOR_SET_ODOM             ((uint8_t)9)
+#define PLAYER_MOTOR_SET_GEAR_REDUCITION  ((uint8_t)10)
+#define PLAYER_MOTOR_SET_TICS             ((uint8_t)11)
 
 /** @brief Data
 
@@ -606,7 +619,7 @@ typedef struct player_motor_cmd
 typedef struct player_motor_position_mode_req
 {
   /** subtype;  must be PLAYER_MOTOR_POSITION_MODE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** 0 for velocity mode, 1 for position mode */
   uint8_t state;
 } __PACKED__ player_motor_position_mode_req_t;
@@ -622,7 +635,7 @@ zero-length acknowledgement.*/
 typedef struct player_motor_velocitymode_config
 {
   /** subtype; must be PLAYER_MOTOR_VELOCITY_MODE_REQ */
-  uint8_t request;
+  //int8_t request;
   /** driver-specific */
   uint8_t value;
 } __PACKED__ player_motor_velocitymode_config_t;
@@ -634,7 +647,7 @@ request.  The server will reply with a zero-length acknowledgement. */
 typedef struct player_motor_resetodom_config
 {
   /** subtype; must be PLAYER_MOTOR_RESET_ODOM_REQ */
-  uint8_t request;
+  //uint8_t request;
 } __PACKED__ player_motor_resetodom_config_t;
 
 /** @brief Configuration request: Set odometry.
@@ -643,7 +656,7 @@ To set the motor's odometry to a particular state, use this request. */
 typedef struct player_motor_set_odom_req
 {
   /** subtype; must be PLAYER_MOTOR_SET_ODOM_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Theta in mrad */
   int32_t theta;
 }__PACKED__ player_motor_set_odom_req_t;
@@ -652,7 +665,7 @@ typedef struct player_motor_set_odom_req
 typedef struct player_motor_speed_pid_req
 {
   /** subtype; must be PLAYER_MOTOR_SPEED_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_motor_speed_pid_req_t;
@@ -661,7 +674,7 @@ typedef struct player_motor_speed_pid_req
 typedef struct player_motor_position_pid_req
 {
   /** subtype; must be PLAYER_MOTOR_POSITION_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_motor_position_pid_req_t;
@@ -673,7 +686,7 @@ acceleration and deacceleration.  */
 typedef struct player_motor_speed_prof_req
 {
   /** subtype; must be PLAYER_MOTOR_SPEED_PROF_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** max speed */
   int32_t speed;
   /** max acceleration */
@@ -693,7 +706,7 @@ still attached.  */
 typedef struct player_motor_power_config
 {
   /** subtype; must be PLAYER_MOTOR_MOTOR_POWER_REQ */
-  uint8_t request;
+  //uint8_t request;
   /** 0 for off, 1 for on */
   uint8_t value;
 } __PACKED__ player_motor_power_config_t;
@@ -712,15 +725,19 @@ The @p position interface is used to control mobile robot bases in 2D.
 */
 
 /* The various configuration request types. */
-#define PLAYER_POSITION_GET_GEOM_REQ          ((uint8_t)1)
-#define PLAYER_POSITION_MOTOR_POWER_REQ       ((uint8_t)2)
-#define PLAYER_POSITION_VELOCITY_MODE_REQ     ((uint8_t)3)
-#define PLAYER_POSITION_RESET_ODOM_REQ        ((uint8_t)4)
-#define PLAYER_POSITION_POSITION_MODE_REQ     ((uint8_t)5)
-#define PLAYER_POSITION_SPEED_PID_REQ         ((uint8_t)6)
-#define PLAYER_POSITION_POSITION_PID_REQ      ((uint8_t)7)
-#define PLAYER_POSITION_SPEED_PROF_REQ        ((uint8_t)8)
-#define PLAYER_POSITION_SET_ODOM_REQ          ((uint8_t)9)
+#define PLAYER_POSITION_GET_GEOM          ((uint8_t)1)
+#define PLAYER_POSITION_MOTOR_POWER       ((uint8_t)2)
+#define PLAYER_POSITION_VELOCITY_MODE     ((uint8_t)3)
+#define PLAYER_POSITION_RESET_ODOM        ((uint8_t)4)
+#define PLAYER_POSITION_POSITION_MODE     ((uint8_t)5)
+#define PLAYER_POSITION_SPEED_PID         ((uint8_t)6)
+#define PLAYER_POSITION_POSITION_PID      ((uint8_t)7)
+#define PLAYER_POSITION_SPEED_PROF        ((uint8_t)8)
+#define PLAYER_POSITION_SET_ODOM          ((uint8_t)9)
+
+// data types
+#define PLAYER_POSITION_DATA              ((uint8_t)0)
+#define PLAYER_POSITION_GEOM              ((uint8_t)1)
 
 /* These are possible Segway RMP config commands; see the status command
 in the RMP manual */
@@ -786,7 +803,7 @@ empty.  The server will reply with the pose and size fields filled in. */
 typedef struct player_position_geom
 {
   /** Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Pose of the robot base, in the robot cs (mm, mm, degrees). */
   int16_t pose[3];
   /** Dimensions of the base (mm, mm). */
@@ -809,7 +826,7 @@ still attached.
 typedef struct player_position_power_config
 { 
   /** subtype; must be PLAYER_POSITION_MOTOR_POWER_REQ */
-  uint8_t request;
+  //uint8_t request;
   /** 0 for off, 1 for on */
   uint8_t value; 
 } __PACKED__ player_position_power_config_t;
@@ -842,7 +859,7 @@ For the @ref player_driver_reb driver, 0 is direct velocity control,
 typedef struct player_position_velocitymode_config
 {
   /** subtype; must be PLAYER_POSITION_VELOCITY_MODE_REQ */
-  uint8_t request; 
+  //uint8_t request; 
   /** driver-specific */
   uint8_t value; 
 } __PACKED__ player_position_velocitymode_config_t;
@@ -855,14 +872,14 @@ reply with a zero-length acknowledgement. */
 typedef struct player_position_resetodom_config
 {
   /** subtype; must be PLAYER_POSITION_RESET_ODOM_REQ */
-  uint8_t request; 
+  //uint8_t request; 
 } __PACKED__ player_position_resetodom_config_t;
 
 /** @brief Configuration request: Change control mode. */
 typedef struct player_position_position_mode_req
 {
   /** subtype;  must be PLAYER_POSITION_POSITION_MODE_REQ */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** 0 for velocity mode, 1 for position mode */
   uint8_t state; 
 } __PACKED__ player_position_position_mode_req_t;
@@ -874,7 +891,7 @@ to a particular state, use this request: */
 typedef struct player_position_set_odom_req
 {
   /** subtype; must be PLAYER_POSITION_SET_ODOM_REQ */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** X and Y (in mm) */
   int32_t x, y;
   /** Heading (in degrees) */
@@ -885,7 +902,7 @@ typedef struct player_position_set_odom_req
 typedef struct player_position_speed_pid_req
 {
   /** subtype; must be PLAYER_POSITION_SPEED_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_position_speed_pid_req_t;
@@ -894,7 +911,7 @@ typedef struct player_position_speed_pid_req
 typedef struct player_position_position_pid_req
 {
   /** subtype; must be PLAYER_POSITION_POSITION_PID_REQ */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_position_position_pid_req_t;
@@ -903,7 +920,7 @@ typedef struct player_position_position_pid_req
 typedef struct player_position_speed_prof_req
 {
   /** subtype; must be PLAYER_POSITION_SPEED_PROF_REQ */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** max speed */
   int16_t speed;
   /** max acceleration */
@@ -914,7 +931,7 @@ typedef struct player_position_speed_prof_req
 typedef struct player_rmp_config 
 {
   /** subtype: must be of PLAYER_RMP_* */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Holds various values depending on the type of config.
       See the "Status" command in the Segway manual. */
   uint16_t value;
@@ -938,15 +955,15 @@ will probably replace the @p position interface (eventually).
 */
 
 /* The various configuration request types. */
-#define PLAYER_POSITION2D_GET_GEOM_REQ          ((uint8_t)1)
-#define PLAYER_POSITION2D_MOTOR_POWER_REQ       ((uint8_t)2)
-#define PLAYER_POSITION2D_VELOCITY_MODE_REQ     ((uint8_t)3)
-#define PLAYER_POSITION2D_RESET_ODOM_REQ        ((uint8_t)4)
-#define PLAYER_POSITION2D_POSITION_MODE_REQ     ((uint8_t)5)
-#define PLAYER_POSITION2D_SPEED_PID_REQ         ((uint8_t)6)
-#define PLAYER_POSITION2D_POSITION_PID_REQ      ((uint8_t)7)
-#define PLAYER_POSITION2D_SPEED_PROF_REQ        ((uint8_t)8)
-#define PLAYER_POSITION2D_SET_ODOM_REQ          ((uint8_t)9)
+#define PLAYER_POSITION2D_GET_GEOM          ((uint8_t)1)
+#define PLAYER_POSITION2D_MOTOR_POWER       ((uint8_t)2)
+#define PLAYER_POSITION2D_VELOCITY_MODE     ((uint8_t)3)
+#define PLAYER_POSITION2D_RESET_ODOM        ((uint8_t)4)
+#define PLAYER_POSITION2D_POSITION_MODE     ((uint8_t)5)
+#define PLAYER_POSITION2D_SPEED_PID         ((uint8_t)6)
+#define PLAYER_POSITION2D_POSITION_PID      ((uint8_t)7)
+#define PLAYER_POSITION2D_SPEED_PROF        ((uint8_t)8)
+#define PLAYER_POSITION2D_SET_ODOM          ((uint8_t)9)
 
 /* These are possible Segway RMP config commands; see the status command in
 the RMP manual */
@@ -1011,7 +1028,7 @@ The server will reply with the pose and size fields filled in. */
 typedef struct player_position2d_geom
 {
   /** Packet subtype.  Must be PLAYER_POSITION2D_GET_GEOM_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Pose of the robot base, in the robot cs (mm, mm, mrad). */
   int16_t pose[3];
   /** Dimensions of the base (mm, mm). */
@@ -1031,7 +1048,7 @@ still attached.  */
 typedef struct player_position2d_power_config
 {
   /** subtype; must be PLAYER_POSITION2D_MOTOR_POWER_REQ */
-  uint8_t request;
+  //uint8_t request;
   /** 0 for off, 1 for on */
   uint8_t value;
 } __PACKED__ player_position2d_power_config_t;
@@ -1062,7 +1079,7 @@ For the @ref player_driver_reb driver, 0 is direct velocity control,
 player_position2d_velocitymode_config
 {
   /** subtype; must be PLAYER_POSITION2D_VELOCITY_MODE_REQ */
-  uint8_t request;
+  //uint8_t request;
   /** driver-specific */
   uint8_t value;
 } __PACKED__ player_position2d_velocitymode_config_t;
@@ -1076,14 +1093,14 @@ acknowledgement. */
 typedef struct player_position2d_resetodom_config
 {
   /** subtype; must be PLAYER_POSITION2D_RESET_ODOM_REQ */
-  uint8_t request;
+  //uint8_t request;
 } __PACKED__ player_position2d_resetodom_config_t;
 
 /** @brief Configuration request: Change position control. */
 typedef struct player_position2d_position_mode_req
 {
   /** subtype;  must be PLAYER_POSITION2D_POSITION_MODE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** 0 for velocity mode, 1 for position mode */
   uint8_t state;
 } __PACKED__ player_position2d_position_mode_req_t;
@@ -1094,7 +1111,7 @@ To set the robot's odometry to a particular state, use this request. */
 typedef struct player_position2d_set_odom_req
 {
   /** subtype; must be PLAYER_POSITION2D_SET_ODOM_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** X and Y (in mm) */
   int32_t x, y;
   /** Heading (in mrad) */
@@ -1105,7 +1122,7 @@ typedef struct player_position2d_set_odom_req
 typedef struct player_position2d_speed_pid_req
 {
   /** subtype; must be PLAYER_POSITION2D_SPEED_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_position2d_speed_pid_req_t;
@@ -1114,7 +1131,7 @@ typedef struct player_position2d_speed_pid_req
 typedef struct player_position2d_position_pid_req
 {
   /** subtype; must be PLAYER_POSITION2D_POSITION_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_position2d_position_pid_req_t;
@@ -1123,7 +1140,7 @@ typedef struct player_position2d_position_pid_req
 typedef struct player_position2d_speed_prof_req
 {
   /** subtype; must be PLAYER_POSITION2D_SPEED_PROF_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** max speed mrad/s*/
   int32_t speed;
   /** max acceleration mrad/s/s*/
@@ -1145,15 +1162,15 @@ The position3d interface is used to control mobile robot bases in 3D
 */
 
 /* Supported config requests */
-#define PLAYER_POSITION3D_GET_GEOM_REQ          ((uint8_t)1)
-#define PLAYER_POSITION3D_MOTOR_POWER_REQ       ((uint8_t)2)
-#define PLAYER_POSITION3D_VELOCITY_MODE_REQ     ((uint8_t)3)
-#define PLAYER_POSITION3D_RESET_ODOM_REQ        ((uint8_t)4)
-#define PLAYER_POSITION3D_POSITION_MODE_REQ     ((uint8_t)5)
-#define PLAYER_POSITION3D_SPEED_PID_REQ         ((uint8_t)6)
-#define PLAYER_POSITION3D_POSITION_PID_REQ      ((uint8_t)7)
-#define PLAYER_POSITION3D_SPEED_PROF_REQ        ((uint8_t)8)
-#define PLAYER_POSITION3D_SET_ODOM_REQ          ((uint8_t)9)
+#define PLAYER_POSITION3D_GET_GEOM          ((uint8_t)1)
+#define PLAYER_POSITION3D_MOTOR_POWER       ((uint8_t)2)
+#define PLAYER_POSITION3D_VELOCITY_MODE     ((uint8_t)3)
+#define PLAYER_POSITION3D_RESET_ODOM        ((uint8_t)4)
+#define PLAYER_POSITION3D_POSITION_MODE     ((uint8_t)5)
+#define PLAYER_POSITION3D_SPEED_PID         ((uint8_t)6)
+#define PLAYER_POSITION3D_POSITION_PID      ((uint8_t)7)
+#define PLAYER_POSITION3D_SPEED_PROF        ((uint8_t)8)
+#define PLAYER_POSITION3D_SET_ODOM          ((uint8_t)9)
 
 /** @brief Data
 
@@ -1203,7 +1220,7 @@ and size fields filled in.  */
 typedef struct player_position3d_geom
 {
   /** Packet subtype.  Must be PLAYER_POSITION_GET_GEOM_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
 
   /** Pose of the robot base, in the robot cs (mm, mm, mm, mrad, mrad, mrad).*/
   int16_t pose[6];
@@ -1227,7 +1244,7 @@ still attached.  */
 typedef struct player_position3d_power_config
 {
   /** subtype; must be PLAYER_POSITION3D_MOTOR_POWER_REQ */
-  uint8_t request;
+  //uint8_t request;
   /** 0 for off, 1 for on */
   uint8_t value;
 } __PACKED__ player_position3d_power_config_t;
@@ -1237,7 +1254,7 @@ typedef struct player_position3d_power_config
 typedef struct player_position3d_position_mode_req
 {
   /** subtype;  must be PLAYER_POSITION_POSITION_MODE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** 0 for velocity mode, 1 for position mode */
   uint8_t state;
 } __PACKED__ player_position3d_position_mode_req_t;
@@ -1253,7 +1270,7 @@ a zero-length acknowledgement */
 typedef struct player_position3d_velocitymode_config
 {
   /** subtype; must be PLAYER_POSITION3D_VELOCITY_MODE_REQ */
-  uint8_t request;
+  //uint8_t request;
   /** driver-specific */
   uint8_t value;
 } __PACKED__ player_position3d_velocitymode_config_t;
@@ -1265,7 +1282,7 @@ To set the robot's odometry to a particular state, use this request.  */
 typedef struct player_position3d_set_odom_req
 {
   /** subtype; must be PLAYER_POSITION3D_SET_ODOM_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** X, Y, and Z (in mm) */
   int32_t x, y, z;
   /** Heading (in mrad) */
@@ -1280,7 +1297,7 @@ request.  The server will reply with a zero-length acknowledgement.  */
 typedef struct player_position3d_resetodom_config
 {
   /** subtype; must be PLAYER_POSITION3D_RESET_ODOM_REQ */
-  uint8_t request;
+  //uint8_t request;
 } __PACKED__ player_position3d_resetodom_config_t;
 
 
@@ -1288,7 +1305,7 @@ typedef struct player_position3d_resetodom_config
 typedef struct player_position3d_speed_pid_req
 {
   /** subtype; must be PLAYER_POSITION3D_SPEED_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_position3d_speed_pid_req_t;
@@ -1298,7 +1315,7 @@ typedef struct player_position3d_speed_pid_req
 typedef struct player_position3d_position_pid_req
 {
   /** subtype; must be PLAYER_POSITION3D_POSITION_PID_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** PID parameters */
   int32_t kp, ki, kd;
 } __PACKED__ player_position3d_position_pid_req_t;
@@ -1307,7 +1324,7 @@ typedef struct player_position3d_position_pid_req
 typedef struct player_position3d_speed_prof_req
 {
   /** subtype; must be PLAYER_POSITION3D_SPEED_PROF_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** max speed (in mrad/s)*/
   int32_t speed;
   /** max acceleration (in mrad/s/s)*/
@@ -1330,8 +1347,12 @@ sensors, such as a sonar array.  This interface accepts no commands.
 /** maximum number of sonar samples in a data packet */
 #define PLAYER_SONAR_MAX_SAMPLES 64
 /* request types */
-#define PLAYER_SONAR_GET_GEOM_REQ   ((uint8_t)1)
-#define PLAYER_SONAR_POWER_REQ      ((uint8_t)2)
+#define PLAYER_SONAR_GET_GEOM   ((uint8_t)1)
+#define PLAYER_SONAR_POWER      ((uint8_t)2)
+/* data types */
+#define PLAYER_SONAR_RANGES		((uint8_t)0)
+#define PLAYER_SONAR_GEOM		((uint8_t)1)
+
 
 /** @brief Data
 
@@ -1354,7 +1375,7 @@ filled in. */
 typedef struct player_sonar_geom
 {
   /** Subtype.  Must be PLAYER_SONAR_GET_GEOM_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** The number of valid poses. */
   uint16_t pose_count;
   /** Pose of each sonar, in robot cs (mm, mm, degrees). */
@@ -1369,7 +1390,7 @@ zero-length acknowledgement. */
 typedef struct player_sonar_power_config
 {
   /** Packet subtype.  Must be PLAYER_SONAR_POWER_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Turn power off (0) or on (>0) */
   uint8_t value;
 } __PACKED__ player_sonar_power_config_t;
@@ -1438,7 +1459,7 @@ same format. */
 typedef struct player_laser_geom
 {
   /** The packet subtype.  Must be PLAYER_LASER_GET_GEOM. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Laser pose, in robot cs (mm, mm, degrees). */
   int16_t pose[3];
   /** Laser dimensions (mm, mm). */
@@ -1456,7 +1477,7 @@ typedef struct player_laser_config
   /** The packet subtype.  Set this to PLAYER_LASER_SET_CONFIG to set
       the laser configuration; or set to PLAYER_LASER_GET_CONFIG to get
       the laser configuration.  */
-  uint8_t subtype;
+  //uint8_t subtype;
 
   /** Start and end angles for the laser scan (in units of 0.01
       degrees).  Valid range is -9000 to +9000.  */
@@ -1482,7 +1503,7 @@ supports it). */
 typedef struct player_laser_power_config
 {
   /** Must be PLAYER_LASER_POWER_CONFIG. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** 0 to turn laser off, 1 to turn laser on */
   uint8_t value;
 } __PACKED__ player_laser_power_config_t;
@@ -1505,8 +1526,8 @@ in images.
 #define PLAYER_BLOBFINDER_MAX_BLOBS 256
 
 /* Config request codes */
-#define PLAYER_BLOBFINDER_SET_COLOR_REQ             ((uint8_t)1)
-#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ     ((uint8_t)2)
+#define PLAYER_BLOBFINDER_SET_COLOR             ((uint8_t)1)
+#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS     ((uint8_t)2)
 
 
 /** @brief Structure describing a single blob. */
@@ -1552,7 +1573,7 @@ in front of the lens.
 typedef struct player_blobfinder_color_config
 { 
   /** Must be PLAYER_BLOBFINDER_SET_COLOR_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** RGB minimum and max values (0-255) **/
   int16_t rmin, rmax;
   int16_t gmin, gmax;
@@ -1576,7 +1597,7 @@ values set to -1 will be left unchanged.
 typedef struct player_blobfinder_imager_config
 { 
   /** Must be PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Contrast & Brightness: (0-255)  -1=no change. */
   int16_t brightness;
   int16_t contrast;
@@ -1604,9 +1625,9 @@ The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 */
 
 /** Code for generic configuration request */
-#define PLAYER_PTZ_GENERIC_CONFIG_REQ	((uint8_t)1)
+#define PLAYER_PTZ_GENERIC_CONFIG	((uint8_t)1)
 /** Code for control mode configuration request */
-#define PLAYER_PTZ_CONTROL_MODE_REQ ((uint8_t)2)
+#define PLAYER_PTZ_CONTROL_MODE ((uint8_t)2)
 /** Code for autoservo configuration request */
 #define PLAYER_PTZ_AUTOSERVO ((uint8_t)3)
 
@@ -1659,7 +1680,7 @@ may fill in "config" with a reply if applicable. */
 typedef struct player_ptz_generic_config
 {
   /** Must be set to PLAYER_PTZ_GENERIC_CONFIG_REQ */
-  uint8_t	subtype;
+  //uint8_t	subtype;
   /** Length of data in config buffer */
   uint16_t	length;
   /** Buffer for command/reply */
@@ -1675,7 +1696,7 @@ clients. */
 typedef struct player_ptz_controlmode_config
 {
   /** Must be set to PLAYER_PTZ_CONTROL_MODE_REQ */
-  uint8_t	subtype;
+  //uint8_t	subtype;
   /** Mode to use: must be either PLAYER_PTZ_VELOCITY_CONTROL or
       PLAYER_PTZ_POSITION_CONTROL. */
   uint8_t mode;
@@ -1840,7 +1861,7 @@ typedef struct player_audiodsp_cmd
    PLAYER_AUDIODSP_PLAY_CHIRP to play a BPSKeyed chirp; bitString should 
    contain the binary string to encode, and bitStringLen set to the length of 
    the bitString. Set to PLAYER_AUDIODSP_REPLAY to replay the last sound. **/
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Frequency to play (Hz) */
   uint16_t frequency;
   /** Amplitude to play (dB?) */
@@ -1876,7 +1897,7 @@ typedef struct player_audiodsp_config
   /** The packet subtype. Set this to PLAYER_AUDIODSP_SET_CONFIG to set
       the audiodsp configuration; or set to PLAYER_AUDIODSP_GET_CONFIG to get
       the audiodsp configuration. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Format with which to sample */
   int16_t sampleFormat;
   /** Sample rate in Hertz */
@@ -1917,7 +1938,7 @@ typedef struct player_audiomixer_cmd
 {
   /** documentation for these fields goes here
    */
-  uint8_t subtype;
+  //uint8_t subtype;
   uint16_t left;
   uint16_t right;
 
@@ -1930,7 +1951,7 @@ which returns the current state of the mixer levels.
 */
 typedef struct player_audiomixer_config
 {
-  uint8_t subtype;
+  //uint8_t subtype;
   uint16_t masterLeft, masterRight;
   uint16_t pcmLeft, pcmRight;
   uint16_t lineLeft, lineRight;
@@ -2075,7 +2096,7 @@ have the same format.
 typedef struct player_fiducial_geom
 {
   /** Packet subtype.  Must be PLAYER_FIDUCIAL_GET_GEOM. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Pose of the detector in the robot cs (x, y, orient) in units if
       (mm, mm, degrees). */
   int16_t pose[3];
@@ -2096,7 +2117,7 @@ have the same format.
 typedef struct player_fiducial_fov
 {
   /** Packet subtype.  PLAYER_FIDUCIAL_GET_FOV or PLAYER_FIDUCIAL_SET_FOV. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** The minimum range of the sensor in mm */
   uint16_t min_range;
   /** The maximum range of the sensor in mm */
@@ -2125,7 +2146,7 @@ Currently supported by the stg_fiducial driver.
 typedef struct player_fiducial_id
 {
   /** Packet subtype. Must be PLAYER_FIDUCIAL_GET_ID or PLAYER_FIDUCIAL_SET_ID. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** The value displayed */
   uint32_t id;
 } __PACKED__ player_fiducial_id_t;
@@ -2182,7 +2203,7 @@ The server replies with a player_fiducial_msg_t */
 typedef struct player_fiducial_msg_rx_req
 {
   /**  Must be PLAYER_FIDUCIAL_RECV_MSG.*/
-  uint8_t subtype;  
+  //uint8_t subtype;  
   /** If non-zero, empty the buffer when getting the message. If
       zero, leave the message in the buffer */
   uint8_t consume;
@@ -2194,7 +2215,7 @@ The server replies with ACK/NACK only.*/
 typedef struct player_fiducial_msg_tx_req
 {
   /**  Must be PLAYER_FIDUCIAL_SEND_MSG. */
-  uint8_t subtype;  
+  //uint8_t subtype;  
   /** If non-zero, send the message just once. If zero, the device may
       send the message repeatedly. */
   uint8_t consume;
@@ -2210,7 +2231,7 @@ sent message. NOTE: this is not yet supported by Stage-1.4.*/
 typedef struct player_fiducial_msg_txrx_req
 { 
   /** Must be PLAYER_FIDUCIAL_EXCHANGE_MSG. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /**  The message to send */
   player_fiducial_msg_t msg;
   /** If non-zero, send the message just once. If zero, the device may
@@ -2312,7 +2333,7 @@ accepts no commands.
 /** Maximum number of bumper samples */
 #define PLAYER_BUMPER_MAX_SAMPLES 32
 /** The request subtypes */
-#define PLAYER_BUMPER_GET_GEOM_REQ          ((uint8_t)1)
+#define PLAYER_BUMPER_GET_GEOM          ((uint8_t)1)
 
 /** @brief Data
 
@@ -2344,7 +2365,7 @@ fields filled in. */
 typedef struct player_bumper_geom
 {
   /** Packet subtype.  Must be PLAYER_BUMPER_GET_GEOM_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** The number of valid bumper definitions. */
   uint16_t bumper_count;
   /** geometry of each bumper */
@@ -2397,7 +2418,7 @@ typedef struct player_truth_pose
     PLAYER_TRUTH_SET_POSE or PLAYER_TRUTH_SET_POSE_ON_ROOT. The last
     option places the object on the background and sets its
     pose. Great for repositioning pucks that have been picked up.*/
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Object position (x, y, z) in mm. */
   int32_t pos[3];
   /** Object orientation (r, p, y) in millirad. */
@@ -2415,7 +2436,7 @@ typedef struct player_truth_fiducial_id
 {
   /** Packet subtype.  Must be either PLAYER_TRUTH_GET_FIDUCIAL_ID or
     PLAYER_TRUTH_SET_FIDUCIAL_ID */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** the fiducial ID */
   int16_t id;
 } __PACKED__ player_truth_fiducial_id_t;
@@ -2483,11 +2504,6 @@ in. For all message subtypes, if the named object does not exist, or
 some other error occurs, the request should reply NACK. */
 typedef struct player_simulation_pose2d_req
 { 
-   /** Packet subtype. Must be one of 
-       PLAYER_SIMULATION_SET_POSE2D, 
-       PLAYER_SIMULATION_GET_POSE2D */
-   uint8_t subtype;
-
   /** the identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
 
@@ -2629,10 +2645,10 @@ This interface accepts no commands.
 #define PLAYER_WIFI_MODE_SECOND		6
 
 /* config requests */
-#define PLAYER_WIFI_MAC_REQ		((uint8_t)1)
-#define PLAYER_WIFI_IWSPY_ADD_REQ		((uint8_t)10)
-#define PLAYER_WIFI_IWSPY_DEL_REQ		((uint8_t)11)
-#define PLAYER_WIFI_IWSPY_PING_REQ		((uint8_t)12)
+#define PLAYER_WIFI_MAC		((uint8_t)1)
+#define PLAYER_WIFI_IWSPY_ADD		((uint8_t)10)
+#define PLAYER_WIFI_IWSPY_DEL		((uint8_t)11)
+#define PLAYER_WIFI_IWSPY_PING		((uint8_t)12)
 
 /** @brief Link information for one host.
 
@@ -2686,13 +2702,13 @@ typedef struct player_wifi_data
 /** @brief Configuration request */
 typedef struct player_wifi_mac_req 
 {
-  uint8_t		subtype;
+  //uint8_t		subtype;
 } __PACKED__ player_wifi_mac_req_t;
 
 /** @brief Configuration request */
 typedef struct player_wifi_iwspy_addr_req
 {
-  uint8_t		subtype;
+  //uint8_t		subtype;
   char			address[32];
 } __PACKED__ player_wifi_iwspy_addr_req_t;
 
@@ -2713,8 +2729,8 @@ This interface accepts no commands.
 /** Maximum number of samples */
 #define PLAYER_IR_MAX_SAMPLES 32
 /* config requests */
-#define PLAYER_IR_POSE_REQ   ((uint8_t)1)
-#define PLAYER_IR_POWER_REQ  ((uint8_t)2)
+#define PLAYER_IR_POSE   ((uint8_t)1)
+#define PLAYER_IR_POWER  ((uint8_t)2)
 
 /** @brief Data
 
@@ -2729,27 +2745,20 @@ typedef struct player_ir_data
   uint16_t ranges[PLAYER_IR_MAX_SAMPLES];
 } __PACKED__ player_ir_data_t;
 
-/** @brief A set of IR poses. */
+/** @brief Configuration request: Query pose.
+
+To query the pose of the IRs, use this request, filling in only
+the subtype.  The server will respond with the other fields filled in. */
 typedef struct player_ir_pose
 {
+  /** subtype; must be PLAYER_IR_POSE_REQ */
+  //uint8_t subtype; 
   /** the number of ir samples returned by this robot */
   uint16_t pose_count;
   /** the pose of each IR detector on this robot (mm, mm, degrees) */
   int16_t poses[PLAYER_IR_MAX_SAMPLES][3];
 } __PACKED__ player_ir_pose_t;
 
-
-/** @brief Configuration request: Query pose.
-
-To query the pose of the IRs, use this request, filling in only
-the subtype.  The server will respond with the other fields filled in. */
-typedef struct player_ir_pose_req
-{
-  /** subtype; must be PLAYER_IR_POSE_REQ */
-  uint8_t subtype; 
-  /** the poses */
-  player_ir_pose_t poses;
-} __PACKED__ player_ir_pose_req_t;
 
 /** @brief Configuration request: IR power.
 
@@ -2758,7 +2767,7 @@ with a zero-length acknowledgement */
 typedef struct player_ir_power_req
 {
   /** must be PLAYER_IR_POWER_REQ */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** 0 for power off, 1 for power on */
   uint8_t state; 
 } __PACKED__ player_ir_power_req_t;
@@ -2785,10 +2794,10 @@ This interface accepts no commands.
 #define PLAYER_LOCALIZE_MAX_HYPOTHS            10
 
 /* Request/reply packet subtypes */
-#define PLAYER_LOCALIZE_SET_POSE_REQ           ((uint8_t)1)
-#define PLAYER_LOCALIZE_GET_CONFIG_REQ         ((uint8_t)2)
-#define PLAYER_LOCALIZE_SET_CONFIG_REQ         ((uint8_t)3)
-#define PLAYER_LOCALIZE_GET_PARTICLES_REQ      ((uint8_t)4)
+#define PLAYER_LOCALIZE_SET_POSE           ((uint8_t)1)
+#define PLAYER_LOCALIZE_GET_CONFIG         ((uint8_t)2)
+#define PLAYER_LOCALIZE_SET_CONFIG         ((uint8_t)3)
+#define PLAYER_LOCALIZE_GET_PARTICLES      ((uint8_t)4)
 
 /** @brief Hypothesis format.
 
@@ -2829,7 +2838,7 @@ zero length response packet. */
 typedef struct player_localize_set_pose
 {
   /** Request subtype; must be PLAYER_LOCALIZE_SET_POSE_REQ. */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** The mean value of the pose estimate (mm, mm, arc-seconds). */
   int32_t mean[3];
   /** The covariance matrix pose estimate (mm$^2$, arc-seconds$^2$). */
@@ -2849,7 +2858,7 @@ typedef struct player_localize_config
 { 
   /** Request subtype; must be either PLAYER_LOCALIZE_GET_CONFIG_REQ
       or PLAYER_LOCALIZE_SET_CONFIG_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Maximum number of particles (for drivers using particle
    * filters). */
   uint32_t num_particles;
@@ -2897,8 +2906,8 @@ delivered in tiles, via a sequence of configuration requests.
 /** The max number of cells we can send in one tile */
 #define PLAYER_MAP_MAX_CELLS_PER_TILE (PLAYER_MAX_REQREP_SIZE - 17)
 /* Configuration subtypes */
-#define PLAYER_MAP_GET_INFO_REQ       ((uint8_t)1)
-#define PLAYER_MAP_GET_DATA_REQ       ((uint8_t)2)
+#define PLAYER_MAP_GET_INFO       ((uint8_t)1)
+#define PLAYER_MAP_GET_DATA       ((uint8_t)2)
 
 /** @brief Configuration request: Get map information.
 
@@ -2909,7 +2918,7 @@ with the size information filled in. */
 typedef struct player_map_info
 {
   /** Request subtype; must be PLAYER_MAP_GET_INFO_REQ */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** The scale of the map (pixels per kilometer). */
   uint32_t scale; 
   /** The size of the map (pixels). */
@@ -2925,7 +2934,7 @@ with the requested map data filled in. */
 typedef struct player_map_data
 {
   /** Request subtype; must be PLAYER_MAP_GET_DATA_REQ. */
-  uint8_t subtype; 
+  //uint8_t subtype; 
   /** The tile origin (pixels). */
   uint32_t col, row;
   /** The size of the tile (pixels). */
@@ -2965,11 +2974,11 @@ This interface returns no data and accepts no commands.
 /** returns this if empty */
 #define MCOM_EMPTY_STRING	"(EMPTY)"
 /* request ids */
-#define PLAYER_MCOM_PUSH_REQ    0
-#define PLAYER_MCOM_POP_REQ     1
-#define PLAYER_MCOM_READ_REQ    2
-#define PLAYER_MCOM_CLEAR_REQ   3
-#define PLAYER_MCOM_SET_CAPACITY_REQ	4
+#define PLAYER_MCOM_PUSH    0
+#define PLAYER_MCOM_POP     1
+#define PLAYER_MCOM_READ    2
+#define PLAYER_MCOM_CLEAR   3
+#define PLAYER_MCOM_SET_CAPACITY	4
 
 
 /** @brief A piece of data. */
@@ -3145,8 +3154,8 @@ The @p planner interface provides control of a 2-D motion planner.
 @{
 */
 
-#define PLAYER_PLANNER_GET_WAYPOINTS_REQ     ((uint8_t)10)
-#define PLAYER_PLANNER_ENABLE_REQ            ((uint8_t)11)
+#define PLAYER_PLANNER_GET_WAYPOINTS     ((uint8_t)10)
+#define PLAYER_PLANNER_ENABLE            ((uint8_t)11)
 
 /** maximum number of waypoints in a single plan */
 #define PLAYER_PLANNER_MAX_WAYPOINTS 128
@@ -3194,7 +3203,7 @@ typedef struct player_planner_waypoint
 typedef struct player_planner_waypoints_req
 {
   /** subtype: must be of PLAYER_PLANNER_GET_WAYPOINTS_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Number of waypoints to follow */
   uint16_t count;
   player_planner_waypoint_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
@@ -3204,7 +3213,7 @@ typedef struct player_planner_waypoints_req
 typedef struct player_planner_enable_req
 {
   /** subtype: must be of PLAYER_PLANNER_ENABLE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** state: 1 to enable, 0 to disable */
   uint8_t state;
 } __PACKED__ player_planner_enable_req_t;
@@ -3223,10 +3232,10 @@ The @p log interface produces no data and accepts no commands.
 */
 
 /* The subtypes for config reqeusts */
-#define PLAYER_LOG_SET_WRITE_STATE_REQ 1
-#define PLAYER_LOG_SET_READ_STATE_REQ 2
-#define PLAYER_LOG_GET_STATE_REQ 3
-#define PLAYER_LOG_SET_READ_REWIND_REQ 4
+#define PLAYER_LOG_SET_WRITE_STATE 1
+#define PLAYER_LOG_SET_READ_STATE 2
+#define PLAYER_LOG_GET_STATE 3
+#define PLAYER_LOG_SET_READ_REWIND 4
 #define PLAYER_LOG_SET_FILENAME 5
 
 /* Types of log devices */
@@ -3239,7 +3248,7 @@ Start/stop data logging */
 typedef struct player_log_set_write_state
 {
   /** Request type: must be PLAYER_LOG_SET_WRITE_STATE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** State: 0=disabled, 1=enabled */
   uint8_t state;
 } __PACKED__ player_log_set_write_state_t;
@@ -3250,7 +3259,7 @@ Start/stop data playback */
 typedef struct player_log_set_read_state
 {
   /** Request type: must be PLAYER_LOG_SET_READ_STATE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** State: 0=disabled, 1=enabled */
   uint8_t state;
 } __PACKED__ player_log_set_read_state_t;
@@ -3262,7 +3271,7 @@ state (i.e., whether it is started or stopped */
 typedef struct player_log_set_read_rewind
 {
   /** Request type: must be PLAYER_LOG_SET_READ_REWIND_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
 } __PACKED__ player_log_set_read_rewind_t;
 
 /** @brief Configuration request: Get state.
@@ -3271,7 +3280,7 @@ Find out whether logging/playback is enabled or disabled */
 typedef struct player_log_get_state
 {
   /** Request type: must be PLAYER_LOG_GET_STATE_REQ */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** The type of log device, either PLAYER_LOG_TYPE_READ or
       PLAYER_LOG_TYPE_WRITE */
   uint8_t type;
@@ -3285,7 +3294,7 @@ Set the name of the file to write to when logging */
 typedef struct player_log_set_filename
 {
   /** Request type: must be PLAYER_LOG_SET_FILENAME */
-  uint8_t subtype;
+  //uint8_t subtype;
   /** Filename; max 255 chars + terminating NULL */
   uint8_t filename[256];
 } __PACKED__ player_log_set_filename_t;

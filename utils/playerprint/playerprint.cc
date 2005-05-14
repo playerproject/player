@@ -198,6 +198,7 @@ int main(int argc, char **argv)
   //pclient.SetFrequency(1000);
 
   /* go into read-think-act loop */
+  printf("Entering Main Read Loop\n");
   double last = -1.0;
   for(;;)
   {
@@ -221,6 +222,8 @@ int main(int argc, char **argv)
         last = timestamp;
       }
     }
+    else
+    	printf("Not fresh data\n");
   }
 }
 

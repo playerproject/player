@@ -34,7 +34,7 @@ int AudioDSPProxy::Configure( uint8_t _channels, uint16_t _sampleRate,
 
   player_audiodsp_config_t config;
 
-  config.subtype = PLAYER_AUDIODSP_SET_CONFIG;
+//  config.subtype = PLAYER_AUDIODSP_SET_CONFIG;
   config.sampleFormat = htons(_sampleFormat);
   config.sampleRate = htons(_sampleRate);
   config.channels = _channels;
@@ -43,7 +43,7 @@ int AudioDSPProxy::Configure( uint8_t _channels, uint16_t _sampleRate,
   sampleRate = _sampleRate;
   channels = _channels;
 
-  return( client->Request(m_device_id,(const char*)&config,sizeof(config)) );
+  return( client->Request(m_device_id,PLAYER_AUDIODSP_SET_CONFIG,(const char*)&config,sizeof(config)) );
 }
 
 int AudioDSPProxy::GetConfigure()
@@ -54,9 +54,9 @@ int AudioDSPProxy::GetConfigure()
   player_audiodsp_config_t config;
   player_msghdr_t hdr;
 
-  config.subtype = PLAYER_AUDIODSP_GET_CONFIG;
+//  config.subtype = PLAYER_AUDIODSP_GET_CONFIG;
 
-  if(client->Request(m_device_id, (const char*)&config, sizeof(config.subtype),
+  if(client->Request(m_device_id, PLAYER_AUDIODSP_GET_CONFIG, (const char*)&config, 0,
         &hdr, (char*)&config,sizeof(config))<0)
     return(-1);
 
@@ -92,12 +92,12 @@ int AudioDSPProxy::PlayTone(unsigned short freq, unsigned short amp,
 {
   player_audiodsp_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIODSP_PLAY_TONE;
+//  cmd.subtype = PLAYER_AUDIODSP_PLAY_TONE;
   cmd.frequency = htons(freq);
   cmd.amplitude = htons(amp);
   cmd.duration = htonl(dur);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIODSP_PLAY_TONE, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioDSPProxy::PlayChirp(unsigned short freq, unsigned short amp, 
@@ -106,23 +106,23 @@ int AudioDSPProxy::PlayChirp(unsigned short freq, unsigned short amp,
 {
   player_audiodsp_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIODSP_PLAY_CHIRP;
+//  cmd.subtype = PLAYER_AUDIODSP_PLAY_CHIRP;
   cmd.frequency = htons(freq);
   cmd.amplitude = htons(amp);
   cmd.duration = htonl(dur);
   strcpy((char*)(cmd.bitString),(char*)(bitString));
   cmd.bitStringLen = htons(bitStringLen);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIODSP_PLAY_CHIRP, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioDSPProxy::Replay()
 {
   player_audiodsp_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIODSP_REPLAY;
+//  cmd.subtype = PLAYER_AUDIODSP_REPLAY;
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIODSP_REPLAY, (const char*)&cmd, sizeof(cmd)) );
 }
 
 // interface that all proxies SHOULD provide

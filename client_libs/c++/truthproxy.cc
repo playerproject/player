@@ -92,9 +92,9 @@ int TruthProxy::GetPose( double *px, double *py, double *pz,
   player_truth_pose_t config;
   player_msghdr_t hdr;
   
-  config.subtype = PLAYER_TRUTH_GET_POSE;
+//  config.subtype = PLAYER_TRUTH_GET_POSE;
   
-  if(client->Request(m_device_id,
+  if(client->Request(m_device_id,PLAYER_TRUTH_GET_POSE,
                      (const char*)&config, sizeof(config),
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
@@ -125,7 +125,7 @@ int TruthProxy::SetPose(double px, double py, double pz,
   int len;
   player_truth_pose_t config;
   
-  config.subtype = PLAYER_TRUTH_SET_POSE;
+//  config.subtype = PLAYER_TRUTH_SET_POSE;
   config.pos[0] = htonl((int32_t)(px * 1000));
   config.pos[1] = htonl((int32_t)(py * 1000));
   config.pos[2] = htonl((int32_t)(pz * 1000));
@@ -133,7 +133,7 @@ int TruthProxy::SetPose(double px, double py, double pz,
   config.rot[1] = htonl((int32_t)(ry * 1000));
   config.rot[2] = htonl((int32_t)(rz * 1000));
   
-  len = client->Request(m_device_id,
+  len = client->Request(m_device_id,PLAYER_TRUTH_SET_POSE,
 			 (const char*)&config, sizeof(config));
   if (len < 0)
     return -1;
@@ -150,7 +150,7 @@ int TruthProxy::SetPoseOnRoot(double px, double py, double pz,
   int len;
   player_truth_pose_t config;
   
-  config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
+//  config.subtype = PLAYER_TRUTH_SET_POSE_ON_ROOT;
   config.pos[0] = htonl((int32_t)(px * 1000));
   config.pos[1] = htonl((int32_t)(py * 1000));
   config.pos[2] = htonl((int32_t)(pz * 1000));
@@ -158,7 +158,7 @@ int TruthProxy::SetPoseOnRoot(double px, double py, double pz,
   config.rot[1] = htonl((int32_t)(ry * 1000));
   config.rot[2] = htonl((int32_t)(rz * 1000));
   
-  len = client->Request( m_device_id,
+  len = client->Request( m_device_id,PLAYER_TRUTH_SET_POSE_ON_ROOT,
 			 (const char*)&config, sizeof(config));
   if (len < 0)
     return -1;
@@ -173,9 +173,9 @@ int TruthProxy::GetFiducialID( int16_t* id )
   player_truth_fiducial_id_t config;
   player_msghdr_t hdr;
   
-  config.subtype = PLAYER_TRUTH_GET_FIDUCIAL_ID;
+//  config.subtype = PLAYER_TRUTH_GET_FIDUCIAL_ID;
   
-  if(client->Request(m_device_id,
+  if(client->Request(m_device_id, PLAYER_TRUTH_GET_FIDUCIAL_ID,
                      (const char*)&config, sizeof(config),
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
@@ -191,11 +191,11 @@ int TruthProxy::SetFiducialID( int16_t id )
   int len;
   player_truth_fiducial_id_t config;
   
-  config.subtype = PLAYER_TRUTH_SET_FIDUCIAL_ID;
+//  config.subtype = PLAYER_TRUTH_SET_FIDUCIAL_ID;
   
   config.id = htons(id);
   
-  len = client->Request(m_device_id,
+  len = client->Request(m_device_id,PLAYER_TRUTH_SET_FIDUCIAL_ID,
 			(const char*)&config, sizeof(config));
   if (len < 0)
     return -1;

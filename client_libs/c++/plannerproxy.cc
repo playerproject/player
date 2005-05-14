@@ -98,10 +98,10 @@ int PlannerProxy::GetWaypoints()
   player_msghdr_t hdr;
 
   memset(&config, 0, sizeof(config));
-  config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
+//  config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
 
-  if (client->Request(m_device_id, (const char*)&config, 
-                        sizeof(config.subtype), &hdr, (char *)&config, 
+  if (client->Request(m_device_id, PLAYER_PLANNER_GET_WAYPOINTS,(const char*)&config, 
+                        0, &hdr, (char *)&config, 
                         sizeof(config)) < 0)
   {
     fprintf(stderr, "failed to get waypoints");
@@ -131,10 +131,10 @@ int PlannerProxy::Enable(int state)
 {
   player_planner_enable_req_t config;
 
-  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
+//  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
   config.state = state;
 
-  if(client->Request(m_device_id, (const char*)&config, sizeof(config)) < 0)
+  if(client->Request(m_device_id, PLAYER_PLANNER_ENABLE, (const char*)&config, sizeof(config)) < 0)
   {
     fprintf(stderr, "failed to enable/disable planner\n");
     return(-1);

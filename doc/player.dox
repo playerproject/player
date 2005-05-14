@@ -198,7 +198,7 @@ EXTRACT_ALL            = YES
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class 
 # will be included in the documentation.
 
-EXTRACT_PRIVATE        = NO
+EXTRACT_PRIVATE        = YES
 
 # If the EXTRACT_STATIC tag is set to YES all static members of a file 
 # will be included in the documentation.
@@ -391,7 +391,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = mainpage.html install.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../server/main.cc ../server/player.h ../server/driver.h ../server/drivertable.h ../server/configfile.h ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/c/playercclient.h ../client_libs/c++/playerclient.h
+INPUT                  = mainpage.html install.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../server/main.cc ../server/clientmanager.h ../server/clientdata.h ../server/message.h ../server/player.h ../server/driver.h ../server/drivertable.h ../server/configfile.h ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/c/playercclient.h ../client_libs/c++/playerclient.h
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 

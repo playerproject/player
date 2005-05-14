@@ -87,10 +87,10 @@ int MapProxy::GetMap()
   player_map_data_t dataReq;
 
   memset( &infoReq, 0, sizeof(infoReq));
-  infoReq.subtype = PLAYER_MAP_GET_INFO_REQ;
+//  infoReq.subtype = PLAYER_MAP_GET_INFO_REQ;
 
-  if (client->Request( m_device_id, (const char*)&infoReq,
-        sizeof(infoReq.subtype), &hdr, (char*)&infoReq, sizeof(infoReq)) <0)
+  if (client->Request( m_device_id, PLAYER_MAP_GET_INFO, (const char*)&infoReq,
+        0, &hdr, (char*)&infoReq, sizeof(infoReq)) <0)
   {
     fprintf(stderr, "failed to get map info");
     return -1;
@@ -109,7 +109,7 @@ int MapProxy::GetMap()
 
 
   // Get the map, in tiles
-  dataReq.subtype = PLAYER_MAP_GET_DATA_REQ;
+//  dataReq.subtype = PLAYER_MAP_GET_DATA_REQ;
 
   // Tile size
   sy = sx = (int)sqrt(sizeof(dataReq.data));
@@ -128,7 +128,7 @@ int MapProxy::GetMap()
 
     reqlen = sizeof(dataReq) - sizeof(dataReq.data);
 
-    if (client->Request(m_device_id, (const char*)&dataReq,
+    if (client->Request(m_device_id, PLAYER_MAP_GET_DATA, (const char*)&dataReq,
             reqlen, &hdr, (char *)&dataReq, sizeof(dataReq)) != 0)
     {
       fprintf(stderr, "failed to get map data");

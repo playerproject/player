@@ -91,11 +91,11 @@ int MotorProxy::SetMotorState(unsigned char state)
   player_motor_power_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_MOTOR_POWER_REQ;
-  config.value   = state;
+//  config.request = PLAYER_MOTOR_POWER_REQ;
+  config.value = state;
 
 
-  return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
+  return(client->Request(m_device_id,PLAYER_MOTOR_POWER, reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
 
@@ -112,10 +112,10 @@ int MotorProxy::SelectVelocityControl(unsigned char mode)
   player_motor_velocitymode_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_MOTOR_VELOCITY_MODE_REQ;
-  config.value   = mode;
+//  config.request = PLAYER_MOTOR_VELOCITY_MODE_REQ;
+  config.value = mode;
 
-  return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
+  return(client->Request(m_device_id,PLAYER_MOTOR_VELOCITY_MODE,reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
 
@@ -132,9 +132,9 @@ int MotorProxy::ResetOdometry()
   player_motor_resetodom_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_MOTOR_RESET_ODOM_REQ;
+//  config.request = PLAYER_MOTOR_RESET_ODOM_REQ;
 
-  return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
+  return(client->Request(m_device_id,PLAYER_MOTOR_RESET_ODOM,reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
 
@@ -151,10 +151,9 @@ int MotorProxy::SetOdometry( double theta)
   player_motor_set_odom_req_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.subtype = PLAYER_MOTOR_SET_ODOM_REQ;
   config.theta   = HTOPL(theta);
   
-  return(client->Request(m_device_id,reinterpret_cast<char*>(&config),
+  return(client->Request(m_device_id,PLAYER_MOTOR_SET_ODOM,reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
 
@@ -174,10 +173,10 @@ MotorProxy::SelectPositionMode(unsigned char mode)
   player_motor_position_mode_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_MOTOR_POSITION_MODE_REQ;
-  req.state   = mode;
+//  req.subtype = PLAYER_MOTOR_POSITION_MODE_REQ;
+  req.state = mode;
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id, PLAYER_MOTOR_POSITION_MODE,
                          reinterpret_cast<char*>(&req), sizeof(req));
 }
 
@@ -218,13 +217,11 @@ MotorProxy::SetSpeedPID(double kp, double ki, double kd)
   player_motor_speed_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_MOTOR_SPEED_PID_REQ;
-  
   req.kp = HTOPL(kp);
   req.ki = HTOPL(ki);
   req.kd = HTOPL(kd);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id, PLAYER_MOTOR_SPEED_PID,
              reinterpret_cast<char*>(&req), sizeof(req));
 }
 
@@ -242,13 +239,11 @@ MotorProxy::SetPositionPID(double kp, double ki, double kd)
   player_motor_speed_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_MOTOR_POSITION_PID_REQ;
-  
   req.kp = HTOPL(kp);
   req.ki = HTOPL(ki);
   req.kd = HTOPL(kd);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id, PLAYER_MOTOR_POSITION_PID,
              reinterpret_cast<char*>(&req), sizeof(req));
 }
 
@@ -268,11 +263,10 @@ MotorProxy::SetPositionSpeedProfile(double spd, double acc)
   player_motor_speed_prof_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_MOTOR_SPEED_PROF_REQ;  
   req.speed   = HTOPL(spd);  
   req.acc     = HTOPL(acc);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id, PLAYER_MOTOR_SPEED_PROF,
              reinterpret_cast<char*>(&req), sizeof(req));
 }
 

@@ -162,7 +162,7 @@ int BlobfinderProxy::SetTrackingColor(int rmin, int rmax, int gmin,
 
    player_blobfinder_color_config_t config;
 
-   config.subtype = PLAYER_BLOBFINDER_SET_COLOR_REQ;
+//   config.subtype = PLAYER_BLOBFINDER_SET_COLOR_REQ;
    config.rmin = htons(rmin);
    config.rmax = htons(rmax);
    config.gmin = htons(gmin);
@@ -170,7 +170,7 @@ int BlobfinderProxy::SetTrackingColor(int rmin, int rmax, int gmin,
    config.bmin = htons(bmin);
    config.bmax = htons(bmax);
 
-   return(client->Request(m_device_id,(const char*)&config,
+   return(client->Request(m_device_id,PLAYER_BLOBFINDER_SET_COLOR,(const char*)&config,
                          sizeof(config)));
 }
 
@@ -221,13 +221,14 @@ int BlobfinderProxy::SetImagerParams(int contrast, int brightness,
 
    player_blobfinder_imager_config_t config;
 
-   config.subtype = PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ;
+//   config.subtype = PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ;
    config.brightness = htons(brightness);
    config.contrast = htons(contrast);
    config.colormode = (unsigned char)colormode;
    config.autogain = (unsigned char)autogain;
 
-   return(client->Request(m_device_id,(const char*)&config,
+   return(client->Request(m_device_id,PLAYER_BLOBFINDER_SET_IMAGER_PARAMS,
+                         (const char*)&config,
                          sizeof(config)));
 
 }

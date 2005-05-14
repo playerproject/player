@@ -40,6 +40,8 @@ void sonar_draw(sonar_t *sonar);
 // Dont draw the sonar scan
 void sonar_nodraw(sonar_t *sonar);
 
+// Update the geometry
+void sonar_update_geom(sonar_t *sonar);
 
 // Create a sonar device
 sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
@@ -111,11 +113,7 @@ void sonar_update(sonar_t *sonar)
       if (playerc_sonar_get_geom(sonar->proxy) != 0)
         PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
 
-      for (i = 0; i < sonar->proxy->pose_count; i++)
-        rtk_fig_origin(sonar->scan_fig[i],
-                       sonar->proxy->poses[i][0],
-                       sonar->proxy->poses[i][1],
-                       sonar->proxy->poses[i][2]);
+      sonar_update_geom(sonar);
     }
   }
   else
@@ -128,6 +126,12 @@ void sonar_update(sonar_t *sonar)
 
   if (sonar->proxy->info.subscribed)
   {
+    if (sonar->proxy->info.freshgeom)
+    {
+    	sonar->proxy->info.freshgeom = 0;
+	sonar_update_geom(sonar);
+    }
+  
     // Draw in the sonar scan if it has been changed.
     if (sonar->proxy->info.datatime != sonar->datatime)
       sonar_draw(sonar);
@@ -138,6 +142,17 @@ void sonar_update(sonar_t *sonar)
     // Dont draw the sonar.
     sonar_nodraw(sonar);
   }
+}
+
+// update sonar geometry
+void sonar_update_geom(sonar_t *sonar)
+{
+  int i;
+      for (i = 0; i < sonar->proxy->pose_count; i++)
+        rtk_fig_origin(sonar->scan_fig[i],
+                       sonar->proxy->poses[i][0],
+                       sonar->proxy->poses[i][1],
+                       sonar->proxy->poses[i][2]);
 }
 
 

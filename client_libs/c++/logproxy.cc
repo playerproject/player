@@ -70,9 +70,9 @@ LogProxy::GetState()
   player_msghdr_t hdr;  
   player_log_get_state_t req;
 
-  req.subtype = PLAYER_LOG_GET_STATE_REQ;
+  //req.subtype = PLAYER_LOG_GET_STATE_REQ;
 
-  if(client->Request(m_device_id, (const char *)&req, sizeof(req.subtype),
+  if(client->Request(m_device_id, PLAYER_LOG_GET_STATE, NULL,0,
                      &hdr, (char*)&req, sizeof(req)) < 0)
     return(-1);
 
@@ -86,10 +86,11 @@ LogProxy::SetWriteState(int state)
 {
   player_log_set_write_state_t req;
 
-  req.subtype = PLAYER_LOG_SET_WRITE_STATE_REQ;
+  //req.subtype = PLAYER_LOG_SET_WRITE_STATE_REQ;
   req.state = (uint8_t)state;
 
-  return(client->Request(m_device_id, (const char *)&req, sizeof(req)));
+  return(client->Request(m_device_id, PLAYER_LOG_SET_WRITE_STATE,
+                         (const char *)&req, sizeof(req)));
 }
 
 int 
@@ -97,10 +98,11 @@ LogProxy::SetReadState(int state)
 {
   player_log_set_read_state_t req;
 
-  req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
+  //req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
   req.state = (uint8_t)state;
 
-  if(client->Request(m_device_id, (const char *)&req, sizeof(req)) < 0)
+  if(client->Request(m_device_id, PLAYER_LOG_SET_READ_STATE,
+                     (const char *)&req, sizeof(req)) < 0)
     return(-1);
   this->state = (uint8_t)state;
   return(0);
@@ -111,9 +113,10 @@ LogProxy::Rewind()
 {
   player_log_set_read_rewind_t req;
 
-  req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
+  //req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
 
-  return(client->Request(m_device_id, (const char *)&req, sizeof(req)));
+  return(client->Request(m_device_id, PLAYER_LOG_SET_READ_REWIND,
+                         (const char *)&req, sizeof(req)));
 }
 
 int
@@ -121,7 +124,7 @@ LogProxy::SetFilename(const char* fname)
 {
   player_log_set_filename_t req;
 
-  req.subtype = PLAYER_LOG_SET_FILENAME;
+  //req.subtype = PLAYER_LOG_SET_FILENAME;
 
   if(strlen(fname) > (sizeof(req.filename)-1))
   {
@@ -130,5 +133,6 @@ LogProxy::SetFilename(const char* fname)
   }
   strcpy((char*)req.filename,fname);
 
-  return(client->Request(m_device_id, (const char *)&req, sizeof(req)));
+  return(client->Request(m_device_id, PLAYER_LOG_SET_FILENAME,
+                         (const char *)&req, sizeof(req)));
 }

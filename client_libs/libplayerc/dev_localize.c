@@ -66,7 +66,7 @@ playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_localize_t));
   memset(device, 0, sizeof(playerc_localize_t));
   playerc_device_init(&device->info, client, PLAYER_LOCALIZE_CODE, index,
-                      (playerc_putdata_fn_t) playerc_localize_putdata);
+                      (playerc_putdata_fn_t) playerc_localize_putdata,NULL,NULL);
     
   return device;
 }
@@ -151,7 +151,7 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
   int len;
   player_localize_set_pose_t req;
 
-  req.subtype = PLAYER_LOCALIZE_SET_POSE_REQ;
+//  req.subtype = PLAYER_LOCALIZE_SET_POSE_REQ;
 
   req.mean[0] = htonl((int) (pose[0] * 1e3));
   req.mean[1] = htonl((int) (pose[1] * 1e3));
@@ -169,7 +169,7 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
   req.cov[2][1] = 0;
   req.cov[2][2] = htonll((int64_t) (cov[2][2] * 180 / M_PI * 3600 * 180 / M_PI * 3600));
 
-  len = playerc_client_request(device->info.client, &device->info,
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LOCALIZE_SET_POSE,
                                &req, sizeof(req), NULL, 0);
   if (len < 0)
     return -1;
@@ -374,10 +374,10 @@ int playerc_localize_get_config(playerc_localize_t *device,
   int len;
   player_localize_config_t config;
 
-  config.subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
+//  config.subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
     
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LOCALIZE_GET_CONFIG,
+                               &config, 0, &config, sizeof(config));
 
   if (len < 0)
     return -1;
@@ -388,7 +388,7 @@ int playerc_localize_get_config(playerc_localize_t *device,
   }
 
   // fill out the data field
-  cfg->subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
+//  cfg->subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
   cfg->num_particles = (uint32_t) ntohl(config.num_particles);
 
   return 0;
@@ -402,10 +402,10 @@ int playerc_localize_set_config(playerc_localize_t *device,
   int len;
   player_localize_config_t config;
 
-  config.subtype = PLAYER_LOCALIZE_SET_CONFIG_REQ;
+//  config.subtype = PLAYER_LOCALIZE_SET_CONFIG_REQ;
   config.num_particles = cfg.num_particles;
 
-  len = playerc_client_request(device->info.client, &device->info,
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LOCALIZE_SET_CONFIG,
                                &config, sizeof(config), &config, sizeof(config));
 
   if (len < 0)
@@ -423,10 +423,11 @@ int playerc_localize_get_particles(playerc_localize_t *device)
 
   assert(req = calloc(1,sizeof(player_localize_get_particles_t)));
 
-  req->subtype = PLAYER_LOCALIZE_GET_PARTICLES_REQ;
+  //req->subtype = PLAYER_LOCALIZE_GET_PARTICLES_REQ;
     
   len = playerc_client_request(device->info.client, &device->info,
-                               req, sizeof(req->subtype), req, 
+                               PLAYER_LOCALIZE_GET_PARTICLES,
+                               NULL, 0, req, 
                                sizeof(player_localize_get_particles_t));
 
   if (len < 0)

@@ -34,7 +34,7 @@ int AudioMixerProxy::GetConfigure()
   player_audiomixer_config_t config;
   player_msghdr_t hdr;
 
-  if(client->Request(m_device_id, (const char*)&config, sizeof(config.subtype),
+  if(client->Request(m_device_id, 0, (const char*)&config, 0,
         &hdr, (char*)&config,sizeof(config))<0)
     return(-1);
 
@@ -74,66 +74,66 @@ int AudioMixerProxy::SetMaster(unsigned short left, unsigned short right)
 {
   player_audiomixer_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIOMIXER_SET_MASTER;
+//  cmd.subtype = PLAYER_AUDIOMIXER_SET_MASTER;
   cmd.left = htons(left);
   cmd.right = htons(right);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIOMIXER_SET_MASTER, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioMixerProxy::SetPCM(unsigned short left, unsigned short right)
 {
   player_audiomixer_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIOMIXER_SET_PCM;
+//  cmd.subtype = PLAYER_AUDIOMIXER_SET_PCM;
   cmd.left = htons(left);
   cmd.right = htons(right);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIOMIXER_SET_PCM, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioMixerProxy::SetLine(unsigned short left, unsigned short right)
 {
   player_audiomixer_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIOMIXER_SET_LINE;
+//  cmd.subtype = PLAYER_AUDIOMIXER_SET_LINE;
   cmd.left = htons(left);
   cmd.right = htons(right);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIOMIXER_SET_LINE, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioMixerProxy::SetMic(unsigned short left, unsigned short right)
 {
   player_audiomixer_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIOMIXER_SET_MIC;
+//  cmd.subtype = PLAYER_AUDIOMIXER_SET_MIC;
   cmd.left = htons(left);
   cmd.right = htons(right);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIOMIXER_SET_MIC, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioMixerProxy::SetIGain(unsigned short gain)
 {
   player_audiomixer_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIOMIXER_SET_IGAIN;
+//  cmd.subtype = PLAYER_AUDIOMIXER_SET_IGAIN;
   cmd.left = htons(gain);
   cmd.right = htons(gain);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIOMIXER_SET_IGAIN, (const char*)&cmd, sizeof(cmd)) );
 }
 
 int AudioMixerProxy::SetOGain(unsigned short gain)
 {
   player_audiomixer_cmd_t cmd;
 
-  cmd.subtype = PLAYER_AUDIOMIXER_SET_OGAIN;
+//  cmd.subtype = PLAYER_AUDIOMIXER_SET_OGAIN;
   cmd.left = htons(gain);
   cmd.right = htons(gain);
 
-  return( client->Write(m_device_id, (const char*)&cmd, sizeof(cmd)) );
+  return( client->Request(m_device_id, PLAYER_AUDIOMIXER_SET_OGAIN, (const char*)&cmd, sizeof(cmd)) );
 }
 
 // interface that all proxies SHOULD provide

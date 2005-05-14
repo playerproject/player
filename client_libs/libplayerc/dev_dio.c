@@ -62,7 +62,7 @@ playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_dio_t));
   memset(device, 0, sizeof(playerc_dio_t));
   playerc_device_init(&device->info, client, PLAYER_DIO_CODE, index,
-                      (playerc_putdata_fn_t) playerc_dio_putdata);
+                      (playerc_putdata_fn_t) playerc_dio_putdata,NULL,NULL);
     
   return device;
 }

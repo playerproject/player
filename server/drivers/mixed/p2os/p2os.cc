@@ -205,7 +205,8 @@ void P2OS_Register(DriverTable* table)
   table->AddDriver("p2os", P2OS_Init);
 }
 
-P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
+P2OS::P2OS(ConfigFile* cf, int section) 
+        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_device_id_t));
@@ -226,9 +227,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->position_id), section, "provides",
                       PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                          sizeof(player_position_data_t),
-                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -239,8 +238,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->compass_id), section, "provides", 
                       PLAYER_POSITION_CODE, -1, "compass") == 0)
   {
-    if(this->AddInterface(this->compass_id, PLAYER_READ_MODE,
-                          sizeof(player_position_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->compass_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -251,8 +249,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->gyro_id), section, "provides", 
                       PLAYER_POSITION_CODE, -1, "gyro") == 0)
   {
-    if(this->AddInterface(this->gyro_id, PLAYER_READ_MODE,
-                          sizeof(player_position_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->gyro_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -264,8 +261,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->sonar_id), section, "provides", 
                       PLAYER_SONAR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE,
-                          sizeof(player_sonar_data_t),0,1,1) != 0)
+    if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -277,8 +273,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->aio_id), section, "provides", 
                       PLAYER_AIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->aio_id, PLAYER_READ_MODE,
-                          sizeof(player_aio_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->aio_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -289,8 +284,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->dio_id), section, "provides", 
                       PLAYER_DIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->dio_id, PLAYER_READ_MODE,
-                          sizeof(player_dio_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->dio_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -301,9 +295,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->gripper_id), section, "provides", 
                       PLAYER_GRIPPER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->gripper_id, PLAYER_ALL_MODE,
-                          sizeof(player_gripper_data_t), 
-                          sizeof(player_gripper_cmd_t), 0, 0) != 0)
+    if(this->AddInterface(this->gripper_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -314,8 +306,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->bumper_id), section, "provides", 
                       PLAYER_BUMPER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE,
-                          sizeof(player_bumper_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -326,8 +317,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
-                          sizeof(player_power_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->power_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -338,8 +328,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->blobfinder_id), section, "provides", 
                       PLAYER_BLOBFINDER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE,
-                          sizeof(player_blobfinder_data_t), 0, 1, 1) != 0)
+    if(this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -350,8 +339,7 @@ P2OS::P2OS(ConfigFile* cf, int section) : Driver(cf,section)
   if(cf->ReadDeviceId(&(this->sound_id), section, "provides", 
                       PLAYER_SOUND_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->sound_id, PLAYER_WRITE_MODE,
-                          0, sizeof(player_sound_cmd_t), 0, 0) != 0)
+    if(this->AddInterface(this->sound_id, PLAYER_WRITE_MODE) != 0)
     {
       this->SetError(-1);
       return;
@@ -776,11 +764,14 @@ int P2OS::Setup()
   }
   
 
+  // TODO: figure out what the right behavior here is
+#if 0
   // zero position command buffer
   player_position_cmd_t zero;
   memset(&zero,0,sizeof(player_position_cmd_t));
   this->PutCommand(this->position_id,(void*)&zero,
                    sizeof(player_position_cmd_t),NULL);
+#endif
   
   /* now spawn reading thread */
   this->StartThread();
@@ -875,64 +866,74 @@ P2OS::PutData(void)
   // TODO: something smarter about timestamping.
 
   // put position data
-  Driver::PutData(this->position_id, 
-                  (void*)&(this->p2os_data.position), 
-                  sizeof(player_position_data_t),
-                  NULL);
+  this->PutMsg(this->position_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.position), 
+               sizeof(player_position_data_t),
+               NULL);
 
   // put sonar data
-  Driver::PutData(this->sonar_id, 
-                  (void*)&(this->p2os_data.sonar), 
-                  sizeof(player_sonar_data_t),
-                  NULL);
+  this->PutMsg(this->sonar_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.sonar), 
+               sizeof(player_sonar_data_t),
+               NULL);
   
   // put aio data
-  Driver::PutData(this->aio_id, 
-                  (void*)&(this->p2os_data.aio), 
-                  sizeof(player_aio_data_t),
-                  NULL);
+  this->PutMsg(this->aio_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.aio), 
+               sizeof(player_aio_data_t),
+               NULL);
 
   // put dio data
-  Driver::PutData(this->dio_id, 
-                  (void*)&(this->p2os_data.dio), 
-                  sizeof(player_dio_data_t),
-                  NULL);
+  this->PutMsg(this->dio_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.dio), 
+               sizeof(player_dio_data_t),
+               NULL);
 
   // put gripper data
-  Driver::PutData(this->gripper_id, 
-                  (void*)&(this->p2os_data.gripper), 
-                  sizeof(player_gripper_data_t),
-                  NULL);
+  this->PutMsg(this->gripper_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.gripper), 
+               sizeof(player_gripper_data_t),
+               NULL);
 
   // put bumper data
-  Driver::PutData(this->bumper_id, 
-                  (void*)&(this->p2os_data.bumper), 
-                  sizeof(player_bumper_data_t),
-                  NULL);
+  this->PutMsg(this->bumper_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.bumper), 
+               sizeof(player_bumper_data_t),
+               NULL);
 
   // put power data
-  Driver::PutData(this->power_id, 
-                  (void*)&(this->p2os_data.power), 
-                  sizeof(player_power_data_t),
-                  NULL);
+  this->PutMsg(this->power_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.power), 
+               sizeof(player_power_data_t),
+               NULL);
 
   // put compass data
-  Driver::PutData(this->compass_id, 
-                  (void*)&(this->p2os_data.compass), 
-                  sizeof(player_position_data_t),
-                  NULL);
+  this->PutMsg(this->compass_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.compass), 
+               sizeof(player_position_data_t),
+               NULL);
 
   // put gyro data
-  Driver::PutData(this->gyro_id, 
-                  (void*)&(this->p2os_data.gyro), 
-                  sizeof(player_position_data_t),
-                  NULL);
+  this->PutMsg(this->gyro_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.gyro), 
+               sizeof(player_position_data_t),
+               NULL);
 
   // put blobfinder data
-  Driver::PutData(this->blobfinder_id, 
-                  (void*)&(this->p2os_data.blobfinder), 
-                  sizeof(player_blobfinder_data_t),
-                  NULL);
+  this->PutMsg(this->blobfinder_id, 
+               NULL, PLAYER_MSGTYPE_DATA, 0,
+               (void*)&(this->p2os_data.blobfinder), 
+               sizeof(player_blobfinder_data_t),
+               NULL);
 }
 
 void 
@@ -961,12 +962,15 @@ P2OS::Main()
     }
     else if(last_position_subscrcount && !(this->position_subscriptions))
     {
+      // TODO: figure out what the right behavior here is
+#if 0
       // overwrite existing motor commands to be zero
       player_position_cmd_t position_cmd;
       position_cmd.xspeed = 0;
       position_cmd.yawspeed = 0;
       this->PutCommand(this->position_id,(void*)(&position_cmd), 
                        sizeof(player_position_cmd_t),NULL);
+#endif
 
       // enable motor power
       this->ToggleMotorPower(1);
@@ -1000,12 +1004,9 @@ P2OS::Main()
         GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
       }
     }
-    
-    // handle pending config requests
-    this->HandleConfig();
 
-    // process latest commands
-    this->GetCommand();
+    // handle pending messages
+    ProcessMessages();
   }
   pthread_exit(NULL);
 }
@@ -1305,320 +1306,276 @@ P2OS::ToggleMotorPower(unsigned char val)
   SendReceive(&packet);
 }
 
-void
-P2OS::HandleConfig(void)
+int 
+P2OS::ProcessMessage(ClientData * client, player_msghdr * hdr,
+                     uint8_t * data, uint8_t * resp_data,
+                     int * resp_len)
 {
-  void* client;
-  unsigned char config[PLAYER_MAX_REQREP_SIZE];
-  int config_size;
+  // Look for configuration requests
+  if(hdr->type == PLAYER_MSGTYPE_REQ)
+    return(this->HandleConfig(hdr,data,resp_data,resp_len));
+  else if(hdr->type == PLAYER_MSGTYPE_CMD)
+    return(this->HandleCommand(hdr,data));
+  else
+    return(-1);
+}
+
+int
+P2OS::HandleConfig(player_msghdr * hdr,
+                   uint8_t * data, uint8_t * resp_data,
+                   int * resp_len)
+{
+  *resp_len = 0;
 
   // check for position config requests
-  if((config_size = this->GetConfig(this->position_id, &client, 
-                                    (void*)config, sizeof(config),NULL)) > 0)
+  if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                        PLAYER_POSITION_SET_ODOM, this->position_id))
   {
-    switch(config[0])
+    if(hdr->size != sizeof(player_position_set_odom_req_t))
     {
-      case PLAYER_POSITION_SET_ODOM_REQ:
-        if(config_size != sizeof(player_position_set_odom_req_t))
-        {
-          PLAYER_WARN("Arg to odometry set requests wrong size; ignoring");
-          this->PutReply(this->position_id, client,
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_position_set_odom_req_t set_odom_req;
-          set_odom_req = *((player_position_set_odom_req_t*)config);
-
-          this->sippacket->x_offset = ((int)ntohl(set_odom_req.x)) -
-                  this->sippacket->xpos;
-          this->sippacket->y_offset = ((int)ntohl(set_odom_req.y)) -
-                  this->sippacket->ypos;
-          this->sippacket->angle_offset = ((int)ntohl(set_odom_req.theta)) -
-                  this->sippacket->angle;
-
-          this->PutReply(this->position_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, NULL);
-        }
-        break;
-
-      case PLAYER_POSITION_MOTOR_POWER_REQ:
-        /* motor state change request 
-         *   1 = enable motors
-         *   0 = disable motors (default)
-         */
-        if(config_size != sizeof(player_position_power_config_t))
-        {
-          PLAYER_WARN("Arg to motor state change request wrong size; ignoring");
-          this->PutReply(this->position_id, client, 
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_position_power_config_t power_config;
-          power_config = *((player_position_power_config_t*)config);
-          this->ToggleMotorPower(power_config.value);
-
-          this->PutReply(this->position_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, NULL);
-        }
-        break;
-
-      case PLAYER_POSITION_RESET_ODOM_REQ:
-        /* reset position to 0,0,0: no args */
-        if(config_size != sizeof(player_position_resetodom_config_t))
-        {
-          PLAYER_WARN("Arg to reset position request is wrong size; ignoring");
-          this->PutReply(this->position_id, client, 
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          ResetRawPositions();
-
-          this->PutReply(this->position_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, NULL);
-        }
-        break;
-
-      case PLAYER_POSITION_GET_GEOM_REQ:
-        /* Return the robot geometry. */
-        if(config_size != 1)
-        {
-          PLAYER_WARN("Arg get robot geom is wrong size; ignoring");
-          this->PutReply(this->position_id, client, 
-                   PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_position_geom_t geom;
-          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-          // TODO: Figure out this rotation offset somehow; it's not 
-          //       given in the Saphira parameters.  For now, -100 is 
-          //       about right for a Pioneer 2DX.
-          geom.pose[0] = htons((short) (-100));
-          geom.pose[1] = htons((short) (0));
-          geom.pose[2] = htons((short) (0));
-          // get dimensions from the parameter table
-          //geom.size[0] = htons((short) (2 * 250));
-          //geom.size[1] = htons((short) (2 * 225));
-          geom.size[0] = 
-                  htons((short)PlayerRobotParams[param_idx].RobotLength);
-          geom.size[1] = 
-                  htons((short)PlayerRobotParams[param_idx].RobotWidth);
-
-          this->PutReply(this->position_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL);
-        }
-        break;
-
-      case PLAYER_POSITION_VELOCITY_MODE_REQ:
-        /* velocity control mode:
-         *   0 = direct wheel velocity control (default)
-         *   1 = separate translational and rotational control
-         */
-        if(config_size != sizeof(player_position_velocitymode_config_t))
-        {
-          puts("Arg to velocity control mode change request is wrong "
-               "size; ignoring");
-          if(PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        }
-
-        player_position_velocitymode_config_t velmode_config;
-        velmode_config = 
-                *((player_position_velocitymode_config_t*)config);
-
-        if(velmode_config.value)
-          direct_wheel_vel_control = false;
-        else
-          direct_wheel_vel_control = true;
-
-        if(PutReply(this->position_id, client, 
-                    PLAYER_MSGTYPE_RESP_ACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
-
-      default:
-        PLAYER_WARN("Position got unknown config request");
-        this->PutReply(this->position_id, client, 
-                       PLAYER_MSGTYPE_RESP_NACK, NULL);
-        break;
+      PLAYER_WARN("Arg to odometry set requests wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
     }
-  }
+    player_position_set_odom_req_t set_odom_req;
+    set_odom_req = *((player_position_set_odom_req_t*)data);
 
+    this->sippacket->x_offset = ((int)ntohl(set_odom_req.x)) -
+            this->sippacket->xpos;
+    this->sippacket->y_offset = ((int)ntohl(set_odom_req.y)) -
+            this->sippacket->ypos;
+    this->sippacket->angle_offset = ((int)ntohl(set_odom_req.theta)) -
+            this->sippacket->angle;
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_POSITION_MOTOR_POWER, 
+                             this->position_id))
+  {
+    /* motor state change request 
+     *   1 = enable motors
+     *   0 = disable motors (default)
+     */
+    if(hdr->size != sizeof(player_position_power_config_t))
+    {
+      PLAYER_WARN("Arg to motor state change request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_position_power_config_t power_config;
+    power_config = *((player_position_power_config_t*)data);
+    this->ToggleMotorPower(power_config.value);
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_POSITION_RESET_ODOM, 
+                             this->position_id))
+  {
+    /* reset position to 0,0,0: no args */
+    if(hdr->size != 0)
+    {
+      PLAYER_WARN("Arg to reset position request is wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    ResetRawPositions();
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_POSITION_GET_GEOM, 
+                             this->position_id))
+  {
+    /* Return the robot geometry. */
+    if(hdr->size != 0)
+    {
+      PLAYER_WARN("Arg get robot geom is wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_position_geom_t geom;
+    // TODO: Figure out this rotation offset somehow; it's not 
+    //       given in the Saphira parameters.  For now, -100 is 
+    //       about right for a Pioneer 2DX.
+    geom.pose[0] = htons((short) (-100));
+    geom.pose[1] = htons((short) (0));
+    geom.pose[2] = htons((short) (0));
+    // get dimensions from the parameter table
+    //geom.size[0] = htons((short) (2 * 250));
+    //geom.size[1] = htons((short) (2 * 225));
+    geom.size[0] = 
+            htons((short)PlayerRobotParams[param_idx].RobotLength);
+    geom.size[1] = 
+            htons((short)PlayerRobotParams[param_idx].RobotWidth);
+
+    memcpy(resp_data, &geom, sizeof(geom));
+    *resp_len = sizeof(geom);
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_POSITION_VELOCITY_MODE, 
+                             this->position_id))
+  {
+    /* velocity control mode:
+     *   0 = direct wheel velocity control (default)
+     *   1 = separate translational and rotational control
+     */
+    if(hdr->size != sizeof(player_position_velocitymode_config_t))
+    {
+      PLAYER_WARN("Arg to velocity control mode change request is wrong "
+                  "size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_position_velocitymode_config_t velmode_config;
+    velmode_config = 
+            *((player_position_velocitymode_config_t*)data);
+
+    if(velmode_config.value)
+      direct_wheel_vel_control = false;
+    else
+      direct_wheel_vel_control = true;
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
   // check for sonar config requests
-  if((config_size = this->GetConfig(this->sonar_id, &client, 
-                                    (void*)config, sizeof(config),NULL)) > 0)
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_SONAR_POWER, 
+                             this->sonar_id))
   {
-    switch(config[0])
+    /*
+     * 1 = enable sonars
+     * 0 = disable sonar
+     */
+    if(hdr->size != sizeof(player_sonar_power_config_t))
     {
-      case PLAYER_SONAR_POWER_REQ:
-        /*
-         * 1 = enable sonars
-         * 0 = disable sonar
-         */
-        if(config_size != sizeof(player_sonar_power_config_t))
-        {
-          PLAYER_WARN("Arg to sonar state change request wrong size; ignoring");
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_sonar_power_config_t sonar_config;
-          sonar_config = *((player_sonar_power_config_t*)config);
-          this->ToggleSonarPower(sonar_config.value);
-
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, NULL);
-        }
-        break;
-
-      case PLAYER_SONAR_GET_GEOM_REQ:
-        /* Return the sonar geometry. */
-        if(config_size != 1)
-        {
-          PLAYER_WARN("Arg get sonar geom is wrong size; ignoring");
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_NACK, NULL);
-        }
-        else
-        {
-          player_sonar_geom_t geom;
-          geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-          geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
-          for(int i = 0; i < PLAYER_SONAR_MAX_SAMPLES; i++)
-          {
-            sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
-            geom.poses[i][0] = htons((short) (pose.x));
-            geom.poses[i][1] = htons((short) (pose.y));
-            geom.poses[i][2] = htons((short) (pose.th));
-          }
-
-          this->PutReply(this->sonar_id, client, 
-                         PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL);
-        }
-        break;
-
-      default:
-        PLAYER_WARN("Sonar got unknown config request");
-        this->PutReply(this->sonar_id, client, 
-                       PLAYER_MSGTYPE_RESP_NACK, NULL);
-        break;
+      PLAYER_WARN("Arg to sonar state change request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
     }
+    player_sonar_power_config_t sonar_config;
+    sonar_config = *((player_sonar_power_config_t*)data);
+    this->ToggleSonarPower(sonar_config.value);
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
   }
-
-  // check for blobfinder requests
-  if((config_size = this->GetConfig(this->blobfinder_id, &client, 
-                                    (void*)config, sizeof(config),NULL)) > 0)
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_SONAR_GET_GEOM, 
+                             this->sonar_id))
   {
-    switch(config[0])
+    /* Return the sonar geometry. */
+    if(hdr->size != 0)
     {
-      case PLAYER_BLOBFINDER_SET_COLOR_REQ:
-        // Set the tracking color (RGB max/min values)
-
-        if(config_size != sizeof(player_blobfinder_color_config_t))
-        {
-          puts("Arg to blobfinder color request wrong size; ignoring");
-          if(PutReply(this->blobfinder_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        }
-        player_blobfinder_color_config_t color_config;
-        color_config = *((player_blobfinder_color_config_t*)config);
-
-        CMUcamTrack( (short)ntohs(color_config.rmin),
-                     (short)ntohs(color_config.rmax), 
-                     (short)ntohs(color_config.gmin),
-                     (short)ntohs(color_config.gmax),
-                     (short)ntohs(color_config.bmin),
-                     (short)ntohs(color_config.bmax) );
-
-        //printf("Color Tracking parameter updated.\n");
-
-        if(PutReply(this->blobfinder_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
-
-      case PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ:
-        // Set the imager control params
-        if(config_size != sizeof(player_blobfinder_imager_config_t))
-        {
-          puts("Arg to blobfinder imager request wrong size; ignoring");
-          if(PutReply(this->blobfinder_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        }
-        player_blobfinder_imager_config_t imager_config;
-        imager_config = *((player_blobfinder_imager_config_t*)config);
-
-        P2OSPacket cam_packet;
-        unsigned char cam_command[50];
-        int np;
-
-        np=3;
-
-        CMUcamStopTracking();	// Stop the current tracking.
-
-        cam_command[0] = TTY3;
-        cam_command[1] = ARGSTR;
-        np += sprintf((char*)&cam_command[np], "CR ");
-
-        if ((short)ntohs(imager_config.brightness) >= 0)
-          np += sprintf((char*)&cam_command[np], " 6 %d",
-                        ntohs(imager_config.brightness));
-
-        if ((short)ntohs(imager_config.contrast) >= 0)
-          np += sprintf((char*)&cam_command[np], " 5 %d",
-                        ntohs(imager_config.contrast));
-
-        if (imager_config.autogain >= 0)
-          if (imager_config.autogain == 0)
-            np += sprintf((char*)&cam_command[np], " 19 32");
-          else
-            np += sprintf((char*)&cam_command[np], " 19 33");
-
-        if (imager_config.colormode >= 0)
-          if (imager_config.colormode == 3)
-            np += sprintf((char*)&cam_command[np], " 18 36");
-          else if (imager_config.colormode == 2)
-            np += sprintf((char*)&cam_command[np], " 18 32");
-          else if (imager_config.colormode == 1)
-            np += sprintf((char*)&cam_command[np], " 18 44");
-          else
-            np += sprintf((char*)&cam_command[np], " 18 40");
-
-        if (np > 6)
-        {
-          sprintf((char*)&cam_command[np], "\r");
-          cam_command[2] = strlen((char *)&cam_command[3]);
-          cam_packet.Build(cam_command, (int)cam_command[2]+3);
-          SendReceive(&cam_packet);
-
-          printf("Blobfinder imager parameters updated.\n");
-          printf("       %s\n", &cam_command[3]);
-        } else
-          printf("Blobfinder imager parameters NOT updated.\n");
-
-        CMUcamTrack(); 	// Restart tracking
-
-        if(PutReply(this->blobfinder_id, client, 
-                    PLAYER_MSGTYPE_RESP_ACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
-
-      default:
-        PLAYER_WARN("unknown config request to blobfinder interface");
-        if(PutReply(this->blobfinder_id, client, 
-                    PLAYER_MSGTYPE_RESP_NACK, NULL))
-          PLAYER_ERROR("failed to PutReply");
-        break;
+      PLAYER_WARN("Arg get sonar geom is wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
     }
+    player_sonar_geom_t geom;
+    size_t geom_len=0;
+    geom.pose_count = htons(PlayerRobotParams[param_idx].SonarNum);
+    geom_len += sizeof(uint16_t);
+    for(int i = 0; i < PlayerRobotParams[param_idx].SonarNum; i++)
+    {
+      sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
+      geom.poses[i][0] = htons((short) (pose.x));
+      geom.poses[i][1] = htons((short) (pose.y));
+      geom.poses[i][2] = htons((short) (pose.th));
+      geom_len += sizeof(uint16_t) * 3;
+    }
+
+    memcpy(resp_data,&geom,geom_len);
+    *resp_len = geom_len;
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  // check for blobfinder requests
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_BLOBFINDER_SET_COLOR, 
+                             this->blobfinder_id))
+  {
+    // Set the tracking color (RGB max/min values)
+
+    if(hdr->size != sizeof(player_blobfinder_color_config_t))
+    {
+      puts("Arg to blobfinder color request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_blobfinder_color_config_t color_config;
+    color_config = *((player_blobfinder_color_config_t*)data);
+
+    CMUcamTrack( (short)ntohs(color_config.rmin),
+                 (short)ntohs(color_config.rmax), 
+                 (short)ntohs(color_config.gmin),
+                 (short)ntohs(color_config.gmax),
+                 (short)ntohs(color_config.bmin),
+                 (short)ntohs(color_config.bmax) );
+
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                             PLAYER_BLOBFINDER_SET_IMAGER_PARAMS, 
+                             this->blobfinder_id))
+  {
+    // Set the imager control params
+    if(hdr->size != sizeof(player_blobfinder_imager_config_t))
+    {
+      puts("Arg to blobfinder imager request wrong size; ignoring");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_blobfinder_imager_config_t imager_config;
+    imager_config = *((player_blobfinder_imager_config_t*)data);
+
+    P2OSPacket cam_packet;
+    unsigned char cam_command[50];
+    int np;
+
+    np=3;
+
+    CMUcamStopTracking();	// Stop the current tracking.
+
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    np += sprintf((char*)&cam_command[np], "CR ");
+
+    if ((short)ntohs(imager_config.brightness) >= 0)
+      np += sprintf((char*)&cam_command[np], " 6 %d",
+                    ntohs(imager_config.brightness));
+
+    if ((short)ntohs(imager_config.contrast) >= 0)
+      np += sprintf((char*)&cam_command[np], " 5 %d",
+                    ntohs(imager_config.contrast));
+
+    if (imager_config.autogain >= 0)
+      if (imager_config.autogain == 0)
+        np += sprintf((char*)&cam_command[np], " 19 32");
+      else
+        np += sprintf((char*)&cam_command[np], " 19 33");
+
+    if (imager_config.colormode >= 0)
+      if (imager_config.colormode == 3)
+        np += sprintf((char*)&cam_command[np], " 18 36");
+      else if (imager_config.colormode == 2)
+        np += sprintf((char*)&cam_command[np], " 18 32");
+      else if (imager_config.colormode == 1)
+        np += sprintf((char*)&cam_command[np], " 18 44");
+      else
+        np += sprintf((char*)&cam_command[np], " 18 40");
+
+    if (np > 6)
+    {
+      sprintf((char*)&cam_command[np], "\r");
+      cam_command[2] = strlen((char *)&cam_command[3]);
+      cam_packet.Build(cam_command, (int)cam_command[2]+3);
+      SendReceive(&cam_packet);
+
+      printf("Blobfinder imager parameters updated.\n");
+      printf("       %s\n", &cam_command[3]);
+    } else
+      printf("Blobfinder imager parameters NOT updated.\n");
+
+    CMUcamTrack(); 	// Restart tracking
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else
+  {
+    PLAYER_WARN("unknown config request to p2os driver");
+    return(-1);
   }
 }
 
@@ -1837,30 +1794,32 @@ P2OS::HandleSoundCommand(player_sound_cmd_t sound_cmd)
   }
 }
 
-void
-P2OS::GetCommand(void)
+int
+P2OS::HandleCommand(player_msghdr * hdr, uint8_t * data)
 {
-  // get and send the latest motor command
-  player_position_cmd_t position_cmd;
-  if(Driver::GetCommand(this->position_id,(void*)&position_cmd,
-                        sizeof(player_position_cmd_t),NULL) > 0)
+  if(this->MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->position_id))
   {
+    // get and send the latest motor command
+    player_position_cmd_t position_cmd;
+    position_cmd = *(player_position_cmd_t*)data;
     this->HandlePositionCommand(position_cmd);
+    return(0);
   }
-
-  // get and send the latest gripper command, if it's new
-  player_gripper_cmd_t gripper_cmd;
-  if(Driver::GetCommand(this->gripper_id,(void*)&gripper_cmd,
-                        sizeof(player_gripper_cmd_t),NULL) > 0)
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->gripper_id))
   {
+    // get and send the latest gripper command, if it's new
+    player_gripper_cmd_t gripper_cmd;
+    gripper_cmd = *(player_gripper_cmd_t*)data;
     this->HandleGripperCommand(gripper_cmd);
+    return(0);
   }
-
-  // get and send the latest sound command, if it's new
-  player_sound_cmd_t sound_cmd;
-  if(Driver::GetCommand(this->sound_id,(void*)&sound_cmd,
-                        sizeof(player_sound_cmd_t),NULL) > 0)
+  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->sound_id))
   {
+    // get and send the latest sound command, if it's new
+    player_sound_cmd_t sound_cmd;
+    sound_cmd = *(player_sound_cmd_t*)data;
     this->HandleSoundCommand(sound_cmd);
+    return(0);
   }
+  return(-1);
 }

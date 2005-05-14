@@ -62,7 +62,9 @@ playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_laser_t));
   memset(device, 0, sizeof(playerc_laser_t));
   playerc_device_init(&device->info, client, PLAYER_LASER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_laser_putdata);
+                      (playerc_putdata_fn_t) playerc_laser_putdata,
+					  (playerc_putdata_fn_t) playerc_laser_putgeom,
+					  (playerc_putdata_fn_t) playerc_laser_putconfig);
 
   device->pose[0] = 0.0;
   device->pose[1] = 0.0;
@@ -136,8 +138,45 @@ void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
   }
 
   device->scan_count = data->range_count;
+
 }
 
+// Process incoming config
+void playerc_laser_putconfig(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_config_t *data, size_t len)
+{
+  if (len != sizeof(player_laser_config_t))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_laser_config_t));
+    return;
+  }
+  
+  device->scan_res = ntohs(data->resolution);
+  device->scan_start = (short) ntohs(data->min_angle) / 100.0 * M_PI / 180;
+  device->scan_count = (((short) ntohs(data->max_angle) / 100.0 * M_PI / 180) - device->scan_start) / device->scan_res;;
+  device->intensity_on = data->intensity;
+  device->range_res = (int) ntohs(data->range_res);
+  
+}
+
+// Process incoming geom
+void playerc_laser_putgeom(playerc_laser_t *device, player_msghdr_t *header,
+                           player_laser_geom_t *data, size_t len)
+{
+  if (len != sizeof(player_laser_geom_t))
+  {
+    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_laser_geom_t));
+    return;
+  }
+
+  device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
+  device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0;
+  device->pose[2] = ((int16_t) ntohs(data->pose[2])) * M_PI / 180;
+  device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0;
+  device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0;
+  
+//  printf("Laser Geometry: %f %f %f %f %f\n",device->pose[0],device->pose[1],device->pose[2],device->size[0],device->size[1]);
+}
 
 // Configure the laser.
 int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double max_angle,
@@ -146,14 +185,14 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
   int len;
   player_laser_config_t config;
 
-  config.subtype = PLAYER_LASER_SET_CONFIG;
+//  config.subtype = PLAYER_LASER_SET_CONFIG;
   config.min_angle = htons((unsigned int) (int) (min_angle * 180.0 / M_PI * 100));
   config.max_angle = htons((unsigned int) (int) (max_angle * 180.0 / M_PI * 100));
   config.resolution = htons(resolution);
   config.intensity = (intensity ? 1 : 0);
   config.range_res = htons((uint16_t)range_res);
 
-  len = playerc_client_request(device->info.client, &device->info,
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LASER_SET_CONFIG,
                                &config, sizeof(config), &config, sizeof(config));
   if (len < 0)
     return -1;
@@ -168,26 +207,26 @@ int  playerc_laser_set_config(playerc_laser_t *device, double min_angle, double 
 int playerc_laser_get_config(playerc_laser_t *device, double *min_angle, double *max_angle,
                              int *resolution, int *range_res, int *intensity)
 {
-  int len;
   player_laser_config_t config;
 
-  config.subtype = PLAYER_LASER_GET_CONFIG;
+//  config.subtype = PLAYER_LASER_GET_CONFIG;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-  
-  *min_angle = (short) ntohs(config.min_angle) / 100.0 * M_PI / 180;
-  *max_angle = (short) ntohs(config.max_angle) / 100.0 * M_PI / 180;
-  *resolution = ntohs(config.resolution);
-  *intensity = (config.intensity ? 1 : 0);
-  *range_res = (int) ntohs(config.range_res);
+  playerc_client_request(device->info.client, &device->info,PLAYER_LASER_GET_CONFIG,
+                               &config, 0, &config, sizeof(config));
+
+
+   while(!device->info.freshconfig)
+   {
+   		//printf("waiting for laser config message\n");
+   		playerc_client_read(device->info.client);
+   }
+
+
+  *min_angle = device->scan_start;
+  *max_angle = device->scan_start + device->scan_count * device->scan_res;
+  *resolution = device->scan_res;
+  *intensity = device->intensity_on;
+  *range_res = device->range_res;
   return 0;
 }
 
@@ -199,24 +238,19 @@ int playerc_laser_get_geom(playerc_laser_t *device)
   int len;
   player_laser_geom_t config;
 
-  config.subtype = PLAYER_LASER_GET_GEOM;
+//  config.subtype = PLAYER_LASER_GET_GEOM;
 
-  len = playerc_client_request(device->info.client, &device->info,
-                               &config, sizeof(config.subtype), &config, sizeof(config));
-  if (len < 0)
+  len = playerc_client_request(device->info.client, &device->info,PLAYER_LASER_GET_GEOM,
+                               &config, 0, &config, sizeof(config));
+  if (len < sizeof(config))
     return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
 
   device->pose[0] = ((int16_t) ntohs(config.pose[0])) / 1000.0;
   device->pose[1] = ((int16_t) ntohs(config.pose[1])) / 1000.0;
   device->pose[2] = ((int16_t) ntohs(config.pose[2])) * M_PI / 180;
   device->size[0] = ((int16_t) ntohs(config.size[0])) / 1000.0;
   device->size[1] = ((int16_t) ntohs(config.size[1])) / 1000.0;
-
+  
   return 0;
 }
 

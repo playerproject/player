@@ -67,7 +67,7 @@ playerc_simulation_t *playerc_simulation_create(playerc_client_t *client, int in
   device = malloc(sizeof(playerc_simulation_t));
   memset(device, 0, sizeof(playerc_simulation_t));
   playerc_device_init(&device->info, client, PLAYER_SIMULATION_CODE, index,
-                      (playerc_putdata_fn_t) playerc_simulation_putdata);
+                      (playerc_putdata_fn_t) playerc_simulation_putdata,NULL,NULL);
   return device;
 }
 
@@ -115,9 +115,10 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
   cmd.x = htonl((int) (gx * 1000.0));
   cmd.y = htonl((int) (gy * 1000.0));
   cmd.a = htonl((int) (ga * 180.0 / M_PI));
-  cmd.subtype = PLAYER_SIMULATION_SET_POSE2D;
+  //cmd.subtype = PLAYER_SIMULATION_SET_POSE2D;
 
   return playerc_client_request(device->info.client, &device->info, 
+                                PLAYER_SIMULATION_SET_POSE2D,
                                 &cmd, sizeof(cmd), &cmd, sizeof(cmd));
 }
 
@@ -128,9 +129,10 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   player_simulation_pose2d_req_t cfg;
   
   memset(&cfg, 0, sizeof(cfg));
-  cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
+  //cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
   strncpy( cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
   if (playerc_client_request(device->info.client, &device->info, 
+                             PLAYER_SIMULATION_GET_POSE2D,
 			     &cfg, sizeof(cfg), &cfg, sizeof(cfg)) < 0)
     return (-1);
   *x =  ((int32_t)ntohl(cfg.x)) / 1e3;

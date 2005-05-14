@@ -142,6 +142,8 @@ class ClientProxy
     /** Have we yet received any data from this device?
      */
     bool valid;
+	bool FreshGeom;
+	bool FreshConfig;
 
     /** Flag set if data has just been read into this device.
         If you use it, you must set it to false yourself after examining
@@ -222,6 +224,13 @@ class ClientProxy
     void StoreData(player_msghdr_t hdr, const char* buffer);
 #endif
     
+    /** Proxies *SHOULD* Provide this method, it is used to recieve Pushed geometry data */
+    virtual void FillGeom(player_msghdr_t hdr, const char* buffer);
+
+    /** Proxies *SHOULD* Provide this method, it is used to recieve Pushed config data */
+    virtual void FillConfig(player_msghdr_t hdr, const char* buffer);
+
+
     /** All proxies SHOULD provide this method, which should print out, in a
         human-readable form, the device's current state. */
     virtual void Print();
@@ -405,7 +414,7 @@ class PlayerClient
     /** Send a request to the server.  This method is @b not intended for
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 on success, -1 otherwise. */
-    int Request(player_device_id_t device_id,
+    int Request(player_device_id_t device_id, uint8_t reqtype,
                 const char* payload,
                 size_t payloadlen,
                 player_msghdr_t* replyhdr,
@@ -416,7 +425,7 @@ class PlayerClient
         direct use.  Rather, device proxies should implement higher-level 
         methods atop this one. Returns 0 if an ACK is received, -1 
         otherwise. */
-    int Request(player_device_id_t device_id,
+    int Request(player_device_id_t device_id, uint8_t reqtype,
                 const char* payload,
                 size_t payloadlen);
     
@@ -1718,6 +1727,9 @@ class SonarProxy : public ClientProxy
 
     // interface that all proxies must provide
     void FillData(player_msghdr_t hdr, const char* buffer);
+    
+    // interface that all proxies should provide
+    void FillGeom(player_msghdr_t hdr, const char* buffer);
     
     /// Print out current sonar range data.
     void Print();

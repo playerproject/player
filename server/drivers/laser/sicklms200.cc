@@ -164,6 +164,12 @@ class SickLMS200 : public Driver
     int Setup();
     int Shutdown();
 
+    // MessageHandler
+    int ProcessMessage(ClientData * client, 
+		       player_msghdr * hdr, 
+		       uint8_t * data, 
+		       uint8_t * resp_data, 
+		       int * resp_len);
   private:
 
     // Main function for device thread.
@@ -300,8 +306,8 @@ void SickLMS200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE,
-             sizeof(player_laser_data_t),0,10,10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+             PLAYER_LASER_CODE, PLAYER_READ_MODE)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -355,7 +361,6 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   
   return;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
@@ -486,6 +491,114 @@ int SickLMS200::Shutdown()
 }
 
 
+int 
+SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
+                           uint8_t * data, uint8_t * resp_data,
+                           int * resp_len)
+{
+  int retval = 0;
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+  *resp_len = 0;
+
+  if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, 
+                        this->device_id))
+  {
+    if(hdr->size != sizeof(player_laser_config_t))
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, sizeof(player_laser_config_t));
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+
+    player_laser_config_t * config = reinterpret_cast<player_laser_config_t *> (data);
+    this->intensity = config->intensity;
+    this->scan_res = ntohs(config->resolution);
+    this->min_angle = (short) ntohs(config->min_angle);
+    this->max_angle = (short) ntohs(config->max_angle);
+    this->range_res = ntohs(config->range_res);
+
+    if(this->CheckScanConfig() != 0)
+    {
+      PLAYER_ERROR("invalid laser configuration requested");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    if (SetLaserMode() != 0)
+    {
+      PLAYER_ERROR("request for config mode failed");
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    if (SetLaserRes(this->scan_width, this->scan_res) != 0)
+    {
+      PLAYER_ERROR("failed setting resolution");
+      retval = PLAYER_MSGTYPE_RESP_NACK;
+    }
+    else if(SetLaserConfig(this->intensity) != 0)
+    {
+      PLAYER_ERROR("failed setting intensity");          
+      retval = PLAYER_MSGTYPE_RESP_NACK;
+    }
+
+    // Issue a new request for data
+    if (RequestLaserData(this->scan_min_segment, this->scan_max_segment))
+      PLAYER_ERROR("request for laser data failed");
+
+    if(!retval)
+    {
+      *resp_len = sizeof(config);
+      memcpy(resp_data, config, sizeof(player_laser_config_t));
+      return(PLAYER_MSGTYPE_RESP_ACK);
+    }
+    else
+      return(retval);
+  }
+  else if (this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_CONFIG, 
+                              this->device_id))
+  {
+    if(hdr->size != 0)
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, 0);
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_laser_config_t config;
+    config.intensity = this->intensity;
+    config.resolution = htons(this->scan_res);
+    config.min_angle = htons((short) this->min_angle);
+    config.max_angle = htons((short) this->max_angle);
+    config.range_res = htons(this->range_res);
+
+    *resp_len = sizeof(player_laser_config_t);
+    memcpy(resp_data, &config, sizeof(player_laser_config_t));
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+  else if (this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, 
+                              this->device_id))
+  {
+    if(hdr->size != 0)
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, 0);
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_laser_geom_t geom;
+    geom.pose[0] = htons((short) (this->pose[0] * 1000));
+    geom.pose[1] = htons((short) (this->pose[1] * 1000));
+    geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
+    geom.size[0] = htons((short) (this->size[0] * 1000));
+    geom.size[1] = htons((short) (this->size[1] * 1000));
+
+    *resp_len = sizeof(player_laser_geom_t);
+    memcpy(resp_data, &geom, sizeof(player_laser_geom_t));
+    return(PLAYER_MSGTYPE_RESP_ACK);
+  }
+
+  // Don't know how to handle this message.
+  return(-1);
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void SickLMS200::Main() 
@@ -500,30 +613,14 @@ void SickLMS200::Main()
     return;
   }
 
-  while (true)
+  while(true)
   {
     // test if we are supposed to cancel
     pthread_testcancel();
+    
+    ProcessMessages();
 
-    // Update the configuration.
-    if (UpdateConfig())
-    {
-      if (SetLaserMode() != 0)
-        PLAYER_ERROR("request for config mode failed");
-      else
-      {
-        if (SetLaserRes(this->scan_width, this->scan_res) != 0)
-          PLAYER_ERROR("failed setting resolution");
-        if (SetLaserConfig(this->intensity) != 0)
-          PLAYER_ERROR("failed setting intensity");          
-      }
-
-      // Issue a new request for data
-      if (RequestLaserData(this->scan_min_segment, this->scan_max_segment))
-        PLAYER_ERROR("request for laser data failed");
-    }
-
-    // Get the time at which we started reading
+     // Get the time at which we started reading
     // This will be a pretty good estimate of when the phenomena occured
     struct timeval time;
     GlobalTime->GetTime(&time);
@@ -570,112 +667,11 @@ void SickLMS200::Main()
       }
       
       // Make data available
-      PutData((uint8_t*) &data, sizeof(data), &time);
+      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*) &data, sizeof(data), &time);
     }
   }
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Process configuration requests.  Returns 1 if the configuration has changed.
-int SickLMS200::UpdateConfig()
-{
-  int len;
-  void *client;
-  char buffer[PLAYER_MAX_REQREP_SIZE];
-  player_laser_config_t config;
-  player_laser_geom_t geom;
-  
-  while ((len = GetConfig(&client, &buffer, sizeof(buffer),NULL)) > 0)
-  {
-    switch (buffer[0])
-    {
-      case PLAYER_LASER_SET_CONFIG:
-      {
-        if (len != sizeof(player_laser_config_t))
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, sizeof(config));
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-
-        memcpy(&config, buffer, sizeof(config));
-        this->intensity = config.intensity;
-        this->scan_res = ntohs(config.resolution);
-        this->min_angle = (short) ntohs(config.min_angle);
-        this->max_angle = (short) ntohs(config.max_angle);
-	this->range_res = ntohs(config.range_res);
-
-        if (this->CheckScanConfig() == 0)
-        {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                      &config, sizeof(config), NULL) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          return 1;
-        }
-        else
-        {
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-            PLAYER_ERROR("PutReply() failed");
-        }
-        break;
-      }
-
-      case PLAYER_LASER_GET_CONFIG:
-      {
-        if (len != 1)
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-
-        config.intensity = this->intensity;
-        config.resolution = htons(this->scan_res);
-        config.min_angle = htons((short) this->min_angle);
-        config.max_angle = htons((short) this->max_angle);
-        config.range_res = htons(this->range_res);
-
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                    &config, sizeof(config), NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-
-      case PLAYER_LASER_GET_GEOM:
-      {
-        if (len != 1)
-        {
-          PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 1);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-            PLAYER_ERROR("PutReply() failed");
-          continue;
-        }
-
-        geom.pose[0] = htons((short) (this->pose[0] * 1000));
-        geom.pose[1] = htons((short) (this->pose[1] * 1000));
-        geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-        geom.size[0] = htons((short) (this->size[0] * 1000));
-        geom.size[1] = htons((short) (this->size[1] * 1000));
-        
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                    &geom, sizeof(geom), NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-
-      default:
-      {
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-    }
-  }
-  return 0;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////

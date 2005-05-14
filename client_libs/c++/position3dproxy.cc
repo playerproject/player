@@ -167,11 +167,11 @@ int Position3DProxy::SetMotorState(unsigned char state)
   player_position_power_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+//  config.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   config.value = state;
 
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION_MOTOR_POWER,
                          reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
@@ -188,10 +188,10 @@ int Position3DProxy::SelectVelocityControl(unsigned char mode)
   player_position3d_velocitymode_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION3D_VELOCITY_MODE_REQ;
+//  config.request = PLAYER_POSITION3D_VELOCITY_MODE_REQ;
   config.value = mode;
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION3D_VELOCITY_MODE,
                          reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
@@ -209,9 +209,9 @@ int Position3DProxy::ResetOdometry()
   player_position3d_resetodom_config_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.request = PLAYER_POSITION3D_RESET_ODOM_REQ;
+//  config.request = PLAYER_POSITION3D_RESET_ODOM_REQ;
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION3D_RESET_ODOM,
                          reinterpret_cast<char*>(&config),
                          sizeof(config)));
 
@@ -231,7 +231,6 @@ int Position3DProxy::SetOdometry(double x, double y, double z,
   player_position3d_set_odom_req_t config;
   memset( &config, 0, sizeof(config) );
 
-  config.subtype = PLAYER_POSITION3D_SET_ODOM_REQ;
   config.x = HTOPL(x);
   config.y = HTOPL(y);
   config.z = HTOPL(z);
@@ -240,7 +239,7 @@ int Position3DProxy::SetOdometry(double x, double y, double z,
   config.pitch = HTOPL(pitch);
   config.yaw   = HTOPL(yaw);
 
-  return(client->Request(m_device_id,
+  return(client->Request(m_device_id,PLAYER_POSITION3D_SET_ODOM,
                          reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
@@ -259,12 +258,11 @@ Position3DProxy::SetSpeedPID(double kp, double ki, double kd)
   player_position3d_speed_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION3D_SPEED_PID_REQ;
   req.kp = HTOPL(kp);
   req.ki = HTOPL(ki);
   req.kd = HTOPL(kd);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION3D_SPEED_PID,
                          reinterpret_cast<const char*>(&req),
                          sizeof(req));
 }
@@ -283,12 +281,11 @@ Position3DProxy::SetPositionPID(double kp, double ki, double kd)
   player_position3d_position_pid_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION3D_POSITION_PID_REQ;
   req.kp = HTOPL(kp);
   req.ki = HTOPL(ki);
   req.kd = HTOPL(kd);
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION3D_POSITION_PID,
                          reinterpret_cast<const char*>(&req),
                          sizeof(req));
 }
@@ -306,11 +303,10 @@ Position3DProxy::SetPositionSpeedProfile(double spd, double acc)
   player_position3d_speed_prof_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION3D_SPEED_PROF_REQ;
   req.speed   = HTOPL(spd); //rad/s
   req.acc     = HTOPL(acc); //rad/s/s
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION3D_SPEED_PROF,
                          reinterpret_cast<char*>(&req),
                          sizeof(req));
 }
@@ -331,10 +327,10 @@ Position3DProxy::SelectPositionMode(unsigned char mode)
   player_position3d_position_mode_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.subtype = PLAYER_POSITION3D_POSITION_MODE_REQ;
+//  req.subtype = PLAYER_POSITION3D_POSITION_MODE_REQ;
   req.state = mode;
 
-  return client->Request(m_device_id,
+  return client->Request(m_device_id,PLAYER_POSITION3D_POSITION_MODE,
                          reinterpret_cast<char*>(&req),
                          sizeof(req));
 }
