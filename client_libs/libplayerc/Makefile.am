@@ -1,6 +1,6 @@
 SUBDIRS = . test bindings doc
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace -I$(top_srcdir)/client_libs/libplayerpacket
+AM_CPPFLAGS = -fPIC -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace -I$(top_srcdir)/client_libs/libplayerpacket
 
 # create the pkg-config entry	
 pkgconfigdir = $(libdir)/pkgconfig
