@@ -103,6 +103,10 @@ class Mixer : public Driver
     // The main loop
     virtual void Main();
 
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
+
     int Write( int dev, int num );
     int Read( int dev, int& num );
 
@@ -111,8 +115,7 @@ class Mixer : public Driver
 };
 
 Mixer::Mixer( ConfigFile* cf, int section)
-  : Driver(cf, section, PLAYER_AUDIOMIXER_CODE, PLAYER_ALL_MODE,
-           0,sizeof(player_audiomixer_cmd_t),1,1)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIOMIXER_CODE, PLAYER_ALL_MODE)
 {
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
 }
@@ -147,6 +150,109 @@ int Mixer::Shutdown()
   return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int Mixer::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  assert(*resp_len>sizeof(player_audiomixer_config_t));
+  
+  *resp_len = 0;
+
+  int vol;
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIOMIXER_GET_LEVELS, device_id))
+  {
+    assert(hdr->size == 0);
+    Lock();
+    player_audiomixer_config_t * config = reinterpret_cast<player_audiomixer_config_t *> (resp_data);
+
+    this->Read(SOUND_MIXER_VOLUME,vol);
+    config->masterLeft = htons( vol & 0xFF );
+    config->masterRight = htons( (vol>>8) & 0xFF );
+
+    this->Read(SOUND_MIXER_PCM,vol);
+    config->pcmLeft = htons( vol & 0xFF );
+    config->pcmRight = htons( (vol>>8) & 0xFF );
+
+    this->Read(SOUND_MIXER_LINE,vol);
+    config->lineLeft = htons( vol & 0xFF );
+    config->lineRight = htons( (vol>>8) & 0xFF );
+
+    this->Read(SOUND_MIXER_MIC,vol);
+    config->micLeft = htons( vol & 0xFF );
+    config->micRight = htons( (vol>>8) & 0xFF );
+
+    this->Read(SOUND_MIXER_IGAIN,vol);
+    config->iGain = htons( vol );
+
+    this->Read(SOUND_MIXER_OGAIN,vol);
+    config->oGain= htons( vol );
+
+    Unlock();
+    *resp_len = sizeof(player_audiomixer_config_t);
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MASTER, device_id))
+  {
+    assert(hdr->size == sizeof(player_audiomixer_cmd_t));
+    player_audiomixer_cmd_t * cmd = reinterpret_cast<player_audiomixer_cmd_t *> (data);
+    vol = ( ntohs(cmd->left)&0xFF) | ( ntohs(cmd->right) << 8);
+    this->Write( SOUND_MIXER_VOLUME, vol );
+    return 0;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_PCM, device_id))
+  {
+    assert(hdr->size == sizeof(player_audiomixer_cmd_t));
+    player_audiomixer_cmd_t * cmd = reinterpret_cast<player_audiomixer_cmd_t *> (data);
+    vol = ( ntohs(cmd->left)&0xFF) | ( ntohs(cmd->right) << 8);
+    this->Write( SOUND_MIXER_PCM, vol );
+    return 0;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_LINE, device_id))
+  {
+    assert(hdr->size == sizeof(player_audiomixer_cmd_t));
+    player_audiomixer_cmd_t * cmd = reinterpret_cast<player_audiomixer_cmd_t *> (data);
+    vol = ( ntohs(cmd->left)&0xFF) | ( ntohs(cmd->right) << 8);
+    this->Write( SOUND_MIXER_LINE, vol );
+    return 0;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MIC, device_id))
+  {
+    assert(hdr->size == sizeof(player_audiomixer_cmd_t));
+    player_audiomixer_cmd_t * cmd = reinterpret_cast<player_audiomixer_cmd_t *> (data);
+    vol = ( ntohs(cmd->left)&0xFF) | ( ntohs(cmd->right) << 8);
+    this->Write( SOUND_MIXER_MIC, vol );
+    return 0;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_IGAIN, device_id))
+  {
+    assert(hdr->size == sizeof(player_audiomixer_cmd_t));
+    player_audiomixer_cmd_t * cmd = reinterpret_cast<player_audiomixer_cmd_t *> (data);
+    this->Write( SOUND_MIXER_IGAIN, ntohs(cmd->left) );
+    return 0;
+  }
+ 
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_OGAIN, device_id))
+  {
+    assert(hdr->size == sizeof(player_audiomixer_cmd_t));
+    player_audiomixer_cmd_t * cmd = reinterpret_cast<player_audiomixer_cmd_t *> (data);
+    this->Write( SOUND_MIXER_OGAIN, ntohs(cmd->left) );
+    return 0;
+  }
+
+  return -1;
+}
+
+
 void Mixer::Main()
 {
   void* client;
@@ -161,93 +267,9 @@ void Mixer::Main()
   {
     // test if we are suppose to cancel
     pthread_testcancel();
-
-    // Set/Get the configuration
-    while((len = GetConfig(&client, &configBuffer, 
-                           sizeof(configBuffer),NULL)) > 0)
-    {
-      player_audiomixer_config_t config;
-
-      if( len != 1 )
-      {
-        PLAYER_ERROR2("config request len is invalid (%d != %d)",len,1);
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        continue;
-      }
-
-      this->Read(SOUND_MIXER_VOLUME,vol);
-      config.masterLeft = htons( vol & 0xFF );
-      config.masterRight = htons( (vol>>8) & 0xFF );
-
-      this->Read(SOUND_MIXER_PCM,vol);
-      config.pcmLeft = htons( vol & 0xFF );
-      config.pcmRight = htons( (vol>>8) & 0xFF );
-
-      this->Read(SOUND_MIXER_LINE,vol);
-      config.lineLeft = htons( vol & 0xFF );
-      config.lineRight = htons( (vol>>8) & 0xFF );
-
-      this->Read(SOUND_MIXER_MIC,vol);
-      config.micLeft = htons( vol & 0xFF );
-      config.micRight = htons( (vol>>8) & 0xFF );
-
-      this->Read(SOUND_MIXER_IGAIN,vol);
-      config.iGain = htons( vol );
-
-      this->Read(SOUND_MIXER_OGAIN,vol);
-      config.oGain= htons( vol );
-
-      if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                   &config, sizeof(config), NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-    }
-
-    // Get the next command
-    memset(&cmdBuffer,0,sizeof(cmdBuffer));
-    len = this->GetCommand(&cmdBuffer,sizeof(cmdBuffer),NULL);
-    this->ClearCommand();
-
-    // Process the command
-    switch(cmdBuffer[0])
-    {
-      case PLAYER_AUDIOMIXER_SET_MASTER:
-        memcpy(&mixerCmd,cmdBuffer,sizeof(mixerCmd));
-        vol = ( ntohs(mixerCmd.left)&0xFF) | ( ntohs(mixerCmd.right) << 8);
-        this->Write( SOUND_MIXER_VOLUME, vol );
-        break;
-
-      case PLAYER_AUDIOMIXER_SET_PCM:
-        memcpy(&mixerCmd,cmdBuffer,sizeof(mixerCmd));
-        vol = ( ntohs(mixerCmd.left)&0xFF) | ( ntohs(mixerCmd.right) << 8);
-        this->Write( SOUND_MIXER_PCM, vol );
-        break;
-
-      case PLAYER_AUDIOMIXER_SET_LINE:
-        memcpy(&mixerCmd,cmdBuffer,sizeof(mixerCmd));
-        vol = ( ntohs(mixerCmd.left)&0xFF) | ( ntohs(mixerCmd.right) << 8);
-        this->Write( SOUND_MIXER_LINE, vol );
-        break;
-
-      case PLAYER_AUDIOMIXER_SET_MIC:
-        memcpy(&mixerCmd,cmdBuffer,sizeof(mixerCmd));
-        vol = ( ntohs(mixerCmd.left)&0xFF) | ( ntohs(mixerCmd.right) << 8);
-        this->Write( SOUND_MIXER_MIC, vol );
-        break;
-
-      case PLAYER_AUDIOMIXER_SET_IGAIN:
-        memcpy(&mixerCmd,cmdBuffer,sizeof(mixerCmd));
-        this->Write( SOUND_MIXER_IGAIN, ntohs(mixerCmd.left) );
-        break;
-
-      case PLAYER_AUDIOMIXER_SET_OGAIN:
-        memcpy(&mixerCmd,cmdBuffer,sizeof(mixerCmd));
-        this->Write( SOUND_MIXER_OGAIN, ntohs(mixerCmd.left) );
-        break;
-
-      default:
-        break;
-    }
+    
+    // process any pending messages
+    ProcessMessages();
   }
 }
 
