@@ -28,10 +28,13 @@ class captureCamera : public capture
     CAMERA VARIABLES
 *************************/
    private: 
-     int camera_index;
-     player_device_id_t camera_id;
-     Driver *camera;
-     bool camera_open;
+    // camera device info
+    Driver *camera;
+    player_device_id_t camera_id;
+    bool camera_open;
+	
+    ClientDataInternal * BaseClient;
+    int camera_index;
      int width,height,depth,image_size;
      //unsigned char * current_rgb;
      unsigned char * YUV;
