@@ -331,8 +331,7 @@ void QuitACTS(void* visiondevice);
 
 
 Acts::Acts( ConfigFile* cf, int section)
-  : Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_ALL_MODE,
-           sizeof(player_blobfinder_data_t),0,0,0)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE, PLAYER_ALL_MODE)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;
@@ -984,7 +983,7 @@ Acts::Main()
     }
 
     /* got the data. now fill it in */
-    PutData(&local_data, sizeof(local_data) - sizeof(local_data.blobs) +
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
             ntohs(local_data.blob_count) * sizeof(local_data.blobs[0]), NULL);
   }
 
