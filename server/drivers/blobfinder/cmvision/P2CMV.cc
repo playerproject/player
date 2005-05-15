@@ -133,6 +133,9 @@ class CMVisionBF:public Driver
     // constructor 
     CMVisionBF( ConfigFile* cf, int section);
 
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
     virtual void Main();
 
     int Setup();
@@ -153,8 +156,7 @@ CMVision_Register(DriverTable* table)
 }
 
 CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
-  :Driver(cf, section, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE,
-          sizeof(player_blobfinder_data_t),0,0,0)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE, PLAYER_READ_MODE)
 {
   vision=NULL;
   cap=NULL;
@@ -337,8 +339,8 @@ CMVisionBF::Main()
     */
       
     /* got the data. now fill it in */
-    PutData(&local_data, sizeof(local_data) - sizeof(local_data.blobs) +
-            ntohs(local_data.blob_count) * sizeof(local_data.blobs[0]), NULL);
+	PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
+            ntohs(local_data.blob_count) * sizeof(local_data.blobs[0]));		
   }
 
   pthread_exit(NULL);
