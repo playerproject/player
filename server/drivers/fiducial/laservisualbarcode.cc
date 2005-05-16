@@ -137,7 +137,7 @@ Andrew Howard
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
-
+#include "clientdata.h"
 
 // Driver for detecting laser retro-reflectors.
 class LaserVisualBarcode : public Driver
@@ -149,18 +149,21 @@ class LaserVisualBarcode : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
+  // Process incoming messages from clients 
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
   // Main function for device thread.
   private: virtual void Main();
 
   // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
+  //private: int HandleRequests();
 
   // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
+  //private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Process laser data.
   // Returns non-zero if the laser data has been updated.
-  private: int UpdateLaser();
+  private: int UpdateLaser(player_laser_data_t * data, unsigned long timestamp_sec, unsigned long timestamp_usec);
 
   // Info on potential fiducials.
   private: struct fiducial_t
@@ -211,7 +214,7 @@ class LaserVisualBarcode : public Driver
   private: void RetireLaserFiducials(double time, player_laser_data_t *data);
 
   // Update the PTZ to point at one of the laser reflectors.
-  private: int UpdatePtz();
+  private: int UpdatePtz(player_ptz_data_t * data, uint32_t tiemstamp_sec, uint32_t timestamp_usec);
 
   // Select a target fiducial for the PTZ to inspect.
   private: void SelectPtzTarget(double time, player_ptz_data_t *data);
@@ -220,7 +223,7 @@ class LaserVisualBarcode : public Driver
   private: void ServoPtz(double time, player_ptz_data_t *data);
 
   // Process any new blobfinder data.
-  private: int UpdateBlobfinder();
+  private: int UpdateBlobfinder(player_blobfinder_data_t * data, uint32_t timestamp_sec, uint32_t timestamp_usec);
 
   // Find blobs with valid properties.
   private: void FindBlobs(double time, player_blobfinder_data_t *data);
@@ -297,8 +300,7 @@ void LaserVisualBarcode_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserVisualBarcode::LaserVisualBarcode( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
-             sizeof(player_fiducial_data_t), 0, 10, 10)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE)
 {
   // Must have an input laser
   if (cf->ReadDeviceId(&this->laser_id, section, "requires",
@@ -358,43 +360,43 @@ int LaserVisualBarcode::Setup()
 {
   
   // Subscribe to the laser.
-  this->laser = deviceTable->GetDriver(this->laser_id);
+  this->laser = SubscribeInternal(this->laser_id);
   if (!this->laser)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
-  if (this->laser->Subscribe(this->laser_id) != 0)
+/*  if (this->laser->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
-  }
+  }*/
 
   // Subscribe to the PTZ.
-  this->ptz = deviceTable->GetDriver(this->ptz_id);
+  this->ptz = SubscribeInternal(this->ptz_id);
   if (!this->ptz)
   {
     PLAYER_ERROR("unable to locate suitable PTZ device");
     return(-1);
   }
-  if (this->ptz->Subscribe(this->ptz_id) != 0)
+/*  if (this->ptz->Subscribe(this->ptz_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to PTZ device");
     return(-1);
-  }
+  }*/
 
   // Subscribe to the blobfinder.
-  this->blobfinder = deviceTable->GetDriver(this->blobfinder_id);
+  this->blobfinder = SubscribeInternal(this->blobfinder_id);
   if (!this->blobfinder)
   {
     PLAYER_ERROR("unable to locate suitable blobfinder device");
     return(-1);
   }
-  if (this->blobfinder->Subscribe(this->blobfinder_id) != 0)
+/*  if (this->blobfinder->Subscribe(this->blobfinder_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to blobfinder device");
     return(-1);
-  }
+  }*/
 
   // Reset blob list.
   this->blob_count = 0;
@@ -414,9 +416,9 @@ int LaserVisualBarcode::Shutdown()
   StopThread();
   
   // Unsubscribe from devices.
-  this->blobfinder->Unsubscribe(this->blobfinder_id);
-  this->ptz->Unsubscribe(this->ptz_id);
-  this->laser->Unsubscribe(this->laser_id);
+  UnsubscribeInternal(this->blobfinder_id);
+  UnsubscribeInternal(this->ptz_id);
+  UnsubscribeInternal(this->laser_id);
 
   return 0;
 }
@@ -435,7 +437,7 @@ void LaserVisualBarcode::Main()
     pthread_testcancel();
 
     // Process any pending requests.
-    HandleRequests();
+    /*HandleRequests();
 
     // Process any new laser data.
     if (UpdateLaser())
@@ -448,14 +450,81 @@ void LaserVisualBarcode::Main()
     UpdatePtz();
 
     // Process any new blobfinder data.
-    UpdateBlobfinder();
+    UpdateBlobfinder();*/
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int LaserVisualBarcode::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, laser_id))
+  {
+  	assert(hdr->size == sizeof(player_laser_data_t));
+  	player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
+  	Lock();
+
+    UpdateLaser(l_data, hdr->timestamp_sec, hdr->timestamp_usec);
+
+  	Unlock();
+    *resp_len = 0;
+  	return 0;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, ptz_id))
+  {
+  	assert(hdr->size == sizeof(player_ptz_data_t));
+  	Lock();
+    UpdatePtz(reinterpret_cast<player_ptz_data_t * > (data), hdr->timestamp_sec, hdr->timestamp_usec);
+  	Unlock();
+    *resp_len = 0;
+  	return 0;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, blobfinder_id))
+  {
+  	assert(hdr->size == sizeof(player_blobfinder_data_t));
+  	Lock();
+    UpdateBlobfinder(reinterpret_cast<player_blobfinder_data_t * > (data), hdr->timestamp_sec, hdr->timestamp_usec);
+  	Unlock();
+    *resp_len = 0;
+  	return 0;
+  }
+
+ 
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+  {
+    int ret = laser->ProcessMessage(BaseClient, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, laser_id, 0, resp_data, resp_data, resp_len);
+    if (ret != PLAYER_MSGTYPE_RESP_ACK)
+    	return ret;
+  	assert(*resp_len == sizeof(player_laser_geom_t));
+  	player_laser_geom_t lgeom = * reinterpret_cast<player_laser_geom_t * > (resp_data);
+  	player_fiducial_geom_t * fgeom = reinterpret_cast<player_fiducial_geom_t * > (resp_data);
+
+    fgeom->pose[0] = lgeom.pose[0];
+    fgeom->pose[1] = lgeom.pose[1];
+    fgeom->pose[2] = lgeom.pose[2];
+    fgeom->size[0] = lgeom.size[0];
+    fgeom->size[1] = lgeom.size[1];
+    fgeom->fiducial_size[0] = ntohs((int) (this->barwidth * 1000));
+    fgeom->fiducial_size[1] = ntohs((int) (this->barwidth * 1000));
+  
+  	*resp_len=sizeof(player_fiducial_geom_t);
+  
+    return ret;
+  }
+  return -1;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process requests.  Returns 1 if the configuration has changed.
-int LaserVisualBarcode::HandleRequests()
+/*int LaserVisualBarcode::HandleRequests()
 {
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
@@ -476,12 +545,12 @@ int LaserVisualBarcode::HandleRequests()
     }
   }
   return 0;
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle geometry requests.
-void LaserVisualBarcode::HandleGetGeom(void *client, void *request, int len)
+/*void LaserVisualBarcode::HandleGetGeom(void *client, void *request, int len)
 {
   unsigned short reptype;
   struct timeval ts;
@@ -512,42 +581,44 @@ void LaserVisualBarcode::HandleGetGeom(void *client, void *request, int len)
     PLAYER_ERROR("PutReply() failed");
 
   return;
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process laser data.
-int LaserVisualBarcode::UpdateLaser()
+int LaserVisualBarcode::UpdateLaser(player_laser_data_t * data, unsigned long timestamp_sec, unsigned long timestamp_usec)
 {
   int i;
-  player_laser_data_t data;
-  size_t size;
-  struct timeval timestamp;
+  //player_laser_data_t data;
+  //size_t size;
+  //struct timeval timestamp;
   double time;
   
   // Get the laser data.
-  size = this->laser->GetData(this->laser_id,(void*)&data, 
+/*  size = this->laser->GetData(this->laser_id,(void*)&data, 
                               sizeof(data), &timestamp);
   time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+*/  
+  time = (double) timestamp_sec + ((double) timestamp_usec) * 1e-6;
   
-  // Dont do anything if this is old data.
+/*  // Dont do anything if this is old data.
   if (time == this->laser_time)
     return 0;
-  this->laser_time = time;
+  this->laser_time = time;*/
   
   // Do some byte swapping on the laser data.
-  data.resolution = ntohs(data.resolution);
-  data.min_angle = ntohs(data.min_angle);
-  data.max_angle = ntohs(data.max_angle);
-  data.range_count = ntohs(data.range_count);
-  for (i = 0; i < data.range_count; i++)
-    data.ranges[i] = ntohs(data.ranges[i]);
+  data->resolution = ntohs(data->resolution);
+  data->min_angle = ntohs(data->min_angle);
+  data->max_angle = ntohs(data->max_angle);
+  data->range_count = ntohs(data->range_count);
+  for (i = 0; i < data->range_count; i++)
+    data->ranges[i] = ntohs(data->ranges[i]);
 
   // Find possible fiducials in this scan.
-  this->FindLaserFiducials(time, &data);
+  this->FindLaserFiducials(time, data);
 
   // Retire fiducials we havent seen for a while.
-  this->RetireLaserFiducials(time, &data);
+  this->RetireLaserFiducials(time, data);
 
   return 1;
 }
@@ -753,33 +824,36 @@ void LaserVisualBarcode::RetireLaserFiducials(double time, player_laser_data_t *
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the PTZ to point at one of the laser reflectors.
-int LaserVisualBarcode::UpdatePtz()
+int LaserVisualBarcode::UpdatePtz(player_ptz_data_t * data, uint32_t timestamp_sec, uint32_t timestamp_usec)
 {
-  player_ptz_data_t data;
-  size_t size;
-  struct timeval timestamp;
+//  player_ptz_data_t data;
+//  size_t size;
+//  struct timeval timestamp;
   double time;
   
   // Get the ptz data.
-  size = this->ptz->GetData(this->ptz_id,(void*)&data, sizeof(data), 
+/*  size = this->ptz->GetData(this->ptz_id,(void*)&data, sizeof(data), 
                             &timestamp);
   time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+*/
+  time = (double) timestamp_sec + ((double) timestamp_usec) * 1e-6;
+
   
   // Dont do anything if this is old data.
-  if (time == this->ptz_time)
+/*  if (time == this->ptz_time)
     return 0;
-  this->ptz_time = time;
+  this->ptz_time = time;*/
   
   // Do some byte swapping on the ptz data.
-  data.pan = ntohs(data.pan);
-  data.tilt = ntohs(data.tilt);
-  data.zoom = ntohs(data.zoom);
+  data->pan = ntohs(data->pan);
+  data->tilt = ntohs(data->tilt);
+  data->zoom = ntohs(data->zoom);
 
   // Pick a fiducial to look at.
-  this->SelectPtzTarget(time, &data);
+  this->SelectPtzTarget(time, data);
 
   // Point the fiducial
-  this->ServoPtz(time, &data);
+  this->ServoPtz(time, data);
 
   return 1;
 }
@@ -881,7 +955,7 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
   cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
   cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
   cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-  this->ptz->PutCommand(this->ptz_id,(void*) &cmd, sizeof(cmd),NULL);
+  this->ptz->ProcessMessage(BaseClient, PLAYER_MSGTYPE_CMD, 0,this->ptz_id, sizeof(cmd),(uint8_t*) &cmd);
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
@@ -893,32 +967,33 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process any new blobfinder data.
-int LaserVisualBarcode::UpdateBlobfinder()
+int LaserVisualBarcode::UpdateBlobfinder(player_blobfinder_data_t * data, uint32_t timestamp_sec, uint32_t timestamp_usec)
 {
   int i, id;
-  player_blobfinder_data_t data;
+//  player_blobfinder_data_t data;
   player_blobfinder_blob_t *blob;
-  size_t size;
-  struct timeval timestamp;
+//  size_t size;
+//  struct timeval timestamp;
   double time;
   
   // Get the blobfinder data.
-  size = this->blobfinder->GetData(this->blobfinder_id, &data, sizeof(data), &timestamp);
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+//  size = this->blobfinder->GetData(this->blobfinder_id, &data, sizeof(data), &timestamp);
+//  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+  time = (double) timestamp_sec + ((double) timestamp_usec) * 1e-6;
   
   // Dont do anything if this is old data.
-  if (time == this->blobfinder_time)
+/*  if (time == this->blobfinder_time)
     return 0;
-  this->blobfinder_time = time;
+  this->blobfinder_time = time;*/
 
   // Do some byte-swapping
-  data.width = ntohs(data.width);
-  data.height = ntohs(data.height);
-  data.blob_count = ntohs(data.blob_count);
+  data->width = ntohs(data->width);
+  data->height = ntohs(data->height);
+  data->blob_count = ntohs(data->blob_count);
   
-  for (i = 0; i < data.blob_count; i++)
+  for (i = 0; i < data->blob_count; i++)
   {
-    blob = data.blobs + i;
+    blob = data->blobs + i;
     blob->x = ntohs(blob->x);
     blob->y = ntohs(blob->y);
     blob->left = ntohs(blob->left);
@@ -929,10 +1004,10 @@ int LaserVisualBarcode::UpdateBlobfinder()
   }
 
   // Extract valid blobs.
-  this->FindBlobs(time, &data);
+  this->FindBlobs(time, data);
 
   // Search for fiducials.
-  id = this->FindVisualFiducials(time, &data, 0, NULL);
+  id = this->FindVisualFiducials(time, data, 0, NULL);
 
   // Assign id to fiducial we are currently looking at.
   if (id >= 0 && this->ptz_fiducial)
@@ -1113,7 +1188,7 @@ void LaserVisualBarcode::UpdateData()
   timestamp.tv_usec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
   
   // Copy data to server.
-  PutData((void*) &data, sizeof(data), &timestamp);
+  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (void*) &data, sizeof(data), &timestamp);
 }
 
 

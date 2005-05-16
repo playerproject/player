@@ -168,7 +168,7 @@ class CameraV4L : public Driver
   private: virtual void Main();
 
   // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
   // Process requests.  Returns 1 if the configuration has changed.
   //private: int HandleRequests();
@@ -418,7 +418,7 @@ void CameraV4L::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraV4L::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+int CameraV4L::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
   assert(hdr);
   assert(data);

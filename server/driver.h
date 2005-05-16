@@ -36,6 +36,7 @@
 #include "playercommon.h"
 #include "message.h"
 #include <player.h>
+#include "clientdata.h" // needed so clients useing ClientDataInternal can cast it to ClientData implicitly
 
 extern bool debug;
 extern bool experimental;
@@ -46,20 +47,6 @@ class ConfigFile;
 class Driver;
 class ClientData;
 
-#if 0
-// Macros to provide helpers for message handling, see rflex.cc for usage
-// MSG(player_device_id DeviceID, MessageType, SubType, Expected data size)
-// Make sure each MSG is matched with a MSG_END
-#define MSG(DeviceID, Type, SubType, Size) \
-	if(hdr->type == Type && hdr->device == DeviceID.code \
-			&& hdr->device_index == DeviceID.index \
-			&& SubType == hdr->subtype)\
-	{ \
-		if ( hdr->size != Size ) {PLAYER_WARN2("Recieved message with incorrect size: %d expected, %d recieved\n",Size,hdr->size); return -1;} 
-	
-#define MSG_END return(0); }
-#define MSG_END_ACK return(PLAYER_MSGTYPE_RESP_ACK); }
-#endif
 
 /// @brief Base class for all drivers.
 ///
@@ -263,15 +250,21 @@ class Driver
     /// able to take max player msg size.
     virtual int ProcessMessage(ClientData * client, player_msghdr * hdr, 
                                uint8_t * data, uint8_t * resp_data,
-                               int * resp_len) 
+                               size_t * resp_len) 
     {return -1;};
 
     /// Helper function that creates the header and then calls driver ProcessMessage
     /// for use by drivers for internal requests
-    int ProcessMessage(ClientData * client, uint16_t Type,
+    int ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
-                       int size, uint8_t * data, 
-                       uint8_t * resp_data, int * resp_len);
+                       size_t size, uint8_t * data, 
+                       uint8_t * resp_data, size_t * resp_len);
+
+    /// Helper function that creates the header and then calls driver ProcessMessage
+    /// for use by drivers for internal requests that expect no reply
+    int ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+                       player_device_id_t device,
+                       size_t size, uint8_t * data);
 
     /// @brief Wait on the condition variable associated with this driver.
     ///
@@ -322,6 +315,22 @@ class Driver
     // in CStageDriver
     virtual void Lock(void);
     virtual void Unlock(void);
+    
+    // used for subscriptions to other drivers internally
+    ClientDataInternal * BaseClient;
+    
+    /// @brief Subscribe to another driver using the internal BaseClient
+    ///
+    /// This method subcribes internally to another driver, it will return a 
+    /// pointer to the driver if successful, this pointer will be valid
+    /// until unsubscribe is called
+    Driver * SubscribeInternal(player_device_id_t id);
+
+    /// @brief Unsubscribe to another driver using the internal BaseClient
+    ///
+    /// This method unsibscribes internally from another driver
+    void UnsubscribeInternal(player_device_id_t id);
+
 };
 
 

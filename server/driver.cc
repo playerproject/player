@@ -60,6 +60,7 @@ Driver::Driver(ConfigFile *cf, int section,
                int interface, uint8_t access)
 {
   this->error = 0;
+  BaseClient = NULL;
   
   // Look for our default device id
   if(cf->ReadDeviceId(&this->device_id, section, "provides", 
@@ -99,6 +100,8 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
   this->alwayson = false;
 
+  BaseClient = NULL;
+
   this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
   assert(InQueue);
 
@@ -111,6 +114,11 @@ Driver::Driver(ConfigFile *cf, int section,
 // drivers are only destroyed when Player exits, but it is cleaner.
 Driver::~Driver()
 {
+  if (BaseClient)
+  {
+  	clientmanager->RemoveClient(BaseClient);
+  	delete BaseClient;
+  }
   delete InQueue;
 }
 
@@ -372,6 +380,32 @@ Driver::DataAvailableStatic( Driver* driver )
   driver->DataAvailable();
 }
 
+
+int Driver::ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+                       player_device_id_t device,
+                       size_t size, uint8_t * data, 
+                       uint8_t * resp_data, size_t * resp_len)
+{
+	// assemble Header
+	player_msghdr_t tmp_hdr;
+	tmp_hdr.device = device.code;
+	tmp_hdr.device_index = device.index;
+	tmp_hdr.size = size;
+	tmp_hdr.type = Type;
+	tmp_hdr.subtype = SubType;
+	
+	return ProcessMessage(client, &tmp_hdr, data, resp_data, resp_len);
+}
+
+int Driver::ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+                       player_device_id_t device,
+                       size_t size, uint8_t * data)
+{
+  size_t resp_size = 0;
+  uint8_t buffer[0];
+  return ProcessMessage(client, Type, SubType, devicem size, data, buffer, &resp_size);
+}
+
 // Waits on the condition variable associated with this device.
 void 
 Driver::Wait(void)
@@ -386,3 +420,37 @@ Driver::Wait(void)
   pthread_cleanup_pop(1);
 }
 
+
+
+/// @brief Subscribe to another driver using the internal BaseClient
+///
+/// This method subcribes internally to another driver, it will return a 
+/// pointer to the driver if successful, this pointer will be valid
+/// until unsubscribe is called
+Driver * Driver::SubscribeInternal(player_device_id_t id)
+{
+  if(BaseClient == NULL)
+  {
+    BaseClient = new ClientDataInternal(this);
+    clientmanager->AddClient(BaseClient);
+  }
+  
+  assert(BaseClient);
+  
+  Driver * ret = deviceTable->GetDriver(id);
+  if (ret)
+  {
+  	if (BaseClient->Subscribe(id)!= 0)
+  		return NULL;
+  }
+  return ret;
+}
+
+/// @brief Unsubscribe to another driver using the internal BaseClient
+///
+/// This method unsibscribes internally from another driver
+void Driver::UnsubscribeInternal(player_device_id_t id)
+{
+  assert(BaseClient);
+  BaseClient->Unsubscribe(id);	
+}
