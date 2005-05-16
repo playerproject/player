@@ -155,8 +155,7 @@ void ImageSeq_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ImageSeq::ImageSeq(ConfigFile *cf, int section)
-  : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
-           sizeof(player_camera_data_t), 0, 10, 10)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
 {
   // Data rate
   this->rate = cf->ReadFloat(section, "rate", 10);
@@ -280,7 +279,7 @@ void ImageSeq::WriteData()
   this->data.compression = this->data.compression;
   this->data.image_size = htonl(this->data.image_size);
       
-  PutData(&this->data, size, NULL);
+  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->data, size, NULL);
       
   return;
 }

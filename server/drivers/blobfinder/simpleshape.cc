@@ -431,6 +431,7 @@ int SimpleShape::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_
       PLAYER_WARN("camera data is compressed");
       return false;
     }
+    return 0;
   }
   
   return -1;
