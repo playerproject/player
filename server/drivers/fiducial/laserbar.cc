@@ -127,7 +127,7 @@ class LaserBar : public Driver
   public: virtual int Shutdown();
 
   // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
   // Main function for device thread.
   private: virtual void Main();
@@ -164,8 +164,6 @@ class LaserBar : public Driver
   private:
   Driver *laser_driver;
   player_device_id_t laser_id;
-	
-  ClientDataInternal * BaseClient;
 
   // Reflector properties.
   private: double reflector_width;
@@ -207,8 +205,6 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
     return;
   }
 
-  BaseClient=NULL;
-
   // Default reflector properties.
   this->reflector_width = cf->ReadLength(section, "width", 0.08);
   this->reflector_tol = cf->ReadLength(section, "tol", 0.50);
@@ -219,21 +215,18 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserBar::Setup()
 {
-  BaseClient = new ClientDataInternal(this);
-  clientmanager->AddClient(BaseClient);
-
-  if (!(this->laser_driver = deviceTable->GetDriver(this->laser_id)))
+  if (!(this->laser_driver = SubscribeInternal(this->laser_id)))
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if (BaseClient->Subscribe(this->laser_id) != 0)
+/*  if (BaseClient->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
-  }
+  }*/
 
   return 0;
 }
@@ -244,11 +237,7 @@ int LaserBar::Setup()
 int LaserBar::Shutdown()
 {
   // Unsubscribe from devices.
-  BaseClient->Unsubscribe(this->laser_id);
-
-  clientmanager->RemoveClient(BaseClient);
-  delete BaseClient;
-  BaseClient = NULL;
+  UnsubscribeInternal(this->laser_id);
 
   return 0;
 }
@@ -276,7 +265,7 @@ void LaserBar::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserBar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+int LaserBar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
   assert(hdr);
   assert(data);
@@ -320,8 +309,25 @@ int LaserBar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
   {
     hdr->device_index = laser_id.index;
+    hdr->subtype = PLAYER_LASER_GET_GEOM;
     int ret = laser_driver->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
+    hdr->subtype = PLAYER_FIDUCIAL_GET_GEOM;
     hdr->device_index = device_id.index;
+    
+  	assert(*resp_len == sizeof(player_laser_geom_t));
+  	player_laser_geom_t lgeom = * reinterpret_cast<player_laser_geom_t * > (resp_data);
+  	player_fiducial_geom_t * fgeom = reinterpret_cast<player_fiducial_geom_t * > (resp_data);
+
+    fgeom->pose[0] = lgeom.pose[0];
+    fgeom->pose[1] = lgeom.pose[1];
+    fgeom->pose[2] = lgeom.pose[2];
+    fgeom->size[0] = lgeom.size[0];
+    fgeom->size[1] = lgeom.size[1];
+    fgeom->fiducial_size[0] = ntohs((int) (this->reflector_width * 1000));
+    fgeom->fiducial_size[1] = ntohs((int) (this->reflector_width * 1000));
+  
+  	*resp_len=sizeof(player_fiducial_geom_t);
+  
     return ret;
   }
   return -1;
