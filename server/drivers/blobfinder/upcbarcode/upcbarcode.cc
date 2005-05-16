@@ -188,7 +188,6 @@ class UPCBarcode : public Driver
   private: double errFirst, errSecond;
 
   // Input camera stuff
-  // Bumper device info
   private:
   Driver *camera;
   player_device_id_t camera_id;
