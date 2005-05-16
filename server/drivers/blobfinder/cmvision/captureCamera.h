@@ -20,8 +20,11 @@
 #include "device.h"
 #include "devicetable.h"
 #include "drivertable.h"
+#include "driver.h"
 
-class captureCamera : public capture
+class ClientDataInternal;
+
+class captureCamera : public capture, public Driver
 {
 
 /*************************
@@ -32,12 +35,13 @@ class captureCamera : public capture
     Driver *camera;
     player_device_id_t camera_id;
     bool camera_open;
+	bool NewCamData;
 	
     ClientDataInternal * BaseClient;
     int camera_index;
      int width,height,depth,image_size;
      //unsigned char * current_rgb;
-     unsigned char * YUV;
+     unsigned char * YUV, *FrameData;;
      player_camera_data_t data;
      double camera_time;
   
@@ -52,6 +56,13 @@ class captureCamera : public capture
      // P2CMV needs to be able to get the image geometry
      int Width(){return(width);}
      int Height(){return(height);}
+
+     int Setup() {return 0;};
+     int Shutdown() {return 0;};
+
+  // Process incoming messages from clients 
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+     
 };
 
 #endif
