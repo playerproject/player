@@ -1917,6 +1917,7 @@ The @p audiomixer interface is used to control sound levels.
 @{
 */
 
+#define PLAYER_AUDIOMIXER_GET_LEVELS 0x00
 #define PLAYER_AUDIOMIXER_SET_MASTER 0x01
 #define PLAYER_AUDIOMIXER_SET_PCM    0x02
 #define PLAYER_AUDIOMIXER_SET_LINE   0x03
