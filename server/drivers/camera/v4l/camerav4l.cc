@@ -167,11 +167,14 @@ class CameraV4L : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
+  // Process incoming messages from clients 
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
   // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
+  //private: int HandleRequests();
 
   // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
+  //private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Update the device data (the data going back to the client).
   private: void WriteData();
@@ -232,8 +235,7 @@ void CameraV4L_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 CameraV4L::CameraV4L( ConfigFile* cf, int section)
-  : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
-           sizeof(player_camera_data_t), 0, 10, 10)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
 {
   const char *snorm;
   
@@ -384,7 +386,8 @@ void CameraV4L::Main()
     pthread_testcancel();
 
     // Process any pending requests.
-    HandleRequests();
+    //HandleRequests();
+    ProcessMessages();
 
     // Get the time
     GlobalTime->GetTime(&time);
@@ -413,10 +416,30 @@ void CameraV4L::Main()
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int CameraV4L::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  assert(*resp_len>sizeof(player_audiomixer_config_t));
+  
+  *resp_len = 0;
 
+/* TODO
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+  {
+    assert(hdr->size == 0);
+    
+  }
+*/  
+  return -1;
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Process requests.  Returns 1 if the configuration has changed.
-int CameraV4L::HandleRequests()
+/*int CameraV4L::HandleRequests()
 {
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
@@ -437,12 +460,12 @@ int CameraV4L::HandleRequests()
     }
   }
   return 0;
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle geometry requests.
-void CameraV4L::HandleGetGeom(void *client, void *request, int len)
+/*void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 {
 
   // TODO
@@ -452,7 +475,7 @@ void CameraV4L::HandleGetGeom(void *client, void *request, int len)
 
   return;
 }
-
+*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -523,7 +546,8 @@ void CameraV4L::WriteData()
   struct timeval timestamp;
   timestamp.tv_sec = this->tsec;
   timestamp.tv_usec = this->tusec;
-  PutData((void*) &this->data, size, &timestamp);
+  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (void*) &this->data, size, &timestamp);
+  //PutData((void*) &this->data, size, &timestamp);
 
   return;
 }

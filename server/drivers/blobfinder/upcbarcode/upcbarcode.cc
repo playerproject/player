@@ -402,14 +402,15 @@ int UPCBarcode::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
   	assert(hdr->size == sizeof(this->cameraData));
   	player_camera_data_t * cam_data = reinterpret_cast<player_camera_data_t * > (data);
   	Lock();
-      this->cameraData.width = ntohs(cam_data->width);
-      this->cameraData.height = ntohs(cam_data->height); 
-      this->cameraData.bpp = cam_data->bpp;
-      this->cameraData.image_size = ntohl(cam_data->image_size);
-      this->cameraData.format = cam_data->format;
-      this->cameraData.compression = cam_data->compression; 
-      this->NewCamData=true;
+    this->cameraData.width = ntohs(cam_data->width);
+    this->cameraData.height = ntohs(cam_data->height); 
+    this->cameraData.bpp = cam_data->bpp;
+    this->cameraData.image_size = ntohl(cam_data->image_size);
+    this->cameraData.format = cam_data->format;
+    this->cameraData.compression = cam_data->compression; 
+    this->NewCamData=true;
   	Unlock();
+  	return 0;
   }
  
   return -1;
