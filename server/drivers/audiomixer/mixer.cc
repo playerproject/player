@@ -158,7 +158,7 @@ int Mixer::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
   assert(data);
   assert(resp_data);
   assert(resp_len);
-  assert(*resp_len>sizeof(player_audiomixer_config_t));
+  assert(*resp_len == PLAYER_MAX_MESSAGE_SIZE);
   
   *resp_len = 0;
 
@@ -255,13 +255,13 @@ int Mixer::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 
 void Mixer::Main()
 {
-  void* client;
+/*  void* client;
   unsigned char configBuffer[PLAYER_MAX_REQREP_SIZE];
   unsigned char cmdBuffer[sizeof(player_audiodsp_cmd)];
   int len;
   int vol;
 
-  player_audiomixer_cmd_t mixerCmd;
+  player_audiomixer_cmd_t mixerCmd;*/
 
   while(true)
   {
@@ -270,6 +270,9 @@ void Mixer::Main()
     
     // process any pending messages
     ProcessMessages();
+    
+    // make sure the thread is idle sometimes
+    usleep(10);
   }
 }
 
