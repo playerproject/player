@@ -114,7 +114,7 @@ Andrew Howard
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
-
+#include "clientdata.h"
 
 // Driver for detecting laser retro-reflectors.
 class LaserBar : public Driver
@@ -126,16 +126,22 @@ class LaserBar : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
+  // Process incoming messages from clients 
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
+  // Main function for device thread.
+  private: virtual void Main();
+
   // Data configuration.
-  public: virtual size_t GetData(player_device_id_t id,
+  /*public: virtual size_t GetData(player_device_id_t id,
                                  void* dest, size_t len,
                                  struct timeval* timestamp);
   public: virtual int PutConfig(player_device_id_t id, void *client, 
                                 void *src, size_t len,
-                                struct timeval* timestamp);
+                                struct timeval* timestamp);*/
 
   // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *request, int len);
+  //private: void HandleGetGeom(void *client, void *request, int len);
 
   // Analyze the laser data and pick out reflectors.
   private: void Find();
@@ -155,8 +161,11 @@ class LaserBar : public Driver
                     double ur, double ub, double uo);
   
   // Pointer to laser to get data from.
-  private: player_device_id_t laser_id;
-  private: Driver *laser_driver;
+  private:
+  Driver *laser_driver;
+  player_device_id_t laser_id;
+	
+  ClientDataInternal * BaseClient;
 
   // Reflector properties.
   private: double reflector_width;
@@ -188,8 +197,7 @@ void LaserBar_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBar::LaserBar( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE,
-             0, 0, 0, 1)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE)
 {
   // Must have an input laser
   if (cf->ReadDeviceId(&this->laser_id, section, "requires",
@@ -198,6 +206,8 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
     this->SetError(-1);    
     return;
   }
+
+  BaseClient=NULL;
 
   // Default reflector properties.
   this->reflector_width = cf->ReadLength(section, "width", 0.08);
@@ -209,6 +219,9 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserBar::Setup()
 {
+  BaseClient = new ClientDataInternal(this);
+  clientmanager->AddClient(BaseClient);
+
   if (!(this->laser_driver = deviceTable->GetDriver(this->laser_id)))
   {
     PLAYER_ERROR("unable to locate suitable laser device");
@@ -216,7 +229,7 @@ int LaserBar::Setup()
   }
     
   // Subscribe to the laser device, but fail if it fails
-  if (this->laser_driver->Subscribe(this->laser_id) != 0)
+  if (BaseClient->Subscribe(this->laser_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
@@ -230,16 +243,95 @@ int LaserBar::Setup()
 // Shutdown the device (called by server thread).
 int LaserBar::Shutdown()
 {
-  // Unsubscribe from the laser device
-  this->laser_driver->Unsubscribe(this->laser_id);
+  // Unsubscribe from devices.
+  BaseClient->Unsubscribe(this->laser_id);
+
+  clientmanager->RemoveClient(BaseClient);
+  delete BaseClient;
+  BaseClient = NULL;
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Main function for device thread
+void LaserBar::Main() 
+{
+  while (true)
+  {
+    // Let the camera drive update rate
+    this->laser_driver->Wait();
+
+    // Test if we are supposed to cancel this thread.
+    pthread_testcancel();
+
+    // Process any pending requests.
+    this->ProcessMessages();
+  }
+  return;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int LaserBar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, laser_id))
+  {
+  	assert(hdr->size == sizeof(player_laser_data_t));
+  	player_laser_data_t * laser_data = reinterpret_cast<player_laser_data_t * > (data);
+  	Lock();
+    // Do some byte swapping
+    this->ldata.resolution = ntohs(laser_data->resolution);
+    this->ldata.range_res = ntohs(laser_data->range_res);
+    this->ldata.min_angle = ntohs(laser_data->min_angle);
+    this->ldata.max_angle = ntohs(laser_data->max_angle);
+    this->ldata.range_count = ntohs(laser_data->range_count);
+    for (int i = 0; i < laser_data->range_count; i++)
+      this->ldata.ranges[i] = ntohs(laser_data->ranges[i]);
+
+    // Analyse the laser data
+    this->Find();
+
+    // Do some byte-swapping on the fiducial data.
+    for (int i = 0; i < this->fdata.count; i++)
+    {
+      this->fdata.fiducials[i].pos[0] = htonl(this->fdata.fiducials[i].pos[0]);
+      this->fdata.fiducials[i].pos[1] = htonl(this->fdata.fiducials[i].pos[1]);
+      this->fdata.fiducials[i].rot[2] = htonl(this->fdata.fiducials[i].rot[2]);
+    }
+    this->fdata.count = htons(this->fdata.count);
+    struct timeval laser_timestamp={hdr->timestamp_sec,hdr->timestamp_usec};
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &fdata, sizeof(fdata),&laser_timestamp);
+
+  	Unlock();
+    *resp_len = 0;
+  	return 0;
+  }
+ 
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+  {
+    hdr->device_index = laser_id.index;
+    int ret = laser_driver->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
+    hdr->device_index = device_id.index;
+    return ret;
+  }
+  return -1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Get data from buffer (called by server thread).
-size_t 
+/*size_t 
 LaserBar::GetData(player_device_id_t id,
                   void* dest, size_t len,
                   struct timeval* timestamp)
@@ -293,11 +385,11 @@ LaserBar::GetData(player_device_id_t id,
   
   return (sizeof(this->fdata));
 }
-
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Put configuration in buffer (called by server thread)
-int 
+/*int 
 LaserBar::PutConfig(player_device_id_t id, void *client, 
                     void *src, size_t len,
                     struct timeval* timestamp)
@@ -327,12 +419,12 @@ LaserBar::PutConfig(player_device_id_t id, void *client,
   }
   
   return (0);
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle geometry requests.
-void LaserBar::HandleGetGeom(void *client, void *request, int len)
+/*void LaserBar::HandleGetGeom(void *client, void *request, int len)
 {
   unsigned short reptype;
   struct timeval ts;
@@ -364,7 +456,7 @@ void LaserBar::HandleGetGeom(void *client, void *request, int len)
 
   return;
 }
-
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data to find reflectors.
