@@ -85,6 +85,7 @@ Brian Gerkey
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <termios.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -127,6 +128,10 @@ class Obot : public Driver
     int InitRobot();
     int GetBatteryVoltage(int* voltage);
 
+  int last_final_lvel, last_final_rvel;
+
+
+
   public:
     int fd; // device file descriptor
     const char* serial_port; // name of dev file
@@ -135,6 +140,11 @@ class Obot : public Driver
     int SetVelocity(int lvel, int rvel);
 
     Obot( ConfigFile* cf, int section);
+
+    int ProcessCommand(player_position_cmd_t * cmd);
+
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -154,10 +164,11 @@ Obot_Register(DriverTable* table)
   table->AddDriver("obot",  Obot_Init);
 }
 
-Obot::Obot( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-         sizeof(player_position_data_t),sizeof(player_position_cmd_t),1,1)
+Obot::Obot( ConfigFile* cf, int section) 
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
 {
+  last_final_rvel = last_final_lvel = 0;
+
   this->fd = -1;
   this->serial_port = cf->ReadString(section, "port", OBOT_DEFAULT_PORT);
 }
@@ -293,8 +304,8 @@ Obot::Setup()
   }
 
   // zero the command buffer
-  PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
-  PutData((unsigned char*)&data,sizeof(data),NULL);
+  //PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
+  //PutData((unsigned char*)&data,sizeof(data),NULL);
 
   // start the thread to talk with the robot
   StartThread();
@@ -337,19 +348,10 @@ Obot::Shutdown()
 void 
 Obot::Main()
 {
-  player_position_cmd_t command;
   player_position_data_t data;
   double lvel_mps, rvel_mps;
   int lvel, rvel;
   int ltics, rtics;
-  double rotational_term, command_lvel, command_rvel;
-  void* client;
-  char config[256];
-  int config_size;
-  int final_lvel, final_rvel;
-  int last_final_lvel, last_final_rvel;
-
-  last_final_rvel = last_final_lvel = 0;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -360,7 +362,56 @@ Obot::Main()
   {
     pthread_testcancel();
     
-    GetCommand((unsigned char*)&command, sizeof(player_position_cmd_t),NULL);
+    ProcessMessages();
+    
+    if(GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
+    {
+      PLAYER_ERROR("failed to get odometry");
+      pthread_exit(NULL);
+    }
+
+    UpdateOdom(ltics,rtics);
+
+    /*
+    int volt;
+    if(GetBatteryVoltage(&volt) < 0)
+      PLAYER_WARN("failed to get voltage");
+    printf("volt: %d\n", volt);
+    */
+
+    double tmp_angle;
+    data.xpos = htonl((int32_t)rint(this->px * 1e3));
+    data.ypos = htonl((int32_t)rint(this->py * 1e3));
+    if(this->pa < 0)
+      tmp_angle = this->pa + 2*M_PI;
+    else
+      tmp_angle = this->pa;
+
+    data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
+
+    data.yspeed = 0;
+    lvel_mps = lvel * OBOT_MPS_PER_TICK;
+    rvel_mps = rvel * OBOT_MPS_PER_TICK;
+    data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
+    data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
+                                             OBOT_AXLE_LENGTH)));
+
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*)&data,sizeof(data),NULL);
+
+
+    
+    usleep(OBOT_DELAY_US);
+  }
+  pthread_cleanup_pop(1);
+}
+
+int Obot::ProcessCommand(player_position_cmd_t * cmd)
+{
+  double rotational_term, command_lvel, command_rvel;
+  int final_lvel, final_rvel;
+
+    player_position_cmd_t & command = *cmd;
+
     command.yawspeed = ntohl(command.yawspeed);
     command.xspeed = ntohl(command.xspeed);
 
@@ -430,106 +481,57 @@ Obot::Main()
       last_final_lvel = final_lvel;
       last_final_rvel = final_rvel;
     }
+	return 0;
+}
 
-    if(GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
-    {
-      PLAYER_ERROR("failed to get odometry");
-      pthread_exit(NULL);
-    }
-
-
-    UpdateOdom(ltics,rtics);
-
-    /*
-    int volt;
-    if(GetBatteryVoltage(&volt) < 0)
-      PLAYER_WARN("failed to get voltage");
-    printf("volt: %d\n", volt);
-    */
-
-    double tmp_angle;
-    data.xpos = htonl((int32_t)rint(this->px * 1e3));
-    data.ypos = htonl((int32_t)rint(this->py * 1e3));
-    if(this->pa < 0)
-      tmp_angle = this->pa + 2*M_PI;
-    else
-      tmp_angle = this->pa;
-
-    data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
-
-    data.yspeed = 0;
-    lvel_mps = lvel * OBOT_MPS_PER_TICK;
-    rvel_mps = rvel * OBOT_MPS_PER_TICK;
-    data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
-    data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
-                                             OBOT_AXLE_LENGTH)));
-
-    PutData((unsigned char*)&data,sizeof(data),NULL);
-
-    player_position_power_config_t* powercfg;
-
-    // handle configs
-    // TODO: break this out into a separate method
-    if((config_size = GetConfig(&client,(void*)config,sizeof(config),NULL)) > 0)
-    {
-      switch(config[0])
-      {
-        case PLAYER_POSITION_GET_GEOM_REQ:
-          /* Return the robot geometry. */
-          if(config_size != 1)
-          {
-            PLAYER_WARN("Get robot geom config is wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-
-          player_position_geom_t geom;
-          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-          geom.pose[0] = htons((short) (0));
-          geom.pose[1] = htons((short) (0));
-          geom.pose[2] = htons((short) (0));
-          // The obot base is 390mm, and we've got about 30cm of foam 
-          // wrapped around it
-          geom.size[0] = htons((short) (450));
-          geom.size[1] = htons((short) (450));
-
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                      &geom, sizeof(geom),NULL))
-            PLAYER_ERROR("failed to PutReply");
-          break;
-        case PLAYER_POSITION_MOTOR_POWER_REQ:
-          // NOTE: this doesn't seem to actually work
-          if(config_size != sizeof(player_position_power_config_t))
-          {
-            PLAYER_WARN("Motor state change request wrong size; ignoring");
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-              PLAYER_ERROR("failed to PutReply");
-            break;
-          }
-          powercfg = (player_position_power_config_t*)config;
-          printf("got motor power req: %d\n", powercfg->value);
-          if(ChangeMotorState(powercfg->value) < 0)
-          {
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-              PLAYER_ERROR("failed to PutReply");
-          }
-          else
-          {
-            if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
-              PLAYER_ERROR("failed to PutReply");
-          }
-          break;
-
-        default:
-          PLAYER_WARN1("received unknown config type %d\n", config[0]);
-          PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL);
-      }
-    }
-    
-    usleep(OBOT_DELAY_US);
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int Obot::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+ 
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+  	assert(hdr->size == sizeof(player_position_cmd_t));
+	ProcessCommand(reinterpret_cast<player_position_cmd_t *> (data));
+  	*resp_len = 0;
+  	return 0;
   }
-  pthread_cleanup_pop(1);
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  {
+  	assert(*resp_len >= sizeof(player_position_geom_t));
+  	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);
+  	
+    geom.pose[0] = htons((short) (0));
+    geom.pose[1] = htons((short) (0));
+    geom.pose[2] = htons((short) (0));
+    // The obot base is 390mm, and we've got about 30cm of foam 
+    // wrapped around it
+    geom.size[0] = htons((short) (450));
+    geom.size[1] = htons((short) (450));
+          
+  	*resp_len = sizeof(player_position_geom_t);
+  	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
+  {
+  	assert(hdr->size == sizeof(player_position_power_config_t));
+   	player_position_power_config_t * powercfg = reinterpret_cast<player_position_power_config_t *> (data);
+
+    *resp_len = 0;
+    if(ChangeMotorState(powercfg->value) < 0)
+      return PLAYER_MSGTYPE_RESP_NACK;
+    else
+      return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  *resp_len = 0;
+  return -1;
 }
 
 int
