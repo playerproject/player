@@ -1010,7 +1010,8 @@ ClientDataTCP::Read()
         readcnt = 1;
         readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
       }
-      break;
+      else
+        break;
     case PLAYER_AWAITING_SECOND_BYTE_STX:
       //puts("PLAYER_AWAITING_SECOND_BYTE_STX");
       
@@ -1036,8 +1037,8 @@ ClientDataTCP::Read()
       {
         readcnt = 0;
         readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+        break;
       }
-      break;
     case PLAYER_AWAITING_REST_OF_HEADER:
       //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
              //readcnt,sizeof(player_msghdr_t));
@@ -1074,6 +1075,7 @@ ClientDataTCP::Read()
                  hdrbuffer.size);
           readcnt = 0;
           readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+          break;
         }
         // ...or too small
         else if(!hdrbuffer.size)
@@ -1081,6 +1083,7 @@ ClientDataTCP::Read()
           PLAYER_WARN("client sent zero-length message.");
           readcnt = 0;
           readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+          break;
         }
         else
         {
@@ -1088,7 +1091,8 @@ ClientDataTCP::Read()
           readstate = PLAYER_AWAITING_REST_OF_BODY;
         }
       }
-      break;
+      else
+        break;
     case PLAYER_AWAITING_REST_OF_BODY:
       //printf("PLAYER_AWAITING_REST_OF_BODY: %d bytes read so far\n",readcnt);
       /* get the payload */
