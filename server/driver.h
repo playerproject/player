@@ -298,7 +298,11 @@ class Driver
     /// default implementation, which does nothing.  Non-threaded
     /// drivers should do whatever they have to do, and call PutData()
     /// when they have new data.
-    virtual void Update() {}
+    virtual void Update() 
+    {
+    	if (!driverthread)
+    		ProcessMessages();
+    }
 
     /// Put Msg to Client
     virtual void PutMsg(player_device_id_t id, 
