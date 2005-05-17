@@ -104,6 +104,10 @@ public:
                           struct timeval* timestamp);
 
     // These do nothing but are abstract in Driver, so here they are
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
+
     virtual int Setup() {
         printf("startup...\n");
         return 0;

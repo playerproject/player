@@ -108,6 +108,8 @@ public:
 
   /* the main thread */
   virtual void Main();
+
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
   
   // we override these, because we will maintain our own subscription count
   virtual int Subscribe(player_device_id_t id);
@@ -193,6 +195,12 @@ private:
   char reb_serial_port[MAX_FILENAME_SIZE]; 
 
   struct pollfd write_pfd, read_pfd;
+  
+  // holding vars for command processing
+  int ProcessCommand(player_position_cmd_t * poscmd);
+  short last_trans_command, last_rot_command;
+  int leftvel, rightvel;
+  int leftpos, rightpos;
 };
 
 

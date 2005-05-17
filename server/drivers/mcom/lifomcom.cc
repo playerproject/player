@@ -97,9 +97,8 @@ LifoMCom(int argc, char** argv):Driver(1,1,20,20),Data(){
 }
 */
 
-LifoMCom::LifoMCom( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_MCOM_CODE, PLAYER_ALL_MODE,
-         sizeof(player_mcom_data_t), 0, 20, 20)
+LifoMCom::LifoMCom( ConfigFile* cf, int section) 
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MCOM_CODE, PLAYER_ALL_MODE)
 {
 }
 
@@ -114,8 +113,86 @@ void LifoMCom_Register(DriverTable* t) {
     t->AddDriver("lifomcom",  LifoMCom_Init);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int LifoMCom::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_len);
+  if (hdr->size < sizeof(player_mcom_config_t))
+    return -1;
+    
+  player_mcom_config_t* cfg = reinterpret_cast<player_mcom_config_t*> (data);
+  cfg->type = ntohs(cfg->type);
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_PUSH, device_id))
+  {
+    Data.Push(cfg->data, cfg->type, cfg->channel);
+  	*resp_len = 0;
+  	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_POP, device_id))
+  {
+  	assert(*resp_data >= sizeof(player_mcom_return_t));
+  	player_mcom_return_t & ret = *reinterpret_cast<player_mcom_return_t *> (resp_data);
+    ret.data = Data.Pop(cfg->type, cfg->channel);
+    if(ret.data.full) 
+    {
+      ret.type = htons(cfg->type);
+      strcpy(ret.channel, cfg->channel);
+      *resp_len = sizeof(player_mcom_return_t);
+      return PLAYER_MSGTYPE_RESP_ACK;
+    }
+    else
+    {
+      *resp_len = 0;
+      return PLAYER_MSGTYPE_RESP_NACK;
+    }
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_READ, device_id))
+  {
+  	assert(*resp_data >= sizeof(player_mcom_return_t));
+  	player_mcom_return_t & ret = *reinterpret_cast<player_mcom_return_t *> (resp_data);
+
+    ret.data = Data.Read(cfg->type, cfg->channel);
+    if(ret.data.full) 
+    {
+      ret.type = htons(cfg->type);
+      strcpy(ret.channel, cfg->channel);
+      Unlock();
+      *resp_len = sizeof(player_mcom_return_t);
+      return PLAYER_MSGTYPE_RESP_ACK;
+    }
+    else
+    {
+      *resp_len = 0;
+      return PLAYER_MSGTYPE_RESP_NACK;
+    }
+  }      
+      
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_CLEAR, device_id))
+  {
+    Data.Clear(cfg->type, cfg->channel);
+  	*resp_len = 0;
+  	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_SET_CAPACITY, device_id))
+  {
+    Data.SetCapacity(cfg->type, cfg->channel, cfg->data.data[0]);
+  	*resp_len = 0;
+  	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  *resp_len = 0;
+  return -1;
+}
+
 // called by player with config requests
-int 
+/*int 
 LifoMCom::PutConfig(player_device_id_t id, void *client, 
                     void* src, size_t len,
                     struct timeval* timestamp)
@@ -174,7 +251,7 @@ LifoMCom::PutConfig(player_device_id_t id, void *client,
             return 0;
     }
     return 0;
-}
+}*/
 
 LifoMCom::Buffer::Buffer() {
     top = 0;
