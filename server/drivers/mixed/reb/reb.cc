@@ -209,6 +209,11 @@ REB::REB(ConfigFile *cf, int section)
   memset(&this->ir_id, 0, sizeof(player_device_id_t));
   memset(&this->power_id, 0, sizeof(player_device_id_t));
 
+  last_trans_command=last_rot_command=0;
+  leftvel=rightvel=0;
+  leftpos=rightpos=0;
+
+
   this->position_subscriptions = 0;
   this->ir_subscriptions = 0;
 
@@ -216,9 +221,7 @@ REB::REB(ConfigFile *cf, int section)
   if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
                       PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                          sizeof(player_position_data_t),
-                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -229,8 +232,7 @@ REB::REB(ConfigFile *cf, int section)
   if(cf->ReadDeviceId(&(this->ir_id), section, "provides", 
                       PLAYER_IR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE,
-                          sizeof(player_ir_data_t), 0, 1, 1) != 0)
+    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -241,8 +243,7 @@ REB::REB(ConfigFile *cf, int section)
   if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
-                          sizeof(player_power_data_t), 0, 0, 0) != 0)
+    if(this->AddInterface(this->power_id, PLAYER_READ_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -333,10 +334,10 @@ REB::Setup()
 
   desired_heading = 0;
 
-  player_position_cmd_t cmd;
+  /*player_position_cmd_t cmd;
   memset(&cmd,0,sizeof(player_position_cmd_t));
   PutData(this->position_id,(void*)&cmd,
-          sizeof(player_position_cmd_t),NULL);
+          sizeof(player_position_cmd_t),NULL);*/
 
   /* now spawn reading thread */
   StartThread();
@@ -411,13 +412,9 @@ REB::Unsubscribe(player_device_id_t id)
 void 
 REB::Main()
 {
-  player_position_cmd_t cmd;
   int last_ir_subscrcount=0;
   int last_position_subscrcount=0;
 
-  short last_trans_command=0, last_rot_command=0;
-  int leftvel=0, rightvel=0;
-  int leftpos=0, rightpos=0;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -433,7 +430,7 @@ REB::Main()
       // to do regression
       player_ir_data_t ir_data;
       memset(&ir_data,0,sizeof(player_ir_data_t));
-      PutData(this->ir_id,(unsigned char*)&ir_data,
+      PutMsg(this->ir_id,NULL, PLAYER_MSGTYPE_DATA, 0,(unsigned char*)&ir_data,
               sizeof(player_ir_data_t),NULL);
     } 
     else if(last_ir_subscrcount && !this->ir_subscriptions)
@@ -488,19 +485,32 @@ REB::Main()
       // overwrite existing motor commands to be zero
       player_position_cmd_t position_cmd;
       memset(&position_cmd,0,sizeof(position_cmd));
-      PutCommand(this->position_id,
-                 (unsigned char*)(&position_cmd), sizeof(position_cmd),NULL);
+      /*PutCommand(this->position_id,
+                 (unsigned char*)(&position_cmd), sizeof(position_cmd),NULL);*/
+      ProcessCommand(&position_cmd);
     }
     last_position_subscrcount = this->position_subscriptions;
 
     // get configuration commands (ioctls)
     ReadConfig();
 
+ 
+    pthread_testcancel();
+
+    // now lets get new data...
+    UpdateData();
+
+    pthread_testcancel();
+    
+  }
+  pthread_exit(NULL);
+}
+
+int REB::ProcessCommand(player_position_cmd_t * poscmd)
+{
+	player_position_cmd_t & cmd = * poscmd;
     if(this->position_subscriptions) 
     {
-      /* read the clients' commands from the common buffer */
-      GetCommand(this->position_id, (unsigned char*)&cmd, sizeof(cmd), NULL);
-
       bool newtrans = false, newrot = false, newheading=false;
       bool newposcommand=false;
       short trans_command, rot_command, heading_command;
@@ -719,23 +729,242 @@ REB::Main()
 	}
       }
     }
-    
-    pthread_testcancel();
-
-    // now lets get new data...
-    UpdateData();
-
-    pthread_testcancel();
-    
-  }
-  pthread_exit(NULL);
+  return 0;    
 }
+
+// Process incoming messages from clients 
+int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_cmd_t));
+	ProcessCommand(reinterpret_cast<player_position_cmd_t *> (data));
+	*resp_len = 0;
+	return 0;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
+  {
+  	assert(hdr->size == sizeof(player_ir_power_req_t));
+  	player_ir_power_req_t * powreq = reinterpret_cast<player_ir_power_req_t *> (data);
+  	
+    if (powreq->state) 
+      SetIRState(REB_IR_START);
+    else 
+      SetIRState(REB_IR_STOP);
+      
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
+  {
+  	assert(*resp_len >= sizeof(player_ir_pose_t));
+  	player_ir_pose_t & irpose = *reinterpret_cast<player_ir_pose_t *> (resp_data);
+
+    uint16_t numir = PlayerUBotRobotParams[param_index].NumberIRSensors;
+    irpose.pose_count = htons(numir);
+    for (int i =0; i < numir; i++) {
+      int16_t *irp = PlayerUBotRobotParams[param_index].ir_pose[i];
+      for (int j =0; j < 3; j++) {
+        irpose.poses[i][j] = htons(irp[j]);
+      }
+    }
+
+    *resp_len = sizeof(player_ir_pose_t);
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
+  {
+/*  	assert(hdr->size == sizeof(player_position_geom_t));
+  	player_position_geom_t * req = reinterpret_cast<player_position_geom_t *> (data);*/
+  	assert(*resp_len >= sizeof(player_position_geom_t));
+  	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);
+
+    geom.pose[0] = htons(0);
+    geom.pose[1] = htons(0);
+    geom.pose[2] = htons(0);
+    geom.size[0] = geom.size[1] = 
+                  htons( (short) (2 * PlayerUBotRobotParams[this->param_index].RobotRadius));
+
+    *resp_len = sizeof(player_position_geom_t);
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_power_config_t));
+  	player_position_power_config_t * mpowreq = reinterpret_cast<player_position_power_config_t *> (data);
+
+    if (mpowreq->value) {
+      this->motors_enabled = true;
+    } else {
+      this->motors_enabled = false;
+    }
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+          // select method of velocity control
+          // 0 for direct velocity control (trans and rot applied directly)
+          // 1 for builtin velocity based heading PD controller
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
+  {
+    assert(hdr->size == sizeof(player_position_velocitymode_config_t));
+  	player_position_velocitymode_config_t * velcont = reinterpret_cast<player_position_velocitymode_config_t *> (data);
+
+    if (!velcont->value) {
+      this->direct_velocity_control = true;
+    } else {
+      this->direct_velocity_control = false;
+    }
+
+    // also set up not to use position mode!
+    this->velocity_mode = true;
+    
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
+  {
+    SetOdometry(0,0,0);
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_POSITION_MODE, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_position_mode_req_t));
+  	player_position_position_mode_req_t * posmode = reinterpret_cast<player_position_position_mode_req_t *> (data);
+
+    if (posmode->state) {
+      this->velocity_mode = false;
+    } else {
+      this->velocity_mode = true;
+    }
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+          
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_set_odom_req_t));
+  	player_position_set_odom_req_t * req = reinterpret_cast<player_position_set_odom_req_t *> (data);
+
+#ifdef DEBUG_CONFIG
+    int x,y;
+    short theta;
+    x = ntohl(req->x);
+    y = ntohl(req->y);
+    theta = ntohs(req->theta);
+
+    printf("REB: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
+#endif
+    SetOdometry(req->x, req->y, req->theta);
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SPEED_PID, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_speed_pid_req_t));
+  	player_position_speed_pid_req_t * pid = reinterpret_cast<player_position_speed_pid_req_t *> (data);
+
+    int kp = ntohl(pid->kp);
+    int ki = ntohl(pid->ki);
+    int kd = ntohl(pid->kd);
+
+#ifdef DEBUG_CONFIG
+    printf("REB: SPEED_PID_REQ kp=%d ki=%d kd=%d\n", kp, ki, kd);
+#endif
+
+    ConfigSpeedPID(REB_MOTOR_LEFT, kp, ki, kd);
+    ConfigSpeedPID(REB_MOTOR_RIGHT, kp, ki, kd);
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_POSITION_PID, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_position_pid_req_t));
+  	player_position_position_pid_req_t * pid = reinterpret_cast<player_position_position_pid_req_t *> (data);
+
+    int kp = ntohl(pid->kp);
+    int ki = ntohl(pid->ki);
+    int kd = ntohl(pid->kd);
+
+#ifdef DEBUG_CONFIG
+    printf("REB: POS_PID_REQ kp=%d ki=%d kd=%d\n", kp, ki, kd);
+#endif
+
+    ConfigPosPID(REB_MOTOR_LEFT, kp, ki, kd);
+    ConfigPosPID(REB_MOTOR_RIGHT, kp, ki, kd);
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SPEED_PROF, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_speed_prof_req_t));
+  	player_position_speed_prof_req_t * prof = reinterpret_cast<player_position_speed_prof_req_t *> (data);
+
+    int spd = ntohs(prof->speed);
+    int acc = ntohs(prof->acc);
+
+#ifdef DEBUG_CONFIG	
+    printf("REB: SPEED_PROF_REQ: spd=%d acc=%d  spdu=%g accu=%g\n", spd, acc,
+           spd*PlayerUBotRobotParams[this->param_index].PulsesPerMMMS,
+           acc*PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+#endif
+    // have to convert spd from mm/s to pulse/10ms
+    spd = (int) rint((double)spd * 
+                     PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+
+    // have to convert acc from mm/s^2 to pulses/256/(10ms^2)
+    acc = (int) rint((double)acc * 
+                     PlayerUBotRobotParams[this->param_index].PulsesPerMMMS);
+    // now have to turn into pulse/256
+    //	acc *= 256;
+
+    if (acc > REB_MAX_ACC) {
+      acc = REB_MAX_ACC;
+    } else if (acc == 0) {
+      acc = REB_MIN_ACC;
+    }
+
+#ifdef DEBUG_CONFIG
+    printf("REB: SPEED_PROF_REQ: SPD=%d  ACC=%d\n", spd, acc);
+    ConfigSpeedProfile(REB_MOTOR_LEFT, spd, acc);
+    ConfigSpeedProfile(REB_MOTOR_RIGHT, spd, acc);
+#endif
+
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  *resp_len = 0;
+  return -1;
+}
+
 
 /* this will read a new config command and interpret it
  *
  * returns: 
  */
-void
+/*void
 REB::ReadConfig()
 {
   int config_size;
@@ -1148,7 +1377,7 @@ REB::ReadConfig()
     // END REB_POSITION IOCTLS ////////////
   }
 }
-
+*/
 
 /* this will update the data that is sent to clients
  * just call separate functions to take care of it
@@ -1163,19 +1392,19 @@ REB::UpdateData()
   player_power_data_t power_data;
 
   UpdateIRData(&ir_data);
-  PutData(this->ir_id,
+  PutMsg(this->ir_id, NULL, PLAYER_MSGTYPE_DATA, 0,
           (void*)&ir_data,
           sizeof(player_ir_data_t),
           NULL);
 
   UpdatePowerData(&power_data);
-  PutData(this->power_id,
+  PutMsg(this->power_id, NULL, PLAYER_MSGTYPE_DATA, 0,
           (void*)&power_data,
           sizeof(player_power_data_t),
           NULL);
 
   UpdatePosData(&position_data);
-  PutData(this->position_id,
+  PutMsg(this->position_id, NULL, PLAYER_MSGTYPE_DATA, 0,
           (void*)&position_data,
           sizeof(player_position_data_t),
           NULL);
@@ -1452,7 +1681,7 @@ REB::SetOdometry(int x, int y, short theta)
 
   player_position_data_t position_data;
   memset(&position_data,0,sizeof(player_position_data_t));
-  PutData(this->position_id,
+  PutMsg(this->position_id,NULL, PLAYER_MSGTYPE_DATA, 0,
           (void*)&position_data, sizeof(player_position_data_t), NULL);
 }
 

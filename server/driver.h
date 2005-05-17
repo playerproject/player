@@ -74,6 +74,7 @@ class Driver
     /// Mutex to go with condition variable cond.
     pthread_mutex_t condMutex;
 
+  protected:
     // Dummy main (just calls real main).  This is used to simplify
     // thread creation.
     static void* DummyMain(void *driver);
