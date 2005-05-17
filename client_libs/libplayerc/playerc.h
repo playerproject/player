@@ -401,9 +401,9 @@ int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *d
 @returns Will return data size for ack, -1 for nack and -2 for failure
 
 */
-int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
+/*int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
 		uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
-
+*/
 /** @brief Test to see if there is pending data.
 
 @param client Pointer to client object.

@@ -105,7 +105,7 @@ class BumperSafe : public Driver
     //void GetCommand();
 
     // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
     // state info
     bool Blocked;
@@ -192,7 +192,7 @@ int BumperSafe::Shutdown() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
 	assert(hdr);
 	assert(data);

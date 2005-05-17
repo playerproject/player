@@ -237,6 +237,9 @@ class Wavefront : public Driver
     // Main function for device thread.
     virtual void Main();
 
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
     bool newData;
 
     // bookkeeping
@@ -308,9 +311,9 @@ class Wavefront : public Driver
     int ShutdownPosition();
     int ShutdownLocalize();
 
-    void GetCommand();
-    void GetLocalizeData();
-    void GetPositionData();
+	void ProcessCommand(player_planner_cmd_t &cmd);
+    void ProcessLocalizeData(player_localize_data_t &);
+    void ProcessPositionData(player_position_data_t &);
     void PutPositionCommand(double x, double y, double a, unsigned char type);
     void PutPlannerData();
     void StopPosition();
@@ -326,9 +329,9 @@ class Wavefront : public Driver
     virtual int Setup();
     virtual int Shutdown();
 
-    int PutConfig(player_device_id_t id, void *client, 
+ /*   int PutConfig(player_device_id_t id, void *client, 
                   void* src, size_t len,
-                  struct timeval* timestamp);
+                  struct timeval* timestamp);*/
 };
 
 
@@ -349,8 +352,7 @@ void Wavefront_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_PLANNER_CODE, PLAYER_ALL_MODE,
-             sizeof(player_planner_data_t), sizeof(player_planner_cmd_t), 5, 5)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE, PLAYER_ALL_MODE)
 {
   // Must have a position device
   if (cf->ReadDeviceId(&this->position_id, section, "requires",
@@ -389,13 +391,13 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
 int 
 Wavefront::Setup()
 {
-  player_planner_cmd_t cmd;
+/*  player_planner_cmd_t cmd;
   player_planner_data_t data;
 
   memset(&cmd,0,sizeof(cmd));
   memset(&data,0,sizeof(data));
   PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
-  PutData((unsigned char*)&data,sizeof(data),NULL);
+  PutData((unsigned char*)&data,sizeof(data),NULL);*/
 
   this->stopped = true;
   this->atgoal = true;
@@ -452,14 +454,14 @@ Wavefront::Shutdown()
 }
 
 void
-Wavefront::GetCommand()
+Wavefront::ProcessCommand(player_planner_cmd_t &cmd)
 {
-  player_planner_cmd_t cmd;
+  //player_planner_cmd_t cmd;
   double new_x, new_y, new_a;
   double eps = 1e-3;
   char enable;
 
-  Driver::GetCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
+  //Driver::GetCommand((unsigned char*)&cmd,sizeof(cmd),NULL);
 
   new_x = ((int)ntohl(cmd.gx))/1e3;
   new_y = ((int)ntohl(cmd.gy))/1e3;
@@ -479,10 +481,10 @@ Wavefront::GetCommand()
 }
 
 void
-Wavefront::GetLocalizeData()
+Wavefront::ProcessLocalizeData(player_localize_data_t & data)
 {
-  player_localize_data_t data;
-  struct timeval timestamp;
+  //player_localize_data_t data;
+  //struct timeval timestamp;
   double lx,ly,la;
   double dist;
   double lx_sum, ly_sum;
@@ -490,18 +492,21 @@ Wavefront::GetLocalizeData()
   double la_tmp;
   //struct timeval curr;
 
-  memset(&data,0,sizeof(data));
+/*  memset(&data,0,sizeof(data));
   if(!this->localize->GetData(this->localize_id,(void*)&data,sizeof(data),
                               &timestamp) || !data.hypoth_count)
+    return;*/
+
+  if (!data.hypoth_count)
     return;
 
   // is this new data?
-  if((this->localize_timesec == (unsigned int)timestamp.tv_sec) && 
+  /*if((this->localize_timesec == (unsigned int)timestamp.tv_sec) && 
      (this->localize_timeusec == (unsigned int)timestamp.tv_usec))
     return;
 
   this->localize_timesec = timestamp.tv_sec;
-  this->localize_timeusec = timestamp.tv_usec;
+  this->localize_timeusec = timestamp.tv_usec;*/
 
   // just take the first hypothesis, on the assumption that it's the
   // highest weight.
@@ -560,9 +565,9 @@ Wavefront::GetLocalizeData()
 }
 
 void
-Wavefront::GetPositionData()
+Wavefront::ProcessPositionData(player_position_data_t & data)
 {
-  player_position_data_t data;
+/*  player_position_data_t data;
   struct timeval timestamp;
 
   if(!this->position->GetData(this->position_id,(void*)&data,sizeof(data),
@@ -575,7 +580,7 @@ Wavefront::GetPositionData()
     return;
 
   this->position_timesec = timestamp.tv_sec;
-  this->position_timeusec = timestamp.tv_usec;
+  this->position_timeusec = timestamp.tv_usec;*/
 
   this->position_x = ((int)ntohl(data.xpos))/1e3;
   this->position_y = ((int)ntohl(data.ypos))/1e3;
@@ -630,7 +635,7 @@ Wavefront::PutPlannerData()
     struct timeval time;
     GlobalTime->GetTime(&time);
 
-    PutData((unsigned char*)&data,sizeof(data),&time);
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0,(unsigned char*)&data,sizeof(data),&time);
   } 
   else 
   {
@@ -638,7 +643,7 @@ Wavefront::PutPlannerData()
     struct timeval ts;
     ts.tv_sec = this->localize_timesec;
     ts.tv_usec = this->localize_timeusec;
-    PutData((unsigned char*)&data,sizeof(data),&ts);
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0,(unsigned char*)&data,sizeof(data),&ts);
   }
 }
 
@@ -666,8 +671,9 @@ Wavefront::PutPositionCommand(double x, double y, double a, unsigned char type)
   cmd.type=type;
   cmd.state=1;
 
-  this->position->PutCommand(this->position_id,
-                             (unsigned char*)&cmd,sizeof(cmd),NULL);
+  this->position->ProcessMessage(PLAYER_MSGTYPE_CMD,0,position_id, sizeof(cmd),(unsigned char*)&cmd);
+//  this->position->PutCommand(this->position_id,
+//                             (unsigned char*)&cmd,sizeof(cmd),NULL);
 }
 
 void
@@ -739,7 +745,9 @@ void Wavefront::Main()
 
   // block until we get initial data from underlying devices
   this->position->Wait();
-  GetPositionData();
+
+  ProcessMessages();
+  //GetPositionData();
   
   // HACK!
   // Blocking here means that the planner won't start until the localizer
@@ -749,17 +757,20 @@ void Wavefront::Main()
   
   //this->localize->Wait();
   usleep(2000000);
-  GetLocalizeData();
+  ProcessMessages();
+//  GetLocalizeData();
   StopPosition();
 
   for(;;)
   {
     pthread_testcancel();
 
-    GetLocalizeData();
-    GetPositionData();
+    ProcessMessages();
+
+    //GetLocalizeData();
+    //GetPositionData();
     PutPlannerData();
-    GetCommand();
+    //GetCommand();
 
     this->newData = false;
 
@@ -942,22 +953,24 @@ Wavefront::SetupPosition()
   player_position_power_config_t motorconfig;
 
   // Subscribe to the position device.
-  if(!(this->position = deviceTable->GetDriver(this->position_id)))
+  if(!(this->position = SubscribeInternal(this->position_id)))
   {
     PLAYER_ERROR("unable to locate suitable position device");
     return(-1);
   }
-  if(this->position->Subscribe(this->position_id) != 0)
+/*  if(this->position->Subscribe(this->position_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return(-1);
-  }
+  }*/
   // Enable the motors
-  motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+//  motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
   motorconfig.value = 1;
-  this->position->Request(this->position_id, this, 
-                          &motorconfig, sizeof(motorconfig), NULL,
-                          &reptype, NULL, 0, NULL);
+  reptype = this->position->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER,
+                 position_id, sizeof(motorconfig), (uint8_t * ) &motorconfig);
+                 
+/*  this->position->Request(this->position_id, this, &motorconfig, sizeof(motorconfig)
+                          &reptype, NULL, 0, NULL);*/
   if(reptype != PLAYER_MSGTYPE_RESP_ACK)
   {
     PLAYER_WARN("failed to enable motors");
@@ -965,11 +978,16 @@ Wavefront::SetupPosition()
   }
 
   // Get the robot's geometry, and infer the radius
-  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-  if(this->position->Request(this->position_id, this, 
+//  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+  size_t replen = sizeof(geom);
+  reptype = this->position->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM,
+                 position_id, 0, (uint8_t *) &geom, (uint8_t *) &geom, &replen);
+
+/*  if(this->position->Request(this->position_id, this, 
                              &geom, sizeof(geom.subtype), NULL,
                              &reptype, &geom, sizeof(geom), &ts) <
-     (int)sizeof(player_position_geom_t))
+     (int)sizeof(player_position_geom_t))*/
+  if (reptype != PLAYER_MSGTYPE_RESP_ACK)
   {
     PLAYER_ERROR("failed to get robot geometry");
     return(-1);
@@ -989,16 +1007,16 @@ int
 Wavefront::SetupLocalize()
 {
   // Subscribe to the localize device.
-  if(!(this->localize = deviceTable->GetDriver(this->localize_id)))
+  if(!(this->localize = SubscribeInternal(this->localize_id)))
   {
     PLAYER_ERROR("unable to locate suitable localize device");
     return(-1);
   }
-  if(this->localize->Subscribe(this->localize_id) != 0)
+ /* if(this->localize->Subscribe(this->localize_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to localize device");
     return(-1);
-  }
+  }*/
 
   return 0;
 }
@@ -1012,16 +1030,16 @@ Wavefront::SetupMap()
   plan_cell_t* cell;
 
   // Subscribe to the map device
-  if(!(mapdevice = deviceTable->GetDriver(this->map_id)))
+  if(!(mapdevice = SubscribeInternal(this->map_id)))
   {
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
   }
-  if(mapdevice->Subscribe(map_id) != 0)
+/*  if(mapdevice->Subscribe(map_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return -1;
-  }
+  }*/
 
   if(!(this->plan = plan_alloc(this->robot_radius+this->safety_dist,
                                this->robot_radius+this->safety_dist,
@@ -1040,14 +1058,18 @@ Wavefront::SetupMap()
   // device API from there)
 
   // first, get the map info
-  int replen;
+  size_t replen = sizeof(player_map_info_t);
   unsigned short reptype;
   player_map_info_t info;
   struct timeval ts;
-  info.subtype = PLAYER_MAP_GET_INFO_REQ;
-  if((replen = mapdevice->Request(map_id, this, 
+  //info.subtype = PLAYER_MAP_GET_INFO_REQ;
+  reptype = mapdevice->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_MAP_GET_INFO,
+                map_id, sizeof(info), (uint8_t *) &info, (uint8_t *) &info, &replen);
+  
+  /*if((replen = mapdevice->Request(map_id, this, 
                                   &info, sizeof(info.subtype), NULL,
-                                  &reptype, &info, sizeof(info),&ts)) <= 0)
+                                  &reptype, &info, sizeof(info),&ts)) <= 0)*/
+  if (reptype != PLAYER_MSGTYPE_RESP_ACK || replen != sizeof(player_map_info_t))
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
@@ -1074,7 +1096,7 @@ Wavefront::SetupMap()
   int sx,sy;
   int si,sj;
 
-  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+//  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
   
   // Tile size
   sy = sx = (int)sqrt(sizeof(data_req.data));
@@ -1092,9 +1114,15 @@ Wavefront::SetupMap()
 
     reqlen = sizeof(data_req) - sizeof(data_req.data);
 
-    if((replen = mapdevice->Request(map_id, this, 
+    replen = (reqlen + si * sj);
+    reptype = mapdevice->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_MAP_GET_DATA,
+                map_id, reqlen, (uint8_t *) &data_req, (uint8_t *) &data_req, &replen);
+
+
+/*    if((replen = mapdevice->Request(map_id, this, 
                                     &data_req, reqlen, NULL,
-                                    &reptype, &data_req, sizeof(data_req),&ts)) == 0)
+                                    &reptype, &data_req, sizeof(data_req),&ts)) == 0)*/
+    if (reptype != PLAYER_MSGTYPE_RESP_ACK || replen == 0)
     {
       PLAYER_ERROR("failed to get map info");
       return(-1);
@@ -1127,8 +1155,7 @@ Wavefront::SetupMap()
   }
 
   // we're done with the map device now
-  if(mapdevice->Unsubscribe(map_id) != 0)
-    PLAYER_WARN("unable to unsubscribe from map device");
+  UnsubscribeInternal(map_id);
 
   plan_update_cspace(this->plan,this->cspace_fname);
   return(0);
@@ -1139,15 +1166,104 @@ Wavefront::SetupMap()
 int 
 Wavefront::ShutdownPosition()
 {
-  return(this->position->Unsubscribe(this->position_id));
+  UnsubscribeInternal(this->position_id);
+  return 0;
 }
 
 int 
 Wavefront::ShutdownLocalize()
 {
-  return(this->localize->Unsubscribe(this->localize_id));
+  UnsubscribeInternal(this->localize_id);
+  return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int Wavefront::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+ 
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, position_id))
+  {
+  	assert(hdr->size == sizeof(player_position_data_t));
+  	ProcessPositionData(*reinterpret_cast<player_position_data_t *> (data));
+  	*resp_len = 0;
+  	return 0;
+  }
+  	
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, localize_id))
+  {
+  	assert(hdr->size == sizeof(player_localize_data_t));
+  	ProcessLocalizeData(*reinterpret_cast<player_localize_data_t *> (data));
+  	*resp_len = 0;
+  	return 0;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+  	assert(hdr->size == sizeof(player_planner_cmd_t));
+  	ProcessCommand(*reinterpret_cast<player_planner_cmd_t *> (data));
+  	*resp_len = 0;
+  	return 0;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_GET_WAYPOINTS, device_id))
+  {
+  	assert(*resp_len >= sizeof(player_planner_waypoints_req_t));
+    player_planner_waypoints_req_t & reply = *reinterpret_cast<player_planner_waypoints_req_t*> (resp_data);
+
+    double wx,wy;
+    size_t replylen;
+    
+        if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
+        {
+          PLAYER_WARN("too many waypoints; truncating list");
+          //reply.count = htons((unsigned short)PLAYER_PLANNER_MAX_WAYPOINTS);
+          reply.count = htons((unsigned short)0);
+        }
+        else
+          reply.count = htons((unsigned short)this->waypoint_count);
+        for(int i=0;i<(int)ntohs(reply.count);i++)
+        {
+          plan_convert_waypoint(plan,this->waypoints[i], &wx, &wy);
+          reply.waypoints[i].x = htonl((int)rint(wx * 1e3));
+          reply.waypoints[i].y = htonl((int)rint(wy * 1e3));
+        }
+        replylen = sizeof(player_planner_waypoints_req_t) - 
+                (PLAYER_PLANNER_MAX_WAYPOINTS - ntohs(reply.count)) * 
+                sizeof(player_planner_waypoint_t);
+  	
+  	*resp_len = sizeof(player_planner_waypoints_req_t);
+  	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_ENABLE, device_id))
+  {
+  	assert(hdr->size == sizeof(player_planner_enable_req_t));
+    player_planner_enable_req_t * enable_req = reinterpret_cast<player_planner_enable_req_t*> (data);
+
+    if(enable_req->state)
+    {
+      this->enable = true;
+      PLAYER_MSG0(2,"Robot enabled");
+    }
+    else
+    {
+      this->enable = false;
+      PLAYER_MSG0(2,"Robot disabled");
+    }
+
+  	*resp_len = 0;
+  	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  
+  *resp_len = 0;
+  return -1;
+}
+/*
 int 
 Wavefront::PutConfig(player_device_id_t id, void *client, 
                      void* src, size_t len,
@@ -1222,4 +1338,4 @@ Wavefront::PutConfig(player_device_id_t id, void *client,
   }
   //Unlock();
   return(0);
-}
+}*/

@@ -198,8 +198,7 @@ void MicroStrain3DMG_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 MicroStrain3DMG::MicroStrain3DMG(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_READ_MODE,
-             sizeof(player_position3d_data_t), 0, 0, 0)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE, PLAYER_READ_MODE)
 {
   // Interface to use
   this->code = code;
@@ -293,7 +292,7 @@ void MicroStrain3DMG::Main()
       
       data.stall = 0;
 
-      this->PutData((void*) &data, sizeof(data), &time);
+      this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,(void*) &data, sizeof(data), &time);
     }
     else
       assert(false);
