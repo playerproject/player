@@ -255,14 +255,14 @@ class Driver
 
     /// Helper function that creates the header and then calls driver ProcessMessage
     /// for use by drivers for internal requests
-    int ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+    int ProcessMessage(uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
                        size_t size, uint8_t * data, 
                        uint8_t * resp_data, size_t * resp_len);
 
     /// Helper function that creates the header and then calls driver ProcessMessage
     /// for use by drivers for internal requests that expect no reply
-    int ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+    int ProcessMessage(uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
                        size_t size, uint8_t * data);
 

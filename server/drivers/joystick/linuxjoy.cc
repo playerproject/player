@@ -202,7 +202,7 @@ class LinuxJoystick : public Driver
   private: void RefreshData();
 
   // Check for new configuration requests
-  private: void CheckConfig();
+  //private: void CheckConfig();
 
   // Put new position command
   private: void PutPositionCommand();
@@ -270,8 +270,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   if(cf->ReadDeviceId(&(this->position_id), section, "provides",
                       PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_READ_MODE,
-                          sizeof(player_position_data_t), 0, 5, 5) != 0)
+    if(this->AddInterface(this->position_id, PLAYER_READ_MODE))
     {
       this->SetError(-1);    
       return;
@@ -281,8 +280,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   if(cf->ReadDeviceId(&(this->joystick_id), section, "provides",
                       PLAYER_JOYSTICK_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->joystick_id, PLAYER_READ_MODE,
-                          sizeof(player_joystick_data_t), 0, 5, 5) != 0)
+    if(this->AddInterface(this->joystick_id, PLAYER_READ_MODE))
     {
       this->SetError(-1);    
       return;
@@ -334,30 +332,34 @@ int LinuxJoystick::Setup()
     unsigned short reptype;
     player_position_cmd_t cmd;
 
-    if(!(this->position = deviceTable->GetDriver(this->cmd_position_id)))
+    if(!(this->position = SubscribeInternal(this->cmd_position_id)))
     {
       PLAYER_ERROR("unable to open position device");
       return(-1);
     }
-    if(this->position->Subscribe(this->cmd_position_id) != 0)
+/*    if(this->position->Subscribe(this->cmd_position_id) != 0)
     {
       PLAYER_ERROR("unable to subscribe to position device");
       return(-1);
-    }
+    }*/
 
     // Enable the motors
-    motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
+    //motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
     motorconfig.value = 1;
-    this->position->Request(this->cmd_position_id, this, 
+    reptype = this->position->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER,
+              this->cmd_position_id, sizeof(motorconfig),(uint8_t*)&motorconfig);
+/*    this->position->Request(this->cmd_position_id, this, 
                             &motorconfig, sizeof(motorconfig), NULL,
-                            &reptype, NULL, 0, NULL);
+                            &reptype, NULL, 0, NULL);*/
     if(reptype != PLAYER_MSGTYPE_RESP_ACK)
       PLAYER_WARN("failed to enable motors");
 
     // Stop the robot
     memset(&cmd,0,sizeof(cmd));
-    this->position->PutCommand(this->cmd_position_id,
-                               (unsigned char*)&cmd,sizeof(cmd),NULL);
+    this->position->ProcessMessage(PLAYER_MSGTYPE_CMD, 0,
+              this->cmd_position_id, sizeof(cmd),(uint8_t*)&cmd);
+/*    this->position->PutCommand(this->cmd_position_id,
+                               (unsigned char*)&cmd,sizeof(cmd),NULL);*/
   }
   
   // Start the device thread; spawns a new thread and executes
@@ -376,7 +378,7 @@ int LinuxJoystick::Shutdown()
   this->StopThread();
 
   if(this->cmd_position_id.code)
-    this->position->Unsubscribe(this->cmd_position_id);
+    UnsubscribeInternal(this->cmd_position_id);
 
   // Close the joystick
   close(this->fd);
@@ -399,7 +401,7 @@ void LinuxJoystick::Main()
     pthread_testcancel();
 
     // Check for and handle configuration requests
-    this->CheckConfig();
+    //this->CheckConfig();
 
     // Run and process output
     this->ReadJoy();
@@ -491,7 +493,7 @@ void LinuxJoystick::RefreshData()
     this->joy_data.xscale = htons(this->xaxis_max);
     this->joy_data.yscale = htons(this->yaxis_max);
     this->joy_data.buttons = htons(this->buttons);
-    this->PutData(this->joystick_id,&this->joy_data,sizeof(this->joy_data),NULL);
+    this->PutMsg(this->joystick_id,NULL, PLAYER_MSGTYPE_DATA,0,&this->joy_data,sizeof(this->joy_data),NULL);
   }
 
   if(this->position_id.code)
@@ -499,7 +501,7 @@ void LinuxJoystick::RefreshData()
     memset(&(this->pos_data),0,sizeof(player_position_data_t));
     this->pos_data.xpos = htonl((int32_t)this->xpos);
     this->pos_data.ypos = htonl(-(int32_t)this->ypos);
-    this->PutData(this->position_id,&this->pos_data, sizeof this->pos_data, NULL);
+    this->PutMsg(this->position_id,NULL, PLAYER_MSGTYPE_DATA,0,&this->pos_data, sizeof this->pos_data, NULL);
   }
 
   return;
@@ -508,7 +510,7 @@ void LinuxJoystick::RefreshData()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-void LinuxJoystick::CheckConfig()
+/*void LinuxJoystick::CheckConfig()
 {
   void *client;
   unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
@@ -529,7 +531,7 @@ void LinuxJoystick::CheckConfig()
   }
 
   return;
-}
+}*/
 
 void LinuxJoystick::PutPositionCommand()
 {
@@ -581,6 +583,9 @@ void LinuxJoystick::PutPositionCommand()
   cmd.type=0;
   cmd.state=1;
 
-  this->position->PutCommand(this->cmd_position_id,
-                             (unsigned char*)&cmd,sizeof(cmd),NULL);
+
+  this->position->ProcessMessage(PLAYER_MSGTYPE_CMD, 0, this->cmd_position_id,sizeof(cmd), (unsigned char*)&cmd);
+/*  this->position->PutCommand(this->cmd_position_id,
+                             (unsigned char*)&cmd,sizeof(cmd),NULL);*/
+                             
 }

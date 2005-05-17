@@ -381,11 +381,12 @@ Driver::DataAvailableStatic( Driver* driver )
 }
 
 
-int Driver::ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
                        size_t size, uint8_t * data, 
                        uint8_t * resp_data, size_t * resp_len)
 {
+	assert(BaseClient);
 	// assemble Header
 	player_msghdr_t tmp_hdr;
 	tmp_hdr.device = device.code;
@@ -394,10 +395,10 @@ int Driver::ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
 	tmp_hdr.type = Type;
 	tmp_hdr.subtype = SubType;
 	
-	return ProcessMessage(client, &tmp_hdr, data, resp_data, resp_len);
+	return ProcessMessage(BaseClient, &tmp_hdr, data, resp_data, resp_len);
 }
 
-int Driver::ProcessMessage(ClientData * client, uint8_t Type, uint8_t SubType,
+int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
                        size_t size, uint8_t * data)
 {
@@ -436,8 +437,13 @@ Driver * Driver::SubscribeInternal(player_device_id_t id)
   }
   
   assert(BaseClient);
-  
+
   Driver * ret = deviceTable->GetDriver(id);
+  if (ret == this)
+  {
+  	PLAYERWARN2("Device attempted to subscribe to itself %d:%d\n",id.code, id.index);
+  	return NULL;
+  }
   if (ret)
   {
   	if (BaseClient->Subscribe(id)!= 0)
