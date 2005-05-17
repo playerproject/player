@@ -138,8 +138,7 @@ void FakeLocalize_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LOCALIZE_CODE, PLAYER_READ_MODE, 
-             sizeof(player_localize_data_t), 0, 5, 5)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOCALIZE_CODE, PLAYER_READ_MODE)
 {
   // Must have an input sim
   if (cf->ReadDeviceId(&this->sim_id, section, "requires",
@@ -172,21 +171,21 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
 int FakeLocalize::Setup()
 {
   // Subscribe to the sim.
-  this->sim_driver = deviceTable->GetDriver(this->sim_id);
+  this->sim_driver = SubscribeInternal(this->sim_id);
   if(!this->sim_driver)
   {
     PLAYER_ERROR("unable to locate suitable simulation device");
     return(-1);
   }
-  if(this->sim_driver->Subscribe(this->sim_id) != 0)
+/*  if(this->sim_driver->Subscribe(this->sim_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to simulation device");
     return(-1);
-  }
+  }*/
   if(this->UpdateData() < 0)
   {
     PLAYER_ERROR("unable to get pose from simulation device");
-    this->sim_driver->Unsubscribe(this->sim_id);
+    UnsubscribeInternal(this->sim_id);
     return(-1);
   }
   this->StartThread();
@@ -199,7 +198,7 @@ int FakeLocalize::Setup()
 int FakeLocalize::Shutdown()
 {
   // Unsubscribe from devices.
-  this->sim_driver->Unsubscribe(this->sim_id);
+  UnsubscribeInternal(this->sim_id);
   
   return 0;
 }
@@ -209,26 +208,33 @@ FakeLocalize::UpdateData()
 {
   player_localize_data_t loc_data;
   player_simulation_pose2d_req_t cfg;
-  int replen;
+//  int replen;
   unsigned short reptype;
-  struct timeval ts;
+//  struct timeval ts;
   
   // Request pose, don't byteswap, and fill in
-  cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
+  //cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
   strncpy( cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
 
-  if(((replen = this->sim_driver->Request(this->sim_id, this, 
+/*  if(((replen = this->sim_driver->Request(this->sim_id, this, 
                                           &cfg, sizeof(cfg.subtype), 
                                           NULL, &reptype, 
                                           &cfg, sizeof(cfg), &ts)) < 
       (int)sizeof(player_simulation_pose2d_req_t)) ||
      (reptype != PLAYER_MSGTYPE_RESP_ACK))
-    return(-1);
+    return(-1);*/
 
+  size_t resp_len = sizeof(cfg);
+  reptype = this->sim_driver->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_GET_POSE2D,
+                                      this->sim_id, 0, (uint8_t *)&cfg, (uint8_t *)&cfg, &resp_len);
+  
+  if (reptype != PLAYER_MSGTYPE_RESP_ACK || resp_len != sizeof(cfg))
+    return -1;
+    
   // Fill in loc_data, byteswapping as we go.
   loc_data.pending_count = 0;
-  loc_data.pending_time_sec = htonl(ts.tv_sec);
-  loc_data.pending_time_usec = htonl(ts.tv_usec);
+  //loc_data.pending_time_sec = htonl(ts.tv_sec);
+  //loc_data.pending_time_usec = htonl(ts.tv_usec);
   loc_data.hypoth_count = htonl(1);
 
   // we didn't byteswap the x,y,a on the way in, so we don't do it on the
@@ -242,12 +248,12 @@ FakeLocalize::UpdateData()
   memset(loc_data.hypoths[0].cov,0,sizeof(int64_t)*9);
   loc_data.hypoths[0].alpha = htonl((uint32_t)1e6);
 
-  this->PutData(&loc_data,sizeof(loc_data),&ts);
+  this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &loc_data,sizeof(loc_data));
 
   return(0);
 }
 
-void
+/*void
 FakeLocalize::HandleRequests()
 {
   int len;
@@ -270,7 +276,7 @@ FakeLocalize::HandleRequests()
         break;
     }
   }
-}
+}*/
 
 void
 FakeLocalize::Main()
@@ -282,7 +288,7 @@ FakeLocalize::Main()
       PLAYER_ERROR("failed to get pose from simulation device");
       pthread_exit(NULL);
     }
-    HandleRequests();
+    //HandleRequests();
     usleep(SLEEPTIME_US);
   }
 }

@@ -255,11 +255,9 @@ GarminNMEA_Register(DriverTable* table)
   table->AddDriver("garminnmea",  GarminNMEA_Init);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////
-GarminNMEA::GarminNMEA( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_GPS_CODE, PLAYER_READ_MODE,
-         sizeof(player_gps_data_t),0,0,0)
+GarminNMEA::GarminNMEA( ConfigFile* cf, int section) 
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GPS_CODE, PLAYER_READ_MODE)
 {
   memset(&data,0,sizeof(data));
 
@@ -977,7 +975,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   data.utm_e = htonl((int32_t) rint(utm_e * 100));
   data.utm_n = htonl((int32_t) rint(utm_n * 100));
 
-  PutData(&data,sizeof(player_gps_data_t),NULL);
+  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &data,sizeof(player_gps_data_t),NULL);
 
   return 0;
 }

@@ -176,6 +176,8 @@ class SickPLS : public Driver
     int Setup();
     int Shutdown();
 
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
   private:
 
     // Main function for device thread.
@@ -183,7 +185,7 @@ class SickPLS : public Driver
 
     // Process configuration requests.  Returns 1 if the configuration
     // has changed.
-    int UpdateConfig();
+    //int UpdateConfig();
 
     // Compute the start and end scan segments based on the current resolution and
     // scan angles.  Returns 0 if the configuration is valid.
@@ -312,8 +314,7 @@ void SickPLS_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickPLS::SickPLS( ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_READ_MODE,
-             sizeof(player_laser_data_t),0,10,10)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE, PLAYER_READ_MODE)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -445,7 +446,7 @@ void SickPLS::Main()
     pthread_testcancel();
 
     // Update the configuration.
-    if (UpdateConfig())
+/*    if (UpdateConfig())
     {
       if (SetLaserMode() != 0)
         PLAYER_ERROR("request for config mode failed");
@@ -460,7 +461,7 @@ void SickPLS::Main()
       if (RequestLaserData(this->scan_min_segment, this->scan_max_segment))
         PLAYER_ERROR("request for laser data failed");
     }
-
+*/
     // Get the time at which we started reading
     // This will be a pretty good estimate of when the phenomena occured
     struct timeval time;
@@ -502,15 +503,90 @@ void SickPLS::Main()
       }
 
       // Make data available
-      PutData((uint8_t*) &data, sizeof(data), &time);
+      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*) &data, sizeof(data), &time);
     }
   }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int SickPLS::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, device_id))
+  {
+  	assert(hdr->size == sizeof(player_laser_config_t));
+    *resp_len = 0;
+    player_laser_config_t * l_cfg = reinterpret_cast<player_laser_config_t *> (data);
+    Lock();
+    this->intensity = l_cfg->intensity;
+    this->scan_res = ntohs(l_cfg->resolution);
+    this->min_angle = (short) ntohs(l_cfg->min_angle);
+    this->max_angle = (short) ntohs(l_cfg->max_angle);
+	this->range_res = ntohs(l_cfg->range_res);
+    Unlock();
+    if (this->CheckScanConfig() == 0)
+    {
+      if (SetLaserMode() != 0)
+        PLAYER_ERROR("request for config mode failed");
+      else
+      {
+        //TBM: Check the configurability of the PLS before enabling this
+        //if (SetLaserConfig(this->intensity) != 0)
+        //  PLAYER_ERROR("failed setting intensity");          
+      }
+
+      // Issue a new request for data
+      if (RequestLaserData(this->scan_min_segment, this->scan_max_segment))
+        PLAYER_ERROR("request for laser data failed");
+      return PLAYER_MSGTYPE_RESP_ACK;
+    }
+    else
+      return PLAYER_MSGTYPE_RESP_NACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_CONFIG, device_id))
+  {
+  	assert(hdr->size == 0);
+    assert(*resp_len > sizeof(player_laser_config_t));
+    player_laser_config_t * lcfg = reinterpret_cast<player_laser_config_t *> (resp_data);
+    *resp_len = sizeof(player_laser_config_t);
+    
+    lcfg->intensity = this->intensity;
+    lcfg->resolution = htons(this->scan_res);
+    lcfg->min_angle = htons((short) this->min_angle);
+    lcfg->max_angle = htons((short) this->max_angle);
+    lcfg->range_res = htons(this->range_res);
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, device_id))
+  {
+  	assert(hdr->size == 0);
+    assert(*resp_len > sizeof(player_laser_geom_t));
+    player_laser_geom_t * l_geom = reinterpret_cast<player_laser_geom_t *> (resp_data);
+    *resp_len = sizeof(player_laser_geom_t);
+    
+    l_geom->pose[0] = htons((short) (this->pose[0] * 1000));
+    l_geom->pose[1] = htons((short) (this->pose[1] * 1000));
+    l_geom->pose[2] = htons((short) (this->pose[2] * 180/M_PI));
+    l_geom->size[0] = htons((short) (this->size[0] * 1000));
+    l_geom->size[1] = htons((short) (this->size[1] * 1000));
+
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  return -1;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 // Process configuration requests.  Returns 1 if the configuration has changed.
-int SickPLS::UpdateConfig()
+/*int SickPLS::UpdateConfig()
 {
   int len;
   void *client;
@@ -608,7 +684,7 @@ int SickPLS::UpdateConfig()
   }
   return 0;
 }
-
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Compute the start and end scan segments based on the current resolution and

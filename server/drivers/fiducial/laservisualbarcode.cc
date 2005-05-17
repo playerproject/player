@@ -500,7 +500,7 @@ int LaserVisualBarcode::ProcessMessage(ClientData * client, player_msghdr * hdr,
  
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
   {
-    int ret = laser->ProcessMessage(BaseClient, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, laser_id, 0, resp_data, resp_data, resp_len);
+    int ret = laser->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, laser_id, 0, resp_data, resp_data, resp_len);
     if (ret != PLAYER_MSGTYPE_RESP_ACK)
     	return ret;
   	assert(*resp_len == sizeof(player_laser_geom_t));
@@ -955,7 +955,7 @@ void LaserVisualBarcode::ServoPtz(double time, player_ptz_data_t *data)
   cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
   cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
   cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-  this->ptz->ProcessMessage(BaseClient, PLAYER_MSGTYPE_CMD, 0,this->ptz_id, sizeof(cmd),(uint8_t*) &cmd);
+  this->ptz->ProcessMessage(PLAYER_MSGTYPE_CMD, 0,this->ptz_id, sizeof(cmd),(uint8_t*) &cmd);
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);

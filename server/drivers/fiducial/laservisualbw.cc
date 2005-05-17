@@ -484,7 +484,7 @@ int LaserVisualBW::ProcessMessage(ClientData * client, player_msghdr * hdr, uint
     assert(*resp_len>sizeof(player_fiducial_geom_t));
     assert(*resp_len>sizeof(player_laser_geom_t));
 
-    int ret = laser->ProcessMessage(BaseClient, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, 
+    int ret = laser->ProcessMessage( PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, 
            laser_id, 0, resp_data, resp_data, resp_len);
     if (ret != PLAYER_MSGTYPE_RESP_ACK)
     	return ret;
@@ -958,7 +958,7 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
   cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
   cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
 //  this->ptz->PutCommand(this->ptz_id,(void*)&cmd, sizeof(cmd), NULL);
-  this->ptz->ProcessMessage(BaseClient, PLAYER_MSGTYPE_CMD, 0,this->ptz_id, sizeof(cmd),(uint8_t*) &cmd);
+  this->ptz->ProcessMessage(PLAYER_MSGTYPE_CMD, 0,this->ptz_id, sizeof(cmd),(uint8_t*) &cmd);
 
   // Compute the dimensions of the image at the range of the target fiducial.
   this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
