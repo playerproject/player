@@ -167,8 +167,10 @@ class ReadLog: public Driver
   // Main loop
   public: virtual void Main();
 
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
   // Process log interface configuration requests
-  private: int ProcessLogConfig();
+  private: int ProcessLogConfig(uint8_t,char*,size_t);
 
   // Process generic configuration requests
   private: int ProcessOtherConfig();
@@ -457,8 +459,7 @@ void ReadLog::Main()
     pthread_testcancel();
 
     // Process requests
-    this->ProcessLogConfig();
-    this->ProcessOtherConfig();
+    ProcessMessages();
 
     // If we're not supposed to playback data, sleep and loop
     if(!this->enable)
@@ -523,8 +524,6 @@ void ReadLog::Main()
         pthread_testcancel();
 
         // Process requests
-        this->ProcessLogConfig();
-        this->ProcessOtherConfig();
 
         ReadLogTime_time.tv_usec += 100000;
         if (ReadLogTime_time.tv_usec >= 1000000)
@@ -618,39 +617,24 @@ void ReadLog::Main()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int ReadLog::ProcessLogConfig()
+int ReadLog::ProcessLogConfig(uint8_t subtype, char * src, size_t len)
 {
-  player_log_set_read_rewind_t rreq;
+ // player_log_set_read_rewind_t rreq;
   player_log_set_read_state_t sreq;
   player_log_get_state_t greq;
-  uint8_t subtype;
-  char src[PLAYER_MAX_REQREP_SIZE];
-  void *client;
-  struct timeval time;
-  size_t len;
+//  uint8_t subtype;
+//  char src[PLAYER_MAX_REQREP_SIZE];
+//  void *client;
+ // struct timeval time;
+  //size_t len;
 
-  len = this->GetConfig(this->log_id, &client, src, sizeof(src), &time);
-  if (len == 0)
-    return 0;
-  
-  if(len < sizeof(sreq.subtype))
-  {
-    PLAYER_WARN2("request was too small (%d < %d)",
-                  len, sizeof(sreq.subtype));
-    if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  subtype = ((player_log_set_read_state_t*)src)->subtype;
   switch(subtype)
   {
-    case PLAYER_LOG_SET_READ_STATE_REQ:
+    case PLAYER_LOG_SET_READ_STATE:
       if(len != sizeof(sreq))
       {
         PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+      	return PLAYER_MSGTYPE_RESP_NACK;
       }
       sreq = *((player_log_set_read_state_t*)src);
       if(sreq.state)
@@ -663,18 +647,8 @@ int ReadLog::ProcessLogConfig()
         puts("ReadLog: stop playback");
         this->enable = false;
       }
-      if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    case PLAYER_LOG_GET_STATE_REQ:
-      if(len != sizeof(greq.subtype))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", 
-                     len, sizeof(greq.subtype));
-        if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
+      return PLAYER_MSGTYPE_RESP_ACK;
+    case PLAYER_LOG_GET_STATE:
       greq = *((player_log_get_state_t*)src);
       greq.type = PLAYER_LOG_TYPE_READ;
       if(this->enable)
@@ -682,81 +656,50 @@ int ReadLog::ProcessLogConfig()
       else
         greq.state = 0;
 
-      if(this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_ACK,
-                        &greq, sizeof(greq),NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    case PLAYER_LOG_SET_READ_REWIND_REQ:
-      if(len != sizeof(rreq.subtype))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", 
-                     len, sizeof(rreq.subtype));
-        if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-
+      return PLAYER_MSGTYPE_RESP_ACK;
+    case PLAYER_LOG_SET_READ_REWIND:
       // set the appropriate flag in the manager
       this->rewind_requested = true;
 
-      if(this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-
-    default:
-      PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(this->log_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+      return PLAYER_MSGTYPE_RESP_ACK;
   }
   
-  return 0;
+  return PLAYER_MSGTYPE_RESP_NACK;
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Process generic requests
-int ReadLog::ProcessOtherConfig()
+int ReadLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len) 
 {
-  int i;
-  player_device_id_t id;
-  char src[PLAYER_MAX_REQREP_SIZE];
-  void *client;
-  struct timeval time;
-  size_t len;
-  
-  // Check for request on all interfaces
-  for (i = 0; i < this->provide_count; i++)
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+	
+  if (hdr->type == PLAYER_MSGTYPE_REQ && hdr->device == device_id.code && hdr->device_index == device_id.index)
   {
-    id = this->provide_ids[i];
+    *resp_len = 0;
+    return ProcessLogConfig(hdr->subtype,(char*)data,hdr->size);
+  }
+	
+  for (int i = 0; i < this->provide_count; i++)
+  {
+    player_device_id_t id = this->provide_ids[i];
     if (id.code == PLAYER_LOG_CODE)
       continue;
-      
-    len = this->GetConfig(id, &client, src, sizeof(src), &time);
-    if (len == 0)
-      continue;
-
-    // we handle sonar geometry requests
-    if((id.code == PLAYER_SONAR_CODE) && 
-       (((player_sonar_geom_t*)src)->subtype == PLAYER_SONAR_GET_GEOM_REQ))
-    {
-      // NOTE: sonar geometry is *already* byteswapped in provide_metadata
-      // TODO: handle timestamps more intelligently here.
-      if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_ACK, 
-                         this->provide_metadata[i], 
-                         sizeof(player_sonar_geom_t), NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-    }
-    // we don't handle any other requests
-    else
-    {
-      if (this->PutReply(id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-    }
+	if (id.code == PLAYER_SONAR_CODE && MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, id))
+	{
+	  assert(*resp_len >= sizeof(player_sonar_geom_t));
+	  *resp_len = sizeof(player_sonar_geom_t);
+	  memcpy(resp_data, this->provide_metadata[i], *resp_len);
+	  return PLAYER_MSGTYPE_RESP_ACK;
+	}
   }
-
-  return 0;
+  
+  *resp_len = 0;
+  return -1;
 }
+
+
 
 
 
@@ -895,7 +838,7 @@ int ReadLog::ParseBlobfinder(player_device_id_t id, int linenum,
   }
   
   size = sizeof(data) - sizeof(data.blobs) + blob_count * sizeof(data.blobs[0]);
-  this->PutData(id, &data, size, &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, size, &time);
 
   return 0;
 }
@@ -934,7 +877,7 @@ int ReadLog::ParseCamera(player_device_id_t id, int linenum,
   // Decode string
   ::DecodeHex(data->image, dst_size, tokens[12], src_size);
               
-  this->PutData(id, data, sizeof(*data) - sizeof(data->image) + dst_size, &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, data, sizeof(*data) - sizeof(data->image) + dst_size, &time);
 
   free(data);
   
@@ -976,7 +919,7 @@ int ReadLog::ParseFiducial(player_device_id_t id, int linenum,
 	data.fiducials[i].urot[2] = NINT32(M_MM(atof(tokens[13*i+19])));
   }
               
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1013,7 +956,7 @@ int ReadLog::ParseGps(player_device_id_t id, int linenum,
   data.quality = atoi(tokens[16]);
   data.num_sats = atoi(tokens[17]);
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0,&data, sizeof(data), &time);
 
   return 0;
 }
@@ -1038,7 +981,7 @@ int ReadLog::ParseJoystick(player_device_id_t id, int linenum,
   data.yscale = NINT16((short) atoi(tokens[9]));
   data.buttons = NUINT16((unsigned short) (unsigned int) atoi(tokens[10]));
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1110,7 +1053,7 @@ int ReadLog::ParseLaser(player_device_id_t id, int linenum,
      }
   */
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1202,7 +1145,7 @@ int ReadLog::ParseSonar(player_device_id_t id, int linenum,
     return -1;
   }
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1229,7 +1172,7 @@ int ReadLog::ParsePosition(player_device_id_t id, int linenum,
   data.yawspeed = NINT32(RAD_DEG(atof(tokens[11])));
   data.stall = atoi(tokens[12]);
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1266,7 +1209,7 @@ int ReadLog::ParsePosition3d(player_device_id_t id, int linenum,
   
   data.stall = atoi(tokens[18]);
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1292,7 +1235,7 @@ int ReadLog::ParseTruth(player_device_id_t id, int linenum,
   data.rot[1] = NINT32(M_MM(atof(tokens[10])));
   data.rot[2] = NINT32(M_MM(atof(tokens[11])));
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }
@@ -1331,7 +1274,7 @@ int ReadLog::ParseWifi(player_device_id_t id, int linenum,
   }
   data.link_count = htons(data.link_count);
 
-  this->PutData(id, &data, sizeof(data), &time);
+  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
 
   return 0;
 }

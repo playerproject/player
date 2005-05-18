@@ -167,6 +167,9 @@ class WriteLog: public Driver
   /// Destructor
   public: ~WriteLog();
 
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
   /// Initialize the driver
   public: virtual int Setup();
 
@@ -174,9 +177,9 @@ class WriteLog: public Driver
   public: virtual int Shutdown();
 
   /// Process configuration requests
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
+/*  public: virtual int PutConfig(player_device_id_t id, void *client, 
                                 void* src, size_t len,
-                                struct timeval* timestamp);
+                                struct timeval* timestamp);*/
 
   // Device thread
   private: virtual void Main(void);
@@ -353,7 +356,7 @@ int WriteLog::Setup()
   {
     device = this->devices + i;
 
-    device->device = deviceTable->GetDriver(device->id);
+    device->device = SubscribeInternal(device->id);
     if (!device->device)
     {
       PLAYER_ERROR3("unable to locate device [%d:%s:%d] for logging",
@@ -362,16 +365,19 @@ int WriteLog::Setup()
                     device->id.index);
       return -1;
     }
-    if (device->device->Subscribe(device->id) != 0)
+/*    if (device->device->Subscribe(device->id) != 0)
     {
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
-    }
+    }*/
     if (device->id.code == PLAYER_SONAR_CODE)
     {
       // We need to cache the sonar geometry
       unsigned short reptype;
-      device->sonar_geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
+      size_t replen = sizeof(device->sonar_geom);
+      reptype=device->device->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+            device->id, 0, (uint8_t *)&(device->sonar_geom), (uint8_t *)&(device->sonar_geom), &replen);
+/*      device->sonar_geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
       if((device->device->Request(device->id,(void*)this,
                                   (void*)&(device->sonar_geom),
                                   sizeof(device->sonar_geom.subtype),
@@ -379,8 +385,8 @@ int WriteLog::Setup()
                                   &reptype,
                                   (void*)&(device->sonar_geom),
                                   sizeof(device->sonar_geom),
-                                  (struct timeval*)NULL) < 0) ||
-         (reptype != PLAYER_MSGTYPE_RESP_ACK))
+                                  (struct timeval*)NULL) < 0) ||*/
+      if (reptype != PLAYER_MSGTYPE_RESP_ACK)
       {
         // oh well.
         PLAYER_WARN("unable to get sonar geometry");
@@ -438,7 +444,7 @@ int WriteLog::Shutdown()
     device = this->devices + i;
 
     // Unsbscribe from the underlying device
-    device->device->Unsubscribe(device->id);
+    UnsubscribeInternal(device->id);
     device->device = NULL;
   }
   
@@ -474,9 +480,109 @@ WriteLog::CloseFile()
   }
 }
 
+int WriteLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len) 
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_SET_WRITE_STATE, device_id))
+  {
+    assert(hdr->size == sizeof(player_log_set_write_state_t));
+    player_log_set_write_state_t & sreq = *reinterpret_cast<player_log_set_write_state_t*> (data);
+		
+    if(sreq.state)
+    {
+      puts("WriteLog: start logging");
+      this->enable = true;
+    }
+    else
+    {
+      puts("WriteLog: stop logging");
+      this->enable = false;
+    }
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_GET_STATE, device_id))
+  {
+    assert(*resp_len >= sizeof(player_log_get_state_t));
+    player_log_get_state_t & greq = *reinterpret_cast<player_log_get_state_t*> (resp_data);
+    *resp_len = sizeof(player_log_get_state_t);
+    
+    greq.type = PLAYER_LOG_TYPE_WRITE;
+    if(this->enable)
+      greq.state = 1;
+    else
+      greq.state = 0;
+
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }  
+
+ 
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_SET_FILENAME, device_id))
+  {
+    assert(hdr->size <= sizeof(player_log_set_filename_t));
+    assert(hdr->size > 0);
+    player_log_set_filename_t & freq = *reinterpret_cast<player_log_set_filename_t*> (data);
+    *resp_len = 0;
+
+    if(this->enable)
+    {
+      PLAYER_WARN("tried to switch filenames while logging");
+      return PLAYER_MSGTYPE_RESP_NACK;
+    }
+
+    PLAYER_MSG1(1,"Closing logfile %s", this->filename);
+    this->CloseFile();
+    strncpy(this->filename,
+            (const char*)freq.filename,
+            hdr->size);
+    this->filename[sizeof(this->filename)-1] = '\0';
+    PLAYER_MSG1(1,"Opening logfile %s", this->filename);
+    if(this->OpenFile() < 0)
+    {
+      PLAYER_WARN1("Failed to open logfile %s", this->filename);
+      return PLAYER_MSGTYPE_RESP_NACK;
+    }
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }  
+
+    if(hdr->type == PLAYER_MSGTYPE_DATA)
+    {
+      *resp_len = 0;
+      // If logging is stopped, then don't log
+      if(!this->enable)
+        return 0;
+        
+      // Walk the device list
+      for (int i = 0; i < this->device_count; i++)
+      {
+        WriteLogDevice * device = this->devices + i;
+      
+        if (device->id.code != hdr->device || device->id.index != hdr->device_index)
+          continue;
+      
+        // record timestamp
+        device->time.tv_sec = hdr->timestamp_sec; 
+        device->time.tv_usec = hdr->timestamp_usec;      
+  
+        // Write data to file
+        this->Write(device, data, hdr->size, device->time);
+        return 0;
+      }
+      return -1;
+    }    	
+  
+  *resp_len = 0;
+  return -1;
+}
+
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int WriteLog::PutConfig(player_device_id_t id, void *client, 
+/*int WriteLog::PutConfig(player_device_id_t id, void *client, 
                         void* src, size_t len,
                         struct timeval* timestamp)
 {
@@ -588,20 +694,24 @@ int WriteLog::PutConfig(player_device_id_t id, void *client,
 
   return 0;
 }
+*/
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void WriteLog::Main(void)
 {
-  int i;
-  size_t size, maxsize;
+  //int i;
+  //size_t size, maxsize;
   struct timeval time, sync_time, elapsed_time;
-  void *data;
+  //void *data;
   WriteLogDevice *device;
   
-  maxsize = PLAYER_MAX_MESSAGE_SIZE;
-  data = malloc(maxsize);
+  //maxsize = PLAYER_MAX_MESSAGE_SIZE;
+  //data = malloc(maxsize);
 
   sync_time.tv_sec = 0;
   sync_time.tv_usec = 0;
@@ -615,28 +725,7 @@ void WriteLog::Main(void)
     device = this->devices;
     device->device->Wait();
 
-    // If logging is stopped, then don't log
-    if(!this->enable)
-      continue;
 
-    // Walk the device list
-    for (i = 0; i < this->device_count; i++)
-    {
-      device = this->devices + i;
-      
-      // Read data from underlying device
-      size = device->device->GetData(device->id, (void*) data, maxsize, &time);
-      assert(size < maxsize);
-
-      // Check for new data
-      if((device->time.tv_sec == time.tv_sec) && 
-         (device->time.tv_usec == time.tv_usec))
-        continue;
-      device->time = time;
-  
-      // Write data to file
-      this->Write(device, data, size, time);
-    }
 
     /// Write the sync packet at 10Hz; it's just a heartbeat
     GlobalTime->GetTime(&time);
@@ -648,7 +737,7 @@ void WriteLog::Main(void)
     }
   }
 
-  free(data);
+  //free(data);
   
   return;
 }

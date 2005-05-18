@@ -313,6 +313,9 @@ class PassThrough:public Driver
   char* remote_config;
   char* remote_reply;
 
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+
   // this function will be run in a separate thread
   virtual void Main();
 
@@ -341,8 +344,7 @@ PassThrough_Register(DriverTable* table)
 }
 
 PassThrough::PassThrough(ConfigFile* cf, int section)
-    : Driver(cf, section, -1, PLAYER_ALL_MODE,
-             PLAYER_MAX_PAYLOAD_SIZE, PLAYER_MAX_PAYLOAD_SIZE, 1, 1)
+ : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, -1, PLAYER_ALL_MODE)
 {
   this->local_id = this->device_id;
   // Figure out remote device location
@@ -375,7 +377,7 @@ PassThrough::CloseConnection()
 {
   if(this->conn.sock >=0)
     player_disconnect(&this->conn);
-  PutData(NULL,0,NULL);
+  //PutData(NULL,0,NULL);
 }
 
 PassThrough::~PassThrough()
@@ -396,7 +398,7 @@ PassThrough::Setup()
 
   // zero out the buffers
   //PutData(NULL,0,0,0);
-  PutCommand(this->device_id,NULL,0,NULL);
+  //PutCommand(this->device_id,NULL,0,NULL);
 
   printf("Passthrough connecting to server at %s:%d...", this->remote_hostname,
          this->remote_id.port);
@@ -457,7 +459,7 @@ PassThrough::Setup()
       struct timeval ts;
       ts.tv_sec = hdr.timestamp_sec;
       ts.tv_usec = hdr.timestamp_usec;
-      PutData(this->remote_data,hdr.size, &ts);
+      PutMsg(remote_id,NULL,PLAYER_MSGTYPE_DATA,0,this->remote_data,hdr.size, &ts);
       break;
     }
   }
@@ -475,55 +477,67 @@ PassThrough::Shutdown()
   return(0);
 }
 
-void
-PassThrough::Main()
-{
-  size_t len_command;
-  size_t len_config;
-  player_msghdr_t hdr;
-  void* client;
-  player_msghdr_t replyhdr;
-  struct timeval ts;
+/*int player_request(player_connection_t* conn, uint8_t reqtype,
+                   uint16_t device, uint16_t device_index, 
+                   const char* payload, size_t payloadlen, 
+                   player_msghdr_t* replyhdr, char* reply, size_t replylen);*/
 
-  for(;;)
-  {
-    // did we get a config request?
-    if((len_config = 
-        GetConfig(&client,this->remote_config,PLAYER_MAX_PAYLOAD_SIZE,NULL)) > 0)
+int PassThrough::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+{
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+	
+	player_msghdr_t replyhdr;
+	
+    if (hdr->type == PLAYER_MSGTYPE_REQ)
     {
       // send it
-      if(player_request(&this->conn,this->remote_id.code,
+      if(player_request(&this->conn,hdr->subtype,this->remote_id.code,
                         this->remote_id.index,
-                        this->remote_config,len_config,&replyhdr,
+                        (const char*)data,hdr->size,&replyhdr,
                         this->remote_reply,PLAYER_MAX_PAYLOAD_SIZE) < 0)
       {
         PLAYER_ERROR("got error while sending request; bailing");
         CloseConnection();
         pthread_exit(NULL);
       }
-
-      ts.tv_sec = replyhdr.timestamp_sec;
-      ts.tv_usec = replyhdr.timestamp_usec;
-
-      // return the reply
-      PutReply(client,replyhdr.type,this->remote_reply,replyhdr.size,&ts);
+      *resp_len = replyhdr.size;
+      memcpy(resp_data,remote_reply,*resp_len);
+      return replyhdr.type;
     }
 
-    // did we get a new command to send?
-    if((len_command = GetCommand((void*)this->remote_command,
-                                 PLAYER_MAX_PAYLOAD_SIZE,NULL)) > 0)
+    if (hdr->type == PLAYER_MSGTYPE_CMD)
     {
       if(player_write(&this->conn,this->remote_id.code,
                       this->remote_id.index,
-                      this->remote_command,len_command) < 0)
+                      	(const char *)data,hdr->size) < 0)
       {
         PLAYER_ERROR("got error while writing command; bailing");
         CloseConnection();
         pthread_exit(NULL);
       }
-      // so we don't re-send old commands
-      this->ClearCommand(this->local_id);
     }
+
+  *resp_len = 0;
+  return -1;
+}
+
+void
+PassThrough::Main()
+{
+//  size_t len_command;
+//  size_t len_config;
+  player_msghdr_t hdr;
+//  void* client;
+//  player_msghdr_t replyhdr;
+//  struct timeval ts;
+
+  for(;;)
+  {
+
+
 
     // get new data from the remote server
     if(player_read(&this->conn,&hdr,this->remote_data,PLAYER_MAX_PAYLOAD_SIZE))
@@ -541,7 +555,7 @@ PassThrough::Main()
       struct timeval ts;
       ts.tv_sec = hdr.timestamp_sec;
       ts.tv_usec = hdr.timestamp_usec;
-      PutData(this->local_id, this->remote_data,hdr.size,&ts);
+      PutMsg(this->local_id, NULL, PLAYER_MSGTYPE_DATA,0,this->remote_data,hdr.size,&ts);
     }
   }
 }
