@@ -165,8 +165,7 @@ SrvAdv_MDNS::~SrvAdv_MDNS() {
 
 // Constructor
 SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
-    : Driver(configFile, configSection, 
-             PLAYER_SERVICE_ADV_CODE, PLAYER_READ_MODE, 0,0,0,0)
+ : Driver(configFile, configSection, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SERVICE_ADV_CODE, PLAYER_ALL_MODE)
 {
     //alwayson = true;      // since there is no client interface
     // this breaks player so I commented it out

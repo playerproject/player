@@ -175,6 +175,11 @@ class canonvcc4:public Driver
   // These are used to compute appropriate zoom values.
 
   canonvcc4(ConfigFile* cf, int section);
+  void ProcessCommand(player_ptz_cmd_t & command);
+  int pandemand , tiltdemand , zoomdemand ;
+
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
   virtual int Setup();
   virtual int Shutdown();
@@ -198,10 +203,10 @@ canonvcc4_Register(DriverTable* table)
 
 /************************************************************************/
 
-canonvcc4::canonvcc4(ConfigFile* cf, int section) :
-  Driver(cf,section,PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
-          sizeof(player_ptz_data_t),sizeof(player_ptz_cmd_t),0,0)
+canonvcc4::canonvcc4(ConfigFile* cf, int section) 
+ : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
 {
+  pandemand = 0; tiltdemand = 0; zoomdemand = 0;
   ptz_fd = -1;
 
   ptz_serial_port = cf->ReadString(section, "port", DEFAULT_PTZ_PORT);
@@ -319,14 +324,14 @@ canonvcc4::Setup()
   puts("Done.");
   
   // zero the command and data buffers
-  player_ptz_data_t data;
+  /*player_ptz_data_t data;
   player_ptz_cmd_t cmd;
 
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
   PutData((void*)&data,sizeof(data),NULL);
-  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);
+  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);*/
   
   //request_state = IDLE;
   // start the thread to talk with the camera
@@ -905,23 +910,11 @@ canonvcc4::setPower(int on)
 
 /************************************************************************/
 
-// this function will be run in a separate thread
-void 
-canonvcc4::Main()
+void canonvcc4::ProcessCommand(player_ptz_cmd_t & command)
 {
-  player_ptz_data_t data;
-  player_ptz_cmd_t command;
-  int pan, tilt, zoom;
-  int pandemand = 0, tiltdemand = 0, zoomdemand = 0;
   bool newpantilt = true, newzoom = true;
   int err;
-
-  while(1) 
-    {
-      pthread_testcancel();
-      GetCommand((void*)&command, sizeof(player_ptz_cmd_t),NULL);
-      pthread_testcancel();
-      
+   
       if(pandemand != (short)ntohs((unsigned short)(command.pan)))
 	{
 	  pandemand = (short)ntohs((unsigned short)(command.pan));
@@ -965,7 +958,24 @@ canonvcc4::Main()
 	      pthread_exit(NULL);
 	    }
 	}
+      	
+	
+}
+
+
+// this function will be run in a separate thread
+void 
+canonvcc4::Main()
+{
+  player_ptz_data_t data;
+  int pan, tilt, zoom;
+
+  while(1) 
+    {
+      pthread_testcancel();
       
+      ProcessMessages();
+
       /* get current state */
       if(GetAbsPanTilt(&pan,&tilt) < 0)
 	{
@@ -994,14 +1004,32 @@ canonvcc4::Main()
       
       /* test if we are supposed to cancel */
       pthread_testcancel();
-      PutData((void*)&data, sizeof(player_ptz_data_t),NULL);
+      PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_ptz_data_t),NULL);
       
-      newpantilt = false;
-      newzoom = false;
-      
+     
       usleep(PTZ_SLEEP_TIME_USEC);
     }
 }
+
+int canonvcc4::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+{
+	assert(hdr);
+	assert(data);
+	assert(resp_data);
+	assert(resp_len);
+
+	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+	{
+	  assert(hdr->size == sizeof(player_ptz_cmd_t));
+	  ProcessCommand(*reinterpret_cast<player_ptz_cmd_t *> (data));
+      *resp_len = 0;
+      return 0;
+	}
+	
+	*resp_len = 0;
+	return -1;
+}
+
 /************************************************************************/
 struct timeval
 substract_time(struct timeval *now, struct timeval *before)

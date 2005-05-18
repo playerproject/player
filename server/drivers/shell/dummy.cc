@@ -256,7 +256,7 @@ int Dummy::Shutdown()
 void Dummy::Main(void)
 {
   struct timespec req;
-  void *client;
+//  void *client;
 
   req.tv_sec = (time_t) (1.0 / this->rate);
   req.tv_nsec = (long) (fmod(1e9 / this->rate, 1e9));
@@ -268,15 +268,16 @@ void Dummy::Main(void)
       continue;
 
     // Write data
-    this->PutData(this->local_id, this->data_buffer, this->data_len, NULL);
+    this->PutMsg(this->local_id,NULL,PLAYER_MSGTYPE_DATA,0, this->data_buffer, this->data_len, NULL);
 
     // Process pending configuration requests
-    while (this->GetConfig(this->local_id, &client, this->req_buffer,
+/*    while (this->GetConfig(this->local_id, &client, this->req_buffer,
                            PLAYER_MAX_REQREP_SIZE, NULL))
     {
       if (this->PutReply(this->local_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
         PLAYER_ERROR("PutReply() failed");
-    }
+    }*/
+    ProcessMessages();
   }
   return;
 }
