@@ -222,6 +222,9 @@ Base units
 - decibel  [dB]
 - volts    [V]
 
+@note see float.h and limits.h for the limits of floats and integers on your
+system
+
 */
 /** @{ */
 
@@ -280,7 +283,7 @@ The @p audio interface is used to control sound hardware, if equipped.
 
 const uint16_t PLAYER_AUDIO_DATA_BUFFER_SIZE    = 20;
 const uint16_t PLAYER_AUDIO_COMMAND_BUFFER_SIZE = 3*sizeof(short);
-const uint16_t PLAYER_AUDIO_PAIRS = 5;
+const uint16_t PLAYER_AUDIO_PAIRS               = 5;
 
 /** @brief Data
 
@@ -338,7 +341,7 @@ typedef struct player_audiodsp_data
   /** [Hz] */
   float frequency[PLAYER_AUDIO_PAIRS];
   /** [Db] */
-  uint32_t amplitude[PLAYER_AUDIO_PAIRS];
+  float amplitude[PLAYER_AUDIO_PAIRS];
 
 } __PACKED__ player_audiodsp_data_t;
 
@@ -357,7 +360,7 @@ typedef struct player_audiodsp_cmd
   /** Duration to play [s] */
   float duration;
   /** BitString to encode in sine wave */
-  unsigned char bit_string[PLAYER_MAX_DEVICE_STRING_LEN];
+  uint8_t bit_string[PLAYER_MAX_DEVICE_STRING_LEN];
   /** Length of the bit string */
   uint32_t bit_string_len;
 } __PACKED__ player_audiodsp_cmd_t;
@@ -430,11 +433,11 @@ which returns the current state of the mixer levels.
 */
 typedef struct player_audiomixer_config
 {
-  uint32_t masterLeft, masterRight;
-  uint32_t pcmLeft, pcmRight;
-  uint32_t lineLeft, lineRight;
-  uint32_t micLeft, micRight;
-  uint32_t iGain, oGain;
+  uint32_t master_left, master_right;
+  uint32_t pcm_left, pcm_right;
+  uint32_t line_left, line_right;
+  uint32_t mic_left, mic_right;
+  uint32_t i_gain, o_gain;
 } __PACKED__ player_audiomixer_config_t;
 
 /** @} */
@@ -455,10 +458,10 @@ The @p blinkenlight data provides the current state of the indicator
 light.*/
 typedef struct player_blinkenlight_data
 {
-  /** zero: disabled, non-zero: enabled */
+  /** FALSE: disabled, TRUE: enabled */
   bool enable;
   /** flash period (one whole on-off cycle) [s]. */
-  float period_s;
+  float period;
 } __PACKED__ player_blinkenlight_data_t;
 
 /** @brief Command
@@ -775,7 +778,9 @@ const uint8_t PLAYER_FIDUCIAL_SET_ID       = 0x08;
 
 /** @brief Info on a single detected fiducial 
 
-The fiducial data packet contains a list of these. */
+The fiducial data packet contains a list of these. 
+@todo I think we should make pos and rot similar to the position interfaces
+*/
 typedef struct player_fiducial_item
 {
   /** The fiducial id.  Fiducials that cannot be identified get id
@@ -1535,7 +1540,7 @@ typedef struct player_motor_data
   /** Theta [rad] */
   float pos;
   /** Angular velocity [rad/s] */
-  float speed;
+  float vel;
   /** Are the motors stalled?   */
   bool stall;
   /** A bitfield of limit switches for the motor 
@@ -1557,7 +1562,7 @@ typedef struct player_motor_cmd
   /** Theta [rad] */
   float pos;
   /** Angular velocities [rad/s] */
-  float speed;
+  float vel;
   /** Motor state (zero is either off or locked, depending on the driver). */
   bool state;
   /** Command type; 0 = velocity, 1 = position. */
@@ -2030,7 +2035,7 @@ typedef struct player_position_data
   /** position [m] (x, y, yaw)*/
   float pos[3];
   /** translational velocities [m/s] (x, y, yaw)*/
-  float speed[3];   
+  float vel[3];   
   /** Are the motors stalled? */
   bool stall;
 } __PACKED__ player_position_data_t;
@@ -2045,7 +2050,7 @@ typedef struct player_position_cmd
   /** position [m] (x, y, yaw)*/
   float pos[3];
   /** translational velocities [m/s] (x, y, yaw)*/
-  float speed[3];   
+  float vel[3];   
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   bool state;
   /** Command type; 0 = velocity, 1 = position. */
@@ -2200,7 +2205,7 @@ typedef struct player_position3d_data
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
   float pos[6];
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  int32_t speed[6];  
+  int32_t vel[6];  
   /** Are the motors stalled? */
   bool stall;
 } __PACKED__ player_position3d_data_t;
@@ -2214,7 +2219,7 @@ typedef struct player_position3d_cmd
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
   int32_t pos[6];
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  int32_t speed[6];  
+  int32_t vel[6];  
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   bool state;
   /** Command type; 0 = velocity, 1 = position. */
