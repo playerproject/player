@@ -698,7 +698,7 @@ static int process_velocity_reply(struct reply_struct *this_reply)
 
 static int process_compass_reply(struct reply_struct *this_reply)
 {
-  int i;
+  int i=0;
 
   if (this_reply->type == ERROR_MSG)
   {

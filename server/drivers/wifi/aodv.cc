@@ -122,7 +122,7 @@ void Aodv_Register(DriverTable *table)
 
 // Constructor
 Aodv::Aodv( ConfigFile *cf, int section)
-    : Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE, 0, 0, 0, 0)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE, PLAYER_READ_MODE)
 {
   return;
 }

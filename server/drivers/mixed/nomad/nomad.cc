@@ -125,6 +125,7 @@ Richard Vaughan, Pawel Zebrowski
 #include <stdlib.h>  /* for abs() */
 #include <netinet/in.h>
 #include <termios.h>
+#include <assert.h>
 
 #include "error.h"
 #include <playertime.h>
@@ -169,6 +170,9 @@ class Nomad:public Driver
   /* the main thread */
   virtual void Main();
   
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
   virtual int Setup();
   virtual int Shutdown();
 
@@ -191,10 +195,7 @@ void Nomad_Register(DriverTable* table)
 }
 
 Nomad::Nomad( ConfigFile* cf, int section)
-  : Driver(cf, section,  PLAYER_NOMAD_CODE, PLAYER_ALL_MODE,
-           sizeof(player_nomad_data_t), 
-           sizeof(player_nomad_cmd_t), 
-           NOMAD_QLEN, NOMAD_QLEN )
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_NOMAD_CODE, PLAYER_ALL_MODE)
 {
   this->serial_device = (char*)cf->ReadString( section, "serial_device", NOMAD_SERIAL_PORT );
   this->serial_speed = cf->ReadInt( section, "serial_speed", NOMAD_SERIAL_BAUD );
@@ -267,46 +268,45 @@ int Nomad::Shutdown()
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int Nomad::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+	
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+  	assert(hdr->size == sizeof(player_nomad_cmd_t));
+  	player_nomad_cmd_t & command = *reinterpret_cast<player_nomad_cmd_t *> (data);
+
+    /* write the command to the robot */      
+    int v = ntohl(command.vel_trans);
+    int w = ntohl(command.vel_steer);
+    int turret = ntohl(command.vel_turret);
+    printf( "command: vel_trans:%d vel_steer:%d turret:%d\n", v,w,turret ); 
+
+    // set the speed
+    vm(mmToInches(v), w*10, turret*10);
+    
+    *resp_len = 0;
+    return 0;
+  }
+  
+  *resp_len = 0;
+  return -1;
+}
+
 void 
 Nomad::Main()
 {  
-  unsigned char config[NOMAD_CONFIG_BUFFER_SIZE];
-  
   for(;;)
     {
-      // handle configs --------------------------------------------------------
-      
-      void* client;
-      size_t config_size = 0;
-      
-      if((config_size = GetConfig(&client, (void*)config, 
-                                  sizeof(config),NULL)))
-	switch( config[0] )
-	  {
-	  default:
-	    puts("Nomad got unknown config request");
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-	      PLAYER_ERROR("failed to PutReply");
-	    break;
-	  }
-      
-      // handle commands--------------------------------------------------------
-      
-      /* read the latest Player client commands */
-      player_nomad_cmd_t command;
-      GetCommand((unsigned char*)&command, sizeof(command),NULL);
-      
-      /* write the command to the robot */      
-      int v = ntohl(command.vel_trans);
-      int w = ntohl(command.vel_steer);
-      int turret = ntohl(command.vel_turret);
-      printf( "command: vel_trans:%d vel_steer:%d turret:%d\n", v,w,turret ); 
-
-      // set the speed
-      vm(mmToInches(v), w*10, turret*10);
-
-
-      // produce data-------------------------------------------------------
+    	ProcessMessages();
+     
+       // produce data-------------------------------------------------------
 
       /* read the latest data from the robot */
       //printf( "read data from robot" );
@@ -341,7 +341,7 @@ Nomad::Main()
 	}
 	  //puts("");
 
-      PutData((uint8_t*)&data, sizeof(data),NULL);
+      PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(uint8_t*)&data, sizeof(data),NULL);
       
       //usleep(1);
 

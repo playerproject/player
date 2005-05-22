@@ -112,6 +112,7 @@ David Feil-Seifer
 #include <math.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <player.h>
 
 static void StopRobot(void* erdev);
@@ -147,9 +148,7 @@ ER::ER(ConfigFile* cf, int section) :
                       PLAYER_POSITION_CODE,-1,NULL) == 0)
   {
     printf("found position\n" );
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                          sizeof(player_position_data_t),
-                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -522,10 +521,10 @@ ER::Setup()
 	}
 
 	// zero the command buffer
-	player_position_cmd_t zero;
+/*	player_position_cmd_t zero;
 	memset(&zero,0,sizeof(player_position_cmd_t));
 	this->PutCommand(this->position_id,(void*)&zero,
-	                 sizeof(player_position_cmd_t),NULL);
+	                 sizeof(player_position_cmd_t),NULL);*/
 
 	// start the thread to talk with the robot
 	this->StartThread();
@@ -747,15 +746,16 @@ ER::Main()
 	for(;;)
 	{
 		pthread_testcancel();
+		ProcessMessages();
     
     	// handle pending config requests
-	    this->HandleConfig();
+	    //this->HandleConfig();
 
 		//PLAYER_WARN("Done with handle config" );
 
 		/* position command */
 
-		this->GetCommand();
+		//this->GetCommand();
 
 		//PLAYER_WARN("Done with get Command config" );
 		/* get battery voltage */
@@ -824,83 +824,55 @@ ER::Main()
   
 }
 
-void
-ER::HandleConfig(void)
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int ER::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
-  void* client;
-  unsigned char config[PLAYER_MAX_REQREP_SIZE];
-  int config_size;
-  player_position_power_config_t* powercfg;
-
-  if((config_size = GetConfig(this->position_id, &client, 
-     (void*)config, sizeof(config),NULL)) > 0)
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+	
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
   {
-    switch(config[0])
-    {
-      case PLAYER_POSITION_GET_GEOM_REQ:
-      /* Return the robot geometry. */
-      if(config_size != 1)
-      {
-        printf("Get robot geom config is wrong size; ignoring\n");
-        if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-        printf("failed to PutReply\n");
-					}
-					else
-					{
-					  printf( "sending geom config\n" );
-					  //TODO : get values from somewhere.
-					  player_position_geom_t geom;
-					  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-					  geom.pose[0] = htons((short) (-100));
-					  geom.pose[1] = htons((short) (0));
-					  geom.pose[2] = htons((short) (0));
-					  geom.size[0] = htons((short) (250));
-					  geom.size[1] = htons((short) (425));
+  	assert(*resp_len >= sizeof(player_position_geom_t));
+  	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);
+    *resp_len = sizeof(player_position_geom_t);
 
-					  PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL);
-					}
-					break;
-						
-				case PLAYER_POSITION_MOTOR_POWER_REQ:
-					// NOTE: this doesn't seem to actually work
-					if(config_size != sizeof(player_position_power_config_t))
-					{
-						printf("Motor state change request wrong size; ignoring\n");
-						if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-							printf("failed to PutReply\n");
-						break;
-					}
-					powercfg = (player_position_power_config_t*)config;
-					printf("got motor power req: %d\n", powercfg->value);
-					if(ChangeMotorState(powercfg->value) < 0)
-					{
-						if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-							printf("failed to PutReply\n");
-					}
-					else
-					{
-						if(PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-							printf("failed to PutReply\n");
-					}
-					break;
-
-					default:
-					printf("received unknown config request\n");
-					PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL);
-			} /* switch */
-		} /* if */
-}
-
-void
-ER::GetCommand(void)
-{
-  // get and send the latest motor command
-  player_position_cmd_t position_cmd;
-  if(Driver::GetCommand(this->position_id,(void*)&position_cmd,
-                        sizeof(player_position_cmd_t),NULL) > 0)
-  {
-    this->HandlePositionCommand(position_cmd);
+    //TODO : get values from somewhere.
+	geom.pose[0] = htons((short) (-100));
+	geom.pose[1] = htons((short) (0));
+	geom.pose[2] = htons((short) (0));
+	geom.size[0] = htons((short) (250));
+	geom.size[1] = htons((short) (425));    
+	
+    return PLAYER_MSGTYPE_RESP_ACK;
   }
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
+  {
+  	assert(hdr->size >= sizeof(player_position_power_config_t));
+  	player_position_power_config_t * powercfg = reinterpret_cast<player_position_power_config_t *> (data);
+    *resp_len = 0;
+
+    printf("got motor power req: %d\n", powercfg->value);
+	if(ChangeMotorState(powercfg->value) < 0)
+	  return PLAYER_MSGTYPE_RESP_NACK;
+	else
+	  return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+  	assert(hdr->size >= sizeof(player_position_cmd_t));
+  	player_position_cmd_t & position_cmd = *reinterpret_cast<player_position_cmd_t *> (data);
+    *resp_len = 0;
+    HandlePositionCommand(position_cmd);
+    return 0;
+  }
+  
+  *resp_len = 0;
+  return -1;
 }
 
 void
