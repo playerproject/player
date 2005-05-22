@@ -311,7 +311,7 @@ void Driver::ProcessMessages()
   MessageQueueElement * el;
   while((el=InQueue->Pop()))
   {
-    int RespLen = PLAYER_MAX_MESSAGE_SIZE;
+    size_t RespLen = PLAYER_MAX_MESSAGE_SIZE;
 
     player_msghdr * hdr = el->msg.GetHeader();
     uint8_t * data = el->msg.GetPayload();
@@ -338,22 +338,23 @@ void Driver::ProcessMessages()
   }
 }
 
-int Driver::ProcessMessage(ClientData * client, uint16_t Type, 
+/*int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
                            player_device_id_t device,
-                           int size, uint8_t * data, 
-                           uint8_t * resp_data, int * resp_len)
+                           size_t size, uint8_t * data, 
+                           uint8_t * resp_data, size_t * resp_len)
 {
   player_msghdr hdr;
   hdr.stx = PLAYER_STXX;
   hdr.type=Type;
+  hdr.subtype=SubType;  
   hdr.device=device.code;
   hdr.device_index=device.index;
   hdr.timestamp_sec=0;
   hdr.timestamp_usec=0;
   hdr.size=size; // size of message data	
 
-  return ProcessMessage(client, &hdr, data, resp_data, resp_len);
-}
+  return ProcessMessage(BaseClient, &hdr, data, resp_data, resp_len);
+}*/
 
 // Signal that new data is available (calls pthread_cond_broadcast()
 // on this device's condition variable, which will release other
@@ -389,6 +390,7 @@ int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
 	assert(BaseClient);
 	// assemble Header
 	player_msghdr_t tmp_hdr;
+    tmp_hdr.stx = PLAYER_STXX;
 	tmp_hdr.device = device.code;
 	tmp_hdr.device_index = device.index;
 	tmp_hdr.size = size;
@@ -404,7 +406,7 @@ int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
 {
   size_t resp_size = 0;
   uint8_t buffer[0];
-  return ProcessMessage(client, Type, SubType, devicem size, data, buffer, &resp_size);
+  return ProcessMessage(Type, SubType, device, size, data, buffer, &resp_size);
 }
 
 // Waits on the condition variable associated with this device.
@@ -441,7 +443,7 @@ Driver * Driver::SubscribeInternal(player_device_id_t id)
   Driver * ret = deviceTable->GetDriver(id);
   if (ret == this)
   {
-  	PLAYERWARN2("Device attempted to subscribe to itself %d:%d\n",id.code, id.index);
+  	PLAYER_WARN2("Device attempted to subscribe to itself %d:%d\n",id.code, id.index);
   	return NULL;
   }
   if (ret)
@@ -460,3 +462,4 @@ void Driver::UnsubscribeInternal(player_device_id_t id)
   assert(BaseClient);
   BaseClient->Unsubscribe(id);	
 }
+

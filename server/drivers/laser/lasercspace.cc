@@ -131,14 +131,14 @@ class LaserCSpace : public Driver
   public: virtual int Shutdown();
 
   // Client interface (this device has no thread).
-  public: virtual size_t GetData(player_device_id_t id,
+  /*public: virtual size_t GetData(player_device_id_t id,
                                  void* dest, size_t len,
-                                 struct timeval* timestamp);
+                                 struct timeval* timestamp);*/
 
   // Client interface (this device has no thread).
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
+  /*public: virtual int PutConfig(player_device_id_t id, void *client, 
                                 void* src, size_t len,
-                                struct timeval* timestamp);
+                                struct timeval* timestamp);*/
 
   // Process laser data.  Returns non-zero if the laser data has been
   // updated.

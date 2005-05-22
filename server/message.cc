@@ -40,7 +40,7 @@ Message::Message()
   assert(Lock);
   pthread_mutex_init(this->Lock,NULL);
   this->Size = sizeof(struct player_msghdr);
-  this->Data = new unsigned char [this->Size]
+  this->Data = new unsigned char [this->Size];
   assert(Data);
   memset(this->Data,0,this->Size);
   this->RefCount = new unsigned int;

@@ -492,8 +492,8 @@ REB::Main()
     last_position_subscrcount = this->position_subscriptions;
 
     // get configuration commands (ioctls)
-    ReadConfig();
-
+    //ReadConfig();
+    ProcessMessages();
  
     pthread_testcancel();
 

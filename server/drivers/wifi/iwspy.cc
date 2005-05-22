@@ -182,8 +182,7 @@ void Iwspy_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Iwspy::Iwspy( ConfigFile *cf, int section)
-    : Driver(cf, section, PLAYER_WIFI_CODE, PLAYER_READ_MODE,
-             sizeof(player_wifi_data_t), 0, 0, 0)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE, PLAYER_READ_MODE)
 {
   int i;
   char key[64];
@@ -307,7 +306,7 @@ void Iwspy::Main()
     data.link_count = htons(data.link_count);
 
     // Send data
-    PutData((uint8_t*) &data, sizeof(data), &time);
+    PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(uint8_t*) &data, sizeof(data), &time);
   }
   return;
 }
