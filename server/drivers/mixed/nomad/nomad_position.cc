@@ -94,12 +94,11 @@ class NomadPosition:public Driver
   NomadPosition( ConfigFile* cf, int section);
   virtual ~NomadPosition();
   
-  /* the main thread */
-  virtual void Main();
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
   
   virtual int Setup();
   virtual int Shutdown();
-  virtual void Update();
   
 protected:
   Driver* nomad;
@@ -123,9 +122,7 @@ void NomadPosition_Register(DriverTable* table)
 
 
 NomadPosition::NomadPosition( ConfigFile* cf, int section)
-  : Driver(cf, section,  PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-           sizeof(player_position_data_t), 
-           sizeof(player_position_cmd_t), 1, 1 )
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
 {
   // Must have a nomad
   if (cf->ReadDeviceId(&this->nomad_id, section, "requires",
@@ -157,7 +154,7 @@ int NomadPosition::Setup()
 	  this->nomad_id.index ); fflush(stdout);
 
   // get the pointer to the Nomad
-  this->nomad = deviceTable->GetDriver(nomad_id);
+  this->nomad = SubscribeInternal(nomad_id);
 
   if(!this->nomad)
   {
@@ -167,126 +164,83 @@ int NomadPosition::Setup()
   
   else printf( " OK.\n" );
  
-  // Subscribe to the nomad device, but fail if it fails
-  if(this->nomad->Subscribe(this->nomad_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to nomad device");
-    return(-1);
-  }
-
-  /* now spawn reading thread */
-  StartThread();
-
   puts( "NomadPosition setup done" );
   return(0);
 }
 
 int NomadPosition::Shutdown()
 {
-  StopThread(); 
-
   // Unsubscribe from the laser device
-  this->nomad->Unsubscribe(this->nomad_id);
+  UnsubscribeInternal(this->nomad_id);
 
   puts("NomadPosition has been shutdown");
   return(0);
 }
 
-void NomadPosition::Update()
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int NomadPosition::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
-  unsigned char config[NOMAD_CONFIG_BUFFER_SIZE];
-  
-  void* client;
-  size_t config_size = 0;
-  
-  // first, check if there is a new config command
-  if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
-    {
-      switch(config[0])
-	{
-	case PLAYER_POSITION_GET_GEOM_REQ:
-	  {
-	    /* Return the robot geometry. */
-	    if(config_size != 1)
-	      {
-		puts("Arg get robot geom is wrong size; ignoring");
-		if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-		  PLAYER_ERROR("failed to PutReply");
-		break;
-	      }
-	    
-	    player_position_geom_t geom;
-	    geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-	    geom.pose[0] = htons((short) (0)); // x offset
-	    geom.pose[1] = htons((short) (0)); // y offset
-	    geom.pose[2] = htons((short) (0)); // a offset
-	    geom.size[0] = htons((short) (2 * NOMAD_RADIUS_MM )); // x size
-	    geom.size[1] = htons((short) (2 * NOMAD_RADIUS_MM )); // y size
-	    
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                        &geom, sizeof(geom),NULL))
-	      PLAYER_ERROR("failed to PutReply");
-	    break;
-	  }
-	default:
-	  puts("Position got unknown config request");
-	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-	    PLAYER_ERROR("failed to PutReply");
-	  break;
-	}
-    }
-  
-  /* read the latest Player client commands */
-  player_position_cmd_t command;
-  if( GetCommand((void*)&command, sizeof(command),NULL) )
-    {
-      // consume the command
-      this->ClearCommand();
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+	
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  {
+  	assert(*resp_len >= sizeof(player_position_geom_t));
+  	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);
+    *resp_len = sizeof(player_position_geom_t);
+
+    geom.pose[0] = htons((short) (0)); // x offset
+    geom.pose[1] = htons((short) (0)); // y offset
+    geom.pose[2] = htons((short) (0)); // a offset
+    geom.size[0] = htons((short) (2 * NOMAD_RADIUS_MM )); // x size
+    geom.size[1] = htons((short) (2 * NOMAD_RADIUS_MM )); // y size   
+
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+  	assert(hdr->size == sizeof(player_position_cmd_t));
+  	player_position_cmd_t & command = *reinterpret_cast<player_position_cmd_t *> (data);
+
+    // convert from the generic position interface to the
+    // Nomad-specific command
+    player_nomad_cmd_t cmd;
+    memset( &cmd, 0, sizeof(cmd) );
+    cmd.vel_trans = (command.xspeed);
+    cmd.vel_steer = (command.yawspeed);
+    cmd.vel_turret = (command.yspeed);
       
-      // convert from the generic position interface to the
-      // Nomad-specific command
-      player_nomad_cmd_t cmd;
-      memset( &cmd, 0, sizeof(cmd) );
-      cmd.vel_trans = (command.xspeed);
-      cmd.vel_steer = (command.yawspeed);
-      cmd.vel_turret = (command.yspeed);
+    // command the Nomad device
+    nomad->ProcessMessage(PLAYER_MSGTYPE_CMD,0,device_id,sizeof(cmd),(uint8_t*)&cmd);
+    *resp_len =0;
+    return 0;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, nomad_id))
+  {
+  	assert(hdr->size == sizeof(player_nomad_data_t));
+  	player_nomad_data_t & nomad_data = *reinterpret_cast<player_nomad_data_t *> (data);
+  
+    // extract the position data from the Nomad packet
+    player_position_data_t pos;
+    memset(&pos,0,sizeof(pos));
       
-      // command the Nomad device
-      this->nomad->PutCommand(this->device_id, (void*)&cmd, sizeof(cmd),NULL); 
-    }
+    pos.xpos = nomad_data.x;
+    pos.ypos = nomad_data.y;
+    pos.yaw = nomad_data.a;
+    pos.xspeed = nomad_data.vel_trans;
+    pos.yawspeed = nomad_data.vel_steer;
+      
+    PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&pos, sizeof(pos), NULL);
+  }
+      
+  *resp_len = 0;
+  return -1;
 }
 
-
-void 
-NomadPosition::Main()
-{  
-  player_nomad_data_t nomad_data;
-  //struct timeval tv;
-
-  for(;;)
-    {
-      // Wait for new data from the Nomad driver
-      this->nomad->Wait();
-      
-      // Get the Nomad data.
-      size_t len = this->nomad->GetData(this->nomad_id,(void*)&nomad_data, 
-                                        sizeof(nomad_data), NULL);
-      
-      assert( len == sizeof(nomad_data) );
-      
-      // extract the position data from the Nomad packet
-      player_position_data_t pos;
-      memset(&pos,0,sizeof(pos));
-      
-      pos.xpos = nomad_data.x;
-      pos.ypos = nomad_data.y;
-      pos.yaw = nomad_data.a;
-      pos.xspeed = nomad_data.vel_trans;
-      pos.yawspeed = nomad_data.vel_steer;
-      
-      PutData((void*)&pos, sizeof(pos), NULL);
-    }
-  pthread_exit(NULL);
-}
 
 

@@ -117,11 +117,12 @@ ClodBuster_Register(DriverTable* table)
 
 
 ClodBuster::ClodBuster( ConfigFile* cf, int section)
-        : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-                 sizeof(player_position_data_t),
-                 sizeof(player_position_cmd_t),1,1)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
 {
   clodbuster_fd = -1;
+
+  speedDemand=0, turnRateDemand=0;
+
   
   strncpy(clodbuster_serial_port,
           cf->ReadString(section, "port", DEFAULT_CLODBUSTER_PORT),
@@ -227,13 +228,13 @@ int ClodBuster::Setup()
   // reset odometry
   ResetRawPositions();
 
-  player_position_cmd_t zero_cmd;
+/*  player_position_cmd_t zero_cmd;
   memset(&zero_cmd,0,sizeof(player_position_cmd_t));
   memset(&this->position_data,0,sizeof(player_position_data_t));
   this->PutCommand(this->device_id,(void*)&zero_cmd,
                    sizeof(player_position_cmd_t),NULL);
   this->PutData((void*)&this->position_data,
-                sizeof(player_position_data_t),NULL);
+                sizeof(player_position_data_t),NULL);*/
   
   direct_command_control = true;
   
@@ -264,18 +265,131 @@ int ClodBuster::Shutdown()
   return(0);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int ClodBuster::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+	
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, device_id))
+  {
+    assert(hdr->size == sizeof(player_position_set_odom_req_t));
+	player_position_set_odom_req_t & set_odom_req = *((player_position_set_odom_req_t*)data);
+		
+	this->position_data.xpos=(set_odom_req.x);
+	this->position_data.ypos=(set_odom_req.y);
+	this->position_data.yaw= set_odom_req.theta>>8;
+	
+	*resp_len = 0;
+	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  {
+    assert(*resp_len >= sizeof(player_position_geom_t));
+	player_position_geom_t & geom = *((player_position_geom_t*)resp_data);
+	*resp_len = sizeof(player_position_geom_t);
+	
+    // TODO : get values from somewhere.
+    geom.pose[0] = htons((short) (-100));
+    geom.pose[1] = htons((short) (0));
+    geom.pose[2] = htons((short) (0));
+    geom.size[0] = htons((short) (2 * 250));
+    geom.size[1] = htons((short) (2 * 225));
+
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
+  {
+    assert(hdr->size == sizeof(player_position_power_config_t));
+	player_position_power_config_t & power_config = *((player_position_power_config_t*)data);
+    GRASPPacket packet; 
+		
+    if(power_config.value==1)
+	  packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
+	else 
+	  packet.Build(SET_SLEEP_MODE,SLEEP_MODE_ON);
+		  
+	packet.Send(clodbuster_fd);
+
+	*resp_len = 0;
+	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+		  /* velocity control mode:
+		   *   0 = direct wheel velocity control (default)
+		   *   1 = separate translational and rotational control
+		   */
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, device_id))
+  {
+    assert(hdr->size == sizeof(player_position_velocitymode_config_t));
+	player_position_velocitymode_config_t & velmode_config = *((player_position_velocitymode_config_t*)data);
+		
+    if(velmode_config.value)
+	  direct_command_control = false;
+	else
+	  direct_command_control = true;
+
+	*resp_len = 0;
+	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, device_id))
+  {
+    ResetRawPositions();
+
+	*resp_len = 0;
+	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SPEED_PID, device_id))
+  {
+    assert(hdr->size == sizeof(player_position_speed_pid_req_t));
+	player_position_speed_pid_req_t & pid = *((player_position_speed_pid_req_t*)data);
+		
+    kp = ntohl(pid.kp);
+	ki = ntohl(pid.ki);
+	kd = ntohl(pid.kd);
+
+	*resp_len = 0;
+	return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  {
+    assert(hdr->size == sizeof(player_position_cmd_t));
+	player_position_cmd_t & command = *((player_position_cmd_t*)data);
+		
+    newmotorspeed = false;
+    if( speedDemand != (int) ntohl(command.xspeed))
+      newmotorspeed = true;
+    speedDemand = (int) ntohl(command.xspeed);
+      
+    newmotorturn = false;
+    if(turnRateDemand != (int) ntohl(command.yawspeed))
+      newmotorturn = true;
+    turnRateDemand = (int) ntohl(command.yawspeed);	
+
+	*resp_len = 0;
+	return 0;
+  }	
+  
+  *resp_len = 0;
+  return -1;
+}
+
 void 
 ClodBuster::Main()
 {
-  player_position_cmd_t command;
-  player_position_speed_pid_req_t pid;
-  unsigned char config[CLODBUSTER_CONFIG_BUFFER_SIZE];
-  GRASPPacket packet; 
+//  player_position_speed_pid_req_t pid;
+//  unsigned char config[CLODBUSTER_CONFIG_BUFFER_SIZE];
   
-  short speedDemand=0, turnRateDemand=0;
-  bool newmotorspeed, newmotorturn;
   
-  int config_size;
+//  int config_size;
 
   GetGraspBoardParams();
 
@@ -293,166 +407,8 @@ ClodBuster::Main()
 
   for(;;)
     {
-      /** New configuration commands **/
-      void* client;
-      // first, check if there is a new config command
-      if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
-	{
-	      switch(config[0])
-		{ 
-		case PLAYER_POSITION_SET_ODOM_REQ:
-		  if(config_size != sizeof(player_position_set_odom_req_t))
-		    {
-		      puts("Arg to odometry set requests wrong size; ignoring");
-		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-			PLAYER_ERROR("failed to PutReply");
-		      break;
-		    }
-		  player_position_set_odom_req_t set_odom_req;
-		  set_odom_req = *((player_position_set_odom_req_t*)config);
-		  
-		  this->position_data.xpos=(set_odom_req.x);
-		  this->position_data.ypos=(set_odom_req.y);
-		  this->position_data.yaw= set_odom_req.theta>>8;
-		 
-		  printf("command yaw: %d , actual %d",set_odom_req.theta,
-                         this->position_data.yaw);
-		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-		     PLAYER_ERROR("failed to PutReply");
-		   break;
-		  case PLAYER_POSITION_GET_GEOM_REQ:
-		    {
-		      /* Return the robot geometry. */
-		      if(config_size != 1)
-			{
-			  puts("Arg get robot geom is wrong size; ignoring");
-			  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-			    PLAYER_ERROR("failed to PutReply");
-			  break;
-			}
-		      
-		      // TODO : get values from somewhere.
-		      player_position_geom_t geom;
-		      geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-		      geom.pose[0] = htons((short) (-100));
-		      geom.pose[1] = htons((short) (0));
-		      geom.pose[2] = htons((short) (0));
-		      geom.size[0] = htons((short) (2 * 250));
-		      geom.size[1] = htons((short) (2 * 225));
-		      
-		      if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                                  &geom, sizeof(geom),NULL))
-			PLAYER_ERROR("failed to PutReply");
-		      break;
-		    }
-		case PLAYER_POSITION_MOTOR_POWER_REQ:
-		  /* motor state change request 
-		   *   1 = enable motors
-		   *   0 = disable motors (default)
-		   */
-		  if(config_size != sizeof(player_position_power_config_t))
-		    {
-		      puts("Arg to motor state change request wrong size; ignoring");
-		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-			PLAYER_ERROR("failed to PutReply");
-		      break;
-		    }
-		  player_position_power_config_t power_config;
-		  power_config = *((player_position_power_config_t*)config);
-		  if(power_config.value==1)
-		    packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
-		  else 
-		    packet.Build(SET_SLEEP_MODE,SLEEP_MODE_ON);
-		  
-		  packet.Send(clodbuster_fd);
-		  
-		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-		  
-		case PLAYER_POSITION_VELOCITY_MODE_REQ:
-		  /* velocity control mode:
-		   *   0 = direct wheel velocity control (default)
-		   *   1 = separate translational and rotational control
-		   */
-		  if(config_size != sizeof(player_position_velocitymode_config_t))
-		    {
-		      puts("Arg to velocity control mode change request is wrong "
-			   "size; ignoring");
-		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-			PLAYER_ERROR("failed to PutReply");
-		      break;
-		    }
-
-		  player_position_velocitymode_config_t velmode_config;
-		  velmode_config = 
-		    *((player_position_velocitymode_config_t*)config);
-
-		  if(velmode_config.value)
-		    direct_command_control = false;
-		  else
-		    direct_command_control = true;
-
-		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-
-		case PLAYER_POSITION_RESET_ODOM_REQ:
-		  /* reset position to 0,0,0: no args */
-		  if(config_size != sizeof(player_position_resetodom_config_t))
-		    {
-		      puts("Arg to reset position request is wrong size; ignoring");
-		      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-			PLAYER_ERROR("failed to PutReply");
-		      break;
-		    }
-		  ResetRawPositions();
-
-		  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-
-	
-		case PLAYER_POSITION_SPEED_PID_REQ: 
-		  // set up the velocity PID on the CB
-		  // kp, ki, kd are used
-		  if (config_size != sizeof(player_position_speed_pid_req_t)) {
-		    fprintf(stderr, "CB: pos speed PID req got wrong size (%d)\n", config_size);
-		    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL)) {
-		      PLAYER_ERROR("CB: failed to put reply");
-		      break;
-		    }
-		  }
-		  
-		  pid =*((player_position_speed_pid_req_t *)config);
-		  kp = ntohl(pid.kp);
-		  ki = ntohl(pid.ki);
-		  kd = ntohl(pid.kd);
-		
-		  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-		  
-		default:
-		  puts("Position got unknown config request");
-		  printf("The config command was %d\n",config[0]);
-		  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-		    PLAYER_ERROR("failed to PutReply");
-		  break;
-		}
-	}
-      /* read the clients' commands from the common buffer */
-      GetCommand((void*)&command, sizeof(command),NULL);
-
-      newmotorspeed = false;
-      if( speedDemand != (int) ntohl(command.xspeed));
-      newmotorspeed = true;
-      speedDemand = (int) ntohl(command.xspeed);
-      
-      newmotorturn = false;
-      if(turnRateDemand != (int) ntohl(command.yawspeed));
-      newmotorturn = true;
-      turnRateDemand = (int) ntohl(command.yawspeed);
+      ProcessMessages();
+      pthread_testcancel();
       
       // read encoders & update pose and velocity
       encoder_measurement = ReadEncoders();
@@ -463,7 +419,7 @@ ClodBuster::Main()
       // remember old values
       old_encoder_measurement = encoder_measurement;
       
-      this->PutData((void*)&this->position_data,
+      this->PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&this->position_data,
                     sizeof(player_position_data_t),NULL);
       //      printf("left: %d , right %d count: %u\n",encoder_measurement.left,encoder_measurement.right,encoder_measurement.time_count);
       //      printf("left: %d , right %d\n",encoder_measurement.left-encoder_offset.left,encoder_measurement.right-encoder_offset.right);

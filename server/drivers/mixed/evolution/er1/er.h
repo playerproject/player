@@ -106,9 +106,13 @@ class ER : public Driver
     virtual void Main();
     virtual int Setup();
     virtual int Shutdown();
-    void HandleConfig(void);
-    void GetCommand(void);
-    void PutData(void);
+    //void HandleConfig(void);
+    //void GetCommand(void);
+    //void PutData(void);
+    
+    // MessageHandler
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
     void HandlePositionCommand(player_position_cmd_t position_cmd);
 
         

@@ -182,6 +182,8 @@ class ClodBuster:public Driver
     // Bound the command velocities
     bool use_vel_band; 
         
+  short speedDemand, turnRateDemand;
+  bool newmotorspeed, newmotorturn;
 
   public:
 
@@ -190,6 +192,9 @@ class ClodBuster:public Driver
 
     /* the main thread */
     virtual void Main();
+
+	// MessageHandler
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
     virtual int Setup();
     virtual int Shutdown();

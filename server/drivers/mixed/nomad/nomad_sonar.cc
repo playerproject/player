@@ -93,12 +93,11 @@ class NomadSonar:public Driver
   NomadSonar( ConfigFile* cf, int section);
   virtual ~NomadSonar();
   
-  /* the main thread */
-  virtual void Main();
+  // MessageHandler
+  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
   
   virtual int Setup();
   virtual int Shutdown();
-  virtual void Update();
   
 protected:
   Driver* nomad;
@@ -122,8 +121,7 @@ void NomadSonar_Register(DriverTable* table)
 
 
 NomadSonar::NomadSonar( ConfigFile* cf, int section)
-  : Driver(cf, section,  PLAYER_SONAR_CODE, PLAYER_READ_MODE,
-           sizeof(player_sonar_data_t), 0, 1, 1 )
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SONAR_CODE, PLAYER_READ_MODE)
 {
   // Must have a nomad
   if (cf->ReadDeviceId(&this->nomad_id, section, "requires",
@@ -155,7 +153,7 @@ int NomadSonar::Setup()
 	  this->nomad_id.index ); fflush(stdout);
 
   // get the pointer to the Nomad
-  this->nomad = deviceTable->GetDriver(nomad_id);
+  this->nomad = SubscribeInternal(nomad_id);
 
   if(!this->nomad)
   {
@@ -164,16 +162,6 @@ int NomadSonar::Setup()
   }
   
   else printf( " OK.\n" );
- 
-  // Subscribe to the nomad device, but fail if it fails
-  if(this->nomad->Subscribe(this->nomad_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to nomad device");
-    return(-1);
-  }
-
-  /* now spawn reading thread */
-  StartThread();
 
   puts( "NomadSonar setup done" );
   return(0);
@@ -181,101 +169,63 @@ int NomadSonar::Setup()
 
 int NomadSonar::Shutdown()
 {
-  StopThread(); 
-
   // Unsubscribe from the laser device
-  this->nomad->Unsubscribe(this->nomad_id);
+  UnsubscribeInternal(this->nomad_id);
 
   puts("NomadSonar has been shutdown");
   return(0);
 }
 
-void NomadSonar::Update()
+
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int NomadSonar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
 {
-  unsigned char config[NOMAD_CONFIG_BUFFER_SIZE];
-  
-  void* client;
-  size_t config_size = 0;
-  
-  // first, check if there is a new config command
-  if((config_size = GetConfig(&client, (void*)config, sizeof(config),NULL)))
-    {
-      switch(config[0])
-	{
-	case PLAYER_SONAR_GET_GEOM_REQ:
-	  {
-	    /* Return the sonar geometry. */
-	    if(config_size != 1)
-	      {
-		puts("Arg get sonar geom is wrong size; ignoring");
-		if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-		  PLAYER_ERROR("failed to PutReply");
-		break;
-	      }
-	    
-	    double interval = (M_PI*2.0)/PLAYER_NOMAD_SONAR_COUNT;
-	    double radius = NOMAD_RADIUS_MM;
-	    
-	    player_sonar_geom_t geom;
-	    memset(&geom,0,sizeof(geom));
-	    geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-	    geom.pose_count = htons((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
-	    for (int i = 0; i < PLAYER_NOMAD_SONAR_COUNT; i++)
-	      {
-		double angle = interval * i;
-		geom.poses[i][0] = htons((int16_t)rint(radius*cos(angle)));
-		geom.poses[i][1] = htons((int16_t)rint(radius*sin(angle)));
-		geom.poses[i][2] = htons((int16_t)RTOD(angle));
-	      }
-	    
-	    puts( "returned Nomad sonar geometry" );
-	    
-	    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                        &geom, sizeof(geom),NULL))
-	      PLAYER_ERROR("failed to PutReply");
-	  }
-	  break;
-	default:
-	  puts("Sonar got unknown config request");
-	  if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-	    PLAYER_ERROR("failed to PutReply");
-	  break;
-	}
-    }
-  
-  // no commads to the sonar
-}
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+	
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, device_id))
+  {
+  	assert(*resp_len >= sizeof(player_sonar_geom_t));
+  	player_sonar_geom_t & geom = *reinterpret_cast<player_sonar_geom_t *> (resp_data);
+    *resp_len = sizeof(player_sonar_geom_t);
 
-
-void 
-NomadSonar::Main()
-{  
-  player_nomad_data_t nomad_data;
-  
-  for(;;)
+    double interval = (M_PI*2.0)/PLAYER_NOMAD_SONAR_COUNT;
+    double radius = NOMAD_RADIUS_MM;
+	    
+    geom.pose_count = htons((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
+    for (int i = 0; i < PLAYER_NOMAD_SONAR_COUNT; i++)
     {
-      // Wait for new data from the Nomad driver
-      this->nomad->Wait();
-      
-      // Get the Nomad data.
-      size_t len = this->nomad->GetData(this->nomad_id,(void*)&nomad_data, 
-                                        sizeof(nomad_data), NULL);
-      
-      assert( len == sizeof(nomad_data) );
-      
-      // extract the sonar data from the Nomad packet
-      player_sonar_data_t player_data;
-      memset(&player_data,0,sizeof(player_data));
-      
-      player_data.range_count = ntohs((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
-  
-      memcpy( &player_data.ranges, 
-	      &nomad_data.sonar, 
-	      PLAYER_NOMAD_SONAR_COUNT * sizeof(uint16_t) );
-      
-      PutData((void*)&player_data, sizeof(player_data), NULL);
+      double angle = interval * i;
+	  geom.poses[i][0] = htons((int16_t)rint(radius*cos(angle)));
+	  geom.poses[i][1] = htons((int16_t)rint(radius*sin(angle)));
+	  geom.poses[i][2] = htons((int16_t)RTOD(angle));
     }
-  pthread_exit(NULL);
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, nomad_id))
+  {
+  	assert(hdr->size == sizeof(player_nomad_data_t));
+  	player_nomad_data_t & nomad_data = *reinterpret_cast<player_nomad_data_t *> (data);
+  
+    // extract the sonar data from the Nomad packet
+    player_sonar_data_t player_data;
+    memset(&player_data,0,sizeof(player_data));
+      
+    player_data.range_count = ntohs((uint16_t)PLAYER_NOMAD_SONAR_COUNT);
+  
+    memcpy( &player_data.ranges, 
+     &nomad_data.sonar, 
+     PLAYER_NOMAD_SONAR_COUNT * sizeof(uint16_t) );
+      
+    PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&player_data, sizeof(player_data), NULL);
+  }
+      
+  *resp_len = 0;
+  return -1;
 }
 
 
