@@ -7,4 +7,4 @@ Description: Player robot server and libraries - part of the Player/Stage Projec
 Version: @VERSION@
 Requires: 
 Libs: -L${prefix}/lib -lplayerpacket -lplayerqueue -lplayerclient
-Cflags: -I${prefix}/include
+Cflags: -I${prefix}/include -I${prefix}/include/player
