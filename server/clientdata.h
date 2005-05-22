@@ -36,7 +36,7 @@
 
 #include <player.h>
 #include "message.h"
-#include "clientmanager.h"
+//#include "clientmanager.h"
 
 // Forward declarations
 class Driver;

@@ -161,7 +161,7 @@ class RFLEX : public Driver
     static int joy_control;
 	
 	// MessageHandler
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 	
 	bool ThreadAlive;
 };
