@@ -136,11 +136,18 @@ class Cmucam2:public Driver
     player_device_id_t ptz_id;
     player_ptz_data_t ptz_data;
 
+    int pan_position;
+    int tilt_position;
+
+
   public:  
 
     // constructor 
     //
     Cmucam2( ConfigFile* cf, int section);
+
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
     virtual void Main();
   
@@ -169,8 +176,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
   if (cf->ReadDeviceId(&(this->blobfinder_id), section, "provides",
                        PLAYER_BLOBFINDER_CODE, -1, NULL) == 0)
   {
-    if (this->AddInterface(this->blobfinder_id, PLAYER_ALL_MODE,
-                           sizeof(player_blobfinder_data_t), 0, 5, 5) != 0)
+    if (this->AddInterface(this->blobfinder_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);    
       return;
@@ -184,15 +190,15 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
   if (cf->ReadDeviceId(&(this->ptz_id), section, "provides",
                        PLAYER_PTZ_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->ptz_id, PLAYER_ALL_MODE,
-                          sizeof(player_ptz_data_t), 
-                          sizeof(player_ptz_cmd_t), 5, 5) != 0)
+    if(this->AddInterface(this->ptz_id, PLAYER_ALL_MODE) != 0)
     {
       this->SetError(-1);    
       return;
     }
   }
 
+  pan_position = 0;
+  tilt_position = 0;
  
   num_of_blobs = cf->ReadInt(section, "num_blobs", 1);
   if(!(this->devicepath = (char*)cf->ReadString(section, "devicepath", NULL)))
@@ -245,6 +251,54 @@ Cmucam2::Shutdown()
   return(0);
 }
 
+int Cmucam2::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, ptz_id))
+  {
+  	assert(hdr->size == sizeof(player_ptz_cmd_t));
+  	player_ptz_cmd_t & command = *reinterpret_cast<player_ptz_cmd_t * > (data);
+
+    if(pan_position != (short)ntohs((unsigned short)(command.pan)))
+    {      
+      pan_position = (short)ntohs((unsigned short)(command.pan));      
+      if( abs(pan_position) <= 90 )      
+        set_servo_position(fd, 0, -1*pan_position);   // Pan value must be negated.      
+    }   
+    if(tilt_position != (short)ntohs((unsigned short)(command.tilt)))
+    {
+      tilt_position = (short)ntohs((unsigned short)(command.tilt));
+      if( abs(tilt_position) <= 90 )
+        set_servo_position(fd, 1, -1*tilt_position);   // Tilt value must be negated.
+    }
+   	
+   	*resp_len = 0;
+   	return 0;
+  }	
+  
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_AUTOSERVO, ptz_id))
+  {
+  	assert(hdr->size == sizeof(player_ptz_controlmode_config));
+    player_ptz_controlmode_config *servo = (player_ptz_controlmode_config*)data;	    
+    auto_servoing(fd, servo->mode);
+    if(servo->mode)
+      printf("Auto servoing is enabled.\n");
+    else
+      printf("Auto servoing is disabled.\n");
+    
+    *resp_len = 0;
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  
+  *resp_len = 0;
+  return -1;
+}
+
+
 
 void
 Cmucam2::Main()
@@ -267,33 +321,22 @@ Cmucam2::Main()
   player_blobfinder_blob_t blob;
 
   int blobs_observed;
-  int pan_position = 0;
-  int tilt_position = 0;
-  player_ptz_cmd_t command;
-  unsigned char config[PLAYER_MAX_REQREP_SIZE];    
+  //player_ptz_cmd_t command;
+  //unsigned char config[PLAYER_MAX_REQREP_SIZE];    
 
   for(;;)
   {      
     // handle commands --------------------------------------------------------
     pthread_testcancel();
-    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
-    pthread_testcancel();    
+    ProcessMessages();
+    
+//    GetCommand((unsigned char*)&command, sizeof(player_ptz_cmd_t),NULL);
+//    pthread_testcancel();    
    
-    if(pan_position != (short)ntohs((unsigned short)(command.pan)))
-    {      
-      pan_position = (short)ntohs((unsigned short)(command.pan));      
-      if( abs(pan_position) <= 90 )      
-        set_servo_position(fd, 0, -1*pan_position);   // Pan value must be negated.      
-    }   
-    if(tilt_position != (short)ntohs((unsigned short)(command.tilt)))
-    {
-      tilt_position = (short)ntohs((unsigned short)(command.tilt));
-      if( abs(tilt_position) <= 90 )
-        set_servo_position(fd, 1, -1*tilt_position);   // Tilt value must be negated.
-    }
+
 
     // handle configs --------------------------------------------------------            
-    void* client;
+/*    void* client;
     size_t config_size = 0; 
     if((config_size = GetConfig(ptz_id, &client, (void*)config, sizeof(config),NULL)))
     {	      
@@ -331,7 +374,7 @@ Cmucam2::Main()
           break;
         }
       }      
-    }
+    }*/
 
     // get data ------------------------------------------------------    
 
@@ -366,10 +409,10 @@ Cmucam2::Main()
     }     
 
     /* got the data. now fill it in */
-    PutData(blobfinder_id, &blobfinder_data,
+    PutMsg(blobfinder_id, NULL, PLAYER_MSGTYPE_DATA, 0, &blobfinder_data,
             sizeof(blobfinder_data) - sizeof(blobfinder_data.blobs) +
             ntohs(blobfinder_data.blob_count) * sizeof(blobfinder_data.blobs[0]), NULL);
-    PutData(ptz_id, &ptz_data, sizeof(ptz_data), NULL);
+    PutMsg(ptz_id, NULL, PLAYER_MSGTYPE_DATA, 0, &ptz_data, sizeof(ptz_data), NULL);
   }
   
   pthread_exit(NULL);

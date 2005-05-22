@@ -100,6 +100,7 @@ LifoMCom(int argc, char** argv):Driver(1,1,20,20),Data(){
 LifoMCom::LifoMCom( ConfigFile* cf, int section) 
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MCOM_CODE, PLAYER_ALL_MODE)
 {
+	printf("Constructing LifoMCom\n");
 }
 
 

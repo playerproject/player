@@ -140,9 +140,8 @@ Waveaudio_Register(DriverTable* table)
   table->AddDriver("wave_audio",  Waveaudio_Init);
 }
 
-Waveaudio::Waveaudio( ConfigFile* cf, int section) :
-  Driver(cf, section, PLAYER_WAVEFORM_CODE, PLAYER_ALL_MODE,
-         sizeof(player_waveform_data_t),0,0,0)
+Waveaudio::Waveaudio( ConfigFile* cf, int section) 
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WAVEFORM_CODE, PLAYER_ALL_MODE)
 {
 }
 
@@ -246,7 +245,7 @@ Waveaudio::Main()
     
     // clear the export buffer
     memset(&data,0,sizeof(data));
-    PutData(&data, sizeof(data),NULL);
+    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,&data, sizeof(data),NULL);
     
     openDSPforRead();
     
@@ -298,7 +297,7 @@ Waveaudio::Main()
 	  ntohl(data.samples) );
 	*/
 	
-	PutData(&data, sizeof(data),NULL);
+	PutMsg(device_id,NULL, PLAYER_MSGTYPE_DATA,0,&data, sizeof(data),NULL);
       }
 }
 

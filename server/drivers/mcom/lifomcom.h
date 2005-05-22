@@ -95,18 +95,18 @@ private:
 
 public:
 
-    // Constructor
-    LifoMCom(ConfigFile* cf, int section);
 
     // Called when we recieve a config request; overrides Driver::PutConfig
-    virtual int PutConfig(player_device_id_t id, void *client, 
+/*    virtual int PutConfig(player_device_id_t id, void *client, 
                           void* src, size_t len,
-                          struct timeval* timestamp);
+                          struct timeval* timestamp);*/
 
     // These do nothing but are abstract in Driver, so here they are
     // Process incoming messages from clients 
     int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
 
+    // Constructor
+    LifoMCom(ConfigFile* cf, int section);
 
     virtual int Setup() {
         printf("startup...\n");
