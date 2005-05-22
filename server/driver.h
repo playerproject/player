@@ -34,10 +34,10 @@
 
 #include <stddef.h> /* for size_t */
 #include "playercommon.h"
-#include <player/message.h>
+#include <message.h>
 #include <player.h>
-#include <player/clientdata.h> // needed so clients using ClientDataInternal can cast it to ClientData implicitly
-#include <player/clientmanager.h> // needed so clients can access the global clientmangager
+#include <clientdata.h> // needed so clients using ClientDataInternal can cast it to ClientData implicitly
+#include <clientmanager.h> // needed so clients can access the global clientmangager
 
 extern bool debug;
 extern bool experimental;
