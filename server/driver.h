@@ -34,9 +34,10 @@
 
 #include <stddef.h> /* for size_t */
 #include "playercommon.h"
-#include "message.h"
+#include <player/message.h>
 #include <player.h>
-#include "clientdata.h" // needed so clients useing ClientDataInternal can cast it to ClientData implicitly
+#include <player/clientdata.h> // needed so clients using ClientDataInternal can cast it to ClientData implicitly
+#include <player/clientmanager.h> // needed so clients can access the global clientmangager
 
 extern bool debug;
 extern bool experimental;
@@ -46,6 +47,8 @@ class CLock;
 class ConfigFile;
 class Driver;
 class ClientData;
+
+
 
 
 /// @brief Base class for all drivers.

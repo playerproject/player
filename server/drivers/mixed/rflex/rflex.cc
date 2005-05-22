@@ -358,7 +358,7 @@ RFLEX_Register(DriverTable *table)
 // Message handler functions
 /////////////////////////////// 
 void PrintHeader(player_msghdr_t hdr);
-int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len) 
 {
 	assert(hdr);
 	assert(data);
