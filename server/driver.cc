@@ -306,6 +306,11 @@ Driver::MainQuit()
 void Driver::ProcessMessages()
 {
   uint8_t RespData[PLAYER_MAX_MESSAGE_SIZE];
+ 
+  // if we have a base client add its messages to the queue
+  if (BaseClient)
+    BaseClient->Read();
+
   // If we have subscriptions, then see if we have and pending messages
   // and process them
   MessageQueueElement * el;

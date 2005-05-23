@@ -255,18 +255,18 @@ class Driver
     virtual int ProcessMessage(ClientData * client, player_msghdr * hdr, 
                                uint8_t * data, uint8_t * resp_data,
                                size_t * resp_len) 
-    {return -1;};
+    {*resp_len = 0; return -1;};
 
     /// Helper function that creates the header and then calls driver ProcessMessage
     /// for use by drivers for internal requests
-    int ProcessMessage(uint8_t Type, uint8_t SubType,
+    virtual int ProcessMessage(uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
                        size_t size, uint8_t * data, 
                        uint8_t * resp_data, size_t * resp_len);
 
     /// Helper function that creates the header and then calls driver ProcessMessage
     /// for use by drivers for internal requests that expect no reply
-    int ProcessMessage(uint8_t Type, uint8_t SubType,
+    virtual int ProcessMessage(uint8_t Type, uint8_t SubType,
                        player_device_id_t device,
                        size_t size, uint8_t * data);
 
@@ -326,6 +326,8 @@ class Driver
     
     // used for subscriptions to other drivers internally
     ClientDataInternal * BaseClient;
+
+  public:
     
     /// @brief Subscribe to another driver using the internal BaseClient
     ///
