@@ -61,6 +61,7 @@ Driver::Driver(ConfigFile *cf, int section,
 {
   this->error = 0;
   BaseClient = NULL;
+  driverthread=0;
   
   // Look for our default device id
   if(cf->ReadDeviceId(&this->device_id, section, "provides", 
@@ -101,6 +102,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->alwayson = false;
 
   BaseClient = NULL;
+  driverthread = 0;
 
   this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
   assert(InQueue);

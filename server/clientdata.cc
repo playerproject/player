@@ -326,8 +326,8 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
       // it's for another device.  hand it off.
       // make sure we've opened this one, in any mode
       if((CheckOpenPermissions(id) && 
-          !(hdr.type == PLAYER_MSGTYPE_CMD)) || 
-         CheckWritePermissions(id))
+          (!(hdr.type == PLAYER_MSGTYPE_CMD)) || 
+         CheckWritePermissions(id)))
       {
         // pass the config request on the proper device
         // make sure we've got a non-NULL pointer
