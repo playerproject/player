@@ -28,6 +28,8 @@
 
 #include "plan.h"
 
+// length of the hash, in unsigned ints
+#define HASH_LEN (MD5_DIGEST_LENGTH / sizeof(unsigned int))
 
 // Create a planner
 plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
@@ -103,7 +105,8 @@ void plan_reset(plan_t *plan)
 // If cachefile is non-NULL, then we try to read the c-space from that
 // file.  If that fails, then we construct the c-space as per normal and
 // then write it out to cachefile.
-void plan_update_cspace(plan_t *plan, const char* cachefile)
+void 
+plan_update_cspace(plan_t *plan, const char* cachefile)
 {
   int i, j;
   int di, dj, dn;
@@ -111,8 +114,8 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
   plan_cell_t *cell, *ncell;
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
-  short hash;
-  hash = plan_md5(plan);
+  unsigned int hash[HASH_LEN];
+  plan_md5(hash, plan);
   if(cachefile)
   {
     PLAYER_MSG1(1,"Trying to read c-space from file %s", cachefile);
@@ -159,7 +162,7 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   if(cachefile)
-    plan_write_cspace(plan,cachefile,hash);
+    plan_write_cspace(plan,cachefile, (unsigned int*)hash);
 #endif
 
   PLAYER_MSG0(1,"Done.");
@@ -168,7 +171,8 @@ void plan_update_cspace(plan_t *plan, const char* cachefile)
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
 // Returns non-zero on error.
-int plan_write_cspace(plan_t *plan, const char* fname, short hash)
+int 
+plan_write_cspace(plan_t *plan, const char* fname, unsigned int* hash)
 {
   plan_cell_t* cell;
   int i,j;
@@ -183,7 +187,9 @@ int plan_write_cspace(plan_t *plan, const char* fname, short hash)
 
   fprintf(fp,"%d\n%d\n", plan->size_x, plan->size_y);
   fprintf(fp,"%.3lf\n%.3lf\n", plan->scale,plan->max_radius);
-  fprintf(fp,"%d\n", hash);
+  for(i=0;i<HASH_LEN;i++)
+    fprintf(fp,"%08X", hash[i]);
+  fprintf(fp,"\n");
 
   for(j = 0; j < plan->size_y; j++)
   {
@@ -201,14 +207,15 @@ int plan_write_cspace(plan_t *plan, const char* fname, short hash)
 // Read the cspace occupancy distance values from a file, one per line.
 // Write them in first with plan_read_cspace().
 // Returns non-zero on error.
-int plan_read_cspace(plan_t *plan, const char* fname, short hash)
+int 
+plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash)
 {
   plan_cell_t* cell;
   int i,j;
   FILE* fp;
   int size_x, size_y;
   double scale, max_radius;
-  short cached_hash;
+  unsigned int cached_hash[HASH_LEN];
 
   if(!(fp = fopen(fname,"r")))
   {
@@ -220,12 +227,21 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
   if((fscanf(fp,"%d", &size_x) < 1) ||
      (fscanf(fp,"%d", &size_y) < 1) ||
      (fscanf(fp,"%lf", &scale) < 1) ||
-     (fscanf(fp,"%lf", &max_radius) < 1) ||
-     (fscanf(fp,"%d", &cached_hash) < 1))
+     (fscanf(fp,"%lf", &max_radius) < 1))
   {
     PLAYER_MSG1(2,"Failed to read c-space metadata from file %s", fname);
     fclose(fp);
     return(-1);
+  }
+
+  for(i=0;i<HASH_LEN;i++)
+  {
+    if(fscanf(fp,"%08X", cached_hash+i) < 1)
+    {
+      PLAYER_MSG1(2,"Failed to read c-space metadata from file %s", fname);
+      fclose(fp);
+      return(-1);
+    }
   }
 
   /* Verify that metadata matches */
@@ -233,7 +249,7 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
      (size_y != plan->size_y) ||
      (fabs(scale - plan->scale) > 1e-3) ||
      (fabs(max_radius - plan->max_radius) > 1e-3) ||
-     (cached_hash != hash))
+     memcmp(cached_hash, hash, sizeof(unsigned int) * HASH_LEN))
   {
     PLAYER_MSG1(2,"Mismatch in c-space metadata read from file %s", fname);
     fclose(fp);
@@ -259,28 +275,22 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
   return(0);
 }
 
-// Compute and return the 16-bit MD5 hash of the map data in the given plan
+// Compute the 16-byte MD5 hash of the map data in the given plan
 // object.
-short
-plan_md5(plan_t* plan)
+void
+plan_md5(unsigned int* digest, plan_t* plan)
 {
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   MD5_CTX c;
-  unsigned char digest[MD5_DIGEST_LENGTH];
-  short digest_short;
 
   MD5_Init(&c);
 
-  MD5_Update(&c,(unsigned char*)plan->cells,
+  MD5_Update(&c,(const unsigned char*)plan->cells,
              (plan->size_x*plan->size_y)*sizeof(plan_cell_t));
 
-  MD5_Final(digest,&c);
+  MD5_Final((unsigned char*)digest,&c);
 
-  // Take the first 2 bytes (out of 16).  Should probably take more...
-  digest_short = *((short*)digest);
-  return(digest_short);
 #else
   PLAYER_ERROR("tried to compute md5 hash, but it's not available");
-  return(0);
 #endif
 }
