@@ -199,7 +199,7 @@ class Camera1394 : public Driver
   private: virtual void Main();
 
   // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
+  //private: int HandleRequests();
 
   // Save a frame to memory
   private: int GrabFrame();
@@ -275,8 +275,7 @@ void Camera1394_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Camera1394::Camera1394( ConfigFile* cf, int section)
-  : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
-           sizeof(player_camera_data_t), 0, 10, 10)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
 {
   float fps;
 
@@ -766,7 +765,8 @@ void Camera1394::Main()
     pthread_testcancel();
 
     // Process any pending requests.
-    HandleRequests();
+    //HandleRequests();
+    //ProcessMessages();
 
     // Get the time
     GlobalTime->GetTime(&this->frameTime);
@@ -798,7 +798,7 @@ void Camera1394::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process requests.  Returns 1 if the configuration has changed.
-int Camera1394::HandleRequests()
+/*int Camera1394::HandleRequests()
 {
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
@@ -815,7 +815,7 @@ int Camera1394::HandleRequests()
     }
   }
   return 0;
-}
+}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1025,7 +1025,7 @@ void Camera1394::WriteData()
   this->data.image_size = htonl(this->data.image_size);
 
   // Copy data to server
-  PutData((void*) &this->data, size, &this->frameTime);
+  PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*) &this->data, size, &this->frameTime);
 
   return;
 }

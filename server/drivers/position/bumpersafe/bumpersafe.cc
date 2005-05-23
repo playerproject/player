@@ -76,7 +76,7 @@ class BumperSafe : public Driver
     BumperSafe( ConfigFile* cf, int section);
 
     // Destructor
-    virtual ~BumperSafe();
+    virtual ~BumperSafe() {};
 
     // Setup/shutdown routines.
     virtual int Setup();
@@ -85,27 +85,14 @@ class BumperSafe : public Driver
     // Underlying devices
     int SetupPosition();
     int ShutdownPosition();
-    //int GetPosition();
 	
     int SetupBumper();
     int ShutdownBumper();
-    //int GetBumper();
-
-    // Main function for device thread.
-    virtual void Main();
-
-  private:
-    // Write the pose data (the data going back to the client).
-    //void PutPose();
-
-    // Send commands to underlying position device
-    //void PutPositionCommand();
-
-    // Check for new commands from server
-    //void GetCommand();
 
     // Process incoming messages from clients 
     int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
+  private:
 
     // state info
     bool Blocked;
@@ -116,8 +103,6 @@ class BumperSafe : public Driver
     Driver *position;
     player_device_id_t position_id;
     int speed,turnrate;
-    //player_position_cmd_t cmd, last_cmd;    
-    //player_position_data_t data;
     double position_time;
     bool position_subscribed;
 
@@ -127,8 +112,6 @@ class BumperSafe : public Driver
     double bumper_time;
     player_bumper_geom_t bumper_geom;
     bool bumper_subscribed;
-	
-    ClientDataInternal * BaseClient;
 };
 
 // Initialization function
@@ -148,11 +131,7 @@ void BumperSafe_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int BumperSafe::Setup() 
 {
-  //player_position_cmd_t cmd = {0};
   Blocked = true;
-
-  BaseClient = new ClientDataInternal(this);
-  clientmanager->AddClient(BaseClient);
 		
   // Initialise the underlying devices.
   if (this->SetupPosition() != 0)
@@ -165,8 +144,6 @@ int BumperSafe::Setup()
   	PLAYER_ERROR2("Bumber safe failed to connect to undelying bumper device %d:%d\n",bumper_id.code, bumper_id.index);
     return -1;
   }
-  // Start the driver thread.
-  this->StartThread();
 
   return 0;
 }
@@ -183,10 +160,6 @@ int BumperSafe::Shutdown() {
   // Stop the odom device.
   this->ShutdownBumper();
 
-  clientmanager->RemoveClient(BaseClient);
-  delete BaseClient;
-  BaseClient = NULL;
-	
   return 0;
 }
 
@@ -323,52 +296,31 @@ int BumperSafe::SetupPosition()
 {
 	uint8_t DataBuffer[PLAYER_MAX_MESSAGE_SIZE];
 	
-	this->position = deviceTable->GetDriver(this->position_id);
+	this->position = SubscribeInternal(this->position_id);
 	if (!this->position)
 	{
 		PLAYER_ERROR("unable to locate suitable position device");
 		return -1;
 	}
-
-	return BaseClient->Subscribe(position_id);
+  
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying position device.
 int BumperSafe::ShutdownPosition() 
 {
-  // Stop the robot before unsubscribing
-  //memset(&cmd,0,sizeof(cmd));
-  //this->PutPositionCommand();
-  
-  return BaseClient->Unsubscribe(position_id);
+  UnsubscribeInternal(position_id);
+  return 0;
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the underlying position device.
-/*void BumperSafe::PutPositionCommand() 
-{
-  player_position_cmd_t NullCmd = {0};
-  if (Blocked && memcmp(&last_cmd,&cmd,sizeof(cmd)))
-    BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&NullCmd, sizeof(cmd));
-  else if (memcmp(&last_cmd,&cmd,sizeof(cmd)))
-    BaseClient.SendMsg(position_id, PLAYER_MSGTYPE_CMD, 0, (uint8_t*)&cmd, sizeof(cmd));
-  last_cmd = cmd;
-}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
 int BumperSafe::SetupBumper() {
-	this->bumper = deviceTable->GetDriver(this->bumper_id);
+	this->bumper = SubscribeInternal(this->bumper_id);
 	if (!this->bumper)
 	{
 		PLAYER_ERROR("unable to locate suitable laser device");
-		return -1;
-	}
-
-	if (BaseClient->Subscribe(bumper_id,'r') != 0)
-	{
-		PLAYER_ERROR("unable to subscribe to bumper device");
 		return -1;
 	}
 	
@@ -379,41 +331,8 @@ int BumperSafe::SetupBumper() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the bumper
 int BumperSafe::ShutdownBumper() {
-	return BaseClient->Unsubscribe(bumper_id);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Main function for device thread
-void BumperSafe::Main() 
-{
-  struct timespec sleeptime;
-  sleeptime.tv_sec = 0;
-//  sleeptime.tv_nsec = 1000000L;
-  sleeptime.tv_nsec = 1000L;
-
-  // Wait till we get new odometry data; this may block indefinitely
-  // this->GetPosition();
-  // this->GetBumper();
-
-	// need to do geom request first
-  PLAYER_MSG0(2,"bumpersafe thread started\n");
-  
-  while (true)
-  {
-	// check base client for messages
-	BaseClient->Read();	  
-	  
-    // Process any pending requests.
-    this->ProcessMessages();
-
-    // Sleep for 1us (will actually take longer than this).
-    nanosleep(&sleeptime, NULL);
-
-    // Test if we are supposed to cancel this thread.
-    pthread_testcancel();
-  }
-  PLAYER_MSG0(2,"bumpersafe thread terminated\n");
-  return;
+	UnsubscribeInternal(bumper_id);
+	return 0;
 }
 
 
@@ -423,7 +342,6 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
         : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
 {
   Blocked = false;
-  BaseClient = NULL;
 
   this->position = NULL;
   // Must have a position device
@@ -445,13 +363,6 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
   }
   this->bumper_time = 0.0;
   
-  //memset(&cmd,0,sizeof(cmd));
-  //memset(&last_cmd,0,sizeof(last_cmd));
-
   return;
 }
 
-
-BumperSafe::~BumperSafe() {
-  delete BaseClient;
-}

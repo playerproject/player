@@ -110,7 +110,11 @@ class Acoustics : public Driver
     int CloseDevice();
 
     // The main loop
-    virtual void Main();
+    //virtual void Main();
+
+    // Process incoming messages from clients 
+    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+
 
     // Get and set the configuration of the driver
     int SetConfiguration(int len, void* client, unsigned char buffer[]);
@@ -160,21 +164,25 @@ class Acoustics : public Driver
     short nHighestPeaks; // Number of peaks to find
     player_audiodsp_data_t data; // The data to return to the user
     double* fft; // reused storage for samples, to be passed into the GSL
+  	char * playBuffer;
 };
 
 Acoustics::Acoustics( ConfigFile* cf, int section)
-  : Driver(cf, section, PLAYER_AUDIODSP_CODE, PLAYER_ALL_MODE,
-           sizeof(player_audiodsp_data_t),sizeof(player_audiodsp_cmd_t),1,1),
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIODSP_CODE, PLAYER_ALL_MODE),
   audioFD(-1),deviceName(NULL),openFlag(-1),channels(1),sampleFormat(16),
   sampleRate(8000),audioBuffSize(4096),audioBuffer(NULL),bytesPerSample(1),
   peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
 {
+  playBuffer = NULL;
   deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
   assert(fft = new double[this->N]);
 }
 
 Acoustics::~Acoustics()
 {
+  delete playBuffer;
+  playBuffer = NULL;
+  
   if(this->fft)
   {
     delete this->fft;
@@ -202,13 +210,13 @@ int Acoustics::Setup()
 
   puts("audio ready");
 
-  StartThread();
+  //StartThread();
   return 0;
 }
 
 int Acoustics::Shutdown()
 {
-  StopThread();
+  //StopThread();
   this->CloseDevice();
 
   delete [] this->peakFreq;
@@ -248,6 +256,104 @@ int Acoustics::CloseDevice()
   return close(audioFD);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Process an incoming message
+int Acoustics::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+{
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+  int playBufferSize=0;
+  
+  if(MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_SET_CONFIG, device_id))
+  {
+    SetConfiguration(hdr->size, client, data);
+  	
+  	*resp_len = 0;
+  	return 0;
+  }
+
+  if(MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_GET_CONFIG, device_id))
+  {
+    GetConfiguration(hdr->size, client, data);
+  	
+  	*resp_len = 0;
+  	return 0;
+  }
+
+  if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_TONE, device_id))
+  {
+  	assert(hdr->size == sizeof(player_audiodsp_cmd_t));
+  	player_audiodsp_cmd_t & audioCmd = *reinterpret_cast<player_audiodsp_cmd_t *> (data);
+  	*resp_len = 0;
+  	
+    playBufferSize = this->CalcBuffSize( ntohl(audioCmd.duration) );
+    delete playBuffer;
+    playBuffer = new char[playBufferSize];
+    assert(playBuffer);
+
+    // Create a tone
+    this->CreateSine(ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
+         ntohl(audioCmd.duration), playBuffer, playBufferSize);
+
+    // Play the sound
+    this->PlayBuffer(playBuffer,playBufferSize);
+    return 0;
+  }
+
+  if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_CHIRP, device_id))
+  {
+  	assert(hdr->size == sizeof(player_audiodsp_cmd_t));
+  	player_audiodsp_cmd_t & audioCmd = *reinterpret_cast<player_audiodsp_cmd_t *> (data);
+  	*resp_len = 0;
+  	
+    int playBufferSize = this->CalcBuffSize( ntohl(audioCmd.duration) );
+    delete playBuffer;
+    playBuffer = new char[playBufferSize];
+    assert(playBuffer);
+    
+    // Create a chirp
+    this->CreateChirp(audioCmd.bitString,ntohs(audioCmd.bitStringLen),
+         ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
+         ntohl(audioCmd.duration), playBuffer, playBufferSize);
+
+    // Play the sound
+    this->PlayBuffer(playBuffer,playBufferSize);
+    return 0;
+  }
+
+  if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_REPLAY, device_id))
+  {
+  	*resp_len = 0;
+    this->PlayBuffer(playBuffer,playBufferSize);
+    return 0;
+  }
+  	
+  if(hdr->type == PLAYER_MSGTYPE_CMD)
+  {
+    // Get the most significant frequencies
+    if( !ListenForTones() )
+    {
+      for (int i=0; i<this->nHighestPeaks; i++) 
+      {
+        this->data.freq[i]=htons((unsigned short)((this->peakFreq[i]*this->sampleRate)/this->N));
+        this->data.amp[i]=htons((unsigned short)this->peakAmp[i]);
+      }
+
+      // Return the data to the user
+      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*)&this->data, sizeof(this->data),NULL);  	
+    }
+    *resp_len = 0;
+    return 0;  	
+  }
+
+  *resp_len = 0;
+  return -1;
+}
+
+/*
 void Acoustics::Main()
 {
   int len=0;
@@ -290,6 +396,7 @@ void Acoustics::Main()
       }
 
     }
+    ProcessMessages();
 
     // Get the next command
     memset(&cmdBuffer,0,sizeof(cmdBuffer));
@@ -369,7 +476,7 @@ void Acoustics::Main()
   if( playBuffer ) 
     delete [] playBuffer;
 }
-
+*/
 int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
 {
 
@@ -379,8 +486,7 @@ int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
         sizeof(config));
-    if( PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
+    PutMsg(device_id, (ClientData*)client, PLAYER_MSGTYPE_RESP_NACK,PLAYER_AUDIODSP_SET_CONFIG,NULL);
     return 1;
   }
 
@@ -399,15 +505,12 @@ int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
     // Create the audio buffer
     this->SetBufferSize(0);
 
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                &config, sizeof(config),NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-
+    PutMsg(device_id,(ClientData*)client, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIODSP_SET_CONFIG,
+                &config, sizeof(config),NULL);
     return -1;
 
   } else {
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
+    PutMsg(device_id, (ClientData *)client, PLAYER_MSGTYPE_RESP_NACK,PLAYER_AUDIODSP_SET_CONFIG,NULL) ;
   }
 
   return 0;
@@ -421,8 +524,8 @@ int Acoustics::GetConfiguration(int len, void* client, unsigned char buffer[])
   if( len != 1 )
   {
     PLAYER_ERROR2("config request len is invalid (%d != %d)",len,1);
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
+    PutMsg(device_id,(ClientData *)client, PLAYER_MSGTYPE_RESP_NACK,PLAYER_AUDIODSP_GET_CONFIG,NULL);
+
     return 1;
   }
 
@@ -430,10 +533,8 @@ int Acoustics::GetConfiguration(int len, void* client, unsigned char buffer[])
   config.sampleRate = htons(this->sampleRate);
   config.channels = this->channels;
 
-  if( PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-               &config, sizeof(config), NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
+  PutMsg(device_id, (ClientData*)client, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIODSP_GET_CONFIG,
+               &config, sizeof(config), NULL);
   return 0;
 }
 
