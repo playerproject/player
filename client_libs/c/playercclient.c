@@ -57,8 +57,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 
+#include <replace/replace.h> // for poll(2)
+
 #include "playercclient.h"
-#include "replace.h"  // for poll(2)
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? (a) : (b))

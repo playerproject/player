@@ -85,9 +85,6 @@ writes appropriate commands to the motors.
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
-#include <player.h>       /* from the server; gives message types */
-#include <playercclient.h>  /* pure C networking building blocks */
-
 #if HAVE_STRINGS_H
   #include <strings.h>
 #endif
@@ -97,9 +94,13 @@ writes appropriate commands to the motors.
 #endif
 
 #include <sys/time.h>
-struct pollfd;
 #include <string.h>
 #include <math.h>
+
+#include <libplayercore/player.h>  /* from the server; gives message types */
+#include <playercclient.h>  /* pure C networking building blocks */
+
+struct pollfd;
 
 #ifndef RTOD
 /** Convert radians to degrees */

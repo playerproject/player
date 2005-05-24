@@ -1,6 +1,6 @@
 SUBDIRS = . test bindings doc
 
-AM_CPPFLAGS = -fPIC -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace -I$(top_srcdir)/client_libs/libplayerpacket
+AM_CPPFLAGS = -fPIC -Wall -I$(top_srcdir) -I$(top_srcdir)/client_libs/libplayerpacket
 
 # create the pkg-config entry	
 pkgconfigdir = $(libdir)/pkgconfig
@@ -42,6 +42,6 @@ libplayerc_a_SOURCES = playerc.h \
 		       dev_gripper.c \
 		       dev_speech.c
 
-libplayerc_a_LIBADD = $(top_builddir)/replace/*.o
+libplayerc_a_LIBADD = $(top_builddir)/replace/*.$(OBJEXT)
 
 include_HEADERS = playerc.h

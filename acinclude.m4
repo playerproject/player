@@ -128,7 +128,7 @@ else
   SEGWAYRMP_EXTRA_LDFLAGS="-L$CANLIB_DIR/lib -lcanlib"
 fi
 
-PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[yes],
+PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[no],
 	[$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
 	[$SEGWAYRMP_EXTRA_LDFLAGS])
 
@@ -293,12 +293,12 @@ PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],[],[],[],[OPENCV],[opencv])
 dnl Service Discovery with libservicediscovery
 AC_LANG_SAVE
 AC_LANG_CPLUSPLUS
-PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [yes],
+PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [no],
     [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
 AC_LANG_RESTORE
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
-PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[yes],
+PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
@@ -311,7 +311,7 @@ disable_reason="disabled by user"
 AC_ARG_ENABLE(amcl,
 [  --disable-amcl           Don't compile the amcl driver],
   user_override=yes,
-  enable_amcl=yes)
+  enable_amcl=no)
 if test "x$enable_alldrivers" = "xno" -a "x$user_override" = "xno"; then
   enable_amcl=no
 fi
@@ -366,7 +366,7 @@ user_override=no
 AC_ARG_ENABLE(gazebo,
 [  --disable-gazebo           Don't compile the Gazebo driver],
 user_override=yes,
-enable_gazebo=yes)
+enable_gazebo=no)
 
 if test "x$enable_alldrivers" = "xno" -a "x$user_override" = "xno"; then
   enable_gazebo=no

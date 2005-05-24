@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server -I$(top_srcdir)/replace
+AM_CPPFLAGS = -I$(top_srcdir)
 
 # create the pkg-config entry
 pkgconfigdir = $(libdir)/pkgconfig

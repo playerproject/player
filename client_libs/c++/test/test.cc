@@ -5,10 +5,10 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <unistd.h>
+
 #include "playerclient.h"
 #include "test.h"
-
-#include <unistd.h>
 
 bool use_stage;
 
