@@ -1,0 +1,12 @@
+# DO NOT edit playercore.pc; edit playercore.pc.in instead
+
+prefix=@prefix@
+
+# this gives access to the player header files for compiling plugins
+
+Name: playercore
+Description: Player robot interface library - part of the Player/Stage Project
+Version: @VERSION@
+Requires: 
+Libs: -L${prefix}/lib/player-@VERSION@
+Cflags: -I${prefix}/include/player-@VERSION@
