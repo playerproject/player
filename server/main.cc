@@ -52,35 +52,22 @@
 #include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
 #include <math.h>
 
-#include <socket_util.h> /* for create_and_bind_socket() */
-#include <deviceregistry.h> /* for register_devices() */
-#include <configfile.h> /* for config file parser */
-
-#include <clientdata.h>
-#include <clientmanager.h>
-#include <devicetable.h>
-#include <drivertable.h>
-#include <error.h>
+#include "socket_util.h" /* for create_and_bind_socket() */
+#include "deviceregistry.h" /* for register_devices() */
+#include "configfile.h" /* for config file parser */
+#include "clientdata.h"
+#include "clientmanager.h"
+#include "devicetable.h"
+#include "drivertable.h"
+#include "error.h"
+#include "playertime.h"
+#include "wallclocktime.h"
+#include "replace.h"
+#include "timer.h"
 
 // I can't find a way to do @prefix@ substitution in server/prefix.h that
 // works in more than one version of autotools.  Fix this later.
 //#include <prefix.h>
-
-// the base class and two derived classes for timefeeds:
-#include <playertime.h>
-#include <wallclocktime.h>
-
-//#include <fcntl.h>
-
-#include "replace.h"
-
-#include "timer.h"
-
-#if INCLUDE_STAGE
-#include <sys/mman.h> // for mmap
-#include <stagetime.h>
-#include <stagedevice.h>
-#endif
 
 // Gazebo stuff
 #if INCLUDE_GAZEBO
@@ -94,10 +81,6 @@
 #include "readlog_time.h"
 #endif
 
-#if INCLUDE_STAGE1P4
-#include "stg_time.h"
-#endif
-
 //#define VERBOSE
 //#define DEBUG
 
@@ -109,9 +92,6 @@ bool quit = false;
 
 // true if sigint should be ignored
 bool mask_sigint = false;
-
-// true if we're connecting to Stage instead of a real robot
-bool use_stage = false;
 
 // enable "special" extensions
 bool player_gerkey = false;
@@ -152,6 +132,15 @@ extern player_interface_t interfaces[];
 // Returns true on success and false on failure.
 bool LoadPlugin(const char* pluginname, const char* cfgfile);
 
+void
+PrintCopyrightMsg()
+{
+  fprintf(stderr,"\n* Part of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
+  fprintf(stderr, "* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,\n* Nate Koenig, and contributors.\n");
+  fprintf(stderr,"* Released under the GNU General Public License.\n");
+  fprintf(stderr,"* Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you\n* are welcome to redistribute it under certain conditions; see COPYING\n* for details.\n\n");
+}
+
 /** @page commandline Command line options
 
 The Player server is run as follows:
@@ -167,7 +156,6 @@ where [options] is one or more of the following:
 - -d &lt;level&gt;       : debug message level (0 = none, 1 = default, 9 = all).
 - -t {tcp | udp} : transport protocol to use.  Default: tcp.
 - -p &lt;port&gt;      : port where Player will listen. Default: 6665.
-- -s &lt;path&gt;      : use memory-mapped IO with Stage through the devices in this directory.
 - -g &lt;id&gt;        : connect to Gazebo server with id &lt;id&gt; (an integer).
 - -r &lt;logfile&gt;   : read data from &lt;logfile&gt; (readlog driver).
 - -f &lt;speed&gt;     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).
@@ -182,7 +170,8 @@ void Usage()
   int maxlen=66;
   char** sortedlist;
 
-  puts("");
+  PrintCopyrightMsg();
+
   fprintf(stderr, "USAGE:  player [options] [<configfile>]\n\n");
   fprintf(stderr, "Where [options] can be:\n");
   fprintf(stderr, "  -h             : print this message.\n");
@@ -191,8 +180,6 @@ void Usage()
   fprintf(stderr, "  -t {tcp | udp} : transport protocol to use.  Default: tcp\n");
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYER_PORTNUM);
-  fprintf(stderr, "  -s <path>      : use memory-mapped IO with Stage "
-          "through the devices in\n                   this directory\n");
   fprintf(stderr, "  -g <path>      : connect to Gazebo instance at <path> \n");
   fprintf(stderr, "  -r <logfile>   : read data from <logfile> (readlog driver)\n");
   fprintf(stderr, "  -f <speed>     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).\n");
@@ -213,23 +200,7 @@ void Usage()
     fprintf(stderr, "%s ", sortedlist[i]);
   }
   free(sortedlist);
-  fprintf(stderr,"\n\nStage 1.3.x support was ");
-#if ! INCLUDE_STAGE
-  fprintf(stderr,"NOT ");
-#endif
-  fprintf(stderr,"included.\n");
-  fprintf(stderr,"\nPart of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
-  fprintf(stderr, "Copyright (C) 2000 - 2004 Brian Gerkey, Richard Vaughan, Andrew Howard,\nand contributors.\n");
-  fprintf(stderr,"\nReleased under the GNU General Public License.\n");
-  fprintf(stderr,"\nPlayer comes with ABSOLUTELY NO WARRANTY.  This is free software, and you are\nwelcome to redistribute it under certain conditions; see COPYING for details.\n\n");
-}
-
-/* just so we know when we've bus errored, even when running under stage */
-void 
-printout_bus( int dummy ) 
-{
-  puts("Player got a SIGBUS! (that ain't good...)");
-  exit(-1);
+  fprintf(stderr, "\n\n");
 }
 
 /* sighandler to shut everything down properly */
@@ -251,31 +222,22 @@ Interrupt( int dummy )
 void 
 SetupSignalHandlers()
 {
-  if(signal(SIGBUS, printout_bus) == SIG_ERR)
-  {
-    perror("signal(2) failed while setting up for SIGBUS");
-    exit(1);
-  }
-
   /* set up to handle SIGPIPE (happens when the client dies) */
   if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGPIPE");
     exit(1);
   }
-
   if(signal(SIGINT, Interrupt ) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGINT");
     exit(1);
   }
-
   if(signal(SIGHUP, Interrupt ) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGHUP");
     exit(1);
   }
-
   if(signal(SIGTERM, Interrupt) == SIG_ERR)
   {
     perror("signal(2) failed while setting up for SIGTERM");
@@ -332,438 +294,12 @@ void PrintHeader(player_msghdr_t hdr)
 }
 
 
-#if INCLUDE_STAGE
-// a simple function to conditionally add a port (if is new) to 
-// a list of ports
-void 
-StageAddPort(int* ports, int* portcount, int newport)
-{
-  // have we registered this port already?
-  int j = 0;
-  while(j<(*portcount))
-  {
-    if(ports[j] == newport)
-      break;
-    j++;
-  }
-  if(j == (*portcount)) // we have not! 
-  {
-    // we add this port to the array of ports we must listen on
-    ports[(*portcount)++] = newport;
-  }
-}
-
-// a matching function to indentify valid device names
-// used by scandir to fetch device filenames
-int
-MatchDeviceName( const struct dirent* ent )
-{
-  // device names are > 2 chars long,; . and .. are not
-  return( strlen( ent->d_name ) > 2 );
-}
-
-// looks in the directory for device entries, creates the devices
-// and fills an array with unique port numbers
-void
-CreateStageDevices(char *directory, int **ports, struct pollfd **ufds, 
-                   int *num_ufds, int protocol)
-{
-#ifdef VERBOSE
-  printf( "Searching for Stage devices\n" );
-#endif
-
-  struct dirent **namelist;
-  int n = -1;
-  int m;
-  
-  int tfd = 0;
-  
-  char devicefile[ MAX_FILENAME_SIZE ];
-
-  int portcount = 0;
-  
-  int* portstmp = new int[MAXPORTS];
-
-
-  // open the lock file
-  char lockfile[ MAX_FILENAME_SIZE ];
-  sprintf( lockfile, "%s/%s", directory, STAGE_LOCK_NAME );
-
-  int lockfd = -1;
-
-  if( (lockfd = open( lockfile, O_RDWR )) < 1 )
-  {
-    printf( "PLAYER: opening lock file %s (%d)\n", lockfile, lockfd );
-    perror("Failed to create lock device" );
-    exit(-1);
-  } 
- 
-  // open all the files in the IO directory
-  n = scandir( directory, &namelist, MatchDeviceName, alphasort);
-  if (n < 0)
-    perror("scandir");
-  else if(!n)
-    PLAYER_WARN1("found no stage device files in directory \"%s\"", directory);
-  else
-  {
-    // for every file in the directory, create a new device
-    m=0;
-    while(m<n)
-    {
-      // don't try to load the clock here - we'll do it below
-      if( strcmp( STAGE_CLOCK_NAME, namelist[m]->d_name ) == 0 )
-      {
-        free(namelist[m]);
-        m++;
-        continue;
-      }
-      
-      // don't try to open the lock here - we already did it above
-      if( strcmp( STAGE_LOCK_NAME, namelist[m]->d_name ) == 0 )
-      {
-        free(namelist[m]);
-        m++;
-        continue;
-      }
-
-#ifdef DEBUG      
-      printf("Opening %s ", namelist[m]->d_name);
-      fflush( stdout );
-#endif
-      
-      sprintf( devicefile, "%s/%s", directory, namelist[m]->d_name ); 
-      
-      if( (tfd = open(devicefile, O_RDWR )) < 0 )
-      {
-        perror( "Failed to open IO file" );
-        printf("Tried to open file \"%s\"\n", devicefile);
-        exit( -1 );
-      }
-    
-      // find out how big the file is - we need to mmap that many bytes
-      int ioSize = lseek( tfd, 0, SEEK_END );
-
-#ifdef VERBOSE
-      printf( "Mapping %d bytes.\n", ioSize );
-      fflush( stdout );
-#endif
-      
-      player_stage_info_t* deviceIO = 0;
-      
-      
-      if((char*)(deviceIO = 
-          (player_stage_info_t*)mmap( NULL, ioSize, PROT_READ | PROT_WRITE, 
-                                      MAP_SHARED, tfd, (off_t)0 ))  
-         == MAP_FAILED )
-      {
-        perror( "Failed to map memory" );
-        exit( -1 );
-      }
-      
-      close( tfd ); // can close fd once mapped
-      
-      // declare outside switch statement
-      StageDevice *dev = 0; 
-      //PSDevice* devicep = 0;
-
-      // prime the configFile parser
-      //int globalparent = configFile.AddEntity(-1,"");
-      
-
-      // get the player type and index from the header
-      // NOT from the filename
-      switch(deviceIO->player_id.code)
-      {
-        // create a generic simulated stage IO device for these types:
-        case PLAYER_PLAYER_CODE: 
-        case PLAYER_POSITION_CODE:
-        case PLAYER_LASER_CODE:
-        case PLAYER_SONAR_CODE:
-        case PLAYER_BLOBFINDER_CODE:  
-        case PLAYER_PTZ_CODE:     
-        case PLAYER_FIDUCIAL_CODE: 
-        case PLAYER_TRUTH_CODE:
-        case PLAYER_GPS_CODE:
-        case PLAYER_GRIPPER_CODE:
-        case PLAYER_IDAR_CODE:
-        case PLAYER_IDARTURRET_CODE:
-        case PLAYER_DESCARTES_CODE:
-        case PLAYER_POWER_CODE:
-        case PLAYER_BUMPER_CODE:
-        case PLAYER_IR_CODE:
-        {
-          // Create a StageDevice with this IO base address and filedes
-          dev = new StageDevice( deviceIO, lockfd, deviceIO->lockbyte );
-	  
-          /*
-          if(deviceTable->AddDevice(deviceIO->player_id, 
-                                    (char*)(deviceIO->drivername),
-                                    (char*)(deviceIO->robotname),
-                                    PLAYER_ALL_MODE, dev) < 0)
-                                    */
-          
-          // add this port to our listening list
-          StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-        }
-        break;
-
-#if 0
-        case PLAYER_LOCALIZE_CODE:
-        {
-          PLAYER_WARN("Localization drivers cannot be loaded from a .world "
-                      "file.\nYou must run a separate instance of Player "
-                      "and use the passthrough driver.");
-        }
-        break;
-
-        case PLAYER_MCOM_CODE:
-          // Create mcom device as per normal
-          //
-          // FIXME: apparently deviceIO->local is *not* currently being set
-          // by Stage?...
-          if(deviceIO->local || !deviceIO->local)
-          {
-            // no options in world file.
-              
-            // find the broadcast device in the available device table
-            DriverEntry* entry;
-            if(!(entry = driverTable->GetDriverEntry("lifomcom")))
-            {
-              puts("WARNING: Player support for mcom device unavailable.");
-            }
-            else
-            {
-              int section = configFile.AddEntity(globalparent, "mcom");
-              // add it to the instantiated device table
-              if(deviceTable->AddDevice(deviceIO->player_id, "mcom",
-                                        (char*)(deviceIO->robotname),
-                                        PLAYER_ALL_MODE, 
-                                        (*(entry->initfunc))(PLAYER_MCOM_STRING,
-                                                             &configFile, 
-                                                             section)) < 0)
-                exit(-1);
- 
-              // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-            }
-          }
-          break;
-
-        case PLAYER_COMMS_CODE:   
-          // Create broadcast device as per normal
-          //
-          // FIXME: apparently deviceIO->local is *not* currently being set
-          // by Stage...
-          if(deviceIO->local || !deviceIO->local)
-          {
-            // Broadcast through the loopback device; note that this
-            // wont work with distributed Stage.
-
-            // the following code is required to load settings into the
-            // ConfigFile object.  should be cleaned up.
-            int section = configFile.AddEntity(globalparent,
-                                               PLAYER_COMMS_STRING);
-            int value = configFile.AddProperty(section, "addr", 0);
-            configFile.AddPropertyValue(value, 0, 0);
-            configFile.AddToken(0, "", 0);
-            configFile.WriteString(section, "addr", "127.255.255.255");
-
-            // find the broadcast device in the available device table
-            DriverEntry* entry;
-            if(!(entry = driverTable->GetDriverEntry("udpbroadcast")))
-            {
-              puts("WARNING: Player support for broadcast device unavailable.");
-            }
-            else
-            {
-              // add it to the instantiated device table
-              if(deviceTable->AddDevice(deviceIO->player_id, "udpbroadcast",
-                                        (char*)(deviceIO->robotname),
-                                        PLAYER_ALL_MODE, 
-                                        (*(entry->initfunc))(PLAYER_COMMS_STRING,
-                                                             &configFile, 
-                                                             section)) < 0)
-                exit(-1);
- 
-              // add this port to our listening list
-              StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-            }
-          }
-          break;
-
-        case PLAYER_SERVICE_ADV_CODE:
-        {
-            DriverEntry* entry = driverTable->GetDriverEntry("service_adv_mdns");
-            if(!entry) {
-                puts("WARNING: Player support for service_adv_mdns is unavailable!");
-                break;
-            }
-            int section = configFile.AddEntity(globalparent, PLAYER_SERVICE_ADV_STRING);
-            // TODO: maybe get some stuff out of the world file and add it here?
-
-            if(deviceTable->AddDevice(deviceIO->player_id, 
-                                      PLAYER_SERVICE_ADV_STRING,
-                                      (char*) deviceIO->robotname, PLAYER_ALL_MODE,
-                                      (* (entry->initfunc) ) (PLAYER_SERVICE_ADV_STRING, 
-                                                              &configFile, 
-                                                              section)) > 0)
-              exit(-1);
-
-            StageAddPort(portstmp, &portcount, deviceIO->player_id.port);
-            break;
-        }
-#endif
-
-        // devices not implemented
-        case PLAYER_AUDIO_CODE:   
-        case PLAYER_AUDIODSP_CODE:
-        case PLAYER_AUDIOMIXER_CODE:
-        case PLAYER_AIO_CODE:
-        case PLAYER_DIO_CODE:
-          printf("Device type %d not yet implemented in Stage\n", 
-                 deviceIO->player_id.code);
-          break;
-	  
-        case 0:
-#ifdef VERBOSE
-          printf("Player ignoring Stage device type %d\n", 
-                 deviceIO->player_id.code);
-#endif
-          break;	  
-	  
-          // unknown device 
-        default:
-          printf( "Unknown device type %d for object ID (%d,%d,%d)\n",
-                  deviceIO->player_id.code, 
-                  deviceIO->player_id.port, 
-                  deviceIO->player_id.code, 
-                  deviceIO->player_id.index ); 
-          break;
-      }
-      free(namelist[m]);
-      m++;
-    }
-    free(namelist);
-  }
-  
-
-  // set the number of ports detected
-  *num_ufds = portcount;
-
-  // we've discovered all thew ports now, so allocate memory for the
-  // required port numbers at the return pointer
-  *ports = new int[ *num_ufds ];
-  assert(*ports);
-  
-  // copy the port numbers in
-  memcpy( *ports, portstmp, *num_ufds * sizeof(int) );
-
-  // clean up
-  delete[] portstmp;
-
-  //printf( "created %d ports (1: %d 2: %d...)\n",
-  //    num_ufds, ports[0], ports[1] );
-    
-  // allocate storage for poll structures
-  *ufds = new struct pollfd[*num_ufds];
-  assert( *ufds );
-
-#ifdef VERBOSE
-  printf( "[Port ");
-#endif
-
-  if(!autoassign_ports)
-  {
-    // bind a socket on each port
-    for(int i=0;i<*num_ufds;i++)
-    {
-#ifdef VERBOSE
-      printf( " %d", (*ports)[i] ); fflush( stdout );
-#endif      
-      // setup the socket to listen on
-      if(((*ufds)[i].fd = create_and_bind_socket(1, (*ports)[i], 
-                                                 protocol,200)) == -1)
-      {
-        fputs("create_and_bind_socket() failed; quitting", stderr);
-        exit(-1);
-      }
-
-      (*ufds)[i].events = POLLIN;
-    }
-  }
-  else
-  {
-    puts("Sorry, auto-assiging port disabled for now.  Come again.");
-    exit(-1);
-#if 0
-    // we're supposed to auto-assign ports.  first, we must get the
-    // baseport.  then we'll get whichever other ports we can.
-    int curr_ufd = 0;
-    int curr_port = global_playerport;
-    CDeviceEntry* entry;
-
-    puts("  Auto-assigning ports; Player is listening on the following ports:");
-    printf("    [ ");
-    fflush(stdout);
-    while((curr_port < 65536) && (curr_ufd < *num_ufds))
-    {
-      if(((*ufds)[curr_ufd].fd = 
-          create_and_bind_socket(&listener,1,curr_port,
-                                 protocol,200)) == -1)
-      {
-        if(!curr_ufd)
-        {
-          PLAYER_ERROR1("couldn't get base port %d", global_playerport);
-          exit(-1);
-        }
-      }
-      else
-      {
-        printf("%d ", curr_port);
-        fflush(stdout);
-        (*ufds)[curr_ufd].events = POLLIN;
-        // now, go through the device table and change all references to
-        // this port.
-        for(entry = deviceTable->GetFirstEntry();
-            entry;
-            entry = deviceTable->GetNextEntry(entry))
-        {
-          if(entry->id.port == (*ports)[curr_ufd])
-            entry->id.port = curr_port;
-        }
-        // also have to fix the port list
-        (*ports)[curr_ufd] = curr_port;
-        curr_ufd++;
-      }
-      curr_port++;
-    }
-
-    if(curr_port == 65536)
-    {
-      PLAYER_ERROR("couldn't find enough free ports");
-      exit(-1);
-    }
-
-    puts("]");
-#endif
-  }
-    
-#ifdef VERBOSE
-  puts( "]" );
-#endif
-
-  return;
-}
-
-#endif
-
 // Try to load a given plugin, using a particular search algorithm.
 // Returns true on success and false on failure.
 bool
 LoadPlugin(const char* pluginname, const char* cfgfile)
 {
 #if HAVE_LIBLTDL
-
   static int init_done = 0;
   
   if( !init_done )
@@ -775,8 +311,6 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     else
       init_done = 1;
   }
-  
-  //void* handle=NULL;
   
   lt_dlhandle handle=NULL;
   PluginInitFn initfunc;
@@ -871,6 +405,21 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       puts("success");
     else
+      printf("failed (%s)\n", lt_dlerror());
+  }
+
+  // try to load it from prefix/lib
+  if(!handle)
+  {
+    memset(fullpath,0,PATH_MAX);
+    strcpy(fullpath,PLAYER_INSTALL_PREFIX);
+    strcat(fullpath,"/lib/");
+    strcat(fullpath,pluginname);
+    printf("trying to load %s...", fullpath);
+    fflush(stdout);
+    if((handle = lt_dlopenext(fullpath)))
+      puts("success");
+    else
       printf("failed (%s)\n", lt_dlerror() );
   }
 
@@ -883,28 +432,8 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = lt_dlopenext(pluginname)))//, RTLD_NOW)))
       puts("success");
     else
-      printf("failed (%s)\n", lt_dlerror() );
+      printf("failed (%s)\n", lt_dlerror());
   }
-
-// I can't find a way to do @prefix@ substitution in server/prefix.h that
-// works in more than one version of autotools.  Fix this later.
-#if 0
-  // try to load it from prefix/lib/player/plugins
-  if(!handle)
-  {
-    memset(fullpath,0,PATH_MAX);
-    strcpy(fullpath,PLAYER_INSTALL_PREFIX);
-    strcat(fullpath,"/lib/player/plugins/");
-    strcat(fullpath,pluginname);
-    printf("trying to load %s...", fullpath);
-    fflush(stdout);
-    if((handle = lt_dlopenext(fullpath)))
-      puts("success");
-    else
-      printf("failed (%s)\n", lt_dlerror() );
-
-  }
-#endif
 
   if (handle == NULL)
   {
@@ -914,7 +443,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   
   // Now invoke the initialization function
   if(handle)
-    {
+  {
     if( !quiet_startup )
     {
       printf("invoking player_driver_init()...");
@@ -952,7 +481,6 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
   return false;
 #endif
-
 }
 
 
@@ -1121,10 +649,10 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
 
   // Print the device table
   if( !quiet_startup )
-    {
-      puts("Using device table:");
-      PrintDeviceTable();
-    }
+  {
+    puts("Using device table:");
+    PrintDeviceTable();
+  }
       
   int i;
   Device *device;
@@ -1152,7 +680,7 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
 int global_argc;
 char** global_argv;
 
-int main( int argc, char *argv[] )
+int main( int argc, char **argv)
 {
   char auth_key[PLAYER_KEYLEN] = "";
   char *configfile = NULL;
@@ -1167,9 +695,6 @@ int main( int argc, char *argv[] )
   struct pollfd *ufds = NULL;
   int num_ufds = 0;
   int protocol = PLAYER_TRANSPORT_TCP;
-#if INCLUDE_STAGE
-  char stage_io_directory[MAX_FILENAME_SIZE]; // filename for mapped memory
-#endif
 
   printf("** Player v%s **", playerversion);
   fflush(stdout);
@@ -1177,11 +702,8 @@ int main( int argc, char *argv[] )
   global_argc = argc;
   global_argv = argv;
 
-  // Register the available drivers in the driverTable.  
-  //
-  // Although most of these devices are only used with physical devices, 
-  // some (e.g., broadcast, bps) are used with Stage, and so we always call 
-  // this function.
+  // Register the available drivers in the driverTable; register_devices()
+  // is defined in deviceregistry.cc
   register_devices();
   
   // Trap ^C
@@ -1189,8 +711,6 @@ int main( int argc, char *argv[] )
 
   // Trap errors from third-party libs
   SetupErrorHandlers();
-
-  //g_server_pid = getpid();
 
   // parse args
   for( int i = 1; i < argc; i++ ) 
@@ -1231,26 +751,6 @@ int main( int argc, char *argv[] )
         exit(-1);
       }
     }
-    else if(!strcmp(argv[i],"-s"))
-    {
-#if INCLUDE_STAGE
-      if(++i<argc) 
-      {
-        strncpy(stage_io_directory, argv[i], sizeof(stage_io_directory));
-        use_stage = true;
-        printf("[Stage %s]", stage_io_directory );
-      }
-      else 
-      {
-        Usage();
-        exit(-1);
-      }
-#else
-      PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
-      exit(-1);
-#endif
-    }
-
     // Gazebo support
     else if(!strcmp(argv[i], "-g"))
     {
@@ -1389,16 +889,12 @@ int main( int argc, char *argv[] )
   
   // by default print a copyright and license message
   if( !quiet_startup )
-    {
-      puts("\n* Part of the Player/Stage Project [http://playerstage.sourceforge.net].");
-      puts("* Copyright 2000-2005 Brian Gerkey, Richard Vaughan, Andrew Howard,\n"
-	   "* Nate Koenig and contributors.");
-      puts("* Released under the GNU General Public License.");
-
-      // then output a line of startup options, each in [square braces]
-      printf( "Startup options:" );
-      fflush(stdout);
-    }
+  {
+    PrintCopyrightMsg();
+    // then output a line of startup options, each in [square braces]
+    printf( "Startup options:" );
+    fflush(stdout);
+  }
   
   printf(" [%s]", (protocol == PLAYER_TRANSPORT_TCP) ? "TCP" : "UDP");
 
@@ -1407,18 +903,7 @@ int main( int argc, char *argv[] )
   // Initialize error handling
   ErrorInit(msg_level);
 
-  if (use_stage)
-  {
-#if INCLUDE_STAGE
-    // Use the clock from State
-    GlobalTime = new StageTime(stage_io_directory);
-    assert(GlobalTime);
-#else
-    PLAYER_ERROR("Sorry, support for Stage not included at compile-time.");
-    exit(-1);
-#endif
-  }
-  else if (gz_serverid >= 0)
+  if (gz_serverid >= 0)
   {
 #ifdef INCLUDE_GAZEBO
     // Initialize gazebo client
@@ -1465,35 +950,21 @@ int main( int argc, char *argv[] )
       exit(-1);
   }
 
-  // Instantiate devices
-  if (use_stage)
-  {
-#if INCLUDE_STAGE
-    // create the shared memory connection to Stage
-    // returns pointer to the timeval struct
-    // and creates the ports array and array length with the port numbers
-    // deduced from the stageIO filenames
-    CreateStageDevices( stage_io_directory, &ports, &ufds, &num_ufds, protocol);
-#endif
-  }
-  else
-  {
-  	ufds = new struct pollfd[num_ufds];
-    assert(ufds);
+  ufds = new struct pollfd[num_ufds];
+  assert(ufds);
 
-    for(int i=0;i<num_ufds;i++)
+  for(int i=0;i<num_ufds;i++)
+  {
+    // setup the socket to listen on
+    if((ufds[i].fd = create_and_bind_socket(1,ports[i],protocol,200)) == -1)
     {
-      // setup the socket to listen on
-      if((ufds[i].fd = create_and_bind_socket(1,ports[i],protocol,200)) == -1)
-      {
-        PLAYER_ERROR("create_and_bind_socket() failed; quitting");
-        exit(-1);
-      }
-      ufds[i].events = POLLIN;
-
-      if( !quiet_startup )
-	printf("listening on port %d\n", ports[i]);
+      PLAYER_ERROR("create_and_bind_socket() failed; quitting");
+      exit(-1);
     }
+    ufds[i].events = POLLIN;
+
+    if( !quiet_startup )
+      printf("listening on port %d\n", ports[i]);
   }
   
   // create the client manager object.
@@ -1551,11 +1022,8 @@ int main( int argc, char *argv[] )
   // check for empty device table
   if(!(deviceTable->Size()))
   {
-    if( use_stage )
-      PLAYER_ERROR("No devices instantiated; no valid Player devices in worldfile?");
-    else
-      PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
-                   "a configuration file?");
+    PLAYER_ERROR("No devices instantiated; perhaps you should supply " 
+                 "a configuration file?");
     exit(-1);
   }
 
@@ -1592,11 +1060,7 @@ int main( int argc, char *argv[] )
   // stop the timer thread
   timer.Stop();
 
-  if(use_stage)
-    puts("** Player quitting **" );
-  else
-    printf("** Player [port %d] quitting **\n", global_playerport );
-
+  printf("** Player [port %d] quitting **\n", global_playerport );
 
 #if INCLUDE_GAZEBO
   // Finalize gazebo client
@@ -1614,6 +1078,4 @@ int main( int argc, char *argv[] )
 
   return(0);
 }
-
-
 

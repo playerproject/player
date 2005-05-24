@@ -19,6 +19,5 @@ ptz \
 service_adv \
 shell \
 speech \
-stage \
 waveform \
 wifi 

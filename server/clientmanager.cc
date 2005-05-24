@@ -49,7 +49,6 @@
 #include "playertime.h"
 extern PlayerTime* GlobalTime;
 extern char playerversion[];
-extern bool use_stage;
 
 /* used to name incoming client connections */
 int
@@ -218,10 +217,7 @@ ClientManager::AddClient(ClientData* client)
     hdr.size = htonl(PLAYER_IDENT_STRLEN);
     
     // write back an identifier string
-    if(use_stage)
-      sprintf((char*)data, "%s%s (stage)", PLAYER_IDENT_STRING, playerversion);
-    else
-      sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
+    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
     memset(((char*)data)+strlen((char*)data),0,
 	   PLAYER_IDENT_STRLEN-strlen((char*)data));
 
