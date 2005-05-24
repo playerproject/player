@@ -283,14 +283,8 @@ Brian Gerkey, Andrew Howard
 #include <string.h>
 
 // we'll use the C client facilities to connect to the remote server
+#include <libplayercore/playercore.h>
 #include <playercclient.h>
-#include <deviceregistry.h>  // for lookup_interface()
-#include <driver.h>
-#include <error.h>
-#include <drivertable.h>
-#include <devicetable.h>
-#include <player.h>
-
 
 extern int global_playerport;
 

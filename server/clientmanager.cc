@@ -34,20 +34,15 @@
 #include <netinet/in.h>  // for byte-swappers
 #include <fcntl.h>  // for fcntl(2)
 #include <unistd.h>  // for fnctl(2)
-
 #include <sys/time.h>  // temporary
 
-#include "clientmanager.h"
-#include "devicetable.h"
-#include "device.h"
-#include "error.h"
-#include "message.h"
+#include <replace/replace.h>  /* for poll(2) */
 
-#include "replace.h"  /* for poll(2) */
+#include <libplayercore/playercore.h>
+
+#include "clientmanager.h"
 
 // the externed vars are declared in main.cc
-#include "playertime.h"
-extern PlayerTime* GlobalTime;
 extern char playerversion[];
 
 /* used to name incoming client connections */

@@ -121,7 +121,9 @@ Andrew Howard
 #include "devicetable.h"
 #include "drivertable.h"
 #include "clientdata.h"
+#include "clientmanager.h"
 
+extern ClientManager* clientmanager;
 
 // Info on potential blobs.
 struct blob_t

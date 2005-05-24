@@ -67,7 +67,6 @@ Toby Collett
 #include "devicetable.h"
 #include "drivertable.h"
 #include "clientdata.h"
-#include "clientmanager.h"
 
 class BumperSafe : public Driver 
 {

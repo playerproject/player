@@ -768,7 +768,7 @@ int VFH_Class::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
     && hdr->device_index == device_id.index)
   {
     hdr->device_index = odom_id.index;
-    int ret = odom->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
+    int ret = odom->ProcessMessage((ClientData*)BaseClient, hdr, data, resp_data, resp_len);
     hdr->device_index = device_id.index;
     return ret;
   }

@@ -139,7 +139,7 @@ Andrew Howard
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
-#include "deviceregistry.h"
+#include "interface_util.h"
 #include "playertime.h"
 #include "encode.h"
 

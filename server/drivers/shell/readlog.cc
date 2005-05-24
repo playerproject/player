@@ -139,7 +139,7 @@ Andrew Howard
 #include "error.h"
 #include "driver.h"
 #include "drivertable.h"
-#include "deviceregistry.h"
+#include "interface_util.h"
 
 #include "encode.h"
 #include "readlog_time.h"

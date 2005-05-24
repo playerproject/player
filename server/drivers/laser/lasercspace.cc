@@ -282,7 +282,7 @@ int LaserCSpace::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, device_id))
   {
     hdr->device_index = laser_id.index;
-    int ret = laser_driver->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
+    int ret = laser_driver->ProcessMessage((ClientData*)BaseClient, hdr, data, resp_data, resp_len);
     hdr->device_index = device_id.index;
     return ret;
   }

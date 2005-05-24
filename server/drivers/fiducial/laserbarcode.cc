@@ -137,6 +137,9 @@ Andrew Howard
 #include "devicetable.h"
 #include "driver.h"
 #include "clientdata.h"
+#include "clientmanager.h"
+
+extern ClientManager* clientmanager;
 
 // The laser barcode detector.
 class LaserBarcode : public Driver

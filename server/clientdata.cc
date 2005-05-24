@@ -40,18 +40,11 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "error.h"
-#include "device.h"
-#include "devicetable.h"
-#include "deviceregistry.h"
+#include <libplayercore/playercore.h>
+
 #include "clientdata.h"
 #include "clientmanager.h"
-#include "playertime.h"
-#include "message.h"
 
-extern PlayerTime* GlobalTime;
-
-//extern DeviceTable* deviceTable;
 extern ClientData* clients[];
 extern ClientManager* clientmanager;
 extern char playerversion[];

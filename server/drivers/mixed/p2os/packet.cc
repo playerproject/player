@@ -37,8 +37,6 @@
 #include <playertime.h>
 extern PlayerTime* GlobalTime;
 
-extern bool debug;
-
 void P2OSPacket::Print() {
   if (packet) {
     printf("\"");
@@ -179,12 +177,6 @@ int P2OSPacket::Send( int fd)
       perror("Send");
       return(1);
     }
-  }
-  if(debug)
-  {
-    struct timeval dummy;
-    GlobalTime->GetTime(&dummy);
-    printf("P2OSPacket::Send():%ld:%ld\n", dummy.tv_sec, dummy.tv_usec);
   }
   return(0);
 }
