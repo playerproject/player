@@ -1,6 +1,6 @@
 SUBDIRS = drivers
 
-AM_CPPFLAGS = -fPIC -Wall @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
+AM_CPPFLAGS = -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir)/drivers/stage -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell -I$(top_srcdir)/replace
 
 if INCLUDE_RTKGUI
 RTKGUI_LIBS=-L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
@@ -23,11 +23,9 @@ player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ $(top_builddir)/client_libs/libpla
 
 # We should be letting libtool handle figuring out the right linker flags.
 # Why are we still specifying -export-dynamic here?
-player_LDFLAGS = -export-dynamic
-
+#player_LDFLAGS = -export-dynamic
 
 bin_PROGRAMS = player
-
 
 player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
                  device.cc device.h drivertable.cc drivertable.h \
@@ -53,8 +51,8 @@ pkginclude_HEADERS = driver.h drivertable.h devicetable.h device.h configfile.h 
 # by configure.  In later versions of Automake, you can use a
 # nodist_player_SOURCES, but that doesn't work with the version we're using.
 #
-EXTRA_DIST = playerconfig.h.in #prefix.h.in
+EXTRA_DIST = playerconfig.h.in 
 
 dist-hook:
-	rm -f $(distdir)/playerconfig.h #$(distdir)/prefix.h
+	rm -f $(distdir)/playerconfig.h
 

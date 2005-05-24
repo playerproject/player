@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,1.6.4)
+AC_INIT(player,1.7)
 
 AC_CONFIG_SRCDIR(server/main.cc)
 
@@ -25,10 +25,6 @@ dnl values.  This will be included by player.h
 dnl
 AC_CONFIG_HEADERS(config.h server/playerconfig.h)
 
-dnl I can't find a way to do @prefix@ substitution in server/prefix.h that
-dnl works in more than one version of autotools.  Fix this later.
-dnl AM_CONFIG_FILES(server/prefix.h)
-
 dnl Find basic tools
 AC_PROG_CC
 AC_PROG_CXX
@@ -45,6 +41,14 @@ dnl by default, don't build any shared libs
 dnl AC_DISABLE_SHARED
 dnl AM_PROG_LIBTOOL
 
+dnl if the user doesn't supply a prefix, we're headed for /usr/local
+if test "x$prefix" != "xNONE"; then
+  PREFIX=$prefix
+else
+  PREFIX=/usr/local
+fi
+AC_SUBST(PREFIX)
+
 dnl Do we have pkg-config?
 AC_CHECK_PROG(have_pkg_config,pkg-config,yes,no)
 if test "x$have_pkg_config" = "xno"; then
@@ -56,10 +60,7 @@ else
   dnl
   dnl Also, add /usr/local/lib/pkgconfig, because on
   dnl some platforms, pkg-config won't look there by default.
-  export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
-  if test "x$prefix" != "xNONE"; then
-    export PKG_CONFIG_PATH=$prefix/lib/pkgconfig:$PKG_CONFIG_PATH
-  fi
+  export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 fi
 
 dnl Do we have SWIG (used for language bindings)
@@ -296,7 +297,6 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/clodbuster/Makefile
           server/drivers/mixed/evolution/Makefile
           server/drivers/mixed/evolution/er1/Makefile
-          server/drivers/stage/Makefile 
           server/drivers/gazebo/Makefile 
           server/drivers/planner/Makefile 
           server/drivers/planner/wavefront/Makefile 
@@ -374,9 +374,9 @@ fi
 
 if test "x$PYTHON_INTERP" != "xno"; then
    AC_MSG_RESULT([To use the Python bindings, modify your PYTHONPATH variable to include])
-   AC_MSG_RESULT([    $prefix/lib/python/\$PYTHON_VERSION/site-packages])
+   AC_MSG_RESULT([    $PREFIX/lib/python/\$PYTHON_VERSION/site-packages])
    AC_MSG_RESULT([For example:])
-   AC_MSG_RESULT([    export PYTHONPATH=\$PYTHONPATH:$prefix/lib/python/\$PYTHON_VERSION/site-packages])
+   AC_MSG_RESULT([    export PYTHONPATH=\$PYTHONPATH:$PREFIX/lib/python/\$PYTHON_VERSION/site-packages])
 fi
 AC_MSG_RESULT([])
 
@@ -421,7 +421,7 @@ IFS=$old_IFS
 
 AC_MSG_RESULT([])
 AC_MSG_RESULT([Player will be installed in:])
-AC_MSG_RESULT([    $prefix/])
+AC_MSG_RESULT([    $PREFIX/])
 AC_MSG_RESULT([])
 AC_MSG_RESULT([To see the configuration options, do:])
 AC_MSG_RESULT([    ./configure --help])

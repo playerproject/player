@@ -258,8 +258,6 @@ PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
 
 PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([stage],[drivers/stage],[yes],[],[],[])
-
 PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
