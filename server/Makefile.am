@@ -25,18 +25,35 @@ player_LDADD   = -lm @PLAYER_DRIVER_LIBPATHS@ $(top_builddir)/client_libs/libpla
 # Why are we still specifying -export-dynamic here?
 #player_LDFLAGS = -export-dynamic
 
+#lib_LIBRARIES = libplayer.a
+
+#libplayer_a_SOURCES = driver.cc driver.h \
+#                      device.cc device.h \
+#                      drivertable.h drivertable.cc \
+#		      devicetable.h devicetable.cc \
+#		      deviceregistry.cc deviceregistry.h \
+#		      configfile.cc configfile.h \
+#		      playercommon.h player.h playerconfig.h \
+#		      error.h error.cc \
+#		      message.h message.cc \
+#		      wallclocktime.cc wallclocktime.h playertime.h
+
 bin_PROGRAMS = player
 
-player_SOURCES = clientdata.cc socket_util.cc driver.cc driver.h \
-                 device.cc device.h drivertable.cc drivertable.h \
-		 devicetable.cc devicetable.h deviceregistry.cc \
-		 deviceregistry.h clientmanager.cc wallclocktime.cc main.cc \
-                 configfile.cc playercommon.h \
-                 player.h playerconfig.h \
+player_SOURCES = clientdata.cc socket_util.cc \
+		 clientmanager.cc main.cc \
                  clientdata.h clientmanager.h socket_util.h \
-                 wallclocktime.h playertime.h configfile.h \
-		 timer.cc timer.h error.cc error.h \
-                 message.h message.cc
+		 timer.cc timer.h  \
+                 driver.cc driver.h \
+                 device.cc device.h \
+                 drivertable.h drivertable.cc \
+		 devicetable.h devicetable.cc \
+		 deviceregistry.cc deviceregistry.h \
+		 configfile.cc configfile.h \
+		 playercommon.h player.h playerconfig.h \
+		 error.h error.cc \
+		 message.h message.cc \
+		 wallclocktime.cc wallclocktime.h playertime.h
 
 
 # Install these to $prefix/include so clients and plugins can use them

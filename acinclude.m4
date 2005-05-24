@@ -221,11 +221,6 @@ AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
 MOBILITY_DIR=$with_mobility,
 MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
 
-PLAYER_ADD_DRIVER([rwi],[drivers/mixed/rwi],[no],
-                  [$MOBILITY_DIR/include/mbylistbase.h],
-                  ["-I$MOBILITY_DIR/include -I$MOBILITY_DIR/tools/include -DUSE_MOBILITY -D__x86__ -D__linux__ -D__OSVERSION__=2"],
-                  ["-L$MOBILITY_DIR/lib -L$MOBILITY_DIR/tools/lib -lmby -lidlmby -lomniDynamic2 -lomniORB2 -ltcpwrapGK -lomnithread"])
-
 PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 

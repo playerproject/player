@@ -345,24 +345,6 @@ void Driver::ProcessMessages()
   }
 }
 
-/*int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
-                           player_device_id_t device,
-                           size_t size, uint8_t * data, 
-                           uint8_t * resp_data, size_t * resp_len)
-{
-  player_msghdr hdr;
-  hdr.stx = PLAYER_STXX;
-  hdr.type=Type;
-  hdr.subtype=SubType;  
-  hdr.device=device.code;
-  hdr.device_index=device.index;
-  hdr.timestamp_sec=0;
-  hdr.timestamp_usec=0;
-  hdr.size=size; // size of message data	
-
-  return ProcessMessage(BaseClient, &hdr, data, resp_data, resp_len);
-}*/
-
 // Signal that new data is available (calls pthread_cond_broadcast()
 // on this device's condition variable, which will release other
 // devices that are waiting on this one).  Usually call this method from 
@@ -394,17 +376,17 @@ int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
                        size_t size, uint8_t * data, 
                        uint8_t * resp_data, size_t * resp_len)
 {
-	assert(BaseClient);
-	// assemble Header
-	player_msghdr_t tmp_hdr;
-    tmp_hdr.stx = PLAYER_STXX;
-	tmp_hdr.device = device.code;
-	tmp_hdr.device_index = device.index;
-	tmp_hdr.size = size;
-	tmp_hdr.type = Type;
-	tmp_hdr.subtype = SubType;
-	
-	return ProcessMessage(BaseClient, &tmp_hdr, data, resp_data, resp_len);
+  assert(BaseClient);
+  // assemble Header
+  player_msghdr_t tmp_hdr;
+  tmp_hdr.stx = PLAYER_STXX;
+  tmp_hdr.device = device.code;
+  tmp_hdr.device_index = device.index;
+  tmp_hdr.size = size;
+  tmp_hdr.type = Type;
+  tmp_hdr.subtype = SubType;
+
+  return ProcessMessage(BaseClient, &tmp_hdr, data, resp_data, resp_len);
 }
 
 int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
