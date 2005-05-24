@@ -22,16 +22,10 @@
 
 /*
  * $Id$
- *
- * this is the WallclockTime class, which just calls gettimeofday() to get
- * the current time
- *
  */
+#ifndef _DRIVERREGISTRY_H
+#define _DRIVERREGISTRY_H
 
-#include <wallclocktime.h>
+void register_drivers();
 
-int WallclockTime::GetTime(struct timeval* time) 
-{ 
-  return(gettimeofday(time,0));
-}
-    
+#endif

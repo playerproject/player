@@ -89,9 +89,10 @@ Nate Koenig, Andrew Howard
 #include "drivertable.h"
 #include "playertime.h"
 #include "clientdata.h"
+#include "clientmanager.h"
 #include "playerpacket.h"
 
-
+extern ClientManager* clientmanager;
 
 class CameraCompress : public Driver
 {

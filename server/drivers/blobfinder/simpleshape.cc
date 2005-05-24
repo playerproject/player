@@ -111,7 +111,9 @@ Andrew Howard
 #include "devicetable.h"
 #include "drivertable.h"
 #include "clientdata.h"
+#include "clientmanager.h"
 
+extern ClientManager* clientmanager;
 
 // Invariant feature set for a contour
 class FeatureSet

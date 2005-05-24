@@ -39,8 +39,10 @@
 #include "captureCamera.h"
 #include "playerpacket.h"
 #include "clientdata.h"
+#include "clientmanager.h"
 
 extern int global_playerport;
+extern ClientManager* clientmanager;
 
 captureCamera::captureCamera(int camera_index) : capture() , Driver(NULL,0)
 {

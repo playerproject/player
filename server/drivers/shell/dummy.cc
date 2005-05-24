@@ -82,7 +82,7 @@ Andrew Howard
 #include "error.h"
 #include "driver.h"
 #include "drivertable.h"
-#include "deviceregistry.h"
+#include "interface_util.h"
 
 
 // The logfile driver

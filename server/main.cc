@@ -31,10 +31,6 @@
   #include <config.h>
 #endif
 
-#if HAVE_LIBLTDL
-  #include <ltdl.h>
-#endif
-
 #if HAVE_OPENCV
   #include <opencv/cv.h>
 #endif
@@ -52,18 +48,14 @@
 #include <netinet/in.h> /* for struct sockaddr_in, SOCK_STREAM */
 #include <math.h>
 
+#include <replace/replace.h>
+#include <libplayercore/playercore.h>
+
 #include "socket_util.h" /* for create_and_bind_socket() */
-#include "deviceregistry.h" /* for register_devices() */
-#include "configfile.h" /* for config file parser */
 #include "clientdata.h"
 #include "clientmanager.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "error.h"
-#include "playertime.h"
-#include "wallclocktime.h"
-#include "replace.h"
 #include "timer.h"
+#include "driverregistry.h"
 
 // I can't find a way to do @prefix@ substitution in server/prefix.h that
 // works in more than one version of autotools.  Fix this later.
@@ -93,22 +85,6 @@ bool quit = false;
 // true if sigint should be ignored
 bool mask_sigint = false;
 
-// enable "special" extensions
-bool player_gerkey = false;
-
-size_t ioSize = 0; // size of the IO buffer
-
-// this table holds all the currently *available* drivers
-DriverTable* driverTable = new DriverTable();
-
-// this table holds all the currently *instantiated* devices
-DeviceTable* deviceTable = new DeviceTable();
-
-// the global PlayerTime object has a method 
-//   int GetTime(struct timeval*)
-// which everyone must use to get the current time
-PlayerTime* GlobalTime;
-
 // keep track of the pointers to our various clients.
 // that way we can cancel them at Shutdown
 ClientManager* clientmanager = NULL;
@@ -119,18 +95,10 @@ ConfigFile configFile;
 // for use in other places (cliendata.cc, for example)
 char playerversion[] = VERSION;
 
-bool experimental = false;
-bool debug = false;
 bool autoassign_ports = false;
 bool quiet_startup = false; // if true, minimize the console output on startup
 
 int global_playerport = PLAYER_PORTNUM; // used to gen. useful output & debug
-
-extern player_interface_t interfaces[];
-
-// Try to load a given plugin, using a particular search algorithm.
-// Returns true on success and false on failure.
-bool LoadPlugin(const char* pluginname, const char* cfgfile);
 
 void
 PrintCopyrightMsg()
@@ -292,198 +260,6 @@ void PrintHeader(player_msghdr_t hdr)
   printf("conid: %u\n", hdr.conid);
   printf("size:%u\n", hdr.size);
 }
-
-
-// Try to load a given plugin, using a particular search algorithm.
-// Returns true on success and false on failure.
-bool
-LoadPlugin(const char* pluginname, const char* cfgfile)
-{
-#if HAVE_LIBLTDL
-  static int init_done = 0;
-  
-  if( !init_done )
-  {
-    int errors = 0;
-    if((errors = lt_dlinit()))
-      PLAYER_ERROR2( "Error(s) initializing dynamic loader (%d, %s)",
-                     errors, lt_dlerror() );
-    else
-      init_done = 1;
-  }
-  
-  lt_dlhandle handle=NULL;
-  PluginInitFn initfunc;
-  char fullpath[PATH_MAX];
-  char* playerpath;
-  char* tmp;
-  char* cfgdir;
-  unsigned int i,j;
-
-  // see if we got an absolute path
-  if(pluginname[0] == '/' || pluginname[0] == '~')
-  {
-    strcpy(fullpath,pluginname);
-    printf("trying to load %s...", fullpath);
-    fflush(stdout);
-    if((handle = lt_dlopenext(fullpath)))
-      puts("success");
-    else
-    {
-      printf("failed (%s)\n", lt_dlerror() );
-      return(false);
-    }
-  }
-
-  // we got a relative path, so search for the module
-
-  // did the user set PLAYERPATH?
-  if(!handle && (playerpath = getenv("PLAYERPATH")))
-  {
-    if( !quiet_startup )
-      printf("PLAYERPATH: %s\n", playerpath);
-    
-    // yep, now parse it, as a colon-separated list of directories
-    i=0;
-    while(i<strlen(playerpath))
-    {
-      j=i;
-      while(j<strlen(playerpath))
-      {
-        if(playerpath[j] == ':')
-        {
-          break;
-        }
-        j++;
-      }
-      memset(fullpath,0,PATH_MAX);
-      strncpy(fullpath,playerpath+i,j-i);
-      strcat(fullpath,"/");
-      strcat(fullpath,pluginname);
-
-      if( !quiet_startup )
-      {
-        printf("trying to load %s...", fullpath);      
-        fflush(stdout);
-      }
-
-      if((handle = lt_dlopenext(fullpath)))
-      {
-        if( !quiet_startup )
-          puts("success");
-        break;
-      }
-      else
-      {
-        if( !quiet_startup )
-          printf("failed (%s)\n", lt_dlerror() );
-        else
-	  printf("failed to load %s (error %s)\n", fullpath,  lt_dlerror() );
-      }
-      i=j+1;
-    }
-  }
-  
-  // try to load it from the directory where the config file is
-  if(!handle && cfgfile)
-  {
-    // Note that dirname() modifies the contents, so
-    // we need to make a copy of the filename.
-    tmp = strdup(cfgfile);
-    memset(fullpath,0,PATH_MAX);
-    cfgdir = dirname(tmp);
-    if(cfgdir[0] != '/' && cfgdir[0] != '~')
-    {
-      getcwd(fullpath, PATH_MAX);
-      strcat(fullpath,"/");
-    }
-    strcat(fullpath,cfgdir);
-    strcat(fullpath,"/");
-    strcat(fullpath,pluginname);
-    free(tmp);
-    printf("trying to load %s...", fullpath);
-    fflush(stdout);
-    if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
-      puts("success");
-    else
-      printf("failed (%s)\n", lt_dlerror());
-  }
-
-  // try to load it from prefix/lib
-  if(!handle)
-  {
-    memset(fullpath,0,PATH_MAX);
-    strcpy(fullpath,PLAYER_INSTALL_PREFIX);
-    strcat(fullpath,"/lib/");
-    strcat(fullpath,pluginname);
-    printf("trying to load %s...", fullpath);
-    fflush(stdout);
-    if((handle = lt_dlopenext(fullpath)))
-      puts("success");
-    else
-      printf("failed (%s)\n", lt_dlerror() );
-  }
-
-  // just pass the libname to lt_dlopenext, to see if it can handle it
-  // (this may work when the plugin is installed in a default system
-  // location).
-  if(!handle)
-  {
-    printf("trying to load %s...", pluginname);
-    if((handle = lt_dlopenext(pluginname)))//, RTLD_NOW)))
-      puts("success");
-    else
-      printf("failed (%s)\n", lt_dlerror());
-  }
-
-  if (handle == NULL)
-  {
-    PLAYER_ERROR1("error loading plugin: %s", pluginname);
-    return false;
-  }
-  
-  // Now invoke the initialization function
-  if(handle)
-  {
-    if( !quiet_startup )
-    {
-      printf("invoking player_driver_init()...");
-      fflush(stdout);
-    }
-
-    initfunc = (PluginInitFn)lt_dlsym(handle,"player_driver_init");
-    if( !initfunc )
-    {
-      puts("failed");
-      PLAYER_ERROR1("failed to resolve player_driver_init: %s\n", 
-		    lt_dlerror() );
-      return(false);
-    }
-
-    int initfunc_result = 0;
-    if( (initfunc_result = (*initfunc)(driverTable)) != 0)
-    {
-      puts("failed");
-      PLAYER_ERROR1("error returned by player_driver_init: %d", 
-		   initfunc_result );
-      return(false);
-    }
-
-    if( !quiet_startup )
-      puts("success");
-
-    return(true);
-  }
-  else
-    return(false);
-
-#else
-  PLAYER_ERROR("Sorry, no support for shared libraries, so can't load plugins.");
-  PLAYER_ERROR("You should install libltdl, which is part of GNU libtool, then re-compile player.");
-  return false;
-#endif
-}
-
 
 // Parse a new-style device from the config file
 bool ParseDeviceEx(ConfigFile *cf, int section)
@@ -703,9 +479,9 @@ int main( int argc, char **argv)
   global_argc = argc;
   global_argv = argv;
 
-  // Register the available drivers in the driverTable; register_devices()
-  // is defined in deviceregistry.cc
-  register_devices();
+  // Register the available drivers in the driverTable; register_drivers()
+  // is defined in driverregistry.cc
+  register_drivers();
   
   // Trap ^C
   SetupSignalHandlers();
@@ -848,11 +624,6 @@ int main( int argc, char **argv)
     {
       printf("[nosigint]");
       mask_sigint = true;
-    }
-    else if(!strcmp(argv[i], "-gerkey"))
-    {
-      printf("[gerkey]");
-      player_gerkey = true;
     }
     else if(!strcmp(argv[i], "-p"))
     {

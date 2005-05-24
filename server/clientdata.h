@@ -34,9 +34,7 @@
 #include <sys/socket.h>  // for sendto(2)
 #include <assert.h>
 
-#include <player.h>
-#include "message.h"
-//#include "clientmanager.h"
+#include <libplayercore/playercore.h>
 
 // Forward declarations
 class Driver;
