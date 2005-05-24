@@ -135,9 +135,9 @@ bool LoadPlugin(const char* pluginname, const char* cfgfile);
 void
 PrintCopyrightMsg()
 {
-  fprintf(stderr,"\n* Part of the Player/Stage Project [http://playerstage.sourceforge.net].\n");
-  fprintf(stderr, "* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,\n* Nate Koenig, and contributors.\n");
-  fprintf(stderr,"* Released under the GNU General Public License.\n");
+  fprintf(stderr,"\n* Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net].\n");
+  fprintf(stderr, "* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,\n* Nate Koenig, and contributors.");
+  fprintf(stderr," Released under the GNU General Public License.\n");
   fprintf(stderr,"* Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you\n* are welcome to redistribute it under certain conditions; see COPYING\n* for details.\n\n");
 }
 
@@ -362,23 +362,24 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       strcat(fullpath,pluginname);
 
       if( !quiet_startup )
-	{
-	  printf("trying to load %s...", fullpath);      
-	  fflush(stdout);
-	}
+      {
+        printf("trying to load %s...", fullpath);      
+        fflush(stdout);
+      }
 
-      if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
-	{
-	  if( !quiet_startup )
-	    puts("success");
-	  break;
-	}
+      if((handle = lt_dlopenext(fullpath)))
+      {
+        if( !quiet_startup )
+          puts("success");
+        break;
+      }
       else
-	if( !quiet_startup )
-	  printf("failed (%s)\n", lt_dlerror() );
-	else
+      {
+        if( !quiet_startup )
+          printf("failed (%s)\n", lt_dlerror() );
+        else
 	  printf("failed to load %s (error %s)\n", fullpath,  lt_dlerror() );
-      
+      }
       i=j+1;
     }
   }
@@ -437,7 +438,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
 
   if (handle == NULL)
   {
-    PLAYER_ERROR1("error loading plugin: %s", lt_dlerror());
+    PLAYER_ERROR1("error loading plugin: %s", pluginname);
     return false;
   }
   

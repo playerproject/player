@@ -37,32 +37,16 @@
 // Forward declarations
 class Driver;
 
-
 // A device entry describes an instantiated driver/interface
 // combination.  Drivers may support more than one interface,
 // and hence appear more than once in the device table.
 class Device
 {
-  private:
-    // did we allocate buffers, or did somebody else?
-    bool allocp;
-
   public:
   
   // Default constructor etc
   Device(player_device_id_t id, Driver *driver, unsigned char access);
   ~Device();
-
-  // Initialize the buffers for this interface
-  void SetupBuffers(size_t datasize, size_t commandsize,
-                    size_t reqqueuelen, size_t repqueuelen, size_t msgqueuelen);
-
-  // Initialize the buffers for this interface, with memory pre-allocated
-  void SetupBuffers(void* data, size_t datasize, 
-                    void* command, size_t commandsize, 
-                    void* reqqueue, int reqqueuelen, 
-                    void* repqueue, int repqueuelen,
-					void* msgqueue, int msgqueuelen);
 
   // Index in the device table
   int index;              
@@ -84,24 +68,6 @@ class Device
 
   // Pointer to the driver
   Driver* driver;
-
-  // Size of the buffers
-  size_t data_size, command_size;
-
-  // Size of the last packet written
-  size_t data_used_size, command_used_size;
-  
-  // Data buffer
-  unsigned char *data;
-
-  // Command buffer
-  unsigned char *command;
-
-  // Timestamp for most recent data
-  struct timeval data_timestamp;
-
-  // Timestamp for most recent command
-  struct timeval command_timestamp;
 };
 
 #endif
