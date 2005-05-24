@@ -15,9 +15,9 @@ EXTRA_DIST = playerc.i setup.py parse.py
 # Generate a OO interface file for libplayerc.  This is tweaked to
 # unable VPAPTH (distcheck) builds; the header files needed by swig
 # are copied into the build tree.
-playerc_oo.i: ../../playerc.h $(top_srcdir)/server/player.h
+playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h
 	if test ! -s ../../playerc.h; then cp $(srcdir)/../../playerc.h ../../; fi
-	if test ! -s $(top_builddir)/server/player.h; then cp $(top_srcdir)/server/player.h $(top_builddir)/server/; fi
+	if test ! -s $(top_builddir)/libplayercore/player.h; then cp $(top_srcdir)/libplayercore/player.h $(top_builddir)/libplayercore/; fi
 	if test ! -s playerc.i; then cp $(srcdir)/playerc.i .; fi
 	python $(srcdir)/parse.py ../../playerc.h playerc_oo.i
 

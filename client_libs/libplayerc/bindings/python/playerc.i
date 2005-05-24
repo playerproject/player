@@ -202,7 +202,7 @@
 
 // Include Player header so we can pick up some constants
 #define __PACKED__
-%import "../../../../server/player.h"
+%import "../../../../libplayercore/player.h"
 
 
 // Use this for regular c-bindings;

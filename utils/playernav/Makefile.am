@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/server @GNOMECANVAS_CFLAGS@
+AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/libplayercore @GNOMECANVAS_CFLAGS@
 
 if WITH_GNOMECANVAS
 bin_PROGRAMS = playernav

@@ -9,7 +9,7 @@ from distutils.core import setup, Extension
 #      bindings.
 module = Extension('_playerc',
                    sources = ['playerc.i'],
-                   include_dirs = ['../..', '../../../../server'],
+                   include_dirs = ['../..', '../../../..'],
                    library_dirs = ['../..', '../../../libplayerpacket'],
                    libraries = ['playerc', 'playerpacket', 'jpeg'])
 

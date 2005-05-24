@@ -74,8 +74,9 @@ extern "C" {
 #endif
 
 
-#include <player.h>
 #include <netinet/in.h> /* for struct in_addr */
+
+#include <libplayercore/player.h>
 
 /** @addtogroup player_clientlib_c C client library */
 /** @{ */

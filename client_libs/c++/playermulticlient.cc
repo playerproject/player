@@ -46,10 +46,12 @@
  * multiclient extension to the c++ client.
  */
 
-#include <playerclient.h>
 #include <string.h>  // for memcpy
 #include <stdio.h>
-#include "replace.h"  // for poll
+
+#include <replace/replace.h>  // for poll
+
+#include "playerclient.h"
 
 // constructor
 PlayerMultiClient::PlayerMultiClient()

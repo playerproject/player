@@ -49,7 +49,7 @@
 #include <stdio.h>
 
 // Get the message structures from Player
-#include "player.h"
+#include <libplayercore/player.h>
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? a : b)

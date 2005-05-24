@@ -10,7 +10,7 @@
  */
 
 
-#include <player.h>
+#include <libplayercore/player.h>
 
 #include "jpeg.h"
 

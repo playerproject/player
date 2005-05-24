@@ -1,6 +1,6 @@
 SUBDIRS = . test
 
-AM_CPPFLAGS = -I$(top_srcdir)/server -I$(srcdir)/../c -I$(srcdir)/../libplayerpacket -I$(top_srcdir)/replace
+AM_CPPFLAGS = -I$(top_srcdir) -I$(srcdir)/../c -I$(srcdir)/../libplayerpacket 
 
 # create the pkg-config entry for the C++
 pkgconfigdir = $(libdir)/pkgconfig
@@ -8,9 +8,9 @@ pkgconfig_DATA = playerclient.pc
 
 lib_LIBRARIES = libplayerclient.a
 
-libplayerclient_a_LIBADD = $(top_builddir)/client_libs/c/playercclient.o $(top_builddir)/replace/*.o $(top_builddir)/client_libs/libplayerpacket/*.o 
+libplayerclient_a_LIBADD = $(top_builddir)/client_libs/c/playercclient.$(OBJEXT) $(top_builddir)/replace/*.$(OBJEXT) $(top_builddir)/client_libs/libplayerpacket/*.$(OBJEXT) 
 
-libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.o  $(top_builddir)/client_libs/libplayerpacket/*.o 
+libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.$(OBJEXT) $(top_builddir)/client_libs/libplayerpacket/*.$(OBJEXT)
 
 
 libplayerclient_a_SOURCES =   clientproxy.cc \

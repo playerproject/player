@@ -1,3 +1,2 @@
 
-SUBDIRS = c libplayerpacket c++ tcl libplayerc 
-# DEPRECATED: pyplayerc 
+SUBDIRS = c libplayerpacket c++ libplayerc 
