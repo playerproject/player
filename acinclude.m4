@@ -290,13 +290,6 @@ fi
 PLAYER_ADD_DRIVER([cameracompress],[drivers/camera/compress],[yes],[jpeglib.h],[],[-ljpeg])
 PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],[],[],[],[OPENCV],[opencv])
 
-dnl Service Discovery with libservicediscovery
-AC_LANG_SAVE
-AC_LANG_CPLUSPLUS
-PLAYER_ADD_DRIVER([service_adv_lsd], [drivers/service_adv], [no],
-    [servicediscovery/servicedirectory.hh], [], [-lservicediscovery])
-AC_LANG_RESTORE
-
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
