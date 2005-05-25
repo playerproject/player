@@ -1,3 +1,5 @@
 Makefile
 Makefile.in
 stamp-h*
+playerconfig.h
+playercore.pc
