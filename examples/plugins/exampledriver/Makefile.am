@@ -1,6 +1,8 @@
 ## Process this file with automake to produce Makefile.in
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src
+
+# example diver is broken: disabled this temporarily so that Player builds
+#SUBDIRS = src
 
 #SUBDIRS = .
 

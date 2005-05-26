@@ -30,6 +30,7 @@
 #include <string.h> 
 #include <stdlib.h> 
 #include <unistd.h> 
+#include <limits.h> // for PATH_MAX
 
 #include <libplayercore/drivertable.h>
 #include <libplayercore/error.h>
