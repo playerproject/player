@@ -321,6 +321,7 @@ AC_OUTPUT(Makefile
           examples/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
+          examples/plugins/exampledriver/src/Makefile
           examples/plugins/multidriver/Makefile
           examples/c++/Makefile
           examples/libplayerc/Makefile
