@@ -217,7 +217,7 @@ ClientManager::AddClient(ClientData* client)
 	   PLAYER_IDENT_STRLEN-strlen((char*)data));
 
     // Make a message with the reply string
-    Message ident_msg(hdr, data, PLAYER_IDENT_STRLEN, client);
+    Message ident_msg(hdr, data, PLAYER_IDENT_STRLEN, client->OutQueue);
     // Push it onto the new client's queue
     client->OutQueue->Push(ident_msg);
 

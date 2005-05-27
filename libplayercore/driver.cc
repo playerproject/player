@@ -48,7 +48,7 @@
 #include <libplayercore/globals.h>
 
 // TODO: remove this dependency
-#include "clientmanager.h"
+//#include "clientmanager.h"
 
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.
@@ -57,7 +57,6 @@ Driver::Driver(ConfigFile *cf, int section,
                int interface, uint8_t access)
 {
   this->error = 0;
-  BaseClient = NULL;
   driverthread=0;
   
   // Look for our default device id
@@ -81,10 +80,7 @@ Driver::Driver(ConfigFile *cf, int section,
 
   this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
   assert(InQueue);
-
   pthread_mutex_init(&this->accessMutex,NULL);
-  pthread_mutex_init(&this->condMutex,NULL);
-  pthread_cond_init(&this->cond,NULL);
 }
     
 // this is the other constructor, used by multi-interface drivers.
@@ -98,27 +94,19 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
   this->alwayson = false;
 
-  BaseClient = NULL;
   driverthread = 0;
 
   this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
   assert(InQueue);
 
   pthread_mutex_init(&this->accessMutex,NULL);
-  pthread_mutex_init(&this->condMutex,NULL);
-  pthread_cond_init(&this->cond,NULL);
 }
 
 // destructor, to free up allocated buffers.  not stricly necessary, since
 // drivers are only destroyed when Player exits, but it is cleaner.
 Driver::~Driver()
 {
-  if (BaseClient)
-  {
-  	clientmanager->RemoveClient(BaseClient);
-  	delete BaseClient;
-  }
-  delete InQueue;
+  delete this->InQueue;
 }
 
 // Add an interface
@@ -134,10 +122,14 @@ Driver::AddInterface(player_device_id_t id, unsigned char access)
   return 0;
 }
 
-// New-style: Write general msg to device
+/// @brief Helper for publishing a message from this driver
+///
+/// @p id is the origin device
+/// @p queue, if non-NULL is the target queue.  If @p queue is NULL,
+///  then the message is sent to all interested parties.
 void
 Driver::PutMsg(player_device_id_t id, 
-	       ClientData* client, 
+	       MessageQueue* queue, 
       	       uint8_t type, 
 	       uint8_t subtype,
    	       void* src, 
@@ -145,6 +137,7 @@ Driver::PutMsg(player_device_id_t id,
 	       struct timeval* timestamp)
 {
   struct timeval ts;
+  Device* dev;
 
   // Fill in the time structure if not supplied
   if(timestamp)
@@ -152,10 +145,42 @@ Driver::PutMsg(player_device_id_t id,
   else
     GlobalTime->GetTime(&ts);
 
-  Lock();
-  clientmanager->PutMsg(type, subtype, id.code, id.index, &ts,
-			len, (unsigned char *)src, client);
-  Unlock();
+  player_msghdr_t hdr;
+  memset(&hdr,0,sizeof(player_msghdr_t));
+  hdr.stx = htons(PLAYER_STXX);
+  hdr.type=type;
+  hdr.subtype=subtype;
+  hdr.device=htons(id.code);
+  hdr.device_index=htons(id.index);
+  hdr.timestamp_sec=htonl(timestamp->tv_sec);
+  hdr.timestamp_usec=htonl(timestamp->tv_usec);
+  hdr.size=htonl(len);
+
+  Message msg(hdr,src,len);
+
+  if(queue)
+  {
+    // push onto the given queue, which provides its own locking
+    queue->Push(msg);
+  }
+  else
+  {
+    // lock here, because we're accessing our device's queue list
+    this->Lock();
+    // push onto each queue subscribed to the given device
+    if(!(dev = deviceTable->GetDevice(id)))
+    {
+      PLAYER_ERROR("tried to publish message via non-existent device");
+      this->Unlock();
+      return;
+    }
+    for(size_t i=0;i<dev->len_queues;i++)
+    {
+      if(dev->queues[i])
+        dev->queues[i]->Push(msg);
+    }
+    this->Unlock();
+  }
 }
 
 // New-style: Read configuration reply from device
@@ -212,7 +237,7 @@ int Driver::Subscribe(player_device_id_t id)
     setupResult = 0;
   }
   
-  return( setupResult );
+  return(setupResult);
 }
 
 int Driver::Unsubscribe(player_device_id_t id)
@@ -224,8 +249,6 @@ int Driver::Unsubscribe(player_device_id_t id)
   else if ( subscriptions == 1) 
   {
     shutdownResult = Shutdown();
-    // to release anybody that's still waiting, in order to allow shutdown
-    DataAvailable();
     subscriptions--;
   }
   else 
@@ -258,21 +281,13 @@ Driver::StopThread(void)
 void* 
 Driver::DummyMain(void *devicep)
 {
-  // block signals that should be handled by the server thread
-#if HAVE_SIGBLOCK
-  sigblock(SIGINT);
-  sigblock(SIGHUP);
-  sigblock(SIGTERM);
-  sigblock(SIGUSR1);
-#endif
-
   // Install a cleanup function
   pthread_cleanup_push(&DummyMainQuit, devicep);
 
   // Run the overloaded Main() in the subclassed device.
   ((Driver*)devicep)->Main();
 
-  // Run, the uninstall cleanup function
+  // Run the uninstall cleanup function
   pthread_cleanup_pop(1);
   
   return NULL;
@@ -285,7 +300,6 @@ Driver::DummyMainQuit(void *devicep)
   // Run the overloaded MainCleanup() in the subclassed device.
   ((Driver*)devicep)->MainQuit();
 }
-
 
 void
 Driver::Main() 
@@ -304,74 +318,48 @@ Driver::MainQuit()
 /// a message with no handler is reached
 void Driver::ProcessMessages()
 {
-  uint8_t RespData[PLAYER_MAX_MESSAGE_SIZE];
+  uint8_t* RespData = NULL;
+  size_t RespLen;
  
-  // if we have a base client add its messages to the queue
-  if (BaseClient)
-    BaseClient->Read();
-
   // If we have subscriptions, then see if we have and pending messages
   // and process them
-  MessageQueueElement * el;
-  while((el=InQueue->Pop()))
+  Message* msg;
+  while((msg = this->InQueue->Pop()))
   {
-    size_t RespLen = PLAYER_MAX_MESSAGE_SIZE;
+    player_msghdr * hdr = msg->GetHeader();
+    uint8_t * data = msg->GetPayload();
 
-    player_msghdr * hdr = el->msg.GetHeader();
-    uint8_t * data = el->msg.GetPayload();
-
-    if (el->msg.GetPayloadSize() != hdr->size)
-      PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",el->msg.GetSize() - sizeof(player_msghdr),hdr->size);
+    if (msg->GetPayloadSize() != hdr->size)
+      PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",msg->GetSize() - sizeof(player_msghdr),hdr->size);
 
     player_device_id_t id;
     id.code = hdr->device;
     id.index = hdr->device_index;
-    int ret = ProcessMessage(el->msg.Client, hdr, data, RespData, &RespLen);
+    int ret = ProcessMessage(msg->Queue, hdr, data, &RespData, &RespLen);
     if(ret > 0)
-      PutMsg(id, el->msg.Client, ret, hdr->subtype, RespData, RespLen, NULL);
+    {
+      PutMsg(id, msg->Queue, ret, hdr->subtype, RespData, RespLen, NULL);
+      free(RespData);
+    }
     else if(ret < 0)
     {
       PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d subtype=%d len=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->subtype, hdr->size);
 
       // If it was a request, reply with an empty NACK
       if(hdr->type == PLAYER_MSGTYPE_REQ)
-        PutMsg(id, el->msg.Client, PLAYER_MSGTYPE_RESP_NACK, 
+        PutMsg(id, msg->Queue, PLAYER_MSGTYPE_RESP_NACK, 
                hdr->subtype, NULL, 0, NULL);
     }
+    delete msg;
     pthread_testcancel();
   }
 }
 
-// Signal that new data is available (calls pthread_cond_broadcast()
-// on this device's condition variable, which will release other
-// devices that are waiting on this one).  Usually call this method from 
-// PutData().
-void 
-Driver::DataAvailable(void)
-{
-  pthread_mutex_lock(&condMutex);
-  pthread_cond_broadcast(&cond);
-  pthread_mutex_unlock(&condMutex);
-  
-  // also wake up the server thread
-  if(!clientmanager)
-    PLAYER_WARN("tried to call DataAvailable() on NULL clientmanager!");
-  else
-    clientmanager->DataAvailable();
-}
-
-// a static version that can be used as a callback - rtv
-void 
-Driver::DataAvailableStatic( Driver* driver )
-{
-  driver->DataAvailable();
-}
-
-
+#if 0
 int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
-                       player_device_id_t device,
-                       size_t size, uint8_t * data, 
-                       uint8_t * resp_data, size_t * resp_len)
+                           player_device_id_t device,
+                           size_t size, uint8_t * data, 
+                           uint8_t * resp_data, size_t * resp_len)
 {
   assert(BaseClient);
   // assemble Header
@@ -394,22 +382,9 @@ int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
   uint8_t buffer[0];
   return ProcessMessage(Type, SubType, device, size, data, buffer, &resp_size);
 }
+#endif
 
-// Waits on the condition variable associated with this device.
-void 
-Driver::Wait(void)
-{
-  // need to push this cleanup function, cause if a thread is cancelled while
-  // in pthread_cond_wait(), it will immediately relock the mutex.  thus we
-  // need to unlock ourselves before exiting.
-  pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock,(void*)&condMutex);
-  pthread_mutex_lock(&condMutex);
-  pthread_cond_wait(&cond,&condMutex);
-  pthread_mutex_unlock(&condMutex);
-  pthread_cleanup_pop(1);
-}
-
-
+#if 0
 
 /// @brief Subscribe to another driver using the internal BaseClient
 ///
@@ -448,4 +423,5 @@ void Driver::UnsubscribeInternal(player_device_id_t id)
   assert(BaseClient);
   BaseClient->Unsubscribe(id);	
 }
+#endif
 

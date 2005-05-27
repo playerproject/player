@@ -1,10 +1,12 @@
-AM_CPPFLAGS = -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir) -I$(top_srcdir)/server
+AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir) 
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = playercore.pc.in
+pkgconfig_DATA = playercore.pc
 
-BUILT_SOURCES = playerconfig.h playercore.pc
+EXTRA_DIST = playercore.pc.in
+
+BUILT_SOURCES = playerconfig.h
 CLEANFILES = playerconfig.h playercore.pc
 
 pkglibdir = $(libdir)/player-@VERSION@

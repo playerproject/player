@@ -299,12 +299,15 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           PLAYER_WARN("unnecessary authentication request");
           requesttype = PLAYER_MSGTYPE_RESP_NACK;
           break;
+// This request only worked with Stage 1.3.x
+#if 0
         case PLAYER_PLAYER_NAMESERVICE:
           HandleNameserviceRequest((player_device_nameservice_req_t*)payload,
                                    (player_device_nameservice_req_t*)replybuffer);
           requesttype = PLAYER_MSGTYPE_RESP_ACK;
           replysize = sizeof(player_device_nameservice_req_t);
           break;
+#endif
         case PLAYER_PLAYER_IDENT:
           // we dont need to do anything here?
           break;
@@ -327,7 +330,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         if((driver = deviceTable->GetDriver(id)))
         {
           // create a message and enqueue it to driver
-          Message New(hdr,payload,hdr.size, this);
+          Message New(hdr,payload,hdr.size, this->OutQueue);
           driver->InQueue->Push(New);
           requesttype = 0;
         }
@@ -458,6 +461,8 @@ void ClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
   return;
 }
 
+// This request only worked with Stage 1.3.x
+#if 0
 void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
                                            player_device_nameservice_req_t *rep)
 {
@@ -481,6 +486,7 @@ void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
 
   return;
 }
+#endif
 
 // TODO: check permissions as registered by the underlying driver
 unsigned char 
@@ -861,10 +867,10 @@ ClientDataTCP::Write(bool requst_only)
   if(this->usedwritebuffersize==0)
   {
     // Loop through waiting messages and write them to buffer
-    MessageQueueElement * el;
-    while((el=this->OutQueue->Pop()))
+    Message msg;
+    while(this->OutQueue->Pop(&msg))
     {
-      size_t totalsize = this->usedwritebuffersize + el->msg.GetSize();
+      size_t totalsize = this->usedwritebuffersize + msg.GetSize();
 
       while(totalsize > this->totalwritebuffersize)
       {
@@ -875,13 +881,11 @@ ClientDataTCP::Write(bool requst_only)
       }
 
       // Fill in latest server time
-      el->msg.GetHeader()->time_sec = htonl(curr.tv_sec);
-      el->msg.GetHeader()->time_usec = htonl(curr.tv_usec);
+      msg.GetHeader()->time_sec = htonl(curr.tv_sec);
+      msg.GetHeader()->time_usec = htonl(curr.tv_usec);
       memcpy(this->totalwritebuffer + this->usedwritebuffersize, 
-	     el->msg.GetData(), el->msg.GetSize());	
-      this->usedwritebuffersize += el->msg.GetSize();
-
-      delete el;
+	     msg.GetData(), msg.GetSize());	
+      this->usedwritebuffersize += msg.GetSize();
     }
   }
 
@@ -973,21 +977,20 @@ int
 ClientDataUDP::Write(bool request_only)
 {
   // Loop through waiting messages and write them to buffer
-  MessageQueueElement * el;
-  while ((el=OutQueue->Pop()))
+  Message msg;
+  while(this->OutQueue->Pop(&msg))
   {
     int byteswritten;
 
     // Assume that all data can be written in a single datagram.  Need to
     // make this smarter later.
-    if((byteswritten = sendto(socket, el->msg.GetData(), el->msg.GetSize(), 0, 
+    if((byteswritten = sendto(socket, msg.GetData(), msg.GetSize(), 0, 
                               (struct sockaddr*)&clientaddr, 
                               (socklen_t)clientaddr_len)) < 0)
     {
       PLAYER_ERROR1("%s", strerror(errno));
       return(-1);
     }
-    delete el;
   }
 
   return(0);
@@ -1015,9 +1018,9 @@ ClientDataInternal::Read()
 {
   // this is a 'psuedo read' basically we take messages from the InQueue and
   // Dispatch them to the drivers
-  MessageQueueElement * el;
-  while ((el=InQueue->Pop()))
-    driver->InQueue->Push(el->msg);
+  Message msg;
+  while(this->InQueue->Pop(&msg))
+    driver->InQueue->Push(msg);
 
   return(0);
 }
@@ -1026,11 +1029,11 @@ int
 ClientDataInternal::Write(bool requst_only)
 {
   // Take messages off the queue and give them to the player server for processing
-  MessageQueueElement * el;
-  while ((el=OutQueue->Pop())) 
+  Message msg;
+  while(this->OutQueue->Pop(&msg))
   {
-    player_msghdr * hdr = el->msg.GetHeader();
-    uint8_t * data = el->msg.GetPayload();
+    player_msghdr * hdr = msg.GetHeader();
+    uint8_t * data = msg.GetPayload();
     if(HandleRequests(*hdr, data, hdr->size) < 0)
       return -1;
   }	
@@ -1058,7 +1061,7 @@ ClientDataInternal::PutMsg(uint8_t type,
   hdr.timestamp_usec = timestamp->tv_usec;
   hdr.size = size; // size of message data
 
-  Message New(hdr,data,size,this);	
+  Message New(hdr,data,size,this->OutQueue);	
   assert(*New.RefCount);
   InQueue->Push(New);
 }
@@ -1088,7 +1091,7 @@ ClientDataInternal::SendMsg(player_device_id_t device,
   hdr.timestamp_usec = ts.tv_usec;
   hdr.size = size; // size of message data
 
-  Message New(hdr,data,size,this);
+  Message New(hdr,data,size,this->OutQueue);
   OutQueue->Push(New);
 
   return 0;

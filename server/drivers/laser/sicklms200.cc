@@ -122,6 +122,7 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -165,10 +166,10 @@ class SickLMS200 : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(ClientData * client, 
+    int ProcessMessage(MessageQueue * resp_queue, 
 		       player_msghdr * hdr, 
 		       uint8_t * data, 
-		       uint8_t * resp_data, 
+		       uint8_t ** resp_data, 
 		       int * resp_len);
   private:
 
@@ -457,6 +458,7 @@ int SickLMS200::Setup()
 
   // Display the laser type
   char type[64];
+  memset(type,0,sizeof(type));
   if (GetLaserType(type, sizeof(type)))
     return 1;
   PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", type, this->device_name, this->port_rate);
@@ -492,8 +494,8 @@ int SickLMS200::Shutdown()
 
 
 int 
-SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
-                           uint8_t * data, uint8_t * resp_data,
+SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
+                           uint8_t * data, uint8_t ** resp_data,
                            int * resp_len)
 {
   int retval = 0;
@@ -501,7 +503,6 @@ SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
   assert(data);
   assert(resp_data);
   assert(resp_len);
-  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
   *resp_len = 0;
 
   if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, 
@@ -549,7 +550,9 @@ SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
     if(!retval)
     {
       *resp_len = sizeof(config);
-      memcpy(resp_data, config, sizeof(player_laser_config_t));
+      *resp_data = (uint8_t*)calloc(1,sizeof(config));
+      assert(*resp_data);
+      memcpy(*resp_data, config, sizeof(player_laser_config_t));
       return(PLAYER_MSGTYPE_RESP_ACK);
     }
     else
@@ -572,7 +575,9 @@ SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
     config.range_res = htons(this->range_res);
 
     *resp_len = sizeof(player_laser_config_t);
-    memcpy(resp_data, &config, sizeof(player_laser_config_t));
+    *resp_data = (uint8_t*)calloc(1,sizeof(player_laser_config_t));
+    assert(*resp_data);
+    memcpy(*resp_data, &config, sizeof(player_laser_config_t));
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
   else if (this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, 
@@ -592,7 +597,9 @@ SickLMS200::ProcessMessage(ClientData * client, player_msghdr * hdr,
     geom.size[1] = htons((short) (this->size[1] * 1000));
 
     *resp_len = sizeof(player_laser_geom_t);
-    memcpy(resp_data, &geom, sizeof(player_laser_geom_t));
+    *resp_data = (uint8_t*)calloc(1,sizeof(player_laser_geom_t));
+    assert(*resp_data);
+    memcpy(*resp_data, &geom, sizeof(player_laser_geom_t));
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
 
@@ -1031,8 +1038,8 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
     }
 
     // NULL terminate the return string
-    assert((size_t) len + 1 < sizeof(packet));
-    packet[len + 1] = 0;
+    assert((size_t) len < sizeof(packet));
+    packet[len] = 0;
 
     // Copy to buffer
     assert(bufflen >= (size_t) len - 1);

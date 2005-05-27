@@ -34,6 +34,7 @@
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
 
+#if 0
 Message::Message()
 {
   this->Lock = new pthread_mutex_t;
@@ -46,45 +47,47 @@ Message::Message()
   this->RefCount = new unsigned int;
   assert(RefCount);
   *this->RefCount = 1;
-  this->Client = NULL;
+  this->Queue = NULL;
 }
-
+#endif
  
 Message::Message(const struct player_msghdr & Header, 
-                 const unsigned char * data, 
+                 const void * data, 
                  unsigned int data_size, 
-                 ClientData * _client)
+                 MessageQueue* _queue)
 {
-  Client = _client;
+  this->Queue = _queue;
   this->Lock = new pthread_mutex_t;
-  assert(Lock);
+  assert(this->Lock);
   pthread_mutex_init(this->Lock,NULL);
-  Size = sizeof(struct player_msghdr)+data_size;
-  assert(Size);
-  Data = new unsigned char[Size];
-  assert(Data);
+  this->Size = sizeof(struct player_msghdr)+data_size;
+  assert(this->Size);
+  this->Data = new unsigned char[this->Size];
+  assert(this->Data);
 
   // copy the header and then the data into out message data buffer
   memcpy(this->Data,&Header,sizeof(struct player_msghdr));
   memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
   this->RefCount = new unsigned int;
-  assert(RefCount);
+  assert(this->RefCount);
   *this->RefCount = 1;
 }
 
 Message::Message(const Message & rhs)
 {
-  Client = rhs.Client;
   assert(rhs.Lock);
   pthread_mutex_lock(rhs.Lock);
+
   assert(rhs.Data);
   assert(rhs.RefCount);
   assert(*(rhs.RefCount));
-  Lock=rhs.Lock;
-  Data=rhs.Data;
+  Lock = rhs.Lock;
+  Data = rhs.Data;
   Size = rhs.Size;
+  Queue = rhs.Queue;
   RefCount = rhs.RefCount;
   (*RefCount)++;
+
   pthread_mutex_unlock(Lock);
 }
 
@@ -108,9 +111,9 @@ void
 Message::DecRef()
 {
   pthread_mutex_lock(Lock);
-  RefCount--;
-  assert(RefCount >= 0);
-  if(RefCount==0)
+  (*RefCount)--;
+  assert((*RefCount) >= 0);
+  if((*RefCount)==0)
   {
     delete [] Data;
     delete RefCount;
@@ -124,17 +127,8 @@ Message::DecRef()
 
 MessageQueueElement::MessageQueueElement()
 {
-  prev = NULL;
-  next = NULL;
-}
-
-MessageQueueElement::MessageQueueElement(MessageQueueElement & Parent, 
-                                         Message & Msg) : msg(Msg)
-{
-  assert(*(msg.RefCount));
-  prev = &Parent;
-  next = Parent.next;
-  Parent.next = this;
+  msg = NULL;
+  prev = next = NULL;
 }
 
 MessageQueueElement::~MessageQueueElement()
@@ -145,24 +139,61 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
 {
   this->Replace = _Replace;
   this->Maxlen = _Maxlen;
-  this->pTail = &this->Head;
-  this->lock = new pthread_mutex_t;
+  this->head = this->tail = NULL;
   this->Length = 0;
-  assert(this->lock);
-  pthread_mutex_init(this->lock,NULL);
+  pthread_mutex_init(&this->lock,NULL);
+  pthread_mutex_init(&this->condMutex,NULL);
+  pthread_cond_init(&this->cond,NULL);
 }
 
 MessageQueue::~MessageQueue()
 {
   // clear the queue
-  while(Pop());
+  while(this->Pop(NULL));
+  pthread_mutex_destroy(&this->lock);
+  pthread_mutex_destroy(&this->condMutex);
+  pthread_cond_destroy(&this->cond);
+}
+
+// Waits on the condition variable associated with this queue.
+void 
+MessageQueue::Wait(void)
+{
+  bool empty;
+  // don't wait if there's data on the queue
+  this->Lock();
+  empty = this->Empty();
+  this->Unlock();
+  if(!empty)
+    return;
+
+  // need to push this cleanup function, cause if a thread is cancelled while
+  // in pthread_cond_wait(), it will immediately relock the mutex.  thus we
+  // need to unlock ourselves before exiting.
+  pthread_cleanup_push((void(*)(void*))pthread_mutex_unlock,
+                       (void*)&this->condMutex);
+  pthread_mutex_lock(&this->condMutex);
+  pthread_cond_wait(&this->cond,&this->condMutex);
+  pthread_mutex_unlock(&this->condMutex);
+  pthread_cleanup_pop(0);
+}
+
+// Signal that new data is available (calls pthread_cond_broadcast()
+// on this device's condition variable, which will release other
+// devices that are waiting on this one).
+void 
+MessageQueue::DataAvailable(void)
+{
+  pthread_mutex_lock(&this->condMutex);
+  pthread_cond_broadcast(&this->cond);
+  pthread_mutex_unlock(&this->condMutex);
 }
 
 MessageQueueElement* 
 MessageQueue::Push(Message & msg)
 {
   player_msghdr_t* hdr;
-  assert(this->pTail);
+
   assert(*msg.RefCount);
   this->Lock();
   hdr = msg.GetHeader();
@@ -170,11 +201,11 @@ MessageQueue::Push(Message & msg)
      ((hdr->type == PLAYER_MSGTYPE_DATA) || 
       (hdr->type == PLAYER_MSGTYPE_CMD)))
   {
-    for(MessageQueueElement* el = this->pTail; 
-        el != &this->Head; 
+    for(MessageQueueElement* el = this->tail; 
+        el != NULL;
         el = el->prev)
     {
-      if(el->msg.Compare(msg))
+      if(el->msg->Compare(msg))
       {
         this->Remove(el);
         delete el;
@@ -186,44 +217,64 @@ MessageQueue::Push(Message & msg)
   {
     PLAYER_WARN("tried to push onto a full message queue");
     this->Unlock();
+    this->DataAvailable();
     return(NULL);
   }
   else
   {
-    this->pTail = new MessageQueueElement(*this->pTail,msg);
+    MessageQueueElement* newelt = new MessageQueueElement();
+    newelt->msg = new Message(msg);
+    if(!this->tail)
+    {
+      this->head = this->tail = newelt;
+      newelt->prev = newelt->next = NULL;
+    }
+    else
+    {
+      this->tail->next = newelt;
+      newelt->prev = this->tail;
+      newelt->next = NULL;
+      this->tail = newelt;
+    }
     this->Length++;
     this->Unlock();
-    return(this->pTail);
+    this->DataAvailable();
+    return(newelt);
   }
 }
 
-MessageQueueElement*
+Message*
 MessageQueue::Pop(MessageQueueElement* el)
 {
   Lock();
-  if(pTail == &Head)
-  {	
+  if(this->Empty())
+  {
     Unlock();
-    return NULL;
+    return(NULL);
   }
   if(!el)
   {
-  	el = this->Head.next;
+    el = this->head;
     assert(el);
   }
   this->Remove(el);
   Unlock();
-  return(el);
+  Message* retmsg = el->msg;
+  delete el;
+  return(retmsg);
 }
 
 void
 MessageQueue::Remove(MessageQueueElement* el)
 {
-  el->prev->next = el->next;
-  if(el == this->pTail)
-    this->pTail = this->pTail->prev;
+  if(el->prev)
+    el->prev->next = el->next;
   else
+    this->head = el->next;
+  if(el->next)
     el->next->prev = el->prev;
+  else
+    this->tail = el->prev;
   this->Length--;
 }
 

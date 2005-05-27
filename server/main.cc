@@ -245,7 +245,6 @@ SetupErrorHandlers()
   return;
 }
 
-
 /* for debugging */
 void PrintHeader(player_msghdr_t hdr)
 {
@@ -261,90 +260,6 @@ void PrintHeader(player_msghdr_t hdr)
   printf("size:%u\n", hdr.size);
 }
 
-// Parse a new-style device from the config file
-bool ParseDeviceEx(ConfigFile *cf, int section)
-{
-  const char *pluginname;  
-  const char *drivername;
-  DriverEntry *entry;
-  Driver *driver;
-  Device *device;
-  int count;
-
-  entry = NULL;
-  driver = NULL;
-  
-  // Load any required plugins
-  pluginname = cf->ReadString(section, "plugin", NULL);
-  if (pluginname != NULL)
-  {
-    if(!LoadPlugin(pluginname,cf->filename))
-    {
-      PLAYER_ERROR1("failed to load plugin: %s", pluginname);
-      return (false);
-    }
-  }
-
-  // Get the driver name
-  drivername = cf->ReadString(section, "name", NULL);
-  if (drivername == NULL)
-  {
-    PLAYER_ERROR1("No driver name specified in section %d", section);
-    return (false);
-  }
-  
-  // Look for the driver
-  entry = driverTable->GetDriverEntry(drivername);
-  if (entry == NULL)
-  {
-    PLAYER_ERROR1("Couldn't find driver \"%s\"", drivername);
-    return (false);
-  }
-
-  // Create a new-style driver
-  if (entry->initfunc == NULL)
-  {
-    PLAYER_ERROR1("Driver has no initialization function \"%s\"", drivername);
-    return (false);
-  }
-
-  // Create a driver; the driver will add entries into the device
-  // table
-  driver = (*(entry->initfunc)) (cf, section);
-  if (driver == NULL || driver->error != 0)
-  {
-    PLAYER_ERROR1("Initialization failed for driver \"%s\"", drivername);
-    return (false);
-  }
-
-  // Fill out the driver name in the device table and count the number
-  // of devices for this driver
-  count = 0;
-  for (device = deviceTable->GetFirstDevice(); device != NULL;
-       device = deviceTable->GetNextDevice(device))
-  {
-    if (device->driver == driver)
-    {
-      strncpy(device->drivername, drivername, sizeof(device->drivername));
-      count++;
-    }
-  }
-
-  // We must have at least one interface per driver
-  if (count == 0)
-  {
-    PLAYER_ERROR1("Driver has no (usable) interfaces \"%s\"", drivername);
-    return false;
-  }
-  
-  // Should this device be "always on"?  
-  if (driver)
-    driver->alwayson = cf->ReadInt(section, "alwayson", driver->alwayson);
-
-  return true;
-}
-
-
 // Display the driver/interface map
 void PrintDeviceTable()
 {
@@ -356,22 +271,23 @@ void PrintDeviceTable()
   printf("------------------------------------------------------------\n");
   
   // Step through the device table
-  for (device = deviceTable->GetFirstDevice(); device != NULL;
-       device = deviceTable->GetNextDevice(device))
+  int i;
+  for(i=0, device = deviceTable->GetFirstDevice(); device != NULL;
+      i++, device = deviceTable->GetNextDevice(device))
   {
-  	int ret_temp=lookup_interface_code(device->id.code, &interface);
+    int ret_temp=lookup_interface_code(device->id.code, &interface);
     assert(ret_temp == 0);
     
     if (device->driver != last_driver)
     {
       fprintf(stdout, "%d driver %s id %d:%s:%d\n",
-              device->index, device->drivername,
+              i, device->drivername,
               device->id.port, interface.name, device->id.index);
     }
     else
     {
       fprintf(stdout, "%d        %*s id %d:%s:%d\n",
-              device->index, strlen(device->drivername), "",
+              i, strlen(device->drivername), "",
               device->id.port, interface.name, device->id.index);
     }
     last_driver = device->driver;
@@ -407,19 +323,8 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
   *num_ports=0;
 
   // load each device specified in the file
-  for(int i = 1; i < configFile.GetSectionCount(); i++)
-  {
-    // AH Why is this here?  REMOVE
-    //if(configFile.sections[i].type < 0)
-    //  continue;
-
-    // Check for new-style device block
-    if (strcmp(configFile.GetSectionType(i), "driver") == 0)
-    {
-      if (!ParseDeviceEx(&configFile, i))
-        return false;
-    }
-  }
+  if(!configFile.ParseAllDrivers())
+    return false;
 
   // Warn of any unused variables
   configFile.WarnUnused();
@@ -683,6 +588,8 @@ int main( int argc, char **argv)
       exit(-1);
 
     // Use the clock from Gazebo
+    if(GlobalTime)
+      delete GlobalTime;
     GlobalTime = new GzTime();
     assert(GlobalTime);
 #else
@@ -700,18 +607,14 @@ int main( int argc, char **argv)
     ::ReadLog_speed = readlog_speed;
  
     // Use the clock from the log file
+    if(GlobalTime)
+      delete GlobalTime;
     GlobalTime = new ReadLogTime();
     assert(GlobalTime);
 #else
     PLAYER_ERROR("Sorry, support for log files not included at compile-time.");
     exit(-1);
 #endif
-  }
-  else
-  {
-    // Use the system clock
-    GlobalTime = new WallclockTime();
-    assert(GlobalTime);
   }
 
   if(configfile != NULL)

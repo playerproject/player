@@ -32,8 +32,11 @@
 
 #include <libplayercore/player.h>
 
-// TODO: remove this dependency
-class ClientData;
+// TODO:
+//   - Add support for stealing the data pointer when creating a message.
+//     That would save one allocation & copy in some situations.
+
+class MessageQueue;
 
 /**
 The message class provides reference counting for a message that is 
@@ -53,12 +56,12 @@ class Message
 {
   public:
     /// Create a NULL message.
-    Message(); 
+    //Message(); 
     /// Create a new message.
     Message(const struct player_msghdr & Header, 
-            const unsigned char * data,
+            const void* data,
             unsigned int data_size, 
-            ClientData * client = NULL); 
+            MessageQueue* _queue = NULL);
     /// Copy pointers from existing message and increment refcount.
     Message(const Message & rhs); 
 
@@ -80,8 +83,8 @@ class Message
     /// Decrement ref count
     void DecRef();
 
-    /// ???
-    ClientData* Client;
+    /// queue to which any response to this message should be directed
+    MessageQueue* Queue;
 
     /// Reference count.
     unsigned int * RefCount;
@@ -102,14 +105,11 @@ class MessageQueueElement
   public:
     /// Create a queue element with NULL prev and next pointers.
     MessageQueueElement();
-    /// Create a queue element with prev pointing to Parent and next
-    /// pointing to Parent.next. I.e., insert Msg after Parent.
-    MessageQueueElement(MessageQueueElement & Parent, Message & Msg);
     /// Destroy a queue element.
     ~MessageQueueElement();
 
     /// The message stored in this queue element.
-    Message msg;
+    Message* msg;
   private:
     /// Pointer to previous queue element.
     MessageQueueElement * prev;
@@ -129,37 +129,55 @@ class MessageQueue
     MessageQueue(bool _Replace, size_t _Maxlen);
     /// Destroy a message queue.
     ~MessageQueue();
+    /// Check whether a queue is empty
+    bool Empty() { return(this->head == NULL); }
     /// Push a message onto the queue.  Returns a pointer to the new last
     /// element in the queue.
-    MessageQueueElement * Push(Message & msg);
+    MessageQueueElement * Push(Message& msg);
     /// Pop message element @p el from the queue.  If @p el is NULL, then the 
     /// tail of the queue is popped.  Returns pointer to said message, or
     /// NULL if the queue is empty.
-    MessageQueueElement * Pop(MessageQueueElement* el = NULL);
+    Message* Pop(MessageQueueElement* el = NULL);
     /// Set the @p Replace flag, which governs whether data and command
     /// messages of the same subtype from the same device are replaced in
     /// the queue.
     void SetReplace(bool _Replace) { this->Replace = _Replace; };
+    /// @brief Wait on this queue.
+    ///
+    /// This method blocks until new data is available (as indicated
+    /// by a call to DataAvailable()).
+    void Wait(void);
+    /// @brief Signal that new data is available.
+    ///
+    /// Calling this method will release any threads currently waiting
+    /// on this queue.
+    void DataAvailable(void);
   private:
     /// Lock the mutex associated with this queue.
-    void Lock() {pthread_mutex_lock(lock);};
+    void Lock() {pthread_mutex_lock(&lock);};
     /// Unlock the mutex associated with this queue.
-    void Unlock() {pthread_mutex_unlock(lock);};
+    void Unlock() {pthread_mutex_unlock(&lock);};
     /// Remove element @p el from the queue, and rearrange pointers
     /// appropriately.
     void Remove(MessageQueueElement* el);
     /// Head of the queue.
-    MessageQueueElement Head;
+    MessageQueueElement* head;
     /// Tail of the queue.
-    MessageQueueElement * pTail;
+    MessageQueueElement* tail;
     /// Mutex to control access to the queue, via Lock() and Unlock().
-    pthread_mutex_t * lock;
+    pthread_mutex_t lock;
     /// Maximum length of queue in elements.
     size_t Maxlen;
     /// Should we replace messages with newer ones from same device?
     bool Replace;
     /// Current length of queue, in elements.
     size_t Length;
+    /// A condition variable that can be used to signal, via
+    /// DataAvailable(), other threads that are Wait()ing on this
+    /// queue.
+    pthread_cond_t cond;
+    /// Mutex to go with condition variable cond.
+    pthread_mutex_t condMutex;
 };
 
 #endif
