@@ -29,14 +29,21 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#include <netinet/in.h>
 
 #include <libplayercore/driver.h>
 #include <libplayercore/device.h>
+#include <libplayercore/message.h>
+#include <libplayercore/error.h>
+#include <libplayercore/playertime.h>
+#include <libplayercore/globals.h>
 
 // Default constructor
 Device::Device(player_device_id_t id, Driver *device, unsigned char access)
 {
-  this->index = -1;
   this->next = NULL;
 
   this->id = id;
@@ -44,13 +51,20 @@ Device::Device(player_device_id_t id, Driver *device, unsigned char access)
   this->access = access;
 
   memset(this->drivername, 0, sizeof(this->drivername));
-  memset(this->robotname, 0, sizeof(this->robotname));
 
   if (this->driver)
   {
     this->driver->entries++;
     this->driver->device_id = id;
   }
+
+  // Start with just a couple of entries; we'll double the size as
+  // necessary in the future.
+  this->len_queues = 2;
+  this->queues = (MessageQueue**)calloc(this->len_queues, 
+                                        sizeof(MessageQueue*));
+  assert(this->queues);
+  this->num_queues = 0;
 }
 
 
@@ -67,5 +81,107 @@ Device::~Device()
     if (this->driver->entries == 0)
       delete this->driver;
   }
+  free(this->queues);
+}
+
+int
+Device::Subscribe(MessageQueue* sub_queue)
+{
+  int retval;
+  size_t i;
+
+  this->driver->Lock();
+  if((retval = this->driver->Subscribe(this->id)))
+  {
+    this->driver->Unlock();
+    return(retval);
+  }
+
+  // add the subscriber's queue to the list
+
+  // do we need to make room?
+  if(this->num_queues == this->len_queues)
+  {
+    this->len_queues *= 2;
+    this->queues = (MessageQueue**)realloc(this->queues, 
+                                           (this->len_queues * 
+                                            sizeof(MessageQueue*)));
+    assert(this->queues);
+  }
+
+  // find an empty spot to put the new queue
+  for(i=0;i<this->len_queues;i++)
+  {
+    if(!this->queues[i])
+    {
+      this->queues[i] = sub_queue;
+      this->num_queues++;
+      break;
+    }
+  }
+  assert(i<this->len_queues);
+
+  this->driver->Unlock();
+  return(0);
+}
+
+int
+Device::Unsubscribe(MessageQueue* sub_queue)
+{
+  int retval;
+
+  this->driver->Lock();
+
+  if((retval = this->driver->Unsubscribe(this->id)))
+  {
+    this->driver->Unlock();
+    return(retval);
+  }
+  // look for the given queue
+  for(size_t i=0;i<this->len_queues;i++)
+  {
+    if(this->queues[i] == sub_queue)
+    {
+      this->queues[i] = NULL;
+      this->num_queues--;
+      this->driver->Unlock();
+      return(0);
+    }
+  }
+  PLAYER_ERROR("tried to unsubscribed not-subscribed queue");
+  this->driver->Unlock();
+  return(-1);
+}
+
+void 
+Device::PutMsg(uint8_t type, 
+               uint8_t subtype,
+               void* src, 
+               size_t len,
+               struct timeval* timestamp)
+{
+  struct timeval ts;
+  player_msghdr_t hdr;
+  
+  // Fill in the current time if not supplied
+  if(timestamp)
+    ts = *timestamp;
+  else
+    GlobalTime->GetTime(&ts);
+
+  memset(&hdr,0,sizeof(player_msghdr_t));
+  hdr.stx = htons(PLAYER_STXX);
+  hdr.type=type;
+  hdr.subtype=subtype;
+  hdr.device=htons(this->id.code);
+  hdr.device_index=htons(this->id.index);
+  hdr.timestamp_sec=htonl(ts.tv_sec);
+  hdr.timestamp_usec=htonl(ts.tv_usec);
+  hdr.size=htonl(len);
+
+  Message msg(hdr,src,len);
+
+  // don't need to lock here, because the queue does its own locking in Push
+  this->driver->InQueue->Push(msg);
 }
 

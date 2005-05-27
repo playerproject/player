@@ -89,7 +89,6 @@ DeviceTable::AddDevice(player_device_id_t id,
     
   // Create a new device entry
   thisentry = new Device(id, driver, access);
-  thisentry->index = numdevices;
   thisentry->next = NULL;
   if(preventry)
     preventry->next = thisentry;

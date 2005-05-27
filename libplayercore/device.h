@@ -30,41 +30,74 @@
 #define _DEVICE_H
 
 #include <libplayercore/player.h>
+#include <libplayercore/message.h>
 
 // Forward declarations
 class Driver;
 
-// A device entry describes an instantiated driver/interface
-// combination.  Drivers may support more than one interface,
-// and hence appear more than once in the device table.
+/// @brief Encapsulates a device (i.e., a driver bound to an interface)
+///
+/// A device describes an instantiated driver/interface
+/// combination.  Drivers may support more than one interface,
+/// and hence appear more than once in the device table.
 class Device
 {
+  private:
   public:
   
-  // Default constructor etc
-  Device(player_device_id_t id, Driver *driver, unsigned char access);
-  ~Device();
+    /// @brief Constructor
+    ///
+    /// @p id is the device id
+    /// @p driver is a pointer to the underlying driver
+    /// @p access is the allowed access
+    Device(player_device_id_t id, Driver *driver, unsigned char access);
 
-  // Index in the device table
-  int index;              
+    /// @brief Destructor
+    ~Device();
 
-  // Next entry in the device table (this is a linked-list)
-  Device* next;
+    /// @brief Subscribe the given queue to this device.
+    int Subscribe(MessageQueue* sub_queue);
 
-  // Id for this device
-  player_device_id_t id;
+    /// @brief Unsubscribe the given queue from this device.
+    int Unsubscribe(MessageQueue* sub_queue);
 
-  // Allowed access mode: 'r', 'w', or 'a'
-  unsigned char access;   
+    /// @brief Send a message to this device.
+    ///
+    /// - @p type is the message type
+    /// - @p subtype is the message subtype
+    /// - @p src is the message payload
+    /// - @p len is the length of the message payload
+    /// - @p timestamp will be attached to the message; if it is NULL, then
+    ///   the current time will be used.
+    void PutMsg(uint8_t type, 
+                uint8_t subtype,
+                void* src, 
+                size_t len,
+                struct timeval* timestamp);
 
-  // The string name for the driver
-  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
-  
-  // the string name for the robot (only used with Stage)
-  char robotname[PLAYER_MAX_DEVICE_STRING_LEN];
+    /// Next entry in the device table (this is a linked-list)
+    Device* next;
 
-  // Pointer to the driver
-  Driver* driver;
+    /// Id for this device
+    player_device_id_t id;
+
+    /// Allowed access mode: 'r', 'w', or 'a'
+    unsigned char access;   
+
+    /// The string name for the underlying driver
+    char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+
+    /// Pointer to the underlying driver
+    Driver* driver;
+
+    /// Linked list of subscribed queues
+    MessageQueue** queues;
+
+    /// Length of @p queues
+    size_t len_queues;
+
+    /// Number of valid (i.e., non-NULL) elements in @p queues
+    size_t num_queues;
 };
 
 #endif

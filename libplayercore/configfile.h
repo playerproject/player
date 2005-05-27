@@ -286,6 +286,12 @@ class ConfigFile
   public: int ReadDeviceId(player_device_id_t *id, int section, const char *name,
                            int code, int index, const char *key);
 
+  // Parse a driver block, and update the deviceTable accordingly
+  public: bool ParseDriver(int section);
+
+  // Parse all driver blocks
+  public: bool ParseAllDrivers();
+
   /// @brief Get the number of sections.
   public: int GetSectionCount();
 

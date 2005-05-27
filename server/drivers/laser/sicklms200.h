@@ -1,8 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  Brian Gerkey   &  Kasper Stoy
- *                      gerkey@usc.edu    kaspers@robotics.usc.edu
- *
+ *  Copyright (C) 2000  
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *                      
+ * 
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -19,23 +20,11 @@
  *
  */
 
-#ifndef _GLOBALS_H
-#define _GLOBALS_H
+#ifndef _SICKLMS200_H
+#define _SICKLMS200_H
 
-#include <libplayercore/devicetable.h>
 #include <libplayercore/drivertable.h>
-#include <libplayercore/playertime.h>
-#include <libplayercore/wallclocktime.h>
 
-// this table holds all the currently *instantiated* devices
-DeviceTable* deviceTable = new DeviceTable();
-
-// this table holds all the currently *available* drivers
-DriverTable* driverTable = new DriverTable();
-
-// the global PlayerTime object has a method 
-//   int GetTime(struct timeval*)
-// which everyone must use to get the current time
-PlayerTime* GlobalTime = new WallclockTime();
+void SickLMS200_Register(DriverTable* table);
 
 #endif

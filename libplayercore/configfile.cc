@@ -41,11 +41,15 @@
 #include <libplayercore/error.h>
 #include <libplayercore/configfile.h>
 #include <libplayercore/interface_util.h>
+#include <libplayercore/driver.h>
+#include <libplayercore/drivertable.h>
+#include <libplayercore/devicetable.h>
+#include <libplayercore/globals.h>
+#include <libplayercore/plugins.h>
 
-extern int global_playerport;
+//extern int global_playerport;
 
 #define COLOR_DATABASE "/usr/X11R6/lib/X11/rgb.txt"
-
 
 ///////////////////////////////////////////////////////////////////////////
 // the isblank() macro is not standard - it's a GNU extension
@@ -1873,7 +1877,8 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
 
     // Extract the fields from the tokens (with default values)
     k = tokens[0];
-    port = global_playerport;
+    //port = global_playerport;
+    port = 0;
     if (tokens[1] && strlen(tokens[1]))
       port = atoi(tokens[1]);
     s = tokens[2];
@@ -1916,8 +1921,104 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
   return -1;
 }
 
+// Parse all driver blocks
+bool 
+ConfigFile::ParseAllDrivers()
+{
+  for(int i = 1; i < this->GetSectionCount(); i++)
+  {
+    // Check for new-style device block
+    if(strcmp(this->GetSectionType(i), "driver") == 0)
+    {
+      if(!this->ParseDriver(i))
+        return false;
+    }
+  }
+  return(true);
+}
 
+// Parse a driver block, and update the deviceTable accordingly
+bool 
+ConfigFile::ParseDriver(int section)
+{
+  const char *pluginname;  
+  const char *drivername;
+  DriverEntry *entry;
+  Driver *driver;
+  Device *device;
+  int count;
 
+  entry = NULL;
+  driver = NULL;
+  
+  // Load any required plugins
+  pluginname = this->ReadString(section, "plugin", NULL);
+  if (pluginname != NULL)
+  {
+    if(!LoadPlugin(pluginname,this->filename))
+    {
+      PLAYER_ERROR1("failed to load plugin: %s", pluginname);
+      return (false);
+    }
+  }
 
+  // Get the driver name
+  drivername = this->ReadString(section, "name", NULL);
+  if (drivername == NULL)
+  {
+    PLAYER_ERROR1("No driver name specified in section %d", section);
+    return (false);
+  }
+  
+  // Look for the driver
+  entry = driverTable->GetDriverEntry(drivername);
+  if (entry == NULL)
+  {
+    PLAYER_ERROR1("Couldn't find driver \"%s\"", drivername);
+    return (false);
+  }
+
+  // Create a new-style driver
+  if (entry->initfunc == NULL)
+  {
+    PLAYER_ERROR1("Driver has no initialization function \"%s\"", drivername);
+    return (false);
+  }
+
+  // Create a driver; the driver will add entries into the device
+  // table
+  driver = (*(entry->initfunc)) (this, section);
+  if (driver == NULL || driver->GetError() != 0)
+  {
+    PLAYER_ERROR1("Initialization failed for driver \"%s\"", drivername);
+    return (false);
+  }
+
+  // Fill out the driver name in the device table and count the number
+  // of devices for this driver
+  count = 0;
+  for (device = deviceTable->GetFirstDevice(); device != NULL;
+       device = deviceTable->GetNextDevice(device))
+  {
+    if (device->driver == driver)
+    {
+      strncpy(device->drivername, drivername, sizeof(device->drivername));
+      count++;
+    }
+  }
+
+  // We must have at least one interface per driver
+  if (count == 0)
+  {
+    PLAYER_ERROR1("Driver has no (usable) interfaces \"%s\"", drivername);
+    return false;
+  }
+  
+  // Should this device be "always on"?  
+  if (driver)
+    driver->alwayson = this->ReadInt(section, "alwayson", driver->alwayson);
+
+  return true;
+}
 
 

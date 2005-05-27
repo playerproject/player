@@ -96,9 +96,12 @@ class ClientData
     /// Handle driver info requests.
     void HandleDriverInfoRequest(player_device_driverinfo_t *req,
                                  player_device_driverinfo_t *rep);
+// This request only worked with Stage 1.3.x
+#if 0
     /// Handle nameservice requests.
     void HandleNameserviceRequest(player_device_nameservice_req_t *req,
                                   player_device_nameservice_req_t *rep);
+#endif
     /// Do we have write (or all) permission on this device?
     bool CheckWritePermissions(player_device_id_t id);
     /// Do we have any (read, write, or all) permission on this device?
