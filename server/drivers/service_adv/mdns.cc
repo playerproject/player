@@ -25,6 +25,7 @@
 // File: mdns.cc
 // Author: Reed Hedges, LPR, Dept. of Computer Science, UMass, Amherst
 // Date: 23 June 2003
+// Updated: 1 June 2005 for architectural Player changes
 //       
 ///////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +60,7 @@ query and find services.
 @par Provides
 
 - none
-  - Note, however, that you must specify a "provides" field in the config file, anyway.
+  - Note, however, that you must specify a "provides" field in the config file, anyway.  Use "opaque".
 
 @par Requires
 
@@ -84,7 +85,7 @@ query and find services.
 driver
 (
   name "service_adv_mdns"
-  provides ["service_adv:0"]
+  provides ["opaque:0"]
   service_name "robot"
   service_description "This is a groovy robot which can be controlled with Player."
   service_tags [ "job=mapper" "operator=reed" "strength=12" "dexterity=18" "intelligence=4" "thac0=8" ]
@@ -93,7 +94,7 @@ driver
 
 @par Authors
 
-Reed Hedges
+Reed Hedges <reed@interreality.org>
 
 */
 /** @} */
@@ -105,14 +106,15 @@ Reed Hedges
 
 #include "playercommon.h"
 #include "drivertable.h"
-#include "deviceregistry.h"
 #include "devicetable.h"
 #include "player.h"
+#include "interface_util.h"
+#include "globals.h"
 
 
 #define MDNS_SERVICE_TYPE "_player._tcp."
 
-class SrvAdv_MDNS : public Driver {
+class SrvAdv_MDNS : public virtual Driver {
   private:
     // MDNS objects
     sw_discovery howl_session;
@@ -165,10 +167,10 @@ SrvAdv_MDNS::~SrvAdv_MDNS() {
 
 // Constructor
 SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
- : Driver(configFile, configSection, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SERVICE_ADV_CODE, PLAYER_ALL_MODE)
+ : Driver(configFile, configSection, true, 0, PLAYER_OPAQUE_CODE, PLAYER_ALL_MODE)
 {
     //alwayson = true;      // since there is no client interface
-    // this breaks player so I commented it out
+    // this breaks player and isn't really neccesary so I commented it out
 
     // read name and description from config file. 
     assert(configFile);
@@ -214,7 +216,6 @@ static sw_result HOWL_API service_reply(
 
 void SrvAdv_MDNS::Prepare() {
 
-  printf("service_adv_mdns: prepare\n");
     sw_text_record txt;
     sw_result r;
 
