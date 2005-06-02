@@ -120,6 +120,11 @@ Details of keyboard control are printed out on the console.
 #define KEYCODE_U 0x75
 #define KEYCODE_O 0x6F
 #define KEYCODE_M 0x6d
+#define KEYCODE_R 0x72
+#define KEYCODE_V 0x76
+#define KEYCODE_T 0x74
+#define KEYCODE_B 0x62
+
 #define KEYCODE_COMMA 0x2c
 #define KEYCODE_PERIOD 0x2e
 
@@ -144,6 +149,10 @@ bool print_speeds = false;
 
 // use the keyboard instead of the joystick?
 bool use_keyboard = false;
+
+// create a gripper proxy and keys to control it?
+bool use_gripper = false;
+GripperProxy *gp = NULL;
 
 // joystick fd
 int jfd;
@@ -306,6 +315,12 @@ keyboard_handler(void* arg)
   puts("q/z : increase/decrease max speeds by 10%");
   puts("w/x : increase/decrease only linear speed by 10%");
   puts("e/c : increase/decrease only angular speed by 10%");
+  if(use_gripper)
+    {
+      puts("r/v : gripper open/close");
+      puts("t/b : gripper up/down");
+    }
+  puts("");
   puts("anything else : stop");
   puts("---------------------------");
 
@@ -392,20 +407,36 @@ keyboard_handler(void* arg)
         if(always_command)
           cont->dirty = true;
         break;
-      case KEYCODE_C:
+    case KEYCODE_C:
         max_rv -= max_rv / 10.0;
         if(always_command)
           cont->dirty = true;
         break;
-      default:
-        speed = 0;
-        turn = 0;
-        cont->dirty = true;
+    case KEYCODE_R:
+      // open gripper
+      if( gp ) gp->SetGrip(GRIPopen);
+      break;
+    case KEYCODE_V:
+      // close gripper
+      if( gp ) gp->SetGrip(GRIPclose);
+      break;      
+    case KEYCODE_B:
+      // open gripper
+      if( gp ) gp->SetGrip(LIFTdown);
+      break;
+    case KEYCODE_T:
+      // open gripper
+      if( gp ) gp->SetGrip(LIFTup);
+      break;
+    default:
+      speed = 0;
+      turn = 0;
+      cont->dirty = true;
     }
     if (cont->dirty == true)
-    {
-      cont->speed = speed * max_tv;
-      cont->turnrate = turn * max_rv;		
+      {
+	cont->speed = speed * max_tv;
+	cont->turnrate = turn * max_rv;		
     }
   }
   return(NULL);
@@ -438,6 +469,19 @@ Client::Client(char* host, int port )
     }
   }
   
+  // optional gripper proxy
+  if(use_gripper)
+    {
+      gp = new GripperProxy(player,0,'a');
+      if( gp->GetAccess() == 'e' )
+	{
+	  puts("Error getting gripper device access!");
+	  exit(1);
+	}
+    }
+  else
+    gp = NULL;
+	  
   // try a few reads
   for( int i=0; i<4; i++ )
   {
@@ -568,32 +612,34 @@ int main(int argc, char** argv)
       print_speeds = true;
     else if( strcmp( argv[i], "-k" ) == 0 )
       use_keyboard = true;
+    else if( strcmp( argv[i], "-g" ) == 0 )
+      use_gripper = true;
     else if( strcmp( argv[i], "-speed" ) == 0 )
-    {
-      if(i++ < argc)
-        max_speed = atof(argv[i]);
-      else
       {
-        puts(USAGE);
-        exit(-1);
+	if(i++ < argc)
+	  max_speed = atof(argv[i]);
+	else
+	  {
+	    puts(USAGE);
+	    exit(-1);
+	  }
       }
-    }
     else if( strcmp( argv[i], "-turnspeed" ) == 0 )
-    {
-      if(i++ < argc)
-        max_turn = DTOR(atof(argv[i]));
-      else
       {
-        puts(USAGE);
-        exit(-1);
+	if(i++ < argc)
+        max_turn = DTOR(atof(argv[i]));
+	else
+	  {
+	    puts(USAGE);
+	    exit(-1);
+	  }
       }
-    }
     else if( strcmp( argv[i], "-udp" ) == 0 )
       protocol = PLAYER_TRANSPORT_UDP;
     else
-    {
-      puts(USAGE); // malformed arg - print usage hints
-      exit(-1);
+      {
+	puts(USAGE); // malformed arg - print usage hints
+	exit(-1);
     }
   }
 
