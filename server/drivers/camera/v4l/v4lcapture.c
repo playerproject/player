@@ -184,6 +184,7 @@ FRAMEGRABBER* fg_open( const char* dev )
 
 void fg_close(FRAMEGRABBER* fg)
 {
+    munmap( fg->mb_map, fg->mbuf.size);     
     close( fg->fd );
 
     // Make sure we free all memory (backwards!)
