@@ -149,7 +149,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
 MessageQueue::~MessageQueue()
 {
   // clear the queue
-  while(this->Pop(NULL));
+  while(this->Pop());
   pthread_mutex_destroy(&this->lock);
   pthread_mutex_destroy(&this->condMutex);
   pthread_cond_destroy(&this->cond);
@@ -244,19 +244,18 @@ MessageQueue::Push(Message & msg)
 }
 
 Message*
-MessageQueue::Pop(MessageQueueElement* el)
+MessageQueue::Pop()
 {
+  MessageQueueElement* el;
   Lock();
   if(this->Empty())
   {
     Unlock();
     return(NULL);
   }
-  if(!el)
-  {
-    el = this->head;
-    assert(el);
-  }
+
+  el = this->head;
+  assert(el);
   this->Remove(el);
   Unlock();
   Message* retmsg = el->msg;

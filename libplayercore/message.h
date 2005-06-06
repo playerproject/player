@@ -68,6 +68,20 @@ class Message
     /// Destroy message, dec ref counts and delete data if ref count == 0
     ~Message(); 
 
+    /// @brief Helper for message processing.
+    ///
+    /// Returns true if @p hdr matches the supplied @p type, @p subtype, 
+    /// and @p id.
+    static bool MatchMessage(player_msghdr_t* hdr, 
+                             uint8_t type, uint8_t subtype, 
+                             player_device_id_t id)
+    {
+      return((hdr->type == type) && 
+             (hdr->subtype == subtype) && 
+             (hdr->device == id.code) && 
+             (hdr->device_index == id.index));
+    }
+
     /// GetData from message.
     unsigned char * GetData() {return Data;};
     /// Get pointer to header.
@@ -88,6 +102,7 @@ class Message
 
     /// Reference count.
     unsigned int * RefCount;
+
   private:
     /// Pointer to the message data.
     uint8_t * Data;
@@ -134,10 +149,11 @@ class MessageQueue
     /// Push a message onto the queue.  Returns a pointer to the new last
     /// element in the queue.
     MessageQueueElement * Push(Message& msg);
-    /// Pop message element @p el from the queue.  If @p el is NULL, then the 
-    /// tail of the queue is popped.  Returns pointer to said message, or
-    /// NULL if the queue is empty.
-    Message* Pop(MessageQueueElement* el = NULL);
+    /// @brief Pop a message off the queue.
+    ///
+    /// Pop the tail (i.e., the first-inserted) message from the queue.
+    /// Returns pointer to said message, or NULL if the queue is empty.
+    Message* Pop();
     /// Set the @p Replace flag, which governs whether data and command
     /// messages of the same subtype from the same device are replaced in
     /// the queue.

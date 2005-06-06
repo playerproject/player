@@ -47,9 +47,6 @@
 #include <libplayercore/configfile.h>
 #include <libplayercore/globals.h>
 
-// TODO: remove this dependency
-//#include "clientmanager.h"
-
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.
 Driver::Driver(ConfigFile *cf, int section, 
@@ -57,7 +54,7 @@ Driver::Driver(ConfigFile *cf, int section,
                int interface, uint8_t access)
 {
   this->error = 0;
-  driverthread=0;
+  driverthread = 0;
   
   // Look for our default device id
   if(cf->ReadDeviceId(&this->device_id, section, "provides", 
@@ -87,14 +84,14 @@ Driver::Driver(ConfigFile *cf, int section,
 Driver::Driver(ConfigFile *cf, int section,
                bool overwrite_cmds, size_t queue_maxlen)
 {
+  this->error = 0;
+  this->driverthread = 0;
+  
   this->device_id.code = INT_MAX;
   
-  this->error = 0;
   this->subscriptions = 0;
-  this->entries = 0;
   this->alwayson = false;
-
-  driverthread = 0;
+  this->entries = 0;
 
   this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
   assert(InQueue);
@@ -102,8 +99,7 @@ Driver::Driver(ConfigFile *cf, int section,
   pthread_mutex_init(&this->accessMutex,NULL);
 }
 
-// destructor, to free up allocated buffers.  not stricly necessary, since
-// drivers are only destroyed when Player exits, but it is cleaner.
+// destructor, to free up allocated queue.
 Driver::~Driver()
 {
   delete this->InQueue;
@@ -182,34 +178,6 @@ Driver::PutMsg(player_device_id_t id,
     this->Unlock();
   }
 }
-
-// New-style: Read configuration reply from device
-/*int 
-Driver::GetMsg(player_device_id_t id, void* client, 
-                 unsigned short* type, 
-                 void* dest, size_t len,
-                 struct timeval* timestamp)
-{
-  int size;
-  Device *device;
-
-  // Find the matching device in the device table
-  device = deviceTable->GetDevice(id);
-  if (device == NULL)
-  {
-    PLAYER_ERROR("interface not found; did you AddInterface()?");
-    assert(false);
-  }
-
-  Lock();
-  //size = device->msgqueue->Match(&id, client, type, timestamp, dest, len);
-  size = 0;
-  // **** need to use new message queue ****
-  Unlock();
-
-  return size;
-}
-*/
 
 void Driver::Lock()
 {
@@ -354,74 +322,4 @@ void Driver::ProcessMessages()
     pthread_testcancel();
   }
 }
-
-#if 0
-int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
-                           player_device_id_t device,
-                           size_t size, uint8_t * data, 
-                           uint8_t * resp_data, size_t * resp_len)
-{
-  assert(BaseClient);
-  // assemble Header
-  player_msghdr_t tmp_hdr;
-  tmp_hdr.stx = PLAYER_STXX;
-  tmp_hdr.device = device.code;
-  tmp_hdr.device_index = device.index;
-  tmp_hdr.size = size;
-  tmp_hdr.type = Type;
-  tmp_hdr.subtype = SubType;
-
-  return ProcessMessage(BaseClient, &tmp_hdr, data, resp_data, resp_len);
-}
-
-int Driver::ProcessMessage(uint8_t Type, uint8_t SubType,
-                       player_device_id_t device,
-                       size_t size, uint8_t * data)
-{
-  size_t resp_size = 0;
-  uint8_t buffer[0];
-  return ProcessMessage(Type, SubType, device, size, data, buffer, &resp_size);
-}
-#endif
-
-#if 0
-
-/// @brief Subscribe to another driver using the internal BaseClient
-///
-/// This method subcribes internally to another driver, it will return a 
-/// pointer to the driver if successful, this pointer will be valid
-/// until unsubscribe is called
-Driver * Driver::SubscribeInternal(player_device_id_t id)
-{
-  if(BaseClient == NULL)
-  {
-    BaseClient = new ClientDataInternal(this);
-    clientmanager->AddClient(BaseClient);
-  }
-  
-  assert(BaseClient);
-
-  Driver * ret = deviceTable->GetDriver(id);
-  if (ret == this)
-  {
-  	PLAYER_WARN2("Device attempted to subscribe to itself %d:%d\n",id.code, id.index);
-  	return NULL;
-  }
-  if (ret)
-  {
-  	if (BaseClient->Subscribe(id)!= 0)
-  		return NULL;
-  }
-  return ret;
-}
-
-/// @brief Unsubscribe to another driver using the internal BaseClient
-///
-/// This method unsibscribes internally from another driver
-void Driver::UnsubscribeInternal(player_device_id_t id)
-{
-  assert(BaseClient);
-  BaseClient->Unsubscribe(id);	
-}
-#endif
 
