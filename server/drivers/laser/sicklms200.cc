@@ -505,8 +505,8 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
   assert(resp_len);
   *resp_len = 0;
 
-  if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, 
-                        this->device_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, 
+                           this->device_id))
   {
     if(hdr->size != sizeof(player_laser_config_t))
     {
@@ -558,8 +558,9 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     else
       return(retval);
   }
-  else if (this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_CONFIG, 
-                              this->device_id))
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                 PLAYER_LASER_GET_CONFIG,
+                                 this->device_id))
   {
     if(hdr->size != 0)
     {
@@ -580,8 +581,9 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     memcpy(*resp_data, &config, sizeof(player_laser_config_t));
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if (this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, 
-                              this->device_id))
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                 PLAYER_LASER_GET_GEOM,
+                                 this->device_id))
   {
     if(hdr->size != 0)
     {

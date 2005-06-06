@@ -49,15 +49,16 @@ class Driver;
 class Driver
 {
   private:
-    /// This mutex is used to lock data, command, and req/rep buffers/queues,
-    /// via Lock() and Unlock().
+    /// @brief Mutex used to lock....via Lock() and Unlock().
     pthread_mutex_t accessMutex;
 
-    /// Last error value; useful for returning error codes from
+    /// @brief Last error value; useful for returning error codes from
     /// constructors.
     int error;
 
   protected:
+    /// @brief The driver's thread. 
+    ///
     /// The driver's thread, when managed by StartThread() and
     /// StopThread().
     pthread_t driverthread;
@@ -93,38 +94,6 @@ class Driver
                         void* src, 
                         size_t len = 0,
                         struct timeval* timestamp = NULL);
-
-    /// @brief Helper for message processing.
-    ///
-    /// Returns true if @p hdr matches the supplied @p type, @p subtype, 
-    /// and @p id.
-    bool MatchMessage(player_msghdr_t* hdr, 
-                      uint8_t type, uint8_t subtype, player_device_id_t id)
-    {
-      return((hdr->type == type) && 
-             (hdr->subtype == subtype) && 
-             (hdr->device == id.code) && 
-             (hdr->device_index == id.index));
-    }
-
-#if 0
-    // used for subscriptions to other drivers internally
-    ClientDataInternal * BaseClient;
-
-  public:
-    
-    /// @brief Subscribe to another driver using the internal BaseClient
-    ///
-    /// This method subcribes internally to another driver, it will return a 
-    /// pointer to the driver if successful, this pointer will be valid
-    /// until unsubscribe is called
-    Driver * SubscribeInternal(player_device_id_t id);
-
-    /// @brief Unsubscribe to another driver using the internal BaseClient
-    ///
-    /// This method unsibscribes internally from another driver
-    void UnsubscribeInternal(player_device_id_t id);
-#endif
 
     /// @brief Add a new-style interface.
     ///
@@ -305,8 +274,8 @@ class Driver
     /// when they have new data.
     virtual void Update() 
     {
-      if (!driverthread)
-        ProcessMessages();
+      if(!this->driverthread)
+        this->ProcessMessages();
     }
 };
 
