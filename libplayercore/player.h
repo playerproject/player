@@ -214,8 +214,6 @@ typedef struct player_msghdr
   uint32_t timestamp_usec; 
   /** For keeping track of associated messages.  Transport-specific. */
   uint32_t seq;
-  /** Reserved space for expansion and/or transport-specific use. */
-  uint32_t reserved0;
   /** Size in bytes of the payload to follow */
   uint32_t size;  
 } __PACKED__ player_msghdr_t;
