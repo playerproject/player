@@ -55,8 +55,6 @@ appropriate client queue/queues
 class Message
 {
   public:
-    /// Create a NULL message.
-    //Message(); 
     /// Create a new message.
     Message(const struct player_msghdr & Header, 
             const void* data,
@@ -71,15 +69,16 @@ class Message
     /// @brief Helper for message processing.
     ///
     /// Returns true if @p hdr matches the supplied @p type, @p subtype, 
-    /// and @p id.
+    /// and @p addr.
     static bool MatchMessage(player_msghdr_t* hdr, 
-                             uint8_t type, uint8_t subtype, 
-                             player_device_id_t id)
+                             uint8_t type, 
+                             uint8_t subtype, 
+                             player_devaddr_t addr)
     {
       return((hdr->type == type) && 
              (hdr->subtype == subtype) && 
-             (hdr->device == id.code) && 
-             (hdr->device_index == id.index));
+             (hdr->addr.interface == addr.interface) && 
+             (hdr->addr.index == addr.index));
     }
 
     /// GetData from message.
@@ -168,32 +167,42 @@ class MessageQueue
     /// Calling this method will release any threads currently waiting
     /// on this queue.
     void DataAvailable(void);
+    /// @brief Check whether a message passes the current filter.
+    bool Filter(Message& msg);
+    /// @brief Clear (i.e., turn off) message filter.
+    void ClearFilter(void);
+    /// @brief Set filter values
+    void SetFilter(int host, int robot, int interface, int index,
+                   int type, int subtype);
   private:
-    /// Lock the mutex associated with this queue.
+    /// @brief Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(&lock);};
-    /// Unlock the mutex associated with this queue.
+    /// @brief Unlock the mutex associated with this queue.
     void Unlock() {pthread_mutex_unlock(&lock);};
-    /// Remove element @p el from the queue, and rearrange pointers
+    /// @brief Remove element @p el from the queue, and rearrange pointers
     /// appropriately.
     void Remove(MessageQueueElement* el);
-    /// Head of the queue.
+    /// @brief Head of the queue.
     MessageQueueElement* head;
-    /// Tail of the queue.
+    /// @brief Tail of the queue.
     MessageQueueElement* tail;
-    /// Mutex to control access to the queue, via Lock() and Unlock().
+    /// @brief Mutex to control access to the queue, via Lock() and Unlock().
     pthread_mutex_t lock;
-    /// Maximum length of queue in elements.
+    /// @brief Maximum length of queue in elements.
     size_t Maxlen;
-    /// Should we replace messages with newer ones from same device?
+    /// @brief Should we replace messages with newer ones from same device?
     bool Replace;
-    /// Current length of queue, in elements.
+    /// @brief Current length of queue, in elements.
     size_t Length;
-    /// A condition variable that can be used to signal, via
+    /// @brief A condition variable that can be used to signal, via
     /// DataAvailable(), other threads that are Wait()ing on this
     /// queue.
     pthread_cond_t cond;
-    /// Mutex to go with condition variable cond.
+    /// @brief Mutex to go with condition variable cond.
     pthread_mutex_t condMutex;
+    /// @brief Current filter values
+    int filter_host, filter_robot, filter_interface, 
+        filter_index, filter_type, filter_subtype;
 };
 
 #endif

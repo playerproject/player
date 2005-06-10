@@ -61,7 +61,7 @@ DeviceTable::~DeviceTable()
     
 // this is the 'base' AddDevice method, which sets all the fields
 int 
-DeviceTable::AddDevice(player_device_id_t id, 
+DeviceTable::AddDevice(player_devaddr_t addr, 
                        unsigned char access, 
                        Driver* driver)
 {
@@ -74,21 +74,21 @@ DeviceTable::AddDevice(player_device_id_t id,
   for(thisentry = head,preventry=NULL; thisentry; 
       preventry=thisentry, thisentry=thisentry->next)
   {
-    if ((thisentry->id.port == id.port) && 
-        (thisentry->id.code == id.code) && 
-        (thisentry->id.index == id.index))
+    if(Device::MatchDeviceAddress(thisentry->addr, addr))
       break;
   }
-  if (thisentry)
+  if(thisentry)
   {
-    PLAYER_ERROR3("duplicate device id %d:%s:%d",
-                  id.port, lookup_interface_name(0, id.code), id.index);
+    PLAYER_ERROR4("duplicate device addr %X:%d:%s:%d",
+                  addr.host, addr.robot,
+                  lookup_interface_name(0, addr.interface), 
+                  addr.index);
     pthread_mutex_unlock(&mutex);
-    return -1;
+    return(-1);
   }
     
   // Create a new device entry
-  thisentry = new Device(id, driver, access);
+  thisentry = new Device(addr, driver, access);
   thisentry->next = NULL;
   if(preventry)
     preventry->next = thisentry;
@@ -103,45 +103,43 @@ DeviceTable::AddDevice(player_device_id_t id,
 // returns the controlling object for the given code (or NULL
 // on failure)
 Driver* 
-DeviceTable::GetDriver(player_device_id_t id)
+DeviceTable::GetDriver(player_devaddr_t addr)
 { 
   Device* thisentry;
   Driver* driver = NULL;
 
-  if((thisentry = GetDevice(id)))
+  if((thisentry = GetDevice(addr)))
     driver = thisentry->driver;
 
   return(driver);
 }
 
     
-// returns the string name of the driver in use for the given id 
+// returns the string name of the driver in use for the given addr 
 // (returns NULL on failure)
-char* 
-DeviceTable::GetDriverName(player_device_id_t id)
+const char* 
+DeviceTable::GetDriverName(player_devaddr_t addr)
 {
   Device* thisentry;
   char* driver = NULL;
 
-  if((thisentry = GetDevice(id)))
+  if((thisentry = GetDevice(addr)))
     driver = thisentry->drivername;
 
-  return(driver);
+  return((const char*)driver);
 }
 
 
-// find a device entry, based on id, and return the pointer (or NULL
+// find a device entry, based on addr, and return the pointer (or NULL
 // on failure)
 Device* 
-DeviceTable::GetDevice(player_device_id_t id)
+DeviceTable::GetDevice(player_devaddr_t addr)
 {
   Device* thisentry;
   pthread_mutex_lock(&mutex);
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
-    if((thisentry->id.code == id.code) && 
-       (thisentry->id.index == id.index) &&
-       (thisentry->id.port == id.port))
+    if(Device::MatchDeviceAddress(thisentry->addr, addr))
       break;
   }
 
@@ -153,12 +151,12 @@ DeviceTable::GetDevice(player_device_id_t id)
 // returns the code for access ('r', 'w', or 'a') for the given 
 // device, or 'e' on failure
 unsigned char 
-DeviceTable::GetDeviceAccess(player_device_id_t id)
+DeviceTable::GetDeviceAccess(player_devaddr_t addr)
 {
   Device* thisentry;
   char access = PLAYER_ERROR_MODE;
 
-  if((thisentry = GetDevice(id)))
+  if((thisentry = GetDevice(addr)))
     access = thisentry->access;
 
   return(access);

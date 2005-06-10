@@ -39,6 +39,7 @@ void ErrorPrint(int msgType, int level, const char *file, int line, const char *
 #define PLAYER_ERROR1(msg, a)     ErrorPrint(PLAYER_ERR_ERR, 0, __FILE__, __LINE__, "error   : " msg "\n", a)
 #define PLAYER_ERROR2(msg, a, b)  ErrorPrint(PLAYER_ERR_ERR, 0, __FILE__, __LINE__, "error   : " msg "\n", a, b)
 #define PLAYER_ERROR3(msg, a, b, c)  ErrorPrint(PLAYER_ERR_ERR, 0, __FILE__, __LINE__,  "error   : " msg "\n", a, b, c)
+#define PLAYER_ERROR4(msg, a, b, c,d)  ErrorPrint(PLAYER_ERR_ERR, 0, __FILE__, __LINE__,  "error   : " msg "\n", a, b, c, d)
 
 /// Warning message macros
 #define PLAYER_WARN(msg)        ErrorPrint(PLAYER_ERR_WARN, 0, __FILE__, __LINE__, "warning : " msg "\n")

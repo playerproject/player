@@ -57,8 +57,8 @@ Driver::Driver(ConfigFile *cf, int section,
   driverthread = 0;
   
   // Look for our default device id
-  if(cf->ReadDeviceId(&this->device_id, section, "provides", 
-                      interface, -1, NULL) != 0)
+  if(cf->ReadDeviceAddr(&this->device_addr, section, "provides", 
+                        interface, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -69,7 +69,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->alwayson = false;
 
   // Create an interface 
-  if(this->AddInterface(this->device_id, access) != 0)
+  if(this->AddInterface(this->device_addr, access) != 0)
   {
     this->SetError(-1);    
     return;
@@ -87,7 +87,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->error = 0;
   this->driverthread = 0;
   
-  this->device_id.code = INT_MAX;
+  this->device_addr.interface = INT_MAX;
   
   this->subscriptions = 0;
   this->alwayson = false;
@@ -107,10 +107,10 @@ Driver::~Driver()
 
 // Add an interface
 int 
-Driver::AddInterface(player_device_id_t id, unsigned char access)
+Driver::AddInterface(player_devaddr_t addr, unsigned char access)
 {
   // Add ourself to the device table
-  if(deviceTable->AddDevice(id, access, this) != 0)
+  if(deviceTable->AddDevice(addr, access, this) != 0)
   {
     PLAYER_ERROR("failed to add interface");
     return -1;
@@ -118,41 +118,14 @@ Driver::AddInterface(player_device_id_t id, unsigned char access)
   return 0;
 }
 
-/// @brief Helper for publishing a message from this driver
-///
-/// @p id is the origin device
-/// @p queue, if non-NULL is the target queue.  If @p queue is NULL,
-///  then the message is sent to all interested parties.
 void
-Driver::PutMsg(player_device_id_t id, 
-	       MessageQueue* queue, 
-      	       uint8_t type, 
-	       uint8_t subtype,
-   	       void* src, 
-	       size_t len,
-	       struct timeval* timestamp)
+Driver::Publish(MessageQueue* queue, 
+                player_msghdr_t* hdr,
+                void* src)
 {
-  struct timeval ts;
   Device* dev;
 
-  // Fill in the time structure if not supplied
-  if(timestamp)
-    ts = *timestamp;
-  else
-    GlobalTime->GetTime(&ts);
-
-  player_msghdr_t hdr;
-  memset(&hdr,0,sizeof(player_msghdr_t));
-  hdr.stx = htons(PLAYER_STXX);
-  hdr.type=type;
-  hdr.subtype=subtype;
-  hdr.device=htons(id.code);
-  hdr.device_index=htons(id.index);
-  hdr.timestamp_sec=htonl(timestamp->tv_sec);
-  hdr.timestamp_usec=htonl(timestamp->tv_usec);
-  hdr.size=htonl(len);
-
-  Message msg(hdr,src,len);
+  Message msg(*hdr,src,hdr->size);
 
   if(queue)
   {
@@ -164,7 +137,7 @@ Driver::PutMsg(player_device_id_t id,
     // lock here, because we're accessing our device's queue list
     this->Lock();
     // push onto each queue subscribed to the given device
-    if(!(dev = deviceTable->GetDevice(id)))
+    if(!(dev = deviceTable->GetDevice(hdr->addr)))
     {
       PLAYER_ERROR("tried to publish message via non-existent device");
       this->Unlock();
@@ -179,6 +152,36 @@ Driver::PutMsg(player_device_id_t id,
   }
 }
 
+void
+Driver::Publish(player_devaddr_t addr, 
+                MessageQueue* queue, 
+                uint8_t type, 
+                uint8_t subtype,
+                void* src, 
+                size_t len,
+                struct timeval* timestamp)
+{
+  struct timeval ts;
+
+  // Fill in the time structure if not supplied
+  if(timestamp)
+    ts = *timestamp;
+  else
+    GlobalTime->GetTime(&ts);
+
+  player_msghdr_t hdr;
+  memset(&hdr,0,sizeof(player_msghdr_t));
+  hdr.stx = PLAYER_STXX;
+  hdr.addr = addr;
+  hdr.type = type;
+  hdr.subtype = subtype;
+  hdr.timestamp_sec = ts.tv_sec;
+  hdr.timestamp_usec = ts.tv_usec;
+  hdr.size = len;
+
+  this->Publish(queue, &hdr, src);
+}
+
 void Driver::Lock()
 {
   pthread_mutex_lock(&accessMutex);
@@ -189,7 +192,7 @@ void Driver::Unlock()
   pthread_mutex_unlock(&accessMutex);
 }
     
-int Driver::Subscribe(player_device_id_t id)
+int Driver::Subscribe(player_devaddr_t addr)
 {
   int setupResult;
 
@@ -208,7 +211,7 @@ int Driver::Subscribe(player_device_id_t id)
   return(setupResult);
 }
 
-int Driver::Unsubscribe(player_device_id_t id)
+int Driver::Unsubscribe(player_devaddr_t addr)
 {
   int shutdownResult;
 
@@ -289,7 +292,7 @@ void Driver::ProcessMessages()
   uint8_t* RespData = NULL;
   size_t RespLen;
  
-  // If we have subscriptions, then see if we have and pending messages
+  // If we have subscriptions, then see if we have any pending messages
   // and process them
   Message* msg;
   while((msg = this->InQueue->Pop()))
@@ -300,23 +303,24 @@ void Driver::ProcessMessages()
     if (msg->GetPayloadSize() != hdr->size)
       PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",msg->GetSize() - sizeof(player_msghdr),hdr->size);
 
-    player_device_id_t id;
-    id.code = hdr->device;
-    id.index = hdr->device_index;
     int ret = ProcessMessage(msg->Queue, hdr, data, &RespData, &RespLen);
     if(ret > 0)
     {
-      PutMsg(id, msg->Queue, ret, hdr->subtype, RespData, RespLen, NULL);
+      this->Publish(hdr->addr, msg->Queue, ret, 
+                    hdr->subtype, RespData, RespLen, NULL);
       free(RespData);
     }
     else if(ret < 0)
     {
-      PLAYER_WARN5("Unhandled message for driver device=%d:%d type=%d subtype=%d len=%d\n",hdr->device, hdr->device_index, hdr->type, hdr->subtype, hdr->size);
+      PLAYER_WARN5("Unhandled message for driver "
+                   "device=%d:%d type=%d subtype=%d len=%d\n",
+                   hdr->addr.interface, hdr->addr.index, 
+                   hdr->type, hdr->subtype, hdr->size);
 
       // If it was a request, reply with an empty NACK
       if(hdr->type == PLAYER_MSGTYPE_REQ)
-        PutMsg(id, msg->Queue, PLAYER_MSGTYPE_RESP_NACK, 
-               hdr->subtype, NULL, 0, NULL);
+        this->Publish(hdr->addr, msg->Queue, PLAYER_MSGTYPE_RESP_NACK, 
+                      hdr->subtype, NULL, 0, NULL);
     }
     delete msg;
     pthread_testcancel();

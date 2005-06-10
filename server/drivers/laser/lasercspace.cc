@@ -102,20 +102,18 @@ Andrew Howard
 */
 /** @} */
 
-#include "player.h"
-
 #include <errno.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
+#include "player.h"
+#include "globals.h"
 #include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
-
 
 // Driver for computing the free c-space from a laser scan.
 class LaserCSpace : public Driver
@@ -123,22 +121,16 @@ class LaserCSpace : public Driver
   // Constructor
   public: LaserCSpace( ConfigFile* cf, int section);
 
-  // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    // MessageHandler
+  public: int ProcessMessage(MessageQueue * resp_queue, 
+                              player_msghdr * hdr, 
+                              uint8_t * data, 
+                              uint8_t ** resp_data, 
+                              int * resp_len);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
   public: virtual int Shutdown();
-
-  // Client interface (this device has no thread).
-  /*public: virtual size_t GetData(player_device_id_t id,
-                                 void* dest, size_t len,
-                                 struct timeval* timestamp);*/
-
-  // Client interface (this device has no thread).
-  /*public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);*/
 
   // Process laser data.  Returns non-zero if the laser data has been
   // updated.
@@ -157,8 +149,8 @@ class LaserCSpace : public Driver
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
   // Laser stuff.
-  private: Driver *laser_driver;
-  private: player_device_id_t laser_id;
+  private: Device *laser_device;
+  private: player_devaddr_t laser_addr;
   private: player_laser_data_t laser_data;
   private: struct timeval laser_timestamp;
 
@@ -197,13 +189,13 @@ LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE, PLAYER_READ_MODE)
 {
   // Must have an input laser
-  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
-                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
+                         PLAYER_LASER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
   }
-  this->laser_driver = NULL;
+  this->laser_device = NULL;
   this->laser_timestamp.tv_sec = 0;
   this->laser_timestamp.tv_usec = 0;
 
@@ -225,22 +217,21 @@ LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
 int LaserCSpace::Setup()
 {
   // Subscribe to the laser.
-  this->laser_driver = SubscribeInternal(this->laser_id);
-  if (!this->laser_driver)
-  {
-    PLAYER_ERROR("unable to locate suitable laser device");
-    return(-1);
-  }
-/*  if (this->laser_driver == this)
+  if(Device::MatchDeviceAddress(this->laser_addr, this->device_addr))
   {
     PLAYER_ERROR("attempt to subscribe to self");
     return(-1);
   }
-  if (this->laser_driver->Subscribe(this->laser_id) != 0)
+  if(!(this->laser_device = deviceTable->GetDevice(this->laser_addr)))
+  {
+    PLAYER_ERROR("unable to locate suitable laser device");
+    return(-1);
+  }
+  if(this->laser_device->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
-  }*/
+  }
 
   return 0;
 }
@@ -251,75 +242,67 @@ int LaserCSpace::Setup()
 int LaserCSpace::Shutdown()
 {
   // Unsubscribe from devices.
-  UnsubscribeInternal(this->laser_id);
+  this->laser_device->Unsubscribe(this->InQueue);
   
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserCSpace::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int LaserCSpace::ProcessMessage(MessageQueue * resp_queue, 
+                                player_msghdr * hdr, 
+                                uint8_t * data, 
+                                uint8_t ** resp_data, 
+                                int * resp_len)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
+  *resp_len = 0;
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, laser_id))
+  // Handle new data from the laser
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, this->laser_addr))
   {
-  	assert(hdr->size == sizeof(player_laser_data_t));
-  	player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
-  	Lock();
-
-    UpdateLaser(l_data);
-
-  	Unlock();
-    *resp_len = 0;
-  	return 0;
+    assert(hdr->size == sizeof(player_laser_data_t));
+    player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
+    this->UpdateLaser(l_data);
+    return(0);
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, device_id))
+  // Forward geometry request to the laser
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM,
+                           this->device_addr))
   {
-    hdr->device_index = laser_id.index;
-    int ret = laser_driver->ProcessMessage((ClientData*)BaseClient, hdr, data, resp_data, resp_len);
-    hdr->device_index = device_id.index;
-    return ret;
+    // Forward the message
+    laser_device->PutMsg(this->InQueue, hdr, data);
+    // Store the return address for later use
+    this->ret_queue = resp_queue;
+    // Set the message filter to look for the response
+    this->InQueue->SetFilter(this->laser_addr.host,
+                             this->laser_addr.robot,
+                             this->laser_addr.interface,
+                             this->laser_addr.index,
+                             -1,
+                             PLAYER_LASER_GET_GEOM);
+    // No response now; it will come later after we hear back from the
+    // laser
+    return(0);
   }
 
-  return -1;
+  // Forward geometry response (success or failure) from the laser
+  if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
+                            PLAYER_LASER_GET_GEOM, this->laser_addr)) ||
+     (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
+                            PLAYER_LASER_GET_GEOM, this->laser_addr)))
+  {
+    // Copy in our address and forward the response
+    hdr->addr = this->device_addr;
+    this->Publish(this->ret_queue, hdr, data);
+    // Clear the filter
+    this->InQueue->ClearFilter();
+    // No response to send; we just sent it ourselves
+    return(0);
+  }
+
+  return(-1);
 }
-
-////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by server thread)
-/*size_t 
-LaserCSpace::GetData(player_device_id_t id,
-                     void* dest, size_t len,
-                     struct timeval* timestamp)
-{
-  // Get the current laser data.
-  this->laser_driver->GetData(this->laser_id, 
-                              (void*)&this->laser_data, 
-                              sizeof(this->laser_data),
-                              &this->laser_timestamp);
-  
-  // If there is new laser data, update our data.  Otherwise, we will
-  // just reuse the existing data.
-  if((this->laser_timestamp.tv_sec != this->time.tv_sec) || 
-     (this->laser_timestamp.tv_usec != this->time.tv_usec))
-    this->UpdateLaser();
-
-  // Copy results
-  assert(len >= sizeof(this->data));
-  memcpy(dest, &this->data, sizeof(this->data));
-
-  // Copy the laser timestamp
-  this->time = this->laser_timestamp;
-  *timestamp = this->time;
-
-  return (sizeof(this->data));
-}
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process laser data.
@@ -329,12 +312,12 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   double r;
   
   // Do some byte swapping on the laser data.
-  this->laser_data.resolution = ntohs(data->resolution);
-  this->laser_data.min_angle = ntohs(data->min_angle);
-  this->laser_data.max_angle = ntohs(data->max_angle);
-  this->laser_data.range_count = ntohs(data->range_count);
+  this->laser_data.resolution = data->resolution;
+  this->laser_data.min_angle = data->min_angle;
+  this->laser_data.max_angle = data->max_angle;
+  this->laser_data.range_count = data->range_count;
   for (i = 0; i < this->laser_data.range_count; i++)
-    this->laser_data.ranges[i] = ntohs(data->ranges[i]);
+    this->laser_data.ranges[i] = data->ranges[i];
 
   // Construct the outgoing laser packet
   this->data.resolution = this->laser_data.resolution;
@@ -352,16 +335,17 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
     this->data.ranges[i] = (int16_t) (r * 1000);
   }
 
-    // Do some byte swapping on the outgoing data.
-  this->data.resolution = htons(this->data.resolution);
-  this->data.min_angle = htons(this->data.min_angle);
-  this->data.max_angle = htons(this->data.max_angle);
+  // Do some byte swapping on the outgoing data.
+  this->data.resolution = this->data.resolution;
+  this->data.min_angle = this->data.min_angle;
+  this->data.max_angle = this->data.max_angle;
   for (i = 0; i < this->data.range_count; i++)
-    this->data.ranges[i] = htons(this->data.ranges[i]);
-  this->data.range_count = htons(this->data.range_count);
+    this->data.ranges[i] = this->data.ranges[i];
+  this->data.range_count = this->data.range_count;
   this->data.range_res = this->laser_data.range_res;
 
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t *) &this->data,sizeof(this->data));
+  this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, 0, 
+                (uint8_t *)&this->data, sizeof(this->data), NULL);
 
   return 1;
 }
@@ -453,62 +437,3 @@ double LaserCSpace::FreeRange(int n)
 
   return max_r;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called in server thread)
-/*int 
-LaserCSpace::PutConfig(player_device_id_t id, void *client, 
-                       void* src, size_t len,
-                       struct timeval* timestamp)
-{
-  uint8_t subtype;
-
-  if (len < 1)
-  {
-    PLAYER_ERROR("empty requestion; ignoring");
-    return 0;
-  }
-
-  subtype = ((uint8_t*) src)[0];  
-  switch (subtype)
-  {
-    case PLAYER_LASER_GET_GEOM:
-      HandleGetGeom(client, src, len);
-      break;
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-  }
-  return 0;
-}*/
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-/*void LaserCSpace::HandleGetGeom(void *client, void *request, int len)
-{
-  unsigned short reptype;
-  struct timeval ts;
-  player_laser_geom_t rep;
-  int replen;
-    
-  // Get the geometry from the laser
-  replen = this->laser_driver->Request(this->laser_id, this, 
-                                       request, len, NULL,
-                                       &reptype, &rep, sizeof(rep), &ts);
-  if (replen <= 0 || replen != sizeof(rep))
-  {
-    PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-    
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &rep, sizeof(rep), &ts) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}*/
-
-

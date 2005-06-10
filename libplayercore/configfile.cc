@@ -1818,15 +1818,17 @@ uint32_t ConfigFile::LookupColor(const char *name)
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a device id.
-int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *name,
-                             int code, int index, const char *key)
+int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
+                               const char *name, int code, int index,
+                               const char *key)
 {
   int prop;
   int i, j, count;
   char str[128];
   char *tokens[4];
   int token_count;
-  int port, ind;
+  //int port;
+  int ind;
   const char *s, *k;
   player_interface_t interface;
 
@@ -1863,13 +1865,8 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
     if (token_count > 0)
       tokens[--token_count] = str;
 
-    /* REMOVE
-    printf("\n");
-    printf("[%s] [%s] [%s] [%s]\n", tokens[0], tokens[1], tokens[2], tokens[3]);
-    */
-    
     // We require at least an interface:index pair
-    if (!(tokens[2] && tokens[3]))
+    if(!(tokens[2] && tokens[3]))
     {
       CONFIG_ERR1("missing interface or index in field [%s]", this->fields[prop].line, name);
       return -1;
@@ -1877,10 +1874,14 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
 
     // Extract the fields from the tokens (with default values)
     k = tokens[0];
+    // @todo 
+    // Handle transport-specific addressing options somehow.
+    /*
     //port = global_playerport;
     port = 0;
     if (tokens[1] && strlen(tokens[1]))
       port = atoi(tokens[1]);
+      */
     s = tokens[2];
     ind = atoi(tokens[3]);
         
@@ -1911,9 +1912,9 @@ int ConfigFile::ReadDeviceId(player_device_id_t *id, int section, const char *na
     // Read the field again, just to mark it as read
     GetFieldValue(prop, i, true);
 
-    id->port = port;
-    id->code = interface.code;
-    id->index = ind;
+    //addr->port = port;
+    addr->interface = interface.code;
+    addr->index = ind;
     return 0;
  
   }

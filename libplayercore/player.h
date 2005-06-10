@@ -177,32 +177,45 @@
 #define __PACKED__ __attribute__ ((packed))
 #endif
 
+/** @brief A device address.
 
-/** Generic message header. */
+ Devices are identified by 12-byte addresses of this form. Some of the
+ fields are transport-dependent in their interpretation. */
+typedef struct player_devaddr
+{
+  /** The "host" on which the device resides.  Transport-dependent. */
+  uint32_t host;
+  /** The "robot" or device collection in which the device resides.
+      Transport-dependent */
+  uint32_t robot;
+  /** The interface provided by the device; must be one of PLAYER_*_CODE */
+  uint16_t interface;
+  /** Which device of that interface */
+  uint16_t index;
+} __PACKED__ player_devaddr_t;
+
+
+/** @brief Generic message header. 
+
+ Every message starts with this header.*/
 typedef struct player_msghdr
 {
   /** Start character; always equal to "xX" (0x5878) */
   uint16_t stx;     
+  /** Device to which this message pertains */
+  player_devaddr_t addr;
   /** Message type; must be one of PLAYER_MSGTYPE_* */
   uint8_t type;    
   /** Message subtype; interface specific */
   uint8_t subtype;    
-  /** What kind of device; must be one of PLAYER_*_CODE */
-  uint16_t device;  
-  /** Which device of that kind */
-  uint16_t device_index; 
-  /** Server's current time (seconds since epoch) */
-  uint32_t time_sec;  
-  /** Server's current time (microseconds since epoch) */
-  uint32_t time_usec; 
-  /** Time when the current data/response was generated */
+  /** Time associated with message contents (seconds since epoch) */
   uint32_t timestamp_sec;  
-  /** Time when the current data/response was generated */
+  /** Time associated with message contents (microseconds since epoch) */
   uint32_t timestamp_usec; 
-  /** For tracking UDP connections */
-  uint16_t conid;  
-  /** For keeping track of associated messages */
-  uint16_t seq;  
+  /** For keeping track of associated messages.  Transport-specific. */
+  uint32_t seq;
+  /** Reserved space for expansion and/or transport-specific use. */
+  uint32_t reserved0;
   /** Size in bytes of the payload to follow */
   uint32_t size;  
 } __PACKED__ player_msghdr_t;
@@ -275,21 +288,6 @@ from devices. */
 #define PLAYER_PLAYER_NAMESERVICE ((uint8_t)8)
 #define PLAYER_PLAYER_IDENT       ((uint8_t)9)
 
-/** @brief A device identifier.
-
- Devices are differentiated internally in Player by 
- these identifiers, and some messages contain them. */
-typedef struct player_device_id
-{
-  /** The interface provided by the device; must be one of PLAYER_*_CODE */
-  uint16_t code;
-  /** The index of the device */
-  uint16_t index;
-  /** The TCP port of the device */
-  uint16_t port;
-} __PACKED__ player_device_id_t;
-
-
 /** @brief Configuration request: Get the list of available devices.
 
     It's useful for applications such as viewer programs
@@ -304,7 +302,7 @@ typedef struct player_device_devlist
   uint16_t device_count;
 
   /** The list of available devices. */
-  player_device_id_t devices[PLAYER_MAX_DEVICES];
+  player_devaddr_t devices[PLAYER_MAX_DEVICES];
 } __PACKED__ player_device_devlist_t;
 
 /** @brief Configuration request: Get the driver name for a particular device.
@@ -317,7 +315,7 @@ typedef struct player_device_driverinfo
   //uint16_t subtype;
 
   /** The device identifier. */
-  player_device_id_t id;
+  player_devaddr_t id;
 
   /** The driver name (returned) */
   char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];

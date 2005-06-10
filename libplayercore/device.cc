@@ -41,21 +41,21 @@
 #include <libplayercore/playertime.h>
 #include <libplayercore/globals.h>
 
-// Default constructor
-Device::Device(player_device_id_t id, Driver *device, unsigned char access)
+// Constructor
+Device::Device(player_devaddr_t addr, Driver *device, unsigned char access)
 {
   this->next = NULL;
 
-  this->id = id;
+  this->addr = addr;
   this->driver = device;
   this->access = access;
 
   memset(this->drivername, 0, sizeof(this->drivername));
 
-  if (this->driver)
+  if(this->driver)
   {
     this->driver->entries++;
-    this->driver->device_id = id;
+    this->driver->device_addr = addr;
   }
 
   // Start with just a couple of entries; we'll double the size as
@@ -91,7 +91,7 @@ Device::Subscribe(MessageQueue* sub_queue)
   size_t i;
 
   this->driver->Lock();
-  if((retval = this->driver->Subscribe(this->id)))
+  if((retval = this->driver->Subscribe(this->addr)))
   {
     this->driver->Unlock();
     return(retval);
@@ -132,7 +132,7 @@ Device::Unsubscribe(MessageQueue* sub_queue)
 
   this->driver->Lock();
 
-  if((retval = this->driver->Unsubscribe(this->id)))
+  if((retval = this->driver->Unsubscribe(this->addr)))
   {
     this->driver->Unlock();
     return(retval);
@@ -153,16 +153,30 @@ Device::Unsubscribe(MessageQueue* sub_queue)
   return(-1);
 }
 
+void
+Device::PutMsg(MessageQueue* resp_queue,
+               player_msghdr_t* hdr,
+               void* src)
+{
+  hdr->addr = this->addr;
+  Message msg(*hdr,src,hdr->size,resp_queue);
+  // don't need to lock here, because the queue does its own locking in Push
+  this->driver->InQueue->Push(msg);
+}
+
+
 void 
-Device::PutMsg(uint8_t type, 
+Device::PutMsg(MessageQueue* resp_queue,
+               uint8_t type,
                uint8_t subtype,
-               void* src, 
+               void* src,
                size_t len,
                struct timeval* timestamp)
 {
   struct timeval ts;
   player_msghdr_t hdr;
   
+
   // Fill in the current time if not supplied
   if(timestamp)
     ts = *timestamp;
@@ -170,18 +184,13 @@ Device::PutMsg(uint8_t type,
     GlobalTime->GetTime(&ts);
 
   memset(&hdr,0,sizeof(player_msghdr_t));
-  hdr.stx = htons(PLAYER_STXX);
-  hdr.type=type;
-  hdr.subtype=subtype;
-  hdr.device=htons(this->id.code);
-  hdr.device_index=htons(this->id.index);
-  hdr.timestamp_sec=htonl(ts.tv_sec);
-  hdr.timestamp_usec=htonl(ts.tv_usec);
-  hdr.size=htonl(len);
+  hdr.stx = PLAYER_STXX;
+  hdr.type = type;
+  hdr.subtype = subtype;
+  hdr.timestamp_sec = ts.tv_sec;
+  hdr.timestamp_usec = ts.tv_usec;
+  hdr.size = len;
 
-  Message msg(hdr,src,len);
-
-  // don't need to lock here, because the queue does its own locking in Push
-  this->driver->InQueue->Push(msg);
+  this->PutMsg(resp_queue, &hdr, src);
 }
 

@@ -49,7 +49,8 @@ class Driver;
 class Driver
 {
   private:
-    /// @brief Mutex used to lock....via Lock() and Unlock().
+    /// @brief Mutex used to lock access, via Lock() and Unlock(), to
+    /// driver internals, like the list of subscribed queues.
     pthread_mutex_t accessMutex;
 
     /// @brief Last error value; useful for returning error codes from
@@ -63,6 +64,13 @@ class Driver
     /// StopThread().
     pthread_t driverthread;
 
+    /// @brief Last requester's queue.
+    ///
+    /// Pointer to a queue to which this driver owes a reply.  Used mainly
+    /// by non-threaded drivers to cache the return address for requests
+    /// that get forwarded to other devices.
+    MessageQueue* ret_queue;
+
     /// @brief Start the driver thread
     ///
     /// This method is usually called from the overloaded Setup() method to
@@ -75,52 +83,73 @@ class Driver
     /// to terminate the driver thread.
     virtual void StopThread(void);
 
-    // Dummy main (just calls real main).  This is used to simplify
-    // thread creation.
+    /// @brief Dummy main (just calls real main).  This is used to simplify
+    /// thread creation.
     static void* DummyMain(void *driver);
 
-    // Dummy main cleanup (just calls real main cleanup).  This is
-    // used to simplify thread termination.
+    /// @brief Dummy main cleanup (just calls real main cleanup).  This is
+    /// used to simplify thread termination.
     static void DummyMainQuit(void *driver);
 
-    /// Publish a message.
-    /// - @p id is the origin device
-    /// - @p queue, if non-NULL is the target queue.  If @p queue is NULL,
-    ///   then the message is sent to all interested parties.
-    virtual void PutMsg(player_device_id_t id, 
-                        MessageQueue* queue, 
-                        uint8_t type, 
-                        uint8_t subtype,
-                        void* src, 
-                        size_t len = 0,
-                        struct timeval* timestamp = NULL);
-
-    /// @brief Add a new-style interface.
+    /// @brief Publish a message via one of this driver's interfaces.
     ///
-    /// @param id Player device id.
+    /// This form of Publish will assemble the message header for you.
+    /// @param addr The origin address
+    /// @param queue If non-NULL, the target queue; if NULL,
+    ///        then the message is sent to all interested parties.
+    /// @param type The message type
+    /// @param subtype The message subtype
+    /// @param src The message body
+    /// @param len Length of the message body
+    /// @param timestamp Timestamp for the message body
+    virtual void Publish(player_devaddr_t addr, 
+                         MessageQueue* queue, 
+                         uint8_t type, 
+                         uint8_t subtype,
+                         void* src, 
+                         size_t len,
+                         struct timeval* timestamp);
+
+    /// @brief Publish a message via one of this driver's interfaces.
+    ///
+    /// Use this form of Publish if you already have the message header
+    /// assembled.
+    /// @param queue If non-NULL, the target queue; if NULL,
+    ///        then the message is sent to all interested parties.
+    /// @param hdr The message header
+    /// @param src The message body
+    void Publish(MessageQueue* queue, 
+                 player_msghdr_t* hdr,
+                 void* src);
+
+    /// @brief Add an interface.
+    ///
+    /// @param addr Player device address.
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
     /// @returns Returns 0 on success
-    int AddInterface(player_device_id_t id, unsigned char access);
+    int AddInterface(player_devaddr_t addr, unsigned char access);
     
     /// @brief Set/reset error code
     void SetError(int code) {this->error = code;}
     
   public:
-    // these methods are used to lock and unlock the various buffers and
-    // queues; they are implemented with mutexes in Driver
+    /// @brief Lock access to driver internals.
     virtual void Lock(void);
+    /// @brief Unlock access to driver internals.
     virtual void Unlock(void);
 
-    /// Default device id (single-interface drivers)
-    player_device_id_t device_id;
+    /// @brief Default device address (single-interface drivers)
+    player_devaddr_t device_addr;
         
-    /// Number of subscriptions to this driver.
+    /// @brief Number of subscriptions to this driver.
     int subscriptions;
 
-    /// Total number of entries in the device table using this driver.
+    /// @brief Total number of entries in the device table using this driver.
     /// This is updated and read by the Device class.
     int entries;
 
+    /// @brief Always on flag.
+    ///
     /// If true, driver should be "always on", i.e., player will
     /// "subscribe" at startup, before any clients subscribe. The
     /// "alwayson" parameter in the config file can be used to turn
@@ -128,7 +157,7 @@ class Driver
     /// to reflect that setting).
     bool alwayson;
 
-    /// Queue for all incoming messages for this driver
+    /// @brief Queue for all incoming messages for this driver
     MessageQueue* InQueue;
 
     /// @brief Constructor for single-interface drivers.
@@ -171,10 +200,10 @@ class Driver
     /// subscriptions to the driver; a driver MAY override them, but
     /// usually won't.  
     ///
-    /// @param id Id of the device to subscribe to (the driver may
+    /// @param addr Address of the device to subscribe to (the driver may
     /// have more than one interface).
     /// @returns Returns 0 on success.
-    virtual int Subscribe(player_device_id_t id);
+    virtual int Subscribe(player_devaddr_t addr);
 
     /// @brief Unsubscribe from this driver.
     ///
@@ -182,10 +211,10 @@ class Driver
     /// subscriptions to the driver; a driver MAY override them, but
     /// usually won't.  
     ///
-    /// @param id Id of the device to unsubscribe from (the driver may
+    /// @param addr Address of the device to unsubscribe from (the driver may
     /// have more than one interface).
     /// @returns Returns 0 on success.
-    virtual int Unsubscribe(player_device_id_t id);
+    virtual int Unsubscribe(player_devaddr_t addr);
 
     /// @brief Initialize the driver.
     ///
@@ -225,53 +254,37 @@ class Driver
     /// driver thread exits.
     virtual void MainQuit(void);
 
-    /// Call this to automatically process messages using registered handler
+    /// @brief Process pending messages.
+    ///
+    /// Call this to automatically process messages using registered handler,
+    /// Driver::ProcessMessage.
     /// Processes messages until no messages remaining in the queue or
     /// a message with no handler is reached
     void ProcessMessages();
 	
+    /// @brief Message handler.
+    ///
     /// This function is called once for each message in the incoming queue.
     /// Reimplement it to provide message handling.
     /// Return 0 for no response, otherwise with player_msgtype if response 
-    /// needed.
+    /// needed.  If a response is needed, storage to hold it will be
+    /// allocated in this method and @p resp_data will point to it.  The
+    /// caller is responsible for freeing this storage.
     /// If calling this method from outside the driver lock the driver mutex 
     /// first.
     /// When writing the driver make sure to protect accesses that could 
     /// clash in the main thread with mutex locks.
-    /// @p resp_data will be filled out with the response data and 
-    /// @p resp_len set to the actual response size; @p resp_data should be 
-    /// able to take max player msg size.
+    /// @param resp_queue The queue to which any response should go.
+    /// @param hdr The message header
+    /// @param data The message body
+    /// @param resp_data Place to put a response
+    /// @param resp_len Place to put length of response
     virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
                                uint8_t * data, uint8_t** resp_data,
                                size_t * resp_len) 
     {*resp_len = 0; *resp_data = NULL; return -1;};
 
-#if 0
-    /// Helper function that creates the header and then calls driver ProcessMessage
-    /// for use by drivers for internal requests
-    virtual int ProcessMessage(uint8_t Type, uint8_t SubType,
-                               player_device_id_t device,
-                               size_t size, uint8_t * data, 
-                               uint8_t * resp_data, size_t * resp_len);
-
-    /// Helper function that creates the header and then calls driver ProcessMessage
-    /// for use by drivers for internal requests that expect no reply
-    virtual int ProcessMessage(uint8_t Type, uint8_t SubType,
-                       player_device_id_t device,
-                       size_t size, uint8_t * data);
-#endif
-
-    // a static version of DataAvailable that can be used as a
-    // callback from libraries. It calls driver->DataAvailable(). 
-    //static void DataAvailableStatic(Driver* driver, player_device_id_t id);
-
     /// @brief Update non-threaded drivers.
-    ///
-    /// This method is called once per loop (in Linux, probably either
-    /// 50Hz or 100Hz) by the server.  Threaded drivers can use the
-    /// default implementation, which does nothing.  Non-threaded
-    /// drivers should do whatever they have to do, and call PutData()
-    /// when they have new data.
     virtual void Update() 
     {
       if(!this->driverthread)

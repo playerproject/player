@@ -47,10 +47,10 @@ class Device
   
     /// @brief Constructor
     ///
-    /// @p id is the device id
+    /// @p addr is the device address
     /// @p driver is a pointer to the underlying driver
     /// @p access is the allowed access
-    Device(player_device_id_t id, Driver *driver, unsigned char access);
+    Device(player_devaddr_t addr, Driver *driver, unsigned char access);
 
     /// @brief Destructor
     ~Device();
@@ -69,17 +69,31 @@ class Device
     /// - @p len is the length of the message payload
     /// - @p timestamp will be attached to the message; if it is NULL, then
     ///   the current time will be used.
-    void PutMsg(uint8_t type, 
+    void PutMsg(MessageQueue* resp_queue,
+                uint8_t type, 
                 uint8_t subtype,
                 void* src, 
                 size_t len,
                 struct timeval* timestamp);
 
+    void PutMsg(MessageQueue* resp_queue,
+                player_msghdr_t* hdr,
+                void* src);
+
+    static bool MatchDeviceAddress(player_devaddr_t addr1,
+                                   player_devaddr_t addr2)
+    {
+      return((addr1.host == addr2.host) &&
+             (addr1.robot == addr2.robot) &&
+             (addr1.interface == addr2.interface) &&
+             (addr1.index == addr2.index));
+    }
+
     /// Next entry in the device table (this is a linked-list)
     Device* next;
 
-    /// Id for this device
-    player_device_id_t id;
+    /// Address for this device
+    player_devaddr_t addr;
 
     /// Allowed access mode: 'r', 'w', or 'a'
     unsigned char access;   
