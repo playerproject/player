@@ -98,13 +98,13 @@ Message::~Message()
 
 bool 
 Message::Compare(Message &other)
-{ 
+{
   player_msghdr_t* thishdr = this->GetHeader();
   player_msghdr_t* otherhdr = other.GetHeader();
-  return((thishdr->type == otherhdr->type) &&
-         (thishdr->subtype == otherhdr->subtype) &&
-         (thishdr->device == otherhdr->device) &&
-         (thishdr->device_index == otherhdr->device_index));
+  return(Message::MatchMessage(thishdr,
+                               otherhdr->type,
+                               otherhdr->subtype,
+                               otherhdr->addr));
 };
 
 void 
@@ -144,6 +144,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   pthread_mutex_init(&this->lock,NULL);
   pthread_mutex_init(&this->condMutex,NULL);
   pthread_cond_init(&this->cond,NULL);
+  this->ClearFilter();
 }
 
 MessageQueue::~MessageQueue()
@@ -177,6 +178,48 @@ MessageQueue::Wait(void)
   pthread_mutex_unlock(&this->condMutex);
   pthread_cleanup_pop(0);
 }
+
+bool
+MessageQueue::Filter(Message& msg)
+{
+  player_msghdr_t* hdr = msg.GetHeader();
+  return(((this->filter_host < 0) || 
+          ((unsigned int)this->filter_host == hdr->addr.host)) &&
+         ((this->filter_robot < 0) || 
+          ((unsigned int)this->filter_robot == hdr->addr.robot)) &&
+         ((this->filter_interface < 0) || 
+          ((unsigned int)this->filter_interface == hdr->addr.interface)) &&
+         ((this->filter_index < 0) || 
+          ((unsigned int)this->filter_index == hdr->addr.index)) &&
+         ((this->filter_type < 0) || 
+          ((unsigned int)this->filter_type == hdr->type)) &&
+         ((this->filter_subtype < 0) || 
+          ((unsigned int)this->filter_subtype == hdr->subtype)));
+}
+
+void
+MessageQueue::SetFilter(int host, int robot, int interface, 
+                        int index, int type, int subtype)
+{
+  this->filter_host = host;
+  this->filter_robot = robot;
+  this->filter_interface = interface;
+  this->filter_index = index;
+  this->filter_type = type;
+  this->filter_subtype = subtype;
+}
+
+void
+MessageQueue::ClearFilter(void)
+{
+  this->filter_host = -1;
+  this->filter_robot = -1;
+  this->filter_interface = -1;
+  this->filter_index = -1;
+  this->filter_type = -1;
+  this->filter_subtype = -1;
+}
+
 
 // Signal that new data is available (calls pthread_cond_broadcast()
 // on this device's condition variable, which will release other
@@ -254,13 +297,21 @@ MessageQueue::Pop()
     return(NULL);
   }
 
-  el = this->head;
-  assert(el);
-  this->Remove(el);
+  // start at the head and traverse the queue until a filter-friendly
+  // message is found
+  for(el = this->head; el; el = el->next)
+  {
+    if(this->Filter(*el->msg))
+    {
+      this->Remove(el);
+      Unlock();
+      Message* retmsg = el->msg;
+      delete el;
+      return(retmsg);
+    }
+  }
   Unlock();
-  Message* retmsg = el->msg;
-  delete el;
-  return(retmsg);
+  return(NULL);
 }
 
 void

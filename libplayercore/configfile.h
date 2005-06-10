@@ -283,8 +283,9 @@ class ConfigFile
   /// @param index Tuple index (use -1 to match all indices).
   /// @param key Device key value (use NULL to match all key vales).
   /// @return Non-zero on error.
-  public: int ReadDeviceId(player_device_id_t *id, int section, const char *name,
-                           int code, int index, const char *key);
+  public: int ReadDeviceAddr(player_devaddr_t* addr, int section, 
+                             const char *name, int code, int index, 
+                             const char *key);
 
   // Parse a driver block, and update the deviceTable accordingly
   public: bool ParseDriver(int section);

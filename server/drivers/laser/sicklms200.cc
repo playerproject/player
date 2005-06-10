@@ -128,7 +128,6 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <sys/ioctl.h>
 
 
@@ -499,14 +498,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
                            int * resp_len)
 {
   int retval = 0;
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
   *resp_len = 0;
 
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, 
-                           this->device_id))
+                           this->device_addr))
   {
     if(hdr->size != sizeof(player_laser_config_t))
     {
@@ -517,10 +512,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 
     player_laser_config_t * config = reinterpret_cast<player_laser_config_t *> (data);
     this->intensity = config->intensity;
-    this->scan_res = ntohs(config->resolution);
-    this->min_angle = (short) ntohs(config->min_angle);
-    this->max_angle = (short) ntohs(config->max_angle);
-    this->range_res = ntohs(config->range_res);
+    this->scan_res = config->resolution;
+    this->min_angle = (short) config->min_angle;
+    this->max_angle = (short) config->max_angle;
+    this->range_res = config->range_res;
 
     if(this->CheckScanConfig() != 0)
     {
@@ -560,7 +555,7 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_LASER_GET_CONFIG,
-                                 this->device_id))
+                                 this->device_addr))
   {
     if(hdr->size != 0)
     {
@@ -570,10 +565,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     }
     player_laser_config_t config;
     config.intensity = this->intensity;
-    config.resolution = htons(this->scan_res);
-    config.min_angle = htons((short) this->min_angle);
-    config.max_angle = htons((short) this->max_angle);
-    config.range_res = htons(this->range_res);
+    config.resolution = this->scan_res;
+    config.min_angle = (short) this->min_angle;
+    config.max_angle = (short) this->max_angle;
+    config.range_res = this->range_res;
 
     *resp_len = sizeof(player_laser_config_t);
     *resp_data = (uint8_t*)calloc(1,sizeof(player_laser_config_t));
@@ -583,7 +578,7 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_LASER_GET_GEOM,
-                                 this->device_id))
+                                 this->device_addr))
   {
     if(hdr->size != 0)
     {
@@ -592,11 +587,11 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
       return(PLAYER_MSGTYPE_RESP_NACK);
     }
     player_laser_geom_t geom;
-    geom.pose[0] = htons((short) (this->pose[0] * 1000));
-    geom.pose[1] = htons((short) (this->pose[1] * 1000));
-    geom.pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-    geom.size[0] = htons((short) (this->size[0] * 1000));
-    geom.size[1] = htons((short) (this->size[1] * 1000));
+    geom.pose[0] = (short) (this->pose[0] * 1000);
+    geom.pose[1] = (short) (this->pose[1] * 1000);
+    geom.pose[2] = (short) (this->pose[2] * 180/M_PI);
+    geom.size[0] = (short) (this->size[0] * 1000);
+    geom.size[1] = (short) (this->size[1] * 1000);
 
     *resp_len = sizeof(player_laser_geom_t);
     *resp_data = (uint8_t*)calloc(1,sizeof(player_laser_geom_t));
@@ -645,15 +640,15 @@ void SickLMS200::Main()
       }
       
       // Prepare packet and byte swap
-      data.min_angle = htons(this->scan_min_segment * this->scan_res - this->scan_width * 50);
-      data.max_angle = htons(this->scan_max_segment * this->scan_res - this->scan_width * 50);
-      data.resolution = htons(this->scan_res);
-      data.range_count = htons(this->scan_max_segment - this->scan_min_segment + 1);
-      data.range_res = htons((uint16_t) this->range_res);
+      data.min_angle = this->scan_min_segment * this->scan_res - this->scan_width * 50;
+      data.max_angle = this->scan_max_segment * this->scan_res - this->scan_width * 50;
+      data.resolution = this->scan_res;
+      data.range_count = this->scan_max_segment - this->scan_min_segment + 1;
+      data.range_res = (uint16_t) this->range_res;
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
         data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-        data.ranges[i] = htons((uint16_t) (data.ranges[i] & 0x1FFF));
+        data.ranges[i] = (uint16_t) (data.ranges[i] & 0x1FFF);
       }
 
       // if the laser is upside-down, reverse the data and intensity
@@ -676,7 +671,8 @@ void SickLMS200::Main()
       }
       
       // Make data available
-      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*) &data, sizeof(data), &time);
+      this->Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, 0, 
+                    (uint8_t*) &data, sizeof(data), &time);
     }
   }
 }
