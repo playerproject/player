@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
   headerfile.write('#include <rpc/types.h>\n')
   headerfile.write('#include <rpc/xdr.h>\n\n')
-  headerfile.write('#include <player.h>\n\n')
+  headerfile.write('#include <libplayercore/player.h>\n\n')
   headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
   headerfile.write('#define PLAYER_ENCODE XDR_ENCODE\n')
   headerfile.write('#define PLAYER_DECODE XDR_DECODE\n\n')
