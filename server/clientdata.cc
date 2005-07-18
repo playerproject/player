@@ -992,32 +992,34 @@ void print_buffer( char* desc, unsigned char* buf, size_t buflen )
 
 int 
 ClientDataTCP::Read()
- {
-   //int thisreadcnt;
-   //bool msgready = false;
-
-   //char c;
+{
+  // debug & test statistics
+  static int message_count = 0;
+  static int read_count = 0;
   
   // create a static input buffer that we'll use every time though
-  // this function.
+  // this function. It'll be freed automatically on exit.
   const size_t inbuflen = 65535;
   static unsigned char* inbuf = NULL;
   if( ! inbuf )
     inbuf = (unsigned char*)calloc( inbuflen, 1 );
- 
+  
   int bytes_rcv = 0;
- 
+  
   // read a big chunk from the socket
-  if( bytes_rcv = read(socket,inbuf,inbuflen) );
+  bytes_rcv = read(socket,inbuf,inbuflen);
   
-  //printf( "read %d bytes on socket %d\n", (int)bytes_rcv, socket );
-  
+  read_count++;
+
+  //printf( "read %d bytes on socket %d\n", (int)bytes_rcv, socket );  
   //print_buffer( "inbuf", inbuf, bytes_rcv );
 
   if( bytes_rcv < 1 )
     {
       if( errno == EAGAIN )
-	return 0; // no data was available to parse. done.
+	return 0; // no data was available to parse. done. this won't
+		  // happen if the calling function checked poll() or
+		  // select() first.
       else
 	return -1; // client gone or some other socket problem. error.
     }
@@ -1030,9 +1032,7 @@ ClientDataTCP::Read()
   // this is the last address in the buffer
   unsigned char *end = ptr + inbuflen;
 
-  int message_count = 0;
-  
-  for( unsigned char* ptr = inbuf; ptr <= end; /*empty*/  )
+  while( ptr <= end )
     {
       //puts( "*STATE MACHINE START*" );
 
@@ -1049,8 +1049,7 @@ ClientDataTCP::Read()
 	    {
 	      ptr++;
 	      
-	      if( ptr > end )
-		break; // need more data
+	      if( ptr > end ) break; // need another read()
 	    }
 	  
 	  //printf( "found first byte at buffer index %d\n", ptr - inbuf );
@@ -1085,9 +1084,6 @@ ClientDataTCP::Read()
 	  
 	  // deliberate no-break
 	  
-
-	  //print_buffer( "ptr", ptr, sizeof(player_msghdr_t) );
-
 	case PLAYER_AWAITING_REST_OF_HEADER:
 	  //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
 	  // readcnt,sizeof(player_msghdr_t));
@@ -1115,12 +1111,9 @@ ClientDataTCP::Read()
 	  hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
 	  hdrbuffer.size = ntohl(hdrbuffer.size);
 	  
-
-	  //print_buffer( "hdrbuffer", (unsigned char*)&hdrbuffer, sizeof(hdrbuffer));
-	
-  
-	  //printf( "header:\ntype %d\ndevice %d\ndevice_index %d\nsize %d\n",
-	  //  hdrbuffer.type, hdrbuffer.device, hdrbuffer.device_index, hdrbuffer.size );
+	  //printf( "header:\ntype %d\ndevice %d\ndevice_index
+	  //%d\nsize %d\n", hdrbuffer.type, hdrbuffer.device,
+	  //hdrbuffer.device_index, hdrbuffer.size );
 	  
 	  // make sure it's not too big
 	  if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
@@ -1151,25 +1144,14 @@ ClientDataTCP::Read()
 	  //printf("PLAYER_AWAITING_REST_OF_BODY: %d/%d bytes\n",readcnt,hdrbuffer.size);
 	  /* get the payload */
 	  
-	  //print_buffer( "ptr (body)", ptr, hdrbuffer.size );
-
-	  //printf( "starting copy. readcnt: %d hdrbuffer.size: %d\n", 
-	  //  (int)readcnt, (int)hdrbuffer.size );
-
 	  while( readcnt < hdrbuffer.size )
 	    {
 	      ((unsigned char*)readbuffer)[readcnt++] =  *ptr++;
 	      if( ptr > end ) break; // need more data
 	    }
 
-	  //printf( "ended copy. readcnt: %d hdrbuffer.size: %d\n", 
-	  //  (int)readcnt, (int)hdrbuffer.size );
-	  
-	  
 	  //puts( "MESSAGE COMPLETE" );
 	  
-	  //print_buffer( "readbuffer", (unsigned char*)readbuffer, readcnt );
-
 	  // we have a whole message: handle it right here.
 	  HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size);
 
@@ -1192,7 +1174,9 @@ ClientDataTCP::Read()
 	}
     }
   
-  printf( "handled %d messages with 1 read\n", message_count );
+  //printf( "reads %d messages %d ratio %.2f\n", 
+  //  read_count, message_count, 
+  //  (double)read_count/(double)message_count );
 
   return(0);
  }
