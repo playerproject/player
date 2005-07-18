@@ -4,9 +4,6 @@
 #  - Handle variable-length arrays (I keep getting segfaults)
 #
 #  - Handle multi-dimensional arrays (e.g., player_sonar_geom_t::poses)
-# 
-#  - Report length properly.  Also, think about how the caller is supposed
-#    to guess the right size for the supplied buffer.
 
 
 import re
@@ -52,6 +49,29 @@ if __name__ == '__main__':
  
   print 'Found ' + `len(structs)` + ' struct(s)'
 
+  headerfile.write('''/*
+ * libplayerxdr
+ *
+ * This library provides functions for translating between player C message
+ * structs and their XDR representations.  For each 'struct player_foo',
+ * there is a single function of the following name and form:
+ *    size_t player_foo_pack(void* buf, size_t buflen, player_foo_t* msg, int op);
+ * This function will either pack (encode to XDR) or unpack (decode from
+ * XDR), depending on the last argument.
+ *
+ * Params:
+ *  - buf: The XDR-encoded buffer that is being encoded / decoded.
+ *  - buflen: Size of buf, in bytes.
+ *  - msg: Pointer to the C struct that is being encoded / decoded.
+ *  - op: Either PLAYER_ENCODE or PLAYER_DECODE
+ *
+ * Returns: The length of the XDR-encoded buffer.
+ *
+ * The caller is responsible for allocating enough space to buf.  Currently
+ * no checking is done for buffer overruns.
+ */\n\n''')
+  headerfile.write('#ifndef _PLAYERXDR_PACK_H_\n')
+  headerfile.write('#define _PLAYERXDR_PACK_H_\n\n')
   headerfile.write('#include <rpc/types.h>\n')
   headerfile.write('#include <rpc/xdr.h>\n\n')
   headerfile.write('#include <libplayercore/player.h>\n\n')
@@ -90,16 +110,15 @@ if __name__ == '__main__':
       if i == 0:
         headerfile.write('int xdr_' + typename + '(XDR* xdrs, ' + typename + 
                          '* msg);\n')
-        sourcefile.write('int xdr_' + typename + '(XDR* xdrs, ' + typename + 
+        sourcefile.write('int\n xdr_' + typename + '(XDR* xdrs, ' + typename + 
                          '* msg)\n{\n')
       else:
-        headerfile.write('int ' + prefix + '_pack(void* buf, size_t buflen, ' +
+        headerfile.write('size_t ' + prefix + '_pack(void* buf, size_t buflen, ' +
                          typename + '* msg, int op);\n')
-        sourcefile.write('int\n' + prefix + '_pack(void* buf, size_t buflen, ' +
+        sourcefile.write('size_t\n' + prefix + '_pack(void* buf, size_t buflen, ' +
                          typename + '* msg, int op)\n{\n')
         sourcefile.write('  XDR xdrs;\n')
         sourcefile.write('  size_t len;\n')
-        sourcefile.write('  len = 0;\n')
         sourcefile.write('  xdrmem_create(&xdrs, buf, buflen, op);\n')
   
       # separate the variable declarations
@@ -160,10 +179,12 @@ if __name__ == '__main__':
       if i == 0:
         sourcefile.write('  return(1);\n}\n\n')
       else:
+        sourcefile.write('  len = xdr_getpos(&xdrs);;\n')
         sourcefile.write('  xdr_destroy(&xdrs);\n')
         sourcefile.write('  return(len);\n}\n\n')
 
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')
+  headerfile.write('#endif\n')
 
   sourcefile.close()
   headerfile.close()

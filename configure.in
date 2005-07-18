@@ -254,6 +254,8 @@ AC_OUTPUT(Makefile
           doc/Makefile 
           libplayercore/Makefile 
           libplayercore/playercore.pc
+          libplayerxdr/Makefile 
+          libplayerxdr/playerxdr.pc
           server/Makefile 
           server/drivers/Makefile 
           server/drivers/gps/Makefile 
