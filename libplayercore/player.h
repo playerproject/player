@@ -630,7 +630,7 @@ zero-length acknowledgement.*/
 typedef struct player_motor_velocitymode_config
 {
   /** subtype; must be PLAYER_MOTOR_VELOCITY_MODE_REQ */
-  //int8_t request;
+  //char request;
   /** driver-specific */
   uint8_t value;
 } __PACKED__ player_motor_velocitymode_config_t;
@@ -1600,9 +1600,9 @@ typedef struct player_blobfinder_imager_config
       ( 0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
       2=YCrCB/AWB Off, 3=YCrCb/AWB On)  -1=no change.
   */
-  int8_t  colormode;
+  char  colormode;
   /** AutoGain:   0=off, 1=on.  -1=no change. */
-  int8_t  autogain;
+  char  autogain;
 } __PACKED__ player_blobfinder_imager_config_t;
 
 /** @} */
@@ -1864,7 +1864,7 @@ typedef struct player_audiodsp_cmd
   /** Duration to play (msec) */
   uint32_t duration;
   /** BitString to encode in sine wave */
-  unsigned char bitString[PLAYER_MAX_DEVICE_STRING_LEN];
+  uint8_t bitString[PLAYER_MAX_DEVICE_STRING_LEN];
   /** Length of the bit string */
   uint16_t bitStringLen;
 } __PACKED__ player_audiodsp_cmd_t;
@@ -2935,7 +2935,7 @@ typedef struct player_map_data
   /** The size of the tile (pixels). */
   uint32_t width, height;
   /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
-  int8_t data[PLAYER_MAX_REQREP_SIZE - 17];
+  char data[PLAYER_MAX_REQREP_SIZE - 17];
 } __PACKED__ player_map_data_t;
 
 
@@ -3123,7 +3123,7 @@ typedef struct player_energy_data
       charge from another energy device. If -1 the device is currently
       providing charge to another energy device. If 0, the device is
       not exchanging charge with an another device. */
-  int8_t charging;
+  char charging;
   
 } __PACKED__ player_energy_data_t;
 
