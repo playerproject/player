@@ -977,158 +977,225 @@ ClientData::FillWriteBuffer(unsigned char* src, size_t offset, size_t len)
 /*************************************************************************
  * ClientDataTCP
  *************************************************************************/
+
+
+void print_buffer( char* desc, unsigned char* buf, size_t buflen )
+{
+  printf( "Buffer %s at %p %d bytes \n", desc, buf, (int)buflen );
+  
+  for( size_t i=0; i<buflen; i++ )
+    printf( "%X ", buf[i] );
+  
+  puts( "<end>" );
+}
+
+
 int 
 ClientDataTCP::Read()
-{
-  int thisreadcnt;
-  bool msgready = false;
+ {
+   //int thisreadcnt;
+   //bool msgready = false;
 
-  char c;
-
-  switch(readstate)
-  {
-    case PLAYER_AWAITING_FIRST_BYTE_STX:
-      //puts("PLAYER_AWAITING_FIRST_BYTE_STX");
-      readcnt = 0;
-
-      if(read(socket,&c,1) <= 0)
-      {
-        if(errno == EAGAIN)
-          break;
-        else
-        {
-          // client must be gone. fuck 'em
-          //perror("client_reader(): read() while waiting for first "
-                 //"byte of STX");
-          return(-1);
-        }
-      }
-
-      // This should be the high byte (we're in network byte order)
-      if(c == PLAYER_STXX >> 8)
-      {
-        readcnt = 1;
-        readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
-      }
-      else
-        break;
-    case PLAYER_AWAITING_SECOND_BYTE_STX:
-      //puts("PLAYER_AWAITING_SECOND_BYTE_STX");
-      
-      if(read(socket,&c,1) <= 0)
-      {
-        if(errno == EAGAIN)
-          break;
-        else
-        {
-          // client must be gone. fuck 'em
-          //perror("client_reader(): read() while waiting for second "
-                 //"byte of STX");
-          return(-1);
-        }
-      }
-      if(c == (char)(PLAYER_STXX & 0x00FF))
-      {
-        hdrbuffer.stx = PLAYER_STXX;
-        readcnt += 1;
-        readstate = PLAYER_AWAITING_REST_OF_HEADER;
-      }
-      else
-      {
-        readcnt = 0;
-        readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-        break;
-      }
-    case PLAYER_AWAITING_REST_OF_HEADER:
-      //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
-             //readcnt,sizeof(player_msghdr_t));
-      /* get the rest of the header */
-      if((thisreadcnt = read(socket, (char*)(&hdrbuffer)+readcnt, 
-                             sizeof(player_msghdr_t)-readcnt)) <= 0)
-      {
-        if(errno == EAGAIN)
-          break;
-        else
-        {
-          //perror("client_reader(): read() while reading header");
-          return(-1);
-        }
-      }
-      readcnt += thisreadcnt;
-      if(readcnt == sizeof(player_msghdr_t))
-      {
-        // byte-swap as necessary
-        hdrbuffer.type = ntohs(hdrbuffer.type);
-        hdrbuffer.device = ntohs(hdrbuffer.device);
-        hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
-        hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
-        hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
-        hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
-        hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
-        hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
-        hdrbuffer.size = ntohl(hdrbuffer.size);
-
-        // make sure it's not too big
-        if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
-        {
-          PLAYER_WARN1("client's message is too big (%d bytes). Ignoring",
-                 hdrbuffer.size);
-          readcnt = 0;
-          readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-          break;
-        }
-        // ...or too small
-        else if(!hdrbuffer.size)
-        {
-          PLAYER_WARN("client sent zero-length message.");
-          readcnt = 0;
-          readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-          break;
-        }
-        else
-        {
-          readcnt = 0;
-          readstate = PLAYER_AWAITING_REST_OF_BODY;
-        }
-      }
-      else
-        break;
-    case PLAYER_AWAITING_REST_OF_BODY:
-      //printf("PLAYER_AWAITING_REST_OF_BODY: %d bytes read so far\n",readcnt);
-      /* get the payload */
-      if((thisreadcnt = read(socket,readbuffer+readcnt,
-                             hdrbuffer.size-readcnt))<=0)
-      {
-        if(!errno || errno == EAGAIN)
-          break;
-        else
-        {
-          //perror("ClientData::Read(): read() errored");
-          return(-1);
-        }
-      }
-      readcnt += thisreadcnt;
-      if(readcnt == hdrbuffer.size)
-      {
-        readcnt = 0;
-        readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-        msgready = true;
-      }
-      break;
-    case PLAYER_READ_ERROR:
-      PLAYER_ERROR("in an error read state!");
-      break;
-    default:
-      PLAYER_ERROR("in an unknown read state!");
-      break;
-  }
+   //char c;
+  
+  // create a static input buffer that we'll use every time though
+  // this function.
+  const size_t inbuflen = 65535;
+  static unsigned char* inbuf = NULL;
+  if( ! inbuf )
+    inbuf = (unsigned char*)calloc( inbuflen, 1 );
  
+  int bytes_rcv = 0;
+ 
+  // read a big chunk from the socket
+  if( bytes_rcv = read(socket,inbuf,inbuflen) );
+  
+  //printf( "read %d bytes on socket %d\n", (int)bytes_rcv, socket );
+  
+  //print_buffer( "inbuf", inbuf, bytes_rcv );
 
-  if(msgready)
-    return(HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size));
-  else
-    return(0);
-}
+  if( bytes_rcv < 1 )
+    {
+      if( errno == EAGAIN )
+	return 0; // no data was available to parse. done.
+      else
+	return -1; // client gone or some other socket problem. error.
+    }
+
+  // now we parse the chunk that we read.
+
+  // ptr will move through the buffer, starting at the head
+  unsigned char *ptr = inbuf;
+  
+  // this is the last address in the buffer
+  unsigned char *end = ptr + inbuflen;
+
+  int message_count = 0;
+  
+  for( unsigned char* ptr = inbuf; ptr <= end; /*empty*/  )
+    {
+      //puts( "*STATE MACHINE START*" );
+
+      switch(readstate)
+	{
+	case PLAYER_AWAITING_FIRST_BYTE_STX:
+	  
+	  //puts("PLAYER_AWAITING_FIRST_BYTE_STX");
+	  readcnt = 0;
+	  
+	  // zip through the buffer looking for the first byte
+	  // This should be the high byte (we're in network byte order)
+	  while( *ptr != PLAYER_STXX >> 8  )
+	    {
+	      ptr++;
+	      
+	      if( ptr > end )
+		break; // need more data
+	    }
+	  
+	  //printf( "found first byte at buffer index %d\n", ptr - inbuf );
+
+	  readcnt = 1;
+	  readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
+	  ptr++;
+	  
+	  // deliberate no-break
+	  
+	case PLAYER_AWAITING_SECOND_BYTE_STX:
+	  //puts("PLAYER_AWAITING_SECOND_BYTE_STX");
+	  
+	  if( *ptr == (char)(PLAYER_STXX & 0x00FF))
+	    {
+	      hdrbuffer.stx = PLAYER_STXX;
+	      readcnt += 1;
+	      readstate = PLAYER_AWAITING_REST_OF_HEADER;
+
+	      //printf( "found first byte at buffer index %d\n", ptr - inbuf );
+
+	      ptr++;
+	      	  
+	      if( ptr > end ) break; // need more data
+	    }
+	  else
+	    {
+	      readcnt = 0; // wrong second byte. start again
+	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+	      break; // need more data
+	    }
+	  
+	  // deliberate no-break
+	  
+
+	  //print_buffer( "ptr", ptr, sizeof(player_msghdr_t) );
+
+	case PLAYER_AWAITING_REST_OF_HEADER:
+	  //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
+	  // readcnt,sizeof(player_msghdr_t));
+	  
+	  // now we must fill a player_msghdr_t from the bytes in our
+	  // buffer, but it might take more than one read to do it.
+	  
+	  // fill up our header structure
+	  while( readcnt < sizeof(player_msghdr_t) )
+	    {
+	      ((unsigned char*)&hdrbuffer)[readcnt++] =  *ptr++;
+	      if( ptr > end ) break; // need more data
+	    }
+	  
+	  // now the header is full of data, we parse it
+	  
+	  // byte-swap as necessary
+	  hdrbuffer.type = ntohs(hdrbuffer.type);
+	  hdrbuffer.device = ntohs(hdrbuffer.device);
+	  hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
+	  hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
+	  hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
+	  hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
+	  hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
+	  hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
+	  hdrbuffer.size = ntohl(hdrbuffer.size);
+	  
+
+	  //print_buffer( "hdrbuffer", (unsigned char*)&hdrbuffer, sizeof(hdrbuffer));
+	
+  
+	  //printf( "header:\ntype %d\ndevice %d\ndevice_index %d\nsize %d\n",
+	  //  hdrbuffer.type, hdrbuffer.device, hdrbuffer.device_index, hdrbuffer.size );
+	  
+	  // make sure it's not too big
+	  if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
+	    {
+	      PLAYER_WARN1("client's message is too big (%d bytes). Ignoring",
+			   hdrbuffer.size);
+	      readcnt = 0;
+	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+	      break;
+	    }
+	  // ...or too small
+	  else if(!hdrbuffer.size)
+	    {
+	      PLAYER_WARN("client sent zero-length message.");
+	      readcnt = 0;
+	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+	      break;
+	    }
+	  else
+	    {
+	      readcnt = 0;
+	      readstate = PLAYER_AWAITING_REST_OF_BODY;
+	    }
+	  
+	  // deliberate no-break
+	  
+	case PLAYER_AWAITING_REST_OF_BODY:
+	  //printf("PLAYER_AWAITING_REST_OF_BODY: %d/%d bytes\n",readcnt,hdrbuffer.size);
+	  /* get the payload */
+	  
+	  //print_buffer( "ptr (body)", ptr, hdrbuffer.size );
+
+	  //printf( "starting copy. readcnt: %d hdrbuffer.size: %d\n", 
+	  //  (int)readcnt, (int)hdrbuffer.size );
+
+	  while( readcnt < hdrbuffer.size )
+	    {
+	      ((unsigned char*)readbuffer)[readcnt++] =  *ptr++;
+	      if( ptr > end ) break; // need more data
+	    }
+
+	  //printf( "ended copy. readcnt: %d hdrbuffer.size: %d\n", 
+	  //  (int)readcnt, (int)hdrbuffer.size );
+	  
+	  
+	  //puts( "MESSAGE COMPLETE" );
+	  
+	  //print_buffer( "readbuffer", (unsigned char*)readbuffer, readcnt );
+
+	  // we have a whole message: handle it right here.
+	  HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size);
+
+	  message_count++;
+	  //puts( "MESSAGE HANDLED. Back to the start" );
+	  readcnt = 0;
+	  readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+	  ptr++;
+
+	  break;
+	  
+	  // remove this case?
+	case PLAYER_READ_ERROR:
+	  PLAYER_ERROR("in an error read state!");
+	  break;	
+	  
+	default:
+	  PLAYER_ERROR("in an unknown read state!");
+	  break;
+	}
+    }
+  
+  printf( "handled %d messages with 1 read\n", message_count );
+
+  return(0);
+ }
 
 // Try to write() len bytes from totalwritebuffer, which should have been
 // filled with FillWriteBuffer().  If fewer than len bytes are written, 

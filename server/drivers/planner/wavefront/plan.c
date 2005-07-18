@@ -13,6 +13,11 @@
   #include <openssl/md5.h>
 #endif
 
+// RTV - not everyone has openssl installed
+#ifndef MD5_DIGEST_LENGTH
+#define MD5_DIGEST_LENGTH 16
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
