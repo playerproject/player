@@ -1046,10 +1046,9 @@ ClientDataTCP::Read()
 	  // zip through the buffer looking for the first byte
 	  // This should be the high byte (we're in network byte order)
 	  while( *ptr != PLAYER_STXX >> 8  )
-	    {
-	      ptr++;
-	      
+	    {	      
 	      if( ptr > end ) break; // need another read()
+	      ptr++;
 	    }
 	  
 	  //printf( "found first byte at buffer index %d\n", ptr - inbuf );
@@ -1071,9 +1070,8 @@ ClientDataTCP::Read()
 
 	      //printf( "found first byte at buffer index %d\n", ptr - inbuf );
 
-	      ptr++;
-	      	  
 	      if( ptr > end ) break; // need more data
+	      ptr++;
 	    }
 	  else
 	    {
