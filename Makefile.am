@@ -1,5 +1,5 @@
 
-SUBDIRS = replace libplayercore libplayerxdr client_libs rtk2 server utils config examples doc
+SUBDIRS = replace libplayercore libplayerxdr libplayertcp client_libs rtk2 server utils config examples doc
 
 EXTRA_DIST = config.simulation config.p2os
 
