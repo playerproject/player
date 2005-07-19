@@ -1,0 +1,10 @@
+# DO NOT edit playertcp.pc; edit playertcp.pc.in instead
+
+prefix=@prefix@
+
+Name: playertcp
+Description: Player TCP messaging library - part of the Player/Stage Project
+Version: @VERSION@
+Requires: 
+Libs: -L${prefix}/lib/player-@VERSION@ -lplayertcp
+Cflags: -I${prefix}/include/player-@VERSION@
