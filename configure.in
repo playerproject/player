@@ -254,6 +254,7 @@ AC_OUTPUT(Makefile
           doc/Makefile 
           libplayercore/Makefile 
           libplayercore/playercore.pc
+          libplayercore/playererror.pc
           libplayerxdr/Makefile 
           libplayerxdr/playerxdr.pc
           libplayertcp/Makefile 

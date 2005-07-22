@@ -1,5 +1,5 @@
-libplayerxdr/Makefile
-libplayerxdr/Makefile.in
-libplayerxdr/pack.c
-libplayerxdr/pack.h
-libplayerxdr/playerxdr.pc
+Makefile
+Makefile.in
+pack.c
+pack.h
+playerxdr.pc

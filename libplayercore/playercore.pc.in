@@ -7,6 +7,6 @@ prefix=@prefix@
 Name: playercore
 Description: Player robot interface library - part of the Player/Stage Project
 Version: @VERSION@
-Requires: 
+Requires: playererror
 Libs: -L${prefix}/lib/player-@VERSION@ -lplayercore -lltdl -lpthread
 Cflags: -I${prefix}/include/player-@VERSION@

@@ -21,8 +21,8 @@ static FILE *msgFile;
 // Initialize error logging
 void ErrorInit(int msgLevel)
 {
-  ::msgLevel = msgLevel;
-  ::msgFile = fopen(".player", "a+");
+  msgLevel = msgLevel;
+  msgFile = fopen(".player", "a+");
 }
 
 
