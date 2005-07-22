@@ -237,7 +237,7 @@ void ClientManager::AddClient(ClientData* client)
   }
 }
     
-// call Update() on all subscribed devices
+// call Update() on all subscribed and alwayson devices
 void 
 ClientManager::UpdateDevices()
 {
@@ -250,10 +250,10 @@ ClientManager::UpdateDevices()
     if(dev->driver->subscriptions || dev->driver->alwayson )
       {
       
-      printf("calling Update on %d:%d:%d\n",
-             dev->id.port,
-             dev->id.code,
-             dev->id.index);
+	//printf("calling Update on %d:%d:%d\n",
+	//   dev->id.port,
+	//   dev->id.code,
+	//   dev->id.index);
              
       dev->driver->Update();
     }

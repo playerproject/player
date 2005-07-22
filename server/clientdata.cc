@@ -1145,9 +1145,9 @@ ClientDataTCP::Read()
 	}
     }
   
-  printf( "messages %lu reads %lu ratio %.2f\n", 
-	  read_count, message_count, 
-	  (double)message_count/(double)read_count );
+  //printf( "messages %lu reads %lu ratio %.2f\n", 
+  //  read_count, message_count, 
+  //  (double)message_count/(double)read_count );
 
   return(0);
  }
