@@ -245,14 +245,16 @@ ClientManager::UpdateDevices()
       dev;
       dev = deviceTable->GetNextDevice(dev))
   {
-    if(dev->driver->subscriptions)
-    {
-      /*
+    // why did alwayson get removed?
+    // if(dev->driver->subscriptions)
+    if(dev->driver->subscriptions || dev->driver->alwayson )
+      {
+      
       printf("calling Update on %d:%d:%d\n",
              dev->id.port,
              dev->id.code,
              dev->id.index);
-             */
+             
       dev->driver->Update();
     }
   }

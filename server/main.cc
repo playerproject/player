@@ -353,6 +353,19 @@ StageAddPort(int* ports, int* portcount, int newport)
 
 // a matching function to indentify valid device names
 // used by scandir to fetch device filenames
+
+// RTV - we have two versions of this function with slightly differnt
+// arguments because scandir(3) is declared differently on Linux and
+// BSD (including Darwin). The compiler will pick the function that
+// matches.
+
+int
+MatchDeviceName( const struct dirent* ent )
+{
+  // device names are > 2 chars long,; . and .. are not
+  return( strlen( ent->d_name ) > 2 );
+}
+
 int
 MatchDeviceName( struct dirent* ent )
 {

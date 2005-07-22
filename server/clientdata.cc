@@ -994,8 +994,9 @@ int
 ClientDataTCP::Read()
 {
   // debug & test statistics
-  static int message_count = 0;
-  static int read_count = 0;
+  // change these to static types to see all-time numbers
+  unsigned long message_count = 0;
+  unsigned long read_count = 0;
   
   // create a static input buffer that we'll use every time though
   // this function. It'll be freed automatically on exit.
@@ -1144,9 +1145,9 @@ ClientDataTCP::Read()
 	}
     }
   
-  //printf( "reads %d messages %d ratio %.2f\n", 
-  //  read_count, message_count, 
-  //  (double)read_count/(double)message_count );
+  printf( "messages %lu reads %lu ratio %.2f\n", 
+	  read_count, message_count, 
+	  (double)message_count/(double)read_count );
 
   return(0);
  }
