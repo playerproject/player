@@ -354,7 +354,7 @@ StageAddPort(int* ports, int* portcount, int newport)
 // a matching function to indentify valid device names
 // used by scandir to fetch device filenames
 int
-MatchDeviceName( const struct dirent* ent )
+MatchDeviceName( struct dirent* ent )
 {
   // device names are > 2 chars long,; . and .. are not
   return( strlen( ent->d_name ) > 2 );

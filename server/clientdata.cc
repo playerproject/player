@@ -1011,8 +1011,7 @@ ClientDataTCP::Read()
   
   read_count++;
 
-  //printf( "read %d bytes on socket %d\n", (int)bytes_rcv, socket );  
-  //print_buffer( "inbuf", inbuf, bytes_rcv );
+  //printf( "**READ %d bytes on socket %d\n", (int)bytes_rcv, socket );  
 
   if( bytes_rcv < 1 )
     {
@@ -1024,140 +1023,113 @@ ClientDataTCP::Read()
 	return -1; // client gone or some other socket problem. error.
     }
 
+  unsigned char* last = inbuf + bytes_rcv;
   // now we parse the chunk that we read.
 
-  // ptr will move through the buffer, starting at the head
-  unsigned char *ptr = inbuf;
-  
-  // this is the last address in the buffer
-  unsigned char *end = ptr + inbuflen;
-
-  while( ptr <= end )
+  // ptr will move through the buffer, head to tail, dealing with each
+  // byte appropriately
+  for( unsigned char *ptr = inbuf; ptr < last; ptr++ )
     {
-      //puts( "*STATE MACHINE START*" );
+      //puts( "*STATE MACHINE START*" );\
+      //print_buffer( "ptr", ptr, last-ptr);
 
       switch(readstate)
 	{
-	case PLAYER_AWAITING_FIRST_BYTE_STX:
-	  
+	case PLAYER_AWAITING_FIRST_BYTE_STX:	  
 	  //puts("PLAYER_AWAITING_FIRST_BYTE_STX");
 	  readcnt = 0;
 	  
-	  // zip through the buffer looking for the first byte
-	  // This should be the high byte (we're in network byte order)
-	  while( *ptr != PLAYER_STXX >> 8  )
-	    {	      
-	      if( ptr > end ) break; // need another read()
-	      ptr++;
+	  if( *ptr ==  (unsigned char)(PLAYER_STXX >> 8) ) // was this the magic byte?
+	    {
+	      readcnt = 1;
+	      readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
 	    }
-	  
-	  //printf( "found first byte at buffer index %d\n", ptr - inbuf );
-
-	  readcnt = 1;
-	  readstate = PLAYER_AWAITING_SECOND_BYTE_STX;
-	  ptr++;
-	  
-	  // deliberate no-break
+	  break;
 	  
 	case PLAYER_AWAITING_SECOND_BYTE_STX:
 	  //puts("PLAYER_AWAITING_SECOND_BYTE_STX");
 	  
-	  if( *ptr == (char)(PLAYER_STXX & 0x00FF))
+	  if( *ptr == (unsigned char)(PLAYER_STXX & 0x00FF))
 	    {
 	      hdrbuffer.stx = PLAYER_STXX;
-	      readcnt += 1;
+	      readcnt++;
 	      readstate = PLAYER_AWAITING_REST_OF_HEADER;
-
-	      //printf( "found first byte at buffer index %d\n", ptr - inbuf );
-
-	      if( ptr > end ) break; // need more data
-	      ptr++;
 	    }
 	  else
 	    {
+	      //puts( "SYNC2 COMPLETE" );
 	      readcnt = 0; // wrong second byte. start again
 	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-	      break; // need more data
 	    }
-	  
-	  // deliberate no-break
+	  break;
 	  
 	case PLAYER_AWAITING_REST_OF_HEADER:
 	  //printf("PLAYER_AWAITING_REST_OF_HEADER: %d/%d\n",
-	  // readcnt,sizeof(player_msghdr_t));
+	  //readcnt,sizeof(player_msghdr_t));
 	  
 	  // now we must fill a player_msghdr_t from the bytes in our
-	  // buffer, but it might take more than one read to do it.
+	  // buffer, but it might take more than one call of this
+	  // function to do it
 	  
-	  // fill up our header structure
-	  while( readcnt < sizeof(player_msghdr_t) )
+	  // add the byte to our header structure
+	  ((unsigned char*)&hdrbuffer)[readcnt++] =  *ptr;
+	  
+	  // when the the header is full of data, we parse it and move on
+	  if( readcnt == sizeof(player_msghdr_t) )
 	    {
-	      ((unsigned char*)&hdrbuffer)[readcnt++] =  *ptr++;
-	      if( ptr > end ) break; // need more data
-	    }
-	  
-	  // now the header is full of data, we parse it
-	  
-	  // byte-swap as necessary
-	  hdrbuffer.type = ntohs(hdrbuffer.type);
-	  hdrbuffer.device = ntohs(hdrbuffer.device);
-	  hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
-	  hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
-	  hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
-	  hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
-	  hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
-	  hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
-	  hdrbuffer.size = ntohl(hdrbuffer.size);
-	  
-	  //printf( "header:\ntype %d\ndevice %d\ndevice_index
-	  //%d\nsize %d\n", hdrbuffer.type, hdrbuffer.device,
-	  //hdrbuffer.device_index, hdrbuffer.size );
-	  
-	  // make sure it's not too big
-	  if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
-	    {
-	      PLAYER_WARN1("client's message is too big (%d bytes). Ignoring",
-			   hdrbuffer.size);
-	      readcnt = 0;
-	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-	      break;
-	    }
-	  // ...or too small
-	  else if(!hdrbuffer.size)
-	    {
-	      PLAYER_WARN("client sent zero-length message.");
-	      readcnt = 0;
-	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-	      break;
-	    }
-	  else
-	    {
-	      readcnt = 0;
-	      readstate = PLAYER_AWAITING_REST_OF_BODY;
-	    }
-	  
-	  // deliberate no-break
-	  
+	      // we've filled the header
+	      // byte-swap as necessary
+	      hdrbuffer.type = ntohs(hdrbuffer.type);
+	      hdrbuffer.device = ntohs(hdrbuffer.device);
+	      hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
+	      hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
+	      hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
+	      hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
+	      hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
+	      hdrbuffer.reserved = ntohl(hdrbuffer.reserved);
+	      hdrbuffer.size = ntohl(hdrbuffer.size);
+	      
+	      // make sure it's not too big
+	      if(hdrbuffer.size > PLAYER_MAX_MESSAGE_SIZE-sizeof(player_msghdr_t))
+		{
+		  PLAYER_WARN1("client's message is too big (%d bytes). Ignoring",
+			       hdrbuffer.size);
+		  readcnt = 0;
+		  readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+		}
+	      // ...or too small
+	      else if(!hdrbuffer.size)
+		{
+		  PLAYER_WARN("client sent zero-length message.");
+		  readcnt = 0;
+		  readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+		}
+	      else
+		{
+		  //puts( "HEADER COMPLETE" );
+		  readcnt = 0;
+		  readstate = PLAYER_AWAITING_REST_OF_BODY;
+		}
+	    }	  
+	  break;
+
 	case PLAYER_AWAITING_REST_OF_BODY:
 	  //printf("PLAYER_AWAITING_REST_OF_BODY: %d/%d bytes\n",readcnt,hdrbuffer.size);
 	  /* get the payload */
 	  
-	  while( readcnt < hdrbuffer.size )
-	    {
-	      ((unsigned char*)readbuffer)[readcnt++] =  *ptr++;
-	      if( ptr > end ) break; // need more data
-	    }
-
-	  //puts( "MESSAGE COMPLETE" );
+	  // add a byte to the payload buffer
+	  readbuffer[readcnt++] =  *ptr;
 	  
-	  // we have a whole message: handle it right here.
-	  HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size);
+	  if( readcnt == hdrbuffer.size )
+	    {
+	      // we have a whole message: handle it right here.
+	      HandleRequests(hdrbuffer,readbuffer, hdrbuffer.size);
+	      
+	      message_count++;
 
-	  message_count++;
-	  //puts( "MESSAGE HANDLED. Back to the start" );
-	  readcnt = 0;
-	  readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
-	  ptr++;
+	      readcnt = 0;
+	      readstate = PLAYER_AWAITING_FIRST_BYTE_STX;
+	    }
 
 	  break;
 	  
