@@ -10,10 +10,11 @@ CLEANFILES = playertcp.pc
 pkglibdir = $(libdir)/player-@VERSION@
 pkglib_LIBRARIES = libplayertcp.a
 
-libplayertcp_a_SOURCES = socket_util.c socket_util.h
+libplayertcp_a_SOURCES = socket_util.c socket_util.h \
+                         playertcp.cc playertcp.h
 
 libplayertcp_a_LIBADD = $(top_builddir)/replace/*.$(OBJEXT)
 
 pkgincludedir = $(includedir)/player-@VERSION@/libplayertcp
 
-#pkginclude_HEADERS = socket_util.h
+pkginclude_HEADERS = playertcp.h

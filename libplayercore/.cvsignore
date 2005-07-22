@@ -3,3 +3,4 @@ Makefile.in
 stamp-h*
 playerconfig.h
 playercore.pc
+playererror.pc
