@@ -32,7 +32,7 @@
 #endif
 
 #if HAVE_LIBLTDL
-  #include <ltdl.h>
+  #include <ltdl.h>74
 #endif
 
 #if HAVE_OPENCV
