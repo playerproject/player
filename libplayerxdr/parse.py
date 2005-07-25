@@ -49,13 +49,14 @@ if __name__ == '__main__':
  
   print 'Found ' + `len(structs)` + ' struct(s)'
 
-  headerfile.write('''/*
+  headerfile.write(
+'''/*
  * libplayerxdr
  *
  * This library provides functions for translating between player C message
  * structs and their XDR representations.  For each 'struct player_foo',
  * there is a single function of the following name and form:
- *    size_t player_foo_pack(void* buf, size_t buflen, player_foo_t* msg, int op);
+ *    int player_foo_pack(void* buf, size_t buflen, player_foo_t* msg, int op);
  * This function will either pack (encode to XDR) or unpack (decode from
  * XDR), depending on the last argument.
  *
@@ -63,12 +64,12 @@ if __name__ == '__main__':
  *  - buf: The XDR-encoded buffer that is being encoded / decoded.
  *  - buflen: Size of buf, in bytes.
  *  - msg: Pointer to the C struct that is being encoded / decoded.
- *  - op: Either PLAYER_ENCODE or PLAYER_DECODE
+ *  - op: Either PLAYERXDR_ENCODE or PLAYERXDR_DECODE
  *
- * Returns: The length of the XDR-encoded buffer.
+ * Returns: On success, the length of the XDR-encoded buffer, and -1
+ *          otherwise (e.g., the buffer was not large enough).
  *
- * The caller is responsible for allocating enough space to buf.  Currently
- * no checking is done for buffer overruns.
+ * The caller is responsible for allocating enough space to buf.
  */\n\n''')
   headerfile.write('#ifndef _PLAYERXDR_PACK_H_\n')
   headerfile.write('#define _PLAYERXDR_PACK_H_\n\n')
@@ -76,8 +77,8 @@ if __name__ == '__main__':
   headerfile.write('#include <rpc/xdr.h>\n\n')
   headerfile.write('#include <libplayercore/player.h>\n\n')
   headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
-  headerfile.write('#define PLAYER_ENCODE XDR_ENCODE\n')
-  headerfile.write('#define PLAYER_DECODE XDR_DECODE\n\n')
+  headerfile.write('#define PLAYERXDR_ENCODE XDR_ENCODE\n')
+  headerfile.write('#define PLAYERXDR_DECODE XDR_DECODE\n\n')
 
   sourcefile.write('#include <' + headerfilename + '>\n\n')
 
@@ -110,15 +111,15 @@ if __name__ == '__main__':
       if i == 0:
         headerfile.write('int xdr_' + typename + '(XDR* xdrs, ' + typename + 
                          '* msg);\n')
-        sourcefile.write('int\n xdr_' + typename + '(XDR* xdrs, ' + typename + 
+        sourcefile.write('int\nxdr_' + typename + '(XDR* xdrs, ' + typename + 
                          '* msg)\n{\n')
       else:
-        headerfile.write('size_t ' + prefix + '_pack(void* buf, size_t buflen, ' +
+        headerfile.write('int ' + prefix + '_pack(void* buf, size_t buflen, ' +
                          typename + '* msg, int op);\n')
-        sourcefile.write('size_t\n' + prefix + '_pack(void* buf, size_t buflen, ' +
+        sourcefile.write('int\n' + prefix + '_pack(void* buf, size_t buflen, ' +
                          typename + '* msg, int op)\n{\n')
         sourcefile.write('  XDR xdrs;\n')
-        sourcefile.write('  size_t len;\n')
+        sourcefile.write('  int len;\n')
         sourcefile.write('  xdrmem_create(&xdrs, buf, buflen, op);\n')
   
       # separate the variable declarations
@@ -159,22 +160,22 @@ if __name__ == '__main__':
             arraysize = arraysize[0]
             varstring = arraypattern.sub('', varstring)
             if i == 0:
-              sourcefile.write('  xdr_vector(xdrs, (char*)&msg->' + 
+              sourcefile.write('  if(xdr_vector(xdrs, (char*)&msg->' + 
                                varstring + ', ' + arraysize + 
                                ', sizeof(' + type + '), (xdrproc_t)' + 
-                               xdr_proc + ');\n')
+                               xdr_proc + ') != 1)\n    return(0);\n')
             else:
-              sourcefile.write('  xdr_vector(&xdrs, (char*)&msg->' + 
+              sourcefile.write('  if(xdr_vector(&xdrs, (char*)&msg->' + 
                                varstring + ', ' + arraysize + 
                                ', sizeof(' + type + '), (xdrproc_t)' + 
-                               xdr_proc + ');\n')
+                               xdr_proc + ') != 1)\n    return(-1);\n')
           else:
             if i == 0:
-              sourcefile.write('  ' + xdr_proc + '(xdrs,&msg->' + 
-                               varstring + ');\n')
+              sourcefile.write('  if(' + xdr_proc + '(xdrs,&msg->' + 
+                               varstring + ') != 1)\n    return(0);\n')
             else:
-              sourcefile.write('  ' + xdr_proc + '(&xdrs,&msg->' + 
-                               varstring + ');\n')
+              sourcefile.write('  if(' + xdr_proc + '(&xdrs,&msg->' + 
+                               varstring + ') != 1)\n    return(-1);\n')
 
       if i == 0:
         sourcefile.write('  return(1);\n}\n\n')

@@ -35,6 +35,13 @@
 
 #include <libplayercore/playercore.h>
 
+/** We try to read() incoming messages in chunks of this size.  We also
+    calloc() and realloc() read buffers in multiples of this size. */
+#define PLAYERTCP_READBUFFER_SIZE 65536
+
+/** Maximum message size, in XDR-encoded format, including message header. */
+#define PLAYERTCP_MAX_MESSAGE_LEN 2097152  // 2MB
+
 // Forward declarations
 struct pollfd;
 
@@ -55,6 +62,13 @@ typedef struct
   struct sockaddr_in addr;
   /** Outgoing queue for this connection */
   MessageQueue* queue;
+  /** Buffer in which to store partial messages */
+  char* readbuffer;
+  /** Total size of @p readbuffer */
+  int readbuffersize;
+  /** How much of @p readbuffer is currently in use (i.e., holding a
+      partial message) */
+  int readbufferlen;
 } playertcp_conn_t;
 
 class PlayerTCP
@@ -75,7 +89,8 @@ class PlayerTCP
     int Listen(int* ports, int num_ports);
     int Accept(int timeout);
     void Close(int cli);
-    int Read(int timeout);
+    int ReadClient(int cli);
+    void ParseBuffer(int cli);
 };
 
 #endif
