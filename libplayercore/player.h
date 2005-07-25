@@ -200,8 +200,6 @@ typedef struct player_devaddr
  Every message starts with this header.*/
 typedef struct player_msghdr
 {
-  /** Start character; always equal to "xX" (0x5878) */
-  uint16_t stx;     
   /** Device to which this message pertains */
   player_devaddr_t addr;
   /** Message type; must be one of PLAYER_MSGTYPE_* */
