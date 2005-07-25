@@ -98,7 +98,7 @@ const uint16_t PLAYER_POSITION2D_CODE     = 48;  // 2-D position
 const uint16_t PLAYER_JOYSTICK_CODE       = 49;  // Joytstick
 const uint16_t PLAYER_SPEECH_RECOGNITION_CODE  = 50;  // speech recognition
 const uint16_t PLAYER_OPAQUE_CODE         = 51;  // plugin interface
-
+const uint16_t PLAYER_POSITION1D_CODE     = 52;  // 1-D position
 /* the currently assigned device strings */
 const char* PLAYER_AIO_STRING            = "aio";
 const char* PLAYER_AUDIO_STRING          = "audio";
@@ -130,6 +130,7 @@ const char* PLAYER_OPAQUE_STRING         = "opaque";
 const char* PLAYER_PLANNER_STRING        = "planner";
 const char* PLAYER_PLAYER_STRING         = "player";
 const char* PLAYER_POSITION_STRING       = "position";
+const char* PLAYER_POSITION1D_STRING     = "position1d";
 const char* PLAYER_POSITION2D_STRING     = "position2d";
 const char* PLAYER_POSITION3D_STRING     = "position3d";
 const char* PLAYER_POWER_STRING          = "power";
@@ -1986,45 +1987,182 @@ typedef struct player_device_nameservice_req
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_position position
+/** @defgroup player_interface_position position1d
 
-The @p position interface is used to control mobile robot bases in 2D.
+The @p position1d interface is used to control linear actuators
 
-@todo: Should we keep the name or switch to position2d?
 @{
 */
 
 /* The various configuration request types. */
-const uint8_t PLAYER_POSITION_GET_GEOM          = 1;
-const uint8_t PLAYER_POSITION_MOTOR_POWER       = 2;
-const uint8_t PLAYER_POSITION_VELOCITY_MODE     = 3;
-const uint8_t PLAYER_POSITION_POSITION_MODE     = 4;
-const uint8_t PLAYER_POSITION_SET_ODOM          = 5;
-const uint8_t PLAYER_POSITION_RESET_ODOM        = 6;
-const uint8_t PLAYER_POSITION_SPEED_PID         = 7;
-const uint8_t PLAYER_POSITION_POSITION_PID      = 8;
-const uint8_t PLAYER_POSITION_SPEED_PROF        = 9;
+const uint8_t PLAYER_POSITION1D_GET_GEOM          = 1;
+const uint8_t PLAYER_POSITION1D_MOTOR_POWER       = 2;
+const uint8_t PLAYER_POSITION1D_VELOCITY_MODE     = 3;
+const uint8_t PLAYER_POSITION1D_POSITION_MODE     = 4;
+const uint8_t PLAYER_POSITION1D_SET_ODOM          = 5;
+const uint8_t PLAYER_POSITION1D_RESET_ODOM        = 6;
+const uint8_t PLAYER_POSITION1D_SPEED_PID         = 7;
+const uint8_t PLAYER_POSITION1D_POSITION_PID      = 8;
+const uint8_t PLAYER_POSITION1D_SPEED_PROF        = 9;
 
 // data types
-const uint8_t PLAYER_POSITION_DATA              = 0;
-const uint8_t PLAYER_POSITION_GEOM              = 1;
+const uint8_t PLAYER_POSITION1D_DATA              = 0;
+const uint8_t PLAYER_POSITION1D_GEOM              = 1;
 
-/* These are possible Segway RMP config commands; see the status command
-in the RMP manual */
-/** @todo should these stay here? */
-const uint8_t PLAYER_POSITION_RMP_VELOCITY_SCALE      = 51;
-const uint8_t PLAYER_POSITION_RMP_ACCEL_SCALE         = 52;
-const uint8_t PLAYER_POSITION_RMP_TURN_SCALE          = 53;
-const uint8_t PLAYER_POSITION_RMP_GAIN_SCHEDULE       = 54;
-const uint8_t PLAYER_POSITION_RMP_CURRENT_LIMIT       = 55;
-const uint8_t PLAYER_POSITION_RMP_RST_INTEGRATORS     = 56;
-const uint8_t PLAYER_POSITION_RMP_SHUTDOWN            = 57;
+/** @brief Data
 
-/* These are used for resetting the Segway RMP's integrators. */
-const uint8_t PLAYER_POSITION_RMP_RST_INT_RIGHT       = 0x01;
-const uint8_t PLAYER_POSITION_RMP_RST_INT_LEFT        = 0x02;
-const uint8_t PLAYER_POSITION_RMP_RST_INT_YAW         = 0x04;
-const uint8_t PLAYER_POSITION_RMP_RST_INT_FOREAFT     = 0x08;
+The @p position interface returns data regarding the odometric pose and
+velocity of the robot, as well as motor stall information. */
+typedef struct player_position1d_data
+{
+  /** position [m]*/
+  float pos;
+  /** translational velocities [m/s]*/
+  float vel;   
+  /** Is the motor stalled? */
+  bool stall;
+} __PACKED__ player_position1d_data_t;
+
+/** @brief Command
+
+The @p position1d interface accepts new positions and/or velocities
+for the robot's motors (drivers may support position control, speed control,
+or both). */
+typedef struct player_position1d_cmd
+{
+  /** position [m]*/
+  float pos;
+  /** translational velocity [m/s]*/
+  float vel;   
+  /** Motor state (FALSE is either off or locked, depending on the driver). */
+  bool state;
+  /** Command type; 0 = velocity, 1 = position. */
+  uint32_t type;
+} __PACKED__ player_position1d_cmd_t;
+
+/** @brief Configuration request: Query geometry.  
+
+To request robot geometry,
+set the subtype to PLAYER_POSITION1D_GET_GEOM_REQ and leave the other fields
+empty.  The server will reply with the pose and size fields filled in. */
+typedef struct player_position1d_geom
+{
+  /** Pose of the robot base, in the robot cs (m, m, rad). */
+  float pose[3];
+  /** Dimensions of the base (m, m). */
+  float size[2];
+} __PACKED__ player_position1d_geom_t;
+
+/** @brief Configuratoin request: Motor power.  
+
+  On some robots, the motor power
+can be turned on and off from software.  To do so, send a request with
+the format given below, and with the appropriate @p state (zero for
+motors off and non-zero for motors on).  The server will reply with a
+zero-length acknowledgement.
+
+Be VERY careful with this command!  You are very likely to start the
+robot running across the room at high speed with the battery charger
+still attached.
+*/
+typedef struct player_position1d_power_config
+{ 
+  /** FALSE for off, TRUE for on */
+  bool state; 
+} __PACKED__ player_position1d_power_config_t;
+
+/** @brief Configuration request: Change velocity control. 
+
+  Some robots offer
+different velocity control modes.  It can be changed by sending a
+request with the format given below, including the appropriate mode.
+No matter which mode is used, the external client interface to the
+@p position1d device remains the same.  The server will reply with a
+zero-length acknowledgement.
+
+*/
+
+typedef struct player_position1d_velocity_mode_config
+{
+  /** driver-specific */
+  uint32_t value; 
+} __PACKED__ player_position1d_velocity_mode_config_t;
+
+/** @brief Configuration request: Reset odometry.  
+
+To reset the robot's odometry
+to x = 0, use the following request.  The server will
+reply with a zero-length acknowledgement. */
+typedef struct player_position1d_reset_odom_config
+{
+} __PACKED__ player_position1d_reset_odom_config_t;
+
+/** @brief Configuration request: Change control mode. */
+typedef struct player_position1d_position_mode_req
+{
+  /** 0 for velocity mode, 1 for position mode */
+  uint32_t state; 
+} __PACKED__ player_position1d_position_mode_req_t;
+
+/** @brief Configuration request: Set odometry.  
+
+To set the robot's odometry
+to a particular state, use this request: */
+typedef struct player_position1d_set_odom_req
+{
+  /** (x) [m] */
+  int32_t pos;  
+}__PACKED__ player_position1d_set_odom_req_t;
+
+/** @brief Configuration request: Set velocity PID parameters. */
+typedef struct player_position1d_speed_pid_req
+{
+  /** PID parameters */
+  float kp, ki, kd;  
+} __PACKED__ player_position1d_speed_pid_req_t;
+
+/** @brief Configuration request: Set position PID parameters. */
+typedef struct player_position1d_position_pid_req
+{
+  /** PID parameters */
+  float kp, ki, kd;
+} __PACKED__ player_position1d_position_pid_req_t;
+
+/** @brief Configuration request: Set linear speed profile parameters. */
+typedef struct player_position1d_speed_prof_req
+{
+  /** max speed [m/s] */
+  float speed;
+  /** max acceleration [m/s^2] */
+  float acc;
+} __PACKED__ player_position1d_speed_prof_req_t;
+
+
+/** @} */
+
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @defgroup player_interface_position position2d
+
+The @p position2d interface is used to control mobile robot bases in 2D.
+
+@{
+*/
+
+/* The various configuration request types. */
+const uint8_t PLAYER_POSITION2D_GET_GEOM          = 1;
+const uint8_t PLAYER_POSITION2D_MOTOR_POWER       = 2;
+const uint8_t PLAYER_POSITION2D_VELOCITY_MODE     = 3;
+const uint8_t PLAYER_POSITION2D_POSITION_MODE     = 4;
+const uint8_t PLAYER_POSITION2D_SET_ODOM          = 5;
+const uint8_t PLAYER_POSITION2D_RESET_ODOM        = 6;
+const uint8_t PLAYER_POSITION2D_SPEED_PID         = 7;
+const uint8_t PLAYER_POSITION2D_POSITION_PID      = 8;
+const uint8_t PLAYER_POSITION2D_SPEED_PROF        = 9;
+
+// data types
+const uint8_t PLAYER_POSITION2D_DATA              = 0;
+const uint8_t PLAYER_POSITION2D_GEOM              = 1;
 
 /** @brief Data
 
@@ -2168,13 +2306,7 @@ typedef struct player_position_speed_prof_req
   float acc;
 } __PACKED__ player_position_speed_prof_req_t;
 
-/** @brief Configuration request: Segway RMP-specific configuration. */
-typedef struct player_rmp_config 
-{
-  /** Holds various values depending on the type of config.
-      See the "Status" command in the Segway manual. */
-  uint16_t value;
-} __PACKED__ player_rmp_config_t;
+
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
