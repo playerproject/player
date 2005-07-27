@@ -364,6 +364,7 @@ extern PlayerTime* GlobalTime;
 #include "amcl_odom.h"
 #include "amcl_laser.h"
 #include "amcl_fiducial.h"
+#include "amcl_sonar.h"
 //#include "amcl_gps.h"
 //#include "amcl_imu.h"
 
@@ -432,6 +433,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   player_device_id_t odom_id;
   player_device_id_t laser_id;
   player_device_id_t fiducial_id;
+  player_device_id_t sonar_id;
   
   // Create odometry sensor
   if(cf->ReadDeviceId(&odom_id, section, "requires",
@@ -459,6 +461,15 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
                       PLAYER_FIDUCIAL_CODE, -1, NULL) == 0)
   {
     sensor = new AMCLFiducial(fiducial_id);
+    sensor->is_action = 0;
+    this->sensors[this->sensor_count++] = sensor;
+  }
+
+  // Create sonar sensor
+  if(cf->ReadDeviceId(&sonar_id, section, "requires",
+                      PLAYER_SONAR_CODE, -1, NULL) == 0)
+  {
+    sensor = new AMCLSonar(sonar_id);
     sensor->is_action = 0;
     this->sensors[this->sensor_count++] = sensor;
   }
