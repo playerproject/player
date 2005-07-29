@@ -36,6 +36,7 @@ For example:
 
 playerprint can print out data for the following kinds of devices:
 - @ref player_interface_position
+- @ref player_interface_power
 - @ref player_interface_position3d
 - @ref player_interface_truth
 - @ref player_interface_sonar
@@ -157,6 +158,8 @@ int main(int argc, char **argv)
     assert(cp = (ClientProxy*)new PositionProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
     assert(cp = (ClientProxy*)new Position3DProxy(&pclient,idx,'r'));
+  else if(!strcmp(dev,PLAYER_POWER_STRING))
+    assert(cp = (ClientProxy*)new PowerProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_TRUTH_STRING))
     assert(cp = (ClientProxy*)new TruthProxy(&pclient,idx,'r'));
   else if(!strcmp(dev,PLAYER_SONAR_STRING))
