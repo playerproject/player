@@ -32,7 +32,7 @@
 #endif
 
 #if HAVE_LIBLTDL
-  #include <ltdl.h>
+  #include <ltdl.h>74
 #endif
 
 #if HAVE_OPENCV
@@ -353,8 +353,21 @@ StageAddPort(int* ports, int* portcount, int newport)
 
 // a matching function to indentify valid device names
 // used by scandir to fetch device filenames
+
+// RTV - we have two versions of this function with slightly differnt
+// arguments because scandir(3) is declared differently on Linux and
+// BSD (including Darwin). The compiler will pick the function that
+// matches.
+
 int
 MatchDeviceName( const struct dirent* ent )
+{
+  // device names are > 2 chars long,; . and .. are not
+  return( strlen( ent->d_name ) > 2 );
+}
+
+int
+MatchDeviceName( struct dirent* ent )
 {
   // device names are > 2 chars long,; . and .. are not
   return( strlen( ent->d_name ) > 2 );
@@ -1044,7 +1057,7 @@ void PrintDeviceTable()
   player_interface_t interface;
 
   last_driver = NULL;
-  printf("------------------------------------------------------------\n");
+  printf("------------------------------------------------------------");
   
   // Step through the device table
   for (device = deviceTable->GetFirstDevice(); device != NULL;
@@ -1052,20 +1065,34 @@ void PrintDeviceTable()
   {
     assert(lookup_interface_code(device->id.code, &interface) == 0);
     
+//     if (device->driver != last_driver)
+//     {
+//       fprintf(stdout, "%d driver %s id %d:%s:%d\n",
+//               device->index, device->drivername,
+//               device->id.port, interface.name, device->id.index);
+//     }
+//     else
+//     {
+//       fprintf(stdout, "%d        %*s id %d:%s:%d\n",
+//               device->index, strlen(device->drivername), "",
+//               device->id.port, interface.name, device->id.index);
+//     }
+    
+    // RTV - compressed the output to avoid being overwhelmed with
+    // output in large setups
     if (device->driver != last_driver)
     {
-      fprintf(stdout, "%d driver %s id %d:%s:%d\n",
-              device->index, device->drivername,
-              device->id.port, interface.name, device->id.index);
+      fprintf(stdout, "\ndriver %s provides",
+              device->drivername );
     }
-    else
-    {
-      fprintf(stdout, "%d        %*s id %d:%s:%d\n",
-              device->index, strlen(device->drivername), "",
-              device->id.port, interface.name, device->id.index);
-    }
+    
+    fprintf(stdout, " %d:%s:%d",
+	    device->id.port, interface.name, device->id.index);
+    
     last_driver = device->driver;
   }
+
+  puts( "" ); // end the driver line
 
   printf("------------------------------------------------------------\n");
   return;
@@ -1474,6 +1501,11 @@ int main( int argc, char *argv[] )
   {
     assert(ufds = new struct pollfd[num_ufds]);
 
+    if( !quiet_startup )
+      printf("listening on ports: " );
+    
+    // todo: nice port range output, e.g. 6665-6685 would clean this up.
+
     for(int i=0;i<num_ufds;i++)
     {
       // setup the socket to listen on
@@ -1485,8 +1517,11 @@ int main( int argc, char *argv[] )
       ufds[i].events = POLLIN;
 
       if( !quiet_startup )
-	printf("listening on port %d\n", ports[i]);
+	printf("%d ", ports[i]);
     }
+    
+    if( !quiet_startup )
+      puts( "" ); // end the line
   }
   
   // create the client manager object.

@@ -10,5 +10,5 @@ noinst_LIBRARIES = @AMCL_LIB@
 
 EXTRA_LIBRARIES = libamcl.a
 
-libamcl_a_SOURCES = amcl.h amcl.cc amcl_sensor.h amcl_sensor.cc amcl_odom.h amcl_odom.cc amcl_laser.h amcl_laser.cc amcl_fiducial.cc amcl_fiducial.h #amcl_gps.h amcl_gps.cc amcl_imu.h amcl_imu.cc amcl_sonar.cc amcl_wifi.cc
+libamcl_a_SOURCES = amcl.h amcl.cc amcl_sensor.h amcl_sensor.cc amcl_odom.h amcl_odom.cc amcl_laser.h amcl_laser.cc amcl_fiducial.cc amcl_fiducial.h amcl_sonar.cc amcl_sonar.h #amcl_gps.h amcl_gps.cc amcl_imu.h amcl_imu.cc amcl_wifi.cc
 libamcl_a_LIBADD = pf/*.o map/*.o models/*.o

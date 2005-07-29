@@ -39,7 +39,7 @@ The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position3d
 
 @par Requires
 
@@ -61,7 +61,7 @@ The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
 driver
 (
   name "microstrain3dmg"
-  provides ["position:0"]
+  provides ["position3d:0"]
   port "/dev/ttyS1"
 )
 @endverbatim
