@@ -150,9 +150,6 @@ if __name__ == '__main__':
           xdr_proc = 'xdr_u_char'
         elif type == 'bool_t':
           xdr_proc = 'xdr_bool'
-        # TODO: check this with the XDR RFC
-        elif type == 'double':
-          xdr_proc = 'xdr_float'
         else:
           # rely on a previous declaration of an xdr_ proc for this type
           xdr_proc = 'xdr_' + type
