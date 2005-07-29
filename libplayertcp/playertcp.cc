@@ -305,7 +305,7 @@ PlayerTCP::ParseBuffer(int cli)
     // Locate the appropriate packing function
     if(!(packfunc = playerxdr_get_func(hdr.addr.interface, hdr.subtype)))
     {
-      // Allow the user to register a callback to handle unsupported
+      // TODO: Allow the user to register a callback to handle unsupported
       // messages
       PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
                    hdr.addr.interface, hdr.addr.index, hdr.subtype);

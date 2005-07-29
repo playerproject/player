@@ -49,53 +49,53 @@ const uint8_t PLAYER_MSGTYPE_RESP_ERR  = 7;
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
-const uint16_t PLAYER_MAX_DEVICE_STRING_LEN = 64;
+#define PLAYER_MAX_DEVICE_STRING_LEN ((uint16_t)64)
 
 /* the currently assigned interface codes */
-const uint16_t PLAYER_NULL_CODE           = 256; // /dev/null analogue
-const uint16_t PLAYER_PLAYER_CODE         = 1;   // the server itself
-const uint16_t PLAYER_POWER_CODE          = 2;   // power subsystem
-const uint16_t PLAYER_GRIPPER_CODE        = 3;   // gripper
-const uint16_t PLAYER_POSITION_CODE       = 4;   // device that moves about
-const uint16_t PLAYER_SONAR_CODE          = 5;   // fixed range-finder
-const uint16_t PLAYER_LASER_CODE          = 6;   // scanning range-finder
-const uint16_t PLAYER_BLOBFINDER_CODE     = 7;   // visual blobfinder
-const uint16_t PLAYER_PTZ_CODE            = 8;   // pan-tilt-zoom unit
-const uint16_t PLAYER_AUDIO_CODE          = 9;   // audio I/O
-const uint16_t PLAYER_FIDUCIAL_CODE       = 10;  // fiducial detector
-const uint16_t PLAYER_SPEECH_CODE         = 12;  // speech I/O
-const uint16_t PLAYER_GPS_CODE            = 13;  // GPS unit
-const uint16_t PLAYER_BUMPER_CODE         = 14;  // bumper array
-const uint16_t PLAYER_TRUTH_CODE          = 15;  // ground-truth (via Stage;
-const uint16_t PLAYER_IDARTURRET_CODE     = 16;  // ranging + comms
-const uint16_t PLAYER_IDAR_CODE           = 17;  // ranging + comms
-const uint16_t PLAYER_DESCARTES_CODE      = 18;  // the Descartes platform
-const uint16_t PLAYER_DIO_CODE            = 20;  // digital I/O
-const uint16_t PLAYER_AIO_CODE            = 21;  // analog I/O
-const uint16_t PLAYER_IR_CODE             = 22;  // IR array
-const uint16_t PLAYER_WIFI_CODE           = 23;  // wifi card status
-const uint16_t PLAYER_WAVEFORM_CODE       = 24;  // fetch raw waveforms
-const uint16_t PLAYER_LOCALIZE_CODE       = 25;  // localization
-const uint16_t PLAYER_MCOM_CODE           = 26;  // multicoms
-const uint16_t PLAYER_SOUND_CODE          = 27;  // sound file playback
-const uint16_t PLAYER_AUDIODSP_CODE       = 28;  // audio dsp I/O
-const uint16_t PLAYER_AUDIOMIXER_CODE     = 29;  // audio I/O
-const uint16_t PLAYER_POSITION3D_CODE     = 30;  // 3-D position
-const uint16_t PLAYER_SIMULATION_CODE     = 31;  // simulators
-const uint16_t PLAYER_SERVICE_ADV_CODE    = 32;  // LAN service advertisement
-const uint16_t PLAYER_BLINKENLIGHT_CODE   = 33;  // blinking lights 
-const uint16_t PLAYER_NOMAD_CODE          = 34;  // Nomad robot
-const uint16_t PLAYER_CAMERA_CODE         = 40;  // camera device (gazebo;
-const uint16_t PLAYER_MAP_CODE            = 42;  // get a map
-const uint16_t PLAYER_PLANNER_CODE        = 44;  // 2D motion planner
-const uint16_t PLAYER_LOG_CODE            = 45;  // log read/write control
-const uint16_t PLAYER_ENERGY_CODE         = 46;  // energy consumption
-const uint16_t PLAYER_MOTOR_CODE          = 47;  // motor interface
-const uint16_t PLAYER_POSITION2D_CODE     = 48;  // 2-D position
-const uint16_t PLAYER_JOYSTICK_CODE       = 49;  // Joytstick
-const uint16_t PLAYER_SPEECH_RECOGNITION_CODE  = 50;  // speech recognition
-const uint16_t PLAYER_OPAQUE_CODE         = 51;  // plugin interface
-const uint16_t PLAYER_POSITION1D_CODE     = 52;  // 1-D position
+#define PLAYER_NULL_CODE           ((uint16_t)256) // /dev/null analogue
+#define PLAYER_PLAYER_CODE         ((uint16_t)1)   // the server itself
+#define PLAYER_POWER_CODE          ((uint16_t)2)   // power subsystem
+#define PLAYER_GRIPPER_CODE        ((uint16_t)3)   // gripper
+#define PLAYER_POSITION_CODE       ((uint16_t)4)   // device that moves about
+#define PLAYER_SONAR_CODE          ((uint16_t)5)   // fixed range-finder
+#define PLAYER_LASER_CODE          ((uint16_t)6)   // scanning range-finder
+#define PLAYER_BLOBFINDER_CODE     ((uint16_t)7)   // visual blobfinder
+#define PLAYER_PTZ_CODE            ((uint16_t)8)   // pan-tilt-zoom unit
+#define PLAYER_AUDIO_CODE          ((uint16_t)9)   // audio I/O
+#define PLAYER_FIDUCIAL_CODE       ((uint16_t)10)  // fiducial detector
+#define PLAYER_SPEECH_CODE         ((uint16_t)12)  // speech I/O
+#define PLAYER_GPS_CODE            ((uint16_t)13)  // GPS unit
+#define PLAYER_BUMPER_CODE         ((uint16_t)14)  // bumper array
+#define PLAYER_TRUTH_CODE          ((uint16_t)15)  // ground-truth (via Stage;
+#define PLAYER_IDARTURRET_CODE     ((uint16_t)16)  // ranging + comms
+#define PLAYER_IDAR_CODE           ((uint16_t)17)  // ranging + comms
+#define PLAYER_DESCARTES_CODE      ((uint16_t)18)  // the Descartes platform
+#define PLAYER_DIO_CODE            ((uint16_t)20)  // digital I/O
+#define PLAYER_AIO_CODE            ((uint16_t)21)  // analog I/O
+#define PLAYER_IR_CODE             ((uint16_t)22)  // IR array
+#define PLAYER_WIFI_CODE           ((uint16_t)23)  // wifi card status
+#define PLAYER_WAVEFORM_CODE       ((uint16_t)24)  // fetch raw waveforms
+#define PLAYER_LOCALIZE_CODE       ((uint16_t)25)  // localization
+#define PLAYER_MCOM_CODE           ((uint16_t)26)  // multicoms
+#define PLAYER_SOUND_CODE          ((uint16_t)27)  // sound file playback
+#define PLAYER_AUDIODSP_CODE       ((uint16_t)28)  // audio dsp I/O
+#define PLAYER_AUDIOMIXER_CODE     ((uint16_t)29)  // audio I/O
+#define PLAYER_POSITION3D_CODE     ((uint16_t)30)  // 3-D position
+#define PLAYER_SIMULATION_CODE     ((uint16_t)31)  // simulators
+#define PLAYER_SERVICE_ADV_CODE    ((uint16_t)32)  // LAN service advertisement
+#define PLAYER_BLINKENLIGHT_CODE   ((uint16_t)33)  // blinking lights 
+#define PLAYER_NOMAD_CODE          ((uint16_t)34)  // Nomad robot
+#define PLAYER_CAMERA_CODE         ((uint16_t)40)  // camera device (gazebo;
+#define PLAYER_MAP_CODE            ((uint16_t)42)  // get a map
+#define PLAYER_PLANNER_CODE        ((uint16_t)44)  // 2D motion planner
+#define PLAYER_LOG_CODE            ((uint16_t)45)  // log read/write control
+#define PLAYER_ENERGY_CODE         ((uint16_t)46)  // energy consumption
+#define PLAYER_MOTOR_CODE          ((uint16_t)47)  // motor interface
+#define PLAYER_POSITION2D_CODE     ((uint16_t)48)  // 2-D position
+#define PLAYER_JOYSTICK_CODE       ((uint16_t)49)  // Joytstick
+#define PLAYER_SPEECH_RECOGNITION_CODE  ((uint16_t)50)  // speech recognition
+#define PLAYER_OPAQUE_CODE         ((uint16_t)51)  // plugin interface
+#define PLAYER_POSITION1D_CODE     ((uint16_t)52)  // 1-D position
 /* the currently assigned device strings */
 const char* PLAYER_AIO_STRING            = "aio";
 const char* PLAYER_AUDIO_STRING          = "audio";
@@ -144,15 +144,15 @@ const char* PLAYER_WIFI_STRING           = "wifi";
 
 
 /* The maximum number of devices the server will support. */
-const uint16_t PLAYER_MAX_DEVICES             = 256;
+#define PLAYER_MAX_DEVICES             ((uint16_t)256)
 
 /* maximum size for request/reply.
  * this is a convenience so that the PlayerQueue can used fixed size elements.
  * need to think about this a little
  */
-const uint16_t PLAYER_MAX_REQREP_SIZE         = 4096; /*4KB*/
+#define PLAYER_MAX_REQREP_SIZE         ((uint16_t)4096) /*4KB*/
 
-const uint16_t PLAYER_MSGQUEUE_DEFAULT_MAXLEN = 32;
+#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN ((uint16_t)32)
 
 /* the default player port */
 const uint16_t PLAYER_PORTNUM                 = 6665;
@@ -161,8 +161,8 @@ const uint16_t PLAYER_PORTNUM                 = 6665;
  * info that is spit back as a banner on connection
  */
 const char* PLAYER_IDENT_STRING    = "Player v.";
-const uint16_t PLAYER_IDENT_STRLEN = 32;
-const uint16_t PLAYER_KEYLEN       = 32;
+#define PLAYER_IDENT_STRLEN ((uint16_t)32)
+#define PLAYER_KEYLEN       ((uint16_t)32)
 
 /* Macro for byte-aligning structures; this is a little
    work-around so the file can be parsed by non-GCC pre-processors
@@ -210,8 +210,7 @@ typedef struct player_msghdr
 } __PACKED__ player_msghdr_t;
 
 
-const uint32_t PLAYER_MAX_PAYLOAD_SIZE =
-  (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t));
+#define PLAYER_MAX_PAYLOAD_SIZE ((uint32_t)(PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t)))
 
 /** @addtogroup units
 
@@ -256,8 +255,8 @@ The @p aio interface provides access to an analog I/O device.
 */
 
 /** The maximum number of analog I/O samples */
-const uint8_t PLAYER_AIO_MAX_INPUTS  = 8;
-const uint8_t PLAYER_AIO_MAX_OUTPUTS = 8;
+#define PLAYER_AIO_MAX_INPUTS  ((uint8_t)8)
+#define PLAYER_AIO_MAX_OUTPUTS ((uint8_t)8)
 
 /** @brief Data
 
@@ -289,9 +288,9 @@ The @p audio interface is used to control sound hardware, if equipped.
 @{
 */
 
-const uint16_t PLAYER_AUDIO_DATA_BUFFER_SIZE    = 20;
-const uint16_t PLAYER_AUDIO_COMMAND_BUFFER_SIZE = 3*sizeof(short);
-const uint16_t PLAYER_AUDIO_PAIRS               = 5;
+#define PLAYER_AUDIO_DATA_BUFFER_SIZE    ((uint16_t)20)
+#define PLAYER_AUDIO_COMMAND_BUFFER_SIZE ((uint16_t)3*sizeof(short))
+#define PLAYER_AUDIO_PAIRS               ((uint16_t)5)
 
 /** @brief Data
 
@@ -467,7 +466,7 @@ light.*/
 typedef struct player_blinkenlight_data
 {
   /** FALSE: disabled, TRUE: enabled */
-  bool_t enable;
+  uint8_t enable;
   /** flash period (one whole on-off cycle) [s]. */
   float period;
 } __PACKED__ player_blinkenlight_data_t;
@@ -490,7 +489,7 @@ in images.
 */
 
 /** The maximum number of blobs in total. */
-const uint16_t PLAYER_BLOBFINDER_MAX_BLOBS = 256;
+#define PLAYER_BLOBFINDER_MAX_BLOBS ((uint16_t)256)
 
 /* Config request codes */
 const uint8_t PLAYER_BLOBFINDER_SET_COLOR         = 1;
@@ -584,7 +583,7 @@ accepts no commands.
 */
 
 /** Maximum number of bumper samples */
-const uint8_t PLAYER_BUMPER_MAX_SAMPLES = 32;
+#define PLAYER_BUMPER_MAX_SAMPLES ((uint8_t)32)
 /** The request subtypes */
 const uint8_t PLAYER_BUMPER_GET_GEOM    = 1;
 
@@ -596,7 +595,7 @@ typedef struct player_bumper_data
   /** the number of valid bumper readings */
   uint32_t count;
   /** array of bumper values */
-  bool_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
+  uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 } __PACKED__ player_bumper_data_t;
 
 /** @brief The geometry of a single bumper */
@@ -640,9 +639,9 @@ This interface has no commands or configuration requests.
 */
 
 /** Image dimensions. */
-const uint16_t PLAYER_CAMERA_IMAGE_WIDTH  = 640;
-const uint16_t PLAYER_CAMERA_IMAGE_HEIGHT = 480;
-const uint32_t PLAYER_CAMERA_IMAGE_SIZE   = 640 * 480 * 4;
+#define PLAYER_CAMERA_IMAGE_WIDTH  ((uint16_t)640)
+#define PLAYER_CAMERA_IMAGE_HEIGHT ((uint16_t)480)
+#define PLAYER_CAMERA_IMAGE_SIZE  ((uint32_t)(PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4))
 
 /** Image format : 8-bit monochrome. */
 const uint8_t PLAYER_CAMERA_FORMAT_MONO8  = 1;
@@ -748,12 +747,12 @@ typedef struct player_energy_data
 /** @brief Configuration request */
 typedef struct player_energy_command
 {
-  /** bool_tean controlling recharging. If FALSE, recharging is
+  /** uint8_tean controlling recharging. If FALSE, recharging is
       disabled. Defaults to TRUE */
-  bool_t enable_input;
-  /** bool_tean controlling whether others can recharge from this
+  uint8_t enable_input;
+  /** uint8_tean controlling whether others can recharge from this
       device. If FALSE, charging others is disabled. Defaults to TRUE.*/  
-  bool_t enable_output; 
+  uint8_t enable_output; 
 } __PACKED__ player_energy_chargepolicy_config_t;
 
 /** @} */
@@ -769,10 +768,10 @@ for devices the detect natural landmarks.
 */
 
 /** The maximum number of fiducials that can be detected at one time. */
-const uint8_t PLAYER_FIDUCIAL_MAX_SAMPLES = 32;
+#define PLAYER_FIDUCIAL_MAX_SAMPLES ((uint8_t)32)
 
 /** The maximum size of a data packet exchanged with a fiducial at one time.*/
-const uint8_t PLAYER_FIDUCIAL_MAX_MSG_LEN = 32;
+#define PLAYER_FIDUCIAL_MAX_MSG_LEN ((uint8_t)32)
 
 /* Request packet subtypes */
 const uint8_t PLAYER_FIDUCIAL_GET_GEOM     = 0x01;
@@ -925,7 +924,7 @@ typedef struct player_fiducial_msg_rx_req
 {
   /** If TRUE, empty the buffer when getting the message. If
       FALSE, leave the message in the buffer */
-  bool_t consume;
+  uint8_t consume;
 }  __PACKED__ player_fiducial_msg_rx_req_t;
 
 /** @brief Configuration request: Fiducial send message request.
@@ -935,7 +934,7 @@ typedef struct player_fiducial_msg_tx_req
 {
   /** If TRUE, send the message just once. If FALSE, the device may
       send the message repeatedly. */
-  bool_t consume;
+  uint8_t consume;
   /** The message to send. */
   player_fiducial_msg_t msg;
 }  __PACKED__ player_fiducial_msg_tx_req_t;
@@ -951,10 +950,10 @@ typedef struct player_fiducial_msg_txrx_req
   player_fiducial_msg_t msg;
   /** If TRUE, send the message just once. If FALSE, the device may
       send the message repeatedly. */
-  bool_t consume_send;
+  uint8_t consume_send;
   /** If TRUE, empty the buffer when getting the message. If
       FALSE, leave the message in the buffer */
-  bool_t consume_reply;
+  uint8_t consume_reply;
 }  __PACKED__ player_fiducial_msg_txrx_req_t; 
   
 /** @} */
@@ -1078,7 +1077,7 @@ This interface accepts no commands.
 */
 
 /** Maximum number of samples */
-const uint8_t PLAYER_IR_MAX_SAMPLES = 32;
+#define PLAYER_IR_MAX_SAMPLES ((uint8_t)32)
 /* config requests */
 const uint8_t PLAYER_IR_POSE        = 1;
 const uint8_t PLAYER_IR_POWER       = 2;
@@ -1116,7 +1115,7 @@ with a zero-length acknowledgement */
 typedef struct player_ir_power_req
 {
   /** FALSE for power off, TRUE for power on */
-  bool_t state; 
+  uint8_t state; 
 } __PACKED__ player_ir_power_req_t;
 /** @} */
 
@@ -1169,7 +1168,7 @@ This interface accepts no commands.
 */
 
 /** The maximum number of laser range values */
-const uint8_t PLAYER_LASER_MAX_SAMPLES  = 401;
+#define PLAYER_LASER_MAX_SAMPLES  ((uint16_t)401)
 
 /* Laser request subtypes. */
 const uint8_t PLAYER_LASER_GET_GEOM     = 0x01;
@@ -1243,7 +1242,7 @@ supports it). */
 typedef struct player_laser_power_config
 {
   /** FALSE to turn laser off, TRUE to turn laser on */
-  bool_t state;
+  uint8_t state;
 } __PACKED__ player_laser_power_config_t;
 
 /** @} */
@@ -1263,7 +1262,7 @@ This interface accepts no commands.
 */
 
 /** The maximum number of pose hypotheses. */
-const uint8_t PLAYER_LOCALIZE_MAX_HYPOTHS   = 10;
+#define PLAYER_LOCALIZE_MAX_HYPOTHS   ((uint8_t)10)
 
 /* Request/reply packet subtypes */
 const uint8_t PLAYER_LOCALIZE_SET_POSE      = 1;
@@ -1358,7 +1357,7 @@ Start/stop data logging */
 typedef struct player_log_set_write_state
 {
   /** State: FALSE=disabled, TRUE=enabled */
-  bool_t state;
+  uint8_t state;
 } __PACKED__ player_log_set_write_state_t;
 
 /** @brief Configuration request: Set playback state
@@ -1367,7 +1366,7 @@ Start/stop data playback */
 typedef struct player_log_set_read_state
 {
   /** State: FALSE=disabled, TRUE=enabled */
-  bool_t state;
+  uint8_t state;
 } __PACKED__ player_log_set_read_state_t;
 
 /** @brief Configuration request: Rewind playback
@@ -1387,7 +1386,7 @@ typedef struct player_log_get_state
       PLAYER_LOG_TYPE_WRITE */
   uint32_t type;
   /** Logging/playback state: FALSE=disabled, TRUE=enabled */
-  bool_t state;
+  uint8_t state;
 } __PACKED__ player_log_get_state_t;
 
 /** @brief Configuration request: Set filename
@@ -1412,7 +1411,7 @@ delivered in tiles, via a sequence of configuration requests.
 */
 
 /** The max number of cells we can send in one tile */
-const uint16_t PLAYER_MAP_MAX_CELLS_PER_TILE  = (PLAYER_MAX_REQREP_SIZE - 17);
+#define PLAYER_MAP_MAX_CELLS_PER_TILE  ((uint16_t)(PLAYER_MAX_REQREP_SIZE - 17))
 /* Configuration subtypes */
 const uint16_t PLAYER_MAP_GET_INFO            = 1;
 const uint16_t PLAYER_MAP_GET_DATA            = 2;
@@ -1464,12 +1463,12 @@ This interface returns no data and accepts no commands.
 */
 
 /** size of the data field in messages */
-const uint16_t MCOM_DATA_LEN            = 128;
-const uint16_t MCOM_DATA_BUFFER_SIZE    = 0;
+#define MCOM_DATA_LEN            ((uint16_t)128)
+#define MCOM_DATA_BUFFER_SIZE    ((uint16_t)0)
 /** number of buffers to keep per channel */
 const uint16_t  MCOM_N_BUFS             = 10;
 /** size of channel name */
-const uint16_t  MCOM_CHANNEL_LEN        = 8;
+#define MCOM_CHANNEL_LEN        ((uint16_t)8)
 /** returns this if empty */
 const char*  MCOM_EMPTY_STRING          = "(EMPTY)";
 /* request ids */
@@ -1551,7 +1550,7 @@ typedef struct player_motor_data
   /** Angular velocity [rad/s] */
   float vel;
   /** Are the motors stalled?   */
-  bool_t stall;
+  uint8_t stall;
   /** A bitfield of limit switches for the motor 
       These are stored as bits at bit
         - @ref PLAYER_MOTOR_LIMIT_MIN,
@@ -1573,7 +1572,7 @@ typedef struct player_motor_cmd
   /** Angular velocities [rad/s] */
   float vel;
   /** Motor state (zero is either off or locked, depending on the driver). */
-  bool_t state;
+  uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
   uint32_t type;
 } __PACKED__ player_motor_cmd_t;
@@ -1670,7 +1669,7 @@ const uint8_t  PLAYER_PLANNER_GET_WAYPOINTS = 10;
 const uint8_t  PLAYER_PLANNER_ENABLE        = 11;
 
 /** maximum number of waypoints in a single plan */
-const uint8_t  PLAYER_PLANNER_MAX_WAYPOINTS = 128;
+#define PLAYER_PLANNER_MAX_WAYPOINTS ((uint8_t)128)
 
 /** @brief Data
 
@@ -1679,9 +1678,9 @@ planner. */
 typedef struct player_planner_data
 {
   /** Did the planner find a valid path? */
-  bool_t valid;
+  uint8_t valid;
   /** Have we arrived at the goal? */
-  bool_t done;
+  uint8_t done;
   /** Current location (m,m,rad) */
   float px,py,pa;
   /** Goal location (m,m,rad) */
@@ -1749,33 +1748,32 @@ const uint16_t PLAYER_CLOSE_MODE  = 99;   // 'c'
 const uint16_t PLAYER_ERROR_MODE  = 101;  // 'e'
 
 
-const uint16_t PLAYER_DATAMODE_PULL  = 1;
-const uint16_t PLAYER_DATAMODE_NEW   = 2;
-const uint16_t PLAYER_DATAMODE_ASYNC = 4;
+#define PLAYER_DATAMODE_PULL  ((uint16_t)1)
+#define PLAYER_DATAMODE_NEW   ((uint16_t)2)
+#define PLAYER_DATAMODE_ASYNC ((uint16_t)4)
 
 /** Data delivery mode: Send data at a fixed rate (default 10Hz;
 see PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) from ALL
 subscribed devices , regardless of whether the data is new or old. A
 PLAYER_MSGTYPE_SYNCH packet follows each set of data. Rarely used. */
-const uint16_t PLAYER_DATAMODE_PUSH_ALL = 0;
+#define PLAYER_DATAMODE_PUSH_ALL ((uint16_t)0)
 /** Data delivery mode: Only on request (see PLAYER_PLAYER_DATA_REQ
 request below), send data from ALL subscribed devices, regardless of
 whether the data is new or old.  A PLAYER_MSGTYPE_SYNCH packet follows
 each set of data.  Rarely used. */
-const uint16_t PLAYER_DATAMODE_PULL_ALL = PLAYER_DATAMODE_PULL;
+#define PLAYER_DATAMODE_PULL_ALL ((uint16_t)PLAYER_DATAMODE_PULL)
 /** Data delivery mode: Send data at a fixed rate (default 10Hz; see
 PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) only from those
 subscribed devices that have produced new data since the last time data
 was pushed to this client.  A PLAYER_MSGTYPE_SYNCH packet follows each
 set of data.  This is the default mode. */
-const uint16_t PLAYER_DATAMODE_PUSH_NEW = PLAYER_DATAMODE_NEW;
+#define PLAYER_DATAMODE_PUSH_NEW ((uint16_t)PLAYER_DATAMODE_NEW)
 /** Data delivery mode: Only on request (see PLAYER_PLAYER_DATA_REQ
 request below), send data only from those subscribed devices that have
 produced new data since the last time data was pushed to this client.
 Use this mode if your client runs slowly or at an upredictable rate
 (e.g., a GUI). A PLAYER_MSGTYPE_SYNCH packet follows each set of data. */
-const uint16_t PLAYER_DATAMODE_PULL_NEW = 
-  (PLAYER_DATAMODE_PULL | PLAYER_DATAMODE_NEW);
+#define PLAYER_DATAMODE_PULL_NEW ((uint16_t)(PLAYER_DATAMODE_PULL | PLAYER_DATAMODE_NEW))
 /** Data delivery mode: When a subscribed device produces new data, send
 it. This is the lowest-latency delivery mode; when a device produces data,
 the server (almost) immediately sends it on the client.  So the client may
@@ -1783,18 +1781,18 @@ receive data at an arbitrarily high rate. PLAYER_MSGTYPE_SYNCH packets
 are still sent, but at a fixed rate (see PLAYER_PLAYER_DATAFREQ_REQ to
 change this rate) that is unrelated to rate at which data are delivered
 from devices. */
-const uint16_t PLAYER_DATAMODE_PUSH_ASYNC = PLAYER_DATAMODE_ASYNC;
+#define PLAYER_DATAMODE_PUSH_ASYNC ((uint16_t)PLAYER_DATAMODE_ASYNC)
 
 /* The request subtypes */
-const uint8_t PLAYER_PLAYER_DEVLIST     = 1;
-const uint8_t PLAYER_PLAYER_DRIVERINFO  = 2;
-const uint8_t PLAYER_PLAYER_DEV         = 3;
-const uint8_t PLAYER_PLAYER_DATA        = 4;
-const uint8_t PLAYER_PLAYER_DATAMODE    = 5;
-const uint8_t PLAYER_PLAYER_DATAFREQ    = 6;
-const uint8_t PLAYER_PLAYER_AUTH        = 7;
-const uint8_t PLAYER_PLAYER_NAMESERVICE = 8;
-const uint8_t PLAYER_PLAYER_IDENT       = 9;
+#define PLAYER_PLAYER_DEVLIST     ((uint8_t)1)
+#define PLAYER_PLAYER_DRIVERINFO  ((uint8_t)2)
+#define PLAYER_PLAYER_DEV         ((uint8_t)3)
+#define PLAYER_PLAYER_DATA        ((uint8_t)4)
+#define PLAYER_PLAYER_DATAMODE    ((uint8_t)5)
+#define PLAYER_PLAYER_DATAFREQ    ((uint8_t)6)
+#define PLAYER_PLAYER_AUTH        ((uint8_t)7)
+#define PLAYER_PLAYER_NAMESERVICE ((uint8_t)8)
+#define PLAYER_PLAYER_IDENT       ((uint8_t)9)
 
 /** @brief A device identifier.
 
@@ -2028,7 +2026,7 @@ typedef struct player_position1d_data
   /** translational velocities [m/s]*/
   float vel;   
   /** Is the motor stalled? */
-  bool_t stall;
+  uint8_t stall;
 } __PACKED__ player_position1d_data_t;
 
 /** @brief Command
@@ -2043,7 +2041,7 @@ typedef struct player_position1d_cmd
   /** translational velocity [m/s]*/
   float vel;   
   /** Motor state (FALSE is either off or locked, depending on the driver). */
-  bool_t state;
+  uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
   uint32_t type;
 } __PACKED__ player_position1d_cmd_t;
@@ -2076,7 +2074,7 @@ still attached.
 typedef struct player_position1d_power_config
 { 
   /** FALSE for off, TRUE for on */
-  bool_t state; 
+  uint8_t state; 
 } __PACKED__ player_position1d_power_config_t;
 
 /** @brief Configuration request: Change velocity control. 
@@ -2183,7 +2181,7 @@ typedef struct player_position_data
   /** translational velocities [m/s] (x, y, yaw)*/
   float vel[3];   
   /** Are the motors stalled? */
-  bool_t stall;
+  uint8_t stall;
 } __PACKED__ player_position_data_t;
 
 /** @brief Command
@@ -2198,7 +2196,7 @@ typedef struct player_position_cmd
   /** translational velocities [m/s] (x, y, yaw)*/
   float vel[3];   
   /** Motor state (FALSE is either off or locked, depending on the driver). */
-  bool_t state;
+  uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
   uint32_t type;
 } __PACKED__ player_position_cmd_t;
@@ -2231,7 +2229,7 @@ still attached.
 typedef struct player_position_power_config
 { 
   /** FALSE for off, TRUE for on */
-  bool_t state; 
+  uint8_t state; 
 } __PACKED__ player_position_power_config_t;
 
 /** @brief Configuration request: Change velocity control. 
@@ -2347,7 +2345,7 @@ typedef struct player_position3d_data
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
   int32_t vel[6];  
   /** Are the motors stalled? */
-  bool_t stall;
+  uint8_t stall;
 } __PACKED__ player_position3d_data_t;
 
 /** @brief Command
@@ -2361,7 +2359,7 @@ typedef struct player_position3d_cmd
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
   int32_t vel[6];  
   /** Motor state (FALSE is either off or locked, depending on the driver). */
-  bool_t state;
+  uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
   uint32_t type;
 } __PACKED__ player_position3d_cmd_t;
@@ -2392,7 +2390,7 @@ still attached.  */
 typedef struct player_position3d_power_config
 {
   /** FALSE for off, TRUE for on */
-  bool_t state;
+  uint8_t state;
 } __PACKED__ player_position3d_power_config_t;
 
 /** @brief Configuration request: Change position control. */
@@ -2492,7 +2490,7 @@ const uint8_t PLAYER_PTZ_AUTOSERVO       = 3;
 
 /** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ, 
     based on the Sony EVID30 camera right now. */
-const uint8_t PLAYER_PTZ_MAX_CONFIG_LEN  = 32;
+#define PLAYER_PTZ_MAX_CONFIG_LEN  ((uint8_t)32)
 
 /** Control mode, for use with PLAYER_PTZ_CONTROL_MODE_REQ */
 const uint8_t PLAYER_PTZ_VELOCITY_CONTROL = 0;
@@ -2580,7 +2578,7 @@ for this interface. Suggestions welcome on playerstage-developers.
 /** Request packet subtypes. */
 const uint8_t PLAYER_SIMULATION_SET_POSE2D        = 0;
 /** the maximum length of a string indentifying a simulation object */
-const uint8_t PLAYER_SIMULATION_IDENTIFIER_MAXLEN = 64;
+#define PLAYER_SIMULATION_IDENTIFIER_MAXLEN ((uint8_t)64)
 
 /** @brief Data
 
@@ -2624,7 +2622,7 @@ sensors, such as a sonar array.  This interface accepts no commands.
 */
 
 /** maximum number of sonar samples in a data packet */
-const uint8_t PLAYER_SONAR_MAX_SAMPLES = 64;
+#define PLAYER_SONAR_MAX_SAMPLES ((uint8_t)64)
 /** request types */
 const uint8_t PLAYER_SONAR_GET_GEOM   = 1;
 const uint8_t PLAYER_SONAR_POWER      = 2;
@@ -2665,7 +2663,7 @@ zero-length acknowledgement. */
 typedef struct player_sonar_power_config
 {
   /** Turn power off TRUE or FALSE */
-  bool_t state;
+  uint8_t state;
 } __PACKED__ player_sonar_power_config_t;
 
 /** @} */
@@ -2702,7 +2700,7 @@ The @p speech interface returns no data.
 */
 
 /** Maximum string length */
-const uint16_t PLAYER_SPEECH_MAX_STRING_LEN = 256;
+#define PLAYER_SPEECH_MAX_STRING_LEN ((uint16_t)256)
 
 
 /** @brief Command
@@ -2726,7 +2724,7 @@ server.
 @{
 */
 
-const uint16_t SPEECH_RECOGNITION_TEXT_LEN = 256;
+#define SPEECH_RECOGNITION_TEXT_LEN ((uint16_t)256)
 
 /** @brief Data
 
@@ -2804,7 +2802,7 @@ say from a digital audio device.
 */
 
 /*4K - half the packet max*/
-const uint16_t PLAYER_WAVEFORM_DATA_MAX = 4096;
+#define PLAYER_WAVEFORM_DATA_MAX ((uint16_t)4096)
 
 /** @brief Data
 
@@ -2835,7 +2833,7 @@ This interface accepts no commands.
 */
 
 /** The maximum number of remote hosts to report on */
-const uint8_t PLAYER_WIFI_MAX_LINKS   = 32;
+#define PLAYER_WIFI_MAX_LINKS   ((uint8_t)32)
 
 /** link quality is in dBm */
 const uint8_t PLAYER_WIFI_QUAL_DBM     = 1;
