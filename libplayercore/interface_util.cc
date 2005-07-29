@@ -119,7 +119,7 @@ lookup_interface_code(int code, player_interface_t* interface)
  * entry that has the given code, and return the name.
  * leturns 0 when the end of the * array is reached.
  */
-char*
+const char*
 lookup_interface_name(unsigned int startpos, int code)
 {
   if(startpos > sizeof(interfaces))

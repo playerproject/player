@@ -184,7 +184,7 @@ Device::PutMsg(MessageQueue* resp_queue,
     GlobalTime->GetTime(&ts);
 
   memset(&hdr,0,sizeof(player_msghdr_t));
-  hdr.stx = PLAYER_STXX;
+  //hdr.stx = PLAYER_STXX;
   hdr.type = type;
   hdr.subtype = subtype;
   hdr.timestamp_sec = ts.tv_sec;
