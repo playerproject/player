@@ -171,7 +171,7 @@ Driver::Publish(player_devaddr_t addr,
 
   player_msghdr_t hdr;
   memset(&hdr,0,sizeof(player_msghdr_t));
-  hdr.stx = PLAYER_STXX;
+  //hdr.stx = PLAYER_STXX;
   hdr.addr = addr;
   hdr.type = type;
   hdr.subtype = subtype;

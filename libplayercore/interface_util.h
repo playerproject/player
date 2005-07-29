@@ -29,7 +29,7 @@
 typedef struct 
 {
   uint16_t code;
-  char* name;
+  const char* name;
 } player_interface_t;
 
 /* 
@@ -52,7 +52,7 @@ lookup_interface_code(int code, player_interface_t* interface);
  * entry that has the given code, and returns the name.
  * returns 0 if the device is not found.
  */
-char*
+const char*
 lookup_interface_name(unsigned int startpos, int code);
 
 #endif
