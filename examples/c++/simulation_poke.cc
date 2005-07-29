@@ -29,7 +29,7 @@
   "       -r <string>: identifier string for the object to move\n" \
 
 char host[256] = "localhost";
-char simobject[256] = "robot";
+char *simobject = "robot";
 int port = PLAYER_PORTNUM;
 int device_index = 0; // use this to access the nth indexed position and laser devices
 
@@ -45,7 +45,7 @@ parse_args(int argc, char** argv)
     if(!strcmp(argv[i],"-r"))
     {
       if(++i<argc)
-        strcpy(simobject,argv[i]);
+        simobject = strdup(argv[i]);
       else
       {
         puts(USAGE);
@@ -99,8 +99,6 @@ int main(int argc, char **argv)
   SimulationProxy sp(&robot,device_index,'w');
 
   PositionProxy pp1(&robot,0,'r');
-  PositionProxy pp2(&robot,1,'r');
-  PositionProxy pp3(&robot,2,'r');
 
   printf("%s\n",robot.conn.banner);
 
@@ -120,24 +118,25 @@ int main(int argc, char **argv)
   
   for(;;)
     {
-      pp1.Print();
-      pp2.Print();
-      pp3.Print();
+      double x =  -width/2.0 + drand48() * width;
+      double y =  -height/2.0 + drand48() * height;
+      double a =  drand48() * M_PI * 2.0;
+
+      printf( "\n** Moving %s to (%.2f,%.2f,%.2f)\n", simobject, x, y, a );
       
       // move the named object to a random position about the origin
-      sp.SetPose2D( simobject, 
-		  -width/2.0 + drand48() * width, 
-		    -height/2.0 + drand48() * height, 
-		    drand48() * M_PI * 2.0 );
-      
-      double x, y, a;
+      sp.SetPose2D( simobject, x, y, a );
+
       sp.GetPose2D( simobject, x, y, a );
       
-      robot.Read();
-
-      printf( "Simulation reported \"%s\" pose as (%.2f, %.2f, %.2f)\n",
+      printf( "GetPose2D reported \"%s\" pose as (%.2f, %.2f, %.2f)\n",
 	      simobject, x, y, a );
+
+      robot.Read();
       
-      sleep(1);
+      puts( "Position Proxy reports:" );
+      pp1.Print();
+      
+      //sleep(1);
   }
 }

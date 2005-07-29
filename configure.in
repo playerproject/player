@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,1.6.4)
+AC_INIT(player,1.6.5)
 
 AC_CONFIG_SRCDIR(server/main.cc)
 
@@ -230,7 +230,7 @@ AC_CHECK_LIB(jpeg,jpeg_read_header,
 
 dnl Check for OpenCV
 if test "x$have_pkg_config" = "xyes"; then
-   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_gtk=no)
+   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_opencv=no)
    if test "x$with_opencv" = "xyes"; then
       AC_DEFINE(HAVE_OPENCV, 1, [OpenCV library is present])
    fi

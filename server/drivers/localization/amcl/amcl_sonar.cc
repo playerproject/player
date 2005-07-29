@@ -21,9 +21,8 @@
 ///////////////////////////////////////////////////////////////////////////
 //
 // Desc: AMCL sonar routines
-// Author: Andrew Howard
-// Date: 6 Feb 2003
-// CVS: $Id$
+// Author: Oscar Gerelli, Dario Lodi Rizzini
+// Date: 22 Jun 2005
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -31,185 +30,359 @@
 #include "config.h"
 #endif
 
+#define PLAYER_ENABLE_MSG 1
+
+#include <sys/types.h> // required by Darwin
+#include <netinet/in.h>
 #include <math.h>
-#include "amcl.h"
+#include <stdlib.h>
+#include <sys/time.h>
+#include <sstream>
+#include "error.h"
+#include "devicetable.h"
+#include "amcl_sonar.h"
+
+extern int global_playerport; // used to gen. useful output & debug
 
 
-#if 0
+////////////////////////////////////////////////////////////////////////////////
+// Default constructor
+AMCLSonar::AMCLSonar(player_device_id_t id)
+{
+  this->driver = NULL;
+  this->sonar_id = id;
+  
+  return;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Load sonar settings
-int AdaptiveMCL::LoadSonar(ConfigFile* cf, int section)
+int AMCLSonar::Load(ConfigFile* cf, int section)
 {
-  this->sonar = NULL;
-  this->sonar_index = cf->ReadInt(section, "sonar_index", -1);
-  this->sonar_pose_count = 0;
-  this->sonar_model = NULL;
+  // Get the map settings.  Don't error check here; we'll do it later, in
+  // SetupMap().
+  cf->ReadDeviceId(&(this->map_id), section, "requires",
+                   PLAYER_MAP_CODE, -1, "sonar");
+  
+
+  this->scount = cf->ReadInt(section, "scount", 0);
+  assert(this->scount > 0);
+
+  sonar_pose = new pf_vector_t[scount];
+
+  for(int i=0; i < scount; i++) {
+     std::stringstream sonar;
+     sonar << "spose[" << i << "]";
+     this->sonar_pose[i].v[0] = cf->ReadTupleLength(section, sonar.str().c_str(), 0, 0);
+     this->sonar_pose[i].v[1] = cf->ReadTupleLength(section, sonar.str().c_str(), 1, 0);
+     this->sonar_pose[i].v[2] = cf->ReadTupleAngle(section, sonar.str().c_str(), 2, 0);
+  }
+
+  this->range_max = cf->ReadLength(section, "sonar_range_max", 4.0);
+  this->range_var = cf->ReadLength(section, "sonar_range_var", 0.50);
+  this->range_bad = cf->ReadFloat(section, "sonar_range_bad", 0.30);
+
+  this->time.tv_sec = 0;
+  this->time.tv_usec = 0;
 
   return 0;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// Unload the model
+int AMCLSonar::Unload(void)
+{
+ 
+  delete[] sonar_pose;
+
+  return 0;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the sonar
-int AdaptiveMCL::SetupSonar(void)
+int AMCLSonar::Setup(void)
 {
-  int i;
-  uint8_t req;
-  uint16_t reptype;
-  player_device_id_t id;
-  player_sonar_geom_t geom;
-  struct timeval tv;
 
-  // If there is no sonar device...
-  if (this->sonar_index < 0)
-    return 0;
-  
-  id.code = PLAYER_SONAR_CODE;
-  id.index = this->sonar_index;
+  if(this->SetupMap() < 0)
+  {
+    PLAYER_ERROR("failed to get sonar map");
+    return(-1);
+  }
 
-  this->sonar = deviceTable->GetDriver(id);
-  if (!this->sonar)
+  // Subscribe to the Sonar device
+  this->driver = deviceTable->GetDriver(this->sonar_id);
+  if (!this->driver)
   {
     PLAYER_ERROR("unable to locate suitable sonar device");
     return -1;
   }
-  if (this->sonar->Subscribe(this) != 0)
+  if (this->driver->Subscribe(this->sonar_id) != 0)
   {
     PLAYER_ERROR("unable to subscribe to sonar device");
     return -1;
   }
 
-  // Get the sonar geometry
-  req = PLAYER_SONAR_GET_GEOM_REQ;
-  if (this->sonar->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
+  return 0;
+}
+
+// TODO: should Unsubscribe from the map on error returns in the function
+int
+AMCLSonar::SetupMap(void)
+{
+
+  Driver* mapdriver;
+
+  // Subscribe to the map device
+  if(!(mapdriver = deviceTable->GetDriver(this->map_id)))
   {
-    PLAYER_ERROR("unable to get sonar geometry");
+    PLAYER_ERROR("unable to locate suitable map device");
+    return -1;
+  }
+  if(mapdriver->Subscribe(this->map_id) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to map device");
     return -1;
   }
 
-  this->sonar_pose_count = (int16_t) ntohs(geom.pose_count);
-  assert((size_t) this->sonar_pose_count <
-         sizeof(this->sonar_poses) / sizeof(this->sonar_poses[0]));
-  
-  for (i = 0; i < this->sonar_pose_count; i++)
+  // Create the map
+  this->map = map_alloc();
+  //PLAYER_MSG1("loading map file [%s]", map_filename);
+  PLAYER_MSG1(2, "reading map from map:%d", this->map_id.index);
+  //if(map_load_occ(this->map, map_filename, map_scale, map_negate) != 0)
+    //return -1;
+
+  // Fill in the map structure (I'm doing it here instead of in libmap, 
+  // because libmap is written in C, so it'd be a pain to invoke the internal 
+  // device API from there)
+
+  // first, get the map info
+  int replen;
+  unsigned short reptype;
+  player_map_info_t info;
+  struct timeval ts;
+  info.subtype = PLAYER_MAP_GET_INFO_REQ;
+  if((replen = mapdriver->Request(this->map_id, this, 
+                                  &info, sizeof(info.subtype), NULL,
+                                  &reptype, &info, sizeof(info), &ts)) == 0)
   {
-    this->sonar_poses[i].v[0] = ((int16_t) ntohs(geom.poses[i][0])) / 1000.0;
-    this->sonar_poses[i].v[1] = ((int16_t) ntohs(geom.poses[i][1])) / 1000.0;
-    this->sonar_poses[i].v[2] = ((int16_t) ntohs(geom.poses[i][2])) * M_PI / 180.0;
+    PLAYER_ERROR("failed to get map info");
+    return(-1);
+  }
+  
+  // copy in the map info
+  this->map->origin_x = this->map->origin_y = 0.0;
+  this->map->scale = 1/(ntohl(info.scale) / 1e3);
+  this->map->size_x = ntohl(info.width);
+  this->map->size_y = ntohl(info.height);
+
+  // allocate space for map cells
+  assert(this->map->cells = (map_cell_t*)malloc(sizeof(map_cell_t) *
+                                                this->map->size_x *
+                                                this->map->size_y));
+
+  // now, get the map data
+  player_map_data_t data_req;
+  int reqlen;
+  int i,j;
+  int oi,oj;
+  int sx,sy;
+  int si,sj;
+
+  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+  
+  // Tile size
+  sy = sx = (int)sqrt(sizeof(data_req.data));
+  assert(sx * sy < (int)sizeof(data_req.data));
+  oi=oj=0;
+  while((oi < this->map->size_x) && (oj < this->map->size_y))
+  {
+    si = MIN(sx, this->map->size_x - oi);
+    sj = MIN(sy, this->map->size_y - oj);
+
+    data_req.col = htonl(oi);
+    data_req.row = htonl(oj);
+    data_req.width = htonl(si);
+    data_req.height = htonl(sj);
+
+    reqlen = sizeof(data_req) - sizeof(data_req.data);
+
+    if((replen = mapdriver->Request(this->map_id, this, 
+                                    &data_req, reqlen, NULL,
+                                    &reptype, 
+                                    &data_req, sizeof(data_req), &ts)) == 0)
+    {
+      PLAYER_ERROR("failed to get map info");
+      return(-1);
+    }
+    else if(replen != (reqlen + si * sj))
+    {
+      PLAYER_ERROR2("got less map data than expected (%d != %d)",
+                    replen, reqlen + si*sj);
+      return(-1);
+    }
+
+    // copy the map data
+    for(j=0;j<sj;j++)
+    {
+      for(i=0;i<si;i++)
+      {
+        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_state = 
+                data_req.data[j*si + i];
+        this->map->cells[MAP_INDEX(this->map,oi+i,oj+j)].occ_dist = 0;
+      }
+    }
+
+    oi += si;
+    if(oi >= this->map->size_x)
+    {
+      oi = 0;
+      oj += sj;
+    }
   }
 
+  // we're done with the map device now
+  if(mapdriver->Unsubscribe(this->map_id) != 0)
+    PLAYER_WARN("unable to unsubscribe from map device");
 
-  // Create the sonar model
-  this->sonar_model = sonar_alloc(this->map, this->sonar_pose_count, this->sonar_poses);
-
-  return 0;
+  return(0);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the sonar
-int AdaptiveMCL::ShutdownSonar(void)
+int AMCLSonar::Shutdown(void)
 {
-  // If there is no sonar device...
-  if (this->sonar_index < 0)
-    return 0;
-
-  this->sonar->Unsubscribe(this);
-  this->sonar = NULL;
-
-  // Delete the sonar model
-  sonar_free(this->sonar_model);
-  this->sonar_model = NULL;
+  this->driver->Unsubscribe(this->sonar_id);
+  this->driver = NULL;
+  map_free(this->map);
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Check for new sonar data
-void AdaptiveMCL::GetSonarData(amcl_sensor_data_t *data)
+// Get the current sonar reading
+AMCLSensorData *AMCLSonar::GetData(void)
 {
+
   int i;
   size_t size;
-  player_sonar_data_t ndata;
+  player_sonar_data_t data;
+  struct timeval timestamp;
   double r;
+  AMCLSonarData *ndata;
 
-  // If there is no sonar device...
-  if (this->sonar_index < 0)
-  {
-    data->sonar_range_count = 0;
-    return;
-  }
-  
+  assert(driver != NULL);
+
   // Get the sonar device data.
-  size = this->sonar->GetData(this, (uint8_t*) &ndata, sizeof(ndata), NULL, NULL);
+  size = this->driver->GetData(this->sonar_id, (void*) &data, 
+                               sizeof(data), &timestamp);
 
-  data->sonar_range_count = ntohs(ndata.range_count);
-  assert((size_t) data->sonar_range_count <
-         sizeof(data->sonar_ranges) / sizeof(data->sonar_ranges[0]));
+
+  if (size == 0)
+    return NULL;
+  if((timestamp.tv_sec == this->time.tv_sec) && 
+     (timestamp.tv_usec == this->time.tv_usec))
+    return NULL;
+
+  double ta = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+  double tb = (double) this->time.tv_sec + ((double) this->time.tv_usec) * 1e-6;  
+  if (ta - tb < 0.100)  // HACK
+    return NULL;
+
+  this->time = timestamp;
+  
+  ndata = new AMCLSonarData;
+
+  ndata->sensor = this;
+  ndata->tsec = timestamp.tv_sec;
+  ndata->tusec = timestamp.tv_usec;
+  
+  ndata->range_count = ntohs(data.range_count);
+  assert((size_t) ndata->range_count * sizeof(ndata->ranges[0]) <= sizeof(ndata->ranges));
+
+  assert(ndata->range_count == scount);
 
   // Read and byteswap the range data
-  for (i = 0; i < data->sonar_range_count; i++)
+  for (i = 0; i < ndata->range_count; i++)
   {
-    r = ((int16_t) ntohs(ndata.ranges[i])) / 1000.0;
-    data->sonar_ranges[i] = r;
+    r = ((uint16_t) ntohs(data.ranges[i])) / 1000.0;
+    ndata->ranges[i][0] = r;
+    ndata->ranges[i][1] = sonar_pose[i].v[2];
   }
-
-  return;
+  
+  return ndata;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the sonar sensor model
-bool AdaptiveMCL::UpdateSonarModel(amcl_sensor_data_t *data)
+bool AMCLSonar::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 {
-  int i;
+  AMCLSonarData *ndata;
   
-  // If there is no sonar device...
-  if (this->sonar_index < 0)
-    return false;
-
-  // Update the sonar sensor model with the latest sonar measurements
-  sonar_clear_ranges(this->sonar_model);
-  for (i = 0; i < data->sonar_range_count; i++)
-    sonar_add_range(this->sonar_model, data->sonar_ranges[i]);
+  ndata = (AMCLSonarData*) data;
 
   // Apply the sonar sensor model
-  pf_update_sensor(this->pf, (pf_sensor_model_fn_t) sonar_sensor_model, this->sonar_model);
+  pf_update_sensor(pf, (pf_sensor_model_fn_t) SensorModel, data);
 
   return true;
 }
-#endif
 
-#ifdef INCLUDE_RTKGUI
 
 ////////////////////////////////////////////////////////////////////////////////
-// Draw the sonar values
-void AdaptiveMCL::DrawSonarData(amcl_sensor_data_t *data)
+// Determine the probability for the given pose
+double AMCLSonar::SensorModel(AMCLSonarData *data, pf_vector_t robotPose)
 {
+  AMCLSonar *self;
   int i;
-  double r, b, ax, ay, bx, by;
+  double z, c, pz;
+  double p;
+  double map_range;
+  double obs_range, obs_bearing;
+  pf_vector_t pose;
   
-  // If there is no sonar device...
-  if (this->sonar_index < 0)
-    return;
+  self = (AMCLSonar*) data->sensor;
 
-  rtk_fig_clear(this->sonar_fig);
-  rtk_fig_color_rgb32(this->sonar_fig, 0xC0C080);
-  
-  for (i = 0; i < data->sonar_range_count; i++)
+
+  p = 1.0;
+
+  for (i = 0; i < data->range_count; i++)
   {
-    r = data->sonar_ranges[i];
-    b = this->sonar_poses[i].v[2];
+     // Take account of the sonar pose relative to the robot
+    pose = pf_vector_coord_add(self->sonar_pose[i], robotPose);
 
-    ax = this->sonar_poses[i].v[0];
-    ay = this->sonar_poses[i].v[1];
+    obs_range = data->ranges[i][0];
+    obs_bearing = data->ranges[i][1];
 
-    bx = ax + r * cos(b);
-    by = ay + r * sin(b);
-    
-    rtk_fig_line(this->sonar_fig, ax, ay, bx, by);
+    // Compute the range according to the map
+    map_range = map_calc_range(self->map, pose.v[0], pose.v[1],
+                               pose.v[2] + obs_bearing, self->range_max + 1.0);
+
+    if (obs_range >= self->range_max && map_range >= self->range_max)
+    {
+      pz = 1.0;
+    }
+    else
+    {
+      // TODO: proper sensor model (using Kolmagorov?)
+      // Simple gaussian model
+      c = self->range_var;
+      z = obs_range - map_range;
+      pz = self->range_bad + (1 - self->range_bad) * exp(-(z * z) / (2 * c * c));
+    }
+
+    p *= pz;
   }
-  return;
+
+  //printf("%e\n", p);
+  //assert(p >= 0);
+  
+  return p;
+
 }
 
-#endif
+
