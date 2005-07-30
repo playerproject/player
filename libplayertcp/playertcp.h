@@ -35,6 +35,9 @@
 
 #include <libplayercore/playercore.h>
 
+/** Default TCP port */
+#define PLAYERTCP_DEFAULT_PORT 6665
+
 /** We try to read() incoming messages in chunks of this size.  We also
     calloc() and realloc() read buffers in multiples of this size. */
 #define PLAYERTCP_READBUFFER_SIZE 65536
@@ -62,12 +65,12 @@ typedef struct
   struct sockaddr_in addr;
   /** Outgoing queue for this connection */
   MessageQueue* queue;
-  /** Buffer in which to store partial messages */
+  /** Buffer in which to store partial incoming messages */
   char* readbuffer;
   /** Total size of @p readbuffer */
   int readbuffersize;
   /** How much of @p readbuffer is currently in use (i.e., holding a
-      partial message) */
+    partial message) */
   int readbufferlen;
 } playertcp_conn_t;
 
@@ -81,6 +84,11 @@ class PlayerTCP
     int num_clients;
     playertcp_conn_t* clients;
     struct pollfd* client_ufds;
+
+    /** Buffer in which to store decoded incoming messages */
+    char* decode_readbuffer;
+    /** Total size of @p decode_readbuffer */
+    int decode_readbuffersize;
 
   public:
     PlayerTCP();

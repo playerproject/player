@@ -76,6 +76,7 @@ if __name__ == '__main__':
   headerfile.write('#include <rpc/types.h>\n')
   headerfile.write('#include <rpc/xdr.h>\n\n')
   headerfile.write('#include <libplayercore/player.h>\n\n')
+  headerfile.write('#include <libplayerxdr/functiontable.h>\n\n')
   headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
   headerfile.write('#define PLAYERXDR_ENCODE XDR_ENCODE\n')
   headerfile.write('#define PLAYERXDR_DECODE XDR_DECODE\n\n')
@@ -185,7 +186,11 @@ if __name__ == '__main__':
       else:
         sourcefile.write('  len = xdr_getpos(&xdrs);;\n')
         sourcefile.write('  xdr_destroy(&xdrs);\n')
-        sourcefile.write('  return(len);\n}\n\n')
+        sourcefile.write('  if(op == PLAYERXDR_ENCODE)\n')
+        sourcefile.write('    return(len);\n')
+        sourcefile.write('  else\n')
+        sourcefile.write('    return(sizeof(' + typename + '));\n')
+        sourcefile.write('}\n\n')
 
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')
   headerfile.write('#endif\n')

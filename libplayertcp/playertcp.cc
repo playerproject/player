@@ -27,10 +27,8 @@
 #include <unistd.h>
 
 #include <replace/replace.h>
-#include <libplayercore/player.h>
-#include <libplayercore/error.h>
-#include <libplayerxdr/pack.h>
-#include <libplayerxdr/functiontable.h>
+#include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 #include "playertcp.h"
 #include "socket_util.h"
@@ -44,6 +42,13 @@ PlayerTCP::PlayerTCP()
   this->num_listeners = 0;
   this->listeners = (playertcp_listener_t*)NULL;
   this->listen_ufds = (struct pollfd*)NULL;
+
+  // Create a buffer to hold decoded incoming messages
+  this->decode_readbuffersize = PLAYERTCP_READBUFFER_SIZE;
+  this->decode_readbuffer = 
+          (char*)calloc(1,this->decode_readbuffersize);
+  assert(this->decode_readbuffer);
+
 }
 
 PlayerTCP::~PlayerTCP()
@@ -172,6 +177,9 @@ PlayerTCP::Accept(int timeout)
       assert(this->clients[j].readbuffer);
       this->clients[j].readbufferlen = 0;
 
+      PLAYER_MSG2(1, "accepted client %d on port %d",
+                  j, this->listeners[i].port);
+
       num_accepts--;
     }
   }
@@ -268,10 +276,12 @@ PlayerTCP::ParseBuffer(int cli)
 {
   player_msghdr_t hdr;
   playertcp_conn_t* client;
-  //Message* msg;
   player_pack_fn_t packfunc;
   int headerlen;
   int msglen;
+  int decode_msglen;
+  Message* msg;
+  Driver* driver;
 
   assert((cli >= 0) && (cli < this->num_clients));
   client = this->clients + cli;
@@ -302,21 +312,66 @@ PlayerTCP::ParseBuffer(int cli)
     if(msglen > client->readbufferlen)
       return;
 
-    // Locate the appropriate packing function
-    if(!(packfunc = playerxdr_get_func(hdr.addr.interface, hdr.subtype)))
+    if(!(driver = deviceTable->GetDriver(hdr.addr)))
     {
-      // TODO: Allow the user to register a callback to handle unsupported
-      // messages
-      PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
-                   hdr.addr.interface, hdr.addr.index, hdr.subtype);
+      PLAYER_WARN3("skipping message of type %u to unknown device %u:%u",
+                   hdr.subtype, hdr.addr.interface, hdr.addr.index);
     }
     else
     {
-      /*
-      if((*packfunc)(client->readbuffer + client->readbufferlen,
-                     client->readbuffersize - client->readbufferlen,
-                     (void*)&
-                     */
+      // Locate the appropriate packing function
+      if(!(packfunc = playerxdr_get_func(hdr.addr.interface, hdr.subtype)))
+      {
+        // TODO: Allow the user to register a callback to handle unsupported
+        // messages
+        PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
+                     hdr.addr.interface, hdr.addr.index, hdr.subtype);
+      }
+      else
+      {
+        // Make sure there's room in the buffer for the decoded messsage.
+        // Because XDR can only inflate the size of a message, the encoded
+        // length is an upper bound on the decoded length.
+        if(this->decode_readbuffersize < msglen)
+        {
+          // Get twice as much space.
+          this->decode_readbuffersize *= 2;
+          // Did we hit the limit (or overflow and become negative)?
+          if((this->decode_readbuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
+             (this->decode_readbuffersize < 0))
+          {
+            PLAYER_WARN1("allocating maximum %d bytes to decoded message buffer",
+                         PLAYERTCP_MAX_MESSAGE_LEN);
+            this->decode_readbuffersize = PLAYERTCP_MAX_MESSAGE_LEN;
+          }
+          this->decode_readbuffer = (char*)realloc(this->decode_readbuffer,
+                                                   this->decode_readbuffersize);
+          assert(this->decode_readbuffer);
+          memset(this->decode_readbuffer, 0, this->decode_readbuffersize);
+        }
+
+	if((decode_msglen =
+	    (*packfunc)(client->readbuffer + client->readbufferlen,
+			client->readbuffersize - client->readbufferlen,
+                        (void*)this->decode_readbuffer, 
+                        PLAYERXDR_DECODE)) < 0)
+        {
+          PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
+                       hdr.addr.interface, hdr.addr.index, hdr.subtype);
+        }
+        else
+        {
+          // Make up a message and send it off
+          msg = new Message(hdr, this->decode_readbuffer,
+                            decode_msglen, client->queue);
+          assert(msg);
+          if(!driver->InQueue->Push(*msg))
+          {
+            PLAYER_WARN3("failed to enqueue message to %u:%u with type %u",
+                         hdr.addr.interface, hdr.addr.index, hdr.subtype);
+          }
+        }
+      }
     }
 
     // Move past the processed message

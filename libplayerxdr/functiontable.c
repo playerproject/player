@@ -27,7 +27,7 @@
  * given message type and subtype.
  */
 
-#include "pack.h"
+#include "playerxdr.h"
 #include "functiontable.h"
 
 typedef struct

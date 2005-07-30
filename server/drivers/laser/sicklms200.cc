@@ -119,6 +119,7 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
 #endif
 
 #include <assert.h>
+#include <math.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -513,8 +514,8 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     player_laser_config_t * config = reinterpret_cast<player_laser_config_t *> (data);
     this->intensity = config->intensity;
     this->scan_res = config->resolution;
-    this->min_angle = (short) config->min_angle;
-    this->max_angle = (short) config->max_angle;
+    this->min_angle = (int)rint(config->min_angle * 1e2);
+    this->max_angle = (int)rint(config->max_angle * 1e2);
     this->range_res = config->range_res;
 
     if(this->CheckScanConfig() != 0)
@@ -607,7 +608,8 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 // Main function for device thread
 void SickLMS200::Main() 
 {
-  uint16_t tmp;
+  int itmp;
+  float tmp;
   bool first = true;
   
   // Ask the laser to send data
@@ -630,9 +632,10 @@ void SickLMS200::Main()
     GlobalTime->GetTime(&time);
     
     // Process incoming data
-    player_laser_data_t data;
-    if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
+    uint16_t mm_ranges[PLAYER_LASER_MAX_SAMPLES];
+    if (ReadLaserData(mm_ranges, PLAYER_LASER_MAX_SAMPLES) == 0)
     {
+      player_laser_data_t data;
       if (first)
       {
         PLAYER_MSG0(2, "receiving data");
@@ -640,15 +643,17 @@ void SickLMS200::Main()
       }
       
       // Prepare packet and byte swap
-      data.min_angle = this->scan_min_segment * this->scan_res - this->scan_width * 50;
-      data.max_angle = this->scan_max_segment * this->scan_res - this->scan_width * 50;
-      data.resolution = this->scan_res;
-      data.range_count = this->scan_max_segment - this->scan_min_segment + 1;
-      data.range_res = (uint16_t) this->range_res;
+      data.min_angle = DTOR((this->scan_min_segment * 
+                             this->scan_res) / 1e2 - this->scan_width / 2.0);
+      data.max_angle = DTOR((this->scan_max_segment * 
+                             this->scan_res) / 1e2  - 
+                            this->scan_width / 2.0);
+      data.resolution = DTOR(this->scan_res / 1e2);
+      data.count = this->scan_max_segment - this->scan_min_segment + 1;
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
-        data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-        data.ranges[i] = (uint16_t) (data.ranges[i] & 0x1FFF);
+        data.intensity[i] = ((mm_ranges[i] >> 13) & 0x0007);
+        data.ranges[i] =  (mm_ranges[i] & 0x1FFF)  * this->range_res / 1e3;
       }
 
       // if the laser is upside-down, reverse the data and intensity
@@ -664,9 +669,9 @@ void SickLMS200::Main()
           tmp=data.ranges[i];
           data.ranges[i]=data.ranges[this->scan_max_segment-this->scan_min_segment-i];
           data.ranges[this->scan_max_segment-this->scan_min_segment-i] = tmp;
-          tmp=data.intensity[i];
+          itmp=data.intensity[i];
           data.intensity[i]=data.intensity[this->scan_max_segment-this->scan_min_segment-i];
-          data.intensity[this->scan_max_segment-this->scan_min_segment-i] = tmp;
+          data.intensity[this->scan_max_segment-this->scan_min_segment-i] = itmp;
         }
       }
       
@@ -1368,7 +1373,7 @@ ssize_t SickLMS200::WriteToLaser(uint8_t *data, ssize_t len)
   tcflush(this->laser_fd, TCIOFLUSH);
 
   ssize_t bytes = 0;
-  struct timeval start, end;
+  //struct timeval start, end;
 
 #ifdef HAVE_HI_SPEED_SERIAL
   // have to write one char at a time, because if we're
