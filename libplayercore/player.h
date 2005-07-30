@@ -30,22 +30,18 @@
 /* Include values from the configure script */
 #include "playerconfig.h"
 
-/* the player transport protocol types */
-const uint16_t PLAYER_TRANSPORT_TCP = 1;
-const uint16_t PLAYER_TRANSPORT_UDP = 2;
-
 /* the player message types */
-const uint8_t PLAYER_MSGTYPE_DATA      = 1;
-const uint8_t PLAYER_MSGTYPE_CMD       = 2;
-const uint8_t PLAYER_MSGTYPE_REQ       = 3;
-const uint8_t PLAYER_MSGTYPE_RESP_ACK  = 4;
-const uint8_t PLAYER_MSGTYPE_SYNCH     = 5;
-const uint8_t PLAYER_MSGTYPE_RESP_NACK = 6;
-const uint8_t PLAYER_MSGTYPE_RESP_ERR  = 7;
-//const uint8_t PLAYER_MSGTYPE_GEOM      = 8;
-//const uint8_t PLAYER_MSGTYPE_CONFIG    = 9;
+#define PLAYER_MSGTYPE_DATA      ((uint8_t)1)
+#define PLAYER_MSGTYPE_CMD       ((uint8_t)2)
+#define PLAYER_MSGTYPE_REQ       ((uint8_t)3)
+#define PLAYER_MSGTYPE_RESP_ACK  ((uint8_t)4)
+#define PLAYER_MSGTYPE_SYNCH     ((uint8_t)5)
+#define PLAYER_MSGTYPE_RESP_NACK ((uint8_t)6)
+#define PLAYER_MSGTYPE_RESP_ERR  ((uint8_t)7)
+//#define PLAYER_MSGTYPE_GEOM      ((uint8_t)8)
+//#define PLAYER_MSGTYPE_CONFIG    ((uint8_t)9)
 // use bitwise or of MSGTYPE_USER with your private message code for custom messages
-//const uint8_t PLAYER_MSGTYPE_USER     10 = 128;
+//#define PLAYER_MSGTYPE_USER     10 ((uint8_t)128)
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
@@ -97,51 +93,50 @@ const uint8_t PLAYER_MSGTYPE_RESP_ERR  = 7;
 #define PLAYER_OPAQUE_CODE         ((uint16_t)51)  // plugin interface
 #define PLAYER_POSITION1D_CODE     ((uint16_t)52)  // 1-D position
 /* the currently assigned device strings */
-const char* PLAYER_AIO_STRING            = "aio";
-const char* PLAYER_AUDIO_STRING          = "audio";
-const char* PLAYER_AUDIODSP_STRING       = "audiodsp";
-const char* PLAYER_AUDIOMIXER_STRING     = "audiomixer";
-const char* PLAYER_BLINKENLIGHT_STRING   = "blinkenlight";
-const char* PLAYER_BLOBFINDER_STRING     = "blobfinder";
-const char* PLAYER_BUMPER_STRING         = "bumper";
-const char* PLAYER_CAMERA_STRING         = "camera";
-const char* PLAYER_DESCARTES_STRING      = "descartes";
-const char* PLAYER_ENERGY_STRING         = "energy";
-const char* PLAYER_DIO_STRING            = "dio";
-const char* PLAYER_GRIPPER_STRING        = "gripper";
-const char* PLAYER_FIDUCIAL_STRING       = "fiducial";
-const char* PLAYER_GPS_STRING            = "gps";
-const char* PLAYER_IDAR_STRING           = "idar";
-const char* PLAYER_IDARTURRET_STRING     = "idarturret";
-const char* PLAYER_IR_STRING             = "ir";
-const char* PLAYER_JOYSTICK_STRING       = "joystick";
-const char* PLAYER_LASER_STRING          = "laser";
-const char* PLAYER_LOCALIZE_STRING       = "localize";
-const char* PLAYER_LOG_STRING            = "log";
-const char* PLAYER_MAP_STRING            = "map";
-const char* PLAYER_MCOM_STRING           = "mcom";
-const char* PLAYER_MOTOR_STRING          = "motor";
-const char* PLAYER_NOMAD_STRING          = "nomad";
-const char* PLAYER_NULL_STRING           = "null";
-const char* PLAYER_OPAQUE_STRING         = "opaque";
-const char* PLAYER_PLANNER_STRING        = "planner";
-const char* PLAYER_PLAYER_STRING         = "player";
-const char* PLAYER_POSITION_STRING       = "position";
-const char* PLAYER_POSITION1D_STRING     = "position1d";
-const char* PLAYER_POSITION2D_STRING     = "position2d";
-const char* PLAYER_POSITION3D_STRING     = "position3d";
-const char* PLAYER_POWER_STRING          = "power";
-const char* PLAYER_PTZ_STRING            = "ptz";
-const char* PLAYER_SERVICE_ADV_STRING    = "service_adv";
-const char* PLAYER_SIMULATION_STRING     = "simulation";
-const char* PLAYER_SONAR_STRING          = "sonar";
-const char* PLAYER_SOUND_STRING           = "sound";
-const char* PLAYER_SPEECH_STRING         = "speech";
-const char* PLAYER_SPEECH_RECOGNITION_STRING = "speech_recognition";
-const char* PLAYER_TRUTH_STRING          = "truth";
-const char* PLAYER_WAVEFORM_STRING       = "waveform";
-const char* PLAYER_WIFI_STRING           = "wifi";
-
+#define PLAYER_AIO_STRING             "aio"
+#define PLAYER_AUDIO_STRING           "audio"
+#define PLAYER_AUDIODSP_STRING        "audiodsp"
+#define PLAYER_AUDIOMIXER_STRING      "audiomixer"
+#define PLAYER_BLINKENLIGHT_STRING    "blinkenlight"
+#define PLAYER_BLOBFINDER_STRING      "blobfinder"
+#define PLAYER_BUMPER_STRING          "bumper"
+#define PLAYER_CAMERA_STRING          "camera"
+#define PLAYER_DESCARTES_STRING       "descartes"
+#define PLAYER_ENERGY_STRING          "energy"
+#define PLAYER_DIO_STRING             "dio"
+#define PLAYER_GRIPPER_STRING         "gripper"
+#define PLAYER_FIDUCIAL_STRING        "fiducial"
+#define PLAYER_GPS_STRING             "gps"
+#define PLAYER_IDAR_STRING            "idar"
+#define PLAYER_IDARTURRET_STRING      "idarturret"
+#define PLAYER_IR_STRING              "ir"
+#define PLAYER_JOYSTICK_STRING        "joystick"
+#define PLAYER_LASER_STRING           "laser"
+#define PLAYER_LOCALIZE_STRING        "localize"
+#define PLAYER_LOG_STRING             "log"
+#define PLAYER_MAP_STRING             "map"
+#define PLAYER_MCOM_STRING            "mcom"
+#define PLAYER_MOTOR_STRING           "motor"
+#define PLAYER_NOMAD_STRING           "nomad"
+#define PLAYER_NULL_STRING            "null"
+#define PLAYER_OPAQUE_STRING          "opaque"
+#define PLAYER_PLANNER_STRING         "planner"
+#define PLAYER_PLAYER_STRING          "player"
+#define PLAYER_POSITION_STRING        "position"
+#define PLAYER_POSITION1D_STRING      "position1d"
+#define PLAYER_POSITION2D_STRING      "position2d"
+#define PLAYER_POSITION3D_STRING      "position3d"
+#define PLAYER_POWER_STRING           "power"
+#define PLAYER_PTZ_STRING             "ptz"
+#define PLAYER_SERVICE_ADV_STRING     "service_adv"
+#define PLAYER_SIMULATION_STRING      "simulation"
+#define PLAYER_SONAR_STRING           "sonar"
+#define PLAYER_SOUND_STRING            "sound"
+#define PLAYER_SPEECH_STRING          "speech"
+#define PLAYER_SPEECH_RECOGNITION_STRING  "speech_recognition"
+#define PLAYER_TRUTH_STRING           "truth"
+#define PLAYER_WAVEFORM_STRING        "waveform"
+#define PLAYER_WIFI_STRING            "wifi"
 
 /* The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES             ((uint16_t)256)
@@ -154,13 +149,10 @@ const char* PLAYER_WIFI_STRING           = "wifi";
 
 #define PLAYER_MSGQUEUE_DEFAULT_MAXLEN ((uint16_t)32)
 
-/* the default player port */
-const uint16_t PLAYER_PORTNUM                 = 6665;
-
 /*
  * info that is spit back as a banner on connection
  */
-const char* PLAYER_IDENT_STRING    = "Player v.";
+#define PLAYER_IDENT_STRING    "Player v."
 #define PLAYER_IDENT_STRLEN ((uint16_t)32)
 #define PLAYER_KEYLEN       ((uint16_t)32)
 
@@ -331,11 +323,11 @@ The @p audiodsp interface is used to control sound hardware, if equipped.
 @{
 */
 
-const uint8_t PLAYER_AUDIODSP_SET_CONFIG = 1;
-const uint8_t PLAYER_AUDIODSP_GET_CONFIG = 2;
-const uint8_t PLAYER_AUDIODSP_PLAY_TONE  = 3;
-const uint8_t PLAYER_AUDIODSP_PLAY_CHIRP = 4;
-const uint8_t PLAYER_AUDIODSP_REPLAY     = 5;
+#define PLAYER_AUDIODSP_SET_CONFIG ((uint8_t)1)
+#define PLAYER_AUDIODSP_GET_CONFIG ((uint8_t)2)
+#define PLAYER_AUDIODSP_PLAY_TONE  ((uint8_t)3)
+#define PLAYER_AUDIODSP_PLAY_CHIRP ((uint8_t)4)
+#define PLAYER_AUDIODSP_REPLAY     ((uint8_t)5)
 
 /** @brief Data
 
@@ -408,12 +400,12 @@ The @p audiomixer interface is used to control sound levels.
 @{
 */
 
-const uint8_t PLAYER_AUDIOMIXER_SET_MASTER = 0x01;
-const uint8_t PLAYER_AUDIOMIXER_SET_PCM    = 0x02;
-const uint8_t PLAYER_AUDIOMIXER_SET_LINE   = 0x03;
-const uint8_t PLAYER_AUDIOMIXER_SET_MIC    = 0x04;
-const uint8_t PLAYER_AUDIOMIXER_SET_IGAIN  = 0x05;
-const uint8_t PLAYER_AUDIOMIXER_SET_OGAIN  = 0x06;
+#define PLAYER_AUDIOMIXER_SET_MASTER ((uint8_t)0x01)
+#define PLAYER_AUDIOMIXER_SET_PCM    ((uint8_t)0x02)
+#define PLAYER_AUDIOMIXER_SET_LINE   ((uint8_t)0x03)
+#define PLAYER_AUDIOMIXER_SET_MIC    ((uint8_t)0x04)
+#define PLAYER_AUDIOMIXER_SET_IGAIN  ((uint8_t)0x05)
+#define PLAYER_AUDIOMIXER_SET_OGAIN  ((uint8_t)0x06)
 
 /** @brief Command
 
@@ -492,8 +484,8 @@ in images.
 #define PLAYER_BLOBFINDER_MAX_BLOBS ((uint16_t)256)
 
 /* Config request codes */
-const uint8_t PLAYER_BLOBFINDER_SET_COLOR         = 1;
-const uint8_t PLAYER_BLOBFINDER_SET_IMAGER_PARAMS = 2;
+#define PLAYER_BLOBFINDER_SET_COLOR         ((uint8_t)1)
+#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS ((uint8_t)2)
 
 
 /** @brief Structure describing a single blob. */
@@ -585,7 +577,7 @@ accepts no commands.
 /** Maximum number of bumper samples */
 #define PLAYER_BUMPER_MAX_SAMPLES ((uint8_t)32)
 /** The request subtypes */
-const uint8_t PLAYER_BUMPER_GET_GEOM    = 1;
+#define PLAYER_BUMPER_GET_GEOM    ((uint8_t)1)
 
 /** @brief Data
 
@@ -644,17 +636,17 @@ This interface has no commands or configuration requests.
 #define PLAYER_CAMERA_IMAGE_SIZE  ((uint32_t)(PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4))
 
 /** Image format : 8-bit monochrome. */
-const uint8_t PLAYER_CAMERA_FORMAT_MONO8  = 1;
+#define PLAYER_CAMERA_FORMAT_MONO8  ((uint8_t)1)
 /** Image format : 16-bit monochrome (network byte order). */
-const uint8_t PLAYER_CAMERA_FORMAT_MONO16 = 2;
+#define PLAYER_CAMERA_FORMAT_MONO16 ((uint8_t)2)
 /** Image format : 16-bit color (5 bits R, 6 bits G, 5 bits B). */
-const uint8_t PLAYER_CAMERA_FORMAT_RGB565 = 4;
+#define PLAYER_CAMERA_FORMAT_RGB565 ((uint8_t)4)
 /** Image format : 24-bit color (8 bits R, 8 bits G, 8 bits B). */
-const uint8_t PLAYER_CAMERA_FORMAT_RGB888 = 5;
+#define PLAYER_CAMERA_FORMAT_RGB888 ((uint8_t)5)
 
 /* Compression methods. */
-const uint8_t PLAYER_CAMERA_COMPRESS_RAW  = 0;
-const uint8_t PLAYER_CAMERA_COMPRESS_JPEG = 1;
+#define PLAYER_CAMERA_COMPRESS_RAW  ((uint8_t)0)
+#define PLAYER_CAMERA_COMPRESS_JPEG ((uint8_t)1)
 
 /** @brief Data */
 typedef struct player_camera_data
@@ -774,14 +766,14 @@ for devices the detect natural landmarks.
 #define PLAYER_FIDUCIAL_MAX_MSG_LEN ((uint8_t)32)
 
 /* Request packet subtypes */
-const uint8_t PLAYER_FIDUCIAL_GET_GEOM     = 0x01;
-const uint8_t PLAYER_FIDUCIAL_GET_FOV      = 0x02;
-const uint8_t PLAYER_FIDUCIAL_SET_FOV      = 0x03;
-const uint8_t PLAYER_FIDUCIAL_SEND_MSG     = 0x04;
-const uint8_t PLAYER_FIDUCIAL_RECV_MSG     = 0x05;
-const uint8_t PLAYER_FIDUCIAL_EXCHANGE_MSG = 0x06;
-const uint8_t PLAYER_FIDUCIAL_GET_ID       = 0x07;
-const uint8_t PLAYER_FIDUCIAL_SET_ID       = 0x08;
+#define PLAYER_FIDUCIAL_GET_GEOM     ((uint8_t)0x01)
+#define PLAYER_FIDUCIAL_GET_FOV      ((uint8_t)0x02)
+#define PLAYER_FIDUCIAL_SET_FOV      ((uint8_t)0x03)
+#define PLAYER_FIDUCIAL_SEND_MSG     ((uint8_t)0x04)
+#define PLAYER_FIDUCIAL_RECV_MSG     ((uint8_t)0x05)
+#define PLAYER_FIDUCIAL_EXCHANGE_MSG ((uint8_t)0x06)
+#define PLAYER_FIDUCIAL_GET_ID       ((uint8_t)0x07)
+#define PLAYER_FIDUCIAL_SET_ID       ((uint8_t)0x08)
 
 /** @brief Info on a single detected fiducial 
 
@@ -1079,8 +1071,8 @@ This interface accepts no commands.
 /** Maximum number of samples */
 #define PLAYER_IR_MAX_SAMPLES ((uint8_t)32)
 /* config requests */
-const uint8_t PLAYER_IR_POSE        = 1;
-const uint8_t PLAYER_IR_POWER       = 2;
+#define PLAYER_IR_POSE        ((uint8_t)1)
+#define PLAYER_IR_POWER       ((uint8_t)2)
 
 /** @brief Data
 
@@ -1171,10 +1163,10 @@ This interface accepts no commands.
 #define PLAYER_LASER_MAX_SAMPLES  ((uint16_t)401)
 
 /* Laser request subtypes. */
-const uint8_t PLAYER_LASER_GET_GEOM     = 0x01;
-const uint8_t PLAYER_LASER_SET_CONFIG   = 0x02;
-const uint8_t PLAYER_LASER_GET_CONFIG   = 0x03;
-const uint8_t PLAYER_LASER_POWER_CONFIG = 0x04;
+#define PLAYER_LASER_GET_GEOM     ((uint8_t)0x01)
+#define PLAYER_LASER_SET_CONFIG   ((uint8_t)0x02)
+#define PLAYER_LASER_GET_CONFIG   ((uint8_t)0x03)
+#define PLAYER_LASER_POWER_CONFIG ((uint8_t)0x04)
 
 /** @brief Data
 
@@ -1185,9 +1177,6 @@ typedef struct player_laser_data
   float min_angle, max_angle;
   /** Angular resolution [rad].  */
   float resolution;
-  /** range resolution.  ranges should be multipled by this. 
-      @todo do we still need this?*/
-  float range_res;
   /** Number of range/intensity readings.  */
   uint32_t count;
   /** Range readings [m]. */
@@ -1228,7 +1217,7 @@ typedef struct player_laser_config
   uint32_t resolution;
 
   /** Range Resolution.  Valid: 1, 10, 100 (For mm, cm, dm). */
-  float range_res;
+  uint16_t range_res;
 
   /** Enable reflection intensity data. */
   uint32_t  intensity;
@@ -1265,9 +1254,9 @@ This interface accepts no commands.
 #define PLAYER_LOCALIZE_MAX_HYPOTHS   ((uint8_t)10)
 
 /* Request/reply packet subtypes */
-const uint8_t PLAYER_LOCALIZE_SET_POSE      = 1;
-const uint8_t PLAYER_LOCALIZE_GET_CONFIG    = 2;
-const uint8_t PLAYER_LOCALIZE_SET_CONFIG    = 3;
+#define PLAYER_LOCALIZE_SET_POSE      ((uint8_t)1)
+#define PLAYER_LOCALIZE_GET_CONFIG    ((uint8_t)2)
+#define PLAYER_LOCALIZE_SET_CONFIG    ((uint8_t)3)
 
 /** @brief Hypothesis format.
 
@@ -1341,15 +1330,15 @@ The @p log interface produces no data and accepts no commands.
 */
 
 /* The subtypes for config reqeusts */
-const uint8_t PLAYER_LOG_SET_WRITE_STATE  = 1;
-const uint8_t  PLAYER_LOG_SET_READ_STATE  = 2;
-const uint8_t  PLAYER_LOG_GET_STATE       = 3;
-const uint8_t  PLAYER_LOG_SET_READ_REWIND = 4;
-const uint8_t  PLAYER_LOG_SET_FILENAME    = 5;
+#define PLAYER_LOG_SET_WRITE_STATE  ((uint8_t)1)
+#define  PLAYER_LOG_SET_READ_STATE  ((uint8_t)2)
+#define  PLAYER_LOG_GET_STATE       ((uint8_t)3)
+#define  PLAYER_LOG_SET_READ_REWIND ((uint8_t)4)
+#define  PLAYER_LOG_SET_FILENAME    ((uint8_t)5)
 
 /* Types of log devices */
-const uint8_t  PLAYER_LOG_TYPE_READ       = 1;
-const uint8_t  PLAYER_LOG_TYPE_WRITE      = 2;
+#define  PLAYER_LOG_TYPE_READ       ((uint8_t)1)
+#define  PLAYER_LOG_TYPE_WRITE      ((uint8_t)2)
 
 /** @brief Configuration request: Set logging state
 
@@ -1413,8 +1402,8 @@ delivered in tiles, via a sequence of configuration requests.
 /** The max number of cells we can send in one tile */
 #define PLAYER_MAP_MAX_CELLS_PER_TILE  ((uint16_t)(PLAYER_MAX_REQREP_SIZE - 17))
 /* Configuration subtypes */
-const uint16_t PLAYER_MAP_GET_INFO            = 1;
-const uint16_t PLAYER_MAP_GET_DATA            = 2;
+#define PLAYER_MAP_GET_INFO            ((uint8_t)1;
+#define PLAYER_MAP_GET_DATA            ((uint8_t)2;
 
 /** @brief Configuration request: Get map information.
 
@@ -1466,17 +1455,17 @@ This interface returns no data and accepts no commands.
 #define MCOM_DATA_LEN            ((uint16_t)128)
 #define MCOM_DATA_BUFFER_SIZE    ((uint16_t)0)
 /** number of buffers to keep per channel */
-const uint16_t  MCOM_N_BUFS             = 10;
+#define  MCOM_N_BUFS             ((uint16_t)10)
 /** size of channel name */
 #define MCOM_CHANNEL_LEN        ((uint16_t)8)
 /** returns this if empty */
-const char*  MCOM_EMPTY_STRING          = "(EMPTY)";
+#define  MCOM_EMPTY_STRING          "(EMPTY)"
 /* request ids */
-const uint8_t  PLAYER_MCOM_PUSH         = 0;
-const uint8_t  PLAYER_MCOM_POP          = 1;
-const uint8_t  PLAYER_MCOM_READ         = 2;
-const uint8_t  PLAYER_MCOM_CLEAR        = 3;
-const uint8_t  PLAYER_MCOM_SET_CAPACITY = 4;
+#define  PLAYER_MCOM_PUSH         ((uint8_t)0)
+#define  PLAYER_MCOM_POP          ((uint8_t)1)
+#define  PLAYER_MCOM_READ         ((uint8_t)2)
+#define  PLAYER_MCOM_CLEAR        ((uint8_t)3)
+#define  PLAYER_MCOM_SET_CAPACITY ((uint8_t)4)
 
 /** @brief A piece of data. */
 typedef struct player_mcom_data
@@ -1500,7 +1489,7 @@ typedef struct player_mcom_config
   player_mcom_data_t data;
 } __PACKED__ player_mcom_config_t;
 
-const uint16_t MCOM_COMMAND_BUFFER_SIZE = (sizeof(player_mcom_config_t));
+#define MCOM_COMMAND_BUFFER_SIZE ((uint16_t)(sizeof(player_mcom_config_t)))
 
 /** @brief Configuration reply from server. */
 typedef struct player_mcom_return
@@ -1523,21 +1512,21 @@ The @p motor interface is used to control a single motor.
 */
 
 /* The various configuration request types. */
-const uint8_t PLAYER_MOTOR_GET_GEOM             = 1;
-const uint8_t PLAYER_MOTOR_POWER                = 2;
-const uint8_t PLAYER_MOTOR_VELOCITY_MODE        = 3;
-const uint8_t PLAYER_MOTOR_POSITION_MODE        = 4;
-const uint8_t PLAYER_MOTOR_SET_ODOM             = 5;
-const uint8_t PLAYER_MOTOR_RESET_ODOM           = 6;
-const uint8_t PLAYER_MOTOR_SPEED_PID            = 7;
-const uint8_t PLAYER_MOTOR_POSITION_PID         = 8;
-const uint8_t PLAYER_MOTOR_SPEED_PROF           = 9;
-const uint8_t PLAYER_MOTOR_SET_GEAR_REDUCITION  = 10;
-const uint8_t PLAYER_MOTOR_SET_TICS             = 11;
+#define PLAYER_MOTOR_GET_GEOM             ((uint8_t)1)
+#define PLAYER_MOTOR_POWER                ((uint8_t)2)
+#define PLAYER_MOTOR_VELOCITY_MODE        ((uint8_t)3)
+#define PLAYER_MOTOR_POSITION_MODE        ((uint8_t)4)
+#define PLAYER_MOTOR_SET_ODOM             ((uint8_t)5)
+#define PLAYER_MOTOR_RESET_ODOM           ((uint8_t)6)
+#define PLAYER_MOTOR_SPEED_PID            ((uint8_t)7)
+#define PLAYER_MOTOR_POSITION_PID         ((uint8_t)8)
+#define PLAYER_MOTOR_SPEED_PROF           ((uint8_t)9)
+#define PLAYER_MOTOR_SET_GEAR_REDUCITION  ((uint8_t)10)
+#define PLAYER_MOTOR_SET_TICS             ((uint8_t)11)
 
-const uint8_t PLAYER_MOTOR_LIMIT_MIN            = 1;
-const uint8_t PLAYER_MOTOR_LIMIT_CENTER         = 2;
-const uint8_t PLAYER_MOTOR_LIMIT_MAX            = 4;
+#define PLAYER_MOTOR_LIMIT_MIN            ((uint8_t)1)
+#define PLAYER_MOTOR_LIMIT_CENTER         ((uint8_t)2)
+#define PLAYER_MOTOR_LIMIT_MAX            ((uint8_t)4)
 
 /** @brief Data
 
@@ -1665,8 +1654,8 @@ The @p planner interface provides control of a 2-D motion planner.
 @{
 */
 
-const uint8_t  PLAYER_PLANNER_GET_WAYPOINTS = 10;
-const uint8_t  PLAYER_PLANNER_ENABLE        = 11;
+#define  PLAYER_PLANNER_GET_WAYPOINTS ((uint8_t)10)
+#define  PLAYER_PLANNER_ENABLE        ((uint8_t)11)
 
 /** maximum number of waypoints in a single plan */
 #define PLAYER_PLANNER_MAX_WAYPOINTS ((uint8_t)128)
@@ -1740,12 +1729,11 @@ This device produces no data and accepts no commands.
 */
 
 /* The device access modes */
-/** @todo Why aren't these chars? */
-const uint16_t PLAYER_READ_MODE   = 114;  // 'r'
-const uint16_t PLAYER_WRITE_MODE  = 119;  // 'w'
-const uint16_t PLAYER_ALL_MODE    = 97;   // 'a'
-const uint16_t PLAYER_CLOSE_MODE  = 99;   // 'c'
-const uint16_t PLAYER_ERROR_MODE  = 101;  // 'e'
+#define PLAYER_READ_MODE   ((uint8_t)114)  // 'r'
+#define PLAYER_WRITE_MODE  ((uint8_t)119)  // 'w'
+#define PLAYER_ALL_MODE    ((uint8_t)97)   // 'a'
+#define PLAYER_CLOSE_MODE  ((uint8_t)99)   // 'c'
+#define PLAYER_ERROR_MODE  ((uint8_t)101)  // 'e'
 
 
 #define PLAYER_DATAMODE_PULL  ((uint16_t)1)
@@ -1883,7 +1871,6 @@ typedef struct player_device_req
   uint16_t index;
   /** The requested access */
   uint8_t access;
-
 } __PACKED__ player_device_req_t;
 
 /** @brief The format of the server's reply to a PLAYER_PLAYER_DEV_REQ
@@ -2001,19 +1988,19 @@ The @p position1d interface is used to control linear actuators
 */
 
 /* The various configuration request types. */
-const uint8_t PLAYER_POSITION1D_GET_GEOM          = 1;
-const uint8_t PLAYER_POSITION1D_MOTOR_POWER       = 2;
-const uint8_t PLAYER_POSITION1D_VELOCITY_MODE     = 3;
-const uint8_t PLAYER_POSITION1D_POSITION_MODE     = 4;
-const uint8_t PLAYER_POSITION1D_SET_ODOM          = 5;
-const uint8_t PLAYER_POSITION1D_RESET_ODOM        = 6;
-const uint8_t PLAYER_POSITION1D_SPEED_PID         = 7;
-const uint8_t PLAYER_POSITION1D_POSITION_PID      = 8;
-const uint8_t PLAYER_POSITION1D_SPEED_PROF        = 9;
+#define PLAYER_POSITION1D_GET_GEOM          ((uint8_t)1)
+#define PLAYER_POSITION1D_MOTOR_POWER       ((uint8_t)2)
+#define PLAYER_POSITION1D_VELOCITY_MODE     ((uint8_t)3)
+#define PLAYER_POSITION1D_POSITION_MODE     ((uint8_t)4)
+#define PLAYER_POSITION1D_SET_ODOM          ((uint8_t)5)
+#define PLAYER_POSITION1D_RESET_ODOM        ((uint8_t)6)
+#define PLAYER_POSITION1D_SPEED_PID         ((uint8_t)7)
+#define PLAYER_POSITION1D_POSITION_PID      ((uint8_t)8)
+#define PLAYER_POSITION1D_SPEED_PROF        ((uint8_t)9)
 
 // data types
-const uint8_t PLAYER_POSITION1D_DATA              = 0;
-const uint8_t PLAYER_POSITION1D_GEOM              = 1;
+#define PLAYER_POSITION1D_DATA              ((uint8_t)0)
+#define PLAYER_POSITION1D_GEOM              ((uint8_t)1)
 
 /** @brief Data
 
@@ -2156,19 +2143,19 @@ The @p position2d interface is used to control mobile robot bases in 2D.
 */
 
 /* The various configuration request types. */
-const uint8_t PLAYER_POSITION2D_GET_GEOM          = 1;
-const uint8_t PLAYER_POSITION2D_MOTOR_POWER       = 2;
-const uint8_t PLAYER_POSITION2D_VELOCITY_MODE     = 3;
-const uint8_t PLAYER_POSITION2D_POSITION_MODE     = 4;
-const uint8_t PLAYER_POSITION2D_SET_ODOM          = 5;
-const uint8_t PLAYER_POSITION2D_RESET_ODOM        = 6;
-const uint8_t PLAYER_POSITION2D_SPEED_PID         = 7;
-const uint8_t PLAYER_POSITION2D_POSITION_PID      = 8;
-const uint8_t PLAYER_POSITION2D_SPEED_PROF        = 9;
+#define PLAYER_POSITION2D_GET_GEOM          ((uint8_t)1)
+#define PLAYER_POSITION2D_MOTOR_POWER       ((uint8_t)2)
+#define PLAYER_POSITION2D_VELOCITY_MODE     ((uint8_t)3)
+#define PLAYER_POSITION2D_POSITION_MODE     ((uint8_t)4)
+#define PLAYER_POSITION2D_SET_ODOM          ((uint8_t)5)
+#define PLAYER_POSITION2D_RESET_ODOM        ((uint8_t)6)
+#define PLAYER_POSITION2D_SPEED_PID         ((uint8_t)7)
+#define PLAYER_POSITION2D_POSITION_PID      ((uint8_t)8)
+#define PLAYER_POSITION2D_SPEED_PROF        ((uint8_t)9)
 
 // data types
-const uint8_t PLAYER_POSITION2D_DATA              = 0;
-const uint8_t PLAYER_POSITION2D_GEOM              = 1;
+#define PLAYER_POSITION2D_DATA              ((uint8_t)0)
+#define PLAYER_POSITION2D_GEOM              ((uint8_t)1)
 
 /** @brief Data
 
@@ -2324,15 +2311,15 @@ The position3d interface is used to control mobile robot bases in 3D
 */
 
 /* Supported config requests */
-const uint8_t PLAYER_POSITION3D_GET_GEOM          = 1;
-const uint8_t PLAYER_POSITION3D_MOTOR_POWER       = 2;
-const uint8_t PLAYER_POSITION3D_VELOCITY_MODE     = 3;
-const uint8_t PLAYER_POSITION3D_POSITION_MODE     = 4;
-const uint8_t PLAYER_POSITION3D_RESET_ODOM        = 5;
-const uint8_t PLAYER_POSITION3D_SET_ODOM          = 6;
-const uint8_t PLAYER_POSITION3D_SPEED_PID         = 7;
-const uint8_t PLAYER_POSITION3D_POSITION_PID      = 8;
-const uint8_t PLAYER_POSITION3D_SPEED_PROF        = 9;
+#define PLAYER_POSITION3D_GET_GEOM          ((uint8_t)1)
+#define PLAYER_POSITION3D_MOTOR_POWER       ((uint8_t)2)
+#define PLAYER_POSITION3D_VELOCITY_MODE     ((uint8_t)3)
+#define PLAYER_POSITION3D_POSITION_MODE     ((uint8_t)4)
+#define PLAYER_POSITION3D_RESET_ODOM        ((uint8_t)5)
+#define PLAYER_POSITION3D_SET_ODOM          ((uint8_t)6)
+#define PLAYER_POSITION3D_SPEED_PID         ((uint8_t)7)
+#define PLAYER_POSITION3D_POSITION_PID      ((uint8_t)8)
+#define PLAYER_POSITION3D_SPEED_PROF        ((uint8_t)9)
 
 /** @brief Data
 
@@ -2482,20 +2469,20 @@ The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 */
 
 /** Code for generic configuration request */
-const uint8_t PLAYER_PTZ_GENERIC_CONFIG  = 1;
+#define PLAYER_PTZ_GENERIC_CONFIG  ((uint8_t)1)
 /** Code for control mode configuration request */
-const uint8_t PLAYER_PTZ_CONTROL_MODE    = 2;
+#define PLAYER_PTZ_CONTROL_MODE    ((uint8_t)2)
 /** Code for autoservo configuration request */
-const uint8_t PLAYER_PTZ_AUTOSERVO       = 3;
+#define PLAYER_PTZ_AUTOSERVO       ((uint8_t)3)
 
 /** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ, 
     based on the Sony EVID30 camera right now. */
 #define PLAYER_PTZ_MAX_CONFIG_LEN  ((uint8_t)32)
 
 /** Control mode, for use with PLAYER_PTZ_CONTROL_MODE_REQ */
-const uint8_t PLAYER_PTZ_VELOCITY_CONTROL = 0;
+#define PLAYER_PTZ_VELOCITY_CONTROL ((uint8_t)0)
 /** Control mode, for use with PLAYER_PTZ_CONTROL_MODE_REQ */
-const uint8_t PLAYER_PTZ_POSITION_CONTROL = 1;
+#define PLAYER_PTZ_POSITION_CONTROL ((uint8_t)1)
 
 /** @brief Data
 
@@ -2576,7 +2563,7 @@ for this interface. Suggestions welcome on playerstage-developers.
 */
 
 /** Request packet subtypes. */
-const uint8_t PLAYER_SIMULATION_SET_POSE2D        = 0;
+#define PLAYER_SIMULATION_SET_POSE2D        ((uint8_t)0)
 /** the maximum length of a string indentifying a simulation object */
 #define PLAYER_SIMULATION_IDENTIFIER_MAXLEN ((uint8_t)64)
 
@@ -2624,11 +2611,11 @@ sensors, such as a sonar array.  This interface accepts no commands.
 /** maximum number of sonar samples in a data packet */
 #define PLAYER_SONAR_MAX_SAMPLES ((uint8_t)64)
 /** request types */
-const uint8_t PLAYER_SONAR_GET_GEOM   = 1;
-const uint8_t PLAYER_SONAR_POWER      = 2;
+#define PLAYER_SONAR_GET_GEOM   ((uint8_t)1)
+#define PLAYER_SONAR_POWER      ((uint8_t)2)
 /** data types */
-const uint8_t PLAYER_SONAR_RANGES     = 0;
-const uint8_t PLAYER_SONAR_GEOM       = 1;
+#define PLAYER_SONAR_RANGES     ((uint8_t)0)
+#define PLAYER_SONAR_GEOM       ((uint8_t)1)
 
 /** @brief Data
 
@@ -2746,11 +2733,11 @@ only avilable in simulation.
 */
 
 /* Request packet subtypes. */
-const uint8_t PLAYER_TRUTH_GET_POSE         = 0x00;
-const uint8_t PLAYER_TRUTH_SET_POSE         = 0x01;
-const uint8_t PLAYER_TRUTH_SET_POSE_ON_ROOT = 0x02;
-const uint8_t PLAYER_TRUTH_GET_FIDUCIAL_ID  = 0x03;
-const uint8_t PLAYER_TRUTH_SET_FIDUCIAL_ID  = 0x04;
+#define PLAYER_TRUTH_GET_POSE         ((uint8_t)0x00)
+#define PLAYER_TRUTH_SET_POSE         ((uint8_t)0x01)
+#define PLAYER_TRUTH_SET_POSE_ON_ROOT ((uint8_t)0x02)
+#define PLAYER_TRUTH_GET_FIDUCIAL_ID  ((uint8_t)0x03)
+#define PLAYER_TRUTH_SET_FIDUCIAL_ID  ((uint8_t)0x04)
 
 /** @brief Data
 
@@ -2836,32 +2823,32 @@ This interface accepts no commands.
 #define PLAYER_WIFI_MAX_LINKS   ((uint8_t)32)
 
 /** link quality is in dBm */
-const uint8_t PLAYER_WIFI_QUAL_DBM     = 1;
+#define PLAYER_WIFI_QUAL_DBM     ((uint8_t)1)
 /** link quality is relative */
-const uint8_t PLAYER_WIFI_QUAL_REL     = 2;
+#define PLAYER_WIFI_QUAL_REL     ((uint8_t)2)
 /** link quality is unknown */
-const uint8_t PLAYER_WIFI_QUAL_UNKNOWN = 3;
+#define PLAYER_WIFI_QUAL_UNKNOWN ((uint8_t)3)
 
 /** unknown operating mode */
-const uint8_t PLAYER_WIFI_MODE_UNKNOWN = 0;
+#define PLAYER_WIFI_MODE_UNKNOWN ((uint8_t)0)
 /** driver decides the mode */
-const uint8_t PLAYER_WIFI_MODE_AUTO    = 1;
+#define PLAYER_WIFI_MODE_AUTO    ((uint8_t)1)
 /** ad hoc mode */
-const uint8_t PLAYER_WIFI_MODE_ADHOC   = 2;
+#define PLAYER_WIFI_MODE_ADHOC   ((uint8_t)2)
 /** infrastructure mode (multi cell network, roaming) */
-const uint8_t PLAYER_WIFI_MODE_INFRA   = 3;
+#define PLAYER_WIFI_MODE_INFRA   ((uint8_t)3)
 /** access point, master mode */
-const uint8_t PLAYER_WIFI_MODE_MASTER  = 4;
+#define PLAYER_WIFI_MODE_MASTER  ((uint8_t)4)
 /** repeater mode */
-const uint8_t PLAYER_WIFI_MODE_REPEAT  = 5;
+#define PLAYER_WIFI_MODE_REPEAT  ((uint8_t)5)
 /** secondary/backup repeater */
-const uint8_t PLAYER_WIFI_MODE_SECOND  = 6;
+#define PLAYER_WIFI_MODE_SECOND  ((uint8_t)6)
 
 /* config requests */
-const uint8_t PLAYER_WIFI_MAC          = 1;
-const uint8_t PLAYER_WIFI_IWSPY_ADD    = 10;
-const uint8_t PLAYER_WIFI_IWSPY_DEL    = 11;
-const uint8_t PLAYER_WIFI_IWSPY_PING   = 12;
+#define PLAYER_WIFI_MAC          ((uint8_t)1)
+#define PLAYER_WIFI_IWSPY_ADD    ((uint8_t)10)
+#define PLAYER_WIFI_IWSPY_DEL    ((uint8_t)11)
+#define PLAYER_WIFI_IWSPY_PING   ((uint8_t)12)
 
 /** @brief Link information for one host.
 

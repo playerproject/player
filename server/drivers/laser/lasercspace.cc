@@ -137,10 +137,10 @@ class LaserCSpace : public Driver
   private: int UpdateLaser(player_laser_data_t * data);
 
   // Pre-compute a bunch of stuff
-  private: void Precompute();
+  private: void Precompute(player_laser_data_t* data);
 
   // Compute the maximum free-space range for sample n.
-  private: double FreeRange(int n);
+  private: double FreeRange(player_laser_data_t* data, int n);
 
   // Process requests.  Returns 1 if the configuration has changed.
   private: int HandleRequests();
@@ -151,7 +151,6 @@ class LaserCSpace : public Driver
   // Laser stuff.
   private: Device *laser_device;
   private: player_devaddr_t laser_addr;
-  private: player_laser_data_t laser_data;
   private: struct timeval laser_timestamp;
 
   // Step size for subsampling the scan (saves CPU cycles)
@@ -308,41 +307,20 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
 // Process laser data.
 int LaserCSpace::UpdateLaser(player_laser_data_t * data)
 {
-  int i;
-  double r;
+  unsigned int i;
   
-  // Do some byte swapping on the laser data.
-  this->laser_data.resolution = data->resolution;
-  this->laser_data.min_angle = data->min_angle;
-  this->laser_data.max_angle = data->max_angle;
-  this->laser_data.range_count = data->range_count;
-  for (i = 0; i < this->laser_data.range_count; i++)
-    this->laser_data.ranges[i] = data->ranges[i];
-
   // Construct the outgoing laser packet
-  this->data.resolution = this->laser_data.resolution;
-  this->data.min_angle = this->laser_data.min_angle;
-  this->data.max_angle = this->laser_data.max_angle;
-  this->data.range_count = this->laser_data.range_count;
+  this->data.resolution = data->resolution;
+  this->data.min_angle = data->min_angle;
+  this->data.max_angle = data->max_angle;
+  this->data.count = data->count;
 
   // Do some precomputations to save time
-  this->Precompute();
+  this->Precompute(data);
 
   // Generate the range estimate for each bearing.
-  for (i = 0; i < this->laser_data.range_count; i++)
-  {
-    r = this->FreeRange(i);
-    this->data.ranges[i] = (int16_t) (r * 1000);
-  }
-
-  // Do some byte swapping on the outgoing data.
-  this->data.resolution = this->data.resolution;
-  this->data.min_angle = this->data.min_angle;
-  this->data.max_angle = this->data.max_angle;
-  for (i = 0; i < this->data.range_count; i++)
-    this->data.ranges[i] = this->data.ranges[i];
-  this->data.range_count = this->data.range_count;
-  this->data.range_res = this->laser_data.range_res;
+  for (i = 0; i < data->count; i++)
+    this->data.ranges[i]  = this->FreeRange(data,i);
 
   this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, 0, 
                 (uint8_t *)&this->data, sizeof(this->data), NULL);
@@ -353,16 +331,15 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pre-compute a bunch of stuff
-void LaserCSpace::Precompute()
+void LaserCSpace::Precompute(player_laser_data_t* data)
 {
-  int i;
+  unsigned int i;
   double r, b, x, y;
   
-  for (i = 0; i < this->laser_data.range_count; i++)
+  for (i = 0; i < data->count; i++)
   {
-    r = (double) (this->laser_data.ranges[i]) / 1000;
-    b = (double) (this->laser_data.min_angle +
-                  this->laser_data.resolution * i) / 100.0 * M_PI / 180;
+    r = data->ranges[i];
+    b = data->min_angle + data->resolution * i;
     x = r * cos(b);
     y = r * sin(b);
 
@@ -377,9 +354,10 @@ void LaserCSpace::Precompute()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Compute the maximum free-space range for sample n.
-double LaserCSpace::FreeRange(int n)
+double LaserCSpace::FreeRange(player_laser_data_t* data, int n)
 {
-  int i, step;
+  unsigned int i; 
+  int step;
   double r, b, x, y;
   double r_, b_, x_, y_;
   double s, nr, nx, ny, dx, dy;
@@ -398,7 +376,7 @@ double LaserCSpace::FreeRange(int n)
   max_r = r - this->radius;
 
   // Look for intersections with obstacles.
-  for (i = 0; i < this->laser_data.range_count; i += step)
+  for (i = 0; i < data->count; i += step)
   {
     r_ = this->lu[i][0];
     if (r_ - this->radius > max_r)
