@@ -231,6 +231,7 @@ PlayerTCP::Close(int cli)
     this->clients[cli].del = 0;
     delete this->clients[cli].queue;
     free(this->clients[cli].readbuffer);
+    free(this->clients[cli].writebuffer);
   }
 }
 
@@ -277,6 +278,14 @@ PlayerTCP::Read(int timeout)
     }
   }
 
+  this->DeleteClients();
+
+  return(0);
+}
+
+void
+PlayerTCP::DeleteClients()
+{
   // Delete those connections that generated errors in this iteration
   for(int i=0; i<this->size_clients; i++)
   {
@@ -298,14 +307,134 @@ PlayerTCP::Read(int timeout)
          (this->size_clients - this->num_clients) * sizeof(playertcp_conn_t));
   memset(this->client_ufds + this->num_clients, 0,
          (this->size_clients - this->num_clients) * sizeof(struct pollfd));
+}
 
-  return(0);
+int
+PlayerTCP::WriteClient(int cli)
+{
+  int numwritten;
+  playertcp_conn_t* client;
+  Message* msg;
+  player_pack_fn_t packfunc;
+  player_msghdr_t* hdr;
+  uint8_t* payload;
+  int encode_msglen;
+
+  client = this->clients + cli;
+  for(;;)
+  {
+    // try to send any bytes leftover from last time.
+    if(client->writebufferlen)
+    {
+      numwritten = write(client->fd, 
+                         client->writebuffer, 
+                         MIN(client->writebufferlen,
+                             PLAYERTCP_WRITEBUFFER_SIZE));
+
+      if(numwritten < 0)
+      {
+        if(errno == EAGAIN)
+        {
+          // buffers are full
+          return(0);
+        }
+        else
+        {
+          PLAYER_MSG1(2,"read() failed: %s", strerror(errno));
+          return(-1);
+        }
+      }
+      else if(numwritten == 0)
+      {
+        PLAYER_MSG0(2,"wrote zero bytes");
+        return(-1);
+      }
+      
+      memmove(client->writebuffer, client->writebuffer + numwritten,
+              client->writebufferlen - numwritten);
+      client->writebufferlen -= numwritten;
+    }
+    // try to pop a pending message
+    else if((msg = client->queue->Pop()))
+    {
+      hdr = msg->GetHeader();
+      payload = msg->GetPayload();
+      // Locate the appropriate packing function
+      if(!(packfunc = playerxdr_get_func(hdr->addr.interface, hdr->subtype)))
+      {
+        // TODO: Allow the user to register a callback to handle unsupported
+        // messages
+        PLAYER_WARN3("skipping message from %u:%u with unsupported type %u",
+                     hdr->addr.interface, hdr->addr.index, hdr->subtype);
+      }
+      else
+      {
+        // Make sure there's room in the buffer for the encoded messsage.
+        // It's not obvious to me how to do this correctly, so I'll just be
+        // conservative.
+        if(msg->GetSize() > (size_t)(client->writebuffersize * 4))
+        {
+          // Get at least twice as much space
+          client->writebuffersize = MAX((size_t)(client->writebuffersize * 2), 
+                                        msg->GetSize());
+          // Did we hit the limit (or overflow and become negative)?
+          if((client->writebuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
+             (client->writebuffersize < 0))
+          {
+            PLAYER_WARN1("allocating maximum %d bytes to outgoing message buffer",
+                         PLAYERTCP_MAX_MESSAGE_LEN);
+            client->writebuffersize = PLAYERTCP_MAX_MESSAGE_LEN;
+          }
+          client->writebuffer = (char*)realloc(client->writebuffer,
+                                               client->writebuffersize);
+          assert(client->writebuffer);
+          memset(client->writebuffer, 0, client->writebuffersize);
+        }
+
+	if((encode_msglen =
+	    player_msghdr_pack(client->writebuffer,
+			       client->writebuffersize, hdr,
+			       PLAYERXDR_ENCODE) < 0))
+        {
+          PLAYER_ERROR("failed to encode msg header");
+          client->writebufferlen = 0;
+          return(0);
+        }
+
+        client->writebufferlen = encode_msglen;
+        if((encode_msglen =
+            (*packfunc)(client->writebuffer + client->writebufferlen,
+                        client->writebuffersize - client->writebufferlen,
+                        payload, PLAYERXDR_ENCODE)) < 0)
+        {
+          PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
+                       hdr->addr.interface, hdr->addr.index, hdr->subtype);
+          client->writebufferlen = 0;
+          return(0);
+        }
+
+        client->writebufferlen += encode_msglen;
+      }
+    }
+    else
+      return(0);
+  }
 }
 
 int
 PlayerTCP::Write()
 {
-  // First
+  for(int i=0;i<this->num_clients;i++)
+  {
+    if(this->WriteClient(i) < 0)
+    {
+      PLAYER_WARN1("failed to write to client %d\n", i);
+      this->clients[i].del = 1;
+    }
+  }
+
+  this->DeleteClients();
+  return(0);
 }
 
 int
@@ -363,13 +492,13 @@ PlayerTCP::ReadClient(int cli)
       }
       else
       {
-        PLAYER_ERROR1("read() failed: %s", strerror(errno));
+        PLAYER_MSG1(2,"read() failed: %s", strerror(errno));
         return(-1);
       }
     }
     else if(numread == 0)
     {
-      PLAYER_ERROR("read() read zero bytes");
+      PLAYER_MSG0(2, "read() read zero bytes");
       return(-1);
     }
   }
@@ -442,8 +571,9 @@ PlayerTCP::ParseBuffer(int cli)
         // length is an upper bound on the decoded length.
         if(this->decode_readbuffersize < msglen)
         {
-          // Get twice as much space.
-          this->decode_readbuffersize *= 2;
+          // Get at least twice as much space
+          this->decode_readbuffersize = 
+                  MAX(this->decode_readbuffersize * 2, msglen);
           // Did we hit the limit (or overflow and become negative)?
           if((this->decode_readbuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
              (this->decode_readbuffersize < 0))

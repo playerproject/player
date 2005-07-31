@@ -115,6 +115,9 @@ class PlayerTCP
     void Close(int cli);
     int ReadClient(int cli);
     int Read(int timeout);
+    int Write();
+    int WriteClient(int cli);
+    void DeleteClients();
     void ParseBuffer(int cli);
 };
 
