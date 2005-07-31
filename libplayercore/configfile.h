@@ -48,7 +48,7 @@
 class ConfigFile
 {
   /// @brief Standard constructor
-  public: ConfigFile();
+  public: ConfigFile(uint32_t _default_host, uint32_t _default_robot);
 
   /// @brief Standard destructor
   public: ~ConfigFile();
@@ -514,6 +514,8 @@ class ConfigFile
   private: int field_size;
   private: int field_count;
   private: Field *fields;
+  private: uint32_t default_host;
+  private: uint32_t default_robot;
 
   // Conversion units
   private: double unit_length;

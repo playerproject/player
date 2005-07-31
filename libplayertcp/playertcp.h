@@ -42,6 +42,10 @@
     calloc() and realloc() read buffers in multiples of this size. */
 #define PLAYERTCP_READBUFFER_SIZE 65536
 
+/** We try to write() outgoing messages in chunks of this size.  We also
+    calloc() and realloc() write buffers in multiples of this size. */
+#define PLAYERTCP_WRITEBUFFER_SIZE 65536
+
 /** Maximum message size, in XDR-encoded format, including message header. */
 #define PLAYERTCP_MAX_MESSAGE_LEN 2097152  // 2MB
 
@@ -57,10 +61,14 @@ typedef struct
 /** @brief A TCP Connection */
 typedef struct
 {
+  /** Marked for deletion? */
+  int del;
   /** Is the connection valid? */
   int valid;
   /** File descriptor for the socket */
   int fd;
+  /** Port on which the connection was originally accepted */
+  int port;
   /** Remote address */
   struct sockaddr_in addr;
   /** Outgoing queue for this connection */
@@ -72,6 +80,13 @@ typedef struct
   /** How much of @p readbuffer is currently in use (i.e., holding a
     partial message) */
   int readbufferlen;
+  /** Buffer in which to store partial outgoint messages */
+  char* writebuffer;
+  /** Total size of @p writebuffer */
+  int writebuffersize;
+  /** How much of @p writebuffer is currently in use (i.e., holding a
+    partial message) */
+  int writebufferlen;
 } playertcp_conn_t;
 
 class PlayerTCP
@@ -81,6 +96,7 @@ class PlayerTCP
     playertcp_listener_t* listeners;
     struct pollfd* listen_ufds;
 
+    int size_clients;
     int num_clients;
     playertcp_conn_t* clients;
     struct pollfd* client_ufds;
@@ -98,6 +114,7 @@ class PlayerTCP
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);
+    int Read(int timeout);
     void ParseBuffer(int cli);
 };
 

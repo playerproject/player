@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <replace/replace.h>
 #include <libplayercore/playercore.h>
@@ -35,6 +36,7 @@
 
 PlayerTCP::PlayerTCP()
 {
+  this->size_clients = 0;
   this->num_clients = 0;
   this->clients = (playertcp_conn_t*)NULL;
   this->client_ufds = (struct pollfd*)NULL;
@@ -48,16 +50,12 @@ PlayerTCP::PlayerTCP()
   this->decode_readbuffer = 
           (char*)calloc(1,this->decode_readbuffersize);
   assert(this->decode_readbuffer);
-
 }
 
 PlayerTCP::~PlayerTCP()
 {
   for(int i=0;i<this->num_clients;i++)
-  {
-    if(this->clients[i].valid)
-      this->Close(i);
-  }
+    this->Close(i);
   free(this->clients);
   free(this->listeners);
   free(this->listen_ufds);
@@ -102,6 +100,7 @@ PlayerTCP::Accept(int timeout)
   int newsock;
   struct sockaddr_in cliaddr;
   socklen_t sender_len;
+  unsigned char data[PLAYER_IDENT_STRLEN];
 
   // Look for new connections
   if((num_accepts = poll(this->listen_ufds, num_listeners, timeout)) < 0)
@@ -118,7 +117,7 @@ PlayerTCP::Accept(int timeout)
   if(!num_accepts)
     return(0);
 
-  for(int i=0; (i<num_listeners) && (i>num_accepts); i++)
+  for(int i=0; (i<num_listeners) && (num_accepts>0); i++)
   {
     if(this->listen_ufds[i].revents & POLLIN)
     {
@@ -134,36 +133,46 @@ PlayerTCP::Accept(int timeout)
         return(-1);
       }
 
+      // make the socket non-blocking
+      if(fcntl(newsock, F_SETFL, O_NONBLOCK) == -1)
+      {
+        PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
+        close(newsock);
+        return(-1);
+      }
+
       // Look for a place to store the new connection info
       int j;
-      for(j=0;j<this->num_clients;j++)
+      for(j=0;j<this->size_clients;j++)
       {
-        if(this->clients[j].valid)
+        if(!this->clients[j].valid)
           break;
       }
 
       // Do we need to allocate another spot?
-      if(j == this->num_clients)
+      if(j == this->size_clients)
       {
-        this->num_clients++;
+        this->size_clients++;
         this->clients = (playertcp_conn_t*)realloc(this->clients,
-                                                   this->num_clients *
+                                                   this->size_clients *
                                                    sizeof(playertcp_conn_t));
         assert(this->clients);
         this->client_ufds = (struct pollfd*)realloc(this->client_ufds,
-                                                    this->num_clients *
+                                                    this->size_clients *
                                                     sizeof(struct pollfd));
         assert(this->client_ufds);
       }
 
       // Store the client's info
       this->clients[j].valid = 1;
+      this->clients[j].del = 0;
+      this->clients[j].port = this->listeners[i].port;
       this->clients[j].fd = newsock;
       this->clients[j].addr = cliaddr;
 
       // Set up for later use of poll
       this->client_ufds[j].fd = this->clients[j].fd;
-
+      this->client_ufds[j].events = POLLIN;
 
       // Create an outgoing queue for this client
       this->clients[j].queue = 
@@ -177,9 +186,25 @@ PlayerTCP::Accept(int timeout)
       assert(this->clients[j].readbuffer);
       this->clients[j].readbufferlen = 0;
 
-      PLAYER_MSG2(1, "accepted client %d on port %d",
-                  j, this->listeners[i].port);
+      // Create a buffer to hold outgoing messages
+      this->clients[j].writebuffersize = PLAYERTCP_WRITEBUFFER_SIZE;
+      this->clients[j].writebuffer = 
+              (char*)calloc(1,this->clients[j].writebuffersize);
+      assert(this->clients[j].writebuffer);
+      this->clients[j].writebufferlen = 0;
 
+      sprintf((char*)data, "%s", PLAYER_IDENT_STRING);
+      memset(((char*)data)+strlen((char*)data),0,
+             PLAYER_IDENT_STRLEN-strlen((char*)data));
+      if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
+      {
+        PLAYER_ERROR("failed to send ident string");
+      }
+
+      PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
+                  j, this->clients[j].port, this->clients[j].fd);
+
+      this->num_clients++;
       num_accepts--;
     }
   }
@@ -192,6 +217,9 @@ PlayerTCP::Close(int cli)
 {
   assert((cli >= 0) && (cli < this->num_clients));
 
+  PLAYER_MSG2(1, "closing connection to client %d on port %d",
+              cli, this->clients[cli].port);
+
   if(!this->clients[cli].valid)
     PLAYER_WARN1("tried to Close() invalid client connection %d", cli);
   else
@@ -200,9 +228,84 @@ PlayerTCP::Close(int cli)
       PLAYER_WARN1("close() failed: %s", strerror(errno));
     this->clients[cli].fd = -1;
     this->clients[cli].valid = 0;
+    this->clients[cli].del = 0;
     delete this->clients[cli].queue;
     free(this->clients[cli].readbuffer);
   }
+}
+
+int
+PlayerTCP::Read(int timeout)
+{
+  int num_available;
+
+  // Poll for incoming messages
+  if((num_available = poll(this->client_ufds, this->num_clients, timeout)) < 0)
+  {
+    // Got interrupted by a signal; no problem
+    if(errno == EINTR)
+      return(0);
+
+    // A genuine problem
+    PLAYER_ERROR1("poll() failed: %s", strerror(errno));
+    return(-1);
+  }
+
+  if(!num_available)
+    return(0);
+
+  for(int i=0; (i<this->num_clients) && (num_available>0); i++)
+  {
+    if((this->clients[i].valid) && 
+       ((this->client_ufds[i].revents & POLLERR) || 
+        (this->client_ufds[i].revents & POLLHUP) ||
+        (this->client_ufds[i].revents & POLLNVAL)))
+    {
+      PLAYER_WARN1("other error on client %d", i);
+      this->clients[i].del = 1;
+      num_available--;
+    }
+    else if((this->clients[i].valid) && 
+            (this->client_ufds[i].revents & POLLIN))
+    {
+      if(this->ReadClient(i) < 0)
+      {
+        PLAYER_WARN1("failed to read from client %d", i);
+        this->clients[i].del = 1;
+      }
+      num_available--;
+    }
+  }
+
+  // Delete those connections that generated errors in this iteration
+  for(int i=0; i<this->size_clients; i++)
+  {
+    if(this->clients[i].del)
+    {
+      this->Close(i);
+      // Remove the resulting blank from both lists
+      memmove(this->clients + i, 
+              this->clients + i + 1, 
+              (this->size_clients - i - 1) * sizeof(playertcp_conn_t));
+      memmove(this->client_ufds + i, 
+              this->client_ufds + i + 1, 
+              (this->size_clients - i - 1) * sizeof(struct pollfd));
+      this->num_clients--;
+      i--;
+    }
+  }
+  memset(this->clients + this->num_clients, 0,
+         (this->size_clients - this->num_clients) * sizeof(playertcp_conn_t));
+  memset(this->client_ufds + this->num_clients, 0,
+         (this->size_clients - this->num_clients) * sizeof(struct pollfd));
+
+  return(0);
+}
+
+int
+PlayerTCP::Write()
+{
+  // First
 }
 
 int
@@ -251,7 +354,7 @@ PlayerTCP::ReadClient(int cli)
                    client->readbuffer + client->readbufferlen,
                    client->readbuffersize - client->readbufferlen);
 
-    if(numread < 1)
+    if(numread < 0)
     {
       if(errno == EAGAIN)
       {
@@ -263,6 +366,11 @@ PlayerTCP::ReadClient(int cli)
         PLAYER_ERROR1("read() failed: %s", strerror(errno));
         return(-1);
       }
+    }
+    else if(numread == 0)
+    {
+      PLAYER_ERROR("read() read zero bytes");
+      return(-1);
     }
   }
 

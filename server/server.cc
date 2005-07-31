@@ -24,6 +24,8 @@
 #include <assert.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <errno.h>
 
 #include <libplayercore/playercore.h>
 #include <libplayertcp/playertcp.h>
@@ -41,18 +43,24 @@ extern int optreset;
 static int debuglevel = 1;
 static int port = PLAYERTCP_DEFAULT_PORT;
 static const char* cfgfilename;
+static int quit;
 
 void PrintCopyrightMsg();
 void PrintUsage();
 int ParseArgs(int argc, char** argv);
+void Quit(int signum);
 
 int
 main(int argc, char** argv)
 {
   PlayerTCP ptcp;
-  ConfigFile cf;
-  int debuglevel = 1;
-  int port = PLAYERTCP_DEFAULT_PORT;
+  ConfigFile* cf;
+
+  if(signal(SIGINT, Quit) == SIG_ERR)
+  {
+    PLAYER_ERROR1("signal() failed: %s", strerror(errno));
+    exit(-1);
+  }
 
   register_drivers();
 
@@ -66,13 +74,16 @@ main(int argc, char** argv)
 
   PrintCopyrightMsg();
 
-  if(!cf.Load(cfgfilename))
+  cf = new ConfigFile(0,port);
+  assert(cf);
+
+  if(!cf->Load(cfgfilename))
   {
     PLAYER_ERROR1("failed to load config file %s", cfgfilename);
     exit(-1);
   }
 
-  if(!cf.ParseAllDrivers())
+  if(!cf->ParseAllDrivers())
   {
     PLAYER_ERROR1("failed to parse config file %s", cfgfilename);
     exit(-1);
@@ -86,16 +97,27 @@ main(int argc, char** argv)
 
   printf("Listening on port: %d\n", port);
 
-  for(;;)
+  while(!quit)
   {
-    if(ptcp.Accept(-1) < 0)
+    if(ptcp.Accept(0) < 0)
     {
       PLAYER_ERROR("failed while accepting new connections");
+      exit(-1);
+    }
+    if(ptcp.Read(1) < 0)
+    {
+      PLAYER_ERROR("failed while reading");
       exit(-1);
     }
   }
 
   return(0);
+}
+
+void
+Quit(int signum)
+{
+  quit = 1;
 }
 
 void

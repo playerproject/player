@@ -19,9 +19,10 @@ static FILE *msgFile;
 
 
 // Initialize error logging
-void ErrorInit(int msgLevel)
+void 
+ErrorInit(int _msgLevel)
 {
-  msgLevel = msgLevel;
+  msgLevel = _msgLevel;
   msgFile = fopen(".player", "a+");
 }
 
@@ -33,19 +34,10 @@ void ErrorPrint(int msgType, int level, const char *file, int line, const char *
   
   va_start(ap, fmt);
 
-  if (msgType == PLAYER_ERR_ERR || msgType == PLAYER_ERR_WARN)
-  {
+  if (level <= msgLevel)
     vfprintf(stderr, fmt, ap);
-    fprintf(msgFile, "%s:%d ", file, line);
-    vfprintf(msgFile, fmt, ap);
-  }
-  else if (msgType == PLAYER_ERR_MSG)
-  {
-    if (level <= msgLevel)
-      vfprintf(stderr, fmt, ap);
-    fprintf(msgFile, "%s:%d ", file, line);
-    vfprintf(msgFile, fmt, ap);
-  }
+  fprintf(msgFile, "%s:%d ", file, line);
+  vfprintf(msgFile, fmt, ap);
   
   va_end(ap);
   
