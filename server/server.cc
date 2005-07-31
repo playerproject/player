@@ -116,6 +116,8 @@ main(int argc, char** argv)
     }
   }
 
+  puts("Quitting.");
+
   return(0);
 }
 
