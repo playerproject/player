@@ -109,6 +109,11 @@ main(int argc, char** argv)
       PLAYER_ERROR("failed while reading");
       exit(-1);
     }
+    if(ptcp.Write() < 0)
+    {
+      PLAYER_ERROR("failed while reading");
+      exit(-1);
+    }
   }
 
   return(0);
