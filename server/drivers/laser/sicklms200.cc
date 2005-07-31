@@ -1373,9 +1373,9 @@ ssize_t SickLMS200::WriteToLaser(uint8_t *data, ssize_t len)
   tcflush(this->laser_fd, TCIOFLUSH);
 
   ssize_t bytes = 0;
-  //struct timeval start, end;
 
 #ifdef HAVE_HI_SPEED_SERIAL
+  struct timeval start, end;
   // have to write one char at a time, because if we're
   // high speed, then must take no longer than 55 us between
   // chars

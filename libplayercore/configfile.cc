@@ -78,9 +78,12 @@
 
 ///////////////////////////////////////////////////////////////////////////
 // Default constructor
-ConfigFile::ConfigFile() 
+ConfigFile::ConfigFile(uint32_t _default_host, uint32_t _default_robot) 
 {
   this->filename = NULL;
+
+  this->default_host = _default_host;
+  this->default_robot = _default_robot;
 
   this->token_size = 0;
   this->token_count = 0;
@@ -1819,7 +1822,7 @@ uint32_t ConfigFile::LookupColor(const char *name)
 ///////////////////////////////////////////////////////////////////////////
 // Read a device id.
 int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
-                               const char *name, int code, int index,
+                               const char *name, int interface, int index,
                                const char *key)
 {
   int prop;
@@ -1827,10 +1830,10 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
   char str[128];
   char *tokens[4];
   int token_count;
-  //int port;
+  unsigned int robot, host;
   int ind;
   const char *s, *k;
-  player_interface_t interface;
+  player_interface_t interf;
 
   // Get the field index
   if ((prop = GetField(section, name)) < 0)
@@ -1874,26 +1877,22 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
 
     // Extract the fields from the tokens (with default values)
     k = tokens[0];
-    // @todo 
-    // Handle transport-specific addressing options somehow.
-    /*
-    //port = global_playerport;
-    port = 0;
+    host = this->default_host;
+    robot = this->default_robot;
     if (tokens[1] && strlen(tokens[1]))
-      port = atoi(tokens[1]);
-      */
+      robot = atoi(tokens[1]);
     s = tokens[2];
     ind = atoi(tokens[3]);
         
     // Find the interface
-    if (::lookup_interface(tokens[2], &interface) != 0)
+    if (::lookup_interface(tokens[2], &interf) != 0)
     {
       CONFIG_ERR1("unknown interface: [%s]", this->fields[prop].line, tokens[2]);
       return -1;
     }
 
-    // Match the code
-    if (code > 0 && interface.code != code)
+    // Match the interface
+    if (interface > 0 && interf.code != interface)
       continue;
 
     // Match the tuple index
@@ -1912,8 +1911,9 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     // Read the field again, just to mark it as read
     GetFieldValue(prop, i, true);
 
-    //addr->port = port;
-    addr->interface = interface.code;
+    addr->host = host;
+    addr->robot = robot;
+    addr->interface = interf.code;
     addr->index = ind;
     return 0;
  
