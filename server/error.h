@@ -46,6 +46,8 @@ void ErrorPrint(int msgType, int level, const char *file, int line, const char *
 #define PLAYER_WARN2(msg, a, b) ErrorPrint(PLAYER_ERR_WARN, 0, __FILE__, __LINE__, "warning : " msg "\n", a, b)
 #define PLAYER_WARN3(msg, a, b, c) ErrorPrint(PLAYER_ERR_WARN, 0, __FILE__, __LINE__, "warning : " msg "\n", a, b, c)
 #define PLAYER_WARN4(msg, a, b, c, d) ErrorPrint(PLAYER_ERR_WARN, 0, __FILE__, __LINE__, "warning : " msg "\n", a, b, c, d)
+#define PLAYER_WARN5(msg, a, b, c, d, e) ErrorPrint(PLAYER_ERR_WARN, 0, __FILE__, __LINE__, "warning : " msg "\n", a, b, c, d, e)
+#define PLAYER_WARN6(msg, a, b, c, d, e, f) ErrorPrint(PLAYER_ERR_WARN, 0, __FILE__, __LINE__, "warning : " msg "\n", a, b, c, d, e, f)
 
 /// General messages.  Use level to indicate the message importance
 ///  - 0 : important
