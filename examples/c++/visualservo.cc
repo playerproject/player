@@ -8,10 +8,9 @@
 #include <playerclient.h>
 
 #define USAGE \
-  "USAGE: visualservo [-h <host>] [-p <port>] [-c <channel>] [-m]\n" \
+  "USAGE: visualservo [-h <host>] [-p <port>] [-m]\n" \
   "       -h <host>: connect to Player on this host\n" \
   "       -p <port>: connect to Player on this TCP port\n" \
-  "       -c <channel>: servo to this color <channel>\n" \
   "       -l       : use laser instead of sonar\n" \
   "       -m       : turn on motors (be CAREFUL!)"
                
@@ -19,7 +18,10 @@
 bool turnOnMotors = false;
 char host[256] = "localhost";
 int port = PLAYER_PORTNUM;
-int channel = 0;
+
+
+// color to track (RRGGBB)
+int color = 0xFF0000;
 
 /* parse command-line args */
 void
@@ -50,16 +52,6 @@ parse_args(int argc, char** argv)
         exit(1);
       }
     }
-    else if(!strcmp(argv[i],"-c"))
-    {
-      if(++i<argc)
-        channel = atoi(argv[i]);
-      else
-      {
-        puts(USAGE);
-        exit(1);
-      }
-    }
     else if(!strcmp(argv[i],"-m"))
     {
       turnOnMotors = true;
@@ -79,6 +71,8 @@ int main(int argc, char** argv)
   int randcount = 0;
   int avoidcount = 0;
   bool obs = false;
+  bool seeblob = false;
+  int blob_idx = -1;
   double minfrontdistance = 0.450;
   unsigned int minarea = 50;
 
@@ -107,13 +101,25 @@ int main(int argc, char** argv)
     if(robot.Read())
       exit(1);
 
-    vp.Print();
+    //vp.Print();
 
     /* See if there is an obstacle in front */
     obs = (sp[2] < minfrontdistance ||
            sp[3] < minfrontdistance ||
            sp[4] < minfrontdistance ||
            sp[5] < minfrontdistance);
+
+    /* Find the biggest blob of the given color */
+    seeblob = false;
+    for(int i=0;i<vp.blob_count;i++)
+    {
+      if((vp.blobs[i].color == color) && (vp.blobs[i].area > minarea))
+      {
+        if(!seeblob || (vp.blobs[i].area > vp.blobs[blob_idx].area))
+          blob_idx = i;
+        seeblob = true;
+      }
+    }
 
     if(obs || avoidcount || pp.stall)
     {
@@ -133,17 +139,12 @@ int main(int argc, char** argv)
       }
       avoidcount--;
     }
-    else if(vp.blob_count>0)
+    else if(seeblob)
     {
-      if(vp.blobs[0].id != channel)
-        continue;
-      if(vp.blobs[0].area < minarea)
-        continue;
-
-      int err = 80 - vp.blobs[0].x;
+      int err = 40 - vp.blobs[blob_idx].x;
       if(abs(err) > 5)
       {
-        newturnrate = DTOR(err / 3.0);
+        newturnrate = DTOR(err);
       }
       else
         newturnrate = 0;
@@ -169,6 +170,7 @@ int main(int argc, char** argv)
       randcount--;
     }
 
+    vp.blob_count = 0;
     /* write commands to robot */
     pp.SetSpeed(newspeed,newturnrate);
   }
