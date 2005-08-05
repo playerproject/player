@@ -3,7 +3,7 @@ driverlibdir = $(libdir)/player-@VERSION@
 
 noinst_LIBRARIES = @LASERCSPACE_LIB@ @SICKPLS_LIB@
 driverlib_LIBRARIES = @SICKLMS200_LIB@
-driverinclude_HEADERS = sicklms200.h
+driverinclude_HEADERS = sicklms200.h lasercspace.h
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 

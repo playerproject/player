@@ -32,6 +32,7 @@
 
 #include "driverregistry.h"
 
+/****************/
 /* getopt stuff */
 extern char *optarg;
 extern int optind;
@@ -39,20 +40,22 @@ extern int optopt;
 extern int opterr;
 extern int optreset;
 /* getopt stuff */
+/****************/
 
-static int debuglevel = 1;
-static int port = PLAYERTCP_DEFAULT_PORT;
-static const char* cfgfilename;
 static int quit;
 
 void PrintCopyrightMsg();
 void PrintUsage();
-int ParseArgs(int argc, char** argv);
+int ParseArgs(int* port, int* debuglevel, const char** cfgfilename, 
+              int argc, char** argv);
 void Quit(int signum);
 
 int
 main(int argc, char** argv)
 {
+  int debuglevel = 1;
+  int port = PLAYERTCP_DEFAULT_PORT;
+  const char* cfgfilename;
   PlayerTCP ptcp;
   ConfigFile* cf;
 
@@ -64,7 +67,7 @@ main(int argc, char** argv)
 
   register_drivers();
 
-  if(ParseArgs(argc, argv) < 0)
+  if(ParseArgs(&port, &debuglevel, &cfgfilename, argc, argv) < 0)
   {
     PrintUsage();
     exit(-1);
@@ -142,8 +145,6 @@ PrintUsage()
   int maxlen=66;
   char** sortedlist;
 
-  //PrintCopyrightMsg();
-
   fprintf(stderr, "USAGE:  player [options] [<configfile>]\n\n");
   fprintf(stderr, "Where [options] can be:\n");
   fprintf(stderr, "  -h             : print this message.\n");
@@ -176,7 +177,8 @@ PrintUsage()
 }
 
 int 
-ParseArgs(int argc, char** argv)
+ParseArgs(int* port, int* debuglevel, const char** cfgfilename, 
+          int argc, char** argv)
 {
   int ch;
   const char* optflags = "d:p:h";
@@ -187,18 +189,16 @@ ParseArgs(int argc, char** argv)
     switch (ch)
     {
       case 'd':
-        debuglevel = atoi(optarg);
+        *debuglevel = atoi(optarg);
         break;
       case 'p':
-        port = atoi(optarg);
+        *port = atoi(optarg);
         break;
       case '?':
       case ':':
       case 'h':
       default:
-        PrintUsage();
-        exit(-1);
-        break;
+        return(-1);
     }
   }
 
@@ -208,7 +208,7 @@ ParseArgs(int argc, char** argv)
   if(argc < 1)
     return(-1);
   
-  cfgfilename = argv[0];
+  *cfgfilename = argv[0];
 
   return(0);
 }
