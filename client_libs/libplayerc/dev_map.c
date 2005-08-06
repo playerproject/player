@@ -62,7 +62,7 @@ playerc_map_t *playerc_map_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_map_t));
   memset(device, 0, sizeof(playerc_map_t));
   playerc_device_init(&device->info, client, PLAYER_MAP_CODE, index,
-                      (playerc_putdata_fn_t) NULL);
+                      (playerc_putdata_fn_t) playerc_map_putdata);
     
   return device;
 }
@@ -87,6 +87,31 @@ int playerc_map_subscribe(playerc_map_t *device, int access)
 int playerc_map_unsubscribe(playerc_map_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
+}
+
+// Process incoming data
+void playerc_map_putdata(playerc_map_t *device, player_msghdr_t *header,
+                         player_map_data_t *data, size_t len)
+{
+  int i,j;
+  char* cell;
+
+  data->col = ntohl(data->col);
+  data->row = ntohl(data->row);
+  data->width = ntohl(data->width);
+  data->height = ntohl(data->height);
+
+  // copy the map data
+  for(j=0;j<data->height;j++)
+  {
+    for(i=0;i<data->width;i++)
+    {
+      cell = device->cells + PLAYERC_MAP_INDEX(device,
+                                               data->col+i,
+                                               data->row+j);
+      *cell = data->data[j*data->width + i];
+    }
+  }
 }
 
 int playerc_map_get_map(playerc_map_t* device)

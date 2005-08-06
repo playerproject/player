@@ -96,10 +96,9 @@ int AMCLLaser::Unload(void)
 // Set up the laser
 int AMCLLaser::Setup(void)
 {
-  //uint8_t req;
-  //uint16_t reptype;
-  //player_laser_geom_t geom;
-  //struct timeval tv;
+  uint16_t reptype;
+  player_laser_geom_t geom;
+  struct timeval tv;
 
   if(this->SetupMap() < 0)
   {
@@ -120,22 +119,20 @@ int AMCLLaser::Setup(void)
     return -1;
   }
 
-  // TODO: use laser geometry request?
-
-  /*
   // Get the laser geometry
-  req = PLAYER_LASER_GET_GEOM;
-  if (this->device->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
+  geom.subtype = PLAYER_LASER_GET_GEOM;
+  if (this->driver->Request(this->laser_id, this, 
+                            &geom, sizeof(geom.subtype), NULL,
+                            &reptype, &geom, sizeof(geom), &tv) < 0)
   {
     PLAYER_ERROR("unable to get laser geometry");
     return -1;
   }
 
   // Set the laser pose relative to the robot
-  this->laser_pose.v[0] = ((int16_t) ntohl(geom.pose[0])) / 1000.0;
-  this->laser_pose.v[1] = ((int16_t) ntohl(geom.pose[1])) / 1000.0;
-  this->laser_pose.v[2] = ((int16_t) ntohl(geom.pose[2])) * M_PI / 180.0;
-  */
+  this->laser_pose.v[0] = ((int16_t) ntohs(geom.pose[0])) / 1e3;
+  this->laser_pose.v[1] = ((int16_t) ntohs(geom.pose[1])) / 1e3;
+  this->laser_pose.v[2] = RTOD((int16_t) ntohs(geom.pose[2]));
 
   return 0;
 }

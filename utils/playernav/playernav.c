@@ -134,20 +134,28 @@ gboolean
 player_read_func(gpointer* arg)
 {
   int i;
-  static int count=0;
   pose_t robot_pose;
   gui_data_t* gui_data = (gui_data_t*)arg;
   static struct timeval last = {0, 0};
+  static struct timeval lastwaypoint_ts = {0, 0};
   struct timeval curr;
   double diff;
   gboolean onmap;
+  int numready;
 
   // read new data
-  if(playerc_mclient_read(gui_data->mclient,10) < 0)
+  for(;;)
   {
-    fprintf(stderr, "Error on read\n");
-    gtk_main_quit();
+    numready = playerc_mclient_read(gui_data->mclient,0);
+    if(numready < 0)
+    {
+      fprintf(stderr, "Error on read\n");
+      gtk_main_quit();
+    }
+    else if(numready == 0)
+      break;
   }
+  gettimeofday(&curr,NULL);
   for(i=0;i<gui_data->num_robots;i++)
   {
     if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
@@ -195,7 +203,9 @@ player_read_func(gpointer* arg)
     }
 
     // every once in a while, get the latest path from each robot
-    if(!(count % (DATA_FREQ * 10 * gui_data->num_robots)))
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - 
+            (lastwaypoint_ts.tv_sec + lastwaypoint_ts.tv_usec/1e6);
+    if(diff >= 1.0)
     {
       if(gui_data->planners[i])
       {
@@ -208,16 +218,23 @@ player_read_func(gpointer* arg)
         //puts("drawing waypoints");
         draw_waypoints(gui_data,i);
       }
+      lastwaypoint_ts = curr;
     }
 
     // raise the robot's canvas item, so that the user can select it
     gnome_canvas_item_raise_to_top(gui_data->robot_items[i]);
   }
 
+  // did we get new map data?
+  if(gui_data->mapdev->info.fresh)
+  {
+    create_map_image(gui_data);
+    gui_data->mapdev->info.fresh = 0;
+  }
+
   // dump screenshot
   if(dumpp)
   {
-    gettimeofday(&curr,NULL);
     diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
     if(diff >= 1.0/dumpfreq)
     {
@@ -226,7 +243,6 @@ player_read_func(gpointer* arg)
     }
   }
 
-  count++;
   return(TRUE);
 }
 

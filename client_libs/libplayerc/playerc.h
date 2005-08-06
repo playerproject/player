@@ -1246,6 +1246,10 @@ typedef struct
   char* cells;
 } playerc_map_t;
 
+// Process incoming data
+void playerc_map_putdata(playerc_map_t *device, player_msghdr_t *header,
+                         player_map_data_t *data, size_t len);
+
 
 /** @brief Convert from a cell position to a map index.
  */

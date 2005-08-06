@@ -32,18 +32,20 @@ init_player(playerc_client_t** clients,
               hostnames[i], ports[i]);
       return(NULL);
     }
-    if(playerc_client_datafreq(clients[i],data_freq) < 0)
-    {
-      fprintf(stderr, "Failed to set data frequency\n");
-      return(NULL);
-    }
+#if 0
     // request ALL data, rather than just NEW data, because the localizer
     // may only send out updates occasionally.
-    if(playerc_client_datamode(clients[i],PLAYER_DATAMODE_PUSH_ALL) < 0)
+    if(playerc_client_datamode(clients[i],PLAYER_DATAMODE_PUSH_NEW) < 0)
     {
       fprintf(stderr, "Failed to set data mode\n");
       return(NULL);
     }
+    if(playerc_client_datafreq(clients[i],10) < 0)
+    {
+      fprintf(stderr, "Failed to set data frequency\n");
+      return(NULL);
+    }
+#endif
     // only subscribe to the first robot's map
     if(i==0)
     {
@@ -81,7 +83,7 @@ init_player(playerc_client_t** clients,
   }
   puts("done");
 
-  playerc_map_unsubscribe(maps[0]);
+  //playerc_map_unsubscribe(maps[0]);
 
 #if 0
   /* Get at least one round of data from each robot */

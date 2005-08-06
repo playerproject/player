@@ -671,7 +671,7 @@ create_map_image(gui_data_t* gui_data)
   GdkPixbuf* pixbuf;
   static guchar* pixels = NULL;
   int i,j;
-  GnomeCanvasItem* imageitem;
+  static GnomeCanvasItem* imageitem = NULL;
 
   if(pixels)
     free(pixels);
@@ -739,6 +739,8 @@ create_map_image(gui_data_t* gui_data)
                                               NULL,
                                               NULL)));
 
+  if(imageitem)
+    gtk_object_destroy(GTK_OBJECT(imageitem));
   g_assert((imageitem = 
             gnome_canvas_item_new(gnome_canvas_root(gui_data->map_canvas), 
                                   gnome_canvas_pixbuf_get_type(),
@@ -754,6 +756,7 @@ create_map_image(gui_data_t* gui_data)
                                          gui_data->mapdev->resolution)/2.0,
                                   "pixbuf", pixbuf,
                                   NULL)));
+  gnome_canvas_item_lower_to_bottom(imageitem);
 
   g_object_unref((GObject*)pixbuf);
 }
