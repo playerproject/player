@@ -38,6 +38,7 @@ class WallclockTime : public PlayerTime
 {
   public:
     int GetTime(struct timeval* time);
+    int GetTimeDouble(double* time);
     ~WallclockTime() {}
 };
 

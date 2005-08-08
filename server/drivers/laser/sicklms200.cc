@@ -307,8 +307,7 @@ void SickLMS200_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickLMS200::SickLMS200(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
-             PLAYER_LASER_CODE, PLAYER_READ_MODE)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -628,8 +627,8 @@ void SickLMS200::Main()
 
      // Get the time at which we started reading
     // This will be a pretty good estimate of when the phenomena occured
-    struct timeval time;
-    GlobalTime->GetTime(&time);
+    double time;
+    GlobalTime->GetTimeDouble(&time);
     
     // Process incoming data
     uint16_t mm_ranges[PLAYER_LASER_MAX_SAMPLES];

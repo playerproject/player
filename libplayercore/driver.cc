@@ -51,7 +51,7 @@
 // interface code and buffer sizes.
 Driver::Driver(ConfigFile *cf, int section, 
                bool overwrite_cmds, size_t queue_maxlen, 
-               int interface, uint8_t access)
+               int interface)
 {
   this->error = 0;
   driverthread = 0;
@@ -69,7 +69,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->alwayson = false;
 
   // Create an interface 
-  if(this->AddInterface(this->device_addr, access) != 0)
+  if(this->AddInterface(this->device_addr) != 0)
   {
     this->SetError(-1);    
     return;
@@ -107,10 +107,10 @@ Driver::~Driver()
 
 // Add an interface
 int 
-Driver::AddInterface(player_devaddr_t addr, unsigned char access)
+Driver::AddInterface(player_devaddr_t addr)
 {
   // Add ourself to the device table
-  if(deviceTable->AddDevice(addr, access, this) != 0)
+  if(deviceTable->AddDevice(addr, this) != 0)
   {
     PLAYER_ERROR("failed to add interface");
     return -1;
@@ -159,15 +159,21 @@ Driver::Publish(player_devaddr_t addr,
                 uint8_t subtype,
                 void* src, 
                 size_t len,
-                struct timeval* timestamp)
+                double* timestamp)
 {
   struct timeval ts;
+  double t;
 
   // Fill in the time structure if not supplied
   if(timestamp)
-    ts = *timestamp;
+  {
+    t = *timestamp;
+  }
   else
+  {
     GlobalTime->GetTime(&ts);
+    t = ts.tv_sec + ts.tv_usec/1e6;
+  }
 
   player_msghdr_t hdr;
   memset(&hdr,0,sizeof(player_msghdr_t));
@@ -175,8 +181,7 @@ Driver::Publish(player_devaddr_t addr,
   hdr.addr = addr;
   hdr.type = type;
   hdr.subtype = subtype;
-  hdr.timestamp_sec = ts.tv_sec;
-  hdr.timestamp_usec = ts.tv_usec;
+  hdr.timestamp = t;
   hdr.size = len;
 
   this->Publish(queue, &hdr, src);

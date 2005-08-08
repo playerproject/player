@@ -62,7 +62,6 @@ DeviceTable::~DeviceTable()
 // this is the 'base' AddDevice method, which sets all the fields
 int 
 DeviceTable::AddDevice(player_devaddr_t addr, 
-                       unsigned char access, 
                        Driver* driver)
 {
   Device* thisentry;
@@ -88,7 +87,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
   }
     
   // Create a new device entry
-  thisentry = new Device(addr, driver, access);
+  thisentry = new Device(addr, driver);
   thisentry->next = NULL;
   if(preventry)
     preventry->next = thisentry;
@@ -147,17 +146,3 @@ DeviceTable::GetDevice(player_devaddr_t addr)
   return(thisentry);
 }
 
-
-// returns the code for access ('r', 'w', or 'a') for the given 
-// device, or 'e' on failure
-unsigned char 
-DeviceTable::GetDeviceAccess(player_devaddr_t addr)
-{
-  Device* thisentry;
-  char access = PLAYER_ERROR_MODE;
-
-  if((thisentry = GetDevice(addr)))
-    access = thisentry->access;
-
-  return(access);
-}

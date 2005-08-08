@@ -517,8 +517,7 @@ PlayerTCP::ParseBuffer(int cli)
   int headerlen;
   int msglen;
   int decode_msglen;
-  Message* msg;
-  Driver* driver;
+  Device* device;
 
   assert((cli >= 0) && (cli < this->num_clients));
   client = this->clients + cli;
@@ -549,7 +548,7 @@ PlayerTCP::ParseBuffer(int cli)
     if(msglen > client->readbufferlen)
       return;
 
-    if(!(driver = deviceTable->GetDriver(hdr.addr)))
+    if(!(device = deviceTable->GetDevice(hdr.addr)))
     {
       PLAYER_WARN3("skipping message of type %u to unknown device %u:%u",
                    hdr.subtype, hdr.addr.interface, hdr.addr.index);
@@ -599,15 +598,9 @@ PlayerTCP::ParseBuffer(int cli)
         }
         else
         {
-          // Make up a message and send it off
-          msg = new Message(hdr, this->decode_readbuffer,
-                            decode_msglen, client->queue);
-          assert(msg);
-          if(!driver->InQueue->Push(*msg))
-          {
-            PLAYER_WARN3("failed to enqueue message to %u:%u with type %u",
-                         hdr.addr.interface, hdr.addr.index, hdr.subtype);
-          }
+          // update the message size and send it off
+          hdr.size = decode_msglen;
+          device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
         }
       }
     }
@@ -618,4 +611,116 @@ PlayerTCP::ParseBuffer(int cli)
   }
 }
 
+int
+PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
+{
+  player_msghdr_t* hdr;
+  uint8_t* payload;
+  player_device_req_t* devreq;
+  Device* device;
+  playertcp_conn_t* client;
+
+  player_device_resp_t devresp;
+  player_msghdr_t resphdr;
+  Message* resp;
+
+  assert((cli >= 0) && (cli < this->num_clients));
+  client = this->clients + cli;
+
+  hdr = msg->GetHeader();
+  payload = msg->GetPayload();
+
+  resphdr = *hdr;
+
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_REQ:
+      switch(hdr->subtype)
+      {
+        // Device subscription request
+        case PLAYER_PLAYER_DEV:
+          devreq = (player_device_req_t*)payload;
+
+          memset(&devresp,0,sizeof(player_device_resp_t));
+          devresp.addr = devreq->addr;
+          devresp.access = PLAYER_ERROR_MODE;
+
+          resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
+          GlobalTime->GetTimeDouble(&resphdr.timestamp);
+          resphdr.size = sizeof(player_device_resp_t);
+
+          if(!(device = deviceTable->GetDevice(devreq->addr)))
+          {
+            PLAYER_WARN2("skipping subscription to unknown device %u:%u",
+                         devreq->addr.interface, devreq->addr.index);
+            
+          }
+          else
+          {
+            // (un)subscribe the client to the device
+            switch(devreq->access)
+            {
+              case PLAYER_OPEN_MODE:
+                if(device->Subscribe(client->queue) < 0)
+                {
+                  PLAYER_WARN2("subscription failed for device %u:%u",
+                               devreq->addr.interface, devreq->addr.index);
+                }
+                else
+                  devresp.access = devreq->access;
+                break;
+              case PLAYER_CLOSE_MODE:
+                if(device->Unsubscribe(client->queue) < 0)
+                {
+                  PLAYER_WARN2("unsubscription failed for device %u:%u",
+                               devreq->addr.interface, devreq->addr.index);
+                }
+                else
+                  devresp.access = devreq->access;
+                break;
+              default:
+                PLAYER_WARN3("unknown access mode %u requested for device %u:%u",
+                             devreq->access, devreq->addr.interface, 
+                             devreq->addr.index);
+                break;
+            }
+          }
+
+          // Make up and push out the reply
+          resp = new Message(resphdr, (void*)&devresp, 
+                             sizeof(player_device_resp_t));
+          assert(resp);
+          client->queue->Push(*resp);
+          delete resp;
+          break;
+        default:
+          PLAYER_WARN1("player interface discarding message of unsupported subtype %u",
+                       hdr->subtype);
+
+          resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
+          GlobalTime->GetTimeDouble(&resphdr.timestamp);
+          resphdr.size = 0;
+          // Make up and push out the reply
+          resp = new Message(resphdr, NULL, 0);
+          assert(resp);
+          client->queue->Push(*resp);
+          delete resp;
+          break;
+      }
+      break;
+    default:
+      PLAYER_WARN1("player interface discarding message of unsupported type %u",
+                   hdr->type);
+      resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
+      GlobalTime->GetTimeDouble(&resphdr.timestamp);
+      resphdr.size = 0;
+      // Make up and push out the reply
+      resp = new Message(resphdr, NULL, 0);
+      assert(resp);
+      client->queue->Push(*resp);
+      delete resp;
+      break;
+  }
+  return(0);
+}
 

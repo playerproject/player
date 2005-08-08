@@ -50,10 +50,9 @@ class DeviceTable
     // this one is used to fill the instantiated device table
     //
     // id is the id for the device (e.g, 's' for sonar)
-    // access is the access for the device (e.g., 'r' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_devaddr_t addr, unsigned char access, Driver* driver);
+    int AddDevice(player_devaddr_t addr, Driver* driver);
     
     // returns the controlling object for the given id 
     // (returns NULL on failure)
@@ -66,10 +65,6 @@ class DeviceTable
     // find a device, based on id, and return the pointer (or NULL on
     // failure)
     Device* GetDevice(player_devaddr_t addr);
-
-    // returns the code for access ('r', 'w', or 'a') for the given 
-    // device, or 'e' on failure
-    unsigned char GetDeviceAccess(player_devaddr_t addr);
 
     // Get the first device entry.
     Device *GetFirstDevice() {return head;}

@@ -49,8 +49,7 @@ class Device
     ///
     /// @p addr is the device address
     /// @p driver is a pointer to the underlying driver
-    /// @p access is the allowed access
-    Device(player_devaddr_t addr, Driver *driver, unsigned char access);
+    Device(player_devaddr_t addr, Driver *driver);
 
     /// @brief Destructor
     ~Device();
@@ -74,7 +73,7 @@ class Device
                 uint8_t subtype,
                 void* src, 
                 size_t len,
-                struct timeval* timestamp);
+                double* timestamp);
 
     void PutMsg(MessageQueue* resp_queue,
                 player_msghdr_t* hdr,
@@ -94,9 +93,6 @@ class Device
 
     /// Address for this device
     player_devaddr_t addr;
-
-    /// Allowed access mode: 'r', 'w', or 'a'
-    unsigned char access;   
 
     /// The string name for the underlying driver
     char drivername[PLAYER_MAX_DEVICE_STRING_LEN];

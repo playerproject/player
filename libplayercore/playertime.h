@@ -39,6 +39,7 @@ class PlayerTime
     //
     // returns 0 on success, -1 on error    
     virtual int GetTime(struct timeval* time) = 0;
+    virtual int GetTimeDouble(double* time) = 0;
     virtual ~PlayerTime() {};
 };
 

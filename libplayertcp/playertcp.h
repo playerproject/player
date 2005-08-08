@@ -119,6 +119,7 @@ class PlayerTCP
     int WriteClient(int cli);
     void DeleteClients();
     void ParseBuffer(int cli);
+    int HandlePlayerMessage(int cli, Message* msg);
 };
 
 #endif

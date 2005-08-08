@@ -42,13 +42,12 @@
 #include <libplayercore/globals.h>
 
 // Constructor
-Device::Device(player_devaddr_t addr, Driver *device, unsigned char access)
+Device::Device(player_devaddr_t addr, Driver *device)
 {
   this->next = NULL;
 
   this->addr = addr;
   this->driver = device;
-  this->access = access;
 
   memset(this->drivername, 0, sizeof(this->drivername));
 
@@ -171,24 +170,27 @@ Device::PutMsg(MessageQueue* resp_queue,
                uint8_t subtype,
                void* src,
                size_t len,
-               struct timeval* timestamp)
+               double* timestamp)
 {
   struct timeval ts;
+  double t;
   player_msghdr_t hdr;
   
 
   // Fill in the current time if not supplied
   if(timestamp)
-    ts = *timestamp;
+    t = *timestamp;
   else
+  {
     GlobalTime->GetTime(&ts);
+    t = ts.tv_sec + ts.tv_usec/1e6;
+  }
 
   memset(&hdr,0,sizeof(player_msghdr_t));
   //hdr.stx = PLAYER_STXX;
   hdr.type = type;
   hdr.subtype = subtype;
-  hdr.timestamp_sec = ts.tv_sec;
-  hdr.timestamp_usec = ts.tv_usec;
+  hdr.timestamp = t;
   hdr.size = len;
 
   this->PutMsg(resp_queue, &hdr, src);
