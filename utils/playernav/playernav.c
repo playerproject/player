@@ -144,8 +144,8 @@ player_read_func(gpointer* arg)
   int numready;
 
   // read new data
-  for(;;)
-  {
+  //for(;;)
+  //{
     numready = playerc_mclient_read(gui_data->mclient,10);
     if(numready < 0)
     {
@@ -153,8 +153,8 @@ player_read_func(gpointer* arg)
       gtk_main_quit();
     }
     else if(numready == 0)
-      break;
-  }
+      return(TRUE);
+  //}
   gettimeofday(&curr,NULL);
   for(i=0;i<gui_data->num_robots;i++)
   {
