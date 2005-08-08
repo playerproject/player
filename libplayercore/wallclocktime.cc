@@ -34,4 +34,13 @@ int WallclockTime::GetTime(struct timeval* time)
 { 
   return(gettimeofday(time,0));
 }
+
+int WallclockTime::GetTimeDouble(double* time) 
+{ 
+  struct timeval ts;
+  if(gettimeofday(&ts,0) < 0)
+    return(-1);
+  *time = ts.tv_sec + ts.tv_usec/1e6;
+  return(0);
+}
     

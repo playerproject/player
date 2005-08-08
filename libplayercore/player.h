@@ -192,9 +192,7 @@ typedef struct player_msghdr
   /** Message subtype; interface specific */
   uint8_t subtype;    
   /** Time associated with message contents (seconds since epoch) */
-  uint32_t timestamp_sec;  
-  /** Time associated with message contents (microseconds since epoch) */
-  uint32_t timestamp_usec; 
+  double timestamp;  
   /** For keeping track of associated messages.  Transport-specific. */
   uint32_t seq;
   /** Size in bytes of the payload to follow */
@@ -1729,11 +1727,9 @@ This device produces no data and accepts no commands.
 */
 
 /* The device access modes */
-#define PLAYER_READ_MODE   ((uint8_t)114)  // 'r'
-#define PLAYER_WRITE_MODE  ((uint8_t)119)  // 'w'
-#define PLAYER_ALL_MODE    ((uint8_t)97)   // 'a'
-#define PLAYER_CLOSE_MODE  ((uint8_t)99)   // 'c'
-#define PLAYER_ERROR_MODE  ((uint8_t)101)  // 'e'
+#define PLAYER_OPEN_MODE   ((uint8_t)1)
+#define PLAYER_CLOSE_MODE  ((uint8_t)2)
+#define PLAYER_ERROR_MODE  ((uint8_t)3)
 
 
 #define PLAYER_DATAMODE_PULL  ((uint16_t)1)
@@ -1863,12 +1859,8 @@ appropriate access.
  and the client should not try to read from or write to the device. */
 typedef struct player_device_req
 {
-  /** Subtype; must be PLAYER_PLAYER_DEV_REQ */
-  //uint16_t subtype;
-  /** The interface for the device */
-  uint16_t code;
-  /** The index for the device */
-  uint16_t index;
+  /** Address of the device */
+  player_devaddr_t addr;
   /** The requested access */
   uint8_t access;
 } __PACKED__ player_device_req_t;
@@ -1877,12 +1869,8 @@ typedef struct player_device_req
 request. */
 typedef struct player_device_resp
 {
-  /** Subtype; will be PLAYER_PLAYER_DEV_REQ */
-  //uint16_t subtype;
-  /** The interface for the device */
-  uint16_t code;
-  /** The index for the device */
-  uint16_t index;
+  /** Address of the device */
+  player_devaddr_t addr;
   /** The granted access */
   uint8_t access;
   /** The name of the underlying driver */

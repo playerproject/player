@@ -108,7 +108,7 @@ class Driver
                          uint8_t subtype,
                          void* src, 
                          size_t len,
-                         struct timeval* timestamp);
+                         double* timestamp);
 
     /// @brief Publish a message via one of this driver's interfaces.
     ///
@@ -127,7 +127,7 @@ class Driver
     /// @param addr Player device address.
     /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
     /// @returns Returns 0 on success
-    int AddInterface(player_devaddr_t addr, unsigned char access);
+    int AddInterface(player_devaddr_t addr);
     
     /// @brief Set/reset error code
     void SetError(int code) {this->error = code;}
@@ -167,13 +167,11 @@ class Driver
     /// @param overwrite_cmds Do new commands overwrite old ones?
     /// @param queue_maxlen How long can the incoming queue grow?
     /// @param interface Player interface code; e.g., PLAYER_POSITION_CODE
-    /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
     Driver(ConfigFile *cf, 
            int section, 
            bool overwrite_cmds, 
            size_t queue_maxlen, 
-           int interface, 
-           uint8_t access);
+           int interface);
 
     /// @brief Constructor for multiple-interface drivers.
     ///

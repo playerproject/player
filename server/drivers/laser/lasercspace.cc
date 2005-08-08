@@ -185,7 +185,7 @@ void LaserCSpace_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   // Must have an input laser
   if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
