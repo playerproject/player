@@ -146,7 +146,7 @@ player_read_func(gpointer* arg)
   // read new data
   for(;;)
   {
-    numready = playerc_mclient_read(gui_data->mclient,0);
+    numready = playerc_mclient_read(gui_data->mclient,10);
     if(numready < 0)
     {
       fprintf(stderr, "Error on read\n");
@@ -212,8 +212,8 @@ player_read_func(gpointer* arg)
         if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
         {
           fprintf(stderr, "error while getting waypoints for robot %d\n", i);
-          gtk_main_quit();
-          break;
+          //gtk_main_quit();
+          continue;
         }
         //puts("drawing waypoints");
         draw_waypoints(gui_data,i);
