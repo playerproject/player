@@ -1023,7 +1023,7 @@ draw_waypoints(gui_data_t* gui_data, int idx)
         move_item(waypoint, pose,0);
       }
 
-      if(i>0)
+      if(i>=gui_data->planners[idx]->curr_waypoint)
       {
         linepoints->coords[0] = gui_data->planners[idx]->waypoints[i-1][0];
         linepoints->coords[1] = -gui_data->planners[idx]->waypoints[i-1][1];
