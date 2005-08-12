@@ -205,8 +205,9 @@ player_read_func(gpointer* arg)
     // every once in a while, get the latest path from each robot
     diff = (curr.tv_sec + curr.tv_usec/1e6) - 
             (lastwaypoint_ts.tv_sec + lastwaypoint_ts.tv_usec/1e6);
-    if(diff >= 1.0)
+    if(diff >= 2.0)
     {
+      lastwaypoint_ts = curr;
       if(gui_data->planners[i])
       {
         if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
@@ -218,7 +219,6 @@ player_read_func(gpointer* arg)
         //puts("drawing waypoints");
         draw_waypoints(gui_data,i);
       }
-      lastwaypoint_ts = curr;
     }
 
     // raise the robot's canvas item, so that the user can select it
