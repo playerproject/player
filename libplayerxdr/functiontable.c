@@ -27,6 +27,10 @@
  * given message type and subtype.
  */
 
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+
 #include "playerxdr.h"
 #include "functiontable.h"
 
@@ -38,7 +42,7 @@ typedef struct
 } playerxdr_function_t;
 
 
-static playerxdr_function_t ftable[] = 
+static playerxdr_function_t init_ftable[] =
 {
   {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DEVLIST, (player_pack_fn_t)player_device_devlist_pack},
   {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DRIVERINFO, (player_pack_fn_t)player_device_driverinfo_pack},
@@ -51,14 +55,43 @@ static playerxdr_function_t ftable[] =
   {0,0,NULL}
 };
 
+static playerxdr_function_t* ftable;
+static int ftable_len;
+
+void
+playerxdr_ftable_init()
+{
+  ftable_len = 0;
+  playerxdr_function_t* f;
+  for(f = init_ftable; f->func; f++)
+    ftable_len++;
+
+  ftable = (playerxdr_function_t*)calloc(ftable_len,
+                                         sizeof(playerxdr_function_t));
+  assert(ftable);
+
+  memcpy(ftable,init_ftable,ftable_len*sizeof(playerxdr_function_t));
+}
+
+void
+playerxdr_ftable_add(playerxdr_function_t f)
+{
+  ftable = (playerxdr_function_t*)realloc(ftable,
+                                          ((ftable_len+1)*
+                                           sizeof(playerxdr_function_t)));
+  assert(ftable);
+  ftable[ftable_len++] = f;
+}
 
 player_pack_fn_t
 playerxdr_get_func(uint16_t interface, uint8_t subtype)
 {
   playerxdr_function_t* curr;
+  int i;
 
-  for(curr=ftable; curr->func; curr++)
+  for(i=0;i<ftable_len;i++)
   {
+    curr = ftable + i;
     if((curr->interface == interface) && (curr->subtype == subtype))
       return(curr->func);
   }

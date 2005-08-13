@@ -255,7 +255,7 @@ analog inputs. */
 typedef struct player_aio_data
 {
   /** number of valid samples */
-  uint32_t count;
+  uint32_t voltages_count;
   /** the samples [V] */
   float voltages[PLAYER_AIO_MAX_INPUTS];
 } __PACKED__ player_aio_data_t;
@@ -263,7 +263,7 @@ typedef struct player_aio_data
 typedef struct player_aio_cmd
 {
   /** number of valid samples */
-  uint32_t count;
+  uint32_t voltages_count;
   /** the samples [V] */
   float voltages[PLAYER_AIO_MAX_OUTPUTS];
 } __PACKED__ player_aio_cmd_t;
@@ -290,8 +290,10 @@ and performs some analysis on it.  PLAYER_AUDIO_PAIRS number
 of frequency/amplitude pairs are then returned as data. */
 typedef struct player_audio_data
 {
+  uint32_t frequency_count;
   /** [Hz] */
   float frequency[PLAYER_AUDIO_PAIRS];
+  uint32_t amplitude_count;
   /** [dB] */
   float amplitude[PLAYER_AUDIO_PAIRS];
 } __PACKED__ player_audio_data_t;
@@ -335,8 +337,10 @@ and performs some analysis on it.  PLAYER_AUDIO_PAIRS number of
 frequency/amplitude pairs are then returned as data. */
 typedef struct player_audiodsp_data
 {
+  uint32_t frequency_count;
   /** [Hz] */
   float frequency[PLAYER_AUDIO_PAIRS];
+  uint32_t amplitude_count;
   /** [Db] */
   float amplitude[PLAYER_AUDIO_PAIRS];
 
@@ -356,6 +360,7 @@ typedef struct player_audiodsp_cmd
   float amplitude;
   /** Duration to play [s] */
   float duration;
+  uint32_t bit_string_count;
   /** BitString to encode in sine wave */
   uint8_t bit_string[PLAYER_MAX_DEVICE_STRING_LEN];
   /** Length of the bit string */
@@ -512,7 +517,7 @@ typedef struct player_blobfinder_data
   /** The image dimensions. [pixels] */
   uint32_t width, height;
   /** The list of blobs. */
-  uint32_t count;
+  uint32_t blobs_count;
   player_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
 } __PACKED__ player_blobfinder_data_t;
 
@@ -583,7 +588,7 @@ The @p bumper interface gives current bumper state*/
 typedef struct player_bumper_data
 {
   /** the number of valid bumper readings */
-  uint32_t count;
+  uint32_t bumpers_count;
   /** array of bumper values */
   uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
 } __PACKED__ player_bumper_data_t;
@@ -607,7 +612,7 @@ fields filled in. */
 typedef struct player_bumper_geom
 {
   /** The number of valid bumper definitions. */
-  uint32_t count;
+  uint32_t bumper_def_count;
   /** geometry of each bumper */
   player_bumper_define_t bumper_def[PLAYER_BUMPER_MAX_SAMPLES];
 } __PACKED__ player_bumper_geom_t;
@@ -663,7 +668,7 @@ typedef struct player_camera_data
       compression. */
   uint32_t compression;
   /** Size of image data as stored in image buffer (bytes) */
-  uint32_t image_size;
+  uint32_t image_count;
   /** Compressed image data (byte-aligned, row major order).
       Multi-byte image formats (such as MONO16) must be converted
       to network byte ordering. */
@@ -801,7 +806,7 @@ The fiducial data packet (all fiducials). */
 typedef struct player_fiducial_data
 {
   /** The number of detected fiducials */
-  uint32_t count;
+  uint32_t fiducials_count;
   /** List of detected fiducials */
   player_fiducial_item_t fiducials[PLAYER_FIDUCIAL_MAX_SAMPLES];
   
@@ -898,6 +903,7 @@ typedef struct player_fiducial_msg
 {
   /** the fiducial ID of the intended target. */
   uint32_t target_id;
+  uint32_t bytes_count;
   /** the raw data of the message */
   uint32_t bytes[PLAYER_FIDUCIAL_MAX_MSG_LEN];
   /** the length of the message in bytes.*/
@@ -1078,9 +1084,10 @@ The @p ir interface returns range readings from the IR array. */
 typedef struct player_ir_data
 {
   /** number of samples */
-  uint32_t count;
+  uint32_t voltages_count;
   /** voltages [V] */
   float voltages[PLAYER_IR_MAX_SAMPLES];
+  uint32_t ranges_count;
   /** ranges [m] */
   float ranges[PLAYER_IR_MAX_SAMPLES];
 } __PACKED__ player_ir_data_t;
@@ -1092,7 +1099,7 @@ the subtype.  The server will respond with the other fields filled in. */
 typedef struct player_ir_pose
 {
   /** the number of ir samples returned by this robot */
-  uint32_t count;
+  uint32_t poses_count;
   /** the pose of each IR detector on this robot (m, m, rad) */
   int32_t poses[PLAYER_IR_MAX_SAMPLES][3];
 } __PACKED__ player_ir_pose_t;
@@ -1176,9 +1183,10 @@ typedef struct player_laser_data
   /** Angular resolution [rad].  */
   float resolution;
   /** Number of range/intensity readings.  */
-  uint32_t count;
+  uint32_t ranges_count;
   /** Range readings [m]. */
   float ranges[PLAYER_LASER_MAX_SAMPLES];
+  uint32_t intensity_count;
   /** Intensity readings. */
   uint32_t intensity[PLAYER_LASER_MAX_SAMPLES];
 } __PACKED__ player_laser_data_t;
@@ -1283,7 +1291,7 @@ typedef struct player_localize_data
   /** The time stamp of the last observation processed. */
   uint32_t pending_time_sec, pending_time_usec;
   /** The number of pose hypotheses. */
-  uint32_t hypoth_count;
+  uint32_t hypoths_count;
   /** The array of the hypotheses. */
   player_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 } __PACKED__ player_localize_data_t;
@@ -1381,6 +1389,7 @@ typedef struct player_log_get_state
 Set the name of the file to write to when logging */
 typedef struct player_log_set_filename
 {
+  uint32_t filename_count;
   /** Filename; max 255 chars + terminating NULL 
       @todo should we use a string here?*/
   uint8_t filename[256];
@@ -1429,6 +1438,7 @@ typedef struct player_map_data
   uint32_t col, row;
   /** The size of the tile [pixels]. */
   uint32_t width, height;
+  uint32_t data_count;
   /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
   int32_t data[PLAYER_MAX_REQREP_SIZE - 17];
 } __PACKED__ player_map_data_t;
@@ -1470,6 +1480,7 @@ typedef struct player_mcom_data
 {
   /** a flag */
   char full;  
+  uint32_t data_count;
   /** the data */
   char data[MCOM_DATA_LEN];
 } __PACKED__ player_mcom_data_t;
@@ -1481,6 +1492,7 @@ typedef struct player_mcom_config
   uint32_t command;
   /** The "type" of the data. */
   uint32_t type;
+  uint32_t channel_count;
   /** The name of the channel. */
   int32_t channel[MCOM_CHANNEL_LEN];
   /** The data. */
@@ -1494,6 +1506,7 @@ typedef struct player_mcom_return
 {
   /** The "type" of the data */
   uint32_t type;
+  uint32_t channel_count;
   /** The name of the channel. */
   int32_t channel[MCOM_CHANNEL_LEN];
   /** The data. */
@@ -1702,7 +1715,7 @@ typedef struct player_planner_waypoint
 typedef struct player_planner_waypoints_req
 {
   /** Number of waypoints to follow */
-  uint32_t count;
+  uint32_t waypoints_count;
   player_planner_waypoint_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
 } __PACKED__ player_planner_waypoints_req_t;
 
@@ -1807,7 +1820,7 @@ typedef struct player_device_devlist
   //uint16_t subtype;
 
   /** The number of devices */
-  uint16_t device_count;
+  uint32_t devices_count;
 
   /** The list of available devices. */
   player_device_id_t devices[PLAYER_MAX_DEVICES];
@@ -1825,6 +1838,7 @@ typedef struct player_device_driverinfo
   /** The device identifier. */
   player_device_id_t id;
 
+  uint32_t driver_name_count;
   /** The driver name (returned) */
   char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
 
@@ -1873,6 +1887,7 @@ typedef struct player_device_resp
   player_devaddr_t addr;
   /** The granted access */
   uint8_t access;
+  uint32_t driver_name_count;
   /** The name of the underlying driver */
   uint8_t driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
 } __PACKED__ player_device_resp_t;
@@ -1950,6 +1965,7 @@ connect to that port by default, unless a specific option is given.
 This mechanism was never really used, and may be removed. */
 typedef struct player_device_auth_req
 {
+  uint32_t auth_key_count;
   /** The authentication key */
   uint8_t auth_key[PLAYER_KEYLEN];
 
@@ -1959,6 +1975,7 @@ typedef struct player_device_auth_req
 /** Documentation about nameservice goes here. */
 typedef struct player_device_nameservice_req
 {
+  uint32_t name_count;
   /** The robot name */
   uint8_t name[PLAYER_MAX_DEVICE_STRING_LEN];
   /** The corresponding port */
@@ -2512,7 +2529,7 @@ may fill in "config" with a reply if applicable. */
 typedef struct player_ptz_generic_config
 {
   /** Length of data in config buffer */
-  uint32_t  length;
+  uint32_t  config_count;
   /** Buffer for command/reply */
   uint32_t  config[PLAYER_PTZ_MAX_CONFIG_LEN];
 } __PACKED__ player_ptz_generic_config_t;
@@ -2580,6 +2597,7 @@ typedef struct player_simulation_cmd
 To set the pose of an object in a simulator, use this message. */
 typedef struct player_simulation_pose2d_req
 { 
+  uint32_t name_count;
   /** the identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** the desired pose in (m, m, rad) */
@@ -2612,7 +2630,7 @@ readings from a robot's sonars. */
 typedef struct player_sonar_data
 {
   /** The number of valid range readings. */
-  uint32_t count;
+  uint32_t ranges_count;
   /** The range readings [m] */
   float ranges[PLAYER_SONAR_MAX_SAMPLES];
 } __PACKED__ player_sonar_data_t;
@@ -2625,7 +2643,7 @@ filled in. */
 typedef struct player_sonar_geom
 {
   /** The number of valid poses. */
-  uint32_t count;
+  uint32_t poses_count;
   /** Pose of each sonar, in robot cs (m, m, rad). */
   float poses[PLAYER_SONAR_MAX_SAMPLES][3];
 } __PACKED__ player_sonar_geom_t;
@@ -2684,6 +2702,7 @@ The @p speech interface accepts a command that is a string to
 be given to the speech synthesizer.*/
 typedef struct player_speech_cmd
 {
+  uint32_t string_count;
   /** The string to say */
   char string[PLAYER_SPEECH_MAX_STRING_LEN];
 } __PACKED__ player_speech_cmd_t;
@@ -2706,6 +2725,7 @@ server.
 The speech recognition data packet.  */
 typedef struct player_speech_recognition_data
 {
+  uint32_t text_count;
   char text[SPEECH_RECOGNITION_TEXT_LEN];
 } __PACKED__ player_speech_recognition_data_t;
 
@@ -2790,7 +2810,7 @@ typedef struct player_waveform_data
   /** Depth - bits per sample */
   uint32_t depth;
   /** Samples - the number of bytes of raw data */
-  uint32_t samples;
+  uint32_t data_count;
   /** data - an array of raw data */
   uint8_t data[ PLAYER_WAVEFORM_DATA_MAX ];
 } __PACKED__ player_waveform_data_t;
@@ -2868,10 +2888,10 @@ typedef struct player_wifi_link
 The complete data packet format. */
 typedef struct player_wifi_data
 {
+  /** length of said list */
+  uint32_t links_count;
   /** A list of links */
   player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
-  /** length of said list */
-  uint32_t link_count;
   /** mysterious throughput calculated by driver */
   uint32_t throughput;
   /** current bitrate of device */
