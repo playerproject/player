@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 # TODO:
-#  - Handle variable-length arrays (I keep getting segfaults)
-#
 #  - Handle multi-dimensional arrays (e.g., player_sonar_geom_t::poses)
 
 
@@ -122,6 +120,8 @@ if __name__ == '__main__':
         sourcefile.write('  XDR xdrs;\n')
         sourcefile.write('  int len;\n')
         sourcefile.write('  xdrmem_create(&xdrs, buf, buflen, op);\n')
+
+      varlist = []
   
       # separate the variable declarations
       decls = declpattern.finditer(varpart[0])
@@ -163,16 +163,44 @@ if __name__ == '__main__':
           if len(arraysize) > 0:
             arraysize = arraysize[0]
             varstring = arraypattern.sub('', varstring)
-            if i == 0:
-              sourcefile.write('  if(xdr_vector(xdrs, (char*)&msg->' + 
-                               varstring + ', ' + arraysize + 
-                               ', sizeof(' + type + '), (xdrproc_t)' + 
-                               xdr_proc + ') != 1)\n    return(0);\n')
+            pointervar = varstring + '_p'
+            countvar = varstring + '_count'
+            # Was a _count variable declared? If so, we'll encode as a
+            # variable-length array (with xdr_array); otherwise we'll
+            # do it fixed-length (with xdr_vector).  xdr_array is picky; we
+            # have to declare a pointer to the array, then pass in the
+            # address of this pointer.  Passing the address of the array
+            # does NOT work.
+            if countvar in varlist:
+              if i == 0:
+                sourcefile.write('  {\n')
+                sourcefile.write('    ' + type + '* ' + pointervar +
+                                 ' = msg->' + varstring + ';\n')
+                sourcefile.write('    if(xdr_array(xdrs, (char**)&' + pointervar + 
+                                 ', &msg->' + countvar +
+                                 ', ' + arraysize + ', sizeof(' + type + '), (xdrproc_t)' + 
+                                 xdr_proc + ') != 1)\n      return(0);\n')
+                sourcefile.write('  }\n')
+              else:
+                sourcefile.write('  {\n')
+                sourcefile.write('    ' + type + '* ' + pointervar +
+                                 ' = msg->' + varstring + ';\n')
+                sourcefile.write('    if(xdr_array(&xdrs, (char**)&' + pointervar + 
+                                 ', &msg->' + countvar +
+                                 ', ' + arraysize +  ', sizeof(' + type + '), (xdrproc_t)' + 
+                                 xdr_proc + ') != 1)\n      return(-1);\n')
+                sourcefile.write('  }\n')
             else:
-              sourcefile.write('  if(xdr_vector(&xdrs, (char*)&msg->' + 
-                               varstring + ', ' + arraysize + 
-                               ', sizeof(' + type + '), (xdrproc_t)' + 
-                               xdr_proc + ') != 1)\n    return(-1);\n')
+              if i == 0:
+                sourcefile.write('  if(xdr_vector(xdrs, (char*)&msg->' +
+                                 varstring + ', ' + arraysize +
+                                 ', sizeof(' + type + '), (xdrproc_t)' +
+                                 xdr_proc + ') != 1)\n    return(0);\n')
+              else:
+                sourcefile.write('  if(xdr_vector(&xdrs, (char*)&msg->' +
+                                 varstring + ', ' + arraysize +
+                                 ', sizeof(' + type + '), (xdrproc_t)' +
+                                 xdr_proc + ') != 1)\n    return(-1);\n')
           else:
             if i == 0:
               sourcefile.write('  if(' + xdr_proc + '(xdrs,&msg->' + 
@@ -181,6 +209,7 @@ if __name__ == '__main__':
               sourcefile.write('  if(' + xdr_proc + '(&xdrs,&msg->' + 
                                varstring + ') != 1)\n    return(-1);\n')
 
+          varlist.append(varstring)
       if i == 0:
         sourcefile.write('  return(1);\n}\n\n')
       else:
