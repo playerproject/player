@@ -163,6 +163,14 @@
 #define __PACKED__ __attribute__ ((packed))
 #endif
 
+/** @brief A pose in the plane, often used to represent the pose of a range
+ * sensor. */
+typedef struct player_pose
+{
+  /** X, Y, and yaw (in m,m,rad) */
+  float px, py, pa;
+} player_pose_t;
+
 /** @brief A device address.
 
  Devices are identified by 12-byte addresses of this form. Some of the
@@ -1100,8 +1108,8 @@ typedef struct player_ir_pose
 {
   /** the number of ir samples returned by this robot */
   uint32_t poses_count;
-  /** the pose of each IR detector on this robot (m, m, rad) */
-  int32_t poses[PLAYER_IR_MAX_SAMPLES][3];
+  /** the pose of each IR detector on this robot */
+  player_pose_t poses[PLAYER_IR_MAX_SAMPLES];
 } __PACKED__ player_ir_pose_t;
 
 
@@ -2644,8 +2652,8 @@ typedef struct player_sonar_geom
 {
   /** The number of valid poses. */
   uint32_t poses_count;
-  /** Pose of each sonar, in robot cs (m, m, rad). */
-  float poses[PLAYER_SONAR_MAX_SAMPLES][3];
+  /** Pose of each sonar, in robot cs */
+  player_pose_t poses[PLAYER_SONAR_MAX_SAMPLES];
 } __PACKED__ player_sonar_geom_t;
 
 /** @brief Configuration request: Sonar power.
