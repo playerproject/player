@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 USAGE="USAGE: upload_www.sh <dest> <name>"
 
 if [ $# -ne 2 ]; then
@@ -22,7 +24,7 @@ NAME=$2
 
 # Create a tarball with the correct name and layout
 rm -rf $NAME
-ln -s player $NAME
+ln -s player-docs $NAME
 tar chvzf $NAME.tgz $NAME
 
 # Copy tarball to website
