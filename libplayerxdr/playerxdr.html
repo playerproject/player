@@ -1,0 +1,100 @@
+/** @addtogroup libplayerxdr libplayerxdr
+
+@section overview Overview
+
+When a player message is sent over a network, the message
+is formatted in XDR (eXternal Data Representation), a standard
+for the description and encoding of data that is independent of the
+wordsize, byte-order or other details of any particular architecture.
+XDR specifies a set of types (e.g., int, float, char) and encoding for
+those types.  See the XDR RFC (http://www.faqs.org/rfcs/rfc1014.html)
+for details.
+
+libplayerxdr is a C library that provides functions for translating
+between player C message structs and their XDR representations.  Using
+other terminology, libplayerxdr is a marshalling/demarshalling library.
+By using libplayerxdr, application writers can avoid the inevitable bugs
+and annoyances of writing their own (de)marshalling code.  Furthermore,
+because libplayerxdr is automatically generated from @ref <player.h>,
+the (de)marshalling code in libplayerxdr is less likely to get out of
+sync with respect to the message structures than is manually-maintained
+code.  The program that parses @ref <player.h> can also be used to parse
+other header files, for example to generate XDR (de)marshalling code for
+user-defined messages.  See below for usage.
+
+@section libplayerxdr libplayerxdr
+
+Each player message is defined as a C @c struct in @ref <player.h>.
+For each @c struct @c player_foo, libplayerxdr defines a single
+function of the following name and form:
+@code
+   int player_foo_pack(void* buf, size_t buflen, player_foo_t* msg, int op);
+@endcode
+
+@param buf The XDR-encoded buffer that is being encoded / decoded.
+@param buflen Size of buf, in bytes.
+@param msg Pointer to the C struct that is being encoded / decoded.
+@param op Either PLAYERXDR_ENCODE or PLAYERXDR_DECODE
+
+@returns On success, the length of the XDR-encoded buffer, and -1
+         otherwise (e.g., the buffer was not large enough).
+
+This function will either pack (encode to XDR) or unpack (decode from
+XDR), depending on the last argument.  
+
+@subsection encoding Encoding a message
+
+When encoding a message, the caller is responsible for allocating enough
+space to @p buf to hold the XDR-encoded format of the message.  The
+XDR-encoded message will be, at most, 4 times larger than the original
+struct, so it is sufficient to allocate a buffer that is 4 times the @c
+sizeof of the struct.
+
+For example, if you have a message @p msg of type @c struct @c player_foo
+that you want to encode, you might do something like this:
+@code
+char* xdrbuf;
+int buflen;
+
+// Allocate space for the encoded message.  XDR will inflate a structure
+// by at most 4 times.
+buflen = sizeof(struct player_foo) * 4;
+xdrbuf = (char*)calloc(1, buflen);
+assert(xdrbuf);
+
+// Encode the message
+if((buflen = player_foo_pack(xdrbuf, buflen, &msg, PLAYERXDR_ENCODE)) < 0)
+{
+  // Packing failed, probably because you didn't allocate
+  // enough space to xdrbuf.
+}
+else
+{
+  // Packing succeeded; you might now, for example, write() xdrbuf onto a
+  // socket.
+}
+@endcode
+
+@subsection decoding Decoding a message
+
+If you have received from the network a message @p xdrbuf, of length @p buflen,
+and you know it to be of type @c player_foo, you can decode it like so:
+@code
+struct player_foo msg;
+
+// Decode the message
+if((buflen = player_foo_pack(xdrbuf, buflen, &msg, PLAYERXDR_DECODE)) < 0)
+{
+  // Unpacking failed, probably because the message wasn't long enough
+}
+else
+{
+  // Unpacking succeeded; you can now read the data from @p msg.
+}
+@endcode
+
+
+@subsection Types
+
+*/
+
