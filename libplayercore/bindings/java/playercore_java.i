@@ -6,7 +6,7 @@
 // The stuff between the braces gets copied verbatim into the output
 %{
 #include <libplayercore/playercore.h>
-#include <server/driverregistry.h>
+#include <server/libplayerdrivers/driverregistry.h>
 %}
 
 // Tell SWIG what some standard types really are
@@ -39,5 +39,13 @@ typedef unsigned long uint64_t;
 %include <libplayercore/playercommon.h>
 %include <libplayercore/playertime.h>
 
-%include <server/driverregistry.h>
+%include <server/libplayerdrivers/driverregistry.h>
+
+%inline 
+%{
+  player_laser_data_t* BufToLaserData(unsigned char* buf)
+  {
+    return (player_laser_data_t*)(buf);
+  }
+%}
 
