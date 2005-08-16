@@ -1,4 +1,5 @@
-JAVA_INCLUDES = -I/usr/lib/j2sdk1.5-sun/include -I/usr/lib/j2sdk1.5-sun/include/linux
+#JAVA_INCLUDES = -I/usr/lib/j2sdk1.5-sun/include -I/usr/lib/j2sdk1.5-sun/include/linux
+JAVA_INCLUDES = -I/System/Library/Frameworks/JavaVM.framework/Versions/1.5.0/Headers
 
 all: libplayerxdr_java.so
 	javac *.java

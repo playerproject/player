@@ -276,7 +276,7 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
     // Set the message filter to look for the response
     this->InQueue->SetFilter(this->laser_addr.host,
                              this->laser_addr.robot,
-                             this->laser_addr.interface,
+                             this->laser_addr.interf,
                              this->laser_addr.index,
                              -1,
                              PLAYER_LASER_GET_GEOM);
@@ -313,13 +313,13 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   this->data.resolution = data->resolution;
   this->data.min_angle = data->min_angle;
   this->data.max_angle = data->max_angle;
-  this->data.count = data->count;
+  this->data.ranges_count = data->ranges_count;
 
   // Do some precomputations to save time
   this->Precompute(data);
 
   // Generate the range estimate for each bearing.
-  for (i = 0; i < data->count; i++)
+  for (i = 0; i < data->ranges_count; i++)
     this->data.ranges[i]  = this->FreeRange(data,i);
 
   this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, 0, 
@@ -336,7 +336,7 @@ void LaserCSpace::Precompute(player_laser_data_t* data)
   unsigned int i;
   double r, b, x, y;
   
-  for (i = 0; i < data->count; i++)
+  for (i = 0; i < data->ranges_count; i++)
   {
     r = data->ranges[i];
     b = data->min_angle + data->resolution * i;
@@ -376,7 +376,7 @@ double LaserCSpace::FreeRange(player_laser_data_t* data, int n)
   max_r = r - this->radius;
 
   // Look for intersections with obstacles.
-  for (i = 0; i < data->count; i += step)
+  for (i = 0; i < data->ranges_count; i += step)
   {
     r_ = this->lu[i][0];
     if (r_ - this->radius > max_r)

@@ -6,6 +6,7 @@
 // The stuff between the braces gets copied verbatim into the output
 %{
 #include <libplayercore/playercore.h>
+#include <server/driverregistry.h>
 %}
 
 // Tell SWIG what some standard types really are
@@ -26,8 +27,17 @@ typedef unsigned long uint64_t;
   (*jenv).ReleaseByteArrayElements($input, $1, 0);
 }
 
-%include <libplayercore/player.h>
-%include <libplayercore/message.h>
-%include <libplayercore/devicetable.h>
 %include <libplayercore/configfile.h>
+%include <libplayercore/device.h>
+%include <libplayercore/devicetable.h>
+%include <libplayercore/driver.h>
+%include <libplayercore/drivertable.h>
+%include <libplayercore/error.h>
+%include <libplayercore/globals.h>
+%include <libplayercore/message.h>
+%include <libplayercore/player.h>
+%include <libplayercore/playercommon.h>
+%include <libplayercore/playertime.h>
+
+%include <server/driverregistry.h>
 

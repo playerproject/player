@@ -29,13 +29,26 @@
 
 // this table holds all the currently *instantiated* devices
 DeviceTable* deviceTable = new DeviceTable();
+//DeviceTable* deviceTable;
 
 // this table holds all the currently *available* drivers
 DriverTable* driverTable = new DriverTable();
+//DriverTable* driverTable;
 
 // the global PlayerTime object has a method 
 //   int GetTime(struct timeval*)
 // which everyone must use to get the current time
 PlayerTime* GlobalTime = new WallclockTime();
+//PlayerTime* GlobalTime;
+
+/*
+void
+player_globals_init(void)
+{
+  deviceTable = new DeviceTable();
+  driverTable = new DriverTable();
+  GlobalTime = new WallclockTime();
+}
+*/
 
 #endif
