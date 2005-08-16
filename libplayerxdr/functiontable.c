@@ -36,7 +36,7 @@
 
 typedef struct
 {
-  uint16_t interface;
+  uint16_t interf;
   uint8_t subtype;
   player_pack_fn_t func;
 } playerxdr_function_t;
@@ -84,7 +84,7 @@ playerxdr_ftable_add(playerxdr_function_t f)
 }
 
 player_pack_fn_t
-playerxdr_get_func(uint16_t interface, uint8_t subtype)
+playerxdr_get_func(uint16_t interf, uint8_t subtype)
 {
   playerxdr_function_t* curr;
   int i;
@@ -92,7 +92,7 @@ playerxdr_get_func(uint16_t interface, uint8_t subtype)
   for(i=0;i<ftable_len;i++)
   {
     curr = ftable + i;
-    if((curr->interface == interface) && (curr->subtype == subtype))
+    if((curr->interf== interf) && (curr->subtype == subtype))
       return(curr->func);
   }
   return(NULL);

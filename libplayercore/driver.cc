@@ -51,14 +51,14 @@
 // interface code and buffer sizes.
 Driver::Driver(ConfigFile *cf, int section, 
                bool overwrite_cmds, size_t queue_maxlen, 
-               int interface)
+               int interf)
 {
   this->error = 0;
   driverthread = 0;
   
   // Look for our default device id
   if(cf->ReadDeviceAddr(&this->device_addr, section, "provides", 
-                        interface, -1, NULL) != 0)
+                        interf, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -87,7 +87,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->error = 0;
   this->driverthread = 0;
   
-  this->device_addr.interface = INT_MAX;
+  this->device_addr.interf = INT_MAX;
   
   this->subscriptions = 0;
   this->alwayson = false;
@@ -319,7 +319,7 @@ void Driver::ProcessMessages()
     {
       PLAYER_WARN5("Unhandled message for driver "
                    "device=%d:%d type=%d subtype=%d len=%d\n",
-                   hdr->addr.interface, hdr->addr.index, 
+                   hdr->addr.interf, hdr->addr.index, 
                    hdr->type, hdr->subtype, hdr->size);
 
       // If it was a request, reply with an empty NACK

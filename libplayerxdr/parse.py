@@ -76,10 +76,16 @@ if __name__ == '__main__':
   headerfile.write('#include <libplayercore/player.h>\n\n')
   headerfile.write('#include <libplayerxdr/functiontable.h>\n\n')
   headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
+  headerfile.write('#ifndef XDR_ENCODE\n')
+  headerfile.write('  #define XDR_ENCODE 0\n')
+  headerfile.write('#endif\n')
+  headerfile.write('#ifndef XDR_DECODE\n')
+  headerfile.write('  #define XDR_DECODE 1\n')
+  headerfile.write('#endif\n')
   headerfile.write('#define PLAYERXDR_ENCODE XDR_ENCODE\n')
   headerfile.write('#define PLAYERXDR_DECODE XDR_DECODE\n\n')
 
-  sourcefile.write('#include <' + headerfilename + '>\n\n')
+  sourcefile.write('#include <libplayerxdr/' + headerfilename + '>\n\n')
 
   contentspattern = re.compile('.*\{\s*(.*?)\s*\}', re.MULTILINE | re.DOTALL)
   declpattern = re.compile('\s*([^;]*?;)', re.MULTILINE)
