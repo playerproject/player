@@ -362,7 +362,7 @@ void NomadSonar_Register(DriverTable *driverTable);
  * necessary.
  */
 void
-register_drivers()
+player_register_drivers()
 {
 #ifdef INCLUDE_BUMPERSAFE
   BumperSafe_Register(driverTable);

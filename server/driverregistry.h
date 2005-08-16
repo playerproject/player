@@ -26,6 +26,6 @@
 #ifndef _DRIVERREGISTRY_H
 #define _DRIVERREGISTRY_H
 
-void register_drivers();
+void player_register_drivers();
 
 #endif

@@ -65,7 +65,7 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  register_drivers();
+  player_register_drivers();
 
   if(ParseArgs(&port, &debuglevel, &cfgfilename, argc, argv) < 0)
   {
