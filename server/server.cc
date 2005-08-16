@@ -29,8 +29,7 @@
 
 #include <libplayercore/playercore.h>
 #include <libplayertcp/playertcp.h>
-
-#include "driverregistry.h"
+#include <libplayerdrivers/driverregistry.h>
 
 /****************/
 /* getopt stuff */

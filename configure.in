@@ -260,6 +260,8 @@ AC_OUTPUT(Makefile
           libplayertcp/Makefile 
           libplayertcp/playertcp.pc
           server/Makefile 
+          server/libplayerdrivers/Makefile 
+          server/libplayerdrivers/playerdrivers.pc
           server/drivers/Makefile 
           server/drivers/gps/Makefile 
           server/drivers/shell/Makefile 
