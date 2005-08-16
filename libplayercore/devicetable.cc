@@ -80,7 +80,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
   {
     PLAYER_ERROR4("duplicate device addr %X:%d:%s:%d",
                   addr.host, addr.robot,
-                  lookup_interface_name(0, addr.interface), 
+                  lookup_interface_name(0, addr.interf), 
                   addr.index);
     pthread_mutex_unlock(&mutex);
     return(-1);

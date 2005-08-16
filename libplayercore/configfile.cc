@@ -1822,7 +1822,7 @@ uint32_t ConfigFile::LookupColor(const char *name)
 ///////////////////////////////////////////////////////////////////////////
 // Read a device id.
 int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
-                               const char *name, int interface, int index,
+                               const char *name, int interf_code, int index,
                                const char *key)
 {
   int prop;
@@ -1892,7 +1892,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     }
 
     // Match the interface
-    if (interface > 0 && interf.code != interface)
+    if (interf_code > 0 && interf.code != interf_code)
       continue;
 
     // Match the tuple index
@@ -1913,7 +1913,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
 
     addr->host = host;
     addr->robot = robot;
-    addr->interface = interf.code;
+    addr->interf = interf.code;
     addr->index = ind;
     return 0;
  

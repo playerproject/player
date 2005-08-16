@@ -84,7 +84,7 @@ class Device
     {
       return((addr1.host == addr2.host) &&
              (addr1.robot == addr2.robot) &&
-             (addr1.interface == addr2.interface) &&
+             (addr1.interf == addr2.interf) &&
              (addr1.index == addr2.index));
     }
 

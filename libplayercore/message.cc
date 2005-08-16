@@ -187,8 +187,8 @@ MessageQueue::Filter(Message& msg)
           ((unsigned int)this->filter_host == hdr->addr.host)) &&
          ((this->filter_robot < 0) || 
           ((unsigned int)this->filter_robot == hdr->addr.robot)) &&
-         ((this->filter_interface < 0) || 
-          ((unsigned int)this->filter_interface == hdr->addr.interface)) &&
+         ((this->filter_interf < 0) || 
+          ((unsigned int)this->filter_interf == hdr->addr.interf)) &&
          ((this->filter_index < 0) || 
           ((unsigned int)this->filter_index == hdr->addr.index)) &&
          ((this->filter_type < 0) || 
@@ -198,12 +198,12 @@ MessageQueue::Filter(Message& msg)
 }
 
 void
-MessageQueue::SetFilter(int host, int robot, int interface, 
+MessageQueue::SetFilter(int host, int robot, int interf, 
                         int index, int type, int subtype)
 {
   this->filter_host = host;
   this->filter_robot = robot;
-  this->filter_interface = interface;
+  this->filter_interf = interf;
   this->filter_index = index;
   this->filter_type = type;
   this->filter_subtype = subtype;
@@ -214,7 +214,7 @@ MessageQueue::ClearFilter(void)
 {
   this->filter_host = -1;
   this->filter_robot = -1;
-  this->filter_interface = -1;
+  this->filter_interf = -1;
   this->filter_index = -1;
   this->filter_type = -1;
   this->filter_subtype = -1;

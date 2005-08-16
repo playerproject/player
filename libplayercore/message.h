@@ -77,7 +77,7 @@ class Message
     {
       return((hdr->type == type) && 
              (hdr->subtype == subtype) && 
-             (hdr->addr.interface == addr.interface) && 
+             (hdr->addr.interf == addr.interf) && 
              (hdr->addr.index == addr.index));
     }
 
@@ -172,7 +172,7 @@ class MessageQueue
     /// @brief Clear (i.e., turn off) message filter.
     void ClearFilter(void);
     /// @brief Set filter values
-    void SetFilter(int host, int robot, int interface, int index,
+    void SetFilter(int host, int robot, int interf, int index,
                    int type, int subtype);
   private:
     /// @brief Lock the mutex associated with this queue.
@@ -201,7 +201,7 @@ class MessageQueue
     /// @brief Mutex to go with condition variable cond.
     pthread_mutex_t condMutex;
     /// @brief Current filter values
-    int filter_host, filter_robot, filter_interface, 
+    int filter_host, filter_robot, filter_interf, 
         filter_index, filter_type, filter_subtype;
 };
 

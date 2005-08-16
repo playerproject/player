@@ -360,12 +360,12 @@ PlayerTCP::WriteClient(int cli)
       hdr = msg->GetHeader();
       payload = msg->GetPayload();
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr->addr.interface, hdr->subtype)))
+      if(!(packfunc = playerxdr_get_func(hdr->addr.interf, hdr->subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages
         PLAYER_WARN3("skipping message from %u:%u with unsupported type %u",
-                     hdr->addr.interface, hdr->addr.index, hdr->subtype);
+                     hdr->addr.interf, hdr->addr.index, hdr->subtype);
       }
       else
       {
@@ -408,7 +408,7 @@ PlayerTCP::WriteClient(int cli)
                         payload, PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
-                       hdr->addr.interface, hdr->addr.index, hdr->subtype);
+                       hdr->addr.interf, hdr->addr.index, hdr->subtype);
           client->writebufferlen = 0;
           return(0);
         }
@@ -551,17 +551,17 @@ PlayerTCP::ParseBuffer(int cli)
     if(!(device = deviceTable->GetDevice(hdr.addr)))
     {
       PLAYER_WARN3("skipping message of type %u to unknown device %u:%u",
-                   hdr.subtype, hdr.addr.interface, hdr.addr.index);
+                   hdr.subtype, hdr.addr.interf, hdr.addr.index);
     }
     else
     {
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr.addr.interface, hdr.subtype)))
+      if(!(packfunc = playerxdr_get_func(hdr.addr.interf, hdr.subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages
         PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
-                     hdr.addr.interface, hdr.addr.index, hdr.subtype);
+                     hdr.addr.interf, hdr.addr.index, hdr.subtype);
       }
       else
       {
@@ -594,7 +594,7 @@ PlayerTCP::ParseBuffer(int cli)
                         PLAYERXDR_DECODE)) < 0)
         {
           PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
-                       hdr.addr.interface, hdr.addr.index, hdr.subtype);
+                       hdr.addr.interf, hdr.addr.index, hdr.subtype);
         }
         else
         {
@@ -652,7 +652,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           if(!(device = deviceTable->GetDevice(devreq->addr)))
           {
             PLAYER_WARN2("skipping subscription to unknown device %u:%u",
-                         devreq->addr.interface, devreq->addr.index);
+                         devreq->addr.interf, devreq->addr.index);
             
           }
           else
@@ -664,7 +664,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                 if(device->Subscribe(client->queue) < 0)
                 {
                   PLAYER_WARN2("subscription failed for device %u:%u",
-                               devreq->addr.interface, devreq->addr.index);
+                               devreq->addr.interf, devreq->addr.index);
                 }
                 else
                   devresp.access = devreq->access;
@@ -673,14 +673,14 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                 if(device->Unsubscribe(client->queue) < 0)
                 {
                   PLAYER_WARN2("unsubscription failed for device %u:%u",
-                               devreq->addr.interface, devreq->addr.index);
+                               devreq->addr.interf, devreq->addr.index);
                 }
                 else
                   devresp.access = devreq->access;
                 break;
               default:
                 PLAYER_WARN3("unknown access mode %u requested for device %u:%u",
-                             devreq->access, devreq->addr.interface, 
+                             devreq->access, devreq->addr.interf, 
                              devreq->addr.index);
                 break;
             }
