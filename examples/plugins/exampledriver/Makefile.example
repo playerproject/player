@@ -1,12 +1,12 @@
 # Desc: Example plugin makefile
 # CVS: $Id$
 
-all: exampledriver.so
+all: libexampledriver.so
 
 %.o: %.cc
-	$(CXX) -Wall -fpic -g3 `pkg-config --cflags player` -c $<
+	$(CXX) -Wall -fpic -g3 `pkg-config --cflags playercore` -c $<
 
-%.so: %.o
+libexampledriver.so: exampledriver.o
 	$(CXX) -shared -nostartfiles -o $@ $<
 
 clean:
