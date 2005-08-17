@@ -55,9 +55,16 @@ if __name__ == '__main__':
     split = string.split(s)
     typename = split[-1]
 
-    outfile.write(typename + '* buf_to_' + typename + '(unsigned char* buf)\n')
+    # cast from buf to a pointer to this type
+    outfile.write(typename + '* buf_to_' + typename + '(void* buf)\n')
     outfile.write('{\n')
     outfile.write('  return((' + typename + '*)(buf));\n')
+    outfile.write('}\n')
+
+    # cast from a pointer to this type to a buf
+    outfile.write('void* ' + typename + '_to_buf(' + typename + '* msg)\n')
+    outfile.write('{\n')
+    outfile.write('  return((void*)(msg));\n')
     outfile.write('}\n')
 
   outfile.write('\n%}\n')

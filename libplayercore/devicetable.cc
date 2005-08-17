@@ -146,3 +146,23 @@ DeviceTable::GetDevice(player_devaddr_t addr)
   return(thisentry);
 }
 
+// Call Update() on each driver with non-zero subscriptions
+//
+// NOTE: this will call Update() once for each subscribed interface to a
+// multi-interface driver.
+void
+DeviceTable::UpdateDevices()
+{
+  Device* thisentry;
+  Driver* dri;
+
+  // We don't lock here, on the assumption that the caller is also the only
+  // thread that can make changes to the device table.
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    dri = thisentry->driver;
+    if(dri->subscriptions > 0)
+      dri->Update();
+  }
+}
+

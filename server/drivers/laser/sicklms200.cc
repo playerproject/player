@@ -140,13 +140,8 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
   #endif
 #endif
 
-#include "playertime.h"
-#include "playercommon.h"
-#include "drivertable.h"
-#include "driver.h"
-#include "error.h"
-#include "player.h"
-#include "replace.h"
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -168,9 +163,9 @@ class SickLMS200 : public Driver
     // MessageHandler
     int ProcessMessage(MessageQueue * resp_queue, 
 		       player_msghdr * hdr, 
-		       uint8_t * data, 
+		       void * data, 
 		       uint8_t ** resp_data, 
-		       int * resp_len);
+		       size_t * resp_len);
   private:
 
     // Main function for device thread.
@@ -494,8 +489,8 @@ int SickLMS200::Shutdown()
 
 int 
 SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
-                           uint8_t * data, uint8_t ** resp_data,
-                           int * resp_len)
+                           void * data, uint8_t ** resp_data,
+                           size_t * resp_len)
 {
   int retval = 0;
   *resp_len = 0;

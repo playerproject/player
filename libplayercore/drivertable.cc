@@ -125,7 +125,7 @@ DriverTable::GetDriverName(int idx)
   return(retval);
 }
 
-int
+static int
 driver_strcmp(const void* a, const void* b)
 {
   const char* stra = *(const char**)a;

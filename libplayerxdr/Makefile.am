@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir)
+AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir) -fno-strict-aliasing
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig

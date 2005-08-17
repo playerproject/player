@@ -303,12 +303,12 @@ void Driver::ProcessMessages()
   while((msg = this->InQueue->Pop()))
   {
     player_msghdr * hdr = msg->GetHeader();
-    uint8_t * data = msg->GetPayload();
+    void * data = msg->GetPayload();
 
     if (msg->GetPayloadSize() != hdr->size)
       PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",msg->GetSize() - sizeof(player_msghdr),hdr->size);
 
-    int ret = ProcessMessage(msg->Queue, hdr, data, &RespData, &RespLen);
+    int ret = this->ProcessMessage(msg->Queue, hdr, data, &RespData, &RespLen);
     if(ret > 0)
     {
       this->Publish(hdr->addr, msg->Queue, ret, 

@@ -18,7 +18,18 @@ endif
 playercore_casts.i: $(srcdir)/../../player.h
 	python parse.py $(srcdir)/../../player.h $@
 
-playercore_java_wrap.cc: playercore_java.i playercore_casts.i  $(srcdir)/../../player.h
+playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
+                         $(srcdir)/../../configfile.h \
+                         $(srcdir)/../../device.h \
+                         $(srcdir)/../../devicetable.h \
+                         $(srcdir)/../../driver.h \
+                         $(srcdir)/../../drivertable.h \
+                         $(srcdir)/../../error.h \
+                         $(srcdir)/../../globals.h \
+                         $(srcdir)/../../message.h \
+                         $(srcdir)/../../player.h \
+                         $(srcdir)/../../playercommon.h \
+                         $(srcdir)/../../playertime.h
 	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I$(srcdir)/../../.. $<
 
 #all-local:

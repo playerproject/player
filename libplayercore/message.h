@@ -82,11 +82,11 @@ class Message
     }
 
     /// GetData from message.
-    unsigned char * GetData() {return Data;};
+    void* GetData() {return (void*)Data;};
     /// Get pointer to header.
     player_msghdr_t * GetHeader() {return reinterpret_cast<player_msghdr_t *> (Data);};
     /// Get pointer to payload.
-    uint8_t * GetPayload() {return (&Data[sizeof(player_msghdr_t)]);};
+    void* GetPayload() {return (void*)(&Data[sizeof(player_msghdr_t)]);};
     /// Get Payload size.
     size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
     /// Size of message data.

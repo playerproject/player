@@ -14,7 +14,7 @@ endif
 
 driverinclude_HEADERS = sicklms200.h lasercspace.h
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 libsicklms200_la_SOURCES = sicklms200.cc
 liblasercspace_la_SOURCES = lasercspace.cc
