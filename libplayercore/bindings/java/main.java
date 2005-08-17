@@ -37,7 +37,7 @@ public class main {
     }
 
     // Subscribe to the laser
-    if(dev.Subscribe(mq) < 0)
+    if(dev.Subscribe(mq) != 0)
     {
       System.out.println("failed to subscribe to laser");
       System.exit(-1);
