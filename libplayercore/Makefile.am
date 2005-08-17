@@ -10,9 +10,9 @@ BUILT_SOURCES = playerconfig.h
 CLEANFILES = playerconfig.h playercore.pc playererror.pc
 
 pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LIBRARIES = libplayercore.a libplayererror.a
+pkglib_LTLIBRARIES = libplayercore.la libplayererror.la
 
-libplayercore_a_SOURCES = driver.cc driver.h \
+libplayercore_la_SOURCES = driver.cc driver.h \
                           device.cc device.h \
                           drivertable.h drivertable.cc \
                           devicetable.h devicetable.cc \
@@ -24,7 +24,7 @@ libplayercore_a_SOURCES = driver.cc driver.h \
 			  plugins.cc plugins.h \
 			  globals.cc globals.h
 
-libplayererror_a_SOURCES = error.h error.c
+libplayererror_la_SOURCES = error.h error.c
 
 coreincludedir = $(includedir)/player-@VERSION@/libplayercore
 coreinclude_HEADERS = configfile.h \

@@ -12,9 +12,9 @@ playerxdr.c: Makefile parse.py $(top_srcdir)/libplayercore/player.h
 	python ./parse.py $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h
 
 pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LIBRARIES = libplayerxdr.a
+pkglib_LTLIBRARIES = libplayerxdr.la
 
-libplayerxdr_a_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
+libplayerxdr_la_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
 
 pkgincludedir = $(includedir)/player-@VERSION@/libplayerxdr
 pkginclude_HEADERS = playerxdr.h functiontable.h

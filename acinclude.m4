@@ -14,7 +14,7 @@ dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd],
 dnl                   [pkgvar],[pkg],[default-includes])
 dnl
 dnl Args:
-dnl   name:    name; driver library should take the name lib<name>.a
+dnl   name:    name; driver library should take the name lib<name>.la
 dnl   path:    path, relative to server, to where driver library will be built
 dnl   default: should this driver be included by default? ("yes" or "no")
 dnl   header:  a list of headers that are all required to build the driver
@@ -35,7 +35,7 @@ dnl                     [[#include <foo.h>]] here.
 dnl
 dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
 dnl <name> capitalized) will be conditionally defined to be 1 and 
-dnl lib<name>.a, respectively.  The variable <name>_EXTRA_CPPFLAGS will be
+dnl lib<name>.la, respectively.  The variable <name>_EXTRA_CPPFLAGS will be
 dnl the value of <cppadd>, for use in the driver's Makefile.am.
 dnl
 AC_DEFUN([PLAYER_ADD_DRIVER], [
@@ -86,7 +86,7 @@ fi
 
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
-  name_caps[_LIB]=[lib]$1[.a]
+  name_caps[_LIB]=[lib]$1[.la]
   name_caps[_LIBPATH]=$2/$name_caps[_LIB]
   name_caps[_EXTRA_CPPFLAGS]=$5
   name_caps[_EXTRA_LIB]=$6
@@ -324,12 +324,12 @@ if test "x$enable_amcl" = "xyes"; then
 fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
-  AMCL_LIB="libamcl.a"
+  AMCL_LIB="libamcl.la"
   PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $AMCL_LIB"
-  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/localization/amcl/libamcl.a"
-  AMCL_PF_LIB="libpf.a"
-  AMCL_MAP_LIB="libmap.a"
-  AMCL_MODELS_LIB="libmodels.a"
+  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/localization/amcl/libamcl.la"
+  AMCL_PF_LIB="libpf.la"
+  AMCL_MAP_LIB="libmap.la"
+  AMCL_MODELS_LIB="libmodels.la"
 dnl  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
   PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GSL_LIBS"
   PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"

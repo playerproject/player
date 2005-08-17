@@ -10,12 +10,13 @@ pkgconfig_DATA = playerdrivers.pc
 CLEANFILES = playerdrivers.pc
 
 pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LIBRARIES = libplayerdrivers.a
+pkglib_LTLIBRARIES = libplayerdrivers.la
 
-libplayerdrivers_a_SOURCES = driverregistry.cc driverregistry.h
+libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
+libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"`
 
 # TODO: move the driver code out of server/drivers
-libplayerdrivers.a: driverregistry.o
-	cp `find ../drivers -name "*.o"` .
-	ar cr $@ *.o
+#libplayerdrivers.la: driverregistry.lo
+#	cp `find ../drivers -name "*.lo"` .
+#	ar cr $@ *.lo
 

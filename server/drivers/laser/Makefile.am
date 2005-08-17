@@ -1,15 +1,16 @@
 driverincludedir = $(includedir)/player-@VERSION@/drivers
 driverlibdir = $(libdir)/player-@VERSION@
 
-noinst_LIBRARIES = @LASERCSPACE_LIB@ @SICKPLS_LIB@
-driverlib_LIBRARIES = @SICKLMS200_LIB@
+driverlib_LTLIBRARIES = @SICKLMS200_LIB@ @LASERCSPACE_LIB@ @SICKPLS_LIB@
 driverinclude_HEADERS = sicklms200.h lasercspace.h
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
-EXTRA_LIBRARIES = libsicklms200.a liblasercspace.a libsickpls.a
+EXTRA_LTLIBRARIES = libsicklms200.la liblasercspace.la libsickpls.la
 
-libsicklms200_a_SOURCES = sicklms200.cc
-liblasercspace_a_SOURCES = lasercspace.cc
-libsickpls_a_SOURCES = sickpls.cc
+libsicklms200_la_SOURCES = sicklms200.cc
+libsicklms200_la_LDFLAGS = -rpath '$(libdir)'
+liblasercspace_la_SOURCES = lasercspace.cc
+liblasercspace_la_LDFLAGS = -rpath '$(libdir)'
+libsickpls_la_SOURCES = sickpls.cc
 

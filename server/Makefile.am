@@ -8,7 +8,7 @@ else
 RTKGUI_LIBS=
 endif
 
-player_DEPENDENCIES = $(top_builddir)/server/libplayerdrivers/libplayerdrivers.a $(top_builddir)/libplayercore/libplayercore.a $(top_builddir)/libplayercore/libplayererror.a $(top_builddir)/libplayertcp/libplayertcp.a $(top_builddir)/libplayerxdr/libplayerxdr.a
+player_DEPENDENCIES = $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 # Note to everybody: please do NOT break the following assignment onto
 # separate lines with backslashes.  It makes the link line look like shit and 
