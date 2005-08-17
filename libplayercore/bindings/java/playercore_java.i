@@ -41,11 +41,7 @@ typedef unsigned long uint64_t;
 
 %include <server/libplayerdrivers/driverregistry.h>
 
-%inline 
-%{
-  player_laser_data_t* BufToLaserData(unsigned char* buf)
-  {
-    return (player_laser_data_t*)(buf);
-  }
-%}
+// Include the auto-generated functions that cast between unsigned char*
+// buffers and message structures
+%include playercore_casts.i
 
