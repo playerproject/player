@@ -1,5 +1,6 @@
 Makefile
 Makefile.in
 playercore_java_wrap.cc
+playercore_casts.i
 *.java
 *.class
