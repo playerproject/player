@@ -1,0 +1,3 @@
+*.class
+*.java
+playerxdr_java_wrap.c

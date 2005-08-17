@@ -2,8 +2,8 @@
 dnl Here are the tests for inclusion of Player's various device drivers
 
 PLAYER_DRIVERS=
-PLAYER_DRIVER_LIBS=
-PLAYER_DRIVER_LIBPATHS=
+dnl PLAYER_DRIVER_LIBS=
+dnl PLAYER_DRIVER_LIBPATHS=
 PLAYER_DRIVER_EXTRA_LIBS=
 PLAYER_NODRIVERS=
 
@@ -14,8 +14,7 @@ dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd],
 dnl                   [pkgvar],[pkg],[default-includes])
 dnl
 dnl Args:
-dnl   name:    name; driver library should take the name lib<name>.la
-dnl   path:    path, relative to server, to where driver library will be built
+dnl   name:    name
 dnl   default: should this driver be included by default? ("yes" or "no")
 dnl   header:  a list of headers that are all required to build the driver
 dnl   cppadd:  compiler flags to be used when building the driver 
@@ -33,16 +32,16 @@ dnl                     For example, if one of the headers that you need in
 dnl                     turn requires <foo.h>, then supply 
 dnl                     [[#include <foo.h>]] here.
 dnl
-dnl The C define INCLUDE_<name> and the autoconf variable <name>_LIB (with 
+dnl The C define INCLUDE_<name> and the automake conditional <name> (with 
 dnl <name> capitalized) will be conditionally defined to be 1 and 
-dnl lib<name>.la, respectively.  The variable <name>_EXTRA_CPPFLAGS will be
+dnl TRUE, respectively.  The variable <name>_EXTRA_CPPFLAGS will be
 dnl the value of <cppadd>, for use in the driver's Makefile.am.
 dnl
 AC_DEFUN([PLAYER_ADD_DRIVER], [
 AC_DEFUN([name_caps],translit($1,[a-z],[A-Z]))
 
 user_override=no
-ifelse($3,[yes],
+ifelse($2,[yes],
   [AC_ARG_ENABLE($1,[  --disable-$1       Don't compile the $1 driver],user_override=yes,enable_$1=yes)],
   [AC_ARG_ENABLE($1, [  --enable-$1       Compile the $1 driver],user_override=yes,enable_$1=no)])
 
@@ -53,11 +52,11 @@ fi
 failed_header_check=no
 failed_package_check=no
 no_pkg_config=no
-if test "x$enable_$1" = "xyes" -a len($4) -gt 0; then
+if test "x$enable_$1" = "xyes" -a len($3) -gt 0; then
 dnl This little bit of hackery keeps us from generating invalid shell code,
 dnl in the form of 'for' over an empty list.
-  if test len($4) -gt 0; then
-    header_list=$4
+  if test len($3) -gt 0; then
+    header_list=$3
   else
     header_list=foo
   fi
@@ -65,16 +64,16 @@ dnl in the form of 'for' over an empty list.
     AC_CHECK_HEADER($header, 
                     enable_$1=yes,
                     enable_$1=no
-                    failed_header_check=yes,$9)
+                    failed_header_check=yes,$8)
   done
   if test "x$failed_header_check" = "xyes"; then
     enable_$1=no
   fi
 fi
 
-if test "x$enable_$1" = "xyes" -a len($7) -gt 0 -a len($8) -gt 0; then
+if test "x$enable_$1" = "xyes" -a len($6) -gt 0 -a len($7) -gt 0; then
   if test "x$have_pkg_config" = "xyes" ; then
-    PKG_CHECK_MODULES($7, $8,
+    PKG_CHECK_MODULES($6, $7,
       enable_$1=yes,
       enable_$1=no
       failed_package_check=yes)
@@ -87,18 +86,18 @@ fi
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
   name_caps[_LIB]=[lib]$1[.la]
-  name_caps[_LIBPATH]=$2/$name_caps[_LIB]
-  name_caps[_EXTRA_CPPFLAGS]=$5
-  name_caps[_EXTRA_LIB]=$6
+dnl  name_caps[_LIBPATH]=$2/$name_caps[_LIB]
+  name_caps[_EXTRA_CPPFLAGS]=$4
+  name_caps[_EXTRA_LIB]=$5
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
 else      
   if test "x$no_pkg_config" = "xyes"; then
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- pkg-config is required to test for dependencies"
   elif test "x$failed_package_check" = "xyes"; then
-    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find required package $8"
+    PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find required package $7"
   elif test "x$failed_header_check" = "xyes"; then
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- couldn't find (at least one of) $header_list"
-  elif test "x$3" = "xno"; then
+  elif test "x$2" = "xno"; then
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by default; use --enable-$1 to enable"
   else
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by user"
@@ -106,8 +105,9 @@ else
 fi        
 
 AC_SUBST(name_caps[_LIB])
-PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
-PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
+AM_CONDITIONAL([INCLUDE_]name_caps, test "x$enable_$1" = "xyes")
+dnl PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
+dnl PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
 AC_SUBST(name_caps[_EXTRA_CPPFLAGS])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 
@@ -128,35 +128,35 @@ else
   SEGWAYRMP_EXTRA_LDFLAGS="-L$CANLIB_DIR/lib -lcanlib"
 fi
 
-PLAYER_ADD_DRIVER([segwayrmp],[drivers/mixed/rmp],[no],
+PLAYER_ADD_DRIVER([segwayrmp],[no],
 	[$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
 	[$SEGWAYRMP_EXTRA_LDFLAGS])
 
-PLAYER_ADD_DRIVER([garminnmea],[drivers/gps],[yes],[],[],[])
+PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([bumpersafe],[drivers/position/bumpersafe],[yes],[],[],[])
+PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([lifomcom],[drivers/mcom],[yes],[],[],[])
+PLAYER_ADD_DRIVER([lifomcom],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([dummy],[drivers/shell],[yes],[],[],[])
+PLAYER_ADD_DRIVER([dummy],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([passthrough],[drivers/shell],[yes],[],[],
+PLAYER_ADD_DRIVER([passthrough],[yes],[],[],
                   ["../client_libs/c/playercclient.o"])
 
-PLAYER_ADD_DRIVER([logfile],[drivers/shell],[yes],[zlib.h],[],[-lz])
+PLAYER_ADD_DRIVER([logfile],[yes],[zlib.h],[],[-lz])
 
-PLAYER_ADD_DRIVER([p2os],[drivers/mixed/p2os],[yes],[],[],[])
+PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([er1],[drivers/mixed/evolution/er1],[no],[asm/ioctls.h],[],[])
+PLAYER_ADD_DRIVER([er1],[no],[asm/ioctls.h],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[drivers/mixed/rflex],[yes],[],[],[])
+PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([sicklms200],[drivers/laser],[yes],[],[],[])
+PLAYER_ADD_DRIVER([sicklms200],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
 	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([sickpls],[drivers/laser],[yes],[],[],[])
+PLAYER_ADD_DRIVER([sickpls],[yes],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
@@ -172,100 +172,100 @@ if test "x$disable_playerclient_thread" = "xno"; then
 fi
 
 
-PLAYER_ADD_DRIVER([acts],[drivers/blobfinder],[yes],[],[],[])
+PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[drivers/mixed/cmucam2],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([cmvision],[drivers/blobfinder/cmvision],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmvision],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([upcbarcode],[drivers/blobfinder/upcbarcode],[yes],[],[],[],
+PLAYER_ADD_DRIVER([upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
 
-PLAYER_ADD_DRIVER([simpleshape],[drivers/blobfinder],[yes],
+PLAYER_ADD_DRIVER([simpleshape],[yes],
                     [],[],[],[OPENCV],[opencv])
 
-PLAYER_ADD_DRIVER([festival],[drivers/speech],[yes],[],[],[])
+PLAYER_ADD_DRIVER([festival],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[drivers/speech/recognition],[yes],["sphinx2/s2types.h"],[],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
+PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/s2types.h"],[],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
-PLAYER_ADD_DRIVER([sonyevid30],[drivers/ptz],[yes],[],[],[])
+PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([amtecpowercube],[drivers/ptz],[yes],[],[],[])
+PLAYER_ADD_DRIVER([amtecpowercube],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([ptu46],[drivers/ptz],[yes],[],[],[])
+PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([canonvcc4],[drivers/ptz],[yes],[],[],[])
+PLAYER_ADD_DRIVER([canonvcc4],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([flockofbirds],[drivers/position/ascension],[no],[],[],[])
+PLAYER_ADD_DRIVER([flockofbirds],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([obot],[drivers/mixed/botrics],[yes],[],[],[])
+PLAYER_ADD_DRIVER([obot],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([clodbuster],[drivers/mixed/clodbuster],[no],[],[],[])
+PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([lasercspace],[drivers/laser],[yes],[],[],[])
+PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxwifi],[drivers/wifi],[yes],[linux/wireless.h],
+PLAYER_ADD_DRIVER([linuxwifi],[yes],[linux/wireless.h],
                   [],[],[],[],[[#include <netinet/in.h>]])
 
-PLAYER_ADD_DRIVER([fixedtones],[drivers/audio],[no],[rfftw.h],[],
+PLAYER_ADD_DRIVER([fixedtones],[no],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
 
-PLAYER_ADD_DRIVER([acoustics],[drivers/audiodsp],[yes],
+PLAYER_ADD_DRIVER([acoustics],[yes],
                   ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([mixer],[drivers/audiomixer],[yes],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([mixer],[yes],[sys/soundcard.h],[],[])
 
 dnl where's Mobility?
 AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
 MOBILITY_DIR=$with_mobility,
 MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
 
-PLAYER_ADD_DRIVER([isense],[drivers/position/isense],[yes],[isense/isense.h],
+PLAYER_ADD_DRIVER([isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
-PLAYER_ADD_DRIVER([wavefront],[drivers/planner/wavefront],[yes],[],[],[])
+PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_CHECK_HEADERS(openssl/md5.h)
 AC_CHECK_LIB(crypto,MD5_Init)
 
-PLAYER_ADD_DRIVER([mapfile],[drivers/map],[yes],[],
+PLAYER_ADD_DRIVER([mapfile],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
-PLAYER_ADD_DRIVER([mapscale],[drivers/map],[yes],[],
+PLAYER_ADD_DRIVER([mapscale],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
-PLAYER_ADD_DRIVER([mapcspace],[drivers/map],[yes],[],[],[])
+PLAYER_ADD_DRIVER([mapcspace],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([waveaudio],[drivers/waveform],[yes],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([waveaudio],[yes],[sys/soundcard.h],[],[])
 
-PLAYER_ADD_DRIVER([aodv],[drivers/wifi],[no],[],[],[])
+PLAYER_ADD_DRIVER([aodv],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([iwspy],[drivers/wifi],[yes],[],[],[])
+PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([reb],[drivers/mixed/reb],[yes],[],[],[])
+PLAYER_ADD_DRIVER([reb],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([khepera],[drivers/mixed/khepera],[yes],[],[],[])
+PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([microstrain],[drivers/position/microstrain],[yes],[],[],[])
+PLAYER_ADD_DRIVER([microstrain],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([vfh],[drivers/position/vfh],[yes],)
+PLAYER_ADD_DRIVER([vfh],[yes],)
 
-PLAYER_ADD_DRIVER([nomad],[drivers/mixed/nomad],[no],[],[],[])
+PLAYER_ADD_DRIVER([nomad],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([laserbar],[drivers/fiducial],[yes],[],[],[])
-PLAYER_ADD_DRIVER([laserbarcode],[drivers/fiducial],[yes],[],[],[])
-PLAYER_ADD_DRIVER([laservisualbarcode],[drivers/fiducial],[yes],[],[],[])
-PLAYER_ADD_DRIVER([laservisualbw],[drivers/fiducial],[yes],[],[],[])
+PLAYER_ADD_DRIVER([laserbar],[yes],[],[],[])
+PLAYER_ADD_DRIVER([laserbarcode],[yes],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbarcode],[yes],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbw],[yes],[],[],[])
 
 dnl - added a header check to stop this building on OS X - rtv
-PLAYER_ADD_DRIVER([linuxjoystick],[drivers/joystick],[yes],[linux/joystick.h],[],[])
+PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
 dnl Camera drivers
-PLAYER_ADD_DRIVER([camerav4l],[drivers/camera/v4l],[yes],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
 dnl IEEE1394 (Firewire) camera driver
-PLAYER_ADD_DRIVER([camera1394],[drivers/camera/1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
 dnl libdc1394 has varying API's, depending on the version.  Do some checks
 dnl to see what the function signatures look like
@@ -287,15 +287,15 @@ if test "x$enable_camera1394" = "xyes"; then
               [arg count for dma capture function])
 fi
 
-PLAYER_ADD_DRIVER([cameracompress],[drivers/camera/compress],[yes],[jpeglib.h],[],[-ljpeg])
-PLAYER_ADD_DRIVER([imageseq],[drivers/camera],[yes],[],[],[],[OPENCV],[opencv])
+PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
+PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
-PLAYER_ADD_DRIVER([service_adv_mdns],[drivers/service_adv],[no],
+PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
-PLAYER_ADD_DRIVER([fakelocalize],[drivers/localization], [yes],[],[],[])
+PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
 dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
 dnl do it manually
@@ -325,8 +325,8 @@ fi
 if test "x$enable_amcl" = "xyes"; then
   AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
   AMCL_LIB="libamcl.la"
-  PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $AMCL_LIB"
-  PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/localization/amcl/libamcl.la"
+  dnl PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $AMCL_LIB"
+  dnl PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/localization/amcl/libamcl.la"
   AMCL_PF_LIB="libpf.la"
   AMCL_MAP_LIB="libmap.la"
   AMCL_MODELS_LIB="libmodels.la"
@@ -345,8 +345,8 @@ AC_SUBST(GSL_CFLAGS)
 dnl Add results from driver tests to compiler and link lines
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
-AC_SUBST(PLAYER_DRIVER_LIBS)
-AC_SUBST(PLAYER_DRIVER_LIBPATHS)
+dnl AC_SUBST(PLAYER_DRIVER_LIBS)
+dnl AC_SUBST(PLAYER_DRIVER_LIBPATHS)
 AC_SUBST(PLAYER_DRIVER_EXTRA_LIBS)
 
 ])
@@ -426,8 +426,8 @@ if test "x$enable_gazebo" = "xyes"; then
 fi
 
 AC_SUBST(GAZEBO_LIB)
-PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $GAZEBO_LIB"
-PLAYER_DRIVER_LIBPATHS="$GAZEBO_LIB_PATH $PLAYER_DRIVER_LIBPATHS"
+dnl PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $GAZEBO_LIB"
+dnl PLAYER_DRIVER_LIBPATHS="$GAZEBO_LIB_PATH $PLAYER_DRIVER_LIBPATHS"
 AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LIB"
 
