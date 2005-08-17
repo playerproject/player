@@ -5,12 +5,12 @@
 CXX = g++
 CXXLD = g++
 LIBTOOL = libtool
-PLAYER_CFLAGS = `pkg-config --cflags player`
+PLAYER_CFLAGS = `pkg-config --cflags playercore`
 INSTALL_DIR = /tmp
 
-all: exampledriver.la
+all: libexampledriver.la
 
-%.la: %.lo
+libexampledriver.la: exampledriver.lo
 	$(LIBTOOL) --mode=link $(CXXLD) -rpath $(INSTALL_DIR) -module -export-dynamic -version-info 0:0:0 $< -o $@
 
 %.lo: %.cc
