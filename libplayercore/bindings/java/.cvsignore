@@ -1,0 +1,5 @@
+Makefile
+Makefile.in
+playercore_java_wrap.cc
+*.java
+*.class
