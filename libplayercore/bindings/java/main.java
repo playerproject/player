@@ -65,7 +65,7 @@ public class main {
       if(addr.getInterf() == playercore_javaConstants.PLAYER_LASER_CODE)
       {
         System.out.println("got laser message");
-        player_laser_data_t data = playercore_java.BufToLaserData(payload);
+        player_laser_data_t data = playercore_java.buf_to_player_laser_data_t(payload);
         System.out.println("\nrange count: " + data.getRanges_count());
         for(int j=0;j<data.getRanges_count();j++)
         {

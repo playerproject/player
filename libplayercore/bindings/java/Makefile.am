@@ -3,12 +3,11 @@ AM_CPPFLAGS = -g -Wall -fPIC @JNI_CFLAGS@
 # files that must be built first
 BUILT_SOURCES =
 if ENABLE_JAVA
-BUILT_SOURCES += playercore_java_wrap.cc
+BUILT_SOURCES += playercore_java_wrap.cc playercore_casts.i
 endif
-SWIG_SOURCES = playercore_java.i
 
-EXTRA_DIST = $(SWIG_SOURCES)
-CLEANFILES = playercore_java_wrap.cc
+EXTRA_DIST = playercore_java.i
+CLEANFILES = playercore_java_wrap.cc playercore_casts.i
 
 pkglibdir = $(libdir)/player-@VERSION@
 pkglib_LTLIBRARIES =
@@ -16,8 +15,11 @@ if ENABLE_JAVA
 pkglib_LTLIBRARIES += libplayercore_java.la
 endif
 
-playercore_java_wrap.cc: $(SWIG_SOURCES) ../../player.h
-	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I../../.. $<
+playercore_casts.i: $(srcdir)/../../player.h
+	python parse.py $(srcdir)/../../player.h $@
+
+playercore_java_wrap.cc: playercore_java.i playercore_casts.i  $(srcdir)/../../player.h
+	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I$(srcdir)/../../.. $<
 
 #all-local:
 #	javac *.java
