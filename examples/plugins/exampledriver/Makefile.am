@@ -1,14 +1,9 @@
-## Process this file with automake to produce Makefile.in
-AUTOMAKE_OPTIONS = foreign
 
-# example diver is broken: disabled this temporarily so that Player builds
-#SUBDIRS = src
 
-#SUBDIRS = .
 
-#exampledir = $(prefix)/src/player/examples/plugins/exampledriver
+exampledir = $(prefix)/share/player/examples/plugins/exampledriver
 
-#FILES = Makefile.example exampledriver.cc example.cfg example.osx.cfg Makefile.osx.example Makefile.libtool
+example_LTLIBRARIES = libexampledriver.la 
+libexampledriver_la_SOURCES = exampledriver.cc
 
-#example_DATA = $(FILES)
-#EXTRA_DIST = $(FILES)
+example_DATA = exampledriver.cc Makefile.example Makefile.libtool Makefile.osx.example example.cfg example.osx.cfg
