@@ -17,7 +17,7 @@ pkglib_LTLIBRARIES += libplayercore_java.la
 endif
 
 playercore_java_wrap.cc: $(SWIG_SOURCES) ../../player.h
-	swig -v -java -c++ -o $@ -I../../.. $<
+	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I../../.. $<
 
 #all-local:
 #	javac *.java
@@ -31,6 +31,4 @@ install-exec-hook:
 endif
 
 clean-local:
-	mv main.java main.java.bak
-	rm -f *.class *.java
-	mv main.java.bak main.java
+	rm -f playercore/*.class playercore/*.java
