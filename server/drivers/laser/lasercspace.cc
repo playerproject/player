@@ -108,12 +108,7 @@ Andrew Howard
 #include <stdlib.h>       // for atoi(3)
 #include <unistd.h>
 
-#include "player.h"
-#include "globals.h"
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
 
 // Driver for computing the free c-space from a laser scan.
 class LaserCSpace : public Driver
@@ -124,9 +119,9 @@ class LaserCSpace : public Driver
     // MessageHandler
   public: int ProcessMessage(MessageQueue * resp_queue, 
                               player_msghdr * hdr, 
-                              uint8_t * data, 
+                              void * data, 
                               uint8_t ** resp_data, 
-                              int * resp_len);
+                              size_t * resp_len);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -250,12 +245,12 @@ int LaserCSpace::Shutdown()
 // Process an incoming message
 int LaserCSpace::ProcessMessage(MessageQueue * resp_queue, 
                                 player_msghdr * hdr, 
-                                uint8_t * data, 
+                                void * data, 
                                 uint8_t ** resp_data, 
-                                int * resp_len)
+                                size_t * resp_len)
 {
   *resp_len = 0;
-  
+
   // Handle new data from the laser
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, this->laser_addr))
   {

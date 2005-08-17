@@ -19,13 +19,13 @@ typedef unsigned int uint32_t;
 typedef long int64_t;
 typedef unsigned long uint64_t;
 
-%apply jbyteArray { void* data }
-%typemap(in) void *data {
-  $1 = (void*)((*jenv).GetByteArrayElements($input, NULL));
-}
-%typemap(freearg) void *foo {
-  (*jenv).ReleaseByteArrayElements($input, $1, 0);
-}
+//%apply jbyteArray { void* data }
+//%typemap(in) void *data {
+//  $1 = (void*)((*jenv).GetByteArrayElements($input, NULL));
+//}
+//%typemap(freearg) void *foo {
+//  (*jenv).ReleaseByteArrayElements($input, $1, 0);
+//}
 
 %include <libplayercore/configfile.h>
 %include <libplayercore/device.h>

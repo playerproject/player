@@ -74,6 +74,10 @@ class DeviceTable
 
     // Return the number of devices
     int Size() {return(numdevices);}
+
+    // Call ProcessMessages() on each non-threaded driver with non-zero
+    // subscriptions
+    void UpdateDevices();
 };
 
 #endif

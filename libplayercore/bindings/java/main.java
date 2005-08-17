@@ -1,7 +1,20 @@
 import playercore.*;
 
-public class main {
-  public static void main(String argv[]) {
+public class main 
+{
+  static boolean quit = false;
+
+  public static void main(String argv[]) 
+  {
+  
+    Runtime.getRuntime().addShutdownHook(new Thread()
+    {
+      public void run()
+      {
+        quit = true;
+      }
+    });
+  
     System.loadLibrary("playercore_java");
 
     // Initialization stuff
@@ -46,32 +59,39 @@ public class main {
     }
 
     // Main loop; receive data
-    for(int i=0;i<100;i++)
+    while(!quit)
     {
-      // Block until data is available
-      System.out.println("waiting");
-      mq.Wait();
+      // Allow non-threaded drivers to process messages
+      playercore_java.getDeviceTable().UpdateDevices();
+
       // Pop a message off the queue
       Message msg = mq.Pop();
       if(msg == null)
       {
-        System.out.println("got null message after waiting");
+        // no messages waiting; yield the processor
+        try { Thread.currentThread().sleep(10); }
+        catch (InterruptedException e) { }
+
         continue;
       }
 
       player_msghdr_t hdr = msg.GetHeader();
-      SWIGTYPE_p_unsigned_char payload = msg.GetPayload();
+      SWIGTYPE_p_void payload = msg.GetPayload();
       addr = hdr.getAddr();
       if(addr.getInterf() == playercore_javaConstants.PLAYER_LASER_CODE)
       {
-        System.out.println("got laser message");
         player_laser_data_t data = playercore_java.buf_to_player_laser_data_t(payload);
         System.out.println("\nrange count: " + data.getRanges_count());
         for(int j=0;j<data.getRanges_count();j++)
         {
           System.out.print(data.getRanges()[j] + " ");
         }
+
+        SWIGTYPE_p_void newpayload = playercore_java.player_laser_data_t_to_buf(data);
+        Message newmsg = new Message(hdr, newpayload, 0, mq);
+
       }
+
     }
 
     dev.Unsubscribe(mq);
