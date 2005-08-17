@@ -11,6 +11,14 @@ AC_PREREQ(2.53)
 dnl figure out build system (uname-style info)
 AC_CANONICAL_SYSTEM
 
+dnl Some parts of the build need to know that we're running on Darwin.
+darwin=no
+case $host in
+  *-darwin*)
+    darwin=yes ;;
+esac
+AM_CONDITIONAL(DARWIN, test "x$darwin" = "xyes")
+
 dnl Initialize automake, requiring version 1.7 or better
 AM_INIT_AUTOMAKE(1.7)
 
@@ -86,13 +94,11 @@ AC_CHECK_PROG(have_java,javac,yes,no)
 
 dnl If we have swig, javac, jni.h, and jni_md.h, then all systems are go
 if test "x$have_swig" = "xyes" -a "x$have_java" = "xyes" -a "x$have_jni_h" = "xyes" -a "x$have_jni_md_h" = "xyes"; then
-  enable_java_wrappers=yes
+  enable_java=yes
 else
-  enable_java_wrappers=no
+  enable_java=no
 fi
-echo enable_java_wrappers
-echo $enable_java_wrappers
-AM_CONDITIONAL(BUILD_JAVA_WRAPPERS, test "x$enable_java_wrappers" = "xyes")
+AM_CONDITIONAL(ENABLE_JAVA, test "x$enable_java" = "xyes")
 JNI_CFLAGS="-I$with_jnidir -I$with_jni_mddir"
 AC_SUBST(JNI_CFLAGS)
 
