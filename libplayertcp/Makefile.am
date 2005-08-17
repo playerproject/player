@@ -8,14 +8,14 @@ EXTRA_DIST = playertcp.pc.in
 CLEANFILES = playertcp.pc
 
 pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LIBRARIES = libplayertcp.a
+pkglib_LTLIBRARIES = libplayertcp.la
 
-libplayertcp_a_DEPENDENCIES = $(top_builddir)/libplayercore/libplayercore.a $(top_builddir)/libplayercore/libplayererror.a $(top_builddir)/libplayerxdr/libplayerxdr.a
+libplayertcp_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-libplayertcp_a_SOURCES = socket_util.c socket_util.h \
+libplayertcp_la_SOURCES = socket_util.c socket_util.h \
                          playertcp.cc playertcp.h
 
-libplayertcp_a_LIBADD = $(top_builddir)/replace/*.$(OBJEXT)
+libplayertcp_la_LIBADD = $(top_builddir)/replace/*.lo
 
 pkgincludedir = $(includedir)/player-@VERSION@/libplayertcp
 
