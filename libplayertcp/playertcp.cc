@@ -317,7 +317,7 @@ PlayerTCP::WriteClient(int cli)
   Message* msg;
   player_pack_fn_t packfunc;
   player_msghdr_t* hdr;
-  uint8_t* payload;
+  void* payload;
   int encode_msglen;
 
   client = this->clients + cli;
@@ -615,7 +615,7 @@ int
 PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 {
   player_msghdr_t* hdr;
-  uint8_t* payload;
+  void* payload;
   player_device_req_t* devreq;
   Device* device;
   playertcp_conn_t* client;
