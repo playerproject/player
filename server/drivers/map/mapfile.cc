@@ -97,18 +97,14 @@ Brian Gerkey
 /** @} */
 
 #include <sys/types.h> // required by Darwin
-#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include <player.h>
-#include <drivertable.h>
-#include <driver.h>
-#include <error.h>
-
 // use gdk-pixbuf for image loading
 #include <gdk-pixbuf/gdk-pixbuf.h>
+
+#include <libplayercore/playercore.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(mf, i, j) ((mf->size_x) * (j) + (i))
@@ -142,9 +138,12 @@ class MapFile : public Driver
                   void* src, size_t len,
                   struct timeval* timestamp);
 
-  // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-
+    // MessageHandler
+    int ProcessMessage(MessageQueue * resp_queue, 
+		       player_msghdr * hdr, 
+		       void * data, 
+		       void ** resp_data, 
+		       size_t * resp_len);
 
 };
 
@@ -180,7 +179,7 @@ MapFile_Register(DriverTable* table)
 
 // this one has no data or commands, just configs
 MapFile::MapFile(ConfigFile* cf, int section, const char* file, double res, int neg) 
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
 {
   this->mapdata = NULL;
   this->size_x = this->size_y = 0;
@@ -273,56 +272,70 @@ MapFile::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int MapFile::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int MapFile::ProcessMessage(MessageQueue * resp_queue, 
+                            player_msghdr * hdr, 
+                            void * data, 
+                            void ** resp_data, 
+                            size_t * resp_len)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-
- 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_GET_INFO, device_id))
+  // Is it a request for map meta-data?
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
+                           this->device_addr))
   {
-  	assert(*resp_len > sizeof(player_map_info_t));
-  	*resp_len = sizeof(player_map_info_t);
-  	player_map_info_t & info = *reinterpret_cast<player_map_info_t *> (resp_data);
+    if(hdr->size != 0)
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, sizeof(player_laser_config_t));
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+    player_map_info_t info;
+    info.scale = this->resolution;
+    info.width = this->size_x;
+    info.height = this->size_y;
 
-    info.scale = htonl((uint32_t)rint(1e3 / this->resolution));
-
-    info.width = htonl((uint32_t) (this->size_x));
-    info.height = htonl((uint32_t) (this->size_y));
-  	
-  	return PLAYER_MSGTYPE_RESP_ACK;
+    *resp_len = sizeof(player_map_info_t);
+    *resp_data = (void*)calloc(1,sizeof(player_map_info_t));
+    assert(*resp_data);
+    memcpy(*resp_data, &info, sizeof(player_map_info_t));
+    return(PLAYER_MSGTYPE_RESP_ACK);
   }
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_GET_DATA, device_id))
+  // Is it a request for a map tile?
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_MAP_REQ_GET_DATA,
+                           this->device_addr))
   {
-  	player_map_data_t & map_data = *reinterpret_cast<player_map_data_t *> (resp_data);
+    player_map_req_data_t* mapreq = (player_map_req_data_t*)data;
 
+    // Can't declare a map tile on the stack (it's too big)
+    size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
+                      (mapreq->width * mapreq->height));
+    *resp_data = (void*)calloc(1,mapsize);
+    assert(*resp_data);
+    player_map_data_t* mapresp = (player_map_data_t*)(*resp_data);
+    
     int i, j;
     int oi, oj, si, sj;
 
     // Construct reply
-    memcpy(resp_data, data, hdr->size);
-
-    oi = ntohl(map_data.col);
-    oj = ntohl(map_data.row);
-    si = ntohl(map_data.width);
-    sj = ntohl(map_data.height);
+    oi = mapresp->col = mapreq->col;
+    oj = mapresp->row = mapreq->row;
+    si = mapresp->width = mapreq->width;
+    sj = mapresp->height = mapreq->height;
 
     // Grab the pixels from the map
     for(j = 0; j < sj; j++)
     {
       for(i = 0; i < si; i++)
       {
-        if((i * j) <= PLAYER_MAP_MAX_CELLS_PER_TILE)
+        if((i * j) <= PLAYER_MAP_MAX_TILE_SIZE)
         {
           if(MAP_VALID(this, i + oi, j + oj))
-            map_data.data[i + j * si] = this->mapdata[MAP_IDX(this, i+oi, j+oj)];
+            mapresp->data[i + j * si] = this->mapdata[MAP_IDX(this, i+oi, j+oj)];
           else
           {
             PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
-            map_data.data[i + j * si] = 0;
+            mapresp->data[i + j * si] = 0;
           }
         }
         else
@@ -330,169 +343,25 @@ int MapFile::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
           PLAYER_WARN("requested tile is too large; truncating");
           if(i == 0)
           {
-            map_data.width = htonl(si-1);
-            map_data.height = htonl(j-1);
+            mapresp->width = si-1;
+            mapresp->height = j-1;
           }
           else
           {
-            map_data.width = htonl(i);
-            map_data.height = htonl(j);
+            mapresp->width = i;
+            mapresp->height = j;
           }
         }
       }
     }
 
-    size_t size=sizeof(map_data) - sizeof(map_data.data) + ntohl(map_data.width) * ntohl(map_data.height);
-  	assert(*resp_len >= size);
-  	*resp_len = size;
-  	return PLAYER_MSGTYPE_RESP_ACK;
+    // recompute size, in case the tile got truncated
+    mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
+               (mapresp->width * mapresp->height));
+    *resp_data = realloc(*resp_data, mapsize);
+    *resp_len = mapsize;
+    return(PLAYER_MSGTYPE_RESP_ACK);
   }
-
-  return -1;
+  return(-1);
 }
 
-// Process configuration requests
-/*int 
-MapFile::PutConfig(player_device_id_t id, void *client, 
-                   void* src, size_t len,
-                   struct timeval* timestamp)
-{
-  // Discard bogus empty packets
-  if(len < 1)
-  {
-    PLAYER_WARN("got zero length configuration request; ignoring");
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return(0);
-  }
-
-  // Process some of the requests immediately
-  switch(((unsigned char*) src)[0])
-  {
-    case PLAYER_MAP_GET_INFO_REQ:
-      HandleGetMapInfo(client, src, len);
-      break;
-    case PLAYER_MAP_GET_DATA_REQ:
-      HandleGetMapData(client, src, len);
-      break;
-    default:
-      PLAYER_ERROR("got unknown config request; ignoring");
-      if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-  }
-
-  return(0);
-}*/
-
-// Handle map info request
-/*int 
-MapFile::HandleGetMapInfo(void *client, void *request, int len)
-{
-  //int reqlen;
-  player_map_info_t info;
-  
-  // Expected length of request
-  //reqlen = sizeof(info.subtype);
-  
-  // check if the config request is valid
-  if(len != reqlen)
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  if(this->mapdata == NULL)
-  {
-    PLAYER_ERROR("NULL map data");
-    if(PutMsg(device_id,client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  // copy in subtype
-  //info.subtype = ((player_map_info_t*)request)->subtype;
- 
-  // convert to pixels / kilometer
-  info.scale = htonl((uint32_t)rint(1e3 / this->resolution));
-
-  info.width = htonl((uint32_t) (this->size_x));
-  info.height = htonl((uint32_t) (this->size_y));
-
-  // Send map info to the client
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &info, sizeof(info), NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}*/
-
-// Handle map data request
-/*void 
-MapFile::HandleGetMapData(void *client, void *request, int len)
-{
-  int i, j;
-  int oi, oj, si, sj;
-  int reqlen;
-  player_map_data_t data;
-
-  // Expected length of request
-  reqlen = sizeof(data) - sizeof(data.data);
-
-  // check if the config request is valid
-  if(len != reqlen)
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  // Construct reply
-  memcpy(&data, request, len);
-
-  oi = ntohl(data.col);
-  oj = ntohl(data.row);
-  si = ntohl(data.width);
-  sj = ntohl(data.height);
-
-  // Grab the pixels from the map
-  for(j = 0; j < sj; j++)
-  {
-    for(i = 0; i < si; i++)
-    {
-      if((i * j) <= PLAYER_MAP_MAX_CELLS_PER_TILE)
-      {
-        if(MAP_VALID(this, i + oi, j + oj))
-          data.data[i + j * si] = this->mapdata[MAP_IDX(this, i+oi, j+oj)];
-        else
-        {
-          PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
-          data.data[i + j * si] = 0;
-        }
-      }
-      else
-      {
-        PLAYER_WARN("requested tile is too large; truncating");
-        if(i == 0)
-        {
-          data.width = htonl(si-1);
-          data.height = htonl(j-1);
-        }
-        else
-        {
-          data.width = htonl(i);
-          data.height = htonl(j);
-        }
-      }
-    }
-  }
-    
-  // Send map info to the client
-  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &data, 
-              sizeof(data) - sizeof(data.data) + 
-              ntohl(data.width) * ntohl(data.height),NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  return;
-}*/

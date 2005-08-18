@@ -162,15 +162,8 @@ Andrew Howard, Brian Gerkey, Paul Osmialowski
 #include <fcntl.h>
 #include <math.h>
 
-#include "replace.h" // for poll(2)
-
-#include "playercommon.h"
-#include "drivertable.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "error.h"
-#include "player.h"
-#include "playertime.h"
+#include <replace/replace.h> // for poll(2)
+#include <libplayercore/playercore.h>
 
 extern PlayerTime *GlobalTime;
 
@@ -192,6 +185,13 @@ class LinuxJoystick : public Driver
   public: int Setup();
   public: int Shutdown();
 
+  // MessageHandler
+  public: int ProcessMessage(MessageQueue * resp_queue, 
+                             player_msghdr * hdr, 
+                             void * data, 
+                             void ** resp_data, 
+                             size_t * resp_len);
+
   // Main function for device thread.
   private: virtual void Main();
 
@@ -208,7 +208,7 @@ class LinuxJoystick : public Driver
   private: void PutPositionCommand();
 
   // Joystick device
-  private: player_device_id_t joystick_id;
+  private: player_devaddr_t joystick_addr;
   private: const char *dev;
   private: int fd;
   private: int16_t xpos, ypos;
@@ -219,14 +219,15 @@ class LinuxJoystick : public Driver
   private: struct timeval lastread;
 
   // Position device
-  private: player_device_id_t position_id;
-  private: player_position_data_t pos_data;
+  private: player_devaddr_t position_addr;
+  private: player_position2d_data_t pos_data;
+  private: int motor_enable_reply;
 
   // These are used when we send commands to a position device
   private: double max_xspeed, max_yawspeed;
   private: int xaxis, yaxis;
-  private: player_device_id_t cmd_position_id;
-  private: Driver* position;
+  private: player_devaddr_t cmd_position_addr;
+  private: Device* position;
 
   // Joystick
   private: player_joystick_data_t joy_data;
@@ -262,25 +263,25 @@ void LinuxJoystick_Register(DriverTable* table)
 LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
 {
   // zero ids, so that we'll know later which interfaces were requested
-  memset(&this->cmd_position_id, 0, sizeof(player_device_id_t));
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
-  memset(&this->joystick_id, 0, sizeof(player_device_id_t));
+  memset(&this->cmd_position_addr, 0, sizeof(player_devaddr_t));
+  memset(&this->position_addr, 0, sizeof(player_devaddr_t));
+  memset(&this->joystick_addr, 0, sizeof(player_devaddr_t));
 
   // Do we create a position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides",
-                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_READ_MODE))
+    if(this->AddInterface(this->position_addr))
     {
       this->SetError(-1);    
       return;
     }
   }
   // Do we create a joystick interface?
-  if(cf->ReadDeviceId(&(this->joystick_id), section, "provides",
-                      PLAYER_JOYSTICK_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->joystick_addr), section, "provides",
+                        PLAYER_JOYSTICK_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->joystick_id, PLAYER_READ_MODE))
+    if(this->AddInterface(this->joystick_addr))
     {
       this->SetError(-1);    
       return;
@@ -298,8 +299,8 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   // Do we talk to a position device?
   if(cf->GetTupleCount(section, "requires"))
   {
-    if(cf->ReadDeviceId(&(this->cmd_position_id), section, "requires", 
-                        PLAYER_POSITION_CODE, -1, NULL) == 0)
+    if(cf->ReadDeviceAddr(&(this->cmd_position_addr), section, "requires", 
+                          PLAYER_POSITION2D_CODE, -1, NULL) == 0)
     {
       this->max_xspeed = cf->ReadLength(section, "max_xspeed", MAX_XSPEED);
       this->max_yawspeed = cf->ReadAngle(section, "max_yawspeed", MAX_YAWSPEED);
@@ -326,40 +327,54 @@ int LinuxJoystick::Setup()
   this->lastread.tv_sec = this->lastread.tv_usec = 0;
 
   // If we're asked, open the position device
-  if(this->cmd_position_id.code)
+  if(this->cmd_position_addr.interf)
   {
-    player_position_power_config_t motorconfig;
-    unsigned short reptype;
-    player_position_cmd_t cmd;
-
-    if(!(this->position = SubscribeInternal(this->cmd_position_id)))
+    if(!(this->position = deviceTable->GetDevice(this->cmd_position_addr)))
     {
-      PLAYER_ERROR("unable to open position device");
+      PLAYER_ERROR("unable to locate suitable position device");
       return(-1);
     }
-/*    if(this->position->Subscribe(this->cmd_position_id) != 0)
+    if(this->position->Subscribe(this->InQueue) != 0)
     {
       PLAYER_ERROR("unable to subscribe to position device");
       return(-1);
-    }*/
+    }
 
     // Enable the motors
-    //motorconfig.request = PLAYER_POSITION_MOTOR_POWER_REQ;
-    motorconfig.value = 1;
-    reptype = this->position->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER,
-              this->cmd_position_id, sizeof(motorconfig),(uint8_t*)&motorconfig);
-/*    this->position->Request(this->cmd_position_id, this, 
-                            &motorconfig, sizeof(motorconfig), NULL,
-                            &reptype, NULL, 0, NULL);*/
-    if(reptype != PLAYER_MSGTYPE_RESP_ACK)
+    player_position2d_power_config_t motorconfig;
+    motorconfig.state = 1;
+    this->motor_enable_reply = -1;
+    // Send the request
+    this->position->PutMsg(this->InQueue,
+                           PLAYER_MSGTYPE_REQ, 
+                           PLAYER_POSITION2D_REQ_MOTOR_POWER,
+                           (void*)&motorconfig,sizeof(motorconfig),NULL);
+    // Set the message filter to look for the response
+    this->InQueue->SetFilter(this->cmd_position_addr.host,
+                             this->cmd_position_addr.robot,
+                             this->cmd_position_addr.interf,
+                             this->cmd_position_addr.index,
+                             -1,
+                             PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    // Await the reply.  When it comes, ProcessMessage() will set
+    // motor_enable_reply accordingly.
+    while(this->motor_enable_reply < 0)
+    {
+      this->ProcessMessages();
+      usleep(10);
+    }
+
+    if(this->motor_enable_reply != PLAYER_MSGTYPE_RESP_ACK)
       PLAYER_WARN("failed to enable motors");
 
     // Stop the robot
+    player_position2d_cmd_t cmd;
     memset(&cmd,0,sizeof(cmd));
-    this->position->ProcessMessage(PLAYER_MSGTYPE_CMD, 0,
-              this->cmd_position_id, sizeof(cmd),(uint8_t*)&cmd);
-/*    this->position->PutCommand(this->cmd_position_id,
-                               (unsigned char*)&cmd,sizeof(cmd),NULL);*/
+    this->position->PutMsg(this->InQueue,
+                           PLAYER_MSGTYPE_CMD,
+                           PLAYER_POSITION2D_CMD_STATE,
+                           (void*)&cmd, sizeof(player_position2d_cmd_t),
+                           NULL);
   }
   
   // Start the device thread; spawns a new thread and executes
@@ -377,8 +392,8 @@ int LinuxJoystick::Shutdown()
   // Stop and join the driver thread
   this->StopThread();
 
-  if(this->cmd_position_id.code)
-    UnsubscribeInternal(this->cmd_position_id);
+  if(this->cmd_position_addr.interf)
+    this->position->Unsubscribe(this->InQueue);
 
   // Close the joystick
   close(this->fd);
@@ -394,14 +409,8 @@ void LinuxJoystick::Main()
   // The main loop; interact with the device here
   while (true)
   {
-    // Sleep (you might, for example, block on a read() instead)
-    // REMOVE usleep(100000);
-
     // test if we are supposed to cancel
     pthread_testcancel();
-
-    // Check for and handle configuration requests
-    //this->CheckConfig();
 
     // Run and process output
     this->ReadJoy();
@@ -410,7 +419,7 @@ void LinuxJoystick::Main()
     this->RefreshData();
 
     // Send new commands to position device
-    if(this->cmd_position_id.code)
+    if(this->cmd_position_addr.interf)
       this->PutPositionCommand();
   }
   return;
@@ -481,63 +490,39 @@ void LinuxJoystick::ReadJoy()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Send new data to server
+// Send new data out
 void LinuxJoystick::RefreshData()
-{ 
-  if(this->joystick_id.code)
+{
+  if(this->joystick_addr.interf)
   {
     memset(&(this->joy_data),0,sizeof(player_joystick_data_t));
-    // Do byte reordering
-    this->joy_data.xpos = htons(this->xpos);
-    this->joy_data.ypos = htons(this->ypos);
-    this->joy_data.xscale = htons(this->xaxis_max);
-    this->joy_data.yscale = htons(this->yaxis_max);
-    this->joy_data.buttons = htons(this->buttons);
-    this->PutMsg(this->joystick_id,NULL, PLAYER_MSGTYPE_DATA,0,&this->joy_data,sizeof(this->joy_data),NULL);
+    this->joy_data.xpos = this->xpos;
+    this->joy_data.ypos = this->ypos;
+    this->joy_data.xscale = this->xaxis_max;
+    this->joy_data.yscale = this->yaxis_max;
+    this->joy_data.buttons = this->buttons;
+    this->Publish(this->joystick_addr, NULL,
+                  PLAYER_MSGTYPE_DATA, PLAYER_JOYSTICK_DATA_STATE,
+                  (void*)&this->joy_data, sizeof(this->joy_data), NULL);
   }
 
-  if(this->position_id.code)
+  if(this->position_addr.interf)
   {
-    memset(&(this->pos_data),0,sizeof(player_position_data_t));
-    this->pos_data.xpos = htonl((int32_t)this->xpos);
-    this->pos_data.ypos = htonl(-(int32_t)this->ypos);
-    this->PutMsg(this->position_id,NULL, PLAYER_MSGTYPE_DATA,0,&this->pos_data, sizeof this->pos_data, NULL);
+    memset(&(this->pos_data),0,sizeof(player_position2d_data_t));
+    this->pos_data.pos[0] = this->xpos;
+    this->pos_data.pos[1] = -this->ypos;
+    this->Publish(this->position_addr, NULL,
+                  PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
+                  (void*)&this->pos_data, sizeof(this->pos_data), NULL);
   }
-
-  return;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Process configuration requests
-/*void LinuxJoystick::CheckConfig()
-{
-  void *client;
-  unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
-  
-  while(this->GetConfig(this->position_id, &client, buffer, 
-                        sizeof(buffer), NULL) > 0)
-  {
-    if(this->PutReply(this->position_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-  while(this->GetConfig(this->joystick_id, &client, buffer, 
-                        sizeof(buffer), NULL) > 0)
-  {
-    if(this->PutReply(this->joystick_id, client, 
-                      PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  return;
-}*/
-
+// command the robot
 void LinuxJoystick::PutPositionCommand()
 {
   double scaled_x, scaled_y;
   double xspeed, yawspeed;
-  player_position_cmd_t cmd;
+  player_position2d_cmd_t cmd;
   struct timeval curr;
   double diff;
 
@@ -578,14 +563,36 @@ void LinuxJoystick::PutPositionCommand()
   PLAYER_MSG2(2,"sending speeds: (%f,%f)", xspeed, yawspeed);
 
   memset(&cmd,0,sizeof(cmd));
-  cmd.xspeed = htonl((int)rint(xspeed*1e3));
-  cmd.yawspeed = htonl((int)rint(RTOD(yawspeed)));
+  cmd.vel[0] = xspeed;
+  cmd.vel[2] = yawspeed;
   cmd.type=0;
   cmd.state=1;
+  this->position->PutMsg(this->InQueue,
+                         PLAYER_MSGTYPE_CMD,
+                         PLAYER_POSITION2D_CMD_STATE,
+                         (void*)&cmd, sizeof(player_position2d_cmd_t),
+                         NULL);
+}
 
-
-  this->position->ProcessMessage(PLAYER_MSGTYPE_CMD, 0, this->cmd_position_id,sizeof(cmd), (unsigned char*)&cmd);
-/*  this->position->PutCommand(this->cmd_position_id,
-                             (unsigned char*)&cmd,sizeof(cmd),NULL);*/
-                             
+// MessageHandler
+int 
+LinuxJoystick::ProcessMessage(MessageQueue * resp_queue, 
+                              player_msghdr * hdr, 
+                              void * data, 
+                              void ** resp_data, 
+                              size_t * resp_len)
+{
+  // Handle motor power response
+  if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
+                            PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+                            this->cmd_position_addr)) ||
+     (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
+                            PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+                            this->cmd_position_addr)))
+  {
+    this->motor_enable_reply = hdr->type;
+    return(0);
+  }
+  else
+    return(-1);
 }

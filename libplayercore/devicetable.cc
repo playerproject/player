@@ -166,3 +166,25 @@ DeviceTable::UpdateDevices()
   }
 }
 
+int
+DeviceTable::StartAlwaysonDrivers()
+{
+  Device* thisentry;
+
+  // We don't lock here, on the assumption that the caller is also the only
+  // thread that can make changes to the device table.
+  for(thisentry=head;thisentry;thisentry=thisentry->next)
+  {
+    if(thisentry->driver->alwayson)
+    {
+      if(thisentry->Subscribe(NULL) != 0)
+      {
+        PLAYER_ERROR2("initial subscription failed for device %d:%d",
+                      thisentry->addr.interf, thisentry->addr.index);
+        return(-1);
+      }
+    }
+  }
+  return(0);
+}
+

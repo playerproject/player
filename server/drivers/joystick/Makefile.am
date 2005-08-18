@@ -1,7 +1,11 @@
-noinst_LIBRARIES = @LINUXJOYSTICK_LIB@
+driverincludedir = $(includedir)/player-@VERSION@/drivers
+driverlibdir = $(libdir)/player-@VERSION@
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = liblinuxjoystick.a
+driverlib_LTLIBRARIES = 
+if INCLUDE_LINUXJOYSTICK
+driverlib_LTLIBRARIES += liblinuxjoystick.la
+endif
 
-liblinuxjoystick_a_SOURCES = linuxjoy.cc
+liblinuxjoystick_la_SOURCES = linuxjoy.cc

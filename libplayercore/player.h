@@ -30,6 +30,9 @@
 /* Include values from the configure script */
 #include "playerconfig.h"
 
+/* the largest possible message */
+#define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
+
 /* the player message types */
 #define PLAYER_MSGTYPE_DATA      1
 #define PLAYER_MSGTYPE_CMD       2
@@ -38,10 +41,6 @@
 #define PLAYER_MSGTYPE_SYNCH     5
 #define PLAYER_MSGTYPE_RESP_NACK 6
 #define PLAYER_MSGTYPE_RESP_ERR  7
-//#define PLAYER_MSGTYPE_GEOM      8
-//#define PLAYER_MSGTYPE_CONFIG    9
-// use bitwise or of MSGTYPE_USER with your private message code for custom messages
-//#define PLAYER_MSGTYPE_USER     10 128
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
@@ -1126,6 +1125,9 @@ This interface accepts no commands or configuration requests.
 @{
 */
 
+/** Data types */
+#define PLAYER_JOYSTICK_DATA_STATE 0x01
+
 /** @brief Data
 
 The joystick data packet, which contains the current state of the
@@ -1408,41 +1410,54 @@ delivered in tiles, via a sequence of configuration requests.
 @{
 */
 
-/** The max number of cells we can send in one tile */
-#define PLAYER_MAP_MAX_CELLS_PER_TILE  (PLAYER_MAX_REQREP_SIZE - 17)
-/* Configuration subtypes */
-#define PLAYER_MAP_GET_INFO            1;
-#define PLAYER_MAP_GET_DATA            2;
+/** The maximum size of a tile, in cells */
+/* 2097152 - 30 (msg header) - 20 (meta-data to accompany the tile) = 2097102 */
+#define PLAYER_MAP_MAX_TILE_SIZE 2097102
+
+/** Configuration subtypes */
+#define PLAYER_MAP_REQ_GET_INFO            0x01
+#define PLAYER_MAP_REQ_GET_DATA            0x02
 
 /** @brief Configuration request: Get map information.
 
 Retrieve the size and scale information of a current map. This request
 is used to get the size information before you request the actual map
-data. Set the subtype to PLAYER_MAP_GET_INFO_REQ; the server will reply
-with the size information filled in. */
+data. */
 typedef struct player_map_info
 {
-  /** The scale of the map [pixels/km]. */
-  uint32_t scale; 
+  /** The scale of the map [m/pixel]. */
+  float scale; 
   /** The size of the map [pixels]. */
   uint32_t width, height;
 } player_map_info_t;
 
 /** @brief Configuration request: Get map data.
 
-Retrieve the map data. Beacause of the limited size of a request-reply
-messages, the map data is tranfered in tiles.  In the request packet,
-set the column and row index of a specific tile; the server will reply
-with the requested map data filled in. */
+Ask for a map tile. Beacause of the limited size of a message,
+the map data is tranfered in tiles.  The device will respond with a 
+player_map_data_t. */
+typedef struct player_map_req_data
+{
+  /** The tile origin [pixels]. */
+  uint32_t col, row;
+  /** The size of the tile [pixels]. */
+  uint32_t width, height;
+} player_map_req_data_t;
+
+/** @brief Map data
+
+A map tile.  This message may either be sent in response to a request,
+or as a data message, if the underyling driver supports dynamic map updates. */
 typedef struct player_map_data
 {
   /** The tile origin [pixels]. */
   uint32_t col, row;
   /** The size of the tile [pixels]. */
   uint32_t width, height;
+  /** The number of cells (needed for XDR packing) */
   uint32_t data_count;
   /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
-  int32_t data[PLAYER_MAX_REQREP_SIZE - 17];
+  char data[PLAYER_MAP_MAX_TILE_SIZE];
 } player_map_data_t;
 /** @} */
 
@@ -2224,7 +2239,7 @@ robot running across the room at high speed with the battery charger
 still attached.
 */
 typedef struct player_position2d_power_config
-{ 
+{
   /** FALSE for off, TRUE for on */
   uint8_t state; 
 } player_position2d_power_config_t;
@@ -2625,8 +2640,8 @@ sensors, such as a sonar array.  This interface accepts no commands.
 /** maximum number of sonar samples in a data packet */
 #define PLAYER_SONAR_MAX_SAMPLES 64
 /** request types */
-#define PLAYER_SONAR_GET_GEOM   1
-#define PLAYER_SONAR_POWER      2
+#define PLAYER_SONAR_REQ_GET_GEOM    0x01
+#define PLAYER_SONAR_REQ_POWER       0x02
 /** data types */
 #define PLAYER_SONAR_DATA_RANGES     0x01
 #define PLAYER_SONAR_DATA_GEOM       0x02

@@ -22,14 +22,6 @@
 /* DO NOT TOUCH THE MACROS ABOVE */
 /*****************************************************************************/
 
-/* the largest possible message that the server will currently send
- * or receive */
-#ifdef PLAYER_BIG_MESSAGES
-#define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
-#else
-#define PLAYER_MAX_MESSAGE_SIZE 8192 /*8KB*/
-#endif
-
 /* make sure we get the various types like 'uint8_t
  *
  * int8_t  : signed 1 byte  (char)

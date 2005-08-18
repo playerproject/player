@@ -132,31 +132,31 @@ PLAYER_ADD_DRIVER([segwayrmp],[no],
 	[$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
 	[$SEGWAYRMP_EXTRA_LDFLAGS])
 
-PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
+PLAYER_ADD_DRIVER([garminnmea],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
+PLAYER_ADD_DRIVER([bumpersafe],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([lifomcom],[yes],[],[],[])
+PLAYER_ADD_DRIVER([lifomcom],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([dummy],[yes],[],[],[])
+PLAYER_ADD_DRIVER([dummy],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([passthrough],[yes],[],[],
+PLAYER_ADD_DRIVER([passthrough],[no],[],[],
                   ["../client_libs/c/playercclient.o"])
 
-PLAYER_ADD_DRIVER([logfile],[yes],[zlib.h],[],[-lz])
+PLAYER_ADD_DRIVER([logfile],[no],[zlib.h],[],[-lz])
 
-PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
+PLAYER_ADD_DRIVER([p2os],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([er1],[no],[asm/ioctls.h],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
+PLAYER_ADD_DRIVER([rflex],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
 	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([sickpls],[yes],[],[],[])
+PLAYER_ADD_DRIVER([sickpls],[no],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
@@ -172,100 +172,99 @@ if test "x$disable_playerclient_thread" = "xno"; then
 fi
 
 
-PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
+PLAYER_ADD_DRIVER([acts],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([cmvision],[yes],[],[],[])
+PLAYER_ADD_DRIVER([cmvision],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([upcbarcode],[yes],[],[],[],
+PLAYER_ADD_DRIVER([upcbarcode],[no],[],[],[],
                   [OPENCV],[opencv])
 
-PLAYER_ADD_DRIVER([simpleshape],[yes],
+PLAYER_ADD_DRIVER([simpleshape],[no],
                     [],[],[],[OPENCV],[opencv])
 
-PLAYER_ADD_DRIVER([festival],[yes],[],[],[])
+PLAYER_ADD_DRIVER([festival],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/s2types.h"],[],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
+PLAYER_ADD_DRIVER([sphinx2],[no],["sphinx2/s2types.h"],[],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
-PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
+PLAYER_ADD_DRIVER([sonyevid30],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([amtecpowercube],[yes],[],[],[])
+PLAYER_ADD_DRIVER([amtecpowercube],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
+PLAYER_ADD_DRIVER([ptu46],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([canonvcc4],[yes],[],[],[])
+PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([obot],[yes],[],[],[])
+PLAYER_ADD_DRIVER([obot],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxwifi],[yes],[linux/wireless.h],
+PLAYER_ADD_DRIVER([linuxwifi],[no],[linux/wireless.h],
                   [],[],[],[],[[#include <netinet/in.h>]])
 
 PLAYER_ADD_DRIVER([fixedtones],[no],[rfftw.h],[],
                   ["-lrfftw -lfftw"])
 
-PLAYER_ADD_DRIVER([acoustics],[yes],
+PLAYER_ADD_DRIVER([acoustics],[no],
                   ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([mixer],[yes],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([mixer],[no],[sys/soundcard.h],[],[])
 
 dnl where's Mobility?
 AC_ARG_WITH(mobility, [  --with-mobility=dir     Location of Mobility],
 MOBILITY_DIR=$with_mobility,
 MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
 
-PLAYER_ADD_DRIVER([isense],[yes],[isense/isense.h],
+PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
                   [],["-lisense"])
 
-PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
+PLAYER_ADD_DRIVER([wavefront],[no],[],[],[])
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_CHECK_HEADERS(openssl/md5.h)
 AC_CHECK_LIB(crypto,MD5_Init)
 
 PLAYER_ADD_DRIVER([mapfile],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
-PLAYER_ADD_DRIVER([mapscale],[yes],[],
+PLAYER_ADD_DRIVER([mapscale],[no],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
-PLAYER_ADD_DRIVER([mapcspace],[yes],[],[],[])
+PLAYER_ADD_DRIVER([mapcspace],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([waveaudio],[yes],[sys/soundcard.h],[],[])
+PLAYER_ADD_DRIVER([waveaudio],[no],[sys/soundcard.h],[],[])
 
 PLAYER_ADD_DRIVER([aodv],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
+PLAYER_ADD_DRIVER([iwspy],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([reb],[yes],[],[],[])
+PLAYER_ADD_DRIVER([reb],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
+PLAYER_ADD_DRIVER([khepera],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([microstrain],[yes],[],[],[])
+PLAYER_ADD_DRIVER([microstrain],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([vfh],[yes],)
+PLAYER_ADD_DRIVER([vfh],[no],)
 
 PLAYER_ADD_DRIVER([nomad],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([laserbar],[yes],[],[],[])
-PLAYER_ADD_DRIVER([laserbarcode],[yes],[],[],[])
-PLAYER_ADD_DRIVER([laservisualbarcode],[yes],[],[],[])
-PLAYER_ADD_DRIVER([laservisualbw],[yes],[],[],[])
+PLAYER_ADD_DRIVER([laserbar],[no],[],[],[])
+PLAYER_ADD_DRIVER([laserbarcode],[no],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbarcode],[no],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbw],[no],[],[],[])
 
-dnl - added a header check to stop this building on OS X - rtv
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
 dnl Camera drivers
-PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([camerav4l],[no],[linux/videodev.h],[],[])
 
 dnl IEEE1394 (Firewire) camera driver
-PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+PLAYER_ADD_DRIVER([camera1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
 dnl libdc1394 has varying API's, depending on the version.  Do some checks
 dnl to see what the function signatures look like
@@ -287,60 +286,22 @@ if test "x$enable_camera1394" = "xyes"; then
               [arg count for dma capture function])
 fi
 
-PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
-PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
+PLAYER_ADD_DRIVER([cameracompress],[no],[jpeglib.h],[],[-ljpeg])
+PLAYER_ADD_DRIVER([imageseq],[no],[],[],[],[OPENCV],[opencv])
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
-PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
+PLAYER_ADD_DRIVER([fakelocalize], [no],[],[],[])
 
-dnl PLAYER_ADD_DRIVER doesn't handle building more than one library, so
-dnl do it manually
-user_override=no
-disable_reason="disabled by user"
-AC_ARG_ENABLE(amcl,
-[  --disable-amcl           Don't compile the amcl driver],
-  user_override=yes,
-  enable_amcl=no)
-if test "x$enable_alldrivers" = "xno" -a "x$user_override" = "xno"; then
-  enable_amcl=no
-fi
-if test "x$enable_amcl" = "xyes"; then
-
-  PKG_CHECK_MODULES(GSL,gsl,
-                    enable_amcl=yes,
-                    enable_amcl=no)
-  if test "x$enable_amcl" = "xno"; then
-    AC_CHECK_HEADER(gsl/gsl_version.h,
-                    enable_amcl=yes
-                    GSL_CFLAGS=
-                    GSL_LIBS="-lgsl -lgslcblas",
-                    enable_amcl=no
-                    disable_reason="couldn't find the GSL")
-  fi
-fi
-if test "x$enable_amcl" = "xyes"; then
-  AC_DEFINE(INCLUDE_AMCL, 1, [[include the AMCL driver]])
-  AMCL_LIB="libamcl.la"
-  dnl PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $AMCL_LIB"
-  dnl PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS drivers/localization/amcl/libamcl.la"
-  AMCL_PF_LIB="libpf.la"
-  AMCL_MAP_LIB="libmap.la"
-  AMCL_MODELS_LIB="libmodels.la"
-dnl  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS -lgsl -lgslcblas"
-  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GSL_LIBS"
-  PLAYER_DRIVERS="$PLAYER_DRIVERS amcl"
-else
-  PLAYER_NODRIVERS="$PLAYER_NODRIVERS:amcl -- $disable_reason"
-fi
-AC_SUBST(AMCL_LIB)
-AC_SUBST(AMCL_PF_LIB)
-AC_SUBST(AMCL_MAP_LIB)
-AC_SUBST(AMCL_MODELS_LIB)
-AC_SUBST(GSL_CFLAGS)
+dnl TODO: handle pkg-config location of gsl.  Some, but not all,
+dnl installation of gsl have a .pc file.
+dnl PKG_CHECK_MODULES(GSL,gsl,
+dnl                   found_gsl=yes,
+dnl                   found_gsl=no)
+PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],[-lgsl -lgslcblas])
 
 dnl Add results from driver tests to compiler and link lines
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
