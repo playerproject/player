@@ -66,7 +66,7 @@ fixed radius; this radius may be set in the configuration file.
 
 @par Configuration requests
 
-- PLAYER_LASER_GET_GEOM
+- PLAYER_LASER_REQ_GET_GEOM
   
 @par Configuration file options
 
@@ -120,7 +120,7 @@ class LaserCSpace : public Driver
   public: int ProcessMessage(MessageQueue * resp_queue, 
                               player_msghdr * hdr, 
                               void * data, 
-                              uint8_t ** resp_data, 
+                              void ** resp_data, 
                               size_t * resp_len);
 
   // Setup/shutdown routines.
@@ -246,7 +246,7 @@ int LaserCSpace::Shutdown()
 int LaserCSpace::ProcessMessage(MessageQueue * resp_queue, 
                                 player_msghdr * hdr, 
                                 void * data, 
-                                uint8_t ** resp_data, 
+                                void ** resp_data, 
                                 size_t * resp_len)
 {
   *resp_len = 0;
@@ -261,7 +261,7 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
   }
 
   // Forward geometry request to the laser
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM,
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM,
                            this->device_addr))
   {
     // Forward the message
@@ -274,7 +274,7 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
                              this->laser_addr.interf,
                              this->laser_addr.index,
                              -1,
-                             PLAYER_LASER_GET_GEOM);
+                             PLAYER_LASER_REQ_GET_GEOM);
     // No response now; it will come later after we hear back from the
     // laser
     return(0);
@@ -282,9 +282,9 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
 
   // Forward geometry response (success or failure) from the laser
   if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
-                            PLAYER_LASER_GET_GEOM, this->laser_addr)) ||
+                            PLAYER_LASER_REQ_GET_GEOM, this->laser_addr)) ||
      (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
-                            PLAYER_LASER_GET_GEOM, this->laser_addr)))
+                            PLAYER_LASER_REQ_GET_GEOM, this->laser_addr)))
   {
     // Copy in our address and forward the response
     hdr->addr = this->device_addr;
@@ -317,7 +317,8 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   for (i = 0; i < data->ranges_count; i++)
     this->data.ranges[i]  = this->FreeRange(data,i);
 
-  this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, 0, 
+  this->Publish(this->device_addr, NULL, 
+                PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 (uint8_t *)&this->data, sizeof(this->data), NULL);
 
   return 1;

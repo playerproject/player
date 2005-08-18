@@ -294,7 +294,7 @@ Driver::MainQuit()
 /// a message with no handler is reached
 void Driver::ProcessMessages()
 {
-  uint8_t* RespData = NULL;
+  void* RespData = NULL;
   size_t RespLen;
  
   // If we have subscriptions, then see if we have any pending messages

@@ -278,7 +278,7 @@ class Driver
     /// @param resp_data Place to put a response
     /// @param resp_len Place to put length of response
     virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
-                               void * data, uint8_t** resp_data,
+                               void * data, void** resp_data,
                                size_t * resp_len) 
     {*resp_len = 0; *resp_data = NULL; return -1;};
 
