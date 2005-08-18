@@ -48,6 +48,7 @@ void PrintUsage();
 int ParseArgs(int* port, int* debuglevel, const char** cfgfilename, 
               int argc, char** argv);
 void Quit(int signum);
+void Cleanup();
 
 int
 main(int argc, char** argv)
@@ -91,9 +92,17 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+  if(deviceTable->StartAlwaysonDrivers() != 0)
+  {
+    PLAYER_ERROR("failed to start alwayson drivers");
+    Cleanup();
+    exit(-1);
+  }
+
   if(ptcp.Listen(&port, 1) < 0)
   {
     PLAYER_ERROR1("failed to listen on port %d", port);
+    Cleanup();
     exit(-1);
   }
 
@@ -104,12 +113,12 @@ main(int argc, char** argv)
     if(ptcp.Accept(0) < 0)
     {
       PLAYER_ERROR("failed while accepting new connections");
-      exit(-1);
+      break;
     }
     if(ptcp.Read(1) < 0)
     {
       PLAYER_ERROR("failed while reading");
-      exit(-1);
+      break;
     }
 
     deviceTable->UpdateDevices();
@@ -117,13 +126,21 @@ main(int argc, char** argv)
     if(ptcp.Write() < 0)
     {
       PLAYER_ERROR("failed while reading");
-      exit(-1);
+      break;
     }
   }
 
   puts("Quitting.");
 
+  Cleanup();
+
   return(0);
+}
+
+void
+Cleanup()
+{
+  delete deviceTable;
 }
 
 void

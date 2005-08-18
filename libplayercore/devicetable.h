@@ -78,6 +78,13 @@ class DeviceTable
     // Call ProcessMessages() on each non-threaded driver with non-zero
     // subscriptions
     void UpdateDevices();
+
+    // Subscribe to each device whose driver is marked 'alwayson'.  Returns
+    // 0 on success, -1 on error (at least one driver failed to start).
+    //
+    // TODO: change the semantics of alwayson to be device-specific, rather
+    // than just driver-specific.
+    int StartAlwaysonDrivers();
 };
 
 #endif
