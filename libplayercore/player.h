@@ -52,7 +52,7 @@
 #define PLAYER_PLAYER_CODE         1   // the server itself
 #define PLAYER_POWER_CODE          2   // power subsystem
 #define PLAYER_GRIPPER_CODE        3   // gripper
-#define PLAYER_POSITION_CODE       4   // device that moves about
+#define PLAYER_POSITION2D_CODE     4   // device that moves about in the plane
 #define PLAYER_SONAR_CODE          5   // fixed range-finder
 #define PLAYER_LASER_CODE          6   // scanning range-finder
 #define PLAYER_BLOBFINDER_CODE     7   // visual blobfinder
@@ -87,7 +87,6 @@
 #define PLAYER_LOG_CODE            45  // log read/write control
 #define PLAYER_ENERGY_CODE         46  // energy consumption
 #define PLAYER_MOTOR_CODE          47  // motor interface
-#define PLAYER_POSITION2D_CODE     48  // 2-D position
 #define PLAYER_JOYSTICK_CODE       49  // Joytstick
 #define PLAYER_SPEECH_RECOGNITION_CODE  50  // speech recognition
 #define PLAYER_OPAQUE_CODE         51  // plugin interface
@@ -122,7 +121,6 @@
 #define PLAYER_OPAQUE_STRING          "opaque"
 #define PLAYER_PLANNER_STRING         "planner"
 #define PLAYER_PLAYER_STRING          "player"
-#define PLAYER_POSITION_STRING        "position"
 #define PLAYER_POSITION1D_STRING      "position1d"
 #define PLAYER_POSITION2D_STRING      "position2d"
 #define PLAYER_POSITION3D_STRING      "position3d"
@@ -1168,11 +1166,14 @@ This interface accepts no commands.
 /** The maximum number of laser range values */
 #define PLAYER_LASER_MAX_SAMPLES  401
 
-/* Laser request subtypes. */
-#define PLAYER_LASER_GET_GEOM     0x01
-#define PLAYER_LASER_SET_CONFIG   0x02
-#define PLAYER_LASER_GET_CONFIG   0x03
-#define PLAYER_LASER_POWER_CONFIG 0x04
+/** Laser data subtypes. */
+#define PLAYER_LASER_DATA_SCAN    0x01
+
+/** Laser request subtypes. */
+#define PLAYER_LASER_REQ_GET_GEOM     0x01
+#define PLAYER_LASER_REQ_SET_CONFIG   0x02
+#define PLAYER_LASER_REQ_GET_CONFIG   0x03
+#define PLAYER_LASER_REQ_POWER        0x04
 
 /** @brief Data
 
@@ -2149,25 +2150,28 @@ The @p position2d interface is used to control mobile robot bases in 2D.
 */
 
 /* The various configuration request types. */
-#define PLAYER_POSITION2D_GET_GEOM          1
-#define PLAYER_POSITION2D_MOTOR_POWER       2
-#define PLAYER_POSITION2D_VELOCITY_MODE     3
-#define PLAYER_POSITION2D_POSITION_MODE     4
-#define PLAYER_POSITION2D_SET_ODOM          5
-#define PLAYER_POSITION2D_RESET_ODOM        6
-#define PLAYER_POSITION2D_SPEED_PID         7
-#define PLAYER_POSITION2D_POSITION_PID      8
-#define PLAYER_POSITION2D_SPEED_PROF        9
+#define PLAYER_POSITION2D_REQ_GET_GEOM          1
+#define PLAYER_POSITION2D_REQ_MOTOR_POWER       2
+#define PLAYER_POSITION2D_REQ_VELOCITY_MODE     3
+#define PLAYER_POSITION2D_REQ_POSITION_MODE     4
+#define PLAYER_POSITION2D_REQ_SET_ODOM          5
+#define PLAYER_POSITION2D_REQ_RESET_ODOM        6
+#define PLAYER_POSITION2D_REQ_SPEED_PID         7
+#define PLAYER_POSITION2D_REQ_POSITION_PID      8
+#define PLAYER_POSITION2D_REQ_SPEED_PROF        9
 
 // data types
-#define PLAYER_POSITION2D_DATA              0
-#define PLAYER_POSITION2D_GEOM              1
+#define PLAYER_POSITION2D_DATA_STATE             1
+#define PLAYER_POSITION2D_DATA_GEOM              2
+
+// Command types
+#define PLAYER_POSITION2D_CMD_STATE              1
 
 /** @brief Data
 
 The @p position interface returns data regarding the odometric pose and
 velocity of the robot, as well as motor stall information. */
-typedef struct player_position_data
+typedef struct player_position2d_data
 {
   /** position [m] (x, y, yaw)*/
   float pos[3];
@@ -2175,14 +2179,14 @@ typedef struct player_position_data
   float vel[3];   
   /** Are the motors stalled? */
   uint8_t stall;
-} player_position_data_t;
+} player_position2d_data_t;
 
 /** @brief Command
 
 The @p position interface accepts new positions and/or velocities
 for the robot's motors (drivers may support position control, speed control,
 or both). */
-typedef struct player_position_cmd
+typedef struct player_position2d_cmd
 {
   /** position [m] (x, y, yaw)*/
   float pos[3];
@@ -2191,21 +2195,21 @@ typedef struct player_position_cmd
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
-  uint32_t type;
-} player_position_cmd_t;
+  uint8_t type;
+} player_position2d_cmd_t;
 
 /** @brief Configuration request: Query geometry.  
 
 To request robot geometry,
 set the subtype to PLAYER_POSITION_GET_GEOM_REQ and leave the other fields
 empty.  The server will reply with the pose and size fields filled in. */
-typedef struct player_position_geom
+typedef struct player_position2d_geom
 {
   /** Pose of the robot base, in the robot cs (m, m, rad). */
   float pose[3];
   /** Dimensions of the base (m, m). */
   float size[2];
-} player_position_geom_t;
+} player_position2d_geom_t;
 
 /** @brief Configuratoin request: Motor power.  
 
@@ -2219,11 +2223,11 @@ Be VERY careful with this command!  You are very likely to start the
 robot running across the room at high speed with the battery charger
 still attached.
 */
-typedef struct player_position_power_config
+typedef struct player_position2d_power_config
 { 
   /** FALSE for off, TRUE for on */
   uint8_t state; 
-} player_position_power_config_t;
+} player_position2d_power_config_t;
 
 /** @brief Configuration request: Change velocity control. 
 
@@ -2250,60 +2254,60 @@ for separate control.
 For the @ref player_driver_reb driver, 0 is direct velocity control,
 1 is for velocity-based heading PD controller.
 */
-typedef struct player_position_velocity_mode_config
+typedef struct player_position2d_velocity_mode_config
 {
   /** driver-specific */
   uint32_t value; 
-} player_position_velocity_mode_config_t;
+} player_position2d_velocity_mode_config_t;
 
 /** @brief Configuration request: Reset odometry.  
 
 To reset the robot's odometry
 to @f$(x, y, yaw) = (0,0,0)@f$, use the following request.  The server will
 reply with a zero-length acknowledgement. */
-typedef struct player_position_reset_odom_config
+typedef struct player_position2d_reset_odom_config
 {
-} player_position_reset_odom_config_t;
+} player_position2d_reset_odom_config_t;
 
 /** @brief Configuration request: Change control mode. */
-typedef struct player_position_position_mode_req
+typedef struct player_position2d_position_mode_req
 {
   /** 0 for velocity mode, 1 for position mode */
   uint32_t state; 
-} player_position_position_mode_req_t;
+} player_position2d_position_mode_req_t;
 
 /** @brief Configuration request: Set odometry.  
 
 To set the robot's odometry
 to a particular state, use this request: */
-typedef struct player_position_set_odom_req
+typedef struct player_position2d_set_odom_req
 {
   /** (x, y, yaw) [m, m, rad] */
   int32_t pos[3];  
-} player_position_set_odom_req_t;
+} player_position2d_set_odom_req_t;
 
 /** @brief Configuration request: Set velocity PID parameters. */
-typedef struct player_position_speed_pid_req
+typedef struct player_position2d_speed_pid_req
 {
   /** PID parameters */
   float kp, ki, kd;  
-} player_position_speed_pid_req_t;
+} player_position2d_speed_pid_req_t;
 
 /** @brief Configuration request: Set position PID parameters. */
-typedef struct player_position_position_pid_req
+typedef struct player_position2d_position_pid_req
 {
   /** PID parameters */
   float kp, ki, kd;
-} player_position_position_pid_req_t;
+} player_position2d_position_pid_req_t;
 
 /** @brief Configuration request: Set linear speed profile parameters. */
-typedef struct player_position_speed_prof_req
+typedef struct player_position2d_speed_prof_req
 {
   /** max speed [m/s] */
   float speed;
   /** max acceleration [m/s^2] */
   float acc;
-} player_position_speed_prof_req_t;
+} player_position2d_speed_prof_req_t;
 
 
 /** @} */
@@ -2455,6 +2459,9 @@ The @p power interface provides access to a robot's power subsystem.
 This interface accepts no commands
 @{
 */
+
+/** Power data types */
+#define PLAYER_POWER_DATA_VOLTAGE 0x01
 
 /** @brief Data
 
@@ -2621,8 +2628,8 @@ sensors, such as a sonar array.  This interface accepts no commands.
 #define PLAYER_SONAR_GET_GEOM   1
 #define PLAYER_SONAR_POWER      2
 /** data types */
-#define PLAYER_SONAR_RANGES     0
-#define PLAYER_SONAR_GEOM       1
+#define PLAYER_SONAR_DATA_RANGES     0x01
+#define PLAYER_SONAR_DATA_GEOM       0x02
 
 /** @brief Data
 

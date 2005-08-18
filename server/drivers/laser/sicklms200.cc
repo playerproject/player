@@ -47,9 +47,9 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 
 @par Configuration requests
 
-- PLAYER_LASER_GET_GEOM
-- PLAYER_LASER_GET_CONFIG
-- PLAYER_LASER_SET_CONFIG
+- PLAYER_LASER_REQ_GET_GEOM
+- PLAYER_LASER_REQ_GET_CONFIG
+- PLAYER_LASER_REQ_SET_CONFIG
   
 @par Configuration file options
 
@@ -164,7 +164,7 @@ class SickLMS200 : public Driver
     int ProcessMessage(MessageQueue * resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data, 
-		       uint8_t ** resp_data, 
+		       void ** resp_data, 
 		       size_t * resp_len);
   private:
 
@@ -489,13 +489,14 @@ int SickLMS200::Shutdown()
 
 int 
 SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
-                           void * data, uint8_t ** resp_data,
+                           void * data, void ** resp_data,
                            size_t * resp_len)
 {
   int retval = 0;
   *resp_len = 0;
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_LASER_REQ_SET_CONFIG, 
                            this->device_addr))
   {
     if(hdr->size != sizeof(player_laser_config_t))
@@ -540,7 +541,7 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     if(!retval)
     {
       *resp_len = sizeof(config);
-      *resp_data = (uint8_t*)calloc(1,sizeof(config));
+      *resp_data = (void*)calloc(1,sizeof(config));
       assert(*resp_data);
       memcpy(*resp_data, config, sizeof(player_laser_config_t));
       return(PLAYER_MSGTYPE_RESP_ACK);
@@ -549,7 +550,7 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
       return(retval);
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                                 PLAYER_LASER_GET_CONFIG,
+                                 PLAYER_LASER_REQ_GET_CONFIG,
                                  this->device_addr))
   {
     if(hdr->size != 0)
@@ -566,13 +567,13 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     config.range_res = this->range_res;
 
     *resp_len = sizeof(player_laser_config_t);
-    *resp_data = (uint8_t*)calloc(1,sizeof(player_laser_config_t));
+    *resp_data = (void*)calloc(1,sizeof(player_laser_config_t));
     assert(*resp_data);
     memcpy(*resp_data, &config, sizeof(player_laser_config_t));
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                                 PLAYER_LASER_GET_GEOM,
+                                 PLAYER_LASER_REQ_GET_GEOM,
                                  this->device_addr))
   {
     if(hdr->size != 0)
@@ -589,7 +590,7 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     geom.size[1] = (short) (this->size[1] * 1000);
 
     *resp_len = sizeof(player_laser_geom_t);
-    *resp_data = (uint8_t*)calloc(1,sizeof(player_laser_geom_t));
+    *resp_data = (void*)calloc(1,sizeof(player_laser_geom_t));
     assert(*resp_data);
     memcpy(*resp_data, &geom, sizeof(player_laser_geom_t));
     return(PLAYER_MSGTYPE_RESP_ACK);
@@ -670,8 +671,9 @@ void SickLMS200::Main()
       }
       
       // Make data available
-      this->Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, 0, 
-                    (uint8_t*) &data, sizeof(data), &time);
+      this->Publish(this->device_addr, NULL, 
+                    PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
+                    (void*)&data, sizeof(data), &time);
     }
   }
 }
