@@ -222,6 +222,7 @@ Device::Request(MessageQueue* resp_queue,
   {
     Message* msg;
     player_msghdr_t* hdr;
+    resp_queue->Wait();
     if((msg = resp_queue->Pop()))
     {
       hdr = msg->GetHeader();
@@ -247,7 +248,8 @@ Device::Request(MessageQueue* resp_queue,
         delete msg;
       }
     }
-    usleep(10);
+    else
+      PLAYER_WARN("got null message after waiting on queue");
   }
 }
 
