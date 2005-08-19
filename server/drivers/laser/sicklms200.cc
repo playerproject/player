@@ -141,6 +141,7 @@ Andrew Howard, Richard Vaughan, Kasper Stoy
 #endif
 
 #include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 #include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 

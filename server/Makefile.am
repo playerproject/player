@@ -1,6 +1,6 @@
 SUBDIRS = drivers libplayerdrivers .
 
-AM_CPPFLAGS = -fPIC -Wall -g @GAZEBO_EXTRA_CPPFLAGS@ -I$(srcdir) -I$(top_srcdir) -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell
+AM_CPPFLAGS = -fPIC -Wall -g @GAZEBO_EXTRA_CPPFLAGS@ -I$(top_srcdir) -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell
 
 if INCLUDE_RTKGUI
 RTKGUI_LIBS=-L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
@@ -14,7 +14,7 @@ player_DEPENDENCIES = $(top_builddir)/server/libplayerdrivers/libplayerdrivers.l
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm -L$(top_builddir)/server/libplayerdrivers -lplayerdrivers -L$(top_builddir)/libplayercore -lplayercore -lplayererror -L$(top_builddir)/libplayertcp -lplayertcp -L$(top_builddir)/libplayerxdr -lplayerxdr @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) -L$(top_builddir)/replace -lreplace
+player_LDADD   = -lm $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/libreplace.la
 
 player_LDFLAGS = -export-dynamic
 

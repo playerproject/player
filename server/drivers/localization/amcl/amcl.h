@@ -40,10 +40,7 @@
 #include "rtk.h"
 #endif
 
-#include "player.h"
-#include "device.h"
-#include "devicetable.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
 
 #include "pf/pf.h"
 #include "amcl_sensor.h"

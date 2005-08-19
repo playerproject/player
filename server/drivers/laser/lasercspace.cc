@@ -109,6 +109,7 @@ Andrew Howard
 #include <unistd.h>
 
 #include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 // Driver for computing the free c-space from a laser scan.
 class LaserCSpace : public Driver
@@ -320,7 +321,7 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
 
   this->Publish(this->device_addr, NULL, 
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-                (uint8_t *)&this->data, sizeof(this->data), NULL);
+                (void*)&this->data, sizeof(this->data), NULL);
 
   return 1;
 }

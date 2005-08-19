@@ -164,6 +164,7 @@ Andrew Howard, Brian Gerkey, Paul Osmialowski
 
 #include <replace/replace.h> // for poll(2)
 #include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 extern PlayerTime *GlobalTime;
 
