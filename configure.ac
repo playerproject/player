@@ -336,9 +336,6 @@ AC_OUTPUT(Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile
-          server/drivers/localization/amcl/pf/Makefile
-          server/drivers/localization/amcl/map/Makefile
-          server/drivers/localization/amcl/models/Makefile
           server/drivers/service_adv/Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile 

@@ -79,6 +79,13 @@ class Device
                 player_msghdr_t* hdr,
                 void* src);
 
+    Message* Request(MessageQueue* resp_queue,
+                     uint8_t type,
+                     uint8_t subtype,
+                     void* src,
+                     size_t len,
+                     double* timestamp);
+
     static bool MatchDeviceAddress(player_devaddr_t addr1,
                                    player_devaddr_t addr2)
     {

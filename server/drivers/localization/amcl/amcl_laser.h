@@ -33,7 +33,6 @@
 #include "map/map.h"
 #include "models/laser.h"
 
-
 // Laser sensor data
 class AMCLLaserData : public AMCLSensorData
 {
@@ -47,7 +46,7 @@ class AMCLLaserData : public AMCLSensorData
 class AMCLLaser : public AMCLSensor
 {
   // Default constructor
-  public: AMCLLaser(player_device_id_t id);
+  public: AMCLLaser(player_devaddr_t addr);
   
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -75,12 +74,12 @@ class AMCLLaser : public AMCLSensor
   private: int SetupMap(void);
 
   // Device info
-  private: player_device_id_t laser_id;
-  private: player_device_id_t map_id;
-  private: Driver *driver;
+  private: player_devaddr_t laser_addr;
+  private: player_devaddr_t map_addr;
+  private: Device *laser_dev;
 
   // Current data timestamp
-  private: struct timeval time;
+  private: double time;
 
   // The laser map
   private: map_t *map;

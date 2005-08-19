@@ -252,7 +252,8 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
   *resp_len = 0;
 
   // Handle new data from the laser
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, this->laser_addr))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
+                           this->laser_addr))
   {
     assert(hdr->size == sizeof(player_laser_data_t));
     player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);

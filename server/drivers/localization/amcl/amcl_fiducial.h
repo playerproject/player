@@ -61,7 +61,7 @@ AMCLFiducialMap* fiducial_map_alloc();
 class AMCLFiducial : public AMCLSensor
 {
   // Default constructor
-  public: AMCLFiducial(player_device_id_t id);
+  public: AMCLFiducial(player_devaddr_t addr);
   
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -96,7 +96,7 @@ class AMCLFiducial : public AMCLSensor
   private: Driver *driver;
 
   // Current data timestamp
-  private: struct timeval time;
+  private: double time;
 
   // The laser map
   private: map_t *map;

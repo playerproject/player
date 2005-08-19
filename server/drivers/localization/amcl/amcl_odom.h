@@ -48,7 +48,7 @@ class AMCLOdomData : public AMCLSensorData
 class AMCLOdom : public AMCLSensor
 {
   // Default constructor
-  public: AMCLOdom(player_device_id_t id);
+  public: AMCLOdom(player_devaddr_t addr);
 
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -73,11 +73,11 @@ class AMCLOdom : public AMCLSensor
   public: static pf_vector_t ActionModel(AMCLOdom *self, pf_vector_t pose);
   
   // Device info
-  private: player_device_id_t odom_id;
-  private: Driver *driver;
+  private: player_devaddr_t odom_addr;
+  private: Device *odom_dev;
 
   // Current data timestamp
-  private: struct timeval time;
+  private: double time;
   
   // Drift model
   private: pf_matrix_t drift;

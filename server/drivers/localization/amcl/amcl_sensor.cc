@@ -38,7 +38,14 @@
 // Default constructor
 AMCLSensor::AMCLSensor()
 {
+  this->InQueue = new MessageQueue(false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+  assert(this->InQueue);
   return;
+}
+
+AMCLSensor::~AMCLSensor()
+{
+  delete this->InQueue;
 }
 
 

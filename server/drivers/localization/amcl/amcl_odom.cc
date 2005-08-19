@@ -32,22 +32,18 @@
 #endif
 
 #include <sys/types.h> // required by Darwin
-#include <netinet/in.h>
 #include <math.h>
-#include "error.h"
-#include "devicetable.h"
+
+#include <libplayercore/playercore.h>
 #include "amcl_odom.h"
-
-extern int global_playerport;
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLOdom::AMCLOdom(player_device_id_t id)
+AMCLOdom::AMCLOdom(player_devaddr_t addr)
 {
-  this->driver = NULL;
+  this->odom_dev = NULL;
   this->action_pdf = NULL;
-  this->odom_id = id;
+  this->odom_addr = addr;
   
   return;
 }
@@ -57,8 +53,7 @@ AMCLOdom::AMCLOdom(player_device_id_t id)
 // Load settings
 int AMCLOdom::Load(ConfigFile* cf, int section)
 {
-  this->time.tv_sec = 0;
-  this->time.tv_usec = 0;
+  this->time = 0.0;
 
   this->drift = pf_matrix_zero();
 
@@ -91,13 +86,13 @@ int AMCLOdom::Unload(void)
 int AMCLOdom::Setup(void)
 {
   // Subscribe to the odometry driver
-  this->driver = deviceTable->GetDriver(this->odom_id);
-  if (!this->driver)
+  this->odom_dev = deviceTable->GetDevice(this->odom_addr);
+  if (!this->odom_dev)
   {
     PLAYER_ERROR("unable to locate suitable position driver");
     return -1;
   }
-  if (this->driver->Subscribe(this->odom_id) != 0)
+  if (this->odom_dev->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -112,8 +107,8 @@ int AMCLOdom::Setup(void)
 int AMCLOdom::Shutdown(void)
 {
   // Unsubscribe from device
-  this->driver->Unsubscribe(this->odom_id);
-  this->driver = NULL;
+  this->odom_dev->Unsubscribe(this->InQueue);
+  this->odom_dev = NULL;
   
   return 0;
 }
@@ -123,38 +118,42 @@ int AMCLOdom::Shutdown(void)
 // Get the current odometry reading
 AMCLSensorData *AMCLOdom::GetData(void)
 {
-  size_t size;
-  struct timeval timestamp;
   pf_vector_t pose;
-  player_position_data_t data;
+  player_position2d_data_t* data;
   AMCLOdomData *ndata;
 
-  // Get the odom device data.
-  size = this->driver->GetData(this->odom_id, 
-                               (void*) &data, 
-                               sizeof(data), &timestamp);
-  if (size == 0)
+  player_msghdr_t* hdr;
+  Message* msg;
+  if(!(msg = this->InQueue->Pop()))
     return NULL;
+
+  hdr = msg->GetHeader();
+
+  // TODO: I think the check can be removed, given the new messaging model.
+  //       I.e., two messages should not have the same timestamp.
+  //               - BPG
 
   // See if this is a new reading
-  if((timestamp.tv_sec == this->time.tv_sec) && 
-     (timestamp.tv_usec == this->time.tv_usec))
+  if(hdr->timestamp == this->time)
+  {
+    delete msg;
     return NULL;
+  }
 
-  double ta = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-  double tb = (double) this->time.tv_sec + ((double) this->time.tv_usec) * 1e-6;  
-  if (ta - tb < 0.100)  // HACK
+  if(!Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                            PLAYER_POSITION2D_DATA_STATE, this->odom_addr))
+  {
+    PLAYER_WARN("got unexpected message");
+    delete msg;
     return NULL;
+  }
 
-  // Byte swap
-  data.xpos = ntohl(data.xpos);
-  data.ypos = ntohl(data.ypos);
-  data.yaw = ntohl(data.yaw);
+  data = (player_position2d_data_t*)msg->GetPayload();
 
   // Compute new robot pose
-  pose.v[0] = (double) ((int32_t) data.xpos) / 1000.0;
-  pose.v[1] = (double) ((int32_t) data.ypos) / 1000.0;
-  pose.v[2] = (double) ((int32_t) data.yaw) * M_PI / 180;
+  pose.v[0] = data->pos[0];
+  pose.v[1] = data->pos[1];
+  pose.v[2] = data->pos[2];
 
   //printf("getdata %.3f %.3f %.3f\n", 
   //	 pose.v[0], pose.v[1], pose.v[2]);
@@ -162,13 +161,14 @@ AMCLSensorData *AMCLOdom::GetData(void)
   ndata = new AMCLOdomData;
 
   ndata->sensor = this;
-  ndata->tsec = timestamp.tv_sec;
-  ndata->tusec = timestamp.tv_usec;
+  ndata->time = hdr->timestamp;
 
   ndata->pose = pose;
   ndata->delta = pf_vector_zero();
 
-  this->time = timestamp;
+  this->time = hdr->timestamp;
+
+  delete msg;
     
   return ndata;
 }

@@ -185,13 +185,6 @@ class LinuxJoystick : public Driver
   public: int Setup();
   public: int Shutdown();
 
-  // MessageHandler
-  public: int ProcessMessage(MessageQueue * resp_queue, 
-                             player_msghdr * hdr, 
-                             void * data, 
-                             void ** resp_data, 
-                             size_t * resp_len);
-
   // Main function for device thread.
   private: virtual void Main();
 
@@ -221,7 +214,6 @@ class LinuxJoystick : public Driver
   // Position device
   private: player_devaddr_t position_addr;
   private: player_position2d_data_t pos_data;
-  private: int motor_enable_reply;
 
   // These are used when we send commands to a position device
   private: double max_xspeed, max_yawspeed;
@@ -343,29 +335,17 @@ int LinuxJoystick::Setup()
     // Enable the motors
     player_position2d_power_config_t motorconfig;
     motorconfig.state = 1;
-    this->motor_enable_reply = -1;
-    // Send the request
-    this->position->PutMsg(this->InQueue,
-                           PLAYER_MSGTYPE_REQ, 
-                           PLAYER_POSITION2D_REQ_MOTOR_POWER,
-                           (void*)&motorconfig,sizeof(motorconfig),NULL);
-    // Set the message filter to look for the response
-    this->InQueue->SetFilter(this->cmd_position_addr.host,
-                             this->cmd_position_addr.robot,
-                             this->cmd_position_addr.interf,
-                             this->cmd_position_addr.index,
-                             -1,
-                             PLAYER_POSITION2D_REQ_MOTOR_POWER);
-    // Await the reply.  When it comes, ProcessMessage() will set
-    // motor_enable_reply accordingly.
-    while(this->motor_enable_reply < 0)
+    Message* msg;
+    if(!(msg = this->position->Request(this->InQueue,
+                                       PLAYER_MSGTYPE_REQ, 
+                                       PLAYER_POSITION2D_REQ_MOTOR_POWER,
+                                       (void*)&motorconfig,
+                                       sizeof(motorconfig),NULL)))
     {
-      this->ProcessMessages();
-      usleep(10);
-    }
-
-    if(this->motor_enable_reply != PLAYER_MSGTYPE_RESP_ACK)
       PLAYER_WARN("failed to enable motors");
+    }
+    else
+      delete msg;
 
     // Stop the robot
     player_position2d_cmd_t cmd;
@@ -574,25 +554,3 @@ void LinuxJoystick::PutPositionCommand()
                          NULL);
 }
 
-// MessageHandler
-int 
-LinuxJoystick::ProcessMessage(MessageQueue * resp_queue, 
-                              player_msghdr * hdr, 
-                              void * data, 
-                              void ** resp_data, 
-                              size_t * resp_len)
-{
-  // Handle motor power response
-  if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
-                            PLAYER_POSITION2D_REQ_MOTOR_POWER, 
-                            this->cmd_position_addr)) ||
-     (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
-                            PLAYER_POSITION2D_REQ_MOTOR_POWER, 
-                            this->cmd_position_addr)))
-  {
-    this->motor_enable_reply = hdr->type;
-    return(0);
-  }
-  else
-    return(-1);
-}
