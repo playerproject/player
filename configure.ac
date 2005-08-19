@@ -2,9 +2,9 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.0)
+AC_INIT(player,2.0-pre1)
 
-AC_CONFIG_SRCDIR(server/main.cc)
+AC_CONFIG_SRCDIR(server/server.cc)
 
 AC_PREREQ(2.53)
 
@@ -339,33 +339,33 @@ AC_OUTPUT(Makefile
           server/drivers/service_adv/Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile 
-          client_libs/Makefile 
-          client_libs/c/Makefile
-          client_libs/c/playercclient.pc
-          client_libs/c++/Makefile
-          client_libs/c++/playerclient.pc
-          client_libs/c++/test/Makefile
-          client_libs/libplayerc/Makefile
-          client_libs/libplayerc/doc/Makefile
-          client_libs/libplayerc/libplayerc.pc
-          client_libs/libplayerc/test/Makefile
-          client_libs/libplayerc/bindings/Makefile
-          client_libs/libplayerc/bindings/python/Makefile
-          client_libs/libplayerpacket/Makefile
-          examples/Makefile
-          examples/plugins/Makefile
-          examples/plugins/exampledriver/Makefile
-          examples/plugins/multidriver/Makefile
-          examples/c++/Makefile
-          examples/libplayerc/Makefile
-          utils/Makefile
-          utils/playerv/Makefile
-          utils/playerjoy/Makefile
-          utils/playernav/Makefile
-          utils/playerprint/Makefile
-          utils/playervcr/Makefile
-          utils/dgps_server/Makefile
-          utils/barcodes/Makefile
+dnl          client_libs/Makefile 
+dnl          client_libs/c/Makefile
+dnl          client_libs/c/playercclient.pc
+dnl          client_libs/c++/Makefile
+dnl          client_libs/c++/playerclient.pc
+dnl          client_libs/c++/test/Makefile
+dnl          client_libs/libplayerc/Makefile
+dnl          client_libs/libplayerc/doc/Makefile
+dnl          client_libs/libplayerc/libplayerc.pc
+dnl          client_libs/libplayerc/test/Makefile
+dnl          client_libs/libplayerc/bindings/Makefile
+dnl          client_libs/libplayerc/bindings/python/Makefile
+dnl          client_libs/libplayerpacket/Makefile
+dnl          examples/Makefile
+dnl          examples/plugins/Makefile
+dnl          examples/plugins/exampledriver/Makefile
+dnl          examples/plugins/multidriver/Makefile
+dnl          examples/c++/Makefile
+dnl          examples/libplayerc/Makefile
+dnl          utils/Makefile
+dnl          utils/playerv/Makefile
+dnl          utils/playerjoy/Makefile
+dnl          utils/playernav/Makefile
+dnl          utils/playerprint/Makefile
+dnl          utils/playervcr/Makefile
+dnl          utils/dgps_server/Makefile
+dnl          utils/barcodes/Makefile
           config/Makefile)
 
 dnl should use AC_MSG_NOTICE(), but that's apparently not defined in
