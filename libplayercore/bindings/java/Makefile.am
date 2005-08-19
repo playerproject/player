@@ -30,6 +30,7 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
                          $(srcdir)/../../player.h \
                          $(srcdir)/../../playercommon.h \
                          $(srcdir)/../../playertime.h
+	mkdir -p playercore
 	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I$(srcdir)/../../.. $<
 
 #all-local:

@@ -1169,7 +1169,8 @@ This interface accepts no commands.
 #define PLAYER_LASER_MAX_SAMPLES  401
 
 /** Laser data subtypes. */
-#define PLAYER_LASER_DATA_SCAN    0x01
+#define PLAYER_LASER_DATA_SCAN        0x01
+#define PLAYER_LASER_DATA_SCANPOSE    0x02
 
 /** Laser request subtypes. */
 #define PLAYER_LASER_REQ_GET_GEOM     0x01
@@ -1194,6 +1195,13 @@ typedef struct player_laser_data
   /** Intensity readings. */
   uint32_t intensity[PLAYER_LASER_MAX_SAMPLES];
 } player_laser_data_t;
+
+/** @brief Data: laser scan with pose attached */
+typedef struct player_laser_data_scanpose
+{
+  player_laser_data_t scan;
+  player_pose_t pose;
+} player_laser_data_scanpose_t;
 
 /** @brief Configuration request:  Get geometry.
 

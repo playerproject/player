@@ -199,6 +199,8 @@ PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([linuxwifi],[no],[linux/wireless.h],
                   [],[],[],[],[[#include <netinet/in.h>]])
 
