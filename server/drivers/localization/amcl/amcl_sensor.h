@@ -29,8 +29,7 @@
 #ifndef AMCL_SENSOR_H
 #define AMCL_SENSOR_H
 
-#include "device.h"
-#include "configfile.h"
+#include <libplayercore/playercore.h>
 #include "pf/pf.h"
 
 
@@ -43,6 +42,9 @@ class AMCLSensor
 {
   // Default constructor
   public: AMCLSensor();
+         
+  // Default destructor
+  public: virtual ~AMCLSensor();
 
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -77,6 +79,9 @@ class AMCLSensor
   // Action pose (action sensors only)
   public: pf_vector_t pose;
 
+  // Queue on which readings from the sensor will arrive
+  protected: MessageQueue* InQueue;
+
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
   public: virtual void SetupGUI(rtk_canvas_t *canvas, rtk_fig_t *robot_fig);
@@ -98,7 +103,7 @@ class AMCLSensorData
   public: AMCLSensor *sensor;
 
   // Data timestamp
-  public: uint32_t tsec, tusec;
+  public: double time;
 };
 
 

@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <assert.h>
 
 #include <netinet/in.h>
@@ -194,5 +195,59 @@ Device::PutMsg(MessageQueue* resp_queue,
   hdr.size = len;
 
   this->PutMsg(resp_queue, &hdr, src);
+}
+
+Message*
+Device::Request(MessageQueue* resp_queue,
+                uint8_t type,
+                uint8_t subtype,
+                void* src,
+                size_t len,
+                double* timestamp)
+{
+  // Send the request message
+  this->PutMsg(resp_queue,
+               type, subtype,
+               src, len, timestamp);
+
+  // Set the message filter to look for the response
+  resp_queue->SetFilter(this->addr.host,
+                        this->addr.robot,
+                        this->addr.interf,
+                        this->addr.index,
+                        -1,
+                        subtype);
+  // Await the reply
+  for(;;)
+  {
+    Message* msg;
+    player_msghdr_t* hdr;
+    if((msg = resp_queue->Pop()))
+    {
+      hdr = msg->GetHeader();
+      if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_ACK,
+                               subtype, this->addr))
+      {
+        // got an ACK
+        resp_queue->ClearFilter();
+        return(msg);
+      }
+      else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_NACK,
+                                    subtype, this->addr))
+      {
+        // got a NACK
+        resp_queue->ClearFilter();
+        delete msg;
+        return(NULL);
+      }
+      else
+      {
+        // got something else
+        PLAYER_ERROR("got unexpected message");
+        delete msg;
+      }
+    }
+    usleep(10);
+  }
 }
 

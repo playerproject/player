@@ -1262,11 +1262,14 @@ This interface accepts no commands.
 
 /** The maximum number of pose hypotheses. */
 #define PLAYER_LOCALIZE_MAX_HYPOTHS   10
+#define PLAYER_LOCALIZE_PARTICLES_MAX 100
+
+/** Data subtypes */
+#define PLAYER_LOCALIZE_DATA_HYPOTHS      0x01
 
 /* Request/reply packet subtypes */
-#define PLAYER_LOCALIZE_SET_POSE      1
-#define PLAYER_LOCALIZE_GET_CONFIG    2
-#define PLAYER_LOCALIZE_SET_CONFIG    3
+#define PLAYER_LOCALIZE_REQ_SET_POSE      0x01
+#define PLAYER_LOCALIZE_REQ_GET_PARTICLES 0x02
 
 /** @brief Hypothesis format.
 
@@ -1277,11 +1280,10 @@ typedef struct player_localize_hypoth
 {
   /** The mean value of the pose estimate (m, m, rad). */
   float mean[3];
-  /** The covariance matrix pose estimate (m$^2$, rad$^2$). 
-      @todo are doubles good here? */
-  int64_t cov[3][3];
-  /** The weight coefficient for linear combination (alpha * 1e6). */
-  uint32_t alpha;
+  /** The covariance matrix pose estimate (m$^2$, rad$^2$). */
+  double cov[3][3];
+  /** The weight coefficient for linear combination (alpha) */
+  double alpha;
 } player_localize_hypoth_t;
 
 /** @brief Data
@@ -1293,7 +1295,7 @@ typedef struct player_localize_data
   /** The number of pending (unprocessed observations) */
   uint32_t pending_count;
   /** The time stamp of the last observation processed. */
-  uint32_t pending_time_sec, pending_time_usec;
+  double pending_time;
   /** The number of pose hypotheses. */
   uint32_t hypoths_count;
   /** The array of the hypotheses. */
@@ -1308,25 +1310,33 @@ typedef struct player_localize_set_pose
 {
   /** The mean value of the pose estimate (m, m, rad). */
   float mean[3];
-  /** The covariance matrix pose estimate (m$^2$, rad$^2$). 
-      @todo are doubles good here?*/
-  int64_t cov[3][3];
-
+  /** The diagonal elements of the covariance matrix pose estimate 
+      (m$^2$, rad$^2$). */
+  double cov[3];
 } player_localize_set_pose_t;
 
-/** @brief Configuration request: Get/Set configuration.
+typedef struct player_localize_particle
+{
+  /** The particle's pose (m,m,rad) */
+  float pose[3];
+  /** The weight coefficient for linear combination (alpha) */
+  double alpha;
+} player_localize_particle_t;
 
-To retrieve the configuration, set the subtype to
-PLAYER_LOCALIZE_GET_CONFIG_REQ and leave the other fields empty. The
-server will reply with the following configuaration fields filled
-in.  To change the current configuration, set the subtype to
-PLAYER_LOCALIZE_SET_CONFIG_REQ and fill the configuration fields. */
-typedef struct player_localize_config
-{ 
-  /** Maximum number of particles (for drivers using particle
-   * filters). */
-  uint32_t num_particles;
-} player_localize_config_t;
+/** @brief Configuration request: Get particles.
+ 
+@todo Fill this in. */
+typedef struct player_localize_get_particles
+{
+  /** The best (?) pose (mm, mm, arc-seconds). */
+  float mean[3];
+  /** The variance of the best (?) pose (mm^2) */
+  double variance;
+  /** The number of particles included */
+  uint32_t particles_count;
+  /** The particles */
+  player_localize_particle_t particles[PLAYER_LOCALIZE_PARTICLES_MAX];
+} player_localize_get_particles_t;
 
 /** @} */
 

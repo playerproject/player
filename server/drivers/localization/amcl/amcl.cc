@@ -122,8 +122,8 @@ The @p amcl driver requires the following interfaces, some of them named:
 - @ref player_interface_laser : source of laser scans
 - "laser" @ref player_interface_map : a map in which to localize the
    robot, by fusing odometry and laser data.
-- @ref player_interface_fiducial : source of fiducial scans
 - In principle supported, but currently disabled are: 
+    - @ref player_interface_fiducial 
     - "imu" @ref player_interface_position
     - @ref player_interface_sonar 
     - @ref player_interface_gps
@@ -351,19 +351,13 @@ Andrew Howard
 #define PLAYER_ENABLE_TRACE 1
 #define PLAYER_ENABLE_MSG 1
 
-// TESTING
-#include "playertime.h"
-//#define INCLUDE_OUTFILE 1
-extern PlayerTime* GlobalTime;
+#include <libplayercore/playercore.h>
 
-#include "error.h"
-#include "deviceregistry.h"
 #include "amcl.h"
-
 // Sensors
 #include "amcl_odom.h"
 #include "amcl_laser.h"
-#include "amcl_fiducial.h"
+//#include "amcl_fiducial.h"
 //#include "amcl_gps.h"
 //#include "amcl_imu.h"
 
@@ -398,15 +392,14 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   double u[3];
   AMCLSensor *sensor;
 
-  memset(&this->localize_id, 0, sizeof(player_device_id_t));
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
+  memset(&this->localize_addr, 0, sizeof(player_devaddr_t));
+  memset(&this->position_addr, 0, sizeof(player_devaddr_t));
 
   // Do we create a localize interface?
-  if(cf->ReadDeviceId(&(this->localize_id), section, "provides",
-                      PLAYER_LOCALIZE_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->localize_addr), section, "provides",
+                        PLAYER_LOCALIZE_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->localize_id, PLAYER_READ_MODE, 
-                          sizeof(player_localize_data_t), 0, 100, 100) != 0)
+    if(this->AddInterface(this->localize_addr))
     {
       this->SetError(-1);    
       return;
@@ -414,11 +407,10 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   }
 
   // Do we create a position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides",
-                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_READ_MODE, 
-                          sizeof(player_position_data_t), 0, 100, 100) != 0)
+    if(this->AddInterface(this->position_addr))
     {
       this->SetError(-1);    
       return;
@@ -429,39 +421,41 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   this->action_sensor = -1;
   this->sensor_count = 0;
 
-  player_device_id_t odom_id;
-  player_device_id_t laser_id;
-  player_device_id_t fiducial_id;
+  player_devaddr_t odom_addr;
+  player_devaddr_t laser_addr;
+  //player_devaddr_t fiducial_addr;
   
   // Create odometry sensor
-  if(cf->ReadDeviceId(&odom_id, section, "requires",
-                      PLAYER_POSITION_CODE, -1, "odometry") == 0)
+  if(cf->ReadDeviceAddr(&odom_addr, section, "requires",
+                        PLAYER_POSITION2D_CODE, -1, "odometry") == 0)
   {
     this->action_sensor = this->sensor_count;
     if (cf->ReadInt(section, "odom_init", 1))
       this->init_sensor = this->sensor_count;
-    sensor = new AMCLOdom(odom_id);
+    sensor = new AMCLOdom(odom_addr);
     sensor->is_action = 1;
     this->sensors[this->sensor_count++] = sensor;
   }
 
   // Create laser sensor
-  if(cf->ReadDeviceId(&laser_id, section, "requires",
-                      PLAYER_LASER_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&laser_addr, section, "requires",
+                        PLAYER_LASER_CODE, -1, NULL) == 0)
   {
-    sensor = new AMCLLaser(laser_id);
+    sensor = new AMCLLaser(laser_addr);
     sensor->is_action = 0;
     this->sensors[this->sensor_count++] = sensor;
   }
 
+#if 0
   // Create fiducial sensor
-  if(cf->ReadDeviceId(&fiducial_id, section, "requires",
-                      PLAYER_FIDUCIAL_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&fiducial_addr, section, "requires",
+                        PLAYER_FIDUCIAL_CODE, -1, NULL) == 0)
   {
-    sensor = new AMCLFiducial(fiducial_id);
+    sensor = new AMCLFiducial(fiducial_addr);
     sensor->is_action = 0;
     this->sensors[this->sensor_count++] = sensor;
   }
+#endif
 
   /*
   // Create GPS sensor
@@ -754,7 +748,9 @@ void AdaptiveMCL::Main(void)
 #endif
 
     // Process any pending requests.
+#if 0
     this->HandleRequests();
+#endif
 
     // Initialize the filter if we havent already done so
     if (!this->pf_init)
@@ -818,7 +814,7 @@ void AdaptiveMCL::InitFilter(void)
 bool AdaptiveMCL::UpdateFilter(void)
 {
   int i;
-  uint32_t tsec, tusec;
+  double ts;
   double weight;
   pf_vector_t pose, delta;
   pf_vector_t pose_mean;
@@ -837,8 +833,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     return false;
   
   // Use the action timestamp 
-  tsec = data->tsec;
-  tusec = data->tusec;
+  ts = data->time;
 
   // HACK
   pose = ((AMCLOdomData*) data)->pose;
@@ -955,8 +950,8 @@ bool AdaptiveMCL::UpdateFilter(void)
 #endif
     
     // Encode data to send to server
-    this->PutDataLocalize(tsec, tusec);
-    this->PutDataPosition(tsec, tusec, delta);
+    this->PutDataLocalize(ts);
+    this->PutDataPosition(ts, delta);
 
     return true;
   }
@@ -977,7 +972,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     
     // Encode data to send to server; only the position interface
     // gets updates every cycle
-    this->PutDataPosition(tsec, tusec, delta);
+    this->PutDataPosition(ts, delta);
 
     return false;
   }
@@ -1002,11 +997,10 @@ hypoth_compare(const void* h1, const void* h2)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the localize interface
-void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
+void AdaptiveMCL::PutDataLocalize(double time)
 {
-  int i, j, k;
+  int i;
   amcl_hyp_t *hyp;
-  double scale[3];
   pf_vector_t pose;
   pf_matrix_t pose_cov;
   size_t datalen;
@@ -1014,11 +1008,10 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
 
   // Record the number of pending observations
   data.pending_count = 0;
-  data.pending_time_sec = 0;
-  data.pending_time_usec = 0;
+  data.pending_time = 0.0;
   
   // Encode the hypotheses
-  data.hypoth_count = this->hyp_count;
+  data.hypoths_count = this->hyp_count;
   for (i = 0; i < this->hyp_count; i++)
   {
     hyp = this->hyps + i;
@@ -1039,78 +1032,53 @@ void AdaptiveMCL::PutDataLocalize(uint32_t tsec, uint32_t tusec)
       assert(0);
     }
 
-    scale[0] = 1000;
-    scale[1] = 1000;
-    scale[2] = 3600 * 180 / M_PI;
-    
-    data.hypoths[i].alpha = (uint32_t) (hyp->weight * 1e6);
+    data.hypoths[i].alpha = hyp->weight;
         
-    data.hypoths[i].mean[0] = (int32_t) (pose.v[0] * scale[0]);
-    data.hypoths[i].mean[1] = (int32_t) (pose.v[1] * scale[1]);
-    data.hypoths[i].mean[2] = (int32_t) (pose.v[2] * scale[2]);
+    data.hypoths[i].mean[0] = pose.v[0];
+    data.hypoths[i].mean[1] = pose.v[1];
+    data.hypoths[i].mean[2] = pose.v[2];
   
-    data.hypoths[i].cov[0][0] = (int64_t) (pose_cov.m[0][0] * scale[0] * scale[0]);
-    data.hypoths[i].cov[0][1] = (int64_t) (pose_cov.m[0][1] * scale[1] * scale[1]);
+    data.hypoths[i].cov[0][0] = pose_cov.m[0][0];
+    data.hypoths[i].cov[0][1] = pose_cov.m[0][1];
     data.hypoths[i].cov[0][2] = 0;
   
-    data.hypoths[i].cov[1][0] = (int64_t) (pose_cov.m[1][0] * scale[0] * scale[0]);
-    data.hypoths[i].cov[1][1] = (int64_t) (pose_cov.m[1][1] * scale[1] * scale[1]);
+    data.hypoths[i].cov[1][0] = pose_cov.m[1][0];
+    data.hypoths[i].cov[1][1] = pose_cov.m[1][1];
     data.hypoths[i].cov[1][2] = 0;
 
     data.hypoths[i].cov[2][0] = 0;
     data.hypoths[i].cov[2][1] = 0;
-    data.hypoths[i].cov[2][2] = (int64_t) (pose_cov.m[2][2] * scale[2] * scale[2]);
+    data.hypoths[i].cov[2][2] = pose_cov.m[2][2];
   }
   
   // sort according to weight
-  qsort((void*)data.hypoths,data.hypoth_count,
+  qsort((void*)data.hypoths,data.hypoths_count,
         sizeof(player_localize_hypoth_t),&hypoth_compare);
 
   // Compute the length of the data packet
-  datalen = sizeof(data) - sizeof(data.hypoths) + data.hypoth_count * sizeof(data.hypoths[0]);
+  datalen = (sizeof(data) - sizeof(data.hypoths) + 
+             data.hypoths_count * sizeof(data.hypoths[0]));
 
-  // Byte-swap
-  data.pending_count = htons(data.pending_count);
-  data.pending_time_sec = htonl(data.pending_time_sec);
-  data.pending_time_usec = htonl(data.pending_time_usec);
-
-  // Byte-swap
-  for (i = 0; (size_t) i < data.hypoth_count; i++)
-  {
-    for (j = 0; j < 3; j++)
-    {
-      data.hypoths[i].mean[j] = htonl(data.hypoths[i].mean[j]);
-      for (k = 0; k < 3; k++)
-        data.hypoths[i].cov[j][k] = htonll(data.hypoths[i].cov[j][k]);
-    }
-    data.hypoths[i].alpha = htonl(data.hypoths[i].alpha);
-  }
-  data.hypoth_count = htonl(data.hypoth_count);
-
-  struct timeval timestamp;
-  timestamp.tv_sec = tsec;
-  timestamp.tv_usec = tusec;
-  // Copy data to server
-  ((Driver*) this)->PutData(this->localize_id, (char*) &data, datalen, &timestamp);
-  
-  return;
+  // Push data out
+  this->Publish(this->localize_addr, NULL,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_LOCALIZE_DATA_HYPOTHS,
+                (void*)&data,datalen,NULL);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the position interface
-void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t delta)
+void AdaptiveMCL::PutDataPosition(double time, pf_vector_t delta)
 {
   int i;
   amcl_hyp_t *hyp;
   pf_vector_t pose;
   pf_matrix_t pose_cov;
-  player_position_data_t data;
+  player_position2d_data_t data;
   double max_weight;
 
-  data.xpos = data.ypos = data.yaw = 0;
-  data.xspeed = data.yspeed = data.yawspeed = 0;
-  data.stall = 0;
+  memset(&data,0,sizeof(data));
 
   max_weight = 0.0;
   
@@ -1141,174 +1109,121 @@ void AdaptiveMCL::PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t del
     if (hyp->weight > max_weight)
     {
       max_weight = hyp->weight;
-      data.xpos = (int) (1000 * pose.v[0]);
-      data.ypos = (int) (1000 * pose.v[1]);
-      data.yaw = (int) (180 / M_PI * pose.v[2]);
+      data.pos[0] = pose.v[0];
+      data.pos[1] = pose.v[1];
+      data.pos[2] = pose.v[2];
     }
   }
 
-  // Byte-swap
-  data.xpos = htonl(data.xpos);
-  data.ypos = htonl(data.ypos);
-  data.yaw = htonl(data.yaw);
-  
-  struct timeval timestamp;
-  timestamp.tv_sec = tsec;
-  timestamp.tv_usec = tusec;
-  // Copy data to server
-  ((Driver*) this)->PutData(this->position_id, (char*) &data, sizeof(data), &timestamp);
-  
-  return;
+  // Push data out
+  this->Publish(this->position_addr, NULL,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_POSITION2D_DATA_STATE,
+                (void*)&data,sizeof(data),NULL);
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-int AdaptiveMCL::HandleRequests(void)
+// MessageHandler
+int 
+AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue, 
+                            player_msghdr * hdr, 
+                            void * data, 
+                            void ** resp_data, 
+                            size_t * resp_len)
 {
-  int len;
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-  
-  while ((len = GetConfig(this->localize_id, &client, 
-                          &request, sizeof(request),NULL)) > 0)
+  player_localize_set_pose_t* setposereq;
+
+  // Is it a request to set the filter's pose?
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_LOCALIZE_REQ_SET_POSE,
+                           this->localize_addr))
   {
-    switch (request[0])
+    if(hdr->size != sizeof(player_localize_set_pose_t))
     {
-      case PLAYER_LOCALIZE_SET_POSE_REQ:
-        HandleSetPose(client, request, len);
-        break;
-      case PLAYER_LOCALIZE_GET_PARTICLES_REQ:
-        HandleGetParticles(client, request, len);
-        break;
-      default:
-        if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, sizeof(player_localize_set_pose_t));
+      return(PLAYER_MSGTYPE_RESP_NACK);
     }
+    setposereq = (player_localize_set_pose_t*)data;
+    
+    pf_vector_t pose;
+    pf_matrix_t cov;
+
+    pose.v[0] = setposereq->mean[0];
+    pose.v[1] = setposereq->mean[1];
+    pose.v[2] = setposereq->mean[2];
+
+    cov = pf_matrix_zero();
+    cov.m[0][0] = setposereq->cov[0];
+    cov.m[1][1] = setposereq->cov[1];
+    cov.m[2][2] = setposereq->cov[2];
+
+    // Re-initialize the filter
+    this->pf_init_pose_mean = pose;
+    this->pf_init_pose_cov = cov;
+    this->pf_init = false;
   }
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle the set pose request
-void AdaptiveMCL::HandleSetPose(void *client, void *request, int len)
-{
-  int reqlen;
-  player_localize_set_pose_t req;
-  pf_vector_t pose;
-  pf_matrix_t cov;
-
-  // Expected length of request
-  reqlen = sizeof(req);
-  
-  // check if the config request is valid
-  if (len != reqlen)
+  // Is it a request for the current particle set?
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                                PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                                this->localize_addr))
   {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  req = *((player_localize_set_pose_t*) request);
-
-  pose.v[0] = ((int32_t) ntohl(req.mean[0])) / 1000.0;
-  pose.v[1] = ((int32_t) ntohl(req.mean[1])) / 1000.0;
-  pose.v[2] = ((int32_t) ntohl(req.mean[2])) / 3600.0 * M_PI / 180;
-
-  cov = pf_matrix_zero();
-  cov.m[0][0] = ((int64_t) ntohll(req.cov[0][0])) / 1e6;
-  cov.m[0][1] = ((int64_t) ntohll(req.cov[0][1])) / 1e6;
-  cov.m[1][0] = ((int64_t) ntohll(req.cov[1][0])) / 1e6;
-  cov.m[1][1] = ((int64_t) ntohll(req.cov[1][1])) / 1e6;
-  cov.m[2][2] = ((int64_t) ntohll(req.cov[2][2])) / (3600.0 * 3600.0) * (M_PI / 180 * M_PI / 180);
-
-  // Re-initialize the filter
-  this->pf_init_pose_mean = pose;
-  this->pf_init_pose_cov = cov;
-  this->pf_init = false;
-
-  // Give them an ack
-  if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-
-// Handle the get particles request
-void 
-AdaptiveMCL::HandleGetParticles(void *client, void *request, int len)
-{
-  int reqlen;
-  pf_vector_t mean;
-  double var;
-  player_localize_get_particles_t* req;
-  player_localize_get_particles_t* resp;
-  pf_sample_set_t *set;
-  pf_sample_t *sample;
-  int i;
-  size_t size;
-  
-  reqlen = sizeof(resp->subtype);
-  // check if the config request is valid
-  if (len != reqlen)
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, reqlen);
-    if (PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  req = (player_localize_get_particles_t*)request;
-
-  // have to get this off the heap, in order to not overflow the stack
-  assert(resp = (player_localize_get_particles_t*)calloc(1,sizeof(player_localize_get_particles_t)));
-
-  size = 0;
-  resp->subtype = PLAYER_LOCALIZE_GET_PARTICLES_REQ;
-  size += 1;
-  pf_get_cep_stats(this->pf, &mean, &var);
-
-  resp->mean[0] = htonl((int32_t)rint(mean.v[0] * 1e3));
-  resp->mean[1] = htonl((int32_t)rint(mean.v[1] * 1e3));
-  resp->mean[2] = htonl((int32_t)rint(RTOD(mean.v[2]) * 3600.0));
-  size += 4 * 3;
-  resp->variance = htonll((uint64_t)rint(var * 1e3 * 1e3));
-  size += 8;
-
-  set = this->pf->sets + this->pf->current_set;
-
-  resp->num_particles = htonl(set->sample_count);
-  size += 4;
-
-  // TODO: pick representative particles
-  for(i=0;i<set->sample_count;i++)
-  {
-    if(i >= PLAYER_LOCALIZE_PARTICLES_MAX)
+    if(hdr->size != 0)
     {
-      //PLAYER_WARN("too many particles");
-      resp->num_particles = htonl(i);
-      break;
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, 0);
+      return(PLAYER_MSGTYPE_RESP_NACK);
     }
 
-    sample = set->samples + i;
 
-    resp->particles[i].pose[0] = htonl((int32_t)rint(sample->pose.v[0] * 1e3));
-    resp->particles[i].pose[1] = htonl((int32_t)rint(sample->pose.v[1] * 1e3));
-    resp->particles[i].pose[2] = 
-            htonl((int32_t)rint(RTOD(sample->pose.v[2]) * 3600.0));
-    resp->particles[i].alpha = htonl((uint32_t)rint(sample->weight * 1e6));
+    pf_vector_t mean;
+    double var;
+    player_localize_get_particles_t* resp;
+    pf_sample_set_t *set;
+    pf_sample_t *sample;
+    int i;
+  
+    *resp_data = calloc(1,sizeof(player_localize_get_particles_t));
+    assert(*resp_data);
+    resp = (player_localize_get_particles_t*)(*resp_data);
 
-    size += 4 * 4;
+    pf_get_cep_stats(this->pf, &mean, &var);
+
+    resp->mean[0] = mean.v[0];
+    resp->mean[1] = mean.v[1];
+    resp->mean[2] = mean.v[2];
+    resp->variance = var;
+
+    set = this->pf->sets + this->pf->current_set;
+
+    resp->particles_count = htonl(set->sample_count);
+
+    // TODO: pick representative particles
+    for(i=0;i<set->sample_count;i++)
+    {
+      if(i >= PLAYER_LOCALIZE_PARTICLES_MAX)
+      {
+        //PLAYER_WARN("too many particles");
+        resp->particles_count = htonl(i);
+        break;
+      }
+
+      sample = set->samples + i;
+      resp->particles[i].pose[0] = sample->pose.v[0];
+      resp->particles[i].pose[1] = sample->pose.v[1];
+      resp->particles[i].pose[2] = sample->pose.v[2];
+      resp->particles[i].alpha = sample->weight;
+    }
+
+    *resp_len = (sizeof(player_localize_get_particles_t) -
+                 (sizeof(player_localize_particle_t) * 
+                  PLAYER_LOCALIZE_PARTICLES_MAX) +
+                 (sizeof(player_localize_particle_t) *
+                  resp->particles_count));
+
+    return(PLAYER_MSGTYPE_RESP_ACK);
   }
 
-  if(PutReply(this->localize_id, client, PLAYER_MSGTYPE_RESP_ACK,
-              resp, size, NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  free(resp);
+  return(-1);
 }
 
 #ifdef INCLUDE_RTKGUI

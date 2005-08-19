@@ -82,6 +82,12 @@ class AdaptiveMCL : public Driver
   // Setup/shutdown routines.
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
+  // MessageHandler
+  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * data, 
+                                     void ** resp_data, 
+                                     size_t * resp_len);
 
   // Check for updated sensor data
   public: virtual void Update(void);
@@ -117,22 +123,10 @@ class AdaptiveMCL : public Driver
   private: bool UpdateFilter();
 
   // Put new localization data
-  private: void PutDataLocalize(uint32_t tsec, uint32_t tusec);
+  private: void PutDataLocalize(double time);
 
   // Put new position data
-  private: void PutDataPosition(uint32_t tsec, uint32_t tusec, pf_vector_t delta);
-
-  // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests(void);
-
-  // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *request, int len);
-
-  // Handle the set pose request
-  private: void HandleSetPose(void *client, void *request, int len);
-
-  // Handle the get particles request
-  private: void HandleGetParticles(void *client, void *request, int len);
+  private: void PutDataPosition(double time, pf_vector_t delta);
 
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
@@ -153,8 +147,8 @@ class AdaptiveMCL : public Driver
   ///////////////////////////////////////////////////////////////////////////
 
   // interfaces we might be using
-  private: player_device_id_t position_id;
-  private: player_device_id_t localize_id;
+  private: player_devaddr_t position_addr;
+  private: player_devaddr_t localize_addr;
   
   // List of all sensors
   private: int sensor_count;

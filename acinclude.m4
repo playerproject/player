@@ -2,8 +2,6 @@
 dnl Here are the tests for inclusion of Player's various device drivers
 
 PLAYER_DRIVERS=
-dnl PLAYER_DRIVER_LIBS=
-dnl PLAYER_DRIVER_LIBPATHS=
 PLAYER_DRIVER_EXTRA_LIBS=
 PLAYER_NODRIVERS=
 
@@ -86,7 +84,6 @@ fi
 if test "x$enable_$1" = "xyes"; then
   AC_DEFINE([INCLUDE_]name_caps, 1, [include the $1 driver])
   name_caps[_LIB]=[lib]$1[.la]
-dnl  name_caps[_LIBPATH]=$2/$name_caps[_LIB]
   name_caps[_EXTRA_CPPFLAGS]=$4
   name_caps[_EXTRA_LIB]=$5
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
@@ -106,8 +103,6 @@ fi
 
 AC_SUBST(name_caps[_LIB])
 AM_CONDITIONAL([INCLUDE_]name_caps, test "x$enable_$1" = "xyes")
-dnl PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $name_caps[_LIB]"
-dnl PLAYER_DRIVER_LIBPATHS="$PLAYER_DRIVER_LIBPATHS $name_caps[_LIBPATH]"
 AC_SUBST(name_caps[_EXTRA_CPPFLAGS])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $name_caps[_EXTRA_LIB]"
 
@@ -301,13 +296,11 @@ dnl installation of gsl have a .pc file.
 dnl PKG_CHECK_MODULES(GSL,gsl,
 dnl                   found_gsl=yes,
 dnl                   found_gsl=no)
-PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],[-lgsl -lgslcblas])
+PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
 
 dnl Add results from driver tests to compiler and link lines
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
-dnl AC_SUBST(PLAYER_DRIVER_LIBS)
-dnl AC_SUBST(PLAYER_DRIVER_LIBPATHS)
 AC_SUBST(PLAYER_DRIVER_EXTRA_LIBS)
 
 ])
@@ -387,8 +380,6 @@ if test "x$enable_gazebo" = "xyes"; then
 fi
 
 AC_SUBST(GAZEBO_LIB)
-dnl PLAYER_DRIVER_LIBS="$PLAYER_DRIVER_LIBS $GAZEBO_LIB"
-dnl PLAYER_DRIVER_LIBPATHS="$GAZEBO_LIB_PATH $PLAYER_DRIVER_LIBPATHS"
 AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LIB"
 
