@@ -61,10 +61,16 @@ playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_laser_t));
   memset(device, 0, sizeof(playerc_laser_t));
+#if 0
   playerc_device_init(&device->info, client, PLAYER_LASER_CODE, index,
                       (playerc_putdata_fn_t) playerc_laser_putdata,
 					  (playerc_putdata_fn_t) playerc_laser_putgeom,
 					  (playerc_putdata_fn_t) playerc_laser_putconfig);
+#endif
+  playerc_device_init(&device->info, client, PLAYER_LASER_CODE, index,
+                      (playerc_putdata_fn_t) playerc_laser_putdata,
+					  (playerc_putdata_fn_t) NULL,
+					  (playerc_putdata_fn_t) NULL);
 
   device->pose[0] = 0.0;
   device->pose[1] = 0.0;
@@ -100,47 +106,43 @@ int playerc_laser_unsubscribe(playerc_laser_t *device)
 
 // Process incoming data
 void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_data_t *data, size_t len)
+                           void *data, size_t len)
 {
   int i;
-  double r, b, db, rr;
+  double r, b, db;
+  player_laser_data_t ldata;
 
-  assert(sizeof(*data) <= len);
-  
-  data->min_angle = ntohs(data->min_angle);
-  data->max_angle = ntohs(data->max_angle);
-  data->resolution = ntohs(data->resolution);
-  data->range_count = ntohs(data->range_count);
-  data->range_res = ntohs(data->range_res);
+  if(player_laser_data_pack(data, len, &ldata, PLAYERXDR_DECODE) < 0)
+  {
+    PLAYERC_ERR("failed to unpack laser data message");
+    return;
+  }
 
-  assert(data->range_count <= sizeof(device->scan) / sizeof(device->scan[0]));
+  assert(ldata.ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
   
-  device->range_res = data->range_res;  
-  rr = (double) data->range_res;
-  
-  b = data->min_angle / 100.0 * M_PI / 180.0;
-  db = data->resolution / 100.0 * M_PI / 180.0;
+  b = ldata.min_angle;
+  db = ldata.resolution;
 
   device->scan_start = b;
   device->scan_res = db;
   
-  for (i = 0; i < data->range_count; i++)
+  for (i = 0; i < ldata.ranges_count; i++)
   {
-    r = ((uint16_t) ntohs(data->ranges[i])) * rr / 1000.0;
+    r = ldata.ranges[i];
     assert(r >= 0);
     device->ranges[i] = r;
     device->scan[i][0] = r;
     device->scan[i][1] = b;
     device->point[i][0] = r * cos(b);
     device->point[i][1] = r * sin(b);
-    device->intensity[i] = data->intensity[i];
+    device->intensity[i] = ldata.intensity[i];
     b += db;
   }
 
-  device->scan_count = data->range_count;
-
+  device->scan_count = ldata.ranges_count;
 }
 
+#if 0
 // Process incoming config
 void playerc_laser_putconfig(playerc_laser_t *device, player_msghdr_t *header,
                            player_laser_config_t *data, size_t len)
@@ -254,4 +256,5 @@ int playerc_laser_get_geom(playerc_laser_t *device)
   return 0;
 }
 
+#endif
 

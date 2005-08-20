@@ -90,7 +90,7 @@ void ExampleDriver_Register(DriverTable* table)
 // pre-Setup() setup.
 ExampleDriver::ExampleDriver(ConfigFile* cf, int section)
     : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
-             PLAYER_POSITION_CODE)
+             PLAYER_POSITION2D_CODE)
 {
   // Read an option from the configuration file
   this->foop = cf->ReadInt(section, "foo", 0);

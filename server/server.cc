@@ -29,6 +29,7 @@
 
 #include <libplayercore/playercore.h>
 #include <libplayertcp/playertcp.h>
+#include <libplayerxdr/functiontable.h>
 #include <libplayerdrivers/driverregistry.h>
 
 /****************/
@@ -66,6 +67,7 @@ main(int argc, char** argv)
   }
 
   player_register_drivers();
+  playerxdr_ftable_init();
 
   if(ParseArgs(&port, &debuglevel, &cfgfilename, argc, argv) < 0)
   {

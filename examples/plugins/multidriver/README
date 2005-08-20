@@ -9,7 +9,7 @@ the Player installed and then type 'make'.
 
 To try it, run:
 
-  $ player multidriver.cfg
+  $ player multi.cfg
 
   Andrew Howard
   ahoward@usc.edu

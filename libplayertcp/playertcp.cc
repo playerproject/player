@@ -501,6 +501,8 @@ PlayerTCP::ReadClient(int cli)
       PLAYER_MSG0(2, "read() read zero bytes");
       return(-1);
     }
+    else
+      client->readbufferlen += numread;
   }
 
   // Try to parse the data received so far
@@ -534,6 +536,8 @@ PlayerTCP::ParseBuffer(int cli)
       return;
     }
 
+    printf("addr: %d:%d:%d:%d\n",
+           hdr.addr.host, hdr.addr.robot, hdr.addr.interf, hdr.addr.index);
     msglen = headerlen + hdr.size;
 
     // Is the message of a legal size?
@@ -548,7 +552,8 @@ PlayerTCP::ParseBuffer(int cli)
     if(msglen > client->readbufferlen)
       return;
 
-    if(!(device = deviceTable->GetDevice(hdr.addr)))
+    device = deviceTable->GetDevice(hdr.addr);
+    if(!device && (hdr.addr.interf != PLAYER_PLAYER_CODE))
     {
       PLAYER_WARN3("skipping message of type %u to unknown device %u:%u",
                    hdr.subtype, hdr.addr.interf, hdr.addr.index);
@@ -600,7 +605,16 @@ PlayerTCP::ParseBuffer(int cli)
         {
           // update the message size and send it off
           hdr.size = decode_msglen;
-          device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+          if(hdr.addr.interf == PLAYER_PLAYER_CODE)
+          {
+            Message* msg = new Message(hdr, this->decode_readbuffer,
+                                       hdr.size, client->queue);
+            assert(msg);
+            this->HandlePlayerMessage(cli, msg);
+            delete msg;
+          }
+          else
+            device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
         }
       }
     }

@@ -51,22 +51,23 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netdb.h>       // for gethostbyname()
-#include <netinet/in.h>  // for struct sockaddr_in, htons(3)
 #include <errno.h>
+#include <sys/time.h>
 
 #include <replace/replace.h>  // for poll(2)
 
 #include "playerc.h"
 #include "error.h"
 
+// TODO: get rid of this structure
 // Player message structure for subscibing to devices.  This one is
 // easier to use than the one defined in messages.h.
 typedef struct
 {
-    uint16_t subtype;
-    uint16_t device;
-    uint16_t index;
-    uint8_t access;
+  uint16_t subtype;
+  uint16_t device;
+  uint16_t index;
+  uint8_t access;
 } __attribute__ ((packed)) playerc_msg_subscribe_t;
 
 
@@ -133,7 +134,7 @@ int playerc_client_connect(playerc_client_t *client)
 {
   struct hostent* entp;
   struct sockaddr_in server;
-  char banner[32+sizeof(player_msghdr_t)];
+  char banner[PLAYER_IDENT_STRLEN];
 
   // Construct socket 
   client->sock = socket(PF_INET, SOCK_STREAM, 0);
@@ -169,13 +170,14 @@ int playerc_client_connect(playerc_client_t *client)
     return -1;
   }
 
+#if 0
   // Default to async data mode
   if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_ASYNC) != 0)
   {
     PLAYERC_ERR("unable to set push_async data mode");
     return -1;
   }
-
+#endif
   // PLAYERC_MSG3("[%s] connected on [%s:%d]", banner, client->hostname, client->port);
   return 0;
 }
@@ -289,40 +291,41 @@ void *playerc_client_read(playerc_client_t *client)
   switch(header.type)
   {
     case PLAYER_MSGTYPE_SYNCH:
-	  client->datatime = header.timestamp_sec + header.timestamp_usec * 1e-6;
+      client->datatime = header.timestamp;
       return client->id;
-	
-/*	case PLAYER_MSGTYPE_GEOM:
-	  return playerc_client_dispatch_geom(client, &header, client->data, len);
-  
-  	case PLAYER_MSGTYPE_CONFIG:
-	  return playerc_client_dispatch_config(client, &header, client->data, len);  
-  */
-  	case PLAYER_MSGTYPE_DATA:
-  	{
-		return playerc_client_dispatch(client, &header, client->data, len);
-  	}
+
+    case PLAYER_MSGTYPE_DATA:
+      return playerc_client_dispatch(client, &header, client->data, len);
   }
-  
-	PLAYERC_WARN1("unexpected message type [%d]", header.type);
-	return NULL;
+
+  PLAYERC_WARN1("unexpected message type [%d]", header.type);
+  return NULL;
 }
 
 
 // Write a command
-// TODO: expose the subtype here.
-int playerc_client_write(playerc_client_t *client, playerc_device_t *device,
-                         void *cmd, int len)
+int playerc_client_write(playerc_client_t *client, 
+                         playerc_device_t *device,
+                         uint8_t subtype, 
+                         void *cmd, int len,
+                         double* timestamp)
 {
   player_msghdr_t header;
+  struct timeval curr;
 
   memset(&header,0,sizeof(player_msghdr_t));
 
-  header.stx = PLAYER_STXX;
+  header.addr = device->addr;
   header.type = PLAYER_MSGTYPE_CMD;
-  header.device = device->code;
-  header.device_index = device->index;
+  header.subtype = subtype;
   header.size = len;
+  if(timestamp)
+    header.timestamp = *timestamp;
+  else
+  {
+    gettimeofday(&curr,NULL);
+    header.timestamp = curr.tv_sec + curr.tv_usec/1e6;
+  }
 
   return playerc_client_writepacket(client, &header, cmd, len);
 }
@@ -332,28 +335,29 @@ int playerc_client_request(playerc_client_t *client,
                            playerc_device_t *deviceinfo,
                            uint8_t subtype,
                            void *req_data, int req_len, 
-                           void *rep_data, int rep_len)
+                           void *rep_data, int* rep_len)
 {
   int i, len;
   player_msghdr_t req_header, rep_header;
 
   if(deviceinfo == NULL)
   {
-    req_header.stx = PLAYER_STXX;
+    // TODO: store the host as a 32-bit number and insert it here
+    req_header.addr.host = 0;
+    req_header.addr.robot = client->port;
+    req_header.addr.interf = PLAYER_PLAYER_CODE;
+    req_header.addr.index = 0;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = PLAYER_PLAYER_CODE;    
-    req_header.device_index = 0;
     req_header.size = req_len;
   }
   else
   {
-    req_header.stx = PLAYER_STXX;
+    req_header.addr = deviceinfo->addr;
     req_header.type = PLAYER_MSGTYPE_REQ;
-    req_header.device = deviceinfo->code;
-    req_header.device_index = deviceinfo->index;
     req_header.size = req_len;
   }
   req_header.subtype = subtype;
+
 
   if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
     return -1;
@@ -373,23 +377,28 @@ int playerc_client_request(playerc_client_t *client,
     }
     else if(rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
     {
-      if (rep_header.device != req_header.device ||
-          rep_header.device_index != req_header.device_index ||
+      if (rep_header.addr.host != req_header.addr.host ||
+          rep_header.addr.robot != req_header.addr.robot ||
+          rep_header.addr.interf != req_header.addr.interf ||
+          rep_header.addr.index != req_header.addr.index ||
           rep_header.subtype != req_header.subtype ||
-          rep_header.size > rep_len)
+          rep_header.size > *rep_len)
       {
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
       }
-      memcpy(rep_data, client->data, rep_len);
+      *rep_len = rep_header.size;
+      memcpy(rep_data, client->data, *rep_len);
       break;
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
     {
-      if (rep_header.device != req_header.device ||
-          rep_header.device_index != req_header.device_index ||
+      if (rep_header.addr.host != req_header.addr.host ||
+          rep_header.addr.robot != req_header.addr.robot ||
+          rep_header.addr.interf != req_header.addr.interf ||
+          rep_header.addr.index != req_header.addr.index ||
           rep_header.subtype != req_header.subtype ||
-          rep_header.size > rep_len)
+          rep_header.size > *rep_len)
       {
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
@@ -553,6 +562,7 @@ int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device)
   return -1;
 }
 
+#if 0
 
 // Get the list of available device ids.  The data is written into the
 // proxy structure rather than returned to the caller.
@@ -619,6 +629,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
 
   return 0;
 }
+#endif
 
 
 // Subscribe to a device
@@ -627,13 +638,28 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
 {
   player_device_req_t req;
   player_device_resp_t rep;
+  unsigned char reqbuf[4*sizeof(player_device_req_t)];
+  int reqbuflen;
+  unsigned char repbuf[4*sizeof(player_device_resp_t)];
+  int repbuflen = sizeof(repbuf);
 
-//  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.code = htons(code);
-  req.index = htons(index);
+  req.addr.host = 0;
+  req.addr.robot = client->port;
+  req.addr.interf = code;
+  req.addr.index = index;
   req.access = access;
 
-  if (playerc_client_request(client, NULL,PLAYER_PLAYER_DEV, &req, sizeof(req), &rep, sizeof(rep)) < 0)
+  // pack the request payload
+  if((reqbuflen = player_device_req_pack((void*)reqbuf,sizeof(reqbuf),
+                                         &req,PLAYERXDR_ENCODE)) < 0)
+    return -1;
+
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DEV, 
+                             (void*)reqbuf, reqbuflen, repbuf, &repbuflen) < 0)
+    return -1;
+
+  // unpack the response
+  if(player_device_resp_pack((void*)repbuf, repbuflen, &rep, PLAYERXDR_DECODE) < 0)
     return -1;
 
   if (rep.access != access)
@@ -654,13 +680,28 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
 {
   player_device_req_t req;
   player_device_resp_t rep;
+  unsigned char reqbuf[4*sizeof(player_device_req_t)];
+  int reqbuflen;
+  unsigned char repbuf[4*sizeof(player_device_resp_t)];
+  int repbuflen = sizeof(repbuf);
 
-//  req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.code = htons(code);
-  req.index = htons(index);
+  req.addr.host = 0;
+  req.addr.robot = client->port;
+  req.addr.interf = code;
+  req.addr.index = index;
   req.access = PLAYER_CLOSE_MODE;
 
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DEV, &req, sizeof(req), &rep, sizeof(rep)) < 0)
+  // pack the request
+  if((reqbuflen = player_device_req_pack((void*)reqbuf,sizeof(reqbuf),
+                                         &req,PLAYERXDR_ENCODE)) < 0)
+    return -1;
+
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DEV, reqbuf, reqbuflen, 
+                             repbuf, &repbuflen) < 0)
+    return -1;
+
+  // unpack the response
+  if(player_device_resp_pack((void*)repbuf,repbuflen,&rep,PLAYERXDR_DECODE) < 0)
     return -1;
 
   if (rep.access != PLAYER_CLOSE_MODE)
@@ -718,34 +759,13 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
                               char *data, int *len)
 {
   int nbytes, bytes, total_bytes;
+  unsigned char hdrbuf[PLAYERXDR_MSGHDR_SIZE];
 
-  // Look for STX
-  for (bytes = 0; bytes < 2;)
+  // Read header
+  for (bytes = 0; bytes < sizeof(hdrbuf);)
   {
-    nbytes = recv(client->sock, (char*) header + bytes, 2 - bytes, 0);
-    if (nbytes <= 0)
-    {
-      PLAYERC_ERR1("recv on stx failed with error [%s]", strerror(errno));
-      return -1;
-    }
-    bytes += nbytes;
-  }
-  if (bytes < 2)
-  {
-    PLAYERC_ERR2("got incomplete stx, %d of %d bytes", bytes, 2);
-    return -1;
-  }
-  if (ntohs(header->stx) != PLAYER_STXX)
-  {
-    PLAYERC_ERR("malformed packet; discarding");
-    return -1;
-  }
-
-  // Read packet
-  for (bytes = 0; bytes < sizeof(player_msghdr_t) - 2;)
-  {
-    nbytes = recv(client->sock, (char*) header + 2 + bytes,
-                  sizeof(player_msghdr_t) - 2 - bytes, 0);
+    nbytes = recv(client->sock, hdrbuf + bytes,
+                  sizeof(hdrbuf) - bytes, 0);
     if (nbytes <= 0)
     {
       PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
@@ -753,24 +773,19 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
     }
     bytes += nbytes;
   }
-  if (bytes < sizeof(player_msghdr_t) - 2)
+  if (bytes < sizeof(hdrbuf))
   {
-    PLAYERC_ERR2("got incomplete header, %d of %d bytes", bytes, sizeof(player_msghdr_t) - 2);
+    PLAYERC_ERR2("got incomplete header, %d of %d bytes", bytes, sizeof(hdrbuf));
+    return -1;
+  }
+
+  // Unpack the header
+  if(player_msghdr_pack(hdrbuf, sizeof(hdrbuf), header, PLAYERXDR_DECODE) < 0)
+  {
+    PLAYERC_ERR("failed to unpack header");
     return -1;
   }
   
-  // Do the network byte re-ordering 
-  header->stx = ntohs(header->stx);
-  header->type = (header->type);
-  header->subtype = (header->subtype);
-  header->device = ntohs(header->device);
-  header->device_index = ntohs(header->device_index);
-  header->size = ntohl(header->size);
-  header->time_sec = ntohl(header->time_sec);
-  header->time_usec = ntohl(header->time_usec);
-  header->timestamp_sec = ntohl(header->timestamp_sec);
-  header->timestamp_usec = ntohl(header->timestamp_usec);
-
   if (header->size > *len)
   {
     PLAYERC_ERR1("packet is too large, %d bytes", header->size);
@@ -800,34 +815,28 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
                                char *data, int len)
 {
   int bytes;
+  unsigned char hdrbuf[PLAYERXDR_MSGHDR_SIZE];
 
-  // Do the network byte re-ordering 
-  header->stx = htons(header->stx);
-  header->type = (header->type);
-  header->subtype = (header->subtype);
-  header->device = htons(header->device);
-  header->device_index = htons(header->device_index);
-  header->size = htonl(header->size);
-  
-  bytes = send(client->sock, header, sizeof(player_msghdr_t), 0);
+  // Pack the header
+  if(player_msghdr_pack(hdrbuf, sizeof(hdrbuf), header, PLAYERXDR_ENCODE) < 0)
+  {
+    PLAYERC_ERR("failed to unpack header");
+    return -1;
+  }
+  // Send the header
+  bytes = send(client->sock, hdrbuf, sizeof(hdrbuf), 0);
   if (bytes < 0)
   {
     PLAYERC_ERR1("send on header failed with error [%s]", strerror(errno));
     return -1;
   }
-  else if (bytes < sizeof(player_msghdr_t))
+  else if (bytes < sizeof(hdrbuf))
   {
-    PLAYERC_ERR2("sent incomplete header, %d of %d bytes", bytes, sizeof(player_msghdr_t));
+    PLAYERC_ERR2("sent incomplete header, %d of %d bytes", bytes, sizeof(hdrbuf));
     return -1;
   }
-  // Now undo the network byte re-ordering 
-  header->stx = ntohs(header->stx);
-  header->type = (header->type);
-  header->subtype = (header->subtype);
-  header->device = ntohs(header->device);
-  header->device_index = ntohs(header->device_index);
-  header->size = ntohl(header->size);
     
+  // Send the body
   bytes = send(client->sock, data, len, 0);
   if (bytes < 0)
   {
@@ -906,10 +915,11 @@ void *playerc_client_dispatch(playerc_client_t *client, player_msghdr_t *header,
   {
     device = client->device[i];
         
-    if (device->code == header->device && device->index == header->device_index)
+    if (device->addr.interf == header->addr.interf && 
+        device->addr.index == header->addr.index)
     {
       // Fill out timing info 
-      device->datatime = header->timestamp_sec + header->timestamp_usec * 1e-6;
+      device->datatime = header->timestamp;
 
       // Call the registerd handler for this device 
       (*device->putdata) (device, (char*) header, data, len);
@@ -939,13 +949,15 @@ void *playerc_client_dispatch_geom(playerc_client_t *client, player_msghdr_t *he
   {
     device = client->device[i];
         
-    if (device->code == header->device && device->index == header->device_index)
+    if (device->addr.interf == header->addr.interf && 
+        device->addr.index == header->addr.index)
     {
       // Call the registerd handler for this device 
       if (device->putgeom)
 	      (*device->putgeom) (device, (char*) header, data, len);
       else
-	    PLAYERC_WARN2("No Geom Message Handler for device %d:%d\n",device->code, device->index);
+	    PLAYERC_WARN2("No Geom Message Handler for device %d:%d\n",
+                          device->addr.interf, device->addr.index);
 
       // mark as fresh
       device->freshgeom = 1;
@@ -968,7 +980,8 @@ void *playerc_client_dispatch_config(playerc_client_t *client, player_msghdr_t *
   {
     device = client->device[i];
         
-    if (device->code == header->device && device->index == header->device_index)
+    if (device->addr.interf == header->addr.interf && 
+        device->addr.index == header->addr.index)
     {
       // Call the registerd handler for this device 
       if (device->putconfig)

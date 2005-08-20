@@ -41,37 +41,40 @@
 #include <string.h>
 #include <netinet/in.h>
 
-#include <player/drivertable.h>
-#include <player/driver.h>
-#include <player.h>
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class MultiDriver : public Driver
 {
-  // Constructor; need that
-  public: MultiDriver(ConfigFile* cf, int section);
+  public:
+    
+    // Constructor; need that
+    MultiDriver(ConfigFile* cf, int section);
 
-  // Must implement the following methods.
-  public: int Setup();
-  public: int Shutdown();
+    // Must implement the following methods.
+    virtual int Setup();
+    virtual int Shutdown();
+    virtual int ProcessMessage(MessageQueue * resp_queue, 
+                               player_msghdr * hdr, 
+                               void * data, 
+                               void ** resp_data, 
+                               size_t * resp_len);
 
-  // Main function for device thread.
-  private: virtual void Main();
+  private:
+    // Main function for device thread.
+    virtual void Main();
 
-  private: void CheckConfig();
-  private: void CheckCommands();
-  private: void RefreshData();
+    // My position interface
+    player_devaddr_t m_position_addr;
+    // My laser interface
+    player_devaddr_t m_laser_addr;
 
-  // Position interface
-  private: player_device_id_t position_id;
-  private: player_position_data_t position_data;
-  private: player_position_cmd_t position_cmd;
-
-  // Laser interface
-  private: player_device_id_t laser_id;
-  private: player_laser_data_t laser_data;
+    // Address of and pointer to the laser device to which I'll subscribe
+    player_devaddr_t laser_addr;
+    Device* laser_dev;
 };
 
 
@@ -98,15 +101,11 @@ void MultiDriver_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Extra stuff for building a shared object.
 
-// Need access to the global driver table
-#include <player/drivertable.h>
-
 /* need the extern to avoid C++ name-mangling  */
 extern "C"
 {
   int player_driver_init(DriverTable* table)
   {
-    puts("plugin init");
     MultiDriver_Register(table);
     return(0);
   }
@@ -119,34 +118,39 @@ extern "C"
 MultiDriver::MultiDriver(ConfigFile* cf, int section)
     : Driver(cf, section)
 {
-  // Create position interface
-  if (cf->ReadDeviceId(&(this->position_id), section, "provides", PLAYER_POSITION_CODE, 0, NULL) != 0)
+  // Create my position interface
+  if (cf->ReadDeviceAddr(&(this->m_position_addr), section, 
+                         "provides", PLAYER_POSITION2D_CODE, 0, NULL) != 0)
   {
     this->SetError(-1);
     return;
   }  
-  if (this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                         sizeof(player_position_data_t),
-                         sizeof(player_position_cmd_t), 10, 10) != 0)
+  if (this->AddInterface(this->m_position_addr))
   {
     this->SetError(-1);    
     return;
   }
 
-  // Create laser interface
-  if (cf->ReadDeviceId(&(this->laser_id), section, "provides", PLAYER_LASER_CODE, 0, NULL) != 0)
+  // Create my laser interface
+  if (cf->ReadDeviceAddr(&(this->m_laser_addr), section, 
+                         "provides", PLAYER_LASER_CODE, 0, NULL) != 0)
   {
     this->SetError(-1);
     return;
   }    
-  if (this->AddInterface(this->laser_id, PLAYER_READ_MODE,
-                         sizeof(player_laser_data_t), 0, 10, 10) != 0)
+  if (this->AddInterface(this->m_laser_addr))
   {
     this->SetError(-1);        
     return;
   }
 
-  return;
+  // Find out which laser I'll subscribe to
+  if (cf->ReadDeviceAddr(&(this->laser_addr), section, 
+                         "requires", PLAYER_LASER_CODE, 0, NULL) != 0)
+  {
+    this->SetError(-1);
+    return;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,7 +159,19 @@ int MultiDriver::Setup()
 {   
   puts("Example driver initialising");
 
-  // Here you do whatever is necessary to setup the device, like open and
+  // Subscribe to the laser device
+  if(!(this->laser_dev = deviceTable->GetDevice(this->laser_addr)))
+  {
+    PLAYER_ERROR("unable to locate suitable laser device");
+    return(-1);
+  }
+  if(this->laser_dev->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to laser device");
+    return(-1);
+  }
+
+  // Here you do whatever else is necessary to setup the device, like open and
   // configure a serial port.
     
   puts("Example driver ready");
@@ -177,6 +193,9 @@ int MultiDriver::Shutdown()
   // Stop and join the driver thread
   this->StopThread();
 
+  // Unsubscribe from the laser
+  this->laser_dev->Unsubscribe(this->InQueue);
+
   // Here you would shut the device down by, for example, closing a
   // serial port.
 
@@ -196,63 +215,53 @@ void MultiDriver::Main()
     // test if we are supposed to cancel
     pthread_testcancel();
 
-    // Check for and handle configuration requests
-    this->CheckConfig();
+    // Process incoming messages.  Calls ProcessMessage() on each pending
+    // message.
+    this->ProcessMessages();
 
-    // Check for commands
-    this->CheckCommands();
+    // Do work here.  
+    //
+    // Send out new messages with Driver::Publish()
+    //
+    // For example, to send a new position pose message:
+    player_position2d_data_t posdata;
+    posdata.pos[0] = 43.2;
+    posdata.pos[1] = -12.2;
+    posdata.pos[2] = M_PI/3.0;
+    posdata.vel[0] = 0.25;
+    posdata.vel[1] = 0.0;
+    posdata.vel[2] = -M_PI/6.0;
+    posdata.stall = 0;
 
-    // Write outgoing data
-    this->RefreshData();
+    this->Publish(this->m_position_addr, NULL,
+                  PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
+                  (void*)&posdata, sizeof(posdata), NULL);
+
     
-    // Sleep (you might, for example, block on a read() instead)
+    // Sleep (or you might, for example, block on a read() instead)
     usleep(100000);
   }
   return;
 }
 
 
-void MultiDriver::CheckConfig()
+int MultiDriver::ProcessMessage(MessageQueue * resp_queue, 
+                                player_msghdr * hdr, 
+                                void * data, 
+                                void ** resp_data, 
+                                size_t * resp_len)
 {
-  void *client;
-  unsigned char buffer[PLAYER_MAX_REQREP_SIZE];
-  
-  while (this->GetConfig(this->position_id, &client, &buffer, sizeof(buffer), NULL) > 0)
+  *resp_len = 0;
+
+  // Handle new data from the laser
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
+                           this->laser_addr))
   {
-    printf("got position request\n");
-    if (this->PutReply(this->position_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 0, NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
+    // Do someting with it
+    return(0);
   }
-
-  while (this->GetConfig(this->laser_id, &client, &buffer, sizeof(buffer), NULL) > 0)
-  {
-    printf("got laser request\n");
-    if (this->PutReply(this->laser_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL, 0, NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  return;
-}
-
-void MultiDriver::CheckCommands()
-{
-  this->GetCommand(this->position_id, &this->position_cmd, sizeof(this->position_cmd), NULL);
-
-  printf("%d %d\n", ntohl(this->position_cmd.xspeed), ntohl(this->position_cmd.yawspeed));
   
-  return;
+  // Tell the caller that you don't know how to handle this message
+  return(-1);
 }
 
-void MultiDriver::RefreshData()
-{
-
-  // Write position data
-  memset(&this->position_data, 0, sizeof(this->position_data));
-  this->PutData(this->position_id, &this->position_data, sizeof(this->position_data), NULL);
-
-  // Write laser data
-  memset(&this->laser_data, 0, sizeof(this->laser_data));
-  this->PutData(this->laser_id, &this->laser_data, sizeof(this->laser_data), NULL);
-
-  return;
-}

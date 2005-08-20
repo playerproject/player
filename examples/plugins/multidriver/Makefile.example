@@ -1,12 +1,12 @@
 # Desc: Example plugin makefile
 # CVS: $Id$
 
-all: multidriver.so
+all: libmultidriver.so
 
 %.o: %.cc
-	$(CXX) -Wall -fpic -g3 `pkg-config --cflags player` -c $<
+	$(CXX) -Wall -fpic -g3 `pkg-config --cflags playercore` -c $<
 
-%.so: %.o
+libmultidriver.so: multidriver.o
 	$(CXX) -shared -nostartfiles -o $@ $<
 
 clean:

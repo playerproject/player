@@ -25,11 +25,12 @@ int test_laser(playerc_client_t *client, int index)
   device = playerc_laser_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_laser_subscribe(device, PLAYER_READ_MODE) == 0)
+  if (playerc_laser_subscribe(device, PLAYER_OPEN_MODE) == 0)
     PASS();
   else
     FAIL();
 
+#if 0
   TEST("set configuration");
   min = -M_PI/2;
   max = +M_PI/2;
@@ -62,7 +63,7 @@ int test_laser(playerc_client_t *client, int index)
     FAIL();
   printf("laser geom: [%6.3f %6.3f %6.3f] [%6.3f %6.3f]\n",
          device->pose[0], device->pose[1], device->pose[2], device->size[0], device->size[1]);
-  
+#endif 
   for (t = 0; t < 10; t++)
   {
     TEST1("reading data (attempt %d)", t);
