@@ -78,8 +78,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_GRIPPER_STRING;
     case PLAYER_IR_CODE:
       return PLAYER_IR_STRING;
-    case PLAYER_POSITION_CODE:
-      return PLAYER_POSITION_STRING;
+    case PLAYER_POSITION2D_CODE:
+      return PLAYER_POSITION2D_STRING;
     case PLAYER_POSITION3D_CODE:
       return PLAYER_POSITION3D_STRING;
     case PLAYER_POWER_CODE:
@@ -133,8 +133,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_GRIPPER_CODE;
   if (strcmp(name, PLAYER_IR_STRING) == 0)
     return PLAYER_IR_CODE;
-  if (strcmp(name, PLAYER_POSITION_STRING) == 0)
-    return PLAYER_POSITION_CODE;
+  if (strcmp(name, PLAYER_POSITION2D_STRING) == 0)
+    return PLAYER_POSITION2D_CODE;
   if (strcmp(name, PLAYER_POSITION3D_STRING) == 0)
     return PLAYER_POSITION3D_CODE;
   if (strcmp(name, PLAYER_POWER_STRING) == 0)

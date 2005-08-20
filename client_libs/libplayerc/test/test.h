@@ -19,6 +19,10 @@
 #define PASS() (1 ? printf("pass\n"), fflush(stdout) : 0)
 #define FAIL() (1 ? printf("\033[41mfail\033[0m\n%s\n", playerc_error_str()), fflush(stdout) : 0)
 
+// Basic laser test
+extern int test_laser(playerc_client_t *client, int index);
+
+#if 0
 // Basic test for BPS device.i
 extern int test_bps(playerc_client_t *client, int index);
 
@@ -30,9 +34,6 @@ extern int test_gps(playerc_client_t *client, int index);
 
 // Basic test for map device
 extern int test_map(playerc_client_t *client, int index);
-
-// Basic laser test
-extern int test_laser(playerc_client_t *client, int index);
 
 // Basic localization test
 extern int test_localize(playerc_client_t *client, int index);
@@ -72,5 +73,6 @@ extern int test_power(playerc_client_t *client, int index);
 
 // Basic test for wifi device.
 extern int test_wifi(playerc_client_t *client, int index);
+#endif
 
 #endif // TEST_H

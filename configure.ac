@@ -339,23 +339,23 @@ AC_OUTPUT(Makefile
           server/drivers/service_adv/Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile 
-dnl          client_libs/Makefile 
+          client_libs/Makefile 
 dnl          client_libs/c/Makefile
 dnl          client_libs/c/playercclient.pc
 dnl          client_libs/c++/Makefile
 dnl          client_libs/c++/playerclient.pc
 dnl          client_libs/c++/test/Makefile
-dnl          client_libs/libplayerc/Makefile
-dnl          client_libs/libplayerc/doc/Makefile
-dnl          client_libs/libplayerc/libplayerc.pc
-dnl          client_libs/libplayerc/test/Makefile
-dnl          client_libs/libplayerc/bindings/Makefile
-dnl          client_libs/libplayerc/bindings/python/Makefile
+          client_libs/libplayerc/Makefile
+          client_libs/libplayerc/doc/Makefile
+          client_libs/libplayerc/libplayerc.pc
+          client_libs/libplayerc/test/Makefile
+          client_libs/libplayerc/bindings/Makefile
+          client_libs/libplayerc/bindings/python/Makefile
 dnl          client_libs/libplayerpacket/Makefile
-dnl          examples/Makefile
-dnl          examples/plugins/Makefile
-dnl          examples/plugins/exampledriver/Makefile
-dnl          examples/plugins/multidriver/Makefile
+          examples/Makefile
+          examples/plugins/Makefile
+          examples/plugins/exampledriver/Makefile
+          examples/plugins/multidriver/Makefile
 dnl          examples/c++/Makefile
 dnl          examples/libplayerc/Makefile
 dnl          utils/Makefile

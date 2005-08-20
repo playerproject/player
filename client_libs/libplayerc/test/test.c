@@ -59,6 +59,7 @@ int main(int argc, const char *argv[])
 
   if (all)
   {
+#if 0
     // Get the available device list from the server.
     TEST("querying interface list");
     if (playerc_client_get_devlist(client) < 0)
@@ -67,6 +68,7 @@ int main(int argc, const char *argv[])
       return -1;
     }
     PASS();
+#endif
   }
   else
   {
@@ -82,8 +84,9 @@ int main(int argc, const char *argv[])
       sindex = strtok(NULL, "");
       index = (sindex ? atoi(sindex) : 0);
 
-      client->devinfos[client->devinfo_count].code = playerc_lookup_code(device);
-      client->devinfos[client->devinfo_count].index = index;
+      client->devinfos[client->devinfo_count].addr.interf = 
+	      playerc_lookup_code(device);
+      client->devinfos[client->devinfo_count].addr.index = index;
       client->devinfo_count++;
 
       free(arg);
@@ -93,96 +96,98 @@ int main(int argc, const char *argv[])
   // Print interface list.
   printf("selected devices [%s:%d]:\n", host, port);
   for (i = 0; i < client->devinfo_count; i++)
-    printf("  %d:%s:%d \n", client->devinfos[i].port, playerc_lookup_name(client->devinfos[i].code), client->devinfos[i].index);
+    printf("  %d:%s:%d \n", client->devinfos[i].addr.robot, playerc_lookup_name(client->devinfos[i].addr.interf), client->devinfos[i].addr.index);
 
   // Run all tests
   for (i = 0; i < client->devinfo_count; i++)
   {
-    switch (client->devinfos[i].code)
+    switch (client->devinfos[i].addr.interf)
     {
+      // Laser device
+      case PLAYER_LASER_CODE:
+        test_laser(client, client->devinfos[i].addr.index);
+        break;
+
+#if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
-        test_blobfinder(client, client->devinfos[i].index);
+        test_blobfinder(client, client->devinfos[i].addr.index);
         break;
 
       // Camera device
       case PLAYER_CAMERA_CODE:
-        test_camera(client, client->devinfos[i].index);
+        test_camera(client, client->devinfos[i].addr.index);
         break;
 
       // Fiducial detector
       case PLAYER_FIDUCIAL_CODE:
-        test_fiducial(client, client->devinfos[i].index);
+        test_fiducial(client, client->devinfos[i].addr.index);
         break;
 
       // GPS device
       case PLAYER_GPS_CODE:
-        test_gps(client, client->devinfos[i].index);
+        test_gps(client, client->devinfos[i].addr.index);
         break;
         
       // Joystick device
       case PLAYER_JOYSTICK_CODE:
-        test_joystick(client, client->devinfos[i].index);
+        test_joystick(client, client->devinfos[i].addr.index);
         break;
 
       // log device
       case PLAYER_LOG_CODE:
-        test_log(client, client->devinfos[i].index);
-        break;
-
-      // Laser device
-      case PLAYER_LASER_CODE:
-        test_laser(client, client->devinfos[i].index);
+        test_log(client, client->devinfos[i].addr.index);
         break;
 
       // Localization device
       case PLAYER_LOCALIZE_CODE:
-        test_localize(client, client->devinfos[i].index);
+        test_localize(client, client->devinfos[i].addr.index);
         break;
 
       // map device
       case PLAYER_MAP_CODE:
-        test_map(client, client->devinfos[i].index);
+        test_map(client, client->devinfos[i].addr.index);
         break;
 
       // Position device
       case PLAYER_POSITION_CODE:
-        test_position(client, client->devinfos[i].index);
+        test_position(client, client->devinfos[i].addr.index);
         break;
 
       // Position device
       case PLAYER_POSITION3D_CODE:
-        test_position3d(client, client->devinfos[i].index);
+        test_position3d(client, client->devinfos[i].addr.index);
         break;
 
       // Power device
       case PLAYER_POWER_CODE:
-        test_power(client, client->devinfos[i].index);
+        test_power(client, client->devinfos[i].addr.index);
         break;
 
       // PTZ device
       case PLAYER_PTZ_CODE:
-        test_ptz(client, client->devinfos[i].index);
+        test_ptz(client, client->devinfos[i].addr.index);
         break;
 
       // Sonar device
       case PLAYER_SONAR_CODE:
-        test_sonar(client, client->devinfos[i].index);
+        test_sonar(client, client->devinfos[i].addr.index);
         break;
 
       // Truth device
       case PLAYER_TRUTH_CODE:
-        test_truth(client, client->devinfos[i].index);
+        test_truth(client, client->devinfos[i].addr.index);
         break;
 
       // WiFi device
       case PLAYER_WIFI_CODE:
-        test_wifi(client, client->devinfos[i].index);
+        test_wifi(client, client->devinfos[i].addr.index);
         break;
+#endif
         
       default:
         printf("no test for interface [%s]\n",
-               playerc_lookup_name(client->devinfos[i].code));
+               playerc_lookup_name(client->devinfos[i].addr.interf));
         break;
     }
   }

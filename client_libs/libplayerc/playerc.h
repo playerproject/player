@@ -50,6 +50,7 @@
 
 // Get the message structures from Player
 #include <libplayercore/player.h>
+#include <libplayerxdr/playerxdr.h>
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? a : b)
@@ -209,7 +210,7 @@ typedef void (*playerc_callback_fn_t) (void *data);
 typedef struct
 {  
   /** Player id of the device. */
-  int port, code, index;
+  player_devaddr_t addr;
 
   /** The driver name. */
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
@@ -388,8 +389,10 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 @returns Returns -1 on error and -2 on NACK.
 
 */ 
-int playerc_client_request(playerc_client_t *client, struct _playerc_device_t *device,
-                           uint8_t reqtype, void *req_data, int req_len, void *rep_data, int rep_len);
+int playerc_client_request(playerc_client_t *client, 
+                           struct _playerc_device_t *device, uint8_t reqtype, 
+                           void *req_data, int req_len, 
+                           void *rep_data, int* rep_len);
                                 
 /** @brief Wait for response from server (blocking).
 
@@ -431,8 +434,11 @@ void *playerc_client_read(playerc_client_t *client);
 
 /** @brief Write data to the server.  @internal
 */
-int playerc_client_write(playerc_client_t *client, struct _playerc_device_t *device,
-                         void *cmd, int len);
+int playerc_client_write(playerc_client_t *client, 
+                         struct _playerc_device_t *device,
+                         uint8_t subtype, 
+                         void *cmd, int len,
+                         double* timestamp);
 
 
 /** @} */
@@ -461,8 +467,8 @@ typedef struct _playerc_device_t
   /** Pointer to the client proxy. */
   playerc_client_t *client;
 
-  /** Device code, index. */
-  int code, index;
+  /** Device address */
+  player_devaddr_t addr;
 
   /** The driver name. */
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
@@ -523,7 +529,7 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 /** @} */
 /**************************************************************************/
 
-
+#if 0
 /***************************************************************************/
 /** @defgroup playerc_proxies Proxies
     @{
@@ -960,6 +966,7 @@ void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *heade
 /** @} */
 /**************************************************************************/
 
+#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_laser laser
@@ -997,9 +1004,6 @@ typedef struct
   /** Angular resolution of the scan (radians). */
   double scan_res;
 
-  /** Range resolution multiplier */
-  int range_res;
-
   /** Raw range data; range (m). */
   double ranges[PLAYERC_LASER_MAX_SAMPLES];
 
@@ -1036,9 +1040,10 @@ pointer for all putdata functions and fix.
 
 */
 void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_data_t *data, size_t len);
+                           void *data, size_t len);
 
 
+#if 0
 void playerc_laser_putgeom(playerc_laser_t *device, player_msghdr_t *header,
                            player_laser_geom_t *data, size_t len);
 
@@ -2160,6 +2165,7 @@ int playerc_speech_say (playerc_speech_t *device, char *);
 /** @} */
 /***************************************************************************/
 
+#endif
 
 /**************************************************************************/
 /** @} (proxies) */

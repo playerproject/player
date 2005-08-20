@@ -84,6 +84,7 @@ if __name__ == '__main__':
   headerfile.write('#endif\n')
   headerfile.write('#define PLAYERXDR_ENCODE XDR_ENCODE\n')
   headerfile.write('#define PLAYERXDR_DECODE XDR_DECODE\n\n')
+  headerfile.write('#define PLAYERXDR_MSGHDR_SIZE 40\n\n')
 
   sourcefile.write('#include <libplayerxdr/' + headerfilename + '>\n\n')
 

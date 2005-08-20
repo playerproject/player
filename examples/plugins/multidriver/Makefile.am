@@ -1,9 +1,9 @@
+AM_CPPFLAGS = -Wall -g -I$(top_srcdir)
 
-SUBDIRS = .
+exampledir = $(prefix)/share/player/examples/plugins/multidriver
 
-exampledir = $(prefix)/src/player/examples/plugins/multidriver
+example_LTLIBRARIES = libmultidriver.la 
+libmultidriver_la_SOURCES = multidriver.cc
 
-FILES = Makefile.example multidriver.cc multi.cfg
-
-example_DATA = $(FILES)
-EXTRA_DIST = $(FILES)
+example_DATA = multidriver.cc multi.cfg Makefile.example Makefile.libtool Makefile.osx.example SConstruct
+EXTRA_DIST = multi.cfg Makefile.example Makefile.libtool Makefile.osx.example SConstruct
