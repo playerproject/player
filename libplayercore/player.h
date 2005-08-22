@@ -232,7 +232,9 @@ system
 //
 // /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup interfaces */
+/** @defgroup interfaces
+All Player communication occurs through <i>interfaces</i>, which specify
+the syntax and semantics for a set of messages. */
 /** @{ */
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -2020,7 +2022,7 @@ typedef struct player_device_nameservice_req
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_position position1d
+/** @defgroup player_interface_position1d position1d
 
 The @p position1d interface is used to control linear actuators
 
@@ -2175,7 +2177,7 @@ typedef struct player_position1d_speed_prof_req
 
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_position position2d
+/** @defgroup player_interface_position2d position2d
 
 The @p position2d interface is used to control mobile robot bases in 2D.
 
