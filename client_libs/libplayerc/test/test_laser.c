@@ -28,7 +28,10 @@ int test_laser(playerc_client_t *client, int index)
   if (playerc_laser_subscribe(device, PLAYER_OPEN_MODE) == 0)
     PASS();
   else
+  {
     FAIL();
+    return(-1);
+  }
 
 #if 0
   TEST("set configuration");

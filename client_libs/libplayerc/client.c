@@ -775,7 +775,7 @@ int playerc_client_readpacket(playerc_client_t *client, player_msghdr_t *header,
   }
   if (bytes < sizeof(hdrbuf))
   {
-    PLAYERC_ERR2("got incomplete header, %d of %d bytes", bytes, sizeof(hdrbuf));
+    PLAYERC_ERR2("got incomplete header, %d of %lu bytes", bytes, sizeof(hdrbuf));
     return -1;
   }
 
@@ -832,7 +832,7 @@ int playerc_client_writepacket(playerc_client_t *client, player_msghdr_t *header
   }
   else if (bytes < sizeof(hdrbuf))
   {
-    PLAYERC_ERR2("sent incomplete header, %d of %d bytes", bytes, sizeof(hdrbuf));
+    PLAYERC_ERR2("sent incomplete header, %d of %lu bytes", bytes, sizeof(hdrbuf));
     return -1;
   }
     

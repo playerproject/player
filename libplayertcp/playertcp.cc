@@ -370,13 +370,12 @@ PlayerTCP::WriteClient(int cli)
       else
       {
         // Make sure there's room in the buffer for the encoded messsage.
-        // It's not obvious to me how to do this correctly, so I'll just be
-        // conservative.
-        if(msg->GetSize() > (size_t)(client->writebuffersize * 4))
+        // 4 times the message is a safe upper bound
+        if((4* hdr->size) > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
           client->writebuffersize = MAX((size_t)(client->writebuffersize * 2), 
-                                        msg->GetSize());
+                                        4*hdr->size);
           // Did we hit the limit (or overflow and become negative)?
           if((client->writebuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
              (client->writebuffersize < 0))
@@ -391,20 +390,10 @@ PlayerTCP::WriteClient(int cli)
           memset(client->writebuffer, 0, client->writebuffersize);
         }
 
-	if((encode_msglen =
-	    player_msghdr_pack(client->writebuffer,
-			       client->writebuffersize, hdr,
-			       PLAYERXDR_ENCODE) < 0))
-        {
-          PLAYER_ERROR("failed to encode msg header");
-          client->writebufferlen = 0;
-          return(0);
-        }
-
-        client->writebufferlen = encode_msglen;
+        // Encode the body first
         if((encode_msglen =
-            (*packfunc)(client->writebuffer + client->writebufferlen,
-                        client->writebuffersize - client->writebufferlen,
+            (*packfunc)(client->writebuffer + PLAYERXDR_MSGHDR_SIZE,
+                        client->writebuffersize - PLAYERXDR_MSGHDR_SIZE,
                         payload, PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
@@ -413,7 +402,20 @@ PlayerTCP::WriteClient(int cli)
           return(0);
         }
 
-        client->writebufferlen += encode_msglen;
+        // Rewrite the size in the header with the length of the encoded
+        // body, then encode the header.
+        hdr->size = encode_msglen;
+	if((encode_msglen =
+	    player_msghdr_pack(client->writebuffer,
+			       client->writebuffersize, hdr,
+			       PLAYERXDR_ENCODE)) < 0)
+        {
+          PLAYER_ERROR("failed to encode msg header");
+          client->writebufferlen = 0;
+          return(0);
+        }
+
+        client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr->size;
       }
     }
     else
@@ -536,8 +538,6 @@ PlayerTCP::ParseBuffer(int cli)
       return;
     }
 
-    printf("addr: %d:%d:%d:%d\n",
-           hdr.addr.host, hdr.addr.robot, hdr.addr.interf, hdr.addr.index);
     msglen = headerlen + hdr.size;
 
     // Is the message of a legal size?
@@ -593,9 +593,9 @@ PlayerTCP::ParseBuffer(int cli)
         }
 
 	if((decode_msglen =
-	    (*packfunc)(client->readbuffer + client->readbufferlen,
-			client->readbuffersize - client->readbufferlen,
-                        (void*)this->decode_readbuffer, 
+	    (*packfunc)(client->readbuffer + PLAYERXDR_MSGHDR_SIZE,
+			client->readbufferlen - PLAYERXDR_MSGHDR_SIZE,
+                        (void*)this->decode_readbuffer,
                         PLAYERXDR_DECODE)) < 0)
         {
           PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
@@ -658,6 +658,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           memset(&devresp,0,sizeof(player_device_resp_t));
           devresp.addr = devreq->addr;
           devresp.access = PLAYER_ERROR_MODE;
+          devresp.driver_name_count = 0;
 
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           GlobalTime->GetTimeDouble(&resphdr.timestamp);
@@ -667,15 +668,18 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           {
             PLAYER_WARN2("skipping subscription to unknown device %u:%u",
                          devreq->addr.interf, devreq->addr.index);
-            
           }
           else
           {
+            // copy in the driver name
+            strncpy(devresp.driver_name,device->drivername,
+                    sizeof(devresp.driver_name));
+            devresp.driver_name_count = strlen(devresp.driver_name);
             // (un)subscribe the client to the device
             switch(devreq->access)
             {
               case PLAYER_OPEN_MODE:
-                if(device->Subscribe(client->queue) < 0)
+                if(device->Subscribe(client->queue) != 0)
                 {
                   PLAYER_WARN2("subscription failed for device %u:%u",
                                devreq->addr.interf, devreq->addr.index);
@@ -684,7 +688,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                   devresp.access = devreq->access;
                 break;
               case PLAYER_CLOSE_MODE:
-                if(device->Unsubscribe(client->queue) < 0)
+                if(device->Unsubscribe(client->queue) != 0)
                 {
                   PLAYER_WARN2("unsubscription failed for device %u:%u",
                                devreq->addr.interf, devreq->addr.index);
