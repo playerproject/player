@@ -135,9 +135,6 @@ class MapFile : public Driver
     ~MapFile();
     int Setup();
     int Shutdown();
-    int PutConfig(player_device_id_t id, void *client, 
-                  void* src, size_t len,
-                  struct timeval* timestamp);
 
     // MessageHandler
     int ProcessMessage(MessageQueue * resp_queue, 

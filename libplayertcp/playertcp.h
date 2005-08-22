@@ -55,9 +55,6 @@ This library moves messages between Player message queues and TCP sockets.
     calloc() and realloc() write buffers in multiples of this size. */
 #define PLAYERTCP_WRITEBUFFER_SIZE 65536
 
-/** Maximum message size, in XDR-encoded format, including message header. */
-#define PLAYERTCP_MAX_MESSAGE_LEN 2097152  // 2MB
-
 // Forward declarations
 struct pollfd;
 

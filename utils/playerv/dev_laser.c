@@ -32,7 +32,7 @@
 
 
 // Update the laser configuration
-void laser_update_config(laser_t *laser);
+//void laser_update_config(laser_t *laser);
 
 // Draw the laser scan
 void laser_draw(laser_t *laser);
@@ -112,12 +112,14 @@ void laser_update(laser_t *laser)
   {
     if (!laser->proxy->info.subscribed)
     {
-      if (playerc_laser_subscribe(laser->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_laser_subscribe(laser->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Get the laser geometry
+      /*
       if (playerc_laser_get_geom(laser->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
+        */
 
       rtk_fig_origin(laser->scan_fig,
                      laser->proxy->pose[0],
@@ -157,6 +159,7 @@ void laser_update(laser_t *laser)
 }
 
 
+#if 0
 // Update the laser configuration
 void laser_update_config(laser_t *laser)
 {
@@ -209,6 +212,7 @@ void laser_update_config(laser_t *laser)
 
   return;
 }  
+#endif
 
 
 // Draw the laser scan
@@ -224,7 +228,7 @@ void laser_draw(laser_t *laser)
   rtk_fig_clear(laser->scan_fig);
 
   // TESTING (should use menu option)
-  if (laser->proxy->info.index == 0)
+  if (laser->proxy->info.addr.index == 0)
     style = 1;
   else
     style = 0;

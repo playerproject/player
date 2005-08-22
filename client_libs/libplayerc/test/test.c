@@ -59,7 +59,6 @@ int main(int argc, const char *argv[])
 
   if (all)
   {
-#if 0
     // Get the available device list from the server.
     TEST("querying interface list");
     if (playerc_client_get_devlist(client) < 0)
@@ -68,7 +67,6 @@ int main(int argc, const char *argv[])
       return -1;
     }
     PASS();
-#endif
   }
   else
   {
@@ -96,7 +94,11 @@ int main(int argc, const char *argv[])
   // Print interface list.
   printf("selected devices [%s:%d]:\n", host, port);
   for (i = 0; i < client->devinfo_count; i++)
-    printf("  %d:%s:%d \n", client->devinfos[i].addr.robot, playerc_lookup_name(client->devinfos[i].addr.interf), client->devinfos[i].addr.index);
+    printf("  %d:%s:%d (%s)\n", 
+           client->devinfos[i].addr.robot, 
+           playerc_lookup_name(client->devinfos[i].addr.interf), 
+           client->devinfos[i].addr.index,
+           client->devinfos[i].drivername);
 
   // Run all tests
   for (i = 0; i < client->devinfo_count; i++)

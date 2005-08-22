@@ -358,8 +358,8 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/plugins/multidriver/Makefile
 dnl          examples/c++/Makefile
 dnl          examples/libplayerc/Makefile
-dnl          utils/Makefile
-dnl          utils/playerv/Makefile
+          utils/Makefile
+          utils/playerv/Makefile
 dnl          utils/playerjoy/Makefile
 dnl          utils/playernav/Makefile
 dnl          utils/playerprint/Makefile
