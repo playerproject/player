@@ -26,6 +26,15 @@
  * $Id$
  */
 
+/** @defgroup libplayertcp libplayertcp
+@{
+
+This library moves messages between Player message queues and TCP sockets.
+
+@todo
+ - More verbose documentation on this library.
+*/
+
 #ifndef _PLAYERTCP_H_
 #define _PLAYERTCP_H_
 
@@ -121,5 +130,7 @@ class PlayerTCP
     void ParseBuffer(int cli);
     int HandlePlayerMessage(int cli, Message* msg);
 };
+
+/** @} */
 
 #endif
