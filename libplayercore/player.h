@@ -1195,7 +1195,7 @@ typedef struct player_laser_data
   float ranges[PLAYER_LASER_MAX_SAMPLES];
   uint32_t intensity_count;
   /** Intensity readings. */
-  uint32_t intensity[PLAYER_LASER_MAX_SAMPLES];
+  uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
 } player_laser_data_t;
 
 /** @brief Data: laser scan with pose attached */
@@ -1818,30 +1818,15 @@ from devices. */
 #define PLAYER_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_ASYNC
 
 /* The request subtypes */
-#define PLAYER_PLAYER_DEVLIST     1
-#define PLAYER_PLAYER_DRIVERINFO  2
-#define PLAYER_PLAYER_DEV         3
-#define PLAYER_PLAYER_DATA        4
-#define PLAYER_PLAYER_DATAMODE    5
-#define PLAYER_PLAYER_DATAFREQ    6
-#define PLAYER_PLAYER_AUTH        7
-#define PLAYER_PLAYER_NAMESERVICE 8
-#define PLAYER_PLAYER_IDENT       9
-
-/** @brief A device identifier.
-
- Devices are differentiated internally in Player by 
- these identifiers, and some messages contain them. */
-typedef struct player_device_id
-{
-  /** The interface provided by the device; must be one of PLAYER_*_CODE */
-  uint16_t code;
-  /** The index of the device */
-  uint16_t index;
-  /** The TCP port of the device */
-  uint16_t port;
-} player_device_id_t;
-
+#define PLAYER_PLAYER_REQ_DEVLIST     1
+#define PLAYER_PLAYER_REQ_DRIVERINFO  2
+#define PLAYER_PLAYER_REQ_DEV         3
+#define PLAYER_PLAYER_REQ_DATA        4
+#define PLAYER_PLAYER_REQ_DATAMODE    5
+#define PLAYER_PLAYER_REQ_DATAFREQ    6
+#define PLAYER_PLAYER_REQ_AUTH        7
+#define PLAYER_PLAYER_REQ_NAMESERVICE 8
+#define PLAYER_PLAYER_REQ_IDENT       9
 
 /** @brief Configuration request: Get the list of available devices.
 
@@ -1853,14 +1838,11 @@ typedef struct player_device_id
     with the fields filled in. */
 typedef struct player_device_devlist
 {
-  /** Subtype; must be PLAYER_PLAYER_DEVLIST_REQ. */
-  //uint16_t subtype;
-
   /** The number of devices */
   uint32_t devices_count;
 
   /** The list of available devices. */
-  player_device_id_t devices[PLAYER_MAX_DEVICES];
+  player_devaddr_t devices[PLAYER_MAX_DEVICES];
 } player_device_devlist_t;
 
 /** @brief Configuration request: Get the driver name for a particular device.
@@ -1869,16 +1851,12 @@ typedef struct player_device_devlist
     and set the id field.  Player will return the driver info. */
 typedef struct player_device_driverinfo
 {
-  /** Subtype; must be PLAYER_PLAYER_DRIVERINFO_REQ. */
-  //uint16_t subtype;
-
   /** The device identifier. */
-  player_device_id_t id;
+  player_devaddr_t addr;
 
   uint32_t driver_name_count;
   /** The driver name (returned) */
   char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
-
 } player_device_driverinfo_t;
 
 /** @brief Configuration request: Get device access. 
@@ -1912,23 +1890,12 @@ typedef struct player_device_req
 {
   /** Address of the device */
   player_devaddr_t addr;
-  /** The requested access */
-  uint8_t access;
-} player_device_req_t;
-
-/** @brief The format of the server's reply to a PLAYER_PLAYER_DEV_REQ
-request. */
-typedef struct player_device_resp
-{
-  /** Address of the device */
-  player_devaddr_t addr;
-  /** The granted access */
+  /** The requested / granted access */
   uint8_t access;
   uint32_t driver_name_count;
   /** The name of the underlying driver */
   char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
-} player_device_resp_t;
-
+} player_device_req_t;
 
 /** @brief Configuration request: Get data.  
 

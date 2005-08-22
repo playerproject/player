@@ -195,12 +195,14 @@ int main(int argc, char **argv)
     return -1;
   }
 
+#if 0
   // Change the server's data delivery mode.
   if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_NEW) != 0)
   {
     PRINT_ERR1("%s", playerc_error_str());
     return -1;
   }
+#endif
 
   // Get the available devices.
   if (playerc_client_get_devlist(client) != 0)
@@ -223,17 +225,18 @@ int main(int argc, char **argv)
   {
     device = devices + device_count;
     
-    device->code = client->devinfos[i].code;
-    device->index = client->devinfos[i].index;
+    device->addr = client->devinfos[i].addr;
     device->drivername = strdup(client->devinfos[i].drivername);
 
     // See if the device should be subscribed immediately.
-    snprintf(section, sizeof(section), "%s:%d", playerc_lookup_name(device->code), device->index);
+    snprintf(section, sizeof(section), "%s:%d", 
+             playerc_lookup_name(device->addr.interf), device->addr.index);
     device->subscribe = opt_get_int(opt, section, "", 0);
     device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
-    if (device->index == 0)
+    if (device->addr.index == 0)
     {
-      snprintf(section, sizeof(section), "%s", playerc_lookup_name(device->code));
+      snprintf(section, sizeof(section), "%s", 
+               playerc_lookup_name(device->addr.interf));
       device->subscribe = opt_get_int(opt, section, "", device->subscribe);
       device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
     }
@@ -249,7 +252,8 @@ int main(int argc, char **argv)
   for (i = 0; i < device_count; i++)
   {
     device = devices + i;
-    snprintf(section, sizeof(section), "%s:%d", playerc_lookup_name(device->code), device->index);
+    snprintf(section, sizeof(section), "%s:%d", 
+             playerc_lookup_name(device->addr.interf), device->addr.index);
     printf("%-16s %-40s", section, device->drivername);
     if (device->proxy)
     {
@@ -275,11 +279,8 @@ int main(int argc, char **argv)
     // Let gui process messages
     rtk_app_main_loop(app);
 
-    // Wait for some data.  We rely on getting the sync messages if no
-    // devices are subscribed.
-	 // printf("Before peek\n");
+    // see if there's data
     count = playerc_client_peek(client, 50);
-	 // printf("after peek\n");
     if (count < 0)
     {
       PRINT_ERR1("%s", playerc_error_str());
@@ -287,25 +288,19 @@ int main(int argc, char **argv)
     }
     if (count > 0)
     {
-		//printf("Got some data\n");
       proxy = playerc_client_read(client);
-
-      // Update everything on the sync packet.
-      if (proxy == client)
-      {
-        // Update all the subscribed devices
-        for (i = 0; i < device_count; i++)
-        {
-          device = devices + i;
-          if (device->proxy)
-            (*(device->fnupdate)) (device->proxy);
-        }
-
-        // Update the main window
-        if (mainwnd_update(mainwnd) != 0)
-          break;
-      }
     }
+
+    // Update the devices
+    for (i = 0; i < device_count; i++)
+    {
+      device = devices + i;
+      if(device->proxy)
+        (*(device->fnupdate)) (device->proxy);
+    }
+    // Update the main window
+    if (mainwnd_update(mainwnd) != 0)
+      break;
   }
   
   // Stop the gui

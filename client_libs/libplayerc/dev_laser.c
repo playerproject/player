@@ -105,41 +105,44 @@ int playerc_laser_unsubscribe(playerc_laser_t *device)
 
 
 // Process incoming data
-void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           void *data, size_t len)
+void playerc_laser_putdata(playerc_laser_t *device, 
+                           player_msghdr_t *header,
+                           void *data)
 {
   int i;
   double r, b, db;
-  player_laser_data_t ldata;
+  player_laser_data_t* scan_data;
 
-  if(player_laser_data_pack(data, len, &ldata, PLAYERXDR_DECODE) < 0)
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_LASER_DATA_SCAN))
   {
-    PLAYERC_ERR("failed to unpack laser data message");
-    return;
+    scan_data = (player_laser_data_t*)data;
+    assert(scan_data->ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
+
+    b = scan_data->min_angle;
+    db = scan_data->resolution;
+
+    device->scan_start = b;
+    device->scan_res = db;
+
+    for (i = 0; i < scan_data->ranges_count; i++)
+    {
+      r = scan_data->ranges[i];
+      assert(r >= 0);
+      device->ranges[i] = r;
+      device->scan[i][0] = r;
+      device->scan[i][1] = b;
+      device->point[i][0] = r * cos(b);
+      device->point[i][1] = r * sin(b);
+      device->intensity[i] = scan_data->intensity[i];
+      b += db;
+    }
+
+    device->scan_count = scan_data->ranges_count;
   }
-
-  assert(ldata.ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
-  
-  b = ldata.min_angle;
-  db = ldata.resolution;
-
-  device->scan_start = b;
-  device->scan_res = db;
-  
-  for (i = 0; i < ldata.ranges_count; i++)
-  {
-    r = ldata.ranges[i];
-    assert(r >= 0);
-    device->ranges[i] = r;
-    device->scan[i][0] = r;
-    device->scan[i][1] = b;
-    device->point[i][0] = r * cos(b);
-    device->point[i][1] = r * sin(b);
-    device->intensity[i] = ldata.intensity[i];
-    b += db;
-  }
-
-  device->scan_count = ldata.ranges_count;
+  else
+    PLAYERC_WARN2("skipping laser message with unknown type/subtype: %d/%d\n",
+                 header->type, header->subtype);
 }
 
 #if 0

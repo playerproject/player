@@ -271,7 +271,7 @@ PlayerTCP::Read(int timeout)
     {
       if(this->ReadClient(i) < 0)
       {
-        PLAYER_WARN1("failed to read from client %d", i);
+        PLAYER_MSG1(2,"failed to read from client %d", i);
         this->clients[i].del = 1;
       }
       num_available--;
@@ -371,18 +371,18 @@ PlayerTCP::WriteClient(int cli)
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message is a safe upper bound
-        if((4* hdr->size) > (size_t)(client->writebuffersize))
+        if((4 * hdr->size) > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
           client->writebuffersize = MAX((size_t)(client->writebuffersize * 2), 
                                         4*hdr->size);
           // Did we hit the limit (or overflow and become negative)?
-          if((client->writebuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
+          if((client->writebuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
              (client->writebuffersize < 0))
           {
             PLAYER_WARN1("allocating maximum %d bytes to outgoing message buffer",
-                         PLAYERTCP_MAX_MESSAGE_LEN);
-            client->writebuffersize = PLAYERTCP_MAX_MESSAGE_LEN;
+                         PLAYERXDR_MAX_MESSAGE_SIZE);
+            client->writebuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
           }
           client->writebuffer = (char*)realloc(client->writebuffer,
                                                client->writebuffersize);
@@ -407,7 +407,7 @@ PlayerTCP::WriteClient(int cli)
         hdr->size = encode_msglen;
 	if((encode_msglen =
 	    player_msghdr_pack(client->writebuffer,
-			       client->writebuffersize, hdr,
+			       PLAYERXDR_MSGHDR_SIZE, hdr,
 			       PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
@@ -459,12 +459,12 @@ PlayerTCP::ReadClient(int cli)
       // Get twice as much space.
       client->readbuffersize *= 2;
       // Did we hit the limit (or overflow and become negative)?
-      if((client->readbuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
+      if((client->readbuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
          (client->readbuffersize < 0))
       {
         PLAYER_WARN2("allocating maximum %d bytes to client %d's read buffer",
-                    PLAYERTCP_MAX_MESSAGE_LEN, cli);
-        client->readbuffersize = PLAYERTCP_MAX_MESSAGE_LEN;
+                    PLAYERXDR_MAX_MESSAGE_SIZE, cli);
+        client->readbuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
       }
       client->readbuffer = (char*)realloc(client->readbuffer, 
                                           client->readbuffersize);
@@ -518,7 +518,6 @@ PlayerTCP::ParseBuffer(int cli)
   player_msghdr_t hdr;
   playertcp_conn_t* client;
   player_pack_fn_t packfunc;
-  int headerlen;
   int msglen;
   int decode_msglen;
   Device* device;
@@ -529,23 +528,27 @@ PlayerTCP::ParseBuffer(int cli)
   // Process one message in each iteration
   for(;;)
   {
+    // Do we have enough bytes to read the header?
+    if(client->readbufferlen < PLAYERXDR_MSGHDR_SIZE)
+      return;
+
     // Try to read the header
-    if((headerlen = player_msghdr_pack(client->readbuffer, 
-                                       client->readbufferlen,
-                                       &hdr, PLAYERXDR_DECODE)) < 0)
+    if(player_msghdr_pack(client->readbuffer, 
+                          PLAYERXDR_MSGHDR_SIZE,
+                          &hdr, PLAYERXDR_DECODE) < 0)
     {
-      // Failed to read the header; presumably not enough bytes received yet.
+      PLAYER_WARN("failed to unpack header on incoming message");
       return;
     }
 
-    msglen = headerlen + hdr.size;
+    msglen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
 
     // Is the message of a legal size?
-    if(msglen > PLAYERTCP_MAX_MESSAGE_LEN)
+    if(msglen > PLAYERXDR_MAX_MESSAGE_SIZE)
     {
       PLAYER_WARN2("incoming message is larger than max (%d > %d); truncating",
-                   msglen, PLAYERTCP_MAX_MESSAGE_LEN);
-      msglen = PLAYERTCP_MAX_MESSAGE_LEN;
+                   msglen, PLAYERXDR_MAX_MESSAGE_SIZE);
+      msglen = PLAYERXDR_MAX_MESSAGE_SIZE;
     }
 
     // Is it all here yet?
@@ -579,12 +582,12 @@ PlayerTCP::ParseBuffer(int cli)
           this->decode_readbuffersize = 
                   MAX(this->decode_readbuffersize * 2, msglen);
           // Did we hit the limit (or overflow and become negative)?
-          if((this->decode_readbuffersize >= PLAYERTCP_MAX_MESSAGE_LEN) ||
+          if((this->decode_readbuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
              (this->decode_readbuffersize < 0))
           {
             PLAYER_WARN1("allocating maximum %d bytes to decoded message buffer",
-                         PLAYERTCP_MAX_MESSAGE_LEN);
-            this->decode_readbuffersize = PLAYERTCP_MAX_MESSAGE_LEN;
+                         PLAYERXDR_MAX_MESSAGE_SIZE);
+            this->decode_readbuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
           }
           this->decode_readbuffer = (char*)realloc(this->decode_readbuffer,
                                                    this->decode_readbuffersize);
@@ -620,7 +623,9 @@ PlayerTCP::ParseBuffer(int cli)
     }
 
     // Move past the processed message
-    memmove(client->readbuffer, client->readbuffer + msglen, msglen);
+    memmove(client->readbuffer, 
+            client->readbuffer + msglen, 
+            client->readbufferlen - msglen);
     client->readbufferlen -= msglen;
   }
 }
@@ -630,11 +635,8 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 {
   player_msghdr_t* hdr;
   void* payload;
-  player_device_req_t* devreq;
-  Device* device;
   playertcp_conn_t* client;
 
-  player_device_resp_t devresp;
   player_msghdr_t resphdr;
   Message* resp;
 
@@ -645,6 +647,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
   payload = msg->GetPayload();
 
   resphdr = *hdr;
+  GlobalTime->GetTimeDouble(&resphdr.timestamp);
 
   switch(hdr->type)
   {
@@ -652,28 +655,39 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
       switch(hdr->subtype)
       {
         // Device subscription request
-        case PLAYER_PLAYER_DEV:
+        case PLAYER_PLAYER_REQ_DEV:
+        {
+          player_device_req_t* devreq;
+          Device* device;
+          player_device_req_t devresp;
+
           devreq = (player_device_req_t*)payload;
-
-          memset(&devresp,0,sizeof(player_device_resp_t));
-          devresp.addr = devreq->addr;
-          devresp.access = PLAYER_ERROR_MODE;
-          devresp.driver_name_count = 0;
-
-          resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
-          GlobalTime->GetTimeDouble(&resphdr.timestamp);
-          resphdr.size = sizeof(player_device_resp_t);
 
           if(!(device = deviceTable->GetDevice(devreq->addr)))
           {
             PLAYER_WARN2("skipping subscription to unknown device %u:%u",
                          devreq->addr.interf, devreq->addr.index);
+            resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
+
+            // Make up and push out the reply
+            resp = new Message(resphdr, NULL, 0);
+            assert(resp);
+            client->queue->Push(*resp);
+            delete resp;
           }
           else
           {
+            resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
+
+            memset(&devresp,0,sizeof(player_device_req_t));
+            devresp.addr = devreq->addr;
+            devresp.access = PLAYER_ERROR_MODE;
+            devresp.driver_name_count = 0;
+
             // copy in the driver name
             strncpy(devresp.driver_name,device->drivername,
                     sizeof(devresp.driver_name));
+            devresp.driver_name[sizeof(devresp.driver_name)-1] = '\0';
             devresp.driver_name_count = strlen(devresp.driver_name);
             // (un)subscribe the client to the device
             switch(devreq->access)
@@ -702,18 +716,94 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                              devreq->addr.index);
                 break;
             }
+
+            // Make up and push out the reply
+            resp = new Message(resphdr, (void*)&devresp, 
+                               sizeof(player_device_req_t));
+            assert(resp);
+            client->queue->Push(*resp);
+            delete resp;
           }
 
+          break;
+        }
+
+        // Request for device list
+        case PLAYER_PLAYER_REQ_DEVLIST:
+        {
+          player_device_devlist_t devlist;
+
+          int numdevices;
+          if((numdevices = deviceTable->Size()) > PLAYER_MAX_DEVICES)
+          {
+            PLAYER_WARN("truncating available device list");
+            numdevices = PLAYER_MAX_DEVICES;
+          }
+          devlist.devices_count = numdevices;
+          int i=0;
+          for (Device* device = deviceTable->GetFirstDevice(); 
+               (device != NULL) && (i < numdevices);
+               device = deviceTable->GetNextDevice(device))
+          {
+            devlist.devices[i++] = device->addr;
+          }
+
+          resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
-          resp = new Message(resphdr, (void*)&devresp, 
-                             sizeof(player_device_resp_t));
+          resp = new Message(resphdr, (void*)&devlist, 
+                             sizeof(player_device_devlist));
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
           break;
+        }
+
+        // Request for detailed info on a particular device
+        case PLAYER_PLAYER_REQ_DRIVERINFO:
+        {
+          player_device_driverinfo_t* inforeq;
+          player_device_driverinfo_t inforesp;
+          Device* device;
+
+          inforeq = (player_device_driverinfo_t*)payload;
+
+          if(!(device = deviceTable->GetDevice(inforeq->addr)))
+          {
+            PLAYER_WARN2("skipping info request for unknown device %u:%u",
+                         inforeq->addr.interf, inforeq->addr.index);
+            resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
+
+            // Make up and push out the reply
+            resp = new Message(resphdr, NULL, 0);
+            assert(resp);
+            client->queue->Push(*resp);
+            delete resp;
+          }
+          else
+          {
+            memset(&inforesp,0,sizeof(inforesp));
+            inforesp.addr = inforeq->addr;
+
+            // copy in the driver name
+            strncpy(inforesp.driver_name,device->drivername,
+                    sizeof(inforesp.driver_name));
+            inforesp.driver_name[sizeof(inforesp.driver_name)-1] = '\0';
+            inforesp.driver_name_count = strlen(device->drivername);
+
+            resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
+            // Make up and push out the reply
+            resp = new Message(resphdr, (void*)&inforesp, 
+                               sizeof(player_device_driverinfo_t));
+            assert(resp);
+            client->queue->Push(*resp);
+            delete resp;
+          }
+          break;
+        }
+
         default:
-          PLAYER_WARN1("player interface discarding message of unsupported subtype %u",
-                       hdr->subtype);
+          PLAYER_WARN1("player interface discarding message of unsupported "
+                       "subtype %u", hdr->subtype);
 
           resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
           GlobalTime->GetTimeDouble(&resphdr.timestamp);

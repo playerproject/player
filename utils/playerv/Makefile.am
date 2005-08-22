@@ -10,21 +10,23 @@ playerv_SOURCES = playerv.c \
                   playerv.h \
                   registry.c \
                   mainwnd.c \
-                  dev_blobfinder.c \
-                  dev_fiducial.c \
-                  dev_laser.c \
-		  dev_localize.c \
-                  dev_map.c \
-                  dev_position.c \
-                  dev_power.c \
-                  dev_ptz.c \
-                  dev_sonar.c \
-                  dev_bumper.c \
-                  dev_ir.c \
-		  dev_wifi.c \
                   error.h \
                   opt.c \
-                  opt.h
+                  opt.h \
+                  dev_laser.c
 
-playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.a
-playerv_LDADD = -L$(top_builddir)/client_libs/libplayerc -lrtk -lplayerc -L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
+#dev_blobfinder.c \
+#dev_fiducial.c \
+#dev_localize.c \
+#dev_map.c \
+#dev_position.c \
+#dev_power.c \
+#dev_ptz.c \
+#dev_sonar.c \
+#dev_bumper.c \
+#dev_ir.c \
+#dev_wifi.c
+
+playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
+                       $(top_builddir)/libplayerxdr/libplayerxdr.la
+playerv_LDADD = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la -lrtk -L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@

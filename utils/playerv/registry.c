@@ -29,8 +29,18 @@
 // Create the appropriate GUI proxy for a given set of device info.
 void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_client_t *client)
 {
-  switch (device->code)
+  switch (device->addr.interf)
   {
+    case PLAYER_LASER_CODE:
+      device->proxy = laser_create(mainwnd, opt, client, 
+                                   device->addr.index, 
+                                   device->drivername, 
+                                   device->subscribe);
+      device->fndestroy = (fndestroy_t) laser_destroy;
+      device->fnupdate = (fnupdate_t) laser_update;
+      break;
+
+#if 0
     case PLAYER_BLOBFINDER_CODE:
       device->proxy = blobfinder_create(mainwnd, opt, client, device->index,
                                         device->drivername, device->subscribe);
@@ -43,13 +53,6 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
                                       device->index, device->drivername, device->subscribe);
       device->fndestroy = (fndestroy_t) fiducial_destroy;
       device->fnupdate = (fnupdate_t) fiducial_update;
-      break;
-
-    case PLAYER_LASER_CODE:
-      device->proxy = laser_create(mainwnd, opt, client, 
-                                   device->index, device->drivername, device->subscribe);
-      device->fndestroy = (fndestroy_t) laser_destroy;
-      device->fnupdate = (fnupdate_t) laser_update;
       break;
 
     case PLAYER_LOCALIZE_CODE:
@@ -114,6 +117,7 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fndestroy = (fndestroy_t) map_destroy;
       device->fnupdate = (fnupdate_t) map_update;
       break;
+#endif
 
     default:
       device->proxy = NULL;

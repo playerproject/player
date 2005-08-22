@@ -37,6 +37,7 @@
 typedef struct
 {
   uint16_t interf;
+  uint8_t type;
   uint8_t subtype;
   player_pack_fn_t func;
 } playerxdr_function_t;
@@ -44,15 +45,16 @@ typedef struct
 
 static playerxdr_function_t init_ftable[] =
 {
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DEVLIST, (player_pack_fn_t)player_device_devlist_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DRIVERINFO, (player_pack_fn_t)player_device_driverinfo_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DEV, (player_pack_fn_t)player_device_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DATA, (player_pack_fn_t)player_device_data_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DATAMODE, (player_pack_fn_t)player_device_datamode_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_DATAFREQ, (player_pack_fn_t)player_device_datafreq_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_AUTH, (player_pack_fn_t)player_device_auth_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_PLAYER_NAMESERVICE, (player_pack_fn_t)player_device_nameservice_req_pack},
-  {0,0,NULL}
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEVLIST, (player_pack_fn_t)player_device_devlist_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DRIVERINFO, (player_pack_fn_t)player_device_driverinfo_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEV, (player_pack_fn_t)player_device_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATA, (player_pack_fn_t)player_device_data_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAMODE, (player_pack_fn_t)player_device_datamode_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAFREQ, (player_pack_fn_t)player_device_datafreq_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_AUTH, (player_pack_fn_t)player_device_auth_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_NAMESERVICE, (player_pack_fn_t)player_device_nameservice_req_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, (player_pack_fn_t)player_laser_data_pack},
+  {0,0,0,NULL}
 };
 
 static playerxdr_function_t* ftable;

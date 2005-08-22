@@ -645,7 +645,8 @@ void SickLMS200::Main()
                              this->scan_res) / 1e2  - 
                             this->scan_width / 2.0);
       data.resolution = DTOR(this->scan_res / 1e2);
-      data.ranges_count = this->scan_max_segment - this->scan_min_segment + 1;
+      data.ranges_count = data.intensity_count = 
+              this->scan_max_segment - this->scan_min_segment + 1;
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
         data.intensity[i] = ((mm_ranges[i] >> 13) & 0x0007);

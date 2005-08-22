@@ -143,7 +143,7 @@ typedef void (*fnupdate_t) (void*);
 typedef struct
 {
   // Device identifier.
-  int code, index;
+  player_devaddr_t addr;
 
   // Driver name
   char *drivername;
@@ -203,6 +203,7 @@ void laser_destroy(laser_t *laser);
 // Update a laser device
 void laser_update(laser_t *laser);
 
+#if 0
 
 /***************************************************************************
  * Fiducial detector
@@ -644,5 +645,6 @@ void map_destroy(map_t *map);
 // Update a map device
 void map_update(map_t *map);
 
+#endif
 
 #endif

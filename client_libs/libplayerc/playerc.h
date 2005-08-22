@@ -145,7 +145,6 @@ struct pollfd;
 typedef struct
 {
   player_msghdr_t header;
-  int len;
   void *data;
 } playerc_client_item_t;
 
@@ -198,7 +197,7 @@ proxies are initialized.
 */
 
 /** @brief Typedef for proxy callback function */
-typedef void (*playerc_putdata_fn_t) (void *device, char *header, char *data, size_t len);
+typedef void (*playerc_putdata_fn_t) (void *device, char *header, char *data);
 
 /** @brief Typedef for proxy callback function */
 typedef void (*playerc_callback_fn_t) (void *data);
@@ -248,8 +247,9 @@ typedef struct _playerc_client_t
   playerc_client_item_t qitems[128];
   int qfirst, qlen, qsize;
 
-  /** @internal Temp buffer for incoming packets. */
+  /** @internal Temp buffers for incoming / outgoing packets. */
   char *data;
+  char *xdrdata;
 
   /** Server time stamp on the last packet. */
   double datatime;
@@ -391,8 +391,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 */ 
 int playerc_client_request(playerc_client_t *client, 
                            struct _playerc_device_t *device, uint8_t reqtype, 
-                           void *req_data, int req_len, 
-                           void *rep_data, int* rep_len);
+                           void *req_data, void *rep_data, int rep_len);
                                 
 /** @brief Wait for response from server (blocking).
 
@@ -437,8 +436,7 @@ void *playerc_client_read(playerc_client_t *client);
 int playerc_client_write(playerc_client_t *client, 
                          struct _playerc_device_t *device,
                          uint8_t subtype, 
-                         void *cmd, int len,
-                         double* timestamp);
+                         void *cmd, double* timestamp);
 
 
 /** @} */
@@ -1039,8 +1037,9 @@ int playerc_laser_unsubscribe(playerc_laser_t *device);
 pointer for all putdata functions and fix.
 
 */
-void playerc_laser_putdata(playerc_laser_t *device, player_msghdr_t *header,
-                           void *data, size_t len);
+void playerc_laser_putdata(playerc_laser_t *device, 
+                           player_msghdr_t *header,
+                           void *data);
 
 
 #if 0
