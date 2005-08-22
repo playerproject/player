@@ -1924,7 +1924,7 @@ typedef struct player_device_resp
   uint8_t access;
   uint32_t driver_name_count;
   /** The name of the underlying driver */
-  uint8_t driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
 } player_device_resp_t;
 
 
