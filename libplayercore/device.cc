@@ -69,18 +69,14 @@ Device::Device(player_devaddr_t addr, Driver *device)
 
 
 Device::~Device() 
-{ 
-  // Shutdown and delete the associated driver
-  if (this->driver) 
+{
+  for(size_t i=0;i<this->len_queues;i++)
   {
-    if (this->driver->subscriptions > 0)
-      this->driver->Shutdown();
-    
-    // Delete only if this is the last entry for this driver
-    this->driver->entries--;
-    if (this->driver->entries == 0)
-      delete this->driver;
+    MessageQueue* q = this->queues[i];
+    if(q)
+      this->Unsubscribe(q);
   }
+  this->driver->entries--;
   free(this->queues);
 }
 
