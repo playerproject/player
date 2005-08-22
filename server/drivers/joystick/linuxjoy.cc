@@ -358,6 +358,8 @@ int LinuxJoystick::Setup()
                            NULL);
   }
   
+  this->xpos = this->ypos = 0;
+  
   // Start the device thread; spawns a new thread and executes
   // LinuxJoystick::Main(), which contains the main loop for the driver.
   this->StartThread();

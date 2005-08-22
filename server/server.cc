@@ -143,6 +143,7 @@ void
 Cleanup()
 {
   delete deviceTable;
+  delete driverTable;
 }
 
 void
