@@ -360,7 +360,8 @@ PlayerTCP::WriteClient(int cli)
       hdr = msg->GetHeader();
       payload = msg->GetPayload();
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr->addr.interf, hdr->subtype)))
+      if(!(packfunc = playerxdr_get_func(hdr->addr.interf, 
+                                         hdr->type, hdr->subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages
@@ -564,7 +565,8 @@ PlayerTCP::ParseBuffer(int cli)
     else
     {
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr.addr.interf, hdr.subtype)))
+      if(!(packfunc = playerxdr_get_func(hdr.addr.interf, hdr.type,
+                                         hdr.subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages

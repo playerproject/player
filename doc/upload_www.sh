@@ -25,10 +25,10 @@ NAME=$2
 # Create a tarball with the correct name and layout
 rm -rf $NAME
 ln -s player-docs $NAME
-tar chvzf $NAME.tgz $NAME
+tar chzf $NAME.tgz $NAME
 
 # Copy tarball to website
 scp $NAME.tgz $SFUSER@shell.sourceforge.net:/home/groups/p/pl/playerstage/htdocs/doc/$DEST
 
 # Untar the file and re-jig the permissions
-ssh $_SFUSER@shell.sourceforge.net 'cd /home/groups/p/pl/playerstage/htdocs/doc/'$DEST'; tar xvzf '$NAME'.tgz; find . -type d | xargs chmod -fR 2775; find . -type f | xargs chmod -fR 664'
+ssh $_SFUSER@shell.sourceforge.net 'cd /home/groups/p/pl/playerstage/htdocs/doc/'$DEST'; tar xzf '$NAME'.tgz; find . -type d | xargs chmod -fR 2775; find . -type f | xargs chmod -fR 664; rm '$NAME'.tgz'

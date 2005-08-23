@@ -45,15 +45,40 @@ typedef struct
 
 static playerxdr_function_t init_ftable[] =
 {
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEVLIST, (player_pack_fn_t)player_device_devlist_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DRIVERINFO, (player_pack_fn_t)player_device_driverinfo_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEV, (player_pack_fn_t)player_device_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATA, (player_pack_fn_t)player_device_data_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAMODE, (player_pack_fn_t)player_device_datamode_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAFREQ, (player_pack_fn_t)player_device_datafreq_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_AUTH, (player_pack_fn_t)player_device_auth_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_NAMESERVICE, (player_pack_fn_t)player_device_nameservice_req_pack},
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, (player_pack_fn_t)player_laser_data_pack},
+  /* player messages */
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEVLIST, 
+    (player_pack_fn_t)player_device_devlist_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DRIVERINFO, 
+    (player_pack_fn_t)player_device_driverinfo_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEV, 
+    (player_pack_fn_t)player_device_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATA, 
+    (player_pack_fn_t)player_device_data_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAMODE, 
+    (player_pack_fn_t)player_device_datamode_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAFREQ, 
+    (player_pack_fn_t)player_device_datafreq_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_AUTH, 
+    (player_pack_fn_t)player_device_auth_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_NAMESERVICE, 
+    (player_pack_fn_t)player_device_nameservice_req_pack},
+
+  /* laser messages */
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
+    (player_pack_fn_t)player_laser_data_pack},
+
+  /* sonar messages */
+  {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_RANGES, 
+    (player_pack_fn_t)player_sonar_data_pack},
+  {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
+    (player_pack_fn_t)player_sonar_geom_pack},
+
+  /* position2d messages */
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+    (player_pack_fn_t)player_position2d_data_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, 
+    (player_pack_fn_t)player_position2d_cmd_pack},
+
   {0,0,0,NULL}
 };
 
@@ -86,7 +111,7 @@ playerxdr_ftable_add(playerxdr_function_t f)
 }
 
 player_pack_fn_t
-playerxdr_get_func(uint16_t interf, uint8_t subtype)
+playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
 {
   playerxdr_function_t* curr;
   int i;
@@ -94,7 +119,13 @@ playerxdr_get_func(uint16_t interf, uint8_t subtype)
   for(i=0;i<ftable_len;i++)
   {
     curr = ftable + i;
-    if((curr->interf== interf) && (curr->subtype == subtype))
+    // Make sure the interface and subtype match exactly.  The supplied
+    // type can be RESP_ACK if the registered type is REQ.
+    if((curr->interf== interf) && 
+       ((curr->type == type) || 
+        ((curr->type == PLAYER_MSGTYPE_REQ) && 
+         (type = PLAYER_MSGTYPE_RESP_ACK))) &&
+        (curr->subtype == subtype))
       return(curr->func);
   }
   return(NULL);

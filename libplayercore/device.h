@@ -47,27 +47,36 @@ class Device
   
     /// @brief Constructor
     ///
-    /// @p addr is the device address
-    /// @p driver is a pointer to the underlying driver
+    /// @param addr : Device address
+    /// @param driver : Pointer to the underlying driver
     Device(player_devaddr_t addr, Driver *driver);
 
     /// @brief Destructor
     ~Device();
 
     /// @brief Subscribe the given queue to this device.
+    ///
+    /// @returns 0 on success, non-zero otherwise.
     int Subscribe(MessageQueue* sub_queue);
 
     /// @brief Unsubscribe the given queue from this device.
+    ///
+    /// @returns 0 on success, non-zero otherwise.
     int Unsubscribe(MessageQueue* sub_queue);
 
     /// @brief Send a message to this device.
     ///
-    /// - @p type is the message type
-    /// - @p subtype is the message subtype
-    /// - @p src is the message payload
-    /// - @p len is the length of the message payload
-    /// - @p timestamp will be attached to the message; if it is NULL, then
-    ///   the current time will be used.
+    /// This method is the basic way of sending a message to a device.  The
+    /// header will be assembled and the message will get pushed on to the 
+    /// underlying driver's InQueue.
+    ///
+    /// @param resp_queue : Where to push any reply (e.g., your InQueue)
+    /// @param type : Message type
+    /// @param subtype : Message subtype
+    /// @param src : Message payload
+    /// @param len : Length of the message payload
+    /// @param timestamp : If non-NULL, the timestamp to attach to the
+    /// message; otherwise, the current time is filled in.
     void PutMsg(MessageQueue* resp_queue,
                 uint8_t type, 
                 uint8_t subtype,
@@ -75,10 +84,33 @@ class Device
                 size_t len,
                 double* timestamp);
 
+    /// @brief Send a message to this device (short form)
+    ///
+    /// This form of PutMsg is useful if you already have the message
+    /// header assembled (e.g., when you're forwarding a message).
+    /// 
+    /// @param resp_queue Where to push any reply
+    /// @param hdr The message header.
+    /// @param src The message body (its size is stored in hdr->size).
     void PutMsg(MessageQueue* resp_queue,
                 player_msghdr_t* hdr,
                 void* src);
 
+    /// @brief Make a request of another device.
+    ///
+    /// This method send a request message to a device
+    /// and waits for the reply.
+    ///
+    /// @param resp_queue : Where to push the reply (e.g., your InQueue)
+    /// @param type : Message type (usually PLAYER_MSGTYPE_REQ).
+    /// @param subtype : Message subtype (interface-specific)
+    /// @param src : Message body
+    /// @param len : Length of src.
+    /// @param timestamp : If non-NULL, the timestamp to attach to the
+    /// request; otherwise, the current time is filled in.
+    ///
+    /// @returns A pointer to the reply message.  The caller is responsible
+    ///          for deleting this pointer.
     Message* Request(MessageQueue* resp_queue,
                      uint8_t type,
                      uint8_t subtype,
@@ -86,6 +118,11 @@ class Device
                      size_t len,
                      double* timestamp);
 
+    /// @brief Compare two addresses
+    ///
+    /// This static method returns true if all 4 components of the two
+    /// addresses match exactly.  It's useful in Driver::ProcessMessage
+    /// when you're deciding how to handle a message.
     static bool MatchDeviceAddress(player_devaddr_t addr1,
                                    player_devaddr_t addr2)
     {

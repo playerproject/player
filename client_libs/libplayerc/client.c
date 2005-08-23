@@ -785,7 +785,8 @@ int playerc_client_readpacket(playerc_client_t *client,
 
 
   // Locate the appropriate unpacking function for the message body
-  if(!(packfunc = playerxdr_get_func(header->addr.interf, header->subtype)))
+  if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
+                                     header->subtype)))
   {
     // TODO: Allow the user to register a callback to handle unsupported
     // messages
@@ -820,7 +821,8 @@ int playerc_client_writepacket(playerc_client_t *client,
   struct timeval curr;
 
   // Locate the appropriate packing function for the message body
-  if(!(packfunc = playerxdr_get_func(header->addr.interf, header->subtype)))
+  if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
+                                     header->subtype)))
   {
     // TODO: Allow the user to register a callback to handle unsupported
     // messages

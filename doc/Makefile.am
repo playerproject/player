@@ -13,7 +13,7 @@ EXTRA_DIST = classes.html \
              upload_www.sh \
              utils.html
 
-CVS_DEST=Player-cvs-php
+CVS_DEST=Player-cvs
 NAME=player
 
 doc:
