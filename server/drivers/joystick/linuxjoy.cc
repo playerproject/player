@@ -492,8 +492,8 @@ void LinuxJoystick::RefreshData()
   if(this->position_addr.interf)
   {
     memset(&(this->pos_data),0,sizeof(player_position2d_data_t));
-    this->pos_data.pos[0] = this->xpos;
-    this->pos_data.pos[1] = -this->ypos;
+    this->pos_data.pos.px = this->xpos;
+    this->pos_data.pos.py = -this->ypos;
     this->Publish(this->position_addr, NULL,
                   PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                   (void*)&this->pos_data, sizeof(this->pos_data), NULL);
@@ -546,8 +546,8 @@ void LinuxJoystick::PutPositionCommand()
   PLAYER_MSG2(2,"sending speeds: (%f,%f)", xspeed, yawspeed);
 
   memset(&cmd,0,sizeof(cmd));
-  cmd.vel[0] = xspeed;
-  cmd.vel[2] = yawspeed;
+  cmd.vel.px = xspeed;
+  cmd.vel.py = yawspeed;
   cmd.type=0;
   cmd.state=1;
   this->position->PutMsg(this->InQueue,

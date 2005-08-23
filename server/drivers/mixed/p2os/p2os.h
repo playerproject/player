@@ -40,6 +40,7 @@
 #include <packet.h>
 #include <player.h>
 #include <robot_params.h>
+#include <clientdata.h>
    
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
@@ -142,17 +143,17 @@ class P2OS : public Driver
   private:
     player_p2os_data_t p2os_data;
     
-    player_device_id_t position_id;
-    player_device_id_t sonar_id;
-    player_device_id_t aio_id;
-    player_device_id_t dio_id;
-    player_device_id_t gripper_id;
-    player_device_id_t bumper_id;
-    player_device_id_t power_id;
-    player_device_id_t compass_id;
-    player_device_id_t gyro_id;
-    player_device_id_t blobfinder_id;
-    player_device_id_t sound_id;
+    player_devaddr_t position_id;
+    player_devaddr_t sonar_id;
+    player_devaddr_t aio_id;
+    player_devaddr_t dio_id;
+    player_devaddr_t gripper_id;
+    player_devaddr_t bumper_id;
+    player_devaddr_t power_id;
+    player_devaddr_t compass_id;
+    player_devaddr_t gyro_id;
+    player_devaddr_t blobfinder_id;
+    player_devaddr_t sound_id;
 
     // bookkeeping to only send new gripper I/O commands
     bool sent_gripper_cmd;
@@ -207,8 +208,8 @@ class P2OS : public Driver
 
     P2OS(ConfigFile* cf, int section);
 
-    int Subscribe(player_device_id_t id);
-    int Unsubscribe(player_device_id_t id);
+    int Subscribe(player_devaddr_t id);
+    int Unsubscribe(player_devaddr_t id);
 
     /* the main thread */
     void Main();

@@ -1110,9 +1110,9 @@ void AdaptiveMCL::PutDataPosition(double time, pf_vector_t delta)
     if (hyp->weight > max_weight)
     {
       max_weight = hyp->weight;
-      data.pos[0] = pose.v[0];
-      data.pos[1] = pose.v[1];
-      data.pos[2] = pose.v[2];
+      data.pos.px = pose.v[0];
+      data.pos.py = pose.v[1];
+      data.pos.pa = pose.v[2];
     }
   }
 

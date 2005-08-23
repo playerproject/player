@@ -44,7 +44,7 @@ class DeviceSubscription
 {
   public:
     /// Id of device.
-    player_device_id_t id;
+    player_devaddr_t id;
     /// Our access to the device.
     unsigned char access;
     /// Pointer to the underlying driver.
@@ -103,19 +103,19 @@ class ClientData
                                   player_device_nameservice_req_t *rep);
 #endif
     /// Do we have write (or all) permission on this device?
-    bool CheckWritePermissions(player_device_id_t id);
+    bool CheckWritePermissions(player_devaddr_t id);
     /// Do we have any (read, write, or all) permission on this device?
-    bool CheckOpenPermissions(player_device_id_t id);
+    bool CheckOpenPermissions(player_devaddr_t id);
     /// What is our current permission on this device?
-    unsigned char FindPermission(player_device_id_t id);
+    unsigned char FindPermission(player_devaddr_t id);
     /// Unsubscribe from this device
-    void Unsubscribe(player_device_id_t id);
+    void Unsubscribe(player_devaddr_t id);
     /// Subscribe to this device
-    int Subscribe(player_device_id_t id);
+    int Subscribe(player_devaddr_t id);
 
  public:
     /// Port on which we're connected to the client.
-    int port;
+    unsigned int port;
     /// The TCP/UDP socket itself, or -1 to indicate that this "client" is
     /// really internal to the server (e.g., the device is alwayson).
     int socket;
@@ -245,7 +245,7 @@ class ClientDataInternal : public ClientData
     int Write(bool requestonly = false);
 
     /// Send a message to a subscribed device.
-    int SendMsg(player_device_id_t id,
+    int SendMsg(player_devaddr_t id,
 		uint8_t type, 
 		uint8_t subtype,
 		uint8_t* src, 
@@ -261,8 +261,8 @@ class ClientDataInternal : public ClientData
 		uint32_t size, 
 		unsigned char * data);
 
-    int Subscribe(player_device_id_t device, char access='a');
-    int Unsubscribe(player_device_id_t device);
+    int Subscribe(player_devaddr_t device, char access='a');
+    int Unsubscribe(player_devaddr_t device);
     int SetDataMode(uint8_t datamode);
   protected:
     MessageQueue* InQueue;

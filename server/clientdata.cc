@@ -97,7 +97,7 @@ bool ClientData::CheckAuth(player_msghdr_t hdr, unsigned char* payload,
 {
   player_device_auth_req_t tmpreq;
 
-  if(hdr.device != PLAYER_PLAYER_CODE)
+  if(hdr.addr.interface != PLAYER_PLAYER_CODE)
     return(false);
 
   // ignore the device_index.  can we have more than one player?
@@ -157,13 +157,10 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   }
   else
   {
-    player_device_id_t id;
-    id.port = port;
-    id.code = hdr.device;
-    id.index = hdr.device_index;
+    player_devaddr_t id = hdr.addr;
 
     // if it's for us, handle it here
-    if(hdr.device == PLAYER_PLAYER_CODE && hdr.type == PLAYER_MSGTYPE_REQ)
+    if(hdr.addr.interface == PLAYER_PLAYER_CODE && hdr.type == PLAYER_MSGTYPE_REQ)
     {
       // ignore the device_index.  can we have more than one player?
       // is the payload big enough?
@@ -199,13 +196,13 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
           resp.code = htons(req.code);
           resp.index = htons(req.index);
 
-          player_device_id_t id;
-          id.port = port; 
-          id.code = (req.code);
+          player_devaddr_t id;
+          id.robot = port; 
+          id.interface = (req.code);
           id.index = (req.index);
           resp.access = FindPermission(id);
 
-          char* drivername;
+          const char* drivername;
           if((drivername = deviceTable->GetDriverName(id)))
             strncpy((char*)resp.driver_name, drivername, sizeof(resp.driver_name));
           else
@@ -337,14 +334,14 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
         else
         {
           PLAYER_WARN2("got request for unknown device: %x:%x",
-                       id.code,id.index);
+                       id.interface,id.index);
           requesttype = PLAYER_MSGTYPE_RESP_ERR;
         }
       }
       else
       {
         PLAYER_WARN2("No permissions to configure %x:%x",
-                     id.code,id.index);
+                     id.interface,id.index);
         requesttype = PLAYER_MSGTYPE_RESP_ERR;
       }
     }
@@ -355,7 +352,7 @@ int ClientData::HandleRequests(player_msghdr_t hdr, unsigned char *payload,
   {
     GlobalTime->GetTime(&curr);
 
-    PutMsg(requesttype, hdr.subtype, hdr.device, hdr.device_index, 
+    PutMsg(requesttype, hdr.subtype, hdr.addr.interface, hdr.addr.index, 
            &curr,replysize,replybuffer);
 
     // write data to the client immediately
@@ -423,11 +420,11 @@ ClientData::HandleListRequest(player_device_devlist_t *req,
        device = deviceTable->GetNextDevice(device))
   {
     assert(rep->device_count < ARRAYSIZE(rep->devices));
-    if (device->id.port == port)
+    if (device->addr.robot == port)
     {
-      rep->devices[rep->device_count].code = htons(device->id.code);
-      rep->devices[rep->device_count].index = htons(device->id.index);
-      rep->devices[rep->device_count].port = htons(device->id.port);
+      rep->devices[rep->device_count].interface = htons(device->addr.interface);
+      rep->devices[rep->device_count].index = htons(device->addr.index);
+      rep->devices[rep->device_count].robot = htons(device->addr.robot);
       rep->device_count++;
     }
   }
@@ -441,12 +438,12 @@ ClientData::HandleListRequest(player_device_devlist_t *req,
 void ClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
                                           player_device_driverinfo_t *rep)
 {
-  char *driver_name;
-  player_device_id_t id;
+  const char *driver_name;
+  player_devaddr_t id;
 
-  id.code = ntohs(req->id.code);
+  id.interface = ntohs(req->id.interface);
   id.index = ntohs(req->id.index);
-  id.port = ntohs(req->id.port);
+  id.robot = ntohl(req->id.robot);
 
   driver_name = deviceTable->GetDriverName(id);
   if (driver_name)
@@ -455,9 +452,9 @@ void ClientData::HandleDriverInfoRequest(player_device_driverinfo_t *req,
     strcpy(rep->driver_name, "unknown");
 
 //  rep->subtype = htons(PLAYER_PLAYER_DRIVERINFO_REQ);
-  req->id.code = req->id.code;
+/*  req->id.code = req->id.code;
   req->id.index = req->id.index;
-  req->id.port = req->id.port;
+  req->id.port = req->id.port;*/
   return;
 }
 
@@ -471,7 +468,7 @@ void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
 //  rep->subtype = PLAYER_PLAYER_NAMESERVICE_REQ;
   strncpy((char*)rep->name,(char*)req->name,sizeof(rep->name));
   rep->name[sizeof(rep->name)-1]='\0';
-  rep->port=0;
+  rep->robot=0;
 
   for(device = deviceTable->GetFirstDevice();
       device;
@@ -479,7 +476,7 @@ void ClientData::HandleNameserviceRequest(player_device_nameservice_req_t *req,
   {
     if(!strcmp((char*)req->name,(char*)device->robotname))
     {
-      rep->port = htons(device->id.port);
+      rep->robot = htonl(device->id.robot);
       break;
     }
   }
@@ -499,16 +496,16 @@ ClientData::UpdateRequested(player_device_req_t req)
   for(thissub=requested,prevsub=NULL;thissub;
       prevsub=thissub,thissub=thissub->next)
   {
-    if((thissub->id.code == req.code) && (thissub->id.index == req.index))
+    if((thissub->id.interface == req.code) && (thissub->id.index == req.index))
       break;
   }
 
   if(!thissub)
   {
     thissub = new DeviceSubscription;
-    thissub->id.code = req.code;
+    thissub->id.interface = req.code;
     thissub->id.index = req.index;
-    thissub->id.port = port;
+    thissub->id.robot = port;
     thissub->driver = deviceTable->GetDriver(thissub->id);
 
     thissub->access = PLAYER_ERROR_MODE;
@@ -525,8 +522,8 @@ ClientData::UpdateRequested(player_device_req_t req)
   if(allowed_access == PLAYER_ERROR_MODE)
   {
     PLAYER_WARN3("not allowing subscription to unknown device \"%d:%s:%d\"",
-                       thissub->id.port,
-                       ::lookup_interface_name(0, thissub->id.code),
+                       thissub->id.robot,
+                       ::lookup_interface_name(0, thissub->id.interface),
                        thissub->id.index);
     return(PLAYER_ERROR_MODE);
   }
@@ -558,8 +555,8 @@ ClientData::UpdateRequested(player_device_req_t req)
            (allowed_access != req.access))
         {
           PLAYER_WARN4("not granting unallowed access '%c' to device \"%d:%s:%d\"",
-                       req.access,thissub->id.port,
-                       ::lookup_interface_name(0, thissub->id.code),
+                       req.access,thissub->id.robot,
+                       ::lookup_interface_name(0, thissub->id.interface),
                        thissub->id.index);
         }
         else
@@ -597,14 +594,14 @@ ClientData::UpdateRequested(player_device_req_t req)
 }
 
 unsigned char 
-ClientData::FindPermission(player_device_id_t id)
+ClientData::FindPermission(player_devaddr_t id)
 {
   unsigned char tmpaccess;
   for(DeviceSubscription* thisub=requested;
       thisub;
       thisub=thisub->next)
   {
-    if((thisub->id.code == id.code) && (thisub->id.index == id.index))
+    if((thisub->id.interface == id.interface) && (thisub->id.index == id.index))
     {
       tmpaccess = thisub->access;
       return(tmpaccess);
@@ -613,7 +610,7 @@ ClientData::FindPermission(player_device_id_t id)
   return(PLAYER_ERROR_MODE);
 }
 
-bool ClientData::CheckOpenPermissions(player_device_id_t id)
+bool ClientData::CheckOpenPermissions(player_devaddr_t id)
 {
   bool permission = false;
   unsigned char letter;
@@ -628,7 +625,7 @@ bool ClientData::CheckOpenPermissions(player_device_id_t id)
   return(permission);
 }
 
-bool ClientData::CheckWritePermissions(player_device_id_t id)
+bool ClientData::CheckWritePermissions(player_devaddr_t id)
 {
   bool permission = false;
   unsigned char letter;
@@ -641,7 +638,7 @@ bool ClientData::CheckWritePermissions(player_device_id_t id)
   return(permission);
 }
 
-int ClientData::Subscribe(player_device_id_t id)
+int ClientData::Subscribe(player_devaddr_t id)
 {
   Driver* driver;
   int subscribe_result;
@@ -654,13 +651,13 @@ int ClientData::Subscribe(player_device_id_t id)
   else
   {
     PLAYER_WARN3("Unknown device \"%d:%s:%d\" - subscribe cancelled", 
-                 id.port,::lookup_interface_name(0, id.code),id.index);
+                 id.robot,::lookup_interface_name(0, id.interface),id.index);
     return(1);
   }
 }
 
 
-void ClientData::Unsubscribe(player_device_id_t id)
+void ClientData::Unsubscribe(player_devaddr_t id)
 {
   Driver* driver;
 
@@ -671,7 +668,7 @@ void ClientData::Unsubscribe(player_device_id_t id)
   else
   {
     PLAYER_WARN3("Unknown device \"%d:%s:%d\" - unsubscribe cancelled", 
-                 id.port,::lookup_interface_name(0, id.code),id.index);
+                 id.robot,::lookup_interface_name(0, id.interface),id.index);
   }
 }
 
@@ -689,8 +686,8 @@ ClientData::PutMsg(uint8_t type,
   hdr.stx = htons(PLAYER_STXX);
   hdr.type=type;
   hdr.subtype=subtype;
-  hdr.device=htons(device);
-  hdr.device_index=htons(device_index);
+  hdr.addr.interface=htons(device);
+  hdr.addr.index=htons(device_index);
   hdr.timestamp_sec=htonl(timestamp->tv_sec);
   hdr.timestamp_usec=htonl(timestamp->tv_usec);
   hdr.size=htonl(size); // size of message data
@@ -790,14 +787,14 @@ ClientDataTCP::Read()
         // byte-swap as necessary
         hdrbuffer.type = (hdrbuffer.type);
         hdrbuffer.subtype = (hdrbuffer.subtype);
-        hdrbuffer.device = ntohs(hdrbuffer.device);
-        hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
-        hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
-        hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
+        hdrbuffer.addr.interface = ntohs(hdrbuffer.addr.interface);
+        hdrbuffer.addr.index = ntohs(hdrbuffer.addr.index);
+/*        hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
+        hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);*/
         hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
         hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
         hdrbuffer.seq = ntohs(hdrbuffer.seq);
-        hdrbuffer.conid = ntohs(hdrbuffer.conid);
+        //hdrbuffer.conid = ntohs(hdrbuffer.conid);
         hdrbuffer.size = ntohl(hdrbuffer.size);
 	
         // make sure it's not too big
@@ -867,10 +864,10 @@ ClientDataTCP::Write(bool requst_only)
   if(this->usedwritebuffersize==0)
   {
     // Loop through waiting messages and write them to buffer
-    Message msg;
-    while(this->OutQueue->Pop(&msg))
+    Message * msg;
+    while((msg =this->OutQueue->Pop()))
     {
-      size_t totalsize = this->usedwritebuffersize + msg.GetSize();
+      size_t totalsize = this->usedwritebuffersize + msg->GetSize();
 
       while(totalsize > this->totalwritebuffersize)
       {
@@ -881,11 +878,11 @@ ClientDataTCP::Write(bool requst_only)
       }
 
       // Fill in latest server time
-      msg.GetHeader()->time_sec = htonl(curr.tv_sec);
-      msg.GetHeader()->time_usec = htonl(curr.tv_usec);
+/*      msg->GetHeader()->time_sec = htonl(curr.tv_sec);
+      msg->GetHeader()->time_usec = htonl(curr.tv_usec);*/
       memcpy(this->totalwritebuffer + this->usedwritebuffersize, 
-	     msg.GetData(), msg.GetSize());	
-      this->usedwritebuffersize += msg.GetSize();
+	     msg->GetData(), msg->GetSize());	
+      this->usedwritebuffersize += msg->GetSize();
     }
   }
 
@@ -955,14 +952,14 @@ ClientDataUDP::Read()
   // byte-swap as necessary
   hdrbuffer.type = (hdrbuffer.type);
   hdrbuffer.subtype = (hdrbuffer.subtype);
-  hdrbuffer.device = ntohs(hdrbuffer.device);
-  hdrbuffer.device_index = ntohs(hdrbuffer.device_index);
-  hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
-  hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);
+  hdrbuffer.addr.interface = ntohs(hdrbuffer.addr.interface);
+  hdrbuffer.addr.index = ntohs(hdrbuffer.addr.index);
+/*  hdrbuffer.time_sec = ntohl(hdrbuffer.time_sec);
+  hdrbuffer.time_usec = ntohl(hdrbuffer.time_usec);*/
   hdrbuffer.timestamp_sec = ntohl(hdrbuffer.timestamp_sec);
   hdrbuffer.timestamp_usec = ntohl(hdrbuffer.timestamp_usec);
   hdrbuffer.seq = ntohs(hdrbuffer.seq);
-  hdrbuffer.conid = ntohs(hdrbuffer.conid);
+//  hdrbuffer.conid = ntohs(hdrbuffer.conid);
   hdrbuffer.size = ntohl(hdrbuffer.size);
 
   memmove(readbuffer,readbuffer+sizeof(player_msghdr_t),
@@ -977,14 +974,14 @@ int
 ClientDataUDP::Write(bool request_only)
 {
   // Loop through waiting messages and write them to buffer
-  Message msg;
-  while(this->OutQueue->Pop(&msg))
+  Message * msg;
+  while((msg=this->OutQueue->Pop()))
   {
     int byteswritten;
 
     // Assume that all data can be written in a single datagram.  Need to
     // make this smarter later.
-    if((byteswritten = sendto(socket, msg.GetData(), msg.GetSize(), 0, 
+    if((byteswritten = sendto(socket, msg->GetData(), msg->GetSize(), 0, 
                               (struct sockaddr*)&clientaddr, 
                               (socklen_t)clientaddr_len)) < 0)
     {
@@ -1018,9 +1015,9 @@ ClientDataInternal::Read()
 {
   // this is a 'psuedo read' basically we take messages from the InQueue and
   // Dispatch them to the drivers
-  Message msg;
-  while(this->InQueue->Pop(&msg))
-    driver->InQueue->Push(msg);
+  Message * msg;
+  while((msg=this->InQueue->Pop()))
+    driver->InQueue->Push(*msg);
 
   return(0);
 }
@@ -1029,11 +1026,11 @@ int
 ClientDataInternal::Write(bool requst_only)
 {
   // Take messages off the queue and give them to the player server for processing
-  Message msg;
-  while(this->OutQueue->Pop(&msg))
+  Message * msg;
+  while((msg=this->OutQueue->Pop()))
   {
-    player_msghdr * hdr = msg.GetHeader();
-    uint8_t * data = msg.GetPayload();
+    player_msghdr * hdr = msg->GetHeader();
+    uint8_t * data = msg->GetPayload();
     if(HandleRequests(*hdr, data, hdr->size) < 0)
       return -1;
   }	
@@ -1055,8 +1052,8 @@ ClientDataInternal::PutMsg(uint8_t type,
   hdr.stx = PLAYER_STXX;
   hdr.type = type;
   hdr.subtype = subtype;
-  hdr.device = device;
-  hdr.device_index = device_index;
+  hdr.addr.interface = device;
+  hdr.addr.index = device_index;
   hdr.timestamp_sec = timestamp->tv_sec;
   hdr.timestamp_usec = timestamp->tv_usec;
   hdr.size = size; // size of message data
@@ -1068,7 +1065,7 @@ ClientDataInternal::PutMsg(uint8_t type,
 
 // Called by client driver to send a message to another driver
 int 
-ClientDataInternal::SendMsg(player_device_id_t device, 
+ClientDataInternal::SendMsg(player_devaddr_t device, 
                             uint8_t type, 
                             uint8_t subtype, 
                             uint8_t * data, 
@@ -1085,8 +1082,8 @@ ClientDataInternal::SendMsg(player_device_id_t device,
   hdr.stx = PLAYER_STXX;
   hdr.type = type;
   hdr.subtype = subtype;
-  hdr.device = device.code;
-  hdr.device_index = device.index;
+  hdr.addr.interface = device.interface;
+  hdr.addr.index = device.index;
   hdr.timestamp_sec = ts.tv_sec;
   hdr.timestamp_usec = ts.tv_usec;
   hdr.size = size; // size of message data
@@ -1098,7 +1095,7 @@ ClientDataInternal::SendMsg(player_device_id_t device,
 }
 
 int 
-ClientDataInternal::Subscribe(player_device_id_t device, char access)
+ClientDataInternal::Subscribe(player_devaddr_t device, char access)
 {
   player_device_req_t req;
 
@@ -1106,14 +1103,14 @@ ClientDataInternal::Subscribe(player_device_id_t device, char access)
   hdr.stx = PLAYER_STXX;
   hdr.type = PLAYER_MSGTYPE_REQ;
   hdr.subtype = PLAYER_PLAYER_DEV;
-  hdr.device = PLAYER_PLAYER_CODE;
-  hdr.device_index = 0;
+  hdr.addr.interface = PLAYER_PLAYER_CODE;
+  hdr.addr.index = 0;
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
   hdr.size = sizeof(req); // size of message data
 
   //	req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.code = htons(device.code);
+  req.code = htons(device.interface);
   req.index = htons(device.index);
   req.access = access;
 
@@ -1123,7 +1120,7 @@ ClientDataInternal::Subscribe(player_device_id_t device, char access)
 }
 
 int
-ClientDataInternal::Unsubscribe(player_device_id_t device)
+ClientDataInternal::Unsubscribe(player_devaddr_t device)
 {
   player_device_req_t req;
 
@@ -1131,14 +1128,14 @@ ClientDataInternal::Unsubscribe(player_device_id_t device)
   hdr.stx = PLAYER_STXX;
   hdr.type = PLAYER_MSGTYPE_REQ;
   hdr.subtype = PLAYER_PLAYER_DEV;
-  hdr.device = PLAYER_PLAYER_CODE;
-  hdr.device_index = 0;
+  hdr.addr.interface = PLAYER_PLAYER_CODE;
+  hdr.addr.index = 0;
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
   hdr.size = sizeof(req); // size of message data
 
   //	req.subtype = htons(PLAYER_PLAYER_DEV_REQ);
-  req.code = htons(device.code);
+  req.code = htons(device.interface);
   req.index = htons(device.index);
   req.access = 'c';
 
@@ -1156,8 +1153,8 @@ ClientDataInternal::SetDataMode(uint8_t datamode)
   hdr.stx = PLAYER_STXX;
   hdr.type = PLAYER_MSGTYPE_REQ;
   hdr.subtype = PLAYER_PLAYER_DATAMODE;
-  hdr.device = PLAYER_PLAYER_CODE;
-  hdr.device_index = 0;
+  hdr.addr.interface = PLAYER_PLAYER_CODE;
+  hdr.addr.index = 0;
   hdr.timestamp_sec = 0;
   hdr.timestamp_usec = 0;
   hdr.size = sizeof(req); // size of message data

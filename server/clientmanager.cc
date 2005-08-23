@@ -205,8 +205,8 @@ ClientManager::AddClient(ClientData* client)
     unsigned char data[PLAYER_IDENT_STRLEN];
     player_msghdr_t hdr = {0};
     hdr.stx = PLAYER_STXX;
-    hdr.device = htons(PLAYER_PLAYER_CODE);
-    hdr.device_index = 0;
+    hdr.addr.interface = htons(PLAYER_PLAYER_CODE);
+    hdr.addr.index = 0;
     hdr.type = PLAYER_MSGTYPE_REQ;
     hdr.subtype = PLAYER_PLAYER_IDENT;
     hdr.size = htonl(PLAYER_IDENT_STRLEN);
@@ -425,7 +425,7 @@ ClientManager::PutMsg(uint8_t type,
           thissub;
           thissub=thissub->next)
       {
-        if(thissub->id.code == device && thissub->id.index == device_index)
+        if(thissub->id.interface == device && thissub->id.index == device_index)
         {
           this->clients[i]->PutMsg(type, subtype, device, device_index, 
                                    timestamp, size, data);
@@ -691,10 +691,10 @@ ClientManagerUDP::Read()
       // if the client ID (the first 2 bytes of reserved) is 0, then this 
       // must be a new client
       if((ntohs(hdr.stx) == PLAYER_STXX) &&
-         (ntohs(hdr.conid) == 0) &&
+//         (ntohs(hdr.conid) == 0) &&
          (ntohs(hdr.type) == PLAYER_MSGTYPE_REQ) &&
-         (ntohs(hdr.device) == PLAYER_PLAYER_CODE) &&
-         (ntohs(hdr.device_index) == 0) &&
+         (ntohs(hdr.addr.interface) == PLAYER_PLAYER_CODE) &&
+         (ntohs(hdr.addr.index) == 0) &&
          (ntohl(hdr.size) == 0))
       {
         // no existing client object; create a new one
@@ -726,9 +726,9 @@ ClientManagerUDP::Read()
         struct timeval curr;
         GlobalTime->GetTime(&curr);
         hdr.type = htons(PLAYER_MSGTYPE_RESP_ACK);
-        hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
+/*        hdr.time_sec = hdr.timestamp_sec = htonl(curr.tv_sec);
         hdr.time_usec = hdr.timestamp_usec = htonl(curr.tv_usec);
-        hdr.conid = htons(clientData->client_id);
+        hdr.conid = htons(clientData->client_id);*/
 
         Message New(hdr,NULL,0);
         clientData->OutQueue->Push(New);
@@ -750,7 +750,7 @@ ClientManagerUDP::Read()
       // is there an object for this client yet?
       for(int j=0; j<num_clients && clients[j]; j++)
       {
-        if(clients[j]->client_id == ntohs(hdr.conid))
+        if(clients[j]->client_id == ntohs(hdr.addr.robot))
         {
           clientData = clients[j];
           break;
