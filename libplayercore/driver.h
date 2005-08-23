@@ -94,6 +94,7 @@ class Driver
     /// @brief Publish a message via one of this driver's interfaces.
     ///
     /// This form of Publish will assemble the message header for you.
+    ///
     /// @param addr The origin address
     /// @param queue If non-NULL, the target queue; if NULL,
     ///        then the message is sent to all interested parties.
@@ -101,7 +102,8 @@ class Driver
     /// @param subtype The message subtype
     /// @param src The message body
     /// @param len Length of the message body
-    /// @param timestamp Timestamp for the message body
+    /// @param timestamp Timestamp for the message body (if NULL, then the
+    /// current time will be filled in)
     virtual void Publish(player_devaddr_t addr, 
                          MessageQueue* queue, 
                          uint8_t type, 
@@ -125,12 +127,19 @@ class Driver
     /// @brief Add an interface.
     ///
     /// @param addr Player device address.
-    /// @param access Allowed access mode; e.g., PLAYER_READ_MODE
-    /// @returns Returns 0 on success
+    //
+    /// @returns 0 on success, non-zero otherwise.
     int AddInterface(player_devaddr_t addr);
     
     /// @brief Set/reset error code
     void SetError(int code) {this->error = code;}
+
+    /// @brief Wait for new data to arrive on the driver's queue.
+    ///
+    /// Call this method to block until new data arrives on
+    /// Driver::InQueue.  This method will return immediately if at least
+    /// one message is already waiting.
+    void Wait() { this->InQueue->Wait(); }
     
   public:
     /// @brief Lock access to driver internals.
@@ -230,15 +239,6 @@ class Driver
     /// @returns Returns 0 on success.
     virtual int Shutdown() = 0;
 
-    /// @brief Do some extra initialization.
-    ///
-    /// This method is called by Player on each driver after all drivers have
-    /// been loaded, and immediately before entering the main loop, so override
-    /// it in your driver subclass if you need to do some last minute setup with
-    /// Player all set up and ready to go.
-    /// @todo I think this can be deprecated.
-    virtual void Prepare() {}
-
     /// @brief Main method for driver thread.
     ///
     /// Most drivers have their own thread of execution, created using
@@ -264,19 +264,17 @@ class Driver
     ///
     /// This function is called once for each message in the incoming queue.
     /// Reimplement it to provide message handling.
-    /// Return 0 for no response, otherwise with player_msgtype if response 
+    /// Return 0 for no response, otherwise with the appropriate
+    /// player message type if a response 
     /// needed.  If a response is needed, storage to hold it will be
     /// allocated in this method and @p resp_data will point to it.  The
     /// caller is responsible for freeing this storage.
-    /// If calling this method from outside the driver lock the driver mutex 
-    /// first.
-    /// When writing the driver make sure to protect accesses that could 
-    /// clash in the main thread with mutex locks.
+    //
     /// @param resp_queue The queue to which any response should go.
     /// @param hdr The message header
     /// @param data The message body
     /// @param resp_data Place to put a response
-    /// @param resp_len Place to put length of response
+    /// @param resp_len Place to put allocated length of response
     virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
                                void * data, void** resp_data,
                                size_t * resp_len) 

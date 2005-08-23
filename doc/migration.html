@@ -205,6 +205,10 @@ compiler finds and complains about it) does the job.
 
 - ConfigFile::ReadDeviceId is now ConfigFile::ReadDeviceAddr.
 
+- The <tt>position</tt> interface is now the @ref
+  player_interface_position2d interface, and its code is
+  PLAYER_POSITION2D_CODE.
+
 - The driver no longer specifies an allowable access mode, in either the
   Driver constructor or in Driver::AddInterface.  The READ, WRITE, and ALL
   access modes have been collapsed into OPEN.  A subscriber can simply OPEN
