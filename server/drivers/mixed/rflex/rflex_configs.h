@@ -19,14 +19,6 @@
 #include <math.h>
 #include <player.h>
 
-//holds the pose of a sonar in robot relative coordinates
-typedef struct
-{
-  double x;
-  double y;
-  double t;
-} sonar_pose_t;
-
 //normalizes an angle in radians to -M_PI<theta<M_PI
 inline double normalize_theta(double theta){
   while(theta>M_PI)
@@ -39,10 +31,10 @@ inline double normalize_theta(double theta){
 //structures for holding general configuration of robot
 typedef struct rflex_config_t{
   char serial_port[256];
-  //length of the robot in mm
-  double mm_length;
-  //width of the robot in mm
-  double mm_width;
+  //length of the robot in m
+  double m_length;
+  //width of the robot in m
+  double m_width;
   //mm*odo_distance_conversion : mm to rflex arbitrary odometry units (trans)
   double odo_distance_conversion;
   //rad*odo_angle_conversion : rad to rflex arbitrary odometry units (rot)
@@ -78,7 +70,7 @@ typedef struct rflex_config_t{
   int *num_sonars_in_bank;
   // pose of each sonar on the robot (x,y,t) in rad and mm
   // note i is forwards, j is left
-  sonar_pose_t *mmrad_sonar_poses;
+  player_pose_t *mrad_sonar_poses;
   //not sure what these do yet actually
   long sonar_echo_delay;
   long sonar_ping_delay;

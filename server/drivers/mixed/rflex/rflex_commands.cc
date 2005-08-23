@@ -510,11 +510,11 @@ static void parseDioReport( unsigned char *buffer )
 
 	// allocate ir storage if we havent already
 	// must be a better place to do this but it works
-   if (status.num_ir== 0 && rflex_configs.ir_poses.pose_count > 0)
+   if (status.num_ir== 0 && rflex_configs.ir_poses.poses_count > 0)
    {
-       status.ir_ranges = new unsigned char[rflex_configs.ir_poses.pose_count];
+       status.ir_ranges = new unsigned char[rflex_configs.ir_poses.poses_count];
        if (status.ir_ranges != NULL)
-           status.num_ir = rflex_configs.ir_poses.pose_count;
+           status.num_ir = rflex_configs.ir_poses.poses_count;
 	else
 		fprintf(stderr,"Error allocating ir range storage in rflex status\n");
    }

@@ -73,7 +73,7 @@ enum
 
 typedef struct player_rflex_data
 {
-  player_position_data_t position;
+  player_position2d_data_t position;
   player_sonar_data_t sonar;
   player_sonar_data_t sonar2;
   player_gripper_data_t gripper;
@@ -98,15 +98,15 @@ typedef struct
 class RFLEX : public Driver 
 {
   private:
-    player_device_id_t position_id;
-    player_device_id_t sonar_id;
-    player_device_id_t sonar_id_2;
-    player_device_id_t ir_id;
-    player_device_id_t bumper_id;
-    player_device_id_t power_id;
-    player_device_id_t aio_id;
-    player_device_id_t dio_id;
-	player_position_cmd_t command;
+    player_devaddr_t position_id;
+    player_devaddr_t sonar_id;
+    player_devaddr_t sonar_id_2;
+    player_devaddr_t ir_id;
+    player_devaddr_t bumper_id;
+    player_devaddr_t power_id;
+    player_devaddr_t aio_id;
+    player_devaddr_t dio_id;
+	player_position2d_cmd_t command;
 
     int position_subscriptions;
     int sonar_subscriptions;
@@ -140,8 +140,8 @@ class RFLEX : public Driver
     virtual void Main();
 
     // we override these, because we will maintain our own subscription count
-    virtual int Subscribe(player_device_id_t id);
-    virtual int Unsubscribe(player_device_id_t id);
+    virtual int Subscribe(player_devaddr_t addr);
+    virtual int Unsubscribe(player_devaddr_t addr);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -161,7 +161,9 @@ class RFLEX : public Driver
     static int joy_control;
 	
 	// MessageHandler
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+	int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+                               void * data, void** resp_data,
+                               size_t * resp_len);
 	
 	bool ThreadAlive;
 };
