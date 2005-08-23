@@ -1,14 +1,17 @@
-SUBDIRS =
+driverincludedir = $(includedir)/player-@VERSION@/drivers
+driverlibdir = $(libdir)/player-@VERSION@
 
-AM_CPPFLAGS = -I$(top_srcdir)/server
+driverlib_LTLIBRARIES = 
+if INCLUDE_BUMPERSAFE
+driverlib_LTLIBRARIES += libbumpersafe.la
+endif
 
-libbumpersafe_a_SOURCES = bumpersafe.cc
+driverinclude_HEADERS = 
 
-libbumpersafe_a_LIBADD = 
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-noinst_LIBRARIES = @BUMPERSAFE_LIB@
+libbumpersafe_la_SOURCES = bumpersafe.cc
 
-EXTRA_LIBRARIES = libbumpersafe.a
 
 
 

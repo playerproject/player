@@ -209,22 +209,22 @@ P2OS::P2OS(ConfigFile* cf, int section)
         : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
-  memset(&this->sonar_id, 0, sizeof(player_device_id_t));
-  memset(&this->aio_id, 0, sizeof(player_device_id_t));
-  memset(&this->dio_id, 0, sizeof(player_device_id_t));
-  memset(&this->gripper_id, 0, sizeof(player_device_id_t));
-  memset(&this->bumper_id, 0, sizeof(player_device_id_t));
-  memset(&this->power_id, 0, sizeof(player_device_id_t));
-  memset(&this->compass_id, 0, sizeof(player_device_id_t));
-  memset(&this->gyro_id, 0, sizeof(player_device_id_t));
-  memset(&this->blobfinder_id, 0, sizeof(player_device_id_t));
-  memset(&this->sound_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_devaddr_t));
+  memset(&this->sonar_id, 0, sizeof(player_devaddr_t));
+  memset(&this->aio_id, 0, sizeof(player_devaddr_t));
+  memset(&this->dio_id, 0, sizeof(player_devaddr_t));
+  memset(&this->gripper_id, 0, sizeof(player_devaddr_t));
+  memset(&this->bumper_id, 0, sizeof(player_devaddr_t));
+  memset(&this->power_id, 0, sizeof(player_devaddr_t));
+  memset(&this->compass_id, 0, sizeof(player_devaddr_t));
+  memset(&this->gyro_id, 0, sizeof(player_devaddr_t));
+  memset(&this->blobfinder_id, 0, sizeof(player_devaddr_t));
+  memset(&this->sound_id, 0, sizeof(player_devaddr_t));
 
   this->position_subscriptions = this->sonar_subscriptions = 0;
 
   // Do we create a robot position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides",
+  if(cf->ReadDeviceAddr(&(this->position_id), section, "provides",
                       PLAYER_POSITION_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
@@ -235,7 +235,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a compass position interface?
-  if(cf->ReadDeviceId(&(this->compass_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->compass_id), section, "provides", 
                       PLAYER_POSITION_CODE, -1, "compass") == 0)
   {
     if(this->AddInterface(this->compass_id, PLAYER_READ_MODE) != 0)
@@ -246,7 +246,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a gyro position interface?
-  if(cf->ReadDeviceId(&(this->gyro_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->gyro_id), section, "provides", 
                       PLAYER_POSITION_CODE, -1, "gyro") == 0)
   {
     if(this->AddInterface(this->gyro_id, PLAYER_READ_MODE) != 0)
@@ -258,7 +258,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
 
   // Do we create a sonar interface?
-  if(cf->ReadDeviceId(&(this->sonar_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->sonar_id), section, "provides", 
                       PLAYER_SONAR_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE) != 0)
@@ -270,7 +270,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
 
   // Do we create an aio interface?
-  if(cf->ReadDeviceId(&(this->aio_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides", 
                       PLAYER_AIO_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->aio_id, PLAYER_READ_MODE) != 0)
@@ -281,7 +281,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a dio interface?
-  if(cf->ReadDeviceId(&(this->dio_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->dio_id), section, "provides", 
                       PLAYER_DIO_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->dio_id, PLAYER_READ_MODE) != 0)
@@ -292,7 +292,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a gripper interface?
-  if(cf->ReadDeviceId(&(this->gripper_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->gripper_id), section, "provides", 
                       PLAYER_GRIPPER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->gripper_id, PLAYER_ALL_MODE) != 0)
@@ -303,7 +303,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a bumper interface?
-  if(cf->ReadDeviceId(&(this->bumper_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->bumper_id), section, "provides", 
                       PLAYER_BUMPER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE) != 0)
@@ -314,7 +314,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a power interface?
-  if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->power_id), section, "provides", 
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->power_id, PLAYER_READ_MODE) != 0)
@@ -325,7 +325,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a blobfinder interface?
-  if(cf->ReadDeviceId(&(this->blobfinder_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->blobfinder_id), section, "provides", 
                       PLAYER_BLOBFINDER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE) != 0)
@@ -336,7 +336,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a sound interface?
-  if(cf->ReadDeviceId(&(this->sound_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->sound_id), section, "provides", 
                       PLAYER_SOUND_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->sound_id, PLAYER_WRITE_MODE) != 0)
@@ -683,10 +683,10 @@ int P2OS::Setup()
     this->SendReceive(&js_packet);
   }
 
-  if(this->blobfinder_id.code)
+  if(this->blobfinder_id.interface)
     CMUcamReset();
 
-  if(this->gyro_id.code)
+  if(this->gyro_id.interface)
   {
     // request that gyro data be sent each cycle
     P2OSPacket gyro_packet;
@@ -810,7 +810,7 @@ int P2OS::Shutdown()
 }
 
 int 
-P2OS::Subscribe(player_device_id_t id)
+P2OS::Subscribe(player_devaddr_t id)
 {
   int setupResult;
 
@@ -818,7 +818,7 @@ P2OS::Subscribe(player_device_id_t id)
   if((setupResult = Driver::Subscribe(id)) == 0)
   {
     // also increment the appropriate subscription counter
-    switch(id.code)
+    switch(id.interface)
     {
       case PLAYER_POSITION_CODE:
         this->position_subscriptions++;
@@ -833,7 +833,7 @@ P2OS::Subscribe(player_device_id_t id)
 }
 
 int 
-P2OS::Unsubscribe(player_device_id_t id)
+P2OS::Unsubscribe(player_devaddr_t id)
 {
   int shutdownResult;
 
@@ -841,7 +841,7 @@ P2OS::Unsubscribe(player_device_id_t id)
   if((shutdownResult = Driver::Unsubscribe(id)) == 0)
   {
     // also decrement the appropriate subscription counter
-    switch(id.code)
+    switch(id.interface)
     {
       case PLAYER_POSITION_CODE:
         assert(--this->position_subscriptions >= 0);
@@ -866,70 +866,70 @@ P2OS::PutData(void)
   // TODO: something smarter about timestamping.
 
   // put position data
-  this->PutMsg(this->position_id, 
+  this->Publish(this->position_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.position), 
                sizeof(player_position_data_t),
                NULL);
 
   // put sonar data
-  this->PutMsg(this->sonar_id, 
+  this->Publish(this->sonar_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.sonar), 
                sizeof(player_sonar_data_t),
                NULL);
   
   // put aio data
-  this->PutMsg(this->aio_id, 
+  this->Publish(this->aio_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.aio), 
                sizeof(player_aio_data_t),
                NULL);
 
   // put dio data
-  this->PutMsg(this->dio_id, 
+  this->Publish(this->dio_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.dio), 
                sizeof(player_dio_data_t),
                NULL);
 
   // put gripper data
-  this->PutMsg(this->gripper_id, 
+  this->Publish(this->gripper_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.gripper), 
                sizeof(player_gripper_data_t),
                NULL);
 
   // put bumper data
-  this->PutMsg(this->bumper_id, 
+  this->Publish(this->bumper_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.bumper), 
                sizeof(player_bumper_data_t),
                NULL);
 
   // put power data
-  this->PutMsg(this->power_id, 
+  this->Publish(this->power_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.power), 
                sizeof(player_power_data_t),
                NULL);
 
   // put compass data
-  this->PutMsg(this->compass_id, 
+  this->Publish(this->compass_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.compass), 
                sizeof(player_position_data_t),
                NULL);
 
   // put gyro data
-  this->PutMsg(this->gyro_id, 
+  this->Publish(this->gyro_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.gyro), 
                sizeof(player_position_data_t),
                NULL);
 
   // put blobfinder data
-  this->PutMsg(this->blobfinder_id, 
+  this->Publish(this->blobfinder_id, 
                NULL, PLAYER_MSGTYPE_DATA, 0,
                (void*)&(this->p2os_data.blobfinder), 
                sizeof(player_blobfinder_data_t),
@@ -979,7 +979,7 @@ P2OS::Main()
 
     // The Amigo board seems to drop commands once in a while.  This is
     // a hack to restart the serial reads if that happens.
-    if(this->blobfinder_id.code)
+    if(this->blobfinder_id.interface)
     {
       struct timeval now_tv;
       GlobalTime->GetTime(&now_tv);
@@ -1055,7 +1055,7 @@ P2OS::SendReceive(P2OSPacket* pkt)
             packet.packet[3] == SERAUX2)
     {
       // This is an AUX2 serial packet
-      if(blobfinder_id.code)
+      if(blobfinder_id.interface)
       {
         /* It is an extended SIP (blobfinder) packet, so process it */
         /* Be sure to pass data size too (packet[2])! */
@@ -1106,7 +1106,7 @@ P2OS::SendReceive(P2OSPacket* pkt)
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             packet.packet[3] == GYROPAC)
     {
-      if(this->gyro_id.code)
+      if(this->gyro_id.interface)
       {
         /* It's a set of gyro measurements */
         this->sippacket->ParseGyro(&packet.packet[2]);
@@ -1328,7 +1328,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
   *resp_len = 0;
 
   // check for position config requests
-  if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                         PLAYER_POSITION_SET_ODOM, this->position_id))
   {
     if(hdr->size != sizeof(player_position_set_odom_req_t))
@@ -1348,7 +1348,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
 
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_POSITION_MOTOR_POWER, 
                              this->position_id))
   {
@@ -1367,7 +1367,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
 
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_POSITION_RESET_ODOM, 
                              this->position_id))
   {
@@ -1381,7 +1381,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
 
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_POSITION_GET_GEOM, 
                              this->position_id))
   {
@@ -1410,7 +1410,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
     *resp_len = sizeof(geom);
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_POSITION_VELOCITY_MODE, 
                              this->position_id))
   {
@@ -1436,7 +1436,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
   // check for sonar config requests
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_SONAR_POWER, 
                              this->sonar_id))
   {
@@ -1455,7 +1455,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
 
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_SONAR_GET_GEOM, 
                              this->sonar_id))
   {
@@ -1483,7 +1483,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
   // check for blobfinder requests
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_BLOBFINDER_SET_COLOR, 
                              this->blobfinder_id))
   {
@@ -1507,7 +1507,7 @@ P2OS::HandleConfig(player_msghdr * hdr,
 
     return(PLAYER_MSGTYPE_RESP_ACK);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                              PLAYER_BLOBFINDER_SET_IMAGER_PARAMS, 
                              this->blobfinder_id))
   {
@@ -1797,7 +1797,7 @@ P2OS::HandleSoundCommand(player_sound_cmd_t sound_cmd)
 int
 P2OS::HandleCommand(player_msghdr * hdr, uint8_t * data)
 {
-  if(this->MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->position_id))
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->position_id))
   {
     // get and send the latest motor command
     player_position_cmd_t position_cmd;
@@ -1805,7 +1805,7 @@ P2OS::HandleCommand(player_msghdr * hdr, uint8_t * data)
     this->HandlePositionCommand(position_cmd);
     return(0);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->gripper_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->gripper_id))
   {
     // get and send the latest gripper command, if it's new
     player_gripper_cmd_t gripper_cmd;
@@ -1813,7 +1813,7 @@ P2OS::HandleCommand(player_msghdr * hdr, uint8_t * data)
     this->HandleGripperCommand(gripper_cmd);
     return(0);
   }
-  else if(this->MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->sound_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,0,this->sound_id))
   {
     // get and send the latest sound command, if it's new
     player_sound_cmd_t sound_cmd;

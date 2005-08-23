@@ -251,12 +251,12 @@ void PrintHeader(player_msghdr_t hdr)
   printf("stx: %u\n", hdr.stx);
   printf("type: %u\n", hdr.type);
   printf("subtype: %u\n", hdr.subtype);
-  printf("device: %u\n", hdr.device);
+/*  printf("device: %u\n", hdr.device);
   printf("index: %u\n", hdr.device_index);
-  printf("time: %u:%u\n", hdr.time_sec,hdr.time_usec);
+  printf("time: %u:%u\n", hdr.time_sec,hdr.time_usec);*/
   printf("times: %u:%u\n", hdr.timestamp_sec,hdr.timestamp_usec);
   printf("seq: %u\n", hdr.seq);
-  printf("conid: %u\n", hdr.conid);
+//  printf("conid: %u\n", hdr.conid);
   printf("size:%u\n", hdr.size);
 }
 
@@ -275,20 +275,20 @@ void PrintDeviceTable()
   for(i=0, device = deviceTable->GetFirstDevice(); device != NULL;
       i++, device = deviceTable->GetNextDevice(device))
   {
-    int ret_temp=lookup_interface_code(device->id.code, &interface);
+    int ret_temp=lookup_interface_code(device->addr.interface, &interface);
     assert(ret_temp == 0);
     
     if (device->driver != last_driver)
     {
       fprintf(stdout, "%d driver %s id %d:%s:%d\n",
               i, device->drivername,
-              device->id.port, interface.name, device->id.index);
+              device->addr.robot, interface.name, device->addr.index);
     }
     else
     {
       fprintf(stdout, "%d        %*s id %d:%s:%d\n",
               i, strlen(device->drivername), "",
-              device->id.port, interface.name, device->id.index);
+              device->addr.robot, interface.name, device->addr.index);
     }
     last_driver = device->driver;
   }
@@ -343,16 +343,18 @@ ParseConfigFile(char* fname, int** ports, int* num_ports)
   for (device = deviceTable->GetFirstDevice(); device != NULL;
        device = deviceTable->GetNextDevice(device))
   {
+  	if (device->addr.robot == 0)
+  	  device->addr.robot = global_playerport;
     // See if the port is already in the table
     for (i = 0; i < *num_ports; i++)
     {
-      if ((*ports)[i] == device->id.port)
+      if ((*ports)[i] == device->addr.robot)
         break;
     }
 
     // If its not in the table, add it
     if (i >= *num_ports)
-      (*ports)[(*num_ports)++] = device->id.port;
+      (*ports)[(*num_ports)++] = device->addr.robot;
   }
 
   return(true);
@@ -625,6 +627,8 @@ int main( int argc, char **argv)
       exit(-1);
   }
 
+  printf("Num of ports: %d\n", num_ufds);
+
   ufds = new struct pollfd[num_ufds];
   assert(ufds);
 
@@ -673,7 +677,7 @@ int main( int argc, char **argv)
     ClientData* clientdata;
     player_device_req_t req;
 
-    clientdata = new ClientDataTCP("",device->id.port);
+    clientdata = new ClientDataTCP("",device->addr.robot);
     assert(clientdata);
         
     // to indicate that this one is a dummy
@@ -682,8 +686,8 @@ int main( int argc, char **argv)
     // add the dummy clients to the clientmanager
     clientmanager->AddClient(clientdata);
 
-    req.code = device->id.code;
-    req.index = device->id.index;
+    req.code = device->addr.interface;
+    req.index = device->addr.index;
     // TODO: should allow user to specify desired alwayson mode in the .cfg
     req.access = device->access;
     if(clientdata->UpdateRequested(req) != device->access)

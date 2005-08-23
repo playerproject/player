@@ -152,9 +152,9 @@ AMCLSensorData *AMCLOdom::GetData(void)
   data = (player_position2d_data_t*)msg->GetPayload();
 
   // Compute new robot pose
-  pose.v[0] = data->pos[0];
-  pose.v[1] = data->pos[1];
-  pose.v[2] = data->pos[2];
+  pose.v[0] = data->pos.px;
+  pose.v[1] = data->pos.py;
+  pose.v[2] = data->pos.pa;
 
   //printf("getdata %.3f %.3f %.3f\n", 
   //	 pose.v[0], pose.v[1], pose.v[2]);

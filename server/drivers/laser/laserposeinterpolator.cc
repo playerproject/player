@@ -290,13 +290,13 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
         double t0 = this->scantimes[i] - this->lastposetime;
         player_laser_data_scanpose_t scanpose;
 
-        scanpose.pose.px = this->lastpose.pos[0] + t0 *
-                (newpose.pos[0] - this->lastpose.pos[0]) / t1;
-        scanpose.pose.py = this->lastpose.pos[1] + t0 *
-                (newpose.pos[1] - this->lastpose.pos[1]) / t1;
-        scanpose.pose.pa = NORMALIZE(this->lastpose.pos[2] + t0 *
-                                     angle_diff(newpose.pos[2],
-                                                this->lastpose.pos[2]) / t1);
+        scanpose.pose.px = this->lastpose.pos.px + t0 *
+                (newpose.pos.px - this->lastpose.pos.px) / t1;
+        scanpose.pose.py = this->lastpose.pos.py + t0 *
+                (newpose.pos.py - this->lastpose.pos.py) / t1;
+        scanpose.pose.pa = NORMALIZE(this->lastpose.pos.pa + t0 *
+                                     angle_diff(newpose.pos.pa,
+                                                this->lastpose.pos.pa) / t1);
         scanpose.scan = this->scans[i];
 
         this->Publish(this->device_addr, NULL,
