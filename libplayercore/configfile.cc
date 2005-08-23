@@ -1892,7 +1892,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     }
 
     // Match the interface
-    if (interf_code > 0 && interf.code != interf_code)
+    if (interf_code > 0 && interf.interf != interf_code)
       continue;
 
     // Match the tuple index
@@ -1913,7 +1913,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
 
     addr->host = host;
     addr->robot = robot;
-    addr->interf = interf.code;
+    addr->interf = interf.interf;
     addr->index = ind;
     return 0;
  

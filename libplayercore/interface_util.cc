@@ -83,7 +83,7 @@ static player_interface_t interfaces[] = {
 int
 lookup_interface(const char* name, player_interface_t* interface)
 {
-  for(int i=0; interfaces[i].code; i++)
+  for(int i=0; interfaces[i].interf; i++)
   {
     if(!strcmp(name, interfaces[i].name))
     {
@@ -102,9 +102,9 @@ lookup_interface(const char* name, player_interface_t* interface)
 int
 lookup_interface_code(int code, player_interface_t* interface)
 {
-  for(int i=0; interfaces[i].code; i++)
+  for(int i=0; interfaces[i].interf; i++)
   {
-    if(code == interfaces[i].code)
+    if(code == interfaces[i].interf)
     {
       *interface = interfaces[i];
       return(0);
@@ -123,9 +123,9 @@ lookup_interface_name(unsigned int startpos, int code)
 {
   if(startpos > sizeof(interfaces))
     return 0;
-  for(int i = startpos; interfaces[i].code != 0; i++)
+  for(int i = startpos; interfaces[i].interf != 0; i++)
   {
-    if(code == interfaces[i].code)
+    if(code == interfaces[i].interf)
     {
       return interfaces[i].name;
     }
