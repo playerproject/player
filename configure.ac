@@ -363,7 +363,7 @@ dnl          examples/libplayerc/Makefile
 dnl          utils/playerjoy/Makefile
 dnl          utils/playernav/Makefile
 dnl          utils/playerprint/Makefile
-dnl          utils/playervcr/Makefile
+          utils/playervcr/Makefile
 dnl          utils/dgps_server/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)

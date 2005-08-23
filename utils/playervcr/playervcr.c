@@ -179,7 +179,7 @@ parse_args(gui_data_t* gui_data, int argc, char** argv)
   int i;
 
   strcpy(gui_data->hostname,"localhost");
-  gui_data->port = PLAYER_PORTNUM;
+  gui_data->port = 6665;
   gui_data->index = 0;
 
   for(i=1; i<argc; i++)
@@ -324,7 +324,7 @@ init_player(gui_data_t* gui_data)
 
   assert(gui_data->log = 
          playerc_log_create(gui_data->client, gui_data->index));
-  if(playerc_log_subscribe(gui_data->log, PLAYER_READ_MODE) < 0)
+  if(playerc_log_subscribe(gui_data->log, PLAYER_OPEN_MODE) < 0)
   {
     fprintf(stderr, "Error: Failed to subscribe to log device\n");
     return(-1);

@@ -477,21 +477,20 @@ WriteLog::CloseFile()
   }
 }
 
-int WriteLog::ProcessMessage(MessageQueue * resp_queue, 
-                             player_msghdr * hdr, 
-                             void * data, 
-                             void ** resp_data, 
-                             size_t * resp_len)
+int 
+WriteLog::ProcessMessage(MessageQueue * resp_queue, 
+                         player_msghdr * hdr, 
+                         void * data, 
+                         void ** resp_data, 
+                         size_t * resp_len)
 {
-  *resp_len = 0;
-
-#if 0
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_SET_WRITE_STATE, device_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_LOG_REQ_SET_WRITE_STATE, 
+                           this->device_addr))
   {
-    assert(hdr->size == sizeof(player_log_set_write_state_t));
-    player_log_set_write_state_t & sreq = *reinterpret_cast<player_log_set_write_state_t*> (data);
+    player_log_set_write_state_t* sreq = (player_log_set_write_state_t*)data;
 		
-    if(sreq.state)
+    if(sreq->state)
     {
       puts("WriteLog: start logging");
       this->enable = true;
@@ -501,15 +500,16 @@ int WriteLog::ProcessMessage(MessageQueue * resp_queue,
       puts("WriteLog: stop logging");
       this->enable = false;
     }
-    *resp_len = 0;
+    *resp_data = calloc(1,sizeof(player_log_set_write_state_t));
+    assert(*resp_data);
+    memcpy(*resp_data,sreq,sizeof(player_log_set_write_state_t));
+    *resp_len = sizeof(player_log_set_write_state_t);
     return PLAYER_MSGTYPE_RESP_ACK;
   }
-  
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_GET_STATE, device_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                                PLAYER_LOG_REQ_GET_STATE, this->device_addr))
   {
-    assert(*resp_len >= sizeof(player_log_get_state_t));
-    player_log_get_state_t & greq = *reinterpret_cast<player_log_get_state_t*> (resp_data);
-    *resp_len = sizeof(player_log_get_state_t);
+    player_log_get_state_t greq;
     
     greq.type = PLAYER_LOG_TYPE_WRITE;
     if(this->enable)
@@ -517,14 +517,16 @@ int WriteLog::ProcessMessage(MessageQueue * resp_queue,
     else
       greq.state = 0;
 
+    *resp_data = calloc(1,sizeof(player_log_get_state_t));
+    assert(*resp_data);
+    memcpy(*resp_data,&greq,sizeof(player_log_get_state_t));
+    *resp_len = sizeof(player_log_get_state_t);
     return PLAYER_MSGTYPE_RESP_ACK;
-  }  
- 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_SET_FILENAME, device_id))
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                                PLAYER_LOG_REQ_SET_FILENAME, this->device_addr))
   {
-    assert(hdr->size <= sizeof(player_log_set_filename_t));
-    assert(hdr->size > 0);
-    player_log_set_filename_t & freq = *reinterpret_cast<player_log_set_filename_t*> (data);
+    player_log_set_filename_t* freq = (player_log_set_filename_t*)data;
     *resp_len = 0;
 
     if(this->enable)
@@ -536,8 +538,8 @@ int WriteLog::ProcessMessage(MessageQueue * resp_queue,
     PLAYER_MSG1(1,"Closing logfile %s", this->filename);
     this->CloseFile();
     strncpy(this->filename,
-            (const char*)freq.filename,
-            hdr->size);
+            (const char*)freq->filename,
+            freq->filename_count);
     this->filename[sizeof(this->filename)-1] = '\0';
     PLAYER_MSG1(1,"Opening logfile %s", this->filename);
     if(this->OpenFile() < 0)
@@ -545,11 +547,14 @@ int WriteLog::ProcessMessage(MessageQueue * resp_queue,
       PLAYER_WARN1("Failed to open logfile %s", this->filename);
       return PLAYER_MSGTYPE_RESP_NACK;
     }
-    return PLAYER_MSGTYPE_RESP_ACK;
-  }  
-#endif
 
-  if(hdr->type == PLAYER_MSGTYPE_DATA)
+    *resp_data = calloc(1,sizeof(player_log_set_filename_t));
+    assert(*resp_data);
+    memcpy(*resp_data,freq,sizeof(player_log_set_filename_t));
+    *resp_len = sizeof(player_log_set_filename_t);
+    return PLAYER_MSGTYPE_RESP_ACK;
+  }
+  else if(hdr->type == PLAYER_MSGTYPE_DATA)
   {
     *resp_len = 0;
     // If logging is stopped, then don't log

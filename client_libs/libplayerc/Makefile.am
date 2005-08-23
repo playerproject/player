@@ -20,7 +20,8 @@ libplayerc_la_SOURCES = playerc.h \
                         utils.c \
                         error.c \
                         error.h \
-                        dev_laser.c
+                        dev_laser.c \
+                        dev_log.c
 #dev_blobfinder.c \
 #dev_bumper.c \
 #dev_camera.c \
@@ -30,7 +31,6 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_ir.c \
 #dev_joystick.c \
 #dev_localize.c \
-#dev_log.c \
 #dev_map.c \
 #dev_motor.c \
 #dev_planner.c \

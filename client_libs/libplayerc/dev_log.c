@@ -91,11 +91,10 @@ int playerc_log_get_state(playerc_log_t* device)
 {
   player_log_get_state_t req;
 
-//  req.subtype = PLAYER_LOG_GET_STATE_REQ;
-
-  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_GET_STATE,
-                            &req, 0,
-                            &req, sizeof(req)) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info,
+                            PLAYER_LOG_REQ_GET_STATE,
+                            &req, &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to get logging/playback state");
     return(-1);
@@ -111,12 +110,11 @@ int playerc_log_set_write_state(playerc_log_t* device, int state)
 {
   player_log_set_write_state_t req;
 
-//  req.subtype = PLAYER_LOG_SET_WRITE_STATE_REQ;
   req.state = (uint8_t)state;
 
-  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_SET_WRITE_STATE,
-                            &req, sizeof(req),
-                            &req, sizeof(req)) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info,PLAYER_LOG_REQ_SET_WRITE_STATE,
+                            &req, &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to start/stop data logging");
     return(-1);
@@ -132,9 +130,9 @@ int playerc_log_set_read_state(playerc_log_t* device, int state)
 //  req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
   req.state = (uint8_t)state;
 
-  if(playerc_client_request(device->info.client, &device->info, PLAYER_LOG_SET_READ_STATE,
-                            &req, sizeof(req),
-                            &req, sizeof(req)) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info, PLAYER_LOG_REQ_SET_READ_STATE,
+                            &req, &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to start/stop data playback");
     return(-1);
@@ -147,11 +145,9 @@ int playerc_log_set_read_rewind(playerc_log_t* device)
 {
   player_log_set_read_rewind_t req;
 
-//  req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
-
-  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_SET_READ_REWIND,
-                            &req, sizeof(req),
-                            &req, sizeof(req)) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info, PLAYER_LOG_REQ_SET_READ_REWIND,
+                            &req, &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to rewind data playback");
     return(-1);
@@ -164,7 +160,6 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
 {
   player_log_set_filename_t req;
 
-//  req.subtype = PLAYER_LOG_SET_FILENAME;
   if(strlen(fname) > (sizeof(req.filename)-1))
   {
     PLAYERC_ERR("filename too long");
@@ -172,8 +167,9 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
   }
   strcpy(req.filename,fname);
 
-  if(playerc_client_request(device->info.client, &device->info,PLAYER_LOG_SET_FILENAME,
-                            &req, sizeof(req), NULL, 0) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info, PLAYER_LOG_REQ_SET_FILENAME,
+                            &req, &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to set logfile name");
     return(-1);
