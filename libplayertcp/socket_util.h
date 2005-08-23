@@ -58,8 +58,8 @@ extern "C" {
  *  On success, the fd of the new socket is returned.  Otherwise, -1 
  *  is returned and an explanatory note is dumped to stderr.
  */
-int create_and_bind_socket(char blocking, int portnum, 
-                           int socktype, int backlog);
+int create_and_bind_socket(char blocking, unsigned int host, 
+                           int portnum, int socktype, int backlog);
 #ifdef __cplusplus
 }
 #endif

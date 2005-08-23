@@ -50,6 +50,12 @@ PlayerTCP::PlayerTCP()
   this->decode_readbuffer = 
           (char*)calloc(1,this->decode_readbuffersize);
   assert(this->decode_readbuffer);
+
+  if(hostname_to_packedaddr(&this->host,"localhost") < 0)
+  {
+    PLAYER_WARN("address lookup failed for localhost");
+    this->host = 0;
+  }
 }
 
 PlayerTCP::~PlayerTCP()
@@ -78,7 +84,8 @@ PlayerTCP::Listen(int* ports, int num_ports)
   for(int i=tmp;i<this->num_listeners;i++)
   {
     if((this->listeners[i].fd = 
-        create_and_bind_socket(1,ports[i],PLAYER_TRANSPORT_TCP,200)) < 0)
+        create_and_bind_socket(1,this->host,ports[i],
+                               PLAYER_TRANSPORT_TCP,200)) < 0)
     {
       PLAYER_ERROR("create_and_bind_socket() failed");
       return(-1);
@@ -556,6 +563,10 @@ PlayerTCP::ParseBuffer(int cli)
     if(msglen > client->readbufferlen)
       return;
 
+    // Using TCP, the host and robot (port) information is in the connection 
+    // and so we don't require that the client fill it in.
+    hdr.addr.host = this->host;
+    hdr.addr.robot = client->port;
     device = deviceTable->GetDevice(hdr.addr);
     if(!device && (hdr.addr.interf != PLAYER_PLAYER_CODE))
     {
@@ -665,6 +676,11 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
           devreq = (player_device_req_t*)payload;
 
+          // Using TCP, the host and robot (port) information is 
+          // in the connection and so we don't require that the client 
+          // fill it in.
+          devreq->addr.host = this->host;
+          devreq->addr.robot = client->port;
           if(!(device = deviceTable->GetDevice(devreq->addr)))
           {
             PLAYER_WARN2("skipping subscription to unknown device %u:%u",
@@ -735,20 +751,20 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
         {
           player_device_devlist_t devlist;
 
-          int numdevices;
-          if((numdevices = deviceTable->Size()) > PLAYER_MAX_DEVICES)
+          int numdevices=0;
+          for(Device* device = deviceTable->GetFirstDevice(); 
+              device;
+              device = deviceTable->GetNextDevice(device))
           {
-            PLAYER_WARN("truncating available device list");
-            numdevices = PLAYER_MAX_DEVICES;
+            if(numdevices == PLAYER_MAX_DEVICES)
+            {
+              PLAYER_WARN("truncating available device list");
+              break;
+            }
+            if((int)device->addr.robot == client->port)
+              devlist.devices[numdevices++] = device->addr;
           }
           devlist.devices_count = numdevices;
-          int i=0;
-          for (Device* device = deviceTable->GetFirstDevice(); 
-               (device != NULL) && (i < numdevices);
-               device = deviceTable->GetNextDevice(device))
-          {
-            devlist.devices[i++] = device->addr;
-          }
 
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
@@ -769,6 +785,11 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
           inforeq = (player_device_driverinfo_t*)payload;
 
+          // Using TCP, the host and robot (port) information is 
+          // in the connection and so we don't require that the client 
+          // fill it in.
+          inforeq->addr.host = this->host;
+          inforeq->addr.robot = client->port;
           if(!(device = deviceTable->GetDevice(inforeq->addr)))
           {
             PLAYER_WARN2("skipping info request for unknown device %u:%u",

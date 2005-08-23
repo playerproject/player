@@ -142,7 +142,6 @@ struct WriteLogDevice
 {
   public: player_devaddr_t addr;
   public: Device *device;
-  public: double time;
   public: int cameraFrame;
   // only filled out for sonar devices; we cache the sonar geometry
   // right after subscribing, then prefix every line of sonar data
@@ -184,11 +183,17 @@ class WriteLog: public Driver
   private: void CloseFile();
 
   // Write data to file
-  private: void Write(WriteLogDevice *device, void *data, 
-                      size_t size, double time);
+  private: void Write(WriteLogDevice *device, 
+                      player_msghdr_t* hdr, void *data);
 
   // Write laser data to file
-  private: void WriteLaser(player_laser_data_t *data);
+  private: int WriteLaser(player_msghdr_t* hdr, 
+                           player_laser_data_t *data);
+
+  // Write position data to file
+  private: int WritePosition(player_msghdr_t* hdr, 
+                              player_position2d_data_t *data);
+
 
 #if 0
   // Write blobfinder data to file
@@ -211,9 +216,6 @@ class WriteLog: public Driver
 
   // Write sonar data to file
   private: void WriteSonar(player_sonar_data_t *data, WriteLogDevice* device);
-
-  // Write position data to file
-  private: void WritePosition(player_position_data_t *data);
 
   // Write position3d data to file
   private: void WritePosition3d(player_position3d_data_t *data);
@@ -273,7 +275,7 @@ void WriteLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LOG_CODE)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOG_CODE)
 {
   int i;
   player_devaddr_t addr;
@@ -319,7 +321,6 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     device = this->devices + this->device_count++;
     device->addr = addr;
     device->device = NULL;
-    device->time = 0.0;
     device->cameraFrame = 0;
   }
 
@@ -460,7 +461,7 @@ WriteLog::OpenFile()
 
   // Write the file header
   fprintf(this->file, "## Player version %s \n", VERSION);
-  fprintf(this->file, "## File version %s \n", "0.2.0");
+  fprintf(this->file, "## File version %s \n", "0.3.0");
 
   return(0);
 }
@@ -566,11 +567,9 @@ int WriteLog::ProcessMessage(MessageQueue * resp_queue,
          (device->addr.index != hdr->addr.index))
         continue;
 
-      // record timestamp
-      device->time = hdr->timestamp;
 
       // Write data to file
-      this->Write(device, data, hdr->size, device->time);
+      this->Write(device, hdr, data);
       return 0;
     }
     return -1;
@@ -718,31 +717,37 @@ WriteLog::Main(void)
 
 ////////////////////////////////////////////////////////////////////////////
 // Write data to file
-void WriteLog::Write(WriteLogDevice *device, void *data, 
-                     size_t size, double time)
+void WriteLog::Write(WriteLogDevice *device, 
+                     player_msghdr_t* hdr, 
+                     void *data)
 {
-  char host[256];
+  //char host[256];
   player_interface_t iface;
-  double stime;
-
-  // Get server time
-  GlobalTime->GetTimeDouble(&stime);
 
   // Get interface name
   assert(device);
   ::lookup_interface_code(device->addr.interf, &iface);
-  gethostname(host, sizeof(host));
+  //gethostname(host, sizeof(host));
   
   // Write header info
-  fprintf(this->file, "%014.3f %s %d %s %02d %014.3f ",
-          stime, host, device->addr.robot, iface.name, 
-          device->addr.index, time);
+  fprintf(this->file, "%014.3f %u %u %s %02u %02u ",
+          hdr->timestamp,
+          device->addr.host, 
+          device->addr.robot, 
+          iface.name, 
+          device->addr.index, 
+          hdr->subtype);
+          
 
+  int retval;
   // Write the data
   switch (iface.interf)
   {
     case PLAYER_LASER_CODE:
-      this->WriteLaser((player_laser_data_t*) data);
+      retval = this->WriteLaser(hdr, (player_laser_data_t*) data);
+      break;
+    case PLAYER_POSITION2D_CODE:
+      retval = this->WritePosition(hdr, (player_position2d_data_t*) data);
       break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
@@ -765,9 +770,6 @@ void WriteLog::Write(WriteLogDevice *device, void *data,
     case PLAYER_SONAR_CODE:
       this->WriteSonar((player_sonar_data_t*) data, device);
       break;
-    case PLAYER_POSITION_CODE:
-      this->WritePosition((player_position_data_t*) data);
-      break;
     case PLAYER_POSITION3D_CODE:
       this->WritePosition3d((player_position3d_data_t*) data);
       break;
@@ -786,8 +788,13 @@ void WriteLog::Write(WriteLogDevice *device, void *data,
     default:
       PLAYER_WARN1("unsupported interface type [%s]", 
                    ::lookup_interface_name(0, iface.interf));
+      retval = -1;
       break;
   }
+  
+  if(retval < 0)
+    PLAYER_WARN2("not logging message to interface \"%s\" with subtype %d",
+                 ::lookup_interface_name(0, iface.interf), hdr->subtype);
 
   fprintf(this->file, "\n");
 
@@ -814,23 +821,68 @@ The format for each @ref player_interface_laser message is:
     - range (float): in meters
     - intensity (int): intensity
 */
-void WriteLog::WriteLaser(player_laser_data_t *data)
+int
+WriteLog::WriteLaser(player_msghdr_t* hdr, 
+                     player_laser_data_t *data)
 {
-  int i;
+  size_t i;
 
-  // Note that, in this format, we need a lot of precision in the
-  // resolution field.
-  
-  fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
-          data->min_angle, data->max_angle,
-          data->resolution, data->ranges_count);
+  // Check the subtype
+  switch(hdr->subtype)
+  {
+    case PLAYER_LASER_DATA_SCAN:
+      // Note that, in this format, we need a lot of precision in the
+      // resolution field.
 
-  for (i = 0; i < ntohs(data->ranges_count); i++)
-    fprintf(this->file, "%.3f %2d ",
-            data->ranges[i], data->intensity[i]);
+      fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
+              data->min_angle, data->max_angle,
+              data->resolution, data->ranges_count);
 
-  return;
+      for (i = 0; i < data->ranges_count; i++)
+        fprintf(this->file, "%.3f %2d ",
+                data->ranges[i], data->intensity[i]);
+      return(0);
+
+    default:
+      return(-1);
+  }
 }
+
+/** @defgroup player_driver_writelog_position Position format
+ 
+@brief @ref player_interface_position format 
+
+The format for each @ref player_interface_position message is:
+  - xpos (float): in meters
+  - ypos (float): in meters
+  - yaw (float): in radians
+  - xspeed (float): in meters / second
+  - yspeed (float): in meters / second
+  - yawspeed (float): in radians / second
+  - stall (int): motor stall sensor
+*/
+int
+WriteLog::WritePosition(player_msghdr_t* hdr, 
+                        player_position2d_data_t *data)
+{
+  // Check the subtype
+  switch(hdr->subtype)
+  {
+    case PLAYER_POSITION2D_DATA_STATE:
+      fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
+              data->pos.px,
+              data->pos.py,
+              data->pos.pa,
+              data->vel.px,
+              data->vel.py,
+              data->vel.pa,
+              data->stall);
+      return(0);
+    default:
+      return(-1);
+  }
+}
+
 
 #if 0
 /** @defgroup player_driver_writelog_blobfinder Blobfinder format
@@ -1111,34 +1163,6 @@ void WriteLog::WriteSonar(player_sonar_data_t *data, WriteLogDevice* device)
   fprintf(this->file, "%u ", HUINT16(data->range_count));
   for(i=0;i<HUINT16(data->range_count);i++)
     fprintf(this->file, "%.3f ", MM_M(HUINT16(data->ranges[i])));
-
-  return;
-}
-
-
-/** @defgroup player_driver_writelog_position Position format
- 
-@brief @ref player_interface_position format 
-
-The format for each @ref player_interface_position message is:
-  - xpos (float): in meters
-  - ypos (float): in meters
-  - yaw (float): in radians
-  - xspeed (float): in meters / second
-  - yspeed (float): in meters / second
-  - yawspeed (float): in radians / second
-  - stall (int): motor stall sensor
-*/
-void WriteLog::WritePosition(player_position_data_t *data)
-{
-  fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
-          MM_M(HINT32(data->xpos)),
-          MM_M(HINT32(data->ypos)),
-          DEG_RAD(HINT32(data->yaw)),
-          MM_M(HINT32(data->xspeed)),
-          MM_M(HINT32(data->yspeed)),
-          DEG_RAD(HINT32(data->yawspeed)),
-          data->stall);
 
   return;
 }
