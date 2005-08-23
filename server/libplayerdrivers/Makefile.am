@@ -16,10 +16,3 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
 libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"`
-#libplayerdrivers_la_LIBADD = $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la
-
-# TODO: move the driver code out of server/drivers
-#libplayerdrivers.la: driverregistry.lo
-#	cp `find ../drivers -name "*.lo"` .
-#	ar cr $@ *.lo
-

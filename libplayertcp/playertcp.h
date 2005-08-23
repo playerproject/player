@@ -98,6 +98,7 @@ typedef struct
 class PlayerTCP
 {
   private:
+    uint32_t host;
     int num_listeners;
     playertcp_listener_t* listeners;
     struct pollfd* listen_ufds;

@@ -70,5 +70,6 @@ to, for example, subscribe to a device.
 #include <libplayercore/playertime.h>
 #include <libplayercore/plugins.h>
 #include <libplayercore/wallclocktime.h>
+#include <libplayercore/addr_util.h>
 
 #endif

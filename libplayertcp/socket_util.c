@@ -26,9 +26,6 @@
  * $Id$
  */
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
 
 #include <sys/types.h>     /* for socket(2) */
 #include <sys/socket.h>     /* for socket(2) */
@@ -41,6 +38,7 @@
 #include <netinet/in.h>   /* for sockaddr_in type */
 
 #include <libplayercore/error.h>
+#include <libplayercore/addr_util.h>
 #include "socket_util.h"
 
 /*
@@ -67,27 +65,17 @@
 
 
 int
-create_and_bind_socket(char blocking, int portnum, 
+create_and_bind_socket(char blocking, unsigned int host, int portnum, 
                        int playersocktype, int backlog)
 {
   int sock;                   /* socket we're creating */
   int flags;                  /* temp for old socket access flags */
   int one = 1;
 
-#if HAVE_GETADDRINFO
-  int retval;
-  struct addrinfo* addr;
-#else
-  struct sockaddr_in saddr;
-  struct hostent* entp;
-#endif
-  struct sockaddr_in* serverp;
+  struct sockaddr_in serverp;
 
   int socktype;
 
-  char* first_dot;
-  char host[256];
-  
   if(playersocktype == PLAYER_TRANSPORT_TCP)
     socktype = SOCK_STREAM;
   else if(playersocktype == PLAYER_TRANSPORT_UDP)
@@ -98,36 +86,9 @@ create_and_bind_socket(char blocking, int portnum,
     return(-1);
   }
 
-  if(gethostname(host,sizeof(host)) == -1)
-  {
-    fputs("receive(): couldn't get hostname. probably should quit\n", stderr);
-    return(-1);
-  }
-
-  /* now, strip down to just the hostname */
-  if((first_dot = strchr(host,'.')))
-  {
-    *first_dot = '\0';
-  }
-
-#if HAVE_GETADDRINFO
-  if((retval = getaddrinfo(host,NULL,NULL,&addr)))
-  {
-    PLAYER_ERROR1("getaddrinfo() failed: %s", gai_strerror(retval));
-    return(-1);
-  }
-  serverp = (struct sockaddr_in*)addr->ai_addr;
-#else
-  if((entp = gethostbyname(host)) == NULL)
-  {
-    PLAYER_ERROR("gethostbyname() failed");
-    return(-1);
-  }
-  memcpy(&(saddr.sin_addr), entp->h_addr_list[0], entp->h_length);
-  serverp = &saddr;
-#endif
-
-  serverp->sin_port = htons(portnum);
+  memset(&serverp,0,sizeof(serverp));
+  serverp.sin_addr.s_addr = host;
+  serverp.sin_port = htons(portnum);
 
   /* 
    * Create the INET socket.  
@@ -136,9 +97,6 @@ create_and_bind_socket(char blocking, int portnum,
   if((sock = socket(PF_INET, socktype, 0)) == -1) 
   {
     perror("create_and_bind_socket:socket() failed; socket not created.");
-#if HAVE_GETADDRINFO
-    freeaddrinfo(addr);
-#endif
     return(-1);
   }
 
@@ -151,10 +109,6 @@ create_and_bind_socket(char blocking, int portnum,
     /* I'm making this non-fatal because it always fails under Cygwin and
      * yet doesn't seem to matter -BPG */
     PLAYER_WARN("fcntl() failed while setting socket pid ownership");
-#if 0
-    close(sock);
-    return(-1);
-#endif
   }
 
   if(!blocking)
@@ -167,9 +121,6 @@ create_and_bind_socket(char blocking, int portnum,
       perror("create_and_bind_socket():fcntl() while getting socket "
                       "access flags; socket not created.");
       close(sock);
-#if HAVE_GETADDRINFO
-      freeaddrinfo(addr);
-#endif
       return(-1);
     }
     /*
@@ -181,9 +132,6 @@ create_and_bind_socket(char blocking, int portnum,
       perror("create_and_bind_socket():fcntl() failed while setting socket "
                       "access flags; socket not created.");
       close(sock);
-#if HAVE_GETADDRINFO
-      freeaddrinfo(addr);
-#endif
       return(-1);
     }
   }
@@ -195,9 +143,6 @@ create_and_bind_socket(char blocking, int portnum,
                   sizeof(one)))
     {
       perror("create_and_bind_socket(): setsockopt(2) failed");
-#if HAVE_GETADDRINFO
-      freeaddrinfo(addr);
-#endif
       return(-1);
     }
   }
@@ -211,23 +156,15 @@ create_and_bind_socket(char blocking, int portnum,
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
    */
-  serverp->sin_family = PF_INET;
-  serverp->sin_addr.s_addr = INADDR_ANY;
+  serverp.sin_family = PF_INET;
+  serverp.sin_addr.s_addr = INADDR_ANY;
 
-  if(bind(sock, (struct sockaddr*)serverp, sizeof(*serverp)) == -1) 
+  if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1) 
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
     close(sock);
-#if HAVE_GETADDRINFO
-    freeaddrinfo(addr);
-#endif
     return(-1);
   }
-
-  // we're done with the server addr struct now
-#if HAVE_GETADDRINFO
-  freeaddrinfo(addr);
-#endif
 
   /* if it's TCP, go ahead with listen() */
   if(socktype == SOCK_STREAM)

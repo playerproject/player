@@ -50,8 +50,14 @@ class ConfigFile
   /// @brief Standard constructor
   public: ConfigFile(uint32_t _default_host, uint32_t _default_robot);
 
+  /// @brief Alternate constructor, to specify the host as a string
+  public: ConfigFile(const char* _default_host, uint32_t _default_robot);
+
   /// @brief Standard destructor
   public: ~ConfigFile();
+
+  /// @internal Intitialization helper
+  private: void ConfigFile::InitFields();
 
   /// @brief Load config from file
   /// @param filename Name of file; can be relative or fully qualified path.

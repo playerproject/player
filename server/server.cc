@@ -56,6 +56,8 @@ main(int argc, char** argv)
 {
   int debuglevel = 1;
   int port = PLAYERTCP_DEFAULT_PORT;
+  int* ports;
+  int num_ports;
   const char* cfgfilename;
   PlayerTCP ptcp;
   ConfigFile* cf;
@@ -79,7 +81,7 @@ main(int argc, char** argv)
 
   PrintCopyrightMsg();
 
-  cf = new ConfigFile(0,port);
+  cf = new ConfigFile("localhost",port);
   assert(cf);
 
   if(!cf->Load(cfgfilename))
@@ -101,14 +103,37 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  if(ptcp.Listen(&port, 1) < 0)
+  // Collect the list of ports on which we should listen
+  ports = (int*)calloc(deviceTable->Size(),sizeof(int));
+  assert(ports);
+  num_ports = 0;
+  for(Device* device = deviceTable->GetFirstDevice();
+      device;
+      device = deviceTable->GetNextDevice(device))
   {
-    PLAYER_ERROR1("failed to listen on port %d", port);
+    int i;
+    for(i=0;i<num_ports;i++)
+    {
+      if((int)device->addr.robot == ports[i])
+        break;
+    }
+    if(i==num_ports)
+      ports[num_ports++] = device->addr.robot;
+  }
+
+  if(ptcp.Listen(ports, num_ports) < 0)
+  {
+    PLAYER_ERROR("failed to listen on requested ports");
     Cleanup();
     exit(-1);
   }
 
-  printf("Listening on port: %d\n", port);
+  printf("Listening on ports: ");
+  for(int i=0;i<num_ports;i++)
+    printf("%d ", ports[i]);
+  puts("");
+
+  free(ports);
 
   while(!quit)
   {

@@ -46,6 +46,7 @@
 #include <libplayercore/devicetable.h>
 #include <libplayercore/globals.h>
 #include <libplayercore/plugins.h>
+#include <libplayercore/addr_util.h>
 
 //extern int global_playerport;
 
@@ -80,10 +81,27 @@
 // Default constructor
 ConfigFile::ConfigFile(uint32_t _default_host, uint32_t _default_robot) 
 {
-  this->filename = NULL;
-
   this->default_host = _default_host;
   this->default_robot = _default_robot;
+  this->InitFields();
+}
+
+/// Alternate constructor, to specify the host as a string
+ConfigFile::ConfigFile(const char* _default_host, uint32_t _default_robot)
+{
+  if(hostname_to_packedaddr(&this->default_host, _default_host) < 0)
+  {
+    PLAYER_WARN1("name lookup failed on \"%s\"", _default_host);
+    this->default_host = 0;
+  }
+  this->default_robot = _default_robot;
+  this->InitFields();
+}
+
+void
+ConfigFile::InitFields()
+{
+  this->filename = NULL;
 
   this->token_size = 0;
   this->token_count = 0;
@@ -1828,7 +1846,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
   int prop;
   int i, j, count;
   char str[128];
-  char *tokens[4];
+  char *tokens[5];
   int token_count;
   unsigned int robot, host;
   int ind;
@@ -1852,11 +1870,11 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     strcpy(str, GetFieldValue(prop, i, false));
 
     memset(tokens, 0, sizeof(tokens));
-    token_count = 4;
+    token_count = 5;
 
     // Split the string inplace using ':' as the delimiter.
     // Note that we do this backwards (leading fields are optional).
-    // The expected syntax is key:port:interface:index.
+    // The expected syntax is key:host:robot:interface:index.
     for (j = strlen(str) - 1; j >= 0 && token_count > 0; j--)
     {
       if (str[j] == ':')
@@ -1869,7 +1887,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
       tokens[--token_count] = str;
 
     // We require at least an interface:index pair
-    if(!(tokens[2] && tokens[3]))
+    if(!(tokens[3] && tokens[4]))
     {
       CONFIG_ERR1("missing interface or index in field [%s]", this->fields[prop].line, name);
       return -1;
@@ -1877,17 +1895,44 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
 
     // Extract the fields from the tokens (with default values)
     k = tokens[0];
-    host = this->default_host;
-    robot = this->default_robot;
-    if (tokens[1] && strlen(tokens[1]))
-      robot = atoi(tokens[1]);
-    s = tokens[2];
-    ind = atoi(tokens[3]);
+    if(tokens[1])
+    {
+      // Try to be smart about reading the host part of the address.
+      for(j=0;j<(int)strlen(tokens[1]);j++)
+      {
+        if(!isdigit(tokens[1][j]))
+          break;
+      }
+      // Are all the characters digits?
+      if(j == (int)strlen(tokens[1]))
+      {
+        // Yes; assume it's a 32-bit packed address
+        host = atoi(tokens[1]);
+      }
+      else
+      {
+        // No; assume it's a string containing a hostname or IP address
+        if(hostname_to_packedaddr(&host, tokens[1]) < 0)
+        {
+          PLAYER_ERROR1("name lookup failed for host \"%s\"", tokens[1]);
+          return -1;
+        }
+      }
+
+    }
+    else
+      host = this->default_host;
+    if(tokens[2])
+      robot = atoi(tokens[2]);
+    else
+      robot = this->default_robot;
+    s = tokens[3];
+    ind = atoi(tokens[4]);
         
     // Find the interface
-    if (::lookup_interface(tokens[2], &interf) != 0)
+    if (::lookup_interface(s, &interf) != 0)
     {
-      CONFIG_ERR1("unknown interface: [%s]", this->fields[prop].line, tokens[2]);
+      CONFIG_ERR1("unknown interface: [%s]", this->fields[prop].line, s);
       return -1;
     }
 

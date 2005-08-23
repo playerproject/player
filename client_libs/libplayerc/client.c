@@ -358,9 +358,8 @@ int playerc_client_request(playerc_client_t *client,
 
   if(deviceinfo == NULL)
   {
-    // TODO: store the host as a 32-bit number and insert it here
     req_header.addr.host = 0;
-    req_header.addr.robot = client->port;
+    req_header.addr.robot = 0;
     req_header.addr.interf = PLAYER_PLAYER_CODE;
     req_header.addr.index = 0;
     req_header.type = PLAYER_MSGTYPE_REQ;
@@ -390,9 +389,8 @@ int playerc_client_request(playerc_client_t *client,
     }
     else if(rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
     {
-      if (rep_header.addr.host != req_header.addr.host ||
-          rep_header.addr.robot != req_header.addr.robot ||
-          rep_header.addr.interf != req_header.addr.interf ||
+      // Using TCP, we only need to check the interface and index
+      if (rep_header.addr.interf != req_header.addr.interf ||
           rep_header.addr.index != req_header.addr.index ||
           rep_header.subtype != req_header.subtype ||
           rep_header.size > rep_len)
@@ -405,9 +403,8 @@ int playerc_client_request(playerc_client_t *client,
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
     {
-      if (rep_header.addr.host != req_header.addr.host ||
-          rep_header.addr.robot != req_header.addr.robot ||
-          rep_header.addr.interf != req_header.addr.interf ||
+      // Using TCP, we only need to check the interface and index
+      if (rep_header.addr.interf != req_header.addr.interf ||
           rep_header.addr.index != req_header.addr.index ||
           rep_header.subtype != req_header.subtype)
       {
@@ -633,7 +630,7 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
   player_device_req_t req;
 
   req.addr.host = 0;
-  req.addr.robot = client->port;
+  req.addr.robot = 0;
   req.addr.interf = code;
   req.addr.index = index;
   req.access = access;
@@ -665,7 +662,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
   player_device_req_t req;
 
   req.addr.host = 0;
-  req.addr.robot = client->port;
+  req.addr.robot = 0;
   req.addr.interf = code;
   req.addr.index = index;
   req.access = PLAYER_CLOSE_MODE;
