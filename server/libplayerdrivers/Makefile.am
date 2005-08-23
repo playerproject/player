@@ -16,3 +16,6 @@ AM_CPPFLAGS = -I$(top_srcdir)
 
 libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
 libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"`
+
+all-local:
+	touch driverregistry.cc

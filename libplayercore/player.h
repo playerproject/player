@@ -1368,11 +1368,11 @@ The @p log interface produces no data and accepts no commands.
 */
 
 /* The subtypes for config reqeusts */
-#define PLAYER_LOG_SET_WRITE_STATE  1
-#define  PLAYER_LOG_SET_READ_STATE  2
-#define  PLAYER_LOG_GET_STATE       3
-#define  PLAYER_LOG_SET_READ_REWIND 4
-#define  PLAYER_LOG_SET_FILENAME    5
+#define PLAYER_LOG_REQ_SET_WRITE_STATE  1
+#define PLAYER_LOG_REQ_SET_READ_STATE   2
+#define PLAYER_LOG_REQ_GET_STATE        3
+#define PLAYER_LOG_REQ_SET_READ_REWIND  4
+#define PLAYER_LOG_REQ_SET_FILENAME     5
 
 /* Types of log devices */
 #define  PLAYER_LOG_TYPE_READ       1
@@ -1411,7 +1411,7 @@ typedef struct player_log_get_state
 {
   /** The type of log device, either PLAYER_LOG_TYPE_READ or
       PLAYER_LOG_TYPE_WRITE */
-  uint32_t type;
+  uint8_t type;
   /** Logging/playback state: FALSE=disabled, TRUE=enabled */
   uint8_t state;
 } player_log_get_state_t;
@@ -1424,7 +1424,7 @@ typedef struct player_log_set_filename
   uint32_t filename_count;
   /** Filename; max 255 chars + terminating NULL 
       @todo should we use a string here?*/
-  uint8_t filename[256];
+  char filename[256];
 } player_log_set_filename_t;
 
 /** @} */

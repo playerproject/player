@@ -1205,6 +1205,7 @@ int playerc_localize_get_particles(playerc_localize_t *device);
 /** @} */
 /**************************************************************************/
 
+#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_log log
@@ -1265,7 +1266,7 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname);
 /** @} */
 
 
-
+#if 0
 /***************************************************************************/
 /** @defgroup playerc_proxy_map map
 

@@ -313,7 +313,8 @@ void Driver::ProcessMessages()
     {
       this->Publish(hdr->addr, msg->Queue, ret, 
                     hdr->subtype, RespData, RespLen, NULL);
-      free(RespData);
+      if(RespLen)
+        free(RespData);
     }
     else if(ret < 0)
     {

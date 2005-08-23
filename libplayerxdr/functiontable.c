@@ -66,6 +66,8 @@ static playerxdr_function_t init_ftable[] =
   /* laser messages */
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
     (player_pack_fn_t)player_laser_data_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE, 
+    (player_pack_fn_t)player_laser_data_scanpose_pack},
 
   /* sonar messages */
   {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_RANGES, 
@@ -78,6 +80,18 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position2d_data_pack},
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, 
     (player_pack_fn_t)player_position2d_cmd_pack},
+
+  /* log messages */
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_WRITE_STATE, 
+    (player_pack_fn_t)player_log_set_write_state_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_READ_STATE, 
+    (player_pack_fn_t)player_log_set_read_state_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_GET_STATE, 
+    (player_pack_fn_t)player_log_get_state_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_READ_REWIND, 
+    (player_pack_fn_t)player_log_set_read_rewind_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_FILENAME, 
+    (player_pack_fn_t)player_log_set_filename_pack},
 
   {0,0,0,NULL}
 };
