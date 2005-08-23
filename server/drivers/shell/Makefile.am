@@ -1,9 +1,17 @@
-noinst_LIBRARIES = @DUMMY_LIB@ @PASSTHROUGH_LIB@ @LOGFILE_LIB@
+driverincludedir = $(includedir)/player-@VERSION@/drivers
+driverlibdir = $(libdir)/player-@VERSION@
 
-AM_CPPFLAGS = -g3 -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace -I$(top_srcdir)/client_libs/c
+driverlib_LTLIBRARIES = 
+if INCLUDE_LOGFILE
+driverlib_LTLIBRARIES += liblogfile.la
+endif
 
-EXTRA_LIBRARIES = libdummy.a libpassthrough.a liblogfile.a
+driverinclude_HEADERS = logfile.h
 
-libdummy_a_SOURCES = dummy.cc
-libpassthrough_a_SOURCES = passthrough.cc 
-liblogfile_a_SOURCES = readlog_time.h readlog_time.cc readlog.cc writelog.cc encode.h encode.cc
+AM_CPPFLAGS = -g3 -Wall -I$(top_srcdir)
+
+#libdummy_a_SOURCES = dummy.cc
+#libpassthrough_a_SOURCES = passthrough.cc 
+liblogfile_la_SOURCES = writelog.cc encode.h encode.cc
+
+#readlog_time.h readlog_time.cc readlog.cc 

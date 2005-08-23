@@ -129,27 +129,20 @@ Andrew Howard
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "interface_util.h"
-#include "playertime.h"
-#include "encode.h"
+#include <libplayercore/playercore.h>
 
+#include "encode.h"
   
 // Utility class for storing per-device info
 struct WriteLogDevice
 {
-  public: player_device_id_t id;
-  public: Driver *device;
-  public: struct timeval time;
+  public: player_devaddr_t addr;
+  public: Device *device;
+  public: double time;
   public: int cameraFrame;
   // only filled out for sonar devices; we cache the sonar geometry
   // right after subscribing, then prefix every line of sonar data
@@ -168,18 +161,17 @@ class WriteLog: public Driver
   public: ~WriteLog();
 
   // MessageHandler
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * data, 
+                                     void ** resp_data, 
+                                     size_t * resp_len);
 
   /// Initialize the driver
   public: virtual int Setup();
 
   /// Finalize the driver
   public: virtual int Shutdown();
-
-  /// Process configuration requests
-/*  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);*/
 
   // Device thread
   private: virtual void Main(void);
@@ -192,8 +184,13 @@ class WriteLog: public Driver
   private: void CloseFile();
 
   // Write data to file
-  private: void Write(WriteLogDevice *device, void *data, size_t size, struct timeval time);
+  private: void Write(WriteLogDevice *device, void *data, 
+                      size_t size, double time);
 
+  // Write laser data to file
+  private: void WriteLaser(player_laser_data_t *data);
+
+#if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
 
@@ -212,9 +209,6 @@ class WriteLog: public Driver
   // Write joystick data to file
   private: void WriteJoystick(player_joystick_data_t *data);
 
-  // Write laser data to file
-  private: void WriteLaser(player_laser_data_t *data);
-
   // Write sonar data to file
   private: void WriteSonar(player_sonar_data_t *data, WriteLogDevice* device);
 
@@ -232,6 +226,7 @@ class WriteLog: public Driver
 
   // Write wifi data to file
   private: void WriteWiFi(player_wifi_data_t *data);
+#endif
 
   // File to write data to
   private: char default_basename[1024];
@@ -278,10 +273,10 @@ void WriteLog_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////
 // Constructor
 WriteLog::WriteLog(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LOG_CODE, PLAYER_ALL_MODE)
+    : Driver(cf, section, PLAYER_LOG_CODE)
 {
   int i;
-  player_device_id_t id;
+  player_devaddr_t addr;
   WriteLogDevice *device;
   time_t t;
   struct tm *ts;
@@ -313,7 +308,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   // Get a list of input devices
   for (i = 0; i < cf->GetTupleCount(section, "requires"); i++)
   {
-    if (cf->ReadDeviceId(&id, section, "requires", -1, i, NULL) != 0)
+    if (cf->ReadDeviceAddr(&addr, section, "requires", -1, i, NULL) != 0)
     {
       this->SetError(-1);
       return;
@@ -322,10 +317,9 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     // Add to our device table
     assert(this->device_count < (int) (sizeof(this->devices) / sizeof(this->devices[0])));
     device = this->devices + this->device_count++;
-    device->id = id;
+    device->addr = addr;
     device->device = NULL;
-    device->time.tv_sec = 0;
-    device->time.tv_usec = 0;
+    device->time = 0.0;
     device->cameraFrame = 0;
   }
 
@@ -356,21 +350,22 @@ int WriteLog::Setup()
   {
     device = this->devices + i;
 
-    device->device = SubscribeInternal(device->id);
+    device->device = deviceTable->GetDevice(device->addr);
     if (!device->device)
     {
       PLAYER_ERROR3("unable to locate device [%d:%s:%d] for logging",
-                    device->id.port,
-                    ::lookup_interface_name(0, device->id.code),
-                    device->id.index);
+                    device->addr.robot,
+                    ::lookup_interface_name(0, device->addr.interf),
+                    device->addr.index);
       return -1;
     }
-/*    if (device->device->Subscribe(device->id) != 0)
+    if(device->device->Subscribe(this->InQueue) != 0)
     {
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
-    }*/
-    if (device->id.code == PLAYER_SONAR_CODE)
+    }
+#if 0
+    if (device->addr.interf == PLAYER_SONAR_CODE)
     {
       // We need to cache the sonar geometry
       unsigned short reptype;
@@ -407,6 +402,7 @@ int WriteLog::Setup()
         }
       }
     }
+#endif
   }
 
   if(this->OpenFile() < 0)
@@ -444,7 +440,7 @@ int WriteLog::Shutdown()
     device = this->devices + i;
 
     // Unsbscribe from the underlying device
-    UnsubscribeInternal(device->id);
+    device->device->Unsubscribe(this->InQueue);
     device->device = NULL;
   }
   
@@ -480,13 +476,15 @@ WriteLog::CloseFile()
   }
 }
 
-int WriteLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len) 
+int WriteLog::ProcessMessage(MessageQueue * resp_queue, 
+                             player_msghdr * hdr, 
+                             void * data, 
+                             void ** resp_data, 
+                             size_t * resp_len)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
+  *resp_len = 0;
 
+#if 0
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_SET_WRITE_STATE, device_id))
   {
     assert(hdr->size == sizeof(player_log_set_write_state_t));
@@ -520,7 +518,6 @@ int WriteLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
 
     return PLAYER_MSGTYPE_RESP_ACK;
   }  
-
  
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LOG_SET_FILENAME, device_id))
   {
@@ -549,34 +546,35 @@ int WriteLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
     }
     return PLAYER_MSGTYPE_RESP_ACK;
   }  
+#endif
 
-    if(hdr->type == PLAYER_MSGTYPE_DATA)
+  if(hdr->type == PLAYER_MSGTYPE_DATA)
+  {
+    *resp_len = 0;
+    // If logging is stopped, then don't log
+    if(!this->enable)
+      return 0;
+
+    // Walk the device list
+    for (int i = 0; i < this->device_count; i++)
     {
-      *resp_len = 0;
-      // If logging is stopped, then don't log
-      if(!this->enable)
-        return 0;
-        
-      // Walk the device list
-      for (int i = 0; i < this->device_count; i++)
-      {
-        WriteLogDevice * device = this->devices + i;
-      
-        if (device->id.code != hdr->device || device->id.index != hdr->device_index)
-          continue;
-      
-        // record timestamp
-        device->time.tv_sec = hdr->timestamp_sec; 
-        device->time.tv_usec = hdr->timestamp_usec;      
-  
-        // Write data to file
-        this->Write(device, data, hdr->size, device->time);
-        return 0;
-      }
-      return -1;
-    }    	
-  
-  *resp_len = 0;
+      WriteLogDevice * device = this->devices + i;
+
+      if((device->addr.host != hdr->addr.host) ||
+         (device->addr.robot != hdr->addr.robot) ||
+         (device->addr.interf != hdr->addr.interf) ||
+         (device->addr.index != hdr->addr.index))
+        continue;
+
+      // record timestamp
+      device->time = hdr->timestamp;
+
+      // Write data to file
+      this->Write(device, data, hdr->size, device->time);
+      return 0;
+    }
+    return -1;
+  }    	
   return -1;
 }
 
@@ -702,85 +700,51 @@ int WriteLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void WriteLog::Main(void)
+void 
+WriteLog::Main(void)
 {
-  //int i;
-  //size_t size, maxsize;
-  struct timeval time, sync_time, elapsed_time;
-  //void *data;
-  WriteLogDevice *device;
-  
-  //maxsize = PLAYER_MAX_MESSAGE_SIZE;
-  //data = malloc(maxsize);
-
-  sync_time.tv_sec = 0;
-  sync_time.tv_usec = 0;
-
   while (1)
   {
     pthread_testcancel();
     
-    // Wait on the first device
-    assert(this->device_count > 0);
-    device = this->devices;
-    device->device->Wait();
+    // Wait on my queue
+    this->Wait();
 
-
-
-    /// Write the sync packet at 10Hz; it's just a heartbeat
-    GlobalTime->GetTime(&time);
-    TIMESUB(&time, &sync_time, &elapsed_time);
-    if (elapsed_time.tv_usec > 100000)
-    {
-      sync_time = time;
-      this->Write(NULL, NULL, 0, sync_time);
-    }
+    // Process all new messages (calls ProcessMessage on each)
+    this->ProcessMessages();
   }
-
-  //free(data);
-  
-  return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Write data to file
-void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct timeval time)
+void WriteLog::Write(WriteLogDevice *device, void *data, 
+                     size_t size, double time)
 {
   char host[256];
-  int port, index;
   player_interface_t iface;
-  struct timeval stime;
+  double stime;
 
   // Get server time
-  GlobalTime->GetTime(&stime);
+  GlobalTime->GetTimeDouble(&stime);
 
   // Get interface name
-  if (device)
-  {
-    lookup_interface_code(device->id.code, &iface);
-    index = device->id.index;
-  }
-  else
-  {
-    iface.name = "sync";
-    iface.code = PLAYER_PLAYER_CODE;
-    index = 0;
-    time = stime;
-  }
-
+  assert(device);
+  ::lookup_interface_code(device->addr.interf, &iface);
   gethostname(host, sizeof(host));
-  port = global_playerport;
   
   // Write header info
   fprintf(this->file, "%014.3f %s %d %s %02d %014.3f ",
-           (double) stime.tv_sec + (double) stime.tv_usec * 1e-6,
-           host, port, iface.name, index,
-           (double) time.tv_sec + (double) time.tv_usec * 1e-6);
+          stime, host, device->addr.robot, iface.name, 
+          device->addr.index, time);
 
   // Write the data
-  switch (iface.code)
+  switch (iface.interf)
   {
+    case PLAYER_LASER_CODE:
+      this->WriteLaser((player_laser_data_t*) data);
+      break;
+#if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
       break;
@@ -797,9 +761,6 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
       break;
     case PLAYER_JOYSTICK_CODE:
       this->WriteJoystick((player_joystick_data_t*) data);
-      break;
-    case PLAYER_LASER_CODE:
-      this->WriteLaser((player_laser_data_t*) data);
       break;
     case PLAYER_SONAR_CODE:
       this->WriteSonar((player_sonar_data_t*) data, device);
@@ -821,8 +782,10 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
       break;
     case PLAYER_PLAYER_CODE:
       break;
+#endif
     default:
-      PLAYER_WARN1("unsupported interface type [%s]", ::lookup_interface_name(0, iface.code));
+      PLAYER_WARN1("unsupported interface type [%s]", 
+                   ::lookup_interface_name(0, iface.interf));
       break;
   }
 
@@ -835,26 +798,41 @@ void WriteLog::Write(WriteLogDevice *device, void *data, size_t size, struct tim
   return;
 }
 
-
-
-////////////////////////////////////////////////////////////////////////////
-// Signed int conversion macros
-#define HINT16(x) ((int16_t) ntohs(x))
-#define HUINT16(x) ((uint16_t) ntohs(x))
-#define HINT32(x) ((int32_t) ntohl(x))
-#define HUINT32(x) ((uint32_t) ntohl(x))
-
-
-////////////////////////////////////////////////////////////////////////////
-// Unit conversion macros
-#define CM_M(x) ((x) / 100.0)
-#define MM_M(x) ((x) / 1000.0)
-#define DEG_RAD(x) ((x) * M_PI / 180.0)
-
-
-
 /** @addtogroup player_driver_writelog */
 /** @{ */
+
+/** @defgroup player_driver_writelog_laser Laser format
+ 
+@brief @ref player_interface_laser format 
+
+The format for each @ref player_interface_laser message is:
+  - min_angle (float): minimum scan angle, in radians
+  - max_angle (float): maximum scan angle, in radians
+  - resolution (float): angular resolution, in radians
+  - count (int): number of readings to follow
+  - list of readings; for each reading:
+    - range (float): in meters
+    - intensity (int): intensity
+*/
+void WriteLog::WriteLaser(player_laser_data_t *data)
+{
+  int i;
+
+  // Note that, in this format, we need a lot of precision in the
+  // resolution field.
+  
+  fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
+          data->min_angle, data->max_angle,
+          data->resolution, data->ranges_count);
+
+  for (i = 0; i < ntohs(data->ranges_count); i++)
+    fprintf(this->file, "%.3f %2d ",
+            data->ranges[i], data->intensity[i]);
+
+  return;
+}
+
+#if 0
 /** @defgroup player_driver_writelog_blobfinder Blobfinder format
  
 @brief @ref player_interface_blobfinder format 
@@ -1099,37 +1077,6 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 }
 
 
-/** @defgroup player_driver_writelog_laser Laser format
- 
-@brief @ref player_interface_laser format 
-
-The format for each @ref player_interface_laser message is:
-  - min_angle (float): minimum scan angle, in radians
-  - max_angle (float): maximum scan angle, in radians
-  - resolution (float): angular resolution, in radians
-  - count (int): number of readings to follow
-  - list of readings; for each reading:
-    - range (float): in meters
-    - intensity (int): intensity
-*/
-void WriteLog::WriteLaser(player_laser_data_t *data)
-{
-  int i;
-
-  // Note that, in this format, we need a lot of precision in the
-  // resolution field.
-  
-  fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
-          DEG_RAD(HINT16(data->min_angle) * 0.01), DEG_RAD(HINT16(data->max_angle) * 0.01),
-          DEG_RAD(HUINT16(data->resolution) * 0.01), HUINT16(data->range_count));
-
-  for (i = 0; i < ntohs(data->range_count); i++)
-    fprintf(this->file, "%.3f %2d ",
-            MM_M(HUINT16(data->ranges[i]) * HUINT16(data->range_res)),
-            data->intensity[i]);
-
-  return;
-}
 
 /** @defgroup player_driver_writelog_sonar Sonar format
  
@@ -1331,6 +1278,7 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
   
   return;
 }
+#endif
 
 
 /** @} */

@@ -138,7 +138,7 @@ PLAYER_ADD_DRIVER([dummy],[no],[],[],[])
 PLAYER_ADD_DRIVER([passthrough],[no],[],[],
                   ["../client_libs/c/playercclient.o"])
 
-PLAYER_ADD_DRIVER([logfile],[no],[zlib.h],[],[-lz])
+PLAYER_ADD_DRIVER([logfile],[yes],[zlib.h],[],[-lz])
 
 PLAYER_ADD_DRIVER([p2os],[no],[],[],[])
 

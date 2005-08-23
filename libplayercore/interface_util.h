@@ -28,7 +28,7 @@
 // interface_util.cc
 typedef struct 
 {
-  uint16_t code;
+  uint16_t interf;
   const char* name;
 } player_interface_t;
 

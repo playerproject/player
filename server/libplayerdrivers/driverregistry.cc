@@ -74,6 +74,10 @@ void Wavefront_Register(DriverTable* table);
 void SegwayRMP_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_LASERPOSEINTERPOLATOR
+void LaserPoseInterp_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SICKLMS200
 void SickLMS200_Register(DriverTable* table);
 #endif
@@ -159,7 +163,7 @@ void PassThrough_Register(DriverTable* table);
 
 #ifdef INCLUDE_LOGFILE
 void WriteLog_Register(DriverTable* table);
-void ReadLog_Register(DriverTable* table);
+//void ReadLog_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_P2OS
@@ -408,6 +412,10 @@ player_register_drivers()
   SegwayRMP_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_LASERPOSEINTERPOLATOR
+  LaserPoseInterp_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
 #endif
@@ -496,7 +504,7 @@ player_register_drivers()
 
 #ifdef INCLUDE_LOGFILE
   WriteLog_Register(driverTable);  
-  ReadLog_Register(driverTable);
+//  ReadLog_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_P2OS
