@@ -225,12 +225,12 @@ void MultiDriver::Main()
     //
     // For example, to send a new position pose message:
     player_position2d_data_t posdata;
-    posdata.pos[0] = 43.2;
-    posdata.pos[1] = -12.2;
-    posdata.pos[2] = M_PI/3.0;
-    posdata.vel[0] = 0.25;
-    posdata.vel[1] = 0.0;
-    posdata.vel[2] = -M_PI/6.0;
+    posdata.pos.px = 43.2;
+    posdata.pos.py = -12.2;
+    posdata.pos.pa = M_PI/3.0;
+    posdata.vel.px = 0.25;
+    posdata.vel.py = 0.0;
+    posdata.vel.pa = -M_PI/6.0;
     posdata.stall = 0;
 
     this->Publish(this->m_position_addr, NULL,
