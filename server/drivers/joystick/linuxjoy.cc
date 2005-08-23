@@ -547,7 +547,7 @@ void LinuxJoystick::PutPositionCommand()
 
   memset(&cmd,0,sizeof(cmd));
   cmd.vel.px = xspeed;
-  cmd.vel.py = yawspeed;
+  cmd.vel.pa = yawspeed;
   cmd.type=0;
   cmd.state=1;
   this->position->PutMsg(this->InQueue,
