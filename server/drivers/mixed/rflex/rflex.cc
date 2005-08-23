@@ -358,71 +358,69 @@ RFLEX_Register(DriverTable *table)
 // Message handler functions
 /////////////////////////////// 
 void PrintHeader(player_msghdr_t hdr);
-int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len) 
+int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
+                           void * data, void ** resp_data,
+                           size_t * resp_len)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data);
+	assert(resp_data && *resp_data);
 	assert(resp_len);
 	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 	*resp_len = 0;
 
-	if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, 
+	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER, 
                         sonar_id))
 	{
 		assert(hdr->size == sizeof(player_sonar_power_config));
 		Lock();
-		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
+		if(reinterpret_cast<player_sonar_power_config_t *> (data)->state==0)
 			rflex_sonars_off(rflex_fd);
 		else
 			rflex_sonars_on(rflex_fd);
 		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_POWER, 
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER, 
                         sonar_id_2))
 	{
 		assert(hdr->size == sizeof(player_sonar_power_config));
 		Lock();
-		if(reinterpret_cast<player_sonar_power_config_t *> (data)->value==0)
+		if(reinterpret_cast<player_sonar_power_config_t *> (data)->state==0)
 			rflex_sonars_off(rflex_fd);
 		else
 			rflex_sonars_on(rflex_fd);
 		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, 
                         sonar_id))
 	{
 		assert(hdr->size == 0);
 
 		player_sonar_geom_t geom;
 		Lock();
-		geom.pose_count = htons((short) rflex_configs.sonar_1st_bank_end);
+		geom.poses_count = ((short) rflex_configs.sonar_1st_bank_end);
 		for (int i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
 		{
-			geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i].x);
-			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i].y);
-			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i].t));
+			geom.poses[i] = rflex_configs.mrad_sonar_poses[i];
 		}
 		Unlock();
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, 
                         sonar_id_2))
 	{
 		assert(hdr->size == 0);
 
 		player_sonar_geom_t geom;
 		Lock();
-		geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+		geom.poses_count = (rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
 		for (int i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
 		{
-			geom.poses[i][0] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].x);
-			geom.poses[i][1] = htons((short) rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y);
-			geom.poses[i][2] = htons((short) RAD2DEG_CONV(rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t));
+			geom.poses[i] = rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start];
 		}
 		Unlock();	
 	
@@ -430,117 +428,102 @@ int RFLEX::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * da
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM, 
                         bumper_id))
 	{
 		assert(hdr->size == 0);
 
 		player_bumper_geom_t geom;
 		Lock();
-		geom.bumper_count = htons((short) rflex_configs.bumper_count);
+		geom.bumper_def_count = rflex_configs.bumper_count;
 		for (int i = 0; i < rflex_configs.bumper_count; i++)
 		{ 
-			geom.bumper_def[i].x_offset = htons((short) rflex_configs.bumper_def[i].x_offset); //mm
-			geom.bumper_def[i].y_offset = htons((short) rflex_configs.bumper_def[i].y_offset); //mm
-			geom.bumper_def[i].th_offset = htons((short) rflex_configs.bumper_def[i].th_offset); //deg
-			geom.bumper_def[i].length = htons((short) rflex_configs.bumper_def[i].length); //mm
-			geom.bumper_def[i].radius = htons((short) rflex_configs.bumper_def[i].radius); //mm
+			geom.bumper_def[i] = rflex_configs.bumper_def[i];
 		}
 		Unlock();
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
 	{
 		assert(hdr->size == 0);
 
-		// Assemble geometry structure for sending
-		player_ir_pose_t geom;
 		Lock();
-		geom.pose_count = htons((short) rflex_configs.ir_poses.pose_count);
-		for (int i = 0; i < rflex_configs.ir_poses.pose_count; i++){
-			geom.poses[i][0] = htons((short) rflex_configs.ir_poses.poses[i][0]); //mm
-			geom.poses[i][1] = htons((short) rflex_configs.ir_poses.poses[i][1]); //mm
-			geom.poses[i][2] = htons((short) rflex_configs.ir_poses.poses[i][2]); //deg
-		}
+		memcpy(resp_data, &rflex_configs.ir_poses, sizeof(rflex_configs.ir_poses));
 		Unlock();
-		memcpy(resp_data, &geom, sizeof(geom));
-		*resp_len = sizeof(geom);
+		*resp_len = sizeof(rflex_configs.ir_poses);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
 	{
-		assert(hdr->size == 1);
+		assert(hdr->size == sizeof(player_ir_power_req_t));
+		player_ir_power_req_t * req = reinterpret_cast<player_ir_power_req_t*> (data);
 		Lock();
-		if (data[0] == 0)
+		if (req->state == 0)
 			rflex_ir_off(rflex_fd);
 		else
 			rflex_ir_on(rflex_fd);	
 		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, position_id))
 	{
-		assert(hdr->size == sizeof(player_position_set_odom_req_t));
+		assert(hdr->size == sizeof(player_position2d_set_odom_req));
 
-		player_position_set_odom_req_t * set_odom_req = ((player_position_set_odom_req_t*)data);;
+		player_position2d_set_odom_req * set_odom_req = reinterpret_cast<player_position2d_set_odom_req*> (data);
 		Lock();
-		set_odometry((long) ntohl(set_odom_req->x),(long) ntohl(set_odom_req->y),(short) ntohs(set_odom_req->theta));	
+		set_odometry((long) (1000*set_odom_req->pose.px),(long) (1000*set_odom_req->pose.py),(short) (1000*set_odom_req->pose.pa));	
 		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_id))
 	{
-		assert(hdr->size == sizeof(player_position_power_config_t));
+		assert(hdr->size == sizeof(player_position2d_power_config_t));
 		
 		Lock();
-		if(((player_position_power_config_t*)data)->value==0)
+		if(((player_position2d_power_config_t*)data)->state==0)
 			rflex_brake_on(rflex_fd);
 		else
 			rflex_brake_off(rflex_fd);
 		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_id))
 	{
-		assert(hdr->size == sizeof(player_position_velocitymode_config_t));
+		assert(hdr->size == sizeof(player_position2d_velocity_mode_config_t));
 		// Does nothing, needs to be implemented
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM, position_id))
 	{
-		assert(hdr->size == sizeof(player_position_resetodom_config_t));
 		Lock();
 		reset_odometry();
 		Unlock();
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_id))
 	{
 		assert(hdr->size == 0);
 
-		player_position_geom_t geom;
-		//mm
-		geom.pose[0] = htons((short) (0));
-		geom.pose[1] = htons((short) (0));
-		//radians
-		geom.pose[2] = htons((short) (0));
-		//mm
+		player_position2d_geom_t geom;
+		geom.pose.px = 0;
+		geom.pose.py = 0;
+		geom.pose.pa = 0;
 		Lock();
-		geom.size[0] = htons((short) (rflex_configs.mm_length));
-		geom.size[1] = htons((short) (rflex_configs.mm_width));
+		geom.size[0] = rflex_configs.m_length;
+		geom.size[1] = rflex_configs.m_width;
 		Unlock();
 
 		memcpy(resp_data, &geom, sizeof(geom));
 		*resp_len = sizeof(geom);
 		return PLAYER_MSGTYPE_RESP_ACK;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, position_id))
 	{
-		assert(hdr->size == sizeof(player_position_cmd_t));
+		assert(hdr->size == sizeof(player_position2d_cmd_t));
 		Lock();
-		command = *reinterpret_cast<player_position_cmd_t *> (data);
+		command = *reinterpret_cast<player_position2d_cmd_t *> (data);
 		Unlock();
 		return 0;
 	}
@@ -552,14 +535,14 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
         : Driver(cf,section)
 {
   // zero ids, so that we'll know later which interfaces were requested 
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
-  memset(&this->sonar_id, 0, sizeof(player_device_id_t));
-  memset(&this->sonar_id_2, 0, sizeof(player_device_id_t));
-  memset(&this->ir_id, 0, sizeof(player_device_id_t));
-  memset(&this->bumper_id, 0, sizeof(player_device_id_t));
-  memset(&this->power_id, 0, sizeof(player_device_id_t));
-  memset(&this->aio_id, 0, sizeof(player_device_id_t));
-  memset(&this->dio_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_devaddr_t));
+  memset(&this->sonar_id, 0, sizeof(player_devaddr_t));
+  memset(&this->sonar_id_2, 0, sizeof(player_devaddr_t));
+  memset(&this->ir_id, 0, sizeof(player_devaddr_t));
+  memset(&this->bumper_id, 0, sizeof(player_devaddr_t));
+  memset(&this->power_id, 0, sizeof(player_devaddr_t));
+  memset(&this->aio_id, 0, sizeof(player_devaddr_t));
+  memset(&this->dio_id, 0, sizeof(player_devaddr_t));
 
   this->position_subscriptions = 0;
   this->sonar_subscriptions = 0;
@@ -567,10 +550,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   this->bumper_subscriptions = 0;
 
   // Do we create a robot position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
-                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->position_id), section, "provides", 
+                      PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
+    if(this->AddInterface(this->position_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -578,10 +561,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   }
 
   // Do we create a sonar interface?
-  if(cf->ReadDeviceId(&(this->sonar_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->sonar_id), section, "provides", 
                       PLAYER_SONAR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->sonar_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->sonar_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -589,10 +572,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   }
 
   // Do we create a second sonar interface?
-  if(cf->ReadDeviceId(&(this->sonar_id_2), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->sonar_id_2), section, "provides", 
                       PLAYER_SONAR_CODE, -1, "bank2") == 0)
   {
-    if(this->AddInterface(this->sonar_id_2, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->sonar_id_2) != 0)
     {
       this->SetError(-1);    
       return;
@@ -601,10 +584,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
 
 
   // Do we create an ir interface?
-  if(cf->ReadDeviceId(&(this->ir_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->ir_id), section, "provides", 
                       PLAYER_IR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->ir_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -612,10 +595,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   }
 
   // Do we create a bumper interface?
-  if(cf->ReadDeviceId(&(this->bumper_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->bumper_id), section, "provides", 
                       PLAYER_BUMPER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->bumper_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->bumper_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -623,10 +606,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   }
 
   // Do we create a power interface?
-  if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->power_id), section, "provides", 
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->power_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->power_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -634,10 +617,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   }
 
   // Do we create an aio interface?
-  if(cf->ReadDeviceId(&(this->aio_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides", 
                       PLAYER_AIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->aio_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->aio_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -645,10 +628,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   }
 
   // Do we create a dio interface?
-  if(cf->ReadDeviceId(&(this->dio_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->dio_id), section, "provides", 
                       PLAYER_DIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->dio_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->dio_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -671,11 +654,11 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   // Position-related options
 
   //length
-  rflex_configs.mm_length=
-    cf->ReadFloat(section, "mm_length",0.5);
+  rflex_configs.m_length=
+    cf->ReadFloat(section, "m_length",0.5);
   //width
-  rflex_configs.mm_width=
-    cf->ReadFloat(section, "mm_width",0.5);
+  rflex_configs.m_width=
+    cf->ReadFloat(section, "m_width",0.5);
   //distance conversion
   rflex_configs.odo_distance_conversion=
     cf->ReadFloat(section, "odo_distance_conversion", 0.0);
@@ -728,15 +711,15 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
           cf->ReadInt(section, "sonar_ping_delay",0);
   rflex_configs.sonar_set_delay=
           cf->ReadInt(section, "sonar_set_delay", 0);
-  rflex_configs.mmrad_sonar_poses=(sonar_pose_t *) malloc(rflex_configs.num_sonars*sizeof(sonar_pose_t));
+  rflex_configs.mrad_sonar_poses=(player_pose_t *) malloc(rflex_configs.num_sonars*sizeof(player_pose_t));
   for(x=0;x<rflex_configs.num_sonars;x++)
   {
-    rflex_configs.mmrad_sonar_poses[x].x=
-            cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x+1,0.0);
-    rflex_configs.mmrad_sonar_poses[x].y=
-            cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x+2,0.0);
-    rflex_configs.mmrad_sonar_poses[x].t=
-            cf->ReadTupleFloat(section, "mmrad_sonar_poses",3*x,0.0);
+    rflex_configs.mrad_sonar_poses[x].px=
+            cf->ReadTupleFloat(section, "mrad_sonar_poses",3*x+1,0.0);
+    rflex_configs.mrad_sonar_poses[x].py=
+            cf->ReadTupleFloat(section, "mrad_sonar_poses",3*x+2,0.0);
+    rflex_configs.mrad_sonar_poses[x].pa=
+            cf->ReadTupleFloat(section, "mrad_sonar_poses",3*x,0.0);
   }
   rflex_configs.sonar_2nd_bank_start=cf->ReadInt(section, "sonar_2nd_bank_start", 0);
   rflex_configs.sonar_1st_bank_end=rflex_configs.sonar_2nd_bank_start>0?rflex_configs.sonar_2nd_bank_start:rflex_configs.num_sonars;
@@ -751,28 +734,28 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   rflex_configs.ir_count=new int[rflex_configs.ir_bank_count];
   rflex_configs.ir_a=new double[pose_count];
   rflex_configs.ir_b=new double[pose_count];
-  rflex_configs.ir_poses.pose_count=pose_count;
-  int RunningTotal = 0;
+  rflex_configs.ir_poses.poses_count=pose_count;
+  unsigned int RunningTotal = 0;
   for(int i=0; i < rflex_configs.ir_bank_count; ++i)
     RunningTotal += (rflex_configs.ir_count[i]=(int) cf->ReadTupleFloat(section, "rflex_banks",i,0));
 
   // posecount is actually unnecasary, but for consistancy will juse use it for error checking :)
-  if (RunningTotal != rflex_configs.ir_poses.pose_count)
+  if (RunningTotal != rflex_configs.ir_poses.poses_count)
   {
     PLAYER_WARN("Error in config file, pose_count not equal to total poses in bank description\n");  
-    rflex_configs.ir_poses.pose_count = RunningTotal;
+    rflex_configs.ir_poses.poses_count = RunningTotal;
   }		
 
   //  rflex_configs.ir_poses.poses=new int16_t[rflex_configs.ir_poses.pose_count];
-  for(x=0;x<rflex_configs.ir_poses.pose_count;x++)
+  for(unsigned int i=0;i<rflex_configs.ir_poses.poses_count;i++)
   {
-    rflex_configs.ir_poses.poses[x][0]=(int) cf->ReadTupleFloat(section, "poses",x*3,0);
-    rflex_configs.ir_poses.poses[x][1]=(int) cf->ReadTupleFloat(section, "poses",x*3+1,0);
-    rflex_configs.ir_poses.poses[x][2]=(int) cf->ReadTupleFloat(section, "poses",x*3+2,0);
+    rflex_configs.ir_poses.poses[i].px= cf->ReadTupleFloat(section, "poses",i*3,0);
+    rflex_configs.ir_poses.poses[i].py= cf->ReadTupleFloat(section, "poses",i*3+1,0);
+    rflex_configs.ir_poses.poses[i].pa= cf->ReadTupleFloat(section, "poses",i*3+2,0);
 
     // Calibration parameters for ir in form range=(a*voltage)^b
-    rflex_configs.ir_a[x] = cf->ReadTupleFloat(section, "rflex_ir_calib",x*2,1);
-    rflex_configs.ir_b[x] = cf->ReadTupleFloat(section, "rflex_ir_calib",x*2+1,1);	
+    rflex_configs.ir_a[i] = cf->ReadTupleFloat(section, "rflex_ir_calib",i*2,1);
+    rflex_configs.ir_b[i] = cf->ReadTupleFloat(section, "rflex_ir_calib",i*2+1,1);	
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -781,11 +764,11 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   rflex_configs.bumper_def = new player_bumper_define_t[rflex_configs.bumper_count];
   for(x=0;x<rflex_configs.bumper_count;++x)
   {
-    rflex_configs.bumper_def[x].x_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x,0)); //mm
-    rflex_configs.bumper_def[x].y_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+1,0)); //mm
-    rflex_configs.bumper_def[x].th_offset = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+2,0)); //deg
-    rflex_configs.bumper_def[x].length = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+3,0)); //mm
-    rflex_configs.bumper_def[x].radius = static_cast<int> (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));	//mm  	
+    rflex_configs.bumper_def[x].pose.px =  (cf->ReadTupleFloat(section, "bumper_def",5*x,0)); //mm
+    rflex_configs.bumper_def[x].pose.py =  (cf->ReadTupleFloat(section, "bumper_def",5*x+1,0)); //mm
+    rflex_configs.bumper_def[x].pose.pa =  (cf->ReadTupleFloat(section, "bumper_def",5*x+2,0)); //deg
+    rflex_configs.bumper_def[x].length =  (cf->ReadTupleFloat(section, "bumper_def",5*x+3,0)); //mm
+    rflex_configs.bumper_def[x].radius =  (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));	//mm  	
   }
   rflex_configs.bumper_address = cf->ReadInt(section, "rflex_bumper_address",DEFAULT_RFLEX_BUMPER_ADDRESS);
 
@@ -861,7 +844,7 @@ RFLEX::StopThread(void)
 }
 
 int 
-RFLEX::Subscribe(player_device_id_t id)
+RFLEX::Subscribe(player_devaddr_t id)
 {
   int setupResult;
 
@@ -869,9 +852,9 @@ RFLEX::Subscribe(player_device_id_t id)
   if((setupResult = Driver::Subscribe(id)) == 0)
   {
     // also increment the appropriate subscription counter
-    switch(id.code)
+    switch(id.interf)
     {
-      case PLAYER_POSITION_CODE:
+      case PLAYER_POSITION2D_CODE:
         this->position_subscriptions++;
         break;
       case PLAYER_SONAR_CODE:
@@ -890,7 +873,7 @@ RFLEX::Subscribe(player_device_id_t id)
 }
 
 int 
-RFLEX::Unsubscribe(player_device_id_t id)
+RFLEX::Unsubscribe(player_devaddr_t id)
 {
   int shutdownResult;
 
@@ -898,9 +881,9 @@ RFLEX::Unsubscribe(player_device_id_t id)
   if((shutdownResult = Driver::Unsubscribe(id)) == 0)
   {
     // also decrement the appropriate subscription counter
-    switch(id.code)
+    switch(id.interf)
     {
-      case PLAYER_POSITION_CODE:
+      case PLAYER_POSITION2D_CODE:
         --this->position_subscriptions;
         assert(this->position_subscriptions >= 0);
         break;
@@ -1023,21 +1006,20 @@ RFLEX::Main()
 
 		if (rflex_configs.home_on_start)
 		{
-			command.yawspeed = htonl(10);
+			command.vel.pa = M_PI/18;
 			command.type=0;
 			newmotorturn=true;
 		}
 
-		//the long casts are necicary (ntohl returns unsigned - we need signed)
-		if(mmPsec_speedDemand != (long) ntohl(command.xspeed))
+		if(mmPsec_speedDemand != command.vel.px)
 		{
         	newmotorspeed = true;
-        	mmPsec_speedDemand = (long) ntohl(command.xspeed);
+        	mmPsec_speedDemand = command.vel.px;
       	}
-      	if(radPsec_turnRateDemand != DEG2RAD_CONV((long) ntohl(command.yawspeed)))
+      	if(radPsec_turnRateDemand != command.vel.pa)
       	{
         	newmotorturn = true;
-        	radPsec_turnRateDemand = DEG2RAD_CONV((long) ntohl(command.yawspeed));
+        	radPsec_turnRateDemand = command.vel.pa;
       	}
       	/* NEXT, write commands */
       	// rflex has a built in failsafe mode where if no move command is recieved in a 
@@ -1066,24 +1048,24 @@ RFLEX::Main()
     }
     
     /* Get data from robot */
-	static long LastYaw = 0;
+	static float LastYaw = 0;
     player_rflex_data_t rflex_data = {0};
 
 	Lock();
     update_everything(&rflex_data);
     Unlock();
 
-    PutMsg(this->position_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->position_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,
             (unsigned char*)&rflex_data.position,
-            sizeof(player_position_data_t),
+            sizeof(player_position2d_data_t),
             NULL);
-    PutMsg(this->sonar_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->sonar_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_SONAR_DATA_RANGES,
             (unsigned char*)&rflex_data.sonar,
             sizeof(player_sonar_data_t),
             NULL);
 	// Here we check if the robot has changed Yaw...
 	// If it has we need to update the geometry as well
-	if (rflex_data.position.yaw != LastYaw)
+	if (rflex_data.position.pos.pa != LastYaw)
 	{
 		// Transmit new sonar geometry
 		double NewGeom[3];
@@ -1091,46 +1073,46 @@ RFLEX::Main()
         player_sonar_geom_t geom;
         
 		Lock();
-        geom.pose_count = htons((short) rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+        geom.poses_count = rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start;
         for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
         {
-		  SonarRotate(rad_odo_theta, rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].x,rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].y,rflex_configs.mmrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].t,NewGeom,&NewGeom[1],&NewGeom[2]);
-          geom.poses[i][0] = htons((short) NewGeom[0]);
-          geom.poses[i][1] = htons((short) NewGeom[1]);
-          geom.poses[i][2] = htons((short) RAD2DEG_CONV(NewGeom[2]));
+		  SonarRotate(rad_odo_theta, rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].px,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].py,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].pa,NewGeom,&NewGeom[1],&NewGeom[2]);
+          geom.poses[i].px = NewGeom[0];
+          geom.poses[i].py = NewGeom[1];
+          geom.poses[i].pa = NewGeom[2];
         }
         Unlock();
-		PutMsg(this->sonar_id_2, NULL, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_GEOM,
+		Publish(this->sonar_id_2, NULL, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_GEOM,
 			(unsigned char*)&geom, sizeof(player_sonar_geom_t),
 			NULL);
 	}
-	LastYaw = rflex_data.position.yaw;
+	LastYaw = rflex_data.position.pos.pa;
 			
-    PutMsg(this->sonar_id_2,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->sonar_id_2,NULL,PLAYER_MSGTYPE_DATA,PLAYER_SONAR_DATA_RANGES,
             (unsigned char*)&rflex_data.sonar2,
             sizeof(player_sonar_data_t),
             NULL);
-    PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_IR_DATA_RANGES,
             (unsigned char*)&rflex_data.ir,
             sizeof(player_ir_data_t),
             NULL);
-    PutMsg(this->bumper_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->bumper_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BUMPER_DATA_STATE,
             (unsigned char*)&rflex_data.bumper,
             sizeof(player_bumper_data_t),
             NULL);
-    PutMsg(this->power_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->power_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POWER_DATA_VOLTAGE,
             (unsigned char*)&rflex_data.power,
             sizeof(player_power_data_t),
             NULL);
-    PutMsg(this->aio_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->aio_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_AIO_DATA_VALUES,
             (unsigned char*)&rflex_data.aio,
             sizeof(player_aio_data_t),
             NULL);
-    PutMsg(this->dio_id,NULL,PLAYER_MSGTYPE_DATA,0,
+    Publish(this->dio_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_DIO_DATA_VALUES,
             (unsigned char*)&rflex_data.dio,
             sizeof(player_dio_data_t),
             NULL);
-            
+           
     ret=pthread_setcancelstate(oldstate,NULL);
 
 	Lock();
@@ -1230,14 +1212,16 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     //integrate latest motion into odometry
     mm_odo_x += mm_displacement * cos(rad_odo_theta);
     mm_odo_y += mm_displacement * sin(rad_odo_theta);
-    d->position.xpos = htonl((long) mm_odo_x);
-    d->position.ypos = htonl((long) mm_odo_y);
+    d->position.pos.px = mm_odo_x;
+    d->position.pos.py = mm_odo_y;
     while(rad_odo_theta<0)
       rad_odo_theta+=2*M_PI;
-    d->position.yaw = htonl((long) RAD2DEG_CONV(rad_odo_theta) %360);
+    while(rad_odo_theta>2*M_PI)
+      rad_odo_theta-=2*M_PI;
+    d->position.pos.pa = rad_odo_theta;
 
-    d->position.xspeed = htonl((long) mmPsec_t_vel);
-    d->position.yawspeed = htonl((long) RAD2DEG_CONV(radPsec_r_vel));
+    d->position.vel.px = mmPsec_t_vel;
+    d->position.vel.pa = radPsec_r_vel;
     //TODO - get better stall information (battery draw?)
   }
   d->position.stall = false;
@@ -1256,13 +1240,13 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     rflex_update_sonar(rflex_fd, a_num_sonars,
 		       arb_ranges);
 //    pthread_testcancel();
-    d->sonar.range_count=htons(rflex_configs.sonar_1st_bank_end);
+    d->sonar.ranges_count=(rflex_configs.sonar_1st_bank_end);
     for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++){
-      d->sonar.ranges[i] = htons((uint16_t) ARB2MM_RANGE_CONV(arb_ranges[i]));
+      d->sonar.ranges[i] = ARB2MM_RANGE_CONV(arb_ranges[i]);
     }
-    d->sonar2.range_count=htons(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+    d->sonar2.ranges_count=(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
     for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++){
-      d->sonar2.ranges[i] = htons((uint16_t) ARB2MM_RANGE_CONV(arb_ranges[rflex_configs.sonar_2nd_bank_start+i]));
+      d->sonar2.ranges[i] = ARB2MM_RANGE_CONV(arb_ranges[rflex_configs.sonar_2nd_bank_start+i]);
     }
   }
 
@@ -1276,37 +1260,37 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     rflex_update_bumpers(rflex_fd, a_num_bumpers, abumper_ranges);
  //   pthread_testcancel();
 
-    d->bumper.bumper_count=(a_num_bumpers);
+    d->bumper.bumpers_count=(a_num_bumpers);
     memcpy(d->bumper.bumpers,abumper_ranges,a_num_bumpers);
   }
 
   // if someone is subscribed to irs copy internal data to device
   if(this->ir_subscriptions)
   {
-    a_num_ir=rflex_configs.ir_poses.pose_count;
+    a_num_ir=rflex_configs.ir_poses.poses_count;
 
 //    pthread_testcancel();
     // first make sure our internal state is up to date
     rflex_update_ir(rflex_fd, a_num_ir, air_ranges);
 //    pthread_testcancel();
 
-    d->ir.range_count = htons(a_num_ir);
+    d->ir.ranges_count = (a_num_ir);
     for (int i = 0; i < a_num_ir; ++i)
     {
-      d->ir.voltages[i] = htons(air_ranges[i]);
+      d->ir.voltages[i] = (air_ranges[i]);
       // using power law mapping of form range = (a*voltage)^b
       int range = (int) (pow(rflex_configs.ir_a[i] *((double) air_ranges[i]),rflex_configs.ir_b[i]));
       // check for min and max ranges, < min = 0 > max = max
       range = range < rflex_configs.ir_min_range ? 0 : range;
       range = range > rflex_configs.ir_max_range ? rflex_configs.ir_max_range : range;
-      d->ir.ranges[i] = htons(range);		
+      d->ir.ranges[i] = (range);		
     }
   }
 
   //this would get the battery,time, and brake state (if we cared)
   //update system (battery,time, and brake also request joystick data)
   rflex_update_system(rflex_fd,&batt,&brake);
-  d->power.charge = htons(static_cast<uint16_t> (batt/10) + rflex_configs.power_offset);
+  d->power.voltage = batt + rflex_configs.power_offset;
 }
 
 //default is for ones that don't need any configuration
@@ -1318,8 +1302,8 @@ void RFLEX::GetOptions(ConfigFile *cf,int section,rflex_config_t *configs){
 //(and thus it's settings)
 void RFLEX::set_config_defaults(){
   strcpy(rflex_configs.serial_port,"/dev/ttyR0");
-  rflex_configs.mm_length=0.0;
-  rflex_configs.mm_width=0.0;
+  rflex_configs.m_length=0.0;
+  rflex_configs.m_width=0.0;
   rflex_configs.odo_distance_conversion=0.0;
   rflex_configs.odo_angle_conversion=0.0;
   rflex_configs.range_distance_conversion=0.0;
@@ -1338,13 +1322,13 @@ void RFLEX::set_config_defaults(){
   rflex_configs.num_sonar_banks=0;
   rflex_configs.num_sonars_possible_per_bank=0;
   rflex_configs.num_sonars_in_bank=NULL;
-  rflex_configs.mmrad_sonar_poses=NULL;
+  rflex_configs.mrad_sonar_poses=NULL;
   
   rflex_configs.bumper_count = 0;
   rflex_configs.bumper_address = 0;
   rflex_configs.bumper_def = NULL;
   
-  rflex_configs.ir_poses.pose_count = 0;
+  rflex_configs.ir_poses.poses_count = 0;
   rflex_configs.ir_base_bank = 0;
   rflex_configs.ir_bank_count = 0;
   rflex_configs.ir_count = NULL;
