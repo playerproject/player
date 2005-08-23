@@ -248,6 +248,8 @@ The @p aio interface provides access to an analog I/O device.
 #define PLAYER_AIO_MAX_INPUTS  8
 #define PLAYER_AIO_MAX_OUTPUTS 8
 
+#define PLAYER_AIO_DATA_VALUES 1
+
 /** @brief Data
 
 The @p aio interface returns data regarding the current state of the
@@ -581,7 +583,8 @@ accepts no commands.
 #define PLAYER_BUMPER_MAX_SAMPLES 32
 /** The request subtypes */
 #define PLAYER_BUMPER_GET_GEOM    1
-
+// data subtype
+#define PLAYER_BUMPER_DATA_STATE	1
 /** @brief Data
 
 The @p bumper interface gives current bumper state*/
@@ -596,8 +599,8 @@ typedef struct player_bumper_data
 /** @brief The geometry of a single bumper */
 typedef struct player_bumper_define
 {
-  /** the local pose of a single bumper [m] */
-  float x_offset, y_offset, th_offset;   
+  /** the local pose of a single bumper */
+  player_pose_t pose;
   /** length of the sensor [m] */
   float length; 
   /** radius of curvature [m] - zero for straight lines */
@@ -683,6 +686,9 @@ typedef struct player_camera_data
 The @p dio interface provides access to a digital I/O device.
 @{
 */
+
+#define PLAYER_DIO_DATA_VALUES 1
+
 
 /** @brief Data
 
@@ -1077,6 +1083,8 @@ This interface accepts no commands.
 /* config requests */
 #define PLAYER_IR_POSE        1
 #define PLAYER_IR_POWER       2
+// data requests
+#define PLAYER_IR_DATA_RANGES 1
 
 /** @brief Data
 
@@ -1168,7 +1176,7 @@ This interface accepts no commands.
 */
 
 /** The maximum number of laser range values */
-#define PLAYER_LASER_MAX_SAMPLES  401
+#define PLAYER_LASER_MAX_SAMPLES  1024
 
 /** Laser data subtypes. */
 #define PLAYER_LASER_DATA_SCAN        0x01
@@ -2175,10 +2183,10 @@ The @p position interface returns data regarding the odometric pose and
 velocity of the robot, as well as motor stall information. */
 typedef struct player_position2d_data
 {
-  /** position [m] (x, y, yaw)*/
-  float pos[3];
-  /** translational velocities [m/s] (x, y, yaw)*/
-  float vel[3];   
+  /** position [m,m,rad] (x, y, yaw)*/
+  player_pose_t pos;
+  /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
+  player_pose_t vel;   
   /** Are the motors stalled? */
   uint8_t stall;
 } player_position2d_data_t;
@@ -2190,10 +2198,10 @@ for the robot's motors (drivers may support position control, speed control,
 or both). */
 typedef struct player_position2d_cmd
 {
-  /** position [m] (x, y, yaw)*/
-  float pos[3];
-  /** translational velocities [m/s] (x, y, yaw)*/
-  float vel[3];   
+  /** position [m,m,rad] (x, y, yaw)*/
+  player_pose_t pos;
+  /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
+  player_pose_t vel;   
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
@@ -2208,7 +2216,7 @@ empty.  The server will reply with the pose and size fields filled in. */
 typedef struct player_position2d_geom
 {
   /** Pose of the robot base, in the robot cs (m, m, rad). */
-  float pose[3];
+  player_pose_t pose;
   /** Dimensions of the base (m, m). */
   float size[2];
 } player_position2d_geom_t;
@@ -2285,7 +2293,7 @@ to a particular state, use this request: */
 typedef struct player_position2d_set_odom_req
 {
   /** (x, y, yaw) [m, m, rad] */
-  int32_t pos[3];  
+  player_pose_t pose;  
 } player_position2d_set_odom_req_t;
 
 /** @brief Configuration request: Set velocity PID parameters. */
