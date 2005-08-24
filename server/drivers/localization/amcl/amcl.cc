@@ -344,7 +344,6 @@ Andrew Howard
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
 #include <sys/types.h>
-#include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 #include <sys/time.h>
 
@@ -1035,9 +1034,9 @@ void AdaptiveMCL::PutDataLocalize(double time)
 
     data.hypoths[i].alpha = hyp->weight;
         
-    data.hypoths[i].mean[0] = pose.v[0];
-    data.hypoths[i].mean[1] = pose.v[1];
-    data.hypoths[i].mean[2] = pose.v[2];
+    data.hypoths[i].mean.px = pose.v[0];
+    data.hypoths[i].mean.py = pose.v[1];
+    data.hypoths[i].mean.pa = pose.v[2];
   
     data.hypoths[i].cov[0][0] = pose_cov.m[0][0];
     data.hypoths[i].cov[0][1] = pose_cov.m[0][1];
@@ -1127,9 +1126,7 @@ void AdaptiveMCL::PutDataPosition(double time, pf_vector_t delta)
 int 
 AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue, 
                             player_msghdr * hdr, 
-                            void * data, 
-                            void ** resp_data, 
-                            size_t * resp_len)
+                            void * data)
 {
   player_localize_set_pose_t* setposereq;
 
@@ -1142,7 +1139,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
     {
       PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
                     hdr->size, sizeof(player_localize_set_pose_t));
-      return(PLAYER_MSGTYPE_RESP_NACK);
+      return(-1);
     }
     setposereq = (player_localize_set_pose_t*)data;
     
@@ -1162,6 +1159,12 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
     this->pf_init_pose_mean = pose;
     this->pf_init_pose_cov = cov;
     this->pf_init = false;
+
+    // Send an ACK
+    this->Publish(this->localize_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LOCALIZE_REQ_SET_POSE);
+    return(0);
   }
   // Is it a request for the current particle set?
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
@@ -1178,50 +1181,38 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
 
     pf_vector_t mean;
     double var;
-    player_localize_get_particles_t* resp;
+    player_localize_get_particles_t resp;
     pf_sample_set_t *set;
     pf_sample_t *sample;
-    int i;
+    size_t i;
   
-    *resp_data = calloc(1,sizeof(player_localize_get_particles_t));
-    assert(*resp_data);
-    resp = (player_localize_get_particles_t*)(*resp_data);
-
     pf_get_cep_stats(this->pf, &mean, &var);
 
-    resp->mean[0] = mean.v[0];
-    resp->mean[1] = mean.v[1];
-    resp->mean[2] = mean.v[2];
-    resp->variance = var;
+    resp.mean.px = mean.v[0];
+    resp.mean.py = mean.v[1];
+    resp.mean.pa = mean.v[2];
+    resp.variance = var;
 
     set = this->pf->sets + this->pf->current_set;
 
-    resp->particles_count = htonl(set->sample_count);
+    resp.particles_count = 
+            MIN(set->sample_count,PLAYER_LOCALIZE_PARTICLES_MAX);
 
     // TODO: pick representative particles
-    for(i=0;i<set->sample_count;i++)
+    for(i=0;i<resp.particles_count;i++)
     {
-      if(i >= PLAYER_LOCALIZE_PARTICLES_MAX)
-      {
-        //PLAYER_WARN("too many particles");
-        resp->particles_count = htonl(i);
-        break;
-      }
-
       sample = set->samples + i;
-      resp->particles[i].pose[0] = sample->pose.v[0];
-      resp->particles[i].pose[1] = sample->pose.v[1];
-      resp->particles[i].pose[2] = sample->pose.v[2];
-      resp->particles[i].alpha = sample->weight;
+      resp.particles[i].pose.px = sample->pose.v[0];
+      resp.particles[i].pose.py = sample->pose.v[1];
+      resp.particles[i].pose.pa = sample->pose.v[2];
+      resp.particles[i].alpha = sample->weight;
     }
 
-    *resp_len = (sizeof(player_localize_get_particles_t) -
-                 (sizeof(player_localize_particle_t) * 
-                  PLAYER_LOCALIZE_PARTICLES_MAX) +
-                 (sizeof(player_localize_particle_t) *
-                  resp->particles_count));
-
-    return(PLAYER_MSGTYPE_RESP_ACK);
+    this->Publish(this->localize_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                  (void*)&resp, sizeof(resp), NULL);
+    return(0);
   }
 
   return(-1);

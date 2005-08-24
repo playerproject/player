@@ -162,9 +162,7 @@ class WriteLog: public Driver
   // MessageHandler
   public: virtual int ProcessMessage(MessageQueue * resp_queue, 
                                      player_msghdr * hdr, 
-                                     void * data, 
-                                     void ** resp_data, 
-                                     size_t * resp_len);
+                                     void * data);
 
   /// Initialize the driver
   public: virtual int Setup();
@@ -194,6 +192,10 @@ class WriteLog: public Driver
   private: int WritePosition(player_msghdr_t* hdr, 
                               player_position2d_data_t *data);
 
+  // Write sonar data to file
+  private: int WriteSonar(player_msghdr_t* hdr,
+                          player_sonar_data_t *data, 
+                          WriteLogDevice* device);
 
 #if 0
   // Write blobfinder data to file
@@ -213,9 +215,6 @@ class WriteLog: public Driver
 
   // Write joystick data to file
   private: void WriteJoystick(player_joystick_data_t *data);
-
-  // Write sonar data to file
-  private: void WriteSonar(player_sonar_data_t *data, WriteLogDevice* device);
 
   // Write position3d data to file
   private: void WritePosition3d(player_position3d_data_t *data);
@@ -365,45 +364,26 @@ int WriteLog::Setup()
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
     }
-#if 0
+
     if (device->addr.interf == PLAYER_SONAR_CODE)
     {
       // We need to cache the sonar geometry
-      unsigned short reptype;
-      size_t replen = sizeof(device->sonar_geom);
-      reptype=device->device->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, 
-            device->id, 0, (uint8_t *)&(device->sonar_geom), (uint8_t *)&(device->sonar_geom), &replen);
-/*      device->sonar_geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-      if((device->device->Request(device->id,(void*)this,
-                                  (void*)&(device->sonar_geom),
-                                  sizeof(device->sonar_geom.subtype),
-                                  (struct timeval*)NULL,
-                                  &reptype,
-                                  (void*)&(device->sonar_geom),
-                                  sizeof(device->sonar_geom),
-                                  (struct timeval*)NULL) < 0) ||*/
-      if (reptype != PLAYER_MSGTYPE_RESP_ACK)
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_SONAR_REQ_GET_GEOM,
+                                         NULL, 0, NULL)))
       {
         // oh well.
         PLAYER_WARN("unable to get sonar geometry");
-        device->sonar_geom.pose_count = 0;
+        device->sonar_geom.poses_count = 0;
       }
       else
       {
-        // byteswap
-        device->sonar_geom.pose_count = ntohs(device->sonar_geom.pose_count);
-        for(int j=0; j<device->sonar_geom.pose_count; j++)
-        {
-          device->sonar_geom.poses[j][0] = 
-                  (int16_t)ntohs(device->sonar_geom.poses[j][0]);
-          device->sonar_geom.poses[j][1] = 
-                  (int16_t)ntohs(device->sonar_geom.poses[j][1]);
-          device->sonar_geom.poses[j][2] = 
-                  (int16_t)ntohs(device->sonar_geom.poses[j][2]);
-        }
+        // cache it
+        device->sonar_geom = *((player_sonar_geom_t*)msg->GetPayload());
       }
     }
-#endif
   }
 
   if(this->OpenFile() < 0)
@@ -480,14 +460,18 @@ WriteLog::CloseFile()
 int 
 WriteLog::ProcessMessage(MessageQueue * resp_queue, 
                          player_msghdr * hdr, 
-                         void * data, 
-                         void ** resp_data, 
-                         size_t * resp_len)
+                         void * data)
 {
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                            PLAYER_LOG_REQ_SET_WRITE_STATE, 
                            this->device_addr))
   {
+    if(hdr->size != sizeof(player_log_set_write_state_t))
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, sizeof(player_log_set_write_state_t));
+      return(-1);
+    }
     player_log_set_write_state_t* sreq = (player_log_set_write_state_t*)data;
 		
     if(sreq->state)
@@ -500,15 +484,23 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
       puts("WriteLog: stop logging");
       this->enable = false;
     }
-    *resp_data = calloc(1,sizeof(player_log_set_write_state_t));
-    assert(*resp_data);
-    memcpy(*resp_data,sreq,sizeof(player_log_set_write_state_t));
-    *resp_len = sizeof(player_log_set_write_state_t);
-    return PLAYER_MSGTYPE_RESP_ACK;
+    
+    // send an empty ACK
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LOG_REQ_SET_WRITE_STATE);
+    return(0);
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                                 PLAYER_LOG_REQ_GET_STATE, this->device_addr))
   {
+    if(hdr->size != 0)
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, 0);
+      return(-1);
+    }
+
     player_log_get_state_t greq;
     
     greq.type = PLAYER_LOG_TYPE_WRITE;
@@ -517,22 +509,28 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
     else
       greq.state = 0;
 
-    *resp_data = calloc(1,sizeof(player_log_get_state_t));
-    assert(*resp_data);
-    memcpy(*resp_data,&greq,sizeof(player_log_get_state_t));
-    *resp_len = sizeof(player_log_get_state_t);
-    return PLAYER_MSGTYPE_RESP_ACK;
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LOG_REQ_GET_STATE,
+                  (void*)&greq, sizeof(greq), NULL);
+    return(0);
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                                 PLAYER_LOG_REQ_SET_FILENAME, this->device_addr))
   {
+    if(hdr->size < sizeof(uint32_t))
+    {
+      PLAYER_ERROR2("request is wrong length (%d < %d); ignoring",
+                    hdr->size, sizeof(uint32_t));
+      return(-1);
+    }
     player_log_set_filename_t* freq = (player_log_set_filename_t*)data;
-    *resp_len = 0;
 
     if(this->enable)
     {
       PLAYER_WARN("tried to switch filenames while logging");
-      return PLAYER_MSGTYPE_RESP_NACK;
+      return(-1);
     }
 
     PLAYER_MSG1(1,"Closing logfile %s", this->filename);
@@ -545,21 +543,18 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
     if(this->OpenFile() < 0)
     {
       PLAYER_WARN1("Failed to open logfile %s", this->filename);
-      return PLAYER_MSGTYPE_RESP_NACK;
+      return(-1);
     }
 
-    *resp_data = calloc(1,sizeof(player_log_set_filename_t));
-    assert(*resp_data);
-    memcpy(*resp_data,freq,sizeof(player_log_set_filename_t));
-    *resp_len = sizeof(player_log_set_filename_t);
-    return PLAYER_MSGTYPE_RESP_ACK;
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_LOG_REQ_SET_FILENAME);
+    return(0);
   }
   else if(hdr->type == PLAYER_MSGTYPE_DATA)
   {
-    *resp_len = 0;
     // If logging is stopped, then don't log
     if(!this->enable)
-      return 0;
+      return(0);
 
     // Walk the device list
     for (int i = 0; i < this->device_count; i++)
@@ -575,132 +570,12 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
 
       // Write data to file
       this->Write(device, hdr, data);
-      return 0;
+      return(0);
     }
-    return -1;
-  }    	
-  return -1;
-}
-
-////////////////////////////////////////////////////////////////////////////
-// Process configuration requests
-/*int WriteLog::PutConfig(player_device_id_t id, void *client, 
-                        void* src, size_t len,
-                        struct timeval* timestamp)
-{
-  player_log_set_write_state_t sreq;
-  player_log_get_state_t greq;
-  player_log_set_filename_t freq;
-  uint8_t subtype;
-
-  if(len < sizeof(sreq.subtype))
-  {
-    PLAYER_WARN2("request was too small (%d < %d)",
-                  len, sizeof(sreq.subtype));
-    if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
+    return(-1);
   }
-
-  subtype = ((player_log_set_write_state_t*)src)->subtype;
-  switch(subtype)
-  {
-    case PLAYER_LOG_SET_WRITE_STATE_REQ:
-      if(len != sizeof(sreq))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      sreq = *((player_log_set_write_state_t*)src);
-      if(sreq.state)
-      {
-        puts("WriteLog: start logging");
-        this->enable = true;
-      }
-      else
-      {
-        puts("WriteLog: stop logging");
-        this->enable = false;
-      }
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    case PLAYER_LOG_GET_STATE_REQ:
-      if(len != sizeof(greq.subtype))
-      {
-        PLAYER_WARN2("request wrong size (%d != %d)", 
-                     len, sizeof(greq.subtype));
-        if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      greq = *((player_log_get_state_t*)src);
-      greq.type = PLAYER_LOG_TYPE_WRITE;
-      if(this->enable)
-        greq.state = 1;
-      else
-        greq.state = 0;
-
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,
-                        &greq, sizeof(greq),NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    case PLAYER_LOG_SET_FILENAME:
-      if(len < (sizeof(freq.subtype)+1))
-      {
-        PLAYER_WARN("request to change filename too short");
-        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      if(len > sizeof(freq))
-      {
-        PLAYER_WARN("request to change filename too long");
-        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      // can't switch filenames while logging
-      if(this->enable)
-      {
-        PLAYER_WARN("tried to switch filenames while logging");
-        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      freq = *((player_log_set_filename_t*)src);
-      PLAYER_MSG1(1,"Closing logfile %s", this->filename);
-      this->CloseFile();
-      strncpy(this->filename,
-              (const char*)freq.filename,
-              len-sizeof(freq.subtype));
-      this->filename[sizeof(this->filename)-1] = '\0';
-      PLAYER_MSG1(1,"Opening logfile %s", this->filename);
-      if(this->OpenFile() < 0)
-      {
-        PLAYER_WARN1("Failed to open logfile %s", this->filename);
-        if(this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      }
-      if(this->PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    default:
-      PLAYER_WARN1("got request of unknown subtype %u", subtype);
-      if (this->PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-  }
-
-  return 0;
+  return(-1);
 }
-*/
-
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
@@ -754,6 +629,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_POSITION2D_CODE:
       retval = this->WritePosition(hdr, (player_position2d_data_t*) data);
       break;
+    case PLAYER_SONAR_CODE:
+      retval = this->WriteSonar(hdr, (player_sonar_data_t*) data, device);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
@@ -771,9 +649,6 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_JOYSTICK_CODE:
       this->WriteJoystick((player_joystick_data_t*) data);
-      break;
-    case PLAYER_SONAR_CODE:
-      this->WriteSonar((player_sonar_data_t*) data, device);
       break;
     case PLAYER_POSITION3D_CODE:
       this->WritePosition3d((player_position3d_data_t*) data);
@@ -888,6 +763,52 @@ WriteLog::WritePosition(player_msghdr_t* hdr,
   }
 }
 
+/** @defgroup player_driver_writelog_sonar Sonar format
+ 
+@brief @ref player_interface_sonar format 
+
+The format for each @ref player_interface_sonar message is:
+  - pose_count (int): number of sonar poses to follow
+  - list of tranducer poses; for each pose:
+    - x (float): relative X position of transducer, in meters
+    - y (float): relative Y position of transducer, in meters
+    - a (float): relative yaw orientation of transducer, in radians
+  - range_count (int): number range values to follow
+  - list of readings; for each reading:
+    - range (float): in meters
+*/
+int 
+WriteLog::WriteSonar(player_msghdr_t* hdr,
+                     player_sonar_data_t *data, 
+                     WriteLogDevice* device)
+{
+  unsigned int i;
+
+  // Check the subtype
+  switch(hdr->subtype)
+  {
+    case PLAYER_SONAR_DATA_RANGES:
+      // Note that, in this format, we need a lot of precision in the
+      // resolution field.
+
+      // Format:
+      //   pose_count x0 y0 a0 x1 y1 a1 ...  range_count r0 r1 ...
+      fprintf(this->file, "%u ", device->sonar_geom.poses_count);
+      for(i=0;i<device->sonar_geom.poses_count;i++)
+        fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
+                device->sonar_geom.poses[i].px,
+                device->sonar_geom.poses[i].py,
+                device->sonar_geom.poses[i].pa);
+
+      fprintf(this->file, "%u ", data->ranges_count);
+      for(i=0;i<data->ranges_count;i++)
+        fprintf(this->file, "%.3f ", data->ranges[i]);
+
+      return(0);
+    default:
+      return(-1);
+  }
+}
 
 #if 0
 /** @defgroup player_driver_writelog_blobfinder Blobfinder format
@@ -1133,44 +1054,6 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
   return;
 }
 
-
-
-/** @defgroup player_driver_writelog_sonar Sonar format
- 
-@brief @ref player_interface_sonar format 
-
-The format for each @ref player_interface_sonar message is:
-  - pose_count (int): number of sonar poses to follow
-  - list of tranducer poses; for each pose:
-    - x (float): relative X position of transducer, in meters
-    - y (float): relative Y position of transducer, in meters
-    - a (float): relative yaw orientation of transducer, in radians
-  - range_count (int): number range values to follow
-  - list of readings; for each reading:
-    - range (float): in meters
-*/
-void WriteLog::WriteSonar(player_sonar_data_t *data, WriteLogDevice* device)
-{
-  unsigned int i;
-
-  // Note that, in this format, we need a lot of precision in the
-  // resolution field.
-
-  // Format:
-  //   pose_count x0 y0 a0 x1 y1 a1 ...  range_count r0 r1 ...
-  fprintf(this->file, "%u ", device->sonar_geom.pose_count);
-  for(i=0;i<device->sonar_geom.pose_count;i++)
-    fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
-            MM_M(device->sonar_geom.poses[i][0]),
-            MM_M(device->sonar_geom.poses[i][1]),
-            DEG_RAD(device->sonar_geom.poses[i][2]));
-
-  fprintf(this->file, "%u ", HUINT16(data->range_count));
-  for(i=0;i<HUINT16(data->range_count);i++)
-    fprintf(this->file, "%.3f ", MM_M(HUINT16(data->ranges[i])));
-
-  return;
-}
 
 
 /** @defgroup player_driver_writelog_position3d Position3d format

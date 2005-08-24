@@ -379,11 +379,12 @@ PlayerTCP::WriteClient(int cli)
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message is a safe upper bound
-        if((4 * hdr->size) > (size_t)(client->writebuffersize))
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * hdr->size);
+        if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
           client->writebuffersize = MAX((size_t)(client->writebuffersize * 2), 
-                                        4*hdr->size);
+                                        maxsize);
           // Did we hit the limit (or overflow and become negative)?
           if((client->writebuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
              (client->writebuffersize < 0))
@@ -401,7 +402,7 @@ PlayerTCP::WriteClient(int cli)
         // Encode the body first
         if((encode_msglen =
             (*packfunc)(client->writebuffer + PLAYERXDR_MSGHDR_SIZE,
-                        client->writebuffersize - PLAYERXDR_MSGHDR_SIZE,
+                        maxsize - PLAYERXDR_MSGHDR_SIZE,
                         payload, PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
@@ -610,7 +611,7 @@ PlayerTCP::ParseBuffer(int cli)
 
 	if((decode_msglen =
 	    (*packfunc)(client->readbuffer + PLAYERXDR_MSGHDR_SIZE,
-			client->readbufferlen - PLAYERXDR_MSGHDR_SIZE,
+			msglen - PLAYERXDR_MSGHDR_SIZE,
                         (void*)this->decode_readbuffer,
                         PLAYERXDR_DECODE)) < 0)
         {

@@ -414,11 +414,6 @@ int playerc_client_request(playerc_client_t *client,
       PLAYERC_ERR("got NACK from request");
       return -2;
     }
-    else if (rep_header.type == PLAYER_MSGTYPE_RESP_ERR)
-    {
-      PLAYERC_ERR("got ERR from request");
-      return -1;
-    }
   }
 
   if (i == 1000)
@@ -780,7 +775,6 @@ int playerc_client_readpacket(playerc_client_t *client,
     total_bytes += bytes;
   }
 
-
   // Locate the appropriate unpacking function for the message body
   if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
                                      header->subtype)))
@@ -817,27 +811,32 @@ int playerc_client_writepacket(playerc_client_t *client,
   int encode_msglen;
   struct timeval curr;
 
-  // Locate the appropriate packing function for the message body
-  if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
-                                     header->subtype)))
+  // Encode the body first, if it's non-NULL
+  if(data)
   {
-    // TODO: Allow the user to register a callback to handle unsupported
-    // messages
-    PLAYERC_ERR3("skipping message to %u:%u with unsupported type %u",
-                 header->addr.interf, header->addr.index, header->subtype);
-    return(-1);
-  }
+    // Locate the appropriate packing function for the message body
+    if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
+                                       header->subtype)))
+    {
+      // TODO: Allow the user to register a callback to handle unsupported
+      // messages
+      PLAYERC_ERR3("skipping message to %u:%u with unsupported type %u",
+                   header->addr.interf, header->addr.index, header->subtype);
+      return(-1);
+    }
 
-  // Encode the body first
-  if((encode_msglen =
-      (*packfunc)(client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
-                  PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
-                  data, PLAYERXDR_ENCODE)) < 0)
-  {
-    PLAYERC_ERR3("encoding failed on message from %u:%u with type %u",
-                 header->addr.interf, header->addr.index, header->subtype);
-    return(-1);
+    if((encode_msglen =
+        (*packfunc)(client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
+                    PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
+                    data, PLAYERXDR_ENCODE)) < 0)
+    {
+      PLAYERC_ERR3("encoding failed on message from %u:%u with type %u",
+                   header->addr.interf, header->addr.index, header->subtype);
+      return(-1);
+    }
   }
+  else
+    encode_msglen = 0;
 
   // Write in the encoded size and current time
   header->size = encode_msglen;
@@ -937,78 +936,23 @@ void *playerc_client_dispatch(playerc_client_t *client,
       device->datatime = header->timestamp;
 
       // Call the registerd handler for this device 
-      (*device->putdata) (device, (char*) header, data);
+      if(device->putmsg)
+      {
+        (*device->putmsg) (device, (char*) header, data);
 
-      // mark as fresh
-      device->fresh = 1;
+        // mark as fresh
+        device->fresh = 1;
 
-      // Call any additional registered callbacks 
-      for (j = 0; j < device->callback_count; j++)
-        (*device->callback[j]) (device->callback_data[j]);
+        // Call any additional registered callbacks 
+        for (j = 0; j < device->callback_count; j++)
+          (*device->callback[j]) (device->callback_data[j]);
 
-      return device->id;
-    }
-  }
-  return NULL;
-}
-
-#if 0
-// Dispatch a packet
-void *playerc_client_dispatch_geom(playerc_client_t *client, player_msghdr_t *header,
-                              void *data, int len)
-{
-  int i;
-  playerc_device_t *device;
-
-  // Look for a device proxy to handle this data 
-  for (i = 0; i < client->device_count; i++)
-  {
-    device = client->device[i];
-        
-    if (device->addr.interf == header->addr.interf && 
-        device->addr.index == header->addr.index)
-    {
-      // Call the registerd handler for this device 
-      if (device->putgeom)
-	      (*device->putgeom) (device, (char*) header, data, len);
+        return device->id;
+      }
       else
-	    PLAYERC_WARN2("No Geom Message Handler for device %d:%d\n",
-                          device->addr.interf, device->addr.index);
-
-      // mark as fresh
-      device->freshgeom = 1;
-
-      return device->id;
+        return NULL;
     }
   }
   return NULL;
 }
 
-// Dispatch a packet
-void *playerc_client_dispatch_config(playerc_client_t *client, player_msghdr_t *header,
-                              void *data, int len)
-{
-  int i;
-  playerc_device_t *device;
-
-  // Look for a device proxy to handle this data 
-  for (i = 0; i < client->device_count; i++)
-  {
-    device = client->device[i];
-        
-    if (device->addr.interf == header->addr.interf && 
-        device->addr.index == header->addr.index)
-    {
-      // Call the registerd handler for this device 
-      if (device->putconfig)
-	      (*device->putconfig) (device, (char*) header, data, len);
-
-      // mark as fresh
-      device->freshconfig = 1;
-
-      return device->id;
-    }
-  }
-  return NULL;
-}
-#endif

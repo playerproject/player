@@ -82,9 +82,7 @@ class AdaptiveMCL : public Driver
   // MessageHandler
   public: virtual int ProcessMessage(MessageQueue * resp_queue, 
                                      player_msghdr * hdr, 
-                                     void * data, 
-                                     void ** resp_data, 
-                                     size_t * resp_len);
+                                     void * data);
 
   // Check for updated sensor data
   public: virtual void Update(void);

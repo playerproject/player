@@ -139,9 +139,7 @@ class MapFile : public Driver
     // MessageHandler
     int ProcessMessage(MessageQueue * resp_queue, 
 		       player_msghdr * hdr, 
-		       void * data, 
-		       void ** resp_data, 
-		       size_t * resp_len);
+		       void * data);
 
 };
 
@@ -272,9 +270,7 @@ MapFile::Shutdown()
 // Process an incoming message
 int MapFile::ProcessMessage(MessageQueue * resp_queue, 
                             player_msghdr * hdr, 
-                            void * data, 
-                            void ** resp_data, 
-                            size_t * resp_len)
+                            void * data)
 {
   // Is it a request for map meta-data?
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
@@ -284,22 +280,21 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     {
       PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
                     hdr->size, sizeof(player_laser_config_t));
-      return(PLAYER_MSGTYPE_RESP_NACK);
+      return(-1);
     }
     player_map_info_t info;
     info.scale = this->resolution;
     info.width = this->size_x;
     info.height = this->size_y;
 
-    *resp_len = sizeof(player_map_info_t);
-    *resp_data = (void*)calloc(1,sizeof(player_map_info_t));
-    assert(*resp_data);
-    memcpy(*resp_data, &info, sizeof(player_map_info_t));
-    return(PLAYER_MSGTYPE_RESP_ACK);
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_MAP_REQ_GET_INFO,
+                  (void*)&info, sizeof(info), NULL);
+    return(0);
   }
-  
   // Is it a request for a map tile?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                            PLAYER_MAP_REQ_GET_DATA,
                            this->device_addr))
   {
@@ -308,9 +303,8 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     // Can't declare a map tile on the stack (it's too big)
     size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
                       (mapreq->width * mapreq->height));
-    *resp_data = (void*)calloc(1,mapsize);
-    assert(*resp_data);
-    player_map_data_t* mapresp = (player_map_data_t*)(*resp_data);
+    player_map_data_t* mapresp = (player_map_data_t*)calloc(1,mapsize);
+    assert(mapresp);
     
     int i, j;
     int oi, oj, si, sj;
@@ -356,9 +350,12 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     // recompute size, in case the tile got truncated
     mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
                (mapresp->width * mapresp->height));
-    *resp_data = realloc(*resp_data, mapsize);
-    *resp_len = mapsize;
-    return(PLAYER_MSGTYPE_RESP_ACK);
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_MAP_REQ_GET_DATA,
+                  (void*)mapresp, mapsize, NULL);
+    free(mapresp);
+    return(0);
   }
   return(-1);
 }

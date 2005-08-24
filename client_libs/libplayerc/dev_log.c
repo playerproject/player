@@ -61,7 +61,7 @@ playerc_log_t *playerc_log_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_log_t));
   memset(device, 0, sizeof(playerc_log_t));
   playerc_device_init(&device->info, client, PLAYER_LOG_CODE, index,
-                      (playerc_putdata_fn_t) NULL,NULL,NULL);
+                      (playerc_putmsg_fn_t) NULL);
     
   return device;
 }
@@ -94,7 +94,7 @@ int playerc_log_get_state(playerc_log_t* device)
   if(playerc_client_request(device->info.client, 
                             &device->info,
                             PLAYER_LOG_REQ_GET_STATE,
-                            &req, &req, sizeof(req)) < 0)
+                            NULL, &req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to get logging/playback state");
     return(-1);
@@ -127,12 +127,11 @@ int playerc_log_set_read_state(playerc_log_t* device, int state)
 {
   player_log_set_read_state_t req;
 
-//  req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
   req.state = (uint8_t)state;
 
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_READ_STATE,
-                            &req, &req, sizeof(req)) < 0)
+                            &req, NULL, 0) < 0)
   {
     PLAYERC_ERR("failed to start/stop data playback");
     return(-1);
@@ -143,11 +142,9 @@ int playerc_log_set_read_state(playerc_log_t* device, int state)
 // Rewind playback
 int playerc_log_set_read_rewind(playerc_log_t* device)
 {
-  player_log_set_read_rewind_t req;
-
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_READ_REWIND,
-                            &req, &req, sizeof(req)) < 0)
+                            NULL, NULL, 0) < 0)
   {
     PLAYERC_ERR("failed to rewind data playback");
     return(-1);
@@ -169,7 +166,7 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
 
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_FILENAME,
-                            &req, &req, sizeof(req)) < 0)
+                            &req, NULL, 0) < 0)
   {
     PLAYERC_ERR("failed to set logfile name");
     return(-1);

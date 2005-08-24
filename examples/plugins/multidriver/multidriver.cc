@@ -59,9 +59,7 @@ class MultiDriver : public Driver
     virtual int Shutdown();
     virtual int ProcessMessage(MessageQueue * resp_queue, 
                                player_msghdr * hdr, 
-                               void * data, 
-                               void ** resp_data, 
-                               size_t * resp_len);
+                               void * data);
 
   private:
     // Main function for device thread.
@@ -247,12 +245,8 @@ void MultiDriver::Main()
 
 int MultiDriver::ProcessMessage(MessageQueue * resp_queue, 
                                 player_msghdr * hdr, 
-                                void * data, 
-                                void ** resp_data, 
-                                size_t * resp_len)
+                                void * data)
 {
-  *resp_len = 0;
-
   // Handle new data from the laser
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
                            this->laser_addr))

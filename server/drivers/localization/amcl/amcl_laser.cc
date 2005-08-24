@@ -138,9 +138,9 @@ int AMCLLaser::Setup(void)
       {
         geom = (player_laser_geom_t*)msg->GetPayload();
         // Set the laser pose relative to the robot
-        this->laser_pose.v[0] = geom->pose[0];
-        this->laser_pose.v[1] = geom->pose[1];
-        this->laser_pose.v[2] = geom->pose[2];
+        this->laser_pose.v[0] = geom->pose.px;
+        this->laser_pose.v[1] = geom->pose.py;
+        this->laser_pose.v[2] = geom->pose.pa;
 
         delete msg;
         break;

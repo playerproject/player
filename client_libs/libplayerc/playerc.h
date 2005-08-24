@@ -197,7 +197,7 @@ proxies are initialized.
 */
 
 /** @brief Typedef for proxy callback function */
-typedef void (*playerc_putdata_fn_t) (void *device, char *header, char *data);
+typedef void (*playerc_putmsg_fn_t) (void *device, char *header, char *data);
 
 /** @brief Typedef for proxy callback function */
 typedef void (*playerc_callback_fn_t) (void *data);
@@ -491,12 +491,8 @@ typedef struct _playerc_device_t
       set it to 0 after using the data. */
   int freshconfig;
 
-  /**  Standard callbacks for this device.  @internal */
-  playerc_putdata_fn_t putdata;
-  /**  Standard callbacks for this device.  @internal */
-  playerc_putdata_fn_t putgeom;
-  /**  Standard callbacks for this device.  @internal */
-  playerc_putdata_fn_t putconfig;
+  /**  Standard message callback for this device.  @internal */
+  playerc_putmsg_fn_t putmsg;
 
   /** Extra user data for this device. @internal */
   void *user_data;
@@ -511,9 +507,7 @@ typedef struct _playerc_device_t
 
 /** @brief Initialise the device. Additional callbacks for geom and config @internal */
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
-                         int code, int index, playerc_putdata_fn_t putdata,
-			             playerc_putdata_fn_t putgeom,
-			             playerc_putdata_fn_t putconfig);
+                         int code, int index, playerc_putmsg_fn_t putmsg);
 
 /** @brief Finalize the device. @internal */
 void playerc_device_term(playerc_device_t *device);
@@ -999,8 +993,11 @@ typedef struct
   /** Start bearing of the scan (radians). */
   double scan_start;
 
-  /** Angular resolution of the scan (radians). */
-  double scan_res;
+  /** Angular resolution in radians. */
+  unsigned char scan_res;
+
+  /** Range resolution, in m. */
+  unsigned char range_res;
 
   /** Raw range data; range (m). */
   double ranges[PLAYERC_LASER_MAX_SAMPLES];
@@ -1031,24 +1028,10 @@ int playerc_laser_subscribe(playerc_laser_t *device, int access);
 /** @brief Un-subscribe from the laser device. */
 int playerc_laser_unsubscribe(playerc_laser_t *device);
 
-/** @brief @internal Parse data from incoming packet
-    
-@todo This modifies the the data packet, which is BAD; change to const
-pointer for all putdata functions and fix.
-
-*/
-void playerc_laser_putdata(playerc_laser_t *device, 
+/** @brief @internal Parse data from incoming packet */
+void playerc_laser_putmsg(playerc_laser_t *device, 
                            player_msghdr_t *header,
                            void *data);
-
-
-#if 0
-void playerc_laser_putgeom(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_geom_t *data, size_t len);
-
-
-void playerc_laser_putconfig(playerc_laser_t *device, player_msghdr_t *header,
-                           player_laser_config_t *data, size_t len);
 
 /** @brief Configure the laser.
 
@@ -1070,7 +1053,9 @@ playerc_error_str() to get a descriptive error message.
 */
 int playerc_laser_set_config(playerc_laser_t *device,
                              double min_angle, double max_angle,
-                             int resolution, int range_res, int intensity);
+                             unsigned char resolution, 
+                             unsigned char range_res, 
+                             unsigned char intensity);
 
 /** @brief Get the laser configuration.
 
@@ -1091,8 +1076,11 @@ playerc_error_str() to get a descriptive error message.
 
 */
 int playerc_laser_get_config(playerc_laser_t *device,
-                             double *min_angle, double *max_angle,
-                             int *resolution, int *range_res, int *intensity);
+                             double *min_angle, 
+                             double *max_angle,
+                             unsigned char *resolution, 
+                             unsigned char *range_res, 
+                             unsigned char *intensity);
 
 /** @brief Get the laser geometry.
 
@@ -1104,6 +1092,8 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 
 /** @} */
 /**************************************************************************/
+
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_localize localize

@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# TODO:
-#  - Handle multi-dimensional arrays (e.g., player_sonar_geom_t::poses)
-
-
 import re
 import string
 import sys
@@ -127,6 +123,8 @@ if __name__ == '__main__':
                          typename + '* msg, int op)\n{\n')
         sourcefile.write('  XDR xdrs;\n')
         sourcefile.write('  int len;\n')
+        sourcefile.write('  if(!buflen)\n')
+        sourcefile.write('    return(0);\n')
         sourcefile.write('  xdrmem_create(&xdrs, buf, buflen, op);\n')
 
       varlist = []

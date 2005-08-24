@@ -120,9 +120,7 @@ class LaserCSpace : public Driver
     // MessageHandler
   public: int ProcessMessage(MessageQueue * resp_queue, 
                               player_msghdr * hdr, 
-                              void * data, 
-                              void ** resp_data, 
-                              size_t * resp_len);
+                              void * data);
 
   // Setup/shutdown routines.
   public: virtual int Setup();
@@ -246,12 +244,8 @@ int LaserCSpace::Shutdown()
 // Process an incoming message
 int LaserCSpace::ProcessMessage(MessageQueue * resp_queue, 
                                 player_msghdr * hdr, 
-                                void * data, 
-                                void ** resp_data, 
-                                size_t * resp_len)
+                                void * data)
 {
-  *resp_len = 0;
-
   // Handle new data from the laser
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
                            this->laser_addr))
@@ -261,10 +255,8 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
     this->UpdateLaser(l_data);
     return(0);
   }
-
-  // Forward geometry request to the laser
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM,
-                           this->device_addr))
+  // Forward any request to the laser
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
   {
     // Forward the message
     laser_device->PutMsg(this->InQueue, hdr, data);
@@ -276,24 +268,23 @@ int LaserCSpace::ProcessMessage(MessageQueue * resp_queue,
                              this->laser_addr.interf,
                              this->laser_addr.index,
                              -1,
-                             PLAYER_LASER_REQ_GET_GEOM);
+                             hdr->subtype);
     // No response now; it will come later after we hear back from the
     // laser
     return(0);
   }
-
-  // Forward geometry response (success or failure) from the laser
-  if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK,
-                            PLAYER_LASER_REQ_GET_GEOM, this->laser_addr)) ||
+  // Forward response (success or failure) from the laser
+  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 
+                            -1, this->laser_addr)) ||
      (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
-                            PLAYER_LASER_REQ_GET_GEOM, this->laser_addr)))
+                            -1, this->laser_addr)))
   {
     // Copy in our address and forward the response
     hdr->addr = this->device_addr;
     this->Publish(this->ret_queue, hdr, data);
     // Clear the filter
     this->InQueue->ClearFilter();
-    // No response to send; we just sent it ourselves
+
     return(0);
   }
 

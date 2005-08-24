@@ -164,9 +164,7 @@ class SickLMS200 : public Driver
     // MessageHandler
     int ProcessMessage(MessageQueue * resp_queue, 
 		       player_msghdr * hdr, 
-		       void * data, 
-		       void ** resp_data, 
-		       size_t * resp_len);
+		       void * data);
   private:
 
     // Main function for device thread.
@@ -489,13 +487,10 @@ int SickLMS200::Shutdown()
 
 
 int 
-SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
-                           void * data, void ** resp_data,
-                           size_t * resp_len)
+SickLMS200::ProcessMessage(MessageQueue * resp_queue, 
+                           player_msghdr * hdr,
+                           void * data)
 {
-  int retval = 0;
-  *resp_len = 0;
-
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                            PLAYER_LASER_REQ_SET_CONFIG, 
                            this->device_addr))
@@ -504,10 +499,11 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     {
       PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
                     hdr->size, sizeof(player_laser_config_t));
-      return(PLAYER_MSGTYPE_RESP_NACK);
+      return(-1);
     }
 
-    player_laser_config_t * config = reinterpret_cast<player_laser_config_t *> (data);
+    player_laser_config_t * config = 
+            reinterpret_cast<player_laser_config_t *> (data);
     this->intensity = config->intensity;
     this->scan_res = config->resolution;
     this->min_angle = (int)rint(config->min_angle * 1e2);
@@ -517,38 +513,37 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     if(this->CheckScanConfig() != 0)
     {
       PLAYER_ERROR("invalid laser configuration requested");
-      return(PLAYER_MSGTYPE_RESP_NACK);
+      return(-1);
     }
     if (SetLaserMode() != 0)
     {
       PLAYER_ERROR("request for config mode failed");
-      return(PLAYER_MSGTYPE_RESP_NACK);
+      return(-1);
     }
     if (SetLaserRes(this->scan_width, this->scan_res) != 0)
     {
       PLAYER_ERROR("failed setting resolution");
-      retval = PLAYER_MSGTYPE_RESP_NACK;
+      return(-1);
     }
     else if(SetLaserConfig(this->intensity) != 0)
     {
       PLAYER_ERROR("failed setting intensity");          
-      retval = PLAYER_MSGTYPE_RESP_NACK;
+      return(-1);
     }
 
     // Issue a new request for data
     if (RequestLaserData(this->scan_min_segment, this->scan_max_segment))
       PLAYER_ERROR("request for laser data failed");
 
-    if(!retval)
-    {
-      *resp_len = sizeof(config);
-      *resp_data = (void*)calloc(1,sizeof(config));
-      assert(*resp_data);
-      memcpy(*resp_data, config, sizeof(player_laser_config_t));
-      return(PLAYER_MSGTYPE_RESP_ACK);
-    }
-    else
-      return(retval);
+    // Configuration succeeded; send the new config back in the ACK
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LASER_REQ_SET_CONFIG,
+                  data, hdr->size, NULL);
+
+    // Return 0 to say that we handled this message
+    return(0);
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_LASER_REQ_GET_CONFIG,
@@ -558,7 +553,7 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     {
       PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
                     hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
+      return(-1);
     }
     player_laser_config_t config;
     config.intensity = this->intensity;
@@ -567,11 +562,12 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     config.max_angle = (short) this->max_angle;
     config.range_res = this->range_res;
 
-    *resp_len = sizeof(player_laser_config_t);
-    *resp_data = (void*)calloc(1,sizeof(player_laser_config_t));
-    assert(*resp_data);
-    memcpy(*resp_data, &config, sizeof(player_laser_config_t));
-    return(PLAYER_MSGTYPE_RESP_ACK);
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LASER_REQ_GET_CONFIG,
+                  (void*)&config, sizeof(config), NULL);
+    return(0);
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_LASER_REQ_GET_GEOM,
@@ -584,17 +580,18 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
       return(PLAYER_MSGTYPE_RESP_NACK);
     }
     player_laser_geom_t geom;
-    geom.pose[0] = (short) (this->pose[0] * 1000);
-    geom.pose[1] = (short) (this->pose[1] * 1000);
-    geom.pose[2] = (short) (this->pose[2] * 180/M_PI);
-    geom.size[0] = (short) (this->size[0] * 1000);
-    geom.size[1] = (short) (this->size[1] * 1000);
+    geom.pose.px = this->pose[0];
+    geom.pose.py = this->pose[1];
+    geom.pose.pa = this->pose[2];
+    geom.size.sl = this->size[0];
+    geom.size.sw = this->size[1];
 
-    *resp_len = sizeof(player_laser_geom_t);
-    *resp_data = (void*)calloc(1,sizeof(player_laser_geom_t));
-    assert(*resp_data);
-    memcpy(*resp_data, &geom, sizeof(player_laser_geom_t));
-    return(PLAYER_MSGTYPE_RESP_ACK);
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LASER_REQ_GET_GEOM,
+                  (void*)&geom, sizeof(geom), NULL);
+    return(0);
   }
 
   // Don't know how to handle this message.
