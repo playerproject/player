@@ -5,6 +5,8 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <libplayercore/playercommon.h>
+
 #include "test.h"
 #include "playerc.h"
 
@@ -57,6 +59,48 @@ int test_position2d(playerc_client_t *client, int index)
       break;
     }
   }
+
+  TEST("moving forward");
+  if(playerc_position2d_set_cmd_vel(device, 0.1, 0.0, 0.0, 1) < 0)
+    FAIL();
+  else
+  {
+    sleep(3);
+    PASS();
+  }
+
+  TEST("moving backward");
+  if(playerc_position2d_set_cmd_vel(device, -0.1, 0.0, 0.0, 1) < 0)
+    FAIL();
+  else
+  {
+    sleep(3);
+    PASS();
+  }
+
+  TEST("turning right");
+  if(playerc_position2d_set_cmd_vel(device, 0.0, 0.0, DTOR(-25.0), 1) < 0)
+    FAIL();
+  else
+  {
+    sleep(3);
+    PASS();
+  }
+
+  TEST("turning left");
+  if(playerc_position2d_set_cmd_vel(device, 0.0, 0.0, DTOR(25.0), 1) < 0)
+    FAIL();
+  else
+  {
+    sleep(3);
+    PASS();
+  }
+
+  TEST("stopping");
+  if(playerc_position2d_set_cmd_vel(device, 0.0, 0.0, 0.0, 1) < 0)
+    FAIL();
+  else
+    PASS();
   
   TEST("unsubscribing");
   if (playerc_position2d_unsubscribe(device) != 0)
