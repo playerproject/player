@@ -110,6 +110,16 @@ int main(int argc, const char *argv[])
         test_laser(client, client->devinfos[i].addr.index);
         break;
 
+      // Position device
+      case PLAYER_POSITION2D_CODE:
+        test_position2d(client, client->devinfos[i].addr.index);
+        break;
+
+      // log device
+      case PLAYER_LOG_CODE:
+        test_log(client, client->devinfos[i].addr.index);
+        break;
+
 #if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
@@ -136,11 +146,6 @@ int main(int argc, const char *argv[])
         test_joystick(client, client->devinfos[i].addr.index);
         break;
 
-      // log device
-      case PLAYER_LOG_CODE:
-        test_log(client, client->devinfos[i].addr.index);
-        break;
-
       // Localization device
       case PLAYER_LOCALIZE_CODE:
         test_localize(client, client->devinfos[i].addr.index);
@@ -149,11 +154,6 @@ int main(int argc, const char *argv[])
       // map device
       case PLAYER_MAP_CODE:
         test_map(client, client->devinfos[i].addr.index);
-        break;
-
-      // Position device
-      case PLAYER_POSITION_CODE:
-        test_position(client, client->devinfos[i].addr.index);
         break;
 
       // Position device

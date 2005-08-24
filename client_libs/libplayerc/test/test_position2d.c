@@ -21,7 +21,7 @@ int test_position2d(playerc_client_t *client, int index)
   device = playerc_position2d_create(client, index);
 
   TEST("subscribing (read/write)");
-  if (playerc_position2d_subscribe(device, PLAYER_ALL_MODE) < 0)
+  if (playerc_position2d_subscribe(device, PLAYER_OPEN_MODE) < 0)
   {
     FAIL();
     return -1;

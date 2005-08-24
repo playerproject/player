@@ -1455,106 +1455,10 @@ int playerc_planner_enable(playerc_planner_t *device, int state);
 /** @} */
 /**************************************************************************/
 
+#endif
 
-/***************************************************************************/
-/** @defgroup playerc_proxy_position position 
-
-The position proxy provides an interface to a mobile robot base, such
-as the ActiveMedia Pioneer series.  The proxy supports both
-differential drive robots (which are capable of forward motion and
-rotation) and omni-drive robots (which are capable of forward,
-sideways and rotational motion).
-
-@{
-*/
-
-
-/** @brief Position device data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  /** Robot geometry in robot cs: pose gives the position and
-      orientation, size gives the extent.  These values are filled in
-      by playerc_position_get_geom(). */
-  double pose[3];
-  double size[2];
-  
-  /** Odometric pose (m, m, radians). */
-  double px, py, pa;
-
-  /** Odometric velocity (m, m, radians). */
-  double vx, vy, va;
-  
-  /** Stall flag [0, 1]. */
-  int stall;
-} playerc_position_t;
-
-
-/** @brief Create a position device proxy. */
-playerc_position_t *playerc_position_create(playerc_client_t *client, int index);
-
-/** @brief Destroy a position device proxy. */
-void playerc_position_destroy(playerc_position_t *device);
-
-/** @brief Subscribe to the position device */
-int playerc_position_subscribe(playerc_position_t *device, int access);
-
-/** @brief Un-subscribe from the position device */
-int playerc_position_unsubscribe(playerc_position_t *device);
-
-/** @internal Parse data from incoming packet */
-void playerc_position_putdata(playerc_position_t *device, player_msghdr_t *header,
-                              player_position_data_t *data, size_t len);
-
-
-/** @brief Enable/disable the motors */
-int playerc_position_enable(playerc_position_t *device, int enable);
-
-/** @brief Get the position geometry.
-
-The writes the result into the proxy rather than returning it to the
-caller.
-
-*/
-int playerc_position_get_geom(playerc_position_t *device);
-
-/** @brief Set the target speed.
-
-All speeds are defined in the robot coordinate system.
-
-@param device Pointer to proxy object.
-@param vx Forward speed (m/s).
-@param vy Sideways speed (m/s); this field is used by omni-drive robots only.
-@param va Rotational speed (radians/s).
-@param state Set to 1 to enable motors.
-
-*/
-int playerc_position_set_cmd_vel(playerc_position_t *device,
-                                 double vx, double vy, double va, int state);
-
-/** @brief Set the target pose.
-
-@param device Pointer to proxy object.
-@param gx, gy, ga Target pose in the odometric coordinate system.
-@param state Set to 1 to enable motors.
-
-*/
-int playerc_position_set_cmd_pose(playerc_position_t *device,
-                                  double gx, double gy, double ga, int state);
-
-
-/** @} */
-/**************************************************************************/
-
- 
 /***************************************************************************/
 /** @defgroup playerc_proxy_position2d position2d
-
-@deprecated
-
-@todo Remove position2d
 
 The position2d proxy provides an interface to a mobile robot base,
 such as the ActiveMedia Pioneer series.  The proxy supports both
@@ -1588,9 +1492,9 @@ typedef struct
 
 } playerc_position2d_t;
 
-
 /** Create a position2d device proxy. */
-playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, int index);
+playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, 
+                                                int index);
 
 /** Destroy a position2d device proxy. */
 void playerc_position2d_destroy(playerc_position2d_t *device);
@@ -1620,9 +1524,15 @@ int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                     double gx, double gy, double ga, int state);
 
+/** @brief @internal Parse data from incoming packet */
+void playerc_position2d_putmsg(playerc_position2d_t *device, 
+                               player_msghdr_t *header,
+                               player_position2d_data_t *data, size_t len);
+
 /** @} */
 /**************************************************************************/
 
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_position3d position3d
