@@ -162,8 +162,7 @@ class RFLEX : public Driver
 	
 	// MessageHandler
 	int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
-                               void * data, void** resp_data,
-                               size_t * resp_len);
+                               void * data);
 	
 	bool ThreadAlive;
 };

@@ -61,12 +61,8 @@ Toby Collett
 #include <time.h>
 #include <math.h>
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "clientdata.h"
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 class BumperSafe : public Driver 
 {
@@ -88,8 +84,9 @@ class BumperSafe : public Driver
     int SetupBumper();
     int ShutdownBumper();
 
-    // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    // Message Handler
+	int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+                               void * data);
 
   private:
 
@@ -99,15 +96,15 @@ class BumperSafe : public Driver
     player_bumper_data_t SafeState;
 
     // Position device info
-    Driver *position;
-    player_device_id_t position_id;
+    Device *position;
+    player_devaddr_t position_id;
     int speed,turnrate;
     double position_time;
     bool position_subscribed;
 
     // Bumper device info
-    Driver *bumper;
-    player_device_id_t bumper_id;
+    Device *bumper;
+    player_devaddr_t bumper_id;
     double bumper_time;
     player_bumper_geom_t bumper_geom;
     bool bumper_subscribed;
@@ -135,12 +132,12 @@ int BumperSafe::Setup()
   // Initialise the underlying devices.
   if (this->SetupPosition() != 0)
   {
-  	PLAYER_ERROR2("Bumber safe failed to connect to undelying position device %d:%d\n",position_id.code, position_id.index);
+  	PLAYER_ERROR2("Bumber safe failed to connect to undelying position device %d:%d\n",position_id.interf, position_id.index);
     return -1;
   }
   if (this->SetupBumper() != 0)
   {
-  	PLAYER_ERROR2("Bumber safe failed to connect to undelying bumper device %d:%d\n",bumper_id.code, bumper_id.index);
+  	PLAYER_ERROR2("Bumber safe failed to connect to undelying bumper device %d:%d\n",bumper_id.interf, bumper_id.index);
     return -1;
   }
 
@@ -164,30 +161,21 @@ int BumperSafe::Shutdown() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int BumperSafe::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+                               void * data)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data);
-	assert(resp_len);
-	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
 
 	if (hdr->type==PLAYER_MSGTYPE_SYNCH)
 	{	
-		*resp_len = 0;
 		return 0;
 	}
-	if (hdr->type==PLAYER_MSGTYPE_RESP_ACK)
-	{	
-		*resp_len = 0;
-		return 0;
-	}	
-	
-	if(MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, bumper_id))
-//	if (hdr->type==PLAYER_MSGTYPE_DATA && hdr->device==bumper_id.code && hdr->device_index==bumper_id.index)
+
+	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE, bumper_id))
 	{
 		// we got bumper data, we need to deal with this
-		double time = (double) hdr->timestamp_sec + ((double) hdr->timestamp_usec) * 1e-6;
+		double time = hdr->timestamp;
 
 		Lock();
 		// Dont do anything if this is old data.
@@ -198,22 +186,16 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		CurrentState = *reinterpret_cast<player_bumper_data *> (data);
 
 		unsigned char hash = 0;
-		for (int i = 0; i < CurrentState.bumper_count; ++i)
+		for (unsigned int i = 0; i < CurrentState.bumpers_count; ++i)
 			hash |= CurrentState.bumpers[i] & ~SafeState.bumpers[i];
 			
 		if (hash)
 		{
 			Blocked = true;
 			Unlock();
-			player_position_cmd_t NullCmd = {0};
-			player_msghdr_t NullHdr;
-			NullHdr.stx = PLAYER_STXX;
-			NullHdr.type = PLAYER_MSGTYPE_CMD;
-			NullHdr.subtype = 0;
-			NullHdr.device = PLAYER_POSITION_CODE;
-			NullHdr.device_index = position_id.index;
-			NullHdr.size = sizeof (NullCmd);
-			int ret = position->ProcessMessage(BaseClient, &NullHdr, (unsigned char*)&NullCmd, resp_data, resp_len);
+			player_position2d_cmd_t NullCmd = {0};
+
+    		position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_STATE,&NullCmd,sizeof(NullCmd),NULL);
 		}
 		else
 		{
@@ -224,11 +206,11 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 		return 0;
 	}
 	
-	if (Blocked && MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
+	if (Blocked && Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, device_addr))
 	{
-		assert(hdr->size == sizeof(player_position_power_config_t));
+		assert(hdr->size == sizeof(player_position2d_power_config_t));
 		// if motor is switched on then we reset the 'safe state' so robot can move with a bump panel active
-  		if (((player_position_power_config_t *) data)->value == 1)
+  		if (((player_position2d_power_config_t *) data)->state == 1)
 		{
 			Lock();
 			SafeState = CurrentState;
@@ -238,50 +220,63 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 			cmd.yawspeed = 0;*/
 			Unlock();
 		}
-		*resp_len = 0;
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+		return 0;
 	}
 	
 	// set reply to value so the reply for this message goes straight to the given client
-	if(hdr->device==device_id.code && hdr->device_index==device_id.index && hdr->type == PLAYER_MSGTYPE_REQ)
+	if(Device::MatchDeviceAddress(hdr->addr,device_addr) && hdr->type == PLAYER_MSGTYPE_REQ)
 	{
-//		Lock();
-		hdr->device_index = position_id.index;
-		int ret = position->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
-		hdr->device_index = device_id.index;
-//		Unlock();
-		return ret;
+	    // Forward the message
+	    position->PutMsg(this->InQueue, hdr, data);
+    	// Store the return address for later use
+	    this->ret_queue = resp_queue;
+    	// Set the message filter to look for the response
+	    this->InQueue->SetFilter(this->position_id.host,
+                             this->position_id.robot,
+                             this->position_id.interf,
+                             this->position_id.index,
+                             -1,
+                             hdr->subtype);
+	    // No response now; it will come later after we hear back from the
+    	// laser
+	    return(0);
 	}
+
+	// Forward responses (success or failure) from the position device
+	if(Device::MatchDeviceAddress(hdr->addr,position_id) && 
+		(hdr->type == PLAYER_MSGTYPE_RESP_ACK || hdr->type == PLAYER_MSGTYPE_RESP_NACK))
+	{
+	    // Copy in our address and forward the response
+    	hdr->addr = this->device_addr;
+	    this->Publish(this->ret_queue, hdr, data);
+    	// Clear the filter
+	    this->InQueue->ClearFilter();
+	    // No response to send; we just sent it ourselves
+    	return(0);
+  	}
+
+	// Forward data from the position device
+	if(Device::MatchDeviceAddress(hdr->addr,position_id) && hdr->type == PLAYER_MSGTYPE_DATA)
+	{
+	    // Copy in our address and forward the response
+    	hdr->addr = this->device_addr;
+	    this->Publish(this->ret_queue, hdr, data);
+	    // No response to send; we just sent it ourselves
+    	return(0);
+  	}
 	
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, position_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, device_addr))
 	{
-		assert(hdr->size == sizeof(player_position_geom_t));
-		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION_GEOM, data, sizeof(player_position_geom_t));		
-		*resp_len=0;
-		return 0;
-	}
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, position_id))
-	{
-		assert(hdr->size == sizeof(player_position_data_t));
-		PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, data, sizeof(player_position_data_t));		
-		*resp_len=0;
-		return 0;
-	}
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
-	{
-		assert(hdr->size == sizeof(player_position_cmd_t));
+		assert(hdr->size == sizeof(player_position2d_cmd_t));
 		Lock();
 //		player_position_cmd_t cmd = *reinterpret_cast<player_position_cmd_t *> (data);
 		if (!Blocked)
 		{
 			Unlock();
-			hdr->device_index = position_id.index;
-			int ret = position->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
-			hdr->device_index = device_id.index;
-			return ret;
+    		position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_STATE,data,hdr->size,&hdr->timestamp);
 		}
 		Unlock();
-		*resp_len = 0;
 		return 0;
 	}
 
@@ -293,34 +288,47 @@ int BumperSafe::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
 // Set up the underlying position device.
 int BumperSafe::SetupPosition() 
 {
-	uint8_t DataBuffer[PLAYER_MAX_MESSAGE_SIZE];
-	
-	this->position = SubscribeInternal(this->position_id);
-	if (!this->position)
+	// Subscribe to the laser.
+	if(Device::MatchDeviceAddress(this->position_id, this->device_addr))
+	{
+		PLAYER_ERROR("attempt to subscribe to self");
+		return(-1);
+	}
+	if(!(this->position = deviceTable->GetDevice(this->position_id)))
 	{
 		PLAYER_ERROR("unable to locate suitable position device");
-		return -1;
+		return(-1);
 	}
-  
-  return 0;
+	if(this->position->Subscribe(this->InQueue) != 0)
+	{
+		PLAYER_ERROR("unable to subscribe to position device");
+		return(-1);
+	}
+
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying position device.
 int BumperSafe::ShutdownPosition() 
 {
-  UnsubscribeInternal(position_id);
-  return 0;
+	position->Unsubscribe(InQueue);
+	return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the bumper
-int BumperSafe::SetupBumper() {
-	this->bumper = SubscribeInternal(this->bumper_id);
-	if (!this->bumper)
+int BumperSafe::SetupBumper() 
+{
+	if(!(this->bumper = deviceTable->GetDevice(this->bumper_id)))
 	{
-		PLAYER_ERROR("unable to locate suitable laser device");
-		return -1;
+		PLAYER_ERROR("unable to locate suitable bumper device");
+		return(-1);
+	}
+	if(this->bumper->Subscribe(this->InQueue) != 0)
+	{
+		PLAYER_ERROR("unable to subscribe to bumper device");
+		return(-1);
 	}
 	
 	return 0;
@@ -330,7 +338,7 @@ int BumperSafe::SetupBumper() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the bumper
 int BumperSafe::ShutdownBumper() {
-	UnsubscribeInternal(bumper_id);
+	bumper->Unsubscribe(InQueue);
 	return 0;
 }
 
@@ -338,14 +346,14 @@ int BumperSafe::ShutdownBumper() {
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 BumperSafe::BumperSafe( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   Blocked = false;
 
   this->position = NULL;
   // Must have a position device
-  if (cf->ReadDeviceId(&this->position_id, section, "requires",
-                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  if (cf->ReadDeviceAddr(&this->position_id, section, "requires",
+                       PLAYER_POSITION2D_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
@@ -354,7 +362,7 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
   
   this->bumper = NULL;
   // Must have a bumper device
-  if (cf->ReadDeviceId(&this->bumper_id, section, "requires",
+  if (cf->ReadDeviceAddr(&this->bumper_id, section, "requires",
                        PLAYER_BUMPER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
@@ -364,4 +372,3 @@ BumperSafe::BumperSafe( ConfigFile* cf, int section)
   
   return;
 }
-

@@ -87,12 +87,12 @@ The rflex driver provides the following device interfaces, some of them named:
 - port (string)
   - Default: "/dev/ttyR0"
   - Serial port used to communicate with the robot.
-- mm_length (float)
+- m_length (float)
   - Default: 0.5
-  - Length of the robot in millimeters
-- mm_width (float)
+  - Length of the robot in meters
+- m_width (float)
   - Default: 0.5
-  - Width of the robot in millimeters
+  - Width of the robot in meters
 - odo_distance_conversion (float)
   - Default: 0
   - Odometry conversion. See Note 1.
@@ -241,15 +241,15 @@ in Player's robot coordinate system.
 driver
 (
   name "rflex" 
-  provides ["position:1" "bumper:0" "sonar::sonar:0" "sonar2::sonar:1" "power:0" "ir:0"]
+  provides ["position2d:1" "bumper:0" "sonar::sonar:0" "sonar2::sonar:1" "power:0" "ir:0"]
 
   rflex_serial_port 		"/dev/ttyR0" 
-  mm_length 			500.0
-  mm_width 			500.0 
+  m_length 			0.5
+  m_width 			0.5 
   odo_distance_conversion 	103
   odo_angle_conversion 		35000
-  default_trans_acceleration 	500.0
-  default_rot_acceleration 	10.0
+  default_trans_acceleration 	0.5
+  default_rot_acceleration 		0.017
   rflex_joystick			1
   rflex_joy_pos_ratio		6
   rflex_joy_ang_ratio		-0.01
@@ -269,11 +269,11 @@ driver
   num_sonar_banks 		14
   num_sonars_possible_per_bank	16
   num_sonars_in_bank 		[4 4 4 4 4 4 3 3 3 3 3 3 3 3]
-  # theta (rads), x, y (mm) in robot coordinates (x is forward)
-  mmrad_sonar_poses 	[     3.01069  -247.86122    32.63155     2.74889  -230.96988    95.67086     2.48709  -198.33834   152.19036     2.22529  -152.19036   198.33834     1.96350   -95.67086   230.96988     1.70170   -32.63155   247.86122     1.43990    32.63155   247.86122     1.17810    95.67086   230.96988     0.91630   152.19036   198.33834     0.65450   198.33834   152.19036     0.39270   230.96988    95.67086     0.13090   247.86122    32.63155    -0.13090   247.86122   -32.63155    -0.39270   230.96988   -95.67086    -0.65450   198.33834  -152.19036    -0.91630   152.19036  -198.33834    -1.17810    95.67086  -230.96988    -1.43990    32.63155  -247.86122    -1.70170   -32.63155  -247.86122    -1.96350   -95.67086  -230.96988    -2.22529  -152.19036  -198.33834    -2.48709  -198.33834  -152.19036    -2.74889  -230.96988   -95.67086    -3.01069  -247.86122   -32.63155       4.18879  -130.00000  -225.16660     3.92699  -183.84776  -183.84776     3.66519  -225.16660  -130.00000     3.40339  -251.14071   -67.29295     3.14159  -260.00000     0.00000     2.87979  -251.14071    67.29295     2.61799  -225.16660   130.00000     2.35619  -183.84776   183.84776     2.09440  -130.00000   225.16660     1.83260   -67.29295   251.14071     1.57080     0.00000   260.00000     1.30900    67.29295   251.14071     1.04720   130.00000   225.16660     0.78540   183.84776   183.84776     0.52360   225.16660   130.00000     0.26180   251.14071    67.29295     0.00000   260.00000     0.00000    -0.26180   251.14071   -67.29295    -0.52360   225.16660  -130.00000    -0.78540   183.84776  -183.84776    -1.04720   130.00000  -225.16660    -1.30900    67.29295  -251.14071    -1.57080     0.00000  -260.00000    -1.83260   -67.29295  -251.14071    -2.09440  -130.00000  -225.16660    -2.35619  -183.84776  -183.84776]
+  # theta (rads), x, y (m) in robot coordinates (x is forward)
+  mrad_sonar_poses 	[     3.01069  -0.24786122    0.03263155     2.74889  -0.23096988    0.09567086     2.48709  -0.19833834   0.15219036     2.22529  -0.15219036   0.19833834     1.96350   -0.09567086   0.23096988     1.70170   -0.03263155   0.24786122     1.43990    0.03263155   0.24786122     1.17810    0.09567086   0.23096988     0.91630   0.15219036   0.19833834     0.65450   0.19833834   0.15219036     0.39270   0.23096988    0.09567086     0.13090   0.24786122    0.03263155    -0.13090   0.24786122   -0.03263155    -0.39270   0.23096988   -0.09567086    -0.65450   0.19833834  -0.15219036    -0.91630   0.15219036  -0.19833834    -1.17810    0.09567086  -0.23096988    -1.43990    0.03263155  -0.24786122    -1.70170   -0.03263155  -0.24786122    -1.96350   -0.09567086  -0.23096988    -2.22529  -0.15219036  -0.19833834    -2.48709  -0.19833834  -0.15219036    -2.74889  -0.23096988   -0.09567086    -3.01069  -0.24786122   -0.03263155       4.18879  -0.13000000  -0.22516660     3.92699  -0.18384776  -0.18384776     3.66519  -0.22516660  -0.13000000     3.40339  -0.25114071   -0.06729295     3.14159  -0.26000000     0.00000     2.87979  -0.25114071    0.06729295     2.61799  -0.22516660   0.13000000     2.35619  -0.18384776   0.18384776     2.09440  -0.13000000   0.22516660     1.83260   -0.06729295   0.25114071     1.57080     0.00000   0.26000000     1.30900    0.06729295   0.25114071     1.04720   0.13000000   0.22516660     0.78540   0.18384776   0.18384776     0.52360   0.22516660   0.13000000     0.26180   0.25114071    0.06729295     0.00000   0.26000000     0.00000    -0.26180   0.25114071   -0.06729295    -0.52360   0.22516660  -0.13000000    -0.78540   0.18384776  -0.18384776    -1.04720   0.13000000  -0.22516660    -1.30900    0.06729295  -0.25114071    -1.57080     0.00000  -0.26000000    -1.83260   -0.06729295  -0.25114071    -2.09440  -0.13000000  -0.22516660    -2.35619  -0.18384776  -0.18384776]
   sonar_2nd_bank_start	24
 	
-  rflex_power_offset		12 # deci volts?
+  rflex_power_offset		1.2 # volts
 
   rflex_base_bank 0
   rflex_bank_count 6
@@ -359,15 +359,10 @@ RFLEX_Register(DriverTable *table)
 /////////////////////////////// 
 void PrintHeader(player_msghdr_t hdr);
 int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
-                           void * data, void ** resp_data,
-                           size_t * resp_len)
+                           void * data)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data && *resp_data);
-	assert(resp_len);
-	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-	*resp_len = 0;
 
 	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER, 
                         sonar_id))
@@ -379,7 +374,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		else
 			rflex_sonars_on(rflex_fd);
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(sonar_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER, 
                         sonar_id_2))
@@ -391,7 +387,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		else
 			rflex_sonars_on(rflex_fd);
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(sonar_id_2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, 
                         sonar_id))
@@ -406,9 +403,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 			geom.poses[i] = rflex_configs.mrad_sonar_poses[i];
 		}
 		Unlock();
-		memcpy(resp_data, &geom, sizeof(geom));
-		*resp_len = sizeof(geom);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(sonar_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, 
                         sonar_id_2))
@@ -423,10 +419,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 			geom.poses[i] = rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start];
 		}
 		Unlock();	
-	
-		memcpy(resp_data, &geom, sizeof(geom));
-		*resp_len = sizeof(geom);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(sonar_id_2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM, 
                         bumper_id))
@@ -441,19 +435,15 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 			geom.bumper_def[i] = rflex_configs.bumper_def[i];
 		}
 		Unlock();
-		memcpy(resp_data, &geom, sizeof(geom));
-		*resp_len = sizeof(geom);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(bumper_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
 	{
-		assert(hdr->size == 0);
-
 		Lock();
-		memcpy(resp_data, &rflex_configs.ir_poses, sizeof(rflex_configs.ir_poses));
+		Publish(ir_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &rflex_configs.ir_poses,sizeof(rflex_configs.ir_poses));
 		Unlock();
-		*resp_len = sizeof(rflex_configs.ir_poses);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
 	{
@@ -465,7 +455,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		else
 			rflex_ir_on(rflex_fd);	
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(ir_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, position_id))
 	{
@@ -475,7 +466,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		Lock();
 		set_odometry((long) (1000*set_odom_req->pose.px),(long) (1000*set_odom_req->pose.py),(short) (1000*set_odom_req->pose.pa));	
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_id))
 	{
@@ -487,20 +479,23 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		else
 			rflex_brake_off(rflex_fd);
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_id))
 	{
 		assert(hdr->size == sizeof(player_position2d_velocity_mode_config_t));
 		// Does nothing, needs to be implemented
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM, position_id))
 	{
 		Lock();
 		reset_odometry();
 		Unlock();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_id))
 	{
@@ -514,10 +509,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		geom.size[0] = rflex_configs.m_length;
 		geom.size[1] = rflex_configs.m_width;
 		Unlock();
-
-		memcpy(resp_data, &geom, sizeof(geom));
-		*resp_len = sizeof(geom);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, position_id))
 	{
