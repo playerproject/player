@@ -1752,7 +1752,7 @@ The @p planner interface accepts a new goal. */
 typedef struct player_planner_cmd
 {
   /** Goal location (m,m,rad) */
-  float gx,gy,ga;
+  player_pose_t goal;
 } player_planner_cmd_t;
 
 /** @brief A waypoint */
