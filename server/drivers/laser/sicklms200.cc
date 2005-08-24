@@ -516,19 +516,15 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue,
       return(-1);
     }
     if (SetLaserMode() != 0)
-    {
       PLAYER_ERROR("request for config mode failed");
-      return(-1);
-    }
-    if (SetLaserRes(this->scan_width, this->scan_res) != 0)
+    else
     {
-      PLAYER_ERROR("failed setting resolution");
-      return(-1);
-    }
-    else if(SetLaserConfig(this->intensity) != 0)
-    {
-      PLAYER_ERROR("failed setting intensity");          
-      return(-1);
+      if (SetLaserRes(this->scan_width, this->scan_res) != 0)
+        PLAYER_ERROR("failed setting resolution");
+/*
+      if(SetLaserConfig(this->intensity) != 0)
+        PLAYER_ERROR("failed setting intensity");          
+*/
     }
 
     // Issue a new request for data
