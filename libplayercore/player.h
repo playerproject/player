@@ -2281,9 +2281,6 @@ typedef struct player_position2d_velocity_mode_config
 To reset the robot's odometry
 to @f$(x, y, yaw) = (0,0,0)@f$, use the following request.  The server will
 reply with a zero-length acknowledgement. */
-typedef struct player_position2d_reset_odom_config
-{
-} player_position2d_reset_odom_config_t;
 
 /** @brief Configuration request: Change control mode. */
 typedef struct player_position2d_position_mode_req

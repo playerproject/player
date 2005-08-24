@@ -22,7 +22,7 @@ int test_log(playerc_client_t *client, int index)
   device = playerc_log_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_log_subscribe(device, PLAYER_READ_MODE) != 0)
+  if (playerc_log_subscribe(device, PLAYER_OPEN_MODE) != 0)
   {
     FAIL();
     return -1;

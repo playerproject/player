@@ -68,6 +68,14 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_laser_data_pack},
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE, 
     (player_pack_fn_t)player_laser_data_scanpose_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM, 
+    (player_pack_fn_t)player_laser_geom_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG, 
+    (player_pack_fn_t)player_laser_config_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG, 
+    (player_pack_fn_t)player_laser_config_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_POWER, 
+    (player_pack_fn_t)player_laser_power_config_pack},
 
   /* sonar messages */
   {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_RANGES, 
@@ -80,6 +88,23 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position2d_data_pack},
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, 
     (player_pack_fn_t)player_position2d_cmd_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, 
+    (player_pack_fn_t)player_position2d_geom_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+    (player_pack_fn_t)player_position2d_power_config_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, 
+    (player_pack_fn_t)player_position2d_velocity_mode_config_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_MODE, 
+    (player_pack_fn_t)player_position2d_position_mode_req_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, 
+    (player_pack_fn_t)player_position2d_set_odom_req_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PID, 
+    (player_pack_fn_t)player_position2d_speed_pid_req_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_PID, 
+    (player_pack_fn_t)player_position2d_position_pid_req_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PROF, 
+    (player_pack_fn_t)player_position2d_speed_prof_req_pack},
+
 
   /* log messages */
   {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_WRITE_STATE, 

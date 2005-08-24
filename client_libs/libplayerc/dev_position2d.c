@@ -53,11 +53,9 @@
 #include "error.h"
 
 // Local declarations
-void playerc_position2d_putdata(playerc_position2d_t *device, player_msghdr_t *header,
-                              player_position2d_data_t *data, size_t len);
-void playerc_position2d_putgeom(playerc_position2d_t *device, player_msghdr_t *header,
-                              player_position2d_geom_t *data, size_t len);
-
+void playerc_position2d_putmsg(playerc_position2d_t *device, 
+                               player_msghdr_t *header,
+                               player_position2d_data_t *data, size_t len);
 
 // Create a new position2d proxy
 playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, int index)
@@ -67,8 +65,7 @@ playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, int in
   device = malloc(sizeof(playerc_position2d_t));
   memset(device, 0, sizeof(playerc_position2d_t));
   playerc_device_init(&device->info, client, PLAYER_POSITION2D_CODE, index,
-                      (playerc_putdata_fn_t) playerc_position2d_putdata,
-                      (playerc_putdata_fn_t) playerc_position2d_putgeom,NULL);
+                      (playerc_putmsg_fn_t) playerc_position2d_putmsg);
 
   
   return device;
@@ -100,124 +97,111 @@ int playerc_position2d_unsubscribe(playerc_position2d_t *device)
 
 
 // Process incoming data
-void playerc_position2d_putdata(playerc_position2d_t *device, 
-                  player_msghdr_t *header,
-                              player_position2d_data_t *data, size_t len)
+void playerc_position2d_putmsg(playerc_position2d_t *device, 
+                               player_msghdr_t *header,
+                               player_position2d_data_t *data, size_t len)
 {
-  device->px = (long) ntohl(data->xpos) / 1000.0;
-  device->py = (long) ntohl(data->ypos) / 1000.0;
-  device->pa = (long) ntohl(data->yaw)  / 1000.0;
-
-  device->vx = (long) ntohl(data->xspeed) / 1000.0;
-  device->vy = (long) ntohl(data->yspeed) / 1000.0;
-  device->va = (long) ntohl(data->yawspeed) / 1000.0;
-
-  device->stall = data->stall;
-}
-
-
-// Process incoming geom
-void playerc_position2d_putgeom(playerc_position2d_t *device, 
-                  player_msghdr_t *header,
-                              player_position2d_geom_t *data, size_t len)
-{
-  if (len != sizeof(player_position2d_geom_t))
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_POSITION2D_DATA_STATE))
   {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_position2d_geom_t));
-    return;
+    device->px = data->pos.px;
+    device->py = data->pos.py;
+    device->pa = data->pos.pa;
+
+    device->vx = data->vel.px;
+    device->vy = data->vel.py;
+    device->va = data->vel.pa;
+
+    device->stall = data->stall;
   }
-
-  device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
-  device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0;
-  device->pose[2] = ((int16_t) ntohs(data->pose[2])) / 1000.0;
-  device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0;
-  device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0;
-
+  else
+    PLAYERC_WARN2("skipping position2d message with unknown type/subtype: %d/%d\n",
+                 header->type, header->subtype);
 }
 
 // Enable/disable the motors
-int playerc_position2d_enable(playerc_position2d_t *device, int enable)
+int 
+playerc_position2d_enable(playerc_position2d_t *device, int enable)
 {
   player_position2d_power_config_t config;
 
-  memset(&config, 0, sizeof(config));
-//  config.request = PLAYER_POSITION2D_MOTOR_POWER_REQ;
-  config.value = enable;
+  config.state = enable;
 
-  return playerc_client_request(device->info.client, &device->info, PLAYER_POSITION2D_MOTOR_POWER,
-                                &config, sizeof(config),
-                                &config, sizeof(config));
+  return(playerc_client_request(device->info.client, 
+                                &device->info, 
+                                PLAYER_POSITION2D_REQ_MOTOR_POWER,
+                                &config, NULL, 0));
 }
 
-int playerc_position2d_position_control(playerc_motor_t *device, int type)
+int 
+playerc_position2d_position_control(playerc_position2d_t *device, int type)
 {
   player_position2d_power_config_t config;
 
-  memset(&config, 0, sizeof(config));
-//  config.request = PLAYER_POSITION2D_MOTOR_POWER_REQ;
-  config.value = type;
+  config.state = type;
 
-  return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_POSITION2D_MOTOR_POWER,
-                                &config, sizeof(config),
-                                &config, sizeof(config));
+  return(playerc_client_request(device->info.client, &device->info,
+                                PLAYER_POSITION2D_REQ_VELOCITY_MODE,
+                                &config, NULL, 0));
 }
 
 // Get the position2d geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_position2d_get_geom(playerc_position2d_t *device)
+int 
+playerc_position2d_get_geom(playerc_position2d_t *device)
 {
-  int len;
-  player_position2d_geom_t config;
+  player_position2d_geom_t geom;
 
-  memset(&config, 0, sizeof(config));
-//  config.subtype = PLAYER_POSITION2D_GET_GEOM_REQ;
+  if(playerc_client_request(device->info.client, &device->info,
+                            PLAYER_POSITION2D_REQ_GET_GEOM,
+                            NULL, (void*)&geom, sizeof(geom)) < 0)
+    return(-1);
 
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_POSITION2D_GET_GEOM,
-                               &config, 0, &config, sizeof(config));
-  if (len < 0)
-    return -1;
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
+  device->pose[0] = geom.pose.px;
+  device->pose[1] = geom.pose.py;
+  device->pose[2] = geom.pose.pa;
+  device->size[0] = geom.size.sl;
+  device->size[1] = geom.size.sw;
 
-  return 0;
+  return(0);
 }
 
 
 // Set the robot speed
-int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
-                 double vx, double vy,
-                                 double va, int state)
+int 
+playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
+                               double vx, double vy, double va, int state)
 {
   player_position2d_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  cmd.xspeed = htonl((int) (vx * 1000.0));
-  cmd.yspeed = htonl((int) (vy * 1000.0));
-  cmd.yawspeed = htonl((int) (va * 1000.0));
+  cmd.vel.px = vx;
+  cmd.vel.py = vy;
+  cmd.vel.pa = va;
   cmd.state = state;
   cmd.type = 0;
 
   return playerc_client_write(device->info.client, &device->info,
-                  &cmd, sizeof(cmd));
+                              PLAYER_POSITION2D_CMD_STATE,
+                              &cmd, NULL);
 }
 
-
 // Set the target pose
-int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
-                  double gx, double gy,
-                                  double ga, int state)
+int 
+playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
+                                double gx, double gy, double ga, int state)
 {
   player_position2d_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  cmd.xpos = htonl((int) (gx * 1000.0));
-  cmd.ypos = htonl((int) (gy * 1000.0));
-  cmd.yaw = htonl((int) (ga * 1000.0));
+  cmd.pos.px = gx;
+  cmd.pos.py = gy;
+  cmd.pos.pa = ga;
   cmd.state = state;
   cmd.type = 1;
 
-  return playerc_client_write(device->info.client,
-                  &device->info, &cmd, sizeof(cmd));
+  return playerc_client_write(device->info.client, &device->info, 
+                              PLAYER_POSITION2D_CMD_STATE,
+                              &cmd, NULL);
 }
 

@@ -22,6 +22,12 @@
 // Basic laser test
 extern int test_laser(playerc_client_t *client, int index);
 
+// Basic test for position2d device.
+extern int test_position2d(playerc_client_t *client, int index);
+
+// Basic test for log device.
+int test_log(playerc_client_t *client, int index);
+
 #if 0
 // Basic test for BPS device.i
 extern int test_bps(playerc_client_t *client, int index);
@@ -43,9 +49,6 @@ extern int test_localize(playerc_client_t *client, int index);
 
 // Basic localization test
 int test_localize(playerc_client_t *client, int index);
-
-// Basic test for position device.
-extern int test_position(playerc_client_t *client, int index);
 
 // Basic test for ptz device.
 extern int test_ptz(playerc_client_t *client, int index);
