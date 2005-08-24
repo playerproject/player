@@ -294,9 +294,6 @@ Driver::MainQuit()
 /// a message with no handler is reached
 void Driver::ProcessMessages()
 {
-  void* RespData = NULL;
-  size_t RespLen;
- 
   // If we have subscriptions, then see if we have any pending messages
   // and process them
   Message* msg;
@@ -308,15 +305,8 @@ void Driver::ProcessMessages()
     if (msg->GetPayloadSize() != hdr->size)
       PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",msg->GetSize() - sizeof(player_msghdr),hdr->size);
 
-    int ret = this->ProcessMessage(msg->Queue, hdr, data, &RespData, &RespLen);
-    if(ret > 0)
-    {
-      this->Publish(hdr->addr, msg->Queue, ret, 
-                    hdr->subtype, RespData, RespLen, NULL);
-      if(RespLen)
-        free(RespData);
-    }
-    else if(ret < 0)
+    int ret = this->ProcessMessage(msg->Queue, hdr, data);
+    if(ret < 0)
     {
       PLAYER_WARN5("Unhandled message for driver "
                    "device=%d:%d type=%d subtype=%d len=%d\n",
