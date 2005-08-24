@@ -40,7 +40,6 @@
 #define PLAYER_MSGTYPE_RESP_ACK  4
 #define PLAYER_MSGTYPE_SYNCH     5
 #define PLAYER_MSGTYPE_RESP_NACK 6
-#define PLAYER_MSGTYPE_RESP_ERR  7
 
 /* strings to match the currently assigned devices (used for pretty-printing 
  * and command-line parsing) */
@@ -160,6 +159,13 @@ typedef struct player_pose
   /** X, Y, and yaw (in m,m,rad) */
   float px, py, pa;
 } player_pose_t;
+
+/** @brief A rectangular bounding box, used to define the size of an object */
+typedef struct player_bbox
+{
+  /** width and length (in m,m) */
+  float sw, sl;
+} player_bbox_t;
 
 /** @brief A device address.
 
@@ -1221,9 +1227,9 @@ same format. */
 typedef struct player_laser_geom
 {
   /** Laser pose, in robot cs (m, m, rad). */
-  float pose[3];
+  player_pose_t pose;
   /** Laser dimensions (m, m). */
-  float size[2];
+  player_bbox_t size;
 } player_laser_geom_t;
 
 /** @brief Configuration request: Get/set scan properties.
@@ -1242,13 +1248,13 @@ typedef struct player_laser_config
       @todo What would valid resolutions be?
             Valid resolutions are 25, 50, 100. 
   */
-  uint32_t resolution;
+  uint8_t resolution;
 
   /** Range Resolution.  Valid: 1, 10, 100 (For mm, cm, dm). */
-  uint16_t range_res;
+  uint8_t range_res;
 
   /** Enable reflection intensity data. */
-  uint32_t  intensity;
+  uint8_t  intensity;
   
 } player_laser_config_t;
 
@@ -1297,7 +1303,7 @@ capable of returning more that one hypothesis. */
 typedef struct player_localize_hypoth
 {
   /** The mean value of the pose estimate (m, m, rad). */
-  float mean[3];
+  player_pose_t mean;
   /** The covariance matrix pose estimate (m$^2$, rad$^2$). */
   double cov[3][3];
   /** The weight coefficient for linear combination (alpha) */
@@ -1336,7 +1342,7 @@ typedef struct player_localize_set_pose
 typedef struct player_localize_particle
 {
   /** The particle's pose (m,m,rad) */
-  float pose[3];
+  player_pose_t pose;
   /** The weight coefficient for linear combination (alpha) */
   double alpha;
 } player_localize_particle_t;
@@ -1347,7 +1353,7 @@ typedef struct player_localize_particle
 typedef struct player_localize_get_particles
 {
   /** The best (?) pose (mm, mm, arc-seconds). */
-  float mean[3];
+  player_pose_t mean;
   /** The variance of the best (?) pose (mm^2) */
   double variance;
   /** The number of particles included */
@@ -2218,7 +2224,7 @@ typedef struct player_position2d_geom
   /** Pose of the robot base, in the robot cs (m, m, rad). */
   player_pose_t pose;
   /** Dimensions of the base (m, m). */
-  float size[2];
+  player_bbox_t size;
 } player_position2d_geom_t;
 
 /** @brief Configuratoin request: Motor power.  
