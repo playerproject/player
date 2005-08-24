@@ -108,9 +108,9 @@ class Driver
                          MessageQueue* queue, 
                          uint8_t type, 
                          uint8_t subtype,
-                         void* src, 
-                         size_t len,
-                         double* timestamp);
+                         void* src=NULL, 
+                         size_t len=0,
+                         double* timestamp=NULL);
 
     /// @brief Publish a message via one of this driver's interfaces.
     ///
@@ -264,21 +264,14 @@ class Driver
     ///
     /// This function is called once for each message in the incoming queue.
     /// Reimplement it to provide message handling.
-    /// Return 0 for no response, otherwise with the appropriate
-    /// player message type if a response 
-    /// needed.  If a response is needed, storage to hold it will be
-    /// allocated in this method and @p resp_data will point to it.  The
-    /// caller is responsible for freeing this storage.
+    /// Return 0 if you handled the message and -1 otherwise
     //
     /// @param resp_queue The queue to which any response should go.
     /// @param hdr The message header
     /// @param data The message body
-    /// @param resp_data Place to put a response
-    /// @param resp_len Place to put allocated length of response
     virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
-                               void * data, void** resp_data,
-                               size_t * resp_len) 
-    {*resp_len = 0; *resp_data = NULL; return -1;};
+                               void * data)
+    {return -1;};
 
     /// @brief Update non-threaded drivers.
     virtual void Update() 
