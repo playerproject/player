@@ -54,8 +54,7 @@ class ExampleDriver : public Driver
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(MessageQueue* resp_queue, 
                                player_msghdr * hdr,
-                               void * data, uint8_t** resp_data,
-                               size_t * resp_len);
+                               void * data);
 
   private:
 
@@ -138,13 +137,11 @@ int ExampleDriver::Shutdown()
 
 int ExampleDriver::ProcessMessage(MessageQueue* resp_queue, 
                                   player_msghdr * hdr,
-                                  void * data, uint8_t** resp_data,
-                                  size_t * resp_len)
+                                  void * data)
 {
-  // Process messages here.  If a response is needed, write it into
-  // resp_data, write its length into resp_len, and return the respone type
-  // (e.g., ACK, NACK).  If no response is needed, return 0.  If you can't
-  // handle the message, return -1.
+  // Process messages here.  Send a response if necessary, using Publish().
+  // If you handle the message successfully, return 0.  Otherwise,
+  // return -1, and a NACK will be sent for you, if a response is required.
   return(0);
 }
 

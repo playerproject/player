@@ -52,9 +52,7 @@
 
 
 void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
-                         int code, int index, playerc_putdata_fn_t putdata,
-			 playerc_putdata_fn_t putgeom,
-			 playerc_putdata_fn_t putconfig)
+                         int code, int index, playerc_putmsg_fn_t putmsg)
 {
   device->id = device;
   device->client = client;
@@ -64,9 +62,7 @@ void playerc_device_init(playerc_device_t *device, playerc_client_t *client,
   device->addr.index = index;
   device->subscribed = 0;
   device->callback_count = 0;
-  device->putdata = putdata;
-  device->putgeom = putgeom;
-  device->putconfig = putconfig;
+  device->putmsg = putmsg;
 
   if (device->client)
     playerc_client_adddevice(device->client, device);

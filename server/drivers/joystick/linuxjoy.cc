@@ -189,6 +189,10 @@ class LinuxJoystick : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
+  public: virtual int ProcessMessage(MessageQueue* resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * data) {return -1;}
+
   // Read the joystick
   private: void ReadJoy();
 

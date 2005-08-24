@@ -20,6 +20,12 @@
  *
  */
 
+/*
+ * TODO:
+ *   - Either get the laser's geometry and use it when computing the 
+ *     pose for the scan, or forward geometry requests to the laser.
+ */
+
 /** @addtogroup drivers Drivers */
 /** @{ */
 /** @defgroup player_driver_laserposeinterpolator laserposeinterpolator
@@ -45,9 +51,7 @@ containing both scan and pose.
 
 @par Configuration requests
 
-- PLAYER_LASER_REQ_GET_GEOM
-- PLAYER_LASER_REQ_GET_CONFIG
-- PLAYER_LASER_REQ_SET_CONFIG
+- None (yet)
   
 @par Configuration file options
 
@@ -125,9 +129,7 @@ class LaserPoseInterp : public Driver
     // MessageHandler
     int ProcessMessage(MessageQueue * resp_queue, 
 		       player_msghdr * hdr, 
-		       void * data, 
-		       void ** resp_data, 
-		       size_t * resp_len);
+		       void * data);
   private:
 
     // device bookkeeping
@@ -245,11 +247,8 @@ int LaserPoseInterp::Shutdown()
 int 
 LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue, 
                                 player_msghdr * hdr,
-                                void * data, void ** resp_data,
-                                size_t * resp_len)
+                                void * data)
 {
-  *resp_len = 0;
-
   // Is it a laser scan?
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
                            PLAYER_LASER_DATA_SCAN, 
