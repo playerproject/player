@@ -69,14 +69,14 @@ class Message
     /// @brief Helper for message processing.
     ///
     /// Returns true if @p hdr matches the supplied @p type, @p subtype, 
-    /// and @p addr.
+    /// and @p addr.  Set type and/or subtype to -1 for don't care.
     static bool MatchMessage(player_msghdr_t* hdr, 
-                             uint8_t type, 
-                             uint8_t subtype, 
+                             int type, 
+                             int subtype, 
                              player_devaddr_t addr)
     {
-      return((hdr->type == type) && 
-             (hdr->subtype == subtype) && 
+      return(((type < 0) || (hdr->type == (uint8_t)type)) && 
+             ((subtype < 0) || (hdr->subtype == (uint8_t)subtype)) && 
              (hdr->addr.interf == addr.interf) && 
              (hdr->addr.index == addr.index));
     }
