@@ -521,10 +521,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue,
     {
       if (SetLaserRes(this->scan_width, this->scan_res) != 0)
         PLAYER_ERROR("failed setting resolution");
-/*
+      /* This call fails for me, but I've only tested with one laser - BPG
+       * */
       if(SetLaserConfig(this->intensity) != 0)
         PLAYER_ERROR("failed setting intensity");          
-*/
     }
 
     // Issue a new request for data

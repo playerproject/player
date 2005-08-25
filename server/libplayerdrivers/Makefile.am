@@ -9,13 +9,15 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = playerdrivers.pc
 CLEANFILES = playerdrivers.pc
 
-pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LTLIBRARIES = libplayerdrivers.la
+lib_LTLIBRARIES = libplayerdrivers.la
 
 AM_CPPFLAGS = -I$(top_srcdir)
 
 libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
-libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"`
+libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"` -version-info 2:0:0
+
+pkgincludedir = $(includedir)/libplayerdrivers
+pkginclude_HEADERS = driverregistry.h
 
 all-local:
 	touch driverregistry.cc

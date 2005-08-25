@@ -31,38 +31,38 @@
 #include "playerv.h"
 
 
-// Draw the position scan
-void position_draw(position_t *self);
+// Draw the position2d scan
+void position2d_draw(position2d_t *self);
 
-// Dont draw the position data
-void position_nodraw(position_t *self);
+// Dont draw the position2d data
+void position2d_nodraw(position2d_t *self);
 
-// Servo the robot (position control)
-void position_servo_pos(position_t *self);
+// Servo the robot (position2d control)
+void position2d_servo_pos(position2d_t *self);
 
 // Servo the robot (velocity control)
-void position_servo_vel(position_t *self);
+void position2d_servo_vel(position2d_t *self);
 
 
-// Create a position device
-position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+// Create a position2d device
+position2d_t *position2d_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                             int index, const char *drivername, int subscribe)
 {
   char label[64];
   char section[64];
-  position_t *self;
+  position2d_t *self;
   
-  self = malloc(sizeof(position_t));
+  self = malloc(sizeof(position2d_t));
 
   self->mainwnd = mainwnd;
-  self->proxy = playerc_position_create(client, index);
+  self->proxy = playerc_position2d_create(client, index);
   self->drivername = strdup(drivername);
   self->datatime = 0;
   
-  snprintf(section, sizeof(section), "position:%d", index);
+  snprintf(section, sizeof(section), "position2d:%d", index);
   
   // Construct the menu
-  snprintf(label, sizeof(label), "position:%d (%s)", index, self->drivername);
+  snprintf(label, sizeof(label), "position2d:%d (%s)", index, self->drivername);
   self->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   self->subscribe_item = rtk_menuitem_create(self->menu, "Subscribe", 1);
   self->command_item = rtk_menuitem_create(self->menu, "Command", 1);
@@ -71,7 +71,7 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
   self->disable_item = rtk_menuitem_create(self->menu, "Disable", 0);
 
   // We can use this device to give us a coordinate system
-  snprintf(label, sizeof(label), "Frame position:%d (%s)", index, self->drivername);
+  snprintf(label, sizeof(label), "Frame position2d:%d (%s)", index, self->drivername);
   self->frame_item = rtk_menuitem_create(mainwnd->view_menu, label, 1);
 
   // Set the initial menu state
@@ -97,12 +97,12 @@ position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *cl
 }
 
 
-// Destroy a position device
-void position_destroy(position_t *self)
+// Destroy a position2d device
+void position2d_destroy(position2d_t *self)
 {
   if (self->proxy->info.subscribed)
-    playerc_position_unsubscribe(self->proxy);
-  playerc_position_destroy(self->proxy);
+    playerc_position2d_unsubscribe(self->proxy);
+  playerc_position2d_destroy(self->proxy);
 
   rtk_fig_destroy(self->path_fig);
   rtk_fig_destroy(self->control_fig);
@@ -118,21 +118,21 @@ void position_destroy(position_t *self)
 }
 
 
-// Update a position device
-void position_update(position_t *self)
+// Update a position2d device
+void position2d_update(position2d_t *self)
 {
   // Update the device subscription
   if (rtk_menuitem_ischecked(self->subscribe_item))
   {
     if (!self->proxy->info.subscribed)
     {
-      if (playerc_position_subscribe(self->proxy, PLAYER_ALL_MODE) != 0)
+      if (playerc_position2d_subscribe(self->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
-      //puts( "getting position geom" );
+      //puts( "getting position2d geom" );
 
       // Get the robot geometry
-      if (playerc_position_get_geom(self->proxy) != 0)
+      if (playerc_position2d_get_geom(self->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
       
       //puts( "done" );
@@ -146,7 +146,7 @@ void position_update(position_t *self)
   else
   {
     if (self->proxy->info.subscribed)
-      if (playerc_position_unsubscribe(self->proxy) != 0)
+      if (playerc_position2d_unsubscribe(self->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   rtk_menuitem_check(self->subscribe_item, self->proxy->info.subscribed);
@@ -162,17 +162,17 @@ void position_update(position_t *self)
   if (rtk_menuitem_isactivated(self->enable_item))
   {
     if (self->proxy->info.subscribed)
-      if (playerc_position_enable(self->proxy, 1) != 0)
+      if (playerc_position2d_enable(self->proxy, 1) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   if (rtk_menuitem_isactivated(self->disable_item))
   {
     if (self->proxy->info.subscribed)
-      if (playerc_position_enable(self->proxy, 0) != 0)
+      if (playerc_position2d_enable(self->proxy, 0) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
 
-  // Reset control figure when using position mode
+  // Reset control figure when using position2d mode
   if (rtk_menuitem_isactivated(self->pose_mode_item))
   {
     self->goal_px = self->proxy->px;
@@ -183,29 +183,29 @@ void position_update(position_t *self)
 
   // Servo to the goal
   if (rtk_menuitem_ischecked(self->pose_mode_item))
-    position_servo_pos(self);
+    position2d_servo_pos(self);
   else
-    position_servo_vel(self);
+    position2d_servo_vel(self);
   
   if (self->proxy->info.subscribed)
   {
-    // Draw in the position scan if it has been changed.
+    // Draw in the position2d scan if it has been changed.
     if (self->proxy->info.datatime != self->datatime)
     {
-      position_draw(self);
+      position2d_draw(self);
       self->datatime = self->proxy->info.datatime;
     }
   }
   else
   {
-    // Dont draw the position.
-    position_nodraw(self);
+    // Dont draw the position2d.
+    position2d_nodraw(self);
   }
 }
 
 
-// Draw the position data
-void position_draw(position_t *self)
+// Draw the position2d data
+void position2d_draw(position2d_t *self)
 {
   rtk_fig_show(self->robot_fig, 1);
 
@@ -219,16 +219,16 @@ void position_draw(position_t *self)
 }
 
 
-// Dont draw the position data
-void position_nodraw(position_t *self)
+// Dont draw the position2d data
+void position2d_nodraw(position2d_t *self)
 {
   rtk_fig_show(self->robot_fig, 0);
   return;
 }
 
 
-// Servo the robot (position control)
-void position_servo_pos(position_t *self)
+// Servo the robot (position2d control)
+void position2d_servo_pos(position2d_t *self)
 {
   double rx, ry, ra;
   //double gx, gy, ga;
@@ -252,7 +252,7 @@ void position_servo_pos(position_t *self)
     // Get goal pose in robot cs
     rtk_fig_get_origin(self->control_fig, &rx, &ry, &ra);
 
-    // Compute goal point in position cs
+    // Compute goal point in position2d cs
     self->goal_px = self->proxy->px + rx * cos(self->proxy->pa) - ry * sin(self->proxy->pa);
     self->goal_py = self->proxy->py + rx * sin(self->proxy->pa) + ry * cos(self->proxy->pa);
     self->goal_pa = self->proxy->pa + ra;
@@ -260,7 +260,7 @@ void position_servo_pos(position_t *self)
     printf("goal %.3f %.3f %.0f\n", self->goal_px, self->goal_py, self->goal_pa * 180 / M_PI);
 
     // Set the new goal pose
-    playerc_position_set_cmd_pose(self->proxy, self->goal_px, self->goal_py, self->goal_pa, 1);
+    playerc_position2d_set_cmd_pose(self->proxy, self->goal_px, self->goal_py, self->goal_pa, 1);
   }
   else
   { 
@@ -286,7 +286,7 @@ void position_servo_pos(position_t *self)
 
 
 // Servo the robot (velocity control)
-void position_servo_vel(position_t *self)
+void position2d_servo_vel(position2d_t *self)
 {
   double d;
   double rx, ry, ra;
@@ -358,7 +358,7 @@ void position_servo_vel(position_t *self)
   //printf("%f %f\n", vr, va);
       
   // Set the new speed
-  playerc_position_set_cmd_vel(self->proxy, vr, 0, va, 1);
+  playerc_position2d_set_cmd_vel(self->proxy, vr, 0, va, 1);
 
   // Draw in the path
   d = 0.30;

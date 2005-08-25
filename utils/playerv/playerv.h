@@ -203,6 +203,56 @@ void laser_destroy(laser_t *laser);
 // Update a laser device
 void laser_update(laser_t *laser);
 
+/***************************************************************************
+ * Position device
+ ***************************************************************************/
+
+// Position device info
+typedef struct
+{
+  // Pointer to the main window
+  mainwnd_t *mainwnd;
+  
+  // Driver name
+  char *drivername;
+
+  // Position device proxy
+  playerc_position2d_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *command_item;
+  rtk_menuitem_t *pose_mode_item;
+  rtk_menuitem_t *enable_item, *disable_item;
+  rtk_menuitem_t *frame_item;
+
+  // Figures
+  rtk_fig_t *robot_fig;
+  rtk_fig_t *control_fig;
+  rtk_fig_t *path_fig;
+
+  // Goal point for position2d mode
+  double goal_px, goal_py, goal_pa;
+  
+} position2d_t;
+
+
+// Create a position2d device
+position2d_t *position2d_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                            int index,  const char *drivername, int subscribe);
+
+// Destroy a position2d device
+void position2d_destroy(position2d_t *self);
+
+// Update a position2d device
+void position2d_update(position2d_t *self);
+
+
+
 #if 0
 
 /***************************************************************************
@@ -240,55 +290,6 @@ void fiducial_destroy(fiducial_t *fiducial);
 
 // Update a fiducial device
 void fiducial_update(fiducial_t *fiducial);
-
-
-/***************************************************************************
- * Position device
- ***************************************************************************/
-
-// Position device info
-typedef struct
-{
-  // Pointer to the main window
-  mainwnd_t *mainwnd;
-  
-  // Driver name
-  char *drivername;
-
-  // Position device proxy
-  playerc_position_t *proxy;
-
-  // Timestamp on most recent data
-  double datatime;
-
-  // Menu stuff
-  rtk_menu_t *menu;
-  rtk_menuitem_t *subscribe_item;
-  rtk_menuitem_t *command_item;
-  rtk_menuitem_t *pose_mode_item;
-  rtk_menuitem_t *enable_item, *disable_item;
-  rtk_menuitem_t *frame_item;
-
-  // Figures
-  rtk_fig_t *robot_fig;
-  rtk_fig_t *control_fig;
-  rtk_fig_t *path_fig;
-
-  // Goal point for position mode
-  double goal_px, goal_py, goal_pa;
-  
-} position_t;
-
-
-// Create a position device
-position_t *position_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                            int index,  const char *drivername, int subscribe);
-
-// Destroy a position device
-void position_destroy(position_t *self);
-
-// Update a position device
-void position_update(position_t *self);
 
 
 /***************************************************************************

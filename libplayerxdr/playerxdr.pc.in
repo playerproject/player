@@ -6,5 +6,5 @@ Name: playerxdr
 Description: Player XDR messaging library - part of the Player/Stage Project
 Version: @VERSION@
 Requires: 
-Libs: -L${prefix}/lib/player-@VERSION@ -lplayerxdr
-Cflags: -I${prefix}/include/player-@VERSION@
+Libs: -L${prefix}/lib -lplayerxdr
+Cflags: -I${prefix}/include

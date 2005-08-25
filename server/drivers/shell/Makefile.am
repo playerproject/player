@@ -1,12 +1,8 @@
-driverincludedir = $(includedir)/player-@VERSION@/drivers
-driverlibdir = $(libdir)/player-@VERSION@
 
-driverlib_LTLIBRARIES = 
+noinst_LTLIBRARIES = 
 if INCLUDE_LOGFILE
-driverlib_LTLIBRARIES += liblogfile.la
+noinst_LTLIBRARIES += liblogfile.la
 endif
-
-driverinclude_HEADERS = logfile.h
 
 AM_CPPFLAGS = -g3 -Wall -I$(top_srcdir)
 

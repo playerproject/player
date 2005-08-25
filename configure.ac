@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built. 
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.0-pre1)
+AC_INIT(player,2.0-pre2)
 
 AC_CONFIG_SRCDIR(server/server.cc)
 
@@ -346,11 +346,11 @@ dnl          client_libs/c++/Makefile
 dnl          client_libs/c++/playerclient.pc
 dnl          client_libs/c++/test/Makefile
           client_libs/libplayerc/Makefile
-          client_libs/libplayerc/doc/Makefile
-          client_libs/libplayerc/libplayerc.pc
+dnl          client_libs/libplayerc/doc/Makefile
+          client_libs/libplayerc/playerc.pc
           client_libs/libplayerc/test/Makefile
-          client_libs/libplayerc/bindings/Makefile
-          client_libs/libplayerc/bindings/python/Makefile
+dnl          client_libs/libplayerc/bindings/Makefile
+dnl          client_libs/libplayerc/bindings/python/Makefile
 dnl          client_libs/libplayerpacket/Makefile
           examples/Makefile
           examples/plugins/Makefile

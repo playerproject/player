@@ -1,21 +1,16 @@
-driverincludedir = $(includedir)/player-@VERSION@/drivers
-driverlibdir = $(libdir)/player-@VERSION@
-
-driverlib_LTLIBRARIES = 
+noinst_LTLIBRARIES = 
 if INCLUDE_SICKLMS200
-driverlib_LTLIBRARIES += libsicklms200.la
+noinst_LTLIBRARIES += libsicklms200.la
 endif
 if INCLUDE_LASERCSPACE
-driverlib_LTLIBRARIES += liblasercspace.la
+noinst_LTLIBRARIES += liblasercspace.la
 endif
 if INCLUDE_SICKPLS
-driverlib_LTLIBRARIES += libsickpls.la
+noinst_LTLIBRARIES += libsickpls.la
 endif
 if INCLUDE_LASERPOSEINTERPOLATOR
-driverlib_LTLIBRARIES += liblaserposeinterpolator.la
+noinst_LTLIBRARIES += liblaserposeinterpolator.la
 endif
-
-driverinclude_HEADERS = sicklms200.h lasercspace.h
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
@@ -23,4 +18,3 @@ libsicklms200_la_SOURCES = sicklms200.cc
 liblasercspace_la_SOURCES = lasercspace.cc
 libsickpls_la_SOURCES = sickpls.cc
 liblaserposeinterpolator_la_SOURCES = laserposeinterpolator.cc
-

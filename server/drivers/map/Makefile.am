@@ -1,19 +1,21 @@
-driverincludedir = $(includedir)/player-@VERSION@/drivers
-driverlibdir = $(libdir)/player-@VERSION@
+driverincludedir = $(includedir)/libplayerdrivers
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@
 
-driverlib_LTLIBRARIES = 
+lib_LTLIBRARIES = 
 if INCLUDE_MAPFILE
-driverlib_LTLIBRARIES += libmapfile.la 
+lib_LTLIBRARIES += libmapfile.la 
 endif
 if INCLUDE_MAPCSPACE
-driverlib_LTLIBRARIES += libmapcspace.la
+lib_LTLIBRARIES += libmapcspace.la
 endif
 if INCLUDE_MAPSCALE
-driverlib_LTLIBRARIES += libmapscale.la
+lib_LTLIBRARIES += libmapscale.la
 endif
 
 libmapfile_la_SOURCES = mapfile.cc 
+libmapfile_la_LDFLAGS = -version-info 2:0:0
 libmapcspace_la_SOURCES = mapcspace.cc 
+libmapcspace_la_LDFLAGS = -version-info 2:0:0
 libmapscale_la_SOURCES = mapscale.cc 
+libmapscale_la_LDFLAGS = -version-info 2:0:0

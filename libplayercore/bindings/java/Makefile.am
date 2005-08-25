@@ -9,10 +9,9 @@ endif
 EXTRA_DIST = playercore_java.i parse.py
 CLEANFILES = playercore_java_wrap.cc playercore_casts.i
 
-pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LTLIBRARIES =
+lib_LTLIBRARIES =
 if ENABLE_JAVA
-pkglib_LTLIBRARIES += libplayercore_java.la
+lib_LTLIBRARIES += libplayercore_java.la
 endif
 
 playercore_casts.i: $(srcdir)/../../player.h
@@ -37,7 +36,7 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
 #	javac *.java
 
 libplayercore_java_la_SOURCES = playercore_java_wrap.cc
-libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/*.lo $(top_builddir)/server/libplayerdrivers/*.lo `find $(top_builddir)/server/drivers -name "*.lo"`
+libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/*.lo $(top_builddir)/server/libplayerdrivers/*.lo `find $(top_builddir)/server/drivers -name "*.lo"` -version-info 2:0:0
 
 if DARWIN
 install-exec-hook:
