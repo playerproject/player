@@ -1,14 +1,9 @@
-SUBDIRS =
 
-AM_CPPFLAGS = -I$(top_srcdir)/server
+noinst_LTLIBRARIES = 
+if INCLUDE_VFH
+noinst_LTLIBRARIES += libvfh.la
+endif
 
-libvfh_a_SOURCES = vfh.cc vfh_algorithm.cc vfh_algorithm.h
+AM_CPPFLAGS = -I$(top_srcdir) -Wall
 
-libvfh_a_LIBADD = 
-
-noinst_LIBRARIES = @VFH_LIB@
-
-EXTRA_LIBRARIES = libvfh.a
-
-
-
+libvfh_la_SOURCES = vfh.cc vfh_algorithm.cc vfh_algorithm.h

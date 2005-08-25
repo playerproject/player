@@ -40,6 +40,7 @@
 #include <libplayercore/message.h>
 #include <libplayercore/error.h>
 #include <libplayercore/playertime.h>
+#include <libplayercore/devicetable.h>
 #include <libplayercore/globals.h>
 
 // Constructor
@@ -199,7 +200,8 @@ Device::Request(MessageQueue* resp_queue,
                 uint8_t subtype,
                 void* src,
                 size_t len,
-                double* timestamp)
+                double* timestamp,
+                bool threaded)
 {
   // Send the request message
   this->PutMsg(resp_queue,
@@ -214,38 +216,71 @@ Device::Request(MessageQueue* resp_queue,
                         -1,
                         subtype);
   // Await the reply
-  for(;;)
+
+  // Ideally, we'd block here, but that won't work if we're making a
+  // request of a non-threaded driver, and we are: (a) also non-threaded
+  // or (b) making this request from within our Setup.  In either case,
+  // the server thread would end up waiting on itself, which won't work.
+  //
+  // So....instead we'll do the following hack: update all drivers
+  // except the requester (if we were to update the requester, and he's
+  // non-threaded, then his ProcessMessage() would get called
+  // recursively).
+
+  Message* msg;
+  if(threaded)
   {
-    Message* msg;
-    player_msghdr_t* hdr;
     resp_queue->Wait();
-    if((msg = resp_queue->Pop()))
+    msg = resp_queue->Pop();
+  }
+  else
+  {
+    for(;;)
     {
-      hdr = msg->GetHeader();
-      if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_ACK,
-                               subtype, this->addr))
+      // We don't lock here, on the assumption that the caller is also the only
+      // thread that can make changes to the device table.
+      for(Device* dev = deviceTable->GetFirstDevice();
+          dev;
+          dev = deviceTable->GetNextDevice(dev))
       {
-        // got an ACK
-        resp_queue->ClearFilter();
-        return(msg);
+        Driver* dri = dev->driver;
+        // don't updated the requester
+        if(dri->InQueue == resp_queue)
+          continue;
+        if((dri->subscriptions > 0) || dri->alwayson)
+          dri->Update();
       }
-      else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_NACK,
-                                    subtype, this->addr))
-      {
-        // got a NACK
-        resp_queue->ClearFilter();
-        delete msg;
-        return(NULL);
-      }
-      else
-      {
-        // got something else
-        PLAYER_ERROR("got unexpected message");
-        delete msg;
-      }
+
+      if((msg = resp_queue->Pop()))
+        break;
     }
-    else
-      PLAYER_WARN("got null message after waiting on queue");
+  }
+
+  assert(msg);
+
+  player_msghdr_t* hdr;
+  hdr = msg->GetHeader();
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_ACK,
+                           subtype, this->addr))
+  {
+    // got an ACK
+    resp_queue->ClearFilter();
+    return(msg);
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_NACK,
+                                subtype, this->addr))
+  {
+    // got a NACK
+    resp_queue->ClearFilter();
+    delete msg;
+    return(NULL);
+  }
+  else
+  {
+    // got something else
+    PLAYER_ERROR("got unexpected message");
+    delete msg;
+    return(NULL);
   }
 }
 
