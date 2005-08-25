@@ -161,7 +161,7 @@ DeviceTable::UpdateDevices()
   for(thisentry=head;thisentry;thisentry=thisentry->next)
   {
     dri = thisentry->driver;
-    if(dri->subscriptions > 0)
+    if((dri->subscriptions > 0) || dri->alwayson)
       dri->Update();
   }
 }

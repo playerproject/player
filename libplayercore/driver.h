@@ -91,6 +91,29 @@ class Driver
     /// used to simplify thread termination.
     static void DummyMainQuit(void *driver);
 
+    /// @brief Add an interface.
+    ///
+    /// @param addr Player device address.
+    //
+    /// @returns 0 on success, non-zero otherwise.
+    int AddInterface(player_devaddr_t addr);
+    
+    /// @brief Set/reset error code
+    void SetError(int code) {this->error = code;}
+
+    /// @brief Wait for new data to arrive on the driver's queue.
+    ///
+    /// Call this method to block until new data arrives on
+    /// Driver::InQueue.  This method will return immediately if at least
+    /// one message is already waiting.
+    void Wait() { this->InQueue->Wait(); }
+    
+  public:
+    /// @brief Lock access to driver internals.
+    virtual void Lock(void);
+    /// @brief Unlock access to driver internals.
+    virtual void Unlock(void);
+
     /// @brief Publish a message via one of this driver's interfaces.
     ///
     /// This form of Publish will assemble the message header for you.
@@ -124,28 +147,6 @@ class Driver
                  player_msghdr_t* hdr,
                  void* src);
 
-    /// @brief Add an interface.
-    ///
-    /// @param addr Player device address.
-    //
-    /// @returns 0 on success, non-zero otherwise.
-    int AddInterface(player_devaddr_t addr);
-    
-    /// @brief Set/reset error code
-    void SetError(int code) {this->error = code;}
-
-    /// @brief Wait for new data to arrive on the driver's queue.
-    ///
-    /// Call this method to block until new data arrives on
-    /// Driver::InQueue.  This method will return immediately if at least
-    /// one message is already waiting.
-    void Wait() { this->InQueue->Wait(); }
-    
-  public:
-    /// @brief Lock access to driver internals.
-    virtual void Lock(void);
-    /// @brief Unlock access to driver internals.
-    virtual void Unlock(void);
 
     /// @brief Default device address (single-interface drivers)
     player_devaddr_t device_addr;

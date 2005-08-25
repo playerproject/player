@@ -58,13 +58,19 @@
 #endif
 
 // Convert radians to degrees
+#ifndef RTOD
 #define RTOD(r) ((r) * 180 / M_PI)
+#endif
 
 // Convert degrees to radians
+#ifndef DTOR
 #define DTOR(d) ((d) * M_PI / 180)
+#endif
 
 // Normalize angle to domain -pi, pi
+#ifndef NORMALIZE
 #define NORMALIZE(z) atan2(sin(z), cos(z))
+#endif
 
 #ifndef BOOL
 	#define BOOL int

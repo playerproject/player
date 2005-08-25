@@ -42,7 +42,8 @@ extern int optreset;
 /* getopt stuff */
 /****************/
 
-static int quit;
+bool player_quit;
+bool player_quiet_startup;
 
 void PrintCopyrightMsg();
 void PrintUsage();
@@ -135,7 +136,7 @@ main(int argc, char** argv)
 
   free(ports);
 
-  while(!quit)
+  while(!player_quit)
   {
     if(ptcp.Accept(0) < 0)
     {
@@ -174,7 +175,7 @@ Cleanup()
 void
 Quit(int signum)
 {
-  quit = 1;
+  player_quit = true;
 }
 
 void
@@ -228,13 +229,16 @@ ParseArgs(int* port, int* debuglevel, const char** cfgfilename,
           int argc, char** argv)
 {
   int ch;
-  const char* optflags = "d:p:h";
+  const char* optflags = "d:p:hq";
 
   // Get letter options
   while((ch = getopt(argc, argv, optflags)) != -1)
   {
     switch (ch)
     {
+      case 'q':
+        player_quiet_startup = true;
+        break;
       case 'd':
         *debuglevel = atoi(optarg);
         break;
