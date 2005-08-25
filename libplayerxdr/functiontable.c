@@ -118,6 +118,12 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_FILENAME, 
     (player_pack_fn_t)player_log_set_filename_pack},
 
+  /* simulation messages */
+  {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_SET_POSE2D, 
+    (player_pack_fn_t)player_simulation_pose2d_req_pack},
+  {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D, 
+    (player_pack_fn_t)player_simulation_pose2d_req_pack},
+
   {0,0,0,NULL}
 };
 

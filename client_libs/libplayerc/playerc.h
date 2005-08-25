@@ -1909,6 +1909,8 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 /** @brief Get link state. */
 playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
 
+#endif
+
 /** @brief Simulation device proxy. */
 typedef struct
 {
@@ -1931,7 +1933,7 @@ int playerc_simulation_subscribe(playerc_simulation_t *device, int access);
 int playerc_simulation_unsubscribe(playerc_simulation_t *device);
 
 // Process incoming data
-void playerc_simulation_putdata(playerc_simulation_t *device, player_msghdr_t *header,
+void playerc_simulation_putmsg(playerc_simulation_t *device, player_msghdr_t *header,
 				player_simulation_data_t *data, size_t len);
 
 int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
@@ -1942,6 +1944,8 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 
 /** @} */
 /***************************************************************************/
+
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_gripper gripper
