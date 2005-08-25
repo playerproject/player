@@ -1,10 +1,8 @@
 prefix=@prefix@
 
-# this gives access to the player header files for compiling plugins
-
-Name: libplayerc
+Name: playerc
 Description: Andrew Howard's Player C client library - part of the Player/Stage Project
 Version: @VERSION@
-Requires: 
+Requires: playerxdr
 Libs: -L${prefix}/lib -lplayerc -lm
 Cflags: -I${prefix}/include
