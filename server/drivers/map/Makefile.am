@@ -1,5 +1,3 @@
-driverincludedir = $(includedir)/libplayerdrivers
-
 AM_CPPFLAGS = -Wall -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@
 
 noinst_LTLIBRARIES = 
