@@ -1244,13 +1244,12 @@ typedef struct player_laser_config
       Valid range is -M_PI to +M_PI. */
   float min_angle, max_angle;
 
-  /** Scan resolution [rad].  
-      @todo What would valid resolutions be?
-            Valid resolutions are 25, 50, 100. 
+  /** Scan resolution [deg*100].  
+    Valid resolutions are 25, 50, 100. 
   */
   uint8_t resolution;
 
-  /** Range Resolution.  Valid: 1, 10, 100 (For mm, cm, dm). */
+  /** Range Resolution [mm].  Valid: 1, 10, 100 (For mm, cm, dm). */
   uint8_t range_res;
 
   /** Enable reflection intensity data. */
