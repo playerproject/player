@@ -270,8 +270,8 @@ class Driver
     /// @param hdr The message header
     /// @param data The message body
     virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
-                               void * data) = 0;
-    //{return -1;};
+                               void * data)
+    {return -1;};
 
     /// @brief Update non-threaded drivers.
     virtual void Update() 

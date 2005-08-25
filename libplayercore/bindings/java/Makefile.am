@@ -40,7 +40,7 @@ libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/*.lo $(top_builddi
 
 if DARWIN
 install-exec-hook:
-	ln -sf $(pkglibdir)/libplayercore_java.dylib $(pkglibdir)/libplayercore_java.jnilib 
+	ln -sf $(libdir)/libplayercore_java.dylib $(libdir)/libplayercore_java.jnilib 
 endif
 
 clean-local:
