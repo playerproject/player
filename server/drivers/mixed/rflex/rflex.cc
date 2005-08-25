@@ -506,8 +506,8 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		geom.pose.py = 0;
 		geom.pose.pa = 0;
 		Lock();
-		geom.size[0] = rflex_configs.m_length;
-		geom.size[1] = rflex_configs.m_width;
+		geom.size.sl = rflex_configs.m_length;
+		geom.size.sw = rflex_configs.m_width;
 		Unlock();
 		Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
 		return 0;
