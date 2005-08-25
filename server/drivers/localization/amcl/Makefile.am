@@ -1,16 +1,13 @@
-
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 if INCLUDE_RTKGUI
 AM_CPPFLAGS += -I$(top_srcdir)/rtk2 @GTK_CFLAGS@
 endif
 
-driverincludedir = $(includedir)/player-@VERSION@/drivers
-driverlibdir = $(libdir)/player-@VERSION@
-
-driverlib_LTLIBRARIES = 
+noinst_LTLIBRARIES = 
 if INCLUDE_AMCL
-driverlib_LTLIBRARIES += libamcl.la
+noinst_LTLIBRARIES += libamcl.la
 endif
+
 
 libamcl_la_SOURCES = amcl.h \
                      amcl.cc \

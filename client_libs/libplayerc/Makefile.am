@@ -8,11 +8,14 @@ AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 # create the pkg-config entry	
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libplayerc.pc
+pkgconfig_DATA = playerc.pc
 
-pkglibdir = $(libdir)/player-@VERSION@
-pkglib_LTLIBRARIES = libplayerc.la
+EXTRA_DIST = playerc.pc.in
+CLEANFILES = playerc.pc
 
+lib_LTLIBRARIES = libplayerc.la
+
+libplayerc_la_LDFLAGS = -version-info 2:0:0
 libplayerc_la_SOURCES = playerc.h \
                         mclient.c \
                         client.c \
@@ -48,5 +51,5 @@ libplayerc_la_SOURCES = playerc.h \
 
 libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo
 
-playercincludedir = $(includedir)/player-@VERSION@/libplayerc
+playercincludedir = $(includedir)/libplayerc
 playercinclude_HEADERS = playerc.h

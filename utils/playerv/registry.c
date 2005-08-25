@@ -40,6 +40,15 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) laser_update;
       break;
 
+    case PLAYER_POSITION2D_CODE:
+      device->proxy = position2d_create(mainwnd, opt, client, 
+                                        device->addr.index, 
+                                        device->drivername, 
+                                        device->subscribe);
+      device->fndestroy = (fndestroy_t) position2d_destroy;
+      device->fnupdate = (fnupdate_t) position2d_update;
+      break;
+
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       device->proxy = blobfinder_create(mainwnd, opt, client, device->index,
@@ -60,13 +69,6 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
                                  device->index, device->drivername, device->subscribe);
       device->fndestroy = (fndestroy_t) localize_destroy;
       device->fnupdate = (fnupdate_t) localize_update;
-      break;
-
-    case PLAYER_POSITION_CODE:
-      device->proxy = position_create(mainwnd, opt, client, 
-                                      device->index, device->drivername, device->subscribe);
-      device->fndestroy = (fndestroy_t) position_destroy;
-      device->fnupdate = (fnupdate_t) position_update;
       break;
 
     case PLAYER_POWER_CODE:

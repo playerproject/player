@@ -8,5 +8,5 @@ Name: playerdrivers
 Description: Player driver library - part of the Player/Stage Project
 Version: @VERSION@
 Requires: playercore
-Libs: -L${prefix}/lib/player-@VERSION@ -lplayerdrivers -lpthread
-Cflags: -I${prefix}/include/player-@VERSION@
+Libs: -L${prefix}/lib -lplayerdrivers -lpthread
+Cflags: -I${prefix}/include
