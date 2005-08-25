@@ -54,9 +54,9 @@
 #include "error.h"
 
 // Local declarations
-void playerc_simulation_putdata(playerc_simulation_t *device,
-                                player_msghdr_t *header,
-                                player_simulation_data_t *data, size_t len);
+void playerc_simulation_putmsg(playerc_simulation_t *device,
+                               player_msghdr_t *header,
+                               player_simulation_data_t *data, size_t len);
 
 
 // Create a new simulation proxy
@@ -67,7 +67,7 @@ playerc_simulation_t *playerc_simulation_create(playerc_client_t *client, int in
   device = malloc(sizeof(playerc_simulation_t));
   memset(device, 0, sizeof(playerc_simulation_t));
   playerc_device_init(&device->info, client, PLAYER_SIMULATION_CODE, index,
-                      (playerc_putdata_fn_t) playerc_simulation_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t)playerc_simulation_putmsg);
   return device;
 }
 
@@ -97,7 +97,7 @@ int playerc_simulation_unsubscribe(playerc_simulation_t *device)
 
 
 // Process incoming data
-void playerc_simulation_putdata(playerc_simulation_t *device, player_msghdr_t *header,
+void playerc_simulation_putmsg(playerc_simulation_t *device, player_msghdr_t *header,
                               player_simulation_data_t *data, size_t len)
 {
   // device->data 
@@ -112,14 +112,14 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
 
   memset(&cmd, 0, sizeof(cmd));
   strncpy(cmd.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cmd.x = htonl((int) (gx * 1000.0));
-  cmd.y = htonl((int) (gy * 1000.0));
-  cmd.a = htonl((int) (ga * 180.0 / M_PI));
-  //cmd.subtype = PLAYER_SIMULATION_SET_POSE2D;
+  cmd.name_count = strlen(cmd.name);
+  cmd.pose.px = gx;
+  cmd.pose.py = gy;
+  cmd.pose.pa = ga;
 
   return playerc_client_request(device->info.client, &device->info, 
-                                PLAYER_SIMULATION_SET_POSE2D,
-                                &cmd, sizeof(cmd), &cmd, sizeof(cmd));
+                                PLAYER_SIMULATION_REQ_SET_POSE2D,
+                                &cmd, NULL, 0);
 }
 
 // Get the current pose
@@ -129,14 +129,14 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   player_simulation_pose2d_req_t cfg;
   
   memset(&cfg, 0, sizeof(cfg));
-  //cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
   strncpy( cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
+  cfg.name_count = strlen(cfg.name);
   if (playerc_client_request(device->info.client, &device->info, 
-                             PLAYER_SIMULATION_GET_POSE2D,
-			     &cfg, sizeof(cfg), &cfg, sizeof(cfg)) < 0)
+                             PLAYER_SIMULATION_REQ_GET_POSE2D,
+			     &cfg, &cfg, sizeof(cfg)) < 0)
     return (-1);
-  *x =  ((int32_t)ntohl(cfg.x)) / 1e3;
-  *y =  ((int32_t)ntohl(cfg.y)) / 1e3;
-  *a =  DTOR((int32_t)ntohl(cfg.a));
+  *x =  cfg.pose.px;
+  *y =  cfg.pose.py;
+  *a =  cfg.pose.pa;
   return 0;
 }

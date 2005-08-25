@@ -25,7 +25,8 @@ libplayerc_la_SOURCES = playerc.h \
                         error.h \
                         dev_laser.c \
                         dev_log.c \
-                        dev_position2d.c
+                        dev_position2d.c \
+                        dev_simulation.c
 #dev_blobfinder.c \
 #dev_bumper.c \
 #dev_camera.c \
@@ -45,7 +46,6 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_truth.c \
 #dev_wifi.c \
 #dev_dio.c \
-#dev_simulation.c \
 #dev_gripper.c \
 #dev_speech.c
 

@@ -26,7 +26,10 @@ extern int test_laser(playerc_client_t *client, int index);
 extern int test_position2d(playerc_client_t *client, int index);
 
 // Basic test for log device.
-int test_log(playerc_client_t *client, int index);
+extern int test_log(playerc_client_t *client, int index);
+
+// Basic test for simulation device.
+extern int test_simulation(playerc_client_t *client, int index);
 
 #if 0
 // Basic test for BPS device.i

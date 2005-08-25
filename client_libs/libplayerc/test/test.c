@@ -120,6 +120,11 @@ int main(int argc, const char *argv[])
         test_log(client, client->devinfos[i].addr.index);
         break;
 
+      // simulation device
+      case PLAYER_SIMULATION_CODE:
+        test_simulation(client, client->devinfos[i].addr.index);
+        break;
+
 #if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
