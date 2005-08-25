@@ -148,9 +148,7 @@ main(int argc, char** argv)
       PLAYER_ERROR("failed while reading");
       break;
     }
-
     deviceTable->UpdateDevices();
-
     if(ptcp.Write() < 0)
     {
       PLAYER_ERROR("failed while reading");

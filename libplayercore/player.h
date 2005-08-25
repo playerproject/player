@@ -2752,63 +2752,6 @@ typedef struct player_speech_recognition_data
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_truth truth
-
-The @p truth interface provides access to the absolute state of entities.
-Note that, unless your robot has superpowers, @p truth devices are
-only avilable in simulation.
-@{
-*/
-
-/* Request packet subtypes. */
-#define PLAYER_TRUTH_GET_POSE         0x00
-#define PLAYER_TRUTH_SET_POSE         0x01
-#define PLAYER_TRUTH_SET_POSE_ON_ROOT 0x02
-#define PLAYER_TRUTH_GET_FIDUCIAL_ID  0x03
-#define PLAYER_TRUTH_SET_FIDUCIAL_ID  0x04
-
-/** @brief Data
-
-The @p truth interface returns data concerning the current state of an
-entity. */
-typedef struct player_truth_data
-{
-  /** Object position in the world (x, y, z, roll, pitch, yaw) 
-      [m, m, m, rad, rad, rad]. */
-  float pos[6];
-} player_truth_data_t;
-
-/** @brief Configuration request: Get/set pose
-
-To get the pose of an object, use the following request, filling in only
-the subtype with PLAYER_TRUTH_GET_POSE (this functionality is subsumed by
-the data packet and should probably be removed).  The server will respond
-with the other fields filled in.  To set the pose, set the subtype to
-PLAYER_TRUTH_SET_POS and fill in the rest of the fields with the new
-pose. */
-typedef struct player_truth_pose
-{
-  /** Object position in the world (x, y, z, roll, pitch, yaw) 
-      [m, m, m, rad, rad, rad]. */
-  float pos[6];  
-} player_truth_pose_t;
-
-/** @brief Configuration request: Get/set fiducial ID number.
-
-To get the fiducial ID of an object, use the following request, filling
-in only the subtype with PLAYER_TRUTH_GET_FIDUCIAL_ID. The server will
-respond with the ID field filled in.  To set the fiducial ID, set the
-subtype to PLAYER_TRUTH_SET_FIDUCIAL_ID and fill in the ID field with
-the desired value. */
-typedef struct player_truth_fiducial_id
-{
-  /** the fiducial ID */
-  int32_t id;
-} player_truth_fiducial_id_t;
-
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
 /** @defgroup player_interface_waveform waveform
 
 The @p waveform interface is used to receive arbitrary digital samples,

@@ -4,18 +4,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
-#include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
 
-#include "player.h"
-#include "driver.h"
-#include "error.h"
-#include "devicetable.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
 #include "vfh_algorithm.h"
-#include "playertime.h"
 
 extern PlayerTime *GlobalTime;
 
@@ -65,10 +59,13 @@ or sector_angle.
 - @ref player_interface_laser : the laser that will be used to avoid
   obstacles
 
+- @todo : add support for getting the robot's true global pose via the 
+  @ref player_interface_simulation interface
+
 @par Configuration requests
 
-- PLAYER_POSITION_GET_GEOM_REQ
-- PLAYER_POSITION_MOTOR_POWER_REQ
+- all position2d requests (as long as the underlying position2d device 
+  supports them)
 
 @par Configuration file options
 
@@ -165,8 +162,9 @@ class VFH_Class : public Driver
     virtual int Shutdown();
 
     // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-
+    virtual int ProcessMessage(MessageQueue* resp_queue, 
+                               player_msghdr * hdr, 
+                               void * data);
     // Main function for device thread.
     virtual void Main();
 
@@ -174,15 +172,10 @@ class VFH_Class : public Driver
     bool active_goal;
     bool turninginplace;
     
-    // Set up the truth device (optional).
-    int SetupTruth();
-    int ShutdownTruth();
-    int ProcessTruth(player_truth_data_t &);
-
     // Set up the odometry device.
     int SetupOdom();
     int ShutdownOdom();
-    int ProcessOdom(player_position_data_t &);
+    void ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data);
 
     // Class to handle the internal VFH algorithm
     // (like maintaining histograms etc)
@@ -198,31 +191,21 @@ class VFH_Class : public Driver
     // Set up the laser device.
     int SetupLaser();
     int ShutdownLaser();
-    int ProcessLaser(player_laser_data_t &);
-
-    // Write the pose data (the data going back to the client).
-    void PutPose();
+    void ProcessLaser(player_laser_data_t &);
 
     // Send commands to underlying position device
     void PutCommand( int speed, int turnrate );
 
     // Check for new commands from server
-    void ProcessCommand(player_position_cmd_t &);
+    void ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &);
 
     // Computes the signed minimum difference between the two angles.  Inputs
     // and return values are in degrees.
     double angle_diff(double a, double b);
     
-    // Truth device info
-    Driver *truth;
-    player_device_id_t truth_id;
-    int use_truth;
-    double truth_time;
-
     // Odometry device info
-    Driver *odom;
-    player_device_id_t odom_id;
-    double odom_time;
+    Device *odom;
+    player_devaddr_t odom_addr;
     double dist_eps;
     double ang_eps;
 
@@ -231,27 +214,16 @@ class VFH_Class : public Driver
     double escape_max_turnspeed;
     double escape_time;
 
-    // Odometric geometry (robot size and pose in robot cs)
-    double odom_geom_pose[3];
-    double odom_geom_size[3];
-
-    // Pose of robot in odometric cs (mm,mm,deg)
+    // Pose and velocity of robot in odometric cs (mm,mm,deg)
     double odom_pose[3];
+    double odom_vel[3];
 
     // Stall flag and counter
     int odom_stall;
 
-    // Velocity of robot in robot cs, NOT byteswapped, just for passing
-    // through
-    int32_t odom_vel_be[3];
-
     // Laser device info
-    Driver *laser;
-    player_device_id_t laser_id;
-    double laser_time;
-
-    // Laser geometry (pose of laser in robot cs)
-    double laser_geom_pose[3];
+    Device *laser;
+    player_devaddr_t laser_addr;
 
     // Laser range and bearing values
     int laser_count;
@@ -263,7 +235,6 @@ class VFH_Class : public Driver
     int speed, turnrate;
     double reset_odom_x, reset_odom_y, reset_odom_t;
     int32_t goal_x, goal_y, goal_t;
-    int32_t goal_vx, goal_vy, goal_vt;
     int cmd_state, cmd_type;
 };
 
@@ -285,20 +256,11 @@ void VFH_Register(DriverTable* table)
 // Set up the device (called by server thread).
 int VFH_Class::Setup() 
 {
-/*  player_position_cmd_t cmd;
-
-  memset(&cmd,0,sizeof(cmd));
-  Driver::PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);*/
-
   this->active_goal = false;
   this->turninginplace = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
 
   
-  // Initialise the underlying truth device.
-  if(this->SetupTruth() != 0)
-    return -1;
-
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
     return -1;
@@ -328,45 +290,7 @@ int VFH_Class::Shutdown() {
 
   // Stop the odom device.
   this->ShutdownOdom();
-  
-  // Stop the truth device.
-  this->ShutdownTruth();
 
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Set up the underlying truth device (optional).
-int VFH_Class::SetupTruth() 
-{
-  //struct timeval ts;
-  
-  // if the user didn't specify a truth device, don't do anything
-  if(!this->use_truth)
-    return(0);
-
-  if(!(this->truth = SubscribeInternal(this->truth_id)))
-  {
-    PLAYER_ERROR("unable to locate suitable truth device");
-    return -1;
-  }
-
-/*  if(this->truth->Subscribe(this->truth_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to truth device");
-    return -1;
-  }*/
-
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the underlying truth device.
-int VFH_Class::ShutdownTruth() 
-{
-
-  if(this->truth)
-    UnsubscribeInternal(this->truth_id);
   return 0;
 }
 
@@ -374,52 +298,40 @@ int VFH_Class::ShutdownTruth()
 // Set up the underlying odom device.
 int VFH_Class::SetupOdom() 
 {
-  //uint8_t req;
-  size_t replen;
-  unsigned short reptype;
-  struct timeval ts;
-  player_position_geom_t geom;
-
-  this->odom = SubscribeInternal(this->odom_id);
-  if (!this->odom)
+  if(!(this->odom = deviceTable->GetDevice(this->odom_addr)))
   {
     PLAYER_ERROR("unable to locate suitable position device");
     return -1;
   }
-
-/*  if (this->odom->Subscribe(this->odom_id) != 0)
+  if(this->odom->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
-  }*/
+  }
 
   // Get the odometry geometry
-  //req = PLAYER_POSITION_GET_GEOM_REQ;
-/*  replen = this->odom->Request(this->odom_id, this, 
-                               &req, sizeof(req), NULL,
-                               &reptype, &geom, sizeof(geom),&ts);*/
-  replen = sizeof(geom);
-  this->odom->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM,
-               odom_id, 0, (uint8_t *) &geom, (uint8_t *) &geom, &replen);
-               
-  geom.pose[0] = ntohs(geom.pose[0]);
-  geom.pose[1] = ntohs(geom.pose[1]);
-  geom.pose[2] = ntohs(geom.pose[2]);
-  geom.size[0] = ntohs(geom.size[0]);
-  geom.size[1] = ntohs(geom.size[1]);
-
-  this->odom_geom_pose[0] = (int16_t) geom.pose[0] / 1000.0;
-  this->odom_geom_pose[1] = (int16_t) geom.pose[1] / 1000.0;
-  this->odom_geom_pose[2] = (int16_t) geom.pose[2] / 180 * M_PI;
-
-  this->odom_geom_size[0] = (int16_t) geom.size[0] / 1000.0;
-  this->odom_geom_size[1] = (int16_t) geom.size[1] / 1000.0;
+  Message* msg;
+  if(!(msg = this->odom->Request(this->InQueue,
+                                 PLAYER_MSGTYPE_REQ,
+                                 PLAYER_POSITION2D_REQ_GET_GEOM,
+                                 NULL, 0, NULL,false)) ||
+     (msg->GetHeader()->size != sizeof(player_position2d_geom_t)))
+  {
+    PLAYER_ERROR("failed to get geometry of underlying position device");
+    return(-1);
+  }
+  player_position2d_geom_t* geom = (player_position2d_geom_t*)msg->GetPayload();
 
   // take the bigger of the two dimensions and halve to get a radius
-  float robot_radius = MAX(geom.size[0],geom.size[1]);
+  float robot_radius = MAX(geom->size.sl,geom->size.sw);
   robot_radius /= 2.0;
 
+  delete msg;
+
   vfh_Algorithm->SetRobotRadius( robot_radius );
+
+  this->odom_pose[0] = this->odom_pose[1] = this->odom_pose[2] = 0.0;
+  this->odom_vel[0] = this->odom_vel[1] = this->odom_vel[2] = 0.0;
 
   return 0;
 }
@@ -434,229 +346,108 @@ int VFH_Class::ShutdownOdom()
   this->turnrate = 0;
   this->PutCommand( speed, turnrate );
   
-  UnsubscribeInternal(this->odom_id);
+  this->odom->Unsubscribe(this->InQueue);
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
-int VFH_Class::SetupLaser() {
-  uint8_t req;
-  size_t replen;
-  unsigned short reptype;
-  struct timeval ts;
-  player_laser_geom_t geom;
-
-  this->laser = SubscribeInternal(this->laser_id);
-  if (!this->laser)
+int VFH_Class::SetupLaser() 
+{
+  if(!(this->laser = deviceTable->GetDevice(this->laser_addr)))
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-/*  if (this->laser->Subscribe(this->laser_id) != 0)
+  if (this->laser->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
-  }*/
+  }
 
-  // Get the laser geometry
-  /*req = PLAYER_LASER_GET_GEOM;
-  replen = this->laser->Request(this->laser_id, 
-                                this, &req, sizeof(req),NULL,
-                                &reptype, &geom, sizeof(geom), &ts);*/
-
-  replen = sizeof(geom);
-  this->odom->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM,
-               laser_id, 0, (uint8_t *) &geom, (uint8_t *) &geom, &replen);
-
-
-  geom.pose[0] = ntohs(geom.pose[0]);
-  geom.pose[1] = ntohs(geom.pose[1]);
-  geom.pose[2] = ntohs(geom.pose[2]);
-  geom.size[0] = ntohs(geom.size[0]);
-  geom.size[1] = ntohs(geom.size[1]);
-
-  this->laser_geom_pose[0] = (int16_t) geom.pose[0] / 1000.0;
-  this->laser_geom_pose[1] = (int16_t) geom.pose[1] / 1000.0;
-  this->laser_geom_pose[2] = (int16_t) geom.pose[2] / 180 * M_PI;
-
+  this->laser_count = 0;
+  for(int i=0;i<PLAYER_LASER_MAX_SAMPLES;i++)
+  {
+    this->laser_ranges[i][0] = 0;
+    this->laser_ranges[i][1] = 0;
+  }
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
-int VFH_Class::ShutdownLaser() {
-  UnsubscribeInternal(this->laser_id);
+int VFH_Class::ShutdownLaser() 
+{
+  this->laser->Unsubscribe(this->InQueue);
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Check for new odometry data
-int VFH_Class::ProcessOdom(player_position_data_t &data) {
-  //int i;
-/*  size_t size;
-  player_position_data_t data;
-  struct timeval timestamp;
-  double time;
+// Process new odometry data
+void 
+VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data) 
+{
 
-  // Get the odom device data.
-  size = this->odom->GetData(this->odom_id,(void*) &data, sizeof(data), 
-                             &timestamp);
-  if (size == 0)
-    return 0;
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (time - this->odom_time < 0.001)
-    return 0;
-  this->odom_time = time;*/
-
-  // Byte swap
-  data.xpos = ntohl(data.xpos);
-  data.ypos = ntohl(data.ypos);
-  data.yaw = ntohl(data.yaw);
-
-  this->odom_pose[0] = (double)((int32_t)data.xpos);
-  this->odom_pose[1] = (double)((int32_t)data.ypos);
-  this->odom_pose[2] = (double)((int32_t)data.yaw);
-
-  // don't byteswap velocities, we're just passing them through
-  this->odom_vel_be[0] = data.xspeed;
-  this->odom_vel_be[1] = data.yspeed;
-  this->odom_vel_be[2] = data.yawspeed;
-
+  // Cache the new odometric pose, velocity, and stall info
+  // NOTE: this->odom_pose is in (mm,mm,deg), as doubles
+  this->odom_pose[0] = data.pos.px * 1e3;
+  this->odom_pose[1] = data.pos.py * 1e3;
+  this->odom_pose[2] = RTOD(data.pos.pa);
+  this->odom_vel[0] = data.vel.px * 1e3;
+  this->odom_vel[1] = data.vel.py * 1e3;
+  this->odom_vel[2] = RTOD(data.vel.pa);
   this->odom_stall = data.stall;
 
-  return 1;
+  // Also change this info out for use by others
+  hdr->addr = this->device_addr;
+  this->Publish(NULL, hdr, (void*)&data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Check for new truth data (optional)
-int VFH_Class::ProcessTruth(player_truth_data_t & data) 
+// Process new laser data
+void 
+VFH_Class::ProcessLaser(player_laser_data_t &data) 
 {
-  //int i;
-/*  size_t size;
-  player_truth_data_t data;
-  struct timeval timestamp;
-  double time;
-
-  // Get the truth device data.
-  size = this->truth->GetData(this->truth_id,(void*) &data, 
-                              sizeof(data), &timestamp);
-  if (size == 0)
-    return 0;
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (time - this->truth_time < 0.001)
-    return 0;
-  this->truth_time = time;*/
-
-  // Byte swap
-  data.pos[0] = ntohl(data.pos[0]);
-  data.pos[1] = ntohl(data.pos[1]);
-  data.rot[2] = ntohl(data.rot[2]);
-
-  // TODO: the units for orientation are probably wrong; the truth
-  // device uses milliradians
-  
-  this->odom_pose[0] = (double) ((int32_t) data.pos[0]);
-  this->odom_pose[1] = (double) ((int32_t) data.pos[1]);
-  this->odom_pose[2] = (double) ((int32_t) data.rot[2]);
-
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Check for new laser data
-int VFH_Class::ProcessLaser(player_laser_data_t &data) {
   int i;
-/*  size_t size;
-  player_laser_data_t data;
-  struct timeval timestamp;
-  double time;*/
-  double r, b, db, range_res;
+  double b, db, r;
 
-  // Get the laser device data.
-/*  size = this->laser->GetData(this->laser_id,(void*) &data, sizeof(data), 
-                              &timestamp);
-  if (size == 0)
-    return 0;
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
+  b = RTOD(data.min_angle);
+  db = RTOD(data.resolution);
 
-  // Dont do anything if this is old data.
-  if (time - this->laser_time < 0.001)
-    return 0;
-  this->laser_time = time;*/
-  /*
-  this->laser->Wait();
-  this->laser->GetData(this,(unsigned char*) &data, sizeof(data), NULL, NULL);
-  */
+  this->laser_count = data.ranges_count;
+  assert(this->laser_count < 
+         (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
 
-//  b = ((int16_t) ntohs(data.min_angle)) / 100.0 * M_PI / 180.0;
-//  db = ((int16_t) ntohs(data.resolution)) / 100.0 * M_PI / 180.0;
-
-  b = ((int16_t) ntohs(data.min_angle)) / 100.0;
-  db = ((int16_t) ntohs(data.resolution)) / 100.0;
-  range_res = ((int16_t) ntohs(data.range_res));
-
-  this->laser_count = ntohs(data.range_count);
-  assert(this->laser_count < (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
-
-  // Read and byteswap the range data
-  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) {
+  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
     this->laser_ranges[i][0] = -1;
-  }
 
-  // what are units of min_angle and resolution
-  //printf("LASER %d %d\n", (int)b, (int)db);
-
-  b += 90;
-  for (i = 0; i < this->laser_count; i++)
+  b += 90.0;
+  for(i = 0; i < this->laser_count; i++)
   {
-//printf("b: %f\n", b);
-//    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
-//if ((i % 20) == 0) {
-//printf("b: %f\n", b);
-    r = ((int16_t) ntohs(data.ranges[i])) * range_res;
-    this->laser_ranges[(int)rint(b * 2)][0] = r;
+    this->laser_ranges[(int)rint(b * 2)][0] = data.ranges[i] * 1e3;
     this->laser_ranges[(int)rint(b * 2)][1] = b;
-//}
     b += db;
   }
 
-  r = 1000000;
-  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) {
+  r = 1000000.0;
+  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+  {
     if (this->laser_ranges[i][0] != -1) {
       r = this->laser_ranges[i][0];
     } else {
       this->laser_ranges[i][0] = r;
     }
   }
- 
-
-/*
-  // Read and byteswap the range data
-  for (i = 0; i < this->laser_count; i++)
-  {
-printf("b: %f\n", b);
-//    r = ((int16_t) ntohs(data.ranges[i])) / 1000.0;
-    r = ((int16_t) ntohs(data.ranges[i]));
-    this->laser_ranges[i][0] = r;
-    this->laser_ranges[i][1] = b;
-    b += db;
-  }
-*/
-
-  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Send commands to the underlying position device
-void VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) {
-  player_position_cmd_t cmd;
+void 
+VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) 
+{
+  player_position2d_cmd_t cmd;
 
 //printf("Command: speed: %d turnrate: %d\n", cmd_speed, cmd_turnrate);
 
@@ -670,185 +461,98 @@ void VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) {
   // disabled.  The P2OS driver does not respect the motor state.
   if (this->cmd_state == 0)
   {
-    cmd.xspeed = 0;
-    cmd.yspeed = 0;
-    cmd.yawspeed = 0;
+    cmd.vel.px = 0;
+    cmd.vel.py = 0;
+    cmd.vel.pa = 0;
   }
-
-  // Velocity mode: pass through the commands.  There is some added
-  // latency here, perhaps move this to GetCommand()?
+  // Velocity mode: the command was already passed through in
+  // ProcessCommand.
   else if (this->cmd_type == 0)
   {
-    cmd.xspeed = this->goal_vx;
-    cmd.yspeed = this->goal_vy;
-    cmd.yawspeed = this->goal_vt;
   }
-
   // Position mode
   else
   {
-    cmd.xspeed = (int32_t) (this->con_vel[0]);
-    cmd.yspeed = (int32_t) (this->con_vel[1]);
-    cmd.yawspeed = (int32_t) (this->con_vel[2]);
+    cmd.vel.px =  this->con_vel[0] / 1e3;
+    cmd.vel.py =  this->con_vel[1] / 1e3;
+    cmd.vel.pa =  DTOR(this->con_vel[2]);
   }
 
-  if (abs(cmd.yawspeed) > vfh_Algorithm->GetMaxTurnrate(cmd.xspeed))
-    PLAYER_WARN1("fast turn %d", cmd.yawspeed);
+  if(fabs(this->con_vel[2]) > 
+     (double)vfh_Algorithm->GetMaxTurnrate((int)this->con_vel[0]))
+    PLAYER_WARN1("fast turn %d", RTOD(cmd.vel.pa));
 
-  cmd.xspeed = htonl(cmd.xspeed);
-  cmd.yspeed = htonl(cmd.yspeed);
-  cmd.yawspeed = htonl(cmd.yawspeed);
-
-//  this->odom->PutCommand(this->odom_id, (void*) &cmd, sizeof(cmd),NULL);
-  this->odom->ProcessMessage(PLAYER_MSGTYPE_CMD, 0, odom_id,
-      sizeof(cmd), (uint8_t *) (&cmd));
-
-  return;
+  this->odom->PutMsg(this->InQueue,
+                     PLAYER_MSGTYPE_CMD,
+                     PLAYER_POSITION2D_CMD_STATE,
+                     (void*)&cmd,sizeof(cmd),NULL);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int VFH_Class::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int VFH_Class::ProcessMessage(MessageQueue* resp_queue, 
+                              player_msghdr * hdr, 
+                              void * data)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, odom_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                           PLAYER_POSITION2D_DATA_STATE, this->odom_addr))
   {
-  	assert(hdr->size ==  sizeof(player_position_data_t));
-    ProcessOdom(*reinterpret_cast<player_position_data_t *> (data));
-    *resp_len = 0;
-    return 0;
+    assert(hdr->size == sizeof(player_position2d_data_t));
+    ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));
+    return(0);
   }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, truth_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                                PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
-  	assert(hdr->size ==  sizeof(player_truth_data_t));
-    ProcessTruth(*reinterpret_cast<player_truth_data_t *> (data));
-    *resp_len = 0;
-    return 0;
-  }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, laser_id))
-  {
-  	assert(hdr->size ==  sizeof(player_laser_data_t));
+    // It's not always that big...
+    //assert(hdr->size == sizeof(player_laser_data_t));
     ProcessLaser(*reinterpret_cast<player_laser_data_t *> (data));
-    *resp_len = 0;
     return 0;
   }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                                PLAYER_POSITION2D_CMD_STATE, 
+                       this->device_addr))
   {
-  	assert(hdr->size ==  sizeof(player_position_cmd_t));
-    ProcessCommand(*reinterpret_cast<player_position_cmd_t *> (data));
-    *resp_len = 0;
+    assert(hdr->size == sizeof(player_position2d_cmd_t));
+    ProcessCommand(hdr, *reinterpret_cast<player_position2d_cmd_t *> (data));
     return 0;
   }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
   {
-  	assert(*resp_len >= sizeof(player_position_geom_t));
-    player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t * >(resp_data);
-    *resp_len = sizeof (player_position_geom_t);
-    
-    geom.pose[0] = htons((int) (this->odom_geom_pose[0] * 1000));
-    geom.pose[1] = htons((int) (this->odom_geom_pose[1] * 1000));
-    geom.pose[2] = htons((int) (this->odom_geom_pose[2] * 180 / M_PI));
-    geom.size[0] = htons((int) (this->odom_geom_size[0] * 1000));
-    geom.size[1] = htons((int) (this->odom_geom_size[1] * 1000));
-     
-    return PLAYER_MSGTYPE_RESP_ACK;
-  }
+    // Pass the request on to the underlying position device and wait for
+    // the reply.
+    Message* msg;
 
-  // pass any other requests to the underlying position device
-  if (hdr->type == PLAYER_MSGTYPE_REQ && hdr->device == device_id.code
-    && hdr->device_index == device_id.index)
-  {
-    hdr->device_index = odom_id.index;
-    int ret = odom->ProcessMessage((ClientData*)BaseClient, hdr, data, resp_data, resp_len);
-    hdr->device_index = device_id.index;
-    return ret;
-  }
-  
-  *resp_len = 0;
-  return -1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle motor power requests
-/*void VFH_Class::HandlePower(void *client, void *req, int reqlen)
-{
-  unsigned short reptype;
-  struct timeval ts;
-
-  this->odom->Request(this->odom_id, this, 
-                      req, reqlen, NULL,
-                      &reptype, NULL, 0, &ts);
-  if (PutReply(client, reptype, &ts) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-void VFH_Class::HandleGetGeom(void *client, void *req, int reqlen)
-{
-  player_position_geom_t geom;
-
-  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-  geom.pose[0] = htons((int) (this->odom_geom_pose[0] * 1000));
-  geom.pose[1] = htons((int) (this->odom_geom_pose[1] * 1000));
-  geom.pose[2] = htons((int) (this->odom_geom_pose[2] * 180 / M_PI));
-  geom.size[0] = htons((int) (this->odom_geom_size[0] * 1000));
-  geom.size[1] = htons((int) (this->odom_geom_size[1] * 1000));
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom), NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-int VFH_Class::HandleRequests()
-{
-  int len;
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-
-  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
-  {
-    printf( "VFH Got a request\n");
-    switch (request[0])
+    if(!(msg = this->odom->Request(this->InQueue,
+                                   hdr->type,
+                                   hdr->subtype,
+                                   (void*)data, 
+                                   hdr->size, 
+                                   &hdr->timestamp)))
     {
-      case PLAYER_POSITION_GET_GEOM_REQ:
-        HandleGetGeom(client, request, len);
-        break;
-
-      case PLAYER_POSITION_MOTOR_POWER_REQ:
-        HandlePower(client, request, len);
-        break;
-
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
+      PLAYER_WARN1("failed to forward config request with subtype: %d\n",
+                   hdr->subtype);
+      return(-1);
     }
-  }
-  return 0;
-}
-*/
 
+    player_msghdr_t* rephdr = msg->GetHeader();
+    void* repdata = msg->GetPayload();
+    // Copy in our address and forward the response
+    rephdr->addr = this->device_addr;
+    this->Publish(resp_queue, rephdr, repdata);
+    delete msg;
+    return(0);
+  }
+  else
+    return -1;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void VFH_Class::Main() 
 {
-  struct timespec sleeptime;
   float dist;
   double angdiff;
   struct timeval startescape, curr;
@@ -857,70 +561,25 @@ void VFH_Class::Main()
   int escape_turnrate_deg;
 
   // bookkeeping to implement hysteresis when rotating at the goal
-  int rotatedir;
+  int rotatedir = 1;
 
   // bookkeeping to implement smarter escape policy
   int escapedir;
 
-  sleeptime.tv_sec = 0;
-  sleeptime.tv_nsec = 1000000L;
-
-  // Wait till we get new odometry data; this may block indefinitely
-  // on older versions of Stage and Gazebo.
-  //this->odom->Wait();
-
-/*  this->GetOdom();
-  if(this->truth)
-    this->GetTruth();*/
-
   escapedir = 1;
   while (true)
   {
-    // Wait till we get new odometry data; this may block indefinitely
-    // on older versions of Stage and Gazebo.
-    // this->odom->Wait();
-
-    // Process any pending requests.
-    //this->HandleRequests();
-    ProcessMessages();
-
-    // Sleep for 1ms (will actually take longer than this).
-    nanosleep(&sleeptime, NULL);
+    // Wait till we get new data
+    this->Wait();
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
-    /*if(this->truth)
-    {
-      // first get odometry, which fills in odom_pose, among other things
-      this->GetOdom();
-      
-      // now get truth, which will overwrite odom_pose
-      if(this->GetTruth() == 0)
-        continue;
-    }
-    else
-    {        
-      // Get new odometric data
-      if (this->GetOdom() == 0)
-        continue;
-    }
-*/
-    // Write odometric data (so we emulate the underlying odometric device)
-    this->PutPose();
-
-    // Read client command
-/*    this->GetCommand();*/
+    // Process any pending requests.
+    this->ProcessMessages();
 
     if(!this->active_goal)
-    {
-      if(this->cmd_type == 0)
-      {
-        // velocity mode; pass through commanded velocites
-        this->PutCommand(-1,-1);
-      }
       continue;
-    }
 
     // Figure how far, in distance and orientation, we are from the goal
     dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
@@ -993,10 +652,8 @@ void VFH_Class::Main()
       while (Desired_Angle < 0)
         Desired_Angle += 360.0;
 
-      // Get new laser data.
-      //this->GetLaser();
       vfh_Algorithm->Update_VFH( this->laser_ranges, 
-                                 (int)ntohl(this->odom_vel_be[0]),
+                                 (int)(this->odom_vel[0]),
                                  Desired_Angle,
                                  dist,
                                  this->dist_eps * 1e3,
@@ -1041,59 +698,48 @@ void VFH_Class::Main()
       this->PutCommand( this->speed, this->turnrate );
     }
   }
-  return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new commands from the server
-void VFH_Class::ProcessCommand(player_position_cmd_t &cmd) 
+void 
+VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &cmd) 
 {
   int x,y,t;
 
-//  if(Driver::GetCommand(&cmd, sizeof(cmd),NULL) != 0) 
+  // Velocity mode; just pass it through
+  if (cmd.type == 0)
   {
-    // Velocity mode
-    if (cmd.type == 0)
+    this->odom->PutMsg(this->InQueue, hdr, (void*)&cmd);
+    this->cmd_type = 0;
+    this->active_goal = false;
+  }
+  // Position mode
+  else
+  {
+    x = (int)rint(cmd.pos.px * 1e3);
+    y = (int)rint(cmd.pos.py * 1e3);
+    t = (int)rint(RTOD(cmd.pos.pa));
+
+    this->cmd_type = 1;
+    this->cmd_state = cmd.state;
+
+    if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
     {
-      x = (int)ntohl(cmd.xspeed);
-      y = (int)ntohl(cmd.yspeed);
-      t = (int)ntohl(cmd.yawspeed);
-
-      this->cmd_type = 0;
-      this->cmd_state = cmd.state;
-      this->goal_vx = x;
-      this->goal_vy = y;
-      this->goal_vt = t;
-      this->active_goal = false;
-    }
-
-    // Position mode
-    else
-    {
-      x = (int)ntohl(cmd.xpos);
-      y = (int)ntohl(cmd.ypos);
-      t = (int)ntohl(cmd.yaw);
-
-      this->cmd_type = 1;
-      this->cmd_state = cmd.state;
-
-      if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
-      {
-        this->active_goal = true;
-        this->turninginplace = false;
-        this->goal_x = x;
-        this->goal_y = y;
-        this->goal_t = t;
-      }
+      this->active_goal = true;
+      this->turninginplace = false;
+      this->goal_x = x;
+      this->goal_y = y;
+      this->goal_t = t;
     }
   }
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 VFH_Class::VFH_Class( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
+  : Driver(cf, section, true, 
+           PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   double cell_size;
   int window_diameter;
@@ -1186,45 +832,21 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
                                           obs_cutoff_1ms,
                                           weight_desired_dir,
                                           weight_current_dir);
-  this->truth = NULL;
-  if (cf->ReadDeviceId(&this->truth_id, section, "requires",
-                       PLAYER_TRUTH_CODE, -1, NULL) != 0)
-    this->use_truth = 0;
-  else
-    this->use_truth = 1;
-  this->truth_time = 0.0;
-  
   this->odom = NULL;
-  if (cf->ReadDeviceId(&this->odom_id, section, "requires",
-                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  if (cf->ReadDeviceAddr(&this->odom_addr, section, "requires",
+                         PLAYER_POSITION2D_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
   }
-  this->odom_time = 0.0;
   
-  // The actual odometry geometry is read from the odometry device
-  this->odom_geom_pose[0] = 0.0;
-  this->odom_geom_pose[1] = 0.0;
-  this->odom_geom_pose[2] = 0.0;
-
-  this->odom_geom_size[0] = 0.0;
-  this->odom_geom_size[1] = 0.0;
-  this->odom_geom_size[2] = 0.0;
-
   this->laser = NULL;
-  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
-                       PLAYER_LASER_CODE, -1, NULL) != 0)
+  if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
+                         PLAYER_LASER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
   }
-  this->laser_time = 0.0;
-
-  // The actual laser geometry is read from the laser device
-  this->laser_geom_pose[0] = 0.0;
-  this->laser_geom_pose[1] = 0.0;
-  this->laser_geom_pose[2] = 0.0;
   
   // Laser settings
   //TODO this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 10);
@@ -1239,38 +861,6 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
 VFH_Class::~VFH_Class() {
   delete this->vfh_Algorithm;
-
-  return;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Update the device data (the data going back to the client).
-void VFH_Class::PutPose()
-{
-  struct timeval timestamp;
-  player_position_data_t data;
-
-  data.xpos = (int32_t)rint(this->odom_pose[0]);
-  data.ypos = (int32_t)rint(this->odom_pose[1]);
-  data.yaw = (int32_t)rint(this->odom_pose[2]);
-
-  data.xspeed = this->odom_vel_be[0];
-  data.yspeed = this->odom_vel_be[1];
-  data.yawspeed = this->odom_vel_be[2];
-  data.stall = this->odom_stall;
-
-  // Byte swap
-  data.xpos = htonl(data.xpos);
-  data.ypos = htonl(data.ypos);
-  data.yaw = htonl(data.yaw);
-  // don't byteswap velocities; they're already in network byteorder
-
-  // Compute timestamp
-  timestamp.tv_sec = (uint32_t) this->odom_time;
-  timestamp.tv_usec = (uint32_t) (fmod(this->odom_time, 1.0) * 1e6);
-
-  // Copy data to server.
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (void*) &data, sizeof(data), &timestamp);
 
   return;
 }

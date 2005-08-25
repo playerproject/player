@@ -93,6 +93,9 @@ typedef struct
   /** How much of @p writebuffer is currently in use (i.e., holding a
     partial message) */
   int writebufferlen;
+  /** Linked list of devices to which we are subscribed */
+  Device** dev_subs;
+  size_t num_dev_subs;
 } playertcp_conn_t;
 
 class PlayerTCP

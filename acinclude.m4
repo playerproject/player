@@ -246,7 +246,7 @@ PLAYER_ADD_DRIVER([khepera],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([microstrain],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([vfh],[no],)
+PLAYER_ADD_DRIVER([vfh],[yes],)
 
 PLAYER_ADD_DRIVER([nomad],[no],[],[],[])
 

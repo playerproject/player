@@ -54,7 +54,7 @@ Driver::Driver(ConfigFile *cf, int section,
                int interf)
 {
   this->error = 0;
-  driverthread = 0;
+  this->driverthread = 0;
   
   // Look for our default device id
   if(cf->ReadDeviceAddr(&this->device_addr, section, "provides", 
@@ -303,7 +303,10 @@ void Driver::ProcessMessages()
     void * data = msg->GetPayload();
 
     if (msg->GetPayloadSize() != hdr->size)
-      PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",msg->GetSize() - sizeof(player_msghdr),hdr->size);
+    {
+      PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",
+                   msg->GetPayloadSize(), hdr->size);
+    }
 
     int ret = this->ProcessMessage(msg->Queue, hdr, data);
     if(ret < 0)

@@ -116,7 +116,8 @@ class Device
                      uint8_t subtype,
                      void* src,
                      size_t len,
-                     double* timestamp);
+                     double* timestamp,
+                     bool threaded = true);
 
     /// @brief Compare two addresses
     ///

@@ -176,6 +176,8 @@ PlayerTCP::Accept(int timeout)
       this->clients[j].port = this->listeners[i].port;
       this->clients[j].fd = newsock;
       this->clients[j].addr = cliaddr;
+      this->clients[j].dev_subs = NULL;
+      this->clients[j].num_dev_subs = 0;
 
       // Set up for later use of poll
       this->client_ufds[j].fd = this->clients[j].fd;
@@ -231,6 +233,13 @@ PlayerTCP::Close(int cli)
     PLAYER_WARN1("tried to Close() invalid client connection %d", cli);
   else
   {
+    for(size_t i=0;i<this->clients[cli].num_dev_subs;i++)
+    {
+      Device* dev = this->clients[cli].dev_subs[i];
+      if(dev)
+        dev->Unsubscribe(this->clients[cli].queue);
+    }
+    free(this->clients[cli].dev_subs);
     if(close(this->clients[cli].fd) < 0)
       PLAYER_WARN1("close() failed: %s", strerror(errno));
     this->clients[cli].fd = -1;
@@ -323,7 +332,7 @@ PlayerTCP::WriteClient(int cli)
   playertcp_conn_t* client;
   Message* msg;
   player_pack_fn_t packfunc;
-  player_msghdr_t* hdr;
+  player_msghdr_t hdr;
   void* payload;
   int encode_msglen;
 
@@ -364,22 +373,25 @@ PlayerTCP::WriteClient(int cli)
     // try to pop a pending message
     else if((msg = client->queue->Pop()))
     {
-      hdr = msg->GetHeader();
+      // Note that we make a COPY of the header.  This is so that we can
+      // edit the size field before sending it out, without affecting other
+      // instances of the message on other queues.
+      hdr = *msg->GetHeader();
       payload = msg->GetPayload();
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr->addr.interf, 
-                                         hdr->type, hdr->subtype)))
+      if(!(packfunc = playerxdr_get_func(hdr.addr.interf, 
+                                         hdr.type, hdr.subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages
         PLAYER_WARN3("skipping message from %u:%u with unsupported type %u",
-                     hdr->addr.interf, hdr->addr.index, hdr->subtype);
+                     hdr.addr.interf, hdr.addr.index, hdr.subtype);
       }
       else
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * hdr->size);
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * hdr.size);
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
@@ -406,17 +418,17 @@ PlayerTCP::WriteClient(int cli)
                         payload, PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
-                       hdr->addr.interf, hdr->addr.index, hdr->subtype);
+                       hdr.addr.interf, hdr.addr.index, hdr.subtype);
           client->writebufferlen = 0;
           return(0);
         }
 
         // Rewrite the size in the header with the length of the encoded
         // body, then encode the header.
-        hdr->size = encode_msglen;
+        hdr.size = encode_msglen;
 	if((encode_msglen =
 	    player_msghdr_pack(client->writebuffer,
-			       PLAYERXDR_MSGHDR_SIZE, hdr,
+			       PLAYERXDR_MSGHDR_SIZE, &hdr,
 			       PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
@@ -424,7 +436,7 @@ PlayerTCP::WriteClient(int cli)
           return(0);
         }
 
-        client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr->size;
+        client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
       }
     }
     else
@@ -718,7 +730,26 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                                devreq->addr.interf, devreq->addr.index);
                 }
                 else
+                {
                   devresp.access = devreq->access;
+                  // record that we subscribed
+                  size_t i;
+                  for(i=0;i<client->num_dev_subs;i++)
+                  {
+                    if(!client->dev_subs[i])
+                      break;
+                  }
+                  if(i==client->num_dev_subs)
+                  {
+                    client->num_dev_subs++;
+                    client->dev_subs = 
+                            (Device**)realloc(client->dev_subs,
+                                              sizeof(Device*)*
+                                              client->num_dev_subs);
+                    assert(client->dev_subs);
+                  }
+                  client->dev_subs[i] = device;
+                }
                 break;
               case PLAYER_CLOSE_MODE:
                 if(device->Unsubscribe(client->queue) != 0)
@@ -727,7 +758,20 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                                devreq->addr.interf, devreq->addr.index);
                 }
                 else
+                {
                   devresp.access = devreq->access;
+                  // record that we unsubscribed
+                  size_t i;
+                  for(i=0;i<client->num_dev_subs;i++)
+                  {
+                    if(client->dev_subs[i] == device)
+                      break;
+                  }
+                  if(i==client->num_dev_subs)
+                    PLAYER_WARN("failed to record unsubscription");
+                  else
+                    client->dev_subs[i] = NULL;
+                }
                 break;
               default:
                 PLAYER_WARN3("unknown access mode %u requested for device %u:%u",
