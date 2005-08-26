@@ -1,4 +1,5 @@
 import playercore.*;
+import Jplayercore.*;
 
 public class main 
 {
@@ -14,7 +15,7 @@ public class main
         quit = true;
       }
     });
-  
+
     System.loadLibrary("playercore_java");
 
     // Initialization stuff
@@ -80,15 +81,17 @@ public class main
       addr = hdr.getAddr();
       if(addr.getInterf() == playercore_javaConstants.PLAYER_LASER_CODE)
       {
-        player_laser_data_t data = playercore_java.buf_to_player_laser_data_t(payload);
-        System.out.println("\nrange count: " + data.getRanges_count());
-        for(int j=0;j<data.getRanges_count();j++)
+        // Convert to Java
+        Jplayer_laser_data_t data = player.buf_to_Jplayer_laser_data_t(payload);
+        // Convert back to C
+        SWIGTYPE_p_void newpayload = player.Jplayer_laser_data_t_to_buf(data);
+        // Convert back to Java
+        Jplayer_laser_data_t newdata = player.buf_to_Jplayer_laser_data_t(newpayload);
+        System.out.println("\nrange count: " + newdata.ranges_count);
+        for(int j=0;j<newdata.ranges_count;j++)
         {
-          System.out.print(data.getRanges()[j] + " ");
+          System.out.print(newdata.ranges[j] + " ");
         }
-
-        SWIGTYPE_p_void newpayload = playercore_java.player_laser_data_t_to_buf(data);
-        Message newmsg = new Message(hdr, newpayload, 0, mq);
 
       }
 
