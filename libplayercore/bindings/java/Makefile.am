@@ -3,19 +3,22 @@ AM_CPPFLAGS = -g -Wall -fPIC @JNI_CFLAGS@
 # files that must be built first
 BUILT_SOURCES =
 if ENABLE_JAVA
-BUILT_SOURCES += playercore_java_wrap.cc playercore_casts.i
+BUILT_SOURCES += playercore_java_wrap.cc playercore_casts.i playercore_arraysofclasses.i
 endif
 
 EXTRA_DIST = playercore_java.i parse.py
-CLEANFILES = playercore_java_wrap.cc playercore_casts.i
+CLEANFILES = playercore_java_wrap.cc playercore_casts.i playercore_arraysofclasses.i
 
 lib_LTLIBRARIES =
 if ENABLE_JAVA
 lib_LTLIBRARIES += libplayercore_java.la
 endif
 
+playercore_arraysofclasses.i: playercore_casts.i
+
 playercore_casts.i: $(srcdir)/../../player.h
-	python $(srcdir)/parse.py $(srcdir)/../../player.h $@
+	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i Jplayercore playercore/player.java
+
 
 playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
                          $(srcdir)/../../configfile.h \
@@ -44,4 +47,4 @@ install-exec-hook:
 endif
 
 clean-local:
-	rm -f playercore/*.class playercore/*.java
+	rm -f playercore Jplayercore

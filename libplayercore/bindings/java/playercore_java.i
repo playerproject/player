@@ -19,13 +19,9 @@ typedef unsigned int uint32_t;
 typedef long int64_t;
 typedef unsigned long uint64_t;
 
-//%apply jbyteArray { void* data }
-//%typemap(in) void *data {
-//  $1 = (void*)((*jenv).GetByteArrayElements($input, NULL));
-//}
-//%typemap(freearg) void *foo {
-//  (*jenv).ReleaseByteArrayElements($input, $1, 0);
-//}
+// Include the auto-generated macros that allow the use of arrays of 
+// non-primitive types (i.e., message structures)
+%include playercore_arraysofclasses.i
 
 %include <libplayercore/configfile.h>
 %include <libplayercore/device.h>
@@ -41,7 +37,7 @@ typedef unsigned long uint64_t;
 
 %include <server/libplayerdrivers/driverregistry.h>
 
-// Include the auto-generated functions that cast between unsigned char*
-// buffers and message structures
+// Include the auto-generated functions that cast between void* buffers and 
+// pointers to message structures
 %include playercore_casts.i
 
