@@ -1304,7 +1304,8 @@ typedef struct player_localize_hypoth
   /** The mean value of the pose estimate (m, m, rad). */
   player_pose_t mean;
   /** The covariance matrix pose estimate (m$^2$, rad$^2$). */
-  double cov[3][3];
+  //double cov[3][3];
+  double cov[3];
   /** The weight coefficient for linear combination (alpha) */
   double alpha;
 } player_localize_hypoth_t;

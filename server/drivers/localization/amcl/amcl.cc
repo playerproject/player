@@ -1038,6 +1038,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
     data.hypoths[i].mean.py = pose.v[1];
     data.hypoths[i].mean.pa = pose.v[2];
   
+    /*
     data.hypoths[i].cov[0][0] = pose_cov.m[0][0];
     data.hypoths[i].cov[0][1] = pose_cov.m[0][1];
     data.hypoths[i].cov[0][2] = 0;
@@ -1049,6 +1050,11 @@ void AdaptiveMCL::PutDataLocalize(double time)
     data.hypoths[i].cov[2][0] = 0;
     data.hypoths[i].cov[2][1] = 0;
     data.hypoths[i].cov[2][2] = pose_cov.m[2][2];
+    */
+
+    data.hypoths[i].cov[0] = pose_cov.m[0][0];
+    data.hypoths[i].cov[1] = pose_cov.m[1][1];
+    data.hypoths[i].cov[2] = pose_cov.m[2][2];
   }
   
   // sort according to weight

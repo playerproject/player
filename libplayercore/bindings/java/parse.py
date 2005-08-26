@@ -5,11 +5,11 @@ import string
 import sys
 import os
 
-USAGE = 'USAGE: parse.y <player.h> <playercore_casts.i> <playercore_arraysofclasses.i> <Jplayercore> <playercore/player.java>'
+USAGE = 'USAGE: parse.y <player.h> <playercore_casts.i> <playercore_arraysofclasses.i> <Jplayercore> <playercore> <player.java>'
 
 if __name__ == '__main__':
 
-  if len(sys.argv) != 6:
+  if len(sys.argv) != 7:
     print USAGE
     sys.exit(-1)
 
@@ -17,8 +17,10 @@ if __name__ == '__main__':
   outfilename = sys.argv[2]
   aofcfilename = sys.argv[3]
   outdir = sys.argv[4]
-  pcjfilename = sys.argv[5]
+  pcoutdir = sys.argv[5]
+  pcjfilename = sys.argv[6]
   os.system('mkdir -p ' + outdir)
+  os.system('mkdir -p ' + pcoutdir)
 
   # Read in the entire file
   infile = open(infilename, 'r')
@@ -27,7 +29,7 @@ if __name__ == '__main__':
 
   outfile = open(outfilename, 'w+')
   aofcfile = open(aofcfilename, 'w+')
-  pcjfile = open(pcjfilename, 'w+')
+  pcjfile = open(pcoutdir + '/' + pcjfilename, 'w+')
 
   # strip C++-style comments
   pattern = re.compile('//.*')
