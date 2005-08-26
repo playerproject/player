@@ -34,7 +34,6 @@ libamcl_la_SOURCES = amcl.h \
                      pf/pf_pdf.c \
                      pf/pf_vector.c \
                      pf/pf_draw.c \
-                     pf/gsl_discrete.c \
                      pf/pf.h \
                      pf/pf_pdf.h \
                      pf/pf_kdtree.h \
@@ -44,6 +43,13 @@ libamcl_la_SOURCES = amcl.h \
                      map/map_store.c \
                      map/map_draw.c \
                      map/map.h
+
+# I'm taking this out of the build, because it prevents me from building
+# Java wrappers to libplayercore + libplayerdrivers.  Darwin doesn't like
+# the multiple definitions of the symbols in gsl_discrete.c.  Besides, the
+# bug that is fixed in this file was apparently merged into the main GSL
+# distro as of 1.4.
+#pf/gsl_discrete.c
 
 #amcl_gps.h amcl_gps.cc amcl_imu.h amcl_imu.cc amcl_sonar.cc amcl_wifi.cc
 #amcl_fiducial.cc amcl_fiducial.h
