@@ -17,10 +17,11 @@ endif
 playercore_arraysofclasses.i: playercore_casts.i
 
 playercore_casts.i: $(srcdir)/../../player.h
-	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i Jplayercore playercore/player.java
+	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i Jplayercore playercore player.java
 
 
 playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
+                         playercore_arraysofclasses.i\
                          $(srcdir)/../../configfile.h \
                          $(srcdir)/../../device.h \
                          $(srcdir)/../../devicetable.h \
@@ -32,7 +33,6 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
                          $(srcdir)/../../player.h \
                          $(srcdir)/../../playercommon.h \
                          $(srcdir)/../../playertime.h
-	mkdir -p playercore
 	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I$(srcdir)/../../.. $<
 
 #all-local:
@@ -47,4 +47,4 @@ install-exec-hook:
 endif
 
 clean-local:
-	rm -f playercore Jplayercore
+	rm -rf playercore Jplayercore

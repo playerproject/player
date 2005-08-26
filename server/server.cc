@@ -42,8 +42,9 @@ extern int optreset;
 /* getopt stuff */
 /****************/
 
-bool player_quit;
-bool player_quiet_startup;
+// These are declared in libplayercore/globals.cc
+extern bool player_quit;
+extern bool player_quiet_startup;
 
 void PrintCopyrightMsg();
 void PrintUsage();
