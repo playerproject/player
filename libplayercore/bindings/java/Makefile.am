@@ -36,7 +36,7 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
 #	javac *.java
 
 libplayercore_java_la_SOURCES = playercore_java_wrap.cc
-libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/*.lo $(top_builddir)/server/libplayerdrivers/*.lo `find $(top_builddir)/server/drivers -name "*.lo"` -version-info 2:0:0
+libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/*.lo $(top_builddir)/server/libplayerdrivers/*.lo `find $(top_builddir)/server/drivers -name "*.lo"` -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@ 
 
 if DARWIN
 install-exec-hook:
