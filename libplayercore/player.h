@@ -121,6 +121,7 @@
 #define PLAYER_PLAYER_STRING          "player"
 #define PLAYER_POSITION1D_STRING      "position1d"
 #define PLAYER_POSITION2D_STRING      "position2d"
+#define PLAYER_POSITION_STRING        "position"
 #define PLAYER_POSITION3D_STRING      "position3d"
 #define PLAYER_POWER_STRING           "power"
 #define PLAYER_PTZ_STRING             "ptz"
