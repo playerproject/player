@@ -28,8 +28,8 @@
 #define PLAYERV_H
 
 // Non-local headers
-#include "rtk.h"
-#include "playerc.h"
+#include <rtk2/rtk.h>
+#include <libplayerc/playerc.h>
 
 // Local headers
 #include "error.h"
