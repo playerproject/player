@@ -241,6 +241,21 @@ int main(int argc, char **argv)
       device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
     }
 
+    // Allow for --position instead of --position2d
+    if(device->addr.interf == PLAYER_POSITION2D_CODE)
+    {
+      snprintf(section, sizeof(section), "%s:%d", 
+               PLAYER_POSITION_STRING, device->addr.index);
+      device->subscribe = opt_get_int(opt, section, "", device->subscribe);
+      device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
+      if (device->addr.index == 0)
+      {
+        snprintf(section, sizeof(section), "%s", PLAYER_POSITION_STRING);
+        device->subscribe = opt_get_int(opt, section, "", device->subscribe);
+        device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
+      }
+    }
+
     // Create the GUI proxy for this device.
     create_proxy(device, opt, mainwnd, client);
 

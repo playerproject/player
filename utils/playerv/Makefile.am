@@ -2,7 +2,7 @@ if WITH_GTK
 PLAYERV = playerv
 endif
 
-AM_CPPFLAGS = -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/libplayercore -I$(top_srcdir)/rtk2 @GTK_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/client_libs @GTK_CFLAGS@
 
 bin_PROGRAMS = $(PLAYERV)
 
