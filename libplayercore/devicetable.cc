@@ -142,6 +142,9 @@ DeviceTable::GetDevice(player_devaddr_t addr)
       break;
   }
 
+  // If we didn't find the device, and its address has a different host or
+  // port, then return a new Device...
+
   pthread_mutex_unlock(&mutex);
   return(thisentry);
 }

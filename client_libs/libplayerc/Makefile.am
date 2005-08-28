@@ -26,6 +26,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_laser.c \
                         dev_log.c \
                         dev_position2d.c \
+                        dev_position.c \
                         dev_simulation.c
 #dev_blobfinder.c \
 #dev_bumper.c \

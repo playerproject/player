@@ -1533,6 +1533,44 @@ void playerc_position2d_putmsg(playerc_position2d_t *device,
 /** @} */
 /**************************************************************************/
 
+/***************************************************************************/
+/** @defgroup playerc_proxy_position position
+
+The position proxy provides backward compatibility for pre-Player 2.0 client
+code.  New code should use the @ref playerc_proxy_position2d proxy instead.
+
+@{
+*/
+
+/** Position device data. */
+typedef playerc_position2d_t playerc_position_t;
+
+/** Create a position device proxy. */
+playerc_position_t *playerc_position_create(playerc_client_t *client, 
+                                            int index);
+/** Destroy a position device proxy. */
+void playerc_position_destroy(playerc_position_t *device);
+/** Subscribe to the position device */
+int playerc_position_subscribe(playerc_position_t *device, int access);
+/** Un-subscribe from the position device */
+int playerc_position_unsubscribe(playerc_position_t *device);
+/** Enable/disable the motors */
+int playerc_position_enable(playerc_position_t *device, int enable);
+/** Get the position geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_position_get_geom(playerc_position_t *device);
+/** Set the target speed.  vx : forward speed (m/s).  vy : sideways
+    speed (m/s); this field is used by omni-drive robots only.  va :
+    rotational speed (rad/s).  All speeds are defined in the robot
+    coordinate system. */
+int playerc_position_set_cmd_vel(playerc_position_t *device,
+                                   double vx, double vy, double va, int state);
+/** Set the target pose (gx, gy, ga) is the target pose in the
+    odometric coordinate system. */
+int playerc_position_set_cmd_pose(playerc_position_t *device,
+                                  double gx, double gy, double ga, int state);
+/** @} */
+
 #if 0
 
 /***************************************************************************/
