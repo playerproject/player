@@ -21,7 +21,7 @@ int test_sonar(playerc_client_t *client, int index)
   device = playerc_sonar_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_sonar_subscribe(device, PLAYER_READ_MODE) == 0)
+  if (playerc_sonar_subscribe(device, PLAYER_OPEN_MODE) == 0)
     PASS();
   else
     FAIL();

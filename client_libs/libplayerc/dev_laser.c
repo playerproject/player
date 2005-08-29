@@ -54,6 +54,10 @@
 #include "playerc.h"
 #include "error.h"
 
+// Process incoming data
+void playerc_laser_putmsg(playerc_laser_t *device, 
+                          player_msghdr_t *header,
+                          void *data);
 
 // Create a new laser proxy
 playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)

@@ -1029,11 +1029,6 @@ int playerc_laser_subscribe(playerc_laser_t *device, int access);
 /** @brief Un-subscribe from the laser device. */
 int playerc_laser_unsubscribe(playerc_laser_t *device);
 
-/** @brief @internal Parse data from incoming packet */
-void playerc_laser_putmsg(playerc_laser_t *device, 
-                           player_msghdr_t *header,
-                           void *data);
-
 /** @brief Configure the laser.
 
 @param device Pointer to proxy object.
@@ -1525,11 +1520,6 @@ int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                     double gx, double gy, double ga, int state);
 
-/** @brief @internal Parse data from incoming packet */
-void playerc_position2d_putmsg(playerc_position2d_t *device, 
-                               player_msghdr_t *header,
-                               player_position2d_data_t *data, size_t len);
-
 /** @} */
 /**************************************************************************/
 
@@ -1768,6 +1758,7 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zo
 /** @} */
 /**************************************************************************/ 
 
+#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_sonar sonar
@@ -1822,6 +1813,7 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 /** @} */
 /**************************************************************************/
 
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_truth truth
@@ -1969,10 +1961,6 @@ int playerc_simulation_subscribe(playerc_simulation_t *device, int access);
 
 // Un-subscribe from the simulation device
 int playerc_simulation_unsubscribe(playerc_simulation_t *device);
-
-// Process incoming data
-void playerc_simulation_putmsg(playerc_simulation_t *device, player_msghdr_t *header,
-				player_simulation_data_t *data, size_t len);
 
 int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
                                   double gx, double gy, double ga);

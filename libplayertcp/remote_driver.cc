@@ -51,29 +51,29 @@ TCPRemoteDriver::Setup()
          this->device_addr.index);
 
   server.sin_family = PF_INET;
-  server.sin_addr = this->device_addr.host;
-  server.sin_port = htons(this->device_addr.port);
+  server.sin_addr.s_addr = this->device_addr.host;
+  server.sin_port = htons(this->device_addr.robot);
 
   // Connect the socket 
   if(connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0)
   {
-    PLAYER_ERR3("connect call on [%d:%d] failed with error [%s]",
+    PLAYER_ERROR3("connect call on [%d:%d] failed with error [%s]",
                 this->device_addr.host, 
-                this->device_addr.port, 
+                this->device_addr.robot, 
                 strerror(errno));
     return(-1);
   }
 
   // Get the banner 
-  if(recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
+  if(recv(sock, banner, sizeof(banner), 0) < (int)sizeof(banner))
   {
-    PLAYER_ERR("incomplete initialization string");
+    PLAYER_ERROR("incomplete initialization string");
     return(-1);
   }
 
   // TODO: subscribe to the remote device, and record it here somewhere.
 
-  this->AddClient(NULL, 0, sock, this);
+  //this->ptcp->AddClient(NULL, 0, sock, this);
 
   return(0); 
 }
