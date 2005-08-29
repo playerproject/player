@@ -34,6 +34,9 @@ extern int test_simulation(playerc_client_t *client, int index);
 // Basic test for sonar device.
 extern int test_sonar(playerc_client_t *client, int index);
 
+// Basic test for power device.
+extern int test_power(playerc_client_t *client, int index);
+
 #if 0
 // Basic test for BPS device.i
 extern int test_bps(playerc_client_t *client, int index);
@@ -73,9 +76,6 @@ extern int test_comms(playerc_client_t *client, int index);
 
 // Basic test for the laser beacon device.
 extern int test_fiducial(playerc_client_t *client, int index);
-
-// Basic test for power device.
-extern int test_power(playerc_client_t *client, int index);
 
 // Basic test for wifi device.
 extern int test_wifi(playerc_client_t *client, int index);

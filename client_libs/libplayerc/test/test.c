@@ -130,6 +130,11 @@ int main(int argc, const char *argv[])
         test_sonar(client, client->devinfos[i].addr.index);
         break;
 
+      // Power device
+      case PLAYER_POWER_CODE:
+        test_power(client, client->devinfos[i].addr.index);
+        break;
+
 #if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
@@ -169,11 +174,6 @@ int main(int argc, const char *argv[])
       // Position device
       case PLAYER_POSITION3D_CODE:
         test_position3d(client, client->devinfos[i].addr.index);
-        break;
-
-      // Power device
-      case PLAYER_POWER_CODE:
-        test_power(client, client->devinfos[i].addr.index);
         break;
 
       // PTZ device

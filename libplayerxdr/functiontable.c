@@ -105,6 +105,9 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PROF, 
     (player_pack_fn_t)player_position2d_speed_prof_req_pack},
 
+  /* power messages */
+  {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_VOLTAGE, 
+    (player_pack_fn_t)player_power_data_pack},
 
   /* log messages */
   {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_WRITE_STATE, 
