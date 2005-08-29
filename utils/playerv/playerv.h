@@ -370,6 +370,8 @@ void ptz_destroy(ptz_t *ptz);
 void ptz_update(ptz_t *ptz);
 
 
+#endif
+
 /***************************************************************************
  * Sonar (Fixed range-finder) device
  ***************************************************************************/
@@ -406,6 +408,8 @@ void sonar_destroy(sonar_t *sonar);
 // Update a sonar device
 void sonar_update(sonar_t *sonar);
 
+
+#if 0
 
 /***************************************************************************
  * IR device

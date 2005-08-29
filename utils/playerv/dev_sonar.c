@@ -106,7 +106,7 @@ void sonar_update(sonar_t *sonar)
   {
     if (!sonar->proxy->info.subscribed)
     {
-      if (playerc_sonar_subscribe(sonar->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_sonar_subscribe(sonar->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
       // Get the sonar geometry

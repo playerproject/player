@@ -31,6 +31,9 @@ extern int test_log(playerc_client_t *client, int index);
 // Basic test for simulation device.
 extern int test_simulation(playerc_client_t *client, int index);
 
+// Basic test for sonar device.
+extern int test_sonar(playerc_client_t *client, int index);
+
 #if 0
 // Basic test for BPS device.i
 extern int test_bps(playerc_client_t *client, int index);
@@ -55,9 +58,6 @@ int test_localize(playerc_client_t *client, int index);
 
 // Basic test for ptz device.
 extern int test_ptz(playerc_client_t *client, int index);
-
-// Basic test for sonar device.
-extern int test_sonar(playerc_client_t *client, int index);
 
 // Basic test for truth device.
 extern int test_truth(playerc_client_t *client, int index);

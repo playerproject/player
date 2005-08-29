@@ -14,7 +14,8 @@ playerv_SOURCES = playerv.c \
                   opt.c \
                   opt.h \
                   dev_laser.c \
-                  dev_position2d.c
+                  dev_position2d.c \
+                  dev_sonar.c
 
 #dev_blobfinder.c \
 #dev_fiducial.c \
@@ -22,7 +23,6 @@ playerv_SOURCES = playerv.c \
 #dev_map.c \
 #dev_power.c \
 #dev_ptz.c \
-#dev_sonar.c \
 #dev_bumper.c \
 #dev_ir.c \
 #dev_wifi.c

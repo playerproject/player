@@ -125,6 +125,11 @@ int main(int argc, const char *argv[])
         test_simulation(client, client->devinfos[i].addr.index);
         break;
 
+      // Sonar device
+      case PLAYER_SONAR_CODE:
+        test_sonar(client, client->devinfos[i].addr.index);
+        break;
+
 #if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
@@ -174,11 +179,6 @@ int main(int argc, const char *argv[])
       // PTZ device
       case PLAYER_PTZ_CODE:
         test_ptz(client, client->devinfos[i].addr.index);
-        break;
-
-      // Sonar device
-      case PLAYER_SONAR_CODE:
-        test_sonar(client, client->devinfos[i].addr.index);
         break;
 
       // Truth device
