@@ -79,6 +79,9 @@ typedef struct
   struct sockaddr_in addr;
   /** Outgoing queue for this connection */
   MessageQueue* queue;
+  /** Local Device* that serves as a proxy for the remote device at the
+   * other end of this connection. */
+  Device* device;
   /** Buffer in which to store partial incoming messages */
   char* readbuffer;
   /** Total size of @p readbuffer */
@@ -121,6 +124,8 @@ class PlayerTCP
     ~PlayerTCP();
 
     int Listen(int* ports, int num_ports);
+    void AddClient(struct sockaddr_in* cliaddr, int local_port,
+                   int newsock, Device* dev);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);

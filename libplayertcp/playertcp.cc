@@ -33,6 +33,7 @@
 
 #include "playertcp.h"
 #include "socket_util.h"
+#include "remote_driver.h"
 
 PlayerTCP::PlayerTCP()
 {
@@ -56,6 +57,8 @@ PlayerTCP::PlayerTCP()
     PLAYER_WARN("address lookup failed for localhost");
     this->host = 0;
   }
+
+  deviceTable->AddRemoteDriverFn(TCPRemoteDriver::TCPRemoteDriver_Init,this);
 }
 
 PlayerTCP::~PlayerTCP()
@@ -100,6 +103,80 @@ PlayerTCP::Listen(int* ports, int num_ports)
   return(0);
 }
 
+void
+PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
+                     int newsock, Device* dev)
+{
+  unsigned char data[PLAYER_IDENT_STRLEN];
+
+  // Look for a place to store the new connection info
+  int j;
+  for(j=0;j<this->size_clients;j++)
+  {
+    if(!this->clients[j].valid)
+      break;
+  }
+
+  // Do we need to allocate another spot?
+  if(j == this->size_clients)
+  {
+    this->size_clients++;
+    this->clients = (playertcp_conn_t*)realloc(this->clients,
+                                               this->size_clients *
+                                               sizeof(playertcp_conn_t));
+    assert(this->clients);
+    this->client_ufds = (struct pollfd*)realloc(this->client_ufds,
+                                                this->size_clients *
+                                                sizeof(struct pollfd));
+    assert(this->client_ufds);
+  }
+
+  memset(this->clients + j, 0, sizeof(playertcp_conn_t));
+  // Store the client's info
+  this->clients[j].valid = 1;
+  this->clients[j].del = 0;
+  this->clients[j].port = local_port;
+  this->clients[j].fd = newsock;
+  if(cliaddr)
+    this->clients[j].addr = *cliaddr;
+  this->clients[j].dev_subs = NULL;
+  this->clients[j].num_dev_subs = 0;
+
+  // Set up for later use of poll
+  this->client_ufds[j].fd = this->clients[j].fd;
+  this->client_ufds[j].events = POLLIN;
+
+  // Create an outgoing queue for this client
+  this->clients[j].queue = 
+          new MessageQueue(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+  assert(this->clients[j].queue);
+
+  // Create a buffer to hold incoming messages
+  this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;
+  this->clients[j].readbuffer = 
+          (char*)calloc(1,this->clients[j].readbuffersize);
+  assert(this->clients[j].readbuffer);
+  this->clients[j].readbufferlen = 0;
+
+  // Create a buffer to hold outgoing messages
+  this->clients[j].writebuffersize = PLAYERTCP_WRITEBUFFER_SIZE;
+  this->clients[j].writebuffer = 
+          (char*)calloc(1,this->clients[j].writebuffersize);
+  assert(this->clients[j].writebuffer);
+  this->clients[j].writebufferlen = 0;
+
+  sprintf((char*)data, "%s", PLAYER_IDENT_STRING);
+  memset(((char*)data)+strlen((char*)data),0,
+         PLAYER_IDENT_STRLEN-strlen((char*)data));
+  if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
+  {
+    PLAYER_ERROR("failed to send ident string");
+  }
+
+  PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
+              j, this->clients[j].port, this->clients[j].fd);
+}
+
 int
 PlayerTCP::Accept(int timeout)
 {
@@ -107,7 +184,6 @@ PlayerTCP::Accept(int timeout)
   int newsock;
   struct sockaddr_in cliaddr;
   socklen_t sender_len;
-  unsigned char data[PLAYER_IDENT_STRLEN];
 
   // Look for new connections
   if((num_accepts = poll(this->listen_ufds, num_listeners, timeout)) < 0)
@@ -148,70 +224,8 @@ PlayerTCP::Accept(int timeout)
         return(-1);
       }
 
-      // Look for a place to store the new connection info
-      int j;
-      for(j=0;j<this->size_clients;j++)
-      {
-        if(!this->clients[j].valid)
-          break;
-      }
-
-      // Do we need to allocate another spot?
-      if(j == this->size_clients)
-      {
-        this->size_clients++;
-        this->clients = (playertcp_conn_t*)realloc(this->clients,
-                                                   this->size_clients *
-                                                   sizeof(playertcp_conn_t));
-        assert(this->clients);
-        this->client_ufds = (struct pollfd*)realloc(this->client_ufds,
-                                                    this->size_clients *
-                                                    sizeof(struct pollfd));
-        assert(this->client_ufds);
-      }
-
-      // Store the client's info
-      this->clients[j].valid = 1;
-      this->clients[j].del = 0;
-      this->clients[j].port = this->listeners[i].port;
-      this->clients[j].fd = newsock;
-      this->clients[j].addr = cliaddr;
-      this->clients[j].dev_subs = NULL;
-      this->clients[j].num_dev_subs = 0;
-
-      // Set up for later use of poll
-      this->client_ufds[j].fd = this->clients[j].fd;
-      this->client_ufds[j].events = POLLIN;
-
-      // Create an outgoing queue for this client
-      this->clients[j].queue = 
-              new MessageQueue(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
-      assert(this->clients[j].queue);
-
-      // Create a buffer to hold incoming messages
-      this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;
-      this->clients[j].readbuffer = 
-              (char*)calloc(1,this->clients[j].readbuffersize);
-      assert(this->clients[j].readbuffer);
-      this->clients[j].readbufferlen = 0;
-
-      // Create a buffer to hold outgoing messages
-      this->clients[j].writebuffersize = PLAYERTCP_WRITEBUFFER_SIZE;
-      this->clients[j].writebuffer = 
-              (char*)calloc(1,this->clients[j].writebuffersize);
-      assert(this->clients[j].writebuffer);
-      this->clients[j].writebufferlen = 0;
-
-      sprintf((char*)data, "%s", PLAYER_IDENT_STRING);
-      memset(((char*)data)+strlen((char*)data),0,
-             PLAYER_IDENT_STRLEN-strlen((char*)data));
-      if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
-      {
-        PLAYER_ERROR("failed to send ident string");
-      }
-
-      PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
-                  j, this->clients[j].port, this->clients[j].fd);
+      this->AddClient(&cliaddr, this->listeners[i].port,
+                      newsock, NULL);
 
       this->num_clients++;
       num_accepts--;
@@ -580,7 +594,7 @@ PlayerTCP::ParseBuffer(int cli)
     // and so we don't require that the client fill it in.
     hdr.addr.host = this->host;
     hdr.addr.robot = client->port;
-    device = deviceTable->GetDevice(hdr.addr);
+    device = deviceTable->GetDevice(hdr.addr,false);
     if(!device && (hdr.addr.interf != PLAYER_PLAYER_CODE))
     {
       PLAYER_WARN3("skipping message of type %u to unknown device %u:%u",
@@ -694,7 +708,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           // fill it in.
           devreq->addr.host = this->host;
           devreq->addr.robot = client->port;
-          if(!(device = deviceTable->GetDevice(devreq->addr)))
+          if(!(device = deviceTable->GetDevice(devreq->addr,false)))
           {
             PLAYER_WARN2("skipping subscription to unknown device %u:%u",
                          devreq->addr.interf, devreq->addr.index);
@@ -835,7 +849,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           // fill it in.
           inforeq->addr.host = this->host;
           inforeq->addr.robot = client->port;
-          if(!(device = deviceTable->GetDevice(inforeq->addr)))
+          if(!(device = deviceTable->GetDevice(inforeq->addr,false)))
           {
             PLAYER_WARN2("skipping info request for unknown device %u:%u",
                          inforeq->addr.interf, inforeq->addr.index);

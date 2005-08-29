@@ -34,9 +34,10 @@
 // initialize the table
 DeviceTable::DeviceTable()
 {
-  numdevices = 0;
-  head = NULL;
-  pthread_mutex_init(&mutex,NULL);
+  this->numdevices = 0;
+  this->head = NULL;
+  pthread_mutex_init(&this->mutex,NULL);
+  this->remote_driver_fn = NULL;
 }
 
 // tear down the table
@@ -62,12 +63,13 @@ DeviceTable::~DeviceTable()
 // this is the 'base' AddDevice method, which sets all the fields
 int 
 DeviceTable::AddDevice(player_devaddr_t addr, 
-                       Driver* driver)
+                       Driver* driver, bool havelock)
 {
   Device* thisentry;
   Device* preventry;
 
-  pthread_mutex_lock(&mutex);
+  if(!havelock)
+    pthread_mutex_lock(&mutex);
 
   // Check for duplicate entries (not allowed)
   for(thisentry = head,preventry=NULL; thisentry; 
@@ -82,7 +84,8 @@ DeviceTable::AddDevice(player_devaddr_t addr,
                   addr.host, addr.robot,
                   lookup_interface_name(0, addr.interf), 
                   addr.index);
-    pthread_mutex_unlock(&mutex);
+    if(!havelock)
+      pthread_mutex_unlock(&mutex);
     return(-1);
   }
     
@@ -95,7 +98,8 @@ DeviceTable::AddDevice(player_devaddr_t addr,
     head = thisentry;
   numdevices++;
 
-  pthread_mutex_unlock(&mutex);
+  if(!havelock)
+    pthread_mutex_unlock(&mutex);
   return(0);
 }
 
@@ -132,7 +136,7 @@ DeviceTable::GetDriverName(player_devaddr_t addr)
 // find a device entry, based on addr, and return the pointer (or NULL
 // on failure)
 Device* 
-DeviceTable::GetDevice(player_devaddr_t addr)
+DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
 {
   Device* thisentry;
   pthread_mutex_lock(&mutex);
@@ -142,8 +146,29 @@ DeviceTable::GetDevice(player_devaddr_t addr)
       break;
   }
 
-  // If we didn't find the device, and its address has a different host or
-  // port, then return a new Device...
+  // If we didn't find the device, give the application's remote device
+  // handler a try
+  if((thisentry == NULL) && lookup_remote && (this->remote_driver_fn != NULL))
+  {
+    Driver* rdriver = (*this->remote_driver_fn)(addr,this->remote_driver_arg);
+    if(rdriver != NULL)
+    {
+      if(this->AddDevice(addr, rdriver, true) < 0)
+      {
+        PLAYER_ERROR("failed to add remote device");
+        delete rdriver;
+      }
+      else
+      {
+        for(thisentry=head;thisentry;thisentry=thisentry->next)
+        {
+          if(Device::MatchDeviceAddress(thisentry->addr, addr))
+            break;
+        }
+        assert(thisentry);
+      }
+    }
+  }
 
   pthread_mutex_unlock(&mutex);
   return(thisentry);
@@ -191,3 +216,13 @@ DeviceTable::StartAlwaysonDrivers()
   return(0);
 }
 
+// Register a factory creation function.  It will be called when
+// GetDevice fails to find a device in the deviceTable.  This function
+// might, for example, locate the device on a remote host (in a
+// transport-dependent manner).
+void 
+DeviceTable::AddRemoteDriverFn(remote_driver_fn_t rdf, void* arg)
+{
+  this->remote_driver_fn = rdf;
+  this->remote_driver_arg = arg;
+}

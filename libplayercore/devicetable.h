@@ -35,6 +35,8 @@
 #include <libplayercore/driver.h>
 #include <libplayercore/device.h>
 
+typedef Driver* (*remote_driver_fn_t) (player_devaddr_t addr, void* arg);
+
 class DeviceTable
 {
   private:
@@ -42,6 +44,13 @@ class DeviceTable
     Device* head;
     int numdevices;
     pthread_mutex_t mutex;
+
+    // A factory creation function that the application can set (via
+    // AddRemoteDevice).  It will be called when GetDevice fails to find a
+    // device in the deviceTable
+    remote_driver_fn_t remote_driver_fn;
+    // Context arg for remote_driver_fn
+    void* remote_driver_arg;
 
   public:
     DeviceTable();
@@ -52,7 +61,7 @@ class DeviceTable
     // id is the id for the device (e.g, 's' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_devaddr_t addr, Driver* driver);
+    int AddDevice(player_devaddr_t addr, Driver* driver, bool havelock=false);
     
     // returns the controlling object for the given id 
     // (returns NULL on failure)
@@ -64,7 +73,7 @@ class DeviceTable
 
     // find a device, based on id, and return the pointer (or NULL on
     // failure)
-    Device* GetDevice(player_devaddr_t addr);
+    Device* GetDevice(player_devaddr_t addr, bool lookup_remote=true);
 
     // Get the first device entry.
     Device *GetFirstDevice() {return head;}
@@ -85,6 +94,12 @@ class DeviceTable
     // TODO: change the semantics of alwayson to be device-specific, rather
     // than just driver-specific.
     int StartAlwaysonDrivers();
+
+    // Register a factory creation function.  It will be called when
+    // GetDevice fails to find a device in the deviceTable.  This function
+    // might, for example, locate the device on a remote host (in a
+    // transport-dependent manner).
+    void AddRemoteDriverFn(remote_driver_fn_t rdf, void* arg);
 };
 
 #endif

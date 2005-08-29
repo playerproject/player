@@ -12,7 +12,8 @@ lib_LTLIBRARIES = libplayertcp.la
 libplayertcp_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 libplayertcp_la_SOURCES = socket_util.c socket_util.h \
-                         playertcp.cc playertcp.h
+                         playertcp.cc playertcp.h \
+			 remote_driver.cc remote_driver.h
 
 libplayertcp_la_LIBADD = $(top_builddir)/replace/*.lo
 libplayertcp_la_LDFLAGS = -version-info 2:0:0
