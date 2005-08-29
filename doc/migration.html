@@ -270,28 +270,16 @@ compiler finds and complains about it) does the job.
   NOT plugin drivers), the Makefile.am layout has changed:
     - All drivers are now built as libtool libraries, with the extension
       <tt>.la</tt>.
-    - These libraries get installed in
-      <tt>$prefix/lib/player-VERSION</tt>.
-    - Each driver should supply a header file that prototypes the driver's
-      registration function (this is the function that adds the driver's
-      name and factory creation function to the global driverTable).
-    - These headers get installed in
-      <tt>$prefix/include/player-VERSION/drivers</tt>.
     - An automake conditional tells you whether your driver should be
       built.
 
   - As an example, if your driver is called <tt>foo</tt>, and is built from
   <tt>foo.cc</tt>, then your Makefile.am might look like this:
   @code
-    driverincludedir = $(includedir)/player-@VERSION@/drivers
-    driverlibdir = $(libdir)/player-@VERSION@
-    
-    driverlib_LTLIBRARIES = 
+    noinst_LTLIBRARIES = 
     if INCLUDE_FOO
-    driverlib_LTLIBRARIES += libfoo.la
+    noinst_LTLIBRARIES += libfoo.la
     endif
-
-    driverinclude_HEADERS = foo.h
 
     AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
