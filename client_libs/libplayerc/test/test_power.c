@@ -39,8 +39,8 @@ int test_power(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      printf("power: [%6.1f] \n",
-             device->charge);
+      printf("power: [%6.1f] [%6.1f%% full]\n",
+             device->charge, device->percent);
     }
     else
       FAIL();
