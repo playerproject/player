@@ -2484,6 +2484,8 @@ typedef struct player_power_data
 {
   /** Battery voltage [V] */
   float  voltage;
+  /** Percent of full charge [%] */
+  float percent;
 } player_power_data_t;
 /** @} */
 

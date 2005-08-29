@@ -1674,6 +1674,9 @@ typedef struct
 
   /** Battery charge (volts). */
   double charge;
+
+  /** Battery charge (percent full). */
+  double percent;
   
 } playerc_power_t;
 

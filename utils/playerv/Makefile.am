@@ -15,13 +15,13 @@ playerv_SOURCES = playerv.c \
                   opt.h \
                   dev_laser.c \
                   dev_position2d.c \
+                  dev_power.c \
                   dev_sonar.c
 
 #dev_blobfinder.c \
 #dev_fiducial.c \
 #dev_localize.c \
 #dev_map.c \
-#dev_power.c \
 #dev_ptz.c \
 #dev_bumper.c \
 #dev_ir.c \
