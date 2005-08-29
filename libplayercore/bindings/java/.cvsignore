@@ -5,5 +5,5 @@ playercore_casts.i
 playercore_arraysofclasses.i
 *.java
 *.class
-Jplayercore
 playercore
+Jplayercore
