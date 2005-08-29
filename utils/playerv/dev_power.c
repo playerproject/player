@@ -129,7 +129,8 @@ void power_draw(power_t *power)
   
   // Draw in the power reading
   rtk_fig_color_rgb32(power->fig, COLOR_POWER);
-  snprintf(text, sizeof(text), "Battery: %4.1fV", power->proxy->charge);
+  snprintf(text, sizeof(text), "Battery: %4.1fV (%5.1f%% full)", 
+           power->proxy->charge, power->proxy->percent);
   rtk_fig_text(power->fig, -1, +1, 0, text);
 
   return;
