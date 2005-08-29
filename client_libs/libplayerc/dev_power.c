@@ -53,7 +53,7 @@
 #include "error.h"
 
 // Local declarations
-void playerc_power_putdata(playerc_power_t *device, player_msghdr_t *header,
+void playerc_power_putmsg(playerc_power_t *device, player_msghdr_t *header,
                               player_power_data_t *data, size_t len);
 
 
@@ -65,7 +65,7 @@ playerc_power_t *playerc_power_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_power_t));
   memset(device, 0, sizeof(playerc_power_t));
   playerc_device_init(&device->info, client, PLAYER_POWER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_power_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_power_putmsg);
 
   
   return device;
@@ -97,10 +97,10 @@ int playerc_power_unsubscribe(playerc_power_t *device)
 
 
 // Process incoming data
-void playerc_power_putdata(playerc_power_t *device, player_msghdr_t *header,
+void playerc_power_putmsg(playerc_power_t *device, player_msghdr_t *header,
                               player_power_data_t *data, size_t len)
 {
-  device->charge = 0.1 * ntohs(data->charge);
+  device->charge = data->voltage;
 
   return;
 }
