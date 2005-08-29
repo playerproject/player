@@ -89,7 +89,7 @@ void power_update(power_t *power)
   if (rtk_menuitem_ischecked(power->subscribe_item))
   {
     if (!power->proxy->info.subscribed)
-      if (playerc_power_subscribe(power->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_power_subscribe(power->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   else

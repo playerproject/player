@@ -40,6 +40,14 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) laser_update;
       break;
 
+    case PLAYER_POWER_CODE:
+      device->proxy = power_create(mainwnd, opt, client, 
+                                   device->addr.index, 
+                                   device->drivername, device->subscribe);
+      device->fndestroy = (fndestroy_t) power_destroy;
+      device->fnupdate = (fnupdate_t) power_update;
+      break;
+
     case PLAYER_POSITION2D_CODE:
       device->proxy = position2d_create(mainwnd, opt, client, 
                                         device->addr.index, 
@@ -78,13 +86,6 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
                                  device->index, device->drivername, device->subscribe);
       device->fndestroy = (fndestroy_t) localize_destroy;
       device->fnupdate = (fnupdate_t) localize_update;
-      break;
-
-    case PLAYER_POWER_CODE:
-      device->proxy = power_create(mainwnd, opt, client, 
-                                      device->index, device->drivername, device->subscribe);
-      device->fndestroy = (fndestroy_t) power_destroy;
-      device->fnupdate = (fnupdate_t) power_update;
       break;
 
     case PLAYER_PTZ_CODE:

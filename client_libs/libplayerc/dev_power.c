@@ -101,6 +101,7 @@ void playerc_power_putmsg(playerc_power_t *device, player_msghdr_t *header,
                               player_power_data_t *data, size_t len)
 {
   device->charge = data->voltage;
+  device->percent = data->percent;
 
   return;
 }

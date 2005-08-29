@@ -292,6 +292,8 @@ void fiducial_destroy(fiducial_t *fiducial);
 void fiducial_update(fiducial_t *fiducial);
 
 
+#endif
+
 /***************************************************************************
  * Power device
  ***************************************************************************/
@@ -329,6 +331,7 @@ void power_destroy(power_t *power);
 void power_update(power_t *power);
 
 
+#if 0
 /***************************************************************************
  * PTZ (pan-tilt-zoom) device
  ***************************************************************************/
