@@ -8,5 +8,5 @@ Name: playererror
 Description: Player error reporting library - part of the Player/Stage Project
 Version: @VERSION@
 Requires: 
-Libs: -L${prefix}/lib/player-@VERSION@ -lplayererror
-Cflags: -I${prefix}/include/player-@VERSION@
+Libs: -L${prefix}/lib -lplayererror
+Cflags: -I${prefix}/include
