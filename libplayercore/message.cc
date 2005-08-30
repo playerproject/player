@@ -34,23 +34,6 @@
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
 
-#if 0
-Message::Message()
-{
-  this->Lock = new pthread_mutex_t;
-  assert(Lock);
-  pthread_mutex_init(this->Lock,NULL);
-  this->Size = sizeof(struct player_msghdr);
-  this->Data = new unsigned char [this->Size];
-  assert(Data);
-  memset(this->Data,0,this->Size);
-  this->RefCount = new unsigned int;
-  assert(RefCount);
-  *this->RefCount = 1;
-  this->Queue = NULL;
-}
-#endif
- 
 Message::Message(const struct player_msghdr & Header, 
                  const void * data, 
                  unsigned int data_size, 
@@ -145,6 +128,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   pthread_mutex_init(&this->condMutex,NULL);
   pthread_cond_init(&this->cond,NULL);
   this->ClearFilter();
+  this->filter_on = false;
 }
 
 MessageQueue::~MessageQueue()
@@ -191,7 +175,9 @@ MessageQueue::Filter(Message& msg)
           ((unsigned int)this->filter_interf == hdr->addr.interf)) &&
          ((this->filter_index < 0) || 
           ((unsigned int)this->filter_index == hdr->addr.index)) &&
-         ((this->filter_type < 0) || 
+         (((this->filter_type < 0) && 
+           ((hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
+            (hdr->type == PLAYER_MSGTYPE_RESP_NACK))) || 
           ((unsigned int)this->filter_type == hdr->type)) &&
          ((this->filter_subtype < 0) || 
           ((unsigned int)this->filter_subtype == hdr->subtype)));
@@ -207,17 +193,13 @@ MessageQueue::SetFilter(int host, int robot, int interf,
   this->filter_index = index;
   this->filter_type = type;
   this->filter_subtype = subtype;
+  this->filter_on = true;
 }
 
 void
 MessageQueue::ClearFilter(void)
 {
-  this->filter_host = -1;
-  this->filter_robot = -1;
-  this->filter_interf = -1;
-  this->filter_index = -1;
-  this->filter_type = -1;
-  this->filter_subtype = -1;
+  this->filter_on = false;
 }
 
 
@@ -301,7 +283,7 @@ MessageQueue::Pop()
   // message is found
   for(el = this->head; el; el = el->next)
   {
-    if(this->Filter(*el->msg))
+    if(!this->filter_on || this->Filter(*el->msg))
     {
       this->Remove(el);
       Unlock();

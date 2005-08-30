@@ -58,11 +58,6 @@ class Driver
     int error;
 
   protected:
-    /// @brief The driver's thread. 
-    ///
-    /// The driver's thread, when managed by StartThread() and
-    /// StopThread().
-    pthread_t driverthread;
 
     /// @brief Last requester's queue.
     ///
@@ -109,6 +104,11 @@ class Driver
     void Wait() { this->InQueue->Wait(); }
     
   public:
+    /// @brief The driver's thread. 
+    ///
+    /// The driver's thread, when managed by StartThread() and
+    /// StopThread().
+    pthread_t driverthread;
     /// @brief Lock access to driver internals.
     virtual void Lock(void);
     /// @brief Unlock access to driver internals.

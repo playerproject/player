@@ -135,6 +135,24 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_TILE, 
     (player_pack_fn_t)player_map_data_pack},
 
+  /* localize messages */
+  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS, 
+    (player_pack_fn_t)player_localize_data_pack},
+  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE, 
+    (player_pack_fn_t)player_localize_set_pose_pack},
+  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_GET_PARTICLES, 
+    (player_pack_fn_t)player_localize_get_particles_pack},
+
+  /* planner messages */
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_PLANNER_DATA_STATE, 
+    (player_pack_fn_t)player_planner_data_pack},
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_PLANNER_CMD_GOAL, 
+    (player_pack_fn_t)player_planner_cmd_pack},
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_ENABLE, 
+    (player_pack_fn_t)player_planner_enable_req_pack},
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_GET_WAYPOINTS, 
+    (player_pack_fn_t)player_planner_waypoints_req_pack},
+
   {0,0,0,NULL}
 };
 

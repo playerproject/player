@@ -201,6 +201,7 @@ class MessageQueue
     /// @brief Mutex to go with condition variable cond.
     pthread_mutex_t condMutex;
     /// @brief Current filter values
+    bool filter_on;
     int filter_host, filter_robot, filter_interf, 
         filter_index, filter_type, filter_subtype;
 };

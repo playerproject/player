@@ -557,6 +557,13 @@ int AdaptiveMCL::Setup(void)
   this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
   this->pf->pop_err = this->pf_err;
   this->pf->pop_z = this->pf_z;
+  
+  // UGLY HACK: Setting this->driverthread to a non-zero value, so that
+  // this device won't get Update()d during any of the Request()s that may
+  // occur during the sensor Setup()s below.  The problem arises because
+  // each sensor within amcl has its own queue; the condition that
+  // prevents the caller from being updated then doesn't work.
+  this->driverthread = (pthread_t)1;
 
   // Start sensors
   for (i = 0; i < this->sensor_count; i++)
@@ -612,26 +619,19 @@ void AdaptiveMCL::Update(void)
   AMCLSensorData *data;
 
   assert(this->action_sensor >= 0 && this->action_sensor < this->sensor_count);
-  
-  // Check the action sensor for new data
-  data = this->sensors[this->action_sensor]->GetData();
-  if (data == NULL)
-    return;
 
-  //printf("push odom pos\n");
-  //pf_vector_fprintf(((AMCLOdomData*) data)->pose, stdout, "%.3f");
-
-  // Flag this as action data and push onto queue
-  this->Push(data);
-
-  // Check the remaining sensors for new data
+  // Check the sensors for new data
   for (i = 0; i < this->sensor_count; i++)
   {
     data = this->sensors[i]->GetData();
     if (data != NULL)
+    {
       this->Push(data);
+      if(this->sensors[i]->is_action)
+        break;
+    }
   }
-
+  
   return;
 }
 
@@ -733,7 +733,7 @@ void AdaptiveMCL::Main(void)
     }
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 #endif
-
+    
     // Sleep for 1ms (will actually take longer than this).
     sleeptime.tv_sec = 0;
     sleeptime.tv_nsec = 1000000L;
@@ -742,6 +742,8 @@ void AdaptiveMCL::Main(void)
     // Test if we are supposed to cancel this thread.  This is the
     // only place we can cancel from if we are running the GUI.
     pthread_testcancel();
+
+    this->ProcessMessages();
 
 #ifdef INCLUDE_RTKGUI
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
