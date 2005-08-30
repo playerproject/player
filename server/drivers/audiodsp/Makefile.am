@@ -1,7 +1,8 @@
-noinst_LIBRARIES = @ACOUSTICS_LIB@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+noinst_LTLIBRARIES = 
+if INCLUDE_ACOUSTICS
+noinst_LTLIBRARIES += libacoustics.la
+endif
 
-EXTRA_LIBRARIES = libacoustics.a 
-
-libacoustics_a_SOURCES = acoustics.cc
+libacoustics_la_SOURCES = acoustics.cc

@@ -113,7 +113,8 @@ class Acoustics : public Driver
     //virtual void Main();
 
     // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    int ProcessMessage(MessageQueue * resp_queue, 
+                       player_msghdr * hdr, void * data);
 
 
     // Get and set the configuration of the driver
@@ -136,15 +137,18 @@ class Acoustics : public Driver
 
 
     // Create a sine wave
-    void CreateSine(unsigned short freq, unsigned short amp, 
-        unsigned int duration, char* buffer, unsigned int bufferSize);
+    void CreateSine(float freq, float amp, 
+        float duration, char* buffer, unsigned int bufferSize);
 
     // Create a BPSK chirp
     void CreateChirp(unsigned char mseq[],unsigned short mseqSize, 
-        unsigned short freq, unsigned short amp, unsigned int pulseTime, 
+        float freq, float amp, float pulseTime, 
         char* buffer, unsigned int bufSize );
 
-    unsigned int CalcBuffSize( unsigned int duration );
+    unsigned int CalcBuffSize( float duration );
+
+    // interfaces we might be using
+    player_devaddr_t audiodsp_addr;
 
     int audioFD; // File descriptor for the device
     const char* deviceName; // Name of the device( ex: "/dev/dsp" )
@@ -167,17 +171,49 @@ class Acoustics : public Driver
   	char * playBuffer;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Create an instance of the driver
+Driver* Acoustics_Init( ConfigFile* cf, int section)
+{
+  return((Driver*)(new Acoustics(cf, section)));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Register the driver
+void Acoustics_Register(DriverTable* table)
+{
+  table->AddDriver("acoustics", Acoustics_Init );
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Constructor
 Acoustics::Acoustics( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIODSP_CODE, PLAYER_ALL_MODE),
+  : Driver(cf, section),
   audioFD(-1),deviceName(NULL),openFlag(-1),channels(1),sampleFormat(16),
   sampleRate(8000),audioBuffSize(4096),audioBuffer(NULL),bytesPerSample(1),
   peakFreq(NULL),peakAmp(NULL),N(1024),nHighestPeaks(5)
 {
+  memset(&this->audiodsp_addr, 0, sizeof(player_devaddr_t));
+
+  // Create an audiodsp interface
+  if (cf->ReadDeviceAddr(&(this->audiodsp_addr), section, "requires",
+        PLAYER_AUDIODSP_CODE, -1, NULL) == 0)
+  {
+    if (this->AddInterface(this->audiodsp_addr))
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
   playBuffer = NULL;
-  deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
+  this->deviceName = cf->ReadString(section,"device",DEFAULT_DEVICE);
   assert(fft = new double[this->N]);
+
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Destructor
 Acoustics::~Acoustics()
 {
   delete playBuffer;
@@ -190,16 +226,8 @@ Acoustics::~Acoustics()
   }
 }
 
-Driver* Acoustics_Init( ConfigFile* cf, int section)
-{
-  return((Driver*)(new Acoustics(cf, section)));
-}
-
-void Acoustics_Register(DriverTable* table)
-{
-  table->AddDriver("acoustics", Acoustics_Init );
-}
-
+////////////////////////////////////////////////////////////////////////////////
+// Set up the device (called by server thread).
 int Acoustics::Setup()
 {
 
@@ -208,23 +236,31 @@ int Acoustics::Setup()
   this->peakFreq = new unsigned short[this->nHighestPeaks];
   this->peakAmp = new unsigned short[this->nHighestPeaks];
 
-  puts("audio ready");
 
-  //StartThread();
+  // Star the driver thread
+  PLAYER_MSG0(2, "running");
+  this->StartThread();
   return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Shutdown the device (called by server thread).
 int Acoustics::Shutdown()
 {
-  //StopThread();
+
+  PLAYER_MSG0(2, "shutting down");
+
+  this->StopThread();
   this->CloseDevice();
 
   delete [] this->peakFreq;
   delete [] this->peakAmp;
 
-  puts("Acoustics has been shutdown");
+  PLAYER_MSG0(2, "shutdown done"); 
   return 0;
 }
+
+
 
 int Acoustics::OpenDevice( int flag )
 {
@@ -239,9 +275,9 @@ int Acoustics::OpenDevice( int flag )
     close(audioFD);
 
     // Then open it again with the new flag
-    if( (audioFD = open(deviceName,this->openFlag)) == -1 )
+    if( (audioFD = open(this->deviceName,this->openFlag)) == -1 )
     {
-      PLAYER_ERROR1("failed to open audio device %s",deviceName);
+      PLAYER_ERROR1("failed to open audio device %s",this->deviceName);
       return -1;
     }
 
@@ -259,74 +295,119 @@ int Acoustics::CloseDevice()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int Acoustics::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int Acoustics::ProcessMessage(MessageQueue * resp_queue, 
+                       player_msghdr * hdr, void * data)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
   int playBufferSize=0;
-  
-  if(MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_SET_CONFIG, device_id))
+ 
+  // Set the configuration
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_AUDIODSP_SET_CONFIG, this->audiodsp_addr))
   {
-    SetConfiguration(hdr->size, client, data);
-  	
-  	*resp_len = 0;
-  	return 0;
+    player_audiodsp_config_t config;
+
+    if( hdr->size != sizeof(player_audiodsp_config_t))
+    {
+      PLAYER_ERROR2("config request len is invalid (%d != %d)", hdr->size, 
+          sizeof(player_audiodsp_config_t));
+      return (PLAYER_MSGTYPE_RESP_NACK);
+    }
+
+    memcpy(&config, data, sizeof(config));
+    this->channels = config.channels;
+
+    // Must open the device for write in order to configure it
+    this->OpenDevice(O_WRONLY);
+
+    // Attempts to set the format and rate of each sample along with
+    // the number of channels to use.
+    if( this->SetSampleFormat(config.format) == 0 &&
+        this->SetChannels(config.channels) == 0 && 
+        this->SetSampleRate((int)config.frequency) == 0 )
+    {
+      // Create the audio buffer
+      this->SetBufferSize(0);
+
+      this->Publish(this->audiodsp_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIODSP_SET_CONFIG, (void *)&config, sizeof(config), NULL);
+      return 0;
+
+    } else {
+      this->Publish(this->audiodsp_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_AUDIODSP_SET_CONFIG) ;
+      return -1;
+    }
   }
 
-  if(MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_GET_CONFIG, device_id))
+
+  // Return the configuration
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_AUDIODSP_GET_CONFIG, this->audiodsp_addr))
   {
-    GetConfiguration(hdr->size, client, data);
-  	
-  	*resp_len = 0;
-  	return 0;
+    player_audiodsp_config_t config;
+
+    if( hdr->size != sizeof(player_audiodsp_config_t) )
+    {
+      PLAYER_ERROR2("config request len is invalid (%d != %d)", hdr->size, 
+          sizeof(player_audiodsp_config_t));
+      return (PLAYER_MSGTYPE_RESP_NACK);
+    }
+
+    config.format = this->sampleFormat;
+    config.frequency = (int)(this->sampleRate);
+    config.channels = this->channels;
+
+    this->Publish(this->audiodsp_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIODSP_GET_CONFIG, (void *)&config, sizeof(config), NULL);
+
   }
 
-  if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_TONE, device_id))
+
+  // Command to play a tone
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                           PLAYER_AUDIODSP_PLAY_TONE, this->audiodsp_addr))
   {
   	assert(hdr->size == sizeof(player_audiodsp_cmd_t));
   	player_audiodsp_cmd_t & audioCmd = *reinterpret_cast<player_audiodsp_cmd_t *> (data);
-  	*resp_len = 0;
   	
-    playBufferSize = this->CalcBuffSize( ntohl(audioCmd.duration) );
+    playBufferSize = this->CalcBuffSize(audioCmd.duration);
     delete playBuffer;
     playBuffer = new char[playBufferSize];
     assert(playBuffer);
 
     // Create a tone
-    this->CreateSine(ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
-         ntohl(audioCmd.duration), playBuffer, playBufferSize);
+    this->CreateSine(audioCmd.frequency, audioCmd.amplitude, 
+         audioCmd.duration, playBuffer, playBufferSize);
 
     // Play the sound
     this->PlayBuffer(playBuffer,playBufferSize);
     return 0;
   }
 
-  if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_CHIRP, device_id))
+
+  // Play a chirp
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                           PLAYER_AUDIODSP_PLAY_CHIRP, this->audiodsp_addr))
   {
   	assert(hdr->size == sizeof(player_audiodsp_cmd_t));
   	player_audiodsp_cmd_t & audioCmd = *reinterpret_cast<player_audiodsp_cmd_t *> (data);
-  	*resp_len = 0;
   	
-    int playBufferSize = this->CalcBuffSize( ntohl(audioCmd.duration) );
+    int playBufferSize = this->CalcBuffSize(audioCmd.duration);
     delete playBuffer;
     playBuffer = new char[playBufferSize];
     assert(playBuffer);
     
     // Create a chirp
-    this->CreateChirp(audioCmd.bitString,ntohs(audioCmd.bitStringLen),
-         ntohs(audioCmd.frequency), ntohs(audioCmd.amplitude), 
-         ntohl(audioCmd.duration), playBuffer, playBufferSize);
+    this->CreateChirp(audioCmd.bit_string, audioCmd.bit_string_count,
+         audioCmd.frequency, audioCmd.amplitude, 
+         audioCmd.duration, playBuffer, playBufferSize);
 
     // Play the sound
     this->PlayBuffer(playBuffer,playBufferSize);
     return 0;
   }
 
-  if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_REPLAY, device_id))
+  // Replay
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                           PLAYER_AUDIODSP_REPLAY, this->audiodsp_addr))
   {
-  	*resp_len = 0;
     this->PlayBuffer(playBuffer,playBufferSize);
     return 0;
   }
@@ -334,22 +415,20 @@ int Acoustics::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
   if(hdr->type == PLAYER_MSGTYPE_CMD)
   {
     // Get the most significant frequencies
-    if( !ListenForTones() )
+    if (!ListenForTones())
     {
       for (int i=0; i<this->nHighestPeaks; i++) 
       {
-        this->data.freq[i]=htons((unsigned short)((this->peakFreq[i]*this->sampleRate)/this->N));
-        this->data.amp[i]=htons((unsigned short)this->peakAmp[i]);
+        this->data.frequency[i]=(this->peakFreq[i]*this->sampleRate)/this->N;
+        this->data.amplitude[i]=this->peakAmp[i];
       }
 
       // Return the data to the user
-      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*)&this->data, sizeof(this->data),NULL);  	
+      this->Publish(this->audiodsp_addr, NULL, PLAYER_MSGTYPE_DATA, 0, (void*)&this->data, sizeof(this->data),NULL);  	
     }
-    *resp_len = 0;
     return 0;  	
   }
 
-  *resp_len = 0;
   return -1;
 }
 
@@ -477,66 +556,6 @@ void Acoustics::Main()
     delete [] playBuffer;
 }
 */
-int Acoustics::SetConfiguration(int len, void* client, unsigned char buffer[])
-{
-
-  player_audiodsp_config_t config;
-
-  if( len != sizeof(player_audiodsp_config_t))
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)", len, 
-        sizeof(config));
-    PutMsg(device_id, (ClientData*)client, PLAYER_MSGTYPE_RESP_NACK,PLAYER_AUDIODSP_SET_CONFIG,NULL);
-    return 1;
-  }
-
-  memcpy(&config, buffer, sizeof(config));
-  this->channels = config.channels;
-
-  // Must open the device for write in order to configure it
-  this->OpenDevice(O_WRONLY);
-
-  // Attempts to set the format and rate of each sample along with
-  // the number of channels to use.
-  if( this->SetSampleFormat( ntohs(config.sampleFormat)) == 0 &&
-      this->SetChannels(config.channels) == 0 && 
-      this->SetSampleRate( ntohs(config.sampleRate)) == 0 )
-  {
-    // Create the audio buffer
-    this->SetBufferSize(0);
-
-    PutMsg(device_id,(ClientData*)client, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIODSP_SET_CONFIG,
-                &config, sizeof(config),NULL);
-    return -1;
-
-  } else {
-    PutMsg(device_id, (ClientData *)client, PLAYER_MSGTYPE_RESP_NACK,PLAYER_AUDIODSP_SET_CONFIG,NULL) ;
-  }
-
-  return 0;
-}
-
-int Acoustics::GetConfiguration(int len, void* client, unsigned char buffer[])
-{
-
-  player_audiodsp_config_t config;
-
-  if( len != 1 )
-  {
-    PLAYER_ERROR2("config request len is invalid (%d != %d)",len,1);
-    PutMsg(device_id,(ClientData *)client, PLAYER_MSGTYPE_RESP_NACK,PLAYER_AUDIODSP_GET_CONFIG,NULL);
-
-    return 1;
-  }
-
-  config.sampleFormat = htons(this->sampleFormat);
-  config.sampleRate = htons(this->sampleRate);
-  config.channels = this->channels;
-
-  PutMsg(device_id, (ClientData*)client, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIODSP_GET_CONFIG,
-               &config, sizeof(config), NULL);
-  return 0;
-}
 
 int Acoustics::SetSampleFormat( int _format )
 {
@@ -591,11 +610,11 @@ int Acoustics::SetSampleFormat( int _format )
   return result;
 }
 
-int Acoustics::SetSampleRate( int _sampleRate )
+int Acoustics::SetSampleRate( int frequency )
 {
   int result = 0;
 
-  this->sampleRate = _sampleRate;
+  this->sampleRate = frequency;
 
   // Try to set the sample rate
   if( ioctl(audioFD, SNDCTL_DSP_SPEED, &this->sampleRate) == -1 )
@@ -605,9 +624,9 @@ int Acoustics::SetSampleRate( int _sampleRate )
   }
 
   // Check if the sample rate was set properly
-  if( this->sampleRate != _sampleRate ) 
+  if( this->sampleRate != frequency ) 
   {
-    PLAYER_WARN2("specified rate:%d set to: %d",_sampleRate, this->sampleRate);
+    PLAYER_WARN2("specified rate:%f set to: %f",frequency, this->sampleRate);
   }
 
   return result;
@@ -826,7 +845,7 @@ int Acoustics::Record()
 
 
 void Acoustics::CreateChirp(unsigned char mseq[], unsigned short mseqSize, 
-    unsigned short freq, unsigned short amp, unsigned int pulseTime, 
+    float freq, float amp, float pulseTime, 
     char* buffer, unsigned int bufSize )
 {
   unsigned int i;
@@ -840,7 +859,7 @@ void Acoustics::CreateChirp(unsigned char mseq[], unsigned short mseqSize,
   zeroBuffer=new char[pulseBufSize];
 
   // Create one carrier pulse
-  CreateSine(freq,amp,pulseTime,oneBuffer,pulseBufSize);
+  this->CreateSine(freq,amp,pulseTime,oneBuffer,pulseBufSize);
 
   // Make the zero buffer 180 degrees out of phase from the one buffer
   memcpy(zeroBuffer,oneBuffer,pulseBufSize);
@@ -868,15 +887,15 @@ void Acoustics::CreateChirp(unsigned char mseq[], unsigned short mseqSize,
 }
 
 // This function might behave badly when the durations is too small....
-void Acoustics::CreateSine(unsigned short freq, unsigned short amp, 
-    unsigned int duration, char* buffer, unsigned int bufferSize)
+void Acoustics::CreateSine(float freq, float amp, 
+    float duration, char* buffer, unsigned int bufferSize)
 {
   unsigned int i;
 
   double omega = (double)freq*2*M_PI/(double)this->sampleRate;
   double phase = 0;
 
-  unsigned int numSamples = (unsigned int)((duration/1000.0)*this->sampleRate);
+  unsigned int numSamples = (unsigned int)(duration*this->sampleRate);
 
   memset(buffer,0,bufferSize);
 
@@ -911,8 +930,8 @@ void Acoustics::CreateSine(unsigned short freq, unsigned short amp,
 
 }
 
-unsigned int Acoustics::CalcBuffSize( unsigned int duration )
+unsigned int Acoustics::CalcBuffSize( float duration )
 {
-  unsigned int numSamples = (unsigned int)((duration/1000.0)*this->sampleRate);
+  unsigned int numSamples = (unsigned int)(duration*this->sampleRate);
   return (unsigned int)(numSamples*this->bytesPerSample*this->channels); 
 }
