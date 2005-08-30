@@ -1211,6 +1211,8 @@ typedef struct player_laser_data
   uint32_t intensity_count;
   /** Intensity readings. */
   uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
+  /** A unique, increasing, ID for the scan */
+  uint32_t id;
 } player_laser_data_t;
 
 /** @brief Data: laser scan with pose attached */

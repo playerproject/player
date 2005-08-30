@@ -268,6 +268,8 @@ class SickLMS200 : public Driver
     int port_rate;
     int current_rate;  
 
+    int scan_id;
+
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct old_serial;
 #endif
@@ -461,6 +463,8 @@ int SickLMS200::Setup()
     return 1;
   if (SetLaserConfig(this->intensity))
     return 1;
+
+  this->scan_id = 0;
 
   PLAYER_MSG0(2, "laser ready");
 
@@ -664,6 +668,8 @@ void SickLMS200::Main()
           data.intensity[this->scan_max_segment-this->scan_min_segment-i] = itmp;
         }
       }
+
+      data.id = this->scan_id++;
       
       // Make data available
       this->Publish(this->device_addr, NULL, 
