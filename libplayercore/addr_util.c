@@ -83,7 +83,6 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
     return(-1);
   }
   *dest = ((struct sockaddr_in*)addr->ai_addr)->sin_addr.s_addr;
-  printf("getaddrinfo:%s:%u\n", host,*dest);
   freeaddrinfo(addr);
 #else
   if((entp = gethostbyname(host)) == NULL)
@@ -92,7 +91,6 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
     return(-1);
   }
   *dest = ((struct in_addr*)entp->h_addr_list[0])->s_addr;
-  printf("gethostbyname: %u\n", *dest);
 #endif
   return(0);
 }
