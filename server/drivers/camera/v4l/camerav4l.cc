@@ -75,13 +75,13 @@ below for notes on specific camera/frame grabber combinations.
   - Desired capture mode.  Can be one of:
     - GREY (8-bit monochrome)
     - RGB565 (16-bit RGB)
-    - RGB24 (24-bit RGB)
+    - RGB888 (24-bit RGB)
     - RGB32 (32-bit RGB; will produce 24-bit color images)
     - YUV420P (planar YUV data; will produce 8-bit monochrome images)
   - Note that not all capture modes are supported by Player's internal image
   format; in these modes, images will be translated to the closest matching
   internal format (e.g., RGB32 -> RGB888).
-    
+
 - save (integer)
   - Default: 0
   - Debugging option: set this to write each frame as an image file on disk.
@@ -89,8 +89,8 @@ below for notes on specific camera/frame grabber combinations.
 Note that some of these options may not be honoured by the underlying
 V4L kernel driver (it may not support a given image size, for
 example).
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -130,7 +130,7 @@ Andrew Howard
 
 */
 /** @} */
-  
+
 
 #include "player.h"
 
@@ -140,6 +140,7 @@ Andrew Howard
 #include <stdlib.h>       // for atoi(3)
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
+#include <time.h>
 
 #include "error.h"
 #include "driver.h"
@@ -149,6 +150,9 @@ Andrew Howard
 
 #include "v4lcapture.h"  // For Gavin's libfg; should integrate this
 #include "ccvt.h"        // For YUV420P-->RGB conversion
+
+
+const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms)
 
 // Time for timestamps
 extern PlayerTime *GlobalTime;
@@ -164,27 +168,23 @@ class CameraV4L : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
 
+  // This method will be invoked on each incoming message
+  public: virtual int ProcessMessage(MessageQueue* resp_queue,
+                                     player_msghdr * hdr,
+                                     void * data);
+
   // Main function for device thread.
   private: virtual void Main();
 
-  // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-
-  // Process requests.  Returns 1 if the configuration has changed.
-  //private: int HandleRequests();
-
-  // Handle geometry requests.
-  //private: void HandleGetGeom(void *client, void *req, int reqlen);
-
   // Update the device data (the data going back to the client).
-  private: void WriteData();
+  private: void RefreshData();
 
   // Video device
   private: const char *device;
-  
+
   // Input source
   private: int source;
-  
+
   // The signal norm: VIDEO_NORM_PAL or VIDEO_NORM_NTSC.
   private: int norm;
 
@@ -193,10 +193,10 @@ class CameraV4L : public Driver
 
   // Camera palette
   private: const char *palette;
-  
+
   // Image dimensions
   private: int width, height;
-  
+
   // Frame grabber interface
   private: FRAMEGRABBER* fg;
 
@@ -211,7 +211,7 @@ class CameraV4L : public Driver
 
   // Capture timestamp
   private: uint32_t tsec, tusec;
-  
+
   // Data to send to server
   private: player_camera_data_t data;
 
@@ -235,16 +235,20 @@ void CameraV4L_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 CameraV4L::CameraV4L( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
+  : Driver(cf,
+           section,
+           true,
+           PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+           PLAYER_CAMERA_CODE)
 {
   const char *snorm;
-  
+
   // Camera defaults to /dev/video0 and NTSC
   this->device = cf->ReadString(section, "port", "/dev/video0");
 
   // Input source
   this->source = cf->ReadInt(section, "source", 3);
-  
+
   // NTSC or PAL
   snorm = cf->ReadString(section, "norm", "ntsc");
   if (strcasecmp(snorm, "ntsc") == 0)
@@ -290,7 +294,7 @@ int CameraV4L::Setup()
     PLAYER_ERROR1("unable to open %s", this->device);
     return -1;
   }
-  
+
   fg_set_source(this->fg, this->source);
   fg_set_source_norm(this->fg, this->norm);
 
@@ -308,9 +312,9 @@ int CameraV4L::Setup()
     this->data.format = PLAYER_CAMERA_FORMAT_RGB565;
     this->depth = 16;
   }
-  else if (strcasecmp(this->palette, "RGB24") == 0)
+  else if (strcasecmp(this->palette, "RGB888") == 0)
   {
-    fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );    
+    fg_set_format(this->fg, VIDEO_PALETTE_RGB24 );
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_RGB24 );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->depth = 24;
@@ -324,14 +328,14 @@ int CameraV4L::Setup()
   }
   else if (strcasecmp(this->palette, "YUV420P") == 0)
   {
-    // YUV420P is now converted to RGB rather than GREY as in player 
+    // YUV420P is now converted to RGB rather than GREY as in player
     // 1.6.2 and earlier
     fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
     this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->depth = 24;    
-    this->rgb_converted_frame = frame_new(this->width, 
-					  this->height, VIDEO_PALETTE_RGB24 );
+    this->depth = 24;
+    this->rgb_converted_frame = frame_new(this->width,
+            this->height, VIDEO_PALETTE_RGB24 );
     //    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
     //    this->depth = 8;
   }
@@ -343,10 +347,10 @@ int CameraV4L::Setup()
   }
 
   fg_set_capture_window(this->fg, 0, 0, this->width, this->height);
-    
+
   // Start the driver thread.
   this->StartThread();
-  
+
   return 0;
 }
 
@@ -369,24 +373,23 @@ int CameraV4L::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void CameraV4L::Main() 
+void CameraV4L::Main()
 {
   struct timeval time;
   int frameno;
   char filename[256];
 
   frameno = 0;
-     
+
   while (true)
   {
     // Go to sleep for a while (this is a polling loop).
-    usleep(50000);
+    nanosleep(&NSLEEP_TIME, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
     // Process any pending requests.
-    //HandleRequests();
     ProcessMessages();
 
     // Get the time
@@ -396,45 +399,47 @@ void CameraV4L::Main()
 
     // Grab the next frame (blocking)
     fg_grab_frame(this->fg, this->frame);
-        
+
     // Write data to server
-    this->WriteData();
-    
+    this->RefreshData();
+
     // Save frames
     if (this->save)
     {
       //printf("click %d\n", frameno);
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
       if (this->frame->format == VIDEO_PALETTE_YUV420P)
-	   {
-		frame_save(this->rgb_converted_frame, filename);
-		printf("saved converted frame\n");
-	   }
+     {
+    frame_save(this->rgb_converted_frame, filename);
+    printf("saved converted frame\n");
+     }
       else
-	   frame_save(this->frame, filename);
+     frame_save(this->frame, filename);
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraV4L::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int CameraV4L::ProcessMessage(MessageQueue* resp_queue,
+                              player_msghdr * hdr,
+                              void * data)
 {
+  assert(resp_queue);
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
-  assert(*resp_len>sizeof(player_audiomixer_config_t));
-  
-  *resp_len = 0;
 
-/* TODO
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+  /* We currently don't support any messages, but if we do...
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_FIDUCIAL_GET_GEOM, this->device_addr))
   {
-    assert(hdr->size == 0);
-    
+    assert(hdr->size == sizeof(player_position2d_data_t));
+    ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));
+    return(0);
+
   }
-*/  
+  */
+
   return -1;
 }
 ////////////////////////////////////////////////////////////////////////////////
@@ -444,7 +449,7 @@ int CameraV4L::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
   int len;
-  
+
   while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
   {
     switch (request[0])
@@ -480,7 +485,7 @@ int CameraV4L::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void CameraV4L::WriteData()
+void CameraV4L::RefreshData()
 {
   int i;
   size_t image_size, size;
@@ -488,7 +493,7 @@ void CameraV4L::WriteData()
 
   // Compute size of image
   image_size = this->width * this->height * this->depth / 8;
-  
+
   // Set the image properties
   this->data.width = htons(this->width);
   this->data.height = htons(this->height);
@@ -497,20 +502,20 @@ void CameraV4L::WriteData()
   this->data.image_size = htonl(image_size);
 
   assert(image_size <= sizeof(this->data.image));
-  
+
   // Copy the image pixels
   if (this->frame->format == VIDEO_PALETTE_YUV420P)
        {// do conversion to RGB (which is bgr at the moment for some reason?)
-	    assert(image_size <= (size_t) this->rgb_converted_frame->size);
-	    ccvt_420p_bgr24(this->width, this->height, 
-			    (unsigned char*) this->frame->data,
-			    (unsigned char*) this->rgb_converted_frame->data);
-	    ptr1 = (unsigned char *)this->rgb_converted_frame->data;
+      assert(image_size <= (size_t) this->rgb_converted_frame->size);
+      ccvt_420p_bgr24(this->width, this->height,
+          (unsigned char*) this->frame->data,
+          (unsigned char*) this->rgb_converted_frame->data);
+      ptr1 = (unsigned char *)this->rgb_converted_frame->data;
        }
   else
        {
-	    assert(image_size <= (size_t) this->frame->size);
-	    ptr1 = (unsigned char *)this->frame->data;
+      assert(image_size <= (size_t) this->frame->size);
+      ptr1 = (unsigned char *)this->frame->data;
        }
   ptr2 = this->data.image;
   switch (this->depth)
@@ -546,7 +551,9 @@ void CameraV4L::WriteData()
   struct timeval timestamp;
   timestamp.tv_sec = this->tsec;
   timestamp.tv_usec = this->tusec;
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (void*) &this->data, size, &timestamp);
+  Publish(this->device_addr, NULL,
+          PLAYER_MSGTYPE_DATA, 0,
+          reinterpret_cast<void*>(&this->data), size, NULL);
   //PutData((void*) &this->data, size, &timestamp);
 
   return;
