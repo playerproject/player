@@ -184,9 +184,7 @@ _robot_button_callback(GnomeCanvasItem *item,
   static GnomeCanvasItem* setting_theta_line = NULL;
   pose_t pose;
   double mean[3];
-  static double cov[3][3] = {{0.5*0.5, 0.0, 0.0},
-                             {0.0, 0.5*0.5, 0.0},
-                             {0.0, 0.0, (M_PI/6.0)*(M_PI/6.0)}};
+  static double cov[3] = {0.5*0.5, 0.5*0.5, (M_PI/6.0)*(M_PI/6.0)};
 
   gui_data_t* gui_data = (gui_data_t*)data;
 
