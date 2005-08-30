@@ -1038,20 +1038,6 @@ void AdaptiveMCL::PutDataLocalize(double time)
     data.hypoths[i].mean.py = pose.v[1];
     data.hypoths[i].mean.pa = pose.v[2];
   
-    /*
-    data.hypoths[i].cov[0][0] = pose_cov.m[0][0];
-    data.hypoths[i].cov[0][1] = pose_cov.m[0][1];
-    data.hypoths[i].cov[0][2] = 0;
-  
-    data.hypoths[i].cov[1][0] = pose_cov.m[1][0];
-    data.hypoths[i].cov[1][1] = pose_cov.m[1][1];
-    data.hypoths[i].cov[1][2] = 0;
-
-    data.hypoths[i].cov[2][0] = 0;
-    data.hypoths[i].cov[2][1] = 0;
-    data.hypoths[i].cov[2][2] = pose_cov.m[2][2];
-    */
-
     data.hypoths[i].cov[0] = pose_cov.m[0][0];
     data.hypoths[i].cov[1] = pose_cov.m[1][1];
     data.hypoths[i].cov[2] = pose_cov.m[2][2];
@@ -1152,9 +1138,9 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
     pf_vector_t pose;
     pf_matrix_t cov;
 
-    pose.v[0] = setposereq->mean[0];
-    pose.v[1] = setposereq->mean[1];
-    pose.v[2] = setposereq->mean[2];
+    pose.v[0] = setposereq->mean.px;
+    pose.v[1] = setposereq->mean.py;
+    pose.v[2] = setposereq->mean.pa;
 
     cov = pf_matrix_zero();
     cov.m[0][0] = setposereq->cov[0];

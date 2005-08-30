@@ -395,6 +395,7 @@ int playerc_client_request(playerc_client_t *client,
           rep_header.subtype != req_header.subtype ||
           rep_header.size > rep_len)
       {
+        printf("%d %d\n", rep_header.size, rep_len);
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
       }
@@ -815,7 +816,8 @@ int playerc_client_writepacket(playerc_client_t *client,
   if(data)
   {
     // Locate the appropriate packing function for the message body
-    if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
+    if(!(packfunc = playerxdr_get_func(header->addr.interf, 
+                                       header->type,
                                        header->subtype)))
     {
       // TODO: Allow the user to register a callback to handle unsupported

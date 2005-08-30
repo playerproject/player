@@ -48,14 +48,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 
 #include "playerc.h"
 #include "error.h"
 
 
 // Local declarations
-void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *header,
+void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header,
                            player_localize_data_t *data, size_t len);
 
 // Create a new localize proxy
@@ -66,7 +65,7 @@ playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_localize_t));
   memset(device, 0, sizeof(playerc_localize_t));
   playerc_device_init(&device->info, client, PLAYER_LOCALIZE_CODE, index,
-                      (playerc_putdata_fn_t) playerc_localize_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_localize_putmsg);
     
   return device;
 }
@@ -98,354 +97,74 @@ int playerc_localize_unsubscribe(playerc_localize_t *device)
 
 
 // Process incoming data
-void playerc_localize_putdata(playerc_localize_t *device, player_msghdr_t *header,
+void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header,
                               player_localize_data_t *data, size_t len)
 {
-  int i, j, k;
-  double scale[3];
-
-  assert(len >= sizeof(*data) - sizeof(data->hypoths));
+  int i, k;
   
-  // Byte-swap the data
-  data->pending_count = ntohs(data->pending_count);
-  data->pending_time_sec = ntohl(data->pending_time_sec);
-  data->pending_time_usec = ntohl(data->pending_time_usec);  
-  data->hypoth_count = ntohl(data->hypoth_count);
-  for (i = 0; i < data->hypoth_count; i++)
-  {
-    for (j = 0; j < 3; j++)
-      data->hypoths[i].mean[j] = ntohl(data->hypoths[i].mean[j]);
-    for (j = 0; j < 3; j++)
-      for (k = 0; k < 3; k++)
-        data->hypoths[i].cov[j][k] = ntohll(data->hypoths[i].cov[j][k]);
-    data->hypoths[i].alpha = ntohl(data->hypoths[i].alpha);
-  }
-
-  scale[0] = 1000;
-  scale[1] = 1000;
-  scale[2] = 3600 * 180 / M_PI;
-  
-  // Read the data; unit conversion
   device->pending_count = data->pending_count;
-  device->pending_time = data->pending_time_sec + 1e-6 * data->pending_time_usec;
-  for (i = 0; i < data->hypoth_count; i++)
+  device->pending_time = data->pending_time;
+  for (i = 0; i < data->hypoths_count; i++)
   {
-    device->hypoths[i].weight = data->hypoths[i].alpha * (1e-6);
+    device->hypoths[i].weight = data->hypoths[i].alpha;
 
-    for (j = 0; j < 3; j++)
-    {
-      device->hypoths[i].mean[j] = data->hypoths[i].mean[j] / scale[j];      
-      for (k = 0; k < 3; k++)
-        device->hypoths[i].cov[j][k] = data->hypoths[i].cov[j][k] / scale[j] / scale[k];
-    }
+    device->hypoths[i].mean[0] = data->hypoths[i].mean.px;
+    device->hypoths[i].mean[1] = data->hypoths[i].mean.py;
+    device->hypoths[i].mean[2] = data->hypoths[i].mean.pa;
+    memset(device->hypoths[i].cov, 0, sizeof(double)*9);
+    for (k = 0; k < 3; k++)
+      device->hypoths[i].cov[k][k] = data->hypoths[i].cov[k];
   }
-  device->hypoth_count = data->hypoth_count;
+  device->hypoth_count = data->hypoths_count;
 
   return;
 }
 
 
 // Set the robot pose (mean and covariance)
-int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3])
+int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3])
 {
-  int len;
   player_localize_set_pose_t req;
 
-//  req.subtype = PLAYER_LOCALIZE_SET_POSE_REQ;
-
-  req.mean[0] = htonl((int) (pose[0] * 1e3));
-  req.mean[1] = htonl((int) (pose[1] * 1e3));
-  req.mean[2] = htonl((int) (pose[2] * 180 / M_PI * 3600));
+  req.mean.px = pose[0];
+  req.mean.py = pose[1];
+  req.mean.pa = pose[2];
   
-  req.cov[0][0] = htonll((int64_t) (cov[0][0] * 1e6));
-  req.cov[0][1] = htonll((int64_t) (cov[0][1] * 1e6));
-  req.cov[0][2] = 0;
+  req.cov[0] = cov[0];
+  req.cov[1] = cov[1];
+  req.cov[2] = cov[2];
 
-  req.cov[1][0] = htonll((int64_t) (cov[1][0] * 1e6));
-  req.cov[1][1] = htonll((int64_t) (cov[1][1] * 1e6));
-  req.cov[1][2] = 0;
-
-  req.cov[2][0] = 0;
-  req.cov[2][1] = 0;
-  req.cov[2][2] = htonll((int64_t) (cov[2][2] * 180 / M_PI * 3600 * 180 / M_PI * 3600));
-
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_LOCALIZE_SET_POSE,
-                               &req, sizeof(req), NULL, 0);
-  if (len < 0)
+   if(playerc_client_request(device->info.client, 
+                             &device->info,
+                             PLAYER_LOCALIZE_REQ_SET_POSE,
+                             &req, NULL, 0) < 0)
     return -1;
 
   return 0;
 }
 
-
-// Retrieve the occupancy map info.  The info is written into the proxy
-// structure.
-
-// deprecated: get the map from the map interface now
-#if 0
-int playerc_localize_get_map_info(playerc_localize_t *device)
-{
-  //int i, j;
-  //int ni, nj;
-  //int sx, sy;
-  //int si, sj;
-  int len;
-  size_t reqlen;
-  player_localize_map_info_t info;
-  //player_localize_map_data_t data;
-  
-  // Get the map header
-  info.subtype = PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
-  reqlen = sizeof(info.subtype);
-  len = playerc_client_request(device->info.client, &device->info,
-                               &info, reqlen, &info, sizeof(info));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(info))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(info));
-    return -1;
-  }
-
-  device->map_size_x = ntohl(info.width);
-  device->map_size_y = ntohl(info.height);
-  device->map_scale = 1000.0 / ((double) (int32_t) ntohl(info.scale));
-
-  device->map_tile_x = 0;
-  device->map_tile_y = 0;
-
-  // Allocate space for the map
-  if (device->map_cells)
-    free(device->map_cells);
-  device->map_cells = malloc(device->map_size_x * device->map_size_y * sizeof(device->map_cells[0]));
-
-  return 0;
-}
-#endif
-
-
-// Retrieve a tile from occupancy map.  The map is written into the proxy
-// structure.
-
-// deprecated: get the map from the map interface now
-#if 0
-int playerc_localize_get_map_tile(playerc_localize_t *device)
-{
-  int i, j;
-  int ni, nj;
-  int sx, sy;
-  int si, sj;
-  int len;
-  size_t reqlen;
-  //player_localize_map_info_t info;
-  player_localize_map_data_t data;
-
-  // Already loaded
-  if (device->map_tile_y >= device->map_size_y)
-    return -1;
-      
-  // Tile size
-  sx = (int) sqrt(sizeof(data.data));
-  sy = sx;
-  assert(sx * sy < sizeof(data.data));
-
-  i = device->map_tile_x;
-  j = device->map_tile_y;
-  
-  // Get the map data in tiles
-  si = MIN(sx, device->map_size_x - i);
-  sj = MIN(sy, device->map_size_y - j);
-
-  data.subtype = PLAYER_LOCALIZE_GET_MAP_DATA_REQ;
-  data.col = htonl(i);
-  data.row = htonl(j);
-  data.width = htonl(si);
-  data.height = htonl(sj); 
-  reqlen = sizeof(data) - sizeof(data.data);
-    
-  len = playerc_client_request(device->info.client, &device->info,
-                               &data, reqlen, &data, sizeof(data));
-  if (len < 0)
-    return -1;
-  if (len < reqlen + si * sj)
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d < %d)", len, reqlen + si * sj);
-    return -1;
-  }
-
-  for (nj = 0; nj < sj; nj++)
-    for (ni = 0; ni < si; ni++)
-      device->map_cells[(i + ni) + (j + nj) * device->map_size_x] = data.data[ni + nj * si];
-
-  device->map_tile_x += sx;
-  if (device->map_tile_x >= device->map_size_x)
-  {
-    device->map_tile_x = 0;
-    device->map_tile_y += sy;
-  }
-  
-  return 0;
-}
-#endif
-
-// Retrieve the occupancy map.  The map is written into the proxy
-// structure.
-
-// deprecated: get the map from the map interface now
-#if 0
-int playerc_localize_get_map(playerc_localize_t *device)
-{
-  int i, j;
-  int ni, nj;
-  int sx, sy;
-  int si, sj;
-  int len;
-  size_t reqlen;
-  player_localize_map_info_t info;
-  player_localize_map_data_t data;
-  
-  // Get the map header
-  info.subtype = PLAYER_LOCALIZE_GET_MAP_INFO_REQ;
-  reqlen = sizeof(info.subtype);
-  len = playerc_client_request(device->info.client, &device->info,
-                               &info, reqlen, &info, sizeof(info));
-  if (len < 0)
-    return -1;
-  if (len != sizeof(info))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(info));
-    return -1;
-  }
-
-  device->map_size_x = ntohl(info.width);
-  device->map_size_y = ntohl(info.height);
-  device->map_scale = 1000.0 / ((double) (int32_t) ntohl(info.scale));
-
-  if (device->map_cells)
-    free(device->map_cells);
-  device->map_cells = malloc(device->map_size_x * device->map_size_y * sizeof(device->map_cells[0]));
-
-  // Tile size
-  sx = (int) sqrt(sizeof(data.data));
-  sy = sx;
-  assert(sx * sy < sizeof(data.data));
-
-  // Get the map data in tiles
-  for (j = 0; j < device->map_size_y; j += sy)
-  {
-    for (i = 0; i < device->map_size_x; i += sx)
-    {
-      si = MIN(sx, device->map_size_x - i);
-      sj = MIN(sy, device->map_size_y - j);
-
-      printf("%d %d\n", i, j);
-      
-      data.subtype = PLAYER_LOCALIZE_GET_MAP_DATA_REQ;
-      data.col = htonl(i);
-      data.row = htonl(j);
-      data.width = htonl(si);
-      data.height = htonl(sj); 
-      reqlen = sizeof(data) - sizeof(data.data);
-    
-      len = playerc_client_request(device->info.client, &device->info,
-                                   &data, reqlen, &data, sizeof(data));
-      if (len < 0)
-        return -1;
-      if (len < reqlen + si * sj)
-      {
-        PLAYERC_ERR2("reply has unexpected length (%d < %d)", len, reqlen + si * sj);
-        return -1;
-      }
-
-      for (nj = 0; nj < sj; nj++)
-        for (ni = 0; ni < si; ni++)
-          device->map_cells[(i + ni) + (j + nj) * device->map_size_x] = data.data[ni + nj * si];
-    }
-  }
-  
-  return 0;
-}
-#endif
-
-// Get the current configuration.
-int playerc_localize_get_config(playerc_localize_t *device,
-                                    player_localize_config_t *cfg)
-{
-  int len;
-  player_localize_config_t config;
-
-//  config.subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
-    
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_LOCALIZE_GET_CONFIG,
-                               &config, 0, &config, sizeof(config));
-
-  if (len < 0)
-    return -1;
-  if (len != sizeof(config))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(config));
-    return -1;
-  }
-
-  // fill out the data field
-//  cfg->subtype = PLAYER_LOCALIZE_GET_CONFIG_REQ;
-  cfg->num_particles = (uint32_t) ntohl(config.num_particles);
-
-  return 0;
-}
-
-
-// Modify the current configuration.
-int playerc_localize_set_config(playerc_localize_t *device,
-                                    player_localize_config_t cfg)
-{
-  int len;
-  player_localize_config_t config;
-
-//  config.subtype = PLAYER_LOCALIZE_SET_CONFIG_REQ;
-  config.num_particles = cfg.num_particles;
-
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_LOCALIZE_SET_CONFIG,
-                               &config, sizeof(config), &config, sizeof(config));
-
-  if (len < 0)
-    return -1;
-
-  return 0;
-}
 
 // Get the particle set
 int playerc_localize_get_particles(playerc_localize_t *device)
 {
-  int len;
   int i;
-  player_localize_get_particles_t* req;
+  player_localize_get_particles_t req;
 
-  assert(req = calloc(1,sizeof(player_localize_get_particles_t)));
 
-  //req->subtype = PLAYER_LOCALIZE_GET_PARTICLES_REQ;
-    
-  len = playerc_client_request(device->info.client, &device->info,
-                               PLAYER_LOCALIZE_GET_PARTICLES,
-                               NULL, 0, req, 
-                               sizeof(player_localize_get_particles_t));
+  if(playerc_client_request(device->info.client, &device->info,
+                            PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                            NULL, 
+                            &req, sizeof(player_localize_get_particles_t)) < 0)
 
-  if (len < 0)
-  {
-    free(req);
     return -1;
-  }
 
-  // TODO: better length checking here
+  device->mean[0] = req.mean.px;
+  device->mean[1] = req.mean.py;
+  device->mean[2] = req.mean.pa;
 
-  // byteswap
-  device->mean[0] = ((int32_t)ntohl(req->mean[0])) / 1e3;
-  device->mean[1] = ((int32_t)ntohl(req->mean[1])) / 1e3;
-  device->mean[2] = (((int32_t)ntohl(req->mean[2])) / 3600.0) * M_PI/180.0;
+  device->variance = req.variance;
 
-  device->variance = ((uint64_t)ntohll(req->variance)) / (1e3 * 1e3);
-
-  device->num_particles = (int32_t)ntohl(req->num_particles);
+  device->num_particles = req.particles_count;
 
   for(i=0;i<device->num_particles;i++)
   {
@@ -456,18 +175,11 @@ int playerc_localize_get_particles(playerc_localize_t *device)
       break;
     }
 
-    device->particles[i].pose[0] = 
-            ((int32_t)ntohl(req->particles[i].pose[0])) / 1e3;
-    device->particles[i].pose[1] = 
-            ((int32_t)ntohl(req->particles[i].pose[1])) / 1e3;
-    device->particles[i].pose[2] = 
-            (((int32_t)ntohl(req->particles[i].pose[2])) / 3600.0) * 
-            M_PI / 180.0;
-    device->particles[i].weight = 
-            ((uint32_t)ntohl(req->particles[i].alpha)) / 1e6;
+    device->particles[i].pose[0] = req.particles[i].pose.px;
+    device->particles[i].pose[1] = req.particles[i].pose.py;
+    device->particles[i].pose[2] = req.particles[i].pose.pa;
+    device->particles[i].weight = req.particles[i].alpha;
   }
-
-  free(req);
 
   return 0;
 }

@@ -48,13 +48,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 
 #include "playerc.h"
 #include "error.h"
 
 // Local declarations
-void playerc_planner_putdata(playerc_planner_t *device, player_msghdr_t *header,
+void playerc_planner_putmsg(playerc_planner_t *device, player_msghdr_t *header,
                               player_planner_data_t *data, size_t len);
 
 
@@ -66,7 +65,7 @@ playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_planner_t));
   memset(device, 0, sizeof(playerc_planner_t));
   playerc_device_init(&device->info, client, PLAYER_PLANNER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_planner_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_planner_putmsg);
 
   
   return device;
@@ -98,43 +97,46 @@ int playerc_planner_unsubscribe(playerc_planner_t *device)
 
 
 // Process incoming data
-void playerc_planner_putdata(playerc_planner_t *device, player_msghdr_t *header,
-                              player_planner_data_t *data, size_t len)
+void 
+playerc_planner_putmsg(playerc_planner_t *device, player_msghdr_t *header,
+                       player_planner_data_t *data, size_t len)
 {
-  device->path_valid = data->valid;
-  device->path_done = data->done;
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_PLANNER_DATA_STATE))
+  {
+    device->path_valid = data->valid;
+    device->path_done = data->done;
 
-  device->px = (long) ntohl(data->px) / 1000.0;
-  device->py = (long) ntohl(data->py) / 1000.0;
-  device->pa = (long) ntohl(data->pa) * M_PI / 180.0;
-  device->pa = atan2(sin(device->pa), cos(device->pa));
+    device->px = data->pos.px;
+    device->py = data->pos.py;
+    device->pa = data->pos.pa;
 
-  device->gx = (long) ntohl(data->gx) / 1000.0;
-  device->gy = (long) ntohl(data->gy) / 1000.0;
-  device->ga = (long) ntohl(data->ga) * M_PI / 180.0;
-  device->ga = atan2(sin(device->ga), cos(device->ga));
+    device->gx = data->goal.px;
+    device->gy = data->goal.py;
+    device->ga = data->goal.pa;
 
-  device->wx = (long) ntohl(data->wx) / 1000.0;
-  device->wy = (long) ntohl(data->wy) / 1000.0;
-  device->wa = (long) ntohl(data->wa) * M_PI / 180.0;
-  device->wa = atan2(sin(device->wa), cos(device->wa));
+    device->wx = data->waypoint.px;
+    device->wy = data->waypoint.py;
+    device->wa = data->waypoint.pa;
 
-  device->curr_waypoint = (int)ntohs(data->curr_waypoint);
-  device->waypoint_count = (unsigned int)ntohs(data->waypoint_count);
+    device->curr_waypoint = data->waypoint_idx;
+    device->waypoint_count = data->waypoints_count;
+  }
 }
 
-
-int playerc_planner_set_cmd_pose(playerc_planner_t *device, double gx, double gy,
-                                  double ga)
+int 
+playerc_planner_set_cmd_pose(playerc_planner_t *device, 
+                                 double gx, double gy, double ga)
 {
   player_planner_cmd_t cmd;
 
-  memset(&cmd, 0, sizeof(cmd));
-  cmd.gx = htonl((int) (gx * 1000.0));
-  cmd.gy = htonl((int) (gy * 1000.0));
-  cmd.ga = htonl((int) (ga * 180.0 / M_PI));
+  cmd.goal.px = gx;
+  cmd.goal.py = gy;
+  cmd.goal.pa = ga;
 
-  return playerc_client_write(device->info.client, &device->info, &cmd, sizeof(cmd));
+  return playerc_client_write(device->info.client, &device->info, 
+                              PLAYER_PLANNER_CMD_GOAL,
+                              &cmd, NULL);
 }
 
 // Get the list of waypoints.  The writes the result into the proxy
@@ -142,29 +144,20 @@ int playerc_planner_set_cmd_pose(playerc_planner_t *device, double gx, double gy
 int playerc_planner_get_waypoints(playerc_planner_t *device)
 {
   int i;
-  int len;
   player_planner_waypoints_req_t config;
 
-  memset(&config, 0, sizeof(config));
-//  config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
-
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_PLANNER_GET_WAYPOINTS,
-                               &config, 0, &config, 
-                               sizeof(config));
-  if (len < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info,
+                            PLAYER_PLANNER_REQ_GET_WAYPOINTS,
+                            NULL, &config, sizeof(config)) < 0)
     return -1;
-  if (len == 0)
-  {
-    PLAYERC_ERR("got unexpected zero-length reply");
-    return -1;
-  }
   
-  device->waypoint_count = (int)ntohs(config.count);
+  device->waypoint_count = config.waypoints_count;
   for(i=0;i<device->waypoint_count;i++)
   {
-    device->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
-    device->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
-    device->waypoints[i][2] = ((int)ntohl(config.waypoints[i].a)) * M_PI / 180;
+    device->waypoints[i][0] = config.waypoints[i].px;
+    device->waypoints[i][1] = config.waypoints[i].py;
+    device->waypoints[i][2] = config.waypoints[i].pa;
   }
   return 0;
 }
@@ -174,11 +167,11 @@ int playerc_planner_enable(playerc_planner_t *device, int state)
 {
   player_planner_enable_req_t config;
 
-//  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
   config.state = state;
 
-  if(playerc_client_request(device->info.client, &device->info, PLAYER_PLANNER_ENABLE,
-                            &config, sizeof(config), NULL, 0) < 0)
+  if(playerc_client_request(device->info.client, &device->info, 
+                            PLAYER_PLANNER_REQ_ENABLE,
+                            &config, NULL, 0) < 0)
     return(-1);
   else
     return(0);

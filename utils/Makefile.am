@@ -1,4 +1,4 @@
 
-SUBDIRS = playerv playervcr 
-#playerjoy playernav playerprint dgps_server barcodes
+SUBDIRS = playerv playervcr playernav 
+#playerjoy playerprint dgps_server barcodes
 #playermap

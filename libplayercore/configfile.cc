@@ -1895,7 +1895,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
 
     // Extract the fields from the tokens (with default values)
     k = tokens[0];
-    if(tokens[1])
+    if(tokens[1] && strlen(tokens[1]))
     {
       // Try to be smart about reading the host part of the address.
       for(j=0;j<(int)strlen(tokens[1]);j++)
@@ -1922,7 +1922,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     }
     else
       host = this->default_host;
-    if(tokens[2])
+    if(tokens[2] && strlen(tokens[2]))
       robot = atoi(tokens[2]);
     else
       robot = this->default_robot;

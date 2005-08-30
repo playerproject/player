@@ -112,55 +112,29 @@ int AMCLLaser::Setup(void)
   }
 
   // Ask for the laser's geometry
-  this->laser_dev->PutMsg(this->InQueue,
-                          PLAYER_MSGTYPE_REQ,
-                          PLAYER_LASER_REQ_GET_GEOM,
-                          NULL, 0, NULL);
-  // Set the message filter to look for the response
-  this->InQueue->SetFilter(this->laser_addr.host,
-                           this->laser_addr.robot,
-                           this->laser_addr.interf,
-                           this->laser_addr.index,
-                           -1,
-                           PLAYER_LASER_REQ_GET_GEOM);
-  // Await the reply
-  for(;;)
+  Message* msg;
+  if(!(msg = laser_dev->Request(this->InQueue,
+                                PLAYER_MSGTYPE_REQ,
+                                PLAYER_LASER_REQ_GET_GEOM,
+                                NULL, 0, NULL,false)))
   {
-    Message* msg;
-    player_msghdr_t* hdr;
-    player_laser_geom_t* geom;
-    if((msg = this->InQueue->Pop()))
-    {
-      hdr = msg->GetHeader();
-      if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_ACK,
-                               PLAYER_LASER_REQ_GET_GEOM,
-                               this->laser_addr))
-      {
-        geom = (player_laser_geom_t*)msg->GetPayload();
-        // Set the laser pose relative to the robot
-        this->laser_pose.v[0] = geom->pose.px;
-        this->laser_pose.v[1] = geom->pose.py;
-        this->laser_pose.v[2] = geom->pose.pa;
-
-        delete msg;
-        break;
-      }
-      else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_RESP_NACK,
-                                    PLAYER_LASER_REQ_GET_GEOM,
-                                    this->laser_addr))
-      {
-        PLAYER_WARN("failed to get laser geometry");
-
-        delete msg;
-        break;
-      }
-      else
-      {
-        PLAYER_ERROR("got unexpected message");
-        delete msg;
-      }
-    }
-    usleep(10);
+    PLAYER_WARN("failed to get laser geometry");
+    this->laser_pose.v[0] = 0.0;
+    this->laser_pose.v[1] = 0.0;
+    this->laser_pose.v[2] = 0.0;
+  }
+  else
+  {
+    player_laser_geom_t* geom = (player_laser_geom_t*)msg->GetPayload();
+    // Set the laser pose relative to the robot
+    this->laser_pose.v[0] = geom->pose.px;
+    this->laser_pose.v[1] = geom->pose.py;
+    this->laser_pose.v[2] = geom->pose.pa;
+    PLAYER_MSG3(2, "laser geometry: %f,%f,%f",
+                this->laser_pose.v[0],
+                this->laser_pose.v[1],
+                RTOD(this->laser_pose.v[2]));
+    delete msg;
   }
   return 0;
 }
@@ -185,7 +159,7 @@ AMCLLaser::SetupMap(void)
 
   // Create the map
   this->map = map_alloc();
-  PLAYER_MSG1(2, "reading map from map:%d", this->map_addr.index);
+  PLAYER_MSG1(2, "AMCL loading map from map:%d...", this->map_addr.index);
 
   // Fill in the map structure (I'm doing it here instead of in libmap, 
   // because libmap is written in C, so it'd be a pain to invoke the internal 
@@ -196,12 +170,12 @@ AMCLLaser::SetupMap(void)
   if(!(msg = mapdev->Request(this->InQueue,
                              PLAYER_MSGTYPE_REQ,
                              PLAYER_MAP_REQ_GET_INFO,
-                             NULL, 0, NULL)))
+                             NULL, 0, NULL, false)))
   {
     PLAYER_ERROR("failed to get map info");
     return(-1);
   }
-  delete msg;
+
 
   player_map_info_t* info = (player_map_info_t*)msg->GetPayload();
   
@@ -219,11 +193,16 @@ AMCLLaser::SetupMap(void)
                                                 this->map->size_y));
 
   // now, get the map data
-  player_map_req_data_t data_req;
+  player_map_data_t* data_req;
+  size_t reqlen;
   int i,j;
   int oi,oj;
   int sx,sy;
   int si,sj;
+
+  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
+  data_req = (player_map_data_t*)calloc(1, reqlen);
+  assert(data_req);
 
   // Tile size
   sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
@@ -234,17 +213,19 @@ AMCLLaser::SetupMap(void)
     si = MIN(sx, this->map->size_x - oi);
     sj = MIN(sy, this->map->size_y - oj);
 
-    data_req.col = oi;
-    data_req.row = oj;
-    data_req.width = si;
-    data_req.height = sj;
+    data_req->col = oi;
+    data_req->row = oj;
+    data_req->width = si;
+    data_req->height = sj;
 
     if(!(msg = mapdev->Request(this->InQueue,
                                PLAYER_MSGTYPE_REQ,
                                PLAYER_MAP_REQ_GET_DATA,
-                               (void*)&data_req,sizeof(data_req),NULL)))
+                               (void*)data_req,reqlen,NULL,false)))
     {
       PLAYER_ERROR("failed to get map info");
+      free(data_req);
+      free(this->map->cells);
       return(-1);
     }
 
@@ -271,9 +252,13 @@ AMCLLaser::SetupMap(void)
     }
   }
 
+  free(data_req);
+
   // we're done with the map device now
   if(mapdev->Unsubscribe(this->InQueue) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
+
+  PLAYER_MSG0(2, "Done");
 
   return(0);
 }

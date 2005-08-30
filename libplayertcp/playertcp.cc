@@ -58,7 +58,7 @@ PlayerTCP::PlayerTCP()
     this->host = 0;
   }
 
-  deviceTable->AddRemoteDriverFn(TCPRemoteDriver::TCPRemoteDriver_Init,this);
+  //deviceTable->AddRemoteDriverFn(TCPRemoteDriver::TCPRemoteDriver_Init,this);
 }
 
 PlayerTCP::~PlayerTCP()

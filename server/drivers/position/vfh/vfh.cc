@@ -318,6 +318,8 @@ int VFH_Class::SetupOdom()
      (msg->GetHeader()->size != sizeof(player_position2d_geom_t)))
   {
     PLAYER_ERROR("failed to get geometry of underlying position device");
+    if(msg)
+      delete msg;
     return(-1);
   }
   player_position2d_geom_t* geom = (player_position2d_geom_t*)msg->GetPayload();

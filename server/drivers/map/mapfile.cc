@@ -287,6 +287,7 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     info.width = this->size_x;
     info.height = this->size_y;
 
+    puts("responding with map info");
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_INFO,
@@ -298,7 +299,7 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
                            PLAYER_MAP_REQ_GET_DATA,
                            this->device_addr))
   {
-    player_map_req_data_t* mapreq = (player_map_req_data_t*)data;
+    player_map_data_t* mapreq = (player_map_data_t*)data;
 
     // Can't declare a map tile on the stack (it's too big)
     size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
@@ -350,6 +351,7 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     // recompute size, in case the tile got truncated
     mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
                (mapresp->width * mapresp->height));
+    mapresp->data_count = mapresp->width * mapresp->height;
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_DATA,
