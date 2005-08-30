@@ -48,7 +48,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 
 #include "playerc.h"
 #include "error.h"
@@ -62,7 +61,7 @@ playerc_map_t *playerc_map_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_map_t));
   memset(device, 0, sizeof(playerc_map_t));
   playerc_device_init(&device->info, client, PLAYER_MAP_CODE, index,
-                      (playerc_putdata_fn_t) NULL,NULL,NULL);
+                      (playerc_putmsg_fn_t) NULL);
     
   return device;
 }
@@ -92,8 +91,8 @@ int playerc_map_unsubscribe(playerc_map_t *device)
 int playerc_map_get_map(playerc_map_t* device)
 {
   player_map_info_t info_req;
-  player_map_data_t data_req;
-  int reqlen, replen;
+  player_map_data_t* data_req;
+  size_t repsize;
   int i,j;
   int oi,oj;
   int sx,sy;
@@ -101,57 +100,56 @@ int playerc_map_get_map(playerc_map_t* device)
   char* cell;
 
   // first, get the map info
-  memset(&info_req, 0, sizeof(info_req));
-//  info_req.subtype = PLAYER_MAP_GET_INFO_REQ;
-
-  if(playerc_client_request(device->info.client, &device->info, PLAYER_MAP_GET_INFO,
-                            &info_req, 0,
-                            &info_req, sizeof(info_req)) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info, 
+                            PLAYER_MAP_REQ_GET_INFO, 
+                            NULL, &info_req, sizeof(info_req)) < 0)
   {
     PLAYERC_ERR("failed to get map info");
     return(-1);
   }
 
-  device->resolution = 1/(ntohl(info_req.scale) / 1e3);
-  device->width = ntohl(info_req.width);
-  device->height = ntohl(info_req.height);
+  device->resolution = info_req.scale;
+  device->width = info_req.width;
+  device->height = info_req.height;
 
-  // allocate space for cells
+  // Allocate space for the whole map
   if(device->cells)
     free(device->cells);
-  assert(device->cells = (char*)malloc(sizeof(char) *
-                                       device->width * device->height));
+  device->cells = (char*)malloc(sizeof(char) *
+                                device->width * device->height);
+  assert(device->cells);
 
   // now, get the map, in tiles
-//  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+
+  // Allocate space for one received tile (metadata + cells)
+  repsize = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
+  repsize += device->width * device->height;
+  data_req = (player_map_data_t*)calloc(repsize, 1);
+  assert(data_req);
 
   // Tile size
-  sy = sx = (int)sqrt(sizeof(data_req.data));
-  assert(sx * sy < (int)sizeof(data_req.data));
+  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
+  assert(sx * sy < (int)(PLAYER_MAP_MAX_TILE_SIZE));
   oi=oj=0;
   while((oi < device->width) && (oj < device->height))
   {
     si = MIN(sx, device->width - oi);
     sj = MIN(sy, device->height - oj);
 
-    data_req.col = htonl(oi);
-    data_req.row = htonl(oj);
-    data_req.width = htonl(si);
-    data_req.height = htonl(sj);
+    memset(data_req,0,repsize);
+    data_req->col = oi;
+    data_req->row = oj;
+    data_req->width = si;
+    data_req->height = sj;
 
-    reqlen = sizeof(data_req) - sizeof(data_req.data);
-
-    if((replen = playerc_client_request(device->info.client, &device->info,PLAYER_MAP_GET_DATA,
-                                        &data_req, reqlen,
-                                        &data_req, sizeof(data_req))) == 0)
+    if(playerc_client_request(device->info.client, &device->info,
+                              PLAYER_MAP_REQ_GET_DATA,
+                              data_req, data_req, repsize) < 0)
     {
-      PLAYERC_ERR("failed to get map info");
-      return(-1);
-    }
-    else if(replen != (reqlen + si * sj))
-    {
-      PLAYERC_ERR2("got less map data than expected (%d != %d)",
-                    replen, reqlen + si*sj);
+      PLAYERC_ERR("failed to get map data");
+      free(data_req);
+      free(device->cells);
       return(-1);
     }
 
@@ -161,7 +159,7 @@ int playerc_map_get_map(playerc_map_t* device)
       for(i=0;i<si;i++)
       {
         cell = device->cells + PLAYERC_MAP_INDEX(device,oi+i,oj+j);
-        *cell = data_req.data[j*si + i];
+        *cell = data_req->data[j*si + i];
       }
     }
 
@@ -172,6 +170,8 @@ int playerc_map_get_map(playerc_map_t* device)
       oj += sj;
     }
   }
+
+  free(data_req);
 
   return(0);
 }

@@ -1305,7 +1305,6 @@ typedef struct player_localize_hypoth
   /** The mean value of the pose estimate (m, m, rad). */
   player_pose_t mean;
   /** The covariance matrix pose estimate (m$^2$, rad$^2$). */
-  //double cov[3][3];
   double cov[3];
   /** The weight coefficient for linear combination (alpha) */
   double alpha;
@@ -1334,7 +1333,7 @@ zero length response packet. */
 typedef struct player_localize_set_pose
 {
   /** The mean value of the pose estimate (m, m, rad). */
-  float mean[3];
+  player_pose_t mean;
   /** The diagonal elements of the covariance matrix pose estimate 
       (m$^2$, rad$^2$). */
   double cov[3];
@@ -1449,7 +1448,10 @@ delivered in tiles, via a sequence of configuration requests.
 /* 2097152 - 30 (msg header) - 20 (meta-data to accompany the tile) = 2097102 */
 #define PLAYER_MAP_MAX_TILE_SIZE 2097102
 
-/** Configuration subtypes */
+/** Data subtypes */
+#define PLAYER_MAP_DATA_TILE               0x01
+
+/** Request subtypes */
 #define PLAYER_MAP_REQ_GET_INFO            0x01
 #define PLAYER_MAP_REQ_GET_DATA            0x02
 
@@ -1466,19 +1468,6 @@ typedef struct player_map_info
   uint32_t width, height;
 } player_map_info_t;
 
-/** @brief Configuration request: Get map data.
-
-Ask for a map tile. Beacause of the limited size of a message,
-the map data is tranfered in tiles.  The device will respond with a 
-player_map_data_t. */
-typedef struct player_map_req_data
-{
-  /** The tile origin [pixels]. */
-  uint32_t col, row;
-  /** The size of the tile [pixels]. */
-  uint32_t width, height;
-} player_map_req_data_t;
-
 /** @brief Map data
 
 A map tile.  This message may either be sent in response to a request,
@@ -1492,7 +1481,7 @@ typedef struct player_map_data
   /** The number of cells (needed for XDR packing) */
   uint32_t data_count;
   /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
-  char data[PLAYER_MAP_MAX_TILE_SIZE];
+  int8_t data[PLAYER_MAP_MAX_TILE_SIZE];
 } player_map_data_t;
 /** @} */
 
@@ -1717,8 +1706,15 @@ The @p planner interface provides control of a 2-D motion planner.
 @{
 */
 
-#define  PLAYER_PLANNER_GET_WAYPOINTS 10
-#define  PLAYER_PLANNER_ENABLE        11
+/** Data subtypes */
+#define PLAYER_PLANNER_DATA_STATE 0x01
+
+/** Command subtypes */
+#define PLAYER_PLANNER_CMD_GOAL 0x01
+
+/** Request subtypes */
+#define PLAYER_PLANNER_REQ_GET_WAYPOINTS 0x01
+#define PLAYER_PLANNER_REQ_ENABLE        0x02
 
 /** maximum number of waypoints in a single plan */
 #define PLAYER_PLANNER_MAX_WAYPOINTS 128
@@ -1734,17 +1730,17 @@ typedef struct player_planner_data
   /** Have we arrived at the goal? */
   uint8_t done;
   /** Current location (m,m,rad) */
-  float px,py,pa;
+  player_pose_t pos;
   /** Goal location (m,m,rad) */
-  float gx,gy,ga;
+  player_pose_t goal;
   /** Current waypoint location (m,m,rad) */
-  float wx,wy,wa;
+  player_pose_t waypoint;
   /** Current waypoint index (handy if you already have the list
       of waypoints). May be negative if there's no plan, or if 
       the plan is done */
-  int32_t curr_waypoint;
+  int32_t waypoint_idx;
   /** Number of waypoints in the plan */
-  uint32_t waypoint_count;
+  uint32_t waypoints_count;
 } player_planner_data_t;
 
 /** @brief Command
@@ -1756,19 +1752,12 @@ typedef struct player_planner_cmd
   player_pose_t goal;
 } player_planner_cmd_t;
 
-/** @brief A waypoint */
-typedef struct player_planner_waypoint
-{
-  /** waypoint location (m,m,rad) */ 
-  float x,y,a;
-} player_planner_waypoint_t;
-
 /** @brief Configuration request: Get waypoints */
 typedef struct player_planner_waypoints_req
 {
   /** Number of waypoints to follow */
   uint32_t waypoints_count;
-  player_planner_waypoint_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
+  player_pose_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
 } player_planner_waypoints_req_t;
 
 /** @brief Configuration request: Enable/disable robot motion */

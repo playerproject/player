@@ -135,6 +135,12 @@ int main(int argc, const char *argv[])
         test_power(client, client->devinfos[i].addr.index);
         break;
 
+      // map device
+      case PLAYER_MAP_CODE:
+        test_map(client, client->devinfos[i].addr.index);
+        break;
+
+
 #if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
@@ -164,11 +170,6 @@ int main(int argc, const char *argv[])
       // Localization device
       case PLAYER_LOCALIZE_CODE:
         test_localize(client, client->devinfos[i].addr.index);
-        break;
-
-      // map device
-      case PLAYER_MAP_CODE:
-        test_map(client, client->devinfos[i].addr.index);
         break;
 
       // Position device

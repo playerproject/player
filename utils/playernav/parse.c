@@ -66,7 +66,7 @@ parse_args(int argc, char** argv, int* num_bots, char** hostnames,
     }
     else
     {
-      port = PLAYER_PORTNUM;
+      port = 6665;
       hostlen = strlen(argv[i]);
     }
 

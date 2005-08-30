@@ -5,7 +5,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <libgnomecanvas/libgnomecanvas.h>
 
-#include <playerc.h>
+#include <libplayerc/playerc.h>
 
 #define MIN_DISPLAY_WIDTH 10
 

@@ -37,6 +37,9 @@ extern int test_sonar(playerc_client_t *client, int index);
 // Basic test for power device.
 extern int test_power(playerc_client_t *client, int index);
 
+// Basic test for map device
+extern int test_map(playerc_client_t *client, int index);
+
 #if 0
 // Basic test for BPS device.i
 extern int test_bps(playerc_client_t *client, int index);
@@ -46,9 +49,6 @@ extern int test_broadcast(playerc_client_t *client, int index);
 
 // Basic test for GPS device.i
 extern int test_gps(playerc_client_t *client, int index);
-
-// Basic test for map device
-extern int test_map(playerc_client_t *client, int index);
 
 // Basic localization test
 extern int test_localize(playerc_client_t *client, int index);

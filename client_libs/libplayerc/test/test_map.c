@@ -22,7 +22,7 @@ int test_map(playerc_client_t *client, int index)
   device = playerc_map_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_map_subscribe(device, PLAYER_READ_MODE) != 0)
+  if (playerc_map_subscribe(device, PLAYER_OPEN_MODE) != 0)
   {
     FAIL();
     return -1;

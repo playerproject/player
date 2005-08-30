@@ -127,6 +127,14 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D, 
     (player_pack_fn_t)player_simulation_pose2d_req_pack},
 
+  /* map messages */
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
+    (player_pack_fn_t)player_map_info_pack},
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_DATA, 
+    (player_pack_fn_t)player_map_data_pack},
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_TILE, 
+    (player_pack_fn_t)player_map_data_pack},
+
   {0,0,0,NULL}
 };
 

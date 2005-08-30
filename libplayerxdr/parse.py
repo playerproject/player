@@ -122,7 +122,7 @@ if __name__ == '__main__':
         sourcefile.write('int\n' + prefix + '_pack(void* buf, size_t buflen, ' +
                          typename + '* msg, int op)\n{\n')
         sourcefile.write('  XDR xdrs;\n')
-        sourcefile.write('  int len;\n')
+        sourcefile.write('  int len = 0;\n')
         sourcefile.write('  if(!buflen)\n')
         sourcefile.write('    return(0);\n')
         sourcefile.write('  xdrmem_create(&xdrs, buf, buflen, op);\n')
@@ -171,6 +171,7 @@ if __name__ == '__main__':
             varstring = arraypattern.sub('', varstring)
             pointervar = varstring + '_p'
             countvar = varstring + '_count'
+
             # Was a _count variable declared? If so, we'll encode as a
             # variable-length array (with xdr_array); otherwise we'll
             # do it fixed-length (with xdr_vector).  xdr_array is picky; we
@@ -178,35 +179,72 @@ if __name__ == '__main__':
             # address of this pointer.  Passing the address of the array
             # does NOT work.
             if countvar in varlist:
-              if i == 0:
-                sourcefile.write('  {\n')
-                sourcefile.write('    ' + type + '* ' + pointervar +
-                                 ' = msg->' + varstring + ';\n')
-                sourcefile.write('    if(xdr_array(xdrs, (char**)&' + pointervar + 
-                                 ', &msg->' + countvar +
-                                 ', ' + arraysize + ', sizeof(' + type + '), (xdrproc_t)' + 
-                                 xdr_proc + ') != 1)\n      return(0);\n')
-                sourcefile.write('  }\n')
+
+              # Is it an array of bytes?  If so, then we'll encode
+              # it a packed opaque bytestring, rather than an array of 4-byte-aligned
+              # chars.
+              if xdr_proc == 'xdr_u_char' or xdr_proc == 'xdr_char':
+                if i == 0:
+                  sourcefile.write('  {\n')
+                  sourcefile.write('    ' + type + '* ' + pointervar +
+                                   ' = msg->' + varstring + ';\n')
+                  sourcefile.write('    if(xdr_bytes(xdrs, (char**)&' + pointervar + 
+                                   ', &msg->' + countvar +
+                                   ', ' + arraysize + ') != 1)\n      return(0);\n')
+                  sourcefile.write('  }\n')
+                else:
+                  sourcefile.write('  {\n')
+                  sourcefile.write('    ' + type + '* ' + pointervar +
+                                   ' = msg->' + varstring + ';\n')
+                  sourcefile.write('    if(xdr_bytes(&xdrs, (char**)&' + pointervar + 
+                                   ', &msg->' + countvar +
+                                   ', ' + arraysize + ') != 1)\n      return(-1);\n')
+                  sourcefile.write('    len += msg->' + countvar + ';\n')
+                  sourcefile.write('  }\n')
               else:
-                sourcefile.write('  {\n')
-                sourcefile.write('    ' + type + '* ' + pointervar +
-                                 ' = msg->' + varstring + ';\n')
-                sourcefile.write('    if(xdr_array(&xdrs, (char**)&' + pointervar + 
-                                 ', &msg->' + countvar +
-                                 ', ' + arraysize +  ', sizeof(' + type + '), (xdrproc_t)' + 
-                                 xdr_proc + ') != 1)\n      return(-1);\n')
-                sourcefile.write('  }\n')
+                if i == 0:
+                  sourcefile.write('  {\n')
+                  sourcefile.write('    ' + type + '* ' + pointervar +
+                                   ' = msg->' + varstring + ';\n')
+                  sourcefile.write('    if(xdr_array(xdrs, (char**)&' + pointervar + 
+                                   ', &msg->' + countvar +
+                                   ', ' + arraysize + ', sizeof(' + type + '), (xdrproc_t)' + 
+                                   xdr_proc + ') != 1)\n      return(0);\n')
+                  sourcefile.write('  }\n')
+                else:
+                  sourcefile.write('  {\n')
+                  sourcefile.write('    ' + type + '* ' + pointervar +
+                                   ' = msg->' + varstring + ';\n')
+                  sourcefile.write('    if(xdr_array(&xdrs, (char**)&' + pointervar + 
+                                   ', &msg->' + countvar +
+                                   ', ' + arraysize +  ', sizeof(' + type + '), (xdrproc_t)' + 
+                                   xdr_proc + ') != 1)\n      return(-1);\n')
+                  sourcefile.write('    len += sizeof(' + type + ') * msg->' + countvar + ';\n')
+                  sourcefile.write('  }\n')
             else:
-              if i == 0:
-                sourcefile.write('  if(xdr_vector(xdrs, (char*)&msg->' +
-                                 varstring + ', ' + arraysize +
-                                 ', sizeof(' + type + '), (xdrproc_t)' +
-                                 xdr_proc + ') != 1)\n    return(0);\n')
+              # Is it an array of bytes?  If so, then we'll encode
+              # it a packed opaque bytestring, rather than an array of 4-byte-aligned
+              # chars.
+              if xdr_proc == 'xdr_u_char' or xdr_proc == 'xdr_char':
+                if i == 0:
+                  sourcefile.write('  if(xdr_opaque(xdrs, (char*)&msg->' +
+                                   varstring + ', ' + arraysize + ') != 1)\n    return(0);\n')
+                else:
+                  sourcefile.write('  if(xdr_opaque(&xdrs, (char*)&msg->' +
+                                   varstring + ', ' + arraysize + ') != 1)\n    return(-1);\n')
+                  sourcefile.write('  len += ' + arraysize + ';\n')
               else:
-                sourcefile.write('  if(xdr_vector(&xdrs, (char*)&msg->' +
-                                 varstring + ', ' + arraysize +
-                                 ', sizeof(' + type + '), (xdrproc_t)' +
-                                 xdr_proc + ') != 1)\n    return(-1);\n')
+                if i == 0:
+                  sourcefile.write('  if(xdr_vector(xdrs, (char*)&msg->' +
+                                   varstring + ', ' + arraysize +
+                                   ', sizeof(' + type + '), (xdrproc_t)' +
+                                   xdr_proc + ') != 1)\n    return(0);\n')
+                else:
+                  sourcefile.write('  if(xdr_vector(&xdrs, (char*)&msg->' +
+                                   varstring + ', ' + arraysize +
+                                   ', sizeof(' + type + '), (xdrproc_t)' +
+                                   xdr_proc + ') != 1)\n    return(-1);\n')
+                  sourcefile.write('  len += sizeof(' + type + ') * ' + arraysize + ';\n')
           else:
             if i == 0:
               sourcefile.write('  if(' + xdr_proc + '(xdrs,&msg->' + 
@@ -214,17 +252,16 @@ if __name__ == '__main__':
             else:
               sourcefile.write('  if(' + xdr_proc + '(&xdrs,&msg->' + 
                                varstring + ') != 1)\n    return(-1);\n')
+              sourcefile.write('  len += sizeof(' + type + ');\n')
 
           varlist.append(varstring)
       if i == 0:
         sourcefile.write('  return(1);\n}\n\n')
       else:
-        sourcefile.write('  len = xdr_getpos(&xdrs);;\n')
-        sourcefile.write('  xdr_destroy(&xdrs);\n')
         sourcefile.write('  if(op == PLAYERXDR_ENCODE)\n')
-        sourcefile.write('    return(len);\n')
-        sourcefile.write('  else\n')
-        sourcefile.write('    return(sizeof(' + typename + '));\n')
+        sourcefile.write('    len = xdr_getpos(&xdrs);;\n')
+        sourcefile.write('  xdr_destroy(&xdrs);\n')
+        sourcefile.write('  return(len);\n')
         sourcefile.write('}\n\n')
 
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')

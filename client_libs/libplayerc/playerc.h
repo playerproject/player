@@ -1089,7 +1089,6 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 /** @} */
 /**************************************************************************/
 
-#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_localize localize
@@ -1176,13 +1175,7 @@ int playerc_localize_subscribe(playerc_localize_t *device, int access);
 int playerc_localize_unsubscribe(playerc_localize_t *device);
 
 /** @brief Set the the robot pose (mean and covariance). */
-int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3][3]);
-
-/** @brief Get the current configuration. */
-int playerc_localize_get_config(playerc_localize_t *device, player_localize_config_t *config);
-
-/** @brief Modify the current configuration. */
-int playerc_localize_set_config(playerc_localize_t *device, player_localize_config_t config);
+int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3]);
 
 /* @brief Get the particle set.  Caller must supply sufficient storage for
    the result. */
@@ -1191,7 +1184,6 @@ int playerc_localize_get_particles(playerc_localize_t *device);
 /** @} */
 /**************************************************************************/
 
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_log log
@@ -1252,7 +1244,6 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname);
 /** @} */
 
 
-#if 0
 /***************************************************************************/
 /** @defgroup playerc_proxy_map map
 
@@ -1301,6 +1292,7 @@ int playerc_map_get_map(playerc_map_t* device);
 /** @} */
 /**************************************************************************/
 
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_motor motor
@@ -1373,6 +1365,8 @@ int playerc_motor_set_cmd_pose(playerc_motor_t *device,
 
 /** @} */
 /**************************************************************************/
+
+#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_planner planner
@@ -1451,7 +1445,6 @@ int playerc_planner_enable(playerc_planner_t *device, int state);
 /** @} */
 /**************************************************************************/
 
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_position2d position2d

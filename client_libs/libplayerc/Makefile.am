@@ -1,7 +1,7 @@
 SUBDIRS = . test 
 #bindings doc
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -g
 
 # TODO: figure out how to handle the jpeg wrappers
 # -I$(top_srcdir)/client_libs/libplayerpacket
@@ -29,6 +29,9 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_position.c \
                         dev_simulation.c \
                         dev_power.c \
+                        dev_planner.c \
+                        dev_map.c \
+                        dev_localize.c \
                         dev_sonar.c
 #dev_blobfinder.c \
 #dev_bumper.c \
@@ -38,10 +41,7 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_gripper.c \
 #dev_ir.c \
 #dev_joystick.c \
-#dev_localize.c \
-#dev_map.c \
 #dev_motor.c \
-#dev_planner.c \
 #dev_position3d.c \
 #dev_ptz.c \
 #dev_truth.c \

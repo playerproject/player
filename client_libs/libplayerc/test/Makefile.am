@@ -4,7 +4,7 @@ else
 BUILDTEST =
 endif
 
-AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir)
+AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir) -g -Wall
 test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm 
 #-L$(top_builddir)/client_libs/libplayerpacket -lplayerpacket
 EXTRA_DIST = test.world test.cfg cave.pnm
@@ -18,6 +18,7 @@ test_SOURCES = test.c \
                test_log.c \
 	       test_simulation.c \
                test_power.c \
+               test_map.c \
                test_sonar.c
 #test_blobfinder.c \
 #test_camera.c \
@@ -25,7 +26,6 @@ test_SOURCES = test.c \
 #test_gps.c \
 #test_joystick.c \
 #test_localize.c \
-#test_map.c \
 #test_motor.c \
 #test_position3d.c \
 #test_ptz.c \
