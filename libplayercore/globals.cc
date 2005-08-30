@@ -22,6 +22,10 @@
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <libplayercore/devicetable.h>
 #include <libplayercore/drivertable.h>
 #include <libplayercore/playertime.h>
@@ -40,5 +44,8 @@ PlayerTime* GlobalTime = new WallclockTime();
 
 bool player_quit;
 bool player_quiet_startup;
+
+// for use in other places
+char playerversion[] = VERSION;
 
 #endif

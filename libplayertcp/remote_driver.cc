@@ -21,7 +21,6 @@
  */
 
 #include <errno.h>
-#include <libplayercore/addr_util.h>
 
 #include "remote_driver.h"
 
@@ -51,28 +50,30 @@ TCPRemoteDriver::Setup()
          this->device_addr.interf,
          this->device_addr.index);
 
+  // Construct socket 
+  sock = socket(PF_INET, SOCK_STREAM, 0);
+  if(sock < 0)
+  {
+    PLAYER_ERROR1("socket call failed with error [%s]", strerror(errno));
+    return(-1);
+  }
+
   server.sin_family = PF_INET;
   server.sin_addr.s_addr = this->device_addr.host;
   server.sin_port = htons(this->device_addr.robot);
 
-  if(server.sin_addr.s_addr == 0)
-  {
-    if(hostname_to_packedaddr(&server.sin_addr.s_addr,"127.0.0.1") < 0)
-    {
-      PLAYER_ERROR("failed to convert 127.0.0.1 to a packed address");
-      return(-1);
-    }
-  }
-
   // Connect the socket 
   if(connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0)
   {
-    PLAYER_ERROR3("connect call on [%d:%d] failed with error [%s]",
+    PLAYER_ERROR3("connect call on [%u:%u] failed with error [%s]",
                 this->device_addr.host, 
                 this->device_addr.robot, 
                 strerror(errno));
     return(-1);
   }
+
+  printf("connected to: %u:%u\n",
+         this->device_addr.host, this->device_addr.robot);
 
   // Get the banner 
   if(recv(sock, banner, sizeof(banner), 0) < (int)sizeof(banner))
@@ -80,6 +81,7 @@ TCPRemoteDriver::Setup()
     PLAYER_ERROR("incomplete initialization string");
     return(-1);
   }
+  printf("got banner: %s\n", banner);
 
   // TODO: subscribe to the remote device, and record it here somewhere.
 

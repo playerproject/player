@@ -35,6 +35,8 @@
 #include "socket_util.h"
 #include "remote_driver.h"
 
+extern char playerversion[];
+
 PlayerTCP::PlayerTCP()
 {
   this->size_clients = 0;
@@ -165,7 +167,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
   assert(this->clients[j].writebuffer);
   this->clients[j].writebufferlen = 0;
 
-  sprintf((char*)data, "%s", PLAYER_IDENT_STRING);
+  sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
   memset(((char*)data)+strlen((char*)data),0,
          PLAYER_IDENT_STRLEN-strlen((char*)data));
   if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
