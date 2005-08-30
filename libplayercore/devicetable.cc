@@ -103,6 +103,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
   return(0);
 }
 
+#if 0
 // returns the controlling object for the given code (or NULL
 // on failure)
 Driver* 
@@ -131,6 +132,7 @@ DeviceTable::GetDriverName(player_devaddr_t addr)
 
   return((const char*)driver);
 }
+#endif
 
 
 // find a device entry, based on addr, and return the pointer (or NULL

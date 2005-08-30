@@ -137,7 +137,7 @@ Driver::Publish(MessageQueue* queue,
     // lock here, because we're accessing our device's queue list
     this->Lock();
     // push onto each queue subscribed to the given device
-    if(!(dev = deviceTable->GetDevice(hdr->addr)))
+    if(!(dev = deviceTable->GetDevice(hdr->addr,false)))
     {
       PLAYER_ERROR("tried to publish message via non-existent device");
       this->Unlock();
