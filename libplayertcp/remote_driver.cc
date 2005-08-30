@@ -21,6 +21,7 @@
  */
 
 #include <errno.h>
+#include <libplayercore/addr_util.h>
 
 #include "remote_driver.h"
 
@@ -53,6 +54,15 @@ TCPRemoteDriver::Setup()
   server.sin_family = PF_INET;
   server.sin_addr.s_addr = this->device_addr.host;
   server.sin_port = htons(this->device_addr.robot);
+
+  if(server.sin_addr.s_addr == 0)
+  {
+    if(hostname_to_packedaddr(&server.sin_addr.s_addr,"127.0.0.1") < 0)
+    {
+      PLAYER_ERROR("failed to convert 127.0.0.1 to a packed address");
+      return(-1);
+    }
+  }
 
   // Connect the socket 
   if(connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0)
