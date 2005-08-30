@@ -63,6 +63,7 @@ class DeviceTable
     //  
     int AddDevice(player_devaddr_t addr, Driver* driver, bool havelock=false);
     
+#if 0
     // returns the controlling object for the given id 
     // (returns NULL on failure)
     Driver* GetDriver(player_devaddr_t addr);
@@ -70,6 +71,7 @@ class DeviceTable
     // returns the string name of the driver in use for the given id 
     // (returns NULL on failure)
     const char* GetDriverName(player_devaddr_t addr);
+#endif
 
     // find a device, based on id, and return the pointer (or NULL on
     // failure)

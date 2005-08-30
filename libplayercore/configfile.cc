@@ -95,6 +95,7 @@ ConfigFile::ConfigFile(const char* _default_host, uint32_t _default_robot)
     this->default_host = 0;
   }
   this->default_robot = _default_robot;
+  printf("default_host: %d\n", this->default_host);
   this->InitFields();
 }
 
@@ -1918,16 +1919,19 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
           return -1;
         }
       }
-
     }
     else
+    {
       host = this->default_host;
+    }
     if(tokens[2] && strlen(tokens[2]))
       robot = atoi(tokens[2]);
     else
       robot = this->default_robot;
     s = tokens[3];
     ind = atoi(tokens[4]);
+
+    printf("ReadDeviceAddr: %d:%d:%s:%d\n", host, robot, s, ind);
         
     // Find the interface
     if (::lookup_interface(s, &interf) != 0)
