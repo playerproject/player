@@ -134,11 +134,14 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
   req.cov[1] = cov[1];
   req.cov[2] = cov[2];
 
-   if(playerc_client_request(device->info.client, 
-                             &device->info,
-                             PLAYER_LOCALIZE_REQ_SET_POSE,
-                             &req, NULL, 0) < 0)
+  if(playerc_client_request(device->info.client, 
+                            &device->info,
+                            PLAYER_LOCALIZE_REQ_SET_POSE,
+                            &req, NULL, 0) < 0)
+  {
+    printf("%s\n", playerc_error_str());
     return -1;
+  }
 
   return 0;
 }

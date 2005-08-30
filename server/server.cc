@@ -70,6 +70,12 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+  if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+  {
+    PLAYER_ERROR1("signal() failed: %s", strerror(errno));
+    exit(-1);
+  }
+
   player_register_drivers();
   playerxdr_ftable_init();
 

@@ -244,10 +244,10 @@ Device::Request(MessageQueue* resp_queue,
           dev = deviceTable->GetNextDevice(dev))
       {
         Driver* dri = dev->driver;
-        // don't updated the requester
+        // don't update the requester
         if(dri->InQueue == resp_queue)
           continue;
-        if((dri->subscriptions > 0) || dri->alwayson)
+        if(!dri->driverthread && ((dri->subscriptions > 0) || dri->alwayson))
           dri->Update();
       }
 
@@ -278,6 +278,7 @@ Device::Request(MessageQueue* resp_queue,
   else
   {
     // got something else
+    resp_queue->ClearFilter();
     PLAYER_ERROR("got unexpected message");
     delete msg;
     return(NULL);

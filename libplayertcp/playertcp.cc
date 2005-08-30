@@ -713,9 +713,12 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
             PLAYER_WARN2("skipping subscription to unknown device %u:%u",
                          devreq->addr.interf, devreq->addr.index);
             resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
+            player_device_req_t devresp = *devreq;
+            devresp.access = PLAYER_ERROR_MODE;
+            devresp.driver_name_count = 0;
 
             // Make up and push out the reply
-            resp = new Message(resphdr, NULL, 0);
+            resp = new Message(resphdr, &devresp, sizeof(devresp));
             assert(resp);
             client->queue->Push(*resp);
             delete resp;

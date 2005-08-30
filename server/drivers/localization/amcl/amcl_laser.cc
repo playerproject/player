@@ -200,7 +200,7 @@ AMCLLaser::SetupMap(void)
   int sx,sy;
   int si,sj;
 
-  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
+  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 4;
   data_req = (player_map_data_t*)calloc(1, reqlen);
   assert(data_req);
 
@@ -217,6 +217,7 @@ AMCLLaser::SetupMap(void)
     data_req->row = oj;
     data_req->width = si;
     data_req->height = sj;
+    data_req->data_count = 0;
 
     if(!(msg = mapdev->Request(this->InQueue,
                                PLAYER_MSGTYPE_REQ,
