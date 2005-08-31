@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/* 
+/*
  * Desc: Player communication packet structures and codes
  * CVS:  $Id$
  */
@@ -41,7 +41,7 @@
 #define PLAYER_MSGTYPE_SYNCH     5
 #define PLAYER_MSGTYPE_RESP_NACK 6
 
-/* strings to match the currently assigned devices (used for pretty-printing 
+/* strings to match the currently assigned devices (used for pretty-printing
  * and command-line parsing) */
 #define PLAYER_MAX_DEVICE_STRING_LEN 64
 
@@ -77,7 +77,7 @@
 #define PLAYER_POSITION3D_CODE     30  // 3-D position
 #define PLAYER_SIMULATION_CODE     31  // simulators
 #define PLAYER_SERVICE_ADV_CODE    32  // LAN service advertisement
-#define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights 
+#define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights
 #define PLAYER_NOMAD_CODE          34  // Nomad robot
 #define PLAYER_CAMERA_CODE         40  // camera device (gazebo;
 #define PLAYER_MAP_CODE            42  // get a map
@@ -185,7 +185,7 @@ typedef struct player_devaddr
   uint16_t index;
 } player_devaddr_t;
 
-/** @brief Generic message header. 
+/** @brief Generic message header.
 
  Every message starts with this header.*/
 typedef struct player_msghdr
@@ -193,15 +193,15 @@ typedef struct player_msghdr
   /** Device to which this message pertains */
   player_devaddr_t addr;
   /** Message type; must be one of PLAYER_MSGTYPE_* */
-  uint8_t type;    
+  uint8_t type;
   /** Message subtype; interface specific */
-  uint8_t subtype;    
+  uint8_t subtype;
   /** Time associated with message contents (seconds since epoch) */
-  double timestamp;  
+  double timestamp;
   /** For keeping track of associated messages.  Transport-specific. */
   uint32_t seq;
   /** Size in bytes of the payload to follow */
-  uint32_t size;  
+  uint32_t size;
 } player_msghdr_t;
 
 
@@ -234,7 +234,7 @@ system
 
 // /////////////////////////////////////////////////////////////////////////////
 //
-//             Here starts the alphabetical list of interfaces 
+//             Here starts the alphabetical list of interfaces
 //                       (please keep it that way)
 //
 // /////////////////////////////////////////////////////////////////////////////
@@ -295,7 +295,7 @@ The @p audio interface is used to control sound hardware, if equipped.
 
 The @p audio interface reads the audio stream from @p /dev/audio (which
 is assumed to be associated with a sound card connected to a microphone)
-and performs some analysis on it.  PLAYER_AUDIO_PAIRS number 
+and performs some analysis on it.  PLAYER_AUDIO_PAIRS number
 of frequency/amplitude pairs are then returned as data. */
 typedef struct player_audio_data
 {
@@ -355,7 +355,7 @@ typedef struct player_audiodsp_data
 
 } player_audiodsp_data_t;
 
-/** @brief Command 
+/** @brief Command
 
 The @p audiodsp interface accepts commands to produce fixed-frequency
 tones or binary phase shift keyed(BPSK) chirps through @p /dev/dsp
@@ -459,7 +459,7 @@ typedef struct player_audiomixer_config
 The @p blinkenlight interface is used to switch on and off a flashing
 indicator light, and to set it's flash period.
 
-This interface accepts no configuration requests 
+This interface accepts no configuration requests
 @{
 */
 
@@ -541,7 +541,7 @@ This is useful for setting the track color by holding the tracking object
 in front of the lens.
 */
 typedef struct player_blobfinder_color_config
-{ 
+{
   /** RGB minimum and max values (0-255) **/
   uint32_t rmin, rmax;
   uint32_t gmin, gmax;
@@ -563,7 +563,7 @@ To set the params, send a request with the format below.  Any
 values set to -1 will be left unchanged.
 */
 typedef struct player_blobfinder_imager_config
-{ 
+{
   /** Contrast & Brightness: (0-255)  -1=no change. */
   int32_t brightness;
   int32_t contrast;
@@ -591,7 +591,7 @@ accepts no commands.
 /** The request subtypes */
 #define PLAYER_BUMPER_GET_GEOM    1
 // data subtype
-#define PLAYER_BUMPER_DATA_STATE	1
+#define PLAYER_BUMPER_DATA_STATE  1
 /** @brief Data
 
 The @p bumper interface gives current bumper state*/
@@ -609,9 +609,9 @@ typedef struct player_bumper_define
   /** the local pose of a single bumper */
   player_pose_t pose;
   /** length of the sensor [m] */
-  float length; 
+  float length;
   /** radius of curvature [m] - zero for straight lines */
-  float radius; 
+  float radius;
 } player_bumper_define_t;
 
 /** @brief Configuration request: Query geometry
@@ -639,7 +639,7 @@ in may formats (see below), but is always packed (i.e., pixel rows are
 byte-aligned).
 
 This interface has no commands or configuration requests.
- 
+
 @{
 */
 
@@ -678,7 +678,7 @@ typedef struct player_camera_data
       compression. */
   uint32_t compression;
   /** Size of image data as stored in image buffer (bytes) */
-  uint32_t image_count;
+  uint32_t image_size;
   /** Compressed image data (byte-aligned, row major order).
       Multi-byte image formats (such as MONO16) must be converted
       to network byte ordering. */
@@ -704,7 +704,7 @@ digital inputs. */
 typedef struct player_dio_data
 {
   /** number of samples */
-  uint32_t count; 
+  uint32_t count;
   /** bitfield of samples */
   uint32_t digin;
 } player_dio_data_t;
@@ -716,7 +716,7 @@ The @p dio interface accepts 4-byte commands which consist of the ouput
 bitfield */
 typedef struct player_dio_cmd
 {
-  /** the command */ 
+  /** the command */
   uint32_t count;
   /** output bitfield */
   uint32_t digout;
@@ -743,13 +743,13 @@ typedef struct player_energy_data
   float joules;
   /** estimated current energy consumption (negative values) or
       aquisition (positive values) [W]. */
-  float watts; 
+  float watts;
   /** charge exchange status: if 1, the device is currently receiving
       charge from another energy device. If -1 the device is currently
       providing charge to another energy device. If 0, the device is
       not exchanging charge with an another device. */
   int32_t charging;
-  
+
 } player_energy_data_t;
 
 /** @brief Configuration request */
@@ -759,8 +759,8 @@ typedef struct player_energy_command
       disabled. Defaults to TRUE */
   uint8_t enable_input;
   /** uint8_tean controlling whether others can recharge from this
-      device. If FALSE, charging others is disabled. Defaults to TRUE.*/  
-  uint8_t enable_output; 
+      device. If FALSE, charging others is disabled. Defaults to TRUE.*/
+  uint8_t enable_output;
 } player_energy_chargepolicy_config_t;
 
 /** @} */
@@ -791,9 +791,9 @@ for devices the detect natural landmarks.
 #define PLAYER_FIDUCIAL_GET_ID       0x07
 #define PLAYER_FIDUCIAL_SET_ID       0x08
 
-/** @brief Info on a single detected fiducial 
+/** @brief Info on a single detected fiducial
 
-The fiducial data packet contains a list of these. 
+The fiducial data packet contains a list of these.
 @todo I think we should make pos and rot similar to the position interfaces
 */
 typedef struct player_fiducial_item
@@ -822,7 +822,7 @@ typedef struct player_fiducial_data
   uint32_t fiducials_count;
   /** List of detected fiducials */
   player_fiducial_item_t fiducials[PLAYER_FIDUCIAL_MAX_SAMPLES];
-  
+
 } player_fiducial_data_t;
 
 /** @brief Configuration request: Get geometry.
@@ -837,7 +837,7 @@ typedef struct player_fiducial_geom
       (m, m, rad). */
   float pose[3];
   /** Size of the detector in units of (m, m) */
-  float size[2];  
+  float size[2];
   /** Dimensions of the fiducials in units of (m, m). */
   float fiducial_size[2];
 } player_fiducial_geom_t;
@@ -855,7 +855,7 @@ typedef struct player_fiducial_fov
   /** The minimum range of the sensor [m] */
   float min_range;
   /** The maximum range of the sensor [m] */
-  float max_range;  
+  float max_range;
   /** The receptive angle of the sensor [rad]. */
   float view_angle;
 } player_fiducial_fov_t;
@@ -920,10 +920,10 @@ typedef struct player_fiducial_msg
   /** the raw data of the message */
   uint32_t bytes[PLAYER_FIDUCIAL_MAX_MSG_LEN];
   /** the length of the message in bytes.*/
-  uint32_t len; 
+  uint32_t len;
   /** the power to transmit, or the intensity of a received message.
       0-255 in device-dependent units.*/
-  uint32_t intensity; 
+  uint32_t intensity;
 } player_fiducial_msg_t;
 
 /** @brief Configuration request: Fiducial receive message request.
@@ -954,7 +954,7 @@ The device sends the message, then replies with the last message
 received, which may be (but is not guaranteed to be) be a reply to the
 sent message. NOTE: this is not yet supported by Stage-1.4.*/
 typedef struct player_fiducial_msg_txrx_req
-{ 
+{
   /**  The message to send */
   player_fiducial_msg_t msg;
   /** If TRUE, send the message just once. If FALSE, the device may
@@ -963,8 +963,8 @@ typedef struct player_fiducial_msg_txrx_req
   /** If TRUE, empty the buffer when getting the message. If
       FALSE, leave the message in the buffer */
   uint8_t consume_reply;
-}  player_fiducial_msg_txrx_req_t; 
-  
+}  player_fiducial_msg_txrx_req_t;
+
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -985,7 +985,7 @@ typedef struct player_gps_data
 {
   /** @todo: What do we want to do w/ units here? */
   /** GPS (UTC) time, in seconds and microseconds since the epoch. */
-  uint32_t time_sec, time_usec; 
+  uint32_t time_sec, time_usec;
   /** Latitude in degrees / 1e7 (units are scaled such that the
       effective resolution is roughly 1cm).  Positive is north of
       equator, negative is south of equator. */
@@ -1032,9 +1032,9 @@ gripper and how it is connected to your robot (e.g., General I/O vs. User
 I/O for the Pioneer gripper).
 
 The following list defines how the data can be interpreted for some
-Pioneer robots and Stage: 
+Pioneer robots and Stage:
 
-- state (unsigned byte) 
+- state (unsigned byte)
   - bit 0: Paddles open
   - bit 1: Paddles closed
   - bit 2: Paddles moving
@@ -1127,7 +1127,7 @@ with a zero-length acknowledgement */
 typedef struct player_ir_power_req
 {
   /** FALSE for power off, TRUE for power on */
-  uint8_t state; 
+  uint8_t state;
 } player_ir_power_req_t;
 /** @} */
 
@@ -1243,12 +1243,12 @@ PLAYER_LASER_SET_CONFIG request.  Read the documentation for your driver
 to determine what configuration values are permissible. */
 typedef struct player_laser_config
 {
-  /** Start and end angles for the laser scan [rad].  
+  /** Start and end angles for the laser scan [rad].
       Valid range is -M_PI to +M_PI. */
   float min_angle, max_angle;
 
-  /** Scan resolution [deg*100].  
-    Valid resolutions are 25, 50, 100. 
+  /** Scan resolution [deg*100].
+    Valid resolutions are 25, 50, 100.
   */
   uint8_t resolution;
 
@@ -1257,7 +1257,7 @@ typedef struct player_laser_config
 
   /** Enable reflection intensity data. */
   uint8_t  intensity;
-  
+
 } player_laser_config_t;
 
 /** @brief Configuration request: Turn power on/off.
@@ -1336,7 +1336,7 @@ typedef struct player_localize_set_pose
 {
   /** The mean value of the pose estimate (m, m, rad). */
   player_pose_t mean;
-  /** The diagonal elements of the covariance matrix pose estimate 
+  /** The diagonal elements of the covariance matrix pose estimate
       (m$^2$, rad$^2$). */
   double cov[3];
 } player_localize_set_pose_t;
@@ -1350,7 +1350,7 @@ typedef struct player_localize_particle
 } player_localize_particle_t;
 
 /** @brief Configuration request: Get particles.
- 
+
 @todo Fill this in. */
 typedef struct player_localize_get_particles
 {
@@ -1430,7 +1430,7 @@ Set the name of the file to write to when logging */
 typedef struct player_log_set_filename
 {
   uint32_t filename_count;
-  /** Filename; max 255 chars + terminating NULL 
+  /** Filename; max 255 chars + terminating NULL
       @todo should we use a string here?*/
   char filename[256];
 } player_log_set_filename_t;
@@ -1465,7 +1465,7 @@ data. */
 typedef struct player_map_info
 {
   /** The scale of the map [m/pixel]. */
-  float scale; 
+  float scale;
   /** The size of the map [pixels]. */
   uint32_t width, height;
 } player_map_info_t;
@@ -1522,7 +1522,7 @@ This interface returns no data and accepts no commands.
 typedef struct player_mcom_data
 {
   /** a flag */
-  char full;  
+  char full;
   uint32_t data_count;
   /** the data */
   char data[MCOM_DATA_LEN];
@@ -1594,11 +1594,11 @@ typedef struct player_motor_data
   float vel;
   /** Are the motors stalled?   */
   uint8_t stall;
-  /** A bitfield of limit switches for the motor 
+  /** A bitfield of limit switches for the motor
       These are stored as bits at bit
         - @ref PLAYER_MOTOR_LIMIT_MIN,
         - @ref PLAYER_MOTOR_LIMIT_CENTER,
-        - @ref PLAYER_MOTOR_LIMIT_MAX        
+        - @ref PLAYER_MOTOR_LIMIT_MAX
   */
   uint32_t limits;
 } player_motor_data_t;
@@ -1738,7 +1738,7 @@ typedef struct player_planner_data
   /** Current waypoint location (m,m,rad) */
   player_pose_t waypoint;
   /** Current waypoint index (handy if you already have the list
-      of waypoints). May be negative if there's no plan, or if 
+      of waypoints). May be negative if there's no plan, or if
       the plan is done */
   int32_t waypoint_idx;
   /** Number of waypoints in the plan */
@@ -1865,7 +1865,7 @@ typedef struct player_device_driverinfo
   char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
 } player_device_driverinfo_t;
 
-/** @brief Configuration request: Get device access. 
+/** @brief Configuration request: Get device access.
 
 This is the most important
 request!  Before interacting with a device, the client must request
@@ -1881,7 +1881,7 @@ appropriate access.
  @b All access is both of the above and finally @b close means that
  there is no longer any access to the device. Device request messages can
  be sent at any time, providing on the fly reconfiguration for clients
- that need different devices depending on the task at hand.  
+ that need different devices depending on the task at hand.
 
  Of course, not all of the access codes are applicable to all devices;
  for instance it does not make sense to write to the sonars.   However,
@@ -1903,7 +1903,7 @@ typedef struct player_device_req
   char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
 } player_device_req_t;
 
-/** @brief Configuration request: Get data.  
+/** @brief Configuration request: Get data.
 
 When the server is in a PLAYER_DATAMODE_PULL_* data delivery mode
 (see next request for information on data delivery modes), the
@@ -1918,9 +1918,9 @@ typedef struct player_device_data_req
 /** @brief Configuration request: Change data delivery mode.
 
 The Player server supports four data modes, described above.
-By default, the server operates in @p PLAYER_DATAMODE_PUSH_NEW mode at 
-a frequency of 10Hz.  To switch to a different mode send a request with the 
-format given below.  The server's reply will be a zero-length 
+By default, the server operates in @p PLAYER_DATAMODE_PUSH_NEW mode at
+a frequency of 10Hz.  To switch to a different mode send a request with the
+format given below.  The server's reply will be a zero-length
 acknowledgement. */
 typedef struct player_device_datamode_req
 {
@@ -1930,7 +1930,7 @@ typedef struct player_device_datamode_req
 } player_device_datamode_req_t;
 
 
-/** @brief Configuration request: Change data delivery frequency.  
+/** @brief Configuration request: Change data delivery frequency.
 
 By default, the fixed frequency for the PUSH data delivery modes is
 10Hz; thus a client which makes no configuration changes will receive
@@ -1944,7 +1944,7 @@ typedef struct player_device_datafreq_req
 } player_device_datafreq_req_t;
 
 
-/** @brief Configuration request: Authentication.  
+/** @brief Configuration request: Authentication.
 
 If server authentication has been enabled (by providing '-key &lt;key&gt;'
 on the command-line; see @ref commandline); then each client must
@@ -2026,7 +2026,7 @@ typedef struct player_position1d_data
   /** position [m]*/
   float pos;
   /** translational velocities [m/s]*/
-  float vel;   
+  float vel;
   /** Is the motor stalled? */
   uint8_t stall;
 } player_position1d_data_t;
@@ -2041,14 +2041,14 @@ typedef struct player_position1d_cmd
   /** position [m]*/
   float pos;
   /** translational velocity [m/s]*/
-  float vel;   
+  float vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
   uint32_t type;
 } player_position1d_cmd_t;
 
-/** @brief Configuration request: Query geometry.  
+/** @brief Configuration request: Query geometry.
 
 To request robot geometry,
 set the subtype to PLAYER_POSITION1D_GET_GEOM_REQ and leave the other fields
@@ -2061,7 +2061,7 @@ typedef struct player_position1d_geom
   float size[2];
 } player_position1d_geom_t;
 
-/** @brief Configuratoin request: Motor power.  
+/** @brief Configuratoin request: Motor power.
 
   On some robots, the motor power
 can be turned on and off from software.  To do so, send a request with
@@ -2074,12 +2074,12 @@ robot running across the room at high speed with the battery charger
 still attached.
 */
 typedef struct player_position1d_power_config
-{ 
+{
   /** FALSE for off, TRUE for on */
-  uint8_t state; 
+  uint8_t state;
 } player_position1d_power_config_t;
 
-/** @brief Configuration request: Change velocity control. 
+/** @brief Configuration request: Change velocity control.
 
   Some robots offer
 different velocity control modes.  It can be changed by sending a
@@ -2093,10 +2093,10 @@ zero-length acknowledgement.
 typedef struct player_position1d_velocity_mode_config
 {
   /** driver-specific */
-  uint32_t value; 
+  uint32_t value;
 } player_position1d_velocity_mode_config_t;
 
-/** @brief Configuration request: Reset odometry.  
+/** @brief Configuration request: Reset odometry.
 
 To reset the robot's odometry
 to x = 0, use the following request.  The server will
@@ -2109,24 +2109,24 @@ typedef struct player_position1d_reset_odom_config
 typedef struct player_position1d_position_mode_req
 {
   /** 0 for velocity mode, 1 for position mode */
-  uint32_t state; 
+  uint32_t state;
 } player_position1d_position_mode_req_t;
 
-/** @brief Configuration request: Set odometry.  
+/** @brief Configuration request: Set odometry.
 
 To set the robot's odometry
 to a particular state, use this request: */
 typedef struct player_position1d_set_odom_req
 {
   /** (x) [m] */
-  int32_t pos;  
+  int32_t pos;
 } player_position1d_set_odom_req_t;
 
 /** @brief Configuration request: Set velocity PID parameters. */
 typedef struct player_position1d_speed_pid_req
 {
   /** PID parameters */
-  float kp, ki, kd;  
+  float kp, ki, kd;
 } player_position1d_speed_pid_req_t;
 
 /** @brief Configuration request: Set position PID parameters. */
@@ -2184,7 +2184,7 @@ typedef struct player_position2d_data
   /** position [m,m,rad] (x, y, yaw)*/
   player_pose_t pos;
   /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
-  player_pose_t vel;   
+  player_pose_t vel;
   /** Are the motors stalled? */
   uint8_t stall;
 } player_position2d_data_t;
@@ -2199,14 +2199,14 @@ typedef struct player_position2d_cmd
   /** position [m,m,rad] (x, y, yaw)*/
   player_pose_t pos;
   /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
-  player_pose_t vel;   
+  player_pose_t vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
   uint8_t type;
 } player_position2d_cmd_t;
 
-/** @brief Configuration request: Query geometry.  
+/** @brief Configuration request: Query geometry.
 
 To request robot geometry,
 set the subtype to PLAYER_POSITION_GET_GEOM_REQ and leave the other fields
@@ -2219,7 +2219,7 @@ typedef struct player_position2d_geom
   player_bbox_t size;
 } player_position2d_geom_t;
 
-/** @brief Configuratoin request: Motor power.  
+/** @brief Configuratoin request: Motor power.
 
   On some robots, the motor power
 can be turned on and off from software.  To do so, send a request with
@@ -2234,10 +2234,10 @@ still attached.
 typedef struct player_position2d_power_config
 {
   /** FALSE for off, TRUE for on */
-  uint8_t state; 
+  uint8_t state;
 } player_position2d_power_config_t;
 
-/** @brief Configuration request: Change velocity control. 
+/** @brief Configuration request: Change velocity control.
 
   Some robots offer
 different velocity control modes.  It can be changed by sending a
@@ -2265,10 +2265,10 @@ For the @ref player_driver_reb driver, 0 is direct velocity control,
 typedef struct player_position2d_velocity_mode_config
 {
   /** driver-specific */
-  uint32_t value; 
+  uint32_t value;
 } player_position2d_velocity_mode_config_t;
 
-/** @brief Configuration request: Reset odometry.  
+/** @brief Configuration request: Reset odometry.
 
 To reset the robot's odometry
 to @f$(x, y, yaw) = (0,0,0)@f$, use the following request.  The server will
@@ -2278,24 +2278,24 @@ reply with a zero-length acknowledgement. */
 typedef struct player_position2d_position_mode_req
 {
   /** 0 for velocity mode, 1 for position mode */
-  uint32_t state; 
+  uint32_t state;
 } player_position2d_position_mode_req_t;
 
-/** @brief Configuration request: Set odometry.  
+/** @brief Configuration request: Set odometry.
 
 To set the robot's odometry
 to a particular state, use this request: */
 typedef struct player_position2d_set_odom_req
 {
   /** (x, y, yaw) [m, m, rad] */
-  player_pose_t pose;  
+  player_pose_t pose;
 } player_position2d_set_odom_req_t;
 
 /** @brief Configuration request: Set velocity PID parameters. */
 typedef struct player_position2d_speed_pid_req
 {
   /** PID parameters */
-  float kp, ki, kd;  
+  float kp, ki, kd;
 } player_position2d_speed_pid_req_t;
 
 /** @brief Configuration request: Set position PID parameters. */
@@ -2345,7 +2345,7 @@ typedef struct player_position3d_data
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
   float pos[6];
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  int32_t vel[6];  
+  int32_t vel[6];
   /** Are the motors stalled? */
   uint8_t stall;
 } player_position3d_data_t;
@@ -2359,7 +2359,7 @@ typedef struct player_position3d_cmd
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
   int32_t pos[6];
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  int32_t vel[6];  
+  int32_t vel[6];
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
@@ -2402,7 +2402,7 @@ typedef struct player_position3d_position_mode_req
   uint32_t value;
 } player_position3d_position_mode_req_t;
 
-/** @brief Configuration request: Change velocity control.  
+/** @brief Configuration request: Change velocity control.
 
 Some robots offer different velocity control modes.  It can be changed by
 sending a request with the format given below, including the appropriate
@@ -2460,7 +2460,7 @@ typedef struct player_position3d_speed_prof_req
 // /////////////////////////////////////////////////////////////////////////////
 /** @defgroup player_interface_power power
 
-The @p power interface provides access to a robot's power subsystem. 
+The @p power interface provides access to a robot's power subsystem.
 This interface accepts no commands
 @{
 */
@@ -2495,7 +2495,7 @@ The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 /** Code for autoservo configuration request */
 #define PLAYER_PTZ_AUTOSERVO       3
 
-/** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ, 
+/** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ,
     based on the Sony EVID30 camera right now. */
 #define PLAYER_PTZ_MAX_CONFIG_LEN  32
 
@@ -2608,11 +2608,11 @@ typedef struct player_simulation_cmd
   uint8_t cmd;
 } player_simulation_cmd_t;
 
-/** @brief Configuration request: set 2D pose of a named simulation object 
+/** @brief Configuration request: set 2D pose of a named simulation object
 
 To set the pose of an object in a simulator, use this message. */
 typedef struct player_simulation_pose2d_req
-{ 
+{
   uint32_t name_count;
   /** the identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
@@ -2691,7 +2691,7 @@ This interface provides no data.
 
 The @p sound interface accepts an index of a pre-recorded sound file
 to play.  */
-typedef struct player_sound_cmd 
+typedef struct player_sound_cmd
 {
   /** Index of sound to be played. */
   uint32_t index;
@@ -2819,7 +2819,7 @@ This interface accepts no commands.
 
 /** @brief Link information for one host.
 
-The @p wifi interface returns data regarding the signal characteristics 
+The @p wifi interface returns data regarding the signal characteristics
 of remote hosts as perceived through a wireless network interface; this
 is the format of the data for each host. */
 typedef struct player_wifi_link
@@ -2866,7 +2866,7 @@ typedef struct player_wifi_data
 } player_wifi_data_t;
 
 /** @brief Configuration request */
-typedef struct player_wifi_mac_req 
+typedef struct player_wifi_mac_req
 {
 } player_wifi_mac_req_t;
 
