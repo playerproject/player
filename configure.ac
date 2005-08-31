@@ -304,6 +304,7 @@ AC_OUTPUT(Makefile
           server/drivers/camera/v4l/Makefile
           server/drivers/camera/1394/Makefile
           server/drivers/camera/compress/Makefile
+          server/drivers/camera/imageseq/Makefile
           server/drivers/fiducial/Makefile 
           server/drivers/ptz/Makefile 
           server/drivers/laser/Makefile 
