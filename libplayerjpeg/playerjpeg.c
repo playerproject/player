@@ -3,6 +3,9 @@
  * $Id$
  * $Source$
  * $Log$
+ * Revision 1.2  2005/08/31 17:51:48  gerkey
+ * *** empty log message ***
+ *
  * Revision 1.1  2005/08/31 17:43:51  gerkey
  * created libplayerjpeg
  *
@@ -26,8 +29,6 @@
 #if HAVE_CONFIG_H
   #include "config.h"
 #endif
-
-#if HAVE_JPEGLIB_H
 
 #include <assert.h>
 #include <stdio.h>
@@ -284,7 +285,3 @@ jpeg_decompress_from_file(unsigned char *dst, char *file, int size, int *w, int 
   jpeg_destroy_decompress(&cinfo);
   fclose(infile);
 }
-
-#else
-  #warning "libjpeg not available, so JPEG support is not included in libplayerpacket"
-#endif // HAVE_LIBJPEG
