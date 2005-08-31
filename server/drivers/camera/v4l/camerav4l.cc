@@ -71,7 +71,7 @@ below for notes on specific camera/frame grabber combinations.
     not support the requested size).
 
 - mode (string)
-  - Default: "RGB24"
+  - Default: "RGB888"
   - Desired capture mode.  Can be one of:
     - GREY (8-bit monochrome)
     - RGB565 (16-bit RGB)
