@@ -1013,6 +1013,9 @@ typedef struct
       values will only be filled if intensity information is enabled
       (using the set_config function). */
   int intensity[PLAYERC_LASER_MAX_SAMPLES];
+
+  /** ID for this scan */
+  int scan_id;
   
 } playerc_laser_t;
 
@@ -1513,6 +1516,10 @@ int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                     double gx, double gy, double ga, int state);
 
+/** Set the odometry offset */
+int playerc_position2d_set_odom(playerc_position2d_t *device,
+                                double ox, double oy, double oa);
+
 /** @} */
 /**************************************************************************/
 
@@ -1552,6 +1559,9 @@ int playerc_position_set_cmd_vel(playerc_position_t *device,
     odometric coordinate system. */
 int playerc_position_set_cmd_pose(playerc_position_t *device,
                                   double gx, double gy, double ga, int state);
+/** Set the odometric offset */
+int playerc_position_set_odom(playerc_position_t *device,
+                              double ox, double oy, double oa);
 /** @} */
 
 #if 0

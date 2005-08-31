@@ -100,3 +100,11 @@ int playerc_position_set_cmd_pose(playerc_position_t *device,
 {
   return playerc_position2d_set_cmd_pose(device,gx,gy,ga,state);
 }
+
+// Set the odometry offset
+int 
+playerc_position_set_odom(playerc_position_t *device,
+                          double ox, double oy, double oa)
+{
+  return(playerc_position2d_set_odom(device, ox, oy, oa));
+}

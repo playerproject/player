@@ -21,6 +21,7 @@
  */
 
 #include <errno.h>
+#include <unistd.h>
 
 #include "remote_driver.h"
 
@@ -31,6 +32,8 @@ TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg)
     this->ptcp = (PlayerTCP*)arg;
   else
     this->ptcp = NULL;
+
+  this->sock = -1;
 }
 
 TCPRemoteDriver::~TCPRemoteDriver()
@@ -39,9 +42,8 @@ TCPRemoteDriver::~TCPRemoteDriver()
 
 int 
 TCPRemoteDriver::Setup() 
-{ 
+{
   struct sockaddr_in server;
-  int sock;
   char banner[PLAYER_IDENT_STRLEN];
 
   printf("trying to Setup %d:%d:%d:%d\n",
@@ -51,8 +53,8 @@ TCPRemoteDriver::Setup()
          this->device_addr.index);
 
   // Construct socket 
-  sock = socket(PF_INET, SOCK_STREAM, 0);
-  if(sock < 0)
+  this->sock = socket(PF_INET, SOCK_STREAM, 0);
+  if(this->sock < 0)
   {
     PLAYER_ERROR1("socket call failed with error [%s]", strerror(errno));
     return(-1);
@@ -63,7 +65,7 @@ TCPRemoteDriver::Setup()
   server.sin_port = htons(this->device_addr.robot);
 
   // Connect the socket 
-  if(connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0)
+  if(connect(this->sock, (struct sockaddr*)&server, sizeof(server)) < 0)
   {
     PLAYER_ERROR3("connect call on [%u:%u] failed with error [%s]",
                 this->device_addr.host, 
@@ -76,7 +78,7 @@ TCPRemoteDriver::Setup()
          this->device_addr.host, this->device_addr.robot);
 
   // Get the banner 
-  if(recv(sock, banner, sizeof(banner), 0) < (int)sizeof(banner))
+  if(recv(this->sock, banner, sizeof(banner), 0) < (int)sizeof(banner))
   {
     PLAYER_ERROR("incomplete initialization string");
     return(-1);
@@ -85,9 +87,9 @@ TCPRemoteDriver::Setup()
 
   // TODO: subscribe to the remote device, and record it here somewhere.
 
-  //this->ptcp->AddClient(NULL, 0, sock, this);
+  //this->ptcp->AddClient(NULL, 0, this->sock, this);
 
-  return(0); 
+  return(0);
 }
 
 int 
@@ -98,7 +100,11 @@ TCPRemoteDriver::Shutdown()
          this->device_addr.robot,
          this->device_addr.interf,
          this->device_addr.index);
-  return(-1); 
+  
+  if(this->sock >= 0)
+    close(this->sock);
+  this->sock = -1;
+  return(0); 
 }
 
 void 

@@ -205,3 +205,20 @@ playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                               &cmd, NULL);
 }
 
+// Set the odometry offset
+int 
+playerc_position2d_set_odom(playerc_position2d_t *device,
+                            double ox, double oy, double oa)
+{
+  player_position2d_set_odom_req_t req;
+
+  req.pose.px = ox;
+  req.pose.py = oy;
+  req.pose.pa = oa;
+
+  return(playerc_client_request(device->info.client, 
+                                &device->info, 
+                                PLAYER_POSITION2D_REQ_SET_ODOM,
+                                &req, NULL, 0));
+}
+

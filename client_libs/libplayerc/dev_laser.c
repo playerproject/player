@@ -136,6 +136,7 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     }
 
     device->scan_count = scan_data->ranges_count;
+    device->scan_id = scan_data->id;
   }
   else
     PLAYERC_WARN2("skipping laser message with unknown type/subtype: %d/%d\n",
