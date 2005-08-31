@@ -30,6 +30,7 @@ class TCPRemoteDriver : public Driver
 {
   private:
     PlayerTCP* ptcp;
+    int sock;
 
   public:
     TCPRemoteDriver(player_devaddr_t addr, void* arg);
