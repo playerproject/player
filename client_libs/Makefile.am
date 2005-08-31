@@ -1,3 +1,3 @@
 
 SUBDIRS = libplayerc 
-#c libplayerpacket c++ 
+#c c++ 

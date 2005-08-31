@@ -247,6 +247,7 @@ AC_CHECK_LIB(jpeg,jpeg_read_header,
              AC_DEFINE(HAVE_LIBJPEG, 1, [Define to 1 if you have the jpeg library (-ljpeg). ])
              LIBS="$LIBS -ljpeg",
              have_libjpeg=no)
+AM_CONDITIONAL(INCLUDE_JPEG, test "x$have_libjpeg" = "xyes")
 
 dnl Check for OpenCV
 if test "x$have_pkg_config" = "xyes"; then
@@ -280,6 +281,7 @@ AC_OUTPUT(Makefile
           rtk2/Makefile 
           replace/Makefile 
           doc/Makefile 
+          libplayerjpeg/Makefile 
           libplayercore/Makefile 
           libplayercore/bindings/Makefile 
           libplayercore/bindings/java/Makefile 
