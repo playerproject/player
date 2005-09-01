@@ -50,6 +50,9 @@ Message::Message(const struct player_msghdr & Header,
 
   // copy the header and then the data into out message data buffer
   memcpy(this->Data,&Header,sizeof(struct player_msghdr));
+  // Force header size to be same as data size
+  ((player_msghdr *) Data)->size = data_size;
+
   memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
   this->RefCount = new unsigned int;
   assert(this->RefCount);
