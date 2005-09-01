@@ -85,9 +85,22 @@ TCPRemoteDriver::Setup()
   }
   printf("got banner: %s\n", banner);
 
-  // TODO: subscribe to the remote device, and record it here somewhere.
+  /*
+  // subscribe to the remote device
+  unsigned char buf[512];
+  player_msghdr_t hdr;
+  player_device_req_t req;
 
+  hdr.addr = this->device_addr;
+  hdr.type = PLAYER_MSGTYPE_REQ;
+  hdr.subtype = PLAYER_DRI
+
+  req.addr = this->device_addr;
+  req.access = PLAYER_OPEN_MODE;
+  req.driver_name_count = 0;
+  if(
   //this->ptcp->AddClient(NULL, 0, this->sock, this);
+  */
 
   return(0);
 }
