@@ -114,6 +114,11 @@ int main(int argc, const char *argv[])
       case PLAYER_POSITION2D_CODE:
         test_position2d(client, client->devinfos[i].addr.index);
         break;
+        
+      // Position device
+      case PLAYER_POSITION3D_CODE:
+        test_position3d(client, client->devinfos[i].addr.index);
+        break;
 
       // log device
       case PLAYER_LOG_CODE:

@@ -26,6 +26,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_laser.c \
                         dev_log.c \
                         dev_position2d.c \
+												dev_position3d.c \
                         dev_position.c \
                         dev_simulation.c \
                         dev_power.c \
@@ -42,7 +43,6 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_ir.c \
 #dev_joystick.c \
 #dev_motor.c \
-#dev_position3d.c \
 #dev_ptz.c \
 #dev_truth.c \
 #dev_wifi.c \

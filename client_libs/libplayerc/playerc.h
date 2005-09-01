@@ -1564,7 +1564,6 @@ int playerc_position_set_odom(playerc_position_t *device,
                               double ox, double oy, double oa);
 /** @} */
 
-#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_position3d position3d
@@ -1622,10 +1621,6 @@ int playerc_position3d_subscribe(playerc_position3d_t *device, int access);
 /** Un-subscribe from the position3d device */
 int playerc_position3d_unsubscribe(playerc_position3d_t *device);
 
-/** @internal Parse data from incoming packet */
-void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *header,
-                                player_position3d_data_t *data, size_t len);
-
 /** Enable/disable the motors */
 int playerc_position3d_enable(playerc_position3d_t *device, int enable);
 
@@ -1658,7 +1653,6 @@ int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
 /** @} */
 /**************************************************************************/
 
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_power power

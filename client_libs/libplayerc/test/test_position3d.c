@@ -3,9 +3,10 @@
  * Author: Andrew Howard
  * Date: 23 May 2002
  # CVS: $Id$
- **************************************************************************/
+**************************************************************************/
 
 #include <math.h>
+
 #include "test.h"
 #include "playerc.h"
 
@@ -22,13 +23,14 @@ int test_position3d(playerc_client_t *client, int index)
   device = playerc_position3d_create(client, index);
 
   TEST("subscribing (read/write)");
-  if (playerc_position3d_subscribe(device, PLAYER_ALL_MODE) < 0)
+  if (playerc_position3d_subscribe(device, PLAYER_OPEN_MODE) < 0)
   {
     FAIL();
     return -1;
   }
   PASS();
 
+#if 0 // TODO  
   TEST("getting geometry");
   if (playerc_position3d_get_geom(device) == 0)
     PASS();
@@ -42,8 +44,9 @@ int test_position3d(playerc_client_t *client, int index)
     PASS();
   else
     FAIL();
+#endif
   
-  for (t = 0; t < 30; t++)
+  for (t = 0; t < 300; t++)
   {
     TEST1("reading data (attempt %d)", t);
 
@@ -67,6 +70,7 @@ int test_position3d(playerc_client_t *client, int index)
       break;
     }
 
+#if 0 // TODO
     TEST1("writing data (attempt %d)", t);
     if (playerc_position3d_set_velocity(device, 0.10, 0, 0, 0, 0, 0.2, 1) != 0)
     {
@@ -74,8 +78,10 @@ int test_position3d(playerc_client_t *client, int index)
       break;
     }
     PASS();
+#endif
   }
-  
+
+#if 0 // TODO
   TEST1("writing data (attempt %d)", t);
   if (playerc_position3d_set_velocity(device, 0, 0, 0, 0, 0, 0, 1) != 0)
     FAIL();
@@ -93,6 +99,7 @@ int test_position3d(playerc_client_t *client, int index)
     FAIL();
   else
     PASS();
+#endif
   
   playerc_position3d_destroy(device);
   
