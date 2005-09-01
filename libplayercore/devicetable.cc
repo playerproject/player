@@ -43,10 +43,23 @@ DeviceTable::DeviceTable()
 // tear down the table
 DeviceTable::~DeviceTable()
 {
-  Device* thisentry = head;
+  Device* thisentry;
   Device* tmpentry;
-  // for each registered device, delete it.
   pthread_mutex_lock(&mutex);
+  // First, shutdown each active driver
+  thisentry=head;
+  while(thisentry)
+  {
+    if(thisentry->driver->subscriptions || thisentry->driver->alwayson)
+    {
+      thisentry->driver->Shutdown();
+      thisentry->driver->subscriptions = 0;
+      thisentry->driver->alwayson = 0;
+    }
+    thisentry = thisentry->next;
+  }
+  // Second, delete each device
+  thisentry=head;
   while(thisentry)
   {
     tmpentry = thisentry->next;
