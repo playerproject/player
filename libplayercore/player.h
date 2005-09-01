@@ -2325,6 +2325,9 @@ The position3d interface is used to control mobile robot bases in 3D
 @{
 */
 
+/** Position data subtypes. */
+#define PLAYER_POSITION3D_DATA_STATE 0x01
+
 /* Supported config requests */
 #define PLAYER_POSITION3D_GET_GEOM          1
 #define PLAYER_POSITION3D_MOTOR_POWER       2
@@ -2345,7 +2348,7 @@ typedef struct player_position3d_data
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
   float pos[6];
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  int32_t vel[6];
+  float vel[6];
   /** Are the motors stalled? */
   uint8_t stall;
 } player_position3d_data_t;

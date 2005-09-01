@@ -53,8 +53,11 @@
 #include "playerc.h"
 #include "error.h"
 
-void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *header,
-                                player_position3d_geom_t *data, size_t len);
+
+// Local declarations
+void playerc_position3d_putmsg(playerc_position3d_t *device, 
+                               player_msghdr_t *header,
+                               player_position3d_data_t *data, size_t len);
 
 
 // Create a new position3d proxy
@@ -65,8 +68,7 @@ playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int in
   device = malloc(sizeof(playerc_position3d_t));
   memset(device, 0, sizeof(playerc_position3d_t));
   playerc_device_init(&device->info, client, PLAYER_POSITION3D_CODE, index,
-                        (playerc_putdata_fn_t) playerc_position3d_putdata,
-                      (playerc_putdata_fn_t) playerc_position3d_putgeom,NULL);
+                      (playerc_putmsg_fn_t) playerc_position3d_putmsg);
 
   
   return device;
@@ -98,28 +100,39 @@ int playerc_position3d_unsubscribe(playerc_position3d_t *device)
 
 
 // Process incoming data
-void playerc_position3d_putdata(playerc_position3d_t *device, player_msghdr_t *header,
-                                player_position3d_data_t *data, size_t len)
+void playerc_position3d_putmsg(playerc_position3d_t *device, 
+                               player_msghdr_t *header,
+                               player_position3d_data_t *data, size_t len)
 {
-  device->pos_x = (long) ntohl(data->xpos) / 1000.0;
-  device->pos_y = (long) ntohl(data->ypos) / 1000.0;
-  device->pos_z = (long) ntohl(data->zpos) / 1000.0;
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_POSITION3D_DATA_STATE))
+  {
+    device->pos_x = data->pos[0];
+    device->pos_y = data->pos[1];
+    device->pos_z = data->pos[2];
 
-  device->pos_roll = (long) ntohl(data->roll)  / 1000.0;
-  device->pos_pitch = (long) ntohl(data->pitch) / 1000.0;
-  device->pos_yaw = (long) ntohl(data->yaw)  / 1000.0;
+    device->pos_roll = data->pos[3];
+    device->pos_pitch = data->pos[4]; 
+    device->pos_yaw = data->pos[5];
 
-  device->vel_x = (long) ntohl(data->xspeed) / 1000.0;
-  device->vel_y = (long) ntohl(data->yspeed) / 1000.0;
-  device->vel_z = (long) ntohl(data->zspeed) / 1000.0;
+    device->vel_x = data->vel[0];
+    device->vel_y = data->vel[1];
+    device->vel_z = data->vel[2];
 
-  device->vel_roll = (long) ntohl(data->rollspeed) / 1000.0;
-  device->vel_pitch = (long) ntohl(data->pitchspeed) / 1000.0;
-  device->vel_yaw = (long) ntohl(data->yawspeed) / 1000.0;
+    device->vel_roll = data->vel[3];
+    device->vel_pitch = data->vel[4];
+    device->vel_yaw = data->vel[5];
   
-  device->stall = data->stall;
+    device->stall = data->stall;
+  }
+  else
+    PLAYERC_WARN2("skipping position3d message with unknown type/subtype: %d/%d\n",
+                  header->type, header->subtype);
 }
 
+
+// TODO
+#if 0
 // Process incoming data
 void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *header,
                                 player_position3d_geom_t *data, size_t len)
@@ -130,6 +143,7 @@ void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *h
     return;
   }
 
+  // TODO
   device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
   device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0;
   device->pose[2] = ((int16_t) ntohs(data->pose[2])) / 1000.0;
@@ -141,9 +155,8 @@ void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *h
   device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0;
   device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0;
   device->size[2] = ((int16_t) ntohs(data->size[2])) / 1000.0;
-
-
 }
+
 
 // Enable/disable the motors
 int playerc_position3d_enable(playerc_position3d_t *device, int enable)
@@ -237,3 +250,4 @@ int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
   return playerc_position3d_set_pose(device,gx,gy,gz,0,0,0);
 }
 
+#endif

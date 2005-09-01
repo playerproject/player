@@ -153,9 +153,6 @@ class MicroStrain3DMG : public Driver
   // Send a packet and wait for a reply from the IMU.
   // Returns the number of bytes read.
   private: int Transact(void *cmd, int cmd_len, void *rep, int rep_len);
-    
-  // Interface to use
-  private: int code;
 
   // Name of port used to communicate with the laser;
   // e.g. /dev/ttyS1
@@ -198,11 +195,8 @@ void MicroStrain3DMG_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 MicroStrain3DMG::MicroStrain3DMG(ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE, PLAYER_READ_MODE)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
 {
-  // Interface to use
-  this->code = code;
-  
   // Default serial port
   this->port_name = cf->ReadString(section, "port", "/dev/ttyS1");
 
@@ -256,7 +250,7 @@ void MicroStrain3DMG::Main()
   //int i;
   double ntime;
   double e[3];
-  struct timeval time;
+  double time;
   player_position3d_data_t data;
   
   while (true)
@@ -266,36 +260,33 @@ void MicroStrain3DMG::Main()
 
     // Get the time; this is probably a better estimate of when the
     // phenomena occured that getting the time after requesting data.
-    GlobalTime->GetTime(&time);
+    GlobalTime->GetTimeDouble(&time);
 
     // Get the Euler angles from the sensor
     GetStabEuler(&ntime, e);
 
-    if (this->code == PLAYER_POSITION3D_CODE)
-    {
-      // Construct data packet
-      data.xpos = 0;
-      data.ypos = 0;
-      data.zpos = 0;
+    // Construct data packet
+    data.pos[0] = 0;
+    data.pos[1] = 0;
+    data.pos[2] = 0;
 
-      data.xspeed = 0;
-      data.yspeed = 0;
-      data.zspeed = 0;
+    data.pos[3] = e[0];
+    data.pos[4] = e[1];
+    data.pos[5] = e[2];
 
-      data.roll = htonl((int32_t) (-e[0] * 180 / M_PI * 3600));
-      data.pitch = htonl((int32_t) (-e[1] * 180 / M_PI * 3600));
-      data.yaw = htonl((int32_t) (-e[2] * 180 / M_PI * 3600));
+    data.vel[0] = 0;
+    data.vel[1] = 0;
+    data.vel[2] = 0;
 
-      data.pitchspeed = 0;
-      data.rollspeed = 0;
-      data.yawspeed = 0;
+    data.vel[3] = 0;
+    data.vel[4] = 0;
+    data.vel[5] = 0;
       
-      data.stall = 0;
-
-      this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,(void*) &data, sizeof(data), &time);
-    }
-    else
-      assert(false);
+    data.stall = 0;
+      
+    // Make data available
+    this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
+                  (void*)&data, sizeof(data), &time);
   }
   return;
 }
