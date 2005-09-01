@@ -11,6 +11,7 @@ with the information necessary to update their code.
   - @ref message-model
 - @ref details
   - @ref message-formats
+  - @ref arrays
   - @ref subtypes
   - @ref dynamic-libs
 - @ref low-details
@@ -114,6 +115,7 @@ limit was exceeded.
 
 A variety of details have changed, including:
   - @ref message-formats
+  - @ref arrays
   - @ref subtypes
   - @ref dynamic-libs
 
@@ -130,6 +132,27 @@ variable-length one-dimensional arrays.  Multi-dimensional arrays are not
 supported.  
 
 Unless otherwise noted, all message fields are represented in MKS units.
+
+@subsection arrays Arrays
+
+Some arrays in message structures are fixed-length and some are
+variable-length.   An array 'foo' is variable-length if the message
+structure containing 'foo' also contains a uint32_t called 'foo_count'
+('foo_count' must appear before 'foo' in the structure).  Otherwise, it is
+fixed-length.  Basically, small arrays (2 or 3 elements) are fixed-length
+and bigger ones are variable-length.
+
+The name 'foo_count' is special.  It tells you how many items are actually
+in the array 'foo'.   This information is used by the XDR functions during
+(de)marshaling.  As a result, you must *always* fill in this field when
+sending a message containing a variable-length array (and you should always
+consult this field when receiving such a message).
+
+For example, when sending a camera image, put the data in 'image' and fill
+in 'image_count' with the actual size of the frame.  Then only those bytes
+will be transferred.  Another example: when asking for the list of
+available devices, you send a player_device_devlist, with the field
+'devices_count' set to 0.  The server responds with it filled in.
 
 @subsection subtypes Message type namespace
 
@@ -188,6 +211,12 @@ driver.  Instead, below is a list of tips, hints, and things to look out
 for.  I find that a combination of systematically following the items on
 this list and compilation by attrition (i.e., fix each problem as the
 compiler finds and complains about it) does the job.
+
+- <tt>libplayerxdr/functiontable.c</tt> must be updated manually to handle
+  each message.  The array <tt>init_ftable</tt> defined in that file
+  contains a (interface, type, subtype, XDR packing function) tuple for
+  each message.  Any message without an entry in that table will not be
+  sent or received.
 
 - The player_device_id_t structure has been replaced with the
   @ref player_devaddr_t structure.  The <tt>code</tt> field is now
