@@ -71,13 +71,6 @@ Device::Device(player_devaddr_t addr, Driver *device)
 
 Device::~Device() 
 {
-  for(size_t i=0;i<this->len_queues;i++)
-  {
-    MessageQueue* q = this->queues[i];
-    if(q)
-      this->Unsubscribe(q);
-  }
-  this->driver->entries--;
   free(this->queues);
 }
 
@@ -145,7 +138,7 @@ Device::Unsubscribe(MessageQueue* sub_queue)
       return(0);
     }
   }
-  PLAYER_ERROR("tried to unsubscribed not-subscribed queue");
+  //PLAYER_ERROR("tried to unsubscribed not-subscribed queue");
   this->driver->Unlock();
   return(-1);
 }

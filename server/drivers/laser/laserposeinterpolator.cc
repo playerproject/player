@@ -239,7 +239,6 @@ int LaserPoseInterp::Shutdown()
   
   this->laser_device->Unsubscribe(this->InQueue);
   this->position_device->Unsubscribe(this->InQueue);
-  StopThread();
   return(0);
 }
 
@@ -307,6 +306,38 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
       this->lastpose = newpose;
       this->lastposetime = hdr->timestamp;
     }
+    return(0);
+  }
+  // Forward any request to the laser
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
+  {
+    // Forward the message
+    laser_device->PutMsg(this->InQueue, hdr, data);
+    // Store the return address for later use
+    this->ret_queue = resp_queue;
+    // Set the message filter to look for the response
+    this->InQueue->SetFilter(this->laser_addr.host,
+                             this->laser_addr.robot,
+                             this->laser_addr.interf,
+                             this->laser_addr.index,
+                             -1,
+                             hdr->subtype);
+    // No response now; it will come later after we hear back from the
+    // laser
+    return(0);
+  }
+  // Forward response (success or failure) from the laser
+  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 
+                            -1, this->laser_addr)) ||
+     (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
+                            -1, this->laser_addr)))
+  {
+    // Copy in our address and forward the response
+    hdr->addr = this->device_addr;
+    this->Publish(this->ret_queue, hdr, data);
+    // Clear the filter
+    this->InQueue->ClearFilter();
+
     return(0);
   }
   // Don't know how to handle this message.
