@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -64,7 +64,7 @@
 extern "C" {
 #endif
 
-  
+
 /***************************************************************************
  * Useful constants (re-defined here so SWIG can pick them up easily)
  **************************************************************************/
@@ -75,12 +75,12 @@ extern "C" {
 #define PLAYERC_ALL_MODE PLAYER_ALL_MODE
 #define PLAYERC_CLOSE_MODE PLAYER_CLOSE_MODE
 #define PLAYERC_ERROR_MODE PLAYER_ERROR_MODE
-  
+
 /** The valid data delivery modes */
-#define PLAYERC_DATAMODE_PUSH_ALL PLAYER_DATAMODE_PUSH_ALL 
-#define PLAYERC_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_ALL 
-#define PLAYERC_DATAMODE_PUSH_NEW PLAYER_DATAMODE_PUSH_NEW 
-#define PLAYERC_DATAMODE_PULL_NEW PLAYER_DATAMODE_PULL_NEW 
+#define PLAYERC_DATAMODE_PUSH_ALL PLAYER_DATAMODE_PUSH_ALL
+#define PLAYERC_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_ALL
+#define PLAYERC_DATAMODE_PUSH_NEW PLAYER_DATAMODE_PUSH_NEW
+#define PLAYERC_DATAMODE_PULL_NEW PLAYER_DATAMODE_PULL_NEW
 #define PLAYERC_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_PUSH_ASYNC
 
 
@@ -93,11 +93,11 @@ extern "C" {
 #define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
 #define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
 #define PLAYERC_BUMPER_MAX_SAMPLES      PLAYER_BUMPER_MAX_SAMPLES
-#define PLAYERC_IR_MAX_SAMPLES		      PLAYER_IR_MAX_SAMPLES
+#define PLAYERC_IR_MAX_SAMPLES          PLAYER_IR_MAX_SAMPLES
 #define PLAYERC_BLOBFINDER_MAX_BLOBS    PLAYER_BLOBFINDER_MAX_BLOBS
 #define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
 
-  
+
 
 /** @addtogroup player_clientlib_libplayerc libplayerc */
 /** @{ */
@@ -123,7 +123,7 @@ int playerc_lookup_code(const char *name);
 /** @}*/
 /***************************************************************************/
 
-  
+
 // Forward declare types
 struct _playerc_client_t;
 struct _playerc_device_t;
@@ -149,7 +149,7 @@ typedef struct
   void *data;
 } playerc_client_item_t;
 
-  
+
 // Multi-client data
 typedef struct
 {
@@ -157,7 +157,7 @@ typedef struct
   int client_count;
   struct _playerc_client_t *client[128];
 
-  // Poll info 
+  // Poll info
   struct pollfd* pollfd;
 
   // Latest time received from any server
@@ -208,13 +208,13 @@ typedef void (*playerc_callback_fn_t) (void *data);
     device.
  */
 typedef struct
-{  
+{
   /** Player id of the device. */
   player_devaddr_t addr;
 
   /** The driver name. */
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
-  
+
 } playerc_device_info_t;
 
 
@@ -228,7 +228,7 @@ typedef struct _playerc_client_t
   /** Server address. */
   char *host;
   int port;
-    
+
   /** @internal Socket descriptor */
   int sock;
 
@@ -314,7 +314,7 @@ PLAYERC_DATAMODE_PUSH_ASYNC.
 
 @returns Returns 0 on success, non-zero otherwise.  Use
 playerc_error_str() to get a descriptive error message.
-  
+
 */
 int playerc_client_datamode(playerc_client_t *client, int mode);
 
@@ -389,11 +389,11 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 @returns Returns -1 on error and -2 on NACK.
 
-*/ 
-int playerc_client_request(playerc_client_t *client, 
-                           struct _playerc_device_t *device, uint8_t reqtype, 
+*/
+int playerc_client_request(playerc_client_t *client,
+                           struct _playerc_device_t *device, uint8_t reqtype,
                            void *req_data, void *rep_data, int rep_len);
-                                
+
 /** @brief Wait for response from server (blocking).
 
 @param client Pointer to client object.
@@ -405,7 +405,7 @@ int playerc_client_request(playerc_client_t *client,
 
 */
 /*int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
-		uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
+    uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
 */
 /** @brief Test to see if there is pending data.
 
@@ -434,9 +434,9 @@ void *playerc_client_read(playerc_client_t *client);
 
 /** @brief Write data to the server.  @internal
 */
-int playerc_client_write(playerc_client_t *client, 
+int playerc_client_write(playerc_client_t *client,
                          struct _playerc_device_t *device,
-                         uint8_t subtype, 
+                         uint8_t subtype,
                          void *cmd, double* timestamp);
 
 
@@ -471,7 +471,7 @@ typedef struct _playerc_device_t
 
   /** The driver name. */
   char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
-  
+
   /** The subscribe flag is non-zero if the device has been
       successfully subscribed (read-only). */
   int subscribed;
@@ -497,7 +497,7 @@ typedef struct _playerc_device_t
 
   /** Extra user data for this device. @internal */
   void *user_data;
-  
+
   /** Extra callbacks for this device. @internal */
   int callback_count;
   playerc_callback_fn_t callback[4];
@@ -542,7 +542,7 @@ complete description of the drivers that support this interface.
 
 /** @brief Description of a single blob. */
 typedef struct
-{  
+{
   /** The blob id; e.g. the color class this blob belongs to. */
   int id;
 
@@ -561,23 +561,23 @@ typedef struct
 
   /** Blob range (m). */
   double range;
-  
+
 } playerc_blobfinder_blob_t;
 
 
 /** @brief Blobfinder device data. */
-typedef struct 
+typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
   /** Image dimensions (pixels). */
   int width, height;
-  
+
   /** A list of detected blobs. */
   int blob_count;
   playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
-  
+
 } playerc_blobfinder_t;
 
 
@@ -619,18 +619,18 @@ typedef struct
 
   /** Number of pose values. */
   int pose_count;
-  
+
   /** Pose of each bumper relative to robot (mm, mm, deg, mm, mm).
       This structure is filled by calling playerc_bumper_get_geom().
       values are x,y (of center) ,normal,length,curvature */
   double poses[PLAYERC_BUMPER_MAX_SAMPLES][5];
-  
+
   /** Number of points in the scan. */
   int bumper_count;
 
   /** Bump data: unsigned char, either boolean or code indicating corner. */
   double bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
-  
+
 } playerc_bumper_t;
 
 
@@ -658,11 +658,11 @@ int playerc_bumper_get_geom(playerc_bumper_t *device);
 /** @} */
 /***************************************************************************/
 
-
+#endif
 /***************************************************************************/
 /** @defgroup playerc_proxy_camera camera
 
-The camera proxy can be used to get images from a camera.  
+The camera proxy can be used to get images from a camera.
 
 @{
 */
@@ -691,14 +691,14 @@ typedef struct
   int compression;
 
   /** Size of image data (bytes) */
-  int image_size;
-  
+  int image_count;
+
   /** Image data (byte aligned, row major order).  Multi-byte image
       formats (such as MONO16) are automatically converted to the
       correct host byte ordering.
   */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
-    
+
 } playerc_camera_t;
 
 
@@ -717,10 +717,13 @@ int playerc_camera_unsubscribe(playerc_camera_t *device);
 /** @brief Decompress the image (modifies the current proxy data). */
 void playerc_camera_decompress(playerc_camera_t *device);
 
+/** @brief Saves the image to disk as a .ppm */
+void playerc_camera_save(playerc_camera_t *device, const char *filename);
+
 
 /** @} */
 /**************************************************************************/
-
+#if 0
 /***************************************************************************/
 /** @defgroup playerc_proxy_fiducial fiducial
 
@@ -771,11 +774,11 @@ typedef struct
   double pose[3];
   double size[2];
   double fiducial_size[2];
-  
+
   /** List of detected beacons. */
   int fiducial_count;
   playerc_fiducial_item_t fiducials[PLAYERC_FIDUCIAL_MAX_SAMPLES];
-    
+
 } playerc_fiducial_t;
 
 
@@ -820,7 +823,7 @@ typedef struct
 
   /** UTC time (seconds since the epoch) */
   double utc_time;
-  
+
   /** Latitude and logitude (degrees).  Latitudes are positive for
       north, negative for south.  Logitudes are positive for east,
       negative for west. */
@@ -844,7 +847,7 @@ typedef struct
 
   /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
   int quality;
-     
+
   /** Number of satellites in view. */
   int sat_count;
 
@@ -884,7 +887,7 @@ typedef struct
 
   // data
   player_ir_data_t ranges;
-  
+
   // config
   player_ir_pose_t poses;
 
@@ -929,13 +932,13 @@ typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
-  
+
   /** Scaled joystick position (0 = centered, 1 = hard over). */
   double px, py;
 
   /** Button states (bitmask) */
   uint16_t buttons;
-  
+
 } playerc_joystick_t;
 
 
@@ -963,7 +966,7 @@ void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *heade
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_laser laser
-    
+
 The laser proxy provides an interface to scanning laser range finders
 such as the @ref player_driver_sicklms200.  Data is returned in the
 playerc_laser_t structure.
@@ -984,7 +987,7 @@ typedef struct
       playerc_laser_get_geom(). */
   double pose[3];
   double size[2];
-  
+
   /** Is intesity data returned. */
   int intensity_on;
 
@@ -1005,7 +1008,7 @@ typedef struct
 
   /** Scan data; range (m) and bearing (radians). */
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];
-  
+
   /** Scan data; x, y position (m). */
   double point[PLAYERC_LASER_MAX_SAMPLES][2];
 
@@ -1016,7 +1019,7 @@ typedef struct
 
   /** ID for this scan */
   int scan_id;
-  
+
 } playerc_laser_t;
 
 
@@ -1052,8 +1055,8 @@ playerc_error_str() to get a descriptive error message.
 */
 int playerc_laser_set_config(playerc_laser_t *device,
                              double min_angle, double max_angle,
-                             unsigned char resolution, 
-                             unsigned char range_res, 
+                             unsigned char resolution,
+                             unsigned char range_res,
                              unsigned char intensity);
 
 /** @brief Get the laser configuration.
@@ -1075,10 +1078,10 @@ playerc_error_str() to get a descriptive error message.
 
 */
 int playerc_laser_get_config(playerc_laser_t *device,
-                             double *min_angle, 
+                             double *min_angle,
                              double *max_angle,
-                             unsigned char *resolution, 
-                             unsigned char *range_res, 
+                             unsigned char *resolution,
+                             unsigned char *range_res,
                              unsigned char *intensity);
 
 /** @brief Get the laser geometry.
@@ -1119,7 +1122,7 @@ typedef struct
 
   /** Weight associated with this hypothesis. */
   double weight;
-  
+
 } playerc_localize_hypoth_t;
 
 typedef struct playerc_localize_particle
@@ -1137,13 +1140,13 @@ typedef struct
 
   /** Map dimensions (cells). */
   int map_size_x, map_size_y;
-  
+
   /** Map scale (m/cell). */
   double map_scale;
 
   /** Next map tile to read. */
   int map_tile_x, map_tile_y;
-  
+
   /** Map data (empty = -1, unknown = 0, occupied = +1). */
   int8_t *map_cells;
 
@@ -1206,7 +1209,7 @@ typedef struct
       PLAYER_LOG_TYPE_WRITE. Call playerc_log_get_state() to fill it. */
   int type;
 
-  /** Is logging/playback enabled? Call playerc_log_get_state() to 
+  /** Is logging/playback enabled? Call playerc_log_get_state() to
       fill it. */
   int state;
 } playerc_log_t;
@@ -1350,13 +1353,13 @@ int playerc_motor_position_control(playerc_motor_t *device, int type);
 
 @param device Pointer to proxy object.
 @param vt Velocity in in rad/s.
-@param state @todo Document state 
+@param state @todo Document state
 
 */
 int playerc_motor_set_cmd_vel(playerc_motor_t *device,
                               double vt, int state);
 
-/** @brief Set the target pose. 
+/** @brief Set the target pose.
 
 @param device Pointer to proxy object.
 @param gt Target pose in rad.
@@ -1401,7 +1404,7 @@ typedef struct
   double wx, wy, wa;
 
   /** Current waypoint index (handy if you already have the list
-      of waypoints). May be negative if there's no plan, or if 
+      of waypoints). May be negative if there's no plan, or if
       the plan is done */
   int curr_waypoint;
 
@@ -1411,7 +1414,7 @@ typedef struct
   /** List of waypoints in the current plan (m,m,radians).  Call
       playerc_planner_get_waypoints() to fill this in. */
   double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][3];
-  
+
 } playerc_planner_t;
 
 /** @brief Create a planner device proxy. */
@@ -1485,7 +1488,7 @@ typedef struct
 } playerc_position2d_t;
 
 /** Create a position2d device proxy. */
-playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, 
+playerc_position2d_t *playerc_position2d_create(playerc_client_t *client,
                                                 int index);
 
 /** Destroy a position2d device proxy. */
@@ -1536,7 +1539,7 @@ code.  New code should use the @ref playerc_proxy_position2d proxy instead.
 typedef playerc_position2d_t playerc_position_t;
 
 /** Create a position device proxy. */
-playerc_position_t *playerc_position_create(playerc_client_t *client, 
+playerc_position_t *playerc_position_create(playerc_client_t *client,
                                             int index);
 /** Destroy a position device proxy. */
 void playerc_position_destroy(playerc_position_t *device);
@@ -1610,7 +1613,7 @@ typedef struct
 
 /** Create a position3d device proxy. */
 playerc_position3d_t *playerc_position3d_create(playerc_client_t *client,
-						int index);
+            int index);
 
 /** Destroy a position3d device proxy. */
 void playerc_position3d_destroy(playerc_position3d_t *device);
@@ -1674,7 +1677,7 @@ typedef struct
 
   /** Battery charge (percent full). */
   double percent;
-  
+
 } playerc_power_t;
 
 
@@ -1692,7 +1695,7 @@ int playerc_power_unsubscribe(playerc_power_t *device);
 
 
 /** @} */
-/**************************************************************************/ 
+/**************************************************************************/
 
 
 #if 0
@@ -1719,7 +1722,7 @@ typedef struct
 
   /** The current zoom value (field of view angle). */
   double zoom;
-  
+
 } playerc_ptz_t;
 
 
@@ -1760,7 +1763,7 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zo
 
 
 /** @} */
-/**************************************************************************/ 
+/**************************************************************************/
 
 #endif
 
@@ -1781,17 +1784,17 @@ typedef struct
 
   /** Number of pose values. */
   int pose_count;
-  
+
   /** Pose of each sonar relative to robot (m, m, radians).  This
       structure is filled by calling playerc_sonar_get_geom(). */
   double poses[PLAYERC_SONAR_MAX_SAMPLES][3];
-  
+
   /** Number of points in the scan. */
   int scan_count;
 
   /** Scan data: range (m). */
   double scan[PLAYERC_SONAR_MAX_SAMPLES];
-  
+
 } playerc_sonar_t;
 
 
@@ -1821,7 +1824,7 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_truth truth
- 
+
 The truth proxy can be used to get and set the pose of objects in a  simulator.
 
 @{
@@ -1911,7 +1914,7 @@ typedef struct
 
   /** Link properties. */
   int qual, level, noise;
- 
+
 } playerc_wifi_link_t;
 
 
@@ -1924,7 +1927,7 @@ typedef struct
   /** A list containing info for each link. */
   playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
   int link_count;
-  
+
 } playerc_wifi_t;
 
 
@@ -1969,8 +1972,8 @@ int playerc_simulation_unsubscribe(playerc_simulation_t *device);
 int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
                                   double gx, double gy, double ga);
 
-int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier, 
-				  double *x, double *y, double *a);
+int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier,
+          double *x, double *y, double *a);
 
 /** @} */
 /***************************************************************************/
@@ -2041,7 +2044,7 @@ typedef struct
 
     /// A bitfield of the current digital inputs.
     uint32_t digin;
-  
+
 } playerc_dio_t;
 
 

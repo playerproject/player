@@ -25,6 +25,9 @@ extern int test_laser(playerc_client_t *client, int index);
 // Basic test for position2d device.
 extern int test_position2d(playerc_client_t *client, int index);
 
+// Basic test for position3d device
+extern int test_position3d(playerc_client_t *client, int index);
+
 // Basic test for log device.
 extern int test_log(playerc_client_t *client, int index);
 
@@ -39,6 +42,9 @@ extern int test_power(playerc_client_t *client, int index);
 
 // Basic test for map device
 extern int test_map(playerc_client_t *client, int index);
+
+// Basic test for camera device
+extern int test_camera(playerc_client_t *client, int index);
 
 #if 0
 // Basic test for BPS device.i

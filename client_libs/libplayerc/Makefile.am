@@ -1,4 +1,4 @@
-SUBDIRS = . test 
+SUBDIRS = . test
 #bindings doc
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir) -g
@@ -6,7 +6,7 @@ AM_CPPFLAGS = -Wall -I$(top_srcdir) -g
 # TODO: figure out how to handle the jpeg wrappers
 # -I$(top_srcdir)/client_libs/libplayerpacket
 
-# create the pkg-config entry	
+# create the pkg-config entry
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = playerc.pc
 
@@ -14,8 +14,12 @@ EXTRA_DIST = playerc.pc.in
 CLEANFILES = playerc.pc
 
 lib_LTLIBRARIES = libplayerc.la
-
 libplayerc_la_LDFLAGS = -version-info 2:0:0
+
+if INCLUDE_JPEG
+libplayerc_la_LDFLAGS += -L$(top_builddir)/libplayerjpeg -lplayerjpeg
+endif
+
 libplayerc_la_SOURCES = playerc.h \
                         mclient.c \
                         client.c \
@@ -26,17 +30,17 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_laser.c \
                         dev_log.c \
                         dev_position2d.c \
-												dev_position3d.c \
+                        dev_position3d.c \
                         dev_position.c \
                         dev_simulation.c \
                         dev_power.c \
                         dev_planner.c \
                         dev_map.c \
                         dev_localize.c \
-                        dev_sonar.c
+                        dev_sonar.c \
+                        dev_camera.c
 #dev_blobfinder.c \
 #dev_bumper.c \
-#dev_camera.c \
 #dev_fiducial.c \
 #dev_gps.c \
 #dev_gripper.c \

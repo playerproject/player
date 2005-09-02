@@ -46,9 +46,9 @@ int main(int argc, const char *argv[])
   }
 
   printf("host [%s:%d]\n", host, port);
-  
+
   client = playerc_client_create(NULL, host, port);
-  
+
   TEST("connecting");
   if (playerc_client_connect(client) != 0)
   {
@@ -82,8 +82,8 @@ int main(int argc, const char *argv[])
       sindex = strtok(NULL, "");
       index = (sindex ? atoi(sindex) : 0);
 
-      client->devinfos[client->devinfo_count].addr.interf = 
-	      playerc_lookup_code(device);
+      client->devinfos[client->devinfo_count].addr.interf =
+        playerc_lookup_code(device);
       client->devinfos[client->devinfo_count].addr.index = index;
       client->devinfo_count++;
 
@@ -94,9 +94,9 @@ int main(int argc, const char *argv[])
   // Print interface list.
   printf("selected devices [%s:%d]:\n", host, port);
   for (i = 0; i < client->devinfo_count; i++)
-    printf("  %d:%s:%d (%s)\n", 
-           client->devinfos[i].addr.robot, 
-           playerc_lookup_name(client->devinfos[i].addr.interf), 
+    printf("  %d:%s:%d (%s)\n",
+           client->devinfos[i].addr.robot,
+           playerc_lookup_name(client->devinfos[i].addr.interf),
            client->devinfos[i].addr.index,
            client->devinfos[i].drivername);
 
@@ -125,6 +125,7 @@ int main(int argc, const char *argv[])
         test_log(client, client->devinfos[i].addr.index);
         break;
 
+#if 0
       // simulation device
       case PLAYER_SIMULATION_CODE:
         test_simulation(client, client->devinfos[i].addr.index);
@@ -145,18 +146,18 @@ int main(int argc, const char *argv[])
         test_map(client, client->devinfos[i].addr.index);
         break;
 
-
-#if 0
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
         test_blobfinder(client, client->devinfos[i].addr.index);
         break;
+#endif
 
       // Camera device
       case PLAYER_CAMERA_CODE:
         test_camera(client, client->devinfos[i].addr.index);
         break;
 
+#if 0
       // Fiducial detector
       case PLAYER_FIDUCIAL_CODE:
         test_fiducial(client, client->devinfos[i].addr.index);
@@ -166,7 +167,7 @@ int main(int argc, const char *argv[])
       case PLAYER_GPS_CODE:
         test_gps(client, client->devinfos[i].addr.index);
         break;
-        
+
       // Joystick device
       case PLAYER_JOYSTICK_CODE:
         test_joystick(client, client->devinfos[i].addr.index);
@@ -197,14 +198,14 @@ int main(int argc, const char *argv[])
         test_wifi(client, client->devinfos[i].addr.index);
         break;
 #endif
-        
+
       default:
         printf("no test for interface [%s]\n",
                playerc_lookup_name(client->devinfos[i].addr.interf));
         break;
     }
   }
-    
+
   TEST("disconnecting");
   if (playerc_client_disconnect(client) != 0)
   {
@@ -212,7 +213,7 @@ int main(int argc, const char *argv[])
     return -1;
   }
   PASS();
-  
+
   playerc_client_destroy(client);
 
   return 0;
