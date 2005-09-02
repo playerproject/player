@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2005 -
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -45,117 +45,137 @@ typedef struct
 
 static playerxdr_function_t init_ftable[] =
 {
-  /* player messages */
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEVLIST, 
-    (player_pack_fn_t)player_device_devlist_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DRIVERINFO, 
-    (player_pack_fn_t)player_device_driverinfo_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEV, 
-    (player_pack_fn_t)player_device_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATA, 
-    (player_pack_fn_t)player_device_data_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAMODE, 
-    (player_pack_fn_t)player_device_datamode_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAFREQ, 
-    (player_pack_fn_t)player_device_datafreq_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_AUTH, 
-    (player_pack_fn_t)player_device_auth_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_NAMESERVICE, 
-    (player_pack_fn_t)player_device_nameservice_req_pack},
+  /* This list is currently alphabetized, please keep it that way! */
+
+  /* camera messages */
+  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_DATA_STATE,
+    (player_pack_fn_t)player_camera_data_pack},
 
   /* laser messages */
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
     (player_pack_fn_t)player_laser_data_pack},
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE, 
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
     (player_pack_fn_t)player_laser_data_scanpose_pack},
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM, 
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM,
     (player_pack_fn_t)player_laser_geom_pack},
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG, 
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG,
     (player_pack_fn_t)player_laser_config_pack},
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG, 
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG,
     (player_pack_fn_t)player_laser_config_pack},
-  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_POWER, 
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_POWER,
     (player_pack_fn_t)player_laser_power_config_pack},
 
-  /* sonar messages */
-  {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_RANGES, 
-    (player_pack_fn_t)player_sonar_data_pack},
-  {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
-    (player_pack_fn_t)player_sonar_geom_pack},
+  /* localize messages */
+  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,
+    (player_pack_fn_t)player_localize_data_pack},
+  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE,
+    (player_pack_fn_t)player_localize_set_pose_pack},
+  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+    (player_pack_fn_t)player_localize_get_particles_pack},
+
+  /* log messages */
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_WRITE_STATE,
+    (player_pack_fn_t)player_log_set_write_state_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_READ_STATE,
+    (player_pack_fn_t)player_log_set_read_state_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_GET_STATE,
+    (player_pack_fn_t)player_log_get_state_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_READ_REWIND,
+    (player_pack_fn_t)player_log_set_read_rewind_pack},
+  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_FILENAME,
+    (player_pack_fn_t)player_log_set_filename_pack},
+
+  /* map messages */
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO,
+    (player_pack_fn_t)player_map_info_pack},
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_DATA,
+    (player_pack_fn_t)player_map_data_pack},
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_TILE,
+    (player_pack_fn_t)player_map_data_pack},
+
+  /* planner messages */
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_PLANNER_DATA_STATE,
+    (player_pack_fn_t)player_planner_data_pack},
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_PLANNER_CMD_GOAL,
+    (player_pack_fn_t)player_planner_cmd_pack},
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_ENABLE,
+    (player_pack_fn_t)player_planner_enable_req_pack},
+  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_GET_WAYPOINTS,
+    (player_pack_fn_t)player_planner_waypoints_req_pack},
+
+  /* player messages */
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEVLIST,
+    (player_pack_fn_t)player_device_devlist_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DRIVERINFO,
+    (player_pack_fn_t)player_device_driverinfo_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DEV,
+    (player_pack_fn_t)player_device_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATA,
+    (player_pack_fn_t)player_device_data_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAMODE,
+    (player_pack_fn_t)player_device_datamode_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAFREQ,
+    (player_pack_fn_t)player_device_datafreq_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_AUTH,
+    (player_pack_fn_t)player_device_auth_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_NAMESERVICE,
+    (player_pack_fn_t)player_device_nameservice_req_pack},
 
   /* position2d messages */
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
     (player_pack_fn_t)player_position2d_data_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE,
     (player_pack_fn_t)player_position2d_cmd_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM,
     (player_pack_fn_t)player_position2d_geom_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER,
     (player_pack_fn_t)player_position2d_power_config_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE,
     (player_pack_fn_t)player_position2d_velocity_mode_config_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_MODE, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_MODE,
     (player_pack_fn_t)player_position2d_position_mode_req_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM,
     (player_pack_fn_t)player_position2d_set_odom_req_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PID, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PID,
     (player_pack_fn_t)player_position2d_speed_pid_req_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_PID, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_PID,
     (player_pack_fn_t)player_position2d_position_pid_req_pack},
-  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PROF, 
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PROF,
     (player_pack_fn_t)player_position2d_speed_prof_req_pack},
-  
+
   /* position3d messages */
-  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE, 
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
     (player_pack_fn_t)player_position3d_data_pack},
 
   /* power messages */
-  {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_VOLTAGE, 
+  {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_VOLTAGE,
     (player_pack_fn_t)player_power_data_pack},
 
-  /* log messages */
-  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_WRITE_STATE, 
-    (player_pack_fn_t)player_log_set_write_state_pack},
-  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_READ_STATE, 
-    (player_pack_fn_t)player_log_set_read_state_pack},
-  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_GET_STATE, 
-    (player_pack_fn_t)player_log_get_state_pack},
-  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_READ_REWIND, 
-    (player_pack_fn_t)player_log_set_read_rewind_pack},
-  {PLAYER_LOG_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOG_REQ_SET_FILENAME, 
-    (player_pack_fn_t)player_log_set_filename_pack},
+  /* ptz messages */
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_DATA_STATE,
+    (player_pack_fn_t)player_ptz_data_pack},
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GEOM_STATE,
+    (player_pack_fn_t)player_ptz_geom_pack},
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_CMD_STATE,
+    (player_pack_fn_t)player_ptz_cmd_pack},
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GEOM,
+    (player_pack_fn_t)player_ptz_geom_pack},
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GENERIC,
+    (player_pack_fn_t)player_ptz_req_generic_pack},
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE,
+    (player_pack_fn_t)player_ptz_req_control_mode_pack},
 
   /* simulation messages */
-  {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_SET_POSE2D, 
+  {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_SET_POSE2D,
     (player_pack_fn_t)player_simulation_pose2d_req_pack},
-  {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D, 
+  {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
     (player_pack_fn_t)player_simulation_pose2d_req_pack},
 
-  /* map messages */
-  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
-    (player_pack_fn_t)player_map_info_pack},
-  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_DATA, 
-    (player_pack_fn_t)player_map_data_pack},
-  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_TILE, 
-    (player_pack_fn_t)player_map_data_pack},
-
-  /* localize messages */
-  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS, 
-    (player_pack_fn_t)player_localize_data_pack},
-  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_SET_POSE, 
-    (player_pack_fn_t)player_localize_set_pose_pack},
-  {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LOCALIZE_REQ_GET_PARTICLES, 
-    (player_pack_fn_t)player_localize_get_particles_pack},
-
-  /* planner messages */
-  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_PLANNER_DATA_STATE, 
-    (player_pack_fn_t)player_planner_data_pack},
-  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_PLANNER_CMD_GOAL, 
-    (player_pack_fn_t)player_planner_cmd_pack},
-  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_ENABLE, 
-    (player_pack_fn_t)player_planner_enable_req_pack},
-  {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_REQ_GET_WAYPOINTS, 
-    (player_pack_fn_t)player_planner_waypoints_req_pack},
+  /* sonar messages */
+  {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_RANGES,
+    (player_pack_fn_t)player_sonar_data_pack},
+  {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
+    (player_pack_fn_t)player_sonar_geom_pack},
 
   {0,0,0,NULL}
 };
@@ -199,9 +219,9 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
     curr = ftable + i;
     // Make sure the interface and subtype match exactly.  The supplied
     // type can be RESP_ACK if the registered type is REQ.
-    if((curr->interf== interf) && 
-       ((curr->type == type) || 
-        ((curr->type == PLAYER_MSGTYPE_REQ) && 
+    if((curr->interf== interf) &&
+       ((curr->type == type) ||
+        ((curr->type == PLAYER_MSGTYPE_REQ) &&
          (type = PLAYER_MSGTYPE_RESP_ACK))) &&
         (curr->subtype == subtype))
       return(curr->func);
