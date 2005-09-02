@@ -185,8 +185,7 @@ class WriteLog: public Driver
                       player_msghdr_t* hdr, void *data);
 
   // Write laser data to file
-  private: int WriteLaser(player_msghdr_t* hdr, 
-                           player_laser_data_t *data);
+  private: int WriteLaser(player_msghdr_t* hdr, void *data);
 
   // Write position data to file
   private: int WritePosition(player_msghdr_t* hdr, 
@@ -624,7 +623,7 @@ void WriteLog::Write(WriteLogDevice *device,
   switch (iface.interf)
   {
     case PLAYER_LASER_CODE:
-      retval = this->WriteLaser(hdr, (player_laser_data_t*) data);
+      retval = this->WriteLaser(hdr, data);
       break;
     case PLAYER_POSITION2D_CODE:
       retval = this->WritePosition(hdr, (player_position2d_data_t*) data);
@@ -702,25 +701,42 @@ The format for each @ref player_interface_laser message is:
     - intensity (int): intensity
 */
 int
-WriteLog::WriteLaser(player_msghdr_t* hdr, 
-                     player_laser_data_t *data)
+WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
 {
   size_t i;
+  player_laser_data_t* scan;
+  player_laser_data_scanpose_t* scanpose;
 
   // Check the subtype
   switch(hdr->subtype)
   {
     case PLAYER_LASER_DATA_SCAN:
+      scan = (player_laser_data_t*)data;
       // Note that, in this format, we need a lot of precision in the
       // resolution field.
 
       fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
-              data->min_angle, data->max_angle,
-              data->resolution, data->ranges_count);
+              scan->min_angle, scan->max_angle,
+              scan->resolution, scan->ranges_count);
 
-      for (i = 0; i < data->ranges_count; i++)
+      for (i = 0; i < scan->ranges_count; i++)
         fprintf(this->file, "%.3f %2d ",
-                data->ranges[i], data->intensity[i]);
+                scan->ranges[i], scan->intensity[i]);
+      return(0);
+
+    case PLAYER_LASER_DATA_SCANPOSE:
+      scanpose = (player_laser_data_scanpose_t*)data;
+      // Note that, in this format, we need a lot of precision in the
+      // resolution field.
+
+      fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %04d ",
+              scanpose->pose.px, scanpose->pose.py, scanpose->pose.pa,
+              scanpose->scan.min_angle, scanpose->scan.max_angle,
+              scanpose->scan.resolution, scanpose->scan.ranges_count);
+
+      for (i = 0; i < scanpose->scan.ranges_count; i++)
+        fprintf(this->file, "%.3f %2d ",
+                scanpose->scan.ranges[i], scanpose->scan.intensity[i]);
       return(0);
 
     default:
