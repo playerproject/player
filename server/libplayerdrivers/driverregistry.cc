@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ void LaserPoseInterp_Register(DriverTable* table);
 #ifdef INCLUDE_SICKLMS200
 void SickLMS200_Register(DriverTable* table);
 #endif
-                                                                               
+
 #ifdef INCLUDE_SICKPLS
 void SickPLS_Register(DriverTable* table);
 #endif
@@ -111,7 +111,7 @@ void SimpleShape_Register(DriverTable* table);
 
 #ifdef INCLUDE_FESTIVAL
 void Festival_Register(DriverTable* table);
-#endif 
+#endif
 
 #ifdef INCLUDE_SPHINX2
 void Sphinx2_Register(DriverTable* table);
@@ -254,6 +254,10 @@ void LifoMCom_Register(DriverTable* table);
 void CameraV4L_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_SPHERE
+void SphereDriver_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_CAMERA1394
 void Camera1394_Register(DriverTable *table);
 #endif
@@ -362,7 +366,7 @@ void NomadSonar_Register(DriverTable *driverTable);
 
 /*
  * this function will be called at startup.  all available devices should
- * be added to the driverTable here.  they will be instantiated later as 
+ * be added to the driverTable here.  they will be instantiated later as
  * necessary.
  */
 void
@@ -419,7 +423,7 @@ player_register_drivers()
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_SICKPLS
   SickPLS_Register(driverTable);
 #endif
@@ -473,7 +477,7 @@ player_register_drivers()
 #ifdef INCLUDE_LASERCSPACE
   LaserCSpace_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_RFLEX
   RFLEX_Register(driverTable);
 #endif
@@ -503,7 +507,7 @@ player_register_drivers()
 #endif
 
 #ifdef INCLUDE_LOGFILE
-  WriteLog_Register(driverTable);  
+  WriteLog_Register(driverTable);
 //  ReadLog_Register(driverTable);
 #endif
 
@@ -530,7 +534,7 @@ player_register_drivers()
   RWIBumper_Register(driverTable);
   RWIPower_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_LINUXWIFI
   LinuxWiFi_Register(driverTable);
 #endif
@@ -562,7 +566,7 @@ player_register_drivers()
 #ifdef INCLUDE_MICROSTRAIN
   MicroStrain3DMG_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_INAV
   INav_Register(driverTable);
 #endif
@@ -589,6 +593,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_CAMERAV4L
   CameraV4L_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SPHERE
+  SphereDriver_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_CAMERA1394
@@ -626,7 +634,7 @@ player_register_drivers()
 #ifdef INCLUDE_GAZEBO_LASER
   GzLaser_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_GAZEBO_POSITION
   GzPosition_Register(driverTable);
 #endif
@@ -638,7 +646,7 @@ player_register_drivers()
 #ifdef INCLUDE_GAZEBO_POWER
   GzPower_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_GAZEBO_PTZ
   GzPtz_Register(driverTable);
 #endif

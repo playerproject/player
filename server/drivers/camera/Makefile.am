@@ -1,2 +1,1 @@
-SUBDIRS = v4l 1394 compress imageseq
-#sphere 
+SUBDIRS = v4l 1394 compress imageseq sphere
