@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -37,13 +37,17 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 /***************************************************************************
- * Desc: Truth device proxy (works with Stage).
+ * Desc: Camera proxy.
  * Author: Andrew Howard
  * Date: 26 May 2002
  * CVS: $Id$
  **************************************************************************/
 #if HAVE_CONFIG_H
   #include "config.h"
+#endif
+
+#if HAVE_JPEGLIB_H
+  #include "libplayerjpeg/playerjpeg.h"
 #endif
 
 #include <assert.h>
@@ -54,13 +58,13 @@
 #include <netinet/in.h>
 
 #include "playerc.h"
-#include "playerpacket.h"
 #include "error.h"
 
 // Local declarations
-void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
-                           player_camera_data_t *data, size_t len);
-
+void playerc_camera_putmsg(playerc_camera_t *device,
+                           player_msghdr_t *header,
+                           player_camera_data_t *data,
+                           size_t len);
 
 // Create a new camera proxy
 playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index)
@@ -69,8 +73,8 @@ playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index)
 
   device = malloc(sizeof(playerc_camera_t));
   memset(device, 0, sizeof(playerc_camera_t));
-  playerc_device_init(&device->info, client, PLAYER_CAMERA_CODE, index, 
-                      (playerc_putdata_fn_t) playerc_camera_putdata,NULL,NULL); 
+  playerc_device_init(&device->info, client, PLAYER_CAMERA_CODE, index,
+                      (playerc_putmsg_fn_t) playerc_camera_putmsg);
   return device;
 }
 
@@ -98,22 +102,26 @@ int playerc_camera_unsubscribe(playerc_camera_t *device)
 
 
 // Process incoming data
-void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
+void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
                             player_camera_data_t *data, size_t len)
 {
-  assert(sizeof(*data) >= len);
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_CAMERA_DATA_STATE))
+  {
+    device->width        = data->width;
+    device->height       = data->height;
+    device->bpp          = data->bpp;
+    device->format       = data->format;
+    device->fdiv         = data->fdiv;
+    device->compression  = data->compression;
+    device->image_count  = data->image_count;
 
-  device->width = ntohs(data->width);
-  device->height = ntohs(data->height);
-  device->bpp = data->bpp;
-  device->format = data->format;
-  device->fdiv = ntohs(data->fdiv);
-  device->compression = data->compression;
-  device->image_size = ntohl(data->image_size);
-
-  assert(device->image_size <= sizeof device->image);
-  memcpy(device->image, data->image, device->image_size);
-  
+    assert(device->image_count <= sizeof(device->image));
+    memcpy(device->image, data->image, device->image_count);
+  }
+  else
+    PLAYERC_WARN2("skipping camera message with unknown type/subtype: %d/%d\n",
+                 header->type, header->subtype);
   return;
 }
 
@@ -121,22 +129,22 @@ void playerc_camera_putdata(playerc_camera_t *device, player_msghdr_t *header,
 // Decompress image data
 void playerc_camera_decompress(playerc_camera_t *device)
 {
+  if (device->compression == PLAYER_CAMERA_COMPRESS_RAW)
+    return;
+
 #if HAVE_JPEGLIB_H
   int dst_size;
   unsigned char *dst;
 
-  if (device->compression == PLAYER_CAMERA_COMPRESS_RAW)
-    return;
-  
   // Create a temp buffer
   dst_size = device->width * device->height * device->bpp / 8;
   dst = malloc(dst_size);
 
   // Decompress into temp buffer
-  jpeg_decompress(dst, dst_size, device->image, device->image_size);
+  jpeg_decompress(dst, dst_size, device->image, device->image_count);
 
   // Copy uncompress image
-  device->image_size = dst_size;
+  device->image_count = dst_size;
   assert(dst_size <= sizeof device->image);
   memcpy(device->image, dst, dst_size);
   free(dst);
@@ -147,8 +155,53 @@ void playerc_camera_decompress(playerc_camera_t *device)
 #else
 
   PLAYERC_ERR("JPEG decompression support was not included at compile-time");
- 
+
 #endif
+
+  return;
+}
+
+// Save a camera image
+// Assumes the image is RGB888
+void playerc_camera_save(playerc_camera_t *device, const char *filename)
+{
+  int i;
+  uint8_t pix;
+  FILE *file;
+
+  file = fopen(filename, "w+");
+  if (file == NULL)
+    return;
+
+  // we need to decompress the image
+  playerc_camera_decompress(device);
+
+  // Write ppm header
+  fprintf(file, "P6\n%d %d\n%d\n", device->width, device->height, 255);
+
+  // Write data here
+  for (i = 0; i < device->image_count; i++)
+  {
+    if (device->format == PLAYER_CAMERA_FORMAT_RGB888)
+    {
+      pix = device->image[i];
+      fputc(pix, file);
+    }
+    else if (device->format == PLAYER_CAMERA_FORMAT_MONO8)
+    {
+      pix = device->image[i];
+      fputc(pix, file);
+      fputc(pix, file);
+      fputc(pix, file);
+    }
+    else
+    {
+      printf("unsupported image format");
+      break;
+    }
+  }
+
+  fclose(file);
 
   return;
 }

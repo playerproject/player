@@ -8,10 +8,6 @@
 #include "test.h"
 #include "playerc.h"
 
-
-static void test_camera_save(playerc_camera_t *device, const char *filename);
-
-
 // Basic test for camera device.
 int test_camera(playerc_client_t *client, int index)
 {
@@ -26,7 +22,7 @@ int test_camera(playerc_client_t *client, int index)
   device = playerc_camera_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_camera_subscribe(device, PLAYER_READ_MODE) != 0)
+  if (playerc_camera_subscribe(device, PLAYER_OPEN_MODE) != 0)
   {
     FAIL();
     return -1;
@@ -46,16 +42,16 @@ int test_camera(playerc_client_t *client, int index)
       PASS();
 
       // Decompress the image
-      csize = device->image_size;
+      csize = device->image_count;
       playerc_camera_decompress(device);
-      usize = device->image_size;
-      
-      printf("camera: [w %d h %d d %d] [%d/%d bytes]\n", 
+      usize = device->image_count;
+
+      printf("camera: [w %d h %d d %d] [%d/%d bytes]\n",
              device->width, device->height, device->bpp, csize, usize);
 
       snprintf(filename, sizeof(filename), "camera_%03d.ppm", t);
       printf("camera: saving [%s]\n", filename);
-      test_camera_save(device, filename);
+      playerc_camera_save(device, filename);
     }
     else
       FAIL();
@@ -68,52 +64,8 @@ int test_camera(playerc_client_t *client, int index)
     return -1;
   }
   PASS();
-  
+
   playerc_camera_destroy(device);
-  
+
   return 0;
 }
-
-
-// Save a camera image
-// Assumes the image is RGB888
-void test_camera_save(playerc_camera_t *device, const char *filename)
-{
-  int i;
-  uint8_t pix;
-  FILE *file;
-
-  file = fopen(filename, "w+");
-  if (file == NULL)
-    return;
-
-  // Write ppm header
-  fprintf(file, "P6\n%d %d\n%d\n", device->width, device->height, 255);
-  
-  // Write data here
-  for (i = 0; i < device->image_size; i++)
-  {
-    if (device->format == PLAYER_CAMERA_FORMAT_RGB888)
-    {
-      pix = device->image[i];
-      fputc(pix, file);
-    }
-    else if (device->format == PLAYER_CAMERA_FORMAT_MONO8)
-    {
-      pix = device->image[i];
-      fputc(pix, file);
-      fputc(pix, file);
-      fputc(pix, file);
-    }
-    else
-    {
-      printf("unsupported image format");
-      break;
-    }
-  }
-
-  fclose(file);
-
-  return;
-}
-
