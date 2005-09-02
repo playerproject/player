@@ -74,6 +74,9 @@ playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
   device->pose[2] = 0.0;
   device->size[0] = 0.15;
   device->size[1] = 0.15;
+  device->robot_pose[0] = 0.0;
+  device->robot_pose[1] = 0.0;
+  device->robot_pose[2] = 0.0;
 
   return device;
 }
@@ -108,12 +111,11 @@ void playerc_laser_putmsg(playerc_laser_t *device,
 {
   int i;
   double r, b, db;
-  player_laser_data_t* scan_data;
 
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_LASER_DATA_SCAN))
   {
-    scan_data = (player_laser_data_t*)data;
+    player_laser_data_t* scan_data = (player_laser_data_t*)data;
     assert(scan_data->ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
 
     b = scan_data->min_angle;
@@ -137,6 +139,38 @@ void playerc_laser_putmsg(playerc_laser_t *device,
 
     device->scan_count = scan_data->ranges_count;
     device->scan_id = scan_data->id;
+  }
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_LASER_DATA_SCANPOSE))
+  {
+    player_laser_data_scanpose_t* scan_data = 
+            (player_laser_data_scanpose_t*)data;
+    assert(scan_data->scan.ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
+
+    b = scan_data->scan.min_angle;
+    db = scan_data->scan.resolution;
+
+    device->scan_start = b;
+    device->scan_res = db;
+
+    for (i = 0; i < scan_data->scan.ranges_count; i++)
+    {
+      r = scan_data->scan.ranges[i];
+      assert(r >= 0);
+      device->ranges[i] = r;
+      device->scan[i][0] = r;
+      device->scan[i][1] = b;
+      device->point[i][0] = r * cos(b);
+      device->point[i][1] = r * sin(b);
+      device->intensity[i] = scan_data->scan.intensity[i];
+      b += db;
+    }
+
+    device->scan_count = scan_data->scan.ranges_count;
+    device->scan_id = scan_data->scan.id;
+    device->robot_pose[0] = scan_data->pose.px;
+    device->robot_pose[1] = scan_data->pose.py;
+    device->robot_pose[2] = scan_data->pose.pa;
   }
   else
     PLAYERC_WARN2("skipping laser message with unknown type/subtype: %d/%d\n",

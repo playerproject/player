@@ -988,6 +988,9 @@ typedef struct
   double pose[3];
   double size[2];
 
+  /** Robot pose (m,m,rad), filled in if the scan came with a pose attached */
+  double robot_pose[3];
+
   /** Is intesity data returned. */
   int intensity_on;
 
