@@ -152,7 +152,7 @@ if __name__ == '__main__':
       elif type == 'uint16_t':
         jtype = 'int'
       elif type == 'int8_t':
-        jtype = 'short'
+        jtype = 'byte'
       elif type == 'uint8_t':
         jtype = 'short'
       elif type == 'char':
