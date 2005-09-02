@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-dnl Initialize autoconf with name and version of package to be built. 
+dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
 AC_INIT(player,2.0-pre4)
 
@@ -85,7 +85,7 @@ AC_ARG_WITH(jni_mddir, [  --with-jni_mddir=<directory containing jni_md.h],,
 with_jni_mddir=/usr/lib/j2sdk1.5-sun/include/linux)
 
 dnl Look for the JNI headers.  I'm using AC_CHECK_FILE, rather than
-dnl AC_CHECK_HEADER, because I can't figure out how to get the latter to 
+dnl AC_CHECK_HEADER, because I can't figure out how to get the latter to
 dnl successfully compile a test program that #include's <jni.h>
 AC_CHECK_FILE($with_jnidir/jni.h, have_jni_h=yes, have_jni_h=no)
 AC_CHECK_FILE($with_jni_mddir/jni_md.h, have_jni_md_h=yes, have_jni_md_h=no)
@@ -107,7 +107,7 @@ dnl client tests are compiled by default
 AC_ARG_ENABLE(tests,   [  --disable-tests          Don't build client tests],,
 enable_tests=yes)
 AM_CONDITIONAL(WITH_TESTS, test "x$enable_tests" = "xyes")
-AC_ARG_ENABLE(profile, [  --enable-profile        Compile with profiling information (with the -pg and -fprofile-arcs compile flags)],  
+AC_ARG_ENABLE(profile, [  --enable-profile        Compile with profiling information (with the -pg and -fprofile-arcs compile flags)],
     if test "x$enableval" = "xyes"; then
         CXXFLAGS="$CXXFLAGS -pg -fprofile-arcs"
         CFLAGS="$CFLAGS -pg -fprofile-arcs"
@@ -124,18 +124,18 @@ AC_ARG_ENABLE(optimize, [  --disable-optimize      Compile without optimization 
     else
         CXXFLAGS="$CXXFLAGS -$enableval"
         CFLAGS="$CFLAGS -$enableval"
-    fi, 
+    fi,
 )
 
 AC_ARG_ENABLE(debug,    [  --disable-debug         Compile without debugging information (-g)],
     if test "x$enableval" = "xyes"; then
-        CXXFLAGS="$CXXFLAGS -g" 
-        CFLAGS="$CFLAGS -g" 
+        CXXFLAGS="$CXXFLAGS -g"
+        CFLAGS="$CFLAGS -g"
     elif test "x$enableval" = "xno"; then
         CXXFLAGS=`echo $CXXFLAGS | sed -e s/-g//g`
         CFLAGS=`echo $CFLAGS | sed -e s/-g//g`
-    fi, 
-) 
+    fi,
+)
 
 dnl use the old compiler
 AC_ARG_WITH(glibc21, [  --with-glibc21          Use the glibc 2.1 compilers],,
@@ -145,7 +145,7 @@ if test "x$with_glibc21" = "xyes"; then
   CC=i386-glibc21-linux-gcc
 fi
 
-AC_ARG_ENABLE(alldrivers, 
+AC_ARG_ENABLE(alldrivers,
               [  --disable-alldrivers         Don't build any drivers],,
               enable_alldrivers=yes)
 
@@ -166,7 +166,7 @@ dnl ************************************************************************
 dnl End of macros from acinclude.m4
 dnl ************************************************************************
 
-dnl Set up GTK/GNOME for the various GUIs 
+dnl Set up GTK/GNOME for the various GUIs
 dnl we do it before configuring drivers in case they have GUI bits
 dnl The logic is: only use pkg-config
 if test "x$have_pkg_config" = "xno"; then
@@ -176,20 +176,20 @@ if test "x$have_pkg_config" = "xno"; then
   with_gnomecanvas=no
 else
   dnl pkg-config is available, so we use it.
-  dnl check for libgnomecanvas and gtk, which some utils 
+  dnl check for libgnomecanvas and gtk, which some utils
   dnl (e.g., playernav, playervcr) need
-  PKG_CHECK_MODULES(GNOMECANVAS, libgnomecanvas-2.0, 
-                    with_gnomecanvas=yes, 
+  PKG_CHECK_MODULES(GNOMECANVAS, libgnomecanvas-2.0,
+                    with_gnomecanvas=yes,
                     with_gnomecanvas=no)
-  PKG_CHECK_MODULES(GTK, gtk+-2.0, 
-                    with_gtk=yes, 
+  PKG_CHECK_MODULES(GTK, gtk+-2.0,
+                    with_gtk=yes,
                     with_gtk=no)
 fi
 AM_CONDITIONAL(WITH_GNOMECANVAS, test "x$with_gnomecanvas" = "xyes")
 AM_CONDITIONAL(WITH_GTK, test "x$with_gtk" = "xyes")
 
 dnl Include RTK gui support (for debugging)
-AC_ARG_ENABLE(rtkgui, 
+AC_ARG_ENABLE(rtkgui,
 [  --enable-rtkgui         Include RTK GUI in server (debugging)],, enable_rtkgui=no)
 if test "x$with_gtk" = "xyes"; then
   if test "x$enable_rtkgui" = "xyes"; then
@@ -204,7 +204,7 @@ dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h jpeglib.h)
 
 dnl Test for socklen_t and define it to int if it's not there.
-dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t 
+dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t
 dnl isn't in the standard headers (autoconf-2.5 has better methods for this)
 AC_MSG_CHECKING(if socklen_t is defined)
 AC_TRY_COMPILE(
@@ -235,12 +235,12 @@ AC_CHECK_FUNCS(sigblock getaddrinfo)
 AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
-AC_CHECK_LIB(ltdl, lt_dlopenext, 
+AC_CHECK_LIB(ltdl, lt_dlopenext,
              have_libltdl=yes
              AC_DEFINE(HAVE_LIBLTDL, 1, [Define to 1 if you have the ltdl library (-lltdl). ])
              LIBS="$LIBS -lltdl",
              have_libltdl=no)
-AC_CHECK_LIB(c_r, pthread_create, 
+AC_CHECK_LIB(c_r, pthread_create,
              [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
 AC_CHECK_LIB(jpeg,jpeg_read_header,
              have_libjpeg=yes
@@ -256,10 +256,18 @@ if test "x$have_pkg_config" = "xyes"; then
       AC_DEFINE(HAVE_OPENCV, 1, [OpenCV library is present])
    fi
 fi
+AM_CONDITIONAL(WITH_OPENCV, test "x$with_opencv" = "xyes")
+
+if test "x$have_pkg_config" = "xyes"; then
+  PKG_CHECK_MODULES(IMAGEMAGICK, ImageMagick++,
+                    with_imagemagick=yes,
+                    with_imagemagick=no)
+fi
+AM_CONDITIONAL(WITH_IMAGEMAGICK, test "x$with_imagemagick" = "xyes")
 
 dnl Optionally build python bindings to libplayerc (libplayerc-py)
 AC_ARG_ENABLE(libplayerc-py,
-     [  --disable-libplayerc-py    Don't compile python bindings for libplayerc],, 
+     [  --disable-libplayerc-py    Don't compile python bindings for libplayerc],,
      enable_libplayerc_py=yes)
 if test "x$enable_libplayerc_py" = "xno"; then
   enable_libplayerc_py=no
@@ -278,71 +286,72 @@ AM_CONDITIONAL(INCLUDE_LIBPLAYERC_PY, test "x$enable_libplayerc_py" = "xyes")
 
 dnl Create the following Makefiles (from the Makefile.ams)
 AC_OUTPUT(Makefile
-          rtk2/Makefile 
-          replace/Makefile 
-          doc/Makefile 
-          libplayerjpeg/Makefile 
-          libplayercore/Makefile 
-          libplayercore/bindings/Makefile 
-          libplayercore/bindings/java/Makefile 
+          rtk2/Makefile
+          replace/Makefile
+          doc/Makefile
+          libplayerjpeg/Makefile
+          libplayercore/Makefile
+          libplayercore/bindings/Makefile
+          libplayercore/bindings/java/Makefile
           libplayercore/playercore.pc
           libplayercore/playererror.pc
-          libplayerxdr/Makefile 
+          libplayerxdr/Makefile
           libplayerxdr/playerxdr.pc
-          libplayertcp/Makefile 
+          libplayertcp/Makefile
           libplayertcp/playertcp.pc
-          server/Makefile 
-          server/libplayerdrivers/Makefile 
+          server/Makefile
+          server/libplayerdrivers/Makefile
           server/libplayerdrivers/playerdrivers.pc
-          server/drivers/Makefile 
-          server/drivers/gps/Makefile 
-          server/drivers/shell/Makefile 
-          server/drivers/mixed/Makefile 
-          server/drivers/position/Makefile 
-          server/drivers/audio/Makefile 
+          server/drivers/Makefile
+          server/drivers/gps/Makefile
+          server/drivers/shell/Makefile
+          server/drivers/mixed/Makefile
+          server/drivers/position/Makefile
+          server/drivers/audio/Makefile
           server/drivers/audiodsp/Makefile
           server/drivers/audiomixer/Makefile
-          server/drivers/camera/Makefile 
+          server/drivers/camera/Makefile
           server/drivers/camera/v4l/Makefile
           server/drivers/camera/1394/Makefile
           server/drivers/camera/compress/Makefile
           server/drivers/camera/imageseq/Makefile
-          server/drivers/fiducial/Makefile 
-          server/drivers/ptz/Makefile 
-          server/drivers/laser/Makefile 
-          server/drivers/waveform/Makefile 
-          server/drivers/blobfinder/Makefile 
+          server/drivers/camera/sphere/Makefile
+          server/drivers/fiducial/Makefile
+          server/drivers/ptz/Makefile
+          server/drivers/laser/Makefile
+          server/drivers/waveform/Makefile
+          server/drivers/blobfinder/Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
-          server/drivers/wifi/Makefile 
-          server/drivers/speech/Makefile 
-          server/drivers/speech/recognition/Makefile 
+          server/drivers/wifi/Makefile
+          server/drivers/speech/Makefile
+          server/drivers/speech/recognition/Makefile
           server/drivers/mixed/cmucam2/Makefile
-          server/drivers/mixed/p2os/Makefile 
-          server/drivers/mixed/rflex/Makefile 
-          server/drivers/mixed/reb/Makefile 
-          server/drivers/mixed/khepera/Makefile 
+          server/drivers/mixed/p2os/Makefile
+          server/drivers/mixed/rflex/Makefile
+          server/drivers/mixed/reb/Makefile
+          server/drivers/mixed/khepera/Makefile
           server/drivers/mixed/rmp/Makefile
           server/drivers/mixed/nomad/Makefile
           server/drivers/mixed/botrics/Makefile
           server/drivers/mixed/clodbuster/Makefile
           server/drivers/mixed/evolution/Makefile
           server/drivers/mixed/evolution/er1/Makefile
-          server/drivers/gazebo/Makefile 
-          server/drivers/planner/Makefile 
-          server/drivers/planner/wavefront/Makefile 
-          server/drivers/position/isense/Makefile 
-          server/drivers/position/microstrain/Makefile 
-          server/drivers/position/vfh/Makefile 
-          server/drivers/position/ascension/Makefile 
-          server/drivers/position/bumpersafe/Makefile 
+          server/drivers/gazebo/Makefile
+          server/drivers/planner/Makefile
+          server/drivers/planner/wavefront/Makefile
+          server/drivers/position/isense/Makefile
+          server/drivers/position/microstrain/Makefile
+          server/drivers/position/vfh/Makefile
+          server/drivers/position/ascension/Makefile
+          server/drivers/position/bumpersafe/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile
           server/drivers/service_adv/Makefile
           server/drivers/map/Makefile
-          server/drivers/joystick/Makefile 
-          client_libs/Makefile 
+          server/drivers/joystick/Makefile
+          client_libs/Makefile
 dnl          client_libs/c/Makefile
 dnl          client_libs/c/playercclient.pc
 dnl          client_libs/c++/Makefile
@@ -362,6 +371,7 @@ dnl          client_libs/libplayerpacket/Makefile
 dnl          examples/c++/Makefile
 dnl          examples/libplayerc/Makefile
           utils/Makefile
+    utils/playercam/Makefile
           utils/playerv/Makefile
 dnl          utils/playerjoy/Makefile
           utils/playernav/Makefile
