@@ -138,7 +138,6 @@ Andrew Howard
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 #include <time.h>
 
@@ -152,7 +151,7 @@ Andrew Howard
 #include "ccvt.h"        // For YUV420P-->RGB conversion
 
 
-const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms)
+const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms) => max 100 fps
 
 // Time for timestamps
 extern PlayerTime *GlobalTime;
@@ -488,35 +487,35 @@ int CameraV4L::ProcessMessage(MessageQueue* resp_queue,
 void CameraV4L::RefreshData()
 {
   int i;
-  size_t image_size, size;
+  size_t image_count, size;
   unsigned char * ptr1, * ptr2;
 
   // Compute size of image
-  image_size = this->width * this->height * this->depth / 8;
+  image_count = this->width * this->height * this->depth / 8;
 
   // Set the image properties
-  this->data.width = htons(this->width);
-  this->data.height = htons(this->height);
-  this->data.bpp = this->depth;
+  this->data.width       = this->width;
+  this->data.height      = this->height;
+  this->data.bpp         = this->depth;
+  this->data.image_count  = image_count;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->data.image_size = htonl(image_size);
 
-  assert(image_size <= sizeof(this->data.image));
+  assert(image_count <= sizeof(this->data.image));
 
   // Copy the image pixels
   if (this->frame->format == VIDEO_PALETTE_YUV420P)
-       {// do conversion to RGB (which is bgr at the moment for some reason?)
-      assert(image_size <= (size_t) this->rgb_converted_frame->size);
-      ccvt_420p_bgr24(this->width, this->height,
-          (unsigned char*) this->frame->data,
-          (unsigned char*) this->rgb_converted_frame->data);
-      ptr1 = (unsigned char *)this->rgb_converted_frame->data;
-       }
+  {// do conversion to RGB (which is bgr at the moment for some reason?)
+    assert(image_count <= (size_t) this->rgb_converted_frame->size);
+    ccvt_420p_bgr24(this->width, this->height,
+                    (unsigned char*) this->frame->data,
+                    (unsigned char*) this->rgb_converted_frame->data);
+    ptr1 = (unsigned char *)this->rgb_converted_frame->data;
+  }
   else
-       {
-      assert(image_size <= (size_t) this->frame->size);
-      ptr1 = (unsigned char *)this->frame->data;
-       }
+  {
+    assert(image_count <= (size_t) this->frame->size);
+    ptr1 = (unsigned char *)this->frame->data;
+  }
   ptr2 = this->data.image;
   switch (this->depth)
   {
@@ -542,19 +541,26 @@ void CameraV4L::RefreshData()
     }
     break;
   default:
-    memcpy(ptr2, ptr1, image_size);
+    memcpy(ptr2, ptr1, image_count);
   }
 
   // Copy data to server
-  size = sizeof(this->data) - sizeof(this->data.image) + image_size;
+  size = sizeof(this->data) - sizeof(this->data.image) + image_count;
 
   struct timeval timestamp;
-  timestamp.tv_sec = this->tsec;
+  timestamp.tv_sec  = this->tsec;
   timestamp.tv_usec = this->tusec;
+
+  // a hack to get this working
+  /*Publish(this->device_addr, NULL,
+          PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+          reinterpret_cast<void*>(&this->data), sizeof(this->data), NULL);*/
+
+  /* We should do this to be efficient */
   Publish(this->device_addr, NULL,
-          PLAYER_MSGTYPE_DATA, 0,
+          PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&this->data), size, NULL);
-  //PutData((void*) &this->data, size, &timestamp);
+  /**/
 
   return;
 }
