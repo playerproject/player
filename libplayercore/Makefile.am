@@ -44,4 +44,6 @@ coreinclude_HEADERS = configfile.h \
                       playertime.h \
                       plugins.h \
                       wallclocktime.h \
-		      error.h
+		      error.h \
+                      addr_util.h
+
