@@ -161,6 +161,16 @@ typedef struct player_pose
   float px, py, pa;
 } player_pose_t;
 
+/** @brief A 3D pose
+ * sensor. */
+typedef struct player_pose3d
+{
+  /** X, Y, Z [m] */
+  float px, py, pz;
+  /** roll, pitch, yaw [rad] */
+  float proll, ppitch, pyaw;
+} player_pose3d_t;
+
 /** @brief A rectangular bounding box, used to define the size of an object */
 typedef struct player_bbox
 {
@@ -643,6 +653,15 @@ This interface has no commands or configuration requests.
 @{
 */
 
+/* The various configuration request types. */
+//   - currently none
+
+// data types
+#define PLAYER_CAMERA_DATA_STATE             1
+
+// Command types
+//   - currently none
+
 /** Image dimensions. */
 #define PLAYER_CAMERA_IMAGE_WIDTH  640
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
@@ -657,7 +676,7 @@ This interface has no commands or configuration requests.
 /** Image format : 24-bit color (8 bits R, 8 bits G, 8 bits B). */
 #define PLAYER_CAMERA_FORMAT_RGB888 5
 
-/* Compression methods. */
+/** Compression methods. */
 #define PLAYER_CAMERA_COMPRESS_RAW  0
 #define PLAYER_CAMERA_COMPRESS_JPEG 1
 
@@ -678,7 +697,7 @@ typedef struct player_camera_data
       compression. */
   uint32_t compression;
   /** Size of image data as stored in image buffer (bytes) */
-  uint32_t image_size;
+  uint32_t image_count;
   /** Compressed image data (byte-aligned, row major order).
       Multi-byte image formats (such as MONO16) must be converted
       to network byte ordering. */
@@ -2491,12 +2510,25 @@ The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 @{
 */
 
+/* The various configuration request types. */
 /** Code for generic configuration request */
-#define PLAYER_PTZ_GENERIC_CONFIG  1
+#define PLAYER_PTZ_REQ_GENERIC         1
 /** Code for control mode configuration request */
-#define PLAYER_PTZ_CONTROL_MODE    2
+#define PLAYER_PTZ_REQ_CONTROL_MODE    2
 /** Code for autoservo configuration request */
-#define PLAYER_PTZ_AUTOSERVO       3
+#define PLAYER_PTZ_REQ_AUTOSERVO       3
+/** geometry request */
+#define PLAYER_PTZ_REQ_GEOM            4
+
+// data types
+/** typical state data */
+#define PLAYER_PTZ_DATA_STATE      1
+/** geometrical pose data */
+#define PLAYER_PTZ_GEOM_STATE      2
+
+// Command types
+/** adjust the ptz */
+#define PLAYER_PTZ_CMD_STATE       1
 
 /** Maximum command length for use with PLAYER_PTZ_GENERIC_CONFIG_REQ,
     based on the Sony EVID30 camera right now. */
@@ -2539,18 +2571,31 @@ typedef struct player_ptz_cmd
   float panspeed, tiltspeed;
 } player_ptz_cmd_t;
 
+/** @brief Configuration request: Query geometry.
+
+To request ptz geometry, set the subtype to PLAYER_PTZ_GET_GEOM_REQ
+and leave the other fields empty.  The server will reply with the pose
+and size fields filled in.  */
+typedef struct player_ptz_geom
+{
+  /** Pose of the ptz base*/
+  player_pose3d_t pos;
+  /** Dimensions of the base [m, m, m]. */
+  uint16_t size[3];
+} player_ptz_geom_t;
+
 /** @brief Configuration request: Generic request
 
 This ioctl allows the client to send a unit-specific command to the unit.
 Whether data is returned depends on the command that was sent.  The server
 may fill in "config" with a reply if applicable. */
-typedef struct player_ptz_generic_config
+typedef struct player_ptz_req_generic
 {
   /** Length of data in config buffer */
   uint32_t  config_count;
   /** Buffer for command/reply */
   uint32_t  config[PLAYER_PTZ_MAX_CONFIG_LEN];
-} player_ptz_generic_config_t;
+} player_ptz_req_generic_t;
 
 /** @brief Configuration request: Control mode.
 
@@ -2558,12 +2603,12 @@ This ioctl allows the client to switch between position and velocity
 control, for those drivers that support it.  Note that this request
 changes how the driver interprets forthcoming commands from all
 clients. */
-typedef struct player_ptz_control_mode_config
+typedef struct player_ptz_req_control_mode
 {
   /** Mode to use: must be either PLAYER_PTZ_VELOCITY_CONTROL or
       PLAYER_PTZ_POSITION_CONTROL. */
   uint32_t mode;
-} player_ptz_control_mode_config_t;
+} player_ptz_req_control_mode_t;
 
 /** @} */
 
