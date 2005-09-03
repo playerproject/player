@@ -49,9 +49,8 @@ PlayerTCP::PlayerTCP()
   this->listen_ufds = (struct pollfd*)NULL;
 
   // Create a buffer to hold decoded incoming messages
-  this->decode_readbuffersize = PLAYERTCP_READBUFFER_SIZE;
-  this->decode_readbuffer = 
-          (char*)calloc(1,this->decode_readbuffersize);
+  this->decode_readbuffersize = PLAYER_MAX_MESSAGE_SIZE;
+  this->decode_readbuffer = (char*)malloc(this->decode_readbuffersize);
   assert(this->decode_readbuffer);
 
   if(hostname_to_packedaddr(&this->host,"localhost") < 0)
@@ -68,8 +67,10 @@ PlayerTCP::~PlayerTCP()
   for(int i=0;i<this->num_clients;i++)
     this->Close(i);
   free(this->clients);
+  free(this->client_ufds);
   free(this->listeners);
   free(this->listen_ufds);
+  free(this->decode_readbuffer);
 }
 
 int
@@ -436,6 +437,7 @@ PlayerTCP::WriteClient(int cli)
           PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
                        hdr.addr.interf, hdr.addr.index, hdr.subtype);
           client->writebufferlen = 0;
+          delete msg;
           return(0);
         }
 
@@ -449,10 +451,12 @@ PlayerTCP::WriteClient(int cli)
         {
           PLAYER_ERROR("failed to encode msg header");
           client->writebufferlen = 0;
+          delete msg;
           return(0);
         }
 
         client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
+        delete msg;
       }
     }
     else
@@ -615,28 +619,6 @@ PlayerTCP::ParseBuffer(int cli)
       }
       else
       {
-        // Make sure there's room in the buffer for the decoded messsage.
-        // Because XDR can only inflate the size of a message, the encoded
-        // length is an upper bound on the decoded length.
-        if(this->decode_readbuffersize < msglen)
-        {
-          // Get at least twice as much space
-          this->decode_readbuffersize = 
-                  MAX(this->decode_readbuffersize * 2, msglen);
-          // Did we hit the limit (or overflow and become negative)?
-          if((this->decode_readbuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
-             (this->decode_readbuffersize < 0))
-          {
-            PLAYER_WARN1("allocating maximum %d bytes to decoded message buffer",
-                         PLAYERXDR_MAX_MESSAGE_SIZE);
-            this->decode_readbuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
-          }
-          this->decode_readbuffer = (char*)realloc(this->decode_readbuffer,
-                                                   this->decode_readbuffersize);
-          assert(this->decode_readbuffer);
-          memset(this->decode_readbuffer, 0, this->decode_readbuffersize);
-        }
-
 	if((decode_msglen =
 	    (*packfunc)(client->readbuffer + PLAYERXDR_MSGHDR_SIZE,
 			msglen - PLAYERXDR_MSGHDR_SIZE,

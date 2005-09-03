@@ -177,6 +177,7 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
     (player_pack_fn_t)player_sonar_geom_pack},
 
+  /* This NULL element signals the end of the list; don't remove it */
   {0,0,0,NULL}
 };
 

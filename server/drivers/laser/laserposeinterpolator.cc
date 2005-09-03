@@ -122,6 +122,7 @@ class LaserPoseInterp : public Driver
     
     // Constructor
     LaserPoseInterp(ConfigFile* cf, int section);
+    ~LaserPoseInterp();
 
     int Setup();
     int Shutdown();
@@ -190,6 +191,12 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   assert(this->scantimes);
 
   return;
+}
+
+LaserPoseInterp::~LaserPoseInterp()
+{
+  free(this->scans);
+  free(this->scantimes);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
