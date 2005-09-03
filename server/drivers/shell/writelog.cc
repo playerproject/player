@@ -143,10 +143,6 @@ struct WriteLogDevice
   public: player_devaddr_t addr;
   public: Device *device;
   public: int cameraFrame;
-  // only filled out for sonar devices; we cache the sonar geometry
-  // right after subscribing, then prefix every line of sonar data
-  // with this info.
-  public: player_sonar_geom_t sonar_geom;
 };
 
 
@@ -192,9 +188,7 @@ class WriteLog: public Driver
                               player_position2d_data_t *data);
 
   // Write sonar data to file
-  private: int WriteSonar(player_msghdr_t* hdr,
-                          player_sonar_data_t *data, 
-                          WriteLogDevice* device);
+  private: int WriteSonar(player_msghdr_t* hdr, void *data);
 
 #if 0
   // Write blobfinder data to file
@@ -344,6 +338,12 @@ int WriteLog::Setup()
   int i;
   WriteLogDevice *device;
 
+  if(this->OpenFile() < 0)
+  {
+    PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
+    return(-1);
+  }
+
   // Subscribe to the underlying devices
   for (i = 0; i < this->device_count; i++)
   {
@@ -366,29 +366,42 @@ int WriteLog::Setup()
 
     if (device->addr.interf == PLAYER_SONAR_CODE)
     {
-      // We need to cache the sonar geometry
+      // Get the sonar geometry
       Message* msg;
       if(!(msg = device->device->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
                                          PLAYER_SONAR_REQ_GET_GEOM,
-                                         NULL, 0, NULL)))
+                                         NULL, 0, NULL, false)))
       {
         // oh well.
         PLAYER_WARN("unable to get sonar geometry");
-        device->sonar_geom.poses_count = 0;
       }
       else
       {
-        // cache it
-        device->sonar_geom = *((player_sonar_geom_t*)msg->GetPayload());
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
       }
     }
-  }
-
-  if(this->OpenFile() < 0)
-  {
-    PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
-    return(-1);
+    else if (device->addr.interf == PLAYER_LASER_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_LASER_REQ_GET_GEOM,
+                                         NULL, 0, NULL, false)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get laser geometry");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
   }
 
   // Enable/disable logging, according to default set in config file
@@ -441,6 +454,13 @@ WriteLog::OpenFile()
   // Write the file header
   fprintf(this->file, "## Player version %s \n", VERSION);
   fprintf(this->file, "## File version %s \n", "0.3.0");
+
+  fprintf(this->file, "## Format: \n");
+  fprintf(this->file, "## - Messages are newline-separated\n");
+  fprintf(this->file, "## - Common header to each message is:\n");
+  fprintf(this->file, "##   time     host   robot  interface index  type   subtype\n");
+  fprintf(this->file, "##   (double) (uint) (uint) (string)  (uint) (uint) (uint)\n");
+  fprintf(this->file, "## - Following the common header is the message payload \n");
 
   return(0);
 }
@@ -609,12 +629,13 @@ void WriteLog::Write(WriteLogDevice *device,
   //gethostname(host, sizeof(host));
   
   // Write header info
-  fprintf(this->file, "%014.3f %u %u %s %02u %02u ",
+  fprintf(this->file, "%014.3f %u %u %s %02u %03u %03u ",
           hdr->timestamp,
           device->addr.host, 
           device->addr.robot, 
           iface.name, 
           device->addr.index, 
+          hdr->type,
           hdr->subtype);
           
 
@@ -629,7 +650,7 @@ void WriteLog::Write(WriteLogDevice *device,
       retval = this->WritePosition(hdr, (player_position2d_data_t*) data);
       break;
     case PLAYER_SONAR_CODE:
-      retval = this->WriteSonar(hdr, (player_sonar_data_t*) data, device);
+      retval = this->WriteSonar(hdr, data);
       break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
@@ -706,39 +727,62 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
   size_t i;
   player_laser_data_t* scan;
   player_laser_data_scanpose_t* scanpose;
+  player_laser_geom_t* geom;
 
-  // Check the subtype
-  switch(hdr->subtype)
+  // Check the type
+  switch(hdr->type)
   {
-    case PLAYER_LASER_DATA_SCAN:
-      scan = (player_laser_data_t*)data;
-      // Note that, in this format, we need a lot of precision in the
-      // resolution field.
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_LASER_DATA_SCAN:
+          scan = (player_laser_data_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
 
-      fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
-              scan->min_angle, scan->max_angle,
-              scan->resolution, scan->ranges_count);
+          fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
+                  scan->min_angle, scan->max_angle,
+                  scan->resolution, scan->ranges_count);
 
-      for (i = 0; i < scan->ranges_count; i++)
-        fprintf(this->file, "%.3f %2d ",
-                scan->ranges[i], scan->intensity[i]);
-      return(0);
+          for (i = 0; i < scan->ranges_count; i++)
+            fprintf(this->file, "%.3f %2d ",
+                    scan->ranges[i], scan->intensity[i]);
+          return(0);
 
-    case PLAYER_LASER_DATA_SCANPOSE:
-      scanpose = (player_laser_data_scanpose_t*)data;
-      // Note that, in this format, we need a lot of precision in the
-      // resolution field.
+        case PLAYER_LASER_DATA_SCANPOSE:
+          scanpose = (player_laser_data_scanpose_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
 
-      fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %04d ",
-              scanpose->pose.px, scanpose->pose.py, scanpose->pose.pa,
-              scanpose->scan.min_angle, scanpose->scan.max_angle,
-              scanpose->scan.resolution, scanpose->scan.ranges_count);
+          fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %04d ",
+                  scanpose->pose.px, scanpose->pose.py, scanpose->pose.pa,
+                  scanpose->scan.min_angle, scanpose->scan.max_angle,
+                  scanpose->scan.resolution, scanpose->scan.ranges_count);
 
-      for (i = 0; i < scanpose->scan.ranges_count; i++)
-        fprintf(this->file, "%.3f %2d ",
-                scanpose->scan.ranges[i], scanpose->scan.intensity[i]);
-      return(0);
+          for (i = 0; i < scanpose->scan.ranges_count; i++)
+            fprintf(this->file, "%.3f %2d ",
+                    scanpose->scan.ranges[i], scanpose->scan.intensity[i]);
+          return(0);
 
+        default:
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_LASER_REQ_GET_GEOM:
+          geom = (player_laser_geom_t*)data;
+          fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f",
+                  geom->pose.px,
+                  geom->pose.py,
+                  geom->pose.pa,
+                  geom->size.sl,
+                  geom->size.sw);
+          return(0);
+        default:
+          return(-1);
+      }
     default:
       return(-1);
   }
@@ -794,33 +838,63 @@ The format for each @ref player_interface_sonar message is:
     - range (float): in meters
 */
 int 
-WriteLog::WriteSonar(player_msghdr_t* hdr,
-                     player_sonar_data_t *data, 
-                     WriteLogDevice* device)
+WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
 {
   unsigned int i;
+  player_sonar_geom_t* geom;
+  player_sonar_data_t* range_data;
 
-  // Check the subtype
-  switch(hdr->subtype)
+  // Check the type
+  switch(hdr->type)
   {
-    case PLAYER_SONAR_DATA_RANGES:
-      // Note that, in this format, we need a lot of precision in the
-      // resolution field.
+    case PLAYER_MSGTYPE_DATA:
 
-      // Format:
-      //   pose_count x0 y0 a0 x1 y1 a1 ...  range_count r0 r1 ...
-      fprintf(this->file, "%u ", device->sonar_geom.poses_count);
-      for(i=0;i<device->sonar_geom.poses_count;i++)
-        fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
-                device->sonar_geom.poses[i].px,
-                device->sonar_geom.poses[i].py,
-                device->sonar_geom.poses[i].pa);
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_SONAR_DATA_GEOM:
+          // Format:
+          //   pose_count x0 y0 a0 x1 y1 a1 ...  
+          geom = (player_sonar_geom_t*)data;
+          fprintf(this->file, "%u ", geom->poses_count);
+          for(i=0;i<geom->poses_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
+                    geom->poses[i].px,
+                    geom->poses[i].py,
+                    geom->poses[i].pa);
+          return(0);
 
-      fprintf(this->file, "%u ", data->ranges_count);
-      for(i=0;i<data->ranges_count;i++)
-        fprintf(this->file, "%.3f ", data->ranges[i]);
+        case PLAYER_SONAR_DATA_RANGES:
+          // Format:
+          //   range_count r0 r1 ...
+          range_data = (player_sonar_data_t*)data;
+          fprintf(this->file, "%u ", range_data->ranges_count);
+          for(i=0;i<range_data->ranges_count;i++)
+            fprintf(this->file, "%.3f ", range_data->ranges[i]);
 
-      return(0);
+          return(0);
+        default:
+          return(-1);
+      }
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_SONAR_REQ_GET_GEOM:
+          // Format:
+          //   pose_count x0 y0 a0 x1 y1 a1 ...  
+          geom = (player_sonar_geom_t*)data;
+          fprintf(this->file, "%u ", geom->poses_count);
+          for(i=0;i<geom->poses_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
+                    geom->poses[i].px,
+                    geom->poses[i].py,
+                    geom->poses[i].pa);
+
+          return(0);
+        default:
+          return(-1);
+      }
     default:
       return(-1);
   }
