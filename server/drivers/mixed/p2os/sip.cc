@@ -97,7 +97,7 @@ void SIP::Fill(player_p2os_data_t* data)
   data->dio.digin = htonl((unsigned int)this->digin);
   //TODO: should do this smarter, based on which analog input is selected
   data->aio.count = (unsigned char)1;
-  data->aio.anin[0] = (unsigned char)this->analog;
+  data->aio.anin[0] = htonl((unsigned int)this->analog);
 
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob
   ** (and therefore one channel too), so everything else is zero.  All
