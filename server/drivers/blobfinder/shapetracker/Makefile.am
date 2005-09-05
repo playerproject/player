@@ -1,9 +1,9 @@
-SUBDIRS = .
+AM_CPPFLAGS = -Wall -I$(top_srcdir) @OPENCV_CFLAGS@
 
-noinst_LIBRARIES = @SHAPETRACKER_LIB@ 
+noinst_LTLIBRARIES =
+if INCLUDE_SHAPETRACKER
+noinst_LTLIBRARIES += libshapetracker.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
-
-EXTRA_LIBRARIES = libshapetracker.a 
-
-libshapetracker_a_SOURCES = shapetracker.cc
+libshapetracker_la_SOURCES = shapetracker.cc
+libshapetracker_la_LIBADD = @OPENCV_LIBS@

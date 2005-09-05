@@ -222,13 +222,13 @@ SphereDriver::SphereDriver(ConfigFile* cf, int section)
 {
   // Create camera interface
   if (0 !=
-    cf->ReadDeviceAddr(&(mCameraId),section,"provides",PLAYER_CAMERA_CODE,0,NULL))
+    cf->ReadDeviceAddr(&(mCameraAddr),section,"provides",PLAYER_CAMERA_CODE,-1,NULL))
   {
     PLAYER_ERROR("Could not read camera ID ");
     SetError(-1);
     return;
   }
-  if (0 != AddInterface(mCameraId))
+  if (0 != AddInterface(mCameraAddr))
   {
     PLAYER_ERROR("Could not add camera interface ");
     SetError(-1);
@@ -237,13 +237,13 @@ SphereDriver::SphereDriver(ConfigFile* cf, int section)
 
   // Create Ptz interface
   if (0 !=
-    cf->ReadDeviceAddr(&(mPtzId),section,"provides",PLAYER_PTZ_CODE,0,NULL))
+    cf->ReadDeviceAddr(&(mPtzAddr),section,"provides",PLAYER_PTZ_CODE,-1,NULL))
   {
     PLAYER_ERROR("Could not read ptz ID ");
     SetError(-1);
     return;
   }
-  if (0 != AddInterface(mPtzId))
+  if (0 != AddInterface(mPtzAddr))
   {
     PLAYER_ERROR("Could not add ptz interface ID ");
     SetError(-1);
@@ -251,7 +251,7 @@ SphereDriver::SphereDriver(ConfigFile* cf, int section)
   }
 
   /// @todo is there a replacement clear command?
-  //ClearCommand(mPtzId);
+  //ClearCommand(mPtzAddr);
 
   // Read options from the configuration file
   mSleep           =
@@ -417,17 +417,17 @@ void SphereDriver::Main()
 
 // Process an incoming message
 int SphereDriver::ProcessMessage(MessageQueue* resp_queue,
-                                 player_msghdr * hdr,
-                                 void * data)
+                                 player_msghdr* hdr,
+                                 void* data)
 {
   assert(resp_queue);
   assert(hdr);
   assert(data);
 
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
-                           PLAYER_PTZ_DATA_STATE, mPtzId))
+                           PLAYER_PTZ_CMD_STATE, mPtzAddr))
   {
-    assert(hdr->size == sizeof(player_ptz_data_t));
+    assert(hdr->size == sizeof(player_ptz_cmd_t));
     ProcessCommand(hdr, *reinterpret_cast<player_ptz_cmd_t *>(data));
     return(0);
   }
@@ -499,11 +499,11 @@ void SphereDriver::RefreshData()
   // Copy data to server
   size = sizeof(mCameraData) - sizeof(mCameraData.image) + image_size;
 
-  Publish(mCameraId, NULL,
+  Publish(mCameraAddr, NULL,
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&mCameraData), size, NULL);
 
-  Publish(mPtzId, NULL,
+  Publish(mPtzAddr, NULL,
           PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
           reinterpret_cast<void*>(&mPtzData), sizeof(mPtzData), NULL);
 
