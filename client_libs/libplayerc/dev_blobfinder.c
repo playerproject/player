@@ -97,33 +97,14 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device)
 void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, player_msghdr_t *header,
                                 player_blobfinder_data_t *data, size_t len)
 {
-  int i;
-  player_blobfinder_blob_t *src;
-  playerc_blobfinder_blob_t *dest;
 
-  device->width = data->width;
+  device->width  = data->width;
   device->height = data->height;
-  device->blobs_count = 0;
+  device->blobs_count = data->blobs_count;
 
-  for (i = 0; i < data->blobs_count; i++)
-  {
-    src = data->blobs + i;
-    if (device->blobs_count >= PLAYERC_BLOBFINDER_MAX_BLOBS)
-      break;
-
-    dest = device->blobs + device->blobs_count++;
-
-    dest->id = src->id;
-    dest->color = src->color;
-    dest->x = src->x;
-    dest->y = src->y;
-    dest->left = src->left;
-    dest->right = src->right;
-    dest->top = src->top;
-    dest->bottom = src->bottom;
-    dest->area = src->area;
-    dest->range = src->range / 1000.0;
-  }
+  memcpy(device->blobs,
+         data->blobs,
+         data->blobs_count*sizeof(player_blobfinder_blob_t));
 
   return;
 }

@@ -46,6 +46,7 @@ Where [options] can be:\n"
   -h <hostname> : host that is running player
   -p <port> : the port number of the host
   -i <index> : the index of the camera
+  -b <index> : the index of the blobfinder
   -r <rate> : the refresh rate of the video
 
 For example, to connect to Player on localhost at the default port
@@ -77,23 +78,32 @@ value at that place will be written to standard out.
 #endif
 
 #include <stdint.h>
+#include <assert.h>
 #include <unistd.h>
 #include <math.h>
 #include <string.h>
 #include <gtk/gtk.h>
 #include "playerc.h"
 
-char g_hostname[255] = "localhost";
-int32_t g_port       = 6665;
-int16_t g_index      = 0;
-int16_t g_rate       = 30;
+char g_hostname[255]       = "localhost";
+int32_t g_port             = 6665;
+int16_t g_camera_index     = 0;
+int16_t g_blobfinder_index = 0;
+int16_t g_rate             = 30;
 
-playerc_client_t *g_client = NULL;
-playerc_camera_t *g_camera = NULL;
+playerc_client_t* g_client         = NULL;
+playerc_camera_t* g_camera         = NULL;
+playerc_blobfinder_t* g_blobfinder = NULL;
+
+player_blobfinder_blob_t g_blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
+uint16_t g_blob_count             = 0;
+
+int32_t g_window_width  = 0;
+int32_t g_window_height = 0;
 
 uint16_t    g_width = 0;
 uint16_t   g_height = 0;
-GdkPixbuf *g_pixbuf = NULL;
+GdkPixbuf* g_pixbuf = NULL;
 guchar g_img[PLAYER_CAMERA_IMAGE_SIZE];
 
 int player_init(int argc, char *argv[]);
@@ -104,7 +114,7 @@ int
 get_options(int argc, char **argv)
 {
   int ch=0, errflg=0;
-  const char* optflags = "i:h:p:r:";
+  const char* optflags = "i:h:p:r:b:";
 
   while((ch=getopt(argc, argv, optflags))!=-1)
   {
@@ -112,7 +122,7 @@ get_options(int argc, char **argv)
     {
       /* case values must match long_options */
       case 'i':
-          g_index = atoi(optarg);
+          g_camera_index = atoi(optarg);
           break;
       case 'h':
           strcpy(g_hostname,optarg);
@@ -122,6 +132,9 @@ get_options(int argc, char **argv)
           break;
       case 'r':
           g_rate = atoi(optarg);
+          break;
+      case 'b':
+          g_blobfinder_index = atoi(optarg);
           break;
       case '?':
       case ':':
@@ -133,7 +146,8 @@ get_options(int argc, char **argv)
   return (0);
 }
 
-void print_usage()
+void
+print_usage()
 {
   printf("\n"
          " playercam - camera test utility for a player camera\n\n"
@@ -143,22 +157,50 @@ void print_usage()
          "  -h <hostname>  : host that is running player\n"
          "  -p <port>      : the port number of the host\n"
          "  -i <index>     : the index of the camera\n"
+         "  -b <index>     : the index of the blobfinder\n"
          "  -r <rate>      : the refresh rate of the video\n\n"
          "Currently supports RGB888 and 8-bit grey scale images.\n\n");
 }
-
 
 gint
 render_camera(gpointer data)
 {
   GdkPixbuf *pixbuf = NULL;
+  GdkPixbuf *blobbuf= NULL;
   GdkGC         *gc = NULL;
   GtkWidget *drawing_area = GTK_WIDGET(data);
   gc = GTK_WIDGET(drawing_area)->style->fg_gc[GTK_WIDGET_STATE(GTK_WIDGET(drawing_area))];
+  uint16_t i;
 
   player_update();
 
-  if ((g_width==g_camera->width)&&(g_height==g_camera->height))
+  if (g_blob_count > 0)
+  {
+    // Draw the blobs
+    blobbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 1, 1);
+    for (i=0; i< g_blob_count; ++i)
+    {
+      // shift the color by 8-bits to account for the alpha channel
+      gdk_pixbuf_fill(blobbuf, g_blobs[i].color << 8);
+
+      gdk_pixbuf_composite(blobbuf,
+                           g_pixbuf,
+                           g_blobs[i].left,
+                           g_blobs[i].top,
+                           abs(g_blobs[i].right - g_blobs[i].left),
+                           abs(g_blobs[i].top   - g_blobs[i].bottom),
+                           1, 1, 1, 1, GDK_INTERP_NEAREST, 128);
+    }
+    gdk_pixbuf_unref(blobbuf);
+  }
+
+  gdk_draw_pixbuf(GTK_WIDGET(drawing_area)->window, gc,
+                    g_pixbuf, 0, 0, 0, 0, g_width, g_height,
+                    GDK_RGB_DITHER_NONE, 0, 0);
+
+
+  // scale everything at the end
+  if ((g_width==g_window_width)&&(g_height==g_window_height))
   { // we don't need to worry about scaling
     gdk_draw_pixbuf(GTK_WIDGET(drawing_area)->window, gc,
                     g_pixbuf, 0, 0, 0, 0, g_width, g_height,
@@ -166,10 +208,10 @@ render_camera(gpointer data)
   }
   else
   {
-    pixbuf = gdk_pixbuf_scale_simple(g_pixbuf, g_width, g_height,
-                                     GDK_INTERP_BILINEAR);
+    pixbuf = gdk_pixbuf_scale_simple(g_pixbuf, g_window_width,
+                                     g_window_height, GDK_INTERP_BILINEAR);
     gdk_draw_pixbuf(GTK_WIDGET(drawing_area)->window, gc,
-                    pixbuf, 0, 0, 0, 0, g_width, g_height,
+                    pixbuf, 0, 0, 0, 0, g_window_width, g_window_height,
                     GDK_RGB_DITHER_NONE, 0, 0);
     gdk_pixbuf_unref(pixbuf);
   }
@@ -181,8 +223,8 @@ gint
 resize(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
     GtkAllocation *size = (GtkAllocation*)event;
-    g_width = size->width;
-    g_height = size->height;
+    g_window_width  = size->width;
+    g_window_height = size->height;
     return TRUE;
 }
 
@@ -191,33 +233,39 @@ click(GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   GdkEventButton *bevent = (GdkEventButton *)event;
   int x,y,o;
+  int width, height, rowstride, n_channels;
+  guchar *pixels, *p;
 
   switch ((gint)event->type)
   {
     case GDK_BUTTON_PRESS:
-      x = (int)rint(bevent->x/g_width*g_camera->width);
-      y = (int)rint(bevent->y/g_height*g_camera->height);
+      x = (int)rint(bevent->x*g_width/g_window_width);
+      y = (int)rint(bevent->y*g_height/g_window_height);
       g_print("[%i, %i] = ", x, y);
 
-      switch (g_camera->format)
+      if (NULL != g_camera)
       {
-        case PLAYER_CAMERA_FORMAT_MONO8:
-          /// @todo
-          // I'm not 100% sure this works
-          // need to check when I get time
-          g_print("[%i]\n", g_camera->image[x + g_camera->width*y]);
-          break;
-        case PLAYER_CAMERA_FORMAT_RGB888:
-          /// @todo
-          // I'm not 100% sure this works
-          // need to check when I get time
-          o = x + 3*g_camera->width*y;
-          g_print("[%i %i %i]\n",
-                  g_camera->image[o],
-                  g_camera->image[o+1],
-                  g_camera->image[o+2]);
-          break;
+        switch (g_camera->format)
+        {
+          case PLAYER_CAMERA_FORMAT_MONO8:
+            /// @todo
+            // I'm not 100% sure this works
+            // need to check when I get time
+            g_print("[%i]\n", g_camera->image[x + g_camera->width*y]);
+            break;
+          case PLAYER_CAMERA_FORMAT_RGB888:
+            /// @todo
+            // I'm not 100% sure this works
+            // need to check when I get time
+            o = x*3 + 3*g_camera->width*y;
+            g_print("[%i %i %i]",
+                    g_camera->image[o],
+                    g_camera->image[o+1],
+                    g_camera->image[o+2]);
+            break;
+        }
       }
+      g_print("\n");
       return TRUE;
   }
   /* Event not handled; try parent item */
@@ -311,59 +359,123 @@ player_init(int argc, char *argv[])
   }
 */
 
-  // Create a g_camera proxy (device id "camera:0") and susbscribe
-  // in read/write mode
-  g_camera = playerc_camera_create(g_client, g_index);
+  // Create a camera proxy (device id "camera:index") and susbscribe
+  g_camera = playerc_camera_create(g_client, g_camera_index);
   if (0 != playerc_camera_subscribe(g_camera, PLAYER_OPEN_MODE))
   {
-    fprintf(stderr, "error: %s\n", playerc_error_str());
+    fprintf(stderr, "camera error: %s\n", playerc_error_str());
+    fprintf(stderr, "playercam will attempt to continue without a camera\n");
+    playerc_camera_destroy(g_camera);
+    g_camera = NULL;
+  }
+
+  // Create a blobfinder proxy (device id "blobfinder:index") and susbscribe
+  g_blobfinder = playerc_blobfinder_create(g_client, g_blobfinder_index);
+  if (0 != playerc_blobfinder_subscribe(g_blobfinder, PLAYER_OPEN_MODE))
+  {
+    fprintf(stderr, "blobfinder error: %s\n", playerc_error_str());
+    fprintf(stderr, "playercam will attempt to continue without a blobfinder\n");
+    playerc_blobfinder_destroy(g_blobfinder);
+    g_blobfinder = NULL;
+  }
+
+  if ((NULL == g_camera) && (NULL == g_blobfinder))
+  {
+    fprintf(stderr, "we need either a camera or blobfinder! aborting\n");
     exit(-1);
   }
 
-  // Get 1 image for the image
+  // Get 1 image for the image size
   if (NULL != playerc_client_read(g_client))
   {
-    // Decompress the image
-    csize = g_camera->image_count;
-    playerc_camera_decompress(g_camera);
-    usize = g_camera->image_count;
+    if (NULL != g_camera)
+    {
+      // Decompress the image
+      csize = g_camera->image_count;
+      playerc_camera_decompress(g_camera);
+      usize = g_camera->image_count;
 
-    g_print("camera: [w %d h %d d %d] [%d/%d bytes]\n",
-            g_camera->width, g_camera->height, g_camera->bpp, csize, usize);
+      g_print("camera: [w %d h %d d %d] [%d/%d bytes]\n",
+              g_camera->width, g_camera->height, g_camera->bpp, csize, usize);
+
+      g_width  = g_camera->width;
+      g_height = g_camera->height;
+    }
+    else // try the blobfinder
+    {
+      // set the image data to 0 since we don't have a camera
+      memset(g_img, 128, PLAYER_CAMERA_IMAGE_SIZE);
+
+      g_print("blobfinder: [w %d h %d]\n",
+              g_blobfinder->width, g_blobfinder->height);
+
+      g_width  = g_blobfinder->width;
+      g_height = g_blobfinder->height;
+    }
   }
 
-  g_width  = g_camera->width;
-  g_height = g_camera->height;
+  g_window_width  = g_width;
+  g_window_height = g_height;
+
+  assert(g_width>0);
+  assert(g_height>0);
 }
 
 int
 player_update()
 {
   int i;
+
   if (NULL != playerc_client_read(g_client))
   {
-    // Decompress the image if necessary
-    playerc_camera_decompress(g_camera);
-
-    // figure out the colorspace
-    switch (g_camera->format)
+    if (NULL != g_camera)
     {
-      case PLAYER_CAMERA_FORMAT_MONO8:
-        // we should try to use the alpha layer,
-        // but for now we need to change
-        // the image data
-        for (i=0;i<g_camera->image_count;++i)
-        {
-          memcpy(g_img+i*3, g_camera->image+i, 3);
-        }
-        break;
-      case PLAYER_CAMERA_FORMAT_RGB888:
-        // do nothing
-        memcpy(g_img, g_camera->image, g_camera->image_count);
-        break;
-      default:
-        g_print("Unknown camera format: %i\n", g_camera->format);
-        exit(-1);
+      // Decompress the image if necessary
+      playerc_camera_decompress(g_camera);
+      // figure out the colorspace
+      switch (g_camera->format)
+      {
+        case PLAYER_CAMERA_FORMAT_MONO8:
+          // we should try to use the alpha layer,
+          // but for now we need to change
+          // the image data
+          for (i=0;i<g_camera->image_count;++i)
+          {
+            memcpy(g_img+i*3, g_camera->image+i, 3);
+          }
+          break;
+        case PLAYER_CAMERA_FORMAT_RGB888:
+          // do nothing
+          memcpy(g_img, g_camera->image, g_camera->image_count);
+          break;
+        default:
+          g_print("Unknown camera format: %i\n", g_camera->format);
+          exit(-1);
+      }
+      g_width  = g_camera->width;
+      g_height = g_camera->height;
+    }
+    else
+    {
+      // set the image data to 0 since we don't have a camera
+      memset(g_img, 128, PLAYER_CAMERA_IMAGE_SIZE);
+    }
+
+    if (NULL != g_blobfinder)
+    {
+      memcpy(g_blobs,
+             g_blobfinder->blobs,
+             g_blobfinder->blobs_count*sizeof(player_blobfinder_blob_t));
+
+      g_blob_count = g_blobfinder->blobs_count;
+
+      if ((g_width  != g_blobfinder->width) ||
+          (g_height != g_blobfinder->height))
+      {
+        g_print("camera and blobfinder height or width do not match\n");
+        // should we die here?
+        //exit(-1);
+      }
     }
   }
   else
@@ -376,8 +488,16 @@ player_update()
 int
 player_quit()
 {
-  playerc_camera_unsubscribe(g_camera);
-  playerc_camera_destroy(g_camera);
+  if (NULL != g_camera)
+  {
+    playerc_camera_unsubscribe(g_camera);
+    playerc_camera_destroy(g_camera);
+  }
+  if (NULL != g_blobfinder)
+  {
+    playerc_blobfinder_unsubscribe(g_blobfinder);
+    playerc_blobfinder_destroy(g_blobfinder);
+  }
   playerc_client_disconnect(g_client);
   playerc_client_destroy(g_client);
 }
