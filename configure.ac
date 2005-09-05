@@ -323,6 +323,9 @@ AC_OUTPUT(Makefile
           server/drivers/blobfinder/Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
+	  server/drivers/blobfinder/simpleshape/Makefile
+	  server/drivers/blobfinder/acts/Makefile
+	  server/drivers/blobfinder/shapetracker/Makefile
           server/drivers/wifi/Makefile
           server/drivers/speech/Makefile
           server/drivers/speech/recognition/Makefile

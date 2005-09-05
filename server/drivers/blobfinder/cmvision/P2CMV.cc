@@ -65,9 +65,28 @@ configuration file.
 
 @par Configuration file options
 
+- debuglevel (int)
+  - Default: 0
+  - If set to 1, the blobfinder will output a testpattern of three blobs.
+
+
 - colorfile (string)
   - Default: "colors.txt"
-  - CMVision configuration file
+  - CMVision configuration file.  In the colors section, the tuple is the RGB
+  value of the intended color.  In the thresholds section, the values are the
+  min:max of the respective YUV channels.
+
+@verbatim
+[Colors]
+(255,  0,  0) 0.000000 10 Red
+(  0,255,  0) 0.000000 10 Green
+(  0,  0,255) 0.000000 10 Blue
+
+[Thresholds]
+( 25:164, 80:120,150:240)
+( 20:220, 50:120, 40:115)
+( 15:190,145:255, 40:120)
+@endverbatim
 
 @par Example
 
@@ -90,16 +109,18 @@ Andy Martignoni III, Brian Gerkey, Brendan Burns, Ben Grocholsky
 
 #include <assert.h>
 #include <stdio.h>
-#include <unistd.h> /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
+#include <unistd.h>  /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
 #include <signal.h>  /* for kill(2) */
-#include <fcntl.h>  /* for fcntl(2) */
+#include <fcntl.h>   /* for fcntl(2) */
 #include <string.h>  /* for strncpy(3),memcpy(3) */
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
-#include <pthread.h>  /* for pthread stuff */
+#include <pthread.h> /* for pthread stuff */
+#include <math.h>    /* for rint */
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 
+#include "conversions.h"
 #include "cmvision.h"
 #include "capture.h"
 
@@ -110,6 +131,8 @@ Andy Martignoni III, Brian Gerkey, Brendan Burns, Ben Grocholsky
 
 #define DEFAULT_CMV_WIDTH CMV_DEFAULT_WIDTH
 #define DEFAULT_CMV_HEIGHT CMV_DEFAULT_HEIGHT
+
+//const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms) => max 100 fps
 /********************************************************************/
 
 class CMVisionBF: public Driver
@@ -128,6 +151,11 @@ class CMVisionBF: public Driver
     player_devaddr_t m_camera_addr;
     Device*          m_camera_dev;
     CMVision*        m_vision;
+
+    // this will output a testpattern for debugging
+    void TestPattern();
+    // print the blobs to the console
+    void Print();
 
   public:
     int Setup();
@@ -166,7 +194,8 @@ CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
            m_camera_dev(NULL),
            m_vision(NULL)
 {
-  m_colorfile = cf->ReadString(section, "colorfile", "colors.txt");
+  m_colorfile  = cf->ReadString(section, "colorfile", "colors.txt");
+  m_debuglevel = cf->ReadInt(section, "debuglevel", 0);
   // Must have an input camera
   if (cf->ReadDeviceAddr(&m_camera_addr, section, "requires",
                          PLAYER_CAMERA_CODE, -1, NULL) != 0)
@@ -215,6 +244,7 @@ CMVisionBF::Shutdown()
   this->m_camera_dev->Unsubscribe(this->InQueue);
 
   delete m_vision;
+  delete m_img;
 
   puts("CMVision server has been shutdown");
   return(0);
@@ -244,6 +274,8 @@ CMVisionBF::ProcessImageData()
     // this shouldn't change often
     if ((m_data.width != m_width) || (m_data.height != m_height))
     {
+      printf("CMVision server initializing...");
+      fflush(stdout);
       if(!(m_vision->initialize(m_width, m_height)))
       {
         PLAYER_ERROR("Vision init failed.");
@@ -252,7 +284,7 @@ CMVisionBF::ProcessImageData()
 
       if(m_colorfile[0])
       {
-        if (0 != m_vision->loadOptions(const_cast<char*>(m_colorfile)))
+        if (!m_vision->loadOptions(const_cast<char*>(m_colorfile)))
         {
           PLAYER_ERROR("Error loading color file");
           exit(-1);
@@ -261,64 +293,61 @@ CMVisionBF::ProcessImageData()
       else
       {
         PLAYER_ERROR("No color file given.  Use the \"m_colorfile\" "
-                    "option in the configuration file.");
+                     "option in the configuration file.");
         exit(-1);
       }
       m_data.width      = m_width;
       m_data.height     = m_height;
-      printf("camera: [w %d h %d]\n", m_width, m_height);
-
+      printf("using camera: [w %d h %d]\n", m_width, m_height);
     }
 
     if (!m_vision->processFrame(reinterpret_cast<image_pixel*>(m_img)))
     {
       PLAYER_ERROR("Frame error.");
-      exit(-1);
     }
 
     m_data.blobs_count = 0;
-
     for (int ch = 0; ch < CMV_MAX_COLORS; ++ch)
     {
-      rgb c;
-
       // Get the descriptive color
-      c = m_vision->getColorVisual(ch);
+      rgb c = m_vision->getColorVisual(ch);;
 
       // Grab the regions for this color
+      CMVision::region* r = NULL;
 
-      for (CMVision::region* r = m_vision->getRegions(ch); r != NULL; r = r->next)
+      for (r = m_vision->getRegions(ch); r != NULL; r = r->next)
       {
         if (m_data.blobs_count >= PLAYER_BLOBFINDER_MAX_BLOBS)
           break;
 
         player_blobfinder_blob_t *blob;
+        blob = m_data.blobs + m_data.blobs_count;
+        m_data.blobs_count++;
 
-        blob = m_data.blobs + m_data.blobs_count++;
-
-        blob->color = int(c.red)<<16 | int(c.green)<<8 | int(c.blue);
-        blob->color = blob->color;
+        blob->color = uint32_t(c.red)   << 16 |
+                      uint32_t(c.green) <<  8 |
+                      uint32_t(c.blue);
 
         // stage puts the range in here to simulate stereo m_vision. we
         // can't do that (yet?) so set the range to zero - rtv
         blob->range = 0;
 
         // get the area first
-        blob->area = r->area;
-        blob->area = blob->area;
+        blob->area   = static_cast<uint32_t>(r->area);
 
-        // convert the other entries to byte-swapped shorts
-        blob->x      = uint16_t(r->cen_x+.5);
-        blob->y      = uint16_t(r->cen_y+.5);
-        blob->left   = r->x1;
-        blob->right  = r->x2;
-        blob->top    = r->y1;
-        blob->bottom = r->y2;
+        blob->x      = static_cast<uint32_t>(rint(r->cen_x+.5));
+        blob->y      = static_cast<uint32_t>(rint(r->cen_y+.5));
+        blob->left   = static_cast<uint32_t>(r->x1);
+        blob->right  = static_cast<uint32_t>(r->x2);
+        blob->top    = static_cast<uint32_t>(r->y1);
+        blob->bottom = static_cast<uint32_t>(r->y2);
       }
-
     }
 
-    /* got the data. now fill it in */
+    if (0 != m_debuglevel)
+      TestPattern();
+
+    /* got the data. now publish it */
     uint size = sizeof(m_data) - sizeof(m_data.blobs) +
                 m_data.blobs_count * sizeof(m_data.blobs[0]);
 
@@ -326,12 +355,44 @@ CMVisionBF::ProcessImageData()
     Publish(device_addr, NULL,
           PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_STATE,
           reinterpret_cast<void*>(&m_data), size, NULL);
+}
 
-/*
-    Publish(device_addr, NULL,
-          PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_STATE,
-          reinterpret_cast<void*>(&m_data), sizeof(m_data), NULL);
-*/
+void
+CMVisionBF::TestPattern()
+{
+  m_data.blobs_count = 3;
+
+  for (uint i=0; i<m_data.blobs_count; ++i)
+  {
+    uint x = m_width/5*i + m_width/5;
+    uint y = m_height/2;
+
+    m_data.blobs[i].x = x;
+    m_data.blobs[i].y = y;
+
+    m_data.blobs[i].top    = y+10;
+    m_data.blobs[i].bottom = y-10;
+    m_data.blobs[i].left   = x-10;
+    m_data.blobs[i].right  = x+10;
+
+    m_data.blobs[i].color  = 0xff << i*8;
+  }
+}
+
+void
+CMVisionBF::Print()
+{
+  for (uint i=0; i<m_data.blobs_count; ++i)
+  {
+    printf("%i: ", i);
+    printf("%i, ", m_data.blobs[i].x);
+    printf("%i, ", m_data.blobs[i].y);
+    printf("%i, ", m_data.blobs[i].top);
+    printf("%i, ", m_data.blobs[i].left);
+    printf("%i, ", m_data.blobs[i].bottom);
+    printf("%i\n", m_data.blobs[i].right);
+  }
+  printf("-----\n");
 }
 
 int
@@ -347,11 +408,21 @@ CMVisionBF::ProcessMessage(MessageQueue* resp_queue,
     // because the images are different than the max size
     //assert(hdr->size == sizeof(player_camera_data_t));
     player_camera_data_t* camera_data;
-    camera_data = reinterpret_cast<player_camera_data_t *> (data);
+    camera_data = reinterpret_cast<player_camera_data_t *>(data);
 
     m_width  = camera_data->width;
     m_height = camera_data->height;
-    m_img    = camera_data->image;
+
+    if (NULL == m_img)
+    {
+      // we need to allocate some memory
+      m_img= new uint8_t[m_width*m_height*2];
+    }
+    else
+    {
+      // now deal with the data
+      rgb2uyvy(camera_data->image, m_img, m_width*m_height);
+    }
 
     // we have a new image,
     ProcessImageData();

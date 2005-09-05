@@ -274,7 +274,7 @@ CameraV4L::CameraV4L( ConfigFile* cf, int section)
   this->height = cf->ReadTupleInt(section, "size", 1, this->height);
 
   // Palette type
-  this->palette = cf->ReadString(section, "mode", "RGB24");
+  this->palette = cf->ReadString(section, "mode", "RGB888");
 
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
@@ -550,11 +550,6 @@ void CameraV4L::RefreshData()
   struct timeval timestamp;
   timestamp.tv_sec  = this->tsec;
   timestamp.tv_usec = this->tusec;
-
-  // a hack to get this working
-  /*Publish(this->device_addr, NULL,
-          PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&this->data), sizeof(this->data), NULL);*/
 
   /* We should do this to be efficient */
   Publish(this->device_addr, NULL,

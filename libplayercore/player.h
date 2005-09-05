@@ -502,6 +502,15 @@ in images.
 @{
 */
 
+/* The various configuration request types. */
+//   - currently none
+
+// data types
+#define PLAYER_BLOBFINDER_DATA_STATE        1
+
+// Command types
+//   - currently none
+
 /** The maximum number of blobs in total. */
 #define PLAYER_BLOBFINDER_MAX_BLOBS 256
 
