@@ -281,7 +281,7 @@ CMVisionBF::ProcessImageData()
     for (int ch = 0; ch < CMV_MAX_COLORS; ++ch)
     {
       rgb c;
-      printf("here %i\n", ch);
+
       // Get the descriptive color
       c = m_vision->getColorVisual(ch);
 
@@ -293,8 +293,6 @@ CMVisionBF::ProcessImageData()
           break;
 
         player_blobfinder_blob_t *blob;
-
-        printf("%i\n", m_data.blobs_count);
 
         blob = m_data.blobs + m_data.blobs_count++;
 
