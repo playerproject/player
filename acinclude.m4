@@ -176,12 +176,16 @@ PLAYER_ADD_DRIVER([cmvision],[no],[],[],[])
 PLAYER_ADD_DRIVER([upcbarcode],[no],[],[],[],
                   [OPENCV],[opencv])
 
+PLAYER_ADD_DRIVER([shapetracker],[no],[],[],[],
+                  [OPENCV],[opencv])
+
 PLAYER_ADD_DRIVER([simpleshape],[no],
-                    [],[],[],[OPENCV],[opencv])
+                  [],[],[],[OPENCV],[opencv])
 
 PLAYER_ADD_DRIVER([festival],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[no],["sphinx2/s2types.h"],[],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
+PLAYER_ADD_DRIVER([sphinx2],[no],["sphinx2/s2types.h"],
+                  [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
 PLAYER_ADD_DRIVER([sonyevid30],[no],[],[],[])
 
