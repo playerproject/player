@@ -65,10 +65,10 @@ class SphereDriver : public Driver
     {return (argT < mTiltMin) ? mTiltMin : ((argT > mTiltMax) ? mTiltMax : argT);};
 
     // Camera interface
-    player_devaddr_t       mCameraId;
+    player_devaddr_t       mCameraAddr;
     player_camera_data_t   mCameraData;
     // PTZ interface
-    player_devaddr_t    mPtzId;
+    player_devaddr_t    mPtzAddr;
     player_ptz_data_t   mPtzData;
     player_ptz_cmd_t    mPtzCmd;
 

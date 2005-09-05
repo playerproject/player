@@ -1,9 +1,8 @@
-SUBDIRS = .
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-noinst_LIBRARIES = @UPCBARCODE_LIB@ 
+noinst_LTLIBRARIES =
+if INCLUDE_UPCBARCODE
+noinst_LTLIBRARIES += libupcbarcode.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
-
-EXTRA_LIBRARIES = libupcbarcode.a 
-
-libupcbarcode_a_SOURCES = upcbarcode.cc
+libupcbarcode_la_SOURCES = upcbarcode.cc
