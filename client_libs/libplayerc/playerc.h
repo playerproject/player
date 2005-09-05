@@ -522,7 +522,7 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 /** @} */
 /**************************************************************************/
 
-#if 0
+
 /***************************************************************************/
 /** @defgroup playerc_proxies Proxies
     @{
@@ -575,7 +575,7 @@ typedef struct
   int width, height;
 
   /** A list of detected blobs. */
-  int blob_count;
+  int blobs_count;
   playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
 
 } playerc_blobfinder_t;
@@ -594,13 +594,14 @@ int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
 int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 /** @brief @internal Parse data from incoming packet */
-void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
+void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, player_msghdr_t *header,
                                 player_blobfinder_data_t *data, size_t len);
 
 
 /** @} */
 /**************************************************************************/
 
+#if 0
 
 /**************************************************************************/
 /** @defgroup playerc_proxy_bumper bumper
@@ -955,7 +956,7 @@ int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
 int playerc_joystick_unsubscribe(playerc_joystick_t *device);
 
 /** @brief @internal Parse data from incoming packet */
-void playerc_joystick_putdata(playerc_joystick_t *device, player_msghdr_t *header,
+void playerc_joystick_putmsg(playerc_joystick_t *device, player_msghdr_t *header,
                               player_joystick_data_t *data, size_t len);
 
 
@@ -1701,7 +1702,6 @@ int playerc_power_unsubscribe(playerc_power_t *device);
 /**************************************************************************/
 
 
-#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_ptz ptz
@@ -1767,8 +1767,6 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zo
 
 /** @} */
 /**************************************************************************/
-
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_sonar sonar

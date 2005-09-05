@@ -24,7 +24,7 @@ int test_blobfinder(playerc_client_t *client, int index)
   device = playerc_blobfinder_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_blobfinder_subscribe(device, PLAYER_READ_MODE) == 0)
+  if (playerc_blobfinder_subscribe(device, PLAYER_OPEN_MODE) == 0)
     PASS();
   else
     FAIL();
@@ -36,12 +36,12 @@ int test_blobfinder(playerc_client_t *client, int index)
     do
       rdevice = playerc_client_read(client);
     while (rdevice == client);
-    
+
     if (rdevice == device)
     {
       PASS();
-      printf("blobfinder: [%d, %d] [%d] ", device->width, device->height, device->blob_count);
-      for (i = 0; i < min(3, device->blob_count); i++)
+      printf("blobfinder: [%d, %d] [%d] ", device->width, device->height, device->blobs_count);
+      for (i = 0; i < min(3, device->blobs_count); i++)
         printf("[%d : (%d %d) (%d %d %d %d) : %d] ", device->blobs[i].id,
                device->blobs[i].x, device->blobs[i].y,
                device->blobs[i].left, device->blobs[i].top,
@@ -55,15 +55,15 @@ int test_blobfinder(playerc_client_t *client, int index)
       break;
     }
   }
-  
+
   TEST("unsubscribing");
   if (playerc_blobfinder_unsubscribe(device) == 0)
     PASS();
   else
     FAIL();
-  
+
   playerc_blobfinder_destroy(device);
-  
+
   return 0;
 }
 
