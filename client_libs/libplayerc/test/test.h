@@ -46,6 +46,12 @@ extern int test_map(playerc_client_t *client, int index);
 // Basic test for camera device
 extern int test_camera(playerc_client_t *client, int index);
 
+// Basic blobfinder test
+extern int test_blobfinder(playerc_client_t *client, int index);
+
+// Basic test for ptz device.
+extern int test_ptz(playerc_client_t *client, int index);
+
 #if 0
 // Basic test for BPS device.i
 extern int test_bps(playerc_client_t *client, int index);
@@ -65,17 +71,11 @@ extern int test_localize(playerc_client_t *client, int index);
 // Basic localization test
 int test_localize(playerc_client_t *client, int index);
 
-// Basic test for ptz device.
-extern int test_ptz(playerc_client_t *client, int index);
-
 // Basic test for truth device.
 extern int test_truth(playerc_client_t *client, int index);
 
 // Basic vision test.
 extern int test_vision(playerc_client_t *client, int index);
-
-// Basic blobfinder test
-extern int test_blobfinder(playerc_client_t *client, int index);
 
 // Basic comms device test
 extern int test_comms(playerc_client_t *client, int index);

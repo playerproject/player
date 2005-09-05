@@ -23,21 +23,21 @@ int test_ptz(playerc_client_t *client, int index)
   device = playerc_ptz_create(client, index);
 
   TEST("subscribing (read)");
-  if (playerc_ptz_subscribe(device, PLAYER_ALL_MODE) == 0)
+  if (0 == playerc_ptz_subscribe(device, PLAYER_OPEN_MODE))
     PASS();
   else
     FAIL();
 
   period = 10 / M_PI * 2;
-  
+
   for (t = 0; t < 20; t++)
-  {    
+  {
     TEST1("reading data (attempt %d)", t);
-    
+
     do
       rdevice = playerc_client_read(client);
     while (rdevice == client);
-    
+
     if (rdevice == device)
     {
       PASS();
@@ -75,9 +75,9 @@ int test_ptz(playerc_client_t *client, int index)
     PASS();
   else
     FAIL();
-  
+
   playerc_ptz_destroy(device);
-  
+
   return 0;
 }
 

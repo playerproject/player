@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -47,7 +47,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 
 #include "playerc.h"
 #include "error.h"
@@ -64,9 +63,10 @@ playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int in
 
   device = malloc(sizeof(playerc_blobfinder_t));
   memset(device, 0, sizeof(playerc_blobfinder_t));
+
   playerc_device_init(&device->info, client, PLAYER_BLOBFINDER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_blobfinder_putdata,NULL,NULL);
-    
+                      (playerc_putmsg_fn_t) playerc_blobfinder_putmsg);
+
   return device;
 }
 
@@ -94,35 +94,35 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device)
 
 
 // Process incoming data
-void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
+void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, player_msghdr_t *header,
                                 player_blobfinder_data_t *data, size_t len)
 {
   int i;
   player_blobfinder_blob_t *src;
   playerc_blobfinder_blob_t *dest;
 
-  device->width = ntohs(data->width);
-  device->height = ntohs(data->height);  
-  device->blob_count = 0;
-  
-  for (i = 0; i < ntohs(data->blob_count); i++)
+  device->width = data->width;
+  device->height = data->height;
+  device->blobs_count = 0;
+
+  for (i = 0; i < data->blobs_count; i++)
   {
     src = data->blobs + i;
-    if (device->blob_count >= PLAYERC_BLOBFINDER_MAX_BLOBS)
+    if (device->blobs_count >= PLAYERC_BLOBFINDER_MAX_BLOBS)
       break;
 
-    dest = device->blobs + device->blob_count++;
+    dest = device->blobs + device->blobs_count++;
 
-    dest->id = ntohs(src->id);
-    dest->color = ntohl(src->color);
-    dest->x = ntohs(src->x);
-    dest->y = ntohs(src->y);
-    dest->left = ntohs(src->left);
-    dest->right = ntohs(src->right);
-    dest->top = ntohs(src->top);
-    dest->bottom = ntohs(src->bottom);
-    dest->area = ntohl(src->area);
-    dest->range = ((uint16_t) ntohs(src->range)) / 1000.0;
+    dest->id = src->id;
+    dest->color = src->color;
+    dest->x = src->x;
+    dest->y = src->y;
+    dest->left = src->left;
+    dest->right = src->right;
+    dest->top = src->top;
+    dest->bottom = src->bottom;
+    dest->area = src->area;
+    dest->range = src->range / 1000.0;
   }
 
   return;

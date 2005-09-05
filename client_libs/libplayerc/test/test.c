@@ -114,7 +114,7 @@ int main(int argc, const char *argv[])
       case PLAYER_POSITION2D_CODE:
         test_position2d(client, client->devinfos[i].addr.index);
         break;
-        
+
       // Position device
       case PLAYER_POSITION3D_CODE:
         test_position3d(client, client->devinfos[i].addr.index);
@@ -146,11 +146,13 @@ int main(int argc, const char *argv[])
         test_map(client, client->devinfos[i].addr.index);
         break;
 
+#endif
+
       // Blobfinder device
       case PLAYER_BLOBFINDER_CODE:
         test_blobfinder(client, client->devinfos[i].addr.index);
         break;
-#endif
+
 
       // Camera device
       case PLAYER_CAMERA_CODE:
@@ -182,12 +184,14 @@ int main(int argc, const char *argv[])
       case PLAYER_POSITION3D_CODE:
         test_position3d(client, client->devinfos[i].addr.index);
         break;
+#endif
 
       // PTZ device
       case PLAYER_PTZ_CODE:
         test_ptz(client, client->devinfos[i].addr.index);
         break;
 
+#if 0
       // Truth device
       case PLAYER_TRUTH_CODE:
         test_truth(client, client->devinfos[i].addr.index);

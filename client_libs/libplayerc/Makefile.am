@@ -38,8 +38,9 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_map.c \
                         dev_localize.c \
                         dev_sonar.c \
-                        dev_camera.c
-#dev_blobfinder.c \
+                        dev_camera.c \
+                        dev_blobfinder.c \
+                        dev_ptz.c
 #dev_bumper.c \
 #dev_fiducial.c \
 #dev_gps.c \
@@ -47,7 +48,6 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_ir.c \
 #dev_joystick.c \
 #dev_motor.c \
-#dev_ptz.c \
 #dev_truth.c \
 #dev_wifi.c \
 #dev_dio.c \
