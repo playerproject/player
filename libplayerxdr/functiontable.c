@@ -47,6 +47,10 @@ static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */
 
+  /* blobfinder messages */
+  {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_DATA_STATE,
+    (player_pack_fn_t)player_blobfinder_data_pack},
+
   /* camera messages */
   {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_DATA_STATE,
     (player_pack_fn_t)player_camera_data_pack},
