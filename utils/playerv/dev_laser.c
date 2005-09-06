@@ -116,10 +116,8 @@ void laser_update(laser_t *laser)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Get the laser geometry
-      /*
       if (playerc_laser_get_geom(laser->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
-        */
 
       rtk_fig_origin(laser->scan_fig,
                      laser->proxy->pose[0],
