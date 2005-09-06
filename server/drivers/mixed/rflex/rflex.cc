@@ -1319,7 +1319,6 @@ void RFLEX::update_everything(player_rflex_data_t* d)
       range = range < rflex_configs.ir_min_range ? 0 : range;
       range = range > rflex_configs.ir_max_range ? rflex_configs.ir_max_range : range;
       d->ir.ranges[i] = (range);		
-      printf("%f %f %f %f\n",d->ir.voltages[i],d->ir.ranges[i],rflex_configs.ir_a[i],rflex_configs.ir_b[i]);
       
     }
   }
