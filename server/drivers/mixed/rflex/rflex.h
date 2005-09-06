@@ -117,24 +117,20 @@ class RFLEX : public Driver
     
     // device used to communicate with rflex
     char rflex_serial_port[MAX_FILENAME_SIZE]; 
-    double mm_odo_x;
-    double mm_odo_y;
+    double m_odo_x;
+    double m_odo_y;
     double rad_odo_theta;
 
     void ResetRawPositions();
     int initialize_robot();
     void reset_odometry();
-    void set_odometry(long,long,short);
+    void set_odometry(float,float,float);
     void update_everything(player_rflex_data_t* d);
 
     void set_config_defaults();
 
   public:
     RFLEX(ConfigFile* cf, int section);
-
-    //override this in subclass, and fill with code to load options from
-    //config file, default is just an empty dummy
-    virtual void GetOptions(ConfigFile* cf,int section,rflex_config_t *rflex_configs);
 
     /* the main thread */
     virtual void Main();
