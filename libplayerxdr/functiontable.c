@@ -51,9 +51,25 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_DATA_STATE,
     (player_pack_fn_t)player_blobfinder_data_pack},
 
+  /* bumper messages */
+  {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
+    (player_pack_fn_t)player_bumper_data_pack},
+  {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_GEOM,
+    (player_pack_fn_t)player_bumper_geom_pack},
+  {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM,
+    (player_pack_fn_t)player_bumper_geom_pack},
+
   /* camera messages */
   {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_DATA_STATE,
     (player_pack_fn_t)player_camera_data_pack},
+
+  /* ir messages */
+  {PLAYER_IR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
+    (player_pack_fn_t)player_ir_data_pack},
+  {PLAYER_IR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE,
+    (player_pack_fn_t)player_ir_pose_pack},
+  {PLAYER_IR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER,
+    (player_pack_fn_t)player_ir_power_req_pack},
 
   /* laser messages */
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
