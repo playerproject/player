@@ -139,7 +139,7 @@ Driver::Publish(MessageQueue* queue,
     // push onto each queue subscribed to the given device
     if(!(dev = deviceTable->GetDevice(hdr->addr,false)))
     {
-      PLAYER_ERROR("tried to publish message via non-existent device");
+      PLAYER_ERROR2("tried to publish message via non-existent device %d:%d", hdr->addr.interf, hdr->addr.index);
       this->Unlock();
       return;
     }
