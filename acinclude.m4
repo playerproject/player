@@ -144,7 +144,7 @@ PLAYER_ADD_DRIVER([p2os],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([er1],[no],[asm/ioctls.h],[],[])
 
-PLAYER_ADD_DRIVER([rflex],[no],[],[],[])
+PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
