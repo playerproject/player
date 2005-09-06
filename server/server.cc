@@ -104,8 +104,6 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  delete cf;
-
   if(deviceTable->StartAlwaysonDrivers() != 0)
   {
     PLAYER_ERROR("failed to start alwayson drivers");
@@ -168,6 +166,7 @@ main(int argc, char** argv)
   puts("Quitting.");
 
   Cleanup();
+  delete cf;
 
   return(0);
 }
