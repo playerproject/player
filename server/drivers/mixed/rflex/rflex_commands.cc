@@ -157,7 +157,8 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
 	// time has passed without recieving a packet. This roughtly approximates
 	// to waiting till the command has finshed being executed on the robot
 	int count;
-	timeval start,now;
+	timeval now;
+	timeval start = {0,0};
 	do  
 	{
 		count = clear_incoming_data(fd);
@@ -721,13 +722,13 @@ static void parseJoyReport( int fd, unsigned char *buffer )
 	if ((buttons & 1) == 1)
 	{
 		JoystickWasOn = true;
-		rflex_set_velocity(fd,(long) MM2ARB_ODO_CONV(y * rflex_configs.joy_pos_ratio),(long) RAD2ARB_ODO_CONV(x * rflex_configs.joy_ang_ratio),(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+		rflex_set_velocity(fd,(long) M2ARB_ODO_CONV(y * rflex_configs.joy_pos_ratio),(long) RAD2ARB_ODO_CONV(x * rflex_configs.joy_ang_ratio),(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));    
 		RFLEX::joy_control = 5;
 	}
 	else if (JoystickWasOn)
 	{
 		JoystickWasOn = false;
-		rflex_set_velocity(fd,0,0,(long) MM2ARB_ODO_CONV(rflex_configs.mmPsec2_trans_acceleration));    
+		rflex_set_velocity(fd,0,0,(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));    
 		RFLEX::joy_control = 5;	
 	}
 

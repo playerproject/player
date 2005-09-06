@@ -35,14 +35,14 @@ typedef struct rflex_config_t{
   double m_length;
   //width of the robot in m
   double m_width;
-  //mm*odo_distance_conversion : mm to rflex arbitrary odometry units (trans)
+  //m*odo_distance_conversion : m to rflex arbitrary odometry units (trans)
   double odo_distance_conversion;
   //rad*odo_angle_conversion : rad to rflex arbitrary odometry units (rot)
   double odo_angle_conversion;
-  //mm*range_distance_conversion : mm to rflex arbitrary range units
+  //mm*range_distance_conversion : m to rflex arbitrary range units
   double range_distance_conversion;
-  //default translational acceleration in mm/sec
-  double mmPsec2_trans_acceleration;
+  //default translational acceleration in m/sec
+  double mPsec2_trans_acceleration;
   //default rotational acceleration in rad/sec
   double radPsec2_rot_acceleration;
 
@@ -89,7 +89,7 @@ typedef struct rflex_config_t{
   player_bumper_define_t * bumper_def;
 
   // power configs
-  int power_offset;
+  float power_offset;
   
   // ir configs
   player_ir_pose_t ir_poses;
@@ -98,8 +98,8 @@ typedef struct rflex_config_t{
   int * ir_count; 
   double * ir_a; 
   double * ir_b; 
-  int ir_min_range;
-  int ir_max_range;
+  float ir_min_range;
+  float ir_max_range;
 }  rflex_config_t;
 
 //notice - every file that includes this header gets a GLOBAL rflex_configs!!
@@ -110,15 +110,13 @@ extern rflex_config_t rflex_configs;
 /*** rather obvious - ARB stands for arbitrary (look above) ***/
 
 //player uses degrees, but I use radians (so cos, and sin work correctly)
-#define RAD2DEG_CONV(x)  ((x)*(180/M_PI))
-#define DEG2RAD_CONV(x) ((x)*(M_PI/180))
 #define ARB2RAD_ODO_CONV(x) ((x)/rflex_configs.odo_angle_conversion)
 #define RAD2ARB_ODO_CONV(x) ((x)*rflex_configs.odo_angle_conversion)
-#define ARB2MM_ODO_CONV(x) ((x)/rflex_configs.odo_distance_conversion)
-#define MM2ARB_ODO_CONV(x) ((x)*rflex_configs.odo_distance_conversion)
+#define ARB2M_ODO_CONV(x) ((x)/rflex_configs.odo_distance_conversion)
+#define M2ARB_ODO_CONV(x) ((x)*rflex_configs.odo_distance_conversion)
 
-#define ARB2MM_RANGE_CONV(x) (x/rflex_configs.range_distance_conversion)
-#define MM2ARB_RANGE_CONV(x) (x*rflex_configs.range_distance_conversion)
+#define ARB2M_RANGE_CONV(x) (x/rflex_configs.range_distance_conversion)
+#define M2ARB_RANGE_CONV(x) (x*rflex_configs.range_distance_conversion)
 
 #endif
 
