@@ -104,7 +104,7 @@ void bumper_update(bumper_t *bumper)
   {
     if (!bumper->proxy->info.subscribed)
     {
-      if (playerc_bumper_subscribe(bumper->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_bumper_subscribe(bumper->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
       // Get the bumper geometry
@@ -114,9 +114,9 @@ void bumper_update(bumper_t *bumper)
       for (i = 0; i < bumper->proxy->pose_count; i++){
 	  //fprintf(stderr, "bumper poses %02d: %f %f %f %f %f\n",i,bumper->proxy->poses[i][0],bumper->proxy->poses[i][1],bumper->proxy->poses[i][2],bumper->proxy->poses[i][3],bumper->proxy->poses[i][4]);
         rtk_fig_origin(bumper->scan_fig[i],
-                       bumper->proxy->poses[i][0]/1e3, // convert mm to m
-                       bumper->proxy->poses[i][1]/1e3,
-                       bumper->proxy->poses[i][2]*M_PI/180.0); // convert deg to rad
+                       bumper->proxy->poses[i][0], // convert mm to m
+                       bumper->proxy->poses[i][1],
+                       bumper->proxy->poses[i][2]); // convert deg to rad
 					   
       }
     }
@@ -165,18 +165,18 @@ void bumper_draw(bumper_t *bumper)
     rtk_fig_linewidth(bumper->scan_fig[i],4);
 
     // calc the geometry of the bumper in rtk terms
-    radius = bumper->proxy->poses[i][4]/1e3;
+    radius = bumper->proxy->poses[i][4];
 
     // check for straight line
     if(radius == 0)
     {
       rtk_fig_line(bumper->scan_fig[i],
-                   0.0,-bumper->proxy->poses[i][3]/1e3/2.0,
-                   0.0,bumper->proxy->poses[i][3]/1e3/2.0);
+                   0.0,-bumper->proxy->poses[i][3]/2.0,
+                   0.0,bumper->proxy->poses[i][3]/2.0);
     }
     else
     {
-      half_angle = (bumper->proxy->poses[i][3]/1e3)/radius/2.0 - 0.04;
+      half_angle = (bumper->proxy->poses[i][3])/radius/2.0 - 0.04;
       rtk_fig_ellipse_arc(bumper->scan_fig[i],-radius,0,0,radius*2,radius*2,-half_angle,half_angle);	
     }
   }

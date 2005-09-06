@@ -104,19 +104,19 @@ void ir_update(ir_t *ir)
   {
     if (!ir->proxy->info.subscribed)
     {
-      if (playerc_ir_subscribe(ir->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_ir_subscribe(ir->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("subscribe failed : %s", playerc_error_str());
 
       // Get the ir geometry
       if (playerc_ir_get_geom(ir->proxy) != 0)
         PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
 
-      for (i = 0; i < ir->proxy->poses.pose_count; i++)
+      for (i = 0; i < ir->proxy->poses.poses_count; i++)
 	  {
         rtk_fig_origin(ir->scan_fig[i],
-                       ((double) ir->proxy->poses.poses[i][0])/1000,
-                       ((double) ir->proxy->poses.poses[i][1])/1000,
-                       ((double) ir->proxy->poses.poses[i][2])*M_PI/180);
+                       ir->proxy->poses.poses[i].px,
+                       ir->proxy->poses.poses[i].py,
+                       ir->proxy->poses.poses[i].pa);
 	  }
     }
   }
@@ -150,7 +150,7 @@ void ir_draw(ir_t *ir)
   double dr, da;
   double points[3][2];
 
-  for (i = 0; i < ir->proxy->ranges.range_count; i++)
+  for (i = 0; i < ir->proxy->ranges.ranges_count; i++)
   {
     rtk_fig_show(ir->scan_fig[i], 1);      
     rtk_fig_clear(ir->scan_fig[i]);
@@ -161,7 +161,7 @@ void ir_draw(ir_t *ir)
 
     // Draw in the range scan
     rtk_fig_color_rgb32(ir->scan_fig[i], COLOR_IR_SCAN);
-    dr = ((double)ir->proxy->ranges.ranges[i])/1000;
+    dr = ((double)ir->proxy->ranges.ranges[i]);
     da = 20 * M_PI / 180 / 2;
   
     points[0][0] = 0;
@@ -180,7 +180,7 @@ void ir_nodraw(ir_t *ir)
 {
   int i;
 
-  for (i = 0; i < ir->proxy->ranges.range_count; i++)
+  for (i = 0; i < ir->proxy->ranges.ranges_count; i++)
     rtk_fig_show(ir->scan_fig[i], 0);
 }
 

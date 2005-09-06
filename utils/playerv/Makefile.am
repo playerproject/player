@@ -13,6 +13,8 @@ playerv_SOURCES = playerv.c \
                   error.h \
                   opt.c \
                   opt.h \
+                  dev_bumper.c \
+                  dev_ir.c \
                   dev_laser.c \
                   dev_position2d.c \
                   dev_power.c \
@@ -23,8 +25,6 @@ playerv_SOURCES = playerv.c \
 #dev_localize.c \
 #dev_map.c \
 #dev_ptz.c \
-#dev_bumper.c \
-#dev_ir.c \
 #dev_wifi.c
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
