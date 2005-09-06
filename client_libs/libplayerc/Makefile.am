@@ -27,25 +27,26 @@ libplayerc_la_SOURCES = playerc.h \
                         utils.c \
                         error.c \
                         error.h \
+                        dev_bumper.c \
+                        dev_blobfinder.c \
+                        dev_camera.c \
+                        dev_ir.c \
                         dev_laser.c \
+                        dev_localize.c \
                         dev_log.c \
+                        dev_map.c \
+                        dev_planner.c \
                         dev_position2d.c \
                         dev_position3d.c \
                         dev_position.c \
-                        dev_simulation.c \
                         dev_power.c \
-                        dev_planner.c \
-                        dev_map.c \
-                        dev_localize.c \
-                        dev_sonar.c \
-                        dev_camera.c \
-                        dev_blobfinder.c \
-                        dev_ptz.c
-#dev_bumper.c \
+                        dev_ptz.c \
+                        dev_simulation.c \
+                        dev_sonar.c 
+
 #dev_fiducial.c \
 #dev_gps.c \
 #dev_gripper.c \
-#dev_ir.c \
 #dev_joystick.c \
 #dev_motor.c \
 #dev_truth.c \

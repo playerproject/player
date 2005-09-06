@@ -55,10 +55,11 @@
 
 
 // Local declarations
-void playerc_ir_putdata(playerc_ir_t *device, player_msghdr_t *header,
-                           player_ir_data_t *data, size_t len);
-void playerc_ir_putgeom(playerc_ir_t *device, player_msghdr_t *header,
-                           player_ir_pose_t *data, size_t len);
+
+// Process incoming data
+void playerc_ir_putmsg(playerc_ir_t *device, 
+                          player_msghdr_t *header,
+                          void *data);
 
 // Create a new ir proxy
 playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index)
@@ -68,8 +69,7 @@ playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_ir_t));
   memset(device, 0, sizeof(playerc_ir_t));
   playerc_device_init(&device->info, client, PLAYER_IR_CODE, index,
-                      (playerc_putdata_fn_t) playerc_ir_putdata,
-                      (playerc_putdata_fn_t) playerc_ir_putgeom,NULL);
+                      (playerc_putmsg_fn_t) playerc_ir_putmsg);
     
   return device;
 }
@@ -98,67 +98,25 @@ int playerc_ir_unsubscribe(playerc_ir_t *device)
 
 
 // Process incoming data
-void playerc_ir_putdata(playerc_ir_t *device, player_msghdr_t *header,
-                           player_ir_data_t *data, size_t len)
+void playerc_ir_putmsg(playerc_ir_t *device, 
+                          player_msghdr_t *header,
+                          void *data)
 {
   int i;
-
-  assert(sizeof(*data) <= len);
-
-  device->ranges.range_count = ntohs(data->range_count);
-
-  // copy data into packet
-  for (i = 0; i < device->ranges.range_count; i++)
-  { 
-    device->ranges.voltages[i] = ntohs(data->voltages[i]);
-    device->ranges.ranges[i] = ntohs(data->ranges[i]);
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_IR_DATA_RANGES))
+  {
+    device->ranges = *(player_ir_data_t *) data;
   }
 }
 
-// Process incoming geom
-void playerc_ir_putgeom(playerc_ir_t *device, player_msghdr_t *header,
-                           player_ir_pose_t *data, size_t len)
-{
-	int i;
-  if (len != sizeof(player_ir_pose_t))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_ir_pose_t));
-    return;
-  }
 
-  device->poses.pose_count = htons(data->pose_count);
-  for (i = 0; i < device->poses.pose_count; i++)
-  {
-    device->poses.poses[i][0] = ((int16_t) ntohs(data->poses[i][0])); //mm
-    device->poses.poses[i][1] = ((int16_t) ntohs(data->poses[i][1])); //mm
-    device->poses.poses[i][2] = ((int16_t) ntohs(data->poses[i][2])); //deg
-  }
-}
-  
 // Get the ir geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
 int playerc_ir_get_geom(playerc_ir_t *device)
 {
-  int i, len;
-  player_ir_pose_t config;
-
-//  config.subtype = PLAYER_IR_POSE_REQ;
-
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_IR_POSE,
-                               &config, 0, &config, sizeof(config));
-  if (len < sizeof(config))
-  	return -1;
-
-  device->poses.pose_count = htons(config.pose_count);
-  for (i = 0; i < device->poses.pose_count; i++)
-  {
-    device->poses.poses[i][0] = ((int16_t) ntohs(config.poses[i][0])); //mm
-    device->poses.poses[i][1] = ((int16_t) ntohs(config.poses[i][1])); //mm
-    device->poses.poses[i][2] = ((int16_t) ntohs(config.poses[i][2])); //deg
-  }
-
-
-  return 0;
+  return playerc_client_request(device->info.client, &device->info,PLAYER_IR_POSE,
+                               0, &device->poses, sizeof(device->poses));
 }
 
 

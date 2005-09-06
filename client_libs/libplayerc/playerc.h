@@ -601,7 +601,6 @@ void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, player_msghdr_t *he
 /** @} */
 /**************************************************************************/
 
-#if 0
 
 /**************************************************************************/
 /** @defgroup playerc_proxy_bumper bumper
@@ -659,7 +658,7 @@ int playerc_bumper_get_geom(playerc_bumper_t *device);
 /** @} */
 /***************************************************************************/
 
-#endif
+
 /***************************************************************************/
 /** @defgroup playerc_proxy_camera camera
 
@@ -720,6 +719,56 @@ void playerc_camera_decompress(playerc_camera_t *device);
 
 /** @brief Saves the image to disk as a .ppm */
 void playerc_camera_save(playerc_camera_t *device, const char *filename);
+
+
+/***************************************************************************/
+/** @defgroup playerc_proxy_ir ir
+
+The ir proxy provides an interface to the ir sensors built into robots
+such as the RWI B21R.
+
+@{
+*/
+
+/** @brief Ir proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  // data
+  player_ir_data_t ranges;
+
+  // config
+  player_ir_pose_t poses;
+
+} playerc_ir_t;
+
+
+/** @brief Create a ir proxy. */
+playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a ir proxy. */
+void playerc_ir_destroy(playerc_ir_t *device);
+
+/** @brief Subscribe to the ir device. */
+int playerc_ir_subscribe(playerc_ir_t *device, int access);
+
+/** @brief Un-subscribe from the ir device. */
+int playerc_ir_unsubscribe(playerc_ir_t *device);
+
+/** @brief Get the ir geometry.
+
+This writes the result into the proxy rather than returning it to the
+caller.
+
+*/
+int playerc_ir_get_geom(playerc_ir_t *device);
+
+
+/** @} */
+/***************************************************************************/
+
 
 
 /** @} */
@@ -870,54 +919,6 @@ int playerc_gps_unsubscribe(playerc_gps_t *device);
 
 /** @} */
 /**************************************************************************/
-
-/***************************************************************************/
-/** @defgroup playerc_proxy_ir ir
-
-The ir proxy provides an interface to the ir sensors built into robots
-such as the RWI B21R.
-
-@{
-*/
-
-/** @brief Ir proxy data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  // data
-  player_ir_data_t ranges;
-
-  // config
-  player_ir_pose_t poses;
-
-} playerc_ir_t;
-
-
-/** @brief Create a ir proxy. */
-playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
-
-/** @brief Destroy a ir proxy. */
-void playerc_ir_destroy(playerc_ir_t *device);
-
-/** @brief Subscribe to the ir device. */
-int playerc_ir_subscribe(playerc_ir_t *device, int access);
-
-/** @brief Un-subscribe from the ir device. */
-int playerc_ir_unsubscribe(playerc_ir_t *device);
-
-/** @brief Get the ir geometry.
-
-This writes the result into the proxy rather than returning it to the
-caller.
-
-*/
-int playerc_ir_get_geom(playerc_ir_t *device);
-
-
-/** @} */
-/***************************************************************************/
 
 
 /***************************************************************************/
