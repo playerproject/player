@@ -611,6 +611,7 @@ accepts no commands.
 #define PLAYER_BUMPER_GET_GEOM    1
 // data subtype
 #define PLAYER_BUMPER_DATA_STATE  1
+#define PLAYER_BUMPER_DATA_GEOM  2
 /** @brief Data
 
 The @p bumper interface gives current bumper state*/
