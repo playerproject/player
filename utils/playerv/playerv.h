@@ -166,6 +166,44 @@ void create_proxy(device_t *device, opt_t *opt,
                   mainwnd_t *mainwnd, playerc_client_t *client);
 
 
+ /***************************************************************************
+  * Bumper device
+  ***************************************************************************/
+
+ // BUMPER device info
+ typedef struct
+ {
+   // Driver name
+   char *drivername;
+
+   // Menu stuff
+   rtk_menu_t *menu;
+   rtk_menuitem_t *subscribe_item;
+
+   // Figures for drawing the bumper 
+   rtk_fig_t *scan_fig[PLAYERC_BUMPER_MAX_SAMPLES];
+
+   // Bumper device proxy
+   playerc_bumper_t *proxy;
+
+   // Timestamp on most recent data
+   double datatime;
+
+ } bumper_t;
+
+
+ // Create a bumper device
+ bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                       int index,  const char *drivername, int subscribe);
+
+ // Destroy a bumper device
+ void bumper_destroy(bumper_t *bumper);
+
+ // Update a bumper device
+ void bumper_update(bumper_t *bumper);
+
+
+
 /***************************************************************************
  * Laser (scanning range-finder)
  ***************************************************************************/
@@ -412,7 +450,7 @@ void sonar_destroy(sonar_t *sonar);
 void sonar_update(sonar_t *sonar);
 
 
-#if 0
+
 
 /***************************************************************************
  * IR device
@@ -450,42 +488,8 @@ void ir_destroy(ir_t *ir);
 // Update a sonar device
 void ir_update(ir_t *ir);
 
- /***************************************************************************
-  * Bumper device
-  ***************************************************************************/
 
- // BUMPER device info
- typedef struct
- {
-   // Driver name
-   char *drivername;
-
-   // Menu stuff
-   rtk_menu_t *menu;
-   rtk_menuitem_t *subscribe_item;
-
-   // Figures for drawing the bumper 
-   rtk_fig_t *scan_fig[PLAYERC_BUMPER_MAX_SAMPLES];
-
-   // Bumper device proxy
-   playerc_bumper_t *proxy;
-
-   // Timestamp on most recent data
-   double datatime;
-
- } bumper_t;
-
-
- // Create a bumper device
- bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
-                       int index,  const char *drivername, int subscribe);
-
- // Destroy a bumper device
- void bumper_destroy(bumper_t *bumper);
-
- // Update a bumper device
- void bumper_update(bumper_t *bumper);
-
+#if 0
 /***************************************************************************
  * Blobfinder device
  ***************************************************************************/
