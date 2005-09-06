@@ -55,10 +55,11 @@
 
 
 // Local declarations
-void playerc_bumper_putdata(playerc_bumper_t *device, player_msghdr_t *header,
-                           player_bumper_data_t *data, size_t len);
-void playerc_bumper_putgeom(playerc_bumper_t *device, player_msghdr_t *header,
-                           player_bumper_geom_t *data, size_t len);
+
+// Process incoming data
+void playerc_bumper_putmsg(playerc_bumper_t *device, 
+                          player_msghdr_t *header,
+                          void *data);
 
 // Create a new bumper proxy
 playerc_bumper_t *playerc_bumper_create(playerc_client_t *client, int index)
@@ -68,9 +69,7 @@ playerc_bumper_t *playerc_bumper_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_bumper_t));
   memset(device, 0, sizeof(playerc_bumper_t));
   playerc_device_init(&device->info, client, PLAYER_BUMPER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_bumper_putdata,
-					  (playerc_putdata_fn_t) playerc_bumper_putgeom,
-					  NULL);
+ 					  (playerc_putmsg_fn_t) playerc_bumper_putmsg);
     
   return device;
 }
@@ -97,41 +96,36 @@ int playerc_bumper_unsubscribe(playerc_bumper_t *device)
   return playerc_device_unsubscribe(&device->info);
 }
 
-
 // Process incoming data
-void playerc_bumper_putdata(playerc_bumper_t *device, player_msghdr_t *header,
-                           player_bumper_data_t *data, size_t len)
+void playerc_bumper_putmsg(playerc_bumper_t *device, 
+                          player_msghdr_t *header,
+                          void *data)
 {
   int i;
-
-  assert(sizeof(*data) <= len);
-
-  device->bumper_count = (data->bumper_count);
-
-  // data is array of bytes, either as boolean or coded for bumper corner
-  for (i = 0; i < device->bumper_count; i++)
-    device->bumpers[i] = (data->bumpers[i]);
-}
-
-// Process incoming geom
-void playerc_bumper_putgeom(playerc_bumper_t *device, player_msghdr_t *header,
-                           player_bumper_geom_t *data, size_t len)
-{
-  int i;
-  if (len != sizeof(player_bumper_geom_t))
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_BUMPER_DATA_STATE))
   {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_bumper_geom_t));
-    return;
+  	player_bumper_data_t * bdata = (player_bumper_data_t *) data;
+    device->bumper_count = bdata->bumpers_count;
+
+    // data is array of bytes, either as boolean or coded for bumper corner
+    for (i = 0; i < device->bumper_count; i++)
+      device->bumpers[i] = bdata->bumpers[i];
   }
-
-  device->pose_count = htons(data->bumper_count);
-  for (i = 0; i < device->pose_count; i++)
+  else if((header->type == PLAYER_MSGTYPE_RESP_ACK) &&
+     (header->subtype == PLAYER_BUMPER_GET_GEOM))
   {
-    device->poses[i][0] = ((int16_t) ntohs(data->bumper_def[i].x_offset)); //mm
-    device->poses[i][1] = ((int16_t) ntohs(data->bumper_def[i].y_offset)); //mm
-    device->poses[i][2] = ((int16_t) ntohs(data->bumper_def[i].th_offset)); //deg
-    device->poses[i][3] = ((int16_t) ntohs(data->bumper_def[i].length)); //mm
-    device->poses[i][4] = ((int16_t) ntohs(data->bumper_def[i].radius)); //mm
+  	player_bumper_geom_t * bgeom = (player_bumper_geom_t *) data;
+  	
+    device->pose_count = bgeom->bumper_def_count;
+    for (i = 0; i < device->pose_count; i++)
+    {
+      device->poses[i][0] = bgeom->bumper_def[i].pose.px; //m
+      device->poses[i][1] = bgeom->bumper_def[i].pose.py; //m
+      device->poses[i][2] = bgeom->bumper_def[i].pose.pa; //rad
+      device->poses[i][3] = bgeom->bumper_def[i].length; //m
+      device->poses[i][4] = bgeom->bumper_def[i].radius; //m
+    }
   }
 }
 
@@ -139,27 +133,24 @@ void playerc_bumper_putgeom(playerc_bumper_t *device, player_msghdr_t *header,
 // rather than returning it to the caller.
 int playerc_bumper_get_geom(playerc_bumper_t *device)
 {
-  int len;
   int i;
   player_bumper_geom_t config;
 
 //  config.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info, PLAYER_BUMPER_GET_GEOM,
-                               &config, 0, &config, sizeof(config));
-  if (len < sizeof(config))
+  if (playerc_client_request(device->info.client, &device->info, PLAYER_BUMPER_GET_GEOM,
+                               NULL, &config, sizeof(config)) < 0)
     return -1;
-  device->pose_count = htons(config.bumper_count);
+  device->pose_count = config.bumper_def_count;
   for (i = 0; i < device->pose_count; i++)
   {
-    device->poses[i][0] = ((int16_t) ntohs(config.bumper_def[i].x_offset)); //mm
-    device->poses[i][1] = ((int16_t) ntohs(config.bumper_def[i].y_offset)); //mm
-    device->poses[i][2] = ((int16_t) ntohs(config.bumper_def[i].th_offset)); //deg
-    device->poses[i][3] = ((int16_t) ntohs(config.bumper_def[i].length)); //mm
-    device->poses[i][4] = ((int16_t) ntohs(config.bumper_def[i].radius)); //mm
+    device->poses[i][0] = config.bumper_def[i].pose.px; //m
+    device->poses[i][1] = config.bumper_def[i].pose.py; //m
+    device->poses[i][2] = config.bumper_def[i].pose.pa; //rad
+    device->poses[i][3] = config.bumper_def[i].length; //m
+    device->poses[i][4] = config.bumper_def[i].radius; //m
   }
-		
-
+	
   return 0;
 }
 
