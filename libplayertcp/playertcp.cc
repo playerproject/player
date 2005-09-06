@@ -815,7 +815,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
           resp = new Message(resphdr, (void*)&devlist, 
-                             sizeof(player_device_devlist));
+                             sizeof(player_device_devlist_t));
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
