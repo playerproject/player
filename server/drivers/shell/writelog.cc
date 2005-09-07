@@ -554,6 +554,7 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
 
     PLAYER_MSG1(1,"Closing logfile %s", this->filename);
     this->CloseFile();
+    memset(this->filename,0,sizeof(this->filename));
     strncpy(this->filename,
             (const char*)freq->filename,
             freq->filename_count);
