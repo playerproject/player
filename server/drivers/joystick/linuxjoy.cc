@@ -345,7 +345,7 @@ int LinuxJoystick::Setup()
                                        PLAYER_MSGTYPE_REQ, 
                                        PLAYER_POSITION2D_REQ_MOTOR_POWER,
                                        (void*)&motorconfig,
-                                       sizeof(motorconfig),NULL)))
+                                       sizeof(motorconfig),NULL,false)))
     {
       PLAYER_WARN("failed to enable motors");
     }

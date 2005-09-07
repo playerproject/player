@@ -61,7 +61,7 @@ public class main
     playercore_java.ErrorInit(9);
     playertcp_java.playerxdr_ftable_init();
 
-    // Convert our localhost to a 32-bit address.  It will be used to
+    // Convert "localhost" to a 32-bit address.  It will be used to
     // lookup available devices.
     long port = 6665;
     // The calling convention is a little funny here, because of the way
@@ -179,7 +179,7 @@ public class main
 
       // Is it a "scanpose" data message from laser:0?
       if((hdr.getType() == playercore_javaConstants.PLAYER_MSGTYPE_DATA) &&
-         (hdr.getSubtype() == playercore_javaConstants.PLAYER_LASER_DATA_SCAN) &&
+         (hdr.getSubtype() == playercore_javaConstants.PLAYER_LASER_DATA_SCANPOSE) &&
          (addr.getInterf() == playercore_javaConstants.PLAYER_LASER_CODE) &&
          (addr.getIndex() == 0))
       {
