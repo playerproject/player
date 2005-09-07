@@ -32,14 +32,15 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
                          $(srcdir)/../../message.h \
                          $(srcdir)/../../player.h \
                          $(srcdir)/../../playercommon.h \
-                         $(srcdir)/../../playertime.h
+                         $(srcdir)/../../playertime.h \
+                         $(srcdir)/../../addr_util.h
 	swig -v -java -package net.sourceforge.playerstage.Jplayercore -outdir net/sourceforge/playerstage/Jplayercore -c++ -o $@ -I$(srcdir)/../../.. $<
 
 #all-local:
 #	javac *.java
 
 libplayercore_java_la_SOURCES = playercore_java_wrap.cc
-libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/*.lo $(top_builddir)/server/libplayerdrivers/*.lo `find $(top_builddir)/server/drivers -name "*.lo"` -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@ 
+libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@
 
 if DARWIN
 install-exec-hook:

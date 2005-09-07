@@ -298,6 +298,8 @@ AC_OUTPUT(Makefile
           libplayerxdr/Makefile
           libplayerxdr/playerxdr.pc
           libplayertcp/Makefile
+          libplayertcp/bindings/Makefile
+          libplayertcp/bindings/java/Makefile
           libplayertcp/playertcp.pc
           server/Makefile
           server/libplayerdrivers/Makefile
