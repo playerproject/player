@@ -59,8 +59,7 @@ if __name__ == '__main__':
 
   outfile.write('%inline\n%{\n\n')
 
-  pcjfile.write('package playercore;\n')
-  pcjfile.write('import Jplayercore.*;\n\n')
+  pcjfile.write('package net.sourceforge.playerstage.Jplayercore;\n')
   pcjfile.write('public class player {\n\n')
 
   for s in structs:
@@ -98,7 +97,7 @@ if __name__ == '__main__':
     # Equivalent non-JNI Java class
     jclass = 'J' + typename
     jfile = open(outdir + '/' + jclass + '.java', 'w+')
-    jfile.write('package Jplayercore;\n')
+    jfile.write('package net.sourceforge.playerstage.Jplayercore;\n')
     jfile.write('import java.io.Serializable;\n')
     jfile.write('public class ' + jclass + ' implements Serializable {\n')
     jfile.write('  public final static long serialVersionUID = ' + `hash(s)` + 'L;\n')

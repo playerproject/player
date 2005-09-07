@@ -1,12 +1,10 @@
-// playercore defines the JNI classes that wrap the underlying C structs
+// Jplayercore defines the JNI classes that wrap the underlying C structs
 // and C++ classes.
-import playercore.*;
-
-// Jplayercore defines the standard (i.e., non-JNI) classes that correspond
+// Jplayercore also defines the standard (i.e., non-JNI) classes that correspond
 // to Player messages.  For player C message struct 'player_foo_t',
 // Jplayercore defines a 'Jplayer_foo_t' that contains equivalent data,
 // in a Serializable form.
-import Jplayercore.*;
+import net.sourceforge.playerstage.Jplayercore.*;
 
 // The class playercore.player contains static methods that translate
 // between the void* message buffers used in C++ and the corresponding 
