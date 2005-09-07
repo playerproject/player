@@ -156,6 +156,7 @@ int playerc_log_set_read_rewind(playerc_log_t* device)
 int playerc_log_set_filename(playerc_log_t* device, const char* fname)
 {
   player_log_set_filename_t req;
+  memset(&req,0,sizeof(req));
 
   if(strlen(fname) > (sizeof(req.filename)-1))
   {
@@ -163,6 +164,7 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
     return(-1);
   }
   strcpy(req.filename,fname);
+  req.filename_count = strlen(req.filename);
 
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_FILENAME,

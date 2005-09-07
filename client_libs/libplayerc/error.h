@@ -58,7 +58,6 @@ extern char *playerc_error_set_str(void);
 
 // Useful error macros.
 // These print out the error
-/*
 #define PLAYERC_ERR(msg)         printf("playerc error   : " msg "\n")
 #define PLAYERC_ERR1(msg, a)     printf("playerc error   : " msg "\n", a)
 #define PLAYERC_ERR2(msg, a, b)  printf("playerc error   : " msg "\n", a, b)
@@ -67,10 +66,10 @@ extern char *playerc_error_set_str(void);
 #define PLAYERC_WARN1(msg, a)    printf("playerc warning : " msg "\n", a)
 #define PLAYERC_WARN2(msg, a, b) printf("playerc warning : " msg "\n", a, b)
 #define PLAYERC_MSG3(msg, a, b, c) printf("playerc message : " msg "\n", a, b, c)
-*/
 
 // Useful error macros.
 // These ones store the error message.
+/*
 #define PLAYERC_ERR(msg)         sprintf(playerc_error_set_str(), msg)
 #define PLAYERC_ERR1(msg, a)     sprintf(playerc_error_set_str(), msg, a)
 #define PLAYERC_ERR2(msg, a, b)  sprintf(playerc_error_set_str(), msg, a, b)
@@ -81,6 +80,7 @@ extern char *playerc_error_set_str(void);
 #define PLAYERC_WARN3(msg, a, b, c) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c)
 #define PLAYERC_WARN4(msg, a, b, c, d) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c, d)
 #define PLAYERC_WARN5(msg, a, b, c, d, e) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c, d, e)
+*/
 
 // DEBUG macros
 #ifdef DEBUG
