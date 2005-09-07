@@ -392,11 +392,15 @@ int playerc_client_request(playerc_client_t *client,
       // Using TCP, we only need to check the interface and index
       if (rep_header.addr.interf != req_header.addr.interf ||
           rep_header.addr.index != req_header.addr.index ||
-          rep_header.subtype != req_header.subtype ||
-          rep_header.size > rep_len)
+          rep_header.subtype != req_header.subtype)
       {
-        printf("%d %d\n", rep_header.size, rep_len);
         PLAYERC_ERR("got the wrong kind of reply (not good).");
+        return -1;
+      }
+      else if(rep_header.size > rep_len)
+      {
+        PLAYERC_ERR2("insufficient space to store the reply (%u > %u)",
+                     rep_header.size, rep_len);
         return -1;
       }
       memcpy(rep_data, client->data, rep_header.size);
