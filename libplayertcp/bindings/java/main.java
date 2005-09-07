@@ -1,10 +1,15 @@
 // Jplayercore defines the JNI classes that wrap the underlying C structs
+
 // and C++ classes.
 // Jplayercore also defines the standard (i.e., non-JNI) classes that correspond
 // to Player messages.  For player C message struct 'player_foo_t',
 // Jplayercore defines a 'Jplayer_foo_t' that contains equivalent data,
 // in a Serializable form.
 import net.sourceforge.playerstage.Jplayercore.*;
+
+// Jplayertcp defines the JNI classes used to handles clients over sockets,
+// including XDR marshaling.
+import net.sourceforge.playerstage.Jplayertcp.*;
 
 // The class playercore.player contains static methods that translate
 // between the void* message buffers used in C++ and the corresponding 
@@ -45,18 +50,30 @@ public class main
     //    playercore_java : The libplayercore code, wrapped in Java
     //    playercore_javaConstants : The #define'd constants as Java consts
     System.loadLibrary("playercore_java");
+    // Also load the playertcp library.
+    System.loadLibrary("playertcp_java");
 
-    long[] hostname = {0};
-    playercore_java.hostname_to_packedaddr(hostname,"localhost");
-    System.out.println(hostname[0]);
 
     //////////////////////////////////////////////////////////////////
     // Initialization stuff
 
     playercore_java.player_register_drivers();
     playercore_java.ErrorInit(9);
+    playertcp_java.playerxdr_ftable_init();
 
-    ConfigFile cf = new ConfigFile(0, 0);
+    // Convert our localhost to a 32-bit address.  It will be used to
+    // lookup available devices.
+    long port = 6665;
+    // The calling convention is a little funny here, because of the way
+    // that SWIG wraps a C function that returns its results via a pointer
+    // that was passed in.
+    long[] hostnamearr = {0};
+    playercore_java.hostname_to_packedaddr(hostnamearr,"localhost");
+    long hostname = hostnamearr[0];
+
+    // Create the configuration file parsing object, setting the default
+    // host and port.
+    ConfigFile cf = new ConfigFile(hostname, port);
 
     if(!cf.Load(argv[0]))
     {
@@ -69,7 +86,21 @@ public class main
       System.out.println("failed to parse cfg file");
       System.exit(-1);
     }
+    if(playercore_java.getDeviceTable().StartAlwaysonDrivers() != 0)
+    {
+      System.out.println("failed to start alwayson drivers");
+      System.exit(-1);
+    }
 
+    // Setup the socket server on the default Player port, 6665
+    PlayerTCP ptcp = new PlayerTCP();
+    int ports[] = { 6665 };
+    ptcp.Listen(ports,1);
+    System.out.print("Listening on ports: ");
+    for(int i=0;i<ports.length;i++)
+      System.out.print(ports[i] + " ");
+    System.out.println("");
+  
     // Initialization stuff
     //////////////////////////////////////////////////////////////////
 
@@ -82,8 +113,8 @@ public class main
 
     // Find the laser
     player_devaddr_t addr = new player_devaddr_t();
-    addr.setHost(0);
-    addr.setRobot(0);
+    addr.setHost(hostname);
+    addr.setRobot(port);
     addr.setInterf(playercore_javaConstants.PLAYER_LASER_CODE);
     addr.setIndex(0);
     Device dev = playercore_java.getDeviceTable().GetDevice(addr,false);
@@ -108,15 +139,31 @@ public class main
     {
       // Allow non-threaded drivers to process messages
       playercore_java.getDeviceTable().UpdateDevices();
+  
+      // Let the socket server accept new connections
+      if(ptcp.Accept(0) < 0)
+      {
+        System.out.println("failed while accepting new connections");
+        break;
+      }
+      // Let the socket server read from current connections
+      if(ptcp.Read(1) < 0)
+      {
+        System.out.println("failed while reading");
+        break;
+      }
+      // Let the socket server write to current connections
+      if(ptcp.Write() < 0)
+      {
+        System.out.println("failed while reading");
+        break;
+      }
 
-      // Pop a message off the queue
+      // Pop a message off our queue
       Message msg = mq.Pop();
       if(msg == null)
       {
-        // no messages waiting; yield the processor
-        try { Thread.currentThread().sleep(10); }
-        catch (InterruptedException e) { }
-
+        // no messages waiting
         continue;
       }
 
@@ -132,7 +179,7 @@ public class main
 
       // Is it a "scanpose" data message from laser:0?
       if((hdr.getType() == playercore_javaConstants.PLAYER_MSGTYPE_DATA) &&
-         (hdr.getSubtype() == playercore_javaConstants.PLAYER_LASER_DATA_SCANPOSE) &&
+         (hdr.getSubtype() == playercore_javaConstants.PLAYER_LASER_DATA_SCAN) &&
          (addr.getInterf() == playercore_javaConstants.PLAYER_LASER_CODE) &&
          (addr.getIndex() == 0))
       {

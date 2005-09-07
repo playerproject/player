@@ -140,8 +140,8 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     device->scan_count = scan_data->ranges_count;
     device->scan_id = scan_data->id;
   }
-  if((header->type == PLAYER_MSGTYPE_DATA) &&
-     (header->subtype == PLAYER_LASER_DATA_SCANPOSE))
+  else if((header->type == PLAYER_MSGTYPE_DATA) &&
+          (header->subtype == PLAYER_LASER_DATA_SCANPOSE))
   {
     player_laser_data_scanpose_t* scan_data = 
             (player_laser_data_scanpose_t*)data;

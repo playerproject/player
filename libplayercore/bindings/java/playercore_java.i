@@ -23,6 +23,9 @@ typedef unsigned long uint64_t;
 // non-primitive types (i.e., message structures)
 %include playercore_arraysofclasses.i
 
+// Special handling for a function that returns its result in a pointer
+int hostname_to_packedaddr(uint32_t* OUTPUT, const char*);
+
 %include <libplayercore/configfile.h>
 %include <libplayercore/device.h>
 %include <libplayercore/devicetable.h>
@@ -34,6 +37,7 @@ typedef unsigned long uint64_t;
 %include <libplayercore/player.h>
 %include <libplayercore/playercommon.h>
 %include <libplayercore/playertime.h>
+%include <libplayercore/addr_util.h>
 
 %include <server/libplayerdrivers/driverregistry.h>
 
