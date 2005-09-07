@@ -132,7 +132,6 @@ Andy Martignoni III, Brian Gerkey, Brendan Burns, Ben Grocholsky
 #define DEFAULT_CMV_WIDTH CMV_DEFAULT_WIDTH
 #define DEFAULT_CMV_HEIGHT CMV_DEFAULT_HEIGHT
 
-//const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms) => max 100 fps
 /********************************************************************/
 
 class CMVisionBF: public Driver
@@ -256,11 +255,11 @@ CMVisionBF::Main()
   // The main loop; interact with the device here
   for(;;)
   {
+    // wait to receive a new message (blocking)
+    Wait();
+
     // test if we are supposed to cancel
     pthread_testcancel();
-
-    // Go to sleep for a while (this is a polling loop)
-    //nanosleep(&NSLEEP_TIME, NULL);
 
     // Process incoming messages, and update outgoing data
     ProcessMessages();
