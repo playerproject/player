@@ -101,6 +101,7 @@ if __name__ == '__main__':
     jfile.write('package Jplayercore;\n')
     jfile.write('import java.io.Serializable;\n')
     jfile.write('public class ' + jclass + ' implements Serializable {\n')
+    jfile.write('  public final static long serialVersionUID = ' + `hash(s)` + 'L;\n')
 
     # Static method in class player to convert from JNI Java object to
     # non-JNI java object
