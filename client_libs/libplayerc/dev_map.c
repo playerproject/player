@@ -122,10 +122,11 @@ int playerc_map_get_map(playerc_map_t* device)
 
   // now, get the map, in tiles
 
-  // Allocate space for one received tile (metadata + cells)
-  repsize = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
-  repsize += device->width * device->height;
-  data_req = (player_map_data_t*)calloc(repsize, 1);
+  // Allocate space for one received tile.  Note that we need to allocate
+  // space to hold the maximum possible tile, because the received tile
+  // will be unpacked into a structure of that size.
+  repsize = sizeof(player_map_data_t);
+  data_req = (player_map_data_t*)malloc(repsize);
   assert(data_req);
 
   // Tile size

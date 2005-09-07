@@ -53,6 +53,8 @@ int ParseArgs(int* port, int* debuglevel, const char** cfgfilename,
 void Quit(int signum);
 void Cleanup();
 
+PlayerTCP* ptcp;
+
 int
 main(int argc, char** argv)
 {
@@ -61,7 +63,6 @@ main(int argc, char** argv)
   int* ports;
   int num_ports;
   const char* cfgfilename;
-  PlayerTCP ptcp;
   ConfigFile* cf;
 
   if(signal(SIGINT, Quit) == SIG_ERR)
@@ -129,7 +130,10 @@ main(int argc, char** argv)
       ports[num_ports++] = device->addr.robot;
   }
 
-  if(ptcp.Listen(ports, num_ports) < 0)
+  ptcp = new PlayerTCP();
+  assert(ptcp);
+
+  if(ptcp->Listen(ports, num_ports) < 0)
   {
     PLAYER_ERROR("failed to listen on requested ports");
     Cleanup();
@@ -145,18 +149,18 @@ main(int argc, char** argv)
 
   while(!player_quit)
   {
-    if(ptcp.Accept(0) < 0)
+    if(ptcp->Accept(0) < 0)
     {
       PLAYER_ERROR("failed while accepting new connections");
       break;
     }
-    if(ptcp.Read(1) < 0)
+    if(ptcp->Read(1) < 0)
     {
       PLAYER_ERROR("failed while reading");
       break;
     }
     deviceTable->UpdateDevices();
-    if(ptcp.Write() < 0)
+    if(ptcp->Write() < 0)
     {
       PLAYER_ERROR("failed while reading");
       break;
@@ -174,6 +178,7 @@ main(int argc, char** argv)
 void
 Cleanup()
 {
+  delete ptcp;
   delete deviceTable;
   delete driverTable;
 }
