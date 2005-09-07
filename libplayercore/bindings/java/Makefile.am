@@ -16,7 +16,7 @@ endif
 
 playercore_arraysofclasses.i: playercore_casts.i
 
-playercore_casts.i: $(srcdir)/../../player.h
+playercore_casts.i: $(srcdir)/../../player.h parse.py
 	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i Jplayercore playercore player.java
 
 
