@@ -17,7 +17,7 @@ endif
 playercore_arraysofclasses.i: playercore_casts.i
 
 playercore_casts.i: $(srcdir)/../../player.h parse.py
-	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i Jplayercore playercore player.java
+	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i net/sourceforge/playerstage/Jplayercore net/sourceforge/playerstage/Jplayercore player.java
 
 
 playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
@@ -33,7 +33,7 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
                          $(srcdir)/../../player.h \
                          $(srcdir)/../../playercommon.h \
                          $(srcdir)/../../playertime.h
-	swig -v -java -package playercore -outdir playercore -c++ -o $@ -I$(srcdir)/../../.. $<
+	swig -v -java -package net.sourceforge.playerstage.Jplayercore -outdir net/sourceforge/playerstage/Jplayercore -c++ -o $@ -I$(srcdir)/../../.. $<
 
 #all-local:
 #	javac *.java
@@ -47,4 +47,4 @@ install-exec-hook:
 endif
 
 clean-local:
-	rm -rf playercore Jplayercore
+	rm -rf net
