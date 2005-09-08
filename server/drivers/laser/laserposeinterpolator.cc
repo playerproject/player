@@ -140,6 +140,7 @@ class LaserPoseInterp : public Driver
     Device* position_device;
 
     // interpolation bookkeeping
+    bool interpolate;
     int maxnumscans;
     int numscans;
     player_laser_data_t* scans;
@@ -182,6 +183,7 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   }
   this->position_device = NULL;
 
+  this->interpolate = cf->ReadInt(section, "interpolate", 1);
   this->maxnumscans = cf->ReadInt(section, "max_scans", DEFAULT_MAXSCANS);
 
   this->scans = (player_laser_data_t*)calloc(this->maxnumscans, 
@@ -260,18 +262,42 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
                            PLAYER_LASER_DATA_SCAN, 
                            this->laser_addr))
   {
-    // is there room?
-    if(this->numscans >= this->maxnumscans)
+    // are we interpolating?
+    if(!this->interpolate)
     {
-      PLAYER_WARN1("exceeded maximum number of scans to buffer (%d)",
-                   this->maxnumscans);
+      // make sure we've gotten at least one pose
+      if(this->lastposetime < 0)
+        return(0);
+
+      // Tag this scan with the last received pose and push it out
+      player_laser_data_scanpose_t scanpose;
+      scanpose.pose.px = this->lastpose.pos.px;
+      scanpose.pose.py = this->lastpose.pos.py;
+      scanpose.pose.pa = this->lastpose.pos.pa;
+      scanpose.scan = *((player_laser_data_t*)data);
+
+      this->Publish(this->device_addr, NULL,
+                    PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
+                    (void*)&scanpose, sizeof(scanpose), &hdr->timestamp);
       return(0);
     }
-    // store the scan and timestamp
-    this->scans[this->numscans] = *((player_laser_data_t*)data);
-    this->scantimes[this->numscans] = hdr->timestamp;
-    this->numscans++;
-    return(0);
+    else
+    {
+      // Buffer the scan to be pushed out later.
+
+      // is there room?
+      if(this->numscans >= this->maxnumscans)
+      {
+        PLAYER_WARN1("exceeded maximum number of scans to buffer (%d)",
+                     this->maxnumscans);
+        return(0);
+      }
+      // store the scan and timestamp
+      this->scans[this->numscans] = *((player_laser_data_t*)data);
+      this->scantimes[this->numscans] = hdr->timestamp;
+      this->numscans++;
+      return(0);
+    }
   }
   // Is it a new pose?
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
@@ -288,30 +314,32 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
     }
     else
     {
-       if(this->numscans == 0)
-         return(0);
-      // Interpolate pose for all buffered scans and send them out
-      double t1 = hdr->timestamp - this->lastposetime;
-      for(int i=0;i<this->numscans;i++)
+      // are we interpolating?
+      if(this->interpolate)
       {
-        double t0 = this->scantimes[i] - this->lastposetime;
-        player_laser_data_scanpose_t scanpose;
+        // Interpolate pose for all buffered scans and send them out
+        double t1 = hdr->timestamp - this->lastposetime;
+        for(int i=0;i<this->numscans;i++)
+        {
+          double t0 = this->scantimes[i] - this->lastposetime;
+          player_laser_data_scanpose_t scanpose;
 
-        scanpose.pose.px = this->lastpose.pos.px + t0 *
-                (newpose.pos.px - this->lastpose.pos.px) / t1;
-        scanpose.pose.py = this->lastpose.pos.py + t0 *
-                (newpose.pos.py - this->lastpose.pos.py) / t1;
-        scanpose.pose.pa = NORMALIZE(this->lastpose.pos.pa + t0 *
-                                     angle_diff(newpose.pos.pa,
-                                                this->lastpose.pos.pa) / t1);
-        scanpose.scan = this->scans[i];
+          scanpose.pose.px = this->lastpose.pos.px + t0 *
+                  (newpose.pos.px - this->lastpose.pos.px) / t1;
+          scanpose.pose.py = this->lastpose.pos.py + t0 *
+                  (newpose.pos.py - this->lastpose.pos.py) / t1;
+          scanpose.pose.pa = NORMALIZE(this->lastpose.pos.pa + t0 *
+                                       angle_diff(newpose.pos.pa,
+                                                  this->lastpose.pos.pa) / t1);
+          scanpose.scan = this->scans[i];
 
-        this->Publish(this->device_addr, NULL,
-                      PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
-                      (void*)&scanpose, sizeof(scanpose), 
-                      this->scantimes + i);
+          this->Publish(this->device_addr, NULL,
+                        PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
+                        (void*)&scanpose, sizeof(scanpose), 
+                        this->scantimes + i);
+        }
+        this->numscans = 0;
       }
-      this->numscans = 0;
       this->lastpose = newpose;
       this->lastposetime = hdr->timestamp;
     }

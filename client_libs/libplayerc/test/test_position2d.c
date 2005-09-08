@@ -5,6 +5,8 @@
  # CVS: $Id$
  **************************************************************************/
 
+#include <unistd.h>
+
 #include "test.h"
 #include "playerc.h"
 
