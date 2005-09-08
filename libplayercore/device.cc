@@ -98,10 +98,12 @@ Device::Subscribe(MessageQueue* sub_queue)
   // do we need to make room?
   if(this->num_queues == this->len_queues)
   {
+    size_t tmp = this->len_queues;
     this->len_queues *= 2;
     this->queues = (MessageQueue**)realloc(this->queues, 
                                            (this->len_queues * 
                                             sizeof(MessageQueue*)));
+    memset(this->queues+tmp,0,(this->len_queues-tmp)*sizeof(MessageQueue*));
     assert(this->queues);
   }
 

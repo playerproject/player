@@ -742,8 +742,8 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           // Note that, in this format, we need a lot of precision in the
           // resolution field.
 
-          fprintf(this->file, "%+07.4f %+07.4f %+.8f %04d ",
-                  scan->min_angle, scan->max_angle,
+          fprintf(this->file, "%04d %+07.4f %+07.4f %+.8f %04d ",
+                  scan->id, scan->min_angle, scan->max_angle,
                   scan->resolution, scan->ranges_count);
 
           for (i = 0; i < scan->ranges_count; i++)
@@ -756,7 +756,8 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           // Note that, in this format, we need a lot of precision in the
           // resolution field.
 
-          fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %04d ",
+          fprintf(this->file, "%04d %+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %04d ",
+                  scanpose->scan.id, 
                   scanpose->pose.px, scanpose->pose.py, scanpose->pose.pa,
                   scanpose->scan.min_angle, scanpose->scan.max_angle,
                   scanpose->scan.resolution, scanpose->scan.ranges_count);
