@@ -82,6 +82,7 @@ value at that place will be written to standard out.
 #include <unistd.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 #include <gtk/gtk.h>
 #include "playerc.h"
 
