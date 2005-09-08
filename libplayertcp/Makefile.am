@@ -1,5 +1,3 @@
-SUBDIRS = . bindings
-
 AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir)
 
 # create the pkg-config entry for the server headers
