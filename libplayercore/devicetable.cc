@@ -50,7 +50,7 @@ DeviceTable::~DeviceTable()
   thisentry=head;
   while(thisentry)
   {
-    if(thisentry->driver->subscriptions || thisentry->driver->alwayson)
+    if(thisentry->driver->subscriptions)
     {
       thisentry->driver->Shutdown();
       thisentry->driver->subscriptions = 0;
