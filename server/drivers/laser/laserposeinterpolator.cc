@@ -288,6 +288,8 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
     }
     else
     {
+       if(this->numscans == 0)
+         return(0);
       // Interpolate pose for all buffered scans and send them out
       double t1 = hdr->timestamp - this->lastposetime;
       for(int i=0;i<this->numscans;i++)
