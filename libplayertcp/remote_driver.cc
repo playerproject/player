@@ -266,7 +266,6 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
                            -1,
                            this->device_addr))
   {
-    printf("sending %d-byte request\n", hdr->size);
     // Push it onto the outgoing queue
     this->Publish(this->queue, hdr, data);
     // Store the return address for later use
@@ -288,7 +287,6 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
           (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
                                  -1, this->device_addr)))
   {
-    puts("got reply");
     // Forward the response
     this->Publish(this->ret_queue, hdr, data);
     // Clear the filter
