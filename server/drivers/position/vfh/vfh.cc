@@ -497,7 +497,6 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
                               player_msghdr * hdr, 
                               void * data)
 {
-
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
                            PLAYER_POSITION2D_DATA_STATE, this->odom_addr))
   {
@@ -515,7 +514,7 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
                                 PLAYER_POSITION2D_CMD_STATE, 
-                       this->device_addr))
+                                this->device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_cmd_t));
     ProcessCommand(hdr, *reinterpret_cast<player_position2d_cmd_t *> (data));
@@ -548,7 +547,10 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
     return(0);
   }
   else
+  {
+    puts("unhandled command");
     return -1;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
