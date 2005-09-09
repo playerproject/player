@@ -31,6 +31,7 @@ class TCPRemoteDriver : public Driver
   private:
     PlayerTCP* ptcp;
     int sock;
+    MessageQueue* queue;
 
   public:
     TCPRemoteDriver(player_devaddr_t addr, void* arg);
@@ -38,7 +39,11 @@ class TCPRemoteDriver : public Driver
 
     virtual int Setup();
     virtual int Shutdown();
-    virtual void Update();
+    virtual int ProcessMessage(MessageQueue* resp_queue, 
+                               player_msghdr * hdr, 
+                               void * data);
+
+    int SubscribeRemote();
 
     static Driver* TCPRemoteDriver_Init(player_devaddr_t addr, void* arg);
 };

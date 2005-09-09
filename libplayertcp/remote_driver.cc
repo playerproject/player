@@ -21,8 +21,11 @@
  */
 
 #include <errno.h>
+#include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 
+#include <libplayerxdr/playerxdr.h>
 #include "remote_driver.h"
 
 TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg) 
@@ -78,29 +81,129 @@ TCPRemoteDriver::Setup()
          this->device_addr.host, this->device_addr.robot);
 
   // Get the banner 
-  if(recv(this->sock, banner, sizeof(banner), 0) < (int)sizeof(banner))
+  if(read(this->sock, banner, sizeof(banner)) < (int)sizeof(banner))
   {
     PLAYER_ERROR("incomplete initialization string");
     return(-1);
   }
   printf("got banner: %s\n", banner);
 
-  /*
-  // subscribe to the remote device
+  if(this->SubscribeRemote() < 0)
+  {
+    close(this->sock);
+    return(-1);
+  }
+
+  // make the socket non-blocking
+  if(fcntl(this->sock, F_SETFL, O_NONBLOCK) == -1)
+  {
+    PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
+    close(this->sock);
+    return(-1);
+  }
+
+  // Add this socket for monitoring
+  this->queue = this->ptcp->AddClient(NULL, 0, this->sock);
+
+  return(0);
+}
+
+// subscribe to the remote device
+int
+TCPRemoteDriver::SubscribeRemote()
+{
+  int encode_msglen;
   unsigned char buf[512];
   player_msghdr_t hdr;
   player_device_req_t req;
 
-  hdr.addr = this->device_addr;
+  memset(&hdr,0,sizeof(hdr));
+  hdr.addr.interf = PLAYER_PLAYER_CODE;
   hdr.type = PLAYER_MSGTYPE_REQ;
-  hdr.subtype = PLAYER_DRI
+  hdr.subtype = PLAYER_PLAYER_REQ_DEV;
+  GlobalTime->GetTimeDouble(&hdr.timestamp);
 
   req.addr = this->device_addr;
   req.access = PLAYER_OPEN_MODE;
   req.driver_name_count = 0;
-  if(
-  //this->ptcp->AddClient(NULL, 0, this->sock, this);
-  */
+
+  // Encode the body
+  if((encode_msglen = 
+      player_device_req_pack(buf + PLAYERXDR_MSGHDR_SIZE,
+                             sizeof(buf)-PLAYERXDR_MSGHDR_SIZE,
+                             &req, PLAYERXDR_ENCODE)) < 0)
+  {
+    PLAYER_ERROR("failed to encode request");
+    return(-1);
+  }
+
+  // Rewrite the size in the header with the length of the encoded
+  // body, then encode the header.
+  hdr.size = encode_msglen;
+  if(player_msghdr_pack(buf, PLAYERXDR_MSGHDR_SIZE, &hdr,
+                        PLAYERXDR_ENCODE) < 0)
+  {
+    PLAYER_ERROR("failed to encode header");
+    return(-1);
+  }
+
+  encode_msglen += PLAYERXDR_MSGHDR_SIZE;
+
+  // Send the request
+  if(write(this->sock, buf, encode_msglen) < encode_msglen)
+  {
+    PLAYER_ERROR1("write failed: %s", strerror(errno));
+    return(-1);
+  }
+  
+  // Receive the response
+  if((encode_msglen = read(this->sock, buf, sizeof(buf))) < 0)
+  {
+    PLAYER_ERROR1("read failed: %s", strerror(errno));
+    return(-1);
+  }
+
+  // Decode the header
+  if(player_msghdr_pack(buf, encode_msglen, &hdr, PLAYERXDR_DECODE) < 0)
+  {
+    PLAYER_ERROR("failed to decode header");
+    return(-1);
+  }
+
+  // Is it the right kind of message?
+  if(!Message::MatchMessage(&hdr, 
+                            PLAYER_MSGTYPE_RESP_ACK,
+                            PLAYER_PLAYER_REQ_DEV,
+                            hdr.addr))
+  {
+    PLAYER_ERROR("got wrong kind of reply");
+    return(-1);
+  }
+
+  memset(&req,0,sizeof(req));
+  // Decode the body
+  if(player_device_req_pack(buf + PLAYERXDR_MSGHDR_SIZE,
+                            encode_msglen-PLAYERXDR_MSGHDR_SIZE,
+                            &req, PLAYERXDR_DECODE) < 0)
+  {
+    PLAYER_ERROR("failed to decode reply");
+    return(-1);
+  }
+
+  // Did we get the right access?
+  if(req.access != PLAYER_OPEN_MODE)
+  {
+    PLAYER_ERROR("got wrong access");
+    return(-1);
+  }
+
+  // Success!
+  PLAYER_MSG5(1, "Subscribed to %d:%d:%d:%d (%s)",
+              this->device_addr.host,
+              this->device_addr.robot,
+              this->device_addr.interf,
+              this->device_addr.index,
+              req.driver_name);
 
   return(0);
 }
@@ -120,10 +223,70 @@ TCPRemoteDriver::Shutdown()
   return(0); 
 }
 
-void 
-TCPRemoteDriver::Update() 
+
+int 
+TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue, 
+                                player_msghdr * hdr, 
+                                void * data)
 {
+  // Is it data from the remote device?
+  if(Message::MatchMessage(hdr,
+                           PLAYER_MSGTYPE_DATA,
+                           -1,
+                           this->device_addr))
+  {
+    // Re-publish it for local consumers
+    this->Publish(NULL, hdr, data);
+    return(0);
+  }
+  // Is it a command for the remote device?
+  else if(Message::MatchMessage(hdr,
+                           PLAYER_MSGTYPE_CMD,
+                           -1,
+                           this->device_addr))
+  {
+    // Push it onto the outgoing queue
+    this->Publish(this->queue, hdr, data);
+    return(0);
+  }
+  // Is it a request for the remote device?
+  else if(Message::MatchMessage(hdr,
+                           PLAYER_MSGTYPE_REQ,
+                           -1,
+                           this->device_addr))
+  {
+    // Push it onto the outgoing queue
+    this->Publish(this->queue, hdr, data);
+    // Store the return address for later use
+    this->ret_queue = resp_queue;
+    // Set the message filter to look for the response
+    this->InQueue->SetFilter(this->device_addr.host,
+                             this->device_addr.robot,
+                             this->device_addr.interf,
+                             this->device_addr.index,
+                             -1,
+                             hdr->subtype);
+    // No response now; it will come later after we hear back from the
+    // laser
+    return(0);
+  }
+  // Forward response (success or failure) from the laser
+  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 
+                                 -1, this->device_addr)) ||
+          (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
+                                 -1, this->device_addr)))
+  {
+    // Forward the response
+    this->Publish(this->ret_queue, hdr, data);
+    // Clear the filter
+    this->InQueue->ClearFilter();
+
+    return(0);
+  }
+  else
+    return(-1);
 }
+
 
 Driver* 
 TCPRemoteDriver::TCPRemoteDriver_Init(player_devaddr_t addr, void* arg)

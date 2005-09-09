@@ -106,9 +106,9 @@ PlayerTCP::Listen(int* ports, int num_ports)
   return(0);
 }
 
-void
+MessageQueue*
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
-                     int newsock, Device* dev)
+                     int newsock)
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
 
@@ -178,6 +178,8 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
 
   PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
               j, this->clients[j].port, this->clients[j].fd);
+
+  return(this->clients[j].queue);
 }
 
 int
@@ -228,7 +230,7 @@ PlayerTCP::Accept(int timeout)
       }
 
       this->AddClient(&cliaddr, this->listeners[i].port,
-                      newsock, NULL);
+                      newsock);
 
       this->num_clients++;
       num_accepts--;
