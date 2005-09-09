@@ -161,19 +161,13 @@ Driver::Publish(player_devaddr_t addr,
                 size_t len,
                 double* timestamp)
 {
-  struct timeval ts;
   double t;
 
   // Fill in the time structure if not supplied
   if(timestamp)
-  {
     t = *timestamp;
-  }
   else
-  {
-    GlobalTime->GetTime(&ts);
-    t = ts.tv_sec + ts.tv_usec/1e6;
-  }
+    GlobalTime->GetTimeDouble(&t);
 
   player_msghdr_t hdr;
   memset(&hdr,0,sizeof(player_msghdr_t));
