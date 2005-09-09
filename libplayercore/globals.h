@@ -30,6 +30,7 @@ extern DeviceTable* deviceTable;
 extern PlayerTime* GlobalTime;
 extern DriverTable* driverTable;
 
-//void player_globals_init(void);
+void player_globals_init(void);
+void player_globals_fini();
 
 #endif

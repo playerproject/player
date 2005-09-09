@@ -32,20 +32,39 @@
 #include <libplayercore/wallclocktime.h>
 
 // this table holds all the currently *instantiated* devices
-DeviceTable* deviceTable = new DeviceTable();
+DeviceTable* deviceTable;
 
 // this table holds all the currently *available* drivers
-DriverTable* driverTable = new DriverTable();
+DriverTable* driverTable;
 
 // the global PlayerTime object has a method 
 //   int GetTime(struct timeval*)
 // which everyone must use to get the current time
-PlayerTime* GlobalTime = new WallclockTime();
+PlayerTime* GlobalTime;
 
 bool player_quit;
 bool player_quiet_startup;
 
 // for use in other places
 char playerversion[] = VERSION;
+
+void
+player_globals_init()
+{
+  deviceTable = new DeviceTable();
+  driverTable = new DriverTable();
+  GlobalTime = new WallclockTime();
+}
+
+void
+player_globals_fini()
+{
+  if(deviceTable)
+    delete deviceTable;
+  if(driverTable)
+    delete driverTable;
+  if(GlobalTime)
+    delete GlobalTime;
+}
 
 #endif

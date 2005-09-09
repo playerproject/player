@@ -77,6 +77,7 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+  player_globals_init();
   player_register_drivers();
   playerxdr_ftable_init();
 
@@ -185,8 +186,7 @@ void
 Cleanup()
 {
   delete ptcp;
-  delete deviceTable;
-  delete driverTable;
+  player_globals_fini();
 }
 
 void
