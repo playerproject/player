@@ -38,6 +38,7 @@ DeviceTable::DeviceTable()
   this->head = NULL;
   pthread_mutex_init(&this->mutex,NULL);
   this->remote_driver_fn = NULL;
+  this->remote_driver_arg = NULL;
 }
 
 // tear down the table
@@ -149,6 +150,8 @@ DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
             break;
         }
         assert(thisentry);
+        strncpy(thisentry->drivername, "remote", 
+                sizeof(thisentry->drivername));
       }
     }
   }

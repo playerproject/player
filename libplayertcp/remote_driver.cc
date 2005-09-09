@@ -31,7 +31,7 @@
 TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg) 
         : Driver(NULL, 0, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
-  if(this->ptcp)
+  if(arg)
     this->ptcp = (PlayerTCP*)arg;
   else
     this->ptcp = NULL;
@@ -49,8 +49,11 @@ TCPRemoteDriver::Setup()
   struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
 
-  printf("trying to Setup %d:%d:%d:%d\n",
-         this->device_addr.host,
+  packedaddr_to_dottedip(this->ipaddr,sizeof(this->ipaddr),
+                         this->device_addr.host);
+
+  printf("trying to Setup %s:%d:%d:%d\n",
+         this->ipaddr,
          this->device_addr.robot,
          this->device_addr.interf,
          this->device_addr.index);
@@ -70,15 +73,15 @@ TCPRemoteDriver::Setup()
   // Connect the socket 
   if(connect(this->sock, (struct sockaddr*)&server, sizeof(server)) < 0)
   {
-    PLAYER_ERROR3("connect call on [%u:%u] failed with error [%s]",
-                this->device_addr.host, 
+    PLAYER_ERROR3("connect call on [%s:%u] failed with error [%s]",
+                this->ipaddr,
                 this->device_addr.robot, 
                 strerror(errno));
     return(-1);
   }
 
-  printf("connected to: %u:%u\n",
-         this->device_addr.host, this->device_addr.robot);
+  printf("connected to: %s:%u\n",
+         this->ipaddr, this->device_addr.robot);
 
   // Get the banner 
   if(read(this->sock, banner, sizeof(banner)) < (int)sizeof(banner))
@@ -86,8 +89,6 @@ TCPRemoteDriver::Setup()
     PLAYER_ERROR("incomplete initialization string");
     return(-1);
   }
-  printf("got banner: %s\n", banner);
-
   if(this->SubscribeRemote() < 0)
   {
     close(this->sock);
@@ -103,7 +104,8 @@ TCPRemoteDriver::Setup()
   }
 
   // Add this socket for monitoring
-  this->queue = this->ptcp->AddClient(NULL, 0, this->sock);
+  this->queue = this->ptcp->AddClient(NULL, this->device_addr.robot, 
+                                      this->sock, false);
 
   return(0);
 }
@@ -198,8 +200,8 @@ TCPRemoteDriver::SubscribeRemote()
   }
 
   // Success!
-  PLAYER_MSG5(1, "Subscribed to %d:%d:%d:%d (%s)",
-              this->device_addr.host,
+  PLAYER_MSG5(1, "Subscribed to %s:%d:%d:%d (%s)",
+              this->ipaddr,
               this->device_addr.robot,
               this->device_addr.interf,
               this->device_addr.index,
@@ -211,8 +213,8 @@ TCPRemoteDriver::SubscribeRemote()
 int 
 TCPRemoteDriver::Shutdown() 
 { 
-  printf("trying to Shutdown %d:%d:%d:%d\n",
-         this->device_addr.host,
+  printf("trying to Shutdown %s:%d:%d:%d\n",
+         this->ipaddr,
          this->device_addr.robot,
          this->device_addr.interf,
          this->device_addr.index);
@@ -223,6 +225,15 @@ TCPRemoteDriver::Shutdown()
   return(0); 
 }
 
+void 
+TCPRemoteDriver::Update()
+{
+  if(this->ptcp->thread == pthread_self())
+    this->ptcp->Read(0);
+  this->ProcessMessages();
+  if(this->ptcp->thread == pthread_self())
+    this->ptcp->Write();
+}
 
 int 
 TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue, 
@@ -255,6 +266,7 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
                            -1,
                            this->device_addr))
   {
+    printf("sending %d-byte request\n", hdr->size);
     // Push it onto the outgoing queue
     this->Publish(this->queue, hdr, data);
     // Store the return address for later use
@@ -276,6 +288,7 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
           (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
                                  -1, this->device_addr)))
   {
+    puts("got reply");
     // Forward the response
     this->Publish(this->ret_queue, hdr, data);
     // Clear the filter
@@ -291,7 +304,5 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
 Driver* 
 TCPRemoteDriver::TCPRemoteDriver_Init(player_devaddr_t addr, void* arg)
 {
-  printf("TCPRemoteDriver_Init(%d:%d:%d:%d)\n",
-         addr.host, addr.robot, addr.interf, addr.index);
   return((Driver*)(new TCPRemoteDriver(addr, arg)));
 }

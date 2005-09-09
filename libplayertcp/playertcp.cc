@@ -39,6 +39,7 @@ extern char playerversion[];
 
 PlayerTCP::PlayerTCP()
 {
+  this->thread = pthread_self();
   this->size_clients = 0;
   this->num_clients = 0;
   this->clients = (playertcp_conn_t*)NULL;
@@ -108,7 +109,7 @@ PlayerTCP::Listen(int* ports, int num_ports)
 
 MessageQueue*
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
-                     int newsock)
+                     int newsock, bool send_banner)
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
 
@@ -168,17 +169,21 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
   assert(this->clients[j].writebuffer);
   this->clients[j].writebufferlen = 0;
 
-  sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
-  memset(((char*)data)+strlen((char*)data),0,
-         PLAYER_IDENT_STRLEN-strlen((char*)data));
-  if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
+  if(send_banner)
   {
-    PLAYER_ERROR("failed to send ident string");
+    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
+    memset(((char*)data)+strlen((char*)data),0,
+           PLAYER_IDENT_STRLEN-strlen((char*)data));
+    if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
+    {
+      PLAYER_ERROR("failed to send ident string");
+    }
   }
 
   PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
               j, this->clients[j].port, this->clients[j].fd);
 
+  this->num_clients++;
   return(this->clients[j].queue);
 }
 
@@ -232,7 +237,6 @@ PlayerTCP::Accept(int timeout)
       this->AddClient(&cliaddr, this->listeners[i].port,
                       newsock);
 
-      this->num_clients++;
       num_accepts--;
     }
   }
@@ -263,7 +267,6 @@ PlayerTCP::Close(int cli)
       PLAYER_WARN1("close() failed: %s", strerror(errno));
     this->clients[cli].fd = -1;
     this->clients[cli].valid = 0;
-    this->clients[cli].del = 0;
     delete this->clients[cli].queue;
     free(this->clients[cli].readbuffer);
     free(this->clients[cli].writebuffer);
@@ -322,21 +325,28 @@ void
 PlayerTCP::DeleteClients()
 {
   // Delete those connections that generated errors in this iteration
-  for(int i=0; i<this->size_clients; i++)
+  for(int i=0; i<this->num_clients; i++)
   {
     if(this->clients[i].del)
     {
       this->Close(i);
-      // Remove the resulting blank from both lists
-      memmove(this->clients + i, 
-              this->clients + i + 1, 
-              (this->size_clients - i - 1) * sizeof(playertcp_conn_t));
-      memmove(this->client_ufds + i, 
-              this->client_ufds + i + 1, 
-              (this->size_clients - i - 1) * sizeof(struct pollfd));
       this->num_clients--;
-      i--;
     }
+  }
+  // Remove the resulting blank from both lists
+  for(int i=0,j=0; i<this->size_clients; i++)
+  {
+    if(this->clients[j].del)
+    {
+      memmove(this->clients + j, 
+              this->clients + j + 1, 
+              (this->size_clients - j - 1) * sizeof(playertcp_conn_t));
+      memmove(this->client_ufds + j, 
+              this->client_ufds + j + 1, 
+              (this->size_clients - j - 1) * sizeof(struct pollfd));
+    }
+    else
+      j++;
   }
   memset(this->clients + this->num_clients, 0,
          (this->size_clients - this->num_clients) * sizeof(playertcp_conn_t));
