@@ -123,6 +123,9 @@ main(int argc, char** argv)
       device;
       device = deviceTable->GetNextDevice(device))
   {
+    // don't listen locally for remote devices
+    if(!strcmp(device->drivername,"remote"))
+      continue;
     int i;
     for(i=0;i<num_ports;i++)
     {
@@ -154,12 +157,15 @@ main(int argc, char** argv)
       PLAYER_ERROR("failed while accepting new connections");
       break;
     }
+
     if(ptcp->Read(1) < 0)
     {
       PLAYER_ERROR("failed while reading");
       break;
     }
+
     deviceTable->UpdateDevices();
+
     if(ptcp->Write() < 0)
     {
       PLAYER_ERROR("failed while reading");

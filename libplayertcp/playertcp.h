@@ -120,10 +120,13 @@ class PlayerTCP
     PlayerTCP();
     ~PlayerTCP();
 
+    pthread_t thread;
+
     int Listen(int* ports, int num_ports);
     MessageQueue* AddClient(struct sockaddr_in* cliaddr, 
                             int local_port,
-                            int newsock);
+                            int newsock,
+                            bool send_banner=true);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);
