@@ -80,6 +80,9 @@ main(int argc, char** argv)
   player_register_drivers();
   playerxdr_ftable_init();
 
+  ptcp = new PlayerTCP();
+  assert(ptcp);
+
   if(ParseArgs(&port, &debuglevel, &cfgfilename, argc, argv) < 0)
   {
     PrintUsage();
@@ -129,9 +132,6 @@ main(int argc, char** argv)
     if(i==num_ports)
       ports[num_ports++] = device->addr.robot;
   }
-
-  ptcp = new PlayerTCP();
-  assert(ptcp);
 
   if(ptcp->Listen(ports, num_ports) < 0)
   {
