@@ -714,7 +714,10 @@ VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &cmd)
   // Velocity mode; just pass it through
   if (cmd.type == 0)
   {
-    this->odom->PutMsg(this->InQueue, hdr, (void*)&cmd);
+    // make a copy of the header and change the address
+    player_msghdr_t newhdr = *hdr;
+    newhdr.addr = this->odom_addr;
+    this->odom->PutMsg(this->InQueue, &newhdr, (void*)&cmd);
     this->cmd_type = 0;
     this->active_goal = false;
   }
