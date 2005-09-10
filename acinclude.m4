@@ -140,7 +140,7 @@ PLAYER_ADD_DRIVER([passthrough],[no],[],[],
 
 PLAYER_ADD_DRIVER([logfile],[yes],[zlib.h],[],[-lz])
 
-PLAYER_ADD_DRIVER([p2os],[no],[],[],[])
+PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([er1],[no],[asm/ioctls.h],[],[])
 

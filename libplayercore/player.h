@@ -265,6 +265,7 @@ The @p aio interface provides access to an analog I/O device.
 #define PLAYER_AIO_MAX_INPUTS  8
 #define PLAYER_AIO_MAX_OUTPUTS 8
 
+/** Data subtypes */
 #define PLAYER_AIO_DATA_VALUES 1
 
 /** @brief Data
@@ -515,8 +516,8 @@ in images.
 #define PLAYER_BLOBFINDER_MAX_BLOBS 256
 
 /* Config request codes */
-#define PLAYER_BLOBFINDER_SET_COLOR         1
-#define PLAYER_BLOBFINDER_SET_IMAGER_PARAMS 2
+#define PLAYER_BLOBFINDER_REQ_SET_COLOR         1
+#define PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS 2
 
 
 /** @brief Structure describing a single blob. */
@@ -723,8 +724,11 @@ The @p dio interface provides access to a digital I/O device.
 @{
 */
 
+/** Data subtypes */
 #define PLAYER_DIO_DATA_VALUES 1
 
+/** Command subtypes */
+#define PLAYER_DIO_CMD_VALUES 1
 
 /** @brief Data
 
@@ -1080,6 +1084,13 @@ Pioneer robots and Stage:
   - bit 4: Left paddle open
   - bit 5: Right paddle open
 */
+
+/** Data subtypes */
+#define PLAYER_GRIPPER_DATA_STATE 1
+
+/** Command subtypes */
+#define PLAYER_GRIPPER_CMD_STATE 1
+
 typedef struct player_gripper_data
 {
   /** The current gripper lift*/
@@ -2746,6 +2757,9 @@ on an Amigobot).
 This interface provides no data.
 @{
 */
+
+/** Commmand subtypes */
+#define PLAYER_SOUND_CMD_IDX 1
 
 /** @brief Command
 

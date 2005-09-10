@@ -34,9 +34,6 @@
 #include <unistd.h>
 #include <stdlib.h> /* for exit() */
 
-#include <playertime.h>
-extern PlayerTime* GlobalTime;
-
 void P2OSPacket::Print() {
   if (packet) {
     printf("\"");
