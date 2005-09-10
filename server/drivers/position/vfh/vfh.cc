@@ -403,8 +403,9 @@ VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data)
   this->odom_stall = data.stall;
 
   // Also change this info out for use by others
-  hdr->addr = this->device_addr;
-  this->Publish(NULL, hdr, (void*)&data);
+  player_msghdr_t newhdr = *hdr;
+  newhdr.addr = this->device_addr;
+  this->Publish(NULL, &newhdr, (void*)&data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

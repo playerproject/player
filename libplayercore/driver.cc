@@ -308,8 +308,9 @@ void Driver::ProcessMessages()
     int ret = this->ProcessMessage(msg->Queue, hdr, data);
     if(ret < 0)
     {
-      PLAYER_WARN5("Unhandled message for driver "
-                   "device=%d:%d type=%d subtype=%d len=%d\n",
+      PLAYER_WARN7("Unhandled message for driver "
+                   "device=%d:%d:%d:%d type=%d subtype=%d len=%d\n",
+                   hdr->addr.host, hdr->addr.robot,
                    hdr->addr.interf, hdr->addr.index, 
                    hdr->type, hdr->subtype, hdr->size);
 
