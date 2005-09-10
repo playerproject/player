@@ -38,53 +38,59 @@
 
 void SIP::Fill(player_p2os_data_t* data)
 {
+  ///////////////////////////////////////////////////////////////
+  // odometry
+
   // initialize position to current offset
-  data->position.xpos = this->x_offset;
-  data->position.ypos = this->y_offset;
+  data->position.pos.px = this->x_offset / 1e3;
+  data->position.pos.py = this->y_offset / 1e3;
   // now transform current position by rotation if there is one
   // and add to offset
   if(this->angle_offset != 0) 
   {
     double rot = DTOR(this->angle_offset);    // convert rotation to radians
-    data->position.xpos += (int32_t) (this->xpos * cos(rot) - 
-                                      this->ypos * sin(rot));
-    data->position.ypos += (int32_t) (this->xpos * sin(rot) + 
-                                      this->ypos * cos(rot));
-    data->position.yaw = (this->angle_offset + angle) % 360;
+    data->position.pos.px +=  ((this->xpos/1e3) * cos(rot) - 
+                               (this->ypos/1e3) * sin(rot));
+    data->position.pos.py +=  ((this->xpos/1e3) * sin(rot) + 
+                               (this->ypos/1e3) * cos(rot));
+    data->position.pos.pa = DTOR(this->angle_offset + angle);
   }
   else 
   {
-    data->position.xpos += this->xpos;
-    data->position.ypos += this->ypos;
-    data->position.yaw = this->angle;
+    data->position.pos.px += this->xpos / 1e3;
+    data->position.pos.py += this->ypos / 1e3;
+    data->position.pos.pa = DTOR(this->angle);
   }
-  // now byteswap fields
-  data->position.xpos = htonl(data->position.xpos);
-  data->position.ypos = htonl(data->position.ypos);
-  data->position.yaw = htonl(data->position.yaw);
-  data->position.xspeed = htonl((int32_t) (((this->lvel) + (this->rvel) ) / 2));
-  data->position.yawspeed = htonl((int32_t)
-                                  (180*((double)(this->rvel - this->lvel) /
-                                        (2.0/PlayerRobotParams[param_idx].DiffConvFactor)) / 
-                                   M_PI));
+  data->position.vel.px = (((this->lvel) + (this->rvel) ) / 2) / 1e3;
+  data->position.vel.py = 0.0;
+  data->position.vel.pa = ((double)(this->rvel - this->lvel) /
+                           (2.0/PlayerRobotParams[param_idx].DiffConvFactor));
   data->position.stall = (unsigned char)(this->lwstall || this->rwstall);
 
+  ///////////////////////////////////////////////////////////////
   // compass
   memset(&(data->compass),0,sizeof(data->compass));
-  data->compass.yaw = htonl(this->compass);
+  data->compass.pos.pa = DTOR(this->compass);
 
+  ///////////////////////////////////////////////////////////////
   // gyro
   memset(&(data->gyro),0,sizeof(data->gyro));
-  data->gyro.yawspeed = htonl(this->gyro_rate);
+  data->gyro.pos.pa = DTOR(this->gyro_rate);
 
-  data->sonar.range_count = htons(PlayerRobotParams[param_idx].SonarNum);
+  ///////////////////////////////////////////////////////////////
+  // sonar
+  data->sonar.ranges_count = PlayerRobotParams[param_idx].SonarNum;
   for(int i=0;i<MIN(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
-    data->sonar.ranges[i] = htons((unsigned short)this->sonars[i]);
+    data->sonar.ranges[i] = this->sonars[i] / 1e3;
 
+  ///////////////////////////////////////////////////////////////
+  // gripper
   data->gripper.state = (unsigned char)(this->timer >> 8);
   data->gripper.beams = (unsigned char)this->digin;
 
-  data->bumper.bumper_count = 10;
+  ///////////////////////////////////////////////////////////////
+  // bumper
+  data->bumper.bumpers_count = 10;
   int j = 0;
   for(int i=4;i>=0;i--)
     data->bumper.bumpers[j++] = 
@@ -92,12 +98,22 @@ void SIP::Fill(player_p2os_data_t* data)
   for(int i=4;i>=0;i--)
     data->bumper.bumpers[j++] = 
       (unsigned char)((this->rearbumpers >> i) & 0x01);
-  data->power.charge = htons((unsigned short)this->battery);
+
+  ///////////////////////////////////////////////////////////////
+  // power
+  data->power.voltage = this->battery / 1e1;
+  data->power.percent = 1e2 * (data->power.voltage / P2OS_NOMINAL_VOLTAGE);
+
+  ///////////////////////////////////////////////////////////////
+  // digital I/O
   data->dio.count = (unsigned char)8;
-  data->dio.digin = htonl((unsigned int)this->digin);
+  data->dio.digin = (unsigned int)this->digin;
+  
+  ///////////////////////////////////////////////////////////////
+  // analog I/O
   //TODO: should do this smarter, based on which analog input is selected
-  data->aio.count = (unsigned char)1;
-  data->aio.anin[0] = (unsigned char)this->analog;
+  data->aio.voltages_count = (unsigned char)1;
+  data->aio.voltages[0] = (this->analog / 255.0) * 5.0;
 
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob
   ** (and therefore one channel too), so everything else is zero.  All
@@ -108,24 +124,24 @@ void SIP::Fill(player_p2os_data_t* data)
   ** confidence value, I'm passing it back as range. */
   memset(data->blobfinder.blobs,0,
          sizeof(player_blobfinder_blob_t)*PLAYER_BLOBFINDER_MAX_BLOBS);
-  data->blobfinder.width = htons(CMUCAM_IMAGE_WIDTH);
-  data->blobfinder.height = htons(CMUCAM_IMAGE_HEIGHT);
+  data->blobfinder.width = CMUCAM_IMAGE_WIDTH;
+  data->blobfinder.height = CMUCAM_IMAGE_HEIGHT;
 
   if (blobarea > 1)	// With filtering, definition of track is 2 pixels
   {
-    data->blobfinder.blob_count = htons(1);
-    data->blobfinder.blobs[0].color = htonl(this->blobcolor);
-    data->blobfinder.blobs[0].x = htons(this->blobmx);
-    data->blobfinder.blobs[0].y = htons(this->blobmy);
-    data->blobfinder.blobs[0].left = htons(this->blobx1);
-    data->blobfinder.blobs[0].right = htons(this->blobx2);
-    data->blobfinder.blobs[0].top = htons(this->bloby1);
-    data->blobfinder.blobs[0].bottom = htons(this->bloby2);
-    data->blobfinder.blobs[0].area = htonl(this->blobarea);
-    data->blobfinder.blobs[0].range = htons(this->blobconf);
+    data->blobfinder.blobs_count = 1;
+    data->blobfinder.blobs[0].color = this->blobcolor;
+    data->blobfinder.blobs[0].x = this->blobmx;
+    data->blobfinder.blobs[0].y = this->blobmy;
+    data->blobfinder.blobs[0].left = this->blobx1;
+    data->blobfinder.blobs[0].right = this->blobx2;
+    data->blobfinder.blobs[0].top = this->bloby1;
+    data->blobfinder.blobs[0].bottom = this->bloby2;
+    data->blobfinder.blobs[0].area = this->blobarea;
+    data->blobfinder.blobs[0].range = this->blobconf;
   }
   else
-    data->blobfinder.blob_count = htons(0);
+    data->blobfinder.blobs_count = 0;
 }
 
 int SIP::PositionChange( unsigned short from, unsigned short to ) 

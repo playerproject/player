@@ -1,15 +1,11 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+noinst_LTLIBRARIES = 
+if INCLUDE_P2OS
+noinst_LTLIBRARIES += libp2os.la
+endif
 
-noinst_LIBRARIES = @P2OS_LIB@ 
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = libp2os.a
-
-libp2os_a_SOURCES = p2os.cc p2os.h \
-                    packet.h packet.cc \
-		    robot_params.cc robot_params.h \
-		    sip.cc sip.h
-
-#p2os_gripper.cc p2os_bumper.cc 
-#p2os_power.cc p2os_aio.cc p2os_cmucam.cc p2os_dio.cc
-#p2os_position.cc p2os_sonar.cc p2os_sound.cc 
-#p2os_compass.cc p2os_gyro.cc
+libp2os_la_SOURCES = p2os.cc p2os.h \
+                     packet.h packet.cc \
+		     robot_params.cc robot_params.h \
+		     sip.cc sip.h

@@ -35,12 +35,11 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <driver.h>
-#include <drivertable.h>
-#include <packet.h>
-#include <player.h>
-#include <robot_params.h>
-#include <clientdata.h>
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
+
+#include "packet.h"
+#include "robot_params.h"
    
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
@@ -54,6 +53,8 @@
 #define P2OS_CYCLETIME_USEC 200000
 
 /* p2os constants */
+
+#define P2OS_NOMINAL_VOLTAGE 12.0
 
 /* Command numbers */
 #define SYNC0 0
@@ -121,7 +122,7 @@
 
 typedef struct player_p2os_data
 {
-  player_position_data_t position;
+  player_position2d_data_t position;
   player_sonar_data_t sonar;
   player_gripper_data_t gripper;
   player_power_data_t power;
@@ -129,8 +130,8 @@ typedef struct player_p2os_data
   player_dio_data_t dio;
   player_aio_data_t aio;
   player_blobfinder_data_t blobfinder;
-  player_position_data_t compass;
-  player_position_data_t gyro;
+  player_position2d_data_t compass;
+  player_position2d_data_t gyro;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -174,12 +175,12 @@ class P2OS : public Driver
     void ToggleSonarPower(unsigned char val);
     /* toggle motors on/off, according to val */
     void ToggleMotorPower(unsigned char val);
-    int HandleConfig(player_msghdr * hdr,
-                     uint8_t * data, uint8_t * resp_data,
-                     int * resp_len);
-    int HandleCommand(player_msghdr * hdr, uint8_t * data);
+    int HandleConfig(MessageQueue* resp_queue,
+                     player_msghdr * hdr,
+                     void* data);
+    int HandleCommand(player_msghdr * hdr, void * data);
     void PutData(void);
-    void HandlePositionCommand(player_position_cmd_t position_cmd);
+    void HandlePositionCommand(player_position2d_cmd_t position_cmd);
     void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
     void HandleSoundCommand(player_sound_cmd_t sound_cmd);
 
@@ -208,21 +209,19 @@ class P2OS : public Driver
 
     P2OS(ConfigFile* cf, int section);
 
-    int Subscribe(player_devaddr_t id);
-    int Unsubscribe(player_devaddr_t id);
+    virtual int Subscribe(player_devaddr_t id);
+    virtual int Unsubscribe(player_devaddr_t id);
 
     /* the main thread */
-    void Main();
+    virtual void Main();
 
-    int Setup();
-    int Shutdown();
+    virtual int Setup();
+    virtual int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(ClientData * client, 
-                       player_msghdr * hdr, 
-                       uint8_t * data, 
-		       uint8_t * resp_data, 
-		       int * resp_len);
+    virtual int ProcessMessage(MessageQueue * resp_queue, 
+                               player_msghdr * hdr, 
+                               void * data);
 
     void CMUcamReset();
     void CMUcamTrack(int rmin=0, int rmax=0, int gmin=0,
