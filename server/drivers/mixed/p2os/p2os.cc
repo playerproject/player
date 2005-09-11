@@ -679,9 +679,9 @@ int P2OS::Setup()
     js_packet.Build(js_command, 4);
     this->SendReceive(&js_packet,false);
   }
-
+  
   if(this->blobfinder_id.interf)
-    CMUcamReset();
+    CMUcamReset(false);
 
   if(this->gyro_id.interf)
   {
@@ -695,7 +695,7 @@ int P2OS::Setup()
     gyro_packet.Build(gyro_command, 4);
     this->SendReceive(&gyro_packet,false);
   }
-
+  
   // if requested, set max accel/decel limits
   P2OSPacket accel_packet;
   unsigned char accel_command[4];
@@ -708,6 +708,7 @@ int P2OS::Setup()
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
+  
   if(this->motor_max_trans_decel < 0)
   {
     accel_command[0] = SETA;
@@ -1155,9 +1156,9 @@ P2OS::ResetRawPositions()
 ** setting interface output mode to raw.  It also restarts
 ** tracking output (current mode)
 ****************************************************************/
-void P2OS::CMUcamReset()
+void P2OS::CMUcamReset(bool doLock)
 {
-  CMUcamStopTracking();	// Stop the current tracking.
+  CMUcamStopTracking(doLock);	// Stop the current tracking.
 
   P2OSPacket cam_packet;
   unsigned char cam_command[8];
@@ -1168,7 +1169,7 @@ void P2OS::CMUcamReset()
   sprintf((char*)&cam_command[3], "RS\r");
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  this->SendReceive(&cam_packet,false);
+  this->SendReceive(&cam_packet,doLock);
 
   // Set for raw output + no ACK/NACK
   printf("Setting raw mode...\n");
@@ -1177,7 +1178,7 @@ void P2OS::CMUcamReset()
   sprintf((char*)&cam_command[3], "RM 3\r");
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  this->SendReceive(&cam_packet,false);
+  this->SendReceive(&cam_packet,doLock);
   usleep(100000);
 
   printf("Flushing serial buffer...\n");
@@ -1186,11 +1187,11 @@ void P2OS::CMUcamReset()
   cam_command[2] = 0;
   cam_command[3] = 0;
   cam_packet.Build(cam_command, 4);
-  this->SendReceive(&cam_packet,false);
+  this->SendReceive(&cam_packet,doLock);
 
   sleep(1);
   // (Re)start tracking
-  this->CMUcamTrack();
+  this->CMUcamStartTracking(false);
 }
 
 
@@ -1211,13 +1212,7 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
 
   if (!rmin && !rmax && !gmin && !gmax && !bmin && !bmax)
   {
-    // Then start it up with current values.
-    cam_command[0] = TTY3;
-    cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TC\r");
-    cam_command[2] = strlen((char *)&cam_command[3]);
-    cam_packet.Build(cam_command, (int)cam_command[2]+3);
-    this->SendReceive(&cam_packet);
+    CMUcamStartTracking();
   }
   else if (rmin<0 || rmax<0 || gmin<0 || gmax<0 || bmin<0 || bmax<0)
   {
@@ -1251,12 +1246,29 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
   this->SendReceive(&cam_packet);
 }
 
+/****************************************************************
+** Start Tracking - with last config
+****************************************************************/
+void P2OS::CMUcamStartTracking(bool doLock)
+{
+   P2OSPacket cam_packet;
+   unsigned char cam_command[50];
+
+    // Then start it up with current values.
+    cam_command[0] = TTY3;
+    cam_command[1] = ARGSTR;
+    sprintf((char*)&cam_command[3], "TC\r");
+    cam_command[2] = strlen((char *)&cam_command[3]);
+    cam_packet.Build(cam_command, (int)cam_command[2]+3);
+    this->SendReceive(&cam_packet,false);
+}
+
 
 /****************************************************************
 ** Stop Tracking - This should be done before any new command
 ** are issued to the CMUcam.
 ****************************************************************/
-void P2OS::CMUcamStopTracking()
+void P2OS::CMUcamStopTracking(bool doLock)
 {
   P2OSPacket cam_packet;
   unsigned char cam_command[50];
@@ -1267,7 +1279,7 @@ void P2OS::CMUcamStopTracking()
   sprintf((char*)&cam_command[3], "\r");
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  this->SendReceive(&cam_packet);
+  this->SendReceive(&cam_packet,doLock);
 }
 
 /* toggle sonars on/off, according to val */
