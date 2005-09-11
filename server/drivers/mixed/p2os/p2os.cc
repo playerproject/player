@@ -216,6 +216,8 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->blobfinder_id, 0, sizeof(player_devaddr_t));
   memset(&this->sound_id, 0, sizeof(player_devaddr_t));
 
+  memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_t));
+
   this->position_subscriptions = this->sonar_subscriptions = 0;
 
   // Do we create a robot position interface?
@@ -660,7 +662,7 @@ int P2OS::Setup()
   this->sippacket->y_offset = 0;
   this->sippacket->angle_offset = 0;
 
-  SendReceive((P2OSPacket*)NULL);
+  SendReceive((P2OSPacket*)NULL,false);
 
   // turn off the sonars at first
   this->ToggleSonarPower(0);
@@ -675,7 +677,7 @@ int P2OS::Setup()
     js_command[2] = 1;
     js_command[3] = 0;
     js_packet.Build(js_command, 4);
-    this->SendReceive(&js_packet);
+    this->SendReceive(&js_packet,false);
   }
 
   if(this->blobfinder_id.interf)
@@ -691,7 +693,7 @@ int P2OS::Setup()
     gyro_command[2] = 1;
     gyro_command[3] = 0;
     gyro_packet.Build(gyro_command, 4);
-    this->SendReceive(&gyro_packet);
+    this->SendReceive(&gyro_packet,false);
   }
 
   // if requested, set max accel/decel limits
@@ -704,7 +706,7 @@ int P2OS::Setup()
     accel_command[2] = this->motor_max_trans_accel & 0x00FF;
     accel_command[3] = (this->motor_max_trans_accel & 0x00FF) >> 8;
     accel_packet.Build(accel_command, 4);
-    this->SendReceive(&accel_packet);
+    this->SendReceive(&accel_packet,false);
   }
   if(this->motor_max_trans_decel < 0)
   {
@@ -713,7 +715,7 @@ int P2OS::Setup()
     accel_command[2] = abs(this->motor_max_trans_decel) & 0x00FF;
     accel_command[3] = (abs(this->motor_max_trans_decel) & 0x00FF) >> 8;
     accel_packet.Build(accel_command, 4);
-    this->SendReceive(&accel_packet);
+    this->SendReceive(&accel_packet,false);
   }
   if(this->motor_max_rot_accel > 0)
   {
@@ -722,7 +724,7 @@ int P2OS::Setup()
     accel_command[2] = this->motor_max_rot_accel & 0x00FF;
     accel_command[3] = (this->motor_max_rot_accel & 0x00FF) >> 8;
     accel_packet.Build(accel_command, 4);
-    this->SendReceive(&accel_packet);
+    this->SendReceive(&accel_packet,false);
   }
   if(this->motor_max_rot_decel < 0)
   {
@@ -731,7 +733,7 @@ int P2OS::Setup()
     accel_command[2] = abs(this->motor_max_rot_decel) & 0x00FF;
     accel_command[3] = (abs(this->motor_max_rot_decel) & 0x00FF) >> 8;
     accel_packet.Build(accel_command, 4);
-    this->SendReceive(&accel_packet);
+    this->SendReceive(&accel_packet,false);
   }
 
   // if requested, change bumper-stall behavior
@@ -754,7 +756,7 @@ int P2OS::Setup()
       bumpstall_command[2] = (unsigned char)this->bumpstall;
       bumpstall_command[3] = 0;
       bumpstall_packet.Build(bumpstall_command, 4);
-      this->SendReceive(&bumpstall_packet);
+      this->SendReceive(&bumpstall_packet,false);
     }
   }
   
@@ -813,15 +815,10 @@ P2OS::Subscribe(player_devaddr_t id)
   if((setupResult = Driver::Subscribe(id)) == 0)
   {
     // also increment the appropriate subscription counter
-    switch(id.interf)
-    {
-      case PLAYER_POSITION2D_CODE:
-        this->position_subscriptions++;
-        break;
-      case PLAYER_SONAR_CODE:
-        this->sonar_subscriptions++;
-        break;
-    }
+    if(Device::MatchDeviceAddress(id, this->position_id))
+      this->position_subscriptions++;
+    else if(Device::MatchDeviceAddress(id, this->sonar_id))
+      this->sonar_subscriptions++;
   }
 
   return(setupResult);
@@ -836,20 +833,10 @@ P2OS::Unsubscribe(player_devaddr_t id)
   if((shutdownResult = Driver::Unsubscribe(id)) == 0)
   {
     // also decrement the appropriate subscription counter
-    switch(id.interf)
-    {
-      case PLAYER_POSITION2D_CODE:
-        assert(--this->position_subscriptions >= 0);
-        break;
-      case PLAYER_SONAR_CODE:
-        assert(--this->sonar_subscriptions >= 0);
-        break;
-	/*
-      default:
-        PLAYER_ERROR1("got unsubscription for unknown interface %d", id.code);
-        assert(false);
-	*/
-    }
+    if(Device::MatchDeviceAddress(id, this->position_id))
+      assert(--this->position_subscriptions >= 0);
+    else if(Device::MatchDeviceAddress(id, this->sonar_id))
+      assert(--this->sonar_subscriptions >= 0);
   }
 
   return(shutdownResult);
@@ -949,8 +936,11 @@ P2OS::Main()
 
   for(;;)
   {
+    pthread_testcancel();
+
     // we want to turn on the sonars if someone just subscribed, and turn
     // them off if the last subscriber just unsubscribed.
+    this->Lock();
     if(!last_sonar_subscrcount && this->sonar_subscriptions)
       this->ToggleSonarPower(1);
     else if(last_sonar_subscrcount && !(this->sonar_subscriptions))
@@ -967,20 +957,11 @@ P2OS::Main()
     }
     else if(last_position_subscrcount && !(this->position_subscriptions))
     {
-      // TODO: figure out what the right behavior here is
-#if 0
-      // overwrite existing motor commands to be zero
-      player_position_cmd_t position_cmd;
-      position_cmd.xspeed = 0;
-      position_cmd.yawspeed = 0;
-      this->PutCommand(this->position_id,(void*)(&position_cmd), 
-                       sizeof(player_position_cmd_t),NULL);
-#endif
-
       // enable motor power
       this->ToggleMotorPower(1);
     }
     last_position_subscrcount = this->position_subscriptions;
+    this->Unlock();
 
     // The Amigo board seems to drop commands once in a while.  This is
     // a hack to restart the serial reads if that happens.
@@ -1011,14 +992,19 @@ P2OS::Main()
     }
 
     // handle pending messages
-    ProcessMessages();
+    if(!this->InQueue->Empty())
+      ProcessMessages();
+    else
+    {
+      // if no pending msg, resend the last position cmd.
+      this->HandlePositionCommand(this->last_position_cmd);
+    }
   }
-  pthread_exit(NULL);
 }
 
 /* send the packet, then receive and parse an SIP */
 int
-P2OS::SendReceive(P2OSPacket* pkt)
+P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
 {
   P2OSPacket packet;
 
@@ -1049,7 +1035,8 @@ P2OS::SendReceive(P2OSPacket* pkt)
       this->sippacket->Parse( &packet.packet[3] );
       this->sippacket->Fill(&(this->p2os_data));
 
-      this->PutData();
+      if(publish_data)
+        this->PutData();
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             packet.packet[3] == SERAUX)
@@ -1067,7 +1054,8 @@ P2OS::SendReceive(P2OSPacket* pkt)
         this->sippacket->ParseSERAUX( &packet.packet[2] );
         this->sippacket->Fill(&(this->p2os_data));
 
-        this->PutData();
+        if(publish_data)
+          this->PutData();
 
         P2OSPacket cam_packet;
         unsigned char cam_command[4];
@@ -1116,7 +1104,8 @@ P2OS::SendReceive(P2OSPacket* pkt)
         /* It's a set of gyro measurements */
         this->sippacket->ParseGyro(&packet.packet[2]);
         this->sippacket->Fill(&(this->p2os_data));
-        this->PutData();
+        if(publish_data)
+          this->PutData();
 
         /* Now, the manual says that we get one gyro packet each cycle,
          * right before the standard SIP.  So, we'll call SendReceive() 
@@ -1156,7 +1145,7 @@ P2OS::ResetRawPositions()
     p2oscommand[0] = SETO;
     p2oscommand[1] = ARGINT;
     pkt.Build(p2oscommand, 2);
-    this->SendReceive(&pkt);
+    this->SendReceive(&pkt,false);
   }
 }
 
@@ -1179,7 +1168,7 @@ void P2OS::CMUcamReset()
   sprintf((char*)&cam_command[3], "RS\r");
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  this->SendReceive(&cam_packet);
+  this->SendReceive(&cam_packet,false);
 
   // Set for raw output + no ACK/NACK
   printf("Setting raw mode...\n");
@@ -1188,7 +1177,7 @@ void P2OS::CMUcamReset()
   sprintf((char*)&cam_command[3], "RM 3\r");
   cam_command[2] = strlen((char *)&cam_command[3]);
   cam_packet.Build(cam_command, (int)cam_command[2]+3);
-  this->SendReceive(&cam_packet);
+  this->SendReceive(&cam_packet,false);
   usleep(100000);
 
   printf("Flushing serial buffer...\n");
@@ -1197,7 +1186,7 @@ void P2OS::CMUcamReset()
   cam_command[2] = 0;
   cam_command[3] = 0;
   cam_packet.Build(cam_command, 4);
-  this->SendReceive(&cam_packet);
+  this->SendReceive(&cam_packet,false);
 
   sleep(1);
   // (Re)start tracking
@@ -1293,7 +1282,7 @@ P2OS::ToggleSonarPower(unsigned char val)
   command[2] = val;
   command[3] = 0;
   packet.Build(command, 4);
-  SendReceive(&packet);
+  SendReceive(&packet,false);
 }
 
 /* toggle motors on/off, according to val */
@@ -1308,7 +1297,7 @@ P2OS::ToggleMotorPower(unsigned char val)
   command[2] = val;
   command[3] = 0;
   packet.Build(command, 4);
-  SendReceive(&packet);
+  SendReceive(&packet,false);
 }
 
 int 
@@ -1351,7 +1340,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
             this->sippacket->angle;
 
     this->Publish(this->position_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM);
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -1372,7 +1361,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     this->ToggleMotorPower(power_config->state);
 
     this->Publish(this->position_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -1388,7 +1377,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     ResetRawPositions();
 
     this->Publish(this->position_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM);
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_RESET_ODOM);
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -1441,7 +1430,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       direct_wheel_vel_control = true;
 
     this->Publish(this->position_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE);
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_VELOCITY_MODE);
     return(0);
   }
   // check for sonar config requests
@@ -1463,7 +1452,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     this->ToggleSonarPower(sonar_config->state);
 
     this->Publish(this->position_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER);
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_SONAR_REQ_POWER);
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -1514,7 +1503,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
                 color_config->bmax);
 
     this->Publish(this->blobfinder_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_SET_COLOR);
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_BLOBFINDER_REQ_SET_COLOR);
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -1581,7 +1570,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     CMUcamTrack(); 	// Restart tracking
 
     this->Publish(this->blobfinder_id, resp_queue,
-                  PLAYER_MSGTYPE_REQ, 
+                  PLAYER_MSGTYPE_RESP_ACK, 
                   PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS);
     return(0);
   }
@@ -1603,7 +1592,7 @@ P2OS::HandlePositionCommand(player_position2d_cmd_t position_cmd)
   P2OSPacket motorpacket; 
 
   speedDemand = (int)rint(position_cmd.vel.px * 1e3);
-  turnRateDemand = (int)rint(position_cmd.vel.pa * 1e3);
+  turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
 
   if(this->direct_wheel_vel_control)
   {
