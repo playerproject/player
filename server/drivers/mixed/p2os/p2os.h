@@ -169,7 +169,7 @@ class P2OS : public Driver
 
     SIP* sippacket;
   
-    int SendReceive(P2OSPacket* pkt);
+    int SendReceive(P2OSPacket* pkt, bool publish_data=true);
     void ResetRawPositions();
     /* toggle sonars on/off, according to val */
     void ToggleSonarPower(unsigned char val);
@@ -189,6 +189,8 @@ class P2OS : public Driver
     int psos_fd;               // p2os device file descriptor
     const char* psos_serial_port;
     struct timeval lastblob_tv;
+     
+    player_position2d_cmd_t last_position_cmd;
 
     // Max motor speeds (mm/sec,deg/sec)
     int motor_max_speed;
