@@ -108,8 +108,11 @@ PlayerTCP::Listen(int* ports, int num_ports)
 }
 
 MessageQueue*
-PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
-                     int newsock, bool send_banner)
+PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
+                     unsigned int local_host,
+                     unsigned int local_port,
+                     int newsock, 
+                     bool send_banner)
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
 
@@ -139,6 +142,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr, int local_port,
   // Store the client's info
   this->clients[j].valid = 1;
   this->clients[j].del = 0;
+  this->clients[j].host = local_host;
   this->clients[j].port = local_port;
   this->clients[j].fd = newsock;
   if(cliaddr)
@@ -234,8 +238,10 @@ PlayerTCP::Accept(int timeout)
         return(-1);
       }
 
-      this->AddClient(&cliaddr, this->listeners[i].port,
-                      newsock);
+      this->AddClient(&cliaddr, 
+                      this->host,
+                      this->listeners[i].port,
+                      newsock, true);
 
       num_accepts--;
     }
@@ -610,13 +616,15 @@ PlayerTCP::ParseBuffer(int cli)
 
     // Using TCP, the host and robot (port) information is in the connection 
     // and so we don't require that the client fill it in.
-    hdr.addr.host = this->host;
+    hdr.addr.host = client->host;
     hdr.addr.robot = client->port;
     device = deviceTable->GetDevice(hdr.addr,false);
     if(!device && (hdr.addr.interf != PLAYER_PLAYER_CODE))
     {
-      PLAYER_WARN3("skipping message of type %u to unknown device %u:%u",
-                   hdr.subtype, hdr.addr.interf, hdr.addr.index);
+      PLAYER_WARN5("skipping message of type %u to unknown device %u:%u:%u:%u",
+                   hdr.subtype, 
+                   hdr.addr.host, hdr.addr.robot,
+                   hdr.addr.interf, hdr.addr.index);
     }
     else
     {

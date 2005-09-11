@@ -163,9 +163,6 @@ void sonar_draw(sonar_t *sonar)
   double dr, da;
   double points[3][2];
 
-  for (i = 0; i < sonar->proxy->scan_count; i++) 
-    printf("%d: %f\n",i,sonar->proxy->scan[i]);
-
   for (i = 0; i < sonar->proxy->scan_count; i++)
   {
     rtk_fig_show(sonar->scan_fig[i], 1);      

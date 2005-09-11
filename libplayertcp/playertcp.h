@@ -73,6 +73,9 @@ typedef struct
   int valid;
   /** File descriptor for the socket */
   int fd;
+  /** Host associated with this connection.  For local devices, it's
+   * localhost (or some alias); for remote devices, it's the remote host. */
+  unsigned int host;
   /** Port on which the connection was originally accepted */
   int port;
   /** Remote address */
@@ -124,7 +127,8 @@ class PlayerTCP
 
     int Listen(int* ports, int num_ports);
     MessageQueue* AddClient(struct sockaddr_in* cliaddr, 
-                            int local_port,
+                            unsigned int local_host,
+                            unsigned int local_port,
                             int newsock,
                             bool send_banner=true);
     int Accept(int timeout);
