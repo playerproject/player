@@ -225,10 +225,11 @@ class P2OS : public Driver
                                player_msghdr * hdr, 
                                void * data);
 
-    void CMUcamReset();
+    void CMUcamReset(bool doLock = true);
     void CMUcamTrack(int rmin=0, int rmax=0, int gmin=0,
                           int gmax=0, int bmin=0, int bmax=0);
-    void CMUcamStopTracking();
+    void CMUcamStartTracking(bool doLock = true);
+    void CMUcamStopTracking(bool doLock = true);
 };
 
 
