@@ -104,8 +104,11 @@ TCPRemoteDriver::Setup()
   }
 
   // Add this socket for monitoring
-  this->queue = this->ptcp->AddClient(NULL, this->device_addr.robot, 
-                                      this->sock, false);
+  this->queue = this->ptcp->AddClient(NULL, 
+                                      this->device_addr.host, 
+                                      this->device_addr.robot, 
+                                      this->sock, 
+                                      false);
 
   return(0);
 }
