@@ -1508,8 +1508,9 @@ typedef struct player_map_info
   float scale;
   /** The size of the map [pixels]. */
   uint32_t width, height;
-  /** The origin of the map [pixels]. */
-  uint32_t origin_x, origin_y;
+  /** The origin of the map [m, m]. That is, the real-world position of
+   * cell (0,0) in the map */
+  player_pose_t origin;
 } player_map_info_t;
 
 /** @brief Map data

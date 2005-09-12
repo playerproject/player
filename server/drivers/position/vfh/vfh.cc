@@ -334,6 +334,7 @@ int VFH_Class::SetupOdom()
 
   this->odom_pose[0] = this->odom_pose[1] = this->odom_pose[2] = 0.0;
   this->odom_vel[0] = this->odom_vel[1] = this->odom_vel[2] = 0.0;
+  this->cmd_state = 1;
 
   return 0;
 }
