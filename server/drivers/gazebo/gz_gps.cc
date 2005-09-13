@@ -68,17 +68,7 @@ class GzGps : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
-
-  // Gazebo device id
+    // Gazebo device id
   private: char *gz_id;
 
   // Gazebo client object
@@ -115,8 +105,7 @@ void GzGps_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzGps::GzGps(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_GPS_CODE, PLAYER_ALL_MODE,
-             sizeof(player_gps_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GPS_CODE)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -191,67 +180,38 @@ void GzGps::Update()
 
 #ifdef HAVE_GZ_GPS_UTC
     // Gazebo 0.5
-    data.time_sec = htonl((int32_t) (this->iface->data->utc_time));
-    data.time_usec = htonl((int32_t) (fmod(this->iface->data->utc_time, 1) * 1e6));
-    data.vdop = htons((uint32_t) (int32_t) (10 * this->iface->data->vdop));
+    data.time_sec = ((int32_t) (this->iface->data->utc_time));
+    data.time_usec = ((int32_t) (fmod(this->iface->data->utc_time, 1) * 1e6));
+    data.vdop = ((uint32_t) (int32_t) (10 * this->iface->data->vdop));
 #else
     // Gazebo 0.4
-    data.time_sec = htonl((int32_t) (0));
-    data.time_usec = htonl((int32_t) (0));
-    data.vdop = htons((uint32_t) (int32_t) (0));    
+    data.time_sec = ((int32_t) (0));
+    data.time_usec = ((int32_t) (0));
+    data.vdop = ((uint32_t) (int32_t) (0));    
 #endif
       
-    data.latitude = htonl((int32_t) (1e7 * this->iface->data->latitude));
-    data.longitude = htonl((int32_t) (1e7 * this->iface->data->longitude));
-    data.altitude = htonl((int32_t) (1000 * this->iface->data->altitude));
-    data.utm_e = htonl((int32_t) (100 * this->iface->data->utm_e));
-    data.utm_n = htonl((int32_t) (100 * this->iface->data->utm_n));
+    data.latitude = ((int32_t) (1e7 * this->iface->data->latitude));
+    data.longitude = ((int32_t) (1e7 * this->iface->data->longitude));
+    data.altitude = ((int32_t) (1000 * this->iface->data->altitude));
+    data.utm_e = ((int32_t) (100 * this->iface->data->utm_e));
+    data.utm_n = ((int32_t) (100 * this->iface->data->utm_n));
     data.num_sats = this->iface->data->satellites;
     data.quality = this->iface->data->quality;
 
-    data.hdop = htons((uint32_t) (int32_t) (10 * this->iface->data->hdop));
+    data.hdop = ((uint32_t) (int32_t) (10 * this->iface->data->hdop));
     
-    data.err_horz = htonl((uint32_t) (int32_t) (1000 * this->iface->data->err_horz));
-    data.err_vert = htonl((uint32_t) (int32_t) (1000 * this->iface->data->err_vert));
+    data.err_horz = ((uint32_t) (int32_t) (1000 * this->iface->data->err_horz));
+    data.err_vert = ((uint32_t) (int32_t) (1000 * this->iface->data->err_vert));
     
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   NULL, 
+                   (void*)&data, sizeof(data), &this->datatime );
   }
 
   gz_gps_unlock(this->iface);
 
   return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzGps::PutCommand(player_device_id_t id,
-                       void* src, size_t len,
-                       struct timeval* timestamp)
-{  
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzGps::PutConfig(player_device_id_t id, void *client, 
-                     void* src, size_t len,
-                     struct timeval* timestamp)
-{
-  uint8_t subtype;
-
-  subtype = ((uint8_t*) src)[0];
-  switch (subtype)
-  {
-    default:
-    {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-  }
-  return 0;
 }
 
 #endif
