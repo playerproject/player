@@ -64,15 +64,9 @@ class GzFiducial : public Driver
   // Get new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
+  public: virtual int ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data);
 
   // Gazebo device id
   private: char *gz_id;
@@ -111,8 +105,7 @@ void GzFiducial_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzFiducial::GzFiducial(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_FIDUCIAL_CODE, PLAYER_ALL_MODE,
-             sizeof(player_fiducial_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -200,22 +193,25 @@ void GzFiducial::Update()
       double r = fid->pose[0];
       double b = fid->pose[1];
 
-      data.fiducials[i].pos[0] = htonl((int32_t) (r * cos( b ) * 1000.0));
-      data.fiducials[i].pos[1] = htonl((int32_t) (r * sin( b ) * 1000.0));
-      data.fiducials[i].rot[2] = htonl((int32_t) (fid->pose[2] * 1000.0));
+      data.fiducials[i].pos[0] = r * cos( b );
+      data.fiducials[i].pos[1] = r * sin( b );
+      data.fiducials[i].rot[2] = fid->pose[2];
 #else
       // Gazebo 0.5
-      data.fiducials[i].pos[0] = htonl((int32_t) (fid->pos[0] * 1000.0));
-      data.fiducials[i].pos[1] = htonl((int32_t) (fid->pos[1] * 1000.0));
-      data.fiducials[i].pos[2] = htonl((int32_t) (fid->pos[2] * 1000.0));      
-      data.fiducials[i].rot[0] = htonl((int32_t) (fid->rot[0] * 1000.0));
-      data.fiducials[i].rot[1] = htonl((int32_t) (fid->rot[1] * 1000.0));
-      data.fiducials[i].rot[2] = htonl((int32_t) (fid->rot[2] * 1000.0));
+      data.fiducials[i].pos[0] = fid->pos[0];
+      data.fiducials[i].pos[1] = fid->pos[1];
+      data.fiducials[i].pos[2] = fid->pos[2];      
+      data.fiducials[i].rot[0] = fid->rot[0];
+      data.fiducials[i].rot[1] = fid->rot[1];
+      data.fiducials[i].rot[2] = fid->rot[2];
 #endif
     }
-    data.count = htons(i);
+    data.fiducials_count = i;
 
-    this->PutData( &data, sizeof(data), &ts );
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_FIDUCIAL_SEND_MSG, 
+                   (void*)&data, sizeof(data), &this->datatime );
   
   }
 
@@ -225,54 +221,36 @@ void GzFiducial::Update()
 
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzFiducial::PutCommand(player_device_id_t id,
-                            void* src, size_t len,
-                            struct timeval* timestamp)
-{
-
-  return;
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzFiducial::PutConfig(player_device_id_t id, void *client, 
-                          void* src, size_t len,
-                          struct timeval* timestamp)
+int GzFiducial::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data)
 {
-  uint8_t subtype;
-
-  subtype = ((uint8_t*) src)[0];
-  switch (subtype)
+  switch (hdr->subtype)
   {
     case PLAYER_FIDUCIAL_GET_GEOM:
     {
       player_fiducial_geom_t rep;
 
-      // TODO: get geometry from somewhere
-      rep.subtype = PLAYER_FIDUCIAL_GET_GEOM;
-      rep.pose[0] = htons((int) (0.0));
-      rep.pose[1] = htons((int) (0.0));
-      rep.pose[2] = htons((int) (0.0));
-      rep.size[0] = htons((int) (0.0));
-      rep.size[1] = htons((int) (0.0));
-      rep.fiducial_size[0] = htons((int) (0.05 * 1000));
-      rep.fiducial_size[1] = htons((int) (0.50 * 1000));
+      rep.pose[0] = 0.0;
+      rep.pose[1] = 0.0;
+      rep.pose[2] = 0.0;
+      rep.size[0] = 0.0;
+      rep.size[1] = 0.0;
+      rep.fiducial_size[0] = 0.05;
+      rep.fiducial_size[1] = 0.50;
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &rep, sizeof(rep),NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
+      this->Publish(this->device_addr, resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK, 
+                    PLAYER_FIDUCIAL_GET_GEOM, 
+                    &rep, sizeof(rep),NULL);
       break;
     }
 
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+      return (PLAYER_MSGTYPE_RESP_NACK);
     }
   }
+
   return 0;
 }
