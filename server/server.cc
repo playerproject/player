@@ -109,6 +109,8 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+  cf->WarnUnused();
+
   if(deviceTable->StartAlwaysonDrivers() != 0)
   {
     PLAYER_ERROR("failed to start alwayson drivers");
