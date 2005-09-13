@@ -163,26 +163,17 @@ Major code rewrite by Paul Osmialowski, newchief@king.net.pl
 #include <math.h>
 #include <stdlib.h>       // for atoi(3)
 #include <stddef.h>       // for NULL
-#include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 #include <libraw1394/raw1394.h>
 #include <libdc1394/dc1394_control.h>
 
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "playertime.h"
-#include "player.h"
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
-// for color and format conversion
-#include "drivers/blobfinder/cmvision/conversions.h"
+// for color and format conversion (located in cmvision)
+#include "conversions.h"
 
 #define NUM_DMA_BUFFERS 4
-
-// Time for timestamps
-extern PlayerTime *GlobalTime;
-
 
 // Driver for detecting laser retro-reflectors.
 class Camera1394 : public Driver
@@ -198,8 +189,10 @@ class Camera1394 : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
-  // Process requests.  Returns 1 if the configuration has changed.
-  //private: int HandleRequests();
+  // This method will be invoked on each incoming message
+  public: virtual int ProcessMessage(MessageQueue* resp_queue,
+                                     player_msghdr * hdr,
+                                     void * data);
 
   // Save a frame to memory
   private: int GrabFrame();
@@ -210,7 +203,7 @@ class Camera1394 : public Driver
   private: int SaveFrame( const char *filename );
 
   // Update the device data (the data going back to the client).
-  private: void WriteData();
+  private: void RefreshData();
 
   // Video device
   private: unsigned int port;
@@ -274,8 +267,12 @@ void Camera1394_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-Camera1394::Camera1394( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
+Camera1394::Camera1394(ConfigFile* cf, int section)
+  : Driver(cf,
+           section,
+           true,
+           PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+           PLAYER_CAMERA_CODE)
 {
   float fps;
 
@@ -758,24 +755,20 @@ void Camera1394::Main()
   {
     
     // Go to sleep for a while (this is a polling loop).
-    // We shouldn't need to sleep if GrabFrame is blocking.
-    // usleep(50000);
+    // We shouldn't need to sleep if GrabFrame is blocking.    
+    //nanosleep(&NSLEEP_TIME, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
     // Process any pending requests.
-    //HandleRequests();
-    //ProcessMessages();
-
-    // Get the time
-    GlobalTime->GetTime(&this->frameTime);
+    ProcessMessages();
 
     // Grab the next frame (blocking)
     this->GrabFrame();
 
     // Write data to server
-    this->WriteData();
+    this->RefreshData();
 
     // this should go or be replaced
     // Save frames; must be done after writedata (which will byteswap)
@@ -797,32 +790,35 @@ void Camera1394::Main()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-/*int Camera1394::HandleRequests()
+// Process an incoming message
+int Camera1394::ProcessMessage(MessageQueue* resp_queue,
+                              player_msghdr * hdr,
+                              void * data)
 {
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-  int len;
-  
-  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
-  {
-    switch (request[0])
-    {
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-    }
-  }
-  return 0;
-}*/
+  assert(resp_queue);
+  assert(hdr);
+  assert(data);
 
+  /* We currently don't support any messages, but if we do...
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_FIDUCIAL_GET_GEOM, this->device_addr))
+  {
+    assert(hdr->size == sizeof(player_position2d_data_t));
+    ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));
+    return(0);
+
+  }
+  */
+
+  return -1;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Store an image frame into the 'frame' buffer
 int Camera1394::GrabFrame()
 {
-  int f, c, i, j;
+  uint f, c;
+  int  i, j;
   unsigned char * ptr1, * ptr2, * dst;
 
   switch (this->method)
@@ -852,20 +848,20 @@ int Camera1394::GrabFrame()
   case MODE_640x480_YUV422:
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_size = this->frameSize;
+    this->data.image_count = this->frameSize;
     this->data.width = this->camera.frame_width;
     this->data.height = this->camera.frame_height;
-    assert(this->data.image_size <= sizeof(this->data.image));
+    assert(this->data.image_count <= sizeof(this->data.image));
     uyvy2rgb((unsigned char *)this->camera.capture_buffer, this->data.image, (this->camera.frame_width) * (this->camera.frame_height));
     break;
   case MODE_1024x768_YUV422:
   case MODE_1280x960_YUV422:
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_size = this->frameSize;
+    this->data.image_count = this->frameSize;
     this->data.width = this->camera.frame_width / 2;
     this->data.height = this->camera.frame_height / 2;
-    assert(this->data.image_size <= sizeof(this->data.image));
+    assert(this->data.image_count <= sizeof(this->data.image));
     uyvy2rgb((unsigned char *)this->camera.capture_buffer, this->resized, (this->camera.frame_width) * (this->camera.frame_height));
     ptr1 = this->resized;
     ptr2 = this->data.image;
@@ -885,10 +881,10 @@ int Camera1394::GrabFrame()
   case MODE_800x600_YUV422:
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_size = this->frameSize;
+    this->data.image_count = this->frameSize;
     this->data.width = 600;
     this->data.height = 450;
-    assert(this->data.image_size <= sizeof(this->data.image));
+    assert(this->data.image_count <= sizeof(this->data.image));
     uyvy2rgb((unsigned char *)this->camera.capture_buffer, this->resized, (this->camera.frame_width) * (this->camera.frame_height));
     ptr1 = this->resized;
     ptr2 = this->data.image;
@@ -912,11 +908,11 @@ int Camera1394::GrabFrame()
   case MODE_640x480_RGB:
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-    this->data.image_size = this->frameSize;
+    this->data.image_count = this->frameSize;
     this->data.width = this->camera.frame_width;
     this->data.height = this->camera.frame_height;
-    assert(this->data.image_size <= sizeof(this->data.image));
-    memcpy(this->data.image, (unsigned char *)this->camera.capture_buffer, this->data.image_size);
+    assert(this->data.image_count <= sizeof(this->data.image));
+    memcpy(this->data.image, (unsigned char *)this->camera.capture_buffer, this->data.image_count);
     break;
   case MODE_640x480_MONO:
   case MODE_800x600_MONO:
@@ -926,11 +922,11 @@ int Camera1394::GrabFrame()
     {
       this->data.bpp = 8;
       this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
-      this->data.image_size = this->frameSize;
+      this->data.image_count = this->frameSize;
       this->data.width = this->camera.frame_width;
       this->data.height = this->camera.frame_height;
-      assert(this->data.image_size <= sizeof(this->data.image));
-      memcpy(this->data.image, (unsigned char *)this->camera.capture_buffer, this->data.image_size);
+      assert(this->data.image_count <= sizeof(this->data.image));
+      memcpy(this->data.image, (unsigned char *)this->camera.capture_buffer, this->data.image_count);
     } else
     {
       this->data.bpp = 24;
@@ -941,24 +937,24 @@ int Camera1394::GrabFrame()
       {
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
-	this->data.image_size = this->frameSize/4*3;
-	assert(this->data.image_size <= sizeof(this->data.image));
+	this->data.image_count = this->frameSize/4*3;
+	assert(this->data.image_count <= sizeof(this->data.image));
 	BayerDownsample((unsigned char *)this->camera.capture_buffer, this->data.image,
 					this->camera.frame_width/2, this->camera.frame_height/2,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_NEAREST:
-        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_size = this->frameSize/4*3;
-	else this->data.image_size = this->frameSize * 3;
-	assert(this->data.image_size <= sizeof(this->data.image));
+        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_count = this->frameSize/4*3;
+	else this->data.image_count = this->frameSize * 3;
+	assert(this->data.image_count <= sizeof(this->data.image));
 	BayerNearestNeighbor((unsigned char *)this->camera.capture_buffer, dst,
 					this->camera.frame_width, this->camera.frame_height,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_EDGE_SENSE:
-        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_size = this->frameSize/4*3;
-        else this->data.image_size = this->frameSize * 3;
-	assert(this->data.image_size <= sizeof(this->data.image));
+        if ((this->camera.frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_count = this->frameSize/4*3;
+        else this->data.image_count = this->frameSize * 3;
+	assert(this->data.image_count <= sizeof(this->data.image));
 	BayerEdgeSense((unsigned char *)this->camera.capture_buffer, dst,
 					this->camera.frame_width, this->camera.frame_height,
 					(bayer_pattern_t)this->BayerPattern);
@@ -1010,23 +1006,25 @@ int Camera1394::GrabFrame()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
-void Camera1394::WriteData()
+void Camera1394::RefreshData()
 {
   size_t size;
 
   // Work out the data size; do this BEFORE byteswapping
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_size;
+  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
 
   // now we just do the byte-swapping
-  this->data.width = htons(this->data.width);
-  this->data.height = htons(this->data.height);
+  this->data.width = this->data.width;
+  this->data.height = this->data.height;
 
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->data.image_size = htonl(this->data.image_size);
+  this->data.image_count = this->data.image_count;
 
-  // Copy data to server
-  PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*) &this->data, size, &this->frameTime);
-
+  /* We should do this to be efficient */
+  Publish(this->device_addr, NULL,
+          PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+          reinterpret_cast<void*>(&this->data), size, NULL);  
+  
   return;
 }
 
@@ -1046,12 +1044,12 @@ int Camera1394::SaveFrame(const char *filename)
   switch (this->data.format)
   {
     case PLAYER_CAMERA_FORMAT_MONO8:
-      fprintf(fp,"P5\n%u %u\n255\n", ntohs(this->data.width), ntohs(this->data.height));
-      fwrite((unsigned char*)this->data.image, 1, ntohl(this->data.image_size), fp);
+      fprintf(fp,"P5\n%u %u\n255\n", this->data.width, this->data.height);
+      fwrite((unsigned char*)this->data.image, 1, this->data.image_count, fp);
       break;
     case PLAYER_CAMERA_FORMAT_RGB888:
-      fprintf(fp,"P6\n%u %u\n255\n", ntohs(this->data.width), ntohs(this->data.height));
-      fwrite((unsigned char*)this->data.image, 1, ntohl(this->data.image_size), fp);
+      fprintf(fp,"P6\n%u %u\n255\n", this->data.width, this->data.height);
+      fwrite((unsigned char*)this->data.image, 1, this->data.image_count, fp);
       break;
     default:
       break;
