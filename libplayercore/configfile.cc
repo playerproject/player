@@ -1941,8 +1941,8 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
     if (interf_code > 0 && interf.interf != interf_code)
       continue;
 
-    // Match the tuple index
-    if (index > 0 && i != index)
+    // Match the tuple index (< 0 matches all indices)
+    if (index >= 0 && i != index)
       continue;
 
     // If we are expecting a key, but there is non in the file, this
