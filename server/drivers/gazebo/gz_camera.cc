@@ -114,8 +114,7 @@ void GzCamera_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzCamera::GzCamera(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_CAMERA_CODE, PLAYER_READ_MODE,
-             sizeof(player_camera_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   // Get the id of the device in Gazebo.
   // TODO: fix potential buffer overflow
@@ -194,12 +193,13 @@ void GzCamera::Update()
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
     // Set the image properties
-    this->data.width = htons(this->iface->data->width);
-    this->data.height = htons(this->iface->data->height);
+    this->data.width = this->iface->data->width;
+    this->data.height = this->iface->data->height;
     this->data.bpp = 24;
+    this->data.fdiv = 1;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-    this->data.image_size = htonl(this->iface->data->image_size);
+    this->data.image_count = this->iface->data->image_size;
 
     // Set the image pixels
     assert((size_t) this->iface->data->image_size < sizeof(this->data.image));
@@ -211,7 +211,11 @@ void GzCamera::Update()
       this->iface->data->image_size;
 
     // Send data to server
-    this->PutData(&this->data, size, &ts);
+    //this->PutData(&this->data, size, &ts);
+    this->Publish(this->device_addr, NULL, 
+                  PLAYER_MSGTYPE_DATA,
+                  PLAYER_CAMERA_DATA_STATE,
+                  (void*)&this->data, size, &this->datatime);
     
 
     // Save frames

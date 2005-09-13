@@ -68,15 +68,9 @@ class GzFactory : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
+  public: virtual int ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data);
 
   // Gazebo id
   private: char *gz_id;
@@ -115,8 +109,7 @@ void GzFactory_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzFactory::GzFactory(ConfigFile* cf, int section)
-  : Driver(cf, section, PLAYER_SPEECH_CODE, PLAYER_ALL_MODE,
-           0, sizeof(player_speech_cmd_t), 10, 10)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_CODE)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -177,36 +170,24 @@ void GzFactory::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzFactory::PutCommand(player_device_id_t id,
-                           void* src, size_t len,
-                           struct timeval* timestamp)
+int GzFactory::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data)
 {
-  player_speech_cmd_t *cmd;
-    
-  assert(len >= sizeof(player_speech_cmd_t));
-  cmd = (player_speech_cmd_t*) src;
-
-  gz_factory_lock(this->iface, 1);
-  strcpy((char *)this->iface->data->string, (char *)cmd->string);
-  gz_factory_unlock(this->iface);
-    
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzFactory::PutConfig(player_device_id_t id, void *client, 
-                         void* src, size_t len,
-                         struct timeval* timestamp)
-{
-  switch (((char*) src)[0])
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, NULL, this->device_addr))
   {
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+    player_speech_cmd_t *cmd;
+
+    assert(hdr->size >= sizeof(player_speech_cmd_t));
+    cmd = (player_speech_cmd_t*) data;
+
+    gz_factory_lock(this->iface, 1);
+    strcpy((char *)this->iface->data->string, (char *)cmd->string);
+    gz_factory_unlock(this->iface);
   }
+  else
+  {
+    return (PLAYER_MSGTYPE_RESP_NACK);
+  }
+    
   return 0;
 }
 

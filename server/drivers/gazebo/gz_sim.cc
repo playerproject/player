@@ -143,8 +143,7 @@ void GzSim_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzSim::GzSim(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_SIMULATION_CODE, PLAYER_ALL_MODE,
-             sizeof(player_simulation_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SIMULATION_CODE)
 {
   // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
