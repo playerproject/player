@@ -131,9 +131,6 @@ Andrew Howard
 */
 /** @} */
 
-
-#include "player.h"
-
 #include <errno.h>
 #include <string.h>
 #include <math.h>
@@ -141,11 +138,8 @@ Andrew Howard
 #include <unistd.h>
 #include <time.h>
 
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "playertime.h"
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 #include "v4lcapture.h"  // For Gavin's libfg; should integrate this
 #include "ccvt.h"        // For YUV420P-->RGB conversion
@@ -233,7 +227,7 @@ void CameraV4L_Register(DriverTable* table)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
-CameraV4L::CameraV4L( ConfigFile* cf, int section)
+CameraV4L::CameraV4L(ConfigFile* cf, int section)
   : Driver(cf,
            section,
            true,
@@ -430,10 +424,10 @@ int CameraV4L::ProcessMessage(MessageQueue* resp_queue,
 
   /* We currently don't support any messages, but if we do...
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                           PLAYER_FIDUCIAL_GET_GEOM, this->device_addr))
+                           PLAYER_CAMERA_GET_GEOM, this->device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_data_t));
-    ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));
+    ProcessGetGeom(hdr, *reinterpret_cast<player_camera_data_t *> (data));
     return(0);
 
   }
@@ -441,46 +435,6 @@ int CameraV4L::ProcessMessage(MessageQueue* resp_queue,
 
   return -1;
 }
-////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-/*int CameraV4L::HandleRequests()
-{
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-  int len;
-
-  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
-  {
-    switch (request[0])
-    {
-      case PLAYER_FIDUCIAL_GET_GEOM:
-        HandleGetGeom(client, request, len);
-        break;
-
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-    }
-  }
-  return 0;
-}*/
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-/*void CameraV4L::HandleGetGeom(void *client, void *request, int len)
-{
-
-  // TODO
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-*/
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the device data (the data going back to the client).
@@ -547,15 +501,10 @@ void CameraV4L::RefreshData()
   // Copy data to server
   size = sizeof(this->data) - sizeof(this->data.image) + image_count;
 
-  struct timeval timestamp;
-  timestamp.tv_sec  = this->tsec;
-  timestamp.tv_usec = this->tusec;
-
   /* We should do this to be efficient */
   Publish(this->device_addr, NULL,
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&this->data), size, NULL);
-  /**/
 
   return;
 }

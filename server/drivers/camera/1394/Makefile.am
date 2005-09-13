@@ -1,7 +1,9 @@
-noinst_LIBRARIES = @CAMERA1394_LIB@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)  -I../../blobfinder/cmvision
 
-AM_CPPFLAGS = -Wall  -I$(top_srcdir)/server
+noinst_LTLIBRARIES =
+if INCLUDE_CAMERA1394
+noinst_LTLIBRARIES += libcamera1394.la
+endif
 
-EXTRA_LIBRARIES = libcamera1394.a
+libcamera1394_la_SOURCES = camera1394.cc 
 
-libcamera1394_a_SOURCES = camera1394.cc 
