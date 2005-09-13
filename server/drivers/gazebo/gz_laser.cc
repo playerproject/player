@@ -111,17 +111,9 @@ class GzLaser : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
+  public: int ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data);
 
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
-
-  // Gazebo device id
+   // Gazebo device id
   private: char *gz_id;
 
   // Gazebo client object
@@ -158,8 +150,7 @@ void GzLaser_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzLaser::GzLaser(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_LASER_CODE, PLAYER_ALL_MODE,
-             sizeof(player_laser_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -246,19 +237,22 @@ void GzLaser::Update()
 
     //printf("range res = %f %f\n", range_res, this->iface->data->max_range);
   
-    data.min_angle = htons((int) (this->iface->data->min_angle * 100 * 180 / M_PI));
-    data.max_angle = htons((int) (this->iface->data->max_angle * 100 * 180 / M_PI));
-    data.resolution = htons((int) (angle_res * 100 * 180 / M_PI));
-    data.range_res = htons((int) range_res);
-    data.range_count = htons((int) (this->iface->data->range_count));
-  
+    data.min_angle = this->iface->data->min_angle * 180 / M_PI;
+    data.max_angle = this->iface->data->max_angle * 180 / M_PI;
+    data.resolution = angle_res * 180 / M_PI;
+    data.ranges_count = this->iface->data->range_count; 
+
     for (i = 0; i < this->iface->data->range_count; i++)
     {
-      data.ranges[i] = htons((int) (this->iface->data->ranges[i] * 1000 / range_res));
+      data.ranges[i] = this->iface->data->ranges[i] / range_res;
       data.intensity[i] = (uint8_t) (int) this->iface->data->intensity[i];
     }
 
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_LASER_DATA_SCAN,        
+                   (void*)&data, sizeof(data), &this->datatime );
+ 
   }
 
   gz_laser_unlock(this->iface);
@@ -266,51 +260,35 @@ void GzLaser::Update()
   return;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzLaser::PutCommand(player_device_id_t id,
-                         void* src, size_t len,
-                         struct timeval* timestamp)
-{  
-  return;
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzLaser::PutConfig(player_device_id_t id, void *client, 
-                       void* src, size_t len,
-                       struct timeval* timestamp)
+int GzLaser::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data)
 {
-  uint8_t subtype;
-
-  subtype = ((uint8_t*) src)[0];
-  switch (subtype)
+  switch (hdr->subtype)
   {
-    case PLAYER_LASER_GET_GEOM:
+    case PLAYER_LASER_REQ_GET_GEOM:
     {
       player_laser_geom_t rep;
 
       // TODO: get geometry from somewhere
-      rep.subtype = PLAYER_LASER_GET_GEOM;
-      rep.pose[0] = htons((int) (0.0));
-      rep.pose[1] = htons((int) (0.0));
-      rep.pose[2] = htons((int) (0.0));
-      rep.size[0] = htons((int) (0.0));
-      rep.size[1] = htons((int) (0.0));
+      rep.pose.px = 0.0;
+      rep.pose.py = 0.0;
+      rep.pose.pa = 0.0;
+      rep.size.sw = 0.0;
+      rep.size.sl = 0.0;
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &rep, sizeof(rep),NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
+      this->Publish(this->device_addr, resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK, 
+                    PLAYER_LASER_REQ_GET_GEOM, 
+                    &rep, sizeof(rep),NULL);
       break;
     }
 
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+      return (PLAYER_MSGTYPE_RESP_NACK);
     }
   }
+
   return 0;
 }
