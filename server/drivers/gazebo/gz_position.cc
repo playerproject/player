@@ -64,16 +64,9 @@ class GzPosition : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
-
+  public: virtual int ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data);
   // Handle geometry requests
   private: void HandleGetGeom(void *client, void *req, int reqlen);
 
@@ -117,8 +110,7 @@ void GzPosition_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzPosition::GzPosition(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_POSITION_CODE, PLAYER_ALL_MODE,
-             sizeof(player_position_data_t), sizeof(player_position_cmd_t), 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -179,7 +171,7 @@ int GzPosition::Shutdown()
 // Check for new data
 void GzPosition::Update()
 {
-  player_position_data_t data;
+  player_position2d_data_t data;
   struct timeval ts;
 
   gz_position_lock(this->iface, 1);
@@ -191,17 +183,21 @@ void GzPosition::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
-    data.xpos = htonl((int) (this->iface->data->pos[0] * 1000));
-    data.ypos = htonl((int) (this->iface->data->pos[1] * 1000));
-    data.yaw = htonl((int) (this->iface->data->rot[2] * 180 / M_PI));
+    data.pos.px = this->iface->data->pos[0];
+    data.pos.py = this->iface->data->pos[1];
+    data.pos.pa = this->iface->data->rot[2] * 180 / M_PI;
 
-    data.xspeed = htonl((int) (this->iface->data->vel_pos[0] * 1000));
-    data.yspeed = htonl((int) (this->iface->data->vel_pos[1] * 1000));
-    data.yawspeed = htonl((int) (this->iface->data->vel_rot[2] * 180 / M_PI));
+    data.vel.px = this->iface->data->vel_pos[0];
+    data.vel.py = this->iface->data->vel_pos[1];
+    data.vel.pa = this->iface->data->vel_rot[2] * 180 / M_PI;
 
     data.stall = (uint8_t) this->iface->data->stall;
 
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_POSITION2D_DATA_STATE, 
+                   (void*)&data, sizeof(data), &this->datatime );
+ 
   }
 
   gz_position_unlock(this->iface);
@@ -212,87 +208,60 @@ void GzPosition::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPosition::PutCommand(player_device_id_t id,
-                            void* src, size_t len,
-                            struct timeval* timestamp)
+int GzPosition::ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data)
 {
-  player_position_cmd_t *cmd;
-    
-  assert(len >= sizeof(player_position_cmd_t));
-  cmd = (player_position_cmd_t*) src;
-
-  gz_position_lock(this->iface, 1);
-  this->iface->data->cmd_vel_pos[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
-  this->iface->data->cmd_vel_pos[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
-  this->iface->data->cmd_vel_rot[2] = ((int) ntohl(cmd->yawspeed)) * M_PI / 180;
-  gz_position_unlock(this->iface);
-    
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzPosition::PutConfig(player_device_id_t id, void *client, 
-                          void* src, size_t len,
-                          struct timeval* timestamp)
-{
-  switch (((char*) src)[0])
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+        PLAYER_POSITION2D_CMD_STATE, this->device_addr))
   {
-    case PLAYER_POSITION_GET_GEOM_REQ:
-      HandleGetGeom(client, src, len);
-      break;
+    player_position2d_cmd_t *cmd;
 
-    case PLAYER_POSITION_MOTOR_POWER_REQ:
-      HandleMotorPower(client, src, len);
-      break;
+    assert(hdr->size >= sizeof(player_position2d_cmd_t));
+    cmd = (player_position2d_cmd_t*) data;
 
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+    gz_position_lock(this->iface, 1);
+    this->iface->data->cmd_vel_pos[0] = cmd->vel.px;
+    this->iface->data->cmd_vel_pos[1] = cmd->vel.py;
+    this->iface->data->cmd_vel_rot[2] = cmd->vel.pa * M_PI / 180;
+    gz_position_unlock(this->iface);
   }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+        PLAYER_POSITION2D_REQ_GET_GEOM, this->device_addr))
+  {
+    player_position2d_geom_t geom;
+
+    // TODO: get correct dimensions; there are for the P2AT
+
+    geom.pose.px = 0;
+    geom.pose.py = 0;
+    geom.pose.pa = 0;
+    geom.size.sw= 0.53;
+    geom.size.sl = 0.38;
+
+    this->Publish(this->device_addr, resp_queue,
+        PLAYER_MSGTYPE_RESP_ACK, 
+        PLAYER_POSITION2D_REQ_GET_GEOM, 
+        &geom, sizeof(geom), NULL);
+
+  }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+        PLAYER_POSITION2D_REQ_MOTOR_POWER, this->device_addr))
+  {
+    player_position2d_power_config_t *power;
+
+    assert((size_t) hdr->size >= sizeof(player_position2d_power_config_t));
+    power = (player_position2d_power_config_t*) data;
+
+    gz_position_lock(this->iface, 1);
+    this->iface->data->cmd_enable_motors = power->state;
+    gz_position_unlock(this->iface);
+
+    this->Publish(this->device_addr, resp_queue,
+        PLAYER_MSGTYPE_RESP_ACK, 
+        PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+        &power, sizeof(power), NULL);
+  }
+
   return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-void GzPosition::HandleGetGeom(void *client, void *req, int reqlen)
-{
-  player_position_geom_t geom;
-
-  // TODO: get correct dimensions; there are for the P2AT
-  
-  geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
-  geom.pose[0] = htons((int) (0));
-  geom.pose[1] = htons((int) (0));
-  geom.pose[2] = htons((int) (0));
-  geom.size[0] = htons((int) (0.53 * 1000));
-  geom.size[1] = htons((int) (0.38 * 1000));
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle motor power 
-void GzPosition::HandleMotorPower(void *client, void *req, int reqlen)
-{
-  player_position_power_config_t *power;
-  
-  assert((size_t) reqlen >= sizeof(player_position_power_config_t));
-  power = (player_position_power_config_t*) req;
-
-  gz_position_lock(this->iface, 1);
-  this->iface->data->cmd_enable_motors = power->value;
-  gz_position_unlock(this->iface);
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  
-  return;
 }
