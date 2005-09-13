@@ -33,6 +33,7 @@ class TCPRemoteDriver : public Driver
     int sock;
     MessageQueue* queue;
     char ipaddr[256];
+    int kill_flag;
 
   public:
     TCPRemoteDriver(player_devaddr_t addr, void* arg);

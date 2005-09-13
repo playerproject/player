@@ -104,11 +104,13 @@ TCPRemoteDriver::Setup()
   }
 
   // Add this socket for monitoring
+  this->kill_flag = 0;
   this->queue = this->ptcp->AddClient(NULL, 
                                       this->device_addr.host, 
                                       this->device_addr.robot, 
                                       this->sock, 
-                                      false);
+                                      false,
+                                      &this->kill_flag);
 
   return(0);
 }
@@ -249,7 +251,7 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
                            -1,
                            this->device_addr))
   {
-    // Re-publish it for local consumers
+    // Re-publish the message for local consumers
     this->Publish(NULL, hdr, data);
     return(0);
   }
@@ -259,6 +261,10 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
                            -1,
                            this->device_addr))
   {
+    // Has our connection to the remote device been closed?
+    if(this->kill_flag)
+      return(0);
+
     // Push it onto the outgoing queue
     this->Publish(this->queue, hdr, data);
     return(0);
@@ -269,20 +275,29 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
                            -1,
                            this->device_addr))
   {
-    // Push it onto the outgoing queue
-    this->Publish(this->queue, hdr, data);
-    // Store the return address for later use
-    this->ret_queue = resp_queue;
-    // Set the message filter to look for the response
-    this->InQueue->SetFilter(this->device_addr.host,
-                             this->device_addr.robot,
-                             this->device_addr.interf,
-                             this->device_addr.index,
-                             -1,
-                             hdr->subtype);
-    // No response now; it will come later after we hear back from the
-    // laser
-    return(0);
+    // Has our connection to the remote device been closed?
+    if(this->kill_flag)
+    {
+      // Send a NACK
+      return(-1);
+    }
+    else
+    {
+      // Push it onto the outgoing queue
+      this->Publish(this->queue, hdr, data);
+      // Store the return address for later use
+      this->ret_queue = resp_queue;
+      // Set the message filter to look for the response
+      this->InQueue->SetFilter(this->device_addr.host,
+                               this->device_addr.robot,
+                               this->device_addr.interf,
+                               this->device_addr.index,
+                               -1,
+                               hdr->subtype);
+      // No response now; it will come later after we hear back from the
+      // laser
+      return(0);
+    }
   }
   // Forward response (success or failure) from the laser
   else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 

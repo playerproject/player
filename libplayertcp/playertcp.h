@@ -58,60 +58,20 @@ This library moves messages between Player message queues and TCP sockets.
 // Forward declarations
 struct pollfd;
 
-typedef struct
-{
-  int fd;
-  int port;
-} playertcp_listener_t;
-
-/** @brief A TCP Connection */
-typedef struct
-{
-  /** Marked for deletion? */
-  int del;
-  /** Is the connection valid? */
-  int valid;
-  /** File descriptor for the socket */
-  int fd;
-  /** Host associated with this connection.  For local devices, it's
-   * localhost (or some alias); for remote devices, it's the remote host. */
-  unsigned int host;
-  /** Port on which the connection was originally accepted */
-  int port;
-  /** Remote address */
-  struct sockaddr_in addr;
-  /** Outgoing queue for this connection */
-  MessageQueue* queue;
-  /** Buffer in which to store partial incoming messages */
-  char* readbuffer;
-  /** Total size of @p readbuffer */
-  int readbuffersize;
-  /** How much of @p readbuffer is currently in use (i.e., holding a
-    partial message) */
-  int readbufferlen;
-  /** Buffer in which to store partial outgoint messages */
-  char* writebuffer;
-  /** Total size of @p writebuffer */
-  int writebuffersize;
-  /** How much of @p writebuffer is currently in use (i.e., holding a
-    partial message) */
-  int writebufferlen;
-  /** Linked list of devices to which we are subscribed */
-  Device** dev_subs;
-  size_t num_dev_subs;
-} playertcp_conn_t;
+struct playertcp_listener;
+struct playertcp_conn;
 
 class PlayerTCP
 {
   private:
     uint32_t host;
     int num_listeners;
-    playertcp_listener_t* listeners;
+    playertcp_listener* listeners;
     struct pollfd* listen_ufds;
 
     int size_clients;
     int num_clients;
-    playertcp_conn_t* clients;
+    playertcp_conn* clients;
     struct pollfd* client_ufds;
 
     /** Buffer in which to store decoded incoming messages */
@@ -130,7 +90,8 @@ class PlayerTCP
                             unsigned int local_host,
                             unsigned int local_port,
                             int newsock,
-                            bool send_banner=true);
+                            bool send_banner=true,
+                            int* kill_flag=NULL);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);

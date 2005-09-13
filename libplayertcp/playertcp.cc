@@ -37,6 +37,54 @@
 
 extern char playerversion[];
 
+typedef struct playertcp_listener
+{
+  int fd;
+  int port;
+} playertcp_listener_t;
+
+/** @brief A TCP Connection */
+typedef struct playertcp_conn
+{
+  /** Marked for deletion? */
+  int del;
+  /** Is the connection valid? */
+  int valid;
+  /** File descriptor for the socket */
+  int fd;
+  /** Host associated with this connection.  For local devices, it's
+   * localhost (or some alias); for remote devices, it's the remote host. */
+  unsigned int host;
+  /** Port on which the connection was originally accepted */
+  int port;
+  /** Remote address */
+  struct sockaddr_in addr;
+  /** Outgoing queue for this connection */
+  MessageQueue* queue;
+  /** Buffer in which to store partial incoming messages */
+  char* readbuffer;
+  /** Total size of @p readbuffer */
+  int readbuffersize;
+  /** How much of @p readbuffer is currently in use (i.e., holding a
+    partial message) */
+  int readbufferlen;
+  /** Buffer in which to store partial outgoint messages */
+  char* writebuffer;
+  /** Total size of @p writebuffer */
+  int writebuffersize;
+  /** How much of @p writebuffer is currently in use (i.e., holding a
+    partial message) */
+  int writebufferlen;
+  /** Linked list of devices to which we are subscribed */
+  Device** dev_subs;
+  size_t num_dev_subs;
+  /** Flag that we should set to true when we kill the client.
+   * TCPRemoteDriver uses this flag to know when the connection has been
+   * closed, and thus that it should stop publishing to its queue. */
+  int* kill_flag;
+} playertcp_conn_t;
+
+
 PlayerTCP::PlayerTCP()
 {
   this->thread = pthread_self();
@@ -112,7 +160,8 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
                      unsigned int local_port,
                      int newsock, 
-                     bool send_banner)
+                     bool send_banner,
+                     int* kill_flag)
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
 
@@ -149,6 +198,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
     this->clients[j].addr = *cliaddr;
   this->clients[j].dev_subs = NULL;
   this->clients[j].num_dev_subs = 0;
+  this->clients[j].kill_flag = kill_flag;
 
   // Set up for later use of poll
   this->client_ufds[j].fd = this->clients[j].fd;
@@ -276,6 +326,8 @@ PlayerTCP::Close(int cli)
     delete this->clients[cli].queue;
     free(this->clients[cli].readbuffer);
     free(this->clients[cli].writebuffer);
+    if(this->clients[cli].kill_flag)
+      *(this->clients[cli].kill_flag) = 1;
   }
 }
 
