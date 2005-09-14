@@ -244,8 +244,8 @@ void GzCamera::SaveFrame(const char *filename)
   if (!file)
     return;
 
-  width = ntohs(this->data.width);
-  height = ntohs(this->data.height);
+  width = this->data.width;
+  height = this->data.height;
 
   if (this->data.format == PLAYER_CAMERA_FORMAT_RGB888)
   {

@@ -2403,9 +2403,9 @@ It accepts new positions and/or velocities for the robot's motors
 typedef struct player_position3d_cmd
 {
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
-  int32_t pos[6];
+  float pos[6];
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  int32_t vel[6];
+  float vel[6];
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
   /** Command type; 0 = velocity, 1 = position. */
@@ -2420,9 +2420,9 @@ and size fields filled in.  */
 typedef struct player_position3d_geom
 {
   /** Pose of the robot base, in the robot cs (m, m, m, rad, rad, rad).*/
-  int16_t pose[6];
+  float pose[6];
   /** Dimensions of the base (m, m, m). */
-  uint16_t size[3];
+  float size[3];
 } player_position3d_geom_t;
 
 /** @brief Configuration request: Motor power.
@@ -2952,6 +2952,52 @@ typedef struct player_wifi_iwspy_addr_req
 } player_wifi_iwspy_addr_req_t;
 
 /** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @defgroup player_interface_truth truth
+
+The @p truth interface provides access to the absolute state of entities.
+Note that, unless your robot has superpowers, @p truth devices are
+only avilable in simulation.
+@{
+*/
+
+/* Data subtypes. */
+#define PLAYER_TRUTH_DATA_POSE 0x01
+#define PLAYER_TRUTH_DATA_FIDUCIAL_ID 0x02
+
+/* Request subtypes. */
+#define PLAYER_TRUTH_REQ_SET_POSE 0x03
+#define PLAYER_TRUTH_REQ_SET_FIDUCIAL_ID 0x04
+
+/** @brief Data
+
+The @p truth interface returns data concerning the current state of an
+entity. */
+typedef struct player_truth_pose
+{
+  /** Object pose in the world . */
+  player_pose3d_t pose;
+}  player_truth_pose_t;
+
+/** @brief Configuration request: Get/set fiducial ID number.
+
+To get the fiducial ID of an object, use the following request, filling
+in only the subtype with PLAYER_TRUTH_GET_FIDUCIAL_ID. The server will
+respond with the ID field filled in.  To set the fiducial ID, set the
+subtype to PLAYER_TRUTH_SET_FIDUCIAL_ID and fill in the ID field with
+the desired value. */
+typedef struct player_truth_fiducial_id
+{
+  /** Packet subtype.  Must be either PLAYER_TRUTH_GET_FIDUCIAL_ID or
+    PLAYER_TRUTH_SET_FIDUCIAL_ID */
+  uint8_t subtype;
+  /** the fiducial ID */
+  int16_t id;
+}  player_truth_fiducial_id_t;
+
+/** @} */
+
 // end defgroup interfaces
 /** @} */
 #endif /* PLAYER_H */

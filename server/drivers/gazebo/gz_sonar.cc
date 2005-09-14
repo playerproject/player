@@ -74,22 +74,19 @@ class GzSonar : public Driver
 
   // Check for new data
   public: virtual void Update();
-
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
+  public: int ProcessMessage( MessageQueue *resp_queue, 
+                              player_msghdr *hdr, 
+                              void *data);
 
   // Handle geometry requests
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
+  private: void HandleGetGeom( MessageQueue *resp_queue, 
+                               player_msghdr *hdr, 
+                               void *data);
 
   // Handle sonar configuration
-  private: void HandleSonarPower(void *client, void *req, int reqlen);
+  private: void HandleSonarPower( MessageQueue *resp_queue, 
+                                  player_msghdr *hdr, 
+                                  void *data);
 
   // Gazebo id
   private: char *gz_id;
@@ -128,8 +125,7 @@ void GzSonar_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzSonar::GzSonar(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_SONAR_CODE, PLAYER_ALL_MODE,
-             sizeof(player_sonar_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SONAR_CODE)
 {
   this->client = GzClient::client;
 
@@ -201,11 +197,14 @@ void GzSonar::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-    data.range_count = htons(this->iface->data->sonar_count);
+    data.ranges_count = this->iface->data->sonar_count;
     for (int i = 0; i < this->iface->data->sonar_count; i++)
-      data.ranges[i] = htons((short) (int) (this->iface->data->sonar_ranges[i] * 1000.0));
+      data.ranges[i] = this->iface->data->sonar_ranges[i];
 
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_SONAR_DATA_RANGES,     
+                   (void*)&data, sizeof(data), &this->datatime );
   }
 
   gz_sonar_unlock(this->iface);
@@ -215,35 +214,18 @@ void GzSonar::Update()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzSonar::PutCommand(player_device_id_t id,
-                          void* src, size_t len,
-                          struct timeval* timestamp)
+// Process Messages
+int GzSonar::ProcessMessage( MessageQueue *resp_queue, 
+                             player_msghdr *hdr, 
+                             void *data)
 {
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzSonar::PutConfig(player_device_id_t id, void *client, 
-                        void* src, size_t len,
-                        struct timeval* timestamp)
-{
-  switch (((char*) src)[0])
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, this->device_addr))
   {
-    case PLAYER_SONAR_GET_GEOM_REQ:
-      HandleGetGeom(client, src, len);
-      break;
-
-    case PLAYER_SONAR_POWER_REQ:
-      HandleSonarPower(client, src, len);
-      break;
-
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+    this->HandleGetGeom(resp_queue, hdr, data);
+  }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_POWER,this->device_addr))
+  {
+    this->HandleSonarPower(resp_queue, hdr, data);
   }
   return 0;
 }
@@ -251,40 +233,43 @@ int GzSonar::PutConfig(player_device_id_t id, void *client,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle geometry requests.
-void GzSonar::HandleGetGeom(void *client, void *req, int reqlen)
+void GzSonar::HandleGetGeom( MessageQueue *resp_queue, 
+                             player_msghdr *hdr, 
+                             void *data)
 {
   player_sonar_geom_t geom;
 
-  geom.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-
   gz_sonar_lock(this->iface, 1);
 
-  geom.pose_count = htons(this->iface->data->sonar_count);
+  geom.poses_count = this->iface->data->sonar_count;
 
   //the position of valid sonar
   for (int i = 0; i < this->iface->data->sonar_count; i++)
   {
-    geom.poses[i][0] = htons((short) (int) (this->iface->data->sonar_pos[i][0] * 1000.0));
-    geom.poses[i][1] = htons((short) (int) (this->iface->data->sonar_pos[i][1] * 1000.0));
-    geom.poses[i][2] = htons((short) (int) (this->iface->data->sonar_rot[i][2] * 180 / M_PI));
+    geom.poses[i].px = this->iface->data->sonar_pos[i][0];
+    geom.poses[i].py = this->iface->data->sonar_pos[i][1];
+    geom.poses[i].pa = this->iface->data->sonar_rot[i][2] * 180 / M_PI;
   }
   gz_sonar_unlock(this->iface);
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
+  this->Publish(this->device_addr, resp_queue,
+                PLAYER_MSGTYPE_RESP_ACK, 
+                PLAYER_SONAR_REQ_GET_GEOM,
+                &geom, sizeof(geom), NULL);
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle sonar power 
-void GzSonar::HandleSonarPower(void *client, void *req, int reqlen)
+void GzSonar::HandleSonarPower( MessageQueue *resp_queue, 
+                             player_msghdr *hdr, 
+                             void *data)
 {
   player_sonar_power_config_t *power;
   
-  assert((size_t) reqlen >= sizeof(player_sonar_power_config_t));
-  power = (player_sonar_power_config_t*) req;
+  assert((size_t) hdr->size >= sizeof(player_sonar_power_config_t));
+  power = (player_sonar_power_config_t*) data;
 
   gz_sonar_lock(this->iface, 1);
 
@@ -292,9 +277,11 @@ void GzSonar::HandleSonarPower(void *client, void *req, int reqlen)
   
   gz_sonar_unlock(this->iface);
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  
+   this->Publish(this->device_addr, resp_queue,
+                PLAYER_MSGTYPE_RESP_ACK, 
+                PLAYER_SONAR_REQ_POWER,
+                power, sizeof(*power), NULL);
+ 
   return;
 }
 

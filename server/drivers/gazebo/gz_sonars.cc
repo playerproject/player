@@ -206,12 +206,12 @@ void GzSonars::Update()
     //Modify by Victor Tran
     //---> Add
     //the count of valid sonars
-    data.range_count = htons(this->iface->data->range_count);
+    data.range_count = this->iface->data->range_count;
 
     //the range of valid sonars
     for (int i = 0; i < this->iface->data->range_count; i++)
     {
-      data.ranges[i] = htons(this->iface->data->ranges[i]);
+      data.ranges[i] = this->iface->data->ranges[i];
     }
     // <--- end Add
     this->PutData(&data, sizeof(data), &ts);
@@ -273,14 +273,14 @@ void GzSonars::HandleGetGeom(void *client, void *req, int reqlen)
   //---> Add
   //the count of valid sonars
   gz_sonars_lock(this->iface, 1);
-  geom.pose_count = htons(this->iface->data->pose_count);
+  geom.pose_count = this->iface->data->pose_count;
 
   //the position of valid sonars
   for (int i = 0; i < this->iface->data->pose_count; i++)
   {
-    geom.poses[i][0] = htons(this->iface->data->poses[i][0]);
-    geom.poses[i][1] = htons(this->iface->data->poses[i][1]);
-    geom.poses[i][2] = htons(this->iface->data->poses[i][2]);
+    geom.poses[i][0] = this->iface->data->poses[i][0];
+    geom.poses[i][1] = this->iface->data->poses[i][1];
+    geom.poses[i][2] = this->iface->data->poses[i][2];
   }
   gz_sonars_unlock(this->iface);
   //<--- end Add

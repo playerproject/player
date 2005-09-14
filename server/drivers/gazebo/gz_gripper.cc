@@ -70,15 +70,9 @@ class GzGripper : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
+  public: int ProcessMessage( MessageQueue *resp_queue, 
+                              player_msghdr *hdr, 
+                              void *data);
 
   // Gazebo id
   private: char *gz_id;
@@ -117,8 +111,7 @@ void GzGripper_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzGripper::GzGripper(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_GRIPPER_CODE, PLAYER_ALL_MODE,
-             sizeof(player_gripper_data_t), sizeof(player_gripper_cmd_t), 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GRIPPER_CODE)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -212,7 +205,11 @@ void GzGripper::Update()
     data.state |= this->iface->data->lift_moving ? 0x40 : 0x00;
     data.state |= this->iface->data->lift_error ? 0x80 : 0x00;
     
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_GRIPPER_DATA_STATE,
+                   (void*)&data, sizeof(data), &this->datatime );
+ 
   }
 
   gz_gripper_unlock(this->iface);
@@ -222,40 +219,25 @@ void GzGripper::Update()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzGripper::PutCommand(player_device_id_t id,
-                           void* src, size_t len,
-                           struct timeval* timestamp)
+// Process Messages
+int GzGripper::ProcessMessage( MessageQueue *resp_queue, 
+                                  player_msghdr *hdr, 
+                                  void *data)
 {
-  player_gripper_cmd_t *cmd;
-    
-  assert(len >= sizeof(player_gripper_cmd_t));
-  cmd = (player_gripper_cmd_t*) src;
-
-  gz_gripper_lock(this->iface, 1);
-  
-  this->iface->data->cmd = (int)(cmd->cmd);
-  
-  gz_gripper_unlock(this->iface);
-    
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzGripper::PutConfig(player_device_id_t id, void *client, 
-                         void* src, size_t len,
-                         struct timeval* timestamp)
-{
-  switch (((char*) src)[0])
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STATE, this->device_addr))
   {
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+    player_gripper_cmd_t *cmd;
+
+    assert(hdr->size >= sizeof(player_gripper_cmd_t));
+    cmd = (player_gripper_cmd_t*) data;
+
+    gz_gripper_lock(this->iface, 1);
+
+    this->iface->data->cmd = (int)(cmd->cmd);
+
+    gz_gripper_unlock(this->iface);
   }
+    
   return 0;
 }
-
 #endif

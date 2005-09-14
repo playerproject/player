@@ -150,10 +150,10 @@ class GzStereo : public Driver
   private: gz_stereo_t *iface;
 
   // Left/right camera interfaces
-  private: player_device_id_t leftId, rightId;
+  private: player_devaddr_t leftId, rightId;
 
   // Left disparity camera interface
-  private: player_device_id_t leftDisparityId, rightDisparityId;
+  private: player_devaddr_t leftDisparityId, rightDisparityId;
 
   // Most recent data
   private: player_camera_data_t leftImage, rightImage;
@@ -191,11 +191,10 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
 {
   // Get left camera interface
   memset(&this->leftId, 0, sizeof(this->leftId));
-  if (cf->ReadDeviceId(&this->leftId, section, "provides",
+  if (cf->ReadDeviceAddr(&this->leftId, section, "provides",
                        PLAYER_CAMERA_CODE, -1, "left") == 0)
   {
-    if (this->AddInterface(this->leftId, PLAYER_READ_MODE,
-                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
+    if (this->AddInterface(this->leftId) != 0)
     {
       this->SetError(-1);
       return;
@@ -204,11 +203,10 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
 
   // Get right camera interface
   memset(&this->rightId, 0, sizeof(this->rightId));
-  if (cf->ReadDeviceId(&this->rightId, section, "provides",
+  if (cf->ReadDeviceAddr(&this->rightId, section, "provides",
                        PLAYER_CAMERA_CODE, -1, "right") == 0)
   {
-    if (this->AddInterface(this->rightId, PLAYER_READ_MODE,
-                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
+    if (this->AddInterface(this->rightId) != 0)
     {
       this->SetError(-1);
       return;
@@ -217,11 +215,10 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
 
   // Get disparity camera interface
   memset(&this->leftDisparityId, 0, sizeof(this->leftDisparityId));
-  if (cf->ReadDeviceId(&this->leftDisparityId, section, "provides",
+  if (cf->ReadDeviceAddr(&this->leftDisparityId, section, "provides",
                        PLAYER_CAMERA_CODE, -1, "left_disparity") == 0)
   {
-    if (this->AddInterface(this->leftDisparityId, PLAYER_READ_MODE,
-                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
+    if (this->AddInterface(this->leftDisparityId) != 0)
     {
       this->SetError(-1);
       return;
@@ -230,11 +227,10 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
 
   // Get disparity camera interface
   memset(&this->rightDisparityId, 0, sizeof(this->rightDisparityId));
-  if (cf->ReadDeviceId(&this->rightDisparityId, section, "provides",
+  if (cf->ReadDeviceAddr(&this->rightDisparityId, section, "provides",
                        PLAYER_CAMERA_CODE, -1, "right_disparity") == 0)
   {
-    if (this->AddInterface(this->rightDisparityId, PLAYER_READ_MODE,
-                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
+    if (this->AddInterface(this->rightDisparityId) != 0)
     {
       this->SetError(-1);
       return;
@@ -242,8 +238,8 @@ GzStereo::GzStereo(ConfigFile* cf, int section)
   }
 
   // Must have at least one interface
-  if (this->leftId.code == 0 && this->rightId.code == 0 &&
-      this->leftDisparityId.code == 0 && this->rightDisparityId.code == 0)
+  if (this->leftId.interf == 0 && this->rightId.interf == 0 &&
+      this->leftDisparityId.interf == 0 && this->rightDisparityId.interf == 0)
   {
     PLAYER_ERROR("no usable interfaces");
     this->SetError(-1);
@@ -334,21 +330,25 @@ void GzStereo::Update()
     ts.tv_sec = (int) (src->time);
     ts.tv_usec = (int) (fmod(src->time, 1) * 1e6);
 
-    if (this->leftId.code)
+    if (this->leftId.interf)
     {
       // Left image
       dst = &this->leftImage;
-      dst->width = htons(src->width);
-      dst->height = htons(src->height);
+      dst->width = src->width;
+      dst->height = src->height;
       dst->bpp = 24;
       dst->format = PLAYER_CAMERA_FORMAT_RGB888;
       dst->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      dst->image_size = htonl(src->left_image_size);
+      dst->image_count = src->left_image_size;
       assert((size_t) src->left_image_size < sizeof(dst->image));
       memcpy(dst->image, src->left_image, src->left_image_size);
       size = sizeof(*dst) - sizeof(dst->image) + src->left_image_size;
-      this->PutData(this->leftId, dst, size, &ts);
 
+      this->Publish( this->leftId, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_CAMERA_DATA_STATE,             
+                   (void*)dst, size, &this->datatime );
+ 
       // Save frames
       if (this->save)
       {
@@ -357,21 +357,25 @@ void GzStereo::Update()
       }
     }
 
-    if (this->rightId.code)
+    if (this->rightId.interf)
     {
       // Right image
       dst = &this->rightImage;
-      dst->width = htons(src->width);
-      dst->height = htons(src->height);
+      dst->width = src->width;
+      dst->height = src->height;
       dst->bpp = 24;
       dst->format = PLAYER_CAMERA_FORMAT_RGB888;
       dst->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      dst->image_size = htonl(src->right_image_size);
+      dst->image_count = src->right_image_size;
       assert((size_t) src->right_image_size < sizeof(dst->image));
       memcpy(dst->image, src->right_image, src->right_image_size);
       size = sizeof(*dst) - sizeof(dst->image) + src->right_image_size;
-      this->PutData(this->rightId, dst, size, &ts);
 
+      this->Publish( this->rightId, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_CAMERA_DATA_STATE,             
+                   (void*)dst, size, &this->datatime );
+ 
       // Save frames
       if (this->save)
       {
@@ -380,17 +384,17 @@ void GzStereo::Update()
       }
     }
 
-    if (this->leftDisparityId.code)
+    if (this->leftDisparityId.interf)
     {
       // Left disparity
       dst = &this->leftDisparity;
-      dst->width = htons(src->width);
-      dst->height = htons(src->height);
+      dst->width = src->width;
+      dst->height = src->height;
       dst->bpp = 16;
       dst->format = PLAYER_CAMERA_FORMAT_MONO16;
-      dst->fdiv = htons(16);
+      dst->fdiv = 16;
       dst->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      dst->image_size = htonl(src->left_disparity_size * 2);
+      dst->image_count = src->left_disparity_size * 2;
       assert((size_t) src->left_disparity_size < sizeof(dst->image));
 
       for (j = 0; j < (int) src->height; j++)
@@ -398,11 +402,15 @@ void GzStereo::Update()
         src_pix = src->left_disparity + j * src->width;
         dst_pix = ((uint16_t*) dst->image) + j * src->width;        
         for (i = 0; i < (int) src->width; i++)
-          dst_pix[i] = htons((uint16_t) (int16_t) (src_pix[i] * 16));
+          dst_pix[i] = (uint16_t) (int16_t) (src_pix[i] * 16);
       }
     
-      size = sizeof(*dst) - sizeof(dst->image) + ntohl(dst->image_size);
-      this->PutData(this->leftDisparityId, dst, size, &ts);
+      size = sizeof(*dst) - sizeof(dst->image) + dst->image_count;
+
+      this->Publish( this->leftDisparityId, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_CAMERA_DATA_STATE,             
+                   (void*)dst, size, &this->datatime );
 
       // Save frames
       if (this->save)
@@ -412,17 +420,17 @@ void GzStereo::Update()
       }
     }
 
-    if (this->rightDisparityId.code)
+    if (this->rightDisparityId.interf)
     {
       // Right disparity
       dst = &this->rightDisparity;
-      dst->width = htons(src->width);
-      dst->height = htons(src->height);
+      dst->width = src->width;
+      dst->height = src->height;
       dst->bpp = 16;
       dst->format = PLAYER_CAMERA_FORMAT_MONO16;
-      dst->fdiv = htons(16);
+      dst->fdiv = 16;
       dst->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      dst->image_size = htonl(src->right_disparity_size * 2);
+      dst->image_count = src->right_disparity_size * 2;
       assert((size_t) src->right_disparity_size < sizeof(dst->image));
 
       for (j = 0; j < (int) src->height; j++)
@@ -430,11 +438,16 @@ void GzStereo::Update()
         src_pix = src->right_disparity + j * src->width;
         dst_pix = ((uint16_t*) dst->image) + j * src->width;        
         for (i = 0; i < (int) src->width; i++)
-          dst_pix[i] = htons((uint16_t) (int16_t) (src_pix[i] * 16));
+          dst_pix[i] = (uint16_t) (int16_t) (src_pix[i] * 16);
       }
     
-      size = sizeof(*dst) - sizeof(dst->image) + ntohl(dst->image_size);
-      this->PutData(this->rightDisparityId, dst, size, &ts);
+      size = sizeof(*dst) - sizeof(dst->image) + dst->image_count;
+
+      this->Publish( this->rightDisparityId, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_CAMERA_DATA_STATE,             
+                   (void*)dst, size, &this->datatime );
+
 
       // Save frames
       if (this->save)
@@ -466,8 +479,8 @@ void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
   if (!file)
     return;
 
-  width = ntohs(data->width);
-  height = ntohs(data->height);
+  width = data->width;
+  height = data->height;
 
   if (data->format == PLAYER_CAMERA_FORMAT_MONO16)
   {
@@ -477,7 +490,7 @@ void GzStereo::SaveFrame(const char *filename, player_camera_data_t *data)
     {
       for (j = 0; j < width; j++)
       {
-        c = (uint8_t) (ntohs(((uint16_t*) data->image)[i * width + j]) / ntohs(data->fdiv));
+        c = (uint8_t) ((((uint16_t*) data->image)[i * width + j]) / (data->fdiv));
         fwrite(&c, 1, 1, file);
       }
     }

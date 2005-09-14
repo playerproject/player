@@ -190,10 +190,10 @@ void GzWifi::Update()
     //   printf("Link COunt : %d\n",data.link_count);
     for(int i=0;i<data.link_count;i++)
     {      
-      data.links[i].qual=htons(0x0001);
+      data.links[i].qual=0x0001;
       memcpy(data.links[i].ip,this->iface->data->links[i].ip,32);
 
-      data.links[i].level=(uint16_t)htons((uint16_t)(this->iface->data->links[i].level));
+      data.links[i].level=(uint16_t)((uint16_t)(this->iface->data->links[i].level));
 
     }
     // printf("\n");
