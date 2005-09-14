@@ -64,21 +64,19 @@ class GzPosition3d : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
-
+  public: virtual int ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data);
+ 
   // Handle geometry requests
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
+  private: void HandleGetGeom(MessageQueue *resp_queue, 
+                              player_msghdr *hdr, 
+                              void *data);
 
   // Handle motor configuration
-  private: void HandleMotorPower(void *client, void *req, int reqlen);
+  private: void HandleMotorPower(MessageQueue *resp_queue, 
+                                 player_msghdr *hdr, 
+                                 void *data);
 
   // Gazebo id
   private: char *gz_id;
@@ -117,8 +115,7 @@ void GzPosition3d_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzPosition3d::GzPosition3d(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE,
-             sizeof(player_position3d_data_t), sizeof(player_position3d_cmd_t), 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
 {
     // Get the globally defined Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -191,25 +188,29 @@ void GzPosition3d::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
-    data.xpos = htonl((int) (this->iface->data->pos[0]* 1000));
-    data.ypos = htonl((int) (this->iface->data->pos[1]* 1000));
-    data.zpos = htonl((int) (this->iface->data->pos[2]* 1000));
+    data.pos[0] = this->iface->data->pos[0];
+    data.pos[1] = this->iface->data->pos[1];
+    data.pos[2] = this->iface->data->pos[2];
 
-    data.roll = htonl((int) (this->iface->data->rot[0] * 1000));
-    data.pitch = htonl((int) (this->iface->data->rot[1] * 1000));
-    data.yaw = htonl((int) (this->iface->data->rot[2] * 1000));
+    data.pos[3] = this->iface->data->rot[0];
+    data.pos[4] = this->iface->data->rot[1];
+    data.pos[5] = this->iface->data->rot[2];
 
-    data.xspeed = htonl((int) (this->iface->data->vel_pos[0]* 1000));
-    data.yspeed = htonl((int) (this->iface->data->vel_pos[1]* 1000));
-    data.zspeed = htonl((int) (this->iface->data->vel_pos[2]* 1000));
+    data.vel[0] = this->iface->data->vel_pos[0];
+    data.vel[1] = this->iface->data->vel_pos[1];
+    data.vel[2] = this->iface->data->vel_pos[2];
 
-    data.rollspeed = htonl((int) (this->iface->data->vel_rot[0] * 1000));
-    data.pitchspeed = htonl((int) (this->iface->data->vel_rot[1] * 1000));
-    data.yawspeed = htonl((int) (this->iface->data->vel_rot[2] * 1000));
+    data.vel[3] = this->iface->data->vel_rot[0];
+    data.vel[4] = this->iface->data->vel_rot[1];
+    data.vel[5] = this->iface->data->vel_rot[2];
 
     data.stall = (uint8_t) this->iface->data->stall;
 
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_POSITION3D_DATA_STATE, 
+                   (void*)&data, sizeof(data), &this->datatime );
+ 
   }
 
   gz_position_unlock(this->iface);
@@ -219,71 +220,61 @@ void GzPosition3d::Update()
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzPosition3d::PutCommand(player_device_id_t id,
-                              void* src, size_t len,
-                              struct timeval* timestamp)
+// Process Messages
+int GzPosition3d::ProcessMessage( MessageQueue *resp_queue, 
+                                  player_msghdr *hdr, 
+                                  void *data)
 {
-  player_position3d_cmd_t *cmd;
-    
-  assert(len >= sizeof(player_position3d_cmd_t));
-  cmd = (player_position3d_cmd_t*) src;
-
-  gz_position_lock(this->iface, 1);
-  this->iface->data->cmd_vel_pos[0] = ((int) ntohl(cmd->xspeed)) / 1000.0;
-  this->iface->data->cmd_vel_pos[1] = ((int) ntohl(cmd->yspeed)) / 1000.0;
-  this->iface->data->cmd_vel_pos[2] = ((int) ntohl(cmd->zspeed)) / 1000.0;
-  this->iface->data->cmd_vel_rot[0] = ((int) ntohl(cmd->rollspeed)) / 1000.0;
-  this->iface->data->cmd_vel_rot[1] = ((int) ntohl(cmd->pitchspeed)) / 1000.0;
-  this->iface->data->cmd_vel_rot[2] = ((int) ntohl(cmd->yawspeed)) / 1000.0;
-  gz_position_unlock(this->iface);
-    
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzPosition3d::PutConfig(player_device_id_t id, void *client, 
-                            void* src, size_t len,
-                            struct timeval* timestamp)
-{
-  switch (((char*) src)[0])
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_SET_ODOM,this->device_addr))
   {
-    case PLAYER_POSITION3D_GET_GEOM_REQ:
-      HandleGetGeom(client, src, len);
-      break;
+    player_position3d_cmd_t *cmd;
 
-    case PLAYER_POSITION3D_MOTOR_POWER_REQ:
-      HandleMotorPower(client, src, len);
-      break;
+    assert(hdr->size >= sizeof(player_position3d_cmd_t));
+    cmd = (player_position3d_cmd_t*) data;
 
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+    gz_position_lock(this->iface, 1);
+    this->iface->data->cmd_vel_pos[0] = cmd->vel[0];
+    this->iface->data->cmd_vel_pos[1] = cmd->vel[1];
+    this->iface->data->cmd_vel_pos[2] = cmd->vel[2];
+    this->iface->data->cmd_vel_rot[0] = cmd->vel[3];
+    this->iface->data->cmd_vel_rot[1] = cmd->vel[4];
+    this->iface->data->cmd_vel_rot[2] = cmd->vel[5];
+    gz_position_unlock(this->iface);
   }
+
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_GET_GEOM,this->device_addr))
+  {
+    this->HandleGetGeom(resp_queue, hdr, data);
+  }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_MOTOR_POWER,this->device_addr))
+  {
+    this->HandleMotorPower(resp_queue, hdr, data);
+  }
+   
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle geometry requests.
-void GzPosition3d::HandleGetGeom(void *client, void *req, int reqlen)
+void GzPosition3d::HandleGetGeom(MessageQueue *resp_queue, 
+                                  player_msghdr *hdr, 
+                                  void *data)
 {
-  player_position_geom_t geom;
+  player_position3d_geom_t geom;
 
   // TODO: get correct dimensions; there are for the P2AT
   // i think this is only for the playerv client .. not really a necessity??  
-  geom.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
-  geom.pose[0] = htons((int) (0));
-  geom.pose[1] = htons((int) (0));
-  geom.pose[2] = htons((int) (0));
-  geom.size[0] = htons((int) (0.53 * 1000));
-  geom.size[1] = htons((int) (0.38 * 1000));
+  geom.pose[0] = 0;
+  geom.pose[1] = 0;
+  geom.pose[2] = 0;
+  geom.size[0] = 0.53;
+  geom.size[1] = 0.38;
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &geom, sizeof(geom),NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
+  this->Publish(this->device_addr, resp_queue,
+                PLAYER_MSGTYPE_RESP_ACK, 
+                PLAYER_POSITION3D_GET_GEOM, 
+                &geom, sizeof(geom), NULL);
   
   return;
 }
@@ -291,19 +282,22 @@ void GzPosition3d::HandleGetGeom(void *client, void *req, int reqlen)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Handle motor power 
-void GzPosition3d::HandleMotorPower(void *client, void *req, int reqlen)
+void GzPosition3d::HandleMotorPower(MessageQueue *resp_queue, 
+                                  player_msghdr *hdr, 
+                                  void *data)
 {
-  player_position_power_config_t *power;
+  player_position3d_power_config_t *power;
   
-  assert((size_t) reqlen >= sizeof(player_position_power_config_t));
-  power = (player_position_power_config_t*) req;
+  assert((size_t) hdr->size >= sizeof(player_position3d_power_config_t));
+  power = (player_position3d_power_config_t*) data;
 
   gz_position_lock(this->iface, 1);
-  this->iface->data->cmd_enable_motors = power->value;
+  this->iface->data->cmd_enable_motors = power->state;
   gz_position_unlock(this->iface);
 
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  
+  this->Publish(this->device_addr, resp_queue,
+                PLAYER_MSGTYPE_RESP_ACK, 
+                PLAYER_POSITION3D_MOTOR_POWER,
+                power, sizeof(power), NULL);
   return;
 }

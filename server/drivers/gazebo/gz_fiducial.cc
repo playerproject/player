@@ -185,7 +185,7 @@ void GzFiducial::Update()
       if (i >= PLAYER_FIDUCIAL_MAX_SAMPLES)
         break;
 
-      data.fiducials[i].id = htons((int16_t) fid->id);
+      data.fiducials[i].id = (int16_t) fid->id;
 
 #ifdef HAVE_GZ_FID_POSE
       // Gazebo 0.4
