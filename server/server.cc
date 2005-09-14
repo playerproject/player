@@ -32,28 +32,16 @@
 #include <libplayerxdr/functiontable.h>
 #include <libplayerdrivers/driverregistry.h>
 
-/****************/
-/* getopt stuff */
-extern char *optarg;
-extern int optind;
-extern int optopt;
-extern int opterr;
-extern int optreset;
-/* getopt stuff */
-/****************/
-
-// These are declared in libplayercore/globals.cc
-extern bool player_quit;
-extern bool player_quiet_startup;
-
 void PrintCopyrightMsg();
 void PrintUsage();
-int ParseArgs(int* port, int* debuglevel, const char** cfgfilename, 
+int ParseArgs(int* port, int* debuglevel, 
+              char** cfgfilename, 
               int argc, char** argv);
 void Quit(int signum);
 void Cleanup();
 
 PlayerTCP* ptcp;
+ConfigFile* cf;
 
 int
 main(int argc, char** argv)
@@ -62,8 +50,7 @@ main(int argc, char** argv)
   int port = PLAYERTCP_DEFAULT_PORT;
   int* ports;
   int num_ports;
-  const char* cfgfilename;
-  ConfigFile* cf;
+  char* cfgfilename;
 
   if(signal(SIGINT, Quit) == SIG_ERR)
   {
@@ -179,7 +166,6 @@ main(int argc, char** argv)
   puts("Quitting.");
 
   Cleanup();
-  delete cf;
 
   return(0);
 }
@@ -189,6 +175,7 @@ Cleanup()
 {
   delete ptcp;
   player_globals_fini();
+  delete cf;
 }
 
 void
@@ -243,8 +230,9 @@ PrintUsage()
   fprintf(stderr, "\n\n");
 }
 
+
 int 
-ParseArgs(int* port, int* debuglevel, const char** cfgfilename, 
+ParseArgs(int* port, int* debuglevel, char** cfgfilename, 
           int argc, char** argv)
 {
   int ch;
@@ -272,13 +260,10 @@ ParseArgs(int* port, int* debuglevel, const char** cfgfilename,
     }
   }
 
-  argc -= optind;
-  argv += optind;
-
-  if(argc < 1)
+  if(optind >= argc)
     return(-1);
   
-  *cfgfilename = argv[0];
+  *cfgfilename = argv[optind];
 
   return(0);
 }

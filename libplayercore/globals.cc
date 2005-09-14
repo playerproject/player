@@ -26,6 +26,10 @@
   #include <config.h>
 #endif
 
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
 #include <libplayercore/devicetable.h>
 #include <libplayercore/drivertable.h>
 #include <libplayercore/playertime.h>
@@ -42,11 +46,10 @@ DriverTable* driverTable;
 // which everyone must use to get the current time
 PlayerTime* GlobalTime;
 
+char* playerversion;
+
 bool player_quit;
 bool player_quiet_startup;
-
-// for use in other places
-char playerversion[] = VERSION;
 
 void
 player_globals_init()
@@ -54,6 +57,10 @@ player_globals_init()
   deviceTable = new DeviceTable();
   driverTable = new DriverTable();
   GlobalTime = new WallclockTime();
+  playerversion = strdup(VERSION);
+  assert(playerversion);
+  player_quit = false;
+  player_quiet_startup = false;
 }
 
 void
@@ -65,6 +72,8 @@ player_globals_fini()
     delete driverTable;
   if(GlobalTime)
     delete GlobalTime;
+  if(playerversion)
+    free(playerversion);
 }
 
 #endif
