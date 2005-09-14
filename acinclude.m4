@@ -129,7 +129,7 @@ PLAYER_ADD_DRIVER([segwayrmp],[no],
 
 PLAYER_ADD_DRIVER([garminnmea],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([bumpersafe],[no],[],[],[])
+PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lifomcom],[no],[],[],[])
 
