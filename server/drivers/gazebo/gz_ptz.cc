@@ -68,14 +68,9 @@ class GzPtz : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-   public: virtual int PutConfig(player_device_id_t id, player_device_id_t* device,
-                                 void* client, void* req, size_t reqlen);
+  public: virtual int ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data);
 
   // Gazebo id
   private: char *gz_id;
@@ -114,8 +109,7 @@ void GzPtz_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzPtz::GzPtz(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_PTZ_CODE, PLAYER_ALL_MODE,
-             sizeof(player_ptz_data_t), sizeof(player_ptz_cmd_t), 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   // Get the id of the device in Gazebo.
   // TODO: fix potential buffer overflow
@@ -187,11 +181,15 @@ void GzPtz::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-    data.pan = htons((int16_t) (this->iface->data->pan * 180 / M_PI));
-    data.tilt = htons((int16_t) (this->iface->data->tilt * 180 / M_PI));
-    data.zoom = htons((int16_t) (this->iface->data->zoom * 180 / M_PI));
+    data.pan = this->iface->data->pan * 180 / M_PI;
+    data.tilt = this->iface->data->tilt * 180 / M_PI;
+    data.zoom = this->iface->data->zoom * 180 / M_PI;
 
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_PTZ_DATA_STATE,      
+                   (void*)&data, sizeof(data), &this->datatime );
+ 
   }
 
   gz_ptz_unlock(this->iface);
@@ -202,38 +200,27 @@ void GzPtz::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-void GzPtz::PutCommand(player_device_id_t id, void *src,
-                       size_t len, struct timeval* timestamp)
+int GzPtz::ProcessMessage( MessageQueue *resp_queue, 
+                           player_msghdr *hdr, 
+                           void *data)
 {
-  player_ptz_cmd_t *cmd;
-
-  assert(len >= sizeof(player_ptz_cmd_t));
-
-  cmd = (player_ptz_cmd_t*) src;
-
-  gz_ptz_lock(this->iface, 1);
-  
-  this->iface->data->cmd_pan = ((int16_t) ntohs(cmd->pan)) * M_PI / 180;
-  this->iface->data->cmd_tilt = ((int16_t) ntohs(cmd->tilt)) * M_PI / 180;
-  this->iface->data->cmd_zoom = ((int16_t) ntohs(cmd->zoom)) * M_PI / 180;
-  
-  gz_ptz_unlock(this->iface);
-
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzPtz::PutConfig(player_device_id_t id, player_device_id_t* device, void* client, void* req, size_t req_len)
-{
-  switch (((char*) req)[0])
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, this->device_addr))
   {
-    default:
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+    player_ptz_cmd_t *cmd;
+
+    assert(hdr->size >= sizeof(player_ptz_cmd_t));
+
+    cmd = (player_ptz_cmd_t*) data;
+
+    gz_ptz_lock(this->iface, 1);
+
+    this->iface->data->cmd_pan = cmd->pan * M_PI / 180;
+    this->iface->data->cmd_tilt = cmd->tilt * M_PI / 180;
+    this->iface->data->cmd_zoom = cmd->zoom * M_PI / 180;
+
+    gz_ptz_unlock(this->iface);
   }
+
   return 0;
 }
 

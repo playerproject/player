@@ -68,16 +68,9 @@ class GzTruth : public Driver
   // Check for new data
   public: virtual void Update();
 
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
-
+  public: virtual int ProcessMessage( MessageQueue *resp_queue, 
+                                      player_msghdr *hdr, 
+                                      void *data);
   // Gazebo device id
   private: char *gz_id;
 
@@ -115,8 +108,7 @@ void GzTruth_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzTruth::GzTruth(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_TRUTH_CODE, PLAYER_ALL_MODE,
-             sizeof(player_truth_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_TRUTH_CODE)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -178,7 +170,7 @@ int GzTruth::Shutdown()
 // Check for new data
 void GzTruth::Update()
 {
-  player_truth_data_t data;
+  player_truth_pose_t data;
   struct timeval ts;
   
   gz_truth_lock(this->iface, 1);
@@ -189,15 +181,19 @@ void GzTruth::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-    data.pos[0] = htonl((int32_t) (1000 * this->iface->data->pos[0]));
-    data.pos[1] = htonl((int32_t) (1000 * this->iface->data->pos[1]));
-    data.pos[2] = htonl((int32_t) (1000 * this->iface->data->pos[2]));
+    data.pose.px = this->iface->data->pos[0];
+    data.pose.py = this->iface->data->pos[1];
+    data.pose.pz = this->iface->data->pos[2];
 
-    data.rot[0] = htonl((int32_t) (1000 * this->iface->data->rot[0]));
-    data.rot[1] = htonl((int32_t) (1000 * this->iface->data->rot[1]));
-    data.rot[2] = htonl((int32_t) (1000 * this->iface->data->rot[2]));
+    data.pose.proll = this->iface->data->rot[0];
+    data.pose.ppitch = this->iface->data->rot[1];
+    data.pose.pyaw = this->iface->data->rot[2];
     
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_TRUTH_DATA_POSE, 
+                   (void*)&data, sizeof(data), &this->datatime );
+ 
   }
 
   gz_truth_unlock(this->iface);
@@ -205,77 +201,44 @@ void GzTruth::Update()
   return;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzTruth::PutCommand(player_device_id_t id,
-                         void* src, size_t len,
-                         struct timeval* timestamp)
-{  
-  return;
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Handle requests
-int GzTruth::PutConfig(player_device_id_t id, void *client, 
-                       void* src, size_t len,
-                       struct timeval* timestamp)
+int GzTruth::ProcessMessage( MessageQueue *resp_queue, 
+                             player_msghdr *hdr, 
+                             void *data)
 {
-  uint8_t subtype;
-
-  subtype = ((uint8_t*) src)[0];
-  switch (subtype)
+  switch (hdr->subtype)
   {
-    case PLAYER_TRUTH_GET_POSE:
+    case PLAYER_TRUTH_REQ_SET_POSE:
     {
-      player_truth_pose_t rep;
-
-      gz_truth_lock(this->iface, 1);
-            
-      rep.pos[0] = htonl((int32_t) (1000 * this->iface->data->pos[0]));
-      rep.pos[1] = htonl((int32_t) (1000 * this->iface->data->pos[1]));
-      rep.pos[2] = htonl((int32_t) (1000 * this->iface->data->pos[2]));
-
-      rep.rot[0] = htonl((int32_t) (1000 * this->iface->data->rot[0]));
-      rep.rot[1] = htonl((int32_t) (1000 * this->iface->data->rot[1]));
-      rep.rot[2] = htonl((int32_t) (1000 * this->iface->data->rot[2]));
-
-      gz_truth_unlock(this->iface);
-
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, (void*) &rep, sizeof(rep),NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-    case PLAYER_TRUTH_SET_POSE:
-    {
-      player_truth_pose_t *req = (player_truth_pose_t*) src;
+      player_truth_pose_t *req = (player_truth_pose_t*) data;
       
       gz_truth_lock(this->iface, 1);
 
-      this->iface->data->cmd_pos[0] = ((int32_t) ntohl(req->pos[0])) / 1000.0;
-      this->iface->data->cmd_pos[1] = ((int32_t) ntohl(req->pos[1])) / 1000.0;
-      this->iface->data->cmd_pos[2] = ((int32_t) ntohl(req->pos[2])) / 1000.0;
+      this->iface->data->cmd_pos[0] = req->pose.px;
+      this->iface->data->cmd_pos[1] = req->pose.py;
+      this->iface->data->cmd_pos[2] = req->pose.pz;
 
-      this->iface->data->cmd_rot[0] = ((int32_t) ntohl(req->rot[0])) / 1000.0;
-      this->iface->data->cmd_rot[1] = ((int32_t) ntohl(req->rot[1])) / 1000.0;
-      this->iface->data->cmd_rot[2] = ((int32_t) ntohl(req->rot[2])) / 1000.0;
+      this->iface->data->cmd_rot[0] = req->pose.proll;
+      this->iface->data->cmd_rot[1] = req->pose.ppitch;
+      this->iface->data->cmd_rot[2] = req->pose.pyaw;
 
       this->iface->data->cmd_new = 1;
 
       gz_truth_unlock(this->iface);
 
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
+      this->Publish(this->device_addr, resp_queue, 
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_TRUTH_REQ_SET_POSE,
+                    &req, sizeof(req), NULL);
       break;
     }
     default:
     {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
+      return (PLAYER_MSGTYPE_RESP_NACK);
     }
   }
+
   return 0;
 }
 
