@@ -68,16 +68,6 @@ class GzPower : public Driver
   // Check for new data
   public: virtual void Update();
   
-  // Commands
-  public: virtual void PutCommand(player_device_id_t id,
-                                  void* src, size_t len,
-                                  struct timeval* timestamp);
-
-  // Request/reply
-  public: virtual int PutConfig(player_device_id_t id, void *client, 
-                                void* src, size_t len,
-                                struct timeval* timestamp);
-
   // Gazebo device id
   private: char *gz_id;
 
@@ -115,8 +105,7 @@ void GzPower_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 GzPower::GzPower(ConfigFile* cf, int section)
-    : Driver(cf, section, PLAYER_POWER_CODE, PLAYER_ALL_MODE,
-             sizeof(player_power_data_t), 0, 10, 10)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POWER_CODE)
 {
   // Get the globally defined  Gazebo client (one per instance of Player)
   this->client = GzClient::client;
@@ -190,46 +179,17 @@ void GzPower::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
 
-    data.charge = htons((int16_t) (this->iface->data->levels[0] * 10));
+    data.percent = this->iface->data->levels[0];
     
-    this->PutData(&data, sizeof(data), &ts);
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_POWER_DATA_VOLTAGE,
+                   (void*)&data, sizeof(data), &this->datatime );
   }
 
   gz_power_unlock(this->iface);
 
   return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Commands
-void GzPower::PutCommand(player_device_id_t id,
-                         void* src, size_t len,
-                         struct timeval* timestamp)
-{  
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle requests
-int GzPower::PutConfig(player_device_id_t id, void *client, 
-                       void* src, size_t len,
-                       struct timeval* timestamp)
-{
-  uint8_t subtype;
-
-  subtype = ((uint8_t*) src)[0];
-  switch (subtype)
-  {
-    default:
-    {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-  }
-  return 0;
 }
 
 #endif
