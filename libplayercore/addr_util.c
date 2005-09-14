@@ -33,6 +33,7 @@
 #include <netdb.h>
 
 #include <libplayercore/error.h>  // for error macros
+#include <libplayercore/playerconfig.h>
 
 void
 packedaddr_to_dottedip(char* dest, size_t len, uint32_t addr)
