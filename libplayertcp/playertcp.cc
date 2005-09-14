@@ -35,8 +35,6 @@
 #include "socket_util.h"
 #include "remote_driver.h"
 
-extern char playerversion[];
-
 typedef struct playertcp_listener
 {
   int fd;
