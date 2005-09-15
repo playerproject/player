@@ -335,7 +335,10 @@ PlayerTCP::Read(int timeout)
   int num_available;
 
   if(!this->num_clients)
+  {
+    usleep(timeout);
     return(0);
+  }
 
   // Poll for incoming messages
   if((num_available = poll(this->client_ufds, this->num_clients, timeout)) < 0)
