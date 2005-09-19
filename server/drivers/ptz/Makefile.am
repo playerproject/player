@@ -9,7 +9,7 @@ if INCLUDE_PTU46
 noinst_LTLIBRARIES += libptu46.la
 endif
 if INCLUDE_CANONVCC4
-noinst_LTLIBRARIES += libcannonvcc4.la
+noinst_LTLIBRARIES += libcanonvcc4.la
 endif
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
