@@ -38,10 +38,6 @@
 #include <sys/time.h>
 #include <errno.h>
 
-// for poll
-#include <replace.h>
-//#include <sys/poll.h>
-
 #include <driver.h>
 #include <playercommon.h>
 #include <player.h>
@@ -73,19 +69,6 @@
 #define SGN(x) ((x) < 0 ? -1 : 1)
 #endif
 
-/*
-typedef struct {
-  player_position_data_t position;
-  player_ir_data_t ir;
-} __attribute__ ((packed)) player_khepera_data_t;
-*/
-
-/*
-typedef struct {
-  player_position_cmd_t position;
-} __attribute__ ((packed)) player_khepera_cmd_t;
-*/
-
 typedef struct player_khepera_geom
 {
 	char * PortName;
@@ -93,7 +76,7 @@ typedef struct player_khepera_geom
 	player_ir_pose_t ir;
 	double * ir_calib_a;
 	double * ir_calib_b;
-	player_position_geom_t position;
+	player_position2d_geom_t position;
 	double encoder_res;
 } __attribute__ ((packed)) player_khepera_geom_t;
 	
@@ -107,19 +90,12 @@ public:
   /* the main thread */
   virtual void Main();
 
-  virtual int Subscribe(player_device_id_t id);
-  virtual int Unsubscribe(player_device_id_t id);
+  virtual int Subscribe(player_devaddr_t addr);
+  virtual int Unsubscribe(player_devaddr_t addr);
   
   virtual int Setup();
   virtual int Shutdown();
   
-  //  void Restart();
-
-  short khtons(short in);
-  short ntokhs(short in);
-
- // void ReadConfig();
-
   int ResetOdometry();
   
   // handle IR
@@ -128,7 +104,7 @@ public:
   void UpdateData(void);
 
   void UpdateIRData(player_ir_data_t *);
-  void UpdatePosData(player_position_data_t *);
+  void UpdatePosData(player_position2d_data_t *);
 
   // the following are all interface functions to the REB
   // this handles the A/D device which deals with IR for us
@@ -147,21 +123,16 @@ public:
   
   //unsigned char ReadStatus(int, int *, int *);
 
-	// MessageHandler
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+		// MessageHandler
+		int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 
 private:
-  player_device_id_t ir_id;
-  player_device_id_t position_id;
+  player_devaddr_t ir_addr;
+  player_devaddr_t position_addr;
   int position_subscriptions;
   int ir_subscriptions;
 
   KheperaSerial * Serial;
-
-
-  /*  int write_serial(char *, int);
-      int read_serial_until(char *, int, char *, int);
-      int write_command(char *buf, int len, int maxsize);*/
 
   player_khepera_geom_t* geometry;
 
@@ -192,7 +163,7 @@ private:
   // device used to communicate with reb
   char khepera_serial_port[MAX_FILENAME_SIZE]; 
 
-  struct pollfd write_pfd, read_pfd;
+  //struct pollfd write_pfd, read_pfd;
 
   
 };
