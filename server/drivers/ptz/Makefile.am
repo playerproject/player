@@ -1,11 +1,22 @@
-noinst_LIBRARIES = @SONYEVID30_LIB@ @AMTECPOWERCUBE_LIB@ @PTU46_LIB@ @CANONVCC4_LIB@
+noinst_LTLIBRARIES = 
+if INCLUDE_SONYEVID30
+noinst_LTLIBRARIES += libsonyevid30.la
+endif
+if INCLUDE_AMTECPOWERCUBE
+noinst_LTLIBRARIES += libamtecpowercube.la
+endif
+if INCLUDE_PTU46
+noinst_LTLIBRARIES += libptu46.la
+endif
+if INCLUDE_CANONVCC4
+noinst_LTLIBRARIES += libcannonvcc4.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = libsonyevid30.a libamtecpowercube.a libptu46.a libcanonvcc4.a
+libsonyevid30_la_SOURCES = sonyevid30.cc
+libamtecpowercube_la_SOURCES = amtecpowercube.cc
+libptu46_la_SOURCES = ptu46.cc
+libcanonvcc4_la_SOURCES = canonvcc4.cc
 
-libsonyevid30_a_SOURCES = sonyevid30.cc
-libamtecpowercube_a_SOURCES = amtecpowercube.cc
-libptu46_a_SOURCES = ptu46.cc
-libcanonvcc4_a_SOURCES = canonvcc4.cc
 
