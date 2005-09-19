@@ -1,9 +1,8 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+noinst_LTLIBRARIES = 
+if INCLUDE_KHEPERA
+noinst_LTLIBRARIES += libkhepera.la
+endif
 
-noinst_LIBRARIES = @KHEPERA_LIB@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = libkhepera.a
-
-libkhepera_a_SOURCES = khepera.cc khepera.h khepera_serial.h khepera_serial.cc
-
-#khepera_position.cc khepera_ir.cc 
+libkhepera_la_SOURCES = khepera.cc khepera.h khepera_serial.h khepera_serial.cc

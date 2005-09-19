@@ -164,31 +164,27 @@ Khepera_Register(DriverTable *table)
   table->AddDriver("khepera", Khepera_Init);
 }
 
-int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int Khepera::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
-	*resp_len = 0;
+	assert(hdr);
+	assert(data);
 
-	if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, 
-                        ir_id))
+	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_addr))
 	{
-		assert(hdr->size == 0);
-		
-		memcpy(resp_data, &geometry->ir, sizeof(geometry->ir));
-		*resp_len = sizeof(geometry->ir);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(ir_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geometry->ir, sizeof(geometry->ir));
+		return 0;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_GET_GEOM, position_addr))
 	{
-		assert(hdr->size == sizeof(player_position_cmd_t));
-		player_position_cmd_t * poscmd = reinterpret_cast<player_position_cmd_t *> (data);
+		player_position2d_cmd_t * poscmd = reinterpret_cast<player_position2d_cmd_t *> (data);
 
 		if (this->velocity_mode) 
 		{
 			// then we are in velocity mode
 
 			// need to calculate the left and right velocities
-			int transvel = static_cast<int> (static_cast<int> (ntohl(poscmd->xspeed)) * geometry->encoder_res);
-			int rotvel = static_cast<int> (static_cast<int> (ntohl(poscmd->yawspeed)) * geometry->encoder_res * M_PI * ntokhs(geometry->position.size[0])/360.0);
+			int transvel = static_cast<int> (static_cast<int> (poscmd->vel.px) * geometry->encoder_res);
+			int rotvel = static_cast<int> (static_cast<int> (poscmd->vel.pa) * geometry->encoder_res * geometry->position.size.sw* geometry->scale);
 			int leftvel = transvel - rotvel;
 			int rightvel = transvel + rotvel;
 
@@ -202,47 +198,32 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 			PLAYER_WARN("Khepera driver does not support position mode yet");
 		return 0;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_GET_GEOM, position_addr))
 	{
-		assert(hdr->size == 0);
-		memcpy(resp_data, &geometry->position, sizeof(geometry->position));
-		*resp_len = sizeof(geometry->position);
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geometry->position, sizeof(geometry->position));
+		return 0;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_addr))
 	{
-		assert(hdr->size == sizeof(player_position_power_config_t));
-		this->motors_enabled = ((player_position_power_config_t *)data)->value;
-		return PLAYER_MSGTYPE_RESP_ACK;
+		this->motors_enabled = ((player_position2d_power_config_t *)data)->state;
+		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype);
+		return 0;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_addr))
 	{
-		assert(hdr->size == sizeof(player_position_velocitymode_config_t));
-		/// Need to implement
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype);
+		return 0;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_RESET_ODOM, position_addr))
 	{
-		assert(hdr->size == 0);
 		ResetOdometry();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype);
+		return 0;
 	}
-	else if(this->MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_SET_ODOM, position_addr))
 	{
-		assert(hdr->size == sizeof(player_position_set_odom_req_t));
-		// note really implemented yet
-		player_position_set_odom_req_t *req = (player_position_set_odom_req_t *) data;
-#ifdef DEBUG_CONFIG
-		int x,y;
-		short theta;
-		x = ntohl(req->x);
-		y = ntohl(req->y);
-		theta = ntohs(req->theta);
-
-		printf("Khepera: SET_ODOM_REQ x=%d y=%d theta=%d\n", x, y, theta);
-#endif
-		ResetOdometry();
-		return PLAYER_MSGTYPE_RESP_ACK;
+		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,hdr->subtype);
+		return 0;
 	}
 
 	return -1;
@@ -251,16 +232,16 @@ int Khepera::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
 {
   // zero ids, so that we'll know later which interfaces were requested
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
-  memset(&this->ir_id, 0, sizeof(player_device_id_t));
+  memset(&position_addr, 0, sizeof(this->position_addr));
+  memset(&ir_addr, 0, sizeof(ir_addr));
 
   this->position_subscriptions = this->ir_subscriptions = 0;
 
   // Do we create a robot position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
-                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides", 
+                      PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
+    if(this->AddInterface(this->position_addr) != 0)
     {
       this->SetError(-1);    
       return;
@@ -268,10 +249,10 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   }
 
   // Do we create an ir interface?
-  if(cf->ReadDeviceId(&(this->ir_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->ir_addr), section, "provides", 
                       PLAYER_IR_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->ir_id, PLAYER_READ_MODE) != 0)
+    if(this->AddInterface(this->ir_addr) != 0)
     {
       this->SetError(-1);    
       return;
@@ -282,11 +263,6 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   geometry = new player_khepera_geom_t;
   geometry->PortName= NULL;
   geometry->scale = 0;
-
-#if 0
-  ((player_khepera_cmd_t*)device_command)->position.xspeed = 0;
-  ((player_khepera_cmd_t*)device_command)->position.yawspeed = 0;
-#endif
 
   //set up the poll parameters... used for the comms
   // over the serial port to the Kam
@@ -305,70 +281,70 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   geometry->encoder_res = cf->ReadFloat(section,"encoder_res", KHEPERA_DEFAULT_ENCODER_RES);
 
   // Load position config
-  geometry->position.pose[0] = khtons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"position_pose",0,0)));
-  geometry->position.pose[1] = khtons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"position_pose",1,0)));
-  geometry->position.pose[2] = htons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"position_pose",2,0)));
+  geometry->position.pose.px = cf->ReadTupleFloat(section,"position_pose",0,0) * geometry->scale;
+  geometry->position.pose.py = cf->ReadTupleFloat(section,"position_pose",1,0) * geometry->scale;
+  geometry->position.pose.pa = cf->ReadTupleFloat(section,"position_pose",2,0) * geometry->scale;
 
   // load dimension of the base
-  geometry->position.size[0] = khtons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"position_size",0,57)));
-  geometry->position.size[1] = khtons(static_cast<unsigned short> (cf->ReadTupleFloat(section,"position_size",1,57)));
+  geometry->position.size.sw = cf->ReadTupleFloat(section,"position_size",0,57) * geometry->scale;
+  geometry->position.size.sl = cf->ReadTupleFloat(section,"position_size",1,57) * geometry->scale;
 
   // load ir geometry config
-  geometry->ir.pose_count = (cf->ReadInt(section,"ir_pose_count", 8));
-  if (geometry->ir.pose_count == 8 && cf->ReadTupleFloat(section,"ir_poses",0,-1) == -1)
+  geometry->ir.poses_count = (cf->ReadInt(section,"ir_pose_count", 8));
+  if (geometry->ir.poses_count == 8 && cf->ReadTupleFloat(section,"ir_poses",0,-1) == -1)
   {
     // load the default ir geometry
-    geometry->ir.poses[0][0] = khtons(10);
-    geometry->ir.poses[0][1] = khtons(24);
-    geometry->ir.poses[0][2] = htons(90);
+    geometry->ir.poses[0].px = 10/1000*geometry->scale;
+    geometry->ir.poses[0].py = 24/1000*geometry->scale;
+    geometry->ir.poses[0].pa = DTOR(90);
 
-    geometry->ir.poses[1][0] = khtons(19);
-    geometry->ir.poses[1][1] = khtons(17);
-    geometry->ir.poses[1][2] = htons(45);
+    geometry->ir.poses[1].px = 19/1000*geometry->scale;
+    geometry->ir.poses[1].py = 17/1000*geometry->scale;
+    geometry->ir.poses[1].pa = DTOR(45);
 
-    geometry->ir.poses[2][0] = khtons(25);
-    geometry->ir.poses[2][1] = khtons(6);
-    geometry->ir.poses[2][2] = htons(0);
+    geometry->ir.poses[2].px = 25/1000*geometry->scale;
+    geometry->ir.poses[2].py = 6/1000*geometry->scale;
+    geometry->ir.poses[2].pa = DTOR(0);
 
-    geometry->ir.poses[3][0] = khtons(25);
-    geometry->ir.poses[3][1] = khtons(-6);
-    geometry->ir.poses[3][2] = htons(0);
+    geometry->ir.poses[3].px = 25/1000*geometry->scale;
+    geometry->ir.poses[3].py = -6/1000*geometry->scale;
+    geometry->ir.poses[3].pa = DTOR(0);
 
-    geometry->ir.poses[4][0] = khtons(19);
-    geometry->ir.poses[4][1] = khtons(-17);
-    geometry->ir.poses[4][2] = htons(static_cast<unsigned short> (-45));
+    geometry->ir.poses[4].px = 19/1000*geometry->scale;
+    geometry->ir.poses[4].py = -17/1000*geometry->scale;
+    geometry->ir.poses[4].pa = DTOR(-45);
 
-    geometry->ir.poses[5][0] = khtons(10);
-    geometry->ir.poses[5][1] = khtons(-24);
-    geometry->ir.poses[5][2] = htons(static_cast<unsigned short> (-90));
+    geometry->ir.poses[5].px = 10/1000*geometry->scale;
+    geometry->ir.poses[5].py = -24/1000*geometry->scale;
+    geometry->ir.poses[5].pa = DTOR(-90);
 
-    geometry->ir.poses[6][0] = khtons(-24);
-    geometry->ir.poses[6][1] = khtons(-10);
-    geometry->ir.poses[6][2] = htons(180);
+    geometry->ir.poses[6].px = -24/1000*geometry->scale;
+    geometry->ir.poses[6].py = -10/1000*geometry->scale;
+    geometry->ir.poses[6].pa = DTOR(180);
 
-    geometry->ir.poses[7][0] = khtons(-24);
-    geometry->ir.poses[7][1] = khtons(10);
-    geometry->ir.poses[7][2] = htons(180);
+    geometry->ir.poses[7].px = -24/1000*geometry->scale;
+    geometry->ir.poses[7].py = 10/1000*geometry->scale;
+    geometry->ir.poses[7].pa = DTOR(180);
   }
   else
   {
     // laod geom from config file
-    for (int i = 0; i < geometry->ir.pose_count; ++i)
+    for (unsigned int i = 0; i < geometry->ir.poses_count; ++i)
     {
-      geometry->ir.poses[i][0] = khtons(static_cast<short> (cf->ReadTupleFloat(section,"ir_poses",3*i,0)));
-      geometry->ir.poses[i][1] = khtons(static_cast<short> (cf->ReadTupleFloat(section,"ir_poses",3*i+1,0)));
-      geometry->ir.poses[i][2] = htons(static_cast<short> (cf->ReadTupleFloat(section,"ir_poses",3*i+2,0)));
+      geometry->ir.poses[i].px = cf->ReadTupleFloat(section,"ir_poses",3*i,0)*geometry->scale;
+      geometry->ir.poses[i].py = cf->ReadTupleFloat(section,"ir_poses",3*i+1,0)*geometry->scale;
+      geometry->ir.poses[i].pa = cf->ReadTupleFloat(section,"ir_poses",3*i+2,0);
     }				
   }
   // laod ir calibration from config file
-  geometry->ir_calib_a = new double[geometry->ir.pose_count];
-  geometry->ir_calib_b = new double[geometry->ir.pose_count];
-  for (int i = 0; i < geometry->ir.pose_count; ++i)
+  geometry->ir_calib_a = new double[geometry->ir.poses_count];
+  geometry->ir_calib_b = new double[geometry->ir.poses_count];
+  for (unsigned int i = 0; i < geometry->ir.poses_count; ++i)
   {
     geometry->ir_calib_a[i] = cf->ReadTupleFloat(section,"ir_calib_a", i, KHEPERA_DEFAULT_IR_CALIB_A);
     geometry->ir_calib_b[i] = cf->ReadTupleFloat(section,"ir_calib_b", i, KHEPERA_DEFAULT_IR_CALIB_B);
   }
-  geometry->ir.pose_count = htons(geometry->ir.pose_count);
+  geometry->ir.poses_count = geometry->ir.poses_count;
 
   // zero position counters
   last_lpos = 0;
@@ -380,28 +356,18 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   
 }
 
-short Khepera::khtons(short in)
-{
-  return htons(static_cast<unsigned short> (in * geometry->scale));
-}
-
-short Khepera::ntokhs(short in)
-{
-  return static_cast<short> (ntohs(static_cast<unsigned short> (in)) / geometry->scale);
-}
-
 int 
-Khepera::Subscribe(player_device_id_t id)
+Khepera::Subscribe(player_devaddr_t addr)
 {
   int setupResult;
 
   // do the subscription
-  if((setupResult = Driver::Subscribe(id)) == 0)
+  if((setupResult = Driver::Subscribe(addr)) == 0)
   {
     // also increment the appropriate subscription counter
-    switch(id.code)
+    switch(addr.interf)
     {
-      case PLAYER_POSITION_CODE:
+      case PLAYER_POSITION2D_CODE:
         this->position_subscriptions++;
         break;
       case PLAYER_IR_CODE:
@@ -414,17 +380,17 @@ Khepera::Subscribe(player_device_id_t id)
 }
 
 int 
-Khepera::Unsubscribe(player_device_id_t id)
+Khepera::Unsubscribe(player_devaddr_t addr)
 {
   int shutdownResult;
 
   // do the unsubscription
-  if((shutdownResult = Driver::Unsubscribe(id)) == 0)
+  if((shutdownResult = Driver::Unsubscribe(addr)) == 0)
   {
     // also decrement the appropriate subscription counter
-    switch(id.code)
+    switch(addr.interf)
     {
-      case PLAYER_POSITION_CODE:
+      case PLAYER_POSITION2D_CODE:
         assert(--this->position_subscriptions >= 0);
         break;
       case PLAYER_IR_CODE:
@@ -487,26 +453,12 @@ Khepera::Shutdown()
 void 
 Khepera::Main()
 {
-  int last_ir_subscrcount=0;
   int last_position_subscrcount=0;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
   while (1) 
   {
-    // we want to turn on the IR if someone just subscribed, and turn
-    // them off if the last subscriber just unsubscribed.
-    if(!last_ir_subscrcount && this->ir_subscriptions)
-    {
-      // zero out ranges in IR data so proxy knows
-      // to do regression
-      player_ir_data_t ir_data;
-      memset(&ir_data,0,sizeof(player_ir_data_t));
-      PutMsg(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,0,(unsigned char*)&ir_data,
-              sizeof(player_ir_data_t),NULL);
-    }
-    last_ir_subscrcount = this->ir_subscriptions;
-
     // we want to reset the odometry and enable the motors if the first 
     // client just subscribed to the position device, and we want to stop 
     // and disable the motors if the last client unsubscribed.
@@ -548,24 +500,18 @@ Khepera::Main()
 void
 Khepera::UpdateData()
 {
-  player_position_data_t position_data;
+  player_position2d_data_t position_data;
   player_ir_data_t ir_data;
 
   UpdatePosData(&position_data);
 
   // put position data
-  PutMsg(this->position_id, NULL, PLAYER_MSGTYPE_DATA,0,
-          (unsigned char *) &position_data,
-          sizeof(player_position_data_t),
-          NULL);
+  Publish(position_addr,NULL,PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (unsigned char *) &position_data, sizeof(player_position2d_data_t),NULL);
 
   UpdateIRData(&ir_data);
 
   // put ir data
-  PutMsg(this->ir_id, NULL, PLAYER_MSGTYPE_DATA, 0,
-          (unsigned char *)&ir_data,
-          sizeof(player_ir_data_t),
-          NULL);
+  Publish(position_addr,NULL,PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES, (unsigned char *) &ir_data, sizeof(ir_data),NULL);
 }
 
 /* this will update the IR part of the client data
@@ -580,21 +526,19 @@ Khepera::UpdateIRData(player_ir_data_t * d)
 {
   ReadAllIR(d);
 
-  d->range_count = geometry->ir.pose_count;
-  for (int i =0; i < ntohs(geometry->ir.pose_count); i++) 
+  d->ranges_count = geometry->ir.poses_count;
+  for (unsigned int i =0; i < geometry->ir.poses_count; i++) 
   {
-    d->ranges[i] = htons(static_cast<unsigned short> (geometry->scale * geometry->ir_calib_a[i] * pow(d->voltages[i],geometry->ir_calib_b[i])));
-    d->voltages[i] = htons(d->voltages[i]);
-    //printf("(%d,%d) ",ntohs(d->ir.ranges[i]),ntohs(d->ir.voltages[i]));
+    d->ranges[i] = geometry->scale * geometry->ir_calib_a[i] * pow(d->voltages[i],geometry->ir_calib_b[i]);
+    d->voltages[i] = d->voltages[i];
   }
-  //printf("\n");
 }
 
   
 /* this will update the position data.  this entails odometry, etc
  */ 
 void
-Khepera::UpdatePosData(player_position_data_t *d)
+Khepera::UpdatePosData(player_position2d_data_t *d)
 {
   // calculate position data
   int pos_left, pos_right;
@@ -608,7 +552,7 @@ Khepera::UpdatePosData(player_position_data_t *d)
   double rotchange = (change_left - change_right) * geometry->encoder_res / 2;
 
   double dx,dy,Theta;
-  double r = (ntokhs(geometry->position.size[0])/2);
+  double r = geometry->position.size.sw*geometry->scale/2;
 
   if (transchange == 0)
   {
@@ -642,16 +586,14 @@ Khepera::UpdatePosData(player_position_data_t *d)
   double rad_Theta = DTOR(yaw);
   x+=(dx*cos(rad_Theta) + dy*sin(rad_Theta));
   y+=(dy*cos(rad_Theta) + dx*sin(rad_Theta));
-  d->xpos = htonl(static_cast<int> (x));
-  d->ypos = ntohl(static_cast<int> (y));
+  d->pos.px = x/geometry->scale;
+  d->pos.py = y/geometry->scale;
   yaw += Theta;
   while (yaw > 360) yaw -= 360;
   while (yaw < 0) yaw += 360;
-  d->yaw = htonl(static_cast<int> (yaw));
-  d->xspeed = htonl(static_cast<int> (trans_vel));
-  //d->yspeed = 0;
-  d->yawspeed = htonl(static_cast<int> (rot_vel_deg));
-  //d->stall = 0;
+  d->pos.pa = DTOR(yaw);
+  d->vel.px = trans_vel/geometry->scale;
+  d->vel.pa = DTOR(rot_vel_deg);
 }
 
 /* this will set the odometry to a given position
@@ -672,10 +614,9 @@ Khepera::ResetOdometry()
   last_lpos = 0;
   last_rpos = 0;
 
-  player_position_data_t data;
-  memset(&data,0,sizeof(player_position_data_t));
-  this->PutMsg(this->position_id, NULL,PLAYER_MSGTYPE_DATA, 0, (unsigned char *) &data, 
-                sizeof(player_position_data_t), NULL);
+  player_position2d_data_t data;
+  memset(&data,0,sizeof(player_position2d_data_t));
+  Publish(position_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data),NULL);
 
   x=y=yaw=0;
   return 0;
@@ -710,11 +651,10 @@ Khepera::ReadAllIR(player_ir_data_t* d)
   // changed these variable-size array declarations to the 
   // bigger-than-necessary ones above, because older versions of gcc don't
   // support variable-size arrays.
-  // int Values[ntohs(geometry->ir.pose_count)];
 
-  if(Serial->KheperaCommand('N',0,NULL,ntohs(geometry->ir.pose_count),Values) < 0)
+  if(Serial->KheperaCommand('N',0,NULL,geometry->ir.poses_count,Values) < 0)
     return -1;			
-  for (int i=0; i< ntohs(geometry->ir.pose_count); ++i)
+  for (unsigned int i=0; i< geometry->ir.poses_count; ++i)
   {
     d->voltages[i] = static_cast<short> (Values[i]);
   }
