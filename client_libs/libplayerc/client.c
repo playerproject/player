@@ -265,6 +265,13 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
 {
   int count;
   struct pollfd fd;
+  playerc_client_item_t *item;
+
+  if (client->qlen > 0)
+  {
+    item = client->qitems + client->qfirst;
+    return(item->header.size);
+  }
   
   fd.fd = client->sock;
   fd.events = POLLIN | POLLHUP;
@@ -307,6 +314,10 @@ void *playerc_client_read(playerc_client_t *client)
 
     if (playerc_client_readpacket(client, &header, client->data) < 0)
       return NULL;
+    else
+      printf("read %d/%d from %d:%d\n",
+           header.type, header.subtype,
+           header.addr.interf, header.addr.index);
   }
   
   switch(header.type)
@@ -916,11 +927,11 @@ int playerc_client_pop(playerc_client_t *client,
   *header = item->header;
   memcpy(data, item->data, header->size);
   free(item->data);
-  
+
   client->qfirst = (client->qfirst + 1) % client->qsize;
   client->qlen -= 1;
 
-  return -1;
+  return(0);
 }
 
 
