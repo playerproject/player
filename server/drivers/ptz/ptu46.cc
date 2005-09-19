@@ -114,8 +114,6 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 #include <drivertable.h>
 #include <player.h>
 
-#include <replace.h>
-
 #define DEFAULT_PTZ_PORT "/dev/ttyR1"
 #define PTZ_SLEEP_TIME_USEC 100000
 
@@ -128,10 +126,8 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 class PTU46
 {
 public:
-	
 	PTU46(char * port, int rate);
 	~PTU46();
-
 
 	// get count/degree resolution
 	float GetRes(char type);
@@ -571,8 +567,7 @@ class PTU46_Device:public Driver
 		virtual int Shutdown();
 
 		// MessageHandler
-		int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
-
+		int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 };
   
 // initialization function
@@ -590,7 +585,7 @@ PTU46_Register(DriverTable* table)
 }
 
 PTU46_Device::PTU46_Device( ConfigFile* cf, int section) :
-  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
 
   data.pan = data.tilt = data.zoom = data.panspeed = data.tiltspeed = 0;
@@ -653,70 +648,63 @@ PTU46_Device::Shutdown()
 	return(0);
 }
 
-int PTU46_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int PTU46_Device::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data);
-	assert(resp_len);
-	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-	*resp_len = 0;
 	
-	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
-
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GENERIC_CONFIG, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GENERIC, device_addr))
 	{
-		assert(hdr->size == 0);
-  		return PLAYER_MSGTYPE_RESP_NACK;
+	    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
 	}
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_CONTROL_MODE, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE, device_addr))
 	{
-		assert(hdr->size == 1);
-		if(data[0] != MoveMode)
+		player_ptz_req_control_mode * control_mode = reinterpret_cast<player_ptz_req_control_mode *> (data);
+		if(control_mode->mode != MoveMode)
 		{
 			uint8_t NewMode;
-			if (data[0] == PLAYER_PTZ_VELOCITY_CONTROL)
+			if (control_mode->mode == PLAYER_PTZ_VELOCITY_CONTROL)
 				NewMode = PTU46_VELOCITY;
-			else if (data[0] == PLAYER_PTZ_POSITION_CONTROL)
+			else if (control_mode->mode == PLAYER_PTZ_POSITION_CONTROL)
 				NewMode = PTU46_POSITION;		
 			else
-				return PLAYER_MSGTYPE_RESP_NACK;
+			{
+			    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+			    return 0;
+			}
 					
 			if(pantilt->SetMode(NewMode))
 				MoveMode = NewMode;
 			else
-				return PLAYER_MSGTYPE_RESP_NACK;
+			{
+			    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+			    return 0;
+			}
 		}
-		return PLAYER_MSGTYPE_RESP_ACK;
+	    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	}
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
 	{
-		assert(hdr->size == sizeof(player_ptz_cmd_t));
 		player_ptz_cmd_t * new_command = reinterpret_cast<player_ptz_cmd_t *> (data);
-		int16_t pan = ntohs(new_command->pan);
-		int16_t tilt = ntohs(new_command->tilt);
-		//uint16_t zoom = ntohs(new_command->zoom);
-		int16_t panspeed = ntohs(new_command->panspeed);
-		int16_t tiltspeed = ntohs(new_command->tiltspeed);
 	
 		bool success = true;
 		// Different processing depending on movement mode
 		if (MoveMode == PLAYER_PTZ_VELOCITY_CONTROL)
 		{
 			// ignore pan and tilt, just use velocity
-			if (cmd.panspeed != panspeed)
+			if (cmd.panspeed != new_command->panspeed)
 			{
-				if(pantilt->SetSpeed(PTU46_PAN,panspeed))
-					cmd.panspeed = panspeed;
+				if(pantilt->SetSpeed(PTU46_PAN,static_cast<int> (RTOD(new_command->panspeed))))
+					cmd.panspeed = new_command->panspeed;
 				else
 					success = false;
 			}
-			if (cmd.tiltspeed != tiltspeed)
+			if (cmd.tiltspeed != new_command->tiltspeed)
 			{
-				if(pantilt->SetSpeed(PTU46_TILT,tiltspeed))
-					cmd.tiltspeed = tiltspeed;
+				if(pantilt->SetSpeed(PTU46_TILT,static_cast<int> (RTOD(new_command->tiltspeed))))
+					cmd.tiltspeed = new_command->tiltspeed;
 				else
 					success = false;
 			}
@@ -724,36 +712,37 @@ int PTU46_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8
 		else
 		{
 			// position move mode, ignore zero velocities, set pan tilt pos
-			if (cmd.pan != pan)
+			if (cmd.pan != new_command->pan)
 			{
-				if(pantilt->SetPos(PTU46_PAN,pan))
-					cmd.pan = pan;
+				if(pantilt->SetPos(PTU46_PAN,static_cast<int> (RTOD(new_command->pan))))
+					cmd.pan = new_command->pan;
 				else
 					success = false;
 			}
-			if (cmd.tilt != tilt)
+			if (cmd.tilt != new_command->tilt)
 			{
-				if(pantilt->SetPos(PTU46_TILT,tilt))
-					cmd.tilt = tilt;
+				if(pantilt->SetPos(PTU46_TILT,static_cast<int> (RTOD(new_command->tilt))))
+					cmd.tilt = new_command->tilt;
 				else
 					success = false;
 			}
-			if (cmd.panspeed != panspeed && panspeed != 0)
+			if (cmd.panspeed != new_command->panspeed && new_command->panspeed != 0)
 			{
-				if(pantilt->SetSpeed(PTU46_PAN,panspeed))
-					cmd.panspeed = panspeed;
+				if(pantilt->SetSpeed(PTU46_PAN,static_cast<int> (RTOD(new_command->panspeed))))
+					cmd.panspeed = new_command->panspeed;
 				else
 					success = false;
 			}
-			if (cmd.tiltspeed != tiltspeed && tiltspeed != 0)
+			if (cmd.tiltspeed != new_command->tiltspeed && new_command->tiltspeed != 0)
 			{
-				if(pantilt->SetSpeed(PTU46_TILT,tiltspeed))
-					cmd.tiltspeed = tiltspeed;
+				if(pantilt->SetSpeed(PTU46_TILT,static_cast<int> (RTOD(new_command->tiltspeed))))
+					cmd.tiltspeed = new_command->tiltspeed;
 				else
 					success = false;
 			}
 		}
-		return PLAYER_MSGTYPE_RESP_ACK;
+		
+	    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	}
 
 	return -1;
@@ -777,7 +766,7 @@ PTU46_Device::Main()
 	    
 	    /* test if we are supposed to cancel */
 	    pthread_testcancel();
-	    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
+	    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
 	    
 		// repeat frequency (default to 10 Hz)
 	    usleep(PTZ_SLEEP_TIME_USEC);
