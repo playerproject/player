@@ -96,7 +96,7 @@ Brian Gerkey
 #include <string.h>  /* for strncpy(3),memcpy(3) */
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
-#include <socket_util.h>
+//#include <socket_util.h>
 
 #include <drivertable.h>
 #include <driver.h>
@@ -139,10 +139,10 @@ class Festival:public Driver
     int Setup();
     int Shutdown();
 
-    	virtual int Unsubscribe(player_device_id_t id);
+    virtual int Unsubscribe(player_devaddr_t id);
 
-		// MessageHandler
-		int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+    // MessageHandler
+    int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 };
 
 
@@ -181,7 +181,7 @@ Festival_Register(DriverTable* table)
 void QuitFestival(void* speechdevice);
 
 Festival::Festival( ConfigFile* cf, int section) :
-  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_CODE, PLAYER_WRITE_MODE)
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_CODE)
 {
 //  int queuelen;
   sock = -1;
@@ -360,7 +360,7 @@ Festival::Shutdown()
 
 
 int
-Festival::Unsubscribe(player_device_id_t device)
+Festival::Unsubscribe(player_devaddr_t device)
 {
 	int retval = Driver::Unsubscribe(device);
 	if (subscriptions == 0)
@@ -368,35 +368,26 @@ Festival::Unsubscribe(player_device_id_t device)
 	return retval;
 }
 
-
-int Festival::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int Festival::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data);
-	assert(resp_len);
-	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-	*resp_len = 0;
-	
-	//printf("ptz got msg: %d %d:%d %d %d\n",hdr->type, hdr->device, hdr->device_index, hdr->size, hdr->size? data[0] : 0);
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_addr))
 	{
-		assert(hdr->size == sizeof(player_speech_cmd_t));
+		player_speech_cmd_t * cmd = (player_speech_cmd_t *) data;
 		// make ABSOLUTELY sure we've got one NULL
-		data[hdr->size]='\0';
-		// now strlen() should return the right length
+		cmd->string[cmd->string_count] = '\0';
 	  
 		Lock();
 		/* if there's space, put it in the queue */
-		queue.push_back(strdup((char *)data));
+		queue.push_back(strdup(cmd->string));
 		Unlock();
 		return 0;
 	}
 
 	return -1;
 }
-
 
 void 
 Festival::KillFestival()
@@ -405,8 +396,6 @@ Festival::KillFestival()
     perror("Festival::KillFestival(): some error while killing Festival");
   sock = -1;
 }
-
-
 
 void
 Festival::Main()
