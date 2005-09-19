@@ -1,10 +1,10 @@
 SUBDIRS = recognition
 
-noinst_LIBRARIES = @FESTIVAL_LIB@
+noinst_LTLIBRARIES = 
+if INCLUDE_FESTIVAL
+noinst_LTLIBRARIES += libfestival.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-
-EXTRA_LIBRARIES = libfestival.a 
-
-libfestival_a_SOURCES = festival.cc
+libfestival_la_SOURCES = festival.cc
