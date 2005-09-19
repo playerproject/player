@@ -424,8 +424,7 @@ class FlockOfBirds_Device : public Driver
 		virtual int Shutdown();
 		
 		// MessageHandler
-		int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
-		
+		int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);		
 };
   
 // initialization function
@@ -443,7 +442,7 @@ FlockOfBirds_Register(DriverTable* table)
 }
 
 FlockOfBirds_Device::FlockOfBirds_Device( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE, PLAYER_ALL_MODE)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION3D_CODE)
 {
 	fob = NULL;
 	
@@ -469,15 +468,6 @@ FlockOfBirds_Device::Setup()
 		return -1;
 	}
 
-	//player_position3d_data_t data;
-	//player_position3d_cmd_t cmd;
-
-	//bzero(&data,sizeof(data));
-	//bzero(&cmd,sizeof(cmd));
-
-  	//PutData((void*)&data,sizeof(data),NULL);
-  	//PutCommand(device_id,(void*)&cmd,sizeof(cmd),NULL);
-
 	// start the thread to talk with the camera
 	StartThread();
 
@@ -499,29 +489,19 @@ FlockOfBirds_Device::Shutdown()
 	return(0);
 }
 
-int FlockOfBirds_Device::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int FlockOfBirds_Device::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data);
-	assert(resp_len);
-	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-	*resp_len = 0;
-
+	
 	return -1;
 }
-
-
 
 // this function will be run in a separate thread
 void 
 FlockOfBirds_Device::Main()
 {
 	player_position3d_data_t data;
-	player_position3d_cmd_t command;
-	char buffer[256];
-	size_t buffer_len;
-	void *client;
 
 	int Front=1; // is the reciever in 'front' of the transmitter (1 = in front, -1 = behind)
 	double LastData[6];
@@ -551,16 +531,16 @@ FlockOfBirds_Device::Main()
 			}
 			memcpy(LastData, PosData,sizeof(LastData));  
 		
-			data.xpos = htonl(static_cast<long> (Front*PosData[0]));
-			data.ypos = htonl(static_cast<long> (Front*PosData[1]));
-			data.zpos = htonl(static_cast<long> (-Front*PosData[2]));
+			data.pos[0] = Front*PosData[0]/1000;
+			data.pos[1] = Front*PosData[1]/1000;
+			data.pos[2] = -Front*PosData[2]/1000;
 				
-			// translate degerees to milli radians
-			data.yaw = htonl(static_cast<long> (round(DTOR(PosData[3])*1000.0)));
-			data.pitch = htonl(static_cast<long> (round(DTOR(PosData[4])*1000.0)));
-			data.roll = htonl(static_cast<long> (round(DTOR(PosData[5])*1000.0)));
+			// translate degerees to radians
+			data.pos[3] = PosData[3]*1000.0;
+			data.pos[4] = PosData[4]*1000.0;
+			data.pos[5] = PosData[5]*1000.0;
 
-			PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_position3d_data_t),NULL);
+			Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,PLAYER_POSITION3D_DATA_STATE,(void*)&data, sizeof(player_position3d_data_t),NULL);
 		}    
 
 		// repeat frequency (default to 10 Hz)

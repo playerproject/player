@@ -1,7 +1,8 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+noinst_LTLIBRARIES = 
+if INCLUDE_FLOCKOFBIRDS
+noinst_LTLIBRARIES += libflockofbirds.la
+endif
 
-noinst_LIBRARIES = @FLOCKOFBIRDS_LIB@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = libflockofbirds.a
-
-libflockofbirds_a_SOURCES = flockofbirds.cc
+libflockofbirds_la_SOURCES = flockofbirds.cc
