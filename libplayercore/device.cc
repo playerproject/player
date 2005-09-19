@@ -65,7 +65,6 @@ Device::Device(player_devaddr_t addr, Driver *device)
   this->queues = (MessageQueue**)calloc(this->len_queues, 
                                         sizeof(MessageQueue*));
   assert(this->queues);
-  this->num_queues = 0;
 }
 
 
@@ -87,16 +86,16 @@ Device::Subscribe(MessageQueue* sub_queue)
   size_t i;
 
   this->driver->Lock();
-  if((retval = this->driver->Subscribe(this->addr)))
+
+  // find an empty spot to put the new queue
+  for(i=0;i<this->len_queues;i++)
   {
-    this->driver->Unlock();
-    return(retval);
+    if(!this->queues[i])
+      break;
   }
 
-  // add the subscriber's queue to the list
-
   // do we need to make room?
-  if(this->num_queues == this->len_queues)
+  if(i == this->len_queues)
   {
     size_t tmp = this->len_queues;
     this->len_queues *= 2;
@@ -107,17 +106,17 @@ Device::Subscribe(MessageQueue* sub_queue)
     assert(this->queues);
   }
 
-  // find an empty spot to put the new queue
-  for(i=0;i<this->len_queues;i++)
+  // add the subscriber's queue to the list
+  this->queues[i] = sub_queue;
+
+  if((retval = this->driver->Subscribe(this->addr)))
   {
-    if(!this->queues[i])
-    {
-      this->queues[i] = sub_queue;
-      this->num_queues++;
-      break;
-    }
+    // remove the subscriber's queue, since the subscription failed
+    this->queues[i] = NULL;
+    this->driver->Unlock();
+    return(retval);
   }
-  assert(i<this->len_queues);
+
 
   this->driver->Unlock();
   return(0);
@@ -141,7 +140,6 @@ Device::Unsubscribe(MessageQueue* sub_queue)
     if(this->queues[i] == sub_queue)
     {
       this->queues[i] = NULL;
-      this->num_queues--;
       this->driver->Unlock();
       return(0);
     }

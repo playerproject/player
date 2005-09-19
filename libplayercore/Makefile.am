@@ -23,7 +23,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
 			  plugins.cc plugins.h \
 			  globals.cc globals.h \
 			  addr_util.c addr_util.h
-libplayercore_la_LDFLAGS = -version-info 2:0:0
+libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 libplayererror_la_SOURCES = error.h error.c
 libplayererror_la_LDFLAGS = -version-info 2:0:0

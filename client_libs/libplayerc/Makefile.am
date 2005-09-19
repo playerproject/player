@@ -14,7 +14,7 @@ EXTRA_DIST = playerc.pc.in
 CLEANFILES = playerc.pc
 
 lib_LTLIBRARIES = libplayerc.la
-libplayerc_la_LDFLAGS = -version-info 2:0:0
+libplayerc_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 if INCLUDE_JPEG
 libplayerc_la_LDFLAGS += -L$(top_builddir)/libplayerjpeg -lplayerjpeg

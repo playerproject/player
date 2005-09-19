@@ -16,7 +16,7 @@ libplayertcp_la_SOURCES = socket_util.c socket_util.h \
 			 remote_driver.cc remote_driver.h
 
 libplayertcp_la_LIBADD = $(top_builddir)/replace/*.lo
-libplayertcp_la_LDFLAGS = -version-info 2:0:0
+libplayertcp_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 pkgincludedir = $(includedir)/libplayertcp
 
