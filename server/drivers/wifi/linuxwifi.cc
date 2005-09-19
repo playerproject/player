@@ -116,7 +116,7 @@ public:
   int Shutdown();
 
   // MessageHandler
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+  int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 
 
 protected:
@@ -163,7 +163,7 @@ LinuxWiFi_Register(DriverTable *table)
 }
 
 LinuxWiFi::LinuxWiFi( ConfigFile *cf, int section) :
-  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE, PLAYER_READ_MODE) 
+  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE) 
 {
   info_fp = NULL;
   
@@ -275,22 +275,16 @@ LinuxWiFi::Shutdown()
   return 0;
 }
 
-int LinuxWiFi::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int LinuxWiFi::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);
-	assert(resp_data);
-	assert(resp_len);
-	assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-	*resp_len = 0;
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, device_addr))
 	{
-		assert(hdr->size == 0);
-
-  		GetMACAddress((char *)resp_data, *resp_len);
-  		*resp_len = strlen((char*)resp_data);
-  		return PLAYER_MSGTYPE_RESP_ACK;
+		player_wifi_mac_req_t req;
+  		GetMACAddress(req.mac,32);
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, 0,(void*)&req, sizeof(player_wifi_mac_req_t),NULL);
 	}
 	return -1;
 }
@@ -432,21 +426,21 @@ LinuxWiFi::Update(void)
     bitrate = req->u.bitrate.value;
   }
 
-  wifi_data.bitrate = htonl(bitrate);
+  wifi_data.bitrate = bitrate;
     
-  wifi_data.link_count = htons(1);
+  wifi_data.links_count = 1;
   strncpy(wifi_data.links[0].ip, "0.0.0.0", sizeof(wifi_data.links[0].ip));
-  wifi_data.links[0].qual = htons(wqual);
-  wifi_data.links[0].level = htons(wlevel);
-  wifi_data.links[0].noise = htons(wnoise);
+  wifi_data.links[0].qual = wqual;
+  wifi_data.links[0].level = wlevel;
+  wifi_data.links[0].noise = wnoise;
 
-  wifi_data.maxqual = htons(wmaxqual);
-  wifi_data.maxlevel = htons(wmaxlevel);
-  wifi_data.maxnoise = htons(wmaxnoise);
+  wifi_data.maxqual = wmaxqual;
+  wifi_data.maxlevel = wmaxlevel;
+  wifi_data.maxnoise = wmaxnoise;
  
   wifi_data.qual_type = qual_type;
-  
-  this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &wifi_data, sizeof(player_wifi_data_t), NULL);
+
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,0,(void*)&wifi_data, sizeof(player_wifi_data_t),NULL);
 }
 
 
