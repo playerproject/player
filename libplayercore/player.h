@@ -814,7 +814,10 @@ for devices the detect natural landmarks.
 /** The maximum size of a data packet exchanged with a fiducial at one time.*/
 #define PLAYER_FIDUCIAL_MAX_MSG_LEN 32
 
-/* Request packet subtypes */
+/** Data subtypes */
+#define PLAYER_FIDUCIAL_DATA_SCAN 0x01
+
+/** Request packet subtypes */
 #define PLAYER_FIDUCIAL_GET_GEOM     0x01
 #define PLAYER_FIDUCIAL_GET_FOV      0x02
 #define PLAYER_FIDUCIAL_SET_FOV      0x03

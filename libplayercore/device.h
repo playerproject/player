@@ -150,9 +150,6 @@ class Device
 
     /// Length of @p queues
     size_t len_queues;
-
-    /// Number of valid (i.e., non-NULL) elements in @p queues
-    size_t num_queues;
 };
 
 #endif
