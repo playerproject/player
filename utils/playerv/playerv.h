@@ -368,8 +368,6 @@ void power_destroy(power_t *power);
 // Update a power device
 void power_update(power_t *power);
 
-
-#if 0
 /***************************************************************************
  * PTZ (pan-tilt-zoom) device
  ***************************************************************************/
@@ -410,8 +408,6 @@ void ptz_destroy(ptz_t *ptz);
 // Update a ptz device
 void ptz_update(ptz_t *ptz);
 
-
-#endif
 
 /***************************************************************************
  * Sonar (Fixed range-finder) device
@@ -489,7 +485,6 @@ void ir_destroy(ir_t *ir);
 void ir_update(ir_t *ir);
 
 
-#if 0
 /***************************************************************************
  * Blobfinder device
  ***************************************************************************/
@@ -657,6 +652,5 @@ void map_destroy(map_t *map);
 // Update a map device
 void map_update(map_t *map);
 
-#endif
 
 #endif

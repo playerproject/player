@@ -73,6 +73,15 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) position2d_update;
       break;
 
+    case PLAYER_PTZ_CODE:
+      device->proxy = ptz_create(mainwnd, opt, client, 
+                                        device->addr.index, 
+                                        device->drivername, 
+                                        device->subscribe);
+      device->fndestroy = (fndestroy_t) ptz_destroy;
+      device->fnupdate = (fnupdate_t) ptz_update;
+      break;
+
     case PLAYER_SONAR_CODE:
       device->proxy = sonar_create(mainwnd, opt, client, 
                                    device->addr.index, 
@@ -80,6 +89,15 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
                                    device->subscribe);
       device->fndestroy = (fndestroy_t) sonar_destroy;
       device->fnupdate = (fnupdate_t) sonar_update;
+      break;
+
+    case PLAYER_WIFI_CODE:
+      device->proxy = wifi_create(mainwnd, opt, client, 
+                                        device->addr.index, 
+                                        device->drivername, 
+                                        device->subscribe);
+      device->fndestroy = (fndestroy_t) wifi_destroy;
+      device->fnupdate = (fnupdate_t) wifi_update;
       break;
 
 #if 0
@@ -104,21 +122,7 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) localize_update;
       break;
 
-    case PLAYER_PTZ_CODE:
-      device->proxy = ptz_create(mainwnd, opt, client, 
-                                 device->index, device->drivername, device->subscribe);
-      device->fndestroy = (fndestroy_t) ptz_destroy;
-      device->fnupdate = (fnupdate_t) ptz_update;
-      break;
 
-
-
-    case PLAYER_WIFI_CODE:
-      device->proxy = wifi_create(mainwnd, opt, client, 
-                                  device->index, device->drivername, device->subscribe);
-      device->fndestroy = (fndestroy_t) wifi_destroy;
-      device->fnupdate = (fnupdate_t) wifi_update;
-      break;
 
     case PLAYER_MAP_CODE:
       device->proxy = map_create(mainwnd, opt, client, 

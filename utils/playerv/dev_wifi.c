@@ -89,7 +89,7 @@ void wifi_update(wifi_t *wifi)
   if (rtk_menuitem_ischecked(wifi->subscribe_item))
   {
     if (!wifi->proxy->info.subscribed)
-      if (playerc_wifi_subscribe(wifi->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_wifi_subscribe(wifi->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   else
