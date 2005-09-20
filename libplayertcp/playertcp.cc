@@ -475,8 +475,8 @@ PlayerTCP::WriteClient(int cli)
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages
-        PLAYER_WARN3("skipping message from %u:%u with unsupported type %u",
-                     hdr.addr.interf, hdr.addr.index, hdr.subtype);
+        PLAYER_WARN4("skipping message from %u:%u with unsupported type %u:%u",
+                     hdr.addr.interf, hdr.addr.index, hdr.type, hdr.subtype);
       }
       else
       {
