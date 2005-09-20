@@ -65,24 +65,6 @@ CameraProxy::~CameraProxy()
   playerc_camera_destroy(mCamera);
 }
 
-// interface that all proxies SHOULD provide
-void
-CameraProxy::Print()
-{
-  std::cout << "#Camera("
-            << mInfo->addr.host
-            << ":"
-            << mInfo->addr.index
-            << ")"
-            << std::endl;
-
-  std::cout << "Height(" << GetHeight()
-            << " px), Width(" << GetWidth()
-            << " px), Depth(" << GetDepth()
-            << " bit), ImageSize(" << GetImageSize()
-            << " bytes)" << std::endl;
-}
-
 void
 CameraProxy::SaveFrame(const std::string aPrefix, uint aWidth)
 {
@@ -105,3 +87,11 @@ CameraProxy::Decompress()
   playerc_camera_decompress(mCamera);
 }
 
+
+std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c)
+{
+  return os << "[" << c.GetWidth()
+            << ", " << c.GetHeight() << "] "
+            << 1/c.GetElapsedTime() << " fps, "
+            << "compressed(" << (c.GetCompression() ? "yes" : "no") << ")";
+}

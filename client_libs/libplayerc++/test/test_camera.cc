@@ -13,13 +13,11 @@ int test_camera(PlayerClient *client, int index)
   try
   {
     using namespace std;
+    using namespace PlayerCc;
 
     CameraProxy cp(client, index);
 
-    cout << "device [" << cp.GetInterfaceStr() << "] ";
-    cout << "driver [" << cp.GetDriverName() << "] ";
-    cout << "index [" << cp.GetIndex() << "] ";
-    cout << endl;
+    cout << static_cast<ClientProxy>(cp) << endl;
 
     for (int i=0; i<10; ++i)
     {
@@ -27,11 +25,7 @@ int test_camera(PlayerClient *client, int index)
       client->Read();
       PASS();
 
-      cout << " width: " << cp.GetWidth();
-      cout << " height: " << cp.GetHeight();
-      cout << " imagesize: " << cp.GetImageSize();
-      cout << " elapsed: " << cp.GetElapsed();
-      cout << endl;
+      cout << cp << endl;
 
       if (i>5)
       {

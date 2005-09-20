@@ -90,7 +90,7 @@ void PlayerClient::Read()
 // change continuous data rate (freq is in Hz)
 void PlayerClient::SetFrequency(uint aFreq)
 {
-  std::cerr << "PlayerClient::SetFrequency() not implemented" << std::endl;
+  std::cerr << "PlayerClient::SetFrequency() not implemented ";
   /*
   if (0!=playerc_client_datafreq(mClient, aFreq))
   {
@@ -103,7 +103,7 @@ void PlayerClient::SetFrequency(uint aFreq)
 // valid modes are given in include/messages.h
 void PlayerClient::SetDataMode(uint aMode)
 {
-  std::cerr << "PlayerClient::SetDataMode() not implemented" << std::endl;
+  std::cerr << "PlayerClient::SetDataMode() not implemented ";
   /*
   if (0!=playerc_client_datamode(mClient, aMode))
   {
@@ -116,7 +116,7 @@ void PlayerClient::SetDataMode(uint aMode)
 void PlayerClient::Authenticate(const std::string* aKey)
 {
 
-  std::cerr << "PlayerClient::Authenticate() not implemented" << std::endl;
+  std::cerr << "PlayerClient::Authenticate() not implemented ";
 /*
   if (0!=playerc_client_authenticate(mClient, aKey->c_str()))
   {
@@ -129,7 +129,7 @@ void PlayerClient::Authenticate(const std::string* aKey)
 // get the pointer to the proxy for the given device and index
 ClientProxy* PlayerClient::GetProxy(player_devaddr_t aAddr)
 {
-  std::cerr << "PlayerClient::GetProxy() not implemented" << std::endl;
+  std::cerr << "PlayerClient::GetProxy() not implemented ";
 //  return *find(mProxyList.begin(), mProxyList.end(), aAddr);
   return NULL;
 }
@@ -145,3 +145,9 @@ void PlayerClient::GetDeviceList()
   }
 }
 
+std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
+{
+  return os << c.GetHostname()
+            << ": "
+            << c.GetPort();
+}

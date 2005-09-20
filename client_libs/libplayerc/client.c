@@ -316,10 +316,10 @@ void *playerc_client_read(playerc_client_t *client)
 
     if (playerc_client_readpacket(client, &header, client->data) < 0)
       return NULL;
-    else
+/*    else
       printf("read %d/%d from %d:%d\n",
            header.type, header.subtype,
-           header.addr.interf, header.addr.index);
+           header.addr.interf, header.addr.index);*/
   }
 
   switch(header.type)
