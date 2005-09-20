@@ -508,10 +508,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue,
     player_laser_config_t * config = 
             reinterpret_cast<player_laser_config_t *> (data);
     this->intensity = config->intensity;
-    this->scan_res = config->resolution;
-    this->min_angle = (int)rint(config->min_angle * 1e2);
-    this->max_angle = (int)rint(config->max_angle * 1e2);
-    this->range_res = config->range_res;
+    this->scan_res = (int) rint(RTOD(config->resolution)*100);
+    this->min_angle = (int)rint(RTOD(config->min_angle)*100);
+    this->max_angle = (int)rint(RTOD(config->max_angle)*100);
+    this->range_res = (int)config->range_res*1000;
 
     if(this->CheckScanConfig() != 0)
     {
@@ -556,10 +556,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue,
     }
     player_laser_config_t config;
     config.intensity = this->intensity;
-    config.resolution = this->scan_res;
-    config.min_angle = (short) this->min_angle;
-    config.max_angle = (short) this->max_angle;
-    config.range_res = this->range_res;
+    config.resolution = DTOR(this->scan_res)/100;
+    config.min_angle = DTOR(this->min_angle)/100;
+    config.max_angle = DTOR(this->max_angle)/100;
+    config.range_res = ((double)this->range_res)/1000.0;
 
     this->Publish(this->device_addr,
                   resp_queue,
