@@ -14,6 +14,7 @@ libplayerclient_a_DEPENDENCIES = $(top_builddir)/client_libs/c/playercclient.$(O
 
 
 libplayerclient_a_SOURCES =   clientproxy.cc \
+                              actarrayproxy.cc \
                               gpsproxy.cc \
                               gripperproxy.cc \
                               fiducialproxy.cc \

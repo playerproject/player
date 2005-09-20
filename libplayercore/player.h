@@ -89,7 +89,9 @@
 #define PLAYER_SPEECH_RECOGNITION_CODE  50  // speech recognition
 #define PLAYER_OPAQUE_CODE         51  // plugin interface
 #define PLAYER_POSITION1D_CODE     52  // 1-D position
+#define PLAYER_ACTARRAY_CODE       53  // Actuator Array interface
 /* the currently assigned device strings */
+#define PLAYER_ACTARRAY_STRING        "actarray"
 #define PLAYER_AIO_STRING             "aio"
 #define PLAYER_AUDIO_STRING           "audio"
 #define PLAYER_AUDIODSP_STRING        "audiodsp"
@@ -253,6 +255,145 @@ system
 All Player communication occurs through <i>interfaces</i>, which specify
 the syntax and semantics for a set of messages. */
 /** @{ */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @defgroup player_interface_actarray actarray
+
+The actuator array interface provides access to an array of actuators.
+
+@{
+ */
+
+#define PLAYER_ACTARRAY_NUM_ACTUATORS     16
+
+#define PLAYER_ACTARRAY_ACTSTATE_IDLE     1
+#define PLAYER_ACTARRAY_ACTSTATE_MOVING   2
+#define PLAYER_ACTARRAY_ACTSTATE_BRAKED   3
+#define PLAYER_ACTARRAY_ACTSTATE_STALLED  4
+
+#define PLAYER_ACTARRAY_TYPE_LINEAR       1
+#define PLAYER_ACTARRAY_TYPE_ROTARY       2
+
+#define PLAYER_ACTARRAY_POWER_REQ         1
+#define PLAYER_ACTARRAY_BRAKES_REQ        2
+#define PLAYER_ACTARRAY_GET_GEOM_REQ      3
+#define PLAYER_ACTARRAY_SPEED_REQ         4
+
+#define PLAYER_ACTARRAY_POS_CMD           1
+#define PLAYER_ACTARRAY_SPEED_CMD         2
+#define PLAYER_ACTARRAY_HOME_CMD          3
+
+#define PLAYER_ACTARRAY_DATA_STATE        1
+
+/** @brief Structure containing a single actuator's information */
+typedef struct player_actarray_actuator
+{
+  /** The position of the actuator in m or rad depending on the type. */
+  float position;
+  /** The speed of the actuator in m/s or rad/s depending on the type. */
+  float speed;
+  /** The current state of the actuator. */
+  uint8_t state;
+} player_actarray_actuator_t;
+
+/** @brief Data
+
+The actuator array data packet. */
+typedef struct player_actarray_data
+{
+  /** The number of actuators in the array. */
+  uint32_t actuators_count;
+  /** The actuator data. */
+  player_actarray_actuator_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+} player_actarray_data_t;
+
+/** @brief Actuator geometry */
+typedef struct player_actarray_actuatorgeom
+{
+  /** The type of the actuator - linear or rotary. */
+  uint8_t type;
+  /** The range of motion of the actuator, in m or rad depending on the type. */
+  float min, centre, max, home;
+  /** The configured speed setting of the actuator - different from current speed. */
+  float config_speed;
+  /** If the actuator has brakes or not. */
+  uint8_t hasbrakes;
+} player_actarray_actuatorgeom_t;
+
+/** @brief Geometry request
+
+Geometry request/response.  */
+typedef struct player_actarray_geom
+{
+  /** The number of actuators in the array. */
+  uint32_t actuators_count;
+  /** The geometry information for each actuator in the array. */
+  player_actarray_actuatorgeom_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+} player_actarray_geom_t;
+
+/** @brief Joint position control command
+
+Tells a joint to attempt to move to a requested position. */
+typedef struct player_actarray_position_cmd
+{
+  /** The joint to command. */
+  uint8_t joint;
+  /** The position to move to. */
+  float position;
+} player_actarray_position_cmd_t;
+
+/** @brief Joint speed control command
+
+Tells a joint to attempt to move at a requested speed. */
+typedef struct player_actarray_speed_cmd
+{
+  /** The joint to command. */
+  uint8_t joint;
+  /** The speed to move at. */
+  float speed;
+} player_actarray_speed_cmd_t;
+
+/** @brief Joint home command
+
+Tells a joint (or the whole array) to go to home position. */
+typedef struct player_actarray_home_cmd
+{
+  /** The joint to command - set to -1 to command all. */
+  uint8_t joint;
+} player_actarray_home_cmd_t;
+
+/** @brief Configuration request: Power.
+
+Turns the power to all actuators in the array on or off. Be careful
+when turning power on that the array is not obstructed from its home
+position in case it moves to it (common behaviour). */
+typedef struct player_actarray_power_config
+{
+  /** Power setting; 0 for off, 1 for on. */
+  uint8_t value;
+} player_actarray_power_config_t;
+
+/** @brief Configuration request: Brakes.
+
+Turns the brakes of all actuators in the array that have them on or off. */
+typedef struct player_actarray_brakes_config
+{
+  /** Brakes setting; 0 for off, 1 for on. */
+  uint8_t value;
+} player_actarray_brakes_config_t;
+
+/** @brief Configuration request: Speed.
+
+Sets the speed of a joint for all subsequent movements. */
+typedef struct player_actarray_speed_config
+{
+  /** Joint to set speed for. */
+  int8_t joint;
+  /** Speed setting in mrad/s. */
+  float speed;
+} player_actarray_speed_config_t;
+
+/** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @defgroup player_interface_aio aio

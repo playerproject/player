@@ -33,6 +33,16 @@
 
 #include <p2os.h>
 
+typedef struct ArmJoint
+{
+	char speed;
+	unsigned char home;
+	unsigned char min;
+	unsigned char centre;
+	unsigned char max;
+	unsigned char ticksPer90;
+} ArmJoint;
+
 class SIP 
 {
  private:
@@ -60,12 +70,26 @@ class SIP
   // This value is filled by ParseGyro()
   int32_t gyro_rate;
 
+  // This information comes from the ARMpac and ARMINFOpac packets
+  bool armPowerOn, armConnected;
+  bool armJointMoving[6];
+  unsigned char armJointPos[6];
+  double armJointPosRads[6];
+  unsigned char armJointTargetPos[6];
+  char *armVersionString;
+  unsigned char armNumJoints;
+  ArmJoint *armJoints;
+
   /* returns 0 if Parsed correctly otherwise 1 */
   void Parse( unsigned char *buffer );
   void ParseSERAUX( unsigned char *buffer );
   void ParseGyro(unsigned char* buffer);
+  void ParseArm (unsigned char *buffer);
+  void ParseArmInfo (unsigned char *buffer);
   void Print();
   void PrintSonars();
+  void PrintArm ();
+  void PrintArmInfo ();
   void Fill(player_p2os_data_t* data);
 
   SIP(int idx) 
