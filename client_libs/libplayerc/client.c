@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -78,10 +78,10 @@ typedef struct
 
 // Local functions
 int playerc_client_get_driverinfo(playerc_client_t *client);
-int playerc_client_readpacket(playerc_client_t *client, 
+int playerc_client_readpacket(playerc_client_t *client,
                               player_msghdr_t *header,
                               char *data);
-int playerc_client_writepacket(playerc_client_t *client, 
+int playerc_client_writepacket(playerc_client_t *client,
                                player_msghdr_t *header,
                                char *data);
 void playerc_client_push(playerc_client_t *client,
@@ -125,16 +125,17 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
   assert(client->data);
   assert(client->xdrdata);
-  
+
   client->qfirst = 0;
   client->qlen = 0;
   client->qsize = sizeof(client->qitems) / sizeof(client->qitems[0]);
 
   client->datatime = 0;
+  client->lasttime = 0;
 
   /* this is the server's default */
   client->mode = PLAYER_DATAMODE_PUSH_NEW;
-  
+
   return client;
 }
 
@@ -156,7 +157,7 @@ int playerc_client_connect(playerc_client_t *client)
   struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
 
-  // Construct socket 
+  // Construct socket
   client->sock = socket(PF_INET, SOCK_STREAM, 0);
   if (client->sock < 0)
   {
@@ -164,7 +165,7 @@ int playerc_client_connect(playerc_client_t *client)
     return -1;
   }
 
-  // Construct server address 
+  // Construct server address
   entp = gethostbyname(client->host);
   if (entp == NULL)
   {
@@ -175,7 +176,7 @@ int playerc_client_connect(playerc_client_t *client)
   memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
   server.sin_port = htons(client->port);
 
-  // Connect the socket 
+  // Connect the socket
   if (connect(client->sock, (struct sockaddr*) &server, sizeof(server)) < 0)
   {
     PLAYERC_ERR3("connect call on [%s:%d] failed with error [%s]",
@@ -183,7 +184,7 @@ int playerc_client_connect(playerc_client_t *client)
     return -1;
   }
 
-  // Get the banner 
+  // Get the banner
   if (recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
   {
     PLAYERC_ERR("incomplete initialization string");
@@ -229,7 +230,7 @@ int playerc_client_datamode(playerc_client_t *client, int mode)
 
   /* cache the change */
   client->mode = mode;
-  
+
   return 0;
 }
 
@@ -243,11 +244,11 @@ int playerc_client_datafreq(playerc_client_t *client, int freq)
 
   if (playerc_client_request(client, NULL, PLAYER_PLAYER_DATAFREQ,  &req, sizeof(req), NULL, 0) < 0)
     return -1;
-  
+
   return 0;
 }
 
-// Request a round of data; only valid when in a request/reply 
+// Request a round of data; only valid when in a request/reply
 // (aka PULL) mode
 int
 playerc_client_requestdata(playerc_client_t* client)
@@ -265,6 +266,7 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
 {
   int count;
   struct pollfd fd;
+
   playerc_client_item_t *item;
 
   if (client->qlen > 0)
@@ -272,18 +274,18 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
     item = client->qitems + client->qfirst;
     return(item->header.size);
   }
-  
+
   fd.fd = client->sock;
   fd.events = POLLIN | POLLHUP;
   fd.revents = 0;
 
-  // Wait for incoming data 
+  // Wait for incoming data
   count = poll(&fd, 1, timeout);
   if (count < 0)
   {
     PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
     return -1;
-  }  
+  }
   if (count > 0 && (fd.revents & POLLHUP))
   {
     PLAYERC_ERR("socket disconnected");
@@ -319,10 +321,11 @@ void *playerc_client_read(playerc_client_t *client)
            header.type, header.subtype,
            header.addr.interf, header.addr.index);
   }
-  
+
   switch(header.type)
   {
     case PLAYER_MSGTYPE_SYNCH:
+      client->lasttime = client->datatime;
       client->datatime = header.timestamp;
       return client->id;
 
@@ -336,9 +339,9 @@ void *playerc_client_read(playerc_client_t *client)
 
 
 // Write a command
-int playerc_client_write(playerc_client_t *client, 
+int playerc_client_write(playerc_client_t *client,
                          playerc_device_t *device,
-                         uint8_t subtype, 
+                         uint8_t subtype,
                          void *cmd, double* timestamp)
 {
   player_msghdr_t header;
@@ -361,7 +364,7 @@ int playerc_client_write(playerc_client_t *client,
 }
 
 // Issue request and await reply (blocking).
-int playerc_client_request(playerc_client_t *client, 
+int playerc_client_request(playerc_client_t *client,
                            playerc_device_t *deviceinfo,
                            uint8_t subtype,
                            void *req_data, void *rep_data, int rep_len)
@@ -444,9 +447,9 @@ int playerc_client_request(playerc_client_t *client,
 
 #if 0
 // Issue request and await reply (blocking).
-int playerc_client_request(playerc_client_t *client, 
-                           playerc_device_t *deviceinfo, uint8_t reqtype, 
-                           void *req_data, int req_len, void *rep_data, 
+int playerc_client_request(playerc_client_t *client,
+                           playerc_device_t *deviceinfo, uint8_t reqtype,
+                           void *req_data, int req_len, void *rep_data,
                            int rep_len)
 {
   int resptype;
@@ -459,7 +462,7 @@ int playerc_client_request(playerc_client_t *client,
 
   if (deviceinfo == NULL)
   {
-    req_header.device = PLAYER_PLAYER_CODE;    
+    req_header.device = PLAYER_PLAYER_CODE;
     req_header.device_index = 0;
   }
   else
@@ -471,16 +474,16 @@ int playerc_client_request(playerc_client_t *client,
   if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
     return -1;
 
-  resptype = playerc_client_getresponse(client, req_header.device, 
-                                        req_header.device_index, 0, NULL, 
+  resptype = playerc_client_getresponse(client, req_header.device,
+                                        req_header.device_index, 0, NULL,
                                         rep_data, rep_len);
   return resptype;
 }
 
 
 int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
-                               uint16_t  index, uint16_t sequence, 
-                               uint8_t * resptype, uint8_t * resp_data, 
+                               uint16_t  index, uint16_t sequence,
+                               uint8_t * resptype, uint8_t * resp_data,
                                int resp_len)
 {
   player_msghdr_t rep_header;
@@ -498,7 +501,7 @@ int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
         *resptype = item->header.subtype;
       // need to deal with removing items from the queue
       // circular buffer is not best option for this
-      // so either need to use linked list 
+      // so either need to use linked list
       // or just tag items as read and remove in read method
       if (item->header.type == PLAYER_MSGTYPE_RESP_NACK)
         return -1;
@@ -510,9 +513,9 @@ int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
         return item->len;
       }
     }
-  } 
+  }
 
-  // then start reading in new messages, store in queue if they are 
+  // then start reading in new messages, store in queue if they are
   // not the one we are waiting for
   for (i = 0; i < 1000; i++)
   {
@@ -527,7 +530,7 @@ int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
         *resptype = rep_header.subtype;
       // need to deal with removing items from the queue
       // circular buffer is not best option for this
-      // so either need to use linked list 
+      // so either need to use linked list
       // or just tag items as read and remove in read method
       if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
         return -1;
@@ -549,7 +552,7 @@ int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
 #endif
 
 
-// Add a device proxy 
+// Add a device proxy
 int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device)
 {
   if (client->device_count >= sizeof(client->device) / sizeof(client->device[0]))
@@ -559,7 +562,7 @@ int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device)
   }
   device->fresh = 0;
   client->device[client->device_count++] = device;
-  return 0; 
+  return 0;
 }
 
 
@@ -627,7 +630,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
       return(-1);
     }
 
-    strncpy(client->devinfos[i].drivername, req.driver_name, 
+    strncpy(client->devinfos[i].drivername, req.driver_name,
             req.driver_name_count);
     client->devinfos[i].drivername[req.driver_name_count] = '\0';
   }
@@ -649,7 +652,7 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
   req.access = access;
   req.driver_name_count = 0;
 
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEV, 
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEV,
                              (void*)&req, (void*)&req, sizeof(req)) < 0)
   {
     PLAYERC_ERR("failed to get response");
@@ -681,7 +684,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
   req.access = PLAYER_CLOSE_MODE;
   req.driver_name_count = 0;
 
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEV, 
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEV,
                              (void*)&req, (void*)&req, sizeof(req)) < 0)
     return -1;
 
@@ -718,7 +721,7 @@ int playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devic
                                playerc_callback_fn_t callback, void *data)
 {
   int i;
-    
+
   for (i = 0; i < device->callback_count; i++)
   {
     if (device->callback[i] != callback)
@@ -736,7 +739,7 @@ int playerc_client_delcallback(playerc_client_t *client, playerc_device_t *devic
 
 
 // Read a raw packet
-int playerc_client_readpacket(playerc_client_t *client, 
+int playerc_client_readpacket(playerc_client_t *client,
                               player_msghdr_t *header,
                               char *data)
 {
@@ -758,20 +761,20 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
   if (bytes < PLAYERXDR_MSGHDR_SIZE)
   {
-    PLAYERC_ERR2("got incomplete header, %d of %u bytes", 
+    PLAYERC_ERR2("got incomplete header, %d of %u bytes",
                  bytes, PLAYERXDR_MSGHDR_SIZE);
     return -1;
   }
 
   // Unpack the header
-  if(player_msghdr_pack(client->xdrdata, 
-                        PLAYERXDR_MSGHDR_SIZE, 
+  if(player_msghdr_pack(client->xdrdata,
+                        PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_DECODE) < 0)
   {
     PLAYERC_ERR("failed to unpack header");
     return -1;
   }
-  
+
   if (header->size > PLAYERXDR_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE)
   {
     PLAYERC_ERR1("packet is too large, %d bytes", header->size);
@@ -782,8 +785,8 @@ int playerc_client_readpacket(playerc_client_t *client,
   total_bytes = 0;
   while (total_bytes < header->size)
   {
-    bytes = recv(client->sock, 
-                 client->xdrdata + PLAYERXDR_MSGHDR_SIZE + total_bytes, 
+    bytes = recv(client->sock,
+                 client->xdrdata + PLAYERXDR_MSGHDR_SIZE + total_bytes,
                  header->size - total_bytes, 0);
     if (bytes <= 0)
     {
@@ -821,7 +824,7 @@ int playerc_client_readpacket(playerc_client_t *client,
 
 
 // Write a raw packet
-int playerc_client_writepacket(playerc_client_t *client, 
+int playerc_client_writepacket(playerc_client_t *client,
                                player_msghdr_t *header, char *data)
 {
   int bytes;
@@ -833,7 +836,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   if(data)
   {
     // Locate the appropriate packing function for the message body
-    if(!(packfunc = playerxdr_get_func(header->addr.interf, 
+    if(!(packfunc = playerxdr_get_func(header->addr.interf,
                                        header->type,
                                        header->subtype)))
     {
@@ -862,7 +865,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   gettimeofday(&curr,NULL);
   header->timestamp = curr.tv_sec + curr.tv_usec / 1e6;
   // Pack the header
-  if(player_msghdr_pack(client->xdrdata, PLAYERXDR_MSGHDR_SIZE, 
+  if(player_msghdr_pack(client->xdrdata, PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_ENCODE) < 0)
   {
     PLAYERC_ERR("failed to pack header");
@@ -870,7 +873,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   }
 
   // Send the message
-  bytes = send(client->sock, client->xdrdata, 
+  bytes = send(client->sock, client->xdrdata,
                PLAYERXDR_MSGHDR_SIZE + encode_msglen, 0);
   if (bytes < 0)
   {
@@ -879,7 +882,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   }
   else if (bytes < (PLAYERXDR_MSGHDR_SIZE + encode_msglen))
   {
-    PLAYERC_ERR2("sent incomplete message, %d of %d bytes", 
+    PLAYERC_ERR2("sent incomplete message, %d of %d bytes",
                  bytes, PLAYERXDR_MSGHDR_SIZE + encode_msglen);
     return -1;
   }
@@ -936,25 +939,26 @@ int playerc_client_pop(playerc_client_t *client,
 
 
 // Dispatch a packet
-void *playerc_client_dispatch(playerc_client_t *client, 
+void *playerc_client_dispatch(playerc_client_t *client,
                               player_msghdr_t *header,
                               void *data)
 {
   int i, j;
   playerc_device_t *device;
-  
-  // Look for a device proxy to handle this data 
+
+  // Look for a device proxy to handle this data
   for (i = 0; i < client->device_count; i++)
   {
     device = client->device[i];
-        
-    if (device->addr.interf == header->addr.interf && 
+
+    if (device->addr.interf == header->addr.interf &&
         device->addr.index == header->addr.index)
     {
-      // Fill out timing info 
+      // Fill out timing info
+      device->lasttime = device->datatime;
       device->datatime = header->timestamp;
 
-      // Call the registerd handler for this device 
+      // Call the registerd handler for this device
       if(device->putmsg)
       {
         (*device->putmsg) (device, (char*) header, data);
@@ -962,7 +966,7 @@ void *playerc_client_dispatch(playerc_client_t *client,
         // mark as fresh
         device->fresh = 1;
 
-        // Call any additional registered callbacks 
+        // Call any additional registered callbacks
         for (j = 0; j < device->callback_count; j++)
           (*device->callback[j]) (device->callback_data[j]);
 

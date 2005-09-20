@@ -5,7 +5,7 @@ PLAYER_DRIVERS=
 PLAYER_DRIVER_EXTRA_LIBS=
 PLAYER_NODRIVERS=
 
-dnl This macro can be used to setup the testing and associated autoconf 
+dnl This macro can be used to setup the testing and associated autoconf
 dnl variables and C defines for a device driver.
 dnl
 dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd],
@@ -15,7 +15,7 @@ dnl Args:
 dnl   name:    name
 dnl   default: should this driver be included by default? ("yes" or "no")
 dnl   header:  a list of headers that are all required to build the driver
-dnl   cppadd:  compiler flags to be used when building the driver 
+dnl   cppadd:  compiler flags to be used when building the driver
 dnl            (e.g., "-I/somewhere_odd/include")
 dnl   ldadd:   link flags to be added to Player if this driver is included
 dnl            (e.g., "-lgsl -lcblas")
@@ -26,12 +26,12 @@ dnl   pkg:     name of package that is required to build the driver; it
 dnl            should be a valid pkg-config spec, like [gtk+-2.0 >= 2.1]
 dnl   default-includes: A chunk of code to insert in a test program when
 dnl                     checking for each of the headers listed in <header>.
-dnl                     For example, if one of the headers that you need in 
-dnl                     turn requires <foo.h>, then supply 
+dnl                     For example, if one of the headers that you need in
+dnl                     turn requires <foo.h>, then supply
 dnl                     [[#include <foo.h>]] here.
 dnl
-dnl The C define INCLUDE_<name> and the automake conditional <name> (with 
-dnl <name> capitalized) will be conditionally defined to be 1 and 
+dnl The C define INCLUDE_<name> and the automake conditional <name> (with
+dnl <name> capitalized) will be conditionally defined to be 1 and
 dnl TRUE, respectively.  The variable <name>_EXTRA_CPPFLAGS will be
 dnl the value of <cppadd>, for use in the driver's Makefile.am.
 dnl
@@ -59,7 +59,7 @@ dnl in the form of 'for' over an empty list.
     header_list=foo
   fi
   for header in $header_list; do
-    AC_CHECK_HEADER($header, 
+    AC_CHECK_HEADER($header,
                     enable_$1=yes,
                     enable_$1=no
                     failed_header_check=yes,$8)
@@ -87,7 +87,7 @@ if test "x$enable_$1" = "xyes"; then
   name_caps[_EXTRA_CPPFLAGS]=$4
   name_caps[_EXTRA_LIB]=$5
   PLAYER_DRIVERS="$PLAYER_DRIVERS $1"
-else      
+else
   if test "x$no_pkg_config" = "xyes"; then
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- pkg-config is required to test for dependencies"
   elif test "x$failed_package_check" = "xyes"; then
@@ -99,7 +99,7 @@ else
   else
     PLAYER_NODRIVERS="$PLAYER_NODRIVERS:$1 -- disabled by user"
   fi
-fi        
+fi
 
 AC_SUBST(name_caps[_LIB])
 AM_CONDITIONAL([INCLUDE_]name_caps, test "x$enable_$1" = "xyes")
@@ -124,8 +124,8 @@ else
 fi
 
 PLAYER_ADD_DRIVER([segwayrmp],[no],
-	[$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
-	[$SEGWAYRMP_EXTRA_LDFLAGS])
+  [$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
+  [$SEGWAYRMP_EXTRA_LDFLAGS])
 
 PLAYER_ADD_DRIVER([garminnmea],[no],[],[],[])
 
@@ -148,7 +148,7 @@ PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sicklms200],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
-	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
+  AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
 PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
@@ -161,7 +161,7 @@ PLAYER_ADD_DRIVER([sickpls],[no],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
-                                                                     
+
 AC_ARG_ENABLE(highspeedsick, [  --disable-highspeedsick   Don't build support for 500Kbps comms with SICK],,enable_highspeedsick=yes)
 if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[disable 500Kbps comms with SICK])
@@ -285,16 +285,16 @@ if test "x$enable_camera1394" = "xyes"; then
   dc1394_dma_setup_args="0"
 
   AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
-    [[#include "libdc1394/dc1394_control.h"]], 
-    [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]), 
+    [[#include "libdc1394/dc1394_control.h"]],
+    [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="11")
 
   AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
-    [[#include "libdc1394/dc1394_control.h"]], 
-    [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]), 
+    [[#include "libdc1394/dc1394_control.h"]],
+    [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="12")
 
-  AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args, 
+  AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args,
               [arg count for dma capture function])
 fi
 
@@ -305,6 +305,10 @@ dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
+
+dnl Garcia driver
+PLAYER_ADD_DRIVER([garcia],[no],
+                  [],[],[],[GARCIA],[libgarcia])
 
 PLAYER_ADD_DRIVER([fakelocalize], [no],[],[],[])
 
@@ -346,9 +350,9 @@ GAZEBO_MIN_VERSION="0.4.0"
 dnl Where is Gazebo?
 if test "x$enable_gazebo" = "xyes"; then
   if test "x$have_pkg_config" = "xyes" ; then
-    PKG_CHECK_MODULES(GAZEBO,gazebo >= $GAZEBO_MIN_VERSION, 
-	  enable_gazebo=yes, 
-    enable_gazebo=no; 
+    PKG_CHECK_MODULES(GAZEBO,gazebo >= $GAZEBO_MIN_VERSION,
+    enable_gazebo=yes,
+    enable_gazebo=no;
     gazebo_disable_reason="could not find Gazebo >= $GAZEBO_MIN_VERSION")
   else
     enable_gazebo=no;
@@ -406,8 +410,8 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LIB"
 dnl Test to see if a particular Gazebo driver is available
 AC_DEFUN([GAZEBO_TEST_DRIVER], [
 
-AC_CHECK_LIB(gazebo, gz_$2_alloc, 
-  include_gazebo_$1=yes, 
+AC_CHECK_LIB(gazebo, gz_$2_alloc,
+  include_gazebo_$1=yes,
   include_gazebo_$1=no,
   [$GAZEBO_LIBS]
 )

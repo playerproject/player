@@ -1,0 +1,10 @@
+prefix=@prefix@
+
+# this gives access to the player header files for compiling plugins
+
+Name: playerc++
+Description: C++ wrapper for libplayerc
+Version: @VERSION@
+Requires: playerxdr playerc
+Libs: -L${prefix}/lib -lplayerxdr -lplayerc -lm
+Cflags: -I${prefix}/include
