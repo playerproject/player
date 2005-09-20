@@ -24,6 +24,7 @@ libplayerc___la_SOURCES =   playercc.h \
                               cameraproxy.cc
 
                               #gpsproxy.cc \
+							  actarrayproxy.cc \
                               gripperproxy.cc \
                               fiducialproxy.cc \
                               laserproxy.cc \
@@ -59,7 +60,7 @@ libplayerc___la_SOURCES =   playercc.h \
                               energyproxy.cc \
                               speechrecognitionproxy.cc \
                               simulationproxy.cc \
-                              logproxy.cc
+                              logproxy.cc 
                               #bpsproxy.cc
                               #bpsproxy.h
 

@@ -326,6 +326,71 @@ class PlayerMultiClient
 /** @defgroup player_clientlib_cplusplus_proxies Proxies */
 /** @{ */
 
+
+typedef struct ActuatorData
+{
+  int position;
+  int speed;
+  unsigned char state;
+} ActuatorData;
+
+typedef struct ActuatorGeom
+{
+  unsigned char type;
+  int min, centre, max, home;
+  int configSpeed;
+  unsigned char hasBrakes;
+} ActuatorGeom;
+
+/**
+
+The @p ActArrayProxy class is used to control a @ref
+player_interface_actarray device.
+ */
+class ActArrayProxy : public ClientProxy
+{
+  friend std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& a);
+  private:
+    int numActuators;
+    ActuatorData actuatorData[PLAYER_ACTARRAY_NUM_ACTUATORS];
+    ActuatorGeom actuatorGeom[PLAYER_ACTARRAY_NUM_ACTUATORS];
+
+  public:
+    /** The client calls this method to make a new proxy.  Leave access empty 
+    to start unconnected. */
+    ActArrayProxy(PlayerClient* pc, unsigned short index,
+                 unsigned char access='c') :
+      ClientProxy(pc) {}
+
+    // interface that all proxies must provide
+    void FillData(player_msghdr_t hdr, const char* buffer);
+
+    // Power control
+    int Power (uint8_t val);
+    // Brakes control
+    int Brakes (uint8_t val);
+    // Speed control
+    int SpeedConfig (int8_t joint, int32_t speed);
+    // Geometry request - call before getting the geometry of a joint through the accessor method
+    int RequestGeometry (void);
+
+    // Send an actuator to a position
+    int SetPosition (int8_t joint, int32_t position);
+    // Move an actuator at a speed
+    int SetSpeed (int8_t joint, int32_t speed);
+    // Send an actuator, or all actuators, home
+    int Home (int8_t joint);
+
+  // Gets the number of actuators in the array
+    int NumActuators (void)               { return numActuators; }
+    // Accessor method for getting an actuator's data
+    ActuatorData GetActuatorData (int joint);
+    // Same again for getting actuator geometry
+    ActuatorGeom GetActuatorGeom (int joint);
+    
+};
+
+
 /**
 
 The @p AIOProxy class is used to read from a @ref player_interface_aio
