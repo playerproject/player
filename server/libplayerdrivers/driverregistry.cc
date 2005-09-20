@@ -86,6 +86,10 @@ void SickLMS200_Register(DriverTable* table);
 void SickPLS_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_URGLASER
+void URGLaserDriver_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_ACTS
 void Acts_Register(DriverTable* table);
 #endif
@@ -135,6 +139,10 @@ void LaserVisualBW_Register(DriverTable* table);
 
 #ifdef INCLUDE_LASERCSPACE
 void LaserCSpace_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_LASERRESCAN
+void LaserRescan_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SONYEVID30
@@ -428,6 +436,10 @@ player_register_drivers()
   SickPLS_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_URGLASER
+  URGLaserDriver_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_ACTS
   Acts_Register(driverTable);
 #endif
@@ -476,6 +488,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_LASERCSPACE
   LaserCSpace_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LASERRESCAN
+  LaserRescan_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_RFLEX
