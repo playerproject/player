@@ -64,7 +64,7 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_actarray_speed_cmd_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD,
     (player_pack_fn_t)player_actarray_home_cmd_pack},
-    
+
   /* blobfinder messages */
   {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_DATA_STATE,
     (player_pack_fn_t)player_blobfinder_data_pack},
@@ -78,7 +78,7 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_bumper_geom_pack},
 
   /* camera messages */
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_DATA_STATE,
+  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
     (player_pack_fn_t)player_camera_data_pack},
 
   /* ir messages */
@@ -252,15 +252,15 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
 {
   playerxdr_function_t* curr;
   int i;
-  
-  // The supplied type can be RESP_ACK if the registered type is REQ.  
+
+  // The supplied type can be RESP_ACK if the registered type is REQ.
   if (type == PLAYER_MSGTYPE_RESP_ACK || type == PLAYER_MSGTYPE_RESP_NACK)
     type = PLAYER_MSGTYPE_REQ;
 
   for(i=0;i<ftable_len;i++)
   {
     curr = ftable + i;
-    // Make sure the interface and subtype match exactly.  
+    // Make sure the interface and subtype match exactly.
     if(curr->interf == interf &&
       curr->type == type &&
       curr->subtype == subtype)
