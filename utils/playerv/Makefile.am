@@ -18,14 +18,14 @@ playerv_SOURCES = playerv.c \
                   dev_laser.c \
                   dev_position2d.c \
                   dev_power.c \
-                  dev_sonar.c
+                  dev_ptz.c \
+                  dev_sonar.c \
+                  dev_wifi.c
 
 #dev_blobfinder.c \
 #dev_fiducial.c \
 #dev_localize.c \
-#dev_map.c \
-#dev_ptz.c \
-#dev_wifi.c
+#dev_map.c
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                        $(top_builddir)/libplayerxdr/libplayerxdr.la

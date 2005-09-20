@@ -55,7 +55,7 @@ ptz_t *ptz_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   snprintf(section, sizeof(section), "ptz:%d", index);
   if (subscribe)
   {
-    if (playerc_ptz_subscribe(ptz->proxy, PLAYER_ALL_MODE) != 0)
+    if (playerc_ptz_subscribe(ptz->proxy, PLAYER_OPEN_MODE) != 0)
       PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
 
@@ -118,7 +118,7 @@ void ptz_update(ptz_t *ptz)
   if (rtk_menuitem_ischecked(ptz->subscribe_item))
   {
     if (!ptz->proxy->info.subscribed)
-      if (playerc_ptz_subscribe(ptz->proxy, PLAYER_ALL_MODE) != 0)
+      if (playerc_ptz_subscribe(ptz->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   else
