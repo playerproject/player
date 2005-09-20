@@ -5,6 +5,7 @@
 #include "playernav.h"
 
 extern double dumpfreq;
+extern double mapupdatefreq;
 
 /* Parse command line arguments, of the form host:port */
 int
@@ -33,10 +34,17 @@ parse_args(int argc, char** argv, size_t* num_bots, char** hostnames,
       else
         return(-1);
     }
-    else if(!strcmp(argv[i],"-map"))
+    else if(!strcmp(argv[i],"-mapidx"))
     {
       if(++i < argc)
         *map_idx = atoi(argv[i]);
+      else
+        return(-1);
+    }
+    else if(!strcmp(argv[i],"-mapupdate"))
+    {
+      if(++i < argc)
+        mapupdatefreq = atof(argv[i]);
       else
         return(-1);
     }

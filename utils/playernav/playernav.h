@@ -43,6 +43,7 @@ typedef struct
   double initial_zoom;
   int aa;
   pose_t robot_poses[MAX_NUM_ROBOTS];
+  GnomeCanvasItem* imageitem;
   GnomeCanvasItem* robot_items[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_labels[MAX_NUM_ROBOTS];
   GnomeCanvasItem* robot_goals[MAX_NUM_ROBOTS];

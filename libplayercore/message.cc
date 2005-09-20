@@ -147,12 +147,19 @@ MessageQueue::~MessageQueue()
 void 
 MessageQueue::Wait(void)
 {
-  bool empty;
+  MessageQueueElement* el;
+
   // don't wait if there's data on the queue
   this->Lock();
-  empty = this->Empty();
+  // start at the head and traverse the queue until a filter-friendly
+  // message is found
+  for(el = this->head; el; el = el->next)
+  {
+    if(!this->filter_on || this->Filter(*el->msg))
+      break;
+  }
   this->Unlock();
-  if(!empty)
+  if(el)
     return;
 
   // need to push this cleanup function, cause if a thread is cancelled while
@@ -245,7 +252,8 @@ MessageQueue::Push(Message & msg)
   {
     PLAYER_WARN("tried to push onto a full message queue");
     this->Unlock();
-    this->DataAvailable();
+    if(!this->filter_on)
+      this->DataAvailable();
     return(NULL);
   }
   else
@@ -266,7 +274,8 @@ MessageQueue::Push(Message & msg)
     }
     this->Length++;
     this->Unlock();
-    this->DataAvailable();
+    if(!this->filter_on || this->Filter(msg))
+      this->DataAvailable();
     return(newelt);
   }
 }

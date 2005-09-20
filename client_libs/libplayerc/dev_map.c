@@ -112,6 +112,8 @@ int playerc_map_get_map(playerc_map_t* device)
   device->resolution = info_req.scale;
   device->width = info_req.width;
   device->height = info_req.height;
+  device->origin[0] = info_req.origin.px;
+  device->origin[1] = info_req.origin.py;
 
   // Allocate space for the whole map
   if(device->cells)

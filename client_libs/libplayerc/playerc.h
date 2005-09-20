@@ -1364,6 +1364,9 @@ typedef struct
   /** Map size, in cells */
   int width, height;
 
+  /** Map origin, in meters (i.e., the real-world coordinates of cell 0,0)*/
+  double origin[2];
+
   /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
   char* cells;
 } playerc_map_t;

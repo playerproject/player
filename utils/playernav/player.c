@@ -74,16 +74,7 @@ init_player(playerc_client_t** clients,
     }
   }
 
-  /* Get the map from the first robot */
-  puts("requesting map");
-  if(playerc_map_get_map(maps[0]) < 0)
-  {
-    fprintf(stderr, "Failed to get map\n");
-    return(NULL);
-  }
-  puts("done");
-
-  playerc_map_unsubscribe(maps[0]);
+  //playerc_map_unsubscribe(maps[0]);
 
 #if 0
   /* Get at least one round of data from each robot */
