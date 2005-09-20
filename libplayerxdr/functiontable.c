@@ -243,7 +243,7 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
     if((curr->interf== interf) &&
        ((curr->type == type) ||
         ((curr->type == PLAYER_MSGTYPE_REQ) &&
-         (type = PLAYER_MSGTYPE_RESP_ACK))) &&
+         (type == PLAYER_MSGTYPE_RESP_ACK))) &&
         (curr->subtype == subtype))
       return(curr->func);
   }
