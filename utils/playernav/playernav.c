@@ -122,6 +122,9 @@ int robot_moving_idx;
 double dumpfreq;
 int dumpp;
 int showparticlesp;
+double mapupdatefreq;
+
+void update_map(gui_data_t* gui_data);
 
 static void
 _interrupt_callback(int signum)
@@ -137,7 +140,8 @@ player_read_func(gpointer* arg)
   static int count=0;
   pose_t robot_pose;
   gui_data_t* gui_data = (gui_data_t*)arg;
-  static struct timeval last = {0, 0};
+  static struct timeval lastdump = {0, 0};
+  static struct timeval lastmapupdate = {0, 0};
   struct timeval curr;
   double diff;
   gboolean onmap;
@@ -150,12 +154,11 @@ player_read_func(gpointer* arg)
   }
   for(i=0;i<gui_data->num_robots;i++)
   {
-    if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
+    if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
     {
-      assert(gui_data->localizes[i]->hypoth_count > 0);
-      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
-      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
-      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
+      robot_pose.px = gui_data->planners[i]->px;
+      robot_pose.py = gui_data->planners[i]->py;
+      robot_pose.pa = gui_data->planners[i]->pa;
 
       // is the robot localized within the map?
       onmap = ((fabs(robot_pose.px) <
@@ -180,7 +183,7 @@ player_read_func(gpointer* arg)
           //printf("moving robot %d\n", i);
           move_item(gui_data->robot_items[i],robot_pose,1);
 
-          if(onmap && showparticlesp)
+          if(onmap && showparticlesp && gui_data->localizes[i])
           {
             playerc_localize_get_particles(gui_data->localizes[i]);
             draw_particles(gui_data,i);
@@ -191,7 +194,7 @@ player_read_func(gpointer* arg)
       // regardless, store this pose for comparison on next iteration
       gui_data->robot_poses[i] = robot_pose;
 
-      gui_data->localizes[i]->info.fresh = 0;
+      gui_data->planners[i]->info.fresh = 0;
     }
 
     // every once in a while, get the latest path from each robot
@@ -211,18 +214,33 @@ player_read_func(gpointer* arg)
     }
 
     // raise the robot's canvas item, so that the user can select it
-    gnome_canvas_item_raise_to_top(gui_data->robot_items[i]);
+    if(gui_data->planners[i])
+      gnome_canvas_item_raise_to_top(gui_data->robot_items[i]);
   }
 
   // dump screenshot
   if(dumpp)
   {
     gettimeofday(&curr,NULL);
-    diff = (curr.tv_sec + curr.tv_usec/1e6) - (last.tv_sec + last.tv_usec/1e6);
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - 
+            (lastdump.tv_sec + lastdump.tv_usec/1e6);
     if(diff >= 1.0/dumpfreq)
     {
       dump_screenshot(gui_data);
-      last = curr;
+      lastdump = curr;
+    }
+  }
+
+  // update map
+  if(mapupdatefreq)
+  {
+    gettimeofday(&curr,NULL);
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - 
+            (lastmapupdate.tv_sec + lastmapupdate.tv_usec/1e6);
+    if(diff >= 1.0/mapupdatefreq)
+    {
+      update_map(gui_data);
+      lastmapupdate = curr;
     }
   }
 
@@ -230,11 +248,30 @@ player_read_func(gpointer* arg)
   return(TRUE);
 }
 
+void
+update_map(gui_data_t* gui_data)
+{
+  /* Get the map from the first robot */
+  //puts("requesting map");
+  if(playerc_map_get_map(gui_data->maps[0]) < 0)
+  {
+    fprintf(stderr, "Failed to get map\n");
+  }
+  else
+  {
+    //puts("done");
+    if(gui_data->imageitem)
+      gtk_object_destroy(GTK_OBJECT(gui_data->imageitem));
+    create_map_image(gui_data);
+  }
+}
+
 int
 main(int argc, char** argv)
 {
   int i;
   int map_idx;
+  int have_map;
 
   pose_t robot_pose;
 
@@ -273,19 +310,42 @@ main(int argc, char** argv)
   for(i=0;i<gui_data.num_robots;i++)
     gui_data.robot_enable_states[i] = 1;
 
-  // we've read the map
+  // use the first robot for the map
   gui_data.mapdev = gui_data.maps[0];
+
+  /* Get the map, just so we know how big to make the window */
+  puts("requesting map");
+  if(playerc_map_get_map(gui_data.mapdev) < 0)
+  {
+    have_map = 0;
+    fprintf(stderr, "Failed to get map\n");
+    // no map yet; guess some values to initialize the GUI
+    gui_data.mapdev->width = gui_data.mapdev->height = 400;
+    gui_data.mapdev->resolution = 0.1;
+    gui_data.mapdev->origin[0] = -20.0;
+    gui_data.mapdev->origin[1] = -20.0;
+  }
+  else
+  {
+    have_map = 1;
+    puts("done");
+  }
 
   init_gui(&gui_data, argc, argv);
 
-  create_map_image(&gui_data);
+  // now draw the map
+  if(have_map)
+    create_map_image(&gui_data);
 
   for(i=0;i<gui_data.num_robots;i++)
   {
-    robot_pose.px = 0.0;
-    robot_pose.py = 0.0;
-    robot_pose.pa = 0.0;
-    create_robot(&gui_data, i, robot_pose);
+    if(gui_data.planners[i])
+    {
+      robot_pose.px = 0.0;
+      robot_pose.py = 0.0;
+      robot_pose.pa = 0.0;
+      create_robot(&gui_data, i, robot_pose);
+    }
   }
 
   gtk_widget_show((GtkWidget*)(gui_data.main_window));

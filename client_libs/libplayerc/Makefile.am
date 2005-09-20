@@ -16,10 +16,6 @@ CLEANFILES = playerc.pc
 lib_LTLIBRARIES = libplayerc.la
 libplayerc_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
-#if INCLUDE_JPEG
-#libplayerc_la_LDFLAGS += -L$(top_builddir)/libplayerjpeg -lplayerjpeg
-#endif
-
 libplayerc_la_SOURCES = playerc.h \
                         mclient.c \
                         client.c \
@@ -57,6 +53,9 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_gripper.c 
 
 libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo
+if INCLUDE_JPEG
+libplayerc_la_LIBADD += $(top_builddir)/libplayerjpeg/*.lo
+endif
 
 playercincludedir = $(includedir)/libplayerc
 playercinclude_HEADERS = playerc.h
