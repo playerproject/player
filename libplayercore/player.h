@@ -1286,17 +1286,16 @@ PLAYER_LASER_SET_CONFIG request.  Read the documentation for your driver
 to determine what configuration values are permissible. */
 typedef struct player_laser_config
 {
-  /** Start and end angles for the laser scan [rad].
-      Valid range is -M_PI to +M_PI. */
-  float min_angle, max_angle;
+  /** Start and end angles for the laser scan [rad].*/
+  float min_angle;
+  /** Start and end angles for the laser scan [rad].*/
+  float max_angle;
 
-  /** Scan resolution [deg*100].
-    Valid resolutions are 25, 50, 100.
-  */
-  uint8_t resolution;
+  /** Scan resolution [rad].  */
+  float resolution;
 
-  /** Range Resolution [mm].  Valid: 1, 10, 100 (For mm, cm, dm). */
-  uint8_t range_res;
+  /** Range Resolution [m] */
+  float range_res;
 
   /** Enable reflection intensity data. */
   uint8_t  intensity;
@@ -2785,6 +2784,10 @@ The @p speech interface provides access to a speech synthesis system.
 The @p speech interface returns no data.
 @{
 */
+
+/** Speech command */
+#define PLAYER_SPEECH_CMD_SAY 1
+
 
 /** Maximum string length */
 #define PLAYER_SPEECH_MAX_STRING_LEN 256
