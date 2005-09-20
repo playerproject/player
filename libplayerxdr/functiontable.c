@@ -234,17 +234,18 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
 {
   playerxdr_function_t* curr;
   int i;
+  
+  // The supplied type can be RESP_ACK if the registered type is REQ.  
+  if (type == PLAYER_MSGTYPE_RESP_ACK || type == PLAYER_MSGTYPE_RESP_NACK)
+    type = PLAYER_MSGTYPE_REQ;
 
   for(i=0;i<ftable_len;i++)
   {
     curr = ftable + i;
-    // Make sure the interface and subtype match exactly.  The supplied
-    // type can be RESP_ACK if the registered type is REQ.
-    if((curr->interf== interf) &&
-       ((curr->type == type) ||
-        ((curr->type == PLAYER_MSGTYPE_REQ) &&
-         (type == PLAYER_MSGTYPE_RESP_ACK))) &&
-        (curr->subtype == subtype))
+    // Make sure the interface and subtype match exactly.  
+    if(curr->interf == interf &&
+      curr->type == type &&
+      curr->subtype == subtype)
       return(curr->func);
   }
   return(NULL);
