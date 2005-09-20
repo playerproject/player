@@ -42,7 +42,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_power.c \
                         dev_ptz.c \
                         dev_simulation.c \
-                        dev_sonar.c \ 
+                        dev_sonar.c \
                         dev_speech.c \
                         dev_wifi.c 
 
