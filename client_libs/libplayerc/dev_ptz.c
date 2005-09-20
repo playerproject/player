@@ -52,7 +52,6 @@
 #include "playerc.h"
 #include "error.h"
 
-
 // Local declarations
 void playerc_ptz_putmsg(playerc_ptz_t *device, player_msghdr_t *header,
                          player_ptz_data_t *data, size_t len);
@@ -103,7 +102,6 @@ void playerc_ptz_putmsg(playerc_ptz_t *device, player_msghdr_t *header,
   return;
 }
 
-
 // Set the pan, tilt and zoom values.
 int playerc_ptz_set(playerc_ptz_t *device, double pan,
                     double tilt, double zoom)
@@ -122,7 +120,6 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan,
                               PLAYER_PTZ_CMD_STATE, &cmd, NULL);
 
 }
-
 
 // Set the pan, tilt and zoom values with speed as well.
 int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt,
