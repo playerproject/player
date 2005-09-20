@@ -658,7 +658,7 @@ int PTU46_Device::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 	    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
 	}
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE, device_addr))
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE, device_addr))
 	{
 		player_ptz_req_control_mode * control_mode = reinterpret_cast<player_ptz_req_control_mode *> (data);
 		if(control_mode->mode != MoveMode)
@@ -685,7 +685,7 @@ int PTU46_Device::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 	    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	}
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
+	else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
 	{
 		player_ptz_cmd_t * new_command = reinterpret_cast<player_ptz_cmd_t *> (data);
 	
@@ -744,8 +744,9 @@ int PTU46_Device::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 		
 	    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
 	}
-
-	return -1;
+	else
+		return -1;
+	return 0;
 }
 
 
@@ -758,11 +759,11 @@ PTU46_Device::Main()
 	  	ProcessMessages();
 	  
 	    // Copy the data.
-	    data.pan = htons(pantilt->GetPos(PTU46_PAN));
-	    data.tilt = htons(pantilt->GetPos(PTU46_TILT));
+	    data.pan = DTOR(pantilt->GetPos(PTU46_PAN));
+	    data.tilt = DTOR(pantilt->GetPos(PTU46_TILT));
 	    data.zoom = 0;
-		data.panspeed = htons(pantilt->GetSpeed(PTU46_PAN));
-		data.tiltspeed = htons(pantilt->GetSpeed(PTU46_TILT));
+		data.panspeed = DTOR(pantilt->GetSpeed(PTU46_PAN));
+		data.tiltspeed = DTOR(pantilt->GetSpeed(PTU46_TILT));
 	    
 	    /* test if we are supposed to cancel */
 	    pthread_testcancel();

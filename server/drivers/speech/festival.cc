@@ -373,7 +373,7 @@ int Festival::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, voi
 	assert(hdr);
 	assert(data);
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_addr))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_SPEECH_CMD_SAY, device_addr))
 	{
 		player_speech_cmd_t * cmd = (player_speech_cmd_t *) data;
 		// make ABSOLUTELY sure we've got one NULL
