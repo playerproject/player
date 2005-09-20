@@ -142,6 +142,28 @@ void SIP::Fill(player_p2os_data_t* data)
   }
   else
     data->blobfinder.blobs_count = 0;
+
+  // Fill in arm data
+  memset (data->actarray.actuators, 0, sizeof (player_actarray_actuator_t) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+  data->actarray.actuators_count = armNumJoints;
+  for (int ii = 0; ii < armNumJoints; ii++)
+  {
+    data->actarray.actuators[ii].position = armJointPosRads[ii];
+    data->actarray.actuators[ii].speed = 0;
+    // State is complex. It can be idle, moving, or stalled (we don't have brakes so don't need to worry about the brake state).
+    // Moving means have moving state from status packet
+    // Idle means have not moving state from status packet and are at target position
+    // Stalled means have not moving state from status packet and are not at target position
+    if (armJointMoving[ii])
+      data->actarray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_MOVING;
+    else
+    {
+      if (armJointPos[ii] == armJointTargetPos[ii])
+        data->actarray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_IDLE;
+      else
+        data->actarray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_STALLED;
+    }
+  }
 }
 
 int SIP::PositionChange( unsigned short from, unsigned short to ) 
@@ -198,6 +220,8 @@ void SIP::Print()
   printf("angle: %d lvel: %d rvel: %d control: %d\n", angle, lvel, rvel, control);
   
   PrintSonars();
+  PrintArmInfo ();
+  PrintArm ();
 }
 
 void SIP::PrintSonars() 
@@ -207,6 +231,23 @@ void SIP::PrintSonars()
     printf("%hu ", sonars[i]);
   } 
   puts("");
+}
+
+void SIP::PrintArm ()
+{
+	printf ("Arm power is %s\tArm is %sconnected\n", (armPowerOn ? "on" : "off"), (armConnected ? "" : "not "));
+	printf ("Arm joint status:\n");
+	for (int ii = 0; ii < 6; ii++)
+		printf ("Joint %d   %s   %d\n", ii + 1, (armJointMoving[ii] ? "Moving " : "Stopped"), armJointPos[ii]);
+}
+
+void SIP::PrintArmInfo ()
+{
+	printf ("Arm version:\t%s\n", armVersionString);
+	printf ("Arm has %d joints:\n", armNumJoints);
+	printf ("  |\tSpeed\tHome\tMin\tCentre\tMax\tTicks/90\n");
+	for (int ii = 0; ii < armNumJoints; ii++)
+		printf ("%d |\t%d\t%d\t%d\t%d\t%d\t%d\n", ii, armJoints[ii].speed, armJoints[ii].home, armJoints[ii].min, armJoints[ii].centre, armJoints[ii].max, armJoints[ii].ticksPer90);
 }
 
 void SIP::Parse( unsigned char *buffer ) 
@@ -460,3 +501,86 @@ SIP::ParseGyro(unsigned char* buffer)
   gyro_rate = average_rate;
 }
 
+void SIP::ParseArm (unsigned char *buffer)
+{
+	int length = (int) buffer[0] - 2;
+
+	if (buffer[1] != ARMPAC)
+	{
+		PLAYER_ERROR ("ERROR: Attempt to parse a non ARM packet as arm data.\n");
+		return;
+	}
+
+	if (length < 1 || length != 9)
+	{
+		PLAYER_WARN ("ARMpac length incorrect size");
+		return;
+	}
+
+	unsigned char status = buffer[2];
+	if (status & 0x01)
+		armPowerOn = true;		// Power is on
+	else
+		armPowerOn = false;		// Power is off
+
+	if (status & 0x02)
+		armConnected = true;	// Connection is established
+	else
+		armConnected = false;	// Connection is not established
+
+	unsigned char motionStatus = buffer[3];
+	if (motionStatus & 0x01)
+		armJointMoving[0] = true;
+	if (motionStatus & 0x02)
+		armJointMoving[1] = true;
+	if (motionStatus & 0x04)
+		armJointMoving[2] = true;
+	if (motionStatus & 0x08)
+		armJointMoving[3] = true;
+	if (motionStatus & 0x10)
+		armJointMoving[4] = true;
+	if (motionStatus & 0x20)
+		armJointMoving[5] = true;
+
+	memcpy (armJointPos, &buffer[4], 6);
+	memset (armJointPosRads, 0, 6 * sizeof (double));
+}
+
+void SIP::ParseArmInfo (unsigned char *buffer)
+{
+	int length = (int) buffer[0] - 2;
+	if (buffer[1] != ARMINFOPAC)
+	{
+		PLAYER_ERROR ("ERROR: Attempt to parse a non ARMINFO packet as arm info.\n");
+		return;
+	}
+
+	if (length < 1)
+	{
+		PLAYER_WARN ("ARMINFOpac length bad size");
+		return;
+	}
+
+	// Copy the version string
+	if (armVersionString)
+		free (armVersionString);
+	armVersionString = strndup ((char*) &buffer[2], length);		// Can't be any bigger than length
+	int dataOffset = strlen (armVersionString) + 3;		// +1 for packet size byte, +1 for packet ID, +1 for null byte
+
+	armNumJoints = buffer[dataOffset];
+	if (armJoints)
+		delete[] armJoints;
+	if (armNumJoints <= 0)
+		return;
+	armJoints = new ArmJoint[armNumJoints];
+	dataOffset += 1;
+	for (int ii = 0; ii < armNumJoints; ii++)
+	{
+		armJoints[ii].speed = buffer[dataOffset + (ii * 6)];
+		armJoints[ii].home = buffer[dataOffset + (ii * 6) + 1];
+		armJoints[ii].min = buffer[dataOffset + (ii * 6) + 2];
+		armJoints[ii].centre = buffer[dataOffset + (ii * 6) + 3];
+		armJoints[ii].max = buffer[dataOffset + (ii * 6) + 4];
+		armJoints[ii].ticksPer90 = buffer[dataOffset + (ii * 6) + 5];
+	}
+}

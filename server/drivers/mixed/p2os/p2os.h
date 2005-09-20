@@ -83,6 +83,18 @@
 #define GYRO 58         // Added in AROS 1.8
 #define TTY3 66		// Added in AmigOS 1.3
 #define GETAUX2 67	// Added in AmigOS 1.3
+#define ARM_INFO 70
+#define ARM_STATUS 71
+#define ARM_INIT 72
+#define ARM_CHECK 73
+#define ARM_POWER 74
+#define ARM_HOME 75
+#define ARM_PARK 76
+#define ARM_POS 77
+#define ARM_SPEED 78
+#define ARM_STOP 79
+#define ARM_AUTOPARK 80
+#define ARM_GRIPPARK 81
 #define SOUND 90
 #define PLAYLIST 91
 
@@ -93,6 +105,8 @@
 #define SERAUX		0xB0
 #define SERAUX2		0xB8	// Added in AmigOS 1.3
 #define GYROPAC         0x98    // Added AROS 1.8
+#define ARMPAC    160   // ARMpac
+#define ARMINFOPAC  161   // ARMINFOpac
 //#define PLAYLIST	0xD0
 
 /* Argument types */
@@ -132,6 +146,7 @@ typedef struct player_p2os_data
   player_blobfinder_data_t blobfinder;
   player_position2d_data_t compass;
   player_position2d_data_t gyro;
+  player_actarray_data_t actarray;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -143,7 +158,7 @@ class P2OS : public Driver
 {
   private:
     player_p2os_data_t p2os_data;
-    
+
     player_devaddr_t position_id;
     player_devaddr_t sonar_id;
     player_devaddr_t aio_id;
@@ -155,10 +170,16 @@ class P2OS : public Driver
     player_devaddr_t gyro_id;
     player_devaddr_t blobfinder_id;
     player_devaddr_t sound_id;
+    player_devaddr_t actarray_id;
 
     // bookkeeping to only send new gripper I/O commands
     bool sent_gripper_cmd;
     player_gripper_cmd_t last_gripper_cmd;
+
+    // Same for actarray commands
+    bool last_actarray_cmd_was_pos;
+    player_actarray_position_cmd_t last_actarray_pos_cmd;
+    player_actarray_home_cmd_t last_actarray_home_cmd;
 
     // bookkeeping to only send new sound I/O commands
     bool sent_sound_cmd;
@@ -166,9 +187,10 @@ class P2OS : public Driver
 
     int position_subscriptions;
     int sonar_subscriptions;
+    int actarray_subscriptions;
 
     SIP* sippacket;
-  
+
     int SendReceive(P2OSPacket* pkt, bool publish_data=true);
     void ResetRawPositions();
     /* toggle sonars on/off, according to val */
@@ -183,13 +205,26 @@ class P2OS : public Driver
     void HandlePositionCommand(player_position2d_cmd_t position_cmd);
     void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
     void HandleSoundCommand(player_sound_cmd_t sound_cmd);
+    void HandleActArrayPosCmd (player_actarray_position_cmd_t cmd);
+    void HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd);
+
+    /////////////////
+    // Actarray stuff
+    inline double TicksToDegrees (int joint, unsigned char ticks);
+    inline unsigned char DegreesToTicks (int joint, double degrees);
+    inline double TicksToRadians (int joint, unsigned char ticks);
+    inline unsigned char RadiansToTicks (int joint, double rads);
+    inline double RadsPerSectoSecsPerTick (int joint, double speed);
+    inline double SecsPerTicktoRadsPerSec (int joint, double secs);
+    void ToggleActArrayPower (unsigned char val, bool lock = true);             // Toggle actarray power on/off
+    void SetActArrayJointSpeed (char joint, double speed);    // Set a joint speed
 
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel
     int psos_fd;               // p2os device file descriptor
     const char* psos_serial_port;
     struct timeval lastblob_tv;
-     
+
     player_position2d_cmd_t last_position_cmd;
 
     // Max motor speeds (mm/sec,deg/sec)

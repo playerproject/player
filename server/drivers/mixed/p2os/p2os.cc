@@ -75,6 +75,9 @@ them named:
 - @ref player_interface_gripper
   - Controls gripper (if equipped)
 
+- @ref player_interface_actarray
+  - Controls arm (if equipped)
+
 - @ref player_interface_bumper
   - Returns data from bumper array (if equipped)
 
@@ -201,7 +204,7 @@ void P2OS_Register(DriverTable* table)
 }
 
 P2OS::P2OS(ConfigFile* cf, int section) 
-        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+        : Driver(cf,section,false,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
@@ -215,6 +218,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->gyro_id, 0, sizeof(player_devaddr_t));
   memset(&this->blobfinder_id, 0, sizeof(player_devaddr_t));
   memset(&this->sound_id, 0, sizeof(player_devaddr_t));
+  memset(&this->actarray_id, 0, sizeof(player_devaddr_t));
 
   memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_t));
 
@@ -343,9 +347,19 @@ P2OS::P2OS(ConfigFile* cf, int section)
     }
   }
 
+  // Do we create an actarray interface?
+  if(cf->ReadDeviceAddr(&(this->actarray_id), section, "provides", PLAYER_ACTARRAY_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->actarray_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
   // build the table of robot parameters.
   ::initialize_robot_params();
-  
+
   // Read config file options
   this->bumpstall = cf->ReadInt(section,"bumpstall",-1);
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
@@ -377,6 +391,9 @@ P2OS::P2OS(ConfigFile* cf, int section)
   this->psos_fd = -1;
 
   this->sent_gripper_cmd = false;
+  this->last_actarray_cmd_was_pos = true;
+  memset (&last_actarray_pos_cmd, 0, sizeof (player_actarray_position_cmd_t));
+  memset (&last_actarray_home_cmd, 0, sizeof (player_actarray_home_cmd_t));
 }
 
 int P2OS::Setup()
@@ -653,7 +670,7 @@ int P2OS::Setup()
             "using defaults\n",stderr);
     param_idx = 0;
   }
-  
+
   // first, receive a packet so we know we're connected.
   if(!this->sippacket)
     this->sippacket = new SIP(param_idx);
@@ -695,7 +712,24 @@ int P2OS::Setup()
     gyro_packet.Build(gyro_command, 4);
     this->SendReceive(&gyro_packet,false);
   }
-  
+
+  if (this->actarray_id.interf)
+  {
+    // Start a continuous stream of ARMpac packets
+    P2OSPacket aaPacket;
+    unsigned char aaCmd[4];
+    aaCmd[0] = ARM_STATUS;
+    aaCmd[1] = ARGINT;
+    aaCmd[2] = 2;
+    aaCmd[3] = 0;
+    aaPacket.Build (aaCmd, 4);
+    SendReceive (&aaPacket,false);
+    // Ask for an ARMINFOpac packet too
+    aaCmd[0] = ARM_INFO;
+    aaPacket.Build (aaCmd, 1);
+    SendReceive (&aaPacket,false);
+  }
+
   // if requested, set max accel/decel limits
   P2OSPacket accel_packet;
   unsigned char accel_command[4];
@@ -770,7 +804,7 @@ int P2OS::Setup()
   this->PutCommand(this->position_id,(void*)&zero,
                    sizeof(player_position_cmd_t),NULL);
 #endif
-  
+
   /* now spawn reading thread */
   this->StartThread();
   return(0);
@@ -820,6 +854,8 @@ P2OS::Subscribe(player_devaddr_t id)
       this->position_subscriptions++;
     else if(Device::MatchDeviceAddress(id, this->sonar_id))
       this->sonar_subscriptions++;
+    else if(Device::MatchDeviceAddress(id, this->actarray_id))
+      this->actarray_subscriptions++;
   }
 
   return(setupResult);
@@ -835,9 +871,20 @@ P2OS::Unsubscribe(player_devaddr_t id)
   {
     // also decrement the appropriate subscription counter
     if(Device::MatchDeviceAddress(id, this->position_id))
-      assert(--this->position_subscriptions >= 0);
+    {
+      this->position_subscriptions--;
+      assert(this->position_subscriptions >= 0);
+    }
     else if(Device::MatchDeviceAddress(id, this->sonar_id))
-      assert(--this->sonar_subscriptions >= 0);
+    {
+      this->sonar_subscriptions--;
+      assert(this->sonar_subscriptions >= 0);
+    }
+    else if(Device::MatchDeviceAddress(id, this->actarray_id))
+    {
+      this->actarray_subscriptions--;
+      assert(this->actarray_subscriptions >= 0);
+    }
   }
 
   return(shutdownResult);
@@ -927,6 +974,14 @@ P2OS::PutData(void)
                 (void*)&(this->p2os_data.blobfinder), 
                 sizeof(player_blobfinder_data_t),
                 NULL);
+
+  // put actarray data
+  this->Publish(this->actarray_id, NULL,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_ACTARRAY_DATA_STATE,
+                (void*)&(this->p2os_data.actarray),
+                sizeof(player_actarray_data_t),
+                NULL);
 }
 
 void 
@@ -934,6 +989,7 @@ P2OS::Main()
 {
   int last_sonar_subscrcount=0;
   int last_position_subscrcount=0;
+  int last_actarray_subscrcount=0;
 
   for(;;)
   {
@@ -947,7 +1003,14 @@ P2OS::Main()
     else if(last_sonar_subscrcount && !(this->sonar_subscriptions))
       this->ToggleSonarPower(0);
     last_sonar_subscrcount = this->sonar_subscriptions;
-    
+
+    // Same for the actarray
+    if(!last_actarray_subscrcount && this->actarray_subscriptions)
+      this->ToggleActArrayPower(1, false);
+    else if(last_actarray_subscrcount && !(this->actarray_subscriptions))
+      this->ToggleActArrayPower(0, false);
+    last_actarray_subscrcount = this->actarray_subscriptions;
+
     // we want to reset the odometry and enable the motors if the first 
     // client just subscribed to the position device, and we want to stop 
     // and disable the motors if the last client unsubscribed.
@@ -994,7 +1057,9 @@ P2OS::Main()
 
     // handle pending messages
     if(!this->InQueue->Empty())
+    {
       ProcessMessages();
+    }
     else
     {
       // if no pending msg, resend the last position cmd.
@@ -1122,7 +1187,35 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
     {
       //printf("got a CONFIGpac:%d\n",packet.size);
     }
-    else 
+    else if (packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && packet.packet[3] == ARMPAC)
+    {
+      if (actarray_id.interf)
+      {
+        // ARMpac - current arm status
+//      printf ("Packet is:\n");
+//      packet.Print ();
+
+        sippacket->ParseArm (&packet.packet[2]);
+        for (int ii = 0; ii < 6; ii++)
+        {
+          sippacket->armJointPosRads[ii] = TicksToRadians (ii, sippacket->armJointPos[ii]);
+        }
+        sippacket->Fill(&p2os_data);
+        // Go for another SIP - there had better be one or things will probably go boom
+      SendReceive(NULL);
+      }
+    }
+    else if (packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && packet.packet[3] == ARMINFOPAC)
+    {
+      // ARMINFOpac - arm configuration stuff
+      if (actarray_id.interf)
+      {
+        sippacket->ParseArmInfo (&packet.packet[2]);
+        // Go for another SIP - there had better be one or things will probably go boom
+        SendReceive(NULL);
+      }
+    }
+    else
     {
       PLAYER_WARN("got unknown packet:");
       packet.PrintHex();
@@ -1312,6 +1405,115 @@ P2OS::ToggleMotorPower(unsigned char val)
   SendReceive(&packet,false);
 }
 
+/////////////////////////////////////////////////////
+//  Actarray stuff
+/////////////////////////////////////////////////////
+
+// Ticks to degrees from the ARIA software
+inline double P2OS::TicksToDegrees (int joint, unsigned char ticks)
+{
+  if ((joint < 0) || (joint >= sippacket->armNumJoints))
+    return 0;
+
+  double result;
+  int pos = ticks - sippacket->armJoints[joint].centre;
+  result = 90.0 / static_cast<double> (sippacket->armJoints[joint].ticksPer90);
+  result = result * pos;
+  if ((joint >= 0) && (joint <= 2))
+    result = -result;
+
+  return result;
+}
+
+// Degrees to ticks from the ARIA software
+inline unsigned char P2OS::DegreesToTicks (int joint, double degrees)
+{
+  double val;
+
+  if ((joint < 0) || (joint >= sippacket->armNumJoints))
+    return 0;
+
+  val = static_cast<double> (sippacket->armJoints[joint].ticksPer90) * degrees / 90.0;
+  val = round (val);
+  if ((joint >= 0) && (joint <= 2))
+    val = -val;
+  val += sippacket->armJoints[joint].centre;
+
+  if (val < sippacket->armJoints[joint].min)
+    return sippacket->armJoints[joint].min;
+  else if (val > sippacket->armJoints[joint].max)
+    return sippacket->armJoints[joint].max;
+  else
+    return static_cast<int> (round (val));
+}
+
+inline double P2OS::TicksToRadians (int joint, unsigned char ticks)
+{
+  double result = DTOR (TicksToDegrees (joint, ticks));
+  return result;
+}
+
+inline unsigned char P2OS::RadiansToTicks (int joint, double rads)
+{
+  unsigned char result = static_cast<unsigned char> (DegreesToTicks (joint, RTOD (rads)));
+  return result;
+}
+
+inline double P2OS::RadsPerSectoSecsPerTick (int joint, double speed)
+{
+  double degs = RTOD (speed);
+  double ticksPerDeg = static_cast<double> (sippacket->armJoints[joint].ticksPer90) / 90.0f;
+  double ticksPerSec = degs * ticksPerDeg;
+  double secsPerTick = 1000.0f / ticksPerSec;
+
+  if (secsPerTick > 127)
+    return 127;
+  else if (secsPerTick < 1)
+    return 1;
+  return secsPerTick;
+}
+
+inline double P2OS::SecsPerTicktoRadsPerSec (int joint, double msecs)
+{
+  double ticksPerSec = 1.0 / (static_cast<double> (msecs) / 1000.0);
+  double ticksPerDeg = static_cast<double> (sippacket->armJoints[joint].ticksPer90) / 90.0f;
+  double degs = ticksPerSec / ticksPerDeg;
+  double rads = DTOR (degs);
+
+  return rads;
+}
+
+void P2OS::ToggleActArrayPower (unsigned char value, bool lock)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  command[0] = ARM_POWER;
+  command[1] = ARGINT;
+  command[2] = value;
+  command[3] = 0;
+  packet.Build (command, 4);
+  SendReceive (&packet, lock);
+}
+
+void P2OS::SetActArrayJointSpeed (char joint, double speed)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  command[0] = ARM_SPEED;
+  command[1] = ARGINT;
+  command[2] = static_cast<int> (round (speed));
+  command[3] = joint;
+  packet.Build (command, 4);
+  SendReceive (&packet);
+}
+
+/////////////////////////////////////////////////////
+//  End actarray stuff
+/////////////////////////////////////////////////////
+
+
 int 
 P2OS::ProcessMessage(MessageQueue * resp_queue, 
                      player_msghdr * hdr, 
@@ -1331,6 +1533,9 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
                    player_msghdr * hdr,
                    void * data)
 {
+  int joint = 0;
+  double newSpeed = 0.0f;
+
   // check for position config requests
   if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                            PLAYER_POSITION2D_REQ_SET_ODOM, 
@@ -1463,7 +1668,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
             (player_sonar_power_config_t*)data;
     this->ToggleSonarPower(sonar_config->state);
 
-    this->Publish(this->position_id, resp_queue,
+    this->Publish(this->sonar_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_SONAR_REQ_POWER);
     return(0);
   }
@@ -1585,6 +1790,52 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, 
                   PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS);
     return(0);
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_POWER_REQ,this->actarray_id))
+  {
+    ToggleActArrayPower (((player_actarray_power_config_t*) data)->value);
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_POWER_REQ);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_BRAKES_REQ,this->actarray_id))
+  {
+    // We don't have any brakes
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_GET_GEOM_REQ,this->actarray_id))
+  {
+    // First ask for an ARMINFOpac (because we need to get any updates to speed settings)
+    P2OSPacket aaPacket;
+    unsigned char aaCmd = ARM_INFO;
+    aaPacket.Build (&aaCmd, 1);
+    SendReceive (&aaPacket);
+
+    player_actarray_geom_t aaGeom;
+
+    aaGeom.actuators_count = sippacket->armNumJoints;
+
+    for (int ii = 0; ii < sippacket->armNumJoints; ii++)
+    {
+      aaGeom.actuators[ii].type = PLAYER_ACTARRAY_TYPE_ROTARY;
+      aaGeom.actuators[ii].min = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].min));
+      aaGeom.actuators[ii].centre = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].centre));
+      aaGeom.actuators[ii].max = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].max));
+      aaGeom.actuators[ii].home = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].home));
+      aaGeom.actuators[ii].config_speed = static_cast<float> (SecsPerTicktoRadsPerSec (ii, sippacket->armJoints[ii].speed));
+      aaGeom.actuators[ii].hasbrakes = 0;
+    }
+
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_GET_GEOM_REQ, &aaGeom, sizeof (aaGeom), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_SPEED_REQ,this->actarray_id))
+  {
+    joint = ((player_actarray_speed_config_t*) data)->joint + 1;
+    newSpeed = RadsPerSectoSecsPerTick (joint, ((player_actarray_speed_config_t*) data)->speed);
+    SetActArrayJointSpeed (joint, newSpeed);
+
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_SPEED_REQ);
+    return 0;
   }
   else
   {
@@ -1808,6 +2059,44 @@ P2OS::HandleSoundCommand(player_sound_cmd_t sound_cmd)
   }
 }
 
+void P2OS::HandleActArrayPosCmd (player_actarray_position_cmd_t cmd)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  printf ("AA Pos Cmd:\t%d->%f\n", cmd.joint, cmd.position);
+
+  if (!last_actarray_cmd_was_pos || (last_actarray_cmd_was_pos &&
+       (cmd.joint != last_actarray_pos_cmd.joint || cmd.position != last_actarray_pos_cmd.position)))
+  {
+    printf ("Doing command\n");
+    command[0] = ARM_POS;
+    command[1] = ARGINT;
+    command[2] = RadiansToTicks (cmd.joint, cmd.position);
+    printf ("Setting position to %d ticks\n", command[2]);
+    command[3] = cmd.joint + 1;
+    packet.Build(command, 4);
+    SendReceive(&packet);
+    sippacket->armJointTargetPos[cmd.joint] = command[2];
+  }
+}
+
+void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  if (last_actarray_cmd_was_pos || (!last_actarray_cmd_was_pos && (cmd.joint != last_actarray_home_cmd.joint)))
+  {
+    command[0] = ARM_HOME;
+    command[1] = ARGINT;
+    command[2] = (cmd.joint == -1) ? 7 : (cmd.joint + 1);
+    command[3] = 0;
+    packet.Build(command, 4);
+    SendReceive(&packet);
+  }
+}
+
 int
 P2OS::HandleCommand(player_msghdr * hdr, void* data)
 {
@@ -1843,6 +2132,23 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     sound_cmd = *(player_sound_cmd_t*)data;
     this->HandleSoundCommand(sound_cmd);
     return(0);
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
+  {
+    player_actarray_position_cmd_t cmd;
+    cmd = *(player_actarray_position_cmd_t*) data;
+    this->HandleActArrayPosCmd (cmd);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_SPEED_CMD,this->actarray_id))
+  {
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->actarray_id))
+  {
+    player_actarray_home_cmd_t cmd;
+    cmd = *(player_actarray_home_cmd_t*) data;
+    this->HandleActArrayHomeCmd (cmd);
+    return 0;
   }
   return(-1);
 }
