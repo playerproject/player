@@ -151,6 +151,12 @@ if  test "x$enable_sicklms200" = "xyes"; then
 	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
+PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
+if  test "x$enable_urglaser" = "xyes"; then
+	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
+fi
+
+
 PLAYER_ADD_DRIVER([sickpls],[no],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
@@ -202,6 +208,8 @@ PLAYER_ADD_DRIVER([obot],[no],[],[],[])
 PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
