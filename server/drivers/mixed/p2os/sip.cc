@@ -564,7 +564,11 @@ void SIP::ParseArmInfo (unsigned char *buffer)
 	// Copy the version string
 	if (armVersionString)
 		free (armVersionString);
-	armVersionString = strndup ((char*) &buffer[2], length);		// Can't be any bigger than length
+        // strndup() isn't available everywhere (e.g., Darwin)
+	//armVersionString = strndup ((char*) &buffer[2], length);		// Can't be any bigger than length
+        armVersionString = (char*)calloc(length+1,sizeof(char));
+        assert(armVersionString);
+        strncpy(armVersionString,(char*)&buffer[2], length);
 	int dataOffset = strlen (armVersionString) + 3;		// +1 for packet size byte, +1 for packet ID, +1 for null byte
 
 	armNumJoints = buffer[dataOffset];
