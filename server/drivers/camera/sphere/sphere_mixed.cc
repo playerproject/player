@@ -24,7 +24,7 @@
   * by Andrew Howard.
   * @author Brad Kratochvil
   * @date 1.2.2005
-  * @addtogroup iris_drivers Drivers
+  * @addtogroup drivers Drivers
   * @{ */
 
 /**
@@ -40,7 +40,6 @@ so this driver supports multiple interfaces.
 @par Compile-time dependencies
 
 - &lt;linux/videodev.h&gt;
-- &lt;CImg.h&gt; (if debug=1)
 
 @par Provides
 
@@ -128,7 +127,6 @@ so this driver supports multiple interfaces.
 driver
 (
   name "spheredriver"
-  plugin "libspheredriver.so"
   provides ["camera:0"
             "ptz:0"]
   port "/dev/video0"
@@ -167,7 +165,6 @@ extern "C" {
 
 #include <unistd.h>
 #include <string.h>
-#include <netinet/in.h>
 #include <iostream>
 #include <stdint.h>
 #include <sys/time.h>
@@ -355,7 +352,7 @@ int SphereDriver::Setup()
   puts("Sphere driver ready");
 
   // Start the device thread; spawns a new thread and executes
-  // S626Mixed::Main(), which contains the main loop for the driver.
+  // SphereDriver::Main(), which contains the main loop for the driver.
   StartThread();
 
   return(0);

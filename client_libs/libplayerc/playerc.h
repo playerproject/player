@@ -253,6 +253,8 @@ typedef struct _playerc_client_t
 
   /** Server time stamp on the last packet. */
   double datatime;
+  /** Server time stamp on the previous packet. */
+  double lasttime;
 
 } playerc_client_t;
 
@@ -477,6 +479,9 @@ typedef struct _playerc_device_t
 
   /** Data timestamp, i.e., the time at which the data was generated (s). */
   double datatime;
+
+  /** Data timestamp from the previous data. */
+  double lasttime;
 
   /** Freshness flag.  Set to 1 whenever data is dispatched to this
       proxy.  Useful with the multi-client, but the user must manually
