@@ -2926,13 +2926,11 @@ The @p speech interface returns no data.
 @{
 */
 
-/** Speech command */
-#define PLAYER_SPEECH_CMD_SAY 1
-
-
 /** Maximum string length */
 #define PLAYER_SPEECH_MAX_STRING_LEN 256
 
+/** Cmd subtypes */
+#define PLAYER_SPEECH_CMD_SAY 0x01
 
 /** @brief Command
 
