@@ -42,7 +42,9 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_power.c \
                         dev_ptz.c \
                         dev_simulation.c \
-                        dev_sonar.c 
+                        dev_sonar.c \ 
+                        dev_speech.c \
+                        dev_wifi.c 
 
 #dev_fiducial.c \
 #dev_gps.c \
@@ -50,10 +52,8 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_joystick.c \
 #dev_motor.c \
 #dev_truth.c \
-#dev_wifi.c \
 #dev_dio.c \
-#dev_gripper.c \
-#dev_speech.c
+#dev_gripper.c 
 
 libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo
 

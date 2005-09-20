@@ -1822,7 +1822,6 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 /** @} */
 /**************************************************************************/
 
-#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_truth truth
@@ -1948,7 +1947,6 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 /** @brief Get link state. */
 playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
 
-#endif
 
 /** @brief Simulation device proxy. */
 typedef struct
@@ -1980,7 +1978,6 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 /** @} */
 /***************************************************************************/
 
-#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_gripper gripper
@@ -2104,8 +2101,6 @@ int playerc_speech_say (playerc_speech_t *device, char *);
 
 /** @} */
 /***************************************************************************/
-
-#endif
 
 /**************************************************************************/
 /** @} (proxies) */

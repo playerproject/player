@@ -53,7 +53,7 @@
 #include "error.h"
 
 // Local declarations
-void playerc_wifi_putdata(playerc_wifi_t *self, player_msghdr_t *header,
+void playerc_wifi_putmsg(playerc_wifi_t *self, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len);
 
 
@@ -65,7 +65,7 @@ playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index)
   self = malloc(sizeof(playerc_wifi_t));
   memset(self, 0, sizeof(playerc_wifi_t));
   playerc_device_init(&self->info, client, PLAYER_WIFI_CODE, index,
-                      (playerc_putdata_fn_t) playerc_wifi_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_wifi_putmsg);
   
   return self;
 }
@@ -94,12 +94,14 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *self)
 
 
 // Process incoming data
-void playerc_wifi_putdata(playerc_wifi_t *self, player_msghdr_t *header,
+void playerc_wifi_putmsg(playerc_wifi_t *self, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len)
 {
   int i;
-  
-  self->link_count = (uint16_t) ntohs(data->link_count);
+
+  if((header->type == PLAYER_MSGTYPE_DATA))
+  {
+  self->link_count = data->links_count;
 
   for (i = 0; i < self->link_count; i++)
   {
@@ -108,12 +110,12 @@ void playerc_wifi_putdata(playerc_wifi_t *self, player_msghdr_t *header,
     strncpy(self->links[i].essid, data->links[i].essid, sizeof(self->links[i].essid));
     self->links[i].mode = data->links[i].mode;
     self->links[i].encrypt = data->links[i].encrypt;
-    self->links[i].freq = (double) (int16_t) ntohs(data->links[i].freq);
-    self->links[i].qual = (int16_t) ntohs(data->links[i].qual);
-    self->links[i].level = (int16_t) ntohs(data->links[i].level);
-    self->links[i].noise = (int16_t) ntohs(data->links[i].noise);
+    self->links[i].freq = data->links[i].freq;
+    self->links[i].qual = data->links[i].qual;
+    self->links[i].level = data->links[i].level;
+    self->links[i].noise = data->links[i].noise;
   }
-
+  }
   return;
 }
 

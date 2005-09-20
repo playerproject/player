@@ -47,7 +47,7 @@
 #include "error.h"
 
 // Local declarations
-void playerc_speech_putdata (playerc_speech_t *device, player_msghdr_t *header,
+void playerc_speech_putmsg (playerc_speech_t *device, player_msghdr_t *header,
 			     char *data, size_t len);
 
 // Create a new speech proxy
@@ -58,8 +58,8 @@ playerc_speech_t *playerc_speech_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_speech_t));
   memset(device, 0, sizeof(playerc_speech_t));
   playerc_device_init(&device->info, client, PLAYER_SPEECH_CODE, index,
-                      (playerc_putdata_fn_t) playerc_speech_putdata,NULL,NULL);
-    
+                      (playerc_putmsg_fn_t) playerc_speech_putmsg);
+
   return device;
 }
 
@@ -83,10 +83,9 @@ int playerc_speech_unsubscribe(playerc_speech_t *device)
 }
 
 // Process incoming data
-void playerc_speech_putdata(playerc_speech_t *device, player_msghdr_t *header,
+void playerc_speech_putmsg(playerc_speech_t *device, player_msghdr_t *header,
 			    char *data, size_t len)
 {
-  assert(sizeof(*data) <= len);
   /* there's no much to do */
 }
 
@@ -101,6 +100,6 @@ int playerc_speech_say(playerc_speech_t *device, char *str)
     strncpy ((char *) (cmd.string), str, PLAYER_SPEECH_MAX_STRING_LEN);
 	
   return playerc_client_write(device->info.client, 
-			      &device->info, &cmd, sizeof(cmd));
+			      &device->info, PLAYER_SPEECH_CMD_SAY, &cmd, NULL);
 }
 
