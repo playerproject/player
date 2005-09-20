@@ -2064,16 +2064,12 @@ void P2OS::HandleActArrayPosCmd (player_actarray_position_cmd_t cmd)
   unsigned char command[4];
   P2OSPacket packet;
 
-  printf ("AA Pos Cmd:\t%d->%f\n", cmd.joint, cmd.position);
-
   if (!last_actarray_cmd_was_pos || (last_actarray_cmd_was_pos &&
        (cmd.joint != last_actarray_pos_cmd.joint || cmd.position != last_actarray_pos_cmd.position)))
   {
-    printf ("Doing command\n");
     command[0] = ARM_POS;
     command[1] = ARGINT;
     command[2] = RadiansToTicks (cmd.joint, cmd.position);
-    printf ("Setting position to %d ticks\n", command[2]);
     command[3] = cmd.joint + 1;
     packet.Build(command, 4);
     SendReceive(&packet);
