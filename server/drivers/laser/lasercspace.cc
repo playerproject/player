@@ -111,20 +111,13 @@ Andrew Howard
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 
+#include "lasertransform.h"
+
 // Driver for computing the free c-space from a laser scan.
-class LaserCSpace : public Driver
+class LaserCSpace : public LaserTransform
 {
   // Constructor
   public: LaserCSpace( ConfigFile* cf, int section);
-
-    // MessageHandler
-  public: int ProcessMessage(MessageQueue * resp_queue, 
-                              player_msghdr * hdr, 
-                              void * data);
-
-  // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
 
   // Process laser data.  Returns non-zero if the laser data has been
   // updated.
@@ -136,16 +129,6 @@ class LaserCSpace : public Driver
   // Compute the maximum free-space range for sample n.
   private: double FreeRange(player_laser_data_t* data, int n);
 
-  // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
-
-  // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
-
-  // Laser stuff.
-  private: Device *laser_device;
-  private: player_devaddr_t laser_addr;
-  private: struct timeval laser_timestamp;
 
   // Step size for subsampling the scan (saves CPU cycles)
   private: int sample_step;
@@ -156,9 +139,6 @@ class LaserCSpace : public Driver
   // Lookup table for precomputations
   private: double lu[PLAYER_LASER_MAX_SAMPLES][4];
 
-  // Fiducila stuff (the data we generate).
-  private: player_laser_data_t data;
-  private: struct timeval time;
 };
 
 
@@ -179,116 +159,13 @@ void LaserCSpace_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserCSpace::LaserCSpace( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+  : LaserTransform(cf, section)
 {
-  // Must have an input laser
-  if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
-                         PLAYER_LASER_CODE, -1, NULL) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-  this->laser_device = NULL;
-  this->laser_timestamp.tv_sec = 0;
-  this->laser_timestamp.tv_usec = 0;
-
   // Settings.
   this->radius = cf->ReadLength(section, "radius", 0.50);
   this->sample_step = cf->ReadInt(section, "step", 1);
   
-  // Outgoing data
-  this->time.tv_sec = 0;
-  this->time.tv_usec = 0;
-  memset(&this->data, 0, sizeof(this->data));
-
   return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Set up the device (called by server thread).
-int LaserCSpace::Setup()
-{
-  // Subscribe to the laser.
-  if(Device::MatchDeviceAddress(this->laser_addr, this->device_addr))
-  {
-    PLAYER_ERROR("attempt to subscribe to self");
-    return(-1);
-  }
-  if(!(this->laser_device = deviceTable->GetDevice(this->laser_addr)))
-  {
-    PLAYER_ERROR("unable to locate suitable laser device");
-    return(-1);
-  }
-  if(this->laser_device->Subscribe(this->InQueue) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to laser device");
-    return(-1);
-  }
-
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device (called by server thread).
-int LaserCSpace::Shutdown()
-{
-  // Unsubscribe from devices.
-  this->laser_device->Unsubscribe(this->InQueue);
-  
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Process an incoming message
-int LaserCSpace::ProcessMessage(MessageQueue * resp_queue, 
-                                player_msghdr * hdr, 
-                                void * data)
-{
-  // Handle new data from the laser
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
-                           this->laser_addr))
-  {
-    assert(hdr->size == sizeof(player_laser_data_t));
-    player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
-    this->UpdateLaser(l_data);
-    return(0);
-  }
-  // Forward any request to the laser
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
-  {
-    // Forward the message
-    laser_device->PutMsg(this->InQueue, hdr, data);
-    // Store the return address for later use
-    this->ret_queue = resp_queue;
-    // Set the message filter to look for the response
-    this->InQueue->SetFilter(this->laser_addr.host,
-                             this->laser_addr.robot,
-                             this->laser_addr.interf,
-                             this->laser_addr.index,
-                             -1,
-                             hdr->subtype);
-    // No response now; it will come later after we hear back from the
-    // laser
-    return(0);
-  }
-  // Forward response (success or failure) from the laser
-  else if((Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_ACK, 
-                            -1, this->laser_addr)) ||
-     (Message::MatchMessage(hdr, PLAYER_MSGTYPE_RESP_NACK,
-                            -1, this->laser_addr)))
-  {
-    // Copy in our address and forward the response
-    hdr->addr = this->device_addr;
-    this->Publish(this->ret_queue, hdr, data);
-    // Clear the filter
-    this->InQueue->ClearFilter();
-
-    return(0);
-  }
-
-  return(-1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
