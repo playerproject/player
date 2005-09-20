@@ -191,7 +191,7 @@ PLAYER_ADD_DRIVER([sonyevid30],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([ptu46],[no],[],[],[])
+PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])
 
