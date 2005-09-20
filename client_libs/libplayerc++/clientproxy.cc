@@ -54,21 +54,13 @@ ClientProxy::~ClientProxy()
   mPc->mProxyList.remove(this);
 }
 
-// interface that all proxies SHOULD provide
-void ClientProxy::Print()
+std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c)
 {
-  std::cerr << "Don't know how to print this device." << std::endl;
+  return os << c.GetDriverName()
+            << ": "
+            << c.GetInterfaceStr()
+            << "("
+            << c.GetIndex()
+            << ")";
 }
-
-/*
-bool operator==(ClientProxy* a, ClientProxy* b)
-{
-  return(a->mDeviceAddr==b->mDeviceAddr);
-}
-
-bool operator!=(ClientProxy* a, ClientProxy* b)
-{
-  return(a->mDeviceAddr!=b->mDeviceAddr);
-}
-*/
 

@@ -124,33 +124,29 @@ class ClientProxy
     /** destructor will try to close access to the device */
     virtual ~ClientProxy();
 
-    /** All proxies provide this method, which prints out, in a
-        human-readable form, the device's current state. */
-    virtual void Print();
-
     /**  Returns true if we have received any data from the device.
      *   Since datatime is set to 0 when we start, if it's not 0 we've
      *   received something.
      */
-    bool IsValid() { return(0!=mInfo->datatime); };
+    bool IsValid() const { return(0!=mInfo->datatime); };
 
     /**  Returns the driver name */
-    const char* GetDriverName() { return(mInfo->drivername); };
+    std::string GetDriverName() const { return(mInfo->drivername); };
 
     /** Returns the received timestamp */
-    double GetDataTime() { return(mInfo->datatime); };
+    double GetDataTime() const { return(mInfo->datatime); };
 
     /** Returns the received timestamp */
-    double GetElapsed() { return(mInfo->datatime-mInfo->lasttime); };
+    double GetElapsedTime() const { return(mInfo->datatime-mInfo->lasttime); };
 
     /** Returns device index */
-    uint GetIndex() { return(mInfo->addr.index); };
+    uint GetIndex() const { return(mInfo->addr.index); };
 
     /** Returns device interface */
-    uint GetInterface() { return(mInfo->addr.interf); };
+    uint GetInterface() const { return(mInfo->addr.interf); };
 
     /** Returns device interface */
-    const char* GetInterfaceStr() { return(playerc_lookup_name(mInfo->addr.interf)); };
+    std::string GetInterfaceStr() const { return(playerc_lookup_name(mInfo->addr.interf)); };
 
   protected:
      /** The controlling client object. */
@@ -250,16 +246,16 @@ class PlayerClient
     void GetDeviceList();
 
     /** Returns the received timestamp */
-    double GetDataTime() { return(mClient->datatime); };
+    double GetDataTime() const { return(mClient->datatime); };
 
     /** Returns the elapsed time since the last message received */
-    double GetElapsed() { return(mClient->datatime-mClient->lasttime); };
+    double GetElapsedTime() const { return(mClient->datatime-mClient->lasttime); };
 
     /** Returns the hostname */
-    char* GetHostname() { return(mClient->host); };
+    char* GetHostname() const { return(mClient->host); };
 
     /** Returns the port */
-    double GetPort() { return(mClient->port); };
+    double GetPort() const { return(mClient->port); };
 };
 
 #if 0
@@ -2483,6 +2479,11 @@ class LogProxy : public ClientProxy
 #endif
 }
 
+/* These need to be outside of the namespace */
+
+std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c);
+std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
+std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
 
 #endif
 

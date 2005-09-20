@@ -47,4 +47,4 @@ std::ostream& operator << (std::ostream& os, const PlayerError& e)
   return os << e.GetErrorFun()
             << " : "
             << e.GetErrorStr();
-};
+}
