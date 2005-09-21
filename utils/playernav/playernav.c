@@ -142,6 +142,7 @@ player_read_func(gpointer* arg)
   gui_data_t* gui_data = (gui_data_t*)arg;
   static struct timeval lastdump = {0, 0};
   static struct timeval lastmapupdate = {0, 0};
+  static player_pose_t lastwaypt = {0, 0, 0};
   struct timeval curr;
   double diff;
   gboolean onmap;
@@ -194,13 +195,11 @@ player_read_func(gpointer* arg)
       // regardless, store this pose for comparison on next iteration
       gui_data->robot_poses[i] = robot_pose;
 
-      gui_data->planners[i]->info.fresh = 0;
-    }
-
-    // every once in a while, get the latest path from each robot
-    if(!(count % (DATA_FREQ * 10 * gui_data->num_robots)))
-    {
-      if(gui_data->planners[i])
+      // if the current goal or waypoint changed, get the whole list 
+      // of waypoints again
+      if((lastwaypt.px != gui_data->planners[i]->wx) ||
+         (lastwaypt.py != gui_data->planners[i]->wy) ||
+         (lastwaypt.pa != gui_data->planners[i]->wa))
       {
         if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
         {
@@ -210,7 +209,13 @@ player_read_func(gpointer* arg)
         }
         //puts("drawing waypoints");
         draw_waypoints(gui_data,i);
+
+        lastwaypt.px = gui_data->planners[i]->wx;
+        lastwaypt.py = gui_data->planners[i]->wy;
+        lastwaypt.pa = gui_data->planners[i]->wa;
       }
+
+      gui_data->planners[i]->info.fresh = 0;
     }
 
     // raise the robot's canvas item, so that the user can select it
@@ -271,6 +276,7 @@ main(int argc, char** argv)
 {
   int i;
   int map_idx;
+  int planner_idx;
   int have_map;
 
   pose_t robot_pose;
@@ -284,10 +290,11 @@ main(int argc, char** argv)
   gui_data.initial_zoom = 1.0;
   gui_data.aa = 1;
   map_idx = 0;
+  planner_idx = 0;
 
   if(parse_args(argc-1, argv+1, &(gui_data.num_robots), gui_data.hostnames, 
                 gui_data.ports, &(gui_data.initial_zoom), &(gui_data.aa),
-                &map_idx) < 0)
+                &map_idx, &planner_idx) < 0)
   {
     puts(USAGE);
     exit(-1);
@@ -303,7 +310,8 @@ main(int argc, char** argv)
                                         gui_data.hostnames, 
                                         gui_data.ports, 
                                         DATA_FREQ,
-                                        map_idx));
+                                        map_idx,
+                                        planner_idx));
 
   // assume the robots all start enabled (should really get the current
   // enable/disable state for each robot from the server).

@@ -10,7 +10,7 @@ extern double mapupdatefreq;
 /* Parse command line arguments, of the form host:port */
 int
 parse_args(int argc, char** argv, size_t* num_bots, char** hostnames, 
-           int* ports, double* zoom, int* aa, int* map_idx)
+           int* ports, double* zoom, int* aa, int* map_idx, int* planner_idx)
 {
   char* idx;
   int port;
@@ -38,6 +38,13 @@ parse_args(int argc, char** argv, size_t* num_bots, char** hostnames,
     {
       if(++i < argc)
         *map_idx = atoi(argv[i]);
+      else
+        return(-1);
+    }
+    else if(!strcmp(argv[i],"-planneridx"))
+    {
+      if(++i < argc)
+        *planner_idx = atoi(argv[i]);
       else
         return(-1);
     }

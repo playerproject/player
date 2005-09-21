@@ -83,7 +83,8 @@ playerc_mclient_t* init_player(playerc_client_t** clients,
                                char** hostnames,
                                int* ports,
                                int data_freq,
-                               int map_idx);
+                               int map_idx,
+                               int planner_idx);
 void fini_player(playerc_mclient_t* mclient,
                  playerc_client_t** clients,
                  playerc_map_t** maps,
@@ -94,6 +95,6 @@ void fini_player(playerc_mclient_t* mclient,
 /* Parse command line arguments, of the form host:port */
 int parse_args(int argc, char** argv,
                size_t* num_bots, char** hostnames, int* ports, double*
-               zoom, int* aa, int* map_idx);
+               zoom, int* aa, int* map_idx, int* planner_idx);
 
 #endif

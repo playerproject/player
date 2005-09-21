@@ -15,7 +15,8 @@ init_player(playerc_client_t** clients,
             char** hostnames,
             int* ports,
             int data_freq,
-            int map_idx)
+            int map_idx,
+            int planner_idx)
 {
   int i;
   playerc_mclient_t* mclient;
@@ -65,7 +66,7 @@ init_player(playerc_client_t** clients,
       playerc_localize_destroy(localizes[i]);
       localizes[i] = NULL;
     }
-    assert(planners[i] = playerc_planner_create(clients[i], 0));
+    assert(planners[i] = playerc_planner_create(clients[i], planner_idx));
     if(playerc_planner_subscribe(planners[i],PLAYER_OPEN_MODE) < 0)
     {
       fprintf(stderr, "Warning: Failed to subscribe to planner on robot %d; you won't be able to give it goals.\n",i);
