@@ -230,7 +230,12 @@ Device::Request(MessageQueue* resp_queue,
   if(threaded)
   {
     resp_queue->Wait();
-    msg = resp_queue->Pop();
+    // HACK: this loop should not be neccesary!
+    while(!(msg = resp_queue->Pop()))
+    {
+      PLAYER_WARN("empty queue after waiting!");
+      resp_queue->Wait();
+    }
   }
   else
   {
