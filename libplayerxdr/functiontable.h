@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-/** @addtogroup libplayerxdr @{ */
+/** @addtogroup libplayerxdr libplayerxdr @{ */
 
 /** Generic Prototype for a player XDR packing function */
 typedef int (*player_pack_fn_t) (void* buf, size_t buflen, void* msg, int op);
