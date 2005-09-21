@@ -34,7 +34,8 @@
 using namespace PlayerCc;
 
 ClientProxy::ClientProxy(PlayerClient* aPc) :
- mPc(aPc)
+ mPc(aPc),
+ mClient(aPc->mClient)
 {
   assert(NULL != mPc);
 
@@ -52,6 +53,22 @@ ClientProxy::~ClientProxy()
   // but we will take care of removing them from the list
 
   mPc->mProxyList.remove(this);
+}
+
+
+
+void
+ClientProxy::Lock() const
+{
+  //aPc->mClient.mMutex.lock();
+  //std::cout << "Lock()" << std::endl;
+}
+
+void
+ClientProxy::Unlock() const
+{
+  //aPc->mClient.mMutex.unlock();
+  //std::cout << "Unlock()" << std::endl;
 }
 
 std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c)

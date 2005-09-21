@@ -114,6 +114,27 @@ class ClientProxy
 {
   friend class PlayerClient;
 
+  protected:
+     /** The controlling client object. */
+    PlayerClient* mPc;
+
+    /** The c client */
+    playerc_client_t* mClient;
+
+    /** The address of the current device */
+    playerc_device_t *mDeviceAddr;
+
+    /** contains convenience information about the device */
+    playerc_device_t *mInfo;
+
+    template<typename T> T GetVar(const T &aV) const;
+
+    template<typename T> void GetVarByRef(const T aBegin, const T aEnd, T aDest) const;
+
+    void Lock() const;
+
+    void Unlock() const;
+
   public:
 
     /**
@@ -128,36 +149,44 @@ class ClientProxy
      *   Since datatime is set to 0 when we start, if it's not 0 we've
      *   received something.
      */
-    bool IsValid() const { return(0!=mInfo->datatime); };
+    bool IsValid() const { return(0!=GetVar(mInfo->datatime)); };
 
     /**  Returns the driver name */
     std::string GetDriverName() const { return(mInfo->drivername); };
 
     /** Returns the received timestamp */
-    double GetDataTime() const { return(mInfo->datatime); };
+    double GetDataTime() const { return(GetVar(mInfo->datatime)); };
 
     /** Returns the received timestamp */
-    double GetElapsedTime() const { return(mInfo->datatime-mInfo->lasttime); };
+    double GetElapsedTime() const { return(GetVar(mInfo->datatime)-GetVar(mInfo->lasttime)); };
 
     /** Returns device index */
-    uint GetIndex() const { return(mInfo->addr.index); };
+    uint GetIndex() const { return(GetVar(mInfo->addr.index)); };
 
     /** Returns device interface */
-    uint GetInterface() const { return(mInfo->addr.interf); };
+    uint GetInterface() const { return(GetVar(mInfo->addr.interf)); };
 
     /** Returns device interface */
-    std::string GetInterfaceStr() const { return(playerc_lookup_name(mInfo->addr.interf)); };
+    std::string GetInterfaceStr() const { return(playerc_lookup_name(GetVar(mInfo->addr.interf))); };
 
-  protected:
-     /** The controlling client object. */
-    PlayerClient* mPc;
-
-    /** The address of the current device */
-    playerc_device_t *mDeviceAddr;
-
-    /** contains convenience information about the device */
-    playerc_device_t *mInfo;
 };
+
+template<typename T> T
+ClientProxy::GetVar(const T &aV) const
+{
+  Lock();
+  T v = aV;
+  Unlock();
+  return v;
+}
+
+template<typename T> void
+ClientProxy::GetVarByRef(const T aBegin, const T aEnd, T aDest) const
+{
+  Lock();
+  std::copy(aBegin, aEnd, aDest);
+  Unlock();
+}
 
 /**
 One @p PlayerClient object is used to control each connection to
@@ -187,10 +216,14 @@ class PlayerClient
       */
     void Disconnect();
 
-  public:
-    /// @todo this shouldn't be here! we need to make this private
     /**  our c-client from playerc */
     playerc_client_t* mClient;
+
+    std::string mHostname;
+
+    uint mPort;
+
+  public:
 
     /** Make a client and connect it as indicated. */
     PlayerClient(const std::string aHostname=PLAYER_HOSTNAME,
@@ -198,6 +231,10 @@ class PlayerClient
 
     /** destructor */
     ~PlayerClient();
+
+    void Run();
+
+    void Stop();
 
     /**
      Check whether there is data waiting on the connection, blocking
@@ -245,17 +282,11 @@ class PlayerClient
      */
     void GetDeviceList();
 
-    /** Returns the received timestamp */
-    double GetDataTime() const { return(mClient->datatime); };
-
-    /** Returns the elapsed time since the last message received */
-    double GetElapsedTime() const { return(mClient->datatime-mClient->lasttime); };
-
     /** Returns the hostname */
-    char* GetHostname() const { return(mClient->host); };
+    std::string GetHostname() const { return(mHostname); };
 
     /** Returns the port */
-    double GetPort() const { return(mClient->port); };
+    double GetPort() const { return(mPort); };
 };
 
 #if 0
@@ -356,7 +387,7 @@ class ActArrayProxy : public ClientProxy
     ActuatorGeom actuatorGeom[PLAYER_ACTARRAY_NUM_ACTUATORS];
 
   public:
-    /** The client calls this method to make a new proxy.  Leave access empty 
+    /** The client calls this method to make a new proxy.  Leave access empty
     to start unconnected. */
     ActArrayProxy(PlayerClient* pc, unsigned short index,
                  unsigned char access='c') :
@@ -387,7 +418,7 @@ class ActArrayProxy : public ClientProxy
     ActuatorData GetActuatorData (int joint);
     // Same again for getting actuator geometry
     ActuatorGeom GetActuatorGeom (int joint);
-    
+
 };
 
 
@@ -2268,34 +2299,36 @@ public:
 
    virtual ~CameraProxy();
 
-   // prints out basic statistics of the camera
-   void Print();
-
    void SaveFrame(const std::string aPrefix, uint aWidth=4);
 
    // decompress the image
    void Decompress();
 
    // Image color depth
-   uint8_t GetDepth() const { return(mCamera->bpp); };
+   uint8_t GetDepth() const { return(GetVar(mCamera->bpp)); };
 
    // Image dimensions (pixels)
-   uint16_t GetWidth() const { return(mCamera->width); };
+   uint16_t GetWidth() const { return(GetVar(mCamera->width)); };
 
    // Image dimensions (pixels)
-   uint16_t GetHeight() const { return(mCamera->height); };
+   uint16_t GetHeight() const { return(GetVar(mCamera->height)); };
 
    // Image format (e.g., RGB888)
-   uint16_t GetFormat() const { return(mCamera->format); };
+   uint16_t GetFormat() const { return(GetVar(mCamera->format)); };
 
    // Sime of the image (bytes)
-   uint32_t GetImageSize() const { return(mCamera->image_count); };
+   uint32_t GetImageSize() const { return(GetVar(mCamera->image_count)); };
 
    // Image data
-   uint8_t* GetImage() const { return(mCamera->image); };
+   void GetImage(uint8_t* aImage) const
+    {
+      return(GetVarByRef(mCamera->image,
+                         mCamera->image+GetVar(mCamera->image_count),
+                         aImage));
+    };
 
    // What is the compression type
-   uint8_t GetCompression() const { return(mCamera->compression); };
+   uint8_t GetCompression() const { return(GetVar(mCamera->compression)); };
 
 protected:
 
