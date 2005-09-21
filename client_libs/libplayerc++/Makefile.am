@@ -1,6 +1,6 @@
 SUBDIRS = . test
 
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(srcdir)/../libplayerc
+AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(srcdir)/../libplayerc @SIGCX_CFLAGS@ @SIGCC_CFLAGS@
 
 # create the pkg-config entry for the C++
 pkgconfigdir = $(libdir)/pkgconfig
@@ -14,7 +14,7 @@ lib_LTLIBRARIES = libplayerc++.la
 # the +'s are turned into _'s by automake
 libplayerc___la_LDFLAGS = -version-info 2:0:0
 
-libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm
+libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm @SIGCX_LIBS@ @SIGCC_LIBS@
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 libplayerc___la_SOURCES =   playercc.h \
@@ -24,7 +24,7 @@ libplayerc___la_SOURCES =   playercc.h \
                               cameraproxy.cc
 
                               #gpsproxy.cc \
-							  actarrayproxy.cc \
+                              actarrayproxy.cc \
                               gripperproxy.cc \
                               fiducialproxy.cc \
                               laserproxy.cc \
@@ -60,7 +60,7 @@ libplayerc___la_SOURCES =   playercc.h \
                               energyproxy.cc \
                               speechrecognitionproxy.cc \
                               simulationproxy.cc \
-                              logproxy.cc 
+                              logproxy.cc
                               #bpsproxy.cc
                               #bpsproxy.h
 

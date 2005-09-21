@@ -37,9 +37,11 @@
 using namespace PlayerCc;
 
 PlayerClient::PlayerClient(const std::string aHostname, uint aPort) :
-  mClient(NULL)
+  mClient(NULL),
+  mHostname(aHostname),
+  mPort(aPort)
 {
-  Connect(aHostname, aPort);
+  Connect(mHostname, mPort);
 }
 
 PlayerClient::~PlayerClient()
@@ -63,7 +65,6 @@ void PlayerClient::Disconnect()
 {
   // Should go through here and disconnect all the proxies associated
   // with us?
-
 
   if (NULL != mClient)
   {

@@ -48,7 +48,7 @@ CameraProxy::CameraProxy(PlayerClient *aPc, uint aIndex)
   mFrameNo(0)
 {
   assert(NULL != aPc);
-  mCamera = playerc_camera_create(mPc->mClient, aIndex);
+  mCamera = playerc_camera_create(mClient, aIndex);
   if (NULL==mCamera)
     throw PlayerError("CameraProxy::CameraProxy()", "could not create");
 
