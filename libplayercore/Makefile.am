@@ -26,7 +26,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
 libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 libplayererror_la_SOURCES = error.h error.c
-libplayererror_la_LDFLAGS = -version-info 2:0:0
+libplayererror_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 coreincludedir = $(includedir)/libplayercore
 coreinclude_HEADERS = configfile.h \
