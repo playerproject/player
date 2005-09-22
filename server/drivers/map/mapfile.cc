@@ -286,6 +286,9 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     info.scale = this->resolution;
     info.width = this->size_x;
     info.height = this->size_y;
+    info.origin.px = -(this->size_x / 2.0) * this->resolution;
+    info.origin.py = -(this->size_y / 2.0) * this->resolution;
+    info.origin.pa = 0.0;
 
     puts("responding with map info");
     this->Publish(this->device_addr, resp_queue,
