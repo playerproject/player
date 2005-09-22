@@ -1,7 +1,3 @@
 
-SUBDIRS = libplayerc 
-
-if INCLUDE_BOOST_SIGNALS
-SUBDIRS += libplayerc++
-endif
+SUBDIRS = libplayerc libplayerc++
 #c c++ 
