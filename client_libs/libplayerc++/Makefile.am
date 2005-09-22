@@ -68,4 +68,3 @@ libplayerc___la_SOURCES =   playercc.h \
                               #bpsproxy.h
 
 include_HEADERS = playercc.h
->>>>>>> 1.4
