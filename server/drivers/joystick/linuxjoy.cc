@@ -223,6 +223,7 @@ class LinuxJoystick : public Driver
   // These are used when we send commands to a position device
   private: double max_xspeed, max_yawspeed;
   private: int xaxis, yaxis;
+  private: int deadman_button;
   private: player_devaddr_t cmd_position_addr;
   private: Device* position;
 
@@ -288,6 +289,7 @@ LinuxJoystick::LinuxJoystick(ConfigFile* cf, int section) : Driver(cf, section)
   this->dev = cf->ReadString(section, "port", "/dev/js0");
   this->xaxis = cf->ReadTupleInt(section,"axes", 0, XAXIS);
   this->yaxis = cf->ReadTupleInt(section,"axes", 1, YAXIS);
+  this->deadman_button = cf->ReadInt(section,"deadman", -1);
   this->xaxis_max = cf->ReadTupleInt(section, "axis_maxima", 0, AXIS_MAX);
   this->yaxis_max = cf->ReadTupleInt(section, "axis_maxima", 1, AXIS_MAX);
   this->xaxis_min = cf->ReadTupleInt(section, "axis_minima", 0, 0);
@@ -407,7 +409,25 @@ void LinuxJoystick::Main()
 
     // Send new commands to position device
     if(this->cmd_position_addr.interf)
-      this->PutPositionCommand();
+    {
+      if((this->deadman_button < 0) ||
+         ((this->buttons >> this->deadman_button) & 0x01))
+      {
+        this->PutPositionCommand();
+      }
+#if 0
+      else
+      {
+        player_position2d_cmd_t cmd;
+        memset(&cmd,0,sizeof(cmd));
+        this->position->PutMsg(this->InQueue,
+                               PLAYER_MSGTYPE_CMD,
+                               PLAYER_POSITION2D_CMD_STATE,
+                               (void*)&cmd, sizeof(player_position2d_cmd_t),
+                               NULL);
+      }
+#endif
+    }
   }
   return;
 }
@@ -545,7 +565,6 @@ void LinuxJoystick::PutPositionCommand()
     PLAYER_WARN("Timeout on joystick; stopping robot");
     xspeed = yawspeed = 0.0;
   }
-
 
   PLAYER_MSG2(2,"sending speeds: (%f,%f)", xspeed, yawspeed);
 
