@@ -9,7 +9,10 @@ pkgconfig_DATA = playerc++.pc
 EXTRA_DIST = playerc++.pc.in
 CLEANFILES = playerc++.pc
 
-lib_LTLIBRARIES = libplayerc++.la
+lib_LTLIBRARIES = 
+if INCLUDE_BOOST_SIGNALS
+lib_LTLIBRARIES += libplayerc++.la
+endif
 
 # the +'s are turned into _'s by automake
 libplayerc___la_LDFLAGS = -version-info 2:0:0
@@ -65,3 +68,4 @@ libplayerc___la_SOURCES =   playercc.h \
                               #bpsproxy.h
 
 include_HEADERS = playercc.h
+>>>>>>> 1.4
