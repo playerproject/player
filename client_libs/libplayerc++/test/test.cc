@@ -49,22 +49,7 @@ int main(int argc, const char *argv[])
   }
 
   printf("host [%s:%d]\n", host, port);
-  PlayerCc::PlayerClient client(host,port);
-
-  // Test the PlayerClient
-  try
-  {
-    TEST("SetFrequency");
-    client.SetFrequency(30);
-    PASS();
-    TEST("SetDataMode");
-    client.SetDataMode(PLAYER_DATAMODE_PUSH_NEW);
-    PASS();
-  }
-  catch (PlayerCc::PlayerError e)
-  {
-    std::cerr << e << std::endl;
-  }
+  PlayerCc::PlayerClient client(host, port);
 
   // Run the tests
   for (i = 1; i < argc; i++)
@@ -77,6 +62,10 @@ int main(int argc, const char *argv[])
     device = strtok(arg + 2, ":");
     sindex = strtok(NULL, "");
     index = (sindex ? atoi(sindex) : 0);
+
+  // Test the ClientProxy and PlayerClient
+    if(strcmp(device, "client") == 0 || strcmp(device, "all") == 0)
+      test_client(&client, index);
 
 #if 0
     // Power device - a simple one to start with
@@ -202,5 +191,4 @@ int main(int argc, const char *argv[])
 
   return 0;
 }
-
 

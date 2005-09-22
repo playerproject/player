@@ -26,48 +26,50 @@
  * parent class for client-side device proxies
  */
 
-#include <playercc.h>
 #include <cstring>
 #include <cstdio>
 #include <iostream>
 
+#include "playercc.h"
+
+#define DEBUG_LEVEL LOW
+#include "debug.h"
+
 using namespace PlayerCc;
 
-ClientProxy::ClientProxy(PlayerClient* aPc) :
+ClientProxy::ClientProxy(PlayerClient* aPc, uint aIndex) :
  mPc(aPc),
- mClient(aPc->mClient)
+ mClient(aPc->mClient),
+ mLastTime(0)
 {
   assert(NULL != mPc);
 
   // add us to the PlayerClient list
   mPc->mProxyList.push_back(this);
-
-  // not sure if this works, or is usefull
-  //mInterfaceName = playerc_lookup_name(mDeviceAddr->interf);
+  PRINT("Added " << this << " to ProxyList");
 }
 
 // destructor will try to close access to the device
 ClientProxy::~ClientProxy()
 {
+  Unsubscribe();
   // each client needs to unsubscribe themselves,
   // but we will take care of removing them from the list
-
   mPc->mProxyList.remove(this);
+  PRINT("Removed " << this << " from ProxyList");
 }
-
-
 
 void
 ClientProxy::Lock() const
 {
-  //aPc->mClient.mMutex.lock();
+  mPc->Lock();
   //std::cout << "Lock()" << std::endl;
 }
 
 void
 ClientProxy::Unlock() const
 {
-  //aPc->mClient.mMutex.unlock();
+  mPc->Unlock();
   //std::cout << "Unlock()" << std::endl;
 }
 

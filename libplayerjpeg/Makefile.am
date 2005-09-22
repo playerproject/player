@@ -1,8 +1,9 @@
 AM_CPPFLAGS = -I$(top_srcdir) -Wall
+lib_LTLIBRARIES =
 
 noinst_LTLIBRARIES =
 if INCLUDE_JPEG
-noinst_LTLIBRARIES += libplayerjpeg.la
+lib_LTLIBRARIES += libplayerjpeg.la
 endif
 
 libplayerjpeg_la_SOURCES = playerjpeg.h playerjpeg.c

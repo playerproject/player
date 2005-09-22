@@ -42,23 +42,35 @@
 using namespace PlayerCc;
 
 CameraProxy::CameraProxy(PlayerClient *aPc, uint aIndex)
-  : ClientProxy(aPc),
+  : ClientProxy(aPc, aIndex),
   mCamera(NULL),
   mPrefix("image"),
   mFrameNo(0)
 {
-  assert(NULL != aPc);
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mCamera->info);
+}
+
+CameraProxy::~CameraProxy()
+{
+  Unsubscribe();
+}
+
+void
+CameraProxy::Subscribe(uint aIndex)
+{
   mCamera = playerc_camera_create(mClient, aIndex);
   if (NULL==mCamera)
     throw PlayerError("CameraProxy::CameraProxy()", "could not create");
 
   if (0 != playerc_camera_subscribe(mCamera, PLAYER_OPEN_MODE))
     throw PlayerError("CameraProxy::CameraProxy()", "could not subscribe");
-
-  mInfo = &(mCamera->info);
 }
 
-CameraProxy::~CameraProxy()
+void
+CameraProxy::Unsubscribe()
 {
   assert(NULL!=mCamera);
   playerc_camera_unsubscribe(mCamera);
@@ -78,20 +90,24 @@ CameraProxy::SaveFrame(const std::string aPrefix, uint aWidth)
   else
     filename << ".ppm";
 
+  Lock();
   playerc_camera_save(mCamera, filename.str().c_str());
+  Unlock();
 }
 
 void
 CameraProxy::Decompress()
 {
+  Lock();
   playerc_camera_decompress(mCamera);
+  Unlock();
 }
-
 
 std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c)
 {
   return os << "[" << c.GetWidth()
             << ", " << c.GetHeight() << "] "
             << 1/c.GetElapsedTime() << " fps, "
+            << c.GetDataTime() << "[s], "
             << "compressed(" << (c.GetCompression() ? "yes" : "no") << ")";
 }

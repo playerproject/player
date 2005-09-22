@@ -188,6 +188,11 @@ fi
 AM_CONDITIONAL(WITH_GNOMECANVAS, test "x$with_gnomecanvas" = "xyes")
 AM_CONDITIONAL(WITH_GTK, test "x$with_gtk" = "xyes")
 
+AC_CXX_NAMESPACES
+AX_BOOST_THREAD
+AX_BOOST_SIGNALS
+AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "$ax_cv_boost_signal" = yes)
+
 dnl Include RTK gui support (for debugging)
 AC_ARG_ENABLE(rtkgui,
 [  --enable-rtkgui         Include RTK GUI in server (debugging)],, enable_rtkgui=no)
@@ -325,9 +330,9 @@ AC_OUTPUT(Makefile
           server/drivers/blobfinder/Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
-	  server/drivers/blobfinder/simpleshape/Makefile
-	  server/drivers/blobfinder/acts/Makefile
-	  server/drivers/blobfinder/shapetracker/Makefile
+    server/drivers/blobfinder/simpleshape/Makefile
+    server/drivers/blobfinder/acts/Makefile
+    server/drivers/blobfinder/shapetracker/Makefile
           server/drivers/wifi/Makefile
           server/drivers/speech/Makefile
           server/drivers/speech/recognition/Makefile
@@ -337,7 +342,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/reb/Makefile
           server/drivers/mixed/khepera/Makefile
           server/drivers/mixed/rmp/Makefile
-	  server/drivers/mixed/garcia/Makefile
+    server/drivers/mixed/garcia/Makefile
           server/drivers/mixed/nomad/Makefile
           server/drivers/mixed/botrics/Makefile
           server/drivers/mixed/clodbuster/Makefile
@@ -362,6 +367,7 @@ dnl          client_libs/c/Makefile
 dnl          client_libs/c/playercclient.pc
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
+	  client_libs/libplayerc++/doc/Makefile
           client_libs/libplayerc++/test/Makefile
           client_libs/libplayerc/Makefile
 dnl          client_libs/libplayerc/doc/Makefile

@@ -153,7 +153,7 @@ fi
 
 PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
 if  test "x$enable_urglaser" = "xyes"; then
-	AC_CHECK_HEADERS(linux/serial.h, [], [], [])
+  AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
 
@@ -270,13 +270,13 @@ PLAYER_ADD_DRIVER([laservisualbw],[no],[],[],[])
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
 dnl Camera drivers
-PLAYER_ADD_DRIVER([camerav4l],[no],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
 dnl Logitech Sphere camera driver
 PLAYER_ADD_DRIVER([sphere],[no],[linux/videodev.h],[],[])
 
 dnl IEEE1394 (Firewire) camera driver
-PLAYER_ADD_DRIVER([camera1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
 dnl libdc1394 has varying API's, depending on the version.  Do some checks
 dnl to see what the function signatures look like
@@ -318,6 +318,81 @@ dnl PKG_CHECK_MODULES(GSL,gsl,
 dnl                   found_gsl=yes,
 dnl                   found_gsl=no)
 PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
+
+AC_DEFUN([AC_CXX_NAMESPACES],
+[AC_CACHE_CHECK(whether the compiler implements namespaces,
+ac_cv_cxx_namespaces,
+[AC_LANG_SAVE
+ AC_LANG_CPLUSPLUS
+ AC_TRY_COMPILE([namespace Outer { namespace Inner { int i = 0; }}],
+                [using namespace Outer::Inner; return i;],
+ ac_cv_cxx_namespaces=yes, ac_cv_cxx_namespaces=no)
+ AC_LANG_RESTORE
+])
+if test "$ac_cv_cxx_namespaces" = yes; then
+  AC_DEFINE(HAVE_NAMESPACES,,[define if the compiler implements namespaces])
+fi
+])
+
+AC_DEFUN([AX_BOOST_SIGNALS],
+[AC_REQUIRE([AC_CXX_NAMESPACES])dnl
+AC_CACHE_CHECK(whether the Boost::Signal library is available,
+ax_cv_boost_signal,
+[AC_LANG_SAVE
+ AC_LANG_CPLUSPLUS
+ AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/signal.hpp>]],
+         [[boost::signal<void ()> sig; return 0;]]),
+           ax_cv_boost_signal=yes, ax_cv_boost_signal=no)
+ AC_LANG_RESTORE
+])
+if test "$ax_cv_boost_signal" = yes; then
+  AC_DEFINE(HAVE_BOOST_SIGNALS,,[define if the Boost::Signal library is available])
+fi
+  dnl Now determine the appropriate file names
+  AC_ARG_WITH([boost-signals],AS_HELP_STRING([--with-boost-signals],
+  [specify the boost signals library or suffix to use]),
+  [if test "x$with_boost_signals" != "xno"; then
+    ax_signals_lib=$with_boost_signals
+    ax_boost_signals_lib=boost_signals-$with_boost_signals
+  fi])
+  for ax_lib in $ax_signals_lib $ax_boost_signals_lib boost_signals; do
+    AC_CHECK_LIB($ax_lib, main, [BOOST_SIGNALS_LIB=$ax_lib break])
+  done
+  AC_SUBST(BOOST_SIGNALS_LIB)
+])dnl
+
+AC_DEFUN([AX_BOOST_THREAD],
+[AC_REQUIRE([AC_CXX_NAMESPACES])dnl
+AC_CACHE_CHECK(whether the Boost::Thread library is available,
+ax_cv_boost_thread,
+[AC_LANG_SAVE
+ AC_LANG_CPLUSPLUS
+ CXXFLAGS_SAVE=$CXXFLAGS
+dnl FIXME: need to include a generic way to check for the flag
+dnl to turn on threading support.
+ CXXFLAGS="-pthread $CXXFLAGS"
+ AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/thread/thread.hpp>]],
+                 [[boost::thread_group thrds; return 0;]]),
+               ax_cv_boost_thread=yes, ax_cv_boost_thread=no)
+ CXXFLAGS=$CXXFLAGS_SAVE
+ AC_LANG_RESTORE
+])
+if test "$ax_cv_boost_thread" = yes; then
+  AC_DEFINE(HAVE_BOOST_THREAD,,[define if the Boost::Thread library is available])
+  dnl Now determine the appropriate file names
+  AC_ARG_WITH([boost-thread],AS_HELP_STRING([--with-boost-thread],
+  [specify the boost thread library or suffix to use]),
+  [if test "x$with_boost_thread" != "xno"; then
+    ax_thread_lib=$with_boost_thread
+    ax_boost_thread_lib=boost_thread-$with_boost_thread
+  fi])
+  for ax_lib in $ax_thread_lib $ax_boost_thread_lib boost_thread; do
+    AC_CHECK_LIB($ax_lib, main, [BOOST_THREAD_LIB=$ax_lib break])
+  done
+  AC_SUBST(BOOST_THREAD_LIB)
+fi
+])dnl
+
 
 dnl Add results from driver tests to compiler and link lines
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"

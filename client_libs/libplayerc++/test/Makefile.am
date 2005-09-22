@@ -5,13 +5,14 @@ BUILDTEST =
 endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir) -I$(top_srcdir)/client_libs/libplayerc -Wall -g
-test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc  -L$(top_builddir)/client_libs/libplayerc++ -lplayerc++ -lm
+test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc  -L$(top_builddir)/client_libs/libplayerc++ -lplayerc++ -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lm
 
 noinst_PROGRAMS = $(BUILDTEST)
 
 test_SOURCES = test.cc \
                test.h \
-               test_camera.cc
+	       test_client.cc \
+	       test_camera.cc
 
 #               test_gps.cc \
                test_blobfinder.cc \
@@ -46,5 +47,5 @@ test_SOURCES = test.cc \
                #test_misc.cc
                #test_bps.cc
 
-clean-local:
-	rm -f test
+#clean-local:
+#	rm -f test
