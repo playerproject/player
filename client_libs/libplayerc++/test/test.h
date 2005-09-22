@@ -25,6 +25,7 @@ extern int robot;
 
 using namespace PlayerCc;
 
+int test_client(PlayerClient* client, int index);
 int test_gps(PlayerClient* client, int index);
 int test_motor(PlayerClient* client, int index);
 int test_position(PlayerClient* client, int index);

@@ -79,7 +79,7 @@
 #define PLAYER_SERVICE_ADV_CODE    32  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights
 #define PLAYER_NOMAD_CODE          34  // Nomad robot
-#define PLAYER_CAMERA_CODE         40  // camera device (gazebo;
+#define PLAYER_CAMERA_CODE         40  // camera device
 #define PLAYER_MAP_CODE            42  // get a map
 #define PLAYER_PLANNER_CODE        44  // 2D motion planner
 #define PLAYER_LOG_CODE            45  // log read/write control

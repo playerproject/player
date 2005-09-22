@@ -59,10 +59,6 @@ writes appropriate commands to the motors.
 #ifndef PLAYERCC_H
 #define PLAYERCC_H
 
-#if PLAYERCLIENT_THREAD
-  #include <pthread.h>
-#endif
-
 #include <cmath>
 #include <ctime>
 #include <cstring>
@@ -72,8 +68,12 @@ writes appropriate commands to the motors.
 
 #include <stdint.h>
 
-#include "playererror.h"
 #include "playerc.h"
+#include "playerclient.h"
+#include "playererror.h"
+
+#include <boost/signal.hpp>
+#include <boost/bind.hpp>
 
 namespace PlayerCc
 {
@@ -93,11 +93,7 @@ namespace PlayerCc
 #define NORMALIZE(z) atan2(sin(z), cos(z))
 #endif
 
-const int PLAYER_PORTNUM(6665);
-const std::string PLAYER_HOSTNAME("localhost");
 
-// forward declaration for friending
-class PlayerClient;
 
 /** @defgroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
@@ -114,7 +110,23 @@ class ClientProxy
 {
   friend class PlayerClient;
 
+  public:
+
+    typedef boost::signals::connection  connection_t;
+
   protected:
+    /** Can only be instantiated by other clients
+     */
+    ClientProxy(PlayerClient* aPc, uint aIndex);
+
+    /** destructor will try to close access to the device */
+    virtual ~ClientProxy();
+
+    // I wish these could be pure virtual, but the're in the constructor/destructor
+    virtual void Subscribe(uint aIndex) {};
+
+    virtual void Unsubscribe() {};
+
      /** The controlling client object. */
     PlayerClient* mPc;
 
@@ -127,23 +139,42 @@ class ClientProxy
     /** contains convenience information about the device */
     playerc_device_t *mInfo;
 
-    template<typename T> T GetVar(const T &aV) const;
+    template<typename T> T GetVar(const T &aV) const
+    { // these have to be defined here since they're templates
+      /* since we're currently not multithreaded, we don't need this
+      Lock();
+      T v = aV;
+      Unlock();
+      return v;
+      */
+      return aV;
+    }
 
-    template<typename T> void GetVarByRef(const T aBegin, const T aEnd, T aDest) const;
+    template<typename T> void GetVarByRef(const T aBegin, const T aEnd, T aDest) const
+    { // these have to be defined here since they're templates
+      /* since we're currently not multithreaded, we don't need this
+      Lock();
+      std::copy(aBegin, aEnd, aDest);
+      Unlock();
+      */
+      aDest = aBegin;
+    }
 
     void Lock() const;
 
     void Unlock() const;
 
+    double mLastTime;
+
+    // "Calling the function call operator may invoke undefined behavior if no slots
+    // are connected to the signal, depending on the combiner used. The default
+    // combiner is well-defined for zero slots when the return type is void but is
+    // undefined when the return type is any other type (because there is no way to
+    // synthesize a return value)."
+    boost::signal<void (void)> mSignal;
+
+
   public:
-
-    /**
-
-     */
-    ClientProxy(PlayerClient* aPc);
-
-    /** destructor will try to close access to the device */
-    virtual ~ClientProxy();
 
     /**  Returns true if we have received any data from the device.
      *   Since datatime is set to 0 when we start, if it's not 0 we've
@@ -151,7 +182,8 @@ class ClientProxy
      */
     bool IsValid() const { return(0!=GetVar(mInfo->datatime)); };
 
-    /**  Returns the driver name */
+    /**  Returns the driver name
+         @todo this isn't guarded by locks yet*/
     std::string GetDriverName() const { return(mInfo->drivername); };
 
     /** Returns the received timestamp */
@@ -169,124 +201,14 @@ class ClientProxy
     /** Returns device interface */
     std::string GetInterfaceStr() const { return(playerc_lookup_name(GetVar(mInfo->addr.interf))); };
 
-};
+    /** Connect a signal to this proxy */
+    template<typename T> connection_t ConnectSignal(T aSubscriber)
+      { return mSignal.connect(aSubscriber); }
 
-template<typename T> T
-ClientProxy::GetVar(const T &aV) const
-{
-  Lock();
-  T v = aV;
-  Unlock();
-  return v;
-}
+    /** Disconnect a signal to this proxy */
+    void DisconnectSignal(connection_t aSubscriber)
+      { aSubscriber.disconnect(); }
 
-template<typename T> void
-ClientProxy::GetVarByRef(const T aBegin, const T aEnd, T aDest) const
-{
-  Lock();
-  std::copy(aBegin, aEnd, aDest);
-  Unlock();
-}
-
-/**
-One @p PlayerClient object is used to control each connection to
-a Player server.  Contained within this object are methods for changing the
-connection parameters and obtaining access to devices, which we explain
-next.
-*/
-class PlayerClient
-{
-  friend class ClientProxy;
-
-  protected:
-    // list of proxies associated with us
-    std::list<ClientProxy*> mProxyList;
-
-    /** get the pointer to the proxy for the given device and index
-     * @return a pointer to the client proxy or NULL if we can't find it.
-     */
-    ClientProxy* GetProxy(player_devaddr_t aAddr);
-
-    /** Connect to the indicated host and port.
-        Returns 0 on success; -1 on error.
-     */
-    void Connect(const std::string aHostname, uint aPort);
-
-    /** Disconnect from server.
-      */
-    void Disconnect();
-
-    /**  our c-client from playerc */
-    playerc_client_t* mClient;
-
-    std::string mHostname;
-
-    uint mPort;
-
-  public:
-
-    /** Make a client and connect it as indicated. */
-    PlayerClient(const std::string aHostname=PLAYER_HOSTNAME,
-                 uint aPort=PLAYER_PORTNUM);
-
-    /** destructor */
-    ~PlayerClient();
-
-    void Run();
-
-    void Stop();
-
-    /**
-     Check whether there is data waiting on the connection, blocking
-     for up to @p timeout milliseconds (set to 0 to not block).
-
-     Returns:
-       - 0 if there is no data waiting
-       - 1 if there is data waiting
-    */
-    int Peek(uint timeout=0);
-
-    /**
-     * Use this method to read data from the server, blocking until at
-     * least one message is received.  Use @ref PlayerClient::Peek() to check
-     * whether any data is currently waiting.
-     */
-    void Read();
-
-    /**
-      You can change the rate at which your client receives data from the
-      server with this method.  The value of @p freq is interpreted as Hz;
-      this will be the new rate at which your client receives data (when in
-      continuous mode).
-     */
-    void SetFrequency(uint aFreq);
-
-    /** You can toggle the mode in which the server sends data to your
-        client with this method.  The @p mode should be one of
-          -  @p PLAYER_DATAMODE_PUSH_ALL (all data at fixed frequency)
-          -  @p PLAYER_DATAMODE_PULL_ALL (all data on demand)
-          -  @p PLAYER_DATAMODE_PUSH_NEW (only new new data at fixed freq)
-          -  @p PLAYER_DATAMODE_PULL_NEW (only new data on demand)
-          -  @p PLAYER_DATAMODE_PUSH_ASYNC (new data, as fast as it is produced)
-        On error, -1 is returned; otherwise 0.
-      */
-    void SetDataMode(uint aMode);
-
-    /** Attempt to authenticate your client using the provided key.  If
-        authentication fails, the server will close your connection.
-      */
-    void Authenticate(const std::string* key);
-
-    /** Get the list of available device ids. The data is written into the
-     * proxy structure rather than retured to the caller.
-     */
-    void GetDeviceList();
-
-    /** Returns the hostname */
-    std::string GetHostname() const { return(mHostname); };
-
-    /** Returns the port */
-    double GetPort() const { return(mPort); };
 };
 
 #if 0
@@ -2332,6 +2254,9 @@ public:
 
 protected:
 
+   virtual void Subscribe(uint aIndex);
+   virtual void Unsubscribe();
+
    // libplayerc data structure
    playerc_camera_t *mCamera;
 
@@ -2579,7 +2504,6 @@ class LogProxy : public ClientProxy
 
 /* These need to be outside of the namespace */
 
-std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c);
 std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
 std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
 

@@ -5,6 +5,7 @@ prefix=@prefix@
 Name: playerc++
 Description: C++ wrapper for libplayerc
 Version: @VERSION@
+# how to I include the boost library here?
 Requires: playerxdr playerc
-Libs: -L${prefix}/lib -lm
+Libs: -L${prefix}/lib -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@
 Cflags: -I${prefix}/include

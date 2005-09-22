@@ -50,10 +50,10 @@
 /** \def DEBUG(x)
  *  \brief output name and value of expression
  */
-#if DEBUG_LEVEL < LOW
-#define DEBUG(x)
+#if DEBUG_LEVEL < HIGH
+#define PRINT(x)
 #else
-#define DEBUG(x) std::cout << #x"= " << (x) << std::endl
+#define PRINT(x) std::cerr << x << std::endl
 #endif
 
 /** \def EVAL(x)
@@ -63,7 +63,7 @@
 #define EVAL(x)
 #else
 #define EVAL(x) \
-  std::cout << #x << ": " << x << std::endl;
+  std::cerr << #x"= " << (x) << std::endl
 #endif
 
 /** \def CHECK(x, y)

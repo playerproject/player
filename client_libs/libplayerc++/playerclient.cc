@@ -26,12 +26,15 @@
  * The C++ client
  */
 
-#include "playercc.h"
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 
-#define DEBUG_LEVEL HIGH
+#include <time.h>
+
+#include "playercc.h"
+
+#define DEBUG_LEVEL LOW
 #include "debug.h"
 
 using namespace PlayerCc;
@@ -59,12 +62,24 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
   {
     throw PlayerError("PlayerClient::Connect()", playerc_error_str());
   }
+  EVAL(mClient);
 }
 
 void PlayerClient::Disconnect()
 {
   // Should go through here and disconnect all the proxies associated
   // with us?
+  // how can we do the loop with a for_each?
+  //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mSignal));
+  /*
+  std::list<ClientProxy*>::iterator it = mProxyList.begin();
+  for(; it != mProxyList.end(); ++it)
+  {
+    ClientProxy* x = *it;
+    // only emit a signal when the interface has received data
+    x->Unsubscribe();
+  }
+  */
 
   if (NULL != mClient)
   {
@@ -74,6 +89,28 @@ void PlayerClient::Disconnect()
   }
 }
 
+// non-blocking
+void PlayerClient::Run(uint aTimeout)
+{
+  timespec sleep = {0,aTimeout*1000000};
+  mIsStop = false;
+  PRINT("Starting Run");
+  while (!mIsStop)
+  {
+    if (Peek())
+    {
+      Read();
+    }
+    nanosleep(&sleep, NULL);
+  }
+  PRINT("Finished");
+}
+
+void PlayerClient::Stop()
+{
+  mIsStop = true;
+}
+
 int PlayerClient::Peek(uint aTimeout)
 {
   return(playerc_client_peek(mClient, aTimeout));
@@ -81,11 +118,46 @@ int PlayerClient::Peek(uint aTimeout)
 
 void PlayerClient::Read()
 {
+  assert(NULL!=mClient);
+  PRINT("Read()");
+  EVAL(mClient);
   // first read the data
+  Lock();
   if (NULL==playerc_client_read(mClient))
   {
+    Unlock();
     throw PlayerError("PlayerClient::Read()", playerc_error_str());
   }
+  Unlock();
+
+  // how can we do the loop with a for_each?
+  //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mSignal));
+  std::list<ClientProxy*>::iterator it = mProxyList.begin();
+  for(; it != mProxyList.end(); ++it)
+  {
+    EVAL(reinterpret_cast<int>(*it));
+    ClientProxy* x = *it;
+    // only emit a signal when the interface has received data
+    if (x->GetDataTime()>x->mLastTime)
+    {
+      x->mLastTime = x->GetDataTime();
+      x->mSignal();
+    }
+  }
+}
+
+void PlayerClient::Lock()
+{
+  //std::cerr << "Lock()...";
+  //mMyMutex.lock();
+  //std::cerr << "OK" << std::endl;
+}
+
+void PlayerClient::Unlock()
+{
+  //std::cerr << "Unlock()...";
+  //mMyMutex.unlock();
+  //std::cerr << "OK" << std::endl;
 }
 
 // change continuous data rate (freq is in Hz)
@@ -134,7 +206,6 @@ ClientProxy* PlayerClient::GetProxy(player_devaddr_t aAddr)
 //  return *find(mProxyList.begin(), mProxyList.end(), aAddr);
   return NULL;
 }
-
 
 // Get the list of available device ids. The data is written into the
 // proxy structure rather than retured to the caller.
