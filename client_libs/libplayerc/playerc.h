@@ -2116,6 +2116,8 @@ int playerc_gripper_unsubscribe(playerc_gripper_t *device);
 /** @brief Send the gripper a command */
 int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
 
+/** @} */
+
 /**************************************************************************/
 /** @defgroup playerc_proxy_dio dio
 

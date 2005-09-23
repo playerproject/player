@@ -41,18 +41,18 @@ in your PATH, then playerv should also be.  Command-line usage is:
 $ playercam [options]
 @endverbatim
 
-Where [options] can be:\n"
-  -help : print this message
-  -h <hostname> : host that is running player
-  -p <port> : the port number of the host
-  -i <index> : the index of the camera
-  -b <index> : the index of the blobfinder
-  -r <rate> : the refresh rate of the video
+Where [options] can be:
+- -help : print this message
+- -h <hostname> : host that is running player
+- -p <port> : the port number of the host
+- -i <index> : the index of the camera
+- -b <index> : the index of the blobfinder
+- -r <rate> : the refresh rate of the video
 
 For example, to connect to Player on localhost at the default port
 (6665), and subscribe to the 1st camera device:
 @verbatim
-$ playercam --i=1
+$ playercam -i=1
 @endverbatim
 
 
@@ -66,9 +66,8 @@ colorspaces:
 Any time a user clicks on the image display, the pixel location and color
 value at that place will be written to standard out.
 
-@todo todo
-- add better vision feedback abilities w/ opencv (directional histogram)
-- add blobfinder overlay using the alpha channel
+@todo
+- add additional vision feedback abilities w/ opencv (directional histogram)
 */
 
 /** @} */

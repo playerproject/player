@@ -3,8 +3,9 @@
  *
  * a simple c++ client application
  */
+#include <iostream>
 
-#include "playercc.h"
+#include "playerc++.h"
 
 int main(int argc, char** argv)
 {

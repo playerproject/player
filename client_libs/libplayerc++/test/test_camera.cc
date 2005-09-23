@@ -4,7 +4,7 @@
  * a test for the C++ CameraProxy
  */
 
-#include "playercc.h"
+#include "playerc++.h"
 #include "test.h"
 
 int test_camera(PlayerClient *client, int index)

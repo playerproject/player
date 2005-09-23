@@ -4,7 +4,7 @@
  * a more complicated C++ example with signals
  */
 
-#include "playercc.h"
+#include "playerc++.h"
 
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
@@ -52,24 +52,24 @@ int main(int argc, char** argv)
     // Here, we're connecting a signal to a function.  We keep the connection_t
     // so we can later disconnect.
     ClientProxy::connection_t conn1;
-    conn1 = cp.ConnectSignal(&read_callback1);
+    conn1 = cp.ConnectReadSignal(&read_callback1);
 
     // here we're connecting a signal to a member function
     test_callback test1, test2;
-    cp.ConnectSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
-    cp.ConnectSignal(boost::bind(&test_callback::read_callback3, boost::ref(test2)));
+    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
+    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test2)));
 
     // now, we should see some signals each time Read() is called.
     for (int i=0; i<10; ++i)
     {
       client.Read();
       if (4==i)
-        cp.DisconnectSignal(conn1);
+        cp.DisconnectReadSignal(conn1);
     }
 
     // Let's connect a signal to callback4.  This signal tells the client
     // to exit after 10 iterations
-    cp.ConnectSignal(boost::bind(&read_callback4, &client));
+    cp.ConnectReadSignal(boost::bind(&read_callback4, &client));
 
     // Now, let's run the client.  This exits when teh client->Stop() function
     // is called from the callback

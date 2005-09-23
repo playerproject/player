@@ -367,7 +367,6 @@ dnl          client_libs/c/Makefile
 dnl          client_libs/c/playercclient.pc
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
-	  client_libs/libplayerc++/doc/Makefile
           client_libs/libplayerc++/test/Makefile
           client_libs/libplayerc/Makefile
 dnl          client_libs/libplayerc/doc/Makefile
@@ -380,7 +379,7 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
-dnl          examples/c++/Makefile
+          examples/libplayerc++/Makefile
 dnl          examples/libplayerc/Makefile
           utils/Makefile
     utils/playercam/Makefile
