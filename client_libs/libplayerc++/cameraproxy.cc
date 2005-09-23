@@ -34,7 +34,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "playercc.h"
+#include "playerc++.h"
 
 #define DEBUG_LEVEL HIGH
 #include "debug.h"
@@ -43,14 +43,14 @@ using namespace PlayerCc;
 
 CameraProxy::CameraProxy(PlayerClient *aPc, uint aIndex)
   : ClientProxy(aPc, aIndex),
-  mCamera(NULL),
+  mDevice(NULL),
   mPrefix("image"),
   mFrameNo(0)
 {
   Subscribe(aIndex);
   // how can I get this into the clientproxy.cc?
   // right now, we're dependent on knowing its device type
-  mInfo = &(mCamera->info);
+  mInfo = &(mDevice->info);
 }
 
 CameraProxy::~CameraProxy()
@@ -61,20 +61,21 @@ CameraProxy::~CameraProxy()
 void
 CameraProxy::Subscribe(uint aIndex)
 {
-  mCamera = playerc_camera_create(mClient, aIndex);
-  if (NULL==mCamera)
+  mDevice = playerc_camera_create(mClient, aIndex);
+  if (NULL==mDevice)
     throw PlayerError("CameraProxy::CameraProxy()", "could not create");
 
-  if (0 != playerc_camera_subscribe(mCamera, PLAYER_OPEN_MODE))
+  if (0 != playerc_camera_subscribe(mDevice, PLAYER_OPEN_MODE))
     throw PlayerError("CameraProxy::CameraProxy()", "could not subscribe");
 }
 
 void
 CameraProxy::Unsubscribe()
 {
-  assert(NULL!=mCamera);
-  playerc_camera_unsubscribe(mCamera);
-  playerc_camera_destroy(mCamera);
+  assert(NULL!=mDevice);
+  playerc_camera_unsubscribe(mDevice);
+  playerc_camera_destroy(mDevice);
+  mDevice = NULL;
 }
 
 void
@@ -91,7 +92,7 @@ CameraProxy::SaveFrame(const std::string aPrefix, uint aWidth)
     filename << ".ppm";
 
   Lock();
-  playerc_camera_save(mCamera, filename.str().c_str());
+  playerc_camera_save(mDevice, filename.str().c_str());
   Unlock();
 }
 
@@ -99,7 +100,7 @@ void
 CameraProxy::Decompress()
 {
   Lock();
-  playerc_camera_decompress(mCamera);
+  playerc_camera_decompress(mDevice);
   Unlock();
 }
 

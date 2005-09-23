@@ -260,9 +260,8 @@ the syntax and semantics for a set of messages. */
 /** @defgroup player_interface_actarray actarray
 
 The actuator array interface provides access to an array of actuators.
-
-@{
- */
+*/
+/** @{ */
 
 #define PLAYER_ACTARRAY_NUM_ACTUATORS     16
 
@@ -1228,6 +1227,18 @@ Pioneer robots and Stage:
   - bit 4: Left paddle open
   - bit 5: Right paddle open
 */
+
+#define GRIPopen   1
+#define GRIPclose  2
+#define GRIPstop   3
+#define LIFTup     4
+#define LIFTdown   5
+#define LIFTstop   6
+#define GRIPstore  7
+#define GRIPdeploy 8
+#define GRIPhalt   15
+#define GRIPpress  16
+#define LIFTcarry  17
 
 /** Data subtypes */
 #define PLAYER_GRIPPER_DATA_STATE 1

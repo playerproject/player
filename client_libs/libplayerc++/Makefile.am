@@ -1,4 +1,4 @@
-SUBDIRS = . test doc
+SUBDIRS = . test
 
 AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(srcdir)/../libplayerc
 
@@ -9,7 +9,7 @@ pkgconfig_DATA = playerc++.pc
 EXTRA_DIST = playerc++.pc.in
 CLEANFILES = playerc++.pc
 
-lib_LTLIBRARIES = 
+lib_LTLIBRARIES =
 if INCLUDE_BOOST_SIGNALS
 lib_LTLIBRARIES += libplayerc++.la
 endif
@@ -20,7 +20,9 @@ libplayerc___la_LDFLAGS = -version-info 2:0:0
 libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lpthread
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-libplayerc___la_SOURCES =   playercc.h \
+libplayerc___la_SOURCES =     playerc++.h \
+                              playerclient.h \
+			      playererror.h \
                               playerclient.cc \
                               playererror.cc \
                               clientproxy.cc \
@@ -67,4 +69,4 @@ libplayerc___la_SOURCES =   playercc.h \
                               #bpsproxy.cc
                               #bpsproxy.h
 
-include_HEADERS = playercc.h
+include_HEADERS = playerc++.h

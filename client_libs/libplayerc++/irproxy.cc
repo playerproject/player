@@ -19,35 +19,30 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 
 /* Copyright (C) 2002
  *   John Sweeney, UMASS, Amherst, Laboratory for Perceptual Robotics
  *
  * $Id$
- * 
+ *
  * implementation of IRProxy.
  *
  */
+
+// these are from playerc++.h
+// these define default coefficients for our
+// range and standard deviation estimates
+const double IRPROXY_DEFAULT_DIST_M_VALUE(-0.661685227)
+const double IRPROXY_DEFAULT_DIST_B_VALUE(10.477102515)
+
+const double IRPROXY_DEFAULT_STD_M_VALUE(1.913005560938)
+const double IRPROXY_DEFAULT_STD_B_VALUE(-7.728130591833)
+
+const uint IRPROXY_M_PARAM(0)
+const uint IRPROXY_B_PARAM(1)
+
+//this is the effective range of the sensor in mm
+const uint IRPROXY_MAX_RANGE(700)
 
 #include <playerclient.h>
 #include <stdio.h>
@@ -56,7 +51,7 @@
 
 IRProxy::IRProxy(PlayerClient *pc, unsigned short index,
                  unsigned char access) :
-  ClientProxy(pc, PLAYER_IR_CODE, index, access) 
+  ClientProxy(pc, PLAYER_IR_CODE, index, access)
 {
   memset(&ir_pose, 0, sizeof(ir_pose));
   GetIRPose();
@@ -94,7 +89,7 @@ IRProxy::SetIRState(unsigned char state)
   req.state = state;
 
   return client->Request(m_device_id,PLAYER_IR_POWER,
-			 (const char *)&req, sizeof(req));
+       (const char *)&req, sizeof(req));
 }
 
 /* this will get the poses of all the IR sensors on the robot
@@ -113,17 +108,17 @@ IRProxy::GetIRPose()
   player_ir_pose_t req;
 
 //  req.subtype = PLAYER_IR_POSE_REQ;
-  
+
   if ((client->Request(m_device_id, PLAYER_IR_POSE, (const char *)&req,
-		       0, &hdr, (char *)&req,
-		       sizeof(req)) < 0) ||
+           0, &hdr, (char *)&req,
+           sizeof(req)) < 0) ||
       hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
     return -1;
   }
 
    ir_pose = req;
 
-	ir_pose.pose_count = ntohs(ir_pose.pose_count);
+  ir_pose.pose_count = ntohs(ir_pose.pose_count);
 
   // now change the byte ordering
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
@@ -132,7 +127,7 @@ IRProxy::GetIRPose()
     ir_pose.poses[i][2] = ntohs(ir_pose.poses[i][2]);
 
     //    printf("IRPROXY: IRPOSE%d: %d %d %d\n", i,
-    //	   ir_pose.poses[i][0], ir_pose.poses[i][1], ir_pose.poses[i][2]);
+    //     ir_pose.poses[i][0], ir_pose.poses[i][1], ir_pose.poses[i][2]);
   }
 
   return 0;
@@ -144,7 +139,7 @@ IRProxy::GetIRPose()
  *
  * M is the slope of the regression line, B is the intercept
  *
- * returns: 
+ * returns:
  */
 void
 IRProxy::SetRangeParams(int which, double m, double b)
@@ -155,10 +150,10 @@ IRProxy::SetRangeParams(int which, double m, double b)
 
 
 /* sets the parameters (slope [m] and intercept [b]) for doing
- * a linear regression to estimate the standard deviation in the 
+ * a linear regression to estimate the standard deviation in the
  * distance estimate.  this is for a particular sensor which
  *
- * returns: 
+ * returns:
  */
 void
 IRProxy::SetStdDevParams(int which, double m, double b)
@@ -179,13 +174,13 @@ IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
 
   if (hdr.size != sizeof(player_ir_data_t)) {
     fprintf(stderr, "REBIRPROXY: expected %d bytes but only got %d\n",
-	    sizeof(player_ir_data_t), hdr.size);
+      sizeof(player_ir_data_t), hdr.size);
   }
 
   for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
     new_range = ntohs(((player_ir_data_t *)buffer)->ranges[i]);
       voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
- 
+
     // if range is 0, then this is from real IR data
     // so we do a regression.  otherwise, its been done
     // for us by stage
@@ -193,7 +188,7 @@ IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
     if (new_range == 0) {
       // calc range in mm
       new_range = (unsigned short) rint(exp( (log( (double)voltages[i] ) - params[i][IRPROXY_B_PARAM] ) /
-					     params[i][IRPROXY_M_PARAM]));
+               params[i][IRPROXY_M_PARAM]));
     }
     // if the range is obviously too far, then dont do the
     // std dev calc.  This threshold should probably be much lower.
@@ -216,7 +211,7 @@ double
 IRProxy::CalcStdDev(int w, unsigned  short range)
 {
   double ret = exp( log( (double)range ) * sparams[w][IRPROXY_M_PARAM] +
-		     sparams[w][IRPROXY_B_PARAM] );
+         sparams[w][IRPROXY_B_PARAM] );
 
   return ret;
 }
@@ -231,8 +226,8 @@ IRProxy::Print()
   printf("#IR(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   for (int i = 0;i < ir_pose.pose_count; i++) {
-    printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i], 
-	   stddev[i]);
+    printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i],
+     stddev[i]);
   }
 }
 

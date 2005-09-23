@@ -11,8 +11,6 @@
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
 
-#include "playercc.h"
-
 #include "test.h"
 
 void read_callback1()
@@ -75,10 +73,10 @@ int test_client(PlayerClient *client, int index)
     test_callback test1, test2;
     ClientProxy::connection_t conn1, conn2;
 
-    conn1 = cp.ConnectSignal(&read_callback1);
-    conn2 = cp.ConnectSignal(&read_callback2);
-    cp.ConnectSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
-    cp.ConnectSignal(boost::bind(&test_callback::read_callback3, boost::ref(test2)));
+    conn1 = cp.ConnectReadSignal(&read_callback1);
+    conn2 = cp.ConnectReadSignal(&read_callback2);
+    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
+    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test2)));
     PASS();
 
     TEST("user read");
@@ -88,14 +86,14 @@ int test_client(PlayerClient *client, int index)
 
       if (4==i)
       {
-        cp.DisconnectSignal(conn1);
-        cp.DisconnectSignal(conn2);
+        cp.DisconnectReadSignal(conn1);
+        cp.DisconnectReadSignal(conn2);
       }
     }
     PASS();
 
     TEST("run");
-    cp.ConnectSignal(boost::bind(&read_callback4, client));
+    cp.ConnectReadSignal(boost::bind(&read_callback4, client));
     client->Run();
     PASS();
 

@@ -19,5 +19,8 @@ NAME=player
 doc:
 	doxygen player.dox
 
-upload_cvs: all
+webdoc:
+	doxygen playerweb.dox
+
+upload_cvs: webdoc
 	./upload_www.sh $(CVS_DEST) $(NAME)

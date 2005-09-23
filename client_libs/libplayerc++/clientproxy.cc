@@ -26,11 +26,9 @@
  * parent class for client-side device proxies
  */
 
-#include <cstring>
-#include <cstdio>
 #include <iostream>
 
-#include "playercc.h"
+#include "playerc++.h"
 
 #define DEBUG_LEVEL LOW
 #include "debug.h"

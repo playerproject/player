@@ -32,7 +32,7 @@
 
 #include <time.h>
 
-#include "playercc.h"
+#include "playerc++.h"
 
 #define DEBUG_LEVEL LOW
 #include "debug.h"
@@ -131,7 +131,7 @@ void PlayerClient::Read()
   Unlock();
 
   // how can we do the loop with a for_each?
-  //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mSignal));
+  //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mReadSignal));
   std::list<ClientProxy*>::iterator it = mProxyList.begin();
   for(; it != mProxyList.end(); ++it)
   {
@@ -141,7 +141,7 @@ void PlayerClient::Read()
     if (x->GetDataTime()>x->mLastTime)
     {
       x->mLastTime = x->GetDataTime();
-      x->mSignal();
+      x->mReadSignal();
     }
   }
 }
@@ -186,6 +186,7 @@ void PlayerClient::SetDataMode(uint aMode)
 }
 
 // authenticate
+#if 0
 void PlayerClient::Authenticate(const std::string* aKey)
 {
 
@@ -207,6 +208,8 @@ ClientProxy* PlayerClient::GetProxy(player_devaddr_t aAddr)
   return NULL;
 }
 
+
+
 // Get the list of available device ids. The data is written into the
 // proxy structure rather than retured to the caller.
 void PlayerClient::GetDeviceList()
@@ -216,6 +219,8 @@ void PlayerClient::GetDeviceList()
     throw PlayerError("PlayerClient::GetDeviceList()", playerc_error_str());
   }
 }
+
+#endif
 
 std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
 {
