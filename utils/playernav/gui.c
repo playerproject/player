@@ -135,8 +135,11 @@ _stop_all_robots(GtkWidget *widget,
   for(i=0;i<gui_data->num_robots;i++)
   {
     planner = gui_data->planners[i];
-    playerc_planner_enable(planner,0);
-    gui_data->robot_enable_states[i] = 0;
+    if(planner)
+    {
+      playerc_planner_enable(planner,0);
+      gui_data->robot_enable_states[i] = 0;
+    }
   }
   return(TRUE);
 }
@@ -153,8 +156,11 @@ _go_all_robots(GtkWidget *widget,
   for(i=0;i<gui_data->num_robots;i++)
   {
     planner = gui_data->planners[i];
-    playerc_planner_enable(planner,1);
-    gui_data->robot_enable_states[i] = 1;
+    if(planner)
+    {
+      playerc_planner_enable(planner,1);
+      gui_data->robot_enable_states[i] = 1;
+    }
   }
   return(TRUE);
 }
