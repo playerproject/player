@@ -25,7 +25,7 @@ libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc
 
 libplayerc___la_SOURCES =     playerc++.h \
                               playerclient.h \
-			      playererror.h \
+			                  playererror.h \
                               playerclient.cc \
                               playererror.cc \
                               clientproxy.cc \

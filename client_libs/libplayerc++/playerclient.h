@@ -27,6 +27,8 @@ const int PLAYER_PORTNUM(6665);
 /**/
 const std::string PLAYER_HOSTNAME("localhost");
 
+class ClientProxy;
+
 /**
 One @p PlayerClient object is used to control each connection to
 a Player server.  Contained within this object are methods for changing the
@@ -39,7 +41,7 @@ class PlayerClient
 
   protected:
     /** list of proxies associated with us */
-    std::list<ClientProxy*> mProxyList;
+    std::list<PlayerCc::ClientProxy*> mProxyList;
 
     /** Connect to the indicated host and port.
      * @exception throws PlayerError if unsuccessfull

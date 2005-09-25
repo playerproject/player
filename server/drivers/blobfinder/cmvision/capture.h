@@ -18,6 +18,7 @@ class capture
 
   public:
     capture() {current=0; captured_frame = false;}
+    virtual ~capture() {};
 
     // you must define these in the subclass
     virtual bool initialize(int nwidth,int nheight) = 0;
