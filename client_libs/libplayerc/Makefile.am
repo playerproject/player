@@ -27,6 +27,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_bumper.c \
                         dev_blobfinder.c \
                         dev_camera.c \
+                        dev_fiducial.c \
                         dev_ir.c \
                         dev_laser.c \
                         dev_localize.c \
@@ -43,7 +44,6 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_speech.c \
                         dev_wifi.c 
 
-#dev_fiducial.c \
 #dev_gps.c \
 #dev_gripper.c \
 #dev_joystick.c \

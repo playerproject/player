@@ -53,8 +53,9 @@
 
 
 // Local declarations
-void playerc_blobfinder_putdata(playerc_blobfinder_t *device, player_msghdr_t *header,
-                            player_blobfinder_data_t *data, size_t len);
+void playerc_blobfinder_putmsg( playerc_blobfinder_t *device, 
+			        player_msghdr_t *header,
+			        void *datap );
 
 // Create a new blobfinder proxy
 playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int index)
@@ -94,17 +95,38 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device)
 
 
 // Process incoming data
-void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, player_msghdr_t *header,
-                                player_blobfinder_data_t *data, size_t len)
+void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, 
+			       player_msghdr_t *header,
+			       void* datap )
 {
+  if( header->type == PLAYER_MSGTYPE_DATA &&
+      header->subtype == PLAYER_BLOBFINDER_DATA_BLOBS)
+    {
+      player_blobfinder_data_t *data = (player_blobfinder_data_t*)datap;
+      
+      device->width  = data->width;
+      device->height = data->height;
+      
+      // threshold the number of blobs to avoid overunning the array
+      device->blobs_count 
+	= MIN( data->blobs_count, PLAYERC_BLOBFINDER_MAX_BLOBS );
 
-  device->width  = data->width;
-  device->height = data->height;
-  device->blobs_count = data->blobs_count;
+      unsigned int b;
+      for( b=0; b<device->blobs_count; b++ )
+	{
+	  device->blobs[b].x = data->blobs[b].x;
+	  device->blobs[b].y = data->blobs[b].y;
 
-  memcpy(device->blobs,
-         data->blobs,
-         data->blobs_count*sizeof(player_blobfinder_blob_t));
+	  device->blobs[b].left = data->blobs[b].left;
+	  device->blobs[b].right = data->blobs[b].right;
+	  device->blobs[b].top = data->blobs[b].top;
+	  device->blobs[b].bottom = data->blobs[b].bottom;
+	  device->blobs[b].color = data->blobs[b].color;
+
+	  device->blobs[b].area = data->blobs[b].area;
+	  device->blobs[b].range = data->blobs[b].range;
+	}      
+    }
 
   return;
 }

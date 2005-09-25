@@ -92,7 +92,7 @@ void fiducial_update(fiducial_t *fiducial)
   {
     if (!fiducial->proxy->info.subscribed)
     {
-      if (playerc_fiducial_subscribe(fiducial->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_fiducial_subscribe(fiducial->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
       // Get the geometry

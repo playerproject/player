@@ -1,4 +1,4 @@
-SUBDIRS = . test
+SUBDIRS = .
 
 AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(srcdir)/../libplayerc
 
@@ -10,8 +10,11 @@ EXTRA_DIST = playerc++.pc.in
 CLEANFILES = playerc++.pc
 
 lib_LTLIBRARIES =
+
+# we need Boost, and so does our test program
 if INCLUDE_BOOST_SIGNALS
-lib_LTLIBRARIES += libplayerc++.la
+ lib_LTLIBRARIES += libplayerc++.la
+ SUBDIRS += test
 endif
 
 # the +'s are turned into _'s by automake

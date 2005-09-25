@@ -848,8 +848,8 @@ int playerc_client_writepacket(playerc_client_t *client,
                     PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
                     data, PLAYERXDR_ENCODE)) < 0)
     {
-      PLAYERC_ERR3("encoding failed on message from %u:%u with type %u",
-                   header->addr.interf, header->addr.index, header->subtype);
+      PLAYERC_ERR4("encoding failed on message from %u:%u with type %u:%u",
+                   header->addr.interf, header->addr.index, header->type, header->subtype);
       return(-1);
     }
   }

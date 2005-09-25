@@ -405,9 +405,13 @@ AC_MSG_RESULT([    C++ compiler: $CXX $CXXFLAGS])
 AC_MSG_RESULT([])
 if test "x$have_libltdl" = "xyes"; then
   AC_MSG_RESULT([Support for plugin drivers will be included.])
+  AC_MSG_RESULT([ ])
 else
   AC_MSG_RESULT([Support for plugin drivers will NOT be included.])
-  AC_MSG_RESULT([You should install libltdl, which is part of GNU libtool.])
+  AC_MSG_RESULT([You need plugin support to use Stage.])
+  AC_MSG_RESULT([To add plugin support, install libltdl, which is ])
+  AC_MSG_RESULT([part of GNU libtool, then configure Player again.])
+  AC_MSG_RESULT([ ])
 fi
 
 if test "x$PYTHON_INTERP" != "xno"; then

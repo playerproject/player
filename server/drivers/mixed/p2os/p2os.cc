@@ -970,7 +970,7 @@ P2OS::PutData(void)
   // put blobfinder data
   this->Publish(this->blobfinder_id, NULL, 
                 PLAYER_MSGTYPE_DATA,
-                PLAYER_BLOBFINDER_DATA_STATE,
+                PLAYER_BLOBFINDER_DATA_BLOBS,
                 (void*)&(this->p2os_data.blobfinder), 
                 sizeof(player_blobfinder_data_t),
                 NULL);

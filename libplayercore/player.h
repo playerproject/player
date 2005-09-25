@@ -647,7 +647,7 @@ in images.
 //   - currently none
 
 // data types
-#define PLAYER_BLOBFINDER_DATA_STATE        1
+#define PLAYER_BLOBFINDER_DATA_BLOBS 1
 
 // Command types
 //   - currently none
@@ -674,8 +674,8 @@ typedef struct player_blobfinder_blob
   uint32_t x, y;
   /** Bounding box for the blob [pixels]. */
   uint32_t left, right, top, bottom;
-  /** Range to the blob center [pixels] */
-  uint32_t range;
+  /** Range to the blob center [meters] */
+  float range;
 } player_blobfinder_blob_t;
 
 /** @brief Data
@@ -951,21 +951,19 @@ for devices the detect natural landmarks.
 /** The maximum number of fiducials that can be detected at one time. */
 #define PLAYER_FIDUCIAL_MAX_SAMPLES 32
 
-/** The maximum size of a data packet exchanged with a fiducial at one time.*/
-#define PLAYER_FIDUCIAL_MAX_MSG_LEN 32
 
-/** Data subtypes */
-#define PLAYER_FIDUCIAL_DATA_SCAN 0x01
+/** Fiducial data subtypes. */
+#define PLAYER_FIDUCIAL_DATA_SCAN 1
 
 /** Request packet subtypes */
-#define PLAYER_FIDUCIAL_GET_GEOM     0x01
-#define PLAYER_FIDUCIAL_GET_FOV      0x02
-#define PLAYER_FIDUCIAL_SET_FOV      0x03
-#define PLAYER_FIDUCIAL_SEND_MSG     0x04
-#define PLAYER_FIDUCIAL_RECV_MSG     0x05
-#define PLAYER_FIDUCIAL_EXCHANGE_MSG 0x06
-#define PLAYER_FIDUCIAL_GET_ID       0x07
-#define PLAYER_FIDUCIAL_SET_ID       0x08
+#define PLAYER_FIDUCIAL_REQ_GET_GEOM     1
+#define PLAYER_FIDUCIAL_REQ_GET_FOV      2
+#define PLAYER_FIDUCIAL_REQ_SET_FOV      3
+#define PLAYER_FIDUCIAL_REQ_GET_ID       7
+#define PLAYER_FIDUCIAL_REQ_SET_ID       8
+
+// note: fiducial messaging hasn't been supported by any driver for a
+// long time. I've removed the interface spec. - rtv 2005.9.23
 
 /** @brief Info on a single detected fiducial
 
@@ -1009,13 +1007,14 @@ have the same format.
 */
 typedef struct player_fiducial_geom
 {
-  /** Pose of the detector in the robot cs (x, y, orient) in units if
-      (m, m, rad). */
-  float pose[3];
-  /** Size of the detector in units of (m, m) */
-  float size[2];
+  /** Pose of the detector in the robot cs */
+  player_pose_t pose;
+
+  /** Size of the detector */
+  player_bbox_t size;
+
   /** Dimensions of the fiducials in units of (m, m). */
-  float fiducial_size[2];
+  player_bbox_t fiducial_size;
 } player_fiducial_geom_t;
 
 /** @brief Configuration request: Get/set sensor field of view.
@@ -1057,89 +1056,6 @@ typedef struct player_fiducial_id
   /** The value displayed */
   uint32_t id;
 } player_fiducial_id_t;
-
-/** @brief Configuration request: Fiducial messaging.
-
-META-NOTE: FIDUCIAL MESSAGING IS NOT WORKING IN STAGE CVS HEAD OR
-STAGE-1.5
-
-NOTE: These configs are currently supported only by the Stage fiducial
-driver (stg_fidicial), but are intended to be a general interface for
-addressable, peer-to-peer messaging.
-
-The fiducial sensor can attempt to send a message to a target using the
-PLAYER_FIDUCIAL_SEND_MSG request. If target_id is -1, the message is
-broadcast to all targets. The device replies with an ACK if the message
-was sent OK, but receipt by the target is not guaranteed. The intensity
-field sets a transmit power in device-dependent units. If the consume flag
-is set, the message is transmitted just once. If it is unset, the message
-may transmitted repeatedly (at device-dependent intervals, if at all).
-
-Send a PLAYER_FIDUCIAL_RECV_MSG request to obtain the last message
-recieved from the indicated target. If the consume flag is set,
-the message is deleted from the device's buffer, if unset, the same
-message can be retreived multiple times until a new message arrives. The
-power field indicates the intensity of the recieved messag, again in
-device-dependent units.
-
-Similarly, the PLAYER_FIDUCIAL_EXCHANGE_MSG request sends a message,
-then returns the most recently received message. Depending on the device
-and the situation, this could be a reflection of the sent message, a
-reply from the target of the sent message, or a message received from
-an unrelated sender.
-*/
-typedef struct player_fiducial_msg
-{
-  /** the fiducial ID of the intended target. */
-  uint32_t target_id;
-  uint32_t bytes_count;
-  /** the raw data of the message */
-  uint32_t bytes[PLAYER_FIDUCIAL_MAX_MSG_LEN];
-  /** the length of the message in bytes.*/
-  uint32_t len;
-  /** the power to transmit, or the intensity of a received message.
-      0-255 in device-dependent units.*/
-  uint32_t intensity;
-} player_fiducial_msg_t;
-
-/** @brief Configuration request: Fiducial receive message request.
-
-The server replies with a player_fiducial_msg_t */
-typedef struct player_fiducial_msg_rx_req
-{
-  /** If TRUE, empty the buffer when getting the message. If
-      FALSE, leave the message in the buffer */
-  uint8_t consume;
-}  player_fiducial_msg_rx_req_t;
-
-/** @brief Configuration request: Fiducial send message request.
-
-The server replies with ACK/NACK only.*/
-typedef struct player_fiducial_msg_tx_req
-{
-  /** If TRUE, send the message just once. If FALSE, the device may
-      send the message repeatedly. */
-  uint8_t consume;
-  /** The message to send. */
-  player_fiducial_msg_t msg;
-}  player_fiducial_msg_tx_req_t;
-
-/** @brief Configuration request: Fiducial exchange message request.
-
-The device sends the message, then replies with the last message
-received, which may be (but is not guaranteed to be) be a reply to the
-sent message. NOTE: this is not yet supported by Stage-1.4.*/
-typedef struct player_fiducial_msg_txrx_req
-{
-  /**  The message to send */
-  player_fiducial_msg_t msg;
-  /** If TRUE, send the message just once. If FALSE, the device may
-      send the message repeatedly. */
-  uint8_t consume_send;
-  /** If TRUE, empty the buffer when getting the message. If
-      FALSE, leave the message in the buffer */
-  uint8_t consume_reply;
-}  player_fiducial_msg_txrx_req_t;
 
 /** @} */
 
