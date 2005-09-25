@@ -349,7 +349,7 @@ CMVisionBF::ProcessImageData()
 
 
     Publish(device_addr, NULL,
-          PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_STATE,
+          PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
           reinterpret_cast<void*>(&mData), size, NULL);
 }
 

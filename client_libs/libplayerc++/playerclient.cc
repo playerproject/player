@@ -132,7 +132,7 @@ void PlayerClient::Read()
 
   // how can we do the loop with a for_each?
   //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mReadSignal));
-  std::list<ClientProxy*>::iterator it = mProxyList.begin();
+  std::list<PlayerCc::ClientProxy*>::iterator it = mProxyList.begin();
   for(; it != mProxyList.end(); ++it)
   {
     EVAL(reinterpret_cast<int>(*it));
