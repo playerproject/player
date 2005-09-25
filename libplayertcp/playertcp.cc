@@ -508,8 +508,8 @@ PlayerTCP::WriteClient(int cli)
                         maxsize - PLAYERXDR_MSGHDR_SIZE,
                         payload, PLAYERXDR_ENCODE)) < 0)
         {
-          PLAYER_WARN3("encoding failed on message from %u:%u with type %u",
-                       hdr.addr.interf, hdr.addr.index, hdr.subtype);
+          PLAYER_WARN4("encoding failed on message from %u:%u with type %u:%u",
+                       hdr.addr.interf, hdr.addr.index, hdr.type, hdr.subtype);
           client->writebufferlen = 0;
           delete msg;
           return(0);

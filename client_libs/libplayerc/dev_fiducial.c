@@ -53,11 +53,10 @@
 #include "error.h"
 
 
-// Local declarations
-void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *header,
-                              player_fiducial_data_t *data, size_t len);
-void playerc_fiducial_putgeom(playerc_fiducial_t *device, player_msghdr_t *header,
-                              player_fiducial_geom_t *data, size_t len);
+// Process incoming data     
+void playerc_fiducial_putmsg(playerc_fiducial_t *device, 
+			     player_msghdr_t *header,
+			     void *data);
 
 // Create a new fiducial proxy
 playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
@@ -67,9 +66,15 @@ playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_fiducial_t));
   memset(device, 0, sizeof(playerc_fiducial_t));
   playerc_device_init(&device->info, client, PLAYER_FIDUCIAL_CODE, index,
-                      (playerc_putdata_fn_t) playerc_fiducial_putdata,
-					  (playerc_putdata_fn_t) playerc_fiducial_putgeom,NULL);
+                      (playerc_putmsg_fn_t) playerc_fiducial_putmsg );
   
+  memset( device->pose, 0, sizeof(device->pose));
+  memset( device->size, 0, sizeof(device->size));
+  
+  // default size of detected fiducials
+  device->fiducial_size[0] = 0.1;
+  device->fiducial_size[1] = 0.01;
+
   return device;
 }
 
@@ -97,37 +102,49 @@ int playerc_fiducial_unsubscribe(playerc_fiducial_t *device)
 
 
 // Process incoming data
-void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *header,
-                         player_fiducial_data_t *data, size_t len)
+void playerc_fiducial_putmsg(playerc_fiducial_t *device, 
+			     player_msghdr_t *header,
+			     void* generic )
 {
-  int i;
-  player_fiducial_item_t *fiducial;
+  
+  if( header->type == PLAYER_MSGTYPE_DATA &&
+      header->subtype == PLAYER_FIDUCIAL_DATA_SCAN )
+    {
+      player_fiducial_data_t* data = (player_fiducial_data_t*)generic;
 
-  device->fiducial_count = ntohs(data->count);
+      device->fiducial_count = data->fiducials_count;
+      
+      int i;
+      for (i = 0; i < device->fiducial_count; i++)
+	{
+	  player_fiducial_item_t *fiducial = data->fiducials + i;
 
-  for (i = 0; i < device->fiducial_count; i++)
-  {
-    fiducial = data->fiducials + i;
-    device->fiducials[i].id = (int16_t) ntohs(fiducial->id);
+	  device->fiducials[i].id = fiducial->id;
 
-    device->fiducials[i].pos[0] = ((int32_t) ntohl(fiducial->pos[0])) / 1000.0;
-    device->fiducials[i].pos[1] = ((int32_t) ntohl(fiducial->pos[1])) / 1000.0;
-    device->fiducials[i].pos[2] = ((int32_t) ntohl(fiducial->pos[2])) / 1000.0;
-    device->fiducials[i].rot[0] = ((int32_t) ntohl(fiducial->rot[0])) / 1000.0;
-    device->fiducials[i].rot[1] = ((int32_t) ntohl(fiducial->rot[1])) / 1000.0;
-    device->fiducials[i].rot[2] = ((int32_t) ntohl(fiducial->rot[2])) / 1000.0;
-    device->fiducials[i].upos[0] = ((int32_t) ntohl(fiducial->upos[0])) / 1000.0;
-    device->fiducials[i].upos[1] = ((int32_t) ntohl(fiducial->upos[1])) / 1000.0;
-    device->fiducials[i].upos[2] = ((int32_t) ntohl(fiducial->upos[2])) / 1000.0;
-    device->fiducials[i].urot[0] = ((int32_t) ntohl(fiducial->urot[0])) / 1000.0;
-    device->fiducials[i].urot[1] = ((int32_t) ntohl(fiducial->urot[1])) / 1000.0;
-    device->fiducials[i].urot[2] = ((int32_t) ntohl(fiducial->urot[2])) / 1000.0;
-
-    device->fiducials[i].range = sqrt(device->fiducials[i].pos[0] * device->fiducials[i].pos[0] +
-                                      device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
-    device->fiducials[i].bearing = atan2(device->fiducials[i].pos[1], device->fiducials[i].pos[0]);
-    device->fiducials[i].orient = device->fiducials[i].rot[2];
-  }
+	  device->fiducials[i].pos[0] = fiducial->pos[0];
+	  device->fiducials[i].pos[1] = fiducial->pos[1];
+	  device->fiducials[i].pos[2] = fiducial->pos[2];
+	  device->fiducials[i].rot[0] = fiducial->rot[0];
+	  device->fiducials[i].rot[1] = fiducial->rot[1];
+	  device->fiducials[i].rot[2] = fiducial->rot[2];
+	  device->fiducials[i].upos[0] = fiducial->upos[0];
+	  device->fiducials[i].upos[1] = fiducial->upos[1];
+	  device->fiducials[i].upos[2] = fiducial->upos[2];
+	  device->fiducials[i].urot[0] = fiducial->urot[0];
+	  device->fiducials[i].urot[1] = fiducial->urot[1];
+	  device->fiducials[i].urot[2] = fiducial->urot[2];
+	  
+	  // get the polar coordinates too. handy!
+	  device->fiducials[i].range = sqrt(device->fiducials[i].pos[0] * device->fiducials[i].pos[0] +
+					    device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
+	  device->fiducials[i].bearing = atan2(device->fiducials[i].pos[1], device->fiducials[i].pos[0]);
+	  device->fiducials[i].orient = device->fiducials[i].rot[2];
+	}
+    }
+  
+  else
+    PLAYERC_WARN2("skipping fiducial message with unknown type/subtype: %d/%d\n",
+		  header->type, header->subtype);
 }
 
 
@@ -135,19 +152,21 @@ void playerc_fiducial_putdata(playerc_fiducial_t *device, player_msghdr_t *heade
 void playerc_fiducial_putgeom(playerc_fiducial_t *device, player_msghdr_t *header,
                          player_fiducial_geom_t *data, size_t len)
 {
-  if (len != sizeof(player_fiducial_geom_t))
-  {
-    PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_fiducial_geom_t));
-    return;
-  }
+  PLAYERC_WARN( "playerc_fiducial_putgeom is not yet implemented" );
+  
+/*   if (len != sizeof(player_fiducial_geom_t)) */
+/*   { */
+/*     PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_fiducial_geom_t)); */
+/*     return; */
+/*   } */
 
-  device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0;
-  device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0;
-  device->pose[2] = ((int16_t) ntohs(data->pose[2])) * M_PI / 180;
-  device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0;
-  device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0;
-  device->fiducial_size[0] = ((int16_t) ntohs(data->fiducial_size[0])) / 1000.0;
-  device->fiducial_size[1] = ((int16_t) ntohs(data->fiducial_size[1])) / 1000.0;
+/*   device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0; */
+/*   device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0; */
+/*   device->pose[2] = ((int16_t) ntohs(data->pose[2])) * M_PI / 180; */
+/*   device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0; */
+/*   device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0; */
+/*   device->fiducial_size[0] = ((int16_t) ntohs(data->fiducial_size[0])) / 1000.0; */
+/*   device->fiducial_size[1] = ((int16_t) ntohs(data->fiducial_size[1])) / 1000.0; */
 }
 
 // Get the fiducial geometry.  The writes the result into the proxy
@@ -159,13 +178,26 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device)
 
 //  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
 
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_FIDUCIAL_GET_GEOM,
-                               &config, 0, &config, sizeof(config));
+  len = playerc_client_request(device->info.client, 
+			       &device->info,
+			       PLAYER_FIDUCIAL_REQ_GET_GEOM,
+                               NULL, &config, sizeof(config));
   if (len < 0)
     return -1;
+  
+  // ?
+  //while(device->info.freshgeom == 0)
+  // playerc_client_read(device->info.client);
 
-   while(device->info.freshgeom == 0)
-   		playerc_client_read(device->info.client);
+  device->pose[0] = config.pose.px;
+  device->pose[1] = config.pose.py;
+  device->pose[2] = config.pose.pa;
 
+  device->size[0] = config.size.sl;
+  device->size[1] = config.size.sw;
+
+  device->fiducial_size[0] = config.fiducial_size.sl;
+  device->fiducial_size[1] = config.fiducial_size.sw;
+  
   return 0;
 }

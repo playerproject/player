@@ -40,6 +40,12 @@ int ParseArgs(int* port, int* debuglevel,
 void Quit(int signum);
 void Cleanup();
 
+
+// TODO:
+// RTV - some drivers need access to the cmdline args, e.g. for X or GTK
+// options. Need to think about the argument parsing strategy
+
+
 PlayerTCP* ptcp;
 ConfigFile* cf;
 
@@ -237,7 +243,7 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename,
 {
   int ch;
   const char* optflags = "d:p:hq";
-
+  
   // Get letter options
   while((ch = getopt(argc, argv, optflags)) != -1)
   {
@@ -254,7 +260,7 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename,
         break;
       case '?':
       case ':':
-      case 'h':
+      case 'h':	
       default:
         return(-1);
     }

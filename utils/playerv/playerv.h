@@ -291,8 +291,6 @@ void position2d_update(position2d_t *self);
 
 
 
-#if 0
-
 /***************************************************************************
  * Fiducial detector
  ***************************************************************************/
@@ -329,8 +327,6 @@ void fiducial_destroy(fiducial_t *fiducial);
 // Update a fiducial device
 void fiducial_update(fiducial_t *fiducial);
 
-
-#endif
 
 /***************************************************************************
  * Power device

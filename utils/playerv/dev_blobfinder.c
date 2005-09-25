@@ -102,7 +102,7 @@ void blobfinder_update(blobfinder_t *blobfinder)
   if (rtk_menuitem_ischecked(blobfinder->subscribe_item))
   {
     if (!blobfinder->proxy->info.subscribed)
-      if (playerc_blobfinder_subscribe(blobfinder->proxy, PLAYER_READ_MODE) != 0)
+      if (playerc_blobfinder_subscribe(blobfinder->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
   }
   else
@@ -163,28 +163,41 @@ void blobfinder_draw(blobfinder_t *blobfinder)
                     DX(blobfinder->proxy->width), DY(blobfinder->proxy->height), 0);
 
   // Draw the blobs.
-  for (i = 0; i < blobfinder->proxy->blob_count; i++)
+  for (i = 0; i < blobfinder->proxy->blobs_count; i++)
   {
     blob = blobfinder->proxy->blobs + i;
 
-    ox = PX((blob->right + blob->left) / 2);
-    oy = PY((blob->bottom + blob->top) / 2);
-    dx = DX(blob->right - blob->left);
-    dy = DY(blob->bottom - blob->top);
+    ox = PX(((double)blob->right + (double)blob->left) / 2);
+    oy = PY(((double)blob->bottom + (double)blob->top) / 2);
+    dx = DX((double)blob->right - (double)blob->left);
+    dy = DY((double)blob->bottom - (double)blob->top);
+
+  /*   printf( "image width %u height %u scale %.3f\n",  */
+/* 	    blobfinder->proxy->width, */
+/* 	    blobfinder->proxy->height, */
+/* 	    blobfinder->scale ); */
+
+/*     printf( "blob %d x %u y %u top %u left %u right %u bottom %u\n", */
+/* 	    i, blob->x, blob->y, */
+/* 	    blob->top, blob->left, blob->right, blob->bottom ); */
+
+/*     printf( "ox %.3f oy %.3f dx %.3f dy %.3f\n", */
+/* 	    ox, oy, dx, dy ); */
+    
 
     rtk_fig_color_rgb32(blobfinder->image_fig, blob->color);
     rtk_fig_rectangle(blobfinder->image_fig, ox, oy, 0, dx, dy, 0);
 
-    ox = PX(blob->x);
-    oy = PY(blob->y);
-    rtk_fig_line(blobfinder->image_fig, ox, PY(blob->bottom), ox, PY(blob->top));
-    rtk_fig_line(blobfinder->image_fig, PX(blob->left), oy, PX(blob->right), oy);
+    ox = PX((double)blob->x);
+    oy = PY((double)blob->y);
+    rtk_fig_line(blobfinder->image_fig, ox, PY((double)blob->bottom), ox, PY((double)blob->top));
+    rtk_fig_line(blobfinder->image_fig, PX((double)blob->left), oy, PX((double)blob->right), oy);
 
     // Draw in the stats
     if (rtk_menuitem_ischecked(blobfinder->stats_item))
     {
-      ox = PX(blob->x);
-      oy = PY(blob->bottom);
+      ox = PX((double)blob->x);
+      oy = PY((double)blob->bottom);
       snprintf(text, sizeof(text), "ch %d\narea %d", blob->id, blob->area);
       rtk_fig_text(blobfinder->image_fig, ox, oy, 0, text);
     }

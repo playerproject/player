@@ -100,21 +100,25 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) wifi_update;
       break;
 
-#if 0
     case PLAYER_BLOBFINDER_CODE:
-      device->proxy = blobfinder_create(mainwnd, opt, client, device->index,
-                                        device->drivername, device->subscribe);
+      device->proxy = blobfinder_create(mainwnd, opt, client,
+					device->addr.index,
+                                        device->drivername, 
+					device->subscribe);
       device->fndestroy = (fndestroy_t) blobfinder_destroy;
       device->fnupdate = (fnupdate_t) blobfinder_update;
       break;
 
     case PLAYER_FIDUCIAL_CODE:
       device->proxy = fiducial_create(mainwnd, opt, client, 
-                                      device->index, device->drivername, device->subscribe);
+                                      device->addr.index, 
+				      device->drivername, 
+				      device->subscribe);
       device->fndestroy = (fndestroy_t) fiducial_destroy;
       device->fnupdate = (fnupdate_t) fiducial_update;
       break;
 
+#if 0
     case PLAYER_LOCALIZE_CODE:
       device->proxy = localize_create(mainwnd, opt, client, 
                                  device->index, device->drivername, device->subscribe);

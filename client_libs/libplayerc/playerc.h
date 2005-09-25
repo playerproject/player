@@ -633,20 +633,20 @@ complete description of the drivers that support this interface.
 typedef struct
 {
   /** The blob id; e.g. the color class this blob belongs to. */
-  int id;
+  unsigned int id;
 
   /** A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
       0x00RRGGBB. */
   uint32_t color;
 
   /** Blob centroid (image coordinates). */
-  int x, y;
+  unsigned int x, y;
 
   /** Bounding box for blob (image coordinates). */
-  int left, top, right, bottom;
+  unsigned int left, top, right, bottom;
 
   /** Blob area (pixels). */
-  int area;
+  unsigned int area;
 
   /** Blob range (m). */
   double range;
@@ -661,10 +661,10 @@ typedef struct
   playerc_device_t info;
 
   /** Image dimensions (pixels). */
-  int width, height;
+  unsigned int width, height;
 
   /** A list of detected blobs. */
-  int blobs_count;
+  unsigned int blobs_count;
   playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
 
 } playerc_blobfinder_t;
@@ -681,10 +681,6 @@ int playerc_blobfinder_subscribe(playerc_blobfinder_t *device, int access);
 
 /** @brief Un-subscribe from the blobfinder device. */
 int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
-
-/** @brief @internal Parse data from incoming packet */
-void playerc_blobfinder_putmsg(playerc_blobfinder_t *device, player_msghdr_t *header,
-                                player_blobfinder_data_t *data, size_t len);
 
 
 /** @} */
@@ -862,7 +858,7 @@ int playerc_ir_get_geom(playerc_ir_t *device);
 
 /** @} */
 /**************************************************************************/
-#if 0
+
 /***************************************************************************/
 /** @defgroup playerc_proxy_fiducial fiducial
 
@@ -879,7 +875,7 @@ that support the fiducial interface.
 /** @brief Description for a single fiducial. */
 typedef struct
 {
-  /** Id (0 if fiducial cannot be identified). */
+  /** Id (-1 if fiducial cannot be identified). */
   int id;
 
   /** @deprecated Beacon range, bearing and orientation. */
@@ -945,6 +941,7 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 /** @} */
 /**************************************************************************/
 
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_gps gps

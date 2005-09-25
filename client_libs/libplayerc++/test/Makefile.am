@@ -1,8 +1,5 @@
-if WITH_TESTS
+
 BUILDTEST = test
-else
-BUILDTEST =
-endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir) -I$(top_srcdir)/client_libs/libplayerc -Wall -g
 test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc  -L$(top_builddir)/client_libs/libplayerc++ -lplayerc++ -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lm

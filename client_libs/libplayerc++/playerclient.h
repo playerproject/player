@@ -1,3 +1,7 @@
+/*
+  $Id$
+*/
+
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 

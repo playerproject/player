@@ -46,40 +46,54 @@ typedef struct
 static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */
-
+  
   /* actarray messages */
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_DATA, PLAYER_ACTARRAY_DATA_STATE,
-    (player_pack_fn_t)player_actarray_data_pack},
+   (player_pack_fn_t)player_actarray_data_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_POWER_REQ,
-    (player_pack_fn_t)player_actarray_power_config_pack},
+   (player_pack_fn_t)player_actarray_power_config_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_BRAKES_REQ,
-    (player_pack_fn_t)player_actarray_brakes_config_pack},
+   (player_pack_fn_t)player_actarray_brakes_config_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_GET_GEOM_REQ,
-    (player_pack_fn_t)player_actarray_geom_pack},
+   (player_pack_fn_t)player_actarray_geom_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_SPEED_REQ,
-    (player_pack_fn_t)player_actarray_speed_config_pack},
+   (player_pack_fn_t)player_actarray_speed_config_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD,
-    (player_pack_fn_t)player_actarray_position_cmd_pack},
+   (player_pack_fn_t)player_actarray_position_cmd_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_SPEED_CMD,
-    (player_pack_fn_t)player_actarray_speed_cmd_pack},
+   (player_pack_fn_t)player_actarray_speed_cmd_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD,
-    (player_pack_fn_t)player_actarray_home_cmd_pack},
-
+   (player_pack_fn_t)player_actarray_home_cmd_pack},
+  
   /* blobfinder messages */
-  {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_DATA_STATE,
-    (player_pack_fn_t)player_blobfinder_data_pack},
-
+  {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
+   (player_pack_fn_t)player_blobfinder_data_pack},
+  
   /* bumper messages */
   {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
-    (player_pack_fn_t)player_bumper_data_pack},
+   (player_pack_fn_t)player_bumper_data_pack},
   {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_GEOM,
-    (player_pack_fn_t)player_bumper_geom_pack},
+   (player_pack_fn_t)player_bumper_geom_pack},
   {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM,
-    (player_pack_fn_t)player_bumper_geom_pack},
-
+   (player_pack_fn_t)player_bumper_geom_pack},
+  
   /* camera messages */
   {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-    (player_pack_fn_t)player_camera_data_pack},
+   (player_pack_fn_t)player_camera_data_pack},
+  
+  /* fiducial messages */
+  {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN,
+   (player_pack_fn_t)player_fiducial_data_pack},
+  {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM,
+   (player_pack_fn_t)player_fiducial_geom_pack},
+  {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_FOV,
+   (player_pack_fn_t)player_fiducial_fov_pack},
+  {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_SET_FOV,
+   (player_pack_fn_t)player_fiducial_fov_pack},
+  {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_ID,
+   (player_pack_fn_t)player_fiducial_id_pack},
+  {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_SET_ID,
+   (player_pack_fn_t)player_fiducial_id_pack},
 
   /* ir messages */
   {PLAYER_IR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
@@ -266,6 +280,11 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
       curr->subtype == subtype)
       return(curr->func);
   }
+
+  printf( "interface %d %d\n", curr->interf, interf );
+  printf( "type %d %d\n", curr->type, type );
+  printf( "subtype %d %d\n", curr->subtype, subtype );
+  
   return(NULL);
 }
 
