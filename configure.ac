@@ -431,6 +431,14 @@ else
 fi
 AC_MSG_RESULT([])
 
+if test "$ax_cv_boost_signal" = yes; then
+  AC_MSG_RESULT([Player will build C++ client libraries])
+else
+  AC_MSG_RESULT([Player will NOT build C++ client libraries])
+  AC_MSG_RESULT([  Install BOOST (www.boost.org) libraries to enable C++])
+fi
+AC_MSG_RESULT([])
+
 if test "x$enable_gazebo" = "xyes"; then
   AC_MSG_RESULT([Player will build Gazebo-based components using:])
   AC_MSG_RESULT([    CPPFLAGS: $GAZEBO_EXTRA_CPPFLAGS])
