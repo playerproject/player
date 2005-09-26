@@ -1,8 +1,8 @@
-SUBDIRS = .
+SUBDIRS = . test
 
 lib_LTLIBRARIES =
 
-# we need Boost, and so does our test program
+# we need Boost
 if INCLUDE_BOOST_SIGNALS
  lib_LTLIBRARIES += libplayerc++.la
  SUBDIRS += test

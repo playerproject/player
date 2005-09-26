@@ -270,13 +270,13 @@ PLAYER_ADD_DRIVER([laservisualbw],[no],[],[],[])
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
 dnl Camera drivers
-PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([camerav4l],[no],[linux/videodev.h],[],[])
 
 dnl Logitech Sphere camera driver
 PLAYER_ADD_DRIVER([sphere],[no],[linux/videodev.h],[],[])
 
 dnl IEEE1394 (Firewire) camera driver
-PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
+PLAYER_ADD_DRIVER([camera1394],[no],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])
 
 dnl libdc1394 has varying API's, depending on the version.  Do some checks
 dnl to see what the function signatures look like
