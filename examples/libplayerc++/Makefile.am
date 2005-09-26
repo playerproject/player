@@ -1,4 +1,4 @@
-PLAYERCC_CFLAGS = -I$(top_srcdir)/client_libs/libplayerc++ -I$(top_srcdir) -I$(top_srcdir)/client_libs/libplayerc
+PLAYERCC_CFLAGS = -I$(top_srcdir)/client_libs/libplayerc++ -I$(top_srcdir) -I$(top_srcdir)/client_libs/libplayerc -I$(top_srcdir)/client_libs/
 PLAYERCC_LIBS = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc  -L$(top_builddir)/client_libs/libplayerc++ -lplayerc++ -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lm
 PLAYERCC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/client_libs/libplayerc++/libplayerc++.la
 

@@ -60,7 +60,7 @@ playerprint can print out data for the following kinds of devices:
 #include <playerc++.h>  // for player c++ client stuff
 #include <string.h> /* for strcpy() */
 #include <assert.h>
-
+#include <libplayercore/playercore.h>
 
 using namespace PlayerCc;
 
@@ -151,16 +151,24 @@ int main(int argc, char **argv)
 {
   parse_args(argc,argv);
 
+  player_interface_t interface;
+  int ret = lookup_interface(dev, &interface);
+
   ClientProxy* cp;
 
   // connect to Player
   PlayerClient pclient(host, port);
- 
-  pclient.SetFrequency(data_rate);
 
-  if(!strcmp(dev,PLAYER_LASER_STRING))
-    cp = (ClientProxy*)new LaserProxy(&pclient,idx);
-
+  switch(interface.interf)
+  {
+    case PLAYER_LASER_CODE:
+      cp = (ClientProxy*)new LaserProxy(&pclient,idx);
+      break;
+    default:
+      printf("Unknown interface \"%s\"\n", dev);
+      exit(1);    
+  }
+  
 /*  else if(!strcmp(dev,PLAYER_POSITION_STRING))
     cp = new PositionProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
@@ -190,12 +198,12 @@ int main(int argc, char **argv)
   else if(!strcmp(dev,PLAYER_GRIPPER_STRING))
     cp = (ClientProxy*)new GripperProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_ACTARRAY_STRING))
-    cp = (ClientProxy*)new ActArrayProxy(&pclient,idx);*/
+    cp = (ClientProxy*)new ActArrayProxy(&pclient,idx);
   else
   {
     printf("Unknown interface \"%s\"\n", dev);
     exit(1);
-  }
+  }*/
   assert(cp);
 
   /* go into read-think-act loop */
@@ -206,24 +214,14 @@ int main(int argc, char **argv)
     /* this blocks until new data comes; 10Hz by default */
     pclient.Read();
     
-    //if(pclient.fresh)
+    printf("Read is now done\n");
+    
+    switch(interface.interf)
     {
-      std::cout << cp;
-      //pclient.fresh = false;
-      
-/*      if( print_timestamp )
-      {
-        double timestamp = 
-                (double)cp->timestamp.tv_sec + ((double)cp->timestamp.tv_usec)/1e6;
-
-        printf( "#timestamp: %.6f\n", timestamp );
-        if(last >= 0.0)
-          printf("#diff: %.6f\n", timestamp - last);
-        last = timestamp;
-      }*/
+      case PLAYER_LASER_CODE:
+        std::cout << *reinterpret_cast<LaserProxy *> (cp);
+        break;
     }
-/*    else
-    	printf("Not fresh data\n");*/
   }
 }
 

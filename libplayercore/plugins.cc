@@ -65,7 +65,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
   
   lt_dlhandle handle=NULL;
   PluginInitFn initfunc;
-  char fullpath[PATH_MAX];
+  char fullpath[PATH_MAX] = {0};
   char* playerpath;
   char* tmp;
   char* cfgdir;
