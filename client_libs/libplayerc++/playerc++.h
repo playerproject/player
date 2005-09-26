@@ -37,7 +37,7 @@
 #include <list>
 #include <stdint.h>
 
-#include "playerc.h"
+#include "libplayerc/playerc.h"
 #include "playerclient.h"
 #include "playererror.h"
 
@@ -1064,9 +1064,9 @@ class LaserProxy : public ClientProxy
     double aMinLeft;
     double aMinRight;
 
-	// local storage of config
-	double min_angle, max_angle, scan_res, range_res;
-	bool intensity;
+  // local storage of config
+  double min_angle, max_angle, scan_res, range_res;
+  bool intensity;
 
   public:
 
