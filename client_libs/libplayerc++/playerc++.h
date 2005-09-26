@@ -38,8 +38,8 @@
 #include <stdint.h>
 
 #include "libplayerc/playerc.h"
-#include "playerclient.h"
-#include "playererror.h"
+#include "libplayerc++/playerclient.h"
+#include "libplayerc++/playererror.h"
 
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
