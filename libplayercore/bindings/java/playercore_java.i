@@ -1,4 +1,15 @@
-%module playercore_java
+// Specify the module name and enable "directors", which we need in
+// order to be able to extend the Driver class in Java and have the virtual
+// methods work correctly.
+%module(directors="1") playercore_java
+
+// Generate a director for just these methods, which are virtual and may be
+// reimplemented in pure Java
+%feature("director") Driver;
+%feature("nodirector") Driver::Lock;
+%feature("nodirector") Driver::Unlock;
+%feature("nodirector") Driver::Subscribe;
+%feature("nodirector") Driver::Unsubscribe;
 
 %include "typemaps.i"
 %include "arrays_java.i"

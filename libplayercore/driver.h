@@ -127,13 +127,13 @@ class Driver
     /// @param len Length of the message body
     /// @param timestamp Timestamp for the message body (if NULL, then the
     /// current time will be filled in)
-    virtual void Publish(player_devaddr_t addr, 
-                         MessageQueue* queue, 
-                         uint8_t type, 
-                         uint8_t subtype,
-                         void* src=NULL, 
-                         size_t len=0,
-                         double* timestamp=NULL);
+    void Publish(player_devaddr_t addr, 
+                 MessageQueue* queue, 
+                 uint8_t type, 
+                 uint8_t subtype,
+                 void* src=NULL, 
+                 size_t len=0,
+                 double* timestamp=NULL);
 
     /// @brief Publish a message via one of this driver's interfaces.
     ///
@@ -181,7 +181,7 @@ class Driver
            int section, 
            bool overwrite_cmds, 
            size_t queue_maxlen, 
-           int interface);
+           int interf);
 
     /// @brief Constructor for multiple-interface drivers.
     ///
