@@ -183,8 +183,8 @@ int
 playerc_laser_set_config(playerc_laser_t *device, 
                          double min_angle, 
                          double max_angle,
-                         unsigned char resolution, 
-                         unsigned char range_res, 
+                         double resolution, 
+                         double range_res, 
                          unsigned char intensity)
 {
   player_laser_config_t config;
@@ -214,8 +214,8 @@ int
 playerc_laser_get_config(playerc_laser_t *device, 
                          double *min_angle, 
                          double *max_angle,
-                         unsigned char *resolution, 
-                         unsigned char *range_res, 
+                         double *resolution, 
+                         double *range_res, 
                          unsigned char *intensity)
 {
   player_laser_config_t config;
@@ -228,10 +228,10 @@ playerc_laser_get_config(playerc_laser_t *device,
   *min_angle = device->scan_start = config.min_angle;
   *max_angle = config.max_angle;
   *resolution = config.resolution;
-  device->scan_res = DTOR(config.resolution / 1e2);
+  device->scan_res = *resolution;
   *intensity = device->intensity_on = config.intensity;
   *range_res = config.range_res;
-  device->range_res = config.range_res / 1e3;
+  device->range_res = *range_res;
   return 0;
 }
 

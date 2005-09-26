@@ -55,11 +55,14 @@ playerprint can print out data for the following kinds of devices:
 /** @} */
 
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>  // for atoi(3)
-#include <playerclient.h>  // for player client stuff
+#include <playerc++.h>  // for player c++ client stuff
 #include <string.h> /* for strcpy() */
 #include <assert.h>
-#include <assert.h>
+
+
+using namespace PlayerCc;
 
 //#include <sys/time.h>
 
@@ -151,53 +154,49 @@ int main(int argc, char **argv)
   ClientProxy* cp;
 
   // connect to Player
-  PlayerClient pclient(host,port);
-  assert(!pclient.SetFrequency(data_rate));
-  if(!strcmp(dev,PLAYER_POSITION_STRING))
-    assert(cp = (ClientProxy*)new PositionProxy(&pclient,idx,'r'));
+  PlayerClient pclient(host, port);
+ 
+  pclient.SetFrequency(data_rate);
+
+  if(!strcmp(dev,PLAYER_LASER_STRING))
+    cp = (ClientProxy*)new LaserProxy(&pclient,idx);
+
+/*  else if(!strcmp(dev,PLAYER_POSITION_STRING))
+    cp = new PositionProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
-    assert(cp = (ClientProxy*)new Position3DProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new Position3DProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_TRUTH_STRING))
-    assert(cp = (ClientProxy*)new TruthProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new TruthProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_SONAR_STRING))
-    assert(cp = (ClientProxy*)new SonarProxy(&pclient,idx,'r'));
-  else if(!strcmp(dev,PLAYER_LASER_STRING))
-    assert(cp = (ClientProxy*)new LaserProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new SonarProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_LOCALIZE_STRING))
-    assert(cp = (ClientProxy*)new LocalizeProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new LocalizeProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_FIDUCIAL_STRING))
-    assert(cp = (ClientProxy*)new FiducialProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new FiducialProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_GPS_STRING))
-    assert(cp = (ClientProxy*)new GpsProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new GpsProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_PTZ_STRING))
-    assert(cp = (ClientProxy*)new PtzProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new PtzProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_BLOBFINDER_STRING))
-    assert(cp = (ClientProxy*)new BlobfinderProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new BlobfinderProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_IR_STRING))
-    assert(cp = (ClientProxy*)new IRProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new IRProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_ENERGY_STRING))
-    assert(cp = (ClientProxy*)new EnergyProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new EnergyProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_BUMPER_STRING))
-    assert(cp = (ClientProxy*)new BumperProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new BumperProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_WIFI_STRING))
-    assert(cp = (ClientProxy*)new WiFiProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new WiFiProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_GRIPPER_STRING))
-    assert(cp = (ClientProxy*)new GripperProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new GripperProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_ACTARRAY_STRING))
-    assert(cp = (ClientProxy*)new ActArrayProxy(&pclient,idx,'r'));
+    cp = (ClientProxy*)new ActArrayProxy(&pclient,idx);*/
   else
   {
     printf("Unknown interface \"%s\"\n", dev);
     exit(1);
   }
-
-  if(cp->GetAccess() != 'r')
-  {
-    puts("Couldn't get read access");
-    exit(1);
-  }
-
-  //pclient.SetFrequency(1000);
+  assert(cp);
 
   /* go into read-think-act loop */
   printf("Entering Main Read Loop\n");
@@ -205,15 +204,14 @@ int main(int argc, char **argv)
   for(;;)
   {
     /* this blocks until new data comes; 10Hz by default */
-    if(pclient.Read())
-      exit(1);
+    pclient.Read();
     
-    if(pclient.fresh)
+    //if(pclient.fresh)
     {
-      cp->Print();
-      pclient.fresh = false;
+      std::cout << cp;
+      //pclient.fresh = false;
       
-      if( print_timestamp )
+/*      if( print_timestamp )
       {
         double timestamp = 
                 (double)cp->timestamp.tv_sec + ((double)cp->timestamp.tv_usec)/1e6;
@@ -222,10 +220,10 @@ int main(int argc, char **argv)
         if(last >= 0.0)
           printf("#diff: %.6f\n", timestamp - last);
         last = timestamp;
-      }
+      }*/
     }
-    else
-    	printf("Not fresh data\n");
+/*    else
+    	printf("Not fresh data\n");*/
   }
 }
 
