@@ -1,14 +1,5 @@
 SUBDIRS = .
 
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(srcdir)/../libplayerc
-
-# create the pkg-config entry for the C++
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = playerc++.pc
-
-EXTRA_DIST = playerc++.pc.in
-CLEANFILES = playerc++.pc
-
 lib_LTLIBRARIES =
 
 # we need Boost, and so does our test program
@@ -17,15 +8,21 @@ if INCLUDE_BOOST_SIGNALS
  SUBDIRS += test
 endif
 
-# the +'s are turned into _'s by automake
-libplayerc___la_LDFLAGS = -version-info 2:0:0
+AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(top_srcdir)/client_libs
 
-libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lpthread
-libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la
+# create the pkg-config entry for the C++
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = playerc++.pc
+
+EXTRA_DIST = playerc++.pc.in
+CLEANFILES = playerc++.pc
+
+# the +'s are turned into _'s by automake
+libplayerc___la_LDFLAGS = -version-info 2:0:0  -rpath $(libdir)
 
 libplayerc___la_SOURCES =     playerc++.h \
                               playerclient.h \
-			                  playererror.h \
+                              playererror.h \
                               playerclient.cc \
                               playererror.cc \
                               clientproxy.cc \
@@ -72,4 +69,8 @@ libplayerc___la_SOURCES =     playerc++.h \
                               #bpsproxy.cc
                               #bpsproxy.h
 
-include_HEADERS = playerc++.h
+libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lpthread
+libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la
+
+libplayerc___includedir = $(includedir)/libplayerc++
+libplayerc___include_HEADERS = playerc++.h

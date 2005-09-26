@@ -42,7 +42,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_simulation.c \
                         dev_sonar.c \
                         dev_speech.c \
-                        dev_wifi.c 
+                        dev_wifi.c
 
 #dev_gps.c \
 #dev_gripper.c \
@@ -50,12 +50,12 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_motor.c \
 #dev_truth.c \
 #dev_dio.c \
-#dev_gripper.c 
+#dev_gripper.c
 
 libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo
 if INCLUDE_JPEG
 libplayerc_la_LIBADD += $(top_builddir)/libplayerjpeg/*.lo
 endif
 
-playercincludedir = $(includedir)/libplayerc
-playercinclude_HEADERS = playerc.h
+libplayerc_includedir = $(includedir)/libplayerc
+libplayerc_include_HEADERS = playerc.h
