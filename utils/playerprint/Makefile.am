@@ -1,5 +1,5 @@
-AM_CPPFLAGS = -I$(top_srcdir)/libplayercore -I$(top_srcdir)/client_libs/c -I$(top_srcdir)/client_libs/c++
-LDADD = $(top_builddir)/client_libs/c++/libplayerclient.a
+AM_CPPFLAGS = -I$(top_srcdir)/libplayercore -I$(top_srcdir)/client_libs/libplayerc++ -I$(top_srcdir)/client_libs/libplayerc
+LDADD = $(top_builddir)/client_libs/libplayerc++/.libs/libplayerc++.a -l@BOOST_THREAD_LIB@ -l@BOOST_SIGNALS_LIB@ $(top_builddir)/client_libs/libplayerc/.libs/libplayerc.a $(top_builddir)/libplayerxdr/.libs/libplayerxdr.a 
 
 bin_PROGRAMS = playerprint
 

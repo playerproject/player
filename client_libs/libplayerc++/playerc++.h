@@ -1064,6 +1064,10 @@ class LaserProxy : public ClientProxy
     double aMinLeft;
     double aMinRight;
 
+	// local storage of config
+	double min_angle, max_angle, scan_res, range_res;
+	bool intensity;
+
   public:
 
     // Constructor
@@ -1101,16 +1105,6 @@ class LaserProxy : public ClientProxy
     double GetIntensity(uint aIndex) const
       { return(GetVar(mDevice->intensity[aIndex])); };
 
-    /** Enable/disable the laser.
-      Set @p state to 1 to enable, 0 to disable.
-      Note that when laser is disabled the client will still receive laser
-      data, but the ranges will always be the last value read from the
-      laser before it was disabled.
-      @b Note: The @ref player_driver_sicklms200 driver currently does
-      not implement this feature.
-     */
-    void SetEnable(bool aEnable);
-
     /** Configure the laser scan pattern.  Angles @p min_angle and
         @p max_angle are measured in radians.
         @p scan_res is measured in units of @f$0.01^{\circ}@f$;
@@ -1139,7 +1133,10 @@ class LaserProxy : public ClientProxy
         and @p lp[0].  */
     double operator [] (uint index)
       { return GetRange(index);}
+
+    friend std::ostream &operator << (std::ostream &os, const PlayerCc::LaserProxy &c);
 };
+std::ostream &operator << (std::ostream &os, const PlayerCc::LaserProxy &c);
 
 /**
 The @p LocalizeProxy class is used to control a @ref

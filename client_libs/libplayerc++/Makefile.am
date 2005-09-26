@@ -29,13 +29,13 @@ libplayerc___la_SOURCES =     playerc++.h \
                               playerclient.cc \
                               playererror.cc \
                               clientproxy.cc \
-                              cameraproxy.cc
+                              cameraproxy.cc \
+                              laserproxy.cc
 
                               #gpsproxy.cc \
                               actarrayproxy.cc \
                               gripperproxy.cc \
                               fiducialproxy.cc \
-                              laserproxy.cc \
                               playerclient.cc \
                               playerclient.h \
                               playermulticlient.cc \
