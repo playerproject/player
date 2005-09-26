@@ -135,7 +135,7 @@ void PlayerClient::Read()
   std::list<PlayerCc::ClientProxy*>::iterator it = mProxyList.begin();
   for(; it != mProxyList.end(); ++it)
   {
-    EVAL(reinterpret_cast<int>(*it));
+    EVAL(*it);
     ClientProxy* x = *it;
     // only emit a signal when the interface has received data
     if (x->GetDataTime()>x->mLastTime)

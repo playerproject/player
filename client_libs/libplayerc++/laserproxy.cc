@@ -100,9 +100,9 @@ int LaserProxy::RequestConfigure()
 std::ostream &PlayerCc::operator << (std::ostream &os, const PlayerCc::LaserProxy &c)
 {
   os << "#min\tmax\tres\tcount\trange_res" << std::endl;
-  os << RTOD(c.GetVar(c.mDevice->scan_start)) << 
-    RTOD(c.GetVar(c.mDevice->scan_start + c.GetVar(c.mDevice->scan_count) * c.GetVar(c.mDevice->scan_res))) <<
-    RTOD(c.GetVar(c.mDevice->scan_res)) << c.GetVar(c.mDevice->scan_count) << c.GetVar(c.mDevice->range_res) << std::endl;
+  os << RTOD(c.GetVar(c.mDevice->scan_start)) << " " <<
+    RTOD(c.GetVar(c.mDevice->scan_start + c.GetVar(c.mDevice->scan_count) * c.GetVar(c.mDevice->scan_res))) << " " <<
+    RTOD(c.GetVar(c.mDevice->scan_res)) << " " << c.GetVar(c.mDevice->scan_count) << " " << c.GetVar(c.mDevice->range_res) << std::endl;
 	
   os << "#range\tbearing\tintensity" << std::endl;
   for(int i=0;i<c.GetVar(c.mDevice->scan_count) && i<PLAYER_LASER_MAX_SAMPLES;i++)
