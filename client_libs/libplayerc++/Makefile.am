@@ -73,4 +73,4 @@ libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_buil
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 libplayerc___includedir = $(includedir)/libplayerc++
-libplayerc___include_HEADERS = playerc++.h
+libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h
