@@ -5,7 +5,6 @@ lib_LTLIBRARIES =
 # we need Boost
 if INCLUDE_BOOST_SIGNALS
  lib_LTLIBRARIES += libplayerc++.la
- SUBDIRS += test
 endif
 
 AM_CPPFLAGS = -Wall -g -I$(top_srcdir) -I$(top_srcdir)/client_libs

@@ -4,7 +4,9 @@ test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client
 
 noinst_PROGRAMS = 
 if INCLUDE_BOOST_SIGNALS
+if WITH_TESTS
   noinst_PROGRAMS += test
+endif 
 endif
 
 test_SOURCES = test.cc \
