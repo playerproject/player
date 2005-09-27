@@ -59,13 +59,6 @@ class Driver
 
   protected:
 
-    /// @brief Last requester's queue.
-    ///
-    /// Pointer to a queue to which this driver owes a reply.  Used mainly
-    /// by non-threaded drivers to cache the return address for requests
-    /// that get forwarded to other devices.
-    MessageQueue* ret_queue;
-
     /// @brief Start the driver thread
     ///
     /// This method is usually called from the overloaded Setup() method to
@@ -113,6 +106,14 @@ class Driver
     virtual void Lock(void);
     /// @brief Unlock access to driver internals.
     virtual void Unlock(void);
+
+    /// @brief Last requester's queue.
+    ///
+    /// Pointer to a queue to which this driver owes a reply.  Used mainly
+    /// by non-threaded drivers to cache the return address for requests
+    /// that get forwarded to other devices.
+    MessageQueue* ret_queue;
+
 
     /// @brief Publish a message via one of this driver's interfaces.
     ///
@@ -271,8 +272,7 @@ class Driver
     /// @param hdr The message header
     /// @param data The message body
     virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
-                               void * data)
-    {return -1;};
+                               void * data);
 
     /// @brief Update non-threaded drivers.
     virtual void Update() 

@@ -42,6 +42,12 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
 libplayercore_java_la_SOURCES = playercore_java_wrap.cc
 libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@ -rpath $(libdir)
 
+javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayercore
+java_DATA = 
+if ENABLE_JAVA
+java_DATA += net/sourceforge/playerstage/Jplayercore/*.java
+endif
+
 if DARWIN
 install-exec-hook:
 	ln -sf $(libdir)/libplayercore_java.dylib $(libdir)/libplayercore_java.jnilib 
