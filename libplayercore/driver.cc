@@ -286,6 +286,13 @@ Driver::MainQuit()
 {
 }
 
+// Default message handler
+int Driver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+                           void * data)
+{
+  return -1;
+}
+
 /// Call this to automatically process messages using registered handler
 /// Processes messages until no messages remaining in the queue or
 /// a message with no handler is reached

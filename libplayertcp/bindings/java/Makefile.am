@@ -22,6 +22,12 @@ playertcp_java_wrap.cc: playertcp_java.i \
 libplayertcp_java_la_SOURCES = playertcp_java_wrap.cc
 libplayertcp_java_la_LDFLAGS = $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayererror.la -version-info 2:0:0 -rpath $(libdir)
 
+javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayertcp
+java_DATA = 
+if ENABLE_JAVA
+java_DATA += net/sourceforge/playerstage/Jplayertcp/*.java
+endif
+
 if DARWIN
 install-exec-hook:
 	ln -sf $(libdir)/libplayertcp_java.dylib $(libdir)/libplayertcp_java.jnilib 
