@@ -221,7 +221,7 @@ int plan_read_cspace(plan_t *plan, const char* fname, short hash)
      (fscanf(fp,"%d", &size_y) < 1) ||
      (fscanf(fp,"%lf", &scale) < 1) ||
      (fscanf(fp,"%lf", &max_radius) < 1) ||
-     (fscanf(fp,"%d", &cached_hash) < 1))
+     (fscanf(fp,"%hd", &cached_hash) < 1))
   {
     PLAYER_MSG1(2,"Failed to read c-space metadata from file %s", fname);
     fclose(fp);

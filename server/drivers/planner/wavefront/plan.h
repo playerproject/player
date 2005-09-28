@@ -13,10 +13,6 @@
 extern "C" {
 #endif
 
-// Forward declarations
-struct _rtk_fig_t *fig;
-
-
 // Description for a grid single cell
 typedef struct _plan_cell_t
 {
@@ -43,6 +39,10 @@ typedef struct
 {
   // Grid dimensions (number of cells)
   int size_x, size_y;
+
+  // Grid origin (real-world coords, in meters, of the lower-left grid
+  // cell)
+  double origin_x, origin_y;
 
   // Grid scale (m/cell)
   double scale;
@@ -99,12 +99,6 @@ int plan_get_waypoint(plan_t *plan, int i, double *px, double *py);
 // Convert given waypoint cell to global x,y
 void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint, 
                            double *px, double *py);
-
-// Draw the grid
-void plan_draw_grid(plan_t *plan, struct _rtk_fig_t *fig);
-
-// Draw waypoints
-void plan_draw_waypoints(plan_t *plan, struct _rtk_fig_t *fig);
 
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().

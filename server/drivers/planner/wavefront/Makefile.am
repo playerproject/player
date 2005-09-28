@@ -1,8 +1,9 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+noinst_LTLIBRARIES = 
+if INCLUDE_WAVEFRONT
+noinst_LTLIBRARIES += libwavefront.la
+endif
 
-noinst_LIBRARIES = @WAVEFRONT_LIB@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
-EXTRA_LIBRARIES = libwavefront.a
-
-libwavefront_a_SOURCES = plan.c plan_plan.c plan_waypoint.c plan.h \
-                         wavefront.cc
+libwavefront_la_SOURCES = plan.c plan_plan.c plan_waypoint.c plan.h \
+                          wavefront.cc
