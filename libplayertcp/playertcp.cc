@@ -179,6 +179,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                                                this->size_clients *
                                                sizeof(playertcp_conn_t));
     assert(this->clients);
+
     this->client_ufds = (struct pollfd*)realloc(this->client_ufds,
                                                 this->size_clients *
                                                 sizeof(struct pollfd));
