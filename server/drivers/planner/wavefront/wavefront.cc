@@ -328,7 +328,8 @@ void Wavefront_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-  : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE)
+  : Driver(cf, section, false, 
+           PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE)
 {
   // Must have a position device to control
   if (cf->ReadDeviceAddr(&this->position_id, section, "requires",
@@ -528,10 +529,12 @@ Wavefront::PutPositionCommand(double x, double y, double a, unsigned char type)
   cmd.type=type;
   cmd.state=1;
 
+  /*
   this->position->PutMsg(this->InQueue,
                          PLAYER_MSGTYPE_CMD,
                          PLAYER_POSITION2D_CMD_STATE,
                          (void*)&cmd,sizeof(cmd),NULL);
+                         */
 }
 
 void
@@ -909,9 +912,9 @@ Wavefront::SetupMap()
   delete msg;
 
   // allocate space for map cells
-  assert(this->plan->cells = (plan_cell_t*)malloc(sizeof(plan_cell_t) *
-                                                  this->plan->size_x *
-                                                  this->plan->size_y));
+  this->plan->cells = (plan_cell_t*)calloc((this->plan->size_x *
+                                            this->plan->size_y),
+                                           sizeof(plan_cell_t));
   assert(this->plan->cells);
 
   // Reset the grid
@@ -978,12 +981,12 @@ Wavefront::SetupMap()
       oj += sj;
     }
   }
+  free(data_req);
 
   puts("Done.");
 
   plan_update_cspace(this->plan,this->cspace_fname);
 
-  free(data_req);
   return(0);
 }
 

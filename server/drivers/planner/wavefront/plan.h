@@ -103,16 +103,16 @@ void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint,
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
 // Returns non-zero on error.
-int plan_write_cspace(plan_t *plan, const char* fname, short hash);
+int plan_write_cspace(plan_t *plan, const char* fname, unsigned int* hash);
 
 // Read the cspace occupancy distance values from a file, one per line.
 // Write them in first with plan_read_cspace().
 // Returns non-zero on error.
-int plan_read_cspace(plan_t *plan, const char* fname, short hash);
+int plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash);
 
 // Compute and return the 16-bit MD5 hash of the map data in the given plan
 // object.
-short plan_md5(plan_t* plan);
+void plan_md5(unsigned int* digest, plan_t* plan);
 
 /**************************************************************************
  * Plan manipulation macros
