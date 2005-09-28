@@ -238,14 +238,16 @@ class Wavefront : public Driver
     virtual void Main();
 
     // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    virtual int ProcessMessage(MessageQueue* resp_queue, 
+                               player_msghdr * hdr, 
+                               void * data);
 
     bool newData;
 
     // bookkeeping
-    player_device_id_t position_id;
-    player_device_id_t localize_id;
-    player_device_id_t map_id;
+    player_devaddr_t position_id;
+    player_devaddr_t localize_id;
+    player_devaddr_t map_id;
     double map_res;
     double robot_radius;
     double safety_dist;
@@ -311,7 +313,7 @@ class Wavefront : public Driver
     int ShutdownPosition();
     int ShutdownLocalize();
 
-	void ProcessCommand(player_planner_cmd_t &cmd);
+    void ProcessCommand(player_planner_cmd_t &cmd);
     void ProcessLocalizeData(player_localize_data_t &);
     void ProcessPositionData(player_position_data_t &);
     void PutPositionCommand(double x, double y, double a, unsigned char type);
@@ -354,23 +356,23 @@ void Wavefront_Register(DriverTable* table)
 Wavefront::Wavefront( ConfigFile* cf, int section)
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE, PLAYER_ALL_MODE)
 {
-  // Must have a position device
-  if (cf->ReadDeviceId(&this->position_id, section, "requires",
-                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  // Must have a position device to control
+  if (cf->ReadDeviceAddr(&this->position_id, section, "requires",
+                         PLAYER_POSITION2D_CODE, -1, "output") != 0)
   {
     this->SetError(-1);
     return;
   }
-  // Must have a localize device
-  if (cf->ReadDeviceId(&this->localize_id, section, "requires",
-                       PLAYER_LOCALIZE_CODE, -1, NULL) != 0)
+  // Must have a position device from which to read global poses
+  if (cf->ReadDeviceAddr(&this->localize_id, section, "requires",
+                         PLAYER_POSITION2D_CODE, -1, "input") != 0)
   {
     this->SetError(-1);
     return;
   }
   // Must have a map device
-  if (cf->ReadDeviceId(&this->map_id, section, "requires",
-                       PLAYER_MAP_CODE, -1, NULL) != 0)
+  if (cf->ReadDeviceAddr(&this->map_id, section, "requires",
+                         PLAYER_MAP_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -744,22 +746,9 @@ void Wavefront::Main()
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
   // block until we get initial data from underlying devices
-  this->position->Wait();
-
-  ProcessMessages();
-  //GetPositionData();
-  
-  // HACK!
-  // Blocking here means that the planner won't start until the localizer
-  // generates a *new* pose estimate, even if the localizer already has
-  // converged to a good value.  That's a pain. So we'll try sleeping
-  // briefly instead.  Clearly not a good solution.
-  
-  //this->localize->Wait();
-  usleep(2000000);
-  ProcessMessages();
-//  GetLocalizeData();
-  StopPosition();
+  // TODO
+  //this->position->Wait();
+  this->StopPosition();
 
   for(;;)
   {
@@ -1179,71 +1168,81 @@ Wavefront::ShutdownLocalize()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int Wavefront::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int Wavefront::ProcessMessage(MessageQueue* resp_queue, 
+                              player_msghdr * hdr, 
+                              void * data);
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
- 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, position_id))
+  // Is it new odometry data?
+  if(MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                  PLAYER_POSITION2D_DATA_STATE, 
+                  this->position_id))
   {
-  	assert(hdr->size == sizeof(player_position_data_t));
-  	ProcessPositionData(*reinterpret_cast<player_position_data_t *> (data));
-  	*resp_len = 0;
-  	return 0;
+    this->ProcessPositionData((player_position2d_data_t*)data);
+    
+    // In case localize_id and position_id are the same
+    if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                             PLAYER_POSITION2D_DATA_STATE,
+                             this->localize_id))
+      this->ProcessLocalizeData((player_position2d_data_t*)data);
+    return(0);
   }
-  	
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, localize_id))
+  // Is it new localization data?
+  else if(MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                       PLAYER_POSITION2D_DATA_STATE, 
+                       this->localize_id))
   {
-  	assert(hdr->size == sizeof(player_localize_data_t));
-  	ProcessLocalizeData(*reinterpret_cast<player_localize_data_t *> (data));
-  	*resp_len = 0;
-  	return 0;
+    this->ProcessLocalizeData((player_position2d_data_t*)data);
+    return(0);
   }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  // Is it a new goal for the planner?
+  else if(MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                       PLAYER_PLANNER_CMD_GOAL, 
+                       this->device_addr))
   {
-  	assert(hdr->size == sizeof(player_planner_cmd_t));
-  	ProcessCommand(*reinterpret_cast<player_planner_cmd_t *> (data));
-  	*resp_len = 0;
-  	return 0;
+    this->ProcessCommand((player_planner_cmd_t*)data);
+    return(0);
   }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_GET_WAYPOINTS, device_id))
+  else if(MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                       PLAYER_PLANNER_REQ_GET_WAYPOINTS, 
+                       this->device_addr))
   {
-  	assert(*resp_len >= sizeof(player_planner_waypoints_req_t));
-    player_planner_waypoints_req_t & reply = *reinterpret_cast<player_planner_waypoints_req_t*> (resp_data);
+    player_planner_waypoints_req_t reply;
 
     double wx,wy;
     size_t replylen;
-    
-        if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
-        {
-          PLAYER_WARN("too many waypoints; truncating list");
-          //reply.count = htons((unsigned short)PLAYER_PLANNER_MAX_WAYPOINTS);
-          reply.count = htons((unsigned short)0);
-        }
-        else
-          reply.count = htons((unsigned short)this->waypoint_count);
-        for(int i=0;i<(int)ntohs(reply.count);i++)
-        {
-          plan_convert_waypoint(plan,this->waypoints[i], &wx, &wy);
-          reply.waypoints[i].x = htonl((int)rint(wx * 1e3));
-          reply.waypoints[i].y = htonl((int)rint(wy * 1e3));
-        }
-        replylen = sizeof(player_planner_waypoints_req_t) - 
-                (PLAYER_PLANNER_MAX_WAYPOINTS - ntohs(reply.count)) * 
-                sizeof(player_planner_waypoint_t);
-  	
-  	*resp_len = sizeof(player_planner_waypoints_req_t);
-  	return PLAYER_MSGTYPE_RESP_ACK;
-  }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PLANNER_ENABLE, device_id))
+    if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
+    {
+      PLAYER_WARN("too many waypoints; truncating list");
+      reply.waypoints_count = 0;
+    }
+    else
+      reply.waypoints_count = this->waypoint_count;
+    for(int i=0;i<reply.waypoints_count;i++)
+    {
+      plan_convert_waypoint(plan,this->waypoints[i], &wx, &wy);
+      reply.waypoints[i].x = wx;
+      reply.waypoints[i].y = wy;
+      reply.waypoints[i].a = 0.0;
+    }
+
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_PLANNER_REQ_GET_WAYPOINTS,
+                  (void*)&resp, sizeof(resp), NULL);
+    return(0);
+  }
+  else if(MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                       PLAYER_PLANNER_REQ_ENABLE, 
+                       this->device_addr))
   {
-  	assert(hdr->size == sizeof(player_planner_enable_req_t));
-    player_planner_enable_req_t * enable_req = reinterpret_cast<player_planner_enable_req_t*> (data);
+    if(hdr->size != sizeof(player_planner_enable_req_t))
+    {
+      PLAYER_ERROR("incorrect size for planner enable request");
+      return(-1);
+    }
+    player_planner_enable_req_t* enable_req = 
+            (player_planner_enable_req_t*)data;
 
     if(enable_req->state)
     {
@@ -1255,87 +1254,13 @@ int Wavefront::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t 
       this->enable = false;
       PLAYER_MSG0(2,"Robot disabled");
     }
-
-  	*resp_len = 0;
-  	return PLAYER_MSGTYPE_RESP_ACK;
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_PLANNER_REQ_ENABLE);
+    return(0);
   }
-  
-  *resp_len = 0;
-  return -1;
+  else
+    return(-1);
 }
-/*
-int 
-Wavefront::PutConfig(player_device_id_t id, void *client, 
-                     void* src, size_t len,
-                     struct timeval* timestamp)
-{
-  player_planner_waypoints_req_t reply;
-  player_planner_enable_req_t* enable_req;
-  double wx,wy;
-  size_t replylen;
-  
-  // TODO: figure out why locking here causes a deadlock.
-  //Lock();
-  memset(&reply,0,sizeof(player_planner_waypoints_req_t));
-  if(len > 0)
-  {
-    switch(((unsigned char*)src)[0])
-    {
-      case PLAYER_PLANNER_GET_WAYPOINTS_REQ:
-        // return the list of waypoints
-        reply.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
-        if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
-        {
-          PLAYER_WARN("too many waypoints; truncating list");
-          //reply.count = htons((unsigned short)PLAYER_PLANNER_MAX_WAYPOINTS);
-          reply.count = htons((unsigned short)0);
-        }
-        else
-          reply.count = htons((unsigned short)this->waypoint_count);
-        for(int i=0;i<(int)ntohs(reply.count);i++)
-        {
-          plan_convert_waypoint(plan,this->waypoints[i], &wx, &wy);
-          reply.waypoints[i].x = htonl((int)rint(wx * 1e3));
-          reply.waypoints[i].y = htonl((int)rint(wy * 1e3));
-        }
-        replylen = sizeof(player_planner_waypoints_req_t) - 
-                (PLAYER_PLANNER_MAX_WAYPOINTS - ntohs(reply.count)) * 
-                sizeof(player_planner_waypoint_t);
 
-        if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, 
-                    (void*)&reply, replylen,NULL))
-          PLAYER_ERROR("PutReply() failed");
-        break;
-      case PLAYER_PLANNER_ENABLE_REQ:
-        if(len != sizeof(player_planner_enable_req_t))
-        {
-          PLAYER_ERROR("incorrect size for planner enable request");
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK, NULL))
-            PLAYER_ERROR("PutReply() failed");
-        }
-        else
-        {
-          enable_req = (player_planner_enable_req_t*)src;
-          if(enable_req->state)
-          {
-            this->enable = true;
-            PLAYER_MSG0(2,"Robot enabled");
-          }
-          else
-          {
-            this->enable = false;
-            PLAYER_MSG0(2,"Robot disabled");
-          }
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL))
-            PLAYER_ERROR("PutReply() failed");
-        }
-        break;
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-    }
-  }
-  //Unlock();
-  return(0);
-}*/
