@@ -382,6 +382,9 @@ Wavefront::Setup()
   memset(this->waypoints,0,sizeof(this->waypoints));
   this->waypoint_count = 0;
 
+  if(SetupPosition() < 0)
+    return(-1);
+
   if(!(this->plan = plan_alloc(this->robot_radius+this->safety_dist,
                                this->robot_radius+this->safety_dist,
                                this->max_radius,
@@ -391,8 +394,6 @@ Wavefront::Setup()
     return(-1);
   }
 
-  if(SetupPosition() < 0)
-    return(-1);
   if(SetupMap() < 0)
     return(-1);
   if(SetupLocalize() < 0)
@@ -560,8 +561,7 @@ Wavefront::StopPosition()
   if(!this->stopped)
   {
     //puts("stopping robot");
-    //PutPositionCommand(this->position_x,this->position_y,this->position_a);
-    PutPositionCommand(0,0,0,0);
+    PutPositionCommand(0.0,0.0,0.0,0);
     this->stopped = true;
   }
 }
@@ -856,7 +856,7 @@ Wavefront::SetupLocalize()
     return(-1);
   }
 
-  return 0;
+  return(0);
 }
 
 // setup the underlying map device (i.e., get the map)
