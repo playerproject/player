@@ -529,12 +529,10 @@ Wavefront::PutPositionCommand(double x, double y, double a, unsigned char type)
   cmd.type=type;
   cmd.state=1;
 
-  /*
   this->position->PutMsg(this->InQueue,
                          PLAYER_MSGTYPE_CMD,
                          PLAYER_POSITION2D_CMD_STATE,
                          (void*)&cmd,sizeof(cmd),NULL);
-                         */
 }
 
 void

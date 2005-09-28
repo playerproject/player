@@ -191,7 +191,10 @@ class VFH_Class : public Driver
     // Set up the laser device.
     int SetupLaser();
     int ShutdownLaser();
+    int SetupSonar();
+    int ShutdownSonar();
     void ProcessLaser(player_laser_data_t &);
+    void ProcessSonar(player_sonar_data_t &);
 
     // Send commands to underlying position device
     void PutCommand( int speed, int turnrate );
@@ -224,6 +227,12 @@ class VFH_Class : public Driver
     // Laser device info
     Device *laser;
     player_devaddr_t laser_addr;
+
+    // Sonar device info
+    Device *sonar;
+    player_devaddr_t sonar_addr;
+    int num_sonars;
+    player_pose_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
 
     // Laser range and bearing values
     int laser_count;
@@ -266,7 +275,9 @@ int VFH_Class::Setup()
     return -1;
 
   // Initialise the laser.
-  if (this->SetupLaser() != 0)
+  if (this->laser_addr.interf && this->SetupLaser() != 0)
+    return -1;
+  if (this->sonar_addr.interf && this->SetupSonar() != 0)
     return -1;
 
   // FIXME
@@ -378,12 +389,67 @@ int VFH_Class::SetupLaser()
   return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Set up the sonar
+int VFH_Class::SetupSonar() 
+{
+  if(!(this->sonar = deviceTable->GetDevice(this->sonar_addr)))
+  {
+    PLAYER_ERROR("unable to locate suitable sonar device");
+    return -1;
+  }
+  if (this->sonar->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to sonar device");
+    return -1;
+  }
+
+  player_sonar_geom_t* cfg;
+  Message* msg;
+
+  // Get the sonar poses
+  if(!(msg = this->sonar->Request(this->InQueue, 
+                                  PLAYER_MSGTYPE_REQ,
+                                  PLAYER_SONAR_REQ_GET_GEOM,
+                                  NULL, 0, NULL,false)))
+  {
+    PLAYER_ERROR("failed to get sonar geometry");
+    return(-1);
+  }
+  
+  // Store the sonar poses
+  cfg = (player_sonar_geom_t*)msg->GetPayload();
+  this->num_sonars = cfg->poses_count;
+  for(int i=0;i<this->num_sonars;i++)
+  {
+    this->sonar_poses[i] = cfg->poses[i];
+  }
+
+  delete msg;
+
+  this->laser_count = 0;
+  for(int i=0;i<PLAYER_LASER_MAX_SAMPLES;i++)
+  {
+    this->laser_ranges[i][0] = 0;
+    this->laser_ranges[i][1] = 0;
+  }
+  return 0;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
 int VFH_Class::ShutdownLaser() 
 {
   this->laser->Unsubscribe(this->InQueue);
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Shut down the sonar
+int VFH_Class::ShutdownSonar() 
+{
+  this->sonar->Unsubscribe(this->InQueue);
   return 0;
 }
 
@@ -447,6 +513,48 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Process new sonar data, in a very crude way.
+void 
+VFH_Class::ProcessSonar(player_sonar_data_t &data) 
+{
+  int i;
+  double b, r;
+  double cone_width = 30.0;
+  int count = 361;
+
+  this->laser_count = count;
+  assert(this->laser_count < 
+         (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
+
+  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+    this->laser_ranges[i][0] = -1;
+
+  //b += 90.0;
+  for(i = 0; i < (int)data.ranges_count; i++)
+  {
+    for(b = RTOD(this->sonar_poses[i].pa) + 90.0 - cone_width/2.0;
+        b < RTOD(this->sonar_poses[i].pa) + 90.0 + cone_width/2.0;
+        b+=0.5)
+    {
+      if((b < 0) || (rint(b*2) >= count))
+        continue;
+      this->laser_ranges[(int)rint(b * 2)][0] = data.ranges[i] * 1e3;
+      this->laser_ranges[(int)rint(b * 2)][1] = b;
+    }
+  }
+
+  r = 1000000.0;
+  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+  {
+    if (this->laser_ranges[i][0] != -1) {
+      r = this->laser_ranges[i][0];
+    } else {
+      this->laser_ranges[i][0] = r;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Send commands to the underlying position device
 void 
 VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) 
@@ -477,14 +585,17 @@ VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
   // Position mode
   else
   {
+    if(fabs(this->con_vel[2]) > 
+       (double)vfh_Algorithm->GetMaxTurnrate((int)this->con_vel[0]))
+    {
+      PLAYER_WARN1("fast turn %d", this->con_vel[2]);
+      this->con_vel[2] = 0;
+    }
+
     cmd.vel.px =  this->con_vel[0] / 1e3;
     cmd.vel.py =  this->con_vel[1] / 1e3;
     cmd.vel.pa =  DTOR(this->con_vel[2]);
   }
-
-  if(fabs(this->con_vel[2]) > 
-     (double)vfh_Algorithm->GetMaxTurnrate((int)this->con_vel[0]))
-    PLAYER_WARN1("fast turn %d", RTOD(cmd.vel.pa));
 
   this->odom->PutMsg(this->InQueue,
                      PLAYER_MSGTYPE_CMD,
@@ -512,6 +623,14 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
     // It's not always that big...
     //assert(hdr->size == sizeof(player_laser_data_t));
     ProcessLaser(*reinterpret_cast<player_laser_data_t *> (data));
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                                PLAYER_SONAR_DATA_RANGES, this->sonar_addr))
+  {
+    // It's not always that big...
+    //assert(hdr->size == sizeof(player_laser_data_t));
+    ProcessSonar(*reinterpret_cast<player_sonar_data_t *> (data));
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
@@ -850,10 +969,18 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   }
   
   this->laser = NULL;
-  if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
-                         PLAYER_LASER_CODE, -1, NULL) != 0)
+  memset(&this->laser_addr,0,sizeof(player_devaddr_t));
+  cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
+                     PLAYER_LASER_CODE, -1, NULL);
+  memset(&this->sonar_addr,0,sizeof(player_devaddr_t));
+  cf->ReadDeviceAddr(&this->sonar_addr, section, "requires",
+                     PLAYER_SONAR_CODE, -1, NULL);
+
+  if((!this->laser_addr.interf && !this->sonar_addr.interf) ||
+     (this->laser_addr.interf && this->sonar_addr.interf))
   {
-    this->SetError(-1);    
+    PLAYER_ERROR("vfh needs exactly one sonar or one laser");
+    this->SetError(-1);
     return;
   }
   
