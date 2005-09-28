@@ -544,7 +544,7 @@ PlayerTCP::Write()
 {
   for(int i=0;i<this->num_clients;i++)
   {
-    if(this->WriteClient(i) < 0)
+    if(this->clients[i].valid && (this->WriteClient(i) < 0))
     {
       PLAYER_WARN1("failed to write to client %d\n", i);
       this->clients[i].del = 1;
