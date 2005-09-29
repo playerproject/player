@@ -131,9 +131,10 @@ class PlayerClient
 
 }
 
-/* These need to be outside of the namespace */
-
-std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c);
+namespace std
+{
+  std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c);
+}
 
 #endif
 

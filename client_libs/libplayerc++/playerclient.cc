@@ -222,7 +222,7 @@ void PlayerClient::GetDeviceList()
 
 #endif
 
-std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
+std::ostream& std::operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
 {
   return os << c.GetHostname()
             << ": "

@@ -30,9 +30,12 @@
 
 using namespace PlayerCc;
 
-PlayerError::PlayerError(const std::string aFun, const std::string aStr) :
+PlayerError::PlayerError(const std::string aFun,
+                         const std::string aStr,
+                         const int aCode) :
   mStr(aStr),
-  mFun(aFun)
+  mFun(aFun),
+  mCode(aCode)
 {
 
 }

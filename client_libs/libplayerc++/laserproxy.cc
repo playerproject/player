@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 /*
  * $Id$
  *
- * client-side laser device 
+ * client-side laser device
  */
 
 #include "playerc++.h"
@@ -71,17 +71,18 @@ LaserProxy::Unsubscribe()
   mDevice = NULL;
 }
 
-void LaserProxy::Configure(double min_angle, 
-                          double max_angle, 
-			              uint scan_res,
-			              uint range_res, 
-                          bool intensity)
+void LaserProxy::Configure(double min_angle,
+                           double max_angle,
+                           uint scan_res,
+                           uint range_res,
+                           bool intensity)
 {
   Lock();
-  playerc_laser_set_config(mDevice,min_angle,max_angle,scan_res,range_res,intensity?1:0);
-  Unlock();	
+  playerc_laser_set_config(mDevice,min_angle,max_angle,
+                           scan_res,range_res,intensity?1:0);
+  Unlock();
 }
-	
+
 
 /** Get the current laser configuration; it is read into the
   relevant class attributes.\\
@@ -91,22 +92,31 @@ int LaserProxy::RequestConfigure()
 {
   Lock();
   unsigned char temp_int;
-  int ret = playerc_laser_get_config(mDevice,&min_angle, &max_angle, &scan_res, &range_res, &temp_int);
+  int ret = playerc_laser_get_config(mDevice,&min_angle, &max_angle,
+                                     &scan_res, &range_res, &temp_int);
   Unlock();
   intensity = temp_int == 0 ? false : true;
   return ret;
 }
 
-std::ostream &PlayerCc::operator << (std::ostream &os, const PlayerCc::LaserProxy &c)
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::LaserProxy &c)
 {
+  /*
   os << "#min\tmax\tres\tcount\trange_res" << std::endl;
-  os << RTOD(c.GetVar(c.mDevice->scan_start)) << " " <<
-    RTOD(c.GetVar(c.mDevice->scan_start + c.GetVar(c.mDevice->scan_count) * c.GetVar(c.mDevice->scan_res))) << " " <<
-    RTOD(c.GetVar(c.mDevice->scan_res)) << " " << c.GetVar(c.mDevice->scan_count) << " " << c.GetVar(c.mDevice->range_res) << std::endl;
-	
+  os << RTOD(c.GetVar(c.mDevice->scan_start)) << "\t"
+     << RTOD(c.GetVar(c.mDevice->scan_start +
+        c.GetVar(c.mDevice->scan_count) * c.GetVar(c.mDevice->scan_res))) << "\t"
+     << RTOD(c.GetVar(c.mDevice->scan_res)) << "\t"
+     << c.GetVar(c.mDevice->scan_count) << "\t"
+     << c.GetVar(c.mDevice->range_res) << std::endl;
+
   os << "#range\tbearing\tintensity" << std::endl;
+
   for(int i=0;i<c.GetVar(c.mDevice->scan_count) && i<PLAYER_LASER_MAX_SAMPLES;i++)
-    os << c.GetVar(c.mDevice->scan[i][0]) << " " << RTOD(c.GetVar(c.mDevice->scan[i][1])) << " " << c.GetVar(c.mDevice->intensity[i]) << " ";
+    os << c.GetVar(c.mDevice->scan[i][0]) << "\t"
+       << RTOD(c.GetVar(c.mDevice->scan[i][1])) << "\t"
+       << c.GetVar(c.mDevice->intensity[i]) << "\t";
+  */
   return os;
 }
 

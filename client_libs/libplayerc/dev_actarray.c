@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -84,7 +84,7 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
                              player_actarray_data_t *data, size_t len)
 {
   int i = 0;
-  
+
   if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_ACTARRAY_DATA_STATE))
   {
     device->actuators_count = data->actuators_count;
@@ -121,15 +121,6 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
     device->actuators[ii].config_speed = geom.actuators[ii].config_speed;
     device->actuators[ii].hasbrakes = geom.actuators[ii].hasbrakes;
   }
-
-//   printf ("%d actuators:\n", device->numactuators);
-//   printf ("Act |\tType\tMin\tCentre\tMax\tHome\tCfgSpd\tPos\tSpeed\tState\tBrakes\n");
-//   for (ii = 0; ii < device->numactuators; ii++)
-//   {
-//     printf (" %2d |\t%s\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%0.3f\t%d\t%s\n", ii, (device->actuators[ii].type ? "Linear" : "Rotary"),
-//             device->actuators[ii].min, device->actuators[ii].centre, device->actuators[ii].max, device->actuators[ii].home, device->actuators[ii].config_speed,
-//             device->actuators[ii].position, device->actuators[ii].speed, device->actuators[ii].state, (device->actuators[ii].hasbrakes ? "Y" : "N"));
-//   }
   return 0;
 }
 

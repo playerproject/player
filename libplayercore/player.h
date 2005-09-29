@@ -358,7 +358,7 @@ Tells a joint (or the whole array) to go to home position. */
 typedef struct player_actarray_home_cmd
 {
   /** The joint to command - set to -1 to command all. */
-  uint8_t joint;
+  int8_t joint;
 } player_actarray_home_cmd_t;
 
 /** @brief Configuration request: Power.

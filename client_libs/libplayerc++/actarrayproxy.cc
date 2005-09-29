@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,212 +19,197 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ * $Id$
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 #if HAVE_CONFIG_H
-  #include "config.h"
+#include "config.h"
 #endif
 
 #include <cassert>
 #include <sstream>
 #include <iomanip>
 
-#include "playercc.h"
+#include "playerc++.h"
+
+#define DEBUG_LEVEL HIGH
+#include "debug.h"
 using namespace PlayerCc;
 
-// interface that all proxies SHOULD provide
-std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& a)
+ActArrayProxy::ActArrayProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  //printf ("#ActArray(%d:%d) - %c\n", m_device_id.code, m_device_id.index, access);
-  os << a.numActuators << " actuators:" << std::endl;
-  os << "Act |\tType\tMin\tCentre\tMax\tHome\tCfgSpd\tPos\tSpeed\tState\tBrakes" << std::endl;
-  for (int ii = 0; ii < numActuators; ii++)
+  Subscribe(aIndex);
+  mInfo = &(mDevice->info);
+}
+
+ActArrayProxy::~ActArrayProxy()
+{
+  Unsubscribe();
+}
+
+void ActArrayProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_actarray_create(mClient, aIndex);
+  if (mDevice==NULL)
+    throw PlayerError("ActArrayProxy::ActArrayProxy()", "could not create");
+
+  if (0 != playerc_actarray_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("ActArrayProxy::ActArrayProxy()", "could not subscribe");
+}
+
+void ActArrayProxy::Unsubscribe(void)
+{
+  assert(mDevice!=NULL);
+  playerc_actarray_unsubscribe(mDevice);
+  playerc_actarray_destroy(mDevice);
+  mDevice = NULL;
+}
+
+// interface that all proxies SHOULD provide
+std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy& a)
+{
+  player_actarray_actuator_t data;
+  player_actarray_actuatorgeom_t geom;
+
+  int old_precision = os.precision(3);
+  std::_Ios_Fmtflags old_flags = os.flags();
+  os.setf(std::ios::fixed);
+
+  os << a.NumActuators () << " actuators:" << std::endl;
+  os << "Act \tType\tMin\tCentre\tMax\tHome"
+        "\tCfgSpd\tPos\tSpeed\tState\tBrakes" << std::endl;
+  for (uint ii = 0; ii < a.NumActuators (); ii++)
   {
-    os <<  ii << (a.actuatorGeom[ii].type ? "Linear" : "Rotary") <<
-            a.actuatorGeom[ii].min << a.actuatorGeom[ii].centre << a.actuatorGeom[ii].max << a.actuatorGeom[ii].home << a.actuatorGeom[ii].configSpeed <<
-            a.actuatorData[ii].position << a.actuatorData[ii].speed << a.actuatorData[ii].state << (a.actuatorGeom[ii].hasBrakes ? "Y" : "N") << std::endl;
+    data = a.GetActuatorData(ii);
+    geom = a.GetActuatorGeom(ii);
+    os <<  ii << '\t'
+       << (geom.type ? "Linear" : "Rotary") << '\t'
+       << geom.min << '\t'
+       << geom.centre << '\t'
+       << geom.max << '\t'
+       << geom.home << '\t'
+       << geom.config_speed << '\t'
+       << data.position << '\t'
+       << data.speed << '\t'
+       << static_cast<int> (data.state)
+       << '\t' << (geom.hasbrakes ? "Y" : "N")
+       << std::endl;
   }
+
+  os.precision(old_precision);
+  os.flags(old_flags);
+
   return os;
 }
 
 // Power control
-int ActArrayProxy::Power (uint8_t val)
+void ActArrayProxy::SetPowerConfig(bool aVal)
 {
-  if (!client)
-    return -1;
+  Lock();
+  int ret = playerc_actarray_power(mDevice, aVal ? 1 : 0);
+  Unlock();
 
-  player_actarray_power_config_t config;
-  memset (&config, 0, sizeof (config));
-  config.request = PLAYER_ACTARRAY_POWER_REQ;
-  config.value = val;
-  return (client->Request(m_device_id, reinterpret_cast<const char*>(&config), sizeof(config)));
+  if (-2 != ret)
+    throw PlayerError("ActArrayProxy::SetPowerConfig", "NACK", ret);
+  else if (0 != ret)
+    throw PlayerError("ActArrayProxy::SetPowerConfig",
+                      playerc_error_str(),
+                      ret);
 }
 
 // Brakes control
-int ActArrayProxy::Brakes (uint8_t val)
+void ActArrayProxy::SetBrakesConfig(bool aVal)
 {
-  if (!client)
-    return -1;
+  Lock();
+  int ret = playerc_actarray_brakes(mDevice, aVal ? 1 : 0)
+  Unlock();
 
-  player_actarray_brakes_config_t config;
-  memset (&config, 0, sizeof (config));
-  config.request = PLAYER_ACTARRAY_BRAKES_REQ;
-  config.value = val;
-  return (client->Request(m_device_id, reinterpret_cast<const char*>(&config), sizeof(config)));
+  if (-2 != ret)
+    throw PlayerError("ActArrayProxy::SetBrakesConfig", "NACK", ret);
+  else if (0 != ret)
+    throw PlayerError("ActArrayProxy::SetBrakesConfig",
+                      playerc_error_str(),
+                      ret);
 }
 
 // Speed config
-int ActArrayProxy::SpeedConfig (int8_t joint, int32_t speed)
+void ActArrayProxy::SetSpeedConfig (uint aJoint, float aSpeed)
 {
-  if (!client)
-    return -1;
+  Lock();
+  int ret = playerc_actarray_speed_config(mDevice, aJoint, aSpeed);
+  Unlock();
 
-  player_actarray_speed_config_t config;
-  memset (&config, 0, sizeof (config));
-  config.request = PLAYER_ACTARRAY_SPEED_REQ;
-  config.joint = joint;
-  config.speed = speed;
-  return (client->Request(m_device_id, reinterpret_cast<const char*>(&config), sizeof(config)));
+  if (-2 != ret)
+    throw PlayerError("ActArrayProxy::SetSpeedConfig", "NACK", ret);
+  else if (0 != ret)
+    throw PlayerError("ActArrayProxy::SetSpeedConfig",
+                      playerc_error_str(),
+                      ret);
 }
 
 // Send an actuator to a position
-int ActArrayProxy::SetPosition (int8_t joint, int32_t position)
+void ActArrayProxy::MoveTo(uint aJoint, float aPosition)
 {
-  if (!client)
-    return -1;
-
-  player_actarray_position_cmd_t cmd;
-  memset (&cmd, 0, sizeof (cmd));
-
-  cmd.flag = 0;
-  cmd.joint = joint;
-  cmd.position = position;
-
-  return(client->Write(m_device_id, reinterpret_cast<const char*>(&cmd), sizeof(cmd)));
+  Lock();
+  playerc_actarray_position_cmd(mDevice, aJoint, aPosition);
+  Unlock();
 }
 
 // Move an actuator at a speed
-int ActArrayProxy::SetSpeed (int8_t joint, int32_t speed)
+void ActArrayProxy::MoveAtSpeed(uint aJoint, float aSpeed)
 {
-  if (!client)
-    return -1;
-
-  player_actarray_speed_cmd_t cmd;
-  memset (&cmd, 0, sizeof (cmd));
-
-  cmd.flag = 0;
-  cmd.joint = joint;
-  cmd.speed = speed;
-
-  return(client->Write(m_device_id, reinterpret_cast<const char*>(&cmd), sizeof(cmd)));
+  Lock();
+  playerc_actarray_speed_cmd(mDevice, aJoint, aSpeed);
+  Unlock();
 }
 
 // Send an actuator, or all actuators, home
-int ActArrayProxy::Home (int8_t joint)
+void ActArrayProxy::MoveHome(int aJoint)
 {
-  if (!client)
-    return -1;
-
-  player_actarray_home_cmd_t cmd;
-  memset (&cmd, 0, sizeof (cmd));
-
-  cmd.flag = 2;
-  cmd.joint = joint;
-
-  return(client->Write(m_device_id, reinterpret_cast<const char*>(&cmd), sizeof(cmd)));
+  Lock();
+  playerc_actarray_home_cmd(mDevice, aJoint);
+  Unlock();
 }
 
-void ActArrayProxy::FillData (player_msghdr_t hdr, const char* buffer)
+player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const
 {
-  if(hdr.size != sizeof(player_actarray_data_t))
+  if (aJoint > NumActuators ())
   {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of actarray data, but received %d. Unexpected results may ensue.\n",
-              sizeof(player_actarray_data_t),hdr.size);
-  }
-  const player_actarray_data_t* lclBuffer = reinterpret_cast<const player_actarray_data_t*>(buffer);
-
-  numActuators = lclBuffer->numactuators;
-  for (int ii = 0; ii < numActuators; ii++)
-  {
-    actuatorData[ii].position = static_cast<int> (ntohl (lclBuffer->actuators[ii].position));
-    actuatorData[ii].speed = static_cast<int> (ntohl (lclBuffer->actuators[ii].speed));
-    actuatorData[ii].state = static_cast<int> (lclBuffer->actuators[ii].state);
-  }
-}
-
-ActuatorData ActArrayProxy::GetActuatorData (int actuator)
-{
-  ActuatorData empty;
-  
-  if (actuator > numActuators)
-  {
-    memset (&empty, 0, sizeof (ActuatorData));
+    player_actarray_actuator_t empty;
+    memset(&empty, 0, sizeof(player_actarray_actuator_t));
     return empty;
   }
   else
-    return actuatorData[actuator];
+    return GetVar(mDevice->actuators_data[aJoint]);
 }
-    // Same again for getting actuator geometry
-ActuatorGeom ActArrayProxy::GetActuatorGeom (int actuator)
+
+// Same again for getting actuator geometry
+player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint aJoint) const
 {
-  ActuatorGeom empty;
-  
-  if (actuator > numActuators)
+  if (aJoint > NumActuators ())
   {
-    memset (&empty, 0, sizeof (ActuatorGeom));
+    player_actarray_actuatorgeom_t empty;
+    memset(&empty, 0, sizeof(player_actarray_actuatorgeom_t));
     return empty;
   }
   else
-    return actuatorGeom[actuator];
+    return GetVar(mDevice->actuators_geom[aJoint]);
 }
 
-int ActArrayProxy::RequestGeometry (void)
+int ActArrayProxy::RequestGeometry(void)
 {
-  player_msghdr_t hdr;
-  player_actarray_geom_t actarray_geom;
-
-  if (!client)
-    return -1;
-
-  actarray_geom.subtype = PLAYER_ACTARRAY_GET_GEOM_REQ;
-
-  if ((client->Request (m_device_id, (const char*) &actarray_geom, sizeof (actarray_geom.subtype), &hdr, (char*) &actarray_geom, sizeof (actarray_geom)) < 0) ||
-       (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
-  {
-//    printf ("Didn't get expected response to ActArray::RequestGeometry, hrd type = %d\n", hdr.type);
-    return -1;
-  }
-
-  numActuators = actarray_geom.numactuators;
-  for (int ii = 0; ii < numActuators; ii++)
-  {
-    actuatorGeom[ii].type = actarray_geom.actuators[ii].type;
-    actuatorGeom[ii].min = static_cast<int> (ntohl (actarray_geom.actuators[ii].min));
-    actuatorGeom[ii].centre = static_cast<int> (ntohl (actarray_geom.actuators[ii].centre));
-    actuatorGeom[ii].max = static_cast<int> (ntohl (actarray_geom.actuators[ii].max));
-    actuatorGeom[ii].home = static_cast<int> (ntohl (actarray_geom.actuators[ii].home));
-    actuatorGeom[ii].configSpeed = static_cast<int> (ntohl (actarray_geom.actuators[ii].config_speed));
-    actuatorGeom[ii].hasBrakes = actarray_geom.actuators[ii].hasbrakes;
-  }
-  return 0;
+  Lock();
+  int ret = playerc_actarray_get_geom(mDevice);
+  Unlock();
+  if (-2 != ret)
+    throw PlayerError("ActArrayProxy::RequestGeometry", "NACK", ret);
+  else if (0 != ret)
+    throw PlayerError("ActArrayProxy::RequestGeometry",
+                      playerc_error_str(),
+                      ret);
 }
