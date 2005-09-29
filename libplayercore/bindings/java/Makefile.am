@@ -39,7 +39,7 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
 #all-local:
 #	javac *.java
 
-libplayercore_java_la_SOURCES = playercore_java_wrap.cc
+nodist_libplayercore_java_la_SOURCES = playercore_java_wrap.cc
 libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@ -rpath $(libdir)
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayercore

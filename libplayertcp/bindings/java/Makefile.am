@@ -19,7 +19,7 @@ playertcp_java_wrap.cc: playertcp_java.i \
 	mkdir -p net/sourceforge/playerstage/Jplayertcp
 	swig -v -java -package net.sourceforge.playerstage.Jplayertcp -outdir net/sourceforge/playerstage/Jplayertcp -c++ -o $@ -I$(srcdir)/../../.. $<
 
-libplayertcp_java_la_SOURCES = playertcp_java_wrap.cc
+nodist_libplayertcp_java_la_SOURCES = playertcp_java_wrap.cc
 libplayertcp_java_la_LDFLAGS = $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayererror.la -version-info 2:0:0 -rpath $(libdir)
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayertcp

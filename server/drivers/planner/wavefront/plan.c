@@ -120,14 +120,14 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
   plan_md5(hash, plan);
   if(cachefile)
   {
-    PLAYER_MSG1(1,"Trying to read c-space from file %s", cachefile);
+    PLAYER_MSG1(2,"Trying to read c-space from file %s", cachefile);
     if(plan_read_cspace(plan,cachefile,hash) == 0)
     {
       // Reading from the cache file worked; we're done here.
-      PLAYER_MSG1(1,"Successfully read c-space from file %s", cachefile);
+      PLAYER_MSG1(2,"Successfully read c-space from file %s", cachefile);
       return;
     }
-    PLAYER_MSG1(1, "Failed to read c-space from file %s", cachefile);
+    PLAYER_MSG1(2, "Failed to read c-space from file %s", cachefile);
   }
 #endif
 

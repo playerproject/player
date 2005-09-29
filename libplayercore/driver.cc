@@ -247,7 +247,9 @@ Driver::StopThread(void)
   void* dummy;
   pthread_cancel(driverthread);
   // Release the driver thread, in case it's waiting on the message queue
+  // or the driver mutex.
   this->InQueue->DataAvailable();
+  this->Unlock();
   if(pthread_join(driverthread,&dummy))
     perror("Driver::StopThread:pthread_join()");
 }

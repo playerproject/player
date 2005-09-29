@@ -56,12 +56,6 @@ TCPRemoteDriver::Setup()
   packedaddr_to_dottedip(this->ipaddr,sizeof(this->ipaddr),
                          this->device_addr.host);
 
-  printf("trying to Setup %s:%d:%d:%d\n",
-         this->ipaddr,
-         this->device_addr.robot,
-         this->device_addr.interf,
-         this->device_addr.index);
-
   // Construct socket 
   this->sock = socket(PF_INET, SOCK_STREAM, 0);
   if(this->sock < 0)
@@ -205,6 +199,11 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
       return(-1);
     }
   }
+
+  // If we're closing, then stop here; we don't need to hear the response.
+  // In any case, explicitly unsubscribing is just a courtesy.
+  if(mode == PLAYER_CLOSE_MODE)
+    return(0);
   
   // Receive the response header
   GlobalTime->GetTimeDouble(&t1);
@@ -288,7 +287,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   }
 
   // Success!
-  PLAYER_MSG5(1, "Subscribed to %s:%d:%d:%d (%s)",
+  PLAYER_MSG5(1, "(un)subscribed to/from remote device %s:%d:%d:%d (%s)",
               this->ipaddr,
               this->device_addr.robot,
               this->device_addr.interf,
@@ -301,21 +300,16 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
 int 
 TCPRemoteDriver::Shutdown() 
 {
-  printf("trying to Shutdown %s:%d:%d:%d\n",
-         this->ipaddr,
-         this->device_addr.robot,
-         this->device_addr.interf,
-         this->device_addr.index);
-
+  // Have we already been killed?
   if(!this->kill_flag)
   {
+    // Unsubscribe
     if(this->SubscribeRemote(PLAYER_CLOSE_MODE) < 0)
       PLAYER_WARN("failed to unsubscribe from remote device");
 
-    if(close(this->sock) < 0)
-      PLAYER_ERROR1("close() failed on remote device: %s",
-                    strerror(errno));
-    this->sock = -1;
+    // Set the delete flag, letting PlayerTCP close the connection and
+    // clean up.
+    this->ptcp->DeleteClient(this->queue);
   }
   return(0); 
 }
