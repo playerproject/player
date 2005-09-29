@@ -81,7 +81,14 @@ if __name__ == '__main__':
     buf_from_name = typename + '_to_buf'
     buf_to_Jname = 'buf_to_J' + typename
     buf_from_Jname = 'J' + typename + '_to_buf'
+    sizeof_name = typename + '_sizeof'
 
+    # function to return the size of the underlying C structure
+    outfile.write('size_t ' + sizeof_name + '(void)\n')
+    outfile.write('{\n')
+    outfile.write('  return(sizeof(' + typename + '));\n')
+    outfile.write('}\n')
+    
     # JNI cast from a void* to a pointer to this type
     outfile.write(typename + '* ' + buf_to_name + '(void* buf)\n')
     outfile.write('{\n')
