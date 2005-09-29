@@ -161,16 +161,23 @@ player_read_func(gpointer* arg)
       robot_pose.py = gui_data->planners[i]->py;
       robot_pose.pa = gui_data->planners[i]->pa;
 
+#if 0
       // is the robot localized within the map?
-      onmap = ((fabs(robot_pose.px) <
-                (gui_data->mapdev->width * 
-                 gui_data->mapdev->resolution / 2.0)) ||
-               (fabs(robot_pose.py) <
-                (gui_data->mapdev->height * 
-                 gui_data->mapdev->resolution / 2.0)));
+      onmap = (robot_pose.px >=
+               gui_data->mapdev->origin[0]) &&
+              (robot_pose.px <
+               (gui_data->mapdev->origin[0] + 
+                (gui_data->mapdev->width * gui_data->mapdev->resolution))) &&
+              (robot_pose.py >=
+               gui_data->mapdev->origin[1]) &&
+              (robot_pose.py <
+               (gui_data->mapdev->origin[1] + 
+                (gui_data->mapdev->height * gui_data->mapdev->resolution)));
+
       // if it's off the map, put it in the middle
       if(!onmap)
         robot_pose.px = robot_pose.py = 0.0;
+#endif
 
       // don't draw the new pose if the user is in the middle of moving the
       // robot
@@ -184,7 +191,8 @@ player_read_func(gpointer* arg)
           //printf("moving robot %d\n", i);
           move_item(gui_data->robot_items[i],robot_pose,1);
 
-          if(onmap && showparticlesp && gui_data->localizes[i])
+          //if(onmap && showparticlesp && gui_data->localizes[i])
+          if(showparticlesp && gui_data->localizes[i])
           {
             playerc_localize_get_particles(gui_data->localizes[i]);
             draw_particles(gui_data,i);
