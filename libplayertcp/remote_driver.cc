@@ -38,6 +38,7 @@ TCPRemoteDriver::TCPRemoteDriver(player_devaddr_t addr, void* arg)
     this->ptcp = NULL;
 
   this->sock = -1;
+  this->setup_timeout = DEFAULT_SETUP_TIMEOUT;
 }
 
 TCPRemoteDriver::~TCPRemoteDriver()
@@ -50,6 +51,7 @@ TCPRemoteDriver::Setup()
   struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
   int numread, thisnumread;
+  double t1, t2;
 
   packedaddr_to_dottedip(this->ipaddr,sizeof(this->ipaddr),
                          this->device_addr.host);
@@ -94,8 +96,9 @@ TCPRemoteDriver::Setup()
   }
 
   // Get the banner.
+  GlobalTime->GetTimeDouble(&t1);
   numread=0;
-  while(numread < sizeof(banner))
+  while(numread < (int)sizeof(banner))
   {
     if((thisnumread = read(this->sock, banner+numread, 
                            sizeof(banner)-numread)) < 0)
@@ -108,11 +111,14 @@ TCPRemoteDriver::Setup()
     }
     else
       numread += thisnumread;
-    pthread_testcancel();
-    if(player_quit)
+    GlobalTime->GetTimeDouble(&t2);
+    if((t2-t1) > this->setup_timeout)
+    {
+      PLAYER_ERROR("timed out reading banner from remote server");
       return(-1);
+    }
   }
-  if(this->SubscribeRemote() < 0)
+  if(this->SubscribeRemote(PLAYER_OPEN_MODE) < 0)
   {
     close(this->sock);
     return(-1);
@@ -130,14 +136,15 @@ TCPRemoteDriver::Setup()
   return(0);
 }
 
-// subscribe to the remote device
+// (un)subscribe to the remote device
 int
-TCPRemoteDriver::SubscribeRemote()
+TCPRemoteDriver::SubscribeRemote(unsigned char mode)
 {
   int encode_msglen;
   unsigned char buf[512];
   player_msghdr_t hdr;
   player_device_req_t req;
+  double t1, t2;
 
   int numbytes, thisnumbytes;
 
@@ -148,7 +155,7 @@ TCPRemoteDriver::SubscribeRemote()
   GlobalTime->GetTimeDouble(&hdr.timestamp);
 
   req.addr = this->device_addr;
-  req.access = PLAYER_OPEN_MODE;
+  req.access = mode;
   req.driver_name_count = 0;
 
   // Encode the body
@@ -174,6 +181,7 @@ TCPRemoteDriver::SubscribeRemote()
   encode_msglen += PLAYERXDR_MSGHDR_SIZE;
 
   // Send the request
+  GlobalTime->GetTimeDouble(&t1);
   numbytes = 0;
   while(numbytes < encode_msglen)
   {
@@ -190,12 +198,16 @@ TCPRemoteDriver::SubscribeRemote()
     {
       numbytes += thisnumbytes;
     }
-    pthread_testcancel();
-    if(player_quit)
+    GlobalTime->GetTimeDouble(&t2);
+    if((t2-t1) > this->setup_timeout)
+    {
+      PLAYER_ERROR("timed out sending subscription request to remote server");
       return(-1);
+    }
   }
   
   // Receive the response header
+  GlobalTime->GetTimeDouble(&t1);
   numbytes = 0;
   while(numbytes < PLAYERXDR_MSGHDR_SIZE)
   {
@@ -210,9 +222,12 @@ TCPRemoteDriver::SubscribeRemote()
     }
     else
       numbytes += thisnumbytes;
-    pthread_testcancel();
-    if(player_quit)
+    GlobalTime->GetTimeDouble(&t2);
+    if((t2-t1) > this->setup_timeout)
+    {
+      PLAYER_ERROR("timed out reading response header from remote server");
       return(-1);
+    }
   }
 
   // Decode the header
@@ -233,6 +248,7 @@ TCPRemoteDriver::SubscribeRemote()
   }
 
   // Receive the response body
+  GlobalTime->GetTimeDouble(&t1);
   numbytes = 0;
   while(numbytes < (int)hdr.size)
   {
@@ -247,9 +263,12 @@ TCPRemoteDriver::SubscribeRemote()
     }
     else
       numbytes += thisnumbytes;
-    pthread_testcancel();
-    if(player_quit)
+    GlobalTime->GetTimeDouble(&t2);
+    if((t2-t1) > this->setup_timeout)
+    {
+      PLAYER_ERROR("timed out reading response body from remote server");
       return(-1);
+    }
   }
 
   memset(&req,0,sizeof(req));
@@ -262,7 +281,7 @@ TCPRemoteDriver::SubscribeRemote()
   }
 
   // Did we get the right access?
-  if(req.access != PLAYER_OPEN_MODE)
+  if(req.access != mode)
   {
     PLAYER_ERROR("got wrong access");
     return(-1);
@@ -287,10 +306,17 @@ TCPRemoteDriver::Shutdown()
          this->device_addr.robot,
          this->device_addr.interf,
          this->device_addr.index);
-  
-  if(this->sock >= 0)
-    close(this->sock);
-  this->sock = -1;
+
+  if(!this->kill_flag)
+  {
+    if(this->SubscribeRemote(PLAYER_CLOSE_MODE) < 0)
+      PLAYER_WARN("failed to unsubscribe from remote device");
+
+    if(close(this->sock) < 0)
+      PLAYER_ERROR1("close() failed on remote device: %s",
+                    strerror(errno));
+    this->sock = -1;
+  }
   return(0); 
 }
 

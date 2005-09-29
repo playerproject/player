@@ -643,6 +643,9 @@ void Wavefront::Main()
   //this->position->Wait();
   this->StopPosition();
 
+  if(this->have_map)
+    plan_update_cspace(this->plan,this->cspace_fname);
+
   for(;;)
   {
     pthread_testcancel();
@@ -1044,8 +1047,6 @@ Wavefront::SetupMap()
   puts("Done.");
 
   this->have_map = true;
-
-  plan_update_cspace(this->plan,this->cspace_fname);
 
   return(0);
 }

@@ -292,7 +292,8 @@ int VFH_Class::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int VFH_Class::Shutdown() {
+int VFH_Class::Shutdown() 
+{
   // Stop the driver thread.
   this->StopThread();
 

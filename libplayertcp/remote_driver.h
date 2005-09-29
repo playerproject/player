@@ -26,6 +26,8 @@
 #include <libplayercore/playercore.h>
 #include "playertcp.h"
 
+#define DEFAULT_SETUP_TIMEOUT 1.0
+
 class TCPRemoteDriver : public Driver
 {
   private:
@@ -34,6 +36,9 @@ class TCPRemoteDriver : public Driver
     MessageQueue* queue;
     char ipaddr[256];
     int kill_flag;
+    double setup_timeout;
+
+    int SubscribeRemote(unsigned char mode);
 
   public:
     TCPRemoteDriver(player_devaddr_t addr, void* arg);
@@ -45,8 +50,6 @@ class TCPRemoteDriver : public Driver
     virtual int ProcessMessage(MessageQueue* resp_queue, 
                                player_msghdr * hdr, 
                                void * data);
-
-    int SubscribeRemote();
 
     static Driver* TCPRemoteDriver_Init(player_devaddr_t addr, void* arg);
 };
