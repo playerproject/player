@@ -411,6 +411,7 @@ PlayerTCP::DeleteClients()
     else
       j++;
   }
+  assert(this->num_clients <= this->size_clients);
   memset(this->clients + this->num_clients, 0,
          (this->size_clients - this->num_clients) * sizeof(playertcp_conn_t));
   memset(this->client_ufds + this->num_clients, 0,
@@ -716,13 +717,18 @@ PlayerTCP::ParseBuffer(int cli)
             assert(msg);
             this->HandlePlayerMessage(cli, msg);
             delete msg;
+
+            // Non-obvious thing: as a result of HandlePlayerMessage(), the
+            // list of clients can get realloc()ed, which can
+            // invalidate our client pointer.  So we'll recompute it.
+            client = this->clients + cli;
           }
           else
             device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
         }
       }
     }
-
+    
     // Move past the processed message
     memmove(client->readbuffer, 
             client->readbuffer + msglen, 
@@ -857,6 +863,11 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                              devreq->addr.index);
                 break;
             }
+
+            // Non-obvious thing: as a result of Subscribe(), the
+            // list of clients can get realloc()ed, which can
+            // invalidate our client pointer.  So we'll recompute it.
+            client = this->clients + cli;
 
             // Make up and push out the reply
             resp = new Message(resphdr, (void*)&devresp, 

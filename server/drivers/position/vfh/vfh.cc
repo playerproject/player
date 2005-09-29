@@ -297,7 +297,12 @@ int VFH_Class::Shutdown() {
   this->StopThread();
 
   // Stop the laser
-  this->ShutdownLaser();
+  if(this->laser)
+    this->ShutdownLaser();
+
+  // Stop the sonar
+  if(this->sonar)
+    this->ShutdownSonar();
 
   // Stop the odom device.
   this->ShutdownOdom();
@@ -972,6 +977,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   memset(&this->laser_addr,0,sizeof(player_devaddr_t));
   cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
                      PLAYER_LASER_CODE, -1, NULL);
+  this->sonar = NULL;
   memset(&this->sonar_addr,0,sizeof(player_devaddr_t));
   cf->ReadDeviceAddr(&this->sonar_addr, section, "requires",
                      PLAYER_SONAR_CODE, -1, NULL);
