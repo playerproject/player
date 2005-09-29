@@ -359,13 +359,6 @@ class ActArrayProxy : public ClientProxy
 {
   private:
 
-   player_actarray_actuator_t mActuatorData;
-   player_actarray_actuatorgeom_t mActuatorGeom;
-
-   uint mNumActuators;
-   player_actarray_actuator_t     actuatorData[PLAYER_ACTARRAY_NUM_ACTUATORS];
-   player_actarray_actuatorgeom_t actuatorGeom[PLAYER_ACTARRAY_NUM_ACTUATORS];
-
    void Subscribe(uint aIndex);
    void Unsubscribe();
 
@@ -377,30 +370,37 @@ class ActArrayProxy : public ClientProxy
     ActArrayProxy(PlayerClient *aPc, uint aIndex);
     ~ActArrayProxy();
 
-    // Geometry request - call before getting the geometry of a joint through the accessor method
+    /// Geometry request - call before getting the
+    /// geometry of a joint through the accessor method
     void RequestGeometry(void);
 
-    // Power control
-    void PowerConfig(bool aVal);
-    // Brakes control
-    void BrakesConfig(bool aVal);
-    // Speed control
-    void SpeedConfig(uint aJoint, double aSpeed);
+    /// Power control
+    void SetPowerConfig(bool aVal);
+    /// Brakes control
+    void SetBrakesConfig(bool aVal);
+    /// Speed control
+    void SetSpeedConfig(uint aJoint, float aSpeed);
 
+    /// Send an actuator to a position
+    void MoveTo(uint aJoint, float aPos);
+    /// Move an actuator at a speed
+    void MoveAtSpeed(uint aJoint, float aSpeed);
+    /// Send an actuator, or all actuators, home
+    void MoveHome(int aJoint);
 
-    // Send an actuator to a position
-    void SetPosition(uint aJoint, double aPos);
-    // Move an actuator at a speed
-    void SetSpeed(uint aJoint, double aSpeed);
-    // Send an actuator, or all actuators, home
-    void GoHome(int aJoint);
+    /// Gets the number of actuators in the array
+    uint GetCount(void) const { return(GetVar(mDevice->actuators_count)); }
+    /// Accessor method for getting an actuator's data
+    player_actarray_actuator_t GetActuatorData(uint aJoint) const;
+    /// Same again for getting actuator geometry
+    player_actarray_actuatorgeom_t GetActuatorGeom(uint aJoint) const;
 
-    // Gets the number of actuators in the array
-    uint NumActuators (void) const { return(GetVar(mDevice->actuators_count)); }
-    // Accessor method for getting an actuator's data
-    player_actarray_actuator_t GetActuatorData(uint aJoint);
-    // Same again for getting actuator geometry
-    player_actarray_actuatorgeom_t GetActuatorGeom(uint aJoint);
+    /// Actuator data access operator.
+    ///    This operator provides an alternate way of access the actuator data.
+    ///    For example, given a @p ActArrayProxy named @p ap, the following
+    ///    expressions are equivalent: @p ap.GetActuatorData[0] and @p ap[0].
+    player_actarray_actuator_t operator [](uint aJoint)
+      { return(GetActuatorData(aJoint)); }
 };
 
 #if 0
@@ -666,32 +666,33 @@ class CameraProxy : public ClientProxy
 
   public:
 
-    // Constructor
+    /// Constructor
     CameraProxy (PlayerClient *aPc, uint aIndex);
 
     virtual ~CameraProxy();
 
+    /// Save the frame
     void SaveFrame(const std::string aPrefix, uint aWidth=4);
 
-    // decompress the image
+    /// decompress the image
     void Decompress();
 
-    // Image color depth
-    uint8_t GetDepth() const { return(GetVar(mDevice->bpp)); };
+    /// Image color depth
+    uint GetDepth() const { return(GetVar(mDevice->bpp)); };
 
-    // Image dimensions (pixels)
-    uint16_t GetWidth() const { return(GetVar(mDevice->width)); };
+    /// Image dimensions (pixels)
+    uint GetWidth() const { return(GetVar(mDevice->width)); };
 
-    // Image dimensions (pixels)
-    uint16_t GetHeight() const { return(GetVar(mDevice->height)); };
+    /// Image dimensions (pixels)
+    uint GetHeight() const { return(GetVar(mDevice->height)); };
 
-    // Image format (e.g., RGB888)
-    uint16_t GetFormat() const { return(GetVar(mDevice->format)); };
+    /// Image format (e.g., RGB888)
+    uint GetFormat() const { return(GetVar(mDevice->format)); };
 
-    // Sime of the image (bytes)
-    uint32_t GetImageSize() const { return(GetVar(mDevice->image_count)); };
+    /// Size of the image (bytes)
+    uint GetImageSize() const { return(GetVar(mDevice->image_count)); };
 
-    // Image data
+    /// Image data
     void GetImage(uint8_t* aImage) const
       {
         return(GetVarByRef(mDevice->image,
@@ -699,8 +700,8 @@ class CameraProxy : public ClientProxy
                            aImage));
       };
 
-    // What is the compression type
-    uint8_t GetCompression() const { return(GetVar(mDevice->compression)); };
+    /// What is the compression type
+    uint GetCompression() const { return(GetVar(mDevice->compression)); };
 
 };
 
@@ -1134,9 +1135,7 @@ class LaserProxy : public ClientProxy
     double operator [] (uint index)
       { return GetRange(index);}
 
-    friend std::ostream &operator << (std::ostream &os, const PlayerCc::LaserProxy &c);
 };
-std::ostream &operator << (std::ostream &os, const PlayerCc::LaserProxy &c);
 
 /**
 The @p LocalizeProxy class is used to control a @ref
@@ -2181,41 +2180,44 @@ class WiFiProxy: public ClientProxy
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::AudioDspProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::AudioMixerProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::BlobFinderProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
-std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::McomProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::SoundProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
-//std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
+namespace std
+{
+  std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioDspProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioMixerProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::BlobFinderProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::McomProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::SoundProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
+  //std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
+}
 /** @} */
 
 

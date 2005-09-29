@@ -104,11 +104,11 @@ CameraProxy::Decompress()
   Unlock();
 }
 
-std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c)
+std::ostream& std::operator << (std::ostream& os, const PlayerCc::CameraProxy& c)
 {
-  return os << "[" << c.GetWidth()
-            << ", " << c.GetHeight() << "] "
-            << 1/c.GetElapsedTime() << " fps, "
-            << c.GetDataTime() << "[s], "
-            << "compressed(" << (c.GetCompression() ? "yes" : "no") << ")";
+  return os << c.GetWidth() << "\t"
+            << c.GetHeight() << "\t"
+            << 1/c.GetElapsedTime() << "\t"
+            << c.GetDataTime() << "\t"
+            << (c.GetCompression() ? "compressed" : "");
 }

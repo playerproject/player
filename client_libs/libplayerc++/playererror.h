@@ -26,6 +26,9 @@ class PlayerError
      */
     std::string mFun;
 
+    /** error code returned by playerc */
+    int mCode;
+
   public:
     /**
      */
@@ -33,9 +36,15 @@ class PlayerError
     /**
      */
     std::string GetErrorFun() const { return(mFun); };
+    /**
+     */
+    int GetErrorCode() const { return(mCode); };
+
     /** default constructor
      */
-    PlayerError(const std::string aFun="", const std::string aStr="");
+    PlayerError(const std::string aFun="",
+                const std::string aStr="",
+                const int aCode=-1);
     /**
      */
     ~PlayerError();
