@@ -91,6 +91,11 @@ PlayerTCP::PlayerTCP()
   this->clients = (playertcp_conn_t*)NULL;
   this->client_ufds = (struct pollfd*)NULL;
 
+  pthread_mutexattr_t mutex_attr;
+  pthread_mutexattr_init(&mutex_attr);
+  pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init(&this->clients_mutex,&mutex_attr);
+
   this->num_listeners = 0;
   this->listeners = (playertcp_listener_t*)NULL;
   this->listen_ufds = (struct pollfd*)NULL;
@@ -163,14 +168,9 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
 
-  // Look for a place to store the new connection info
-  int j;
-  for(j=0;j<this->size_clients;j++)
-  {
-    if(!this->clients[j].valid)
-      break;
-  }
+  pthread_mutex_lock(&this->clients_mutex);
 
+  int j = this->num_clients;
   // Do we need to allocate another spot?
   if(j == this->size_clients)
   {
@@ -222,6 +222,10 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   assert(this->clients[j].writebuffer);
   this->clients[j].writebufferlen = 0;
 
+  this->num_clients++;
+
+  pthread_mutex_unlock(&this->clients_mutex);
+
   if(send_banner)
   {
     sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
@@ -236,7 +240,6 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
               j, this->clients[j].port, this->clients[j].fd);
 
-  this->num_clients++;
   return(this->clients[j].queue);
 }
 
@@ -290,7 +293,7 @@ PlayerTCP::Accept(int timeout)
       this->AddClient(&cliaddr, 
                       this->host,
                       this->listeners[i].port,
-                      newsock, true);
+                      newsock, true, NULL);
 
       num_accepts--;
     }
@@ -307,27 +310,24 @@ PlayerTCP::Close(int cli)
   PLAYER_MSG2(1, "closing connection to client %d on port %d",
               cli, this->clients[cli].port);
 
-  if(!this->clients[cli].valid)
-    PLAYER_WARN1("tried to Close() invalid client connection %d", cli);
-  else
+  for(size_t i=0;i<this->clients[cli].num_dev_subs;i++)
   {
-    for(size_t i=0;i<this->clients[cli].num_dev_subs;i++)
+    Device* dev = this->clients[cli].dev_subs[i];
     {
-      Device* dev = this->clients[cli].dev_subs[i];
       if(dev)
         dev->Unsubscribe(this->clients[cli].queue);
     }
-    free(this->clients[cli].dev_subs);
-    if(close(this->clients[cli].fd) < 0)
-      PLAYER_WARN1("close() failed: %s", strerror(errno));
-    this->clients[cli].fd = -1;
-    this->clients[cli].valid = 0;
-    delete this->clients[cli].queue;
-    free(this->clients[cli].readbuffer);
-    free(this->clients[cli].writebuffer);
-    if(this->clients[cli].kill_flag)
-      *(this->clients[cli].kill_flag) = 1;
   }
+  free(this->clients[cli].dev_subs);
+  if(close(this->clients[cli].fd) < 0)
+    PLAYER_WARN1("close() failed: %s", strerror(errno));
+  this->clients[cli].fd = -1;
+  this->clients[cli].valid = 0;
+  delete this->clients[cli].queue;
+  free(this->clients[cli].readbuffer);
+  free(this->clients[cli].writebuffer);
+  if(this->clients[cli].kill_flag)
+    *(this->clients[cli].kill_flag) = 1;
 }
 
 int
@@ -341,9 +341,13 @@ PlayerTCP::Read(int timeout)
     return(0);
   }
 
+  pthread_mutex_lock(&this->clients_mutex);
+
   // Poll for incoming messages
   if((num_available = poll(this->client_ufds, this->num_clients, timeout)) < 0)
   {
+    pthread_mutex_unlock(&this->clients_mutex);
+
     // Got interrupted by a signal; no problem
     if(errno == EINTR)
       return(0);
@@ -354,12 +358,14 @@ PlayerTCP::Read(int timeout)
   }
 
   if(!num_available)
+  {
+    pthread_mutex_unlock(&this->clients_mutex);
     return(0);
+  }
 
   for(int i=0; (i<this->num_clients) && (num_available>0); i++)
   {
-    if((this->clients[i].valid) && 
-       ((this->client_ufds[i].revents & POLLERR) || 
+    if(((this->client_ufds[i].revents & POLLERR) || 
         (this->client_ufds[i].revents & POLLHUP) ||
         (this->client_ufds[i].revents & POLLNVAL)))
     {
@@ -367,8 +373,7 @@ PlayerTCP::Read(int timeout)
       this->clients[i].del = 1;
       num_available--;
     }
-    else if((this->clients[i].valid) && 
-            (this->client_ufds[i].revents & POLLIN))
+    else if(this->client_ufds[i].revents & POLLIN)
     {
       if(this->ReadClient(i) < 0)
       {
@@ -379,7 +384,9 @@ PlayerTCP::Read(int timeout)
     }
   }
 
+
   this->DeleteClients();
+  pthread_mutex_unlock(&this->clients_mutex);
 
   return(0);
 }
@@ -393,10 +400,21 @@ PlayerTCP::DeleteClients()
   {
     if(this->clients[i].del)
     {
+      this->clients[i].valid = 0;
       this->Close(i);
       num_deleted++;
     }
   }
+  // Delete those connections that generated errors in this iteration
+  for(int i=0; i<this->num_clients; i++)
+  {
+    if(this->clients[i].valid && this->clients[i].del)
+    {
+      this->Close(i);
+      num_deleted++;
+    }
+  }
+
   this->num_clients -= num_deleted;
 
   // Remove the resulting blank from both lists
@@ -419,6 +437,25 @@ PlayerTCP::DeleteClients()
          (this->size_clients - this->num_clients) * sizeof(playertcp_conn_t));
   memset(this->client_ufds + this->num_clients, 0,
          (this->size_clients - this->num_clients) * sizeof(struct pollfd));
+}
+
+void
+PlayerTCP::DeleteClient(MessageQueue* q)
+{
+  pthread_mutex_lock(&this->clients_mutex);
+  
+  // Find the client and mark it for deletion.
+  int i;
+  for(i=0;i<this->num_clients;i++)
+  {
+    if(this->clients[i].queue == q)
+    {
+      this->clients[i].del = 1;
+      break;
+    }
+  }
+
+  pthread_mutex_unlock(&this->clients_mutex);
 }
 
 int
@@ -535,8 +572,8 @@ PlayerTCP::WriteClient(int cli)
         }
 
         client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
-        delete msg;
       }
+      delete msg;
     }
     else
       return(0);
@@ -546,16 +583,21 @@ PlayerTCP::WriteClient(int cli)
 int
 PlayerTCP::Write()
 {
+  pthread_mutex_lock(&this->clients_mutex);
+
   for(int i=0;i<this->num_clients;i++)
   {
-    if(this->clients[i].valid && (this->WriteClient(i) < 0))
+    if(this->WriteClient(i) < 0)
     {
       PLAYER_WARN1("failed to write to client %d\n", i);
       this->clients[i].del = 1;
     }
   }
 
+
   this->DeleteClients();
+  pthread_mutex_unlock(&this->clients_mutex);
+
   return(0);
 }
 
@@ -746,6 +788,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
   player_msghdr_t* hdr;
   void* payload;
   playertcp_conn_t* client;
+  int sub_result;
 
   player_msghdr_t resphdr;
   Message* resp;
@@ -811,7 +854,15 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
             switch(devreq->access)
             {
               case PLAYER_OPEN_MODE:
-                if(device->Subscribe(client->queue) != 0)
+                // Subscribe to the device
+                sub_result = device->Subscribe(client->queue);
+                
+                // Non-obvious thing: as a result of Subscribe(), the
+                // list of clients can get realloc()ed, which can
+                // invalidate our client pointer.  So we'll recompute it.
+                client = this->clients + cli;
+
+                if(sub_result < 0)
                 {
                   PLAYER_WARN2("subscription failed for device %u:%u",
                                devreq->addr.interf, devreq->addr.index);
@@ -837,6 +888,8 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                   }
                   client->dev_subs[i] = device;
                 }
+
+
                 break;
               case PLAYER_CLOSE_MODE:
                 if(device->Unsubscribe(client->queue) != 0)
@@ -866,11 +919,6 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                              devreq->addr.index);
                 break;
             }
-
-            // Non-obvious thing: as a result of Subscribe(), the
-            // list of clients can get realloc()ed, which can
-            // invalidate our client pointer.  So we'll recompute it.
-            client = this->clients + cli;
 
             // Make up and push out the reply
             resp = new Message(resphdr, (void*)&devresp, 

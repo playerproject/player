@@ -41,6 +41,7 @@ This library moves messages between Player message queues and TCP sockets.
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include <libplayercore/playercore.h>
 
@@ -69,6 +70,7 @@ class PlayerTCP
     playertcp_listener* listeners;
     struct pollfd* listen_ufds;
 
+    pthread_mutex_t clients_mutex;
     int size_clients;
     int num_clients;
     playertcp_conn* clients;
@@ -90,8 +92,8 @@ class PlayerTCP
                             unsigned int local_host,
                             unsigned int local_port,
                             int newsock,
-                            bool send_banner=true,
-                            int* kill_flag=NULL);
+                            bool send_banner,
+                            int* kill_flag);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);
@@ -101,6 +103,7 @@ class PlayerTCP
     void DeleteClients();
     void ParseBuffer(int cli);
     int HandlePlayerMessage(int cli, Message* msg);
+    void DeleteClient(MessageQueue* q);
 };
 
 /** @} */

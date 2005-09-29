@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.0-pre5)
+AC_INIT(player,2.0-pre6)
 
 AC_CONFIG_SRCDIR(server/server.cc)
 

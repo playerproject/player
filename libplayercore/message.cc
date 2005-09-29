@@ -137,7 +137,9 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
 MessageQueue::~MessageQueue()
 {
   // clear the queue
-  while(this->Pop());
+  Message* msg;
+  while((msg = this->Pop()))
+    delete msg;
   pthread_mutex_destroy(&this->lock);
   pthread_mutex_destroy(&this->condMutex);
   pthread_cond_destroy(&this->cond);
