@@ -100,6 +100,7 @@ int plan_get_waypoint(plan_t *plan, int i, double *px, double *py);
 void plan_convert_waypoint(plan_t* plan, plan_cell_t *waypoint, 
                            double *px, double *py);
 
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
 // Returns non-zero on error.
@@ -113,6 +114,7 @@ int plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash);
 // Compute and return the 16-bit MD5 hash of the map data in the given plan
 // object.
 void plan_md5(unsigned int* digest, plan_t* plan);
+#endif // HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 
 /**************************************************************************
  * Plan manipulation macros
