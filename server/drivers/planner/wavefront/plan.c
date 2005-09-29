@@ -9,6 +9,7 @@
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
+
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   #include <openssl/md5.h>
 #endif
@@ -169,6 +170,7 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
   PLAYER_MSG0(1,"Done.");
 }
 
+#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // Write the cspace occupancy distance values to a file, one per line.
 // Read them back in with plan_read_cspace().
 // Returns non-zero on error.
@@ -282,14 +284,11 @@ plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash)
   return(0);
 }
 
-
-
 // Compute the 16-byte MD5 hash of the map data in the given plan
 // object.
 void
 plan_md5(unsigned int* digest, plan_t* plan)
 {
-#if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   MD5_CTX c;
 
   MD5_Init(&c);
@@ -298,9 +297,5 @@ plan_md5(unsigned int* digest, plan_t* plan)
              (plan->size_x*plan->size_y)*sizeof(plan_cell_t));
 
   MD5_Final((unsigned char*)digest,&c);
-
-#else
-  PLAYER_ERROR("tried to compute md5 hash, but it's not available");
-#endif
 }
-
+#endif // HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
