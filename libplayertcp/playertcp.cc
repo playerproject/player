@@ -387,15 +387,18 @@ PlayerTCP::Read(int timeout)
 void
 PlayerTCP::DeleteClients()
 {
+  int num_deleted=0;
   // Delete those connections that generated errors in this iteration
   for(int i=0; i<this->num_clients; i++)
   {
     if(this->clients[i].del)
     {
       this->Close(i);
-      this->num_clients--;
+      num_deleted++;
     }
   }
+  this->num_clients -= num_deleted;
+
   // Remove the resulting blank from both lists
   for(int i=0,j=0; i<this->size_clients; i++)
   {
