@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <libplayercore/globals.h>
 #include <libplayerxdr/playerxdr.h>
 #include "remote_driver.h"
 
@@ -48,6 +49,7 @@ TCPRemoteDriver::Setup()
 {
   struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
+  int numread, thisnumread;
 
   packedaddr_to_dottedip(this->ipaddr,sizeof(this->ipaddr),
                          this->device_addr.host);
@@ -83,22 +85,35 @@ TCPRemoteDriver::Setup()
   printf("connected to: %s:%u\n",
          this->ipaddr, this->device_addr.robot);
 
-  // Get the banner 
-  if(read(this->sock, banner, sizeof(banner)) < (int)sizeof(banner))
-  {
-    PLAYER_ERROR("incomplete initialization string");
-    return(-1);
-  }
-  if(this->SubscribeRemote() < 0)
-  {
-    close(this->sock);
-    return(-1);
-  }
-
   // make the socket non-blocking
   if(fcntl(this->sock, F_SETFL, O_NONBLOCK) == -1)
   {
     PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
+    close(this->sock);
+    return(-1);
+  }
+
+  // Get the banner.
+  numread=0;
+  while(numread < sizeof(banner))
+  {
+    if((thisnumread = read(this->sock, banner+numread, 
+                           sizeof(banner)-numread)) < 0)
+    {
+      if(errno != EAGAIN)
+      {
+        PLAYER_ERROR("error reading banner from remote device");
+        return(-1);
+      }
+    }
+    else
+      numread += thisnumread;
+    pthread_testcancel();
+    if(player_quit)
+      return(-1);
+  }
+  if(this->SubscribeRemote() < 0)
+  {
     close(this->sock);
     return(-1);
   }
@@ -123,6 +138,8 @@ TCPRemoteDriver::SubscribeRemote()
   unsigned char buf[512];
   player_msghdr_t hdr;
   player_device_req_t req;
+
+  int numbytes, thisnumbytes;
 
   memset(&hdr,0,sizeof(hdr));
   hdr.addr.interf = PLAYER_PLAYER_CODE;
@@ -157,21 +174,49 @@ TCPRemoteDriver::SubscribeRemote()
   encode_msglen += PLAYERXDR_MSGHDR_SIZE;
 
   // Send the request
-  if(write(this->sock, buf, encode_msglen) < encode_msglen)
+  numbytes = 0;
+  while(numbytes < encode_msglen)
   {
-    PLAYER_ERROR1("write failed: %s", strerror(errno));
-    return(-1);
+    if((thisnumbytes = write(this->sock, buf+numbytes, 
+                             encode_msglen-numbytes)) < 0)
+    {
+      if(errno != EAGAIN)
+      {
+        PLAYER_ERROR1("write failed: %s", strerror(errno));
+        return(-1);
+      }
+    }
+    else
+    {
+      numbytes += thisnumbytes;
+    }
+    pthread_testcancel();
+    if(player_quit)
+      return(-1);
   }
   
-  // Receive the response
-  if((encode_msglen = read(this->sock, buf, sizeof(buf))) < 0)
+  // Receive the response header
+  numbytes = 0;
+  while(numbytes < PLAYERXDR_MSGHDR_SIZE)
   {
-    PLAYER_ERROR1("read failed: %s", strerror(errno));
-    return(-1);
+    if((thisnumbytes = read(this->sock, buf+numbytes, 
+                            PLAYERXDR_MSGHDR_SIZE-numbytes)) < 0)
+    {
+      if(errno != EAGAIN)
+      {
+        PLAYER_ERROR1("read failed: %s", strerror(errno));
+        return(-1);
+      }
+    }
+    else
+      numbytes += thisnumbytes;
+    pthread_testcancel();
+    if(player_quit)
+      return(-1);
   }
 
   // Decode the header
-  if(player_msghdr_pack(buf, encode_msglen, &hdr, PLAYERXDR_DECODE) < 0)
+  if(player_msghdr_pack(buf, PLAYERXDR_MSGHDR_SIZE, &hdr, PLAYERXDR_DECODE) < 0)
   {
     PLAYER_ERROR("failed to decode header");
     return(-1);
@@ -187,11 +232,30 @@ TCPRemoteDriver::SubscribeRemote()
     return(-1);
   }
 
+  // Receive the response body
+  numbytes = 0;
+  while(numbytes < (int)hdr.size)
+  {
+    if((thisnumbytes = read(this->sock, buf+PLAYERXDR_MSGHDR_SIZE+numbytes, 
+                            hdr.size-numbytes)) < 0)
+    {
+      if(errno != EAGAIN)
+      {
+        PLAYER_ERROR1("read failed: %s", strerror(errno));
+        return(-1);
+      }
+    }
+    else
+      numbytes += thisnumbytes;
+    pthread_testcancel();
+    if(player_quit)
+      return(-1);
+  }
+
   memset(&req,0,sizeof(req));
   // Decode the body
   if(player_device_req_pack(buf + PLAYERXDR_MSGHDR_SIZE,
-                            encode_msglen-PLAYERXDR_MSGHDR_SIZE,
-                            &req, PLAYERXDR_DECODE) < 0)
+                            hdr.size, &req, PLAYERXDR_DECODE) < 0)
   {
     PLAYER_ERROR("failed to decode reply");
     return(-1);
@@ -217,7 +281,7 @@ TCPRemoteDriver::SubscribeRemote()
 
 int 
 TCPRemoteDriver::Shutdown() 
-{ 
+{
   printf("trying to Shutdown %s:%d:%d:%d\n",
          this->ipaddr,
          this->device_addr.robot,

@@ -233,7 +233,7 @@ MOBILITY_DIR="${HOME}/../mobility/mobility-b-1.1.7-rh6.0")
 PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
                   [],["-lisense"])
 
-PLAYER_ADD_DRIVER([wavefront],[no],[],[],[])
+PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_CHECK_HEADERS(openssl/md5.h)
 AC_CHECK_LIB(crypto,MD5_Init)

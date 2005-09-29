@@ -187,6 +187,7 @@ plan_write_cspace(plan_t *plan, const char* fname, unsigned int* hash)
   }
 
   fprintf(fp,"%d\n%d\n", plan->size_x, plan->size_y);
+  fprintf(fp,"%.3lf\n%.3lf\n", plan->origin_x, plan->origin_y);
   fprintf(fp,"%.3lf\n%.3lf\n", plan->scale,plan->max_radius);
   for(i=0;i<HASH_LEN;i++)
     fprintf(fp,"%08X", hash[i]);
@@ -215,6 +216,7 @@ plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash)
   int i,j;
   FILE* fp;
   int size_x, size_y;
+  double origin_x, origin_y;
   double scale, max_radius;
   unsigned int cached_hash[HASH_LEN];
 
@@ -227,6 +229,8 @@ plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash)
   /* Read out the metadata */
   if((fscanf(fp,"%d", &size_x) < 1) ||
      (fscanf(fp,"%d", &size_y) < 1) ||
+     (fscanf(fp,"%lf", &origin_x) < 1) ||
+     (fscanf(fp,"%lf", &origin_y) < 1) ||
      (fscanf(fp,"%lf", &scale) < 1) ||
      (fscanf(fp,"%lf", &max_radius) < 1))
   {
@@ -248,6 +252,8 @@ plan_read_cspace(plan_t *plan, const char* fname, unsigned int* hash)
   /* Verify that metadata matches */
   if((size_x != plan->size_x) ||
      (size_y != plan->size_y) ||
+     (fabs(origin_x - plan->origin_x) > 1e-3) ||
+     (fabs(origin_y - plan->origin_y) > 1e-3) ||
      (fabs(scale - plan->scale) > 1e-3) ||
      (fabs(max_radius - plan->max_radius) > 1e-3) ||
      memcmp(cached_hash, hash, sizeof(unsigned int) * HASH_LEN))

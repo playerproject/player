@@ -276,11 +276,17 @@ class Wavefront : public Driver
     double replan_dist_thresh;
     // leave at least this much time (seconds) between replanning cycles
     double replan_min_time;
+    // should we request the map at startup? (or wait for it to be pushed
+    // to us as data?)
+    bool request_map;
+    // Do we have a map yet?
+    bool have_map;
 
     // methods for internal use
     int SetupLocalize();
     int SetupPosition();
     int SetupMap();
+    int GetMap(bool threaded);
     int ShutdownPosition();
     int ShutdownLocalize();
     int ShutdownMap();
@@ -289,6 +295,7 @@ class Wavefront : public Driver
     void ProcessCommand(player_planner_cmd_t* cmd);
     void ProcessLocalizeData(player_position2d_data_t* data);
     void ProcessPositionData(player_position2d_data_t* data);
+    void ProcessMapInfo(player_map_info_t* info);
     void PutPositionCommand(double x, double y, double a, unsigned char type);
     void PutPlannerData();
     void StopPosition();
@@ -359,6 +366,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->ang_eps = cf->ReadAngle(section,"angle_epsilon",DTOR(10));
   this->replan_dist_thresh = cf->ReadLength(section,"replan_dist_thresh",2.0);
   this->replan_min_time = cf->ReadFloat(section,"replan_min_time",2.0);
+  this->request_map = cf->ReadInt(section,"request_map",1);
   this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
 }
 
@@ -368,6 +376,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
 int 
 Wavefront::Setup()
 {
+  this->have_map = false;
   this->stopped = true;
   this->atgoal = true;
   this->enable = true;
@@ -461,6 +470,33 @@ Wavefront::ProcessPositionData(player_position2d_data_t* data)
   this->position_x = data->pos.px;
   this->position_y = data->pos.py;
   this->position_a = data->pos.pa;
+}
+
+void 
+Wavefront::ProcessMapInfo(player_map_info_t* info)
+{
+  // Got new map info pushed to us.  We'll save this info and get the new
+  // map.
+  this->plan->scale = info->scale;
+  this->plan->size_x = info->width;
+  this->plan->size_y = info->height;
+  this->plan->origin_x = info->origin.px;
+  this->plan->origin_y = info->origin.py;
+
+  // Now get the map data, possibly in separate tiles.
+  if(this->GetMap(true) < 0)
+  {
+    this->have_map = false;
+    this->StopPosition();
+  }
+  else
+  {
+    this->have_map = true;
+    plan_update_cspace(this->plan,this->cspace_fname);
+    // force replanning
+    if(this->curr_waypoint >= 0)
+      this->new_goal = true;
+  }
 }
 
 void
@@ -612,6 +648,12 @@ void Wavefront::Main()
     pthread_testcancel();
 
     ProcessMessages();
+
+    if(!this->have_map)
+    {
+      usleep(CYCLE_TIME_US);
+      continue;
+    }
 
     GlobalTime->GetTimeDouble(&t);
 
@@ -860,8 +902,89 @@ Wavefront::SetupLocalize()
   return(0);
 }
 
+// Retrieve the map data in tiles, assuming that the map info is already
+// stored in this->plan.
+int
+Wavefront::GetMap(bool threaded)
+{
+  // allocate space for map cells
+  this->plan->cells = (plan_cell_t*)realloc(this->plan->cells,
+                                            (this->plan->size_x *
+                                             this->plan->size_y *
+                                             sizeof(plan_cell_t)));
+  assert(this->plan->cells);
+
+  // Reset the grid
+  plan_reset(this->plan);
+
+  // now, get the map data
+  player_map_data_t* data_req;
+  size_t reqlen;
+  int i,j;
+  int oi,oj;
+  int sx,sy;
+  int si,sj;
+
+  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
+  data_req = (player_map_data_t*)calloc(1, reqlen);
+  assert(data_req);
+
+  // Tile size
+  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
+  assert(sx * sy < (int)PLAYER_MAP_MAX_TILE_SIZE);
+  oi=oj=0;
+  while((oi < this->plan->size_x) && (oj < this->plan->size_y))
+  {
+    si = MIN(sx, this->plan->size_x - oi);
+    sj = MIN(sy, this->plan->size_y - oj);
+
+    data_req->col = oi;
+    data_req->row = oj;
+    data_req->width = si;
+    data_req->height = sj;
+
+    Message* msg;
+    if(!(msg = this->mapdevice->Request(this->InQueue,
+                                        PLAYER_MSGTYPE_REQ,
+                                        PLAYER_MAP_REQ_GET_DATA,
+                                        (void*)data_req,reqlen,NULL, 
+                                        threaded)))
+    {
+      PLAYER_ERROR("failed to get map data");
+      free(data_req);
+      free(this->plan->cells);
+      return(-1);
+    }
+
+    player_map_data_t* mapdata = (player_map_data_t*)msg->GetPayload();
+    plan_cell_t* cell;
+
+    // copy the map data
+    for(j=0;j<sj;j++)
+    {
+      for(i=0;i<si;i++)
+      {
+        cell = this->plan->cells + PLAN_INDEX(this->plan,oi+i,oj+j);
+        cell->occ_dist = this->plan->max_radius;
+        if((cell->occ_state = mapdata->data[j*si + i]) >= 0)
+          cell->occ_dist = 0;
+      }
+    }
+
+    delete msg;
+
+    oi += si;
+    if(oi >= this->plan->size_x)
+    {
+      oi = 0;
+      oj += sj;
+    }
+  }
+  free(data_req);
+  return(0);
+}
+
 // setup the underlying map device (i.e., get the map)
-// TODO: should Unsubscribe from the map on error returns in the function
 int
 Wavefront::SetupMap()
 {
@@ -876,6 +999,11 @@ Wavefront::SetupMap()
     PLAYER_ERROR("unable to subscribe to map device");
     return(-1);
   }
+
+  // should we get the map now?  if not, we'll wait for it to be pushed to
+  // us as data later.
+  if(!this->request_map)
+    return(0);
 
   printf("Wavefront: Loading map from map:%d...\n", this->map_id.index);
   fflush(NULL);
@@ -909,79 +1037,13 @@ Wavefront::SetupMap()
 
   delete msg;
 
-  // allocate space for map cells
-  this->plan->cells = (plan_cell_t*)calloc((this->plan->size_x *
-                                            this->plan->size_y),
-                                           sizeof(plan_cell_t));
-  assert(this->plan->cells);
-
-  // Reset the grid
-  plan_reset(this->plan);
-
-  // now, get the map data
-  player_map_data_t* data_req;
-  size_t reqlen;
-  int i,j;
-  int oi,oj;
-  int sx,sy;
-  int si,sj;
-
-  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
-  data_req = (player_map_data_t*)calloc(1, reqlen);
-  assert(data_req);
-
-  // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)PLAYER_MAP_MAX_TILE_SIZE);
-  oi=oj=0;
-  while((oi < this->plan->size_x) && (oj < this->plan->size_y))
-  {
-    si = MIN(sx, this->plan->size_x - oi);
-    sj = MIN(sy, this->plan->size_y - oj);
-
-    data_req->col = oi;
-    data_req->row = oj;
-    data_req->width = si;
-    data_req->height = sj;
-
-    if(!(msg = this->mapdevice->Request(this->InQueue,
-                                        PLAYER_MSGTYPE_REQ,
-                                        PLAYER_MAP_REQ_GET_DATA,
-                                        (void*)data_req,reqlen,NULL, false)))
-    {
-      PLAYER_ERROR("failed to get map data");
-      free(data_req);
-      free(this->plan->cells);
-      return(-1);
-    }
-
-    player_map_data_t* mapdata = (player_map_data_t*)msg->GetPayload();
-    plan_cell_t* cell;
-
-    // copy the map data
-    for(j=0;j<sj;j++)
-    {
-      for(i=0;i<si;i++)
-      {
-        cell = this->plan->cells + PLAN_INDEX(this->plan,oi+i,oj+j);
-        cell->occ_dist = this->plan->max_radius;
-        if((cell->occ_state = mapdata->data[j*si + i]) >= 0)
-          cell->occ_dist = 0;
-      }
-    }
-
-    delete msg;
-
-    oi += si;
-    if(oi >= this->plan->size_x)
-    {
-      oi = 0;
-      oj += sj;
-    }
-  }
-  free(data_req);
+  // Now get the map data, possibly in separate tiles.
+  if(this->GetMap(false) < 0)
+    return(-1);
 
   puts("Done.");
+
+  this->have_map = true;
 
   plan_update_cspace(this->plan,this->cspace_fname);
 
@@ -1072,6 +1134,7 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
                   (void*)&reply, sizeof(reply), NULL);
     return(0);
   }
+  // Is it a request to enable or disable the planner?
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
                                 PLAYER_PLANNER_REQ_ENABLE, 
                                 this->device_addr))
@@ -1098,6 +1161,19 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_PLANNER_REQ_ENABLE);
+    return(0);
+  }
+  // Is it new map metadata?
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                                PLAYER_MAP_DATA_INFO,
+                                this->map_id))
+  {
+    if(hdr->size != sizeof(player_map_info_t))
+    {
+      PLAYER_ERROR("incorrect size for map info");
+      return(-1);
+    }
+    this->ProcessMapInfo((player_map_info_t*)data);
     return(0);
   }
   else

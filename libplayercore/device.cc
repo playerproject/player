@@ -233,6 +233,7 @@ Device::Request(MessageQueue* resp_queue,
     // HACK: this loop should not be neccesary!
     while(!(msg = resp_queue->Pop()))
     {
+      pthread_testcancel();
       PLAYER_WARN("empty queue after waiting!");
       resp_queue->Wait();
     }

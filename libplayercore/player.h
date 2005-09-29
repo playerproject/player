@@ -1561,7 +1561,8 @@ delivered in tiles, via a sequence of configuration requests.
 #define PLAYER_MAP_MAX_TILE_SIZE 2097102
 
 /** Data subtypes */
-#define PLAYER_MAP_DATA_TILE               0x01
+#define PLAYER_MAP_DATA_INFO               0x01
+#define PLAYER_MAP_DATA_TILE               0x02
 
 /** Request subtypes */
 #define PLAYER_MAP_REQ_GET_INFO            0x01

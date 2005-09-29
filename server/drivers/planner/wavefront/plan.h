@@ -118,22 +118,17 @@ void plan_md5(unsigned int* digest, plan_t* plan);
  * Plan manipulation macros
  **************************************************************************/
 
-// Convert from origin-at-lower-left-corner (like Stage) to
-// origin-at-center.
-#define PLAN_SXCX(plan, x) ((x) - (plan->scale * plan->size_x / 2.0))
-#define PLAN_SYCY(plan, y) ((y) - (plan->scale * plan->size_y / 2.0))
-
-// Convert from origin-at-center to origin-at-lower-left-corner (like Stage).
-#define PLAN_CXSX(plan, x) ((x) + (plan->scale * plan->size_x / 2.0))
-#define PLAN_CYSY(plan, y) ((y) + (plan->scale * plan->size_y / 2.0))
-
 // Convert from plan index to world coords
-#define PLAN_WXGX(plan, i) (((i) - plan->size_x / 2) * plan->scale)
-#define PLAN_WYGY(plan, j) (((j) - plan->size_y / 2) * plan->scale)
+//#define PLAN_WXGX(plan, i) (((i) - plan->size_x / 2) * plan->scale)
+//#define PLAN_WYGY(plan, j) (((j) - plan->size_y / 2) * plan->scale)
+#define PLAN_WXGX(plan, i) ((plan)->origin_x + (i) * (plan)->scale)
+#define PLAN_WYGY(plan, j) ((plan)->origin_y + (j) * (plan)->scale)
 
 // Convert from world coords to plan coords
-#define PLAN_GXWX(plan, x) (floor((x) / plan->scale + 0.5) + plan->size_x / 2)
-#define PLAN_GYWY(plan, y) (floor((y) / plan->scale + 0.5) + plan->size_y / 2)
+//#define PLAN_GXWX(plan, x) (floor((x) / plan->scale + 0.5) + plan->size_x / 2)
+//#define PLAN_GYWY(plan, y) (floor((y) / plan->scale + 0.5) + plan->size_y / 2)
+#define PLAN_GXWX(plan, x) ((int)(((x) - (plan)->origin_x) / (plan)->scale + 0.5))
+#define PLAN_GYWY(plan, y) ((int)(((y) - (plan)->origin_y) / (plan)->scale + 0.5))
 
 // Test to see if the given plan coords lie within the absolute plan bounds.
 #define PLAN_VALID(plan, i, j) ((i >= 0) && (i < plan->size_x) && (j >= 0) && (j < plan->size_y))
