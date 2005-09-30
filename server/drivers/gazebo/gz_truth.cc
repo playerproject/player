@@ -171,6 +171,7 @@ int GzTruth::Shutdown()
 void GzTruth::Update()
 {
   player_truth_pose_t data;
+  double e[3];
   struct timeval ts;
   
   gz_truth_lock(this->iface, 1);
@@ -185,9 +186,12 @@ void GzTruth::Update()
     data.pose.py = this->iface->data->pos[1];
     data.pose.pz = this->iface->data->pos[2];
 
-    data.pose.proll = this->iface->data->rot[0];
-    data.pose.ppitch = this->iface->data->rot[1];
-    data.pose.pyaw = this->iface->data->rot[2];
+    // Convert the rotation from quaternion to euler 
+    gz_truth_euler_from_quatern(e, this->iface->data->rot);
+
+    data.pose.proll = e[0];
+    data.pose.ppitch = e[1];
+    data.pose.pyaw = e[2];
     
     this->Publish( this->device_addr, NULL,
                    PLAYER_MSGTYPE_DATA,
@@ -207,6 +211,9 @@ int GzTruth::ProcessMessage( MessageQueue *resp_queue,
                              player_msghdr *hdr, 
                              void *data)
 {
+  double q[4];
+  double e[3];
+
   switch (hdr->subtype)
   {
     case PLAYER_TRUTH_REQ_SET_POSE:
@@ -219,9 +226,16 @@ int GzTruth::ProcessMessage( MessageQueue *resp_queue,
       this->iface->data->cmd_pos[1] = req->pose.py;
       this->iface->data->cmd_pos[2] = req->pose.pz;
 
-      this->iface->data->cmd_rot[0] = req->pose.proll;
-      this->iface->data->cmd_rot[1] = req->pose.ppitch;
-      this->iface->data->cmd_rot[2] = req->pose.pyaw;
+      e[0] = req->pose.proll;
+      e[1] = req->pose.ppitch;
+      e[2] = req->pose.pyaw;
+
+      gz_truth_quatern_from_euler(q,e);
+
+      this->iface->data->cmd_rot[0] = q[0];
+      this->iface->data->cmd_rot[1] = q[1];
+      this->iface->data->cmd_rot[2] = q[2];
+      this->iface->data->cmd_rot[3] = q[3];
 
       this->iface->data->cmd_new = 1;
 
