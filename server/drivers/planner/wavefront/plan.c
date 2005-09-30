@@ -131,7 +131,7 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
   }
 #endif
 
-  PLAYER_MSG0(1,"Generating C-space....");
+  PLAYER_MSG0(2,"Generating C-space....");
           
   dn = (int) ceil(plan->max_radius / plan->scale);
   
@@ -167,7 +167,7 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
     plan_write_cspace(plan,cachefile, (unsigned int*)hash);
 #endif
 
-  PLAYER_MSG0(1,"Done.");
+  PLAYER_MSG0(2,"Done.");
 }
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO

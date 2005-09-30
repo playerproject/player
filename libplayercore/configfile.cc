@@ -62,9 +62,9 @@
 ///////////////////////////////////////////////////////////////////////////
 // Useful macros for dumping parser errors
 #define TOKEN_ERR(z, l) \
-  fprintf(stderr, "%s:%d error: " z, this->filename, l)
+  fprintf(stderr, "%s:%d error: " z "\n", this->filename, l)
 #define PARSE_ERR(z, l) \
-  fprintf(stderr, "%s:%d error: " z, this->filename, l)
+  fprintf(stderr, "%s:%d error: " z "\n", this->filename, l)
 
 #define CONFIG_WARN1(z, line, a) \
   fprintf(stderr, "%s:%d warning: " z "\n", this->filename, line, a)
@@ -546,6 +546,9 @@ bool ConfigFile::LoadTokenInclude(FILE *file, int *line, int include)
     free(fullpath);
     return false;
   }
+
+  // Add an EOL to stop parsing of the include statement
+  AddToken(TokenEOL, "\n", include);
 
   // Read tokens from the file
   if (!LoadTokens(infile, include + 1))
