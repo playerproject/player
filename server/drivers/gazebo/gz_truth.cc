@@ -187,7 +187,7 @@ void GzTruth::Update()
     data.pose.pz = this->iface->data->pos[2];
 
     // Convert the rotation from quaternion to euler 
-    gz_truth_euler_from_quatern(e, this->iface->data->rot);
+    gz_truth_euler_from_quatern(this->iface, e, this->iface->data->rot);
 
     data.pose.proll = e[0];
     data.pose.ppitch = e[1];
@@ -230,7 +230,7 @@ int GzTruth::ProcessMessage( MessageQueue *resp_queue,
       e[1] = req->pose.ppitch;
       e[2] = req->pose.pyaw;
 
-      gz_truth_quatern_from_euler(q,e);
+      gz_truth_quatern_from_euler(this->iface, q,e);
 
       this->iface->data->cmd_rot[0] = q[0];
       this->iface->data->cmd_rot[1] = q[1];
