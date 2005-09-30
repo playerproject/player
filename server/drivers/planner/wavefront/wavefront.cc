@@ -281,6 +281,8 @@ class Wavefront : public Driver
     bool request_map;
     // Do we have a map yet?
     bool have_map;
+    // Has the map changed since last time we planned?
+    bool new_map;
 
     // methods for internal use
     int SetupLocalize();
@@ -377,6 +379,7 @@ int
 Wavefront::Setup()
 {
   this->have_map = false;
+  this->new_map = false;
   this->stopped = true;
   this->atgoal = true;
   this->enable = true;
@@ -492,7 +495,7 @@ Wavefront::ProcessMapInfo(player_map_info_t* info)
   else
   {
     this->have_map = true;
-    plan_update_cspace(this->plan,this->cspace_fname);
+    this->new_map = true;
     // force replanning
     if(this->curr_waypoint >= 0)
       this->new_goal = true;
@@ -643,9 +646,6 @@ void Wavefront::Main()
   //this->position->Wait();
   this->StopPosition();
 
-  if(this->have_map)
-    plan_update_cspace(this->plan,this->cspace_fname);
-
   for(;;)
   {
     pthread_testcancel();
@@ -681,6 +681,11 @@ void Wavefront::Main()
     // Did we get a new goal, or is it time to replan?
     if(this->new_goal || replan)
     {
+      if(this->new_map)
+      {
+        plan_update_cspace(this->plan,this->cspace_fname);
+        this->new_map = false;
+      }
       // compute costs to the new goal
       plan_update_plan(this->plan, this->target_x, this->target_y);
 
@@ -1045,8 +1050,6 @@ Wavefront::SetupMap()
     return(-1);
 
   puts("Done.");
-
-  this->have_map = true;
 
   return(0);
 }
