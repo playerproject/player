@@ -93,8 +93,12 @@ AC_CHECK_FILE($with_jni_mddir/jni_md.h, have_jni_md_h=yes, have_jni_md_h=no)
 dnl Do we have a Java compiler?
 AC_CHECK_PROG(have_java,javac,yes,no)
 
-dnl If we have python, swig, javac, jni.h, and jni_md.h, then all systems are go
-if test "x$have_python" = "xyes" -a "x$have_swig" = "xyes" -a "x$have_java" = "xyes" -a "x$have_jni_h" = "xyes" -a "x$have_jni_md_h" = "xyes"; then
+dnl Let the user disable building java wrappers
+AC_ARG_ENABLE(jplayer, [  --disable-jplayer         Don't build Jplayer (the Java wrappers)],, enable_jplayer=yes)
+
+dnl If we have python, swig, javac, jni.h, and jni_md.h, then all 
+dnl systems are go for building Jplayer
+if test "x$enable_jplayer" = "xyes" -a "x$have_python" = "xyes" -a "x$have_swig" = "xyes" -a "x$have_java" = "xyes" -a "x$have_jni_h" = "xyes" -a "x$have_jni_md_h" = "xyes"; then
   enable_java=yes
 else
   enable_java=no

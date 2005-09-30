@@ -10,6 +10,7 @@
 %feature("nodirector") Driver::Unlock;
 %feature("nodirector") Driver::Subscribe;
 %feature("nodirector") Driver::Unsubscribe;
+%feature("nodirector") Driver::ProcessMessage;
 
 %include "typemaps.i"
 %include "arrays_java.i"
