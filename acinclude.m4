@@ -235,8 +235,12 @@ PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
 
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 dnl The wavefront driver can make use of MD5 hash functions, if present
-AC_CHECK_HEADERS(openssl/md5.h)
-AC_CHECK_LIB(crypto,MD5_Init)
+AC_ARG_ENABLE(md5, [  --disable-md5      Don't use MD5 hashing functions],,
+enable_md5=yes)
+if test "x$enable_md5" = "xyes"; then
+  AC_CHECK_HEADERS(openssl/md5.h)
+  AC_CHECK_LIB(crypto,MD5_Init)
+fi
 
 PLAYER_ADD_DRIVER([mapfile],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
