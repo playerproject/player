@@ -4,13 +4,13 @@ PLAYERCC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_build
 
 AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
 # this should be cleaned, but no time now
-example1_LDADD = $(PLAYERCC_LIBS)
-example1_DEPENDENCIES = $(PLAYERCC_DEPS)
-example2_LDADD = $(PLAYERCC_LIBS)
-example2_DEPENDENCIES = $(PLAYERCC_DEPS)
-
-bin_PROGRAMS = example1 example2
-
-example1_SOURCES = example1.cc
-
-example2_SOURCES = example2.cc
+#example1_LDADD = $(PLAYERCC_LIBS)
+#example1_DEPENDENCIES = $(PLAYERCC_DEPS)
+#example2_LDADD = $(PLAYERCC_LIBS)
+#example2_DEPENDENCIES = $(PLAYERCC_DEPS)
+#
+#bin_PROGRAMS = example1 example2
+#
+#example1_SOURCES = example1.cc
+#
+#example2_SOURCES = example2.cc

@@ -226,7 +226,7 @@ typedef struct _playerc_client_t
   int device_count;
 
   /** @internal A circular queue used to buffer incoming data packets. */
-  playerc_client_item_t qitems[128];
+  playerc_client_item_t qitems[512];
   int qfirst, qlen, qsize;
 
   /** @internal Temp buffers for incoming / outgoing packets. */
