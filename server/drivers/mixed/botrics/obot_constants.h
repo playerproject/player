@@ -47,6 +47,12 @@
 #define OBOT_MAGIC_TIMING_CONSTANT 1.0
 #define OBOT_MPS_PER_TICK  (OBOT_M_PER_TICK * OBOT_PID_FREQUENCY / \
                                 OBOT_MAGIC_TIMING_CONSTANT)
+#define OBOT_WIDTH 0.45
+#define OBOT_LENGTH 0.45
+#define OBOT_POSE_X 0.0
+#define OBOT_POSE_Y 0.0
+#define OBOT_POSE_A 0.0
+#define OBOT_NOMINAL_VOLTAGE 48.0
 
 /* assuming that the counts can use the full space of a signed 32-bit int */
 #define OBOT_MAX_TICS 2147483648U
