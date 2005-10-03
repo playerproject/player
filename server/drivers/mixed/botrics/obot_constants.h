@@ -35,6 +35,9 @@
 // might need to define a longer delay to wait for acks
 #define OBOT_DELAY_US 10000
 
+// time between consecutive publishes
+#define OBOT_PUBLISH_INTERVAL 0.1
+
 /************************************************************************/
 /* Physical constants, in meters, radians, seconds (unless otherwise noted) */
 #define OBOT_AXLE_LENGTH    0.317

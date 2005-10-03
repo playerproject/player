@@ -89,14 +89,9 @@ Brian Gerkey
 #include <termios.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
-#include "player.h"
-#include "replace.h"
+#include <libplayercore/playercore.h>
 #include "obot_constants.h"
 
 static void StopRobot(void* obotdev);
@@ -114,6 +109,7 @@ class Obot : public Driver
     bool odom_initialized;
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
+    double max_xspeed, max_yawspeed;
 
     // Robot geometry (size and rotational offset)
     player_bbox_t robot_size;
@@ -198,6 +194,11 @@ Obot::Obot( ConfigFile* cf, int section)
                                               1, OBOT_POSE_Y);
     this->robot_pose.pa = cf->ReadTupleAngle(section, "offset",
                                              2, OBOT_POSE_A);
+
+    this->max_xspeed = cf->ReadTupleLength(section, "max_speed",
+                                           0, 0.5);
+    this->max_yawspeed = cf->ReadTupleAngle(section, "max_speed",
+                                            1, DTOR(40.0));
   }
 
   // Do we create a power interface?
@@ -331,7 +332,8 @@ Obot::Setup()
   fd_blocking = true;
   puts("Done.");
 
-  if(SendCommand(OBOT_SET_ACCELERATIONS,10,10) < 0)
+  // TODO: what are reasoanable numbers here?
+  if(SendCommand(OBOT_SET_ACCELERATIONS,1,1) < 0)
   {
     PLAYER_ERROR("failed to set accelerations on setup");
     close(this->fd);
@@ -376,6 +378,8 @@ Obot::Main()
   double lvel_mps, rvel_mps;
   int lvel, rvel;
   int ltics, rtics;
+  double last_publish_time = 0.0;
+  double t;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -396,31 +400,38 @@ Obot::Main()
     }
     this->UpdateOdom(ltics,rtics);
 
-    data.pos.px = this->px;
-    data.pos.py = this->py;
-    data.pos.pa = this->pa;
-
-    data.vel.py = 0;
-    lvel_mps = lvel * OBOT_MPS_PER_TICK;
-    rvel_mps = rvel * OBOT_MPS_PER_TICK;
-    data.vel.px = (lvel_mps + rvel_mps) / 2.0;
-    data.vel.pa = (rvel_mps-lvel_mps) / OBOT_AXLE_LENGTH;
-
-    this->Publish(this->position_addr, NULL, 
-                  PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
-                  (void*)&data,sizeof(data),NULL);
-
     // Update and publish power info
     int volt;
     if(GetBatteryVoltage(&volt) < 0)
       PLAYER_WARN("failed to get voltage");
-
-    charge_data.voltage = (float)volt;
-    charge_data.percent = ((float)volt) / OBOT_NOMINAL_VOLTAGE;
-    this->Publish(this->power_addr, NULL, 
-                  PLAYER_MSGTYPE_DATA,
-                  PLAYER_POWER_DATA_VOLTAGE,
-                  (void*)&charge_data, sizeof(player_power_data_t), NULL);
+    
+    GlobalTime->GetTimeDouble(&t);
+    if((t - last_publish_time) > OBOT_PUBLISH_INTERVAL)
+    {
+      data.pos.px = this->px;
+      data.pos.py = this->py;
+      data.pos.pa = this->pa;
+  
+      data.vel.py = 0;
+      lvel_mps = lvel * OBOT_MPS_PER_TICK;
+      rvel_mps = rvel * OBOT_MPS_PER_TICK;
+      data.vel.px = (lvel_mps + rvel_mps) / 2.0;
+      data.vel.pa = (rvel_mps-lvel_mps) / OBOT_AXLE_LENGTH;
+  
+      this->Publish(this->position_addr, NULL, 
+                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+                    (void*)&data,sizeof(data),NULL);
+  
+      charge_data.voltage = ((float)volt) / 1e1;
+      charge_data.percent = 1e2 * (charge_data.voltage / 
+                                   OBOT_NOMINAL_VOLTAGE);
+      this->Publish(this->power_addr, NULL, 
+                    PLAYER_MSGTYPE_DATA,
+                    PLAYER_POWER_DATA_VOLTAGE,
+                    (void*)&charge_data, sizeof(player_power_data_t), NULL);
+  
+      last_publish_time = t;
+    }
 
     usleep(OBOT_DELAY_US);
   }
@@ -432,11 +443,33 @@ Obot::ProcessCommand(player_position2d_cmd_t * cmd)
 {
   double rotational_term, command_lvel, command_rvel;
   int final_lvel, final_rvel;
+  double xspeed, yawspeed;
+
+  xspeed = cmd->vel.px;
+  yawspeed = cmd->vel.pa;
+
+  // Clamp velocities according to given maxima
+  // TODO: test this to see if it does the right thing.  We could clamp
+  //       individual wheel velocities instead.
+  if(fabs(xspeed) > this->max_xspeed)
+  {
+    if(xspeed > 0)
+      xspeed = this->max_xspeed;
+    else
+      xspeed = -this->max_xspeed;
+  }
+  if(fabs(yawspeed) > this->max_yawspeed)
+  {
+    if(yawspeed > 0)
+      yawspeed = this->max_yawspeed;
+    else
+      yawspeed = -this->max_yawspeed;
+  }
 
   // convert (tv,rv) to (lv,rv) and send to robot
-  rotational_term = cmd->vel.pa * OBOT_AXLE_LENGTH / 2.0;
-  command_rvel = cmd->vel.px + rotational_term;
-  command_lvel = cmd->vel.px - rotational_term;
+  rotational_term = yawspeed * OBOT_AXLE_LENGTH / 2.0;
+  command_rvel = xspeed + rotational_term;
+  command_lvel = xspeed - rotational_term;
 
   // sanity check on per-wheel speeds
   if(fabs(command_lvel) > OBOT_MAX_WHEELSPEED)
@@ -674,14 +707,12 @@ Obot::GetBatteryVoltage(int* voltage)
   unsigned char buf[5];
   buf[0] = OBOT_GET_VOLTAGE;
 
-  puts("sending for voltage");
   if(WriteBuf(buf,1) < 0)
   {
     PLAYER_ERROR("failed to send battery voltage command");
     return(-1);
   }
 
-  puts("waiting for voltage");
   if(ReadBuf(buf,5) < 0)
   {
     PLAYER_ERROR("failed to read battery voltage");
