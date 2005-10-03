@@ -112,6 +112,12 @@ class Obot : public Driver
     double px, py, pa;  // integrated odometric pose (m,m,rad)
     int last_ltics, last_rtics;
     bool odom_initialized;
+    player_devaddr_t position_addr;
+    player_devaddr_t power_addr;
+
+    // Robot geometry (size and rotational offset)
+    player_bbox_t robot_size;
+    player_pose_t robot_pose;
 
     // methods for internal use
     int WriteBuf(unsigned char* s, size_t len);
@@ -139,12 +145,14 @@ class Obot : public Driver
     // public, so that it can be called from pthread cleanup function
     int SetVelocity(int lvel, int rvel);
 
-    Obot( ConfigFile* cf, int section);
+    Obot(ConfigFile* cf, int section);
 
-    int ProcessCommand(player_position_cmd_t * cmd);
+    void ProcessCommand(player_position2d_cmd_t * cmd);
 
     // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    int ProcessMessage(MessageQueue * resp_queue, 
+                       player_msghdr * hdr, 
+                       void * data);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -165,9 +173,43 @@ Obot_Register(DriverTable* table)
 }
 
 Obot::Obot( ConfigFile* cf, int section) 
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
+  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
-  last_final_rvel = last_final_lvel = 0;
+  memset(&this->position_addr,0,sizeof(player_devaddr_t));
+  memset(&this->power_addr,0,sizeof(player_devaddr_t));
+
+  // Do we create a robot position interface?
+  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->position_addr) != 0)
+    {
+      this->SetError(-1);    
+      return;
+    }
+
+    this->robot_size.sl = cf->ReadTupleLength(section, "size", 
+                                              0, OBOT_LENGTH);
+    this->robot_size.sw = cf->ReadTupleLength(section, "size", 
+                                              1, OBOT_WIDTH);
+    this->robot_pose.px = cf->ReadTupleLength(section, "offset",
+                                              0, OBOT_POSE_X);
+    this->robot_pose.py = cf->ReadTupleLength(section, "offset",
+                                              1, OBOT_POSE_Y);
+    this->robot_pose.pa = cf->ReadTupleAngle(section, "offset",
+                                             2, OBOT_POSE_A);
+  }
+
+  // Do we create a power interface?
+  if(cf->ReadDeviceAddr(&(this->power_addr), section, "provides", 
+                      PLAYER_POWER_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->power_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
 
   this->fd = -1;
   this->serial_port = cf->ReadString(section, "port", OBOT_DEFAULT_PORT);
@@ -215,16 +257,10 @@ Obot::Setup()
   struct termios term;
   int flags;
   int ltics,rtics,lvel,rvel;
-  player_position_cmd_t cmd;
-  player_position_data_t data;
-
-  cmd.xpos = cmd.ypos = cmd.yaw = 0;
-  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-  data.xpos = data.ypos = data.yaw = 0;
-  data.xspeed = data.yspeed = data.yawspeed = 0;
 
   this->px = this->py = this->pa = 0.0;
   this->odom_initialized = false;
+  this->last_final_rvel = this->last_final_lvel = 0;
 
   printf("Botrics Obot connection initializing (%s)...", serial_port);
   fflush(stdout);
@@ -303,10 +339,6 @@ Obot::Setup()
     return(-1);
   }
 
-  // zero the command buffer
-  //PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
-  //PutData((unsigned char*)&data,sizeof(data),NULL);
-
   // start the thread to talk with the robot
   StartThread();
 
@@ -323,16 +355,7 @@ Obot::Shutdown()
 
   StopThread();
 
-  // the robot is stopped by the thread cleanup function StopRobot(), which
-  // is called as a result of the above StopThread()
-  /*
-  if(SetVelocity(0,0) < 0)
-    PLAYER_ERROR("failed to stop robot while shutting down");
-   */
-
   usleep(OBOT_DELAY_US);
-  //if(ChangeMotorState(0) < 0)
-    //PLAYER_ERROR("failed to limp motors on shutdown");
 
   deinitstr[0] = OBOT_DEINIT;
   if(WriteBuf(deinitstr,sizeof(deinitstr)) < 0)
@@ -348,7 +371,8 @@ Obot::Shutdown()
 void 
 Obot::Main()
 {
-  player_position_data_t data;
+  player_position2d_data_t data;
+  player_power_data_t charge_data;
   double lvel_mps, rvel_mps;
   int lvel, rvel;
   int ltics, rtics;
@@ -364,174 +388,172 @@ Obot::Main()
     
     ProcessMessages();
     
-    if(GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
+    // Update and publish odometry info
+    if(this->GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
     {
       PLAYER_ERROR("failed to get odometry");
       pthread_exit(NULL);
     }
+    this->UpdateOdom(ltics,rtics);
 
-    UpdateOdom(ltics,rtics);
+    data.pos.px = this->px;
+    data.pos.py = this->py;
+    data.pos.pa = this->pa;
 
-    /*
+    data.vel.py = 0;
+    lvel_mps = lvel * OBOT_MPS_PER_TICK;
+    rvel_mps = rvel * OBOT_MPS_PER_TICK;
+    data.vel.px = (lvel_mps + rvel_mps) / 2.0;
+    data.vel.pa = (rvel_mps-lvel_mps) / OBOT_AXLE_LENGTH;
+
+    this->Publish(this->position_addr, NULL, 
+                  PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+                  (void*)&data,sizeof(data),NULL);
+
+    // Update and publish power info
     int volt;
     if(GetBatteryVoltage(&volt) < 0)
       PLAYER_WARN("failed to get voltage");
-    printf("volt: %d\n", volt);
-    */
 
-    double tmp_angle;
-    data.xpos = htonl((int32_t)rint(this->px * 1e3));
-    data.ypos = htonl((int32_t)rint(this->py * 1e3));
-    if(this->pa < 0)
-      tmp_angle = this->pa + 2*M_PI;
-    else
-      tmp_angle = this->pa;
+    charge_data.voltage = (float)volt;
+    charge_data.percent = ((float)volt) / OBOT_NOMINAL_VOLTAGE;
+    this->Publish(this->power_addr, NULL, 
+                  PLAYER_MSGTYPE_DATA,
+                  PLAYER_POWER_DATA_VOLTAGE,
+                  (void*)&charge_data, sizeof(player_power_data_t), NULL);
 
-    data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
-
-    data.yspeed = 0;
-    lvel_mps = lvel * OBOT_MPS_PER_TICK;
-    rvel_mps = rvel * OBOT_MPS_PER_TICK;
-    data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
-    data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
-                                             OBOT_AXLE_LENGTH)));
-
-    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*)&data,sizeof(data),NULL);
-
-
-    
     usleep(OBOT_DELAY_US);
   }
   pthread_cleanup_pop(1);
 }
 
-int Obot::ProcessCommand(player_position_cmd_t * cmd)
+void
+Obot::ProcessCommand(player_position2d_cmd_t * cmd)
 {
   double rotational_term, command_lvel, command_rvel;
   int final_lvel, final_rvel;
 
-    player_position_cmd_t & command = *cmd;
+  // convert (tv,rv) to (lv,rv) and send to robot
+  rotational_term = cmd->vel.pa * OBOT_AXLE_LENGTH / 2.0;
+  command_rvel = cmd->vel.px + rotational_term;
+  command_lvel = cmd->vel.px - rotational_term;
 
-    command.yawspeed = ntohl(command.yawspeed);
-    command.xspeed = ntohl(command.xspeed);
-
-    // convert (tv,rv) to (lv,rv) and send to robot
-    rotational_term = DTOR(command.yawspeed) * OBOT_AXLE_LENGTH / 2.0;
-    command_rvel = (command.xspeed/1e3) + rotational_term;
-    command_lvel = (command.xspeed/1e3) - rotational_term;
-
-    // sanity check on per-wheel speeds
-    if(fabs(command_lvel) > OBOT_MAX_WHEELSPEED)
+  // sanity check on per-wheel speeds
+  if(fabs(command_lvel) > OBOT_MAX_WHEELSPEED)
+  {
+    if(command_lvel > 0)
     {
-      if(command_lvel > 0)
-      {
-        command_lvel = OBOT_MAX_WHEELSPEED;
-        command_rvel *= OBOT_MAX_WHEELSPEED/command_lvel;
-      }
-      else
-      {
-        command_lvel = - OBOT_MAX_WHEELSPEED;
-        command_rvel *= -OBOT_MAX_WHEELSPEED/command_lvel;
-      }
+      command_lvel = OBOT_MAX_WHEELSPEED;
+      command_rvel *= OBOT_MAX_WHEELSPEED/command_lvel;
     }
-    if(fabs(command_rvel) > OBOT_MAX_WHEELSPEED)
+    else
     {
-      if(command_rvel > 0)
-      {
-        command_rvel = OBOT_MAX_WHEELSPEED;
-        command_lvel *= OBOT_MAX_WHEELSPEED/command_rvel;
-      }
-      else
-      {
-        command_rvel = - OBOT_MAX_WHEELSPEED;
-        command_lvel *= -OBOT_MAX_WHEELSPEED/command_rvel;
-      }
+      command_lvel = - OBOT_MAX_WHEELSPEED;
+      command_rvel *= -OBOT_MAX_WHEELSPEED/command_lvel;
     }
-
-    final_lvel = (int)rint(command_lvel / OBOT_MPS_PER_TICK);
-    final_rvel = (int)rint(command_rvel / OBOT_MPS_PER_TICK);
-
-    // TODO: do this min threshold smarter, to preserve desired travel 
-    // direction
-
-    /* to account for our bad low-level PID motor controller */
-    if(abs(final_rvel) > 0 && abs(final_rvel) < OBOT_MIN_WHEELSPEED_TICKS)
+  }
+  if(fabs(command_rvel) > OBOT_MAX_WHEELSPEED)
+  {
+    if(command_rvel > 0)
     {
-      if(final_rvel > 0)
-        final_rvel = OBOT_MIN_WHEELSPEED_TICKS;
-      else
-        final_rvel = -OBOT_MIN_WHEELSPEED_TICKS;
+      command_rvel = OBOT_MAX_WHEELSPEED;
+      command_lvel *= OBOT_MAX_WHEELSPEED/command_rvel;
     }
-    if(abs(final_lvel) > 0 && abs(final_lvel) < OBOT_MIN_WHEELSPEED_TICKS)
+    else
     {
-      if(final_lvel > 0)
-        final_lvel = OBOT_MIN_WHEELSPEED_TICKS;
-      else
-        final_lvel = -OBOT_MIN_WHEELSPEED_TICKS;
+      command_rvel = - OBOT_MAX_WHEELSPEED;
+      command_lvel *= -OBOT_MAX_WHEELSPEED/command_rvel;
     }
+  }
 
-    if((final_lvel != last_final_lvel) ||
-       (final_rvel != last_final_rvel))
+  final_lvel = (int)rint(command_lvel / OBOT_MPS_PER_TICK);
+  final_rvel = (int)rint(command_rvel / OBOT_MPS_PER_TICK);
+
+  // TODO: do this min threshold smarter, to preserve desired travel 
+  // direction
+
+  /* to account for our bad low-level PID motor controller */
+  if(abs(final_rvel) > 0 && abs(final_rvel) < OBOT_MIN_WHEELSPEED_TICKS)
+  {
+    if(final_rvel > 0)
+      final_rvel = OBOT_MIN_WHEELSPEED_TICKS;
+    else
+      final_rvel = -OBOT_MIN_WHEELSPEED_TICKS;
+  }
+  if(abs(final_lvel) > 0 && abs(final_lvel) < OBOT_MIN_WHEELSPEED_TICKS)
+  {
+    if(final_lvel > 0)
+      final_lvel = OBOT_MIN_WHEELSPEED_TICKS;
+    else
+      final_lvel = -OBOT_MIN_WHEELSPEED_TICKS;
+  }
+
+  if((final_lvel != last_final_lvel) ||
+     (final_rvel != last_final_rvel))
+  {
+    if(SetVelocity(final_lvel,final_rvel) < 0)
     {
-      if(SetVelocity(final_lvel,final_rvel) < 0)
-      {
-        PLAYER_ERROR("failed to set velocity");
-        pthread_exit(NULL);
-      }
-      last_final_lvel = final_lvel;
-      last_final_rvel = final_rvel;
+      PLAYER_ERROR("failed to set velocity");
+      pthread_exit(NULL);
     }
-	return 0;
+    last_final_lvel = final_lvel;
+    last_final_rvel = final_rvel;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int Obot::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int Obot::ProcessMessage(MessageQueue * resp_queue, 
+                         player_msghdr * hdr, 
+                         void * data)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
- 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                           PLAYER_POSITION2D_CMD_STATE, 
+                           this->position_addr))
   {
-  	assert(hdr->size == sizeof(player_position_cmd_t));
-	ProcessCommand(reinterpret_cast<player_position_cmd_t *> (data));
-  	*resp_len = 0;
-  	return 0;
+    assert(hdr->size == sizeof(player_position2d_cmd_t));
+    this->ProcessCommand((player_position2d_cmd_t*)data);
+    return(0);
   }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                                PLAYER_POSITION2D_REQ_GET_GEOM, 
+                                this->position_addr))
   {
-  	assert(*resp_len >= sizeof(player_position_geom_t));
-  	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);
+    player_position2d_geom_t  geom;
   	
-    geom.pose[0] = htons((short) (0));
-    geom.pose[1] = htons((short) (0));
-    geom.pose[2] = htons((short) (0));
-    // The obot base is 390mm, and we've got about 30cm of foam 
-    // wrapped around it
-    geom.size[0] = htons((short) (450));
-    geom.size[1] = htons((short) (450));
-          
-  	*resp_len = sizeof(player_position_geom_t);
-  	return PLAYER_MSGTYPE_RESP_ACK;
-  }
+    geom.pose = this->robot_pose;
+    geom.size = this->robot_size;
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
+    this->Publish(this->position_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_POSITION2D_REQ_GET_GEOM,
+                  (void*)&geom, sizeof(geom), NULL);
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+                                this->position_addr))
   {
-  	assert(hdr->size == sizeof(player_position_power_config_t));
-   	player_position_power_config_t * powercfg = reinterpret_cast<player_position_power_config_t *> (data);
+    /* motor state change request 
+     *   1 = enable motors
+     *   0 = disable motors (default)
+     */
+    if(hdr->size != sizeof(player_position2d_power_config_t))
+    {
+      PLAYER_WARN("Arg to motor state change request wrong size; ignoring");
+      return(-1);
+    }
+    player_position2d_power_config_t* power_config =
+            (player_position2d_power_config_t*)data;
+    this->ChangeMotorState(power_config->state);
 
-    *resp_len = 0;
-    if(ChangeMotorState(powercfg->value) < 0)
-      return PLAYER_MSGTYPE_RESP_NACK;
-    else
-      return PLAYER_MSGTYPE_RESP_ACK;
+    this->Publish(this->position_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK, 
+                  PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return(0);
   }
-
-  *resp_len = 0;
-  return -1;
+  else
+    return -1;
 }
 
 int

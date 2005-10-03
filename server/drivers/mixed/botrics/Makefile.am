@@ -1,7 +1,8 @@
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
 
-noinst_LIBRARIES = @OBOT_LIB@ 
+noinst_LTLIBRARIES = 
+if INCLUDE_OBOT
+noinst_LTLIBRARIES += libobot.la
+endif
 
-EXTRA_LIBRARIES = libobot.a
-
-libobot_a_SOURCES = obot.cc obot_constants.h
+libobot_la_SOURCES = obot.cc obot_constants.h

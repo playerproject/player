@@ -203,7 +203,7 @@ PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([flockofbirds],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([obot],[no],[],[],[])
+PLAYER_ADD_DRIVER([obot],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
