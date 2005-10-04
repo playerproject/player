@@ -42,7 +42,6 @@ typedef struct
   player_pack_fn_t func;
 } playerxdr_function_t;
 
-
 static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */

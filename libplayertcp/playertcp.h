@@ -104,6 +104,7 @@ class PlayerTCP
     void ParseBuffer(int cli);
     int HandlePlayerMessage(int cli, Message* msg);
     void DeleteClient(MessageQueue* q);
+    bool Listening(int port);
 };
 
 /** @} */

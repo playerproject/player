@@ -69,7 +69,7 @@ main(int argc, char** argv)
     PLAYER_ERROR1("signal() failed: %s", strerror(errno));
     exit(-1);
   }
-
+  
   player_globals_init();
   player_register_drivers();
   playerxdr_ftable_init();

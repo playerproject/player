@@ -63,7 +63,7 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
   struct hostent* entp;
 #endif
   char host[256];
-  
+
   if(!hostname)
   {
     if(gethostname(host,sizeof(host)) == -1)
