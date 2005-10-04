@@ -172,7 +172,6 @@ main(int argc, char** argv)
   puts("Quitting.");
 
   Cleanup();
-
   return(0);
 }
 

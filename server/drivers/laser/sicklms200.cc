@@ -312,7 +312,7 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   this->size[1] = 0.15;
 
   // Serial port
-  this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_LASER_PORT));
+  this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
 
   // Serial rate
   this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);

@@ -1,6 +1,6 @@
 SUBDIRS = drivers libplayerdrivers .
 
-AM_CPPFLAGS = -fPIC -Wall -g @GAZEBO_EXTRA_CPPFLAGS@ -I$(top_srcdir) -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell
+AM_CPPFLAGS = -Wall -g @GAZEBO_EXTRA_CPPFLAGS@ -I$(top_srcdir) -I$(srcdir)/drivers/gazebo -I$(srcdir)/drivers/shell
 
 if INCLUDE_RTKGUI
 RTKGUI_LIBS=-L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
