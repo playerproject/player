@@ -1,9 +1,9 @@
 Makefile
 Makefile.in
 playercore_java_wrap.cc
+playercore_java_wrap.h
 playercore_casts.i
 playercore_arraysofclasses.i
 *.java
 *.class
-playercore
-Jplayercore
+net

@@ -64,6 +64,7 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
 #endif
   char host[256];
 
+  memset(host,0,sizeof(host));
   if(!hostname)
   {
     if(gethostname(host,sizeof(host)) == -1)
