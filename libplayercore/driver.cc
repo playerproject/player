@@ -130,7 +130,12 @@ Driver::Publish(MessageQueue* queue,
   if(queue)
   {
     // push onto the given queue, which provides its own locking
-    queue->Push(msg);
+    if(!queue->Push(msg))
+    {
+      PLAYER_ERROR4("tried to push %d/%d from %d:%d",
+                    hdr->type, hdr->subtype,
+                    hdr->addr.interf, hdr->addr.index);
+    }
   }
   else
   {
@@ -150,7 +155,14 @@ Driver::Publish(MessageQueue* queue,
     for(size_t i=0;i<dev->len_queues;i++)
     {
       if(dev->queues[i])
-        dev->queues[i]->Push(msg);
+      {
+        if(!dev->queues[i]->Push(msg))
+        {
+          PLAYER_ERROR4("tried to push %d/%d from %d:%d",
+                        hdr->type, hdr->subtype,
+                        hdr->addr.interf, hdr->addr.index);
+        }
+      }
     }
     this->Unlock();
   }

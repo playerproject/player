@@ -337,7 +337,7 @@ void Wavefront_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-  : Driver(cf, section, false, 
+  : Driver(cf, section, true, 
            PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE)
 {
   // Must have a position device to control
