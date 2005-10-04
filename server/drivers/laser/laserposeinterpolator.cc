@@ -147,6 +147,8 @@ class LaserPoseInterp : public Driver
     double* scantimes;
     player_position2d_data_t lastpose;
     double lastposetime;
+    double update_thresh[2];
+    double update_interval;
 };
 
 // a factory creation function
@@ -185,6 +187,11 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
 
   this->interpolate = cf->ReadInt(section, "interpolate", 1);
   this->maxnumscans = cf->ReadInt(section, "max_scans", DEFAULT_MAXSCANS);
+  this->update_thresh[0] = cf->ReadTupleLength(section, "update_thresh",
+                                               0, 0.0);
+  this->update_thresh[1] = cf->ReadTupleAngle(section, "update_thresh",
+                                              1, 0.0);
+  this->update_interval = cf->ReadFloat(section, "update_interval", 0.0);
 
   this->scans = (player_laser_data_t*)calloc(this->maxnumscans, 
                                              sizeof(player_laser_data_t));
