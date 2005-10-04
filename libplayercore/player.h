@@ -180,6 +180,13 @@ typedef struct player_bbox
   float sw, sl;
 } player_bbox_t;
 
+/** @brief A line segment, used to construct vector-based maps */
+typedef struct player_segment
+{
+  /** Endpoints */
+  float x0, y0, x1, y1;
+} player_segment_t;
+
 /** @brief A device address.
 
  Devices are identified by 12-byte addresses of this form. Some of the
@@ -1560,13 +1567,20 @@ delivered in tiles, via a sequence of configuration requests.
 /* 2097152 - 30 (msg header) - 20 (meta-data to accompany the tile) = 2097102 */
 #define PLAYER_MAP_MAX_TILE_SIZE 2097102
 
+/** The maximum number of map lines */
+/* (2097152 - 30 (msg header) - 20 (meta-data to accompany the lines)) / 
+ *                                 16 (size of each line) = 131068 */
+#define PLAYER_MAP_MAX_SEGMENTS 131068
+
 /** Data subtypes */
 #define PLAYER_MAP_DATA_INFO               0x01
 #define PLAYER_MAP_DATA_TILE               0x02
+#define PLAYER_MAP_DATA_VECTOR             0x03
 
 /** Request subtypes */
 #define PLAYER_MAP_REQ_GET_INFO            0x01
 #define PLAYER_MAP_REQ_GET_DATA            0x02
+#define PLAYER_MAP_REQ_GET_VECTOR          0x03
 
 /** @brief Configuration request: Get map information.
 
@@ -1599,6 +1613,21 @@ typedef struct player_map_data
   /** Cell occupancy value (empty = -1, unknown = 0, occupied = +1). */
   int8_t data[PLAYER_MAP_MAX_TILE_SIZE];
 } player_map_data_t;
+
+/** @brief Map data (vector form)
+
+A vector map, represented as line segments.  This message may either be sent 
+in response to a request, or as a data message, if the underyling driver 
+supports dynamic map updates. */
+typedef struct player_map_data_vector
+{
+  /** The minimum and maximum coordinates of all the line segments [meters] */
+  float minx, maxx, miny, maxy;
+  /** The number of line segments (needed for XDR packing) */
+  uint32_t segments_count;
+  /** Line segments */
+  player_segment_t segments[PLAYER_MAP_MAX_SEGMENTS];
+} player_map_data_vector_t;
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////

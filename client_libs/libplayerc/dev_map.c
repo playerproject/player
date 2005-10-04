@@ -178,3 +178,48 @@ int playerc_map_get_map(playerc_map_t* device)
 
   return(0);
 }
+
+int 
+playerc_map_get_vector(playerc_map_t* device)
+{
+  size_t repsize;
+  player_map_data_vector_t* vmap;
+
+  // Allocate space for one received tile.  Note that we need to allocate
+  // space to hold the maximum possible tile, because the received tile
+  // will be unpacked into a structure of that size.
+  repsize = sizeof(player_map_data_vector_t);
+  vmap = (player_map_data_vector_t*)malloc(repsize);
+  assert(vmap);
+
+  if(playerc_client_request(device->info.client, 
+                            &device->info, 
+                            PLAYER_MAP_REQ_GET_VECTOR, 
+                            NULL, vmap, repsize) < 0)
+  {
+    PLAYERC_ERR("failed to get map vector data");
+    free(vmap);
+    return(-1);
+  }
+
+  // Copy meta-data
+  device->vminx = vmap->minx;
+  device->vminy = vmap->miny;
+  device->vmaxx = vmap->maxx;
+  device->vmaxy = vmap->maxy;
+  device->num_segments = vmap->segments_count;
+
+  // Allocate space into which we'll copy the segments.
+  if(device->segments)
+    free(device->segments);
+  device->segments = (player_segment_t*)malloc(device->num_segments *
+                                               sizeof(player_segment_t));
+  assert(device->segments);
+  memcpy(device->segments,
+         vmap->segments,
+         device->num_segments*sizeof(player_segment_t));
+  free(vmap);
+  return(0);
+}
+
+

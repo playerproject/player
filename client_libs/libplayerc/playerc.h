@@ -1348,6 +1348,12 @@ typedef struct
 
   /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
   char* cells;
+  
+  /** Vector-based version of the map (call playerc_map_get_vector() to
+   * fill this in). */
+  double vminx, vminy, vmaxx, vmaxy;
+  int num_segments;
+  player_segment_t* segments;
 } playerc_map_t;
 
 
@@ -1370,6 +1376,8 @@ int playerc_map_unsubscribe(playerc_map_t *device);
 /** @brief Get the map, which is stored in the proxy. */
 int playerc_map_get_map(playerc_map_t* device);
 
+/** @brief Get the vector map, which is stored in the proxy. */
+int playerc_map_get_vector(playerc_map_t* device);
 
 /** @} */
 /**************************************************************************/
