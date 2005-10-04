@@ -46,7 +46,7 @@ DriverTable* driverTable;
 // which everyone must use to get the current time
 PlayerTime* GlobalTime;
 
-char* playerversion;
+char playerversion[32];
 
 bool player_quit;
 bool player_quiet_startup;
@@ -57,8 +57,7 @@ player_globals_init()
   deviceTable = new DeviceTable();
   driverTable = new DriverTable();
   GlobalTime = new WallclockTime();
-  playerversion = strdup(VERSION);
-  assert(playerversion);
+  strncpy(playerversion, VERSION, sizeof(playerversion));
   player_quit = false;
   player_quiet_startup = false;
 }
@@ -72,8 +71,6 @@ player_globals_fini()
     delete driverTable;
   if(GlobalTime)
     delete GlobalTime;
-  if(playerversion)
-    free(playerversion);
 }
 
 #endif

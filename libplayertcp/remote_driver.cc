@@ -26,6 +26,7 @@
 #include <fcntl.h>
 
 #include <libplayercore/globals.h>
+#include <libplayercore/error.h>
 #include <libplayerxdr/playerxdr.h>
 #include "remote_driver.h"
 
@@ -55,6 +56,18 @@ TCPRemoteDriver::Setup()
 
   packedaddr_to_dottedip(this->ipaddr,sizeof(this->ipaddr),
                          this->device_addr.host);
+
+  // We can't talk to ourselves
+  if(this->ptcp->Listening(this->device_addr.robot))
+  {
+    PLAYER_ERROR4("tried to connect to self (%s:%d:%d:%d)\n",
+                  this->ipaddr,
+                  this->device_addr.robot,
+                  this->device_addr.interf,
+                  this->device_addr.index);
+    return(-1);
+  }
+
 
   // Construct socket 
   this->sock = socket(PF_INET, SOCK_STREAM, 0);

@@ -228,9 +228,9 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 
   if(send_banner)
   {
-    sprintf((char*)data, "%s%s", PLAYER_IDENT_STRING, playerversion);
-    memset(((char*)data)+strlen((char*)data),0,
-           PLAYER_IDENT_STRLEN-strlen((char*)data));
+    memset(data,0,sizeof(data));
+    snprintf((char*)data, sizeof(data)-1, "%s%s", 
+             PLAYER_IDENT_STRING, playerversion);
     if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
     {
       PLAYER_ERROR("failed to send ident string");
@@ -456,6 +456,17 @@ PlayerTCP::DeleteClient(MessageQueue* q)
   }
 
   pthread_mutex_unlock(&this->clients_mutex);
+}
+
+bool
+PlayerTCP::Listening(int port)
+{
+  for(int i=0;i<this->num_listeners;i++)
+  {
+    if(port == this->listeners[i].port)
+      return(true);
+  }
+  return(false);
 }
 
 int
