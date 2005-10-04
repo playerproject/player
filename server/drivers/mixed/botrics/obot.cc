@@ -110,6 +110,8 @@ class Obot : public Driver
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
     double max_xspeed, max_yawspeed;
+    bool motors_swapped;
+    int max_accel;
 
     // Robot geometry (size and rotational offset)
     player_bbox_t robot_size;
@@ -199,6 +201,8 @@ Obot::Obot( ConfigFile* cf, int section)
                                            0, 0.5);
     this->max_yawspeed = cf->ReadTupleAngle(section, "max_speed",
                                             1, DTOR(40.0));
+    this->motors_swapped = cf->ReadInt(section, "motors_swapped", 0);
+    this->max_accel = cf->ReadInt(section, "max_accel", 5);
   }
 
   // Do we create a power interface?
@@ -333,7 +337,7 @@ Obot::Setup()
   puts("Done.");
 
   // TODO: what are reasoanable numbers here?
-  if(SendCommand(OBOT_SET_ACCELERATIONS,1,1) < 0)
+  if(SendCommand(OBOT_SET_ACCELERATIONS,this->max_accel,this->max_accel) < 0)
   {
     PLAYER_ERROR("failed to set accelerations on setup");
     close(this->fd);
@@ -411,7 +415,7 @@ Obot::Main()
       data.pos.px = this->px;
       data.pos.py = this->py;
       data.pos.pa = this->pa;
-  
+
       data.vel.py = 0;
       lvel_mps = lvel * OBOT_MPS_PER_TICK;
       rvel_mps = rvel * OBOT_MPS_PER_TICK;
@@ -819,6 +823,13 @@ Obot::UpdateOdom(int ltics, int rtics)
   struct timeval currtime;
   double timediff;
 
+  if(this->motors_swapped)
+  {
+    int tmp = ltics;
+    ltics = rtics;
+    rtics = tmp;
+  }
+
   if(!this->odom_initialized)
   {
     this->last_ltics = ltics;
@@ -952,8 +963,13 @@ Obot::SendCommand(unsigned char cmd, int val1, int val2)
 int
 Obot::SetVelocity(int lvel, int rvel)
 {
-  //printf("sending %d:%d\n", lvel,rvel);
-  if(SendCommand(OBOT_SET_VELOCITIES,lvel,rvel) < 0)
+  int retval;
+
+  if(!this->motors_swapped)
+    retval = SendCommand(OBOT_SET_VELOCITIES,lvel,rvel);
+  else
+    retval = SendCommand(OBOT_SET_VELOCITIES,rvel,lvel);
+  if(retval < 0)
   {
     PLAYER_ERROR("failed to set velocities");
     return(-1);
