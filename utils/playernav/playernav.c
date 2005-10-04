@@ -146,9 +146,19 @@ player_read_func(gpointer* arg)
   struct timeval curr;
   double diff;
   gboolean onmap;
+  int peek;
+
+  peek = playerc_mclient_peek(gui_data->mclient,10);
+  if(peek < 0)
+  {
+    fprintf(stderr, "Error on read\n");
+    gtk_main_quit();
+  }
+  else if(peek == 0)
+    return(TRUE);
 
   // read new data
-  if(playerc_mclient_read(gui_data->mclient,10) < 0)
+  if(playerc_mclient_read(gui_data->mclient,-1) < 0)
   {
     fprintf(stderr, "Error on read\n");
     gtk_main_quit();
