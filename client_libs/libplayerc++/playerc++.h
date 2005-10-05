@@ -403,7 +403,8 @@ class ActArrayProxy : public ClientProxy
       { return(GetActuatorData(aJoint)); }
 };
 
-#if 0
+#if 0 // Not in libplayerc 
+
 /**
 The @p AIOProxy class is used to read from a @ref player_interface_aio
 (analog I/O) device.  */
@@ -568,7 +569,9 @@ class BlinkenLightProxy : public ClientProxy
      */
     void SetEnable(bool aSet);
 };
+
 #endif
+
 /**
 The @p BlobfinderProxy class is used to control a  @ref
 player_interface_blobfinder device.  It contains no methods.  The latest
@@ -590,19 +593,19 @@ class BlobfinderProxy : public ClientProxy
     ~BlobfinderProxy();
 
     uint GetCount() const { return(GetVar(mDevice->blobs_count)); };
-    playerc_blobfinder_blob_t GetBlob(uint aIndex);
+    playerc_blobfinder_blob_t GetBlob(uint aIndex) const { return GetVar(mDevice->blobs[aIndex]);};
 
     uint GetWidth() const { return(GetVar(mDevice->width)); };
     uint GetHeight() const { return(GetVar(mDevice->height)); };
 
-    void SetTrackingColor(uint aReMin=0,   uint aReMax=255, uint aGrMin=0,
+/*    void SetTrackingColor(uint aReMin=0,   uint aReMax=255, uint aGrMin=0,
                           uint aGrMax=255, uint aBlMin=0,   uint aBlMax=255);
     void SetImagerParams(int aContrast, int aBrightness,
                          int aAutogain, int aColormode);
     void SetContrast(int aC);
     void SetColorMode(int aM);
     void SetBrightness(int aB);
-    void SetAutoGain(int aG);
+    void SetAutoGain(int aG);*/
 
 };
 
@@ -630,7 +633,7 @@ class BumperProxy : public ClientProxy
 
     /** Returns 1 if the specified bumper has been bumped, 0 otherwise.
       */
-    bool IsBumped(uint aIndex) const { return(GetVar(mDevice->bumpers[aIndex])); };
+    uint IsBumped(uint aIndex) const { return(GetVar(mDevice->bumpers[aIndex])); };
 
     /** Returns 1 if any bumper has been bumped, 0 otherwise.
       */
@@ -639,11 +642,11 @@ class BumperProxy : public ClientProxy
     /** Requests the geometries of the bumpers.
         Returns -1 if anything went wrong, 0 if OK
      */
-    void RequestBumperConfig();
+    int RequestBumperConfig();
 
     uint GetPoseCount() const { return(GetVar(mDevice->pose_count)); };
 
-    //player_bumper_geom_t GetPose(uint aIndex) const { return(GetVar(mDevice->poses[aIndex])); };
+    player_bumper_define_t GetPose(uint aIndex) const { return(GetVar(mDevice->poses[aIndex])); };
 
 };
 
@@ -705,6 +708,7 @@ class CameraProxy : public ClientProxy
 
 };
 
+#if 0 // not libplayerc yet
 
 /**
 The @p DioProxy class is used to read from a @ref player_interface_dio
@@ -738,7 +742,6 @@ class DioProxy : public ClientProxy
     void SetOutput(uint aCount, uint32_t aDigout);
 };
 
-#if 0
 /**
 The @p EnergyProxy class is used to read from an @ref
 player_interface_energy device.
@@ -765,6 +768,7 @@ public:
     /** The charging flag is true if we are currently charging, else false. */
     bool GetCharging() const { return(GetVar(mDevice->charging)); };
 };
+
 #endif
 
 #if 0 // This one just had too much to do right now ;)
@@ -2188,8 +2192,8 @@ namespace std
   //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioDspProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioMixerProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::BlobFinderProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::BlobfinderProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);

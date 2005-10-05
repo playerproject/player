@@ -120,11 +120,7 @@ void playerc_bumper_putmsg(playerc_bumper_t *device,
     device->pose_count = bgeom->bumper_def_count;
     for (i = 0; i < device->pose_count; i++)
     {
-      device->poses[i][0] = bgeom->bumper_def[i].pose.px; //m
-      device->poses[i][1] = bgeom->bumper_def[i].pose.py; //m
-      device->poses[i][2] = bgeom->bumper_def[i].pose.pa; //rad
-      device->poses[i][3] = bgeom->bumper_def[i].length; //m
-      device->poses[i][4] = bgeom->bumper_def[i].radius; //m
+      device->poses[i] = bgeom->bumper_def[i];
     }
   }
 }
@@ -144,11 +140,7 @@ int playerc_bumper_get_geom(playerc_bumper_t *device)
   device->pose_count = config.bumper_def_count;
   for (i = 0; i < device->pose_count; i++)
   {
-    device->poses[i][0] = config.bumper_def[i].pose.px; //m
-    device->poses[i][1] = config.bumper_def[i].pose.py; //m
-    device->poses[i][2] = config.bumper_def[i].pose.pa; //rad
-    device->poses[i][3] = config.bumper_def[i].length; //m
-    device->poses[i][4] = config.bumper_def[i].radius; //m
+    device->poses[i] = config.bumper_def[i];
   }
 	
   return 0;

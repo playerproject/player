@@ -80,10 +80,10 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
   std::_Ios_Fmtflags old_flags = os.flags();
   os.setf(std::ios::fixed);
 
-  os << a.NumActuators () << " actuators:" << std::endl;
+  os << a.GetCount () << " actuators:" << std::endl;
   os << "Act \tType\tMin\tCentre\tMax\tHome"
         "\tCfgSpd\tPos\tSpeed\tState\tBrakes" << std::endl;
-  for (uint ii = 0; ii < a.NumActuators (); ii++)
+  for (uint ii = 0; ii < a.GetCount (); ii++)
   {
     data = a.GetActuatorData(ii);
     geom = a.GetActuatorGeom(ii);
@@ -126,7 +126,7 @@ void ActArrayProxy::SetPowerConfig(bool aVal)
 void ActArrayProxy::SetBrakesConfig(bool aVal)
 {
   Lock();
-  int ret = playerc_actarray_brakes(mDevice, aVal ? 1 : 0)
+  int ret = playerc_actarray_brakes(mDevice, aVal ? 1 : 0);
   Unlock();
 
   if (-2 != ret)
@@ -178,7 +178,7 @@ void ActArrayProxy::MoveHome(int aJoint)
 
 player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const
 {
-  if (aJoint > NumActuators ())
+  if (aJoint > mDevice->actuators_count)
   {
     player_actarray_actuator_t empty;
     memset(&empty, 0, sizeof(player_actarray_actuator_t));
@@ -191,7 +191,7 @@ player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const
 // Same again for getting actuator geometry
 player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint aJoint) const
 {
-  if (aJoint > NumActuators ())
+  if (aJoint > mDevice->actuators_count)
   {
     player_actarray_actuatorgeom_t empty;
     memset(&empty, 0, sizeof(player_actarray_actuatorgeom_t));
@@ -201,7 +201,7 @@ player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint aJoint) const
     return GetVar(mDevice->actuators_geom[aJoint]);
 }
 
-int ActArrayProxy::RequestGeometry(void)
+void ActArrayProxy::RequestGeometry(void)
 {
   Lock();
   int ret = playerc_actarray_get_geom(mDevice);

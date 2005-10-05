@@ -25,11 +25,22 @@ libplayerc___la_SOURCES =     playerc++.h \
                               playerclient.cc \
                               playererror.cc \
                               clientproxy.cc \
+                              actarrayproxy.cc \
+                              blobfinderproxy.cc \
+                              bumperproxy.cc \
                               cameraproxy.cc \
                               laserproxy.cc
 
+# not in libplayerc yet \
+                              aioproxy.cc \
+                              audioproxy.cc \
+                              audiodspproxy.cc \
+                              audiomixerproxy.cc \
+                              blinkenlightproxy.cc \
+                              dioproxy.cc \
+                              energyproxy.cc 
+
                               #gpsproxy.cc \
-                              actarrayproxy.cc \
                               gripperproxy.cc \
                               fiducialproxy.cc \
                               playerclient.cc \
@@ -40,28 +51,19 @@ libplayerc___la_SOURCES =     playerc++.h \
                               sonarproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
-                              blobfinderproxy.cc \
                               wifiproxy.cc \
                               irproxy.cc \
                               powerproxy.cc \
-                              bumperproxy.cc \
-                              dioproxy.cc \
-                              audioproxy.cc \
                               waveformproxy.cc \
                               mcomproxy.cc \
                               localizeproxy.cc \
                               soundproxy.cc \
-                              audiodspproxy.cc \
-                              audiomixerproxy.cc \
                               motorproxy.cc \
                               position2dproxy.cc \
                               position3dproxy.cc \
-                              blinkenlightproxy.cc \
                               cameraproxy.cc \
-                              aioproxy.cc \
                               plannerproxy.cc \
                               mapproxy.cc \
-                              energyproxy.cc \
                               speechrecognitionproxy.cc \
                               simulationproxy.cc \
                               logproxy.cc

@@ -520,34 +520,11 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 /** @defgroup playerc_proxy_actarray actarray
 
 The actarray proxy provides an interface to actuator arrays
-such as the ActivMedia Pioneer Arm.  See the Player User Manual for a
+such as the ActivMedia Pioneer Arm. See the Player User Manual for a
 complete description of the drivers that support this interface.
 
 @{
 */
-
-/** @brief Description of an actuator. */
-typedef struct
-{
-  // Stuff updated in data packets
-  /** The position of the actuator in m or rad depending on the type. */
-  float position;
-  /** The speed of the actuator in m/s or rad/s depending on the type. */
-  float speed;
-  /** The current state of the actuator. */
-  uint8_t state;
-
-  // Stuff updated in geometry packets
-  /** The type of the actuator - linear or rotary. */
-  uint8_t type;
-  /** The range of motion of the actuator, in m or rad depending on the type. */
-  float min, centre, max, home;
-  /** The configured speed setting of the actuator - different from current speed. */
-  float config_speed;
-  /** If the actuator has brakes or not. */
-  uint8_t hasbrakes;
-} playerc_actarray_actuator_t;
-
 
 /** @brief Actarray device data. */
 typedef struct
@@ -557,8 +534,9 @@ typedef struct
 
   /** The number of actuators in the array. */
   uint8_t actuators_count;
-  /** The actuator data. */
-  playerc_actarray_actuator_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  /** The actuator data and geometry. */
+  player_actarray_actuator_t actuators_data[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  player_actarray_actuatorgeom_t actuators_geom[PLAYER_ACTARRAY_NUM_ACTUATORS];
 } playerc_actarray_t;
 
 /** @brief Create an actarray proxy. */
@@ -578,10 +556,10 @@ int playerc_actarray_unsubscribe(playerc_actarray_t *device);
 int playerc_actarray_get_geom(playerc_actarray_t *device);
 
 /** @brief Command a joint in the array to move to a specified position. */
-int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position);
+int playerc_actarray_position_cmd(playerc_actarray_t *device, uint joint, float position);
 
 /** @brief Command a joint in the array to move at a specified speed. */
-int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed);
+int playerc_actarray_speed_cmd(playerc_actarray_t *device, uint joint, float speed);
 
 /** @brief Command a joint (or, if joint is -1, the whole array) to go to its home position. */
 int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
@@ -589,13 +567,13 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
 /** @brief Turn the power to the array on or off. Be careful
 when turning power on that the array is not obstructed from its home
 position in case it moves to it (common behaviour). */
-int playerc_actarray_power(playerc_actarray_t *device, int enable);
+int playerc_actarray_power(playerc_actarray_t *device, uint enable);
 
 /** @brief Turn the brakes of all actuators in the array that have them on or off. */
-int playerc_actarray_brakes(playerc_actarray_t *device, int enable);
+int playerc_actarray_brakes(playerc_actarray_t *device, uint enable);
 
 /** @brief Set the speed of a joint (-1 for all joints) for all subsequent movement commands. */
-int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed);
+int playerc_actarray_speed_config(playerc_actarray_t *device, uint joint, float speed);
 
 /** @} */
 /**************************************************************************/
@@ -690,13 +668,13 @@ typedef struct
   /** Pose of each bumper relative to robot (mm, mm, deg, mm, mm).
       This structure is filled by calling playerc_bumper_get_geom().
       values are x,y (of center) ,normal,length,curvature */
-  double poses[PLAYERC_BUMPER_MAX_SAMPLES][5];
+  player_bumper_define_t poses[PLAYERC_BUMPER_MAX_SAMPLES];
 
   /** Number of points in the scan. */
   int bumper_count;
 
   /** Bump data: unsigned char, either boolean or code indicating corner. */
-  double bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
+  unsigned char bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
 
 } playerc_bumper_t;
 

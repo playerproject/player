@@ -1,4 +1,3 @@
 
-SUBDIRS = libplayerc 
-#libplayerc++
+SUBDIRS = libplayerc libplayerc++
 #c c++ 

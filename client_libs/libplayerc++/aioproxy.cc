@@ -22,48 +22,63 @@
  */
 
 /* AIOProxy client library.  Based loosly on the DIO Proxy */
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
 
-void
-AIOProxy::FillData(player_msghdr_t hdr, const char *buffer)
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+AIOProxy::AIOProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(hdr.size != sizeof(player_aio_data_t)) 
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: AIOProxy expected %d bytes of "
-              "analog data, but received %d. Unexpected results may "
-              "ensue.\n",
-              sizeof(player_aio_data_t),hdr.size);
-  }
-
-  count = ((player_aio_data_t *)buffer)->count;
-  if (count<0)
-  {
-	  printf("WARNING: AIOProxy received a negative count value.\n");
-	  count=0;
-  }
-  for (int i=0;i<count;i++)
-	anin[i] = ntohl(((player_aio_data_t *)buffer)->anin[i]);
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-// interface that all proxies SHOULD provide
-void
-AIOProxy::Print()
+AIOProxy::~AIOProxy()
 {
-  printf("#AIO(%d:%d) - %c\n", m_device_id.code,
-           m_device_id.index, access);
-  printf("Count: %i\n",count);
-  if (count<0)
-  {
-	printf("WARNING: AIOProxy received a negative count value.\n");
-   	count=0;
-  }
-  for (char i=0;i<count;i++)
-  {
-	  printf("AIO%i - %i\n",i, anin[i]);
-  }
+  Unsubscribe();
 }
 
+void
+AIOProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_aio_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("LaserProxy::LaserProxy()", "could not create");
+
+  if (0 != playerc_aio_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("LaserProxy::LaserProxy()", "could not subscribe");
+}
+
+void
+AIOProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  playerc_aio_unsubscribe(mDevice);
+  playerc_aio_destroy(mDevice);
+  mDevice = NULL;
+}
+
+
+
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::AIOProxy &c)
+{
+  os << "#AIO (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << c.GetCount() << std::endl;
+  if (c.GetCount()<0)
+  {
+	os << "WARNING: AIOProxy received a negative count value.\n" << std::endl;
+  }
+  else
+  {
+    for (unsigned int i=0;i < c.GetCount();i++)
+    {
+      os << "AIO" << i << " - " << c.GetAnin(i) << std::endl;
+    }
+  }
+
+  return os;
+}
