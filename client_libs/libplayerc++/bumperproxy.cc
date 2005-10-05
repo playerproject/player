@@ -20,128 +20,69 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+#include "playerc++.h"
 
-#include <playerclient.h>
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
+using namespace PlayerCc;
+
+BumperProxy::BumperProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
+{
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
+}
+
+BumperProxy::~BumperProxy()
+{
+  Unsubscribe();
+}
+
+void
+BumperProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_bumper_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("BumperProxy::BumperProxy()", "could not create");
+
+  if (0 != playerc_bumper_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("BumperProxy::BumperProxy()", "could not subscribe");
+}
+
+void
+BumperProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  playerc_bumper_unsubscribe(mDevice);
+  playerc_bumper_destroy(mDevice);
+  mDevice = NULL;
+}
+
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::BumperProxy &c)
+{
+  os << "#Bumper(" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << "Count:" << c.GetCount() << std::endl;
+  for (unsigned int i=0;i < c.GetCount();i++)
+  {
+    os << (c.IsBumped(i) ? '1' : '0');
+  }
+  return os;
+}
 
 bool
-BumperProxy::BumpedAny()
+BumperProxy::IsAnyBumped()
 {
-  for (int i=0; (i < bumper_count)&&(i < PLAYER_BUMPER_MAX_SAMPLES); i++) {
-    if (bumpers[i])
+  for (unsigned int i=0; (i < GetCount())&&(i < PLAYER_BUMPER_MAX_SAMPLES); i++) {
+    if (IsBumped(i))
       return true;
   }
   // if we got this far...
   return false;
 }
 
-bool
-BumperProxy::Bumped(const unsigned int i)
+int 
+BumperProxy::RequestBumperConfig()
 {
-  if (i < bumper_count)
-    return (bumpers[i]) ? true : false;
-  else
-    return false;
+  return playerc_bumper_get_geom(mDevice);
 }
-
-int
-BumperProxy::GetBumperGeom( player_bumper_geom_t* bumper_geom )
-{
-  player_msghdr_t hdr;
-  
-  if(!client)
-    return(-1);
-
-  assert( bumper_geom );
-
-
-
-//  bumper_geom->subtype = PLAYER_BUMPER_GET_GEOM_REQ;
-
-  if((client->Request(m_device_id, PLAYER_BUMPER_GET_GEOM,(const char*)bumper_geom,
-                      0, &hdr, (char*)bumper_geom, 
-                      sizeof(*bumper_geom)) < 0) ||
-     (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
-    return(-1);
-
-  bumper_geom->bumper_count = ntohs(bumper_geom->bumper_count);
-
-  // fix the byte order for all the geom definitions
-  for(int i=0;i<bumper_geom->bumper_count;i++)
-  {
-    bumper_geom->bumper_def[i].x_offset =
-      ntohs(bumper_geom->bumper_def[i].x_offset);
-
-    bumper_geom->bumper_def[i].y_offset = 
-      ntohs(bumper_geom->bumper_def[i].y_offset);
-    
-    bumper_geom->bumper_def[i].th_offset = 
-      ntohs(bumper_geom->bumper_def[i].th_offset);
-    
-    bumper_geom->bumper_def[i].length = 
-      ntohs(bumper_geom->bumper_def[i].length);
-    
-    bumper_geom->bumper_def[i].radius = 
-      ntohs(bumper_geom->bumper_def[i].radius);
-  }
-
-  return(0);
-}
-
-
-
-void
-BumperProxy::FillData(player_msghdr_t hdr, const char *buffer)
-{
-  if(hdr.size != sizeof(player_bumper_data_t)) {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: rwi_bumperproxy expected %d bytes of"
-              " bumper data, but received %d. Unexpected results may"
-              " ensue.\n",
-              sizeof(player_bumper_data_t), hdr.size);
-  }
-
-  bumper_count = ((player_bumper_data_t *)buffer)->bumper_count;
-  for(int i=0;i<bumper_count && i<PLAYER_BUMPER_MAX_SAMPLES;i++)
-    bumpers[i] = ((player_bumper_data_t *)buffer)->bumpers[i];
-}
-
-#ifndef MIN
-  #define MIN(a,b) ((a < b) ? (a) : (b))
-#endif
-
-// interface that all proxies SHOULD provide
-void 
-BumperProxy::Print()
-{
-  printf("#Bumper(%d:%d) - %c\n", m_device_id.code, 
-         m_device_id.index, access);
-  printf("%d\n", bumper_count);
-  for (int i = MIN(bumper_count, PLAYER_BUMPER_MAX_SAMPLES) - 1; i >= 0; i--)
-    putchar((bumpers[i]) ? '1' : '0');
-  puts(" ");
-}
-

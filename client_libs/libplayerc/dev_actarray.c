@@ -90,9 +90,9 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
     device->actuators_count = data->actuators_count;
     for (i = 0; i < device->actuators_count; i++)
     {
-      device->actuators[i].position = data->actuators[i].position;
-      device->actuators[i].speed = data->actuators[i].speed;
-      device->actuators[i].state = data->actuators[i].state;
+      device->actuators_data[i].position = data->actuators[i].position;
+      device->actuators_data[i].speed = data->actuators[i].speed;
+      device->actuators_data[i].state = data->actuators[i].state;
     }
   }
   else
@@ -113,19 +113,19 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
 
   for (ii = 0; ii < device->actuators_count; ii++)
   {
-    device->actuators[ii].type = geom.actuators[ii].type;
-    device->actuators[ii].min = geom.actuators[ii].min;
-    device->actuators[ii].centre = geom.actuators[ii].centre;
-    device->actuators[ii].max = geom.actuators[ii].max;
-    device->actuators[ii].home = geom.actuators[ii].home;
-    device->actuators[ii].config_speed = geom.actuators[ii].config_speed;
-    device->actuators[ii].hasbrakes = geom.actuators[ii].hasbrakes;
+    device->actuators_geom[ii].type = geom.actuators[ii].type;
+    device->actuators_geom[ii].min = geom.actuators[ii].min;
+    device->actuators_geom[ii].centre = geom.actuators[ii].centre;
+    device->actuators_geom[ii].max = geom.actuators[ii].max;
+    device->actuators_geom[ii].home = geom.actuators[ii].home;
+    device->actuators_geom[ii].config_speed = geom.actuators[ii].config_speed;
+    device->actuators_geom[ii].hasbrakes = geom.actuators[ii].hasbrakes;
   }
   return 0;
 }
 
 // Command a joint in the array to move to a specified position
-int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position)
+int playerc_actarray_position_cmd(playerc_actarray_t *device, uint joint, float position)
 {
   player_actarray_position_cmd_t cmd;
 
@@ -139,7 +139,7 @@ int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float p
 }
 
 // Command a joint in the array to move at a specified speed
-int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed)
+int playerc_actarray_speed_cmd(playerc_actarray_t *device, uint joint, float speed)
 {
   player_actarray_speed_cmd_t cmd;
 
@@ -166,7 +166,7 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint)
 }
 
 // Turn the power to the array on or off
-int playerc_actarray_power(playerc_actarray_t *device, int enable)
+int playerc_actarray_power(playerc_actarray_t *device, uint enable)
 {
   player_actarray_power_config_t config;
 
@@ -178,7 +178,7 @@ int playerc_actarray_power(playerc_actarray_t *device, int enable)
 }
 
 // Turn the brakes of all actuators in the array that have them on or off
-int playerc_actarray_brakes(playerc_actarray_t *device, int enable)
+int playerc_actarray_brakes(playerc_actarray_t *device, uint enable)
 {
   player_actarray_brakes_config_t config;
 
@@ -190,7 +190,7 @@ int playerc_actarray_brakes(playerc_actarray_t *device, int enable)
 }
 
 // Set the speed of a joint (-1 for all joints) for all subsequent movement commands
-int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed)
+int playerc_actarray_speed_config(playerc_actarray_t *device, uint joint, float speed)
 {
   player_actarray_speed_config_t config;
 
