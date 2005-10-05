@@ -1142,7 +1142,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         cam_command[2] = 0;
         cam_command[3] = 0;
         cam_packet.Build(cam_command, 4);
-        this->SendReceive(&cam_packet);
+        this->SendReceive(&cam_packet,publish_data);
 
         // Reqest next packet
         cam_command[0] = GETAUX2;
@@ -1151,7 +1151,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;
         cam_command[3] = 0;
         cam_packet.Build(cam_command, 4);
-        this->SendReceive(&cam_packet);
+        this->SendReceive(&cam_packet,publish_data);
         GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
       }
     }
@@ -1182,7 +1182,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
          * a definite danger of infinite recursion here if the manual
          * is wrong.
          */
-        this->SendReceive(NULL);
+        this->SendReceive(NULL,publish_data);
       }
     }
     else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
@@ -1205,7 +1205,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         }
         sippacket->Fill(&p2os_data);
         // Go for another SIP - there had better be one or things will probably go boom
-      SendReceive(NULL);
+        SendReceive(NULL,publish_data);
       }
     }
     else if (packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && packet.packet[3] == ARMINFOPAC)
@@ -1215,7 +1215,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       {
         sippacket->ParseArmInfo (&packet.packet[2]);
         // Go for another SIP - there had better be one or things will probably go boom
-        SendReceive(NULL);
+        SendReceive(NULL,publish_data);
       }
     }
     else
