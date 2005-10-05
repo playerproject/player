@@ -42,6 +42,10 @@ void GarminNMEA_Register(DriverTable* table);
 void MapFile_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_VMAPFILE
+void VMapFile_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_MAPCSPACE
 void MapCspace_Register(DriverTable* table);
 #endif
@@ -390,6 +394,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_MAPFILE
   MapFile_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_VMAPFILE
+  VMapFile_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_MAPCSPACE

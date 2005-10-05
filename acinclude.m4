@@ -242,6 +242,7 @@ if test "x$enable_md5" = "xyes"; then
   AC_CHECK_LIB(crypto,MD5_Init)
 fi
 
+PLAYER_ADD_DRIVER([vmapfile],[yes],[],[],[])
 PLAYER_ADD_DRIVER([mapfile],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_ADD_DRIVER([mapscale],[no],[],
