@@ -21,33 +21,21 @@
 /*
  * $Id$
  *
- * A driver to read an occupancy grid map from an image file.
+ * A driver to read a vector map from a text file
  */
 
 /** @addtogroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_mapfile mapfile
+/** @defgroup player_driver_vmapfile vmapfile
 
-The mapfile driver reads a occupancy grid map from a bitmap image file and
+The vmapfile driver reads a vector map from a text file and
 provides the map to others via the @ref player_interface_map interface.
-Since gdk-pixbuf is used to load the file, pretty much all bitmap formats
-are supported.
 
-Each cell in an occupancy grid map takes 1 of 3 states: occupied (1),
-unknown (0), and free (-1).  The mapfile driver converts each pixel of an
-image to a cell with one of these states in the following way: average
-the color values; divide this average by max value to get a ratio; if
-this ratio is greater than .95, the cell is occupied; if ratio is less
-than 0.1, the cell is free; otherwise it is unknown.  In other words,
-"blacker" pixels are occupied, "whiter" pixels are free, and those in
-between are unknown.
-
-Note that @ref player_interface_map devices produce no data; the map is
-delivered via a sequence of configuration requests.
+The format of the text file is...
 
 @par Compile-time dependencies
 
-- gdk-pixbuf-2.0 (usually installed as part of GTK)
+- None
 
 @par Provides
 
@@ -59,33 +47,22 @@ delivered via a sequence of configuration requests.
 
 @par Configuration requests
 
-- PLAYER_MAP_GET_INFO_REQ
-- PLAYER_MAP_GET_DATA_REQ
+- PLAYER_MAP_REQ_GET_VECTOR
 
 @par Configuration file options
 
 - filename (string)
   - Default: NULL
-  - The image file to read.
-- resolution (length)
-  - Default: -1.0
-  - Resolution (length per pixel) of the image.
-- negate (integer)
-  - Default: 0
-  - Should we negate (i.e., invert) the colors in the image before
-    reading it?  Useful if you're using the same image file as the
-    world bitmap for Stage 1.3.x, which has the opposite semantics for
-    free/occupied pixels.
+  - The file to read.
  
 @par Example 
 
 @verbatim
 driver
 (
-  name "mapfile"
+  name "vmapfile"
   provides ["map:0"]
-  filename "mymap.pgm"
-  resolution 0.1  # 10cm per pixel
+  filename "mymap.wld"
 )
 @endverbatim
 
@@ -99,40 +76,22 @@ Brian Gerkey
 #include <sys/types.h> // required by Darwin
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-
-// use gdk-pixbuf for image loading
-#include <gdk-pixbuf/gdk-pixbuf.h>
+#include <assert.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
-// compute linear index for given map coords
-#define MAP_IDX(mf, i, j) ((mf->size_x) * (j) + (i))
-
-// check that given coords are valid (i.e., on the map)
-#define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf->size_x) && (j >= 0) && (j < mf->size_y))
-
-
-extern int global_playerport;
-
-class MapFile : public Driver
+class VMapFile : public Driver
 {
   private:
     const char* filename;
-    double resolution;
-    int negate;
-    int size_x, size_y;
-    char* mapdata;
+    player_map_data_vector_t* vmap;
     
-    // Handle map info request
-    void HandleGetMapInfo(void *client, void *request, int len);
     // Handle map data request
-    void HandleGetMapData(void *client, void *request, int len);
+    void HandleGetMapVector(void *client, void *request, int len);
 
   public:
-    MapFile(ConfigFile* cf, int section, const char* file, double res, int neg);
-    ~MapFile();
+    VMapFile(ConfigFile* cf, int section, const char* file);
+    ~VMapFile();
     int Setup();
     int Shutdown();
 
@@ -144,131 +103,137 @@ class MapFile : public Driver
 };
 
 Driver*
-MapFile_Init(ConfigFile* cf, int section)
+VMapFile_Init(ConfigFile* cf, int section)
 {
   const char* filename;
-  double resolution;
-  int negate;
 
   if(!(filename = cf->ReadFilename(section,"filename", NULL)))
   {
     PLAYER_ERROR("must specify map filename");
     return(NULL);
   }
-  if((resolution = cf->ReadLength(section,"resolution",-1.0)) < 0)
-  {
-    PLAYER_ERROR("must specify positive map resolution");
-    return(NULL);
-  }
-  negate = cf->ReadInt(section,"negate",0);
-
-  return((Driver*)(new MapFile(cf, section, filename, resolution, negate)));
+  return((Driver*)(new MapFile(cf, section, filename)));
 }
 
 // a driver registration function
 void 
-MapFile_Register(DriverTable* table)
+VMapFile_Register(DriverTable* table)
 {
-  table->AddDriver("mapfile", MapFile_Init);
+  table->AddDriver("vmapfile", VMapFile_Init);
 }
 
 
 // this one has no data or commands, just configs
-MapFile::MapFile(ConfigFile* cf, int section, const char* file, double res, int neg) 
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
+VMapFile::VMapFile(ConfigFile* cf, int section, const char* file)
+  : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
 {
-  this->mapdata = NULL;
-  this->size_x = this->size_y = 0;
+  this->vmap = NULL;
   this->filename = file;
-  this->resolution = res;
-  this->negate = neg;
 }
 
-MapFile::~MapFile()
+VMapFile::~VMapFile()
 {
 }
 
 int
-MapFile::Setup()
+VMapFile::Setup()
 {
-  GdkPixbuf* pixbuf;
-  guchar* pixels;
-  guchar* p;
-  int rowstride, n_channels, bps;
-  GError* error = NULL;
-  int i,j,k;
-  double occ;
-  int color_sum;
-  double color_avg;
+  FILE* fp;
+  double ox, oy, w, h;
+  double x0,y0,x1,y1;
+  char linebuf[512];
+  char keyword [512];
+  int got_origin, got_width, got_height;
 
-  // Initialize glib
-  g_type_init();
-
-  printf("MapFile loading image file: %s...", this->filename);
+  printf("VMapFile loading file: %s...", this->filename);
   fflush(stdout);
 
-  // Read the image
-  if(!(pixbuf = gdk_pixbuf_new_from_file(this->filename, &error)))
+  if(!(fp = fopen(this->filename, "r")))
   {
-    PLAYER_ERROR1("failed to open image file %s", this->filename);
+    PLAYER_ERROR1("failed to open file %s", this->filename);
     return(-1);
   }
 
-  this->size_x = gdk_pixbuf_get_width(pixbuf);
-  this->size_y = gdk_pixbuf_get_height(pixbuf);
+  // Allocate space for the biggest possible vector map; we'll realloc
+  // later
+  this->vmap = 
+          (player_map_data_vector_t*)malloc(sizeof(player_map_data_vector_t));
+  assert(this->vmap);
 
-  assert(this->mapdata = (char*)malloc(sizeof(char) *
-                                       this->size_x * this->size_y));
-
-  rowstride = gdk_pixbuf_get_rowstride(pixbuf);
-  bps = gdk_pixbuf_get_bits_per_sample(pixbuf)/8;
-  n_channels = gdk_pixbuf_get_n_channels(pixbuf);
-  if(gdk_pixbuf_get_has_alpha(pixbuf))
-    n_channels++;
-
-  // Read data
-  pixels = gdk_pixbuf_get_pixels(pixbuf);
-  for(j = 0; j < this->size_y; j++)
+  this->vmap->segments_count = 0;
+  got_origin = got_width = got_height = 0;
+  while(!feof(fp))
   {
-    for (i = 0; i < this->size_x; i++)
-    {
-      p = pixels + j*rowstride + i*n_channels*bps;
-      color_sum = 0;
-      for(k=0;k<n_channels;k++)
-        color_sum += *(p + (k * bps));
-      color_avg = color_sum / (double)n_channels;
+    if(!fgets(linebuf, sizeof(linebuf), fp))
+      break;
+    if(!strlen(linebuf) || (linebuf[0] == '#'))
+      continue;
 
-      if(this->negate)
-        occ = color_avg / 255.0;
-      else
-        occ = (255 - color_avg) / 255.0;
-      if(occ > 0.95)
-        this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = +1;
-      else if(occ < 0.1)
-        this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = -1;
-      else
-        this->mapdata[MAP_IDX(this,i,this->size_y - j - 1)] = 0;
+    if((sscanf(linebuf,"%s %f %f", keyword, &ox, &oy) == 3) &&
+       !strcmp(keyword, "origin"))
+    {
+      got_origin = 1;
     }
+    else if((sscanf(linebuf,"%s %f", keyword, &w) == 2) &&
+            !strcmp(keyword, "width"))
+    {
+      got_width = 1;
+    }
+    else if((sscanf(linebuf,"%s %f", keyword, &h) == 2) &&
+            !strcmp(keyword, "height"))
+    {
+      got_height = 1;
+    }
+    else if(sscanf(linebuf, "%f %f %f %f", &x0, &y0, &x1, &y1) == 4)
+    {
+      this->vmap->segments[this->vmap->segments_count].x0 = (float)x0;
+      this->vmap->segments[this->vmap->segments_count].y0 = (float)y0;
+      this->vmap->segments[this->vmap->segments_count].x1 = (float)x1;
+      this->vmap->segments[this->vmap->segments_count].y1 = (float)y1;
+      this->vmap->segments_count++;
+      if(this->vmap->segments_count == PLAYER_MAP_MAX_SEGMENTS)
+      {
+        PLAYER_WARN("too many segments in file; truncating");
+        break;
+      }
+    }
+    else
+      PLAYER_WARN1("ignoring line:%s:", linebuf);
   }
 
-  gdk_pixbuf_unref(pixbuf);
+  if(!got_origin || !got_width || !got_height)
+  {
+    PLAYER_ERROR("file is missing meta-data");
+    return(-1);
+  }
+
+  this->vmap->minx = (float)ox;
+  this->vmap->miny = (float)oy;
+  this->vmap->maxx = (float)(w + ox);
+  this->vmap->maxy = (float)(h + oy);
+
+  this->vmap = (player_map_data_vector_t*)realloc(this->vmap,
+                                                  sizeof(player_map_data_vector_t) - 
+                                                  ((PLAYER_MAP_MAX_SEGMENTS - 
+                                                    this->vmap->segments_count) * 
+                                                   sizeof(player_segment_t)));
+  assert(this->vmap);
 
   puts("Done.");
-  printf("MapFile read a %d X %d map, at %.3f m/pix\n",
-         this->size_x, this->size_y, this->resolution);
+  printf("VMapFile read a %d-segment map\n", this->vmap->segments_count);
   return(0);
 }
 
 int
-MapFile::Shutdown()
+VMapFile::Shutdown()
 {
-  free(this->mapdata);
+  free(this->vmap);
   return(0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int MapFile::ProcessMessage(MessageQueue * resp_queue, 
+int VMapFile::ProcessMessage(MessageQueue * resp_queue, 
                             player_msghdr * hdr, 
                             void * data)
 {

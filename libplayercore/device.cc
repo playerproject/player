@@ -42,6 +42,7 @@
 #include <libplayercore/playertime.h>
 #include <libplayercore/devicetable.h>
 #include <libplayercore/globals.h>
+#include <libplayercore/error.h>
 
 // Constructor
 Device::Device(player_devaddr_t addr, Driver *device)
@@ -157,7 +158,12 @@ Device::PutMsg(MessageQueue* resp_queue,
   hdr->addr = this->addr;
   Message msg(*hdr,src,hdr->size,resp_queue);
   // don't need to lock here, because the queue does its own locking in Push
-  this->driver->InQueue->Push(msg);
+  if(!this->driver->InQueue->Push(msg))
+  {
+    PLAYER_ERROR4("tried to push %d/%d from/onto %d/%d\n",
+                  hdr->type, hdr->subtype,
+                  hdr->addr.interf, hdr->addr.index);
+  }
 }
 
 
