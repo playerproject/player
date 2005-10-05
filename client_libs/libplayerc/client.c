@@ -61,6 +61,9 @@
 #include "playerc.h"
 #include "error.h"
 
+// TODO: expose this timeout value somewhere
+#define REQUEST_TIMEOUT 2.0
+
 // Have we done one-time intialization work yet?
 static int init_done;
 
@@ -365,7 +368,9 @@ int playerc_client_request(playerc_client_t *client,
                            uint8_t subtype,
                            void *req_data, void *rep_data, int rep_len)
 {
-  int i;
+  double t;
+  struct timeval last;
+  struct timeval curr;
   player_msghdr_t req_header, rep_header;
 
   if(deviceinfo == NULL)
@@ -387,10 +392,24 @@ int playerc_client_request(playerc_client_t *client,
   if (playerc_client_writepacket(client, &req_header, req_data) < 0)
     return -1;
 
+  t = REQUEST_TIMEOUT;
+
   // Read packets until we get a reply.  Data packets get queued up
   // for later processing.
-  for (i = 0; i < 1000; i++)
+  while(t >= 0)
   {
+    int peek;
+    gettimeofday(&last,NULL);
+    peek = playerc_client_peek(client,10);
+    gettimeofday(&curr,NULL);
+    t -= ((curr.tv_sec + curr.tv_usec/1e6) - 
+          (last.tv_sec + last.tv_usec/1e6));
+
+    if(peek < 0)
+      return -1;
+    else if(peek == 0)
+      continue;
+      
     if (playerc_client_readpacket(client, &rep_header, client->data) < 0)
       return -1;
 
@@ -416,7 +435,7 @@ int playerc_client_request(playerc_client_t *client,
         return -1;
       }
       memcpy(rep_data, client->data, rep_header.size);
-      break;
+      return(0);
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
     {
@@ -433,12 +452,8 @@ int playerc_client_request(playerc_client_t *client,
     }
   }
 
-  if (i == 1000)
-  {
-    PLAYERC_ERR("timed out waiting for server reply to request");
-    return -1;
-  }
-  return 0;
+  PLAYERC_ERR("timed out waiting for server reply to request");
+  return -1;
 }
 
 #if 0
