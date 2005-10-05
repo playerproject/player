@@ -4,6 +4,9 @@ noinst_LTLIBRARIES =
 if INCLUDE_MAPFILE
 noinst_LTLIBRARIES += libmapfile.la 
 endif
+if INCLUDE_VMAPFILE
+noinst_LTLIBRARIES += libvmapfile.la 
+endif
 if INCLUDE_MAPCSPACE
 noinst_LTLIBRARIES += libmapcspace.la
 endif
@@ -12,5 +15,6 @@ noinst_LTLIBRARIES += libmapscale.la
 endif
 
 libmapfile_la_SOURCES = mapfile.cc 
+libvmapfile_la_SOURCES = vmapfile.cc 
 libmapcspace_la_SOURCES = mapcspace.cc 
 libmapscale_la_SOURCES = mapscale.cc 

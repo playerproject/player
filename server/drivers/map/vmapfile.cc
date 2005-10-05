@@ -85,6 +85,7 @@ class VMapFile : public Driver
   private:
     const char* filename;
     player_map_data_vector_t* vmap;
+    size_t vmapsize;
     
     // Handle map data request
     void HandleGetMapVector(void *client, void *request, int len);
@@ -112,7 +113,7 @@ VMapFile_Init(ConfigFile* cf, int section)
     PLAYER_ERROR("must specify map filename");
     return(NULL);
   }
-  return((Driver*)(new MapFile(cf, section, filename)));
+  return((Driver*)(new VMapFile(cf, section, filename)));
 }
 
 // a driver registration function
@@ -139,8 +140,8 @@ int
 VMapFile::Setup()
 {
   FILE* fp;
-  double ox, oy, w, h;
-  double x0,y0,x1,y1;
+  int ox, oy, w, h;
+  int x0,y0,x1,y1;
   char linebuf[512];
   char keyword [512];
   int got_origin, got_width, got_height;
@@ -169,27 +170,40 @@ VMapFile::Setup()
     if(!strlen(linebuf) || (linebuf[0] == '#'))
       continue;
 
-    if((sscanf(linebuf,"%s %f %f", keyword, &ox, &oy) == 3) &&
-       !strcmp(keyword, "origin"))
+    if(sscanf(linebuf,"%s",keyword) == 1)
     {
-      got_origin = 1;
+      if(!strcmp(keyword, "origin"))
+      {
+        if(sscanf(linebuf,"%s %d %d", keyword, &ox, &oy) == 3)
+          got_origin = 1;
+        else
+          PLAYER_WARN1("invalid line:%s:",linebuf);
+        continue;
+      }
+      else if(!strcmp(keyword, "width"))
+      {
+        if(sscanf(linebuf,"%s %d", keyword, &w) == 2)
+          got_width = 1;
+        else
+          PLAYER_WARN1("invalid line:%s:",linebuf);
+        continue;
+      }
+      else if(!strcmp(keyword, "height"))
+      {
+        if(sscanf(linebuf,"%s %d", keyword, &h) == 2)
+          got_height = 1;
+        else
+          PLAYER_WARN1("invalid line:%s:",linebuf);
+        continue;
+      }
     }
-    else if((sscanf(linebuf,"%s %f", keyword, &w) == 2) &&
-            !strcmp(keyword, "width"))
+
+    if(sscanf(linebuf, "%d %d %d %d", &x0, &y0, &x1, &y1) == 4)
     {
-      got_width = 1;
-    }
-    else if((sscanf(linebuf,"%s %f", keyword, &h) == 2) &&
-            !strcmp(keyword, "height"))
-    {
-      got_height = 1;
-    }
-    else if(sscanf(linebuf, "%f %f %f %f", &x0, &y0, &x1, &y1) == 4)
-    {
-      this->vmap->segments[this->vmap->segments_count].x0 = (float)x0;
-      this->vmap->segments[this->vmap->segments_count].y0 = (float)y0;
-      this->vmap->segments[this->vmap->segments_count].x1 = (float)x1;
-      this->vmap->segments[this->vmap->segments_count].y1 = (float)y1;
+      this->vmap->segments[this->vmap->segments_count].x0 = x0/1e3;
+      this->vmap->segments[this->vmap->segments_count].y0 = y0/1e3;
+      this->vmap->segments[this->vmap->segments_count].x1 = x1/1e3;
+      this->vmap->segments[this->vmap->segments_count].y1 = y1/1e3;
       this->vmap->segments_count++;
       if(this->vmap->segments_count == PLAYER_MAP_MAX_SEGMENTS)
       {
@@ -207,16 +221,19 @@ VMapFile::Setup()
     return(-1);
   }
 
-  this->vmap->minx = (float)ox;
-  this->vmap->miny = (float)oy;
-  this->vmap->maxx = (float)(w + ox);
-  this->vmap->maxy = (float)(h + oy);
+  this->vmap->minx = ox/1e3;
+  this->vmap->miny = oy/1e3;
+  this->vmap->maxx = (w + ox)/1e3;
+  this->vmap->maxy = (h + oy)/1e3;
+
+  // Resize
+  this->vmapsize = (sizeof(player_map_data_vector_t) - 
+                    ((PLAYER_MAP_MAX_SEGMENTS - 
+                      this->vmap->segments_count) * 
+                     sizeof(player_segment_t)));
 
   this->vmap = (player_map_data_vector_t*)realloc(this->vmap,
-                                                  sizeof(player_map_data_vector_t) - 
-                                                  ((PLAYER_MAP_MAX_SEGMENTS - 
-                                                    this->vmap->segments_count) * 
-                                                   sizeof(player_segment_t)));
+                                                  this->vmapsize);
   assert(this->vmap);
 
   puts("Done.");
@@ -234,98 +251,22 @@ VMapFile::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
 int VMapFile::ProcessMessage(MessageQueue * resp_queue, 
-                            player_msghdr * hdr, 
-                            void * data)
+                             player_msghdr * hdr, 
+                             void * data)
 {
-  // Is it a request for map meta-data?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
+  // Is it a request for the map?
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_MAP_REQ_GET_VECTOR,
                            this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, sizeof(player_laser_config_t));
-      return(-1);
-    }
-    player_map_info_t info;
-    info.scale = this->resolution;
-    info.width = this->size_x;
-    info.height = this->size_y;
-    info.origin.px = -(this->size_x / 2.0) * this->resolution;
-    info.origin.py = -(this->size_y / 2.0) * this->resolution;
-    info.origin.pa = 0.0;
-
+    // Give it the map.
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_MAP_REQ_GET_INFO,
-                  (void*)&info, sizeof(info), NULL);
+                  PLAYER_MAP_REQ_GET_VECTOR,
+                  (void*)this->vmap, this->vmapsize, NULL);
     return(0);
   }
-  // Is it a request for a map tile?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_MAP_REQ_GET_DATA,
-                           this->device_addr))
-  {
-    player_map_data_t* mapreq = (player_map_data_t*)data;
-
-    // Can't declare a map tile on the stack (it's too big)
-    size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
-                      (mapreq->width * mapreq->height));
-    player_map_data_t* mapresp = (player_map_data_t*)calloc(1,mapsize);
-    assert(mapresp);
-    
-    int i, j;
-    int oi, oj, si, sj;
-
-    // Construct reply
-    oi = mapresp->col = mapreq->col;
-    oj = mapresp->row = mapreq->row;
-    si = mapresp->width = mapreq->width;
-    sj = mapresp->height = mapreq->height;
-
-    // Grab the pixels from the map
-    for(j = 0; j < sj; j++)
-    {
-      for(i = 0; i < si; i++)
-      {
-        if((i * j) <= PLAYER_MAP_MAX_TILE_SIZE)
-        {
-          if(MAP_VALID(this, i + oi, j + oj))
-            mapresp->data[i + j * si] = this->mapdata[MAP_IDX(this, i+oi, j+oj)];
-          else
-          {
-            PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
-            mapresp->data[i + j * si] = 0;
-          }
-        }
-        else
-        {
-          PLAYER_WARN("requested tile is too large; truncating");
-          if(i == 0)
-          {
-            mapresp->width = si-1;
-            mapresp->height = j-1;
-          }
-          else
-          {
-            mapresp->width = i;
-            mapresp->height = j;
-          }
-        }
-      }
-    }
-
-    // recompute size, in case the tile got truncated
-    mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
-               (mapresp->width * mapresp->height));
-    mapresp->data_count = mapresp->width * mapresp->height;
-    this->Publish(this->device_addr, resp_queue,
-                  PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_MAP_REQ_GET_DATA,
-                  (void*)mapresp, mapsize, NULL);
-    free(mapresp);
-    return(0);
-  }
-  return(-1);
+  else
+    return(-1);
 }
 
