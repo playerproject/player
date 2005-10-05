@@ -524,6 +524,11 @@ Wavefront::PutPlannerData()
   data.pos.py = this->localize_y;
   data.pos.pa = this->localize_a;
 
+  printf("Wavefront: pose: %.3f %.3f %.3f\n",
+         data.pos.px,
+         data.pos.py,
+         RTOD(data.pos.pa));
+
   data.goal.px = this->target_x;
   data.goal.py = this->target_y;
   data.goal.pa = this->target_a;
