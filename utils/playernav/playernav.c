@@ -165,11 +165,22 @@ player_read_func(gpointer* arg)
   }
   for(i=0;i<gui_data->num_robots;i++)
   {
+    /*
     if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
     {
       robot_pose.px = gui_data->planners[i]->px;
       robot_pose.py = gui_data->planners[i]->py;
       robot_pose.pa = gui_data->planners[i]->pa;
+      */
+    if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
+    {
+      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
+      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
+      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
+      printf("robot_pose: %.3f %.3f %.3f\n", 
+             robot_pose.px,
+             robot_pose.py,
+             robot_pose.pa);
 
 #if 0
       // is the robot localized within the map?
