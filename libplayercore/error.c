@@ -36,8 +36,11 @@ void ErrorPrint(int msgType, int level, const char *file, int line, const char *
 
   if (level <= msgLevel)
     vfprintf(stderr, fmt, ap);
-  fprintf(msgFile, "%s:%d ", file, line);
-  vfprintf(msgFile, fmt, ap);
+  if (msgFile)
+  {
+    fprintf(msgFile, "%s:%d ", file, line);
+    vfprintf(msgFile, fmt, ap);
+  }
   
   va_end(ap);
   
