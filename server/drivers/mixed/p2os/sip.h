@@ -100,6 +100,20 @@ class SIP
 
     xpos = INT_MAX;
     ypos = INT_MAX;
+    
+    // intialise some of the internal values 
+    blobmx = blobmy = blobx1 = blobx2 = bloby1 = bloby2 = blobarea = blobconf = blobcolor = 0;
+	armPowerOn = armConnected = false;
+	armVersionString = NULL;
+	armJoints = NULL;
+	armNumJoints = 0;
+	for (int i = 0; i < 6; ++i)
+	{
+		armJointMoving[i] = false;
+		armJointPos[i] = 0;
+		armJointPosRads[i] = 0;
+		armJointTargetPos[i] = 0;
+	}
   }
 };
 
