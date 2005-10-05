@@ -222,7 +222,10 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_t));
 
-  this->position_subscriptions = this->sonar_subscriptions = 0;
+  this->position_subscriptions = this->sonar_subscriptions = this->actarray_subscriptions = 0;
+
+  // intialise members
+  sippacket = NULL;
 
   // Do we create a robot position interface?
   if(cf->ReadDeviceAddr(&(this->position_id), section, "provides",
