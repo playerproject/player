@@ -688,6 +688,9 @@ void Wavefront::Main()
     {
       if(this->new_map)
       {
+        // Unfortunately, this computation can take a while (e.g., 1-2
+        // seconds).  So we'll stop the robot while it thinks.
+        this->StopPosition();
         plan_update_cspace(this->plan,this->cspace_fname);
         this->new_map = false;
       }
