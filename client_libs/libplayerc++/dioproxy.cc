@@ -42,65 +42,57 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
+
+
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+DioProxy::DioProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
+{
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
+}
+
+DioProxy::~DioProxy()
+{
+  Unsubscribe();
+}
 
 void
-DIOProxy::FillData(player_msghdr_t hdr, const char *buffer)
+DioProxy::Subscribe(uint aIndex)
 {
-  if(hdr.size != sizeof(player_dio_data_t)) 
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: DIOProxy expected %d bytes of "
-              "power data, but received %d. Unexpected results may "
-              "ensue.\n",
-              sizeof(player_dio_data_t),hdr.size);
-  }
+  mDevice = playerc_dio_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("DioProxy::DioProxy()", "could not create");
 
-  const player_dio_data_t* lclBuffer =
-    reinterpret_cast<const player_dio_data_t*>(buffer);
-
-  count = lclBuffer->count;
-  digin = ntohl(lclBuffer->digin);
+  if (0 != playerc_dio_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("DioProxy::DioProxy()", "could not subscribe");
 }
 
-// interface that all proxies SHOULD provide
 void
-DIOProxy::Print()
+DioProxy::Unsubscribe()
 {
-  printf("#DIO(%d:%d) - %c\n", m_device_id.code, 
-         m_device_id.index, access);
-  printf("%d bit:  ",count);
-  for (int i=0; i< count; i++)
-  {
-	printf( (digin << i) & 0x80000000 ? "1" : "0");
-	if (i %4 == 3)
-		printf(" ");
-  }
-  printf("\n");
+  assert(NULL!=mDevice);
+  playerc_dio_unsubscribe(mDevice);
+  playerc_dio_destroy(mDevice);
+  mDevice = NULL;
 }
 
-// Outputs a bitfield to the DIO
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-
-int
-DIOProxy::SetOutput(uint8_t output_count, uint32_t digout)
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::DioProxy &c)
 {
-
-  if(!client)
-    return(-1);
-
-  player_dio_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  cmd.count  = output_count;
-  cmd.digout = htonl(digout);
-
-  return(client->Write(m_device_id,
-                       reinterpret_cast<char*>(&cmd),sizeof(cmd)));
+  os << "#DIO (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  for (unsigned int i = 0; i < c.GetCount(); ++i)
+    os << i << ": " << ((c.GetDigin() << i) & 0x80000000 ? "1" : "0");
+  return os;
 }
 
+/// Set the output
+void DioProxy::SetOutput(uint aCount, uint32_t aDigout)
+{
+  playerc_dio_set_output(mDevice, aCount, aDigout);
+}

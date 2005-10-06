@@ -27,6 +27,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_bumper.c \
                         dev_blobfinder.c \
                         dev_camera.c \
+                        dev_dio.c \
                         dev_fiducial.c \
                         dev_gripper.c \
                         dev_ir.c \
@@ -49,8 +50,8 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_gripper.c \
 #dev_joystick.c \
 #dev_motor.c \
-#dev_truth.c \
-#dev_dio.c \
+#dev_truth.c
+
 #
 
 libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo

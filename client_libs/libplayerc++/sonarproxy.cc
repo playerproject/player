@@ -46,106 +46,61 @@
  * client-side sonar device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <string.h> // for memset
-    
-// enable/disable the sonars
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int 
-SonarProxy::SetSonarState(unsigned char state)
+
+
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+SonarProxy::SonarProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(!client)
-    return(-1);
-
-  player_sonar_power_config_t config;
-
-//  config.subtype = PLAYER_SONAR_POWER_REQ;
-  config.value = state;
-
-  return(client->Request(m_device_id,PLAYER_SONAR_POWER,(const char*)&config,
-                         sizeof(config)));
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-int 
-SonarProxy::GetSonarGeom()
+SonarProxy::~SonarProxy()
 {
-  player_msghdr_t hdr;
-  player_sonar_geom_t sonar_pose;
-
-  if(!client)
-    return(-1);
-
-//  sonar_pose.subtype = PLAYER_SONAR_GET_GEOM_REQ;
-
-  if((client->Request(m_device_id,PLAYER_SONAR_GET_GEOM,(const char*)&sonar_pose,
-                      0, &hdr, (char*)&sonar_pose, 
-                      sizeof(sonar_pose)) < 0) ||
-     (hdr.type != PLAYER_MSGTYPE_RESP_ACK))
-    return(-1);
-
-  pose_count = ntohs(sonar_pose.pose_count);
-  for(int i=0;i<pose_count;i++)
-  {
-    poses[i][0] = ((short)ntohs(sonar_pose.poses[i][0])) / 1e3;
-    poses[i][1] = ((short)ntohs(sonar_pose.poses[i][1])) / 1e3;
-    poses[i][2] = DTOR((short)ntohs(sonar_pose.poses[i][2]));
-  }
-
-  return(0);
+  Unsubscribe();
 }
 
-void SonarProxy::FillData(player_msghdr_t hdr, const char* buffer)
+void
+SonarProxy::Subscribe(uint aIndex)
 {
-  if(hdr.size != sizeof(player_sonar_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of sonar data, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_sonar_data_t),hdr.size);
-  }
+  mDevice = playerc_sonar_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("SonarProxy::SonarProxy()", "could not create");
 
-  range_count = ntohs(((player_sonar_data_t*)buffer)->range_count);
-  memset(ranges,0,sizeof(ranges));
-  for(size_t i=0;i<range_count;i++)
-  {
-    ranges[i] = ntohs(((player_sonar_data_t*)buffer)->ranges[i]) / 1e3;
-  }
+  if (0 != playerc_sonar_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("SonarProxy::SonarProxy()", "could not subscribe");
 }
 
-void 
-SonarProxy::FillGeom(player_msghdr_t hdr, const char* buffer)
+void
+SonarProxy::Unsubscribe()
 {
-  if(hdr.size != sizeof(player_sonar_geom_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of sonar geom, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_sonar_geom_t),hdr.size);
-  }
-  player_sonar_geom_t * sonar_pose = (player_sonar_geom_t*)buffer;
+  assert(NULL!=mDevice);
+  playerc_sonar_unsubscribe(mDevice);
+  playerc_sonar_destroy(mDevice);
+  mDevice = NULL;
+}
 
-  pose_count = ntohs(sonar_pose->pose_count);
-  for(int i=0;i<pose_count;i++)
-  {
-    poses[i][0] = ((short)ntohs(sonar_pose->poses[i][0])) / 1e3;
-    poses[i][1] = ((short)ntohs(sonar_pose->poses[i][1])) / 1e3;
-    poses[i][2] = DTOR((short)ntohs(sonar_pose->poses[i][2]));
-  }
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::SonarProxy &c)
+{
+  os << "#Sonar (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  for (unsigned int i = 0; i < c.GetCount(); ++i)
+    os << i << ": " << c[i] << std::endl;
+  return os;
 }
 
 
-// interface that all proxies SHOULD provide
-void SonarProxy::Print()
+
+
+/// Request the sonar geometry.
+void SonarProxy::RequestGeom()
 {
-  printf("#Sonar(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
-  for(size_t i=0;i<range_count;i++)
-    printf("%.3f ", ranges[i]);
-  puts("");
+  playerc_sonar_get_geom(mDevice);
 }
 

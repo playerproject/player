@@ -30,6 +30,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               blobfinderproxy.cc \
                               bumperproxy.cc \
                               cameraproxy.cc \
+                              dioproxy.cc \
                               fiducialproxy.cc \
                               gripperproxy.cc \
                               irproxy.cc \
@@ -41,7 +42,11 @@ libplayerc___la_SOURCES =     playerc++.h \
                               position2dproxy.cc \
                               position3dproxy.cc \
                               powerproxy.cc \
-                              ptzproxy.cc
+                              ptzproxy.cc \
+                              simulationproxy.cc \
+                              sonarproxy.cc \
+                              speechproxy.cc \
+                              wifiproxy.cc
 
 # not in libplayerc yet \
                               aioproxy.cc \
@@ -49,21 +54,14 @@ libplayerc___la_SOURCES =     playerc++.h \
                               audiodspproxy.cc \
                               audiomixerproxy.cc \
                               blinkenlightproxy.cc \
-                              dioproxy.cc \
                               energyproxy.cc \
                               gpsproxy.cc \
                               mcomproxy.cc \
-                              motorproxy.cc
-
-# not looked at yet \
-                              sonarproxy.cc \
-                              speechproxy.cc \
-                              truthproxy.cc \
-                              wifiproxy.cc \
-                              waveformproxy.cc \
+                              motorproxy.cc \
                               soundproxy.cc \
                               speechrecognitionproxy.cc \
-                              simulationproxy.cc
+                              truthproxy.cc \
+                              waveformproxy.cc
 
 libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lpthread
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la

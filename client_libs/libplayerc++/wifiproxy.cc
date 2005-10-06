@@ -47,282 +47,49 @@
  * implementation of WiFi proxy class
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <math.h>
 
-/* fills in all the data....
- *
- * returns:
- */
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+WiFiProxy::WiFiProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
+{
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
+}
+
+WiFiProxy::~WiFiProxy()
+{
+  Unsubscribe();
+}
+
 void
-WiFiProxy::FillData(player_msghdr_t hdr, const char *buffer)
+WiFiProxy::Subscribe(uint aIndex)
 {
-  if (hdr.size != sizeof(player_wifi_data_t)) {
-    fprintf(stderr, "WIFIPROXY: expected %d but got %d\n",
-	    sizeof(player_wifi_data_t), hdr.size);
-  }
+  mDevice = playerc_wifi_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("WiFiProxy::WiFiProxy()", "could not create");
 
-  player_wifi_data_t * d = (player_wifi_data_t *)buffer;
-
-  throughput = ntohl(d->throughput);
-  op_mode = d->mode;
-  bitrate = ntohl(d->bitrate);
-
-  // get access point/cell addr
-  strncpy(access_point, d->ap, sizeof(access_point));
-  
-  link_count = ntohs(d->link_count);
-  qual_type = d->qual_type;  
-  maxqual = ntohs(d->maxqual);
-  maxlevel = ntohs(d->maxlevel);
-  maxnoise = ntohs(d->maxnoise);
-
-  for (int i = 0; i < link_count; i++) {
-    links[i].qual = ntohs(d->links[i].qual);
-    links[i].level = ntohs(d->links[i].level);
-    links[i].noise = ntohs(d->links[i].noise);
-    //    links[i].bitrate = ntohl(d->links[i].bitrate);
-
-    memcpy(links[i].ip, d->links[i].ip, sizeof(links[i].ip));
-    printf("WIFIPROXY: FILL: IP: %s\n", links[i].ip);
-  }
-  
+  if (0 != playerc_wifi_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("WiFiProxy::WiFiProxy()", "could not subscribe");
 }
 
-/* print it
- *
- * returns:
- */
 void
-WiFiProxy::Print()
+WiFiProxy::Unsubscribe()
 {
-  char mode[16];
-
-  switch(op_mode) {
-  case PLAYER_WIFI_MODE_AUTO:
-    strcpy(mode, "AUTO");
-    break;
-  case PLAYER_WIFI_MODE_ADHOC:
-    strcpy(mode, "ADHOC");
-    break;
-  case PLAYER_WIFI_MODE_MASTER:
-    strcpy(mode, "MASTER");
-    break;
-  case PLAYER_WIFI_MODE_INFRA:
-    strcpy(mode, "INFRA");
-    break;
-  case PLAYER_WIFI_MODE_REPEAT:
-    strcpy(mode, "REPEAT");
-    break;
-  case PLAYER_WIFI_MODE_SECOND:
-    strcpy(mode, "SECOND");
-    break;
-  default:
-    sprintf(mode, "OTHER (%d)", op_mode);
-  }
-
-  printf("#WiFi(%d:%d) - %c\n", m_device_id.code, 
-         m_device_id.index, access);
-
-  printf("\tMode: %s\t%s\n", mode, access_point);
-  printf("\tBitrate: %d\tThroughput: %d\n", bitrate, throughput);
-
-  if (!link_count) {
-    printf("\tNo link information\n");
-  } else {
-    for (int i =0; i < link_count; i++) {
-      printf("\tIP: %s", links[i].ip);
-
-      switch(qual_type) {
-      case PLAYER_WIFI_QUAL_DBM:
-	printf("\tquality: %d/%d\tlevel: %d dBm\tnoise: %d dBm\n", 
-	       links[i].qual, maxqual,
-	       links[i].level - 0x100, links[i].noise - 0x100);
-	break;
-      case PLAYER_WIFI_QUAL_REL:
-	printf("\tquality: %d/%d\tlevel: %d/%d\tnoise: %d/%d\n",
-	       links[i].qual, maxqual,
-	       links[i].level, maxlevel,
-	       links[i].noise, maxnoise);
-	break;
-      case PLAYER_WIFI_QUAL_UNKNOWN:
-      default:
-	printf("\tquality: %d\tlevel: %d\tnoise: %d\n",
-	       links[i].qual, links[i].level, links[i].noise);
-	break;
-      }
-    }
-  }
+  assert(NULL!=mDevice);
+  playerc_wifi_unsubscribe(mDevice);
+  playerc_wifi_destroy(mDevice);
+  mDevice = NULL;
 }
 
-/* given the ip address, find the link quality.  if ip address
- * is NULL, return the first link entry
- *
- * returns: the link quality for given IP
- */
-int
-WiFiProxy::GetLinkQuality(char *ip)
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::WiFiProxy &c)
 {
-  int idx = 0;
-
-  if (ip) {
-    idx = GetLinkIndex(ip);
-    if (idx < 0) {
-      return 0;
-    }
-  }
-
-  return links[idx].qual;
+  os << "#WiFi (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  return os;
 }
 
-/* given the IP, return the signal level, or first entry
- * if IP is NULL
- *
- * returns: signal level to IP
- */
-int
-WiFiProxy::GetLevel(char *ip)
-{
-  int idx = 0;
-  
-  if (ip) {
-    idx = GetLinkIndex(ip);
-    if (idx < 0) {
-      return 0;
-    }
-  }
-
-  return links[idx].level;
-}
-
-/* 
- *
- * returns: noise level for given IP
- */
-int
-WiFiProxy::GetNoise(char *ip)
-{
-  int idx =0;
-  if (ip) {
-    idx =  GetLinkIndex(ip);
-    if (idx < 0) {
-      return 0;
-    }
-  }
-
-  return links[idx].level;
-}
-
-  
-/* 
- *
- * returns: bitrate for given IP
- */
-int
-WiFiProxy::GetBitrate()
-{
-  return bitrate;
-}
-
-/* given the IP address, find the corresponding link entry
- *
- * returns: index of link entry with given IP, -1 if not found
- */
-int
-WiFiProxy::GetLinkIndex(char *ip)
-{
-  for (int i=0; i < link_count; i++) {
-    if (!strcmp(links[i].ip, ip)) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-/* ioctl for getting the MAC address of the robot that the linuxwifi
- * driver is running on...
- *
- * returns: MAC address in ASCII format, also in arg mac
- */
-char *
-WiFiProxy::GetMAC(char *mac, int len)
-{
-  char buf[32];
-
-  player_wifi_mac_req_t req;
-  player_msghdr_t hdr;
-
-//  req.subtype = PLAYER_WIFI_MAC_REQ;
-
-  if (client->Request(m_device_id, PLAYER_WIFI_MAC, (const char *)&req, sizeof(req),
-		      &hdr, buf, sizeof(buf)) < 0) {
-    *mac = '\0';
-  } else {
-    strncpy(mac, buf, len);
-  }
-
-  return mac;
-}
-
-/* 
- *
- * returns: IP address
- */
-char *
-WiFiProxy::GetIP(char *ip, int len)
-{
-  strncpy(ip, links[0].ip, len);
-
-  return ip;
-}
-
-/* copies MAC address of current access point to buf
- *
- * returns: pointer to buf
- */
-char *
-WiFiProxy::GetAP(char *buf, int len)
-{
-  strncpy(buf, access_point, len);
-  return buf;
-}
-
-/* add a host to the spy list
- *
- * returns: 
- */
-int
-WiFiProxy::AddSpyHost(char *address)
-{
-  player_wifi_iwspy_addr_req_t req;
-
-  //req.subtype = PLAYER_WIFI_IWSPY_ADD_REQ;
-  strncpy(req.address, address, sizeof(req.address));
-
-  printf("WIFIPROXY: add host %s\n", address);
-
-  int ret = client->Request(m_device_id, PLAYER_WIFI_IWSPY_ADD, (const char *)&req, sizeof(req));
-  printf("WIFIPROXY: ret=%d\n", ret);
-  return ret;
-}
-
-/* remove a host from the spy list
- *
- * returns: 
- */
-int
-WiFiProxy::RemoveSpyHost(char *address)
-{
-  player_wifi_iwspy_addr_req_t req;
-  
-//  req.subtype = PLAYER_WIFI_IWSPY_DEL_REQ;
-  strncpy(req.address, address, sizeof(req.address));
-
-  return client->Request(m_device_id, PLAYER_WIFI_IWSPY_DEL, (const char *)&req, sizeof(req));
-}
-
-  
-  

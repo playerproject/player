@@ -46,55 +46,64 @@
  * client-side beacon device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
 
-void SimulationProxy::FillData(player_msghdr_t hdr, const char* buffer)
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+SimulationProxy::SimulationProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  // empty
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-// interface that all proxies SHOULD provide
-void SimulationProxy::Print()
+SimulationProxy::~SimulationProxy()
 {
-  printf("#Simulation(%d:%d) - %c\n",
-         m_device_id.code, m_device_id.index, access);
+  Unsubscribe();
+}
+
+void
+SimulationProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_simulation_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("SimulationProxy::SimulationProxy()", "could not create");
+
+  if (0 != playerc_simulation_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("SimulationProxy::SimulationProxy()", "could not subscribe");
+}
+
+void
+SimulationProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  playerc_simulation_unsubscribe(mDevice);
+  playerc_simulation_destroy(mDevice);
+  mDevice = NULL;
+}
+
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::SimulationProxy &c)
+{
+  os << "#Simulation (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  return os;
 }
 
 
-int SimulationProxy::SetPose2D( char* identifier, double x, double y, double a )
+/** set the 2D pose of an object in the simulator, identified by the
+std::string. Returns 0 on success, else a non-zero error code. */
+void SimulationProxy::SetPose2d(char* identifier, double x, double y, double a)
 {
-  
-  player_simulation_pose2d_req_t req;
-
-//  req.subtype = PLAYER_SIMULATION_SET_POSE2D;
-  strncpy( req.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
-  req.x = htonl( (int32_t)(1000.0 * x) );
-  req.y = htonl( (int32_t)(1000.0 * y) );
-  req.a = htonl( (int32_t)RTOD(a) );
-
-  return client->Request( m_device_id,PLAYER_SIMULATION_SET_POSE2D,
-			  (const char *)&req, sizeof(req));
+  playerc_simulation_set_pose2d(mDevice,identifier, x,y,a);
+}
+	
+/** get the pose of an object in the simulator, identified by the
+std::string Returns 0 on success, else a non-zero error code.  */
+void SimulationProxy::GetPose2d(char* identifier, double& x, double& y, double& a)
+{
+  playerc_simulation_get_pose2d(mDevice,identifier, &x,&y,&a);
 }
 
-int SimulationProxy::GetPose2D( char* identifier, double& x, double& y, double& a )
-{
-  player_msghdr_t hdr;  
-  player_simulation_pose2d_req_t cfg;
-  
-  //cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
-  strncpy( cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
-  
-  if(client->Request(m_device_id,PLAYER_SIMULATION_GET_POSE2D,
-                     (const char*)&cfg, sizeof(cfg.name),
-                     &hdr, (char*)&cfg, sizeof(cfg)) < 0)
-    return(-1);
-  
-  x =  ((int32_t)ntohl(cfg.x)) / 1e3;
-  y =  ((int32_t)ntohl(cfg.y)) / 1e3;
-  a =  DTOR((int32_t)ntohl(cfg.a));
-  
-  return 0;
-}
