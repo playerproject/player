@@ -18,26 +18,6 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2005-
- *     Brian Gerkey
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 
 /*
  * $Id$
@@ -45,94 +25,73 @@
  * client-side log device
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
+#include "playerc++.h"
 
-void 
-LogProxy::FillData(player_msghdr_t hdr, const char* buffer)
+using namespace PlayerCc;
+
+LogProxy::LogProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  // empty
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-// interface that all proxies SHOULD provide
-void 
-LogProxy::Print()
+LogProxy::~LogProxy()
 {
-  printf("#Log(%d:%d) - %c\n",
-         m_device_id.code, m_device_id.index, access);
+  Unsubscribe();
 }
 
-int 
-LogProxy::GetState()
+void
+LogProxy::Subscribe(uint aIndex)
 {
-  player_msghdr_t hdr;  
-  player_log_get_state_t req;
+  mDevice = playerc_log_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("LogProxy::LogProxy()", "could not create");
 
-  //req.subtype = PLAYER_LOG_GET_STATE_REQ;
-
-  if(client->Request(m_device_id, PLAYER_LOG_GET_STATE, NULL,0,
-                     &hdr, (char*)&req, sizeof(req)) < 0)
-    return(-1);
-
-  this->type = req.type;
-  this->state = req.state;
-  return(0);
+  if (0 != playerc_log_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("LogProxy::LogProxy()", "could not subscribe");
 }
 
-int 
-LogProxy::SetWriteState(int state)
+void
+LogProxy::Unsubscribe()
 {
-  player_log_set_write_state_t req;
-
-  //req.subtype = PLAYER_LOG_SET_WRITE_STATE_REQ;
-  req.state = (uint8_t)state;
-
-  return(client->Request(m_device_id, PLAYER_LOG_SET_WRITE_STATE,
-                         (const char *)&req, sizeof(req)));
+  assert(NULL!=mDevice);
+  playerc_log_unsubscribe(mDevice);
+  playerc_log_destroy(mDevice);
+  mDevice = NULL;
 }
 
-int 
-LogProxy::SetReadState(int state)
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::LogProxy &c)
 {
-  player_log_set_read_state_t req;
-
-  //req.subtype = PLAYER_LOG_SET_READ_STATE_REQ;
-  req.state = (uint8_t)state;
-
-  if(client->Request(m_device_id, PLAYER_LOG_SET_READ_STATE,
-                     (const char *)&req, sizeof(req)) < 0)
-    return(-1);
-  this->state = (uint8_t)state;
-  return(0);
+  os << "#Log (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  
+  return os;
 }
 
-int
-LogProxy::Rewind()
+
+/** Start/stop (1/0) writing to the log file. */
+int LogProxy::SetWriteState(int aState)
 {
-  player_log_set_read_rewind_t req;
-
-  //req.subtype = PLAYER_LOG_SET_READ_REWIND_REQ;
-
-  return(client->Request(m_device_id, PLAYER_LOG_SET_READ_REWIND,
-                         (const char *)&req, sizeof(req)));
+  return playerc_log_set_write_state(mDevice,aState);
 }
 
-int
-LogProxy::SetFilename(const char* fname)
+/** Start/stop (1/0) reading from the log file. */
+int LogProxy::SetReadState(int aState)
 {
-  player_log_set_filename_t req;
+  return playerc_log_set_read_state(mDevice,aState);
+}
 
-  //req.subtype = PLAYER_LOG_SET_FILENAME;
+/** Rewind the log file.*/
+int LogProxy::Rewind()
+{
+  return playerc_log_set_read_rewind(mDevice);
+}
 
-  if(strlen(fname) > (sizeof(req.filename)-1))
-  {
-    puts("filename too long");
-    return(-1);
-  }
-  strcpy((char*)req.filename,fname);
-
-  return(client->Request(m_device_id, PLAYER_LOG_SET_FILENAME,
-                         (const char *)&req, sizeof(req)));
+/** Set the name of the logfile to write to. */
+int LogProxy::SetFilename(const std::string aFilename)
+{
+  return playerc_log_set_filename(mDevice,aFilename.c_str());
 }

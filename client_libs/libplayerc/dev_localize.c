@@ -100,20 +100,20 @@ int playerc_localize_unsubscribe(playerc_localize_t *device)
 void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header,
                               player_localize_data_t *data, size_t len)
 {
-  int i, k;
+  int i;//, k;
   
   device->pending_count = data->pending_count;
   device->pending_time = data->pending_time;
   for (i = 0; i < data->hypoths_count; i++)
   {
-    device->hypoths[i].weight = data->hypoths[i].alpha;
+    //device->hypoths[i].weight = data->hypoths[i].alpha;
 
-    device->hypoths[i].mean[0] = data->hypoths[i].mean.px;
-    device->hypoths[i].mean[1] = data->hypoths[i].mean.py;
+    device->hypoths[i] = data->hypoths[i];
+/*    device->hypoths[i].mean[1] = data->hypoths[i].mean.py;
     device->hypoths[i].mean[2] = data->hypoths[i].mean.pa;
     memset(device->hypoths[i].cov, 0, sizeof(double)*9);
     for (k = 0; k < 3; k++)
-      device->hypoths[i].cov[k][k] = data->hypoths[i].cov[k];
+      device->hypoths[i].cov[k] = data->hypoths[i].cov[k];*/
   }
   device->hypoth_count = data->hypoths_count;
 

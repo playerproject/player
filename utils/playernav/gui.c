@@ -92,9 +92,9 @@ _show_particles(GtkWidget *widget,
       if(!gui_data->localizes[i] || (gui_data->localizes[i]->hypoth_count <= 0))
         continue;
 
-      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
-      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
-      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
+      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean.px;
+      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean.py;
+      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean.pa;
 
       onmap = ((fabs(robot_pose.px) <
                 (gui_data->mapdev->width * 
