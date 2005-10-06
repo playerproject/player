@@ -708,7 +708,6 @@ class CameraProxy : public ClientProxy
 
 };
 
-#if 0 // not libplayerc yet
 
 /**
 The @p DioProxy class is used to read from a @ref player_interface_dio
@@ -741,6 +740,9 @@ class DioProxy : public ClientProxy
     /// Set the output
     void SetOutput(uint aCount, uint32_t aDigout);
 };
+
+#if 0 // not libplayerc yet
+
 
 /**
 The @p EnergyProxy class is used to read from an @ref
@@ -1745,7 +1747,7 @@ class PtzProxy : public ClientProxy
     double GetZoom() const { return(GetVar(mDevice->zoom)); };
 
 };
-#if 0
+
 /**
 The @p SimulationProxy proxy provides access to a @ref player_interface_simulation device.
 */
@@ -1773,7 +1775,7 @@ class SimulationProxy : public ClientProxy
       std::string Returns 0 on success, else a non-zero error code.  */
   void GetPose2d(char* identifier, double& x, double& y, double& a);
 };
-#endif
+
 
 /**
 The @p SonarProxy class is used to control a @ref player_interface_sonar
@@ -1801,7 +1803,7 @@ class SonarProxy : public ClientProxy
     double GetScan(uint aIndex) const { return(GetVar(mDevice->scan[aIndex])); };
     /** This operator provides an alternate way of access the scan data.
         For example, LaserProxy[0] == LaserProxy.GetRange(0) */
-    double operator [] (uint aIndex) { return GetScan(aIndex); }
+    double operator [] (uint aIndex) const { return GetScan(aIndex); }
 
     /** Number of valid sonar poses
      */
@@ -1817,7 +1819,7 @@ class SonarProxy : public ClientProxy
         data, but the ranges will always be the last value read from the sonars
         before they were disabled.
      */
-    void SetEnable(bool aEnable);
+    //void SetEnable(bool aEnable);
 
     /// Request the sonar geometry.
     void RequestGeom();
@@ -2101,7 +2103,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::BlobfinderProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
@@ -2119,13 +2121,13 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SoundProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
 }
 /** @} */

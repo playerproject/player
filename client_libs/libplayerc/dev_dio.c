@@ -51,8 +51,11 @@
 
 
 // Local declarations
-void playerc_dio_putdata(playerc_dio_t *device, player_msghdr_t *header,
-                           player_dio_data_t *data, size_t len);
+void playerc_dio_putmsg(playerc_dio_t *device,
+                           player_msghdr_t *header,
+                           player_dio_data_t *data,
+                           size_t len);
+
 
 // Create a new dio proxy
 playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index)
@@ -62,7 +65,7 @@ playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_dio_t));
   memset(device, 0, sizeof(playerc_dio_t));
   playerc_device_init(&device->info, client, PLAYER_DIO_CODE, index,
-                      (playerc_putdata_fn_t) playerc_dio_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_dio_putmsg);
     
   return device;
 }
@@ -86,15 +89,17 @@ int playerc_dio_unsubscribe(playerc_dio_t *device)
   return playerc_device_unsubscribe(&device->info);
 }
 
+
 // Process incoming data
-void playerc_dio_putdata(playerc_dio_t *device, player_msghdr_t *header,
-                           player_dio_data_t *data, size_t len)
+void playerc_dio_putmsg(playerc_dio_t *device, player_msghdr_t *header,
+                            player_dio_data_t *data, size_t len)
 {
-  assert(sizeof(*data) <= len);
-  
-  device->count = (data->count);
-  device->digin = ntohl(data->digin);
-  
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_DIO_DATA_VALUES))
+  {
+  	device->count = data->count;
+   	device->digin = data->digin; 	
+  }
 }
 
 /* Set the output for the dio device. */
@@ -108,6 +113,6 @@ int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t
 	cmd.digout = htonl(digout);
 	
 	return playerc_client_write(device->info.client, 
-		&device->info, &cmd, sizeof(cmd));
+		&device->info, PLAYER_DIO_CMD_VALUES,&cmd,sizeof(cmd));
 }
 

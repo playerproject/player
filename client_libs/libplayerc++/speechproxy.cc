@@ -46,28 +46,57 @@
  * client-side speech device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-    
-// send a speech command
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int SpeechProxy::Say(char* str)
+
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+SpeechProxy::SpeechProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(!client)
-    return(-1);
-
-  player_speech_cmd_t cmd;
-
-  memset(cmd.string,0,sizeof(cmd.string));
-  if(str)
-    strncpy((char*)(cmd.string),str,PLAYER_SPEECH_MAX_STRING_LEN);
-
-  return(client->Write(m_device_id,
-                       (const char*)&cmd,sizeof(cmd)));
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
+SpeechProxy::~SpeechProxy()
+{
+  Unsubscribe();
+}
+
+void
+SpeechProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_speech_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("SpeechProxy::SpeechProxy()", "could not create");
+
+  if (0 != playerc_speech_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("SpeechProxy::SpeechProxy()", "could not subscribe");
+}
+
+void
+SpeechProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  playerc_speech_unsubscribe(mDevice);
+  playerc_speech_destroy(mDevice);
+  mDevice = NULL;
+}
+
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::SpeechProxy &c)
+{
+  os << "#Speech (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  return os;
+}
+
+/** Send a phrase to say.
+    The phrase is an ASCII std::string.
+*/
+void SpeechProxy::Say(std::string aStr)
+{
+  playerc_speech_say(mDevice, aStr.c_str());
+}
 
