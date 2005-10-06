@@ -1095,15 +1095,15 @@ class LocalizeProxy : public ClientProxy
     uint GetHypothCount() const { return(GetVar(mDevice->hypoth_count)); };
 
     /** Array of possible poses. */
-    //player_localize_hypoth_t GetHypoth(uint aIndex) const
-    //  { return(GetVar(mDevice->hypoths[aIndex])); };
+    player_localize_hypoth_t GetHypoth(uint aIndex) const
+      { return(GetVar(mDevice->hypoths[aIndex])); };
 
     /** Set the current pose hypothesis (m, m, radians). */
-    void SetPose(double pose[3], double cov[3][3]);
+    int SetPose(double pose[3], double cov[3]);
 
     /** Get the number of particles (for particle filter-based localization
         systems).  Returns the number of particles.*/
-    uint GetNumParticles();
+    uint GetNumParticles() const { return(GetVar(mDevice->num_particles)); };
 };
 
 /**
@@ -1134,16 +1134,16 @@ class LogProxy : public ClientProxy
     int GetState() const { return(GetVar(mDevice->state)); };
 
     /** Start/stop (1/0) writing to the log file. */
-    void SetWriteState(int aState);
+    int SetWriteState(int aState);
 
     /** Start/stop (1/0) reading from the log file. */
-    void SetReadState(int aState);
+    int SetReadState(int aState);
 
     /** Rewind the log file.*/
-    void Rewind();
+    int Rewind();
 
     /** Set the name of the logfile to write to. */
-    void SetFilename(const std::string aFilename);
+    int SetFilename(const std::string aFilename);
 };
 
 /**
@@ -2089,6 +2089,7 @@ class WiFiProxy: public ClientProxy
 
 namespace std
 {
+  std::ostream& operator << (std::ostream& os, const player_pose_t& c);
   std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
 
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
@@ -2107,8 +2108,8 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::McomProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);

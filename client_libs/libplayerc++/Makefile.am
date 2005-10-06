@@ -33,7 +33,9 @@ libplayerc___la_SOURCES =     playerc++.h \
                               fiducialproxy.cc \
                               gripperproxy.cc \
                               irproxy.cc \
-                              laserproxy.cc
+                              laserproxy.cc \
+                              localizeproxy.cc \
+                              logproxy.cc
 
 # not in libplayerc yet \
                               aioproxy.cc \
@@ -46,10 +48,6 @@ libplayerc___la_SOURCES =     playerc++.h \
                               gpsproxy.cc 
 
 # not looked at yet \
-                              playerclient.cc \
-                              playerclient.h \
-                              playermulticlient.cc \
-                              positionproxy.cc \
                               ptzproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
@@ -58,7 +56,6 @@ libplayerc___la_SOURCES =     playerc++.h \
                               powerproxy.cc \
                               waveformproxy.cc \
                               mcomproxy.cc \
-                              localizeproxy.cc \
                               soundproxy.cc \
                               motorproxy.cc \
                               position2dproxy.cc \
@@ -66,8 +63,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               plannerproxy.cc \
                               mapproxy.cc \
                               speechrecognitionproxy.cc \
-                              simulationproxy.cc \
-                              logproxy.cc
+                              simulationproxy.cc
 
 libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lpthread
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la

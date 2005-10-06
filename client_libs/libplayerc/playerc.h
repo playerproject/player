@@ -1235,7 +1235,7 @@ typedef struct
 
   /** List of possible poses. */
   int hypoth_count;
-  playerc_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
+  player_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
 
   double mean[3];
   double variance;
