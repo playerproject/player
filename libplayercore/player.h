@@ -982,15 +982,10 @@ typedef struct player_fiducial_item
   /** The fiducial id.  Fiducials that cannot be identified get id
       -1. */
   int32_t id;
-  /** Fiducial position relative to the detector (x, y, z) [m]. */
-  float pos[3];
-  /** Fiducial orientation relative to the detector (r, p, y) [rad]. */
-  float rot[3];
-  /** Uncertainty in the measured pose (x, y, z) [m]. */
-  float upos[3];
-  /** Uncertainty in fiducial orientation relative to the detector
-      (r, p, y) [rad]. */
-  float urot[3];
+  /** Fiducial pose relative to the detector. */
+  player_pose3d_t pose;
+  /** Uncertainty in the measured pose . */
+  player_pose3d_t upose;
 } player_fiducial_item_t;
 
 

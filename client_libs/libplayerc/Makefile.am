@@ -28,6 +28,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_blobfinder.c \
                         dev_camera.c \
                         dev_fiducial.c \
+                        dev_gripper.c \
                         dev_ir.c \
                         dev_laser.c \
                         dev_localize.c \
@@ -50,7 +51,7 @@ libplayerc_la_SOURCES = playerc.h \
 #dev_motor.c \
 #dev_truth.c \
 #dev_dio.c \
-#dev_gripper.c
+#
 
 libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo
 if INCLUDE_JPEG
