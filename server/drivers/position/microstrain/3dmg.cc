@@ -266,23 +266,10 @@ void MicroStrain3DMG::Main()
     GetStabEuler(&ntime, e);
 
     // Construct data packet
-    data.pos[0] = 0;
-    data.pos[1] = 0;
-    data.pos[2] = 0;
-
-    data.pos[3] = e[0];
-    data.pos[4] = e[1];
-    data.pos[5] = e[2];
-
-    data.vel[0] = 0;
-    data.vel[1] = 0;
-    data.vel[2] = 0;
-
-    data.vel[3] = 0;
-    data.vel[4] = 0;
-    data.vel[5] = 0;
-      
-    data.stall = 0;
+    memset(&data,0,sizeof(data));
+    data.pos.proll = e[0];
+    data.pos.ppitch = e[1];
+    data.pos.pyaw = e[2];
       
     // Make data available
     this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,

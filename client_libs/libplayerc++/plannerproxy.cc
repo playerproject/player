@@ -19,26 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+
 
 /*
  * $Id$
@@ -46,138 +27,69 @@
  * client-side planner device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <math.h>
-#include <limits.h>
-#include <stdio.h>
+#include "playerc++.h"
 
-// Constructor
-PlannerProxy::PlannerProxy( PlayerClient *pc, unsigned short index,
-    unsigned char access )
-  : ClientProxy (pc, PLAYER_PLANNER_CODE, index, access)
+using namespace PlayerCc;
+
+PlannerProxy::PlannerProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  this->pathDone = true;
-  this->pathValid = true;
-  return;
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
 PlannerProxy::~PlannerProxy()
 {
-  return;
+  Unsubscribe();
 }
 
-
-// Set a new goal point
-int PlannerProxy::SetCmdPose( double gx, double gy, double ga)
+void
+PlannerProxy::Subscribe(uint aIndex)
 {
-  if (!client)
-    return -1;
+  mDevice = playerc_planner_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("PlannerProxy::PlannerProxy()", "could not create");
 
-
-  player_planner_cmd_t cmd;
-  memset (&cmd, 0, sizeof(cmd));
-
-  cmd.gx = (int32_t)htonl((int) (gx * 1000.0));
-  cmd.gy = (int32_t)htonl((int) (gy * 1000.0));
-  cmd.ga = (int32_t)htonl((int) (ga * 180.0 / M_PI));
-
-  return (client->Write( m_device_id, (const char*)&cmd, sizeof(cmd)));
+  if (0 != playerc_planner_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("PlannerProxy::PlannerProxy()", "could not subscribe");
 }
 
-
-// Get the list of waypoints. This write the result into the proxy rather
-// returning it to the caller.
-int PlannerProxy::GetWaypoints()
+void
+PlannerProxy::Unsubscribe()
 {
-  if (!client)
-    return (-1);
+  assert(NULL!=mDevice);
+  playerc_planner_unsubscribe(mDevice);
+  playerc_planner_destroy(mDevice);
+  mDevice = NULL;
+}
 
-  player_planner_waypoints_req_t config;
-  player_msghdr_t hdr;
-
-  memset(&config, 0, sizeof(config));
-//  config.subtype = PLAYER_PLANNER_GET_WAYPOINTS_REQ;
-
-  if (client->Request(m_device_id, PLAYER_PLANNER_GET_WAYPOINTS,(const char*)&config, 
-                        0, &hdr, (char *)&config, 
-                        sizeof(config)) < 0)
-  {
-    fprintf(stderr, "failed to get waypoints");
-    return -1;
-  }
-
-  if (hdr.size == 0)
-  {
-    fprintf(stderr, "got unexpected zero-length reply");
-    return -1;
-  }
-
-  this->waypointCount = (int)ntohs(config.count);
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
+{
+  os << "#Planner (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   
-  for (int i=0; i<this->waypointCount; i++)
-  {
-    this->waypoints[i][0] = ((int)ntohl(config.waypoints[i].x)) / 1e3;
-    this->waypoints[i][1] = ((int)ntohl(config.waypoints[i].y)) / 1e3;
-    this->waypoints[i][2] = DTOR((int)ntohl(config.waypoints[i].a));
-  }
-
-  return 0;
+  return os;
 }
 
-// Enable/disable the robot's motion.
-int PlannerProxy::Enable(int state)
+/** Set the goal pose (gx, gy, ga) */
+int PlannerProxy::SetGoalPose(double aGx, double aGy, double aGa)
 {
-  player_planner_enable_req_t config;
-
-//  config.subtype = PLAYER_PLANNER_ENABLE_REQ;
-  config.state = state;
-
-  if(client->Request(m_device_id, PLAYER_PLANNER_ENABLE, (const char*)&config, sizeof(config)) < 0)
-  {
-    fprintf(stderr, "failed to enable/disable planner\n");
-    return(-1);
-  }
-  
-  return(0);
+  return playerc_planner_set_cmd_pose(mDevice, aGx, aGy, aGa);
 }
 
-// Process incoming data
-void PlannerProxy::FillData( player_msghdr_t hdr, const char *buffer)
+/** Get the list of waypoints. Writes the result into the proxy
+    rather than returning it to the caller. */
+int PlannerProxy::RequestWaypoints()
 {
-
-  if (hdr.size != sizeof(player_planner_data_t))
-  {
-    if (player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of position data, but "
-          "received %d. Unexpected results may ensue.\n",
-          sizeof(player_planner_data_t),hdr.size);
-
-  }
-
-  player_planner_data_t *data = (player_planner_data_t*)buffer;
-
-  this->pathValid = data->valid==1;
-  this->pathDone = data->done==1;
-
-  this->px = (long) ntohl(data->px) / 1000.0;
-  this->py = (long) ntohl(data->py) / 1000.0;
-  this->pa = (long) ntohl(data->pa) * M_PI / 180.0;
-  this->pa = atan2(sin(this->pa), cos(this->pa));
-
-  this->gx = (long) ntohl(data->gx) / 1000.0;
-  this->gy = (long) ntohl(data->gy) / 1000.0;
-  this->ga = (long) ntohl(data->ga) * M_PI / 180.0;
-  this->ga = atan2(sin(this->ga), cos(this->ga));
-
-  this->wx = (long) ntohl(data->wx) / 1000.0;
-  this->wy = (long) ntohl(data->wy) / 1000.0;
-  this->wa = (long) ntohl(data->wa) * M_PI / 180.0;
-  this->wa = atan2(sin(this->wa), cos(this->wa));
-
-  this->currWaypoint = (short) ntohs(data->curr_waypoint);
-  this->waypointCount = (unsigned short)ntohs(data->waypoint_count);
-
-  return;
+  return playerc_planner_get_waypoints(mDevice);
 }
+
+/** Enable/disable the robot's motion.  Set state to true to enable, false to
+    disable. */
+int PlannerProxy::SetEnable(bool aEnable)
+{
+  return playerc_planner_enable(mDevice, aEnable);
+}
+

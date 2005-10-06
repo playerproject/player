@@ -46,370 +46,96 @@
  * client-side position2D device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <math.h>
-#include <stdio.h>
+#include "playerc++.h"
 
-// send a motor command
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
+using namespace PlayerCc;
 
-int 
-Position2DProxy::SetSpeed(double xspeed, double yspeed, double yawspeed)
+Position2dProxy::Position2dProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(!client)
-    return(-1);
-
-  player_position2d_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  cmd.xspeed   = htonl(static_cast<int32_t>(rint(xspeed*1e3)));
-  cmd.yspeed   = htonl(static_cast<int32_t>(rint(yspeed*1e3)));
-  cmd.yawspeed = htonl(static_cast<int32_t>(rint(yawspeed*1e3)));
-
-  return(client->Write(m_device_id,
-                       reinterpret_cast<const char*>(&cmd),
-                       sizeof(cmd)));
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-/* sets the desired heading to theta, with the translational
- * and rotational velocity contraints xspeed and yawspeed, respectively
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::DoDesiredHeading(double yaw, double xspeed, double yawspeed)
+Position2dProxy::~Position2dProxy()
 {
-  if (!client) {
-    return -1;
-  }
+  Unsubscribe();
+}
 
-  player_position2d_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
+void
+Position2dProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_position2d_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("Position2dProxy::Position2dProxy()", "could not create");
 
-  // the desired heading is the yaw member
-  cmd.yaw = htonl(static_cast<int32_t>(rint(yaw*1e3)));
-  
-  // set velocity constraints
-  cmd.xspeed = htonl(static_cast<int32_t>(rint(xspeed*1e3)));
-  cmd.yawspeed = htonl(static_cast<int32_t>(rint(yawspeed*1e3)));
+  if (0 != playerc_position2d_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("Position2dProxy::Position2dProxy()", "could not subscribe");
+}
 
-  return client->Write(m_device_id,
-                       reinterpret_cast<const char*>(&cmd),
-                       sizeof(cmd));
+void
+Position2dProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  playerc_position2d_unsubscribe(mDevice);
+  playerc_position2d_destroy(mDevice);
+  mDevice = NULL;
+}
+
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::Position2dProxy &c)
+{
+  os << "#Position2D (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << "#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall" << std::endl;
+  os << c.GetXpos() << " " << c.GetYpos() << " " << c.GetYaw() << " " ;
+  os << c.GetXSpeed() << " " << c.GetYSpeed() << " " << c.GetYawSpeed() << " ";
+  os << c.GetStall() << std::endl;
+  return os;
+}
+
+/** Send a motor command for velocity control mode.
+    Specify the forward, sideways, and angular speeds in m/sec, m/sec,
+    and radians/sec, respectively.
+*/
+void Position2dProxy::SetSpeed(double aXSpeed, double aYSpeed, double aYawSpeed)
+{
+  playerc_position2d_set_cmd_vel(mDevice,aXSpeed,aYSpeed,aYawSpeed,0);
 }
 
 
-/* if the robot is in position2d mode, this will make it perform
- * a straightline translation by trans mm. (negative values will be backwards)
- * undefined effect if in velocity mode
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::DoStraightLine(double m)
+/** Send a motor command for position control mode.  Specify the
+    desired pose of the robot in m, m, radians.
+*/
+void Position2dProxy::GoTo(double aX, double aY, double aYaw)
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  // we send a no movement pos command first so that
-  // the real pos command will look new.  sort of a hack FIX
-  cmd.xspeed = 0;
-  cmd.yawspeed = 0;
-  cmd.yaw = 0;
-
-  client->Write(m_device_id,
-                reinterpret_cast<const char*>(&cmd),
-                sizeof(cmd));
-
-  // now we send the real pos command
-  cmd.xspeed = htons(static_cast<int32_t>(rint(m*1e3)));
-
-  return client->Write(m_device_id,
-                       reinterpret_cast<const char*>(&cmd),
-                       sizeof(cmd));
+  playerc_position2d_set_cmd_pose(mDevice,aX,aY,aYaw,0);
 }
 
-/* if in position2d mode, this will cause a turn in place rotation of
- * rot degrees.
- * undefined effect in velocity mode
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::DoRotation(double yawspeed)
+/** Enable/disable the motors.
+    Set @p state to 0 to disable or 1 to enable.
+    Be VERY careful with this method!  Your robot is likely to run across the
+    room with the charger still attached.
+*/
+void Position2dProxy::SetMotorEnable(bool aEnable)
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  // as before, send a fake pos command first so the
-  // real one will be flagged as new
-
-  cmd.xspeed = 0;
-  cmd.yawspeed = 0;
-  cmd.yaw = 0;
-
-  client->Write(m_device_id,
-                reinterpret_cast<const char*>(&cmd),
-                sizeof(cmd));
-
-  cmd.yawspeed = htonl(static_cast<int32_t>(rint(yawspeed*1e3)));
-
-
-  return client->Write(m_device_id,
-                       reinterpret_cast<const char*>(&cmd),
-                       sizeof(cmd));
+  playerc_position2d_enable(mDevice,aEnable);
 }
 
-// enable/disable the motors
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int Position2DProxy::SetMotorState(unsigned char state)
+/** Reset odometry to (0,0,0).
+*/
+void Position2dProxy::ResetOdometry()
 {
-  if(!client)
-    return(-1);
-
-  player_position2d_power_config_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.request = PLAYER_POSITION2D_MOTOR_POWER_REQ;
-  config.value = state;
-
-
-  return(client->Request(m_device_id, PLAYER_POSITION2D_MOTOR_POWER,
-                         reinterpret_cast<const char*>(&config),
-                         sizeof(config)));
+	SetOdometry(0,0,0);
 }
 
-// select velocity control mode.  driver dependent
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int Position2DProxy::SelectVelocityControl(unsigned char mode)
+/** Sets the odometry to the pose @p (x, y, yaw).
+    Note that @p x and @p y are in m and @p yaw is in radians.
+*/
+void Position2dProxy::SetOdometry(double aX, double aY, double aYaw)
 {
-  if(!client)
-    return(-1);
-
-  player_position2d_velocitymode_config_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.request = PLAYER_POSITION2D_VELOCITY_MODE_REQ;
-  config.value = mode;
-
-  return(client->Request(m_device_id,PLAYER_POSITION2D_VELOCITY_MODE,
-                         reinterpret_cast<const char*>(&config),
-                         sizeof(config)));
+  playerc_position2d_set_odom(mDevice,aX,aY,aYaw);
 }
 
-// reset odometry to (0,0,0)
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int Position2DProxy::ResetOdometry()
-{
-  if(!client)
-    return(-1);
-
-  player_position2d_resetodom_config_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.request = PLAYER_POSITION2D_RESET_ODOM_REQ;
-
-  return(client->Request(m_device_id,PLAYER_POSITION2D_RESET_ODOM,
-                         reinterpret_cast<const char*>(&config),
-                         sizeof(config)));
-}
-
-// set odometry to (x,y,a)
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int Position2DProxy::SetOdometry( double x, double y, double yaw)
-{
-  if(!client)
-    return(-1);
-
-  player_position2d_set_odom_req_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.subtype = PLAYER_POSITION2D_SET_ODOM_REQ;
-  config.x = htonl(static_cast<int32_t>(rint(x*1e3)));
-  config.y = htonl(static_cast<int32_t>(rint(y*1e3)));
-  config.theta = htonl(static_cast<int32_t>(rint(yaw*1e3)));
-
-  return(client->Request(m_device_id,PLAYER_POSITION2D_SET_ODOM,
-                         reinterpret_cast<const char*>(&config),
-                         sizeof(config)));
-}
-
-/* select the kind of velocity control to perform
- * 1 for position2d mode
- * 0 for velocity mode
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::SelectPositionMode(unsigned char mode)
-{
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_position_mode_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-//  req.subtype = PLAYER_POSITION2D_POSITION_MODE_REQ;
-  req.state = mode;
-
-  return client->Request(m_device_id,PLAYER_POSITION2D_POSITION_MODE,
-                         reinterpret_cast<const char*>(&req),
-                         sizeof(req));
-}
-
-/* goto the specified location (m, m, radians)
- * this only works if the robot supports position2d control.
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::GoTo(double x, double y, double yaw)
-{
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  cmd.xpos = htonl(static_cast<int32_t>(rint(x*1e3)));
-  cmd.ypos = htonl(static_cast<int32_t>(rint(y*1e3)));
-  cmd.yaw  = htonl(static_cast<int32_t>(rint(yaw*1e3)));
-  cmd.state = 1;
-  cmd.type  = 1;
-
-  return(client->Write(m_device_id,
-                       reinterpret_cast<const char*>(&cmd),
-                       sizeof(cmd)));
-}
-
-/* set the PID for the speed controller
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::SetSpeedPID(double kp, double ki, double kd)
-{
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_speed_pid_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-//  req.subtype = PLAYER_POSITION2D_SPEED_PID_REQ;
-  req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
-  req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
-  req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
-
-  return client->Request(m_device_id,PLAYER_POSITION2D_SPEED_PID,
-                         reinterpret_cast<const char*>(&req),
-                         sizeof(req));
-}
-
-/* set the constants for the position PID
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::SetPositionPID(double kp, double ki, double kd)
-{
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_position_pid_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-//  req.subtype = PLAYER_POSITION2D_POSITION_PID_REQ;
-  req.kp = htonl(static_cast<int32_t>(rint(kp*1e3)));
-  req.ki = htonl(static_cast<int32_t>(rint(ki*1e3)));
-  req.kd = htonl(static_cast<int32_t>(rint(kd*1e3)));
-
-  return client->Request(m_device_id,PLAYER_POSITION2D_POSITION_PID,
-                         reinterpret_cast<const char*>(&req),
-                         sizeof(req));
-}
-
-/* set the speed profile values used during position mode
- * spd is max speed in mm/s
- * acc is acceleration to use in mm/s^2
- *
- * returns: 0 if ok, -1 else
- */
-int
-Position2DProxy::SetPositionSpeedProfile(double spd, double acc)
-{
-  if (!client) {
-    return -1;
-  }
-
-  player_position2d_speed_prof_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-//  req.subtype = PLAYER_POSITION2D_SPEED_PROF_REQ;
-  req.speed   = htonl(static_cast<int32_t>(rint(spd*1e3))); //mrad/s
-  req.acc     = htonl(static_cast<int32_t>(rint(acc*1e3))); //mrad/s/s
-
-  return client->Request(m_device_id,PLAYER_POSITION2D_SPEED_PROF,
-                         reinterpret_cast<const char*>(&req),
-                         sizeof(req));
-}
-
-void Position2DProxy::FillData(player_msghdr_t hdr, const char* buffer)
-{
-  if(hdr.size != sizeof(player_position_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of position data, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_position_data_t),hdr.size);
-  }
-  const player_position_data_t* lclBuffer =
-    reinterpret_cast<const player_position_data_t*>(buffer);
-
-  xpos     = static_cast<int32_t>(ntohl(lclBuffer->xpos))     / 1e3;
-  ypos     = static_cast<int32_t>(ntohl(lclBuffer->ypos))     / 1e3;
-  yaw      = static_cast<int32_t>(ntohl(lclBuffer->yaw))      / 1e3;
-  xspeed   = static_cast<int32_t>(ntohl(lclBuffer->xspeed))   / 1e3;
-  yspeed   = static_cast<int32_t>(ntohl(lclBuffer->yspeed))   / 1e3;
-  yawspeed = static_cast<int32_t>(ntohl(lclBuffer->yawspeed)) / 1e3;
-  stall    = lclBuffer->stall;
-}
-
-// interface that all proxies SHOULD provide
-void Position2DProxy::Print()
-{
-  printf("#Position(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
-  puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
-  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%5u\n", 
-         xpos,ypos,RTOD(yaw),xspeed,yspeed,RTOD(yawspeed),stall);
-}
 
