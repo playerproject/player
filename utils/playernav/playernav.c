@@ -166,23 +166,20 @@ player_read_func(gpointer* arg)
   for(i=0;i<gui_data->num_robots;i++)
   {
     /*
-    if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
-    {
-      robot_pose.px = gui_data->planners[i]->px;
-      robot_pose.py = gui_data->planners[i]->py;
-      robot_pose.pa = gui_data->planners[i]->pa;
-      */
     if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
     {
       robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
       robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
       robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
-      printf("robot_pose: %.3f %.3f %.3f\n", 
-             robot_pose.px,
-             robot_pose.py,
-             robot_pose.pa);
+      */
 
-#if 0
+    if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
+    {
+      robot_pose.px = gui_data->planners[i]->px;
+      robot_pose.py = gui_data->planners[i]->py;
+      robot_pose.pa = gui_data->planners[i]->pa;
+
+      /*
       // is the robot localized within the map?
       onmap = (robot_pose.px >=
                gui_data->mapdev->origin[0]) &&
@@ -198,7 +195,7 @@ player_read_func(gpointer* arg)
       // if it's off the map, put it in the middle
       if(!onmap)
         robot_pose.px = robot_pose.py = 0.0;
-#endif
+        */
 
       // don't draw the new pose if the user is in the middle of moving the
       // robot
