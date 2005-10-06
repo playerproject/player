@@ -35,7 +35,13 @@ libplayerc___la_SOURCES =     playerc++.h \
                               irproxy.cc \
                               laserproxy.cc \
                               localizeproxy.cc \
-                              logproxy.cc
+                              logproxy.cc \
+                              mapproxy.cc \
+                              plannerproxy.cc \
+                              position2dproxy.cc \
+                              position3dproxy.cc \
+                              powerproxy.cc \
+                              ptzproxy.cc
 
 # not in libplayerc yet \
                               aioproxy.cc \
@@ -45,23 +51,17 @@ libplayerc___la_SOURCES =     playerc++.h \
                               blinkenlightproxy.cc \
                               dioproxy.cc \
                               energyproxy.cc \
-                              gpsproxy.cc 
+                              gpsproxy.cc \
+                              mcomproxy.cc \
+                              motorproxy.cc
 
 # not looked at yet \
-                              ptzproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
                               truthproxy.cc \
                               wifiproxy.cc \
-                              powerproxy.cc \
                               waveformproxy.cc \
-                              mcomproxy.cc \
                               soundproxy.cc \
-                              motorproxy.cc \
-                              position2dproxy.cc \
-                              position3dproxy.cc \
-                              plannerproxy.cc \
-                              mapproxy.cc \
                               speechrecognitionproxy.cc \
                               simulationproxy.cc
 

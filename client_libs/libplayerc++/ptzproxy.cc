@@ -46,112 +46,65 @@
  * client-side ptz device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-    
-// send a camera command
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int PtzProxy::SetCam(double pan, double tilt, double zoom)
+
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+PtzProxy::PtzProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(!client)
-    return(-1);
-
-  player_ptz_cmd_t cmd;
-
-  memset(&cmd,0,sizeof(cmd));
-  cmd.pan = htons((short)rint(RTOD(pan)));
-  cmd.tilt = htons((short)rint(RTOD(tilt)));
-  cmd.zoom = htons((short)rint(RTOD(zoom)));
-
-  return(client->Write(m_device_id,
-                       (const char*)&cmd,sizeof(cmd)));
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-int PtzProxy::SetSpeed(double panspeed, double tiltspeed)
+PtzProxy::~PtzProxy()
 {
-  if(!client)
-    return(-1);
-
-  player_ptz_cmd_t cmd;
-
-  memset(&cmd,0,sizeof(cmd));
-  cmd.panspeed = htons((short)rint(RTOD(panspeed)));
-  cmd.tiltspeed = htons((short)rint(RTOD(tiltspeed)));
-
-  return(client->Write(m_device_id,
-                       (const char*)&cmd,sizeof(cmd)));
+  Unsubscribe();
 }
 
-int
-PtzProxy::SendConfig(uint8_t *bytes, size_t len, uint8_t *reply, 
-		     size_t reply_len)
+void
+PtzProxy::Subscribe(uint aIndex)
 {
-  player_ptz_generic_config_t cfg;
-  player_msghdr_t hdr;
+  mDevice = playerc_ptz_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("PtzProxy::PtzProxy()", "could not create");
 
-  if (len > PLAYER_PTZ_MAX_CONFIG_LEN) {
-    fprintf(stderr, "config too long to send!\n");
-    return -1;
-  }
-
-  //cfg.subtype = PLAYER_PTZ_GENERIC_CONFIG_REQ;
-  memcpy(&cfg.config, bytes, len);
-  cfg.length = htons((short)len);
-  
-  if (client->Request(m_device_id, PLAYER_PTZ_GENERIC_CONFIG,(const char *)&cfg,
-		      sizeof(cfg), &hdr,
-		      (char *)&cfg, sizeof(cfg)) < 0) {
-    fprintf(stderr, "PTZPROXY: error on SendConfig request\n");
-    return -1;
-  }
-  
-  memcpy(reply, &cfg.config, reply_len);
-
-  return 0;
+  if (0 != playerc_ptz_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("PtzProxy::PtzProxy()", "could not subscribe");
 }
 
-int
-PtzProxy::SelectControlMode(uint8_t mode)
+void
+PtzProxy::Unsubscribe()
 {
-  player_ptz_controlmode_config cfg;
-
-  //cfg.subtype = PLAYER_PTZ_CONTROL_MODE_REQ;
-  cfg.mode = mode;
-
-  return(client->Request(m_device_id,PLAYER_PTZ_CONTROL_MODE,(const char*)&cfg,
-                         sizeof(cfg)));
-}
-  
-
-void PtzProxy::FillData(player_msghdr_t hdr, const char* buffer)
-{
-  if(hdr.size != sizeof(player_ptz_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of ptz data, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_ptz_data_t),hdr.size);
-  }
-
-  pan = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->pan));
-  tilt = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->tilt));
-  zoom = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->zoom));
-  panspeed = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->panspeed));
-  tiltspeed = DTOR((short)ntohs(((player_ptz_data_t*)buffer)->tiltspeed));
+  assert(NULL!=mDevice);
+  playerc_ptz_unsubscribe(mDevice);
+  playerc_ptz_destroy(mDevice);
+  mDevice = NULL;
 }
 
-// interface that all proxies SHOULD provide
-void PtzProxy::Print()
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::PtzProxy &c)
 {
-  printf("#Ptz(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
-  puts("#pan\ttilt\tzoom\tpanspeed\ttiltspeed");
-  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n", pan,tilt,zoom,panspeed,tiltspeed);
+  os << "#PTZ (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << c.GetPan() << " " << c.GetTilt() << " " << c.GetZoom() << std::endl;
+  return os;
+}
+
+/** Change the camera state.
+    Specify the new @p pan, @p tilt, and @p zoom values
+    (all degrees).
+*/
+void PtzProxy::SetCam(double aPan, double aTilt, double aZoom)
+{
+  playerc_ptz_set(mDevice, aPan, aTilt, aZoom);
+}
+
+/** Specify new target velocities */
+void PtzProxy::SetSpeed(double aPanSpeed, double aTiltSpeed, double aZoomSpeed)
+{
+  playerc_ptz_set_ws(mDevice, 0, 0, 0, aPanSpeed, aTiltSpeed);
 }
 

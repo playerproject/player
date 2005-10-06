@@ -1380,15 +1380,15 @@ class PlannerProxy : public ClientProxy
     ~PlannerProxy();
 
     /** Set the goal pose (gx, gy, ga) */
-    void SetGoalPose(double aGx, double aGy, double aGa);
+    int SetGoalPose(double aGx, double aGy, double aGa);
 
     /** Get the list of waypoints. Writes the result into the proxy
         rather than returning it to the caller. */
-    void RequestWaypoints();
+    int RequestWaypoints();
 
     /** Enable/disable the robot's motion.  Set state to true to enable, false to
         disable. */
-    void SetEnable(bool aEnable);
+    int SetEnable(bool aEnable);
 
     /** Did the planner find a valid path? */
     uint GetPathValid() const { return(GetVar(mDevice->path_valid)); };
@@ -1445,23 +1445,23 @@ class Position2dProxy : public ClientProxy
     // Constructor
     Position2dProxy(PlayerClient *aPc, uint aIndex);
 
-    Position2dProxy();
+    ~Position2dProxy();
 
     /** Send a motor command for velocity control mode.
         Specify the forward, sideways, and angular speeds in m/sec, m/sec,
         and radians/sec, respectively.
     */
-    void SetSpeed(double xspeed, double yspeed, double yawspeed);
+    void SetSpeed(double aXSpeed, double aYSpeed, double aYawSpeed);
 
     /** Same as the previous SetSpeed(), but doesn't take the yspeed speed
         (so use this one for non-holonomic robots). */
-    void SetSpeed(double speed, double turnrate)
-        { return(SetSpeed(speed, 0, turnrate));}
+    void SetSpeed(double aXSpeed, double aYawSpeed)
+        { return(SetSpeed(aXSpeed, 0, aYawSpeed));}
 
     /** Send a motor command for position control mode.  Specify the
         desired pose of the robot in m, m, radians.
     */
-    void GoTo(double x, double y, double yaw);
+    void GoTo(double aX, double aY, double aYaw);
 
 
     /** Enable/disable the motors.
@@ -1480,7 +1480,7 @@ class Position2dProxy : public ClientProxy
         For the reb_position driver: 0 is direct velocity control, 1 is for
         velocity-based heading PD controller (uses DoDesiredHeading()).
     */
-    void SelectVelocityControl(unsigned char mode);
+    //void SelectVelocityControl(unsigned char mode);
 
     /** Reset odometry to (0,0,0).
     */
@@ -1489,37 +1489,37 @@ class Position2dProxy : public ClientProxy
     /** Select position mode on the reb_position driver.
         Set @p mode for 0 for velocity mode, 1 for position mode.
     */
-    void SelectPositionMode(unsigned char mode);
+    //void SelectPositionMode(unsigned char mode);
 
     /** Sets the odometry to the pose @p (x, y, yaw).
         Note that @p x and @p y are in m and @p yaw is in radians.
     */
-    void SetOdometry(double x, double y, double yaw);
+    void SetOdometry(double aX, double aY, double aYaw);
 
     /// Only supported by the reb_position driver.
-    void SetSpeedPID(double kp, double ki, double kd);
+    //void SetSpeedPID(double kp, double ki, double kd);
 
     /// Only supported by the reb_position driver.
-    void SetPositionPID(double kp, double ki, double kd);
+    //void SetPositionPID(double kp, double ki, double kd);
 
     /// Only supported by the reb_position driver.
     /// spd rad/s, acc rad/s/s
-    void SetPositionSpeedProfile(double spd, double acc);
+    //void SetPositionSpeedProfile(double spd, double acc);
 
     /// @attention Only supported by the reb_position driver.
-    void DoStraightLine(double m);
+   // void DoStraightLine(double m);
 
     /// @attention Only supported by the reb_position driver.
-    void DoRotation(double yawspeed);
+    //void DoRotation(double yawspeed);
 
     /// @attention Only supported by the reb_position driver.
-    void DoDesiredHeading(double yaw, double xspeed, double yawspeed);
+    //void DoDesiredHeading(double yaw, double xspeed, double yawspeed);
 
     /// @attention Only supported by the segwayrmp driver
-    void SetStatus(uint8_t cmd, uint16_t value);
+    //void SetStatus(uint8_t cmd, uint16_t value);
 
     /// @attention Only supported by the segwayrmp driver
-    void PlatformShutdown();
+    //void PlatformShutdown();
 
     /// Accessor method
     double  GetXpos() const { return(GetVar(mDevice->px)); };
@@ -1566,115 +1566,115 @@ class Position3dProxy : public ClientProxy
     // Constructor
     Position3dProxy(PlayerClient *aPc, uint aIndex);
 
-    Position3dProxy();
+    ~Position3dProxy();
 
     /** Send a motor command for a planar robot.
         Specify the forward, sideways, and angular speeds in m/s, m/s, m/s,
         rad/s, rad/s, and rad/s, respectively.
     */
-    void SetSpeed(double xspeed, double yspeed, double zspeed,
-          double rollspeed, double pitchspeed, double yawspeed);
+    void SetSpeed(double aXSpeed, double aYSpeed, double aZSpeed,
+          double aRollSpeed, double aPitchSpeed, double aYawSpeed);
 
     /** Send a motor command for a planar robot.
         Specify the forward, sideways, and angular speeds in m/s, m/s,
         and rad/s, respectively.
     */
-    void SetSpeed(double xspeed,double yspeed,
-          double zspeed,double yawspeed)
-      { SetSpeed(xspeed,yspeed,zspeed,0,0,yawspeed); }
+    void SetSpeed(double aXSpeed,double aYSpeed,
+          double aZSpeed,double aYawSpeed)
+      { SetSpeed(aXSpeed,aYSpeed,aZSpeed,0,0,aYawSpeed); }
 
-    void SetSpeed(double xspeed, double yspeed, double yawspeed)
-      { SetSpeed(xspeed, yspeed, 0, 0, 0, yawspeed); }
+    void SetSpeed(double aXSpeed, double aYSpeed, double aYawSpeed)
+      { SetSpeed(aXSpeed, aYSpeed, 0, 0, 0, aYawSpeed); }
 
     /** Same as the previous SetSpeed(), but doesn't take the sideways speed
         (so use this one for non-holonomic robots). */
-    void SetSpeed(double xspeed, double yawspeed)
-      { SetSpeed(xspeed,0,0,0,0,yawspeed);}
+    void SetSpeed(double aXSpeed, double aYawSpeed)
+      { SetSpeed(aXSpeed,0,0,0,0,aYawSpeed);}
 
 
     /** Send a motor command for position control mode.  Specify the
         desired pose of the robot in m, m, m, rad, rad, rad.
     */
-    void GoTo(double x, double y, double z,
-              double roll, double pitch, double yaw);
+    void GoTo(double aX, double aY, double aZ,
+              double aRoll, double aPitch, double aYaw);
 
     /** Enable/disable the motors.
         Set @p state to 0 to disable or 1 to enable.
         @attention Be VERY careful with this method!  Your robot is likely to run across the
         room with the charger still attached.
     */
-    void SetMotorEnable(bool enable);
+    void SetMotorEnable(bool aEnable);
 
     /** Select velocity control mode.
 
         This is driver dependent.
     */
-    void SelectVelocityControl(unsigned char mode);
+    //void SelectVelocityControl(unsigned char mode);
 
     /** Reset odometry to (0,0,0).
     */
-    void ResetOdometry();
+//    void ResetOdometry() {SetOdometry(0,0,0);};
 
     /** Sets the odometry to the pose @p (x, y, z, roll, pitch, yaw).
         Note that @p x, @p y, and @p z are in m and @p roll,
         @p pitch, and @p yaw are in radians.
     */
-    void SetOdometry(double x, double y, double z,
-                     double roll, double pitch, double yaw);
+//    void SetOdometry(double aX, double aY, double aZ,
+//                     double aRoll, double aPitch, double aYaw);
 
     /** Select position mode
         Set @p mode for 0 for velocity mode, 1 for position mode.
     */
-    void SelectPositionMode(unsigned char mode);
+    //void SelectPositionMode(unsigned char mode);
 
     /// @attention Only supported by the reb_position driver.
-    void SetSpeedPID(double kp, double ki, double kd);
+    //void SetSpeedPID(double kp, double ki, double kd);
 
     /// @attention Only supported by the reb_position driver.
-    void SetPositionPID(double kp, double ki, double kd);
+    //void SetPositionPID(double kp, double ki, double kd);
 
     /// Sets the ramp profile for position based control
     /// spd rad/s, acc rad/s/s
-    void SetPositionSpeedProfile(double spd, double acc);
+    //void SetPositionSpeedProfile(double spd, double acc);
 
     /// Accessor method
-    double  Xpos() const { return(GetVar(mDevice->pos_x)); };
+    double  GetXPos() const { return(GetVar(mDevice->pos_x)); };
 
     /// Accessor method
-    double  Ypos() const { return(GetVar(mDevice->pos_y)); };
+    double  GetYPos() const { return(GetVar(mDevice->pos_y)); };
 
     /// Accessor method
-    double  Zpos() const { return(GetVar(mDevice->pos_z)); };
+    double  GetZPos() const { return(GetVar(mDevice->pos_z)); };
 
     /// Accessor method
-    double  Roll() const { return(GetVar(mDevice->pos_roll)); };
+    double  GetRoll() const { return(GetVar(mDevice->pos_roll)); };
 
     /// Accessor method
-    double  Pitch() const { return(GetVar(mDevice->pos_pitch)); };
+    double  GetPitch() const { return(GetVar(mDevice->pos_pitch)); };
 
     /// Accessor method
-    double  Yaw() const { return(GetVar(mDevice->pos_yaw)); };
+    double  GetYaw() const { return(GetVar(mDevice->pos_yaw)); };
 
     /// Accessor method
-    double  XSpeed() const { return(GetVar(mDevice->vel_x)); };
+    double  GetXSpeed() const { return(GetVar(mDevice->vel_x)); };
 
     /// Accessor method
-    double  YSpeed() const { return(GetVar(mDevice->vel_y)); };
+    double  GetYSpeed() const { return(GetVar(mDevice->vel_y)); };
 
     /// Accessor method
-    double  ZSpeed() const { return(GetVar(mDevice->vel_z)); };
+    double  GetZSpeed() const { return(GetVar(mDevice->vel_z)); };
 
     /// Accessor method
-    double  RollSpeed() const { return(GetVar(mDevice->vel_roll)); };
+    double  GetRollSpeed() const { return(GetVar(mDevice->vel_roll)); };
 
     /// Accessor method
-    double  PitchSpeed() const { return(GetVar(mDevice->vel_pitch)); };
+    double  GetPitchSpeed() const { return(GetVar(mDevice->vel_pitch)); };
 
     /// Accessor method
-    double  YawSpeed() const { return(GetVar(mDevice->vel_yaw)); };
+    double  GetYawSpeed() const { return(GetVar(mDevice->vel_yaw)); };
 
     /// Accessor method
-    bool Stall () const { return(GetVar(mDevice->stall)); };
+    bool GetStall () const { return(GetVar(mDevice->stall)); };
 };
 
 /**
@@ -1736,7 +1736,7 @@ class PtzProxy : public ClientProxy
 
     /** Select new control mode.  Use either PLAYER_PTZ_POSITION_CONTROL
         or PLAYER_PTZ_VELOCITY_CONTROL. */
-    void SelectControlMode(uint aMode);
+    //void SelectControlMode(uint aMode);
 
     double GetPan() const { return(GetVar(mDevice->pan)); };
 
@@ -2110,15 +2110,15 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::McomProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SoundProxy& c);

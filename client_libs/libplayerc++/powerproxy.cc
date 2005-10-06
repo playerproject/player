@@ -42,32 +42,50 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
 
-void
-PowerProxy::FillData(player_msghdr_t hdr, const char *buffer)
+#include "playerc++.h"
+
+using namespace PlayerCc;
+
+PowerProxy::PowerProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(hdr.size != sizeof(player_power_data_t)) 
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: PowerProxy expected %d bytes of "
-              "power data, but received %d. Unexpected results may "
-              "ensue.\n",
-              sizeof(player_power_data_t),hdr.size);
-  }
-
-  charge = ntohs(((player_power_data_t *)buffer)->charge) / 1e1;
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-// interface that all proxies SHOULD provide
-void
-PowerProxy::Print()
+PowerProxy::~PowerProxy()
 {
-  printf("#Power(%d:%d) - %c\n", m_device_id.code, 
-         m_device_id.index, access);
-  printf("%.1f\n", charge);
+  Unsubscribe();
+}
+
+void
+PowerProxy::Subscribe(uint aIndex)
+{
+  mDevice = playerc_power_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("PowerProxy::PowerProxy()", "could not create");
+
+  if (0 != playerc_power_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("PowerProxy::PowerProxy()", "could not subscribe");
+}
+
+void
+PowerProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  playerc_power_unsubscribe(mDevice);
+  playerc_power_destroy(mDevice);
+  mDevice = NULL;
+}
+
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::PowerProxy &c)
+{
+  os << "#Power (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << c.GetCharge() << std::endl;
+  return os;
 }
 

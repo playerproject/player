@@ -2466,6 +2466,10 @@ The position3d interface is used to control mobile robot bases in 3D
 /** Position data subtypes. */
 #define PLAYER_POSITION3D_DATA_STATE 0x01
 
+/** Commands */
+#define  PLAYER_POSITION3D_CMD_SET_VEL      1
+#define  PLAYER_POSITION3D_CMD_SET_POS      2
+
 /* Supported config requests */
 #define PLAYER_POSITION3D_GET_GEOM          1
 #define PLAYER_POSITION3D_MOTOR_POWER       2
@@ -2484,29 +2488,36 @@ of the robot, as well as motor stall information.  */
 typedef struct player_position3d_data
 {
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
-  float pos[6];
+  player_pose3d_t pos;
   /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  float vel[6];
+  player_pose3d_t vel;
   /** Are the motors stalled? */
   uint8_t stall;
 } player_position3d_data_t;
 
-/** @brief Command
+/** @brief Command pos
 
 It accepts new positions and/or velocities for the robot's motors
 (drivers may support position control, speed control, or both).  */
-typedef struct player_position3d_cmd
+typedef struct player_position3d_cmd_pos
 {
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
-  float pos[6];
-  /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
-  float vel[6];
+  player_pose3d_t pos;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
-  /** Command type; 0 = velocity, 1 = position. */
-  uint32_t type;
-} player_position3d_cmd_t;
+} player_position3d_cmd_pos_t;
 
+/** @brief Command vel
+
+It accepts new positions and/or velocities for the robot's motors
+(drivers may support position control, speed control, or both).  */
+typedef struct player_position3d_cmd_vel
+{
+  /** (x, y, z, roll, pitch, yaw) velocity [m, m, m, rad, rad, rad] */
+  player_pose3d_t vel;
+  /** Motor state (FALSE is either off or locked, depending on the driver). */
+  uint8_t state;
+} player_position3d_cmd_vel_t;
 /** @brief Configuration request: Query geometry.
 
 To request robot geometry, set the subtype to PLAYER_POSITION_GET_GEOM_REQ
