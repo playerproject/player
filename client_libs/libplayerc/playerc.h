@@ -766,55 +766,6 @@ void playerc_camera_decompress(playerc_camera_t *device);
 void playerc_camera_save(playerc_camera_t *device, const char *filename);
 
 
-/***************************************************************************/
-/** @defgroup playerc_proxy_ir ir
-
-The ir proxy provides an interface to the ir sensors built into robots
-such as the RWI B21R.
-
-@{
-*/
-
-/** @brief Ir proxy data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  // data
-  player_ir_data_t ranges;
-
-  // config
-  player_ir_pose_t poses;
-
-} playerc_ir_t;
-
-
-/** @brief Create a ir proxy. */
-playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
-
-/** @brief Destroy a ir proxy. */
-void playerc_ir_destroy(playerc_ir_t *device);
-
-/** @brief Subscribe to the ir device. */
-int playerc_ir_subscribe(playerc_ir_t *device, int access);
-
-/** @brief Un-subscribe from the ir device. */
-int playerc_ir_unsubscribe(playerc_ir_t *device);
-
-/** @brief Get the ir geometry.
-
-This writes the result into the proxy rather than returning it to the
-caller.
-
-*/
-int playerc_ir_get_geom(playerc_ir_t *device);
-
-
-/** @} */
-/***************************************************************************/
-
-
 
 /** @} */
 /**************************************************************************/
@@ -832,30 +783,6 @@ that support the fiducial interface.
 */
 
 
-/** @brief Description for a single fiducial. */
-typedef struct
-{
-  /** Id (-1 if fiducial cannot be identified). */
-  int id;
-
-  /** @deprecated Beacon range, bearing and orientation. */
-  double range, bearing, orient;
-
-  /** Relative beacon position (x, y, z). */
-  double pos[3];
-
-  /** Relative beacon orientation (r, p, y). */
-  double rot[3];
-
-  /** Position uncertainty (x, y, z). */
-  double upos[3];
-
-  /** Orientation uncertainty (r, p, y). */
-  double urot[3];
-
-} playerc_fiducial_item_t;
-
-
 /** @brief Fiducial finder data. */
 typedef struct
 {
@@ -866,13 +793,11 @@ typedef struct
       playerc_fiducial_get_geom().  [pose] is the detector pose in the
       robot cs, [size] is the detector size, [fiducial_size] is the
       fiducial size. */
-  double pose[3];
-  double size[2];
-  double fiducial_size[2];
+  player_fiducial_geom_t fiducial_geom;
 
   /** List of detected beacons. */
-  int fiducial_count;
-  playerc_fiducial_item_t fiducials[PLAYERC_FIDUCIAL_MAX_SAMPLES];
+  int fiducials_count;
+  player_fiducial_item_t fiducials[PLAYERC_FIDUCIAL_MAX_SAMPLES];
 
 } playerc_fiducial_t;
 
@@ -966,6 +891,107 @@ int playerc_gps_unsubscribe(playerc_gps_t *device);
 /** @} */
 /**************************************************************************/
 
+#endif
+
+/***************************************************************************/
+/** @defgroup playerc_proxy_gripper gripper
+
+The gripper proxy provides an interface to the gripper
+
+@{
+*/
+
+/** @brief Gripper device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  unsigned char state;
+  unsigned char beams;
+  int outer_break_beam;
+  int inner_break_beam;
+  int paddles_open;
+  int paddles_closed;
+  int paddles_moving;
+  int gripper_error;
+  int lift_up;
+  int lift_down;
+  int lift_moving;
+  int lift_error;
+
+} playerc_gripper_t;
+
+
+/** @brief Create a gripper device proxy. */
+playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a gripper device proxy. */
+void playerc_gripper_destroy(playerc_gripper_t *device);
+
+/** @brief Subscribe to the gripper device */
+int playerc_gripper_subscribe(playerc_gripper_t *device, int access);
+
+/** @brief Un-subscribe from the gripper device */
+int playerc_gripper_unsubscribe(playerc_gripper_t *device);
+
+/** @brief Send the gripper a command */
+int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
+
+/** @} */
+/**************************************************************************/
+
+
+
+/***************************************************************************/
+/** @defgroup playerc_proxy_ir ir
+
+The ir proxy provides an interface to the ir sensors built into robots
+such as the RWI B21R.
+
+@{
+*/
+
+/** @brief Ir proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  // data
+  player_ir_data_t ranges;
+
+  // config
+  player_ir_pose_t poses;
+
+} playerc_ir_t;
+
+
+/** @brief Create a ir proxy. */
+playerc_ir_t *playerc_ir_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a ir proxy. */
+void playerc_ir_destroy(playerc_ir_t *device);
+
+/** @brief Subscribe to the ir device. */
+int playerc_ir_subscribe(playerc_ir_t *device, int access);
+
+/** @brief Un-subscribe from the ir device. */
+int playerc_ir_unsubscribe(playerc_ir_t *device);
+
+/** @brief Get the ir geometry.
+
+This writes the result into the proxy rather than returning it to the
+caller.
+
+*/
+int playerc_ir_get_geom(playerc_ir_t *device);
+
+
+/** @} */
+/***************************************************************************/
+
+#if 0
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_joystick joystick
@@ -2036,52 +2062,7 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 /***************************************************************************/
 
 
-/***************************************************************************/
-/** @defgroup playerc_proxy_gripper gripper
 
-The gripper proxy provides an interface to the gripper
-
-@{
-*/
-
-/** @brief Gripper device data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  unsigned char state;
-  unsigned char beams;
-  int outer_break_beam;
-  int inner_break_beam;
-  int paddles_open;
-  int paddles_closed;
-  int paddles_moving;
-  int gripper_error;
-  int lift_up;
-  int lift_down;
-  int lift_moving;
-  int lift_error;
-
-} playerc_gripper_t;
-
-
-/** @brief Create a gripper device proxy. */
-playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index);
-
-/** @brief Destroy a gripper device proxy. */
-void playerc_gripper_destroy(playerc_gripper_t *device);
-
-/** @brief Subscribe to the gripper device */
-int playerc_gripper_subscribe(playerc_gripper_t *device, int access);
-
-/** @brief Un-subscribe from the gripper device */
-int playerc_gripper_unsubscribe(playerc_gripper_t *device);
-
-/** @brief Send the gripper a command */
-int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
-
-/** @} */
 
 /**************************************************************************/
 /** @defgroup playerc_proxy_dio dio

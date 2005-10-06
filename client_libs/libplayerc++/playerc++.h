@@ -771,8 +771,6 @@ public:
 
 #endif
 
-#if 0 // This one just had too much to do right now ;)
-
 /**
 The @p FiducialProxy class is used to control @ref
 player_interface_fiducial devices.  The latest set of detected beacons
@@ -780,9 +778,7 @@ is stored in the @p beacons array.
 */
 class FiducialProxy : public ClientProxy
 {
-
   protected:
-
     void Subscribe(uint aIndex);
     void Unsubscribe();
 
@@ -790,110 +786,34 @@ class FiducialProxy : public ClientProxy
     playerc_fiducial_t *mDevice;
 
   public:
-
+    FiducialProxy(PlayerClient *aPc, uint aIndex);
+    ~FiducialProxy();
+    
     /** The number of beacons detected
     */
-    uint GetCount() const { return(GetVar(mDevice->count)); };
+    uint GetCount() const { return(GetVar(mDevice->fiducials_count)); };
 
-    /** The pose of the sensor [x,y,theta] in [m,m,rad]
-    */
-    double pose[3];
+	/** Get detected beacon description
+	 */
+	player_fiducial_item_t GetFiducialItem(uint aIndex) const { return GetVar(mDevice->fiducials[aIndex]);};
 
-    /** The size of the sensor [x,y] in [m,m]
+    /** The pose of the sensor 
     */
-    double size[2];
+    player_pose_t GetSensorPose() const { return GetVar(mDevice->fiducial_geom.pose);};
+
+    /** The size of the sensor 
+    */
+    player_bbox_t GetSensorSize() const { return GetVar(mDevice->fiducial_geom.size);};
 
     /** The size of the most recently detected fiducial
     */
-    double fiducial_size[2];
-
-    /** the minimum range of the sensor in meters (partially defines the FOV)
-    */
-    double min_range;
-
-    /** the maximum range of the sensor in meters (partially defines the FOV)
-    */
-    double max_range;
-
-    /** the receptive angle of the sensor in degrees (partially defines the FOV)
-    */
-    double view_angle;
-
-    /** The latest laser beacon data. */
-    FiducialItem beacons[PLAYER_FIDUCIAL_MAX_SAMPLES];
-
-    /** Constructor.  Leave the access field empty to start
-        unconnected. */
-    FiducialProxy(PlayerClient* pc, unsigned short index,
-                  unsigned char access='c') :
-      ClientProxy(pc,PLAYER_FIDUCIAL_CODE,index,access) { count=0; }
-
-    // interface that all proxies must provide
-    void FillData(player_msghdr_t hdr, const char* buffer);
-
-    /// Print out latest beacon data.
-    void Print();
-
-    /// Print the latest FOV configuration
-    int PrintFOV();
-
-    /// Print the latest geometry configuration
-    int PrintGeometry();
+    player_bbox_t GetFiducialSize() const { return GetVar(mDevice->fiducial_geom.fiducial_size);};
 
     /// Get the sensor's geometry configuration
-    int GetConfigure();
-
-    /// Get the field of view
-    int GetFOV();
-
-    /** Set the fiducial identification value displayed by this device
-        (if supported) returns the value actually used by the device,
-        which may differ from the one requested, or -1 on error. Also
-        stores the returned id in the proxy's data member 'id'.
-    */
-    int SetId( int id );
-
-    /** Get the fiducial identification value displayed by this device
-        (if supported). returns the ID or -1 on error. Also stores the
-        returned id in the proxy's data member 'id'.
-    */
-    int GetId( void );
-
-    /** Set the field of view, updating the proxy with the actual values
-        achieved. Params are: minimum range in meters, maximum range in
-        meters, view angle in radians
-    */
-
-    int SetFOV( double min_range,
-          double max_range,
-          double view_angle);
-
-    /**  Attempt to send a message to a fiducial. See the Player manual
-        for details of the message packet. Use a target_id of -1 to
-        broadcast. If consume is true, the message is sent only
-        once. If false, the message may be sent multiple times, but
-        this is device dependent. Note: these message functions use
-        configs that are probably only supported by Stage-1.4 (or
-        later) fiducial driver.
-    */
-
-    int SendMessage( player_fiducial_msg_t* msg, bool consume );
-
-    /** Read a message received by the device. If a message is available,
-      the recv_msg packet is filled in and 0 is returned.  no message can
-      be retrieved from the device, returns -1. If consume is true, the
-      message is deleted from the device on reading. If false, the
-      message is kept and can be read again. Note: these message
-      functions use configs that are probably only supported by Stage-1.4
-      (or later) fiducial driver.
-    */
-
-    int RecvMessage( player_fiducial_msg_t* msg, bool consume );
-
+    int GetGeometry();
 };
-#endif
 
-#if 0
+#if 0 // not in libplayerc yet
 /**
 The @p GpsProxy class is used to control a @ref player_interface_gps
 device.  The latest pose data is stored in three class attributes.  */
@@ -984,7 +904,7 @@ class GripperProxy : public ClientProxy
         on the command and argument.
         Returns 0 if everything's ok, and  -1 otherwise (that's bad).
     */
-    void SetGrip(uint8_t aCmd, uint8_t aArg=0);
+    int SetGrip(uint8_t aCmd, uint8_t aArg=0);
 };
 
 
@@ -1004,21 +924,12 @@ class IrProxy : public ClientProxy
     // libplayerc data structure
     playerc_ir_t *mDevice;
 
-    // Standard deviations
-    double stddev[PLAYER_IR_MAX_SAMPLES];
-
-    // Distance regression params
-    double params[PLAYER_IR_MAX_SAMPLES][2];
-
-    // Standard deviation regression params
-    double sparams[PLAYER_IR_MAX_SAMPLES][2];
-
   public:
 
     // Constructor
     IrProxy(PlayerClient *aPc, uint aIndex);
 
-    IrProxy();
+    ~IrProxy();
 
     uint GetCount() const { return(GetVar(mDevice->ranges.ranges_count)); };
     double GetRange(uint aIndex) const
@@ -1028,18 +939,10 @@ class IrProxy : public ClientProxy
 
     uint GetPoseCount() const { return(GetVar(mDevice->poses.poses_count)); };
     // still need GetPose
+    player_pose_t GetPose(uint aIndex) const {return GetVar(mDevice->poses.poses[aIndex]);};
 
-    // Enable/disable the IRs.
-    void SetEnable(bool aEnable);
-
-    // Set range parameters.
-    void SetRangeParams(int aWhich, double aM, double aB);
-
-    // Set standard deviation parameters.
-    void SetStdDevParams(int aWhich, double aM, double aB);
-
-    // Calculate standard deviations.
-    double CalcStdDev(int aW, double aRange);
+    // Request IR pose information
+    int GetGeom();
 
     /** Range access operator.
         This operator provides an alternate way of access the range data.
@@ -2186,6 +2089,8 @@ class WiFiProxy: public ClientProxy
 
 namespace std
 {
+  std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
+
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
@@ -2197,10 +2102,10 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);

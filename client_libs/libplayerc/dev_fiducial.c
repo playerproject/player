@@ -17,25 +17,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) Andrew Howard 2003
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
+
 /***************************************************************************
  * Desc: Fiducial device proxy
  * Author: Andrew Howard
@@ -68,13 +50,11 @@ playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
   playerc_device_init(&device->info, client, PLAYER_FIDUCIAL_CODE, index,
                       (playerc_putmsg_fn_t) playerc_fiducial_putmsg );
   
-  memset( device->pose, 0, sizeof(device->pose));
-  memset( device->size, 0, sizeof(device->size));
-  
+  memset( &device->fiducial_geom, 0, sizeof(device->fiducial_geom));
   // default size of detected fiducials
-  device->fiducial_size[0] = 0.1;
-  device->fiducial_size[1] = 0.01;
-
+  device->fiducial_geom.size.sl = 0.1;
+  device->fiducial_geom.size.sw = 0.01;
+  
   return device;
 }
 
@@ -112,14 +92,16 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
     {
       player_fiducial_data_t* data = (player_fiducial_data_t*)generic;
 
-      device->fiducial_count = data->fiducials_count;
+      device->fiducials_count = data->fiducials_count;
       
       int i;
-      for (i = 0; i < device->fiducial_count; i++)
+      for (i = 0; i < device->fiducials_count; i++)
 	{
 	  player_fiducial_item_t *fiducial = data->fiducials + i;
+	  
+	  device->fiducials[i] = *fiducial;
 
-	  device->fiducials[i].id = fiducial->id;
+/*	  device->fiducials[i].id = fiducial->id;
 
 	  device->fiducials[i].pos[0] = fiducial->pos[0];
 	  device->fiducials[i].pos[1] = fiducial->pos[1];
@@ -138,7 +120,7 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 	  device->fiducials[i].range = sqrt(device->fiducials[i].pos[0] * device->fiducials[i].pos[0] +
 					    device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
 	  device->fiducials[i].bearing = atan2(device->fiducials[i].pos[1], device->fiducials[i].pos[0]);
-	  device->fiducials[i].orient = device->fiducials[i].rot[2];
+	  device->fiducials[i].orient = device->fiducials[i].rot[2];*/
 	}
     }
   
@@ -189,15 +171,15 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device)
   //while(device->info.freshgeom == 0)
   // playerc_client_read(device->info.client);
 
-  device->pose[0] = config.pose.px;
-  device->pose[1] = config.pose.py;
+  device->fiducial_geom = config;
+/*  device->pose[1] = config.pose.py;
   device->pose[2] = config.pose.pa;
 
   device->size[0] = config.size.sl;
   device->size[1] = config.size.sw;
 
   device->fiducial_size[0] = config.fiducial_size.sl;
-  device->fiducial_size[1] = config.fiducial_size.sw;
+  device->fiducial_size[1] = config.fiducial_size.sw;*/
   
   return 0;
 }

@@ -22,6 +22,7 @@ libplayerc___la_LDFLAGS = -version-info 2:0:0  -rpath $(libdir)
 libplayerc___la_SOURCES =     playerc++.h \
                               playerclient.h \
                               playererror.h \
+                              playerc++.cc \
                               playerclient.cc \
                               playererror.cc \
                               clientproxy.cc \
@@ -29,6 +30,9 @@ libplayerc___la_SOURCES =     playerc++.h \
                               blobfinderproxy.cc \
                               bumperproxy.cc \
                               cameraproxy.cc \
+                              fiducialproxy.cc \
+                              gripperproxy.cc \
+                              irproxy.cc \
                               laserproxy.cc
 
 # not in libplayerc yet \
@@ -38,11 +42,10 @@ libplayerc___la_SOURCES =     playerc++.h \
                               audiomixerproxy.cc \
                               blinkenlightproxy.cc \
                               dioproxy.cc \
-                              energyproxy.cc 
+                              energyproxy.cc \
+                              gpsproxy.cc 
 
-                              #gpsproxy.cc \
-                              gripperproxy.cc \
-                              fiducialproxy.cc \
+# not looked at yet \
                               playerclient.cc \
                               playerclient.h \
                               playermulticlient.cc \
@@ -52,7 +55,6 @@ libplayerc___la_SOURCES =     playerc++.h \
                               speechproxy.cc \
                               truthproxy.cc \
                               wifiproxy.cc \
-                              irproxy.cc \
                               powerproxy.cc \
                               waveformproxy.cc \
                               mcomproxy.cc \
@@ -61,14 +63,11 @@ libplayerc___la_SOURCES =     playerc++.h \
                               motorproxy.cc \
                               position2dproxy.cc \
                               position3dproxy.cc \
-                              cameraproxy.cc \
                               plannerproxy.cc \
                               mapproxy.cc \
                               speechrecognitionproxy.cc \
                               simulationproxy.cc \
                               logproxy.cc
-                              #bpsproxy.cc
-                              #bpsproxy.h
 
 libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lpthread
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la

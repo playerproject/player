@@ -53,8 +53,9 @@
 #include "error.h"
 
 // Local declarations
-void playerc_gripper_putdata(playerc_gripper_t *device, player_msghdr_t *header,
-			     player_gripper_data_t *data, size_t len);
+void playerc_gripper_putmsg(playerc_gripper_t *device, 
+			     player_msghdr_t *header,
+			     void* generic );
 
 // Create a new gripper proxy
 playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index)
@@ -64,8 +65,7 @@ playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_gripper_t));
   memset(device, 0, sizeof(playerc_gripper_t));
   playerc_device_init(&device->info, client, PLAYER_GRIPPER_CODE, index,
-                      (playerc_putdata_fn_t) playerc_gripper_putdata, 
-                      NULL, NULL);
+                      (playerc_putmsg_fn_t) playerc_gripper_putmsg);
   return device;
 }
 
@@ -94,21 +94,29 @@ int playerc_gripper_unsubscribe(playerc_gripper_t *device)
 
 
 // Process incoming data
-void playerc_gripper_putdata(playerc_gripper_t *device, player_msghdr_t *header,
-                              player_gripper_data_t *data, size_t len)
+void playerc_gripper_putmsg(playerc_gripper_t *device, 
+			     player_msghdr_t *header,
+			     void* generic )
 {
-  device->state = data->state;
-  device->beams = data->beams;
-  device->outer_break_beam = (data->beams & 0x04) ? 1 : 0;
-  device->inner_break_beam = (data->beams & 0x08) ? 1 : 0;
-  device->paddles_open = (device->state & 0x01) ? 1 : 0;
-  device->paddles_closed = (device->state & 0x02) ? 1 : 0;
-  device->paddles_moving = (device->state & 0x04) ? 1 : 0;
-  device->gripper_error = (device->state & 0x08) ? 1 : 0;
-  device->lift_up = (device->state & 0x10) ? 1 : 0;
-  device->lift_down = (device->state & 0x20) ? 1 : 0;
-  device->lift_moving = (device->state & 0x40) ? 1 : 0;
-  device->lift_error = (device->state & 0x80) ? 1 : 0;
+  
+  if( header->type == PLAYER_MSGTYPE_DATA &&
+      header->subtype == PLAYER_GRIPPER_DATA_STATE )
+  {
+    player_gripper_data_t * data = (player_gripper_data_t * ) generic;
+
+    device->state = data->state;
+    device->beams = data->beams;
+    device->outer_break_beam = (data->beams & 0x04) ? 1 : 0;
+    device->inner_break_beam = (data->beams & 0x08) ? 1 : 0;
+    device->paddles_open = (device->state & 0x01) ? 1 : 0;
+    device->paddles_closed = (device->state & 0x02) ? 1 : 0;
+    device->paddles_moving = (device->state & 0x04) ? 1 : 0;
+    device->gripper_error = (device->state & 0x08) ? 1 : 0;
+    device->lift_up = (device->state & 0x10) ? 1 : 0;
+    device->lift_down = (device->state & 0x20) ? 1 : 0;
+    device->lift_moving = (device->state & 0x40) ? 1 : 0;
+    device->lift_error = (device->state & 0x80) ? 1 : 0;
+  }
 }
 
 // Set a cmd
@@ -121,6 +129,6 @@ int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t command, uint8_t 
   cmd.arg = arg;
 
   return playerc_client_write(device->info.client,
-                  &device->info, &cmd, sizeof(cmd));
+                  &device->info, PLAYER_GRIPPER_CMD_STATE, &cmd, sizeof(cmd));
 }
 

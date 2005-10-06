@@ -29,206 +29,59 @@
  *
  */
 
-// these are from playerc++.h
-// these define default coefficients for our
-// range and standard deviation estimates
-const double IRPROXY_DEFAULT_DIST_M_VALUE(-0.661685227)
-const double IRPROXY_DEFAULT_DIST_B_VALUE(10.477102515)
+#include "playerc++.h"
 
-const double IRPROXY_DEFAULT_STD_M_VALUE(1.913005560938)
-const double IRPROXY_DEFAULT_STD_B_VALUE(-7.728130591833)
+using namespace PlayerCc;
 
-const uint IRPROXY_M_PARAM(0)
-const uint IRPROXY_B_PARAM(1)
-
-//this is the effective range of the sensor in mm
-const uint IRPROXY_MAX_RANGE(700)
-
-#include <playerclient.h>
-#include <stdio.h>
-#include <math.h>
-#include <netinet/in.h>
-
-IRProxy::IRProxy(PlayerClient *pc, unsigned short index,
-                 unsigned char access) :
-  ClientProxy(pc, PLAYER_IR_CODE, index, access)
+IrProxy::IrProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  memset(&ir_pose, 0, sizeof(ir_pose));
-  GetIRPose();
-
-  // now set up default M & B values for the IRs
-  for (int i =0;i < PLAYER_IR_MAX_SAMPLES; i++) {
-    params[i][IRPROXY_M_PARAM] = IRPROXY_DEFAULT_DIST_M_VALUE;
-    params[i][IRPROXY_B_PARAM] = IRPROXY_DEFAULT_DIST_B_VALUE;
-
-    sparams[i][IRPROXY_M_PARAM] = IRPROXY_DEFAULT_STD_M_VALUE;
-    sparams[i][IRPROXY_B_PARAM] = IRPROXY_DEFAULT_STD_B_VALUE;
-
-    voltages[i] = 0;
-    ranges[i] = 0;
-    stddev[i] = 0.0;
-  }
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-/* enable/disable the IRs
- * 1 for enable
- * 0 for disable
- *
- * returns: 0 if ok, -1 else
- */
-int
-IRProxy::SetIRState(unsigned char state)
+IrProxy::~IrProxy()
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_ir_power_req_t req;
-
-//  req.subtype = PLAYER_IR_POWER_REQ;
-  req.state = state;
-
-  return client->Request(m_device_id,PLAYER_IR_POWER,
-       (const char *)&req, sizeof(req));
+  Unsubscribe();
 }
 
-/* this will get the poses of all the IR sensors on the robot
- * and write them to ir_pose
- *
- * returns: 0 if ok, -1 else
- */
-int
-IRProxy::GetIRPose()
-{
-  if (!client) {
-    return -1;
-  }
-
-  player_msghdr_t hdr;
-  player_ir_pose_t req;
-
-//  req.subtype = PLAYER_IR_POSE_REQ;
-
-  if ((client->Request(m_device_id, PLAYER_IR_POSE, (const char *)&req,
-           0, &hdr, (char *)&req,
-           sizeof(req)) < 0) ||
-      hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
-    return -1;
-  }
-
-   ir_pose = req;
-
-  ir_pose.pose_count = ntohs(ir_pose.pose_count);
-
-  // now change the byte ordering
-  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
-    ir_pose.poses[i][0] = ntohs(ir_pose.poses[i][0]);
-    ir_pose.poses[i][1] = ntohs(ir_pose.poses[i][1]);
-    ir_pose.poses[i][2] = ntohs(ir_pose.poses[i][2]);
-
-    //    printf("IRPROXY: IRPOSE%d: %d %d %d\n", i,
-    //     ir_pose.poses[i][0], ir_pose.poses[i][1], ir_pose.poses[i][2]);
-  }
-
-  return 0;
-}
-
-/* give the device the parameters for doing range estimation
- * we use an exponential regression by doing linear regression
- * in log space.  so we just need an m and b value for each sensor
- *
- * M is the slope of the regression line, B is the intercept
- *
- * returns:
- */
 void
-IRProxy::SetRangeParams(int which, double m, double b)
+IrProxy::Subscribe(uint aIndex)
 {
-  params[which][IRPROXY_M_PARAM] = m;
-  params[which][IRPROXY_B_PARAM] = b;
+  mDevice = playerc_ir_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("IrProxy::IrProxy()", "could not create");
+
+  if (0 != playerc_ir_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("IrProxy::IrProxy()", "could not subscribe");
 }
 
-
-/* sets the parameters (slope [m] and intercept [b]) for doing
- * a linear regression to estimate the standard deviation in the
- * distance estimate.  this is for a particular sensor which
- *
- * returns:
- */
 void
-IRProxy::SetStdDevParams(int which, double m, double b)
+IrProxy::Unsubscribe()
 {
-  sparams[which][IRPROXY_M_PARAM] = m;
-  sparams[which][IRPROXY_B_PARAM] = b;
+  assert(NULL!=mDevice);
+  playerc_ir_unsubscribe(mDevice);
+  playerc_ir_destroy(mDevice);
+  mDevice = NULL;
 }
 
-/* fill data
- *
- * returns:
- */
-void
-IRProxy::FillData(player_msghdr_t hdr, const char *buffer)
+std::ostream& std::operator << (std::ostream &os, const PlayerCc::IrProxy &c)
 {
+  os << "#IR (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  for (unsigned int i = 0; i < c.GetCount(); ++i)
+    os << i << ": " << c.GetRange(i) << " " << c.GetVoltage(i) << std::endl;
+  
+  return os;
+}
 
-  unsigned short new_range;
-
-  if (hdr.size != sizeof(player_ir_data_t)) {
-    fprintf(stderr, "REBIRPROXY: expected %d bytes but only got %d\n",
-      sizeof(player_ir_data_t), hdr.size);
-  }
-
-  for (int i =0; i < PLAYER_IR_MAX_SAMPLES; i++) {
-    new_range = ntohs(((player_ir_data_t *)buffer)->ranges[i]);
-      voltages[i] = ntohs( ((player_ir_data_t *)buffer)->voltages[i] );
-
-    // if range is 0, then this is from real IR data
-    // so we do a regression.  otherwise, its been done
-    // for us by stage
-
-    if (new_range == 0) {
-      // calc range in mm
-      new_range = (unsigned short) rint(exp( (log( (double)voltages[i] ) - params[i][IRPROXY_B_PARAM] ) /
-               params[i][IRPROXY_M_PARAM]));
-    }
-    // if the range is obviously too far, then dont do the
-    // std dev calc.  This threshold should probably be much lower.
-    if (new_range <= 8000) {
-      ranges[i] = new_range;
-      stddev[i] = CalcStdDev(i, ranges[i]);
-    } else {
-      stddev[i] = 1.0;
-    }
-  }
+int IrProxy::GetGeom()
+{
+  return playerc_ir_get_geom(mDevice);	
 }
 
 
-/* calculate the standard deviation given a distance measurement
- * for sensor w
- *
- * returns: the estimated standard deviation
- */
-double
-IRProxy::CalcStdDev(int w, unsigned  short range)
-{
-  double ret = exp( log( (double)range ) * sparams[w][IRPROXY_M_PARAM] +
-         sparams[w][IRPROXY_B_PARAM] );
-
-  return ret;
-}
-
-/* print out the good stuff
- *
- * returns:
- */
-void
-IRProxy::Print()
-{
-  printf("#IR(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
-  for (int i = 0;i < ir_pose.pose_count; i++) {
-    printf("IR%d:\tR=%d\tV=%d\tSTD=%g\n", i, ranges[i], voltages[i],
-     stddev[i]);
-  }
-}
 
 

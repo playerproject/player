@@ -132,24 +132,24 @@ void fiducial_draw(fiducial_t *fiducial)
   double ox, oy, oa;
   double wx, wy;
   char text[64];
-  playerc_fiducial_item_t *fdata;
+  player_fiducial_item_t *fdata;
 
   rtk_fig_show(fiducial->fig, 1);      
   rtk_fig_clear(fiducial->fig);
   rtk_fig_color_rgb32(fiducial->fig, COLOR_FIDUCIAL);
 
   rtk_fig_origin(fiducial->fig,
-                 fiducial->proxy->pose[0],
-                 fiducial->proxy->pose[1],
-                 fiducial->proxy->pose[2]);
+                 fiducial->proxy->fiducial_geom.pose.px,
+                 fiducial->proxy->fiducial_geom.pose.py,
+                 fiducial->proxy->fiducial_geom.pose.pa);
   rtk_fig_rectangle(fiducial->fig, 0, 0, 0,
-                    fiducial->proxy->size[0],                    
-                    fiducial->proxy->size[1], 0);
+                    fiducial->proxy->fiducial_geom.size.sw,                    
+                    fiducial->proxy->fiducial_geom.size.sl, 0);
 
-  wx = fiducial->proxy->fiducial_size[0];
-  wy = fiducial->proxy->fiducial_size[1];
+  wx = fiducial->proxy->fiducial_geom.fiducial_size.sw;
+  wy = fiducial->proxy->fiducial_geom.fiducial_size.sl;
   
-  for (i = 0; i < fiducial->proxy->fiducial_count; i++)
+  for (i = 0; i < fiducial->proxy->fiducials_count; i++)
   {
     fdata = fiducial->proxy->fiducials + i;
 
@@ -158,9 +158,9 @@ void fiducial_draw(fiducial_t *fiducial)
     oy = fdata->range * sin(fdata->bearing);
     oa = fdata->orient;
     */
-    ox = fdata->pos[0];
-    oy = fdata->pos[1];
-    oa = fdata->rot[2];
+    ox = fdata->pose.px;
+    oy = fdata->pose.py;
+    oa = fdata->pose.pyaw;
     
     rtk_fig_rectangle(fiducial->fig, ox, oy, oa, wx, wy, 0);
     rtk_fig_arrow(fiducial->fig, ox, oy, oa, 0.20, 0.10);
