@@ -22,8 +22,6 @@
 
 /*
  * $Id$
- *
- * parent class for client-side device proxies
  */
 
 #include <iostream>

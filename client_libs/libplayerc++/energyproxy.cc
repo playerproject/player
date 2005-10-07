@@ -2,7 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -21,10 +20,11 @@
  *
  */
 
-#include <playerclient.h>
-#include <string.h>
-#include <stdio.h>
+/*
+ * $Id$
+ */
 
+#include "playerc++.h"
 
 void
 EnergyProxy::FillData(player_msghdr_t hdr, const char *buffer)
@@ -36,9 +36,9 @@ EnergyProxy::FillData(player_msghdr_t hdr, const char *buffer)
               " ensue.\n",
               sizeof(player_energy_data_t), hdr.size);
   }
-  
+
   player_energy_data_t *penergy = (player_energy_data_t *)buffer;
-  
+
   this->joules = ntohl(penergy->mjoules) / 1000.0;
   this->watts = ntohl(penergy->mwatts) / 1000.0;
   this->charging = (bool)penergy->charging;
@@ -46,13 +46,13 @@ EnergyProxy::FillData(player_msghdr_t hdr, const char *buffer)
 }
 
 // interface that all proxies SHOULD provide
-void 
+void
 EnergyProxy::Print()
 {
-  printf("#Energy(%d:%d) - %c\n", m_device_id.code, 
+  printf("#Energy(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   printf( "#Joules / Watts / Charging\n%f\t%f\t%s\n",
-	  this->joules, this->watts, this->charging ? "TRUE" : "FALSE" );
+    this->joules, this->watts, this->charging ? "TRUE" : "FALSE" );
   puts(" ");
 }
 

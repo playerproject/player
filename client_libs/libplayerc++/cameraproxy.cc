@@ -22,8 +22,6 @@
 
 /*
  * $Id$
- *
- * client-side camera device
  */
 
 #if HAVE_CONFIG_H

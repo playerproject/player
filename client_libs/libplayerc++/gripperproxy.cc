@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,10 +20,9 @@
  *
  */
 
+
 /*
  * $Id$
- *
- * client-side gripper device 
  */
 
 #include "playerc++.h"
@@ -73,7 +72,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::GripperProxy &
   os << (c.GetState() ? "open" : "closed") << " ";
   os << (c.GetInnerBreakBeam() ? "broken" : "clear") << " ";
   os << (c.GetOuterBreakBeam() ? "broken" : "clear") << std::endl;
-  
+
   return os;
 }
 
@@ -83,8 +82,10 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::GripperProxy &
 // Returns:
 //   0 if everything's ok
 //   -1 otherwise (that's bad)
-int GripperProxy::SetGrip(uint8_t aCmd, uint8_t aArg)
+void GripperProxy::SetGrip(uint8_t aCmd, uint8_t aArg)
 {
-  return playerc_gripper_set_cmd(mDevice,aCmd,aArg);
+  if (0 != playerc_gripper_set_cmd(mDevice,aCmd,aArg))
+    throw PlayerError("GripperProxy::SetGrip()", "error setting grip");
+  return;
 }
 

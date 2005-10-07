@@ -2,7 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -21,7 +20,10 @@
  *
  */
 
-/* Misc componets of libplayerc++ */
+
+/*
+ * $Id$
+ */
 
 #include "playerc++.h"
 

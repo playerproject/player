@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,38 +19,23 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
 /*
  * $Id$
- *
- * reads raw sample data from a waveform interface. Supports writing
- * the wave to the DSP device - works for playing sounds captured with
- * waveaudio driver.
- *
- * TODO:
- * - configurable output device (dump to file, etc).  
  */
+
+#include "playerc++.h"
 
 #if HAVE_CONFIG_H
   #include <config.h>
 #endif
 
-#include <playerclient.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdio.h>
-#include <math.h>
-#include <unistd.h>
-
 #if HAVE_SYS_SOUNDCARD_H
   #include <sys/soundcard.h>
 #endif
 
-WaveformProxy::~WaveformProxy()   
-{ 
+WaveformProxy::~WaveformProxy()
+{
   if(this->fd > 0 ) close(this->fd);
 }
 
@@ -66,37 +51,37 @@ void WaveformProxy::FillData(player_msghdr_t hdr, const char* buffer)
 
   player_waveform_data_t* data = (player_waveform_data_t*)buffer;
 
-  printf( "rate: %d depth: %d samples: %d\n", 
-	  (unsigned int)ntohl(data->rate),
-	  (unsigned short)ntohs(data->depth),
-	  (unsigned int)ntohl(data->samples) );
-  
+  printf( "rate: %d depth: %d samples: %d\n",
+    (unsigned int)ntohl(data->rate),
+    (unsigned short)ntohs(data->depth),
+    (unsigned int)ntohl(data->samples) );
 
-  this->bitrate = 
+
+  this->bitrate =
     (unsigned int)ntohl(data->rate);
-  this->depth = 
-    (unsigned short)ntohs(data->depth); 
-  this->last_samples = 
+  this->depth =
+    (unsigned short)ntohs(data->depth);
+  this->last_samples =
     (unsigned int)ntohl(data->samples);
-  
+
   memcpy( (void*)this->buffer, data->data, this->last_samples );
 }
 
 // interface that all proxies SHOULD provide
 void WaveformProxy::Print()
 {
-  printf("#Waveform(%d:%d) - %c\n", m_device_id.code, 
+  printf("#Waveform(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
 
-  printf("Bitrate: %d bps Depth: %d bits Last samples: %d\n", 
-	 this->bitrate, this->depth, this->last_samples );
+  printf("Bitrate: %d bps Depth: %d bits Last samples: %d\n",
+   this->bitrate, this->depth, this->last_samples );
 
   /*
     for( int s=0; s< this->last_samples; s++ )
     printf( "%d ", this->buffer[s] );
     puts("");
   */
-  
+
 }
 
 // Play the waveform through the DSP
@@ -106,24 +91,24 @@ void WaveformProxy::Play()
 }
 
 
-void 
-WaveformProxy::OpenDSPforWrite() 
+void
+WaveformProxy::OpenDSPforWrite()
 {
   if (fd>0) close(fd);
-  
+
   fd = open("/dev/dsp", O_WRONLY );
   if (fd < 0) {
     perror("open of /dev/dsp failed");
     exit(1);
-  } 
+  }
 }
 
-int WaveformProxy::ConfigureDSP() 
+int WaveformProxy::ConfigureDSP()
 {
   int arg;      /* argument for ioctl calls */
   int status;   /* return status of system calls */
   int r=0;
-  
+
 #if HAVE_SYS_SOUNDCARD_H
   OpenDSPforWrite();
 
@@ -131,7 +116,7 @@ int WaveformProxy::ConfigureDSP()
   arg = this->depth;      /* sample size */
   status = ioctl(fd, SOUND_PCM_WRITE_BITS, &arg);
   if (status == -1) {
-    perror("SOUND_PCM_WRITE_BITS ioctl failed"); 
+    perror("SOUND_PCM_WRITE_BITS ioctl failed");
     r=-1;
   }
   if (arg != this->depth) {
@@ -161,7 +146,7 @@ int WaveformProxy::ConfigureDSP()
   fprintf(stderr, "no soundcard support compiled in\n");
   r=1;
 #endif
- 
+
   return r;
 }
 

@@ -2,7 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -20,6 +19,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+
+
+/*
+ * $Id$
+ */
+
 #include "playerc++.h"
 
 using namespace PlayerCc;
@@ -73,7 +78,8 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::BumperProxy &c
 bool
 BumperProxy::IsAnyBumped()
 {
-  for (unsigned int i=0; (i < GetCount())&&(i < PLAYER_BUMPER_MAX_SAMPLES); i++) {
+  for (uint i=0; (i < GetCount())&&(i < PLAYER_BUMPER_MAX_SAMPLES); ++i)
+  {
     if (IsBumped(i))
       return true;
   }
@@ -81,8 +87,10 @@ BumperProxy::IsAnyBumped()
   return false;
 }
 
-int 
+void
 BumperProxy::RequestBumperConfig()
 {
-  return playerc_bumper_get_geom(mDevice);
+  if (0 != playerc_bumper_get_geom(mDevice))
+    throw PlayerError("BumperProxy::RequestBumperConfig()", "error getting geom");
+  return;
 }

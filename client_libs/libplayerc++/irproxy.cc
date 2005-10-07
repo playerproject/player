@@ -20,13 +20,9 @@
  *
  */
 
-/* Copyright (C) 2002
- *   John Sweeney, UMASS, Amherst, Laboratory for Perceptual Robotics
- *
+
+/*
  * $Id$
- *
- * implementation of IRProxy.
- *
  */
 
 #include "playerc++.h"
@@ -73,13 +69,15 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::IrProxy &c)
   os << "#IR (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   for (unsigned int i = 0; i < c.GetCount(); ++i)
     os << i << ": " << c.GetRange(i) << " " << c.GetVoltage(i) << std::endl;
-  
+
   return os;
 }
 
-int IrProxy::GetGeom()
+void IrProxy::RequestGeom()
 {
-  return playerc_ir_get_geom(mDevice);	
+  if (0 != playerc_ir_get_geom(mDevice))
+    throw PlayerError("IrProxy::RequestGeom()", "error getting geom");
+  return;
 }
 
 

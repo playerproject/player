@@ -2,7 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -22,36 +21,17 @@
  */
 
 /*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
- *                      
+ * $Id$
  *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * client-side blobfinder device
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
+#include "playerc++.h"
 
 void
 AudioProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
-  if(hdr.size != sizeof(player_audio_data_t)) 
+  if(hdr.size != sizeof(player_audio_data_t))
   {
     if(player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: AudioProxy expected %d bytes of "
@@ -91,9 +71,9 @@ AudioProxy::PlayTone(unsigned short freq,
 void
 AudioProxy::Print()
 {
-  printf("#Audio(%d:%d) - %c\n", m_device_id.code, 
+  printf("#Audio(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
-  printf("(%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u)\n", 
+  printf("(%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u)\n",
          frequency0,amplitude0,
          frequency1,amplitude1,
          frequency2,amplitude2,

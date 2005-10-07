@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,41 +19,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 
 /*
  * $Id$
- * 
- * client-side motor device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <math.h>
-#include <stdio.h>
-
-#define PTOHL(x) static_cast<int32_t>(ntohl(x))/1e3
-#define HTOPL(x) htonl(static_cast<int32_t>(rint(x*1e3)))
+#include "playerc++.h"
 
 // send a motor command
 //
@@ -152,7 +123,7 @@ int MotorProxy::SetOdometry( double theta)
   memset( &config, 0, sizeof(config) );
 
   config.theta   = HTOPL(theta);
-  
+
   return(client->Request(m_device_id,PLAYER_MOTOR_SET_ODOM,reinterpret_cast<char*>(&config),
                          sizeof(config)));
 }
@@ -190,7 +161,7 @@ MotorProxy::GoTo(double angle)
 {
   if (!client) {
     return -1;
-  }  
+  }
 
   player_motor_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
@@ -263,7 +234,7 @@ MotorProxy::SetPositionSpeedProfile(double spd, double acc)
   player_motor_speed_prof_req_t req;
   memset( &req, 0, sizeof(req) );
 
-  req.speed   = HTOPL(spd);  
+  req.speed   = HTOPL(spd);
   req.acc     = HTOPL(acc);
 
   return client->Request(m_device_id, PLAYER_MOTOR_SPEED_PROF,
@@ -292,7 +263,7 @@ void MotorProxy::Print()
   printf("#Motor(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   printf("#\ttheta\tthetaspeed\tstall\n");
-  printf("%.3f\t%.3f\t%i\t\n", 
+  printf("%.3f\t%.3f\t%i\t\n",
          theta, thetaspeed, stall);
 }
 

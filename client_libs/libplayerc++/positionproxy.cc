@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,39 +19,13 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
 
 /*
  * $Id$
- *
- * client-side position device 
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-    
+#include "playerc++.h"
+
 // send a motor command
 //
 // Returns:
@@ -91,16 +65,16 @@ PositionProxy::DoDesiredHeading(int theta, int xspeed, int yawspeed)
 
   // the desired heading is the yaw member
   cmd.yaw = htonl(theta);
-  
+
   // set velocity constraints
   cmd.xspeed = htonl(xspeed);
   cmd.yawspeed = htonl(yawspeed);
   cmd.state = 1;
 
   return client->Write(m_device_id,
-		       (const char *)&cmd, sizeof(cmd));
+           (const char *)&cmd, sizeof(cmd));
 }
-  
+
 
 /* if the robot is in position mode, this will make it perform
  * a straightline translation by trans mm. (negative values will be backwards)
@@ -118,7 +92,7 @@ PositionProxy::DoStraightLine(int trans)
   player_position_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
 
-  // we send a no movement pos command first so that 
+  // we send a no movement pos command first so that
   // the real pos command will look new.  sort of a hack FIX
   cmd.xspeed = 0;
   cmd.yawspeed = 0;
@@ -126,7 +100,7 @@ PositionProxy::DoStraightLine(int trans)
   cmd.state = 1;
 
   client->Write(m_device_id,
-		(const char *)&cmd, sizeof(cmd));
+    (const char *)&cmd, sizeof(cmd));
 
   // now we send the real pos command
 
@@ -134,11 +108,11 @@ PositionProxy::DoStraightLine(int trans)
   cmd.xspeed = htons(t);
 
   return client->Write(m_device_id,
-			 (const char *)&cmd, sizeof(cmd));
+       (const char *)&cmd, sizeof(cmd));
 }
 
 /* if in position mode, this will cause a turn in place rotation of
- * rot degrees.  
+ * rot degrees.
  * undefined effect in velocity mode
  *
  * returns: 0 if ok, -1 else
@@ -162,13 +136,13 @@ PositionProxy::DoRotation(int rot)
   cmd.state = 1;
 
   client->Write(m_device_id,
-		(const char *)&cmd, sizeof(cmd));
+    (const char *)&cmd, sizeof(cmd));
 
   short r = (short) rot;
   cmd.yawspeed = htons(r);
 
   return client->Write(m_device_id,
-			 (const char *)&cmd, sizeof(cmd));
+       (const char *)&cmd, sizeof(cmd));
 }
 
 // enable/disable the motors
@@ -251,7 +225,7 @@ int PositionProxy::SetOdometry( double x, double y, double theta)
   config.y = (int32_t)htonl((int)rint(y*1e3));
   config.theta = (int32_t)htonl((int)rint(RTOD(theta)));
   //printf("theta: %d\n", (int)ntohl(config.theta));
-  
+
   return(client->Request(m_device_id,PLAYER_POSITION_SET_ODOM,(const char*)&config,
                          sizeof(config)));
 }
@@ -276,7 +250,7 @@ PositionProxy::SelectPositionMode(unsigned char mode)
   req.state = mode;
 
   return client->Request(m_device_id,PLAYER_POSITION_POSITION_MODE,
-			 (const char *)&req, sizeof(req));
+       (const char *)&req, sizeof(req));
 }
 
 /* goto the specified location (m, m, radians)
@@ -289,7 +263,7 @@ PositionProxy::GoTo(double x, double y, double t)
 {
   if (!client) {
     return -1;
-  }  
+  }
 
   player_position_cmd_t cmd;
   memset( &cmd, 0, sizeof(cmd) );
@@ -324,7 +298,7 @@ PositionProxy::SetSpeedPID(int kp, int ki, int kd)
   req.kd = htonl((unsigned int)kd);
 
   return client->Request(m_device_id,PLAYER_POSITION_SPEED_PID,
-			 (const char *)&req, sizeof(req));
+       (const char *)&req, sizeof(req));
 }
 
 /* set the constants for the position PID
@@ -347,7 +321,7 @@ PositionProxy::SetPositionPID(short kp, short ki, short kd)
   req.kd = htonl(kd);
 
   return client->Request(m_device_id,PLAYER_POSITION_POSITION_PID,
-			 (const char *)&req, sizeof(req));
+       (const char *)&req, sizeof(req));
 }
 
 /* set the speed profile values used during position mode
@@ -371,7 +345,7 @@ PositionProxy::SetPositionSpeedProfile(short spd, short acc)
   req.acc = htons(acc);
 
   return client->Request(m_device_id,PLAYER_POSITION_SPEED_PROF,
-			 (const char *)&req, sizeof(req));
+       (const char *)&req, sizeof(req));
 }
 
 /* For the segwayrmp driver, this allows us to send status commands
@@ -405,7 +379,7 @@ PositionProxy::SetStatus(uint8_t cmd, uint16_t value)
   rmp_cfg.value = htons(value);
 
   return client->Request(m_device_id,cmd,
-			 (const char *)&rmp_cfg, sizeof(rmp_cfg));
+       (const char *)&rmp_cfg, sizeof(rmp_cfg));
 }
 
 int
@@ -419,7 +393,7 @@ PositionProxy::PlatformShutdown()
   //rmp.subtype = PLAYER_POSITION_RMP_SHUTDOWN;
 
   return client->Request(m_device_id,PLAYER_POSITION_RMP_SHUTDOWN,
-			 (const char *)&rmp, sizeof(rmp));
+       (const char *)&rmp, sizeof(rmp));
 }
 
 int
@@ -433,7 +407,7 @@ PositionProxy::GetGeometry()
   //if(client->Request(m_device_id, (const char*)&config, sizeof(config.subtype),
                      //&hdr, (char*)&config, sizeof(config)) < 0)
   // Is this right?
-  if(client->Request(m_device_id, PLAYER_POSITION_GET_GEOM, 
+  if(client->Request(m_device_id, PLAYER_POSITION_GET_GEOM,
                      (const char*)NULL, (size_t)0,
                      &hdr, (char*)&config, sizeof(config)) < 0)
     return(-1);
@@ -472,7 +446,7 @@ void PositionProxy::Print()
   printf("#Position(%d:%d) - %c\n", m_device_id.code,
          m_device_id.index, access);
   puts("#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall");
-  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%5u\n", 
+  printf("%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%5u\n",
          xpos,ypos,RTOD(theta),speed,sidespeed,RTOD(turnrate),stall);
 }
 

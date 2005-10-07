@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,10 +20,9 @@
  *
  */
 
+
 /*
  * $Id$
- *
- * client-side beacon device 
  */
 
 #include "playerc++.h"
@@ -73,8 +72,8 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::FiducialProxy 
   os << c.GetCount() << std::endl;
   for (unsigned int i=0;i < c.GetCount();i++)
   {
-  	player_fiducial_item_t item = c.GetFiducialItem(i);
-    os << "  " << i << " - " << item.id << ": " << 
+    player_fiducial_item_t item = c.GetFiducialItem(i);
+    os << "  " << i << " - " << item.id << ": " <<
       item.pose << " " << item.upose << std::endl;
   }
   return os;
@@ -82,8 +81,11 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::FiducialProxy 
 
 // Get the fiducial geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int FiducialProxy::GetGeometry()
+void
+FiducialProxy::RequestGeometry()
 {
-  playerc_fiducial_get_geom(mDevice);
+  if (0 != playerc_fiducial_get_geom(mDevice))
+    throw PlayerError("FiducialProxy::RequestGeometry()", "error getting geom");
+  return;
 }
 

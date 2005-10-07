@@ -55,7 +55,9 @@ class PlayerError
 
 }
 
-// this needs to stay out of the namespace, doesn't it?
+namespace std
+{
 std::ostream& operator << (std::ostream& os, const PlayerCc::PlayerError& e);
+}
 
 #endif

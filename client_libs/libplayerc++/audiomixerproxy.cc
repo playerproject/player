@@ -1,8 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2002
+ *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -21,10 +20,13 @@
  *
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
+/*
+ * $Id$
+ *
+ * client-side blobfinder device
+ */
+
+#include "playerc++.h"
 
 int AudioMixerProxy::GetConfigure()
 {
@@ -58,7 +60,7 @@ int AudioMixerProxy::GetConfigure()
 
 void AudioMixerProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
-  if(hdr.size != sizeof(player_audiodsp_data_t)) 
+  if(hdr.size != sizeof(player_audiodsp_data_t))
   {
     if(player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: AudioProxy expected %d bytes of "
@@ -139,7 +141,7 @@ int AudioMixerProxy::SetOGain(unsigned short gain)
 // interface that all proxies SHOULD provide
 void AudioMixerProxy::Print()
 {
-  printf("#Mixer(%d:%d) - %c\n", m_device_id.code, m_device_id.index, 
+  printf("#Mixer(%d:%d) - %c\n", m_device_id.code, m_device_id.index,
       access);
 
   printf("Master\t PCM\t Line\tMic\tIGain\tOGain\n");

@@ -3,6 +3,7 @@
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
  *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -16,37 +17,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
+
 /*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003
- *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- *
- *  This library is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU Lesser General Public
- *  License as published by the Free Software Foundation; either
- *  version 2.1 of the License, or (at your option) any later version.
- *
- *  This library is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *  Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public
- *  License along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * $Id$
  */
 
-/* $Id$
- *
- *  MComProxy class by Matt Brewer at UMass Amherst 2002
- *  added to 1.3 by reed
- */
+#include "playerc++.h"
 
-#include <stdio.h>
-#include <playerclient.h>
-    
 int MComProxy::Push(int type, char * channelQ,char* dat){
   if(!client)
     return(-1);
@@ -66,7 +45,7 @@ int MComProxy::Push(int type, char * channelQ,char* dat){
 
 int MComProxy::Read(int type, char * channelQ){
     player_msghdr_t hdr;
-    if(!client) 
+    if(!client)
         return(-1);
     player_mcom_config_t cfg;
 //    cfg.command = PLAYER_MCOM_READ_REQ;
@@ -74,7 +53,7 @@ int MComProxy::Read(int type, char * channelQ){
     strcpy(cfg.channel,channelQ);
     player_mcom_return_t reply;
     int r = client->Request(m_device_id, PLAYER_MCOM_READ,
-            (const char*)&cfg, sizeof(cfg), &hdr, 
+            (const char*)&cfg, sizeof(cfg), &hdr,
             (char*)&reply, sizeof(reply));
     if(r < 0)
         return r;
@@ -101,10 +80,10 @@ int MComProxy::Pop(int type, char* channelQ){
   strcpy(cfg.channel,channelQ);
   player_mcom_return_t reply;
   int r = client->Request(m_device_id, PLAYER_MCOM_POP,
-		      (const char*)&cfg, sizeof(cfg), &hdr , 
+          (const char*)&cfg, sizeof(cfg), &hdr ,
               (char*)&reply, sizeof(reply));
   if(r < 0)
-    return r; 
+    return r;
   if(hdr.type != PLAYER_MSGTYPE_RESP_ACK) {
     memset(&data, 0, sizeof(data));
     type = 0;
@@ -120,17 +99,17 @@ int MComProxy::Pop(int type, char* channelQ){
 int MComProxy::Clear(int type, char * channelQ){
   if(!client)
     return(-1);
-  
+
   player_mcom_config_t cfg;
 //  cfg.command = PLAYER_MCOM_CLEAR_REQ;
   cfg.type=htons(type);
   strcpy(cfg.channel,channelQ);
-  return client->Request(m_device_id, PLAYER_MCOM_CLEAR, 
-			 (const char*)&cfg,sizeof(cfg));
+  return client->Request(m_device_id, PLAYER_MCOM_CLEAR,
+       (const char*)&cfg,sizeof(cfg));
 }
 
 int
-MComProxy::SetCapacity(int type, char *channel, unsigned char cap) 
+MComProxy::SetCapacity(int type, char *channel, unsigned char cap)
 {
   if (!client) {
     return -1;
