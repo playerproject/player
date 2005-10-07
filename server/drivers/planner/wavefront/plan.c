@@ -161,7 +161,7 @@ plan_set_bbox(plan_t* plan, double padding, double min_size,
 
   // Make sure the min_size is achievable
   gmin_size = (int)ceil(min_size / plan->scale);
-  gmin_size = MIN(gmin_size, MIN(plan->size_x, plan->size_y));
+  gmin_size = MIN(gmin_size, MIN(plan->size_x-1, plan->size_y-1));
 
   // Add padding
   gpadding = (int)ceil(padding / plan->scale);
@@ -179,8 +179,8 @@ plan_set_bbox(plan_t* plan, double padding, double min_size,
   while(sx < gmin_size)
   {
     dx = gmin_size - sx;
-    min_x -= dx / 2;
-    max_x += dx / 2;
+    min_x -= (int)ceil(dx / 2.0);
+    max_x += (int)ceil(dx / 2.0);
 
     min_x = MAX(min_x, 0);
     max_x = MIN(max_x, plan->size_x-1);
@@ -191,8 +191,8 @@ plan_set_bbox(plan_t* plan, double padding, double min_size,
   while(sy < gmin_size)
   {
     dy = gmin_size - sy;
-    min_y -= dy / 2;
-    max_y += dy / 2;
+    min_y -= (int)ceil(dy / 2.0);
+    max_y += (int)ceil(dy / 2.0);
 
     min_y = MAX(min_y, 0);
     max_y = MIN(max_y, plan->size_y-1);
