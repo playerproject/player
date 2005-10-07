@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 
 /*
  * $Id$
- *
- * client-side localization device 
  */
 
 #include "playerc++.h"
@@ -73,13 +71,16 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy 
   {
     os << i << " (weight " << c.GetHypoth(i).alpha << "): ";
     os << "[" << c.GetHypoth(i).mean << "]" << std::endl;
-  }  
+  }
   return os;
 }
 
-int LocalizeProxy::SetPose(double pose[3], double cov[3])
+void
+LocalizeProxy::SetPose(double pose[3], double cov[3])
 {
-  return playerc_localize_set_pose(mDevice, pose, cov);
+  if (0 != playerc_localize_set_pose(mDevice, pose, cov))
+    throw PlayerError("LocalizeProxy::SetPose()", "error setting pose");
+  return;
 }
 
 

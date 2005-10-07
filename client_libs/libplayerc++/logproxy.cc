@@ -1,8 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2005-
- *     Brian Gerkey
- *                      
+ *  Copyright (C) 2000-2003
+ *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -19,10 +20,9 @@
  *
  */
 
+
 /*
  * $Id$
- *
- * client-side log device
  */
 
 #include "playerc++.h"
@@ -64,34 +64,41 @@ LogProxy::Unsubscribe()
   mDevice = NULL;
 }
 
+void
+LogProxy::SetWriteState(int aState)
+{
+  if (0 != playerc_log_set_write_state(mDevice,aState))
+    throw PlayerError("LogProxy::SetWriteState()", "error setting write");
+  return;
+}
+
+void
+LogProxy::SetReadState(int aState)
+{
+  if (0 != playerc_log_set_read_state(mDevice,aState))
+    throw PlayerError("LogProxy::SetReadState()", "error setting read");
+  return;
+}
+
+void
+LogProxy::Rewind()
+{
+  if (0 != playerc_log_set_read_rewind(mDevice))
+    throw PlayerError("LogProxy::Rewind()", "error rewinding");
+  return;
+}
+
+void
+LogProxy::SetFilename(const std::string aFilename)
+{
+  if (0 != playerc_log_set_filename(mDevice,aFilename.c_str()))
+    throw PlayerError("LogProxy::SetFilename()", "error setting filename");
+  return;
+}
+
 std::ostream& std::operator << (std::ostream &os, const PlayerCc::LogProxy &c)
 {
   os << "#Log (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  
+
   return os;
-}
-
-
-/** Start/stop (1/0) writing to the log file. */
-int LogProxy::SetWriteState(int aState)
-{
-  return playerc_log_set_write_state(mDevice,aState);
-}
-
-/** Start/stop (1/0) reading from the log file. */
-int LogProxy::SetReadState(int aState)
-{
-  return playerc_log_set_read_state(mDevice,aState);
-}
-
-/** Rewind the log file.*/
-int LogProxy::Rewind()
-{
-  return playerc_log_set_read_rewind(mDevice);
-}
-
-/** Set the name of the logfile to write to. */
-int LogProxy::SetFilename(const std::string aFilename)
-{
-  return playerc_log_set_filename(mDevice,aFilename.c_str());
 }

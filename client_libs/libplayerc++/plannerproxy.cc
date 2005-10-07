@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@
 
 /*
  * $Id$
- *
- * client-side planner device 
  */
 
 #include "playerc++.h"
@@ -69,27 +67,33 @@ PlannerProxy::Unsubscribe()
 std::ostream& std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
 {
   os << "#Planner (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  
+
   return os;
 }
 
-/** Set the goal pose (gx, gy, ga) */
-int PlannerProxy::SetGoalPose(double aGx, double aGy, double aGa)
+void
+PlannerProxy::SetGoalPose(double aGx, double aGy, double aGa)
 {
-  return playerc_planner_set_cmd_pose(mDevice, aGx, aGy, aGa);
+  if (0 != playerc_planner_set_cmd_pose(mDevice, aGx, aGy, aGa))
+    throw PlayerError("PlannerProxy::SetGoalPose()", "error setting goal");
+  return;
 }
 
-/** Get the list of waypoints. Writes the result into the proxy
-    rather than returning it to the caller. */
-int PlannerProxy::RequestWaypoints()
+void
+PlannerProxy::RequestWaypoints()
 {
-  return playerc_planner_get_waypoints(mDevice);
+  if (0 != playerc_planner_get_waypoints(mDevice))
+    throw PlayerError("PlannerProxy::RequestWaypoints()",
+                      "error requesting waypoint");
+  return;
 }
 
-/** Enable/disable the robot's motion.  Set state to true to enable, false to
-    disable. */
-int PlannerProxy::SetEnable(bool aEnable)
+
+void
+PlannerProxy::SetEnable(bool aEnable)
 {
-  return playerc_planner_enable(mDevice, aEnable);
+  if (0 != playerc_planner_enable(mDevice, aEnable))
+    throw PlayerError("PlannerProxy::SetEnable()", "error setting enable");
+  return;
 }
 

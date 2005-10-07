@@ -22,16 +22,13 @@
 
 /*
  * $Id$
- *
- * client-side laser device
  */
 
 #include "playerc++.h"
-#include <netinet/in.h>
-#include <string.h>
-#include <stdio.h>
-#include <math.h>
-#include <limits.h>
+#include <cstring>
+#include <cstdio>
+#include <cmath>
+#include <climits>
 
 using namespace PlayerCc;
 
@@ -71,32 +68,31 @@ LaserProxy::Unsubscribe()
   mDevice = NULL;
 }
 
-void LaserProxy::Configure(double min_angle,
-                           double max_angle,
-                           uint scan_res,
-                           uint range_res,
-                           bool intensity)
+void
+LaserProxy::Configure(double min_angle,
+                      double max_angle,
+                      uint scan_res,
+                      uint range_res,
+                      bool intensity)
 {
   Lock();
-  playerc_laser_set_config(mDevice,min_angle,max_angle,
-                           scan_res,range_res,intensity?1:0);
+  if (0 != playerc_laser_set_config(mDevice, min_angle, max_angle,
+                                    scan_res, range_res, intensity?1:0))
+    throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
   Unlock();
 }
 
-
-/** Get the current laser configuration; it is read into the
-  relevant class attributes.\\
-  Returns the 0 on success, or -1 of there is a problem.
- */
-int LaserProxy::RequestConfigure()
+void
+LaserProxy::RequestConfigure()
 {
   Lock();
   unsigned char temp_int;
-  int ret = playerc_laser_get_config(mDevice,&min_angle, &max_angle,
-                                     &scan_res, &range_res, &temp_int);
+  if (0 != playerc_laser_get_config(mDevice, &min_angle, &max_angle,
+                                     &scan_res, &range_res, &temp_int))
+    throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
   Unlock();
   intensity = temp_int == 0 ? false : true;
-  return ret;
+  return;
 }
 
 std::ostream& std::operator << (std::ostream &os, const PlayerCc::LaserProxy &c)

@@ -45,9 +45,10 @@ PlayerError::~PlayerError()
 
 }
 
-std::ostream& operator << (std::ostream& os, const PlayerError& e)
+std::ostream& std::operator << (std::ostream& os, const PlayerError& e)
 {
   return os << e.GetErrorFun()
+            << "(" << e.GetErrorCode() << ")"
             << " : "
             << e.GetErrorStr();
 }

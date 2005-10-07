@@ -1,8 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2002
+ *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -21,12 +20,16 @@
  *
  */
 
-#include <playerclient.h>
-#include <netinet/in.h>
-#include <string.h>
+
+/*
+ * $Id$
+ */
+
+
+#include <cstring>
 #include <stdio.h>
 
-int AudioDSPProxy::Configure( uint8_t _channels, uint16_t _sampleRate, 
+int AudioDSPProxy::Configure( uint8_t _channels, uint16_t _sampleRate,
     int16_t _sampleFormat)
 {
   if(!client)
@@ -69,7 +72,7 @@ int AudioDSPProxy::GetConfigure()
 
 void AudioDSPProxy::FillData(player_msghdr_t hdr, const char *buffer)
 {
-  if(hdr.size != sizeof(player_audiodsp_data_t)) 
+  if(hdr.size != sizeof(player_audiodsp_data_t))
   {
     if(player_debug_level(-1) >= 1)
       fprintf(stderr,"WARNING: AudioProxy expected %d bytes of "
@@ -84,7 +87,7 @@ void AudioDSPProxy::FillData(player_msghdr_t hdr, const char *buffer)
     freq[i]=ntohs(((player_audiodsp_data_t*)buffer)->freq[i]);
     amp[i]=ntohs(((player_audiodsp_data_t*)buffer)->amp[i]);
   }
- 
+
 }
 
 int AudioDSPProxy::PlayTone(unsigned short freq, unsigned short amp,
@@ -100,8 +103,8 @@ int AudioDSPProxy::PlayTone(unsigned short freq, unsigned short amp,
   return( client->Request(m_device_id, PLAYER_AUDIODSP_PLAY_TONE, (const char*)&cmd, sizeof(cmd)) );
 }
 
-int AudioDSPProxy::PlayChirp(unsigned short freq, unsigned short amp, 
-    unsigned int dur, const unsigned char bitString[], 
+int AudioDSPProxy::PlayChirp(unsigned short freq, unsigned short amp,
+    unsigned int dur, const unsigned char bitString[],
     unsigned short bitStringLen)
 {
   player_audiodsp_cmd_t cmd;
@@ -128,7 +131,7 @@ int AudioDSPProxy::Replay()
 // interface that all proxies SHOULD provide
 void AudioDSPProxy::Print()
 {
-  printf("#Acoustics(%d:%d) - %c\n", m_device_id.code, m_device_id.index, 
+  printf("#Acoustics(%d:%d) - %c\n", m_device_id.code, m_device_id.index,
       access);
 
   printf("\tSample Rate:%d\n",sampleRate);
@@ -141,6 +144,6 @@ void AudioDSPProxy::Print()
     printf("(%6u,%6u) ",freq[i],amp[i]);
   }
   printf("\n");
- 
+
 }
 

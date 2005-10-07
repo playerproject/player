@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,10 +20,9 @@
  *
  */
 
+
 /*
  * $Id$
- *
- * client-side map device 
  */
 
 #include "playerc++.h"
@@ -68,12 +67,14 @@ MapProxy::Unsubscribe()
 std::ostream& std::operator << (std::ostream &os, const PlayerCc::MapProxy &c)
 {
   os << "#Map (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  
+
   return os;
 }
 
-/** Get the map and store it in the proxy */
-int MapProxy::RequestMap()
+void
+MapProxy::RequestMap()
 {
-  return playerc_map_get_map(mDevice);
+  if (0 != playerc_map_get_map(mDevice))
+    throw PlayerError("MapProxy::RequestMap()", "error requesting map");
+  return;
 }

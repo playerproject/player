@@ -2,7 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2000-2003
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *     Nik Melchior
  *
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -21,7 +20,11 @@
  *
  */
 
-/* AIOProxy client library.  Based loosly on the DIO Proxy */
+
+/*
+ * $Id$
+ */
+
 
 #include "playerc++.h"
 
@@ -70,7 +73,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::AIOProxy &c)
   os << c.GetCount() << std::endl;
   if (c.GetCount()<0)
   {
-	os << "WARNING: AIOProxy received a negative count value.\n" << std::endl;
+  os << "WARNING: AIOProxy received a negative count value.\n" << std::endl;
   }
   else
   {
