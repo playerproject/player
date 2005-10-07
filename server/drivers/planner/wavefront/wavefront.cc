@@ -263,7 +263,7 @@ class Wavefront : public Driver
     // current odom pose
     double position_x, position_y, position_a;
     // current list of waypoints
-    plan_cell_t *waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
+    double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][2];
     int waypoint_count;
     // current localize pose
     double localize_x, localize_y, localize_a;
@@ -283,12 +283,15 @@ class Wavefront : public Driver
     bool have_map;
     // Has the map changed since last time we planned?
     bool new_map;
+    // Is there a new map available (which we haven't retrieved yet)?
+    bool new_map_available;
 
     // methods for internal use
     int SetupLocalize();
     int SetupPosition();
     int SetupMap();
     int GetMap(bool threaded);
+    int GetMapInfo(bool threaded);
     int ShutdownPosition();
     int ShutdownLocalize();
     int ShutdownMap();
@@ -380,6 +383,7 @@ Wavefront::Setup()
 {
   this->have_map = false;
   this->new_map = false;
+  this->new_map_available = false;
   this->stopped = true;
   this->atgoal = true;
   this->enable = true;
@@ -392,7 +396,6 @@ Wavefront::Setup()
 
   this->new_goal = false;
 
-  memset(this->waypoints,0,sizeof(this->waypoints));
   this->waypoint_count = 0;
 
   if(SetupPosition() < 0)
@@ -453,7 +456,8 @@ Wavefront::ProcessCommand(player_planner_cmd_t* cmd)
     this->target_x = new_x;
     this->target_y = new_y;
     this->target_a = new_a;
-    //printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
+    printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
+printf("have_map: %d\n", this->have_map);
     this->new_goal = true;
     this->atgoal = false;
   }
@@ -655,7 +659,7 @@ void Wavefront::Main()
 
     ProcessMessages();
 
-    if(!this->have_map)
+    if(!this->have_map && !this->new_map_available)
     {
       usleep(CYCLE_TIME_US);
       continue;
@@ -684,6 +688,25 @@ void Wavefront::Main()
     // Did we get a new goal, or is it time to replan?
     if(this->new_goal || replan)
     {
+      // Should we get a new map?
+      if(this->new_map_available)
+      {
+        this->new_map_available = false;
+
+        if(this->GetMapInfo(true) < 0)
+	  PLAYER_WARN("failed to get new map info");
+	else
+	{
+          if(this->GetMap(true) < 0)
+	    PLAYER_WARN("failed to get new map data");
+	  else
+	  {
+	    this->new_map = true;
+	    this->have_map = true;
+	  }
+	}
+      }
+
       // We need to recompute the C-space if the map changed, or if the
       // goal or robot pose lie outside the bounds of the area we last
       // searched.
@@ -781,9 +804,16 @@ void Wavefront::Main()
 
       if(this->plan->waypoint_count > 0)
       {
-        memcpy(this->waypoints, this->plan->waypoints,
-               sizeof(plan_cell_t*) * this->waypoint_count);
-
+        for(int i=0;i<this->plan->waypoint_count;i++)
+        {
+	  double wx, wy;
+	  plan_convert_waypoint(this->plan,
+	                        this->plan->waypoints[i],
+				&wx, &wy);
+	  this->waypoints[i][0] = wx;
+	  this->waypoints[i][1] = wy;
+	}
+ 
         this->curr_waypoint = 0;
         this->new_goal = true;
       }
@@ -852,10 +882,8 @@ void Wavefront::Main()
           continue;
         }
         // get next waypoint
-        plan_convert_waypoint(this->plan,
-                              this->waypoints[this->curr_waypoint],
-                              &this->waypoint_x,
-                              &this->waypoint_y);
+	this->waypoint_x = this->waypoints[this->curr_waypoint][0];
+	this->waypoint_y = this->waypoints[this->curr_waypoint][1];
         this->curr_waypoint++;
 
         this->waypoint_a = this->target_a;
@@ -1050,6 +1078,40 @@ Wavefront::GetMap(bool threaded)
   return(0);
 }
 
+int
+Wavefront::GetMapInfo(bool threaded)
+{
+  Message* msg;
+  if(!(msg = this->mapdevice->Request(this->InQueue,
+                                      PLAYER_MSGTYPE_REQ,
+                                      PLAYER_MAP_REQ_GET_INFO,
+                                      NULL, 0, NULL, threaded)))
+  {
+    PLAYER_WARN("failed to get map info");
+    this->plan->scale = 0.1;
+    this->plan->size_x = 0;
+    this->plan->size_y = 0;
+    this->plan->origin_x = 0.0;
+    this->plan->origin_y = 0.0;
+    return(-1);
+  }
+
+  player_map_info_t* info = (player_map_info_t*)msg->GetPayload();
+
+  // copy in the map info
+  this->plan->scale = info->scale;
+  this->plan->size_x = info->width;
+  this->plan->size_y = info->height;
+  this->plan->origin_x = info->origin.px;
+  this->plan->origin_y = info->origin.py;
+  // Set the bounds to search the whole grid.
+  plan_set_bounds(this->plan, 
+                  0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
+
+  delete msg;
+  return(0);
+}
+
 // setup the underlying map device (i.e., get the map)
 int
 Wavefront::SetupMap()
@@ -1077,35 +1139,8 @@ Wavefront::SetupMap()
   // Fill in the map structure
 
   // first, get the map info
-  Message* msg;
-  if(!(msg = this->mapdevice->Request(this->InQueue,
-                                      PLAYER_MSGTYPE_REQ,
-                                      PLAYER_MAP_REQ_GET_INFO,
-                                      NULL, 0, NULL, false)))
-  {
-    PLAYER_WARN("failed to get map info");
-    this->plan->scale = 0.1;
-    this->plan->size_x = 0;
-    this->plan->size_y = 0;
-    this->plan->origin_x = 0.0;
-    this->plan->origin_y = 0.0;
-    return(0);
-  }
-
-  player_map_info_t* info = (player_map_info_t*)msg->GetPayload();
-
-  // copy in the map info
-  this->plan->scale = info->scale;
-  this->plan->size_x = info->width;
-  this->plan->size_y = info->height;
-  this->plan->origin_x = info->origin.px;
-  this->plan->origin_y = info->origin.py;
-  // Set the bounds to search the whole grid.
-  plan_set_bounds(this->plan, 
-                  0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
-
-  delete msg;
-
+  if(this->GetMapInfo(false) < 0)
+    return(-1);
   // Now get the map data, possibly in separate tiles.
   if(this->GetMap(false) < 0)
     return(-1);
@@ -1179,8 +1214,6 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
   {
     player_planner_waypoints_req_t reply;
 
-    double wx,wy;
-
     if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
     {
       PLAYER_WARN("too many waypoints; truncating list");
@@ -1190,9 +1223,8 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
       reply.waypoints_count = this->waypoint_count;
     for(int i=0;i<(int)reply.waypoints_count;i++)
     {
-      plan_convert_waypoint(plan,this->waypoints[i], &wx, &wy);
-      reply.waypoints[i].px = wx;
-      reply.waypoints[i].py = wy;
+      reply.waypoints[i].px = this->waypoints[i][0];
+      reply.waypoints[i].py = this->waypoints[i][1];
       reply.waypoints[i].pa = 0.0;
     }
 
@@ -1241,7 +1273,8 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
       PLAYER_ERROR("incorrect size for map info");
       return(-1);
     }
-    this->ProcessMapInfo((player_map_info_t*)data);
+    //this->ProcessMapInfo((player_map_info_t*)data);
+    this->new_map_available = true;
     return(0);
   }
   else
