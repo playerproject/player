@@ -40,6 +40,9 @@ typedef struct
   // Grid dimensions (number of cells)
   int size_x, size_y;
 
+  // Grid bounds (for limiting the search).
+  int min_x, min_y, max_x, max_y;
+
   // Grid origin (real-world coords, in meters, of the lower-left grid
   // cell)
   double origin_x, origin_y;
@@ -58,6 +61,8 @@ typedef struct
 
   // The grid data
   plan_cell_t *cells;
+  unsigned char* marks;
+  size_t marks_size;
   
   // Queue of cells to update
   int queue_start, queue_len, queue_size;
@@ -83,6 +88,13 @@ void plan_reset(plan_t *plan);
 // Load the occupancy values from an image file
 int plan_load_occ(plan_t *plan, const char *filename, double scale);
 #endif
+
+void plan_set_bounds(plan_t* plan, int min_x, int min_y, int max_x, int max_y);
+
+void plan_set_bbox(plan_t* plan, double padding, double min_size,
+                   double x0, double y0, double x1, double y1);
+
+int plan_check_inbounds(plan_t* plan, double x, double y);
 
 // Construct the configuration space from the occupancy grid.
 void plan_update_cspace(plan_t *plan, const char* cachefile);
@@ -134,6 +146,8 @@ void plan_md5(unsigned int* digest, plan_t* plan);
 
 // Test to see if the given plan coords lie within the absolute plan bounds.
 #define PLAN_VALID(plan, i, j) ((i >= 0) && (i < plan->size_x) && (j >= 0) && (j < plan->size_y))
+// Test to see if the given plan coords lie within the user-specified plan bounds
+#define PLAN_VALID_BOUNDS(plan, i, j) ((i >= plan->min_x) && (i <= plan->max_x) && (j >= plan->min_y) && (j <= plan->max_y))
 
 // Compute the cell index for the given plan coords.
 #define PLAN_INDEX(plan, i, j) ((i) + (j) * plan->size_x)
