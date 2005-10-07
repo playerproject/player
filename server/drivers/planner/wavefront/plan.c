@@ -27,7 +27,7 @@
 #include <error.h>
 
 #include "plan.h"
-#include "heap.h"
+//#include "heap.h"
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
 // length of the hash, in unsigned ints
@@ -242,6 +242,7 @@ plan_update_cspace_naive(plan_t* plan)
   }
 }
 
+#if 0
 void
 plan_update_cspace_dp(plan_t* plan)
 {
@@ -352,7 +353,7 @@ plan_update_cspace_dp(plan_t* plan)
   }
   //heap_free(Q);
 }
-
+#endif
 
 // Construct the configuration space from the occupancy grid.
 // This treats both occupied and unknown cells as bad.
