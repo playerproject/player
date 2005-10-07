@@ -45,7 +45,7 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
   ni = PLAN_GXWX(plan, gx);
   nj = PLAN_GYWY(plan, gy);
   
-  if (!PLAN_VALID(plan, ni, nj))
+  if (!PLAN_VALID_BOUNDS(plan, ni, nj))
     return;
 
   cell = plan->cells + PLAN_INDEX(plan, ni, nj);
@@ -73,7 +73,7 @@ void plan_update_plan(plan_t *plan, double gx, double gy)
         ni = oi + di;
         nj = oj + dj;
 
-        if (!PLAN_VALID(plan, ni, nj))
+        if (!PLAN_VALID_BOUNDS(plan, ni, nj))
           continue;
         ncell = plan->cells + PLAN_INDEX(plan, ni, nj);
 

@@ -6,4 +6,4 @@ endif
 AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/server
 
 libwavefront_la_SOURCES = plan.c plan_plan.c plan_waypoint.c plan.h \
-                          wavefront.cc
+                          wavefront.cc heap.h heap.c

@@ -485,6 +485,9 @@ Wavefront::ProcessMapInfo(player_map_info_t* info)
   this->plan->size_y = info->height;
   this->plan->origin_x = info->origin.px;
   this->plan->origin_y = info->origin.py;
+  // Set the bounds to search the whole grid.
+  plan_set_bounds(this->plan, 
+                  0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
 
   // Now get the map data, possibly in separate tiles.
   if(this->GetMap(true) < 0)
@@ -523,11 +526,6 @@ Wavefront::PutPlannerData()
   data.pos.px = this->localize_x;
   data.pos.py = this->localize_y;
   data.pos.pa = this->localize_a;
-
-  printf("Wavefront: pose: %.3f %.3f %.3f\n",
-         data.pos.px,
-         data.pos.py,
-         RTOD(data.pos.pa));
 
   data.goal.px = this->target_x;
   data.goal.py = this->target_y;
@@ -686,12 +684,30 @@ void Wavefront::Main()
     // Did we get a new goal, or is it time to replan?
     if(this->new_goal || replan)
     {
-      if(this->new_map)
+      // We need to recompute the C-space if the map changed, or if the
+      // goal or robot pose lie outside the bounds of the area we last
+      // searched.
+      if(this->new_map || 
+         !plan_check_inbounds(plan,this->localize_x,this->localize_y) ||
+          !plan_check_inbounds(plan,this->target_x,this->target_y))
       {
         // Unfortunately, this computation can take a while (e.g., 1-2
         // seconds).  So we'll stop the robot while it thinks.
         this->StopPosition();
+
+        // Set the bounds to search only an axis-aligned bounding box
+        // around the robot and the goal.
+        plan_set_bbox(this->plan, 1.0, 3.0,
+                      this->localize_x, this->localize_y,
+                      this->target_x, this->target_y);
+
+        struct timeval t0, t1;
+        gettimeofday(&t0, NULL);
         plan_update_cspace(this->plan,this->cspace_fname);
+        gettimeofday(&t1, NULL);
+        printf("time to update: %f\n", 
+               (t1.tv_sec + t1.tv_usec/1e6) -
+               (t0.tv_sec + t0.tv_usec/1e6));
         this->new_map = false;
       }
       // compute costs to the new goal
@@ -699,6 +715,40 @@ void Wavefront::Main()
 
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
+
+      if(this->plan->waypoint_count == 0)
+      {
+        // No path.  If we only searched a bounding box last time, grow the
+        // bounds to encompass the whole map and try again.
+        if((plan->min_x > 0) || (plan->max_x < (plan->size_x - 1)) ||
+           (plan->min_y > 0) || (plan->max_y < (plan->size_y - 1)))
+        {
+          // Unfortunately, this computation can take a while (e.g., 1-2
+          // seconds).  So we'll stop the robot while it thinks.
+          this->StopPosition();
+
+          // Set the bounds to search the whole grid.
+          plan_set_bounds(this->plan, 0, 0,
+                          this->plan->size_x - 1,
+                          this->plan->size_y - 1);
+
+          struct timeval t0, t1;
+          gettimeofday(&t0, NULL);
+          plan_update_cspace(this->plan,this->cspace_fname);
+          gettimeofday(&t1, NULL);
+          printf("time to update: %f\n", 
+               (t1.tv_sec + t1.tv_usec/1e6) -
+               (t0.tv_sec + t0.tv_usec/1e6));
+
+          // compute costs to the new goal
+          plan_update_plan(this->plan, this->target_x, this->target_y);
+
+          // compute a path to the goal from the current position
+          plan_update_waypoints(this->plan, 
+                                this->localize_x, 
+                                this->localize_y);
+        }
+      }
 
       if(this->plan->waypoint_count == 0)
       {
@@ -1050,12 +1100,18 @@ Wavefront::SetupMap()
   this->plan->size_y = info->height;
   this->plan->origin_x = info->origin.px;
   this->plan->origin_y = info->origin.py;
+  // Set the bounds to search the whole grid.
+  plan_set_bounds(this->plan, 
+                  0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
 
   delete msg;
 
   // Now get the map data, possibly in separate tiles.
   if(this->GetMap(false) < 0)
     return(-1);
+
+  this->have_map = true;
+  this->new_map = true;
 
   puts("Done.");
 
