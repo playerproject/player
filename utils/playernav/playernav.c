@@ -230,15 +230,18 @@ player_read_func(gpointer* arg)
         if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
         {
           fprintf(stderr, "error while getting waypoints for robot %d\n", i);
-          gtk_main_quit();
-          break;
+          //gtk_main_quit();
+          //break;
         }
-        //puts("drawing waypoints");
-        draw_waypoints(gui_data,i);
+        else
+        {
+          //puts("drawing waypoints");
+          draw_waypoints(gui_data,i);
 
-        lastwaypt.px = gui_data->planners[i]->wx;
-        lastwaypt.py = gui_data->planners[i]->wy;
-        lastwaypt.pa = gui_data->planners[i]->wa;
+          lastwaypt.px = gui_data->planners[i]->wx;
+          lastwaypt.py = gui_data->planners[i]->wy;
+          lastwaypt.pa = gui_data->planners[i]->wa;
+        }
       }
 
       gui_data->planners[i]->info.fresh = 0;

@@ -284,13 +284,16 @@ _robot_button_callback(GnomeCanvasItem *item,
                 {
                   fprintf(stderr, "error while setting goal on robot %d\n", 
                           idx);
-                  gtk_main_quit();
-                  return(TRUE);
+                  //gtk_main_quit();
+                  //return(TRUE);
                 }
-                gui_data->goals[idx][0] = mean[0];
-                gui_data->goals[idx][1] = mean[1];
-                gui_data->goals[idx][2] = mean[2];
-                gui_data->planners[idx]->waypoint_count = -1;
+                else
+                {
+                  gui_data->goals[idx][0] = mean[0];
+                  gui_data->goals[idx][1] = mean[1];
+                  gui_data->goals[idx][2] = mean[2];
+                  gui_data->planners[idx]->waypoint_count = -1;
+                }
               }
               else
               {
