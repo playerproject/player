@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
   PlayerCc::PlayerClient  robot("localhost");
   PlayerCc::SonarProxy    sp(&robot,0);
-  PlayerCc::PositionProxy pp(&robot,0);
+  PlayerCc::Position2dProxy pp(&robot,0);
 
   double newturnrate, newspeed;
 
@@ -18,13 +18,12 @@ int main(int argc, char *argv[])
     std::cout << sp << std::endl;
 
     // do simple collision avoidance
-    if((sp.Range(0) + sp.Range(1)) <
-       (sp.Range(6) + sp.Range(7)))
+    if((sp[0] + sp[1]) < (sp[6] + sp[7]))
       newturnrate = DTOR(-20); // turn 20 degrees per second
     else
       newturnrate = DTOR(20);
 
-    if(sp.Range(3) < 0.500)
+    if(sp[3] < 0.500)
       newspeed = 0;
     else
       newspeed = 0.100;

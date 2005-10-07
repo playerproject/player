@@ -1,16 +1,9 @@
-/*
- * $Id$
- *
- * a more complicated C++ example with signals
- */
-
 #include "playerc++.h"
-
+#include <iostream>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
 
 // these are our callback functions.  Currently, they all need to return void.
-
 void read_callback1()
 {
     std::cout << "read_client_callback_1" << std::endl;
@@ -20,7 +13,7 @@ void read_callback2()
 {
     std::cout << "read_client_callback_2" << std::endl;
 }
-
+// we can also have callbacks in objects
 class test_callback
 {
   public:
@@ -31,7 +24,7 @@ class test_callback
     }
 
 };
-
+// we'll use this to stop the client
 void read_callback4(PlayerCc::PlayerClient* c)
 {
   static uint i(0);
@@ -71,7 +64,7 @@ int main(int argc, char** argv)
     // to exit after 10 iterations
     cp.ConnectReadSignal(boost::bind(&read_callback4, &client));
 
-    // Now, let's run the client.  This exits when teh client->Stop() function
+    // Now, let's run the client.  This exits when the client->Stop() function
     // is called from the callback
     client.Run();
   }
