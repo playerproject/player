@@ -137,7 +137,8 @@ void playerc_sonar_putgeom(playerc_sonar_t *device, player_msghdr_t *header,
 // rather than returning it to the caller.
 int playerc_sonar_get_geom(playerc_sonar_t *device)
 {
-  int i;
+  int i;	
+	
   player_sonar_geom_t config;
 
   if(playerc_client_request(device->info.client, 
@@ -149,9 +150,7 @@ int playerc_sonar_get_geom(playerc_sonar_t *device)
   device->pose_count = config.poses_count;
   for (i = 0; i < device->pose_count; i++)
   {
-    device->poses[i][0] = config.poses[i].px;
-    device->poses[i][1] = config.poses[i].py;
-    device->poses[i][2] = config.poses[i].pa;
+    device->poses[i] = config.poses[i];
   }
    return 0;
 }

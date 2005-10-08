@@ -1868,8 +1868,8 @@ class SonarProxy : public ClientProxy
     uint GetPoseCount() const { return(GetVar(mDevice->pose_count)); };
 
     /// Sonar poses (m,m,radians)
-    //double GetPose(uint aIndex) const
-    //  { return(GetVar(mDevice->pose[aIndex])); };
+    player_pose_t GetPose(uint aIndex) const
+      { return(GetVar(mDevice->poses[aIndex])); };
 
     /// Enable/disable the sonars.
     /// Set @p state to 1 to enable, 0 to disable.
