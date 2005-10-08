@@ -1087,7 +1087,7 @@ typedef struct
   double scan[PLAYERC_LASER_MAX_SAMPLES][2];
 
   /** Scan data; x, y position (m). */
-  double point[PLAYERC_LASER_MAX_SAMPLES][2];
+  player_point_2d_t point[PLAYERC_LASER_MAX_SAMPLES];
 
   /** Scan reflection intensity values (0-3).  Note that the intensity
       values will only be filled if intensity information is enabled

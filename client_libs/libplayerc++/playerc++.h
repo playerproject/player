@@ -1049,23 +1049,23 @@ class LaserProxy : public ClientProxy
     /// Range resolution of scan (mm)
     double GetRangeRes() const { return(GetVar(mDevice->range_res)); };
 
-/*
-    /// Scan range for the latest set of data (radians)
-    double GetMaxAngle() const { return(GetVar(mDevice->min_angle)); };
-    /// Scan range for the latest set of data (radians)
-    double GetMinAngle() const { return(GetVar(mDevice->max_angle)); };
 
-    /// Whether or not reflectance (i.e., intensity) values are being returned.
+    /// Scan range for the latest set of data (radians)
+    double GetMaxAngle() const { return(GetVar(mDevice->scan_start)); };
+    /// Scan range for the latest set of data (radians)
+    double GetMinAngle() const { return(GetVar(mDevice->scan_start) + GetVar(mDevice->scan_count)*GetVar(mDevice->scan_res)); };
+
+/*    /// Whether or not reflectance (i.e., intensity) values are being returned.
     bool IsIntensity() const { return(GetVar(mDevice->intensity)); };
 
     /// Scan data (polar): range (m) and bearing (radians)
     double GetScan(uint aIndex) const
       { return(GetVar(mDevice->scan[aIndex])); };
-
-    /// Scan data (Cartesian): x,y (m)
-    double GetPoint(uint aIndex) const
-      { return(GetVar(mDevice->point[aIndex])); };
 */
+    /// Scan data (Cartesian): x,y (m)
+    player_point_2d_t GetPoint(uint aIndex) const
+      { return(GetVar(mDevice->point[aIndex])); };
+
 
     /// get the range
     double GetRange(uint aIndex) const
@@ -1880,7 +1880,6 @@ class SonarProxy : public ClientProxy
 
     /// Request the sonar geometry.
     void RequestGeom();
-
 };
 
 #if 0

@@ -155,6 +155,14 @@
 #define PLAYER_IDENT_STRLEN 32
 #define PLAYER_KEYLEN       32
 
+/** @brief A point in the plane */
+typedef struct player_point_2d
+{
+  /** X, Y (in m,m) */
+  float px, py;
+} player_point_2d_t;
+
+
 /** @brief A pose in the plane, often used to represent the pose of a range
  * sensor. */
 typedef struct player_pose
