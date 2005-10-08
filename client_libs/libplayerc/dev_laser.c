@@ -131,8 +131,8 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       device->ranges[i] = r;
       device->scan[i][0] = r;
       device->scan[i][1] = b;
-      device->point[i][0] = r * cos(b);
-      device->point[i][1] = r * sin(b);
+      device->point[i].px = r * cos(b);
+      device->point[i].py = r * sin(b);
       device->intensity[i] = scan_data->intensity[i];
       b += db;
     }
@@ -160,8 +160,8 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       device->ranges[i] = r;
       device->scan[i][0] = r;
       device->scan[i][1] = b;
-      device->point[i][0] = r * cos(b);
-      device->point[i][1] = r * sin(b);
+      device->point[i].px = r * cos(b);
+      device->point[i].py = r * sin(b);
       device->intensity[i] = scan_data->scan.intensity[i];
       b += db;
     }

@@ -238,8 +238,8 @@ void laser_draw(laser_t *laser)
     // Draw in the range scan
     for (i = 0; i < laser->proxy->scan_count; i++)
     {
-      bx = laser->proxy->point[i][0];
-      by = laser->proxy->point[i][1];
+      bx = laser->proxy->point[i].px;
+      by = laser->proxy->point[i].py;
       if (i == 0)
       {
         ax = bx;
@@ -289,8 +289,8 @@ void laser_draw(laser_t *laser)
   {
     if (laser->proxy->intensity[i] == 0)
       continue;
-    ax = laser->proxy->point[i][0];
-    ay = laser->proxy->point[i][1];
+    ax = laser->proxy->point[i].px;
+    ay = laser->proxy->point[i].py;
     rtk_fig_rectangle(laser->scan_fig, ax, ay, 0, 0.05, 0.05, 1);
   }
 
