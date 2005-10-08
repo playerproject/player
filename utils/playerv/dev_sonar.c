@@ -150,9 +150,9 @@ void sonar_update_geom(sonar_t *sonar)
   int i;
       for (i = 0; i < sonar->proxy->pose_count; i++)
         rtk_fig_origin(sonar->scan_fig[i],
-                       sonar->proxy->poses[i][0],
-                       sonar->proxy->poses[i][1],
-                       sonar->proxy->poses[i][2]);
+                       sonar->proxy->poses[i].px,
+                       sonar->proxy->poses[i].py,
+                       sonar->proxy->poses[i].pa);
 }
 
 
