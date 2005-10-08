@@ -67,7 +67,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::Position2dProx
 {
   os << "#Position2D (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   os << "#xpos\typos\ttheta\tspeed\tsidespeed\tturn\tstall" << std::endl;
-  os << c.GetXpos() << " " << c.GetYpos() << " " << c.GetYaw() << " " ;
+  os << c.GetXPos() << " " << c.GetYPos() << " " << c.GetYaw() << " " ;
   os << c.GetXSpeed() << " " << c.GetYSpeed() << " " << c.GetYawSpeed() << " ";
   os << c.GetStall() << std::endl;
   return os;
