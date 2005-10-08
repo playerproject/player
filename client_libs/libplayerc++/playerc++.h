@@ -1587,10 +1587,10 @@ class Position2dProxy : public ClientProxy
     //void PlatformShutdown();
 
     /// Accessor method
-    double  GetXpos() const { return(GetVar(mDevice->px)); };
+    double  GetXPos() const { return(GetVar(mDevice->px)); };
 
     /// Accessor method
-    double  GetYpos() const { return(GetVar(mDevice->py)); };
+    double  GetYPos() const { return(GetVar(mDevice->py)); };
 
     /// Accessor method
     double GetYaw() const { return(GetVar(mDevice->pa)); };
