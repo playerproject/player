@@ -1006,7 +1006,7 @@ class IrProxy : public ClientProxy
     /// This operator provides an alternate way of access the range data.
     /// For example, given a @p IrProxy named @p ip, the following
     /// expressions are equivalent: @p ip.GetRange[0] and @p ip[0].
-    double operator [](uint aIndex)
+    double operator [](uint aIndex) const
       { return(GetRange(aIndex)); }
 
 };
@@ -1233,10 +1233,12 @@ class MapProxy : public ClientProxy
     void RequestMap();
 
     /// Return the index of the (x,y) item in the cell array
-    int GetCellIndex(int x, int y);
+    int GetCellIndex(int x, int y) const
+    { return y*GetWidth() + x; };
 
     /// Get the (x,y) cell
-    //int GetCell( char* cell, int x, int y );
+    unsigned char GetCell(int x, int y ) const
+    { return(GetVar(mDevice->cells[GetCellIndex(x,y)])); };
 
     /// Map resolution, m/cell
     double GetResolution() const { return(GetVar(mDevice->resolution)); };
