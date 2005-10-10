@@ -58,12 +58,12 @@ playerprint can print out data for the following kinds of devices:
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>  // for atoi(3)
-#include <playerc.h>  // for libplayerc client stuff
+#include <libplayerc++/playerc++.h>  // for libplayerc client stuff
 #include <string.h> /* for strcpy() */
 #include <assert.h>
 #include <libplayercore/playercore.h>
 
-//using namespace PlayerCc;
+using namespace PlayerCc;
 
 //#include <sys/time.h>
 

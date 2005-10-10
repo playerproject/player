@@ -37,7 +37,7 @@ Where options can be:
 - -n   : dont send commands or enable motors (debugging)
 - -k   : use keyboard control
 - -p   : print out speeds on the console
-- -udp : use UDP instead of TCP
+- -udp : use UDP instead of TCP (deprecated, currently disabled)
 - -speed     : maximum linear speed (m/sec)
 - -turnspeed : maximum angular speed (deg/sec)
 - &lt;host:port&gt; : connect to a Player on this host and port
@@ -84,11 +84,13 @@ Details of keyboard control are printed out on the console.
 #include <stdio.h>
 #include <string.h> /* for strcpy() */
 #include <stdlib.h>  /* for atoi(3),rand(3) */
-#include <playerclient.h>
 #include <time.h>
 #include <pthread.h>
 
 #include <list>
+
+#include <libplayerc++/playerc++.h>
+using namespace PlayerCc;
 
 #define USAGE \
   "USAGE: playerjoy [options] <host:port> [<host:port>] ... \n" \
@@ -98,7 +100,7 @@ Details of keyboard control are printed out on the console.
   "       -n   : dont send commands or enable motors (debugging)\n" \
   "       -k   : use keyboard control\n" \
   "       -p   : print out speeds on the console\n" \
-  "       -udp : use UDP instead of TCP\n" \
+  "       -udp : use UDP instead of TCP (deprecated, currently disabled)\n" \
   "       -speed     : maximum linear speed (m/sec)\n" \
   "       -turnspeed : maximum angular speed (deg/sec)\n" \
   "       <host:port> : connect to a Player on this host and port\n"
@@ -158,7 +160,7 @@ GripperProxy *gp = NULL;
 int jfd;
 
 // allow either TCP or UDP
-int protocol = PLAYER_TRANSPORT_TCP;
+//int protocol = PLAYER_TRANSPORT_TCP;
 
 // initial max speeds
 
@@ -168,8 +170,8 @@ class Client
 private:
   // these are the proxies we create to access the devices
   PlayerClient *player;
-  PositionProxy *pp;
-  Position3DProxy *pp3;
+  Position2dProxy *pp;
+  Position3dProxy *pp3;
 
   struct timeval lastcommand;
 
@@ -449,35 +451,23 @@ Client::Client(char* host, int port )
   fflush( stdout );
   
   /* Connect to the Player server */
-  assert( player = new PlayerClient(host,port,protocol) );  
+  assert( player = new PlayerClient(host,port/*,protocol*/) );  
   if(!threed)
   {
-    assert( pp = new PositionProxy(player,idx,'a') );
-    if(pp->GetAccess() == 'e') 
-    {
-      puts("Error getting position device access!");
-      exit(1);
-    }
+    pp = new Position2dProxy(player,idx);
+    assert(pp);
   }
   else
   {
-    assert( pp3 = new Position3DProxy(player,0,'a') );
-    if(pp3->GetAccess() == 'e') 
-    {
-      puts("Error getting position3d device access!");
-      exit(1);
-    }
+    pp3 = new Position3dProxy(player,idx);
+    assert(pp3);
   }
   
   // optional gripper proxy
   if(use_gripper)
     {
-      gp = new GripperProxy(player,0,'a');
-      if( gp->GetAccess() == 'e' )
-	{
-	  puts("Error getting gripper device access!");
-	  exit(1);
-	}
+      gp = new GripperProxy(player,0);
+      assert(gp);
     }
   else
     gp = NULL;
@@ -485,23 +475,17 @@ Client::Client(char* host, int port )
   // try a few reads
   for( int i=0; i<4; i++ )
   {
-    if(player->Read() < 0 )
-    {
-      fprintf(stderr, "Read failed. Quitting.");
-      exit( -1 );
-    }
+    player->Read();
   }
 
   // turn on the motors
   if(!threed)
   {
-    if(pp->SetMotorState(1))
-      fprintf(stderr, "Failed to turn on motor power");
+    pp->SetMotorEnable(1);
   }
   else
   {
-    if(pp3->SetMotorState(1))
-      fprintf(stderr, "Failed to turn on motor power");
+    pp3->SetMotorEnable(1);
   }
   
   gettimeofday(&lastcommand,NULL);
@@ -511,8 +495,7 @@ Client::Client(char* host, int port )
 
 void Client::Read( void )
 {
-  if(player->Read())
-    exit(-1);
+  player->Read();
 }
 
 void Client::Update( struct controller* cont )
@@ -523,9 +506,9 @@ void Client::Update( struct controller* cont )
   if(g_verbose)
   {
     if(!threed)
-      pp->Print();
+      std::cout << *pp;
     else
-      pp3->Print();
+      std::cout << *pp3;
   }
 
   gettimeofday(&curr,NULL);
@@ -634,8 +617,8 @@ int main(int argc, char** argv)
 	    exit(-1);
 	  }
       }
-    else if( strcmp( argv[i], "-udp" ) == 0 )
-      protocol = PLAYER_TRANSPORT_UDP;
+/*    else if( strcmp( argv[i], "-udp" ) == 0 )
+      protocol = PLAYER_TRANSPORT_UDP;*/
     else
       {
 	puts(USAGE); // malformed arg - print usage hints
