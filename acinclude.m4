@@ -303,7 +303,7 @@ if test "x$enable_camera1394" = "xyes"; then
               [arg count for dma capture function])
 fi
 
-PLAYER_ADD_DRIVER([cameracompress],[no],[jpeglib.h],[],[-ljpeg])
+PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 PLAYER_ADD_DRIVER([imageseq],[no],[],[],[],[OPENCV],[opencv])
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
