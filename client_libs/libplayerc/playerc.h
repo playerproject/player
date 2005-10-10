@@ -938,6 +938,11 @@ int playerc_gripper_unsubscribe(playerc_gripper_t *device);
 /** @brief Send the gripper a command */
 int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
 
+/** @brief Print a human-readable version of the gripper state. If
+    set, the string <prefix> is printed before the state string. */
+void playerc_gripper_print( playerc_gripper_t *device, const char* prefix );
+
+
 /** @} */
 /**************************************************************************/
 
@@ -1168,6 +1173,11 @@ caller.
 
 */
 int playerc_laser_get_geom(playerc_laser_t *device);
+
+/** @brief Print a human-readable summary of the laser state on
+    stdout. */
+void playerc_laser_print( playerc_laser_t * device, 
+			  const char* prefix );
 
 /** @} */
 /**************************************************************************/

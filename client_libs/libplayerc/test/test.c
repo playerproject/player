@@ -125,6 +125,11 @@ int main(int argc, const char *argv[])
         test_log(client, client->devinfos[i].addr.index);
         break;
 
+      // log device
+      case PLAYER_GRIPPER_CODE:
+        test_gripper(client, client->devinfos[i].addr.index);
+        break;
+
 #if 0
       // simulation device
       case PLAYER_SIMULATION_CODE:

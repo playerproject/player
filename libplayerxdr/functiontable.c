@@ -94,6 +94,12 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_SET_ID,
    (player_pack_fn_t)player_fiducial_id_pack},
 
+  /* gripper messages */
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_GRIPPER_DATA_STATE,
+   (player_pack_fn_t)player_gripper_data_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STATE,
+   (player_pack_fn_t)player_gripper_cmd_pack},
+
   /* ir messages */
   {PLAYER_IR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
     (player_pack_fn_t)player_ir_data_pack},

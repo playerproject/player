@@ -256,3 +256,21 @@ playerc_laser_get_geom(playerc_laser_t *device)
   return 0;
 }
 
+void playerc_laser_print( playerc_laser_t * device, 
+			  const char* prefix )
+{
+  if( prefix )
+    printf( "%s: ", prefix );
+  
+  printf("[%14.3f] scan_id: %d  scan_count: %d\n",
+	 device->info.datatime,
+	 device->scan_id, 
+	 device->scan_count );
+  
+  printf( "# ranges\n" );
+  int i;
+  for( i=0; i<device->scan_count; i++ )
+    printf( "%.3f ", device->ranges[i] );
+  puts( "" );
+
+}

@@ -35,19 +35,20 @@ For example:
 @par Features
 
 playerprint can print out data for the following kinds of devices:
-- @ref player_interface_position
-- @ref player_interface_position3d
-- @ref player_interface_truth
-- @ref player_interface_sonar
-- @ref player_interface_laser
-- @ref player_interface_localize
+- @ref player_interface_blobfinder
+- @ref player_interface_bumper
+- @ref player_interface_energy
 - @ref player_interface_fiducial
 - @ref player_interface_gps
-- @ref player_interface_ptz
-- @ref player_interface_blobfinder
+- @ref player_interface_gripper
 - @ref player_interface_ir
-- @ref player_interface_energy
-- @ref player_interface_bumper
+- @ref player_interface_laser
+- @ref player_interface_localize
+- @ref player_interface_position
+- @ref player_interface_position3d
+- @ref player_interface_ptz
+- @ref player_interface_sonar
+- @ref player_interface_truth
 - @ref player_interface_wifi
 
 */
@@ -57,12 +58,12 @@ playerprint can print out data for the following kinds of devices:
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>  // for atoi(3)
-#include <playerc++.h>  // for player c++ client stuff
+#include <playerc.h>  // for libplayerc client stuff
 #include <string.h> /* for strcpy() */
 #include <assert.h>
 #include <libplayercore/playercore.h>
 
-using namespace PlayerCc;
+//using namespace PlayerCc;
 
 //#include <sys/time.h>
 
