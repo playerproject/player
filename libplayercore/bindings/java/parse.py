@@ -108,6 +108,7 @@ if __name__ == '__main__':
     jfile.write('import java.io.Serializable;\n')
     jfile.write('public class ' + jclass + ' implements Serializable {\n')
     jfile.write('  public final static long serialVersionUID = ' + `hash(s)` + 'L;\n')
+    jclass_constructor = '  public ' + jclass + '() {\n';
 
     # Static method in class player to convert from JNI Java object to
     # non-JNI java object
@@ -187,9 +188,14 @@ if __name__ == '__main__':
             jfile.write('  public String ' + varstring + ';\n')
           else:
             jfile.write('  public ' + jtype + '[] ' + varstring + ';\n')
+
+          if builtin_type == 0:
+            jclass_constructor += '    ' + varstring + ' = new ' + jtype + '[playercore_javaConstants.' + arraysize + '];\n'
         else:
           arraysize = ''
           jfile.write('  public ' + jtype + ' ' + varstring + ';\n')
+          if builtin_type == 0:
+            jclass_constructor += '    ' + varstring + ' = new ' + jtype + '();\n'
 
         if builtin_type:
           pcj_data_to_jdata += '    Jdata.' + varstring + ' = data.get' + string.capitalize(varstring) + '();\n'
@@ -215,7 +221,6 @@ if __name__ == '__main__':
             pcj_jdata_to_data += '        foo[i] = ' + jtype + '_to_' + type + '(Jdata.' + varstring + '[i]);\n'
             pcj_jdata_to_data += '      data.set' + string.capitalize(varstring) + '(foo);\n'
             pcj_jdata_to_data += '    }\n'
-
     pcj_data_to_jdata += '    return(Jdata);\n'
     pcj_data_to_jdata += '  }\n\n'
     pcjfile.write(pcj_data_to_jdata)
@@ -224,6 +229,8 @@ if __name__ == '__main__':
     pcj_jdata_to_data += '  }\n\n'
     pcjfile.write(pcj_jdata_to_data)
 
+    jclass_constructor += '  }\n'
+    jfile.write(jclass_constructor)
     jfile.write('}\n')
     jfile.close()
 
