@@ -386,7 +386,7 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/libplayerc++/Makefile
 dnl          examples/libplayerc/Makefile
           utils/Makefile
-    utils/playercam/Makefile
+          utils/playercam/Makefile
           utils/playerv/Makefile
 dnl          utils/playerjoy/Makefile
           utils/playernav/Makefile
