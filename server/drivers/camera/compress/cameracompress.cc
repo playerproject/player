@@ -82,56 +82,54 @@ Nate Koenig, Andrew Howard
 #include <netinet/in.h>   // for htons(3)
 #include <math.h>
 
-#include "player.h"
-#include "error.h"
-#include "device.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "playertime.h"
-#include "clientdata.h"
-#include "clientmanager.h"
-#include "playerpacket.h"
-
-extern ClientManager* clientmanager;
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
+#include <libplayerjpeg/playerjpeg.h>
 
 class CameraCompress : public Driver
 {
-  public: CameraCompress( ConfigFile *cf, int section);
+  // Constructor
+  public: CameraCompress( ConfigFile* cf, int section);
 
+  // Setup/shutdown routines.
   public: virtual int Setup();
   public: virtual int Shutdown();
 
-  // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+  // This method will be invoked on each incoming message
+  public: virtual int ProcessMessage(MessageQueue* resp_queue,
+                                     player_msghdr * hdr,
+                                     void * data);
 
+  // Main function for device thread.
   private: virtual void Main();
-
+  
   //private: int UpdateCamera();
   private: void WriteData();
   private: void SaveFrame(const char *filename);
 
   // Input camera device
   private:
-  Driver *camera;
-  player_device_id_t camera_id;
-  bool NewCamData;
+
+    // Camera device info
+    Device *camera;
+    player_devaddr_t camera_id;
+    double camera_time;
+    bool camera_subscribed;
+    bool NewCamData;
 	
-  ClientDataInternal * BaseClient;
+    // Acquired camera data
+    player_camera_data_t camera_data;
+    char converted[PLAYER_CAMERA_IMAGE_SIZE];
 
-  // Acquired camera data
-  private: struct timeval camera_time;
-  private: player_camera_data_t camera_data;
-  private: char converted[PLAYER_CAMERA_IMAGE_SIZE];
+    // Output (compressed) camera data
+    private: player_camera_data_t data;
 
-  // Output (compressed) camera data
-  private: player_camera_data_t data;
+    // Image quality for JPEG compression
+    private: double quality;
 
-  // Image quality for JPEG compression
-  private: double quality;
-
-  // Save image frames?
-  private: int save;
-  private: int frameno;
+    // Save image frames?
+    private: int save;
+    private: int frameno;
 };
 
 
@@ -146,25 +144,24 @@ void CameraCompress_Register(DriverTable *table)
 }
 
 CameraCompress::CameraCompress( ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
-
   this->frameno = 0;
 
-  // Must have an input camera
-  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
+  this->camera = NULL;
+  // Must have a camera device
+  if (cf->ReadDeviceAddr(&this->camera_id, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
   }
-  
+  this->camera_time = 0.0;
+
   this->save = cf->ReadInt(section,"save",0);
   this->quality = cf->ReadFloat(section, "image_quality", 0.8);
 
   // camera settings
-  this->camera = NULL;
-  this->BaseClient = NULL;
   this->NewCamData = false;
 
   return;
@@ -172,24 +169,24 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
 
 int CameraCompress::Setup()
 {
-  //set up the base client
-  BaseClient = new ClientDataInternal(this);
-  clientmanager->AddClient(BaseClient);
-
-  // Subscribe to the camera
-  this->camera = deviceTable->GetDriver(this->camera_id);
-  
-  if (!this->camera)
+  // Subscribe to the laser.
+  if(Device::MatchDeviceAddress(this->camera_id, this->device_addr))
+  {
+    PLAYER_ERROR("attempt to subscribe to self");
+    return(-1);
+  }
+  if(!(this->camera = deviceTable->GetDevice(this->camera_id)))
   {
     PLAYER_ERROR("unable to locate suitable camera device");
-    return (-1);
+    return(-1);
   }
-
-  if (BaseClient->Subscribe(this->camera_id) != 0)
+  if(this->camera->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to camera device");
     return(-1);
   }
+
+  return 0;
 
   // Start the driver thread.
   this->StartThread();
@@ -201,40 +198,25 @@ int CameraCompress::Shutdown()
 {
   // Stop the driver thread
   StopThread();
-
-  // Unsubscribe from devices.
-  BaseClient->Unsubscribe(this->camera_id);
-
-  clientmanager->RemoveClient(BaseClient);
-  delete BaseClient;
-  BaseClient = NULL;
+  
+  camera->Unsubscribe(InQueue);
 
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraCompress::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
+int CameraCompress::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+                               void * data)
 {
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
-  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
   
-  *resp_len = 0;
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, camera_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
   	assert(hdr->size == sizeof(this->camera_data));
-  	player_camera_data_t * cam_data = reinterpret_cast<player_camera_data_t * > (data);
   	Lock();
-    this->camera_data.width = ntohs(cam_data->width);
-    this->camera_data.height = ntohs(cam_data->height); 
-    this->camera_data.bpp = cam_data->bpp;
-    this->camera_data.image_size = ntohl(cam_data->image_size);
-    this->camera_data.format = cam_data->format;
-    this->camera_data.compression = cam_data->compression; 
+  	camera_data = *reinterpret_cast<player_camera_data_t * > (data);
     this->NewCamData=true;
   	Unlock();
     if (this->camera_data.compression != PLAYER_CAMERA_COMPRESS_RAW)
@@ -256,7 +238,8 @@ void CameraCompress::Main()
   while (true)
   {
     // Let the camera driver update this thread
-    this->camera->Wait();
+    //this->camera->Wait();
+    InQueue->Wait();
 
     // Test if we are suppose to cancel this thread.
     pthread_testcancel();
@@ -270,7 +253,7 @@ void CameraCompress::Main()
       {
       case 8:
         l = (this->camera_data.width) * (this->camera_data.height);
-	ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
+    	ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
 	for (i = 0; i < l; i++)
 	{
 	  ptr[0] = *ptr1;
@@ -299,7 +282,7 @@ void CameraCompress::Main()
         PLAYER_WARN("unsupported image depth (not good)");
         return;
       }
-      this->data.image_size = jpeg_compress( (char*)this->data.image, 
+      this->data.image_count = jpeg_compress( (char*)this->data.image, 
                                              ptr,
                                              this->camera_data.width, 
                                              this->camera_data.height,
@@ -310,20 +293,20 @@ void CameraCompress::Main()
       {
         snprintf(filename, sizeof(filename), "click-%04d.ppm",this->frameno++);
         FILE *fp = fopen(filename, "w+");
-        fwrite (this->data.image, 1, this->data.image_size, fp);
+        fwrite (this->data.image, 1, this->data.image_count, fp);
         fclose(fp);
       }
 
-      size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_size;
+      size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
 
-      this->data.width = htons(this->camera_data.width);
-      this->data.height = htons(this->camera_data.height);
+      this->data.width = (this->camera_data.width);
+      this->data.height = (this->camera_data.height);
       this->data.bpp = 24;
       this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
       this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
-      this->data.image_size = htonl(this->data.image_size);
+      this->data.image_count = (this->data.image_count);
       
-      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (void*) &this->data, size, &this->camera_time);
+      Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
     }
   }
   return;

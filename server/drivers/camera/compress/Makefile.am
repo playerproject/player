@@ -1,7 +1,8 @@
-noinst_LIBRARIES = @CAMERACOMPRESS_LIB@
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/client_libs/libplayerpacket
+noinst_LTLIBRARIES =
+if INCLUDE_CAMERACOMPRESS
+noinst_LTLIBRARIES += libcameracompress.la
+endif
 
-EXTRA_LIBRARIES = libcameracompress.a
-
-libcameracompress_a_SOURCES = cameracompress.cc
+libcameracompress_la_SOURCES = cameracompress.cc
