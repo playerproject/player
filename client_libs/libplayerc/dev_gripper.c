@@ -120,15 +120,48 @@ void playerc_gripper_putmsg(playerc_gripper_t *device,
 }
 
 // Set a cmd
-int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t command, uint8_t arg)
+int playerc_gripper_set_cmd(playerc_gripper_t *device, 
+			    uint8_t command, 
+			    uint8_t arg)
 {
   player_gripper_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
   cmd.cmd = command;
   cmd.arg = arg;
-
-  return playerc_client_write(device->info.client,
-                  &device->info, PLAYER_GRIPPER_CMD_STATE, &cmd, sizeof(cmd));
+  
+  return playerc_client_write(device->info.client, &device->info, 
+			      PLAYER_GRIPPER_CMD_STATE, 
+			      &cmd, NULL );
 }
 
+// print human-readable state 
+void playerc_gripper_print(playerc_gripper_t *device, 
+			   const char* prefix )
+{
+  if( prefix )
+    printf( "%s: ", prefix );
+  
+  printf("[%14.3f]"
+	 " outer_break_beam: %d"
+	 " inner_break_beam: %d"
+	 " paddles_open: %d"
+	 " paddles_closed: %d"
+	 " paddles_moving: %d"
+	 " gripper_error: %d"
+	 " lift_up: %d"
+	 " lift_down: %d"
+	 " lift_moving: %d"
+	 " lift_error: %d\n",	    
+	 device->info.datatime, 
+	 device->outer_break_beam,
+	 device->inner_break_beam,
+	 device->paddles_open,
+	 device->paddles_closed,
+	 device->paddles_moving,
+	 device->gripper_error,
+	 device->lift_up,
+	 device->lift_down,
+	 device->lift_moving,
+	 device->lift_error );	     
+}

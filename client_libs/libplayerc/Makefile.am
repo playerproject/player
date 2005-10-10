@@ -47,7 +47,6 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_wifi.c
 
 #dev_gps.c \
-#dev_gripper.c \
 #dev_joystick.c \
 #dev_motor.c \
 #dev_truth.c

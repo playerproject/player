@@ -11,7 +11,21 @@ EXTRA_DIST = test.world test.cfg cave.pnm
 
 noinst_PROGRAMS = $(BUILDTEST)
 
-test_SOURCES = test.c test.h test_laser.c test_position2d.c test_position3d.c test_log.c test_simulation.c test_power.c test_map.c test_sonar.c test_camera.c test_blobfinder.c test_ptz.c
+test_SOURCES = \
+	test.c \
+	test.h \
+	test_gripper.c \
+	test_laser.c \
+	test_position2d.c \
+	test_position3d.c \
+	test_log.c \
+	test_simulation.c \
+	test_power.c \
+	test_map.c \
+	test_sonar.c \
+	test_camera.c \
+	test_blobfinder.c \
+	test_ptz.c
 
 #test_camera.c \
 #test_fiducial.c \

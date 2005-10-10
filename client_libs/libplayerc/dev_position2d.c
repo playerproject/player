@@ -222,3 +222,20 @@ playerc_position2d_set_odom(playerc_position2d_t *device,
                                 &req, NULL, 0));
 }
 
+void playerc_position2d_print( playerc_position2d_t * device, 
+			       const char* prefix )
+{
+  if( prefix )
+    printf( "%s: ", prefix );
+  
+  printf( "#time\t\tpx\tpy\tpa\tvx\txvy\tva\tstall\n"
+	  "%14.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.d\n",
+	  device->info.datatime,
+	  device->px,
+	  device->py,
+	  device->pa,
+	  device->vx,
+	  device->vy,
+	  device->va,
+	  device->stall );  
+}
