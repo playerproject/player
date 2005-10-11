@@ -122,6 +122,28 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_POWER,
     (player_pack_fn_t)player_laser_power_config_pack},
 
+  /* limb messages */
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,
+    (player_pack_fn_t)player_limb_data_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_HOME_CMD,
+    (player_pack_fn_t)player_limb_home_cmd_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_STOP_CMD,
+    (player_pack_fn_t)player_limb_stop_cmd_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_SETPOSE_CMD,
+    (player_pack_fn_t)player_limb_setpose_cmd_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_SETPOSITION_CMD,
+    (player_pack_fn_t)player_limb_setposition_cmd_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_VECMOVE_CMD,
+    (player_pack_fn_t)player_limb_vecmove_cmd_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_POWER_REQ,
+    (player_pack_fn_t)player_limb_power_req_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_BRAKES_REQ,
+    (player_pack_fn_t)player_limb_brakes_req_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_GEOM_REQ,
+    (player_pack_fn_t)player_limb_geom_req_pack},
+  {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_SPEED_REQ,
+    (player_pack_fn_t)player_limb_speed_req_pack},
+
   /* localize messages */
   {PLAYER_LOCALIZE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,
     (player_pack_fn_t)player_localize_data_pack},

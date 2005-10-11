@@ -58,7 +58,7 @@ void ActArrayProxy::Subscribe(uint aIndex)
   if (mDevice==NULL)
     throw PlayerError("ActArrayProxy::ActArrayProxy()", "could not create");
 
-  if (0 != playerc_actarray_subscribe(mDevice, PLAYER_OPEN_MODE))
+  if (playerc_actarray_subscribe(mDevice, PLAYER_OPEN_MODE) != 0)
     throw PlayerError("ActArrayProxy::ActArrayProxy()", "could not subscribe");
 }
 
@@ -114,9 +114,9 @@ void ActArrayProxy::SetPowerConfig(bool aVal)
   int ret = playerc_actarray_power(mDevice, aVal ? 1 : 0);
   Unlock();
 
-  if (-2 != ret)
+  if (ret == -2)
     throw PlayerError("ActArrayProxy::SetPowerConfig", "NACK", ret);
-  else if (0 != ret)
+  else if (ret != 0)
     throw PlayerError("ActArrayProxy::SetPowerConfig",
                       playerc_error_str(),
                       ret);
@@ -129,9 +129,9 @@ void ActArrayProxy::SetBrakesConfig(bool aVal)
   int ret = playerc_actarray_brakes(mDevice, aVal ? 1 : 0);
   Unlock();
 
-  if (-2 != ret)
+  if (ret == -2)
     throw PlayerError("ActArrayProxy::SetBrakesConfig", "NACK", ret);
-  else if (0 != ret)
+  else if (ret != 0)
     throw PlayerError("ActArrayProxy::SetBrakesConfig",
                       playerc_error_str(),
                       ret);
@@ -144,9 +144,9 @@ void ActArrayProxy::SetSpeedConfig (uint aJoint, float aSpeed)
   int ret = playerc_actarray_speed_config(mDevice, aJoint, aSpeed);
   Unlock();
 
-  if (-2 != ret)
+  if (ret == -2)
     throw PlayerError("ActArrayProxy::SetSpeedConfig", "NACK", ret);
-  else if (0 != ret)
+  else if (ret != 0)
     throw PlayerError("ActArrayProxy::SetSpeedConfig",
                       playerc_error_str(),
                       ret);
@@ -206,9 +206,9 @@ void ActArrayProxy::RequestGeometry(void)
   Lock();
   int ret = playerc_actarray_get_geom(mDevice);
   Unlock();
-  if (-2 != ret)
+  if (ret == -2)
     throw PlayerError("ActArrayProxy::RequestGeometry", "NACK", ret);
-  else if (0 != ret)
+  else if (ret != 0)
     throw PlayerError("ActArrayProxy::RequestGeometry",
                       playerc_error_str(),
                       ret);

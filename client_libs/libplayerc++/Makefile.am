@@ -35,6 +35,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               gripperproxy.cc \
                               irproxy.cc \
                               laserproxy.cc \
+                              limbproxy.cc \
                               localizeproxy.cc \
                               logproxy.cc \
                               mapproxy.cc \

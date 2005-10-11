@@ -1176,8 +1176,75 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 
 /** @brief Print a human-readable summary of the laser state on
     stdout. */
-void playerc_laser_print( playerc_laser_t * device, 
-			  const char* prefix );
+void playerc_laser_print( playerc_laser_t * device,
+        const char* prefix );
+
+/** @} */
+/**************************************************************************/
+
+
+/** @defgroup playerc_proxy_limb limb
+
+The limb proxy provides an interface to limbs using forward/inverse
+kinematics, such as the ActivMedia Pioneer Arm. See the Player User Manual for a
+complete description of the drivers that support this interface.
+
+@{
+*/
+
+/** @brief Limb device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  player_limb_data_t data;
+  player_limb_geom_req_t geom;
+} playerc_limb_t;
+
+/** @brief Create a limb proxy. */
+playerc_limb_t *playerc_limb_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a limb proxy. */
+void playerc_limb_destroy(playerc_limb_t *device);
+
+/** @brief Subscribe to the limb device. */
+int playerc_limb_subscribe(playerc_limb_t *device, int access);
+
+/** @brief Un-subscribe from the limb device. */
+int playerc_limb_unsubscribe(playerc_limb_t *device);
+
+/** @brief Get the limb geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_limb_get_geom(playerc_limb_t *device);
+
+/** @brief Command the end effector to move home. */
+int playerc_limb_home_cmd(playerc_limb_t *device);
+
+/** @brief Command the end effector to stop immediatly. */
+int playerc_limb_stop_cmd(playerc_limb_t *device);
+
+/** @brief Command the end effector to move to a specified pose. */
+int playerc_limb_setpose_cmd(playerc_limb_t *device, float pX, float pY, float pZ, float aX, float aY, float aZ, float oX, float oY, float oZ);
+
+/** @brief Command the end effector to move to a specified position
+(ignoring approach and orientation vectors). */
+int playerc_limb_setposition_cmd(playerc_limb_t *device, float pX, float pY, float pZ);
+
+/** @brief Command the end effector to move along the provided vector from
+its current position for the provided distance. */
+int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, float length);
+
+/** @brief Turn the power to the limb on or off. Be careful
+when turning power on that the limb is not obstructed from its home
+position in case it moves to it (common behaviour). */
+int playerc_limb_power(playerc_limb_t *device, uint enable);
+
+/** @brief Turn the brakes of all actuators in the limb that have them on or off. */
+int playerc_limb_brakes(playerc_limb_t *device, uint enable);
+
+/** @brief Set the speed of the limb joints for all subsequent movement commands. */
+int playerc_limb_speed_config(playerc_limb_t *device, float speed);
 
 /** @} */
 /**************************************************************************/
@@ -1362,7 +1429,7 @@ typedef struct
 
   /** Occupancy for each cell (empty = -1, unknown = 0, occupied = +1) */
   char* cells;
-  
+
   /** Vector-based version of the map (call playerc_map_get_vector() to
    * fill this in). */
   double vminx, vminy, vmaxx, vmaxy;
@@ -1396,8 +1463,6 @@ int playerc_map_get_vector(playerc_map_t* device);
 /** @} */
 /**************************************************************************/
 
-#if 0
-
 /***************************************************************************/
 /** @defgroup playerc_proxy_motor motor
 
@@ -1415,11 +1480,19 @@ typedef struct
   /** Odometric pose (radians). */
   double pt;
 
-  /** Odometric velocity (radians). */
+  /** Odometric velocity (radians/second). */
   double vt;
 
   /** Stall flag [0, 1]. */
   int stall;
+
+  /** A bitfield of limit switches for the motor
+      These are stored as bits at bit
+        - @ref PLAYER_MOTOR_LIMIT_MIN,
+        - @ref PLAYER_MOTOR_LIMIT_CENTER,
+        - @ref PLAYER_MOTOR_LIMIT_MAX
+  */
+  uint limits;
 
 } playerc_motor_t;
 
@@ -1467,10 +1540,16 @@ int playerc_motor_set_cmd_vel(playerc_motor_t *device,
 int playerc_motor_set_cmd_pose(playerc_motor_t *device,
                                double gt, int state);
 
+/** Set the odometry offset
+
+@param device Pointer to proxy object.
+@param gt Odometry value in rad.
+
+*/
+int playerc_motor_set_odom(playerc_motor_t *device, double ot);
+
 /** @} */
 /**************************************************************************/
-
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_planner planner

@@ -1108,6 +1108,56 @@ class LaserProxy : public ClientProxy
 };
 
 /**
+The @p LimbProxy class is used to control a @ref player_interface_limb
+device.
+ */
+class LimbProxy : public ClientProxy
+{
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+   // libplayerc data structure
+    playerc_limb_t *mDevice;
+
+  public:
+
+    LimbProxy(PlayerClient *aPc, uint aIndex);
+    ~LimbProxy();
+
+    /// Geometry request - call before getting the
+    /// geometry of a joint through the accessor method
+    void RequestGeometry(void);
+
+    /// Power control
+    void SetPowerConfig(bool aVal);
+    /// Brakes control
+    void SetBrakesConfig(bool aVal);
+    /// Speed control
+    void SetSpeedConfig(float aSpeed);
+
+    /// Move the limb to the home position
+    void MoveHome(void);
+    /// Stop the limb immediately
+    void Stop(void);
+    /// Move the end effector to a given pose
+    void SetPose(float aPX, float aPY, float aPZ,
+                 float aAX, float aAY, float aAZ,
+                 float aOX, float aOY, float aOZ);
+    /// Move the end effector to a given position, ignoring orientation
+    void SetPosition(float aX, float aY, float aZ);
+    /// Move the end effector along a vector of given length,
+    /// maintaining current orientation
+    void VectorMove(float aX, float aY, float aZ, float aLength);
+
+    /// Accessor method for getting the limb's data
+    player_limb_data_t GetData(void) const;
+    /// Same again for getting the limb's geometry
+    player_limb_geom_req_t GetGeom(void) const;
+};
+
+/**
 The @p LocalizeProxy class is used to control a @ref
 player_interface_localize device, which can provide multiple pose
 hypotheses for a robot.
@@ -2164,6 +2214,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::LimbProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
