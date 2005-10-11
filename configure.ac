@@ -195,7 +195,7 @@ AM_CONDITIONAL(WITH_GTK, test "x$with_gtk" = "xyes")
 AC_CXX_NAMESPACES
 AX_BOOST_THREAD
 AX_BOOST_SIGNALS
-AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "$ax_cv_boost_signal" = yes)
+AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "x$ax_cv_boost_signal" = "xyes")
 
 dnl Include RTK gui support (for debugging)
 AC_ARG_ENABLE(rtkgui,
