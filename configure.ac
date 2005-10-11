@@ -388,7 +388,7 @@ dnl          examples/libplayerc/Makefile
           utils/Makefile
           utils/playercam/Makefile
           utils/playerv/Makefile
-dnl          utils/playerjoy/Makefile
+          utils/playerjoy/Makefile
           utils/playernav/Makefile
           utils/playerprint/Makefile
           utils/playervcr/Makefile
