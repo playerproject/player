@@ -152,7 +152,12 @@ typedef struct player_p2os_data
 // this is here because we need the above typedef's before including it.
 #include <sip.h>
 
+#include "kinecalc.h"
+
 class SIP;
+
+// Forward declaration of the KineCalc_Base class declared in kinecalc_base.h
+//class KineCalc;
 
 class P2OS : public Driver 
 {
@@ -171,6 +176,7 @@ class P2OS : public Driver
     player_devaddr_t blobfinder_id;
     player_devaddr_t sound_id;
     player_devaddr_t actarray_id;
+    player_devaddr_t limb_id;
 
     // bookkeeping to only send new gripper I/O commands
     bool sent_gripper_cmd;
@@ -205,8 +211,6 @@ class P2OS : public Driver
     void HandlePositionCommand(player_position2d_cmd_t position_cmd);
     void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
     void HandleSoundCommand(player_sound_cmd_t sound_cmd);
-    void HandleActArrayPosCmd (player_actarray_position_cmd_t cmd);
-    void HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd);
 
     /////////////////
     // Actarray stuff
@@ -216,8 +220,23 @@ class P2OS : public Driver
     inline unsigned char RadiansToTicks (int joint, double rads);
     inline double RadsPerSectoSecsPerTick (int joint, double speed);
     inline double SecsPerTicktoRadsPerSec (int joint, double secs);
-    void ToggleActArrayPower (unsigned char val, bool lock = true);             // Toggle actarray power on/off
-    void SetActArrayJointSpeed (char joint, double speed);    // Set a joint speed
+    void ToggleActArrayPower (unsigned char val, bool lock = true);   // Toggle actarray power on/off
+    void SetActArrayJointSpeed (char joint, double speed);            // Set a joint speed
+    void HandleActArrayPosCmd (player_actarray_position_cmd_t cmd);
+    void HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd);
+
+    /////////////////
+    // Limb stuff
+    KineCalc *kineCalc;
+    float armOffsetX, armOffsetY, armOffsetZ;
+    // This is here because we don't want it zeroed every time someone fills in some other data
+    player_limb_data_t limb_data;
+
+    void HandleLimbHomeCmd (void);
+    void HandleLimbStopCmd (void);
+    void HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd);
+    void HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd);
+    void HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd);
 
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel

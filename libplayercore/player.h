@@ -90,6 +90,7 @@
 #define PLAYER_OPAQUE_CODE         51  // plugin interface
 #define PLAYER_POSITION1D_CODE     52  // 1-D position
 #define PLAYER_ACTARRAY_CODE       53  // Actuator Array interface
+#define PLAYER_LIMB_CODE           54  // Limb interface
 /* the currently assigned device strings */
 #define PLAYER_ACTARRAY_STRING        "actarray"
 #define PLAYER_AIO_STRING             "aio"
@@ -111,6 +112,7 @@
 #define PLAYER_IR_STRING              "ir"
 #define PLAYER_JOYSTICK_STRING        "joystick"
 #define PLAYER_LASER_STRING           "laser"
+#define PLAYER_LIMB_STRING            "limb"
 #define PLAYER_LOCALIZE_STRING        "localize"
 #define PLAYER_LOG_STRING             "log"
 #define PLAYER_MAP_STRING             "map"
@@ -1393,6 +1395,144 @@ typedef struct player_laser_power_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
+/** @addtogroup interfaces */
+/** @{ */
+/** @defgroup player_interface_limb limb
+
+The limb interface provides access to a multi-jointed limb
+
+@{
+ */
+
+#define PLAYER_LIMB_STATE_IDLE        1     // Idle
+#define PLAYER_LIMB_STATE_BRAKED      2     // Brakes are on
+#define PLAYER_LIMB_STATE_MOVING      3     // Moving to target
+#define PLAYER_LIMB_STATE_OOR         4     // Target was out of reach
+#define PLAYER_LIMB_STATE_COLL        5     // Target was blocked by collision
+
+#define PLAYER_LIMB_DATA              1
+
+#define PLAYER_LIMB_HOME_CMD          1
+#define PLAYER_LIMB_STOP_CMD          2
+#define PLAYER_LIMB_SETPOSE_CMD       3
+#define PLAYER_LIMB_SETPOSITION_CMD   4
+#define PLAYER_LIMB_VECMOVE_CMD       5
+
+#define PLAYER_LIMB_POWER_REQ         1
+#define PLAYER_LIMB_BRAKES_REQ        2
+#define PLAYER_LIMB_GEOM_REQ          3
+#define PLAYER_LIMB_SPEED_REQ         4
+
+/** @brief Data
+
+  The limb data packet. */
+typedef struct player_limb_data
+{
+  /** The position of the end effector. */
+  float pX, pY, pZ;
+  /** The approach vector of the end effector. */
+  float aX, aY, aZ;
+  /** The orientation vector of the end effector (a vector in a predefined direction
+      on the end effector, generally from fingertip to fingertip). */
+  float oX, oY, oZ;
+  /** The state of the limb. */
+  uint8_t state;
+} player_limb_data_t;
+
+/** @brief Home command
+
+Tells the end effector to return to its home position. */
+typedef struct player_limb_home_cmd
+{
+  // PLAYER_LIMB_HOME_CMD subtype
+} player_limb_home_cmd_t;
+
+/** @brief Stop command
+
+Tells the limb to stop moving immediatly. */
+typedef struct player_limb_stop_cmd
+{
+  // PLAYER_LIMB_STOP_CMD subtype
+} player_limb_stop_cmd_t;
+
+/** @brief Set end effector pose command
+
+Provides a fully-described pose (position, normal vector and
+orientation vector) for the end effector to move to. */
+typedef struct player_limb_setpose_cmd
+{
+  /** Position of the end effector. */
+  float pX, pY, pZ;
+  /** Approach vector. */
+  float aX, aY, aZ;
+  /** Orientation vector. */
+  float oX, oY, oZ;
+} player_limb_setpose_cmd_t;
+
+/** @brief Set end effector position command
+
+Set the position of the end effector without worrying about a
+specific orientation. */
+typedef struct player_limb_setposition_cmd
+{
+  /** Position of the end effector. */
+  float pX, pY, pZ;
+} player_limb_setposition_cmd_t;
+
+/** @brief Vector move the end effector
+
+Move the end effector along the provided vector from its current
+position for the provided distance. */
+typedef struct player_limb_vecmove_cmd
+{
+  /** Direction vector to move in. */
+  float x, y, z;
+  /** Distance to move. */
+  float length;
+} player_limb_vecmove_cmd_t;
+
+/** @brief Configuration request: Power.
+
+Turns the power to the limb. Be careful when turning power on that
+the limb is not obstructed from its home position in case it moves
+to it (common behaviour). */
+typedef struct player_limb_power_req
+{
+  /** Power setting; 0 for off, 1 for on. */
+  uint8_t value;
+} player_limb_power_req_t;
+
+/** @brief Configuration request: Brakes.
+
+Turns the brakes of the limb on or off. */
+typedef struct player_limb_brakes_req
+{
+  /** Brakes setting; 0 for off, 1 for on. */
+  uint8_t value;
+} player_limb_brakes_req_t;
+
+/** @brief Geometry request
+
+Geometry request/response.  */
+typedef struct player_limb_geom_req
+{
+  /** The base position of the end-effector in robot coordinates. */
+  float x, y, z;
+} player_limb_geom_req_t;
+
+/** @brief Configuration request: Speed.
+
+Sets the speed of the end effector for all subsequent movements. */
+typedef struct player_limb_speed_req
+{
+  /** Speed setting in m/s. */
+  float speed;
+} player_limb_speed_req_t;
+
+/** @} */
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
 /** @defgroup player_interface_localize localize
 
 The @p localize interface provides pose information for the robot.
@@ -1571,7 +1711,7 @@ delivered in tiles, via a sequence of configuration requests.
 #define PLAYER_MAP_MAX_TILE_SIZE 2097102
 
 /** The maximum number of map lines */
-/* (2097152 - 30 (msg header) - 20 (meta-data to accompany the lines)) / 
+/* (2097152 - 30 (msg header) - 20 (meta-data to accompany the lines)) /
  *                                 16 (size of each line) = 131068 */
 #define PLAYER_MAP_MAX_SEGMENTS 131068
 
@@ -1619,8 +1759,8 @@ typedef struct player_map_data
 
 /** @brief Map data (vector form)
 
-A vector map, represented as line segments.  This message may either be sent 
-in response to a request, or as a data message, if the underyling driver 
+A vector map, represented as line segments.  This message may either be sent
+in response to a request, or as a data message, if the underyling driver
 supports dynamic map updates. */
 typedef struct player_map_data_vector
 {
@@ -1727,6 +1867,13 @@ The @p motor interface is used to control a single motor.
 #define PLAYER_MOTOR_LIMIT_MIN            1
 #define PLAYER_MOTOR_LIMIT_CENTER         2
 #define PLAYER_MOTOR_LIMIT_MAX            4
+
+// data types
+#define PLAYER_MOTOR_DATA_STATE             1
+//#define PLAYER_MOTOR_DATA_GEOM              2
+
+// Command types
+#define PLAYER_MOTOR_CMD_STATE              1
 
 /** @brief Data
 

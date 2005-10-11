@@ -104,12 +104,12 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
 int playerc_actarray_get_geom(playerc_actarray_t *device)
 {
   player_actarray_geom_t geom;
-  int ii = 0;
+  int ii = 0, result = 0;
 
-  if(playerc_client_request(device->info.client, &device->info,
+  if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_ACTARRAY_GET_GEOM_REQ,
-                            NULL, (void*)&geom, sizeof(geom)) < 0)
-    return -1;
+                            NULL, (void*)&geom, sizeof(geom))) < 0)
+    return result;
 
   for (ii = 0; ii < device->actuators_count; ii++)
   {

@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,7 @@
 #include "error.h"
 
 // Local declarations
-void playerc_position2d_putmsg(playerc_position2d_t *device, 
+void playerc_position2d_putmsg(playerc_position2d_t *device,
                                player_msghdr_t *header,
                                player_position2d_data_t *data, size_t len);
 
@@ -67,7 +67,7 @@ playerc_position2d_t *playerc_position2d_create(playerc_client_t *client, int in
   playerc_device_init(&device->info, client, PLAYER_POSITION2D_CODE, index,
                       (playerc_putmsg_fn_t) playerc_position2d_putmsg);
 
-  
+
   return device;
 }
 
@@ -97,7 +97,7 @@ int playerc_position2d_unsubscribe(playerc_position2d_t *device)
 
 
 // Process incoming data
-void playerc_position2d_putmsg(playerc_position2d_t *device, 
+void playerc_position2d_putmsg(playerc_position2d_t *device,
                                player_msghdr_t *header,
                                player_position2d_data_t *data, size_t len)
 {
@@ -120,23 +120,23 @@ void playerc_position2d_putmsg(playerc_position2d_t *device,
 }
 
 // Enable/disable the motors
-int 
+int
 playerc_position2d_enable(playerc_position2d_t *device, int enable)
 {
   player_position2d_power_config_t config;
 
   config.state = enable;
 
-  return(playerc_client_request(device->info.client, 
-                                &device->info, 
+  return(playerc_client_request(device->info.client,
+                                &device->info,
                                 PLAYER_POSITION2D_REQ_MOTOR_POWER,
                                 &config, NULL, 0));
 }
 
-int 
+int
 playerc_position2d_position_control(playerc_position2d_t *device, int type)
 {
-  player_position2d_power_config_t config;
+  player_position2d_position_mode_req_t config;
 
   config.state = type;
 
@@ -147,7 +147,7 @@ playerc_position2d_position_control(playerc_position2d_t *device, int type)
 
 // Get the position2d geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int 
+int
 playerc_position2d_get_geom(playerc_position2d_t *device)
 {
   player_position2d_geom_t geom;
@@ -168,7 +168,7 @@ playerc_position2d_get_geom(playerc_position2d_t *device)
 
 
 // Set the robot speed
-int 
+int
 playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
                                double vx, double vy, double va, int state)
 {
@@ -187,7 +187,7 @@ playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 }
 
 // Set the target pose
-int 
+int
 playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                 double gx, double gy, double ga, int state)
 {
@@ -200,13 +200,13 @@ playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
   cmd.state = state;
   cmd.type = 1;
 
-  return playerc_client_write(device->info.client, &device->info, 
+  return playerc_client_write(device->info.client, &device->info,
                               PLAYER_POSITION2D_CMD_STATE,
                               &cmd, NULL);
 }
 
 // Set the odometry offset
-int 
+int
 playerc_position2d_set_odom(playerc_position2d_t *device,
                             double ox, double oy, double oa)
 {
@@ -216,26 +216,26 @@ playerc_position2d_set_odom(playerc_position2d_t *device,
   req.pose.py = oy;
   req.pose.pa = oa;
 
-  return(playerc_client_request(device->info.client, 
-                                &device->info, 
+  return(playerc_client_request(device->info.client,
+                                &device->info,
                                 PLAYER_POSITION2D_REQ_SET_ODOM,
                                 &req, NULL, 0));
 }
 
-void playerc_position2d_print( playerc_position2d_t * device, 
-			       const char* prefix )
+void playerc_position2d_print( playerc_position2d_t * device,
+             const char* prefix )
 {
   if( prefix )
     printf( "%s: ", prefix );
-  
+
   printf( "#time\t\tpx\tpy\tpa\tvx\txvy\tva\tstall\n"
-	  "%14.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.d\n",
-	  device->info.datatime,
-	  device->px,
-	  device->py,
-	  device->pa,
-	  device->vx,
-	  device->vy,
-	  device->va,
-	  device->stall );  
+    "%14.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.d\n",
+    device->info.datatime,
+    device->px,
+    device->py,
+    device->pa,
+    device->vx,
+    device->vy,
+    device->va,
+    device->stall );
 }

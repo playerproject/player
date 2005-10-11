@@ -78,6 +78,9 @@ them named:
 - @ref player_interface_actarray
   - Controls arm (if equipped)
 
+- @ref player_interface_limb
+  - Inverse kinematics interface to arm
+
 - @ref player_interface_bumper
   - Returns data from bumper array (if equipped)
 
@@ -219,6 +222,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->blobfinder_id, 0, sizeof(player_devaddr_t));
   memset(&this->sound_id, 0, sizeof(player_devaddr_t));
   memset(&this->actarray_id, 0, sizeof(player_devaddr_t));
+  memset(&this->limb_id, 0, sizeof(player_devaddr_t));
 
   memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_t));
 
@@ -350,8 +354,23 @@ P2OS::P2OS(ConfigFile* cf, int section)
     }
   }
 
-  // Do we create an actarray interface?
-  if(cf->ReadDeviceAddr(&(this->actarray_id), section, "provides", PLAYER_ACTARRAY_CODE, -1, NULL) == 0)
+  // Do we create a limb interface?
+  if(cf->ReadDeviceAddr(&(this->limb_id), section, "provides", PLAYER_LIMB_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->limb_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+    // If we do, we need a kinematics calculator
+    kineCalc = new KineCalc;
+  }
+  else
+    kineCalc = NULL;
+
+  // Do we create an actarray interface? Note that if we have a limb interface, this implies an actarray interface
+  if((cf->ReadDeviceAddr(&(this->actarray_id), section, "provides", PLAYER_ACTARRAY_CODE, -1, NULL) == 0) ||
+      (this->limb_id.interf))
   {
     if(this->AddInterface(this->actarray_id) != 0)
     {
@@ -390,6 +409,23 @@ P2OS::P2OS(ConfigFile* cf, int section)
                                                              0)));
 
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
+
+  // Limb configuration
+  limb_data.state = PLAYER_LIMB_STATE_IDLE;
+  armOffsetX = cf->ReadTupleFloat(section, "limb_pos", 0, 0.0f);
+  armOffsetY = cf->ReadTupleFloat(section, "limb_pos", 1, 0.0f);
+  armOffsetZ = cf->ReadTupleFloat(section, "limb_pos", 2, 0.0f);
+  double temp1 = cf->ReadTupleFloat(section, "limb_links", 0, 0.06875f);
+  double temp2 = cf->ReadTupleFloat(section, "limb_links", 1, 0.16f);
+  double temp3 = cf->ReadTupleFloat(section, "limb_links", 2, 0.0f);
+  double temp4 = cf->ReadTupleFloat(section, "limb_links", 3, 0.13775f);
+  double temp5 = cf->ReadTupleFloat(section, "limb_links", 4, 0.11321f);
+  kineCalc->SetLinkLengths (temp1, temp2, temp3, temp4, temp5);
+  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 0, 0.0f));
+  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 1, 0.0f));
+  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 2, 0.0f));
+  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 3, 0.0f));
+  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 4, 0.0f));
 
   this->psos_fd = -1;
 
@@ -840,6 +876,11 @@ int P2OS::Shutdown()
   puts("P2OS has been shutdown");
   delete this->sippacket;
   this->sippacket = NULL;
+   if (kineCalc)
+   {
+     delete kineCalc;
+     kineCalc = NULL;
+   }
 
   return(0);
 }
@@ -858,6 +899,10 @@ P2OS::Subscribe(player_devaddr_t id)
     else if(Device::MatchDeviceAddress(id, this->sonar_id))
       this->sonar_subscriptions++;
     else if(Device::MatchDeviceAddress(id, this->actarray_id))
+      this->actarray_subscriptions++;
+    else if(Device::MatchDeviceAddress(id, this->limb_id))
+      // We use the actarray subscriptions count for the limb
+      // interface too since they're the same physical hardware
       this->actarray_subscriptions++;
   }
 
@@ -885,6 +930,13 @@ P2OS::Unsubscribe(player_devaddr_t id)
     }
     else if(Device::MatchDeviceAddress(id, this->actarray_id))
     {
+      this->actarray_subscriptions--;
+      assert(this->actarray_subscriptions >= 0);
+    }
+    else if(Device::MatchDeviceAddress(id, this->limb_id))
+    {
+      // We use the actarray subscriptions count for the limb
+      // interface too since they're the same physical hardware
       this->actarray_subscriptions--;
       assert(this->actarray_subscriptions >= 0);
     }
@@ -985,6 +1037,14 @@ P2OS::PutData(void)
                 (void*)&(this->p2os_data.actarray),
                 sizeof(player_actarray_data_t),
                 NULL);
+
+  // put limb data
+  this->Publish(this->limb_id, NULL,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_LIMB_DATA,
+                (void*)&(this->limb_data),
+                sizeof(player_limb_data_t),
+                NULL);
 }
 
 void 
@@ -1007,7 +1067,7 @@ P2OS::Main()
       this->ToggleSonarPower(0);
     last_sonar_subscrcount = this->sonar_subscriptions;
 
-    // Same for the actarray
+    // Same for the actarray - this will also turn it on and off with limb subscriptions
     if(!last_actarray_subscrcount && this->actarray_subscriptions)
       this->ToggleActArrayPower(1, false);
     else if(last_actarray_subscrcount && !(this->actarray_subscriptions))
@@ -1195,18 +1255,39 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       if (actarray_id.interf)
       {
         // ARMpac - current arm status
-//      printf ("Packet is:\n");
-//      packet.Print ();
-
+        double joints[6];
         sippacket->ParseArm (&packet.packet[2]);
         for (int ii = 0; ii < 6; ii++)
         {
           sippacket->armJointPosRads[ii] = TicksToRadians (ii, sippacket->armJointPos[ii]);
+          joints[ii] = sippacket->armJointPosRads[ii];
         }
         sippacket->Fill(&p2os_data);
-        // Go for another SIP - there had better be one or things will probably go boom
-        SendReceive(NULL,publish_data);
+        kineCalc->CalculateFK (joints);
+        limb_data.pX = kineCalc->GetP ().x + armOffsetX;
+        limb_data.pY = -kineCalc->GetP ().y + armOffsetY;
+        limb_data.pZ = kineCalc->GetP ().z + armOffsetZ;
+        limb_data.aX = kineCalc->GetA ().x;
+        limb_data.aY = -kineCalc->GetA ().y;
+        limb_data.aZ = kineCalc->GetA ().z;
+        limb_data.oX = kineCalc->GetO ().x;
+        limb_data.oY = -kineCalc->GetO ().y;
+        limb_data.oZ = kineCalc->GetO ().z;
+        if (limb_data.state != PLAYER_LIMB_STATE_OOR && limb_data.state != PLAYER_LIMB_STATE_COLL)
+        {
+          if (sippacket->armJointMoving[0] || sippacket->armJointMoving[1] || sippacket->armJointMoving[2] ||
+              sippacket->armJointMoving[3] || sippacket->armJointMoving[4])
+          {
+            limb_data.state = PLAYER_LIMB_STATE_MOVING;
+          }
+          else
+            limb_data.state = PLAYER_LIMB_STATE_IDLE;
+        }
       }
+      if(publish_data)
+        this->PutData();
+      // Go for another SIP - there had better be one or things will probably go boom
+      SendReceive(NULL,publish_data);
     }
     else if (packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && packet.packet[3] == ARMINFOPAC)
     {
@@ -1214,6 +1295,9 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       if (actarray_id.interf)
       {
         sippacket->ParseArmInfo (&packet.packet[2]);
+        // Update the KineCalc with the new info for joints - one would assume this doesn't change, though...
+        for (int ii = 0; ii < 5; ii++)
+          kineCalc->SetJointRange (ii, TicksToRadians (ii, sippacket->armJoints[ii].min), TicksToRadians (ii, sippacket->armJoints[ii].max));
         // Go for another SIP - there had better be one or things will probably go boom
         SendReceive(NULL,publish_data);
       }
@@ -1840,6 +1924,42 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_SPEED_REQ);
     return 0;
   }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_POWER_REQ,this->limb_id))
+  {
+    ToggleActArrayPower (((player_actarray_power_config_t*) data)->value);
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_POWER_REQ);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_BRAKES_REQ,this->limb_id))
+  {
+    // We don't have any brakes
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_GEOM_REQ,this->limb_id))
+  {
+    player_limb_geom_req_t limbGeom;
+
+    limbGeom.x = armOffsetX;
+    limbGeom.y = armOffsetY;
+    limbGeom.z = armOffsetZ;
+
+    this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_GEOM_REQ, &limbGeom, sizeof (limbGeom), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_SPEED_REQ,this->limb_id))
+  {
+    // FIXME - need to figure out what sort of speed support we should provide through the IK interface
+    // For now, just set all joint speeds - take the value as being rad/s instead of m/s
+    float speed = ((player_limb_speed_req_t*) data)->speed;
+    for (int ii = 1; ii < 6; ii++)
+    {
+      newSpeed = RadsPerSectoSecsPerTick (ii, speed);
+      SetActArrayJointSpeed (ii, newSpeed);
+    }
+
+    this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_SPEED_REQ);
+    return 0;
+  }
   else
   {
     PLAYER_WARN("unknown config request to p2os driver");
@@ -2096,6 +2216,162 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
   }
 }
 
+void P2OS::HandleLimbHomeCmd (void)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  command[0] = ARM_HOME;
+  command[1] = ARGINT;
+  command[2] = 7;
+  command[3] = 0;
+  packet.Build(command, 4);
+  SendReceive(&packet);
+}
+
+void P2OS::HandleLimbStopCmd (void)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  command[0] = ARM_STOP;
+  command[1] = ARGINT;
+
+  for (int ii = 1; ii < 5; ii++)
+  {
+    command[2] = ii;
+    command[3] = 0;
+    packet.Build (command, 4);
+    SendReceive (&packet);
+  }
+}
+
+void P2OS::HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+  EndEffector pose;
+
+//  printf ("Moving limb to pose (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", cmd.pX, cmd.pY, cmd.pZ, cmd.oX, cmd.oY, cmd.oZ, cmd.aX, cmd.aY, cmd.aZ);
+
+  pose.p.x = cmd.pX - armOffsetX;
+  pose.p.y = -(cmd.pY - armOffsetY);
+  pose.p.z = cmd.pZ - armOffsetZ;
+  pose.o.x = cmd.oX; pose.o.y = -cmd.oY; pose.o.z = cmd.oZ;
+  pose.a.x = cmd.aX; pose.a.y = -cmd.aY; pose.a.z = cmd.aZ;
+  pose.o = kineCalc->Normalise (pose.o);
+  pose.a = kineCalc->Normalise (pose.a);
+  pose.n = kineCalc->CalculateN (pose);
+
+  if (!kineCalc->CalculateIK (pose))
+  {
+    limb_data.state = PLAYER_LIMB_STATE_OOR;
+    return;
+  }
+
+  command[0] = ARM_POS;
+  command[1] = ARGINT;
+
+  for (int ii = 0; ii < 5; ii++)
+  {
+    command[2] = RadiansToTicks (ii, kineCalc->GetTheta (ii));
+    command[3] = ii + 1;
+    packet.Build (command, 4);
+    SendReceive (&packet);
+//    printf ("Sent joint %d to %f (%d)\n", ii, kineCalc->GetTheta (ii), command[2]);
+  }
+
+  limb_data.state = PLAYER_LIMB_STATE_MOVING;
+}
+
+void P2OS::HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd)
+{
+  EndEffector pose;
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  pose.p.x = cmd.pX - armOffsetX;
+  pose.p.y = -(cmd.pY - armOffsetY);
+  pose.p.z = cmd.pZ - armOffsetZ;
+
+  // Use the pose info from the last reported arm position
+  pose.o = kineCalc->GetO ();
+  pose.a = kineCalc->GetA ();
+  pose.n = kineCalc->GetN ();
+
+  if (!kineCalc->CalculateIK (pose))
+  {
+    limb_data.state = PLAYER_LIMB_STATE_OOR;
+    return;
+  }
+
+  command[0] = ARM_POS;
+  command[1] = ARGINT;
+
+  for (int ii = 0; ii < 5; ii++)
+  {
+    command[2] = RadiansToTicks (ii, kineCalc->GetTheta (ii));
+    command[3] = ii + 1;
+    packet.Build (command, 4);
+    SendReceive (&packet);
+  }
+
+  limb_data.state = PLAYER_LIMB_STATE_MOVING;
+}
+
+void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
+{
+  EndEffector pose;
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  // To do a vector move, calculate a new position that is offset from the current
+  // by the length of the desired move in the direction of the desired vector.
+  // Since we lack constant motion control, but are moving over a small range, this
+  // should hopefully give an accurate representation of a vector move.
+  // UPDATE: Turns out it doesn't work. Oh well. Maybe I'll have time to rewrite
+  // this driver in the future so that it can support proper constant motion
+  // control without being an unmaintainable mess.
+  // As such, this vector move isn't actually a vector move as it is intended in
+  // the interface. I'll leave it in because it could be useful as an "offset"
+  // command, but this should be noted in the docs for the driver.
+
+  pose.p = kineCalc->GetP ();
+  pose.o = kineCalc->GetO ();
+  pose.a = kineCalc->GetA ();
+  pose.n = kineCalc->GetN ();
+
+  KineVector offset;
+  offset.x = cmd.x;   offset.y = -cmd.y;   offset.z = cmd.z;
+  offset = kineCalc->Normalise (offset);
+  offset.x *= cmd.length;
+  offset.y *= cmd.length;
+  offset.z *= cmd.length;
+
+  pose.p.x += offset.x;
+  pose.p.y += offset.y;
+  pose.p.z += offset.z;
+
+  if (!kineCalc->CalculateIK (pose))
+  {
+    limb_data.state = PLAYER_LIMB_STATE_OOR;
+    return;
+  }
+
+  command[0] = ARM_POS;
+  command[1] = ARGINT;
+
+  for (int ii = 0; ii < 5; ii++)
+  {
+    command[2] = RadiansToTicks (ii, kineCalc->GetTheta (ii));
+    command[3] = ii + 1;
+    packet.Build (command, 4);
+    SendReceive (&packet);
+  }
+
+  limb_data.state = PLAYER_LIMB_STATE_MOVING;
+}
+
 int
 P2OS::HandleCommand(player_msghdr * hdr, void* data)
 {
@@ -2132,21 +2408,52 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     this->HandleSoundCommand(sound_cmd);
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
   {
     player_actarray_position_cmd_t cmd;
     cmd = *(player_actarray_position_cmd_t*) data;
     this->HandleActArrayPosCmd (cmd);
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_SPEED_CMD,this->actarray_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_SPEED_CMD,this->actarray_id))
   {
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->actarray_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->actarray_id))
   {
     player_actarray_home_cmd_t cmd;
     cmd = *(player_actarray_home_cmd_t*) data;
     this->HandleActArrayHomeCmd (cmd);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_HOME_CMD,this->limb_id))
+  {
+    this->HandleLimbHomeCmd ();
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_STOP_CMD,this->limb_id))
+  {
+    this->HandleLimbStopCmd ();
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSE_CMD,this->limb_id))
+  {
+    player_limb_setpose_cmd_t cmd;
+    cmd = *(player_limb_setpose_cmd_t*) data;
+    this->HandleLimbSetPoseCmd (cmd);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
+  {
+    player_limb_setposition_cmd_t cmd;
+    cmd = *(player_limb_setposition_cmd_t*) data;
+    this->HandleLimbSetPositionCmd (cmd);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
+  {
+    player_limb_vecmove_cmd_t cmd;
+    cmd = *(player_limb_vecmove_cmd_t*) data;
+    this->HandleLimbVecMoveCmd (cmd);
     return 0;
   }
   return(-1);
