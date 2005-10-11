@@ -178,6 +178,7 @@ if test "x$have_pkg_config" = "xno"; then
   AC_MSG_WARN([No GTK/GNOME-based GUIs will be built.])
   with_gtk=no
   with_gnomecanvas=no
+  with_gdkpixbuf=no
 else
   dnl pkg-config is available, so we use it.
   dnl check for libgnomecanvas and gtk, which some utils
@@ -188,9 +189,13 @@ else
   PKG_CHECK_MODULES(GTK, gtk+-2.0,
                     with_gtk=yes,
                     with_gtk=no)
+  PKG_CHECK_MODULES(GDK_PIXBUF, gdk-pixbuf-2.0,
+                    with_gdkpixbuf=yes,
+                    with_gdkpixbuf=no)
 fi
 AM_CONDITIONAL(WITH_GNOMECANVAS, test "x$with_gnomecanvas" = "xyes")
 AM_CONDITIONAL(WITH_GTK, test "x$with_gtk" = "xyes")
+AM_CONDITIONAL(WITH_GDKPIXBUF, test "x$with_gdkpixbuf" = "xyes")
 
 AC_CXX_NAMESPACES
 AX_BOOST_THREAD
@@ -387,6 +392,7 @@ dnl          client_libs/libplayerpacket/Makefile
 dnl          examples/libplayerc/Makefile
           utils/Makefile
           utils/playercam/Makefile
+          utils/playerwritemap/Makefile
           utils/playerv/Makefile
           utils/playerjoy/Makefile
           utils/playernav/Makefile
