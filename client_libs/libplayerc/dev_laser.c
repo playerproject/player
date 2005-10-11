@@ -123,6 +123,7 @@ void playerc_laser_putmsg(playerc_laser_t *device,
 
     device->scan_start = b;
     device->scan_res = db;
+    device->max_range = scan_data->max_range;
 
     for (i = 0; i < scan_data->ranges_count; i++)
     {
@@ -202,8 +203,8 @@ playerc_laser_set_config(playerc_laser_t *device,
 
   // copy them locally
   device->scan_start = config.min_angle;
-  device->scan_res = DTOR(config.resolution / 1e2);
-  device->range_res = config.range_res / 1e3;
+  device->scan_res = config.resolution;
+  device->range_res = config.range_res;
   device->intensity_on = config.intensity;
 
   return 0;
@@ -232,6 +233,7 @@ playerc_laser_get_config(playerc_laser_t *device,
   *intensity = device->intensity_on = config.intensity;
   *range_res = config.range_res;
   device->range_res = *range_res;
+  device->max_range = config.max_range;
   return 0;
 }
 

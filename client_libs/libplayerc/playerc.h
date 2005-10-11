@@ -970,10 +970,13 @@ typedef struct
   double scan_start;
 
   /** Angular resolution in radians. */
-  unsigned char scan_res;
+  double scan_res;
 
   /** Range resolution, in m. */
-  unsigned char range_res;
+  double range_res;
+
+  /** Maximum range of sensor, in m. */
+  double max_range;
 
   /** Raw range data; range (m). */
   double ranges[PLAYERC_LASER_MAX_SAMPLES];
@@ -1014,10 +1017,11 @@ int playerc_laser_unsubscribe(playerc_laser_t *device);
 @param min_angle, max_angle Start and end angles for the scan
 (radians).
 
-@param resolution Angular resolution in 0.01 degree
-increments. Valid values are 25, 50, 100.
+@param resolution Angular resolution in radians. Valid values depend on the 
+underlyling driver.
 
-@param range_res Range resolution in mm.  Valid values are: 1, 10, 100.
+@param range_res Range resolution in m.  Valid values depend on the 
+underlyling driver.
 
 @param intensity Intensity flag; set to 1 to enable reflection intensity data.
 
@@ -1038,10 +1042,11 @@ int playerc_laser_set_config(playerc_laser_t *device,
 @param min_angle, max_angle Start and end angles for the scan
 (radians).
 
-@param resolution Angular resolution in 0.01 degree
-increments. Valid values are 25, 50, 100.
+@param resolution Angular resolution in radians. Valid values depend on the 
+underlyling driver.
 
-@param range_res Range resolution in mm.  Valid values are: 1, 10, 100.
+@param range_res Range resolution in m.  Valid values depend on the 
+underlyling driver.
 
 @param intensity Intensity flag; set to 1 to enable reflection intensity data.
 

@@ -1329,6 +1329,8 @@ typedef struct player_laser_data
   float resolution;
   /** Number of range/intensity readings.  */
   uint32_t ranges_count;
+  /** Maximum range [m]. */
+  float max_range;
   /** Range readings [m]. */
   float ranges[PLAYER_LASER_MAX_SAMPLES];
   uint32_t intensity_count;
@@ -1373,6 +1375,9 @@ typedef struct player_laser_config
 
   /** Scan resolution [rad].  */
   float resolution;
+
+  /** Maximum range [m] */
+  float max_range;
 
   /** Range Resolution [m] */
   float range_res;

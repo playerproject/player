@@ -352,7 +352,6 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
              ((this->scantimes[i] - this->lastpublishposetime) >=
               this->update_interval))
           {
-            puts("LaserPoseInterp publishing");
             this->Publish(this->device_addr, NULL,
                           PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
                           (void*)&scanpose, sizeof(scanpose), 

@@ -127,7 +127,7 @@ Andrew Howard
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <netinet/in.h>
+#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -135,19 +135,17 @@ Andrew Howard
 
 #include <zlib.h>
   
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
-#include "interface_util.h"
+#include <libplayercore/playercore.h>
 
 #include "encode.h"
 #include "readlog_time.h"
   
+#if 0
 // we use this pointer to reset timestamps in the client objects when the
 // log gets rewound
 #include "clientmanager.h"
 extern ClientManager* clientmanager;
+#endif
 
 // The logfile driver
 class ReadLog: public Driver 
@@ -167,77 +165,120 @@ class ReadLog: public Driver
   // Main loop
   public: virtual void Main();
 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-
+  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr_t * hdr, 
+                                     void * data);
   // Process log interface configuration requests
-  private: int ProcessLogConfig(uint8_t,char*,size_t);
+  private: int ProcessLogConfig(MessageQueue * resp_queue, 
+                                player_msghdr_t * hdr, 
+                                void * data);
 
-  // Process generic configuration requests
-  private: int ProcessOtherConfig();
+  // Process position interface configuration requests
+  private: int ProcessPositionConfig(MessageQueue * resp_queue, 
+                                     player_msghdr_t * hdr, 
+                                     void * data);
+
+  // Process laser interface configuration requests
+  private: int ProcessLaserConfig(MessageQueue * resp_queue, 
+                                  player_msghdr_t * hdr, 
+                                  void * data);
+
+  // Process sonar interface configuration requests
+  private: int ProcessSonarConfig(MessageQueue * resp_queue, 
+                                  player_msghdr_t * hdr, 
+                                  void * data);
 
   // Parse the header info
   private: int ParseHeader(int linenum, int token_count, char **tokens,
-                           player_device_id_t *id, struct timeval *stime, struct timeval *dtime);
-
+                           player_devaddr_t *id, double *dtime,
+                           unsigned short* type, unsigned short* subtype);
   // Parse some data
-  private: int ParseData(player_device_id_t id, int linenum,
-                         int token_count, char **tokens, struct timeval time);
+  private: int ParseData(player_devaddr_t id, 
+                         unsigned short type, unsigned short subtype,
+                         int linenum, int token_count, char **tokens, 
+                         double time);
 
+#if 0
   // Parse blobfinder data
-  private: int ParseBlobfinder(player_device_id_t id, int linenum,
-                               int token_count, char **tokens, struct timeval time);
+  private: int ParseBlobfinder(player_devaddr_t id, 
+                               unsigned short type, unsigned short subtype,
+                               int linenum,
+                               int token_count, char **tokens, double time);
 
   // Parse camera data
-  private: int ParseCamera(player_device_id_t id, int linenum,
-                          int token_count, char **tokens, struct timeval time);
+  private: int ParseCamera(player_devaddr_t id, 
+                           unsigned short type, unsigned short subtype,
+                           int linenum,
+                          int token_count, char **tokens, double time);
 
   // Parse fiducial data
-  private: int ParseFiducial(player_device_id_t id, int linenum,
-                          int token_count, char **tokens, struct timeval time);
+  private: int ParseFiducial(player_devaddr_t id, 
+                             unsigned short type, unsigned short subtype,
+                             int linenum,
+                          int token_count, char **tokens, double time);
 
   // Parse gps data
-  private: int ParseGps(player_device_id_t id, int linenum,
-                        int token_count, char **tokens, struct timeval time);
+  private: int ParseGps(player_devaddr_t id, 
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time);
 
   // Parse joystick data
-  private: int ParseJoystick(player_device_id_t id, int linenum,
-                        int token_count, char **tokens, struct timeval time);
+  private: int ParseJoystick(player_devaddr_t id, 
+                             unsigned short type, unsigned short subtype,
+                             int linenum,
+                        int token_count, char **tokens, double time);
+#endif
 
   // Parse laser data
-  private: int ParseLaser(player_device_id_t id, int linenum,
-                          int token_count, char **tokens, struct timeval time);
+  private: int ParseLaser(player_devaddr_t id, 
+                          unsigned short type, unsigned short subtype,
+                          int linenum,
+                          int token_count, char **tokens, double time);
 
   // Parse sonar data
-  private: int ParseSonar(player_device_id_t id, int linenum,
-                          int token_count, char **tokens, struct timeval time);
-
+  private: int ParseSonar(player_devaddr_t id, 
+                          unsigned short type, unsigned short subtype,
+                          int linenum,
+                          int token_count, char **tokens, double time);
   // Parse position data
-  private: int ParsePosition(player_device_id_t id, int linenum,
-                             int token_count, char **tokens, struct timeval time);
+  private: int ParsePosition(player_devaddr_t id, 
+                             unsigned short type, unsigned short subtype,
+                             int linenum,
+                             int token_count, char **tokens, double time);
+
+#if 0
 
   // Parse position3d data
-  private: int ParsePosition3d(player_device_id_t id, int linenum,
-                               int token_count, char **tokens, struct timeval time);
+  private: int ParsePosition3d(player_devaddr_t id, 
+                               unsigned short type, unsigned short subtype,
+                               int linenum,
+                               int token_count, char **tokens, double time);
 
   // Parse truth data
-  private: int ParseTruth(player_device_id_t id, int linenum,
-                               int token_count, char **tokens, struct timeval time);
+  private: int ParseTruth(player_devaddr_t id, 
+                          unsigned short type, unsigned short subtype,
+                          int linenum,
+                          int token_count, char **tokens, double time);
 
   // Parse wifi data
-  private: int ParseWifi(player_device_id_t id, int linenum,
-                         int token_count, char **tokens, struct timeval time);
+  private: int ParseWifi(player_devaddr_t id, 
+                         unsigned short type, unsigned short subtype,
+                         int linenum,
+                         int token_count, char **tokens, double time);
+#endif
 
   // List of provided devices
   private: int provide_count;
-  private: player_device_id_t provide_ids[1024];
+  private: player_devaddr_t provide_ids[1024];
   // spots to cache metadata for a device (e.g., sonar geometry)
   private: void* provide_metadata[1024];
 
   // The log interface (at most one of these)
-  private: player_device_id_t log_id;
+  private: player_devaddr_t log_id;
   
   // File to read data from
-  private: char *filename;
+  private: const char *filename;
   private: FILE *file;
   private: gzFile gzfile;
 
@@ -264,22 +305,9 @@ class ReadLog: public Driver
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Some global variables that must be set from command line options
-char *ReadLog_filename = NULL;
-double ReadLog_speed = 1.0;
-
-
-////////////////////////////////////////////////////////////////////////////
 // Create a driver for reading log files
 Driver* ReadReadLog_Init(ConfigFile* cf, int section)
 {
-  // Check that the global readlog options have been set
-  if (::ReadLog_filename == NULL)
-  {
-    PLAYER_ERROR("no log file specified; did you forget to use -r <filename>?");
-    return NULL;
-  }
-
   return ((Driver*) (new ReadLog(cf, section)));
 }
 
@@ -299,7 +327,16 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
     : Driver(cf, section)
 {  
   int i,j;
-  player_device_id_t id;
+  player_devaddr_t id;
+
+  this->filename = cf->ReadFilename(section, "filename", NULL);
+  if(!this->filename)
+  {
+    PLAYER_ERROR("must specify a log file to read from");
+    this->SetError(-1);
+    return;
+  }
+  this->speed = cf->ReadFloat(section, "speed", 1.0);
 
   this->provide_count = 0;
   memset(&this->log_id, 0, sizeof(this->log_id));
@@ -308,18 +345,19 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   // Get a list of devices to provide
   for (i = 0; i < 1024; i++)
   {
-    if (cf->ReadDeviceId(&id, section, "provides", -1, i, NULL) != 0)
+    // TODO: fix the indexing here
+    if (cf->ReadDeviceAddr(&id, section, "provides", -1, i, NULL) != 0)
       break;
-    if (id.code == PLAYER_LOG_CODE)
+    if (id.interf == PLAYER_LOG_CODE)
       this->log_id = id;
     else
       this->provide_ids[this->provide_count++] = id;
   }
 
   // Register the log device
-  if (this->log_id.code == PLAYER_LOG_CODE)
+  if (this->log_id.interf == PLAYER_LOG_CODE)
   {
-    if (this->AddInterface(this->log_id, PLAYER_ALL_MODE) != 0)
+    if (this->AddInterface(this->log_id) != 0)
     {
       this->SetError(-1);
       return;
@@ -329,7 +367,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   // Register all the provides devices
   for (i = 0; i < this->provide_count; i++)
   {
-    if (this->AddInterface(this->provide_ids[i], PLAYER_ALL_MODE) != 0)
+    if (this->AddInterface(this->provide_ids[i]) != 0)
     {
       for(j=0;j<this->provide_count;j++)
       {
@@ -345,7 +383,7 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
     }
 
     // if it's sonar, then make a spot to cache geometry info
-    if(this->provide_ids[i].code == PLAYER_SONAR_CODE)
+    if(this->provide_ids[i].interf == PLAYER_SONAR_CODE)
       assert((this->provide_metadata[i] = 
               calloc(sizeof(player_sonar_geom_t),1)));
   }
@@ -355,11 +393,15 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   this->autorewind = cf->ReadInt(section, "autorewind", 0);
 
   // Initialize other stuff
-  this->filename = strdup(::ReadLog_filename);
   this->format = strdup("unknown");
-  this->speed = ::ReadLog_speed;
   this->file = NULL;
   this->gzfile = NULL;
+
+  // Set up the global time object.  We're just shoving our own in over the
+  // pre-existing WallclockTime object.  Not pretty but it works.
+  if(GlobalTime)
+    delete GlobalTime;
+  GlobalTime = new ReadLogTime();
   
   return;
 }
@@ -390,6 +432,7 @@ int ReadLog::Setup()
   // Reset the time
   ReadLogTime_time.tv_sec = 0;
   ReadLogTime_time.tv_usec = 0;
+  ReadLogTime_timeDouble = 0.0;
 
   // Open the file (possibly compressed)
   if (strlen(this->filename) >= 3 && \
@@ -409,8 +452,9 @@ int ReadLog::Setup()
 
   // Make some space for parsing data from the file.  This size is not
   // an exact upper bound; it's just my best guess.
-  this->line_size = 4 * PLAYER_MAX_MESSAGE_SIZE;
+  this->line_size = PLAYER_MAX_MESSAGE_SIZE;
   this->line = (char*) malloc(this->line_size);
+  assert(this->line);
 
   // Start device thread
   this->StartThread();
@@ -447,29 +491,42 @@ void ReadLog::Main()
 {
   int ret;
   int i, len, linenum;
-  int token_count;
+  bool use_stored_tokens;
+  int token_count=0;
   char *tokens[4096];
-  player_device_id_t header_id, provide_id;
-  struct timeval stime, dtime;
+  player_devaddr_t header_id, provide_id;
+  struct timeval tv;
+  double last_wall_time, curr_wall_time;
+  double curr_log_time, last_log_time;
+  unsigned short type, subtype;
+  bool reading_configs;
 
   linenum = 0;
+
+  last_wall_time = -1.0;
+  last_log_time = -1.0;
+
+  // First thing, we'll read all the configs from the front of the file
+  reading_configs = true;
+  use_stored_tokens = false;
   
   while (true)
   {
     pthread_testcancel();
 
     // Process requests
-    ProcessMessages();
+    if(!reading_configs)
+      ProcessMessages();
 
     // If we're not supposed to playback data, sleep and loop
-    if(!this->enable)
+    if(!this->enable && !reading_configs)
     {
       usleep(10000);
       continue;
     }
 
     // If a client has requested that we rewind, then do so
-    if(this->rewind_requested)
+    if(!reading_configs && this->rewind_requested)
     {
       // back up to the beginning of the file
       if (this->gzfile)
@@ -490,7 +547,9 @@ void ReadLog::Main()
         // reset the time
         ReadLogTime_time.tv_sec = 0;
         ReadLogTime_time.tv_usec = 0;
+        ReadLogTime_timeDouble = 0.0;
 
+#if 0
         // reset time-of-last-write in all clients
         //
         // FIXME: It's not really thread-safe to call this here, because it
@@ -498,6 +557,7 @@ void ReadLog::Main()
         //        written in the server thread.  But I'll be damned if I'm
         //        going to add a mutex just for this.
         clientmanager->ResetClientTimestamps();
+#endif
 
         // reset the flag
         this->rewind_requested = false;
@@ -507,107 +567,141 @@ void ReadLog::Main()
       }
     }
 
-    // Read a line from the file; note that gzgets is really slow
-    // compared to fgets (on uncompressed files), so use the latter.
-    if (this->gzfile)
-      ret = (gzgets(this->file, this->line, this->line_size) == NULL);
+    if(!use_stored_tokens)
+    {
+      // Read a line from the file; note that gzgets is really slow
+      // compared to fgets (on uncompressed files), so use the latter.
+      if (this->gzfile)
+        ret = (gzgets(this->file, this->line, this->line_size) == NULL);
+      else
+        ret = (fgets(this->line, this->line_size, (FILE*) this->file) == NULL);
+
+      if (ret != 0)
+      {
+        PLAYER_MSG1(1, "reached end of log file %s", this->filename);
+        // File is done, so just loop forever, unless we're on auto-rewind,
+        // or until a client requests rewind.
+        reading_configs = false;
+        while(!this->autorewind && !this->rewind_requested)
+        {
+          usleep(100000);
+          pthread_testcancel();
+
+          // Process requests
+          this->ProcessMessages();
+
+          ReadLogTime_timeDouble += 0.1;
+          ReadLogTime_time.tv_sec = (time_t)floor(ReadLogTime_timeDouble);
+          ReadLogTime_time.tv_sec = (time_t)fmod(ReadLogTime_timeDouble,1.0);
+        }
+
+        // request a rewind and start again
+        this->rewind_requested = true;
+        continue;
+      }
+
+      // Possible buffer overflow, so bail
+      assert(strlen(this->line) < this->line_size);
+
+      linenum += 1;
+
+      //printf("line %d\n", linenum);
+      //continue;
+
+      // Tokenize the line using whitespace separators
+      token_count = 0;
+      len = strlen(line);
+      for (i = 0; i < len; i++)
+      {
+        if (isspace(line[i]))
+          line[i] = 0;
+        else if (i == 0)
+        {
+          assert(token_count < (int) (sizeof(tokens) / sizeof(tokens[i])));
+          tokens[token_count++] = line + i;
+        }
+        else if (line[i - 1] == 0)
+        {
+          assert(token_count < (int) (sizeof(tokens) / sizeof(tokens[i])));
+          tokens[token_count++] = line + i;
+        }
+      }
+
+      if (token_count >= 1)
+      {
+        // Discard comments
+        if (strcmp(tokens[0], "#") == 0)
+          continue;
+
+        // Parse meta-data
+        if (strcmp(tokens[0], "##") == 0)
+        {
+          if (token_count == 4)
+          {
+            free(this->format);
+            this->format = strdup(tokens[3]);
+          }
+          continue;
+        }
+      }
+    }
     else
-      ret = (fgets(this->line, this->line_size, (FILE*) this->file) == NULL);
-        
-    if (ret != 0)
-    {
-      // File is done, so just loop forever, unless we're on auto-rewind,
-      // or until a client requests rewind.
-      while(!this->autorewind && !this->rewind_requested)
-      {
-        usleep(100000);
-        pthread_testcancel();
-
-        // Process requests
-
-        ReadLogTime_time.tv_usec += 100000;
-        if (ReadLogTime_time.tv_usec >= 1000000)
-        {
-          ReadLogTime_time.tv_sec += 1;
-          ReadLogTime_time.tv_usec = (ReadLogTime_time.tv_usec % 1000000);
-        }
-      }
-
-      // request a rewind and start again
-      this->rewind_requested = true;
-      continue;
-    }
-
-    // Possible buffer overflow, so bail
-    assert(strlen(this->line) < this->line_size);
-
-    linenum += 1;
-
-    //printf("line %d\n", linenum);
-    //continue;
-
-    // Tokenize the line using whitespace separators
-    token_count = 0;
-    len = strlen(line);
-    for (i = 0; i < len; i++)
-    {
-      if (isspace(line[i]))
-        line[i] = 0;
-      else if (i == 0)
-      {
-        assert(token_count < (int) (sizeof(tokens) / sizeof(tokens[i])));
-        tokens[token_count++] = line + i;
-      }
-      else if (line[i - 1] == 0)
-      {
-        assert(token_count < (int) (sizeof(tokens) / sizeof(tokens[i])));
-        tokens[token_count++] = line + i;
-      }
-    }
-
-    if (token_count >= 1)
-    {
-      // Discard comments
-      if (strcmp(tokens[0], "#") == 0)
-        continue;
-
-      // Parse meta-data
-      if (strcmp(tokens[0], "##") == 0)
-      {
-        if (token_count == 4)
-        {
-          free(this->format);
-          this->format = strdup(tokens[3]);
-        }
-        continue;
-      }
-    }
+      use_stored_tokens = false;
 
     // Parse out the header info
-    if (this->ParseHeader(linenum, token_count, tokens, &header_id, &stime, &dtime) != 0)
+    if (this->ParseHeader(linenum, token_count, tokens, 
+                          &header_id, &curr_log_time, &type, &subtype) != 0)
       continue;
 
-    // Set the global timestamp
-    ::ReadLogTime_time = stime;
-    
-    // Use sync messages to regulate replay
-    if (header_id.code == PLAYER_PLAYER_CODE)
+    if(reading_configs)
     {
-      //printf("reading %ld %ld\n", stime.tv_sec, stime.tv_usec);
-          
-      // TODO: this needs a radical re-design
-      usleep((int) (100000 / this->speed));
-      continue;
+      if(type != PLAYER_MSGTYPE_RESP_ACK)
+      {
+        // not a config
+        reading_configs = false;
+        // we'll reuse this tokenized string next time through, instead of
+        // reading a fresh line from the file
+        use_stored_tokens = true;
+        continue;
+      }
     }
 
+    // Set the global timestamp
+    ::ReadLogTime_timeDouble = curr_log_time;
+    ::ReadLogTime_time.tv_sec = (time_t)floor(curr_log_time);
+    ::ReadLogTime_time.tv_usec = (time_t)fmod(curr_log_time,1.0);
+
+    gettimeofday(&tv,NULL);
+    curr_wall_time = tv.tv_sec + tv.tv_usec/1e6;
+    if(!reading_configs)
+    {
+      // Have we published at least one message from this log?
+      if(last_wall_time >= 0)
+      {
+        // Wait until it's time to publish this message
+        while((curr_wall_time - last_wall_time) <
+              ((curr_log_time - last_log_time) / this->speed))
+        {
+          gettimeofday(&tv,NULL);
+          curr_wall_time = tv.tv_sec + tv.tv_usec/1e6;
+          this->ProcessMessages();
+          usleep(1000);
+        }
+      }
+
+      last_wall_time = curr_wall_time;
+      last_log_time = curr_log_time;
+    }
+    
     // Look for a matching read interface; data will be output on
     // the corresponding provides interface.
     for (i = 0; i < this->provide_count; i++)
     {
       provide_id = this->provide_ids[i];
-      if (header_id.code == provide_id.code && header_id.index == provide_id.index)
-        this->ParseData(provide_id, linenum, token_count, tokens, dtime);
-    } 
+      if(Device::MatchDeviceAddress(header_id, provide_id))
+        this->ParseData(provide_id, type, subtype,
+                        linenum, token_count, tokens, curr_log_time);
+    }
   }
 
   return;
@@ -617,27 +711,24 @@ void ReadLog::Main()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int ReadLog::ProcessLogConfig(uint8_t subtype, char * src, size_t len)
+int ReadLog::ProcessLogConfig(MessageQueue * resp_queue, 
+                              player_msghdr_t * hdr, 
+                              void * data)
 {
- // player_log_set_read_rewind_t rreq;
-  player_log_set_read_state_t sreq;
+  player_log_set_read_state_t* sreq;
   player_log_get_state_t greq;
-//  uint8_t subtype;
-//  char src[PLAYER_MAX_REQREP_SIZE];
-//  void *client;
- // struct timeval time;
-  //size_t len;
 
-  switch(subtype)
+  switch(hdr->subtype)
   {
-    case PLAYER_LOG_SET_READ_STATE:
-      if(len != sizeof(sreq))
+    case PLAYER_LOG_REQ_SET_READ_STATE:
+      if(hdr->size != sizeof(player_log_set_read_state_t))
       {
-        PLAYER_WARN2("request wrong size (%d != %d)", len, sizeof(sreq));
-      	return PLAYER_MSGTYPE_RESP_NACK;
+        PLAYER_WARN2("request wrong size (%d != %d)", 
+                     hdr->size, sizeof(player_log_set_read_state_t));
+      	return(-1);
       }
-      sreq = *((player_log_set_read_state_t*)src);
-      if(sreq.state)
+      sreq = (player_log_set_read_state_t*)data;
+      if(sreq->state)
       {
         puts("ReadLog: start playback");
         this->enable = true;
@@ -647,61 +738,169 @@ int ReadLog::ProcessLogConfig(uint8_t subtype, char * src, size_t len)
         puts("ReadLog: stop playback");
         this->enable = false;
       }
-      return PLAYER_MSGTYPE_RESP_ACK;
-    case PLAYER_LOG_GET_STATE:
-      greq = *((player_log_get_state_t*)src);
+      this->Publish(this->log_id, resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_LOG_REQ_SET_READ_STATE);
+      return(0);
+
+    case PLAYER_LOG_REQ_GET_STATE:
       greq.type = PLAYER_LOG_TYPE_READ;
       if(this->enable)
         greq.state = 1;
       else
         greq.state = 0;
 
-      return PLAYER_MSGTYPE_RESP_ACK;
-    case PLAYER_LOG_SET_READ_REWIND:
+      this->Publish(this->log_id, resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_LOG_REQ_GET_STATE,
+                    (void*)&greq, sizeof(greq), NULL);
+      return(0);
+
+    case PLAYER_LOG_REQ_SET_READ_REWIND:
       // set the appropriate flag in the manager
       this->rewind_requested = true;
 
-      return PLAYER_MSGTYPE_RESP_ACK;
+      this->Publish(this->log_id, resp_queue,
+                    PLAYER_MSGTYPE_RESP_ACK,
+                    PLAYER_LOG_REQ_SET_READ_REWIND);
+      return(0);
+
+    default:
+      return(-1);
   }
-  
-  return PLAYER_MSGTYPE_RESP_NACK;
 }
 
-
-int ReadLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len) 
+int 
+ReadLog::ProcessPositionConfig(MessageQueue * resp_queue, 
+                               player_msghdr_t * hdr, 
+                               void * data)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-	
-  if (hdr->type == PLAYER_MSGTYPE_REQ && hdr->device == device_id.code && hdr->device_index == device_id.index)
+  switch(hdr->subtype)
   {
-    *resp_len = 0;
-    return ProcessLogConfig(hdr->subtype,(char*)data,hdr->size);
+    case PLAYER_POSITION2D_REQ_GET_GEOM:
+      {
+        // Find the right place from which to retrieve it
+        int j;
+        for(j=0;j<this->provide_count;j++)
+        {
+          if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+            break;
+        }
+        if(j>=this->provide_count)
+          return(-1);
+
+        if(!this->provide_metadata[j])
+          return(-1);
+
+        this->Publish(this->provide_ids[j], resp_queue,
+                      PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                      this->provide_metadata[j],
+                      sizeof(player_position2d_geom_t),
+                      NULL);
+        return(0);
+      }
+    default:
+      return(-1);
   }
-	
-  for (int i = 0; i < this->provide_count; i++)
-  {
-    player_device_id_t id = this->provide_ids[i];
-    if (id.code == PLAYER_LOG_CODE)
-      continue;
-	if (id.code == PLAYER_SONAR_CODE && MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, id))
-	{
-	  assert(*resp_len >= sizeof(player_sonar_geom_t));
-	  *resp_len = sizeof(player_sonar_geom_t);
-	  memcpy(resp_data, this->provide_metadata[i], *resp_len);
-	  return PLAYER_MSGTYPE_RESP_ACK;
-	}
-  }
-  
-  *resp_len = 0;
-  return -1;
 }
 
+int 
+ReadLog::ProcessLaserConfig(MessageQueue * resp_queue, 
+                            player_msghdr_t * hdr, 
+                            void * data)
+{
+  switch(hdr->subtype)
+  {
+    case PLAYER_LASER_REQ_GET_GEOM:
+      {
+        // Find the right place from which to retrieve it
+        int j;
+        for(j=0;j<this->provide_count;j++)
+        {
+          if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+            break;
+        }
+        if(j>=this->provide_count)
+          return(-1);
 
+        if(!this->provide_metadata[j])
+          return(-1);
 
+        this->Publish(this->provide_ids[j], resp_queue,
+                      PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                      this->provide_metadata[j],
+                      sizeof(player_laser_geom_t),
+                      NULL);
+        return(0);
+      }
+    default:
+      return(-1);
+  }
+}
 
+int 
+ReadLog::ProcessSonarConfig(MessageQueue * resp_queue, 
+                            player_msghdr_t * hdr, 
+                            void * data)
+{
+  switch(hdr->subtype)
+  {
+    case PLAYER_SONAR_REQ_GET_GEOM:
+      {
+        // Find the right place from which to retrieve it
+        int j;
+        for(j=0;j<this->provide_count;j++)
+        {
+          if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+            break;
+        }
+        if(j>=this->provide_count)
+          return(-1);
+
+        if(!this->provide_metadata[j])
+          return(-1);
+
+        this->Publish(this->provide_ids[j], resp_queue,
+                      PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                      this->provide_metadata[j],
+                      sizeof(player_sonar_geom_t),
+                      NULL);
+        return(0);
+      }
+    default:
+      return(-1);
+  }
+}
+
+int 
+ReadLog::ProcessMessage(MessageQueue * resp_queue, 
+                        player_msghdr_t * hdr, 
+                        void * data)
+{
+  // Handle log config requests
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1,
+                           this->log_id))
+  {
+    return(this->ProcessLogConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+          (hdr->addr.interf == PLAYER_LASER_CODE))
+  {
+    return(this->ProcessLaserConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+          (hdr->addr.interf == PLAYER_SONAR_CODE))
+  {
+    return(this->ProcessSonarConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+          (hdr->addr.interf == PLAYER_POSITION2D_CODE))
+  {
+    return(this->ProcessPositionConfig(resp_queue, hdr, data));
+  }
+  else
+    return -1;
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // Signed int conversion macros
@@ -720,13 +919,15 @@ int ReadLog::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse the header info
-int ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
-                         player_device_id_t *id, struct timeval *stime, struct timeval *dtime)
+int 
+ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
+                     player_devaddr_t *id, double *dtime,
+                     unsigned short* type, unsigned short* subtype)
 {
   char *name;
   player_interface_t interface;
   
-  if (token_count < 4)
+  if (token_count < 7)
   {
     PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
     return -1;
@@ -734,23 +935,15 @@ int ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
   
   name = tokens[3];
 
-  if (strcmp(name, "sync") == 0)
+  if (lookup_interface(name, &interface) == 0)
   {
-    id->code = PLAYER_PLAYER_CODE;
-    id->index = 0;
-    stime->tv_sec = (uint32_t) floor(atof(tokens[0]));
-    stime->tv_usec = ((uint32_t) floor(atof(tokens[0]) * 1e6)) % 1000000;
-    dtime->tv_sec = stime->tv_sec;
-    dtime->tv_usec = stime->tv_usec;
-  }
-  else if (lookup_interface(name, &interface) == 0)
-  {
-    id->code = interface.code;
+    *dtime = atof(tokens[0]);
+    id->host = atoi(tokens[1]);
+    id->robot = atoi(tokens[2]);
+    id->interf = interface.interf;
     id->index = atoi(tokens[4]);
-    stime->tv_sec = (uint32_t) floor(atof(tokens[0]));
-    stime->tv_usec = ((uint32_t) (fmod(atof(tokens[0]), 1) * 1e6)) % 1000000;
-    dtime->tv_sec = (uint32_t) floor(atof(tokens[5]));
-    dtime->tv_usec = ((uint32_t) (fmod(atof(tokens[5]), 1) * 1e6)) % 1000000;
+    *type = atoi(tokens[5]);
+    *subtype = atoi(tokens[6]);
   }
   else
   {
@@ -764,40 +957,59 @@ int ReadLog::ParseHeader(int linenum, int token_count, char **tokens,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse data
-int ReadLog::ParseData(player_device_id_t id, int linenum,
-                       int token_count, char **tokens, struct timeval time)
+int ReadLog::ParseData(player_devaddr_t id, 
+                       unsigned short type, unsigned short subtype,
+                       int linenum, int token_count, char **tokens, 
+                       double time)
 {
-  if (id.code == PLAYER_BLOBFINDER_CODE)
-    return this->ParseBlobfinder(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_CAMERA_CODE)
-    return this->ParseCamera(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_FIDUCIAL_CODE)
-    return this->ParseFiducial(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_GPS_CODE)
-    return this->ParseGps(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_JOYSTICK_CODE)
-    return this->ParseJoystick(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_LASER_CODE)
-    return this->ParseLaser(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_SONAR_CODE)
-    return this->ParseSonar(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_POSITION_CODE)
-    return this->ParsePosition(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_POSITION3D_CODE)
-    return this->ParsePosition3d(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_TRUTH_CODE)
-    return this->ParseTruth(id, linenum, token_count, tokens, time);
-  else if (id.code == PLAYER_WIFI_CODE)
-    return this->ParseWifi(id, linenum, token_count, tokens, time);
+#if 0
+  if (id.interf == PLAYER_BLOBFINDER_CODE)
+    return this->ParseBlobfinder(id, type, subtype, linenum, 
+                                 token_count, tokens, time);
+  else if (id.interf == PLAYER_CAMERA_CODE)
+    return this->ParseCamera(id, type, subtype, linenum, 
+                             token_count, tokens, time);
+  else if (id.interf == PLAYER_FIDUCIAL_CODE)
+    return this->ParseFiducial(id, type, subtype, linenum, 
+                               token_count, tokens, time);
+  else if (id.interf == PLAYER_GPS_CODE)
+    return this->ParseGps(id, type, subtype, linenum, 
+                          token_count, tokens, time);
+  else if (id.interf == PLAYER_JOYSTICK_CODE)
+    return this->ParseJoystick(id, type, subtype, linenum, 
+                               token_count, tokens, time);
+#endif
+  if (id.interf == PLAYER_LASER_CODE)
+    return this->ParseLaser(id, type, subtype, linenum, 
+                            token_count, tokens, time);
+  else if (id.interf == PLAYER_SONAR_CODE)
+    return this->ParseSonar(id, type, subtype, linenum, 
+                            token_count, tokens, time);
+  else if (id.interf == PLAYER_POSITION2D_CODE)
+    return this->ParsePosition(id, type, subtype, linenum, 
+                               token_count, tokens, time);
 
-  PLAYER_WARN1("unknown interface code [%s]", ::lookup_interface_name(0, id.code));
+#if 0
+  else if (id.interf == PLAYER_POSITION3D_CODE)
+    return this->ParsePosition3d(id, type, subtype, linenum, 
+                                 token_count, tokens, time);
+  else if (id.interf == PLAYER_TRUTH_CODE)
+    return this->ParseTruth(id, type, subtype, linenum, 
+                            token_count, tokens, time);
+  else if (id.interf == PLAYER_WIFI_CODE)
+    return this->ParseWifi(id, type, subtype, linenum, 
+                           token_count, tokens, time);
+#endif
+
+  PLAYER_WARN1("unknown interface code [%s]", 
+               ::lookup_interface_name(0, id.interf));
   return -1;
 }
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////
 // Parse blobfinder data
-int ReadLog::ParseBlobfinder(player_device_id_t id, int linenum,
+int ReadLog::ParseBlobfinder(player_devaddr_t id, int linenum,
                              int token_count, char **tokens, struct timeval time)
 {
   player_blobfinder_data_t data;
@@ -846,7 +1058,7 @@ int ReadLog::ParseBlobfinder(player_device_id_t id, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse camera data
-int ReadLog::ParseCamera(player_device_id_t id, int linenum,
+int ReadLog::ParseCamera(player_devaddr_t id, int linenum,
                                int token_count, char **tokens, struct timeval time)
 {
   player_camera_data_t *data;
@@ -887,7 +1099,7 @@ int ReadLog::ParseCamera(player_device_id_t id, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse fiducial data
-int ReadLog::ParseFiducial(player_device_id_t id, int linenum,
+int ReadLog::ParseFiducial(player_devaddr_t id, int linenum,
                                int token_count, char **tokens, struct timeval time)
 {
   player_fiducial_data_t data;
@@ -927,7 +1139,7 @@ int ReadLog::ParseFiducial(player_device_id_t id, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse GPS data
-int ReadLog::ParseGps(player_device_id_t id, int linenum,
+int ReadLog::ParseGps(player_devaddr_t id, int linenum,
                       int token_count, char **tokens, struct timeval time)
 {
   player_gps_data_t data;
@@ -964,7 +1176,7 @@ int ReadLog::ParseGps(player_device_id_t id, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse joystick data
-int ReadLog::ParseJoystick(player_device_id_t id, int linenum,
+int ReadLog::ParseJoystick(player_devaddr_t id, int linenum,
                       int token_count, char **tokens, struct timeval time)
 {
   player_joystick_data_t data;
@@ -985,202 +1197,377 @@ int ReadLog::ParseJoystick(player_device_id_t id, int linenum,
 
   return 0;
 }
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse laser data
-int ReadLog::ParseLaser(player_device_id_t id, int linenum,
-                        int token_count, char **tokens, struct timeval time)
+int ReadLog::ParseLaser(player_devaddr_t id, 
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
 {
   int i, count;
-  player_laser_data_t data;
 
-  if (token_count < 12)
+  switch(type)
   {
-    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
-    return -1;
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_LASER_DATA_SCAN:
+          {
+            player_laser_data_t data;
+
+            if (token_count < 12)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.id = atoi(tokens[7]);
+            data.min_angle = atof(tokens[8]);
+            data.max_angle = atof(tokens[9]);
+            data.resolution = atof(tokens[10]);
+            data.ranges_count = atoi(tokens[11]);
+            data.intensity_count = data.ranges_count;
+
+            count = 0;
+            for (i = 12; i < token_count; i += 2)
+            {
+              data.ranges[count] = atof(tokens[i + 0]);
+              data.intensity[count] = atoi(tokens[i + 1]);
+              count += 1;
+            }
+
+            if (count != (int)data.ranges_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        case PLAYER_LASER_DATA_SCANPOSE:
+          {
+            player_laser_data_scanpose_t data;
+
+            if (token_count < 15)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.scan.id = atoi(tokens[7]);
+            data.pose.px = atof(tokens[8]);
+            data.pose.py = atof(tokens[9]);
+            data.pose.pa = atof(tokens[10]);
+            data.scan.min_angle = atof(tokens[11]);
+            data.scan.max_angle = atof(tokens[12]);
+            data.scan.resolution = atof(tokens[13]);
+            data.scan.ranges_count = atoi(tokens[14]);
+            data.scan.intensity_count = data.scan.ranges_count;
+
+            count = 0;
+            for (i = 15; i < token_count; i += 2)
+            {
+              data.scan.ranges[count] = atof(tokens[i + 0]);
+              data.scan.intensity[count] = atoi(tokens[i + 1]);
+              count += 1;
+            }
+
+            if (count != (int)data.scan.ranges_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown laser data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(subtype)
+      {
+        case PLAYER_LASER_REQ_GET_GEOM:
+          {
+            if(token_count < 12)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+
+            // cache it
+            player_laser_geom_t* geom = 
+                    (player_laser_geom_t*)calloc(1,sizeof(player_laser_geom_t));
+            assert(geom);
+
+            geom->pose.px = atof(tokens[7]);
+            geom->pose.py = atof(tokens[8]);
+            geom->pose.pa = atof(tokens[9]);
+            geom->size.sl = atof(tokens[10]);
+            geom->size.sw = atof(tokens[11]);
+
+            // Find the right place to put it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+              if(Device::MatchDeviceAddress(this->provide_ids[j], id))
+                break;
+            }
+            assert(j<this->provide_count);
+
+            if(this->provide_metadata[j])
+              free(this->provide_metadata[j]);
+
+            this->provide_metadata[j] = (void*)geom;
+
+            // nothing to publish
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown laser reply subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown laser msg type %d\n", type);
+      return(-1);
   }
-
-  data.min_angle = NINT16(RAD_DEG(atof(tokens[6])) * 100);
-  data.max_angle = NINT16(RAD_DEG(atof(tokens[7])) * 100);
-  data.resolution = NUINT16(RAD_DEG(atof(tokens[8])) * 100);
-  data.range_res = NUINT16(1);
-  data.range_count = NUINT16(atoi(tokens[9]));
-    
-  count = 0;
-  for (i = 10; i < token_count; i += 2)
-  {
-    data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));
-    data.intensity[count] = atoi(tokens[i + 1]);
-    count += 1;
-  }
-
-  if (count != ntohs(data.range_count))
-  {
-    PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
-    return -1;
-  }
-
-  /* DEPRECATED; REMOVE
-     else
-     {
-     data.min_angle = +18000;
-     data.max_angle = -18000;
-    
-     count = 0;
-     for (i = 6; i < token_count; i += 3)
-     {
-     data.ranges[count] = NUINT16(M_MM(atof(tokens[i + 0])));      
-     data.intensity[count] = atoi(tokens[i + 2]);
-
-     angle = (int) (atof(tokens[i + 1]) * 180 / M_PI * 100);
-     if (angle < data.min_angle)
-     data.min_angle = angle;
-     if (angle > data.max_angle)
-     data.max_angle = angle;
-
-     count += 1;
-     }
-
-     data.resolution = (data.max_angle - data.min_angle) / (count - 1);
-     data.range_count = count;
-
-     data.range_count = NUINT16(data.range_count);
-     data.min_angle = NINT16(data.min_angle);
-     data.max_angle = NINT16(data.max_angle);
-     data.resolution = NUINT16(data.resolution);
-     data.range_res = NUINT16(1);
-     }
-  */
-
-  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
-
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse sonar data
-int ReadLog::ParseSonar(player_device_id_t id, int linenum,
-                               int token_count, char **tokens, struct timeval time)
+int ReadLog::ParseSonar(player_devaddr_t id, 
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
 {
-  int i;
-  int idx = -1;
-  int curr; 
-  unsigned short pose_count, range_count;
-  player_sonar_data_t data;
-  player_sonar_geom_t* geom;
-
-  memset(&data,0,sizeof(data));
-
-  // finding matching id in provide_ids, to get the right slot in
-  // provide_metadata.
-  for(i=0;i<this->provide_count;i++)
+  switch(type)
   {
-    if((this->provide_ids[i].code == id.code) &&
-       (this->provide_ids[i].index == id.index) && 
-       (this->provide_ids[i].port == id.port))
-    {
-      idx = i;
-      break;
-    }
-  }
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_SONAR_DATA_RANGES:
+          {
+            player_sonar_data_t data;
+            if(token_count < 8)
+            {
+              PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+              return -1;
+            }
+            data.ranges_count = atoi(tokens[7]);
+            int count = 0;
+            for(int i=8;i<token_count;i++)
+            {
+              data.ranges[count++] = atof(tokens[i]);
+            }
+            if(count != (int)data.ranges_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+        case PLAYER_SONAR_DATA_GEOM:
+          {
+            player_sonar_geom_t geom;
+            if(token_count < 8)
+            {
+              PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+              return -1;
+            }
+            geom.poses_count = atoi(tokens[7]);
+            int count = 0;
+            for(int i=8;i<token_count;i+=3)
+            {
+              geom.poses[count].px = atof(tokens[i]);
+              geom.poses[count].py = atof(tokens[i+1]);
+              geom.poses[count].pa = atof(tokens[i+2]);
+              count++;
+            }
+            if(count != (int)geom.poses_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d", 
+                            this->filename, linenum);
+              return -1;
+            }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&geom, sizeof(geom), &time);
+            return(0);
+          }
+        default:
+          PLAYER_ERROR1("unknown sonar data subtype %d\n", subtype);
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(subtype)
+      {
+        case PLAYER_SONAR_REQ_GET_GEOM:
+          {
+            if(token_count < 8)
+            {
+              PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+              return -1;
+            }
 
-  if(idx < 0)
-  {
-    PLAYER_ERROR("couldn't find sonar id in list");
-    return -1;
-  }
+            // cache it
+            player_sonar_geom_t* geom =
+                    (player_sonar_geom_t*)calloc(1,sizeof(player_sonar_geom_t));
+            assert(geom);
 
-  if (token_count < 8)
-  {
-    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
-    return -1;
-  }
+            geom->poses_count = atoi(tokens[7]);
+            int count = 0;
+            for(int i=8;i<token_count;i+=3)
+            {
+              geom->poses[count].px = atof(tokens[i]);
+              geom->poses[count].py = atof(tokens[i+1]);
+              geom->poses[count].pa = atof(tokens[i+2]);
+              count++;
+            }
+            if(count != (int)geom->poses_count)
+            {
+              PLAYER_ERROR2("range count mismatch at %s:%d", 
+                            this->filename, linenum);
+              free(geom);
+              return -1;
+            }
 
-  // parse, byteswap, and cache sonar geom into this->provide_metadata[idx]
-  geom = (player_sonar_geom_t*)this->provide_metadata[idx];
-  assert(geom);
-  curr = 6;
-  geom->pose_count = NUINT16(atoi(tokens[curr]));
-  curr++;
-  for(pose_count=0; 
-      pose_count < ntohs(geom->pose_count); 
-      pose_count++)
-  {
-    if((curr + 2) >= token_count)
-      break;
-    geom->poses[pose_count][0] = NINT16(M_MM(atof(tokens[curr])));
-    geom->poses[pose_count][1] = NINT16(M_MM(atof(tokens[curr+1])));
-    geom->poses[pose_count][2] = NINT16(RAD_DEG(atof(tokens[curr+2])));
-    curr += 3;
-  }
+            // Find the right place to put it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+              if(Device::MatchDeviceAddress(this->provide_ids[j], id))
+                break;
+            }
+            assert(j<this->provide_count);
 
-  if(pose_count != ntohs(geom->pose_count))
-  {
-    PLAYER_ERROR2("pose count mismatch at %s:%d", this->filename, linenum);
-    return -1;
-  }
+            if(this->provide_metadata[j])
+              free(this->provide_metadata[j]);
 
-  // parse and put sonar data
-  if(curr >= token_count)
-  {
-    PLAYER_ERROR2("incomplete line (no range data) at %s:%d", this->filename, linenum);
-    return -1;
-  }
-  data.range_count = NUINT16(atoi(tokens[curr]));
-  curr++;
-  for(range_count=0;
-      range_count < ntohs(data.range_count);
-      range_count++)
-  {
-    if(curr >= token_count)
-      break;
-    data.ranges[range_count] = NUINT16(M_MM(atof(tokens[curr])));
-    curr++;
-  }
+            this->provide_metadata[j] = (void*)geom;
 
-  if(range_count != ntohs(data.range_count))
-  {
-    PLAYER_ERROR2("range count mismatch at %s:%d", this->filename, linenum);
-    return -1;
+            // nothing to publish
+            return(0);
+          }
+        default:
+          PLAYER_ERROR1("unknown sonar reply subtype %d\n", subtype);
+          return(-1);
+      }
+    default:
+      PLAYER_ERROR1("unknown sonar message type %d\n", subtype);
+      return(-1);
   }
-
-  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
-
-  return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse position data
-int ReadLog::ParsePosition(player_device_id_t id, int linenum,
-                                  int token_count, char **tokens, struct timeval time)
+int
+ReadLog::ParsePosition(player_devaddr_t id, 
+                       unsigned short type, unsigned short subtype,
+                       int linenum,
+                       int token_count, char **tokens, double time)
 {
-  player_position_data_t data;
-
-  if (token_count < 12)
+  switch(type)
   {
-    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
-    return -1;
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_POSITION2D_DATA_STATE:
+          {
+            player_position2d_data_t data;
+            if(token_count < 14)
+            {
+              PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+              return -1;
+            }
+            data.pos.px = atof(tokens[7]);
+            data.pos.py = atof(tokens[8]);
+            data.pos.pa = atof(tokens[9]);
+            data.vel.px = atof(tokens[10]);
+            data.vel.py = atof(tokens[11]);
+            data.vel.pa = atof(tokens[12]);
+            data.stall = atoi(tokens[13]);
+
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+        default:
+          PLAYER_ERROR1("unknown position data subtype %d\n", subtype);
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(subtype)
+      {
+        case PLAYER_POSITION2D_REQ_GET_GEOM:
+          {
+            if(token_count < 12)
+            {
+              PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+              return -1;
+            }
+
+            // cache it
+            player_position2d_geom_t* geom =
+                    (player_position2d_geom_t*)calloc(1,sizeof(player_position2d_geom_t));
+            assert(geom);
+
+            geom->pose.px = atof(tokens[7]);
+            geom->pose.py = atof(tokens[8]);
+            geom->pose.pa = atof(tokens[9]);
+            geom->size.sl = atof(tokens[10]);
+            geom->size.sw = atof(tokens[11]);
+
+            // Find the right place to put it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+              if(Device::MatchDeviceAddress(this->provide_ids[j], id))
+                break;
+            }
+            assert(j<this->provide_count);
+
+            if(this->provide_metadata[j])
+              free(this->provide_metadata[j]);
+
+            this->provide_metadata[j] = (void*)geom;
+
+            // nothing to publish
+            return(0);
+          }
+        default:
+          PLAYER_ERROR1("unknown position reply subtype %d\n", subtype);
+          return(-1);
+      }
+    default:
+      PLAYER_ERROR1("unknown position message type %d\n", subtype);
+      return(-1);
   }
-  
-  data.xpos = NINT32(M_MM(atof(tokens[6])));
-  data.ypos = NINT32(M_MM(atof(tokens[7])));
-  data.yaw = NINT32(RAD_DEG(atof(tokens[8])));
-  data.xspeed = NINT32(M_MM(atof(tokens[9])));
-  data.yspeed = NINT32(M_MM(atof(tokens[10])));
-  data.yawspeed = NINT32(RAD_DEG(atof(tokens[11])));
-  data.stall = atoi(tokens[12]);
-
-  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
-
-  return 0;
 }
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////
 // Parse position3d data
-int ReadLog::ParsePosition3d(player_device_id_t id, int linenum,
+int ReadLog::ParsePosition3d(player_devaddr_t id, int linenum,
                              int token_count, char **tokens, struct timeval time)
 {
  player_position3d_data_t data;
@@ -1216,7 +1603,7 @@ int ReadLog::ParsePosition3d(player_device_id_t id, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse truth data
-int ReadLog::ParseTruth(player_device_id_t id, int linenum,
+int ReadLog::ParseTruth(player_devaddr_t id, int linenum,
                              int token_count, char **tokens, struct timeval time)
 {
  player_truth_data_t data;
@@ -1243,7 +1630,7 @@ int ReadLog::ParseTruth(player_device_id_t id, int linenum,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
-int ReadLog::ParseWifi(player_device_id_t id, int linenum,
+int ReadLog::ParseWifi(player_devaddr_t id, int linenum,
                               int token_count, char **tokens, struct timeval time)
 {
   player_wifi_data_t data;
@@ -1278,5 +1665,5 @@ int ReadLog::ParseWifi(player_device_id_t id, int linenum,
 
   return 0;
 }
-
+#endif
 
