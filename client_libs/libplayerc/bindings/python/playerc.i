@@ -146,8 +146,8 @@
 %typemap(out) playerc_blobfinder_blob_t [ANY]
 {
   int i;
-  $result = PyTuple_New(arg1->blob_count);
-  for (i = 0; i < arg1->blob_count; i++) 
+  $result = PyTuple_New(arg1->blobs_count);
+  for (i = 0; i < arg1->blobs_count; i++) 
   {
     PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_blobfinder_blob_t, 0);
     PyTuple_SetItem($result,i,o);

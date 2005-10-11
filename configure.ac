@@ -334,9 +334,9 @@ AC_OUTPUT(Makefile
           server/drivers/blobfinder/Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
-    server/drivers/blobfinder/simpleshape/Makefile
-    server/drivers/blobfinder/acts/Makefile
-    server/drivers/blobfinder/shapetracker/Makefile
+          server/drivers/blobfinder/simpleshape/Makefile
+          server/drivers/blobfinder/acts/Makefile
+          server/drivers/blobfinder/shapetracker/Makefile
           server/drivers/wifi/Makefile
           server/drivers/speech/Makefile
           server/drivers/speech/recognition/Makefile
@@ -346,7 +346,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/reb/Makefile
           server/drivers/mixed/khepera/Makefile
           server/drivers/mixed/rmp/Makefile
-    server/drivers/mixed/garcia/Makefile
+          server/drivers/mixed/garcia/Makefile
           server/drivers/mixed/nomad/Makefile
           server/drivers/mixed/botrics/Makefile
           server/drivers/mixed/clodbuster/Makefile
@@ -376,8 +376,8 @@ dnl          client_libs/c/playercclient.pc
 dnl          client_libs/libplayerc/doc/Makefile
           client_libs/libplayerc/playerc.pc
           client_libs/libplayerc/test/Makefile
-dnl          client_libs/libplayerc/bindings/Makefile
-dnl          client_libs/libplayerc/bindings/python/Makefile
+          client_libs/libplayerc/bindings/Makefile
+          client_libs/libplayerc/bindings/python/Makefile
 dnl          client_libs/libplayerpacket/Makefile
           examples/Makefile
           examples/plugins/Makefile
