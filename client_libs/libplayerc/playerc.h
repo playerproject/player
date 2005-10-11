@@ -826,72 +826,7 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 /** @} */
 /**************************************************************************/
 
-#if 0
 
-/***************************************************************************/
-/** @defgroup playerc_proxy_gps gps
-
-The gps proxy provides an interface to a GPS-receiver.
-
-@{
-*/
-
-/** @brief GPS proxy data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  /** UTC time (seconds since the epoch) */
-  double utc_time;
-
-  /** Latitude and logitude (degrees).  Latitudes are positive for
-      north, negative for south.  Logitudes are positive for east,
-      negative for west. */
-  double lat, lon;
-
-  /** Altitude (meters).  Positive is above sea-level, negative is
-      below. */
-  double alt;
-
-  /** UTM easting and northing (meters). */
-  double utm_e, utm_n;
-
-  /** Horizontal dilution of precision. */
-  double hdop;
-
-  /** Vertical dilution of precision. */
-  double vdop;
-
-  /** Horizontal and vertical error (meters). */
-  double err_horz, err_vert;
-
-  /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
-  int quality;
-
-  /** Number of satellites in view. */
-  int sat_count;
-
-} playerc_gps_t;
-
-
-/** @brief Create a gps proxy. */
-playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
-
-/** @brief Destroy a gps proxy. */
-void playerc_gps_destroy(playerc_gps_t *device);
-
-/** @brief Subscribe to the gps device. */
-int playerc_gps_subscribe(playerc_gps_t *device, int access);
-
-/** @brief Un-subscribe from the gps device. */
-int playerc_gps_unsubscribe(playerc_gps_t *device);
-
-
-/** @} */
-/**************************************************************************/
-
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_gripper gripper
@@ -940,7 +875,7 @@ int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg)
 
 /** @brief Print a human-readable version of the gripper state. If
     set, the string <prefix> is printed before the state string. */
-void playerc_gripper_print( playerc_gripper_t *device, const char* prefix );
+void playerc_gripper_printout( playerc_gripper_t *device, const char* prefix );
 
 
 /** @} */
@@ -996,52 +931,7 @@ int playerc_ir_get_geom(playerc_ir_t *device);
 /** @} */
 /***************************************************************************/
 
-#if 0
 
-/***************************************************************************/
-/** @defgroup playerc_proxy_joystick joystick
-
-The joystick proxy provides an interface to joysticks.
-
-@{
-*/
-
-/** @brief Joystick device data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-  /** Scaled joystick position (0 = centered, 1 = hard over). */
-  double px, py;
-
-  /** Button states (bitmask) */
-  uint16_t buttons;
-
-} playerc_joystick_t;
-
-
-/** @brief Create a joystick device proxy. */
-playerc_joystick_t *playerc_joystick_create(playerc_client_t *client, int index);
-
-/** @brief Destroy a joystick device proxy. */
-void playerc_joystick_destroy(playerc_joystick_t *device);
-
-/** @brief Subscribe to the joystick device */
-int playerc_joystick_subscribe(playerc_joystick_t *device, int access);
-
-/** @brief Un-subscribe from the joystick device */
-int playerc_joystick_unsubscribe(playerc_joystick_t *device);
-
-/** @brief @internal Parse data from incoming packet */
-void playerc_joystick_putmsg(playerc_joystick_t *device, player_msghdr_t *header,
-                              player_joystick_data_t *data, size_t len);
-
-
-/** @} */
-/**************************************************************************/
-
-#endif
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_laser laser
@@ -1176,8 +1066,8 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 
 /** @brief Print a human-readable summary of the laser state on
     stdout. */
-void playerc_laser_print( playerc_laser_t * device,
-        const char* prefix );
+void playerc_laser_printout( playerc_laser_t * device, 
+			  const char* prefix );
 
 /** @} */
 /**************************************************************************/
@@ -1496,7 +1386,6 @@ typedef struct
 
 } playerc_motor_t;
 
-
 /** @brief Create a motor device proxy. */
 playerc_motor_t *playerc_motor_create(playerc_client_t *client, int index);
 
@@ -1550,6 +1439,7 @@ int playerc_motor_set_odom(playerc_motor_t *device, double ot);
 
 /** @} */
 /**************************************************************************/
+
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_planner planner

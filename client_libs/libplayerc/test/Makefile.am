@@ -14,7 +14,6 @@ noinst_PROGRAMS = $(BUILDTEST)
 test_SOURCES = \
 	test.c \
 	test.h \
-	test_gripper.c \
 	test_laser.c \
 	test_position2d.c \
 	test_position3d.c \
@@ -27,6 +26,7 @@ test_SOURCES = \
 	test_blobfinder.c \
 	test_ptz.c
 
+#test_gripper.c \
 #test_camera.c \
 #test_fiducial.c \
 #test_gps.c \

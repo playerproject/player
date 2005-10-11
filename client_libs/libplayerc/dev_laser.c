@@ -256,7 +256,7 @@ playerc_laser_get_geom(playerc_laser_t *device)
   return 0;
 }
 
-void playerc_laser_print( playerc_laser_t * device, 
+void playerc_laser_printout( playerc_laser_t * device, 
 			  const char* prefix )
 {
   if( prefix )

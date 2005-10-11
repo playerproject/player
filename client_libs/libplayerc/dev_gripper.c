@@ -136,7 +136,7 @@ int playerc_gripper_set_cmd(playerc_gripper_t *device,
 }
 
 // print human-readable state 
-void playerc_gripper_print(playerc_gripper_t *device, 
+void playerc_gripper_printout(playerc_gripper_t *device, 
 			   const char* prefix )
 {
   if( prefix )
