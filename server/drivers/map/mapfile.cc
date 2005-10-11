@@ -304,8 +304,11 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     player_map_data_t* mapreq = (player_map_data_t*)data;
 
     // Can't declare a map tile on the stack (it's too big)
+    /*
     size_t mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
                       (mapreq->width * mapreq->height));
+                      */
+    size_t mapsize = sizeof(player_map_data_t);
     player_map_data_t* mapresp = (player_map_data_t*)calloc(1,mapsize);
     assert(mapresp);
     
@@ -351,9 +354,10 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     }
 
     // recompute size, in case the tile got truncated
-    mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
-               (mapresp->width * mapresp->height));
+    //mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
+               //(mapresp->width * mapresp->height));
     mapresp->data_count = mapresp->width * mapresp->height;
+    printf("publishing tile of size %u\n", mapsize);
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_DATA,

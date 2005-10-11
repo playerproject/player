@@ -20,12 +20,6 @@
  *
  */
 
-/*
- * TODO:
- *   - Either get the laser's geometry and use it when computing the 
- *     pose for the scan, or forward geometry requests to the laser.
- */
-
 /** @addtogroup drivers Drivers */
 /** @{ */
 /** @defgroup player_driver_laserposeinterpolator laserposeinterpolator
@@ -90,6 +84,7 @@ Brian Gerkey
 #endif
 
 #include <math.h>
+#include <float.h>
 #include <stdlib.h>
 #include <assert.h>
 
@@ -147,8 +142,11 @@ class LaserPoseInterp : public Driver
     double* scantimes;
     player_position2d_data_t lastpose;
     double lastposetime;
+    player_pose_t lastpublishpose;
+    double lastpublishposetime;
     double update_thresh[2];
     double update_interval;
+    bool send_all_scans;
 };
 
 // a factory creation function
@@ -188,10 +186,11 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   this->interpolate = cf->ReadInt(section, "interpolate", 1);
   this->maxnumscans = cf->ReadInt(section, "max_scans", DEFAULT_MAXSCANS);
   this->update_thresh[0] = cf->ReadTupleLength(section, "update_thresh",
-                                               0, 0.0);
+                                               0, DBL_MAX);
   this->update_thresh[1] = cf->ReadTupleAngle(section, "update_thresh",
-                                              1, 0.0);
-  this->update_interval = cf->ReadFloat(section, "update_interval", 0.0);
+                                              1, DBL_MAX);
+  this->update_interval = cf->ReadFloat(section, "update_interval", DBL_MAX);
+  this->send_all_scans = cf->ReadInt(section, "send_all_scans", 1);
 
   this->scans = (player_laser_data_t*)calloc(this->maxnumscans, 
                                              sizeof(player_laser_data_t));
@@ -243,6 +242,7 @@ int LaserPoseInterp::Setup()
 
   this->numscans = 0;
   this->lastposetime = -1;
+  this->lastpublishposetime = -1;
 
   return(0);
 }
@@ -340,10 +340,27 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
                                                   this->lastpose.pos.pa) / t1);
           scanpose.scan = this->scans[i];
 
-          this->Publish(this->device_addr, NULL,
-                        PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
-                        (void*)&scanpose, sizeof(scanpose), 
-                        this->scantimes + i);
+          // Should we publish this scan?  Take account of all the various
+          // thresholds that the user can set.
+          if((this->send_all_scans) ||
+             (this->lastpublishposetime < 0.0) ||
+             (hypot(scanpose.pose.px-this->lastpublishpose.px,
+                    scanpose.pose.py-this->lastpublishpose.py) >= 
+              this->update_thresh[0]) ||
+             (fabs(angle_diff(scanpose.pose.pa,this->lastpublishpose.pa)) >=
+              this->update_thresh[1]) ||
+             ((this->scantimes[i] - this->lastpublishposetime) >=
+              this->update_interval))
+          {
+            puts("LaserPoseInterp publishing");
+            this->Publish(this->device_addr, NULL,
+                          PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
+                          (void*)&scanpose, sizeof(scanpose), 
+                          this->scantimes + i);
+
+            this->lastpublishposetime = this->scantimes[i];
+            this->lastpublishpose = scanpose.pose;
+          }
         }
         this->numscans = 0;
       }
