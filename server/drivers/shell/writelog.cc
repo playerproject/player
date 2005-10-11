@@ -184,8 +184,7 @@ class WriteLog: public Driver
   private: int WriteLaser(player_msghdr_t* hdr, void *data);
 
   // Write position data to file
-  private: int WritePosition(player_msghdr_t* hdr, 
-                              player_position2d_data_t *data);
+  private: int WritePosition(player_msghdr_t* hdr, void *data);
 
   // Write sonar data to file
   private: int WriteSonar(player_msghdr_t* hdr, void *data);
@@ -394,6 +393,25 @@ int WriteLog::Setup()
       {
         // oh well.
         PLAYER_WARN("unable to get laser geometry");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+    else if (device->addr.interf == PLAYER_POSITION2D_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_POSITION2D_REQ_GET_GEOM,
+                                         NULL, 0, NULL, false)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get position geometry");
       }
       else
       {
@@ -648,7 +666,7 @@ void WriteLog::Write(WriteLogDevice *device,
       retval = this->WriteLaser(hdr, data);
       break;
     case PLAYER_POSITION2D_CODE:
-      retval = this->WritePosition(hdr, (player_position2d_data_t*) data);
+      retval = this->WritePosition(hdr, data);
       break;
     case PLAYER_SONAR_CODE:
       retval = this->WriteSonar(hdr, data);
@@ -804,22 +822,56 @@ The format for each @ref player_interface_position message is:
   - stall (int): motor stall sensor
 */
 int
-WriteLog::WritePosition(player_msghdr_t* hdr, 
-                        player_position2d_data_t *data)
+WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 {
-  // Check the subtype
-  switch(hdr->subtype)
+  // Check the type
+  switch(hdr->type)
   {
-    case PLAYER_POSITION2D_DATA_STATE:
-      fprintf(this->file, "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
-              data->pos.px,
-              data->pos.py,
-              data->pos.pa,
-              data->vel.px,
-              data->vel.py,
-              data->vel.pa,
-              data->stall);
-      return(0);
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_POSITION2D_DATA_STATE:
+          {
+            player_position2d_data_t* pdata = 
+                    (player_position2d_data_t*)data;
+            fprintf(this->file, 
+                    "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
+                    pdata->pos.px,
+                    pdata->pos.py,
+                    pdata->pos.pa,
+                    pdata->vel.px,
+                    pdata->vel.py,
+                    pdata->vel.pa,
+                    pdata->stall);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_POSITION2D_REQ_GET_GEOM:
+          {
+            player_position2d_geom_t* gdata = 
+                    (player_position2d_geom_t*)data;
+            fprintf(this->file, 
+                    "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f",
+                    gdata->pose.px,
+                    gdata->pose.py,
+                    gdata->pose.pa,
+                    gdata->size.sl,
+                    gdata->size.sw);
+
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+
     default:
       return(-1);
   }

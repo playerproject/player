@@ -178,6 +178,7 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   this->data.resolution = data->resolution;
   this->data.min_angle = data->min_angle;
   this->data.max_angle = data->max_angle;
+  this->data.max_range = data->max_range;
   this->data.ranges_count = data->ranges_count;
 
   // Do some precomputations to save time

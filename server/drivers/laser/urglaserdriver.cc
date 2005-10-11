@@ -154,7 +154,8 @@ URGLaserDriver::URGLaserDriver(ConfigFile* cf, int section)
 	Conf.min_angle = cf->ReadFloat(section,"min_angle",DTOR(-115));
 	Conf.max_angle = cf->ReadFloat(section,"max_angle",DTOR(115));
 	Conf.resolution = DTOR(270.0/769.0);
-	Conf.range_res = 1;
+        Conf.max_range = 4.0;
+	Conf.range_res = 0.001;
 	Conf.intensity = 0;
 	
     //config data
@@ -236,6 +237,8 @@ void URGLaserDriver::Main()
 		Laser.GetReadings(Readings);
 		Data.min_angle = Conf.min_angle;
 		Data.max_angle = Conf.max_angle;
+                // TODO: check this value
+                Data.max_range = 4.0;
 		Data.resolution = Conf.resolution;
 		Data.ranges_count = max_i - min_i;
 

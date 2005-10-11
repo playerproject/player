@@ -164,6 +164,7 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
   this->data.min_angle = (min_angle);
   this->data.max_angle = (max_angle);
   this->data.ranges_count = scan_count;
+  this->data.max_range = data->max_range;
   
   double real_min = data->min_angle;
   double real_res = data->resolution;

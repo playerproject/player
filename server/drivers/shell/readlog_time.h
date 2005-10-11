@@ -40,14 +40,16 @@ class ReadLogTime : public PlayerTime
   // Destructor
   public: virtual ~ReadLogTime();
 
-  // Get the simulator time
+  // Get the current time
   public: int GetTime(struct timeval* time);
+
+  // Get the current time
+  public: int GetTimeDouble(double* time);
 };
 
 
 // Some readlog related global vars
-extern char *ReadLog_filename;
-extern double ReadLog_speed;
 extern struct timeval ReadLogTime_time;
+extern double ReadLogTime_timeDouble;
 
 #endif

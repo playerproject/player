@@ -175,7 +175,7 @@ void PassThrough_Register(DriverTable* table);
 
 #ifdef INCLUDE_LOGFILE
 void WriteLog_Register(DriverTable* table);
-//void ReadLog_Register(DriverTable* table);
+void ReadLog_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_P2OS
@@ -532,7 +532,7 @@ player_register_drivers()
 
 #ifdef INCLUDE_LOGFILE
   WriteLog_Register(driverTable);
-//  ReadLog_Register(driverTable);
+  ReadLog_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_P2OS

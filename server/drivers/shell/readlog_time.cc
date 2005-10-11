@@ -36,6 +36,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // The global time for readlog
 struct timeval ReadLogTime_time;
+double ReadLogTime_timeDouble;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,5 +60,12 @@ ReadLogTime::~ReadLogTime()
 int ReadLogTime::GetTime(struct timeval* time)
 {
   *time = ReadLogTime_time;    
-  return 0;
+  return(0);
+}
+
+int 
+ReadLogTime::GetTimeDouble(double* time)
+{
+  *time = ReadLogTime_timeDouble;
+  return(0);
 }
