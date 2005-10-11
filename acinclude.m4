@@ -341,61 +341,61 @@ fi
 
 AC_DEFUN([AX_BOOST_SIGNALS],
 [AC_REQUIRE([AC_CXX_NAMESPACES])dnl
-AC_CACHE_CHECK(whether the Boost::Signal library is available,
-ax_cv_boost_signal,
-[AC_LANG_SAVE
- AC_LANG_CPLUSPLUS
- AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/signal.hpp>]],
-         [[boost::signal<void ()> sig; return 0;]]),
-           ax_cv_boost_signal=yes, ax_cv_boost_signal=no)
- AC_LANG_RESTORE
-])
-if test "$ax_cv_boost_signal" = yes; then
-  AC_DEFINE(HAVE_BOOST_SIGNALS,,[define if the Boost::Signal library is available])
-fi
-  dnl Now determine the appropriate file names
-  AC_ARG_WITH([boost-signals],AS_HELP_STRING([--with-boost-signals],
+dnl Now determine the appropriate file names
+AC_ARG_WITH([boost-signals],AS_HELP_STRING([--with-boost-signals],
   [specify the boost signals library or suffix to use]),
-  [if test "x$with_boost_signals" != "xno"; then
-    ax_signals_lib=$with_boost_signals
-    ax_boost_signals_lib=boost_signals-$with_boost_signals
-  fi])
-  for ax_lib in $ax_signals_lib $ax_boost_signals_lib boost_signals; do
+  [with_boost_signals=$withval],[with_boost_signals="yes"])
+if test "x$with_boost_signals" != "xno"; then
+  AC_CACHE_CHECK(whether the Boost::Signal library is available,
+      ax_cv_boost_signal,
+      [AC_LANG_SAVE
+        AC_LANG_CPLUSPLUS
+        AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/signal.hpp>]],
+          [[boost::signal<void ()> sig; return 0;]]),
+	  ax_cv_boost_signal="yes", ax_cv_boost_signal="no")
+        AC_LANG_RESTORE
+      ])
+  if test "x$ax_cv_boost_signal" = "xyes"; then
+    AC_DEFINE(HAVE_BOOST_SIGNALS,,[define if the Boost::Signal library is available])
+  fi
+  if test "x$with_boost_signals" != "xyes"; then
+    ax_boost_signals_lib="boost_signals-$with_boost_signals $with_boost_signals"
+  fi
+  for ax_lib in $ax_boost_signals_lib boost_signals; do
     AC_CHECK_LIB($ax_lib, main, [BOOST_SIGNALS_LIB=$ax_lib break])
   done
-  AC_SUBST(BOOST_SIGNALS_LIB)
+fi])
+AC_SUBST(BOOST_SIGNALS_LIB)
 ])dnl
 
 AC_DEFUN([AX_BOOST_THREAD],
 [AC_REQUIRE([AC_CXX_NAMESPACES])dnl
-AC_CACHE_CHECK(whether the Boost::Thread library is available,
-ax_cv_boost_thread,
-[AC_LANG_SAVE
- AC_LANG_CPLUSPLUS
- CXXFLAGS_SAVE=$CXXFLAGS
-dnl FIXME: need to include a generic way to check for the flag
-dnl to turn on threading support.
- CXXFLAGS="-pthread $CXXFLAGS"
- AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/thread/thread.hpp>]],
-                 [[boost::thread_group thrds; return 0;]]),
-               ax_cv_boost_thread=yes, ax_cv_boost_thread=no)
- CXXFLAGS=$CXXFLAGS_SAVE
- AC_LANG_RESTORE
-])
-if test "$ax_cv_boost_thread" = yes; then
-  AC_DEFINE(HAVE_BOOST_THREAD,,[define if the Boost::Thread library is available])
-  dnl Now determine the appropriate file names
-  AC_ARG_WITH([boost-thread],AS_HELP_STRING([--with-boost-thread],
+dnl Now determine the appropriate file names
+AC_ARG_WITH([boost-thread],AS_HELP_STRING([--with-boost-thread],
   [specify the boost thread library or suffix to use]),
-  [if test "x$with_boost_thread" != "xno"; then
-    ax_thread_lib=$with_boost_thread
-    ax_boost_thread_lib=boost_thread-$with_boost_thread
-  fi])
-  for ax_lib in $ax_thread_lib $ax_boost_thread_lib boost_thread-mt boost_thread; do
+  [with_boost_thread=$withval],[with_boost_thread="yes"])
+if test "x$with_boost_thread" != "xno"; then
+  AC_CACHE_CHECK(whether the Boost::Thread library is available,
+      ax_cv_boost_thread,
+      [AC_LANG_SAVE
+        AC_LANG_CPLUSPLUS
+        AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/thread/thread.hpp>]],
+                 [[boost::thread_group thrds; return 0;]]),
+               ax_cv_boost_thread="yes", ax_cv_boost_thread="no")
+        CXXFLAGS=$CXXFLAGS_SAVE
+        AC_LANG_RESTORE
+      ])
+  if test "x$ax_cv_boost_thread" = "xyes"; then
+    AC_DEFINE(HAVE_BOOST_THREAD,,[define if the Boost::Thread library is available])
+  fi
+  if test "x$with_boost_thread" != "xyes"; then
+    ax_boost_thread_lib="boost_thread-$with_boost_thread $with_boost_thread"
+  fi
+  for ax_lib in $ax_boost_thread_lib boost_thread boost_thread-mt; do
     AC_CHECK_LIB($ax_lib, main, [BOOST_THREAD_LIB=$ax_lib break])
   done
-  AC_SUBST(BOOST_THREAD_LIB)
-fi
+fi])
+AC_SUBST(BOOST_THREAD_LIB)
 ])dnl
 
 
