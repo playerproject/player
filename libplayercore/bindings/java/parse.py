@@ -197,20 +197,21 @@ if __name__ == '__main__':
           if builtin_type == 0:
             jclass_constructor += '    ' + varstring + ' = new ' + jtype + '();\n'
 
+        capvarstring = string.capitalize(varstring[0]) + varstring[1:]
         if builtin_type:
-          pcj_data_to_jdata += '    Jdata.' + varstring + ' = data.get' + string.capitalize(varstring) + '();\n'
-          pcj_jdata_to_data += '    data.set' + string.capitalize(varstring) + '(Jdata.' + varstring +');\n'
+          pcj_data_to_jdata += '    Jdata.' + varstring + ' = data.get' + capvarstring + '();\n'
+          pcj_jdata_to_data += '    data.set' + capvarstring + '(Jdata.' + varstring +');\n'
         else:
           if arraysize == '':
-            pcj_data_to_jdata += '    Jdata.' + varstring + ' = ' + type + '_to_' + jtype + '(data.get' + string.capitalize(varstring) + '());\n'
-            pcj_jdata_to_data += '    data.set' + string.capitalize(varstring) + '(' + jtype + '_to_' + type + '(Jdata.' + varstring + '));\n'
+            pcj_data_to_jdata += '    Jdata.' + varstring + ' = ' + type + '_to_' + jtype + '(data.get' + capvarstring + '());\n'
+            pcj_jdata_to_data += '    data.set' + capvarstring + '(' + jtype + '_to_' + type + '(Jdata.' + varstring + '));\n'
           else:
             try:
               asize = int(arraysize)
             except:
               arraysize = 'playercore_javaConstants.' + arraysize
             pcj_data_to_jdata += '    {\n'
-            pcj_data_to_jdata += '      ' + type + ' foo[] = data.get' + string.capitalize(varstring) + '();\n'
+            pcj_data_to_jdata += '      ' + type + ' foo[] = data.get' + capvarstring + '();\n'
             pcj_data_to_jdata += '      for(int i=0;i<' + arraysize + ';i++)\n'
             pcj_data_to_jdata += '        Jdata.' + varstring + '[i] = ' + type + '_to_' + jtype + '(foo[i]);\n'
             pcj_data_to_jdata += '    }\n'
@@ -219,7 +220,7 @@ if __name__ == '__main__':
             pcj_jdata_to_data += '      ' + type + ' foo[] = new ' + type + '[' + arraysize + '];\n'
             pcj_jdata_to_data += '      for(int i=0;i<' + arraysize + ';i++)\n'
             pcj_jdata_to_data += '        foo[i] = ' + jtype + '_to_' + type + '(Jdata.' + varstring + '[i]);\n'
-            pcj_jdata_to_data += '      data.set' + string.capitalize(varstring) + '(foo);\n'
+            pcj_jdata_to_data += '      data.set' + capvarstring + '(foo);\n'
             pcj_jdata_to_data += '    }\n'
     pcj_data_to_jdata += '    return(Jdata);\n'
     pcj_data_to_jdata += '  }\n\n'
