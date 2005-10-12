@@ -46,6 +46,7 @@ WiFiProxy::~WiFiProxy()
 void
 WiFiProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_wifi_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("WiFiProxy::WiFiProxy()", "could not create");
@@ -58,12 +59,14 @@ void
 WiFiProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_wifi_unsubscribe(mDevice);
   playerc_wifi_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::WiFiProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::WiFiProxy &c)
 {
   os << "#WiFi (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   return os;

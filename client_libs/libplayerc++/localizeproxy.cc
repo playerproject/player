@@ -46,6 +46,7 @@ LocalizeProxy::~LocalizeProxy()
 void
 LocalizeProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_localize_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("LocalizeProxy::LocalizeProxy()", "could not create");
@@ -58,12 +59,14 @@ void
 LocalizeProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_localize_unsubscribe(mDevice);
   playerc_localize_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy &c)
 {
   os << "#Localize (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   os << "Hypothesis Count: " << c.GetNumParticles() << std::endl;
@@ -78,6 +81,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy 
 void
 LocalizeProxy::SetPose(double pose[3], double cov[3])
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_localize_set_pose(mDevice, pose, cov))
     throw PlayerError("LocalizeProxy::SetPose()", "error setting pose");
   return;

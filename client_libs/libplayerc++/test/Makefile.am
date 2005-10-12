@@ -1,18 +1,23 @@
+AM_CPPFLAGS = -I$(top_srcdir) \
+              -I$(top_srcdir)/client_libs \
+              -Wall -g $(PLAYERCC_EXTRA_CFLAGS)
 
-AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir) -I$(top_srcdir)/client_libs/libplayerc -Wall -g -I$(top_srcdir)/client_libs
-test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerc  -L$(top_builddir)/client_libs/libplayerc++ -lplayerc++ -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@ -lm
+test_LDADD = -L$(top_builddir)/libplayerxdr \
+             -L$(top_builddir)/client_libs/libplayerc \
+             -L$(top_builddir)/client_libs/libplayerc++ \
+             $(PLAYERCC_LIB)
 
-noinst_PROGRAMS = 
-if INCLUDE_BOOST_SIGNALS
+noinst_PROGRAMS =
+if INCLUDE_PLAYERCC
 if WITH_TESTS
   noinst_PROGRAMS += test
-endif 
+endif
 endif
 
 test_SOURCES = test.cc \
                test.h \
-	       test_client.cc \
-	       test_camera.cc
+               test_client.cc \
+               test_camera.cc
 
 #               test_gps.cc \
                test_blobfinder.cc \
@@ -47,5 +52,3 @@ test_SOURCES = test.cc \
                #test_misc.cc
                #test_bps.cc
 
-#clean-local:
-#	rm -f test

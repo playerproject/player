@@ -47,6 +47,7 @@ LogProxy::~LogProxy()
 void
 LogProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_log_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("LogProxy::LogProxy()", "could not create");
@@ -59,6 +60,7 @@ void
 LogProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_log_unsubscribe(mDevice);
   playerc_log_destroy(mDevice);
   mDevice = NULL;
@@ -67,6 +69,7 @@ LogProxy::Unsubscribe()
 void
 LogProxy::SetWriteState(int aState)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_log_set_write_state(mDevice,aState))
     throw PlayerError("LogProxy::SetWriteState()", "error setting write");
   return;
@@ -75,6 +78,7 @@ LogProxy::SetWriteState(int aState)
 void
 LogProxy::SetReadState(int aState)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_log_set_read_state(mDevice,aState))
     throw PlayerError("LogProxy::SetReadState()", "error setting read");
   return;
@@ -83,6 +87,7 @@ LogProxy::SetReadState(int aState)
 void
 LogProxy::Rewind()
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_log_set_read_rewind(mDevice))
     throw PlayerError("LogProxy::Rewind()", "error rewinding");
   return;
@@ -91,12 +96,14 @@ LogProxy::Rewind()
 void
 LogProxy::SetFilename(const std::string aFilename)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_log_set_filename(mDevice,aFilename.c_str()))
     throw PlayerError("LogProxy::SetFilename()", "error setting filename");
   return;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::LogProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::LogProxy &c)
 {
   os << "#Log (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
 

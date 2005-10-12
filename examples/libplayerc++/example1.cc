@@ -5,7 +5,7 @@
  */
 #include <iostream>
 
-#include "playerc++.h"
+#include <libplayerc++/playerc++.h>
 
 int main(int argc, char** argv)
 {

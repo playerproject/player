@@ -54,6 +54,7 @@ LimbProxy::~LimbProxy()
 
 void LimbProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_limb_create(mClient, aIndex);
   if (mDevice==NULL)
     throw PlayerError("LimbProxy::LimbProxy()", "could not create");
@@ -65,13 +66,15 @@ void LimbProxy::Subscribe(uint aIndex)
 void LimbProxy::Unsubscribe(void)
 {
   assert(mDevice!=NULL);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_limb_unsubscribe(mDevice);
   playerc_limb_destroy(mDevice);
   mDevice = NULL;
 }
 
 // interface that all proxies SHOULD provide
-std::ostream& std::operator << (std::ostream& os, const PlayerCc::LimbProxy& a)
+std::ostream&
+std::operator << (std::ostream& os, const PlayerCc::LimbProxy& a)
 {
   player_limb_data_t data = a.GetData ();
   player_limb_geom_req_t geom = a.GetGeom ();
@@ -112,9 +115,8 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::LimbProxy& a)
 // Power control
 void LimbProxy::SetPowerConfig(bool aVal)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   int ret = playerc_limb_power(mDevice, aVal ? 1 : 0);
-  Unlock();
 
   if (ret == -2)
     throw PlayerError("LimbProxy::SetPowerConfig", "NACK", ret);
@@ -127,9 +129,8 @@ void LimbProxy::SetPowerConfig(bool aVal)
 // Brakes control
 void LimbProxy::SetBrakesConfig(bool aVal)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   int ret = playerc_limb_brakes(mDevice, aVal ? 1 : 0);
-  Unlock();
 
   if (ret == -2)
     throw PlayerError("LimbProxy::SetBrakesConfig", "NACK", ret);
@@ -142,9 +143,8 @@ void LimbProxy::SetBrakesConfig(bool aVal)
 // Speed config
 void LimbProxy::SetSpeedConfig (float aSpeed)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   int ret = playerc_limb_speed_config(mDevice, aSpeed);
-  Unlock();
 
   if (ret == -2)
     throw PlayerError("LimbProxy::SetSpeedConfig", "NACK", ret);
@@ -157,17 +157,15 @@ void LimbProxy::SetSpeedConfig (float aSpeed)
 // Move the limb to the home position
 void LimbProxy::MoveHome(void)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_limb_home_cmd(mDevice);
-  Unlock();
 }
 
 // Stop the limb immediately
 void LimbProxy::Stop(void)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_limb_stop_cmd(mDevice);
-  Unlock();
 }
 
 // Move the end effector to a given pose
@@ -175,25 +173,22 @@ void LimbProxy::SetPose(float aPX, float aPY, float aPZ,
                         float aAX, float aAY, float aAZ,
                         float aOX, float aOY, float aOZ)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_limb_setpose_cmd(mDevice, aPX, aPY, aPZ, aAX, aAY, aAZ, aOX, aOY, aOZ);
-  Unlock();
 }
 
 // Move the end effector to a given position, ignoring orientation
 void LimbProxy::SetPosition(float aX, float aY, float aZ)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_limb_setposition_cmd(mDevice, aX, aY, aZ);
-  Unlock();
 }
 
 // Move the end effector along a vector of given length, maintaining current orientation
 void LimbProxy::VectorMove(float aX, float aY, float aZ, float aLength)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_limb_vecmove_cmd(mDevice, aX, aY, aZ, aLength);
-  Unlock();
 }
 
 // Accessor method for getting the limb's data
@@ -210,9 +205,9 @@ player_limb_geom_req_t LimbProxy::GetGeom(void) const
 
 void LimbProxy::RequestGeometry(void)
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   int ret = playerc_limb_get_geom(mDevice);
-  Unlock();
+
   if (ret == -2)
     throw PlayerError("LimbProxy::RequestGeometry", "NACK", ret);
   else if (ret != 0)

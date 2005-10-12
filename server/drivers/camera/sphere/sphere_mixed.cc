@@ -343,6 +343,13 @@ int SphereDriver::Setup()
   mTiltMin = DEG2RAD(min/100.0);
   mTiltMax = DEG2RAD(max/100.0);
 
+  if (mDebug)
+  {
+    printf("min, max:\n");
+    printf("pan      %.3f %.3f\n", mPanMin, mPanMax);
+    printf("tilt     %.3f %.3f\n", mTiltMin, mTiltMax);
+  }
+
   reset_pan_tilt(mFg->fd, SET_PAN);
   reset_pan_tilt(mFg->fd, SET_TILT);
 
@@ -443,8 +450,13 @@ void SphereDriver::ProcessCommand(player_msghdr_t* hdr, player_ptz_cmd_t &data)
   pan       = (int16_t)rint(RAD2DEG(LimitPan(data.pan))*100);
   tilt      = (int16_t)rint(RAD2DEG(LimitTilt(data.tilt))*100);
 
-  mPtzData.pan       = LimitPan(mPtzCmd.pan);
-  mPtzData.tilt      = LimitTilt(mPtzCmd.tilt);
+  mPtzCmd.pan        = DEG2RAD(pan/100.0);
+  mPtzCmd.tilt       = DEG2RAD(tilt/100.0);
+
+  // we currently just store the command after checking the limits
+  mPtzData.pan       = mPtzCmd.pan;
+  mPtzData.tilt      = mPtzCmd.tilt;
+
   // we don't support these
   mPtzData.zoom      = -1;
   mPtzData.panspeed  = -1;

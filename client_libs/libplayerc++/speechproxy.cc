@@ -46,6 +46,7 @@ SpeechProxy::~SpeechProxy()
 void
 SpeechProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_speech_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("SpeechProxy::SpeechProxy()", "could not create");
@@ -58,22 +59,23 @@ void
 SpeechProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_speech_unsubscribe(mDevice);
   playerc_speech_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::SpeechProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::SpeechProxy &c)
 {
   os << "#Speech (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   return os;
 }
 
-/** Send a phrase to say.
-    The phrase is an ASCII std::string.
-*/
-void SpeechProxy::Say(std::string aStr)
+void
+SpeechProxy::Say(std::string aStr)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_speech_say(mDevice, aStr.c_str());
 }
 

@@ -96,7 +96,7 @@ AC_CHECK_PROG(have_java,javac,yes,no)
 dnl Let the user disable building java wrappers
 AC_ARG_ENABLE(jplayer, [  --disable-jplayer         Don't build Jplayer (the Java wrappers)],, enable_jplayer=yes)
 
-dnl If we have python, swig, javac, jni.h, and jni_md.h, then all 
+dnl If we have python, swig, javac, jni.h, and jni_md.h, then all
 dnl systems are go for building Jplayer
 if test "x$enable_jplayer" = "xyes" -a "x$have_python" = "xyes" -a "x$have_swig" = "xyes" -a "x$have_java" = "xyes" -a "x$have_jni_h" = "xyes" -a "x$have_jni_md_h" = "xyes"; then
   enable_java=yes
@@ -199,8 +199,20 @@ AM_CONDITIONAL(WITH_GDKPIXBUF, test "x$with_gdkpixbuf" = "xyes")
 
 AC_CXX_NAMESPACES
 AX_BOOST_THREAD
+AM_CONDITIONAL(INCLUDE_BOOST_THREAD, test "x$ax_cv_boost_thread" = "xyes")
 AX_BOOST_SIGNALS
 AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "x$ax_cv_boost_signal" = "xyes")
+
+if test "x$ax_cv_boost_signal" = "xyes"; then
+  if test "x$ax_cv_boost_thread" = "xyes"; then
+    PLAYERCC_EXTRA_CFLAGS="-pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
+    PLAYERCC_LIB="-lplayerxdr -lplayerc -lplayerc++ -lm -lboost_signals -lboost_thread -lpthread"
+    AC_SUBST(PLAYERCC_EXTRA_CFLAGS)
+    AC_SUBST(PLAYERCC_LIB)
+    ax_playercc=yes
+  fi
+fi
+AM_CONDITIONAL(INCLUDE_PLAYERCC, test "x$ax_playercc" = "xyes")
 
 dnl Include RTK gui support (for debugging)
 AC_ARG_ENABLE(rtkgui,

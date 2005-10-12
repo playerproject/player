@@ -48,6 +48,7 @@ AIOProxy::~AIOProxy()
 void
 AIOProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_aio_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("LaserProxy::LaserProxy()", "could not create");
@@ -60,6 +61,7 @@ void
 AIOProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_aio_unsubscribe(mDevice);
   playerc_aio_destroy(mDevice);
   mDevice = NULL;

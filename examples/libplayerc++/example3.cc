@@ -2,36 +2,35 @@
 #include <iostream>
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+#include <cmath>
 
+#include <time.h>
 // these are our callback functions.  Currently, they all need to return void.
 void read_callback1()
 {
-    std::cout << "read_client_callback_1" << std::endl;
+    std::cout << "callback_1" << std::endl;
 }
 
-void read_callback2()
+void read_callback2(uint &aI)
 {
-    std::cout << "read_client_callback_2" << std::endl;
+    std::cout << "callback_2" << " " << ++aI << std::endl;
 }
+
 // we can also have callbacks in objects
 class test_callback
 {
   public:
 
-    void read_callback3()
-    {
-        std::cout << "read_client_callback_3 " << this << std::endl;
-    }
+    test_callback(int aId) : mId(aId) {};
 
+    void read_callback3()
+      { std::cout << "callback_3 " << mId << std::endl; }
+
+    void read_callback4(uint aOpt = 0)
+      { std::cout << "callback_3 " << mId << " " << aOpt << std::endl; }
+
+    int mId;
 };
-// we'll use this to stop the client
-void read_callback4(PlayerCc::PlayerClient* c)
-{
-  static uint i(0);
-  std::cout << "read_client_callback_4: " << i << std::endl;
-  if (++i>10)
-    c->Stop();
-}
 
 int main(int argc, char** argv)
 {
@@ -41,32 +40,34 @@ int main(int argc, char** argv)
 
     PlayerClient client("localhost", 6665);
     CameraProxy cp(&client, 0);
+    PtzProxy   ptz(&client, 0);
 
     // Here, we're connecting a signal to a function.  We keep the connection_t
     // so we can later disconnect.
     ClientProxy::connection_t conn1;
     conn1 = cp.ConnectReadSignal(&read_callback1);
 
+    ClientProxy::connection_t conn2;
+    uint count = 0;
+    conn2 = cp.ConnectReadSignal(boost::bind(&read_callback2, count));
+
     // here we're connecting a signal to a member function
-    test_callback test1, test2;
+    test_callback test1(1), test2(2);
     cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
-    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test2)));
+    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback4, boost::ref(test2), 1));
 
     // now, we should see some signals each time Read() is called.
-    for (int i=0; i<10; ++i)
+    client.StartThread();
+
+    timespec sleep = {1, 0}; // 5s loop
+    for (uint i=0; i<1000; ++i)
     {
-      client.Read();
-      if (4==i)
-        cp.DisconnectReadSignal(conn1);
+      std::cout << ptz;
+      ptz.SetCam(ptz.GetPan()+DTOR(10*pow(-1, i%2)), 0, 0);
+      nanosleep(&sleep, NULL);
     }
 
-    // Let's connect a signal to callback4.  This signal tells the client
-    // to exit after 10 iterations
-    cp.ConnectReadSignal(boost::bind(&read_callback4, &client));
-
-    // Now, let's run the client.  This exits when the client->Stop() function
-    // is called from the callback
-    client.Run();
+    client.StopThread();
   }
   catch (PlayerCc::PlayerError e)
   {

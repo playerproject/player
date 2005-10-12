@@ -11,7 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include "playerc++.h"
+#include <libplayerc++/playerc++.h>
 
 extern bool use_stage;
 

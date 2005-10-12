@@ -47,6 +47,7 @@ FiducialProxy::~FiducialProxy()
 void
 FiducialProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_fiducial_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("FiducialProxy::FiducialProxy()", "could not create");
@@ -59,6 +60,7 @@ void
 FiducialProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_fiducial_unsubscribe(mDevice);
   playerc_fiducial_destroy(mDevice);
   mDevice = NULL;
@@ -73,8 +75,8 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::FiducialProxy 
   for (unsigned int i=0;i < c.GetCount();i++)
   {
     player_fiducial_item_t item = c.GetFiducialItem(i);
-    os << "  " << i << " - " << item.id << ": " <<
-      item.pose << " " << item.upose << std::endl;
+    os << "  " << i << " - " << item.id << ": "
+       << item.pose << " " << item.upose << std::endl;
   }
   return os;
 }
@@ -84,6 +86,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::FiducialProxy 
 void
 FiducialProxy::RequestGeometry()
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_fiducial_get_geom(mDevice))
     throw PlayerError("FiducialProxy::RequestGeometry()", "error getting geom");
   return;

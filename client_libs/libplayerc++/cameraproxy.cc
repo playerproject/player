@@ -59,6 +59,7 @@ CameraProxy::~CameraProxy()
 void
 CameraProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_camera_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("CameraProxy::CameraProxy()", "could not create");
@@ -71,6 +72,7 @@ void
 CameraProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_camera_unsubscribe(mDevice);
   playerc_camera_destroy(mDevice);
   mDevice = NULL;
@@ -89,17 +91,15 @@ CameraProxy::SaveFrame(const std::string aPrefix, uint aWidth)
   else
     filename << ".ppm";
 
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_camera_save(mDevice, filename.str().c_str());
-  Unlock();
 }
 
 void
 CameraProxy::Decompress()
 {
-  Lock();
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_camera_decompress(mDevice);
-  Unlock();
 }
 
 std::ostream& std::operator << (std::ostream& os, const PlayerCc::CameraProxy& c)

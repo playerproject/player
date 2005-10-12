@@ -45,7 +45,7 @@ typedef struct
 static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */
-  
+
   /* actarray messages */
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_DATA, PLAYER_ACTARRAY_DATA_STATE,
    (player_pack_fn_t)player_actarray_data_pack},
@@ -63,11 +63,11 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_actarray_speed_cmd_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD,
    (player_pack_fn_t)player_actarray_home_cmd_pack},
-  
+
   /* blobfinder messages */
   {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
    (player_pack_fn_t)player_blobfinder_data_pack},
-  
+
   /* bumper messages */
   {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
    (player_pack_fn_t)player_bumper_data_pack},
@@ -75,11 +75,11 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_bumper_geom_pack},
   {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM,
    (player_pack_fn_t)player_bumper_geom_pack},
-  
+
   /* camera messages */
   {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
    (player_pack_fn_t)player_camera_data_pack},
-  
+
   /* fiducial messages */
   {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN,
    (player_pack_fn_t)player_fiducial_data_pack},
@@ -237,11 +237,11 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_power_data_pack},
 
   /* ptz messages */
-  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_DATA_STATE,
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
     (player_pack_fn_t)player_ptz_data_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GEOM_STATE,
     (player_pack_fn_t)player_ptz_geom_pack},
-  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_CMD_STATE,
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE,
     (player_pack_fn_t)player_ptz_cmd_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GEOM,
     (player_pack_fn_t)player_ptz_geom_pack},
@@ -317,7 +317,7 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
   printf( "interface %d %d\n", curr->interf, interf );
   printf( "type %d %d\n", curr->type, type );
   printf( "subtype %d %d\n", curr->subtype, subtype );
-  
+
   return(NULL);
 }
 
