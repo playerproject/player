@@ -421,7 +421,7 @@ int SphereDriver::ProcessMessage(MessageQueue* resp_queue,
   assert(hdr);
   assert(data);
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
                            PLAYER_PTZ_CMD_STATE, mPtzAddr))
   {
     assert(hdr->size == sizeof(player_ptz_cmd_t));
