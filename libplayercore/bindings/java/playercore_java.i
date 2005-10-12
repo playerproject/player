@@ -44,7 +44,9 @@ int hostname_to_packedaddr(uint32_t* OUTPUT, const char*);
 %include <libplayercore/driver.h>
 %include <libplayercore/drivertable.h>
 %include <libplayercore/error.h>
+%immutable;
 %include <libplayercore/globals.h>
+%mutable;
 %include <libplayercore/message.h>
 %include <libplayercore/player.h>
 %include <libplayercore/playercommon.h>
