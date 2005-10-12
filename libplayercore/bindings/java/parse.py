@@ -184,13 +184,17 @@ if __name__ == '__main__':
         if len(arraysize) > 0:
           arraysize = arraysize[0]
           varstring = arraypattern.sub('', varstring)
-          if type == 'char':
+          if jtype == 'char':
             jfile.write('  public String ' + varstring + ';\n')
           else:
             jfile.write('  public ' + jtype + '[] ' + varstring + ';\n')
 
-          if builtin_type == 0:
-            jclass_constructor += '    ' + varstring + ' = new ' + jtype + '[playercore_javaConstants.' + arraysize + '];\n'
+          #if builtin_type == 0:
+          if jtype != 'char':
+            if arraysize.isdigit():
+              jclass_constructor += '    ' + varstring + ' = new ' + jtype + '[' + arraysize + '];\n'
+            else:
+              jclass_constructor += '    ' + varstring + ' = new ' + jtype + '[playercore_javaConstants.' + arraysize + '];\n'
         else:
           arraysize = ''
           jfile.write('  public ' + jtype + ' ' + varstring + ';\n')
