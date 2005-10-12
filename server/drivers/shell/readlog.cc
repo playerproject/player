@@ -1217,7 +1217,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
           {
             player_laser_data_t data;
 
-            if (token_count < 12)
+            if (token_count < 13)
             {
               PLAYER_ERROR2("incomplete line at %s:%d", 
                             this->filename, linenum);
@@ -1228,11 +1228,12 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             data.min_angle = atof(tokens[8]);
             data.max_angle = atof(tokens[9]);
             data.resolution = atof(tokens[10]);
-            data.ranges_count = atoi(tokens[11]);
+            data.max_range = atof(tokens[11]);
+            data.ranges_count = atoi(tokens[12]);
             data.intensity_count = data.ranges_count;
 
             count = 0;
-            for (i = 12; i < token_count; i += 2)
+            for (i = 13; i < token_count; i += 2)
             {
               data.ranges[count] = atof(tokens[i + 0]);
               data.intensity[count] = atoi(tokens[i + 1]);
@@ -1254,7 +1255,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
           {
             player_laser_data_scanpose_t data;
 
-            if (token_count < 15)
+            if (token_count < 16)
             {
               PLAYER_ERROR2("incomplete line at %s:%d", 
                             this->filename, linenum);
@@ -1268,11 +1269,12 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             data.scan.min_angle = atof(tokens[11]);
             data.scan.max_angle = atof(tokens[12]);
             data.scan.resolution = atof(tokens[13]);
-            data.scan.ranges_count = atoi(tokens[14]);
+            data.scan.max_range = atof(tokens[14]);
+            data.scan.ranges_count = atoi(tokens[15]);
             data.scan.intensity_count = data.scan.ranges_count;
 
             count = 0;
-            for (i = 15; i < token_count; i += 2)
+            for (i = 16; i < token_count; i += 2)
             {
               data.scan.ranges[count] = atof(tokens[i + 0]);
               data.scan.intensity[count] = atoi(tokens[i + 1]);

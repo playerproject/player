@@ -735,6 +735,7 @@ The format for each @ref player_interface_laser message is:
   - min_angle (float): minimum scan angle, in radians
   - max_angle (float): maximum scan angle, in radians
   - resolution (float): angular resolution, in radians
+  - max_range (float): maximum scan range, in meters
   - count (int): number of readings to follow
   - list of readings; for each reading:
     - range (float): in meters
@@ -760,9 +761,9 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           // Note that, in this format, we need a lot of precision in the
           // resolution field.
 
-          fprintf(this->file, "%04d %+07.4f %+07.4f %+.8f %04d ",
+          fprintf(this->file, "%04d %+07.4f %+07.4f %+.8f %+07.4f %04d ",
                   scan->id, scan->min_angle, scan->max_angle,
-                  scan->resolution, scan->ranges_count);
+                  scan->resolution, scan->max_range, scan->ranges_count);
 
           for (i = 0; i < scan->ranges_count; i++)
             fprintf(this->file, "%.3f %2d ",
@@ -774,11 +775,12 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           // Note that, in this format, we need a lot of precision in the
           // resolution field.
 
-          fprintf(this->file, "%04d %+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %04d ",
+          fprintf(this->file, "%04d %+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %+07.4f %04d ",
                   scanpose->scan.id, 
                   scanpose->pose.px, scanpose->pose.py, scanpose->pose.pa,
                   scanpose->scan.min_angle, scanpose->scan.max_angle,
-                  scanpose->scan.resolution, scanpose->scan.ranges_count);
+                  scanpose->scan.resolution, scanpose->scan.max_range,
+                  scanpose->scan.ranges_count);
 
           for (i = 0; i < scanpose->scan.ranges_count; i++)
             fprintf(this->file, "%.3f %2d ",
