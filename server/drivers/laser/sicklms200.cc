@@ -559,15 +559,15 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue,
     config.resolution = DTOR(this->scan_res)/100;
     config.min_angle = DTOR(this->min_angle)/100;
     config.max_angle = DTOR(this->max_angle)/100;
-    if(this->scan_res == 1)
+    if(this->range_res == 1)
       config.max_range = 8.0;
-    else if(this->scan_res == 10)
+    else if(this->range_res == 10)
       config.max_range = 80.0;
-    else if(this->scan_res == 100)
+    else if(this->range_res == 100)
       config.max_range = 150.0;
     else
     {
-      PLAYER_WARN("Invalid scan_res!");
+      PLAYER_WARN("Invalid range_res!");
       config.max_range = 8.0;
     }
     config.range_res = ((double)this->range_res)/1000.0;
@@ -651,15 +651,15 @@ void SickLMS200::Main()
       data.max_angle = DTOR((this->scan_max_segment * 
                              this->scan_res) / 1e2  - 
                             this->scan_width / 2.0);
-      if(this->scan_res == 1)
+      if(this->range_res == 1)
         data.max_range = 8.0;
-      else if(this->scan_res == 10)
+      else if(this->range_res == 10)
         data.max_range = 80.0;
-      else if(this->scan_res == 100)
+      else if(this->range_res == 100)
         data.max_range = 150.0;
       else
       {
-        PLAYER_WARN("Invalid scan_res!");
+        PLAYER_WARN("Invalid range_res!");
         data.max_range = 8.0;
       }
       data.resolution = DTOR(this->scan_res / 1e2);
