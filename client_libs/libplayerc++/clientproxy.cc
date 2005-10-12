@@ -39,10 +39,9 @@ ClientProxy::ClientProxy(PlayerClient* aPc, uint aIndex) :
  mLastTime(0)
 {
   assert(NULL != mPc);
-
   // add us to the PlayerClient list
   mPc->mProxyList.push_back(this);
-  PRINT("Added " << this << " to ProxyList");
+  PRINT("added " << this << " to ProxyList");
 }
 
 // destructor will try to close access to the device
@@ -55,21 +54,7 @@ ClientProxy::~ClientProxy()
   PRINT("Removed " << this << " from ProxyList");
 }
 
-void
-ClientProxy::Lock() const
-{
-  mPc->Lock();
-  //std::cout << "Lock()" << std::endl;
-}
-
-void
-ClientProxy::Unlock() const
-{
-  mPc->Unlock();
-  //std::cout << "Unlock()" << std::endl;
-}
-
-std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c)
+std::ostream& std::operator << (std::ostream& os, const PlayerCc::ClientProxy& c)
 {
   return os << c.GetDriverName()
             << ": "

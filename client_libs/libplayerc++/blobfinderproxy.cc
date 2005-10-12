@@ -48,6 +48,7 @@ BlobfinderProxy::~BlobfinderProxy()
 void
 BlobfinderProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_blobfinder_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("BlobfinderProxy::BlobfinderProxy()", "could not create");
@@ -60,6 +61,7 @@ void
 BlobfinderProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_blobfinder_unsubscribe(mDevice);
   playerc_blobfinder_destroy(mDevice);
   mDevice = NULL;

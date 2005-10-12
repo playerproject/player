@@ -46,6 +46,7 @@ PowerProxy::~PowerProxy()
 void
 PowerProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_power_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("PowerProxy::PowerProxy()", "could not create");
@@ -58,12 +59,14 @@ void
 PowerProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_power_unsubscribe(mDevice);
   playerc_power_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::PowerProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::PowerProxy &c)
 {
   os << "#Power (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   os << c.GetCharge() << std::endl;

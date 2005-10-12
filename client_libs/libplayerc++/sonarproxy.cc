@@ -46,6 +46,7 @@ SonarProxy::~SonarProxy()
 void
 SonarProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_sonar_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("SonarProxy::SonarProxy()", "could not create");
@@ -58,12 +59,14 @@ void
 SonarProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_sonar_unsubscribe(mDevice);
   playerc_sonar_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::SonarProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::SonarProxy &c)
 {
   os << "#Sonar (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   for (unsigned int i = 0; i < c.GetCount(); ++i)
@@ -71,12 +74,10 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::SonarProxy &c)
   return os;
 }
 
-
-
-
-/// Request the sonar geometry.
-void SonarProxy::RequestGeom()
+void
+SonarProxy::RequestGeom()
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_sonar_get_geom(mDevice);
 }
 

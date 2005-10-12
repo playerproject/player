@@ -46,6 +46,7 @@ DioProxy::~DioProxy()
 void
 DioProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_dio_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("DioProxy::DioProxy()", "could not create");
@@ -58,6 +59,7 @@ void
 DioProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_dio_unsubscribe(mDevice);
   playerc_dio_destroy(mDevice);
   mDevice = NULL;
@@ -74,5 +76,8 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::DioProxy &c)
 /// Set the output
 void DioProxy::SetOutput(uint aCount, uint32_t aDigout)
 {
-  playerc_dio_set_output(mDevice, aCount, aDigout);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+  if (0 != playerc_dio_set_output(mDevice, aCount, aDigout))
+    throw PlayerError("DioProxy::SetOutput()", "error setting output");
+  return;
 }

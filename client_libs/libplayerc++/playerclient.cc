@@ -32,6 +32,8 @@
 
 #include <time.h>
 
+#include <boost/thread/xtime.hpp>
+
 #include "playerc++.h"
 
 #define DEBUG_LEVEL LOW
@@ -42,13 +44,20 @@ using namespace PlayerCc;
 PlayerClient::PlayerClient(const std::string aHostname, uint aPort) :
   mClient(NULL),
   mHostname(aHostname),
-  mPort(aPort)
+  mPort(aPort),
+  mThread(NULL),
+  mMutex()
 {
   Connect(mHostname, mPort);
 }
 
 PlayerClient::~PlayerClient()
 {
+  if (!mIsStop)
+  {
+    StopThread();
+  }
+
   Disconnect();
 }
 
@@ -76,7 +85,6 @@ void PlayerClient::Disconnect()
   for(; it != mProxyList.end(); ++it)
   {
     ClientProxy* x = *it;
-    // only emit a signal when the interface has received data
     x->Unsubscribe();
   }
   */
@@ -89,12 +97,46 @@ void PlayerClient::Disconnect()
   }
 }
 
+void PlayerClient::StartThread()
+{
+  assert(NULL == mThread);
+  mThread = new boost::thread(boost::bind(&PlayerClient::RunThread, this));
+}
+
+void PlayerClient::StopThread()
+{
+  Stop();
+  assert(mThread);
+  mThread->join();
+  delete mThread;
+  mThread = NULL;
+  PRINT("joined");
+}
+
 // non-blocking
+void PlayerClient::RunThread()
+{
+  mIsStop = false;
+  PRINT("starting run");
+  while (!mIsStop)
+  {
+    if (Peek())
+    {
+      Read();
+    }
+    boost::xtime xt;
+    boost::xtime_get(&xt, boost::TIME_UTC);
+    // we sleep for 0 seconds
+    boost::thread::sleep(xt);
+  }
+}
+
+// blocking
 void PlayerClient::Run(uint aTimeout)
 {
   timespec sleep = {0,aTimeout*1000000};
   mIsStop = false;
-  PRINT("Starting Run");
+  PRINT("starting run");
   while (!mIsStop)
   {
     if (Peek())
@@ -103,7 +145,6 @@ void PlayerClient::Run(uint aTimeout)
     }
     nanosleep(&sleep, NULL);
   }
-  PRINT("Finished");
 }
 
 void PlayerClient::Stop()
@@ -113,51 +154,40 @@ void PlayerClient::Stop()
 
 int PlayerClient::Peek(uint aTimeout)
 {
-  return(playerc_client_peek(mClient, aTimeout));
+  boost::mutex::scoped_lock lock(mMutex);
+  //EVAL(playerc_client_peek(mClient, aTimeout));
+  return playerc_client_peek(mClient, aTimeout);
 }
 
 void PlayerClient::Read()
 {
   assert(NULL!=mClient);
-  PRINT("Read()");
-  EVAL(mClient);
+  PRINT("read()");
   // first read the data
-  Lock();
-  if (NULL==playerc_client_read(mClient))
   {
-    Unlock();
-    throw PlayerError("PlayerClient::Read()", playerc_error_str());
+    boost::mutex::scoped_lock lock(mMutex);
+    if (NULL==playerc_client_read(mClient))
+    {
+      throw PlayerError("PlayerClient::Read()", playerc_error_str());
+    }
   }
-  Unlock();
 
   // how can we do the loop with a for_each?
   //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mReadSignal));
   std::list<PlayerCc::ClientProxy*>::iterator it = mProxyList.begin();
   for(; it != mProxyList.end(); ++it)
   {
-    EVAL(*it);
     ClientProxy* x = *it;
     // only emit a signal when the interface has received data
-    if (x->GetDataTime()>x->mLastTime)
+    x->GetDataTime();
+
+    if (x->GetDataTime() > x->mLastTime)
     {
+      //boost::mutex::scoped_lock lock(mMutex);
       x->mLastTime = x->GetDataTime();
       x->mReadSignal();
     }
   }
-}
-
-void PlayerClient::Lock()
-{
-  //std::cerr << "Lock()...";
-  //mMyMutex.lock();
-  //std::cerr << "OK" << std::endl;
-}
-
-void PlayerClient::Unlock()
-{
-  //std::cerr << "Unlock()...";
-  //mMyMutex.unlock();
-  //std::cerr << "OK" << std::endl;
 }
 
 // change continuous data rate (freq is in Hz)
@@ -222,7 +252,8 @@ void PlayerClient::GetDeviceList()
 
 #endif
 
-std::ostream& std::operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
+std::ostream&
+std::operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
 {
   return os << c.GetHostname()
             << ": "

@@ -129,16 +129,16 @@ parse_args(int argc, char** argv)
     }
     else if(!strcmp(argv[i],"-t"))
       {
-	print_timestamp = true;
+  print_timestamp = true;
       }
     else
       {
-	puts(USAGE);
-	exit(1);
+  puts(USAGE);
+  exit(1);
       }
     i++;
   }
-  
+
   dev = argv[argc-1];
   if((colon = strchr(argv[argc-1],':')))
   {
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
   parse_args(argc,argv);
 
   player_interface_t interface;
-  int ret = lookup_interface(dev, &interface);
+  //int ret = lookup_interface(dev, &interface);
 
   ClientProxy* cp;
 
@@ -167,9 +167,9 @@ int main(int argc, char **argv)
       break;
     default:
       printf("Unknown interface \"%s\"\n", dev);
-      exit(1);    
+      exit(1);
   }
-  
+
 /*  else if(!strcmp(dev,PLAYER_POSITION_STRING))
     cp = new PositionProxy(&pclient,idx);
   else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
@@ -214,9 +214,9 @@ int main(int argc, char **argv)
   {
     /* this blocks until new data comes; 10Hz by default */
     pclient.Read();
-    
+
     printf("Read is now done\n");
-    
+
     switch(interface.interf)
     {
       case PLAYER_LASER_CODE:

@@ -47,6 +47,7 @@ MapProxy::~MapProxy()
 void
 MapProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_map_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("MapProxy::MapProxy()", "could not create");
@@ -59,12 +60,14 @@ void
 MapProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_map_unsubscribe(mDevice);
   playerc_map_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::MapProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::MapProxy &c)
 {
   os << "#Map (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
 
@@ -74,6 +77,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::MapProxy &c)
 void
 MapProxy::RequestMap()
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_map_get_map(mDevice))
     throw PlayerError("MapProxy::RequestMap()", "error requesting map");
   return;

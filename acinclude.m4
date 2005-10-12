@@ -352,7 +352,7 @@ if test "x$with_boost_signals" != "xno"; then
         AC_LANG_CPLUSPLUS
         AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/signal.hpp>]],
           [[boost::signal<void ()> sig; return 0;]]),
-	  ax_cv_boost_signal="yes", ax_cv_boost_signal="no")
+          ax_cv_boost_signal="yes", ax_cv_boost_signal="no")
         AC_LANG_RESTORE
       ])
   if test "x$ax_cv_boost_signal" = "xyes"; then
@@ -375,13 +375,16 @@ AC_ARG_WITH([boost-thread],AS_HELP_STRING([--with-boost-thread],
   [specify the boost thread library or suffix to use]),
   [with_boost_thread=$withval],[with_boost_thread="yes"])
 if test "x$with_boost_thread" != "xno"; then
+  AC_DEFINE(_POSIX_PTHREAD_SEMANTICS, 1, [Define pthread semantics])
+  AC_DEFINE(_REENTRANT, 1, [Define reentrant])
   AC_CACHE_CHECK(whether the Boost::Thread library is available,
       ax_cv_boost_thread,
       [AC_LANG_SAVE
         AC_LANG_CPLUSPLUS
-        AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include <boost/thread/thread.hpp>]],
-                 [[boost::thread_group thrds; return 0;]]),
-               ax_cv_boost_thread="yes", ax_cv_boost_thread="no")
+        AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include "confdefs.h"
+                                            #include <boost/thread/thread.hpp>]],
+                 [[boost::thread thread; return 0;]]),
+                 ax_cv_boost_thread="yes", ax_cv_boost_thread="no")
         CXXFLAGS=$CXXFLAGS_SAVE
         AC_LANG_RESTORE
       ])

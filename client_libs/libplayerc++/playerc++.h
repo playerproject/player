@@ -22,7 +22,7 @@
 
 /***************************************************************************
  * Desc: Player v2.0 C++ client
- * Author:
+ * Authors: Brad Kratochvil, Toby Collett
  *
  * Date: 23 Sep 2005
  # CVS: $Id$
@@ -43,6 +43,10 @@
 
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/read_write_mutex.hpp>
 
 /** @addtogroup clientlibs Client Libraries */
 /** @{ */
@@ -163,9 +167,8 @@ class ClientProxy
     template<typename T>
     T GetVar(const T &aV) const
     { // these have to be defined here since they're templates
-      Lock();
+      boost::mutex::scoped_lock lock(mPc->mMutex);
       T v = aV;
-      Unlock();
       return v;
     }
 
@@ -179,16 +182,9 @@ class ClientProxy
     template<typename T>
     void GetVarByRef(const T aBegin, const T aEnd, T aDest) const
     { // these have to be defined here since they're templates
-      Lock();
+      boost::mutex::scoped_lock lock(mPc->mMutex);
       std::copy(aBegin, aEnd, aDest);
-      Unlock();
     }
-
-    /** Lock the PlayerClient so data access can be performed */
-    void Lock() const;
-
-    /** Tell PlayerClient that we're done */
-    void Unlock() const;
 
     /** The last time that data was read by this client in [s].*/
     double mLastTime;
@@ -226,7 +222,7 @@ class ClientProxy
 
     /** Returns the received timestamp [s]*/
     double GetElapsedTime() const
-      { return(GetVar(mInfo->datatime)-GetVar(mInfo->lasttime)); };
+      { return(GetVar(mInfo->datatime) - GetVar(mInfo->lasttime)); };
 
     /** Returns device index */
     uint GetIndex() const { return(GetVar(mInfo->addr.index)); };
@@ -243,11 +239,13 @@ class ClientProxy
       */
     template<typename T>
     connection_t ConnectReadSignal(T aSubscriber)
-      { return mReadSignal.connect(aSubscriber); }
+      { boost::mutex::scoped_lock lock(mPc->mMutex);
+        return mReadSignal.connect(aSubscriber); }
 
     /** Disconnect a signal to this proxy */
     void DisconnectReadSignal(connection_t aSubscriber)
-      { aSubscriber.disconnect(); }
+      { boost::mutex::scoped_lock lock(mPc->mMutex);
+        aSubscriber.disconnect(); }
 
 };
 

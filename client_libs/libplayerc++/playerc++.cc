@@ -27,14 +27,17 @@
 
 #include "playerc++.h"
 
-std::ostream& std::operator << (std::ostream& os, const player_pose_t& c)
+std::ostream&
+std::operator << (std::ostream& os, const player_pose_t& c)
 {
   os << "pos: " << c.px << "," << c.py << "," << c.pa;
   return os;
 }
 
-std::ostream& std::operator << (std::ostream& os, const player_pose3d_t& c)
+std::ostream&
+std::operator << (std::ostream& os, const player_pose3d_t& c)
 {
-  os << "pos: " << c.px << "," << c.py << "," << c.pz << " " << c.proll << "," << c.ppitch << "," << c.pyaw;
+  os << "pos: " << c.px << "," << c.py << "," << c.pz << " "
+     << c.proll << "," << c.ppitch << "," << c.pyaw;
   return os;
 }

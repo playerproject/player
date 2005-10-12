@@ -47,6 +47,7 @@ PlannerProxy::~PlannerProxy()
 void
 PlannerProxy::Subscribe(uint aIndex)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   mDevice = playerc_planner_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("PlannerProxy::PlannerProxy()", "could not create");
@@ -59,12 +60,14 @@ void
 PlannerProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   playerc_planner_unsubscribe(mDevice);
   playerc_planner_destroy(mDevice);
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &c)
 {
   os << "#Planner (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
 
@@ -74,6 +77,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::PlannerProxy &
 void
 PlannerProxy::SetGoalPose(double aGx, double aGy, double aGa)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_planner_set_cmd_pose(mDevice, aGx, aGy, aGa))
     throw PlayerError("PlannerProxy::SetGoalPose()", "error setting goal");
   return;
@@ -82,6 +86,7 @@ PlannerProxy::SetGoalPose(double aGx, double aGy, double aGa)
 void
 PlannerProxy::RequestWaypoints()
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_planner_get_waypoints(mDevice))
     throw PlayerError("PlannerProxy::RequestWaypoints()",
                       "error requesting waypoint");
@@ -92,6 +97,7 @@ PlannerProxy::RequestWaypoints()
 void
 PlannerProxy::SetEnable(bool aEnable)
 {
+  boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_planner_enable(mDevice, aEnable))
     throw PlayerError("PlannerProxy::SetEnable()", "error setting enable");
   return;
