@@ -81,7 +81,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       PLAYER_MSG0(1, "success");
     else
     {
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror() );
+      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror() );
       return(false);
     }
   }
@@ -120,7 +120,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
       }
       else
       {
-        PLAYER_MSG2(1, "failed to load %s (error %s)\n", fullpath,  lt_dlerror());
+        PLAYER_MSG2(2, "failed to load %s (error %s)\n", fullpath,  lt_dlerror());
       }
       i=j+1;
     }
@@ -147,7 +147,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       PLAYER_MSG0(1, "success");
     else
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror());
+      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror());
   }
 
   // try to load it from prefix/lib
@@ -162,7 +162,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = lt_dlopenext(fullpath)))
       PLAYER_MSG0(1, "success");
     else
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror() );
+      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror() );
   }
 
   // just pass the libname to lt_dlopenext, to see if it can handle it
@@ -174,7 +174,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = lt_dlopenext(pluginname)))
       PLAYER_MSG0(1, "success");
     else
-      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror());
+      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror());
   }
 
   if (handle == NULL)
