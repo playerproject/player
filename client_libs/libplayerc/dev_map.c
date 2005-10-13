@@ -180,6 +180,7 @@ int playerc_map_get_map(playerc_map_t* device)
     }
 
 #if HAVE_ZLIB_H
+    unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
     if(uncompress((Bytef*)unzipped_data, &unzipped_data_len,
                   data_req->data, data_req->data_count) != Z_OK)
     {
