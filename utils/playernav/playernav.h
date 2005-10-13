@@ -61,6 +61,7 @@ typedef struct
 void create_map_image(gui_data_t* gui_data);
 void init_gui(gui_data_t* gui_data, 
               int argc, char** argv);
+void update_map(gui_data_t* gui_data);
 void fini_gui(gui_data_t* gui_data);
 void create_robot(gui_data_t* gui_data, int idx, pose_t pose);
 void move_item(GnomeCanvasItem* item, pose_t pose, int raise);

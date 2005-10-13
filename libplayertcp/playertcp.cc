@@ -323,7 +323,16 @@ PlayerTCP::Close(int cli)
     PLAYER_WARN1("close() failed: %s", strerror(errno));
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
-  delete this->clients[cli].queue;
+  // FIXME
+  // We can't delete the queue here, because there may be one or more
+  // drivers that have pending requests from this client.  Such a driver
+  // will try to push the reply onto this queue, causing a segfault or
+  // deadlock.  So we'll empty the queue and just leave it hanging around,
+  // which is a (small) memory leak.
+  //delete this->clients[cli].queue;
+  Message* msg;
+  while((msg = this->clients[cli].queue->Pop()))
+    delete msg;
   free(this->clients[cli].readbuffer);
   free(this->clients[cli].writebuffer);
   if(this->clients[cli].kill_flag)
