@@ -207,7 +207,7 @@ void P2OS_Register(DriverTable* table)
 }
 
 P2OS::P2OS(ConfigFile* cf, int section) 
-        : Driver(cf,section,false,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
   memset(&this->position_id, 0, sizeof(player_devaddr_t));
