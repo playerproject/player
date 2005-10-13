@@ -17,6 +17,9 @@ libplayertcp_la_SOURCES = socket_util.c socket_util.h \
 
 libplayertcp_la_LIBADD = $(top_builddir)/replace/*.lo
 libplayertcp_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
+if HAVE_ZLIB
+libplayertcp_la_LDFLAGS += -lz
+endif
 
 pkgincludedir = $(includedir)/libplayertcp
 

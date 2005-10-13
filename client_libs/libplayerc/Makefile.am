@@ -15,6 +15,9 @@ CLEANFILES = playerc.pc
 
 lib_LTLIBRARIES = libplayerc.la
 libplayerc_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
+if HAVE_ZLIB
+libplayerc_la_LDFLAGS += -lz
+endif
 
 libplayerc_la_SOURCES = playerc.h \
                         mclient.c \
