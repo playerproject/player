@@ -100,6 +100,7 @@ Brian Gerkey
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <float.h>
 
 // use gdk-pixbuf for image loading
 #include <gdk-pixbuf/gdk-pixbuf.h>
@@ -123,6 +124,7 @@ class MapFile : public Driver
     double resolution;
     int negate;
     int size_x, size_y;
+    player_pose_t origin;
     char* mapdata;
     
     // Handle map info request
@@ -131,7 +133,8 @@ class MapFile : public Driver
     void HandleGetMapData(void *client, void *request, int len);
 
   public:
-    MapFile(ConfigFile* cf, int section, const char* file, double res, int neg);
+    MapFile(ConfigFile* cf, int section, const char* file, 
+            double res, int neg, player_pose_t o);
     ~MapFile();
     int Setup();
     int Shutdown();
@@ -149,6 +152,7 @@ MapFile_Init(ConfigFile* cf, int section)
   const char* filename;
   double resolution;
   int negate;
+  player_pose_t origin;
 
   if(!(filename = cf->ReadFilename(section,"filename", NULL)))
   {
@@ -161,8 +165,12 @@ MapFile_Init(ConfigFile* cf, int section)
     return(NULL);
   }
   negate = cf->ReadInt(section,"negate",0);
+  origin.px = cf->ReadTupleLength(section,"origin",0,FLT_MAX);
+  origin.py = cf->ReadTupleLength(section,"origin",1,FLT_MAX);
+  origin.pa = cf->ReadTupleAngle(section,"origin",2,FLT_MAX);
 
-  return((Driver*)(new MapFile(cf, section, filename, resolution, negate)));
+  return((Driver*)(new MapFile(cf, section, filename, 
+                               resolution, negate, origin)));
 }
 
 // a driver registration function
@@ -174,7 +182,8 @@ MapFile_Register(DriverTable* table)
 
 
 // this one has no data or commands, just configs
-MapFile::MapFile(ConfigFile* cf, int section, const char* file, double res, int neg) 
+MapFile::MapFile(ConfigFile* cf, int section, const char* file, 
+                 double res, int neg, player_pose_t o) 
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
 {
   this->mapdata = NULL;
@@ -182,6 +191,7 @@ MapFile::MapFile(ConfigFile* cf, int section, const char* file, double res, int 
   this->filename = file;
   this->resolution = res;
   this->negate = neg;
+  this->origin = o;
 }
 
 MapFile::~MapFile()
@@ -286,9 +296,15 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     info.scale = this->resolution;
     info.width = this->size_x;
     info.height = this->size_y;
-    info.origin.px = -(this->size_x / 2.0) * this->resolution;
-    info.origin.py = -(this->size_y / 2.0) * this->resolution;
-    info.origin.pa = 0.0;
+    // Did the user specify an origin?
+    if(this->origin.px == FLT_MAX)
+    {
+      info.origin.px = -(this->size_x / 2.0) * this->resolution;
+      info.origin.py = -(this->size_y / 2.0) * this->resolution;
+      info.origin.pa = 0.0;
+    }
+    else
+      info.origin = this->origin;
 
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
