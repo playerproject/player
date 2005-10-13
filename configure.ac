@@ -229,6 +229,12 @@ AM_CONDITIONAL(INCLUDE_RTKGUI, test "x$enable_rtkgui" = "xyes")
 dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h jpeglib.h)
 
+AC_CHECK_HEADER(zlib.h, have_zlib=yes, have_zlib=no)
+if test "x$have_zlib" = "xyes"; then
+  AC_DEFINE(HAVE_ZLIB_H, 1, [[[zlib is available]]])
+fi
+AM_CONDITIONAL(HAVE_ZLIB, test "x$have_zlib" = "xyes")
+
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t
 dnl isn't in the standard headers (autoconf-2.5 has better methods for this)

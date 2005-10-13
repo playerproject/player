@@ -20,12 +20,20 @@
  *
  */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#if HAVE_ZLIB_H
+  #include <zlib.h>
+#endif
 
 #include <replace/replace.h>
 #include <libplayercore/playercore.h>
@@ -488,6 +496,7 @@ PlayerTCP::WriteClient(int cli)
   player_msghdr_t hdr;
   void* payload;
   int encode_msglen;
+  player_map_data_t* zipped_data=NULL;
 
   client = this->clients + cli;
   for(;;)
@@ -564,6 +573,45 @@ PlayerTCP::WriteClient(int cli)
           memset(client->writebuffer, 0, client->writebuffersize);
         }
 
+        // HACK: special handling for map data to compress it before sending
+        // them out over the network.
+        if((hdr.addr.interf == PLAYER_MAP_CODE) &&
+           (hdr.type == PLAYER_MSGTYPE_RESP_ACK) && 
+           (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
+        {
+#if HAVE_ZLIB_H
+          player_map_data_t* raw_data = (player_map_data_t*)payload;
+          player_map_data_t* zipped_data = 
+                  (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
+          assert(zipped_data);
+
+          // copy the metadata
+          zipped_data->col = raw_data->col;
+          zipped_data->row = raw_data->row;
+          zipped_data->width = raw_data->width;
+          zipped_data->height = raw_data->height;
+          uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
+
+          // compress the tile
+          if(compress((Bytef*)zipped_data->data,&count,
+                      (const Bytef*)raw_data->data, raw_data->data_count) != Z_OK)
+          {
+            PLAYER_ERROR("failed to compress map data");
+            free(zipped_data);
+            client->writebufferlen = 0;
+            delete msg;
+            return(0);
+          }
+
+          zipped_data->data_count = count;
+
+          // swap the payload pointer to point at the zipped version
+          payload = (void*)zipped_data;
+#else
+          PLAYER_WARN("not compressing map data, because zlib was not found at compile time");
+#endif
+        }
+
         // Encode the body first
         if((encode_msglen =
             (*packfunc)(client->writebuffer + PLAYERXDR_MSGHDR_SIZE,
@@ -572,6 +620,11 @@ PlayerTCP::WriteClient(int cli)
         {
           PLAYER_WARN4("encoding failed on message from %u:%u with type %u:%u",
                        hdr.addr.interf, hdr.addr.index, hdr.type, hdr.subtype);
+          if(zipped_data)
+          {
+            free(zipped_data);
+            zipped_data=NULL;
+          }
           client->writebufferlen = 0;
           delete msg;
           return(0);
@@ -586,6 +639,11 @@ PlayerTCP::WriteClient(int cli)
 			       PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
+          if(zipped_data)
+          {
+            free(zipped_data);
+            zipped_data=NULL;
+          }
           client->writebufferlen = 0;
           delete msg;
           return(0);
@@ -594,6 +652,11 @@ PlayerTCP::WriteClient(int cli)
         client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
       }
       delete msg;
+      if(zipped_data)
+      {
+        free(zipped_data);
+        zipped_data=NULL;
+      }
     }
     else
       return(0);
@@ -789,7 +852,48 @@ PlayerTCP::ParseBuffer(int cli)
             client = this->clients + cli;
           }
           else
-            device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+          {
+            // HACK: special handling for map data to uncompress it after sending
+            // over the network.
+            if((hdr.addr.interf == PLAYER_MAP_CODE) &&
+               (hdr.type == PLAYER_MSGTYPE_RESP_ACK) && 
+               (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
+            {
+#if HAVE_ZLIB_H
+              player_map_data_t* zipped_data = 
+                      (player_map_data_t*)this->decode_readbuffer;
+              player_map_data_t* raw_data = 
+                      (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
+              assert(raw_data);
+
+              // copy the metadata
+              raw_data->col = zipped_data->col;
+              raw_data->row = zipped_data->row;
+              raw_data->width = zipped_data->width;
+              raw_data->height = zipped_data->height;
+              uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
+
+              // uncompress the tile
+              if(uncompress((Bytef*)raw_data->data,&count,
+                            (const Bytef*)zipped_data->data, 
+                            (uLongf)zipped_data->data_count) != Z_OK)
+              {
+                PLAYER_ERROR("failed to uncompress map data");
+              }
+              else
+              {
+                raw_data->data_count = count;
+                device->PutMsg(client->queue, &hdr, raw_data);
+              }
+              free(raw_data);
+#else
+              PLAYER_WARN("not uncompressing map data, because zlib was not found at compile time");
+              device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+#endif
+            }
+            else
+              device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+          }
         }
       }
     }
