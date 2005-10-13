@@ -25,6 +25,41 @@
  * $Id$
  */
 
+/** @addtogroup clientlibs Client Libraries */
+/** @{ */
+
+/** @addtogroup player_clientlib_cplusplus libplayerc++
+
+The C++ library is built on a "service proxy" model in which the client
+maintains local objects that are proxies for remote services.  There are
+two kinds of proxies: the special server proxy @p PlayerClient and the
+various device-specific proxies.  Each kind of proxy is implemented as a
+separate class.  The user first creates a @p PlayerClient proxy and uses
+it to establish a connection to a Player server.  Next, the proxies of the
+appropriate device-specific types are created and initialized using the
+existing @p PlayerClient proxy.  To make this process concrete, consider
+the following simple example (for clarity, we omit some error-checking):
+
+@include example0.cc
+
+This program performs simple (and bad) sonar-based obstacle avoidance with
+a mobile robot .  First, a @p PlayerClient
+proxy is created, using the default constructor to connect to the
+server listening at @p localhost:6665.  Next, a @p SonarProxy is
+created to control the sonars and a @p PositionProxy to control the
+robot's motors.  The constructors for these objects use the existing @p
+PlayerClient proxy to establish access to the 0th @p sonar and @p position
+devices, respectively. Finally, we enter a simple loop that reads the current
+sonar state and writes appropriate commands to the motors.
+
+Callbacks can also be registered to the different proxies to be called on a
+Read().  This is illustrated by the following example:
+
+@include example2.cc
+
+*/
+/** @} */
+
 #include "playerc++.h"
 
 std::ostream&
