@@ -62,7 +62,7 @@
 #include "error.h"
 
 // TODO: expose this timeout value somewhere
-#define REQUEST_TIMEOUT 5.0
+#define REQUEST_TIMEOUT 10.0
 
 // Have we done one-time intialization work yet?
 static int init_done;
