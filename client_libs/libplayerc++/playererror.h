@@ -12,41 +12,35 @@ namespace PlayerCc
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-/**
-  Playerc++ exception class
+/** @brief The C++ exception class
+ *
+ * PlayerC++ exception class
  */
 class PlayerError
 {
-  protected:
+  private:
 
-    /** a string describing the error
-     */
+    // a string describing the error
     std::string mStr;
-    /** a string describing the location of the error in the source
-     */
+    // a string describing the location of the error in the source
     std::string mFun;
 
-    /** error code returned by playerc */
+    // error code returned by playerc
     int mCode;
 
   public:
-    /**
-     */
+    ///
     std::string GetErrorStr() const { return(mStr); };
-    /**
-     */
+    ///
     std::string GetErrorFun() const { return(mFun); };
-    /**
-     */
+    ///
     int GetErrorCode() const { return(mCode); };
 
-    /** default constructor
-     */
+    /// default constructor
     PlayerError(const std::string aFun="",
                 const std::string aStr="",
                 const int aCode=-1);
-    /**
-     */
+    ///
     ~PlayerError();
 };
 /** }@ */

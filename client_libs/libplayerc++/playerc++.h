@@ -48,43 +48,12 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/read_write_mutex.hpp>
 
-/** @addtogroup clientlibs Client Libraries */
-/** @{ */
-
-/** @addtogroup player_clientlib_cplusplus libplayerc++
-
-The C++ library is built on a "service proxy" model in which the client
-maintains local objects that are proxies for remote services.  There are
-two kinds of proxies: the special server proxy @p PlayerClient and the
-various device-specific proxies.  Each kind of proxy is implemented as a
-separate class.  The user first creates a @p PlayerClient proxy and uses
-it to establish a connection to a Player server.  Next, the proxies of the
-appropriate device-specific types are created and initialized using the
-existing @p PlayerClient proxy.  To make this process concrete, consider
-the following simple example (for clarity, we omit some error-checking):
-
-@include example0.cc
-
-This program performs simple (and bad) sonar-based obstacle avoidance with
-a mobile robot .  First, a @p PlayerClient
-proxy is created, using the default constructor to connect to the
-server listening at @p localhost:6665.  Next, a @p SonarProxy is
-created to control the sonars and a @p PositionProxy to control the
-robot's motors.  The constructors for these objects use the existing @p
-PlayerClient proxy to establish access to the 0th @p sonar and @p position
-devices, respectively. Finally, we enter a simple loop that reads the current
-sonar state and writes appropriate commands to the motors.
-
-Callbacks can also be registered to the different proxies to be called on a
-Read().  This is illustrated by the following example:
-
-@include example2.cc
-
-*/
-/** @{ */
-
+/** */
 namespace PlayerCc
 {
+
+/** @addtogroup player_clientlib_cplusplus libplayerc++ */
+/** @{ */
 
 /** @addtogroup player_clientlib_utility Utility and error-handling functions */
 /** @{ */
@@ -109,11 +78,12 @@ namespace PlayerCc
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-/**
-Base class for all proxy devices. Access to a device is provided by a
-device-specific proxy class.  These classes all inherit from the @p
-ClientProxy class which defines an interface for device proxies.  As such,
-a few methods are common to all devices and we explain them here.
+/** @brief The Player client base class
+ *
+ * Base class for all proxy devices. Access to a device is provided by a
+ * device-specific proxy class.  These classes all inherit from the @p
+ * ClientProxy class which defines an interface for device proxies.  As such,
+ * a few methods are common to all devices and we explain them here.
 */
 class ClientProxy
 {
@@ -121,49 +91,45 @@ class ClientProxy
 
   public:
 
-    /** A connection type.  This is usefull when attaching signals to the
-     *  ClientProxy because it allows for detatching the signals.
-     */
+    /// A connection type.  This is usefull when attaching signals to the
+    /// ClientProxy because it allows for detatching the signals.
     typedef boost::signals::connection connection_t;
 
   protected:
 
-    /** The ClientProxy constructor
-     *  @attention Potected, so it can only be instantiated by other clients
-     *
-     * @throw PlayerError Throws a PlayerError if unable to connect to the client
-     */
+    // The ClientProxy constructor
+    // @attention Potected, so it can only be instantiated by other clients
+    //
+    // @throw PlayerError Throws a PlayerError if unable to connect to the client
     ClientProxy(PlayerClient* aPc, uint aIndex);
 
-    /** destructor will try to close access to the device */
+    // destructor will try to close access to the device
     virtual ~ClientProxy();
 
-    /** Subscribe to the proxy
-     * This needs to be defined for every proxy.
-     * @arg aIndex the index of the devce we want to connect to
-     */
+    // Subscribe to the proxy
+    // This needs to be defined for every proxy.
+    // @arg aIndex the index of the devce we want to connect to
+
     // I wish these could be pure virtual,
     // but they're used in the constructor/destructor
     virtual void Subscribe(uint aIndex) {};
 
-    /** Unsubscribe from the proxy
-     * This needs to be defined for every proxy.
-     */
+    // Unsubscribe from the proxy
+    // This needs to be defined for every proxy.
     virtual void Unsubscribe() {};
 
-    /** The controlling client object. */
+    // The controlling client object.
     PlayerClient* mPc;
 
-    /** A reference to the C client */
+    // A reference to the C client
     playerc_client_t* mClient;
 
-    /** contains convenience information about the device */
+    // contains convenience information about the device
     playerc_device_t *mInfo;
 
-    /** @brief Get a variable from the client
-     *  All Get functions need to use this when accessing data from the
-     *  c library to make sure the data access is thread safe.
-     */
+    // @brief Get a variable from the client
+    // All Get functions need to use this when accessing data from the
+    // c library to make sure the data access is thread safe.
     template<typename T>
     T GetVar(const T &aV) const
     { // these have to be defined here since they're templates
@@ -172,13 +138,12 @@ class ClientProxy
       return v;
     }
 
-    /** @brief Get a variable from the client by reference
-     *  All Get functions need to use this when accessing data from the
-     *  c library to make sure the data access is thread safe.  In this
-     *  case, a begin, end, and destination pointer must be given (similar
-     *  to C++ copy).  It is up to the user to ensure there is memory
-     *  allocated at aDest.
-     */
+    // @brief Get a variable from the client by reference
+    // All Get functions need to use this when accessing data from the
+    // c library to make sure the data access is thread safe.  In this
+    // case, a begin, end, and destination pointer must be given (similar
+    // to C++ copy).  It is up to the user to ensure there is memory
+    // allocated at aDest.
     template<typename T>
     void GetVarByRef(const T aBegin, const T aEnd, T aDest) const
     { // these have to be defined here since they're templates
@@ -186,63 +151,61 @@ class ClientProxy
       std::copy(aBegin, aEnd, aDest);
     }
 
-    /** The last time that data was read by this client in [s].*/
+    // The last time that data was read by this client in [s].
     double mLastTime;
 
-    /** A boost::signal which is used for our callbacks.
-     * The signal will normally be of a type such as:
-     * - boost::signal<void ()>
-     * - boost::signal<void (T)>
-     *  where T can be any type.
-     *
-     * @attention we currently only use signals that return void because we
-     * don't have checks to make sure a signal is registered.  If an empty
-     * signal is called:
-     *
-     * @attention "Calling the function call operator may invoke undefined
-     * behavior if no slots are connected to the signal, depending on the
-     * combiner used. The default combiner is well-defined for zero slots when
-     * the return type is void but is undefined when the return type is any
-     * other type (because there is no way to synthesize a return value)."
-     */
+    // A boost::signal which is used for our callbacks.
+    // The signal will normally be of a type such as:
+    // - boost::signal<void ()>
+    // - boost::signal<void (T)>
+    // where T can be any type.
+    //
+    // @attention we currently only use signals that return void because we
+    // don't have checks to make sure a signal is registered.  If an empty
+    // signal is called:
+    //
+    // @attention "Calling the function call operator may invoke undefined
+    // behavior if no slots are connected to the signal, depending on the
+    // combiner used. The default combiner is well-defined for zero slots when
+    // the return type is void but is undefined when the return type is any
+    // other type (because there is no way to synthesize a return value)."
+    //
     boost::signal<void (void)> mReadSignal;
 
   public:
 
-    /**  Returns true if we have received any data from the device.
-     */
+    ///  Returns true if we have received any data from the device.
     bool IsValid() const { return(0!=GetVar(mInfo->datatime)); };
 
-    /**  Returns the driver name
-         @todo GetDriverName isn't guarded by locks yet*/
+    ///  Returns the driver name
+    ///  @todo GetDriverName isn't guarded by locks yet
     std::string GetDriverName() const { return(mInfo->drivername); };
 
-    /** Returns the received timestamp [s] */
+    /// Returns the received timestamp [s]
     double GetDataTime() const { return(GetVar(mInfo->datatime)); };
 
-    /** Returns the received timestamp [s]*/
+    /// Returns the received timestamp [s]
     double GetElapsedTime() const
       { return(GetVar(mInfo->datatime) - GetVar(mInfo->lasttime)); };
 
-    /** Returns device index */
+    /// Returns device index
     uint GetIndex() const { return(GetVar(mInfo->addr.index)); };
 
-    /** Returns device interface */
+    /// Returns device interface
     uint GetInterface() const { return(GetVar(mInfo->addr.interf)); };
 
-    /** Returns device interface */
+    /// Returns device interface
     std::string GetInterfaceStr() const
       { return(playerc_lookup_name(GetVar(mInfo->addr.interf))); };
 
-    /** Connect a signal to this proxy
-        For more information check out @file example2.cc
-      */
+    /// Connect a signal to this proxy
+    /// For more information check out @file example2.cc
     template<typename T>
     connection_t ConnectReadSignal(T aSubscriber)
       { boost::mutex::scoped_lock lock(mPc->mMutex);
         return mReadSignal.connect(aSubscriber); }
 
-    /** Disconnect a signal to this proxy */
+    /// Disconnect a signal to this proxy
     void DisconnectReadSignal(connection_t aSubscriber)
       { boost::mutex::scoped_lock lock(mPc->mMutex);
         aSubscriber.disconnect(); }
@@ -278,12 +241,11 @@ class PlayerMultiClient
     // destructor
     ~PlayerMultiClient();
 
-    /** How many clients are currently being managed?
-     */
+    /// How many clients are currently being managed?
     int GetNumClients(void) { return num_ufds; };
 
-    /** Return a pointer to the client associated with the given host and port,
-        or NULL if none is connected to that address. */
+    /// Return a pointer to the client associated with the given host and port,
+    ///  or NULL if none is connected to that address.
     PlayerClient* GetClient( char* host, int port );
 
     /** Return a pointer to the client associated with the given binary host
@@ -292,11 +254,11 @@ class PlayerMultiClient
 
     /** After creating and connecting a PlayerClient object, you should use
         this method to hand it over to the PlayerMultiClient for management.
-        */
+      */
     void AddClient(PlayerClient* client);
 
     /** Remove a client from PlayerMultiClient management.
-     */
+      */
     void RemoveClient(PlayerClient* client);
 
     /** Read on one of the client connections.  This method will return after
@@ -571,7 +533,7 @@ class BlinkenLightProxy : public ClientProxy
     /** Set the state of the indicator light. A period of zero means
         the light will be unblinkingly on or off. Returns 0 on
         success, else -1.
-     */
+      */
     void SetEnable(bool aSet);
 };
 
@@ -2148,21 +2110,21 @@ class WiFiProxy: public ClientProxy
 
 #if 0
 
-    int GetLinkQuality(char * ip = NULL);
-    int GetLevel(char * ip = NULL);
-    int GetLeveldBm(char * ip = NULL) { return GetLevel(ip) - 0x100; }
-    int GetNoise(char * ip = NULL);
-    int GetNoisedBm(char * ip = NULL) { return GetNoise(ip) - 0x100; }
+    int GetLinkQuality(char/// ip = NULL);
+    int GetLevel(char/// ip = NULL);
+    int GetLeveldBm(char/// ip = NULL) { return GetLevel(ip) - 0x100; }
+    int GetNoise(char/// ip = NULL);
+    int GetNoisedBm(char/// ip = NULL) { return GetNoise(ip) - 0x100; }
 
     uint16_t GetMaxLinkQuality() { return maxqual; }
     uint8_t GetMode() { return op_mode; }
 
     int GetBitrate();
 
-    char * GetMAC(char *buf, int len);
+    char/// GetMAC(char *buf, int len);
 
-    char * GetIP(char *buf, int len);
-    char * GetAP(char *buf, int len);
+    char/// GetIP(char *buf, int len);
+    char/// GetAP(char *buf, int len);
 
     int AddSpyHost(char *address);
     int RemoveSpyHost(char *address);
@@ -2187,7 +2149,6 @@ class WiFiProxy: public ClientProxy
 } // namespace PlayerCc
 
 
-/* These need to be outside of the namespace (i think) */
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
@@ -2237,7 +2198,6 @@ namespace std
 
 
 /** @} (c++)*/
-/** @} (client_libs)*/
 
 #endif
 

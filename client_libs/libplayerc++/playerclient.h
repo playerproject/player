@@ -13,65 +13,63 @@
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
 
-//#define _REENTRANT
-//#define _POSIX_PTHREAD_SEMANTICS
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/read_write_mutex.hpp>
 
-/** @defgroup player_clientlib_cplusplus libplayerc++ */
+namespace PlayerCc
+{
+/** @addtogroup player_clientlib_cplusplus libplayerc++ */
 /** @{ */
 
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-/**/
-namespace PlayerCc
-{
-/**/
+/** The default port number for @ref PlayerClient */
 const int PLAYER_PORTNUM(6665);
-/**/
+/** The default hostname for @ref PlayerClient */
 const std::string PLAYER_HOSTNAME("localhost");
 
 class ClientProxy;
 
-/**
-One @p PlayerClient object is used to control each connection to
-a Player server.  Contained within this object are methods for changing the
-connection parameters and obtaining access to devices, which we explain
-next.
+/** @brief The ClientProxy is used for communicating with the player server
+ *
+ * One @p PlayerClient object is used to control each connection to
+ * a Player server.  Contained within this object are methods for changing the
+ * connection parameters and obtaining access to devices, which we explain
+ * next.
 */
 class PlayerClient
 {
   friend class ClientProxy;
 
-  protected:
-    /// list of proxies associated with us
+  private:
+    // list of proxies associated with us
     std::list<PlayerCc::ClientProxy*> mProxyList;
 
-    /// Connect to the indicated host and port.
-    /// @exception throws PlayerError if unsuccessfull
+    // Connect to the indicated host and port.
+    // @exception throws PlayerError if unsuccessfull
     void Connect(const std::string aHostname, uint aPort);
 
-    /// Disconnect from server.
+    // Disconnect from server.
     void Disconnect();
 
-    ///  our c-client from playerc
+    //  our c-client from playerc
     playerc_client_t* mClient;
 
-    /// The hostname of the server, stored for convenience
+    // The hostname of the server, stored for convenience
     std::string mHostname;
 
-    /// The port number of the server, stored for convenience
+    // The port number of the server, stored for convenience
     uint mPort;
 
-    /// Is the thread currently stopped or stopping?
+    // Is the thread currently stopped or stopping?
     bool mIsStop;
 
-    /// This is the thread where we run \ref Run()
+    // This is the thread where we run \ref Run()
     boost::thread* mThread;
 
-    /// A helper function for starting the thread
+    // A helper function for starting the thread
     void RunThread();
 
   public:
@@ -119,6 +117,7 @@ class PlayerClient
     /// server with this method.  The value of @p freq is interpreted as Hz;
     /// this will be the new rate at which your client receives data (when in
     /// continuous mode).
+    ///
     /// @exception throws PlayerError if unsuccessfull
     void SetFrequency(uint aFreq);
 
@@ -129,6 +128,7 @@ class PlayerClient
     ///   - PLAYER_DATAMODE_PUSH_NEW (only new new data at fixed freq)
     ///   - PLAYER_DATAMODE_PULL_NEW (only new data on demand)
     ///   - PLAYER_DATAMODE_PUSH_ASYNC (new data, as fast as it is produced)
+    ///
     /// @exception throws PlayerError if unsuccessfull
     void SetDataMode(uint aMode);
 

@@ -59,11 +59,12 @@ int main(int argc, char** argv)
     // now, we should see some signals each time Read() is called.
     client.StartThread();
 
-    timespec sleep = {1, 0}; // 5s loop
-    for (uint i=0; i<1000; ++i)
+    timespec sleep = {0, 1000000};
+    for (;;)
     {
-      std::cout << ptz;
-      ptz.SetCam(ptz.GetPan()+DTOR(10*pow(-1, i%2)), 0, 0);
+      //std::cout << ptz;
+      //ptz.SetCam(ptz.GetPan()+DTOR(10*pow(-1, i%2)), 0, 0);
+      ptz.SetCam(ptz.GetPan(), 0, 0);
       nanosleep(&sleep, NULL);
     }
 
