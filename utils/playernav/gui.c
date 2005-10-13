@@ -73,6 +73,16 @@ _show_names(GtkWidget *widget,
   return(TRUE);
 }
 
+
+static gboolean 
+_refresh_map(GtkWidget *widget,
+             GdkEvent *event,
+             gpointer data)
+{
+  update_map((gui_data_t*)widget);
+  return(TRUE);
+}
+
 static gboolean 
 _show_particles(GtkWidget *widget,
                 GdkEvent *event,
@@ -433,6 +443,7 @@ make_menu(gui_data_t* gui_data)
   GtkMenuItem* view_item;
   GtkCheckMenuItem* show_names_item;
   GtkCheckMenuItem* show_particles_item;
+  GtkCheckMenuItem* refresh_map_item;
   
   GtkMenu* stop_menu;
   GtkMenuItem* stop_item;
@@ -454,6 +465,7 @@ make_menu(gui_data_t* gui_data)
   dump_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Capture stills");
   show_names_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show robot names");
   show_particles_item = (GtkCheckMenuItem*)gtk_check_menu_item_new_with_label("Show particles");
+  refresh_map_item = (GtkCheckMenuItem*)gtk_menu_item_new_with_label("Refresh map");
   stop_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Stop all robots");
   go_all_item = (GtkMenuItem*)gtk_menu_item_new_with_label("Go all robots");
 
@@ -479,6 +491,9 @@ make_menu(gui_data_t* gui_data)
   gtk_widget_add_accelerator((GtkWidget*)show_particles_item, "activate", 
                              accel_group, GDK_p, GDK_CONTROL_MASK, 
                              GTK_ACCEL_VISIBLE);
+  gtk_widget_add_accelerator((GtkWidget*)refresh_map_item, "activate", 
+                             accel_group, GDK_r, GDK_CONTROL_MASK, 
+                             GTK_ACCEL_VISIBLE);
   gtk_widget_add_accelerator((GtkWidget*)dump_item, "activate", 
                              accel_group, GDK_d, GDK_CONTROL_MASK, 
                              GTK_ACCEL_VISIBLE);
@@ -488,6 +503,7 @@ make_menu(gui_data_t* gui_data)
   gtk_menu_shell_append (GTK_MENU_SHELL(file_menu), (GtkWidget*)quit_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_names_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)show_particles_item);
+  gtk_menu_shell_append (GTK_MENU_SHELL(view_menu), (GtkWidget*)refresh_map_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)stop_all_item);
   gtk_menu_shell_append (GTK_MENU_SHELL(stop_menu), (GtkWidget*)go_all_item);
 
@@ -505,6 +521,9 @@ make_menu(gui_data_t* gui_data)
   g_signal_connect_swapped(G_OBJECT (show_particles_item), "activate",
                            G_CALLBACK(_show_particles),
                            (gpointer) gui_data);
+  g_signal_connect_swapped(G_OBJECT (refresh_map_item), "activate",
+                           G_CALLBACK(_refresh_map),
+                           (gpointer) gui_data);
   g_signal_connect_swapped(G_OBJECT (stop_all_item), "activate",
                            G_CALLBACK(_stop_all_robots),
                            (gpointer) gui_data);
@@ -517,6 +536,7 @@ make_menu(gui_data_t* gui_data)
   gtk_widget_show((GtkWidget*)quit_item);
   gtk_widget_show((GtkWidget*)show_names_item);
   gtk_widget_show((GtkWidget*)show_particles_item);
+  gtk_widget_show((GtkWidget*)refresh_map_item);
   gtk_widget_show((GtkWidget*)stop_all_item);
   gtk_widget_show((GtkWidget*)go_all_item);
 
