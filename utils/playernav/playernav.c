@@ -123,6 +123,7 @@ double dumpfreq;
 int dumpp;
 int showparticlesp;
 double mapupdatefreq;
+int get_waypoints;
 
 void update_map(gui_data_t* gui_data);
 
@@ -142,11 +143,18 @@ player_read_func(gpointer* arg)
   gui_data_t* gui_data = (gui_data_t*)arg;
   static struct timeval lastdump = {0, 0};
   static struct timeval lastmapupdate = {0, 0};
-  static player_pose_t lastwaypt = {0, 0, 0};
+  static player_pose_t lastwaypt[MAX_NUM_ROBOTS];
+  static player_pose_t lastgoal[MAX_NUM_ROBOTS];
   struct timeval curr;
   double diff;
   gboolean onmap;
   int peek;
+
+  if(!count)
+  {
+    memset(lastwaypt,0,sizeof(lastwaypt));
+    memset(lastgoal,0,sizeof(lastgoal));
+  }
 
   peek = playerc_mclient_peek(gui_data->mclient,10);
   if(peek < 0)
@@ -223,25 +231,37 @@ player_read_func(gpointer* arg)
 
       // if the current goal or waypoint changed, get the whole list 
       // of waypoints again
-      if((lastwaypt.px != gui_data->planners[i]->wx) ||
-         (lastwaypt.py != gui_data->planners[i]->wy) ||
-         (lastwaypt.pa != gui_data->planners[i]->wa))
+      if((lastwaypt[i].px != gui_data->planners[i]->wx) ||
+         (lastwaypt[i].py != gui_data->planners[i]->wy) ||
+         (lastwaypt[i].pa != gui_data->planners[i]->wa) ||
+         (lastgoal[i].px != gui_data->planners[i]->gx) ||
+         (lastgoal[i].py != gui_data->planners[i]->gy) ||
+         (lastgoal[i].pa != gui_data->planners[i]->ga))
       {
-        if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
+        if(get_waypoints)
         {
-          fprintf(stderr, "error while getting waypoints for robot %d\n", i);
-          //gtk_main_quit();
-          //break;
+          if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
+          {
+            fprintf(stderr, "error while getting waypoints for robot %d\n", i);
+            //gtk_main_quit();
+            //break;
+          }
+          else
+          {
+            //puts("drawing waypoints");
+            draw_waypoints(gui_data,i);
+
+          }
         }
         else
-        {
-          //puts("drawing waypoints");
-          draw_waypoints(gui_data,i);
+          draw_goal(gui_data,i);
 
-          lastwaypt.px = gui_data->planners[i]->wx;
-          lastwaypt.py = gui_data->planners[i]->wy;
-          lastwaypt.pa = gui_data->planners[i]->wa;
-        }
+        lastwaypt[i].px = gui_data->planners[i]->wx;
+        lastwaypt[i].py = gui_data->planners[i]->wy;
+        lastwaypt[i].pa = gui_data->planners[i]->wa;
+        lastgoal[i].px = gui_data->planners[i]->gx;
+        lastgoal[i].py = gui_data->planners[i]->gy;
+        lastgoal[i].pa = gui_data->planners[i]->ga;
       }
 
       gui_data->planners[i]->info.fresh = 0;

@@ -1088,6 +1088,20 @@ draw_waypoints(gui_data_t* gui_data, int idx)
   }
 }
 
+void
+draw_goal(gui_data_t* gui_data, int idx)
+{
+  if(!dragging && !setting_theta)
+  {
+    pose_t p;
+    p.px = gui_data->planners[idx]->gx;
+    p.py = gui_data->planners[idx]->gy;
+    p.pa = gui_data->planners[idx]->ga;
+    move_item(gui_data->robot_goals[idx],p,0);
+    gnome_canvas_item_show(gui_data->robot_goals[idx]);
+  }
+}
+
 
 void
 dump_screenshot(gui_data_t* gui_data)

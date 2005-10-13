@@ -73,6 +73,7 @@ void item_to_meters(GnomeCanvasItem* item,
                     double* dx, double* dy, 
                     double ix, double iy);
 void draw_waypoints(gui_data_t* gui_data, int idx);
+void draw_goal(gui_data_t* gui_data, int idx);
 void draw_particles(gui_data_t* gui_data, int idx);
 void dump_screenshot(gui_data_t* gui_data);
 
