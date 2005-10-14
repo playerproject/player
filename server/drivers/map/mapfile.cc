@@ -167,7 +167,8 @@ MapFile_Init(ConfigFile* cf, int section)
   negate = cf->ReadInt(section,"negate",0);
   origin.px = cf->ReadTupleLength(section,"origin",0,FLT_MAX);
   origin.py = cf->ReadTupleLength(section,"origin",1,FLT_MAX);
-  origin.pa = cf->ReadTupleAngle(section,"origin",2,FLT_MAX);
+  //origin.pa = cf->ReadTupleAngle(section,"origin",2,FLT_MAX);
+  origin.pa = 0.0;
 
   return((Driver*)(new MapFile(cf, section, filename, 
                                resolution, negate, origin)));
