@@ -268,7 +268,7 @@ system
 //
 // /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup interfaces
+/** @defgroup interfaces Interfaces
 All Player communication occurs through <i>interfaces</i>, which specify
 the syntax and semantics for a set of messages. */
 /** @{ */

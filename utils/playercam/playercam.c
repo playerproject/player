@@ -26,17 +26,17 @@
 
 /** @addtogroup utils Utilities */
 /** @{ */
-/** @defgroup player_util_playecam playercam
+/** @defgroup player_util_playercam playercam
 
 @par Synopsis
 
-Playercam is a gui client that displays images captured from a player camera
-device.
+Playercam is a gui client that displays images captured from a player
+@ref player_interface_camera and/or @ref player_interface_blobfinder device.
 
 @par Usage
 
 playercam is installed alongside player in $prefix/bin, so if player is
-in your PATH, then playerv should also be.  Command-line usage is:
+in your PATH, then @em playercam should also be.  Command-line usage is:
 @verbatim
 $ playercam [options]
 @endverbatim
