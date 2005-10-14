@@ -51,7 +51,6 @@
 /** */
 namespace PlayerCc
 {
-
 /** @addtogroup player_clientlib_cplusplus libplayerc++ */
 /** @{ */
 
@@ -289,7 +288,7 @@ class PlayerMultiClient
 class SomethingProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     // Subscribe
     void Subscribe(uint aIndex);
@@ -377,7 +376,7 @@ The @p AIOProxy class is used to read from a @ref player_interface_aio
 (analog I/O) device.  */
 class AIOProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -402,7 +401,7 @@ The @p AudioProxy class controls an @ref player_interface_audio device.
 class AudioProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -433,7 +432,7 @@ The @p AudioDspProxy class controls an @ref player_interface_audiodsp device.
 */
 class AudioDspProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -477,7 +476,7 @@ The @p AudioMixerProxy class controls an @ref player_interface_audiomixer device
 */
 class AudioMixerProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -506,7 +505,7 @@ a flashing indicator light, and to set its period, via a @ref
 player_interface_blinkenlight device */
 class BlinkenLightProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -547,7 +546,7 @@ indexed by color channel.
 */
 class BlobfinderProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -599,7 +598,7 @@ player_interface_bumper device.
 class BumperProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -646,7 +645,7 @@ player_interface_camera device. */
 class CameraProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     virtual void Subscribe(uint aIndex);
     virtual void Unsubscribe();
@@ -705,7 +704,7 @@ The @p DioProxy class is used to read from a @ref player_interface_dio
 */
 class DioProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -738,7 +737,7 @@ player_interface_energy device.
 */
 class EnergyProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -768,7 +767,7 @@ is stored in the @p beacons array.
 */
 class FiducialProxy : public ClientProxy
 {
-  protected:
+  private:
     void Subscribe(uint aIndex);
     void Unsubscribe();
 
@@ -818,7 +817,7 @@ device.  The latest pose data is stored in three class attributes.  */
 class GpsProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -870,7 +869,7 @@ handful of class attributes.  A single method provides user control.
 class GripperProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -930,7 +929,7 @@ device.
 class IrProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -978,7 +977,7 @@ intensity.  The laser scan range, resolution and so on can be configured
 using the Configure() method.  */
 class LaserProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1125,7 +1124,7 @@ hypotheses for a robot.
 class LocalizeProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1184,7 +1183,7 @@ The @p LogProxy proxy provides access to a @ref player_interface_log device.
 */
 class LogProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1224,7 +1223,7 @@ The @p map proxy provides access to a @ref player_interface_map device.
 */
 class MapProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1279,7 +1278,7 @@ playermcomtypes.h.
 */
 class McomProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1346,7 +1345,7 @@ device.  The latest motor data is contained in the attributes @p theta,
 @p thetaspeed, etc. */
 class MotorProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1440,7 +1439,7 @@ player_interface_planner. */
 class PlannerProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1516,7 +1515,7 @@ in the attributes xpos, ypos, etc.  */
 class Position2dProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1630,7 +1629,7 @@ contained in the attributes xpos, ypos, etc.
 class Position3dProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1750,7 +1749,7 @@ class Position3dProxy : public ClientProxy
 The @p PowerProxy class controls a @ref player_interface_power device. */
 class PowerProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1778,7 +1777,7 @@ attributes and changed using the SetCam() method.
 class PtzProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1821,7 +1820,7 @@ The @p SimulationProxy proxy provides access to a
 */
 class SimulationProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1852,7 +1851,7 @@ range attribute, or using the the [] operator.
 */
 class SonarProxy : public ClientProxy
 {
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1902,7 +1901,7 @@ device, which allows you to play pre-recorded sound files on a robot.
 class SoundProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1928,7 +1927,7 @@ device.  Use the say method to send things to say.
 class SpeechProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1954,7 +1953,7 @@ The @p SpeechRecognition proxy provides access to a @ref player_interface_speech
 class SpeechRecognitionProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -1985,7 +1984,7 @@ can put a truth device on robot and teleport it around the place.
 class TruthProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -2045,7 +2044,7 @@ a @ref player_interface_waveform device.  */
 class WaveformProxy : public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -2094,7 +2093,7 @@ The @p WiFiProxy class controls a @ref player_interface_wifi device.  */
 class WiFiProxy: public ClientProxy
 {
 
-  protected:
+  private:
 
     void Subscribe(uint aIndex);
     void Unsubscribe();
@@ -2129,7 +2128,7 @@ class WiFiProxy: public ClientProxy
     int AddSpyHost(char *address);
     int RemoveSpyHost(char *address);
 
-  protected:
+  private:
     int GetLinkIndex(char *ip);
 
     /// The current wifi data.

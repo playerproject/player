@@ -19,21 +19,19 @@
  *
  */
 
-/** Video4Linux mixed mode driver for Logitech Sphere cameras w/ PTZ.
-  * This driver is a heavily modified version of the camerav4l one developed
-  * by Andrew Howard.
-  * @author Brad Kratochvil
-  * @date 1.2.2005
+/**
   * @addtogroup drivers Drivers
   * @{ */
 
 /**
   *@defgroup player_driver_sphere sphere
 
+  * This driver is a heavily modified version of the camerav4l one developed
+  * by Andrew Howard.  The sphere driver captures images from a Logitech Sphere
+  * cameras.  It differs from a normal Video4Linux device in that it has a
+  * built in Pan/Tilt/Zoom unit, so this driver supports multiple interfaces.
 
-The sphere driver captures images from a Logitech Sphere cameras.  It differs
-from a normal Video4Linux device in that it has a built in Pan/Tilt/Zoom unit,
-so this driver supports multiple interfaces.
+  * @date 1.2.2005
 
 @image html sphere.png
 
@@ -140,10 +138,10 @@ driver
 )
 @endverbatim
 
+
 @par Authors
 
 Brad Kratochvil
-
 */
 /** @} */
 

@@ -47,7 +47,7 @@ driver
 @endverbatim
 
 This file instructs the server to create two devices:
-  - A Pioneer P2OS driver, supporting the @ref player_interface_position interface.
+  - A Pioneer P2OS driver, supporting the @ref player_interface_position2d interface.
   - A Sick LMS200 driver, supporting the @ref player_interface_laser interface.
 Client programs can subsequently connect to these devices, read data,
 send commands and so forth (see below).
@@ -72,7 +72,7 @@ principle, this can be done using Player's low-level
 network-socket-base protocol.  In practice, most users will avail
 themselves of one of the existing @e client @e libraries; the
 libraries manage the network interactions, data marshalling and so on,
-and present a much more convenient API.  
+and present a much more convenient API.
 
 For example, the following code fragment demonstrates a simple client
 using the @ref player_clientlib_libplayerc library.
@@ -99,13 +99,12 @@ Client libraries also exist for C, C++, Tcl, LISP, Java, and Python.
 @section mainpage_info Further information
 
 More detailed information can be found here:
-  - @ref commandline
   - @ref utilities
   - @ref client_libs
-  - @ref configfile 
-  - @ref drivers 
-  - @ref interfaces 
-  - @ref protocol 
+  - @ref configfile
+  - @ref drivers
+  - @ref interfaces
+  - @ref protocol
 
 
 */

@@ -25,16 +25,16 @@ namespace PlayerCc
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-/** The default port number for @ref PlayerClient */
+/** The default port number for PlayerClient */
 const int PLAYER_PORTNUM(6665);
-/** The default hostname for @ref PlayerClient */
+/** The default hostname for PlayerClient */
 const std::string PLAYER_HOSTNAME("localhost");
 
 class ClientProxy;
 
-/** @brief The ClientProxy is used for communicating with the player server
+/** @brief The PlayerClient is used for communicating with the player server
  *
- * One @p PlayerClient object is used to control each connection to
+ * One PlayerClient object is used to control each connection to
  * a Player server.  Contained within this object are methods for changing the
  * connection parameters and obtaining access to devices, which we explain
  * next.
