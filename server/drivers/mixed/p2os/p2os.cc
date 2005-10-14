@@ -411,21 +411,24 @@ P2OS::P2OS(ConfigFile* cf, int section)
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
 
   // Limb configuration
-  limb_data.state = PLAYER_LIMB_STATE_IDLE;
-  armOffsetX = cf->ReadTupleFloat(section, "limb_pos", 0, 0.0f);
-  armOffsetY = cf->ReadTupleFloat(section, "limb_pos", 1, 0.0f);
-  armOffsetZ = cf->ReadTupleFloat(section, "limb_pos", 2, 0.0f);
-  double temp1 = cf->ReadTupleFloat(section, "limb_links", 0, 0.06875f);
-  double temp2 = cf->ReadTupleFloat(section, "limb_links", 1, 0.16f);
-  double temp3 = cf->ReadTupleFloat(section, "limb_links", 2, 0.0f);
-  double temp4 = cf->ReadTupleFloat(section, "limb_links", 3, 0.13775f);
-  double temp5 = cf->ReadTupleFloat(section, "limb_links", 4, 0.11321f);
-  kineCalc->SetLinkLengths (temp1, temp2, temp3, temp4, temp5);
-  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 0, 0.0f));
-  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 1, 0.0f));
-  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 2, 0.0f));
-  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 3, 0.0f));
-  kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 4, 0.0f));
+  if(kineCalc)
+  {
+    limb_data.state = PLAYER_LIMB_STATE_IDLE;
+    armOffsetX = cf->ReadTupleFloat(section, "limb_pos", 0, 0.0f);
+    armOffsetY = cf->ReadTupleFloat(section, "limb_pos", 1, 0.0f);
+    armOffsetZ = cf->ReadTupleFloat(section, "limb_pos", 2, 0.0f);
+    double temp1 = cf->ReadTupleFloat(section, "limb_links", 0, 0.06875f);
+    double temp2 = cf->ReadTupleFloat(section, "limb_links", 1, 0.16f);
+    double temp3 = cf->ReadTupleFloat(section, "limb_links", 2, 0.0f);
+    double temp4 = cf->ReadTupleFloat(section, "limb_links", 3, 0.13775f);
+    double temp5 = cf->ReadTupleFloat(section, "limb_links", 4, 0.11321f);
+    kineCalc->SetLinkLengths (temp1, temp2, temp3, temp4, temp5);
+    kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 0, 0.0f));
+    kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 1, 0.0f));
+    kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 2, 0.0f));
+    kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 3, 0.0f));
+    kineCalc->SetOffset (0, cf->ReadTupleFloat(section, "limb_offsets", 4, 0.0f));
+  }
 
   this->psos_fd = -1;
 
