@@ -65,10 +65,8 @@ libplayerc___la_SOURCES =     playerc++.h \
                               truthproxy.cc \
                               waveformproxy.cc
 
-libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr \
-                         -L$(top_builddir)/client_libs/libplayerc \
-                         -lplayerxdr -lplayerc -lm \
-                         -lboost_signals -lboost_thread -lpthread
+libplayerc___la_LIBADD = -L$(top_builddir)/libplayerxdr -L$(top_builddir)/client_libs/libplayerc -lplayerxdr -lplayerc -lm -l$(BOOST_SIGNALS_LIB) -l$(BOOST_THREAD_LIB) -lpthread
+
 
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                                $(top_builddir)/libplayerxdr/libplayerxdr.la

@@ -206,7 +206,7 @@ AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "x$ax_cv_boost_signal" = "xyes")
 if test "x$ax_cv_boost_signal" = "xyes"; then
   if test "x$ax_cv_boost_thread" = "xyes"; then
     PLAYERCC_EXTRA_CFLAGS="-pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
-    PLAYERCC_LIB="-lplayerxdr -lplayerc -lplayerc++ -lm -lboost_signals -lboost_thread -lpthread"
+    PLAYERCC_LIB="-L$top_builddir/libplayerxdr -L$top_builddir/client_libs/libplayerc -L$top_builddir/client_libs/libplayerc++ -lplayerxdr -lplayerc -lplayerc++ -lm -l$BOOST_SIGNALS_LIB -l$BOOST_THREAD_LIB -lpthread"
     AC_SUBST(PLAYERCC_EXTRA_CFLAGS)
     AC_SUBST(PLAYERCC_LIB)
     ax_playercc=yes
