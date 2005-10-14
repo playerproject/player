@@ -2,10 +2,7 @@ AM_CPPFLAGS = -I$(top_srcdir) \
               -I$(top_srcdir)/client_libs \
               -Wall -g $(PLAYERCC_EXTRA_CFLAGS)
 
-test_LDADD = -L$(top_builddir)/libplayerxdr \
-             -L$(top_builddir)/client_libs/libplayerc \
-             -L$(top_builddir)/client_libs/libplayerc++ \
-             $(PLAYERCC_LIB)
+test_LDADD = $(PLAYERCC_LIB)
 
 noinst_PROGRAMS =
 if INCLUDE_PLAYERCC
