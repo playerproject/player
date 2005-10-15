@@ -123,7 +123,7 @@ double dumpfreq;
 int dumpp;
 int showparticlesp;
 double mapupdatefreq;
-int get_waypoints;
+int get_waypoints=0;
 
 void update_map(gui_data_t* gui_data);
 
