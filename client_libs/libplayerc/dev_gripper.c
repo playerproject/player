@@ -135,6 +135,30 @@ int playerc_gripper_set_cmd(playerc_gripper_t *device,
 			      &cmd, NULL );
 }
 
+
+// Get the geometry.  The writes the result into the proxy
+// rather than returning it to the caller.
+int
+playerc_gripper_get_geom(playerc_gripper_t *device)
+{
+  player_gripper_geom_t config;
+  
+  if(playerc_client_request(device->info.client, 
+                            &device->info,PLAYER_GRIPPER_REQ_GET_GEOM,
+                            NULL, &config, sizeof(config)) < 0)
+    return -1;
+
+  device->pose[0] = config.pose.px;
+  device->pose[1] = config.pose.py;
+  device->pose[2] = config.pose.pa;
+  device->size[0] = config.size.sl;
+  device->size[1] = config.size.sw;
+  
+  return 0;
+}
+
+
+
 // print human-readable state 
 void playerc_gripper_printout(playerc_gripper_t *device, 
 			   const char* prefix )
@@ -143,6 +167,8 @@ void playerc_gripper_printout(playerc_gripper_t *device,
     printf( "%s: ", prefix );
   
   printf("[%14.3f]"
+	 " pose[%.2f,%.2f,%.2f]"
+	 " size[%.2f,%.2f]"
 	 " outer_break_beam: %d"
 	 " inner_break_beam: %d"
 	 " paddles_open: %d"
@@ -154,6 +180,8 @@ void playerc_gripper_printout(playerc_gripper_t *device,
 	 " lift_moving: %d"
 	 " lift_error: %d\n",	    
 	 device->info.datatime, 
+	 device->pose[0], device->pose[1], device->pose[2],
+	 device->size[0], device->size[1],
 	 device->outer_break_beam,
 	 device->inner_break_beam,
 	 device->paddles_open,

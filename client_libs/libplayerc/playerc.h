@@ -841,6 +841,13 @@ typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
+  
+  /** Gripper geometry in the robot cs: pose gives the position and
+      orientation, size gives the extent.  These values are initially
+      zero, but can be filled in by calling
+      playerc_gripper_get_geom(). */
+  double pose[3];
+  double size[2];
 
   unsigned char state;
   unsigned char beams;

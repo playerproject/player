@@ -1127,6 +1127,28 @@ interface is VERY Pioneer-specific, and should really be generalized.
  @{
  */
 
+/** Data subtypes */
+#define PLAYER_GRIPPER_DATA_STATE 1
+
+/** Command subtypes */
+#define PLAYER_GRIPPER_CMD_STATE 1
+
+/** Config subtypes */
+#define PLAYER_GRIPPER_REQ_GET_GEOM 1
+
+/** Command codes */
+#define GRIPopen   1
+#define GRIPclose  2
+#define GRIPstop   3
+#define LIFTup     4
+#define LIFTdown   5
+#define LIFTstop   6
+#define GRIPstore  7
+#define GRIPdeploy 8
+#define GRIPhalt   15
+#define GRIPpress  16
+#define LIFTcarry  17
+
 /** @brief Data
 
 The @p gripper interface returns 2 bytes that represent the current
@@ -1156,24 +1178,6 @@ Pioneer robots and Stage:
   - bit 5: Right paddle open
 */
 
-#define GRIPopen   1
-#define GRIPclose  2
-#define GRIPstop   3
-#define LIFTup     4
-#define LIFTdown   5
-#define LIFTstop   6
-#define GRIPstore  7
-#define GRIPdeploy 8
-#define GRIPhalt   15
-#define GRIPpress  16
-#define LIFTcarry  17
-
-/** Data subtypes */
-#define PLAYER_GRIPPER_DATA_STATE 1
-
-/** Command subtypes */
-#define PLAYER_GRIPPER_CMD_STATE 1
-
 typedef struct player_gripper_data
 {
   /** The current gripper lift*/
@@ -1196,6 +1200,22 @@ typedef struct player_gripper_cmd
   /** optional argument */
   uint32_t arg;
 } player_gripper_cmd_t;
+
+
+/** @brief Geometry config 
+
+The geometry (pose and size) of the gripper device can be queried
+using the PLAYER_FIDUCIAL_GET_GEOM request. 
+*/
+
+typedef struct player_gripper_geom
+{
+  /** Gripper pose, in robot cs (m, m, rad). */
+  player_pose_t pose;
+  /** Gripper dimensions (m, m). */
+  player_bbox_t size;
+} player_gripper_geom_t;
+
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////

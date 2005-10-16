@@ -267,12 +267,14 @@ typedef struct
   rtk_menuitem_t *pose_mode_item;
   rtk_menuitem_t *enable_item, *disable_item;
   rtk_menuitem_t *frame_item;
+  rtk_menuitem_t *stats_item;
 
   // Figures
   rtk_fig_t *robot_fig;
   rtk_fig_t *control_fig;
   rtk_fig_t *path_fig;
-
+  rtk_fig_t *stats_fig;
+  
   // Goal point for position2d mode
   double goal_px, goal_py, goal_pa;
   
@@ -326,6 +328,49 @@ void fiducial_destroy(fiducial_t *fiducial);
 
 // Update a fiducial device
 void fiducial_update(fiducial_t *fiducial);
+
+/***************************************************************************
+ * Gripper device
+ ***************************************************************************/
+
+// Gripper device info
+typedef struct
+{
+  // Pointer to the main window
+  mainwnd_t *mainwnd;
+  
+  // Driver name
+  char *drivername;
+
+  // Gripper device proxy
+  playerc_gripper_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *command_item;
+  rtk_menuitem_t *pose_mode_item;
+  rtk_menuitem_t *enable_item, *disable_item;
+  rtk_menuitem_t *frame_item;
+
+  // Figures
+  rtk_fig_t *grip_fig;
+  
+} gripper_t;
+
+
+// Create a gripper device
+gripper_t *gripper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+			  int index,  const char *drivername, int subscribe);
+
+// Destroy a gripper device
+void gripper_destroy(gripper_t *self);
+
+// Update a gripper device
+void gripper_update(gripper_t *self);
 
 
 /***************************************************************************

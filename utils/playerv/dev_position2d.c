@@ -69,6 +69,7 @@ position2d_t *position2d_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t
   self->pose_mode_item = rtk_menuitem_create(self->menu, "Position mode", 1);
   self->enable_item = rtk_menuitem_create(self->menu, "Enable", 0);
   self->disable_item = rtk_menuitem_create(self->menu, "Disable", 0);
+  self->stats_item = rtk_menuitem_create(self->menu, "Show values", 1);
 
   // We can use this device to give us a coordinate system
   snprintf(label, sizeof(label), "Frame position2d:%d (%s)", index, self->drivername);
@@ -91,6 +92,12 @@ position2d_t *position2d_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t
   rtk_fig_movemask(self->control_fig, RTK_MOVE_TRANS);
   self->path_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 2);
   
+  // figure for speed & stall state readout
+
+  self->stats_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig , 2);
+  rtk_fig_movemask(self->stats_fig, RTK_MOVE_TRANS);
+  rtk_fig_origin(self->stats_fig, -3.0,2.0, 0);
+
   self->goal_px = self->goal_py = self->goal_pa = 0.0;
   
   return self;
@@ -107,6 +114,7 @@ void position2d_destroy(position2d_t *self)
   rtk_fig_destroy(self->path_fig);
   rtk_fig_destroy(self->control_fig);
   rtk_fig_destroy(self->robot_fig);
+  rtk_fig_destroy(self->stats_fig);
 
   rtk_menuitem_destroy(self->subscribe_item);
   rtk_menu_destroy(self->menu);
@@ -204,11 +212,32 @@ void position2d_update(position2d_t *self)
 }
 
 
+static char text[256];
+
 // Draw the position2d data
 void position2d_draw(position2d_t *self)
 {
   rtk_fig_show(self->robot_fig, 1);
 
+
+  rtk_fig_clear(self->stats_fig);
+  
+  // optionally show pose, velocity & stall values
+  if (rtk_menuitem_ischecked(self->stats_item))
+    {
+      snprintf(text, sizeof(text), 
+	       "pose\n x:%.3f\n y:%.3f\n a:%.3f\nvelocity\n x:%.3f\n y:%.3f\n a:%.3f\n %s",
+	       self->proxy->px,
+	       self->proxy->py,
+	       self->proxy->pa,
+	       self->proxy->vx,
+	       self->proxy->vy,
+	       self->proxy->va,
+	       self->proxy->stall ? "STALL" : "" );
+      
+      rtk_fig_text(self->stats_fig, 0,0,0, text);
+    }
+  
   // REMOVE
   //rtk_fig_show(self->odo_fig, 1);      
   //rtk_fig_clear(self->odo_fig);
@@ -223,6 +252,7 @@ void position2d_draw(position2d_t *self)
 void position2d_nodraw(position2d_t *self)
 {
   rtk_fig_show(self->robot_fig, 0);
+  rtk_fig_clear(self->stats_fig);
   return;
 }
 
