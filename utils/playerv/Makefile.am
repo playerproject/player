@@ -16,6 +16,7 @@ playerv_SOURCES = playerv.c \
                   dev_blobfinder.c \
                   dev_bumper.c \
                   dev_fiducial.c \
+                  dev_gripper.c \
                   dev_ir.c \
                   dev_laser.c \
                   dev_position2d.c \

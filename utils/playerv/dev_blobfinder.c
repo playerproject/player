@@ -150,7 +150,7 @@ void blobfinder_draw(blobfinder_t *blobfinder)
   {
     rtk_canvas_get_size(blobfinder->image_fig->canvas, &sizex, &sizey);
     rtk_canvas_get_scale(blobfinder->image_fig->canvas, &scalex, &scaley);
-    rtk_fig_origin(blobfinder->image_fig, -sizex * scalex / 4, sizey * scaley / 4, 0);
+    rtk_fig_origin(blobfinder->image_fig, -sizex * scalex / 4, -sizey * scaley / 4, 0);
     blobfinder->image_init = 1;
   }
 

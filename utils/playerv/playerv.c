@@ -75,6 +75,7 @@ playerv can visualize data from the following kinds of devices:
 - @ref player_interface_blobfinder
 - @ref player_interface_bumper
 - @ref player_interface_fiducial
+- @ref player_interface_gripper
 - @ref player_interface_ir
 - @ref player_interface_laser
 - @ref player_interface_localize

@@ -1,5 +1,5 @@
 /***************************************************************************
- * Desc: Tests for the position2d device
+ * Desc: Tests for the gripper device
  * Author: Richard Vaughan, based on Andrew Howard's test_laser.c
  * Date: 9 October 2005
  # CVS: $Id$
@@ -39,7 +39,7 @@ int test_gripper(playerc_client_t *client, int index)
     if (rdevice == device)
     {
       PASS();
-      playerc_gripper_print( device, "gripper" );
+      playerc_gripper_printout( device, "gripper" );
     }
     else
     {
@@ -60,7 +60,7 @@ int test_gripper(playerc_client_t *client, int index)
       rdevice = playerc_client_read(client);
     while (rdevice == client);
 
-    playerc_gripper_print( device, "gripper" );
+    playerc_gripper_printout( device, "gripper" );
 
     PASS();
   }
@@ -77,7 +77,7 @@ int test_gripper(playerc_client_t *client, int index)
       rdevice = playerc_client_read(client);
     while (rdevice == client);
 
-    playerc_gripper_print( device, "gripper" );
+    playerc_gripper_printout( device, "gripper" );
 
     PASS();
   }

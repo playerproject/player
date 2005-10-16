@@ -99,6 +99,8 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_gripper_data_pack},
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STATE,
    (player_pack_fn_t)player_gripper_cmd_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_GRIPPER_REQ_GET_GEOM,
+   (player_pack_fn_t)player_gripper_geom_pack},
 
   /* ir messages */
   {PLAYER_IR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,

@@ -104,39 +104,39 @@ int main(int argc, const char *argv[])
   for (i = 0; i < client->devinfo_count; i++)
   {
     switch (client->devinfos[i].addr.interf)
-    {
-      // Laser device
+      {
+	// Laser device
       case PLAYER_LASER_CODE:
         test_laser(client, client->devinfos[i].addr.index);
         break;
-
-      // Position device
+	
+	// Position device
       case PLAYER_POSITION2D_CODE:
         test_position2d(client, client->devinfos[i].addr.index);
         break;
-
-      // Position device
+	
+	// Position device
       case PLAYER_POSITION3D_CODE:
         test_position3d(client, client->devinfos[i].addr.index);
         break;
 
-      // log device
+	// log device
       case PLAYER_LOG_CODE:
-        test_log(client, client->devinfos[i].addr.index);
-        break;
-
-      // log device
-//      case PLAYER_GRIPPER_CODE:
-//        test_gripper(client, client->devinfos[i].addr.index);
-//        break;
-
+	test_log(client, client->devinfos[i].addr.index);
+	break;
+	
+	// gripper device
+      case PLAYER_GRIPPER_CODE:
+	test_gripper(client, client->devinfos[i].addr.index);
+	break;
+	
 #if 0
-      // simulation device
+	// simulation device
       case PLAYER_SIMULATION_CODE:
         test_simulation(client, client->devinfos[i].addr.index);
         break;
-
-      // Sonar device
+	
+	// Sonar device
       case PLAYER_SONAR_CODE:
         test_sonar(client, client->devinfos[i].addr.index);
         break;
