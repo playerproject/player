@@ -61,7 +61,7 @@ map_t *map_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   rtk_menuitem_check(map->subscribe_item, subscribe);
   
   // Construct figures
-  map->fig = rtk_fig_create(mainwnd->canvas, NULL, 50);
+  map->fig = rtk_fig_create(mainwnd->canvas, NULL, 1);
   
   return map;
 }
@@ -90,7 +90,7 @@ void map_update(map_t *map)
   {
     if (!map->proxy->info.subscribed)
       {
-	if (playerc_map_subscribe(map->proxy, PLAYER_READ_MODE) != 0)
+	if (playerc_map_subscribe(map->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
 	// download a map
@@ -111,7 +111,7 @@ void map_update(map_t *map)
     // Draw in the map scan if it has been changed.
     if (map->proxy->info.datatime != map->datatime)
     {
-      map_draw(map);
+      //map_draw(map);
       map->datatime = map->proxy->info.datatime;
     }
   }
@@ -133,6 +133,18 @@ void map_draw(map_t *map)
   rtk_fig_show(map->fig, 1);      
   rtk_fig_clear(map->fig);
   
+  puts( "map draw" );
+
+  rtk_fig_color_rgb32(map->fig, 0xFF0000 ); 
+  rtk_fig_rectangle(map->fig, 
+		    0,0,0,		   
+		    map->proxy->width * scale,
+		    map->proxy->height * scale,
+		    0 );
+
+  // TODO - combine contiguous cells to minimize the number of
+  // rectangles we have to draw - performance is pretty nasty right
+  // now on big maps.
 
   for( x=0; x<map->proxy->width; x++ )
     for( y=0; y<map->proxy->height; y++ )
@@ -145,20 +157,20 @@ void map_draw(map_t *map)
 	    
 	  case 0:
 	    // unknown: draw grey square
-	    rtk_fig_color_rgb32(map->fig, 0x808080 ); 
+	    rtk_fig_color_rgb32(map->fig, 0x808080 );
 	    rtk_fig_rectangle(map->fig,
-			      (x - map->proxy->width/2.0) * scale, 
-			      (y - map->proxy->height/2.0) * scale, 
-			      0, 
-			      scale, scale, 1);	    
+			      (x - map->proxy->width/2.0) * scale + scale/2.0,
+			      (y - map->proxy->height/2.0) * scale + scale/2.0,
+			      0,
+			      scale, scale, 1);
 	    break;
 
 	  case +1:  
 	    // occupied: draw black square
 	    rtk_fig_color_rgb32(map->fig, 0x0 ); 
 	    rtk_fig_rectangle(map->fig, 
-			      (x - map->proxy->width/2.0) * scale, 
-			      (y - map->proxy->height/2.0) * scale, 
+			      (x - map->proxy->width/2.0) * scale + scale/2.0, 
+			      (y - map->proxy->height/2.0) * scale + scale/2.0, 
 			      0, 
 			      scale, scale, 1);	    
 	    break;
