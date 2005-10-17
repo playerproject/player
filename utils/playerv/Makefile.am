@@ -16,7 +16,6 @@ playerv_SOURCES = playerv.c \
                   dev_blobfinder.c \
                   dev_bumper.c \
                   dev_fiducial.c \
-                  dev_gripper.c \
                   dev_ir.c \
                   dev_laser.c \
                   dev_map.c \
@@ -26,6 +25,7 @@ playerv_SOURCES = playerv.c \
                   dev_sonar.c \
                   dev_wifi.c
 
+#dev_gripper.c
 #dev_localize.c 
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \

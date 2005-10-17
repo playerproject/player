@@ -118,6 +118,7 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) fiducial_update;
       break;
 
+#if 0
     case PLAYER_GRIPPER_CODE:
       device->proxy = gripper_create(mainwnd, opt, client, 
 				     device->addr.index, 
@@ -126,6 +127,7 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fndestroy = (fndestroy_t) gripper_destroy;
       device->fnupdate = (fnupdate_t) gripper_update;
       break;
+#endif
 
     case PLAYER_MAP_CODE:
       device->proxy = map_create(mainwnd, opt, client, 
