@@ -5,16 +5,42 @@
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <string>
 #include <list>
 
 #include <stdint.h>
 
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
+#ifdef HAVE_BOOST_SIGNALS
+  #include <boost/signal.hpp>
+  #include <boost/bind.hpp>
+#endif
 
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
+#ifdef HAVE_BOOST_THREAD
+  #include <boost/thread/mutex.hpp>
+  #include <boost/thread/thread.hpp>
+  #include <boost/thread/xtime.hpp>
+#else
+  // we have to define this so we don't have to
+  // comment out all the instances of scoped_lock
+  // in all the proxies
+  namespace boost
+  {
+    class mutex
+    {
+      public:
+        mutex() {};
+        class scoped_lock
+        {
+          public: scoped_lock(mutex m) {};
+        };
+    };
+  }
+
+#endif
 
 namespace PlayerCc
 {
@@ -65,8 +91,10 @@ class PlayerClient
     // Is the thread currently stopped or stopping?
     bool mIsStop;
 
+#ifdef HAVE_BOOST_THREAD
     // This is the thread where we run \ref Run()
     boost::thread* mThread;
+#endif
 
     // A helper function for starting the thread
     void RunThread();
@@ -80,8 +108,10 @@ class PlayerClient
     /// destructor
     ~PlayerClient();
 
+//#ifdef HAVE_BOOST_THREAD
     /// A mutex for handling synchronization
     boost::mutex mMutex;
+//#endif
 
     // ideally, we'd use the read_write mutex, but I was having some problems
     // (with their code) because it's under development

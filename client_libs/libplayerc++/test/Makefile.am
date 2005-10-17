@@ -2,7 +2,17 @@ AM_CPPFLAGS = -I$(top_srcdir) \
               -I$(top_srcdir)/client_libs \
               -Wall -g $(PLAYERCC_EXTRA_CFLAGS)
 
-test_LDADD = $(PLAYERCC_LIB)
+
+test_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
+                    $(top_builddir)/client_libs/libplayerc++/libplayerc++.la \
+                    $(top_builddir)/libplayerxdr/libplayerxdr.la
+
+PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
+                  -L${top_builddir}/client_libs/libplayerc \
+                  -L${top_builddir}/client_libs/libplayerc++
+
+test_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+
 
 noinst_PROGRAMS =
 if INCLUDE_PLAYERCC
@@ -13,7 +23,6 @@ endif
 
 test_SOURCES = test.cc \
                test.h \
-               test_client.cc \
                test_camera.cc
 
 #               test_gps.cc \
