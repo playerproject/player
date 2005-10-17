@@ -197,22 +197,37 @@ AM_CONDITIONAL(WITH_GNOMECANVAS, test "x$with_gnomecanvas" = "xyes")
 AM_CONDITIONAL(WITH_GTK, test "x$with_gtk" = "xyes")
 AM_CONDITIONAL(WITH_GDKPIXBUF, test "x$with_gdkpixbuf" = "xyes")
 
-AC_CXX_NAMESPACES
-AX_BOOST_THREAD
-AM_CONDITIONAL(INCLUDE_BOOST_THREAD, test "x$ax_cv_boost_thread" = "xyes")
-AX_BOOST_SIGNALS
-AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "x$ax_cv_boost_signal" = "xyes")
+dnl PlayerCc
+AC_ARG_WITH(playercc,
+            [  --with-playercc         Compile the C++ library],,
+            with_playercc=yes)
+if test "x$with_playercc" = "xyes"; then
+  PLAYERCC_EXTRA_CFLAGS=""
+  PLAYERCC_LIB="-lplayerxdr -lplayerc -lm"
+  AC_CXX_NAMESPACES
 
-if test "x$ax_cv_boost_signal" = "xyes"; then
-  if test "x$ax_cv_boost_thread" = "xyes"; then
-    PLAYERCC_EXTRA_CFLAGS="-pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
-    PLAYERCC_LIB="-L$top_builddir/libplayerxdr -L$top_builddir/client_libs/libplayerc -L$top_builddir/client_libs/libplayerc++ -lplayerxdr -lplayerc -lplayerc++ -lm -l$BOOST_SIGNALS_LIB -l$BOOST_THREAD_LIB -lpthread"
-    AC_SUBST(PLAYERCC_EXTRA_CFLAGS)
-    AC_SUBST(PLAYERCC_LIB)
-    ax_playercc=yes
+  AX_BOOST_SIGNALS
+  if test "x$ax_cv_boost_signal" = "xyes"; then
+    PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS"
+    PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_SIGNALS_LIB"
   fi
+  AX_BOOST_THREAD
+  if test "x$ax_cv_boost_thread" = "xyes"; then
+      PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS -pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
+      PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_THREAD_LIB -lpthread"
+  fi
+  if test "x$ax_cv_boost_signal" = "xyes"; then
+    if test "x$ax_cv_boost_thread" = "xyes"; then
+      ax_playercc_boost=yes
+    fi
+  fi
+  AC_SUBST(PLAYERCC_EXTRA_CFLAGS)
+  AC_SUBST(PLAYERCC_LIB)
 fi
-AM_CONDITIONAL(INCLUDE_PLAYERCC, test "x$ax_playercc" = "xyes")
+AM_CONDITIONAL(INCLUDE_BOOST_THREAD, test "x$ax_cv_boost_thread" = "xyes")
+AM_CONDITIONAL(INCLUDE_BOOST_SIGNALS, test "x$ax_cv_boost_signal" = "xyes")
+AM_CONDITIONAL(INCLUDE_PLAYERCC_BOOST, test "x$ax_playercc_boost" = "xyes")
+AM_CONDITIONAL(INCLUDE_PLAYERCC, test "x$with_playercc" = "xyes")
 
 dnl Include RTK gui support (for debugging)
 AC_ARG_ENABLE(rtkgui,
@@ -459,11 +474,25 @@ else
 fi
 AC_MSG_RESULT([])
 
-if test "$ax_cv_boost_signal" = yes; then
-  AC_MSG_RESULT([Player will build C++ client libraries])
+dnl show if libplayerc++ will or will not be built
+if test "x$with_playercc" = "xyes"; then
+  AC_MSG_RESULT([libplayerc++ will be built])
+  if test "x$ax_cv_boost_signal" = "xyes"; then
+    AC_MSG_RESULT([  signaling included])
+  else
+    AC_MSG_RESULT([  signaling NOT included])
+  fi
+  if test "x$ax_cv_boost_thread" = "xyes"; then
+    AC_MSG_RESULT([  multithreading included])
+  else
+    AC_MSG_RESULT([  multithreading NOT included])
+  fi
+  if test "x$ax_playercc_boost" != "xyes"; then
+    AC_MSG_RESULT([  Install BOOST (www.boost.org) libraries to enable multithreaded ])
+    AC_MSG_RESULT([  and/or signaling in libplayerc++.])
+  fi
 else
-  AC_MSG_RESULT([Player will NOT build C++ client libraries])
-  AC_MSG_RESULT([  Install BOOST (www.boost.org) libraries to enable C++])
+  AC_MSG_RESULT([libplayerc++ will NOT be built])
 fi
 AC_MSG_RESULT([])
 

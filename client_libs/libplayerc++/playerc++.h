@@ -32,6 +32,10 @@
 #ifndef PLAYERCC_H
 #define PLAYERCC_H
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <cmath>
 #include <string>
 #include <list>
@@ -41,12 +45,16 @@
 #include "libplayerc++/playerclient.h"
 #include "libplayerc++/playererror.h"
 
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
+#ifdef HAVE_BOOST_SIGNALS
+  #include <boost/signal.hpp>
+  #include <boost/bind.hpp>
+#endif
 
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/thread.hpp>
-#include <boost/thread/read_write_mutex.hpp>
+#ifdef HAVE_BOOST_THREAD
+  #include <boost/thread/mutex.hpp>
+  #include <boost/thread/thread.hpp>
+  #include <boost/thread/xtime.hpp>
+#endif
 
 /** */
 namespace PlayerCc
@@ -92,7 +100,9 @@ class ClientProxy
 
     /// A connection type.  This is usefull when attaching signals to the
     /// ClientProxy because it allows for detatching the signals.
+#ifdef HAVE_BOOST_SIGNALS
     typedef boost::signals::connection connection_t;
+#endif
 
   protected:
 
@@ -169,7 +179,9 @@ class ClientProxy
     // the return type is void but is undefined when the return type is any
     // other type (because there is no way to synthesize a return value)."
     //
+#ifdef HAVE_BOOST_SIGNALS
     boost::signal<void (void)> mReadSignal;
+#endif
 
   public:
 
@@ -197,6 +209,7 @@ class ClientProxy
     std::string GetInterfaceStr() const
       { return(playerc_lookup_name(GetVar(mInfo->addr.interf))); };
 
+#ifdef HAVE_BOOST_SIGNALS
     /// Connect a signal to this proxy
     /// For more information check out @file example2.cc
     template<typename T>
@@ -208,6 +221,7 @@ class ClientProxy
     void DisconnectReadSignal(connection_t aSubscriber)
       { boost::mutex::scoped_lock lock(mPc->mMutex);
         aSubscriber.disconnect(); }
+#endif
 
 };
 

@@ -32,8 +32,6 @@
 
 #include <time.h>
 
-#include <boost/thread/xtime.hpp>
-
 #include "playerc++.h"
 
 #define DEBUG_LEVEL LOW
@@ -44,19 +42,22 @@ using namespace PlayerCc;
 PlayerClient::PlayerClient(const std::string aHostname, uint aPort) :
   mClient(NULL),
   mHostname(aHostname),
-  mPort(aPort),
-  mThread(NULL),
-  mMutex()
+  mPort(aPort)
 {
+#ifdef HAVE_BOOST_THREAD
+  mThread = NULL;
+#endif
   Connect(mHostname, mPort);
 }
 
 PlayerClient::~PlayerClient()
 {
+#ifdef HAVE_BOOST_THREAD
   if (!mIsStop)
   {
     StopThread();
   }
+#endif
 
   Disconnect();
 }
@@ -99,23 +100,32 @@ void PlayerClient::Disconnect()
 
 void PlayerClient::StartThread()
 {
+#ifdef HAVE_BOOST_THREAD
   assert(NULL == mThread);
   mThread = new boost::thread(boost::bind(&PlayerClient::RunThread, this));
+#else
+  throw PlayerError("PlayerClient::StartThread","Thread support not included");
+#endif
 }
 
 void PlayerClient::StopThread()
 {
+#ifdef HAVE_BOOST_THREAD
   Stop();
   assert(mThread);
   mThread->join();
   delete mThread;
   mThread = NULL;
   PRINT("joined");
+#else
+  throw PlayerError("PlayerClient::StopThread","Thread support not included");
+#endif
 }
 
 // non-blocking
 void PlayerClient::RunThread()
 {
+#ifdef HAVE_BOOST_THREAD
   mIsStop = false;
   PRINT("starting run");
   while (!mIsStop)
@@ -129,6 +139,10 @@ void PlayerClient::RunThread()
     // we sleep for 0 seconds
     boost::thread::sleep(xt);
   }
+#else
+  throw PlayerError("PlayerClient::RunThread","Thread support not included");
+#endif
+
 }
 
 // blocking
@@ -172,6 +186,7 @@ void PlayerClient::Read()
     }
   }
 
+#ifdef HAVE_BOOST_SIGNALS
   // how can we do the loop with a for_each?
   //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mReadSignal));
   std::list<PlayerCc::ClientProxy*>::iterator it = mProxyList.begin();
@@ -181,6 +196,7 @@ void PlayerClient::Read()
     // only emit a signal when the interface has received data
     x->GetDataTime();
 
+
     if (x->GetDataTime() > x->mLastTime)
     {
       //boost::mutex::scoped_lock lock(mMutex);
@@ -188,6 +204,7 @@ void PlayerClient::Read()
       x->mReadSignal();
     }
   }
+#endif
 }
 
 // change continuous data rate (freq is in Hz)

@@ -7,6 +7,10 @@
 
 #include <unistd.h>
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include "test.h"
 
 bool use_stage;
@@ -63,9 +67,16 @@ int main(int argc, const char *argv[])
     sindex = strtok(NULL, "");
     index = (sindex ? atoi(sindex) : 0);
 
+/*
   // Test the ClientProxy and PlayerClient
+#ifdef HAVE_BOOST_SIGNALS
+  // we need both signals and threads
+#ifdef HAVE_BOOST_THREAD
     if(strcmp(device, "client") == 0 || strcmp(device, "all") == 0)
       test_client(&client, index);
+#endif
+#endif
+*/
 
 #if 0
     // Power device - a simple one to start with
