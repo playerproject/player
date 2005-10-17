@@ -6,5 +6,5 @@ Name: playerc++
 Description: C++ wrapper for libplayerc
 Version: @VERSION@
 Requires: playerxdr playerc
-Libs: -L${prefix}/lib -lplayerc++ -lm -l@BOOST_SIGNALS_LIB@ -l@BOOST_THREAD_LIB@
+Libs: -L${prefix}/lib -lplayerc++ @PLAYERCC_LIB@
 Cflags: -I${prefix}/include @PLAYERCC_EXTRA_CFLAGS@
