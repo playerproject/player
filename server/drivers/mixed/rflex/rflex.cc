@@ -52,7 +52,7 @@ the @ref player_driver_ptu46 driver.
 
 The rflex driver provides the following device interfaces, some of them named:
 
-- @ref player_interface_position : This interface returns odometry data,
+- @ref player_interface_position2d : This interface returns odometry data,
   and accepts velocity commands.
 - "sonar" @ref player_interface_sonar : Range data from the sonar array
 - "sonar2" @ref player_interface_sonar : Range data from the second sonar array
@@ -64,7 +64,7 @@ The rflex driver provides the following device interfaces, some of them named:
 
 @par Supported configuration requests
 
-- The @ref player_interface_position interface supports:
+- The @ref player_interface_position2d interface supports:
   - PLAYER_POSITION_SET_ODOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ

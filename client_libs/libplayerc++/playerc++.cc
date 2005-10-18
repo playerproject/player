@@ -72,7 +72,9 @@ Then, in your Makefile.am you can add:
 AM_CPPFLAGS += PLAYERCC_CFLAGS
 programname_LDFLAGS = $(PLAYERCC_LIBS)
 @endverbatim
+*/
 
+/*
 If you are not using Automake, you need to add the following statements to the
 compiling step:
 @verbatim

@@ -1,7 +1,7 @@
 /** @page configfile Configuration files
 
 Whenever you run Player, you supply a configuration file as the last
-argument (see @ref commandline).  This file, which usually has a @p .cfg
+argument.  This file, which usually has a @p .cfg
 extension, instantiates drivers and attaches them to indexed interfaces,
 through which client programs can access them.  The purpose of the
 configuration file is to map physical or simulated devices to logical 
@@ -113,17 +113,17 @@ driver
 A driver may support more than one interface of the same type.  In this
 case, the @p key field is used to distinguish among them.  For example,
 the @ref player_driver_p2os driver supports three different @ref
-player_interface_position interfaces: odometry, compass, and gyro.
+player_interface_position2d interfaces: odometry, compass, and gyro.
 The following file instantiates this drivers and maps all three of its
-@ref player_interface_position interfaces, as well some others:
+@ref player_interface_position2d interfaces, as well some others:
 
 @verbatim
 driver
 (
   name "p2os"
-  provides ["odometry::position:0" 
-            "compass::position:1" 
-            "gyro::position:2"
+  provides ["odometry::position2d:0" 
+            "compass::position2d:1" 
+            "gyro::position2d:2"
             "bumper:0"
             "sonar:0"]
 )

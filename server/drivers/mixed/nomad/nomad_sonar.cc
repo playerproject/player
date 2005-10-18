@@ -48,7 +48,7 @@ information and an example.
 
 @par Requires
 
-- @ref player_interface_nomad
+- player_interface_nomad
 
 @par Configuration requests
 

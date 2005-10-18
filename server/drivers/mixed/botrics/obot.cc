@@ -42,7 +42,7 @@ over a normal serial port using the @ref player_driver_sicklms200 driver).
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
 
 @par Requires
 
@@ -65,7 +65,7 @@ over a normal serial port using the @ref player_driver_sicklms200 driver).
 driver
 (
   name "obot"
-  provides ["position:0"]
+  provides ["position2d:0"]
 )
 @endverbatim
 

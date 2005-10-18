@@ -36,7 +36,7 @@ The clodbuster driver controls the Clodbuster robot.
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
 
 @par Requires
 
@@ -63,7 +63,7 @@ The clodbuster driver controls the Clodbuster robot.
 driver
 (
   name "clodbuster"
-  provides ["position:0"]
+  provides ["position2d:0"]
 )
 @endverbatim
 
