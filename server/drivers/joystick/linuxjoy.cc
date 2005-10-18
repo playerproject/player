@@ -34,7 +34,7 @@
 
 The linuxjoystick driver reads data from a standard Linux joystick and
 provides the data via the @ref player_interface_joystick interface.
-This driver can also control a @ref player_interface_position device by
+This driver can also control a @ref player_interface_position2d device by
 converting joystick positions to velocity commands.
 
 @par Compile-time dependencies
@@ -44,13 +44,13 @@ converting joystick positions to velocity commands.
 @par Provides
 
 - @ref player_interface_joystick : joystick data
-- @ref player_interface_position : joystick data represented as 2-D 
+- @ref player_interface_position2d : joystick data represented as 2-D 
   position data.  Raw X- and Y-axis values are reported as xpos and ypos in the 
   position packet (all other fields are zero).
 
 @par Requires
 
-- @ref player_interface_position : if present, joystick positions will be
+- @ref player_interface_position2d : if present, joystick positions will be
   interpreted as velocities and sent as commands to this position device.
   See also max_xspeed and max_yawspeed options below.
 

@@ -65,7 +65,7 @@ straightforward to add support for other CAN cards.
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
   - This interface returns odometry data, and accepts velocity commands.
 
 - @ref player_interface_position3d

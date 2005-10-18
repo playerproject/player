@@ -32,7 +32,7 @@
 The khepera driver is used to interface to the K-Team khepera robot. 
 
 This driver is experimental and should be treated with caution. At
-this point it supports the @ref player_interface_position and 
+this point it supports the @ref player_interface_position2d and 
 @ref player_interface_ir interfaces.
 
 TODO: 
@@ -45,7 +45,7 @@ TODO:
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
 - @ref player_interface_ir
 
 @par Requires
@@ -54,7 +54,7 @@ TODO:
 
 @par Supported configuration requests
 
-- The @ref player_interface_position interface supports:
+- The @ref player_interface_position2d interface supports:
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
@@ -95,7 +95,7 @@ TODO:
 driver
 (
   name "khepera"
-  provides ["position:0" "ir:0"]
+  provides ["position2d:0" "ir:0"]
 )
 @endverbatim
 

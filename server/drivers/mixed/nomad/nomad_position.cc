@@ -44,11 +44,11 @@ information and an example.
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
 
 @par Requires
 
-- @ref player_interface_nomad
+- player_interface_nomad
 
 @par Configuration requests
 

@@ -54,7 +54,7 @@ by all means contribute it.  It would be welcome to the mix.
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
 
 @par Requires
 
@@ -87,7 +87,7 @@ by all means contribute it.  It would be welcome to the mix.
 driver
 (
   name "er1"
-  provides ["position:0"]
+  provides ["position2d:0"]
 )
 @endverbatim
 

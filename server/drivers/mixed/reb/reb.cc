@@ -69,7 +69,7 @@ Email John Sweeney (sweeney (at) cs.umass.edu) for information.
 
 The reb driver sets some default PID parameters and resets the
 odometry to (0,0,0) when the first client subscribes to the @ref
-player_interface_position interface.  Likewise, the IR sensors are only
+player_interface_position2d interface.  Likewise, the IR sensors are only
 turned on when an @ref player_interface_ir client has subscribed.
 
 Position mode is very finicky.  This seems to be a problem with the
@@ -94,7 +94,7 @@ to be running the LPRSerCom program.
 
 The reb driver provides the following device interfaces:
 
-- @ref player_interface_position : This interface returns odometry data,
+- @ref player_interface_position2d : This interface returns odometry data,
   and accepts velocity commands.
 
 - @ref player_interface_ir : This interface returns IR range data.
@@ -103,7 +103,7 @@ The reb driver provides the following device interfaces:
 
 @par Supported configuration requests
 
-- The @ref player_interface_position interface supports:
+- The @ref player_interface_position2d interface supports:
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
@@ -133,7 +133,7 @@ The reb driver provides the following device interfaces:
 driver
 (
   name "reb"
-  provides ["position:0" "ir:0" "power:0"]
+  provides ["position2d:0" "ir:0" "power:0"]
 )
 @endverbatim
 

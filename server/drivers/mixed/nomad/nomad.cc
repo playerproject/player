@@ -39,7 +39,7 @@
 The nomad driver controls the Nomadics NOMAD200 robot, and should be
 easily modified to support close relatives.
 
-This driver uses the Nomad-specific @ref player_interface_nomad
+This driver uses the Nomad-specific player_interface_nomad
 interface to talk over a serial port to a robot running Nomadics'
 robot server program. The nomad interface gives access to most of
 the Nomad's functionality. This driver also has a set of companion
@@ -58,7 +58,7 @@ for example configfiles.
 
 @par Provides
 
-- @ref player_interface_nomad
+- player_interface_nomad
 
 @par Requires
 
