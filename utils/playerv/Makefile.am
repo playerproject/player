@@ -23,9 +23,8 @@ playerv_SOURCES = playerv.c \
                   dev_power.c \
                   dev_ptz.c \
                   dev_sonar.c \
-                  dev_wifi.c
-
-#dev_gripper.c
+                  dev_wifi.c \
+                  dev_gripper.c
 #dev_localize.c 
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
