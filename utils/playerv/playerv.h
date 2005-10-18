@@ -329,7 +329,6 @@ void fiducial_destroy(fiducial_t *fiducial);
 // Update a fiducial device
 void fiducial_update(fiducial_t *fiducial);
 
-#if 0
 /***************************************************************************
  * Gripper device
  ***************************************************************************/
@@ -372,7 +371,6 @@ void gripper_destroy(gripper_t *self);
 
 // Update a gripper device
 void gripper_update(gripper_t *self);
-#endif
 
 /***************************************************************************
  * Power device
