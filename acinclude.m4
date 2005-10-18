@@ -355,15 +355,20 @@ if test "x$with_boost_signals" != "xno"; then
           ax_cv_boost_signal="yes", ax_cv_boost_signal="no")
         AC_LANG_RESTORE
       ])
-  if test "x$ax_cv_boost_signal" = "xyes"; then
-    AC_DEFINE(HAVE_BOOST_SIGNALS,,[define if the Boost::Signal library is available])
-  fi
   if test "x$with_boost_signals" != "xyes"; then
     ax_boost_signals_lib="boost_signals-$with_boost_signals $with_boost_signals"
   fi
   for ax_lib in $ax_boost_signals_lib boost_signals; do
     AC_CHECK_LIB($ax_lib, main, [BOOST_SIGNALS_LIB=$ax_lib break])
   done
+  dnl make sure we have a lib
+  if test $BOOST_SIGNALS_LIB; then
+    if test "x$ax_cv_boost_signal" = "xyes"; then
+      AC_DEFINE(HAVE_BOOST_SIGNALS,,[define if the Boost::Signal library is available])
+    fi
+  else
+    ax_cv_boost_signal="no"
+  fi
 fi])
 AC_SUBST(BOOST_SIGNALS_LIB)
 ])dnl
@@ -388,15 +393,20 @@ if test "x$with_boost_thread" != "xno"; then
         CXXFLAGS=$CXXFLAGS_SAVE
         AC_LANG_RESTORE
       ])
-  if test "x$ax_cv_boost_thread" = "xyes"; then
-    AC_DEFINE(HAVE_BOOST_THREAD,,[define if the Boost::Thread library is available])
-  fi
   if test "x$with_boost_thread" != "xyes"; then
     ax_boost_thread_lib="boost_thread-$with_boost_thread $with_boost_thread"
   fi
   for ax_lib in $ax_boost_thread_lib boost_thread boost_thread-mt; do
     AC_CHECK_LIB($ax_lib, main, [BOOST_THREAD_LIB=$ax_lib break])
   done
+  dnl make sure we have a lib
+  if test $BOOST_THREAD_LIB; then
+    if test "x$ax_cv_boost_thread" = "xyes"; then
+        AC_DEFINE(HAVE_BOOST_THREAD,,[define if the Boost::Thread library is available])
+    fi
+  else
+    ax_cv_boost_thread="no"
+  fi
 fi])
 AC_SUBST(BOOST_THREAD_LIB)
 ])dnl
