@@ -54,6 +54,11 @@ ClientProxy::~ClientProxy()
   PRINT("Removed " << this << " from ProxyList");
 }
 
+void ClientProxy::Print()
+{
+  std::cout << *this << std::endl;
+}
+
 std::ostream& std::operator << (std::ostream& os, const PlayerCc::ClientProxy& c)
 {
   return os << c.GetDriverName()

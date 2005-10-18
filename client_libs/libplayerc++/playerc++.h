@@ -205,6 +205,9 @@ class ClientProxy
     /// Returns device interface
     uint GetInterface() const { return(GetVar(mInfo->addr.interf)); };
 
+    /// Prints the interface's data.  See also the iostream operators.
+    virtual void Print();
+
     /// Returns device interface
     std::string GetInterfaceStr() const
       { return(playerc_lookup_name(GetVar(mInfo->addr.interf))); };

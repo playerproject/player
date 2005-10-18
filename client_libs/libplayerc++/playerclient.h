@@ -170,6 +170,12 @@ class PlayerClient
 
     /// Returns the port
     uint GetPort() const { return(mPort); };
+
+    /// Get the interface code for a given name
+    int LookupCode(std::string aName) const;
+
+    /// Get the name for a given interface code
+    std::string LookupName(int aCode) const;
 };
 
 /** }@ */

@@ -232,6 +232,16 @@ void PlayerClient::SetDataMode(uint aMode)
   */
 }
 
+int PlayerClient::LookupCode(std::string aName) const
+{
+  return playerc_lookup_code(aName.c_str());
+}
+
+std::string PlayerClient::LookupName(int aCode) const
+{
+  return std::string(playerc_lookup_name(aCode));
+}
+
 // authenticate
 #if 0
 void PlayerClient::Authenticate(const std::string* aKey)
