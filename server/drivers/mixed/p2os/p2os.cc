@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -51,13 +51,13 @@ splitting up the devices' functionality.
 The p2os driver provides the following device interfaces, some of
 them named:
 
-- "odometry" @ref player_interface_position
+- "odometry" @ref player_interface_position2d
   - This interface returns odometry data, and accepts velocity commands.
 
-- "compass" @ref player_interface_position
+- "compass" @ref player_interface_position2d
   - This interface returns compass data (if equipped).
 
-- "gyro" @ref player_interface_position
+- "gyro" @ref player_interface_position2d
   - This interface returns gyroscope data (if equipped).
 
 - @ref player_interface_power
@@ -94,7 +94,7 @@ them named:
 
 @par Supported configuration requests
 
-- "odometry" @ref player_interface_position:
+- "odometry" @ref player_interface_position2d:
   - PLAYER_POSITION_SET_ODOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_RESET_ODOM_REQ
@@ -117,7 +117,7 @@ them named:
   - Nonzero if a radio modem is being used; zero for a direct serial link.
 - bumpstall (integer)
   - Default: -1
-  - Determine whether a bumper-equipped robot stalls when its bumpers are 
+  - Determine whether a bumper-equipped robot stalls when its bumpers are
     pressed.  Allowed values are:
       - -1 : Don't change anything; the bumper-stall behavior will
              be determined by the BumpStall value stored in the robot's
@@ -146,22 +146,22 @@ them named:
     Zero means use the robot's default value.
 - max_xdecel (length)
   - Default: 0
-  - Maximum translational deceleration, in length/sec/sec; nonpositive.  
+  - Maximum translational deceleration, in length/sec/sec; nonpositive.
     Zero means use the robot's default value.
 - max_yawaccel (angle)
   - Default: 0
-  - Maximum rotational acceleration, in angle/sec/sec; nonnegative.  
+  - Maximum rotational acceleration, in angle/sec/sec; nonnegative.
     Zero means use the robot's default value.
 - max_yawdecel (angle)
   - Default: 0
-  - Maximum rotational deceleration, in angle/sec/sec; nonpositive.  
+  - Maximum rotational deceleration, in angle/sec/sec; nonpositive.
     Zero means use the robot's default value.
 - use_vel_band (integer)
   - Default: 0
   - Use velocity bands
 
-  
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -206,7 +206,7 @@ void P2OS_Register(DriverTable* table)
   table->AddDriver("p2os", P2OS_Init);
 }
 
-P2OS::P2OS(ConfigFile* cf, int section) 
+P2OS::P2OS(ConfigFile* cf, int section)
         : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
@@ -237,13 +237,13 @@ P2OS::P2OS(ConfigFile* cf, int section)
   {
     if(this->AddInterface(this->position_id) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
 
   // Do we create a compass position interface?
-  if(cf->ReadDeviceAddr(&(this->compass_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->compass_id), section, "provides",
                         PLAYER_POSITION2D_CODE, -1, "compass") == 0)
   {
     if(this->AddInterface(this->compass_id) != 0)
@@ -254,7 +254,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a gyro position interface?
-  if(cf->ReadDeviceAddr(&(this->gyro_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->gyro_id), section, "provides",
                         PLAYER_POSITION2D_CODE, -1, "gyro") == 0)
   {
     if(this->AddInterface(this->gyro_id) != 0)
@@ -266,41 +266,41 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
 
   // Do we create a sonar interface?
-  if(cf->ReadDeviceAddr(&(this->sonar_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->sonar_id), section, "provides",
                       PLAYER_SONAR_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->sonar_id) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
 
 
   // Do we create an aio interface?
-  if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides",
                       PLAYER_AIO_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->aio_id) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
 
   // Do we create a dio interface?
-  if(cf->ReadDeviceAddr(&(this->dio_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->dio_id), section, "provides",
                       PLAYER_DIO_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->dio_id) != 0)
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
 
   // Do we create a gripper interface?
-  if(cf->ReadDeviceAddr(&(this->gripper_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->gripper_id), section, "provides",
                       PLAYER_GRIPPER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->gripper_id) != 0)
@@ -311,7 +311,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a bumper interface?
-  if(cf->ReadDeviceAddr(&(this->bumper_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->bumper_id), section, "provides",
                       PLAYER_BUMPER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->bumper_id) != 0)
@@ -322,7 +322,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a power interface?
-  if(cf->ReadDeviceAddr(&(this->power_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->power_id), section, "provides",
                       PLAYER_POWER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->power_id) != 0)
@@ -333,7 +333,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a blobfinder interface?
-  if(cf->ReadDeviceAddr(&(this->blobfinder_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->blobfinder_id), section, "provides",
                       PLAYER_BLOBFINDER_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->blobfinder_id) != 0)
@@ -344,7 +344,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   }
 
   // Do we create a sound interface?
-  if(cf->ReadDeviceAddr(&(this->sound_id), section, "provides", 
+  if(cf->ReadDeviceAddr(&(this->sound_id), section, "provides",
                       PLAYER_SOUND_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->sound_id) != 0)
@@ -387,25 +387,25 @@ P2OS::P2OS(ConfigFile* cf, int section)
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
   this->radio_modemp = cf->ReadInt(section, "radio", 0);
   this->joystickp = cf->ReadInt(section, "joystick", 0);
-  this->direct_wheel_vel_control = 
+  this->direct_wheel_vel_control =
           cf->ReadInt(section, "direct_wheel_vel_control", 1);
   this->motor_max_speed = (int)rint(1e3 * cf->ReadLength(section,
                                                          "max_xspeed",
                                                          MOTOR_DEF_MAX_SPEED));
-  this->motor_max_turnspeed = (int)rint(RTOD(cf->ReadAngle(section, 
-                                                         "max_yawspeed", 
+  this->motor_max_turnspeed = (int)rint(RTOD(cf->ReadAngle(section,
+                                                         "max_yawspeed",
                                                          MOTOR_DEF_MAX_TURNSPEED)));
-  this->motor_max_trans_accel = (short)rint(1e3 * 
-                                            cf->ReadLength(section, 
+  this->motor_max_trans_accel = (short)rint(1e3 *
+                                            cf->ReadLength(section,
                                                            "max_xaccel", 0));
   this->motor_max_trans_decel = (short)rint(1e3 *
-                                            cf->ReadLength(section, 
+                                            cf->ReadLength(section,
                                                            "max_xdecel", 0));
-  this->motor_max_rot_accel = (short)rint(RTOD(cf->ReadAngle(section, 
-                                                             "max_yawaccel", 
+  this->motor_max_rot_accel = (short)rint(RTOD(cf->ReadAngle(section,
+                                                             "max_yawaccel",
                                                              0)));
-  this->motor_max_rot_decel = (short)rint(RTOD(cf->ReadAngle(section, 
-                                                             "max_yawdecel", 
+  this->motor_max_rot_decel = (short)rint(RTOD(cf->ReadAngle(section,
+                                                             "max_yawdecel",
                                                              0)));
 
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
@@ -461,7 +461,7 @@ int P2OS::Setup()
     AFTER_SECOND_SYNC,
     READY
   } psos_state;
-    
+
   psos_state = NO_SYNC;
 
   char name[20], type[20], subtype[20];
@@ -470,13 +470,13 @@ int P2OS::Setup()
   printf("P2OS connection initializing (%s)...",this->psos_serial_port);
   fflush(stdout);
 
-  if((this->psos_fd = open(this->psos_serial_port, 
+  if((this->psos_fd = open(this->psos_serial_port,
                      O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     perror("P2OS::Setup():open():");
     return(1);
-  }  
- 
+  }
+
   if(tcgetattr( this->psos_fd, &term ) < 0 )
   {
     perror("P2OS::Setup():tcgetattr():");
@@ -488,7 +488,7 @@ int P2OS::Setup()
   cfmakeraw( &term );
   cfsetispeed(&term, bauds[currbaud]);
   cfsetospeed(&term, bauds[currbaud]);
-  
+
   if(tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0)
   {
     perror("P2OS::Setup():tcsetattr():");
@@ -513,7 +513,7 @@ int P2OS::Setup()
     return(1);
   }
 
-  // radio modem initialization code, courtesy of Kim Jinsuck 
+  // radio modem initialization code, courtesy of Kim Jinsuck
   //   <jinsuckk@cs.tamu.edu>
   if(this->radio_modemp)
   {
@@ -528,7 +528,7 @@ int P2OS::Setup()
 
     usleep(10000);
     // get "\n\rConnecting..." --> \n\r is my guess
-    buf_len = read(this->psos_fd, modem_buf, 14); 
+    buf_len = read(this->psos_fd, modem_buf, 14);
     modem_buf[buf_len]='\0';
     printf("wireless modem response = %s\n", modem_buf);
 
@@ -541,18 +541,18 @@ int P2OS::Setup()
       modem_buf[buf_len]='\0';
       printf("wireless modem response = %s\n", modem_buf);
       // if "Partner busy!"
-      if(modem_buf[2] == 'P') 
+      if(modem_buf[2] == 'P')
       {
         printf("Please reset partner modem and try again\n");
         return(1);
       }
       // if "\n\rPartner not found!"
-      if(modem_buf[0] == 'P') 
+      if(modem_buf[0] == 'P')
       {
         printf("Please check partner modem and try again\n");
         return(1);
       }
-      if(modem_connect_try-- == 0) 
+      if(modem_connect_try-- == 0)
       {
         puts("Failed to connect radio modem, Trying direct connection...");
         break;
@@ -634,7 +634,7 @@ int P2OS::Setup()
         }
       }
     }
-    
+
     switch(receivedpacket.packet[3])
     {
       case SYNC0:
@@ -647,7 +647,7 @@ int P2OS::Setup()
         psos_state = READY;
         break;
       default:
-        // maybe P2OS is still running from last time.  let's try to CLOSE 
+        // maybe P2OS is still running from last time.  let's try to CLOSE
         // and reconnect
         if(!sent_close)
         {
@@ -667,8 +667,8 @@ int P2OS::Setup()
 
   if(psos_state != READY)
   {
-    printf("Couldn't synchronize with P2OS.\n"  
-           "  Most likely because the robot is not connected to %s\n", 
+    printf("Couldn't synchronize with P2OS.\n"
+           "  Most likely because the robot is not connected to %s\n",
            this->psos_serial_port);
     close(this->psos_fd);
     this->psos_fd = -1;
@@ -699,7 +699,7 @@ int P2OS::Setup()
   // now, based on robot type, find the right set of parameters
   for(i=0;i<PLAYER_NUM_ROBOT_TYPES;i++)
   {
-    if(!strcasecmp(PlayerRobotParams[i].Class,type) && 
+    if(!strcasecmp(PlayerRobotParams[i].Class,type) &&
        !strcasecmp(PlayerRobotParams[i].Subclass,subtype))
     {
       param_idx = i;
@@ -738,7 +738,7 @@ int P2OS::Setup()
     js_packet.Build(js_command, 4);
     this->SendReceive(&js_packet,false);
   }
-  
+
   if(this->blobfinder_id.interf)
     CMUcamReset(false);
 
@@ -784,7 +784,7 @@ int P2OS::Setup()
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
-  
+
   if(this->motor_max_trans_decel < 0)
   {
     accel_command[0] = SETA;
@@ -836,7 +836,7 @@ int P2OS::Setup()
       this->SendReceive(&bumpstall_packet,false);
     }
   }
-  
+
 
   // TODO: figure out what the right behavior here is
 #if 0
@@ -855,7 +855,7 @@ int P2OS::Setup()
 int P2OS::Shutdown()
 {
   unsigned char command[20],buffer[20];
-  P2OSPacket packet; 
+  P2OSPacket packet;
 
   memset(buffer,0,20);
 
@@ -888,7 +888,7 @@ int P2OS::Shutdown()
   return(0);
 }
 
-int 
+int
 P2OS::Subscribe(player_devaddr_t id)
 {
   int setupResult;
@@ -912,7 +912,7 @@ P2OS::Subscribe(player_devaddr_t id)
   return(setupResult);
 }
 
-int 
+int
 P2OS::Unsubscribe(player_devaddr_t id)
 {
   int shutdownResult;
@@ -948,88 +948,88 @@ P2OS::Unsubscribe(player_devaddr_t id)
   return(shutdownResult);
 }
 
-void 
+void
 P2OS::PutData(void)
 {
   // TODO: something smarter about timestamping.
 
   // put odometry data
-  this->Publish(this->position_id, NULL, 
+  this->Publish(this->position_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
-                (void*)&(this->p2os_data.position), 
+                (void*)&(this->p2os_data.position),
                 sizeof(player_position2d_data_t),
                 NULL);
 
   // put sonar data
-  this->Publish(this->sonar_id, NULL, 
+  this->Publish(this->sonar_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_SONAR_DATA_RANGES,
-                (void*)&(this->p2os_data.sonar), 
+                (void*)&(this->p2os_data.sonar),
                 sizeof(player_sonar_data_t),
                 NULL);
-  
+
   // put aio data
-  this->Publish(this->aio_id, NULL, 
+  this->Publish(this->aio_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_AIO_DATA_VALUES,
-                (void*)&(this->p2os_data.aio), 
+                (void*)&(this->p2os_data.aio),
                 sizeof(player_aio_data_t),
                 NULL);
 
   // put dio data
-  this->Publish(this->dio_id, NULL, 
+  this->Publish(this->dio_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_DIO_DATA_VALUES,
-                (void*)&(this->p2os_data.dio), 
+                (void*)&(this->p2os_data.dio),
                 sizeof(player_dio_data_t),
                 NULL);
 
   // put gripper data
-  this->Publish(this->gripper_id, NULL, 
+  this->Publish(this->gripper_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_GRIPPER_DATA_STATE,
-                (void*)&(this->p2os_data.gripper), 
+                (void*)&(this->p2os_data.gripper),
                 sizeof(player_gripper_data_t),
                 NULL);
 
   // put bumper data
-  this->Publish(this->bumper_id, NULL, 
+  this->Publish(this->bumper_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BUMPER_DATA_STATE,
-                (void*)&(this->p2os_data.bumper), 
+                (void*)&(this->p2os_data.bumper),
                 sizeof(player_bumper_data_t),
                 NULL);
 
   // put power data
-  this->Publish(this->power_id, NULL, 
+  this->Publish(this->power_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POWER_DATA_VOLTAGE,
-                (void*)&(this->p2os_data.power), 
+                (void*)&(this->p2os_data.power),
                 sizeof(player_power_data_t),
                 NULL);
 
   // put compass data
-  this->Publish(this->compass_id, NULL, 
+  this->Publish(this->compass_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
-                (void*)&(this->p2os_data.compass), 
+                (void*)&(this->p2os_data.compass),
                 sizeof(player_position2d_data_t),
                 NULL);
 
   // put gyro data
-  this->Publish(this->gyro_id, NULL, 
+  this->Publish(this->gyro_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
-                (void*)&(this->p2os_data.gyro), 
+                (void*)&(this->p2os_data.gyro),
                 sizeof(player_position2d_data_t),
                 NULL);
 
   // put blobfinder data
-  this->Publish(this->blobfinder_id, NULL, 
+  this->Publish(this->blobfinder_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BLOBFINDER_DATA_BLOBS,
-                (void*)&(this->p2os_data.blobfinder), 
+                (void*)&(this->p2os_data.blobfinder),
                 sizeof(player_blobfinder_data_t),
                 NULL);
 
@@ -1050,7 +1050,7 @@ P2OS::PutData(void)
                 NULL);
 }
 
-void 
+void
 P2OS::Main()
 {
   int last_sonar_subscrcount=0;
@@ -1077,8 +1077,8 @@ P2OS::Main()
       this->ToggleActArrayPower(0, false);
     last_actarray_subscrcount = this->actarray_subscriptions;
 
-    // we want to reset the odometry and enable the motors if the first 
-    // client just subscribed to the position device, and we want to stop 
+    // we want to reset the odometry and enable the motors if the first
+    // client just subscribed to the position device, and we want to stop
     // and disable the motors if the last client unsubscribed.
     if(!last_position_subscrcount && this->position_subscriptions)
     {
@@ -1099,7 +1099,7 @@ P2OS::Main()
     {
       struct timeval now_tv;
       GlobalTime->GetTime(&now_tv);
-      if (now_tv.tv_sec > lastblob_tv.tv_sec) 
+      if (now_tv.tv_sec > lastblob_tv.tv_sec)
       {
         P2OSPacket cam_packet;
         unsigned char cam_command[4];
@@ -1117,7 +1117,7 @@ P2OS::Main()
         cam_command[3] = 0;
         cam_packet.Build(cam_command, 4);
         SendReceive(&cam_packet);
-        GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
+        GlobalTime->GetTime(&lastblob_tv);  // Reset last blob packet time
       }
     }
 
@@ -1157,7 +1157,7 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       pthread_exit(NULL);
     }
 
-    if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+    if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
        (packet.packet[3] == 0x30 || packet.packet[3] == 0x31) ||
        (packet.packet[3] == 0x32 || packet.packet[3] == 0x33) ||
        (packet.packet[3] == 0x34))
@@ -1215,10 +1215,10 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         cam_command[3] = 0;
         cam_packet.Build(cam_command, 4);
         this->SendReceive(&cam_packet,publish_data);
-        GlobalTime->GetTime(&lastblob_tv);	// Reset last blob packet time
+        GlobalTime->GetTime(&lastblob_tv);  // Reset last blob packet time
       }
     }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             (packet.packet[3] == 0x50 || packet.packet[3] == 0x80) ||
 //            (packet.packet[3] == 0xB0 || packet.packet[3] == 0xC0) ||
             (packet.packet[3] == 0xC0) ||
@@ -1240,15 +1240,15 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
           this->PutData();
 
         /* Now, the manual says that we get one gyro packet each cycle,
-         * right before the standard SIP.  So, we'll call SendReceive() 
-         * again (with no packet to send) to get the standard SIP.  There's 
+         * right before the standard SIP.  So, we'll call SendReceive()
+         * again (with no packet to send) to get the standard SIP.  There's
          * a definite danger of infinite recursion here if the manual
          * is wrong.
          */
         this->SendReceive(NULL,publish_data);
       }
     }
-    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB && 
+    else if(packet.packet[0] == 0xFA && packet.packet[1] == 0xFB &&
             (packet.packet[3] == 0x20))
     {
       //printf("got a CONFIGpac:%d\n",packet.size);
@@ -1341,7 +1341,7 @@ P2OS::ResetRawPositions()
 ****************************************************************/
 void P2OS::CMUcamReset(bool doLock)
 {
-  CMUcamStopTracking(doLock);	// Stop the current tracking.
+  CMUcamStopTracking(doLock); // Stop the current tracking.
 
   P2OSPacket cam_packet;
   unsigned char cam_command[8];
@@ -1388,7 +1388,7 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
                        int gmin, int gmax,
                        int bmin, int bmax)
 {
-  this->CMUcamStopTracking();	// Stop the current tracking.
+  this->CMUcamStopTracking(); // Stop the current tracking.
 
   P2OSPacket cam_packet;
   unsigned char cam_command[50];
@@ -1414,7 +1414,7 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
     //                   rmin, rmax, gmin, gmax, bmin, bmax);
     cam_command[0] = TTY3;
     cam_command[1] = ARGSTR;
-    sprintf((char*)&cam_command[3], "TC %d %d %d %d %d %d\r", 
+    sprintf((char*)&cam_command[3], "TC %d %d %d %d %d %d\r",
              rmin, rmax, gmin, gmax, bmin, bmax);
     cam_command[2] = strlen((char *)&cam_command[3]);
     cam_packet.Build(cam_command, (int)cam_command[2]+3);
@@ -1423,7 +1423,7 @@ void P2OS::CMUcamTrack(int rmin, int rmax,
 
   cam_command[0] = GETAUX2;
   cam_command[1] = ARGINT;
-  cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1;	// Guarantee 1 full message
+  cam_command[2] = CMUCAM_MESSAGE_LEN * 2 -1; // Guarantee 1 full message
   cam_command[3] = 0;
   cam_packet.Build(cam_command, 4);
   this->SendReceive(&cam_packet);
@@ -1470,7 +1470,7 @@ void
 P2OS::ToggleSonarPower(unsigned char val)
 {
   unsigned char command[4];
-  P2OSPacket packet; 
+  P2OSPacket packet;
 
   command[0] = SONAR;
   command[1] = ARGINT;
@@ -1485,7 +1485,7 @@ void
 P2OS::ToggleMotorPower(unsigned char val)
 {
   unsigned char command[4];
-  P2OSPacket packet; 
+  P2OSPacket packet;
 
   command[0] = ENABLE;
   command[1] = ARGINT;
@@ -1604,9 +1604,9 @@ void P2OS::SetActArrayJointSpeed (char joint, double speed)
 /////////////////////////////////////////////////////
 
 
-int 
-P2OS::ProcessMessage(MessageQueue * resp_queue, 
-                     player_msghdr * hdr, 
+int
+P2OS::ProcessMessage(MessageQueue * resp_queue,
+                     player_msghdr * hdr,
                      void * data)
 {
   // Look for configuration requests
@@ -1628,7 +1628,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
 
   // check for position config requests
   if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                           PLAYER_POSITION2D_REQ_SET_ODOM, 
+                           PLAYER_POSITION2D_REQ_SET_ODOM,
                            this->position_id))
   {
     if(hdr->size != sizeof(player_position2d_set_odom_req_t))
@@ -1636,7 +1636,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       PLAYER_WARN("Arg to odometry set requests wrong size; ignoring");
       return(-1);
     }
-    player_position2d_set_odom_req_t* set_odom_req = 
+    player_position2d_set_odom_req_t* set_odom_req =
             (player_position2d_set_odom_req_t*)data;
 
     this->sippacket->x_offset = ((int)rint(set_odom_req->pose.px*1e3)) -
@@ -1651,10 +1651,10 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_POSITION2D_REQ_MOTOR_POWER, 
+                                PLAYER_POSITION2D_REQ_MOTOR_POWER,
                                 this->position_id))
   {
-    /* motor state change request 
+    /* motor state change request
      *   1 = enable motors
      *   0 = disable motors (default)
      */
@@ -1672,7 +1672,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_POSITION2D_REQ_RESET_ODOM, 
+                                PLAYER_POSITION2D_REQ_RESET_ODOM,
                                 this->position_id))
   {
     /* reset position to 0,0,0: no args */
@@ -1688,7 +1688,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_POSITION2D_REQ_GET_GEOM, 
+                                PLAYER_POSITION2D_REQ_GET_GEOM,
                                 this->position_id))
   {
     /* Return the robot geometry. */
@@ -1698,8 +1698,8 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       return(-1);
     }
     player_position2d_geom_t geom;
-    // TODO: Figure out this rotation offset somehow; it's not 
-    //       given in the Saphira parameters.  For now, -0.1 is 
+    // TODO: Figure out this rotation offset somehow; it's not
+    //       given in the Saphira parameters.  For now, -0.1 is
     //       about right for a Pioneer 2DX.
     geom.pose.px = -0.1;
     geom.pose.py = 0.0;
@@ -1715,7 +1715,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_POSITION2D_REQ_VELOCITY_MODE, 
+                                PLAYER_POSITION2D_REQ_VELOCITY_MODE,
                                 this->position_id))
   {
     /* velocity control mode:
@@ -1728,7 +1728,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
                   "size; ignoring");
       return(-1);
     }
-    player_position2d_velocity_mode_config_t* velmode_config = 
+    player_position2d_velocity_mode_config_t* velmode_config =
             (player_position2d_velocity_mode_config_t*)data;
 
     if(velmode_config->value)
@@ -1742,7 +1742,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
   }
   // check for sonar config requests
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_SONAR_REQ_POWER, 
+                                PLAYER_SONAR_REQ_POWER,
                                 this->sonar_id))
   {
     /*
@@ -1754,7 +1754,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       PLAYER_WARN("Arg to sonar state change request wrong size; ignoring");
       return(-1);
     }
-    player_sonar_power_config_t* sonar_config = 
+    player_sonar_power_config_t* sonar_config =
             (player_sonar_power_config_t*)data;
     this->ToggleSonarPower(sonar_config->state);
 
@@ -1763,7 +1763,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_SONAR_REQ_GET_GEOM, 
+                                PLAYER_SONAR_REQ_GET_GEOM,
                                 this->sonar_id))
   {
     /* Return the sonar geometry. */
@@ -1789,7 +1789,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
   }
   // check for blobfinder requests
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                             PLAYER_BLOBFINDER_REQ_SET_COLOR, 
+                             PLAYER_BLOBFINDER_REQ_SET_COLOR,
                              this->blobfinder_id))
   {
     // Set the tracking color (RGB max/min values)
@@ -1799,11 +1799,11 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       puts("Arg to blobfinder color request wrong size; ignoring");
       return(-1);
     }
-    player_blobfinder_color_config_t* color_config = 
+    player_blobfinder_color_config_t* color_config =
             (player_blobfinder_color_config_t*)data;
 
     CMUcamTrack(color_config->rmin,
-                color_config->rmax, 
+                color_config->rmax,
                 color_config->gmin,
                 color_config->gmax,
                 color_config->bmin,
@@ -1814,7 +1814,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS, 
+                                PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS,
                                 this->blobfinder_id))
   {
     // Set the imager control params
@@ -1823,7 +1823,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       puts("Arg to blobfinder imager request wrong size; ignoring");
       return(-1);
     }
-    player_blobfinder_imager_config_t* imager_config = 
+    player_blobfinder_imager_config_t* imager_config =
             (player_blobfinder_imager_config_t*)data;
 
     P2OSPacket cam_packet;
@@ -1832,7 +1832,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
 
     np=3;
 
-    CMUcamStopTracking();	// Stop the current tracking.
+    CMUcamStopTracking(); // Stop the current tracking.
 
     cam_command[0] = TTY3;
     cam_command[1] = ARGSTR;
@@ -1874,10 +1874,10 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     } else
       printf("Blobfinder imager parameters NOT updated.\n");
 
-    CMUcamTrack(); 	// Restart tracking
+    CMUcamTrack();  // Restart tracking
 
     this->Publish(this->blobfinder_id, resp_queue,
-                  PLAYER_MSGTYPE_RESP_ACK, 
+                  PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS);
     return(0);
   }
@@ -1978,7 +1978,7 @@ P2OS::HandlePositionCommand(player_position2d_cmd_t position_cmd)
   double rotational_term;
   unsigned short absspeedDemand, absturnRateDemand;
   unsigned char motorcommand[4];
-  P2OSPacket motorpacket; 
+  P2OSPacket motorpacket;
 
   speedDemand = (int)rint(position_cmd.vel.px * 1e3);
   turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
@@ -2128,7 +2128,7 @@ P2OS::HandleGripperCommand(player_gripper_cmd_t gripper_cmd)
   else
   {
     newgrippercommand = false;
-    if(gripper_cmd.cmd != this->last_gripper_cmd.cmd || 
+    if(gripper_cmd.cmd != this->last_gripper_cmd.cmd ||
        gripper_cmd.arg != this->last_gripper_cmd.arg)
     {
       newgrippercommand = true;
@@ -2138,7 +2138,7 @@ P2OS::HandleGripperCommand(player_gripper_cmd_t gripper_cmd)
   if(newgrippercommand)
   {
     //puts("sending gripper command");
-    // gripper command 
+    // gripper command
     gripcommand[0] = GRIPPER;
     gripcommand[1] = ARGINT;
     gripcommand[2] = gripper_cmd.cmd & 0x00FF;
@@ -2146,8 +2146,8 @@ P2OS::HandleGripperCommand(player_gripper_cmd_t gripper_cmd)
     grippacket.Build(gripcommand, 4);
     SendReceive(&grippacket);
 
-    // pass extra value to gripper if needed 
-    if(gripper_cmd.cmd == GRIPpress || gripper_cmd.cmd == LIFTcarry ) 
+    // pass extra value to gripper if needed
+    if(gripper_cmd.cmd == GRIPpress || gripper_cmd.cmd == LIFTcarry )
     {
       gripcommand[0] = GRIPPERVAL;
       gripcommand[1] = ARGINT;

@@ -46,25 +46,25 @@ or sector_angle.
 
 @par Provides
 
-- @ref player_interface_position : accepts target poses, to which vfh will
+- @ref player_interface_position2d : accepts target poses, to which vfh will
   attempt to drive the robot.  Also passes through the data from the
-  underlying @ref player_interface_position device.  All data and commands
+  underlying @ref player_interface_position2d device.  All data and commands
   are in the odometric frame of the underlying device.
 
 @par Requires
 
-- @ref player_interface_position : the underlying robot that will be
+- @ref player_interface_position2d : the underlying robot that will be
   controlled by vfh.
 
 - @ref player_interface_laser : the laser that will be used to avoid
   obstacles
 
-- @todo : add support for getting the robot's true global pose via the 
+- @todo : add support for getting the robot's true global pose via the
   @ref player_interface_simulation interface
 
 @par Configuration requests
 
-- all position2d requests (as long as the underlying position2d device 
+- all position2d requests (as long as the underlying position2d device
   supports them)
 
 @par Configuration file options
@@ -102,7 +102,7 @@ or sector_angle.
   - Default: free_space_cutoff
   - ???
 - weight_desired_dir (float)
-  - Default: 5.0  
+  - Default: 5.0
   - Bias for the robot to turn to move toward goal position.
 - weight_current_dir (float)
   - Default: 3.0
@@ -148,7 +148,7 @@ Chris Jones, Brian Gerkey, Alex Brooks
 
 /** @} */
 
-class VFH_Class : public Driver 
+class VFH_Class : public Driver
 {
   public:
     // Constructor
@@ -161,9 +161,9 @@ class VFH_Class : public Driver
     virtual int Setup();
     virtual int Shutdown();
 
-    // Process incoming messages from clients 
-    virtual int ProcessMessage(MessageQueue* resp_queue, 
-                               player_msghdr * hdr, 
+    // Process incoming messages from clients
+    virtual int ProcessMessage(MessageQueue* resp_queue,
+                               player_msghdr * hdr,
                                void * data);
     // Main function for device thread.
     virtual void Main();
@@ -171,7 +171,7 @@ class VFH_Class : public Driver
   private:
     bool active_goal;
     bool turninginplace;
-    
+
     // Set up the odometry device.
     int SetupOdom();
     int ShutdownOdom();
@@ -205,7 +205,7 @@ class VFH_Class : public Driver
     // Computes the signed minimum difference between the two angles.  Inputs
     // and return values are in degrees.
     double angle_diff(double a, double b);
-    
+
     // Odometry device info
     Device *odom;
     player_devaddr_t odom_addr;
@@ -248,28 +248,28 @@ class VFH_Class : public Driver
 };
 
 // Initialization function
-Driver* 
-VFH_Init(ConfigFile* cf, int section) 
+Driver*
+VFH_Init(ConfigFile* cf, int section)
 {
   return ((Driver*) (new VFH_Class( cf, section)));
-} 
+}
 
 // a driver registration function
 void VFH_Register(DriverTable* table)
-{ 
+{
   table->AddDriver("vfh",  VFH_Init);
   return;
-} 
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int VFH_Class::Setup() 
+int VFH_Class::Setup()
 {
   this->active_goal = false;
   this->turninginplace = false;
   this->goal_x = this->goal_y = this->goal_t = 0;
 
-  
+
   // Initialise the underlying position device.
   if (this->SetupOdom() != 0)
     return -1;
@@ -292,7 +292,7 @@ int VFH_Class::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int VFH_Class::Shutdown() 
+int VFH_Class::Shutdown()
 {
   // Stop the driver thread.
   this->StopThread();
@@ -313,7 +313,7 @@ int VFH_Class::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying odom device.
-int VFH_Class::SetupOdom() 
+int VFH_Class::SetupOdom()
 {
   if(!(this->odom = deviceTable->GetDevice(this->odom_addr)))
   {
@@ -358,14 +358,14 @@ int VFH_Class::SetupOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the underlying odom device.
-int VFH_Class::ShutdownOdom() 
+int VFH_Class::ShutdownOdom()
 {
 
   // Stop the robot before unsubscribing
   this->speed = 0;
   this->turnrate = 0;
   this->PutCommand( speed, turnrate );
-  
+
   this->odom->Unsubscribe(this->InQueue);
   return 0;
 }
@@ -373,7 +373,7 @@ int VFH_Class::ShutdownOdom()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the laser
-int VFH_Class::SetupLaser() 
+int VFH_Class::SetupLaser()
 {
   if(!(this->laser = deviceTable->GetDevice(this->laser_addr)))
   {
@@ -397,7 +397,7 @@ int VFH_Class::SetupLaser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the sonar
-int VFH_Class::SetupSonar() 
+int VFH_Class::SetupSonar()
 {
   if(!(this->sonar = deviceTable->GetDevice(this->sonar_addr)))
   {
@@ -414,7 +414,7 @@ int VFH_Class::SetupSonar()
   Message* msg;
 
   // Get the sonar poses
-  if(!(msg = this->sonar->Request(this->InQueue, 
+  if(!(msg = this->sonar->Request(this->InQueue,
                                   PLAYER_MSGTYPE_REQ,
                                   PLAYER_SONAR_REQ_GET_GEOM,
                                   NULL, 0, NULL,false)))
@@ -422,7 +422,7 @@ int VFH_Class::SetupSonar()
     PLAYER_ERROR("failed to get sonar geometry");
     return(-1);
   }
-  
+
   // Store the sonar poses
   cfg = (player_sonar_geom_t*)msg->GetPayload();
   this->num_sonars = cfg->poses_count;
@@ -445,7 +445,7 @@ int VFH_Class::SetupSonar()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the laser
-int VFH_Class::ShutdownLaser() 
+int VFH_Class::ShutdownLaser()
 {
   this->laser->Unsubscribe(this->InQueue);
   return 0;
@@ -453,7 +453,7 @@ int VFH_Class::ShutdownLaser()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shut down the sonar
-int VFH_Class::ShutdownSonar() 
+int VFH_Class::ShutdownSonar()
 {
   this->sonar->Unsubscribe(this->InQueue);
   return 0;
@@ -461,8 +461,8 @@ int VFH_Class::ShutdownSonar()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process new odometry data
-void 
-VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data) 
+void
+VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data)
 {
 
   // Cache the new odometric pose, velocity, and stall info
@@ -483,8 +483,8 @@ VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process new laser data
-void 
-VFH_Class::ProcessLaser(player_laser_data_t &data) 
+void
+VFH_Class::ProcessLaser(player_laser_data_t &data)
 {
   int i;
   double b, db, r;
@@ -493,10 +493,10 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   db = RTOD(data.resolution);
 
   this->laser_count = data.ranges_count;
-  assert(this->laser_count < 
+  assert(this->laser_count <
          (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
 
-  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
     this->laser_ranges[i][0] = -1;
 
   b += 90.0;
@@ -508,7 +508,7 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   }
 
   r = 1000000.0;
-  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
   {
     if (this->laser_ranges[i][0] != -1) {
       r = this->laser_ranges[i][0];
@@ -520,8 +520,8 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process new sonar data, in a very crude way.
-void 
-VFH_Class::ProcessSonar(player_sonar_data_t &data) 
+void
+VFH_Class::ProcessSonar(player_sonar_data_t &data)
 {
   int i;
   double b, r;
@@ -529,10 +529,10 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   int count = 361;
 
   this->laser_count = count;
-  assert(this->laser_count < 
+  assert(this->laser_count <
          (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
 
-  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
     this->laser_ranges[i][0] = -1;
 
   //b += 90.0;
@@ -550,7 +550,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   }
 
   r = 1000000.0;
-  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++) 
+  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
   {
     if (this->laser_ranges[i][0] != -1) {
       r = this->laser_ranges[i][0];
@@ -562,8 +562,8 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Send commands to the underlying position device
-void 
-VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate ) 
+void
+VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
 {
   player_position2d_cmd_t cmd;
 
@@ -591,7 +591,7 @@ VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
   // Position mode
   else
   {
-    if(fabs(this->con_vel[2]) > 
+    if(fabs(this->con_vel[2]) >
        (double)vfh_Algorithm->GetMaxTurnrate((int)this->con_vel[0]))
     {
       PLAYER_WARN1("fast turn %d", this->con_vel[2]);
@@ -612,18 +612,18 @@ VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int VFH_Class::ProcessMessage(MessageQueue* resp_queue, 
-                              player_msghdr * hdr, 
+int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
+                              player_msghdr * hdr,
                               void * data)
 {
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                            PLAYER_POSITION2D_DATA_STATE, this->odom_addr))
   {
     assert(hdr->size == sizeof(player_position2d_data_t));
     ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                                 PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
     // It's not always that big...
@@ -631,7 +631,7 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
     ProcessLaser(*reinterpret_cast<player_laser_data_t *> (data));
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                                 PLAYER_SONAR_DATA_RANGES, this->sonar_addr))
   {
     // It's not always that big...
@@ -639,8 +639,8 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
     ProcessSonar(*reinterpret_cast<player_sonar_data_t *> (data));
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-                                PLAYER_POSITION2D_CMD_STATE, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_POSITION2D_CMD_STATE,
                                 this->device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_cmd_t));
@@ -656,8 +656,8 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
     if(!(msg = this->odom->Request(this->InQueue,
                                    hdr->type,
                                    hdr->subtype,
-                                   (void*)data, 
-                                   hdr->size, 
+                                   (void*)data,
+                                   hdr->size,
                                    &hdr->timestamp)))
     {
       PLAYER_WARN1("failed to forward config request with subtype: %d\n",
@@ -682,7 +682,7 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void VFH_Class::Main() 
+void VFH_Class::Main()
 {
   float dist;
   double angdiff;
@@ -713,7 +713,7 @@ void VFH_Class::Main()
       continue;
 
     // Figure how far, in distance and orientation, we are from the goal
-    dist = sqrt(pow((goal_x - this->odom_pose[0]),2) + 
+    dist = sqrt(pow((goal_x - this->odom_pose[0]),2) +
                 pow((goal_y - this->odom_pose[1]),2));
     angdiff = this->angle_diff((double)this->goal_t,this->odom_pose[2]);
 
@@ -735,7 +735,7 @@ void VFH_Class::Main()
 
     // CASE 1: The robot has stalled, so escape if the user specified
     //         a non-zero escape velocity.
-    if(escaping || 
+    if(escaping ||
        (this->escape_speed && this->escape_time && this->odom_stall))
     {
       if(!escaping)
@@ -751,7 +751,7 @@ void VFH_Class::Main()
         // [-escape_max_turnspeed,escape_max_turnspeed]
         escape_turnrate_deg = (int)rint(RTOD(this->escape_max_turnspeed));
         this->turnrate = (int)(2.0 * escape_turnrate_deg *
-                               rand()/(RAND_MAX+1.0)) - 
+                               rand()/(RAND_MAX+1.0)) -
                 escape_turnrate_deg/2 + 1;
       }
       else
@@ -762,7 +762,7 @@ void VFH_Class::Main()
     }
     // CASE 2: The robot is at the goal, within user-specified tolerances, so
     //         stop.
-    else if((dist < (this->dist_eps * 1e3)) && 
+    else if((dist < (this->dist_eps * 1e3)) &&
             (fabs(DTOR(angdiff)) < this->ang_eps))
     {
       this->active_goal = false;
@@ -783,12 +783,12 @@ void VFH_Class::Main()
       while (Desired_Angle < 0)
         Desired_Angle += 360.0;
 
-      vfh_Algorithm->Update_VFH( this->laser_ranges, 
+      vfh_Algorithm->Update_VFH( this->laser_ranges,
                                  (int)(this->odom_vel[0]),
                                  Desired_Angle,
                                  dist,
                                  this->dist_eps * 1e3,
-                                 this->speed, 
+                                 this->speed,
                                  this->turnrate );
       PutCommand( this->speed, this->turnrate );
       this->turninginplace = false;
@@ -802,7 +802,7 @@ void VFH_Class::Main()
 
       // Turn in place in the appropriate direction, with speed
       // proportional to the angular distance to the goal orientation.
-      turnrate = (int)rint(fabs(angdiff/180.0) * 
+      turnrate = (int)rint(fabs(angdiff/180.0) *
                            vfh_Algorithm->GetMaxTurnrate(speed));
 
       // If we've just gotten to the goal, pick a direction to turn;
@@ -833,8 +833,8 @@ void VFH_Class::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new commands from the server
-void 
-VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &cmd) 
+void
+VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &cmd)
 {
   int x,y,t;
 
@@ -872,14 +872,14 @@ VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &cmd)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 VFH_Class::VFH_Class( ConfigFile* cf, int section)
-  : Driver(cf, section, true, 
+  : Driver(cf, section, true,
            PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   double cell_size;
   int window_diameter;
   int sector_angle;
   double safety_dist_0ms;
-  double safety_dist_1ms; 
+  double safety_dist_1ms;
   int max_speed;
   int max_speed_narrow_opening;
   int max_speed_wide_opening;
@@ -903,37 +903,37 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   window_diameter = cf->ReadInt(section, "window_diameter", 61);
   sector_angle = cf->ReadInt(section, "sector_angle", 5);
   safety_dist_0ms = cf->ReadLength(section, "safety_dist_0ms", 0.1) * 1e3;
-  safety_dist_1ms = cf->ReadLength(section, "safety_dist_1ms", 
+  safety_dist_1ms = cf->ReadLength(section, "safety_dist_1ms",
                                    safety_dist_0ms/1e3) * 1e3;
   max_speed = (int)rint(1e3 * cf->ReadLength(section, "max_speed", 0.2));
-  max_speed_narrow_opening = 
-          (int)rint(1e3 * cf->ReadLength(section, 
-                                         "max_speed_narrow_opening", 
+  max_speed_narrow_opening =
+          (int)rint(1e3 * cf->ReadLength(section,
+                                         "max_speed_narrow_opening",
                                          max_speed/1e3));
-  max_speed_wide_opening = 
-          (int)rint(1e3 * cf->ReadLength(section, 
-                                         "max_speed_wide_opening", 
+  max_speed_wide_opening =
+          (int)rint(1e3 * cf->ReadLength(section,
+                                         "max_speed_wide_opening",
                                          max_speed/1e3));
   max_acceleration = (int)rint(1e3 * cf->ReadLength(section, "max_acceleration", 0.2));
   min_turnrate = (int)rint(RTOD(cf->ReadAngle(section, "min_turnrate", DTOR(10))));
   max_turnrate_0ms = (int) rint(RTOD(cf->ReadAngle(section, "max_turnrate_0ms", DTOR(40))));
-  max_turnrate_1ms = 
-          (int) rint(RTOD(cf->ReadAngle(section, 
-                                        "max_turnrate_1ms", 
+  max_turnrate_1ms =
+          (int) rint(RTOD(cf->ReadAngle(section,
+                                        "max_turnrate_1ms",
                                         DTOR(max_turnrate_0ms))));
-  min_turn_radius_safety_factor = 
+  min_turn_radius_safety_factor =
           cf->ReadFloat(section, "min_turn_radius_safety_factor", 1.0);
-  free_space_cutoff_0ms = cf->ReadFloat(section, 
-                                        "free_space_cutoff_0ms", 
+  free_space_cutoff_0ms = cf->ReadFloat(section,
+                                        "free_space_cutoff_0ms",
                                         2000000.0);
-  obs_cutoff_0ms = cf->ReadFloat(section, 
-                                 "obs_cutoff_0ms", 
+  obs_cutoff_0ms = cf->ReadFloat(section,
+                                 "obs_cutoff_0ms",
                                  free_space_cutoff_0ms);
-  free_space_cutoff_1ms = cf->ReadFloat(section, 
-                                        "free_space_cutoff_1ms", 
+  free_space_cutoff_1ms = cf->ReadFloat(section,
+                                        "free_space_cutoff_1ms",
                                         free_space_cutoff_0ms);
-  obs_cutoff_1ms = cf->ReadFloat(section, 
-                                 "obs_cutoff_1ms", 
+  obs_cutoff_1ms = cf->ReadFloat(section,
+                                 "obs_cutoff_1ms",
                                  free_space_cutoff_1ms);
   weight_desired_dir = cf->ReadFloat(section, "weight_desired_dir", 5.0);
   weight_current_dir = cf->ReadFloat(section, "weight_current_dir", 3.0);
@@ -951,7 +951,7 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
                                           window_diameter,
                                           sector_angle,
                                           safety_dist_0ms,
-                                          safety_dist_1ms, 
+                                          safety_dist_1ms,
                                           max_speed,
                                           max_speed_narrow_opening,
                                           max_speed_wide_opening,
@@ -970,10 +970,10 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
   if (cf->ReadDeviceAddr(&this->odom_addr, section, "requires",
                          PLAYER_POSITION2D_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
-  
+
   this->laser = NULL;
   memset(&this->laser_addr,0,sizeof(player_devaddr_t));
   cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
@@ -990,10 +990,10 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-  
+
   // Laser settings
   //TODO this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 10);
-  
+
   return;
 }
 

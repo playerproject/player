@@ -147,10 +147,10 @@ driver
 )
 @endverbatim
 A client connecting to @p orac will see four devices: two @ref
-player_interface_position devices and two @ref player_interface_laser
+player_interface_position2d devices and two @ref player_interface_laser
 devices.  Both robots can now be controlled through a single connection
 to @p orac.
-      
+
 @par Example: Shifting computation
 
 Computationally expensive drivers (such as @ref player_driver_amcl)
@@ -171,7 +171,7 @@ driver
   provides ["laser:0"]
 )
 @endverbatim
-The robot is assumed to be a Pioneer with a SICK laser range-finder. 
+The robot is assumed to be a Pioneer with a SICK laser range-finder.
 
 - Now imagine that we have a workstation named @p orac.  On
 this workstation, start another instance of Player with the
@@ -206,7 +206,7 @@ driver
 (See the documentation for the @ref player_driver_amcl driver for a
 detailed description of the additional setings for that driver.)
 Clients connecting to this server will see a robot with @ref
-player_interface_position, @ref player_interface_laser and @ref
+player_interface_position2d, @ref player_interface_laser and @ref
 player_interface_localize devices, but all of the heavy computation will
 be done on the workstation.
 
@@ -268,7 +268,7 @@ driver
 @endverbatim
 The second Player server will start up and listen on port 7000;
 clients connecting to this server will see a robot with @ref
-player_interface_position, @ref player_interface_laser, and @ref
+player_interface_position2d, @ref player_interface_laser, and @ref
 player_interface_localize devices.
 
 @par Authors
@@ -288,12 +288,12 @@ Brian Gerkey, Andrew Howard
 
 extern int global_playerport;
 
-class PassThrough:public Driver 
+class PassThrough:public Driver
 {
   private:
   // info for our local device
   player_device_id_t local_id;
-  
+
   // info for the server/device to which we will connect
   const char* remote_hostname;
   player_device_id_t remote_id;
@@ -324,14 +324,14 @@ class PassThrough:public Driver
 };
 
 // initialization function
-Driver* 
+Driver*
 PassThrough_Init( ConfigFile* cf, int section)
 {
   return((Driver*)(new PassThrough(cf, section)));
 }
 
 // a driver registration function
-void 
+void
 PassThrough_Register(DriverTable* table)
 {
   table->AddDriver("passthrough",  PassThrough_Init);
@@ -356,7 +356,7 @@ PassThrough::PassThrough(ConfigFile* cf, int section)
     this->SetError(-1);
     return;
   }
-      
+
   this->remote_access = (unsigned char)cf->ReadString(section, "access", "a")[0];
   this->conn.protocol = PLAYER_TRANSPORT_TCP;
 
@@ -383,7 +383,7 @@ PassThrough::~PassThrough()
   free(this->remote_reply);
 }
 
-int 
+int
 PassThrough::Setup()
 {
   unsigned char grant_access;
@@ -399,14 +399,14 @@ PassThrough::Setup()
   // connect to the server
   if(player_connect(&this->conn,this->remote_hostname,this->remote_id.port) < 0)
   {
-    PLAYER_ERROR1("couldn't connect to remote host \"%s\"", 
+    PLAYER_ERROR1("couldn't connect to remote host \"%s\"",
                   this->remote_hostname);
     return(-1);
   }
 
   puts("Done");
 
-  printf("Passthrough opening device %d:%d:%d...", 
+  printf("Passthrough opening device %d:%d:%d...",
          this->remote_id.port,
          this->remote_id.code,
          this->remote_id.index);
@@ -463,7 +463,7 @@ PassThrough::Setup()
   return(0);
 }
 
-int 
+int
 PassThrough::Shutdown()
 {
   StopThread();
@@ -472,19 +472,19 @@ PassThrough::Shutdown()
 }
 
 /*int player_request(player_connection_t* conn, uint8_t reqtype,
-                   uint16_t device, uint16_t device_index, 
-                   const char* payload, size_t payloadlen, 
+                   uint16_t device, uint16_t device_index,
+                   const char* payload, size_t payloadlen,
                    player_msghdr_t* replyhdr, char* reply, size_t replylen);*/
 
-int PassThrough::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int PassThrough::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
 {
-	assert(hdr);
-	assert(data);
-	assert(resp_data);
-	assert(resp_len);
-	
-	player_msghdr_t replyhdr;
-	
+  assert(hdr);
+  assert(data);
+  assert(resp_data);
+  assert(resp_len);
+
+  player_msghdr_t replyhdr;
+
     if (hdr->type == PLAYER_MSGTYPE_REQ)
     {
       // send it
@@ -506,7 +506,7 @@ int PassThrough::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_
     {
       if(player_write(&this->conn,this->remote_id.code,
                       this->remote_id.index,
-                      	(const char *)data,hdr->size) < 0)
+                        (const char *)data,hdr->size) < 0)
       {
         PLAYER_ERROR("got error while writing command; bailing");
         CloseConnection();

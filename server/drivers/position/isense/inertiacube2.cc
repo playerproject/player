@@ -46,7 +46,7 @@ device we subscribe to has good position information but poor orientation
 information.
 
 Neither configuration requests nor commands are passed through to the
-underlying @ref player_interface_position device.
+underlying @ref player_interface_position2d device.
 
 @par Compile-time dependencies
 
@@ -54,11 +54,11 @@ underlying @ref player_interface_position device.
 
 @par Provides
 
-- @ref player_interface_position : corrected pose information
+- @ref player_interface_position2d : corrected pose information
 
 @par Requires
 
-- @ref player_interface_position : source of raw odometry
+- @ref player_interface_position2d : source of raw odometry
 
 @par Configuration requests
 
@@ -73,8 +73,8 @@ underlying @ref player_interface_position device.
 - compass (integer)
   - Default: 2
   - Compass setting (0 = off, 1 = partial, 2 = full).
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -164,7 +164,7 @@ class InertiaCube2 : public Driver
 
   // Compass setting (0 = off, 1 = partial, 2 = full).
   private: int compass;
-  
+
   // Serial port.
   private: const char *port;
 
@@ -211,19 +211,19 @@ InertiaCube2::InertiaCube2( ConfigFile* cf, int section)
     : Driver(cf, section, sizeof(player_position_data_t), 0, 10, 10)
 {
   this->port = cf->ReadString(section, "port", "/dev/ttyS3");
-  
+
   // Must have a position device
   if (cf->ReadDeviceId(&this->position_id, section, "requires",
                        PLAYER_POSITION_CODE, -1, NULL) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
   this->position = NULL;
   this->position_time = 0;
 
   this->compass = cf->ReadInt(section, "compass", 2);
-                              
+
   return;
 }
 
@@ -235,14 +235,14 @@ int InertiaCube2::Setup()
   // Initialise the underlying position device.
   if (this->SetupPosition() != 0)
     return -1;
-  
+
   // Initialise the cube.
   if (this->SetupImu() != 0)
     return -1;
 
   // Start the driver thread.
   this->StartThread();
-  
+
   return 0;
 }
 
@@ -305,9 +305,9 @@ int InertiaCube2::SetupImu()
   ISD_TRACKER_INFO_TYPE info;
   ISD_STATION_INFO_TYPE sinfo;
   ISD_TRACKER_DATA_TYPE data;
-  
+
   verbose = 0;
-  
+
   // Open the tracker.  Takes a port number, so we strip it from the
   // port string.
   port = atoi(this->port + strlen(this->port) - 1);
@@ -384,9 +384,9 @@ int InertiaCube2::ShutdownImu()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get the tracker type.
-const char *InertiaCube2::ImuType(int type) 
+const char *InertiaCube2::ImuType(int type)
 {
-  switch (type) 
+  switch (type)
   {
     case ISD_NONE:
       return "Unknown";
@@ -401,9 +401,9 @@ const char *InertiaCube2::ImuType(int type)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get the tracker model.
-const char *InertiaCube2::ImuModel(int model) 
+const char *InertiaCube2::ImuModel(int model)
 {
-  switch (model) 
+  switch (model)
   {
     case ISD_IS300:
       return "IS-300 Series";
@@ -429,17 +429,17 @@ const char *InertiaCube2::ImuModel(int model)
   return "Unknown";
 }
 
- 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void InertiaCube2::Main() 
+void InertiaCube2::Main()
 {
   struct timespec sleeptime;
 
   // Sleep for 1ms (will actually take longer than this).
   sleeptime.tv_sec = 0;
   sleeptime.tv_nsec = 1000000L;
-  
+
   while (true)
   {
     // Go to sleep for a while (this is a polling loop).
@@ -470,7 +470,7 @@ void InertiaCube2::Main()
              this->pose[0],
              this->pose[1],
              this->pose[2] * 180 / M_PI);
-      
+
       // Expose the new estimate to the server.
       UpdateData();
     }
@@ -486,7 +486,7 @@ int InertiaCube2::HandleRequests()
   int len;
   void *client;
   char request[PLAYER_MAX_REQREP_SIZE];
-  
+
   while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
   {
     switch (request[0])
@@ -529,7 +529,7 @@ void InertiaCube2::HandleGetGeom(void *client, void *request, int len)
   id.code = PLAYER_POSITION_CODE;
   id.index = this->position_index;
   id.port = this->device_id.port;
-  
+
   // Get underlying device geometry.
   req = PLAYER_POSITION_GET_GEOM_REQ;
   if (this->Request(&id, this, &req, 1, &reptype, &ts, &geom, sizeof(geom)) != 0)
@@ -549,7 +549,7 @@ void InertiaCube2::HandleGetGeom(void *client, void *request, int len)
   if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
     PLAYER_ERROR("PutReply() failed");
   */
-  
+
   return;
 }
 
@@ -559,7 +559,7 @@ void InertiaCube2::HandleGetGeom(void *client, void *request, int len)
 void InertiaCube2::UpdateImu()
 {
   ISD_TRACKER_DATA_TYPE data;
-  
+
   // Update the tracker data.
   if (ISD_GetData(this->imu, &data) == 0)
   {
@@ -590,7 +590,7 @@ int InertiaCube2::UpdatePosition()
   player_position_data_t data;
   uint32_t timesec, timeusec;
   double time;
-  
+
   // Get the position device data.
   size = this->position->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
   time = (double) timesec + ((double) timeusec) * 1e-6;
@@ -608,7 +608,7 @@ int InertiaCube2::UpdatePosition()
   this->position_new_pose[0] = (double) data.xpos / 1000.0;
   this->position_new_pose[1] = (double) data.ypos / 1000.0;
   this->position_new_pose[2] = (double) data.yaw * M_PI / 180;
-  
+
   return 1;
 }
 
@@ -638,7 +638,7 @@ void InertiaCube2::UpdatePose()
   this->position_old_pose[1] = this->position_new_pose[1];
   this->position_old_pose[2] = this->position_new_pose[2];
   this->imu_old_orient = this->imu_new_orient;
-  
+
   return;
 }
 

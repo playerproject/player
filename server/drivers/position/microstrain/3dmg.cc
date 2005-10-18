@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -39,7 +39,7 @@ The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
 
 @par Provides
 
-- @ref player_interface_position
+- @ref player_interface_position2d
 
 @par Requires
 
@@ -54,8 +54,8 @@ The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
 - port (string)
   - Default: "/dev/ttyS1"
   - The serial port where the IMU is connected.
- 
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -106,7 +106,7 @@ class MicroStrain3DMG : public Driver
   ///////////////////////////////////////////////////////////////////////////
   // Top half methods; these methods run in the server thread
   ///////////////////////////////////////////////////////////////////////////
-  
+
   // Constructor
   public: MicroStrain3DMG(ConfigFile* cf, int section);
 
@@ -127,14 +127,14 @@ class MicroStrain3DMG : public Driver
   // Returns 0 on success
   private: int ClosePort();
 
-  
+
   ///////////////////////////////////////////////////////////////////////////
   // Bottom half methods; these methods run in the device thread
   ///////////////////////////////////////////////////////////////////////////
 
   // Main function for device thread.
   private: virtual void Main();
-  
+
   // Read the firmware version
   private: int GetFirmware(char *firmware, int len);
 
@@ -149,7 +149,7 @@ class MicroStrain3DMG : public Driver
 
   // Read the stabilized Euler angles
   private: int GetStabEuler(double *time, double e[3]);
-  
+
   // Send a packet and wait for a reply from the IMU.
   // Returns the number of bytes read.
   private: int Transact(void *cmd, int cmd_len, void *rep, int rep_len);
@@ -215,13 +215,13 @@ MicroStrain3DMG::~MicroStrain3DMG()
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
 int MicroStrain3DMG::Setup()
-{   
+{
   printf("IMU initialising (%s)\n", this->port_name);
-    
+
   // Open the port
   if (OpenPort())
     return -1;
-  
+
   // Start driver thread
   StartThread();
 
@@ -245,14 +245,14 @@ int MicroStrain3DMG::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void MicroStrain3DMG::Main() 
+void MicroStrain3DMG::Main()
 {
   //int i;
   double ntime;
   double e[3];
   double time;
   player_position3d_data_t data;
-  
+
   while (true)
   {
     // Test if we are supposed to cancel
@@ -270,7 +270,7 @@ void MicroStrain3DMG::Main()
     data.pos.proll = e[0];
     data.pos.ppitch = e[1];
     data.pos.pyaw = e[2];
-      
+
     // Make data available
     this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
                   (void*)&data, sizeof(data), &time);
@@ -285,7 +285,7 @@ void MicroStrain3DMG::Main()
 int MicroStrain3DMG::OpenPort()
 {
   char firmware[32];
-  
+
   // Open the port
   this->fd = open(this->port_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
   if (this->fd < 0)
@@ -317,12 +317,12 @@ int MicroStrain3DMG::OpenPort()
   tcflush(this->fd, TCIOFLUSH);
 
   printf("getting version...\n");
-  
+
   // Check the firmware version
   if (GetFirmware(firmware, sizeof(firmware)) < 0)
     return -1;
   printf("opened %s\n", firmware);
-    
+
   return 0;
 }
 
@@ -344,13 +344,13 @@ int MicroStrain3DMG::GetFirmware(char *firmware, int len)
   int version;
   uint8_t cmd[1];
   uint8_t rep[5];
-  
+
   cmd[0] = CMD_VERSION;
   if (Transact(cmd, sizeof(cmd), rep, sizeof(rep)) < 0)
     return -1;
 
   version = MAKEUINT16(rep[2], rep[1]);
-  
+
   snprintf(firmware, len, "3DM-G Firmware %d.%d.%02d",
            version / 1000, (version % 1000) / 100, version % 100);
   return 0;
@@ -366,7 +366,7 @@ int MicroStrain3DMG::GetStabV(double *time, double v[3], double w[3])
   uint8_t cmd[1];
   uint8_t rep[23];
   int ticks;
-  
+
   cmd[0] = CMD_STABV;
   if (Transact(cmd, sizeof(cmd), rep, sizeof(rep)) < 0)
     return -1;
@@ -395,7 +395,7 @@ int MicroStrain3DMG::GetStabM(int M[3][3])
   int i, j, k;
   uint8_t cmd[1];
   uint8_t rep[23];
-  
+
   cmd[0] = CMD_STABM;
   if (Transact(cmd, sizeof(cmd), rep, sizeof(rep)) < 0)
     return -1;
@@ -413,7 +413,7 @@ int MicroStrain3DMG::GetStabM(int M[3][3])
     }
     printf("\n");
   }
-  
+
   return 0;
 }
 
@@ -427,7 +427,7 @@ int MicroStrain3DMG::GetStabQ(double *time, double q[4])
   int ticks;
   uint8_t cmd[1];
   uint8_t rep[13];
-  
+
   cmd[0] = CMD_STABQ;
   if (Transact(cmd, sizeof(cmd), rep, sizeof(rep)) < 0)
     return -1;
@@ -442,8 +442,8 @@ int MicroStrain3DMG::GetStabQ(double *time, double q[4])
 
   // TODO: handle rollover
   ticks = (uint16_t) MAKEUINT16(rep[10], rep[9]);
-  *time = ticks * TICK_TIME;  
-  
+  *time = ticks * TICK_TIME;
+
   return 0;
 }
 
@@ -457,7 +457,7 @@ int MicroStrain3DMG::GetStabEuler(double *time, double e[3])
   int ticks;
   uint8_t cmd[1];
   uint8_t rep[11];
-  
+
   cmd[0] = CMD_STABEULER;
   if (Transact(cmd, sizeof(cmd), rep, sizeof(rep)) < 0)
     return -1;
@@ -472,8 +472,8 @@ int MicroStrain3DMG::GetStabEuler(double *time, double e[3])
 
   // TODO: handle rollover
   ticks = (uint16_t) MAKEUINT16(rep[10], rep[9]);
-  *time = ticks * TICK_TIME;  
-  
+  *time = ticks * TICK_TIME;
+
   return 0;
 }
 
@@ -484,10 +484,10 @@ int MicroStrain3DMG::GetStabEuler(double *time, double e[3])
 int MicroStrain3DMG::Transact(void *cmd, int cmd_len, void *rep, int rep_len)
 {
   int nbytes, bytes;
-  
+
   // Make sure both input and output queues are empty
   tcflush(this->fd, TCIOFLUSH);
-    
+
   // Write the data to the port
   bytes = write(this->fd, cmd, cmd_len);
   if (bytes < 0)
@@ -507,6 +507,6 @@ int MicroStrain3DMG::Transact(void *cmd, int cmd_len, void *rep, int rep_len)
       PLAYER_ERROR1("error reading from IMU [%s]", strerror(errno));
     bytes += nbytes;
   }
-  
+
   return bytes;
 }

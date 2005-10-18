@@ -41,7 +41,7 @@ building player.
 playerv is installed alongside player in $prefix/bin, so if player is
 in your PATH, then playerv should also be.  Command-line usage is:
 @verbatim
-$ playerv [-h <hostname>] [-p <port>] [--<device>:<index>] [--<device>:<index>] ... 
+$ playerv [-h <hostname>] [-p <port>] [--<device>:<index>] [--<device>:<index>] ...
 @endverbatim
 For example, to connect to Player on localhost at the default port
 (6665), and subscribe to the 0th position and sonar devices:
@@ -80,21 +80,21 @@ playerv can visualize data from the following kinds of devices:
 - @ref player_interface_laser
 - @ref player_interface_localize
 - @ref player_interface_map
-- @ref player_interface_position
+- @ref player_interface_position2d
 - @ref player_interface_power
 - @ref player_interface_ptz
 - @ref player_interface_sonar
 - @ref player_interface_wifi
 
 playerv provides teleoperation of the following kinds of devices:
-- @ref player_interface_position : In velocity mode (the default),
+- @ref player_interface_position2d : In velocity mode (the default),
   click and drag with the left mouse button to set desired velocity vector
   (this will only work if the underlying driver supports velocity control;
   most position drivers do).  In position mode (select "Position mode"
   from the device's submenu), click and drag with the left mouse button
   to set a position target (this will only work if the underlying driver
   support position control; @ref player_driver_vfh is one example).
-- @ref player_interface_ptz : Click and drag the green circle to pan and zoom; 
+- @ref player_interface_ptz : Click and drag the green circle to pan and zoom;
   click and drag the blue circle to tilt.
 
 
@@ -144,7 +144,7 @@ void print_usage()
 int main(int argc, char **argv)
 {
   playerc_client_t *client;
-  rtk_app_t *app;  
+  rtk_app_t *app;
   mainwnd_t *mainwnd;
   opt_t *opt;
   const char *host;
@@ -181,7 +181,7 @@ int main(int argc, char **argv)
   host = opt_get_string(opt, "", "host", NULL);
   if (!host)
     host = opt_get_string(opt, "", "h", "localhost");
-  
+
   port = opt_get_int(opt, "", "port", -1);
   if (port < 0)
     port = opt_get_int(opt, "", "p", 6665);
@@ -219,24 +219,24 @@ int main(int argc, char **argv)
   mainwnd = mainwnd_create(app, host, port);
   if (!mainwnd)
     return -1;
-  
+
   // Create a list of available devices, with their gui proxies.
   device_count = 0;
   for (i = 0; i < client->devinfo_count; i++)
   {
     device = devices + device_count;
-    
+
     device->addr = client->devinfos[i].addr;
     device->drivername = strdup(client->devinfos[i].drivername);
 
     // See if the device should be subscribed immediately.
-    snprintf(section, sizeof(section), "%s:%d", 
+    snprintf(section, sizeof(section), "%s:%d",
              playerc_lookup_name(device->addr.interf), device->addr.index);
     device->subscribe = opt_get_int(opt, section, "", 0);
     device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
     if (device->addr.index == 0)
     {
-      snprintf(section, sizeof(section), "%s", 
+      snprintf(section, sizeof(section), "%s",
                playerc_lookup_name(device->addr.interf));
       device->subscribe = opt_get_int(opt, section, "", device->subscribe);
       device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
     // Allow for --position instead of --position2d
     if(device->addr.interf == PLAYER_POSITION2D_CODE)
     {
-      snprintf(section, sizeof(section), "%s:%d", 
+      snprintf(section, sizeof(section), "%s:%d",
                PLAYER_POSITION_STRING, device->addr.index);
       device->subscribe = opt_get_int(opt, section, "", device->subscribe);
       device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
@@ -262,13 +262,13 @@ int main(int argc, char **argv)
 
     device_count++;
   }
-    
+
   // Print the list of available devices.
   printf("Available devices: %s:%d\n", host, port);
   for (i = 0; i < device_count; i++)
   {
     device = devices + i;
-    snprintf(section, sizeof(section), "%s:%d", 
+    snprintf(section, sizeof(section), "%s:%d",
              playerc_lookup_name(device->addr.interf), device->addr.index);
     printf("%-16s %-40s", section, device->drivername);
     if (device->proxy)
@@ -282,14 +282,14 @@ int main(int argc, char **argv)
       printf("unsupported");
     printf("\n");
   }
-  
+
   // Print out a list of unused options.
   opt_warn_unused(opt);
 
   // Start the gui; dont run in a separate thread and dont let it do
   // its own updates.
   rtk_app_main_init(app);
-  
+
   while (!quit)
   {
     // Let gui process messages
@@ -318,7 +318,7 @@ int main(int argc, char **argv)
     if (mainwnd_update(mainwnd) != 0)
       break;
   }
-  
+
   // Stop the gui
   rtk_app_main_term(app);
 
@@ -346,6 +346,6 @@ int main(int argc, char **argv)
   rtk_app_destroy(app);
 
   opt_term(opt);
-  
+
   return 0;
 }

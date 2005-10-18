@@ -43,11 +43,11 @@ $ playercam [options]
 
 Where [options] can be:
 - -help : print this message
-- -h <hostname> : host that is running player
-- -p <port> : the port number of the host
-- -i <index> : the index of the camera
-- -b <index> : the index of the blobfinder
-- -r <rate> : the refresh rate of the video
+- -h &lt;hostname&gt; : host that is running player
+- -p &lt;port&gt; : the port number of the host
+- -i &lt;index&gt; : the index of the camera
+- -b &lt;index&gt; : the index of the blobfinder
+- -r &lt;rate&gt; : the refresh rate of the video
 
 For example, to connect to Player on localhost at the default port
 (6665), and subscribe to the 1st camera device:

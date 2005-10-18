@@ -26,7 +26,7 @@
   * @{ */
 
 /**
-  *@defgroup player_driver_sphere garcia
+  *@defgroup player_driver_garcia garcia
 
 
 The garcia driver captures

@@ -29,7 +29,7 @@ This driver works in the following way: upon receiving a new @ref
 player_interface_planner target, a path is planned from the robot's
 current pose, as reported by the underlying @ref player_interface_localize
 device.  The waypoints in this path are handed down, in sequence,
-to the underlying @ref player_interface_position device, which should
+to the underlying @ref player_interface_position2d device, which should
 be capable of local navigation (the @ref player_driver_vfh driver is a
 great candidate). By tying everything together in this way, this driver
 offers the mythical "global goto" for your robot.
@@ -69,7 +69,7 @@ For help in using this driver, try the @ref player_util_playernav utility.
 
 @par Requires
 
-- @ref player_interface_position : robot to be controlled;
+- @ref player_interface_position2d : robot to be controlled;
   this device must be capable of position control (usually you would
   use the @ref player_driver_vfh driver)
 - @ref player_interface_localize : localization system (usually you
@@ -102,7 +102,7 @@ thinks it has already achieved it.
 - distance_epsilon (length)
   - Default: 0.5 m
   - Planar distance from the target position that will be considered
-    acceptable.  
+    acceptable.
     Set this to be GREATER than the corresponding threshold of
     the underlying position device!
 - angle_epsilon (angle)
@@ -135,7 +135,7 @@ thinks it has already achieved it.
     stopped and started.  This feature requires md5 hashing functions
     in libcrypto.
 
-@par Example 
+@par Example
 
 This example shows how to use the wavefront driver to plan and execute paths
 on a laser-equipped Pioneer.
@@ -223,7 +223,7 @@ Brian Gerkey, Andrew Howard
 
 class Wavefront : public Driver
 {
-  private: 
+  private:
     // Main function for device thread.
     virtual void Main();
 
@@ -316,9 +316,9 @@ class Wavefront : public Driver
     virtual int Setup();
     virtual int Shutdown();
 
-    // Process incoming messages from clients 
-    virtual int ProcessMessage(MessageQueue* resp_queue, 
-                               player_msghdr * hdr, 
+    // Process incoming messages from clients
+    virtual int ProcessMessage(MessageQueue* resp_queue,
+                               player_msghdr * hdr,
                                void * data);
 };
 
@@ -340,7 +340,7 @@ void Wavefront_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Wavefront::Wavefront( ConfigFile* cf, int section)
-  : Driver(cf, section, true, 
+  : Driver(cf, section, true,
            PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PLANNER_CODE)
 {
   // Must have a position device to control
@@ -378,7 +378,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
-int 
+int
 Wavefront::Setup()
 {
   this->have_map = false;
@@ -423,7 +423,7 @@ Wavefront::Setup()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
-int 
+int
 Wavefront::Shutdown()
 {
   // Stop the driver thread.
@@ -479,7 +479,7 @@ Wavefront::ProcessPositionData(player_position2d_data_t* data)
   this->position_a = data->pos.pa;
 }
 
-void 
+void
 Wavefront::ProcessMapInfo(player_map_info_t* info)
 {
   // Got new map info pushed to us.  We'll save this info and get the new
@@ -490,7 +490,7 @@ Wavefront::ProcessMapInfo(player_map_info_t* info)
   this->plan->origin_x = info->origin.px;
   this->plan->origin_y = info->origin.py;
   // Set the bounds to search the whole grid.
-  plan_set_bounds(this->plan, 
+  plan_set_bounds(this->plan,
                   0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
 
   // Now get the map data, possibly in separate tiles.
@@ -513,7 +513,7 @@ void
 Wavefront::PutPlannerData()
 {
   player_planner_data_t data;
-  
+
   memset(&data,0,sizeof(data));
 
   if(this->waypoint_count > 0)
@@ -635,7 +635,7 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void Wavefront::Main() 
+void Wavefront::Main()
 {
   double dist, angle;
   double t;
@@ -679,10 +679,10 @@ void Wavefront::Main()
                         (this->localize_x - last_replan_lx)) +
                        ((this->localize_y - last_replan_ly) *
                         (this->localize_y - last_replan_ly)));
-    replan = (this->replan_dist_thresh >= 0.0) && 
+    replan = (this->replan_dist_thresh >= 0.0) &&
             (replan_dist > this->replan_dist_thresh) &&
             (this->replan_min_time >= 0.0) &&
-            (replan_timediff > this->replan_min_time) && 
+            (replan_timediff > this->replan_min_time) &&
             !this->atgoal;
 
     // Did we get a new goal, or is it time to replan?
@@ -694,23 +694,23 @@ void Wavefront::Main()
         this->new_map_available = false;
 
         if(this->GetMapInfo(true) < 0)
-	  PLAYER_WARN("failed to get new map info");
-	else
-	{
+    PLAYER_WARN("failed to get new map info");
+  else
+  {
           if(this->GetMap(true) < 0)
-	    PLAYER_WARN("failed to get new map data");
-	  else
-	  {
-	    this->new_map = true;
-	    this->have_map = true;
-	  }
-	}
+      PLAYER_WARN("failed to get new map data");
+    else
+    {
+      this->new_map = true;
+      this->have_map = true;
+    }
+  }
       }
 
       // We need to recompute the C-space if the map changed, or if the
       // goal or robot pose lie outside the bounds of the area we last
       // searched.
-      if(this->new_map || 
+      if(this->new_map ||
          !plan_check_inbounds(plan,this->localize_x,this->localize_y) ||
           !plan_check_inbounds(plan,this->target_x,this->target_y))
       {
@@ -728,7 +728,7 @@ void Wavefront::Main()
         gettimeofday(&t0, NULL);
         plan_update_cspace(this->plan,this->cspace_fname);
         gettimeofday(&t1, NULL);
-        printf("time to update: %f\n", 
+        printf("time to update: %f\n",
                (t1.tv_sec + t1.tv_usec/1e6) -
                (t0.tv_sec + t0.tv_usec/1e6));
         this->new_map = false;
@@ -759,7 +759,7 @@ void Wavefront::Main()
           gettimeofday(&t0, NULL);
           plan_update_cspace(this->plan,this->cspace_fname);
           gettimeofday(&t1, NULL);
-          printf("time to update: %f\n", 
+          printf("time to update: %f\n",
                (t1.tv_sec + t1.tv_usec/1e6) -
                (t0.tv_sec + t0.tv_usec/1e6));
 
@@ -767,8 +767,8 @@ void Wavefront::Main()
           plan_update_plan(this->plan, this->target_x, this->target_y);
 
           // compute a path to the goal from the current position
-          plan_update_waypoints(this->plan, 
-                                this->localize_x, 
+          plan_update_waypoints(this->plan,
+                                this->localize_x,
                                 this->localize_y);
         }
       }
@@ -806,14 +806,14 @@ void Wavefront::Main()
       {
         for(int i=0;i<this->plan->waypoint_count;i++)
         {
-	  double wx, wy;
-	  plan_convert_waypoint(this->plan,
-	                        this->plan->waypoints[i],
-				&wx, &wy);
-	  this->waypoints[i][0] = wx;
-	  this->waypoints[i][1] = wy;
-	}
- 
+    double wx, wy;
+    plan_convert_waypoint(this->plan,
+                          this->plan->waypoints[i],
+        &wx, &wy);
+    this->waypoints[i][0] = wx;
+    this->waypoints[i][1] = wy;
+  }
+
         this->curr_waypoint = 0;
         this->new_goal = true;
       }
@@ -834,9 +834,9 @@ void Wavefront::Main()
                  (this->localize_x - this->target_x)) +
                 ((this->localize_y - this->target_y) *
                  (this->localize_y - this->target_y)));
-    // Note that we compare the current heading and waypoint heading in the 
+    // Note that we compare the current heading and waypoint heading in the
     // *odometric* frame.   We do this because comparing the current
-    // heading and waypoint heading in the localization frame is unreliable 
+    // heading and waypoint heading in the localization frame is unreliable
     // when making small adjustments to achieve a desired heading (i.e., the
     // robot gets there and VFH stops, but here we don't realize we're done
     // because the localization heading hasn't changed sufficiently).
@@ -857,13 +857,13 @@ void Wavefront::Main()
     else
     {
       // are we there yet?  ignore angle, cause this is just a waypoint
-      dist = sqrt(((this->localize_x - this->waypoint_x) * 
+      dist = sqrt(((this->localize_x - this->waypoint_x) *
                    (this->localize_x - this->waypoint_x)) +
                   ((this->localize_y - this->waypoint_y) *
                    (this->localize_y - this->waypoint_y)));
-      // Note that we compare the current heading and waypoint heading in the 
+      // Note that we compare the current heading and waypoint heading in the
       // *odometric* frame.   We do this because comparing the current
-      // heading and waypoint heading in the localization frame is unreliable 
+      // heading and waypoint heading in the localization frame is unreliable
       // when making small adjustments to achieve a desired heading (i.e., the
       // robot gets there and VFH stops, but here we don't realize we're done
       // because the localization heading hasn't changed sufficiently).
@@ -882,8 +882,8 @@ void Wavefront::Main()
           continue;
         }
         // get next waypoint
-	this->waypoint_x = this->waypoints[this->curr_waypoint][0];
-	this->waypoint_y = this->waypoints[this->curr_waypoint][1];
+  this->waypoint_x = this->waypoints[this->curr_waypoint][0];
+  this->waypoint_y = this->waypoints[this->curr_waypoint][1];
         this->curr_waypoint++;
 
         this->waypoint_a = this->target_a;
@@ -891,7 +891,7 @@ void Wavefront::Main()
                     (this->waypoint_x - this->localize_x) +
                     (this->waypoint_y - this->localize_y) *
                     (this->waypoint_y - this->localize_y));
-        angle = atan2(this->waypoint_y - this->localize_y, 
+        angle = atan2(this->waypoint_y - this->localize_y,
                       this->waypoint_x - this->localize_x);
         if((dist > this->dist_eps) &&
            fabs(this->angle_diff(angle,this->localize_a)) > M_PI/4.0)
@@ -907,7 +907,7 @@ void Wavefront::Main()
 
         this->new_goal = false;
       }
-      
+
       SetWaypoint(this->waypoint_x, this->waypoint_y, this->waypoint_a);
     }
 
@@ -919,7 +919,7 @@ void Wavefront::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying position device.
-int 
+int
 Wavefront::SetupPosition()
 {
   player_position2d_geom_t* geom;
@@ -943,7 +943,7 @@ Wavefront::SetupPosition()
   if(!(msg = this->position->Request(this->InQueue,
                                      PLAYER_MSGTYPE_REQ,
                                      PLAYER_POSITION2D_REQ_MOTOR_POWER,
-                                     (void*)&motorconfig, 
+                                     (void*)&motorconfig,
                                      sizeof(motorconfig), NULL, false)))
   {
     PLAYER_WARN("failed to enable motors");
@@ -966,7 +966,7 @@ Wavefront::SetupPosition()
 
   geom = (player_position2d_geom_t*)msg->GetPayload();
 
-  // take the bigger of the two dimensions, convert to meters, and halve 
+  // take the bigger of the two dimensions, convert to meters, and halve
   // to get a radius
   this->robot_radius = MAX(geom->size.sl, geom->size.sw);
   this->robot_radius /= 2.0;
@@ -978,7 +978,7 @@ Wavefront::SetupPosition()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the underlying localize device.
-int 
+int
 Wavefront::SetupLocalize()
 {
   // Subscribe to the localize device.
@@ -1041,7 +1041,7 @@ Wavefront::GetMap(bool threaded)
     if(!(msg = this->mapdevice->Request(this->InQueue,
                                         PLAYER_MSGTYPE_REQ,
                                         PLAYER_MAP_REQ_GET_DATA,
-                                        (void*)data_req,reqlen,NULL, 
+                                        (void*)data_req,reqlen,NULL,
                                         threaded)))
     {
       PLAYER_ERROR("failed to get map data");
@@ -1105,7 +1105,7 @@ Wavefront::GetMapInfo(bool threaded)
   this->plan->origin_x = info->origin.px;
   this->plan->origin_y = info->origin.py;
   // Set the bounds to search the whole grid.
-  plan_set_bounds(this->plan, 
+  plan_set_bounds(this->plan,
                   0, 0, this->plan->size_x - 1, this->plan->size_y - 1);
 
   delete msg;
@@ -1153,19 +1153,19 @@ Wavefront::SetupMap()
   return(0);
 }
 
-int 
+int
 Wavefront::ShutdownPosition()
 {
   return(this->position->Unsubscribe(this->InQueue));
 }
 
-int 
+int
 Wavefront::ShutdownLocalize()
 {
   return(this->localize->Unsubscribe(this->InQueue));
 }
 
-int 
+int
 Wavefront::ShutdownMap()
 {
   return(this->mapdevice->Unsubscribe(this->InQueue));
@@ -1173,18 +1173,18 @@ Wavefront::ShutdownMap()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int 
-Wavefront::ProcessMessage(MessageQueue* resp_queue, 
-                          player_msghdr * hdr, 
+int
+Wavefront::ProcessMessage(MessageQueue* resp_queue,
+                          player_msghdr * hdr,
                           void * data)
 {
   // Is it new odometry data?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                           PLAYER_POSITION2D_DATA_STATE, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                           PLAYER_POSITION2D_DATA_STATE,
                            this->position_id))
   {
     this->ProcessPositionData((player_position2d_data_t*)data);
-    
+
     // In case localize_id and position_id are the same
     if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                              PLAYER_POSITION2D_DATA_STATE,
@@ -1193,23 +1193,23 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
     return(0);
   }
   // Is it new localization data?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
-                                PLAYER_POSITION2D_DATA_STATE, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
+                                PLAYER_POSITION2D_DATA_STATE,
                                 this->localize_id))
   {
     this->ProcessLocalizeData((player_position2d_data_t*)data);
     return(0);
   }
   // Is it a new goal for the planner?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-                                PLAYER_PLANNER_CMD_GOAL, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_PLANNER_CMD_GOAL,
                                 this->device_addr))
   {
     this->ProcessCommand((player_planner_cmd_t*)data);
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                                PLAYER_PLANNER_REQ_GET_WAYPOINTS, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_PLANNER_REQ_GET_WAYPOINTS,
                                 this->device_addr))
   {
     player_planner_waypoints_req_t reply;
@@ -1235,8 +1235,8 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
     return(0);
   }
   // Is it a request to enable or disable the planner?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                                PLAYER_PLANNER_REQ_ENABLE, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_PLANNER_REQ_ENABLE,
                                 this->device_addr))
   {
     if(hdr->size != sizeof(player_planner_enable_req_t))
@@ -1244,7 +1244,7 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
       PLAYER_ERROR("incorrect size for planner enable request");
       return(-1);
     }
-    player_planner_enable_req_t* enable_req = 
+    player_planner_enable_req_t* enable_req =
             (player_planner_enable_req_t*)data;
 
     if(enable_req->state)
@@ -1264,7 +1264,7 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
     return(0);
   }
   // Is it new map metadata?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                                 PLAYER_MAP_DATA_INFO,
                                 this->map_id))
   {
@@ -1285,7 +1285,7 @@ Wavefront::ProcessMessage(MessageQueue* resp_queue,
 double
 Wavefront::angle_diff(double a, double b)
 {
-  double d1, d2; 
+  double d1, d2;
   a = NORMALIZE(a);
   b = NORMALIZE(b);
   d1 = a-b;

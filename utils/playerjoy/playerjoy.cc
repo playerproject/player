@@ -1,9 +1,9 @@
 /*
  * playerjoy.cc - control position devices with a joystick
  *
- * Author: Richard Vaughan 
+ * Author: Richard Vaughan
  * Created: 25 July 2002
- * 
+ *
  * $Id$
  */
 
@@ -14,7 +14,7 @@
 @par Synopsis
 
 playerjoy is a console-based client that provides planar,
-differential-drive teleoperation of @ref player_interface_position and
+differential-drive teleoperation of @ref player_interface_position2d and
 @ref player_interface_position3d devices.  In other words, playerjoy
 allows you to manually drive your (physical or simulated) robot around.
 playerjoy uses velocity control, and so will only work when the underlying
@@ -53,7 +53,7 @@ velocity, left/right sets rotational (yaw) velocity.
 Details of keyboard control are printed out on the console.
 
 @todo
-  Calibrate out initial offset; should be possible by parsing the 
+  Calibrate out initial offset; should be possible by parsing the
   JS_EVENT_INIT message.
 
 */
@@ -177,7 +177,7 @@ private:
 
 public:
   Client(char* host, int port ); // constructor
-  
+
   void Read( void ); // get data from Player
   void Update( struct controller* cont ); // send commands to Player
 };
@@ -232,7 +232,7 @@ joystick_handler(void* arg)
   struct controller* cont = (struct controller*)arg;
 
   struct js_event event;
-  
+
   int buttons_state = 0;
 
   // loop around a joystick read
@@ -247,7 +247,7 @@ joystick_handler(void* arg)
       else
         buttons_state &= ~(1 << event.number);
     }
-      
+
     // ignore the startup events
     if( event.type & JS_EVENT_INIT )
     {
@@ -274,7 +274,7 @@ joystick_handler(void* arg)
             cont->dirty = true;
             break;
         }
-      }	  
+      }
       break;
     }
   }
@@ -283,7 +283,7 @@ joystick_handler(void* arg)
 #endif
 
 #if KEYBOARD_SUPPORT
-// read commands from the keyboard 
+// read commands from the keyboard
 void*
 keyboard_handler(void* arg)
 {
@@ -306,7 +306,7 @@ keyboard_handler(void* arg)
   raw.c_cc[VEOL] = 1;
   raw.c_cc[VEOF] = 2;
   tcsetattr(kfd, TCSANOW, &raw);
-  
+
   puts("Reading from keyboard");
   puts("---------------------------");
   puts("Moving around:");
@@ -421,7 +421,7 @@ keyboard_handler(void* arg)
     case KEYCODE_V:
       // close gripper
       if( gp ) gp->SetGrip(GRIPclose);
-      break;      
+      break;
     case KEYCODE_B:
       // open gripper
       if( gp ) gp->SetGrip(LIFTdown);
@@ -437,21 +437,21 @@ keyboard_handler(void* arg)
     }
     if (cont->dirty == true)
       {
-	cont->speed = speed * max_tv;
-	cont->turnrate = turn * max_rv;		
+  cont->speed = speed * max_tv;
+  cont->turnrate = turn * max_rv;
     }
   }
   return(NULL);
 }
 #endif
-      
+
 Client::Client(char* host, int port )
 {
   printf( "Connecting to Player at %s:%d - ", host, port );
   fflush( stdout );
-  
+
   /* Connect to the Player server */
-  assert( player = new PlayerClient(host,port/*,protocol*/) );  
+  assert( player = new PlayerClient(host,port/*,protocol*/) );
   if(!threed)
   {
     pp = new Position2dProxy(player,idx);
@@ -462,7 +462,7 @@ Client::Client(char* host, int port )
     pp3 = new Position3dProxy(player,idx);
     assert(pp3);
   }
-  
+
   // optional gripper proxy
   if(use_gripper)
     {
@@ -471,7 +471,7 @@ Client::Client(char* host, int port )
     }
   else
     gp = NULL;
-	  
+
   // try a few reads
   for( int i=0; i<4; i++ )
   {
@@ -487,7 +487,7 @@ Client::Client(char* host, int port )
   {
     pp3->SetMotorEnable(1);
   }
-  
+
   gettimeofday(&lastcommand,NULL);
 
   puts("Success");
@@ -512,7 +512,7 @@ void Client::Update( struct controller* cont )
   }
 
   gettimeofday(&curr,NULL);
-  
+
   if(cont->dirty || always_command) // if the joystick sent a command
   {
     stopped = false;
@@ -520,7 +520,7 @@ void Client::Update( struct controller* cont )
     {
       if(print_speeds)
         printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
-      
+
       // send the speed commands
       if(!threed)
         pp->SetSpeed(cont->speed, cont->turnrate);
@@ -531,9 +531,9 @@ void Client::Update( struct controller* cont )
       printf("%5.3f %5.3f\n", cont->speed, RTOD(cont->turnrate));
     lastcommand = curr;
   }
-  else if(use_keyboard && 
+  else if(use_keyboard &&
           (((curr.tv_sec + (curr.tv_usec / 1e6)) -
-            (lastcommand.tv_sec + (lastcommand.tv_usec / 1e6))) > 
+            (lastcommand.tv_sec + (lastcommand.tv_usec / 1e6))) >
            COMMAND_TIMEOUT_SEC))
   {
     if(!stopped)
@@ -567,9 +567,9 @@ int main(int argc, char** argv)
     if( char* colon = index( argv[i], ':'  ) )
     {
       // replace the colon with a terminator
-      *colon = 0; 	  
+      *colon = 0;
       // now argv[i] is a hostname string
-      // and colon=1 is a port number string	  
+      // and colon=1 is a port number string
       clients.push_front( new Client( argv[i], atoi( colon+1 ) ));
     }
     // otherwise look for the verbose flag
@@ -599,30 +599,30 @@ int main(int argc, char** argv)
       use_gripper = true;
     else if( strcmp( argv[i], "-speed" ) == 0 )
       {
-	if(i++ < argc)
-	  max_speed = atof(argv[i]);
-	else
-	  {
-	    puts(USAGE);
-	    exit(-1);
-	  }
+  if(i++ < argc)
+    max_speed = atof(argv[i]);
+  else
+    {
+      puts(USAGE);
+      exit(-1);
+    }
       }
     else if( strcmp( argv[i], "-turnspeed" ) == 0 )
       {
-	if(i++ < argc)
+  if(i++ < argc)
         max_turn = DTOR(atof(argv[i]));
-	else
-	  {
-	    puts(USAGE);
-	    exit(-1);
-	  }
+  else
+    {
+      puts(USAGE);
+      exit(-1);
+    }
       }
 /*    else if( strcmp( argv[i], "-udp" ) == 0 )
       protocol = PLAYER_TRANSPORT_UDP;*/
     else
       {
-	puts(USAGE); // malformed arg - print usage hints
-	exit(-1);
+  puts(USAGE); // malformed arg - print usage hints
+  exit(-1);
     }
   }
 
@@ -633,7 +633,7 @@ int main(int argc, char** argv)
   // this structure is maintained by the joystick reader
   struct controller cont;
   memset( &cont, 0, sizeof(cont) );
-  
+
   pthread_t dummy;
 
   if(!use_keyboard)
@@ -648,7 +648,7 @@ int main(int argc, char** argv)
       use_keyboard = true;
     }
     else
-      pthread_create(&dummy, NULL, &joystick_handler, (void*)&cont); 
+      pthread_create(&dummy, NULL, &joystick_handler, (void*)&cont);
 #else
     fprintf(stderr, "Joystick support not included; falling back on keyboard control");
     use_keyboard = true;
@@ -658,7 +658,7 @@ int main(int argc, char** argv)
   if(use_keyboard)
   {
 #if KEYBOARD_SUPPORT
-    pthread_create(&dummy, NULL, &keyboard_handler, (void*)&cont); 
+    pthread_create(&dummy, NULL, &keyboard_handler, (void*)&cont);
 #else
     fprintf(stderr, "Keyboard support not include; bailing.");
     exit(-1);

@@ -74,7 +74,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref player_interface_joystick
 - @ref player_interface_laser
 - @ref player_interface_sonar
-- @ref player_interface_position
+- @ref player_interface_position2d
 - @ref player_interface_position3d
 - @ref player_interface_power
 - @ref player_interface_truth
@@ -100,8 +100,8 @@ The writelog driver can will log data from the following interfaces:
   - Save camera data to image files as well as to the log file.  The image
     files are named "writelog_YYYY_MM_DD_HH_MM_camera_II_NNNNNNN.pnm",
     where II is the device index and NNNNNNN is the frame number.
-      
-@par Example 
+
+@par Example
 
 @verbatim
 driver
@@ -109,7 +109,7 @@ driver
   name "writelog"
   requires ["laser:0" "position:0"]
   provides ["log:0"]
-  alwayson 1 
+  alwayson 1
   autorecord 1
 )
 @endverbatim
@@ -136,7 +136,7 @@ Andrew Howard
 #include <libplayercore/playercore.h>
 
 #include "encode.h"
-  
+
 // Utility class for storing per-device info
 struct WriteLogDevice
 {
@@ -147,7 +147,7 @@ struct WriteLogDevice
 
 
 // The logfile driver
-class WriteLog: public Driver 
+class WriteLog: public Driver
 {
   /// Constructor
   public: WriteLog(ConfigFile* cf, int section);
@@ -156,8 +156,8 @@ class WriteLog: public Driver
   public: ~WriteLog();
 
   // MessageHandler
-  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
-                                     player_msghdr * hdr, 
+  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+                                     player_msghdr * hdr,
                                      void * data);
 
   /// Initialize the driver
@@ -177,7 +177,7 @@ class WriteLog: public Driver
   private: void CloseFile();
 
   // Write data to file
-  private: void Write(WriteLogDevice *device, 
+  private: void Write(WriteLogDevice *device,
                       player_msghdr_t* hdr, void *data);
 
   // Write laser data to file
@@ -196,12 +196,12 @@ class WriteLog: public Driver
   // Write camera data to file
   private: void WriteCamera(player_camera_data_t *data);
 
-  // Write camera data to image file as well 
+  // Write camera data to image file as well
   private: void WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *ts);
 
   // Write fiducial data to file
   private: void WriteFiducial(player_fiducial_data_t *data);
-  
+
   // Write GPS data to file
   private: void WriteGps(player_gps_data_t *data);
 
@@ -273,7 +273,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   WriteLogDevice *device;
   time_t t;
   struct tm *ts;
-  
+
   this->file = NULL;
 
   // Construct default filename from date and time.  Note that we use
@@ -287,7 +287,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
            this->default_basename);
 
   // Let user override default filename
-  strcpy(this->filename, 
+  strcpy(this->filename,
          cf->ReadString(section, "filename", this->default_filename));
 
   // Default enabled?
@@ -297,7 +297,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
     this->enable_default = false;
 
   this->device_count = 0;
-  
+
   // Get a list of input devices
   for (i = 0; i < cf->GetTupleCount(section, "requires"); i++)
   {
@@ -306,7 +306,7 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
       this->SetError(-1);
       return;
     }
-    
+
     // Add to our device table
     assert(this->device_count < (int) (sizeof(this->devices) / sizeof(this->devices[0])));
     device = this->devices + this->device_count++;
@@ -427,7 +427,7 @@ int WriteLog::Setup()
 
   // Start device thread
   this->StartThread();
-  
+
   return 0;
 }
 
@@ -454,7 +454,7 @@ int WriteLog::Shutdown()
     device->device->Unsubscribe(this->InQueue);
     device->device = NULL;
   }
-  
+
   return 0;
 }
 
@@ -494,13 +494,13 @@ WriteLog::CloseFile()
   }
 }
 
-int 
-WriteLog::ProcessMessage(MessageQueue * resp_queue, 
-                         player_msghdr * hdr, 
+int
+WriteLog::ProcessMessage(MessageQueue * resp_queue,
+                         player_msghdr * hdr,
                          void * data)
 {
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_LOG_REQ_SET_WRITE_STATE, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LOG_REQ_SET_WRITE_STATE,
                            this->device_addr))
   {
     if(hdr->size != sizeof(player_log_set_write_state_t))
@@ -510,7 +510,7 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
       return(-1);
     }
     player_log_set_write_state_t* sreq = (player_log_set_write_state_t*)data;
-		
+
     if(sreq->state)
     {
       puts("WriteLog: start logging");
@@ -521,14 +521,14 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
       puts("WriteLog: stop logging");
       this->enable = false;
     }
-    
+
     // send an empty ACK
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_LOG_REQ_SET_WRITE_STATE);
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOG_REQ_GET_STATE, this->device_addr))
   {
     if(hdr->size != 0)
@@ -539,7 +539,7 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
     }
 
     player_log_get_state_t greq;
-    
+
     greq.type = PLAYER_LOG_TYPE_WRITE;
     if(this->enable)
       greq.state = 1;
@@ -553,7 +553,7 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
                   (void*)&greq, sizeof(greq), NULL);
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOG_REQ_SET_FILENAME, this->device_addr))
   {
     if(hdr->size < sizeof(uint32_t))
@@ -617,13 +617,13 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void 
+void
 WriteLog::Main(void)
 {
   while (1)
   {
     pthread_testcancel();
-    
+
     // Wait on my queue
     this->Wait();
 
@@ -635,8 +635,8 @@ WriteLog::Main(void)
 
 ////////////////////////////////////////////////////////////////////////////
 // Write data to file
-void WriteLog::Write(WriteLogDevice *device, 
-                     player_msghdr_t* hdr, 
+void WriteLog::Write(WriteLogDevice *device,
+                     player_msghdr_t* hdr,
                      void *data)
 {
   //char host[256];
@@ -646,17 +646,17 @@ void WriteLog::Write(WriteLogDevice *device,
   assert(device);
   ::lookup_interface_code(device->addr.interf, &iface);
   //gethostname(host, sizeof(host));
-  
+
   // Write header info
   fprintf(this->file, "%014.3f %u %u %s %02u %03u %03u ",
           hdr->timestamp,
-          device->addr.host, 
-          device->addr.robot, 
-          iface.name, 
-          device->addr.index, 
+          device->addr.host,
+          device->addr.robot,
+          iface.name,
+          device->addr.index,
           hdr->type,
           hdr->subtype);
-          
+
 
   int retval;
   // Write the data
@@ -705,12 +705,12 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
 #endif
     default:
-      PLAYER_WARN1("unsupported interface type [%s]", 
+      PLAYER_WARN1("unsupported interface type [%s]",
                    ::lookup_interface_name(0, iface.interf));
       retval = -1;
       break;
   }
-  
+
   if(retval < 0)
     PLAYER_WARN2("not logging message to interface \"%s\" with subtype %d",
                  ::lookup_interface_name(0, iface.interf), hdr->subtype);
@@ -720,7 +720,7 @@ void WriteLog::Write(WriteLogDevice *device,
   // Flush the data (some drivers produce a lot of data; we dont want
   // it to back up and slow us down later).
   fflush(this->file);
-  
+
   return;
 }
 
@@ -728,8 +728,8 @@ void WriteLog::Write(WriteLogDevice *device,
 /** @{ */
 
 /** @defgroup player_driver_writelog_laser Laser format
- 
-@brief @ref player_interface_laser format 
+
+@brief @ref player_interface_laser format
 
 The format for each @ref player_interface_laser message is:
   - min_angle (float): minimum scan angle, in radians
@@ -776,7 +776,7 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           // resolution field.
 
           fprintf(this->file, "%04d %+07.3f %+07.3f %+07.3f %+07.4f %+07.4f %+.8f %+07.4f %04d ",
-                  scanpose->scan.id, 
+                  scanpose->scan.id,
                   scanpose->pose.px, scanpose->pose.py, scanpose->pose.pa,
                   scanpose->scan.min_angle, scanpose->scan.max_angle,
                   scanpose->scan.resolution, scanpose->scan.max_range,
@@ -811,10 +811,10 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
 }
 
 /** @defgroup player_driver_writelog_position Position format
- 
-@brief @ref player_interface_position format 
 
-The format for each @ref player_interface_position message is:
+@brief @ref player_interface_position2d format
+
+The format for each @ref player_interface_position2d message is:
   - xpos (float): in meters
   - ypos (float): in meters
   - yaw (float): in radians
@@ -835,9 +835,9 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
       {
         case PLAYER_POSITION2D_DATA_STATE:
           {
-            player_position2d_data_t* pdata = 
+            player_position2d_data_t* pdata =
                     (player_position2d_data_t*)data;
-            fprintf(this->file, 
+            fprintf(this->file,
                     "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f %+07.3f %d",
                     pdata->pos.px,
                     pdata->pos.py,
@@ -858,9 +858,9 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
       {
         case PLAYER_POSITION2D_REQ_GET_GEOM:
           {
-            player_position2d_geom_t* gdata = 
+            player_position2d_geom_t* gdata =
                     (player_position2d_geom_t*)data;
-            fprintf(this->file, 
+            fprintf(this->file,
                     "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f",
                     gdata->pose.px,
                     gdata->pose.py,
@@ -880,8 +880,8 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 }
 
 /** @defgroup player_driver_writelog_sonar Sonar format
- 
-@brief @ref player_interface_sonar format 
+
+@brief @ref player_interface_sonar format
 
 The format for each @ref player_interface_sonar message is:
   - pose_count (int): number of sonar poses to follow
@@ -893,7 +893,7 @@ The format for each @ref player_interface_sonar message is:
   - list of readings; for each reading:
     - range (float): in meters
 */
-int 
+int
 WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
 {
   unsigned int i;
@@ -910,11 +910,11 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
       {
         case PLAYER_SONAR_DATA_GEOM:
           // Format:
-          //   pose_count x0 y0 a0 x1 y1 a1 ...  
+          //   pose_count x0 y0 a0 x1 y1 a1 ...
           geom = (player_sonar_geom_t*)data;
           fprintf(this->file, "%u ", geom->poses_count);
           for(i=0;i<geom->poses_count;i++)
-            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
                     geom->poses[i].px,
                     geom->poses[i].py,
                     geom->poses[i].pa);
@@ -938,11 +938,11 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
       {
         case PLAYER_SONAR_REQ_GET_GEOM:
           // Format:
-          //   pose_count x0 y0 a0 x1 y1 a1 ...  
+          //   pose_count x0 y0 a0 x1 y1 a1 ...
           geom = (player_sonar_geom_t*)data;
           fprintf(this->file, "%u ", geom->poses_count);
           for(i=0;i<geom->poses_count;i++)
-            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ", 
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
                     geom->poses[i].px,
                     geom->poses[i].py,
                     geom->poses[i].pa);
@@ -958,8 +958,8 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
 
 #if 0
 /** @defgroup player_driver_writelog_blobfinder Blobfinder format
- 
-@brief @ref player_interface_blobfinder format 
+
+@brief @ref player_interface_blobfinder format
 
 The format for each @ref player_interface_blobfinder message is:
   - width (int): in pixels, of image
@@ -972,7 +972,7 @@ The format for each @ref player_interface_blobfinder message is:
     - x y (ints): in pixels, of blob center
     - left right top bottom (ints): in pixels, of bounding box
     - range (int): in mm, of range to blob (if supported)
- 
+
 */
 void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
 {
@@ -996,14 +996,14 @@ void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
             HUINT16(data->blobs[i].bottom),
             MM_M(HUINT16(data->blobs[i].range)));
   }
-  
+
   return;
 }
 
 
 /** @defgroup player_driver_writelog_camera Camera format
- 
-@brief @ref player_interface_camera format 
+
+@brief @ref player_interface_camera format
 
 The format for each @ref player_interface_camera message is:
   - width (int): in pixels
@@ -1023,7 +1023,7 @@ void WriteLog::WriteCamera(player_camera_data_t *data)
           HUINT16(data->width), HUINT16(data->height),
           data->bpp, data->format, data->compression,
           HUINT32(data->image_size));
-  
+
   // Check image size
   src_size = HUINT32(data->image_size);
   dst_size = ::EncodeHexSize(src_size);
@@ -1035,13 +1035,13 @@ void WriteLog::WriteCamera(player_camera_data_t *data)
   // Write image bytes
   fprintf(this->file, str);
   free(str);
-  
+
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Write camera data to image file as well 
+// Write camera data to image file as well
 void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *data, struct timeval *time)
 {
   FILE *file;
@@ -1052,10 +1052,10 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
     PLAYER_WARN("unsupported compression method");
     return;
   }
-  
+
   snprintf(filename, sizeof(filename), "%s_camera_%02d_%06d.pnm",
            this->default_basename, device->id.index, device->cameraFrame++);
-  
+
   file = fopen(filename, "w+");
   if (file == NULL)
     return;
@@ -1076,16 +1076,16 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
   {
     PLAYER_WARN("unsupported image format");
   }
-  
+
   fclose(file);
-  
+
   return;
 }
 
 
 /** @defgroup player_driver_writelog_fiducial Fiducial format
- 
-@brief @ref player_interface_fiducial format 
+
+@brief @ref player_interface_fiducial format
 
 The format for each @ref player_interface_fiducial message is:
   - count (int): number of fiducials to follow
@@ -1128,14 +1128,14 @@ void WriteLog::WriteFiducial(player_fiducial_data_t *data)
             MM_M(HINT32(data->fiducials[i].urot[1])),
             MM_M(HINT32(data->fiducials[i].urot[2])));
   }
-  
+
   return;
 }
 
 
 /** @defgroup player_driver_writelog_gps GPS format
- 
-@brief @ref player_interface_gps format 
+
+@brief @ref player_interface_gps format
 
 The format for each @ref player_interface_gps message is:
   - time (float): current GPS time, in seconds
@@ -1165,21 +1165,21 @@ void WriteLog::WriteGps(player_gps_data_t *data)
           (double) HINT32(data->longitude) / (1e7),
           MM_M(HINT32(data->altitude)),
           CM_M(HINT32(data->utm_e)),
-          CM_M(HINT32(data->utm_n)), 
+          CM_M(HINT32(data->utm_n)),
           (double) HINT16(data->hdop) / 10,
           (double) HINT16(data->vdop) / 10,
           MM_M(HINT32(data->err_horz)),
           MM_M(HINT32(data->err_vert)),
           (int) data->quality,
           (int) data->num_sats);
-  
+
   return;
 }
 
 
 /** @defgroup player_driver_writelog_joystick Joystick format
- 
-@brief @ref player_interface_joystick format 
+
+@brief @ref player_interface_joystick format
 
 The format for each @ref player_interface_joystick message is:
   - xpos (int): unscaled X position of joystick
@@ -1203,8 +1203,8 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 
 
 /** @defgroup player_driver_writelog_position3d Position3d format
- 
-@brief @ref player_interface_position3d format 
+
+@brief @ref player_interface_position3d format
 
 The format for each @ref player_interface_position3d message is:
   - xpos (float): in meters
@@ -1248,8 +1248,8 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
 
 
 /** @defgroup player_driver_writelog_power Power format
- 
-@brief @ref player_interface_power format 
+
+@brief @ref player_interface_power format
 
 The format for each @ref player_interface_power message is:
   - charge (float): in volts
@@ -1262,8 +1262,8 @@ void WriteLog::WritePower(player_power_data_t *data)
 
 
 /** @defgroup player_driver_writelog_wifi WiFi format
- 
-@brief @ref player_interface_wifi format 
+
+@brief @ref player_interface_wifi format
 
 The format for each @ref player_interface_wifi message is:
   - link_count (int): number of nodes to follow
@@ -1282,7 +1282,7 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
 {
   int i;
   char *mac, *ip, *essid;
-  
+
   fprintf(this->file, "%04d ", HUINT16(data->link_count));
 
   for (i = 0; i < ntohs(data->link_count); i++)
@@ -1313,8 +1313,8 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
 
 
 /** @defgroup player_driver_writelog_truth Truth format
- 
-@brief @ref player_interface_truth format 
+
+@brief @ref player_interface_truth format
 
 The format for each @ref player_interface_truth message is:
   - x (float): in meters
@@ -1333,7 +1333,7 @@ void WriteLog::WriteTruth(player_truth_data_t *data)
           MM_M(HINT32(data->rot[0])),
           MM_M(HINT32(data->rot[1])),
           MM_M(HINT32(data->rot[2])));
-  
+
   return;
 }
 #endif

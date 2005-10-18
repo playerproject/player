@@ -841,7 +841,7 @@ typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
-  
+
   /** Gripper geometry in the robot cs: pose gives the position and
       orientation, size gives the extent.  These values are initially
       zero, but can be filled in by calling
@@ -881,7 +881,7 @@ int playerc_gripper_unsubscribe(playerc_gripper_t *device);
 int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
 
 /** @brief Print a human-readable version of the gripper state. If
-    set, the string <prefix> is printed before the state string. */
+    set, the string &lt;prefix&gt; is printed before the state string. */
 void playerc_gripper_printout( playerc_gripper_t *device, const char* prefix );
 
 
@@ -1024,10 +1024,10 @@ int playerc_laser_unsubscribe(playerc_laser_t *device);
 @param min_angle, max_angle Start and end angles for the scan
 (radians).
 
-@param resolution Angular resolution in radians. Valid values depend on the 
+@param resolution Angular resolution in radians. Valid values depend on the
 underlyling driver.
 
-@param range_res Range resolution in m.  Valid values depend on the 
+@param range_res Range resolution in m.  Valid values depend on the
 underlyling driver.
 
 @param intensity Intensity flag; set to 1 to enable reflection intensity data.
@@ -1049,10 +1049,10 @@ int playerc_laser_set_config(playerc_laser_t *device,
 @param min_angle, max_angle Start and end angles for the scan
 (radians).
 
-@param resolution Angular resolution in radians. Valid values depend on the 
+@param resolution Angular resolution in radians. Valid values depend on the
 underlyling driver.
 
-@param range_res Range resolution in m.  Valid values depend on the 
+@param range_res Range resolution in m.  Valid values depend on the
 underlyling driver.
 
 @param intensity Intensity flag; set to 1 to enable reflection intensity data.
@@ -1078,8 +1078,8 @@ int playerc_laser_get_geom(playerc_laser_t *device);
 
 /** @brief Print a human-readable summary of the laser state on
     stdout. */
-void playerc_laser_printout( playerc_laser_t * device, 
-			  const char* prefix );
+void playerc_laser_printout( playerc_laser_t * device,
+        const char* prefix );
 
 /** @} */
 /**************************************************************************/
@@ -1444,7 +1444,7 @@ int playerc_motor_set_cmd_pose(playerc_motor_t *device,
 /** Set the odometry offset
 
 @param device Pointer to proxy object.
-@param gt Odometry value in rad.
+@param ot Odometry value in rad.
 
 */
 int playerc_motor_set_odom(playerc_motor_t *device, double ot);
