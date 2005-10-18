@@ -110,7 +110,7 @@ sensor models.
 
 - @ref player_interface_localize : this interface provides a (sort of)
   representative sample of the current pose hypotheses, weighted by likelihood.
-- @ref player_interface_position : this interface provides just the
+- @ref player_interface_position2d : this interface provides just the
   most-likely hypothesis, formatted as position data, which you can
   (at your peril) pretend came from a perfect odometry system
 
@@ -118,14 +118,14 @@ sensor models.
 
 The @p amcl driver requires the following interfaces, some of them named:
 
-- "odometry" @ref player_interface_position : source of odometry information
+- "odometry" @ref player_interface_position2d : source of odometry information
 - @ref player_interface_laser : source of laser scans
 - "laser" @ref player_interface_map : a map in which to localize the
    robot, by fusing odometry and laser data.
-- In principle supported, but currently disabled are: 
-    - @ref player_interface_fiducial 
-    - "imu" @ref player_interface_position
-    - @ref player_interface_sonar 
+- In principle supported, but currently disabled are:
+    - @ref player_interface_fiducial
+    - "imu" @ref player_interface_position2d
+    - @ref player_interface_sonar
     - @ref player_interface_gps
     - @ref player_interface_wifi
 
@@ -233,13 +233,13 @@ range finder:
 @verbatim
 driver
 (
-  name "p2os_position" 
+  name "p2os_position"
   provides ["odometry::position:0"]
   port "/dev/ttyS0"
 )
 driver
 (
-  name "sicklms200" 
+  name "sicklms200"
   provides ["laser:0"]
   port "/dev/ttyS2"
 )
@@ -315,7 +315,7 @@ driver
 )
 @endverbatim
 The second Player server will listen on port 7000; clients connecting
-to this server will see a robot with @ref player_interface_position,
+to this server will see a robot with @ref player_interface_position2d,
 @ref player_interface_laser and @ref player_interface_localize devices.
 The map file @p cave.pnm can be the same file used by Stage to create the
 world bitmap (note the @p negate option to the @ref player_driver_mapfile
@@ -382,7 +382,7 @@ void AdaptiveMCL_Register(DriverTable* table)
 // Useful macros
 #define AMCL_DATASIZE MAX(sizeof(player_localize_data_t), sizeof(player_position_data_t))
 
-  
+
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
@@ -401,7 +401,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   {
     if(this->AddInterface(this->localize_addr))
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
@@ -412,7 +412,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   {
     if(this->AddInterface(this->position_addr))
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
@@ -424,7 +424,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   player_devaddr_t odom_addr;
   player_devaddr_t laser_addr;
   //player_devaddr_t fiducial_addr;
-  
+
   // Create odometry sensor
   if(cf->ReadDeviceAddr(&odom_addr, section, "requires",
                         PLAYER_POSITION2D_CODE, -1, "odometry") == 0)
@@ -473,8 +473,8 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   // Load sensor settings
   for (i = 0; i < this->sensor_count; i++)
-    this->sensors[i]->Load(cf, section);  
-  
+    this->sensors[i]->Load(cf, section);
+
   // Create the sensor data queue
   this->q_len = 0;
   this->q_start = 0;
@@ -518,7 +518,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   this->enable_gui = cf->ReadInt(section, "enable_gui", 0);
 #endif
 
-  
+
   return;
 }
 
@@ -549,7 +549,7 @@ AdaptiveMCL::~AdaptiveMCL(void)
 int AdaptiveMCL::Setup(void)
 {
   int i;
-    
+
   PLAYER_MSG0(2, "setup");
 
   // Create the particle filter
@@ -557,7 +557,7 @@ int AdaptiveMCL::Setup(void)
   this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
   this->pf->pop_err = this->pf_err;
   this->pf->pop_z = this->pf_z;
-  
+
   // UGLY HACK: Setting this->driverthread to a non-zero value, so that
   // this device won't get Update()d during any of the Request()s that may
   // occur during the sensor Setup()s below.  The problem arises because
@@ -578,11 +578,11 @@ int AdaptiveMCL::Setup(void)
 
   // Initial hypothesis list
   this->hyp_count = 0;
-  
+
   // Start the driver thread.
   PLAYER_MSG0(2, "running");
   this->StartThread();
-  
+
   return 0;
 }
 
@@ -592,9 +592,9 @@ int AdaptiveMCL::Setup(void)
 int AdaptiveMCL::Shutdown(void)
 {
   int i;
-  
+
   PLAYER_MSG0(2, "shutting down");
-    
+
   // Stop the driver thread.
   this->StopThread();
 
@@ -631,7 +631,7 @@ void AdaptiveMCL::Update(void)
         break;
     }
   }
-  
+
   return;
 }
 
@@ -660,21 +660,21 @@ void AdaptiveMCL::Push(AMCLSensorData *data)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Take a peek at the queue 
+// Take a peek at the queue
 AMCLSensorData *AdaptiveMCL::Peek(void)
 {
   int i;
 
   this->Lock();
-  
+
   if (this->q_len == 0)
   {
-    this->Unlock();  
+    this->Unlock();
     return NULL;
   }
   i = this->q_start % this->q_size;
 
-  this->Unlock();  
+  this->Unlock();
   return this->q_data[i];
 }
 
@@ -686,33 +686,33 @@ AMCLSensorData *AdaptiveMCL::Pop(void)
   int i;
 
   this->Lock();
-  
+
   if (this->q_len == 0)
   {
-    this->Unlock();  
+    this->Unlock();
     return NULL;
   }
   i = this->q_start++ % this->q_size;
   this->q_len--;
 
-  this->Unlock();  
+  this->Unlock();
   return this->q_data[i];
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void AdaptiveMCL::Main(void) 
-{  
+void AdaptiveMCL::Main(void)
+{
   struct timespec sleeptime;
-  
+
   // WARNING: this only works for Linux
   // Run at a lower priority
   nice(10);
 
 #ifdef INCLUDE_RTKGUI
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-  
+
   // Start the GUI
   if (this->enable_gui)
     this->SetupGUI();
@@ -722,7 +722,7 @@ void AdaptiveMCL::Main(void)
   // Open file for logging results
   this->outfile = fopen("amcl.out", "w+");
 #endif
-    
+
   while (true)
   {
 #ifdef INCLUDE_RTKGUI
@@ -733,7 +733,7 @@ void AdaptiveMCL::Main(void)
     }
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 #endif
-    
+
     // Sleep for 1ms (will actually take longer than this).
     sleeptime.tv_sec = 0;
     sleeptime.tv_nsec = 1000000L;
@@ -757,7 +757,7 @@ void AdaptiveMCL::Main(void)
     // Initialize the filter if we havent already done so
     if (!this->pf_init)
       this->InitFilter();
-    
+
     // Update the filter
     if (this->UpdateFilter())
     {
@@ -796,7 +796,7 @@ void AdaptiveMCL::MainQuit()
   // Close the log file
   fclose(this->outfile);
 #endif
-  
+
   return;
 }
 
@@ -806,7 +806,7 @@ void AdaptiveMCL::MainQuit()
 void AdaptiveMCL::InitFilter(void)
 {
   ::pf_init(this->pf, this->pf_init_pose_mean, this->pf_init_pose_cov);
-  
+
   return;
 }
 
@@ -833,8 +833,8 @@ bool AdaptiveMCL::UpdateFilter(void)
     return false;
   if (!data->sensor->is_action)
     return false;
-  
-  // Use the action timestamp 
+
+  // Use the action timestamp
   ts = data->time;
 
   // HACK
@@ -853,7 +853,7 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // See if we should update the filter
     update = fabs(delta.v[0]) > this->min_dr ||
-      fabs(delta.v[1]) > this->min_dr ||   
+      fabs(delta.v[1]) > this->min_dr ||
       fabs(delta.v[2]) > this->min_da;
   }
 
@@ -886,7 +886,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     // Modify the delta in the action data so the filter gets
     // updated correctly
     ((AMCLOdomData*) data)->delta = delta;
-    
+
     // Use the action data to update the filter
     data->sensor->UpdateAction(this->pf, data);
     delete data; data = NULL;
@@ -926,7 +926,7 @@ bool AdaptiveMCL::UpdateFilter(void)
       // Discard data
       delete data; data = NULL;
     }
-    
+
     // Resample the particles
     pf_update_resample(this->pf);
 
@@ -950,7 +950,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     if (this->enable_gui)
       this->UpdateGUI();
 #endif
-    
+
     // Encode data to send to server
     this->PutDataLocalize(ts);
     this->PutDataPosition(ts, delta);
@@ -971,7 +971,7 @@ bool AdaptiveMCL::UpdateFilter(void)
       assert(data);
       delete data; data = NULL;
     }
-    
+
     // Encode data to send to server; only the position interface
     // gets updates every cycle
     this->PutDataPosition(ts, delta);
@@ -1011,7 +1011,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
   // Record the number of pending observations
   data.pending_count = 0;
   data.pending_time = 0.0;
-  
+
   // Encode the hypotheses
   data.hypoths_count = this->hyp_count;
   for (i = 0; i < this->hyp_count; i++)
@@ -1035,22 +1035,22 @@ void AdaptiveMCL::PutDataLocalize(double time)
     }
 
     data.hypoths[i].alpha = hyp->weight;
-        
+
     data.hypoths[i].mean.px = pose.v[0];
     data.hypoths[i].mean.py = pose.v[1];
     data.hypoths[i].mean.pa = pose.v[2];
-  
+
     data.hypoths[i].cov[0] = pose_cov.m[0][0];
     data.hypoths[i].cov[1] = pose_cov.m[1][1];
     data.hypoths[i].cov[2] = pose_cov.m[2][2];
   }
-  
+
   // sort according to weight
   qsort((void*)data.hypoths,data.hypoths_count,
         sizeof(player_localize_hypoth_t),&hypoth_compare);
 
   // Compute the length of the data packet
-  datalen = (sizeof(data) - sizeof(data.hypoths) + 
+  datalen = (sizeof(data) - sizeof(data.hypoths) +
              data.hypoths_count * sizeof(data.hypoths[0]));
 
   // Push data out
@@ -1075,7 +1075,7 @@ void AdaptiveMCL::PutDataPosition(double time, pf_vector_t delta)
   memset(&data,0,sizeof(data));
 
   max_weight = 0.0;
-  
+
   // Encode the hypotheses
   for (i = 0; i < this->hyp_count; i++)
   {
@@ -1117,15 +1117,15 @@ void AdaptiveMCL::PutDataPosition(double time, pf_vector_t delta)
 }
 
 // MessageHandler
-int 
-AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue, 
-                            player_msghdr * hdr, 
+int
+AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
+                            player_msghdr * hdr,
                             void * data)
 {
   player_localize_set_pose_t* setposereq;
 
   // Is it a request to set the filter's pose?
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                            PLAYER_LOCALIZE_REQ_SET_POSE,
                            this->localize_addr))
   {
@@ -1136,7 +1136,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
       return(-1);
     }
     setposereq = (player_localize_set_pose_t*)data;
-    
+
     pf_vector_t pose;
     pf_matrix_t cov;
 
@@ -1161,7 +1161,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
     return(0);
   }
   // Is it a request for the current particle set?
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                                 this->localize_addr))
   {
@@ -1179,7 +1179,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
     pf_sample_set_t *set;
     pf_sample_t *sample;
     size_t i;
-  
+
     pf_get_cep_stats(this->pf, &mean, &var);
 
     resp.mean.px = mean.v[0];
@@ -1189,7 +1189,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
 
     set = this->pf->sets + this->pf->current_set;
 
-    resp.particles_count = 
+    resp.particles_count =
             MIN(set->sample_count,PLAYER_LOCALIZE_PARTICLES_MAX);
 
     // TODO: pick representative particles
@@ -1219,7 +1219,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
 int AdaptiveMCL::SetupGUI(void)
 {
   int i;
-  
+
   // Initialize RTK
   rtk_init(NULL, NULL);
 
@@ -1284,7 +1284,7 @@ int AdaptiveMCL::SetupGUI(void)
 int AdaptiveMCL::ShutdownGUI(void)
 {
   int i;
-  
+
   // Finalize the sensor GUI's
   for (i = 0; i < this->sensor_count; i++)
     this->sensors[i]->ShutdownGUI(this->canvas, this->robot_fig);
@@ -1292,12 +1292,12 @@ int AdaptiveMCL::ShutdownGUI(void)
   rtk_fig_destroy(this->robot_fig);
   rtk_fig_destroy(this->pf_fig);
   rtk_fig_destroy(this->map_fig);
-  
+
   rtk_canvas_destroy(this->canvas);
   rtk_app_destroy(this->app);
 
   rtk_app_main_term(this->app);
-  
+
   return 0;
 }
 
@@ -1329,7 +1329,7 @@ void AdaptiveMCL::DrawPoseEst()
   double max_weight;
   amcl_hyp_t *hyp;
   pf_vector_t pose;
-  
+
   this->Lock();
 
   max_weight = -1;
@@ -1343,15 +1343,15 @@ void AdaptiveMCL::DrawPoseEst()
       pose = hyp->pf_pose_mean;
     }
   }
-  
+
   this->Unlock();
 
   if (max_weight < 0.0)
     return;
-    
+
   // Shift the robot figure
   rtk_fig_origin(this->robot_fig, pose.v[0], pose.v[1], pose.v[2]);
- 
+
   return;
 }
 

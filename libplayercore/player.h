@@ -1202,10 +1202,10 @@ typedef struct player_gripper_cmd
 } player_gripper_cmd_t;
 
 
-/** @brief Geometry config 
+/** @brief Geometry config
 
 The geometry (pose and size) of the gripper device can be queried
-using the PLAYER_FIDUCIAL_GET_GEOM request. 
+using the PLAYER_FIDUCIAL_GET_GEOM request.
 */
 
 typedef struct player_gripper_geom
@@ -2265,7 +2265,7 @@ typedef struct player_device_datafreq_req
 /** @brief Configuration request: Authentication.
 
 If server authentication has been enabled (by providing '-key &lt;key&gt;'
-on the command-line; see @ref commandline); then each client must
+on the command-line); then each client must
 authenticate itself before otherwise interacting with the server.
 To authenticate, send a request with this format.
 
