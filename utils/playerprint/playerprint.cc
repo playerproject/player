@@ -1,5 +1,8 @@
 /*
  * a utility to print out data from any of a number of interfaces
+ *
+ * $Id$
+ *
  */
 
 /** @addtogroup utils Utilities */
@@ -19,13 +22,13 @@ driver.
 playerprint is installed alongside player in $prefix/bin, so if player is
 in your PATH, then playerprint should also be.  Command-line usage is:
 @verbatim
-$ playerprint [-t] [-u <rate>] [-h <host>] [-p <port>] <device>
+$ playerprint [-r <rate>] [-h <host>] [-p <port>] [-i <index>] <device>
 @endverbatim
 Where the options are:
 - -h &lt;host&gt;: connect to Player on this host (default: localhost)
 - -p &lt;port&gt;: connect to Player on this TCP port (default: 6665)
-- -t : print the timestamp before the data (default: don't print timestamps)
-- -u &lt;rate&gt;: request data update at &lt;rate&gt; in Hz (default: 10Hz)
+- -r &lt;rate&gt;: request data update at &lt;rate&gt; in Hz (default: 10Hz)
+- -i &lt;index&gt;: the index of the device (default: 0)
 
 For example:
 <pre>
@@ -35,19 +38,27 @@ For example:
 @par Features
 
 playerprint can print out data for the following kinds of devices:
+- @ref player_interface_actarray
 - @ref player_interface_blobfinder
 - @ref player_interface_bumper
-- @ref player_interface_energy
+- @ref player_interface_camera
+- @ref player_interface_dio
 - @ref player_interface_fiducial
-- @ref player_interface_gps
 - @ref player_interface_gripper
 - @ref player_interface_ir
 - @ref player_interface_laser
+- @ref player_interface_limb
 - @ref player_interface_localize
-- @ref player_interface_position
+- @ref player_interface_log
+- @ref player_interface_map
+- @ref player_interface_planner
+- @ref player_interface_position2d
 - @ref player_interface_position3d
+- @ref player_interface_power
 - @ref player_interface_ptz
+- @ref player_interface_simulation
 - @ref player_interface_sonar
+- @ref player_interface_speech
 - @ref player_interface_truth
 - @ref player_interface_wifi
 
@@ -58,171 +69,253 @@ playerprint can print out data for the following kinds of devices:
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>  // for atoi(3)
-#include <libplayerc++/playerc++.h>  // for libplayerc client stuff
-#include <string.h> /* for strcpy() */
+#include <libplayerc/playerc.h>      // for libplayerc client stuff
+#include <libplayerc++/playerc++.h>  // for libplayerc++ client stuff
+
 #include <assert.h>
-#include <libplayercore/playercore.h>
-
-using namespace PlayerCc;
-
-//#include <sys/time.h>
 
 #define USAGE \
   "USAGE: playerprint [-h <host>] [-p <port>] <device>\n" \
-  "       -h <host>: connect to Player on this host\n" \
-  "       -p <port>: connect to Player on this TCP port\n" \
-  "       -t : print the proxy's timestamp before the data\n" \
-  "       -u <rate>: request data update at <rate> in Hz\n"
+  "       -h <host>:  connect to Player on this host\n" \
+  "       -p <port>:  connect to Player on this TCP port\n" \
+  "       -r <rate>:  request data update at <rate> in Hz\n" \
+  "       -i <index>: the index of the device\n"
 
-char host[256] = "localhost";
-int port = PLAYER_PORTNUM;
-int idx = 0;
-char* dev = NULL;
-bool print_timestamp = false;
-int data_rate = 10;
+std::string g_hostname= PlayerCc::PLAYER_HOSTNAME;
+int32_t g_port        = PlayerCc::PLAYER_PORTNUM;
+int16_t g_index       = 0;
+int16_t g_rate        = 10;
 
-/* easy little command line argument parser */
+std::string g_device("");
+
 void
-parse_args(int argc, char** argv)
+print_usage()
 {
-  int i;
-  char* colon;
-
-  if(argc < 2)
-  {
-    puts(USAGE);
-    exit(1);
-  }
-
-  i=1;
-  while(i<argc-1)
-  {
-    if(!strcmp(argv[i],"-h"))
-    {
-      if(++i<argc-1)
-        strcpy(host,argv[i]);
-      else
-      {
-        puts(USAGE);
-        exit(1);
-      }
-    }
-    else if(!strcmp(argv[i],"-u"))
-    {
-      if(++i<argc-1)
-        data_rate = atoi(argv[i]);
-      else
-      {
-        puts(USAGE);
-        exit(1);
-      }
-    }
-    else if(!strcmp(argv[i],"-p"))
-    {
-      if(++i<argc-1)
-        port = atoi(argv[i]);
-      else
-      {
-        puts(USAGE);
-        exit(1);
-      }
-    }
-    else if(!strcmp(argv[i],"-t"))
-      {
-  print_timestamp = true;
-      }
-    else
-      {
-  puts(USAGE);
-  exit(1);
-      }
-    i++;
-  }
-
-  dev = argv[argc-1];
-  if((colon = strchr(argv[argc-1],':')))
-  {
-    *colon = '\0';
-    if(strlen(colon+1))
-      idx = atoi(colon+1);
-  }
+  using namespace std;
+  cout << "USAGE: playerprint [-r <rate>] [-h <host>] [-p <port>] [-i <index>] <device>" << endl;
+  cout << "       -h <host>:  connect to Player on this host" << endl;
+  cout << "       -p <port>:  connect to Player on this TCP port" << endl;
+  cout << "       -r <rate>:  request data update at <rate> in Hz" << endl;
+  cout << "       -i <index>: the index of the device" << endl;
 }
 
-int main(int argc, char **argv)
+int
+get_options(int argc, char **argv)
 {
-  parse_args(argc,argv);
+  int ch=0, errflg=0;
+  const char* optflags = "i:h:p:r:";
 
-  player_interface_t interface;
-  //int ret = lookup_interface(dev, &interface);
+  while((ch=getopt(argc, argv, optflags))!=-1)
+  {
+    switch(ch)
+    {
+      /* case values must match long_options */
+      case 'i':
+          g_index = atoi(optarg);
+          break;
+      case 'h':
+          g_hostname = optarg;
+          break;
+      case 'p':
+          g_port = atoi(optarg);
+          break;
+      case 'r':
+          std::cerr << "Data rate not yet implemented!" << std::endl;
+          g_rate = atoi(optarg);
+          break;
+      case '?':
+      case ':':
+      default:
+        return (-1);
+    }
+  }
+
+  if(optind >= argc)
+    return(-1);
+
+  g_device = argv[optind];
+
+  return (0);
+}
+
+int
+main(int argc, char **argv)
+{
+  using namespace PlayerCc;
+
+  if(get_options(argc, argv) < 0)
+  {
+    print_usage();
+    exit(-1);
+  }
 
   ClientProxy* cp;
 
   // connect to Player
-  PlayerClient pclient(host, port);
+  PlayerClient client(g_hostname, g_port);
 
-  switch(interface.interf)
+  int code = client.LookupCode(g_device);
+
+  // this code would be much cleaner w/ callbacks on read :)
+  switch(code)
   {
-    case PLAYER_LASER_CODE:
-      cp = (ClientProxy*)new LaserProxy(&pclient,idx);
+//    case PLAYER__CODE:
+//      cp = (ClientProxy*)new Proxy(&client,g_index);
+//      break;
+    case PLAYER_ACTARRAY_CODE:
+      cp = (ClientProxy*)new ActArrayProxy(&client,g_index);
       break;
+    case PLAYER_BLOBFINDER_CODE:
+      cp = (ClientProxy*)new BlobfinderProxy(&client,g_index);
+      break;
+    case PLAYER_BUMPER_CODE:
+      cp = (ClientProxy*)new BumperProxy(&client,g_index);
+      break;
+    case PLAYER_CAMERA_CODE:
+      cp = (ClientProxy*)new CameraProxy(&client,g_index);
+      break;
+    case PLAYER_DIO_CODE:
+      cp = (ClientProxy*)new DioProxy(&client,g_index);
+      break;
+    case PLAYER_FIDUCIAL_CODE:
+      cp = (ClientProxy*)new FiducialProxy(&client,g_index);
+      break;
+    case PLAYER_GRIPPER_CODE:
+      cp = (ClientProxy*)new GripperProxy(&client,g_index);
+      break;
+    case PLAYER_IR_CODE:
+      cp = (ClientProxy*)new IrProxy(&client,g_index);
+      break;
+    case PLAYER_LASER_CODE:
+      cp = (ClientProxy*)new LaserProxy(&client,g_index);
+      break;
+    case PLAYER_LIMB_CODE:
+      cp = (ClientProxy*)new LimbProxy(&client,g_index);
+      break;
+    case PLAYER_LOCALIZE_CODE:
+      cp = (ClientProxy*)new LocalizeProxy(&client,g_index);
+      break;
+    case PLAYER_LOG_CODE:
+      cp = (ClientProxy*)new LogProxy(&client,g_index);
+      break;
+    case PLAYER_MAP_CODE:
+      cp = (ClientProxy*)new MapProxy(&client,g_index);
+      break;
+    case PLAYER_PLANNER_CODE:
+      cp = (ClientProxy*)new PlannerProxy(&client,g_index);
+      break;
+    case PLAYER_POSITION2D_CODE:
+      cp = (ClientProxy*)new Position2dProxy(&client,g_index);
+      break;
+    case PLAYER_POSITION3D_CODE:
+      cp = (ClientProxy*)new Position3dProxy(&client,g_index);
+      break;
+    case PLAYER_POWER_CODE:
+      cp = (ClientProxy*)new PowerProxy(&client,g_index);
+      break;
+    case PLAYER_PTZ_CODE:
+      cp = (ClientProxy*)new PtzProxy(&client,g_index);
+      break;
+    case PLAYER_SIMULATION_CODE:
+      cp = (ClientProxy*)new SimulationProxy(&client,g_index);
+      break;
+    case PLAYER_SONAR_CODE:
+      cp = (ClientProxy*)new SonarProxy(&client,g_index);
+      break;
+    case PLAYER_SPEECH_CODE:
+      cp = (ClientProxy*)new SpeechProxy(&client,g_index);
+      break;
+//    case PLAYER_TRUTH_CODE:
+//      cp = (ClientProxy*)new TruthProxy(&client,g_index);
+//      break;
+//    case PLAYER_WIFI_CODE:
+//      cp = (ClientProxy*)new WifiProxy(&client,g_index);
+//      break;
     default:
-      printf("Unknown interface \"%s\"\n", dev);
-      exit(1);
+      std::cout << "Unknown interface " << g_device << std::endl;
+      exit(-1);
   }
-
-/*  else if(!strcmp(dev,PLAYER_POSITION_STRING))
-    cp = new PositionProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_POSITION3D_STRING))
-    cp = (ClientProxy*)new Position3DProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_TRUTH_STRING))
-    cp = (ClientProxy*)new TruthProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_SONAR_STRING))
-    cp = (ClientProxy*)new SonarProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_LOCALIZE_STRING))
-    cp = (ClientProxy*)new LocalizeProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_FIDUCIAL_STRING))
-    cp = (ClientProxy*)new FiducialProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_GPS_STRING))
-    cp = (ClientProxy*)new GpsProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_PTZ_STRING))
-    cp = (ClientProxy*)new PtzProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_BLOBFINDER_STRING))
-    cp = (ClientProxy*)new BlobfinderProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_IR_STRING))
-    cp = (ClientProxy*)new IRProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_ENERGY_STRING))
-    cp = (ClientProxy*)new EnergyProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_BUMPER_STRING))
-    cp = (ClientProxy*)new BumperProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_WIFI_STRING))
-    cp = (ClientProxy*)new WiFiProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_GRIPPER_STRING))
-    cp = (ClientProxy*)new GripperProxy(&pclient,idx);
-  else if(!strcmp(dev,PLAYER_ACTARRAY_STRING))
-    cp = (ClientProxy*)new ActArrayProxy(&pclient,idx);
-  else
-  {
-    printf("Unknown interface \"%s\"\n", dev);
-    exit(1);
-  }*/
   assert(cp);
 
-  /* go into read-think-act loop */
-  printf("Entering Main Read Loop\n");
-  double last = -1.0;
   for(;;)
   {
     /* this blocks until new data comes; 10Hz by default */
-    pclient.Read();
+    client.Read();
 
-    printf("Read is now done\n");
-
-    switch(interface.interf)
+    switch(code)
     {
+      case PLAYER_ACTARRAY_CODE:
+        std::cout << *reinterpret_cast<ActArrayProxy *> (cp);
+        break;
+      case PLAYER_BLOBFINDER_CODE:
+        std::cout << *reinterpret_cast<BlobfinderProxy *> (cp);
+        break;
+      case PLAYER_BUMPER_CODE:
+        std::cout << *reinterpret_cast<BumperProxy *> (cp);
+        break;
+      case PLAYER_CAMERA_CODE:
+        std::cout << *reinterpret_cast<CameraProxy *> (cp);
+        break;
+      case PLAYER_DIO_CODE:
+        std::cout << *reinterpret_cast<DioProxy *> (cp);
+        break;
+      case PLAYER_FIDUCIAL_CODE:
+        std::cout << *reinterpret_cast<FiducialProxy *> (cp);
+        break;
+      case PLAYER_GRIPPER_CODE:
+        std::cout << *reinterpret_cast<GripperProxy *> (cp);
+        break;
+      case PLAYER_IR_CODE:
+        std::cout << *reinterpret_cast<IrProxy *> (cp);
+        break;
       case PLAYER_LASER_CODE:
         std::cout << *reinterpret_cast<LaserProxy *> (cp);
         break;
+      case PLAYER_LIMB_CODE:
+        std::cout << *reinterpret_cast<LimbProxy *> (cp);
+        break;
+      case PLAYER_LOCALIZE_CODE:
+        std::cout << *reinterpret_cast<LocalizeProxy *> (cp);
+        break;
+      case PLAYER_LOG_CODE:
+        std::cout << *reinterpret_cast<LogProxy *> (cp);
+        break;
+      case PLAYER_MAP_CODE:
+        std::cout << *reinterpret_cast<MapProxy *> (cp);
+        break;
+      case PLAYER_PLANNER_CODE:
+        std::cout << *reinterpret_cast<PlannerProxy *> (cp);
+        break;
+      case PLAYER_POSITION2D_CODE:
+        std::cout << *reinterpret_cast<Position2dProxy *> (cp);
+        break;
+      case PLAYER_POSITION3D_CODE:
+        std::cout << *reinterpret_cast<Position3dProxy *> (cp);
+        break;
+      case PLAYER_POWER_CODE:
+        std::cout << *reinterpret_cast<PowerProxy *> (cp);
+        break;
+      case PLAYER_PTZ_CODE:
+        std::cout << *reinterpret_cast<PtzProxy *> (cp);
+        break;
+      case PLAYER_SIMULATION_CODE:
+        std::cout << *reinterpret_cast<SimulationProxy *> (cp);
+        break;
+      case PLAYER_SONAR_CODE:
+        std::cout << *reinterpret_cast<SonarProxy *> (cp);
+        break;
+      case PLAYER_SPEECH_CODE:
+        std::cout << *reinterpret_cast<SpeechProxy *> (cp);
+        break;
+//      case PLAYER_TRUTH_CODE:
+//        std::cout << *reinterpret_cast<TruthProxy *> (cp);
+//        break;
+//      case PLAYER_WIFI_CODE:
+//        std::cout << *reinterpret_cast<WifiProxy *> (cp);
+//        break;
     }
+
+    std::cout << std::endl;
   }
 }
 
