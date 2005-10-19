@@ -241,6 +241,9 @@ class SickLMS200 : public Driver
 
     // Starup delay
     int startup_delay;
+
+    // Number of time to try connecting
+    int retry_limit;
   
     // Scan width and resolution.
     int scan_width, scan_res;
@@ -317,6 +320,7 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   // Serial rate
   this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
   this->current_rate = this->port_rate;
+  this->retry_limit = cf->ReadInt(section, "retry", 0) + 1;
 
 #ifdef HAVE_HI_SPEED_SERIAL
   this->can_do_hi_speed = true;
@@ -373,43 +377,49 @@ int SickLMS200::Setup()
   // for the laser to initialized
   sleep(this->startup_delay);
   
-  // Try connecting at the given rate
-  PLAYER_MSG1(2, "connecting at %d", this->port_rate);
-  if (ChangeTermSpeed(this->port_rate))
-    return 1;
-  if (SetLaserMode() == 0)
-    rate = this->port_rate;
-  else if (SetLaserMode() == 0)
-    rate = this->port_rate;
+  for(int i=0;i<this->retry_limit;i++)
+  {
+    // Try connecting at the given rate
+    PLAYER_MSG1(2, "connecting at %d", this->port_rate);
+    if (ChangeTermSpeed(this->port_rate))
+      return 1;
+    if (SetLaserMode() == 0)
+      rate = this->port_rate;
+    else if (SetLaserMode() == 0)
+      rate = this->port_rate;
 
-  // Try connecting at 9600
-  if (rate == 0 && this->port_rate != 9600)
-  {
-    PLAYER_MSG0(2, "connecting at 9600");
-    if (ChangeTermSpeed(9600))
-      return 1;
-    if (SetLaserMode() == 0)
-      rate = 9600;
-  }
+    // Try connecting at 9600
+    if (rate == 0 && this->port_rate != 9600)
+    {
+      PLAYER_MSG0(2, "connecting at 9600");
+      if (ChangeTermSpeed(9600))
+        return 1;
+      if (SetLaserMode() == 0)
+        rate = 9600;
+    }
 
-  // Try connecting at 38400
-  if (rate == 0 && this->port_rate >= 38400)
-  {
-    PLAYER_MSG0(2, "connecting at 38400");
-    if (ChangeTermSpeed(38400))
-      return 1;
-    if (SetLaserMode() == 0)
-      rate = 38400;
-  }
-  
-  // Try connecting at 500000
-  if (rate == 0 && this->port_rate >= 500000 && this->can_do_hi_speed)
-  {
-    PLAYER_MSG0(2, "connecting at 500000");
-    if (ChangeTermSpeed(500000))
-      return 1;
-    if (SetLaserMode() == 0)
-      rate = 500000;
+    // Try connecting at 38400
+    if (rate == 0 && this->port_rate >= 38400)
+    {
+      PLAYER_MSG0(2, "connecting at 38400");
+      if (ChangeTermSpeed(38400))
+        return 1;
+      if (SetLaserMode() == 0)
+        rate = 38400;
+    }
+
+    // Try connecting at 500000
+    if (rate == 0 && this->port_rate >= 500000 && this->can_do_hi_speed)
+    {
+      PLAYER_MSG0(2, "connecting at 500000");
+      if (ChangeTermSpeed(500000))
+        return 1;
+      if (SetLaserMode() == 0)
+        rate = 500000;
+    }
+
+    if(rate != 0)
+      break;
   }
 
   // Could not find the laser
