@@ -52,9 +52,6 @@ int main(int argc, char** argv)
     cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
     cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test2)));
 
-    // we can also connect signals to the client's functions
-    cp.ConnectReadSignal(boost::bind(&CameraProxy::Print, boost::ref(cp)));
-
     // now, we should see some signals each time Read() is called.
     for (int i=0; i<10; ++i)
     {

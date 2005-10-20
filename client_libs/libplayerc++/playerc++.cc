@@ -69,7 +69,7 @@ AC_SUBST(PLAYERCC_LIBS)
 
 Then, in your Makefile.am you can add:
 @verbatim
-AM_CPPFLAGS += PLAYERCC_CFLAGS
+AM_CPPFLAGS += $(PLAYERCC_CFLAGS)
 programname_LDFLAGS = $(PLAYERCC_LIBS)
 @endverbatim
 */

@@ -160,6 +160,8 @@ class ClientProxy
       std::copy(aBegin, aEnd, aDest);
     }
 
+  private:
+
     // The last time that data was read by this client in [s].
     double mLastTime;
 
@@ -183,34 +185,34 @@ class ClientProxy
     boost::signal<void (void)> mReadSignal;
 #endif
 
+    // Outputs the signal if there is new data
+    void ReadSignal();
+
   public:
 
     ///  Returns true if we have received any data from the device.
-    bool IsValid() const { return(0!=GetVar(mInfo->datatime)); };
+    bool IsValid() const { return 0!=GetVar(mInfo->datatime); };
 
     ///  Returns the driver name
     ///  @todo GetDriverName isn't guarded by locks yet
-    std::string GetDriverName() const { return(mInfo->drivername); };
+    std::string GetDriverName() const { return mInfo->drivername; };
 
     /// Returns the received timestamp [s]
-    double GetDataTime() const { return(GetVar(mInfo->datatime)); };
+    double GetDataTime() const { return GetVar(mInfo->datatime); };
 
     /// Returns the received timestamp [s]
     double GetElapsedTime() const
-      { return(GetVar(mInfo->datatime) - GetVar(mInfo->lasttime)); };
+      { return GetVar(mInfo->datatime) - GetVar(mInfo->lasttime); };
 
     /// Returns device index
-    uint GetIndex() const { return(GetVar(mInfo->addr.index)); };
+    uint GetIndex() const { return GetVar(mInfo->addr.index); };
 
     /// Returns device interface
-    uint GetInterface() const { return(GetVar(mInfo->addr.interf)); };
-
-    /// Prints the interface's data.  See also the iostream operators.
-    virtual void Print();
+    uint GetInterface() const { return GetVar(mInfo->addr.interf); };
 
     /// Returns device interface
     std::string GetInterfaceStr() const
-      { return(playerc_lookup_name(GetVar(mInfo->addr.interf))); };
+      { return playerc_lookup_name(GetVar(mInfo->addr.interf)); };
 
 #ifdef HAVE_BOOST_SIGNALS
     /// Connect a signal to this proxy
@@ -317,7 +319,7 @@ class SomethingProxy : public ClientProxy
 
   public:
     // Constructor
-    SomethingProxy(PlayerClient *aPc, uint aIndex);
+    SomethingProxy(PlayerClient *aPc, uint aIndex=0);
     // Destructor
     ~SomethingProxy();
 
@@ -349,7 +351,7 @@ class ActArrayProxy : public ClientProxy
   public:
 
     /// Default constructor
-    ActArrayProxy(PlayerClient *aPc, uint aIndex);
+    ActArrayProxy(PlayerClient *aPc, uint aIndex=0);
     /// Default destructor
     ~ActArrayProxy();
 
@@ -372,7 +374,7 @@ class ActArrayProxy : public ClientProxy
     void MoveHome(int aJoint);
 
     /// Gets the number of actuators in the array
-    uint GetCount(void) const { return(GetVar(mDevice->actuators_count)); }
+    uint GetCount(void) const { return GetVar(mDevice->actuators_count); }
     /// Accessor method for getting an actuator's data
     player_actarray_actuator_t GetActuatorData(uint aJoint) const;
     /// Same again for getting actuator geometry
@@ -403,7 +405,7 @@ class AIOProxy : public ClientProxy
 
 public:
 
-    AIOProxy (PlayerClient *aPc, uint aIndex);
+    AIOProxy (PlayerClient *aPc, uint aIndex=0);
     ~AIOProxy();
 
     // The number of valid digital inputs.
@@ -428,7 +430,7 @@ class AudioProxy : public ClientProxy
 
   public:
 
-    AudioProxy(PlayerClient *aPc, uint aIndex)
+    AudioProxy(PlayerClient *aPc, uint aIndex=0)
     ~AudioProxy();
 
     uint GetCount() const { return(GetVar(mDevice->count)); };
@@ -458,7 +460,7 @@ class AudioDspProxy : public ClientProxy
     playerc_audiodsp_t *mDevice;
 
   public:
-    AudioDspProxy(PlayerClient *aPc, uint aIndex);
+    AudioDspProxy(PlayerClient *aPc, uint aIndex=0);
     ~AudioDspProxy
 
     /** Format code of each sample */
@@ -503,7 +505,7 @@ class AudioMixerProxy : public ClientProxy
 
   public:
 
-    AudioMixerProxy (PlayerClient *aPc, uint aIndex);
+    AudioMixerProxy (PlayerClient *aPc, uint aIndex=0);
 
     void GetConfigure();
 
@@ -534,7 +536,7 @@ class BlinkenLightProxy : public ClientProxy
     /** Constructor.
         Leave the access field empty to start unconnected.
     */
-    BlinkenLightProxy(PlayerClient *aPc, uint aIndex);
+    BlinkenLightProxy(PlayerClient *aPc, uint aIndex=0);
     ~BlinkenLightProxy();
 
     // true: indicator light enabled, false: disabled.
@@ -573,20 +575,20 @@ class BlobfinderProxy : public ClientProxy
 
   public:
     /// default contsructor
-    BlobfinderProxy(PlayerClient *aPc, uint aIndex);
+    BlobfinderProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~BlobfinderProxy();
 
     /// returns the number of blobs
-    uint GetCount() const { return(GetVar(mDevice->blobs_count)); };
+    uint GetCount() const { return GetVar(mDevice->blobs_count); };
     /// returns a blob
     playerc_blobfinder_blob_t GetBlob(uint aIndex) const
       { return GetVar(mDevice->blobs[aIndex]);};
 
     /// get the width of the image
-    uint GetWidth() const { return(GetVar(mDevice->width)); };
+    uint GetWidth() const { return GetVar(mDevice->width); };
     /// get the height of the image
-    uint GetHeight() const { return(GetVar(mDevice->height)); };
+    uint GetHeight() const { return GetVar(mDevice->height); };
 
     /// Blobfinder data access operator.
     ///    This operator provides an alternate way of access the actuator data.
@@ -625,14 +627,14 @@ class BumperProxy : public ClientProxy
 
   public:
 
-    BumperProxy(PlayerClient *aPc, uint aIndex);
+    BumperProxy(PlayerClient *aPc, uint aIndex=0);
     ~BumperProxy();
 
-    uint GetCount() const { return(GetVar(mDevice->bumper_count)); };
+    uint GetCount() const { return GetVar(mDevice->bumper_count); };
 
     /// Returns true if the specified bumper has been bumped, false otherwise.
     uint IsBumped(uint aIndex) const
-      { return(GetVar(mDevice->bumpers[aIndex])); };
+      { return GetVar(mDevice->bumpers[aIndex]); };
 
     /// Returns true if any bumper has been bumped, false otherwise.
     bool IsAnyBumped();
@@ -641,18 +643,18 @@ class BumperProxy : public ClientProxy
     void RequestBumperConfig();
 
     /// Returns the number bumper poses
-    uint GetPoseCount() const { return(GetVar(mDevice->pose_count)); };
+    uint GetPoseCount() const { return GetVar(mDevice->pose_count); };
 
     /// Returns a specific bumper pose
     player_bumper_define_t GetPose(uint aIndex) const
-      { return(GetVar(mDevice->poses[aIndex])); };
+      { return GetVar(mDevice->poses[aIndex]); };
 
     /// BumperProxy data access operator.
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p BumperProxy named @p bp, the following
     ///    expressions are equivalent: @p bp.IsBumped[0] and @p bp[0].
     bool operator [](uint aIndex)
-      { return(IsBumped(aIndex)); }
+      { return IsBumped(aIndex); }
 
 };
 
@@ -676,7 +678,7 @@ class CameraProxy : public ClientProxy
   public:
 
     /// Constructor
-    CameraProxy (PlayerClient *aPc, uint aIndex);
+    CameraProxy (PlayerClient *aPc, uint aIndex=0);
 
     virtual ~CameraProxy();
 
@@ -687,30 +689,30 @@ class CameraProxy : public ClientProxy
     void Decompress();
 
     /// Image color depth
-    uint GetDepth() const { return(GetVar(mDevice->bpp)); };
+    uint GetDepth() const { return GetVar(mDevice->bpp); };
 
     /// Image dimensions (pixels)
-    uint GetWidth() const { return(GetVar(mDevice->width)); };
+    uint GetWidth() const { return GetVar(mDevice->width); };
 
     /// Image dimensions (pixels)
-    uint GetHeight() const { return(GetVar(mDevice->height)); };
+    uint GetHeight() const { return GetVar(mDevice->height); };
 
     /// Image format (e.g., RGB888)
-    uint GetFormat() const { return(GetVar(mDevice->format)); };
+    uint GetFormat() const { return GetVar(mDevice->format); };
 
     /// Size of the image (bytes)
-    uint GetImageSize() const { return(GetVar(mDevice->image_count)); };
+    uint GetImageSize() const { return GetVar(mDevice->image_count); };
 
     /// Image data
     void GetImage(uint8_t* aImage) const
       {
-        return(GetVarByRef(mDevice->image,
+        return GetVarByRef(mDevice->image,
                            mDevice->image+GetVar(mDevice->image_count),
-                           aImage));
+                           aImage);
       };
 
     /// What is the compression type
-    uint GetCompression() const { return(GetVar(mDevice->compression)); };
+    uint GetCompression() const { return GetVar(mDevice->compression); };
 
 };
 
@@ -731,15 +733,15 @@ class DioProxy : public ClientProxy
 
   public:
     /// constructor
-    DioProxy(PlayerClient *aPc, uint aIndex);
+    DioProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~DioProxy();
 
     /// The number of valid digital inputs.
-    uint GetCount() const { return(GetVar(mDevice->count)); };
+    uint GetCount() const { return GetVar(mDevice->count); };
 
     /// A bitfield of the current digital inputs.
-    uint32_t GetDigin() const { return(GetVar(mDevice->digin)); };
+    uint32_t GetDigin() const { return GetVar(mDevice->digin); };
 
     /// Set the output to the bitfield aDigout
     void SetOutput(uint aCount, uint32_t aDigout);
@@ -764,15 +766,15 @@ class EnergyProxy : public ClientProxy
 
 public:
 
-    EnergyProxy(PlayerClient *aPc, uint aIndex);
+    EnergyProxy(PlayerClient *aPc, uint aIndex=0);
     ~EnergyProxy();
 
     /** These members give the current amount of energy stored [Joules] */
-    uint GetJoules() const { return(GetVar(mDevice->joules)); };
+    uint GetJoules() const { return GetVar(mDevice->joules); };
     /** the amount of energy current being consumed [Watts] */
-    uint GetWatts() const { return(GetVar(mDevice->watts)); };
+    uint GetWatts() const { return GetVar(mDevice->watts); };
     /** The charging flag is true if we are currently charging, else false. */
-    bool GetCharging() const { return(GetVar(mDevice->charging)); };
+    bool GetCharging() const { return GetVar(mDevice->charging); };
 };
 
 #endif
@@ -793,12 +795,12 @@ class FiducialProxy : public ClientProxy
 
   public:
     /// constructor
-    FiducialProxy(PlayerClient *aPc, uint aIndex);
+    FiducialProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~FiducialProxy();
 
     /// The number of beacons detected
-    uint GetCount() const { return(GetVar(mDevice->fiducials_count)); };
+    uint GetCount() const { return GetVar(mDevice->fiducials_count); };
 
     /// Get detected beacon description
     player_fiducial_item_t GetFiducialItem(uint aIndex) const
@@ -824,7 +826,7 @@ class FiducialProxy : public ClientProxy
     ///    For example, given a @p FiducialProxy named @p fp, the following
     ///    expressions are equivalent: @p fp.GetFiducialItem[0] and @p fp[0].
     player_fiducial_item_t operator [](uint aIndex)
-      { return(GetFiducialItem(aIndex)); }
+      { return GetFiducialItem(aIndex); }
 };
 
 #if 0 // not in libplayerc yet
@@ -845,37 +847,37 @@ class GpsProxy : public ClientProxy
   public:
 
     // Constructor
-    GpsProxy(PlayerClient *aPc, uint aIndex);
+    GpsProxy(PlayerClient *aPc, uint aIndex=0);
 
     ~GpsProxy();
 
     /// Latitude and longitude, in degrees.
-    uint GetLatitude() const { return(GetVar(mDevice->latitude)); };
-    uint GetLongitude() const { return(GetVar(mDevice->longitude)); };
+    uint GetLatitude() const { return GetVar(mDevice->latitude); };
+    uint GetLongitude() const { return GetVar(mDevice->longitude); };
 
     /// Altitude, in meters.
-    uint GetAltitude() const { return(GetVar(mDevice->altitude)); };
+    uint GetAltitude() const { return GetVar(mDevice->altitude); };
 
     /// Number of satellites in view.
-    uint GetSatellites() const { return(GetVar(mDevice->num_sats)); };
+    uint GetSatellites() const { return GetVar(mDevice->num_sats); };
 
     /// Fix quality
-    uint GetQuality() const { return(GetVar(mDevice->quality)); };
+    uint GetQuality() const { return GetVar(mDevice->quality); };
 
     /// Horizontal dilution of position (HDOP)
-    uint GetHdop() const { return(GetVar(mDevice->hdop)); };
+    uint GetHdop() const { return GetVar(mDevice->hdop); };
 
     /// Vertical dilution of position (HDOP)
-    uint GetVdop() const { return(GetVar(mDevice->vdop)); };
+    uint GetVdop() const { return GetVar(mDevice->vdop); };
 
     /// UTM easting and northing (meters).
-    uint GetUtmEasting() const { return(GetVar(mDevice->utm_e)); };
-    uint GetUtmNorthing() const { return(GetVar(mDevice->utm_n)); };
+    uint GetUtmEasting() const { return GetVar(mDevice->utm_e); };
+    uint GetUtmNorthing() const { return GetVar(mDevice->utm_n); };
     double utm_northing;
 
     /// Time, since the epoch
-    uint GetTimeSec() const { return(GetVar(mDevice->time_sec)); };
-    uint GetTimeUsec() const { return(GetVar(mDevice->time_usec)); };
+    uint GetTimeSec() const { return GetVar(mDevice->time_sec); };
+    uint GetTimeUsec() const { return GetVar(mDevice->time_usec); };
 };
 #endif
 /**
@@ -897,40 +899,40 @@ class GripperProxy : public ClientProxy
   public:
 
     /// constructor
-    GripperProxy(PlayerClient *aPc, uint aIndex);
+    GripperProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~GripperProxy();
 
     ///
-    uint GetState() const { return(GetVar(mDevice->state)); };
+    uint GetState() const { return GetVar(mDevice->state); };
     ///
-    uint GetBeams() const { return(GetVar(mDevice->beams)); };
+    uint GetBeams() const { return GetVar(mDevice->beams); };
     ///
     uint GetOuterBreakBeam() const
-      { return(GetVar(mDevice->outer_break_beam)); };
+      { return GetVar(mDevice->outer_break_beam); };
     ///
     uint GetInnerBreakBeam() const
-      { return(GetVar(mDevice->inner_break_beam)); };
+      { return GetVar(mDevice->inner_break_beam); };
     ///
     uint GetPaddlesOpen() const
-      { return(GetVar(mDevice->paddles_open)); };
+      { return GetVar(mDevice->paddles_open); };
     ///
     uint GetPaddlesClosed() const
-      { return(GetVar(mDevice->paddles_closed)); };
+      { return GetVar(mDevice->paddles_closed); };
     ///
     uint GetPaddlesMoving() const
-      { return(GetVar(mDevice->paddles_moving)); };
+      { return GetVar(mDevice->paddles_moving); };
     ///
     uint GetGripperError() const
-      { return(GetVar(mDevice->gripper_error)); };
+      { return GetVar(mDevice->gripper_error); };
     ///
-    uint GetLiftUp() const { return(GetVar(mDevice->lift_up)); };
+    uint GetLiftUp() const { return GetVar(mDevice->lift_up); };
     ///
-    uint GetLiftDown() const { return(GetVar(mDevice->lift_down)); };
+    uint GetLiftDown() const { return GetVar(mDevice->lift_down); };
     ///
-    uint GetLiftMoving() const { return(GetVar(mDevice->lift_moving)); };
+    uint GetLiftMoving() const { return GetVar(mDevice->lift_moving); };
     ///
-    uint GetLiftError() const { return(GetVar(mDevice->lift_error)); };
+    uint GetLiftError() const { return GetVar(mDevice->lift_error); };
 
     /// Send a gripper command.  Look in the Player user manual for details
     /// on the command and argument.
@@ -957,20 +959,20 @@ class IrProxy : public ClientProxy
   public:
 
     /// Constructor
-    IrProxy(PlayerClient *aPc, uint aIndex);
+    IrProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~IrProxy();
 
     /// get the number of IR rangers
-    uint GetCount() const { return(GetVar(mDevice->ranges.ranges_count)); };
+    uint GetCount() const { return GetVar(mDevice->ranges.ranges_count); };
     /// get the current range
     double GetRange(uint aIndex) const
-      { return(GetVar(mDevice->ranges.ranges[aIndex])); };
+      { return GetVar(mDevice->ranges.ranges[aIndex]); };
     /// get the current voltage
     double GetVoltage(uint aIndex) const
-      { return(GetVar(mDevice->ranges.voltages[aIndex])); };
+      { return GetVar(mDevice->ranges.voltages[aIndex]); };
     /// get the number of poses
-    uint GetPoseCount() const { return(GetVar(mDevice->poses.poses_count)); };
+    uint GetPoseCount() const { return GetVar(mDevice->poses.poses_count); };
     /// get a particular pose
     player_pose_t GetPose(uint aIndex) const
       {return GetVar(mDevice->poses.poses[aIndex]);};
@@ -983,7 +985,7 @@ class IrProxy : public ClientProxy
     /// For example, given a @p IrProxy named @p ip, the following
     /// expressions are equivalent: @p ip.GetRange[0] and @p ip[0].
     double operator [](uint aIndex) const
-      { return(GetRange(aIndex)); }
+      { return GetRange(aIndex); }
 
 };
 
@@ -1012,44 +1014,44 @@ class LaserProxy : public ClientProxy
   public:
 
     /// constructor
-    LaserProxy(PlayerClient *aPc, uint aIndex);
+    LaserProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~LaserProxy();
 
     /// Number of points in scan
-    uint GetCount() const { return(GetVar(mDevice->scan_count)); };
+    uint GetCount() const { return GetVar(mDevice->scan_count); };
 
     /// Angular resolution of scan (radians)
-    double GetScanRes() const { return(GetVar(mDevice->scan_res)); };
+    double GetScanRes() const { return GetVar(mDevice->scan_res); };
 
     /// Range resolution of scan (mm)
-    double GetRangeRes() const { return(GetVar(mDevice->range_res)); };
+    double GetRangeRes() const { return GetVar(mDevice->range_res); };
 
 
     /// Scan range for the latest set of data (radians)
-    double GetMaxAngle() const { return(GetVar(mDevice->scan_start)); };
+    double GetMaxAngle() const { return GetVar(mDevice->scan_start); };
     /// Scan range for the latest set of data (radians)
-    double GetMinAngle() const { return(GetVar(mDevice->scan_start) + GetVar(mDevice->scan_count)*GetVar(mDevice->scan_res)); };
+    double GetMinAngle() const { return GetVar(mDevice->scan_start) + GetVar(mDevice->scan_count)*GetVar(mDevice->scan_res); };
 
 /*    /// Whether or not reflectance (i.e., intensity) values are being returned.
-    bool IsIntensity() const { return(GetVar(mDevice->intensity)); };
+    bool IsIntensity() const { return GetVar(mDevice->intensity); };
 
     /// Scan data (polar): range (m) and bearing (radians)
     double GetScan(uint aIndex) const
-      { return(GetVar(mDevice->scan[aIndex])); };
+      { return GetVar(mDevice->scan[aIndex]); };
 */
     /// Scan data (Cartesian): x,y (m)
     player_point_2d_t GetPoint(uint aIndex) const
-      { return(GetVar(mDevice->point[aIndex])); };
+      { return GetVar(mDevice->point[aIndex]); };
 
 
     /// get the range
     double GetRange(uint aIndex) const
-      { return(GetVar(mDevice->ranges[aIndex])); };
+      { return GetVar(mDevice->ranges[aIndex]); };
 
     /// get the intensity
     double GetIntensity(uint aIndex) const
-      { return(GetVar(mDevice->intensity[aIndex])); };
+      { return GetVar(mDevice->intensity[aIndex]); };
 
     /// Configure the laser scan pattern.  Angles @p min_angle and
     /// @p max_angle are measured in radians.
@@ -1099,7 +1101,7 @@ class LimbProxy : public ClientProxy
 
   public:
 
-    LimbProxy(PlayerClient *aPc, uint aIndex);
+    LimbProxy(PlayerClient *aPc, uint aIndex=0);
     ~LimbProxy();
 
     /// Geometry request - call before getting the
@@ -1152,47 +1154,47 @@ class LocalizeProxy : public ClientProxy
   public:
 
     /// constructor
-    LocalizeProxy(PlayerClient *aPc, uint aIndex);
+    LocalizeProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~LocalizeProxy();
 
     /// Map dimensions (cells)
     // @todo should these be in a player_pose_t?
-    uint GetMapSizeX() const { return(GetVar(mDevice->map_size_x)); };
-    uint GetMapSizeY() const { return(GetVar(mDevice->map_size_y)); };
+    uint GetMapSizeX() const { return GetVar(mDevice->map_size_x); };
+    uint GetMapSizeY() const { return GetVar(mDevice->map_size_y); };
 
     // @todo should these be in a player_pose_t?
-    uint GetMapTileX() const { return(GetVar(mDevice->map_tile_x)); };
-    uint GetMapTileY() const { return(GetVar(mDevice->map_tile_y)); };
+    uint GetMapTileX() const { return GetVar(mDevice->map_tile_x); };
+    uint GetMapTileY() const { return GetVar(mDevice->map_tile_y); };
 
     /// Map scale (m/cell)
-    double GetMapScale() const { return(GetVar(mDevice->map_scale)); };
+    double GetMapScale() const { return GetVar(mDevice->map_scale); };
 
     // Map data (empty = -1, unknown = 0, occupied = +1)
     // is this still needed?  if so,
     //void GetMapCells(uint8_t* aCells) const
     //{
-    //  return(GetVarByRef(mDevice->map_cells,
+    //  return GetVarByRef(mDevice->map_cells,
     //                     mDevice->image+GetVar(mDevice->??map_cell_cout??),
-    //                     aCells));
+    //                     aCells);
     //};
 
     /// Number of pending (unprocessed) sensor readings
-    uint GetPendingCount() const { return(GetVar(mDevice->pending_count)); };
+    uint GetPendingCount() const { return GetVar(mDevice->pending_count); };
 
     /// Number of possible poses
-    uint GetHypothCount() const { return(GetVar(mDevice->hypoth_count)); };
+    uint GetHypothCount() const { return GetVar(mDevice->hypoth_count); };
 
     /// Array of possible poses.
     player_localize_hypoth_t GetHypoth(uint aIndex) const
-      { return(GetVar(mDevice->hypoths[aIndex])); };
+      { return GetVar(mDevice->hypoths[aIndex]); };
 
     /// Set the current pose hypothesis (m, m, radians).
     void SetPose(double pose[3], double cov[3]);
 
     /// Get the number of particles (for particle filter-based localization
     /// systems).  Returns the number of particles.
-    uint GetNumParticles() const { return(GetVar(mDevice->num_particles)); };
+    uint GetNumParticles() const { return GetVar(mDevice->num_particles); };
 };
 
 /**
@@ -1210,17 +1212,17 @@ class LogProxy : public ClientProxy
 
   public:
     /// Constructor
-    LogProxy(PlayerClient *aPc, uint aIndex);
+    LogProxy(PlayerClient *aPc, uint aIndex=0);
 
     /// Destructor
     ~LogProxy();
 
     /// What kind of log device is this? Either PLAYER_LOG_TYPE_READ or
     /// PLAYER_LOG_TYPE_WRITE. Call GetState() to fill it.
-    int GetType() const { return(GetVar(mDevice->type)); };
+    int GetType() const { return GetVar(mDevice->type); };
 
     /// Is logging/playback enabled? Call GetState() to fill it.
-    int GetState() const { return(GetVar(mDevice->state)); };
+    int GetState() const { return GetVar(mDevice->state); };
 
     /// Start/stop (1/0) writing to the log file.
     void SetWriteState(int aState);
@@ -1250,7 +1252,7 @@ class MapProxy : public ClientProxy
 
   public:
     /// constructor
-    MapProxy(PlayerClient *aPc, uint aIndex);
+    MapProxy(PlayerClient *aPc, uint aIndex=0);
 
     /// destructor
     ~MapProxy();
@@ -1264,24 +1266,24 @@ class MapProxy : public ClientProxy
 
     /// Get the (x,y) cell
     unsigned char GetCell(int x, int y ) const
-    { return(GetVar(mDevice->cells[GetCellIndex(x,y)])); };
+    { return GetVar(mDevice->cells[GetCellIndex(x,y)]); };
 
     /// Map resolution, m/cell
-    double GetResolution() const { return(GetVar(mDevice->resolution)); };
+    double GetResolution() const { return GetVar(mDevice->resolution); };
 
     /// Map size, in cells
     ///    @todo should this be returned as a player_size_t?
-    uint GetWidth() const { return(GetVar(mDevice->width)); };
+    uint GetWidth() const { return GetVar(mDevice->width); };
     /// Map size, in cells
     /// @todo should this be returned as a player_size_t?
-    uint GetHeight() const { return(GetVar(mDevice->height)); };
+    uint GetHeight() const { return GetVar(mDevice->height); };
 
     /// Occupancy for each cell (empty = -1, unknown = 0, occupied = +1)
     void GetMap(int8_t* aMap) const
     {
-      return(GetVarByRef(reinterpret_cast<int8_t*>(mDevice->cells),
+      return GetVarByRef(reinterpret_cast<int8_t*>(mDevice->cells),
                          reinterpret_cast<int8_t*>(mDevice->cells+GetWidth()*GetHeight()),
-                         aMap));
+                         aMap);
     };
 };
 
@@ -1373,7 +1375,7 @@ class MotorProxy : public ClientProxy
   public:
 
     /** Constructor. */
-    MotorProxy((PlayerClient *aPc, uint aIndex);
+    MotorProxy((PlayerClient *aPc, uint aIndex=0);
     ~MotorProxy();
 
     /** Send a motor command for velocity control mode.
@@ -1440,13 +1442,13 @@ class MotorProxy : public ClientProxy
     void SetPositionSpeedProfile(double aSpd, double aAcc);
 
     /// Accessor method
-    uint GetPos() const { return(GetVar(mDevice->theta)); };
+    uint GetPos() const { return GetVar(mDevice->theta); };
 
     /// Accessor method
-    uint GetSpeed() const { return(GetVar(mDevice->thetaspeed)); };
+    uint GetSpeed() const { return GetVar(mDevice->thetaspeed); };
 
     /// Accessor method
-    uint GetStall() const { return(GetVar(mDevice->stall)); };
+    uint GetStall() const { return GetVar(mDevice->stall); };
 
 };
 #endif
@@ -1467,7 +1469,7 @@ class PlannerProxy : public ClientProxy
   public:
 
     /// constructor
-    PlannerProxy(PlayerClient *aPc, uint aIndex);
+    PlannerProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~PlannerProxy();
 
@@ -1483,45 +1485,45 @@ class PlannerProxy : public ClientProxy
     void SetEnable(bool aEnable);
 
     /// Did the planner find a valid path?
-    uint GetPathValid() const { return(GetVar(mDevice->path_valid)); };
+    uint GetPathValid() const { return GetVar(mDevice->path_valid); };
 
     /// Have we arrived at the goal?
-    uint GetPathDone() const { return(GetVar(mDevice->path_done)); };
+    uint GetPathDone() const { return GetVar(mDevice->path_done); };
 
     /// Current pose (m)
-    double GetPx() const { return(GetVar(mDevice->px)); };
+    double GetPx() const { return GetVar(mDevice->px); };
     /// Current pose (m)
-    double GetPy() const { return(GetVar(mDevice->py)); };
+    double GetPy() const { return GetVar(mDevice->py); };
     /// Current pose (m)
-    double GetPz() const { return(GetVar(mDevice->pa)); };
+    double GetPz() const { return GetVar(mDevice->pa); };
 
     /// Goal location (radians)
-    double GetGx() const { return(GetVar(mDevice->gx)); };
+    double GetGx() const { return GetVar(mDevice->gx); };
     /// Goal location (radians)
-    double GetGy() const { return(GetVar(mDevice->gy)); };
+    double GetGy() const { return GetVar(mDevice->gy); };
     /// Goal location (radians)
-    double GetGz() const { return(GetVar(mDevice->ga)); };
+    double GetGz() const { return GetVar(mDevice->ga); };
 
     /// Current waypoint location (m)
-    double GetWx() const { return(GetVar(mDevice->wx)); };
+    double GetWx() const { return GetVar(mDevice->wx); };
     /// Current waypoint location (m)
-    double GetWy() const { return(GetVar(mDevice->wy)); };
+    double GetWy() const { return GetVar(mDevice->wy); };
     /// Current waypoint location (m)
-    double GetWz() const { return(GetVar(mDevice->wa)); };
+    double GetWz() const { return GetVar(mDevice->wa); };
 
     /// Current waypoint index (handy if you already have the list
     /// of waypoints). May be negative if there's no plan, or if
     /// the plan is done
     uint GetCurrentWaypoint() const
-      { return(GetVar(mDevice->curr_waypoint)); };
+      { return GetVar(mDevice->curr_waypoint); };
 
     /// Number of waypoints in the plan
     uint GetWaypointCount() const
-      { return(GetVar(mDevice->waypoint_count)); };
+      { return GetVar(mDevice->waypoint_count); };
 
     // Get a waypoints in the current plan (m,m,radians).
     //uint GetWaypoint(uint aIndex) const
-    //  { return(GetVar(mDevice->waypoints[aIndex])); };
+    //  { return GetVar(mDevice->waypoints[aIndex]); };
 
 };
 
@@ -1543,7 +1545,7 @@ class Position2dProxy : public ClientProxy
   public:
 
     /// constructor
-    Position2dProxy(PlayerClient *aPc, uint aIndex);
+    Position2dProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~Position2dProxy();
 
@@ -1555,7 +1557,7 @@ class Position2dProxy : public ClientProxy
     /// Same as the previous SetSpeed(), but doesn't take the yspeed speed
     /// (so use this one for non-holonomic robots).
     void SetSpeed(double aXSpeed, double aYawSpeed)
-        { return(SetSpeed(aXSpeed, 0, aYawSpeed));}
+        { return SetSpeed(aXSpeed, 0, aYawSpeed);}
 
     /// Send a motor command for position control mode.  Specify the
     /// desired pose of the robot in m, m, radians.
@@ -1615,25 +1617,25 @@ class Position2dProxy : public ClientProxy
     //void PlatformShutdown();
 
     /// Accessor method
-    double  GetXPos() const { return(GetVar(mDevice->px)); };
+    double  GetXPos() const { return GetVar(mDevice->px); };
 
     /// Accessor method
-    double  GetYPos() const { return(GetVar(mDevice->py)); };
+    double  GetYPos() const { return GetVar(mDevice->py); };
 
     /// Accessor method
-    double GetYaw() const { return(GetVar(mDevice->pa)); };
+    double GetYaw() const { return GetVar(mDevice->pa); };
 
     /// Accessor method
-    double  GetXSpeed() const { return(GetVar(mDevice->vx)); };
+    double  GetXSpeed() const { return GetVar(mDevice->vx); };
 
     /// Accessor method
-    double  GetYSpeed() const { return(GetVar(mDevice->vy)); };
+    double  GetYSpeed() const { return GetVar(mDevice->vy); };
 
     /// Accessor method
-    double  GetYawSpeed() const { return(GetVar(mDevice->va)); };
+    double  GetYawSpeed() const { return GetVar(mDevice->va); };
 
     /// Accessor method
-    bool GetStall() const { return(GetVar(mDevice->stall)); };
+    bool GetStall() const { return GetVar(mDevice->stall); };
 
 };
 
@@ -1657,7 +1659,7 @@ class Position3dProxy : public ClientProxy
   public:
 
     /// constructor
-    Position3dProxy(PlayerClient *aPc, uint aIndex);
+    Position3dProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~Position3dProxy();
 
@@ -1723,43 +1725,43 @@ class Position3dProxy : public ClientProxy
     //void SetPositionSpeedProfile(double spd, double acc);
 
     /// Accessor method
-    double  GetXPos() const { return(GetVar(mDevice->pos_x)); };
+    double  GetXPos() const { return GetVar(mDevice->pos_x); };
 
     /// Accessor method
-    double  GetYPos() const { return(GetVar(mDevice->pos_y)); };
+    double  GetYPos() const { return GetVar(mDevice->pos_y); };
 
     /// Accessor method
-    double  GetZPos() const { return(GetVar(mDevice->pos_z)); };
+    double  GetZPos() const { return GetVar(mDevice->pos_z); };
 
     /// Accessor method
-    double  GetRoll() const { return(GetVar(mDevice->pos_roll)); };
+    double  GetRoll() const { return GetVar(mDevice->pos_roll); };
 
     /// Accessor method
-    double  GetPitch() const { return(GetVar(mDevice->pos_pitch)); };
+    double  GetPitch() const { return GetVar(mDevice->pos_pitch); };
 
     /// Accessor method
-    double  GetYaw() const { return(GetVar(mDevice->pos_yaw)); };
+    double  GetYaw() const { return GetVar(mDevice->pos_yaw); };
 
     /// Accessor method
-    double  GetXSpeed() const { return(GetVar(mDevice->vel_x)); };
+    double  GetXSpeed() const { return GetVar(mDevice->vel_x); };
 
     /// Accessor method
-    double  GetYSpeed() const { return(GetVar(mDevice->vel_y)); };
+    double  GetYSpeed() const { return GetVar(mDevice->vel_y); };
 
     /// Accessor method
-    double  GetZSpeed() const { return(GetVar(mDevice->vel_z)); };
+    double  GetZSpeed() const { return GetVar(mDevice->vel_z); };
 
     /// Accessor method
-    double  GetRollSpeed() const { return(GetVar(mDevice->vel_roll)); };
+    double  GetRollSpeed() const { return GetVar(mDevice->vel_roll); };
 
     /// Accessor method
-    double  GetPitchSpeed() const { return(GetVar(mDevice->vel_pitch)); };
+    double  GetPitchSpeed() const { return GetVar(mDevice->vel_pitch); };
 
     /// Accessor method
-    double  GetYawSpeed() const { return(GetVar(mDevice->vel_yaw)); };
+    double  GetYawSpeed() const { return GetVar(mDevice->vel_yaw); };
 
     /// Accessor method
-    bool GetStall () const { return(GetVar(mDevice->stall)); };
+    bool GetStall () const { return GetVar(mDevice->stall); };
 };
 
 /**
@@ -1776,12 +1778,12 @@ class PowerProxy : public ClientProxy
 
   public:
     /// constructor
-    PowerProxy(PlayerClient *aPc, uint aIndex);
+    PowerProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~PowerProxy();
 
     /// Returns the current charge.
-    double GetCharge() const { return(GetVar(mDevice->charge)); };
+    double GetCharge() const { return GetVar(mDevice->charge); };
 
 };
 
@@ -1804,7 +1806,7 @@ class PtzProxy : public ClientProxy
 
   public:
     /// constructor
-    PtzProxy(PlayerClient *aPc, uint aIndex);
+    PtzProxy(PlayerClient *aPc, uint aIndex=0);
     // destructor
     ~PtzProxy();
 
@@ -1823,11 +1825,11 @@ class PtzProxy : public ClientProxy
     //void SelectControlMode(uint aMode);
 
     /// Return Pan (rad)
-    double GetPan() const { return(GetVar(mDevice->pan)); };
+    double GetPan() const { return GetVar(mDevice->pan); };
     /// Return Tilt (rad)
-    double GetTilt() const { return(GetVar(mDevice->tilt)); };
+    double GetTilt() const { return GetVar(mDevice->tilt); };
     /// Return Zoom
-    double GetZoom() const { return(GetVar(mDevice->zoom)); };
+    double GetZoom() const { return GetVar(mDevice->zoom); };
 
 };
 
@@ -1847,7 +1849,7 @@ class SimulationProxy : public ClientProxy
 
   public:
     /// constructor
-    SimulationProxy(PlayerClient *aPc, uint aIndex);
+    SimulationProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~SimulationProxy();
 
@@ -1878,26 +1880,26 @@ class SonarProxy : public ClientProxy
 
   public:
     /// constructor
-    SonarProxy(PlayerClient *aPc, uint aIndex);
+    SonarProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~SonarProxy();
 
     /// return the sensor count
-    uint GetCount() const { return(GetVar(mDevice->scan_count)); };
+    uint GetCount() const { return GetVar(mDevice->scan_count); };
 
     /// return a particular scan value
     double GetScan(uint aIndex) const
-      { return(GetVar(mDevice->scan[aIndex])); };
+      { return GetVar(mDevice->scan[aIndex]); };
     /// This operator provides an alternate way of access the scan data.
     /// For example, SonarProxy[0] == SonarProxy.GetRange(0)
     double operator [] (uint aIndex) const { return GetScan(aIndex); }
 
     /// Number of valid sonar poses
-    uint GetPoseCount() const { return(GetVar(mDevice->pose_count)); };
+    uint GetPoseCount() const { return GetVar(mDevice->pose_count); };
 
     /// Sonar poses (m,m,radians)
     player_pose_t GetPose(uint aIndex) const
-      { return(GetVar(mDevice->poses[aIndex])); };
+      { return GetVar(mDevice->poses[aIndex]); };
 
     /// Enable/disable the sonars.
     /// Set @p state to 1 to enable, 0 to disable.
@@ -1928,7 +1930,7 @@ class SoundProxy : public ClientProxy
 
   public:
     // Constructor
-    SoundProxy(PlayerClient *aPc, uint aIndex);
+    SoundProxy(PlayerClient *aPc, uint aIndex=0);
 
     ~SoundProxy();
 
@@ -1954,7 +1956,7 @@ class SpeechProxy : public ClientProxy
 
   public:
     /// constructor
-    SpeechProxy(PlayerClient *aPc, uint aIndex);
+    SpeechProxy(PlayerClient *aPc, uint aIndex=0);
     /// constructor
     ~SpeechProxy();
 
@@ -1980,7 +1982,7 @@ class SpeechRecognitionProxy : public ClientProxy
 
   public:
     // Constructor
-    SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex);
+    SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);
 
     ~SpeechRecognitionProxy();
 
@@ -2011,22 +2013,22 @@ class TruthProxy : public ClientProxy
 
   public:
     /// constructor
-    TruthProxy(PlayerClient *aPc, uint aIndex);
+    TruthProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~TruthProxy();
 
     /// Returns x (m)
-    double GetX() const { return(GetVar(mDevice->pos[0])); };
+    double GetX() const { return GetVar(mDevice->pos[0]); };
     /// Returns y (m)
-    double GetY() const { return(GetVar(mDevice->pos[1])); };
+    double GetY() const { return GetVar(mDevice->pos[1]); };
     /// Returns z (m)
-    double GetZ() const { return(GetVar(mDevice->pos[2])); };
+    double GetZ() const { return GetVar(mDevice->pos[2]); };
     /// Returns roll (rad)
-    double GetRoll() const { return(GetVar(mDevice->rot[0])); };
+    double GetRoll() const { return GetVar(mDevice->rot[0]); };
     /// Returns pitch (rad)
-    double GetPitch() const { return(GetVar(mDevice->rot[1])); };
+    double GetPitch() const { return GetVar(mDevice->rot[1]); };
     /// Returns yaw (rad)
-    double GetYaw() const { return(GetVar(mDevice->rot[2])); };
+    double GetYaw() const { return GetVar(mDevice->rot[2]); };
 
     /// Query Player about the current pose - requests the pose from the
     /// server, then fills in values for the arguments. Usually you'll
@@ -2071,28 +2073,28 @@ class WaveformProxy : public ClientProxy
 
   public:
     // Constructor
-    WaveformProxy(PlayerClient *aPc, uint aIndex);
+    WaveformProxy(PlayerClient *aPc, uint aIndex=0);
 
     ~WaveformProxy();
 
-    uint GetCount() const { return(GetVar(mDevice->data_count)); };
+    uint GetCount() const { return GetVar(mDevice->data_count); };
 
     /// sample rate in bits per second
-    uint GetBitRate() const { return(GetVar(mDevice->rate)); };
+    uint GetBitRate() const { return GetVar(mDevice->rate); };
 
     /// sample depth in bits
-    uint GetDepth() const { return(GetVar(mDevice->depth)); };
+    uint GetDepth() const { return GetVar(mDevice->depth); };
 
     /// the data is buffered here for playback
     void GetImage(uint8_t* aBuffer) const
     {
-      return(GetVarByRef(mDevice->data,
+      return GetVarByRef(mDevice->data,
                          mDevice->data+GetCount(),
-                         aBuffer));
+                         aBuffer);
     };
 
     // dsp file descriptor
-    //uint GetFd() const { return(GetVar(mDevice->fd)); };
+    //uint GetFd() const { return GetVar(mDevice->fd); };
 
     // set up the DSP to the current bitrate and depth
     void ConfigureDSP(uint aBitRate, uint aDepth);
@@ -2120,7 +2122,7 @@ class WiFiProxy: public ClientProxy
 
   public:
     /// constructor
-    WiFiProxy(PlayerClient *aPc, uint aIndex);
+    WiFiProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~WiFiProxy();
 

@@ -77,18 +77,9 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
 
 void PlayerClient::Disconnect()
 {
-  // Should go through here and disconnect all the proxies associated
-  // with us?
-  // how can we do the loop with a for_each?
-  //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mSignal));
-  /*
-  std::list<ClientProxy*>::iterator it = mProxyList.begin();
-  for(; it != mProxyList.end(); ++it)
-  {
-    ClientProxy* x = *it;
-    x->Unsubscribe();
-  }
-  */
+  std::for_each(mProxyList.begin(),
+                mProxyList.end(),
+                std::mem_fun(&ClientProxy::Unsubscribe));
 
   if (NULL != mClient)
   {
@@ -187,23 +178,9 @@ void PlayerClient::Read()
   }
 
 #ifdef HAVE_BOOST_SIGNALS
-  // how can we do the loop with a for_each?
-  //std::for_each(mProxyList.begin(), mProxyList.end(), boost::mem_fn(&ClientProxy::mReadSignal));
-  std::list<PlayerCc::ClientProxy*>::iterator it = mProxyList.begin();
-  for(; it != mProxyList.end(); ++it)
-  {
-    ClientProxy* x = *it;
-    // only emit a signal when the interface has received data
-    x->GetDataTime();
-
-
-    if (x->GetDataTime() > x->mLastTime)
-    {
-      //boost::mutex::scoped_lock lock(mMutex);
-      x->mLastTime = x->GetDataTime();
-      x->mReadSignal();
-    }
-  }
+  std::for_each(mProxyList.begin(),
+                mProxyList.end(),
+                std::mem_fun(&ClientProxy::ReadSignal));
 #endif
 }
 

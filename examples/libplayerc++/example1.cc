@@ -1,9 +1,7 @@
-#include <libplayerc++/playerc++.h>
-
 #include <iostream>
-
 #include <boost/signal.hpp>
 #include <boost/bind.hpp>
+#include <libplayerc++/playerc++.h>
 
 // These are our callback functions.
 // Currently, they all must return void.
@@ -51,17 +49,14 @@ int main(int argc, char** argv)
   // it runs into trouble
   try
   {
-    // it's best use the "using namespace" operation sparingly
-    using namespace PlayerCc;
-
     // let's setup a client
     // by default PlayerClient uses localhost and 6665
-    PlayerClient client;
-    CameraProxy cp(&client, 0);
+    PlayerCc::PlayerClient client;
+    PlayerCc::CameraProxy  cp(&client, 0);
 
     // Here, we're connecting a signal to a function.
     // We keep the connection_t so we can later disconnect.
-    ClientProxy::connection_t conn;
+    PlayerCc::ClientProxy::connection_t conn;
     conn = cp.ConnectReadSignal(&cb1);
 
     // Signals can also be connected without storing the connection_t,
@@ -85,7 +80,7 @@ int main(int argc, char** argv)
     // server.  The first is by manually calling Read() each time we would
     // like to process data.
     std::cout << "Read()" << std::endl;
-    for (int i=0; i<10; ++i)
+    for (uint i=0; i<10; ++i)
     {
       client.Read();
       // an example of disconnecting a signal
@@ -101,7 +96,7 @@ int main(int argc, char** argv)
 
     // Let's connect our stop_cb() signal.  This signal tells the client
     // to exit after 10 iterations
-    uint i=0;
+    uint i = 0;
     conn = cp.ConnectReadSignal(boost::bind(&stop_cb, &client, i));
 
     // Now, let's run the client.  This exits when the client->Stop() function
@@ -124,7 +119,7 @@ int main(int argc, char** argv)
 
     // Instead of sleeping here, we could also be sending commands and reading
     // directly from the proxy.
-    for (int j=0; j<10; ++j)
+    for (uint j=0; j<10; ++j)
     {
       cp.SaveFrame("test");
       // all proxies have a iostream operator
