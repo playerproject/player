@@ -54,9 +54,18 @@ ClientProxy::~ClientProxy()
   PRINT("Removed " << this << " from ProxyList");
 }
 
-void ClientProxy::Print()
+void ClientProxy::ReadSignal()
 {
-  std::cout << *this << std::endl;
+#ifdef HAVE_BOOST_SIGNALS
+  // only emit a signal when the interface has received data
+  if (GetDataTime() > mLastTime)
+  {
+    mLastTime = GetDataTime();;
+    mReadSignal();
+  }
+#else
+  throw PlayerError("ClientProxy::ReadSignal","Signal support not included");
+#endif
 }
 
 std::ostream& std::operator << (std::ostream& os, const PlayerCc::ClientProxy& c)
