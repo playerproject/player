@@ -124,3 +124,12 @@ std::operator << (std::ostream& os, const player_pose3d_t& c)
      << c.proll << "," << c.ppitch << "," << c.pyaw;
   return os;
 }
+
+std::ostream&
+std::operator << (std::ostream& os, const playerc_device_info_t& c)
+{
+  os << c.drivername << "("
+     << playerc_lookup_name(c.addr.interf) << ":" << c.addr.index
+     << ")";
+  return os;
+}

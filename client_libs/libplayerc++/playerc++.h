@@ -85,12 +85,17 @@ namespace PlayerCc
 /** @addtogroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
-/** @brief The Player client base class
+/** @brief The client proxy base class
  *
  * Base class for all proxy devices. Access to a device is provided by a
  * device-specific proxy class.  These classes all inherit from the @p
  * ClientProxy class which defines an interface for device proxies.  As such,
  * a few methods are common to all devices and we explain them here.
+ *
+ * Since the ConnectReadSignal() and DisconnectReadSignal() member functions
+ * are based on the Boost signals library, they are conditionally available
+ * depending on Boost's presence in the system.  See the @em configure script
+ * for more information.
 */
 class ClientProxy
 {
@@ -2174,6 +2179,7 @@ namespace std
 {
   std::ostream& operator << (std::ostream& os, const player_pose_t& c);
   std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
+  std::ostream& operator << (std::ostream& os, const playerc_device_info_t& c);
 
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);

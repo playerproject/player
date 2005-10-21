@@ -61,8 +61,12 @@ class ClientProxy;
  *
  * One PlayerClient object is used to control each connection to
  * a Player server.  Contained within this object are methods for changing the
- * connection parameters and obtaining access to devices, which we explain
- * next.
+ * connection parameters and obtaining access to devices.
+ *
+ * Since the threading functionality of the PlayerClient is built on Boost,
+ * these options are conditionally available based on the Boost threading
+ * library being present on the system.  The StartThread and StopThread are
+ * the only functions conditionally available based on this.
 */
 class PlayerClient
 {
@@ -71,6 +75,8 @@ class PlayerClient
   private:
     // list of proxies associated with us
     std::list<PlayerCc::ClientProxy*> mProxyList;
+
+    std::list<playerc_device_info_t> mDeviceList;
 
     // Connect to the indicated host and port.
     // @exception throws PlayerError if unsuccessfull
@@ -137,6 +143,8 @@ class PlayerClient
     /// - 1 if there is data waiting
     int Peek(uint timeout=0);
 
+    /// A blocking Read
+    ///
     /// Use this method to read data from the server, blocking until at
     /// least one message is received.  Use @ref PlayerClient::Peek() to check
     /// whether any data is currently waiting.
@@ -164,6 +172,8 @@ class PlayerClient
     /// Get the list of available device ids. The data is written into the
     /// proxy structure rather than retured to the caller.
     void RequestDeviceList();
+
+    std::list<playerc_device_info_t> GetDeviceList();
 
     /// Returns the hostname
     std::string GetHostname() const { return(mHostname); };
