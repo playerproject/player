@@ -184,10 +184,32 @@ void PlayerClient::Read()
 #endif
 }
 
+void PlayerClient::RequestDeviceList()
+{
+  boost::mutex::scoped_lock lock(mMutex);
+  if (0!=playerc_client_get_devlist(mClient))
+  {
+    throw PlayerError("PlayerClient::RequestDeviceList()", playerc_error_str());
+  }
+}
+
+std::list<playerc_device_info_t> PlayerClient::GetDeviceList()
+{
+  std::list<playerc_device_info_t> dev_list;
+  for (int i=0; i < mClient->devinfo_count; ++i)
+  {
+    PRINT(mClient->devinfos[i]);
+    dev_list.push_back(mClient->devinfos[i]);
+  }
+
+  return dev_list;
+}
+
 // change continuous data rate (freq is in Hz)
 void PlayerClient::SetFrequency(uint aFreq)
 {
-  std::cerr << "PlayerClient::SetFrequency() not implemented ";
+  std::cerr << "PlayerClient::SetFrequency() not implemented in libplayerc"
+            << std::endl;
   /*
   if (0!=playerc_client_datafreq(mClient, aFreq))
   {
@@ -200,7 +222,8 @@ void PlayerClient::SetFrequency(uint aFreq)
 // valid modes are given in include/messages.h
 void PlayerClient::SetDataMode(uint aMode)
 {
-  std::cerr << "PlayerClient::SetDataMode() not implemented ";
+  std::cerr << "PlayerClient::SetDataMode() not implemented in libplayerc"
+            << std::endl;
   /*
   if (0!=playerc_client_datamode(mClient, aMode))
   {
@@ -218,43 +241,6 @@ std::string PlayerClient::LookupName(int aCode) const
 {
   return std::string(playerc_lookup_name(aCode));
 }
-
-// authenticate
-#if 0
-void PlayerClient::Authenticate(const std::string* aKey)
-{
-
-  std::cerr << "PlayerClient::Authenticate() not implemented ";
-/*
-  if (0!=playerc_client_authenticate(mClient, aKey->c_str()))
-  {
-    throw PlayerError("PlayerClient::Authenticate()", playerc_error_str());
-  }
-*/
-
-}
-
-// get the pointer to the proxy for the given device and index
-ClientProxy* PlayerClient::GetProxy(player_devaddr_t aAddr)
-{
-  std::cerr << "PlayerClient::GetProxy() not implemented ";
-//  return *find(mProxyList.begin(), mProxyList.end(), aAddr);
-  return NULL;
-}
-
-
-
-// Get the list of available device ids. The data is written into the
-// proxy structure rather than retured to the caller.
-void PlayerClient::GetDeviceList()
-{
-  if (0!=playerc_client_get_devlist(mClient))
-  {
-    throw PlayerError("PlayerClient::GetDeviceList()", playerc_error_str());
-  }
-}
-
-#endif
 
 std::ostream&
 std::operator << (std::ostream& os, const PlayerCc::PlayerClient& c)
