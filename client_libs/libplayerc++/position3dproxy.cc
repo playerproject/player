@@ -46,7 +46,7 @@ Position3dProxy::~Position3dProxy()
 void
 Position3dProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_position3d_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("Position3dProxy::Position3dProxy()", "could not create");
@@ -59,7 +59,7 @@ void
 Position3dProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position3d_unsubscribe(mDevice);
   playerc_position3d_destroy(mDevice);
   mDevice = NULL;
@@ -80,24 +80,25 @@ std::operator << (std::ostream &os, const PlayerCc::Position3dProxy &c)
 
 void
 Position3dProxy::SetSpeed(double aXSpeed, double aYSpeed, double aZSpeed,
-      double aRollSpeed, double aPitchSpeed, double aYawSpeed)
+                          double aRollSpeed, double aPitchSpeed, double aYawSpeed)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
-  playerc_position3d_set_velocity(mDevice, aXSpeed, aYSpeed, aZSpeed, aRollSpeed, aPitchSpeed, aYawSpeed, 0);
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_position3d_set_velocity(mDevice, aXSpeed, aYSpeed, aZSpeed,
+                                  aRollSpeed, aPitchSpeed, aYawSpeed, 0);
 }
 
 void
 Position3dProxy::GoTo(double aX, double aY, double aZ,
                       double aRoll, double aPitch, double aYaw)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position3d_set_pose(mDevice, aX, aY, aZ, aRoll, aPitch, aYaw);
 }
 
 void
 Position3dProxy::SetMotorEnable(bool aEnable)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position3d_enable(mDevice,aEnable);
 }
 

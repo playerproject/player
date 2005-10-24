@@ -54,7 +54,7 @@ ActArrayProxy::~ActArrayProxy()
 
 void ActArrayProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_actarray_create(mClient, aIndex);
   if (mDevice==NULL)
     throw PlayerError("ActArrayProxy::ActArrayProxy()", "could not create");
@@ -66,7 +66,7 @@ void ActArrayProxy::Subscribe(uint aIndex)
 void ActArrayProxy::Unsubscribe(void)
 {
   assert(mDevice!=NULL);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_unsubscribe(mDevice);
   playerc_actarray_destroy(mDevice);
   mDevice = NULL;
@@ -112,7 +112,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
 // Power control
 void ActArrayProxy::SetPowerConfig(bool aVal)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   int ret = playerc_actarray_power(mDevice, aVal ? 1 : 0);
 
   if (ret == -2)
@@ -126,7 +126,7 @@ void ActArrayProxy::SetPowerConfig(bool aVal)
 // Brakes control
 void ActArrayProxy::SetBrakesConfig(bool aVal)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   int ret = playerc_actarray_brakes(mDevice, aVal ? 1 : 0);
 
   if (ret == -2)
@@ -140,7 +140,7 @@ void ActArrayProxy::SetBrakesConfig(bool aVal)
 // Speed config
 void ActArrayProxy::SetSpeedConfig (uint aJoint, float aSpeed)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   int ret = playerc_actarray_speed_config(mDevice, aJoint, aSpeed);
 
   if (ret == -2)
@@ -154,21 +154,21 @@ void ActArrayProxy::SetSpeedConfig (uint aJoint, float aSpeed)
 // Send an actuator to a position
 void ActArrayProxy::MoveTo(uint aJoint, float aPosition)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_position_cmd(mDevice, aJoint, aPosition);
 }
 
 // Move an actuator at a speed
 void ActArrayProxy::MoveAtSpeed(uint aJoint, float aSpeed)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_speed_cmd(mDevice, aJoint, aSpeed);
 }
 
 // Send an actuator, or all actuators, home
 void ActArrayProxy::MoveHome(int aJoint)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_home_cmd(mDevice, aJoint);
 }
 
@@ -176,7 +176,7 @@ player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const
 {
   if (aJoint > mDevice->actuators_count)
   {
-    boost::mutex::scoped_lock lock(mPc->mMutex);
+    scoped_lock_t lock(mPc->mMutex);
     player_actarray_actuator_t empty;
     memset(&empty, 0, sizeof(player_actarray_actuator_t));
     return empty;
@@ -190,7 +190,7 @@ player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint aJoint) const
 {
   if (aJoint > mDevice->actuators_count)
   {
-    boost::mutex::scoped_lock lock(mPc->mMutex);
+    scoped_lock_t lock(mPc->mMutex);
     player_actarray_actuatorgeom_t empty;
     memset(&empty, 0, sizeof(player_actarray_actuatorgeom_t));
     return empty;
@@ -201,7 +201,7 @@ player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint aJoint) const
 
 void ActArrayProxy::RequestGeometry(void)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   int ret = playerc_actarray_get_geom(mDevice);
 
   if (ret == -2)

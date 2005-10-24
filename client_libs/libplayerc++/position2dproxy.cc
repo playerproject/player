@@ -46,7 +46,7 @@ Position2dProxy::~Position2dProxy()
 void
 Position2dProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_position2d_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("Position2dProxy::Position2dProxy()", "could not create");
@@ -59,7 +59,7 @@ void
 Position2dProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position2d_unsubscribe(mDevice);
   playerc_position2d_destroy(mDevice);
   mDevice = NULL;
@@ -79,21 +79,21 @@ std::operator << (std::ostream &os, const PlayerCc::Position2dProxy &c)
 void
 Position2dProxy::SetSpeed(double aXSpeed, double aYSpeed, double aYawSpeed)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position2d_set_cmd_vel(mDevice,aXSpeed,aYSpeed,aYawSpeed,0);
 }
 
 void
 Position2dProxy::GoTo(double aX, double aY, double aYaw)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position2d_set_cmd_pose(mDevice,aX,aY,aYaw,0);
 }
 
 void
 Position2dProxy::SetMotorEnable(bool aEnable)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position2d_enable(mDevice,aEnable);
 }
 
@@ -106,7 +106,7 @@ Position2dProxy::ResetOdometry()
 void
 Position2dProxy::SetOdometry(double aX, double aY, double aYaw)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_position2d_set_odom(mDevice,aX,aY,aYaw);
 }
 

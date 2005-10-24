@@ -46,7 +46,7 @@ SimulationProxy::~SimulationProxy()
 void
 SimulationProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_simulation_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("SimulationProxy::SimulationProxy()", "could not create");
@@ -59,7 +59,7 @@ void
 SimulationProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_simulation_unsubscribe(mDevice);
   playerc_simulation_destroy(mDevice);
   mDevice = NULL;
@@ -74,13 +74,13 @@ std::operator << (std::ostream &os, const PlayerCc::SimulationProxy &c)
 
 void SimulationProxy::SetPose2d(char* identifier, double x, double y, double a)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_simulation_set_pose2d(mDevice,identifier, x,y,a);
 }
 
 void SimulationProxy::GetPose2d(char* identifier, double& x, double& y, double& a)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_simulation_get_pose2d(mDevice,identifier, &x,&y,&a);
 }
 

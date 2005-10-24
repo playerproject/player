@@ -103,10 +103,22 @@ class ClientProxy
 
   public:
 
+#ifdef HAVE_BOOST_SIGNALS
     /// A connection type.  This is usefull when attaching signals to the
     /// ClientProxy because it allows for detatching the signals.
-#ifdef HAVE_BOOST_SIGNALS
     typedef boost::signals::connection connection_t;
+
+    // A scoped lock
+    typedef boost::mutex::scoped_lock scoped_lock_t;
+
+    // the function pointer type for read signals signal
+    typedef boost::signal<void (void)> read_signal_t;
+#else
+    // if we're not using boost, just define them.
+    typedef int connection_t;
+    // we redefine boost::mustex::scoped_lock in playerclient.h
+    typedef boost::mutex::scoped_lock scoped_lock_t;
+    typedef int read_signal_t;
 #endif
 
   protected:
@@ -147,7 +159,7 @@ class ClientProxy
     template<typename T>
     T GetVar(const T &aV) const
     { // these have to be defined here since they're templates
-      boost::mutex::scoped_lock lock(mPc->mMutex);
+      scoped_lock_t lock(mPc->mMutex);
       T v = aV;
       return v;
     }
@@ -161,7 +173,7 @@ class ClientProxy
     template<typename T>
     void GetVarByRef(const T aBegin, const T aEnd, T aDest) const
     { // these have to be defined here since they're templates
-      boost::mutex::scoped_lock lock(mPc->mMutex);
+      scoped_lock_t lock(mPc->mMutex);
       std::copy(aBegin, aEnd, aDest);
     }
 
@@ -186,9 +198,7 @@ class ClientProxy
     // the return type is void but is undefined when the return type is any
     // other type (because there is no way to synthesize a return value)."
     //
-#ifdef HAVE_BOOST_SIGNALS
-    boost::signal<void (void)> mReadSignal;
-#endif
+    read_signal_t mReadSignal;
 
     // Outputs the signal if there is new data
     void ReadSignal();
@@ -221,15 +231,15 @@ class ClientProxy
 
 #ifdef HAVE_BOOST_SIGNALS
     /// Connect a signal to this proxy
-    /// For more information check out @file example2.cc
+    /// For more information check out @ref player_clientlib_multi
     template<typename T>
     connection_t ConnectReadSignal(T aSubscriber)
-      { boost::mutex::scoped_lock lock(mPc->mMutex);
+      { scoped_lock_t lock(mPc->mMutex);
         return mReadSignal.connect(aSubscriber); }
 
     /// Disconnect a signal to this proxy
     void DisconnectReadSignal(connection_t aSubscriber)
-      { boost::mutex::scoped_lock lock(mPc->mMutex);
+      { scoped_lock_t lock(mPc->mMutex);
         aSubscriber.disconnect(); }
 #endif
 

@@ -29,6 +29,12 @@
   // in all the proxies
   namespace boost
   {
+    class thread
+    {
+      public:
+        thread() {};
+    };
+
     class mutex
     {
       public:
@@ -72,6 +78,12 @@ class PlayerClient
 {
   friend class ClientProxy;
 
+  // our thread type
+  typedef boost::thread thread_t;
+
+  // our mutex type
+  typedef boost::mutex mutex_t;
+
   private:
     // list of proxies associated with us
     std::list<PlayerCc::ClientProxy*> mProxyList;
@@ -97,10 +109,8 @@ class PlayerClient
     // Is the thread currently stopped or stopping?
     bool mIsStop;
 
-#ifdef HAVE_BOOST_THREAD
-    // This is the thread where we run \ref Run()
-    boost::thread* mThread;
-#endif
+    // This is the thread where we run @ref Run()
+    thread_t* mThread;
 
     // A helper function for starting the thread
     void RunThread();
@@ -114,10 +124,8 @@ class PlayerClient
     /// destructor
     ~PlayerClient();
 
-//#ifdef HAVE_BOOST_THREAD
     /// A mutex for handling synchronization
-    boost::mutex mMutex;
-//#endif
+    mutex_t mMutex;
 
     // ideally, we'd use the read_write mutex, but I was having some problems
     // (with their code) because it's under development
@@ -160,11 +168,11 @@ class PlayerClient
 
     /// You can toggle the mode in which the server sends data to your
     /// client with this method.  The @p mode should be one of
-    ///   - PLAYER_DATAMODE_PUSH_ALL (all data at fixed frequency)
-    ///   - PLAYER_DATAMODE_PULL_ALL (all data on demand)
-    ///   - PLAYER_DATAMODE_PUSH_NEW (only new new data at fixed freq)
-    ///   - PLAYER_DATAMODE_PULL_NEW (only new data on demand)
-    ///   - PLAYER_DATAMODE_PUSH_ASYNC (new data, as fast as it is produced)
+    ///   - @ref PLAYER_DATAMODE_PUSH_ALL (all data at fixed frequency)
+    ///   - @ref PLAYER_DATAMODE_PULL_ALL (all data on demand)
+    ///   - @ref PLAYER_DATAMODE_PUSH_NEW (only new new data at fixed freq)
+    ///   - @ref PLAYER_DATAMODE_PULL_NEW (only new data on demand)
+    ///   - @ref PLAYER_DATAMODE_PUSH_ASYNC (new data, as fast as it is produced)
     ///
     /// @exception throws PlayerError if unsuccessfull
     void SetDataMode(uint aMode);
