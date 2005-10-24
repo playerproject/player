@@ -414,8 +414,8 @@ dnl          client_libs/c/playercclient.pc
 dnl          client_libs/libplayerc/doc/Makefile
           client_libs/libplayerc/playerc.pc
           client_libs/libplayerc/test/Makefile
-          client_libs/libplayerc/bindings/Makefile
-          client_libs/libplayerc/bindings/python/Makefile
+dnl          client_libs/libplayerc/bindings/Makefile
+dnl          client_libs/libplayerc/bindings/python/Makefile
 dnl          client_libs/libplayerpacket/Makefile
           examples/Makefile
           examples/plugins/Makefile

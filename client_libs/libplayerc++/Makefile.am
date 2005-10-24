@@ -21,6 +21,7 @@ CLEANFILES = playerc++.pc
 libplayerc___la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 libplayerc___la_SOURCES =     playerc++.h \
+                              debug.h \
                               playerclient.h \
                               playererror.h \
                               playerc++.cc \
