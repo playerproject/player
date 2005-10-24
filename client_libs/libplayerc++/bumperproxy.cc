@@ -47,7 +47,7 @@ BumperProxy::~BumperProxy()
 void
 BumperProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_bumper_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("BumperProxy::BumperProxy()", "could not create");
@@ -60,7 +60,7 @@ void
 BumperProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_bumper_unsubscribe(mDevice);
   playerc_bumper_destroy(mDevice);
   mDevice = NULL;
@@ -92,7 +92,7 @@ BumperProxy::IsAnyBumped()
 void
 BumperProxy::RequestBumperConfig()
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_bumper_get_geom(mDevice))
     throw PlayerError("BumperProxy::RequestBumperConfig()", "error getting geom");
   return;

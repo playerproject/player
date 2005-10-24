@@ -46,7 +46,7 @@ SpeechProxy::~SpeechProxy()
 void
 SpeechProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_speech_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("SpeechProxy::SpeechProxy()", "could not create");
@@ -59,7 +59,7 @@ void
 SpeechProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_speech_unsubscribe(mDevice);
   playerc_speech_destroy(mDevice);
   mDevice = NULL;
@@ -75,7 +75,7 @@ std::operator << (std::ostream &os, const PlayerCc::SpeechProxy &c)
 void
 SpeechProxy::Say(std::string aStr)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_speech_say(mDevice, aStr.c_str());
 }
 

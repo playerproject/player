@@ -159,7 +159,7 @@ void PlayerClient::Stop()
 
 int PlayerClient::Peek(uint aTimeout)
 {
-  boost::mutex::scoped_lock lock(mMutex);
+  ClientProxy::scoped_lock_t lock(mMutex);
   //EVAL(playerc_client_peek(mClient, aTimeout));
   return playerc_client_peek(mClient, aTimeout);
 }
@@ -170,7 +170,7 @@ void PlayerClient::Read()
   PRINT("read()");
   // first read the data
   {
-    boost::mutex::scoped_lock lock(mMutex);
+    ClientProxy::scoped_lock_t lock(mMutex);
     if (NULL==playerc_client_read(mClient))
     {
       throw PlayerError("PlayerClient::Read()", playerc_error_str());
@@ -186,7 +186,7 @@ void PlayerClient::Read()
 
 void PlayerClient::RequestDeviceList()
 {
-  boost::mutex::scoped_lock lock(mMutex);
+  ClientProxy::scoped_lock_t lock(mMutex);
   if (0!=playerc_client_get_devlist(mClient))
   {
     throw PlayerError("PlayerClient::RequestDeviceList()", playerc_error_str());

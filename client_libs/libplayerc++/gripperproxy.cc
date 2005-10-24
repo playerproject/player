@@ -47,7 +47,7 @@ GripperProxy::~GripperProxy()
 void
 GripperProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_gripper_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("GripperProxy::GripperProxy()", "could not create");
@@ -60,7 +60,7 @@ void
 GripperProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_gripper_unsubscribe(mDevice);
   playerc_gripper_destroy(mDevice);
   mDevice = NULL;
@@ -86,7 +86,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::GripperProxy &
 //   -1 otherwise (that's bad)
 void GripperProxy::SetGrip(uint8_t aCmd, uint8_t aArg)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_gripper_set_cmd(mDevice,aCmd,aArg))
     throw PlayerError("GripperProxy::SetGrip()", "error setting grip");
   return;

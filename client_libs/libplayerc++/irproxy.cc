@@ -47,7 +47,7 @@ IrProxy::~IrProxy()
 void
 IrProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_ir_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("IrProxy::IrProxy()", "could not create");
@@ -60,7 +60,7 @@ void
 IrProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_ir_unsubscribe(mDevice);
   playerc_ir_destroy(mDevice);
   mDevice = NULL;
@@ -78,7 +78,7 @@ std::operator << (std::ostream &os, const PlayerCc::IrProxy &c)
 
 void IrProxy::RequestGeom()
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_ir_get_geom(mDevice))
     throw PlayerError("IrProxy::RequestGeom()", "error getting geom");
   return;

@@ -51,7 +51,7 @@ LaserProxy::~LaserProxy()
 void
 LaserProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_laser_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("LaserProxy::LaserProxy()", "could not create");
@@ -64,7 +64,7 @@ void
 LaserProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   playerc_laser_unsubscribe(mDevice);
   playerc_laser_destroy(mDevice);
   mDevice = NULL;
@@ -77,7 +77,7 @@ LaserProxy::Configure(double min_angle,
                       uint range_res,
                       bool intensity)
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_laser_set_config(mDevice, min_angle, max_angle,
                                     scan_res, range_res, intensity?1:0))
     throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
@@ -86,7 +86,7 @@ LaserProxy::Configure(double min_angle,
 void
 LaserProxy::RequestConfigure()
 {
-  boost::mutex::scoped_lock lock(mPc->mMutex);
+  scoped_lock_t lock(mPc->mMutex);
   unsigned char temp_int;
   if (0 != playerc_laser_get_config(mDevice, &min_angle, &max_angle,
                                      &scan_res, &range_res, &temp_int))

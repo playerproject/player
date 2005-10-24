@@ -46,7 +46,7 @@ PtzProxy::~PtzProxy()
 void
 PtzProxy::Subscribe(uint aIndex)
 {
-  boost::mutex::scoped_lock  lock(mPc->mMutex);
+  scoped_lock_t  lock(mPc->mMutex);
   mDevice = playerc_ptz_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("PtzProxy::PtzProxy()", "could not create");
@@ -59,7 +59,7 @@ void
 PtzProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
-  boost::mutex::scoped_lock  lock(mPc->mMutex);
+  scoped_lock_t  lock(mPc->mMutex);
   playerc_ptz_unsubscribe(mDevice);
   playerc_ptz_destroy(mDevice);
   mDevice = NULL;
@@ -78,14 +78,14 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::PtzProxy &c)
 */
 void PtzProxy::SetCam(double aPan, double aTilt, double aZoom)
 {
-  boost::mutex::scoped_lock  lock(mPc->mMutex);
+  scoped_lock_t  lock(mPc->mMutex);
   playerc_ptz_set(mDevice, aPan, aTilt, aZoom);
 }
 
 /** Specify new target velocities */
 void PtzProxy::SetSpeed(double aPanSpeed, double aTiltSpeed, double aZoomSpeed)
 {
-  boost::mutex::scoped_lock  lock(mPc->mMutex);
+  scoped_lock_t  lock(mPc->mMutex);
   playerc_ptz_set_ws(mDevice, 0, 0, 0, aPanSpeed, aTiltSpeed);
 }
 
