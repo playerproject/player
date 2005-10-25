@@ -79,6 +79,18 @@ namespace PlayerCc
 /// Normalize angle to domain -pi, pi
 #define NORMALIZE(z) atan2(sin(z), cos(z))
 #endif
+
+/// Return the minimum of a, b
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+
+/// Return the maximum of a, b
+#ifndef MAX
+  #define MAX(a,b) ((a > b) ? (a) : (b))
+#endif
+
+
 /** @}*/
 
 
