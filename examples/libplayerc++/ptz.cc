@@ -14,7 +14,7 @@
 #include <string>
 
 // defines gHostname, gPort, ...
-#include "config.h"
+#include "args.h"
 
 int main(int argc, char **argv)
 {

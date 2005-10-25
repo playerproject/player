@@ -9,7 +9,7 @@
 #include <libplayerc++/playerc++.h>
 #include <iostream>
 
-#include "config.h"
+#include "args.h"
 
 int
 main(int argc, char **argv)
