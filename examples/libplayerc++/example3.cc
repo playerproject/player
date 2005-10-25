@@ -1,36 +1,27 @@
+// For anyone who looks at this file:
+//
+// I'm using this as a playground for *contemplating* new functionality of the
+// libplayerc++ library, so it may not make any sense.
+//
+// You've been warned...
+
 #include <libplayerc++/playerc++.h>
 #include <iostream>
-#include <boost/signal.hpp>
-#include <boost/bind.hpp>
-#include <cmath>
+#include <unistd.h>
 
-#include <time.h>
-// these are our callback functions.  Currently, they all need to return void.
-void read_callback1()
+#include "config.h"
+
+template<typename T>
+void Print(T t)
 {
-    std::cout << "callback_1" << std::endl;
+  std::cout << t << std::endl;
 }
 
-void read_callback2(uint &aI)
+template<typename T>
+void Print_Ref(T t)
 {
-    std::cout << "callback_2" << " " << ++aI << std::endl;
+  std::cout << *t << std::endl;
 }
-
-// we can also have callbacks in objects
-class test_callback
-{
-  public:
-
-    test_callback(int aId) : mId(aId) {};
-
-    void read_callback3()
-      { std::cout << "callback_3 " << mId << std::endl; }
-
-    void read_callback4(uint aOpt = 0)
-      { std::cout << "callback_3 " << mId << " " << aOpt << std::endl; }
-
-    int mId;
-};
 
 int main(int argc, char** argv)
 {
@@ -38,37 +29,30 @@ int main(int argc, char** argv)
   {
     using namespace PlayerCc;
 
-    PlayerClient client("localhost", 6665);
-    CameraProxy cp(&client, 0);
-    PtzProxy   ptz(&client, 0);
+    parse_args(argc, argv);
 
-    // Here, we're connecting a signal to a function.  We keep the connection_t
-    // so we can later disconnect.
-    ClientProxy::connection_t conn1;
-    conn1 = cp.ConnectReadSignal(&read_callback1);
+    PlayerClient client(gHostname, gPort);
 
-    ClientProxy::connection_t conn2;
-    uint count = 0;
-    conn2 = cp.ConnectReadSignal(boost::bind(&read_callback2, count));
+    client.SetDataMode(gDataMode);
+    client.SetFrequency(gFrequency);
 
-    // here we're connecting a signal to a member function
-    test_callback test1(1), test2(2);
-    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback3, boost::ref(test1)));
-    cp.ConnectReadSignal(boost::bind(&test_callback::read_callback4, boost::ref(test2), 1));
+    client.RequestDeviceList();
+    std::list<playerc_device_info_t> dlist(client.GetDeviceList());
 
-    // now, we should see some signals each time Read() is called.
-    client.StartThread();
+    for_each(dlist.begin(), dlist.end(), Print<playerc_device_info_t>);
 
-    timespec sleep = {0, 1000000};
-    for (;;)
-    {
-      //std::cout << ptz;
-      //ptz.SetCam(ptz.GetPan()+DTOR(10*pow(-1, i%2)), 0, 0);
-      ptz.SetCam(ptz.GetPan(), 0, 0);
-      nanosleep(&sleep, NULL);
-    }
+    std::list<ClientProxy*> mProxyList;
 
-    client.StopThread();
+    CameraProxy  cp(&client, gIndex);
+    PtzProxy  pp(&client, gIndex);
+
+    mProxyList.push_back(&cp);
+    mProxyList.push_back(&pp);
+
+    for_each(mProxyList.begin(),
+             mProxyList.end(),
+             Print_Ref<ClientProxy*>);
+
   }
   catch (PlayerCc::PlayerError e)
   {
