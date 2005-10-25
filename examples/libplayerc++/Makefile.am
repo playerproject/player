@@ -14,11 +14,11 @@ AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
 
 bin_PROGRAMS =
 if INCLUDE_PLAYERCC
-  bin_PROGRAMS += example0
+  bin_PROGRAMS += example0 ptz laserobstacleavoid
 endif
 
 if INCLUDE_PLAYERCC_BOOST
-  bin_PROGRAMS += example1 example3
+  bin_PROGRAMS += example1 example3 goto
 endif
 
 if INCLUDE_BOOST_SIGNALS
@@ -40,3 +40,15 @@ example2_DEPENDENCIES = $(PLAYERCC_DEPS)
 example3_SOURCES = example3.cc
 example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
 example3_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+goto_SOURCES = goto.cc
+goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+goto_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+laserobstacleavoid_SOURCES = laserobstacleavoid.cc
+laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+laserobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+ptz_SOURCES = ptz.cc
+ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
