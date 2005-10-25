@@ -9,7 +9,7 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "config.h"
+#include "args.h"
 
 template<typename T>
 void Print(T t)

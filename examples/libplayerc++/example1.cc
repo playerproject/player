@@ -44,6 +44,21 @@ void stop_cb(PlayerCc::PlayerClient* c, uint &i)
 
 int main(int argc, char** argv)
 {
+  char * hostname = "lcoalhost";
+  int port = 6665;
+	
+  for (int i = 1; i < argc; ++i)
+  {
+    if (strcmp(argv[i],"-h")==0 && ++i<argc)
+	{
+		hostname = argv[i];
+	}
+	else if (strcmp(argv[i],"-p")==0 && ++i<argc)
+	{
+		port = atoi(argv[i]);
+	}
+  }
+	
   // it's always good to put the code in a try block
   // libplayerc++ throws a PlayerError exception when
   // it runs into trouble
@@ -51,7 +66,7 @@ int main(int argc, char** argv)
   {
     // let's setup a client
     // by default PlayerClient uses localhost and 6665
-    PlayerCc::PlayerClient client;
+    PlayerCc::PlayerClient client(hostname,port);
     PlayerCc::CameraProxy  cp(&client, 0);
 
     // Here, we're connecting a signal to a function.
