@@ -4,8 +4,6 @@
  * a simple demo to show how to send commands to and get feedback from
  * the Sony PTZ camera.  this program will pan the camera in a loop
  * from side to side
- *
- * @todo: this has been ported to libplayerc++, but not tested
  */
 
 #include <libplayerc++/playerc++.h>
@@ -38,9 +36,9 @@ int main(int argc, char **argv)
 
       std::cout << zp << std::endl;
 
-      if(zp.GetPan() > DTOR(80) || zp.GetPan() < DTOR(-80))
+      if(zp.GetPan() > DTOR(40) || zp.GetPan() < DTOR(-40))
       {
-        newpan = DTOR(dir*70);
+        newpan = DTOR(dir*30);
         zp.SetCam(newpan,zp.GetTilt(),zp.GetZoom());
         for(int i=0;i<10;i++)
         {

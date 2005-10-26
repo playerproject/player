@@ -31,7 +31,7 @@ dnl
 dnl Also create playerconfig.h, replacing a couple of C defines with the right
 dnl values.  This will be included by player.h
 dnl
-AC_CONFIG_HEADERS(config.h libplayercore/playerconfig.h)
+AC_CONFIG_HEADERS(config.h libplayercore/playerconfig.h client_libs/libplayerc++/playerc++config.h)
 
 dnl Find basic tools
 AC_PROG_CC

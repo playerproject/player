@@ -14,7 +14,7 @@ AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
 
 bin_PROGRAMS =
 if INCLUDE_PLAYERCC
-  bin_PROGRAMS += example0 ptz laserobstacleavoid
+  bin_PROGRAMS += example0 grip ptz laserobstacleavoid
 endif
 
 if INCLUDE_PLAYERCC_BOOST
@@ -44,6 +44,10 @@ example3_DEPENDENCIES = $(PLAYERCC_DEPS)
 goto_SOURCES = goto.cc
 goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
 goto_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+grip_SOURCES = grip.cc
+grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+grip_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 laserobstacleavoid_SOURCES = laserobstacleavoid.cc
 laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++

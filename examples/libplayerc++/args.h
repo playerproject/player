@@ -9,8 +9,50 @@ uint         gDebug(0);
 uint         gFrequency(10); // Hz
 uint         gDataMode(PLAYER_DATAMODE_PUSH_NEW);
 
-void
-print_usage(int argc, char** argv)
+void print_usage(int argc, char** argv);
+
+int parse_args(int argc, char** argv)
+{
+  // set the flags
+  const char* optflags = "h:p:i:d:u:m:";
+  int ch;
+
+  // use getopt to parse the flags
+  while(-1 != (ch = getopt(argc, argv, optflags)))
+  {
+    switch(ch)
+    {
+      // case values must match long_options
+      case 'h': // hostname
+          gHostname = optarg;
+          break;
+      case 'p': // port
+          gPort = atoi(optarg);
+          break;
+      case 'i': // index
+          gIndex = atoi(optarg);
+          break;
+      case 'd': // debug
+          gDebug = atoi(optarg);
+          break;
+      case 'u': // update rate
+          gFrequency = atoi(optarg);
+          break;
+      case 'm': // datamode
+          gDataMode = atoi(optarg);
+          break;
+      case '?': // help
+      case ':':
+      default:  // unknown
+        print_usage(argc, argv);
+        exit (-1);
+    }
+  }
+
+  return (0);
+} // end parse_args
+
+void print_usage(int argc, char** argv)
 {
   using namespace std;
   cerr << "USAGE:  " << *argv << " [options]" << endl << endl;
@@ -19,7 +61,7 @@ print_usage(int argc, char** argv)
        << PlayerCc::PLAYER_HOSTNAME << ")" << endl;
   cerr << "  -p <port>      : port where Player will listen (default: "
        << PlayerCc::PLAYER_PORTNUM << ")" << endl;
-  cerr << "  -i <index>     : device index"
+  cerr << "  -i <index>     : device index (default: 0)"
        << endl;
   cerr << "  -d <level>     : debug message level (0 = none -- 9 = all)"
        << endl;
@@ -37,44 +79,4 @@ print_usage(int argc, char** argv)
        << PLAYER_DATAMODE_PULL_NEW << endl;
   cerr << "                      PLAYER_DATAMODE_ASYNC    = "
        << PLAYER_DATAMODE_ASYNC << endl;
-}
-
-int
-parse_args(int argc, char** argv)
-{
-  const char* optflags = "h:p:i:d:u:m:";
-  int ch;
-
-  while(-1 != (ch = getopt(argc, argv, optflags)))
-  {
-    switch(ch)
-    {
-      /* case values must match long_options */
-      case 'h':
-          gHostname = optarg;
-          break;
-      case 'p':
-          gPort = atoi(optarg);
-          break;
-      case 'i':
-          gIndex = atoi(optarg);
-          break;
-      case 'd':
-          gDebug = atoi(optarg);
-          break;
-      case 'u':
-          gFrequency = atoi(optarg);
-          break;
-      case 'm':
-          gDataMode = atoi(optarg);
-          break;
-      case '?':
-      case ':':
-      default:
-        print_usage(argc, argv);
-        return (-1);
-    }
-  }
-
-  return (0);
-}
+} // end print_usage

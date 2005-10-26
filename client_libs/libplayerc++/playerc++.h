@@ -32,18 +32,17 @@
 #ifndef PLAYERCC_H
 #define PLAYERCC_H
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
-
 #include <cmath>
 #include <string>
 #include <list>
 #include <stdint.h>
 
+
 #include "libplayerc/playerc.h"
+#include "libplayerc++/playerc++config.h"
 #include "libplayerc++/playerclient.h"
 #include "libplayerc++/playererror.h"
+
 
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
