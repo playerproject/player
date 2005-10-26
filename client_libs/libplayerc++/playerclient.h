@@ -5,9 +5,7 @@
 #ifndef PLAYERCLIENT_H
 #define PLAYERCLIENT_H
 
-#if HAVE_CONFIG_H
-  #include <config.h>
-#endif
+#include "libplayerc++/playerc++config.h"
 
 #include <string>
 #include <list>

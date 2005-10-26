@@ -75,4 +75,4 @@ libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc
                                $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 libplayerc___includedir = $(includedir)/libplayerc++
-libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h
+libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h playerc++config.h
