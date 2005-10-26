@@ -166,6 +166,8 @@ class SickLMS200 : public Driver
 		       void * data);
   private:
 
+    int SetupLaser();
+
     // Main function for device thread.
     virtual void Main();
 
@@ -365,6 +367,61 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
 // Set up the device
 int SickLMS200::Setup()
 {
+  PLAYER_MSG1(2, "Laser initialising (%s)", this->device_name);
+    
+  // Open the terminal
+  if (OpenTerm())
+    return 1;
+
+  // Some Pioneers only power laser after the terminal is opened; wait
+  // for the laser to initialized
+  sleep(this->startup_delay);
+  
+  int i;
+  for(i=0;i<this->retry_limit;i++)
+  {
+    if(this->SetupLaser() == 0)
+    {
+      // Success
+      break;
+    }
+  }
+
+  if(i == this->retry_limit)
+  {
+    PLAYER_ERROR("unable to connect to laser");
+    return 1;
+  }
+
+  // Display the laser type
+  char type[64];
+  memset(type,0,sizeof(type));
+  if (GetLaserType(type, sizeof(type)))
+    return 1;
+  PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", type, this->device_name, this->port_rate);
+
+  // Configure the laser
+  if (SetLaserRes(this->scan_width, this->scan_res))
+    return 1;
+  if (SetLaserConfig(this->intensity))
+    return 1;
+
+  this->scan_id = 0;
+
+  PLAYER_MSG0(2, "laser ready");
+
+  // Start the device thread
+  StartThread();
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Try to setup the laser.  This method may be called multiple times from
+// Setup() if the user set a retry limit.  Returns 0 on success, non-zero
+// on failure.
+int SickLMS200::SetupLaser()
+{
   int rate = 0;
     
   PLAYER_MSG1(2, "Laser initialising (%s)", this->device_name);
@@ -377,49 +434,43 @@ int SickLMS200::Setup()
   // for the laser to initialized
   sleep(this->startup_delay);
   
-  for(int i=0;i<this->retry_limit;i++)
+  // Try connecting at the given rate
+  PLAYER_MSG1(2, "connecting at %d", this->port_rate);
+  if (ChangeTermSpeed(this->port_rate))
+    return 1;
+  if (SetLaserMode() == 0)
+    rate = this->port_rate;
+  else if (SetLaserMode() == 0)
+    rate = this->port_rate;
+
+  // Try connecting at 9600
+  if (rate == 0 && this->port_rate != 9600)
   {
-    // Try connecting at the given rate
-    PLAYER_MSG1(2, "connecting at %d", this->port_rate);
-    if (ChangeTermSpeed(this->port_rate))
+    PLAYER_MSG0(2, "connecting at 9600");
+    if (ChangeTermSpeed(9600))
       return 1;
     if (SetLaserMode() == 0)
-      rate = this->port_rate;
-    else if (SetLaserMode() == 0)
-      rate = this->port_rate;
+      rate = 9600;
+  }
 
-    // Try connecting at 9600
-    if (rate == 0 && this->port_rate != 9600)
-    {
-      PLAYER_MSG0(2, "connecting at 9600");
-      if (ChangeTermSpeed(9600))
-        return 1;
-      if (SetLaserMode() == 0)
-        rate = 9600;
-    }
+  // Try connecting at 38400
+  if (rate == 0 && this->port_rate >= 38400)
+  {
+    PLAYER_MSG0(2, "connecting at 38400");
+    if (ChangeTermSpeed(38400))
+      return 1;
+    if (SetLaserMode() == 0)
+      rate = 38400;
+  }
 
-    // Try connecting at 38400
-    if (rate == 0 && this->port_rate >= 38400)
-    {
-      PLAYER_MSG0(2, "connecting at 38400");
-      if (ChangeTermSpeed(38400))
-        return 1;
-      if (SetLaserMode() == 0)
-        rate = 38400;
-    }
-
-    // Try connecting at 500000
-    if (rate == 0 && this->port_rate >= 500000 && this->can_do_hi_speed)
-    {
-      PLAYER_MSG0(2, "connecting at 500000");
-      if (ChangeTermSpeed(500000))
-        return 1;
-      if (SetLaserMode() == 0)
-        rate = 500000;
-    }
-
-    if(rate != 0)
-      break;
+  // Try connecting at 500000
+  if (rate == 0 && this->port_rate >= 500000 && this->can_do_hi_speed)
+  {
+    PLAYER_MSG0(2, "connecting at 500000");
+    if (ChangeTermSpeed(500000))
+      return 1;
+    if (SetLaserMode() == 0)
+      rate = 500000;
   }
 
   // Could not find the laser
@@ -459,26 +510,6 @@ int SickLMS200::Setup()
     PLAYER_ERROR1("unsupported rate %d", this->port_rate);
     return 1;
   }
-
-  // Display the laser type
-  char type[64];
-  memset(type,0,sizeof(type));
-  if (GetLaserType(type, sizeof(type)))
-    return 1;
-  PLAYER_MSG3(2, "SICK laser type [%s] at [%s:%d]", type, this->device_name, this->port_rate);
-
-  // Configure the laser
-  if (SetLaserRes(this->scan_width, this->scan_res))
-    return 1;
-  if (SetLaserConfig(this->intensity))
-    return 1;
-
-  this->scan_id = 0;
-
-  PLAYER_MSG0(2, "laser ready");
-
-  // Start the device thread
-  StartThread();
 
   return 0;
 }
