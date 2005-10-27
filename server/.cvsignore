@@ -2,3 +2,6 @@ Makefile
 Makefile.in
 player
 stamp-h*
+player.pc
+playerconfig.h
+
