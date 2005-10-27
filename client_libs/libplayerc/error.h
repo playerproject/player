@@ -50,15 +50,16 @@
 
 #include <stdio.h>
 
+#define PLAYERC_ERROR_SIZE 1024
 // Use this function to read the error string
-extern const char *playerc_error_str(void);
+const char *playerc_error_str(void);
 
 // Use this function to set the error string
-extern char *playerc_error_set_str(void);
+char *playerc_error_set_str(void);
 
 // Useful error macros.
 // These print out the error
-#define PLAYERC_ERR(msg)         printf("playerc error   : " msg "\n")
+/*#define PLAYERC_ERR(msg)         printf("playerc error   : " msg "\n")
 #define PLAYERC_ERR1(msg, a)     printf("playerc error   : " msg "\n", a)
 #define PLAYERC_ERR2(msg, a, b)  printf("playerc error   : " msg "\n", a, b)
 #define PLAYERC_ERR3(msg, a, b, c)  printf("playerc error   : " msg "\n", a, b, c)
@@ -71,21 +72,22 @@ extern char *playerc_error_set_str(void);
 #define PLAYERC_WARN4(msg, a, b, c, d)  printf("playerc warning   : " msg "\n", a, b, c, d)
 
 #define PLAYERC_MSG3(msg, a, b, c) printf("playerc message : " msg "\n", a, b, c)
-
+*/
 // Useful error macros.
 // These ones store the error message.
-/*
-#define PLAYERC_ERR(msg)         sprintf(playerc_error_set_str(), msg)
-#define PLAYERC_ERR1(msg, a)     sprintf(playerc_error_set_str(), msg, a)
-#define PLAYERC_ERR2(msg, a, b)  sprintf(playerc_error_set_str(), msg, a, b)
-#define PLAYERC_ERR3(msg, a, b, c)  sprintf(playerc_error_set_str(), msg, a, b, c)
-#define PLAYERC_WARN(msg)        sprintf(playerc_error_set_str(), "warning : " msg)
-#define PLAYERC_WARN1(msg, a)    sprintf(playerc_error_set_str(), "warning : " msg, a)
-#define PLAYERC_WARN2(msg, a, b) sprintf(playerc_error_set_str(), "warning : " msg, a, b)
-#define PLAYERC_WARN3(msg, a, b, c) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c)
-#define PLAYERC_WARN4(msg, a, b, c, d) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c, d)
-#define PLAYERC_WARN5(msg, a, b, c, d, e) sprintf(playerc_error_set_str(), "warning : " msg, a, b, c, d, e)
-*/
+#define PLAYERC_ERR(msg)         			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg), printf("playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_ERR1(msg, a)     			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a), printf("playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_ERR2(msg, a, b)  			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b), printf("playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_ERR3(msg, a, b, c)  		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c), printf("playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_ERR4(msg, a, b, c, d)  		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c, d), printf("playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_ERR5(msg, a, b, c, d, e)  	snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, msg, a, b, c, d, e), printf("playerc error   : %s\n",playerc_error_str())
+#define PLAYERC_WARN(msg)        			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg), printf("playerc warning   : %s\n",playerc_error_str())
+#define PLAYERC_WARN1(msg, a)    			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a), printf("playerc warning   : %s\n",playerc_error_str())
+#define PLAYERC_WARN2(msg, a, b) 			snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b), printf("playerc warning   : %s\n",playerc_error_str())
+#define PLAYERC_WARN3(msg, a, b, c) 		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c), printf("playerc warning   : %s\n",playerc_error_str())
+#define PLAYERC_WARN4(msg, a, b, c, d) 		snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c, d), printf("playerc warning   : %s\n",playerc_error_str())
+#define PLAYERC_WARN5(msg, a, b, c, d, e) 	snprintf(playerc_error_set_str(), PLAYERC_ERROR_SIZE, "warning : " msg, a, b, c, d, e), printf("playerc warning   : %s\n",playerc_error_str())
+
 
 // DEBUG macros
 #ifdef DEBUG
