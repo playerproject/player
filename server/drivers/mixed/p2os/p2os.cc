@@ -1266,25 +1266,28 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
           joints[ii] = sippacket->armJointPosRads[ii];
         }
         sippacket->Fill(&p2os_data);
-        kineCalc->CalculateFK (joints);
-        limb_data.pX = kineCalc->GetP ().x + armOffsetX;
-        limb_data.pY = -kineCalc->GetP ().y + armOffsetY;
-        limb_data.pZ = kineCalc->GetP ().z + armOffsetZ;
-        limb_data.aX = kineCalc->GetA ().x;
-        limb_data.aY = -kineCalc->GetA ().y;
-        limb_data.aZ = kineCalc->GetA ().z;
-        limb_data.oX = kineCalc->GetO ().x;
-        limb_data.oY = -kineCalc->GetO ().y;
-        limb_data.oZ = kineCalc->GetO ().z;
-        if (limb_data.state != PLAYER_LIMB_STATE_OOR && limb_data.state != PLAYER_LIMB_STATE_COLL)
+        if(kineCalc)
         {
-          if (sippacket->armJointMoving[0] || sippacket->armJointMoving[1] || sippacket->armJointMoving[2] ||
-              sippacket->armJointMoving[3] || sippacket->armJointMoving[4])
+          kineCalc->CalculateFK (joints);
+          limb_data.pX = kineCalc->GetP ().x + armOffsetX;
+          limb_data.pY = -kineCalc->GetP ().y + armOffsetY;
+          limb_data.pZ = kineCalc->GetP ().z + armOffsetZ;
+          limb_data.aX = kineCalc->GetA ().x;
+          limb_data.aY = -kineCalc->GetA ().y;
+          limb_data.aZ = kineCalc->GetA ().z;
+          limb_data.oX = kineCalc->GetO ().x;
+          limb_data.oY = -kineCalc->GetO ().y;
+          limb_data.oZ = kineCalc->GetO ().z;
+          if (limb_data.state != PLAYER_LIMB_STATE_OOR && limb_data.state != PLAYER_LIMB_STATE_COLL)
           {
-            limb_data.state = PLAYER_LIMB_STATE_MOVING;
+            if (sippacket->armJointMoving[0] || sippacket->armJointMoving[1] || sippacket->armJointMoving[2] ||
+                sippacket->armJointMoving[3] || sippacket->armJointMoving[4])
+            {
+              limb_data.state = PLAYER_LIMB_STATE_MOVING;
+            }
+            else
+              limb_data.state = PLAYER_LIMB_STATE_IDLE;
           }
-          else
-            limb_data.state = PLAYER_LIMB_STATE_IDLE;
         }
       }
       if(publish_data)
