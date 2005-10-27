@@ -50,7 +50,7 @@
 
 
 // A place to put error strings
-char playerc_errorstr[1024];
+char playerc_errorstr[PLAYERC_ERROR_SIZE];
 
 // Use this function to read the error string
 const char *playerc_error_str()
