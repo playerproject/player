@@ -1302,9 +1302,12 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
       {
         sippacket->ParseArmInfo (&packet.packet[2]);
         // Update the KineCalc with the new info for joints - one would assume this doesn't change, though...
-        for (int ii = 0; ii < 5; ii++)
-          kineCalc->SetJointRange (ii, TicksToRadians (ii, sippacket->armJoints[ii].min), TicksToRadians (ii, sippacket->armJoints[ii].max));
-        // Go for another SIP - there had better be one or things will probably go boom
+        if (kineCalc)
+        {
+          for (int ii = 0; ii < 5; ii++)
+            kineCalc->SetJointRange (ii, TicksToRadians (ii, sippacket->armJoints[ii].min), TicksToRadians (ii, sippacket->armJoints[ii].max));
+          // Go for another SIP - there had better be one or things will probably go boom
+        }
         SendReceive(NULL,publish_data);
       }
     }
