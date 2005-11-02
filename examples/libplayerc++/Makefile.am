@@ -53,6 +53,10 @@ laserobstacleavoid_SOURCES = laserobstacleavoid.cc
 laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
 laserobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-ptz_SOURCES = ptz.cc
+ptz_SOURCES = randomwalk.cc
+ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+ptz_SOURCES = sonarobstacleavoid.cc
 ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
 ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
