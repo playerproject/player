@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 
     PlayerClient robot(gHostname, gPort);
     Position2dProxy pp(&robot, gIndex);
-    
+
     if (gUseLaser)
       lp = new LaserProxy (&robot, gIndex);
     else
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     double newturnrate=0.0f, newspeed=0.0f;
     for(;;)
     {
-      
+
       robot.Read();
 
       /* See if there is an obstacle in front */
@@ -60,22 +60,22 @@ int main(int argc, char** argv)
       else
       {
         obs = ((sp->GetScan (2) < minfrontdistance) ||   // 0?
-               (sp->GetScan (3) < minfrontdistance) ||   
+               (sp->GetScan (3) < minfrontdistance) ||
                (sp->GetScan (4) < minfrontdistance) ||   // 0?
-               (sp->GetScan (5) < minfrontdistance) );    
+               (sp->GetScan (5) < minfrontdistance) );
       }
-  
+
       if(obs || avoidcount || pp.GetStall ())
       {
-        newspeed = avoidspeed; 
-  
+        newspeed = avoidspeed;
+
         /* once we start avoiding, continue avoiding for 2 seconds */
         /* (we run at about 10Hz, so 20 loop iterations is about 2 sec) */
         if(!avoidcount)
         {
           avoidcount = 15;
           randcount = 0;
-  
+
           if(gUseLaser)
           {
             if(lp->MinLeft () < lp->MinRight ())
@@ -97,20 +97,20 @@ int main(int argc, char** argv)
       {
         avoidcount = 0;
         newspeed = speed;
-  
+
         /* update turnrate every 3 seconds */
         if(!randcount)
         {
           /* make random int tween -20 and 20 */
           //randint = (1+(int)(40.0*rand()/(RAND_MAX+1.0))) - 20;
           randint = rand() % 41 - 20;
-  
-          newturnrate = DTOR(randint);
+
+          newturnrate = dtor(randint);
           randcount = 20;
         }
         randcount--;
       }
-  
+
       // write commands to robot
       pp.SetSpeed(newspeed, newturnrate);
     }

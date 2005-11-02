@@ -110,20 +110,17 @@ position_goto(player_pose_t target)
   double newturnrate = 0;
   double newspeed = 0;
 
-  if (fabs(RTOD(angle)) > 10.0)
+  if (fabs(rtod(angle)) > 10.0)
   {
-    newturnrate = DTOR((angle/M_PI) * 40.0);
-    newturnrate = MIN(newturnrate, DTOR(40.0));
-    newturnrate = MAX(newturnrate, DTOR(-40.0));
+    newturnrate = limit((angle/M_PI) * 40.0, -40, 40);
+    newturnrate = dtor(newturnrate));
   }
   else
     newturnrate = 0.0;
 
   if (dist > 0.05)
   {
-    newspeed = dist * 0.200;
-    newspeed = MIN(newspeed,  0.200);
-    newspeed = MAX(newspeed, -0.200);
+    newspeed = limit(dist * 0.200, -0.2, 0.2);
   }
   else
     newspeed = 0.0;
@@ -175,9 +172,9 @@ sonar_avoid(void)
   if(avoid)
   {
     if ((sp->GetScan(0) + sp->GetScan(1)) < (sp->GetScan(6) + sp->GetScan(7)))
-      newturnrate = 30;
+      newturnrate = dtor(30);
     else
-      newturnrate = -30;
+      newturnrate = dtor(-30);
   }
 
   if(newspeed < 10.0 && newturnrate < 10.0)

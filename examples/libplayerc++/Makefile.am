@@ -14,7 +14,12 @@ AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
 
 bin_PROGRAMS =
 if INCLUDE_PLAYERCC
-  bin_PROGRAMS += example0 grip ptz laserobstacleavoid
+  bin_PROGRAMS += example0 \
+                  grip \
+                  ptz \
+                  laserobstacleavoid \
+                  randomwalk \
+                  sonarobstacleavoid
 endif
 
 if INCLUDE_PLAYERCC_BOOST
@@ -53,10 +58,14 @@ laserobstacleavoid_SOURCES = laserobstacleavoid.cc
 laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
 laserobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-ptz_SOURCES = randomwalk.cc
+ptz_SOURCES = ptz.cc
 ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
 ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-ptz_SOURCES = sonarobstacleavoid.cc
-ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
-ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
+randomwalk_SOURCES = randomwalk.cc
+randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+randomwalk_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc
+sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
