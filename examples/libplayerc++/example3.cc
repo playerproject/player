@@ -53,6 +53,7 @@ int main(int argc, char** argv)
              mProxyList.end(),
              Print_Ref<ClientProxy*>);
 
+
   }
   catch (PlayerCc::PlayerError e)
   {

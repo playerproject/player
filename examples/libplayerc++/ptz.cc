@@ -36,19 +36,19 @@ int main(int argc, char **argv)
 
       std::cout << zp << std::endl;
 
-      if(zp.GetPan() > DTOR(40) || zp.GetPan() < DTOR(-40))
+      if(zp.GetPan() > dtor(40) || zp.GetPan() < dtor(-40))
       {
-        newpan = DTOR(dir*30);
-        zp.SetCam(newpan,zp.GetTilt(),zp.GetZoom());
-        for(int i=0;i<10;i++)
+        newpan = dtor(dir*30);
+        zp.SetCam(newpan, zp.GetTilt(), zp.GetZoom());
+        for(int i=0; i<10; ++i)
         {
           robot.Read();
         }
         std::cout << zp << std::endl;
         dir = -dir;
       }
-      newpan = zp.GetPan() + dir * DTOR(5);
-      zp.SetCam(newpan,zp.GetTilt(),zp.GetZoom());
+      newpan = zp.GetPan() + dir * dtor(5);
+      zp.SetCam(newpan, zp.GetTilt(), zp.GetZoom());
     }
     catch (PlayerError e)
     {

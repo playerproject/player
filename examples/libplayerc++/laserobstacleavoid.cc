@@ -66,9 +66,8 @@ main(int argc, char **argv)
       newspeed = (r+l)/1e3;
 
       newturnrate = (r-l);
-      newturnrate = MIN(newturnrate,40);
-      newturnrate = MAX(newturnrate,-40);
-      newturnrate = DTOR(newturnrate);
+      newturnrate = limit(newturnrate, -40.0, 40.0);
+      newturnrate = dtor(newturnrate);
 
       std::cout << "speed: " << newspeed
                 << "turn: " << newturnrate

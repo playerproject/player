@@ -48,7 +48,7 @@ int main(int argc, char **argv)
        */
       avoid = 0;
       newspeed = 0.200;
-  
+
       if (avoid == 0)
       {
           if((sp[2] < really_min_front_dist) ||
@@ -68,14 +68,14 @@ int main(int argc, char **argv)
               avoid = 50;
           }
       }
-  
+
       if(avoid > 0)
-      {  
-        if((sp[0] + sp[1]) < 
+      {
+        if((sp[0] + sp[1]) <
            (sp[6] + sp[7]))
-          newturnrate = DTOR(-30);
+          newturnrate = dtor(-30);
         else
-          newturnrate = DTOR(30);
+          newturnrate = dtor(30);
         avoid--;
       }
       else

@@ -64,31 +64,58 @@ namespace PlayerCc
 /** @addtogroup player_clientlib_utility Utility and error-handling functions */
 /** @{ */
 
-#ifndef RTOD
+// Since they are inline, these functions are as efficient as DEFINES,
+// but now they have the benefit of type checking!
+
 /// Convert radians to degrees
-#define RTOD(r) ((r) * 180 / M_PI)
-#endif
+inline double rtod(double r)
+{
+  return r * 180.0 / M_PI;
+}
 
-#ifndef DTOR
 /// Convert degrees to radians
-#define DTOR(d) ((d) * M_PI / 180)
-#endif
+inline double dtor(double r)
+{
+  return r * M_PI / 180.0;
+}
 
-#ifndef NORMALIZE
 /// Normalize angle to domain -pi, pi
-#define NORMALIZE(z) atan2(sin(z), cos(z))
-#endif
+inline double normalize(double z)
+{
+  return atan2(sin(z), cos(z));
+}
 
 /// Return the minimum of a, b
-#ifndef MIN
-  #define MIN(a,b) ((a < b) ? (a) : (b))
-#endif
+template<typename T>
+inline T min(T a, T b)
+{
+  if (a < b)
+    return a;
+  else
+    return b;
+}
 
 /// Return the maximum of a, b
-#ifndef MAX
-  #define MAX(a,b) ((a > b) ? (a) : (b))
-#endif
+template<typename T>
+inline T max(T a, T b)
+{
+  if (a > b)
+    return a;
+  else
+    return b;
+}
 
+/// Limit a value to the range of min, max
+template<typename T>
+inline T limit(T a, T b, T c)
+{
+  if (a < b)
+    return b;
+  else if (a > c)
+    return c;
+  else
+    return a;
+}
 
 /** @}*/
 
