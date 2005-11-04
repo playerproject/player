@@ -97,6 +97,8 @@ parse_args(int argc, char** argv)
 void
 position_goto(player_pose_t target)
 {
+  using namespace PlayerCc;
+
   double dist, angle;
 
   dist = sqrt((target.px - pp->GetXPos())*
@@ -112,8 +114,8 @@ position_goto(player_pose_t target)
 
   if (fabs(rtod(angle)) > 10.0)
   {
-    newturnrate = limit((angle/M_PI) * 40.0, -40, 40);
-    newturnrate = dtor(newturnrate));
+    newturnrate = limit((angle/M_PI) * 40.0, -40.0, 40.0);
+    newturnrate = dtor(newturnrate);
   }
   else
     newturnrate = 0.0;
@@ -172,9 +174,9 @@ sonar_avoid(void)
   if(avoid)
   {
     if ((sp->GetScan(0) + sp->GetScan(1)) < (sp->GetScan(6) + sp->GetScan(7)))
-      newturnrate = dtor(30);
+      newturnrate = PlayerCc::dtor(30);
     else
-      newturnrate = dtor(-30);
+      newturnrate = PlayerCc::dtor(-30);
   }
 
   if(newspeed < 10.0 && newturnrate < 10.0)
