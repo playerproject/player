@@ -107,12 +107,12 @@ inline T max(T a, T b)
 
 /// Limit a value to the range of min, max
 template<typename T>
-inline T limit(T a, T b, T c)
+inline T limit(T a, T min, T max)
 {
-  if (a < b)
-    return b;
-  else if (a > c)
-    return c;
+  if (a < min)
+    return min;
+  else if (a > max)
+    return max;
   else
     return a;
 }
@@ -283,69 +283,6 @@ class ClientProxy
 
 };
 
-#if 0
-/**
-
-The PlayerMultiClient makes it easy to control multiple Player connections
-within one thread.   You can connect to any number of Player servers
-and read from all of them with a single Read().
-
-*/
-class PlayerMultiClient
-{
-  private:
-    // dynamically managed array of our clients
-    PlayerClient** clients;
-    //int num_clients;
-    int size_clients;
-
-    // dynamically managed array of structs that we'll give to poll(2)
-    struct pollfd* ufds;
-    int size_ufds;
-    int num_ufds;
-
-  public:
-    /** Uninteresting constructor.
-    */
-    PlayerMultiClient();
-
-    // destructor
-    ~PlayerMultiClient();
-
-    /// How many clients are currently being managed?
-    int GetNumClients(void) { return num_ufds; };
-
-    /// Return a pointer to the client associated with the given host and port,
-    ///  or NULL if none is connected to that address.
-    PlayerClient* GetClient( char* host, int port );
-
-    /** Return a pointer to the client associated with the given binary host
-        and port, or NULL if none is connected to that address. */
-    PlayerClient* GetClient( struct in_addr* addr, int port );
-
-    /** After creating and connecting a PlayerClient object, you should use
-        this method to hand it over to the PlayerMultiClient for management.
-      */
-    void AddClient(PlayerClient* client);
-
-    /** Remove a client from PlayerMultiClient management.
-      */
-    void RemoveClient(PlayerClient* client);
-
-    /** Read on one of the client connections.  This method will return after
-        reading from the server with first available data.  It will @b
-        not read data from all servers.  You can use the @p fresh flag
-        in each client object to determine who got new data.  You should
-        then set that flag to false.  Returns 0 if everything went OK,
-        -1 if something went wrong. */
-    int Read();
-
-    /** Same as Read(), but reads everything off the socket so we end
-        up with the freshest data, subject to N maximum reads. */
-    int ReadLatest( int max_reads );
-};
-
-#endif
 /** @} (core) */
 
 /** @addtogroup player_clientlib_cplusplus_proxies Proxies */
@@ -441,12 +378,10 @@ class ActArrayProxy : public ClientProxy
       { return(GetActuatorData(aJoint)); }
 };
 
-#if 0 // Not in libplayerc
-
 /**
-The @p AIOProxy class is used to read from a @ref player_interface_aio
+The @p AioProxy class is used to read from a @ref player_interface_aio
 (analog I/O) device.  */
-class AIOProxy : public ClientProxy
+class AioProxy : public ClientProxy
 {
   private:
 
@@ -458,14 +393,29 @@ class AIOProxy : public ClientProxy
 
 public:
 
-    AIOProxy (PlayerClient *aPc, uint aIndex=0);
-    ~AIOProxy();
+    AioProxy (PlayerClient *aPc, uint aIndex=0);
+    ~AioProxy();
 
-    // The number of valid digital inputs.
-    uint GetCount() const { return(GetVar(mDevice->count)); };
+    /// Accessor function
+    uint GetCount() const { return(GetVar(mDevice->voltages_count)); };
 
-    double GetAnin(uint aIndex)  const { return(GetVar(mDevice->anin[aIndex])); };
+    /// Accessor function
+    double GetVoltage(uint aIndex)  const
+      { return(GetVar(mDevice->voltages[aIndex])); };
+
+    /// Set the output voltage
+    void SetVoltage(uint aIndex, double aVoltage);
+
+    /// AioProxy data access operator.
+    ///    This operator provides an alternate way of access the actuator data.
+    ///    For example, given a @p AioProxy named @p bp, the following
+    ///    expressions are equivalent: @p ap.GetVoltage(0) and @p ap[0].
+    bool operator [](uint aIndex) const
+      { return GetVoltage(aIndex); }
+
 };
+
+#if 0 // Not in libplayerc
 
 /**
 The @p AudioProxy class controls an @ref player_interface_audio device.
@@ -647,7 +597,7 @@ class BlobfinderProxy : public ClientProxy
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p BlobfinderProxy named @p bp, the following
     ///    expressions are equivalent: @p bp.GetBlob[0] and @p bp[0].
-    playerc_blobfinder_blob_t operator [](uint aIndex)
+    playerc_blobfinder_blob_t operator [](uint aIndex) const
       { return(GetBlob(aIndex)); }
 
 /*
@@ -706,7 +656,7 @@ class BumperProxy : public ClientProxy
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p BumperProxy named @p bp, the following
     ///    expressions are equivalent: @p bp.IsBumped[0] and @p bp[0].
-    bool operator [](uint aIndex)
+    bool operator [](uint aIndex) const
       { return IsBumped(aIndex); }
 
 };
@@ -878,7 +828,7 @@ class FiducialProxy : public ClientProxy
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p FiducialProxy named @p fp, the following
     ///    expressions are equivalent: @p fp.GetFiducialItem[0] and @p fp[0].
-    player_fiducial_item_t operator [](uint aIndex)
+    player_fiducial_item_t operator [](uint aIndex) const
       { return GetFiducialItem(aIndex); }
 };
 
@@ -1133,7 +1083,7 @@ class LaserProxy : public ClientProxy
     /// LaserProxy named @p lp, the following expressions are
     /// equivalent: @p lp.ranges[0], @p lp.Ranges(0),
     /// and @p lp[0].
-    double operator [] (uint index)
+    double operator [] (uint index) const
       { return GetRange(index);}
 
 };
@@ -1410,7 +1360,7 @@ public:
 };
 
 #endif
-#if 0
+
 /**
 The @p MotorProxy class is used to control a @ref player_interface_motor
 device.  The latest motor data is contained in the attributes @p theta,
@@ -1428,7 +1378,7 @@ class MotorProxy : public ClientProxy
   public:
 
     /** Constructor. */
-    MotorProxy((PlayerClient *aPc, uint aIndex=0);
+    MotorProxy(PlayerClient *aPc, uint aIndex=0);
     ~MotorProxy();
 
     /** Send a motor command for velocity control mode.
@@ -1495,16 +1445,28 @@ class MotorProxy : public ClientProxy
     void SetPositionSpeedProfile(double aSpd, double aAcc);
 
     /// Accessor method
-    uint GetPos() const { return GetVar(mDevice->theta); };
+    double GetPos() const { return GetVar(mDevice->pt); };
 
     /// Accessor method
-    uint GetSpeed() const { return GetVar(mDevice->thetaspeed); };
+    double GetSpeed() const { return GetVar(mDevice->vt); };
 
     /// Accessor method
     uint GetStall() const { return GetVar(mDevice->stall); };
 
+    /// Accessor method
+    bool IsLimitMin() const
+      { return GetVar(mDevice->limits) && PLAYER_MOTOR_LIMIT_MIN > 0; };
+
+    /// Accessor method
+    bool IsLimitCenter() const
+      { return GetVar(mDevice->limits) && PLAYER_MOTOR_LIMIT_CENTER > 0; };
+
+    /// Accessor method
+    bool IsLimitMax() const
+      { return GetVar(mDevice->limits) && PLAYER_MOTOR_LIMIT_MAX > 0; };
+
 };
-#endif
+
 /**
 The @p PlannerProxy proxy provides an interface to a 2D motion @ref
 player_interface_planner. */
@@ -2231,7 +2193,7 @@ namespace std
 
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioDspProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioMixerProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
@@ -2249,8 +2211,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::McomProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);

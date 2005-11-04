@@ -30,7 +30,7 @@
 
 using namespace PlayerCc;
 
-AIOProxy::AIOProxy(PlayerClient *aPc, uint aIndex)
+AioProxy::AioProxy(PlayerClient *aPc, uint aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -40,13 +40,13 @@ AIOProxy::AIOProxy(PlayerClient *aPc, uint aIndex)
   mInfo = &(mDevice->info);
 }
 
-AIOProxy::~AIOProxy()
+AioProxy::~AioProxy()
 {
   Unsubscribe();
 }
 
 void
-AIOProxy::Subscribe(uint aIndex)
+AioProxy::Subscribe(uint aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_aio_create(mClient, aIndex);
@@ -58,7 +58,7 @@ AIOProxy::Subscribe(uint aIndex)
 }
 
 void
-AIOProxy::Unsubscribe()
+AioProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
   scoped_lock_t lock(mPc->mMutex);
@@ -67,21 +67,27 @@ AIOProxy::Unsubscribe()
   mDevice = NULL;
 }
 
+void
+AioProxy::SetVoltage(uint aIndex, double aVoltage)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_aio_set_output(mDevice, aIndex, aVoltage);
+}
 
-
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::AIOProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::AioProxy &c)
 {
   os << "#AIO (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   os << c.GetCount() << std::endl;
-  if (c.GetCount()<0)
+  if (c.GetCount() < 0)
   {
-  os << "WARNING: AIOProxy received a negative count value.\n" << std::endl;
+    os << "WARNING: AioProxy received a negative count value.\n" << std::endl;
   }
   else
   {
-    for (unsigned int i=0;i < c.GetCount();i++)
+    for (uint i=0; i < c.GetCount(); ++i)
     {
-      os << "AIO" << i << " - " << c.GetAnin(i) << std::endl;
+      os << "AIO" << i << " - " << c[i] << std::endl;
     }
   }
 

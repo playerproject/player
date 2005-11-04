@@ -26,244 +26,113 @@
 
 #include "playerc++.h"
 
-// send a motor command
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int MotorProxy::SetSpeed(double speed)
+using namespace PlayerCc;
+
+MotorProxy::MotorProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(!client)
-    return(-1);
-
-  player_motor_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  // 0 = velocity
-  cmd.type  = 0;
-  cmd.state = 1;
-  cmd.thetaspeed = HTOPL(speed);
-
-  return(
-    client->Write(m_device_id,reinterpret_cast<char*>(&cmd),sizeof(cmd)));
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-
-// enable/disable the motors
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int MotorProxy::SetMotorState(unsigned char state)
+MotorProxy::~MotorProxy()
 {
-  if(!client)
-    return(-1);
-
-  player_motor_power_config_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.request = PLAYER_MOTOR_POWER_REQ;
-  config.value = state;
-
-
-  return(client->Request(m_device_id,PLAYER_MOTOR_POWER, reinterpret_cast<char*>(&config),
-                         sizeof(config)));
+  Unsubscribe();
 }
 
-// Select velocity control mdoe, driver specific
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int MotorProxy::SelectVelocityControl(unsigned char mode)
+void
+MotorProxy::Subscribe(uint aIndex)
 {
-  if(!client)
-    return(-1);
+  scoped_lock_t lock(mPc->mMutex);
+  mDevice = playerc_motor_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("MotorProxy::MotorProxy()", "could not create");
 
-  player_motor_velocitymode_config_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.request = PLAYER_MOTOR_VELOCITY_MODE_REQ;
-  config.value = mode;
-
-  return(client->Request(m_device_id,PLAYER_MOTOR_VELOCITY_MODE,reinterpret_cast<char*>(&config),
-                         sizeof(config)));
+  if (0 != playerc_motor_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("MotorProxy::MotorProxy()", "could not subscribe");
 }
 
-// reset odometry to (0,0,0)
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int MotorProxy::ResetOdometry()
+void
+MotorProxy::Unsubscribe()
 {
-  if(!client)
-    return(-1);
-
-  player_motor_resetodom_config_t config;
-  memset( &config, 0, sizeof(config) );
-
-//  config.request = PLAYER_MOTOR_RESET_ODOM_REQ;
-
-  return(client->Request(m_device_id,PLAYER_MOTOR_RESET_ODOM,reinterpret_cast<char*>(&config),
-                         sizeof(config)));
+  assert(NULL!=mDevice);
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_motor_unsubscribe(mDevice);
+  playerc_motor_destroy(mDevice);
+  mDevice = NULL;
 }
 
-// set odometry to (x,y,a)
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-int MotorProxy::SetOdometry( double theta)
+void
+MotorProxy::SetSpeed(double aSpeed)
 {
-  if(!client)
-    return(-1);
-
-  player_motor_set_odom_req_t config;
-  memset( &config, 0, sizeof(config) );
-
-  config.theta   = HTOPL(theta);
-
-  return(client->Request(m_device_id,PLAYER_MOTOR_SET_ODOM,reinterpret_cast<char*>(&config),
-                         sizeof(config)));
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_motor_set_cmd_vel(mDevice, aSpeed, 0);
 }
 
-/* select the kind of velocity control to perform
- * 1 for motor mode
- * 0 for velocity mode
- *
- * returns: 0 if ok, -1 else
- */
-int
-MotorProxy::SelectPositionMode(unsigned char mode)
+void
+MotorProxy::GoTo(double aAngle)
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_motor_position_mode_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-//  req.subtype = PLAYER_MOTOR_POSITION_MODE_REQ;
-  req.state = mode;
-
-  return client->Request(m_device_id, PLAYER_MOTOR_POSITION_MODE,
-                         reinterpret_cast<char*>(&req), sizeof(req));
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_motor_set_cmd_pose(mDevice, aAngle, 0);
 }
 
-/* goto the specified location (m, m, radians)
- * this only works if the robot supports motor control.
- *
- * returns: 0 if ok, -1 else
- */
-int
-MotorProxy::GoTo(double angle)
+void
+MotorProxy::SetMotorEnable(bool aEnable)
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_motor_cmd_t cmd;
-  memset( &cmd, 0, sizeof(cmd) );
-
-  cmd.theta = HTOPL(angle);
-  cmd.state = 1;
-  cmd.type  = 1;
-
-  return(client->Write(m_device_id,
-                       reinterpret_cast<char*>(&cmd),sizeof(cmd)));
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_motor_enable(mDevice,aEnable);
 }
 
-/* set the PID for the speed controller
- *
- * returns: 0 if ok, -1 else
- */
-int
-MotorProxy::SetSpeedPID(double kp, double ki, double kd)
+void
+MotorProxy::ResetOdometry()
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_motor_speed_pid_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-  req.kp = HTOPL(kp);
-  req.ki = HTOPL(ki);
-  req.kd = HTOPL(kd);
-
-  return client->Request(m_device_id, PLAYER_MOTOR_SPEED_PID,
-             reinterpret_cast<char*>(&req), sizeof(req));
+  SetOdometry(0);
 }
 
-/* set the constants for the motor PID
- *
- * returns: 0 if ok, -1 else
- */
-int
-MotorProxy::SetPositionPID(double kp, double ki, double kd)
+void
+MotorProxy::SetOdometry(double aAngle)
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_motor_speed_pid_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-  req.kp = HTOPL(kp);
-  req.ki = HTOPL(ki);
-  req.kd = HTOPL(kd);
-
-  return client->Request(m_device_id, PLAYER_MOTOR_POSITION_PID,
-             reinterpret_cast<char*>(&req), sizeof(req));
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_motor_set_odom(mDevice, aAngle);
 }
 
-/* set the speed profile values used during motor mode
- * spd is max speed in mm/s
- * acc is acceleration to use in mm/s^2
- *
- * returns: 0 if ok, -1 else
- */
-int
-MotorProxy::SetPositionSpeedProfile(double spd, double acc)
+void
+MotorProxy::SetSpeedPID(double aKp, double aKi, double aKd)
 {
-  if (!client) {
-    return -1;
-  }
-
-  player_motor_speed_prof_req_t req;
-  memset( &req, 0, sizeof(req) );
-
-  req.speed   = HTOPL(spd);
-  req.acc     = HTOPL(acc);
-
-  return client->Request(m_device_id, PLAYER_MOTOR_SPEED_PROF,
-             reinterpret_cast<char*>(&req), sizeof(req));
-}
-
-void MotorProxy::FillData(player_msghdr_t hdr, const char* buffer)
-{
-  if(hdr.size != sizeof(player_motor_data_t))
+  std::cerr << "MotorProxy::SetSpeedPID() not implemented in libplayerc"
+            << std::endl;
+  /*
+  if (0!=playerc_motor_set_speed_pid(mClient, aKp, aKi, aKd))
   {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of motor data, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_motor_data_t),hdr.size);
+    throw PlayerError("MotorProxy::SetSpeedPID()", playerc_error_str());
   }
-  const player_motor_data_t* lclBuffer = reinterpret_cast<const player_motor_data_t*>(buffer);
-
-  theta      = PTOHL(lclBuffer->theta);
-  thetaspeed = PTOHL(lclBuffer->thetaspeed);
-  stall      = lclBuffer->stall;
+  */
 }
 
-// interface that all proxies SHOULD provide
-void MotorProxy::Print()
+void
+MotorProxy::SetPositionPID(double aKp, double aKi, double aKd)
 {
-  printf("#Motor(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
-  printf("#\ttheta\tthetaspeed\tstall\n");
-  printf("%.3f\t%.3f\t%i\t\n",
-         theta, thetaspeed, stall);
+  std::cerr << "MotorProxy::SetPositionPID() not implemented in libplayerc"
+            << std::endl;
+  /*
+  if (0!=playerc_motor_set_position_pid(mClient, aKp, aKi, aKd))
+  {
+    throw PlayerError("MotorProxy::SetPositionPID()", playerc_error_str());
+  }
+  */
+}
+
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::MotorProxy &c)
+{
+  os << "#Motor (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << "#pos\tvel\tmin\tcenter\tmax\tstall" << std::endl;
+  os << c.GetPos() << "\t" << c.GetSpeed() << "\t";
+  os << c.IsLimitMin() << "\t" << c.IsLimitCenter() << "\t" << c.IsLimitMax() << "\t";
+  os << c.GetStall() << std::endl;
+  return os;
 }
 

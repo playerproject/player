@@ -29,6 +29,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               playererror.cc \
                               clientproxy.cc \
                               actarrayproxy.cc \
+                              aioproxy.cc \
                               blobfinderproxy.cc \
                               bumperproxy.cc \
                               cameraproxy.cc \
@@ -41,6 +42,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               localizeproxy.cc \
                               logproxy.cc \
                               mapproxy.cc \
+                              motorproxy.cc \
                               plannerproxy.cc \
                               position2dproxy.cc \
                               position3dproxy.cc \

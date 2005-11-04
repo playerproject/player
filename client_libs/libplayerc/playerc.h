@@ -515,6 +515,47 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 */
 /***************************************************************************/
 
+/**************************************************************************/
+/** @defgroup playerc_proxy_aio aio
+
+The aio proxy provides an interface to the analog input/output sensors.
+
+@{
+*/
+
+/** Aio proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /// The number of valid analog inputs.
+  uint8_t voltages_count;
+
+  /// A bitfield of the current digital inputs.
+  float voltages[PLAYER_AIO_MAX_INPUTS];
+
+} playerc_aio_t;
+
+
+/** Create a aio proxy. */
+playerc_aio_t *playerc_aio_create(playerc_client_t *client, int index);
+
+/** Destroy a aio proxy. */
+void playerc_aio_destroy(playerc_aio_t *device);
+
+/** Subscribe to the aio device. */
+int playerc_aio_subscribe(playerc_aio_t *device, int access);
+
+/** Un-subscribe from the aio device. */
+int playerc_aio_unsubscribe(playerc_aio_t *device);
+
+/** Set the output for the aio device. */
+int playerc_aio_set_output(playerc_aio_t *device, uint8_t id, float volt);
+
+/** @} */
+/***************************************************************************/
+
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_actarray actarray

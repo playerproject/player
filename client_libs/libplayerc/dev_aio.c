@@ -36,7 +36,7 @@
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-/*  dio Proxy for libplayerc library.
+/*  aio Proxy for libplayerc library.
  *  Structure based on the rest of libplayerc.
  */
 #include <assert.h>
@@ -50,68 +50,74 @@
 
 
 // Local declarations
-void playerc_dio_putmsg(playerc_dio_t *device,
-                           player_msghdr_t *header,
-                           player_dio_data_t *data,
-                           size_t len);
+void playerc_aio_putmsg(playerc_aio_t *device,
+                        player_msghdr_t *header,
+                        player_aio_data_t *data,
+                        size_t len);
 
 
-// Create a new dio proxy
-playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index)
+// Create a new aio proxy
+playerc_aio_t *playerc_aio_create(playerc_client_t *client, int index)
 {
-  playerc_dio_t *device;
+  playerc_aio_t *device;
 
-  device = malloc(sizeof(playerc_dio_t));
-  memset(device, 0, sizeof(playerc_dio_t));
-  playerc_device_init(&device->info, client, PLAYER_DIO_CODE, index,
-                      (playerc_putmsg_fn_t) playerc_dio_putmsg);
+  device = malloc(sizeof(playerc_aio_t));
+  memset(device, 0, sizeof(playerc_aio_t));
+  playerc_device_init(&device->info, client, PLAYER_AIO_CODE, index,
+                      (playerc_putmsg_fn_t) playerc_aio_putmsg);
 
   return device;
 }
 
-// Destroy a dio proxy
-void playerc_dio_destroy(playerc_dio_t *device)
+// Destroy a aio proxy
+void playerc_aio_destroy(playerc_aio_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
 }
 
-// Subscribe to the dio device
-int playerc_dio_subscribe(playerc_dio_t *device, int access)
+// Subscribe to the aio device
+int playerc_aio_subscribe(playerc_aio_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
-// Un-subscribe from the dio device
-int playerc_dio_unsubscribe(playerc_dio_t *device)
+// Un-subscribe from the aio device
+int playerc_aio_unsubscribe(playerc_aio_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_dio_putmsg(playerc_dio_t *device, player_msghdr_t *header,
-                            player_dio_data_t *data, size_t len)
+void playerc_aio_putmsg(playerc_aio_t *device, player_msghdr_t *header,
+                        player_aio_data_t *data, size_t len)
 {
   if((header->type == PLAYER_MSGTYPE_DATA) &&
-     (header->subtype == PLAYER_DIO_DATA_VALUES))
+     (header->subtype == PLAYER_AIO_DATA_STATE))
   {
-    device->count = data->count;
-    device->digin = data->digin;
+    device->voltages_count = data->voltages_count;
+    memcpy(device->voltages,
+            data->voltages,
+            PLAYER_AIO_MAX_OUTPUTS*sizeof(float));
   }
 }
 
-/* Set the output for the dio device. */
-int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout)
+/* Set the output for the aio device. */
+int playerc_aio_set_output(playerc_aio_t *device,
+                           uint8_t id,
+                           float volt)
 {
-  player_dio_cmd_t cmd;
+  player_aio_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
 
-  cmd.count = output_count;
-  cmd.digout = digout;
+  cmd.id = id;
+  cmd.voltage = volt;
 
   return playerc_client_write(device->info.client,
-    &device->info, PLAYER_DIO_CMD_VALUES,&cmd,sizeof(cmd));
+                              &device->info,
+                              PLAYER_AIO_CMD_STATE,
+                              &cmd,
+                              sizeof(cmd));
 }
-
