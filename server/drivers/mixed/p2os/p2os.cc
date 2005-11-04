@@ -972,7 +972,7 @@ P2OS::PutData(void)
   // put aio data
   this->Publish(this->aio_id, NULL,
                 PLAYER_MSGTYPE_DATA,
-                PLAYER_AIO_DATA_VALUES,
+                PLAYER_AIO_DATA_STATE,
                 (void*)&(this->p2os_data.aio),
                 sizeof(player_aio_data_t),
                 NULL);

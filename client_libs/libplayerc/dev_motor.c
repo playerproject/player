@@ -17,10 +17,28 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-
+/*
+ *  Player - One Hell of a Robot Server
+ *  Copyright (C) Andrew Howard 2003
+ *
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 /***************************************************************************
  * Desc: Motor device proxy
- * Author:
+ * Author: Andrew Howard
  * Date: 13 May 2002
  * CVS: $Id$
  **************************************************************************/
@@ -37,8 +55,7 @@
 // Local declarations
 void playerc_motor_putmsg(playerc_motor_t *device,
                           player_msghdr_t *header,
-                          player_motor_data_t *data,
-                          size_t len);
+                          player_motor_data_t *data, size_t len);
 
 // Create a new motor proxy
 playerc_motor_t *playerc_motor_create(playerc_client_t *client, int index)
@@ -82,16 +99,16 @@ int playerc_motor_unsubscribe(playerc_motor_t *device)
 // Process incoming data
 void playerc_motor_putmsg(playerc_motor_t *device,
                           player_msghdr_t *header,
-                          player_motor_data_t *data,
-                          size_t len)
+                          player_motor_data_t *data, size_t len)
 {
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_MOTOR_DATA_STATE))
   {
     device->pt = data->pos;
     device->vt = data->vel;
-    device->stall = data->stall;
+
     device->limits = data->limits;
+    device->stall = data->stall;
   }
   else
     PLAYERC_WARN2("skipping motor message with unknown type/subtype: %d/%d\n",
@@ -108,7 +125,7 @@ playerc_motor_enable(playerc_motor_t *device, int enable)
 
   return(playerc_client_request(device->info.client,
                                 &device->info,
-                                PLAYER_MOTOR_POWER,
+                                PLAYER_MOTOR_REQ_POWER,
                                 &config, NULL, 0));
 }
 
@@ -120,13 +137,14 @@ playerc_motor_position_control(playerc_motor_t *device, int type)
   config.value = type;
 
   return(playerc_client_request(device->info.client, &device->info,
-                                PLAYER_MOTOR_VELOCITY_MODE,
+                                PLAYER_MOTOR_REQ_VELOCITY_MODE,
                                 &config, NULL, 0));
 }
 
 // Set the robot speed
 int
-playerc_motor_set_cmd_vel(playerc_motor_t *device, double vt, int state)
+playerc_motor_set_cmd_vel(playerc_motor_t *device,
+                          double vt, int state)
 {
   player_motor_cmd_t cmd;
 
@@ -142,7 +160,8 @@ playerc_motor_set_cmd_vel(playerc_motor_t *device, double vt, int state)
 
 // Set the target pose
 int
-playerc_motor_set_cmd_pose(playerc_motor_t *device, double gt, int state)
+playerc_motor_set_cmd_pose(playerc_motor_t *device,
+                           double gt, int state)
 {
   player_motor_cmd_t cmd;
 
@@ -166,17 +185,18 @@ playerc_motor_set_odom(playerc_motor_t *device, double ot)
 
   return(playerc_client_request(device->info.client,
                                 &device->info,
-                                PLAYER_MOTOR_SET_ODOM,
+                                PLAYER_MOTOR_REQ_SET_ODOM,
                                 &req, NULL, 0));
 }
 
-void playerc_motor_print(playerc_motor_t * device, const char* prefix )
+void playerc_motor_print( playerc_motor_t * device,
+             const char* prefix )
 {
   if( prefix )
     printf( "%s: ", prefix );
 
-  printf( "#time\t\tpt\tvt\tlimit\tstall\n"
-    "%14.3f\t%.3f\t%.3f\t%i\t%.d\n",
+  printf("#time\t\tpt\tvt\tlimits\tstall\n"
+         "%14.3f\t%.3f\t%.3f\t%d\t%.d\n",
     device->info.datatime,
     device->pt,
     device->vt,

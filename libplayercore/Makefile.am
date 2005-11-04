@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir) 
+AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir)
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
@@ -19,10 +19,10 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           playercommon.h player.h playerconfig.h.in \
                           message.h message.cc \
                           wallclocktime.cc wallclocktime.h playertime.h \
-			  interface_util.cc interface_util.h \
-			  plugins.cc plugins.h \
-			  globals.cc globals.h \
-			  addr_util.c addr_util.h
+                          interface_util.cc interface_util.h \
+                          plugins.cc plugins.h \
+                          globals.cc globals.h \
+                          addr_util.c addr_util.h
 libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
 libplayererror_la_SOURCES = error.h error.c
@@ -44,6 +44,6 @@ coreinclude_HEADERS = configfile.h \
                       playertime.h \
                       plugins.h \
                       wallclocktime.h \
-		      error.h \
+                      error.h \
                       addr_util.h
 

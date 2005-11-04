@@ -422,8 +422,12 @@ The @p aio interface provides access to an analog I/O device.
 #define PLAYER_AIO_MAX_INPUTS  8
 #define PLAYER_AIO_MAX_OUTPUTS 8
 
-/** Data subtypes */
-#define PLAYER_AIO_DATA_VALUES 1
+// data types
+#define PLAYER_AIO_DATA_STATE             1
+//#define PLAYER_AIO_DATA_GEOM            2
+
+// Command types
+#define PLAYER_AIO_CMD_STATE              1
 
 /** @brief Data
 
@@ -440,9 +444,9 @@ typedef struct player_aio_data
 typedef struct player_aio_cmd
 {
   /** number of valid samples */
-  uint32_t voltages_count;
+  uint32_t id;
   /** the samples [V] */
-  float voltages[PLAYER_AIO_MAX_OUTPUTS];
+  float voltage;
 } player_aio_cmd_t;
 
 /** @} */
@@ -1877,17 +1881,17 @@ The @p motor interface is used to control a single motor.
 */
 
 /* The various configuration request types. */
-#define PLAYER_MOTOR_GET_GEOM             1
-#define PLAYER_MOTOR_POWER                2
-#define PLAYER_MOTOR_VELOCITY_MODE        3
-#define PLAYER_MOTOR_POSITION_MODE        4
-#define PLAYER_MOTOR_SET_ODOM             5
-#define PLAYER_MOTOR_RESET_ODOM           6
-#define PLAYER_MOTOR_SPEED_PID            7
-#define PLAYER_MOTOR_POSITION_PID         8
-#define PLAYER_MOTOR_SPEED_PROF           9
-#define PLAYER_MOTOR_SET_GEAR_REDUCITION  10
-#define PLAYER_MOTOR_SET_TICS             11
+#define PLAYER_MOTOR_REQ_GET_GEOM             1
+#define PLAYER_MOTOR_REQ_POWER                2
+#define PLAYER_MOTOR_REQ_VELOCITY_MODE        3
+#define PLAYER_MOTOR_REQ_POSITION_MODE        4
+#define PLAYER_MOTOR_REQ_SET_ODOM             5
+#define PLAYER_MOTOR_REQ_RESET_ODOM           6
+#define PLAYER_MOTOR_REQ_SPEED_PID            7
+#define PLAYER_MOTOR_REQ_POSITION_PID         8
+#define PLAYER_MOTOR_REQ_SPEED_PROF           9
+#define PLAYER_MOTOR_REQ_SET_GEAR_REDUCITION  10
+#define PLAYER_MOTOR_REQ_SET_TICS             11
 
 #define PLAYER_MOTOR_LIMIT_MIN            1
 #define PLAYER_MOTOR_LIMIT_CENTER         2

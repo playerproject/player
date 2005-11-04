@@ -64,6 +64,12 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD,
    (player_pack_fn_t)player_actarray_home_cmd_pack},
 
+  /* aio messages */
+  {PLAYER_AIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE,
+   (player_pack_fn_t)player_aio_data_pack},
+  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AIO_CMD_STATE,
+   (player_pack_fn_t)player_aio_cmd_pack},
+
   /* blobfinder messages */
   {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
    (player_pack_fn_t)player_blobfinder_data_pack},
