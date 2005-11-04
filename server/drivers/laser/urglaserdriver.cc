@@ -146,13 +146,13 @@ URGLaserDriver::URGLaserDriver(ConfigFile* cf, int section)
 	assert(Readings);
 
     // read options from config file
-	Geom.pose.px = (cf->ReadTupleFloat(section,"pose",0,0));
-	Geom.pose.py = (cf->ReadTupleFloat(section,"pose",1,0));
-	Geom.pose.pa = (cf->ReadTupleFloat(section,"pose",2,0));
+	Geom.pose.px = (cf->ReadTupleLength(section,"pose",0,0));
+	Geom.pose.py = (cf->ReadTupleLength(section,"pose",1,0));
+	Geom.pose.pa = (cf->ReadTupleAngle(section,"pose",2,0));
 	
 	//set up config structure
-	Conf.min_angle = cf->ReadFloat(section,"min_angle",DTOR(-115));
-	Conf.max_angle = cf->ReadFloat(section,"max_angle",DTOR(115));
+	Conf.min_angle = cf->ReadAngle(section,"min_angle",DTOR(-115));
+	Conf.max_angle = cf->ReadAngle(section,"max_angle",DTOR(115));
 	Conf.resolution = DTOR(270.0/769.0);
         Conf.max_range = 4.0;
 	Conf.range_res = 0.001;
