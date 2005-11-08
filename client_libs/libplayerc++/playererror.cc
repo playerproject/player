@@ -27,6 +27,7 @@
  */
 
 #include "playererror.h"
+#include "debug.h"
 
 using namespace PlayerCc;
 
@@ -37,7 +38,7 @@ PlayerError::PlayerError(const std::string aFun,
   mFun(aFun),
   mCode(aCode)
 {
-
+  LOG(aFun << " " << aStr << " " << aCode);
 }
 
 PlayerError::~PlayerError()

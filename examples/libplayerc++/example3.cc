@@ -53,6 +53,22 @@ int main(int argc, char** argv)
              mProxyList.end(),
              Print_Ref<ClientProxy*>);
 
+    // testing PlayerMultiClient
+
+    PlayerClient client1("localhost");
+    PlayerClient client2("feyd");
+
+    std::list<PlayerClient*> m_client;
+
+    m_client.push_back(&client1);
+    m_client.push_back(&client2);
+
+    CameraProxy  cp1(&client1);
+    PtzProxy     pp1(&client1);
+
+    std::for_each(m_client.begin(),
+                  m_client.end(),
+                  std::mem_fun(&PlayerClient::ReadIfWaiting));
 
   }
   catch (PlayerCc::PlayerError e)

@@ -34,9 +34,8 @@
 #include <iomanip>
 
 #include "playerc++.h"
-
-#define DEBUG_LEVEL LOW
 #include "debug.h"
+
 using namespace PlayerCc;
 
 ActArrayProxy::ActArrayProxy(PlayerClient *aPc, uint aIndex)

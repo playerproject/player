@@ -34,9 +34,8 @@
 #include <iomanip>
 
 #include "playerc++.h"
-
-#define DEBUG_LEVEL LOW
 #include "debug.h"
+
 using namespace PlayerCc;
 
 LimbProxy::LimbProxy(PlayerClient *aPc, uint aIndex)
