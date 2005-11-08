@@ -145,9 +145,9 @@ class PlayerClient
     /// for up to @p timeout milliseconds (set to 0 to not block).
     ///
     /// @returns
-    /// - 0 if there is no data waiting
-    /// - 1 if there is data waiting
-    int Peek(uint timeout=0);
+    /// - false if there is no data waiting
+    /// - true if there is data waiting
+    bool Peek(uint timeout=0);
 
     /// A blocking Read
     ///
@@ -155,6 +155,12 @@ class PlayerClient
     /// least one message is received.  Use @ref PlayerClient::Peek() to check
     /// whether any data is currently waiting.
     void Read();
+
+    /// A nonblocking Read
+    ///
+    /// Use this method if you want to read in a nonblocking manner.  This
+    /// is the equivalent of checking if Peek is true and then reading
+    void ReadIfWaiting();
 
     /// You can change the rate at which your client receives data from the
     /// server with this method.  The value of @p freq is interpreted as Hz;

@@ -27,8 +27,6 @@
 #include <iostream>
 
 #include "playerc++.h"
-
-#define DEBUG_LEVEL LOW
 #include "debug.h"
 
 using namespace PlayerCc;
@@ -36,6 +34,7 @@ using namespace PlayerCc;
 ClientProxy::ClientProxy(PlayerClient* aPc, uint aIndex) :
  mPc(aPc),
  mClient(aPc->mClient),
+ mFresh(false),
  mLastTime(0)
 {
   assert(NULL != mPc);
@@ -51,21 +50,28 @@ ClientProxy::~ClientProxy()
   // each client needs to unsubscribe themselves,
   // but we will take care of removing them from the list
   mPc->mProxyList.remove(this);
-  PRINT("Removed " << this << " from ProxyList");
+  PRINT("removed " << this << " from ProxyList");
 }
 
 void ClientProxy::ReadSignal()
 {
-#ifdef HAVE_BOOST_SIGNALS
+  PRINT("read " << *this);
   // only emit a signal when the interface has received data
-  if (GetDataTime() > mLastTime)
+  scoped_lock_t lock(mPc->mMutex);
+  if (mInfo->datatime > mLastTime)
   {
-    mLastTime = GetDataTime();;
+    mFresh = true;
+    mLastTime = mInfo->datatime;
+#ifdef HAVE_BOOST_SIGNALS
     mReadSignal();
-  }
-#else
-  throw PlayerError("ClientProxy::ReadSignal","Signal support not included");
 #endif
+  }
+}
+
+void ClientProxy::NotFresh()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  mFresh = false;
 }
 
 std::ostream& std::operator << (std::ostream& os, const PlayerCc::ClientProxy& c)

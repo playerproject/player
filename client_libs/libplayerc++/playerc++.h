@@ -191,6 +191,9 @@ class ClientProxy
     // contains convenience information about the device
     playerc_device_t *mInfo;
 
+    // if set to true, the current data is "fresh"
+    bool mFresh;
+
     // @brief Get a variable from the client
     // All Get functions need to use this when accessing data from the
     // c library to make sure the data access is thread safe.
@@ -245,6 +248,14 @@ class ClientProxy
 
     ///  Returns true if we have received any data from the device.
     bool IsValid() const { return 0!=GetVar(mInfo->datatime); };
+
+    /// Fresh is set to true on each new read.  It is up to the user to
+    /// set it to false if the data has already been read.  This is most
+    /// useful when used in conjunction with the PlayerMultiClient
+    bool IsFresh() const { return GetVar(mFresh); };
+
+    /// This states that the data in a client is currently not Fresh
+    void NotFresh();
 
     ///  Returns the driver name
     ///  @todo GetDriverName isn't guarded by locks yet

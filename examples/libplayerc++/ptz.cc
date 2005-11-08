@@ -25,6 +25,7 @@ int main(int argc, char **argv)
 
   /* Request sensor data */
   PtzProxy zp(&robot, gIndex);
+  CameraProxy cp(&robot, gIndex);
 
   int dir = 1;
   double newpan;

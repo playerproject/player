@@ -28,6 +28,10 @@
 #ifndef UTIL_DEBUG_H
 #define UTIL_DEBUG_H
 
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 #include <iostream>
 
 /** Debugging Macros
@@ -47,10 +51,19 @@
 #define MEDIUM 2
 #define HIGH   3
 
-/** \def DEBUG(x)
+/** \def LOG(x)
+ *  \brief write output to std::clog
+ */
+#if DEBUG_LEVEL < LOW
+#define LOG(x)
+#else
+#define LOG(x) std::clog << x << std::endl
+#endif
+
+/** \def PRINT(x)
  *  \brief output name and value of expression
  */
-#if DEBUG_LEVEL < HIGH
+#if DEBUG_LEVEL < MEDIUM
 #define PRINT(x)
 #else
 #define PRINT(x) std::cerr << x << std::endl
@@ -63,23 +76,9 @@
 #define EVAL(x)
 #else
 #define EVAL(x) \
-  std::cerr << #x"= " << (x) << std::endl
-#endif
-
-/** \def CHECK(x, y)
- *  \brief check if condition x is true and if y!=0 then exit
- */
-#if DEBUG_LEVEL < MEDIUM
-#define CHECK(x, y)
-#else
-#define CHECK(x, y) \
-  if (! (x)) \
-  { \
-    std::cerr << "CHECK " << #x << " failed" << std::endl; \
-    std::cerr << " on line " << __LINE__  << std::endl; \
-    std::cerr << " in file " << __FILE__ << std::endl;  \
-    if (0!=y) exit(y);  \
-  }
+  std::cerr << #x" = " << (x) << std::endl
 #endif
 
 #endif
+
+

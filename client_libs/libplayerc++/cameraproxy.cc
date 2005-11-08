@@ -33,8 +33,6 @@
 #include <iomanip>
 
 #include "playerc++.h"
-
-#define DEBUG_LEVEL HIGH
 #include "debug.h"
 
 using namespace PlayerCc;

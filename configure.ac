@@ -141,6 +141,28 @@ AC_ARG_ENABLE(debug,    [  --disable-debug         Compile without debugging inf
     fi,
 )
 
+AC_ARG_ENABLE(debug-level,
+ [  --enable-debug-level[=[type]]
+                      none   : no debugging code compiled
+                      low    : some debugging code
+                      medium : more debugging code
+                      high   : verbose logging to console and system log],
+ [ if   test "x$enableval" = "xnone" ; then
+      AC_DEFINE(DEBUG_LEVEL, NONE, [no debugging code compiled])
+   elif test "x$enableval" = "xlow" ; then
+      AC_DEFINE(DEBUG_LEVEL, LOW, [some outputs])
+   elif test "x$enableval" = "xmedium" ; then
+      AC_DEFINE(DEBUG_LEVEL, MEDIUM, [more outputs])
+   elif test "x$enableval" = "xhigh" ; then
+      AC_DEFINE(DEBUG_LEVEL, HIGH, [verbose logging to console and system log])
+   else
+      echo
+      echo "Error!"
+      echo "Unknown debug level"
+      exit -1
+   fi
+ ])
+
 dnl use the old compiler
 AC_ARG_WITH(glibc21, [  --with-glibc21          Use the glibc 2.1 compilers],,
 with_glibc21=no)

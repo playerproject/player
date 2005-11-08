@@ -33,8 +33,8 @@
 #include <time.h>
 
 #include "playerc++.h"
+#include "playerclient.h"
 
-#define DEBUG_LEVEL LOW
 #include "debug.h"
 
 using namespace PlayerCc;
@@ -67,6 +67,8 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
   assert("" != aHostname);
   assert(0  != aPort);
 
+  LOG("Connecting " << *this);
+
   mClient = playerc_client_create(NULL, aHostname.c_str(), aPort);
   if (0 != playerc_client_connect(mClient))
   {
@@ -77,6 +79,8 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
 
 void PlayerClient::Disconnect()
 {
+  LOG("Disconnecting " << *this);
+
   std::for_each(mProxyList.begin(),
                 mProxyList.end(),
                 std::mem_fun(&ClientProxy::Unsubscribe));
@@ -157,11 +161,18 @@ void PlayerClient::Stop()
   mIsStop = true;
 }
 
-int PlayerClient::Peek(uint aTimeout)
+bool PlayerClient::Peek(uint aTimeout)
 {
   ClientProxy::scoped_lock_t lock(mMutex);
   //EVAL(playerc_client_peek(mClient, aTimeout));
   return playerc_client_peek(mClient, aTimeout);
+}
+
+
+void PlayerClient::ReadIfWaiting()
+{
+  if (Peek())
+    Read();
 }
 
 void PlayerClient::Read()
@@ -177,11 +188,9 @@ void PlayerClient::Read()
     }
   }
 
-#ifdef HAVE_BOOST_SIGNALS
   std::for_each(mProxyList.begin(),
                 mProxyList.end(),
                 std::mem_fun(&ClientProxy::ReadSignal));
-#endif
 }
 
 void PlayerClient::RequestDeviceList()
