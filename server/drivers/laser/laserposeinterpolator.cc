@@ -186,10 +186,10 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
   this->interpolate = cf->ReadInt(section, "interpolate", 1);
   this->maxnumscans = cf->ReadInt(section, "max_scans", DEFAULT_MAXSCANS);
   this->update_thresh[0] = cf->ReadTupleLength(section, "update_thresh",
-                                               0, DBL_MAX);
+                                               0, -1.0);
   this->update_thresh[1] = cf->ReadTupleAngle(section, "update_thresh",
-                                              1, DBL_MAX);
-  this->update_interval = cf->ReadFloat(section, "update_interval", DBL_MAX);
+                                              1, -1.0);
+  this->update_interval = cf->ReadFloat(section, "update_interval", -1.0);
   this->send_all_scans = cf->ReadInt(section, "send_all_scans", 1);
 
   this->scans = (player_laser_data_t*)calloc(this->maxnumscans, 
@@ -344,13 +344,16 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
           // thresholds that the user can set.
           if((this->send_all_scans) ||
              (this->lastpublishposetime < 0.0) ||
-             (hypot(scanpose.pose.px-this->lastpublishpose.px,
-                    scanpose.pose.py-this->lastpublishpose.py) >= 
-              this->update_thresh[0]) ||
-             (fabs(angle_diff(scanpose.pose.pa,this->lastpublishpose.pa)) >=
-              this->update_thresh[1]) ||
-             ((this->scantimes[i] - this->lastpublishposetime) >=
-              this->update_interval))
+             ((this->update_thresh[0] >= 0.0) &&
+              (hypot(scanpose.pose.px-this->lastpublishpose.px,
+                     scanpose.pose.py-this->lastpublishpose.py) >= 
+               this->update_thresh[0])) ||
+             ((this->update_thresh[1] >= 0.0) &&
+              (fabs(angle_diff(scanpose.pose.pa,this->lastpublishpose.pa)) >=
+               this->update_thresh[1])) ||
+             ((this->update_interval >= 0.0) &&
+              ((this->scantimes[i] - this->lastpublishposetime) >=
+               this->update_interval)))
           {
             this->Publish(this->device_addr, NULL,
                           PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
