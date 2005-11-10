@@ -173,6 +173,9 @@ class WriteLog: public Driver
   // write in the logfile header.
   private: int OpenFile();
 
+  // Request and write geometries
+  private: void WriteGeometries();
+
   // Flush and close this->file
   private: void CloseFile();
 
@@ -337,12 +340,6 @@ int WriteLog::Setup()
   int i;
   WriteLogDevice *device;
 
-  if(this->OpenFile() < 0)
-  {
-    PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
-    return(-1);
-  }
-
   // Subscribe to the underlying devices
   for (i = 0; i < this->device_count; i++)
   {
@@ -361,64 +358,6 @@ int WriteLog::Setup()
     {
       PLAYER_ERROR("unable to subscribe to device for logging");
       return -1;
-    }
-
-    if (device->addr.interf == PLAYER_SONAR_CODE)
-    {
-      // Get the sonar geometry
-      Message* msg;
-      if(!(msg = device->device->Request(this->InQueue,
-                                         PLAYER_MSGTYPE_REQ,
-                                         PLAYER_SONAR_REQ_GET_GEOM,
-                                         NULL, 0, NULL, false)))
-      {
-        // oh well.
-        PLAYER_WARN("unable to get sonar geometry");
-      }
-      else
-      {
-        // log it
-        this->Write(device, msg->GetHeader(), msg->GetPayload());
-        delete msg;
-      }
-    }
-    else if (device->addr.interf == PLAYER_LASER_CODE)
-    {
-      // Get the laser geometry
-      Message* msg;
-      if(!(msg = device->device->Request(this->InQueue,
-                                         PLAYER_MSGTYPE_REQ,
-                                         PLAYER_LASER_REQ_GET_GEOM,
-                                         NULL, 0, NULL, false)))
-      {
-        // oh well.
-        PLAYER_WARN("unable to get laser geometry");
-      }
-      else
-      {
-        // log it
-        this->Write(device, msg->GetHeader(), msg->GetPayload());
-        delete msg;
-      }
-    }
-    else if (device->addr.interf == PLAYER_POSITION2D_CODE)
-    {
-      // Get the laser geometry
-      Message* msg;
-      if(!(msg = device->device->Request(this->InQueue,
-                                         PLAYER_MSGTYPE_REQ,
-                                         PLAYER_POSITION2D_REQ_GET_GEOM,
-                                         NULL, 0, NULL, false)))
-      {
-        // oh well.
-        PLAYER_WARN("unable to get position geometry");
-      }
-      else
-      {
-        // log it
-        this->Write(device, msg->GetHeader(), msg->GetPayload());
-        delete msg;
-      }
     }
   }
 
@@ -480,7 +419,78 @@ WriteLog::OpenFile()
   fprintf(this->file, "##   (double) (uint) (uint) (string)  (uint) (uint) (uint)\n");
   fprintf(this->file, "## - Following the common header is the message payload \n");
 
+  this->WriteGeometries();
+
   return(0);
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Request and write geometries
+void WriteLog::WriteGeometries()
+{
+  // Subscribe to the underlying devices
+  for (int i = 0; i < this->device_count; i++)
+  {
+    WriteLogDevice* device = this->devices + i;
+
+    if (device->addr.interf == PLAYER_SONAR_CODE)
+    {
+      // Get the sonar geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_SONAR_REQ_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get sonar geometry");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+    else if (device->addr.interf == PLAYER_LASER_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_LASER_REQ_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get laser geometry");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+    else if (device->addr.interf == PLAYER_POSITION2D_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_POSITION2D_REQ_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get position geometry");
+      }
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+  }
 }
 
 void
@@ -620,6 +630,12 @@ WriteLog::ProcessMessage(MessageQueue * resp_queue,
 void
 WriteLog::Main(void)
 {
+  if(this->OpenFile() < 0)
+  {
+    PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
+    return;
+  }
+
   while (1)
   {
     pthread_testcancel();
