@@ -95,6 +95,16 @@ LaserProxy::RequestConfigure()
   return;
 }
 
+void
+LaserProxy::RequestGeom()
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+  unsigned char temp_int;
+  if (0 != playerc_laser_get_geom(mDevice))
+    throw PlayerError("LaserProxy::RequestGeom()", "error getting geom");
+  return;
+}
+
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::LaserProxy &c)
 {
