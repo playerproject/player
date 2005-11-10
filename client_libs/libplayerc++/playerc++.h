@@ -1084,6 +1084,29 @@ class LaserProxy : public ClientProxy
     /// relevant class attributes.
     void RequestConfigure();
 
+    /// Get the laser's geometry; it is read into the
+    /// relevant class attributes.
+    void RequestGeom();
+
+    /// Accessor for the pose (fill it in by calling RequestGeom)
+    player_pose_t GetPose()
+    { 
+      player_pose_t p;
+      p.px = mDevice->pose[0];
+      p.py = mDevice->pose[1];
+      p.pa = mDevice->pose[2];
+      return(p);
+    }
+
+    /// Accessor for the size (fill it in by calling RequestGeom)
+    player_bbox_t GetSize()
+    {
+      player_bbox_t b;
+      b.sl = mDevice->size[0];
+      b.sw = mDevice->size[1];
+      return(b);
+    }
+
     ///
     double MinLeft () { return aMinLeft; }
     ///
@@ -1589,6 +1612,28 @@ class Position2dProxy : public ClientProxy
     /// desired pose of the robot in m, m, radians.
     void GoTo(double aX, double aY, double aYaw);
 
+    /// Get the device's geometry; it is read into the
+    /// relevant class attributes.
+    void RequestGeom();
+
+    /// Accessor for the pose (fill it in by calling RequestGeom)
+    player_pose_t GetPose()
+    { 
+      player_pose_t p;
+      p.px = mDevice->pose[0];
+      p.py = mDevice->pose[1];
+      p.pa = mDevice->pose[2];
+      return(p);
+    }
+
+    /// Accessor for the size (fill it in by calling RequestGeom)
+    player_bbox_t GetSize()
+    {
+      player_bbox_t b;
+      b.sl = mDevice->size[0];
+      b.sw = mDevice->size[1];
+      return(b);
+    }
 
     /// Enable/disable the motors.
     /// Set @p state to 0 to disable or 1 to enable.
