@@ -194,7 +194,7 @@ typedef struct
   player_devaddr_t addr;
 
   /** The driver name. */
-  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+  char drivername[PLAYER_MAX_DRIVER_STRING_LEN];
 
 } playerc_device_info_t;
 
@@ -453,7 +453,7 @@ typedef struct _playerc_device_t
   player_devaddr_t addr;
 
   /** The driver name. */
-  char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+  char drivername[PLAYER_MAX_DRIVER_STRING_LEN];
 
   /** The subscribe flag is non-zero if the device has been
       successfully subscribed (read-only). */

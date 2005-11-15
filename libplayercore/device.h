@@ -140,7 +140,7 @@ class Device
     player_devaddr_t addr;
 
     /// The string name for the underlying driver
-    char drivername[PLAYER_MAX_DEVICE_STRING_LEN];
+    char drivername[PLAYER_MAX_DRIVER_STRING_LEN];
 
     /// Pointer to the underlying driver
     Driver* driver;
