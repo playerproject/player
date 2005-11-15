@@ -31,22 +31,44 @@
 /* Include values from the configure script */
 #include "playerconfig.h"
 
-/** the largest possible message */
+/** @ingroup libplayercore
+ * @defgroup message_constants Miscellaneous constants
+ * Maximum message lengths, etc.
+ * @{ */
+/** The largest possible message */
 #define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
+/** Maximum length for a driver name */
+#define PLAYER_MAX_DRIVER_STRING_LEN 64
+/** The maximum number of devices the server will support. */
+#define PLAYER_MAX_DEVICES             256
+/** Default maximum length for a message queue */
+#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 32
+/** String that is spit back as a banner on connection */
+#define PLAYER_IDENT_STRING    "Player v."
+/** Length of string that is spit back as a banner on connection */
+#define PLAYER_IDENT_STRLEN 32
+/** Length of authentication key */
+#define PLAYER_KEYLEN       32
+/** Maximum payload in a message */
+#define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
+/** @} */
 
-/** the player message types */
+/** @ingroup libplayercore
+ * @defgroup message_types Message types
+ * @todo Document the message types
+ * @{ */
 #define PLAYER_MSGTYPE_DATA      1
 #define PLAYER_MSGTYPE_CMD       2
 #define PLAYER_MSGTYPE_REQ       3
 #define PLAYER_MSGTYPE_RESP_ACK  4
 #define PLAYER_MSGTYPE_SYNCH     5
 #define PLAYER_MSGTYPE_RESP_NACK 6
+/** @} */
 
-/* strings to match the currently assigned devices (used for pretty-printing
- * and command-line parsing) */
-#define PLAYER_MAX_DEVICE_STRING_LEN 64
 
-/** the currently assigned interface codes */
+/** @ingroup libplayercore
+ * @defgroup message_codes Interface codes
+ * @{ */
 #define PLAYER_NULL_CODE           256 // /dev/null analogue
 #define PLAYER_PLAYER_CODE         1   // the server itself
 #define PLAYER_POWER_CODE          2   // power subsystem
@@ -92,7 +114,11 @@
 #define PLAYER_POSITION1D_CODE     52  // 1-D position
 #define PLAYER_ACTARRAY_CODE       53  // Actuator Array interface
 #define PLAYER_LIMB_CODE           54  // Limb interface
-/* the currently assigned device strings */
+/** @} */
+
+/** @ingroup libplayercore
+ * @defgroup message_strings Interface string names
+ * @{ */
 #define PLAYER_ACTARRAY_STRING        "actarray"
 #define PLAYER_AIO_STRING             "aio"
 #define PLAYER_AUDIO_STRING           "audio"
@@ -139,63 +165,71 @@
 #define PLAYER_TRUTH_STRING           "truth"
 #define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
+/** @} */
 
-/* The maximum number of devices the server will support. */
-#define PLAYER_MAX_DEVICES             256
-
-/* maximum size for request/reply.
- * this is a convenience so that the PlayerQueue can used fixed size elements.
- * need to think about this a little
- */
-#define PLAYER_MAX_REQREP_SIZE         4096 /*4KB*/
-
-#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 32
-
-/*
- * info that is spit back as a banner on connection
- */
-#define PLAYER_IDENT_STRING    "Player v."
-#define PLAYER_IDENT_STRLEN 32
-#define PLAYER_KEYLEN       32
+/** @ingroup libplayercore
+ * @defgroup utility_structs General-purpose message structures.  
+ * These structures often appear inside other structures.
+ * @{ */
 
 /** @brief A point in the plane */
 typedef struct player_point_2d
 {
-  /** X, Y (in m,m) */
-  float px, py;
+  /** X [m] */
+  float px;
+  /** Y [m] */
+  float py;
 } player_point_2d_t;
 
 
-/** @brief A pose in the plane, often used to represent the pose of a range
- * sensor. */
+/** @brief A pose in the plane */
 typedef struct player_pose
 {
-  /** X, Y, and yaw (in m,m,rad) */
-  float px, py, pa;
+  /** X [m] */
+  float px;
+  /** Y [m] */
+  float py;
+  /** yaw [rad] */
+  float pa;
 } player_pose_t;
 
-/** @brief A 3D pose
- * sensor. */
+/** @brief A pose in space */
 typedef struct player_pose3d
 {
-  /** X, Y, Z [m] */
-  float px, py, pz;
-  /** roll, pitch, yaw [rad] */
-  float proll, ppitch, pyaw;
+  /** X [m] */
+  float px;
+  /** Y [m] */
+  float py;
+  /** Z [m] */
+  float pz;
+  /** roll [rad] */
+  float proll;
+  /** pitch [rad] */
+  float ppitch;
+  /** yaw [rad] */
+  float pyaw;
 } player_pose3d_t;
 
 /** @brief A rectangular bounding box, used to define the size of an object */
 typedef struct player_bbox
 {
-  /** width and length (in m,m) */
-  float sw, sl;
+  /** Width [m] */
+  float sw; 
+  /** Length [m] */
+  float sl;
 } player_bbox_t;
 
 /** @brief A line segment, used to construct vector-based maps */
 typedef struct player_segment
 {
-  /** Endpoints */
-  float x0, y0, x1, y1;
+  /** Endpoints [m] */
+  float x0;
+  /** Endpoints [m] */
+  float y0;
+  /** Endpoints [m] */
+  float x1;
+  /** Endpoints [m] */
+  float y1;
 } player_segment_t;
 
 /** @brief A device address.
@@ -233,9 +267,7 @@ typedef struct player_msghdr
   /** Size in bytes of the payload to follow */
   uint32_t size;
 } player_msghdr_t;
-
-
-#define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
+/** @} */
 
 /** 
 @ingroup libplayercore
@@ -270,7 +302,7 @@ system
 
 /** 
 @ingroup libplayercore
-@defgroup interfaces Interfaces
+@defgroup interfaces Interface specifications
 
 All Player communication occurs through <i>interfaces</i>, which specify
 the syntax and semantics for a set of messages. 
@@ -583,6 +615,7 @@ The @p audiodsp interface is used to control sound hardware, if equipped.
 @defgroup interface_audiodsp_constants Constants
 @{ */
 #define PLAYER_AUDIODSP_MAX_FREQS 8
+#define PLAYER_AUDIODSP_MAX_BITSTRING_LEN 64
 /** @} */
 
 /**
@@ -640,7 +673,7 @@ typedef struct player_audiodsp_cmd
   float duration;
   uint32_t bit_string_count;
   /** BitString to encode in sine wave */
-  uint8_t bit_string[PLAYER_MAX_DEVICE_STRING_LEN];
+  uint8_t bit_string[PLAYER_AUDIODSP_MAX_BITSTRING_LEN];
   /** Length of the bit string */
   uint32_t bit_string_len;
 } player_audiodsp_cmd_t;
@@ -904,21 +937,37 @@ typedef struct player_blobfinder_imager_config
 // /////////////////////////////////////////////////////////////////////////////
 /** 
 @ingroup interfaces
-@defgroup player_interface_bumper bumper
+@defgroup interface_bumper bumper
 @brief An array of bumpers
 
 The @p bumper interface returns data from a bumper array.  This interface
 accepts no commands.
-@{
 */
 
+/** @ingroup interface_bumper
+ * @defgroup interface_bumper_constants Constants
+ * @{ */
 /** Maximum number of bumper samples */
 #define PLAYER_BUMPER_MAX_SAMPLES 32
-/** The request subtypes */
+/** @} */
+
+/** @ingroup interface_bumper
+ * @defgroup interface_bumper_configs Configuration subtypes
+ * @{ */
 #define PLAYER_BUMPER_GET_GEOM    1
-// data subtype
+/** @} */
+
+/** @ingroup interface_bumper
+ * @defgroup interface_bumper_data Data subtypes
+ * @{ */
 #define PLAYER_BUMPER_DATA_STATE  1
 #define PLAYER_BUMPER_DATA_GEOM  2
+/** @} */
+
+/** @ingroup interface_bumper
+ * @defgroup interface_bumper_structs Messages structures
+ * @{ */
+
 /** @brief Data
 
 The @p bumper interface gives current bumper state*/
@@ -2326,7 +2375,7 @@ typedef struct player_device_driverinfo
 
   uint32_t driver_name_count;
   /** The driver name (returned) */
-  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+  char driver_name[PLAYER_MAX_DRIVER_STRING_LEN];
 } player_device_driverinfo_t;
 
 /** @brief Configuration request: Get device access.
@@ -2364,7 +2413,7 @@ typedef struct player_device_req
   uint8_t access;
   uint32_t driver_name_count;
   /** The name of the underlying driver */
-  char driver_name[PLAYER_MAX_DEVICE_STRING_LEN];
+  char driver_name[PLAYER_MAX_DRIVER_STRING_LEN];
 } player_device_req_t;
 
 /** @brief Configuration request: Get data.
@@ -2451,7 +2500,7 @@ typedef struct player_device_nameservice_req
 {
   uint32_t name_count;
   /** The robot name */
-  uint8_t name[PLAYER_MAX_DEVICE_STRING_LEN];
+  uint8_t name[PLAYER_MAX_DRIVER_STRING_LEN];
   /** The corresponding port */
   uint16_t port;
 } player_device_nameservice_req_t;

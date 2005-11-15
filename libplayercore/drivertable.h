@@ -54,7 +54,7 @@ class DriverEntry
   DriverInitFn initfunc;
 
   // the string name for the driver
-  char name[PLAYER_MAX_DEVICE_STRING_LEN]; 
+  char name[PLAYER_MAX_DRIVER_STRING_LEN]; 
 
   // next in list
   DriverEntry* next;  
