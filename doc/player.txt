@@ -13,7 +13,7 @@
 
 <p>Player source and documentation is released under the terms of the
 GNU General Public License v2. A copy of the license is included with the
-sourcecode in the file 'COPYING". Copying and redistribution is permitted
+sourcecode in the file COPYING. Copying and redistribution is permitted
 only under the terms of the license.  Client libraries are simultaneously
 released under the terms of the GNU Lesser General Public License v2.1.
 
@@ -114,30 +114,39 @@ because you don't have root access:
 /** 
 @defgroup libplayercore libplayercore
 
+\section synopsis Synopsis
 This C++ library defines the device driver API, the message queues used to
 move messages between devices, facilities for parsing configuration files
 and for loading and instantiating drivers.
 
-The core components of this library are:
+The primary components of libplayercore are:
+  - @ref message_basics : The basics of Player-based messaging, including
+    size limits, unit specifications, and address structures.
+  - @ref interfaces : The syntax and semantics of all the messages for each
+    Player interface.
+  - @ref ConfigFile : Configuration file parsing
+  - @ref Message : 
+  - @ref MessageQueue : 
+  - @ref Driver :
+  - @ref Device :
 
-- player.h : Defines all message formats.
+\section linking Example compilation and linkage
+The most common usage of libplayercore is in building a plugin driver.  If
+the code for your driver is in mydriver.cc, you can build it like this (on
+Linux):
+\code
+  $ g++ `pkg-config --cflags playercore` -o -shared mydriver.so mydriver.cc `pkg-config --libs playercore`
+\endcode
 
-- Driver : All drivers inherit from this class, and must implement certain
-methods.
 
-- Device : An instantiated driver (i.e., a driver bound to an interface) is
-a device and can be accessed via a pointer of this type.  Use this class
-to, for example, subscribe to a device.
+*/
 
-- ConfigFile : Use this class to parse a configuration file
+/** 
+@defgroup libplayererror libplayererror
 
-- Message : All messages are of this type
+This C library provides error-reporting and debug output facilities.
+Instead of calling directly into the stdio library (printf, puts, etc.),
+use the macros defined in error.h, so that message verbosity can be
+centrally controlled and so that all messsages get logged to .player.
 
-- MessageQueue : Messages are delivered on queues of this type, and every
-  driver has one (Driver::InQueue).
-
-- error.h : Error-reporting and debug output facilities.  Don't call
-  directly into the stdio library (printf, puts, etc.).  Instead use the
-  macros defined in error.h, so that message verbosity can be centrally
-  controlled and so that all messsages get logged to .player.
 */

@@ -65,7 +65,7 @@ BRIEF_MEMBER_DESC      = YES
 # Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DESC are set to NO, the
 # brief descriptions will be completely suppressed.
 
-REPEAT_BRIEF           = NO
+REPEAT_BRIEF           = YES
 
 # This tag implements a quasi-intelligent brief description abbreviator
 # that is used to form the text in various listings. Each string
@@ -392,8 +392,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 #INPUT                  = player.txt install.html migration.html tutorials.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../libplayerxdr/playerxdr.html ../libplayerxdr ../libplayercore/playercore.h ../server/libplayerdrivers ../libplayertcp ../libplayercore ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h
-INPUT                  = player.txt install.html ../libplayercore/player.h
-
+INPUT                  = player.txt install.html ../libplayercore/player.h ../libplayercore/error.h
 # If the value of the INPUT tag contains directories, you can use the
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
 # and *.h) to filter out the source-files in the directories. If left

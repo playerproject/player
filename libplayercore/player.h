@@ -32,11 +32,18 @@
 #include "playerconfig.h"
 
 /** @ingroup libplayercore
+ * @defgroup message_basics Messaging basics
+ * Interface-independent message types, sizes, units, address structures, etc.
+ */
+
+/** @ingroup message_basics
  * @defgroup message_constants Miscellaneous constants
  * Maximum message lengths, etc.
  * @{ */
 /** The largest possible message */
 #define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
+/** Maximum payload in a message */
+#define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
 /** Maximum length for a driver name */
 #define PLAYER_MAX_DRIVER_STRING_LEN 64
 /** The maximum number of devices the server will support. */
@@ -49,11 +56,9 @@
 #define PLAYER_IDENT_STRLEN 32
 /** Length of authentication key */
 #define PLAYER_KEYLEN       32
-/** Maximum payload in a message */
-#define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
 /** @} */
 
-/** @ingroup libplayercore
+/** @ingroup message_basics
  * @defgroup message_types Message types
  * @todo Document the message types
  * @{ */
@@ -66,8 +71,9 @@
 /** @} */
 
 
-/** @ingroup libplayercore
+/** @ingroup message_basics
  * @defgroup message_codes Interface codes
+ * An integer code is assigned to each interface
  * @{ */
 #define PLAYER_NULL_CODE           256 // /dev/null analogue
 #define PLAYER_PLAYER_CODE         1   // the server itself
@@ -116,8 +122,10 @@
 #define PLAYER_LIMB_CODE           54  // Limb interface
 /** @} */
 
-/** @ingroup libplayercore
+/** @ingroup message_basics
  * @defgroup message_strings Interface string names
+ * Used in configuration file parsing and console output, each interface is
+ * assigned a string name.
  * @{ */
 #define PLAYER_ACTARRAY_STRING        "actarray"
 #define PLAYER_AIO_STRING             "aio"
@@ -167,7 +175,49 @@
 #define PLAYER_WIFI_STRING            "wifi"
 /** @} */
 
-/** @ingroup libplayercore
+/** @ingroup message_basics
+ * @defgroup address_structs Address structures
+ * Device and message address structures.
+ * @{ */
+
+/** @brief A device address.
+
+ Devices are identified by 12-byte addresses of this form. Some of the
+ fields are transport-dependent in their interpretation. */
+typedef struct player_devaddr
+{
+  /** The "host" on which the device resides.  Transport-dependent. */
+  uint32_t host;
+  /** The "robot" or device collection in which the device resides.
+      Transport-dependent */
+  uint32_t robot;
+  /** The interface provided by the device; must be one of PLAYER_*_CODE */
+  uint16_t interf;
+  /** Which device of that interface */
+  uint16_t index;
+} player_devaddr_t;
+
+/** @brief Generic message header.
+
+ Every message starts with this header.*/
+typedef struct player_msghdr
+{
+  /** Device to which this message pertains */
+  player_devaddr_t addr;
+  /** Message type; must be one of PLAYER_MSGTYPE_* */
+  uint8_t type;
+  /** Message subtype; interface specific */
+  uint8_t subtype;
+  /** Time associated with message contents (seconds since epoch) */
+  double timestamp;
+  /** For keeping track of associated messages.  Transport-specific. */
+  uint32_t seq;
+  /** Size in bytes of the payload to follow */
+  uint32_t size;
+} player_msghdr_t;
+/** @} */
+
+/** @ingroup message_basics
  * @defgroup utility_structs General-purpose message structures.  
  * These structures often appear inside other structures.
  * @{ */
@@ -232,45 +282,10 @@ typedef struct player_segment
   float y1;
 } player_segment_t;
 
-/** @brief A device address.
-
- Devices are identified by 12-byte addresses of this form. Some of the
- fields are transport-dependent in their interpretation. */
-typedef struct player_devaddr
-{
-  /** The "host" on which the device resides.  Transport-dependent. */
-  uint32_t host;
-  /** The "robot" or device collection in which the device resides.
-      Transport-dependent */
-  uint32_t robot;
-  /** The interface provided by the device; must be one of PLAYER_*_CODE */
-  uint16_t interf;
-  /** Which device of that interface */
-  uint16_t index;
-} player_devaddr_t;
-
-/** @brief Generic message header.
-
- Every message starts with this header.*/
-typedef struct player_msghdr
-{
-  /** Device to which this message pertains */
-  player_devaddr_t addr;
-  /** Message type; must be one of PLAYER_MSGTYPE_* */
-  uint8_t type;
-  /** Message subtype; interface specific */
-  uint8_t subtype;
-  /** Time associated with message contents (seconds since epoch) */
-  double timestamp;
-  /** For keeping track of associated messages.  Transport-specific. */
-  uint32_t seq;
-  /** Size in bytes of the payload to follow */
-  uint32_t size;
-} player_msghdr_t;
 /** @} */
 
 /** 
-@ingroup libplayercore
+@ingroup message_basics
 @defgroup units Units
 
 In the interest of using MKS units (http://en.wikipedia.org/wiki/Mks) the
@@ -319,50 +334,44 @@ The actuator array interface provides access to an array of actuators.
 
 /** 
 @ingroup interface_actarray
-@defgroup interface_actarray_constants Constants 
 @{
 */
+
+/** Maximum number of actuators */
 #define PLAYER_ACTARRAY_NUM_ACTUATORS     16
 
+/** Idle state code */
 #define PLAYER_ACTARRAY_ACTSTATE_IDLE     1
+/** Moving state code */
 #define PLAYER_ACTARRAY_ACTSTATE_MOVING   2
+/** Braked state code */
 #define PLAYER_ACTARRAY_ACTSTATE_BRAKED   3
+/** Stalled state code */
 #define PLAYER_ACTARRAY_ACTSTATE_STALLED  4
 
+/** Linear type code */
 #define PLAYER_ACTARRAY_TYPE_LINEAR       1
+/** Rotary type code */
 #define PLAYER_ACTARRAY_TYPE_ROTARY       2
-/** @} */
 
-/** 
-@ingroup interface_actarray
-@defgroup interface_actarray_configs Configuration subtypes
-@{ */
+/** Request subtype: power */
 #define PLAYER_ACTARRAY_POWER_REQ         1
+/** Request subtype: brakes */
 #define PLAYER_ACTARRAY_BRAKES_REQ        2
+/** Request subtype: get geometry */
 #define PLAYER_ACTARRAY_GET_GEOM_REQ      3
+/** Request subtype: speed */
 #define PLAYER_ACTARRAY_SPEED_REQ         4
-/** @} */
 
-/** 
-@ingroup interface_actarray
-@defgroup interface_actarray_commands Command subtypes
-@{ */
+/** Command subtype: position */
 #define PLAYER_ACTARRAY_POS_CMD           1
+/** Command subtype: speed */
 #define PLAYER_ACTARRAY_SPEED_CMD         2
+/** Command subtype: home */
 #define PLAYER_ACTARRAY_HOME_CMD          3
-/** @} */
 
-/** 
-@ingroup interface_actarray
-@defgroup interface_actarray_data Data subtypes
-@{ */
+/** Data subtype: state */
 #define PLAYER_ACTARRAY_DATA_STATE        1
-/** @} */
-
-/** 
-@ingroup interface_actarray
-@defgroup interface_actarray_structs Message structures
-@{ */
 
 /** @brief Structure containing a single actuator's information */
 typedef struct player_actarray_actuator
@@ -375,7 +384,7 @@ typedef struct player_actarray_actuator
   uint8_t state;
 } player_actarray_actuator_t;
 
-/** @brief Data
+/** @brief Data: state
 
 The actuator array data packet. */
 typedef struct player_actarray_data
@@ -405,9 +414,10 @@ typedef struct player_actarray_actuatorgeom
   uint8_t hasbrakes;
 } player_actarray_actuatorgeom_t;
 
-/** @brief Geometry request
+/** @brief Request/reply: get geometry
 
-Geometry request/response.  */
+Send a null PLAYER_ACTARRAY_GET_GEOM_REQ request to receive the geometry in
+this form. */
 typedef struct player_actarray_geom
 {
   /** The number of actuators in the array. */
@@ -416,7 +426,7 @@ typedef struct player_actarray_geom
   player_actarray_actuatorgeom_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
 } player_actarray_geom_t;
 
-/** @brief Joint position control command
+/** @brief Command: Joint position control
 
 Tells a joint to attempt to move to a requested position. */
 typedef struct player_actarray_position_cmd
@@ -427,7 +437,7 @@ typedef struct player_actarray_position_cmd
   float position;
 } player_actarray_position_cmd_t;
 
-/** @brief Joint speed control command
+/** @brief Command: Joint speed control
 
 Tells a joint to attempt to move at a requested speed. */
 typedef struct player_actarray_speed_cmd
@@ -438,7 +448,7 @@ typedef struct player_actarray_speed_cmd
   float speed;
 } player_actarray_speed_cmd_t;
 
-/** @brief Joint home command
+/** @brief Command: Joint home
 
 Tells a joint (or the whole array) to go to home position. */
 typedef struct player_actarray_home_cmd
@@ -447,29 +457,32 @@ typedef struct player_actarray_home_cmd
   char joint;
 } player_actarray_home_cmd_t;
 
-/** @brief Configuration request: Power.
+/** @brief Request/reply: Power.
 
-Turns the power to all actuators in the array on or off. Be careful
-when turning power on that the array is not obstructed from its home
-position in case it moves to it (common behaviour). */
+Send a PLAYER_ACTARRAY_POWER_REQ request to turn the power to all actuators
+in the array on or off. Be careful when turning power on that the array is
+not obstructed from its home position in case it moves to it (common
+behaviour). Null response. */
 typedef struct player_actarray_power_config
 {
   /** Power setting; 0 for off, 1 for on. */
   uint8_t value;
 } player_actarray_power_config_t;
 
-/** @brief Configuration request: Brakes.
+/** @brief Request/reply: Brakes.
 
-Turns the brakes of all actuators in the array that have them on or off. */
+Send a PLAYER_ACTARRAY_BRAKES_REQ request to turn the brakes of all
+actuators in the array that have them on or off. Null response.*/
 typedef struct player_actarray_brakes_config
 {
   /** Brakes setting; 0 for off, 1 for on. */
   uint8_t value;
 } player_actarray_brakes_config_t;
 
-/** @brief Configuration request: Speed.
+/** @brief Request/reply: Speed.
 
-Sets the speed of a joint for all subsequent movements. */
+Send a PLAYER_ACTARRAY_SPEED_REQ request to set the speed of a joint for
+all subsequent movements. Null response. */
 typedef struct player_actarray_speed_config
 {
   /** Joint to set speed for. */
@@ -490,35 +503,20 @@ The @p aio interface provides access to an analog I/O device.
 
 /**
 @ingroup interface_aio
-@defgroup interface_aio_constants Constants
 @{ */
+
 /** The maximum number of analog I/O samples */
 #define PLAYER_AIO_MAX_INPUTS  8
 /** The maximum number of analog I/O samples */
 #define PLAYER_AIO_MAX_OUTPUTS 8
-/** @} */
 
-/**
-@ingroup interface_aio
-@defgroup interface_aio_command Command subtypes
-@{ */
+/** Command subtype: state */
 #define PLAYER_AIO_CMD_STATE              1
-/** @} */
 
-/**
-@ingroup interface_aio
-@defgroup interface_aio_data Data subtypes
-@{ */
+/** Data subtype: state */
 #define PLAYER_AIO_DATA_STATE             1
-/** @} */
 
-/**
-@ingroup interface_aio
-@defgroup interface_aio_structs Message structures
-@{
-*/
-
-/** @brief Data
+/** @brief Data: state
 
 The @p aio interface returns data regarding the current state of the
 analog inputs. */
@@ -530,7 +528,7 @@ typedef struct player_aio_data
   float voltages[PLAYER_AIO_MAX_INPUTS];
 } player_aio_data_t;
 
-/** @brief Command
+/** @brief Command: state
 
 The @p aio interface allows for the voltage level on one output to be set */
 typedef struct player_aio_cmd
@@ -557,18 +555,16 @@ The @p audio interface is used to control sound hardware, if equipped.
 
 /** 
 @ingroup interface_audio
-@defgroup interface_audio_constants Constants
 @{ */
+
+/** Data buffer size */
 #define PLAYER_AUDIO_DATA_BUFFER_SIZE    20
+/** Command buffer size */
 #define PLAYER_AUDIO_COMMAND_BUFFER_SIZE (3*sizeof(short))
+/** Number of frequency / amplitude pairs to report */
 #define PLAYER_AUDIO_PAIRS               5
-/** @} */
 
-/** @ingroup interface_audio
- * @defgroup interface_audio_structs Message structures 
- * @{ */
-
-/** @brief Data
+/** @brief Data: tones detected
 
 The @p audio interface reads the audio stream from @p /dev/audio (which
 is assumed to be associated with a sound card connected to a microphone)
@@ -584,7 +580,7 @@ typedef struct player_audio_data
   float amplitude[PLAYER_AUDIO_PAIRS];
 } player_audio_data_t;
 
-/** @brief Command
+/** @brief Command: tone to emit
 
 The @p audio interface accepts commands to produce fixed-frequency tones
 through @p /dev/dsp (which is assumed to be associated with a sound card
@@ -612,35 +608,29 @@ The @p audiodsp interface is used to control sound hardware, if equipped.
 
 /**
 @ingroup interface_audiodsp
-@defgroup interface_audiodsp_constants Constants
 @{ */
+
+/** Maximum number of frequencies to report */
 #define PLAYER_AUDIODSP_MAX_FREQS 8
+/** Maximum length of a BPSK bitstring to emit */
 #define PLAYER_AUDIODSP_MAX_BITSTRING_LEN 64
-/** @} */
 
-/**
-@ingroup interface_audiodsp
-@defgroup interface_audiodsp_configs Configuration subtypes
-@{ */
+/** Request/reply subtype: set configuration */
 #define PLAYER_AUDIODSP_SET_CONFIG 1
+/** Request/reply subtype: get configuration */
 #define PLAYER_AUDIODSP_GET_CONFIG 2
-/** @} */
 
-/**
-@ingroup interface_audiodsp
-@defgroup interface_audiodsp_data Data subtypes
-@{ */
+/** Command subtype: play tone */
 #define PLAYER_AUDIODSP_PLAY_TONE  1
+/** Command subtype: play chirp */
 #define PLAYER_AUDIODSP_PLAY_CHIRP 2
+/** Command subtype: replay (last tone, last chirp ?) */
 #define PLAYER_AUDIODSP_REPLAY     3
-/** @} */
 
-/**
-@ingroup interface_audiodsp
-@defgroup interface_audiodsp_structs Message structures
-@{ */
+/** Data subtype: detected tones */
+#define PLAYER_AUDIODSP_DATA_TONES 1
 
-/** @brief Data
+/** @brief Data: detected tones
 
 The @p audiodsp interface reads the audio stream from @p /dev/dsp (which
 is assumed to be associated with a sound card connected to a microphone)
@@ -657,7 +647,7 @@ typedef struct player_audiodsp_data
 
 } player_audiodsp_data_t;
 
-/** @brief Command
+/** @brief Command: tone / chirp to play
 
 The @p audiodsp interface accepts commands to produce fixed-frequency
 tones or binary phase shift keyed(BPSK) chirps through @p /dev/dsp
@@ -678,11 +668,11 @@ typedef struct player_audiodsp_cmd
   uint32_t bit_string_len;
 } player_audiodsp_cmd_t;
 
-/** @brief Configuration request : Get/set audio properties.
+/** @brief Request/reply : Get/set audio properties.
 
-The audiodsp configuration can be queried using the
-PLAYER_AUDIODSP_GET_CONFIG request and modified using the
-PLAYER_AUDIODSP_SET_CONFIG request.
+Send a null PLAYER_AUDIODSP_GET_CONFIG request to receive the audiodsp
+configuration.  Send a full PLAYER_AUDIODSP_SET_CONFIG request to modify
+the configuration (and receive a null response).
 
 The sample format is defined in sys/soundcard.h, and defines the byte
 size and endian format for each sample.
@@ -713,29 +703,32 @@ The @p audiomixer interface is used to control sound levels.
 
 /**
 @ingroup interface_audiomixer
-@defgroup interface_audiomixer_configs Command subtypes
 @{ */
+
+/** Command subtype: set master level */
 #define PLAYER_AUDIOMIXER_SET_MASTER 1
+/** Command subtype: set PCM level */
 #define PLAYER_AUDIOMIXER_SET_PCM    2
+/** Command subtype: set line in level */
 #define PLAYER_AUDIOMIXER_SET_LINE   3
+/** Command subtype: set microphone level */
 #define PLAYER_AUDIOMIXER_SET_MIC    4
+/** Command subtype: set input gain level */
 #define PLAYER_AUDIOMIXER_SET_IGAIN  5
+/** Command subtype: set output gain level */
 #define PLAYER_AUDIOMIXER_SET_OGAIN  6
-/** @} */
 
-/**
-@ingroup interface_audiomixer
-@defgroup interface_audiomixer_structs Message structures
-@{ */
+/** Request/reply subtype: get levels */
+#define PLAYER_AUDIOMIXER_GET_LEVELS 1
 
-/** @brief Command
+/** @brief Command: set level
 
 The @p audiomixer interface accepts commands to set the left and right
 volume levels of various channels. The channel is determined by the
-subtype of the command: PLAYER_AUDIOMIXER_MASTER for the master volume,
-PLAYER_AUDIOMIXER_PCM for the PCM volume, PLAYER_AUDIOMIXER_LINE for
-the line in volume, PLAYER_AUDIOMIXER_MIC for the microphone volume,
-PLAYER_AUDIOMIXER_IGAIN for the input gain, and PLAYER_AUDIOMIXER_OGAIN
+subtype of the command: PLAYER_AUDIOMIXER_SET_MASTER for the master volume,
+PLAYER_AUDIOMIXER_SET_PCM for the PCM volume, PLAYER_AUDIOMIXER_SET_LINE for
+the line in volume, PLAYER_AUDIOMIXER_SET_MIC for the microphone volume,
+PLAYER_AUDIOMIXER_SET_IGAIN for the input gain, and PLAYER_AUDIOMIXER_SET_OGAIN
 for the output gain.
 */
 typedef struct player_audiomixer_cmd
@@ -747,10 +740,10 @@ typedef struct player_audiomixer_cmd
 
 } player_audiomixer_cmd_t;
 
-/** @brief Configuration request: Get levels
+/** @brief Request/reply: Get levels
 
-The @p audiomixer interface provides accepts a configuration request
-which returns the current state of the mixer levels.
+Send a null PLAYER_AUDIOMIXER_GET_LEVELS request to receive the
+current state of the mixer levels.
 */
 typedef struct player_audiomixer_config
 {
@@ -780,10 +773,16 @@ indicator light, and to set it's flash period.
 This interface accepts no configuration requests.
 */
 
+/** Data subtype: state */
+#define PLAYER_BLINKENLIGHT_DATA_STATE 1
+
+/** Command subtype: state */
+#define PLAYER_BLINKENLIGHT_CMD_STATE 1
+
 /** @ingroup interface_blinkenlight
- * @defgroup interface_blinkenlight_structs Message structures 
  * @{ */
-/** @brief Data
+
+/** @brief Data: state
 
 The @p blinkenlight data provides the current state of the indicator
 light.*/
@@ -795,7 +794,7 @@ typedef struct player_blinkenlight_data
   float period;
 } player_blinkenlight_data_t;
 
-/** @brief Command
+/** @brief Command: state
 
 The @p blinkenlight command sets the current state of the indicator
 light. It uses the same packet as the data.*/
@@ -815,28 +814,18 @@ in images.
 
 
 /** @ingroup interface_blobfinder
- * @defgroup interface_blobfinder_constants Constants
  * @{ */
+
 /** The maximum number of blobs in total. */
 #define PLAYER_BLOBFINDER_MAX_BLOBS 256
-/** @} */
 
-/** @ingroup interface_blobfinder
- * @defgroup interface_blobfinder_data Data subtypes
- * @{ */
+/** Data subtype: detected blobs */
 #define PLAYER_BLOBFINDER_DATA_BLOBS 1
-/** @} */
 
-/** @ingroup interface_blobfinder
- * @defgroup interface_blobfinder_configs Configuration subtypes
- * @{ */
+/** Request/reply subtype: set tracking color */
 #define PLAYER_BLOBFINDER_REQ_SET_COLOR         1
+/** Request/reply subtype: set imager parameters */
 #define PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS 2
-/** @} */
-
-/** @ingroup interface_blobfinder
- * @defgroup interface_blobfinder_structs Message structures
- * @{ */
 
 /** @brief Structure describing a single blob. */
 typedef struct player_blobfinder_blob
@@ -864,7 +853,7 @@ typedef struct player_blobfinder_blob
   float range;
 } player_blobfinder_blob_t;
 
-/** @brief Data
+/** @brief Data: detected blobs
 
 The list of detected blobs, returned as data by @p blobfinder devices. */
 typedef struct player_blobfinder_data
@@ -879,14 +868,14 @@ typedef struct player_blobfinder_data
 } player_blobfinder_data_t;
 
 
-/** @brief Configuration request: Set tracking color.
+/** @brief Request/reply: Set tracking color.
 
-For some sensors (ie CMUcam), simple blob tracking tracks only one
-color.  To set the tracking color, send a request with the format below,
-including the RGB color ranges (max and min).  Values of -1 will cause
-the track color to be automatically set to the current window color.
-This is useful for setting the track color by holding the tracking object
-in front of the lens.
+For some sensors (ie CMUcam), simple blob tracking tracks only one color.
+To set the tracking color, send a PLAYER_BLOBFINDER_REQ_SET_COLOR request
+with the format below, including the RGB color ranges (max and min).
+Values of -1 will cause the track color to be automatically set to the
+current window color.  This is useful for setting the track color by
+holding the tracking object in front of the lens.  Null response.
 */
 typedef struct player_blobfinder_color_config
 {
@@ -915,8 +904,9 @@ are implemented here:
    - auto gain   (0=off, 1=on)
    - color mode  (0=RGB/AutoWhiteBalance Off,  1=RGB/AutoWhiteBalance On,
                 2=YCrCB/AWB Off, 3=YCrCb/AWB On)
-To set the params, send a request with the format below.  Any
-values set to -1 will be left unchanged.
+To set the params, send a PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS request
+with the format below.  Any values set to -1 will be left unchanged.
+Null response.
 */
 typedef struct player_blobfinder_imager_config
 {
@@ -945,30 +935,20 @@ accepts no commands.
 */
 
 /** @ingroup interface_bumper
- * @defgroup interface_bumper_constants Constants
  * @{ */
+
 /** Maximum number of bumper samples */
 #define PLAYER_BUMPER_MAX_SAMPLES 32
-/** @} */
 
-/** @ingroup interface_bumper
- * @defgroup interface_bumper_configs Configuration subtypes
- * @{ */
+/** Request/reply subtype: get geometry */
 #define PLAYER_BUMPER_GET_GEOM    1
-/** @} */
 
-/** @ingroup interface_bumper
- * @defgroup interface_bumper_data Data subtypes
- * @{ */
+/** Data subtype: state */
 #define PLAYER_BUMPER_DATA_STATE  1
+/** Data subtype: geometry */
 #define PLAYER_BUMPER_DATA_GEOM  2
-/** @} */
 
-/** @ingroup interface_bumper
- * @defgroup interface_bumper_structs Messages structures
- * @{ */
-
-/** @brief Data
+/** @brief Data: state
 
 The @p bumper interface gives current bumper state*/
 typedef struct player_bumper_data
@@ -990,11 +970,12 @@ typedef struct player_bumper_define
   float radius;
 } player_bumper_define_t;
 
-/** @brief Configuration request: Query geometry
+/** @brief Data AND Request/reply: bumper geometry
 
-To query the geometry of a bumper array, give the following request,
-filling in only the subtype.  The server will repond with the other
-fields filled in. */
+To query the geometry of a bumper array, send a null PLAYER_BUMPER_GET_GEOM
+request.  The response will be in this form.  This message may also be sent
+as data (e.g., from a robot whose bumper can move with respect to its body)
+*/
 typedef struct player_bumper_geom
 {
   /** The number of valid bumper definitions. */
@@ -1006,31 +987,28 @@ typedef struct player_bumper_geom
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_camera camera
+/** @ingroup interfaces
+ @defgroup interface_camera camera
+ @brief Camera imagery
 
 The camera interface is used to see what the camera sees.  It is
 intended primarily for server-side (i.e., driver-to-driver) data
 transfers, rather than server-to-client transfers.  Image data can be
 in may formats (see below), but is always packed (i.e., pixel rows are
 byte-aligned).
-
-This interface has no commands or configuration requests.
-
-@{
 */
 
-/* The various configuration request types. */
-//   - currently none
+/** @ingroup interface_camera
+ * @{ */
 
-// data types
+/** Data subtype: state */
 #define PLAYER_CAMERA_DATA_STATE             1
 
-// Command types
-//   - currently none
-
-/** Image dimensions. */
+/** Maximum image width, in pixels */
 #define PLAYER_CAMERA_IMAGE_WIDTH  640
+/** Maximum image height, in pixels */
 #define PLAYER_CAMERA_IMAGE_HEIGHT 480
+/** Maximum image size, in pixels */
 #define PLAYER_CAMERA_IMAGE_SIZE  (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
 
 /** Image format : 8-bit monochrome. */
@@ -1042,11 +1020,12 @@ This interface has no commands or configuration requests.
 /** Image format : 24-bit color (8 bits R, 8 bits G, 8 bits B). */
 #define PLAYER_CAMERA_FORMAT_RGB888 5
 
-/** Compression methods. */
+/** Compression method: raw */
 #define PLAYER_CAMERA_COMPRESS_RAW  0
+/** Compression method: jpeg */
 #define PLAYER_CAMERA_COMPRESS_JPEG 1
 
-/** @brief Data */
+/** @brief Data: state */
 typedef struct player_camera_data
 {
   /** Image dimensions [pixels]. */
@@ -1073,19 +1052,23 @@ typedef struct player_camera_data
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_dio dio
+/** @ingroup interfaces
+ * @defgroup interface_dio dio
+ * @brief Digital I/O
 
 The @p dio interface provides access to a digital I/O device.
-@{
 */
 
-/** Data subtypes */
+/** @ingroup interface_dio
+ * @{ */
+
+/** Data subtype: input values */
 #define PLAYER_DIO_DATA_VALUES 1
 
-/** Command subtypes */
+/** Command subtype: output values */
 #define PLAYER_DIO_CMD_VALUES 1
 
-/** @brief Data
+/** @brief Data: input values
 
 The @p dio interface returns data regarding the current state of the
 digital inputs. */
@@ -1098,7 +1081,7 @@ typedef struct player_dio_data
 } player_dio_data_t;
 
 
-/** @brief Command
+/** @brief Command: output values
 
 The @p dio interface accepts 4-byte commands which consist of the ouput
 bitfield */
@@ -1113,14 +1096,24 @@ typedef struct player_dio_cmd
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_energy energy
+/** @ingroup interfaces
+ * @defgroup interface_energy energy
+ * @brief Energy storage / consumption
 
 The @p energy interface provides data about energy storage, consumption
 and charging.  This interface accepts no commands.
-@{
 */
 
-/** @brief Data
+/** @ingroup interface_energy
+ * @{ */
+
+/** Data subtype: state */
+#define PLAYER_ENERGY_DATA_STATE 1
+
+/** Request subtype: set charging policy */
+#define PLAYER_ENERGY_SET_CHARGING_POLICY_REQ 1
+
+/** @brief Data: state
 
 The @p energy interface reports he amount of energy stored, current rate
 of energy consumption or aquisition, and whether or not the device is
@@ -1140,8 +1133,11 @@ typedef struct player_energy_data
 
 } player_energy_data_t;
 
-/** @brief Configuration request */
-typedef struct player_energy_command
+/** @brief Request/reply: set charging policy
+ *
+ * Send a PLAYER_ENERGY_SET_CHARGING_POLICY_REQ request to change the
+ * charging policy. */
+typedef struct player_energy_chargepolicy_config
 {
   /** uint8_tean controlling recharging. If FALSE, recharging is
       disabled. Defaults to TRUE */
