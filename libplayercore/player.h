@@ -24,16 +24,17 @@
  * CVS:  $Id$
  */
 
+
 #ifndef PLAYER_H
 #define PLAYER_H
 
 /* Include values from the configure script */
 #include "playerconfig.h"
 
-/* the largest possible message */
+/** the largest possible message */
 #define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
 
-/* the player message types */
+/** the player message types */
 #define PLAYER_MSGTYPE_DATA      1
 #define PLAYER_MSGTYPE_CMD       2
 #define PLAYER_MSGTYPE_REQ       3
@@ -45,7 +46,7 @@
  * and command-line parsing) */
 #define PLAYER_MAX_DEVICE_STRING_LEN 64
 
-/* the currently assigned interface codes */
+/** the currently assigned interface codes */
 #define PLAYER_NULL_CODE           256 // /dev/null analogue
 #define PLAYER_PLAYER_CODE         1   // the server itself
 #define PLAYER_POWER_CODE          2   // power subsystem
@@ -236,7 +237,9 @@ typedef struct player_msghdr
 
 #define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
 
-/** @addtogroup units
+/** 
+@ingroup libplayercore
+@defgroup units Units
 
 In the interest of using MKS units (http://en.wikipedia.org/wiki/Mks) the
 internal message structure will use the following unit base types.
@@ -257,9 +260,6 @@ Base units
 system
 
 */
-/** @{ */
-
-/** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
 //
@@ -268,18 +268,28 @@ system
 //
 // /////////////////////////////////////////////////////////////////////////////
 
-/** @defgroup interfaces Interfaces
+/** 
+@ingroup libplayercore
+@defgroup interfaces Interfaces
+
 All Player communication occurs through <i>interfaces</i>, which specify
-the syntax and semantics for a set of messages. */
-/** @{ */
+the syntax and semantics for a set of messages. 
+*/
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_actarray actarray
+/** 
+@ingroup interfaces
+@defgroup interface_actarray actarray
+@brief An array of actuators
 
 The actuator array interface provides access to an array of actuators.
 */
-/** @{ */
 
+/** 
+@ingroup interface_actarray
+@defgroup interface_actarray_constants Constants 
+@{
+*/
 #define PLAYER_ACTARRAY_NUM_ACTUATORS     16
 
 #define PLAYER_ACTARRAY_ACTSTATE_IDLE     1
@@ -289,17 +299,38 @@ The actuator array interface provides access to an array of actuators.
 
 #define PLAYER_ACTARRAY_TYPE_LINEAR       1
 #define PLAYER_ACTARRAY_TYPE_ROTARY       2
+/** @} */
 
+/** 
+@ingroup interface_actarray
+@defgroup interface_actarray_configs Configuration subtypes
+@{ */
 #define PLAYER_ACTARRAY_POWER_REQ         1
 #define PLAYER_ACTARRAY_BRAKES_REQ        2
 #define PLAYER_ACTARRAY_GET_GEOM_REQ      3
 #define PLAYER_ACTARRAY_SPEED_REQ         4
+/** @} */
 
+/** 
+@ingroup interface_actarray
+@defgroup interface_actarray_commands Command subtypes
+@{ */
 #define PLAYER_ACTARRAY_POS_CMD           1
 #define PLAYER_ACTARRAY_SPEED_CMD         2
 #define PLAYER_ACTARRAY_HOME_CMD          3
+/** @} */
 
+/** 
+@ingroup interface_actarray
+@defgroup interface_actarray_data Data subtypes
+@{ */
 #define PLAYER_ACTARRAY_DATA_STATE        1
+/** @} */
+
+/** 
+@ingroup interface_actarray
+@defgroup interface_actarray_structs Message structures
+@{ */
 
 /** @brief Structure containing a single actuator's information */
 typedef struct player_actarray_actuator
@@ -329,7 +360,13 @@ typedef struct player_actarray_actuatorgeom
   /** The type of the actuator - linear or rotary. */
   uint8_t type;
   /** The range of motion of the actuator, in m or rad depending on the type. */
-  float min, centre, max, home;
+  float min; 
+  /** The range of motion of the actuator, in m or rad depending on the type. */
+  float centre; 
+  /** The range of motion of the actuator, in m or rad depending on the type. */
+  float max;
+  /** The range of motion of the actuator, in m or rad depending on the type. */
+  float home;
   /** The configured speed setting of the actuator - different from current speed. */
   float config_speed;
   /** If the actuator has brakes or not. */
@@ -375,7 +412,7 @@ Tells a joint (or the whole array) to go to home position. */
 typedef struct player_actarray_home_cmd
 {
   /** The joint to command - set to -1 to command all. */
-  int8_t joint;
+  char joint;
 } player_actarray_home_cmd_t;
 
 /** @brief Configuration request: Power.
@@ -404,30 +441,50 @@ Sets the speed of a joint for all subsequent movements. */
 typedef struct player_actarray_speed_config
 {
   /** Joint to set speed for. */
-  int8_t joint;
+  char joint;
   /** Speed setting in mrad/s. */
   float speed;
 } player_actarray_speed_config_t;
-
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_aio aio
+/** 
+@ingroup interfaces
+@defgroup interface_aio aio
+@brief Analog I/O
 
 The @p aio interface provides access to an analog I/O device.
-@{
 */
 
+/**
+@ingroup interface_aio
+@defgroup interface_aio_constants Constants
+@{ */
 /** The maximum number of analog I/O samples */
 #define PLAYER_AIO_MAX_INPUTS  8
+/** The maximum number of analog I/O samples */
 #define PLAYER_AIO_MAX_OUTPUTS 8
+/** @} */
 
-// data types
-#define PLAYER_AIO_DATA_STATE             1
-//#define PLAYER_AIO_DATA_GEOM            2
-
-// Command types
+/**
+@ingroup interface_aio
+@defgroup interface_aio_command Command subtypes
+@{ */
 #define PLAYER_AIO_CMD_STATE              1
+/** @} */
+
+/**
+@ingroup interface_aio
+@defgroup interface_aio_data Data subtypes
+@{ */
+#define PLAYER_AIO_DATA_STATE             1
+/** @} */
+
+/**
+@ingroup interface_aio
+@defgroup interface_aio_structs Message structures
+@{
+*/
 
 /** @brief Data
 
@@ -441,27 +498,43 @@ typedef struct player_aio_data
   float voltages[PLAYER_AIO_MAX_INPUTS];
 } player_aio_data_t;
 
+/** @brief Command
+
+The @p aio interface allows for the voltage level on one output to be set */
 typedef struct player_aio_cmd
 {
-  /** number of valid samples */
+  /** Which I/O output to command */
   uint32_t id;
-  /** the samples [V] */
+  /** Voltage level to set */
   float voltage;
 } player_aio_cmd_t;
 
 /** @} */
 
+
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_audio audio
+/** 
+@ingroup interfaces
+@defgroup interface_audio audio
+@brief Audible tone emission / detection (deprecated)
+
+@deprecated Use the @ref interface_audiodsp interface instead
 
 The @p audio interface is used to control sound hardware, if equipped.
-
-@{
 */
 
+/** 
+@ingroup interface_audio
+@defgroup interface_audio_constants Constants
+@{ */
 #define PLAYER_AUDIO_DATA_BUFFER_SIZE    20
 #define PLAYER_AUDIO_COMMAND_BUFFER_SIZE (3*sizeof(short))
 #define PLAYER_AUDIO_PAIRS               5
+/** @} */
+
+/** @ingroup interface_audio
+ * @defgroup interface_audio_structs Message structures 
+ * @{ */
 
 /** @brief Data
 
@@ -493,37 +566,61 @@ typedef struct player_audio_cmd
   /** Duration to play [s] */
   float duration;
 } player_audio_cmd_t;
+
 /** @} */
 
-
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_audiodsp audiodsp
+/** 
+@ingroup interfaces
+@defgroup interface_audiodsp audiodsp
+@brief Audible tone emission / detection
 
 The @p audiodsp interface is used to control sound hardware, if equipped.
-
-@{
 */
 
+/**
+@ingroup interface_audiodsp
+@defgroup interface_audiodsp_constants Constants
+@{ */
+#define PLAYER_AUDIODSP_MAX_FREQS 8
+/** @} */
+
+/**
+@ingroup interface_audiodsp
+@defgroup interface_audiodsp_configs Configuration subtypes
+@{ */
 #define PLAYER_AUDIODSP_SET_CONFIG 1
 #define PLAYER_AUDIODSP_GET_CONFIG 2
-#define PLAYER_AUDIODSP_PLAY_TONE  3
-#define PLAYER_AUDIODSP_PLAY_CHIRP 4
-#define PLAYER_AUDIODSP_REPLAY     5
+/** @} */
+
+/**
+@ingroup interface_audiodsp
+@defgroup interface_audiodsp_data Data subtypes
+@{ */
+#define PLAYER_AUDIODSP_PLAY_TONE  1
+#define PLAYER_AUDIODSP_PLAY_CHIRP 2
+#define PLAYER_AUDIODSP_REPLAY     3
+/** @} */
+
+/**
+@ingroup interface_audiodsp
+@defgroup interface_audiodsp_structs Message structures
+@{ */
 
 /** @brief Data
 
 The @p audiodsp interface reads the audio stream from @p /dev/dsp (which
 is assumed to be associated with a sound card connected to a microphone)
-and performs some analysis on it.  PLAYER_AUDIO_PAIRS number of
+and performs some analysis on it.  PLAYER_AUDIODSP_MAX_FREQS number of
 frequency/amplitude pairs are then returned as data. */
 typedef struct player_audiodsp_data
 {
   uint32_t frequency_count;
   /** [Hz] */
-  float frequency[PLAYER_AUDIO_PAIRS];
+  float frequency[PLAYER_AUDIODSP_MAX_FREQS];
   uint32_t amplitude_count;
   /** [Db] */
-  float amplitude[PLAYER_AUDIO_PAIRS];
+  float amplitude[PLAYER_AUDIODSP_MAX_FREQS];
 
 } player_audiodsp_data_t;
 
@@ -560,12 +657,7 @@ size and endian format for each sample.
 The sample rate defines the Hertz at which to sample.
 
 Mono or stereo sampling is defined in the channels parameter where
-1==mono and 2==stereo.
- */
-
-/** @brief Configuration request: Get/set audio configuration.
-
-Request/reply packet for getting and setting the audio configuration. */
+1==mono and 2==stereo. */
 typedef struct player_audiodsp_config
 {
   /** Format with which to sample */
@@ -578,27 +670,40 @@ typedef struct player_audiodsp_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_audiomixer audiomixer
+/** 
+@ingroup interfaces
+@defgroup interface_audiomixer audiomixer
+@brief Sound level control 
 
 The @p audiomixer interface is used to control sound levels.
-@{
 */
 
-#define PLAYER_AUDIOMIXER_SET_MASTER 0x01
-#define PLAYER_AUDIOMIXER_SET_PCM    0x02
-#define PLAYER_AUDIOMIXER_SET_LINE   0x03
-#define PLAYER_AUDIOMIXER_SET_MIC    0x04
-#define PLAYER_AUDIOMIXER_SET_IGAIN  0x05
-#define PLAYER_AUDIOMIXER_SET_OGAIN  0x06
+/**
+@ingroup interface_audiomixer
+@defgroup interface_audiomixer_configs Command subtypes
+@{ */
+#define PLAYER_AUDIOMIXER_SET_MASTER 1
+#define PLAYER_AUDIOMIXER_SET_PCM    2
+#define PLAYER_AUDIOMIXER_SET_LINE   3
+#define PLAYER_AUDIOMIXER_SET_MIC    4
+#define PLAYER_AUDIOMIXER_SET_IGAIN  5
+#define PLAYER_AUDIOMIXER_SET_OGAIN  6
+/** @} */
+
+/**
+@ingroup interface_audiomixer
+@defgroup interface_audiomixer_structs Message structures
+@{ */
 
 /** @brief Command
 
-The @p audiomixer interface accepts commands to set the left
-and right volume levels of various channels. The channel may be
-PLAYER_AUDIOMIXER_MASTER for the master volume, PLAYER_AUDIOMIXER_PCM
-for the PCM volume, PLAYER_AUDIOMIXER_LINE for the line in volume,
-PLAYER_AUDIOMIXER_MIC for the microphone volume, PLAYER_AUDIOMIXER_IGAIN
-for the input gain, and PLAYER_AUDIOMIXER_OGAIN for the output gain.
+The @p audiomixer interface accepts commands to set the left and right
+volume levels of various channels. The channel is determined by the
+subtype of the command: PLAYER_AUDIOMIXER_MASTER for the master volume,
+PLAYER_AUDIOMIXER_PCM for the PCM volume, PLAYER_AUDIOMIXER_LINE for
+the line in volume, PLAYER_AUDIOMIXER_MIC for the microphone volume,
+PLAYER_AUDIOMIXER_IGAIN for the input gain, and PLAYER_AUDIOMIXER_OGAIN
+for the output gain.
 */
 typedef struct player_audiomixer_cmd
 {
@@ -616,25 +721,35 @@ which returns the current state of the mixer levels.
 */
 typedef struct player_audiomixer_config
 {
-  uint32_t master_left, master_right;
-  uint32_t pcm_left, pcm_right;
-  uint32_t line_left, line_right;
-  uint32_t mic_left, mic_right;
-  uint32_t i_gain, o_gain;
+  uint32_t master_left;
+  uint32_t master_right;
+  uint32_t pcm_left;
+  uint32_t pcm_right;
+  uint32_t line_left;
+  uint32_t line_right;
+  uint32_t mic_left;
+  uint32_t mic_right;
+  uint32_t i_gain;
+  uint32_t o_gain;
 } player_audiomixer_config_t;
 
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_blinkenlight blinkenlight
+/** 
+@ingroup interfaces
+@defgroup interface_blinkenlight blinkenlight
+@brief A blinking light
 
 The @p blinkenlight interface is used to switch on and off a flashing
 indicator light, and to set it's flash period.
 
-This interface accepts no configuration requests
-@{
+This interface accepts no configuration requests.
 */
 
+/** @ingroup interface_blinkenlight
+ * @defgroup interface_blinkenlight_structs Message structures 
+ * @{ */
 /** @brief Data
 
 The @p blinkenlight data provides the current state of the indicator
@@ -656,30 +771,39 @@ typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_blobfinder blobfinder
+/** 
+@ingroup interfaces
+@defgroup interface_blobfinder blobfinder
+@brief A visual blob-detection system
 
 The blobfinder interface provides access to devices that detect blobs
 in images.
-
-@{
 */
 
-/* The various configuration request types. */
-//   - currently none
 
-// data types
-#define PLAYER_BLOBFINDER_DATA_BLOBS 1
-
-// Command types
-//   - currently none
-
+/** @ingroup interface_blobfinder
+ * @defgroup interface_blobfinder_constants Constants
+ * @{ */
 /** The maximum number of blobs in total. */
 #define PLAYER_BLOBFINDER_MAX_BLOBS 256
+/** @} */
 
-/* Config request codes */
+/** @ingroup interface_blobfinder
+ * @defgroup interface_blobfinder_data Data subtypes
+ * @{ */
+#define PLAYER_BLOBFINDER_DATA_BLOBS 1
+/** @} */
+
+/** @ingroup interface_blobfinder
+ * @defgroup interface_blobfinder_configs Configuration subtypes
+ * @{ */
 #define PLAYER_BLOBFINDER_REQ_SET_COLOR         1
 #define PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS 2
+/** @} */
 
+/** @ingroup interface_blobfinder
+ * @defgroup interface_blobfinder_structs Message structures
+ * @{ */
 
 /** @brief Structure describing a single blob. */
 typedef struct player_blobfinder_blob
@@ -692,9 +816,17 @@ typedef struct player_blobfinder_blob
   /** The blob area [pixels]. */
   uint32_t area;
   /** The blob centroid [pixels]. */
-  uint32_t x, y;
+  uint32_t x;
+  /** The blob centroid [pixels]. */
+  uint32_t y;
   /** Bounding box for the blob [pixels]. */
-  uint32_t left, right, top, bottom;
+  uint32_t left; 
+  /** Bounding box for the blob [pixels]. */
+  uint32_t right;
+  /** Bounding box for the blob [pixels]. */
+  uint32_t top;
+  /** Bounding box for the blob [pixels]. */
+  uint32_t bottom;
   /** Range to the blob center [meters] */
   float range;
 } player_blobfinder_blob_t;
@@ -705,7 +837,9 @@ The list of detected blobs, returned as data by @p blobfinder devices. */
 typedef struct player_blobfinder_data
 {
   /** The image dimensions. [pixels] */
-  uint32_t width, height;
+  uint32_t width;
+  /** The image dimensions. [pixels] */
+  uint32_t height;
   /** The list of blobs. */
   uint32_t blobs_count;
   player_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
@@ -724,9 +858,17 @@ in front of the lens.
 typedef struct player_blobfinder_color_config
 {
   /** RGB minimum and max values (0-255) **/
-  uint32_t rmin, rmax;
-  uint32_t gmin, gmax;
-  uint32_t bmin, bmax;
+  uint32_t rmin;
+  /** RGB minimum and max values (0-255) **/
+  uint32_t rmax;
+  /** RGB minimum and max values (0-255) **/
+  uint32_t gmin;
+  /** RGB minimum and max values (0-255) **/
+  uint32_t gmax;
+  /** RGB minimum and max values (0-255) **/
+  uint32_t bmin;
+  /** RGB minimum and max values (0-255) **/
+  uint32_t bmax;
 } player_blobfinder_color_config_t;
 
 
@@ -760,7 +902,10 @@ typedef struct player_blobfinder_imager_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @defgroup player_interface_bumper bumper
+/** 
+@ingroup interfaces
+@defgroup player_interface_bumper bumper
+@brief An array of bumpers
 
 The @p bumper interface returns data from a bumper array.  This interface
 accepts no commands.
@@ -1424,8 +1569,6 @@ typedef struct player_laser_power_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** @addtogroup interfaces */
-/** @{ */
 /** @defgroup player_interface_limb limb
 
 The limb interface provides access to a multi-jointed limb
@@ -1558,7 +1701,6 @@ typedef struct player_limb_speed_req
   float speed;
 } player_limb_speed_req_t;
 
-/** @} */
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -3290,6 +3432,4 @@ typedef struct player_truth_fiducial_id
 
 /** @} */
 
-// end defgroup interfaces
-/** @} */
 #endif /* PLAYER_H */

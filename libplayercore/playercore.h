@@ -20,37 +20,6 @@
  *
  */
 
-/** @defgroup libplayercore libplayercore
-@{
-This C++ library defines the device driver API, the message queues used to
-move messages between devices, facilities for parsing configuration files
-and for loading and instantiating drivers.
-
-The core components of this library are:
-
-- player.h : Defines all message formats.
-
-- Driver : All drivers inherit from this class, and must implement certain
-methods.
-
-- Device : An instantiated driver (i.e., a driver bound to an interface) is
-a device and can be accessed via a pointer of this type.  Use this class
-to, for example, subscribe to a device.
-
-- ConfigFile : Use this class to parse a configuration file
-
-- Message : All messages are of this type
-
-- MessageQueue : Messages are delivered on queues of this type, and every
-  driver has one (Driver::InQueue).
-
-- error.h : Error-reporting and debug output facilities.  Don't call
-  directly into the stdio library (printf, puts, etc.).  Instead use the
-  macros defined in error.h, so that message verbosity can be centrally
-  controlled and so that all messsages get logged to .player.
-@}
-*/
-
 
 #ifndef _PLAYERCORE_H
 #define _PLAYERCORE_H

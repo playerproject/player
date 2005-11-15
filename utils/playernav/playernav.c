@@ -173,13 +173,13 @@ player_read_func(gpointer* arg)
   }
   for(i=0;i<gui_data->num_robots;i++)
   {
-    /*
+#if 0
     if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
     {
-      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean[0];
-      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean[1];
-      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean[2];
-      */
+      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean.px;
+      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean.py;
+      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean.pa;
+#endif
 
     if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
     {
@@ -228,7 +228,6 @@ player_read_func(gpointer* arg)
 
       // regardless, store this pose for comparison on next iteration
       gui_data->robot_poses[i] = robot_pose;
-
       // if the current goal or waypoint changed, get the whole list 
       // of waypoints again
       if((lastwaypt[i].px != gui_data->planners[i]->wx) ||
@@ -265,9 +264,11 @@ player_read_func(gpointer* arg)
       }
 
       gui_data->planners[i]->info.fresh = 0;
+      //gui_data->localizes[i]->info.fresh = 0;
     }
 
     // raise the robot's canvas item, so that the user can select it
+    //if(gui_data->localizes[i])
     if(gui_data->planners[i])
       gnome_canvas_item_raise_to_top(gui_data->robot_items[i]);
   }
@@ -396,6 +397,7 @@ main(int argc, char** argv)
 
   for(i=0;i<gui_data.num_robots;i++)
   {
+    //if(gui_data.localizes[i])
     if(gui_data.planners[i])
     {
       robot_pose.px = 0.0;

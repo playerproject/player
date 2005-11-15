@@ -305,8 +305,11 @@ playerxdr_ftable_add(playerxdr_function_t f)
 player_pack_fn_t
 playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
 {
-  playerxdr_function_t* curr;
+  playerxdr_function_t* curr=NULL;
   int i;
+
+  if(!ftable_len)
+    return(NULL);
 
   // The supplied type can be RESP_ACK if the registered type is REQ.
   if (type == PLAYER_MSGTYPE_RESP_ACK || type == PLAYER_MSGTYPE_RESP_NACK)
