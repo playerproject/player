@@ -424,7 +424,9 @@ int Acoustics::ProcessMessage(MessageQueue * resp_queue,
       }
 
       // Return the data to the user
-      this->Publish(this->audiodsp_addr, NULL, PLAYER_MSGTYPE_DATA, 0, (void*)&this->data, sizeof(this->data),NULL);  	
+      this->Publish(this->audiodsp_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                    PLAYER_AUDIODSP_DATA_TONES, 
+                    (void*)&this->data, sizeof(this->data),NULL);  	
     }
     return 0;  	
   }
