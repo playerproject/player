@@ -91,7 +91,7 @@ $ g++ -o foo foo.o -lplayerc++ -lm -lboost_signals -lboost_thread
 /** @addtogroup player_clientlib_cplusplus libplayerc++ */
 /** @{ */
 
-/** @addtogroup player_clientlib_multi Signals & multithreading
+/** @defgroup player_clientlib_multi Signals & multithreading
 
 Along with providing access to the basic C functions of @ref player_clientlib_libplayerc
 in a C++ fashion, libplayerc++ also provides additional functionality along
@@ -111,17 +111,39 @@ can best be illustrated through the use of an example:
 
 
 std::ostream&
+std::operator << (std::ostream& os, const player_point_2d_t& c)
+{
+  os << "point: " << c.px << "," << c.py;
+  return os;
+}
+
+std::ostream&
 std::operator << (std::ostream& os, const player_pose_t& c)
 {
-  os << "pos: " << c.px << "," << c.py << "," << c.pa;
+  os << "pose: " << c.px << "," << c.py << "," << c.pa;
   return os;
 }
 
 std::ostream&
 std::operator << (std::ostream& os, const player_pose3d_t& c)
 {
-  os << "pos: " << c.px << "," << c.py << "," << c.pz << " "
+  os << "pose3d: " << c.px << "," << c.py << "," << c.pz << " "
      << c.proll << "," << c.ppitch << "," << c.pyaw;
+  return os;
+}
+
+std::ostream&
+std::operator << (std::ostream& os, const player_bbox_t& c)
+{
+  os << "bbox: " << c.sw << "," << c.sl;
+  return os;
+}
+
+std::ostream&
+std::operator << (std::ostream& os, const player_segment_t& c)
+{
+  os << "segment: (" << c.x0 << "," << c.y0 << ") - ("
+     << c.x1 << "," << c.y1 << ")";
   return os;
 }
 

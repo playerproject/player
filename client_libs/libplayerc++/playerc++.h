@@ -61,7 +61,7 @@ namespace PlayerCc
 /** @addtogroup player_clientlib_cplusplus libplayerc++ */
 /** @{ */
 
-/** @addtogroup player_clientlib_utility Utility and error-handling functions */
+/** @defgroup player_clientlib_utility Utility and error-handling functions */
 /** @{ */
 
 // Since they are inline, these functions are as efficient as DEFINES,
@@ -120,7 +120,7 @@ inline T limit(T a, T min, T max)
 /** @}*/
 
 
-/** @addtogroup player_clientlib_cplusplus_core Core functionality */
+/** @defgroup player_clientlib_cplusplus_core Core functionality */
 /** @{ */
 
 /** @brief The client proxy base class
@@ -278,25 +278,33 @@ class ClientProxy
     std::string GetInterfaceStr() const
       { return playerc_lookup_name(GetVar(mInfo->addr.interf)); };
 
-#ifdef HAVE_BOOST_SIGNALS
     /// Connect a signal to this proxy
     /// For more information check out @ref player_clientlib_multi
     template<typename T>
     connection_t ConnectReadSignal(T aSubscriber)
-      { scoped_lock_t lock(mPc->mMutex);
-        return mReadSignal.connect(aSubscriber); }
+      {
+#ifdef HAVE_BOOST_SIGNALS
+        scoped_lock_t lock(mPc->mMutex);
+        return mReadSignal.connect(aSubscriber);
+#else
+        return -1;
+#endif
+      }
 
     /// Disconnect a signal to this proxy
     void DisconnectReadSignal(connection_t aSubscriber)
-      { scoped_lock_t lock(mPc->mMutex);
-        aSubscriber.disconnect(); }
+      {
+#ifdef HAVE_BOOST_SIGNALS
+        scoped_lock_t lock(mPc->mMutex);
+        aSubscriber.disconnect();
 #endif
+      }
 
 };
 
 /** @} (core) */
 
-/** @addtogroup player_clientlib_cplusplus_proxies Proxies */
+/** @defgroup player_clientlib_cplusplus_proxies Proxies */
 /** @{ */
 
 #if 0
@@ -1090,7 +1098,7 @@ class LaserProxy : public ClientProxy
 
     /// Accessor for the pose (fill it in by calling RequestGeom)
     player_pose_t GetPose()
-    { 
+    {
       player_pose_t p;
       scoped_lock_t lock(mPc->mMutex);
 
@@ -1622,10 +1630,9 @@ class Position2dProxy : public ClientProxy
 
     /// Accessor for the pose (fill it in by calling RequestGeom)
     player_pose_t GetPose()
-    { 
+    {
       player_pose_t p;
       scoped_lock_t lock(mPc->mMutex);
-
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
       p.pa = mDevice->pose[2];
@@ -1637,7 +1644,6 @@ class Position2dProxy : public ClientProxy
     {
       player_bbox_t b;
       scoped_lock_t lock(mPc->mMutex);
-
       b.sl = mDevice->size[0];
       b.sw = mDevice->size[1];
       return(b);
@@ -2114,15 +2120,15 @@ class TruthProxy : public ClientProxy
     /// just read the class attributes but this function allows you
     /// to get pose direct from the server if you need too.
     void GetPose(double *px, double *py, double *pz,
-                double *rx, double *ry, double *rz);
+                 double *rx, double *ry, double *rz);
 
     /// Request a change in pose.
     void SetPose(double px, double py, double pz,
-                double rx, double ry, double rz);
+                 double rx, double ry, double rz);
 
     /// ???
     void SetPoseOnRoot(double px, double py, double pz,
-                      double rx, double ry, double rz);
+                       double rx, double ry, double rz);
 
     /// Request the value returned by a fiducialfinder (and possibly a
     /// foofinser, depending on its mode), when detecting this
@@ -2251,8 +2257,11 @@ class WiFiProxy: public ClientProxy
 
 namespace std
 {
+  std::ostream& operator << (std::ostream& os, const player_point_2d_t& c);
   std::ostream& operator << (std::ostream& os, const player_pose_t& c);
   std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
+  std::ostream& operator << (std::ostream& os, const player_bbox_t& c);
+  std::ostream& operator << (std::ostream& os, const player_segment_t& c);
   std::ostream& operator << (std::ostream& os, const playerc_device_info_t& c);
 
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
