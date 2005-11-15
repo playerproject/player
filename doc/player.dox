@@ -65,7 +65,7 @@ BRIEF_MEMBER_DESC      = YES
 # Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DESC are set to NO, the
 # brief descriptions will be completely suppressed.
 
-REPEAT_BRIEF           = YES
+REPEAT_BRIEF           = NO
 
 # This tag implements a quasi-intelligent brief description abbreviator
 # that is used to form the text in various listings. Each string
@@ -118,7 +118,7 @@ SHORT_NAMES            = NO
 # comments will behave just like the Qt-style comments (thus requiring an
 # explicit @brief command for a brief description.
 
-JAVADOC_AUTOBRIEF      = NO
+JAVADOC_AUTOBRIEF      = YES
 
 # The MULTILINE_CPP_IS_BRIEF tag can be set to YES to make Doxygen
 # treat a multi-line C++ special comment block (i.e. a block of //! or ///
@@ -126,7 +126,7 @@ JAVADOC_AUTOBRIEF      = NO
 # The new default is to treat a multi-line C++ comment block as a detailed
 # description. Set this tag to YES if you prefer the old behaviour instead.
 
-MULTILINE_CPP_IS_BRIEF = NO
+MULTILINE_CPP_IS_BRIEF = YES
 
 # If the DETAILS_AT_TOP tag is set to YES then Doxygen
 # will output the detailed description near the top, like JavaDoc.
@@ -193,7 +193,7 @@ SUBGROUPING            = YES
 # Private class members and static file members will be hidden unless
 # the EXTRACT_PRIVATE and EXTRACT_STATIC tags are set to YES
 
-EXTRACT_ALL            = YES
+EXTRACT_ALL            = NO
 
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class
 # will be included in the documentation.
@@ -284,7 +284,7 @@ SORT_MEMBER_DOCS       = YES
 # by member name. If set to NO (the default) the members will appear in
 # declaration order.
 
-SORT_BRIEF_DOCS        = YES 
+SORT_BRIEF_DOCS        = NO
 
 # If the SORT_BY_SCOPE_NAME tag is set to YES, the class list will be
 # sorted by fully-qualified names, including namespaces. If set to
@@ -300,7 +300,7 @@ SORT_BY_SCOPE_NAME     = YES
 # disable (NO) the todo list. This list is created by putting \todo
 # commands in the documentation.
 
-GENERATE_TODOLIST      = NO 
+GENERATE_TODOLIST      = YES 
 
 # The GENERATE_TESTLIST tag can be used to enable (YES) or
 # disable (NO) the test list. This list is created by putting \test
@@ -318,7 +318,7 @@ GENERATE_BUGLIST       = YES
 # disable (NO) the deprecated list. This list is created by putting
 # \deprecated commands in the documentation.
 
-GENERATE_DEPRECATEDLIST= YES
+GENERATE_DEPRECATEDLIST = YES
 
 # The ENABLED_SECTIONS tag can be used to enable conditional
 # documentation sections, marked by \if sectionname ... \endif.
@@ -391,7 +391,8 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories
 # with spaces.
 
-INPUT                  = mainpage.html install.html migration.html tutorials.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../libplayerxdr/playerxdr.html ../libplayerxdr ../libplayercore/playercore.h ../server/libplayerdrivers ../libplayertcp ../libplayercore ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h
+#INPUT                  = player.txt install.html migration.html tutorials.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../libplayerxdr/playerxdr.html ../libplayerxdr ../libplayercore/playercore.h ../server/libplayerdrivers ../libplayertcp ../libplayercore ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h
+INPUT                  = player.txt install.html ../libplayercore/player.h
 
 # If the value of the INPUT tag contains directories, you can use the
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
@@ -619,7 +620,7 @@ TOC_EXPAND             = NO
 # top of each HTML page. The value NO (the default) enables the index and
 # the value YES disables it.
 
-DISABLE_INDEX          = NO
+DISABLE_INDEX          = YES
 
 # This tag can be used to set the number of enum values (range [1..20])
 # that doxygen will group on one line in the generated HTML documentation.
@@ -893,7 +894,7 @@ EXPAND_ONLY_PREDEF     = NO
 # If the SEARCH_INCLUDES tag is set to YES (the default) the includes files
 # in the INCLUDE_PATH (see below) will be search if a #include is found.
 
-SEARCH_INCLUDES        = YES
+SEARCH_INCLUDES        = NO
 
 # The INCLUDE_PATH tag can be used to specify one or more directories that
 # contain include files that are not input files but should be processed by

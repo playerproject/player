@@ -1092,6 +1092,8 @@ class LaserProxy : public ClientProxy
     player_pose_t GetPose()
     { 
       player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
       p.pa = mDevice->pose[2];
@@ -1102,6 +1104,8 @@ class LaserProxy : public ClientProxy
     player_bbox_t GetSize()
     {
       player_bbox_t b;
+      scoped_lock_t lock(mPc->mMutex);
+
       b.sl = mDevice->size[0];
       b.sw = mDevice->size[1];
       return(b);
@@ -1620,6 +1624,8 @@ class Position2dProxy : public ClientProxy
     player_pose_t GetPose()
     { 
       player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
       p.pa = mDevice->pose[2];
@@ -1630,6 +1636,8 @@ class Position2dProxy : public ClientProxy
     player_bbox_t GetSize()
     {
       player_bbox_t b;
+      scoped_lock_t lock(mPc->mMutex);
+
       b.sl = mDevice->size[0];
       b.sw = mDevice->size[1];
       return(b);

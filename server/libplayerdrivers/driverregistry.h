@@ -24,12 +24,15 @@
  * $Id$
  */
 
-/** @defgroup libplayerdrivers libplayerdrivers
+/** 
+@ingroup player
+@defgroup libplayerdrivers libplayerdrivers
 @{
 This library contains all the drivers that were built during the Player
 installation.  The contents will vary from system to system, depending on
 which drivers' prerequisites are satisfied and which options are supplied
 by the user to the configure script.
+
 */
 
 #ifndef _DRIVERREGISTRY_H
@@ -42,6 +45,6 @@ global driverTable.    From there, the drivers can be instantiated and
 bound to interfaces. If you use libplayerdrivers, you should call this function during program intialization. 
 */
 void player_register_drivers();
-
 /** @} */
+
 #endif

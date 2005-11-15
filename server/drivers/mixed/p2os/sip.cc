@@ -489,7 +489,8 @@ SIP::ParseGyro(unsigned char* buffer)
   unsigned char temp;
   for(int i=0; i<count; i++)
   {
-    rate = (unsigned short)(buffer[bufferpos++] | (buffer[bufferpos++] << 8));
+    rate = (unsigned short)(buffer[bufferpos++]);
+    rate |= buffer[bufferpos++] << 8;
     temp = bufferpos++;
 
     ratesum += rate;
