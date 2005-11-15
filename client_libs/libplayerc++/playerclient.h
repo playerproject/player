@@ -69,7 +69,7 @@ class ClientProxy;
  *
  * Since the threading functionality of the PlayerClient is built on Boost,
  * these options are conditionally available based on the Boost threading
- * library being present on the system.  The StartThread and StopThread are
+ * library being present on the system.  The StartThread() and StopThread() are
  * the only functions conditionally available based on this.
 */
 class PlayerClient
