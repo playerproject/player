@@ -24,12 +24,13 @@
  * A driver to read a vector map from a text file
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_vmapfile vmapfile
+/** @defgroup driver_vmapfile vmapfile
+ * @brief Read vector maps from text files
 
 The vmapfile driver reads a vector map from a text file and
-provides the map to others via the @ref player_interface_map interface.
+provides the map to others via the @ref interface_map interface.
 
 The format of the text file is...
 
@@ -39,7 +40,7 @@ The format of the text file is...
 
 @par Provides
 
-- @ref player_interface_map
+- @ref interface_map
 
 @par Requires
 
@@ -66,9 +67,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 /** @} */

@@ -24,14 +24,15 @@
  * CVS: $Id$
  *************************************************************************/
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 /** @{ */
-/** @defgroup player_util_playercam playercam
+/** @defgroup util_playercam playercam
+ * @brief Camera visualization GUI
 
 @par Synopsis
 
 Playercam is a gui client that displays images captured from a player
-@ref player_interface_camera and/or @ref player_interface_blobfinder device.
+@ref interface_camera and/or @ref interface_blobfinder device.
 
 @par Usage
 
@@ -68,6 +69,8 @@ value at that place will be written to standard out.
 
 @todo
 - add additional vision feedback abilities w/ opencv (directional histogram)
+
+@author Brad Kratochvil
 */
 
 /** @} */

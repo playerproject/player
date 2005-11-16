@@ -31,10 +31,10 @@
  * 
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_nomad nomad
-
+/** @defgroup driver_nomad nomad
+ * @brief Nomadics NOMAD200 mobile robot
 
 The nomad driver controls the Nomadics NOMAD200 robot, and should be
 easily modified to support close relatives.
@@ -44,9 +44,9 @@ interface to talk over a serial port to a robot running Nomadics'
 robot server program. The nomad interface gives access to most of
 the Nomad's functionality. This driver also has a set of companion
 drivers that provide generic (i.e. not robot-specific) Player
-interfaces. These are: @ref player_driver_nomad_position (provides @ref
-player_interface_position) and @ref player_driver_nomad_sonar (provides
-@ref player_interface_sonar). The companion drivers rely on the nomad
+interfaces. These are: @ref driver_nomad_position (provides @ref
+interface_position2d) and @ref driver_nomad_sonar (provides
+@ref interface_sonar). The companion drivers rely on the nomad
 driver to talk to the robot, so you MUST instantiate a nomad device in
 your config file, followed by the devices using the companion drivers. See
 below for an example config file umentation for the companion drivers
@@ -106,9 +106,7 @@ driver
 
 @endverbatim
 
-@par Authors
-
-Richard Vaughan, Pawel Zebrowski
+@author Richard Vaughan, Pawel Zebrowski
 
 */
 /** @} */

@@ -30,9 +30,10 @@
  *  
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_iwspy iwspy
+/** @defgroup driver_iwspy iwspy
+ * @brief Linux iwspy access
 
 This driver works like iwspy; it uses the linux wireless extensions
 to get signal strengths to wireless NICS.
@@ -43,7 +44,7 @@ to get signal strengths to wireless NICS.
 
 @par Provides
 
-- @ref player_interface_wifi
+- @ref interface_wifi
 
 @par Requires
 
@@ -73,9 +74,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

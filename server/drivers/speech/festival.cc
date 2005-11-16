@@ -24,9 +24,10 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_festival festival
+/** @defgroup driver_festival festival
+ * @brief Festival speech synthesis system
 
 The festival driver provides access to the
 Festival speech synthesis system.  Festival is <a
@@ -44,7 +45,7 @@ will handle starting and stopping the Festival server.
 
 @par Provides
 
-- @ref player_interface_speech
+- @ref interface_speech
 
 @par Requires
 
@@ -77,9 +78,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 /** @} */

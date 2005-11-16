@@ -25,9 +25,10 @@
   CVS: $Id$
 */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_segwayrmp segwayrmp
+/** @defgroup driver_segwayrmp segwayrmp
+ * @brief Segway RMP mobile robot
 
 The segwayrmp driver provides control of a Segway RMP (Robotic
 Mobility Platform), which is an experimental robotic version of the
@@ -65,15 +66,15 @@ straightforward to add support for other CAN cards.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
   - This interface returns odometry data, and accepts velocity commands.
 
-- @ref player_interface_position3d
+- @ref interface_position3d
   - This interface returns odometry data (x, y and yaw) from the wheel
   encoders, and attitude data (pitch and roll) from the IMU.  The
   driver accepts velocity commands (x vel and yaw vel).
 
-- @ref player_interface_power
+- @ref interface_power
   - Returns the current battery voltage (72 V when fully charged).
 
 @par Configuration requests
@@ -112,9 +113,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-- John Sweeney, Brian Gerkey, Andrew Howard
+@author John Sweeney, Brian Gerkey, Andrew Howard
 */
 /** @} */
 

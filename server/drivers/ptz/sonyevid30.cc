@@ -26,9 +26,10 @@
  * the Sony EVI-D30 PTZ camera
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_sonyevid30 sonyevid30
+/** @defgroup driver_sonyevid30 sonyevid30
+ * @brief Sony EVI-D30 and EVI-D100 pan-tilt-zoom cameras
 
 The sonyevid30 driver provides control of a Sony EVI-D30 and Sony EVI-D100
 pan-tilt-zoom camera units.
@@ -48,7 +49,7 @@ The sonyevid30 driver only supports position control.
 
 @par Provides
 
-- @ref player_interface_ptz
+- @ref interface_ptz
 
 @par Requires
 
@@ -81,10 +82,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
-Brad Tonkes (D100 mode)
+@author Brian Gerkey, Brad Tonkes (D100 mode)
 
 */
 /** @} */

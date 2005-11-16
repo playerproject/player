@@ -20,9 +20,10 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_canonvcc4 canonvcc4
+/** @defgroup driver_canonvcc4 canonvcc4
+ * @brief Canon VC-C4 pan-tilt-zoom camera
 
 The canonvcc4 driver controls a Canon VC-C4 PTZ camera.
 
@@ -49,7 +50,7 @@ The canonvcc4 driver only support position control.
 
 @par Provides
 
-- @ref player_interface_ptz
+- @ref interface_ptz
 
 @par Requires
 
@@ -80,9 +81,7 @@ driver
 Add more functionalities. Actually Only pan, tilt and zoom
 values can be set up.
 
-@par Authors
-
-Elena Lazkano', Aitzol Astigarraga
+@author Elena Lazkano', Aitzol Astigarraga
 
 */
 

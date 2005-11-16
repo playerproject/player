@@ -32,9 +32,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_amcl amcl
+/** @defgroup driver_amcl amcl
+ * @brief Adaptive Monte Carlo localization
 
 The @p amcl driver implements the Adaptive Monte-Carlo
 Localization algorithm described by Dieter Fox.
@@ -108,9 +109,9 @@ sensor models.
 
 @par Provides
 
-- @ref player_interface_localize : this interface provides a (sort of)
+- @ref interface_localize : this interface provides a (sort of)
   representative sample of the current pose hypotheses, weighted by likelihood.
-- @ref player_interface_position2d : this interface provides just the
+- @ref interface_position2d : this interface provides just the
   most-likely hypothesis, formatted as position data, which you can
   (at your peril) pretend came from a perfect odometry system
 
@@ -118,16 +119,16 @@ sensor models.
 
 The @p amcl driver requires the following interfaces, some of them named:
 
-- "odometry" @ref player_interface_position2d : source of odometry information
-- @ref player_interface_laser : source of laser scans
-- "laser" @ref player_interface_map : a map in which to localize the
+- "odometry" @ref interface_position2d : source of odometry information
+- @ref interface_laser : source of laser scans
+- "laser" @ref interface_map : a map in which to localize the
    robot, by fusing odometry and laser data.
 - In principle supported, but currently disabled are:
-    - @ref player_interface_fiducial
-    - "imu" @ref player_interface_position2d
-    - @ref player_interface_sonar
-    - @ref player_interface_gps
-    - @ref player_interface_wifi
+    - @ref interface_fiducial
+    - "imu" @ref interface_position2d
+    - @ref interface_sonar
+    - @ref interface_gps
+    - @ref interface_wifi
 
 @par Configuration requests
 
@@ -265,7 +266,7 @@ changed to match your particular configuration.
 
 The @p amcl driver is not supported natively in Stage 1.3.x.  Users must
 therefore employ a second Player server configured to use the @ref
-player_driver_passthrough driver.  The basic procedure is as follows.
+driver_passthrough driver.  The basic procedure is as follows.
 - Start Stage with a world file something like this:
 @verbatim
 ...
@@ -315,19 +316,16 @@ driver
 )
 @endverbatim
 The second Player server will listen on port 7000; clients connecting
-to this server will see a robot with @ref player_interface_position2d,
-@ref player_interface_laser and @ref player_interface_localize devices.
+to this server will see a robot with @ref interface_position2d,
+@ref interface_laser and @ref interface_localize devices.
 The map file @p cave.pnm can be the same file used by Stage to create the
-world bitmap (note the @p negate option to the @ref player_driver_mapfile
+world bitmap (note the @p negate option to the @ref driver_mapfile
 driver, which inverts the colors in the image; this is necessary because
 Stage interprets black pixels as free and white pixels as obstacles).
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 @todo
-- Get the laser's pose from the laser, using the GET_GEOM request.
 - Implement / update other sensor models
 
 */

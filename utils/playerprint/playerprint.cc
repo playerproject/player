@@ -5,16 +5,17 @@
  *
  */
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 /** @{ */
-/** @defgroup player_util_playerprint playerprint
+/** @defgroup util_playerprint playerprint
+ * @brief Print sensor data to the console
 
 @par Synopsis
 
 playerprint prints out sensor data to the console.  It is useful mainly
 for verifying that a device is working during the setup or debugging
-process.  If you want to visualize data, try @ref player_util_playerv.
-If you want to log data to a file, try the @ref player_driver_writelog
+process.  If you want to visualize data, try @ref util_playerv.
+If you want to log data to a file, try the @ref driver_writelog
 driver.
 
 @par Usage
@@ -38,29 +39,31 @@ For example:
 @par Features
 
 playerprint can print out data for the following kinds of devices:
-- @ref player_interface_actarray
-- @ref player_interface_blobfinder
-- @ref player_interface_bumper
-- @ref player_interface_camera
-- @ref player_interface_dio
-- @ref player_interface_fiducial
-- @ref player_interface_gripper
-- @ref player_interface_ir
-- @ref player_interface_laser
-- @ref player_interface_limb
-- @ref player_interface_localize
-- @ref player_interface_log
-- @ref player_interface_map
-- @ref player_interface_planner
-- @ref player_interface_position2d
-- @ref player_interface_position3d
-- @ref player_interface_power
-- @ref player_interface_ptz
-- @ref player_interface_simulation
-- @ref player_interface_sonar
-- @ref player_interface_speech
-- @ref player_interface_truth
-- @ref player_interface_wifi
+- @ref interface_actarray
+- @ref interface_blobfinder
+- @ref interface_bumper
+- @ref interface_camera
+- @ref interface_dio
+- @ref interface_fiducial
+- @ref interface_gripper
+- @ref interface_ir
+- @ref interface_laser
+- @ref interface_limb
+- @ref interface_localize
+- @ref interface_log
+- @ref interface_map
+- @ref interface_planner
+- @ref interface_position2d
+- @ref interface_position3d
+- @ref interface_power
+- @ref interface_ptz
+- @ref interface_simulation
+- @ref interface_sonar
+- @ref interface_speech
+- @ref interface_truth
+- @ref interface_wifi
+
+@author Brian Gerkey
 
 */
 

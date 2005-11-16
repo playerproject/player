@@ -26,9 +26,10 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_aodv aodv
+/** @defgroup driver_aodv aodv
+ * @brief Linux AODV ad hoc networking
 
 The aodv driver reports signal strengths for AODV ah-hoc network software.
 
@@ -38,7 +39,7 @@ The aodv driver reports signal strengths for AODV ah-hoc network software.
 
 @par Provides
 
-- @ref player_interface_wifi
+- @ref interface_wifi
 
 @par Requires
 
@@ -62,9 +63,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

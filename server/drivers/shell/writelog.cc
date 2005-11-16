@@ -26,15 +26,16 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_writelog writelog
+/** @defgroup driver_writelog writelog
+ * @brief Logging data
 
 The writelog driver will write data from another device to a log file.
 Each data message is written to a separate line.  The format for each
 supported interface is given below.
 
-The @ref player_driver_readlog driver can be used to replay the data
+The @ref driver_readlog driver can be used to replay the data
 (to client programs, the replayed data will appear to come from the
 real sensors).
 
@@ -44,12 +45,12 @@ the writelog driver records data from the specified list of devices
 at the rate that new data is produced by the first device in that list
 (so put the fastest one first).  Commands are not logged.
 
-For help in remote-controlling logging, try @ref player_util_playervcr.
-Note that you must declare a @ref player_interface_log device to allow
+For help in remote-controlling logging, try @ref util_playervcr.
+Note that you must declare a @ref interface_log device to allow
 logging control.
 
 Note that unless you plan to remote-control this driver via the @ref
-player_interface_log interface (e.g., using @ref player_util_playervcr),
+interface_log interface (e.g., using @ref util_playervcr),
 you should specify the @p alwayson option in the configuration file so
 that logging start when Player starts.
 
@@ -59,7 +60,7 @@ that logging start when Player starts.
 
 @par Provides
 
-- @ref player_interface_log : can be used to turn logging on/off
+- @ref interface_log : can be used to turn logging on/off
 
 @par Requires
 
@@ -67,18 +68,18 @@ The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
 The writelog driver can will log data from the following interfaces:
 
-- @ref player_interface_blobfinder
-- @ref player_interface_camera
-- @ref player_interface_fiducial
-- @ref player_interface_gps
-- @ref player_interface_joystick
-- @ref player_interface_laser
-- @ref player_interface_sonar
-- @ref player_interface_position2d
-- @ref player_interface_position3d
-- @ref player_interface_power
-- @ref player_interface_truth
-- @ref player_interface_wifi
+- @ref interface_blobfinder
+- @ref interface_camera
+- @ref interface_fiducial
+- @ref interface_gps
+- @ref interface_joystick
+- @ref interface_laser
+- @ref interface_sonar
+- @ref interface_position2d
+- @ref interface_position3d
+- @ref interface_power
+- @ref interface_truth
+- @ref interface_wifi
 
 @par Configuration requests
 
@@ -114,9 +115,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */
@@ -745,9 +744,9 @@ void WriteLog::Write(WriteLogDevice *device,
 
 /** @defgroup player_driver_writelog_laser Laser format
 
-@brief @ref player_interface_laser format
+@brief @ref interface_laser format
 
-The format for each @ref player_interface_laser message is:
+The format for each @ref interface_laser message is:
   - min_angle (float): minimum scan angle, in radians
   - max_angle (float): maximum scan angle, in radians
   - resolution (float): angular resolution, in radians
@@ -828,9 +827,9 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
 
 /** @defgroup player_driver_writelog_position Position format
 
-@brief @ref player_interface_position2d format
+@brief @ref interface_position2d format
 
-The format for each @ref player_interface_position2d message is:
+The format for each @ref interface_position2d message is:
   - xpos (float): in meters
   - ypos (float): in meters
   - yaw (float): in radians
@@ -897,9 +896,9 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 
 /** @defgroup player_driver_writelog_sonar Sonar format
 
-@brief @ref player_interface_sonar format
+@brief @ref interface_sonar format
 
-The format for each @ref player_interface_sonar message is:
+The format for each @ref interface_sonar message is:
   - pose_count (int): number of sonar poses to follow
   - list of tranducer poses; for each pose:
     - x (float): relative X position of transducer, in meters
@@ -975,9 +974,9 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
 #if 0
 /** @defgroup player_driver_writelog_blobfinder Blobfinder format
 
-@brief @ref player_interface_blobfinder format
+@brief @ref interface_blobfinder format
 
-The format for each @ref player_interface_blobfinder message is:
+The format for each @ref interface_blobfinder message is:
   - width (int): in pixels, of image
   - height (int): in pixels, of image
   - count (int): number of blobs to follow
@@ -1019,9 +1018,9 @@ void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
 
 /** @defgroup player_driver_writelog_camera Camera format
 
-@brief @ref player_interface_camera format
+@brief @ref interface_camera format
 
-The format for each @ref player_interface_camera message is:
+The format for each @ref interface_camera message is:
   - width (int): in pixels
   - height (int): in pixels
   - depth (int): in bits per pixel
@@ -1101,9 +1100,9 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
 
 /** @defgroup player_driver_writelog_fiducial Fiducial format
 
-@brief @ref player_interface_fiducial format
+@brief @ref interface_fiducial format
 
-The format for each @ref player_interface_fiducial message is:
+The format for each @ref interface_fiducial message is:
   - count (int): number of fiducials to follow
   - list of fiducials; for each fiducial:
     - id (int): fiducial ID
@@ -1151,9 +1150,9 @@ void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 
 /** @defgroup player_driver_writelog_gps GPS format
 
-@brief @ref player_interface_gps format
+@brief @ref interface_gps format
 
-The format for each @ref player_interface_gps message is:
+The format for each @ref interface_gps message is:
   - time (float): current GPS time, in seconds
   - latitude (float): in degrees
   - longitude (float): in degrees
@@ -1195,9 +1194,9 @@ void WriteLog::WriteGps(player_gps_data_t *data)
 
 /** @defgroup player_driver_writelog_joystick Joystick format
 
-@brief @ref player_interface_joystick format
+@brief @ref interface_joystick format
 
-The format for each @ref player_interface_joystick message is:
+The format for each @ref interface_joystick message is:
   - xpos (int): unscaled X position of joystick
   - ypos (int): unscaled Y position of joystick
   - xscale (int): maximum X position
@@ -1220,9 +1219,9 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 
 /** @defgroup player_driver_writelog_position3d Position3d format
 
-@brief @ref player_interface_position3d format
+@brief @ref interface_position3d format
 
-The format for each @ref player_interface_position3d message is:
+The format for each @ref interface_position3d message is:
   - xpos (float): in meters
   - ypos (float): in meters
   - zpos (float): in meters
@@ -1265,9 +1264,9 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
 
 /** @defgroup player_driver_writelog_power Power format
 
-@brief @ref player_interface_power format
+@brief @ref interface_power format
 
-The format for each @ref player_interface_power message is:
+The format for each @ref interface_power message is:
   - charge (float): in volts
 */
 void WriteLog::WritePower(player_power_data_t *data)
@@ -1279,9 +1278,9 @@ void WriteLog::WritePower(player_power_data_t *data)
 
 /** @defgroup player_driver_writelog_wifi WiFi format
 
-@brief @ref player_interface_wifi format
+@brief @ref interface_wifi format
 
-The format for each @ref player_interface_wifi message is:
+The format for each @ref interface_wifi message is:
   - link_count (int): number of nodes to follow
   - list of nodes; for each node:
     - mac (string): MAC address
@@ -1330,9 +1329,9 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
 
 /** @defgroup player_driver_writelog_truth Truth format
 
-@brief @ref player_interface_truth format
+@brief @ref interface_truth format
 
-The format for each @ref player_interface_truth message is:
+The format for each @ref interface_truth message is:
   - x (float): in meters
   - y (float): in meters
   - z (float): in meters

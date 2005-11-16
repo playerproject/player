@@ -27,9 +27,10 @@
  * CVS: $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_microstrain3dmg microstrain3dmg
+/** @defgroup driver_microstrain3dmg microstrain3dmg
+ * @brief MicroStrain 3DM-G IMU
 
 The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
 
@@ -39,7 +40,7 @@ The microstrain3dmg driver controls the MicroStrain 3DM-G IMU.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
 
 @par Requires
 
@@ -66,9 +67,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

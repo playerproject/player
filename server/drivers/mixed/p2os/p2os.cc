@@ -31,9 +31,10 @@
  */
 
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_p2os p2os
+/** @defgroup driver_p2os p2os
+ * @brief ActivMedia mobile robots
 
 Many robots made by ActivMedia, such as the Pioneer series and the
 AmigoBot, are controlled by a microcontroller that runs a special embedded
@@ -51,59 +52,59 @@ splitting up the devices' functionality.
 The p2os driver provides the following device interfaces, some of
 them named:
 
-- "odometry" @ref player_interface_position2d
+- "odometry" @ref interface_position2d
   - This interface returns odometry data, and accepts velocity commands.
 
-- "compass" @ref player_interface_position2d
+- "compass" @ref interface_position2d
   - This interface returns compass data (if equipped).
 
-- "gyro" @ref player_interface_position2d
+- "gyro" @ref interface_position2d
   - This interface returns gyroscope data (if equipped).
 
-- @ref player_interface_power
+- @ref interface_power
   - Returns the current battery voltage (12 V when fully charged).
 
-- @ref player_interface_sonar
+- @ref interface_sonar
   - Returns data from sonar arrays (if equipped)
 
-- @ref player_interface_aio
+- @ref interface_aio
   - Returns data from analog I/O ports (if equipped)
 
-- @ref player_interface_dio
+- @ref interface_dio
   - Returns data from digital I/O ports (if equipped)
 
-- @ref player_interface_gripper
+- @ref interface_gripper
   - Controls gripper (if equipped)
 
-- @ref player_interface_actarray
+- @ref interface_actarray
   - Controls arm (if equipped)
 
-- @ref player_interface_limb
+- @ref interface_limb
   - Inverse kinematics interface to arm
 
-- @ref player_interface_bumper
+- @ref interface_bumper
   - Returns data from bumper array (if equipped)
 
-- @ref player_interface_blobfinder
+- @ref interface_blobfinder
   - Controls a CMUCam2 connected to the AUX port on the P2OS board
     (if equipped).
 
-- @ref player_interface_sound
+- @ref interface_sound
   - Controls the sound system of the AmigoBot, which can play back
     recorded wav files.
 
 @par Supported configuration requests
 
-- "odometry" @ref player_interface_position2d:
+- "odometry" @ref interface_position2d :
   - PLAYER_POSITION_SET_ODOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_RESET_ODOM_REQ
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
-- @ref player_interface_sonar:
+- @ref interface_sonar :
   - PLAYER_SONAR_POWER_REQ
   - PLAYER_SONAR_GET_GEOM_REQ
-- @ref player_interface_blobfinder
+- @ref interface_blobfinder :
   - PLAYER_BLOBFINDER_SET_COLOR_REQ
   - PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ
 
@@ -171,9 +172,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey, Kasper Stoy, James McKenna
+@author Brian Gerkey, Kasper Stoy, James McKenna
 */
 /** @} */
 

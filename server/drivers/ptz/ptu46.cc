@@ -30,9 +30,10 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_ptu46 ptu46
+/** @defgroup driver_ptu46 ptu46
+ * @brief Directed Perceptions PTU-46-17.5 pan-tilt unit
 
 The ptu46 driver provides control of the PTU-46-17.5 pan-tilt unit from
 directed perceptions through its text interface (This unit is standard on
@@ -48,7 +49,7 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 
 @par Provides
 
-- @ref player_interface_ptz
+- @ref interface_ptz
 
 @par Requires
 
@@ -64,9 +65,7 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
   - Default: "/dev/ttyS0"
   - The serial port to which the unit is attached.
 
-@par Authors
-
-- Toby Collett 
+@author Toby Collett 
 
 */
 

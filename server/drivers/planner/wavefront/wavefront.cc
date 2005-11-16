@@ -18,19 +18,20 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_wavefront wavefront
+/** @defgroup driver_wavefront wavefront
+ * @brief Wavefront-propagation path-planner
 
 The wavefront driver implements a global path planner for a planar
 mobile robot.
 
 This driver works in the following way: upon receiving a new @ref
-player_interface_planner target, a path is planned from the robot's
-current pose, as reported by the underlying @ref player_interface_localize
+interface_planner target, a path is planned from the robot's
+current pose, as reported by the underlying @ref interface_localize
 device.  The waypoints in this path are handed down, in sequence,
-to the underlying @ref player_interface_position2d device, which should
-be capable of local navigation (the @ref player_driver_vfh driver is a
+to the underlying @ref interface_position2d device, which should
+be capable of local navigation (the @ref driver_vfh driver is a
 great candidate). By tying everything together in this way, this driver
 offers the mythical "global goto" for your robot.
 
@@ -50,14 +51,14 @@ plan costs for all the cells have been evaluated, the robot can simply
 follow the gradient of each lowest adjacent cell all the way to the goal.
 
 In order to function effectively with an underlying obstacle avoidance
-algorithm, such as Vector Field Histogram (the @ref player_driver_vfh
+algorithm, such as Vector Field Histogram (the @ref driver_vfh
 driver), the planner only hands off waypoints, not the entire path. The
 wavefront planner finds the longest straight-line distances that don't
 cross obstacles between cells that are on the path. The endpoints of
 these straight lines become sequential goal locations for the underlying
 device driving the robot.
 
-For help in using this driver, try the @ref player_util_playernav utility.
+For help in using this driver, try the @ref util_playernav utility.
 
 @par Compile-time dependencies
 
@@ -65,16 +66,16 @@ For help in using this driver, try the @ref player_util_playernav utility.
 
 @par Provides
 
-- @ref player_interface_planner
+- @ref interface_planner
 
 @par Requires
 
-- @ref player_interface_position2d : robot to be controlled;
+- @ref interface_position2d : robot to be controlled;
   this device must be capable of position control (usually you would
-  use the @ref player_driver_vfh driver)
-- @ref player_interface_localize : localization system (usually you
-  would use the @ref player_driver_amcl driver)
-- @ref player_interface_map : the map to plan paths in
+  use the @ref driver_vfh driver)
+- @ref interface_localize : localization system (usually you
+  would use the @ref driver_amcl driver)
+- @ref interface_map : the map to plan paths in
 
 @par Configuration requests
 
@@ -186,10 +187,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey, Andrew Howard
-
+@author Brian Gerkey, Andrew Howard
 */
 /** @} */
 

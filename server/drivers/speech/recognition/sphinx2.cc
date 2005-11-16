@@ -24,11 +24,12 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_sphinx2 sphinx2
+/** @defgroup driver_sphinx2 sphinx2
+ * @brief Sphinx2 speech recognition system
 
-Add documentation about sphinx2
+@todo Add documentation about sphinx2
 
 @par Compile-time dependencies
 
@@ -36,7 +37,7 @@ Add documentation about sphinx2
 
 @par Provides
 
-- @ref player_interface_speech_recognition
+- @ref interface_speech_recognition
 
 @par Requires
 
@@ -91,9 +92,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Nate Koenig
+@author Nate Koenig
 
 */
 /** @} */

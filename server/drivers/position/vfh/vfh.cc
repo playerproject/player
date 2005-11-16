@@ -13,16 +13,17 @@
 
 extern PlayerTime *GlobalTime;
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_vfh vfh
+/** @defgroup driver_vfh vfh
+ * @brief Vector Field Histogram local navigation algorithm
 
 The vfh driver implements the Vector Field Histogram Plus local
 navigation method by Ulrich and Borenstein.  VFH+ provides real-time
 obstacle avoidance and path following capabilities for mobile robots.
 Layered on top of a laser-equipped robot, vfh works great as a local
 navigation system (for global navigation, you can layer the @ref
-player_driver_wavefront driver on top of vfh).
+driver_wavefront driver on top of vfh).
 
 The primary parameters to tweak to get reliable performance are
 safety_dist and free_space_cutoff.  In general, safety_dist determines how
@@ -46,21 +47,21 @@ or sector_angle.
 
 @par Provides
 
-- @ref player_interface_position2d : accepts target poses, to which vfh will
+- @ref interface_position2d : accepts target poses, to which vfh will
   attempt to drive the robot.  Also passes through the data from the
-  underlying @ref player_interface_position2d device.  All data and commands
+  underlying @ref interface_position2d device.  All data and commands
   are in the odometric frame of the underlying device.
 
 @par Requires
 
-- @ref player_interface_position2d : the underlying robot that will be
+- @ref interface_position2d : the underlying robot that will be
   controlled by vfh.
 
-- @ref player_interface_laser : the laser that will be used to avoid
+- @ref interface_laser : the laser that will be used to avoid
   obstacles
 
 - @todo : add support for getting the robot's true global pose via the
-  @ref player_interface_simulation interface
+  @ref interface_simulation interface
 
 @par Configuration requests
 
@@ -140,9 +141,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Chris Jones, Brian Gerkey, Alex Brooks
+@author Chris Jones, Brian Gerkey, Alex Brooks
 
 */
 

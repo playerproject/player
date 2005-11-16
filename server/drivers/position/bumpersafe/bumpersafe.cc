@@ -1,10 +1,11 @@
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_bumpersafe bumpersafe
+/** @defgroup driver_bumpersafe bumpersafe
+ * @brief Bumper monitor
 
 This is a low level safety 'driver' that temporarily disables
 velocity commands if a bumper is pressed. It sits on top of @ref
-player_interface_bumper and @ref player_interface_position2d devices.
+interface_bumper and @ref interface_position2d devices.
 
 The general concept of this device is to not do much, but to provide
 a last line of defense in the case that higher level drivers or client
@@ -16,19 +17,19 @@ software fails in its object avoidance.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
 
 @par Requires
 
-- @ref player_interface_position2d : the underlying robot to be controlled
-- @ref player_interface_bumper : the bumper to read from
+- @ref interface_position2d : the underlying robot to be controlled
+- @ref interface_bumper : the bumper to read from
 
 @par Configuration requests
 
 - PLAYER_POSITION_MOTOR_POWER_REQ : if motor is switched on then we
   reset the 'safe state' so robot can move with a bump panel active
 - all other requests are just passed on to the underlying @ref
-  player_interface_position2d device
+  interface_position2d device
 
 @par Configuration file options
 
@@ -45,9 +46,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Toby Collett
+@author Toby Collett
 
 */
 /** @} */

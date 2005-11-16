@@ -25,12 +25,13 @@
  * scale it to produce a map with a different given resolution.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_mapscale mapscale
+/** @defgroup driver_mapscale mapscale
+ * @brief Scale grid maps
 
 The mapscale driver reads a occupancy grid map from another @ref
-player_interface_map device and scales it to produce a new map
+interface_map device and scales it to produce a new map
 with a different resolution.  The scaling is accomplished with the
 gdk_pixbuf_scale_simple() function, using the GDK_INTERP_HYPER algorithm.
 
@@ -40,11 +41,11 @@ gdk_pixbuf_scale_simple() function, using the GDK_INTERP_HYPER algorithm.
 
 @par Provides
 
-- @ref player_interface_map : the resulting scaled map
+- @ref interface_map : the resulting scaled map
 
 @par Requires
 
-- @ref player_interface_map : the raw map, to be scaled
+- @ref interface_map : the raw map, to be scaled
 
 @par Configuration requests
 
@@ -76,9 +77,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 /** @} */

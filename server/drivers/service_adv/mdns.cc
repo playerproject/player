@@ -29,9 +29,10 @@
 //       
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_service_adv_mdns service_adv_mdns
+/** @defgroup driver_service_adv_mdns service_adv_mdns
+ * @brief Multicast DNS service discovery
 
 This driver can be used to publish a Player service using 
 the proposed IETF standard for multicast DNS service discovery (MDNS-SD).
@@ -92,9 +93,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Reed Hedges <reed@interreality.org>
+@author Reed Hedges
 
 */
 /** @} */

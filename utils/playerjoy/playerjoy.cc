@@ -7,15 +7,16 @@
  * $Id$
  */
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 /** @{ */
-/** @defgroup player_util_playerjoy playerjoy
+/** @defgroup util_playerjoy playerjoy
+ * @brief Joystick control for a mobile robot
 
 @par Synopsis
 
 playerjoy is a console-based client that provides planar,
-differential-drive teleoperation of @ref player_interface_position2d and
-@ref player_interface_position3d devices.  In other words, playerjoy
+differential-drive teleoperation of @ref interface_position2d and
+@ref interface_position3d devices.  In other words, playerjoy
 allows you to manually drive your (physical or simulated) robot around.
 playerjoy uses velocity control, and so will only work when the underlying
 driver supports velocity control (most drivers do).
@@ -33,7 +34,7 @@ Where options can be:
 - -3d  : connect to position3d interface (instead of position)
 - -c   : continuously send commands, instead of sending commands only on
          change (useful with drivers with watchdog timers, like the
-         @ref player_driver_segwayrmp)
+         @ref driver_segwayrmp)
 - -n   : dont send commands or enable motors (debugging)
 - -k   : use keyboard control
 - -p   : print out speeds on the console
@@ -56,6 +57,7 @@ Details of keyboard control are printed out on the console.
   Calibrate out initial offset; should be possible by parsing the
   JS_EVENT_INIT message.
 
+@author Brian Gerkey, Richard Vaughan
 */
 
 /** @} */

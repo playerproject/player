@@ -44,8 +44,8 @@
 
 @par Configuration requests
 
-- PLAYER_AUDIODSP_SET_CONFIG
-- PLAYER_AUDIODSP_GET_CONFIG
+- @ref PLAYER_AUDIODSP_SET_CONFIG
+- @ref PLAYER_AUDIODSP_GET_CONFIG
 
 @par Configuration file options
 

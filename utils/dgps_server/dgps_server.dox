@@ -3,11 +3,12 @@
  * that right now).
  */
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 
 /** @{ */
 
-/** @defgroup player_util_dgps_server dgps_server
+/** @defgroup util_dgps_server dgps_server
+@brief Differential GPS correction server
 
 @par Synopsis
 
@@ -16,7 +17,7 @@ Raw packets from the base station are re-transmitted over a multicast
 UDP socket.
 
 The main use of this program is to feed DGPS corrections to @ref
-player_interface_gps drivers, such as @ref player_driver_garminnmea.
+interface_gps drivers, such as @ref driver_garminnmea.
 
 @par Usage
 
@@ -25,6 +26,8 @@ TODO.
 @par Supported base stations
 
 TODO.
+
+@author Andrew Howard
 
 */
 

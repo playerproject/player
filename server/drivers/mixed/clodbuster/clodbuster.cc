@@ -24,9 +24,10 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_clodbuster clodbuster
+/** @defgroup driver_clodbuster clodbuster
+ * @brief Clodbuster mobile robot
 
 The clodbuster driver controls the Clodbuster robot.
 
@@ -36,7 +37,7 @@ The clodbuster driver controls the Clodbuster robot.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
 
 @par Requires
 
@@ -67,9 +68,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Ben Grocholsky
+@author Ben Grocholsky
 */
 /** @} */
 

@@ -29,9 +29,10 @@
  * module of trogdor; thanks to the author of that module.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_er1 er1
+/** @defgroup driver_er1 er1
+ * @brief Evolution ER1 mobile robot
 
 The er1 driver provides position control of the Evolution Robotics'
 ER1 and ERSDK robots.
@@ -54,7 +55,7 @@ by all means contribute it.  It would be welcome to the mix.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
 
 @par Requires
 
@@ -91,9 +92,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-David Feil-Seifer
+@author David Feil-Seifer
 */
 /** @} */
 

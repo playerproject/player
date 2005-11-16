@@ -21,13 +21,14 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_waveaudio waveaudio
+/** @defgroup driver_waveaudio waveaudio
+ * @brief Raw audio waveforms
 
 The waveaudio driver captures audio from /dev/dsp on systems which
 support the OSS sound driver. The data is exported using the @ref
-player_interface_waveform generic sample data interface. Currently data
+interface_waveform generic sample data interface. Currently data
 is captured at 8bit, mono, 16KHz.
 
 @par Compile-time dependencies
@@ -36,7 +37,7 @@ is captured at 8bit, mono, 16KHz.
 
 @par Provides
 
-- @ref player_interface_waveform
+- @ref interface_waveform
 
 @par Requires
 
@@ -60,9 +61,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Richard Vaughan
+@author Richard Vaughan
 
 */
 /** @} */

@@ -6,14 +6,15 @@
 //
 //   * Make the zoom work better / look nicer
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 /** @{ */
-/** @defgroup player_util_playernav playernav
+/** @defgroup util_playernav playernav
+ * @brief Multi-robot localization, navigation, and path-planning GUI
 
 @par Synopsis
 
 playernav is a GUI client that provides control over @ref
-player_interface_localize and @ref player_interface_planner devices.
+interface_localize and @ref interface_planner devices.
 It allows you to set your robots' localization hypotheses by dragging
 and dropping them in the map.  You can set global goals the same way,
 and see the planned paths and the robots' progress toward the goals.
@@ -40,18 +41,18 @@ Where the options are:
 playernav will connect to Player at each host:port combination given on
 the command line.  For each one, playernav will attempt to subscribe to
 the following devices:
-- @ref player_interface_localize :0
-- @ref player_interface_planner :0
+- @ref interface_localize :0
+- @ref interface_planner :0
 
 Additionally, playernav will attempt to subscribe to the following device
 on the first server:
-- @ref player_interface_map :&lt;map_idx&gt; 
+- @ref interface_map :&lt;map_idx&gt; 
 
 If the subscription to the map fails, playernav will exit.  If other
 subscriptions fail, you'll be warned, but playernav will continue.  So,
 for example, if you just want to view a map, point playernav at a server
-with @ref player_interface_map :&lt;map_idx&gt; defined.  Of course, if subscription
-to @ref player_interface_localize :0 or @ref player_interface_planner
+with @ref interface_map :&lt;map_idx&gt; defined.  Of course, if subscription
+to @ref interface_localize :0 or @ref interface_planner
 :0 fails for a robot, then you will not be able to localize or command,
 respectively, that robot.
 
@@ -100,6 +101,8 @@ previous plan, if any.
 @par Screenshots
 
 @image html playernav-example.jpg "Screenshot of playernav with three robots moving toward goals"
+
+@author Brian Gerkey
 
 */
 
