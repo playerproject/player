@@ -1,0 +1,6 @@
+/** @ingroup tutorials
+@defgroup tutorial_config Writing configuration files
+@brief Config files
+
+@todo Write this
+*/
