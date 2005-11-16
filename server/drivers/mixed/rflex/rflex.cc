@@ -28,9 +28,10 @@
  * Added support for bump sensors for RWI b21r robot, uses DIO
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_rflex rflex
+/** @defgroup driver_rflex rflex
+ * @brief RWI mobile robots
 
 The rflex driver is used to control RWI robots by directly communicating
 with RFLEX onboard the robot (i.e., Mobility is bypassed).  To date,
@@ -40,9 +41,9 @@ parameters to set in the config file, however.
 
 As of March 2003 these drivers have been modified to support the
 b21r robot, Currently additional support has been added for the @ref
-player_interface_power interface and @ref player_interface_bumper
+interface_power interface and @ref interface_bumper
 interface. For the pan tilt unit on the b21r please refer to
-the @ref player_driver_ptu46 driver.
+the @ref driver_ptu46 driver.
 
 @par Compile-time dependencies
 
@@ -52,34 +53,34 @@ the @ref player_driver_ptu46 driver.
 
 The rflex driver provides the following device interfaces, some of them named:
 
-- @ref player_interface_position2d : This interface returns odometry data,
+- @ref interface_position2d : This interface returns odometry data,
   and accepts velocity commands.
-- "sonar" @ref player_interface_sonar : Range data from the sonar array
-- "sonar2" @ref player_interface_sonar : Range data from the second sonar array
-- @ref player_interface_ir
-- @ref player_interface_bumper
-- @ref player_interface_power
-- @ref player_interface_aio
-- @ref player_interface_dio
+- "sonar" @ref interface_sonar : Range data from the sonar array
+- "sonar2" @ref interface_sonar : Range data from the second sonar array
+- @ref interface_ir
+- @ref interface_bumper
+- @ref interface_power
+- @ref interface_aio
+- @ref interface_dio
 
 @par Supported configuration requests
 
-- The @ref player_interface_position2d interface supports:
+- The @ref interface_position2d interface supports:
   - PLAYER_POSITION_SET_ODOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
   - PLAYER_POSITION_RESET_ODOM_REQ
   - PLAYER_POSITION_GET_GEOM_REQ
-- The @ref player_interface_ir interface supports:
+- The @ref interface_ir interface supports:
   - PLAYER_IR_POWER_REQ
   - PLAYER_IR_POSE_REQ
-- The "sonar" @ref player_interface_sonar interface supports:
+- The "sonar" @ref interface_sonar interface supports:
   - PLAYER_SONAR_POWER_REQ
   - PLAYER_SONAR_GET_GEOM_REQ
-- The "sonar2" @ref player_interface_sonar interface supports:
+- The "sonar2" @ref interface_sonar interface supports:
   - PLAYER_SONAR_POWER_REQ
   - PLAYER_SONAR_GET_GEOM_REQ
-- The @ref player_interface_bumper interface supports:
+- The @ref interface_bumper interface supports:
   - PLAYER_BUMPER_GET_GEOM_REQ
 
 @par Configuration file options
@@ -286,9 +287,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Matthew Brewer, Toby Collett
+@author Matthew Brewer, Toby Collett
 */
 /** @} */
 

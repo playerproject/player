@@ -36,9 +36,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_inertiacube2 inertiacube2
+/** @defgroup driver_inertiacube2 inertiacube2
+ * @brief iSense InertiaCube2 IMU
 
 Uses an iSense InertiaCube2 inertial orientation sensor to correct
 the odometry coming from a robot.  The assumption is that the position
@@ -46,7 +47,7 @@ device we subscribe to has good position information but poor orientation
 information.
 
 Neither configuration requests nor commands are passed through to the
-underlying @ref player_interface_position2d device.
+underlying @ref interface_position2d device.
 
 @par Compile-time dependencies
 
@@ -54,11 +55,11 @@ underlying @ref player_interface_position2d device.
 
 @par Provides
 
-- @ref player_interface_position2d : corrected pose information
+- @ref interface_position2d : corrected pose information
 
 @par Requires
 
-- @ref player_interface_position2d : source of raw odometry
+- @ref interface_position2d : source of raw odometry
 
 @par Configuration requests
 
@@ -92,9 +93,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

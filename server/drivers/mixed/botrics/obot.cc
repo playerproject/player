@@ -28,13 +28,14 @@
  * module of CARMEN; thanks to the authors of that module.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_obot obot
+/** @defgroup driver_obot obot
+ * @brief Botrics Obot mobile robot
 
 The obot driver controls the Obot robot, made by Botrics.  It's a
 small, very fast robot that can carry a SICK laser (talk to the laser
-over a normal serial port using the @ref player_driver_sicklms200 driver).
+over a normal serial port using the @ref driver_sicklms200 driver).
 
 @par Compile-time dependencies
 
@@ -42,7 +43,8 @@ over a normal serial port using the @ref player_driver_sicklms200 driver).
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
+- @ref interface_power
 
 @par Requires
 
@@ -69,9 +71,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 */
 /** @} */
 

@@ -45,9 +45,10 @@
  * it.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_reb reb
+/** @defgroup driver_reb reb
+ * @brief K-Team Kameleon Robotics Extension Board
 
 The reb driver is used to control robots using the K-Team Kameleon
 376SBC with Robotics Extension Board (REB).  The Kameleon, (or Kam),
@@ -69,8 +70,8 @@ Email John Sweeney (sweeney (at) cs.umass.edu) for information.
 
 The reb driver sets some default PID parameters and resets the
 odometry to (0,0,0) when the first client subscribes to the @ref
-player_interface_position2d interface.  Likewise, the IR sensors are only
-turned on when an @ref player_interface_ir client has subscribed.
+interface_position2d interface.  Likewise, the IR sensors are only
+turned on when an @ref interface_ir client has subscribed.
 
 Position mode is very finicky.  This seems to be a problem with the
 REB itself, which may lose bytes on the serial port while performing
@@ -94,16 +95,16 @@ to be running the LPRSerCom program.
 
 The reb driver provides the following device interfaces:
 
-- @ref player_interface_position2d : This interface returns odometry data,
+- @ref interface_position2d : This interface returns odometry data,
   and accepts velocity commands.
 
-- @ref player_interface_ir : This interface returns IR range data.
+- @ref interface_ir : This interface returns IR range data.
 
-- @ref player_interface_power : This interface returns power data.
+- @ref interface_power : This interface returns power data.
 
 @par Supported configuration requests
 
-- The @ref player_interface_position2d interface supports:
+- The @ref interface_position2d interface supports:
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
@@ -113,7 +114,7 @@ The reb driver provides the following device interfaces:
   - PLAYER_POSITION_SPEED_PID_REQ
   - PLAYER_POSITION_POSITION_PID_REQ
   - PLAYER_POSITION_SPEED_PROF_REQ
-- The @ref player_interface_ir interface supports:
+- The @ref interface_ir interface supports:
   - PLAYER_IR_POWER_REQ
   - PLAYER_IR_POSE_REQ
 
@@ -137,9 +138,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-John Sweeney
+@author John Sweeney
 */
 /** @} */
 

@@ -24,12 +24,13 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_cmucam2 cmucam2
+/** @defgroup driver_cmucam2 cmucam2
+ * @brief CMUCam2 pan-tilt-zoom blob-tracking camera
 
 The cmucam2 driver connects over a serial port to a CMUCam2. Presents a
-@ref player_interface_blobfinder interface and a @ref player_interface_ptz
+@ref interface_blobfinder interface and a @ref interface_ptz
 interface and can track multiple color blobs.  This driver is rudimentary
 but working. Color tracking parameters are defined in Player's config file
 (see below for an example).
@@ -41,8 +42,8 @@ but working. Color tracking parameters are defined in Player's config file
 
 @par Provides
 
-- @ref player_interface_blobfinder : the blobs detected by the CMUCam2
-- @ref player_interface_ptz : control of the servos that pan and tilt
+- @ref interface_blobfinder : the blobs detected by the CMUCam2
+- @ref interface_ptz : control of the servos that pan and tilt
   the CMUCam2
 
 @par Requires
@@ -51,7 +52,7 @@ but working. Color tracking parameters are defined in Player's config file
 
 @par Supported configuration requests
 
-- The @ref player_interface_ptz interface supports:
+- The @ref interface_ptz interface supports:
   - PLAYER_PTZ_AUTOSERVO
 
 @par Configuration file options
@@ -84,9 +85,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Pouya Bastani, Richard Vaughan
+@author Pouya Bastani, Richard Vaughan
 */
 /** @} */
 

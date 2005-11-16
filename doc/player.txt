@@ -164,3 +164,9 @@ provide a new one, please let us know.  Send your contribution to the
 users' mailing list: playerstage-users@lists.sourceforge.net.
 */
 
+/** @defgroup utils Player utilities
+@brief Player utilities
+
+Several utilities are included with the Player distribution, listed below.
+*/
+

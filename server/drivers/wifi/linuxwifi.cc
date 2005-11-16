@@ -27,9 +27,10 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_linuxwifi linuxwifi
+/** @defgroup driver_linuxwifi linuxwifi
+ * @brief Linux WiFi devices
 
 The linuxwifi driver provides access to information about wireless
 Ethernet cards in Linux.  It reads the wireless info found in
@@ -42,7 +43,7 @@ our own orinoco cards.
 
 @par Provides
 
-- @ref player_interface_wifi
+- @ref interface_wifi
 
 @par Requires
 
@@ -69,9 +70,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-John Sweeney
+@author John Sweeney
 
 */
 /** @} */

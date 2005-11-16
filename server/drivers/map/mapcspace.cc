@@ -25,19 +25,20 @@
  * convolve it with a robot to create the C-space.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_mapcspace mapcspace
+/** @defgroup driver_mapcspace mapcspace
+ * @brief Grow obstacles in grid maps
 
 The mapcspace driver reads a occupancy grid map from another @ref
-player_interface_map device and convolves it with a robot of a particular
+interface_map device and convolves it with a robot of a particular
 shape and size to create the configuration space (C-space) map.  That is,
 this driver "grows" obstacles in the map to produce a new map in which,
 for path-planning purposes, you can consider the robot to be a point.
 
 Both occupied and unknown cells are grown.
 
-Note that @ref player_interface_map devices produce no data; the map is
+Note that @ref interface_map devices produce no data; the map is
 delivered via a sequence of configuration requests.
 
 @par Compile-time dependencies
@@ -46,11 +47,11 @@ delivered via a sequence of configuration requests.
 
 @par Provides
 
-- @ref player_interface_map : the resulting C-space map
+- @ref interface_map : the resulting C-space map
 
 @par Requires
 
-- @ref player_interface_map : the raw map, from which to make the C-space map
+- @ref interface_map : the raw map, from which to make the C-space map
 
 @par Configuration requests
 
@@ -87,9 +88,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 /** @} */

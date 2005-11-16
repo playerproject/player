@@ -1,3 +1,19 @@
+/** @ingroup utils Utilities */
+/** @{ */
+/** @defgroup util_playerwritemap playerwritemap
+ * @brief Retrieve map data and save it to a file
+
+@par Synopsis
+
+@todo write a synopsis
+
+@par Usage
+
+@todo write usage
+
+@author Brian Gerkey
+
+*/
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>

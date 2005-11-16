@@ -27,15 +27,16 @@
  * The writelog driver will write data from another device to a log file.
  * The readlog driver will replay the data as if it can from the real sensors.
  */
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_readlog readlog
+/** @defgroup driver_readlog readlog
+ * @brief Playback of logged data
 
 The readlog driver can be used to replay data stored in a log file.
 This is particularly useful for debugging client programs, since users
 may run their clients against the same data set over and over again.
 Suitable log files can be generated using the @ref
-player_driver_writelog driver.
+driver_writelog driver.
 
 To make use of log file data, Player must be started in a special
 mode:
@@ -54,8 +55,8 @@ id's specified in the provides field must match those stored in the
 log file (i.e., data logged as "position:0" must also be read back as
 "position:0").
 
-For help in controlling playback, try @ref player_util_playervcr.
-Note that you must declare a @ref player_interface_log device to allow
+For help in controlling playback, try @ref util_playervcr.
+Note that you must declare a @ref interface_log device to allow
 playback control.
 
 @par Compile-time dependencies
@@ -67,20 +68,20 @@ playback control.
 
 The readlog driver can provide the following device interfaces.
 
-- @ref player_interface_blobfinder
-- @ref player_interface_camera
-- @ref player_interface_fiducial
-- @ref player_interface_gps
-- @ref player_interface_joystick
-- @ref player_interface_laser
-- @ref player_interface_position2d
-- @ref player_interface_position3d
-- @ref player_interface_truth
-- @ref player_interface_wifi
+- @ref interface_blobfinder
+- @ref interface_camera
+- @ref interface_fiducial
+- @ref interface_gps
+- @ref interface_joystick
+- @ref interface_laser
+- @ref interface_position2d
+- @ref interface_position3d
+- @ref interface_truth
+- @ref interface_wifi
 
 The driver also provides an interface for controlling the playback:
 
-- @ref player_interface_log
+- @ref interface_log
 
 @par Requires
 
@@ -98,7 +99,7 @@ The driver also provides an interface for controlling the playback:
   - Default: 1
   - Begin playing back log data when first client subscribes
     (as opposed to waiting for the client to tell the @ref
-    player_interface_log device to play).
+    interface_log device to play).
 - autorewind (integer)
   - Default: 0
   - Automatically rewind and play the log file again when the end is
@@ -116,9 +117,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

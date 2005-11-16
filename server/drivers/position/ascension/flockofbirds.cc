@@ -1,12 +1,13 @@
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_flockofbirds flockofbirds
+/** @defgroup driver_flockofbirds flockofbirds
+ * @brief Ascension Flock of Birds position tracker
 
 The flockofbirds driver provides a basic interface to the ascension
 Flock of Birds 6DOF position tracker.
 
 This driver ignores all commands and configuration requests and simple
-provides a continuous stream of @ref player_interface_position2d updates
+provides a continuous stream of @ref interface_position2d updates
 from a single flock of birds controller.
 
 There is currently no support for multiple trackers.
@@ -17,7 +18,7 @@ There is currently no support for multiple trackers.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
 
 @par Requires
 
@@ -49,9 +50,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Toby Collett
+@author Toby Collett
 
 */
 /** @} */

@@ -25,15 +25,16 @@
  */
 
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_khepera khepera
+/** @defgroup driver_khepera khepera
+ * @brief K-Team Khepera mobile robot
 
 The khepera driver is used to interface to the K-Team khepera robot. 
 
 This driver is experimental and should be treated with caution. At
-this point it supports the @ref player_interface_position2d and 
-@ref player_interface_ir interfaces.
+this point it supports the @ref interface_position2d and 
+@ref interface_ir interfaces.
 
 TODO: 
  - Add support for position control (currently only velocity control)
@@ -45,8 +46,8 @@ TODO:
 
 @par Provides
 
-- @ref player_interface_position2d
-- @ref player_interface_ir
+- @ref interface_position2d
+- @ref interface_ir
 
 @par Requires
 
@@ -54,13 +55,13 @@ TODO:
 
 @par Supported configuration requests
 
-- The @ref player_interface_position2d interface supports:
+- The @ref interface_position2d interface supports:
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_MOTOR_POWER_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
   - PLAYER_POSITION_RESET_ODOM_REQ
   - PLAYER_POSITION_SET_ODOM_REQ
-- The @ref player_interface_ir interface supports:
+- The @ref interface_ir interface supports:
   - PLAYER_IR_POSE_REQ
 
 @par Configuration file options
@@ -99,9 +100,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Toby Collett
+@author Toby Collett
 */
 /** @} */
 

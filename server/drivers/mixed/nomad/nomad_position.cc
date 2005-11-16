@@ -29,13 +29,14 @@
  * 
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_nomad_position nomad_position
+/** @defgroup driver_nomad_position nomad_position
+ * @brief Nomadics NOMAD200 motors, odometry
 
 The nomad_position driver controls the wheelbase of the Nomadics
 NOMAD200 robot.  This driver is a thin wrapper that exchanges data and
-commands with the @ref player_driver_nomad driver; look there for more
+commands with the @ref driver_nomad driver; look there for more
 information and an example.
 
 @par Compile-time dependencies
@@ -44,7 +45,7 @@ information and an example.
 
 @par Provides
 
-- @ref player_interface_position2d
+- @ref interface_position2d
 
 @par Requires
 
@@ -59,9 +60,7 @@ information and an example.
 - none
 
 
-@par Authors
-
-Richard Vaughan, Pawel Zebrowski
+@author Richard Vaughan, Pawel Zebrowski
 
 */
 /** @} */

@@ -22,13 +22,14 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_amtecpowercube amtecpowercube
+/** @defgroup driver_amtecpowercube amtecpowercube
+ * @brief Amtec PowerCube pan-tilt unit
 
 The amtecpowercube driver controls the Amtec PowerCube Wrist,
 a powerful pan-tilt unit that can, for example, carry a SICK laser
-(@ref player_driver_sicklms200).
+(@ref driver_sicklms200).
 
 The amtecpowercube driver supports both position and velocity control,
 via the PLAYER_PTZ_CONTROL_MODE_REQ request.  For constant swiveling,
@@ -42,7 +43,7 @@ Note that this driver is relatively new and not thoroughly tested.
 
 @par Provides
 
-- @ref player_interface_ptz
+- @ref interface_ptz
 
 @par Requires
 
@@ -76,9 +77,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 

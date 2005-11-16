@@ -24,9 +24,10 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_lifomcom lifomcom
+/** @defgroup driver_lifomcom lifomcom
+ * @brief Queue-based client-client communication
 
 The lifomcom driver provides a last-in-first-out (LIFO) multi-stack
 communication system with which clients can exchange data through an
@@ -44,7 +45,7 @@ if we're reading drive commands, for example, we can be sure to get a
 
 @par Provides
 
-- @ref player_interface_mcom
+- @ref interface_mcom
 
 @par Requires
 
@@ -72,9 +73,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-- Matthew Brewer, Reed Hedges
+@author Matthew Brewer, Reed Hedges
 
 */
 /** @} */

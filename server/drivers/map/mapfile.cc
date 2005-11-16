@@ -24,12 +24,13 @@
  * A driver to read an occupancy grid map from an image file.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_mapfile mapfile
+/** @defgroup driver_mapfile mapfile
+ * @brief Read grid maps from image files
 
 The mapfile driver reads a occupancy grid map from a bitmap image file and
-provides the map to others via the @ref player_interface_map interface.
+provides the map to others via the @ref interface_map interface.
 Since gdk-pixbuf is used to load the file, pretty much all bitmap formats
 are supported.
 
@@ -42,7 +43,7 @@ than 0.1, the cell is free; otherwise it is unknown.  In other words,
 "blacker" pixels are occupied, "whiter" pixels are free, and those in
 between are unknown.
 
-Note that @ref player_interface_map devices produce no data; the map is
+Note that @ref interface_map devices produce no data; the map is
 delivered via a sequence of configuration requests.
 
 @par Compile-time dependencies
@@ -51,7 +52,7 @@ delivered via a sequence of configuration requests.
 
 @par Provides
 
-- @ref player_interface_map
+- @ref interface_map
 
 @par Requires
 
@@ -89,9 +90,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 /** @} */

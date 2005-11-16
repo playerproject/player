@@ -24,9 +24,10 @@
  * CVS: $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_dummy dummy
+/** @defgroup driver_dummy dummy
+ * @brief Dummy driver
 
 The dummy driver generates dummy data and consumes dummy commands for
 any interface; useful for debugging client libraries and benchmarking
@@ -65,9 +66,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 */
 /** @} */
   

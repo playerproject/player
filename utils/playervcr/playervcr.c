@@ -26,16 +26,17 @@
  * A simple GUI for controlling start/stop of data logging/playback
  */
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 /** @{ */
-/** @defgroup player_util_playervcr playervcr
+/** @defgroup util_playervcr playervcr
+ * @brief Remote control of data logging and playback
 
 @par Synopsis
 
 playervcr is a GUI client that provides VCR-like control over
 the recording and playback of logfiles.  It does this via the @ref
-player_interface_log interface of the @ref player_driver_writelog and
-@ref player_driver_readlog drivers, respectively.
+interface_log interface of the @ref driver_writelog and
+@ref driver_readlog drivers, respectively.
 
 playervcr requires GTK.
 
@@ -49,12 +50,12 @@ $ playervcr [-h <host>] [-p <port>] [-i <index>]
 Where the options are:
 - -h &lt;host&gt; : connect to Player on this host (default: localhost)
 - -p &lt;port&gt; : connect to Player at this port (default: 6665)
-- -i &lt;index&gt; : connect to the @ref player_interface_log device
+- -i &lt;index&gt; : connect to the @ref interface_log device
   with this index
 
-To use playervcr, you must create a @ref player_interface_log device,
+To use playervcr, you must create a @ref interface_log device,
 such as "log:0", in your configuration file.  Look at the docs for
-the @ref player_driver_writelog and @ref player_driver_readlog drivers
+the @ref driver_writelog and @ref driver_readlog drivers
 for examples.
 
 When playervcr starts, a single window containing a few self-explanatory
@@ -66,6 +67,8 @@ can rewind, start, and stop; when writing data, you can start and stop.
 
 @image html playervcr-writelog.jpg "Screenshot of playervcr controlling a writelog device"
 @image html playervcr-readlog.jpg "Screenshot of playervcr controlling a readlog device"
+
+@author Brian Gerkey
 
 */
 

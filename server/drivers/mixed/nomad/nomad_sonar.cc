@@ -29,13 +29,14 @@
  * 
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_nomad_sonar nomad_sonar
+/** @defgroup driver_nomad_sonar nomad_sonar
+ * @brief Nomadics NOMAD200 sonar array
 
 The nomad_sonar driver controls the sonars of the Nomadics
 NOMAD200 robot.  This driver is a thin wrapper that exchanges data and
-commands with the @ref player_driver_nomad driver; look there for more
+commands with the @ref driver_nomad driver; look there for more
 information and an example.
 
 @par Compile-time dependencies
@@ -44,7 +45,7 @@ information and an example.
 
 @par Provides
 
-- @ref player_interface_sonar
+- @ref interface_sonar
 
 @par Requires
 
@@ -59,9 +60,7 @@ information and an example.
 - none
 
 
-@par Authors
-
-Richard Vaughan, Pawel Zebrowski
+@author Richard Vaughan, Pawel Zebrowski
 
 */
 /** @} */

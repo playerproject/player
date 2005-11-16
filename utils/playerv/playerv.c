@@ -24,9 +24,10 @@
  * CVS: $Id$
  *************************************************************************/
 
-/** @addtogroup utils Utilities */
+/** @ingroup utils */
 /** @{ */
-/** @defgroup player_util_playerv playerv
+/** @defgroup util_playerv playerv
+ * @brief General-purpose sensor visualization and device control GUI
 
 @par Synopsis
 
@@ -72,35 +73,37 @@ when building librtk).
 @par Features
 
 playerv can visualize data from the following kinds of devices:
-- @ref player_interface_blobfinder
-- @ref player_interface_bumper
-- @ref player_interface_fiducial
-- @ref player_interface_gripper
-- @ref player_interface_ir
-- @ref player_interface_laser
-- @ref player_interface_localize
-- @ref player_interface_map
-- @ref player_interface_position2d
-- @ref player_interface_power
-- @ref player_interface_ptz
-- @ref player_interface_sonar
-- @ref player_interface_wifi
+- @ref interface_blobfinder
+- @ref interface_bumper
+- @ref interface_fiducial
+- @ref interface_gripper
+- @ref interface_ir
+- @ref interface_laser
+- @ref interface_localize
+- @ref interface_map
+- @ref interface_position2d
+- @ref interface_power
+- @ref interface_ptz
+- @ref interface_sonar
+- @ref interface_wifi
 
 playerv provides teleoperation of the following kinds of devices:
-- @ref player_interface_position2d : In velocity mode (the default),
+- @ref interface_position2d : In velocity mode (the default),
   click and drag with the left mouse button to set desired velocity vector
   (this will only work if the underlying driver supports velocity control;
   most position drivers do).  In position mode (select "Position mode"
   from the device's submenu), click and drag with the left mouse button
   to set a position target (this will only work if the underlying driver
-  support position control; @ref player_driver_vfh is one example).
-- @ref player_interface_ptz : Click and drag the green circle to pan and zoom;
+  support position control; @ref driver_vfh is one example).
+- @ref interface_ptz : Click and drag the green circle to pan and zoom;
   click and drag the blue circle to tilt.
 
 
 @par Screenshots
 @image html playerv-sonar.jpg "Screenshot of playerv showing position and sonar data"
 @image html playerv-laser-blobfinder-ptz.jpg "Screenshot of playerv showing position, laser, blobfinder, and ptz data"
+
+@author Andrew Howard
 
 */
 

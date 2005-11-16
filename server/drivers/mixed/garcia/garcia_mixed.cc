@@ -22,11 +22,12 @@
 /** Mixed mode driver for Garcia robot by Acroname
   * @author Brad Kratochvil
   * @date 20050915
-  * @addtogroup drivers Drivers
+  * @ingroup drivers
   * @{ */
 
 /**
-  *@defgroup player_driver_garcia garcia
+  *@defgroup driver_garcia garcia
+  @brief The Garcia mobile robot
 
 
 The garcia driver captures
@@ -37,10 +38,10 @@ The garcia driver captures
 
 @par Provides
 
-- @ref player_interface_position2d
-- @ref player_interface_ir
-- @ref player_interface_speech
-- @ref player_interface_dio
+- @ref interface_position2d
+- @ref interface_ir
+- @ref interface_speech
+- @ref interface_dio
 
 @par Requires
 
@@ -70,9 +71,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brad Kratochvil
+@author Brad Kratochvil
 
 */
 /** @} */
