@@ -46,13 +46,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_sickpls sickpls
-
+/** @defgroup driver_sickpls sickpls
+ * @brief SICK PLS laser range-finder
 
 The sickpls driver controls the SICK PLS scanning laser range-finder.
-This driver will likely be merged into the @ref player_driver_sicklms200
+This driver will likely be merged into the @ref driver_sicklms200
 driver (eventually).
 
 @par Compile-time dependencies
@@ -61,7 +61,7 @@ driver (eventually).
 
 @par Provides
 
-- @ref player_interface_laser
+- @ref interface_laser
 
 @par Requires
 
@@ -118,9 +118,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Yannick Brosseau, Andrew Howard
+@author Yannick Brosseau, Andrew Howard
 
 */
 /** @} */

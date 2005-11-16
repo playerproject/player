@@ -21,11 +21,13 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_mixer mixer
+/** @defgroup driver_mixer mixer
 
-TODO
+@brief TODO
+
+@todo Write a description
 
 @par Compile-time dependencies
 
@@ -33,7 +35,7 @@ TODO
 
 @par Provides
 
-- @ref player_interface_audiomixer
+- @ref interface_audiomixer
 
 @par Requires
 
@@ -60,9 +62,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-- Nate Koenig
+@author Nate Koenig
 
 */
 

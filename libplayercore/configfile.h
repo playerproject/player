@@ -30,21 +30,24 @@
 
 #include <libplayercore/player.h>
 
-/// @brief Class for loading configuration file information.
-///
-/// This class is used to load settings from a configuration text
-/// file.  Ths file is dividing into sections, with section having a
-/// set of key/value fields.
-/// Example file format is as follows:
-/// @verbatim
-/// # This is a comment
-/// section_name
-/// (
-///   key1  0             
-///   key2 "foo"          
-///   key3 ["foo" "bar"]  
-/// )
-/// @endverbatim
+/** @brief Class for loading configuration file information.
+
+This class is used to load settings from a configuration text file.
+Ths file is divided into sections, with section having a set of key/value
+fields.
+
+Example file format is as follows:
+@code
+# This is a comment
+section_name
+(
+key1  0             
+key2 "foo"          
+key3 ["foo" "bar"]  
+)
+@endcode
+*/
+
 class ConfigFile
 {
   /// @brief Standard constructor

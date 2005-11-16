@@ -21,11 +21,13 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_acoustics acoustics
+/** @defgroup driver_acoustics acoustics
 
-TODO
+@brief TODO
+
+@todo Write a description here
 
 @par Compile-time dependencies
 
@@ -34,7 +36,7 @@ TODO
 
 @par Provides
 
-- @ref player_interface_audiodsp
+- @ref interface_audiodsp
 
 @par Requires
 
@@ -62,9 +64,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-- Nate Koenig
+@author Nate Koenig
 
 */
 

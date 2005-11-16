@@ -32,9 +32,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_laserbar laserbar
+/** @defgroup driver_laserbar laserbar
+ * @brief Laser bar detector.
 
 The laser bar detector searches for retro-reflective targets in the
 laser range finder data.  Targets can be either planar or cylindrical,
@@ -47,8 +48,8 @@ The range at which targets can be detected is dependant on the target
 size, the angular resolution of the laser and the quality of the
 retro-reflective material used on the target.
 
-See also the @ref player_driver_laserbarcode and 
-@ref player_driver_laservisualbarcode drivers.
+See also the @ref driver_laserbarcode and 
+@ref driver_laservisualbarcode drivers.
 
 @image html laservisualbeacon.jpg "A sample laser bar (ignore the colored bands)"
 
@@ -59,11 +60,11 @@ See also the @ref player_driver_laserbarcode and
 @par Provides
 
 - This driver provides detected target information through a @ref
-  player_interface_fiducial device.
+  interface_fiducial device.
 
 @par Requires
 
-- This driver finds targets in scans from a @ref player_interface_laser
+- This driver finds targets in scans from a @ref interface_laser
   device.
 
 @par Configuration requests
@@ -92,9 +93,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 */
 /** @} */
 

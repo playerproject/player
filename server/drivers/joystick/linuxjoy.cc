@@ -28,13 +28,14 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_linuxjoystick linuxjoystick
+/** @defgroup driver_linuxjoystick linuxjoystick
+ * @brief Linux joystick
 
 The linuxjoystick driver reads data from a standard Linux joystick and
-provides the data via the @ref player_interface_joystick interface.
-This driver can also control a @ref player_interface_position2d device by
+provides the data via the @ref interface_joystick interface.
+This driver can also control a @ref interface_position2d device by
 converting joystick positions to velocity commands.
 
 @par Compile-time dependencies
@@ -43,14 +44,14 @@ converting joystick positions to velocity commands.
 
 @par Provides
 
-- @ref player_interface_joystick : joystick data
-- @ref player_interface_position2d : joystick data represented as 2-D 
+- @ref interface_joystick : joystick data
+- @ref interface_position2d : joystick data represented as 2-D 
   position data.  Raw X- and Y-axis values are reported as xpos and ypos in the 
   position packet (all other fields are zero).
 
 @par Requires
 
-- @ref player_interface_position2d : if present, joystick positions will be
+- @ref interface_position2d : if present, joystick positions will be
   interpreted as velocities and sent as commands to this position device.
   See also max_xspeed and max_yawspeed options below.
 
@@ -141,9 +142,7 @@ driver
 Add support for continuously sending commands, which might be needed for 
 position devices that use watchdog timers.
 
-@par Authors
-
-Andrew Howard, Brian Gerkey, Paul Osmialowski
+@author Andrew Howard, Brian Gerkey, Paul Osmialowski
 
 */
 /** @} */

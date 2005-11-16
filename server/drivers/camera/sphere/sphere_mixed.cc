@@ -20,11 +20,12 @@
  */
 
 /**
-  * @addtogroup drivers Drivers
+  * @ingroup drivers
   * @{ */
 
 /**
-  *@defgroup player_driver_sphere sphere
+  *@defgroup driver_sphere sphere
+  @brief Logitech Sphere camera
 
   * This driver is a heavily modified version of the camerav4l one developed
   * by Andrew Howard.  The sphere driver captures images from a Logitech Sphere
@@ -41,8 +42,8 @@
 
 @par Provides
 
-- @ref player_interface_camera
-- @ref player_interface_ptz
+- @ref interface_camera
+- @ref interface_ptz
 
 @par Requires
 
@@ -56,7 +57,7 @@
 
 - port (string)
   - Default: "/dev/video0"
-  - Device to read video data from.
+  - %Device to read video data from.
 
 - size (integer tuple)
   - Default: 320 x 240
@@ -139,9 +140,7 @@ driver
 @endverbatim
 
 
-@par Authors
-
-Brad Kratochvil
+@author Brad Kratochvil
 */
 /** @} */
 

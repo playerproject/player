@@ -20,10 +20,10 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_laserposeinterpolator laserposeinterpolator
-
+/** @defgroup driver_laserposeinterpolator laserposeinterpolator
+ * @brief Attach poses to laser scans
 
 The laserposeinterpolator driver reads laser scans from a laser device
 and poses from a position2d device, linearly interpolates to estimate
@@ -36,12 +36,12 @@ containing both scan and pose.
 
 @par Provides
 
-- @ref player_interface_laser
+- @ref interface_laser
 
 @par Requires
 
-- @ref player_interface_laser
-- @ref player_interface_position2d
+- @ref interface_laser
+- @ref interface_position2d
 
 @par Configuration requests
 
@@ -71,9 +71,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 /** @} */

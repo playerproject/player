@@ -27,9 +27,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_simpleshape simpleshape
+/** @defgroup driver_simpleshape simpleshape
+ * @brief Visual shape-detection
 
 The simpleshape driver looks for simple geometric shapes in a camera
 image.  The user must supply a @e model of the target shape, in the
@@ -43,16 +44,16 @@ form of a binary image (such as the one shown below).
 
 @par Requires
 
-- This driver acquires image data from a @ref player_interface_camera
+- This driver acquires image data from a @ref interface_camera
   interface.
 
 @par Provides
 
 - This driver provides detected shapes through a @ref
-  player_interface_blobfinder interface.
+  interface_blobfinder interface.
 
 - This driver also supplies processed image data through a @ref
-  player_interface_camera interface (this data is intended mostly for
+  interface_camera interface (this data is intended mostly for
   debugging).  Note that the dimensions of the output image are twice
   that of the input image: the output image is divided into four
   parts, each showing one step in the detection process.  From
@@ -88,9 +89,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 */
 /** @} */
 

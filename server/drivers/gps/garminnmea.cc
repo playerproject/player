@@ -23,19 +23,19 @@
  * $Id$
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_garminnmea garminnmea
-
+/** @defgroup driver_garminnmea garminnmea
+ * @brief Garmin GPS unit
  
-Device driver for the Garmin geko 201 handheld GPS unit.  Interacts with
+%Device driver for the Garmin geko 201 handheld GPS unit.  Interacts with
 the unit by speaking NMEA over a serial line.  As such, this driver may
 work with other Garmin units, and (likely with some modification) other
 NMEA-compliant GPS units.
  
 The driver may also attempt to read DGPS RTCM corrections from a
 multi-cast network address, and forward these corrections to the
-GPS unit.  The @ref player_util_dgps_server utility may be used to gather
+GPS unit.  The @ref util_dgps_server utility may be used to gather
 and broadcast the DGPS RTCM corrections.
  
 NMEA and proprietary Garmin codes can be found at
@@ -51,7 +51,7 @@ http://home.mira.net/~gnb/gps/nmea.html
 
 @par Provides
 
-- @ref player_interface_gps
+- @ref interface_gps
 
 @par Configuration requests
 
@@ -68,7 +68,7 @@ http://home.mira.net/~gnb/gps/nmea.html
 - dgps_enable (integer)
   - Default: 1
   - Enable/disable listening for DGPS corrections via UDP multicast
-    (use @ref player_util_dgps_server to send the corrections)
+    (use @ref util_dgps_server to send the corrections)
 - dgps_group (string)
   - Default: "225.0.0.43"
   - Multicast group on which to listen for DGPS corrections</td></tr>
@@ -87,9 +87,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey, Andrew Howard
+@authors Brian Gerkey, Andrew Howard
 
 */
 /** @} */

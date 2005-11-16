@@ -33,10 +33,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_lasercspace lasercspace
-
+/** @defgroup driver_lasercspace lasercspace
+ * @brief Laser configuration space
 
 The lasercspace driver processes a laser scan to compute the
 configuration space (`C-space') boundary.  That is, it shortens the
@@ -58,11 +58,11 @@ fixed radius; this radius may be set in the configuration file.
 
 @par Provides
 
-- @ref player_interface_laser : output of the C-space scan
+- @ref interface_laser : output of the C-space scan
 
 @par Requires
 
-- @ref player_interface_laser : raw laser data from which to make C-space scan
+- @ref interface_laser : raw laser data from which to make C-space scan
 
 @par Configuration requests
 
@@ -95,9 +95,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

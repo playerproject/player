@@ -26,9 +26,10 @@
  CVS: $Id$
 */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers Drivers */
 /** @{ */
-/** @defgroup player_driver_sicklms200 sicklms200
+/** @defgroup driver_sicklms200 sicklms200
+ * @brief SICK LMS 200 laser range-finder
 
 
 The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
@@ -39,7 +40,7 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 
 @par Provides
 
-- @ref player_interface_laser
+- @ref interface_laser
 
 @par Requires
 
@@ -105,9 +106,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard, Richard Vaughan, Kasper Stoy
+@author Andrew Howard, Richard Vaughan, Kasper Stoy
 
 */
 /** @} */

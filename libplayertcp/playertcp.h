@@ -27,13 +27,15 @@
  */
 
 /** @defgroup libplayertcp libplayertcp
-@{
+ * @brief Player TCP library
 
 This library moves messages between Player message queues and TCP sockets.
 
 @todo
  - More verbose documentation on this library.
 */
+/** @ingroup libplayertcp
+@{ */
 
 #ifndef _PLAYERTCP_H_
 #define _PLAYERTCP_H_

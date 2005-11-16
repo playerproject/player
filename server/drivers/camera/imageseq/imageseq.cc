@@ -26,9 +26,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_imageseq imageseq
+/** @defgroup driver_imageseq imageseq
+ * @brief Image file sequencer
 
 The imageseq driver simulates a camera by reading an image sequence
 from the filesystem.  The filenames for the image sequence must be
@@ -43,7 +44,7 @@ Note that only grayscale images are currently supported.
 
 @par Provides
 
-- This driver supports the @ref player_interface_camera interface.
+- This driver supports the @ref interface_camera interface.
 
 @par Requires
 
@@ -79,9 +80,7 @@ driver
 
 @todo Add support for color images.
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

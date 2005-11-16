@@ -26,9 +26,10 @@
  * Uses CMVision to retrieve the blob data
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_cmvision cmvision
+/** @defgroup driver_cmvision cmvision
+@brief CMVision
 
 CMVision (Color Machine Vision) is a fast
 color-segmentation (aka blob-finding) software library.
@@ -48,11 +49,11 @@ configuration file.
 
 @par Provides
 
-- @ref player_interface_blobfinder
+- @ref interface_blobfinder
 
 @par Requires
 
-- @ref player_interface_camera : camera device to get image data from
+- @ref interface_camera : camera device to get image data from
 
 @par Configuration requests
 
@@ -94,9 +95,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andy Martignoni III, Brian Gerkey, Brendan Burns,
+@author Andy Martignoni III, Brian Gerkey, Brendan Burns,
 Ben Grocholsky, Brad Kratochvil
 
 */

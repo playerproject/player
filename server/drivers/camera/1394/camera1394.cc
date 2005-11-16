@@ -26,10 +26,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_camera1394 camera1394
-
+/** @defgroup driver_camera1394 camera1394
+ * @brief Firewire camera capture
 
 The camera1394 driver captures images from IEEE1394 (Firewire, iLink)
 cameras.  
@@ -41,7 +41,7 @@ cameras.
 
 @par Provides
 
-- @ref player_interface_camera
+- @ref interface_camera
 
 @par Requires
 
@@ -146,11 +146,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Nate Koenig, Andrew Howard
-Major code rewrite by Paul Osmialowski, newchief@king.net.pl
-
+@author Nate Koenig, Andrew Howard; major code rewrite by Paul Osmialowski, newchief@king.net.pl
 */
 /** @} */
 

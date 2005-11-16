@@ -20,12 +20,13 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_urglaser urglaser
+/** @defgroup driver_urglaser urglaser
+ * @brief Hokuyo URG laser range-finder
 
 
-The urglaser driver controls the URG scanning laser range-finder.
+The urglaser driver controls the Hokuyo URG scanning laser range-finder.
 
 @par Compile-time dependencies
 
@@ -33,7 +34,7 @@ The urglaser driver controls the URG scanning laser range-finder.
 
 @par Provides
 
-- @ref player_interface_laser
+- @ref interface_laser
 
 @par Requires
 
@@ -71,9 +72,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Toby Collett
+@author Toby Collett
 
 */
 /** @} */
