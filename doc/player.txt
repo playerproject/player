@@ -20,7 +20,7 @@ released under the terms of the GNU Lesser General Public License v2.1.
 */
 
 /** 
-@defgroup help Getting Help
+@page help Getting Help
 
 If you're having problems and you can't find what you need in this manual,
 there are several places to find help.
@@ -34,7 +34,7 @@ FAQ page</a>.
 
 Next, you should search <a
 href="http://sourceforge.net/mailarchive/forum.php?forum_id=8201">the
-playerstage_users mailing list archive</a> to
+playerstage-users mailing list archive</a> to
 see if your questions have already been answered.
 
 Next, you should probably spend a few minutes with <a
@@ -42,7 +42,7 @@ href=http://www.google.com>Google</a>. This often works well, as it
 picks up P/S/G conversations from all over the place.
 
 If you still need help, you can send email to the mailing list
-playerstage_users@lists.sourceforge.net and a user or developer may
+playerstage-users@lists.sourceforge.net and a user or developer may
 reply to you. <b>Remember that these mails go to hundreds of people</b>, so
 please be polite and give as much information as you can in your
 email.
@@ -53,7 +53,7 @@ href="http://playerstage.sourceforge.net/index.php?src=faq#reporting_bugs">here<
 */
 
 /**
-@defgroup install Installation
+@page install Installation
 
 <h2>Standard install procedure</h2>
 
@@ -106,7 +106,7 @@ because you don't have root access:
 */
 
 /**
-@defgroup start Quick start
+@page start Quick start
 
 @todo Write a quick start guide
 */
@@ -150,3 +150,17 @@ use the macros defined in error.h, so that message verbosity can be
 centrally controlled and so that all messsages get logged to .player.
 
 */
+
+/** @defgroup tutorials Tutorials
+
+Listed below are tutorials on various topics that may be of interest
+to users of Player.  The goal of these documents is to provide the user
+with concise explanations (with examples, wherever possible) of important
+concepts and common tasks.
+
+<b>Please contribute!</b>  If you have anything to add, whether it's to
+fill out an empty tutorial, augment an existing tutorial, or suggest or
+provide a new one, please let us know.  Send your contribution to the
+users' mailing list: playerstage-users@lists.sourceforge.net.
+*/
+

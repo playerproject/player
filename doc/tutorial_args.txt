@@ -1,13 +1,6 @@
-
-/* @page tutorials Player tutorials
-
-Several tutorials on how to do Player related tasks:
-- @ref player_tutorial_args : How to load arguments into your program.
-
-*/
-
-
-/** @page player_tutorial_args Tutorial: Command line arguments
+/** @ingroup tutorials
+@defgroup tutorial_args Command line arguments
+@brief Parsing command-line arguments
 
 If you would like to pass command line arguments to your Player client
 programs you can use the getopt feature provided by unistd.h.
@@ -50,4 +43,3 @@ Where [options] can be:
 For the complete code see examples/libplayerc++/args.h
 
 */
-
