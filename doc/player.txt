@@ -1,5 +1,5 @@
 /* Player documentation file - parsed by Doxygen for the user
- * manual 
+ * manual
  * $Id$
 */
 
@@ -19,7 +19,7 @@ released under the terms of the GNU Lesser General Public License v2.1.
 
 */
 
-/** 
+/**
 @page help Getting Help
 
 If you're having problems and you can't find what you need in this manual,
@@ -47,7 +47,7 @@ reply to you. <b>Remember that these mails go to hundreds of people</b>, so
 please be polite and give as much information as you can in your
 email.
 
-For more tips and hints on getting help, look <a 
+For more tips and hints on getting help, look <a
 href="http://playerstage.sourceforge.net/index.php?src=faq#reporting_bugs">here</a>.
 
 */
@@ -69,7 +69,7 @@ from <a href="http://sourceforge.net/project/showfiles.php?group_id=42445">Sourc
 
 <li>`cd' into Player's source directory:<br>
      <tt>$ cd player-\<version\></tt>
- 
+
 <li>To configure Player with default settings:<br>
 <tt>$ ./configure</tt><br>
 
@@ -78,7 +78,7 @@ from <a href="http://sourceforge.net/project/showfiles.php?group_id=42445">Sourc
 
 <li>Install Player. By default, Player will be installed in
 <tt>/usr/local</tt> so you need to become root for this step. Remember
-to return to your normal user ID afterwards. <br> 
+to return to your normal user ID afterwards. <br>
 <tt>$ make install</tt>
 
 </ol>
@@ -106,12 +106,6 @@ because you don't have root access:
 */
 
 /**
-@page start Quick start
-
-@todo Write a quick start guide
-*/
-
-/** 
 @defgroup libplayercore libplayercore
 
 \section synopsis Synopsis
@@ -125,8 +119,8 @@ The primary components of libplayercore are:
   - @ref interfaces : The syntax and semantics of all the messages for each
     Player interface.
   - @ref ConfigFile : Configuration file parsing
-  - @ref Message : 
-  - @ref MessageQueue : 
+  - @ref Message :
+  - @ref MessageQueue :
   - @ref Driver :
   - @ref Device :
 
@@ -141,7 +135,7 @@ Linux):
 
 */
 
-/** 
+/**
 @defgroup libplayererror libplayererror
 
 This C library provides error-reporting and debug output facilities.

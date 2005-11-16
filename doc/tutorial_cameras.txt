@@ -2,5 +2,5 @@
 @defgroup tutorial_cameras Using cameras
 @brief Configuring and accessing cameras
 
-@todo Write this
+@include camera.cc
 */
