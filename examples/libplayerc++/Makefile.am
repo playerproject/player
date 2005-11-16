@@ -12,23 +12,29 @@ PLAYERCC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
 
 AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
 
-bin_PROGRAMS =
+noinst_PROGRAMS =
+
 if INCLUDE_PLAYERCC
-  bin_PROGRAMS += example0 \
-                  grip \
-                  ptz \
-                  laserobstacleavoid \
-                  randomwalk \
-                  sonarobstacleavoid
+  noinst_PROGRAMS += camera \
+                     example0 \
+                     grip \
+                     ptz \
+                     laserobstacleavoid \
+                     randomwalk \
+                     sonarobstacleavoid
 endif
 
 if INCLUDE_PLAYERCC_BOOST
-  bin_PROGRAMS += example1 example3 goto
+  noinst_PROGRAMS += example1 example3 goto
 endif
 
 if INCLUDE_BOOST_SIGNALS
-  bin_PROGRAMS += example2
+  noinst_PROGRAMS += example2
 endif
+
+camera_SOURCES = camera.cc
+camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+camera_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example0_SOURCES = example0.cc
 example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++

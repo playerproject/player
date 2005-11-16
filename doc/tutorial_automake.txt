@@ -1,0 +1,6 @@
+/** @ingroup tutorials
+@defgroup tutorial_automake Using Player and Automake
+@brief A brief overview of how Automake works
+
+@include camera.cc
+*/

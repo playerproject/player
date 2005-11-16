@@ -427,8 +427,6 @@ AC_OUTPUT(Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile
           client_libs/Makefile
-dnl          client_libs/c/Makefile
-dnl          client_libs/c/playercclient.pc
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
           client_libs/libplayerc++/test/Makefile
@@ -443,8 +441,8 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
+	  examples/libplayerc/Makefile
           examples/libplayerc++/Makefile
-dnl          examples/libplayerc/Makefile
           utils/Makefile
           utils/playercam/Makefile
           utils/playerwritemap/Makefile
