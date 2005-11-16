@@ -35,9 +35,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_laserbarcode laserbarcode
+/** @defgroup driver_laserbarcode laserbarcode
+ * @brief Laser barcode detector
 
 The laser barcode detector searches for specially constructed barcodes in
 the laser range finder data.  An example laser barcode is shown below.
@@ -57,8 +58,8 @@ angular resolution of 0.5 deg, barcodes can be detected and identified
 at a range of about 2.5m.  With the laser resolution set to  0.25 deg,
 this distance is roughly doubled to about 5m.
 
-See also the @ref player_driver_laserbar and
-@ref player_driver_laservisualbarcode drivers.
+See also the @ref driver_laserbar and
+@ref driver_laservisualbarcode drivers.
 
 @image html beacon.jpg "A sample laser barcode.  This barcode has 8 bits, each of which is 50mm wide."
 
@@ -69,11 +70,11 @@ See also the @ref player_driver_laserbar and
 @par Provides
 
 - This driver provides detected target information through a @ref
-  player_interface_fiducial device.
+  interface_fiducial device.
 
 @par Requires
 
-- This driver finds targets in scans from a @ref player_interface_laser
+- This driver finds targets in scans from a @ref interface_laser
   device.
 
 @par Configuration requests
@@ -114,9 +115,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 */
 /** @} */
 

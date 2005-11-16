@@ -28,9 +28,10 @@
  *   from ACTS, which this device spawns and then talks to.
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_acts acts
+/** @defgroup driver_acts acts
+ * @brief ActivMedia color tracking system
 
 ACTS is a fast color segmentation system written by Paul Rybski and sold
 by <a href=http://www.activrobots.com>ActivMedia</a>.  After training,
@@ -51,7 +52,7 @@ acts driver).
 
 @par Provides
 
-- @ref player_interface_blobfinder
+- @ref interface_blobfinder
 
 @par Requires
 
@@ -129,9 +130,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Brian Gerkey
+@author Brian Gerkey
 
 */
 

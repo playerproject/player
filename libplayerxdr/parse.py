@@ -44,8 +44,8 @@ if __name__ == '__main__':
   print 'Found ' + `len(structs)` + ' struct(s)'
 
   headerfile.write(
-'''/*
- * libplayerxdr
+'''/** @defgroup libplayerxdr libplayerxdr
+ * @brief Player XDR library
  *
  * This library provides functions for translating between player C message
  * structs and their XDR representations.  For each 'struct player_foo',
@@ -64,7 +64,9 @@ if __name__ == '__main__':
  *          otherwise (e.g., the buffer was not large enough).
  *
  * The caller is responsible for allocating enough space to buf.
- */\n\n''')
+ */
+ /** @ingroup libplayerxdr
+ @{ */\n\n''')
   headerfile.write('#ifndef _PLAYERXDR_PACK_H_\n')
   headerfile.write('#define _PLAYERXDR_PACK_H_\n\n')
   headerfile.write('#include <rpc/types.h>\n')
@@ -263,6 +265,7 @@ if __name__ == '__main__':
 
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')
   headerfile.write('#endif\n')
+  headerfile.write('/** @} */\n')
 
   sourcefile.close()
   headerfile.close()

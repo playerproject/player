@@ -26,10 +26,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_cameracompress cameracompress
-
+/** @defgroup driver_cameracompress cameracompress
+ * @brief Image compression
 
 The cameracompress driver accepts data from another camera device,
 compresses it, and makes the compressed data available on a new
@@ -41,12 +41,12 @@ interface.
 
 @par Provides
 
-- Compressed image data is provided via a @ref player_interface_camera
+- Compressed image data is provided via a @ref interface_camera
   device.
 
 @par Requires
 
-- Image data to be compressed is read from a @ref player_interface_camera
+- Image data to be compressed is read from a @ref interface_camera
   device.
 
 @par Configuration requests
@@ -68,9 +68,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Nate Koenig, Andrew Howard
+@author Nate Koenig, Andrew Howard
 
 */
 /** @} */

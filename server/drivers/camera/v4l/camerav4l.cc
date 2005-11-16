@@ -26,10 +26,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_camerav4l camerav4l
-
+/** @defgroup driver_camerav4l camerav4l
+ * @brief Video4Linux camera capture
 
 The camerav4l driver captures images from V4l-compatible cameras.  See
 below for notes on specific camera/frame grabber combinations.
@@ -40,7 +40,7 @@ below for notes on specific camera/frame grabber combinations.
 
 @par Provides
 
-- @ref player_interface_camera
+- @ref interface_camera
 
 @par Requires
 
@@ -54,7 +54,7 @@ below for notes on specific camera/frame grabber combinations.
 
 - port (string)
   - Default: "/dev/video0"
-  - Device to read video data from.
+  - %Device to read video data from.
 
 - source (integer)
   - Default: 3
@@ -124,9 +124,7 @@ vary for other kernel versions.  Also, the binary-only pwcx.o module is needed t
 access frame sizes larger than 160x120; good luck finding this and/or getting
 it to work (the developer spat the dummy and took down his website).
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 /** @} */

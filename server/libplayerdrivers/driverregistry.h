@@ -25,15 +25,22 @@
  */
 
 /** 
-@ingroup player
 @defgroup libplayerdrivers libplayerdrivers
-@{
+@brief Library of standard Player drivers
+
 This library contains all the drivers that were built during the Player
 installation.  The contents will vary from system to system, depending on
 which drivers' prerequisites are satisfied and which options are supplied
 by the user to the configure script.
-
 */
+
+/** @ingroup libplayerdrivers
+@defgroup drivers Drivers
+@brief The drivers themselves
+*/
+
+/** @ingroup libplayerdrivers
+ * @{ */
 
 #ifndef _DRIVERREGISTRY_H
 #define _DRIVERREGISTRY_H

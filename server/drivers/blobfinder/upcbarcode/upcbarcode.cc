@@ -33,9 +33,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_upcbarcode upcbarcode
+/** @defgroup driver_upcbarcode upcbarcode
+ * @brief UPC barcode detection
 
 The upcbarcode driver searches for standard, single-digit UPC barcodes
 in a camera image (a sample barcode is shown below)
@@ -48,14 +49,14 @@ in a camera image (a sample barcode is shown below)
 
 @par Provides
 
-- @ref player_interface_blobfinder : outputs blob information on detected 
+- @ref interface_blobfinder : outputs blob information on detected 
   barcodes
-- @ref player_interface_camera : passes through image data from underlying 
+- @ref interface_camera : passes through image data from underlying 
   camera device (optional)
 
 @par Requires
 
-- @ref player_interface_camera
+- @ref interface_camera
 
 @par Configuration requests
 
@@ -96,9 +97,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 
 */
 

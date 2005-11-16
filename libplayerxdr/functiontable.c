@@ -179,11 +179,7 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_map_data_pack},
   {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_INFO,
     (player_pack_fn_t)player_map_info_pack},
-  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_TILE,
-    (player_pack_fn_t)player_map_data_pack},
-  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_DATA_VECTOR,
-    (player_pack_fn_t)player_map_data_vector_pack},
-  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_MAP_DATA_VECTOR,
+  {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_VECTOR,
     (player_pack_fn_t)player_map_data_vector_pack},
 
   /* planner messages */
@@ -247,8 +243,6 @@ static playerxdr_function_t init_ftable[] =
   /* ptz messages */
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
     (player_pack_fn_t)player_ptz_data_pack},
-  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GEOM_STATE,
-    (player_pack_fn_t)player_ptz_geom_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE,
     (player_pack_fn_t)player_ptz_cmd_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GEOM,

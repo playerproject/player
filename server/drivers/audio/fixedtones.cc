@@ -21,9 +21,9 @@
  *
  */
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_fixedtones fixedtones
+/** @defgroup driver_fixedtones fixedtones (deprecated)
 
 The fixedtones driver provides access to sound hardware, via the
 Linux OSS interface.  Incoming sound is put through a Discrete Fourier
@@ -31,8 +31,8 @@ Transform, and the frequencies and amplitudes of the five highest peaks
 in the frequency domain are determined.  The fixedtones driver can also
 produce fixed-tone sounds of given frequency, amplitude, and duration.
 
-This driver is not widely used and may not function properly.  You might
-want to try the @ref player_driver_acoustics driver instead.
+@deprecated This driver is not widely used and may not function properly;
+you might want to try the @ref driver_acoustics driver instead.
 
 @par Compile-time dependencies
 
@@ -40,7 +40,7 @@ want to try the @ref player_driver_acoustics driver instead.
 
 @par Provides
 
-- @ref player_interface_audio
+- @ref interface_audio
 
 @par Requires
 
@@ -54,9 +54,7 @@ want to try the @ref player_driver_acoustics driver instead.
 
 - none
 
-@par Authors
-
-- Esben Ostergaard
+@author Esben Ostergaard
 
 */
 

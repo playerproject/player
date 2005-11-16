@@ -36,9 +36,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_laservisualbarcode laservisualbarcode
+/** @defgroup driver_laservisualbarcode laservisualbarcode
+ * @brief Color laser/visual barcode detector
 
 The laser visual barcode detector uses both searches for fiducials that
 are both retro-reflective and color-coded.  Fiducials can be either planar
@@ -59,11 +60,11 @@ camera is used to determine its identity.
 The range at which fiducials can be both detected and identified
 depends on a number of factors, including the size of the fiducial and
 the angular resolution of the laser.  Generally speaking, however,
-this detector has better range than the @ref player_driver_laserbarcode
+this detector has better range than the @ref driver_laserbarcode
 detector, but produces fewer observations.
 
-See also the @ref player_driver_laserbar and @ref
-player_driver_laserbarcode drivers.
+See also the @ref driver_laserbar and @ref
+driver_laserbarcode drivers.
 
 @image html laservisualbeacon.jpg "A sample laser visual barcode."
 
@@ -74,13 +75,13 @@ player_driver_laserbarcode drivers.
 @par Provides
 
 - This driver provides detected target information through a @ref
-  player_interface_fiducial device.
+  interface_fiducial device.
 
 @par Requires
 
-- @ref player_interface_laser
-- @ref player_interface_ptz
-- @ref player_interface_blobfinder
+- @ref interface_laser
+- @ref interface_ptz
+- @ref interface_blobfinder
 
 @par Configuration requests
 
@@ -118,9 +119,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 */
 /** @} */
 

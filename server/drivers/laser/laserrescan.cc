@@ -31,12 +31,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_laserescan laserescan
+/** @defgroup driver_laserrescan laserrescan
+ * @brief Laser rescanner
 
-
-The lasercspace driver processes a laser scan to create a virtual scan 
+The laserrescan driver processes a laser scan to create a virtual scan 
 configuration. Existing scans are interpolated.
 
 The driver was created for the purpose of using pmap with non-sick scanners
@@ -47,11 +47,11 @@ The driver was created for the purpose of using pmap with non-sick scanners
 
 @par Provides
 
-- @ref player_interface_laser : output of the rescan
+- @ref interface_laser : output of the rescan
 
 @par Requires
 
-- @ref player_interface_laser : raw laser data from which to interpolate
+- @ref interface_laser : raw laser data from which to interpolate
 
 @par Configuration requests
 
@@ -85,9 +85,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Toby Collett
+@author Toby Collett
 
 */
 /** @} */

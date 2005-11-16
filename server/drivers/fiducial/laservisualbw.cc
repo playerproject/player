@@ -36,9 +36,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
-/** @defgroup player_driver_laservisualbw laservisualbw
+/** @defgroup driver_laservisualbw laservisualbw
+ * @brief Black & white laser/visual barcode detector
 
 Parses a laser scan to find the retro-reflective patches (lines or
 circles), then points the camera at the patch, zooms in, and attempts
@@ -52,13 +53,13 @@ circular patches.
 @par Provides
 
 - This driver provides detected target information through a @ref
-  player_interface_fiducial device.
+  interface_fiducial device.
 
 @par Requires
 
-- @ref player_interface_laser
-- @ref player_interface_ptz
-- @ref player_interface_camera
+- @ref interface_laser
+- @ref interface_ptz
+- @ref interface_camera
 
 @par Configuration requests
 
@@ -106,9 +107,7 @@ driver
 )
 @endverbatim
 
-@par Authors
-
-Andrew Howard
+@author Andrew Howard
 */
 /** @} */
 
