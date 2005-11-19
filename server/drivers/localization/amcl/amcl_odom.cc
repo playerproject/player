@@ -225,14 +225,21 @@ bool AMCLOdom::UpdateAction(pf_t *pf, AMCLSensorData *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // The action model function (static method)
-pf_vector_t AMCLOdom::ActionModel(AMCLOdom *self, pf_vector_t pose)
+void 
+AMCLOdom::ActionModel(AMCLOdom *self, pf_sample_set_t* set)
 {
-  pf_vector_t z, npose;
-  
-  z = pf_pdf_gaussian_sample(self->action_pdf);
-  npose = pf_vector_coord_add(z, pose);
-    
-  return npose; 
+  int i;
+  pf_vector_t z;
+  pf_sample_t *sample;
+
+  // Compute the new sample poses
+  for (i = 0; i < set->sample_count; i++)
+  {
+    sample = set->samples + i;
+    z = pf_pdf_gaussian_sample(self->action_pdf);
+    sample->pose = pf_vector_coord_add(z, sample->pose);
+    sample->weight = 1.0 / set->sample_count;
+  }
 }
 
 

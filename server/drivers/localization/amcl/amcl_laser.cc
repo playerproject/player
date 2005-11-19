@@ -353,63 +353,78 @@ bool AMCLLaser::UpdateSensor(pf_t *pf, AMCLSensorData *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Determine the probability for the given pose
-double AMCLLaser::SensorModel(AMCLLaserData *data, pf_vector_t pose)
+double AMCLLaser::SensorModel(AMCLLaserData *data, pf_sample_set_t* set)
 {
   AMCLLaser *self;
-  int i, step;
+  int i, j, step;
   double z, c, pz;
   double p;
   double map_range;
   double obs_range, obs_bearing;
+  double total_weight;
+  pf_sample_t *sample;
+  pf_vector_t pose;
   
   self = (AMCLLaser*) data->sensor;
 
-  // Take account of the laser pose relative to the robot
-  pose = pf_vector_coord_add(self->laser_pose, pose);
-
-  p = 1.0;
-
-  step = (data->range_count - 1) / (self->max_beams - 1);
-  for (i = 0; i < data->range_count; i += step)
+  total_weight = 0.0;
+  
+  // Compute the sample weights
+  for (j = 0; j < set->sample_count; j++)
   {
-    obs_range = data->ranges[i][0];
-    obs_bearing = data->ranges[i][1];
+    sample = set->samples + j;
+    pose = sample->pose;
 
-    // Compute the range according to the map
-    map_range = map_calc_range(self->map, pose.v[0], pose.v[1],
-                               pose.v[2] + obs_bearing, data->range_max + 1.0);
+    // Take account of the laser pose relative to the robot
+    pose = pf_vector_coord_add(self->laser_pose, pose);
 
-    if (obs_range >= data->range_max && map_range >= data->range_max)
+    p = 1.0;
+
+    step = (data->range_count - 1) / (self->max_beams - 1);
+    for (i = 0; i < data->range_count; i += step)
     {
-      pz = 1.0;
-    }
-    else
-    {
-      // TODO: proper sensor model (using Kolmagorov?)
-      // Simple gaussian model
-      c = self->range_var;
-      z = obs_range - map_range;
-      pz = self->range_bad + (1 - self->range_bad) * exp(-(z * z) / (2 * c * c));
+      obs_range = data->ranges[i][0];
+      obs_bearing = data->ranges[i][1];
+
+      // Compute the range according to the map
+      map_range = map_calc_range(self->map, pose.v[0], pose.v[1],
+                                 pose.v[2] + obs_bearing, data->range_max + 1.0);
+
+      if (obs_range >= data->range_max && map_range >= data->range_max)
+      {
+        pz = 1.0;
+      }
+      else
+      {
+        // TODO: proper sensor model (using Kolmagorov?)
+        // Simple gaussian model
+        c = self->range_var;
+        z = obs_range - map_range;
+        pz = self->range_bad + (1 - self->range_bad) * exp(-(z * z) / (2 * c * c));
+      }
+
+      /*
+         if (obs->range >= 8.0 && map_range >= 8.0)
+         p *= 1.0;
+         else if (obs->range >= 8.0 && map_range < 8.0)
+         p *= self->range_bad;
+         else if (obs->range < 8.0 && map_range >= 8.0)
+         p *= self->range_bad;
+         else
+         p *= laser_sensor_prob(self, obs->range, map_range);
+       */
+
+      p *= pz;
     }
 
-    /*
-    if (obs->range >= 8.0 && map_range >= 8.0)
-      p *= 1.0;
-    else if (obs->range >= 8.0 && map_range < 8.0)
-      p *= self->range_bad;
-    else if (obs->range < 8.0 && map_range >= 8.0)
-      p *= self->range_bad;
-    else
-      p *= laser_sensor_prob(self, obs->range, map_range);
-    */
-    
-    p *= pz;
+    //printf("%e\n", p);
+    //assert(p >= 0);
+
+    sample->weight *= p;
+    total_weight += sample->weight;
   }
 
-  //printf("%e\n", p);
-  //assert(p >= 0);
-  
-  return p;
+  return(total_weight);
 }
 
 

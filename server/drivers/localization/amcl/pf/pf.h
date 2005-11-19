@@ -19,6 +19,7 @@ extern "C" {
 // Forward declarations
 struct _pf_t;
 struct _rtk_fig_t;
+struct _pf_sample_set_t;
 
 // Function prototype for the initialization model; generates a sample pose from
 // an appropriate distribution.
@@ -26,11 +27,13 @@ typedef pf_vector_t (*pf_init_model_fn_t) (void *init_data);
 
 // Function prototype for the action model; generates a sample pose from
 // an appropriate distribution
-typedef pf_vector_t (*pf_action_model_fn_t) (void *action_data, pf_vector_t pose);
+typedef void (*pf_action_model_fn_t) (void *action_data, 
+                                      struct _pf_sample_set_t* set);
 
 // Function prototype for the sensor model; determines the probability
-// for the given sample pose.
-typedef double (*pf_sensor_model_fn_t) (void *sensor_data, pf_vector_t pose);
+// for the given set of sample poses.
+typedef double (*pf_sensor_model_fn_t) (void *sensor_data, 
+                                        struct _pf_sample_set_t* set);
 
 
 // Information for a single sample
@@ -65,7 +68,7 @@ typedef struct
 
 
 // Information for a set of samples
-typedef struct
+typedef struct _pf_sample_set_t
 {
   // The samples
   int sample_count;

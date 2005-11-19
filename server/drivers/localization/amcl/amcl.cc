@@ -510,6 +510,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   // Initial hypothesis list
   this->hyp_count = 0;
+  pthread_mutex_init(&this->best_hyp_lock,NULL);
 
 #ifdef INCLUDE_RTKGUI
   // Enable debug gui
@@ -537,6 +538,7 @@ AdaptiveMCL::~AdaptiveMCL(void)
     delete this->sensors[i];
   }
   this->sensor_count = 0;
+  pthread_mutex_destroy(&this->best_hyp_lock);
 
   return;
 }
@@ -615,6 +617,7 @@ void AdaptiveMCL::Update(void)
 {
   int i;
   AMCLSensorData *data;
+  pf_vector_t pose, delta;
 
   assert(this->action_sensor >= 0 && this->action_sensor < this->sensor_count);
 
@@ -626,7 +629,19 @@ void AdaptiveMCL::Update(void)
     {
       this->Push(data);
       if(this->sensors[i]->is_action)
-        break;
+      {
+        if (this->pf_init)
+        {
+          // HACK: Assume that the action sensor is odometry
+          pose = ((AMCLOdomData*)data)->pose;
+
+          // Compute change in pose
+          delta = pf_vector_coord_sub(pose, this->pf_odom_pose);
+
+          // Publish new pose estimate
+          this->PutDataPosition(delta);
+        }
+      }
     }
   }
 
@@ -880,8 +895,8 @@ bool AdaptiveMCL::UpdateFilter(void)
   // If the robot has moved, update the filter
   else if (this->pf_init && update)
   {
-    printf("pose\n");
-    pf_vector_fprintf(pose, stdout, "%.3f");
+    //printf("pose\n");
+    //pf_vector_fprintf(pose, stdout, "%.3f");
 
     // HACK
     // Modify the delta in the action data so the filter gets
@@ -893,7 +908,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     delete data; data = NULL;
 
     // Pose at last filter update
-    this->pf_odom_pose = pose;
+    //this->pf_odom_pose = pose;
   }
   else
   {
@@ -909,7 +924,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     while (1)
     {
       data = this->Peek();
-      if ((data == NULL) || (data->sensor->is_action))
+      if ((data == NULL ) || (data->sensor->is_action))
       {
         // HACK: Discard action data until we've processed at least one sensor reading
         if(!processed_first_sensor)
@@ -934,6 +949,7 @@ bool AdaptiveMCL::UpdateFilter(void)
       {
         data->sensor->UpdateSensor(this->pf, data);
         processed_first_sensor = true;
+        this->pf_odom_pose = pose;
       }
 
 #ifdef INCLUDE_RTKGUI
@@ -950,6 +966,8 @@ bool AdaptiveMCL::UpdateFilter(void)
     pf_update_resample(this->pf);
 
     // Read out the current hypotheses
+    double max_weight = 0.0;
+    pf_vector_t max_weight_pose;
     this->hyp_count = 0;
     for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
     {
@@ -962,6 +980,19 @@ bool AdaptiveMCL::UpdateFilter(void)
       hyp->weight = weight;
       hyp->pf_pose_mean = pose_mean;
       hyp->pf_pose_cov = pose_cov;
+
+      if(hyp->weight > max_weight)
+      {
+        max_weight = hyp->weight;
+        max_weight_pose = hyp->pf_pose_mean;
+      }
+    }
+
+    if(max_weight > 0.0)
+    {
+      pthread_mutex_lock(&this->best_hyp_lock);
+      this->best_hyp = max_weight_pose;
+      pthread_mutex_unlock(&this->best_hyp_lock);
     }
 
 #ifdef INCLUDE_RTKGUI
@@ -972,7 +1003,7 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // Encode data to send to server
     this->PutDataLocalize(ts);
-    this->PutDataPosition(ts, delta);
+    //this->PutDataPosition(ts, delta);
 
     return true;
   }
@@ -991,9 +1022,11 @@ bool AdaptiveMCL::UpdateFilter(void)
       delete data; data = NULL;
     }
 
+#if 0
     // Encode data to send to server; only the position interface
     // gets updates every cycle
     this->PutDataPosition(ts, delta);
+#endif
 
     return false;
   }
@@ -1082,51 +1115,24 @@ void AdaptiveMCL::PutDataLocalize(double time)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the position interface
-void AdaptiveMCL::PutDataPosition(double time, pf_vector_t delta)
+void AdaptiveMCL::PutDataPosition(pf_vector_t delta)
 {
-  int i;
-  amcl_hyp_t *hyp;
   pf_vector_t pose;
-  pf_matrix_t pose_cov;
   player_position2d_data_t data;
-  double max_weight;
 
   memset(&data,0,sizeof(data));
 
-  max_weight = 0.0;
+  // Get the current estimate
+  pthread_mutex_lock(&this->best_hyp_lock);
+  pose = this->best_hyp;
+  pthread_mutex_unlock(&this->best_hyp_lock);
 
-  // Encode the hypotheses
-  for (i = 0; i < this->hyp_count; i++)
-  {
-    hyp = this->hyps + i;
+  // Add the accumulated odometric change
+  pose = pf_vector_coord_add(delta, pose);
 
-    // Get the current estimate
-    pose = hyp->pf_pose_mean;
-    pose_cov = hyp->pf_pose_cov;
-
-    // Add the accumulated odometric change
-    pose = pf_vector_coord_add(delta, pose);
-
-    // Check for bad values
-    if (!pf_vector_finite(pose))
-    {
-      pf_vector_fprintf(pose, stderr, "%e");
-      assert(0);
-    }
-    if (!pf_matrix_finite(pose_cov))
-    {
-      pf_matrix_fprintf(pose_cov, stderr, "%e");
-      assert(0);
-    }
-
-    if (hyp->weight > max_weight)
-    {
-      max_weight = hyp->weight;
-      data.pos.px = pose.v[0];
-      data.pos.py = pose.v[1];
-      data.pos.pa = pose.v[2];
-    }
-  }
+  data.pos.px = pose.v[0];
+  data.pos.py = pose.v[1];
+  data.pos.pa = pose.v[2];
 
   // Push data out
   this->Publish(this->position_addr, NULL,
