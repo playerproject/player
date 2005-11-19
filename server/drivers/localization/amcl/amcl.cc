@@ -830,7 +830,10 @@ bool AdaptiveMCL::UpdateFilter(void)
   if (data == NULL)
     return false;
   if (!data->sensor->is_action)
+  {
+    delete data;
     return false;
+  }
 
   // Use the action timestamp
   ts = data->time;
@@ -898,6 +901,7 @@ bool AdaptiveMCL::UpdateFilter(void)
     delete data; data = NULL;
   }
 
+  bool processed_first_sensor = false;
   // If the robot has moved, update the filter
   if (update)
   {
@@ -905,15 +909,32 @@ bool AdaptiveMCL::UpdateFilter(void)
     while (1)
     {
       data = this->Peek();
-      if (data == NULL)
-        break;
-      if (data->sensor->is_action)
-        break;
+      if ((data == NULL) || (data->sensor->is_action))
+      {
+        // HACK: Discard action data until we've processed at least one sensor reading
+        if(!processed_first_sensor)
+        {
+          if(data)
+          {
+            data = this->Pop();
+            assert(data);
+            delete data;
+          }
+          continue;
+        }
+        else
+          break;
+      }
       data = this->Pop();
       assert(data);
 
       // Use the data to update the filter
-      data->sensor->UpdateSensor(this->pf, data);
+      // HACK: only use the first sensor reading
+      if(!processed_first_sensor)
+      {
+        data->sensor->UpdateSensor(this->pf, data);
+        processed_first_sensor = true;
+      }
 
 #ifdef INCLUDE_RTKGUI
       // Draw the current sensor data
