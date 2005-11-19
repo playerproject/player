@@ -70,7 +70,7 @@ class AMCLOdom : public AMCLSensor
   public: virtual bool UpdateAction(pf_t *pf, AMCLSensorData *data);
 
   // The action model callback (static method)
-  public: static pf_vector_t ActionModel(AMCLOdom *self, pf_vector_t pose);
+  public: static void ActionModel(AMCLOdom *self, pf_sample_set_t* set);
   
   // Device info
   private: player_devaddr_t odom_addr;

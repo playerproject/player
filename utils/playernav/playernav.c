@@ -190,7 +190,6 @@ player_read_func(gpointer* arg)
       robot_pose.py = gui_data->planners[i]->py;
       robot_pose.pa = gui_data->planners[i]->pa;
 
-      /*
       // is the robot localized within the map?
       onmap = (robot_pose.px >=
                gui_data->mapdev->origin[0]) &&
@@ -206,7 +205,6 @@ player_read_func(gpointer* arg)
       // if it's off the map, put it in the middle
       if(!onmap)
         robot_pose.px = robot_pose.py = 0.0;
-        */
 
       // don't draw the new pose if the user is in the middle of moving the
       // robot

@@ -69,7 +69,8 @@ class AMCLLaser : public AMCLSensor
   public: virtual bool UpdateSensor(pf_t *pf, AMCLSensorData *data);
 
   // Determine the probability for the given pose
-  private: static double SensorModel(AMCLLaserData *data, pf_vector_t pose);
+  private: static double SensorModel(AMCLLaserData *data, 
+                                     pf_sample_set_t* set);
 
   // retrieve the map
   private: int SetupMap(void);

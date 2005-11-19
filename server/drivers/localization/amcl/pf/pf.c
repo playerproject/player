@@ -164,19 +164,11 @@ void pf_init_model(pf_t *pf, pf_init_model_fn_t init_fn, void *init_data)
 // Update the filter with some new action
 void pf_update_action(pf_t *pf, pf_action_model_fn_t action_fn, void *action_data)
 {
-  int i;
   pf_sample_set_t *set;
-  pf_sample_t *sample;
 
   set = pf->sets + pf->current_set;
 
-  // Compute the new sample poses
-  for (i = 0; i < set->sample_count; i++)
-  {
-    sample = set->samples + i;
-    sample->pose = (*action_fn) (action_data, sample->pose);
-    sample->weight = 1.0 / set->sample_count;
-  }
+  (*action_fn) (action_data, set);
   
   return;
 }
@@ -191,15 +183,9 @@ void pf_update_sensor(pf_t *pf, pf_sensor_model_fn_t sensor_fn, void *sensor_dat
   double total;
 
   set = pf->sets + pf->current_set;
-  total = 0;
 
   // Compute the sample weights
-  for (i = 0; i < set->sample_count; i++)
-  {
-    sample = set->samples + i;
-    sample->weight *= (*sensor_fn) (sensor_data, sample->pose);
-    total += sample->weight;
-  }
+  total = (*sensor_fn) (sensor_data, set);
   
   if (total > 0.0)
   {

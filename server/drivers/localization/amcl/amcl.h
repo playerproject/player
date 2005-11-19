@@ -36,6 +36,8 @@
 #ifndef AMCL_H
 #define AMCL_H
 
+#include <pthread.h>
+
 #ifdef INCLUDE_RTKGUI
 #include "rtk.h"
 #endif
@@ -121,7 +123,7 @@ class AdaptiveMCL : public Driver
   private: void PutDataLocalize(double time);
 
   // Put new position data
-  private: void PutDataPosition(double time, pf_vector_t delta);
+  private: void PutDataPosition(pf_vector_t delta);
 
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
@@ -167,6 +169,8 @@ class AdaptiveMCL : public Driver
   // Current particle filter pose estimates
   private: int hyp_count;
   private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
+  private: pf_vector_t best_hyp;
+  private: pthread_mutex_t best_hyp_lock;
 
   // Has the filter been initialized?
   private: bool pf_init;
