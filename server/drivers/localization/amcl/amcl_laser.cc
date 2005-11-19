@@ -62,12 +62,7 @@ int AMCLLaser::Load(ConfigFile* cf, int section)
   cf->ReadDeviceAddr(&(this->map_addr), section, "requires",
                      PLAYER_MAP_CODE, -1, "laser");
   
-  this->laser_pose.v[0] = cf->ReadTupleLength(section, "laser_pose", 0, 0);
-  this->laser_pose.v[1] = cf->ReadTupleLength(section, "laser_pose", 1, 0);
-  this->laser_pose.v[2] = cf->ReadTupleAngle(section, "laser_pose", 2, 0);
-
   this->max_beams = cf->ReadInt(section, "laser_max_beams", 6);
-  this->range_max = cf->ReadLength(section, "laser_range_max", 8.192);
   this->range_var = cf->ReadLength(section, "laser_range_var", 0.10);
   this->range_bad = cf->ReadFloat(section, "laser_range_bad", 0.10);
 
@@ -323,6 +318,7 @@ AMCLSensorData *AMCLLaser::GetData(void)
   ndata->time = hdr->timestamp;
   
   ndata->range_count = data->ranges_count;
+  ndata->range_max = data->max_range;
   assert((size_t) ndata->range_count < sizeof(ndata->ranges) / sizeof(ndata->ranges[0]));
 
   // Read the range data
@@ -381,9 +377,9 @@ double AMCLLaser::SensorModel(AMCLLaserData *data, pf_vector_t pose)
 
     // Compute the range according to the map
     map_range = map_calc_range(self->map, pose.v[0], pose.v[1],
-                               pose.v[2] + obs_bearing, self->range_max + 1.0);
+                               pose.v[2] + obs_bearing, data->range_max + 1.0);
 
-    if (obs_range >= self->range_max && map_range >= self->range_max)
+    if (obs_range >= data->range_max && map_range >= data->range_max)
     {
       pz = 1.0;
     }

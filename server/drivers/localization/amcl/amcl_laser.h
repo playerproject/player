@@ -38,6 +38,7 @@ class AMCLLaserData : public AMCLSensorData
 {
   // Laser range data (range, bearing tuples)
   public: int range_count;
+  public: double range_max;
   public: double ranges[PLAYER_LASER_MAX_SAMPLES][2];
 };
 
@@ -90,9 +91,6 @@ class AMCLLaser : public AMCLSensor
   // Max beams to consider
   private: int max_beams;
 
-  // Max valid laser range
-  private: double range_max;
-  
   // Laser range variance
   private: double range_var;
 

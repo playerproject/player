@@ -157,7 +157,7 @@ AMCLSensorData *AMCLOdom::GetData(void)
   pose.v[2] = data->pos.pa;
 
   //printf("getdata %.3f %.3f %.3f\n", 
-  //	 pose.v[0], pose.v[1], pose.v[2]);
+  	 //pose.v[0], pose.v[1], pose.v[2]);
 
   ndata = new AMCLOdomData;
 

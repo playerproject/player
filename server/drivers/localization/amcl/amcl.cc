@@ -877,8 +877,8 @@ bool AdaptiveMCL::UpdateFilter(void)
   // If the robot has moved, update the filter
   else if (this->pf_init && update)
   {
-    //printf("pose\n");
-    //pf_vector_fprintf(pose, stdout, "%.3f");
+    printf("pose\n");
+    pf_vector_fprintf(pose, stdout, "%.3f");
 
     // HACK
     // Modify the delta in the action data so the filter gets
