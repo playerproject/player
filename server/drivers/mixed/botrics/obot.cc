@@ -421,7 +421,12 @@ Obot::Main()
       rvel_mps = rvel * OBOT_MPS_PER_TICK;
       data.vel.px = (lvel_mps + rvel_mps) / 2.0;
       data.vel.pa = (rvel_mps-lvel_mps) / OBOT_AXLE_LENGTH;
+      data.stall = 0;
   
+      //printf("publishing: %.3f %.3f %.3f\n",
+             //data.pos.px,
+             //data.pos.py,
+             //RTOD(data.pos.pa));
       this->Publish(this->position_addr, NULL, 
                     PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
                     (void*)&data,sizeof(data),NULL);
@@ -900,7 +905,7 @@ Obot::UpdateOdom(int ltics, int rtics)
   this->pa += a_delta;
   this->pa = NORMALIZE(this->pa);
   
-  //printf("obot: pose: %f,%f,%f\n", this->px,this->py,RTOD(this->pa));
+  //printf("obot: pose: %f,%f,%f\n", this->px,this->py, RTOD(this->pa));
 
   this->last_ltics = ltics;
   this->last_rtics = rtics;

@@ -455,7 +455,6 @@ Wavefront::ProcessCommand(player_planner_cmd_t* cmd)
     this->target_y = new_y;
     this->target_a = new_a;
     printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
-printf("have_map: %d\n", this->have_map);
     this->new_goal = true;
     this->atgoal = false;
   }
@@ -686,23 +685,24 @@ void Wavefront::Main()
     // Did we get a new goal, or is it time to replan?
     if(this->new_goal || replan)
     {
+#if 0
       // Should we get a new map?
       if(this->new_map_available)
       {
         this->new_map_available = false;
 
         if(this->GetMapInfo(true) < 0)
-    PLAYER_WARN("failed to get new map info");
-  else
-  {
+          PLAYER_WARN("failed to get new map info");
+        else
+        {
           if(this->GetMap(true) < 0)
-      PLAYER_WARN("failed to get new map data");
-    else
-    {
-      this->new_map = true;
-      this->have_map = true;
-    }
-  }
+            PLAYER_WARN("failed to get new map data");
+          else
+          {
+            this->new_map = true;
+            this->have_map = true;
+          }
+        }
       }
 
       // We need to recompute the C-space if the map changed, or if the
@@ -731,12 +731,15 @@ void Wavefront::Main()
                (t0.tv_sec + t0.tv_usec/1e6));
         this->new_map = false;
       }
+#endif
+
       // compute costs to the new goal
       plan_update_plan(this->plan, this->target_x, this->target_y);
 
       // compute a path to the goal from the current position
       plan_update_waypoints(this->plan, this->localize_x, this->localize_y);
 
+#if 0
       if(this->plan->waypoint_count == 0)
       {
         // No path.  If we only searched a bounding box last time, grow the
@@ -770,6 +773,7 @@ void Wavefront::Main()
                                 this->localize_y);
         }
       }
+#endif
 
       if(this->plan->waypoint_count == 0)
       {
@@ -804,13 +808,13 @@ void Wavefront::Main()
       {
         for(int i=0;i<this->plan->waypoint_count;i++)
         {
-    double wx, wy;
-    plan_convert_waypoint(this->plan,
-                          this->plan->waypoints[i],
-        &wx, &wy);
-    this->waypoints[i][0] = wx;
-    this->waypoints[i][1] = wy;
-  }
+          double wx, wy;
+          plan_convert_waypoint(this->plan,
+                                this->plan->waypoints[i],
+                                &wx, &wy);
+          this->waypoints[i][0] = wx;
+          this->waypoints[i][1] = wy;
+        }
 
         this->curr_waypoint = 0;
         this->new_goal = true;
@@ -1142,6 +1146,8 @@ Wavefront::SetupMap()
   // Now get the map data, possibly in separate tiles.
   if(this->GetMap(false) < 0)
     return(-1);
+
+  plan_update_cspace(this->plan,this->cspace_fname);
 
   this->have_map = true;
   this->new_map = true;
