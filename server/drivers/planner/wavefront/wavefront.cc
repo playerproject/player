@@ -283,6 +283,9 @@ class Wavefront : public Driver
     bool new_map;
     // Is there a new map available (which we haven't retrieved yet)?
     bool new_map_available;
+    // Do we consider inserting a rotational waypoint between every pair of
+    // waypoints, or just before the first one?
+    bool always_insert_rotational_waypoints;
 
     // methods for internal use
     int SetupLocalize();
@@ -371,6 +374,8 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->replan_min_time = cf->ReadFloat(section,"replan_min_time",2.0);
   this->request_map = cf->ReadInt(section,"request_map",1);
   this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
+  this->always_insert_rotational_waypoints = 
+          cf->ReadInt(section, "add_rotational_waypoints", 1);
 }
 
 
@@ -619,6 +624,8 @@ Wavefront::SetWaypoint(double wx, double wy, double wa)
   LocalizeToPosition(&wx_odom, &wy_odom, &wa_odom, wx, wy, wa);
 
   // hand down waypoint
+  //printf("sending waypoint: %.3f %.3f %.3f\n",
+         //wx_odom, wy_odom, RTOD(wa_odom));
   PutPositionCommand(wx_odom, wy_odom, wa_odom,1);
 
   // cache this waypoint, odometric coords
@@ -884,25 +891,31 @@ void Wavefront::Main()
           continue;
         }
         // get next waypoint
-  this->waypoint_x = this->waypoints[this->curr_waypoint][0];
-  this->waypoint_y = this->waypoints[this->curr_waypoint][1];
+        this->waypoint_x = this->waypoints[this->curr_waypoint][0];
+        this->waypoint_y = this->waypoints[this->curr_waypoint][1];
         this->curr_waypoint++;
 
         this->waypoint_a = this->target_a;
-        dist = sqrt((this->waypoint_x - this->localize_x) *
-                    (this->waypoint_x - this->localize_x) +
-                    (this->waypoint_y - this->localize_y) *
-                    (this->waypoint_y - this->localize_y));
-        angle = atan2(this->waypoint_y - this->localize_y,
-                      this->waypoint_x - this->localize_x);
-        if((dist > this->dist_eps) &&
-           fabs(this->angle_diff(angle,this->localize_a)) > M_PI/4.0)
+        if(this->always_insert_rotational_waypoints || 
+           (this->curr_waypoint == 2))
         {
-          this->waypoint_x = this->localize_x;
-          this->waypoint_y = this->localize_y;
-          this->waypoint_a = angle;
-          this->curr_waypoint--;
-          rotate_waypoint=true;
+          dist = sqrt((this->waypoint_x - this->localize_x) *
+                      (this->waypoint_x - this->localize_x) +
+                      (this->waypoint_y - this->localize_y) *
+                      (this->waypoint_y - this->localize_y));
+          angle = atan2(this->waypoint_y - this->localize_y,
+                        this->waypoint_x - this->localize_x);
+          if((dist > this->dist_eps) &&
+             fabs(this->angle_diff(angle,this->localize_a)) > M_PI/4.0)
+          {
+            this->waypoint_x = this->localize_x;
+            this->waypoint_y = this->localize_y;
+            this->waypoint_a = angle;
+            this->curr_waypoint--;
+            rotate_waypoint=true;
+          }
+          else
+            rotate_waypoint=false;
         }
         else
           rotate_waypoint=false;
