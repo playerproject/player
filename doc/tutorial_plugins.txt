@@ -2,4 +2,6 @@
 @defgroup tutorial_plugins Using Player plugins
 @brief How to write, compile, and load plugin driver
 
+@todo Write this
+
 */
