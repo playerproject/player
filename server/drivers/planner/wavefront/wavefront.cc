@@ -446,23 +446,27 @@ void
 Wavefront::ProcessCommand(player_planner_cmd_t* cmd)
 {
   double new_x, new_y, new_a;
-  double eps = 1e-3;
+  //double eps = 1e-3;
 
   new_x = cmd->goal.px;
   new_y = cmd->goal.py;
   new_a = cmd->goal.pa;
 
+#if 0
   if((fabs(new_x - this->target_x) > eps) ||
      (fabs(new_y - this->target_y) > eps) ||
      (fabs(this->angle_diff(new_a,this->target_a)) > eps))
   {
+#endif
     this->target_x = new_x;
     this->target_y = new_y;
     this->target_a = new_a;
     printf("new goal: %f, %f, %f\n", target_x, target_y, target_a);
     this->new_goal = true;
     this->atgoal = false;
+#if 0
   }
+#endif
 }
 
 void
