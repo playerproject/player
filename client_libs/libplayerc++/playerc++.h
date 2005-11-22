@@ -1327,6 +1327,9 @@ class MapProxy : public ClientProxy
     /// @todo should this be returned as a player_size_t?
     uint GetHeight() const { return GetVar(mDevice->height); };
 
+    double GetOriginX() const { return GetVar(mDevice->origin[0]); };
+    double GetOriginY() const { return GetVar(mDevice->origin[1]); };
+
     /// Occupancy for each cell (empty = -1, unknown = 0, occupied = +1)
     void GetMap(int8_t* aMap) const
     {
