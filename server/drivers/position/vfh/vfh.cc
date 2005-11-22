@@ -790,6 +790,7 @@ void VFH_Class::Main()
                                  this->speed,
                                  this->turnrate );
       
+#if 0
       // HACK: if we're within twice the distance threshold, 
       // and still going fast, slow down.
 
@@ -802,6 +803,8 @@ void VFH_Class::Main()
         printf("slowing down from %d to %d\n",
                foo, this->speed);
       }
+#endif
+
       PutCommand( this->speed, this->turnrate );
       this->turninginplace = false;
     }
