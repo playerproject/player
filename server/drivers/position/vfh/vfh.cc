@@ -789,6 +789,19 @@ void VFH_Class::Main()
                                  this->dist_eps * 1e3,
                                  this->speed,
                                  this->turnrate );
+      
+      // HACK: if we're within twice the distance threshold, 
+      // and still going fast, slow down.
+
+      if((dist < (this->dist_eps * 1e3 * 3.0)) &&
+         (this->speed > (vfh_Algorithm->GetCurrentMaxSpeed() / 3.0)))
+      {
+        int foo = this->speed;
+        this->speed = 
+                (int)rint(vfh_Algorithm->GetCurrentMaxSpeed() / 3.0);
+        printf("slowing down from %d to %d\n",
+               foo, this->speed);
+      }
       PutCommand( this->speed, this->turnrate );
       this->turninginplace = false;
     }
