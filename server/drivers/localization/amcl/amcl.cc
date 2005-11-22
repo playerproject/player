@@ -926,7 +926,8 @@ bool AdaptiveMCL::UpdateFilter(void)
       data = this->Peek();
       if ((data == NULL ) || (data->sensor->is_action))
       {
-        // HACK: Discard action data until we've processed at least one sensor reading
+        // HACK: Discard action data until we've processed at least one
+        // sensor reading
         if(!processed_first_sensor)
         {
           if(data)
@@ -935,6 +936,9 @@ bool AdaptiveMCL::UpdateFilter(void)
             assert(data);
             delete data;
           }
+          // avoid a busy loop while waiting for a sensor reading to
+          // process
+          usleep(10000);
           continue;
         }
         else
