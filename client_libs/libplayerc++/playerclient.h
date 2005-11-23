@@ -48,11 +48,17 @@
 
 namespace PlayerCc
 {
-/** @addtogroup player_clientlib_cplusplus libplayerc++ */
-/** @{ */
+/** @addtogroup player_clientlib_cplusplus libplayerc++
 
-/** @addtogroup player_clientlib_cplusplus_core Core functionality */
-/** @{ */
+ @{
+
+ */
+
+/** @addtogroup player_clientlib_cplusplus_core Core functionality
+
+ @{
+
+ */
 
 /** The default port number for PlayerClient */
 const int PLAYER_PORTNUM(6665);
@@ -200,8 +206,8 @@ class PlayerClient
     std::string LookupName(int aCode) const;
 };
 
-/** }@ */
-/** }@ */
+/** }@ (core) */
+/** }@ (c++) */
 
 }
 
