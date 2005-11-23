@@ -167,7 +167,7 @@ ALIASES                =
 # For instance, some of the names that are used will be different. The list
 # of all members will be omitted, etc.
 
-OPTIMIZE_OUTPUT_FOR_C  = NO
+OPTIMIZE_OUTPUT_FOR_C  = YES 
 
 # Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java sources
 # only. Doxygen will then generate output that is more tailored for Java.
@@ -392,7 +392,7 @@ WARN_LOGFILE           =
 # with spaces.
 
 #INPUT                  = player.txt install.html migration.html tutorials.html utils.html clients.html plugin_driver.html configfile.html protocol.html ../libplayerxdr/playerxdr.html ../libplayerxdr ../libplayercore/playercore.h ../server/libplayerdrivers ../libplayertcp ../libplayercore ../server/drivers/ ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../client_libs/libplayerc/doc/mainpage.html ../client_libs/libplayerc/doc/libplayerc_py.html ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h
-INPUT                  = player.txt quick_start.txt tutorial_automake.txt tutorial_devices.txt tutorial_config.txt tutorial_runplayer.txt tutorial_plugins.txt tutorial_maps.txt tutorial_cameras.txt tutorial_args.txt install.html ../libplayercore/player.h ../libplayercore/error.h ../libplayercore/configfile.h ../libplayercore/driver.h ../libplayercore/device.h ../libplayercore/message.h ../server/drivers ../libplayertcp/playertcp.h ../libplayerxdr/playerxdr.h ../server/libplayerdrivers/driverregistry.h ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../utils/playerwritemap/playerwritemap.c
+INPUT                  = player.txt quick_start.txt tutorial_automake.txt tutorial_devices.txt tutorial_config.txt tutorial_runplayer.txt tutorial_plugins.txt tutorial_maps.txt tutorial_cameras.txt tutorial_args.txt install.html ../libplayercore/player.h ../libplayercore/error.h ../libplayercore/configfile.h ../libplayercore/driver.h ../libplayercore/device.h ../libplayercore/message.h ../server/drivers ../libplayertcp/playertcp.h ../libplayerxdr/playerxdr.h ../server/libplayerdrivers/driverregistry.h ../utils/playerv/playerv.c ../utils/playernav/playernav.c ../utils/playercam/playercam.c ../utils/playerjoy/playerjoy.cc ../utils/playerprint/playerprint.cc ../utils/playervcr/playervcr.c ../utils/dgps_server/dgps_server.dox ../utils/playerwritemap/playerwritemap.c ../client_libs/libplayerc/playerc.h ../client_libs/libplayerc/playerc.c ../client_libs/libplayerc++/playerclient.h ../client_libs/libplayerc++/playerc++.h ../client_libs/libplayerc++/playerc++.cc ../client_libs/libplayerc++/playererror.h
 # If the value of the INPUT tag contains directories, you can use the
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
 # and *.h) to filter out the source-files in the directories. If left

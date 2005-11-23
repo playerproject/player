@@ -91,7 +91,7 @@ $ g++ -o foo foo.o -lplayerc++ -lm -lboost_signals -lboost_thread
 /** @addtogroup player_clientlib_cplusplus libplayerc++ */
 /** @{ */
 
-/** @defgroup player_clientlib_multi Signals & multithreading
+/** @addtogroup player_clientlib_multi Signals & multithreading
 
 Along with providing access to the basic C functions of @ref player_clientlib_libplayerc
 in a C++ fashion, libplayerc++ also provides additional functionality along
