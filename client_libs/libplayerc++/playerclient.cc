@@ -45,6 +45,7 @@ PlayerClient::PlayerClient(const std::string aHostname, uint aPort) :
   mPort(aPort)
 {
 #ifdef HAVE_BOOST_THREAD
+  mIsStop=true;
   mThread = NULL;
 #endif
   Connect(mHostname, mPort);
@@ -98,6 +99,7 @@ void PlayerClient::StartThread()
 #ifdef HAVE_BOOST_THREAD
   assert(NULL == mThread);
   mThread = new boost::thread(boost::bind(&PlayerClient::RunThread, this));
+  mIsStop = false;
 #else
   throw PlayerError("PlayerClient::StartThread","Thread support not included");
 #endif
