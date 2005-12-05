@@ -237,7 +237,7 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position3d_data_pack},
 
   /* power messages */
-  {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_VOLTAGE,
+  {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
     (player_pack_fn_t)player_power_data_pack},
 
   /* ptz messages */

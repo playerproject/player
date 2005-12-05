@@ -100,8 +100,22 @@ int playerc_power_unsubscribe(playerc_power_t *device)
 void playerc_power_putmsg(playerc_power_t *device, player_msghdr_t *header,
                               player_power_data_t *data, size_t len)
 {
-  device->charge = data->voltage;
-  device->percent = data->percent;
+  device->valid = data->valid;
+  
+  if( device->valid & PLAYER_POWER_MASK_VOLTS )
+    device->charge = data->volts;
+
+  if( device->valid & PLAYER_POWER_MASK_PERCENT )
+    device->percent = data->percent;
+
+  if( device->valid & PLAYER_POWER_MASK_JOULES )
+    device->joules = data->joules;
+
+  if( device->valid & PLAYER_POWER_MASK_WATTS )
+    device->watts = data->watts;
+
+  if( device->valid & PLAYER_POWER_MASK_CHARGING )
+    device->charging = data->charging;
 
   return;
 }
