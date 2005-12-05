@@ -120,7 +120,8 @@ void power_update(power_t *power)
 // Draw the power scan
 void power_draw(power_t *power)
 {
-  char text[64];
+  char text[256];
+  char buf[64];
 
   rtk_fig_show(power->fig, 1);      
   rtk_fig_clear(power->fig);
@@ -129,8 +130,44 @@ void power_draw(power_t *power)
   
   // Draw in the power reading
   rtk_fig_color_rgb32(power->fig, COLOR_POWER);
-  snprintf(text, sizeof(text), "Battery: %4.1fV (%5.1f%% full)", 
-           power->proxy->charge, power->proxy->percent);
+  
+  text[0] = 0;
+  
+  if( power->proxy->valid & PLAYER_POWER_MASK_VOLTS )
+    {
+      snprintf(buf, sizeof(buf), "Voltage: %4.1fV", 
+	       power->proxy->charge );
+      
+      strncat( text, buf, sizeof(text) );
+    }
+
+  if( power->proxy->valid & PLAYER_POWER_MASK_PERCENT )
+    {
+      snprintf(buf, sizeof(buf), "(%5.1f%%)", 
+	       power->proxy->percent);
+      strncat( text, buf, sizeof(text) );
+    }
+  
+  if( power->proxy->valid & PLAYER_POWER_MASK_JOULES )
+    {
+      snprintf(buf, sizeof(buf), " Joules: %4f", 
+	       power->proxy->joules);
+      strncat( text, buf, sizeof(text) );
+    }
+  
+  if( power->proxy->valid & PLAYER_POWER_MASK_WATTS )
+    {
+      snprintf(buf, sizeof(buf), " Watts: %4.1f", 
+	       power->proxy->joules);
+      strncat( text, buf, sizeof(text) );
+    }
+  
+
+  if( power->proxy->valid & PLAYER_POWER_MASK_CHARGING )
+    strncat( text, 
+	     power->proxy->charging ? " CHARGING" : "",
+	     sizeof(text) );
+
   rtk_fig_text(power->fig, -1, +1, 0, text);
 
   return;

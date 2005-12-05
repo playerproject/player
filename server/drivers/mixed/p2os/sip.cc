@@ -101,8 +101,10 @@ void SIP::Fill(player_p2os_data_t* data)
 
   ///////////////////////////////////////////////////////////////
   // power
-  data->power.voltage = this->battery / 1e1;
-  data->power.percent = 1e2 * (data->power.voltage / P2OS_NOMINAL_VOLTAGE);
+  // set the bits that indicate which fields we're using
+  data->power.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
+  data->power.volts = this->battery / 1e1;
+  data->power.percent = 1e2 * (data->power.volts / P2OS_NOMINAL_VOLTAGE);
 
   ///////////////////////////////////////////////////////////////
   // digital I/O

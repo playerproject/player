@@ -430,13 +430,14 @@ Obot::Main()
       this->Publish(this->position_addr, NULL, 
                     PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
                     (void*)&data,sizeof(data),NULL);
-  
-      charge_data.voltage = ((float)volt) / 1e1;
-      charge_data.percent = 1e2 * (charge_data.voltage / 
+      
+      charge_data.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
+      charge_data.volts = ((float)volt) / 1e1;
+      charge_data.percent = 1e2 * (charge_data.volts / 
                                    OBOT_NOMINAL_VOLTAGE);
       this->Publish(this->power_addr, NULL, 
                     PLAYER_MSGTYPE_DATA,
-                    PLAYER_POWER_DATA_VOLTAGE,
+                    PLAYER_POWER_DATA_STATE,
                     (void*)&charge_data, sizeof(player_power_data_t), NULL);
   
       last_publish_time = t;

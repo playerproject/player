@@ -1160,10 +1160,17 @@ typedef struct player_dio_cmd
 
 /** @} */
 
+/* REMOVE ENERGY DEVICE - USE POWER INSTEAD - RTV 2005.12.04 */
+
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
  * @defgroup interface_energy energy
  * @brief Energy storage / consumption
+
+DEPRECATED: THE FUNCTIONALITY OF THE ENERGY DEVICE HAS BEEN FOLDED INTO THE
+POWER DEVICE. YOU SHOULD CONSIDER USING THE POWER DEVICE INSTEAD. NO
+NEW DEVELOPMENT SHOULD BE DONE ON THE ENERGY DEVICE AND IT WILL BE
+REMOVED FROM HERE VERY SOON.
 
 The @p energy interface provides data about energy storage, consumption
 and charging.  This interface accepts no commands.
@@ -3362,25 +3369,69 @@ typedef struct player_position3d_speed_prof_req
  * @defgroup interface_power power
  * @brief Power system
 
-The @p power interface provides access to a robot's power subsystem.
+The @p power interface provides access to a robot's power
+subsystem. Includes the functionality of the old Player @p energy device, which is
+now deprecated.
 */
 
 /** @ingroup interface_power
  * @{ */
 
 /** Data subtype: voltage */
-#define PLAYER_POWER_DATA_VOLTAGE 1
+#define PLAYER_POWER_DATA_STATE 1
+
+/** Request subtype: set charging policy */
+#define PLAYER_POWER_SET_CHARGING_POLICY_REQ 1
+
+/** bit masks for the  player_power_data_t mask field */
+#define PLAYER_POWER_MASK_VOLTS 1
+#define PLAYER_POWER_MASK_WATTS 2
+#define PLAYER_POWER_MASK_JOULES 4
+#define PLAYER_POWER_MASK_PERCENT 8
+#define PLAYER_POWER_MASK_CHARGING 16
 
 /** @brief Data: voltage (@ref PLAYER_POWER_DATA_VOLTAGE)
 
 The @p power interface returns data in this format. */
 typedef struct player_power_data
 {
+  /** Status bits. The driver will set the bits to indicate which fields
+      it is using. Bitwise-and with PLAYER_POWER_MASK_X values to see
+      which fields are being set.*/
+  uint32_t valid;
+  
   /** Battery voltage [V] */
-  float  voltage;
+  float  volts;
   /** Percent of full charge [%] */
   float percent;
+  /** energy stored [J]. */
+  float joules;
+  /** estimated current energy consumption (negative values) or
+      aquisition (positive values) [W]. */
+  float watts;
+  /** charge exchange status: if 1, the device is currently receiving
+      charge from another energy device. If -1 the device is currently
+      providing charge to another energy device. If 0, the device is
+      not exchanging charge with an another device. */
+  int32_t charging;
+
 } player_power_data_t;
+
+
+/** @brief Request/reply: set charging policy
+ *
+ * Send a @ref PLAYER_ENERGY_SET_CHARGING_POLICY_REQ request to change the
+ * charging policy. */
+typedef struct player_power_chargepolicy_config
+{
+  /** uint8_tean controlling recharging. If FALSE, recharging is
+      disabled. Defaults to TRUE */
+  uint8_t enable_input;
+  /** uint8_tean controlling whether others can recharge from this
+      device. If FALSE, charging others is disabled. Defaults to TRUE.*/
+  uint8_t enable_output;
+} player_power_chargepolicy_config_t;
+
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////

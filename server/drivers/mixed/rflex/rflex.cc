@@ -1131,7 +1131,7 @@ RFLEX::Main()
             sizeof(player_bumper_data_t),
             NULL);
   if (power_id.interf)
-    Publish(this->power_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POWER_DATA_VOLTAGE,
+    Publish(this->power_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POWER_DATA_STATE,
             (unsigned char*)&rflex_data.power,
             sizeof(player_power_data_t),
             NULL);
@@ -1325,13 +1325,17 @@ void RFLEX::update_everything(player_rflex_data_t* d)
   //this would get the battery,time, and brake state (if we cared)
   //update system (battery,time, and brake also request joystick data)
   rflex_update_system(rflex_fd,&batt,&brake);
-  d->power.voltage = static_cast<float>(batt)/100.0 + rflex_configs.power_offset;
-  if (d->power.voltage > 24)
+  
+  // set the bits for the fields we're using
+  d->power.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
+  
+  d->power.volts = static_cast<float>(batt)/100.0 + rflex_configs.power_offset;
+  if (d->power.volts > 24)
     d->power.percent = 100;
-  else if (d->power.voltage < 20)
+  else if (d->power.volts < 20)
     d->power.percent = 0;
   else
-    d->power.percent = 100.0*(d->power.voltage-20.0)/4.0;
+    d->power.percent = 100.0*(d->power.volts-20.0)/4.0;
 }
 
 //this is so things don't crash if we don't load a device

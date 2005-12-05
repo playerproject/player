@@ -1003,7 +1003,7 @@ P2OS::PutData(void)
   // put power data
   this->Publish(this->power_id, NULL,
                 PLAYER_MSGTYPE_DATA,
-                PLAYER_POWER_DATA_VOLTAGE,
+                PLAYER_POWER_DATA_STATE,
                 (void*)&(this->p2os_data.power),
                 sizeof(player_power_data_t),
                 NULL);

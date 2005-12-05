@@ -1791,12 +1791,26 @@ typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
-
-  /** Battery charge (volts). */
+  
+  /** status bits. Bitwise-and with PLAYER_POWER_MASK_ values to see
+      which fields are being set by the driver. */
+  int valid;
+  
+  /** Battery charge (Volts). */
   double charge;
 
   /** Battery charge (percent full). */
   double percent;
+
+  /** energy stored (Joules) */
+  double joules;
+
+  /** power currently being used (Watts). Negative numbers indicate
+      charging. */
+  double watts;
+
+  /** charging flag. TRUE if charging, else FALSE */
+  int charging;
 
 } playerc_power_t;
 
