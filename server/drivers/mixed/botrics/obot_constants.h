@@ -33,7 +33,7 @@
 #define OBOT_DEFAULT_PORT "/dev/usb/ttyUSB1"
 
 // might need to define a longer delay to wait for acks
-#define OBOT_DELAY_US 10000
+#define OBOT_DELAY_US 50000
 
 // time between consecutive publishes
 #define OBOT_PUBLISH_INTERVAL 0.1

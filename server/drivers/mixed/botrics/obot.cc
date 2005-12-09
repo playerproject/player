@@ -129,12 +129,12 @@ class Obot : public Driver
     int SendCommand(unsigned char cmd, int val1, int val2);
     int ComputeTickDiff(int from, int to);
     int ChangeMotorState(int state);
+    int OpenTerm();
     int InitRobot();
     int GetBatteryVoltage(int* voltage);
 
-  int last_final_lvel, last_final_rvel;
-
-
+    int last_final_lvel, last_final_rvel;
+    bool sent_new_command;
 
   public:
     int fd; // device file descriptor
@@ -256,20 +256,11 @@ Obot::InitRobot()
   return(0);
 }
 
-int 
-Obot::Setup()
+int
+Obot::OpenTerm()
 {
   struct termios term;
-  int flags;
-  int ltics,rtics,lvel,rvel;
-
-  this->px = this->py = this->pa = 0.0;
-  this->odom_initialized = false;
-  this->last_final_rvel = this->last_final_lvel = 0;
-
-  printf("Botrics Obot connection initializing (%s)...", serial_port);
-  fflush(stdout);
-
+  
   // open it.  non-blocking at first, in case there's no robot
   if((this->fd = open(serial_port, O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
@@ -298,6 +289,28 @@ Obot::Setup()
   }
 
   fd_blocking = false;
+  return(0);
+}
+
+int 
+Obot::Setup()
+{
+  int flags;
+  int ltics,rtics,lvel,rvel;
+
+  this->px = this->py = this->pa = 0.0;
+  this->odom_initialized = false;
+  this->last_final_rvel = this->last_final_lvel = 0;
+  this->sent_new_command = false;
+
+  printf("Botrics Obot connection initializing (%s)...", serial_port);
+  fflush(stdout);
+
+  if(OpenTerm() < 0)
+  {
+    PLAYER_ERROR("failed to initialize robot");
+    return(-1);
+  }
 
   if(InitRobot() < 0)
   {
@@ -394,15 +407,22 @@ Obot::Main()
   {
     pthread_testcancel();
     
+    this->sent_new_command = false;
     ProcessMessages();
+    if(!this->sent_new_command)
+    {
+      if(this->SetVelocity(this->last_final_lvel, this->last_final_rvel) < 0)
+        PLAYER_ERROR("failed to set velocity");
+    }
     
     // Update and publish odometry info
     if(this->GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
     {
       PLAYER_ERROR("failed to get odometry");
-      pthread_exit(NULL);
+      //pthread_exit(NULL);
     }
-    this->UpdateOdom(ltics,rtics);
+    else
+      this->UpdateOdom(ltics,rtics);
 
     // Update and publish power info
     int volt;
@@ -443,9 +463,9 @@ Obot::Main()
       last_publish_time = t;
     }
 
-    usleep(OBOT_DELAY_US);
+    //usleep(OBOT_DELAY_US);
   }
-  pthread_cleanup_pop(1);
+  pthread_cleanup_pop(0);
 }
 
 void
@@ -554,8 +574,14 @@ int Obot::ProcessMessage(MessageQueue * resp_queue,
                            PLAYER_POSITION2D_CMD_STATE, 
                            this->position_addr))
   {
-    assert(hdr->size == sizeof(player_position2d_cmd_t));
-    this->ProcessCommand((player_position2d_cmd_t*)data);
+    // Only take the first new command (should probably take the last,
+    // but...)
+    if(!this->sent_new_command)
+    {
+      assert(hdr->size == sizeof(player_position2d_cmd_t));
+      this->ProcessCommand((player_position2d_cmd_t*)data);
+      this->sent_new_command = true;
+    }
     return(0);
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
@@ -643,6 +669,15 @@ Obot::WriteBuf(unsigned char* s, size_t len)
   int thisnumwritten;
   unsigned char ack[1];
 
+  /*
+  static double last = 0.0;
+  double t;
+  GlobalTime->GetTimeDouble(&t);
+  printf("WriteBuf: %d bytes (time since last: %f)\n", 
+         len, t-last);
+  last=t;
+  */
+
   for(;;)
   {
     numwritten=0;
@@ -673,20 +708,32 @@ Obot::WriteBuf(unsigned char* s, size_t len)
     switch(ack[0])
     {
       case OBOT_ACK:
+        usleep(OBOT_DELAY_US);
         return(0);
       case OBOT_NACK:
         PLAYER_WARN("got NACK; reinitializing connection");
-        return(-1);
-        /*
+        usleep(OBOT_DELAY_US);
+        if(close(this->fd) < 0)
+          PLAYER_WARN1("close failed: %s", strerror(errno));
+        if(OpenTerm() < 0)
+        {
+          PLAYER_ERROR("failed to re-open connection");
+          return(-1);
+        }
         if(InitRobot() < 0)
         {
           PLAYER_ERROR("failed to reinitialize");
           return(-1);
         }
+        else
+        {
+          usleep(OBOT_DELAY_US);
+          return(0);
+        }
         break;
-        */
       default:
         PLAYER_WARN1("got unknown value for acknowledgement: %d",ack[0]);
+        usleep(OBOT_DELAY_US);
         return(-1);
     }
   }
@@ -970,6 +1017,8 @@ int
 Obot::SetVelocity(int lvel, int rvel)
 {
   int retval;
+  
+  //printf("SetVelocity: %d %d\n", lvel, rvel);
 
   if(!this->motors_swapped)
     retval = SendCommand(OBOT_SET_VELOCITIES,lvel,rvel);
