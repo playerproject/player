@@ -83,7 +83,7 @@ CameraProxy::SaveFrame(const std::string aPrefix, uint aWidth)
   filename.imbue(std::locale(""));
   filename.fill('0');
 
-  filename << mPrefix << std::setw(aWidth) << mFrameNo++;
+  filename << aPrefix << std::setw(aWidth) << mFrameNo++;
   if (GetCompression())
     filename << ".jpg";
   else
