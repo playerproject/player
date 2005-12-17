@@ -8,7 +8,7 @@ PLAYER_NODRIVERS=
 dnl This macro can be used to setup the testing and associated autoconf
 dnl variables and C defines for a device driver.
 dnl
-dnl PLAYER_ADD_DRIVER(name,path,default,[header],[cppadd],[ldadd],
+dnl PLAYER_ADD_DRIVER(name,default,[header],[cppadd],[ldadd],
 dnl                   [pkgvar],[pkg],[default-includes])
 dnl
 dnl Args:
@@ -259,7 +259,7 @@ PLAYER_ADD_DRIVER([iwspy],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([reb],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([khepera],[no],[],[],[])
+PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([microstrain],[yes],[],[],[])
 
