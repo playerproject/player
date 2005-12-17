@@ -173,7 +173,7 @@ int Khepera::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void
 		Publish(ir_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geometry->ir, sizeof(geometry->ir));
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_GET_GEOM, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, position_addr))
 	{
 		player_position2d_cmd_t * poscmd = reinterpret_cast<player_position2d_cmd_t *> (data);
 
@@ -197,29 +197,29 @@ int Khepera::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void
 			PLAYER_WARN("Khepera driver does not support position mode yet");
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_GET_GEOM, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_addr))
 	{
 		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geometry->position, sizeof(geometry->position));
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_addr))
 	{
 		this->motors_enabled = ((player_position2d_power_config_t *)data)->state;
 		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype);
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_addr))
 	{
 		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype);
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_RESET_ODOM, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM, position_addr))
 	{
 		ResetOdometry();
 		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype);
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_REQ_SET_ODOM, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, position_addr))
 	{
 		Publish(position_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,hdr->subtype);
 		return 0;
