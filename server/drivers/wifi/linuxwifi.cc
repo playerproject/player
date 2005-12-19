@@ -282,7 +282,7 @@ int LinuxWiFi::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, vo
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, device_addr))
 	{
 		player_wifi_mac_req_t req;
-  		GetMACAddress(req.mac,32);
+  		GetMACAddress((char *)req.mac,32);
 		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, 0,(void*)&req, sizeof(player_wifi_mac_req_t),NULL);
 	}
 	return -1;
@@ -428,18 +428,22 @@ LinuxWiFi::Update(void)
   wifi_data.bitrate = bitrate;
     
   wifi_data.links_count = 1;
-  strncpy(wifi_data.links[0].ip, "0.0.0.0", sizeof(wifi_data.links[0].ip));
+  strncpy((char*)wifi_data.links[0].ip, "0.0.0.0", sizeof(wifi_data.links[0].ip));
+  wifi_data.links[0].ip_count = sizeof(wifi_data.links[0].ip);
   wifi_data.links[0].qual = wqual;
   wifi_data.links[0].level = wlevel;
   wifi_data.links[0].noise = wnoise;
 
+  wifi_data.links[0].mac_count = 0;
+  wifi_data.links[0].essid_count = 0;
+  
   wifi_data.maxqual = wmaxqual;
   wifi_data.maxlevel = wmaxlevel;
   wifi_data.maxnoise = wmaxnoise;
  
   wifi_data.qual_type = qual_type;
 
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,0,(void*)&wifi_data, sizeof(player_wifi_data_t),NULL);
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,PLAYER_WIFI_DATA_STATE,(void*)&wifi_data, sizeof(player_wifi_data_t),NULL);
 }
 
 

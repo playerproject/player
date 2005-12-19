@@ -3915,11 +3915,14 @@ is the format of the data for each host. */
 typedef struct player_wifi_link
 {
   /** MAC address. */
-  char mac[32];
+  uint32_t mac_count;
+  uint8_t mac[ 32 ];	
   /** IP address. */
-  char ip[32];
+  uint32_t ip_count;
+  uint8_t ip[32];
   /** ESSID. */
-  char essid[32];
+  uint32_t essid_count;
+  uint8_t essid[32];
   /** Mode (master, adhoc, etc). */
   uint32_t mode;
   /** Frequency [MHz]. */
@@ -3964,6 +3967,9 @@ typedef struct player_wifi_data
 /** @brief Request/reply: */
 typedef struct player_wifi_mac_req
 {
+  /** MAC address. */
+  uint32_t mac_count;
+  uint8_t mac[ 32 ];	
 } player_wifi_mac_req_t;
 
 /** @brief Request/reply: */
