@@ -530,14 +530,14 @@ FlockOfBirds_Device::Main()
       }
       memcpy(LastData, PosData,sizeof(LastData));
 
-      data.pos[0] = Front*PosData[0]/1000;
-      data.pos[1] = Front*PosData[1]/1000;
-      data.pos[2] = -Front*PosData[2]/1000;
+      data.pos.px = Front*PosData[0]/1000;
+      data.pos.py = Front*PosData[1]/1000;
+      data.pos.pz = -Front*PosData[2]/1000;
 
       // translate degerees to radians
-      data.pos[3] = PosData[3]*1000.0;
-      data.pos[4] = PosData[4]*1000.0;
-      data.pos[5] = PosData[5]*1000.0;
+      data.pos.proll = PosData[3]*1000.0;
+      data.pos.ppitch = PosData[4]*1000.0;
+      data.pos.pyaw = PosData[5]*1000.0;
 
       Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,PLAYER_POSITION3D_DATA_STATE,(void*)&data, sizeof(player_position3d_data_t),NULL);
     }
