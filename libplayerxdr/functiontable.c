@@ -264,6 +264,19 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
     (player_pack_fn_t)player_sonar_geom_pack},
 
+  /* wifi messages */
+  {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE,
+    (player_pack_fn_t)player_wifi_data_pack},
+  {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC,
+    (player_pack_fn_t)player_wifi_mac_req_pack},
+  {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_IWSPY_ADD,
+    (player_pack_fn_t)player_wifi_iwspy_addr_req_pack},
+  {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_IWSPY_DEL,
+    (player_pack_fn_t)player_wifi_iwspy_addr_req_pack},
+  {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_IWSPY_PING,
+    (player_pack_fn_t)player_wifi_iwspy_addr_req_pack},
+    
+    
   /* This NULL element signals the end of the list; don't remove it */
   {0,0,0,NULL}
 };

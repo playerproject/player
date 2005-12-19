@@ -213,7 +213,7 @@ PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([linuxwifi],[no],[linux/wireless.h],
+PLAYER_ADD_DRIVER([linuxwifi],[yes],[linux/wireless.h],
                   [],[],[],[],[[#include <netinet/in.h>]])
 
 PLAYER_ADD_DRIVER([fixedtones],[no],[rfftw.h],[],
@@ -303,9 +303,6 @@ if test "x$enable_camera1394" = "xyes"; then
     [[#include "libdc1394/dc1394_control.h"]],
     [[#if LIBDC1394_VERSION != 0200 #error #endif]]),
     dc1394_dma_setup_args="20")
-
-    
-    dc1394_cameracapture
 
   AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args,
               [arg count for dma capture function])
