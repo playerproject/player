@@ -799,8 +799,8 @@ void VFH_Class::Main()
         int foo = this->speed;
         this->speed = 
                 (int)rint(vfh_Algorithm->GetCurrentMaxSpeed() / 2.0);
-        printf("slowing down from %d to %d\n",
-               foo, this->speed);
+        //printf("slowing down from %d to %d\n",
+	//     foo, this->speed);
       }
 
       PutCommand( this->speed, this->turnrate );
