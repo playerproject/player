@@ -887,6 +887,9 @@ in images.
 /** Request/reply subtype: set imager parameters */
 #define PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS 2
 
+//#define PLAYER_BLOBFINDER_DATA_BLOBS 1
+
+
 /** @brief Structure describing a single blob. */
 typedef struct player_blobfinder_blob
 {
@@ -1194,7 +1197,7 @@ typedef struct player_energy_data
 {
   /** energy stored [J]. */
   float joules;
-  /** estimated current energy consumption (negative values) or
+  /** estimated current power consumption (negative values) or
       aquisition (positive values) [W]. */
   float watts;
   /** charge exchange status: if 1, the device is currently receiving
@@ -1202,7 +1205,6 @@ typedef struct player_energy_data
       providing charge to another energy device. If 0, the device is
       not exchanging charge with an another device. */
   int32_t charging;
-
 } player_energy_data_t;
 
 /** @brief Request/reply: set charging policy

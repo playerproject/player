@@ -326,8 +326,9 @@ dnl TODO: handle pkg-config location of gsl.  Some, but not all,
 dnl installation of gsl have a .pc file.
 dnl PKG_CHECK_MODULES(GSL,gsl,
 dnl                   found_gsl=yes,
-dnl                   found_gsl=no)
+dnl                  found_gsl=no)
 PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
+
 
 AC_DEFUN([AC_CXX_NAMESPACES],
 [AC_CACHE_CHECK(whether the compiler implements namespaces,
