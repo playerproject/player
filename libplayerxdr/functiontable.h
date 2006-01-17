@@ -59,7 +59,7 @@ player_pack_fn_t playerxdr_get_func(uint16_t interf, uint8_t type,
  * @todo Add the ability to extend the function table for user-defined
  * message types.
  */
-void playerxdr_ftable_init();
+void playerxdr_ftable_init(void);
 
 /** @} */
 

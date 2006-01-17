@@ -10,8 +10,8 @@ from distutils.core import setup, Extension
 module = Extension('_playerc',
                    sources = ['playerc.i'],
                    include_dirs = ['../..', '../../../..'],
-                   library_dirs = ['../..', '../../../libplayerpacket'],
-                   libraries = ['playerc', 'playerpacket', 'jpeg'])
+                   library_dirs = ['../../.libs', '../../../../libplayerxdr/.libs', '../../../../libplayerjpeg/.libs'],
+                   libraries = ['playerxdr', 'playerc', 'playerjpeg', 'jpeg'])
 
 
 setup(name = 'playerc',
