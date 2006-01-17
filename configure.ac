@@ -11,6 +11,8 @@ AC_PREREQ(2.53)
 dnl figure out build system (uname-style info)
 AC_CANONICAL_SYSTEM
 
+m4_pattern_allow(_PKG_ERRORS)
+
 dnl Some parts of the build need to know that we're running on Darwin.
 darwin=no
 case $host in
@@ -434,8 +436,8 @@ AC_OUTPUT(Makefile
 dnl          client_libs/libplayerc/doc/Makefile
           client_libs/libplayerc/playerc.pc
           client_libs/libplayerc/test/Makefile
-dnl          client_libs/libplayerc/bindings/Makefile
-dnl          client_libs/libplayerc/bindings/python/Makefile
+          client_libs/libplayerc/bindings/Makefile
+          client_libs/libplayerc/bindings/python/Makefile
 dnl          client_libs/libplayerpacket/Makefile
           examples/Makefile
           examples/plugins/Makefile
