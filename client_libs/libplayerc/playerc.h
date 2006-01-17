@@ -299,7 +299,7 @@ PLAYERC_DATAMODE_PUSH_ASYNC.
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_datamode(playerc_client_t *client, int mode);
+//int playerc_client_datamode(playerc_client_t *client, int mode);
 
 /** @brief Request a round of data.
 
@@ -325,7 +325,7 @@ delivery mode is PLAYERC_DATAMODE_PUSH_ASYNC.
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_datafreq(playerc_client_t *client, int freq);
+//int playerc_client_datafreq(playerc_client_t *client, int freq);
 
 /** @brief Add a device proxy. @internal
  */
