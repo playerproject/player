@@ -81,10 +81,18 @@ AC_CHECK_PROG(have_python,python,yes,no)
 AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 
 dnl Where are the JNI headers?
+if test "x$darwin" = "xyes"; then
+  default_jnidir=/System/Library/Frameworks/JavaVM.framework/Versions/1.5.0/Headers/
+  default_jni_mddir=/System/Library/Frameworks/JavaVM.framework/Versions/1.5.0/Headers/
+else
+  default_jnidir=/usr/lib/j2sdk1.5-sun/include
+  default_jni_mddir=/usr/lib/j2sdk1.5-sun/include/linux
+fi
+
 AC_ARG_WITH(jnidir, [  --with-jnidir=<directory containing jni.h],,
-with_jnidir=/usr/lib/j2sdk1.5-sun/include)
+with_jnidir=$default_jnidir)
 AC_ARG_WITH(jni_mddir, [  --with-jni_mddir=<directory containing jni_md.h],,
-with_jni_mddir=/usr/lib/j2sdk1.5-sun/include/linux)
+with_jni_mddir=$default_jni_mddir)
 
 dnl Look for the JNI headers.  I'm using AC_CHECK_FILE, rather than
 dnl AC_CHECK_HEADER, because I can't figure out how to get the latter to
