@@ -2,7 +2,7 @@ AM_CPPFLAGS = -g -Wall -fPIC @JNI_CFLAGS@
 
 # files that must be built first
 BUILT_SOURCES =
-if ENABLE_JAVA
+if ENABLE_JPLAYER
 BUILT_SOURCES += playercore_java_wrap.cc playercore_casts.i playercore_arraysofclasses.i
 endif
 
@@ -10,7 +10,7 @@ EXTRA_DIST = playercore_java.i parse.py
 CLEANFILES = playercore_java_wrap.cc playercore_casts.i playercore_arraysofclasses.i
 
 lib_LTLIBRARIES =
-if ENABLE_JAVA
+if ENABLE_JPLAYER
 lib_LTLIBRARIES += libplayercore_java.la
 endif
 
@@ -44,7 +44,7 @@ libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la 
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayercore
 java_DATA = 
-if ENABLE_JAVA
+if ENABLE_JPLAYER
 java_DATA += net/sourceforge/playerstage/Jplayercore/*.java
 endif
 

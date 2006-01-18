@@ -64,5 +64,5 @@ if INCLUDE_JPEG
 libplayerc_la_LIBADD += $(top_builddir)/libplayerjpeg/*.lo
 endif
 
-libplayerc_includedir = $(includedir)/libplayerc
+libplayerc_includedir = $(includedir)/player-2.0/libplayerc
 libplayerc_include_HEADERS = playerc.h

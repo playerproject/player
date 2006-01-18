@@ -2103,6 +2103,7 @@ class SpeechRecognitionProxy : public ClientProxy
 };
 #endif
 
+#if 0
 /**
 The @p TruthProxy gets and sets the @e true pose of a @ref
 interface_truth device [worldfile tag: truth()]. This may be
@@ -2168,7 +2169,6 @@ class TruthProxy : public ClientProxy
     void SetFiducialID(int16_t id);
 
 };
-#if 0
 /**
 The @p WaveformProxy class is used to read raw digital waveforms from
 a @ref interface_waveform device.  */
