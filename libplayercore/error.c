@@ -31,18 +31,21 @@ ErrorInit(int _msgLevel)
 void ErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...)
 {
   va_list ap;
-  
-  va_start(ap, fmt);
 
   if (level <= msgLevel)
+  {
+    va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    va_start(ap, fmt);
+  }
   if (msgFile)
   {
     fprintf(msgFile, "%s:%d ", file, line);
+    va_start(ap, fmt);
     vfprintf(msgFile, fmt, ap);
+    va_end(ap);
   }
-  
-  va_end(ap);
   
   return;
 }
