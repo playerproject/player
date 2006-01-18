@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
@@ -57,7 +58,7 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
 {
 #if HAVE_GETADDRINFO
   int retval;
-  struct addrinfo* addr;
+  struct addrinfo* addr = NULL;
 #else
   struct sockaddr_in saddr;
   struct hostent* entp;
@@ -69,7 +70,7 @@ hostname_to_packedaddr(uint32_t* dest, const char* hostname)
   {
     if(gethostname(host,sizeof(host)) == -1)
     {
-      fputs("receive(): couldn't get hostname. probably should quit\n", stderr);
+      PLAYER_ERROR("couldn't get hostname");
       return(-1);
     }
   }

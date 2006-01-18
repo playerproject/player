@@ -133,6 +133,48 @@ class MessageQueueElement
     friend class MessageQueue;
 };
 
+/** We keep a singly-linked list of (addr,type,subtype,replace) tuples.
+ * When a new message comes in, we check its (addr,type,subtype) signature
+ * against this list to find a replace rule.  If its not in the list, the
+ * default rule is used: never replace config requests or replies, replace
+ * data and command msgs if the Replace flag is set.
+ */
+class MessageReplaceRule
+{
+  private:
+    // The address to match (not using a player_devaddr_t so that we can
+    // use -1 to indicate don't care)
+    int host, robot, interf, index;
+    // The type and subtype to match (-1 is don't care)
+    int type, subtype;
+  public:
+    MessageReplaceRule(int _host, int _robot, int _interf, int _index,
+                       int _type, int _subtype, bool _replace) :
+            host(_host), robot(_robot), interf(_interf), index(_index),
+            type(_type), subtype(_subtype), replace(_replace), next(NULL) {}
+
+    bool Match(player_msghdr_t* hdr)
+    {
+      return(((this->host < 0) || 
+              ((uint32_t)this->host == hdr->addr.host)) &&
+             ((this->robot < 0) || 
+              ((uint32_t)this->robot == hdr->addr.robot)) &&
+             ((this->interf < 0) || 
+              ((uint16_t)this->interf == hdr->addr.interf)) &&
+             ((this->index < 0) || 
+              ((uint16_t)this->index == hdr->addr.index)) &&
+             ((this->type < 0) || 
+              ((uint8_t)this->type == hdr->type)) &&
+             ((this->subtype < 0) || 
+              ((uint8_t)this->subtype == hdr->subtype)));
+    }
+
+    // To replace, or not to replace
+    bool replace;
+    // Next rule in the list
+    MessageReplaceRule* next;
+};
+
 /**
  A doubly-linked queue of messages.
 */
@@ -157,6 +199,12 @@ class MessageQueue
     /// messages of the same subtype from the same device are replaced in
     /// the queue.
     void SetReplace(bool _Replace) { this->Replace = _Replace; };
+    /// @brief Add a replacement rule to the list
+    void AddReplaceRule(int _host, int _robot, int _interf, int _index,
+                        int _type, int _subtype, bool _replace);
+    /// @brief Check whether a message with the given header should replace
+    /// any existing message of the same signature.
+    bool CheckReplace(player_msghdr_t* hdr);
     /// @brief Wait on this queue.
     ///
     /// This method blocks until new data is available (as indicated
@@ -190,7 +238,10 @@ class MessageQueue
     pthread_mutex_t lock;
     /// @brief Maximum length of queue in elements.
     size_t Maxlen;
-    /// @brief Should we replace messages with newer ones from same device?
+    /// @brief Singly-linked list of replacement rules
+    MessageReplaceRule* replaceRules;
+    /// @brief When a (data or command) message doesn't match a rule in 
+    /// replaceRules, should we replace it?
     bool Replace;
     /// @brief Current length of queue, in elements.
     size_t Length;
