@@ -2,7 +2,7 @@ AM_CPPFLAGS = -g -Wall -fPIC @JNI_CFLAGS@
 
 # files that must be built first
 BUILT_SOURCES =
-if ENABLE_JAVA
+if ENABLE_JPLAYER
 BUILT_SOURCES += playertcp_java_wrap.cc
 endif
 
@@ -10,7 +10,7 @@ EXTRA_DIST = playertcp_java.i
 CLEANFILES = playertcp_java_wrap.cc
 
 lib_LTLIBRARIES =
-if ENABLE_JAVA
+if ENABLE_JPLAYER
 lib_LTLIBRARIES += libplayertcp_java.la
 endif
 
@@ -24,7 +24,7 @@ libplayertcp_java_la_LDFLAGS = $(top_builddir)/libplayertcp/libplayertcp.la $(to
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayertcp
 java_DATA = 
-if ENABLE_JAVA
+if ENABLE_JPLAYER
 java_DATA += net/sourceforge/playerstage/Jplayertcp/*.java
 endif
 

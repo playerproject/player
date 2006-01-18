@@ -28,7 +28,7 @@ libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 libplayererror_la_SOURCES = error.h error.c
 libplayererror_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
 
-coreincludedir = $(includedir)/libplayercore
+coreincludedir = $(includedir)/player-2.0/libplayercore
 coreinclude_HEADERS = configfile.h \
                       device.h \
                       devicetable.h \

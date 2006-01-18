@@ -100,12 +100,22 @@ AC_ARG_ENABLE(jplayer, [  --disable-jplayer         Don't build Jplayer (the Jav
 
 dnl If we have python, swig, javac, jni.h, and jni_md.h, then all
 dnl systems are go for building Jplayer
-if test "x$enable_jplayer" = "xyes" -a "x$have_python" = "xyes" -a "x$have_swig" = "xyes" -a "x$have_java" = "xyes" -a "x$have_jni_h" = "xyes" -a "x$have_jni_md_h" = "xyes"; then
-  enable_java=yes
-else
-  enable_java=no
+if test "x$enable_jplayer" = "xno"; then
+  reason_jplayer="disabled by user"
+elif test "x$have_python" = "xno"; then
+  reason_jplayer="could not find python"
+  enable_jplayer=no
+elif test "x$have_swig" = "xno"; then
+  reason_jplayer="could not find swig"
+  enable_jplayer=no
+elif test "x$have_java" = "xno"; then
+  reason_jplayer="could not find java"
+  enable_jplayer=no
+elif test "x$have_jni_h" = "xno" -o "x$have_jni_md_h" = "xno"; then
+  reason_jplayer="could not find JNI headers (jni.h, jni_md.h)"
+  enable_jplayer=no
 fi
-AM_CONDITIONAL(ENABLE_JAVA, test "x$enable_java" = "xyes")
+AM_CONDITIONAL(ENABLE_JPLAYER, test "x$enable_jplayer" = "xyes")
 JNI_CFLAGS="-I$with_jnidir -I$with_jni_mddir"
 AC_SUBST(JNI_CFLAGS)
 
@@ -490,9 +500,16 @@ AC_MSG_RESULT([])
 dnl Expand this to include all client libs/bindings
 dnl libplayerc python bindings
 if test "x$enable_libplayerc_py" = "xyes"; then
-  AC_MSG_RESULT([libplayerc Python bindings will be built])
+  AC_MSG_RESULT([Python bindings to libplayerc will be built])
 else
-  AC_MSG_RESULT([libplayerc Python bindings will not be built -- $reason_libplayerc_py])
+  AC_MSG_RESULT([Python bindings to libplayerc will not be built -- $reason_libplayerc_py])
+fi
+AC_MSG_RESULT([])
+dnl libplayercore / libplayertcp / libplayerxdr Java bindings
+if test "x$enable_jplayer" = "xyes"; then
+  AC_MSG_RESULT([Java bindings to libplayercore/libplayertcp will be built])
+else
+  AC_MSG_RESULT([Java bindings to libplayercore/libplayertcp will not be built -- $reason_jplayer])
 fi
 AC_MSG_RESULT([])
 

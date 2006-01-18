@@ -21,6 +21,6 @@ if HAVE_ZLIB
 libplayertcp_la_LDFLAGS += -lz
 endif
 
-pkgincludedir = $(includedir)/libplayertcp
+pkgincludedir = $(includedir)/player-2.0/libplayertcp
 
 pkginclude_HEADERS = playertcp.h
