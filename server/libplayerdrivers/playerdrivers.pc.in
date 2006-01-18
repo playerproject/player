@@ -9,4 +9,4 @@ Description: Player driver library - part of the Player/Stage Project
 Version: @VERSION@
 Requires: playercore
 Libs: -L${prefix}/lib -lplayerdrivers -lpthread
-Cflags: -I${prefix}/include
+Cflags: -I${prefix}/include/player-2.0

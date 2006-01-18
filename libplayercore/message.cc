@@ -132,6 +132,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   pthread_cond_init(&this->cond,NULL);
   this->ClearFilter();
   this->filter_on = false;
+  this->replaceRules = NULL;
 }
 
 MessageQueue::~MessageQueue()
@@ -140,9 +141,69 @@ MessageQueue::~MessageQueue()
   Message* msg;
   while((msg = this->Pop()))
     delete msg;
+
+  // clear the list of replacement rules
+  MessageReplaceRule* tmp;
+  MessageReplaceRule* curr = this->replaceRules;
+  while(curr)
+  {
+    tmp = curr->next;
+    delete curr;
+    curr = tmp;
+  }
+
   pthread_mutex_destroy(&this->lock);
   pthread_mutex_destroy(&this->condMutex);
   pthread_cond_destroy(&this->cond);
+}
+
+/// @brief Add a replacement rule to the list
+void 
+MessageQueue::AddReplaceRule(int _host, int _robot, int _interf, int _index,
+                             int _type, int _subtype, bool _replace)
+{
+  MessageReplaceRule* curr;
+  for(curr=this->replaceRules;curr && curr->next;curr=curr->next);
+  if(!curr)
+  {
+    curr = new MessageReplaceRule(_host, _robot, _interf, _index,
+                                  _type, _subtype, _replace);
+    assert(curr);
+  }
+  else
+  {
+    curr->next = new MessageReplaceRule(_host, _robot, _interf, _index,
+                                        _type, _subtype, _replace);
+    assert(curr->next);
+  }
+}
+
+bool
+MessageQueue::CheckReplace(player_msghdr_t* hdr)
+{
+  // First look through the replacement rules
+  for(MessageReplaceRule* curr=this->replaceRules;curr;curr=curr->next)
+  {
+    if(curr->Match(hdr))
+      return(curr->replace);
+  }
+
+  // Didn't find it; follow the default rule
+
+  // Don't replace config requests or replies
+  if((hdr->type == PLAYER_MSGTYPE_REQ) || 
+     (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
+     (hdr->type == PLAYER_MSGTYPE_RESP_NACK))
+    return(false);
+  // Replace data and command according to the this->Replace flag
+  else if((hdr->type == PLAYER_MSGTYPE_DATA) ||
+          (hdr->type == PLAYER_MSGTYPE_CMD))
+    return(this->Replace);
+  else
+  {
+    PLAYER_ERROR1("encountered unknown message type %u", hdr->type);
+    return(false);
+  }
 }
 
 // Waits on the condition variable associated with this queue.
@@ -234,9 +295,8 @@ MessageQueue::Push(Message & msg)
   assert(*msg.RefCount);
   this->Lock();
   hdr = msg.GetHeader();
-  if(this->Replace && 
-     ((hdr->type == PLAYER_MSGTYPE_DATA) || 
-      (hdr->type == PLAYER_MSGTYPE_CMD)))
+  // Should we try to replace an older message of the same signature?
+  if(this->CheckReplace(hdr))
   {
     for(MessageQueueElement* el = this->tail; 
         el != NULL;
@@ -250,6 +310,7 @@ MessageQueue::Push(Message & msg)
       }
     }
   }
+  // Are we over the limit?
   if(this->Length >= this->Maxlen)
   {
     PLAYER_WARN("tried to push onto a full message queue");

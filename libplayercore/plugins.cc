@@ -132,6 +132,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     // Note that dirname() modifies the contents, so
     // we need to make a copy of the filename.
     tmp = strdup(cfgfile);
+    assert(tmp);
     memset(fullpath,0,PATH_MAX);
     cfgdir = dirname(tmp);
     if(cfgdir[0] != '/' && cfgdir[0] != '~')
