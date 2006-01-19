@@ -112,7 +112,8 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
 
   memset(&cmd, 0, sizeof(cmd));
   strncpy(cmd.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cmd.name_count = strlen(cmd.name);
+  cmd.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  cmd.name_count = strlen(cmd.name) + 1;
   cmd.pose.px = gx;
   cmd.pose.py = gy;
   cmd.pose.pa = ga;
@@ -129,8 +130,9 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   player_simulation_pose2d_req_t cfg;
   
   memset(&cfg, 0, sizeof(cfg));
-  strncpy( cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
-  cfg.name_count = strlen(cfg.name);
+  strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  cfg.name_count = strlen(cfg.name) + 1;
   if (playerc_client_request(device->info.client, &device->info, 
                              PLAYER_SIMULATION_REQ_GET_POSE2D,
 			     &cfg, &cfg, sizeof(cfg)) < 0)
