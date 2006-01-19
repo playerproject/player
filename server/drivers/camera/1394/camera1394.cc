@@ -1035,7 +1035,7 @@ int Camera1394::GrabFrame()
 #if LIBDC1394_VERSION == 0200
   frame_width = camera->capture.frame_width;
   frame_height = camera->capture.frame_height;
-  capture_buffer = camera->capture.capture_buffer;
+  capture_buffer = (int *) camera->capture.capture_buffer;
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
