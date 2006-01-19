@@ -320,7 +320,7 @@ dnl Garcia driver
 PLAYER_ADD_DRIVER([garcia],[no],
                   [],[],[],[GARCIA],[libgarcia])
 
-PLAYER_ADD_DRIVER([fakelocalize], [no],[],[],[])
+PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
 dnl TODO: handle pkg-config location of gsl.  Some, but not all,
 dnl installation of gsl have a .pc file.
