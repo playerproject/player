@@ -1,9 +1,9 @@
 SUBDIRS = amcl
 
-noinst_LIBRARIES = @FAKELOCALIZE_LIB@
+noinst_LTLIBRARIES =
+if INCLUDE_FAKELOCALIZE
+noinst_LTLIBRARIES += libfakelocalize.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+libfakelocalize_la_SOURCES = fakelocalize.cc 
 
-EXTRA_LIBRARIES = libfakelocalize.a
-
-libfakelocalize_a_SOURCES = fakelocalize.cc

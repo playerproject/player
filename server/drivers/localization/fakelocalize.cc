@@ -88,17 +88,17 @@ driver
 */
 /** @} */
 
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 #define SLEEPTIME_US 100000
+
+#define min(x,y) (x < y ? x : y)
 
 // Driver for computing the free c-space from a laser scan.
 class FakeLocalize : public Driver
@@ -114,8 +114,8 @@ class FakeLocalize : public Driver
   // Simulation stuff.
   private: int UpdateData();
   private: void HandleRequests();
-  private: Driver *sim_driver;
-  private: player_device_id_t sim_id;
+  private: Device *sim;
+  private: player_devaddr_t sim_id;
   private: const char* model;
 };
 
@@ -137,16 +137,16 @@ void FakeLocalize_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOCALIZE_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOCALIZE_CODE)
 {
   // Must have an input sim
-  if (cf->ReadDeviceId(&this->sim_id, section, "requires",
+  if (cf->ReadDeviceAddr(&this->sim_id, section, "requires",
                        PLAYER_SIMULATION_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
     return;
   }
-  this->sim_driver = NULL;
+  this->sim = NULL;
 
   if(!(this->model = cf->ReadString(section, "model", NULL)))
   {
@@ -170,23 +170,26 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
 int FakeLocalize::Setup()
 {
   // Subscribe to the sim.
-  this->sim_driver = SubscribeInternal(this->sim_id);
-  if(!this->sim_driver)
+  if(!(this->sim = deviceTable->GetDevice(this->sim_id)))
   {
     PLAYER_ERROR("unable to locate suitable simulation device");
     return(-1);
   }
-/*  if(this->sim_driver->Subscribe(this->sim_id) != 0)
+  if(this->sim->Subscribe(this->InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to simulation device");
     return(-1);
-  }*/
-  if(this->UpdateData() < 0)
+  }
+
+
+/*  if(this->UpdateData() < 0)
   {
     PLAYER_ERROR("unable to get pose from simulation device");
-    UnsubscribeInternal(this->sim_id);
+    this->sim->Unsubscribe(this->InQueue);
+    	sim = NULL;
+//    UnsubscribeInternal(this->sim_id);
     return(-1);
-  }
+  }*/
   this->StartThread();
   return 0;
 }
@@ -197,7 +200,9 @@ int FakeLocalize::Setup()
 int FakeLocalize::Shutdown()
 {
   // Unsubscribe from devices.
-  UnsubscribeInternal(this->sim_id);
+  this->sim->Unsubscribe(this->InQueue);
+  sim = NULL;
+  //UnsubscribeInternal(this->sim_id);
   
   return 0;
 }
@@ -211,71 +216,46 @@ FakeLocalize::UpdateData()
   unsigned short reptype;
 //  struct timeval ts;
   
-  // Request pose, don't byteswap, and fill in
-  //cfg.subtype = PLAYER_SIMULATION_GET_POSE2D;
-  strncpy( cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN );
+  // Request pose
+  strncpy(cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN - 1] = '\0';
+  cfg.name_count = min(strlen(cfg.name),PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1) + 1;
 
-/*  if(((replen = this->sim_driver->Request(this->sim_id, this, 
-                                          &cfg, sizeof(cfg.subtype), 
-                                          NULL, &reptype, 
-                                          &cfg, sizeof(cfg), &ts)) < 
-      (int)sizeof(player_simulation_pose2d_req_t)) ||
-     (reptype != PLAYER_MSGTYPE_RESP_ACK))
-    return(-1);*/
+  Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
+  		(void *) &cfg, sizeof(cfg), NULL);
+  		
+  if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
+  {
+  	// we got a good reply so update our data
+  	assert(Reply->GetPayloadSize() == sizeof(cfg));
+  	player_simulation_pose2d_req_t * resp = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
+  	
+    // Fill in loc_data, byteswapping as we go.
+    loc_data.pending_count = 0;
+    loc_data.pending_time = Reply->GetHeader()->timestamp;
+    loc_data.hypoths_count = 1;
 
-  size_t resp_len = sizeof(cfg);
-  reptype = this->sim_driver->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_GET_POSE2D,
-                                      this->sim_id, 0, (uint8_t *)&cfg, (uint8_t *)&cfg, &resp_len);
-  
-  if (reptype != PLAYER_MSGTYPE_RESP_ACK || resp_len != sizeof(cfg))
-    return -1;
+    loc_data.hypoths[0].mean = resp->pose;
+
+    // zero covariance and max weight
+    memset(loc_data.hypoths[0].cov,0,sizeof(int64_t)*9);
+    loc_data.hypoths[0].alpha = htonl((uint32_t)1e6);
+
+    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,&loc_data,sizeof(loc_data));
+    delete Reply;
+    	Reply = NULL;
+  }
+  else
+  {
+  	// we got an error, thats bad
+  	delete Reply;
+  	return -1;
+  }
     
-  // Fill in loc_data, byteswapping as we go.
-  loc_data.pending_count = 0;
-  //loc_data.pending_time_sec = htonl(ts.tv_sec);
-  //loc_data.pending_time_usec = htonl(ts.tv_usec);
-  loc_data.hypoth_count = htonl(1);
-
-  // we didn't byteswap the x,y,a on the way in, so we don't do it on the
-  // way out.
-  loc_data.hypoths[0].mean[0] = cfg.x;
-  loc_data.hypoths[0].mean[1] = cfg.y;
-  // convert from degrees to squared arc seconds
-  loc_data.hypoths[0].mean[2] = htonl(((int32_t)ntohl(cfg.a))*3600);
-
-  // zero covariance and max weight
-  memset(loc_data.hypoths[0].cov,0,sizeof(int64_t)*9);
-  loc_data.hypoths[0].alpha = htonl((uint32_t)1e6);
-
-  this->PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &loc_data,sizeof(loc_data));
 
   return(0);
 }
 
-/*void
-FakeLocalize::HandleRequests()
-{
-  int len;
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-
-  while ((len = GetConfig(this->device_id, &client, 
-                          &request, sizeof(request),NULL)) > 0)
-  {
-    switch (request[0])
-    {
-      case PLAYER_LOCALIZE_SET_POSE_REQ:
-        PutReply(this->device_id,client,PLAYER_MSGTYPE_RESP_ACK,NULL);
-        break;
-      case PLAYER_LOCALIZE_GET_PARTICLES_REQ:
-        PutReply(this->device_id,client,PLAYER_MSGTYPE_RESP_NACK,NULL);
-        break;
-      default:
-        PutReply(this->device_id,client,PLAYER_MSGTYPE_RESP_NACK,NULL);
-        break;
-    }
-  }
-}*/
 
 void
 FakeLocalize::Main()
