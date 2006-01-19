@@ -69,8 +69,8 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::LocalizeProxy &c)
 {
   os << "#Localize (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  os << "Hypothesis Count: " << c.GetNumParticles() << std::endl;
-  for (unsigned int i = 0; i < c.GetNumParticles(); ++i)
+  os << "Hypothesis Count: " << c.GetNumHypoths() << std::endl;
+  for (unsigned int i = 0; i < c.GetNumHypoths(); ++i)
   {
     os << i << " (weight " << c.GetHypoth(i).alpha << "): ";
     os << "[" << c.GetHypoth(i).mean << "]" << std::endl;
