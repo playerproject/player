@@ -1265,6 +1265,9 @@ class LocalizeProxy : public ClientProxy
     /// Set the current pose hypothesis (m, m, radians).
     void SetPose(double pose[3], double cov[3]);
 
+    /// Get the number of localization hypoths.
+    uint GetNumHypoths() const { return GetVar(mDevice->hypoth_count); };
+
     /// Get the number of particles (for particle filter-based localization
     /// systems).  Returns the number of particles.
     uint GetNumParticles() const { return GetVar(mDevice->num_particles); };
