@@ -23,8 +23,7 @@
 #include <sys/types.h>
 #include <errno.h>
 
-#include <playercommon.h>
-#include <error.h>
+#include <libplayercore/playercore.h>
 
 #include "plan.h"
 //#include "heap.h"

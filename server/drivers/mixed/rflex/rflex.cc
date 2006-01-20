@@ -313,10 +313,7 @@ driver
 #include "rflex_commands.h"
 #include "rflex-io.h"
 
-#include <driver.h>
-#include <error.h>
-#include <drivertable.h>
-#include <playertime.h>
+#include <libplayercore/playercore.h>
 extern PlayerTime* GlobalTime;
 
 extern int               RFLEX::joy_control;
@@ -1163,6 +1160,8 @@ RFLEX::Main()
 }
 
 int RFLEX::initialize_robot(){
+  // Neither g++ nor I can find a definition for thread_is_running - BPG
+#if 0
 #ifdef _REENTRANT
   if (thread_is_running)
     {
@@ -1171,6 +1170,7 @@ int RFLEX::initialize_robot(){
       fprintf(stderr,"This is a bug in the code, and must be fixed.\n");
       return -1;
     }
+#endif
 #endif
 
   if (rflex_open_connection(rflex_configs.serial_port, &rflex_fd) < 0)

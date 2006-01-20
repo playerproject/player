@@ -15,7 +15,7 @@ pkgconfig_DATA += playerxdr.pc
 pkginclude_HEADERS += playerxdr.h functiontable.h
 endif
 
-bin_SCRIPTS = playerxdrgen.py
+dist_bin_SCRIPTS = playerxdrgen.py
 
 EXTRA_DIST = playerxdr.pc.in
 

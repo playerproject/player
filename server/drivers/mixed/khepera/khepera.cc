@@ -121,12 +121,7 @@ driver
 
 #include <khepera.h>
 
-#include <error.h>
-#include <driver.h>
-#include <drivertable.h>
-
-#include <playertime.h>
-extern PlayerTime* GlobalTime;
+#include <libplayercore/playercore.h>
 
 // we need to debug different things at different times
 //#define DEBUG_POS

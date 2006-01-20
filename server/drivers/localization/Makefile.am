@@ -1,4 +1,5 @@
 SUBDIRS = amcl
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 noinst_LTLIBRARIES =
 if INCLUDE_FAKELOCALIZE
