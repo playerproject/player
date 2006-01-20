@@ -39,6 +39,16 @@ extern "C" {
 /** Generic Prototype for a player XDR packing function */
 typedef int (*player_pack_fn_t) (void* buf, size_t buflen, void* msg, int op);
 
+/** Structure to pair an (interface,type,subtype) tuple with an XDR
+ * pack/unpack function */
+typedef struct
+{
+  uint16_t interf;
+  uint8_t type;
+  uint8_t subtype;
+  player_pack_fn_t func;
+} playerxdr_function_t;
+
 /** @brief Look up the XDR packing function for a given message signature.
  *
  * @param interf : The interface
@@ -50,6 +60,12 @@ typedef int (*player_pack_fn_t) (void* buf, size_t buflen, void* msg, int op);
  */
 player_pack_fn_t playerxdr_get_func(uint16_t interf, uint8_t type, 
                                     uint8_t subtype);
+
+/** @brief Add an entry to the function table.
+ *
+ * @param f : the message signature and function to add
+ */
+void playerxdr_ftable_add(playerxdr_function_t f);
 
 /** @brief Initialize the XDR function table.
  *
