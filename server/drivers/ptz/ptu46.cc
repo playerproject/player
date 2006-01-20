@@ -107,11 +107,7 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 #define PTU46_POSITION 'i'
 
 // Includes needed for player
-#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
-#include <driver.h>
-#include <error.h>
-#include <drivertable.h>
-#include <player.h>
+#include <libplayercore/playercore.h>
 
 #define DEFAULT_PTZ_PORT "/dev/ttyR1"
 #define PTZ_SLEEP_TIME_USEC 100000

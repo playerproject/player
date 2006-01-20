@@ -5,7 +5,7 @@ noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
 
 # files that must be built first
-BUILT_SOURCES = playerc_oo.i
+BUILT_SOURCES = playerc_oo.i srcbuilddirs.py
 
 endif
 
@@ -21,8 +21,17 @@ playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h
 	if test ! -s playerc.i; then cp $(srcdir)/playerc.i .; fi
 	python $(srcdir)/parse.py ../../playerc.h playerc_oo.i
 
+# Dump src and build paths into a Python file so that we can get them in
+# setup.py (distutils doesn't seem to allow extra command-line options to
+# the setup.py script)
+srcbuilddirs.py:
+	echo "srcdir = '$(srcdir)'" > $@
+	echo "top_srcdir = '$(top_srcdir)'" >> $@
+	echo "builddir = '$(builddir)'" >> $@
+	echo "top_builddir = '$(top_builddir)'" >> $@
+
 # Use distutils to build module
-pythonbuild: playerc_oo.i ../../playerc.h
+pythonbuild: playerc_oo.i ../../playerc.h srcbuilddirs.py
 	python $(srcdir)/setup.py build
 
 # For distcheck builds, clean up the files we created in the build tree
@@ -34,7 +43,7 @@ pythonbuild: playerc_oo.i ../../playerc.h
 
 # Normal cleanup
 clean-local:
-	rm -f playerc.py *.pyc playerc_oo.i
+	rm -f playerc.py *.pyc playerc_oo.i srcbuilddirs.py
 	rm -rf build
 
 install-data-hook: $(PYTHONINSTALL)

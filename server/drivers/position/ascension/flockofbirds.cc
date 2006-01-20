@@ -68,13 +68,8 @@ driver
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
-#include <netinet/in.h>
 
-// Player includes
-#include <player.h>
-#include <driver.h>
-#include <drivertable.h>
-#include <error.h>
+#include <libplayercore/playercore.h>
 
 // Flock of Birds Serial device interface...
 // two classes, the first to do the access, the second to interface with player
@@ -107,7 +102,7 @@ public:
   double * GetPosition();
   double GetRange();
 
-  int SetRange(int);
+  //int SetRange(int);
 
 protected:
   // serial port descriptor
@@ -373,6 +368,7 @@ double * FlockOfBirdsSerial::GetPosition()
   return SafePosition;
 }
 
+/*
 int FlockOfBirdsSerial::SetRange(int Range)
 {
   short Temp = htons(Range);
@@ -380,6 +376,7 @@ int FlockOfBirdsSerial::SetRange(int Range)
     return -1;
   return WriteCommand(0x03,2,reinterpret_cast<char *> (&Temp));
 }
+*/
 
 //return the range of the sensor in mm
 double FlockOfBirdsSerial::GetRange()

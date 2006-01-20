@@ -22,9 +22,9 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include <playertime.h>
 #include <math.h>
-#include <playercommon.h>
+
+#include <libplayercore/playercore.h>
 
 extern PlayerTime *GlobalTime;
 

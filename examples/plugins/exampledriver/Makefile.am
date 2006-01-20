@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/libplayercore
+AM_CPPFLAGS = -Wall -g -I$(top_srcdir)
 
 exampledir = $(prefix)/share/player/examples/plugins/exampledriver
 

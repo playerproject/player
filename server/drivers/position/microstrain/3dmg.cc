@@ -88,16 +88,7 @@ driver
 #include <netinet/in.h>
 #include <stdlib.h>
 
-#include "playercommon.h"
-#include "drivertable.h"
-#include "driver.h"
-#include "error.h"
-#include "player.h"
-#include "replace.h"
-
-#include "playertime.h"
-extern PlayerTime *GlobalTime;
-
+#include <libplayercore/playercore.h>
 
 // MicroStraing 3DM-G IMU driver
 class MicroStrain3DMG : public Driver

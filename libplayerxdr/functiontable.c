@@ -32,6 +32,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <libplayercore/error.h>
+
 #include "playerxdr.h"
 #include "functiontable.h"
 
@@ -292,14 +294,51 @@ playerxdr_ftable_init()
   memcpy(ftable,init_ftable,ftable_len*sizeof(playerxdr_function_t));
 }
 
-void
-playerxdr_ftable_add(playerxdr_function_t f)
+int
+playerxdr_ftable_add(playerxdr_function_t f, int replace)
 {
-  ftable = (playerxdr_function_t*)realloc(ftable,
-                                          ((ftable_len+1)*
-                                           sizeof(playerxdr_function_t)));
-  assert(ftable);
-  ftable[ftable_len++] = f;
+  if(playerxdr_get_func(f.interf, f.type, f.subtype))
+  {
+    // It's already in the table.  Did the caller say to replace?
+    if(!replace)
+    {
+      // Nope; return an error
+      return(-1);
+    }
+    else
+    {
+      // Yes; replace (it's clearly inefficient to iterate through the
+      // table again to find the entry to replace, but the table is pretty
+      // small and this doesn't happen very often)
+      int i;
+      playerxdr_function_t* curr;
+
+      for(i=0;i<ftable_len;i++)
+      {
+        curr = ftable + i;
+        // Make sure the interface, type, and subtype match exactly
+        if((curr->interf == f.interf) &&
+           (curr->subtype == f.subtype) &&
+           (curr->type == f.type))
+        {
+          curr->func = f.func;
+          return(0);
+        }
+        PLAYER_ERROR("unable to find entry to replace");
+        return(-1);
+      }
+    }
+  }
+  else
+  {
+    // Not in the table; add it
+    ftable = (playerxdr_function_t*)realloc(ftable,
+                                            ((ftable_len+1)*
+                                             sizeof(playerxdr_function_t)));
+    assert(ftable);
+    ftable[ftable_len++] = f;
+    return(0);
+  }
 }
 
 player_pack_fn_t

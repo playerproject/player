@@ -6,4 +6,5 @@ endif
 
 playerwritemap_SOURCES =  playerwritemap.c
 
-playerwritemap_LDADD = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la @GDK_PIXBUF_LIBS@
+playerwritemap_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
+playerwritemap_LDADD = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayererror.la @GDK_PIXBUF_LIBS@

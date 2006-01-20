@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include "libplayerc/playerc.h"
+
+#include <libplayerc/playerc.h>
 
 int
 main(int argc, const char **argv)

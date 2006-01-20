@@ -1,6 +1,14 @@
-
 from distutils.core import setup, Extension
 
+from srcbuilddirs import *
+if srcdir == '':
+  srcdir = '.'
+if top_srcdir == '':
+  top_srcdir = '.'
+if builddir == '':
+  builddir = '.'
+if top_builddir == '':
+  top_builddir = '.'
 
 #TODO: handle linking to libjpeg conditionally, depending on whether or not
 #      it was found during configuration.  The easiest way to do this may
@@ -9,8 +17,10 @@ from distutils.core import setup, Extension
 #      bindings.
 module = Extension('_playerc',
                    sources = ['playerc.i'],
-                   include_dirs = ['../..', '../../../..'],
-                   library_dirs = ['../../.libs', '../../../../libplayerxdr/.libs', '../../../../libplayerjpeg/.libs'],
+                   include_dirs = [srcdir + '/../..', top_srcdir],
+                   library_dirs = [builddir + '/../../.libs', 
+                                   top_builddir + '/libplayerxdr/.libs',
+                                   top_builddir + '/libplayerjpeg/.libs'],
                    libraries = ['playerxdr', 'playerc', 'playerjpeg', 'jpeg'])
 
 

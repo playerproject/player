@@ -86,7 +86,8 @@ value at that place will be written to standard out.
 #include <string.h>
 #include <stdlib.h>
 #include <gtk/gtk.h>
-#include "playerc.h"
+
+#include <libplayerc/playerc.h>
 
 char g_hostname[255]       = "localhost";
 int32_t g_port             = 6665;

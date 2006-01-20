@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -Wall -fPIC @JNI_CFLAGS@
+AM_CPPFLAGS = -g -Wall -fPIC -I$(top_srcdir) @JNI_CFLAGS@
 
 # files that must be built first
 BUILT_SOURCES =

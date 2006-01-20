@@ -29,7 +29,7 @@
 #ifndef READLOG_TIME_H
 #define READLOG_TIME_H
 
-#include "playertime.h"
+#include <libplayercore/playertime.h>
 
 // Incremental navigation driver
 class ReadLogTime : public PlayerTime

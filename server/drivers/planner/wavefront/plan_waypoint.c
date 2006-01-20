@@ -11,7 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "error.h"
+#include <libplayercore/error.h>
+
 #include "plan.h"
 
 // Test to see if once cell is reachable from another
