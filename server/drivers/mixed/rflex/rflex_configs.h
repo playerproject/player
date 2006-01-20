@@ -17,7 +17,7 @@
 #define RFLEX_CONFIGS_H
 
 #include <math.h>
-#include <player.h>
+#include <libplayercore/player.h>
 
 //normalizes an angle in radians to -M_PI<theta<M_PI
 inline double normalize_theta(double theta){

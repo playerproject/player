@@ -38,10 +38,7 @@
 #include <sys/time.h>
 #include <errno.h>
 
-#include <driver.h>
-#include <playercommon.h>
-#include <player.h>
-#include <drivertable.h>
+#include <libplayercore/playercore.h>
 //#include <khepera_params.h>
 #include <khepera_serial.h>
 

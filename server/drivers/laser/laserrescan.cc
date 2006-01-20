@@ -90,7 +90,7 @@ driver
 */
 /** @} */
 
-#include "player.h"
+#include <libplayercore/playercore.h>
 
 #include <errno.h>
 #include <string.h>
@@ -98,11 +98,6 @@ driver
 #include <stdlib.h>       // for atoi(3)
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
-
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
 
 #include "lasertransform.h"
 

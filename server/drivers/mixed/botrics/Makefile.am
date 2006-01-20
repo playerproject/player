@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 noinst_LTLIBRARIES = 
 if INCLUDE_OBOT

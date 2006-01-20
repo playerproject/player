@@ -35,9 +35,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <driver.h>
-#include <drivertable.h>
-#include <player.h>
+#include <libplayercore/playercore.h>
    
 #include "rflex_commands.h"
 #include "rflex-io.h"

@@ -4,7 +4,7 @@ import re
 import string
 import sys
 
-USAGE = 'USAGE: parse.y <player.h> <pack.c> <pack.h>'
+USAGE = 'USAGE: parse.y <interface-spec.h> <pack.c> <pack.h>'
 
 if __name__ == '__main__':
 

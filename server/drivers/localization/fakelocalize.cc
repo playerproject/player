@@ -94,7 +94,6 @@ driver
 #include <unistd.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 #define SLEEPTIME_US 100000
 
