@@ -82,7 +82,7 @@ can rewind, start, and stop; when writing data, you can start and stop.
 
 #include <gtk/gtk.h>
 
-#include <playerc.h>
+#include <libplayerc/playerc.h>
 
 #define USAGE "USAGE: playervcr [-h <host>] [-p <port>] [-i <index>]"
 #define MAX_HOSTNAME_LEN 256

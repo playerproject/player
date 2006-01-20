@@ -5,13 +5,15 @@ AM_CPPFLAGS = -I$(top_srcdir) \
 
 test_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                     $(top_builddir)/client_libs/libplayerc++/libplayerc++.la \
-                    $(top_builddir)/libplayerxdr/libplayerxdr.la
+                    $(top_builddir)/libplayerxdr/libplayerxdr.la \
+                    $(top_builddir)/libplayercore/libplayererror.la
 
 PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
+                  -L${top_builddir}/libplayercore \
                   -L${top_builddir}/client_libs/libplayerc \
                   -L${top_builddir}/client_libs/libplayerc++
 
-test_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+test_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayererror
 
 
 noinst_PROGRAMS =

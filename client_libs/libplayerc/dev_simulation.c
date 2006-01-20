@@ -47,11 +47,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <netinet/in.h>
 
 #include "playerc.h"
-#include "playercommon.h"
-#include "error.h"
 
 // Local declarations
 void playerc_simulation_putmsg(playerc_simulation_t *device,

@@ -22,8 +22,7 @@
 #define VFH_ALGORITHM_H
 
 #include <vector>
-#include "player.h"
-#include "playertime.h"
+#include <libplayercore/playercore.h>
 
 class VFH_Algorithm
 {

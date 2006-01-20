@@ -42,7 +42,6 @@
 #include <netinet/in.h>
 
 #include <libplayercore/playercore.h>
-#include <libplayercore/error.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////

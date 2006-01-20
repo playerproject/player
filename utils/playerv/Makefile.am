@@ -28,5 +28,6 @@ playerv_SOURCES = playerv.c \
 #dev_localize.c 
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
-                       $(top_builddir)/libplayerxdr/libplayerxdr.la
-playerv_LDADD = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la -lrtk -L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@
+                       $(top_builddir)/libplayerxdr/libplayerxdr.la \
+                       $(top_builddir)/libplayercore/libplayererror.la
+playerv_LDADD = $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayererror.la -lrtk -L$(top_builddir)/rtk2 -lrtk @GTK_LIBS@

@@ -33,6 +33,7 @@
 // Get the message structures from Player
 #include <libplayercore/player.h>
 #include <libplayercore/playercommon.h>
+#include <libplayercore/error.h>
 #include <libplayerxdr/playerxdr.h>
 
 #ifndef MIN

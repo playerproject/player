@@ -64,8 +64,14 @@ player_pack_fn_t playerxdr_get_func(uint16_t interf, uint8_t type,
 /** @brief Add an entry to the function table.
  *
  * @param f : the message signature and function to add
+ * @param replace : whether any existing function for the same signature
+ *                  should be replaced.
+ *
+ * @returns 0 on success (new entry was entered, replacing old one if
+ * necessary), -1 on failure (an existing entry matched the given
+ * signature, but @p replace was 0)
  */
-void playerxdr_ftable_add(playerxdr_function_t f);
+int playerxdr_ftable_add(playerxdr_function_t f, int replace);
 
 /** @brief Initialize the XDR function table.
  *

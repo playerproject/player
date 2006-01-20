@@ -90,12 +90,7 @@ driver
 
 #include <time.h>
 
-#include <configfile.h>
-#include <driver.h>
-#include <error.h>
-#include <drivertable.h>
-#include <player.h>
-#include <playertime.h>
+#include <libplayercore/playercore.h>
 
 extern PlayerTime *GlobalTime;
 

@@ -3,11 +3,13 @@ PLAYERCC_CFLAGS = -I$(top_srcdir) \
                   $(PLAYERCC_EXTRA_CFLAGS)
 
 PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
+                  -L${top_builddir}/libplayercore \
                   -L${top_builddir}/client_libs/libplayerc \
                   -L${top_builddir}/client_libs/libplayerc++
 
 PLAYERCC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                 $(top_builddir)/libplayerxdr/libplayerxdr.la \
+                $(top_builddir)/libplayercore/libplayererror.la \
                 $(top_builddir)/client_libs/libplayerc++/libplayerc++.la
 
 AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
@@ -32,46 +34,46 @@ if INCLUDE_BOOST_SIGNALS
   noinst_PROGRAMS += example2
 endif
 
-camera_SOURCES = camera.cc
-camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+camera_SOURCES = camera.cc args.h
+camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 camera_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example0_SOURCES = example0.cc
-example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 example0_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-example1_SOURCES = example1.cc
-example1_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+example1_SOURCES = example1.cc args.h
+example1_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 example1_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example2_SOURCES = example2.cc
-example2_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+example2_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 example2_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-example3_SOURCES = example3.cc
-example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+example3_SOURCES = example3.cc args.h
+example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 example3_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 goto_SOURCES = goto.cc
-goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 goto_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-grip_SOURCES = grip.cc
-grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+grip_SOURCES = grip.cc args.h
+grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 grip_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-laserobstacleavoid_SOURCES = laserobstacleavoid.cc
-laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+laserobstacleavoid_SOURCES = laserobstacleavoid.cc args.h
+laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 laserobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-ptz_SOURCES = ptz.cc
-ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+ptz_SOURCES = ptz.cc args.h
+ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-randomwalk_SOURCES = randomwalk.cc
-randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+randomwalk_SOURCES = randomwalk.cc args.h
+randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 randomwalk_DEPENDENCIES = $(PLAYERCC_DEPS)
 
-sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc
-sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++
+sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc args.h
+sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
