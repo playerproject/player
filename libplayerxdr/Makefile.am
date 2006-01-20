@@ -15,12 +15,14 @@ pkgconfig_DATA += playerxdr.pc
 pkginclude_HEADERS += playerxdr.h functiontable.h
 endif
 
-EXTRA_DIST = playerxdr.pc.in parse.py
+bin_SCRIPTS = playerxdrgen.py
+
+EXTRA_DIST = playerxdr.pc.in
 
 CLEANFILES = playerxdr.pc playerxdr.c playerxdr.h
 
-playerxdr.c: Makefile parse.py $(top_srcdir)/libplayercore/player.h
-	python $(srcdir)/parse.py $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h
+playerxdr.c: Makefile playerxdrgen.py $(top_srcdir)/libplayercore/player.h
+	python $(srcdir)/playerxdrgen.py $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h
 
 libplayerxdr_la_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
 libplayerxdr_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
