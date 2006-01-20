@@ -30,11 +30,12 @@
 #include <limits.h>
 #include <math.h>  /* rint(3) */
 #include <sys/types.h>
-#include <netinet/in.h>
-#include <sip.h>
-#include <error.h>
 #include <stdlib.h> /* for abs() */
 #include <unistd.h>
+
+#include <libplayercore/error.h>
+
+#include "sip.h"
 
 void SIP::Fill(player_p2os_data_t* data)
 {

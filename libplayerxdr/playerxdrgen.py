@@ -1,10 +1,15 @@
 #!/usr/bin/env python
 
+#TODO: 
+#  - Add an option to specify whether we're building libplayerxdr (whose
+#    header gets installed for general use, has copyright boilerplate,
+#    etc.) or a user XDR lib
+
 import re
 import string
 import sys
 
-USAGE = 'USAGE: parse.y <interface-spec.h> <pack.c> <pack.h>'
+USAGE = 'USAGE: playerxdrgen.y <interface-spec.h> <pack.c> <pack.h>'
 
 if __name__ == '__main__':
 

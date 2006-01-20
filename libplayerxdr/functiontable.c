@@ -30,17 +30,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "playerxdr.h"
 #include "functiontable.h"
-
-typedef struct
-{
-  uint16_t interf;
-  uint8_t type;
-  uint8_t subtype;
-  player_pack_fn_t func;
-} playerxdr_function_t;
 
 static playerxdr_function_t init_ftable[] =
 {
