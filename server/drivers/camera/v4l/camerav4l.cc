@@ -86,6 +86,10 @@ below for notes on specific camera/frame grabber combinations.
   - Default: 0
   - Debugging option: set this to write each frame as an image file on disk.
 
+- have_ov519 (integer)
+  - Default: 0
+  - Needed for ovc519 based cameras that send data jpeg compressed on the usb bus.
+
 Note that some of these options may not be honoured by the underlying
 V4L kernel driver (it may not support a given image size, for
 example).
@@ -123,6 +127,12 @@ the kernel source (add a product id in a couple of places in pwc-if.c).  Milage 
 vary for other kernel versions.  Also, the binary-only pwcx.o module is needed to
 access frame sizes larger than 160x120; good luck finding this and/or getting
 it to work (the developer spat the dummy and took down his website).
+
+Update for pwc:
+The original source has been taken up by another developer and is now available
+from http://www.saillard.org/linux/pwc/. This new version also doesnt need the 
+binary driver which is a bonus
+
 
 @author Andrew Howard
 
@@ -200,6 +210,9 @@ class CameraV4L : public Driver
   // Write frames to disk?
   private: int save;
 
+  // unpack jpeg data from ov519 based cameras
+  private: int have_ov519;
+  
   // Capture timestamp
   private: uint32_t tsec, tusec;
 
@@ -271,6 +284,9 @@ CameraV4L::CameraV4L(ConfigFile* cf, int section)
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
 
+  // unpack ov519
+  this->have_ov519 = cf->ReadInt(section, "have_ov519", 0);
+  
   return;
 }
 
@@ -454,50 +470,60 @@ void CameraV4L::RefreshData()
 
   assert(image_count <= sizeof(this->data.image));
 
-  // Copy the image pixels
-  if (this->frame->format == VIDEO_PALETTE_YUV420P)
-  {// do conversion to RGB (which is bgr at the moment for some reason?)
-    assert(image_count <= (size_t) this->rgb_converted_frame->size);
-    ccvt_420p_bgr24(this->width, this->height,
-                    (unsigned char*) this->frame->data,
-                    (unsigned char*) this->rgb_converted_frame->data);
-    ptr1 = (unsigned char *)this->rgb_converted_frame->data;
+  if (have_ov519)
+  {
+    this->data.image_count = (*(unsigned short *)(frame->data))*8;
+    this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
+    memcpy(data.image, &(((char*)frame->data)[2]), data.image_count);
   }
   else
   {
-    assert(image_count <= (size_t) this->frame->size);
-    ptr1 = (unsigned char *)this->frame->data;
-  }
-  ptr2 = this->data.image;
-  switch (this->depth)
-  {
-  case 24:
-    for (i = 0; i < ((this->width) * (this->height)); i++)
-    {
-      ptr2[0] = ptr1[2];
-      ptr2[1] = ptr1[1];
-      ptr2[2] = ptr1[0];
-      ptr1 += 3;
-      ptr2 += 3;
+    // Copy the image pixels
+    if (this->frame->format == VIDEO_PALETTE_YUV420P)
+    {// do conversion to RGB (which is bgr at the moment for some reason?)
+      assert(image_count <= (size_t) this->rgb_converted_frame->size);
+      ccvt_420p_bgr24(this->width, this->height,
+                      (unsigned char*) this->frame->data,
+                      (unsigned char*) this->rgb_converted_frame->data);
+      ptr1 = (unsigned char *)this->rgb_converted_frame->data;
     }
-    break;
-  case 32:
-    for (i = 0; i < ((this->width) * (this->height)); i++)
+    else
     {
-      ptr2[0] = ptr1[2];
-      ptr2[1] = ptr1[1];
-      ptr2[2] = ptr1[0];
-      ptr2[3] = ptr1[3];
-      ptr1 += 4;
-      ptr2 += 4;
+      assert(image_count <= (size_t) this->frame->size);
+      ptr1 = (unsigned char *)this->frame->data;
     }
-    break;
-  default:
-    memcpy(ptr2, ptr1, image_count);
+    ptr2 = this->data.image;
+    switch (this->depth)
+    {
+    case 24:
+      for (i = 0; i < ((this->width) * (this->height)); i++)
+      {
+        ptr2[0] = ptr1[2];
+	ptr2[1] = ptr1[1];
+        ptr2[2] = ptr1[0];
+        ptr1 += 3;
+        ptr2 += 3;
+      }
+      break;
+    case 32:
+      for (i = 0; i < ((this->width) * (this->height)); i++)
+     {
+        ptr2[0] = ptr1[2];
+        ptr2[1] = ptr1[1];
+        ptr2[2] = ptr1[0];
+        ptr2[3] = ptr1[3];
+        ptr1 += 4;
+        ptr2 += 4;
+      }
+      break;
+    default:
+      memcpy(ptr2, ptr1, image_count);
+    }
   }
 
   // Copy data to server
   size = sizeof(this->data) - sizeof(this->data.image) + image_count;
+
 
   /* We should do this to be efficient */
   Publish(this->device_addr, NULL,
