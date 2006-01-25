@@ -53,7 +53,8 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   rtk_canvas_origin(wnd->canvas, 0, 0);
 
   snprintf(title, sizeof(title), "PlayerViewer %s:%d", host, port);
-  rtk_canvas_title(wnd->canvas, title);
+  //rtk_canvas_title(wnd->canvas, title);
+  rtk_canvas_title(wnd->canvas, "Robot sensor viewer");
 
   // Create file menu
   wnd->file_menu = rtk_menu_create(wnd->canvas, "File");
