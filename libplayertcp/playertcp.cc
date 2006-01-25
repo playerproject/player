@@ -496,7 +496,9 @@ PlayerTCP::WriteClient(int cli)
   player_msghdr_t hdr;
   void* payload;
   int encode_msglen;
+#if HAVE_ZLIB_H
   player_map_data_t* zipped_data=NULL;
+#endif
 
   client = this->clients + cli;
   for(;;)
@@ -581,8 +583,7 @@ PlayerTCP::WriteClient(int cli)
         {
 #if HAVE_ZLIB_H
           player_map_data_t* raw_data = (player_map_data_t*)payload;
-          player_map_data_t* zipped_data = 
-                  (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
+          zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
           assert(zipped_data);
 
           // copy the metadata
@@ -591,6 +592,7 @@ PlayerTCP::WriteClient(int cli)
           zipped_data->width = raw_data->width;
           zipped_data->height = raw_data->height;
           uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
+          assert(count >= compressBound(raw_data->data_count));
 
           // compress the tile
           if(compress((Bytef*)zipped_data->data,&count,
@@ -620,11 +622,13 @@ PlayerTCP::WriteClient(int cli)
         {
           PLAYER_WARN4("encoding failed on message from %u:%u with type %u:%u",
                        hdr.addr.interf, hdr.addr.index, hdr.type, hdr.subtype);
+#if HAVE_ZLIB_H
           if(zipped_data)
           {
             free(zipped_data);
             zipped_data=NULL;
           }
+#endif
           client->writebufferlen = 0;
           delete msg;
           return(0);
@@ -639,11 +643,13 @@ PlayerTCP::WriteClient(int cli)
 			       PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
+#if HAVE_ZLIB_H
           if(zipped_data)
           {
             free(zipped_data);
             zipped_data=NULL;
           }
+#endif
           client->writebufferlen = 0;
           delete msg;
           return(0);
@@ -652,11 +658,13 @@ PlayerTCP::WriteClient(int cli)
         client->writebufferlen = PLAYERXDR_MSGHDR_SIZE + hdr.size;
       }
       delete msg;
+#if HAVE_ZLIB_H
       if(zipped_data)
       {
         free(zipped_data);
         zipped_data=NULL;
       }
+#endif
     }
     else
       return(0);
