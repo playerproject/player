@@ -81,6 +81,12 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
    (player_pack_fn_t)player_camera_data_pack},
 
+ /* dio messages */
+  {PLAYER_DIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES,
+   (player_pack_fn_t)player_dio_data_pack},
+  {PLAYER_DIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_DIO_CMD_VALUES,
+   (player_pack_fn_t)player_dio_cmd_pack},
+
   /* fiducial messages */
   {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN,
    (player_pack_fn_t)player_fiducial_data_pack},
