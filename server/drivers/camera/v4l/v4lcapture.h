@@ -104,6 +104,7 @@ typedef struct
     struct video_mbuf           mbuf;       // Memory buffer #frames, offsets
     void*                       mb_map;     // Memory-mapped buffer
     int                         cur_frame;  // Currently capuring frame no.
+    int							max_buffer; // Maximum number of frames to buffer
 
 } FRAMEGRABBER;
 

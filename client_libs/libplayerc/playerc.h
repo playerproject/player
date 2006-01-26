@@ -328,6 +328,28 @@ playerc_error_str() to get a descriptive error message.
 */
 //int playerc_client_datafreq(playerc_client_t *client, int freq);
 
+/** @brief Add a replace rule to the client queue on the server
+
+@param client Pointer to client object.
+
+@param interf Interface to set replace rule for (-1 for wildcard)
+
+@param index index to set replace rule for (-1 for wildcard)
+
+@param type type to set replace rule for (-1 for wildcard), 
+i.e. PLAYER_MSGTYPE_DATA
+
+@param subtype message subtype to set replace rule for (-1 for wildcard)
+
+@param replace Should we replace these messages
+
+@returns Returns 0 on success, non-zero otherwise.  Use
+playerc_error_str() to get a descriptive error message.
+
+*/
+int playerc_client_add_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace);
+
+
 /** @brief Add a device proxy. @internal
  */
 int playerc_client_adddevice(playerc_client_t *client, struct _playerc_device_t *device);
@@ -1210,19 +1232,6 @@ interface, and and drivers that support it (such as the amcl driver).
 */
 
 /** @brief Hypothesis data. */
-typedef struct
-{
-  /** Pose estimate (x, y, theta) in (m, m, radians). */
-  double mean[3];
-
-  /** Covariance. */
-  double cov[3][3];
-
-  /** Weight associated with this hypothesis. */
-  double weight;
-
-} playerc_localize_hypoth_t;
-
 typedef struct playerc_localize_particle
 {
   double pose[3];
@@ -1639,6 +1648,10 @@ int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
     odometric coordinate system. */
 int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                     double gx, double gy, double ga, int state);
+
+/** Set the target cmd for car like position */
+int playerc_position2d_set_cmd_car(playerc_position2d_t *device,
+                                    double vx,double a);
 
 /** Set the odometry offset */
 int playerc_position2d_set_odom(playerc_position2d_t *device,

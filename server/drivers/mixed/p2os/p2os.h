@@ -208,7 +208,7 @@ class P2OS : public Driver
                      void* data);
     int HandleCommand(player_msghdr * hdr, void * data);
     void PutData(void);
-    void HandlePositionCommand(player_position2d_cmd_t position_cmd);
+    void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
     void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
     void HandleSoundCommand(player_sound_cmd_t sound_cmd);
 
@@ -244,7 +244,7 @@ class P2OS : public Driver
     const char* psos_serial_port;
     struct timeval lastblob_tv;
 
-    player_position2d_cmd_t last_position_cmd;
+    player_position2d_cmd_vel_t last_position_cmd;
 
     // Max motor speeds (mm/sec,deg/sec)
     int motor_max_speed;

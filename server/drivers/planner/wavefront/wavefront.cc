@@ -560,31 +560,37 @@ Wavefront::PutPlannerData()
 void
 Wavefront::PutPositionCommand(double x, double y, double a, unsigned char type)
 {
-  player_position2d_cmd_t cmd;
+  player_position2d_cmd_vel_t vel_cmd;
+  player_position2d_cmd_pos_t pos_cmd;
 
-  memset(&cmd,0,sizeof(cmd));
+  memset(&vel_cmd,0,sizeof(vel_cmd));
+  memset(&pos_cmd,0,sizeof(pos_cmd));
 
   if(type)
   {
     // position control
-    cmd.pos.px = x;
-    cmd.pos.py = y;
-    cmd.pos.pa = a;
+    pos_cmd.pos.px = x;
+    pos_cmd.pos.py = y;
+    pos_cmd.pos.pa = a;
+    pos_cmd.state=1;
+    this->position->PutMsg(this->InQueue,
+                         PLAYER_MSGTYPE_CMD,
+                         PLAYER_POSITION2D_CMD_POS,
+                         (void*)&pos_cmd,sizeof(pos_cmd),NULL);
   }
   else
   {
     // velocity control (used to stop the robot)
-    cmd.vel.px = x;
-    cmd.vel.py = y;
-    cmd.vel.pa = a;
-  }
-  cmd.type=type;
-  cmd.state=1;
-
-  this->position->PutMsg(this->InQueue,
+    vel_cmd.vel.px = x;
+    vel_cmd.vel.py = y;
+    vel_cmd.vel.pa = a;
+    vel_cmd.state=1;
+    this->position->PutMsg(this->InQueue,
                          PLAYER_MSGTYPE_CMD,
-                         PLAYER_POSITION2D_CMD_STATE,
-                         (void*)&cmd,sizeof(cmd),NULL);
+                         PLAYER_POSITION2D_CMD_VEL,
+                         (void*)&vel_cmd,sizeof(vel_cmd),NULL);
+  }
+
 }
 
 void

@@ -91,6 +91,13 @@ Position2dProxy::GoTo(double aX, double aY, double aYaw)
 }
 
 void
+Position2dProxy::SetCarlike(double aXSpeed, double aDriveAngle)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_position2d_set_cmd_car(mDevice,aXSpeed,aDriveAngle);
+}
+
+void
 Position2dProxy::SetMotorEnable(bool aEnable)
 {
   scoped_lock_t lock(mPc->mMutex);

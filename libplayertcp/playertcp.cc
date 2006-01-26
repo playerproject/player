@@ -1141,6 +1141,22 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           break;
         }
 
+        // Request for detailed info on a particular device
+        case PLAYER_PLAYER_REQ_ADD_REPLACE_RULE:
+        {
+          player_add_replace_rule_req * req = reinterpret_cast<player_add_replace_rule_req *> (payload);
+          client->queue->AddReplaceRule(-1,-1,req->interf, req->index, req->type, req->subtype, req->replace);
+          resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
+
+          // Make up and push out the reply
+          resp = new Message(resphdr, NULL, 0);
+          assert(resp);
+          client->queue->Push(*resp);
+          delete resp;
+          break;
+        }
+
+
         default:
           PLAYER_WARN1("player interface discarding message of unsupported "
                        "subtype %u", hdr->subtype);

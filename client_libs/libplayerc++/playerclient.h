@@ -187,6 +187,26 @@ class PlayerClient
     /// @exception throws PlayerError if unsuccessfull
     void SetDataMode(uint aMode);
 
+    /// Add a replace rule to the clients queue on the server
+    ///
+	/// @param client Pointer to client object.
+	///
+	/// @param interf Interface to set replace rule for (-1 for wildcard)
+	///
+	/// @param index index to set replace rule for (-1 for wildcard)
+	/// 
+	/// @param type type to set replace rule for (-1 for wildcard), 
+	/// i.e. PLAYER_MSGTYPE_DATA
+	///
+	/// @param subtype message subtype to set replace rule for (-1 for wildcard)
+	///
+	/// @param replace Should we replace these messages
+	///
+	/// @returns Returns 0 on success, non-zero otherwise.  Use
+    ///
+    /// @exception throws PlayerError if unsuccessfull
+    void AddReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace);
+
     /// Get the list of available device ids. The data is written into the
     /// proxy structure rather than retured to the caller.
     void RequestDeviceList();

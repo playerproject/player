@@ -116,7 +116,7 @@ void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header
       device->hypoths[i].cov[k] = data->hypoths[i].cov[k];*/
   }
   device->hypoth_count = data->hypoths_count;
-
+  
   return;
 }
 

@@ -508,11 +508,11 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, position_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, position_id))
   {
-    assert(hdr->size == sizeof(player_position2d_cmd_t));
+    assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
     Lock();
-    command = *reinterpret_cast<player_position2d_cmd_t *> (data);
+    command = *reinterpret_cast<player_position2d_cmd_vel_t *> (data);
     Unlock();
     return 0;
   }
@@ -532,6 +532,8 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   memset(&this->power_id, 0, sizeof(player_devaddr_t));
   memset(&this->aio_id, 0, sizeof(player_devaddr_t));
   memset(&this->dio_id, 0, sizeof(player_devaddr_t));
+  
+  command_type = 0;
 
   this->position_subscriptions = 0;
   this->sonar_subscriptions = 0;
@@ -1025,7 +1027,6 @@ RFLEX::Main()
     if (rflex_configs.home_on_start)
     {
       command.vel.pa = M_PI/18;
-      command.type=0;
       newmotorturn=true;
     }
 
@@ -1051,10 +1052,10 @@ RFLEX::Main()
         if (joy_control > 0)
           --joy_control;
         // only set new command if type is valid and their is a new command
-        else if (command.type == 0)
+        else if (command_type == 0)
         {
           rflex_set_velocity(rflex_fd,(long) M2ARB_ODO_CONV(mPsec_speedDemand),(long) RAD2ARB_ODO_CONV(radPsec_turnRateDemand),(long) M2ARB_ODO_CONV(rflex_configs.mPsec2_trans_acceleration));
-          command.type = 255;
+          command_type = 255;
         }
         Unlock();
     }

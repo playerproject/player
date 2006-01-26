@@ -213,12 +213,12 @@ int GzPosition::ProcessMessage( MessageQueue *resp_queue,
                                       void *data)
 {
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-        PLAYER_POSITION2D_CMD_STATE, this->device_addr))
+        PLAYER_POSITION2D_CMD_VEL, this->device_addr))
   {
-    player_position2d_cmd_t *cmd;
+    player_position2d_cmd_vel_t *cmd;
 
-    assert(hdr->size >= sizeof(player_position2d_cmd_t));
-    cmd = (player_position2d_cmd_t*) data;
+    assert(hdr->size >= sizeof(player_position2d_cmd_vel_t));
+    cmd = (player_position2d_cmd_vel_t*) data;
 
     gz_position_lock(this->iface, 1);
     this->iface->data->cmd_vel_pos[0] = cmd->vel.px;
@@ -226,7 +226,7 @@ int GzPosition::ProcessMessage( MessageQueue *resp_queue,
     this->iface->data->cmd_vel_rot[2] = cmd->vel.pa * M_PI / 180;
     gz_position_unlock(this->iface);
   }
-  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
         PLAYER_POSITION2D_REQ_GET_GEOM, this->device_addr))
   {
     player_position2d_geom_t geom;

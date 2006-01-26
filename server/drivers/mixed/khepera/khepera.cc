@@ -168,28 +168,21 @@ int Khepera::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void
 		Publish(ir_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geometry->ir, sizeof(geometry->ir));
 		return 0;
 	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, position_addr))
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, position_addr))
 	{
-		player_position2d_cmd_t * poscmd = reinterpret_cast<player_position2d_cmd_t *> (data);
+		player_position2d_cmd_vel_t * poscmd = reinterpret_cast<player_position2d_cmd_vel_t *> (data);
 
-		if (this->velocity_mode) 
-		{
-			// then we are in velocity mode
+		// need to calculate the left and right velocities
+		int transvel = static_cast<int> (static_cast<int> (poscmd->vel.px) * geometry->encoder_res);
+		int rotvel = static_cast<int> (static_cast<int> (poscmd->vel.pa) * geometry->encoder_res * geometry->position.size.sw* geometry->scale);
+		int leftvel = transvel - rotvel;
+		int rightvel = transvel + rotvel;
 
-			// need to calculate the left and right velocities
-			int transvel = static_cast<int> (static_cast<int> (poscmd->vel.px) * geometry->encoder_res);
-			int rotvel = static_cast<int> (static_cast<int> (poscmd->vel.pa) * geometry->encoder_res * geometry->position.size.sw* geometry->scale);
-			int leftvel = transvel - rotvel;
-			int rightvel = transvel + rotvel;
-
-			// now we set the speed
-			if (this->motors_enabled) 
-				SetSpeed(leftvel,rightvel);
-			else 
-				SetSpeed(0,0);
-		} 
-		else
-			PLAYER_WARN("Khepera driver does not support position mode yet");
+		// now we set the speed
+		if (this->motors_enabled) 
+			SetSpeed(leftvel,rightvel);
+		else 
+			SetSpeed(0,0);
 		return 0;
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_addr))
