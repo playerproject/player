@@ -112,6 +112,6 @@ int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t
   cmd.digout = digout;
 
   return playerc_client_write(device->info.client,
-    &device->info, PLAYER_DIO_CMD_VALUES,&cmd,sizeof(cmd));
+    &device->info, PLAYER_DIO_CMD_VALUES,&cmd,NULL);
 }
 
