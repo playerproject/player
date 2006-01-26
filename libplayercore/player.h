@@ -3855,7 +3855,7 @@ typedef struct player_waveform_data
   /** Samples - the number of bytes of raw data */
   uint32_t data_count;
   /** data - an array of raw data */
-  uint8_t data[ PLAYER_WAVEFORM_DATA_MAX ];
+  uint8_t data[PLAYER_WAVEFORM_DATA_MAX];
 } player_waveform_data_t;
 
 /** @} */
@@ -3918,7 +3918,7 @@ typedef struct player_wifi_link
 {
   /** MAC address. */
   uint32_t mac_count;
-  uint8_t mac[ 32 ];	
+  uint8_t mac[32];	
   /** IP address. */
   uint32_t ip_count;
   uint8_t ip[32];
@@ -3971,7 +3971,7 @@ typedef struct player_wifi_mac_req
 {
   /** MAC address. */
   uint32_t mac_count;
-  uint8_t mac[ 32 ];	
+  uint8_t mac[32];	
 } player_wifi_mac_req_t;
 
 /** @brief Request/reply: */
