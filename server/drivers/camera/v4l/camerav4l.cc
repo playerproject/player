@@ -522,7 +522,7 @@ void CameraV4L::RefreshData()
   }
 
   // Copy data to server
-  size = sizeof(this->data) - sizeof(this->data.image) + image_count;
+  size = sizeof(this->data) - sizeof(this->data.image) + data.image_count;
 
 
   /* We should do this to be efficient */
