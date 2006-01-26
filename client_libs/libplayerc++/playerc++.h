@@ -1654,6 +1654,9 @@ class Position2dProxy : public ClientProxy
     /// desired pose of the robot in m, m, radians.
     void GoTo(double aX, double aY, double aYaw);
 
+    /// Sets command for carlike robot
+    void SetCarlike(double aXSpeed, double aDriveAngle);
+
     /// Get the device's geometry; it is read into the
     /// relevant class attributes.
     void RequestGeom();

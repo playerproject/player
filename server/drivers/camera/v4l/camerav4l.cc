@@ -90,6 +90,12 @@ below for notes on specific camera/frame grabber combinations.
   - Default: 0
   - Needed for ovc519 based cameras that send data jpeg compressed on the usb bus.
 
+- max_buffer (integer)
+  - Default: -1 (dont set)
+  - Limit the maximum number of buffers to use for grabbing. This reduces latency, but also 
+  	potentially reduces throughput. Use this if you are reading slowly from the player
+  	driver and dont want to get stale frames
+
 Note that some of these options may not be honoured by the underlying
 V4L kernel driver (it may not support a given image size, for
 example).
@@ -201,6 +207,9 @@ class CameraV4L : public Driver
   // Frame grabber interface
   private: FRAMEGRABBER* fg;
 
+  // Max buffers to use
+  private: int max_buffer;
+
   // The current image (local copy)
   private: FRAME* frame;
 
@@ -286,6 +295,10 @@ CameraV4L::CameraV4L(ConfigFile* cf, int section)
 
   // unpack ov519
   this->have_ov519 = cf->ReadInt(section, "have_ov519", 0);
+
+  // unpack ov519
+  this->max_buffer = cf->ReadInt(section, "max_buffer", -1);
+
   
   return;
 }
@@ -301,6 +314,9 @@ int CameraV4L::Setup()
     PLAYER_ERROR1("unable to open %s", this->device);
     return -1;
   }
+  
+  if (max_buffer > 0)
+  	fg->max_buffer = max_buffer;
 
   fg_set_source(this->fg, this->source);
   fg_set_source_norm(this->fg, this->norm);

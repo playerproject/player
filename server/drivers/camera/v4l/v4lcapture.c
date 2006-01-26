@@ -159,6 +159,9 @@ FRAMEGRABBER* fg_open( const char* dev )
     free( fg );
     return NULL;
   }
+  
+  // set the default max_buffer
+  fg->max_buffer = fg->mbuf.frames;
 
   // Memory map the video buffer
   fg->mb_map = mmap( NULL,                    // Start addr
@@ -403,11 +406,11 @@ FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
     //----------------------------
 
     // Wrap counter
-    if ( capture_frame >= fg->mbuf.frames )
+    if ( capture_frame >= fg->mbuf.frames || capture_frame > fg->max_buffer)
     {
         capture_frame = 0;
     }
-
+    
     // Set up capture parameters
     fg->mmap.format = fg->picture.palette;
     fg->mmap.frame  = capture_frame;

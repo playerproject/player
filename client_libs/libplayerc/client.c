@@ -218,6 +218,24 @@ int playerc_client_disconnect(playerc_client_t *client)
   return 0;
 }
 
+// add a replace rule the the clients queue on the server
+int playerc_client_add_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace)
+{
+  player_add_replace_rule_req_t req;
+
+  req.interf = interf;
+  req.index = index;
+  req.type = type;
+  req.subtype = subtype;
+  req.replace = replace;
+
+
+
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_ADD_REPLACE_RULE, &req, NULL, 0) < 0)
+    return -1;
+
+  return 0;
+}
 
 #if 0
 // Change the server's data delivery mode

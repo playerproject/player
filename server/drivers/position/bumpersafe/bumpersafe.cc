@@ -192,9 +192,9 @@ int BumperSafe::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
     {
       Blocked = true;
       Unlock();
-      player_position2d_cmd_t NullCmd = {0};
+      player_position2d_cmd_vel_t NullCmd = {0};
 
-        position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_STATE,&NullCmd,sizeof(NullCmd),NULL);
+        position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_VEL,&NullCmd,sizeof(NullCmd),NULL);
     }
     else
     {
@@ -265,15 +265,27 @@ int BumperSafe::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
       return(0);
     }
 
-  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_STATE, device_addr))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, device_addr))
   {
-    assert(hdr->size == sizeof(player_position2d_cmd_t));
+    assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
     Lock();
-//    player_position_cmd_t cmd = *reinterpret_cast<player_position_cmd_t *> (data);
     if (!Blocked)
     {
       Unlock();
-        position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_STATE,data,hdr->size,&hdr->timestamp);
+        position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_VEL,data,hdr->size,&hdr->timestamp);
+    }
+    Unlock();
+    return 0;
+  }
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_POS, device_addr))
+  {
+    assert(hdr->size == sizeof(player_position2d_cmd_pos_t));
+    Lock();
+    if (!Blocked)
+    {
+      Unlock();
+        position->PutMsg(InQueue,PLAYER_MSGTYPE_CMD,PLAYER_POSITION2D_CMD_POS,data,hdr->size,&hdr->timestamp);
     }
     Unlock();
     return 0;

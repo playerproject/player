@@ -243,6 +243,15 @@ void PlayerClient::SetDataMode(uint aMode)
   */
 }
 
+// add replace rule
+void PlayerClient::AddReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace)
+{
+  if (0!=playerc_client_add_replace_rule(mClient, aInterf,aIndex,aType,aSubtype,aReplace))
+  {
+    throw PlayerError("PlayerClient::AddReplaceRule()", playerc_error_str());
+  }
+}
+
 int PlayerClient::LookupCode(std::string aName) const
 {
   return playerc_lookup_code(aName.c_str());

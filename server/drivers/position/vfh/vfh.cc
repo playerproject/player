@@ -199,7 +199,7 @@ class VFH_Class : public Driver
     void PutCommand( int speed, int turnrate );
 
     // Check for new commands from server
-    void ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &);
+    void ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_pos_t &);
 
     // Computes the signed minimum difference between the two angles.  Inputs
     // and return values are in degrees.
@@ -564,7 +564,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
 void
 VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
 {
-  player_position2d_cmd_t cmd;
+  player_position2d_cmd_vel_t cmd;
 
 //printf("Command: speed: %d turnrate: %d\n", cmd_speed, cmd_turnrate);
 
@@ -581,11 +581,6 @@ VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
     cmd.vel.px = 0;
     cmd.vel.py = 0;
     cmd.vel.pa = 0;
-  }
-  // Velocity mode: the command was already passed through in
-  // ProcessCommand.
-  else if (this->cmd_type == 0)
-  {
   }
   // Position mode
   else
@@ -604,7 +599,7 @@ VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
 
   this->odom->PutMsg(this->InQueue,
                      PLAYER_MSGTYPE_CMD,
-                     PLAYER_POSITION2D_CMD_STATE,
+                     PLAYER_POSITION2D_CMD_VEL,
                      (void*)&cmd,sizeof(cmd),NULL);
 }
 
@@ -639,13 +634,27 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
-                                PLAYER_POSITION2D_CMD_STATE,
+                                PLAYER_POSITION2D_CMD_POS,
                                 this->device_addr))
   {
-    assert(hdr->size == sizeof(player_position2d_cmd_t));
-    ProcessCommand(hdr, *reinterpret_cast<player_position2d_cmd_t *> (data));
+    assert(hdr->size == sizeof(player_position2d_cmd_pos_t));
+    ProcessCommand(hdr, *reinterpret_cast<player_position2d_cmd_pos_t *> (data));
     return 0;
   }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_POSITION2D_CMD_VEL,
+                                this->device_addr))
+  {
+    assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
+    // make a copy of the header and change the address
+    player_msghdr_t newhdr = *hdr;
+    newhdr.addr = this->odom_addr;
+    this->odom->PutMsg(this->InQueue, &newhdr, (void*)data);
+    this->cmd_type = 0;
+    this->active_goal = false;
+
+    return 0;
+  }  
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->device_addr))
   {
     // Pass the request on to the underlying position device and wait for
@@ -796,7 +805,7 @@ void VFH_Class::Main()
       if((dist < (this->dist_eps * 1e3 * 2.0)) &&
          (this->speed > (vfh_Algorithm->GetCurrentMaxSpeed() / 2.0)))
       {
-        int foo = this->speed;
+//        int foo = this->speed;
         this->speed = 
                 (int)rint(vfh_Algorithm->GetCurrentMaxSpeed() / 2.0);
         //printf("slowing down from %d to %d\n",
@@ -847,38 +856,24 @@ void VFH_Class::Main()
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new commands from the server
 void
-VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_t &cmd)
+VFH_Class::ProcessCommand(player_msghdr_t* hdr, player_position2d_cmd_pos_t &cmd)
 {
   int x,y,t;
 
-  // Velocity mode; just pass it through
-  if (cmd.type == 0)
-  {
-    // make a copy of the header and change the address
-    player_msghdr_t newhdr = *hdr;
-    newhdr.addr = this->odom_addr;
-    this->odom->PutMsg(this->InQueue, &newhdr, (void*)&cmd);
-    this->cmd_type = 0;
-    this->active_goal = false;
-  }
-  // Position mode
-  else
-  {
-    x = (int)rint(cmd.pos.px * 1e3);
-    y = (int)rint(cmd.pos.py * 1e3);
-    t = (int)rint(RTOD(cmd.pos.pa));
+  x = (int)rint(cmd.pos.px * 1e3);
+  y = (int)rint(cmd.pos.py * 1e3);
+  t = (int)rint(RTOD(cmd.pos.pa));
 
-    this->cmd_type = 1;
-    this->cmd_state = cmd.state;
+  this->cmd_type = 1;
+  this->cmd_state = cmd.state;
 
-    if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
-    {
-      this->active_goal = true;
-      this->turninginplace = false;
-      this->goal_x = x;
-      this->goal_y = y;
-      this->goal_t = t;
-    }
+  if((x != this->goal_x) || (y != this->goal_y) || (t != this->goal_t))
+  {
+    this->active_goal = true;
+    this->turninginplace = false;
+    this->goal_x = x;
+    this->goal_y = y;
+    this->goal_t = t;
   }
 }
 

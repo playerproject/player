@@ -172,17 +172,16 @@ int
 playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
                                double vx, double vy, double va, int state)
 {
-  player_position2d_cmd_t cmd;
+  player_position2d_cmd_vel_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
   cmd.vel.px = vx;
   cmd.vel.py = vy;
   cmd.vel.pa = va;
   cmd.state = state;
-  cmd.type = 0;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_POSITION2D_CMD_STATE,
+                              PLAYER_POSITION2D_CMD_VEL,
                               &cmd, NULL);
 }
 
@@ -191,17 +190,30 @@ int
 playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                 double gx, double gy, double ga, int state)
 {
-  player_position2d_cmd_t cmd;
+  player_position2d_cmd_pos_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
   cmd.pos.px = gx;
   cmd.pos.py = gy;
   cmd.pos.pa = ga;
   cmd.state = state;
-  cmd.type = 1;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_POSITION2D_CMD_STATE,
+                              PLAYER_POSITION2D_CMD_POS,
+                              &cmd, NULL);
+}
+
+// Set the target pose
+int
+playerc_position2d_set_cmd_car(playerc_position2d_t *device,
+                                double vx, double a)
+{
+  player_position2d_cmd_car_t cmd;
+  cmd.velocity = vx;
+  cmd.angle = a;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_POSITION2D_CMD_CAR,
                               &cmd, NULL);
 }
 

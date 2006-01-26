@@ -354,12 +354,12 @@ int LinuxJoystick::Setup()
       delete msg;
 
     // Stop the robot
-    player_position2d_cmd_t cmd;
+    player_position2d_cmd_vel_t cmd;
     memset(&cmd,0,sizeof(cmd));
     this->position->PutMsg(this->InQueue,
                            PLAYER_MSGTYPE_CMD,
-                           PLAYER_POSITION2D_CMD_STATE,
-                           (void*)&cmd, sizeof(player_position2d_cmd_t),
+                           PLAYER_POSITION2D_CMD_VEL,
+                           (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                            NULL);
   }
   
@@ -417,12 +417,12 @@ void LinuxJoystick::Main()
 #if 0
       else
       {
-        player_position2d_cmd_t cmd;
+        player_position2d_cmd_vel_t cmd;
         memset(&cmd,0,sizeof(cmd));
         this->position->PutMsg(this->InQueue,
                                PLAYER_MSGTYPE_CMD,
-                               PLAYER_POSITION2D_CMD_STATE,
-                               (void*)&cmd, sizeof(player_position2d_cmd_t),
+                               PLAYER_POSITION2D_CMD_VEL,
+                               (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                                NULL);
       }
 #endif
@@ -528,7 +528,7 @@ void LinuxJoystick::PutPositionCommand()
 {
   double scaled_x, scaled_y;
   double xspeed, yawspeed;
-  player_position2d_cmd_t cmd;
+  player_position2d_cmd_vel_t cmd;
   struct timeval curr;
   double diff;
 
@@ -570,12 +570,12 @@ void LinuxJoystick::PutPositionCommand()
   memset(&cmd,0,sizeof(cmd));
   cmd.vel.px = xspeed;
   cmd.vel.pa = yawspeed;
-  cmd.type=0;
+  //cmd.type=0;
   cmd.state=1;
   this->position->PutMsg(this->InQueue,
                          PLAYER_MSGTYPE_CMD,
-                         PLAYER_POSITION2D_CMD_STATE,
-                         (void*)&cmd, sizeof(player_position2d_cmd_t),
+                         PLAYER_POSITION2D_CMD_VEL,
+                         (void*)&cmd, sizeof(player_position2d_cmd_vel_t),
                          NULL);
 }
 

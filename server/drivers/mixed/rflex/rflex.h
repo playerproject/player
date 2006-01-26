@@ -104,7 +104,8 @@ class RFLEX : public Driver
     player_devaddr_t power_id;
     player_devaddr_t aio_id;
     player_devaddr_t dio_id;
-	player_position2d_cmd_t command;
+	player_position2d_cmd_vel_t command;
+	int command_type;
 
     int position_subscriptions;
     int sonar_subscriptions;

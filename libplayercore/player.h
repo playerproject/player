@@ -2636,6 +2636,8 @@ from devices. */
 #define PLAYER_PLAYER_REQ_AUTH        7
 #define PLAYER_PLAYER_REQ_NAMESERVICE 8
 #define PLAYER_PLAYER_REQ_IDENT       9
+#define PLAYER_PLAYER_REQ_ADD_REPLACE_RULE 10
+
 
 /** @brief Request/reply: Get the list of available devices.
 
@@ -2786,6 +2788,31 @@ typedef struct player_device_nameservice_req
   /** The corresponding port */
   uint16_t port;
 } player_device_nameservice_req_t;
+
+/** @brief Configuration request: Add client queue replace rule.
+
+Allows the client to add a replace rule to their server queue. Replace
+rules define which messages will be replaced when new data arrives.
+If you are not updating frequently from ther server then the use of 
+replace rules for data packets will stop any queue overflow messages
+
+Each field in the request type corresponds to the equivalent field in
+the message header use -1 for a dont care value.
+ */
+typedef struct player_add_replace_rule_req
+{
+	/** Interface to set replace rule for (-1 for wildcard) */
+	int32_t interf;
+	/** index to set replace rule for (-1 for wildcard) */
+	int32_t index;
+	/** message type to set replace rule for (-1 for wildcard), i.e. PLAYER_MSGTYPE_DATA */
+	int32_t type;
+	/** message subtype to set replace rule for (-1 for wildcard) */
+	int32_t subtype;
+	/** Should we replace these messages */
+	int32_t replace	;
+} player_add_replace_rule_req_t;
+
 
 /** @} */
 
@@ -3011,8 +3038,12 @@ The @p position2d interface is used to control mobile robot bases in 2D.
 /** Data subtype: geometry */
 #define PLAYER_POSITION2D_DATA_GEOM              2
 
-/** Command subtype: state */
-#define PLAYER_POSITION2D_CMD_STATE              1
+/** Command subtype: velocity command */
+#define PLAYER_POSITION2D_CMD_VEL                1
+/** Command subtype: position command */
+#define PLAYER_POSITION2D_CMD_POS              2
+/** Command subtype: carlike command */
+#define PLAYER_POSITION2D_CMD_CAR              3
 
 /** @brief Data: state (@ref PLAYER_POSITION2D_DATA_STATE)
 
@@ -3028,22 +3059,44 @@ typedef struct player_position2d_data
   uint8_t stall;
 } player_position2d_data_t;
 
-/** @brief Command: state (@ref PLAYER_POSITION2D_CMD_STATE)
+/** @brief Command: velocity (@ref PLAYER_POSITION2D_CMD_VEL)
 
-The @p position interface accepts new positions and/or velocities
+The @p position interface accepts new velocities
 for the robot's motors (drivers may support position control, speed control,
 or both). */
-typedef struct player_position2d_cmd
+typedef struct player_position2d_cmd_vel
 {
-  /** position [m,m,rad] (x, y, yaw)*/
-  player_pose_t pos;
   /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
   player_pose_t vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
-  /** Command type; 0 = velocity, 1 = position. */
-  uint8_t type;
-} player_position2d_cmd_t;
+} player_position2d_cmd_vel_t;
+
+/** @brief Command: position (@ref PLAYER_POSITION2D_CMD_POS)
+
+The @p position interface accepts new positions 
+for the robot's motors (drivers may support position control, speed control,
+or both). */
+typedef struct player_position2d_cmd_pos
+{
+  /** position [m,m,rad] (x, y, yaw)*/
+  player_pose_t pos;
+  /** Motor state (FALSE is either off or locked, depending on the driver). */
+  uint8_t state;
+} player_position2d_cmd_pos_t;
+
+/** @brief Command: carlike (@ref PLAYER_POSITION2D_CMD_CAR)
+
+The @p position interface accepts new carlike velocity commands (speed and turning angle)
+for the robot's motors (only supported by some drivers). */
+typedef struct player_position2d_cmd_car
+{
+  /** forward velocity (m/s) */
+  double velocity;
+  /** turning angle (rad) */
+  double angle;
+} player_position2d_cmd_car_t;
+
 
 /** @brief Data AND Request/reply: geometry.
 

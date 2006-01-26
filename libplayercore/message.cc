@@ -166,7 +166,7 @@ MessageQueue::AddReplaceRule(int _host, int _robot, int _interf, int _index,
   for(curr=this->replaceRules;curr && curr->next;curr=curr->next);
   if(!curr)
   {
-    curr = new MessageReplaceRule(_host, _robot, _interf, _index,
+    curr = replaceRules = new MessageReplaceRule(_host, _robot, _interf, _index,
                                   _type, _subtype, _replace);
     assert(curr);
   }

@@ -223,7 +223,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->actarray_id, 0, sizeof(player_devaddr_t));
   memset(&this->limb_id, 0, sizeof(player_devaddr_t));
 
-  memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_t));
+  memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
 
   this->position_subscriptions = this->sonar_subscriptions = this->actarray_subscriptions = 0;
 
@@ -1976,7 +1976,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
 }
 
 void
-P2OS::HandlePositionCommand(player_position2d_cmd_t position_cmd)
+P2OS::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 {
   int speedDemand, turnRateDemand;
   double leftvel, rightvel;
@@ -2385,12 +2385,12 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
 {
   if(Message::MatchMessage(hdr,
                            PLAYER_MSGTYPE_CMD,
-                           PLAYER_POSITION2D_CMD_STATE,
+                           PLAYER_POSITION2D_CMD_VEL,
                            this->position_id))
   {
     // get and send the latest motor command
-    player_position2d_cmd_t position_cmd;
-    position_cmd = *(player_position2d_cmd_t*)data;
+    player_position2d_cmd_vel_t position_cmd;
+    position_cmd = *(player_position2d_cmd_vel_t*)data;
     this->HandlePositionCommand(position_cmd);
     return(0);
   }

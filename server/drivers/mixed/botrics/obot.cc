@@ -145,7 +145,7 @@ class Obot : public Driver
 
     Obot(ConfigFile* cf, int section);
 
-    void ProcessCommand(player_position2d_cmd_t * cmd);
+    void ProcessCommand(player_position2d_cmd_vel_t * cmd);
 
     // Process incoming messages from clients 
     int ProcessMessage(MessageQueue * resp_queue, 
@@ -469,7 +469,7 @@ Obot::Main()
 }
 
 void
-Obot::ProcessCommand(player_position2d_cmd_t * cmd)
+Obot::ProcessCommand(player_position2d_cmd_vel_t * cmd)
 {
   double rotational_term, command_lvel, command_rvel;
   int final_lvel, final_rvel;
@@ -571,15 +571,15 @@ int Obot::ProcessMessage(MessageQueue * resp_queue,
                          void * data)
 {
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-                           PLAYER_POSITION2D_CMD_STATE, 
+                           PLAYER_POSITION2D_CMD_VEL, 
                            this->position_addr))
   {
     // Only take the first new command (should probably take the last,
     // but...)
     if(!this->sent_new_command)
     {
-      assert(hdr->size == sizeof(player_position2d_cmd_t));
-      this->ProcessCommand((player_position2d_cmd_t*)data);
+      assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
+      this->ProcessCommand((player_position2d_cmd_vel_t*)data);
       this->sent_new_command = true;
     }
     return(0);
