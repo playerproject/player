@@ -520,7 +520,7 @@ PlayerTCP::WriteClient(int cli)
         }
         else
         {
-          PLAYER_MSG1(2,"read() failed: %s", strerror(errno));
+          PLAYER_MSG1(2,"write() failed: %s", strerror(errno));
           return(-1);
         }
       }

@@ -78,6 +78,7 @@ cameras.
     - "1024x768_yuv422" - will be rescaled to 512x384
     - "1280x960_mono"
     - "1280x960_yuv422" - will be rescaled to 640x480
+    - "FORMAT7_MODE0" - only available with libdc1394 >= 2.0
   - Currently, all mono modes will produce 8-bit monochrome images unless 
   a color decoding option is provided (see bayer).
   - All yuv422 modes are converted to RGB24
@@ -188,6 +189,8 @@ driver
 #define FORMAT_VGA_NONCOMPRESSED DC1394_FORMAT0
 #define FORMAT_SVGA_NONCOMPRESSED_1 DC1394_FORMAT1
 #define FORMAT_SVGA_NONCOMPRESSED_2 DC1394_FORMAT2
+#define FORMAT_6 DC1394_FORMAT6
+#define FORMAT_7 DC1394_FORMAT7
 
 // mode enumneration
 #define 	  MODE_160x120_YUV444	  DC1394_MODE_160x120_YUV444
@@ -272,7 +275,7 @@ class Camera1394 : public Driver
   // Save a frame to memory
   private: int GrabFrame();
 
-  private: unsigned char resized[1280 * 960 * 3];
+  private: unsigned char * resized;//[1280 * 960 * 3];
 
   // Save a frame to disk
   private: int SaveFrame( const char *filename );
@@ -288,6 +291,7 @@ class Camera1394 : public Driver
   private: dc1394camera_t * camera;
   // Camera features
   private: dc1394featureset_t features;
+  private: dc1394format7modeset_t modeset;
 #else  
   private: dc1394_cameracapture camera;
   // Camera features
@@ -356,6 +360,8 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
            PLAYER_CAMERA_CODE)
 {
   float fps;
+
+  resized=NULL;
 
   this->handle = NULL;
   this->method = methodNone;
@@ -463,6 +469,14 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
     this->format = FORMAT_SVGA_NONCOMPRESSED_2;
     this->frameSize = 640 * 480 * 3;
   }
+#if LIBDC1394_VERSION == 0200
+  else if (0==strcmp(str,"FORMAT7_MODE0"))
+  {
+    this->mode = MODE_FORMAT7_0;
+    this->format = FORMAT_7;
+    this->frameSize = 0;
+  }
+#endif
   else
   {
     PLAYER_ERROR1("unknown video mode [%s]", str);
@@ -616,6 +630,9 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
 // Safe Cleanup
 void Camera1394::SafeCleanup()
 {
+  delete resized;
+  resized = NULL;
+
 #if LIBDC1394_VERSION == 0200
   if (this->camera)
   {
@@ -816,6 +833,28 @@ int Camera1394::Setup()
   // Remove; leave?
   dc1394_print_feature_set(&this->features);
 
+#if LIBDC1394_VERSION == 0200
+  // if format 7 requested check that it is supported
+  if (FORMAT_7==this->format && DC1394_SUCCESS!=dc1394_format7_get_modeset(camera, &modeset))
+  {
+    bool HasMode7 = false;
+    for (unsigned int i=0;i<DC1394_MODE_FORMAT7_NUM;i++) 
+    {
+      if (modeset.mode[i].present!=0) 
+      {
+        HasMode7 = true;
+        break;	
+      }
+    }
+    if (!HasMode7)
+    {
+      PLAYER_ERROR("Could not set Format 7");
+      this->SafeCleanup();
+      return -1;
+    }
+  }
+#endif
+
   // Get the ISO channel and speed of the video
 #if LIBDC1394_VERSION == 0200
   if (DC1394_SUCCESS != dc1394_video_get_iso_channel_and_speed(this->camera, 
@@ -847,9 +886,29 @@ int Camera1394::Setup()
                                &this->camera) == DC1394_SUCCESS)
 #elif LIBDC1394_VERSION == 0200
   // Set camera to use DMA, improves performance.
-  if (!this->forceRaw &&
-      dc1394_dma_setup_capture(this->camera, channel, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1, NULL) == DC1394_SUCCESS)
+  bool DMA_Success = false;
+  if (!this->forceRaw)
+  {
+    if (FORMAT_7 == format)
+    {
+      if (DC1394_SUCCESS == dc1394_dma_setup_format7_capture(camera, channel, mode, speed,
+            (uint_t)DC1394_QUERY_FROM_CAMERA, (uint_t)DC1394_QUERY_FROM_CAMERA, 
+            (uint_t)DC1394_QUERY_FROM_CAMERA, (uint_t)DC1394_QUERY_FROM_CAMERA, 
+//            (uint_t)DC1394_QUERY_FROM_CAMERA, NUM_DMA_BUFFERS, 1, NULL))
+            (uint_t)DC1394_QUERY_FROM_CAMERA, 10, 0, NULL))      {
+        DMA_Success = true;
+      }
+    }
+    else
+    {
+      if (DC1394_SUCCESS == dc1394_dma_setup_capture(this->camera, channel, this->mode, speed,
+                               this->frameRate, NUM_DMA_BUFFERS, 1, NULL))
+      {
+        DMA_Success = true;
+      }
+    }
+  }
+  if (DMA_Success)
 #else
   if (0)
 #endif
@@ -1042,6 +1101,9 @@ int Camera1394::GrabFrame()
   capture_buffer = this->camera.capture_buffer;
 #endif
 
+  if (frameSize == 0)
+    frameSize = frame_width * frame_height;
+
   switch (this->mode)
   {
   case MODE_320x240_YUV422:
@@ -1056,6 +1118,8 @@ int Camera1394::GrabFrame()
     break;
   case MODE_1024x768_YUV422:
   case MODE_1280x960_YUV422:
+    if (resized == NULL)
+      resized = new unsigned char[1280 * 960 * 3];
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
@@ -1079,6 +1143,8 @@ int Camera1394::GrabFrame()
     }
     break;
   case MODE_800x600_YUV422:
+    if (resized == NULL)
+      resized = new unsigned char[1280 * 960 * 3];
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
@@ -1118,6 +1184,7 @@ int Camera1394::GrabFrame()
   case MODE_800x600_MONO:
   case MODE_1024x768_MONO:
   case MODE_1280x960_MONO:
+  case MODE_FORMAT7_0:
     if (!DoBayerConversion)
     {
       this->data.bpp = 8;
@@ -1127,12 +1194,21 @@ int Camera1394::GrabFrame()
       this->data.height = frame_height;
       assert(this->data.image_count <= sizeof(this->data.image));
       memcpy(this->data.image, (unsigned char *)capture_buffer, this->data.image_count);
-    } else
+    } 
+    else
     {
       this->data.bpp = 24;
       this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-      if ((frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) dst = this->resized;
-      else dst = this->data.image;
+      if ((frame_width) > PLAYER_CAMERA_IMAGE_WIDTH)
+      {
+        if (resized == NULL)
+          resized = new unsigned char[this->frameSize * 3];
+        dst = this->resized;
+      }
+      else 
+      {
+        dst = this->data.image;
+      }
       switch (this->BayerMethod)
       {
       case BAYER_DECODING_DOWNSAMPLE:
@@ -1214,7 +1290,7 @@ void Camera1394::RefreshData()
 {
   size_t size;
 
-  // Work out the data size; do this BEFORE byteswapping
+  // Work out the data size
   size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
 
   // now we just do the byte-swapping

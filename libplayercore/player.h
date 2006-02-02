@@ -41,7 +41,7 @@
  * Maximum message lengths, etc.
  * @{ */
 /** The largest possible message */
-#define PLAYER_MAX_MESSAGE_SIZE 2097152 /*2MB*/
+#define PLAYER_MAX_MESSAGE_SIZE 8388608 /*8MB*/
 /** Maximum payload in a message */
 #define PLAYER_MAX_PAYLOAD_SIZE (PLAYER_MAX_MESSAGE_SIZE - sizeof(player_msghdr_t))
 /** Maximum length for a driver name */
@@ -1071,9 +1071,9 @@ byte-aligned).
 #define PLAYER_CAMERA_DATA_STATE             1
 
 /** Maximum image width, in pixels */
-#define PLAYER_CAMERA_IMAGE_WIDTH  640
+#define PLAYER_CAMERA_IMAGE_WIDTH  1920
 /** Maximum image height, in pixels */
-#define PLAYER_CAMERA_IMAGE_HEIGHT 480
+#define PLAYER_CAMERA_IMAGE_HEIGHT 1080
 /** Maximum image size, in pixels */
 #define PLAYER_CAMERA_IMAGE_SIZE  (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
 
