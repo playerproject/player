@@ -178,6 +178,15 @@ MessageQueue::AddReplaceRule(int _host, int _robot, int _interf, int _index,
   }
 }
 
+/// @brief Add a replacement rule to the list
+void 
+MessageQueue::AddReplaceRule(const player_devaddr_t &device,
+                             int _type, int _subtype, bool _replace)
+{
+  this->AddReplaceRule (device.host, device.robot, device.interf, device.index,
+                        _type, _subtype, _replace);
+}
+
 bool
 MessageQueue::CheckReplace(player_msghdr_t* hdr)
 {
