@@ -376,6 +376,10 @@ P2OS::P2OS(ConfigFile* cf, int section)
       this->SetError(-1);
       return;
     }
+    // Stop actarray messages in the queue from being overwritten
+    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD, false);
+    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_SPEED_CMD, false);
+    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD, false);
   }
 
   // build the table of robot parameters.

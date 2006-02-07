@@ -204,6 +204,9 @@ class MessageQueue
     /// @brief Add a replacement rule to the list
     void AddReplaceRule(int _host, int _robot, int _interf, int _index,
                         int _type, int _subtype, bool _replace);
+    /// @brief Add a replacement rule to the list
+    void AddReplaceRule(const player_devaddr_t &device,
+                        int _type, int _subtype, bool _replace);
     /// @brief Check whether a message with the given header should replace
     /// any existing message of the same signature.
     bool CheckReplace(player_msghdr_t* hdr);
