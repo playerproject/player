@@ -54,6 +54,30 @@ extern "C" {
 #define ROOMBA_MODE_SAFE                 2
 #define ROOMBA_MODE_FULL                 3
 
+#define ROOMBA_TVEL_MAX_MM_S           500     
+#define ROOMBA_RADIUS_MAX_MM          2000
+
+#define ROOMBA_SENSOR_PACKET_SIZE       26
+
+#define ROOMBA_CHARGING_NOT              0
+#define ROOMBA_CHARGING_RECOVERY         1
+#define ROOMBA_CHARGING_CHARGING         2
+#define ROOMBA_CHARGING_TRICKLE          3
+#define ROOMBA_CHARGING_WAITING          4
+#define ROOMBA_CHARGING_ERROR            5
+
+#define ROOMBA_AXLE_LENGTH            0.258
+
+#ifndef MIN
+  #define MIN(a,b) ((a < b) ? (a) : (b))
+#endif
+#ifndef MAX
+  #define MAX(a,b) ((a > b) ? (a) : (b))
+#endif
+#ifndef NORMALIZE
+  #define NORMALIZE(z) atan2(sin(z), cos(z))
+#endif
+
 typedef struct
 {
   /* Serial port to which the robot is connected */
@@ -64,13 +88,44 @@ typedef struct
   /* Current operation mode; one of ROOMBA_MODE_* */
   unsigned char mode;
   /* Integrated odometric position [m m rad] */
-  double x, y, theta;
+  double ox, oy, oa;
+
+  /* Various Boolean flags */
+  int bumper_left, bumper_right;
+  unsigned char wheeldrop_caster, wheeldrop_left, wheeldrop_right;
+  unsigned char wall;
+  unsigned char cliff_left, cliff_frontleft, cliff_frontright, cliff_right;
+  unsigned char virtual_wall;
+  unsigned char overcurrent_driveleft, overcurrent_driveright;
+  unsigned char overcurrent_mainbrush, overcurrent_sidebrush;
+  unsigned char overcurrent_vacuum;
+  unsigned char dirtdetector_right, dirtdetector_left;
+  unsigned char remote_opcode;
+  unsigned char button_power, button_spot, button_clean, button_max;
+
+  /* One of ROOMBA_CHARGING_* */
+  unsigned char charging_state;
+  /* Volts */
+  double voltage;
+  /* Amps */
+  double current;
+  /* degrees C */
+  double temperature;
+  /* Ah */
+  double charge;
+  /* Capacity */
+  double capacity;
 } roomba_comm_t;
 
 roomba_comm_t* roomba_create(const char* serial_port);
 int roomba_open(roomba_comm_t* r);
 int roomba_init(roomba_comm_t* r);
 int roomba_close(roomba_comm_t* r);
+int roomba_set_speeds(roomba_comm_t* r, double tv, double rv);
+int roomba_parse_sensor_packet(roomba_comm_t* r, 
+                               unsigned char* buf, size_t buflen);
+int roomba_get_sensors(roomba_comm_t* r, int timeout);
+
 
 #ifdef __cplusplus
 }
