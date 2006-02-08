@@ -102,6 +102,8 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_fiducial_id_pack},
 
   /* graphics2d messages */
+  {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_CLEAR,
+   (player_pack_fn_t)player_graphics2d_cmd_clear_pack},
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POINTS,
    (player_pack_fn_t)player_graphics2d_cmd_points_pack},
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POLYGON,

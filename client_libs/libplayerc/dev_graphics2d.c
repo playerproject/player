@@ -128,7 +128,13 @@ int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
 
 int playerc_graphics2d_clear(playerc_graphics2d_t *device )
 {
+
+  /* HACK - send a meaningless, but non-zero-length message. We only
+     do this because empty messages don't seem to work. TODO:
+     investigate! */
+  player_graphics2d_cmd_clear_t hack;
+  
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_GRAPHICS2D_CMD_CLEAR,
-                              NULL, NULL);
+                              &hack, NULL);
 }
