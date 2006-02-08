@@ -47,6 +47,7 @@ main(int argc, char **argv)
     for( r=1.0; r>0; r-=0.1 )
       {
 	col.blue = (int)(r * 255.0);
+	col.red  = (int)(255.0 - r * 255.0);
 	
 	player_point_2d_t pts[4];
 	pts[0].px = -r;
@@ -54,7 +55,7 @@ main(int argc, char **argv)
 	pts[1].px = r;
 	pts[1].py = -r;
 	pts[2].px = r;
-	pts[2].py = r;
+	pts[2].py = r;\
 	pts[3].px = -r;
 	pts[3].py = r;
 	
@@ -64,4 +65,8 @@ main(int argc, char **argv)
   }
 
   sleep(2);
+
+  gp.Clear();
+
+  return 0;
 }

@@ -952,8 +952,20 @@ class Graphics2dProxy : public ClientProxy
     Graphics2dProxy(PlayerClient *aPc, uint aIndex=0);
     // Destructor
     ~Graphics2dProxy();
+    
+    /// Set the current pen color
+    void Color( player_color_t col );
 
+    /// Set the current pen color
+    void Color( uint8_t red,  uint8_t green,  uint8_t blue,  uint8_t alpha );
+
+    /// Clear the drawing area
+    void Clear( void );
+
+    /// Draw a set of points
     void DrawPoints( player_point_2d_t pts[], int count );
+
+    // Draw a polygon defined by a set of points
     void DrawPolygon( player_point_2d_t pts[], int count, bool filled, player_color_t fill_color );
 };
 
