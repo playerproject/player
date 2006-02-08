@@ -74,6 +74,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_LASER_STRING;
     case PLAYER_LOCALIZE_CODE:
       return PLAYER_LOCALIZE_STRING;
+    case PLAYER_GRAPHICS2D_CODE:
+      return PLAYER_GRAPHICS2D_STRING;
     case PLAYER_GRIPPER_CODE:
       return PLAYER_GRIPPER_STRING;
     case PLAYER_IR_CODE:
@@ -125,6 +127,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_FIDUCIAL_CODE;
   if (strcmp(name, PLAYER_JOYSTICK_STRING) == 0)
     return PLAYER_JOYSTICK_CODE;
+  if (strcmp(name, PLAYER_GRAPHICS2D_STRING) == 0)
+    return PLAYER_GRAPHICS2D_CODE;
   if (strcmp(name, PLAYER_GPS_STRING) == 0)
     return PLAYER_GPS_CODE;
   if (strcmp(name, PLAYER_LASER_STRING) == 0)

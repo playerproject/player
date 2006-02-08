@@ -101,6 +101,14 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_SET_ID,
    (player_pack_fn_t)player_fiducial_id_pack},
 
+  /* graphics2d messages */
+  {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POINTS,
+   (player_pack_fn_t)player_graphics2d_cmd_points_pack},
+  {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POLYGON,
+   (player_pack_fn_t)player_graphics2d_cmd_polygon_pack},
+  {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POLYLINE,
+   (player_pack_fn_t)player_graphics2d_cmd_polyline_pack},
+
   /* gripper messages */
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_GRIPPER_DATA_STATE,
    (player_pack_fn_t)player_gripper_data_pack},

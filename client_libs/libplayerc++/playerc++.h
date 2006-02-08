@@ -926,6 +926,35 @@ class GpsProxy : public ClientProxy
     uint GetTimeUsec() const { return GetVar(mDevice->time_usec); };
 };
 #endif
+
+/**
+ * The @p Graphics2dProxy class is used to draw simple graphics into a
+ * rendering device provided by Player using the graphics2d
+ * interface. For example, the Stage plugin implements this interface
+ * so you can draw into the Stage window. This is very useful to
+ * visualize what's going on in your controller.
+ */
+class Graphics2dProxy : public ClientProxy
+{
+
+  private:
+
+    // Subscribe
+    void Subscribe(uint aIndex);
+    // Unsubscribe
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_graphics2d_t *mDevice;
+
+  public:
+    // Constructor
+    Graphics2dProxy(PlayerClient *aPc, uint aIndex=0);
+    // Destructor
+    ~Graphics2dProxy();
+
+};
+
 /**
 The @p GripperProxy class is used to control a @ref
 interface_gripper device.  The latest gripper data held in a

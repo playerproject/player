@@ -16,6 +16,7 @@ test_SOURCES = \
 	test.h \
 	test_blobfinder.c \
 	test_camera.c \
+	test_graphics2d.c \
 	test_gripper.c \
 	test_laser.c \
 	test_log.c \

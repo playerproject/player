@@ -28,7 +28,7 @@ $ gcc -c simple.c -o simple.o
 $ gcc -lm -lplayerc simple.o -o simple
 </PRE>
 
-Make sure that <tt>playerc.h</tt> is installed somewhere in you
+Make sure that <tt>playerc.h</tt> is installed somewhere in your
 include path, and that <tt>libplayerc.a</tt> is in your library path.
 
 <P>

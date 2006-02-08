@@ -34,6 +34,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_camera.c \
                         dev_dio.c \
                         dev_fiducial.c \
+                        dev_graphics2d.c \
                         dev_gripper.c \
                         dev_ir.c \
                         dev_laser.c \

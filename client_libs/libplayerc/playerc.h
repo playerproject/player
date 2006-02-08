@@ -891,6 +891,59 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 /**************************************************************************/
 
 
+/***************************************************************************/
+/** @defgroup playerc_proxy_graphics2d graphics2d
+
+The graphics2d proxy provides an interface to the graphics2d
+
+@{
+*/
+
+/** @brief Graphics2d device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** current drawing color */
+  player_color_t color;
+  
+} playerc_graphics2d_t;
+
+
+/** @brief Create a graphics2d device proxy. */
+playerc_graphics2d_t *playerc_graphics2d_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a graphics2d device proxy. */
+void playerc_graphics2d_destroy(playerc_graphics2d_t *device);
+
+/** @brief Subscribe to the graphics2d device */
+int playerc_graphics2d_subscribe(playerc_graphics2d_t *device, int access);
+
+/** @brief Un-subscribe from the graphics2d device */
+int playerc_graphics2d_unsubscribe(playerc_graphics2d_t *device);
+
+/** @brief Set the current drawing color */
+int playerc_graphics2d_color(playerc_graphics2d_t *device, 
+			     player_color_t col );
+
+/** @brief Draw some points */
+int playerc_graphics2d_draw_points(playerc_graphics2d_t *device, 
+			      player_point_2d_t pts[], int count );
+
+/** @brief Draw a polyline that connects an array of points */
+int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device, 
+			      player_point_2d_t pts[], int count );
+
+/** @brief Draw a polygon */
+int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device, 
+				    player_point_2d_t pts[], int count );
+
+/** @brief Clear the canvas */
+int playerc_graphics2d_clear(playerc_graphics2d_t *device );
+
+
+/** @} */
 
 /***************************************************************************/
 /** @defgroup playerc_proxy_gripper gripper
