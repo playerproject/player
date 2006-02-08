@@ -66,3 +66,16 @@ Graphics2dProxy::Unsubscribe()
 }
 
 
+void
+Graphics2dProxy::DrawPoints( player_point_2d_t pts[], int count )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_graphics2d_draw_points(mDevice,pts,count); 
+}
+ 
+void 
+Graphics2dProxy::DrawPolygon( player_point_2d_t pts[], int count, bool filled, player_color_t fill_color )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_graphics2d_draw_polygon(mDevice,pts,count,(int)filled,fill_color); 
+}

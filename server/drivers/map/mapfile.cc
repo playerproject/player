@@ -373,6 +373,7 @@ int MapFile::ProcessMessage(MessageQueue * resp_queue,
     //mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
                //(mapresp->width * mapresp->height));
     mapresp->data_count = mapresp->width * mapresp->height;
+    
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_DATA,

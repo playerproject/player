@@ -23,6 +23,7 @@ if INCLUDE_PLAYERCC
                      ptz \
                      laserobstacleavoid \
                      randomwalk \
+                     clientgraphics \
                      sonarobstacleavoid
 endif
 
@@ -61,6 +62,10 @@ goto_DEPENDENCIES = $(PLAYERCC_DEPS)
 grip_SOURCES = grip.cc args.h
 grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
 grip_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+clientgraphics_SOURCES = clientgraphics.cc args.h
+clientgraphics_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+clientgraphics_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 laserobstacleavoid_SOURCES = laserobstacleavoid.cc args.h
 laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror

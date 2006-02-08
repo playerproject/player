@@ -100,13 +100,30 @@ int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
 int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device, 
 			      player_point_2d_t pts[], int count )
 {
-  puts( "TODO" );
+  puts( "WARNING: playerc_graphics2d_draw_polyline() not yet implemented" );
 }
 
 int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device, 
-				    player_point_2d_t pts[], int count )
+				    player_point_2d_t pts[], 
+				    int count,
+				    int filled,
+				    player_color_t fill_color )
 {
-  puts( "TODO" );
+  player_graphics2d_cmd_polygon_t cmd;
+
+  /* limit the number of points we can draw */
+  count = MIN(count,PLAYER_GRAPHICS2D_MAX_POINTS);
+  cmd.count = count;
+  memcpy( &cmd.points, pts, sizeof(player_point_2d_t)*count);
+  cmd.color = device->color;
+  cmd.filled = filled;
+
+  if( filled )
+    memcpy( &cmd.fill_color, &fill_color, sizeof(cmd.fill_color));
+  
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_GRAPHICS2D_CMD_POLYGON,
+                              &cmd, NULL);  
 }
 
 int playerc_graphics2d_clear(playerc_graphics2d_t *device )

@@ -1424,7 +1424,7 @@ this interface to allow clients to draw in the Stage window.
  * @{ */
 
 /** The maximum number of points that can be described in a packet. */
-#define PLAYER_GRAPHICS2D_MAX_POINTS 32
+#define PLAYER_GRAPHICS2D_MAX_POINTS 64
 
 /** Command subtype: clear the drawing area (send an empty message) */
 #define PLAYER_GRAPHICS2D_CMD_CLEAR 1
