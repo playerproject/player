@@ -126,6 +126,7 @@
 #define PLAYER_POSITION1D_CODE     52  // 1-D position
 #define PLAYER_ACTARRAY_CODE       53  // Actuator Array interface
 #define PLAYER_LIMB_CODE           54  // Limb interface
+#define PLAYER_GRAPHICS2D_CODE     55  // Graphics2D interface
 /** @} */
 
 /** @ingroup message_basics
@@ -183,6 +184,7 @@
 #define PLAYER_TRUTH_STRING           "truth"
 #define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
+#define PLAYER_GRAPHICS2D_STRING       "graphics2d"
 /** @} */
 
 /** @ingroup message_basics
@@ -302,6 +304,20 @@ typedef struct player_segment
   /** Endpoints [m] */
   float y1;
 } player_segment_t;
+
+/** @brief A color descriptor */
+typedef struct player_color
+{
+  /** Alpha (transparency) channel */
+  uint8_t alpha;
+  /** Red color channel */
+  uint8_t red;
+  /** Green color channel */
+  uint8_t green;
+  /** Blue color channel */
+  uint8_t blue;
+} player_color_t;
+
 
 /** @} */
 
@@ -1392,6 +1408,83 @@ typedef struct player_gps_data
 } player_gps_data_t;
 
 /** @} */
+
+////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_graphics2d graphics2d
+ * @brief Two-dimensional graphics interface
+
+The @p graphics2d interface provides an interface to graphics
+devices. Drivers can implement this interface to provide clients and
+other drivers with graphics output. For example, Stage models present
+this interface to allow clients to draw in the Stage window.
+*/
+
+/** @ingroup interface_graphics2d
+ * @{ */
+
+/** The maximum number of points that can be described in a packet. */
+#define PLAYER_GRAPHICS2D_MAX_POINTS 32
+
+/** Command subtype: clear the drawing area (send an empty message) */
+#define PLAYER_GRAPHICS2D_CMD_CLEAR 1
+/** Command subtype: draw points */
+#define PLAYER_GRAPHICS2D_CMD_POINTS 2
+/** Command subtype: draw a polyline */
+#define PLAYER_GRAPHICS2D_CMD_POLYLINE 3
+/** Command subtype: draw a polygon */
+#define PLAYER_GRAPHICS2D_CMD_POLYGON 4
+
+/** @brief Data: This interface produces no data. */
+
+/** @brief Requests: This interface accepts no requests. */
+
+/** @brief Command: Draw points (@ref PLAYER_GRAPHICS2D_CMD_POINTS)
+Draw some points.
+*/
+typedef struct player_graphics2d_cmd_points
+{
+  /** Number of points in this packet. */
+  uint16_t count;
+  /** Array of points. */
+  player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
+  /** Color in which the points should be drawn. */
+  player_color_t color;
+} player_graphics2d_cmd_points_t;
+
+/** @brief Command: Draw polyline (@ref PLAYER_GRAPHICS2D_CMD_POLYLINE)
+Draw a series of straight line segments between a set of points.
+*/
+typedef struct player_graphics2d_cmd_polyline
+{
+  /** Number of points in this packet. */
+  uint16_t count;
+  /** Array of points to be joined by lines. */
+  player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
+  /** Color in which the line should be drawn. */
+  player_color_t color;
+} player_graphics2d_cmd_polyline_t;
+
+/** @brief Command: Draw polygon (@ref PLAYER_GRAPHICS2D_CMD_POLYGON)
+Draw a polygon.
+*/
+typedef struct player_graphics2d_cmd_polygon
+{
+  /** Number of points in this packet. */
+  uint16_t count;
+  /** array of points defining the polygon. */
+  player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
+  /** Color in which the outline should be drawn. */
+  player_color_t color;
+  /** Color in which the polygon should be filled. */
+  player_color_t fill_color;
+  /** If non-zero, the polygon should be drawn filled, else empty. */
+  uint8_t filled;
+} player_graphics2d_cmd_polygon_t;
+
+/** @} */
+
+
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
