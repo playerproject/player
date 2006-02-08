@@ -929,15 +929,20 @@ int playerc_graphics2d_color(playerc_graphics2d_t *device,
 
 /** @brief Draw some points */
 int playerc_graphics2d_draw_points(playerc_graphics2d_t *device, 
-			      player_point_2d_t pts[], int count );
+				   player_point_2d_t pts[], 
+				   int count );
 
 /** @brief Draw a polyline that connects an array of points */
 int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device, 
-			      player_point_2d_t pts[], int count );
+				     player_point_2d_t pts[], 
+				     int count );
 
 /** @brief Draw a polygon */
 int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device, 
-				    player_point_2d_t pts[], int count );
+				    player_point_2d_t pts[], 
+				    int count, 
+				    int filled,
+				    player_color_t fill_color );
 
 /** @brief Clear the canvas */
 int playerc_graphics2d_clear(playerc_graphics2d_t *device );

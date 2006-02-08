@@ -953,6 +953,8 @@ class Graphics2dProxy : public ClientProxy
     // Destructor
     ~Graphics2dProxy();
 
+    void DrawPoints( player_point_2d_t pts[], int count );
+    void DrawPolygon( player_point_2d_t pts[], int count, bool filled, player_color_t fill_color );
 };
 
 /**
