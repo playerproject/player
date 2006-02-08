@@ -67,6 +67,13 @@ Graphics2dProxy::Unsubscribe()
 
 
 void
+Graphics2dProxy::Clear( void )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_graphics2d_clear(mDevice); 
+}
+
+void
 Graphics2dProxy::DrawPoints( player_point_2d_t pts[], int count )
 {
   scoped_lock_t lock(mPc->mMutex);
@@ -78,4 +85,23 @@ Graphics2dProxy::DrawPolygon( player_point_2d_t pts[], int count, bool filled, p
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_graphics2d_draw_polygon(mDevice,pts,count,(int)filled,fill_color); 
+}
+
+void
+Graphics2dProxy::Color( player_color_t col )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_graphics2d_color(mDevice, col); 
+}
+
+void
+Graphics2dProxy::Color( uint8_t red,  uint8_t green,  uint8_t blue,  uint8_t alpha )
+{
+  player_color_t col;
+  col.red = red;
+  col.green = green;
+  col.blue = blue;
+  col.alpha = alpha;
+
+  this->Color( col );
 }
