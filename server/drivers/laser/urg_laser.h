@@ -13,7 +13,11 @@ class urg_laser
 		urg_laser();
 		~urg_laser();
 		
-		void Open(const char * PortName);
+		int Open(const char * PortName, int use_serial, int baud);
+                int Close();
+                int ChangeBaud(int curr_baud, int new_baud, int timeout);
+		int ReadUntil(int fd, unsigned char *buf, 
+			      int len, int timeout);
 		
 		
 		bool PortOpen();

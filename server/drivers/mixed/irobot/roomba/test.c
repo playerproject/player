@@ -10,9 +10,12 @@ main(void)
   int i;
   roomba_comm_t* r;
 
-  r = roomba_create("/dev/ttyS0");
+  puts("foo");
+  r = roomba_create("/dev/ttyS3");
+  puts("foo");
   if(roomba_open(r) < 0)
     exit(-1);
+  puts("foo");
 
   for(i=0;i<100;i++)
   {

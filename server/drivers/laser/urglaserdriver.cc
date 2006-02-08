@@ -89,6 +89,7 @@ driver
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <math.h>
+#include <termios.h>
 
 #include <vector>
 using namespace std;
@@ -156,9 +157,33 @@ URGLaserDriver::URGLaserDriver(ConfigFile* cf, int section)
         Conf.max_range = 4.0;
 	Conf.range_res = 0.001;
 	Conf.intensity = 0;
+
+        int b = cf->ReadInt(section, "baud", 115200);
+        int baud;
+        switch(b)
+        {
+          case 115200:
+            baud = B115200;
+            break;
+          case 57600:
+            baud = B57600;
+            break;
+          case 19200:
+            baud = B19200;
+            break;
+          default:
+            PLAYER_WARN1("ignoring invalid baud rate %d", b);
+            baud = B115200;
+            break;
+        }
 	
     //config data
-	Laser.Open(cf->ReadString(section, "port", "/dev/ttyACM0"));
+	if(Laser.Open(cf->ReadString(section, "port", "/dev/ttyACM0"),
+                      cf->ReadInt(section, "use_serial", 0), baud) < 0)
+        {
+          this->SetError(1);
+          return;
+        }
 
     return;
 }
@@ -183,10 +208,12 @@ int URGLaserDriver::Setup() {
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
 int URGLaserDriver::Shutdown() {
-    // Stop and join the driver thread
-    StopThread();
+  // Stop and join the driver thread
+  StopThread();
 
-    return(0);
+  Laser.Close();
+
+  return(0);
 }
 
 
