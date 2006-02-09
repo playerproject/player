@@ -769,11 +769,11 @@ void
 PlayerTCP::ParseBuffer(int cli)
 {
   player_msghdr_t hdr;
-  playertcp_conn_t* client;
-  player_pack_fn_t packfunc;
-  int msglen;
-  int decode_msglen;
-  Device* device;
+  playertcp_conn_t* client=NULL;
+  player_pack_fn_t packfunc=NULL;
+  int msglen=0;
+  int decode_msglen=0;
+  Device* device=NULL;
 
   assert((cli >= 0) && (cli < this->num_clients));
   client = this->clients + cli;
@@ -822,27 +822,42 @@ PlayerTCP::ParseBuffer(int cli)
     }
     else
     {
-      // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr.addr.interf, hdr.type,
-                                         hdr.subtype)))
+      // Iff there's a payload to pack, locate the appropriate packing
+      // function
+      if( hdr.size > 0 && 
+	  !(packfunc = playerxdr_get_func(hdr.addr.interf, 
+					  hdr.type,
+					  hdr.subtype)))
       {
-        // TODO: Allow the user to register a callback to handle unsupported
-        // messages
-        PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
-                     hdr.addr.interf, hdr.addr.index, hdr.subtype);
+	  // TODO: Allow the user to register a callback to handle unsupported
+	  // messages
+	  PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
+		       hdr.addr.interf, hdr.addr.index, hdr.subtype);
       }
       else
       {
-	if((decode_msglen =
+	if( packfunc )
+	{
+	  decode_msglen =
 	    (*packfunc)(client->readbuffer + PLAYERXDR_MSGHDR_SIZE,
 			msglen - PLAYERXDR_MSGHDR_SIZE,
-                        (void*)this->decode_readbuffer,
-                        PLAYERXDR_DECODE)) < 0)
-        {
-          PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
-                       hdr.addr.interf, hdr.addr.index, hdr.subtype);
-        }
-        else
+			(void*)this->decode_readbuffer,
+			PLAYERXDR_DECODE);
+	}
+	else // no packing function? this had better be an empty message 
+	{
+	    if( hdr.size == 0 )
+	      decode_msglen = 0; // an empty message decoded is still empty
+	    else
+	      decode_msglen = -1; // indicate error
+	}
+      
+	if( decode_msglen < 0 )
+	{
+	  PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
+		       hdr.addr.interf, hdr.addr.index, hdr.subtype);
+	}	   
+	else
         {
           // update the message size and send it off
           hdr.size = decode_msglen;
