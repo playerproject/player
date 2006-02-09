@@ -965,8 +965,11 @@ class Graphics2dProxy : public ClientProxy
     /// Draw a set of points
     void DrawPoints( player_point_2d_t pts[], int count );
 
-    // Draw a polygon defined by a set of points
+    /// Draw a polygon defined by a set of points
     void DrawPolygon( player_point_2d_t pts[], int count, bool filled, player_color_t fill_color );
+    
+    /// Draw a line connecting  set of points
+    void DrawPolyline( player_point_2d_t pts[], int count );
 };
 
 /**

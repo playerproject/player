@@ -25,10 +25,11 @@ main(int argc, char **argv)
     
     std::cout << robot << std::endl;
     
+    player_point_2d_t pts[RAYS];
+
     double r;
     for( r=0; r<1.0; r+=0.05 )
       {
-	player_point_2d_t pts[RAYS];
 	int p;
 	for( p=0; p<RAYS; p++ )
 	  {
@@ -36,15 +37,22 @@ main(int argc, char **argv)
 	    pts[p].py = r * sin(p * M_PI/(RAYS/2));
 	  }	
 	
+	gp.Color( 255,0,0,0 );
 	gp.DrawPoints( pts, RAYS );
 
-	usleep(100000);
+	usleep(500000);
+
+	gp.Color( (int)(255.0*r),(int)(255-255.0*r),0,0 );
+	gp.DrawPolyline( pts, RAYS/2 );
+
       }
+
+    sleep(1);
     
     player_color_t col;
     memset( &col, 0, sizeof(col));
 
-    for( r=1.0; r>0; r-=0.1 )
+    for( r=1; r>0; r-=0.1 )
       {
 	col.blue = (int)(r * 255.0);
 	col.red  = (int)(255.0 - r * 255.0);
@@ -61,10 +69,10 @@ main(int argc, char **argv)
 	
 	gp.DrawPolygon( pts, 4, 1, col);
 	
-	usleep(100000);
+	usleep(300000);
   }
 
-  sleep(2);
+  sleep(1);
 
   gp.Clear();
 

@@ -98,9 +98,20 @@ int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
 
 
 int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device, 
-			      player_point_2d_t pts[], int count )
+				     player_point_2d_t pts[], 
+				     int count )
 {
-  puts( "WARNING: playerc_graphics2d_draw_polyline() not yet implemented" );
+  player_graphics2d_cmd_polyline_t cmd;
+  
+  /* limit the number of points we can draw */
+  count = MIN(count,PLAYER_GRAPHICS2D_MAX_POINTS);
+  cmd.count = count;
+  memcpy( &cmd.points, pts, sizeof(player_point_2d_t)*count);
+ cmd.color = device->color;
+   
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_GRAPHICS2D_CMD_POLYLINE,
+                              &cmd, NULL);
 }
 
 int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device, 
@@ -128,15 +139,6 @@ int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
 
 int playerc_graphics2d_clear(playerc_graphics2d_t *device )
 {
-
-  /* HACK - send a meaningless, but non-zero-length message. We only
-     do this because empty messages don't seem to work. TODO:
-     investigate! */
-  /* player_graphics2d_cmd_clear_t hack; */
-  
-/*   return playerc_client_write(device->info.client, &device->info, */
-/*                               PLAYER_GRAPHICS2D_CMD_CLEAR, */
-/*                               &hack, NULL); */
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_GRAPHICS2D_CMD_CLEAR,
                               NULL, NULL);
