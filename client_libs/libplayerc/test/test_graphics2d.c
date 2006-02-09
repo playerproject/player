@@ -32,13 +32,14 @@ int test_graphics2d(playerc_client_t *client, int index)
   }
   PASS();
 
-
+  
+  player_point_2d_t pts[RAYS];
+  
   double r;
   for( r=0; r<1.0; r+=0.05 )
     {
       TEST("drawing points");
       
-      player_point_2d_t pts[RAYS];
       int p;
       for( p=0; p<RAYS; p++ )
 	{
@@ -51,12 +52,31 @@ int test_graphics2d(playerc_client_t *client, int index)
       else
 	PASS();
 
-      usleep(200000);
+      usleep(100000);
     }
   
   TEST("changing color");
-      
   player_color_t col;
+  col.red = 0;
+  col.green = 255;
+  col.blue = 0;
+  col.alpha = 0;
+
+  if(playerc_graphics2d_color(device, col) < 0)
+    FAIL();
+  else
+    PASS();
+
+  TEST("drawing polyline");
+  
+  if(playerc_graphics2d_draw_polyline(device, pts, RAYS) < 0)
+    FAIL();
+  else
+    PASS();
+  
+  usleep(500000);
+
+  TEST("changing color");      
   col.red = 0;
   col.green = 128;
   col.blue = 255;
@@ -88,7 +108,7 @@ int test_graphics2d(playerc_client_t *client, int index)
       else
 	PASS();
       
-      usleep(500000);
+      usleep(100000);
     }
 
   sleep(2);
