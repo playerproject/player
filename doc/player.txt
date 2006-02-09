@@ -6,8 +6,81 @@
 /**
 @mainpage The Player Robot %Device Interface
 
-<p>Copyright Brian Gerkey Vaughan and contributors 1999-2005.
+<p>Copyright Brian Gerkey and contributors 1999-2006, and beyond.
 <p>Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net]
+
+\section Overview
+
+<p>
+Player is a <i>robot device interface</i>.  What does that mean?
+If you're familiar with operating systems (OS) terminology, the Player
+is a <i>hardware abstraction layer</i> (HAL) for robotic devices.  Your OS
+(Linux, Mac OS X, etc.) hides the details of your computer's hardware by
+defining generic concepts such as "mouse" and "printer," with each having a
+standard <i>interface</i>.  Programs such as word processors can (to
+a great extent) avoid knowing the details about your <i>particular</i>
+mouse or printer, as long each adheres to the appropriate interface.  The
+details of making a particular mouse, say, support the standard "mouse"
+interface are handled by a <i>driver</i>.
+</p>
+
+<p>
+Player serves the same purpose for robotic devices, making it a kind of
+robot OS.  Player defines a set of standard interfaces (@ref interfaces),
+each of which is a specification of the ways that you can interact with some
+class of devices.  For example the @ref interface_position2d interface
+covers ground-based mobile robots, allowing them to accept commands
+to make them move (either velocity or position targets) and to report
+their state (current velocity and position).  Many drivers support the
+@ref interface_position2d interface, including @ref driver_p2os, @ref
+driver_obot, and @ref driver_rflex, each of which controls a different
+kind of robot.  The job of the driver is to make the robot support the
+standard interface.  This way, Player control code that works with one
+robot will work (within reason) on another robot.
+</p>
+
+\section Transports
+<p>
+Player also provides <i>transport</i> mechanisms that allow data to
+be exchanged among drivers and control programs that are executing on
+different machines.  By far the most common transport in use now is a
+client/server TCP socet-based transport (see @ref start for an example of
+this usage).  In this setup, a server called <b>player</b> is executed
+with a configuration file (@ref tutorial_config) that defines which
+drivers to instantiate and how to bind them to hardware.  The drivers
+run inside the <b>player</b> server (often in multiple threads), and the
+user's control program runs as a client to that server.  @ref clientlibs
+are available in various languages to facilitate the development of such
+control programs.  Other transports can be used instead; an experimental
+JINI-based transport is also available.
+</p>
+
+\section repository Player as a code respository
+<p>
+Though most Player drivers directly control hardware, recently a number of
+<i>abstract</i> drivers have been developed.  An abstract driver uses other
+drivers, instead of hardware, as sources for data and sinks for commands.
+The main use of abstract drivers is to encapsulate useful algorithms in a
+way that they can be easily reused.  For example, the @ref driver_amcl
+driver is an implementation of adaptive Monte Carlo localization, a
+well-known algorithm for probabalistic localization of a mobile robot.
+This driver supports both the @ref interface_position2d interface (so it
+can be used directly in place of odometry) and the more sophisticated @ref
+interface_localize interface (which allows for multiple pose hypotheses to
+be considered).  In addition to providing this incredibly useful
+implementation of a particular localization algorithm, by defining such
+standard interfaces we build up an environment in which alternative
+algorithms and implementations can be developed and tested.  Other abstract
+drivers include @ref driver_vfh, @ref driver_wavefront, and @ref
+driver_laserbarcode.  Ideally, Player will become a common development
+platform and community code respository for such algorithms.
+</p>
+
+\section Versions
+
+<p>This document describes Player version 2.x, which represents a
+significant change from the 1.6.x line.  The information contained
+herein does <b>not</b> apply to earlier versions of Player</p>
 
 \section License
 
@@ -15,7 +88,7 @@
 GNU General Public License v2. A copy of the license is included with the
 sourcecode in the file COPYING. Copying and redistribution is permitted
 only under the terms of the license.  Client libraries are simultaneously
-released under the terms of the GNU Lesser General Public License v2.1.
+released under the terms of the GNU Lesser General Public License v2.1.</p>
 
 */
 
