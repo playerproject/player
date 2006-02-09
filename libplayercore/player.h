@@ -1439,15 +1439,6 @@ this interface to allow clients to draw in the Stage window.
 
 /** @brief Requests: This interface accepts no requests. */
 
-/** @brief Command: clear drawing area (@ref PLAYER_GRAPHICS2D_CMD_CLEAR)
-Erase all drawing.
-*/
-typedef struct player_graphics2d_cmd_clear
-{
-  /** unused - workaround the empty-command bug */
-  uint8_t dummy ;
-} player_graphics2d_cmd_clear_t;
-
 /** @brief Command: Draw points (@ref PLAYER_GRAPHICS2D_CMD_POINTS)
 Draw some points.
 */
