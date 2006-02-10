@@ -308,6 +308,10 @@ int main(int argc, char **argv)
     if (count > 0)
     {
       proxy = playerc_client_read(client);
+      // NULL return from playerc_client_read() means an error in the
+      // connection to the server (I think)
+      if(!proxy)
+        break;
     }
 
     // Update the devices
@@ -342,11 +346,14 @@ int main(int argc, char **argv)
   }
   playerc_client_destroy(client);
 
+  // For some reason, either of the following calls makes the program
+  // segfault on exit.  I haven't figured out why, so I'm commenting them out.  - BPG
+
   // Destroy the windows
-  mainwnd_destroy(mainwnd);
+  //mainwnd_destroy(mainwnd);
 
   // Destroy the gui
-  rtk_app_destroy(app);
+  //rtk_app_destroy(app);
 
   opt_term(opt);
 
