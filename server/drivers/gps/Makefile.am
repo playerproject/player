@@ -1,7 +1,9 @@
-noinst_LIBRARIES = @GARMINNMEA_LIB@
+noinst_LTLIBRARIES = 
+if INCLUDE_GARMINNMEA
+noinst_LTLIBRARIES += libgarminnmea.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = libgarminnmea.a
+libgarminnmea_la_SOURCES = garminnmea.cc
 
-libgarminnmea_a_SOURCES = garminnmea.cc
