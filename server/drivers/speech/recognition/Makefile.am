@@ -1,7 +1,8 @@
-noinst_LIBRARIES = @SPHINX2_LIB@
+noinst_LTLIBRARIES = 
+if INCLUDE_SPHINX2
+noinst_LTLIBRARIES += libsphinx2.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-EXTRA_LIBRARIES = libsphinx2.a 
-
-libsphinx2_a_SOURCES = sphinx2.cc
+libsphinx2_la_SOURCES = sphinx2.cc
