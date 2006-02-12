@@ -105,7 +105,7 @@ driver
 #include "error.h"
 #include "drivertable.h"
 #include "player.h"
-#include "replace.h"
+#include "replace/replace.h"
 
 #define MODEL_D3X 0x0402
 #define MODEL_D100 0x040D
@@ -146,8 +146,7 @@ class SonyEVID30:public Driver
 //  int HandleConfig(void *client, unsigned char *buf, size_t len);
 
   // MessageHandler
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
-
+  int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 
   // this function will be run in a separate thread
   virtual void Main();
@@ -225,8 +224,8 @@ SonyEVID30_Register(DriverTable* table)
   table->AddDriver("sonyevid30",  SonyEVID30_Init);
 }
 
-SonyEVID30::SonyEVID30( ConfigFile* cf, int section) :
-  Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+SonyEVID30::SonyEVID30( ConfigFile* cf, int section) 
+: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   ptz_fd = -1;
   command_pending1 = false;
@@ -859,43 +858,35 @@ SonyEVID30::SendAbsZoom(short zoom)
 }
 
 
-int SonyEVID30::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int SonyEVID30::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
-  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-  *resp_len = 0;
 
-  player_ptz_generic_config_t *cfg;
-  int length;
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_GENERIC_CONFIG, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GENERIC, device_addr))
   {
-    assert(hdr->size == sizeof(player_ptz_generic_config_t));
+    assert(hdr->size == sizeof(player_ptz_req_generic_t));
 
-    cfg = (player_ptz_generic_config_t *)data;
-    length = ntohs(cfg->length);
+    player_ptz_req_generic_t *cfg = (player_ptz_req_generic_t *)data;
 
     // check whether command or inquiry...
     if (cfg->config[0] == VISCA_COMMAND_CODE) 
     {
-      if (SendCommand(cfg->config, length) < 0) 
-        return 	PLAYER_MSGTYPE_RESP_NACK;
+      if (SendCommand((uint8_t *)cfg->config, cfg->config_count) < 0) 
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
       else
-        return PLAYER_MSGTYPE_RESP_ACK;
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+      return 0;
     } 
     else 
     {
       // this is an inquiry, so we have to send data back
-      length = SendRequest(cfg->config, length, cfg->config);
-      cfg->length = htons(length);
-
-      return PLAYER_MSGTYPE_RESP_ACK;
+      cfg->config_count = SendRequest((uint8_t*)cfg->config, cfg->config_count, (uint8_t*)cfg->config);
+      Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
     }
   }
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
   {
     short zoomdemand=0;
     bool newpantilt=true, newzoom=true;
@@ -1009,7 +1000,7 @@ SonyEVID30::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_ptz_data_t),NULL);
+    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
        
     usleep(PTZ_SLEEP_TIME_USEC);
     }

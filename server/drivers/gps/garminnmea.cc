@@ -115,7 +115,7 @@ driver
 #include "driver.h"
 #include "drivertable.h"
 #include "player.h"
-#include "replace.h"
+#include "replace/replace.h"
 
 #define DEFAULT_GPS_PORT "/dev/ttyS0"
 #define DEFAULT_DGPS_GROUP "225.0.0.43"
@@ -255,7 +255,7 @@ GarminNMEA_Register(DriverTable* table)
 
 ///////////////////////////////////////////////////////////////////////////
 GarminNMEA::GarminNMEA( ConfigFile* cf, int section) 
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GPS_CODE, PLAYER_READ_MODE)
+: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_GPS_CODE)
 {
   memset(&data,0,sizeof(data));
 
@@ -973,7 +973,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   data.utm_e = htonl((int32_t) rint(utm_e * 100));
   data.utm_n = htonl((int32_t) rint(utm_n * 100));
 
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &data,sizeof(player_gps_data_t),NULL);
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_GPS_DATA_STATE, &data,sizeof(player_gps_data_t),NULL);
 
   return 0;
 }
