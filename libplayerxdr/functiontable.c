@@ -65,9 +65,49 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AIO_CMD_STATE,
    (player_pack_fn_t)player_aio_cmd_pack},
 
+  /* audiodsp messages */
+  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIODSP_DATA_TONES,
+   (player_pack_fn_t)player_audiodsp_data_pack},
+  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_TONE,
+   (player_pack_fn_t)player_audiodsp_cmd_pack},
+  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_CHIRP,
+   (player_pack_fn_t)player_audiodsp_cmd_pack},
+  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_REPLAY,
+   (player_pack_fn_t)player_audiodsp_cmd_pack},
+  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_GET_CONFIG,
+   (player_pack_fn_t)player_audiodsp_config_pack},
+  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_SET_CONFIG,
+   (player_pack_fn_t)player_audiodsp_config_pack},
+
+  /* audiomixer messages */
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MASTER,
+   (player_pack_fn_t)player_audiomixer_cmd_pack},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_PCM,
+   (player_pack_fn_t)player_audiomixer_cmd_pack},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_LINE,
+   (player_pack_fn_t)player_audiomixer_cmd_pack},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MIC,
+   (player_pack_fn_t)player_audiomixer_cmd_pack},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_IGAIN,
+   (player_pack_fn_t)player_audiomixer_cmd_pack},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_OGAIN,
+   (player_pack_fn_t)player_audiomixer_cmd_pack},
+  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIOMIXER_GET_LEVELS,
+   (player_pack_fn_t)player_audiomixer_config_pack},
+
+  /* blinkenlight messages */
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLINKENLIGHT_DATA_STATE,
+   (player_pack_fn_t)player_blinkenlight_data_pack},
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_CMD, PLAYER_BLINKENLIGHT_CMD_STATE,
+   (player_pack_fn_t)player_blinkenlight_data_pack},
+
   /* blobfinder messages */
   {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
    (player_pack_fn_t)player_blobfinder_data_pack},
+  {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_SET_COLOR,
+   (player_pack_fn_t)player_blobfinder_color_config_pack},
+  {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS,
+   (player_pack_fn_t)player_blobfinder_imager_config_pack},
 
   /* bumper messages */
   {PLAYER_BUMPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
@@ -101,6 +141,10 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_FIDUCIAL_CODE, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_SET_ID,
    (player_pack_fn_t)player_fiducial_id_pack},
 
+  /* gps messages */
+  {PLAYER_GPS_CODE, PLAYER_MSGTYPE_DATA, PLAYER_GPS_DATA_STATE,
+   (player_pack_fn_t)player_gps_data_pack},
+
   /* graphics2d messages */
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POINTS,
    (player_pack_fn_t)player_graphics2d_cmd_points_pack},
@@ -124,6 +168,10 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_ir_pose_pack},
   {PLAYER_IR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER,
     (player_pack_fn_t)player_ir_power_req_pack},
+
+  /* ir messages */
+  {PLAYER_JOYSTICK_CODE, PLAYER_MSGTYPE_DATA, PLAYER_JOYSTICK_DATA_STATE,
+    (player_pack_fn_t)player_joystick_data_pack},
 
   /* laser messages */
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
@@ -221,6 +269,33 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_ADD_REPLACE_RULE,
     (player_pack_fn_t)player_add_replace_rule_req_pack},
 
+  /* position1d messages */
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_STATE,
+    (player_pack_fn_t)player_position1d_data_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_GEOM,
+    (player_pack_fn_t)player_position1d_geom_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION1D_CMD_STATE,
+    (player_pack_fn_t)player_position1d_cmd_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_GET_GEOM,
+    (player_pack_fn_t)player_position1d_geom_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_MOTOR_POWER,
+    (player_pack_fn_t)player_position1d_power_config_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_VELOCITY_MODE,
+    (player_pack_fn_t)player_position1d_velocity_mode_config_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_POSITION_MODE,
+    (player_pack_fn_t)player_position1d_position_mode_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_SET_ODOM,
+    (player_pack_fn_t)player_position1d_set_odom_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_RESET_ODOM,
+    (player_pack_fn_t)player_position1d_reset_odom_config_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_SPEED_PID,
+    (player_pack_fn_t)player_position1d_speed_pid_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_POSITION_PID,
+    (player_pack_fn_t)player_position1d_position_pid_pack},
+  {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION1D_SPEED_PROF,
+    (player_pack_fn_t)player_position1d_speed_prof_pack},
+
+
   /* position2d messages */
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
     (player_pack_fn_t)player_position2d_data_pack},
@@ -278,6 +353,18 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_sonar_data_pack},
   {PLAYER_SONAR_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
     (player_pack_fn_t)player_sonar_geom_pack},
+
+  /* speech messages */
+  {PLAYER_SPEECH_CODE, PLAYER_MSGTYPE_CMD, PLAYER_SPEECH_CMD_SAY,
+    (player_pack_fn_t)player_speech_cmd_pack},
+
+  /* speech recognition messages */
+  {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SPEECH_RECOGNITION_DATA_STRING,
+    (player_pack_fn_t)player_speech_recognition_data_pack},
+
+  /* speech recognition messages */
+  {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WAVEFORM_DATA_SAMPLE,
+    (player_pack_fn_t)player_waveform_data_pack},
 
   /* wifi messages */
   {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE,

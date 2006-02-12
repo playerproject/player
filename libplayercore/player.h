@@ -3027,6 +3027,8 @@ To reset the robot's odometry to x = 0, send a @ref PLAYER_POSITION1D_RESET_ODOM
 request.  Null response. */
 typedef struct player_position1d_reset_odom_config
 {
+  /** driver-specific */
+  uint32_t value;
 } player_position1d_reset_odom_config_t;
 
 /** @brief Request/reply: Change control mode. 
@@ -3034,7 +3036,7 @@ typedef struct player_position1d_reset_odom_config
 To change the control mode, send a @ref PLAYER_POSITION1D_POSITION_MODE reqeust.
 Null response.
 */
-typedef struct player_position1d_position_mode_req
+typedef struct player_position1d_position_mode
 {
   /** 0 for velocity mode, 1 for position mode */
   uint32_t state;
@@ -3045,7 +3047,7 @@ typedef struct player_position1d_position_mode_req
 To set the robot's odometry
 to a particular state, send a @ref PLAYER_POSITION1D_SET_ODOM request. 
 Null response. */
-typedef struct player_position1d_set_odom_req
+typedef struct player_position1d_set_odom
 {
   /** (x) [m] */
   float pos;
@@ -3056,7 +3058,7 @@ typedef struct player_position1d_set_odom_req
 To set velocity PID parameters, send a @ref PLAYER_POSITION1D_SPEED_PID request.
 Null response.
 */
-typedef struct player_position1d_speed_pid_req
+typedef struct player_position1d_speed_pid
 {
   /** PID parameters */
   float kp;
@@ -3071,7 +3073,7 @@ typedef struct player_position1d_speed_pid_req
 To set position PID parameters, send a @ref PLAYER_POSITION1D_POSITION_PID request.
 Null response.
 */
-typedef struct player_position1d_position_pid_req
+typedef struct player_position1d_position_pid
 {
   /** PID parameters */
   float kp;
@@ -3086,7 +3088,7 @@ typedef struct player_position1d_position_pid_req
 To set linear speed profile parameters, send a
 @ref PLAYER_POSITION1D_SPEED_PROF requst.  Null response.
 */
-typedef struct player_position1d_speed_prof_req
+typedef struct player_position1d_speed_prof
 {
   /** max speed [m/s] */
   float speed;
@@ -3896,10 +3898,10 @@ server.
  * @{ */
 
 /** Maximum length of string to recognize */
-#define SPEECH_RECOGNITION_TEXT_LEN 256
+#define PLAYER_SPEECH_RECOGNITION_TEXT_LEN 256
 
 /** Data subtype: recognized string */
-#define SPEECH_RECOGNITION_DATA_STRING 1
+#define PLAYER_SPEECH_RECOGNITION_DATA_STRING 1
 
 /** @brief Data: recognized string (@ref PLAYER_SPEECH_MAX_STRING_LEN)
 
@@ -3909,7 +3911,7 @@ typedef struct player_speech_recognition_data
   /** Length of text */
   uint32_t text_count;
   /** Recognized text */
-  char text[SPEECH_RECOGNITION_TEXT_LEN];
+  char text[PLAYER_SPEECH_RECOGNITION_TEXT_LEN];
 } player_speech_recognition_data_t;
 
 /** @} */

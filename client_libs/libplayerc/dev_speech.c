@@ -97,7 +97,10 @@ int playerc_speech_say(playerc_speech_t *device, const char *str)
   memset(&cmd, 0, sizeof(cmd));
 	
   if (str)
+  {
     strncpy ((char *) (cmd.string), str, PLAYER_SPEECH_MAX_STRING_LEN);
+    cmd.string_count = strlen(str) + 1; 
+  }
 	
   return playerc_client_write(device->info.client, 
 			      &device->info, PLAYER_SPEECH_CMD_SAY, &cmd, NULL);

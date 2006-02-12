@@ -109,7 +109,7 @@ driver
 #include <string.h>  /* for strncpy(3),memcpy(3) */
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
-#include <socket_util.h>
+#include <libplayertcp/socket_util.h>
 
 #include <playertime.h>
 #include <player.h>
@@ -151,9 +151,10 @@ class Sphinx2 : public Driver
     int Setup();
     int Shutdown();
 
-    virtual void PutCommand(player_device_id_t id,
-                            void* src, size_t len,
-                            struct timeval* timestamp);
+	// This method will be invoked on each incoming message
+	virtual int ProcessMessage(MessageQueue* resp_queue, 
+                               player_msghdr * hdr,
+                               void * data);
 
   private: ad_rec_t *audioDev;
   private: cont_ad_t *continuousModule;
@@ -183,8 +184,7 @@ void Sphinx2_Register(DriverTable* table)
 }
 
 Sphinx2::Sphinx2( ConfigFile *cf, int section )
-  : Driver( cf, section, PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_READ_MODE,
-      sizeof(player_speech_recognition_data), 0,0,0)
+: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_SPEECH_RECOGNITION_CODE)
 {
   this->hmmDir = cf->ReadFilename( section, "hmm_dir",
       "/usr/local/share/sphinx2/model/hmm/6k");
@@ -280,11 +280,14 @@ int Sphinx2::Shutdown()
   return(0);
 }
 
-void Sphinx2::PutCommand(player_device_id_t id, void* src, size_t len,
-                     struct timeval* timestamp)
-{
-  Unlock();
+
+int Sphinx2::ProcessMessage(MessageQueue* resp_queue, 
+                                  player_msghdr * hdr,
+                                  void * data)
+{	
+	return -1;
 }
+
 
 void Sphinx2::Main()
 {
@@ -399,12 +402,14 @@ void Sphinx2::Main()
       //continue;
     }
 
-    strncpy(data.text, hypothesis, SPEECH_RECOGNITION_TEXT_LEN);
+    strncpy(data.text, hypothesis, PLAYER_SPEECH_RECOGNITION_TEXT_LEN);
 
     printf ("%d: %s\n", frames, data.text); fflush (stdout);
 
-    PutData( (uint8_t*)&data, sizeof(data), &time);
-
+//    PutData( (uint8_t*)&data, sizeof(data), &time);
+    Publish(device_addr,NULL,
+        PLAYER_MSGTYPE_DATA,PLAYER_SPEECH_RECOGNITION_DATA_STRING,
+        (uint8_t*)&data, sizeof(data), NULL);
 
     // Resume A/D recording for next utterance
     if (ad_start_rec (this->audioDev) < 0)
