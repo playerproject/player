@@ -158,7 +158,7 @@ extern PlayerTime* GlobalTime;
 #include "drivertable.h"
 #include "driver.h"
 #include "error.h"
-#include "replace.h"
+#include "replace/replace.h"
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
 #define DEFAULT_LASER_PORT_RATE 9600
@@ -174,8 +174,10 @@ class SickPLS : public Driver
     int Setup();
     int Shutdown();
 
-    // Process incoming messages from clients 
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    // MessageHandler
+    int ProcessMessage(MessageQueue * resp_queue, 
+		       player_msghdr * hdr, 
+		       void * data);
   private:
 
     // Main function for device thread.
@@ -252,11 +254,11 @@ class SickPLS : public Driver
     int startup_delay;
   
     // Scan width and resolution.
-    int scan_width, scan_res;
+    float scan_width, scan_res;
 
     // Start and end scan angles (for restricted scan).  These are in
     // units of 0.01 degrees.
-    int min_angle, max_angle;
+    float min_angle, max_angle;
     
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
@@ -312,7 +314,7 @@ void SickPLS_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickPLS::SickPLS( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE, PLAYER_READ_MODE)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
   // Laser geometry.
   this->pose[0] = cf->ReadTupleLength(section, "pose", 0, 0.0);
@@ -425,7 +427,7 @@ int SickPLS::Shutdown()
 // Main function for device thread
 void SickPLS::Main() 
 {
-  uint16_t tmp;
+  float tmp;
   // Ask the laser to send data
   for (int retry = 0; retry < MAX_RETRIES; retry++)
   {
@@ -467,18 +469,19 @@ void SickPLS::Main()
     
     // Process incoming data
     player_laser_data_t data;
-    if (ReadLaserData(data.ranges, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
+    uint16_t * TempData = new uint16_t[sizeof(data.ranges) / sizeof(data.ranges[0])];
+    if (ReadLaserData(TempData, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
     {
-      // Prepare packet and byte swap
-      data.min_angle = htons(this->scan_min_segment * this->scan_res - this->scan_width * 50);
-      data.max_angle = htons(this->scan_max_segment * this->scan_res - this->scan_width * 50);
-      data.resolution = htons(this->scan_res);
-      data.range_count = htons(this->scan_max_segment - this->scan_min_segment + 1);
-      data.range_res = htons((uint16_t) this->range_res);
+      // Prepare packet 
+      data.min_angle = (this->scan_min_segment * this->scan_res - this->scan_width * 50);
+      data.max_angle = (this->scan_max_segment * this->scan_res - this->scan_width * 50);
+      data.resolution = (this->scan_res);
+      data.ranges_count = (this->scan_max_segment - this->scan_min_segment + 1);
+//      data.range_res = (this->range_res);
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
-        data.intensity[i] = ((data.ranges[i] >> 13) & 0x000E);
-        data.ranges[i] = htons((uint16_t) (data.ranges[i] & 0x1FFF));
+        data.intensity[i] = ((TempData[i] >> 13) & 0x000E);
+        data.ranges[i] = ((TempData[i] & 0x1FFF));
       }
 
       // if the laser is upside-down, reverse the data and intensity
@@ -494,39 +497,44 @@ void SickPLS::Main()
           tmp=data.ranges[i];
           data.ranges[i]=data.ranges[this->scan_max_segment-this->scan_min_segment-i];
           data.ranges[this->scan_max_segment-this->scan_min_segment-i] = tmp;
-          tmp=data.intensity[i];
+          uint8_t tmp_intensity=data.intensity[i];
           data.intensity[i]=data.intensity[this->scan_max_segment-this->scan_min_segment-i];
-          data.intensity[this->scan_max_segment-this->scan_min_segment-i] = tmp;
+          data.intensity[this->scan_max_segment-this->scan_min_segment-i] = tmp_intensity;
         }
       }
 
       // Make data available
-      PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (uint8_t*) &data, sizeof(data), &time);
+      this->Publish(this->device_addr, NULL, 
+                    PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
+                    (void*)&data, sizeof(data), NULL);
     }
+    delete TempData;
   }
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int SickPLS::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int 
+SickPLS::ProcessMessage(MessageQueue * resp_queue, 
+                           player_msghdr * hdr,
+                           void * data)
 {
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_SET_CONFIG, device_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_LASER_REQ_SET_CONFIG, 
+                           this->device_addr))
   {
   	assert(hdr->size == sizeof(player_laser_config_t));
-    *resp_len = 0;
     player_laser_config_t * l_cfg = reinterpret_cast<player_laser_config_t *> (data);
     Lock();
     this->intensity = l_cfg->intensity;
-    this->scan_res = ntohs(l_cfg->resolution);
-    this->min_angle = (short) ntohs(l_cfg->min_angle);
-    this->max_angle = (short) ntohs(l_cfg->max_angle);
-	this->range_res = ntohs(l_cfg->range_res);
+    this->scan_res = (l_cfg->resolution);
+    this->min_angle = (l_cfg->min_angle);
+    this->max_angle = (l_cfg->max_angle);
+	this->range_res = (l_cfg->range_res);
     Unlock();
     if (this->CheckScanConfig() == 0)
     {
@@ -548,35 +556,43 @@ int SickPLS::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * 
       return PLAYER_MSGTYPE_RESP_NACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_CONFIG, device_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_LASER_REQ_GET_CONFIG, 
+                           this->device_addr))
   {
   	assert(hdr->size == 0);
-    assert(*resp_len > sizeof(player_laser_config_t));
-    player_laser_config_t * lcfg = reinterpret_cast<player_laser_config_t *> (resp_data);
-    *resp_len = sizeof(player_laser_config_t);
+    player_laser_config_t lcfg;
     
-    lcfg->intensity = this->intensity;
-    lcfg->resolution = htons(this->scan_res);
-    lcfg->min_angle = htons((short) this->min_angle);
-    lcfg->max_angle = htons((short) this->max_angle);
-    lcfg->range_res = htons(this->range_res);
-    return PLAYER_MSGTYPE_RESP_ACK;
+    lcfg.intensity = this->intensity;
+    lcfg.resolution = (this->scan_res);
+    lcfg.min_angle = ((short) this->min_angle);
+    lcfg.max_angle = ((short) this->max_angle);
+    lcfg.range_res = (this->range_res);
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LASER_REQ_GET_CONFIG,
+                  (void*)&lcfg, sizeof(lcfg), NULL);
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, device_id))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                           PLAYER_LASER_REQ_GET_GEOM, 
+                           this->device_addr))
   {
-  	assert(hdr->size == 0);
-    assert(*resp_len > sizeof(player_laser_geom_t));
-    player_laser_geom_t * l_geom = reinterpret_cast<player_laser_geom_t *> (resp_data);
-    *resp_len = sizeof(player_laser_geom_t);
-    
-    l_geom->pose[0] = htons((short) (this->pose[0] * 1000));
-    l_geom->pose[1] = htons((short) (this->pose[1] * 1000));
-    l_geom->pose[2] = htons((short) (this->pose[2] * 180/M_PI));
-    l_geom->size[0] = htons((short) (this->size[0] * 1000));
-    l_geom->size[1] = htons((short) (this->size[1] * 1000));
+    player_laser_geom_t geom;
+    geom.pose.px = this->pose[0];
+    geom.pose.py = this->pose[1];
+    geom.pose.pa = this->pose[2];
+    geom.size.sl = this->size[0];
+    geom.size.sw = this->size[1];
 
-    return PLAYER_MSGTYPE_RESP_ACK;
+    this->Publish(this->device_addr,
+                  resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LASER_REQ_GET_GEOM,
+                  (void*)&geom, sizeof(geom), NULL);
+    return(0);
   }
   return -1;
 }
