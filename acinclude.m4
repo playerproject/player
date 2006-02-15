@@ -191,7 +191,7 @@ PLAYER_ADD_DRIVER([flockofbirds],[yes],[],[],[])
 PLAYER_ADD_DRIVER([garcia],[no],
                   [],[],[],[GARCIA],[libgarcia])
 
-PLAYER_ADD_DRIVER([garminnmea],[no],[],[],[])
+PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([imageseq],[no],[],[],[],[OPENCV],[opencv])
 
@@ -285,7 +285,7 @@ if  test "x$enable_sicklms200" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([sickpls],[no],[],[],[])
+PLAYER_ADD_DRIVER([sickpls],[yes],[],[],[])
 if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
@@ -303,7 +303,7 @@ PLAYER_ADD_DRIVER([sphere],[no],[linux/videodev.h],[],[])
 PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/s2types.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
-PLAYER_ADD_DRIVER([sonyevid30],[no],[],[],[])
+PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[no],[],[],[],
                   [OPENCV],[opencv])
@@ -318,6 +318,8 @@ PLAYER_ADD_DRIVER([vfh],[yes],)
 PLAYER_ADD_DRIVER([vmapfile],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([waveaudio],[no],[sys/soundcard.h],[],[])
+
+PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 dnl The wavefront driver can make use of MD5 hash functions, if present
