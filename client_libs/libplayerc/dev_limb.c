@@ -86,17 +86,17 @@ void playerc_limb_putmsg(playerc_limb_t *device,
 {
   if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_LIMB_DATA))
   {
-    device->data.pX = data->pX;
-    device->data.pY = data->pY;
-    device->data.pZ = data->pZ;
+    device->data.position.px = data->position.px;
+    device->data.position.py = data->position.py;
+    device->data.position.pz = data->position.pz;
 
-    device->data.aX = data->aX;
-    device->data.aY = data->aY;
-    device->data.aZ = data->aZ;
+    device->data.approach.px = data->approach.px;
+    device->data.approach.py = data->approach.py;
+    device->data.approach.pz = data->approach.pz;
 
-    device->data.oX = data->oX;
-    device->data.oY = data->oY;
-    device->data.oZ = data->oZ;
+    device->data.orientation.pz = data->orientation.px;
+    device->data.orientation.py = data->orientation.py;
+    device->data.orientation.pz = data->orientation.pz;
 
     device->data.state = data->state;
   }
@@ -115,9 +115,9 @@ int playerc_limb_get_geom(playerc_limb_t *device)
      NULL, (void*)&geom, sizeof(geom)) < 0)
     return -1;
 
-  device->geom.x = geom.x;
-  device->geom.y = geom.y;
-  device->geom.z = geom.z;
+  device->geom.basePos.px = geom.basePos.px;
+  device->geom.basePos.py = geom.basePos.py;
+  device->geom.basePos.pz = geom.basePos.pz;
 
   return 0;
 }
@@ -152,9 +152,9 @@ int playerc_limb_setpose_cmd(playerc_limb_t *device, float pX, float pY, float p
   player_limb_setpose_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  cmd.pX = pX;  cmd.pY = pY;  cmd.pZ = pZ;
-  cmd.aX = aX;  cmd.aY = aY;  cmd.aZ = aZ;
-  cmd.oX = oX;  cmd.oY = oY;  cmd.oZ = oZ;
+  cmd.position.px = pX;  cmd.position.py = pY;  cmd.position.pz = pZ;
+  cmd.approach.px = aX;  cmd.approach.py = aY;  cmd.approach.pz = aZ;
+  cmd.orientation.px = oX;  cmd.orientation.py = oY;  cmd.orientation.pz = oZ;
 
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_LIMB_SETPOSE_CMD,
@@ -167,9 +167,9 @@ int playerc_limb_setposition_cmd(playerc_limb_t *device, float pX, float pY, flo
   player_limb_setposition_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  cmd.pX = pX;
-  cmd.pY = pY;
-  cmd.pZ = pZ;
+  cmd.position.px = pX;
+  cmd.position.py = pY;
+  cmd.position.pz = pZ;
 
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_LIMB_SETPOSITION_CMD,
@@ -182,9 +182,9 @@ int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, 
   player_limb_vecmove_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  cmd.x = x;
-  cmd.y = y;
-  cmd.z = z;
+  cmd.direction.px = x;
+  cmd.direction.py = y;
+  cmd.direction.pz = z;
   cmd.length = length;
 
   return playerc_client_write(device->info.client, &device->info,

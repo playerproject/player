@@ -82,10 +82,10 @@ std::operator << (std::ostream& os, const PlayerCc::LimbProxy& a)
   std::_Ios_Fmtflags old_flags = os.flags();
   os.setf(std::ios::fixed);
 
-  os << "Limb offset: " << geom.x << ", " << geom.y << ", " << geom.z << endl;
-  os << "End effector position: " << data.pX << ", " << data.pY << ", " << data.pZ << endl;
-  os << "Approach vector: " << data.aX << ", " << data.aY << ", " << data.aZ << endl;
-  os << "Orientation vector: " << data.oX << ", " << data.oY << ", " << data.oZ << endl;
+  os << "Limb offset: " << geom.basePos.px << ", " << geom.basePos.py << ", " << geom.basePos.pz << endl;
+  os << "End effector position: " << data.position.px << ", " << data.position.py << ", " << data.position.pz << endl;
+  os << "Approach vector: " << data.approach.px << ", " << data.approach.py << ", " << data.approach.pz << endl;
+  os << "Orientation vector: " << data.orientation.px << ", " << data.orientation.py << ", " << data.orientation.pz << endl;
   switch (data.state)
   {
     case PLAYER_LIMB_STATE_IDLE:

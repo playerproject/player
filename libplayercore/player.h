@@ -274,6 +274,18 @@ typedef struct player_point_2d
 } player_point_2d_t;
 
 
+/** @brief A point in 3D space */
+typedef struct player_point_3d
+{
+  /** X [m] */
+  float px;
+  /** Y [m] */
+  float py;
+  /** Z [m] */
+  float pz;
+} player_point_3d_t;
+
+
 /** @brief A pose in the plane */
 typedef struct player_pose
 {
@@ -525,7 +537,7 @@ Tells a joint to attempt to move to a requested position. */
 typedef struct player_actarray_position_cmd
 {
   /** The joint to command. */
-  uint8_t joint;
+  int32_t joint;
   /** The position to move to. */
   float position;
 } player_actarray_position_cmd_t;
@@ -536,7 +548,7 @@ Tells a joint to attempt to move at a requested speed. */
 typedef struct player_actarray_speed_cmd
 {
   /** The joint to command. */
-  uint8_t joint;
+  int32_t joint;
   /** The speed to move at. */
   float speed;
 } player_actarray_speed_cmd_t;
@@ -547,7 +559,7 @@ Tells a joint (or the whole array) to go to home position. */
 typedef struct player_actarray_home_cmd
 {
   /** The joint to command - set to -1 to command all. */
-  char joint;
+  int32_t joint;
 } player_actarray_home_cmd_t;
 
 /** @brief Request/reply: Power.
@@ -579,7 +591,7 @@ all subsequent movements. Null response. */
 typedef struct player_actarray_speed_config
 {
   /** Joint to set speed for. */
-  char joint;
+  int32_t joint;
   /** Speed setting in mrad/s. */
   float speed;
 } player_actarray_speed_config_t;
@@ -1906,29 +1918,13 @@ The limb interface provides access to a multi-jointed limb
 typedef struct player_limb_data
 {
   /** The position of the end effector. */
-  float pX;
-  /** The position of the end effector. */
-  float pY;
-  /** The position of the end effector. */
-  float pZ;
+  player_point_3d_t position;
   /** The approach vector of the end effector. */
-  float aX;
-  /** The approach vector of the end effector. */
-  float aY;
-  /** The approach vector of the end effector. */
-  float aZ;
+  player_point_3d_t approach;
   /** The orientation vector of the end effector (a vector in a
   predefined direction on the end effector, generally from fingertip to
   fingertip). */
-  float oX;
-  /** The orientation vector of the end effector (a vector in a
-  predefined direction on the end effector, generally from fingertip to
-  fingertip). */
-  float oY;
-  /** The orientation vector of the end effector (a vector in a
-  predefined direction on the end effector, generally from fingertip to
-  fingertip). */
-  float oZ;
+  player_point_3d_t orientation;
   /** The state of the limb. */
   uint8_t state;
 } player_limb_data_t;
@@ -1954,23 +1950,11 @@ orientation vector) for the end effector to move to. */
 typedef struct player_limb_setpose_cmd
 {
   /** Position of the end effector. */
-  float pX;
-  /** Position of the end effector. */
-  float pY;
-  /** Position of the end effector. */
-  float pZ;
+  player_point_3d_t position;
   /** Approach vector. */
-  float aX;
-  /** Approach vector. */
-  float aY;
-  /** Approach vector. */
-  float aZ;
+  player_point_3d_t approach;
   /** Orientation vector. */
-  float oX;
-  /** Orientation vector. */
-  float oY;
-  /** Orientation vector. */
-  float oZ;
+  player_point_3d_t orientation;
 } player_limb_setpose_cmd_t;
 
 /** @brief Command: Set end effector position (@ref PLAYER_LIMB_SETPOSITION_CMD)
@@ -1980,11 +1964,7 @@ specific orientation. */
 typedef struct player_limb_setposition_cmd
 {
   /** Position of the end effector. */
-  float pX;
-  /** Position of the end effector. */
-  float pY;
-  /** Position of the end effector. */
-  float pZ;
+  player_point_3d_t position;
 } player_limb_setposition_cmd_t;
 
 /** @brief Command: Vector move the end effector (@ref PLAYER_LIMB_VECMOVE_CMD)
@@ -1994,11 +1974,7 @@ position for the provided distance. */
 typedef struct player_limb_vecmove_cmd
 {
   /** Direction vector to move in. */
-  float x;
-  /** Direction vector to move in. */
-  float y;
-  /** Direction vector to move in. */
-  float z;
+  player_point_3d_t direction;
   /** Distance to move. */
   float length;
 } player_limb_vecmove_cmd_t;
@@ -2030,11 +2006,7 @@ Query geometry by sending a null @ref PLAYER_LIMB_GEOM_REQ reqest.*/
 typedef struct player_limb_geom_req
 {
   /** The base position of the end-effector in robot coordinates. */
-  float x;
-  /** The base position of the end-effector in robot coordinates. */
-  float y;
-  /** The base position of the end-effector in robot coordinates. */
-  float z;
+  player_point_3d_t basePos;
 } player_limb_geom_req_t;
 
 /** @brief Request/reply: Speed.

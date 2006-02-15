@@ -1272,15 +1272,15 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         if(kineCalc)
         {
           kineCalc->CalculateFK (joints);
-          limb_data.pX = kineCalc->GetP ().x + armOffsetX;
-          limb_data.pY = -kineCalc->GetP ().y + armOffsetY;
-          limb_data.pZ = kineCalc->GetP ().z + armOffsetZ;
-          limb_data.aX = kineCalc->GetA ().x;
-          limb_data.aY = -kineCalc->GetA ().y;
-          limb_data.aZ = kineCalc->GetA ().z;
-          limb_data.oX = kineCalc->GetO ().x;
-          limb_data.oY = -kineCalc->GetO ().y;
-          limb_data.oZ = kineCalc->GetO ().z;
+          limb_data.position.px = kineCalc->GetP ().x + armOffsetX;
+          limb_data.position.py = -kineCalc->GetP ().y + armOffsetY;
+          limb_data.position.pz = kineCalc->GetP ().z + armOffsetZ;
+          limb_data.approach.px = kineCalc->GetA ().x;
+          limb_data.approach.py = -kineCalc->GetA ().y;
+          limb_data.approach.pz = kineCalc->GetA ().z;
+          limb_data.orientation.px = kineCalc->GetO ().x;
+          limb_data.orientation.py = -kineCalc->GetO ().y;
+          limb_data.orientation.pz = kineCalc->GetO ().z;
           if (limb_data.state != PLAYER_LIMB_STATE_OOR && limb_data.state != PLAYER_LIMB_STATE_COLL)
           {
             if (sippacket->armJointMoving[0] || sippacket->armJointMoving[1] || sippacket->armJointMoving[2] ||
@@ -1595,7 +1595,7 @@ void P2OS::ToggleActArrayPower (unsigned char value, bool lock)
   SendReceive (&packet, lock);
 }
 
-void P2OS::SetActArrayJointSpeed (char joint, double speed)
+void P2OS::SetActArrayJointSpeed (int joint, double speed)
 {
   unsigned char command[4];
   P2OSPacket packet;
@@ -1951,9 +1951,9 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
   {
     player_limb_geom_req_t limbGeom;
 
-    limbGeom.x = armOffsetX;
-    limbGeom.y = armOffsetY;
-    limbGeom.z = armOffsetZ;
+    limbGeom.basePos.px = armOffsetX;
+    limbGeom.basePos.py = armOffsetY;
+    limbGeom.basePos.pz = armOffsetZ;
 
     this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_GEOM_REQ, &limbGeom, sizeof (limbGeom), NULL);
     return 0;
@@ -2205,10 +2205,10 @@ void P2OS::HandleActArrayPosCmd (player_actarray_position_cmd_t cmd)
     command[0] = ARM_POS;
     command[1] = ARGINT;
     command[2] = RadiansToTicks (cmd.joint, cmd.position);
-    command[3] = cmd.joint + 1;
+    command[3] = static_cast<unsigned char> (cmd.joint) + 1;
     packet.Build(command, 4);
     SendReceive(&packet);
-    sippacket->armJointTargetPos[cmd.joint] = command[2];
+    sippacket->armJointTargetPos[static_cast<unsigned char> (cmd.joint)] = command[2];
   }
 }
 
@@ -2221,7 +2221,7 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
   {
     command[0] = ARM_HOME;
     command[1] = ARGINT;
-    command[2] = (cmd.joint == -1) ? 7 : (cmd.joint + 1);
+    command[2] = (cmd.joint == -1) ? 7 : (static_cast<unsigned char> (cmd.joint) + 1);
     command[3] = 0;
     packet.Build(command, 4);
     SendReceive(&packet);
@@ -2266,11 +2266,11 @@ void P2OS::HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd)
 
 //  printf ("Moving limb to pose (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", cmd.pX, cmd.pY, cmd.pZ, cmd.oX, cmd.oY, cmd.oZ, cmd.aX, cmd.aY, cmd.aZ);
 
-  pose.p.x = cmd.pX - armOffsetX;
-  pose.p.y = -(cmd.pY - armOffsetY);
-  pose.p.z = cmd.pZ - armOffsetZ;
-  pose.o.x = cmd.oX; pose.o.y = -cmd.oY; pose.o.z = cmd.oZ;
-  pose.a.x = cmd.aX; pose.a.y = -cmd.aY; pose.a.z = cmd.aZ;
+  pose.p.x = cmd.position.px - armOffsetX;
+  pose.p.y = -(cmd.position.py - armOffsetY);
+  pose.p.z = cmd.position.pz - armOffsetZ;
+  pose.o.x = cmd.orientation.px; pose.o.y = -cmd.orientation.py; pose.o.z = cmd.orientation.pz;
+  pose.a.x = cmd.orientation.px; pose.a.y = -cmd.orientation.py; pose.a.z = cmd.orientation.pz;
   pose.o = kineCalc->Normalise (pose.o);
   pose.a = kineCalc->Normalise (pose.a);
   pose.n = kineCalc->CalculateN (pose);
@@ -2302,9 +2302,9 @@ void P2OS::HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd)
   unsigned char command[4];
   P2OSPacket packet;
 
-  pose.p.x = cmd.pX - armOffsetX;
-  pose.p.y = -(cmd.pY - armOffsetY);
-  pose.p.z = cmd.pZ - armOffsetZ;
+  pose.p.x = cmd.position.px - armOffsetX;
+  pose.p.y = -(cmd.position.py - armOffsetY);
+  pose.p.z = cmd.position.pz - armOffsetZ;
 
   // Use the pose info from the last reported arm position
   pose.o = kineCalc->GetO ();
@@ -2354,7 +2354,7 @@ void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
   pose.n = kineCalc->GetN ();
 
   KineVector offset;
-  offset.x = cmd.x;   offset.y = -cmd.y;   offset.z = cmd.z;
+  offset.x = cmd.direction.px;   offset.y = -cmd.direction.py;   offset.z = cmd.direction.pz;
   offset = kineCalc->Normalise (offset);
   offset.x *= cmd.length;
   offset.y *= cmd.length;

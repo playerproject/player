@@ -221,7 +221,7 @@ class P2OS : public Driver
     inline double RadsPerSectoSecsPerTick (int joint, double speed);
     inline double SecsPerTicktoRadsPerSec (int joint, double secs);
     void ToggleActArrayPower (unsigned char val, bool lock = true);   // Toggle actarray power on/off
-    void SetActArrayJointSpeed (char joint, double speed);            // Set a joint speed
+    void SetActArrayJointSpeed (int joint, double speed);             // Set a joint speed
     void HandleActArrayPosCmd (player_actarray_position_cmd_t cmd);
     void HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd);
 
