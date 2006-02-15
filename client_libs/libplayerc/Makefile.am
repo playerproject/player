@@ -20,7 +20,6 @@ libplayerc_la_LDFLAGS += -lz
 endif
 
 libplayerc_la_SOURCES = playerc.h \
-                        playerc.c \
                         mclient.c \
                         client.c \
                         device.c \

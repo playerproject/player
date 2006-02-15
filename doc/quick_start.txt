@@ -1,6 +1,8 @@
 /**
 @page start Quick start
 
+@todo Rewrite this
+
 What is Player? Player is a robot device server. It gives you simple and complete control over the physical sensors and actuators on your mobile robot. When Player is running on your robot, your client control program connects to it via a standard TCP socket, and communication is accomplished by the sending and receiving of some of a small set of simple messages.
 
 Player is designed to be language and platform independent. Your client program can run on any machine that has network connectivity to your robot, and it can be written in any language that can open and control a TCP socket. Client-side libraries are currently available for C, C++, Tcl, LISP, Java, and Python.
@@ -49,7 +51,7 @@ libraries manage the network interactions, data marshalling and so on,
 and present a much more convenient API.
 
 For example, the following code fragment demonstrates a simple client
-using the @ref clientlib_libplayerc library.
+using the @ref player_clientlib_libplayerc library.
 
 @include simple.c
 
@@ -68,15 +70,4 @@ Assuming everything is plugged in and turned on, your robot should
 scoot across the room.
 
 Client libraries exist for C, C++, Tcl, LISP, Java, and Python.
-
-@section mainpage_info Further information
-
-More detailed information can be found here:
-  - @ref tutorials
-  - @ref client_libs
-  - @ref configfile
-  - @ref drivers
-  - @ref interfaces
-  - @ref utilities
-
 */
