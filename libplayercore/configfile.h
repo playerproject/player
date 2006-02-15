@@ -32,20 +32,136 @@
 
 /** @brief Class for loading configuration file information.
 
-This class is used to load settings from a configuration text file.
-Ths file is divided into sections, with section having a set of key/value
-fields.
+This class is used to load and configure drivers from a configuration text
+file.  This file is divided into sections, with section having a set of
+key/value fields.
 
 Example file format is as follows:
 @code
 # This is a comment
-section_name
+
+# The keyword 'driver' begins a section
+driver
 (
-key1  0             
-key2 "foo"          
-key3 ["foo" "bar"]  
+  # This line is used to identify which driver to
+  # instantiate
+  name "mydriver"
+
+  # This line lists the interfaces that the driver
+  # will support
+  provides ["position2d:0" "laser:0"]
+
+  # This line lists the devices to which the driver
+  # will subscribe
+  requires ["ptz:0"]
+
+  # An integer
+  key1  0             
+  # A string
+  key2 "foo"          
+  # A tuple of strings
+  key3 ["foo" "bar"]  
+  # A tuple of multiple types
+  key4 ["foo" 3.14 42]
 )
 @endcode
+
+The most common use of this class is for a driver to extract configuration
+file options.  All drivers are passed a ConfigFile pointer @b cf and an
+integer @b section in their contructor (see Driver::Driver).  The driver
+code can use this information to retrieve key/value information that was
+given inside the appropriate @b driver() section in the configuration file.
+For example:
+@code
+  int maximum_speed = cf->ReadInt(section, "max_speed", -1);
+  if(maximum_speed == -1)
+  {
+    // Since the default value of -1 was assigned,
+    // no "max_speed" key/value was given in the configuration
+    // file.
+  }
+@endcode
+
+For each type Foo, there is a method ReadFoo() that looks for a key/value
+pair in the indicated section and with the type Foo.  The last argument
+specifies a default value to return if the given key is not found.  The
+default should either be a reasonable value or a recognizably invalid value
+(so that you can determine when the user did not specify a value).
+
+Always use ReadLength for linear dimensions, positions, and time
+derivatives (velocities, accelerations, etc.) ; this method will return
+values in meters, regardless of what local units are being used in the
+configuration file.  Similarly, always use ReadAngle for angular quanities;
+this method will always return values in radians.
+
+Always use ReadFilename for filenames; this method will return absolute
+paths, appropriately converting any relative paths that are given in the
+configuration file.  Non-absolute paths in the configuration file are
+assumed to be relative to the directory in which the configuration file
+itself resides.
+
+Always use ReadColor for packed 24-bit color values.
+
+Drivers that support multiple interfaces must use ReadDeviceAddr to find
+out which interfaces they have been asked to support (single-interface
+drivers specify their one interface in the Driver constructor).  For
+example, to check whether the driver has been asked to support a @ref
+interface_position2d interface, and if so, to add that interface:
+@code
+  player_devaddr_t position_addr;
+  if(cf->ReadDeviceAddr(&position_addr, section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(position_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+@endcode
+A driver can support more than interface of the same type.  For example,
+the @ref driver_p2os driver supports 3 @ref interface_position2d interfaces:
+one for wheelmotors/odometry, one for compass, and one for gyro.  In this
+case, the last argument to ReadDeviceAddr is used to differentiate them,
+according to key that was given in the "provides" line.  For example, if
+in the configuration file we have:
+@code
+driver
+(
+  name "mydriver"
+  provides ["odometry:::position2d:0" "gyro:::position2d:1"]
+)
+@endcode
+then in the driver code we can do something like this:
+@code
+  player_devaddr_t odom_addr, gyro_addr;
+
+  // Do we create an odometry position interface?
+  if(cf->ReadDeviceAddr(&odom_addr, section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, "odometry") == 0)
+  {
+    if(this->AddInterface(odom_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a gyro position interface?
+  if(cf->ReadDeviceAddr(&gyro_addr, section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, "gyro") == 0)
+  {
+    if(this->AddInterface(gyro_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+@endcode
+
+Drivers that subscribe to other devices use ReadDeviceAddr in the same way
+to retrieve information from the "requires" line of the configuration file.
+
 */
 
 class ConfigFile
@@ -285,7 +401,7 @@ class ConfigFile
   /// Reads a device id from the named field of the given section.
   /// The returned id will match the given code, index and key values.
   //
-  /// @param id ID field to be filled in.
+  /// @param addr address field to be filled in.
   /// @param section File section.
   /// @param name Field name.
   /// @param code Interface type code (use 0 to match all interface types).

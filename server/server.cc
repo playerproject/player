@@ -20,6 +20,16 @@
  *
  */
 
+/** @ingroup utils */
+/** @{ */
+/** @defgroup util_player player server
+ @brief TCP server that allows remote access to Player devices.
+
+ @todo Document command-line options here
+
+*/
+/** @} */
+
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>

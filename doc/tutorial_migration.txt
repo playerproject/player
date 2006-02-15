@@ -1,4 +1,6 @@
-/** @page migrate Migrating from Player 1.6 to Player 2.0
+/** @ingroup tutorials
+@defgroup tutorial_migrating_drivers Migrating from Player 1.6 to Player 2.0
+@brief Including a guide to updating your drivers.
 
 Much changed in Player between 1.6 and 2.0, from the fundamental message
 model to the nuts and bolts of message formats.  This page aims to ease the

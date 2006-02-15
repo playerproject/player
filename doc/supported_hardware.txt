@@ -30,7 +30,7 @@ developers' mailing list</a>.
 <tr>
 <td><b>Manufacturer</b></td>
 <td><b>Device(s)</b></td>
-<td><b>Driver</b></td>
+<td><b>%Driver</b></td>
 </tr>
 
 <tr>
@@ -103,7 +103,49 @@ Transport (HT)</a></td>
 <tr>
 <td><b>Manufacturer</b></td>
 <td><b>Device(s)</b></td>
-<td><b>Driver</b></td>
+<td><b>%Driver</b></td>
+</tr>
+
+<tr>
+<td><a href="http://www.amtec-robotics.com//">Amtec</a></td>
+<td><a href="http://www.amtec-robotics.com/1275.html">PowerCube</a>
+pan-tilt unit</a></td>
+<td>@ref driver_amtecpowercube</td>
+</tr>
+
+<tr>
+<td><a href="http://www.garmin.com/">Garmin</a></td>
+<td><a href="http://www.garmin.com/products/geko201/">
+Geko 201</a> handheld GPS receiver (and most other NMEA-compliant GPS
+units)</td>
+<td>@ref driver_garminnmea</td>
+</tr>
+
+<tr>
+<td><a href="http://www.hokuyo-aut.jp/">Hokuyo</a></td>
+<td><a href="http://www.hokuyo-aut.jp/products/urg/urg.htm">URG</a> laser 
+range finder</td>
+<td>@ref driver_urglaser</td>
+</tr>
+
+<tr>
+<td><a href="http://www.isense.com/">InterSense</a></td>
+<td><a href="http://www.isense.com/products/prec/ic2/index.htm">
+InertiaCube2</a> IMU</td>
+<td>@ref driver_inertiacube2</td>
+</tr>
+
+<tr>
+<td><a href="http://www.microstrain.com/">MicroStrain</a></td>
+<td><a href="http://www.microstrain.com/3DM-G.htm">
+3DM-G</a> IMU</td>
+<td>@ref driver_microstrain3dmg</td>
+</tr>
+
+<tr>
+<td><a href="http://www.logitech.com">Logitech</a></td>
+<td>QuickCam Sphere pan-tilt-zoom camera</td>
+<td>@ref driver_sphere</td>
 </tr>
 
 <tr>
@@ -129,34 +171,6 @@ pan-tilt blob-tracking camera</td>
 <td>@ref driver_cmucam2</td>
 </tr>
 
-<tr>
-<td><a href="http://www.isense.com/">InterSense</a></td>
-<td><a href="http://www.isense.com/products/prec/ic2/index.htm">
-InertiaCube2</a> IMU</td>
-<td>@ref driver_inertiacube2</td>
-</tr>
-
-<tr>
-<td><a href="http://www.microstrain.com/">MicroStrain</a></td>
-<td><a href="http://www.microstrain.com/3DM-G.htm">
-3DM-G</a> IMU</td>
-<td>@ref driver_microstrain3dmg</td>
-</tr>
-
-<tr>
-<td><a href="http://www.garmin.com/">Garmin</a></td>
-<td><a href="http://www.garmin.com/products/geko201/">
-Geko 201</a> handheld GPS receiver (and most other NMEA-compliant GPS
-units)</td>
-<td>@ref driver_garminnmea</td>
-</tr>
-
-<tr>
-<td><a href="http://www.amtec-robotics.com//">Amtec</a></td>
-<td><a href="http://www.amtec-robotics.com/1275.html">PowerCube</a>
-pan-tilt unit</a></td>
-<td>@ref driver_amtecpowercube</td>
-</tr>
 
 <tr>
 <td>Various</td>
@@ -200,22 +214,9 @@ about the wireless hardware (e.g., signal quality).</td>
 </tr>
 
 <tr>
-<td><a href="http://www.logitech.com">Logitech</a></td>
-<td>QuickCam Sphere pan-tilt-zoom camera</td>
-<td>@ref driver_sphere</td>
-</tr>
-
-<tr>
 <td>Various</td>
 <td>Generic Linux joystick. Allows access to axis and button state.
 <td>@ref driver_linuxjoystick</td>
-</tr>
-
-<tr>
-<td><a href="http://www.hokuyo-aut.jp/">Hokuyo</a></td>
-<td><a href="http://www.hokuyo-aut.jp/products/urg/urg.htm">URG</a> laser 
-range finder</td>
-<td>@ref driver_urglaser</td>
 </tr>
 
 </table>
@@ -225,34 +226,23 @@ range finder</td>
 <tr>
 <td>Manufacturer</td>
 <td>Device(s)</td>
-<td>Connection type</td>
-<td>Driver(s)/ Interface(s)</td>
-<td>Notes</td>
-<td>Maintainer</td>
+<td>%Driver</td>
 </tr>
 
 <tr>
 <td><a href="http://www-2.cs.cmu.edu/~jbruce/">Jim Bruce</a></td>
 <td><a href="http://www-2.cs.cmu.edu/~jbruce/cmvision/">
 Color Machine Vision (CMVision)</a> blob-tracking software</td>
-<td>directly linked into Player</td>
-<td>cmvision/blobfinder</td>
-<td>Supports capture in Linux from firewire cameras (requires libraw1394
-and libdc1394) and Video4Linux2 (requires V4L2 support).</td>
-<td>
-<a href="http://lists.sourceforge.net/lists/listinfo/playerstage-developers">
-(None)</a></td>
+<td>@ref driver_cmvision</td>
 </tr>
 
 <tr>
-<td><a href="http://www.activrobots.com">ActivMedia</a>
-(<a href="http://www-users.cs.umn.edu/~rybski/">Paul Rybski</a>)</td>
+<td><a href="http://www.mobilerobots.com">MobileRobots</a> (formerly
+ActivMedia); written by 
+<a href="http://www-users.cs.umn.edu/~rybski/">Paul Rybski</a></td>
 <td><a href="http://www.activrobots.com/SOFTWARE/index.html#acts">
 ActivMedia Color Tracking System (ACTS)</a> blob-tracking software</td>
-<td>TCP socket</td>
-<td>acts/blobfinder</td>
-<td>Requires pre-existing installation of ACTS.</td>
-<td><a href="http://www.ai.sri.com/~gerkey">Brian Gerkey</a></td>
+<td>@ref driver_acts</td>
 </tr>
 
 <tr>
@@ -260,20 +250,14 @@ ActivMedia Color Tracking System (ACTS)</a> blob-tracking software</td>
 Technology Research, University of Edinburgh</a></td>
 <td><a href="http://www.cstr.ed.ac.uk/projects/festival/">
 Festival</a> speech-synthesis software</td>
-<td>TCP socket</td>
-<td>festival/speech</td>
-<td>Requires pre-existing installation of Festival.</td>
-<td><a href="http://www.ai.sri.com/~gerkey">Brian Gerkey</a></td>
+<td>@ref driver_festival</td>
 </tr>
 
 <tr>
-<td><a href="http://zerohour.net/~reed">Reed Hedges</a></td>
-<td><a href="http://interreality.org/software/servicediscovery">
-libservicediscovery</a> resource discovery library</td>
-<td>directly linked into Player</td>
-<td>service_adv/(none)</td>
-<td>Requires pre-existing installation of libservicediscovery.</td>
-<td><a href="http://zerohour.net/~reed">Reed Hedges</a></td>
+<td><a href="http://www.porchdogsoft.com">Porchdog Software</a></td>
+<td><a href="http://www.porchdogsoft.com/products/howl/">Howl</a> 
+Zeroconf networking library</td>
+<td>@ref driver_service_adv_mdns</td>
 </tr>
 </table>
 
@@ -281,66 +265,48 @@ libservicediscovery</a> resource discovery library</td>
 <table border=2>
 <tr>
 <td>Algorithm(s)</td>
-<td>Driver(s)/ Interface(s)</td>
+<td>Description</td>
 <td>References</td>
-<td>Notes</td>
-<td>Maintainer</td>
+<td>%Driver</td>
 </tr>
 
 <tr>
 <td>configuration space</td>
-<td>lasercspace/laser</td>
-<td></td>
 <td>Modulates raw laser data according to the robot's dimensions in order
 to represent the empty area in the robot's configuration space.</td>
-<td><a href="http://robotics.usc.edu/~ahoward/">Andrew Howard</a></td>
+<td></td>
+<td>@ref driver_lasercspace</td>
 </tr>
 
 <tr>
 <td><a href="http://www-personal.engin.umich.edu/~johannb/vff&vfh.htm">
-Vector Field Histogram (VFH)</a> goal-seeking obstacle avoidance
-algorithm</td>
-<td>vfh/position</td>
-<td>Based on <a href="http://www-personal.engin.umich.edu/~johannb/">
-Johann Borenstein's</a> VFH.</td>
-<td>Most parameters of the algorithm can be set in Player's configuration
-file.</td>
-<td><a href="http://robotics.usc.edu/~cvjones/">Chris Jones</a></td>
+Vector Field Histogram (VFH+)</a></td>
+<td>goal-seeking obstacle avoidance algorithm</td>
+<td>Ulrich & Borenstein (1998), 
+<a href="http://www-personal.engin.umich.edu/~johannb/Papers/paper73.pdf">"VFH+: Reliable Obstacle Avoidance for Fast Mobile Robots"</a></td>
+<td>@ref driver_vfh</td>
 </tr>
 
 <tr>
 <td>
-Adaptive Monte Carlo Localization (AMCL)</a> probabilistic localization
-algorithm</td>
-<td>amcl/localize</td>
-
+Adaptive Monte Carlo Localization (AMCL)</a></td>
+<td>Performs probabilistic localization for a planar mobile robot equipped
+with a map and appropriate sensors</td>
 <td>
-See <a href="http://www.cs.washington.edu/homes/fox/">Dieter Fox's</a> paper on 
-<a href="http://www.cs.washington.edu/homes/fox/abstracts/adaptive-sampling-nips-01.abstract.html">adaptive sampling<a>
-</td>
-
-<td>Supports localization based on many types of sensor data, including:
-odometry, sonar, laser, and wifi signal strength.</td>
-<td><a href="http://robotics.usc.edu/~ahoward/">Andrew Howard</a></td>
+Fox (2001), <a href="http://www.cs.washington.edu/ai/Mobile_Robotics/abstracts/adaptive-sampling-nips-01.abstract.html">KLD-Sampling: Adaptive Particle Filters</a></td>
+<td>@ref driver_amcl</td>
 </tr>
 
 <tr>
 <td>Wavefront propagation planner</td>
-<td>wavefront/position</td>
-
-<td>
-See <a href="http://robotics.stanford.edu/~latombe">Jean-Claude Latombe's</a>
-authoritative book
-<a href="http://search.barnesandnoble.com/booksearch/isbnInquiry.asp?userid=2WIJN3PX4U&isbn=0792391292&itm=1">Robot Motion Planning</a>
-</td>
-
 <td>
 Performs configuration-space path-planning for a planar robot via cell
-decomposition and wavefront propagation.  Requires an underlying
-localization device (e.g., amcl) and an underlying obstacle-avoiding
-position device (e.g., vfh).
+decomposition and wavefront propagation.
 </td>
-<td><a href="http://www.ai.sri.com/~gerkey">Brian Gerkey</a></td>
+<td>
+Latombe (1991), 
+<a href="http://search.barnesandnoble.com/booksearch/isbnInquiry.asp?userid=2WIJN3PX4U&isbn=0792391292&itm=1">Robot Motion Planning</a></td>
+<td>@ref driver_wavefront</td>
 </tr>
 </table>
 
@@ -349,27 +315,25 @@ position device (e.g., vfh).
 <tr>
 <td>Manufacturer</td>
 <td>Name</td>
-<td>Driver(s)/ Interface(s)</td>
-<td>Notes</td>
-<td>Maintainer</td>
+<td>Description</td>
+<td>%Driver(s)</td>
 </tr>
 
 <tr>
-<td><a href="http://playerstage.sf.net">The Player/Stage project</a></td>
-<td><a href="index.php?src=stage">Stage</a></td>
-<td></td>
-<td></td>
-<td><a href="http://robotics.usc.edu/~vaughan">Richard Vaughan</a></td>
+<td><a href="http://playerstage.sf.net">The Player/Stage/Gazebo project</a></td>
+<td><a href="http://playerstage.sf.net/index.php?src=gazebo">Gazebo</a></td>
+<td>A 3-dimensional multi-robot simulator</td>
+<td>@ref player_driver_gz_sim, @ref player_driver_gz_laser, 
+@ref player_driver_gz_stereo, and others</td>
 </tr>
 
 <tr>
-<td><a href="http://playerstage.sf.net">The Player/Stage project</a></td>
-<td><a href="index.php?src=gazebo">
-Gazebo</a></td>
-<td>gz_laser/laser, gz_position/position</td>
-<td></td>
-<td><a href="http://robotics.usc.edu/~ahoward/">Andrew Howard</a></td>
+<td><a href="http://playerstage.sf.net">The Player/Stage/Gazebo project</a></td>
+<td><a href="http://playerstage.sf.net/index.php?src=stage">Stage</a></td>
+<td>A 2-dimensional multi-robot simulator</td>
+<td><a href="http://playerstage.sourceforge.net/doc/stage-2.0.0a/group__player.html">stage</a></td>
 </tr>
+
 
 </table>
 

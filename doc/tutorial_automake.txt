@@ -215,8 +215,8 @@ as avaliable for make
                      libraries in /prefix/lib where prefix is usually /usr/local.
 - @p make @p uninstall : Uninstalls the project i.e removes the files added to
                        /prefix/bin, /prefix/include and /prefix/lib directories.
-- @p make @p dist : Creates a distribution of the project (<package-name>-
-                  <version>.tar.gz file) of the project.
+- @p make @p dist : Creates a distribution of the project
+(\<package-name\>- \<version\>.tar.gz file) of the project.
 
 @section references References
 

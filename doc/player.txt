@@ -13,7 +13,7 @@
 
 <p>
 Player is a <i>robot device interface</i>.  What does that mean?
-If you're familiar with operating systems (OS) terminology, the Player
+If you're familiar with operating systems (OS) terminology, Player
 is a <i>hardware abstraction layer</i> (HAL) for robotic devices.  Your OS
 (Linux, Mac OS X, etc.) hides the details of your computer's hardware by
 defining generic concepts such as "mouse" and "printer," with each having a
@@ -126,59 +126,6 @@ href="http://playerstage.sourceforge.net/index.php?src=faq#reporting_bugs">here<
 */
 
 /**
-@page install Installation
-
-<h2>Standard install procedure</h2>
-
-<p>To install Player in the default location (/usr/local), follow these steps:
-
-<ol>
-
-<li>Download the latest Player source tarball (player-\<version\>.tgz)
-from <a href="http://sourceforge.net/project/showfiles.php?group_id=42445">SourceForge</a>.
-
-<li>Uncompress and expand the tarball: <br>
-    <tt>$ tar xzvf player-\<version\>.tgz</tt>
-
-<li>`cd' into Player's source directory:<br>
-     <tt>$ cd player-\<version\></tt>
-
-<li>To configure Player with default settings:<br>
-<tt>$ ./configure</tt><br>
-
-<li>Compile Player:<br>
-<tt>$ make</tt>
-
-<li>Install Player. By default, Player will be installed in
-<tt>/usr/local</tt> so you need to become root for this step. Remember
-to return to your normal user ID afterwards. <br>
-<tt>$ make install</tt>
-
-</ol>
-
-<h2>Customized installations</h2>
-
-<p>Player follows the standard GNU autotools conventions for build and
-install options. To see a list of all the available configuration
-options, do this:
-
-<p><tt>./configure --help</tt>
-
-<p>The most important option is <tt>--prefix</tt>, used
-to change the installation directory from the default (which varies
-from system to system, but is usually <tt>/usr/local</tt>).
-Prefixes must be absolute paths, i.e. a complete path starting with a '/'.
-
-<p>For example, you might want to install Player in your home directory
-because you don't have root access:
-
-<p><tt>$./configure --prefix=/home/gerkey/ps</tt>
-
-
-@todo Talk about more configure options here, like disable-alldrivers.
-*/
-
-/**
 @defgroup libplayercore libplayercore
 
 \section synopsis Synopsis
@@ -192,10 +139,13 @@ The primary components of libplayercore are:
   - @ref interfaces : The syntax and semantics of all the messages for each
     Player interface.
   - @ref ConfigFile : Configuration file parsing
-  - @ref Message :
-  - @ref MessageQueue :
-  - @ref Driver :
-  - @ref Device :
+  - @ref Message : The basic object used to transfer information
+  - @ref MessageQueue : Messages are delivered by being pushed onto queues;
+    every driver has one
+  - @ref Driver : The class from which all drivers inherit
+  - @ref Device : An instantied driver that is bound to an interface; all
+    external access to a driver is mediated through one or more Device
+    objects
 
 \section linking Example compilation and linkage
 The most common usage of libplayercore is in building a plugin driver.  If
@@ -237,3 +187,14 @@ users' mailing list: playerstage-users@lists.sourceforge.net.
 Several utilities are included with the Player distribution, listed below.
 */
 
+/** @defgroup clientlibs Client Libraries 
+
+Libraries are available in various languages to facilitate the development
+of TCP client programs.   You would probably use one of these libraries to
+develop your robot control program if, like most people, you're using the
+@ref util_player (whether with hardware or simulation).
+
+Be sure to also check for 
+<a href="http://playerstage.sourceforge.net/index.php?src=contrib">contributed
+libraries</a>.
+*/

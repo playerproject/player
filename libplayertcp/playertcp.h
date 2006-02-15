@@ -32,7 +32,7 @@
 This library moves messages between Player message queues and TCP sockets.
 
 @todo
- - More verbose documentation on this library.
+ - More verbose documentation on this library, including the protocol
 */
 /** @ingroup libplayertcp
 @{ */

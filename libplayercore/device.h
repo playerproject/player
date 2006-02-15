@@ -108,6 +108,13 @@ class Device
     /// @param len : Length of src.
     /// @param timestamp : If non-NULL, the timestamp to attach to the
     /// request; otherwise, the current time is filled in.
+    /// @param threaded : True if the caller is executing in its own
+    ///                   thread, false otherwise
+    /// 
+    /// @note It is is crucial that @p threaded be set correctly.  If you
+    ///       call this method from within Setup() or Shutdown(), or if
+    ///       your driver does not run in its own thread, then @p 
+    ///       threaded must be false.  Deadlocks will otherwise result.
     ///
     /// @returns A pointer to the reply message.  The caller is responsible
     ///          for deleting this pointer.

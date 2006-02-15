@@ -40,17 +40,20 @@ class SegwayRMP : public Driver
     // Setup/shutdown routines.
     virtual int Setup();
     virtual int Shutdown();
+    virtual int ProcessMessage(MessageQueue * resp_queue,
+                               player_msghdr * hdr,
+                               void * data);
 
   protected:
 
     // Supported interfaces
-    player_device_id_t position_id;
-    player_position_data_t position_data;
+    player_devaddr_t position_id;
+    player_position2d_data_t position_data;
 
-    player_device_id_t position3d_id;
+    player_devaddr_t position3d_id;
     player_position3d_data_t position3d_data;
   
-    player_device_id_t power_id;
+    player_devaddr_t power_id;
     player_power_data_t power_data;
 
   private:
@@ -60,13 +63,13 @@ class SegwayRMP : public Driver
 
     int timeout_counter;
 
-    int max_xspeed, max_yawspeed;
+    float max_xspeed, max_yawspeed;
 
     bool firstread;
 
     DualCANIO *canio;
 
-    int16_t last_xspeed, last_yawspeed;
+    float curr_xspeed, curr_yawspeed;
 
     // Flag set if motors can be enabled (i.e., enable them to be
     // enabled).  Set by a config request.

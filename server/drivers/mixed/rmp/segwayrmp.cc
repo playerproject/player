@@ -164,18 +164,17 @@ void SegwayRMP_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
-  memset(&this->position_id.code, 0, sizeof(player_device_id_t));
-  memset(&this->position3d_id.code, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(player_devaddr_t));
+  memset(&this->position3d_id, 0, sizeof(player_devaddr_t));
+  memset(&this->power_id, 0, sizeof(player_devaddr_t));
 
   // Do we create a position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
-                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->position_id), section, "provides", 
+                      PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE,
-                          sizeof(player_position_data_t),
-                          sizeof(player_position_cmd_t), 1, 1) != 0)
+    if(this->AddInterface(this->position_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -183,12 +182,10 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   // Do we create a position3d interface?
-  if(cf->ReadDeviceId(&(this->position3d_id), section, "provides", 
-                      PLAYER_POSITION3D_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->position3d_id), section, "provides", 
+                        PLAYER_POSITION3D_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->position3d_id, PLAYER_ALL_MODE,
-                          sizeof(player_position3d_data_t),
-                          sizeof(player_position3d_cmd_t), 1, 1) != 0)
+    if(this->AddInterface(this->position3d_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -196,11 +193,10 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
   }
 
   // Do we create a power interface?
-  if(cf->ReadDeviceId(&(this->power_id), section, "provides", 
-                      PLAYER_POWER_CODE, -1, NULL) == 0)
+  if(cf->ReadDeviceAddr(&(this->power_id), section, "provides", 
+                        PLAYER_POWER_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->power_id, PLAYER_READ_MODE,
-                          sizeof(player_power_data_t), 0, 1, 1) != 0)
+    if(this->AddInterface(this->power_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -229,10 +225,12 @@ int
 SegwayRMP::Setup()
 {
   // Clear the command buffers
+#if 0
   if (this->position_id.code)
     ClearCommand(this->position_id);
   if (this->position3d_id.code)
     ClearCommand(this->position3d_id);
+#endif
 
   PLAYER_MSG0(2, "CAN bus initializing");
 
@@ -254,13 +252,13 @@ SegwayRMP::Setup()
   // Initialize odometry
   this->odom_x = this->odom_y = this->odom_yaw = 0.0;
 
-  this->last_xspeed = this->last_yawspeed = 0;
+  this->curr_xspeed = this->curr_yawspeed = 0.0;
   this->motor_allow_enable = false;
   this->motor_enabled = false;
   this->firstread = true;
   this->timeout_counter = 0;
 
-  StartThread();
+  this->StartThread();
 
   return(0);
 }
@@ -299,14 +297,14 @@ SegwayRMP::Shutdown()
 void 
 SegwayRMP::Main()
 {
-  unsigned char buffer[256];
-  size_t buffer_len;
-  player_position_cmd_t position_cmd;
-  player_position3d_cmd_t position3d_cmd;
-  void *client;
+  //unsigned char buffer[256];
+  //size_t buffer_len;
+  //player_position2d_cmd_t position_cmd;
+  //player_position3d_cmd_t position3d_cmd;
+  //void *client;
   CanPacket pkt;
-  int32_t xspeed,yawspeed;
-  bool got_command;
+  //int32_t xspeed,yawspeed;
+  //bool got_command;
   bool first;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -435,6 +433,40 @@ SegwayRMP::Main()
     if(Write(pkt) < 0)
       PLAYER_ERROR("error on write");
   }
+}
+
+int
+SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
+                          player_msghdr * hdr,
+                          void * data)
+{
+  /// @todo
+  /// Handle config requests
+  
+  // 2-D velocity command
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                           PLAYER_POSITION2D_CMD_VEL, 
+                           this->position_id))
+  {
+    player_position2d_cmd_vel_t* cmd = (player_position2d_cmd_vel_t*)data;
+    this->curr_xspeed = cmd->vel.px;
+    this->curr_yawspeed = cmd->vel.pa;
+    this->motor_enabled = cmd->state & this->motor_allow_enable;
+    this->timeout_counter = 0;
+  }
+  // 3-D velocity command
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                           PLAYER_POSITION3D_CMD_SET_VEL,
+                           this->position3d_id))
+  {
+    player_position3d_cmd_vel_t* cmd = (player_position3d_cmd_vel_t*)data;
+    this->curr_xspeed = cmd->vel.px;
+    this->curr_yawspeed = cmd->vel.pa;
+    this->motor_enabled = cmd->state & this->motor_allow_enable;
+    this->timeout_counter = 0;
+  }
+  else
+    return(-1);
 }
   
 // helper to handle config requests
@@ -787,35 +819,35 @@ SegwayRMP::UpdateData(rmp_frame_t * data_frame)
     this->odom_yaw += 2 * M_PI;
   
   // first, do 2D info.
-  this->position_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
-  this->position_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
-  this->position_data.yaw = htonl((int32_t)RTOD(this->odom_yaw));
+  this->position_data.pos.px = this->odom_x;
+  this->position_data.pos.py = this->odom_y;
+  this->position_data.pos.pa = this->odom_a;
   
   // combine left and right wheel velocity to get foreward velocity
   // change from counts/s into mm/s
-  this->position_data.xspeed = 
-    htonl((uint32_t)rint(((double)data_frame->left_dot +
+  this->position_data.vel.px = ((double)data_frame->left_dot +
                           (double)data_frame->right_dot) /
                          (double)RMP_COUNT_PER_M_PER_S 
-                         * 1000.0 / 2.0));
+                         / 2.0;
   
   // no side speeds for this bot
-  this->position_data.yspeed = 0;
+  this->position_data.vel.py = 0;
   
   // from counts/sec into deg/sec.  also, take the additive
   // inverse, since the RMP reports clockwise angular velocity as
   // positive.
-  this->position_data.yawspeed =
-    htonl((int32_t)(-rint((double)data_frame->yaw_dot / 
-                          (double)RMP_COUNT_PER_DEG_PER_S)));
+  this->position_data.vel.pa = 
+          DTOR(-(double)data_frame->yaw_dot / (double)RMP_COUNT_PER_DEG_PER_S);
   
   this->position_data.stall = 0;
   
   // now, do 3D info.
-  this->position3d_data.xpos = htonl((int32_t)(this->odom_x * 1000.0));
-  this->position3d_data.ypos = htonl((int32_t)(this->odom_y * 1000.0));
+  this->position3d_data.pos.px = this->odom_x;
+  this->position3d_data.pos.py = this->odom_y;
   // this robot doesn't fly
-  this->position3d_data.zpos = 0;
+  this->position3d_data.pos.pz = 0;
+
+  /// TODO left off here
   
   // normalize angles to [0,360]
   tmp = NORMALIZE(DTOR((double)data_frame->roll /

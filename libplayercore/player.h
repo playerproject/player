@@ -60,22 +60,51 @@
 
 /** @ingroup message_basics
  * @defgroup message_types Message types
- * @todo Document the message types
+ * The Player message types
  */
 /** @ingroup message_types
  * @{ */
+
+/** A data message.  Such messages are asynchronously published from
+devices, and are usually used to reflect some part of the device's state.
+*/
 #define PLAYER_MSGTYPE_DATA      1
+
+/** A command message.  Such messages are asynchronously published to
+devices, and are usually used to change some aspect of the device's state. */
 #define PLAYER_MSGTYPE_CMD       2
+
+/** A request message.  Such messages are published synchronously to
+devices, usually to get or set some aspect of the device's state that is
+not available in data or command messages.  Every request message gets
+a response message (either PLAYER_MSGTYPE_RESP_ACK or
+PLAYER_MSGTYPE_RESP_NACK). */
 #define PLAYER_MSGTYPE_REQ       3
+
+/** A positive response message.  Such messages are published in response
+to a PLAYER_MSGTYPE_REQ.  This message indicates that the underlying driver
+received, interpreted, and processed the request.  Any requested data is in
+the body of this response message. */
 #define PLAYER_MSGTYPE_RESP_ACK  4
+
+/** A synch message.  @todo Deprecate this message type? */
 #define PLAYER_MSGTYPE_SYNCH     5
+
+/** A negative response message.  Such messages are published in response
+to a PLAYER_MSGTYPE_REQ.  This messages indicates that the underlying
+driver did not process the message.  Possible causes include: the driver's
+message queue was full, the driver failed to interpret the request, or the
+the driver does not support the request.   This message will have no data
+in the body.*/
 #define PLAYER_MSGTYPE_RESP_NACK 6
+
 /** @} */
 
 
 /** @ingroup message_basics
  * @defgroup message_codes Interface codes
- * An integer code is assigned to each interface
+ * An integer code is assigned to each interface.  See @ref interfaces for
+ * detailed descriptions of each interface.
  */
 
 /** @ingroup message_codes
@@ -132,7 +161,8 @@
 /** @ingroup message_basics
  * @defgroup message_strings Interface string names
  * Used in configuration file parsing and console output, each interface is
- * assigned a string name.
+ * assigned a string name. See @ref interfaces for
+ * detailed descriptions of each interface.
  */
 
 /** @ingroup message_strings
@@ -189,7 +219,7 @@
 
 /** @ingroup message_basics
  * @defgroup address_structs Address structures
- * Device and message address structures.
+ * %Device and message address structures.
  * @{ */
 
 /** @brief A device address.
@@ -324,6 +354,7 @@ typedef struct player_color
 /** 
 @ingroup message_basics
 @defgroup units Units
+Standard units used in Player messages.
 
 In the interest of using MKS units (http://en.wikipedia.org/wiki/Mks) the
 internal message structure will use the following unit base types.
@@ -357,8 +388,10 @@ system
 @defgroup interfaces Interface specifications
 
 All Player communication occurs through <i>interfaces</i>, which specify
-the syntax and semantics for a set of messages. Below are the details.
-For each interface, the following is given:
+the syntax and semantics for a set of messages. See the tutorial @ref
+tutorial_devices for a discussion of what an interface is.
+
+Below are the details.  For each interface, the following is given:
 - Relevant constants (size limits, etc.)
 - %Message subtypes:
   - Data subtypes : codes for each kind of data message defined by the interface
@@ -3540,7 +3573,7 @@ now deprecated.
 #define PLAYER_POWER_MASK_PERCENT 8
 #define PLAYER_POWER_MASK_CHARGING 16
 
-/** @brief Data: voltage (@ref PLAYER_POWER_DATA_VOLTAGE)
+/** @brief Data: voltage (@ref PLAYER_POWER_DATA_STATE)
 
 The @p power interface returns data in this format. */
 typedef struct player_power_data
