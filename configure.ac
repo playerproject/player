@@ -432,6 +432,8 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/clodbuster/Makefile
           server/drivers/mixed/evolution/Makefile
           server/drivers/mixed/evolution/er1/Makefile
+          server/drivers/mixed/irobot/Makefile
+          server/drivers/mixed/irobot/roomba/Makefile
           server/drivers/gazebo/Makefile
           server/drivers/planner/Makefile
           server/drivers/planner/wavefront/Makefile

@@ -86,6 +86,10 @@ void LaserPoseInterp_Register(DriverTable* table);
 void SickLMS200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ROOMBA
+void Roomba_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SICKPLS
 void SickPLS_Register(DriverTable* table);
 #endif
@@ -438,6 +442,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ROOMBA
+  Roomba_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKPLS

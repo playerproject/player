@@ -32,12 +32,16 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-// TODO: remove this include
-#include <sys/poll.h>
+#ifdef HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
+#include <replace/replace.h>
+//#include <sys/poll.h>
 
 #include "roomba_comms.h"
 
-#define TWOSCOMP(v) (1 + ~v)
+//#define TWOSCOMP(v) (~v + 1)
 
 roomba_comm_t*
 roomba_create(const char* serial_port)
@@ -52,8 +56,14 @@ roomba_create(const char* serial_port)
   return(r);
 }
 
+void
+roomba_destroy(roomba_comm_t* r)
+{
+  free(r);
+}
+
 int
-roomba_open(roomba_comm_t* r)
+roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
 {
   struct termios term;
   int flags;
@@ -90,8 +100,9 @@ roomba_open(roomba_comm_t* r)
     return(-1);
   }
   
-  // TODO: handle not having cfmakeraw available
+#if HAVE_CFMAKERAW
   cfmakeraw(&term);
+#endif
   cfsetispeed(&term, B57600);
   cfsetospeed(&term, B57600);
   
@@ -103,7 +114,7 @@ roomba_open(roomba_comm_t* r)
     return(-1);
   }
 
-  if(roomba_init(r) < 0)
+  if(roomba_init(r, fullcontrol) < 0)
   {
     puts("failed to initialize connection");
     close(r->fd);
@@ -111,7 +122,7 @@ roomba_open(roomba_comm_t* r)
     return(-1);
   }
 
-  if(roomba_get_sensors(r, 500) < 0)
+  if(roomba_get_sensors(r, 1000) < 0)
   {
     puts("roomba_open():failed to get data");
     close(r->fd);
@@ -142,7 +153,7 @@ roomba_open(roomba_comm_t* r)
 }
 
 int
-roomba_init(roomba_comm_t* r)
+roomba_init(roomba_comm_t* r, unsigned char fullcontrol)
 {
   unsigned char cmdbuf[1];
 
@@ -168,13 +179,16 @@ roomba_init(roomba_comm_t* r)
 
   usleep(ROOMBA_DELAY_MODECHANGE_MS * 1e3);
 
-  cmdbuf[0] = ROOMBA_OPCODE_CONTROL;
-  if(write(r->fd, cmdbuf, 1) < 0)
+  if(fullcontrol)
   {
-    perror("roomba_init():write():");
-    return(-1);
+    cmdbuf[0] = ROOMBA_OPCODE_FULL;
+    if(write(r->fd, cmdbuf, 1) < 0)
+    {
+      perror("roomba_init():write():");
+      return(-1);
+    }
+    r->mode = ROOMBA_MODE_FULL;
   }
-  r->mode = ROOMBA_MODE_FULL;
 
   return(0);
 }
@@ -182,6 +196,22 @@ roomba_init(roomba_comm_t* r)
 int
 roomba_close(roomba_comm_t* r)
 {
+  unsigned char cmdbuf[1];
+
+  roomba_set_speeds(r, 0.0, 0.0);
+
+  usleep(ROOMBA_DELAY_MODECHANGE_MS * 1e3);
+
+  /*
+  cmdbuf[0] = ROOMBA_OPCODE_POWER;
+  if(write(r->fd, cmdbuf, 1) < 0)
+  {
+    perror("roomba_close():write():");
+  }
+
+  usleep(ROOMBA_DELAY_MODECHANGE_MS * 1e3);
+  */
+
   if(close(r->fd) < 0)
   {
     perror("roomba_close():close():");
@@ -196,12 +226,14 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
 {
   unsigned char cmdbuf[5];
   int16_t tv_mm, rad_mm;
-  int16_t tv_mm_tc, rad_mm_tc;
+  //int16_t tv_mm_tc, rad_mm_tc;
+
+  printf("tv: %.3lf rv: %.3lf\n", tv, rv);
 
   tv_mm = (int16_t)rint(tv * 1e3);
   tv_mm = MAX(tv_mm, -ROOMBA_TVEL_MAX_MM_S);
   tv_mm = MIN(tv_mm, ROOMBA_TVEL_MAX_MM_S);
-  tv_mm_tc = TWOSCOMP(tv_mm);
+  //tv_mm_tc = TWOSCOMP(tv_mm);
 
   if(rv == 0)
   {
@@ -215,22 +247,30 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
       rad_mm = 1;
     else
       rad_mm = -1;
+
+    tv_mm = 500;
   }
   else
   {
     // General case: convert rv to turn radius
-    rad_mm = (int16_t)rint(tv_mm / (rv * 1e3));
+    rad_mm = (int16_t)rint(tv_mm / rv);
+    printf("real rad_mm: %d\n", rad_mm);
     rad_mm = MAX(rad_mm, -ROOMBA_RADIUS_MAX_MM);
     rad_mm = MIN(rad_mm, ROOMBA_RADIUS_MAX_MM);
   }
 
-  rad_mm_tc = TWOSCOMP(rad_mm);
+  //rad_mm_tc = TWOSCOMP(rad_mm);
+
+  printf("tv_mm: %d rad_mm: %d\n", tv_mm, rad_mm);
 
   cmdbuf[0] = ROOMBA_OPCODE_DRIVE;
-  cmdbuf[1] = (unsigned char)(tv_mm_tc >> 8);
-  cmdbuf[2] = (unsigned char)(tv_mm_tc & 0xFF);
-  cmdbuf[3] = (unsigned char)(rad_mm_tc >> 8);
-  cmdbuf[4] = (unsigned char)(rad_mm_tc & 0xFF);
+  cmdbuf[1] = (unsigned char)(tv_mm >> 8);
+  cmdbuf[2] = (unsigned char)(tv_mm & 0xFF);
+  cmdbuf[3] = (unsigned char)(rad_mm >> 8);
+  cmdbuf[4] = (unsigned char)(rad_mm & 0xFF);
+
+  printf("set_speeds: %X %X %X %X %X\n",
+         cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], cmdbuf[4]);
 
   if(write(r->fd, cmdbuf, 5) < 0)
   {
@@ -249,6 +289,8 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
   unsigned char databuf[ROOMBA_SENSOR_PACKET_SIZE];
   int retval;
   int numread;
+  int totalnumread;
+  int i;
 
   cmdbuf[0] = ROOMBA_OPCODE_SENSORS;
   /* Zero to get all sensor data */
@@ -263,7 +305,8 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
   ufd[0].fd = r->fd;
   ufd[0].events = POLLIN;
 
-  for(;;)
+  totalnumread = 0;
+  while(totalnumread < sizeof(databuf))
   {
     if((retval = poll(ufd,1,timeout)) < 0)
     {
@@ -279,23 +322,25 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
       return(-1);
     else
     {
-      if((numread = read(r->fd,databuf,sizeof(databuf))) < 0)
+      if((numread = read(r->fd,databuf+totalnumread,sizeof(databuf)-totalnumread)) < 0)
       {
         perror("roomba_get_sensors():read()");
         return(-1);
       }
-      else if(numread < sizeof(databuf))
-      {
-        puts("roomba_get_sensors():short read");
-        return(-1);
-      }
       else
       {
-        roomba_parse_sensor_packet(r, databuf, (size_t)numread);
-        return(0);
+        totalnumread += numread;
+        /*
+        printf("read %d bytes; buffer so far:\n", numread);
+        for(i=0;i<totalnumread;i++)
+          printf("%x ", databuf[i]);
+        puts("");
+        */
       }
     }
   }
+  roomba_parse_sensor_packet(r, databuf, (size_t)totalnumread);
+  return(0);
 }
 
 int
@@ -389,4 +434,42 @@ roomba_parse_sensor_packet(roomba_comm_t* r, unsigned char* buf, size_t buflen)
   assert(idx == ROOMBA_SENSOR_PACKET_SIZE);
 
   return(0);
+}
+
+int
+roomba_clean(roomba_comm_t* r)
+{
+  unsigned char cmdbuf[1];
+
+  cmdbuf[0] = ROOMBA_OPCODE_CLEAN;
+  if(write(r->fd, cmdbuf, 1) < 0)
+  {
+    perror("roomba_clean():write():");
+    return(-1);
+  }
+  return(0);
+}
+
+void
+roomba_print(roomba_comm_t* r)
+{
+  printf("mode: %d\n", r->mode);
+  printf("position: %.3lf %.3lf %.3lf\n", r->ox, r->oy, r->oa);
+  printf("bumpers: l:%d r:%d\n", r->bumper_left, r->bumper_right);
+  printf("wall: %d virtual wall: %d\n", r->wall, r->virtual_wall);
+  printf("wheeldrops: c:%d l:%d r:%d\n", 
+         r->wheeldrop_caster, r->wheeldrop_left, r->wheeldrop_right);
+  printf("cliff: l:%d fl:%d fr:%d r:%d\n",
+         r->cliff_left, r->cliff_frontleft, r->cliff_frontright, r->cliff_right);
+  printf("overcurrent: dl:%d dr:%d mb:%d sb:%d v:%d\n",
+         r->overcurrent_driveleft, r->overcurrent_driveright,
+         r->overcurrent_mainbrush, r->overcurrent_sidebrush, r->overcurrent_vacuum);
+  printf("dirt: l:%d r:%d\n", r->dirtdetector_left, r->dirtdetector_right);
+  printf("remote opcode: %d\n", r->remote_opcode);
+  printf("buttons: p:%d s:%d c:%d m:%d\n",
+         r->button_power, r->button_spot, r->button_clean, r->button_max);
+  printf("charging state: %d\n", r->charging_state);
+  printf("battery: voltage:%.3lf current:%.3lf temp:%.3lf charge:%.3lf capacity:%.3f\n", 
+         r->voltage, r->current, r->temperature, r->charge, r->capacity);
+
 }
