@@ -226,7 +226,7 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
   int16_t tv_mm, rad_mm;
   //int16_t tv_mm_tc, rad_mm_tc;
 
-  printf("tv: %.3lf rv: %.3lf\n", tv, rv);
+  //printf("tv: %.3lf rv: %.3lf\n", tv, rv);
 
   tv_mm = (int16_t)rint(tv * 1e3);
   tv_mm = MAX(tv_mm, -ROOMBA_TVEL_MAX_MM_S);
@@ -246,20 +246,20 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
     else
       rad_mm = -1;
 
-    tv_mm = 500;
+    tv_mm = (int16_t)rint(ROOMBA_AXLE_LENGTH * fabs(rv) * 1e3);
   }
   else
   {
     // General case: convert rv to turn radius
     rad_mm = (int16_t)rint(tv_mm / rv);
-    printf("real rad_mm: %d\n", rad_mm);
+    //printf("real rad_mm: %d\n", rad_mm);
     rad_mm = MAX(rad_mm, -ROOMBA_RADIUS_MAX_MM);
     rad_mm = MIN(rad_mm, ROOMBA_RADIUS_MAX_MM);
   }
 
   //rad_mm_tc = TWOSCOMP(rad_mm);
 
-  printf("tv_mm: %d rad_mm: %d\n", tv_mm, rad_mm);
+  //printf("tv_mm: %d rad_mm: %d\n", tv_mm, rad_mm);
 
   cmdbuf[0] = ROOMBA_OPCODE_DRIVE;
   cmdbuf[1] = (unsigned char)(tv_mm >> 8);
@@ -267,8 +267,8 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
   cmdbuf[3] = (unsigned char)(rad_mm >> 8);
   cmdbuf[4] = (unsigned char)(rad_mm & 0xFF);
 
-  printf("set_speeds: %X %X %X %X %X\n",
-         cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], cmdbuf[4]);
+  //printf("set_speeds: %X %X %X %X %X\n",
+         //cmdbuf[0], cmdbuf[1], cmdbuf[2], cmdbuf[3], cmdbuf[4]);
 
   if(write(r->fd, cmdbuf, 5) < 0)
   {
