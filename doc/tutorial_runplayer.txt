@@ -1,7 +1,0 @@
-/** @ingroup tutorials
-@defgroup tutorial_runplayer Running the Player TCP server
-@brief Basics for client-server operation
-
-@todo Write this
-*/
-

@@ -136,8 +136,8 @@ LaserRescan::LaserRescan( ConfigFile* cf, int section)
     : LaserTransform(cf, section)
 {
   // Settings.
-  this->max_angle = cf->ReadFloat(section, "max_angle", 1*M_PI/2);
-  this->min_angle = cf->ReadLength(section, "min_angle", -1*M_PI/2);
+  this->max_angle = cf->ReadAngle(section, "max_angle", M_PI/2.0);
+  this->min_angle = cf->ReadAngle(section, "min_angle", -M_PI/2.0);
   this->scan_count = cf->ReadInt(section, "scan_count", 181);
   res = (max_angle - min_angle) / scan_count;
 
