@@ -224,6 +224,12 @@ if __name__ == '__main__':
     file = open(infilename, 'r')
     instream = file.read()
 
+    # Remove block comments from the file
+    commentRule = re.compile('/\*.*?\*/', re.DOTALL)
+    instream = commentRule.sub ('', instream)
+    commentRule = re.compile('//.*')
+    instream = commentRule.sub ('', instream)
+
     # Extract "class prefixes" from the header
     prefixes = extract_prefixes(instream)
 
