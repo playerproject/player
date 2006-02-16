@@ -20,8 +20,9 @@ module = Extension('_playerc',
                    include_dirs = [srcdir + '/../..', top_srcdir],
                    library_dirs = [builddir + '/../../.libs', 
                                    top_builddir + '/libplayerxdr/.libs',
+                                   top_builddir + '/libplayercore/.libs',
                                    top_builddir + '/libplayerjpeg/.libs'],
-                   libraries = ['playerxdr', 'playerc', 'playerjpeg', 'jpeg'])
+                   libraries = ['playerxdr', 'playerc', 'playerjpeg', 'jpeg', 'playererror'])
 
 
 setup(name = 'playerc',
