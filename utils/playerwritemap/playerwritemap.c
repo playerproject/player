@@ -23,12 +23,13 @@
 // use gdk-pixbuf for image saving
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#define USAGE "Usage: writemap [-h <host>] [-p <port>] [-m {v|o}] <filename>"
+#define USAGE "Usage: playerwritemap [-h <host>] [-p <port>] [-m {v|o}] [-i <mapidx>] <filename>"
 
 char* host;
 char* fname;
 int port;
 int omap;
+int idx;
 
 void create_map_image(playerc_map_t* map, const char* fname, const char* fmt);
 
@@ -44,6 +45,7 @@ int main(int argc, char **argv)
   host = "localhost";
   port = 6665;
   omap = 1;
+  idx = 0;
 
   if(parse_args(argc,argv) < 0)
   {
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
     return -1;
 
   // Create and subscribe to a map device.
-  map = playerc_map_create(client, 0);
+  map = playerc_map_create(client, idx);
   if (playerc_map_subscribe(map, PLAYER_OPEN_MODE))
     return -1;
 
@@ -128,6 +130,12 @@ parse_args(int argc, char** argv)
       if(++i >= max)
         return(-1);
       host = argv[i];
+    }
+    else if(!strcmp(argv[i],"-i"))
+    {
+      if(++i >= max)
+        return(-1);
+      idx = atoi(argv[i]);
     }
     else if(!strcmp(argv[i],"-p"))
     {
