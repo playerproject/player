@@ -1,73 +1,99 @@
 /**
 @page start Quick start
 
-@todo Rewrite this
+The most common way to use Player is to run the @ref util_player on your
+robot, then accessing your robot's devices with a <i>client</i> program.
+Here we give two examples of this usage: one for a physical robot and one
+for a simulated robot.
 
-What is Player? Player is a robot device server. It gives you simple and complete control over the physical sensors and actuators on your mobile robot. When Player is running on your robot, your client control program connects to it via a standard TCP socket, and communication is accomplished by the sending and receiving of some of a small set of simple messages.
+@section realrobot Physical hardware
 
-Player is designed to be language and platform independent. Your client program can run on any machine that has network connectivity to your robot, and it can be written in any language that can open and control a TCP socket. Client-side libraries are currently available for C, C++, Tcl, LISP, Java, and Python.
+You need to write a Player configuration file, usually with the extension
+<b>.cfg</b>, that instantiates the driver(s) needed to control your robot
+and tell the driver(s) how to access relevant hardware.  The job of the
+configuration file is to map your physical devices to Player devices.
 
-Player also makes no assumptions about how you might want to structure your robot control programs; i.e., Player is architecturally neutral.
+Several example configuration files are installed (by default) in
+/usr/local/share/player/config.  It's best to start with one of these as a
+template.
 
-@par Starting the Player server
+For example, if you have a Pioneer mobile robot with a sonar array and a
+SICK LMS200 laser range-finder attached, your .cfg file might look like
+this (if you have different hardware, check the @ref supported_hardware
+page to see what driver(s) you should use instead):
+@code
+driver
+(
+  name "p2os"
+  provides ["odometry:::position2d:0" "sonar:0"]
+  port "/dev/ttyS0"
+)
+driver
+(
+  name "sicklms200"
+  provides ["laser:0"]
+  port "/dev/ttyS1"
+)
+@endcode
 
-The Player server is run as follows:
-@verbatim
-$ player [options] <configfile>
-@endverbatim
+This file instantiates the @ref driver_p2os driver to access the robot's
+motors and its sonar array (both are controlled inside the robot by a
+single microcontroller).  This driver will talk to the robot over the
+serial port "/dev/ttyS0" and map these sensors to the Player devices
+"position2d:0" and "sonar:0".  This file also instantiates the @ref
+driver_sicklms200 driver to access the SICK laser over the serial port
+"/dev/ttyS1" and present it as the Player device "laser:0".
 
-The configuration file is a text file describing the set of devices to
-be instantiated; for example, if you have an ActivMedia Pioneer and a
-SICKLMS200 scanning laser range finder:
+Assuming you named this file @b pioneer.cfg, you would run player like so
+(do this on the computer that is connected to the robot and laser; for the
+Pioneer this is probably the computer that is installed inside the robot):
+@code
+$ player pioneer.cfg
 
-@include simple.cfg
+* Part of the Player/Stage/Gazebo Project
+* [http://playerstage.sourceforge.net].
+* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,
+* Nate Koenig, and contributors. Released under the GNU General Public
+* License.
+* Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
+* are welcome to redistribute it under certain conditions; see COPYING
+* for details.
 
-This file instructs the server to create two devices:
-  - A Pioneer P2OS driver, supporting the @ref interface_position2d interface.
-  - A Sick LMS200 driver, supporting the @ref interface_laser interface.
-Client programs can subsequently connect to these devices, read data,
-send commands and so forth (see below).
+Listening on ports: 6665
+@endcode
+Now player is waiting to service client connections on port 6665.
+To visualize the sensor data, try the graphical tool @ref util_playerv.
+Just like any client program, you can run it either on the same machine
+where you're running the player server, or on any other machine that
+has network connectivity to it.  
 
-Note the important distinction between drivers, interfaces and devices:
-  - A @b driver supports a @e specific piece of hardware, such as a SICK LMS200
-    scanning laser range-finder.
-  - An @b interface is a @e generic mechanism for getting data and/or
-    sending commands to a piece of hardware.
-  - A @b device describes a specific driver/interface pairing; e.g., a SICK LMS200
-    driver which supports the @ref interface_laser interface.
-.
-Devices are also given an @b index to facilitate unique addressing
-(e.g., "laser:0" or "laser:1"); this allows the server to instantiate
-more than one device with the same interface.
+Let's assume that the hostname of your robot's computer is @b marvin, and
+that you want to run @ref util_playerv on your desktop machine (and that
+there's a network, probably wireless between the two machines).  Then you
+would do something like this:
+@code
+$ playerv -h marvin --position2d --laser --sonar
+@endcode
+You should get a window that shows you the robot (it's the box in the
+middle) with sonar data (brown cones) and laser data (blue polyline).
+The robot's front end points to the right in this window.
 
+To drive the robot around, choose the menu option
+Devices->position2d:0->Command.  A little crosshair will appear on the
+robot; click and drag it right and left to move the robot forward and
+backward (drag it up and down to turn left and right).
 
-@par Writing a Player client
+Ok, so you can teleoperate the robot; how about autonomous control?
+De-select the Devices->position2d:0->Command option in the menu, so that
+@ref util_playerv will stop sending commands to the robot.  Then try the
+randomwalk program (it doesn't get installed; you can find it compiled
+where you built player, in examples/libplayerc++):
+@code
+$ randomwalk
+@endcode
+The robot should start wandering around, using the sonar array to avoid
+obstacles.  You should see the sonar and laser data changing in @ref
+util_playerv.  Ctrl-C to exit randomwalk, which will stop the robot.  
+Ctrl-C to exit player.
 
-Users can write programs to communicate with the Player server.  In
-principle, this can be done using Player's low-level
-network-socket-base protocol.  In practice, most users will avail
-themselves of one of the existing @e client @e libraries; the
-libraries manage the network interactions, data marshalling and so on,
-and present a much more convenient API.
-
-For example, the following code fragment demonstrates a simple client
-using the @ref player_clientlib_libplayerc library.
-
-@include simple.c
-
-This example can be built using the commands:
-@verbatim
-$ gcc -c simple.c -o simple.o
-$ gcc -lm -lplayerxdr -lplayerc simple.o -o simple
-@endverbatim
-
-With the server already started, you can run the example with:
-@verbatim
-$ ./simple
-@endverbatim
-
-Assuming everything is plugged in and turned on, your robot should
-scoot across the room.
-
-Client libraries exist for C, C++, Tcl, LISP, Java, and Python.
 */

@@ -20,6 +20,73 @@
  *
  */
 
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_roomba roomba
+ @brief iRobot Roomba
+
+Newer versions of the iRobot Roomba vaccum robot can be controlled by an
+external computer over a serial line.  This driver supports control of
+these robots.  
+
+Note that the serial port on top of the Roomba operates at 5V, not the
+RS232 standard of 12V.  This means that you cannot just plug a plain
+old serial cable between the Roomba and your PC's serial port.  You need
+to put a level-shifter in between them.  Or you if have a computer that
+exposes serial lines at "logic level," (e.g., the Gumstix), you can use
+them directly.  Check out <a href="http://www.irobot.com/hacker">iRobot's
+hacker site</a> for more information, including the pinout on the Roomba's
+serial port.  The <a href="http://roomba.pbwiki.com">Roomba Wiki</a>
+has a howto on building an appropriate serial cable.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+The roomba driver provides the following device interfaces:
+
+- @ref interface_position2d
+  - This interface returns odometry data, and accepts velocity commands.
+
+@par Supported configuration requests
+
+- None
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS0"
+  - Serial port used to communicate with the robot.
+- safe (integer)
+  - Default: 1
+  - Nonzero to keep the robot in "safe" mode (the robot will stop if
+    the wheeldrop or cliff sensors are triggered), zero for "full" mode
+
+@par Example
+
+@verbatim
+driver
+(
+  name "roomba"
+  provides ["position2d:0"]
+  port "/dev/ttyS2"
+  safe 1
+)
+@endverbatim
+
+@todo
+- Add power and bumper interfaces
+- Recover from a cliff/wheeldrop sensor being triggered in safe mode;
+the robot goes into passive mode when this happens, which right now
+requires Player to be restarted
+- Add some config requests, like position geometry
+
+@author Brian Gerkey
+*/
+/** @} */
+
 
 #include <unistd.h>
 
