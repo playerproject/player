@@ -1,0 +1,44 @@
+/** @ingroup tutorials
+@defgroup tutorial_crosscompiling Cross-compiling
+@brief How to build Player for embedded systems
+
+@section Introduction
+
+While Player is most often used on laptop- or workstation-class machines,
+it is also intended to run on less powerful embedded systems.  Over the
+years, Player has been used on a variety of such systems, including the
+iPaq, Intel Stayton, nanoEngine, and Gumstix.  These systems are
+not powerful enough to run a compiler, and they generally have a different
+architecture from your desktop machine (e.g., ARM instead of x86), which
+means that you need to <i>cross-compile</i> programs to run on them.
+
+This document gives some guidance to help in cross-compiling Player.
+Beware that cross-compiling is fairly complicated, and that the information
+given here is by no means a complete treatment of the subject.
+
+@section An example to work with
+
+When cross-compiling, the <i>build</i> system is the one where the
+compiling is happening, and the <i>host</i> system is the one where the
+compiled program will eventually run.  Throughout this document, we'll
+assume that you your build system is <b>x86-linux</b> (e.g., a Linux
+workstation or laptop) and that your host system is <b>arm-linux</b> (e.g.,
+a Gumstix).  This is probably the most common setup.  If your situation is
+different, then just mentally translate the system-specific names used
+below.
+
+@section Prerequisites
+
+First, you need an x86-linux to arm-linux <i>toolchain</i>.  There are a
+variety of ways to get a toolchain, including compiling it yourself from
+scratch.  Unless you're looking to build character, I suggest getting a
+pre-compiled toolchain.  The toolchain <b>must include C++ support</b>,
+since much of Player is written in C++.
+
+@note Gumstix users (and possibly other users of uClibc): Player requires
+all of the xdr_* functions, which requires setting  UCLIBC_HAS_FULL_RPC=y
+
+
+
+*/
+

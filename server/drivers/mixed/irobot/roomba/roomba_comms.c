@@ -41,8 +41,6 @@
 
 #include "roomba_comms.h"
 
-//#define TWOSCOMP(v) (~v + 1)
-
 roomba_comm_t*
 roomba_create(const char* serial_port)
 {
@@ -224,14 +222,12 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
 {
   unsigned char cmdbuf[5];
   int16_t tv_mm, rad_mm;
-  //int16_t tv_mm_tc, rad_mm_tc;
 
   //printf("tv: %.3lf rv: %.3lf\n", tv, rv);
 
   tv_mm = (int16_t)rint(tv * 1e3);
   tv_mm = MAX(tv_mm, -ROOMBA_TVEL_MAX_MM_S);
   tv_mm = MIN(tv_mm, ROOMBA_TVEL_MAX_MM_S);
-  //tv_mm_tc = TWOSCOMP(tv_mm);
 
   if(rv == 0)
   {
@@ -256,8 +252,6 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
     rad_mm = MAX(rad_mm, -ROOMBA_RADIUS_MAX_MM);
     rad_mm = MIN(rad_mm, ROOMBA_RADIUS_MAX_MM);
   }
-
-  //rad_mm_tc = TWOSCOMP(rad_mm);
 
   //printf("tv_mm: %d rad_mm: %d\n", tv_mm, rad_mm);
 
