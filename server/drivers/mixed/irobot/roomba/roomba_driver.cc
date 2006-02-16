@@ -27,7 +27,7 @@
 
 #include "roomba_comms.h"
 
-#define CYCLE_TIME_MS 100000
+#define CYCLE_TIME_US 100000
 
 class Roomba : public Driver
 {
@@ -89,12 +89,16 @@ Roomba::Setup()
     return(-1);
   }
 
+  this->StartThread();
+
   return(0);
 }
 
 int
 Roomba::Shutdown()
 {
+  this->StopThread();
+
   if(roomba_close(this->roomba_dev))
   {
     PLAYER_ERROR("failed to close roomba connection");
@@ -129,8 +133,7 @@ Roomba::Main()
      this->Publish(this->device_addr, NULL,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
-
-     usleep(CYCLE_TIME_MS * 1e3);
+     usleep(CYCLE_TIME_US);
   }
 }
 
@@ -139,5 +142,21 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
 		       player_msghdr * hdr, 
 		       void * data)
 {
+  if(Message::MatchMessage(hdr,
+                           PLAYER_MSGTYPE_CMD,
+                           PLAYER_POSITION2D_CMD_VEL,
+                           this->device_addr))
+  {
+    // get and send the latest motor command
+    player_position2d_cmd_vel_t position_cmd;
+    position_cmd = *(player_position2d_cmd_vel_t*)data;
+    if(roomba_set_speeds(this->roomba_dev, 
+                         position_cmd.vel.px, 
+                         position_cmd.vel.pa) < 0)
+    {
+      PLAYER_ERROR("failed to set speeds to roomba");
+    }
+    return(0);
+  }
   return(-1);
 }
