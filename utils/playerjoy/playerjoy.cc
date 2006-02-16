@@ -69,13 +69,6 @@ Details of keyboard control are printed out on the console.
 #include <termios.h>
 #define KEYBOARD_SUPPORT 1
 
-#if HAVE_LINUX_JOYSTICK_H
-  #include <linux/joystick.h>
-  #define JOYSTICK_SUPPORT 1
-#else
-  #define JOYSTICK_SUPPORT 0
-#endif
-
 #include <assert.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -88,6 +81,14 @@ Details of keyboard control are printed out on the console.
 #include <stdlib.h>  /* for atoi(3),rand(3) */
 #include <time.h>
 #include <pthread.h>
+
+#if HAVE_LINUX_JOYSTICK_H
+  #include <linux/joystick.h>
+  #define JOYSTICK_SUPPORT 1
+#else
+  #define JOYSTICK_SUPPORT 0
+#endif
+
 
 #include <list>
 

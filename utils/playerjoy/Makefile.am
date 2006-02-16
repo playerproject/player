@@ -18,7 +18,7 @@ PLAYERCC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                 $(top_builddir)/client_libs/libplayerc++/libplayerc++.la
 
 playerjoy_CPPFLAGS     = $(PLAYERCC_CFLAGS)
-playerjoy_LDADD        = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
+playerjoy_LDADD        = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc -lplayerc++ -lplayerxdr -lplayererror
 playerjoy_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 

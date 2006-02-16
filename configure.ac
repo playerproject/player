@@ -60,7 +60,14 @@ fi
 AC_SUBST(PREFIX)
 
 dnl Do we have pkg-config?
-AC_CHECK_PROG(have_pkg_config,pkg-config,yes,no)
+dnl If we're cross-compiling, pretend we don't have pkg-config, because it
+dnl will do the wrong thing (i.e., identify packages on the build systems
+dnl instead of the host system).
+if test "$host" = "$build"; then
+  AC_CHECK_PROG(have_pkg_config,pkg-config,yes,no)
+else
+  have_pkg_config=no
+fi
 if test "x$have_pkg_config" = "xno"; then
   AC_MSG_WARN([You should really install pkg-config])
   AC_MSG_WARN([Some components of Player will not be built])
@@ -97,8 +104,16 @@ with_jni_mddir=$default_jni_mddir)
 dnl Look for the JNI headers.  I'm using AC_CHECK_FILE, rather than
 dnl AC_CHECK_HEADER, because I can't figure out how to get the latter to
 dnl successfully compile a test program that #include's <jni.h>
-AC_CHECK_FILE($with_jnidir/jni.h, have_jni_h=yes, have_jni_h=no)
-AC_CHECK_FILE($with_jni_mddir/jni_md.h, have_jni_md_h=yes, have_jni_md_h=no)
+dnl Furthermore, AC_CHECK_FILE doesn't work when cross-compiling, so we'll
+dnl check for that here (is there a better way to see if we're
+dnl cross-compiling?)
+if test "$host" = "$build"; then
+  AC_CHECK_FILE($with_jnidir/jni.h, have_jni_h=yes, have_jni_h=no)
+  AC_CHECK_FILE($with_jni_mddir/jni_md.h, have_jni_md_h=yes, have_jni_md_h=no)
+else
+  have_jni_h=no
+  have_jni_md_h=no
+fi
 
 dnl Do we have a Java compiler?
 AC_CHECK_PROG(have_java,javac,yes,no)
@@ -245,7 +260,7 @@ AC_ARG_WITH(playercc,
             with_playercc=yes)
 if test "x$with_playercc" = "xyes"; then
   PLAYERCC_EXTRA_CFLAGS=""
-  PLAYERCC_LIB="-lplayerxdr -lplayerc -lm"
+  PLAYERCC_LIB="-lplayerc -lplayerxdr -lm"
   AC_CXX_NAMESPACES
 
   AX_BOOST_SIGNALS
@@ -319,7 +334,7 @@ AC_TRY_COMPILE(
           AC_DEFINE(O_SYNC, 0, must define this on some non-Linux platforms)])
 
 dnl Checks for library functions.
-AC_REPLACE_FUNCS(poll dirname cfmakeraw)
+AC_REPLACE_FUNCS(poll dirname cfmakeraw round)
 AC_CHECK_FUNCS(sigblock getaddrinfo)
 AC_CHECK_LIB(rt, nanosleep)
 AC_CHECK_LIB(nsl, gethostbyname)

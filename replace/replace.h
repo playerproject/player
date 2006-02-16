@@ -87,6 +87,10 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
   void cfmakeraw (struct termios *t);
 #endif // !HAVE_CFMAKERAW
 
+#if !HAVE_ROUND
+  double round (double x);
+#endif // !HAVE_ROUND
+
 #ifdef __cplusplus
 }
 #endif

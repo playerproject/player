@@ -5,7 +5,7 @@ BUILDTEST =
 endif
 
 AM_CPPFLAGS = -I$(srcdir)/.. -I$(top_srcdir) -g -Wall
-test_LDADD = -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/libplayercore -lplayererror -L$(top_builddir)/client_libs/libplayerc -lplayerc -lm
+test_LDADD = -L$(top_builddir)/client_libs/libplayerc -lplayerc -L$(top_builddir)/libplayerxdr -lplayerxdr -L$(top_builddir)/libplayercore -lplayererror -lm
 #-L$(top_builddir)/client_libs/libplayerpacket -lplayerpacket
 EXTRA_DIST = test.world test.cfg cave.pnm
 

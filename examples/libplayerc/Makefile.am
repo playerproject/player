@@ -14,5 +14,5 @@ AM_CPPFLAGS = $(PLAYERC_CFLAGS) -Wall -g
 noinst_PROGRAMS = simple
 
 simple_SOURCES = simple.c
-simple_LDADD = $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayerc -lplayererror
+simple_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror
 simple_DEPENDENCIES = $(PLAYERC_DEPS)
