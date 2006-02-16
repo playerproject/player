@@ -49,7 +49,7 @@ Player 2.0 aims to clarify and compartmentalize its components in such a
 way that they can be extended, resused, and replaced, as the situation
 demands.  At its core, Player 2.0 comprises 5 components:
 
-- <b>Interface specification</b>: The world of robotic devices is carved up
+- @ref interface : The world of robotic devices is carved up
   into a set of interfaces.  Each interface defines the syntax and
   semantics of the messages that a conforming device can consume and
   produce.  This specification is written as a C header file, <player.h>,
@@ -77,8 +77,8 @@ demands.  At its core, Player 2.0 comprises 5 components:
   sockets and message queues (as defined in libplayercore).  All messages
   are XDR-encoded (with libplayerxdr) before network transmission.
 
-Because it's just so darn useful, Player 2.0 still contains a TCP server
-called <i>player</i>.  As you can imagine, this server is a short C++
+Because it's just so darn useful, Player 2.0 still contains a TCP @ref
+util_player.  As you can imagine, this server is a short C++
 program that uses the above libraries to provide the ability to parse a
 configuration file, load/instantiate device drivers, and allow clients
 access to these devices via XDR-encoded messages over a TCP socket.
