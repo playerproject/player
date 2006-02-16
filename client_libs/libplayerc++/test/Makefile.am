@@ -13,7 +13,7 @@ PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
                   -L${top_builddir}/client_libs/libplayerc \
                   -L${top_builddir}/client_libs/libplayerc++
 
-test_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayererror
+test_LDADD = $(PLAYERCC_LIB_DIRS) -lplayerc++ $(PLAYERCC_LIB) -lplayererror
 
 
 noinst_PROGRAMS =

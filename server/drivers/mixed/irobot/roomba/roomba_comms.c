@@ -100,9 +100,7 @@ roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
     return(-1);
   }
   
-#if HAVE_CFMAKERAW
   cfmakeraw(&term);
-#endif
   cfsetispeed(&term, B57600);
   cfsetospeed(&term, B57600);
   

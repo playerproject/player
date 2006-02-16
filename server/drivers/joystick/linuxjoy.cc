@@ -147,7 +147,6 @@ position devices that use watchdog timers.
 */
 /** @} */
 
-#include <linux/joystick.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <stdio.h>
@@ -160,6 +159,7 @@ position devices that use watchdog timers.
 #include <sys/time.h>
 #include <fcntl.h>
 #include <math.h>
+#include <linux/joystick.h>
 
 #include <replace/replace.h> // for poll(2)
 #include <libplayercore/playercore.h>
