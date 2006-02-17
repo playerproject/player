@@ -25,145 +25,20 @@
  # CVS: $Id$
  **************************************************************************/
 
+
 /** @ingroup clientlibs
 @defgroup player_clientlib_libplayerc libplayerc
 
-libplayerc is a client library for the Player robot device server.  It
+libplayerc is a client library for the @ref util_player.  It
 is written in C to maximize portability, and in the expectation that
 users will write bindings for other languages (such as Python and
 Java) against this library; @ref player_clientlib_libplayerc_py "Python bindings" are
 already available.
 
-@section libplayerc_usage General usage
-
-libplayerc is based on a device <i>proxy</i> model, in which the client
-maintains a local proxy for each of the devices on the remote server.
-Thus, for example, one can create local proxies for the <tt>position</tt>
-and <tt>laser</tt> devices.  There is also a special <tt>client</tt> proxy,
-used to control the Player server itself.
-
-Programs using libplayerc will generally have the following structure:
-
-@include simpleclient.c
-
-This example can be built using the commands:
-<PRE>
-$ gcc -c simple.c -o simple.o
-$ gcc -lm -lplayerc simple.o -o simple
-</PRE>
-
-Make sure that <tt>playerc.h</tt> is installed somewhere in your
-include path, and that <tt>libplayerc.a</tt> is in your library path.
-
-<P>
-The above program can be broken into six steps, as follows.
-
-<ul>
-
-<li> Create and connect a client proxy.
-
-<P>
-<PRE>
-client = playerc_client_create(NULL, "localhost", 6665);
-playerc_client_connect(client);
-</PRE>
-The <TT>create</TT> function creates a new client proxy and returns a
-pointer to be used in future function calls (<TT>localhost</TT> should be
-replaced with the network host name of the robot).  The <TT>connect</TT>
-function notifies the Player server that a new client wishes to
-recieve data.
-
-
-<li> Create and subscribe a device proxy.
-
-<P>
-<PRE>
-position = playerc_position_create(client, 0);
-playerc_position_subscribe(position, PLAYER_ALL_MODE);
-</PRE>
-The <TT>create</TT> function creates a new position device proxy and
-returns a pointer to be used in future function calls.  The <TT>subscribe</TT> function notifies the Player server that the client is
-using the position device, and that the client expects to both send
-commands and recieve data (<TT>PLAYER_MODE_ALL</TT>).
-
-<li> Configure the device, send commands.
-
-<P>
-<PRE>
-playerc_position_enable(position, 1);
-playerc_position_set_speed(position, 0, 0, 0.1);
-</PRE>
-The <TT>enable</TT> function sends a configuration request to the server,
-changing the robot's motor state from <TT>off</TT> to <TT>on</TT>, thereby
-allowing the robot to move.  The <TT>setspeed</TT> function sends a new
-motor speed, in this case commanding the robot to turn on the spot.
-
-
-<P>
-Note that most Player devices will accept both asynchronous
-<EM>command</EM> and synchronous <EM>configuration</EM> requests.
-Sending commands is analogous using the standard Unix <TT>write</TT>
-device interface, while sending configuration requests is analogous to
-using the <TT>ioctl</TT> interface.  For the most part,
-<TT>libplayerc</TT> hides the distinction between these two
-interfaces.  Users should be aware, however, that while commands are
-always handled promptly by the server, configuration requests may take
-significant time to complete.  If possible, configuration requests
-should therefore be restricted to the initialization phase of the
-program.
-
-
-<li> Read data from the device.
-
-<P>
-<PRE>
-playerc_client_read(client);
-printf("position : %f %f %f\n", position-&gt;px, ... );
-</PRE>
-The <TT>read</TT> function blocks until new data arrives from the Player
-server.  This data may be from one of the subscribed devices, or it
-may be from the server itself (which sends regular synchronization
-messages to all of its clients).  The <TT>read</TT> function inspects the
-incoming data and automatically updates the elements in the
-appropriate device proxy.  This function also returns a pointer to the
-proxy that was updated, so that user programs may, if desired, trigger
-appropriate events on the arrival of different kinds of data.
-
-
-<li> Unsubscribe and destroy the device proxy.
-
-<P>
-<PRE>
-playerc_position_unsubscribe(position);
-playerc_position_destroy(position);
-</PRE>
-The <TT>unsubscribe</TT> function tells the Player server that the client
-is no longer using this device.  The <TT>destroy</TT> function then frees
-the memory associated with the device proxy; the <TT>device</TT> pointer
-is now invalid and should be not be re-used.
-
-
-<li> Disconnect and destroy the client proxy.
-
-<P>
-<PRE>
-playerc_client_disconnect(client);
-playerc_client_destroy(client);
-</PRE>
-The <TT>disconnect</TT> function tells the server that the client is
-shutting down.  The <TT>destroy</TT> function then frees the memory
-associated with the client proxy; the <TT>client</TT> pointer is now
-invalid and should be not be re-used.
-
-</ul>
-
-
-@section libplayerc_ref Proxy reference
-
-Detailed information for each proxy can be found in the <a
-href="modules.html">Reference</a> section.
-
+Be sure to check out the @ref libplayerc_example "example".
 */
+/** @{ */
+
 
 #ifndef PLAYERC_H
 #define PLAYERC_H
@@ -219,13 +94,139 @@ extern "C" {
 #define PLAYERC_BLOBFINDER_MAX_BLOBS    PLAYER_BLOBFINDER_MAX_BLOBS
 #define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
 
+/** @} */
+
+/**
+@ingroup player_clientlib_libplayerc
+@defgroup libplayerc_example libplayerc example
+@brief An example
+
+libplayerc is based on a device <i>proxy</i> model, in which the client
+maintains a local proxy for each of the devices on the remote server.
+Thus, for example, one can create local proxies for the 
+@ref interface_position2d
+and @ref interface_laser devices.  There is also a special <tt>client</tt> proxy,
+used to control the Player server itself.
+
+Programs using libplayerc will generally have the following structure:
+
+@include simpleclient.c
+
+This example can be built using the command:
+<PRE>
+$ gcc -o simpleclient `pkg-config --cflags playerc` simpleclient.c `pkg-config --libs playerc`
+</PRE>
+
+Make sure that <tt>libplayerc</tt> is installed somewhere that pkg-config
+can find it.
+
+<P>
+The above program can be broken into six steps, as follows.
+
+<ul>
+
+<li> Create and connect a client proxy.
+
+<P>
+<PRE>
+client = playerc_client_create(NULL, "localhost", 6665);
+playerc_client_connect(client);
+</PRE>
+The <TT>create</TT> function creates a new client proxy and returns a
+pointer to be used in future function calls (<TT>localhost</TT> should be
+replaced with the network host name of the robot).  The <TT>connect</TT>
+function notifies the Player server that a new client wishes to
+recieve data.
 
 
-/** @addtogroup player_clientlib_libplayerc libplayerc */
-/** @{ */
+<li> Create and subscribe a device proxy.
+
+<P>
+<PRE>
+position2d = playerc_position2d_create(client, 0);
+playerc_position2d_subscribe(position2d, PLAYERC_OPEN_MODE);
+</PRE>
+The <TT>create</TT> function creates a new position2d device proxy and
+returns a pointer to be used in future function calls.  The <TT>subscribe</TT> function notifies the Player server that the client is
+using the position2d device, and that the client expects to both send
+commands and recieve data (<TT>PLAYERC_OPEN_MODE</TT>).
+
+<li> Configure the device, send commands.
+
+<P>
+<PRE>
+playerc_position2d_enable(position2d, 1);
+playerc_position2d_set_speed(position2d, 0, 0, 0.1);
+</PRE>
+The <TT>enable</TT> function sends a configuration request to the server,
+changing the robot's motor state from <TT>off</TT> to <TT>on</TT>, thereby
+allowing the robot to move.  The <TT>setspeed</TT> function sends a new
+motor speed, in this case commanding the robot to turn on the spot.
+
+
+<P>
+Note that most Player devices will accept both asynchronous
+<EM>command</EM> and synchronous <EM>configuration</EM> requests.
+Sending commands is analogous using the standard Unix <TT>write</TT>
+device interface, while sending configuration requests is analogous to
+using the <TT>ioctl</TT> interface.  For the most part,
+<TT>libplayerc</TT> hides the distinction between these two
+interfaces.  Users should be aware, however, that while commands are
+always handled promptly by the server, configuration requests may take
+significant time to complete.  If possible, configuration requests
+should therefore be restricted to the initialization phase of the
+program.
+
+
+<li> Read data from the device.
+
+<P>
+<PRE>
+playerc_client_read(client);
+printf("position : %f %f %f\n", position2d-&gt;px, ... );
+</PRE>
+The <TT>read</TT> function blocks until new data arrives from the Player
+server.  This data may be from one of the subscribed devices, or it
+may be from the server itself (which sends regular synchronization
+messages to all of its clients).  The <TT>read</TT> function inspects the
+incoming data and automatically updates the elements in the
+appropriate device proxy.  This function also returns a pointer to the
+proxy that was updated, so that user programs may, if desired, trigger
+appropriate events on the arrival of different kinds of data.
+
+
+<li> Unsubscribe and destroy the device proxy.
+
+<P>
+<PRE>
+playerc_position2d_unsubscribe(position2d);
+playerc_position2d_destroy(position2d);
+</PRE>
+The <TT>unsubscribe</TT> function tells the Player server that the client
+is no longer using this device.  The <TT>destroy</TT> function then frees
+the memory associated with the device proxy; the <TT>device</TT> pointer
+is now invalid and should be not be re-used.
+
+
+<li> Disconnect and destroy the client proxy.
+
+<P>
+<PRE>
+playerc_client_disconnect(client);
+playerc_client_destroy(client);
+</PRE>
+The <TT>disconnect</TT> function tells the server that the client is
+shutting down.  The <TT>destroy</TT> function then frees the memory
+associated with the client proxy; the <TT>client</TT> pointer is now
+invalid and should be not be re-used.
+
+</ul>
+*/
 
 /***************************************************************************/
-/** @defgroup playerc_utility Utility and error-handling functions
+/** @ingroup player_clientlib_libplayerc
+ * @defgroup playerc_utility Utility and error-handling
+ * @brief Some helper functions
 @{
 */
 /***************************************************************************/
@@ -257,7 +258,10 @@ struct pollfd;
 
 
 /***************************************************************************/
-/** @defgroup multiclient Multi-Client object
+/** @ingroup player_clientlib_libplayerc
+ * @defgroup multiclient Multi-Client object
+ * @brief The multi-client object manages connections to multiple server in
+ * parallel.
 
 @todo Document mutliclient
 
@@ -309,7 +313,8 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout);
 
 
 /***************************************************************************/
-/** @defgroup playerc_client Client API
+/** @ingroup player_clientlib_libplayerc
+ * @defgroup playerc_client Client API
 
 The client object manages the connection with the Player server; it is
 responsible for reading new data, setting data transmission modes and
@@ -591,7 +596,8 @@ int playerc_client_write(playerc_client_t *client,
 
 
 /***************************************************************************/
-/** @defgroup playerc_device Device API
+/** @ingroup player_clientlib_libplayerc
+ * @defgroup playerc_device Device API
 
 The device object provides a common interface to the functionality
 that is shared by all device proxies (in OOP parlance, it is a base
@@ -673,13 +679,15 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxies Proxies
-    @{
+/** @ingroup player_clientlib_libplayerc 
+ * @defgroup playerc_proxies Device proxies
+ * @brief Each interface has a corresponding proxy
 */
 /***************************************************************************/
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_aio aio
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_aio aio
 
 The aio proxy provides an interface to the analog input/output sensors.
 
@@ -721,7 +729,8 @@ int playerc_aio_set_output(playerc_aio_t *device, uint8_t id, float volt);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_actarray actarray
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_actarray actarray
 
 The actarray proxy provides an interface to actuator arrays
 such as the ActivMedia Pioneer Arm. See the Player User Manual for a
@@ -784,7 +793,8 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, uint joint, float 
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_blobfinder blobfinder
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_blobfinder blobfinder
 
 The blobfinder proxy provides an interface to color blob detectors
 such as the ACTS vision system.  See the Player User Manual for a
@@ -852,7 +862,8 @@ int playerc_blobfinder_unsubscribe(playerc_blobfinder_t *device);
 
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_bumper bumper
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_bumper bumper
 
 The bumper proxy provides an interface to the bumper sensors built
 into robots such as the RWI B21R.
@@ -909,7 +920,8 @@ int playerc_bumper_get_geom(playerc_bumper_t *device);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_camera camera
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_camera camera
 
 The camera proxy can be used to get images from a camera.
 
@@ -975,7 +987,8 @@ void playerc_camera_save(playerc_camera_t *device, const char *filename);
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_fiducial fiducial
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_fiducial fiducial
 
 The fiducial proxy provides an interface to a fiducial detector.  This
 device looks for fiducials (markers or beacons) in the laser scan, and
@@ -1032,7 +1045,8 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_graphics2d graphics2d
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_graphics2d graphics2d
 
 The graphics2d proxy provides an interface to the graphics2d
 
@@ -1091,7 +1105,8 @@ int playerc_graphics2d_clear(playerc_graphics2d_t *device );
 /** @} */
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_gripper gripper
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_gripper gripper
 
 The gripper proxy provides an interface to the gripper
 
@@ -1153,7 +1168,8 @@ void playerc_gripper_printout( playerc_gripper_t *device, const char* prefix );
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_ir ir
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_ir ir
 
 The ir proxy provides an interface to the ir sensors built into robots
 such as the RWI B21R.
@@ -1203,7 +1219,8 @@ int playerc_ir_get_geom(playerc_ir_t *device);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_laser laser
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_laser laser
 
 The laser proxy provides an interface to scanning laser range finders
 such as the @ref player_driver_sicklms200.  Data is returned in the
@@ -1347,7 +1364,8 @@ void playerc_laser_printout( playerc_laser_t * device,
 /**************************************************************************/
 
 
-/** @defgroup playerc_proxy_limb limb
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_limb limb
 
 The limb proxy provides an interface to limbs using forward/inverse
 kinematics, such as the ActivMedia Pioneer Arm. See the Player User Manual for a
@@ -1415,7 +1433,8 @@ int playerc_limb_speed_config(playerc_limb_t *device, float speed);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_localize localize
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_localize localize
 
 The localize proxy provides an interface to localization drivers.
 Generally speaking, these are abstract drivers that attempt to
@@ -1497,7 +1516,8 @@ int playerc_localize_get_particles(playerc_localize_t *device);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_log log
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_log log
 
 The log proxy provides start/stop control of data logging
 
@@ -1556,7 +1576,8 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_map map
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_map map
 
 The map proxy provides an interface to a map.
 
@@ -1615,7 +1636,8 @@ int playerc_map_get_vector(playerc_map_t* device);
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_motor motor
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_motor motor
 
 The motor proxy provides an interface a simple, single motor.
 
@@ -1703,7 +1725,8 @@ int playerc_motor_set_odom(playerc_motor_t *device, double ot);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_planner planner
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_planner planner
 
 The planner proxy provides an interface to a 2D motion planner.
 
@@ -1781,7 +1804,8 @@ int playerc_planner_enable(playerc_planner_t *device, int state);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_position2d position2d
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_position2d position2d
 
 The position2d proxy provides an interface to a mobile robot base,
 such as the ActiveMedia Pioneer series.  The proxy supports both
@@ -1859,7 +1883,8 @@ int playerc_position2d_set_odom(playerc_position2d_t *device,
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_position position
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_position position
 
 The position proxy provides backward compatibility for pre-Player 2.0 client
 code.  New code should use the @ref playerc_proxy_position2d proxy instead.
@@ -1901,7 +1926,8 @@ int playerc_position_set_odom(playerc_position_t *device,
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_position3d position3d
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_position3d position3d
 
 The position3d proxy provides an interface to a mobile robot base,
 such as the Segway RMP series.  The proxy supports both differential
@@ -1990,7 +2016,8 @@ int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_power power
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_power power
 
 The power proxy provides an interface through which battery levels can
 be monitored.
@@ -2046,7 +2073,8 @@ int playerc_power_unsubscribe(playerc_power_t *device);
 
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_ptz ptz
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_ptz ptz
 
 The ptz proxy provides an interface to pan-tilt units such as the Sony
 PTZ camera.
@@ -2111,7 +2139,8 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zo
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_sonar sonar
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_sonar sonar
 
 The sonar proxy provides an interface to the sonar range sensors built
 into robots such as the ActiveMedia Pioneer series.
@@ -2164,7 +2193,8 @@ int playerc_sonar_get_geom(playerc_sonar_t *device);
 /**************************************************************************/
 
 /***************************************************************************/
-/** @defgroup playerc_proxy_wifi wifi
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_wifi wifi
 
 The wifi proxy is used to query the state of a wireless network.  It
 returns information such as the link quality and signal strength of
@@ -2263,7 +2293,8 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_dio dio
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_dio dio
 
 The dio proxy provides an interface to the digital input/output sensors.
 
@@ -2306,7 +2337,8 @@ int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t
 
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_speech speech
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_speech speech
 
 The speech proxy provides an interface to a speech synthesis system.
 
@@ -2340,11 +2372,7 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 /** @} */
 /***************************************************************************/
 
-/**************************************************************************/
-/** @} (proxies) */
-/**************************************************************************/
 
-/** @} (addtogroup) */
 
 #ifdef __cplusplus
 }

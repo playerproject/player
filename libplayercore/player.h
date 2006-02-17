@@ -420,6 +420,10 @@ It can be the case that a given message can be sent as data or in response
 to a request.  A common example is geometry.  For many devices geometry
 is fixed and so need only be requested once.  For others geometry may
 change dynamically and so the device will publish it periodically.
+
+@todo
+  - Normalize subtype names (PLAYER_PTZ_REQ_GEOM vs PLAYER_POSITION2D_REQ_GET_GEOM)
+  - Normalize subtype numbers (PLAYER_POSITION2D_SET_ODOM = 6 and PLAYER_POSITION2D_RESET_ODOM = 5, while position3d has PLAYER_POSITION3D_REQ_SET_ODOM = 5 and PLAYER_POSITION_3D_REQ_RESET_ODOM = 6)
 */
 
 // /////////////////////////////////////////////////////////////////////////////

@@ -1,12 +1,13 @@
 
 #include <stdio.h>
-#include "playerc.h"
+
+#include <libplayerc/playerc.h>
 
 int main(int argc, const char **argv)
 {
   int i;
   playerc_client_t *client;
-  playerc_position_t *position;
+  playerc_position2d_t *position2d;
 
   // Create a client object and connect to the server; the server must
   // be running on "localhost" at port 6665
@@ -17,32 +18,32 @@ int main(int argc, const char **argv)
     return -1;
   }
 
-  // Create a position proxy (device id "position:0") and susbscribe
+  // Create a position2d proxy (device id "position2d:0") and susbscribe
   // in read/write mode
-  position = playerc_position_create(client, 0);
-  if (playerc_position_subscribe(position, PLAYER_ALL_MODE) != 0)
+  position2d = playerc_position2d_create(client, 0);
+  if (playerc_position2d_subscribe(position2d, PLAYERC_OPEN_MODE) != 0)
   {
     fprintf(stderr, "error: %s\n", playerc_error_str());
     return -1;
   }
 
   // Enable the robots motors
-  playerc_position_enable(position, 1);
+  playerc_position2d_enable(position2d, 1);
 
   // Start the robot turning slowing
-  playerc_position_set_cmd_vel(position, 0, 0, 0.1, 1);
+  playerc_position2d_set_cmd_vel(position2d, 0, 0, 0.1, 1);
 
   for (i = 0; i < 200; i++)
   {
     // Read data from the server and display current robot position
     playerc_client_read(client);
     printf("position : %f %f %f\n",
-           position->px, position->py, position->pa);
+           position2d->px, position2d->py, position2d->pa);
   } 
 
   // Shutdown and tidy up
-  playerc_position_unsubscribe(position);
-  playerc_position_destroy(position);
+  playerc_position2d_unsubscribe(position2d);
+  playerc_position2d_destroy(position2d);
   playerc_client_disconnect(client);
   playerc_client_destroy(client);
 

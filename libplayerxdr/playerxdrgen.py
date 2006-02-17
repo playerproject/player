@@ -113,6 +113,9 @@ if __name__ == '__main__':
     headerfile.write('#ifndef ' + ifndefsymbol + '\n\n')
     headerfile.write('#include <libplayerxdr/playerxdr.h>\n\n')
     headerfile.write('#include "' + infilename + '"\n\n')
+    headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
+    sourcefile.write('#include <rpc/types.h>\n')
+    sourcefile.write('#include <rpc/xdr.h>\n\n')
     sourcefile.write('#include "' + headerfilename + '"\n\n')
 
   contentspattern = re.compile('.*\{\s*(.*?)\s*\}', re.MULTILINE | re.DOTALL)
