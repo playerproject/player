@@ -45,7 +45,7 @@ Player also provides <i>transport</i> mechanisms that allow data to
 be exchanged among drivers and control programs that are executing on
 different machines.  By far the most common transport in use now is a
 client/server TCP socet-based transport (see @ref start for an example of
-this usage).  In this setup, a server called <b>player</b> is executed
+this usage).  In this setup, the @ref util_player is executed
 with a configuration file (@ref tutorial_config) that defines which
 drivers to instantiate and how to bind them to hardware.  The drivers
 run inside the <b>player</b> server (often in multiple threads), and the
@@ -120,9 +120,7 @@ reply to you. <b>Remember that these mails go to hundreds of people</b>, so
 please be polite and give as much information as you can in your
 email.
 
-For more tips and hints on getting help, look <a
-href="http://playerstage.sourceforge.net/index.php?src=faq#reporting_bugs">here</a>.
-
+For more tips and hints on getting help, look <a href="http://playerstage.sourceforge.net/index.php?src=faq#reporting_bugs">here</a>.
 */
 
 /**

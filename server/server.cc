@@ -25,7 +25,44 @@
 /** @defgroup util_player player server
  @brief TCP server that allows remote access to Player devices.
 
- @todo Document command-line options here
+The most commonly-used of the Player utilities, @b player is a TCP
+server that allows remote access to devices.  It is normally executed
+on-board a robot, and is given a configuration file that maps the robot's
+hardware to Player devices, which are then accessible to client programs.
+The situation is essentially the same when running a simulation.
+
+@section Usage
+
+@code
+player [-q] [-d <level>] [-p <port>] [-h] <cfgfile>
+@endcode
+Arguments:
+- -h : Give help info; also lists drivers that were compiled into the server.
+- -q : Quiet startup
+- -d <level> : Set the debug level, 0-9.  0 is only errors, 1 is errors +
+warnings, 2 is errors + warnings + diagnostics, higher levels may give
+more output.  Default: 1.
+- -p <port> : Establish the default TCP port, which will be assigned to
+any devices in the configuration file without an explicit port assignment.
+Default: 6665.
+- <cfgfile> : The configuration file to read.
+
+@section Example
+
+@code
+$ player pioneer.cfg
+
+* Part of the Player/Stage/Gazebo Project
+* [http://playerstage.sourceforge.net].
+* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,
+* Nate Koenig, and contributors. Released under the GNU General Public
+* License.
+* Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
+* are welcome to redistribute it under certain conditions; see COPYING
+* for details.
+
+Listening on ports: 6665
+@endcode
 
 */
 /** @} */

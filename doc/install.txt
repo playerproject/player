@@ -80,7 +80,8 @@ Now the executables are in /home/gerkey/ps/bin, the libraries are in
 @note You may have to change various environment variables if you
 install Player somewhere other than the default location.  Variables that
 may need modification include: PATH, LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH
-on Mac OS X), and PKG_CONFIG_PATH.
+on Mac OS X), and PKG_CONFIG_PATH.  More information on local installations
+can be found <a href="http://playerstage.sourceforge.net/index.php?src=faq#local">here</a>.
 </p>
 
 \subsection driveroptions Selecting which drivers to build
