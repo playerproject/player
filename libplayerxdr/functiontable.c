@@ -431,9 +431,9 @@ playerxdr_ftable_add(playerxdr_function_t f, int replace)
           curr->func = f.func;
           return(0);
         }
-        PLAYER_ERROR("unable to find entry to replace");
-        return(-1);
       }
+      PLAYER_ERROR("unable to find entry to replace");
+      return(-1);
     }
   }
   else

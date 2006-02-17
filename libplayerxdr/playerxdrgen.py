@@ -9,17 +9,30 @@ import re
 import string
 import sys
 
-USAGE = 'USAGE: playerxdrgen.y <interface-spec.h> <pack.c> <pack.h>'
+USAGE = 'USAGE: playerxdrgen.y [-distro] <interface-spec.h> <pack.c> <pack.h>'
 
 if __name__ == '__main__':
 
-  if len(sys.argv) != 4:
+  if len(sys.argv) < 4:
     print USAGE
     sys.exit(-1)
 
-  infilename = sys.argv[1]
-  sourcefilename = sys.argv[2]
-  headerfilename = sys.argv[3]
+  distro = 0
+  
+  idx = 1
+  if len(sys.argv) == 5:
+    if sys.argv[idx] == '-distro':
+      distro = 1
+      idx += 1
+    else:
+      print USAGE
+      sys.exit(-1)
+    
+  infilename = sys.argv[idx]
+  idx += 1
+  sourcefilename = sys.argv[idx]
+  idx += 1
+  headerfilename = sys.argv[idx]
 
   # Read in the entire file
   infile = open(infilename, 'r')
@@ -48,7 +61,8 @@ if __name__ == '__main__':
  
   print 'Found ' + `len(structs)` + ' struct(s)'
 
-  headerfile.write(
+  if distro:
+    headerfile.write(
 '''/** @defgroup libplayerxdr libplayerxdr
  * @brief Player XDR library
  *
@@ -72,25 +86,34 @@ if __name__ == '__main__':
  */
  /** @ingroup libplayerxdr
  @{ */\n\n''')
-  headerfile.write('#ifndef _PLAYERXDR_PACK_H_\n')
-  headerfile.write('#define _PLAYERXDR_PACK_H_\n\n')
-  headerfile.write('#include <rpc/types.h>\n')
-  headerfile.write('#include <rpc/xdr.h>\n\n')
-  headerfile.write('#include <libplayercore/player.h>\n\n')
-  headerfile.write('#include <libplayerxdr/functiontable.h>\n\n')
-  headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
-  headerfile.write('#ifndef XDR_ENCODE\n')
-  headerfile.write('  #define XDR_ENCODE 0\n')
-  headerfile.write('#endif\n')
-  headerfile.write('#ifndef XDR_DECODE\n')
-  headerfile.write('  #define XDR_DECODE 1\n')
-  headerfile.write('#endif\n')
-  headerfile.write('#define PLAYERXDR_ENCODE XDR_ENCODE\n')
-  headerfile.write('#define PLAYERXDR_DECODE XDR_DECODE\n\n')
-  headerfile.write('#define PLAYERXDR_MSGHDR_SIZE 40\n\n')
-  headerfile.write('#define PLAYERXDR_MAX_MESSAGE_SIZE (4*PLAYER_MAX_MESSAGE_SIZE)\n\n')
+    headerfile.write('#ifndef _PLAYERXDR_PACK_H_\n')
+    headerfile.write('#define _PLAYERXDR_PACK_H_\n\n')
+    headerfile.write('#include <rpc/types.h>\n')
+    headerfile.write('#include <rpc/xdr.h>\n\n')
+    headerfile.write('#include <libplayercore/player.h>\n\n')
+    headerfile.write('#include <libplayerxdr/functiontable.h>\n\n')
+    headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
+    headerfile.write('#ifndef XDR_ENCODE\n')
+    headerfile.write('  #define XDR_ENCODE 0\n')
+    headerfile.write('#endif\n')
+    headerfile.write('#ifndef XDR_DECODE\n')
+    headerfile.write('  #define XDR_DECODE 1\n')
+    headerfile.write('#endif\n')
+    headerfile.write('#define PLAYERXDR_ENCODE XDR_ENCODE\n')
+    headerfile.write('#define PLAYERXDR_DECODE XDR_DECODE\n\n')
+    headerfile.write('#define PLAYERXDR_MSGHDR_SIZE 40\n\n')
+    headerfile.write('#define PLAYERXDR_MAX_MESSAGE_SIZE (4*PLAYER_MAX_MESSAGE_SIZE)\n\n')
 
-  sourcefile.write('#include <libplayerxdr/' + headerfilename + '>\n\n')
+    sourcefile.write('#include <libplayerxdr/' + headerfilename + '>\n\n')
+  else:
+    ifndefsymbol = '_'
+    for i in range(0,len(string.split(infilename,'.')[0])):
+      ifndefsymbol += string.capitalize(infilename[i])
+    ifndefsymbol += '_'
+    headerfile.write('#ifndef ' + ifndefsymbol + '\n\n')
+    headerfile.write('#include <libplayerxdr/playerxdr.h>\n\n')
+    headerfile.write('#include "' + infilename + '"\n\n')
+    sourcefile.write('#include "' + headerfilename + '"\n\n')
 
   contentspattern = re.compile('.*\{\s*(.*?)\s*\}', re.MULTILINE | re.DOTALL)
   declpattern = re.compile('\s*([^;]*?;)', re.MULTILINE)
@@ -270,7 +293,8 @@ if __name__ == '__main__':
 
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')
   headerfile.write('#endif\n')
-  headerfile.write('/** @} */\n')
+  if distro:
+    headerfile.write('/** @} */\n')
 
   sourcefile.close()
   headerfile.close()
