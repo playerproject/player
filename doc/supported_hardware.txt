@@ -3,15 +3,11 @@
 
 <p>
 The following tables list the hardware and software systems that are
-supported by Player.  Also given are the names of the maintainers for each
-driver.  However, most questions should be directed to our 
-<a href="http://sourceforge.net/mail/?group_id=42445">mailing lists</a>,
-so that they are archived for all to use.
+supported by Player.
 </p>
 <p>
-These tables should generally be up to date
-with respect to the current code in CVS, and thus may be newer than the
-latest official release.
+These tables should generally be up to date with respect to the current
+code in CVS, and thus may be newer than the latest official release.
 </p>
 <p>
 Please post additions and corrections to these tables to our 
