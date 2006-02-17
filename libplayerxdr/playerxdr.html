@@ -130,7 +130,11 @@ variable-length array named @c bar, the message structure must also contain
 an unsigned integer (@c uint32_t) field named @c bar_count.  This field
 will contain the actual element count of the array when encoding and
 decoding.  If there is no @c bar_count field, then the array @c bar will be
-encoded fixed-length.
+encoded fixed-length.  
+
+Before encoding a structure with a variable-length array, you @b must
+fill in the corresponding _count field; that's the only way for the
+packing function to know how much of the array you're actually using.
 
 In either case, the array must be declared in the message structure to
 occupy its maximum length.   For example, the @c player_bumper_data
@@ -156,6 +160,20 @@ typedef struct player_fiducial_geom
 @endcode
 In this structure, each array will always be its maximum length, so there is
 nothing to be gained by allowing for them to vary.
+
+@subsection bytearrays Character arrays (strings)
+
+According to the XDR specification, arrays of characters (e.g., char
+foo[8]) should be encoded as a sequence of XDR-encoded characters, each
+occupying 4 bytes.  We use a small optimization here: arrays of the
+following types:
+- int8_t
+- uint8_t
+- char
+- unsigned char
+
+are encoded as opaque XDR "byte arrays", using xdr_bytes().  The encoding
+uses just one byte per character.
 
 @section parser Parsing user-defined messages
 

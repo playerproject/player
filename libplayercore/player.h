@@ -125,9 +125,6 @@ in the body.*/
 #define PLAYER_GPS_CODE            13  // GPS unit
 #define PLAYER_BUMPER_CODE         14  // bumper array
 #define PLAYER_TRUTH_CODE          15  // ground-truth (via Stage;
-#define PLAYER_IDARTURRET_CODE     16  // ranging + comms
-#define PLAYER_IDAR_CODE           17  // ranging + comms
-#define PLAYER_DESCARTES_CODE      18  // the Descartes platform
 #define PLAYER_DIO_CODE            20  // digital I/O
 #define PLAYER_AIO_CODE            21  // analog I/O
 #define PLAYER_IR_CODE             22  // IR array
@@ -177,14 +174,11 @@ in the body.*/
 #define PLAYER_BLOBFINDER_STRING      "blobfinder"
 #define PLAYER_BUMPER_STRING          "bumper"
 #define PLAYER_CAMERA_STRING          "camera"
-#define PLAYER_DESCARTES_STRING       "descartes"
 #define PLAYER_ENERGY_STRING          "energy"
 #define PLAYER_DIO_STRING             "dio"
 #define PLAYER_GRIPPER_STRING         "gripper"
 #define PLAYER_FIDUCIAL_STRING        "fiducial"
 #define PLAYER_GPS_STRING             "gps"
-#define PLAYER_IDAR_STRING            "idar"
-#define PLAYER_IDARTURRET_STRING      "idarturret"
 #define PLAYER_IR_STRING              "ir"
 #define PLAYER_JOYSTICK_STRING        "joystick"
 #define PLAYER_LASER_STRING           "laser"
@@ -776,8 +770,6 @@ typedef struct player_audiodsp_cmd
   uint32_t bit_string_count;
   /** BitString to encode in sine wave */
   uint8_t bit_string[PLAYER_AUDIODSP_MAX_BITSTRING_LEN];
-  /** Length of the bit string */
-  uint32_t bit_string_len;
 } player_audiodsp_cmd_t;
 
 /** @brief Request/reply : Get/set audio properties.
@@ -3345,6 +3337,8 @@ The position3d interface is used to control mobile robot bases in 3D
 
 /** Data subtype: state */
 #define PLAYER_POSITION3D_DATA_STATE 1
+/** Data subtype: geometry */
+#define PLAYER_POSITION3D_DATA_GEOMETRY 2
 
 /** Command subtype: velocity control */
 #define  PLAYER_POSITION3D_CMD_SET_VEL      1
