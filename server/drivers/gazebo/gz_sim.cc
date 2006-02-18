@@ -40,7 +40,7 @@ present when working with the simulator.
 
 @par Provides
 
-- @ref player_interface_simulation
+- @ref interface_simulation
 
 @par Requires
 

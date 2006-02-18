@@ -39,13 +39,13 @@ player [-q] [-d <level>] [-p <port>] [-h] <cfgfile>
 Arguments:
 - -h : Give help info; also lists drivers that were compiled into the server.
 - -q : Quiet startup
-- -d <level> : Set the debug level, 0-9.  0 is only errors, 1 is errors +
+- -d \<level\> : Set the debug level, 0-9.  0 is only errors, 1 is errors +
 warnings, 2 is errors + warnings + diagnostics, higher levels may give
 more output.  Default: 1.
-- -p <port> : Establish the default TCP port, which will be assigned to
+- -p \<port\> : Establish the default TCP port, which will be assigned to
 any devices in the configuration file without an explicit port assignment.
 Default: 6665.
-- <cfgfile> : The configuration file to read.
+- \<cfgfile\> : The configuration file to read.
 
 @section Example
 

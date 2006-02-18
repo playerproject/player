@@ -57,21 +57,23 @@
 
 namespace PlayerCc
 {
-/** @addtogroup player_clientlib_cplusplus libplayerc++
+/** @ingroup clientlibs 
+    @defgroup player_clientlib_cplusplus libplayerc++
+    @brief A C++ client library for the @ref util_player
 
-  The Player C++ client library.
+The C++ library is built on a "service proxy" model in which the client
+maintains local objects that are proxies for remote services.  This library
+wraps the functionality of @ref player_clientlib_libplayerc with a more
+friendly C++ API.
 
- @{
-
+Be sure to see @ref cplusplus_example "this example".
  */
 
-/** @addtogroup player_clientlib_utility Utility and error-handling functions
-
-  Helper functions when using the library.
-
- @{
-
- */
+/** @ingroup player_clientlib_cplusplus
+   @defgroup player_clientlib_utility Utility and error-handling functions
+   @brief Helper functions when using the library.
+*/
+/** @{ */
 
 // Since they are inline, these functions are as efficient as DEFINES,
 // but now they have the benefit of type checking!
@@ -129,14 +131,14 @@ inline T limit(T a, T min, T max)
 /** @} (utility)*/
 
 
-/** @addtogroup player_clientlib_cplusplus_core Core functionality
+/** @ingroup player_clientlib_cplusplus
+ * @defgroup player_clientlib_cplusplus_core Core functionality
+ * @brief Device-independent components
 
   The core of libplayerc++ is based around the @p PlayerClient and
   @p ClientProxy.
-
- @{
-
- */
+  */
+/** @{ */
 
 /** @brief The client proxy base class
  *
@@ -319,10 +321,6 @@ class ClientProxy
 
 /** @} (core) */
 
-
-
-
-
 #if 0
 
 /**
@@ -352,14 +350,14 @@ class SomethingProxy : public ClientProxy
 
 #endif
 
-/** @addtogroup player_clientlib_cplusplus_proxies Proxies
+/** @ingroup player_clientlib_cplusplus
+ * @defgroup player_clientlib_cplusplus_proxies Proxies
+ * @brief A proxy class is associated with each kind of device
 
   The proxies all inherit from @p ClientProxy and implement the functions
   from @ref player_clientlib_libplayerc.
-
-  @{
-
-  */
+*/
+/** @{ */
 
 // ==============================================================
 //
@@ -2326,8 +2324,6 @@ class WiFiProxy: public ClientProxy
 #endif
 };
 /** @} (proxies)*/
-
-/** @} (c++)*/
 
 } // namespace PlayerCc
 

@@ -45,6 +45,7 @@
 extern int global_playerport; // used to gen. useful output & debug
 
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
 AMCLFiducial::AMCLFiducial(player_device_id_t id)
@@ -577,3 +578,4 @@ double fiducial_map_calc_bearing( AMCLFiducialMap *fmap, double ox, double oy, d
         
   return b;
 }
+#endif

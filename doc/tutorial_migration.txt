@@ -49,7 +49,7 @@ Player 2.0 aims to clarify and compartmentalize its components in such a
 way that they can be extended, resused, and replaced, as the situation
 demands.  At its core, Player 2.0 comprises 5 components:
 
-- @ref interface : The world of robotic devices is carved up
+- @ref interfaces "interface": The world of robotic devices is carved up
   into a set of interfaces.  Each interface defines the syntax and
   semantics of the messages that a conforming device can consume and
   produce.  This specification is written as a C header file, <player.h>,
@@ -98,7 +98,7 @@ system.  In this model, each device is presumed to have some time-varying
 state, and the goal of Player is to provide the ability to read and
 (sometimes) write this state.  The content of a device's state and whether
 it is mutable is defined by the interface(s) that the device supports.  For
-example, a mobile robot that supports the @ref player_interface_position2d
+example, a mobile robot that supports the @ref interface_position2d
 interface maintains as its state the robot's position and velocity.  These
 data are reported in the <i>data</i> messages produced by the robot and can
 be changed by <i>command</i> messages sent to the robot.  This model is
@@ -187,7 +187,7 @@ there are 7 <tt>type</tt>s:
 - synch (PLAYER_MSGTYPE_SYNCH) : This message will likely be deprecated.
 
 Each message also has an interface-specific <tt>subtype</tt>.  For example,
-the @ref player_interface_laser interface defines 2 data messages: one
+the @ref interface_laser interface defines 2 data messages: one
 contains a scan, while the other contains both a scan and a pose.  The
 <tt>subtype</tt> field of the message header allows the recipient to
 disambiguate the two.  The <tt>subtype</tt> of a response message will
@@ -237,7 +237,7 @@ compiler finds and complains about it) does the job.
 - ConfigFile::ReadDeviceId is now ConfigFile::ReadDeviceAddr.
 
 - The <tt>position</tt> interface is now the @ref
-  player_interface_position2d interface, and its code is
+  interface_position2d interface, and its code is
   PLAYER_POSITION2D_CODE.
 
 - The driver no longer specifies an allowable access mode, in either the
@@ -277,7 +277,7 @@ compiler finds and complains about it) does the job.
   respond to each request message in place in this method.
   Driver::ProcessMessages will be invoked periodically on each non-threaded
   driver.  Forwarding requests to an underlying driver from a non-threaded
-  driver is tricky; look at the @ref player_driver_lasercspace driver for
+  driver is tricky; look at the @ref driver_lasercspace driver for
   an example.
 
 - Device::Request provides an easy way to send a request to another device
@@ -288,7 +288,7 @@ compiler finds and complains about it) does the job.
 - No more byte-swapping or unit-conversions in driver code.  Drivers are
   transport-independent modules, and as such send and receive all messages
   in their native C struct formats (host byte-order, MKS units), as defined
-  in <player.h>.  Nobody should #include <netinet/in.h>.
+  in <player.h>.  Nobody should include <netinet/in.h>.
 
 - Only one file should be included from Player:
   @code

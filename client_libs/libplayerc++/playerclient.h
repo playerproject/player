@@ -189,18 +189,16 @@ class PlayerClient
 
     /// Add a replace rule to the clients queue on the server
     ///
-	/// @param client Pointer to client object.
+	/// @param aInterf Interface to set replace rule for (-1 for wildcard)
 	///
-	/// @param interf Interface to set replace rule for (-1 for wildcard)
-	///
-	/// @param index index to set replace rule for (-1 for wildcard)
+	/// @param aIndex index to set replace rule for (-1 for wildcard)
 	/// 
-	/// @param type type to set replace rule for (-1 for wildcard), 
+	/// @param aType type to set replace rule for (-1 for wildcard), 
 	/// i.e. PLAYER_MSGTYPE_DATA
 	///
-	/// @param subtype message subtype to set replace rule for (-1 for wildcard)
+	/// @param aSubtype message subtype to set replace rule for (-1 for wildcard)
 	///
-	/// @param replace Should we replace these messages
+	/// @param aReplace Should we replace these messages
 	///
 	/// @returns Returns 0 on success, non-zero otherwise.  Use
     ///

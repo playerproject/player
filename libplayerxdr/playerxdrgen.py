@@ -63,28 +63,7 @@ if __name__ == '__main__':
 
   if distro:
     headerfile.write(
-'''/** @defgroup libplayerxdr libplayerxdr
- * @brief Player XDR library
- *
- * This library provides functions for translating between player C message
- * structs and their XDR representations.  For each 'struct player_foo',
- * there is a single function of the following name and form:
- *    int player_foo_pack(void* buf, size_t buflen, player_foo_t* msg, int op);
- * This function will either pack (encode to XDR) or unpack (decode from
- * XDR), depending on the last argument.
- *
- * Params:
- *  - buf: The XDR-encoded buffer that is being encoded / decoded.
- *  - buflen: Size of buf, in bytes.
- *  - msg: Pointer to the C struct that is being encoded / decoded.
- *  - op: Either PLAYERXDR_ENCODE or PLAYERXDR_DECODE
- *
- * Returns: On success, the length of the XDR-encoded buffer, and -1
- *          otherwise (e.g., the buffer was not large enough).
- *
- * The caller is responsible for allocating enough space to buf.
- */
- /** @ingroup libplayerxdr
+'''/** @ingroup libplayerxdr
  @{ */\n\n''')
     headerfile.write('#ifndef _PLAYERXDR_PACK_H_\n')
     headerfile.write('#define _PLAYERXDR_PACK_H_\n\n')

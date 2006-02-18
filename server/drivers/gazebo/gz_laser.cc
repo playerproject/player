@@ -41,7 +41,7 @@ libgazebo laser interface (such as the SickLMS200 model).
 
 @par Provides
 
-- @ref player_interface_laser
+- @ref interface_laser
 
 @par Requires
 
