@@ -28,6 +28,7 @@
 
 /** @ingroup clientlibs
 @defgroup player_clientlib_libplayerc libplayerc
+@brief A C client library for the @ref util_player
 
 libplayerc is a client library for the @ref util_player.  It
 is written in C to maximize portability, and in the expectation that
@@ -1223,10 +1224,10 @@ int playerc_ir_get_geom(playerc_ir_t *device);
  * @defgroup playerc_proxy_laser laser
 
 The laser proxy provides an interface to scanning laser range finders
-such as the @ref player_driver_sicklms200.  Data is returned in the
+such as the @ref driver_sicklms200.  Data is returned in the
 playerc_laser_t structure.
 
-This proxy wraps the low-level @ref player_interface_laser interface.
+This proxy wraps the low-level @ref interface_laser interface.
 
 @{
 */
@@ -1696,8 +1697,7 @@ int playerc_motor_position_control(playerc_motor_t *device, int type);
 
 @param device Pointer to proxy object.
 @param vt Velocity in in rad/s.
-@param state @todo Document state
-
+@param state ?
 */
 int playerc_motor_set_cmd_vel(playerc_motor_t *device,
                               double vt, int state);
@@ -1706,7 +1706,7 @@ int playerc_motor_set_cmd_vel(playerc_motor_t *device,
 
 @param device Pointer to proxy object.
 @param gt Target pose in rad.
-@param state @todo Document state
+@param state ?
 
 */
 int playerc_motor_set_cmd_pose(playerc_motor_t *device,

@@ -27,10 +27,9 @@
 
 #include "playerc++.h"
 
-/** @addtogroup clientlibs Client Libraries */
-/** @{ */
-
-/** @addtogroup player_clientlib_cplusplus libplayerc++
+/** @ingroup player_clientlib_cplusplus 
+    @defgroup cplusplus_example libplayerc++ example
+    @brief An example of using libplayerc++
 
 The C++ library is built on a "service proxy" model in which the client
 maintains local objects that are proxies for remote services.  There are
@@ -44,21 +43,29 @@ the following simple example (for clarity, we omit some error-checking):
 
 @include example0.cc
 
+Compile this program like so:
+@verbatim
+$ g++ -o example0 `pkg-config --cflags playerc++` example0.cc `pkg-config --libs playerc++`
+@endverbatim
+
+Be sure that libplayerc++ is installed somewhere that pkg-config can find it.
+
 This program performs simple (and bad) sonar-based obstacle avoidance with
 a mobile robot .  First, a PlayerClient
 proxy is created, using the default constructor to connect to the
 server listening at @p localhost:6665.  Next, a SonarProxy is
 created to control the sonars and a PositionProxy to control the
 robot's motors.  The constructors for these objects use the existing
- PlayerClient proxy to establish access to the 0th @ref player_interface_sonar
-and @ref player_interface_position2d devices, respectively. Finally, we enter
+ PlayerClient proxy to establish access to the 0th @ref interface_sonar
+and @ref interface_position2d devices, respectively. Finally, we enter
 a simple loop that reads the current sonar state and writes appropriate
 commands to the motors.
 
-In order to use libplayerc++ in your application, you will need to load
-the appropriate library and set the appropriate compiler flags.  An Automake
-package config file is included(playerc++.pc).  To use this in your automake
-project, simply add the following to your configure.in or configure.ac:
+@section Using automake
+
+An Automake package config file is included(playerc++.pc).  To use this in
+your automake project, simply add the following to your configure.in or
+configure.ac:
 
 @verbatim
 # Player C++ Library
@@ -72,26 +79,12 @@ Then, in your Makefile.am you can add:
 AM_CPPFLAGS += $(PLAYERCC_CFLAGS)
 programname_LDFLAGS = $(PLAYERCC_LIBS)
 @endverbatim
+
 */
 
-/*
-If you are not using Automake, you need to add the following statements to the
-compiling step:
-@verbatim
-$ g++ -Wall -g3 -pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT -c foo.cc
-@endverbatim
-and the following to the linking stage:
-@verbatim
-$ g++ -o foo foo.o -lplayerc++ -lm -lboost_signals -lboost_thread
-@endverbatim
-*/
-
-/** @} */
-
-/** @addtogroup player_clientlib_cplusplus libplayerc++ */
-/** @{ */
-
-/** @addtogroup player_clientlib_multi Signals & multithreading
+/** @ingroup player_clientlib_cplusplus 
+    @defgroup player_clientlib_multi Signals & multithreading
+    @brief Boost signal and thread support
 
 Along with providing access to the basic C functions of @ref player_clientlib_libplayerc
 in a C++ fashion, libplayerc++ also provides additional functionality along
@@ -107,8 +100,6 @@ can best be illustrated through the use of an example:
 @include example1.cc
 
 */
-/** @} */
-
 
 std::ostream&
 std::operator << (std::ostream& os, const player_point_2d_t& c)

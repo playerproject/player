@@ -1,0 +1,6 @@
+/** @ingroup tutorials
+@defgroup tutorial_datalog Data logging
+@brief Logging sensor data to files and playing it back
+
+@todo Write this
+*/

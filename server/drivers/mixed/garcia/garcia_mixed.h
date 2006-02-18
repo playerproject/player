@@ -46,7 +46,9 @@ class GarciaDriver : public Driver
                                player_msghdr * hdr,
                                void * data);
     //void ProcessConfig();
-    void ProcessPos2dCommand(player_msghdr_t* hdr, player_ptz_cmd_t &data);
+    void ProcessPos2dCommand(player_msghdr_t* hdr, player_position2d_cmd_t &data);
+    void ProcessSpeechCommand(player_msghdr_t* hdr, player_speech_cmd_t &data);
+    void ProcessDioCommand(player_msghdr_t* hdr, player_dio_cmd_t &data);
     void RefreshData();
 
  private:

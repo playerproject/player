@@ -43,17 +43,17 @@ libgazebo stereo interface (such as the StereoHead model).
 
 This driver provides four named camera interfaces:
 
-- "left" @ref player_interface_camera
+- "left" @ref interface_camera
   - Left camera image (RGB)
 
-- "right" @ref player_interface_camera
+- "right" @ref interface_camera
   - Right camera image (RGB)
 
-- "left_disparity" @ref player_interface_camera
+- "left_disparity" @ref interface_camera
   - Left disparity image; this is a 16-bit monochrome image (MONO16), with
     each pixel recording the horizontal disparity in the rectified image.
 
-- "right_disparity" @ref player_interface_camera
+- "right_disparity" @ref interface_camera
   - Right disparity image; this is a 16-bit monochrome image (MONO16), with
     each pixel recording the horizontal disparity in the rectified image.
 
