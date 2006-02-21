@@ -18,7 +18,7 @@ def test_wifi(client, index):
     link = device.get_link(0)
     print '[%s] [%d]' % (link.mac, link.level)
     
-    if playerc_wifi_subscribe(device, PLAYERC_READ_MODE) != 0:
+    if playerc_wifi_subscribe(device, PLAYERC_OPEN_MODE) != 0:
         raise playerc_error_str()    
 
     for i in range(5):
