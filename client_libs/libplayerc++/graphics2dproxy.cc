@@ -98,7 +98,7 @@ void
 Graphics2dProxy::Color( player_color_t col )
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_graphics2d_color(mDevice, col); 
+  playerc_graphics2d_setcolor(mDevice, col); 
 }
 
 void
