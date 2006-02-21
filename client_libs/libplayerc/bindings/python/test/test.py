@@ -13,7 +13,7 @@ import threading
 from playerc import *
 
 from test_camera import *
-from test_position import *
+from test_position2d import *
 from test_laser import *
 from test_wifi import *
 
@@ -34,14 +34,15 @@ def main(server, test, context):
     # Print the device list
     print '\033[m'
     print '----------------------------------------------------------------------'
-    for devinfo in c.devinfos:
+    for i in range(0,c.devinfo_count):
+        devinfo =  c.devinfos[i]
         print '%d:%s:%d %20s' % \
-              (devinfo.port, playerc_lookup_name(devinfo.code),
-               devinfo.index, devinfo.drivername)
+              (devinfo.addr.robot, playerc_lookup_name(devinfo.addr.interf),
+               devinfo.addr.index, devinfo.drivername)
     print '----------------------------------------------------------------------'
 
     # Switch to async mode
-    c.datamode(PLAYERC_DATAMODE_PUSH_ASYNC)
+    #c.datamode(PLAYERC_DATAMODE_PUSH_ASYNC)
 
     eval('test_%s(c, %d, context)' % (test[0], test[1]))
 

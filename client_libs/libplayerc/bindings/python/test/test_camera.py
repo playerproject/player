@@ -11,7 +11,7 @@ def test_camera(client, index, context):
     """Basic test of the camera interface."""
 
     camera = playerc_camera(client, index)
-    if camera.subscribe(PLAYERC_READ_MODE) != 0:
+    if camera.subscribe(PLAYERC_OPEN_MODE) != 0:
         raise playerc_error_str()    
 
     for i in range(10):

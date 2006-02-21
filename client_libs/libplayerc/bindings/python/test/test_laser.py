@@ -11,7 +11,7 @@ def test_laser(client, index, context):
     """Basic test of the laser interface."""
 
     laser = playerc_laser(client, index)
-    if laser.subscribe(PLAYERC_READ_MODE) != 0:
+    if laser.subscribe(PLAYERC_OPEN_MODE) != 0:
         raise playerc_error_str()    
 
     for i in range(10):
