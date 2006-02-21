@@ -74,7 +74,7 @@ int playerc_graphics2d_unsubscribe(playerc_graphics2d_t *device)
 }
 
 
-int playerc_graphics2d_color(playerc_graphics2d_t *device, 
+int playerc_graphics2d_setcolor(playerc_graphics2d_t *device, 
 			     player_color_t col )
 {
   device->color = col;

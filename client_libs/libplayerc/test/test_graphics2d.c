@@ -62,7 +62,7 @@ int test_graphics2d(playerc_client_t *client, int index)
   col.blue = 0;
   col.alpha = 0;
 
-  if(playerc_graphics2d_color(device, col) < 0)
+  if(playerc_graphics2d_setcolor(device, col) < 0)
     FAIL();
   else
     PASS();
@@ -82,7 +82,7 @@ int test_graphics2d(playerc_client_t *client, int index)
   col.blue = 255;
   col.alpha = 0;
 
-  if(playerc_graphics2d_color(device, col) < 0)
+  if(playerc_graphics2d_setcolor(device, col) < 0)
     FAIL();
   else
     PASS();

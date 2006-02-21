@@ -130,66 +130,18 @@
   }
 }
 
-// Arrays of playerc_device_info_t
-%typemap(out) playerc_device_info_t [ANY]
+// Catch-all rule to converts arrays of structures to tuples of proxies for
+// the underlying structs
+%typemap(out) SWIGTYPE [ANY]
 {
  int i;
-  $result = PyTuple_New(arg1->devinfo_count);
-  for (i = 0; i < arg1->devinfo_count; i++) 
+  $result = PyTuple_New($1_dim0);
+  for (i = 0; i < $1_dim0; i++) 
   {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_device_info_t, 0);
+    PyObject *o = SWIG_NewPointerObj($1 + i, $1_descriptor, 0);
     PyTuple_SetItem($result,i,o);
   }
 }
-
-// Arrays of playerc_blobfinder_blob_t
-%typemap(out) playerc_blobfinder_blob_t [ANY]
-{
-  int i;
-  $result = PyTuple_New(arg1->blobs_count);
-  for (i = 0; i < arg1->blobs_count; i++) 
-  {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_blobfinder_blob_t, 0);
-    PyTuple_SetItem($result,i,o);
-  }
-}
-
-// Arrays of playerc_fiducial_item_t
-%typemap(out) playerc_fiducial_item_t [ANY]
-{
-  int i;
-  $result = PyTuple_New(arg1->fiducial_count);
-  for (i = 0; i < arg1->fiducial_count; i++) 
-  {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_fiducial_item_t, 0);
-    PyTuple_SetItem($result,i,o);
-  }
-}
-
-// Arrays of playerc_localize_hypoth_t
-%typemap(out) playerc_localize_hypoth_t [ANY]
-{
-  int i;
-  $result = PyTuple_New(arg1->hypoth_count);
-  for (i = 0; i < arg1->hypoth_count; i++) 
-  {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_localize_hypoth_t, 0);
-    PyTuple_SetItem($result,i,o);
-  }
-}
-
-// Arrays of playerc_wifi_link_t
-%typemap(out) playerc_wifi_link_t [ANY]
-{
-  int i;
-  $result = PyTuple_New(arg1->link_count);
-  for (i = 0; i < arg1->link_count; i++) 
-  {
-    PyObject *o = SWIG_NewPointerObj($1 + i, SWIGTYPE_p_playerc_wifi_link_t, 0);
-    PyTuple_SetItem($result,i,o);
-  }
-}
-
 
 // Provide thread-support on some functions
 %exception read
@@ -200,9 +152,9 @@
 }
 
 
-// Include Player header so we can pick up some constants
-#define __PACKED__
-%import "../../../../libplayercore/player.h"
+// Include Player header so we can pick up some constants and generate
+// wrapper code for structs
+%include "../../../../libplayercore/player.h"
 
 
 // Use this for regular c-bindings;
