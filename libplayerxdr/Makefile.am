@@ -25,5 +25,6 @@ playerxdr.c: Makefile playerxdrgen.py $(top_srcdir)/libplayercore/player.h
 	python $(srcdir)/playerxdrgen.py -distro $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h
 
 libplayerxdr_la_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
-libplayerxdr_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
+libplayerxdr_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la
 
+libplayerxdr_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la
