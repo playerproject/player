@@ -1079,8 +1079,8 @@ int playerc_graphics2d_subscribe(playerc_graphics2d_t *device, int access);
 int playerc_graphics2d_unsubscribe(playerc_graphics2d_t *device);
 
 /** @brief Set the current drawing color */
-int playerc_graphics2d_color(playerc_graphics2d_t *device, 
-			     player_color_t col );
+int playerc_graphics2d_setcolor(playerc_graphics2d_t *device, 
+                                player_color_t col );
 
 /** @brief Draw some points */
 int playerc_graphics2d_draw_points(playerc_graphics2d_t *device, 
