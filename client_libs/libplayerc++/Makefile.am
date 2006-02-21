@@ -18,7 +18,7 @@ EXTRA_DIST = playerc++.pc.in
 CLEANFILES = playerc++.pc
 
 # the +'s are turned into _'s by automake
-libplayerc___la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/client_libs/libplayerc/libplayerc.la  $(top_builddir)/libplayerxdr/libplayerxdr.la
+libplayerc___la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/client_libs/libplayerc/libplayerc.la
 
 libplayerc___la_SOURCES =     playerc++.h \
                               debug.h \
@@ -75,8 +75,7 @@ libplayerc___la_SOURCES =     playerc++.h \
 #libplayerc___la_LIBADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB)
 libplayerc___la_LIBADD = $(PLAYERCC_LIB)
 
-libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
-                               $(top_builddir)/libplayerxdr/libplayerxdr.la
+libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la
 
 libplayerc___includedir = $(includedir)/player-2.0/libplayerc++
 libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h playerc++config.h

@@ -9,7 +9,7 @@ EXTRA_DIST = playercore.pc.in playererror.pc.in
 BUILT_SOURCES = playerconfig.h
 CLEANFILES = playerconfig.h playercore.pc playererror.pc
 
-lib_LTLIBRARIES = libplayercore.la libplayererror.la
+lib_LTLIBRARIES = libplayererror.la libplayercore.la
 
 libplayercore_la_SOURCES = driver.cc driver.h \
                           device.cc device.h \
@@ -23,7 +23,8 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           plugins.cc plugins.h \
                           globals.cc globals.h \
                           addr_util.c addr_util.h
-libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
+libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la
+libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la
 
 libplayererror_la_SOURCES = error.h error.c
 libplayererror_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)

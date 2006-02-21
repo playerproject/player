@@ -15,7 +15,7 @@ CLEANFILES = playerc.pc
 
 lib_LTLIBRARIES = libplayerc.la
 libplayerc_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la
-libplayerc_la_DEPENDENCIES = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la
+libplayerc_la_DEPENDENCIES = $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 if HAVE_ZLIB
 libplayerc_la_LDFLAGS += -lz
