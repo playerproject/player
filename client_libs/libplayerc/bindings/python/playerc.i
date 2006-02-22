@@ -91,6 +91,11 @@
 }
 
 // Integer types
+%typemap(out) uint8_t
+{
+  $result = PyInt_FromLong((long) (unsigned char) $1);
+}
+
 %typemap(out) uint16_t
 {
   $result = PyInt_FromLong((long) (unsigned long) $1);
@@ -109,6 +114,17 @@
   for (i = 0; i < $1_dim0; i++) 
   {
     PyObject *o = PyFloat_FromDouble((double) $1[i]);
+    PyList_SetItem($result,i,o);
+  }
+}
+
+%typemap(out) uint8_t [ANY] 
+{
+  int i;
+  $result = PyList_New($1_dim0);
+  for (i = 0; i < $1_dim0; i++) 
+  {
+    PyObject *o = PyInt_FromLong((long) (unsigned char) $1[i]);
     PyList_SetItem($result,i,o);
   }
 }
