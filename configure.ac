@@ -260,7 +260,7 @@ AC_ARG_WITH(playercc,
             with_playercc=yes)
 if test "x$with_playercc" = "xyes"; then
   PLAYERCC_EXTRA_CFLAGS=""
-  PLAYERCC_LIB="-lplayerc -lplayerxdr -lm"
+  PLAYERCC_LIB="-lm"
   AC_CXX_NAMESPACES
 
   AX_BOOST_SIGNALS
