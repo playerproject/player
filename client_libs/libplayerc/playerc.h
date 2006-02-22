@@ -747,7 +747,7 @@ typedef struct
   playerc_device_t info;
 
   /** The number of actuators in the array. */
-  uint8_t actuators_count;
+  uint32_t actuators_count;
   /** The actuator data and geometry. */
   player_actarray_actuator_t actuators_data[PLAYER_ACTARRAY_NUM_ACTUATORS];
   player_actarray_actuatorgeom_t actuators_geom[PLAYER_ACTARRAY_NUM_ACTUATORS];
@@ -890,7 +890,7 @@ typedef struct
   int bumper_count;
 
   /** Bump data: unsigned char, either boolean or code indicating corner. */
-  unsigned char bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
+  uint8_t bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
 
 } playerc_bumper_t;
 
