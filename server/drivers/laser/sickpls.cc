@@ -106,6 +106,14 @@ driver (eventually).
   - Default: [0.0 0.0 0.0]
   - Pose (x,y,theta) of the laser, relative to its parent object (e.g.,
     the robot to which the laser is attached).
+
+- autodetect_rate (integer)
+  - Default: 1
+  - Set to 0 to avoid baud rate autodetection, which fails on some lasers.
+
+- ignore_errors (integer)
+  - Default: 0
+  - Ignore errors during initialization of the laser.
       
 @par Example 
 
@@ -136,9 +144,9 @@ driver
 #include <sys/stat.h>
 #include <termios.h>
 #include <unistd.h>
-#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+//#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <sys/ioctl.h>
-#include <playertime.h>
+#include <math.h>
 
 #undef HAVE_HI_SPEED_SERIAL
 #ifdef HAVE_LINUX_SERIAL_H
@@ -148,17 +156,11 @@ driver
   #endif
 #endif
 
-extern PlayerTime* GlobalTime;
-
 #define PLAYER_ENABLE_MSG 0
 #define PLAYER_ENABLE_TRACE 0
 
-#include "playercommon.h"
-#include "playercommon.h"
-#include "drivertable.h"
-#include "driver.h"
-#include "error.h"
-#include "replace/replace.h"
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
 #define DEFAULT_LASER_PORT_RATE 9600
@@ -254,11 +256,11 @@ class SickPLS : public Driver
     int startup_delay;
   
     // Scan width and resolution.
-    float scan_width, scan_res;
+    int scan_width, scan_res;
 
     // Start and end scan angles (for restricted scan).  These are in
     // units of 0.01 degrees.
-    float min_angle, max_angle;
+    int min_angle, max_angle;
     
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
@@ -276,8 +278,14 @@ class SickPLS : public Driver
 
     bool can_do_hi_speed;
     int port_rate;
+  
+  // Allow the autodetect mechanism for the rate - MB
+  int autodetect_rate;
 
-   int type;
+  // Ignore errors in initialization
+  int ignore_errors;
+
+  int type;
   
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct old_serial;
@@ -339,6 +347,8 @@ SickPLS::SickPLS( ConfigFile* cf, int section)
   this->invert = cf->ReadInt(section, "invert", 0);
 
   this->port_rate = cf->ReadInt(section, "rate", DEFAULT_LASER_PORT_RATE);
+  this->autodetect_rate = cf->ReadInt(section, "autodetect_rate", 1);
+  this->ignore_errors = cf->ReadInt(section, "ignore_errors", 0);
 
 #ifdef HAVE_HI_SPEED_SERIAL
   this->can_do_hi_speed = true;
@@ -372,7 +382,28 @@ int SickPLS::Setup()
   // Some Pioneers only power laser after the terminal is opened; wait
   // for the laser to initialized
   sleep(this->startup_delay);
-  
+
+  //////// MB
+  // The autodetect mechanism for speed might not work for all (older) PLS lasers
+  // we are then forced to use the rate given in the configuration file and *not* change it. 
+  if(!autodetect_rate) {
+    if (ChangeTermSpeed(port_rate))
+      return 1;
+    if (RequestLaserData(0,360) != 0)
+      {
+	PLAYER_ERROR("connection failed");
+	return 1;
+      }
+    puts("laser ready");
+    
+    // Start the device thread
+    StartThread();
+    
+    return 0;
+  }
+  ////////// 
+
+
   // Start out at 38400 with non-blocking io
   if (ChangeTermSpeed(38400))
     return 1;
@@ -390,10 +421,11 @@ int SickPLS::Setup()
       return 1;
     }
     PLAYER_MSG0(2, "laser operating at 9600; changing to 38400");
-      if (SetLaserSpeed(38400))
-        return 1;
-      if (ChangeTermSpeed(38400))
-        return 1;
+
+    if (SetLaserSpeed(38400))
+      return 1;
+    if (ChangeTermSpeed(38400))
+      return 1;
   }
 
   puts("laser ready");
@@ -429,6 +461,7 @@ void SickPLS::Main()
 {
   float tmp;
   // Ask the laser to send data
+
   for (int retry = 0; retry < MAX_RETRIES; retry++)
   {
     if (RequestLaserData(this->scan_min_segment, this->scan_max_segment) == 0)
@@ -531,10 +564,10 @@ SickPLS::ProcessMessage(MessageQueue * resp_queue,
     player_laser_config_t * l_cfg = reinterpret_cast<player_laser_config_t *> (data);
     Lock();
     this->intensity = l_cfg->intensity;
-    this->scan_res = (l_cfg->resolution);
-    this->min_angle = (l_cfg->min_angle);
-    this->max_angle = (l_cfg->max_angle);
-	this->range_res = (l_cfg->range_res);
+    this->scan_res = (int)rint(RTOD(l_cfg->resolution)*100);
+    this->min_angle = (int)rint(RTOD(l_cfg->min_angle)*100);
+    this->max_angle = (int)rint(RTOD(l_cfg->max_angle)*100);
+    this->range_res = (int)l_cfg->range_res*1000;
     Unlock();
     if (this->CheckScanConfig() == 0)
     {
@@ -1164,6 +1197,7 @@ int SickPLS::RequestLaserData(int min_segment, int max_segment)
   // PLAYER_TRACE0("waiting for acknowledge");
   printf("LASER: RLD: waiting for ACK\n");
   len = ReadFromLaser(packet, sizeof(packet), true, 1000);
+
   if (len < 0)
     return 1;
   else if (len < 1)

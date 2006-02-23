@@ -81,6 +81,12 @@
 #define BUMP_STALL 44
 #define JOYDRIVE 47
 #define GYRO 58         // Added in AROS 1.8
+#define ROTKP 82        // Added in P2OS1.M
+#define ROTKV 83        // Added in P2OS1.M
+#define ROTKI 84        // Added in P2OS1.M
+#define TRANSKP 85      // Added in P2OS1.M
+#define TRANSKV 86      // Added in P2OS1.M
+#define TRANSKI 87      // Added in P2OS1.M
 #define TTY3 66		// Added in AmigOS 1.3
 #define GETAUX2 67	// Added in AmigOS 1.3
 #define ARM_INFO 70
@@ -190,6 +196,9 @@ class P2OS : public Driver
     // bookkeeping to only send new sound I/O commands
     bool sent_sound_cmd;
     player_sound_cmd_t last_sound_cmd;
+    // PID settings
+    int rot_kp, rot_kv, rot_ki, trans_kp, trans_kv, trans_ki;
+
 
     int position_subscriptions;
     int sonar_subscriptions;

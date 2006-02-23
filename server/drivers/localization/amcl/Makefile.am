@@ -43,6 +43,7 @@ libamcl_la_SOURCES = amcl.h \
                      map/map_store.c \
                      map/map_draw.c \
                      map/map.h
+		     
 
 # I'm taking this out of the build, because it prevents me from building
 # Java wrappers to libplayercore + libplayerdrivers.  Darwin doesn't like
@@ -51,5 +52,5 @@ libamcl_la_SOURCES = amcl.h \
 # distro as of 1.4.
 #pf/gsl_discrete.c
 
-#amcl_gps.h amcl_gps.cc amcl_imu.h amcl_imu.cc amcl_sonar.cc amcl_wifi.cc
-#amcl_fiducial.cc amcl_fiducial.h
+#amcl_gps.h amcl_gps.cc amcl_imu.h amcl_imu.cc amcl_sonar.cc amcl_wifi.cc 
+#amcl_sonar.cc amcl_fiducial.cc amcl_fiducial.h

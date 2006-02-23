@@ -230,7 +230,7 @@ Cmucam2::Setup()
   if(fd<0)                           // if not successful, stop
   {
     printf("Camera connection failed!\n");
-    return 0; 
+    return -1; 
   }
   auto_servoing(fd, 0);
 
