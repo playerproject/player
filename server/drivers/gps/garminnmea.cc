@@ -111,11 +111,8 @@ driver
 #include <errno.h>
 
 
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
-#include "player.h"
-#include "replace/replace.h"
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 
 #define DEFAULT_GPS_PORT "/dev/ttyS0"
 #define DEFAULT_DGPS_GROUP "225.0.0.43"
@@ -887,7 +884,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     arcseconds *= -1;
 
   lat = arcseconds / 3600.0;
-  data.latitude = htonl((int32_t)rint(lat * 1e7));
+  data.latitude = (int32_t)rint(lat * 1e7);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -907,7 +904,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
     arcseconds *= -1;
 
   lon = arcseconds / 3600.0;
-  data.longitude = htonl((int32_t)rint(lon * 1e7));
+  data.longitude = (int32_t)rint(lon * 1e7);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -922,12 +919,12 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
   // 8th field is HDOP.  we'll multiply by ten to make it an integer.
-  data.hdop = htons((uint16_t)rint(atof(field) * 10));
+  data.hdop = (uint16_t)rint(atof(field) * 10);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
   // 9th field is altitude, in meters.  we'll convert to mm.
-  data.altitude = htonl((int32_t)rint(atof(field) * 1000.0));
+  data.altitude = (int32_t)rint(atof(field) * 1000.0);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -970,8 +967,8 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   UTM(lat, lon, &utm_e, &utm_n);
   //printf("utm: %.3f %.3f\n", utm_e, utm_n);
   
-  data.utm_e = htonl((int32_t) rint(utm_e * 100));
-  data.utm_n = htonl((int32_t) rint(utm_n * 100));
+  data.utm_e = (int32_t) rint(utm_e * 100);
+  data.utm_n = (int32_t) rint(utm_n * 100);
 
   Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_GPS_DATA_STATE, &data,sizeof(player_gps_data_t),NULL);
 
@@ -1061,8 +1058,8 @@ int GarminNMEA::ParseGPRMC(const char *buf)
   // second, unfortunately.
   utc = mktime(&tms);
   
-  data.time_sec = htonl((uint32_t) utc);
-  data.time_usec = htonl((uint32_t) 0);
+  data.time_sec = (uint32_t) utc;
+  data.time_usec = (uint32_t) 0;
 
   /* Dont write here
   // Need to parse to sentences before write data
@@ -1096,7 +1093,7 @@ int GarminNMEA::ParsePGRME(const char *buf)
 
   // First field is horizontal error
   err = atof(field);
-  data.err_horz = htonl((uint32_t) (err * 1000));
+  data.err_horz = (uint32_t) (err * 1000);
   
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);
@@ -1113,7 +1110,7 @@ int GarminNMEA::ParsePGRME(const char *buf)
 
   // Third field is vertical error
   err = atof(field);
-  data.err_vert = htonl((uint32_t) (err * 1000));
+  data.err_vert = (uint32_t) (err * 1000);
 
   if(!(ptr = GetNextField(field, sizeof(field), ptr)))
     return(-1);

@@ -99,13 +99,10 @@ driver
 #include <termios.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+#include <math.h>
 
-#include "driver.h"
-#include "error.h"
-#include "drivertable.h"
-#include "player.h"
-#include "replace/replace.h"
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 
 #define MODEL_D3X 0x0402
 #define MODEL_D100 0x040D
@@ -893,14 +890,14 @@ int SonyEVID30::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, v
   	
   	assert (hdr->size == sizeof (player_ptz_cmd_t));
   	player_ptz_cmd_t command = *reinterpret_cast<player_ptz_cmd_t *> (data);
-    if(pandemand != (short)ntohs((unsigned short)(command.pan)))
+    if(pandemand != (int)rint(RTOD(command.pan)))
     {
-      pandemand = (short)ntohs((unsigned short)(command.pan));
+      pandemand = (int)rint(RTOD(command.pan));
       newpantilt = true;
     }
-    if(tiltdemand != (short)ntohs((unsigned short)(command.tilt)))
+    if(tiltdemand != (int)rint(RTOD(command.tilt)))
     {
-      tiltdemand = (short)ntohs((unsigned short)(command.tilt));
+      tiltdemand = (int)rint(RTOD(command.tilt));
       newpantilt = true;
     }
     
@@ -994,9 +991,9 @@ SonyEVID30::Main()
 	}
   
     // Copy the data.
-    data.pan = htons((unsigned short)pan);
-    data.tilt = htons((unsigned short)tilt);
-    data.zoom = htons((unsigned short)zoom);
+    data.pan = DTOR(pan);
+    data.tilt = DTOR(tilt);
+    data.zoom = DTOR(zoom);
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
