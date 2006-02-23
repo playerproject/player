@@ -29,6 +29,7 @@
  */
 
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1427,7 +1428,7 @@ void rtk_fig_image_free(rtk_fig_t *fig, rtk_image_stroke_t *data)
 // Update image
 void rtk_fig_image_calc(rtk_fig_t *fig, rtk_image_stroke_t *data)
 {
-  int i, j;
+  int i;
   int minx, miny, maxx, maxy;
   int px, py;
   double dx, dy;
@@ -1488,13 +1489,15 @@ void rtk_fig_image_calc(rtk_fig_t *fig, rtk_image_stroke_t *data)
 // Render image
 void rtk_fig_image_draw(rtk_fig_t *fig, rtk_image_stroke_t *data)
 {
-  int i, j, k;
+  int i, j;
   int fill;
-  double ix, iy, px, py;
+  int depth;
   double sxx, sxy, syx, syy;
   double dxx, dxy, dyx, dyy;
-  double ox, oy, cosa, sina;
-  uint16_t *last_pixel, *pixel, *mask;
+  double ox, oy;
+  uint16_t * mask;
+  unsigned char * last_pixel;
+  unsigned char * pixel;
   double gpoints[4][2];
   GdkPoint points[4];
   GdkGCValues values;
@@ -1550,48 +1553,44 @@ void rtk_fig_image_draw(rtk_fig_t *fig, rtk_image_stroke_t *data)
   fill = 1;
 
   last_pixel = NULL;
-  pixel = (uint16_t*) data->image;
-  mask = (uint16_t*) data->mask;
+  pixel = data->image;
+  mask = (uint16_t *)data->mask;
+  depth = (data->bpp) / 8;
 
   for (j = 0; j < data->height; j++)
   {
     for (i = 0; i < data->width; i++)
     {
-      /*
-        if (!mask || *mask > 0)
-        {
-        // Set polygon color
-        color.red = RTK_R_RGB16(*pixel) << 8;
-        color.green = RTK_G_RGB16(*pixel) << 8;
-        color.blue = RTK_B_RGB16(*pixel) << 8;
-        gdk_color_alloc(colormap, &color);
-        gdk_gc_set_foreground(fig->canvas->gc, &color);
-
-        // Set start of polygon
-        points[0].x = gpoints[0][0];
-        points[0].y = gpoints[0][1];
-        points[1].x = gpoints[1][0];
-        points[1].y = gpoints[1][1];
-
-        // Set end of polygon
-        points[2].x = gpoints[2][0];
-        points[2].y = gpoints[2][1];
-        points[3].x = gpoints[3][0];
-        points[3].y = gpoints[3][1];
-
-        // Draw the polygon
-        gdk_draw_polygon(drawable, fig->canvas->gc, fill, points, 4);
-        }
-      */
-
       if (last_pixel == NULL)
       {
         if (!mask || *mask > 0)
         {
           // Set polygon color
-          color.red = RTK_R_RGB16(*pixel) << 8;
-          color.green = RTK_G_RGB16(*pixel) << 8;
-          color.blue = RTK_B_RGB16(*pixel) << 8;
+	  switch (depth)
+	  {
+	  case 1:
+            color.red = (*pixel) << 8;
+            color.green = (*pixel) << 8;
+            color.blue = (*pixel) << 8;
+	    break;
+	  case 2:
+            color.red = RTK_R_RGB16(*((uint16_t *)pixel)) << 8;
+            color.green = RTK_G_RGB16(*((uint16_t *)pixel)) << 8;
+            color.blue = RTK_B_RGB16(*((uint16_t *)pixel)) << 8;
+	    break;
+	  case 3:
+	    color.red = (*pixel) << 8;
+            color.green = (*(pixel + 1)) << 8;
+            color.blue = (*(pixel + 2)) << 8;
+	    break;
+	  case 4:
+	    color.red = (*pixel) << 8;
+            color.green = (*(pixel + 1)) << 8;
+            color.blue = (*(pixel + 2)) << 8;
+	    break;
+	  default:
+	    fprintf(stderr, "Unsupported depth!\n");
+	  }
           gdk_color_alloc(colormap, &color);
           gdk_gc_set_foreground(fig->canvas->gc, &color);
 
@@ -1626,9 +1625,31 @@ void rtk_fig_image_draw(rtk_fig_t *fig, rtk_image_stroke_t *data)
             gdk_draw_polygon(drawable, fig->canvas->gc, fill, points, 4);
 
             // Set new polygon color
-            color.red = RTK_R_RGB16(*pixel) << 8;
-            color.green = RTK_G_RGB16(*pixel) << 8;
-            color.blue = RTK_B_RGB16(*pixel) << 8;
+	    switch (depth)
+	    {
+	    case 1:
+              color.red = (*pixel) << 8;
+              color.green = (*pixel) << 8;
+              color.blue = (*pixel) << 8;
+	      break;
+	    case 2:
+              color.red = RTK_R_RGB16(*((uint16_t *)pixel)) << 8;
+              color.green = RTK_G_RGB16(*((uint16_t *)pixel)) << 8;
+              color.blue = RTK_B_RGB16(*((uint16_t *)pixel)) << 8;
+	      break;
+	    case 3:
+	      color.red = (*pixel) << 8;
+              color.green = (*(pixel + 1)) << 8;
+              color.blue = (*(pixel + 2)) << 8;
+	      break;
+	    case 4:
+	      color.red = (*pixel) << 8;
+              color.green = (*(pixel + 1)) << 8;
+              color.blue = (*(pixel + 2)) << 8;
+	      break;
+	    default:
+	      fprintf(stderr, "Unsupported depth!\n");
+	    }
             gdk_color_alloc(colormap, &color);
             gdk_gc_set_foreground(fig->canvas->gc, &color);
 
@@ -1654,7 +1675,7 @@ void rtk_fig_image_draw(rtk_fig_t *fig, rtk_image_stroke_t *data)
         }
       }
 
-      pixel++;
+      pixel += depth;
       if (mask)
         mask++;
 

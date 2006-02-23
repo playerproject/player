@@ -122,11 +122,11 @@ The @p amcl driver requires the following interfaces, some of them named:
 - "odometry" @ref interface_position2d : source of odometry information
 - @ref interface_laser : source of laser scans
 - "laser" @ref interface_map : a map in which to localize the
-   robot, by fusing odometry and laser data.
+   robot, by fusing odometry and laser/sonar data.
 - In principle supported, but currently disabled are:
     - @ref interface_fiducial
     - "imu" @ref interface_position2d
-    - @ref interface_sonar
+    - @ref interface_sonar 
     - @ref interface_gps
     - @ref interface_wifi
 

@@ -153,6 +153,36 @@ them named:
   - Default: 0
   - Maximum rotational acceleration, in angle/sec/sec; nonnegative.
     Zero means use the robot's default value.
+- rot_kp (integer)
+  - Default: -1
+  - Rotational PID setting; proportional gain.
+    Negative means use the robot's default value.
+  - Requires P2OS1.M or above
+- rot_kv (integer)
+  - Default: -1
+  - Rotational PID setting; derivative gain.
+    Negative means use the robot's default value.
+  - Requires P2OS1.M or above
+- rot_ki (integer)
+  - Default: -1
+  - Rotational PID setting; integral gain.
+    Negative means use the robot's default value.
+  - Requires P2OS1.M or above
+- trans_kp (integer)
+  - Default: -1
+  - Translational PID setting; proportional gain.
+    Negative means use the robot's default value.
+  - Requires P2OS1.M or above
+- trans_kv (integer)
+  - Default: -1
+  - Translational PID setting; derivative gain.
+    Negative means use the robot's default value.
+  - Requires P2OS1.M or above
+- trans_ki (integer)
+  - Default: -1
+  - Translational PID setting; integral gain.
+    Negative means use the robot's default value.
+  - Requires P2OS1.M or above
 - max_yawdecel (angle)
   - Default: 0
   - Maximum rotational deceleration, in angle/sec/sec; nonpositive.
@@ -387,6 +417,13 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   // Read config file options
   this->bumpstall = cf->ReadInt(section,"bumpstall",-1);
+  this->rot_kp = cf->ReadInt(section, "rot_kp", -1);
+  this->rot_kv = cf->ReadInt(section, "rot_kv", -1);
+  this->rot_ki = cf->ReadInt(section, "rot_ki", -1);
+  this->trans_kp = cf->ReadInt(section, "trans_kp", -1);
+  this->trans_kv = cf->ReadInt(section, "trans_kv", -1);
+  this->trans_ki = cf->ReadInt(section, "trans_ki", -1);
+
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
   this->radio_modemp = cf->ReadInt(section, "radio", 0);
   this->joystickp = cf->ReadInt(section, "joystick", 0);
@@ -783,7 +820,7 @@ int P2OS::Setup()
     accel_command[0] = SETA;
     accel_command[1] = ARGINT;
     accel_command[2] = this->motor_max_trans_accel & 0x00FF;
-    accel_command[3] = (this->motor_max_trans_accel & 0x00FF) >> 8;
+    accel_command[3] = (this->motor_max_trans_accel & 0xFF00) >> 8;
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
@@ -793,7 +830,7 @@ int P2OS::Setup()
     accel_command[0] = SETA;
     accel_command[1] = ARGNINT;
     accel_command[2] = abs(this->motor_max_trans_decel) & 0x00FF;
-    accel_command[3] = (abs(this->motor_max_trans_decel) & 0x00FF) >> 8;
+    accel_command[3] = (abs(this->motor_max_trans_decel) & 0xFF00) >> 8;
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
@@ -802,7 +839,7 @@ int P2OS::Setup()
     accel_command[0] = SETRA;
     accel_command[1] = ARGINT;
     accel_command[2] = this->motor_max_rot_accel & 0x00FF;
-    accel_command[3] = (this->motor_max_rot_accel & 0x00FF) >> 8;
+    accel_command[3] = (this->motor_max_rot_accel & 0xFF00) >> 8;
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
@@ -811,10 +848,70 @@ int P2OS::Setup()
     accel_command[0] = SETRA;
     accel_command[1] = ARGNINT;
     accel_command[2] = abs(this->motor_max_rot_decel) & 0x00FF;
-    accel_command[3] = (abs(this->motor_max_rot_decel) & 0x00FF) >> 8;
+    accel_command[3] = (abs(this->motor_max_rot_decel) & 0xFF00) >> 8;
     accel_packet.Build(accel_command, 4);
     this->SendReceive(&accel_packet,false);
   }
+
+
+  // if requested, change PID settings
+  P2OSPacket pid_packet;
+  unsigned char pid_command[4];
+  if(this->rot_kp >= 0)
+  {
+    pid_command[0] = ROTKP;
+    pid_command[1] = ARGINT;
+    pid_command[2] = this->rot_kp & 0x00FF;
+    pid_command[3] = (this->rot_kp & 0xFF00) >> 8;
+    pid_packet.Build(pid_command, 4);
+    this->SendReceive(&pid_packet);
+  }
+  if(this->rot_kv >= 0)
+  {
+    pid_command[0] = ROTKV;
+    pid_command[1] = ARGINT;
+    pid_command[2] = this->rot_kv & 0x00FF;
+    pid_command[3] = (this->rot_kv & 0xFF00) >> 8;
+    pid_packet.Build(pid_command, 4);
+    this->SendReceive(&pid_packet);
+  }
+  if(this->rot_ki >= 0)
+  {
+    pid_command[0] = ROTKI;
+    pid_command[1] = ARGINT;
+    pid_command[2] = this->rot_ki & 0x00FF;
+    pid_command[3] = (this->rot_ki & 0xFF00) >> 8;
+    pid_packet.Build(pid_command, 4);
+    this->SendReceive(&pid_packet);
+  }
+  if(this->trans_kp >= 0)
+  {
+    pid_command[0] = TRANSKP;
+    pid_command[1] = ARGINT;
+    pid_command[2] = this->trans_kp & 0x00FF;
+    pid_command[3] = (this->trans_kp & 0xFF00) >> 8;
+    pid_packet.Build(pid_command, 4);
+    this->SendReceive(&pid_packet);
+  }
+  if(this->trans_kv >= 0)
+  {
+    pid_command[0] = TRANSKV;
+    pid_command[1] = ARGINT;
+    pid_command[2] = this->trans_kv & 0x00FF;
+    pid_command[3] = (this->trans_kv & 0xFF00) >> 8;
+    pid_packet.Build(pid_command, 4);
+    this->SendReceive(&pid_packet);
+  }
+  if(this->trans_ki >= 0)
+  {
+    pid_command[0] = TRANSKI;
+    pid_command[1] = ARGINT;
+    pid_command[2] = this->trans_ki & 0x00FF;
+    pid_command[3] = (this->trans_ki & 0xFF00) >> 8;
+    pid_packet.Build(pid_command, 4);
+    this->SendReceive(&pid_packet);
+  }
+
 
   // if requested, change bumper-stall behavior
   // 0 = don't stall
