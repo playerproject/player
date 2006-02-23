@@ -25,6 +25,9 @@
 /** @defgroup driver_canonvcc4 canonvcc4
  * @brief Canon VC-C4 pan-tilt-zoom camera
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The canonvcc4 driver controls a Canon VC-C4 PTZ camera.
 
 The canonvcc4 driver operates over a direct serial link, not

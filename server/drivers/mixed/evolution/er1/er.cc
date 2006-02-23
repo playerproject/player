@@ -34,6 +34,9 @@
 /** @defgroup driver_er1 er1
  * @brief Evolution ER1 mobile robot
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The er1 driver provides position control of the Evolution Robotics'
 ER1 and ERSDK robots.
 

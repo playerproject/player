@@ -36,6 +36,9 @@
 /** @defgroup driver_nomad nomad
  * @brief Nomadics NOMAD200 mobile robot
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The nomad driver controls the Nomadics NOMAD200 robot, and should be
 easily modified to support close relatives.
 

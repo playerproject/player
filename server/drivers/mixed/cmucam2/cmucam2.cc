@@ -29,6 +29,9 @@
 /** @defgroup driver_cmucam2 cmucam2
  * @brief CMUCam2 pan-tilt-zoom blob-tracking camera
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The cmucam2 driver connects over a serial port to a CMUCam2. Presents a
 @ref interface_blobfinder interface and a @ref interface_ptz
 interface and can track multiple color blobs.  This driver is rudimentary

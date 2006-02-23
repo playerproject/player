@@ -29,6 +29,9 @@
 /** @defgroup driver_clodbuster clodbuster
  * @brief Clodbuster mobile robot
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The clodbuster driver controls the Clodbuster robot.
 
 @par Compile-time dependencies

@@ -40,6 +40,9 @@
 /** @defgroup driver_laserbarcode laserbarcode
  * @brief Laser barcode detector
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The laser barcode detector searches for specially constructed barcodes in
 the laser range finder data.  An example laser barcode is shown below.
 The barcode is constructed using strips of retro-reflective paper.

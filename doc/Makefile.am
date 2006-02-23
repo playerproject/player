@@ -17,6 +17,7 @@ tutorial_automake.txt \
 tutorial_cameras.txt \
 tutorial_config.txt \
 tutorial_crosscompiling.txt \
+tutorial_datalog.txt \
 tutorial_devices.txt \
 tutorial_maps.txt \
 tutorial_migration.txt \
@@ -32,9 +33,14 @@ dist-hook: doc
 doc:
 	doxygen player.dox
 
+docdir = $(prefix)/doc
+
 install-data-hook:
-	 mkdir -p $(prefix)/doc
-	 cp -r -p -v $(srcdir)/player-docs $(prefix)/doc/player
+	 mkdir -p $(DESTDIR)$(docdir)
+	 cp -r -p -v $(srcdir)/player-docs $(DESTDIR)$(docdir)/player
+
+uninstall-local:
+	rm -rf $(DESTDIR)$(docdir)/player
 
 #doxygen playerweb.dox
 webdoc:

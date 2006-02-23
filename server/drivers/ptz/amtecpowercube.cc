@@ -27,6 +27,9 @@
 /** @defgroup driver_amtecpowercube amtecpowercube
  * @brief Amtec PowerCube pan-tilt unit
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The amtecpowercube driver controls the Amtec PowerCube Wrist,
 a powerful pan-tilt unit that can, for example, carry a SICK laser
 (@ref driver_sicklms200).

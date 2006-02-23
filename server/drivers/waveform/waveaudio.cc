@@ -26,6 +26,9 @@
 /** @defgroup driver_waveaudio waveaudio
  * @brief Raw audio waveforms
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The waveaudio driver captures audio from /dev/dsp on systems which
 support the OSS sound driver. The data is exported using the @ref
 interface_waveform generic sample data interface. Currently data

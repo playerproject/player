@@ -50,6 +50,9 @@
 /** @defgroup driver_reb reb
  * @brief K-Team Kameleon Robotics Extension Board
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The reb driver is used to control robots using the K-Team Kameleon
 376SBC with Robotics Extension Board (REB).  The Kameleon, (or Kam),
 has a Motorola MC68376 microcontroller that can perform velocity and

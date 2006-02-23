@@ -34,6 +34,9 @@
 /** @defgroup driver_service_adv_mdns service_adv_mdns
  * @brief Multicast DNS service discovery
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 This driver can be used to publish a Player service using 
 the proposed IETF standard for multicast DNS service discovery (MDNS-SD).
 MDNS-SD is a part of the <a href="http://www.zeroconf.org">Zeroconf</a> protocols,

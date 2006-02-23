@@ -40,6 +40,9 @@
 /** @{ */
 /** @defgroup driver_laservisualbw laservisualbw
  * @brief Black & white laser/visual barcode detector
+ 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
 Parses a laser scan to find the retro-reflective patches (lines or
 circles), then points the camera at the patch, zooms in, and attempts

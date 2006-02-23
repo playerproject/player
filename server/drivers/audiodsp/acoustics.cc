@@ -24,10 +24,12 @@
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_acoustics acoustics
+@brief Analyze and produce audible tones with sound hardware
 
-@brief TODO
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
-@todo Write a description here
+@todo Write a full description
 
 @par Compile-time dependencies
 

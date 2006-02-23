@@ -27,6 +27,17 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup player_driver_gz_truth gz_truth
+ * @brief Gazebo truth
+
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
+*/
+/** @} */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif

@@ -24,8 +24,10 @@
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_mixer mixer
+@brief Controls mixer levels (volume, balance, etc) on sound hardware.
 
-@brief TODO
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
 @todo Write a description
 

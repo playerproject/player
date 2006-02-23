@@ -32,6 +32,9 @@
 /** @defgroup driver_simpleshape simpleshape
  * @brief Visual shape-detection
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The simpleshape driver looks for simple geometric shapes in a camera
 image.  The user must supply a @e model of the target shape, in the
 form of a binary image (such as the one shown below).

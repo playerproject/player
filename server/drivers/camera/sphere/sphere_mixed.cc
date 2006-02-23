@@ -27,6 +27,9 @@
   *@defgroup driver_sphere sphere
   @brief Logitech Sphere camera
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
   * This driver is a heavily modified version of the camerav4l one developed
   * by Andrew Howard.  The sphere driver captures images from a Logitech Sphere
   * cameras.  It differs from a normal Video4Linux device in that it has a

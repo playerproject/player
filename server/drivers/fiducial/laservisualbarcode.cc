@@ -41,6 +41,9 @@
 /** @defgroup driver_laservisualbarcode laservisualbarcode
  * @brief Color laser/visual barcode detector
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The laser visual barcode detector uses both searches for fiducials that
 are both retro-reflective and color-coded.  Fiducials can be either planar
 or cylindical, as shown below.  For planar targets, the range, bearing,

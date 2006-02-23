@@ -17,7 +17,7 @@ endif
 
 dist_bin_SCRIPTS = playerxdrgen.py
 
-EXTRA_DIST = playerxdr.pc.in
+EXTRA_DIST = playerxdr.pc.in playerxdr.html
 
 CLEANFILES = playerxdr.pc playerxdr.c playerxdr.h
 

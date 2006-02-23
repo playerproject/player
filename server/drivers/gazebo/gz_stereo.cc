@@ -30,7 +30,10 @@
 /** @addtogroup drivers Drivers */
 /** @{ */
 /** @defgroup player_driver_gz_stereo gz_stereo
+ * @brief Gazebo stereo camera
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
 The gz_stereo driver is used to access Gazebo models that support the
 libgazebo stereo interface (such as the StereoHead model).
