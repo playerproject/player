@@ -53,7 +53,8 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_simulation.c \
                         dev_sonar.c \
                         dev_speech.c \
-                        dev_wifi.c
+                        dev_wifi.c \
+			dev_rfid.c
 
 #dev_gps.c \
 #dev_joystick.c \

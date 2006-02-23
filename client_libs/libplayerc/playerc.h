@@ -94,6 +94,8 @@ extern "C" {
 #define PLAYERC_IR_MAX_SAMPLES          PLAYER_IR_MAX_SAMPLES
 #define PLAYERC_BLOBFINDER_MAX_BLOBS    PLAYER_BLOBFINDER_MAX_BLOBS
 #define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
+#define PLAYERC_RFID_MAX_TAGS           PLAYER_RFID_MAX_TAGS
+#define PLAYERC_RFID_MAX_GUID           PLAYER_RFID_MAX_GUID
 
 /** @} */
 
@@ -2372,6 +2374,53 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 /** @} */
 /***************************************************************************/
 
+/**************************************************************************/
+/** @defgroup playerc_proxy_rfid rfid
+
+The rfid proxy provides an interface to the digital input/output sensors.
+
+@{
+*/
+
+/** @brief Structure describing a single RFID tag. */
+typedef struct
+{
+    /** Tag type. */
+    uint32_t type;
+    /** GUID count. */
+    uint32_t guid_count;
+    /** The Globally Unique IDentifier (GUID) of the tag. */
+    uint8_t guid[PLAYERC_RFID_MAX_GUID];
+}  playerc_rfidtag_t;
+
+/** @brief RFID proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** The number of RFID tags found. */
+  uint16_t tags_count;
+
+  /** The list of RFID tags. */
+  playerc_rfidtag_t tags[PLAYERC_RFID_MAX_TAGS];
+} playerc_rfid_t;
+
+
+/** @brief Create a rfid proxy. */
+playerc_rfid_t *playerc_rfid_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a rfid proxy. */
+void playerc_rfid_destroy(playerc_rfid_t *device);
+
+/** @brief Subscribe to the rfid device. */
+int playerc_rfid_subscribe(playerc_rfid_t *device, int access);
+
+/** @brief Un-subscribe from the rfid device. */
+int playerc_rfid_unsubscribe(playerc_rfid_t *device);
+
+/** @} */
+/***************************************************************************/
 
 
 #ifdef __cplusplus

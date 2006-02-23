@@ -25,7 +25,8 @@ endif
 
 test_SOURCES = test.cc \
                test.h \
-               test_camera.cc
+               test_camera.cc \
+	       test_rfid.cc
 
 #               test_gps.cc \
                test_blobfinder.cc \

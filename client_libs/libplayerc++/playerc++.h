@@ -2323,6 +2323,38 @@ class WiFiProxy: public ClientProxy
     char access_point[32];
 #endif
 };
+/** 
+The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
+class RFIDProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_rfid_t *mDevice;
+
+  public:
+    /// constructor
+    RFIDProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~RFIDProxy();
+
+    /// returns the number of RFID tags
+    uint GetTagsCount() const { return GetVar(mDevice->tags_count); };
+    /// returns a RFID tag
+    playerc_rfidtag_t GetRFIDTag(uint aIndex) const
+      { return GetVar(mDevice->tags[aIndex]);};
+
+    /// RFID data access operator.
+    ///    This operator provides an alternate way of access the actuator data.
+    ///    For example, given a @p RFIDProxy named @p rp, the following
+    ///    expressions are equivalent: @p rp.GetRFIDTag[0] and @p rp[0].
+    playerc_rfidtag_t operator [](uint aIndex) const
+      { return(GetRFIDTag(aIndex)); }
+};
 /** @} (proxies)*/
 
 } // namespace PlayerCc
@@ -2377,6 +2409,7 @@ namespace std
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
 }
 /** @} (utility) */

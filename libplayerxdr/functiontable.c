@@ -342,6 +342,10 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE,
     (player_pack_fn_t)player_ptz_req_control_mode_pack},
 
+  /* rfid messages */
+  {PLAYER_RFID_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA,
+    (player_pack_fn_t)player_rfid_data_pack},
+
   /* simulation messages */
   {PLAYER_SIMULATION_CODE, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_SET_POSE2D,
     (player_pack_fn_t)player_simulation_pose2d_req_pack},

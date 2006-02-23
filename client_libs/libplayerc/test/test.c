@@ -135,6 +135,10 @@ int main(int argc, const char *argv[])
 	test_gripper(client, client->devinfos[i].addr.index);
 	break;
 	
+	// rfid device
+      case PLAYER_RFID_CODE:
+        test_rfid(client, client->devinfos[i].addr.index);
+        break;
 #if 0
 	// simulation device
       case PLAYER_SIMULATION_CODE:

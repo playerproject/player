@@ -20,4 +20,7 @@ service_adv \
 shell \
 speech \
 waveform \
-wifi 
+wifi \
+rfid
+
+
