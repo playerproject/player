@@ -26,8 +26,13 @@ upload_www.sh
 CVS_DEST=Player-cvs
 NAME=player
 
+dist-hook: doc
+
 doc:
 	doxygen player.dox
+
+install-data-hook:
+	 cp -r -p -v player-docs $(prefix)/doc/player
 
 #doxygen playerweb.dox
 webdoc:

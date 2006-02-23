@@ -44,6 +44,9 @@ VC-C4 ranges:
 
 The canonvcc4 driver only support position control.
 
+There is a <a href="http://canondrv.sourceforge.net/">related project</a>
+that may be of interest to people hacking on this driver.
+
 @par Compile-time dependencies
 
 - none

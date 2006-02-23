@@ -97,10 +97,7 @@ driver
 #include <pthread.h>  /* for pthread stuff */
 //#include <socket_util.h>
 
-#include <drivertable.h>
-#include <driver.h>
-#include <error.h>
-#include <player.h>
+#include <libplayercore/playercore.h>
 
 /* don't change this unless you change the Festival init scripts as well*/
 #define DEFAULT_FESTIVAL_PORTNUM 1314
