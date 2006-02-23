@@ -153,6 +153,7 @@ in the body.*/
 #define PLAYER_ACTARRAY_CODE       53  // Actuator Array interface
 #define PLAYER_LIMB_CODE           54  // Limb interface
 #define PLAYER_GRAPHICS2D_CODE     55  // Graphics2D interface
+#define PLAYER_RFID_CODE           56  // RFID reader interface
 /** @} */
 
 /** @ingroup message_basics
@@ -199,6 +200,7 @@ in the body.*/
 #define PLAYER_POSITION3D_STRING      "position3d"
 #define PLAYER_POWER_STRING           "power"
 #define PLAYER_PTZ_STRING             "ptz"
+#define PLAYER_RFID_STRING            "rfid"
 #define PLAYER_SERVICE_ADV_STRING     "service_adv"
 #define PLAYER_SIMULATION_STRING      "simulation"
 #define PLAYER_SONAR_STRING           "sonar"
@@ -4131,6 +4133,69 @@ typedef struct player_wifi_iwspy_addr_req
   /** Address ?? */
   char      address[32];
 } player_wifi_iwspy_addr_req_t;
+
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_rfid rfid
+ * @brief RFID reader
+
+The RFID interface provides access to a RFID reader (driver implementations 
+include RFID readers such as Skyetek M1 and Inside M300).
+*/
+
+/** @ingroup interface_rfid
+ * @{ */
+
+/** The maximum nr of tags that can be detected in the RF field in total. */
+#define PLAYER_RFID_MAX_TAGS 30
+/** The maximum number of digits one RFID tag can have. */
+#define PLAYER_RFID_MAX_GUID 8
+
+/** Data subtype */
+#define PLAYER_RFID_DATA         1
+
+/** Request/reply: put the reader in sleep mode (0) or wake it up (1). */
+#define PLAYER_RFID_REQ_POWER    1
+/** Request/reply: read data from the RFID tag - to be implemented.    */
+#define PLAYER_RFID_REQ_READTAG  2
+/** Request/reply: write data to the RFID tag - to be implemented.     */
+#define PLAYER_RFID_REQ_WRITETAG 3
+/** Request/reply: lock data blocks of a RFID tag - to be implemented. */
+#define PLAYER_RFID_REQ_LOCKTAG  4
+
+/** @brief Structure describing a single RFID tag. */
+typedef struct player_rfid_tag
+{
+  /** Tag type. */
+  uint32_t type;
+  /** GUID count. */
+  uint32_t guid_count;
+  /** The Globally Unique IDentifier (GUID) of the tag. */
+  char guid[PLAYER_RFID_MAX_GUID];
+} player_rfid_tag_t;
+
+/** @brief Data
+
+The RFID data packet.  */
+typedef struct player_rfid_data
+{
+  /** The number of RFID tags found. */
+  uint32_t tags_count;
+  /** The list of RFID tags. */
+  player_rfid_tag_t tags[PLAYER_RFID_MAX_TAGS];
+} player_rfid_data_t;
+
+/** @brief Command
+
+Just a placeholder for now; data will be added in future.
+*/
+typedef struct player_rfid_cmd
+{
+  /** A single byte of as-yet-unspecified command. Useful for experiments. */
+  uint8_t temp;
+} player_rfid_cmd_t;
 
 /** @} */
 

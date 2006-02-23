@@ -78,6 +78,9 @@ int main(int argc, const char *argv[])
 #endif
 */
 
+    // RFID device
+    if(strcmp(device, "rfid") == 0 || strcmp(device, "all") == 0)
+      test_rfid(&client, index);
 #if 0
     // Power device - a simple one to start with
     if(strcmp(device, "power") == 0 || strcmp(device, "all") == 0)

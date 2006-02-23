@@ -380,6 +380,14 @@ void NomadSonar_Register(DriverTable *driverTable);
 //void NomadSpeech_Register(DriverTable *driverTable);
 #endif
 
+#ifdef INCLUDE_INSIDEM300
+void InsideM300_Register(DriverTable *driverTable);
+#endif
+
+#ifdef INCLUDE_SKYETEKM1
+void SkyetekM1_Register(DriverTable *driverTable);
+#endif
+
 /*
  * this function will be called at startup.  all available devices should
  * be added to the driverTable here.  they will be instantiated later as
@@ -735,5 +743,13 @@ player_register_drivers()
 
   //StgEnergy_Register(driverTable);
   //StgBlinkenlight_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_INSIDEM300
+  InsideM300_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SKYETEKM1
+  SkyetekM1_Register(driverTable);
 #endif
 }

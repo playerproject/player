@@ -57,6 +57,7 @@ int test_audiomixer(PlayerClient* client, int index);
 int test_blobfinder(PlayerClient* client, int index);
 int test_blinkenlight(PlayerClient* client, int index);
 int test_camera(PlayerClient* client, int index);
+int test_rfid(PlayerClient* client, int index);
 //int test_bps(PlayerClient* client, int index);
 
 #endif // TEST_H

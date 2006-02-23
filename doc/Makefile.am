@@ -40,6 +40,7 @@ install-data-hook:
 	 cp -r -p -v $(srcdir)/player-docs $(DESTDIR)$(docdir)/player
 
 uninstall-local:
+	chmod -R u+w $(DESTDIR)$(docdir)/player
 	rm -rf $(DESTDIR)$(docdir)/player
 
 #doxygen playerweb.dox

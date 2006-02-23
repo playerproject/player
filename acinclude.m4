@@ -322,6 +322,13 @@ PLAYER_ADD_DRIVER([waveaudio],[no],[sys/soundcard.h],[],[])
 PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
+
+dnl RFID support
+PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])
+PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
+
+
+
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_ARG_ENABLE(md5, [  --disable-md5      Don't use MD5 hashing functions],,
 enable_md5=yes)

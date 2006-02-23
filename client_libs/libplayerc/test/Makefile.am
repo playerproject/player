@@ -26,7 +26,8 @@ test_SOURCES = \
 	test_power.c \
 	test_ptz.c \
 	test_simulation.c \
-	test_sonar.c
+	test_sonar.c \
+	test_rfid.c
 
 #test_camera.c \
 #test_fiducial.c \
