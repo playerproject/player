@@ -30,6 +30,9 @@
 /** @defgroup driver_segwayrmp segwayrmp
  * @brief Segway RMP mobile robot
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The segwayrmp driver provides control of a Segway RMP (Robotic
 Mobility Platform), which is an experimental robotic version of the
 Segway HT (Human Transport), a kind of two-wheeled, self-balancing

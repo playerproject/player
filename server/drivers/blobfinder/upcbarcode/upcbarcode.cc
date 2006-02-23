@@ -38,6 +38,9 @@
 /** @defgroup driver_upcbarcode upcbarcode
  * @brief UPC barcode detection
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The upcbarcode driver searches for standard, single-digit UPC barcodes
 in a camera image (a sample barcode is shown below)
 

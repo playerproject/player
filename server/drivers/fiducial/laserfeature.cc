@@ -33,6 +33,20 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_laserfeature laserfeature
+ * @brief Extract line/corner features from a laser scan.
+ 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
+@todo Document this driver.
+
+@author Andrew Howard
+*/
+/** @} */
+
 #include <errno.h>
 #include <string.h>
 #include <math.h>

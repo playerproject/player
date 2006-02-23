@@ -31,6 +31,9 @@
 /** @defgroup driver_imageseq imageseq
  * @brief Image file sequencer
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The imageseq driver simulates a camera by reading an image sequence
 from the filesystem.  The filenames for the image sequence must be
 numbered; e.g.: "image_0000.pnm", "image_0001.pnm", "image_0002.pnm",

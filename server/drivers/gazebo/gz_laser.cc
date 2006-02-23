@@ -27,10 +27,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/** @addtogroup drivers Drivers */
+/** @ingroup drivers */
 /** @{ */
 /** @defgroup player_driver_gz_laser gz_laser
+ * @brief Gazebo laser
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
 The gz_laser driver is used to access Gazebo models that support the
 libgazebo laser interface (such as the SickLMS200 model).

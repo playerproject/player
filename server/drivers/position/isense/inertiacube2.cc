@@ -41,6 +41,9 @@
 /** @defgroup driver_inertiacube2 inertiacube2
  * @brief iSense InertiaCube2 IMU
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 Uses an iSense InertiaCube2 inertial orientation sensor to correct
 the odometry coming from a robot.  The assumption is that the position
 device we subscribe to has good position information but poor orientation

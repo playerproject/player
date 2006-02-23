@@ -7,4 +7,6 @@ if INCLUDE_CMVISION
 noinst_LTLIBRARIES += libcmvision.la
 endif
 
+EXTRA_DIST = colors.txt colors2.txt
+
 libcmvision_la_SOURCES = cmvision.cc cmvision.h conversions.c conversions.h capture.h P2CMV.cc

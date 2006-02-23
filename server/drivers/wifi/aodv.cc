@@ -31,6 +31,9 @@
 /** @defgroup driver_aodv aodv
  * @brief Linux AODV ad hoc networking
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The aodv driver reports signal strengths for AODV ah-hoc network software.
 
 @par Compile-time dependencies

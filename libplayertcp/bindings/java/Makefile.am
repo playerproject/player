@@ -29,8 +29,10 @@ java_DATA += net/sourceforge/playerstage/Jplayertcp/*.java
 endif
 
 if DARWIN
+if ENABLE_JPLAYER
 install-exec-hook:
-	ln -sf $(libdir)/libplayertcp_java.dylib $(libdir)/libplayertcp_java.jnilib 
+	cd $(DESTDIR)$(libdir) && ln -sf libplayertcp_java.dylib libplayertcp_java.jnilib 
+endif
 endif
 
 clean-local:

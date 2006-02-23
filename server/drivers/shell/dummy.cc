@@ -29,6 +29,9 @@
 /** @defgroup driver_dummy dummy
  * @brief Dummy driver
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 The dummy driver generates dummy data and consumes dummy commands for
 any interface; useful for debugging client libraries and benchmarking
 server performance.

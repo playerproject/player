@@ -30,6 +30,10 @@
 /** @addtogroup drivers Drivers */
 /** @{ */
 /** @defgroup player_driver_gz_sim gz_sim
+  @brief Gazebo simulation control
+
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
 The gz_sim driver controls the Gazebo simulator.  This driver must be
 present when working with the simulator.

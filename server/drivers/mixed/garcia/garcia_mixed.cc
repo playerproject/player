@@ -29,6 +29,8 @@
   *@defgroup driver_garcia garcia
   @brief The Garcia mobile robot
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
 
 The garcia driver captures
 

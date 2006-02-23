@@ -33,6 +33,20 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_shapetracker shapetracker
+    @brief Tracks shapes in camera images.
+
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
+@todo Document this driver
+
+@author Andrew Howard
+*/
+/** @} */
+
 #include "player.h"
 
 #include <errno.h>

@@ -33,6 +33,9 @@
 /** @defgroup driver_acts acts
  * @brief ActivMedia color tracking system
 
+@todo This driver is currently disabled because it needs to be updated to
+the Player 2.0 API.
+
 ACTS is a fast color segmentation system written by Paul Rybski and sold
 by <a href=http://www.activrobots.com>ActivMedia</a>.  After training,
 ACTS finds colored blobs in a single camera image.  Player's acts driver

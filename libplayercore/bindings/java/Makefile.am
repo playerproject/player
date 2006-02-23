@@ -49,8 +49,10 @@ java_DATA += net/sourceforge/playerstage/Jplayercore/*.java
 endif
 
 if DARWIN
+if ENABLE_JPLAYER
 install-exec-hook:
-	ln -sf $(libdir)/libplayercore_java.dylib $(libdir)/libplayercore_java.jnilib 
+	cd $(DESTDIR)$(libdir) && ln -sf libplayercore_java.dylib libplayercore_java.jnilib 
+endif
 endif
 
 clean-local:
