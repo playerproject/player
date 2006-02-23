@@ -5,7 +5,7 @@ noinst_DATA = pythonbuild
 PYTHONINSTALL = pythoninstall
 
 # files that must be built first
-BUILT_SOURCES = playerc_oo.i $(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py
+BUILT_SOURCES = playerc_oo.i srcbuilddirs.py
 
 endif
 
@@ -13,7 +13,7 @@ endif
 EXTRA_DIST = playerc.i setup.py parse.py
 
 # Generate a OO interface file for libplayerc.  This is tweaked to
-# unable VPAPTH (distcheck) builds; the header files needed by swig
+# enable VPAPTH (distcheck) builds; the header files needed by swig
 # are copied into the build tree.
 playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h
 	if test ! -s ../../playerc.h; then cp $(srcdir)/../../playerc.h ../../; fi
@@ -24,15 +24,16 @@ playerc_oo.i: ../../playerc.h $(top_srcdir)/libplayercore/player.h
 # Dump src and build paths into a Python file so that we can get them in
 # setup.py (distutils doesn't seem to allow extra command-line options to
 # the setup.py script)
-$(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py:
-	echo "srcdir = '$(srcdir)'" > $@
-	echo "top_srcdir = '$(top_srcdir)'" >> $@
-	echo "builddir = '$(builddir)'" >> $@
-	echo "top_builddir = '$(top_builddir)'" >> $@
+srcbuilddirs.py:
+	echo "srcdir = '$(srcdir)'" > $(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py
+	echo "top_srcdir = '$(top_srcdir)'" >> $(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py
+	echo "builddir = '$(builddir)'" >> $(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py
+	echo "top_builddir = '$(top_builddir)'" >> $(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py
 
 # Use distutils to build module
-pythonbuild: playerc_oo.i ../../playerc.h $(top_builddir)/client_libs/libplayerc/bindings/python/srcbuilddirs.py
-	python $(srcdir)/setup.py build
+pythonbuild: playerc_oo.i ../../playerc.h srcbuilddirs.py
+	if test ! -s $(top_builddir)/client_libs/libplayerc/bindings/python/setup.py; then cp $(srcdir)/setup.py $(top_builddir)/client_libs/libplayerc/bindings/python/setup.py; fi
+	python $(top_builddir)/client_libs/libplayerc/bindings/python/setup.py build
 
 # For distcheck builds, clean up the files we created in the build tree
 # This generates warnings, so I'm relying on the top-level Makefile.am override.

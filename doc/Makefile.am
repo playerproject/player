@@ -27,12 +27,14 @@ CVS_DEST=Player-cvs
 NAME=player
 
 dist-hook: doc
+	cp -r -p -v player-docs $(distdir)/player-docs
 
 doc:
 	doxygen player.dox
 
 install-data-hook:
-	 cp -r -p -v player-docs $(prefix)/doc/player
+	 mkdir -p $(prefix)/doc
+	 cp -r -p -v $(srcdir)/player-docs $(prefix)/doc/player
 
 #doxygen playerweb.dox
 webdoc:
