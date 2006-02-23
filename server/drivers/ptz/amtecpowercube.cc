@@ -34,6 +34,10 @@ The amtecpowercube driver controls the Amtec PowerCube Wrist,
 a powerful pan-tilt unit that can, for example, carry a SICK laser
 (@ref driver_sicklms200).
 
+This driver communicates with the PowerCube via RS232, and does NOT handle
+the newer CAN-based units.  Please submit a patch to support the CAN
+protocol.
+
 The amtecpowercube driver supports both position and velocity control,
 via the PLAYER_PTZ_CONTROL_MODE_REQ request.  For constant swiveling,
 the PowerCube works better under velocity control.
