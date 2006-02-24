@@ -35,6 +35,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               cameraproxy.cc \
                               dioproxy.cc \
                               fiducialproxy.cc \
+                              gpsproxy.cc \
                               graphics2dproxy.cc \
                               gripperproxy.cc \
                               irproxy.cc \
@@ -49,11 +50,11 @@ libplayerc___la_SOURCES =     playerc++.h \
                               position3dproxy.cc \
                               powerproxy.cc \
                               ptzproxy.cc \
+                              rfidproxy.cc \
                               simulationproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
-                              wifiproxy.cc \
-			      rfidproxy.cc
+                              wifiproxy.cc 
 
 # not in libplayerc yet \
                               aioproxy.cc \
@@ -62,7 +63,6 @@ libplayerc___la_SOURCES =     playerc++.h \
                               audiomixerproxy.cc \
                               blinkenlightproxy.cc \
                               energyproxy.cc \
-                              gpsproxy.cc \
                               mcomproxy.cc \
                               motorproxy.cc \
                               soundproxy.cc \

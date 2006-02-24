@@ -26,42 +26,52 @@
 
 #include "playerc++.h"
 
-void GpsProxy::FillData(player_msghdr_t hdr, const char* buffer)
+using namespace PlayerCc;
+
+GpsProxy::GpsProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  player_gps_data_t* buf = (player_gps_data_t*)buffer;
-  if(hdr.size != sizeof(player_gps_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of GPS data, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_gps_data_t),hdr.size);
-  }
-
-  latitude = ((int)ntohl(buf->latitude)) / 1e7;
-  longitude = (int)ntohl(buf->longitude) / 1e7;
-
-  altitude = (int)ntohl(buf->altitude) / 1000.0;
-
-  satellites = buf->num_sats;
-
-  quality = buf->quality;
-
-  hdop = (int) (unsigned int) ntohs(buf->hdop) * 10.0;
-  vdop = (int) (unsigned int) ntohs(buf->vdop) * 10.0;
-
-  utm_easting = (int32_t) ntohl(buf->utm_e) / 100.0;
-  utm_northing = (int32_t) ntohl(buf->utm_n) / 100.0;
-
-  time.tv_sec = ntohl(buf->time_sec);
-  time.tv_usec = ntohl(buf->time_usec);
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-// interface that all proxies SHOULD provide
-void GpsProxy::Print()
+GpsProxy::~GpsProxy()
 {
-  printf("#GPS(%d:%d) - %c\n",
-         m_device_id.code, m_device_id.index, access);
-  puts("#(fix,lat,long,alt,sats)");
-  printf("%d\t%f\t%f\t%f\t%d\n",quality,latitude,longitude,altitude,satellites);
+  Unsubscribe();
 }
 
+void
+GpsProxy::Subscribe(uint aIndex)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  mDevice = playerc_gps_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("GpsProxy::GpsProxy()", "could not create");
+
+  if (0 != playerc_gps_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("GpsProxy::GpsProxy()", "could not subscribe");
+}
+
+void
+GpsProxy::Unsubscribe()
+{
+  assert(NULL!=mDevice);
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_gps_unsubscribe(mDevice);
+  playerc_gps_destroy(mDevice);
+  mDevice = NULL;
+}
+
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::GpsProxy &c)
+{
+  os << "#GPS (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << "#lat|long|alt|utm_e|utm_n|err_horz|err_vert|num_sats" << std::endl;
+  os << c.GetLatitude() << " " << c.GetLongitude() << " " << c.GetAltitude() << " " ;
+  os << c.GetUtmEasting() << " " << c.GetUtmNorthing() << " " << c.GetErrHorizontal() << " ";
+  os << c.GetErrVertical() << " " << c.GetSatellites() << std::endl;
+  return os;
+}
