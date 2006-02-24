@@ -11,11 +11,13 @@ nomad.cfg \
 obot.cfg \
 pioneer.cfg \
 readlog.cfg \
+rfid.cfg \
 segwayrmp.cfg \
 testhowl.cfg \
 umass_ATRVJr.cfg \
 umass_ATRVMini.cfg \
 umass_reb.cfg \
+vfh.cfg \
 vfh.cfg \
 wavefront.cfg \
 writelog.cfg
@@ -29,6 +31,7 @@ nomad.cfg \
 obot.cfg \
 pioneer.cfg \
 readlog.cfg \
+rfid.cfg \
 segwayrmp.cfg \
 testhowl.cfg \
 umass_ATRVJr.cfg \
