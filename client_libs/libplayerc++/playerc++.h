@@ -873,7 +873,6 @@ class FiducialProxy : public ClientProxy
       { return GetFiducialItem(aIndex); }
 };
 
-#if 0 // not in libplayerc yet
 /**
 The @p GpsProxy class is used to control a @ref interface_gps
 device.  The latest pose data is stored in three class attributes.  */
@@ -896,34 +895,35 @@ class GpsProxy : public ClientProxy
     ~GpsProxy();
 
     /// Latitude and longitude, in degrees.
-    uint GetLatitude() const { return GetVar(mDevice->latitude); };
-    uint GetLongitude() const { return GetVar(mDevice->longitude); };
+    double GetLatitude() const { return GetVar(mDevice->lat); };
+    double GetLongitude() const { return GetVar(mDevice->lon); };
 
     /// Altitude, in meters.
-    uint GetAltitude() const { return GetVar(mDevice->altitude); };
+    double GetAltitude() const { return GetVar(mDevice->alt); };
 
     /// Number of satellites in view.
-    uint GetSatellites() const { return GetVar(mDevice->num_sats); };
+    uint GetSatellites() const { return GetVar(mDevice->sat_count); };
 
     /// Fix quality
     uint GetQuality() const { return GetVar(mDevice->quality); };
 
     /// Horizontal dilution of position (HDOP)
-    uint GetHdop() const { return GetVar(mDevice->hdop); };
+    double GetHdop() const { return GetVar(mDevice->hdop); };
 
     /// Vertical dilution of position (HDOP)
-    uint GetVdop() const { return GetVar(mDevice->vdop); };
+    double GetVdop() const { return GetVar(mDevice->vdop); };
 
     /// UTM easting and northing (meters).
-    uint GetUtmEasting() const { return GetVar(mDevice->utm_e); };
-    uint GetUtmNorthing() const { return GetVar(mDevice->utm_n); };
-    double utm_northing;
+    double GetUtmEasting() const { return GetVar(mDevice->utm_e); };
+    double GetUtmNorthing() const { return GetVar(mDevice->utm_n); };
 
     /// Time, since the epoch
-    uint GetTimeSec() const { return GetVar(mDevice->time_sec); };
-    uint GetTimeUsec() const { return GetVar(mDevice->time_usec); };
+    double GetTime() const { return GetVar(mDevice->utc_time); };
+
+	/// Errors
+    double GetErrHorizontal() const { return GetVar(mDevice->err_horz); };
+    double GetErrVertical() const { return GetVar(mDevice->err_vert); };
 };
-#endif
 
 /**
  * The @p Graphics2dProxy class is used to draw simple graphics into a
@@ -2387,7 +2387,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);

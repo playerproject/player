@@ -35,6 +35,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_camera.c \
                         dev_dio.c \
                         dev_fiducial.c \
+                        dev_gps.c \
                         dev_graphics2d.c \
                         dev_gripper.c \
                         dev_ir.c \
@@ -50,13 +51,12 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_position.c \
                         dev_power.c \
                         dev_ptz.c \
+                        dev_rfid.c \
                         dev_simulation.c \
                         dev_sonar.c \
                         dev_speech.c \
-                        dev_wifi.c \
-			dev_rfid.c
+                        dev_wifi.c 
 
-#dev_gps.c \
 #dev_joystick.c \
 #dev_truth.c
 

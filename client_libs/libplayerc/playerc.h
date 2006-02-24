@@ -1046,6 +1046,68 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device);
 /** @} */
 /**************************************************************************/
 
+/***************************************************************************/
+/** @defgroup playerc_proxy_gps gps
+
+The gps proxy provides an interface to a GPS-receiver.
+
+@{
+*/
+
+/** @brief GPS proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** UTC time (seconds since the epoch) */
+  double utc_time;
+
+  /** Latitude and logitude (degrees).  Latitudes are positive for
+      north, negative for south.  Logitudes are positive for east,
+      negative for west. */
+  double lat, lon;
+
+  /** Altitude (meters).  Positive is above sea-level, negative is
+      below. */
+  double alt;
+
+  /** UTM easting and northing (meters). */
+  double utm_e, utm_n;
+
+  /** Horizontal dilution of precision. */
+  double hdop;
+
+  /** Vertical dilution of precision. */
+  double vdop;
+
+  /** Horizontal and vertical error (meters). */
+  double err_horz, err_vert;
+
+  /** Quality of fix 0 = invalid, 1 = GPS fix, 2 = DGPS fix */
+  int quality;
+
+  /** Number of satellites in view. */
+  int sat_count;
+
+} playerc_gps_t;
+
+
+/** @brief Create a gps proxy. */
+playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a gps proxy. */
+void playerc_gps_destroy(playerc_gps_t *device);
+
+/** @brief Subscribe to the gps device. */
+int playerc_gps_subscribe(playerc_gps_t *device, int access);
+
+/** @brief Un-subscribe from the gps device. */
+int playerc_gps_unsubscribe(playerc_gps_t *device);
+
+
+/** @} */
+/**************************************************************************/
 
 /***************************************************************************/
 /** @ingroup playerc_proxies

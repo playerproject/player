@@ -55,8 +55,9 @@
 
 
 // Local declarations
-void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
-                         player_gps_data_t *data, size_t len);
+void playerc_gps_putmsg(playerc_gps_t *device,
+                               player_msghdr_t *header,
+                               void *data, size_t len);
 
 // Create a new gps proxy
 playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index)
@@ -66,7 +67,7 @@ playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index)
   device = malloc(sizeof(playerc_gps_t));
   memset(device, 0, sizeof(playerc_gps_t));
   playerc_device_init(&device->info, client, PLAYER_GPS_CODE, index,
-                      (playerc_putdata_fn_t) playerc_gps_putdata,NULL,NULL);
+                      (playerc_putmsg_fn_t) playerc_gps_putmsg);
     
   return device;
 }
@@ -95,30 +96,35 @@ int playerc_gps_unsubscribe(playerc_gps_t *device)
 
 
 // Process incoming data
-void playerc_gps_putdata(playerc_gps_t *device, player_msghdr_t *header,
-                         player_gps_data_t *data, size_t len)
+void playerc_gps_putmsg(playerc_gps_t *device,
+                               player_msghdr_t *header,
+                               void *data, size_t len)
 {
-  assert(sizeof(*data) <= len);
+  if((header->type == PLAYER_MSGTYPE_DATA) &&
+     (header->subtype == PLAYER_GPS_DATA_STATE))
+  {
+    player_gps_data_t * gps_data = (player_gps_data_t *) data;
+    device->utc_time = gps_data->time_sec + ((double) gps_data->time_usec)/1e6;
 
-  device->utc_time = (uint32_t) ntohl(data->time_sec);
-  device->utc_time += ((uint32_t) ntohl(data->time_usec)) * 1e-6;
+    device->lat = gps_data->latitude / 1e7;
+    device->lon = gps_data->longitude / 1e7;
+    device->alt = gps_data->altitude / 1e3;
 
-  device->lat = (int32_t) ntohl(data->latitude) / 1e7;
-  device->lon = (int32_t) ntohl(data->longitude) / 1e7;
-  device->alt = (int32_t) ntohl(data->altitude) / 1000.0;
+    device->utm_e = gps_data->utm_e;
+    device->utm_n = gps_data->utm_n;
 
-  device->utm_e = (int32_t) ntohl(data->utm_e) / 100.0;
-  device->utm_n = (int32_t) ntohl(data->utm_n) / 100.0;
+    device->hdop = gps_data->hdop / 10.0;
+    device->vdop = gps_data->vdop / 10.0;
 
-  device->hdop = (uint16_t) ntohs(data->hdop) / 10.0;
-  device->vdop = (uint16_t) ntohs(data->vdop) / 10.0;
-  
-  device->err_horz = (uint32_t) ntohl(data->err_horz) / 1000.0;
-  device->err_vert = (uint32_t) ntohl(data->err_vert) / 1000.0;
+    device->err_horz = gps_data->err_horz;
+    device->err_vert = gps_data->err_vert;
 
-  device->quality = data->quality;
-  device->sat_count = data->num_sats;
-
+    device->quality = gps_data->quality;
+    device->sat_count = gps_data->num_sats;
+  }
+  else
+    PLAYERC_WARN2("skipping gps message with unknown type/subtype: %d/%d\n",
+                 header->type, header->subtype);
   return;
 }
 
