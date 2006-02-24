@@ -772,10 +772,10 @@ int playerc_actarray_unsubscribe(playerc_actarray_t *device);
 int playerc_actarray_get_geom(playerc_actarray_t *device);
 
 /** @brief Command a joint in the array to move to a specified position. */
-int playerc_actarray_position_cmd(playerc_actarray_t *device, uint joint, float position);
+int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position);
 
 /** @brief Command a joint in the array to move at a specified speed. */
-int playerc_actarray_speed_cmd(playerc_actarray_t *device, uint joint, float speed);
+int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed);
 
 /** @brief Command a joint (or, if joint is -1, the whole array) to go to its home position. */
 int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
@@ -783,13 +783,13 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
 /** @brief Turn the power to the array on or off. Be careful
 when turning power on that the array is not obstructed from its home
 position in case it moves to it (common behaviour). */
-int playerc_actarray_power(playerc_actarray_t *device, uint enable);
+int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable);
 
 /** @brief Turn the brakes of all actuators in the array that have them on or off. */
-int playerc_actarray_brakes(playerc_actarray_t *device, uint enable);
+int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable);
 
 /** @brief Set the speed of a joint (-1 for all joints) for all subsequent movement commands. */
-int playerc_actarray_speed_config(playerc_actarray_t *device, uint joint, float speed);
+int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed);
 
 /** @} */
 /**************************************************************************/
@@ -1428,7 +1428,7 @@ int playerc_limb_power(playerc_limb_t *device, uint enable);
 /** @brief Turn the brakes of all actuators in the limb that have them on or off. */
 int playerc_limb_brakes(playerc_limb_t *device, uint enable);
 
-/** @brief Set the speed of the limb joints for all subsequent movement commands. */
+/** @brief Set the speed of the end effector (m/s) for all subsequent movement commands. */
 int playerc_limb_speed_config(playerc_limb_t *device, float speed);
 
 /** @} */

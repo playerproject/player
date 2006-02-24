@@ -126,7 +126,7 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
 }
 
 // Command a joint in the array to move to a specified position
-int playerc_actarray_position_cmd(playerc_actarray_t *device, uint joint, float position)
+int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position)
 {
   player_actarray_position_cmd_t cmd;
 
@@ -140,7 +140,7 @@ int playerc_actarray_position_cmd(playerc_actarray_t *device, uint joint, float 
 }
 
 // Command a joint in the array to move at a specified speed
-int playerc_actarray_speed_cmd(playerc_actarray_t *device, uint joint, float speed)
+int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed)
 {
   player_actarray_speed_cmd_t cmd;
 
@@ -167,7 +167,7 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint)
 }
 
 // Turn the power to the array on or off
-int playerc_actarray_power(playerc_actarray_t *device, uint enable)
+int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable)
 {
   player_actarray_power_config_t config;
 
@@ -179,7 +179,7 @@ int playerc_actarray_power(playerc_actarray_t *device, uint enable)
 }
 
 // Turn the brakes of all actuators in the array that have them on or off
-int playerc_actarray_brakes(playerc_actarray_t *device, uint enable)
+int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable)
 {
   player_actarray_brakes_config_t config;
 
@@ -191,7 +191,7 @@ int playerc_actarray_brakes(playerc_actarray_t *device, uint enable)
 }
 
 // Set the speed of a joint (-1 for all joints) for all subsequent movement commands
-int playerc_actarray_speed_config(playerc_actarray_t *device, uint joint, float speed)
+int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed)
 {
   player_actarray_speed_config_t config;
 
