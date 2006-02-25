@@ -217,38 +217,38 @@ std::list<playerc_device_info_t> PlayerClient::GetDeviceList()
 }
 
 // change continuous data rate (freq is in Hz)
-void PlayerClient::SetFrequency(uint aFreq)
-{
-  std::cerr << "PlayerClient::SetFrequency() not implemented in libplayerc"
-            << std::endl;
-  /*
-  if (0!=playerc_client_datafreq(mClient, aFreq))
-  {
-    throw PlayerError("PlayerClient::SetFrequency()", playerc_error_str());
-  }
-  */
-}
+// void PlayerClient::SetFrequency(uint aFreq)
+// {
+//   std::cerr << "PlayerClient::SetFrequency() not implemented in libplayerc"
+//             << std::endl;
+//   /*
+//   if (0!=playerc_client_datafreq(mClient, aFreq))
+//   {
+//     throw PlayerError("PlayerClient::SetFrequency()", playerc_error_str());
+//   }
+//   */
+// }
 
 // change data delivery mode
 // valid modes are given in include/messages.h
 void PlayerClient::SetDataMode(uint aMode)
 {
-  std::cerr << "PlayerClient::SetDataMode() not implemented in libplayerc"
-            << std::endl;
-  /*
+/*  std::cerr << "PlayerClient::SetDataMode() not implemented in libplayerc"
+            << std::endl;*/
+
   if (0!=playerc_client_datamode(mClient, aMode))
   {
     throw PlayerError("PlayerClient::SetDataMode()", playerc_error_str());
   }
-  */
+
 }
 
 // add replace rule
-void PlayerClient::AddReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace)
+void PlayerClient::SetReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace)
 {
-  if (0!=playerc_client_add_replace_rule(mClient, aInterf,aIndex,aType,aSubtype,aReplace))
+  if (0!=playerc_client_set_replace_rule(mClient, aInterf,aIndex,aType,aSubtype,aReplace))
   {
-    throw PlayerError("PlayerClient::AddReplaceRule()", playerc_error_str());
+    throw PlayerError("PlayerClient::SetReplaceRule()", playerc_error_str());
   }
 }
 

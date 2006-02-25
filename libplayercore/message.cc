@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/* 
+/*
  * Desc: Message class and message queues
  * CVS:  $Id$
  * Author: Toby Collett - Jan 2005
  */
- 
+
 #include <pthread.h>
 #include <assert.h>
 #include <string.h>
@@ -34,9 +34,9 @@
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
 
-Message::Message(const struct player_msghdr & Header, 
-                 const void * data, 
-                 unsigned int data_size, 
+Message::Message(const struct player_msghdr & Header,
+                 const void * data,
+                 unsigned int data_size,
                  MessageQueue* _queue)
 {
   this->Queue = _queue;
@@ -73,6 +73,7 @@ Message::Message(const Message & rhs)
   Queue = rhs.Queue;
   RefCount = rhs.RefCount;
   (*RefCount)++;
+  ready = false;
 
   pthread_mutex_unlock(Lock);
 }
@@ -82,7 +83,7 @@ Message::~Message()
   this->DecRef();
 }
 
-bool 
+bool
 Message::Compare(Message &other)
 {
   player_msghdr_t* thishdr = this->GetHeader();
@@ -93,7 +94,7 @@ Message::Compare(Message &other)
                                otherhdr->addr));
 };
 
-void 
+void
 Message::DecRef()
 {
   pthread_mutex_lock(Lock);
@@ -133,6 +134,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   this->ClearFilter();
   this->filter_on = false;
   this->replaceRules = NULL;
+  this->pull = false;
 }
 
 MessageQueue::~MessageQueue()
@@ -158,28 +160,43 @@ MessageQueue::~MessageQueue()
 }
 
 /// @brief Add a replacement rule to the list
-void 
+void
 MessageQueue::AddReplaceRule(int _host, int _robot, int _interf, int _index,
                              int _type, int _subtype, bool _replace)
 {
   MessageReplaceRule* curr;
-  for(curr=this->replaceRules;curr && curr->next;curr=curr->next);
+  for(curr=this->replaceRules;curr;curr=curr->next)
+  {
+    // Check for an existing rule with the same criteria; replace if found
+    if (curr->Equivalent (_host, _robot, _interf, _index, _type, _subtype))
+    {
+      curr->replace = _replace;
+      return;
+    }
+	if (curr->next == NULL)
+		// Break before for() increments if this is the last one in the list
+		break;
+  }
   if(!curr)
   {
     curr = replaceRules = new MessageReplaceRule(_host, _robot, _interf, _index,
                                   _type, _subtype, _replace);
-    assert(curr);
+//	assert(curr);  // This is bad. What happens if there's a memory allocation failure when not built with debug?
+    if (!curr)
+      PLAYER_ERROR ("memory allocation failure; could not add new replace rule");
   }
   else
   {
     curr->next = new MessageReplaceRule(_host, _robot, _interf, _index,
                                         _type, _subtype, _replace);
-    assert(curr->next);
+//	assert(curr->next);  // This is bad. What happens if there's a memory allocation failure when not built with debug?
+    if (!curr->next)
+      PLAYER_ERROR ("memory allocation failure; could not add new replace rule");
   }
 }
 
 /// @brief Add a replacement rule to the list
-void 
+void
 MessageQueue::AddReplaceRule(const player_devaddr_t &device,
                              int _type, int _subtype, bool _replace)
 {
@@ -200,9 +217,10 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
   // Didn't find it; follow the default rule
 
   // Don't replace config requests or replies
-  if((hdr->type == PLAYER_MSGTYPE_REQ) || 
+  if((hdr->type == PLAYER_MSGTYPE_REQ) ||
      (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
-     (hdr->type == PLAYER_MSGTYPE_RESP_NACK))
+     (hdr->type == PLAYER_MSGTYPE_RESP_NACK) ||
+     (hdr->type == PLAYER_MSGTYPE_SYNCH))
     return(false);
   // Replace data and command according to the this->Replace flag
   else if((hdr->type == PLAYER_MSGTYPE_DATA) ||
@@ -216,7 +234,7 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
 }
 
 // Waits on the condition variable associated with this queue.
-void 
+void
 MessageQueue::Wait(void)
 {
   MessageQueueElement* el;
@@ -249,24 +267,24 @@ bool
 MessageQueue::Filter(Message& msg)
 {
   player_msghdr_t* hdr = msg.GetHeader();
-  return(((this->filter_host < 0) || 
+  return(((this->filter_host < 0) ||
           ((unsigned int)this->filter_host == hdr->addr.host)) &&
-         ((this->filter_robot < 0) || 
+         ((this->filter_robot < 0) ||
           ((unsigned int)this->filter_robot == hdr->addr.robot)) &&
-         ((this->filter_interf < 0) || 
+         ((this->filter_interf < 0) ||
           ((unsigned int)this->filter_interf == hdr->addr.interf)) &&
-         ((this->filter_index < 0) || 
+         ((this->filter_index < 0) ||
           ((unsigned int)this->filter_index == hdr->addr.index)) &&
-         (((this->filter_type < 0) && 
+         (((this->filter_type < 0) &&
            ((hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
-            (hdr->type == PLAYER_MSGTYPE_RESP_NACK))) || 
+            (hdr->type == PLAYER_MSGTYPE_RESP_NACK))) ||
           ((unsigned int)this->filter_type == hdr->type)) &&
-         ((this->filter_subtype < 0) || 
+         ((this->filter_subtype < 0) ||
           ((unsigned int)this->filter_subtype == hdr->subtype)));
 }
 
 void
-MessageQueue::SetFilter(int host, int robot, int interf, 
+MessageQueue::SetFilter(int host, int robot, int interf,
                         int index, int type, int subtype)
 {
   this->filter_host = host;
@@ -278,6 +296,35 @@ MessageQueue::SetFilter(int host, int robot, int interf,
   this->filter_on = true;
 }
 
+
+void MessageQueue::MarkAllReady (void)
+{
+  MessageQueueElement *current;
+
+  if (!pull)
+    return;   // No need to mark ready if not in pull mode
+
+  Lock();
+  // Mark all messages in the queue ready
+  for (current = head; current != NULL; current = current->next)
+  {
+    current->msg->SetReady ();
+  }
+  Unlock ();
+  // Push a sync message onto the end
+  struct player_msghdr syncHeader;
+  syncHeader.addr.host = 0;
+  syncHeader.addr.robot = 0;
+  syncHeader.addr.interf = PLAYER_PLAYER_CODE;
+  syncHeader.addr.index = 0;
+  syncHeader.type = PLAYER_MSGTYPE_SYNCH;
+  syncHeader.subtype = 0;
+  Message syncMessage (syncHeader, 0, 0);
+  syncMessage.SetReady ();
+  Push (syncMessage);
+}
+
+
 void
 MessageQueue::ClearFilter(void)
 {
@@ -288,7 +335,7 @@ MessageQueue::ClearFilter(void)
 // Signal that new data is available (calls pthread_cond_broadcast()
 // on this device's condition variable, which will release other
 // devices that are waiting on this one).
-void 
+void
 MessageQueue::DataAvailable(void)
 {
   pthread_mutex_lock(&this->condMutex);
@@ -296,7 +343,7 @@ MessageQueue::DataAvailable(void)
   pthread_mutex_unlock(&this->condMutex);
 }
 
-MessageQueueElement* 
+MessageQueueElement*
 MessageQueue::Push(Message & msg)
 {
   player_msghdr_t* hdr;
@@ -307,11 +354,11 @@ MessageQueue::Push(Message & msg)
   // Should we try to replace an older message of the same signature?
   if(this->CheckReplace(hdr))
   {
-    for(MessageQueueElement* el = this->tail; 
+    for(MessageQueueElement* el = this->tail;
         el != NULL;
         el = el->prev)
     {
-      if(el->msg->Compare(msg))
+      if(el->msg->Compare(msg) && !el->msg->Ready ())
       {
         this->Remove(el);
         delete el;
@@ -332,6 +379,11 @@ MessageQueue::Push(Message & msg)
   {
     MessageQueueElement* newelt = new MessageQueueElement();
     newelt->msg = new Message(msg);
+    if (!pull || newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_DATA)
+    {
+      // If not in pull mode, or message is not data, set ready to true immediatly
+      newelt->msg->SetReady ();
+    }
     if(!this->tail)
     {
       this->head = this->tail = newelt;
@@ -368,6 +420,33 @@ MessageQueue::Pop()
   for(el = this->head; el; el = el->next)
   {
     if(!this->filter_on || this->Filter(*el->msg))
+    {
+      this->Remove(el);
+      Unlock();
+      Message* retmsg = el->msg;
+      delete el;
+      return(retmsg);
+    }
+  }
+  Unlock();
+  return(NULL);
+}
+
+Message* MessageQueue::PopReady (void)
+{
+  MessageQueueElement* el;
+  Lock();
+  if(this->Empty())
+  {
+    Unlock();
+    return(NULL);
+  }
+
+  // start at the head and traverse the queue until a filter-friendly
+  // message (that is marked ready if in pull mode) is found
+  for(el = this->head; el; el = el->next)
+  {
+    if((!this->filter_on || this->Filter(*el->msg)) && ((pull && el->msg->Ready ()) || !pull))
     {
       this->Remove(el);
       Unlock();

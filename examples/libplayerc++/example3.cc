@@ -34,7 +34,6 @@ int main(int argc, char** argv)
     PlayerClient client(gHostname, gPort);
 
     client.SetDataMode(gDataMode);
-    client.SetFrequency(gFrequency);
 
     client.RequestDeviceList();
     std::list<playerc_device_info_t> dlist(client.GetDeviceList());

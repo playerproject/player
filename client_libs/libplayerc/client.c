@@ -137,7 +137,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->lasttime = 0;
 
   /* this is the server's default */
-  client->mode = PLAYER_DATAMODE_PUSH_NEW;
+  client->mode = PLAYER_DATAMODE_PUSH;
 
   return client;
 }
@@ -219,7 +219,7 @@ int playerc_client_disconnect(playerc_client_t *client)
 }
 
 // add a replace rule the the clients queue on the server
-int playerc_client_add_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace)
+int playerc_client_set_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace)
 {
   player_add_replace_rule_req_t req;
 
@@ -237,16 +237,15 @@ int playerc_client_add_replace_rule(playerc_client_t *client, int interf, int in
   return 0;
 }
 
-#if 0
 // Change the server's data delivery mode
-int playerc_client_datamode(playerc_client_t *client, int mode)
+int playerc_client_datamode(playerc_client_t *client, uint8_t mode)
 {
   player_device_datamode_req_t req;
 
 //  req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
   req.mode = mode;
 
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DATAMODE, &req, sizeof(req), NULL, 0) < 0)
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATAMODE, &req, NULL, 0) < 0)
     return -1;
 
   /* cache the change */
@@ -254,6 +253,8 @@ int playerc_client_datamode(playerc_client_t *client, int mode)
 
   return 0;
 }
+
+#if 0
 
 // Change the server's data delivery frequency (freq is in Hz)
 int playerc_client_datafreq(playerc_client_t *client, int freq)
@@ -269,6 +270,8 @@ int playerc_client_datafreq(playerc_client_t *client, int freq)
   return 0;
 }
 
+#endif
+
 // Request a round of data; only valid when in a request/reply
 // (aka PULL) mode
 int
@@ -277,10 +280,8 @@ playerc_client_requestdata(playerc_client_t* client)
   player_device_data_req_t req;
 
 //  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
-  return(playerc_client_request(client, NULL, PLAYER_PLAYER_DATA, &req, sizeof(req), NULL, 0));
+  return(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL, 0));
 }
-
-#endif
 
 // Test to see if there is pending data.
 int playerc_client_peek(playerc_client_t *client, int timeout)
@@ -320,38 +321,44 @@ void *playerc_client_read(playerc_client_t *client)
 {
   player_msghdr_t header;
 
-  // See if there is any queued data.
-  if (playerc_client_pop(client, &header, client->data) < 0)
-  {
-    // If there is no queued data, read a packet (blocking).
-
-#if 0
     // If we're in a PULL mode, first request a round of data.
-    if((client->mode == PLAYER_DATAMODE_PULL_NEW) ||
-       (client->mode == PLAYER_DATAMODE_PULL_ALL))
-    {
-       if(playerc_client_requestdata(client) < 0)
-         return NULL;
-    }
-#endif
-
-    if (playerc_client_readpacket(client, &header, client->data) < 0)
+  if (client->mode == PLAYER_DATAMODE_PULL)
+  {
+    if (playerc_client_requestdata(client) < 0)
       return NULL;
   }
 
-  switch(header.type)
+  while (true)
   {
-    case PLAYER_MSGTYPE_SYNCH:
-      client->lasttime = client->datatime;
-      client->datatime = header.timestamp;
-      return client->id;
+    // See if there is any queued data.
+    if (playerc_client_pop (client, &header, client->data) < 0)
+    {
+      // If there is no queued data, read a packet (blocking).
+      if (playerc_client_readpacket (client, &header, client->data) < 0)
+        return NULL;
+    }
 
-    case PLAYER_MSGTYPE_DATA:
-      return playerc_client_dispatch(client, &header, client->data);
+    switch(header.type)
+    {
+      case PLAYER_MSGTYPE_SYNCH:
+        client->lasttime = client->datatime;
+        client->datatime = header.timestamp;
+        return client->id;
+      case PLAYER_MSGTYPE_DATA:
+        if (client->mode == PLAYER_DATAMODE_PUSH)
+          // If in push mode, handle and return
+          return playerc_client_dispatch (client, &header, client->data);
+        else  // PULL mode, so keep on going
+        {
+          if (playerc_client_dispatch (client, &header, client->data) == NULL)
+            return NULL;
+          continue;
+        }
+      default:
+        PLAYERC_WARN1 ("unexpected message type [%d]", header.type);
+        return NULL;
+    }
   }
-
-  PLAYERC_WARN1("unexpected message type [%d]", header.type);
-  return NULL;
 }
 
 
@@ -420,20 +427,20 @@ int playerc_client_request(playerc_client_t *client,
     gettimeofday(&last,NULL);
     peek = playerc_client_peek(client,10);
     gettimeofday(&curr,NULL);
-    t -= ((curr.tv_sec + curr.tv_usec/1e6) - 
+    t -= ((curr.tv_sec + curr.tv_usec/1e6) -
           (last.tv_sec + last.tv_usec/1e6));
 
     if(peek < 0)
       return -1;
     else if(peek == 0)
       continue;
-      
+
     if (playerc_client_readpacket(client, &rep_header, client->data) < 0)
       return -1;
 
-    if (rep_header.type == PLAYER_MSGTYPE_DATA)
+    if (rep_header.type == PLAYER_MSGTYPE_DATA || rep_header.type == PLAYER_MSGTYPE_SYNCH)
     {
-      // Queue up any incoming data packets for later dispatch
+      // Queue up any incoming data and sync packets for later processing
       playerc_client_push(client, &rep_header, client->data);
     }
     else if(rep_header.type == PLAYER_MSGTYPE_RESP_ACK)

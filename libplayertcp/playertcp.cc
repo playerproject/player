@@ -2,7 +2,7 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2005 -
  *     Brian Gerkey
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ PlayerTCP::Listen(int* ports, int num_ports)
 
   for(int i=tmp;i<this->num_listeners;i++)
   {
-    if((this->listeners[i].fd = 
+    if((this->listeners[i].fd =
         create_and_bind_socket(1,this->host,ports[i],
                                PLAYER_TRANSPORT_TCP,200)) < 0)
     {
@@ -157,7 +157,7 @@ PlayerTCP::Listen(int* ports, int num_ports)
       return(-1);
     }
     this->listeners[i].port = ports[i];
-    
+
     // set up for later use of poll() to accept() connections on this port
     this->listen_ufds[i].fd = this->listeners[i].fd;
     this->listen_ufds[i].events = POLLIN;
@@ -170,7 +170,7 @@ MessageQueue*
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
                      unsigned int local_port,
-                     int newsock, 
+                     int newsock,
                      bool send_banner,
                      int* kill_flag)
 {
@@ -212,20 +212,20 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   this->client_ufds[j].events = POLLIN;
 
   // Create an outgoing queue for this client
-  this->clients[j].queue = 
+  this->clients[j].queue =
           new MessageQueue(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
   assert(this->clients[j].queue);
 
   // Create a buffer to hold incoming messages
   this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;
-  this->clients[j].readbuffer = 
+  this->clients[j].readbuffer =
           (char*)calloc(1,this->clients[j].readbuffersize);
   assert(this->clients[j].readbuffer);
   this->clients[j].readbufferlen = 0;
 
   // Create a buffer to hold outgoing messages
   this->clients[j].writebuffersize = PLAYERTCP_WRITEBUFFER_SIZE;
-  this->clients[j].writebuffer = 
+  this->clients[j].writebuffer =
           (char*)calloc(1,this->clients[j].writebuffersize);
   assert(this->clients[j].writebuffer);
   this->clients[j].writebufferlen = 0;
@@ -237,7 +237,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   if(send_banner)
   {
     memset(data,0,sizeof(data));
-    snprintf((char*)data, sizeof(data)-1, "%s%s", 
+    snprintf((char*)data, sizeof(data)-1, "%s%s",
              PLAYER_IDENT_STRING, playerversion);
     if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
     {
@@ -282,8 +282,8 @@ PlayerTCP::Accept(int timeout)
       memset(&cliaddr, 0, sizeof(cliaddr));
 
       // Shouldn't block here
-      if((newsock = accept(this->listen_ufds[i].fd, 
-                           (struct sockaddr*)&cliaddr, 
+      if((newsock = accept(this->listen_ufds[i].fd,
+                           (struct sockaddr*)&cliaddr,
                            &sender_len)) == -1)
       {
         PLAYER_ERROR1("accept() failed: %s", strerror(errno));
@@ -298,7 +298,7 @@ PlayerTCP::Accept(int timeout)
         return(-1);
       }
 
-      this->AddClient(&cliaddr, 
+      this->AddClient(&cliaddr,
                       this->host,
                       this->listeners[i].port,
                       newsock, true, NULL);
@@ -382,7 +382,7 @@ PlayerTCP::Read(int timeout)
 
   for(int i=0; (i<this->num_clients) && (num_available>0); i++)
   {
-    if(((this->client_ufds[i].revents & POLLERR) || 
+    if(((this->client_ufds[i].revents & POLLERR) ||
         (this->client_ufds[i].revents & POLLHUP) ||
         (this->client_ufds[i].revents & POLLNVAL)))
     {
@@ -439,11 +439,11 @@ PlayerTCP::DeleteClients()
   {
     if(this->clients[j].del)
     {
-      memmove(this->clients + j, 
-              this->clients + j + 1, 
+      memmove(this->clients + j,
+              this->clients + j + 1,
               (this->size_clients - j - 1) * sizeof(playertcp_conn_t));
-      memmove(this->client_ufds + j, 
-              this->client_ufds + j + 1, 
+      memmove(this->client_ufds + j,
+              this->client_ufds + j + 1,
               (this->size_clients - j - 1) * sizeof(struct pollfd));
     }
     else
@@ -460,7 +460,7 @@ void
 PlayerTCP::DeleteClient(MessageQueue* q)
 {
   pthread_mutex_lock(&this->clients_mutex);
-  
+
   // Find the client and mark it for deletion.
   int i;
   for(i=0;i<this->num_clients;i++)
@@ -506,8 +506,8 @@ PlayerTCP::WriteClient(int cli)
     // try to send any bytes leftover from last time.
     if(client->writebufferlen)
     {
-      numwritten = write(client->fd, 
-                         client->writebuffer, 
+      numwritten = write(client->fd,
+                         client->writebuffer,
                          MIN(client->writebufferlen,
                              PLAYERTCP_WRITEBUFFER_SIZE));
 
@@ -529,13 +529,13 @@ PlayerTCP::WriteClient(int cli)
         PLAYER_MSG0(2,"wrote zero bytes");
         return(-1);
       }
-      
+
       memmove(client->writebuffer, client->writebuffer + numwritten,
               client->writebufferlen - numwritten);
       client->writebufferlen -= numwritten;
     }
     // try to pop a pending message
-    else if((msg = client->queue->Pop()))
+    else if((msg = client->queue->PopReady()))
     {
       // Note that we make a COPY of the header.  This is so that we can
       // edit the size field before sending it out, without affecting other
@@ -543,7 +543,7 @@ PlayerTCP::WriteClient(int cli)
       hdr = *msg->GetHeader();
       payload = msg->GetPayload();
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr.addr.interf, 
+      if(!(packfunc = playerxdr_get_func(hdr.addr.interf,
                                          hdr.type, hdr.subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
@@ -559,7 +559,7 @@ PlayerTCP::WriteClient(int cli)
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
-          client->writebuffersize = MAX((size_t)(client->writebuffersize * 2), 
+          client->writebuffersize = MAX((size_t)(client->writebuffersize * 2),
                                         maxsize);
           // Did we hit the limit (or overflow and become negative)?
           if((client->writebuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
@@ -578,7 +578,7 @@ PlayerTCP::WriteClient(int cli)
         // HACK: special handling for map data to compress it before sending
         // them out over the network.
         if((hdr.addr.interf == PLAYER_MAP_CODE) &&
-           (hdr.type == PLAYER_MSGTYPE_RESP_ACK) && 
+           (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
            (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
         {
 #if HAVE_ZLIB_H
@@ -706,7 +706,7 @@ PlayerTCP::ReadClient(int cli)
   for(;;)
   {
     // Might we need more room to assemble the current partial message?
-    if((client->readbuffersize - client->readbufferlen) < 
+    if((client->readbuffersize - client->readbufferlen) <
        PLAYERTCP_READBUFFER_SIZE)
     {
       // Get twice as much space.
@@ -719,10 +719,10 @@ PlayerTCP::ReadClient(int cli)
                     PLAYERXDR_MAX_MESSAGE_SIZE, cli);
         client->readbuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
       }
-      client->readbuffer = (char*)realloc(client->readbuffer, 
+      client->readbuffer = (char*)realloc(client->readbuffer,
                                           client->readbuffersize);
       assert(client->readbuffer);
-      memset(client->readbuffer + client->readbufferlen, 0, 
+      memset(client->readbuffer + client->readbufferlen, 0,
              client->readbuffersize - client->readbufferlen);
     }
 
@@ -734,7 +734,7 @@ PlayerTCP::ReadClient(int cli)
       break;
     }
 
-    numread = read(client->fd, 
+    numread = read(client->fd,
                    client->readbuffer + client->readbufferlen,
                    client->readbuffersize - client->readbufferlen);
 
@@ -786,7 +786,7 @@ PlayerTCP::ParseBuffer(int cli)
       return;
 
     // Try to read the header
-    if(player_msghdr_pack(client->readbuffer, 
+    if(player_msghdr_pack(client->readbuffer,
                           PLAYERXDR_MSGHDR_SIZE,
                           &hdr, PLAYERXDR_DECODE) < 0)
     {
@@ -808,7 +808,7 @@ PlayerTCP::ParseBuffer(int cli)
     if(msglen > client->readbufferlen)
       return;
 
-    // Using TCP, the host and robot (port) information is in the connection 
+    // Using TCP, the host and robot (port) information is in the connection
     // and so we don't require that the client fill it in.
     hdr.addr.host = client->host;
     hdr.addr.robot = client->port;
@@ -816,7 +816,7 @@ PlayerTCP::ParseBuffer(int cli)
     if(!device && (hdr.addr.interf != PLAYER_PLAYER_CODE))
     {
       PLAYER_WARN5("skipping message of type %u to unknown device %u:%u:%u:%u",
-                   hdr.subtype, 
+                   hdr.subtype,
                    hdr.addr.host, hdr.addr.robot,
                    hdr.addr.interf, hdr.addr.index);
     }
@@ -824,8 +824,8 @@ PlayerTCP::ParseBuffer(int cli)
     {
       // Iff there's a payload to pack, locate the appropriate packing
       // function
-      if( hdr.size > 0 && 
-	  !(packfunc = playerxdr_get_func(hdr.addr.interf, 
+      if( hdr.size > 0 &&
+	  !(packfunc = playerxdr_get_func(hdr.addr.interf,
 					  hdr.type,
 					  hdr.subtype)))
       {
@@ -844,19 +844,19 @@ PlayerTCP::ParseBuffer(int cli)
 			(void*)this->decode_readbuffer,
 			PLAYERXDR_DECODE);
 	}
-	else // no packing function? this had better be an empty message 
+	else // no packing function? this had better be an empty message
 	{
 	    if( hdr.size == 0 )
 	      decode_msglen = 0; // an empty message decoded is still empty
 	    else
 	      decode_msglen = -1; // indicate error
 	}
-      
+
 	if( decode_msglen < 0 )
 	{
 	  PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
 		       hdr.addr.interf, hdr.addr.index, hdr.subtype);
-	}	   
+	}
 	else
         {
           // update the message size and send it off
@@ -879,13 +879,13 @@ PlayerTCP::ParseBuffer(int cli)
             // HACK: special handling for map data to uncompress it after sending
             // over the network.
             if((hdr.addr.interf == PLAYER_MAP_CODE) &&
-               (hdr.type == PLAYER_MSGTYPE_RESP_ACK) && 
+               (hdr.type == PLAYER_MSGTYPE_RESP_ACK) &&
                (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
             {
 #if HAVE_ZLIB_H
-              player_map_data_t* zipped_data = 
+              player_map_data_t* zipped_data =
                       (player_map_data_t*)this->decode_readbuffer;
-              player_map_data_t* raw_data = 
+              player_map_data_t* raw_data =
                       (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
               assert(raw_data);
 
@@ -898,7 +898,7 @@ PlayerTCP::ParseBuffer(int cli)
 
               // uncompress the tile
               if(uncompress((Bytef*)raw_data->data,&count,
-                            (const Bytef*)zipped_data->data, 
+                            (const Bytef*)zipped_data->data,
                             (uLongf)zipped_data->data_count) != Z_OK)
               {
                 PLAYER_ERROR("failed to uncompress map data");
@@ -920,10 +920,10 @@ PlayerTCP::ParseBuffer(int cli)
         }
       }
     }
-    
+
     // Move past the processed message
-    memmove(client->readbuffer, 
-            client->readbuffer + msglen, 
+    memmove(client->readbuffer,
+            client->readbuffer + msglen,
             client->readbufferlen - msglen);
     client->readbufferlen -= msglen;
   }
@@ -963,8 +963,8 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
           devreq = (player_device_req_t*)payload;
 
-          // Using TCP, the host and robot (port) information is 
-          // in the connection and so we don't require that the client 
+          // Using TCP, the host and robot (port) information is
+          // in the connection and so we don't require that the client
           // fill it in.
           devreq->addr.host = this->host;
           devreq->addr.robot = client->port;
@@ -1003,7 +1003,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
               case PLAYER_OPEN_MODE:
                 // Subscribe to the device
                 sub_result = device->Subscribe(client->queue);
-                
+
                 // Non-obvious thing: as a result of Subscribe(), the
                 // list of clients can get realloc()ed, which can
                 // invalidate our client pointer.  So we'll recompute it.
@@ -1027,7 +1027,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                   if(i==client->num_dev_subs)
                   {
                     client->num_dev_subs++;
-                    client->dev_subs = 
+                    client->dev_subs =
                             (Device**)realloc(client->dev_subs,
                                               sizeof(Device*)*
                                               client->num_dev_subs);
@@ -1062,13 +1062,13 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
                 break;
               default:
                 PLAYER_WARN3("unknown access mode %u requested for device %u:%u",
-                             devreq->access, devreq->addr.interf, 
+                             devreq->access, devreq->addr.interf,
                              devreq->addr.index);
                 break;
             }
 
             // Make up and push out the reply
-            resp = new Message(resphdr, (void*)&devresp, 
+            resp = new Message(resphdr, (void*)&devresp,
                                sizeof(player_device_req_t));
             assert(resp);
             client->queue->Push(*resp);
@@ -1084,7 +1084,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           player_device_devlist_t devlist;
 
           int numdevices=0;
-          for(Device* device = deviceTable->GetFirstDevice(); 
+          for(Device* device = deviceTable->GetFirstDevice();
               device;
               device = deviceTable->GetNextDevice(device))
           {
@@ -1100,7 +1100,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
-          resp = new Message(resphdr, (void*)&devlist, 
+          resp = new Message(resphdr, (void*)&devlist,
                              sizeof(player_device_devlist_t));
           assert(resp);
           client->queue->Push(*resp);
@@ -1117,8 +1117,8 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
           inforeq = (player_device_driverinfo_t*)payload;
 
-          // Using TCP, the host and robot (port) information is 
-          // in the connection and so we don't require that the client 
+          // Using TCP, the host and robot (port) information is
+          // in the connection and so we don't require that the client
           // fill it in.
           inforeq->addr.host = this->host;
           inforeq->addr.robot = client->port;
@@ -1147,7 +1147,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
             resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
             // Make up and push out the reply
-            resp = new Message(resphdr, (void*)&inforesp, 
+            resp = new Message(resphdr, (void*)&inforesp,
                                sizeof(player_device_driverinfo_t));
             assert(resp);
             client->queue->Push(*resp);
@@ -1170,6 +1170,36 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           delete resp;
           break;
         }
+
+        // Request change of data mode
+        case PLAYER_PLAYER_REQ_DATAMODE:
+        {
+          player_device_datamode_req_t * req = reinterpret_cast<player_device_datamode_req_t *> (payload);
+          if (req->mode == PLAYER_DATAMODE_PUSH)
+            client->queue->SetPull (false);
+          else if (req->mode == PLAYER_DATAMODE_PULL)
+            client->queue->SetPull (true);
+          else
+            PLAYER_WARN1 ("unknown data mode requsted: %d", req->mode);
+          // Make up and push out the reply
+          resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
+          resp = new Message(resphdr, NULL, 0);
+          assert(resp);
+          client->queue->Push(*resp);
+          delete resp;
+          break;
+        }
+
+        // Request data
+        case PLAYER_PLAYER_REQ_DATA:
+          // Make up and push out the reply
+          resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
+          resp = new Message(resphdr, NULL, 0);
+          assert(resp);
+          client->queue->Push(*resp);
+          delete resp;
+          client->queue->MarkAllReady ();
+          break;
 
 
         default:
