@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-/* 
+/*
  * Desc: Message class and message queues
  * CVS:  $Id$
  * Author: Toby Collett - Jan 2005
@@ -56,31 +56,31 @@ class Message
 {
   public:
     /// Create a new message.
-    Message(const struct player_msghdr & Header, 
+    Message(const struct player_msghdr & Header,
             const void* data,
-            unsigned int data_size, 
+            unsigned int data_size,
             MessageQueue* _queue = NULL);
     /// Copy pointers from existing message and increment refcount.
-    Message(const Message & rhs); 
+    Message(const Message & rhs);
 
     /// Destroy message, dec ref counts and delete data if ref count == 0
-    ~Message(); 
+    ~Message();
 
     /** @brief Helper for message processing.
-    
-    Returns true if @p hdr matches the supplied @p type, @p subtype, 
+
+    Returns true if @p hdr matches the supplied @p type, @p subtype,
     and @p addr.  Set type and/or subtype to -1 for don't care.
     */
-    static bool MatchMessage(player_msghdr_t* hdr, 
-                             int type, 
-                             int subtype, 
+    static bool MatchMessage(player_msghdr_t* hdr,
+                             int type,
+                             int subtype,
                              player_devaddr_t addr)
     {
-      return(((type < 0) || (hdr->type == (uint8_t)type)) && 
-             ((subtype < 0) || (hdr->subtype == (uint8_t)subtype)) && 
-             (hdr->addr.host == addr.host) && 
-             (hdr->addr.robot == addr.robot) && 
-             (hdr->addr.interf == addr.interf) && 
+      return(((type < 0) || (hdr->type == (uint8_t)type)) &&
+             (hdr->subtype == (uint8_t)subtype) &&
+             (hdr->addr.host == addr.host) &&
+             (hdr->addr.robot == addr.robot) &&
+             (hdr->addr.interf == addr.interf) &&
              (hdr->addr.index == addr.index));
     }
 
@@ -98,6 +98,10 @@ class Message
     bool Compare(Message &other);
     /// Decrement ref count
     void DecRef();
+    /// Set ready to send
+    void SetReady ()            { ready = true; }
+    /// Check if ready to send
+		bool Ready (void) const     { return ready; }
 
     /// queue to which any response to this message should be directed
     MessageQueue* Queue;
@@ -112,6 +116,8 @@ class Message
     unsigned int Size;
     /// Used to lock access to Data.
     pthread_mutex_t * Lock;
+    /// Marks if the message is ready to be sent to the client
+    bool ready;
 };
 
 /**
@@ -158,21 +164,28 @@ class MessageReplaceRule
 
     bool Match(player_msghdr_t* hdr)
     {
-      return(((this->host < 0) || 
+      return(((this->host < 0) ||
               ((uint32_t)this->host == hdr->addr.host)) &&
-             ((this->robot < 0) || 
+             ((this->robot < 0) ||
               ((uint32_t)this->robot == hdr->addr.robot)) &&
-             ((this->interf < 0) || 
+             ((this->interf < 0) ||
               ((uint16_t)this->interf == hdr->addr.interf)) &&
-             ((this->index < 0) || 
+             ((this->index < 0) ||
               ((uint16_t)this->index == hdr->addr.index)) &&
-             ((this->type < 0) || 
+             ((this->type < 0) ||
               ((uint8_t)this->type == hdr->type)) &&
-             ((this->subtype < 0) || 
+             ((this->subtype < 0) ||
               ((uint8_t)this->subtype == hdr->subtype)));
     }
 
+    bool Equivalent (int _host, int _robot, int _interf, int _index, int _type, int _subtype)
+    {
+      return (host == _host && robot == _robot && _interf && index == _index &&
+          type == _type && subtype == _subtype);
+    }
+
     // To replace, or not to replace
+    // That is the question
     bool replace;
     // Next rule in the list
     MessageReplaceRule* next;
@@ -242,9 +255,14 @@ class MessageQueue
     element in the queue. */
     MessageQueueElement * Push(Message& msg);
     /** Pop a message off the queue.
-    Pop the tail (i.e., the first-inserted) message from the queue.
+    Pop the head (i.e., the first-inserted) message from the queue.
     Returns pointer to said message, or NULL if the queue is empty */
     Message* Pop();
+    /** Pop a ready message off the queue.
+    Pop the head (i.e., the first-inserted) message from the queue.
+    If pull_flag is true, only pop messages marked as ready.
+    Returns pointer to said message, or NULL if the queue is empty */
+    Message* PopReady (void);
     /** Set the @p Replace flag, which governs whether data and command
     messages of the same subtype from the same device are replaced in
     the queue. */
@@ -270,7 +288,7 @@ class MessageQueue
     /** Wait on this queue.  This method blocks until new data is available
     (as indicated by a call to DataAvailable()). */
     void Wait(void);
-    /** Signal that new data is available.  Calling this method will 
+    /** Signal that new data is available.  Calling this method will
      release any threads currently waiting on this queue. */
     void DataAvailable(void);
     /// @brief Check whether a message passes the current filter.
@@ -280,6 +298,11 @@ class MessageQueue
     /// @brief Set filter values
     void SetFilter(int host, int robot, int interf, int index,
                    int type, int subtype);
+    /** Set the @p pull flag, which if true then requires messages to be marked
+    as ready before they will be sent to the client. */
+    void SetPull (bool _pull) { this->pull = _pull; }
+    /// Mark all messages in the queue as ready to be sent
+    void MarkAllReady (void);
   private:
     /// @brief Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(&lock);};
@@ -298,7 +321,7 @@ class MessageQueue
     size_t Maxlen;
     /// @brief Singly-linked list of replacement rules
     MessageReplaceRule* replaceRules;
-    /// @brief When a (data or command) message doesn't match a rule in 
+    /// @brief When a (data or command) message doesn't match a rule in
     /// replaceRules, should we replace it?
     bool Replace;
     /// @brief Current length of queue, in elements.
@@ -311,8 +334,11 @@ class MessageQueue
     pthread_mutex_t condMutex;
     /// @brief Current filter values
     bool filter_on;
-    int filter_host, filter_robot, filter_interf, 
+    int filter_host, filter_robot, filter_interf,
         filter_index, filter_type, filter_subtype;
+    /// @brief Flag for if in pull mode. If false, push mode. Push is default mode,
+    /// but pull is the recommended method to avoid getting delays in data on the client.
+    bool pull;
 };
 
 #endif

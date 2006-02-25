@@ -7,7 +7,7 @@ uint         gPort(PlayerCc::PLAYER_PORTNUM);
 uint         gIndex(0);
 uint         gDebug(0);
 uint         gFrequency(10); // Hz
-uint         gDataMode(PLAYER_DATAMODE_PUSH_NEW);
+uint         gDataMode(PLAYER_DATAMODE_PUSH);
 
 void print_usage(int argc, char** argv);
 
@@ -69,7 +69,11 @@ void print_usage(int argc, char** argv)
        << endl;
   cerr << "  -m <datamode>  : set server data delivery mode"
        << endl;
-  cerr << "                      PLAYER_DATAMODE_PUSH_ALL = "
+  cerr << "                      PLAYER_DATAMODE_PUSH = "
+       << PLAYER_DATAMODE_PUSH << endl;
+  cerr << "                      PLAYER_DATAMODE_PULL = "
+       << PLAYER_DATAMODE_PULL << endl;
+/*  cerr << "                      PLAYER_DATAMODE_PUSH_ALL = "
        << PLAYER_DATAMODE_PUSH_ALL << endl;
   cerr << "                      PLAYER_DATAMODE_PULL_ALL = "
        << PLAYER_DATAMODE_PULL_ALL << endl;
@@ -78,5 +82,5 @@ void print_usage(int argc, char** argv)
   cerr << "                      PLAYER_DATAMODE_PULL_NEW = "
        << PLAYER_DATAMODE_PULL_NEW << endl;
   cerr << "                      PLAYER_DATAMODE_ASYNC    = "
-       << PLAYER_DATAMODE_ASYNC << endl;
+       << PLAYER_DATAMODE_ASYNC << endl;*/
 } // end print_usage

@@ -160,6 +160,8 @@ class PlayerClient
     /// Use this method to read data from the server, blocking until at
     /// least one message is received.  Use @ref PlayerClient::Peek() to check
     /// whether any data is currently waiting.
+    /// In pull mode, this will block until all data waiting on the server has
+    /// been received, ensuring as up to date data as possible.
     void Read();
 
     /// A nonblocking Read
@@ -174,26 +176,27 @@ class PlayerClient
     /// continuous mode).
     ///
     /// @exception throws PlayerError if unsuccessfull
-    void SetFrequency(uint aFreq);
+//     void SetFrequency(uint aFreq);
 
     /// You can toggle the mode in which the server sends data to your
     /// client with this method.  The @p mode should be one of
-    ///   - @ref PLAYER_DATAMODE_PUSH_ALL (all data at fixed frequency)
-    ///   - @ref PLAYER_DATAMODE_PULL_ALL (all data on demand)
-    ///   - @ref PLAYER_DATAMODE_PUSH_NEW (only new new data at fixed freq)
-    ///   - @ref PLAYER_DATAMODE_PULL_NEW (only new data on demand)
-    ///   - @ref PLAYER_DATAMODE_PUSH_ASYNC (new data, as fast as it is produced)
+    ///   - @ref PLAYER_DATAMODE_PUSH (all data)
+    ///   - @ref PLAYER_DATAMODE_PULL (data on demand)
+    /// When in pull mode, it is highly recommended that a replace rule is set
+    /// for data packets to prevent the server message queue becoming flooded.
     ///
     /// @exception throws PlayerError if unsuccessfull
     void SetDataMode(uint aMode);
 
-    /// Add a replace rule to the clients queue on the server
+    /// Set a replace rule for the clients queue on the server.
+	/// If a rule with the same pattern already exists, it will be replaced with
+	/// the new rule (i.e., its setting to replace will be updated).
     ///
 	/// @param aInterf Interface to set replace rule for (-1 for wildcard)
 	///
 	/// @param aIndex index to set replace rule for (-1 for wildcard)
-	/// 
-	/// @param aType type to set replace rule for (-1 for wildcard), 
+	///
+	/// @param aType type to set replace rule for (-1 for wildcard),
 	/// i.e. PLAYER_MSGTYPE_DATA
 	///
 	/// @param aSubtype message subtype to set replace rule for (-1 for wildcard)
@@ -203,7 +206,7 @@ class PlayerClient
 	/// @returns Returns 0 on success, non-zero otherwise.  Use
     ///
     /// @exception throws PlayerError if unsuccessfull
-    void AddReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace);
+    void SetReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace);
 
     /// Get the list of available device ids. The data is written into the
     /// proxy structure rather than retured to the caller.

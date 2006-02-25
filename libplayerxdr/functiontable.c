@@ -268,6 +268,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_device_nameservice_req_pack},
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_ADD_REPLACE_RULE,
     (player_pack_fn_t)player_add_replace_rule_req_pack},
+  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_SYNCH, 0,
+    (player_pack_fn_t)player_add_replace_rule_req_pack},
 
   /* position1d messages */
   {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_STATE,
@@ -381,8 +383,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_wifi_iwspy_addr_req_pack},
   {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_IWSPY_PING,
     (player_pack_fn_t)player_wifi_iwspy_addr_req_pack},
-    
-    
+
+
   /* This NULL element signals the end of the list; don't remove it */
   {0,0,0,NULL}
 };

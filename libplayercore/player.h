@@ -256,7 +256,7 @@ typedef struct player_msghdr
 /** @} */
 
 /** @ingroup message_basics
- * @defgroup utility_structs General-purpose message structures.  
+ * @defgroup utility_structs General-purpose message structures.
  * These structures often appear inside other structures.
  * @{ */
 
@@ -314,7 +314,7 @@ typedef struct player_pose3d
 typedef struct player_bbox
 {
   /** Width [m] */
-  float sw; 
+  float sw;
   /** Length [m] */
   float sl;
 } player_bbox_t;
@@ -323,7 +323,7 @@ typedef struct player_bbox
 typedef struct player_bbox3d
 {
   /** Width [m] */
-  float sw; 
+  float sw;
   /** Length [m] */
   float sl;
   /** Height [m] */
@@ -359,7 +359,7 @@ typedef struct player_color
 
 /** @} */
 
-/** 
+/**
 @ingroup message_basics
 @defgroup units Units
 Standard units used in Player messages.
@@ -391,7 +391,7 @@ system
 //
 // /////////////////////////////////////////////////////////////////////////////
 
-/** 
+/**
 @ingroup libplayercore
 @defgroup interfaces Interface specifications
 
@@ -429,7 +429,7 @@ change dynamically and so the device will publish it periodically.
 */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_actarray actarray
 @brief An array of actuators
@@ -437,7 +437,7 @@ change dynamically and so the device will publish it periodically.
 The actuator array interface provides access to an array of actuators.
 */
 
-/** 
+/**
 @ingroup interface_actarray
 @{
 */
@@ -506,9 +506,9 @@ typedef struct player_actarray_actuatorgeom
   /** The type of the actuator - linear or rotary. */
   uint8_t type;
   /** The range of motion of the actuator, in m or rad depending on the type. */
-  float min; 
+  float min;
   /** The range of motion of the actuator, in m or rad depending on the type. */
-  float centre; 
+  float centre;
   /** The range of motion of the actuator, in m or rad depending on the type. */
   float max;
   /** The range of motion of the actuator, in m or rad depending on the type. */
@@ -598,7 +598,7 @@ typedef struct player_actarray_speed_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_aio aio
 @brief Analog I/O
@@ -648,7 +648,7 @@ typedef struct player_aio_cmd
 
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_audio audio
 @brief Audible tone emission / detection (deprecated)
@@ -658,7 +658,7 @@ typedef struct player_aio_cmd
 The @p audio interface is used to control sound hardware, if equipped.
 */
 
-/** 
+/**
 @ingroup interface_audio
 @{ */
 
@@ -705,7 +705,7 @@ typedef struct player_audio_cmd
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_audiodsp audiodsp
 @brief Audible tone emission / detection
@@ -803,10 +803,10 @@ typedef struct player_audiodsp_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_audiomixer audiomixer
-@brief Sound level control 
+@brief Sound level control
 
 The @p audiomixer interface is used to control sound levels.
 */
@@ -882,7 +882,7 @@ typedef struct player_audiomixer_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_blinkenlight blinkenlight
 @brief A blinking light
@@ -922,7 +922,7 @@ typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_blobfinder blobfinder
 @brief A visual blob-detection system
@@ -964,7 +964,7 @@ typedef struct player_blobfinder_blob
   /** The blob centroid [pixels]. */
   uint32_t y;
   /** Bounding box for the blob [pixels]. */
-  uint32_t left; 
+  uint32_t left;
   /** Bounding box for the blob [pixels]. */
   uint32_t right;
   /** Bounding box for the blob [pixels]. */
@@ -1049,7 +1049,7 @@ typedef struct player_blobfinder_imager_config
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
-/** 
+/**
 @ingroup interfaces
 @defgroup interface_bumper bumper
 @brief An array of bumpers
@@ -1534,7 +1534,7 @@ typedef struct player_graphics2d_cmd_polygon
  * @defgroup interface_gripper gripper
  * @brief An actuated gripper
 
-The @p gripper interface provides access to a robotic gripper.  
+The @p gripper interface provides access to a robotic gripper.
 
 @todo This interface is VERY Pioneer-specific, and should really be generalized.
 */
@@ -1692,7 +1692,7 @@ typedef struct player_ir_pose
 
 /** @brief Request/reply: set power
 
-To turn IR power on and off, send a @ref PLAYER_IR_POWER request.  
+To turn IR power on and off, send a @ref PLAYER_IR_POWER request.
 Null response. */
 typedef struct player_ir_power_req
 {
@@ -1805,7 +1805,7 @@ typedef struct player_laser_data
 
 /** @brief Data: pose-stamped scan (@ref PLAYER_LASER_DATA_SCANPOSE)
 
-A laser scan with a pose that indicates the (possibly esimated) pose of the 
+A laser scan with a pose that indicates the (possibly esimated) pose of the
 laser when the scan was taken. */
 typedef struct player_laser_data_scanpose
 {
@@ -1853,7 +1853,7 @@ typedef struct player_laser_config
 
 /** @brief Request/reply: Turn power on/off.
 
-Send a @ref PLAYER_LASER_REQ_POWER request to turn laser power on or off 
+Send a @ref PLAYER_LASER_REQ_POWER request to turn laser power on or off
 (assuming your hardware supports it). */
 typedef struct player_laser_power_config
 {
@@ -1877,15 +1877,15 @@ The limb interface provides access to a multi-jointed limb
  * @{ */
 
 /** Idle */
-#define PLAYER_LIMB_STATE_IDLE        1     
+#define PLAYER_LIMB_STATE_IDLE        1
 /** Brakes are on */
-#define PLAYER_LIMB_STATE_BRAKED      2     
+#define PLAYER_LIMB_STATE_BRAKED      2
 /** Moving to target */
-#define PLAYER_LIMB_STATE_MOVING      3     
+#define PLAYER_LIMB_STATE_MOVING      3
 /** Target was out of reach */
-#define PLAYER_LIMB_STATE_OOR         4     
+#define PLAYER_LIMB_STATE_OOR         4
 /** Target was blocked by collision */
-#define PLAYER_LIMB_STATE_COLL        5     
+#define PLAYER_LIMB_STATE_COLL        5
 
 /** Data subtype: state */
 #define PLAYER_LIMB_DATA              1
@@ -2083,7 +2083,7 @@ typedef struct player_localize_data
 
 /** @brief Request/reply: Set the robot pose estimate.
 
-Set the current robot pose hypothesis by sending a 
+Set the current robot pose hypothesis by sending a
 @ref PLAYER_LOCALIZE_REQ_SET_POSE request.  Null response. */
 typedef struct player_localize_set_pose
 {
@@ -2228,7 +2228,7 @@ maps are delivered in tiles, via a sequence of requests.
 2097152 - 30 (msg header) - 20 (meta-data to accompany the tile) = 2097102 */
 #define PLAYER_MAP_MAX_TILE_SIZE 2097102
 
-/** The maximum number of segments in a vector map 
+/** The maximum number of segments in a vector map
 
 (2097152 - 30 (msg header) - 20 (meta-data to accompany the lines)) /
 16 (size of each line) = 131068 */
@@ -2476,9 +2476,9 @@ typedef struct player_motor_cmd
   uint32_t type;
 } player_motor_cmd_t;
 
-/** @brief Request/reply: Change position control. 
+/** @brief Request/reply: Change position control.
 
-To change between position and velocity control, send a 
+To change between position and velocity control, send a
 @ref PLAYER_MOTOR_REQ_POSITION_MODE request.  Null response.
 */
 typedef struct player_motor_position_mode_req
@@ -2510,7 +2510,7 @@ typedef struct player_motor_reset_odom_config
 
 /** @brief Request/reply: Set odometry.
 
-To set the motor's odometry to a particular state, send a 
+To set the motor's odometry to a particular state, send a
 @ref PLAYER_MOTOR_REQ_SET_ODOM request.  Null response. */
 typedef struct player_motor_set_odom_req
 {
@@ -2518,9 +2518,9 @@ typedef struct player_motor_set_odom_req
   float theta;
 } player_motor_set_odom_req_t;
 
-/** @brief Request/reply: Set velocity PID parameters. 
+/** @brief Request/reply: Set velocity PID parameters.
 
-To set the velocity PID parameters, send a @ref PLAYER_MOTOR_REQ_SPEED_PID 
+To set the velocity PID parameters, send a @ref PLAYER_MOTOR_REQ_SPEED_PID
 request.  Null response. */
 typedef struct player_motor_speed_pid_req
 {
@@ -2534,7 +2534,7 @@ typedef struct player_motor_speed_pid_req
 
 /** @brief Request/reply: Set motor PID parameters.
 
-To set the position PID parameters, send a @ref PLAYER_MOTOR_REQ_POSITION_PID 
+To set the position PID parameters, send a @ref PLAYER_MOTOR_REQ_POSITION_PID
 request.  Null response. */
 typedef struct player_motor_position_pid_req
 {
@@ -2635,7 +2635,7 @@ typedef struct player_planner_cmd
   player_pose_t goal;
 } player_planner_cmd_t;
 
-/** @brief Request/reply: Get waypoints 
+/** @brief Request/reply: Get waypoints
 
 To retrieve the list of waypoints, send a null
 @ref PLAYER_PLANNER_REQ_GET_WAYPOINTS request.
@@ -2648,7 +2648,7 @@ typedef struct player_planner_waypoints_req
   player_pose_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
 } player_planner_waypoints_req_t;
 
-/** @brief Request/reply: Enable/disable robot motion 
+/** @brief Request/reply: Enable/disable robot motion
 
 To enable or disable the planner, send a @ref PLAYER_PLANNER_REQ_ENABLE
 request.  When disabled, the planner will stop the robot.  When enabled, the planner should resume plan execution.  Null response.
@@ -2684,40 +2684,14 @@ configuring the behavior of the server.  There is only one such device
 #define PLAYER_ERROR_MODE  3
 
 
-#define PLAYER_DATAMODE_PULL  1
-#define PLAYER_DATAMODE_NEW   2
-#define PLAYER_DATAMODE_ASYNC 4
-
-/** Data delivery mode: Send data at a fixed rate (default 10Hz;
-see PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) from ALL
-subscribed devices , regardless of whether the data is new or old. A
-PLAYER_MSGTYPE_SYNCH packet follows each set of data. Rarely used. */
-#define PLAYER_DATAMODE_PUSH_ALL 0
-/** Data delivery mode: Only on request (see PLAYER_PLAYER_DATA_REQ
-request below), send data from ALL subscribed devices, regardless of
-whether the data is new or old.  A PLAYER_MSGTYPE_SYNCH packet follows
-each set of data.  Rarely used. */
-#define PLAYER_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL
-/** Data delivery mode: Send data at a fixed rate (default 10Hz; see
-PLAYER_PLAYER_DATAFREQ_REQ below to change the rate) only from those
-subscribed devices that have produced new data since the last time data
-was pushed to this client.  A PLAYER_MSGTYPE_SYNCH packet follows each
-set of data.  This is the default mode. */
-#define PLAYER_DATAMODE_PUSH_NEW PLAYER_DATAMODE_NEW
-/** Data delivery mode: Only on request (see PLAYER_PLAYER_DATA_REQ
-request below), send data only from those subscribed devices that have
-produced new data since the last time data was pushed to this client.
-Use this mode if your client runs slowly or at an upredictable rate
-(e.g., a GUI). A PLAYER_MSGTYPE_SYNCH packet follows each set of data. */
-#define PLAYER_DATAMODE_PULL_NEW (PLAYER_DATAMODE_PULL | PLAYER_DATAMODE_NEW)
-/** Data delivery mode: When a subscribed device produces new data, send
-it. This is the lowest-latency delivery mode; when a device produces data,
-the server (almost) immediately sends it on the client.  So the client may
-receive data at an arbitrarily high rate. PLAYER_MSGTYPE_SYNCH packets
-are still sent, but at a fixed rate (see PLAYER_PLAYER_DATAFREQ_REQ to
-change this rate) that is unrelated to rate at which data are delivered
-from devices. */
-#define PLAYER_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_ASYNC
+/** Data delivery mode: Send data from all subscribed devices
+all the time (i.e. when it's ready on the server). */
+#define PLAYER_DATAMODE_PUSH  1
+/** Data delivery mode: Only on request, send data from all
+subscribed devices. A PLAYER_MSGTYPE_SYNCH packet follows each
+set of data. Request should be made automatically by client
+libraries when they begin reading. */
+#define PLAYER_DATAMODE_PULL   2
 
 /** Request/reply subtype: get device list */
 #define PLAYER_PLAYER_REQ_DEVLIST     1
@@ -2796,27 +2770,24 @@ typedef struct player_device_req
 
 /** @brief Configuration request: Get data.
 
-When the server is in a PLAYER_DATAMODE_PULL_* data delivery mode
-(see next request for information on data delivery modes), the
+When the server is in a PLAYER_DATAMODE_PULL data delivery mode, the
 client can request a single round of data by sending a zero-argument
-request with type code @p 0x0003.  The response will be a zero-length
-acknowledgement.  The client @e only needs to make this request when a
-PLAYER_DATAMODE_PULL_* mode is in use.  */
+request with type code @p PLAYER_PLAYER_REQ_DATA.  The response will
+be a zero-length acknowledgement. */
 typedef struct player_device_data_req
 {
 } player_device_data_req_t;
 
 /** @brief Configuration request: Change data delivery mode.
 
-The Player server supports four data modes, described above.
-By default, the server operates in @p PLAYER_DATAMODE_PUSH_NEW mode at
-a frequency of 10Hz.  To switch to a different mode send a request with the
-format given below.  The server's reply will be a zero-length
-acknowledgement. */
+The Player server supports two data modes, described above.
+By default, the server operates in @p PLAYER_DATAMODE_PUSH mode. To
+switch to a different mode send a request with the format given
+below. The server's reply will be a zero-length acknowledgement. */
 typedef struct player_device_datamode_req
 {
   /** The requested mode */
-  uint32_t mode;
+  uint8_t mode;
 
 } player_device_datamode_req_t;
 
@@ -2889,7 +2860,7 @@ typedef struct player_device_nameservice_req
 
 Allows the client to add a replace rule to their server queue. Replace
 rules define which messages will be replaced when new data arrives.
-If you are not updating frequently from ther server then the use of 
+If you are not updating frequently from ther server then the use of
 replace rules for data packets will stop any queue overflow messages
 
 Each field in the request type corresponds to the equivalent field in
@@ -3034,7 +3005,7 @@ typedef struct player_position1d_reset_odom_config
   uint32_t value;
 } player_position1d_reset_odom_config_t;
 
-/** @brief Request/reply: Change control mode. 
+/** @brief Request/reply: Change control mode.
 
 To change the control mode, send a @ref PLAYER_POSITION1D_POSITION_MODE reqeust.
 Null response.
@@ -3048,7 +3019,7 @@ typedef struct player_position1d_position_mode
 /** @brief Request/reply: Set odometry.
 
 To set the robot's odometry
-to a particular state, send a @ref PLAYER_POSITION1D_SET_ODOM request. 
+to a particular state, send a @ref PLAYER_POSITION1D_SET_ODOM request.
 Null response. */
 typedef struct player_position1d_set_odom
 {
@@ -3056,7 +3027,7 @@ typedef struct player_position1d_set_odom
   float pos;
 } player_position1d_set_odom_req_t;
 
-/** @brief Request/reply: Set velocity PID parameters. 
+/** @brief Request/reply: Set velocity PID parameters.
 
 To set velocity PID parameters, send a @ref PLAYER_POSITION1D_SPEED_PID request.
 Null response.
@@ -3071,7 +3042,7 @@ typedef struct player_position1d_speed_pid
   float kd;
 } player_position1d_speed_pid_req_t;
 
-/** @brief Request/reply: Set position PID parameters. 
+/** @brief Request/reply: Set position PID parameters.
 
 To set position PID parameters, send a @ref PLAYER_POSITION1D_POSITION_PID request.
 Null response.
@@ -3081,12 +3052,12 @@ typedef struct player_position1d_position_pid
   /** PID parameters */
   float kp;
   /** PID parameters */
-  float ki; 
+  float ki;
   /** PID parameters */
   float kd;
 } player_position1d_position_pid_req_t;
 
-/** @brief Request/reply: Set linear speed profile parameters. 
+/** @brief Request/reply: Set linear speed profile parameters.
 
 To set linear speed profile parameters, send a
 @ref PLAYER_POSITION1D_SPEED_PROF requst.  Null response.
@@ -3172,7 +3143,7 @@ typedef struct player_position2d_cmd_vel
 
 /** @brief Command: position (@ref PLAYER_POSITION2D_CMD_POS)
 
-The @p position interface accepts new positions 
+The @p position interface accepts new positions
 for the robot's motors (drivers may support position control, speed control,
 or both). */
 typedef struct player_position2d_cmd_pos
@@ -3264,7 +3235,7 @@ typedef struct player_position2d_reset_odom_config
 {
 } player_position2d_reset_odom_config_t;
 
-/** @brief Request/reply: Change control mode. 
+/** @brief Request/reply: Change control mode.
 
 To change control mode, send a @ref PLAYER_POSITION2D_REQ_POSITION_MODE request.
 Null response.
@@ -3285,7 +3256,7 @@ typedef struct player_position2d_set_odom_req
   player_pose_t pose;
 } player_position2d_set_odom_req_t;
 
-/** @brief Request/reply: Set velocity PID parameters. 
+/** @brief Request/reply: Set velocity PID parameters.
  *
  * To set velocity PID parameters, send a @ref PLAYER_POSITION2D_REQ_SPEED_PID
  * request.  Null response.
@@ -3316,7 +3287,7 @@ typedef struct player_position2d_position_pid_req
   float kd;
 } player_position2d_position_pid_req_t;
 
-/** @brief Request/reply: Set linear speed profile parameters. 
+/** @brief Request/reply: Set linear speed profile parameters.
  *
  * To set linear speed profile parameters, send a
  * @ref PLAYER_POSITION2D_REQ_SPEED_PROF request.  Null response. */
@@ -3435,7 +3406,7 @@ typedef struct player_position3d_power_config
   uint8_t state;
 } player_position3d_power_config_t;
 
-/** @brief Request/reply: Change position control. 
+/** @brief Request/reply: Change position control.
 
 To change control mode, send a @ref PLAYER_POSITION3D_POSITION_MODE request.
 Null response.
@@ -3471,13 +3442,13 @@ typedef struct player_position3d_set_odom_req
 
 /** @brief Request/reply: Reset odometry.
 
-To reset the robot's odometry to @f$(x,y,\theta) = (0,0,0)@f$, 
+To reset the robot's odometry to @f$(x,y,\theta) = (0,0,0)@f$,
 send a @ref PLAYER_POSITION3D_RESET_ODOM request.  Null response. */
 typedef struct player_position3d_reset_odom_config
 {
 } player_position3d_reset_odom_config_t;
 
-/** @brief Request/reply: Set velocity PID parameters. 
+/** @brief Request/reply: Set velocity PID parameters.
  *
  * To set velocity PID parameters, send a @ref PLAYER_POSITION3D_SPEED_PID
  * request.  Null response. */
@@ -3491,7 +3462,7 @@ typedef struct player_position3d_speed_pid_req
   float kd;
 } player_position3d_speed_pid_req_t;
 
-/** @brief Request/reply: Set position PID parameters. 
+/** @brief Request/reply: Set position PID parameters.
  *
  * To set position PID parameters, send a @ref PLAYER_POSITION3D_POSITION_PID
  * request.  Null response. */
@@ -3554,7 +3525,7 @@ typedef struct player_power_data
       it is using. Bitwise-and with PLAYER_POWER_MASK_X values to see
       which fields are being set.*/
   uint32_t valid;
-  
+
   /** Battery voltage [V] */
   float  volts;
   /** Percent of full charge [%] */
@@ -3808,7 +3779,7 @@ typedef struct player_sonar_data
 
 /** @brief Data AND Request/reply: geometry.
 
-To query the geometry of the sonar transducers, send a null 
+To query the geometry of the sonar transducers, send a null
 @ref PLAYER_SONAR_REQ_GET_GEOM request.  Depending on the underlying
 driver, this message can also be sent as data with the subtype
 @ref PLAYER_SONAR_DATA_GEOM. */
@@ -4071,7 +4042,7 @@ typedef struct player_wifi_link
 {
   /** MAC address. */
   uint32_t mac_count;
-  uint8_t mac[32];	
+  uint8_t mac[32];
   /** IP address. */
   uint32_t ip_count;
   uint8_t ip[32];
@@ -4124,7 +4095,7 @@ typedef struct player_wifi_mac_req
 {
   /** MAC address. */
   uint32_t mac_count;
-  uint8_t mac[32];	
+  uint8_t mac[32];
 } player_wifi_mac_req_t;
 
 /** @brief Request/reply: */
@@ -4141,7 +4112,7 @@ typedef struct player_wifi_iwspy_addr_req
  * @defgroup interface_rfid rfid
  * @brief RFID reader
 
-The RFID interface provides access to a RFID reader (driver implementations 
+The RFID interface provides access to a RFID reader (driver implementations
 include RFID readers such as Skyetek M1 and Inside M300).
 */
 

@@ -75,11 +75,14 @@ extern "C" {
 
 
 /** The valid data delivery modes */
-#define PLAYERC_DATAMODE_PUSH_ALL PLAYER_DATAMODE_PUSH_ALL
-#define PLAYERC_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_ALL
-#define PLAYERC_DATAMODE_PUSH_NEW PLAYER_DATAMODE_PUSH_NEW
-#define PLAYERC_DATAMODE_PULL_NEW PLAYER_DATAMODE_PULL_NEW
-#define PLAYERC_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_PUSH_ASYNC
+// #define PLAYERC_DATAMODE_PUSH_ALL PLAYER_DATAMODE_PUSH_ALL
+// #define PLAYERC_DATAMODE_PULL_ALL PLAYER_DATAMODE_PULL_ALL
+// #define PLAYERC_DATAMODE_PUSH_NEW PLAYER_DATAMODE_PUSH_NEW
+// #define PLAYERC_DATAMODE_PULL_NEW PLAYER_DATAMODE_PULL_NEW
+// #define PLAYERC_DATAMODE_PUSH_ASYNC PLAYER_DATAMODE_PUSH_ASYNC
+#define PLAYERC_DATAMODE_PUSH PLAYER_DATAMODE_PUSH
+#define PLAYERC_DATAMODE_PULL PLAYER_DATAMODE_PULL
+
 
 
 /***************************************************************************
@@ -106,7 +109,7 @@ extern "C" {
 
 libplayerc is based on a device <i>proxy</i> model, in which the client
 maintains a local proxy for each of the devices on the remote server.
-Thus, for example, one can create local proxies for the 
+Thus, for example, one can create local proxies for the
 @ref interface_position2d
 and @ref interface_laser devices.  There is also a special <tt>client</tt> proxy,
 used to control the Player server itself.
@@ -363,7 +366,7 @@ typedef struct _playerc_client_t
   int sock;
 
   /** @internal Data delivery mode */
-  int mode;
+  uint8_t mode;
 
   /** List of available (but not necessarily subscribed) devices.
       This list is filled in by playerc_client_get_devlist(). */
@@ -440,15 +443,14 @@ int playerc_client_disconnect(playerc_client_t *client);
 @param client Pointer to client object.
 
 @param mode Data delivery mode; must be one of
-PLAYERC_DATAMODE_PUSH_ALL, PLAYERC_DATAMODE_PUSH_NEW,
-PLAYERC_DATAMODE_PUSH_ASYNC; the defalt mode is
-PLAYERC_DATAMODE_PUSH_ASYNC.
+PLAYERC_DATAMODE_PUSH, PLAYERC_DATAMODE_PULL; the defalt mode is
+PLAYERC_DATAMODE_PUSH.
 
 @returns Returns 0 on success, non-zero otherwise.  Use
 playerc_error_str() to get a descriptive error message.
 
 */
-//int playerc_client_datamode(playerc_client_t *client, int mode);
+int playerc_client_datamode(playerc_client_t *client, uint8_t mode);
 
 /** @brief Request a round of data.
 
@@ -461,7 +463,7 @@ playerc_client_read will do it for you if the client is in a PULL mode.
 Use @ref playerc_client_datamode to change modes.
 
 */
-//int playerc_client_requestdata(playerc_client_t* client);
+int playerc_client_requestdata(playerc_client_t* client);
 
 /** @brief Change the server's data delivery frequency
 
@@ -474,20 +476,23 @@ delivery mode is PLAYERC_DATAMODE_PUSH_ASYNC.
 playerc_error_str() to get a descriptive error message.
 
 */
-//int playerc_client_datafreq(playerc_client_t *client, int freq);
+// int playerc_client_datafreq(playerc_client_t *client, int freq);
 
-/** @brief Add a replace rule to the client queue on the server
+/** @brief Set a replace rule for the client queue on the server
+
+If a rule with the same pattern already exists, it will be replaced with
+the new rule (i.e., its setting to replace will be updated).
 
 @param client Pointer to client object.
 
 @param interf Interface to set replace rule for (-1 for wildcard)
 
-@param index index to set replace rule for (-1 for wildcard)
+@param index Index to set replace rule for (-1 for wildcard)
 
-@param type type to set replace rule for (-1 for wildcard), 
+@param type Type to set replace rule for (-1 for wildcard),
 i.e. PLAYER_MSGTYPE_DATA
 
-@param subtype message subtype to set replace rule for (-1 for wildcard)
+@param subtype Message subtype to set replace rule for (-1 for wildcard)
 
 @param replace Should we replace these messages
 
@@ -495,7 +500,7 @@ i.e. PLAYER_MSGTYPE_DATA
 playerc_error_str() to get a descriptive error message.
 
 */
-int playerc_client_add_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace);
+int playerc_client_set_replace_rule(playerc_client_t *client, int interf, int index, int type, int subtype, int replace);
 
 
 /** @brief Add a device proxy. @internal
@@ -577,9 +582,10 @@ int playerc_client_peek(playerc_client_t *client, int timeout);
 
 @param client Pointer to client object.
 
-@returns For data packets, will return the ID of the proxy that got
+@returns PUSH mode: For data packets, will return the ID of the proxy that got
 the data; for synch packets, will return the ID of the client itself;
 on error, will return NULL.
+PULL mode: Will return NULL on error, non-NULL on success.
 
 */
 void *playerc_client_read(playerc_client_t *client);
@@ -682,7 +688,7 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 
 
 /***************************************************************************/
-/** @ingroup player_clientlib_libplayerc 
+/** @ingroup player_clientlib_libplayerc
  * @defgroup playerc_proxies Device proxies
  * @brief Each interface has a corresponding proxy
 */
@@ -1126,7 +1132,7 @@ typedef struct
 
   /** current drawing color */
   player_color_t color;
-  
+
 } playerc_graphics2d_t;
 
 
@@ -1143,23 +1149,23 @@ int playerc_graphics2d_subscribe(playerc_graphics2d_t *device, int access);
 int playerc_graphics2d_unsubscribe(playerc_graphics2d_t *device);
 
 /** @brief Set the current drawing color */
-int playerc_graphics2d_setcolor(playerc_graphics2d_t *device, 
+int playerc_graphics2d_setcolor(playerc_graphics2d_t *device,
                                 player_color_t col );
 
 /** @brief Draw some points */
-int playerc_graphics2d_draw_points(playerc_graphics2d_t *device, 
-				   player_point_2d_t pts[], 
+int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
+				   player_point_2d_t pts[],
 				   int count );
 
 /** @brief Draw a polyline that connects an array of points */
-int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device, 
-				     player_point_2d_t pts[], 
+int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device,
+				     player_point_2d_t pts[],
 				     int count );
 
 /** @brief Draw a polygon */
-int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device, 
-				    player_point_2d_t pts[], 
-				    int count, 
+int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
+				    player_point_2d_t pts[],
+				    int count,
 				    int filled,
 				    player_color_t fill_color );
 
@@ -2094,11 +2100,11 @@ typedef struct
 {
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
-  
+
   /** status bits. Bitwise-and with PLAYER_POWER_MASK_ values to see
       which fields are being set by the driver. */
   int valid;
-  
+
   /** Battery charge (Volts). */
   double charge;
 
