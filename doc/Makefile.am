@@ -33,11 +33,10 @@ dist-hook: doc
 doc:
 	doxygen player.dox
 
-docdir = $(prefix)/doc
+docdir = $(prefix)/share/doc
 
 install-data-hook:
-	 mkdir -p $(DESTDIR)$(docdir)
-	 cp -r -p -v $(srcdir)/player-docs $(DESTDIR)$(docdir)/player
+	 if test -d $(srcdir)/player-docs; then mkdir -p $(DESTDIR)$(docdir); cp -r -p -v $(srcdir)/player-docs $(DESTDIR)$(docdir)/player; fi
 
 uninstall-local:
 	chmod -R u+w $(DESTDIR)$(docdir)/player

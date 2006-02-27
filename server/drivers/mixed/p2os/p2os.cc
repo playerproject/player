@@ -2102,28 +2102,28 @@ P2OS::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
     {
       if(leftvel > 0)
       {
-        leftvel = this->motor_max_speed;
         rightvel *= this->motor_max_speed/leftvel;
+        leftvel = this->motor_max_speed;
         puts("Left wheel velocity threshholded!");
       }
       else
       {
-        leftvel = -this->motor_max_speed;
         rightvel *= -this->motor_max_speed/leftvel;
+        leftvel = -this->motor_max_speed;
       }
     }
     if(fabs(rightvel) > this->motor_max_speed)
     {
       if(rightvel > 0)
       {
-        rightvel = this->motor_max_speed;
         leftvel *= this->motor_max_speed/rightvel;
+        rightvel = this->motor_max_speed;
         puts("Right wheel velocity threshholded!");
       }
       else
       {
-        rightvel = -this->motor_max_speed;
         leftvel *= -this->motor_max_speed/rightvel;
+        rightvel = -this->motor_max_speed;
       }
     }
 
