@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -44,8 +44,9 @@ static player_interface_t interfaces[] = {
   {PLAYER_BUMPER_CODE, PLAYER_BUMPER_STRING},
   {PLAYER_AIO_CODE, PLAYER_AIO_STRING},
   {PLAYER_DIO_CODE, PLAYER_DIO_STRING},
+  {PLAYER_POSITION1D_CODE, PLAYER_POSITION1D_STRING},
   {PLAYER_POSITION2D_CODE, PLAYER_POSITION2D_STRING},
-  {PLAYER_POSITION2D_CODE, PLAYER_POSITION_STRING},
+  {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING},
   {PLAYER_SONAR_CODE, PLAYER_SONAR_STRING},
   {PLAYER_WIFI_CODE, PLAYER_WIFI_STRING},
   {PLAYER_IR_CODE, PLAYER_IR_STRING},
@@ -55,14 +56,12 @@ static player_interface_t interfaces[] = {
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING},
   {PLAYER_SOUND_CODE, PLAYER_SOUND_STRING},
   {PLAYER_AUDIOMIXER_CODE, PLAYER_AUDIOMIXER_STRING},
-  {PLAYER_POSITION3D_CODE, PLAYER_POSITION3D_STRING},
   {PLAYER_TRUTH_CODE, PLAYER_TRUTH_STRING},
   {PLAYER_GPS_CODE, PLAYER_GPS_STRING},
   {PLAYER_SERVICE_ADV_CODE, PLAYER_SERVICE_ADV_STRING},
   {PLAYER_SIMULATION_CODE, PLAYER_SIMULATION_STRING},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_BLINKENLIGHT_STRING},
   {PLAYER_LASER_CODE, PLAYER_LASER_STRING},
-  {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING},
   {PLAYER_CAMERA_CODE, PLAYER_CAMERA_STRING},
   {PLAYER_BLOBFINDER_CODE, PLAYER_BLOBFINDER_STRING},
   {PLAYER_NOMAD_CODE, PLAYER_NOMAD_STRING},
@@ -80,7 +79,7 @@ static player_interface_t interfaces[] = {
   {0,NULL}
 };
 
-/* 
+/*
  * looks through the array of available interfaces for one which the given
  * name.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
@@ -99,7 +98,7 @@ lookup_interface(const char* name, player_interface_t* interface)
   return(-1);
 }
 
-/* 
+/*
  * looks through the array of available interfaces for one which the given
  * code.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
@@ -136,4 +135,4 @@ lookup_interface_name(unsigned int startpos, int code)
     }
   }
   return 0;
-} 
+}
