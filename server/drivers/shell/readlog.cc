@@ -35,25 +35,14 @@
 The readlog driver can be used to replay data stored in a log file.
 This is particularly useful for debugging client programs, since users
 may run their clients against the same data set over and over again.
-Suitable log files can be generated using the @ref
-driver_writelog driver.
+Suitable log files can be generated using the @ref driver_writelog driver.
+The format for the log file can be found in the
+@ref tutorial_datalog "data logging tutorial".
 
-To make use of log file data, Player must be started in a special
-mode:
-
-@verbatim
-  $ player -r <logfile> -f speed <configfile>
-@endverbatim
-
-The '-r' switch instructs Player to load the given log file, and
-replay the data according the configuration specified in the
-configuration file.  The '-f' switch controls replay speed ('-f 2'
-will replay at twice normal speed).
-
-See the below for an example configuration file; note that the device
+See below for an example configuration file; note that the device
 id's specified in the provides field must match those stored in the
-log file (i.e., data logged as "position:0" must also be read back as
-"position:0").
+log file (i.e., data logged as "position2d:0" must also be read back as
+"position2d:0").
 
 For help in controlling playback, try @ref util_playervcr.
 Note that you must declare a @ref interface_log device to allow
@@ -63,20 +52,23 @@ playback control.
 
 - none
 
-
 @par Provides
 
 The readlog driver can provide the following device interfaces.
+
+- @ref interface_laser
+- @ref interface_position2d
+- @ref interface_sonar
+
+The following interfaces are supported in principle but are currently
+disabled because they need to be updated:
 
 - @ref interface_blobfinder
 - @ref interface_camera
 - @ref interface_fiducial
 - @ref interface_gps
 - @ref interface_joystick
-- @ref interface_laser
-- @ref interface_position2d
 - @ref interface_position3d
-- @ref interface_truth
 - @ref interface_wifi
 
 The driver also provides an interface for controlling the playback:
@@ -115,11 +107,13 @@ The driver also provides an interface for controlling the playback:
 
 @verbatim
 
-# Use this device to get laser data from the log
+# Play back odometry and laser data at twice real-time from "mydata.log"
 driver
 (
   name "readlog"
-  provides ["position:0" "laser:0" "log:0"]
+  filename "mydata.log"
+  provides ["position2d:0" "laser:0" "log:0"]
+  speed 2.0
 )
 @endverbatim
 
