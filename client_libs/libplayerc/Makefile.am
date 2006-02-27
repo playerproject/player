@@ -44,7 +44,6 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_localize.c \
                         dev_log.c \
                         dev_map.c \
-                        dev_motor.c \
                         dev_planner.c \
                         dev_position2d.c \
                         dev_position3d.c \
@@ -57,8 +56,9 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_speech.c \
                         dev_wifi.c 
 
-#dev_joystick.c \
+#dev_joystick.c
 #dev_truth.c
+#dev_motor.c
 
 #
 

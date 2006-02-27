@@ -80,27 +80,50 @@ or sector_angle.
 - sector_angle (integer)
   - Default: 5
   - Histogram angular resolution, in degrees.
-- safety_dist (length)
+- safety_dist_0ms (length)
   - Default: 0.1 m
-  - The minimum distance the robot is allowed to get to obstacles.
+  - The minimum distance the robot is allowed to get to obstacles when stopped.
+- safety_dist_1ms (length)
+  - Default: safety_dist_0ms
+  - The minimum distance the robot is allowed to get to obstacles when
+    travelling at 1 m/s.
 - max_speed (length / sec)
   - Default: 0.2 m/sec
   - The maximum allowable speed of the robot.
+- max_speed_narrow_opening (length / sec)
+  - Default: max_speed
+  - The maximum allowable speed of the robot through a narrow opening
+- max_speed_wide_opening (length / sec)
+  - Default: max_speed
+  - The maximum allowable speed of the robot through a wide opening
 - max_acceleration (length / sec / sec)
   - Default: 0.2 m/sec/sec
   - The maximum allowable acceleration of the robot.
 - min_turnrate (angle / sec)
   - Default: 10 deg/sec
   - The minimum allowable turnrate of the robot.
-- max_turnrate (angle / sec)
+- max_turnrate_0ms (angle / sec)
   - Default: 40 deg/sec
-  - The maximum allowable turnrate of the robot.
-- free_space_cutoff (float)
+  - The maximum allowable turnrate of the robot when stopped.
+- max_turnrate_1ms (angle / sec)
+  - Default: max_turnrate_0ms
+  - The maximum allowable turnrate of the robot when travelling 1 m/s.
+- min_turn_radius_safety_factor (float)
+  - Default: 1.0
+  - ?
+- free_space_cutoff_0ms (float)
   - Default: 2000000.0
   - Unitless value.  The higher the value, the closer the robot will
-    get to obstacles before avoiding.
-- obs_cutoff (float)
-  - Default: free_space_cutoff
+    get to obstacles before avoiding (while stopped).
+- free_space_cutoff_1ms (float)
+  - Default: free_space_cutoff_0ms
+  - Unitless value.  The higher the value, the closer the robot will
+    get to obstacles before avoiding (while travelling at 1 m/s).
+- obs_cutoff_0ms (float)
+  - Default: free_space_cutoff_0ms
+  - ???
+- obs_cutoff_1ms (float)
+  - Default: free_space_cutoff_1ms
   - ???
 - weight_desired_dir (float)
   - Default: 5.0
@@ -115,6 +138,22 @@ or sector_angle.
 - angle_epsilon (angle)
   - Default: 10 deg
   - Angular difference from target angle that will considered acceptable.
+- Stall escape options.  If the underlying position2d device reports a
+  stall, this driver can attempt a blind escape procedure.  It does so by
+  driving forward or backward while turning for a fixed amount of time.  If
+  the escape fails (i.e., the stall is still in effect), then it will try again.
+  - escape_speed (length / sec)
+    - Default: 0.0
+    - If non-zero, the translational velocity that will be used while trying
+      to escape.
+  - escape_time (float)
+    - Default: 0.0
+    - If non-zero, the time (in seconds) for which an escape attempt will be 
+      made.
+  - escape_max_turnspeed (angle / sec)
+    - Default: 0.0
+    - If non-zero, the maximum angular velocity that will be used when 
+      trying to escape.
 
 @par Example
 @verbatim

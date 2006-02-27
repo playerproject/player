@@ -55,9 +55,9 @@ The garcia driver captures
 
 @par Configuration file options
 
-- port (string)
-  - Default: "/dev/ttyS0"
-  - Serial port to communicate with the device
+- config_path (filename)
+  - Default: "garcia.config"
+  - Path to Garcia configuration file
 
 @par Example
 
@@ -196,7 +196,7 @@ GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
   //ClearCommand(mPosition2dAddr);
 
   // Read options from the configuration file
-  mConfigPath = cf->ReadString(section, "config_path", "garcia.config");
+  mConfigPath = cf->ReadFilename(section, "config_path", "garcia.config");
 
   return;
 }

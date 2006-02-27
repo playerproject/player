@@ -57,9 +57,30 @@ over a normal serial port using the @ref driver_sicklms200 driver).
 
 @par Configuration file options
 
+- offset (length tuple)
+  - Default: [0.0 0.0 0.0]
+  - Offset of the robot's center of rotation
+
+- size (length tuple)
+  - Default: [0.45 0.45]
+  - Bounding box (length, width) of the robot
+
 - port (string)
   - Default: "/dev/usb/ttyUSB1"
   - Serial port used to communicate with the robot.
+
+- max_speed (length, angle tuple)
+  - Default: [0.5 40.0]
+  - Maximum (translational, rotational) velocities
+
+- max_accel (integer)
+  - Default: 5
+  - Maximum acceleration/deceleration (units?)
+
+- motors_swapped (integer)
+  - Default: 0
+  - If non-zero, then assume that the motors and encoders connections
+    are swapped.
   
 @par Example 
 

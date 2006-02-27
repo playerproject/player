@@ -55,7 +55,13 @@ interface.
 
 @par Configuration file options
 
-- none
+- save (int)
+  - Default: 0
+  - If non-zero, compressed images are saved to disk (with a .ppm extension?)
+
+- image_quality (float)
+  - Default: 0.8
+  - JPEG image quality (0.0 - 1.0)
       
 @par Example 
 

@@ -95,6 +95,12 @@ The driver also provides an interface for controlling the playback:
 
 @par Configuration file options
 
+- filename (filename)
+  - Default: NULL
+  - The log file to play back.
+- speed (float)
+  - Default: 1.0
+  - Playback speed; 1.0 is real-time
 - autoplay (integer)
   - Default: 1
   - Begin playing back log data when first client subscribes

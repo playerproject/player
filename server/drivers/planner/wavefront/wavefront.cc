@@ -70,11 +70,16 @@ For help in using this driver, try the @ref util_playernav utility.
 
 @par Requires
 
-- @ref interface_position2d : robot to be controlled;
+This driver controls two named position2d devices: one for input and one
+for output.  That way you can read poses from a localization or SLAM system
+and send commands directly to the robot.  The input and output devices may
+be the same.
+
+- "input" @ref interface_position2d : source of current pose information
+  (usually you would use the @ref driver_amcl driver)
+- "output" @ref interface_position2d : robot to be controlled;
   this device must be capable of position control (usually you would
   use the @ref driver_vfh driver)
-- @ref interface_localize : localization system (usually you
-  would use the @ref driver_amcl driver)
 - @ref interface_map : the map to plan paths in
 
 @par Configuration requests
@@ -135,6 +140,12 @@ thinks it has already achieved it.
     can save a lot of time, especially when the planner is frequently
     stopped and started.  This feature requires md5 hashing functions
     in libcrypto.
+- add_rotational_waypoints (integer)
+  - Default: 1
+  - If non-zero, add an in-place rotational waypoint before the next
+    waypoint if the difference between the robot's current heading and the
+    heading to the next waypoint is greater than 45 degrees.  Generally
+    helps the low-level position controller, but sacrifices speed.
 
 @par Example
 
@@ -210,14 +221,6 @@ driver
 
 // time to sleep between loops (us)
 #define CYCLE_TIME_US 100000
-// number of past poses to use when low-pass filtering localize data
-#define LOCALIZE_WINDOW_SIZE 10
-// skip poses that are more than this far away from the current window avg
-// (meters)
-#define LOCALIZE_WINDOW_EPSILON 3.0
-// if localize gets more than this far behind, stop the robot to let it
-// catch up (seconds) - CURRENTLY UNUSED (but probably should be)
-#define LOCALIZE_MAX_LAG 2.0
 
 class Wavefront : public Driver
 {

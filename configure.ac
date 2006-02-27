@@ -85,7 +85,23 @@ AC_CHECK_PROG(have_swig,swig,yes,no)
 
 dnl Do we have Python?
 AC_CHECK_PROG(have_python,python,yes,no)
+if test "x$have_python" = "xno"; then
+  AC_MSG_RESULT([Many parts of Player will not be built.])
+  AC_MSG_RESULT([You should really install Python.])
+fi
 AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
+
+dnl Do we have Python development tools?
+AC_MSG_CHECKING([for the distutils Python package])
+  ac_distutils_result=`python -c "import distutils" 2>&1`
+  if test -z "$ac_distutils_result"; then
+    AC_MSG_RESULT([yes])
+    have_pythondev=yes
+  else
+    AC_MSG_RESULT([no; Python extensions will not be built])
+    have_pythondev=no
+  fi
+AM_CONDITIONAL(HAVE_PYTHONDEV, test "x$have_pythondev" = "xyes")
 
 dnl Where are the JNI headers?
 if test "x$darwin" = "xyes"; then
@@ -382,6 +398,9 @@ elif test "x$have_swig" = "xno"; then
 elif test "x$have_python" = "xno"; then
   enable_libplayerc_py=no
   reason_libplayerc_py="could not find python"
+elif test "x$have_pythondev" = "xno"; then
+  enable_libplayerc_py=no
+  reason_libplayerc_py="could not find python distutils"
 elif test "x$have_libjpeg" = "xno"; then
   enable_libplayerc_py=no
   reason_libplayerc_py="could not find libjpeg"
