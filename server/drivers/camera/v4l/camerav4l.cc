@@ -77,7 +77,8 @@ below for notes on specific camera/frame grabber combinations.
     - RGB565 (16-bit RGB)
     - RGB888 (24-bit RGB)
     - RGB32 (32-bit RGB; will produce 24-bit color images)
-    - YUV420P (planar YUV data; will produce 8-bit monochrome images)
+    - YUV420P (planar YUV data converted to 24-bit color images)
+    - YUV420P_GREY (planar YUV data; will produce 8-bit monochrome images)
   - Note that not all capture modes are supported by Player's internal image
   format; in these modes, images will be translated to the closest matching
   internal format (e.g., RGB32 -> RGB888).
@@ -362,6 +363,13 @@ int CameraV4L::Setup()
     //    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
     //    this->depth = 8;
   }
+  else if (strcasecmp(this->palette, "YUV420P_GREY") == 0)
+  {
+    fg_set_format(this->fg, VIDEO_PALETTE_YUV420P);
+    this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_YUV420P );
+    this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+    this->depth = 8;
+   }
   else
   {
     PLAYER_ERROR2("image depth %d is not supported (add it yourself in %s)",
@@ -387,7 +395,8 @@ int CameraV4L::Shutdown()
 
   // Free resources
   frame_release(this->frame);
-  if (this->frame->format == VIDEO_PALETTE_YUV420P)
+  if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
+      (this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
        frame_release(this->rgb_converted_frame);
   fg_close(this->fg);
   return 0;
@@ -431,13 +440,14 @@ void CameraV4L::Main()
     {
       //printf("click %d\n", frameno);
       snprintf(filename, sizeof(filename), "click-%04d.ppm", frameno++);
-      if (this->frame->format == VIDEO_PALETTE_YUV420P)
-     {
-    frame_save(this->rgb_converted_frame, filename);
-    printf("saved converted frame\n");
-     }
+      if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
+	  (this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
+	   {
+		frame_save(this->rgb_converted_frame, filename);
+		//printf("saved converted frame\n");
+	   }
       else
-     frame_save(this->frame, filename);
+	   frame_save(this->frame, filename);
     }
   }
 }
@@ -495,19 +505,20 @@ void CameraV4L::RefreshData()
   else
   {
     // Copy the image pixels
-    if (this->frame->format == VIDEO_PALETTE_YUV420P)
-    {// do conversion to RGB (which is bgr at the moment for some reason?)
-      assert(image_count <= (size_t) this->rgb_converted_frame->size);
-      ccvt_420p_bgr24(this->width, this->height,
-                      (unsigned char*) this->frame->data,
-                      (unsigned char*) this->rgb_converted_frame->data);
-      ptr1 = (unsigned char *)this->rgb_converted_frame->data;
-    }
+    if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
+	(this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
+	 {// do conversion to RGB (which is bgr at the moment for some reason?)
+	      assert(image_count <= (size_t) this->rgb_converted_frame->size);
+	      ccvt_420p_bgr24(this->width, this->height,
+		   (unsigned char*) this->frame->data,
+		   (unsigned char*) this->rgb_converted_frame->data);
+	      ptr1 = (unsigned char *)this->rgb_converted_frame->data;
+	 }
     else
-    {
-      assert(image_count <= (size_t) this->frame->size);
-      ptr1 = (unsigned char *)this->frame->data;
-    }
+	 {
+	      assert(image_count <= (size_t) this->frame->size);
+	      ptr1 = (unsigned char *)this->frame->data;
+	 }
     ptr2 = this->data.image;
     switch (this->depth)
     {
