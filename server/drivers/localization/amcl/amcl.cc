@@ -162,6 +162,13 @@ The @p amcl driver requires the following interfaces, some of them named:
     - Default: [0.2 30] (m deg)
     - Minimum change required in action sensor to force update in
       particle filter.
+  - odom_drift[0-2] (float tuples)
+    - Default:
+      - odom_drift[0] [0.2 0.0 0.0]
+      - odom_drift[1] [0.0 0.2 0.0]
+      - odom_drift[2] [0.0 0.0 0.2]
+    - Set the 3 rows of the covariance matrix used for odometric drift.  
+      This matrix should be symmetric.
 - Laser settings:
   - laser_pose (length tuple)
     - Default: [0 0 0]
