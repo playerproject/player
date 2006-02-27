@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -102,7 +102,7 @@ const char *playerc_lookup_name(int code)
       return PLAYER_LOG_STRING;
     case PLAYER_SIMULATION_CODE:
       return PLAYER_SIMULATION_STRING;
-	
+
     default:
       break;
   }
@@ -139,8 +139,6 @@ int playerc_lookup_code(const char *name)
     return PLAYER_GRIPPER_CODE;
   if (strcmp(name, PLAYER_IR_STRING) == 0)
     return PLAYER_IR_CODE;
-  if (strcmp(name, PLAYER_POSITION_STRING) == 0)
-    return PLAYER_POSITION2D_CODE;
   if (strcmp(name, PLAYER_POSITION2D_STRING) == 0)
     return PLAYER_POSITION2D_CODE;
   if (strcmp(name, PLAYER_POSITION3D_STRING) == 0)

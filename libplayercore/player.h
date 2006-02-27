@@ -196,7 +196,6 @@ in the body.*/
 #define PLAYER_PLAYER_STRING          "player"
 #define PLAYER_POSITION1D_STRING      "position1d"
 #define PLAYER_POSITION2D_STRING      "position2d"
-#define PLAYER_POSITION_STRING        "position"
 #define PLAYER_POSITION3D_STRING      "position3d"
 #define PLAYER_POWER_STRING           "power"
 #define PLAYER_PTZ_STRING             "ptz"
@@ -2868,16 +2867,16 @@ the message header use -1 for a dont care value.
  */
 typedef struct player_add_replace_rule_req
 {
-	/** Interface to set replace rule for (-1 for wildcard) */
-	int32_t interf;
-	/** index to set replace rule for (-1 for wildcard) */
-	int32_t index;
-	/** message type to set replace rule for (-1 for wildcard), i.e. PLAYER_MSGTYPE_DATA */
-	int32_t type;
-	/** message subtype to set replace rule for (-1 for wildcard) */
-	int32_t subtype;
-	/** Should we replace these messages */
-	int32_t replace	;
+  /** Interface to set replace rule for (-1 for wildcard) */
+  int32_t interf;
+  /** index to set replace rule for (-1 for wildcard) */
+  int32_t index;
+  /** message type to set replace rule for (-1 for wildcard), i.e. PLAYER_MSGTYPE_DATA */
+  int32_t type;
+  /** message subtype to set replace rule for (-1 for wildcard) */
+  int32_t subtype;
+  /** Should we replace these messages */
+  int32_t replace ;
 } player_add_replace_rule_req_t;
 
 
@@ -2927,9 +2926,9 @@ The @p position interface returns data regarding the odometric pose and
 velocity of the robot, as well as motor stall information. */
 typedef struct player_position1d_data
 {
-  /** position [m]*/
+  /** position [m] or [rad] depending on actuator type*/
   float pos;
-  /** translational velocities [m/s]*/
+  /** translational velocities [m/s] or [rad/s] depending on actuator type*/
   float vel;
   /** Is the motor stalled? */
   uint8_t stall;
@@ -2942,9 +2941,9 @@ the robot's motors (drivers may support position control, speed control,
 or both). */
 typedef struct player_position1d_cmd
 {
-  /** position [m]*/
+  /** position [m] or [rad] */
   float pos;
-  /** translational velocity [m/s]*/
+  /** translational velocity [m/s] or [rad/s] */
   float vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
@@ -3023,7 +3022,7 @@ to a particular state, send a @ref PLAYER_POSITION1D_SET_ODOM request.
 Null response. */
 typedef struct player_position1d_set_odom
 {
-  /** (x) [m] */
+  /** (x) [m] or [rad] */
   float pos;
 } player_position1d_set_odom_req_t;
 
@@ -3064,9 +3063,9 @@ To set linear speed profile parameters, send a
 */
 typedef struct player_position1d_speed_prof
 {
-  /** max speed [m/s] */
+  /** max speed [m/s] or [rad/s] */
   float speed;
-  /** max acceleration [m/s^2] */
+  /** max acceleration [m/s^2] or [rad/s^2] */
   float acc;
 } player_position1d_speed_prof_req_t;
 /** @} */
