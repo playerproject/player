@@ -32,8 +32,9 @@
  * @brief Logging data
 
 The writelog driver will write data from another device to a log file.
-Each data message is written to a separate line.  The format for each
-supported interface is given below.
+Each data message is written to a separate line.  The format for the 
+file is given in the 
+@ref tutorial_datalog "data logging tutorial".
 
 The @ref driver_readlog driver can be used to replay the data
 (to client programs, the replayed data will appear to come from the
@@ -68,14 +69,18 @@ The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
 The writelog driver can will log data from the following interfaces:
 
+- @ref interface_laser
+- @ref interface_sonar
+- @ref interface_position2d
+
+The following interfaces are supported in principle but are currently
+disabled because they need to be updated:
+
 - @ref interface_blobfinder
 - @ref interface_camera
 - @ref interface_fiducial
 - @ref interface_gps
 - @ref interface_joystick
-- @ref interface_laser
-- @ref interface_sonar
-- @ref interface_position2d
 - @ref interface_position3d
 - @ref interface_power
 - @ref interface_truth
@@ -105,10 +110,12 @@ The writelog driver can will log data from the following interfaces:
 @par Example
 
 @verbatim
+# Log data from laser:0 position2d:0 to "mydata.log"
 driver
 (
   name "writelog"
-  requires ["laser:0" "position:0"]
+  filename "mydata.log"
+  requires ["laser:0" "position2d:0"]
   provides ["log:0"]
   alwayson 1
   autorecord 1
@@ -215,9 +222,6 @@ class WriteLog: public Driver
 
   // Write power data to file
   private: void WritePower(player_power_data_t *data);
-
-  // Write truth data to file
-  private: void WriteTruth(player_truth_data_t *data);
 
   // Write wifi data to file
   private: void WriteWiFi(player_wifi_data_t *data);
@@ -710,9 +714,6 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_POWER_CODE:
       this->WritePower((player_power_data_t*) data);
       break;
-    case PLAYER_TRUTH_CODE:
-      this->WriteTruth((player_truth_data_t*) data);
-      break;
     case PLAYER_WIFI_CODE:
       this->WriteWiFi((player_wifi_data_t*) data);
       break;
@@ -739,14 +740,14 @@ void WriteLog::Write(WriteLogDevice *device,
   return;
 }
 
-/** @addtogroup player_driver_writelog */
-/** @{ */
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_laser laser format
 
-/** @defgroup player_driver_writelog_laser Laser format
+@brief laser log format
 
-@brief @ref interface_laser format
-
-The format for each @ref interface_laser message is:
+The following type:subtype laser messages can be logged:
+- 1:1 (PLAYER_LASER_DATA_SCAN) - A scan.  The format is:
+  - scan_id (int): unique, usually increasing index associated with the scan
   - min_angle (float): minimum scan angle, in radians
   - max_angle (float): maximum scan angle, in radians
   - resolution (float): angular resolution, in radians
@@ -755,6 +756,27 @@ The format for each @ref interface_laser message is:
   - list of readings; for each reading:
     - range (float): in meters
     - intensity (int): intensity
+
+- 1:2 (PLAYER_LASER_DATA_SCANPOSE) - A scan with an attached pose. The format is:
+  - scan_id (int): unique, usually increasing index associated with the scan
+  - px (float): X coordinate of the pose of the laser's parent object (e.g., the robot to which it is attached), in meters
+  - py (float): Y coordinate of the pose of the laser's parent object (e.g., the robot to which it is attached), in meters
+  - pa (float): yaw coordinate of the pose of the laser's parent object (e.g., the robot to which it is attached), in radians
+  - min_angle (float): minimum scan angle, in radians
+  - max_angle (float): maximum scan angle, in radians
+  - resolution (float): angular resolution, in radians
+  - max_range (float): maximum scan range, in meters
+  - count (int): number of readings to follow
+  - list of readings; for each reading:
+    - range (float): in meters
+    - intensity (int): intensity
+
+- 4:1 (PLAYER_LASER_REQ_GET_GEOM) - Laser pose information. The format is:
+  - lx (float): X coordinate of the laser's pose wrt its parent (e.g., the robot to which it is attached), in meters.
+  - ly (float): Y coordinate of the laser's pose wrt its parent (e.g., the robot to which it is attached), in meters.
+  - la (float): yaw coordinate of the laser's pose wrt its parent (e.g., the robot to which it is attached), in radians.
+  - sx (float): length of the laser
+  - sy (float): width of the laser
 */
 int
 WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
@@ -825,18 +847,27 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
   }
 }
 
-/** @defgroup player_driver_writelog_position Position format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_position position2d format
 
-@brief @ref interface_position2d format
+@brief position2d log format
 
-The format for each @ref interface_position2d message is:
-  - xpos (float): in meters
-  - ypos (float): in meters
-  - yaw (float): in radians
-  - xspeed (float): in meters / second
-  - yspeed (float): in meters / second
-  - yawspeed (float): in radians / second
-  - stall (int): motor stall sensor
+The following type:subtype position2d messages can be logged:
+- 1:1 (PLAYER_POSITION2D_DATA_STATE) Odometry information.  The format is:
+  - px (float): X coordinate of the device's pose, in meters
+  - py (float): Y coordinate of the device's pose, in meters
+  - pa (float): yaw coordinate of the device's pose, in radians
+  - vx (float): X coordinate of the device's velocity, in meters/sec
+  - vy (float): Y coordinate of the device's velocity, in meters/sec
+  - va (float): yaw coordinate of the device's velocity, in radians/sec
+  - stall (int): Motor stall flag
+
+- 4:0 (PLAYER_POSITION2D_REQ_GET_GEOM) Geometry info.  The format is:
+  - px (float): X coordinate of the offset of the device's center of rotation, in meters
+  - py (float): Y coordinate of the offset of the device's center of rotation, in meters
+  - pa (float): yaw coordinate of the offset of the device's center of rotation, in radians
+  - sx (float): The device's length, in meters
+  - sy (float): The device's width, in meters
 */
 int
 WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
@@ -894,19 +925,30 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
   }
 }
 
-/** @defgroup player_driver_writelog_sonar Sonar format
+/** @ingroup tutorial_datalog
+ @defgroup player_driver_writelog_sonar sonar format
 
-@brief @ref interface_sonar format
+@brief sonar log format
 
-The format for each @ref interface_sonar message is:
+The following type:subtype sonar messages can be logged:
+- 1:1 (PLAYER_SONAR_DATA_RANGES) Range data.  The format is:
+  - range_count (int): number range values to follow
+  - list of readings; for each reading:
+    - range (float): in meters
+
+- 1:2 (PLAYER_SONAR_DATA_GEOM) Geometry data. The format is:
   - pose_count (int): number of sonar poses to follow
   - list of tranducer poses; for each pose:
     - x (float): relative X position of transducer, in meters
     - y (float): relative Y position of transducer, in meters
     - a (float): relative yaw orientation of transducer, in radians
-  - range_count (int): number range values to follow
-  - list of readings; for each reading:
-    - range (float): in meters
+
+- 4:1 (PLAYER_SONAR_REQ_GET_GEOM) Geometry info. The format is:
+  - pose_count (int): number of sonar poses to follow
+  - list of tranducer poses; for each pose:
+    - x (float): relative X position of transducer, in meters
+    - y (float): relative Y position of transducer, in meters
+    - a (float): relative yaw orientation of transducer, in radians
 */
 int
 WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
@@ -972,9 +1014,10 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
 }
 
 #if 0
-/** @defgroup player_driver_writelog_blobfinder Blobfinder format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_blobfinder Blobfinder format
 
-@brief @ref interface_blobfinder format
+@brief blobfinder log format
 
 The format for each @ref interface_blobfinder message is:
   - width (int): in pixels, of image
@@ -1016,9 +1059,10 @@ void WriteLog::WriteBlobfinder(player_blobfinder_data_t *data)
 }
 
 
-/** @defgroup player_driver_writelog_camera Camera format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_camera Camera format
 
-@brief @ref interface_camera format
+@brief camera data format
 
 The format for each @ref interface_camera message is:
   - width (int): in pixels
@@ -1098,9 +1142,10 @@ void WriteLog::WriteCameraImage(WriteLogDevice *device, player_camera_data_t *da
 }
 
 
-/** @defgroup player_driver_writelog_fiducial Fiducial format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_fiducial Fiducial format
 
-@brief @ref interface_fiducial format
+@brief fiducial log format
 
 The format for each @ref interface_fiducial message is:
   - count (int): number of fiducials to follow
@@ -1148,9 +1193,10 @@ void WriteLog::WriteFiducial(player_fiducial_data_t *data)
 }
 
 
-/** @defgroup player_driver_writelog_gps GPS format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_gps GPS format
 
-@brief @ref interface_gps format
+@brief gps log format
 
 The format for each @ref interface_gps message is:
   - time (float): current GPS time, in seconds
@@ -1192,9 +1238,10 @@ void WriteLog::WriteGps(player_gps_data_t *data)
 }
 
 
-/** @defgroup player_driver_writelog_joystick Joystick format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_joystick Joystick format
 
-@brief @ref interface_joystick format
+@brief joystick log format
 
 The format for each @ref interface_joystick message is:
   - xpos (int): unscaled X position of joystick
@@ -1217,9 +1264,10 @@ void WriteLog::WriteJoystick(player_joystick_data_t *data)
 
 
 
-/** @defgroup player_driver_writelog_position3d Position3d format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_position3d Position3d format
 
-@brief @ref interface_position3d format
+@brief position3d format
 
 The format for each @ref interface_position3d message is:
   - xpos (float): in meters
@@ -1262,9 +1310,10 @@ void WriteLog::WritePosition3d(player_position3d_data_t *data)
 }
 
 
-/** @defgroup player_driver_writelog_power Power format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_power Power format
 
-@brief @ref interface_power format
+@brief power log format
 
 The format for each @ref interface_power message is:
   - charge (float): in volts
@@ -1276,9 +1325,10 @@ void WriteLog::WritePower(player_power_data_t *data)
 }
 
 
-/** @defgroup player_driver_writelog_wifi WiFi format
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_wifi WiFi format
 
-@brief @ref interface_wifi format
+@brief wifi log format
 
 The format for each @ref interface_wifi message is:
   - link_count (int): number of nodes to follow
@@ -1326,32 +1376,6 @@ void WriteLog::WriteWiFi(player_wifi_data_t *data)
   return;
 }
 
-
-/** @defgroup player_driver_writelog_truth Truth format
-
-@brief @ref interface_truth format
-
-The format for each @ref interface_truth message is:
-  - x (float): in meters
-  - y (float): in meters
-  - z (float): in meters
-  - roll (float): in radians
-  - pitch (float): in radians
-  - yaw (float): in radians
-*/
-void WriteLog::WriteTruth(player_truth_data_t *data)
-{
-  fprintf(this->file, "%+07.3f %+07.3f %+07.3f %+07.3f %+07.3f %+07.3f",
-          MM_M(HINT32(data->pos[0])),
-          MM_M(HINT32(data->pos[1])),
-          MM_M(HINT32(data->pos[2])),
-          MM_M(HINT32(data->rot[0])),
-          MM_M(HINT32(data->rot[1])),
-          MM_M(HINT32(data->rot[2])));
-
-  return;
-}
 #endif
 
 
-/** @} */
