@@ -1,8 +1,7 @@
+noinst_LTLIBRARIES = 
+if INCLUDE_CMUCAM2
+noinst_LTLIBRARIES += libcmucam2.la
+endif
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-noinst_LIBRARIES = @CMUCAM2_LIB@ 
-
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
-
-EXTRA_LIBRARIES = libcmucam2.a 
-
-libcmucam2_a_SOURCES = cmucam2.cc camera.h camera.c 
+libcmucam2_la_SOURCES = cmucam2.cc camera.h camera.c 
