@@ -50,10 +50,13 @@ the Player 2.0 API.
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#include "player.h"
+/*#include "player.h"
 #include "error.h"
 #include "driver.h"
 #include "drivertable.h"
+*/
+
+#include <libplayercore/playercore.h>
 
 #include "gazebo.h"
 #include "gz_client.h"
@@ -199,21 +202,21 @@ void GzPosition3d::Update()
     ts.tv_sec = (int) (this->iface->data->time);
     ts.tv_usec = (int) (fmod(this->iface->data->time, 1) * 1e6);
   
-    data.pos[0] = this->iface->data->pos[0];
-    data.pos[1] = this->iface->data->pos[1];
-    data.pos[2] = this->iface->data->pos[2];
+    data.pos.px = this->iface->data->pos[0];
+    data.pos.py = this->iface->data->pos[1];
+    data.pos.pz = this->iface->data->pos[2];
 
-    data.pos[3] = this->iface->data->rot[0];
-    data.pos[4] = this->iface->data->rot[1];
-    data.pos[5] = this->iface->data->rot[2];
+    data.pos.proll = this->iface->data->rot[0];
+    data.pos.ppitch = this->iface->data->rot[1];
+    data.pos.pyaw = this->iface->data->rot[2];
 
-    data.vel[0] = this->iface->data->vel_pos[0];
-    data.vel[1] = this->iface->data->vel_pos[1];
-    data.vel[2] = this->iface->data->vel_pos[2];
+    data.vel.px = this->iface->data->vel_pos[0];
+    data.vel.py = this->iface->data->vel_pos[1];
+    data.vel.pz = this->iface->data->vel_pos[2];
 
-    data.vel[3] = this->iface->data->vel_rot[0];
-    data.vel[4] = this->iface->data->vel_rot[1];
-    data.vel[5] = this->iface->data->vel_rot[2];
+    data.vel.proll = this->iface->data->vel_rot[0];
+    data.vel.ppitch = this->iface->data->vel_rot[1];
+    data.vel.pyaw = this->iface->data->vel_rot[2];
 
     data.stall = (uint8_t) this->iface->data->stall;
 
@@ -238,18 +241,18 @@ int GzPosition3d::ProcessMessage( MessageQueue *resp_queue,
 {
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_SET_ODOM,this->device_addr))
   {
-    player_position3d_cmd_t *cmd;
+    player_position3d_cmd_vel_t *cmd;
 
-    assert(hdr->size >= sizeof(player_position3d_cmd_t));
-    cmd = (player_position3d_cmd_t*) data;
+    assert(hdr->size >= sizeof(player_position3d_cmd_vel_t));
+    cmd = (player_position3d_cmd_vel_t*) data;
 
     gz_position_lock(this->iface, 1);
-    this->iface->data->cmd_vel_pos[0] = cmd->vel[0];
-    this->iface->data->cmd_vel_pos[1] = cmd->vel[1];
-    this->iface->data->cmd_vel_pos[2] = cmd->vel[2];
-    this->iface->data->cmd_vel_rot[0] = cmd->vel[3];
-    this->iface->data->cmd_vel_rot[1] = cmd->vel[4];
-    this->iface->data->cmd_vel_rot[2] = cmd->vel[5];
+    this->iface->data->cmd_vel_pos[0] = cmd->vel.px;
+    this->iface->data->cmd_vel_pos[1] = cmd->vel.py;
+    this->iface->data->cmd_vel_pos[2] = cmd->vel.pz;
+    this->iface->data->cmd_vel_rot[0] = cmd->vel.proll;
+    this->iface->data->cmd_vel_rot[1] = cmd->vel.ppitch;
+    this->iface->data->cmd_vel_rot[2] = cmd->vel.pyaw;
     gz_position_unlock(this->iface);
   }
 
@@ -276,11 +279,11 @@ void GzPosition3d::HandleGetGeom(MessageQueue *resp_queue,
 
   // TODO: get correct dimensions; there are for the P2AT
   // i think this is only for the playerv client .. not really a necessity??  
-  geom.pose[0] = 0;
-  geom.pose[1] = 0;
-  geom.pose[2] = 0;
-  geom.size[0] = 0.53;
-  geom.size[1] = 0.38;
+  geom.pose.px = 0;
+  geom.pose.py = 0;
+  geom.pose.pyaw = 0;
+  geom.size.sw = 0.53;
+  geom.size.sl = 0.38;
 
   this->Publish(this->device_addr, resp_queue,
                 PLAYER_MSGTYPE_RESP_ACK, 

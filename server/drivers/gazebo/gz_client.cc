@@ -30,8 +30,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "player.h"
+/*#include "player.h"
 #include "error.h"
+*/
+
+#include <libplayercore/playercore.h>
+
 #include "gazebo.h"
 #include "gz_client.h"
 

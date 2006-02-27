@@ -440,7 +440,7 @@ dnl Find Gazebo
 AC_DEFUN([GAZEBO_FIND],[
 
 dnl Include Gazebo?
-user_override=no
+user_override=yes
 AC_ARG_ENABLE(gazebo,
 [  --disable-gazebo           Don't compile the Gazebo driver],
 user_override=yes,
@@ -455,7 +455,7 @@ if test "x$enable_gazebo"="xno"; then
 fi
 
 dnl What version do we support?
-GAZEBO_MIN_VERSION="0.4.0"
+GAZEBO_MIN_VERSION="0.5.2"
 
 dnl Where is Gazebo?
 if test "x$enable_gazebo" = "xyes"; then
@@ -510,6 +510,7 @@ if test "x$enable_gazebo" = "xyes"; then
   GAZEBO_EXTRA_LIB=$GAZEBO_LIBS
 fi
 
+AM_CONDITIONAL(INCLUDE_GAZEBO, test "x$enable_gazebo" = "xyes")
 AC_SUBST(GAZEBO_LIB)
 AC_SUBST(GAZEBO_EXTRA_CPPFLAGS)
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GAZEBO_EXTRA_LIB"
@@ -553,7 +554,6 @@ GAZEBO_TEST_DRIVER([truth],[truth])
 GAZEBO_TEST_DRIVER([stereo],[stereo])
 GAZEBO_TEST_DRIVER([gripper],[gripper])
 GAZEBO_TEST_DRIVER([sonar],[sonar])
-GAZEBO_TEST_DRIVER([sonars],[sonars])  dnl Deprecated; backwards compatability
 
 ])
 

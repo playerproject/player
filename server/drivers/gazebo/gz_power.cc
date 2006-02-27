@@ -54,10 +54,13 @@ the Player 2.0 API.
 #include <netinet/in.h>
 #include <stdlib.h>       // for atoi(3)
 
-#include "player.h"
+/*#include "player.h"
 #include "error.h"
 #include "driver.h"
 #include "drivertable.h"
+*/
+
+#include <libplayercore/playercore.h>
 
 #include "gazebo.h"
 #include "gz_client.h"
@@ -194,7 +197,7 @@ void GzPower::Update()
     
     this->Publish( this->device_addr, NULL,
                    PLAYER_MSGTYPE_DATA,
-                   PLAYER_POWER_DATA_VOLTAGE,
+                   PLAYER_POWER_DATA_STATE,
                    (void*)&data, sizeof(data), &this->datatime );
   }
 

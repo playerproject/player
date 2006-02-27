@@ -89,10 +89,13 @@ Andrew Howard
 #include <stdlib.h>       // for atoi(3)
 #include <unistd.h>
 
-#include "player.h"
+/*#include "player.h"
 #include "error.h"
 #include "driver.h"
 #include "drivertable.h"
+*/
+
+#include <libplayercore/playercore.h>
 
 #include "gazebo.h"
 #include "gz_client.h"
