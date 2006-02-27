@@ -63,10 +63,6 @@ will handle starting and stopping the Festival server.
 - libdir (string)
   - Default: "/usr/local/festival/lib"
   - The path to Festival's library of phonemes and such.
-- queuelen (integer)
-  - Default: 4
-  - Length of incoming command queue.  If the queue fills, new commands 
-    are discarded.
  
 @par Example 
 

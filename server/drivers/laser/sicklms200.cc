@@ -63,6 +63,11 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
   - Default: 38400
   - Baud rate.  Valid values are 9600, 38400 (RS232 or RS422) and
     500000 (RS422 only).
+
+- retry (integer)
+  - Default: 0
+  - If the initial connection to the laser fails, retry this many times before
+    giving up.
   
 - delay (integer)
   - Default: 0
@@ -92,6 +97,10 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
   - Default: [0.0 0.0 0.0]
   - Pose (x,y,theta) of the laser, relative to its parent object (e.g.,
     the robot to which the laser is attached).
+
+- size (length tuple)
+  - Default: [0.15 0.15]
+  - Footprint (x,y) of the laser.
       
 @par Example 
 

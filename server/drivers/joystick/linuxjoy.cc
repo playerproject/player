@@ -52,8 +52,8 @@ converting joystick positions to velocity commands.
 @par Requires
 
 - @ref interface_position2d : if present, joystick positions will be
-  interpreted as velocities and sent as commands to this position device.
-  See also max_xspeed and max_yawspeed options below.
+  interpreted as velocities and sent as commands to this position2d device.
+  See also max_xspeed, max_yawspeed, and deadman_button options below.
 
 @par Configuration requests
 
@@ -75,6 +75,11 @@ converting joystick positions to velocity commands.
   - Minimum values on the X and Y axes, respectively.  Anything smaller
     in absolute value than this limit will be reported as zero.
     Useful for implementing a dead zone on a touchy joystick.
+- deadman_button (integer)
+  - Default: -1
+  - When controlling a @ref interface_position2d device, if deadman_button is 
+    >= 0, this joystick button must be depressed for commands to be 
+    sent to that device.
 - max_xspeed (length / sec)
   - Default: 0.5 m/sec
   - The maximum absolute translational velocity to be used when commanding a

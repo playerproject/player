@@ -38,6 +38,11 @@ There is currently no support for multiple trackers.
   - Default: 115200
   - The baud rate to be used.
 
+- voidsize (integer)
+  - Default: 50
+  - Size of transmitter 'radius' in mm, ie minimum value axis can have
+    without collision with tx
+
 @par Example
 
 @verbatim

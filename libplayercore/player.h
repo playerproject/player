@@ -145,7 +145,7 @@ in the body.*/
 #define PLAYER_PLANNER_CODE        44  // 2D motion planner
 #define PLAYER_LOG_CODE            45  // log read/write control
 #define PLAYER_ENERGY_CODE         46  // energy consumption
-#define PLAYER_MOTOR_CODE          47  // motor interface
+//#define PLAYER_MOTOR_CODE          47  // motor interface
 #define PLAYER_JOYSTICK_CODE       49  // Joytstick
 #define PLAYER_SPEECH_RECOGNITION_CODE  50  // speech recognition
 #define PLAYER_OPAQUE_CODE         51  // plugin interface
@@ -188,7 +188,7 @@ in the body.*/
 #define PLAYER_LOG_STRING             "log"
 #define PLAYER_MAP_STRING             "map"
 #define PLAYER_MCOM_STRING            "mcom"
-#define PLAYER_MOTOR_STRING           "motor"
+//#define PLAYER_MOTOR_STRING           "motor"
 #define PLAYER_NOMAD_STRING           "nomad"
 #define PLAYER_NULL_STRING            "null"
 #define PLAYER_OPAQUE_STRING          "opaque"
@@ -2387,192 +2387,6 @@ typedef struct player_mcom_return
   /** The data. */
   player_mcom_data_t data;
 } player_mcom_return_t;
-
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
-/** @ingroup interfaces
- * @defgroup interface_motor motor
- * @brief A single motor
-
-The @p motor interface is used to control a single motor.
-*/
-
-/** @ingroup interface_motor
- * @{ */
-
-/** Request/reply subtype: get geometry */
-#define PLAYER_MOTOR_REQ_GET_GEOM             1
-/** Request/reply subtype: power */
-#define PLAYER_MOTOR_REQ_POWER                2
-/** Request/reply subtype: velocity mode */
-#define PLAYER_MOTOR_REQ_VELOCITY_MODE        3
-/** Request/reply subtype: position mode */
-#define PLAYER_MOTOR_REQ_POSITION_MODE        4
-/** Request/reply subtype: set odometry */
-#define PLAYER_MOTOR_REQ_SET_ODOM             5
-/** Request/reply subtype: reset odometry */
-#define PLAYER_MOTOR_REQ_RESET_ODOM           6
-/** Request/reply subtype: set speed PID parameters */
-#define PLAYER_MOTOR_REQ_SPEED_PID            7
-/** Request/reply subtype: set position PID parameters */
-#define PLAYER_MOTOR_REQ_POSITION_PID         8
-/** Request/reply subtype: set speed profile parameters */
-#define PLAYER_MOTOR_REQ_SPEED_PROF           9
-/** Request/reply subtype: set gear reduction */
-#define PLAYER_MOTOR_REQ_SET_GEAR_REDUCTION  10
-/** Request/reply subtype: set tics */
-#define PLAYER_MOTOR_REQ_SET_TICS             11
-
-/** Bitfield position of motor limit minimum */
-#define PLAYER_MOTOR_LIMIT_MIN            1
-/** Bitfield position of motor limit center */
-#define PLAYER_MOTOR_LIMIT_CENTER         2
-/** Bitfield position of motor limit maximum */
-#define PLAYER_MOTOR_LIMIT_MAX            4
-
-/** Data subtype: state */
-#define PLAYER_MOTOR_DATA_STATE             1
-
-/** Command subtype: state */
-#define PLAYER_MOTOR_CMD_STATE              1
-
-/** @brief Data: state (@ref PLAYER_MOTOR_DATA_STATE)
-
-The @p motor interface returns data regarding the position and
-velocity of the motor, as well as stall information. */
-typedef struct player_motor_data
-{
-  /** Theta [rad] */
-  float pos;
-  /** Angular velocity [rad/s] */
-  float vel;
-  /** Are the motors stalled?   */
-  uint8_t stall;
-  /** A bitfield of limit switches for the motor
-      These are stored as bits at bit
-        - @ref PLAYER_MOTOR_LIMIT_MIN,
-        - @ref PLAYER_MOTOR_LIMIT_CENTER,
-        - @ref PLAYER_MOTOR_LIMIT_MAX
-  */
-  uint32_t limits;
-} player_motor_data_t;
-
-/** @brief Command: state (@ref PLAYER_MOTOR_CMD_STATE)
-
-The @p motor interface accepts new positions and/or velocities
-for the motors (drivers may support position control, speed control,
-or both). */
-typedef struct player_motor_cmd
-{
-  /** Theta [rad] */
-  float pos;
-  /** Angular velocities [rad/s] */
-  float vel;
-  /** Motor state (zero is either off or locked, depending on the driver). */
-  uint8_t state;
-  /** Command type; 0 = velocity, 1 = position. */
-  uint32_t type;
-} player_motor_cmd_t;
-
-/** @brief Request/reply: Change position control.
-
-To change between position and velocity control, send a
-@ref PLAYER_MOTOR_REQ_POSITION_MODE request.  Null response.
-*/
-typedef struct player_motor_position_mode_req
-{
-  /** 0 for velocity mode, 1 for position mode */
-  uint32_t value;
-} player_motor_position_mode_req_t;
-
-/** @brief Request/reply: Change velocity control mode.
-
-Some motors offer different velocity control modes.  It can be changed by
-sending a @ref PLAYER_MOTOR_REQ_VELOCITY_MODE request with the format given
-below, including the appropriate mode.  No matter which mode is used,
-the external client interface to the @p motor device remains the same.
-Null response. */
-typedef struct player_motor_velocity_mode_config
-{
-  /** driver-specific */
-  uint8_t value;
-} player_motor_velocity_mode_config_t;
-
-/** @brief Request/reply: Reset odometry.
-
-To reset the motors's odometry to @f$\theta = 0@f$, use the following
-request.  Null response. */
-typedef struct player_motor_reset_odom_config
-{
-} player_motor_reset_odom_config_t;
-
-/** @brief Request/reply: Set odometry.
-
-To set the motor's odometry to a particular state, send a
-@ref PLAYER_MOTOR_REQ_SET_ODOM request.  Null response. */
-typedef struct player_motor_set_odom_req
-{
-  /** Theta [rad] */
-  float theta;
-} player_motor_set_odom_req_t;
-
-/** @brief Request/reply: Set velocity PID parameters.
-
-To set the velocity PID parameters, send a @ref PLAYER_MOTOR_REQ_SPEED_PID
-request.  Null response. */
-typedef struct player_motor_speed_pid_req
-{
-  /** PID parameters */
-  float kp;
-  /** PID parameters */
-  float ki;
-  /** PID parameters */
-  float kd;
-} player_motor_speed_pid_req_t;
-
-/** @brief Request/reply: Set motor PID parameters.
-
-To set the position PID parameters, send a @ref PLAYER_MOTOR_REQ_POSITION_PID
-request.  Null response. */
-typedef struct player_motor_position_pid_req
-{
-  /** PID parameters */
-  float kp;
-  /** PID parameters */
-  float ki;
-  /** PID parameters */
-  float kd;
-} player_motor_position_pid_req_t;
-
-/** @brief Request/reply: Set speed profile parameters.
-
-To set speed profile parameters, send a @ref PLAYER_MOTOR_REQ_SPEED_PROF request.
-This is useful in position control mode when you want to ramp your
-acceleration and deacceleration.  Null response. */
-typedef struct player_motor_speed_prof_req
-{
-  /** max speed [rad/s] */
-  float speed;
-  /** max acceleration [rad/s^2] */
-  float acc;
-} player_motor_speed_prof_req_t;
-
-/** @brief Configuration request: Motor power.
-
-On some robots, the motor power can be turned on and off from software.
-To do so, send a @ref PLAYER_MOTOR_REQ_POWER request with the format given
-below, and with the appropriate @p state (zero for motors off and non-zero
-for motors on).  Null response.
-
-Be VERY careful with this command!  You are very likely to start the
-robot running across the room at high speed with the battery charger
-still attached.  */
-typedef struct player_motor_power_config
-{
-  /** FALSE for off, TRUE for on */
-  uint8_t state;
-} player_motor_power_config_t;
 
 /** @} */
 

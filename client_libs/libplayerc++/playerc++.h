@@ -1482,112 +1482,6 @@ public:
 #endif
 
 /**
-The @p MotorProxy class is used to control a @ref interface_motor
-device.  The latest motor data is contained in the attributes @p theta,
-@p thetaspeed, etc. */
-class MotorProxy : public ClientProxy
-{
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_motor_t *mDevice;
-
-  public:
-
-    /** Constructor. */
-    MotorProxy(PlayerClient *aPc, uint aIndex=0);
-    ~MotorProxy();
-
-    /** Send a motor command for velocity control mode.
-        Specify the angular speeds in rad/s.
-        Returns: 0 if everything's ok, -1 otherwise.
-    */
-    void SetSpeed(double aSpeed);
-
-    /** Send a motor command for position control mode.  Specify the
-        desired angle of the motor in radians.
-    */
-    void GoTo(double aAngle);
-
-
-    /** Enable/disable the motors.
-        Set @p state to false to disable or true to enable.
-        Be VERY careful with this method!  Your robot is likely to run across the
-        room with the charger still attached.
-    */
-    void SetMotorEnable(bool aEnable);
-
-    /** Select velocity control mode.
-        The motor state is typically device independent.  This is where you
-        can potentially choose between different types of control methods
-        (PD, PID, etc)
-    */
-    void SelectVelocityControl(uint aMode);
-
-    /** Reset odometry to (0,0,0).
-        Returns: 0 if everything's ok, -1 otherwise.
-    */
-    void ResetOdometry();
-
-    /** Sets the odometry to the pose @p (theta).
-        Note that @p theta is in radians.
-        Returns: 0 if OK, -1 else
-    */
-    void SetOdometry(double aAngle);
-
-    /** Select position mode on the motor driver.
-        Set @p mode for 0 for velocity mode, 1 for position mode.
-        Returns: 0 if OK, -1 else
-    */
-
-    void SelectPositionMode(uint aMode);
-
-    /** Set the PID parameters of the motor for use in velocity control mode
-        Returns: 0 if OK, -1 else
-    */
-
-    void SetSpeedPID(double aKp, double aKi, double aKd);
-
-    /** Set the PID parameters of the motor for use in position control mode
-        Returns: 0 if OK, -1 else
-    */
-
-    void SetPositionPID(double aKp, double aKi, double aKd);
-
-    /** Set the ramp profile of the motor when in position control mode
-        spd is in rad/s and acc is in rad/s/s
-        Returns: 0 if OK, -1 else
-    */
-
-    void SetPositionSpeedProfile(double aSpd, double aAcc);
-
-    /// Accessor method
-    double GetPos() const { return GetVar(mDevice->pt); };
-
-    /// Accessor method
-    double GetSpeed() const { return GetVar(mDevice->vt); };
-
-    /// Accessor method
-    uint GetStall() const { return GetVar(mDevice->stall); };
-
-    /// Accessor method
-    bool IsLimitMin() const
-      { return GetVar(mDevice->limits) && PLAYER_MOTOR_LIMIT_MIN > 0; };
-
-    /// Accessor method
-    bool IsLimitCenter() const
-      { return GetVar(mDevice->limits) && PLAYER_MOTOR_LIMIT_CENTER > 0; };
-
-    /// Accessor method
-    bool IsLimitMax() const
-      { return GetVar(mDevice->limits) && PLAYER_MOTOR_LIMIT_MAX > 0; };
-
-};
-
-/**
 The @p PlannerProxy proxy provides an interface to a 2D motion @ref
 interface_planner. */
 class PlannerProxy : public ClientProxy
@@ -2395,7 +2289,6 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
-  std::ostream& operator << (std::ostream& os, const PlayerCc::MotorProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);

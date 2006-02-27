@@ -69,6 +69,10 @@ The sonyevid30 driver only supports position control.
   - Default: [3 30]
   - The minimum and maximum fields of view (in degrees), which will depend on
    the lens(es) you are using.  Half-angle??
+
+- movement (integer)
+  - Default: 0
+  - Movement mode (?)
  
 @par Example 
 

@@ -44,7 +44,6 @@ libplayerc___la_SOURCES =     playerc++.h \
                               localizeproxy.cc \
                               logproxy.cc \
                               mapproxy.cc \
-                              motorproxy.cc \
                               plannerproxy.cc \
                               position2dproxy.cc \
                               position3dproxy.cc \
@@ -69,6 +68,8 @@ libplayerc___la_SOURCES =     playerc++.h \
                               speechrecognitionproxy.cc \
                               truthproxy.cc \
                               waveformproxy.cc
+
+# motorproxy.cc
 
 #PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
 #                  -L${top_builddir}/client_libs/libplayerc

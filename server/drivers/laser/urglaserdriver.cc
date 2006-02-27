@@ -25,8 +25,8 @@
 /** @defgroup driver_urglaser urglaser
  * @brief Hokuyo URG laser range-finder
 
-
 The urglaser driver controls the Hokuyo URG scanning laser range-finder.
+Communication with the laser can be either via USB or RS232.
 
 @par Compile-time dependencies
 
@@ -50,16 +50,27 @@ The urglaser driver controls the Hokuyo URG scanning laser range-finder.
 
 - port (string)
   - Default: "/dev/ttyACM0"
-  - USB acm device port to which laser is attached.  
+  - Port to which the laser is connected.  Can be either a serial port or
+    the port associated with USB acm device.  See use_serial.
 
 - pose (float tuple m m rad)
   - Default: [0.0 0.0 0.0]
   - Pose (x,y,theta) of the laser, relative to its parent object (e.g.,
     the robot to which the laser is attached).
 
-- min_angle, max_angle (float [rad])
-  - Default: -2 and 2
+- min_angle, max_angle (angle float)
+  - Default: [-2.0 2.0] (or [-115.0 115.0] in degrees)
   - Minimum and maximum scan angles to return
+
+- use_serial (integer)
+  - Default: 0
+  - If non-zero, communicate via RS232 instead of USB.
+
+- baud (integer)
+  - Default: 115200
+  - Baud rate to use when communicating with the laser over RS232.  Valid
+    rates are: 19200, 57600, and 115200.  The driver will auto-detect the
+    current rate then change to the desired rate.
 
 @par Example 
 

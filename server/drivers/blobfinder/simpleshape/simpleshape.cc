@@ -80,6 +80,10 @@ form of a binary image (such as the one shown below).
   - Default: [40 20]
   - Thresholds for the Canny edge detector.
 
+- match_thresh (float tuple) 
+  - Default: [0.50 20.0 0.20]
+  - Match thresholds (?)
+
 @par Example
 
 @verbatim
