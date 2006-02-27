@@ -50,11 +50,12 @@ the Player 2.0 API.
 #include <netinet/in.h>
 #include <stdlib.h>       // for atoi(3)
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
+//#include "player.h"
+//#include "error.h"
+//#include "driver.h"
+//#include "drivertable.h"
 
+#include <libplayercore/playercore.h>
 #include "gazebo.h"
 #include "gz_client.h"
 
@@ -204,24 +205,24 @@ void GzFiducial::Update()
       double r = fid->pose[0];
       double b = fid->pose[1];
 
-      data.fiducials[i].pos[0] = r * cos( b );
-      data.fiducials[i].pos[1] = r * sin( b );
-      data.fiducials[i].rot[2] = fid->pose[2];
+      data.fiducials[i].pose.px = r * cos( b );
+      data.fiducials[i].pose.py = r * sin( b );
+      data.fiducials[i].pose.pyaw = fid->pose[2];
 #else
       // Gazebo 0.5
-      data.fiducials[i].pos[0] = fid->pos[0];
-      data.fiducials[i].pos[1] = fid->pos[1];
-      data.fiducials[i].pos[2] = fid->pos[2];      
-      data.fiducials[i].rot[0] = fid->rot[0];
-      data.fiducials[i].rot[1] = fid->rot[1];
-      data.fiducials[i].rot[2] = fid->rot[2];
+      data.fiducials[i].pose.px = fid->pos[0];
+      data.fiducials[i].pose.py = fid->pos[1];
+      data.fiducials[i].pose.pz = fid->pos[2];      
+      data.fiducials[i].pose.proll = fid->rot[0];
+      data.fiducials[i].pose.ppitch = fid->rot[1];
+      data.fiducials[i].pose.pyaw = fid->rot[2];
 #endif
     }
     data.fiducials_count = i;
 
     this->Publish( this->device_addr, NULL,
                    PLAYER_MSGTYPE_DATA,
-                   PLAYER_FIDUCIAL_SEND_MSG, 
+                   PLAYER_FIDUCIAL_DATA_SCAN, 
                    (void*)&data, sizeof(data), &this->datatime );
   
   }
@@ -238,21 +239,21 @@ int GzFiducial::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, voi
 {
   switch (hdr->subtype)
   {
-    case PLAYER_FIDUCIAL_GET_GEOM:
+    case PLAYER_FIDUCIAL_REQ_GET_GEOM:
     {
       player_fiducial_geom_t rep;
 
-      rep.pose[0] = 0.0;
-      rep.pose[1] = 0.0;
-      rep.pose[2] = 0.0;
-      rep.size[0] = 0.0;
-      rep.size[1] = 0.0;
-      rep.fiducial_size[0] = 0.05;
-      rep.fiducial_size[1] = 0.50;
+      rep.pose.px = 0.0;
+      rep.pose.py = 0.0;
+      rep.pose.pa = 0.0;
+      rep.size.sw = 0.0;
+      rep.size.sl = 0.0;
+      rep.fiducial_size.sw = 0.05;
+      rep.fiducial_size.sl = 0.50;
 
       this->Publish(this->device_addr, resp_queue,
                     PLAYER_MSGTYPE_RESP_ACK, 
-                    PLAYER_FIDUCIAL_GET_GEOM, 
+                    PLAYER_FIDUCIAL_REQ_GET_GEOM, 
                     &rep, sizeof(rep),NULL);
       break;
     }

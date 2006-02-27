@@ -61,10 +61,13 @@ the Player 2.0 API.
 #include <sys/types.h>
 #include <netinet/in.h>
 
-#include "player.h"
+/*#include "player.h"
 #include "error.h"
 #include "driver.h"
 #include "drivertable.h"
+*/
+
+#include <libplayercore/playercore.h>
 
 #include "gazebo.h"
 #include "gz_client.h"
