@@ -171,7 +171,7 @@ PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([cmucam2],[no],[],[],[])
+PLAYER_ADD_DRIVER([cmucam2],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmvision],[yes],[],[],[])
 
