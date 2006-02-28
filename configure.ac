@@ -24,7 +24,7 @@ AM_CONDITIONAL(DARWIN, test "x$darwin" = "xyes")
 dnl Initialize automake, specifying that the newer "pax" format should be
 dnl used for making tarballs (it doesn't have the 99-character pathname
 dnl limit present in older archive formats)
-AM_INIT_AUTOMAKE([tar-ustar dist-bzip2])
+AM_INIT_AUTOMAKE([1.9 tar-ustar dist-bzip2])
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
@@ -153,7 +153,7 @@ build_jplayer=$enable_jplayer
 if test "x$have_python" = "xno" -o "x$have_swig" = "xno" -o "x$have_java" = "xno" -o "x$have_jni_h" = "xno" -o "x$have_jni_md_h" = "xno"; then
   build_jplayer=no
 fi
-AM_CONDITIONAL(BUILD_JPLAYER, test "x$enable_jplayer" = "xyes")
+AM_CONDITIONAL(BUILD_JPLAYER, test "x$build_jplayer" = "xyes")
 
 dnl client tests are compiled by default
 AC_ARG_ENABLE(tests,   [  --disable-tests          Don't build client tests],,
