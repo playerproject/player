@@ -143,7 +143,6 @@ dnl Must have Java and JNI headers to compile Jplayer
 if test "x$have_java" = "xno" -o "x$have_jni_h" = "xno" -o "x$have_jni_md_h" = "xno"; then
   enable_jplayer=no
 fi
-AM_CONDITIONAL(ENABLE_JPLAYER, test "x$enable_jplayer" = "xyes")
 JNI_CFLAGS="-I$with_jnidir -I$with_jni_mddir"
 AC_SUBST(JNI_CFLAGS)
 
@@ -154,6 +153,15 @@ if test "x$have_python" = "xno" -o "x$have_swig" = "xno" -o "x$have_java" = "xno
   build_jplayer=no
 fi
 AM_CONDITIONAL(BUILD_JPLAYER, test "x$build_jplayer" = "xyes")
+
+dnl A further test, only relevant to developers who have Java but not SWIG
+dnl installed
+if test "$host" = "$build" -a "x$build_jplayer" = "xno" -a "x$enable_jplayer" = "xyes"; then
+  AC_CHECK_FILE(libplayercore/bindings/java/playercore_java_wrap.cc,,
+                enable_jplayer=no)
+fi
+
+AM_CONDITIONAL(ENABLE_JPLAYER, test "x$enable_jplayer" = "xyes")
 
 dnl client tests are compiled by default
 AC_ARG_ENABLE(tests,   [  --disable-tests          Don't build client tests],,
