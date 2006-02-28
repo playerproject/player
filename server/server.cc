@@ -79,10 +79,18 @@ Listening on ports: 6665
 #include <libplayerxdr/functiontable.h>
 #include <libplayerdrivers/driverregistry.h>
 
+// Includes for Gazebo
+#if INCLUDE_GAZEBO
+#include <gazebo.h>
+#include "gz_client.h"
+#include "gz_time.h"
+#endif
+
+
 void PrintCopyrightMsg();
 void PrintUsage();
 int ParseArgs(int* port, int* debuglevel, 
-              char** cfgfilename, 
+              char** cfgfilename, int* gz_serverid,
               int argc, char** argv);
 void Quit(int signum);
 void Cleanup();
@@ -101,6 +109,7 @@ main(int argc, char** argv)
 {
   int debuglevel = 1;
   int port = PLAYERTCP_DEFAULT_PORT;
+  int gz_serverid = -1;
   int* ports;
   int num_ports;
   char* cfgfilename;
@@ -124,7 +133,7 @@ main(int argc, char** argv)
   ptcp = new PlayerTCP();
   assert(ptcp);
 
-  if(ParseArgs(&port, &debuglevel, &cfgfilename, argc, argv) < 0)
+  if(ParseArgs(&port, &debuglevel, &cfgfilename, &gz_serverid, argc, argv) < 0)
   {
     PrintUsage();
     exit(-1);
@@ -133,6 +142,24 @@ main(int argc, char** argv)
   ErrorInit(debuglevel);
 
   PrintCopyrightMsg();
+
+  if (gz_serverid >= 0)
+  {
+#if INCLUDE_GAZEBO
+    if (GzClient::Init(gz_serverid,NULL) != 0)
+    {
+      exit(-1);
+    }
+
+    if (GlobalTime)
+      delete GlobalTime;
+
+    // Use the clock from Gazebo
+    GlobalTime = new GzTime();
+#else
+    PLAYER_ERROR("Sorry, support for Gazebo not included at compile-time.");
+#endif
+  }
 
   cf = new ConfigFile("localhost",port);
   assert(cf);
@@ -219,6 +246,12 @@ main(int argc, char** argv)
   puts("Quitting.");
 
   Cleanup();
+
+#if INCLUDE_GAZEBO
+  if (gz_serverid >= 0)
+    GzClient::Fini();
+#endif
+
   return(0);
 }
 
@@ -284,11 +317,11 @@ PrintUsage()
 
 
 int 
-ParseArgs(int* port, int* debuglevel, char** cfgfilename, 
+ParseArgs(int* port, int* debuglevel, char** cfgfilename, int* gz_serverid,
           int argc, char** argv)
 {
   int ch;
-  const char* optflags = "d:p:hq";
+  const char* optflags = "d:p:g:hq";
   
   // Get letter options
   while((ch = getopt(argc, argv, optflags)) != -1)
@@ -303,6 +336,9 @@ ParseArgs(int* port, int* debuglevel, char** cfgfilename,
         break;
       case 'p':
         *port = atoi(optarg);
+        break;
+      case 'g':
+        *gz_serverid = atoi(optarg);
         break;
       case '?':
       case ':':

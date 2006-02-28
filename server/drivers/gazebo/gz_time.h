@@ -43,6 +43,7 @@ class GzTime : public PlayerTime
 
   // Get the simulator time
   public: int GetTime(struct timeval* time);
+  public: int GetTimeDouble(double* time);
 
   // Pointer to the simulator interface
   private: gz_sim_t *sim;

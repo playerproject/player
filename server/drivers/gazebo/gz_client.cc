@@ -59,6 +59,8 @@ int GzClient::Init(int serverid, const char *prefixid)
   GzClient::client = gz_client_alloc();
   assert(GzClient::client);
 
+  printf("GzClient ServerId[%d]\n",serverid);
+
 #ifdef GZ_CLIENT_ID_PLAYER
   // Use version 0.5.0
   if (gz_client_connect_wait(GzClient::client, serverid, GZ_CLIENT_ID_PLAYER) != 0)

@@ -503,7 +503,7 @@ fi
 dnl Set up the necessary vars
 if test "x$enable_gazebo" = "xyes"; then
   AC_DEFINE(INCLUDE_GAZEBO, 1, [include the $1 driver])
-  GAZEBO_LIB=libgazebo.a
+  GAZEBO_LIB=libgazebo.la
   GAZEBO_LIB_PATH=drivers/gazebo/$GAZEBO_LIB
   GAZEBO_EXTRA_CPPFLAGS=$GAZEBO_CFLAGS
   GAZEBO_EXTRA_LFLAGS=
