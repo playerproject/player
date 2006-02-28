@@ -491,6 +491,7 @@ int read_f_packet (int fd, char *fpack_chars)
 */
 int read_image (int fd, int chan_num, packet_f *fpacket)
 {  
+	char fpack_chars [F_PACKET_LENGTH];
 	switch (chan_num)
 	{
 		case 0:
@@ -520,7 +521,6 @@ int read_image (int fd, int chan_num, packet_f *fpacket)
 		}
 	}
    
-	char fpack_chars [F_PACKET_LENGTH];
   
 	if (read_f_packet (fd, fpack_chars) != 0)
 		return -1;

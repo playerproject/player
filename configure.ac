@@ -21,8 +21,10 @@ case $host in
 esac
 AM_CONDITIONAL(DARWIN, test "x$darwin" = "xyes")
 
-dnl Initialize automake, requiring version 1.7 or better
-AM_INIT_AUTOMAKE(1.7)
+dnl Initialize automake, specifying that the newer "pax" format should be
+dnl used for making tarballs (it doesn't have the 99-character pathname
+dnl limit present in older archive formats)
+AM_INIT_AUTOMAKE([tar-ustar dist-bzip2])
 
 dnl Need AC_PROG_MAKE_SET for recursive building
 AC_PROG_MAKE_SET
@@ -137,26 +139,21 @@ AC_CHECK_PROG(have_java,javac,yes,no)
 dnl Let the user disable building java wrappers
 AC_ARG_ENABLE(jplayer, [  --disable-jplayer         Don't build Jplayer (the Java wrappers)],, enable_jplayer=yes)
 
-dnl If we have python, swig, javac, jni.h, and jni_md.h, then all
-dnl systems are go for building Jplayer
-if test "x$enable_jplayer" = "xno"; then
-  reason_jplayer="disabled by user"
-elif test "x$have_python" = "xno"; then
-  reason_jplayer="could not find python"
-  enable_jplayer=no
-elif test "x$have_swig" = "xno"; then
-  reason_jplayer="could not find swig"
-  enable_jplayer=no
-elif test "x$have_java" = "xno"; then
-  reason_jplayer="could not find java"
-  enable_jplayer=no
-elif test "x$have_jni_h" = "xno" -o "x$have_jni_md_h" = "xno"; then
-  reason_jplayer="could not find JNI headers (jni.h, jni_md.h)"
+dnl Must have Java and JNI headers to compile Jplayer
+if test "x$have_java" = "xno" -o "x$have_jni_h" = "xno" -o "x$have_jni_md_h" = "xno"; then
   enable_jplayer=no
 fi
 AM_CONDITIONAL(ENABLE_JPLAYER, test "x$enable_jplayer" = "xyes")
 JNI_CFLAGS="-I$with_jnidir -I$with_jni_mddir"
 AC_SUBST(JNI_CFLAGS)
+
+dnl Must have python, swig, javac, jni.h, and jni_md.h to generate code
+dnl for Jplayer
+build_jplayer=$enable_jplayer
+if test "x$have_python" = "xno" -o "x$have_swig" = "xno" -o "x$have_java" = "xno" -o "x$have_jni_h" = "xno" -o "x$have_jni_md_h" = "xno"; then
+  build_jplayer=no
+fi
+AM_CONDITIONAL(BUILD_JPLAYER, test "x$enable_jplayer" = "xyes")
 
 dnl client tests are compiled by default
 AC_ARG_ENABLE(tests,   [  --disable-tests          Don't build client tests],,
@@ -315,13 +312,15 @@ fi
 AM_CONDITIONAL(INCLUDE_RTKGUI, test "x$enable_rtkgui" = "xyes")
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h jpeglib.h)
+AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h jpeglib.h zlib.h)
 
-AC_CHECK_HEADER(zlib.h, have_zlib=yes, have_zlib=no)
-if test "x$have_zlib" = "xyes"; then
-  AC_DEFINE(HAVE_ZLIB_H, 1, [[[zlib is available]]])
+dnl Look for compress2 and compressBound in libz
+AC_CHECK_LIB(z,compress2)
+AC_CHECK_FUNC(compressBound, have_compressBound=yes, have_compressBound=no)
+if test "x$have_compressBound" = "xno"; then
+  AC_LIBOBJ(compressBound)
+  AC_DEFINE(NEED_COMPRESSBOUND, 1, [Define to 1 if you do NOT have the compressBound function in libz])
 fi
-AM_CONDITIONAL(HAVE_ZLIB, test "x$have_zlib" = "xyes")
 
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t
@@ -412,6 +411,7 @@ AC_OUTPUT(Makefile
           rtk2/Makefile
           replace/Makefile
           doc/Makefile
+          doc/images/Makefile
           libplayerjpeg/Makefile
           libplayercore/Makefile
           libplayercore/bindings/Makefile
@@ -488,7 +488,7 @@ AC_OUTPUT(Makefile
           client_libs/libplayerc++/playerc++.pc
           client_libs/libplayerc++/test/Makefile
           client_libs/libplayerc/Makefile
-dnl          client_libs/libplayerc/doc/Makefile
+          client_libs/libplayerc/doc/Makefile
           client_libs/libplayerc/playerc.pc
           client_libs/libplayerc/test/Makefile
           client_libs/libplayerc/bindings/Makefile
@@ -508,7 +508,7 @@ dnl          client_libs/libplayerpacket/Makefile
           utils/playernav/Makefile
           utils/playerprint/Makefile
           utils/playervcr/Makefile
-dnl          utils/dgps_server/Makefile
+          utils/dgps_server/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)
 
@@ -548,13 +548,6 @@ if test "x$enable_libplayerc_py" = "xyes"; then
   AC_MSG_RESULT([Python bindings to libplayerc will be built])
 else
   AC_MSG_RESULT([Python bindings to libplayerc will not be built -- $reason_libplayerc_py])
-fi
-AC_MSG_RESULT([])
-dnl libplayercore / libplayertcp / libplayerxdr Java bindings
-if test "x$enable_jplayer" = "xyes"; then
-  AC_MSG_RESULT([Java bindings to libplayercore/libplayertcp will be built])
-else
-  AC_MSG_RESULT([Java bindings to libplayercore/libplayertcp will not be built -- $reason_jplayer])
 fi
 AC_MSG_RESULT([])
 

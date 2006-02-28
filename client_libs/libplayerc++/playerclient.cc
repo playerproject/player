@@ -29,6 +29,8 @@
 #include <cassert>
 #include <cstdio>
 #include <iostream>
+#include <algorithm>
+#include <functional>
 
 #include <time.h>
 

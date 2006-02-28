@@ -124,7 +124,7 @@ class Cmucam2:public Driver
 		uint32_t colors[MAX_CHANNELS];
 		void get_blob (packet_t cam_packet, player_blobfinder_blob_t *blob,
 					   color_config range);
-		void get_image (packet_f cam_packet, player_camera_data_t *image);
+		void get_image (packet_f* cam_packet, player_camera_data_t *image);
 		int fd;
 		int num_of_blobs;
 		const char* devicepath;
@@ -493,15 +493,22 @@ void Cmucam2::RefreshDataPtz        ()
 ////////////////////////////////////////////////////////////////////////////////
 void Cmucam2::RefreshDataCamera     ()
 {
-	packet_f              camera_packet;
+	packet_f*              camera_packet;
+
+        camera_packet = (packet_f*)malloc(sizeof(packet_f));
+        assert(camera_packet);
   
 	memset (&this->cam_data, 0, sizeof (this->cam_data));
-	memset (&camera_packet,  0, sizeof (camera_packet));
+	memset (camera_packet,  0, sizeof (packet_f));
 
-	if (read_image (fd, -1, &camera_packet) != 0)
-		pthread_exit (NULL);
+	if (read_image (fd, -1, camera_packet) != 0)
+        {
+          free(camera_packet);
+          pthread_exit (NULL);
+        }
 
 	get_image (camera_packet, &cam_data);
+        free(camera_packet);
 
 	Publish (this->cam_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, 
 			 &cam_data, sizeof (player_camera_data_t), NULL);
@@ -550,14 +557,14 @@ void Cmucam2::get_blob (packet_t cam_packet,
    Returns:     The Player format for image data
 */
 
-void Cmucam2::get_image (packet_f cam_packet, 
+void Cmucam2::get_image (packet_f* cam_packet, 
 						 player_camera_data_t *cam_data)
 {
 	int x = 0;
 	int y = 0;
   
-	(*cam_data).width       = cam_packet.xsize;
-	(*cam_data).height      = cam_packet.ysize;
+	(*cam_data).width       = cam_packet->xsize;
+	(*cam_data).height      = cam_packet->ysize;
 	(*cam_data).bpp         = 24;
 	(*cam_data).format      = 5;    // PLAYER_CAMERA_FORMAT_RGB888
 	(*cam_data).fdiv        = 1;
@@ -568,9 +575,9 @@ void Cmucam2::get_image (packet_f cam_packet,
 	{
 		for (x = 0; x < (int32_t)(*cam_data).width; x++)
 		{
-			int red   = cam_packet.rows[y].rgb[x].r << 16;
-			int green = cam_packet.rows[y].rgb[x].g << 8;
-			int blue  = cam_packet.rows[y].rgb[x].b;
+			int red   = cam_packet->rows[y].rgb[x].r << 16;
+			int green = cam_packet->rows[y].rgb[x].g << 8;
+			int blue  = cam_packet->rows[y].rgb[x].b;
 			(*cam_data).image[y * (*cam_data).width * 2 + x * 2]
 					= (red + green + blue);
 			(*cam_data).image[y * (*cam_data).width * 2 + x * 2 + 1] 

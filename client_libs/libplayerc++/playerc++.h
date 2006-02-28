@@ -35,8 +35,6 @@
 #include <cmath>
 #include <string>
 #include <list>
-#include <stdint.h>
-
 
 #include "libplayerc/playerc.h"
 #include "libplayerc++/playerc++config.h"

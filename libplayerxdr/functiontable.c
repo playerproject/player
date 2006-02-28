@@ -405,8 +405,8 @@ static int ftable_len;
 void
 playerxdr_ftable_init()
 {
-  ftable_len = 0;
   playerxdr_function_t* f;
+  ftable_len = 0;
   for(f = init_ftable; f->func; f++)
     ftable_len++;
 

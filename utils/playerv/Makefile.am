@@ -2,6 +2,8 @@ if WITH_GTK
 PLAYERV = playerv
 endif
 
+EXTRA_DIST = playerv-laser-blobfinder-ptz.jpg playerv-sonar.jpg
+
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/client_libs @GTK_CFLAGS@
 
 bin_PROGRAMS = $(PLAYERV)

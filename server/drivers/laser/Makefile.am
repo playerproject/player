@@ -18,6 +18,8 @@ if INCLUDE_URGLASER
 noinst_LTLIBRARIES += liburglaser.la
 endif
 
+EXTRA_DIST = lasercspace-1.jpg lasercspace-2.jpg
+
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 libsicklms200_la_SOURCES = sicklms200.cc

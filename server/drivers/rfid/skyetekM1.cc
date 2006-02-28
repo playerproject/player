@@ -198,7 +198,7 @@ int SkyetekM1::Setup ()
 
 	// Change port settings
 	struct termios options;
-	bzero (&options, sizeof (options));// clear the struct for new port settings
+	memset (&options, 0, sizeof (options));// clear the struct for new port settings
 	
 	// Get the current port settings
 	if (tcgetattr (this->fd, &options) != 0) {
@@ -408,7 +408,7 @@ void SkyetekM1::SelectTags ()
 			len = response_buf[1];
 		
 		unsigned char TID[len];
-		bzero (&TID, sizeof (TID)); // clear the struct for new port settings
+		memset (&TID, 0, sizeof (TID)); // clear the struct for new port settings
 		usleep (10000); // sleep for 10ms
 		ReadSerial (TID, len);
 		if (response_buf[2] == 0x94)

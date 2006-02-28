@@ -101,7 +101,10 @@ PlayerTCP::PlayerTCP()
 
   pthread_mutexattr_t mutex_attr;
   pthread_mutexattr_init(&mutex_attr);
+  // TODO: see what happens if recursive mutexes are not available
+#ifdef PTHREAD_MUTEX_RECURSIVE
   pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+#endif
   pthread_mutex_init(&this->clients_mutex,&mutex_attr);
 
   this->num_listeners = 0;
