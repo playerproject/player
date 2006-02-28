@@ -1,1 +1,1 @@
-EXTRA_DIST = joydrive.py libplayerc_py.html mainpage.html simpleclient.c
+EXTRA_DIST = simpleclient.c

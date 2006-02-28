@@ -88,6 +88,7 @@ driver
 #include <netinet/in.h>
 #include <stdlib.h>
 
+#include <replace/replace.h>
 #include <libplayercore/playercore.h>
 
 // MicroStraing 3DM-G IMU driver

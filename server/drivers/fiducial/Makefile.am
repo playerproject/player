@@ -2,6 +2,8 @@ noinst_LIBRARIES = @LASERBAR_LIB@ @LASERBARCODE_LIB@ @LASERVISUALBARCODE_LIB@ @L
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
 
+EXTRA_DIST = beacon.jpg laservisualbeacon.jpg
+
 EXTRA_LIBRARIES = liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a liblaservisualbw.a
 
 liblaserbar_a_SOURCES = laserbar.cc

@@ -10,8 +10,6 @@
 #include <string>
 #include <list>
 
-#include <stdint.h>
-
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
   #include <boost/bind.hpp>

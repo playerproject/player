@@ -5,5 +5,4 @@ if INCLUDE_GARCIA
 noinst_LTLIBRARIES += libgarcia.la
 endif
 
-libgarcia_la_SOURCES = garcia_mixed.cc 
-
+libgarcia_la_SOURCES = garcia_mixed.cc garcia_mixed.h

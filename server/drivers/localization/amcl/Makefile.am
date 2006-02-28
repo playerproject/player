@@ -8,6 +8,8 @@ if INCLUDE_AMCL
 noinst_LTLIBRARIES += libamcl.la
 endif
 
+EXTRA_DIST = amcl-phe200-0010.jpg amcl-phe200-0400.jpg amcl-phe200-0800.jpg amcl-phe200-1200.jpg
+
 
 libamcl_la_SOURCES = amcl.h \
                      amcl.cc \

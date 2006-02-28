@@ -112,6 +112,7 @@ driver
 #include <unistd.h>
 #include <math.h>
 
+#include <replace/replace.h>
 #include <libplayercore/playercore.h>
 #include "obot_constants.h"
 

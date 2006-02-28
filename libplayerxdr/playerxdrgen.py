@@ -142,13 +142,12 @@ if __name__ == '__main__':
       varlist = []
   
       # separate the variable declarations
-      decls = declpattern.finditer(varpart[0])
-      for d in decls:
+      decls = declpattern.findall(varpart[0])
+      for dstring in decls:
         # find the type and variable names in this declaration
-        dstring = d.string[d.start(1):d.end(1)]
         type = typepattern.findall(dstring)[0]
         dstring = typepattern.sub('', dstring, 1)
-        vars = variablepattern.finditer(dstring)
+        vars = variablepattern.findall(dstring)
   
         # Do some name mangling for common types
         if type == 'int64_t':
@@ -174,8 +173,7 @@ if __name__ == '__main__':
           xdr_proc = 'xdr_' + type
   
         # iterate through each variable
-        for var in vars:
-          varstring = var.string[var.start(1):var.end(1)]
+        for varstring in vars:
           # is it an array or a scalar?
           arraysize = arraypattern.findall(varstring)
           if len(arraysize) > 0:

@@ -91,6 +91,10 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout);
   double round (double x);
 #endif // !HAVE_ROUND
 
+#if NEED_COMPRESSBOUND
+  unsigned long compressBound (unsigned long sourceLen);
+#endif // NEED_COMPRESSBOUND
+
 #ifdef __cplusplus
 }
 #endif

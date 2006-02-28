@@ -242,7 +242,7 @@ int InsideM300::Setup ()
 
 	// Change port settings
 	struct termios options;
-	bzero (&options, sizeof (options));// clear the struct for new port settings
+	memset (&options, 0,sizeof (options));// clear the struct for new port settings
 	
 	// Get the current port settings
 	if (tcgetattr (this->fd, &options) != 0) {
@@ -660,7 +660,7 @@ int InsideM300::SelectTags ()
 			{
 				InsideInventory (1, chipMask, globalChipAnswer);
 			
-				bzero (&ISOCommand, sizeof (ISOCommand));
+				memset (&ISOCommand, 0,sizeof (ISOCommand));
 				int k;
 				for (k = 2; k < 10; k++)
 					ISOCommand[k] = globalChipAnswer[k-2];
@@ -669,7 +669,7 @@ int InsideM300::SelectTags ()
 				// 0xC2 = TRANSMIT (Note: get Chip Answer)
 				status = SendISOCommand (ISO_IN, 0, 0xC2, 0xB3, 0x00, 0x0A, 
 							 ISOCommand, chipAnswer);
-				bzero (&ISOCommand, sizeof (ISOCommand));
+				memset (&ISOCommand, 0,sizeof (ISOCommand));
 				ISOCommand[0] = 0x36; ISOCommand[1] = 0x01;
 				ISOCommand[2] = 0x00; ISOCommand[3] = 0x00;
 				// 0xC2 = TRANSMIT (Note: get Chip Answer)

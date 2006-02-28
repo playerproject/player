@@ -2,12 +2,11 @@ AM_CPPFLAGS = -g -Wall -fPIC -I$(top_srcdir) @JNI_CFLAGS@
 
 # files that must be built first
 BUILT_SOURCES =
-if ENABLE_JPLAYER
-BUILT_SOURCES += playercore_java_wrap.cc playercore_casts.i playercore_arraysofclasses.i
+if BUILD_JPLAYER
+BUILT_SOURCES += playercore_java_wrap.cc playercore_java_wrap.h playercore_casts.i playercore_arraysofclasses.i
 endif
 
-EXTRA_DIST = playercore_java.i parse.py
-CLEANFILES = playercore_java_wrap.cc playercore_casts.i playercore_arraysofclasses.i
+EXTRA_DIST = playercore_java.i parse.py playercore_java_wrap.cc playercore_java_wrap.h playercore_casts.i playercore_arraysofclasses.i
 
 lib_LTLIBRARIES =
 if ENABLE_JPLAYER
@@ -16,10 +15,11 @@ endif
 
 playercore_arraysofclasses.i: playercore_casts.i
 
-playercore_casts.i: $(srcdir)/../../player.h parse.py
+playercore_casts.i: $(top_srcdir)/libplayercore/player.h parse.py
 	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i net/sourceforge/playerstage/Jplayercore net/sourceforge/playerstage/Jplayercore player.java
 
 
+playercore_java_wrap.h: playercore_java_wrap.cc
 playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
                          playercore_arraysofclasses.i\
                          $(srcdir)/../../configfile.h \
@@ -39,7 +39,7 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
 #all-local:
 #	javac *.java
 
-nodist_libplayercore_java_la_SOURCES = playercore_java_wrap.cc
+libplayercore_java_la_SOURCES = playercore_java_wrap.cc playercore_java_wrap.h
 libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@ -rpath $(libdir)
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayercore
@@ -48,12 +48,13 @@ if ENABLE_JPLAYER
 java_DATA += net/sourceforge/playerstage/Jplayercore/*.java
 endif
 
+dist-hook:
+	mkdir -p $(distdir)/net/sourceforge/playerstage/Jplayercore
+	cp -r -p -v $(srcdir)/net/sourceforge/playerstage/Jplayercore/* $(distdir)/net/sourceforge/playerstage/Jplayercore
+
 if DARWIN
 if ENABLE_JPLAYER
 install-exec-hook:
 	cd $(DESTDIR)$(libdir) && ln -sf libplayercore_java.dylib libplayercore_java.jnilib 
 endif
 endif
-
-clean-local:
-	rm -rf net
