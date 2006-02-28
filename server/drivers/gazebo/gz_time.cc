@@ -65,3 +65,15 @@ int GzTime::GetTime(struct timeval* time)
   
   return 0;
 }
+
+int GzTime::GetTimeDouble(double* time)
+{
+  struct timeval ts;
+
+  ts.tv_sec = (int) floor(this->sim->data->sim_time);
+  ts.tv_usec = (int) floor(fmod(this->sim->data->sim_time, 1.0) * 1e6);
+ 
+  *time = ts.tv_sec + ts.tv_usec/1e6;
+
+  return 0;
+}
