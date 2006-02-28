@@ -898,25 +898,82 @@ This interface accepts no configuration requests.
 #define PLAYER_BLINKENLIGHT_DATA_STATE 1
 
 /** Command subtype: state */
-#define PLAYER_BLINKENLIGHT_CMD_STATE 1
+#define PLAYER_BLINKENLIGHT_CMD_STATE      1
+/** Command subtype: light */
+#define PLAYER_BLINKENLIGHT_CMD_POWER      2
+/** Command subtype: color */
+#define PLAYER_BLINKENLIGHT_CMD_COLOR      3
+/** Command subtype: period */
+#define PLAYER_BLINKENLIGHT_CMD_PERIOD     4
+/** Command subtype: dutycycle */
+#define PLAYER_BLINKENLIGHT_CMD_DUTYCYCLE  5
 
 /** @brief Data: state (@ref PLAYER_BLINKENLIGHT_DATA_STATE)
-
 The @p blinkenlight data provides the current state of the indicator
 light.*/
 typedef struct player_blinkenlight_data
 {
   /** FALSE: disabled, TRUE: enabled */
   uint8_t enable;
-  /** flash period (one whole on-off cycle) [s]. */
+  /** flash period (duration of one whole on-off cycle) [s]. */
   float period;
+  /** flash duty cycle (ratio of time-on to time-off in one cycle). */
+  float dutycycle;
+  /** the color of the light */
+  player_color_t color;
 } player_blinkenlight_data_t;
 
 /** @brief Command: state (@ref PLAYER_BLINKENLIGHT_CMD_STATE)
+This @p blinkenlight command sets the complete current state of the
+indicator light. */
+typedef struct player_blinkenlight_cmd
+{
+  /** FALSE: disabled, TRUE: enabled */
+  uint8_t enable;
+  /** flash period (duration of one whole on-off cycle) [s]. */
+  float period;
+  /** flash duty cycle (ratio of time-on to time-off in one cycle). */
+  float dutycycle;
+  /** the color of the light */
+  player_color_t color;
+} player_blinkenlight_cmd_t;
 
-The @p blinkenlight command sets the current state of the indicator
-light. It uses the same packet as the data.*/
-typedef player_blinkenlight_data_t player_blinkenlight_cmd_t;
+/** @brief Command: power (@ref PLAYER_BLINKENLIGHT_CMD_POWER)
+This @p blinkenlight command turns the light on or off.
+*/
+typedef struct player_blinkenlight_cmd_power
+{
+  /** FALSE: off, TRUE: on */
+  uint8_t enable;
+} player_blinkenlight_cmd_power_t;
+
+/** @brief Command: color (@ref PLAYER_BLINKENLIGHT_DATA_COLOR)
+This @p blinkenlight command sets the color of the light.
+*/
+typedef struct player_blinkenlight_cmd_color
+{
+  /** the color of the light */
+  player_color_t color;
+} player_blinkenlight_cmd_color_t;
+
+/** @brief Command: period (@ref PLAYER_BLINKENLIGHT_DATA_PERIOD)
+This @p blinkenlight command sets the duration of one on/off blink cycle in seconds.
+*/
+typedef struct player_blinkenlight_cmd_period
+{
+  /** flash period (duration of one whole on-off cycle) [s]. */
+  float period;
+} player_blinkenlight_cmd_period_t;
+
+/** @brief Command: dutycycle (@ref
+PLAYER_BLINKENLIGHT_DATA_DUTYCYCLE) This @p blinkenlight command sets
+the ratio of light-on to light-off time in one on/off blink cycle.
+*/
+typedef struct player_blinkenlight_cmd_dutycycle
+{
+  /** flash duty cycle (ratio of time-on to time-off in one cycle). */
+  float dutycycle;
+} player_blinkenlight_cmd_dutycycle_t;
 
 /** @} */
 

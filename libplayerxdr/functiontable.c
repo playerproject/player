@@ -65,6 +65,8 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AIO_CMD_STATE,
    (player_pack_fn_t)player_aio_cmd_pack},
 
+
+ 
   /* audiodsp messages */
   {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIODSP_DATA_TONES,
    (player_pack_fn_t)player_audiodsp_data_pack},
@@ -99,7 +101,15 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLINKENLIGHT_DATA_STATE,
    (player_pack_fn_t)player_blinkenlight_data_pack},
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_CMD, PLAYER_BLINKENLIGHT_CMD_STATE,
-   (player_pack_fn_t)player_blinkenlight_data_pack},
+   (player_pack_fn_t)player_blinkenlight_cmd_pack},
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_CMD, PLAYER_BLINKENLIGHT_CMD_POWER,
+   (player_pack_fn_t)player_blinkenlight_cmd_power_pack},
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_CMD, PLAYER_BLINKENLIGHT_CMD_COLOR,
+   (player_pack_fn_t)player_blinkenlight_cmd_color_pack},
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_CMD, PLAYER_BLINKENLIGHT_CMD_DUTYCYCLE,
+   (player_pack_fn_t)player_blinkenlight_cmd_dutycycle_pack},
+  {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_CMD, PLAYER_BLINKENLIGHT_CMD_PERIOD,
+   (player_pack_fn_t)player_blinkenlight_cmd_period_pack},
 
   /* blobfinder messages */
   {PLAYER_BLOBFINDER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
