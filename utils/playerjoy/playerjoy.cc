@@ -66,6 +66,10 @@ Details of keyboard control are printed out on the console.
   #include <config.h>
 #endif
 
+#if HAVE_STRINGS_H
+  #include <strings.h>
+#endif
+
 #include <termios.h>
 #define KEYBOARD_SUPPORT 1
 
