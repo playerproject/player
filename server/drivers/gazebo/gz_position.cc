@@ -92,7 +92,7 @@ class GzPosition : public Driver
 
   // Gazebo client object
   private: gz_client_t *client;
-  
+
   // Gazebo Interface
   private: gz_position_t *iface;
 
@@ -140,6 +140,7 @@ GzPosition::GzPosition(ConfigFile* cf, int section)
 
   this->datatime = -1;
 
+
   return;
 }
 
@@ -181,6 +182,7 @@ int GzPosition::Shutdown()
 }
 
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Check for new data
 void GzPosition::Update()
@@ -190,8 +192,12 @@ void GzPosition::Update()
 
   gz_position_lock(this->iface, 1);
 
-  if (this->iface->data->time > this->datatime)
+  if (!this->InQueue->Empty())
+    this->ProcessMessages();
+
+  //if (this->iface->data->time > this->datatime)
   {
+
     this->datatime = this->iface->data->time;
     
     ts.tv_sec = (int) (this->iface->data->time);
@@ -207,11 +213,16 @@ void GzPosition::Update()
 
     data.stall = (uint8_t) this->iface->data->stall;
 
-    this->Publish( this->device_addr, NULL,
+    /*this->Publish( this->device_addr, NULL,
                    PLAYER_MSGTYPE_DATA,
                    PLAYER_POSITION2D_DATA_STATE, 
                    (void*)&data, sizeof(data), &this->datatime );
- 
+                   */
+
+    this->Publish( this->device_addr, NULL,
+                   PLAYER_MSGTYPE_DATA,
+                   PLAYER_POSITION2D_DATA_STATE, 
+                   (void*)&data, sizeof(data), NULL );
   }
 
   gz_position_unlock(this->iface);
@@ -222,27 +233,77 @@ void GzPosition::Update()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Commands
-int GzPosition::ProcessMessage( MessageQueue *resp_queue, 
-                                      player_msghdr *hdr, 
-                                      void *data)
+int GzPosition::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, 
+    void *data)
 {
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
         PLAYER_POSITION2D_CMD_VEL, this->device_addr))
   {
     player_position2d_cmd_vel_t *cmd;
 
-    assert(hdr->size >= sizeof(player_position2d_cmd_vel_t));
     cmd = (player_position2d_cmd_vel_t*) data;
-
-    gz_position_lock(this->iface, 1);
+    printf("XYA[%f %f %f]\n",cmd->vel.px, cmd->vel.py, cmd->vel.pa);
+    //gz_position_lock(this->iface, 1);
     this->iface->data->cmd_vel_pos[0] = cmd->vel.px;
     this->iface->data->cmd_vel_pos[1] = cmd->vel.py;
     this->iface->data->cmd_vel_rot[2] = cmd->vel.pa * M_PI / 180;
-    gz_position_unlock(this->iface);
+    //   gz_position_unlock(this->iface);
+    return 0;
   }
+
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+        PLAYER_POSITION2D_REQ_SET_ODOM, this->device_addr))
+  {
+    if (hdr->size != sizeof(player_position2d_set_odom_req_t))
+    {
+      PLAYER_WARN("Arg to odometry set requestes wrong size; ignoring");
+      return -1;
+    }
+
+    player_position2d_set_odom_req_t *odom = (player_position2d_set_odom_req_t*)data;
+
+    this->iface->data->pos[0] = odom->pose.px;
+    this->iface->data->pos[1] = odom->pose.py;
+    this->iface->data->pos[2] = odom->pose.pa;
+
+    this->Publish(this->device_addr, resp_queue,
+        PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
+
+    return 0;
+  }
+
+
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+        PLAYER_POSITION2D_REQ_MOTOR_POWER, this->device_addr))
+  {
+    if (hdr->size != sizeof(player_position2d_power_config_t))
+    {
+      PLAYER_WARN("Arg to motor set requestes wrong size; ignoring");
+      return -1;
+    }
+
+    player_position2d_power_config_t *power;
+
+    power = (player_position2d_power_config_t*) data;
+
+    this->iface->data->cmd_enable_motors = power->state;
+
+    this->Publish(this->device_addr, resp_queue,
+        PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+
+    return 0;
+  }
+
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
         PLAYER_POSITION2D_REQ_GET_GEOM, this->device_addr))
   {
+    if (hdr->size != 0)
+    {
+      PLAYER_WARN("Arg get robot geom is wrong size; ignoring");
+      return -1;
+    }
+
+
     player_position2d_geom_t geom;
 
     // TODO: get correct dimensions; there are for the P2AT
@@ -258,24 +319,24 @@ int GzPosition::ProcessMessage( MessageQueue *resp_queue,
         PLAYER_POSITION2D_REQ_GET_GEOM, 
         &geom, sizeof(geom), NULL);
 
+    return 0;
   }
-  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
-        PLAYER_POSITION2D_REQ_MOTOR_POWER, this->device_addr))
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+        PLAYER_POSITION2D_REQ_RESET_ODOM, this->device_addr))
   {
-    player_position2d_power_config_t *power;
-
-    assert((size_t) hdr->size >= sizeof(player_position2d_power_config_t));
-    power = (player_position2d_power_config_t*) data;
-
-    gz_position_lock(this->iface, 1);
-    this->iface->data->cmd_enable_motors = power->state;
-    gz_position_unlock(this->iface);
-
+    if (hdr->size != 0)
+    {
+      PLAYER_WARN("Arg reset position request is wrong size; ignoring");
+      return -1;
+    }
+    
+    // TODO: Make this work!!
+    //
     this->Publish(this->device_addr, resp_queue,
-        PLAYER_MSGTYPE_RESP_ACK, 
-        PLAYER_POSITION2D_REQ_MOTOR_POWER, 
-        &power, sizeof(power), NULL);
+        PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_RESET_ODOM);
+
+    return 0;
   }
 
-  return 0;
+  return -1;
 }
