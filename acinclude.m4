@@ -225,7 +225,7 @@ PLAYER_ADD_DRIVER([lifomcom],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([logfile],[yes],[zlib.h],[],[-lz])
+PLAYER_ADD_DRIVER([logfile],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([mapcspace],[no],[],[],[])
 
