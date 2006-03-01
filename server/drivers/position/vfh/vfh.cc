@@ -722,7 +722,6 @@ int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
   }
   else
   {
-    puts("unhandled command");
     return -1;
   }
 }
