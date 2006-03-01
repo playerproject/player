@@ -1138,7 +1138,7 @@ class LaserProxy : public ClientProxy
       { return GetVar(mDevice->ranges[aIndex]); };
 
     /// get the intensity
-    double GetIntensity(uint aIndex) const
+    int GetIntensity(uint aIndex) const
       { return GetVar(mDevice->intensity[aIndex]); };
 
     /// Configure the laser scan pattern.  Angles @p min_angle and
