@@ -323,7 +323,12 @@ dnl Checks for header files.
 AC_CHECK_HEADERS(stdint.h strings.h sys/soundcard.h sys/filio.h linux/joystick.h jpeglib.h zlib.h)
 
 dnl Look for compress2 and compressBound in libz
-AC_CHECK_LIB(z,compress2)
+AC_CHECK_LIB(z,compress2,
+             have_libz=yes
+             AC_DEFINE(HAVE_LIBZ, 1, [Define to 1 if you have the z library (-lz). ])
+             LIBS="$LIBS -lz",
+             have_libz=no)
+AM_CONDITIONAL(HAVE_LIBZ, test "x$have_libz" = "xyes")
 AC_CHECK_FUNC(compressBound, have_compressBound=yes, have_compressBound=no)
 if test "x$have_compressBound" = "xno"; then
   AC_LIBOBJ(compressBound)

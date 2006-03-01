@@ -122,6 +122,10 @@ driver
 */
 /** @} */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -132,7 +136,9 @@ driver
 #include <math.h>
 #include <unistd.h>
 
-#include <zlib.h>
+#if HAVE_ZLIB_H
+  #include <zlib.h>
+#endif
 
 #include <libplayercore/playercore.h>
 
@@ -279,7 +285,9 @@ class ReadLog: public Driver
   // File to read data from
   private: const char *filename;
   private: FILE *file;
+#if HAVE_ZLIB_H
   private: gzFile gzfile;
+#endif
 
   // Input buffer
   private: size_t line_size;
@@ -394,7 +402,9 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   // Initialize other stuff
   this->format = strdup("unknown");
   this->file = NULL;
+#if HAVE_ZLIB_H
   this->gzfile = NULL;
+#endif
 
   // Set up the global time object.  We're just shoving our own in over the
   // pre-existing WallclockTime object.  Not pretty but it works.
@@ -436,10 +446,18 @@ int ReadLog::Setup()
   // Open the file (possibly compressed)
   if (strlen(this->filename) >= 3 && \
       strcasecmp(this->filename + strlen(this->filename) - 3, ".gz") == 0)
+  {
+#if HAVE_ZLIB_H
     this->gzfile = gzopen(this->filename, "r");
+#else
+    PLAYER_ERROR("no support for reading compressed log files");
+    return -1;
+#endif
+  }
   else
     this->file = fopen(this->filename, "r");
 
+  /** @todo Fix support for reading gzipped files */
   if (this->file == NULL)
   {
     PLAYER_ERROR2("unable to open [%s]: %s\n", this->filename, strerror(errno));
@@ -473,12 +491,18 @@ int ReadLog::Shutdown()
   free(this->line);
 
   // Close the file
+#if HAVE_ZLIB_H
   if (this->gzfile)
+  {
     gzclose(this->gzfile);
-  else
+    this->gzfile = NULL;
+  }
+#endif
+  if(this->file)
+  {
     fclose(this->file);
-  this->gzfile = NULL;
-  this->file = NULL;
+    this->file = NULL;
+  }
 
   return 0;
 }
@@ -528,10 +552,14 @@ void ReadLog::Main()
     if(!reading_configs && this->rewind_requested)
     {
       // back up to the beginning of the file
+#if HAVE_ZLIB_H
       if (this->gzfile)
         ret = gzseek(this->file,0,SEEK_SET);
       else
         ret = fseek(this->file,0,SEEK_SET);
+#else
+      ret = fseek(this->file,0,SEEK_SET);
+#endif
 
       if(ret < 0)
       {
@@ -570,10 +598,14 @@ void ReadLog::Main()
     {
       // Read a line from the file; note that gzgets is really slow
       // compared to fgets (on uncompressed files), so use the latter.
+#if HAVE_ZLIB_H
       if (this->gzfile)
         ret = (gzgets(this->file, this->line, this->line_size) == NULL);
       else
         ret = (fgets(this->line, this->line_size, (FILE*) this->file) == NULL);
+#else
+      ret = (fgets(this->line, this->line_size, (FILE*) this->file) == NULL);
+#endif
 
       if (ret != 0)
       {
