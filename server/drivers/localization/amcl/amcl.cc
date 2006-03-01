@@ -476,6 +476,14 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
     this->sensors[this->sensor_count++] = new AMCLImu();
   */
 
+  // We need an "action" sensor
+  if(this->action_sensor < 0)
+  {
+    PLAYER_ERROR("No action sensor");
+    this->SetError(-1);
+    return;
+  }
+
   // Load sensor settings
   for (i = 0; i < this->sensor_count; i++)
     this->sensors[i]->Load(cf, section);
