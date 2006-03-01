@@ -77,7 +77,7 @@ class Message
                              player_devaddr_t addr)
     {
       return(((type < 0) || (hdr->type == (uint8_t)type)) &&
-             (hdr->subtype == (uint8_t)subtype) &&
+             ((subtype < 0) || (hdr->subtype == (uint8_t)subtype)) &&
              (hdr->addr.host == addr.host) &&
              (hdr->addr.robot == addr.robot) &&
              (hdr->addr.interf == addr.interf) &&
