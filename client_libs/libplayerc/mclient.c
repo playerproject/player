@@ -153,6 +153,12 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout)
         if(mclient->client[i]->datatime > mclient->time)
           mclient->time = mclient->client[i]->datatime;
       }
+      else
+      {
+        // got no message even though poll() said there was something there, which 
+        // almost certainly means that we lost the connection
+        return(-1);
+      }
     }
   }
   return count;
