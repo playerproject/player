@@ -169,7 +169,7 @@ player_read_func(gpointer* arg)
     return(TRUE);
 
   // read new data
-  if(playerc_mclient_read(gui_data->mclient,-1) < 0)
+  if(playerc_mclient_read(gui_data->mclient,-1) <= 0)
   {
     fprintf(stderr, "Error on read\n");
     gtk_main_quit();
