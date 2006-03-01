@@ -26,8 +26,10 @@ main(int argc, char **argv)
     PlayerClient robot(gHostname, gPort);
     Position2dProxy pp(&robot, gIndex);
     LaserProxy lp(&robot, gIndex);
-    
+
     std::cout << robot << std::endl;
+
+    pp.SetMotorEnable (true);
 
     // go into read-think-act loop
     for(;;)
@@ -75,7 +77,7 @@ main(int argc, char **argv)
                 << std::endl;
 
       // write commands to robot
-      pp.SetSpeed(newspeed, newturnrate);      
+      pp.SetSpeed(newspeed, newturnrate);
     }
   }
   catch (PlayerCc::PlayerError e)
