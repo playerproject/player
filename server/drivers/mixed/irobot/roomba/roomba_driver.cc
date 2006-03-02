@@ -191,6 +191,8 @@ Roomba::Main()
        return;
      }
 
+     PLAYER_MSG0(2, "got sensor data");
+
      memset(&posdata,0,sizeof(posdata));
 
      posdata.pos.px = this->roomba_dev->ox;
@@ -200,6 +202,7 @@ Roomba::Main()
      this->Publish(this->device_addr, NULL,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
+     PLAYER_MSG0(2, "published sensor data");
      usleep(CYCLE_TIME_US);
   }
 }
@@ -217,6 +220,9 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
     // get and send the latest motor command
     player_position2d_cmd_vel_t position_cmd;
     position_cmd = *(player_position2d_cmd_vel_t*)data;
+    PLAYER_MSG2(2,"sending motor commands %f:%f", 
+                position_cmd.vel.px,
+                position_cmd.vel.pa);
     if(roomba_set_speeds(this->roomba_dev, 
                          position_cmd.vel.px, 
                          position_cmd.vel.pa) < 0)
