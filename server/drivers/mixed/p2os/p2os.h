@@ -138,7 +138,10 @@
 #define CMUCAM_IMAGE_HEIGHT	143
 #define CMUCAM_MESSAGE_LEN	10
 
+/* conection stuff */
 #define DEFAULT_P2OS_PORT "/dev/ttyS0"
+#define DEFAULT_P2OS_TCP_REMOTE_HOST "localhost"
+#define DEFAULT_P2OS_TCP_REMOTE_PORT 8101
 
 typedef struct player_p2os_data
 {
@@ -250,7 +253,12 @@ class P2OS : public Driver
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel
     int psos_fd;               // p2os device file descriptor
-    const char* psos_serial_port;
+    const char* psos_serial_port; // name of serial port device
+    bool psos_use_tcp;    // use TCP port instead of serial port 
+    const char* psos_tcp_host;  // hostname to use if using TCP
+    int psos_tcp_port;  // remote port to use if using TCP
+
+
     struct timeval lastblob_tv;
 
     player_position2d_cmd_vel_t last_position_cmd;

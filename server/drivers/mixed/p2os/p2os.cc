@@ -112,10 +112,22 @@ them named:
 
 - port (string)
   - Default: "/dev/ttyS0"
+- use_tcp (boolean)
+  - Defaut: 0
+  - Set to 1 if a TCP connection should be used instead of serial port (e.g. Amigobot 
+    with ethernet-serial bridge device attached)
+- tcp_remote_host (string)
+  - Default: "localhost"
+  - Remote hostname or IP address to connect to if using TCP
+- tcp_remote_port (integer)
+  - Default: 8101
+  - Remote port to connect to if using TCP
   - Serial port used to communicate with the robot.
 - radio (integer)
   - Default: 0
   - Nonzero if a radio modem is being used; zero for a direct serial link.
+    (a radio modem is different from and older than the newer ethernet-serial bridge used
+     on newer Pioneers and Amigos)
 - bumpstall (integer)
   - Default: -1
   - Determine whether a bumper-equipped robot stalls when its bumpers are
@@ -221,6 +233,9 @@ driver
 #include <stdlib.h>  /* for abs() */
 #include <netinet/in.h>
 #include <termios.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
 
 #include "p2os.h"
 
@@ -425,6 +440,10 @@ P2OS::P2OS(ConfigFile* cf, int section)
   this->trans_ki = cf->ReadInt(section, "trans_ki", -1);
 
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
+  //this->psos_use_tcp = cf->ReadBool(section, "use_tcp", false); // TODO after ReadBool added 
+  this->psos_use_tcp = cf->ReadInt(section, "use_tcp", 0);
+  this->psos_tcp_host = cf->ReadString(section, "tcp_remote_host", DEFAULT_P2OS_TCP_REMOTE_HOST);
+  this->psos_tcp_port = cf->ReadInt(section, "tcp_remote_port", DEFAULT_P2OS_TCP_REMOTE_PORT);
   this->radio_modemp = cf->ReadInt(section, "radio", 0);
   this->joystickp = cf->ReadInt(section, "joystick", 0);
   this->direct_wheel_vel_control =
@@ -507,99 +526,179 @@ int P2OS::Setup()
   char name[20], type[20], subtype[20];
   int cnt;
 
-  printf("P2OS connection initializing (%s)...",this->psos_serial_port);
-  fflush(stdout);
 
-  if((this->psos_fd = open(this->psos_serial_port,
-                     O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+  if(this->psos_use_tcp)
   {
-    perror("P2OS::Setup():open():");
-    return(1);
-  }
 
-  if(tcgetattr( this->psos_fd, &term ) < 0 )
-  {
-    perror("P2OS::Setup():tcgetattr():");
-    close(this->psos_fd);
-    this->psos_fd = -1;
-    return(1);
-  }
-
-  cfmakeraw( &term );
-  cfsetispeed(&term, bauds[currbaud]);
-  cfsetospeed(&term, bauds[currbaud]);
-
-  if(tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0)
-  {
-    perror("P2OS::Setup():tcsetattr():");
-    close(this->psos_fd);
-    this->psos_fd = -1;
-    return(1);
-  }
-
-  if(tcflush(this->psos_fd, TCIOFLUSH ) < 0)
-  {
-    perror("P2OS::Setup():tcflush():");
-    close(this->psos_fd);
-    this->psos_fd = -1;
-    return(1);
-  }
-
-  if((flags = fcntl(this->psos_fd, F_GETFL)) < 0)
-  {
-    perror("P2OS::Setup():fcntl()");
-    close(this->psos_fd);
-    this->psos_fd = -1;
-    return(1);
-  }
-
-  // radio modem initialization code, courtesy of Kim Jinsuck
-  //   <jinsuckk@cs.tamu.edu>
-  if(this->radio_modemp)
-  {
-    puts("Initializing radio modem...");
-    write(this->psos_fd, "WMS2\r", 5);
-
-    usleep(50000);
-    char modem_buf[50];
-    int buf_len = read(this->psos_fd, modem_buf, 5);          // get "WMS2"
-    modem_buf[buf_len]='\0';
-    printf("wireless modem response = %s\n", modem_buf);
-
-    usleep(10000);
-    // get "\n\rConnecting..." --> \n\r is my guess
-    buf_len = read(this->psos_fd, modem_buf, 14);
-    modem_buf[buf_len]='\0';
-    printf("wireless modem response = %s\n", modem_buf);
-
-    // wait until get "Connected to address 2"
-    int modem_connect_try = 10;
-    while(strstr(modem_buf, "ected to addres") == NULL)
+    // TCP socket:
+    
+    printf("P2OS connecting to remote host (%s:%d)... ", this->psos_tcp_host, this->psos_tcp_port);
+    fflush(stdout);
+    if( (this->psos_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
-      usleep(300000);
-      buf_len = read(this->psos_fd, modem_buf, 40);
+      perror("P2OS::Setup():socket():");
+      return(1);
+    }
+    //printf("created socket %d.\nLooking up hostname...\n", this->psos_fd);
+    struct hostent* h = gethostbyname(this->psos_tcp_host);
+    if(!h)
+    {
+      perror("Error looking up hostname or address %s:");
+      return(1);
+    }
+    struct sockaddr_in addr;
+    assert(h->h_length <= sizeof(addr.sin_addr));
+    //printf("gethostbyname returned address %d length %d.\n", * h->h_addr, h->h_length);
+    memcpy(&(addr.sin_addr), h->h_addr, h->h_length);
+    //printf("copied address to addr.sin_addr.s_addr=%d\n", addr.sin_addr.s_addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(this->psos_tcp_port);
+    printf("Found host address, connecting...");
+    fflush(stdout);
+    if(connect(this->psos_fd, (struct sockaddr*) &addr, sizeof(addr)) < 0)
+    {
+      perror("Error Connecting to remote host (P2OS::Setup()::connect()):");
+      return(1);
+    }
+    fcntl(this->psos_fd, F_SETFL, O_SYNC | O_NONBLOCK);
+    if((flags = fcntl(this->psos_fd, F_GETFL)) < 0)
+    {
+      perror("P2OS::Setup():fcntl()");
+      close(this->psos_fd);
+      this->psos_fd = -1;
+      return(1);
+    }
+    assert(flags & O_NONBLOCK);
+    printf("TCP socket connection is OK... ");
+    fflush(stdout);
+  } 
+  else
+  {
+
+    // Serial port:
+    
+    printf("P2OS connection opening serial port %s...",this->psos_serial_port);
+    fflush(stdout);
+
+    if((this->psos_fd = open(this->psos_serial_port,
+                     O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+    {
+      perror("P2OS::Setup():open():");
+      return(1);
+    }
+
+    if(tcgetattr( this->psos_fd, &term ) < 0 )
+    {
+      perror("P2OS::Setup():tcgetattr():");
+      close(this->psos_fd);
+      this->psos_fd = -1;
+      return(1);
+    }
+
+    cfmakeraw( &term );
+    cfsetispeed(&term, bauds[currbaud]);
+    cfsetospeed(&term, bauds[currbaud]);
+
+    
+    if(tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0)
+    {
+      perror("P2OS::Setup():tcsetattr():");
+      close(this->psos_fd);
+      this->psos_fd = -1;
+      return(1);
+    }
+
+    if(tcflush(this->psos_fd, TCIOFLUSH ) < 0)
+    {
+      perror("P2OS::Setup():tcflush():");
+      close(this->psos_fd);
+      this->psos_fd = -1;
+      return(1);
+    }
+
+    if((flags = fcntl(this->psos_fd, F_GETFL)) < 0)
+    {
+      perror("P2OS::Setup():fcntl()");
+      close(this->psos_fd);
+      this->psos_fd = -1;
+      return(1);
+    }
+
+    // radio modem initialization code, courtesy of Kim Jinsuck
+    //   <jinsuckk@cs.tamu.edu>
+    if(this->radio_modemp)
+    {
+      puts("Initializing radio modem...");
+      write(this->psos_fd, "WMS2\r", 5);
+
+      usleep(50000);
+      char modem_buf[50];
+      int buf_len = read(this->psos_fd, modem_buf, 5);          // get "WMS2"
       modem_buf[buf_len]='\0';
       printf("wireless modem response = %s\n", modem_buf);
-      // if "Partner busy!"
-      if(modem_buf[2] == 'P')
+
+      usleep(10000);
+      // get "\n\rConnecting..." --> \n\r is my guess
+      buf_len = read(this->psos_fd, modem_buf, 14);
+      modem_buf[buf_len]='\0';
+      printf("wireless modem response = %s\n", modem_buf);
+
+      // wait until get "Connected to address 2"
+      int modem_connect_try = 10;
+      while(strstr(modem_buf, "ected to addres") == NULL)
       {
-        printf("Please reset partner modem and try again\n");
-        return(1);
-      }
-      // if "\n\rPartner not found!"
-      if(modem_buf[0] == 'P')
-      {
-        printf("Please check partner modem and try again\n");
-        return(1);
-      }
-      if(modem_connect_try-- == 0)
-      {
-        puts("Failed to connect radio modem, Trying direct connection...");
-        break;
+        puts("Initializing radio modem...");
+        write(this->psos_fd, "WMS2\r", 5);
+
+        usleep(50000);
+        char modem_buf[50];
+        int buf_len = read(this->psos_fd, modem_buf, 5);          // get "WMS2"
+        modem_buf[buf_len]='\0';
+        printf("wireless modem response = %s\n", modem_buf);
+        // if "Partner busy!"
+        if(modem_buf[2] == 'P')
+        {
+          printf("Please reset partner modem and try again\n");
+          return(1);
+        }
+        // if "\n\rPartner not found!"
+        if(modem_buf[0] == 'P')
+        {
+          printf("Please check partner modem and try again\n");
+          return(1);
+        }
+        if(modem_connect_try-- == 0)
+        {
+          usleep(300000);
+          buf_len = read(this->psos_fd, modem_buf, 40);
+          modem_buf[buf_len]='\0';
+          printf("wireless modem response = %s\n", modem_buf);
+          // if "Partner busy!"
+          if(modem_buf[2] == 'P') 
+          {
+            printf("Please reset partner modem and try again\n");
+            return(1);
+          }
+          // if "\n\rPartner not found!"
+          if(modem_buf[0] == 'P') 
+          {
+            printf("Please check partner modem and try again\n");
+            return(1);
+          }
+          if(modem_connect_try-- == 0) 
+          {
+            puts("Failed to connect radio modem, Trying direct connection...");
+            break;
+          }
+        }
       }
     }
-  }
+    printf("Connected to robot device, handshaking with P2OS...");
+    fflush(stdout);
+  }// end TCP socket or serial port.
 
+  // Sync:
+  
   int num_sync_attempts = 3;
   while(psos_state != READY)
   {
@@ -612,6 +711,7 @@ int P2OS::Setup()
         usleep(P2OS_CYCLETIME_USEC);
         break;
       case AFTER_FIRST_SYNC:
+        printf("turning off NONBLOCK mode...\n");
         if(fcntl(this->psos_fd, F_SETFL, flags ^ O_NONBLOCK) < 0)
         {
           perror("P2OS::Setup():fcntl()");
@@ -707,9 +807,11 @@ int P2OS::Setup()
 
   if(psos_state != READY)
   {
+    if(this->psos_use_tcp)
     printf("Couldn't synchronize with P2OS.\n"
-           "  Most likely because the robot is not connected to %s\n",
-           this->psos_serial_port);
+           "  Most likely because the robot is not connected %s %s\n",
+           this->psos_use_tcp ? "to the ethernet-serial bridge device " : "to the serial port",
+           this->psos_use_tcp ? this->psos_tcp_host : this->psos_serial_port);
     close(this->psos_fd);
     this->psos_fd = -1;
     return(1);
