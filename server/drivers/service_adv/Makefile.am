@@ -1,4 +1,8 @@
-noinst_LIBRARIES = @SERVICE_ADV_MDNS_LIB@
+noinst_LTLIBRARIES =
+if INCLUDE_SERVICE_ADV_MDNS
+noinst_LTLIBRARIES += libservice_adv_mdns.la
+endif
+
 AM_CPPFLAGS = -Wall -I$(top_srcdir)/server @HOWL_CFLAGS@
-EXTRA_LIBRARIES = libservice_adv_mdns.a
-libservice_adv_mdns_a_SOURCES = mdns.cc
+libservice_adv_mdns_la_SOURCES = mdns.cc
+#libservice_adv_mdns_la_LDADD = @HOWL_LDFLAGS@

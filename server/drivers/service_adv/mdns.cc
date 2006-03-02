@@ -24,8 +24,11 @@
 //
 // File: mdns.cc
 // Author: Reed Hedges, LPR, Dept. of Computer Science, UMass, Amherst
+//                      and MobileRobots Inc.
+//                      <reed@mobilerobots.com>
 // Date: 23 June 2003
 // Updated: 1 June 2005 for architectural Player changes
+// Updated: 27 February 2006 for architectural Player changes 
 //       
 ///////////////////////////////////////////////////////////////////////////
 
@@ -34,15 +37,13 @@
 /** @defgroup driver_service_adv_mdns service_adv_mdns
  * @brief Multicast DNS service discovery
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
-This driver can be used to publish a Player service using 
-the proposed IETF standard for multicast DNS service discovery (MDNS-SD).
+ This driver can be used to publish information about a Player TCP service using 
+ the proposed IETF standard for multicast DNS service discovery (MDNS-SD).
 MDNS-SD is a part of the <a href="http://www.zeroconf.org">Zeroconf</a> protocols,
 and has also been called "Rendezvous".
 
-The MDNS-SD service type is "_player._tcp".    In addition to any 
+If you use this driver, it is assumed that the standard Player 2 TCP transport
+is being used;  the MDNS-SD service type is "_player2._tcp".    In addition to any 
 "service_description" given in the configuration file (see below), any 
 loaded device drivers will be represented in the service's TXT record.
 Each device will be entered into the TXT record as: 
@@ -96,7 +97,7 @@ driver
 )
 @endverbatim
 
-@author Reed Hedges
+@author Reed Hedges <reed@mobilerobots.com>
 
 */
 /** @} */
@@ -114,9 +115,9 @@ driver
 #include "globals.h"
 
 
-#define MDNS_SERVICE_TYPE "_player._tcp."
+#define MDNS_SERVICE_TYPE "_player2._tcp."
 
-class SrvAdv_MDNS : public virtual Driver {
+class SrvAdv_MDNS : public  Driver {
   private:
     // MDNS objects
     sw_discovery howl_session;
@@ -127,17 +128,23 @@ class SrvAdv_MDNS : public virtual Driver {
   public:
     SrvAdv_MDNS( ConfigFile* cf, int section);
     virtual ~SrvAdv_MDNS();
+    void start() { StartThread(); }
 
-    // Create service directory, find values, and add this service to it.
-    virtual void Prepare();
+  protected:
+    // Create service directory, find values, and add this service to it. return
+    // false on error
+    bool Prepare();
    
-    // called when a client (the first client?) connects
-    virtual int Setup() {
+
+
+    // called when a client (the first client?) connects. no clients ever
+    // connect.
+    int Setup() {
         return 0;
     }
 
     // called when a client (the last client?) disconnects
-    virtual int Shutdown() {
+    int Shutdown() {
         return 0;
     }
 
@@ -151,14 +158,16 @@ class SrvAdv_MDNS : public virtual Driver {
 
 
 
-Driver* SrvAdv_MDNS_Init( ConfigFile* cf, int section) {
-    return (Driver*)(new SrvAdv_MDNS( cf, section));
+Driver* ServiceAdvMDNS_Init( ConfigFile* cf, int section) {
+  SrvAdv_MDNS* s = new SrvAdv_MDNS(cf, section);
+  s->start();
+  return s;
 }
 
 // a driver registration function
 void ServiceAdvMDNS_Register(DriverTable* table)
 {
-  table->AddDriver("service_adv_mdns",  SrvAdv_MDNS_Init);
+  table->AddDriver("service_adv_mdns",  &ServiceAdvMDNS_Init);
 }
 
 
@@ -169,7 +178,7 @@ SrvAdv_MDNS::~SrvAdv_MDNS() {
 
 // Constructor
 SrvAdv_MDNS::SrvAdv_MDNS( ConfigFile* configFile, int configSection)
- : Driver(configFile, configSection, true, 0, PLAYER_OPAQUE_CODE, PLAYER_ALL_MODE)
+ : Driver(configFile, configSection, true, 0, PLAYER_OPAQUE_CODE)
 {
     //alwayson = true;      // since there is no client interface
     // this breaks player and isn't really neccesary so I commented it out
@@ -216,25 +225,25 @@ static sw_result HOWL_API service_reply(
     return SW_OKAY;
 }
 
-void SrvAdv_MDNS::Prepare() {
+bool SrvAdv_MDNS::Prepare() {
 
     sw_text_record txt;
     sw_result r;
 
     if(sw_discovery_init(&howl_session) != SW_OKAY) {
         fprintf(stderr, "service_adv_mdns: Error: Howl initialization failed. (Is mdnsresponder running?)\n");
-        return;
+        return false;
     }
     if(sw_text_record_init(&txt) != SW_OKAY) {
         fprintf(stderr, "service_adv_mdns: Error: sw_text_record_init failed! (Memory error?)\n");
-        return;
+        return false;
     }
 
     // determine a suitible default name if it was unset in the config file:
     if(name == "") {
-        char portstr[12];
-        snprintf(portstr, 12, "%d", (device_id.port + 1) - PLAYER_PORTNUM);
-        name = std::string("robot") + portstr;
+        char s[12];
+        snprintf(s, 11, "%d", device_addr.robot);
+        name = std::string("robot") + s;
     }
 
     // add a description to the TXT record if given in the config file
@@ -247,10 +256,10 @@ void SrvAdv_MDNS::Prepare() {
 
     // add a tag to the TXT record for each device in the device table
     for(Device* dev = deviceTable->GetFirstDevice(); dev != 0; dev = deviceTable->GetNextDevice(dev)) {
-        char* devname = lookup_interface_name(0, dev->id.code);
+        const char* devname = lookup_interface_name(0, dev->addr.interf);
         if(devname) {
             char deviceTag[512];
-            snprintf(deviceTag, sizeof(deviceTag), "device=%s#%d(%s)", devname, dev->id.index, dev->drivername);
+            snprintf(deviceTag, sizeof(deviceTag), "device=%s#%d(%s)", devname, dev->addr.index, dev->drivername);
             if(sw_text_record_add_string(txt, deviceTag) != SW_OKAY)
                 fprintf(stderr, "service_adv_mdns: Error: could not add device tag \"%s\" to text record.\n", deviceTag);
         }
@@ -263,15 +272,15 @@ void SrvAdv_MDNS::Prepare() {
             fprintf(stderr, "service_adv_mdns: Error: could not add device tag \"%s\" to text record.\n", (*i).c_str());
     }
 
-    printf("service_adv_mdns: Publishing service with MDNS type \"_player._tcp\", port %d, and name \"%s\".\n", device_id.port, name.c_str());
+    printf("service_adv_mdns: Publishing service with MDNS type \""MDNS_SERVICE_TYPE"\", port %d, and name \"%s\".\n", device_addr.robot, name.c_str());
     r = sw_discovery_publish(
             howl_session,        // session
             0,                  // NIC index (0=all)
             name.c_str(),       // service name
-            MDNS_SERVICE_TYPE,  // service type, defined above to _player._tcp
+            MDNS_SERVICE_TYPE,  // service type, defined above
             NULL,               // service domain, NULL=defaut (.local)
             NULL,               // service hostname, NULL=default
-            device_id.port,     // service port
+            device_addr.robot,  // service port (assuming TCP transport!)
             sw_text_record_bytes(txt),  // TXT record
             sw_text_record_len(txt),    // TXT record length
             &service_reply,     // callback function
@@ -280,17 +289,21 @@ void SrvAdv_MDNS::Prepare() {
     if(r != SW_OKAY) {
         fprintf(stderr, "service_adv_mdns: Error: Service publishing failed!  (%ld)\n", r);
         sw_text_record_fina(txt);
-        return;
+        return false;
     }
         
 
     sw_text_record_fina(txt);
-    StartThread();
 
+    return true;
 }
 
 void SrvAdv_MDNS::Main() {
-    printf("service_adv_mdns: running howl...\n");
+    if(!Prepare())
+    {
+      stop();
+      return;
+    }
     sw_discovery_run(howl_session); // (does not return)
 }
 
