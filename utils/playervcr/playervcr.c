@@ -128,7 +128,7 @@ player_read_func(gpointer* arg)
     fprintf(stderr, "Error: Failed to peek at Player socket\n");
     exit(-1);
   }
-  if(peek_result && (playerc_client_read(gui_data->client) < 0))
+  if(peek_result && !playerc_client_read(gui_data->client))
   {
     fprintf(stderr, "Error: Failed to read from Player\n");
     exit(-1);
