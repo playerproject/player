@@ -231,5 +231,25 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
     }
     return(0);
   }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_GET_GEOM,
+                                this->device_addr))
+  {
+    /* Return the robot geometry. */
+    player_position2d_geom_t geom;
+    // Assume that it turns about its geometric center
+    geom.pose.px = 0.0;
+    geom.pose.py = 0.0;
+    geom.pose.pa = 0.0;
+
+    geom.size.sl = 2.0*ROOMBA_RADIUS;
+    geom.size.sw = 2.0*ROOMBA_RADIUS;
+
+    this->Publish(this->device_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_POSITION2D_REQ_GET_GEOM,
+                  (void*)&geom, sizeof(geom), NULL);
+    return(0);
+  }
   return(-1);
 }
