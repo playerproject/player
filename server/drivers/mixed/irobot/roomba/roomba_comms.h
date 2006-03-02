@@ -68,6 +68,9 @@ extern "C" {
 
 #define ROOMBA_AXLE_LENGTH            0.258
 
+// TODO: measure this
+#define ROOMBA_RADIUS 0.25
+
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? (a) : (b))
 #endif
