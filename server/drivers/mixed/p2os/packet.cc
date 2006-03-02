@@ -104,7 +104,7 @@ int P2OSPacket::Receive( int fd )
       {
         if ( (cnt+=read( fd, &prefix[2], 1 )) < 0 ) 
         {
-          //perror("P2OSPacket():Receive():read():");
+          perror("Error reading packet header from robot connection: P2OSPacket():Receive():read():");
           return(1);
         }
       }
@@ -125,8 +125,8 @@ int P2OSPacket::Receive( int fd )
     {
       if ( (cnt+=read( fd, &packet[3+cnt],  prefix[2]-cnt )) < 0 ) 
       {
-        //perror("P2OSPacket():Receive():read():");
-	return(1);
+        perror("Error reading packet body from robot connection: P2OSPacket():Receive():read():");
+        return(1);
       }  
     }
   } while (!Check());  
