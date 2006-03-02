@@ -358,7 +358,9 @@ MessageQueue::Push(Message & msg)
         el != NULL;
         el = el->prev)
     {
-      if(el->msg->Compare(msg) && !el->msg->Ready ())
+      // Ignore ready flag outside pull mode - when a client goes to pull mode, only the client's
+      // queue is set to pull, so other queues will still ignore ready flag
+      if(el->msg->Compare(msg) && (!el->msg->Ready () || !pull))
       {
         this->Remove(el);
         delete el;
