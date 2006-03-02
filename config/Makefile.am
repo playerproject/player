@@ -13,7 +13,6 @@ pioneer.cfg \
 readlog.cfg \
 rfid.cfg \
 segwayrmp.cfg \
-testhowl.cfg \
 umass_ATRVJr.cfg \
 umass_ATRVMini.cfg \
 umass_reb.cfg \
@@ -33,7 +32,6 @@ pioneer.cfg \
 readlog.cfg \
 rfid.cfg \
 segwayrmp.cfg \
-testhowl.cfg \
 umass_ATRVJr.cfg \
 umass_ATRVMini.cfg \
 umass_reb.cfg \
