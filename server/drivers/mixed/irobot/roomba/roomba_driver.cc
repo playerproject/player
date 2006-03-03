@@ -119,6 +119,10 @@ class Roomba : public Driver
     // full control or not
     bool safe;
 
+    player_devaddr_t position_addr;
+    player_devaddr_t power_addr;
+    player_devaddr_t bumper_addr;
+
     // The underlying roomba object
     roomba_comm_t* roomba_dev;
 };
@@ -136,8 +140,45 @@ void Roomba_Register(DriverTable* table)
 }
 
 Roomba::Roomba(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
+  memset(&this->position_addr,0,sizeof(player_devaddr_t));
+  memset(&this->power_addr,0,sizeof(player_devaddr_t));
+  memset(&this->bumper_addr,0,sizeof(player_devaddr_t));
+
+  // Do we create a position interface?
+  if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
+                        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->position_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a power interface?
+  if(cf->ReadDeviceAddr(&(this->power_addr), section, "provides",
+                        PLAYER_POWER_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->power_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a bumper interface?
+  if(cf->ReadDeviceAddr(&(this->bumper_addr), section, "provides",
+                        PLAYER_BUMPER_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->bumper_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
   this->serial_port = cf->ReadString(section, "port", "/dev/ttyS0");
   this->safe = cf->ReadInt(section, "safe", 1);
   this->roomba_dev = NULL;
@@ -178,8 +219,6 @@ Roomba::Shutdown()
 void
 Roomba::Main()
 {
-  player_position2d_data_t posdata;
-
   for(;;)
   {
      this->ProcessMessages();
@@ -191,18 +230,55 @@ Roomba::Main()
        return;
      }
 
-     PLAYER_MSG0(2, "got sensor data");
-
+     ////////////////////////////
+     // Update position2d data
+     player_position2d_data_t posdata;
      memset(&posdata,0,sizeof(posdata));
 
      posdata.pos.px = this->roomba_dev->ox;
      posdata.pos.py = this->roomba_dev->oy;
      posdata.pos.pa = this->roomba_dev->oa;
 
-     this->Publish(this->device_addr, NULL,
+     this->Publish(this->position_addr, NULL,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
-     PLAYER_MSG0(2, "published sensor data");
+
+     ////////////////////////////
+     // Update power data
+     player_power_data_t powerdata;
+     memset(&powerdata,0,sizeof(powerdata));
+
+     powerdata.volts = this->roomba_dev->voltage;
+     powerdata.watts = this->roomba_dev->voltage * this->roomba_dev->current;
+     powerdata.joules = this->roomba_dev->charge;
+     powerdata.percent = 100.0 * 
+             (this->roomba_dev->charge / this->roomba_dev->capacity);
+     powerdata.charging = 
+             (this->roomba_dev->charging_state == ROOMBA_CHARGING_NOT) ? 0 : 1;
+     powerdata.valid = (PLAYER_POWER_MASK_VOLTS |
+                        PLAYER_POWER_MASK_WATTS | 
+                        PLAYER_POWER_MASK_JOULES | 
+                        PLAYER_POWER_MASK_PERCENT |
+                        PLAYER_POWER_MASK_CHARGING);
+
+     this->Publish(this->power_addr, NULL,
+                   PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
+                   (void*)&powerdata, sizeof(powerdata), NULL);
+
+     ////////////////////////////
+     // Update bumper data
+     player_bumper_data_t bumperdata;
+     memset(&bumperdata,0,sizeof(bumperdata));
+
+     bumperdata.bumpers_count = 2;
+     bumperdata.bumpers[0] = this->roomba_dev->bumper_left;
+     bumperdata.bumpers[1] = this->roomba_dev->bumper_right;
+
+     this->Publish(this->bumper_addr, NULL,
+                   PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
+                   (void*)&bumperdata, sizeof(bumperdata), NULL);
+
+
      usleep(CYCLE_TIME_US);
   }
 }
@@ -215,7 +291,7 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
   if(Message::MatchMessage(hdr,
                            PLAYER_MSGTYPE_CMD,
                            PLAYER_POSITION2D_CMD_VEL,
-                           this->device_addr))
+                           this->position_addr))
   {
     // get and send the latest motor command
     player_position2d_cmd_vel_t position_cmd;
@@ -233,7 +309,7 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                 PLAYER_POSITION2D_REQ_GET_GEOM,
-                                this->device_addr))
+                                this->position_addr))
   {
     /* Return the robot geometry. */
     player_position2d_geom_t geom;
@@ -242,14 +318,42 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
     geom.pose.py = 0.0;
     geom.pose.pa = 0.0;
 
-    geom.size.sl = 2.0*ROOMBA_RADIUS;
-    geom.size.sw = 2.0*ROOMBA_RADIUS;
+    geom.size.sl = ROOMBA_DIAMETER;
+    geom.size.sw = ROOMBA_DIAMETER;
 
-    this->Publish(this->device_addr, resp_queue,
+    this->Publish(this->position_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_POSITION2D_REQ_GET_GEOM,
                   (void*)&geom, sizeof(geom), NULL);
     return(0);
   }
-  return(-1);
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_BUMPER_GET_GEOM,
+                                this->bumper_addr))
+  {
+    player_bumper_geom_t geom;
+
+    geom.bumper_def_count = 2;
+
+    geom.bumper_def[0].pose.px = 0.0;
+    geom.bumper_def[0].pose.py = 0.0;
+    geom.bumper_def[0].pose.pa = 0.0;
+    geom.bumper_def[0].length = 0.0;
+    geom.bumper_def[0].radius = ROOMBA_DIAMETER/2.0;
+
+    geom.bumper_def[1].pose.px = 0.0;
+    geom.bumper_def[1].pose.py = 0.0;
+    geom.bumper_def[1].pose.pa = 0.0;
+    geom.bumper_def[1].length = 0.0;
+    geom.bumper_def[1].radius = ROOMBA_DIAMETER/2.0;
+
+    this->Publish(this->bumper_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_BUMPER_GET_GEOM,
+                  (void*)&geom, sizeof(geom), NULL);
+
+    return(0);
+  }
+  else
+    return(-1);
 }
