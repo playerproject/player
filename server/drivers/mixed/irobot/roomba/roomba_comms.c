@@ -192,7 +192,7 @@ roomba_init(roomba_comm_t* r, unsigned char fullcontrol)
 int
 roomba_close(roomba_comm_t* r)
 {
-  unsigned char cmdbuf[1];
+  //unsigned char cmdbuf[1];
 
   roomba_set_speeds(r, 0.0, 0.0);
 
@@ -282,7 +282,7 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
   int retval;
   int numread;
   int totalnumread;
-  int i;
+  //int i;
 
   cmdbuf[0] = ROOMBA_OPCODE_SENSORS;
   /* Zero to get all sensor data */
