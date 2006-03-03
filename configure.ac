@@ -235,14 +235,8 @@ dnl ************************************************************************
 dnl Start of macros from acinclude.m4
 dnl ************************************************************************
 
-dnl Do the standard driver tests (including gazebo)
+dnl Do the standard driver tests
 PLAYER_DRIVERTESTS
-
-dnl Do some additional gazebo tests (may omit some gazebo drivers)
-GAZEBO_FIND
-if test "x$enable_gazebo" = "xyes"; then
-   GAZEBO_DRIVERTESTS
-fi
 
 dnl ************************************************************************
 dnl End of macros from acinclude.m4
@@ -481,7 +475,6 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/evolution/er1/Makefile
           server/drivers/mixed/irobot/Makefile
           server/drivers/mixed/irobot/roomba/Makefile
-          server/drivers/gazebo/Makefile
           server/drivers/planner/Makefile
           server/drivers/planner/wavefront/Makefile
           server/drivers/position/isense/Makefile
@@ -585,16 +578,6 @@ else
   AC_MSG_RESULT([libplayerc++ will NOT be built])
 fi
 AC_MSG_RESULT([])
-
-if test "x$enable_gazebo" = "xyes"; then
-  AC_MSG_RESULT([Player will build Gazebo-based components using:])
-  AC_MSG_RESULT([    CPPFLAGS: $GAZEBO_EXTRA_CPPFLAGS])
-  AC_MSG_RESULT([    LDFLAGS: $GAZEBO_EXTRA_LDFLAGS])
-  AC_MSG_RESULT([])
-else
-  AC_MSG_RESULT([Gazebo support will not be included -- $gazebo_disable_reason])
-  AC_MSG_RESULT([])
-fi
 
 AC_MSG_RESULT([The following device drivers will be included:])
 for player_lib in $PLAYER_DRIVERS; do
