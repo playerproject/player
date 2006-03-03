@@ -5,7 +5,6 @@ audiomixer \
 blobfinder \
 camera \
 fiducial \
-gazebo \
 gps \
 joystick \
 laser \

@@ -287,63 +287,6 @@ void CameraCompress_Register(DriverTable* table);
 #endif
 
 
-#ifdef INCLUDE_GAZEBO_SIM
-void GzSim_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_CAMERA
-void GzCamera_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_FACTORY
-void GzFactory_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_FIDUCIAL
-void GzFiducial_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_GPS
-void GzGps_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_LASER
-void GzLaser_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_POSITION
-void GzPosition_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_POSITION3D
-void GzPosition3d_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_POWER
-void GzPower_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_PTZ
-void GzPtz_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_TRUTH
-void GzTruth_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_GRIPPER
-void GzGripper_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_SONAR
-void GzSonar_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_GAZEBO_STEREO
-void GzStereo_Register(DriverTable *table);
-#endif
-
-
 #ifdef INCLUDE_SERVICE_ADV_LSD
 void ServiceAdvLSD_Register(DriverTable* table);
 #endif
@@ -645,63 +588,6 @@ player_register_drivers()
 #ifdef INCLUDE_CAMERACOMPRESS
   CameraCompress_Register(driverTable);
 #endif
-
-#ifdef INCLUDE_GAZEBO_SIM
-  GzSim_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_CAMERA
-  GzCamera_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_FACTORY
-  GzFactory_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_FIDUCIAL
-  GzFiducial_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_GPS
-  GzGps_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_LASER
-  GzLaser_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_POSITION
-  GzPosition_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_POSITION3D
-  GzPosition3d_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_POWER
-  GzPower_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_PTZ
-  GzPtz_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_TRUTH
-  GzTruth_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_GRIPPER
-  GzGripper_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_SONAR
-  GzSonar_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_GAZEBO_STEREO
-  GzStereo_Register(driverTable);
-#endif
-
 
 #ifdef INCLUDE_SERVICE_ADV_LSD
   ServiceAdvLSD_Register(driverTable);
