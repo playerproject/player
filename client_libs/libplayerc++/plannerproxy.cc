@@ -103,3 +103,32 @@ PlannerProxy::SetEnable(bool aEnable)
   return;
 }
 
+/// Waypoint[i] location (m)
+double PlannerProxy::GetIx(int i) const 
+{ 
+  if (i < mDevice->waypoint_count)
+    return GetVar(mDevice->waypoints[i][0]); 
+  else
+    throw PlayerError("PlannerProxy::GetIx()", "invalid index");
+    return 0;
+}
+
+/// Waypoint[i] location (m)
+double PlannerProxy::GetIy(int i) const 
+{ 
+  if (i < mDevice->waypoint_count)
+    return GetVar(mDevice->waypoints[i][1]); 
+  else
+    throw PlayerError("PlannerProxy::GetIx()", "invalid index");
+    return 0;
+}
+
+/// Waypoint[i] location (m)
+double PlannerProxy::GetIz(int i) const
+{ 
+  if (i < mDevice->waypoint_count)
+    return GetVar(mDevice->waypoints[i][2]); 
+  else
+    throw PlayerError("PlannerProxy::GetIx()", "invalid index");
+    return 0;
+}

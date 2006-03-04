@@ -1137,6 +1137,11 @@ class LaserProxy : public ClientProxy
     double GetRange(uint aIndex) const
       { return GetVar(mDevice->ranges[aIndex]); };
 
+    /// get the bearing
+    double GetBearing(uint aIndex) const
+      { return GetVar(mDevice->scan[aIndex][1]); };
+
+
     /// get the intensity
     int GetIntensity(uint aIndex) const
       { return GetVar(mDevice->intensity[aIndex]); };
@@ -1538,6 +1543,14 @@ class PlannerProxy : public ClientProxy
     /// Current waypoint location (m)
     double GetWz() const { return GetVar(mDevice->wa); };
 
+    /// Waypoint[i] location (m)
+    double GetIx(int i) const;
+    /// Waypoint[i] location (m)
+    double GetIy(int i) const;
+    /// Waypoint[i] location (m)
+    double GetIz(int i) const; 
+
+
     /// Current waypoint index (handy if you already have the list
     /// of waypoints). May be negative if there's no plan, or if
     /// the plan is done
@@ -1550,7 +1563,7 @@ class PlannerProxy : public ClientProxy
 
     // Get a waypoints in the current plan (m,m,radians).
     //uint GetWaypoint(uint aIndex) const
-    //  { return GetVar(mDevice->waypoints[aIndex]); };
+      //{ return GetVar(mDevice->waypoints[aIndex]); };
 
 };
 
