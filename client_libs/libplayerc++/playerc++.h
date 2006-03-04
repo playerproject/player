@@ -1527,28 +1527,28 @@ class PlannerProxy : public ClientProxy
     /// Current pose (m)
     double GetPy() const { return GetVar(mDevice->py); };
     /// Current pose (m)
-    double GetPz() const { return GetVar(mDevice->pa); };
+    double GetPa() const { return GetVar(mDevice->pa); };
 
     /// Goal location (radians)
     double GetGx() const { return GetVar(mDevice->gx); };
     /// Goal location (radians)
     double GetGy() const { return GetVar(mDevice->gy); };
     /// Goal location (radians)
-    double GetGz() const { return GetVar(mDevice->ga); };
+    double GetGa() const { return GetVar(mDevice->ga); };
 
     /// Current waypoint location (m)
     double GetWx() const { return GetVar(mDevice->wx); };
     /// Current waypoint location (m)
     double GetWy() const { return GetVar(mDevice->wy); };
     /// Current waypoint location (m)
-    double GetWz() const { return GetVar(mDevice->wa); };
+    double GetWa() const { return GetVar(mDevice->wa); };
 
     /// Waypoint[i] location (m)
     double GetIx(int i) const;
     /// Waypoint[i] location (m)
     double GetIy(int i) const;
     /// Waypoint[i] location (m)
-    double GetIz(int i) const; 
+    double GetIa(int i) const; 
 
 
     /// Current waypoint index (handy if you already have the list
