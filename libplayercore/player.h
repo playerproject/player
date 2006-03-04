@@ -137,7 +137,6 @@ in the body.*/
 #define PLAYER_AUDIOMIXER_CODE     29  // audio I/O
 #define PLAYER_POSITION3D_CODE     30  // 3-D position
 #define PLAYER_SIMULATION_CODE     31  // simulators
-#define PLAYER_SERVICE_ADV_CODE    32  // LAN service advertisement
 #define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights
 #define PLAYER_NOMAD_CODE          34  // Nomad robot
 #define PLAYER_CAMERA_CODE         40  // camera device
@@ -200,7 +199,6 @@ in the body.*/
 #define PLAYER_POWER_STRING           "power"
 #define PLAYER_PTZ_STRING             "ptz"
 #define PLAYER_RFID_STRING            "rfid"
-#define PLAYER_SERVICE_ADV_STRING     "service_adv"
 #define PLAYER_SIMULATION_STRING      "simulation"
 #define PLAYER_SONAR_STRING           "sonar"
 #define PLAYER_SOUND_STRING            "sound"

@@ -286,11 +286,6 @@ void ImageSeq_Register(DriverTable* table);
 void CameraCompress_Register(DriverTable* table);
 #endif
 
-
-#ifdef INCLUDE_SERVICE_ADV_LSD
-void ServiceAdvLSD_Register(DriverTable* table);
-#endif
-
 #ifdef INCLUDE_SERVICE_ADV_MDNS
 void ServiceAdvMDNS_Register(DriverTable* table);
 #endif
@@ -587,10 +582,6 @@ player_register_drivers()
 
 #ifdef INCLUDE_CAMERACOMPRESS
   CameraCompress_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_SERVICE_ADV_LSD
-  ServiceAdvLSD_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_MDNS
