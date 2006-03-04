@@ -49,6 +49,7 @@ PlannerProxy::Subscribe(uint aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_planner_create(mClient, aIndex);
+
   if (NULL==mDevice)
     throw PlayerError("PlannerProxy::PlannerProxy()", "could not create");
 
@@ -124,7 +125,7 @@ double PlannerProxy::GetIy(int i) const
 }
 
 /// Waypoint[i] location (m)
-double PlannerProxy::GetIz(int i) const
+double PlannerProxy::GetIa(int i) const
 { 
   if (i < mDevice->waypoint_count)
     return GetVar(mDevice->waypoints[i][2]); 
