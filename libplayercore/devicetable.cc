@@ -46,7 +46,6 @@ DeviceTable::~DeviceTable()
 {
   Device* thisentry;
   Device* tmpentry;
-  pthread_mutex_lock(&mutex);
   // First, shutdown each active driver
   thisentry=head;
   while(thisentry)
@@ -59,6 +58,7 @@ DeviceTable::~DeviceTable()
     }
     thisentry = thisentry->next;
   }
+  pthread_mutex_lock(&mutex);
   // Second, delete each device
   thisentry=head;
   while(thisentry)

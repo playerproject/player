@@ -1068,6 +1068,7 @@ StopRobot(void* obotdev)
 {
   Obot* td = (Obot*)obotdev;
 
+  tcflush(td->fd,TCIOFLUSH);
   if(td->SetVelocity(0,0) < 0)
     PLAYER_ERROR("failed to stop robot on thread exit");
 }

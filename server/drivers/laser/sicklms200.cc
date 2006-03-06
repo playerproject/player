@@ -967,7 +967,7 @@ int SickLMS200::SetLaserMode()
     // This could take a while...
     //
     PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 1000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1014,7 +1014,7 @@ int SickLMS200::SetLaserSpeed(int speed)
             
     // Wait for laser to return ack
     //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 2000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 20000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1057,7 +1057,7 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
       return 1;
 
     // Wait for laser to return data
-    len = ReadFromLaser(packet, sizeof(packet), false, 1000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1112,7 +1112,7 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for laser to return data
     //PLAYER_MSG0(2, "waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, 1000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1162,7 +1162,7 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for the change to "take"
     //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), false, 1000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1215,7 +1215,7 @@ int SickLMS200::SetLaserRes(int width, int res)
 
     // Wait for laser to return data
     //PLAYER_MSG0(2, "waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, 1000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1289,7 +1289,7 @@ int SickLMS200::RequestLaserData(int min_segment, int max_segment)
 
     // Wait for laser to return ack
     // This should be fairly prompt
-    len = ReadFromLaser(packet, sizeof(packet), true, 1000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
