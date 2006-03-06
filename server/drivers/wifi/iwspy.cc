@@ -87,7 +87,6 @@ driver
 #include <string.h>
 #include <stdlib.h>
 
-#include <netinet/in.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -184,7 +183,7 @@ void Iwspy_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 Iwspy::Iwspy( ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE)
 {
   int i;
   char key[64];
@@ -272,7 +271,7 @@ void Iwspy::Main()
 { 
   int i;
   nic_t *nic;
-  struct timeval time;
+  double time;
   player_wifi_link_t *link;
   player_wifi_data_t data;
   
@@ -282,33 +281,37 @@ void Iwspy::Main()
     pthread_testcancel();
     usleep(100000);
 
+    // Process any incoming messages
+    this->ProcessMessages();
+
     // Get the time at which we started reading.
     // This is not a great estimate of when the phenomena occurred.
-    GlobalTime->GetTime(&time);
+    GlobalTime->GetTimeDouble(&time);
 
     // Get the updated iwspy info
     this->UpdateIwSpy();
 
     // Construct data packet
-    data.link_count = 0;
+    data.links_count = 0;
     for (i = 0; i < this->nic_count; i++)
     {
       nic = this->nics + i;
 
       if (nic->in_count > nic->out_count)
       {
-        link = data.links + data.link_count++;
-        strcpy(link->ip, nic->ip);
-        link->qual = htons(nic->link);
-        link->level = htons(nic->level);
-        link->noise = htons(nic->noise);
+        link = data.links + data.links_count++;
+        memcpy(link->ip, nic->ip, strlen(nic->ip));
+        link->qual = nic->link;
+        link->level = nic->level;
+        link->noise = nic->noise;
         nic->out_count = nic->in_count;
       }
     }
-    data.link_count = htons(data.link_count);
+    data.links_count = data.links_count;
 
     // Send data
-    PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(uint8_t*) &data, sizeof(data), &time);
+    this->Publish(this->device_addr,NULL,PLAYER_MSGTYPE_DATA,
+                  PLAYER_WIFI_DATA_STATE, &data, sizeof(data), &time);
   }
   return;
 }

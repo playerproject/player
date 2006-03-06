@@ -198,7 +198,7 @@ PLAYER_ADD_DRIVER([imageseq],[no],[],[],[],[OPENCV],[opencv])
 PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
                   [],["-lisense"])
 
-PLAYER_ADD_DRIVER([iwspy],[no],[],[],[])
+PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
