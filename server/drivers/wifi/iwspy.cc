@@ -189,9 +189,6 @@ Iwspy::Iwspy( ConfigFile *cf, int section)
   char key[64];
   const char *ip, *mac;
 
-  // Read the number of pings to start
-  this->ping_count = 5;
-
   // Ethernet interface to monitor
   this->ethx = cf->ReadString(section, "eth", "eth1");
   
@@ -279,7 +276,7 @@ void Iwspy::Main()
   {
     // Test if we are supposed to terminate.
     pthread_testcancel();
-    usleep(100000);
+    usleep(1000000);
 
     // Process any incoming messages
     this->ProcessMessages();
@@ -292,6 +289,7 @@ void Iwspy::Main()
     this->UpdateIwSpy();
 
     // Construct data packet
+    memset(&data,0,sizeof(data));
     data.links_count = 0;
     for (i = 0; i < this->nic_count; i++)
     {
@@ -301,6 +299,9 @@ void Iwspy::Main()
       {
         link = data.links + data.links_count++;
         memcpy(link->ip, nic->ip, strlen(nic->ip));
+	link->ip_count = strlen(nic->ip);
+        memcpy(link->mac, nic->mac, strlen(nic->mac));
+	link->mac_count = strlen(nic->mac);
         link->qual = nic->link;
         link->level = nic->level;
         link->noise = nic->noise;
@@ -437,7 +438,7 @@ void Iwspy::Parse(int fd)
   char line[1024];
   char mac[32];
   int link, level, noise;
-  char status[16];
+  //char status[16];
   nic_t *nic;
 
   bytes = read(fd, buffer, sizeof(buffer));
@@ -459,13 +460,10 @@ void Iwspy::Parse(int fd)
     
     //printf("[%s]\n", line);
 
-    // See if there is new data (data is new if we get a status value)
-    if (sscanf(line, " %s : Quality:%d/%*d Signal level:%d dBm  Noise level:%d dBm (%s)",
-               mac, &link, &level, &noise, status) < 5)
+    // Get data for each registered NIC
+    if (sscanf(line, " %s : Quality%*c%d/%*d Signal level%*c%d/%*d Noise level%*c%d/%*d",
+               mac, &link, &level, &noise) < 4)
     {
-      //status[0] = 0;
-      //if (sscanf(line, " %s : Quality:%d/%*d Signal level:%d dBm  Noise level:%d dBm",
-      //           mac, &link, &level, &noise) < 4)
       continue;
     }
 
@@ -486,6 +484,10 @@ void Iwspy::Parse(int fd)
         break;
       }
     }
+    /*
+    if(j==this->nic_count)
+      printf("unknown mac:%s:\n", mac);
+      */
   }
 
   return;
@@ -570,12 +572,12 @@ int Iwspy::StartPing()
   int i;
   int dummy_fd;
   
-  for (i = 0; i < this->ping_count; i++)
+  for (i = 0; i < this->nic_count; i++)
   {
     assert(i < (int) (sizeof(this->ping_pid) / sizeof(this->ping_pid[0])));
 
     // Space the pings out over 1 second
-    usleep(1000000 / this->ping_count);
+    usleep(1000000 / this->nic_count);
     
     // Fork here
     this->ping_pid[i] = fork();
@@ -590,12 +592,17 @@ int Iwspy::StartPing()
       dup2(dummy_fd,2);
 
       // Run ping
-      if (execlp("ping", "ping", "-b", "10.0.0.0", NULL) != 0)
+      if (execlp("ping", "ping", this->nics[i].ip, NULL) != 0)
       {
         PLAYER_ERROR1("error on exec: [%s]", strerror(errno));
         exit(errno);
       }
       assert(false);
+    }
+    // in the parent...
+    else
+    {
+      this->ping_count++;
     }
   }
   return 0;

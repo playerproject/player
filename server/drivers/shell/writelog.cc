@@ -198,6 +198,9 @@ class WriteLog: public Driver
   // Write sonar data to file
   private: int WriteSonar(player_msghdr_t* hdr, void *data);
 
+  // Write wifi data to file
+  private: int WriteWiFi(player_msghdr_t* hdr, void *data);
+
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -223,8 +226,6 @@ class WriteLog: public Driver
   // Write power data to file
   private: void WritePower(player_power_data_t *data);
 
-  // Write wifi data to file
-  private: void WriteWiFi(player_wifi_data_t *data);
 #endif
 
   // File to write data to
@@ -690,6 +691,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_SONAR_CODE:
       retval = this->WriteSonar(hdr, data);
       break;
+    case PLAYER_WIFI_CODE:
+      retval = this->WriteWiFi(hdr, data);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
@@ -713,9 +717,6 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_POWER_CODE:
       this->WritePower((player_power_data_t*) data);
-      break;
-    case PLAYER_WIFI_CODE:
-      this->WriteWiFi((player_wifi_data_t*) data);
       break;
     case PLAYER_PLAYER_CODE:
       break;
@@ -1012,6 +1013,93 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
       return(-1);
   }
 }
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_wifi WiFi format
+
+@brief wifi log format
+
+The format for each @ref interface_wifi message is:
+  - links_count (int): number of nodes to follow
+  - list of nodes; for each node:
+    - mac (string): MAC address
+    - ip (string): IP address
+    - essid (string): ESSID
+    - mode (int): operating mode (master, adhoc, etc.)
+    - freq (int): in MHz
+    - encrypt (int): encrypted?
+    - qual (int): link quality
+    - level (int): link level
+    - noise (int): noise level
+*/
+int
+WriteLog::WriteWiFi(player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  char mac[32], ip[32], essid[32];
+  player_wifi_data_t* wdata;
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+	case PLAYER_WIFI_DATA_STATE:
+	  wdata = (player_wifi_data_t*)data;
+          fprintf(this->file, "%04d ", wdata->links_count);
+
+          for (i = 0; i < wdata->links_count; i++)
+          {
+	    memset(mac,0,sizeof(mac));
+	    memset(ip,0,sizeof(ip));
+	    memset(essid,0,sizeof(essid));
+
+	    assert(wdata->links[i].mac_count < sizeof(mac));
+	    assert(wdata->links[i].ip_count < sizeof(ip));
+	    assert(wdata->links[i].essid_count < sizeof(essid));
+
+	    memcpy(mac, wdata->links[i].mac, wdata->links[i].mac_count);
+            if (strlen(mac) == 0)
+	    {
+              mac[0] = '\'';
+              mac[1] = '\'';
+	    }
+        
+	    memcpy(ip, wdata->links[i].ip, wdata->links[i].ip_count);
+            if (strlen(ip) == 0)
+	    {
+              ip[0] = '\'';
+              ip[1] = '\'';
+	    }
+        
+            memcpy(essid, wdata->links[i].essid, wdata->links[i].essid_count);
+            if (strlen(essid) == 0)
+	    {
+              essid[0] = '\'';
+              essid[1] = '\'';
+	    }
+        
+            fprintf(this->file, "'%s' '%s' '%s' %d %d %d %d %d %d ",
+                    mac, ip, essid,
+                    wdata->links[i].mode, wdata->links[i].freq,
+                    wdata->links[i].encrypt,
+                    wdata->links[i].qual,
+                    wdata->links[i].level,
+                    wdata->links[i].noise);
+          }
+          return(0);
+
+        default:
+          return(-1);
+      }
+
+   default:
+     return(-1);
+  }
+}
+
 
 #if 0
 /** @ingroup tutorial_datalog
@@ -1324,57 +1412,6 @@ void WriteLog::WritePower(player_power_data_t *data)
   return;
 }
 
-
-/** @ingroup tutorial_datalog
- * @defgroup player_driver_writelog_wifi WiFi format
-
-@brief wifi log format
-
-The format for each @ref interface_wifi message is:
-  - link_count (int): number of nodes to follow
-  - list of nodes; for each node:
-    - mac (string): MAC address
-    - ip (string): IP address
-    - essid (string): ESSID
-    - mode (int): operating mode (master, adhoc, etc.)
-    - freq (int): in MHz
-    - encrypt (int): encrypted?
-    - qual (int): link quality
-    - level (int): link level
-    - noise (int): noise level
-*/
-void WriteLog::WriteWiFi(player_wifi_data_t *data)
-{
-  int i;
-  char *mac, *ip, *essid;
-
-  fprintf(this->file, "%04d ", HUINT16(data->link_count));
-
-  for (i = 0; i < ntohs(data->link_count); i++)
-  {
-    mac = data->links[i].mac;
-    if (strlen(mac) == 0)
-      mac = "''";
-
-    ip = data->links[i].ip;
-    if (strlen(ip) == 0)
-      ip = "''";
-
-    essid = data->links[i].essid;
-    if (strlen(essid) == 0)
-      essid = "''";
-
-    fprintf(this->file, "'%s' '%s' '%s' %d %d %d %d %d %d ",
-            mac, ip, essid,
-            data->links[i].mode, HUINT16(data->links[i].freq),
-            data->links[i].encrypt,
-            HINT16(data->links[i].qual),
-            HINT16(data->links[i].level),
-            HINT16(data->links[i].noise));
-  }
-
-  return;
-}
 
 #endif
 
