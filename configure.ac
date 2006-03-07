@@ -4,6 +4,10 @@ dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
 AC_INIT(player,2.0.0)
 
+dnl this is used by libtool to assign version numbers
+PLAYER_VERSION_INFO="-version-info 2:0:0"
+AC_SUBST(PLAYER_VERSION_INFO)
+
 AC_CONFIG_SRCDIR(server/server.cc)
 
 AC_PREREQ(2.53)

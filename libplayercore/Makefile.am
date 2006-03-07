@@ -27,7 +27,7 @@ libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/
 libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la
 
 libplayererror_la_SOURCES = error.h error.c
-libplayererror_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir)
+libplayererror_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir)
 
 coreincludedir = $(includedir)/player-2.0/libplayercore
 coreinclude_HEADERS = configfile.h \

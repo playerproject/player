@@ -57,11 +57,13 @@ void ClientProxy::ReadSignal()
 {
   PRINT("read " << *this);
   // only emit a signal when the interface has received data
-  scoped_lock_t lock(mPc->mMutex);
-  if (mInfo->datatime > mLastTime)
+  if (GetVar(mInfo->datatime) > GetVar(mLastTime))
   {
-    mFresh = true;
-    mLastTime = mInfo->datatime;
+    {
+      scoped_lock_t lock(mPc->mMutex);
+      mFresh = true;
+      mLastTime = mInfo->datatime;
+    }
 #ifdef HAVE_BOOST_SIGNALS
     mReadSignal();
 #endif

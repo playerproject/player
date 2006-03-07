@@ -122,7 +122,7 @@ void
 Position2dProxy::RequestGeom()
 {
   boost::mutex::scoped_lock lock(mPc->mMutex);
-  unsigned char temp_int;
+
   if (0 != playerc_position2d_get_geom(mDevice))
     throw PlayerError("Position2dProxy::RequestGeom()", "error getting geom");
   return;

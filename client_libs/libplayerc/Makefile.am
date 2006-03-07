@@ -13,7 +13,7 @@ EXTRA_DIST = playerc.pc.in
 CLEANFILES = playerc.pc
 
 lib_LTLIBRARIES = libplayerc.la
-libplayerc_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la
+libplayerc_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la
 libplayerc_la_DEPENDENCIES = $(top_builddir)/libplayerxdr/libplayerxdr.la
 
 libplayerc_la_SOURCES = playerc.h \
@@ -40,16 +40,16 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_log.c \
                         dev_map.c \
                         dev_planner.c \
+                        dev_position1d.c \
                         dev_position2d.c \
                         dev_position3d.c \
-                        dev_position.c \
                         dev_power.c \
                         dev_ptz.c \
                         dev_rfid.c \
                         dev_simulation.c \
                         dev_sonar.c \
                         dev_speech.c \
-                        dev_wifi.c 
+                        dev_wifi.c
 
 #dev_joystick.c
 #dev_truth.c
