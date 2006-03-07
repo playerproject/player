@@ -1154,20 +1154,20 @@ int playerc_graphics2d_setcolor(playerc_graphics2d_t *device,
 
 /** @brief Draw some points */
 int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
-				   player_point_2d_t pts[],
-				   int count );
+           player_point_2d_t pts[],
+           int count );
 
 /** @brief Draw a polyline that connects an array of points */
 int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device,
-				     player_point_2d_t pts[],
-				     int count );
+             player_point_2d_t pts[],
+             int count );
 
 /** @brief Draw a polygon */
 int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
-				    player_point_2d_t pts[],
-				    int count,
-				    int filled,
-				    player_color_t fill_color );
+            player_point_2d_t pts[],
+            int count,
+            int filled,
+            player_color_t fill_color );
 
 /** @brief Clear the canvas */
 int playerc_graphics2d_clear(playerc_graphics2d_t *device );
@@ -1784,6 +1784,91 @@ int playerc_planner_enable(playerc_planner_t *device, int state);
 /** @} */
 /**************************************************************************/
 
+/***************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_position1d position1d
+
+The position1d proxy provides an interface to 1 DOF actuator such as a
+linear or rotational actuator.
+
+@{
+*/
+
+/** Position1d device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Robot geometry in robot cs: pose gives the position1d and
+      orientation, size gives the extent.  These values are filled in
+      by playerc_position1d_get_geom(). */
+  double pose[3];
+  double size[2];
+
+  /** Odometric pose [m] or [rad]. */
+  double pos;
+
+  /** Odometric velocity [m/s] or [rad/s]. */
+  double vel;
+
+  /** Stall flag [0, 1]. */
+  int stall;
+
+  /** Status bitfield of extra data in the following order:
+      - status (unsigned byte)
+        - bit 0: limit min
+        - bit 1: limit center
+        - bit 2: limit max
+        - bit 3: over current
+        - bit 4: trajectory complete
+        - bit 5: is enabled
+        - bit 6:
+        - bit 7:
+    */
+  int status;
+
+} playerc_position1d_t;
+
+/** Create a position1d device proxy. */
+playerc_position1d_t *playerc_position1d_create(playerc_client_t *client,
+                                                int index);
+
+/** Destroy a position1d device proxy. */
+void playerc_position1d_destroy(playerc_position1d_t *device);
+
+/** Subscribe to the position1d device */
+int playerc_position1d_subscribe(playerc_position1d_t *device, int access);
+
+/** Un-subscribe from the position1d device */
+int playerc_position1d_unsubscribe(playerc_position1d_t *device);
+
+/** Enable/disable the motors */
+int playerc_position1d_enable(playerc_position1d_t *device, int enable);
+
+/** Get the position1d geometry.  The writes the result into the proxy
+    rather than returning it to the caller. */
+int playerc_position1d_get_geom(playerc_position1d_t *device);
+
+/** Set the target speed. */
+int playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
+                                   double vel, int state);
+
+/** Set the target position. */
+int playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
+                                   double pos, int state);
+
+/** Go to target position at a certain velocity */
+int playerc_position1d_go_to(playerc_position1d_t *device,
+                             double pos, double vel, int state);
+
+/** Set the odometry offset */
+int playerc_position1d_set_odom(playerc_position1d_t *device,
+                                double odom);
+
+/** @} */
+/**************************************************************************/
+
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
@@ -1863,49 +1948,6 @@ int playerc_position2d_set_odom(playerc_position2d_t *device,
 
 /** @} */
 /**************************************************************************/
-
-/***************************************************************************/
-/** @ingroup playerc_proxies
- * @defgroup playerc_proxy_position position
-
-The position proxy provides backward compatibility for pre-Player 2.0 client
-code.  New code should use the @ref playerc_proxy_position2d proxy instead.
-
-@{
-*/
-
-/** Position device data. */
-typedef playerc_position2d_t playerc_position_t;
-
-/** Create a position device proxy. */
-playerc_position_t *playerc_position_create(playerc_client_t *client,
-                                            int index);
-/** Destroy a position device proxy. */
-void playerc_position_destroy(playerc_position_t *device);
-/** Subscribe to the position device */
-int playerc_position_subscribe(playerc_position_t *device, int access);
-/** Un-subscribe from the position device */
-int playerc_position_unsubscribe(playerc_position_t *device);
-/** Enable/disable the motors */
-int playerc_position_enable(playerc_position_t *device, int enable);
-/** Get the position geometry.  The writes the result into the proxy
-    rather than returning it to the caller. */
-int playerc_position_get_geom(playerc_position_t *device);
-/** Set the target speed.  vx : forward speed (m/s).  vy : sideways
-    speed (m/s); this field is used by omni-drive robots only.  va :
-    rotational speed (rad/s).  All speeds are defined in the robot
-    coordinate system. */
-int playerc_position_set_cmd_vel(playerc_position_t *device,
-                                   double vx, double vy, double va, int state);
-/** Set the target pose (gx, gy, ga) is the target pose in the
-    odometric coordinate system. */
-int playerc_position_set_cmd_pose(playerc_position_t *device,
-                                  double gx, double gy, double ga, int state);
-/** Set the odometric offset */
-int playerc_position_set_odom(playerc_position_t *device,
-                              double ox, double oy, double oa);
-/** @} */
-
 
 /***************************************************************************/
 /** @ingroup playerc_proxies

@@ -55,7 +55,7 @@
 
 namespace PlayerCc
 {
-/** @ingroup clientlibs 
+/** @ingroup clientlibs
     @defgroup player_clientlib_cplusplus libplayerc++
     @brief A C++ client library for the @ref util_player
 
@@ -518,7 +518,7 @@ class AudioDspProxy : public ClientProxy
     double GetAmplitude(uint aIndex) const
       { return(GetVar(mDevice->amplitude[aIndex])); };
 
-    void Configure(uint aChan, uint aRate, int16_t aFormat=0xFFFFFFFF );
+    void Configure(uint aChan, uint aRate, int16_t aFormat=0xFFFFFFFF);
 
     void RequestConfigure();
 
@@ -785,6 +785,10 @@ class DioProxy : public ClientProxy
     /// A bitfield of the current digital inputs.
     uint32_t GetDigin() const { return GetVar(mDevice->digin); };
 
+    /// Get a specific bit
+    bool GetInput(uint aIndex) const
+      { return (GetVar(mDevice->digin) & (1 << aIndex)) > 0; };
+
     /// Set the output to the bitfield aDigout
     void SetOutput(uint aCount, uint32_t aDigout);
 };
@@ -918,7 +922,7 @@ class GpsProxy : public ClientProxy
     /// Time, since the epoch
     double GetTime() const { return GetVar(mDevice->utc_time); };
 
-	/// Errors
+    /// Errors
     double GetErrHorizontal() const { return GetVar(mDevice->err_horz); };
     double GetErrVertical() const { return GetVar(mDevice->err_vert); };
 };
@@ -948,24 +952,27 @@ class Graphics2dProxy : public ClientProxy
     Graphics2dProxy(PlayerClient *aPc, uint aIndex=0);
     // Destructor
     ~Graphics2dProxy();
-    
-    /// Set the current pen color
-    void Color( player_color_t col );
 
     /// Set the current pen color
-    void Color( uint8_t red,  uint8_t green,  uint8_t blue,  uint8_t alpha );
+    void Color(player_color_t col);
+
+    /// Set the current pen color
+    void Color(uint8_t red,  uint8_t green,  uint8_t blue,  uint8_t alpha);
 
     /// Clear the drawing area
-    void Clear( void );
+    void Clear(void);
 
     /// Draw a set of points
-    void DrawPoints( player_point_2d_t pts[], int count );
+    void DrawPoints(player_point_2d_t pts[], int count);
 
     /// Draw a polygon defined by a set of points
-    void DrawPolygon( player_point_2d_t pts[], int count, bool filled, player_color_t fill_color );
-    
+    void DrawPolygon(player_point_2d_t pts[],
+                     int count,
+                     bool filled,
+                     player_color_t fill_color);
+
     /// Draw a line connecting  set of points
-    void DrawPolyline( player_point_2d_t pts[], int count );
+    void DrawPolyline(player_point_2d_t pts[], int count);
 };
 
 /**
@@ -1119,7 +1126,11 @@ class LaserProxy : public ClientProxy
     /// Scan range for the latest set of data (radians)
     double GetMaxAngle() const { return GetVar(mDevice->scan_start); };
     /// Scan range for the latest set of data (radians)
-    double GetMinAngle() const { return GetVar(mDevice->scan_start) + GetVar(mDevice->scan_count)*GetVar(mDevice->scan_res); };
+    double GetMinAngle() const
+    {
+      scoped_lock_t lock(mPc->mMutex);
+      return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
+    };
 
 /*    /// Whether or not reflectance (i.e., intensity) values are being returned.
     bool IsIntensity() const { return GetVar(mDevice->intensity); };
@@ -1388,7 +1399,7 @@ class MapProxy : public ClientProxy
     { return y*GetWidth() + x; };
 
     /// Get the (x,y) cell
-    unsigned char GetCell(int x, int y ) const
+    unsigned char GetCell(int x, int y) const
     { return GetVar(mDevice->cells[GetCellIndex(x,y)]); };
 
     /// Map resolution, m/cell
@@ -1568,6 +1579,130 @@ class PlannerProxy : public ClientProxy
 };
 
 /**
+The @p Position1dProxy class is used to control a @ref
+interface_position1d device.  The latest position data is contained
+in the attributes pos, vel , etc.  */
+class Position1dProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_position1d_t *mDevice;
+
+  public:
+
+    /// constructor
+    Position1dProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~Position1dProxy();
+
+    /// Send a motor command for velocity control mode.
+    /// Specify the forward, sideways, and angular speeds in m/sec, m/sec,
+    /// and radians/sec, respectively.
+    void SetSpeed(double aVel);
+
+    /// Send a motor command for position control mode.  Specify the
+    /// desired pose of the robot in [m] or [rad], and the velocity
+    /// to go there [m/s] or [rad/s]
+    void GoTo(double aPos, double aVel=0);
+
+    /// Get the device's geometry; it is read into the
+    /// relevant class attributes.
+    void RequestGeom();
+
+    /// Accessor for the pose (fill it in by calling RequestGeom)
+    player_pose_t GetPose()
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->pose[0];
+      p.py = mDevice->pose[1];
+      p.pa = mDevice->pose[2];
+      return(p);
+    }
+
+    /// Accessor for the size (fill it in by calling RequestGeom)
+    player_bbox_t GetSize()
+    {
+      player_bbox_t b;
+      scoped_lock_t lock(mPc->mMutex);
+      b.sl = mDevice->size[0];
+      b.sw = mDevice->size[1];
+      return(b);
+    }
+
+    /// Enable/disable the motors.
+    /// Set @p state to 0 to disable or 1 to enable.
+    /// Be VERY careful with this method!  Your robot is likely to run across the
+    /// room with the charger still attached.
+    void SetMotorEnable(bool enable);
+
+    /// Sets the odometry to the pose @p (x, y, yaw).
+    /// Note that @p x and @p y are in m and @p yaw is in radians.
+    void SetOdometry(double aPos);
+
+    /// Reset odometry to 0.
+    void ResetOdometry() { SetOdometry(0); };
+
+    /// Set PID terms
+    //void SetSpeedPID(double kp, double ki, double kd);
+
+    /// Set PID terms
+    //void SetPositionPID(double kp, double ki, double kd);
+
+    /// Set speed ramping profile
+    /// spd rad/s, acc rad/s/s
+    //void SetPositionSpeedProfile(double spd, double acc);
+
+    /// Accessor method
+    double  GetPos() const { return GetVar(mDevice->pos); };
+
+    /// Accessor method
+    double  GetVel() const { return GetVar(mDevice->vel); };
+
+    /// Accessor method
+    bool GetStall() const { return GetVar(mDevice->stall); };
+
+    /// Accessor method
+    uint8_t GetStatus() const { return GetVar(mDevice->status); };
+
+    /// Accessor method
+    bool IsLimitMin() const
+      { return (GetVar(mDevice->status) &
+               (1 << PLAYER_POSITION1D_STATUS_LIMIT_MIN)) > 0; };
+
+    /// Accessor method
+    bool IsLimitCen() const
+      { return (GetVar(mDevice->status) &
+               (1 << PLAYER_POSITION1D_STATUS_LIMIT_CEN)) > 0; };
+
+    /// Accessor method
+    bool IsLimitMax() const
+      { return (GetVar(mDevice->status) &
+               (1 << PLAYER_POSITION1D_STATUS_LIMIT_MAX)) > 0; };
+
+    /// Accessor method
+    bool IsOverCurrent() const
+      { return (GetVar(mDevice->status) &
+               (1 << PLAYER_POSITION1D_STATUS_OC)) > 0; };
+
+    /// Accessor method
+    bool IsTrajComplete() const
+      { return (GetVar(mDevice->status) &
+               (1 << PLAYER_POSITION1D_STATUS_TRAJ_COMPLETE)) > 0; };
+
+    /// Accessor method
+    bool IsEnabled() const
+      { return (GetVar(mDevice->status) &
+               (1 << PLAYER_POSITION1D_STATUS_ENABLED)) > 0; };
+
+};
+
+/**
 The @p Position2dProxy class is used to control a @ref
 interface_position2d device.  The latest position data is contained
 in the attributes xpos, ypos, etc.  */
@@ -1637,14 +1772,14 @@ class Position2dProxy : public ClientProxy
     /// room with the charger still attached.
     void SetMotorEnable(bool enable);
 
-    /// Select velocity control mode.
-    ///
-    /// For the the p2os_position driver, set @p mode to 0 for direct wheel
-    /// velocity control (default), or 1 for separate translational and
-    /// rotational control.
-    ///
-    /// For the reb_position driver: 0 is direct velocity control, 1 is for
-    /// velocity-based heading PD controller (uses DoDesiredHeading()).
+    // Select velocity control mode.
+    //
+    // For the the p2os_position driver, set @p mode to 0 for direct wheel
+    // velocity control (default), or 1 for separate translational and
+    // rotational control.
+    //
+    // For the reb_position driver: 0 is direct velocity control, 1 is for
+    // velocity-based heading PD controller (uses DoDesiredHeading()).
     //void SelectVelocityControl(unsigned char mode);
 
     /// Reset odometry to (0,0,0).
@@ -1968,11 +2103,11 @@ class SonarProxy : public ClientProxy
     player_pose_t GetPose(uint aIndex) const
       { return GetVar(mDevice->poses[aIndex]); };
 
-    /// Enable/disable the sonars.
-    /// Set @p state to 1 to enable, 0 to disable.
-    /// Note that when sonars are disabled the client will still receive sonar
-    /// data, but the ranges will always be the last value read from the sonars
-    /// before they were disabled.
+    // Enable/disable the sonars.
+    // Set @p state to 1 to enable, 0 to disable.
+    // Note that when sonars are disabled the client will still receive sonar
+    // data, but the ranges will always be the last value read from the sonars
+    // before they were disabled.
     //void SetEnable(bool aEnable);
 
     /// Request the sonar geometry.
@@ -2228,7 +2363,7 @@ class WiFiProxy: public ClientProxy
     char access_point[32];
 #endif
 };
-/** 
+/**
 The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
 class RFIDProxy : public ClientProxy
 {
@@ -2301,7 +2436,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);

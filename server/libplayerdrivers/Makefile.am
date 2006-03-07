@@ -15,7 +15,7 @@ AM_CPPFLAGS = -fPIC -Wall -I$(top_srcdir)
 
 libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
 libplayerdrivers_la_LIBADD = @PLAYER_DRIVER_EXTRA_LIBS@
-libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"` -version-info 2:0:0 -rpath $(libdir)
+libplayerdrivers_la_LDFLAGS = `find $(top_builddir)/server/drivers -name "*.lo"` $(PLAYER_VERSION_INFO) -rpath $(libdir)
 
 if INCLUDE_JPEG
 libplayerdrivers_la_LIBADD += $(top_builddir)/libplayerjpeg/libplayerjpeg.la

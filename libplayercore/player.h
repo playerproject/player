@@ -2763,31 +2763,46 @@ The @p position1d interface is used to control linear actuators
  * @{ */
 
 /** Request/reply subtype: get geometry */
-#define PLAYER_POSITION1D_GET_GEOM          1
-/** Request/reply subtype: power */
-#define PLAYER_POSITION1D_MOTOR_POWER       2
+#define PLAYER_POSITION1D_REQ_GET_GEOM          1
+/** Request/reply subtype: motor power */
+#define PLAYER_POSITION1D_REQ_MOTOR_POWER       2
 /** Request/reply subtype: velocity mode */
-#define PLAYER_POSITION1D_VELOCITY_MODE     3
+#define PLAYER_POSITION1D_REQ_VELOCITY_MODE     3
 /** Request/reply subtype: position mode */
-#define PLAYER_POSITION1D_POSITION_MODE     4
+#define PLAYER_POSITION1D_REQ_POSITION_MODE     4
 /** Request/reply subtype: set odometry */
-#define PLAYER_POSITION1D_SET_ODOM          5
+#define PLAYER_POSITION1D_REQ_SET_ODOM          5
 /** Request/reply subtype: reset odometry */
-#define PLAYER_POSITION1D_RESET_ODOM        6
+#define PLAYER_POSITION1D_REQ_RESET_ODOM        6
 /** Request/reply subtype: set speed PID params */
-#define PLAYER_POSITION1D_SPEED_PID         7
+#define PLAYER_POSITION1D_REQ_SPEED_PID         7
 /** Request/reply subtype: set position PID params */
-#define PLAYER_POSITION1D_POSITION_PID      8
+#define PLAYER_POSITION1D_REQ_POSITION_PID      8
 /** Request/reply subtype: set speed profile params */
-#define PLAYER_POSITION1D_SPEED_PROF        9
+#define PLAYER_POSITION1D_REQ_SPEED_PROF        9
 
 /** Data subtype: state */
-#define PLAYER_POSITION1D_DATA_STATE      1
+#define PLAYER_POSITION1D_DATA_STATE             1
 /** Data subtype: geometry */
-#define PLAYER_POSITION1D_DATA_GEOM       2
+#define PLAYER_POSITION1D_DATA_GEOM              2
 
-/** Command subtype: state */
-#define PLAYER_POSITION1D_CMD_STATE       1
+/** Command subtype: velocity command */
+#define PLAYER_POSITION1D_CMD_VEL                1
+/** Command subtype: position command */
+#define PLAYER_POSITION1D_CMD_POS                2
+
+/** Status byte: limit min */
+#define PLAYER_POSITION1D_STATUS_LIMIT_MIN 0
+/** Status byte: limit center */
+#define PLAYER_POSITION1D_STATUS_LIMIT_CEN 1
+/** Status byte: limit max */
+#define PLAYER_POSITION1D_STATUS_LIMIT_MAX 2
+/** Status byte: limit over current */
+#define PLAYER_POSITION1D_STATUS_OC 3
+/** Status byte: limit trajectory complete */
+#define PLAYER_POSITION1D_STATUS_TRAJ_COMPLETE 4
+/** Status byte: enabled */
+#define PLAYER_POSITION1D_STATUS_ENABLED 5
 
 /** @brief Data: state (@ref PLAYER_POSITION1D_DATA_STATE)
 
@@ -2801,6 +2816,19 @@ typedef struct player_position1d_data
   float vel;
   /** Is the motor stalled? */
   uint8_t stall;
+  /** bitfield of extra data in the following order:
+      - status (unsigned byte)
+        - bit 0: limit min
+        - bit 1: limit center
+        - bit 2: limit max
+        - bit 3: over current
+        - bit 4: trajectory complete
+        - bit 5: is enabled
+        - bit 6:
+        - bit 7:
+    */
+  uint8_t status;
+
 } player_position1d_data_t;
 
 /** @brief Command: state (@ref PLAYER_POSITION1D_CMD_STATE)
@@ -2816,8 +2844,6 @@ typedef struct player_position1d_cmd
   float vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
-  /** Command type; 0 = velocity, 1 = position. */
-  uint32_t type;
 } player_position1d_cmd_t;
 
 /** @brief Request/reply: Query geometry.

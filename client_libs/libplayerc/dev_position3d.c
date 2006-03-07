@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@
 
 
 // Local declarations
-void playerc_position3d_putmsg(playerc_position3d_t *device, 
+void playerc_position3d_putmsg(playerc_position3d_t *device,
                                player_msghdr_t *header,
                                player_position3d_data_t *data, size_t len);
 
@@ -70,7 +70,7 @@ playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int in
   playerc_device_init(&device->info, client, PLAYER_POSITION3D_CODE, index,
                       (playerc_putmsg_fn_t) playerc_position3d_putmsg);
 
-  
+
   return device;
 }
 
@@ -100,7 +100,7 @@ int playerc_position3d_unsubscribe(playerc_position3d_t *device)
 
 
 // Process incoming data
-void playerc_position3d_putmsg(playerc_position3d_t *device, 
+void playerc_position3d_putmsg(playerc_position3d_t *device,
                                player_msghdr_t *header,
                                player_position3d_data_t *data, size_t len)
 {
@@ -112,7 +112,7 @@ void playerc_position3d_putmsg(playerc_position3d_t *device,
     device->pos_z = data->pos.pz;
 
     device->pos_roll = data->pos.proll;
-    device->pos_pitch = data->pos.ppitch; 
+    device->pos_pitch = data->pos.ppitch;
     device->pos_yaw = data->pos.pyaw;
 
     device->vel_x = data->vel.px;
@@ -122,7 +122,7 @@ void playerc_position3d_putmsg(playerc_position3d_t *device,
     device->vel_roll = data->vel.proll;
     device->vel_pitch = data->vel.ppitch;
     device->vel_yaw = data->vel.pyaw;
-  
+
     device->stall = data->stall;
   }
   else
@@ -170,7 +170,7 @@ int playerc_position3d_enable(playerc_position3d_t *device, int enable)
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_POSITION3D_MOTOR_POWER,
                                 &config,
-                                &config, sizeof(config));    
+                                &config, sizeof(config));
 }
 
 
@@ -194,7 +194,7 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
 
 
 // Set the robot speed
-int playerc_position3d_set_velocity(playerc_position3d_t *device, 
+int playerc_position3d_set_velocity(playerc_position3d_t *device,
                      double vx, double vy, double vz,
                      double vr, double vp, double vt, int state)
 {
@@ -212,7 +212,7 @@ int playerc_position3d_set_velocity(playerc_position3d_t *device,
   cmd.state = state;
 
   return playerc_client_write(device->info.client,
-                     &device->info, PLAYER_POSITION3D_CMD_SET_VEL,&cmd,sizeof(cmd));
+                              &device->info, PLAYER_POSITION3D_CMD_SET_VEL,&cmd,NULL);
 }
 
 
@@ -233,7 +233,7 @@ int playerc_position3d_set_pose(playerc_position3d_t *device,
   cmd.pos.pyaw = gt;
 
   return playerc_client_write(device->info.client,
-                     &device->info, PLAYER_POSITION3D_CMD_SET_POS,&cmd,sizeof(cmd));
+                              &device->info, PLAYER_POSITION3D_CMD_SET_POS,&cmd,NULL);
 }
 
 /** For compatibility with old position3d interface */
