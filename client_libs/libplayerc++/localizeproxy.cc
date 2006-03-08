@@ -88,3 +88,16 @@ LocalizeProxy::SetPose(double pose[3], double cov[3])
 }
 
 
+player_pose_t LocalizeProxy::GetParticlePose(int index) const
+{
+  player_pose_t pose;
+
+  assert(index>=0 && index < this->mDevice->num_particles);
+
+  pose.px = this->mDevice->particles[index].pose[0];
+  pose.py = this->mDevice->particles[index].pose[1];
+  pose.pa = this->mDevice->particles[index].pose[2];
+
+  return pose;
+}
+
