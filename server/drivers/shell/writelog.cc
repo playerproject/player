@@ -1061,29 +1061,13 @@ WriteLog::WriteWiFi(player_msghdr_t* hdr, void *data)
 	    assert(wdata->links[i].essid_count < sizeof(essid));
 
 	    memcpy(mac, wdata->links[i].mac, wdata->links[i].mac_count);
-            if (strlen(mac) == 0)
-	    {
-              mac[0] = '\'';
-              mac[1] = '\'';
-	    }
-        
 	    memcpy(ip, wdata->links[i].ip, wdata->links[i].ip_count);
-            if (strlen(ip) == 0)
-	    {
-              ip[0] = '\'';
-              ip[1] = '\'';
-	    }
-        
             memcpy(essid, wdata->links[i].essid, wdata->links[i].essid_count);
-            if (strlen(essid) == 0)
-	    {
-              essid[0] = '\'';
-              essid[1] = '\'';
-	    }
         
             fprintf(this->file, "'%s' '%s' '%s' %d %d %d %d %d %d ",
                     mac, ip, essid,
-                    wdata->links[i].mode, wdata->links[i].freq,
+                    wdata->links[i].mode, 
+                    wdata->links[i].freq,
                     wdata->links[i].encrypt,
                     wdata->links[i].qual,
                     wdata->links[i].level,

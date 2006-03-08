@@ -32,6 +32,8 @@
 #include <libplayercore/player.h>
 #include <libplayercore/message.h>
 
+#define LOCALHOST_ADDR 16777343
+
 // Forward declarations
 class Driver;
 
@@ -134,7 +136,14 @@ class Device
     static bool MatchDeviceAddress(player_devaddr_t addr1,
                                    player_devaddr_t addr2)
     {
-      return((addr1.host == addr2.host) &&
+      // On some machines, looking up "localhost" gives you
+      // "127.0.0.1", which packs into a 32-bit int as 16777343.  On other
+      // machines, it gives you "0.0.0.0", which packs as 0.  In order to
+      // be able to do things like play back logfiles made on any machine,
+      // we'll treat these two addresses as identical.
+      return(((addr1.host == addr2.host) ||
+              ((addr1.host == 0) && (addr2.host == LOCALHOST_ADDR)) ||
+              ((addr1.host == LOCALHOST_ADDR) && (addr2.host == 0))) &&
              (addr1.robot == addr2.robot) &&
              (addr1.interf == addr2.interf) &&
              (addr1.index == addr2.index));

@@ -252,6 +252,11 @@ class ReadLog: public Driver
                              int linenum,
                              int token_count, char **tokens, double time);
 
+  // Parse wifi data
+  private: int ParseWifi(player_devaddr_t id,
+                         unsigned short type, unsigned short subtype,
+                         int linenum,
+                         int token_count, char **tokens, double time);
 #if 0
 
   // Parse position3d data
@@ -266,11 +271,6 @@ class ReadLog: public Driver
                           int linenum,
                           int token_count, char **tokens, double time);
 
-  // Parse wifi data
-  private: int ParseWifi(player_devaddr_t id,
-                         unsigned short type, unsigned short subtype,
-                         int linenum,
-                         int token_count, char **tokens, double time);
 #endif
 
   // List of provided devices
@@ -730,8 +730,21 @@ void ReadLog::Main()
     {
       provide_id = this->provide_ids[i];
       if(Device::MatchDeviceAddress(header_id, provide_id))
+      {
         this->ParseData(provide_id, type, subtype,
                         linenum, token_count, tokens, curr_log_time);
+        break;
+      }
+    }
+    if(i >= this->provide_count)
+    {
+      PLAYER_MSG6(2, "unhandled message from %d:%d:%d:%d %d:%d\n",
+                  header_id.host,
+                  header_id.robot,
+                  header_id.interf,
+                  header_id.index,
+                  type, subtype);
+
     }
   }
 
@@ -852,10 +865,16 @@ ReadLog::ProcessLaserConfig(MessageQueue * resp_queue,
             break;
         }
         if(j>=this->provide_count)
+        {
+          puts("no matching device");
           return(-1);
+        }
 
         if(!this->provide_metadata[j])
+        {
+          puts("no metadata");
           return(-1);
+        }
 
         this->Publish(this->provide_ids[j], resp_queue,
                       PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
@@ -1019,6 +1038,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_POSITION2D_CODE)
     return this->ParsePosition(id, type, subtype, linenum,
                                token_count, tokens, time);
+  else if (id.interf == PLAYER_WIFI_CODE)
+    return this->ParseWifi(id, type, subtype, linenum,
+                           token_count, tokens, time);
 
 #if 0
   else if (id.interf == PLAYER_POSITION3D_CODE)
@@ -1027,9 +1049,6 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_TRUTH_CODE)
     return this->ParseTruth(id, type, subtype, linenum,
                             token_count, tokens, time);
-  else if (id.interf == PLAYER_WIFI_CODE)
-    return this->ParseWifi(id, type, subtype, linenum,
-                           token_count, tokens, time);
 #endif
 
   PLAYER_WARN1("unknown interface code [%s]",
@@ -1505,7 +1524,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
           return(-1);
       }
     default:
-      PLAYER_ERROR1("unknown sonar message type %d\n", subtype);
+      PLAYER_ERROR1("unknown sonar message type %d\n", type);
       return(-1);
   }
 }
@@ -1592,7 +1611,70 @@ ReadLog::ParsePosition(player_devaddr_t id,
           return(-1);
       }
     default:
-      PLAYER_ERROR1("unknown position message type %d\n", subtype);
+      PLAYER_ERROR1("unknown position message type %d\n", type);
+      return(-1);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse wifi data
+int ReadLog::ParseWifi(player_devaddr_t id, 
+                       unsigned short type, unsigned short subtype,
+                       int linenum,
+                       int token_count, char **tokens, double time)
+{
+  player_wifi_data_t data;
+  player_wifi_link_t *link;
+  int i;
+  unsigned int reported_count;
+
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_WIFI_DATA_STATE:
+          {
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
+              return -1;
+            }
+
+            reported_count = atoi(tokens[7]);
+            data.links_count = 0;
+            for(i = 8; (i+8) < token_count; i += 9)
+            {
+              link = data.links + data.links_count;
+
+              memcpy(link->mac, tokens[i + 0]+1, strlen(tokens[i+0])-2);
+              link->mac_count = strlen(tokens[i+0])-2;
+              memcpy(link->ip, tokens[i + 1]+1, strlen(tokens[i+1])-2);
+              link->ip_count = strlen(tokens[i+1])-2;
+              memcpy(link->essid, tokens[i + 2]+1, strlen(tokens[i+2])-2);
+              link->essid_count = strlen(tokens[i+2])-2;
+              link->mode = atoi(tokens[i + 3]);
+              link->freq = atoi(tokens[i + 4]);
+              link->encrypt = atoi(tokens[i + 5]);
+              link->qual = atoi(tokens[i + 6]);
+              link->level = atoi(tokens[i + 7]);
+              link->noise = atoi(tokens[i + 8]);
+
+              data.links_count++;
+            }
+            if(data.links_count != reported_count)
+              PLAYER_WARN("read fewer wifi link entries than expected");
+
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+        default:
+          PLAYER_ERROR1("unknown wifi data subtype %d\n", subtype);
+          return(-1);
+      }
+    default:
+      PLAYER_ERROR1("unknown wifi message type %d\n", type);
       return(-1);
   }
 }
@@ -1661,42 +1743,5 @@ int ReadLog::ParseTruth(player_devaddr_t id, int linenum,
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Parse wifi data
-int ReadLog::ParseWifi(player_devaddr_t id, int linenum,
-                              int token_count, char **tokens, struct timeval time)
-{
-  player_wifi_data_t data;
-  player_wifi_link_t *link;
-  int i;
-
-  if (token_count < 6)
-  {
-    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
-    return -1;
-  }
-
-  data.link_count = 0;
-  for (i = 6; i < token_count; i += 4)
-  {
-    link = data.links + data.link_count;
-
-    strcpy(link->ip, tokens[i + 0]);
-    link->qual = atoi(tokens[i + 1]);
-    link->level = atoi(tokens[i + 2]);
-    link->noise = atoi(tokens[i + 3]);
-
-    link->qual = htons(link->qual);
-    link->level = htons(link->level);
-    link->noise = htons(link->noise);
-
-    data.link_count++;
-  }
-  data.link_count = htons(data.link_count);
-
-  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
-
-  return 0;
-}
 #endif
 
