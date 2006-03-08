@@ -66,7 +66,7 @@ int AMCLOdom::Load(ConfigFile* cf, int section)
   this->drift.m[1][1] = cf->ReadTupleFloat(section, "odom_drift[1]", 1, 0.20);
   this->drift.m[1][2] = cf->ReadTupleFloat(section, "odom_drift[1]", 2, 0.00);
 
-  this->drift.m[2][0] = cf->ReadTupleFloat(section, "odom_drift[2]", 0, 0.00);
+  this->drift.m[2][0] = cf->ReadTupleFloat(section, "odom_drift[2]", 0, 0.20);
   this->drift.m[2][1] = cf->ReadTupleFloat(section, "odom_drift[2]", 1, 0.00);
   this->drift.m[2][2] = cf->ReadTupleFloat(section, "odom_drift[2]", 2, 0.20);
 

@@ -166,9 +166,8 @@ The @p amcl driver requires the following interfaces, some of them named:
     - Default:
       - odom_drift[0] [0.2 0.0 0.0]
       - odom_drift[1] [0.0 0.2 0.0]
-      - odom_drift[2] [0.0 0.0 0.2]
+      - odom_drift[2] [0.2 0.0 0.2]
     - Set the 3 rows of the covariance matrix used for odometric drift.  
-      This matrix should be symmetric.
 - Laser settings:
   - laser_pose (length tuple)
     - Default: [0 0 0]
