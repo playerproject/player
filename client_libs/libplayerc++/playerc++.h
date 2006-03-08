@@ -1320,6 +1320,13 @@ class LocalizeProxy : public ClientProxy
     player_localize_hypoth_t GetHypoth(uint aIndex) const
       { return GetVar(mDevice->hypoths[aIndex]); };
 
+    /// Get the particle set
+    int GetParticles()
+      { return playerc_localize_get_particles(mDevice); }
+
+    /// Get the Pose of a particle
+    player_pose_t GetParticlePose(int index) const;
+
     /// Set the current pose hypothesis (m, m, radians).
     void SetPose(double pose[3], double cov[3]);
 
