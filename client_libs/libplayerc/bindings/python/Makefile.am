@@ -10,7 +10,7 @@ BUILT_SOURCES = playerc_oo.i srcbuilddirs.py
 endif
 
 # files that go in distribution
-EXTRA_DIST = playerc.i setup.py parse.py libplayerc_py.html
+EXTRA_DIST = playerc.i setup.py parse.py libplayerc_py.html playercpy_example.py
 
 # Generate a OO interface file for libplayerc.  This is tweaked to
 # enable VPAPTH (distcheck) builds; the header files needed by swig
