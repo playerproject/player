@@ -54,6 +54,8 @@ const char *playerc_lookup_name(int code)
 {
   switch (code)
   {
+    case PLAYER_ACTARRAY_CODE:
+      return PLAYER_ACTARRAY_STRING;
     case PLAYER_AIO_CODE:
       return PLAYER_AIO_STRING;
     case PLAYER_BLOBFINDER_CODE:
@@ -72,6 +74,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_GPS_STRING;
     case PLAYER_LASER_CODE:
       return PLAYER_LASER_STRING;
+    case PLAYER_LIMB_CODE:
+      return PLAYER_LIMB_STRING;
     case PLAYER_LOCALIZE_CODE:
       return PLAYER_LOCALIZE_STRING;
     case PLAYER_GRAPHICS2D_CODE:
@@ -115,6 +119,8 @@ const char *playerc_lookup_name(int code)
 // Get the device code for a give name.
 int playerc_lookup_code(const char *name)
 {
+  if (strcmp(name, PLAYER_ACTARRAY_STRING) == 0)
+    return PLAYER_ACTARRAY_CODE;
   if (strcmp(name, PLAYER_AIO_STRING) == 0)
     return PLAYER_AIO_CODE;
   if (strcmp(name, PLAYER_BLOBFINDER_STRING) == 0)
@@ -135,6 +141,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_GPS_CODE;
   if (strcmp(name, PLAYER_LASER_STRING) == 0)
     return PLAYER_LASER_CODE;
+  if (strcmp(name, PLAYER_LIMB_STRING) == 0)
+    return PLAYER_LIMB_CODE;
   if (strcmp(name, PLAYER_LOCALIZE_STRING) == 0)
     return PLAYER_LOCALIZE_CODE;
   if (strcmp(name, PLAYER_GRIPPER_STRING) == 0)
