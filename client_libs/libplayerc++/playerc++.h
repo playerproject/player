@@ -1613,9 +1613,8 @@ class Position1dProxy : public ClientProxy
     void SetSpeed(double aVel);
 
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in [m] or [rad], and the velocity
-    /// to go there [m/s] or [rad/s]
-    void GoTo(double aPos, double aVel=0);
+    /// desired pose of the robot in [m] or [rad]
+    void GoTo(double aPos);
 
     /// Get the device's geometry; it is read into the
     /// relevant class attributes.

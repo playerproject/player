@@ -1858,10 +1858,6 @@ int playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
 int playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
                                    double pos, int state);
 
-/** Go to target position at a certain velocity */
-int playerc_position1d_go_to(playerc_position1d_t *device,
-                             double pos, double vel, int state);
-
 /** Set the odometry offset */
 int playerc_position1d_set_odom(playerc_position1d_t *device,
                                 double odom);

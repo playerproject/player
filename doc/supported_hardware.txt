@@ -319,8 +319,7 @@ Latombe (1991),
 <td><a href="http://playerstage.sf.net">The Player/Stage/Gazebo project</a></td>
 <td><a href="http://playerstage.sf.net/index.php?src=gazebo">Gazebo</a></td>
 <td>A 3-dimensional multi-robot simulator</td>
-<td>@ref player_driver_gz_sim, @ref player_driver_gz_laser, 
-@ref player_driver_gz_stereo, and others</td>
+<td>gazebo</td>
 </tr>
 
 <tr>

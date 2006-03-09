@@ -59,7 +59,7 @@ Other lasers on the same host:robot would be assigned different indexes.
 
 <p>
 Other drivers also support the @ref interface_laser interface, including
-@ref driver_urglaser, @ref player_driver_gz_laser, and <a href="http://playerstage.sourceforge.net/doc/stage-2.0.0a/group__player.html">stage</a>.
+@ref driver_urglaser and <a href="http://playerstage.sourceforge.net/doc/stage-2.0.0a/group__player.html">stage</a>.
 From the point of view of programs that use these drivers, they're all the
 same: they supply planar range data.  It doesn't matter exactly which model
 of laser is being used, or even whether the laser is physical or simulated.

@@ -945,7 +945,7 @@ typedef struct player_blinkenlight_cmd_power
   uint8_t enable;
 } player_blinkenlight_cmd_power_t;
 
-/** @brief Command: color (@ref PLAYER_BLINKENLIGHT_DATA_COLOR)
+/** @brief Command: color (@ref PLAYER_BLINKENLIGHT_CMD_COLOR)
 This @p blinkenlight command sets the color of the light.
 */
 typedef struct player_blinkenlight_cmd_color
@@ -954,7 +954,7 @@ typedef struct player_blinkenlight_cmd_color
   player_color_t color;
 } player_blinkenlight_cmd_color_t;
 
-/** @brief Command: period (@ref PLAYER_BLINKENLIGHT_DATA_PERIOD)
+/** @brief Command: period (@ref PLAYER_BLINKENLIGHT_CMD_PERIOD)
 This @p blinkenlight command sets the duration of one on/off blink cycle in seconds.
 */
 typedef struct player_blinkenlight_cmd_period
@@ -964,7 +964,7 @@ typedef struct player_blinkenlight_cmd_period
 } player_blinkenlight_cmd_period_t;
 
 /** @brief Command: dutycycle (@ref
-PLAYER_BLINKENLIGHT_DATA_DUTYCYCLE) This @p blinkenlight command sets
+PLAYER_BLINKENLIGHT_CMD_DUTYCYCLE) This @p blinkenlight command sets
 the ratio of light-on to light-off time in one on/off blink cycle.
 */
 typedef struct player_blinkenlight_cmd_dutycycle
@@ -2831,25 +2831,36 @@ typedef struct player_position1d_data
 
 } player_position1d_data_t;
 
-/** @brief Command: state (@ref PLAYER_POSITION1D_CMD_STATE)
+/** @brief Command: state (@ref PLAYER_POSITION1D_CMD_VEL)
 
-The @p position1d interface accepts new positions and/or velocities for
+The @p position1d interface accepts new velocities for
 the robot's motors (drivers may support position control, speed control,
 or both). */
-typedef struct player_position1d_cmd
+typedef struct player_position1d_cmd_vel
 {
-  /** position [m] or [rad] */
-  float pos;
-  /** translational velocity [m/s] or [rad/s] */
+  /** velocity [m/s] or [rad/s] */
   float vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
-} player_position1d_cmd_t;
+} player_position1d_cmd_vel_t;
+
+/** @brief Command: state (@ref PLAYER_POSITION1D_CMD_POS)
+
+The @p position1d interface accepts new positions for
+the robot's motors (drivers may support position control, speed control,
+or both). */
+typedef struct player_position1d_cmd_pos
+{
+  /** position [m] or [rad] */
+  float pos;
+  /** Motor state (FALSE is either off or locked, depending on the driver). */
+  uint8_t state;
+} player_position1d_cmd_pos_t;
 
 /** @brief Request/reply: Query geometry.
 
 To request robot geometry, send a null
-@ref PLAYER_POSITION1D_GET_GEOM. */
+@ref PLAYER_POSITION1D_REQ_GET_GEOM. */
 typedef struct player_position1d_geom
 {
   /** Pose of the robot base, in the robot cs (m, m, rad). */
@@ -2861,7 +2872,7 @@ typedef struct player_position1d_geom
 /** @brief Request/reply: Motor power.
 
 On some robots, the motor power can be turned on and off from software.
-To do so, send a @ref PLAYER_POSITION1D_MOTOR_POWER request with the format
+To do so, send a @ref PLAYER_POSITION1D_REQ_MOTOR_POWER request with the format
 given below, and with the appropriate @p state (zero for motors off and
 non-zero for motors on).  Null response.
 
@@ -2878,7 +2889,7 @@ typedef struct player_position1d_power_config
 /** @brief Request/reply: Change velocity control.
 
 Some robots offer different velocity control modes.  It can be changed by
-sending a @ref PLAYER_POSITION1D_VELOCITY_MODE request with the format given
+sending a @ref PLAYER_POSITION1D_REQ_VELOCITY_MODE request with the format given
 below, including the appropriate mode.  No matter which mode is used, the
 external client interface to the @p position1d device remains the same.
 Null response.
@@ -2891,7 +2902,7 @@ typedef struct player_position1d_velocity_mode_config
 
 /** @brief Request/reply: Reset odometry.
 
-To reset the robot's odometry to x = 0, send a @ref PLAYER_POSITION1D_RESET_ODOM
+To reset the robot's odometry to x = 0, send a @ref PLAYER_POSITION1D_REQ_RESET_ODOM
 request.  Null response. */
 typedef struct player_position1d_reset_odom_config
 {
@@ -2901,7 +2912,7 @@ typedef struct player_position1d_reset_odom_config
 
 /** @brief Request/reply: Change control mode.
 
-To change the control mode, send a @ref PLAYER_POSITION1D_POSITION_MODE reqeust.
+To change the control mode, send a @ref PLAYER_POSITION1D_REQ_POSITION_MODE reqeust.
 Null response.
 */
 typedef struct player_position1d_position_mode
@@ -2913,7 +2924,7 @@ typedef struct player_position1d_position_mode
 /** @brief Request/reply: Set odometry.
 
 To set the robot's odometry
-to a particular state, send a @ref PLAYER_POSITION1D_SET_ODOM request.
+to a particular state, send a @ref PLAYER_POSITION1D_REQ_SET_ODOM request.
 Null response. */
 typedef struct player_position1d_set_odom
 {
@@ -2923,7 +2934,7 @@ typedef struct player_position1d_set_odom
 
 /** @brief Request/reply: Set velocity PID parameters.
 
-To set velocity PID parameters, send a @ref PLAYER_POSITION1D_SPEED_PID request.
+To set velocity PID parameters, send a @ref PLAYER_POSITION1D_REQ_SPEED_PID request.
 Null response.
 */
 typedef struct player_position1d_speed_pid
@@ -2938,7 +2949,7 @@ typedef struct player_position1d_speed_pid
 
 /** @brief Request/reply: Set position PID parameters.
 
-To set position PID parameters, send a @ref PLAYER_POSITION1D_POSITION_PID request.
+To set position PID parameters, send a @ref PLAYER_POSITION1D_REQ_POSITION_PID request.
 Null response.
 */
 typedef struct player_position1d_position_pid
@@ -2954,7 +2965,7 @@ typedef struct player_position1d_position_pid
 /** @brief Request/reply: Set linear speed profile parameters.
 
 To set linear speed profile parameters, send a
-@ref PLAYER_POSITION1D_SPEED_PROF requst.  Null response.
+@ref PLAYER_POSITION1D_REQ_SPEED_PROF requst.  Null response.
 */
 typedef struct player_position1d_speed_prof
 {
