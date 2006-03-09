@@ -99,7 +99,6 @@ void
 LaserProxy::RequestGeom()
 {
   boost::mutex::scoped_lock lock(mPc->mMutex);
-  unsigned char temp_int;
   if (0 != playerc_laser_get_geom(mDevice))
     throw PlayerError("LaserProxy::RequestGeom()", "error getting geom");
   return;
@@ -108,22 +107,20 @@ LaserProxy::RequestGeom()
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::LaserProxy &c)
 {
-  /*
   os << "#min\tmax\tres\tcount\trange_res" << std::endl;
-  os << RTOD(c.GetVar(c.mDevice->scan_start)) << "\t"
-     << RTOD(c.GetVar(c.mDevice->scan_start +
-        c.GetVar(c.mDevice->scan_count) * c.GetVar(c.mDevice->scan_res))) << "\t"
-     << RTOD(c.GetVar(c.mDevice->scan_res)) << "\t"
-     << c.GetVar(c.mDevice->scan_count) << "\t"
-     << c.GetVar(c.mDevice->range_res) << std::endl;
+  os << RTOD(c.GetMinAngle()) << "\t"
+     << RTOD(c.GetMaxAngle()) << "\t"
+     << RTOD(c.GetScanRes()) << "\t"
+     << c.GetCount() << "\t"
+     << c.GetRangeRes() << std::endl;
 
   os << "#range\tbearing\tintensity" << std::endl;
 
-  for(int i=0;i<c.GetVar(c.mDevice->scan_count) && i<PLAYER_LASER_MAX_SAMPLES;i++)
-    os << c.GetVar(c.mDevice->scan[i][0]) << "\t"
-       << RTOD(c.GetVar(c.mDevice->scan[i][1])) << "\t"
-       << c.GetVar(c.mDevice->intensity[i]) << "\t";
-  */
+  for(unsigned int i=0;i<c.GetCount();i++)
+    os << c.GetRange(i) << "\t"
+       << RTOD(c.GetBearing(i)) << "\t"
+       << c.GetIntensity(i) << "\t";
+  
   return os;
 }
 
