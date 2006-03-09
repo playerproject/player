@@ -189,7 +189,7 @@ LaserPoseInterp::LaserPoseInterp(ConfigFile* cf, int section)
                                                0, DBL_MAX);
   this->update_thresh[1] = cf->ReadTupleAngle(section, "update_thresh",
                                               1, DBL_MAX);
-  this->update_interval = cf->ReadFloat(section, "update_interval", DBL_MAX);
+  this->update_interval = cf->ReadFloat(section, "update_interval", -1.0);
   this->send_all_scans = cf->ReadInt(section, "send_all_scans", 1);
 
   this->scans = (player_laser_data_t*)calloc(this->maxnumscans, 
@@ -349,8 +349,9 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
               this->update_thresh[0]) ||
              (fabs(angle_diff(scanpose.pose.pa,this->lastpublishpose.pa)) >=
               this->update_thresh[1]) ||
-             ((this->scantimes[i] - this->lastpublishposetime) >=
-              this->update_interval))
+             ((this->update_interval > 0.0) &&
+              ((this->scantimes[i] - this->lastpublishposetime) >=
+               this->update_interval)))
           {
             this->Publish(this->device_addr, NULL,
                           PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
