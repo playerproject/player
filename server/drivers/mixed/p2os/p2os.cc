@@ -104,6 +104,8 @@ them named:
 - @ref interface_sonar :
   - PLAYER_SONAR_POWER_REQ
   - PLAYER_SONAR_GET_GEOM_REQ
+- @ref interface_bumper :
+  - PLAYER_BUMPER_GET_GEOM
 - @ref interface_blobfinder :
   - PLAYER_BLOBFINDER_SET_COLOR_REQ
   - PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ
@@ -114,7 +116,7 @@ them named:
   - Default: "/dev/ttyS0"
 - use_tcp (boolean)
   - Defaut: 0
-  - Set to 1 if a TCP connection should be used instead of serial port (e.g. Amigobot 
+  - Set to 1 if a TCP connection should be used instead of serial port (e.g. Amigobot
     with ethernet-serial bridge device attached)
 - tcp_remote_host (string)
   - Default: "localhost"
@@ -202,6 +204,18 @@ them named:
 - use_vel_band (integer)
   - Default: 0
   - Use velocity bands
+- limb_pos (3 floats)
+  - Default: 0, 0, 0
+  - Position of the base of the arm from the robot centre in metres.
+- limb_links (5 floats)
+  - Default: 0.06875, 0.16, 0, 0.13775, 0.11321
+  - Offset from previous joint to this joint in metres.
+    e.g. the offset from base to joint 0 is 0.06875m, and from joint 0 to joint 1 is 0.16m.
+- limb_offsets (5 floats)
+  - Default: 0, 0, 0, 0, 0
+  - Angular offset of each joint from desired position to actual position (calibration data).
+  - Taken by commanding joints to 0rad with actarray interface, then measuring their actual angle.
+
 
 
 @par Example
@@ -440,7 +454,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   this->trans_ki = cf->ReadInt(section, "trans_ki", -1);
 
   this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_P2OS_PORT);
-  //this->psos_use_tcp = cf->ReadBool(section, "use_tcp", false); // TODO after ReadBool added 
+  //this->psos_use_tcp = cf->ReadBool(section, "use_tcp", false); // TODO after ReadBool added
   this->psos_use_tcp = cf->ReadInt(section, "use_tcp", 0);
   this->psos_tcp_host = cf->ReadString(section, "tcp_remote_host", DEFAULT_P2OS_TCP_REMOTE_HOST);
   this->psos_tcp_port = cf->ReadInt(section, "tcp_remote_port", DEFAULT_P2OS_TCP_REMOTE_PORT);
@@ -531,7 +545,7 @@ int P2OS::Setup()
   {
 
     // TCP socket:
-    
+
     printf("P2OS connecting to remote host (%s:%d)... ", this->psos_tcp_host, this->psos_tcp_port);
     fflush(stdout);
     if( (this->psos_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
@@ -571,12 +585,12 @@ int P2OS::Setup()
     assert(flags & O_NONBLOCK);
     printf("TCP socket connection is OK... ");
     fflush(stdout);
-  } 
+  }
   else
   {
 
     // Serial port:
-    
+
     printf("P2OS connection opening serial port %s...",this->psos_serial_port);
     fflush(stdout);
 
@@ -599,7 +613,7 @@ int P2OS::Setup()
     cfsetispeed(&term, bauds[currbaud]);
     cfsetospeed(&term, bauds[currbaud]);
 
-    
+
     if(tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0)
     {
       perror("P2OS::Setup():tcsetattr():");
@@ -674,18 +688,18 @@ int P2OS::Setup()
           modem_buf[buf_len]='\0';
           printf("wireless modem response = %s\n", modem_buf);
           // if "Partner busy!"
-          if(modem_buf[2] == 'P') 
+          if(modem_buf[2] == 'P')
           {
             printf("Please reset partner modem and try again\n");
             return(1);
           }
           // if "\n\rPartner not found!"
-          if(modem_buf[0] == 'P') 
+          if(modem_buf[0] == 'P')
           {
             printf("Please check partner modem and try again\n");
             return(1);
           }
-          if(modem_connect_try-- == 0) 
+          if(modem_connect_try-- == 0)
           {
             puts("Failed to connect radio modem, Trying direct connection...");
             break;
@@ -698,7 +712,7 @@ int P2OS::Setup()
   }// end TCP socket or serial port.
 
   // Sync:
-  
+
   int num_sync_attempts = 3;
   while(psos_state != READY)
   {
@@ -2170,6 +2184,31 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
 
     this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_SPEED_REQ);
     return 0;
+  }
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM, this->bumper_id))
+  {
+    /* Return the bumper geometry. */
+    if(hdr->size != 0)
+    {
+      PLAYER_WARN("Arg get bumper geom is wrong size; ignoring");
+      return(-1);
+    }
+    player_bumper_geom_t geom;
+    geom.bumper_def_count = PlayerRobotParams[param_idx].FrontBumpers + PlayerRobotParams[param_idx].RearBumpers;
+    for(unsigned int ii = 0; ii < geom.bumper_def_count; ii++)
+    {
+      bumper_def_t def = PlayerRobotParams[param_idx].bumper_geom[ii];
+      geom.bumper_def[ii].pose.px = def.x;
+      geom.bumper_def[ii].pose.py = def.y;
+      geom.bumper_def[ii].pose.pa = DTOR(def.th);
+      geom.bumper_def[ii].length = def.length;
+      geom.bumper_def[ii].radius = def.radius;
+    }
+
+    this->Publish(this->bumper_id, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_BUMPER_GET_GEOM,
+                  (void*)&geom, sizeof(geom), NULL);
+    return(0);
   }
   else
   {
