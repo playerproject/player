@@ -252,8 +252,10 @@ class MessageQueue
     /// Check whether a queue is empty
     bool Empty() { return(this->head == NULL); }
     /** Push a message onto the queue.  Returns a pointer to the new last
-    element in the queue. */
-    MessageQueueElement * Push(Message& msg);
+    element in the queue. UseReserved should only be set true when pushing sync
+    messages on to the queue. If UseReserved is false then a single message slot
+    is reserved on the queue for a sync message */
+    MessageQueueElement * Push(Message& msg, bool UseReserved = false);
     /** Pop a message off the queue.
     Pop the head (i.e., the first-inserted) message from the queue.
     Returns pointer to said message, or NULL if the queue is empty */

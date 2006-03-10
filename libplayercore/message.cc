@@ -321,7 +321,7 @@ void MessageQueue::MarkAllReady (void)
   syncHeader.subtype = 0;
   Message syncMessage (syncHeader, 0, 0);
   syncMessage.SetReady ();
-  Push (syncMessage);
+  Push (syncMessage, true);
 }
 
 
@@ -344,7 +344,7 @@ MessageQueue::DataAvailable(void)
 }
 
 MessageQueueElement*
-MessageQueue::Push(Message & msg)
+MessageQueue::Push(Message & msg, bool UseReserved)
 {
   player_msghdr_t* hdr;
 
@@ -369,7 +369,7 @@ MessageQueue::Push(Message & msg)
     }
   }
   // Are we over the limit?
-  if(this->Length >= this->Maxlen)
+  if(this->Length >= this->Maxlen - (UseReserved ? 0 : 1))
   {
     PLAYER_WARN("tried to push onto a full message queue");
     this->Unlock();
