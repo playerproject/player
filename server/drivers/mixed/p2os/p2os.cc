@@ -210,7 +210,7 @@ them named:
 - limb_links (5 floats)
   - Default: 0.06875, 0.16, 0, 0.13775, 0.11321
   - Offset from previous joint to this joint in metres.
-    e.g. the offset from base to joint 0 is 0.06875m, and from joint 0 to joint 1 is 0.16m.
+    e.g. the offset from joint 0 to joint 1 is 0.06875m, and from joint 1 to joint 2 is 0.16m.
 - limb_offsets (5 floats)
   - Default: 0, 0, 0, 0, 0
   - Angular offset of each joint from desired position to actual position (calibration data).
