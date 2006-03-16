@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,15 +40,15 @@
 
 #include "packet.h"
 #include "robot_params.h"
-   
+
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
 
-/* 
- * Apparently, newer kernel require a large value (200000) here.  It only 
- * makes the initialization phase take a bit longer, and doesn't have any 
- * impact on the speed at which packets are received from P2OS 
+/*
+ * Apparently, newer kernel require a large value (200000) here.  It only
+ * makes the initialization phase take a bit longer, and doesn't have any
+ * impact on the speed at which packets are received from P2OS
  */
 #define P2OS_CYCLETIME_USEC 200000
 
@@ -168,7 +168,7 @@ class SIP;
 // Forward declaration of the KineCalc_Base class declared in kinecalc_base.h
 //class KineCalc;
 
-class P2OS : public Driver 
+class P2OS : public Driver
 {
   private:
     player_p2os_data_t p2os_data;
@@ -254,21 +254,19 @@ class P2OS : public Driver
     int direct_wheel_vel_control; // false -> separate trans and rot vel
     int psos_fd;               // p2os device file descriptor
     const char* psos_serial_port; // name of serial port device
-    bool psos_use_tcp;    // use TCP port instead of serial port 
+    bool psos_use_tcp;    // use TCP port instead of serial port
     const char* psos_tcp_host;  // hostname to use if using TCP
     int psos_tcp_port;  // remote port to use if using TCP
 
 
     struct timeval lastblob_tv;
 
-    player_position2d_cmd_vel_t last_position_cmd;
-
     // Max motor speeds (mm/sec,deg/sec)
     int motor_max_speed;
     int motor_max_turnspeed;
 
     // Bound the command velocities
-    bool use_vel_band; 
+    bool use_vel_band;
 
     // Max motor accel/decel (mm/sec/sec, deg/sec/sec)
     short motor_max_trans_accel, motor_max_trans_decel;
@@ -277,6 +275,10 @@ class P2OS : public Driver
     int radio_modemp; // are we using a radio modem?
     int joystickp; // are we using a joystick?
     int bumpstall; // should we change the bumper-stall behavior?
+
+    float pulse; // Pulse time
+    double lastPulseTime; // Last time of sending a pulse or command to the robot
+    void SendPulse (void);
 
   public:
 
@@ -292,8 +294,8 @@ class P2OS : public Driver
     virtual int Shutdown();
 
     // MessageHandler
-    virtual int ProcessMessage(MessageQueue * resp_queue, 
-                               player_msghdr * hdr, 
+    virtual int ProcessMessage(MessageQueue * resp_queue,
+                               player_msghdr * hdr,
                                void * data);
 
     void CMUcamReset(bool doLock = true);
