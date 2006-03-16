@@ -141,7 +141,7 @@ them named:
       - 1 : Stall on front bumper contact.
       - 2 : Stall on rear bumper contact.
       - 3 : Stall on either bumper contact.
-- pulse (integer)
+- pulse (float)
   - Default: -1
   - Specify a pulse for keeping the robot alive. Pioneer robots have a built-in watchdog in
     the onboard controller. After a timeout period specified in the robot's FLASH, if no commands
@@ -152,6 +152,8 @@ them named:
     time out.
   - Specifying a value of -1 turns off the pulse, meaning that if you do not send regular commands
     from your client program, the robot's onboard controller will time out and stop.
+  - WARNING: Overriding the onboard watchdog is dangerous! Specifying -1 and writing your client
+    appropriately is definitely the preffered option!
 - joystick (integer)
   - Default: 0
   - Use direct joystick control
