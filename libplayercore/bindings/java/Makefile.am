@@ -16,6 +16,7 @@ endif
 playercore_arraysofclasses.i: playercore_casts.i
 
 playercore_casts.i: $(top_srcdir)/libplayercore/player.h parse.py
+	rm -rf net
 	python $(srcdir)/parse.py $(srcdir)/../../player.h playercore_casts.i playercore_arraysofclasses.i net/sourceforge/playerstage/Jplayercore net/sourceforge/playerstage/Jplayercore player.java
 
 

@@ -15,6 +15,7 @@ endif
 
 playertcp_java_wrap.cc: playertcp_java.i \
                         $(top_srcdir)/libplayertcp/playertcp.h
+	rm -rf net
 	mkdir -p net/sourceforge/playerstage/Jplayertcp
 	swig -v -java -package net.sourceforge.playerstage.Jplayertcp -outdir net/sourceforge/playerstage/Jplayertcp -c++ -o $@ -I$(srcdir)/../../.. $<
 
