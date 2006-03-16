@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -45,7 +45,7 @@ Communication with the laser can be either via USB or RS232.
 - PLAYER_LASER_REQ_GET_GEOM
 - PLAYER_LASER_REQ_GET_CONFIG
 - PLAYER_LASER_REQ_SET_CONFIG
-  
+
 @par Configuration file options
 
 - port (string)
@@ -72,7 +72,7 @@ Communication with the laser can be either via USB or RS232.
     rates are: 19200, 57600, and 115200.  The driver will auto-detect the
     current rate then change to the desired rate.
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -87,7 +87,7 @@ driver
 
 */
 /** @} */
-  
+
 
 
 #include <unistd.h>
@@ -111,8 +111,8 @@ using namespace std;
 
 class URGLaserDriver : public Driver {
 public:
-    
-	// Constructor; 
+
+	// Constructor;
 	URGLaserDriver(ConfigFile* cf, int section);
 	// Destructor
 	~URGLaserDriver();
@@ -122,7 +122,7 @@ public:
 	int Shutdown();
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage(MessageQueue* resp_queue, 
+	virtual int ProcessMessage(MessageQueue* resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -132,10 +132,14 @@ private:
 
 	urg_laser_readings_t * Readings;
 	urg_laser Laser;
-	
+
 	player_laser_data_t Data;
 	player_laser_geom_t Geom;
 	player_laser_config_t Conf;
+
+	bool UseSerial;
+	int BaudRate;
+	char * Port;
 };
 
 
@@ -152,7 +156,7 @@ URGLaserDriver::URGLaserDriver(ConfigFile* cf, int section)
 	memset(&Conf, 0, sizeof(Conf));
 	Geom.size.sw = (0.050);
 	Geom.size.sl = (0.050);
-	
+
 	Readings = new urg_laser_readings_t;
 	assert(Readings);
 
@@ -160,7 +164,7 @@ URGLaserDriver::URGLaserDriver(ConfigFile* cf, int section)
 	Geom.pose.px = (cf->ReadTupleLength(section,"pose",0,0));
 	Geom.pose.py = (cf->ReadTupleLength(section,"pose",1,0));
 	Geom.pose.pa = (cf->ReadTupleAngle(section,"pose",2,0));
-	
+
 	//set up config structure
 	Conf.min_angle = cf->ReadAngle(section,"min_angle",DTOR(-115));
 	Conf.max_angle = cf->ReadAngle(section,"max_angle",DTOR(115));
@@ -169,32 +173,26 @@ URGLaserDriver::URGLaserDriver(ConfigFile* cf, int section)
 	Conf.range_res = 0.001;
 	Conf.intensity = 0;
 
-        int b = cf->ReadInt(section, "baud", 115200);
-        int baud;
-        switch(b)
-        {
-          case 115200:
-            baud = B115200;
-            break;
-          case 57600:
-            baud = B57600;
-            break;
-          case 19200:
-            baud = B19200;
-            break;
-          default:
-            PLAYER_WARN1("ignoring invalid baud rate %d", b);
-            baud = B115200;
-            break;
-        }
-	
-    //config data
-	if(Laser.Open(cf->ReadString(section, "port", "/dev/ttyACM0"),
-                      cf->ReadInt(section, "use_serial", 0), baud) < 0)
-        {
-          this->SetError(1);
-          return;
-        }
+	int b = cf->ReadInt(section, "baud", 115200);
+	switch(b)
+	{
+		case 115200:
+			BaudRate = B115200;
+			break;
+		case 57600:
+			BaudRate = B57600;
+			break;
+		case 19200:
+			BaudRate = B19200;
+			break;
+		default:
+			PLAYER_WARN1("ignoring invalid baud rate %d", b);
+			BaudRate = B115200;
+			break;
+	}
+
+	Port = strdup(cf->ReadString(section, "port", "/dev/ttyACM0"));
+	UseSerial = (cf->ReadInt(section, "use_serial", 0)==1);
 
     return;
 }
@@ -206,7 +204,15 @@ URGLaserDriver::~URGLaserDriver()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
-int URGLaserDriver::Setup() {   
+int URGLaserDriver::Setup() {
+	//config data
+	if(Laser.Open(Port,UseSerial,BaudRate) < 0)
+	{
+		this->SetError(1);
+		return -1;
+	}
+
+
     // Start the device thread; spawns a new thread and executes
     // ExampleDriver::Main(), which contains the main loop for the driver.
 	StartThread();
@@ -228,12 +234,12 @@ int URGLaserDriver::Shutdown() {
 }
 
 
-int URGLaserDriver::ProcessMessage(MessageQueue* resp_queue, 
+int URGLaserDriver::ProcessMessage(MessageQueue* resp_queue,
                                   player_msghdr * hdr,
                                   void * data)
-{	
-	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-                           PLAYER_LASER_REQ_GET_GEOM, 
+{
+	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LASER_REQ_GET_GEOM,
                            this->device_addr))
 	{
 		Publish(device_addr,resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype,&Geom,sizeof(Geom),NULL);
@@ -248,7 +254,7 @@ int URGLaserDriver::ProcessMessage(MessageQueue* resp_queue,
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void URGLaserDriver::Main() 
+void URGLaserDriver::Main()
 {
 	// The main loop; interact with the device here
 	for(;;)	{
@@ -257,19 +263,19 @@ void URGLaserDriver::Main()
 
 		// Process any pending messages
 		ProcessMessages();
-		
+
 		int min_i = static_cast<int> (384 + Conf.min_angle/Conf.resolution);
 		int max_i = static_cast<int> (384 + Conf.max_angle/Conf.resolution);
-		
+
 		if (min_i > max_i)
 			min_i = max_i;
 		if (min_i < 0)
 			min_i = 0;
-		
+
 		if (max_i > 769)
 			max_i = 769;
-		
-		
+
+
 		// update device data
 		Laser.GetReadings(Readings);
 		Data.min_angle = Conf.min_angle;
@@ -284,10 +290,10 @@ void URGLaserDriver::Main()
 			Data.ranges[i] = Readings->Readings[i+min_i] < 20 ? (4095) : (Readings->Readings[i+min_i]);
 			Data.ranges[i]/=1000;
 		}
-		Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
+		Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
 			&Data, sizeof(player_laser_data_t), NULL);
 		//printf("Put Data to client\n");
-		
+
     	// Sleep (you might, for example, block on a read() instead)
     	//usleep(10);
 
@@ -306,7 +312,7 @@ Driver* URGLaserDriver_Init(ConfigFile* cf, int section) {
 	return((Driver*)(new URGLaserDriver(cf, section)));
 }
 
-//Registers the driver in the driver table. Called from the 
+//Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
 int URGLaserDriver_Register(DriverTable* table) {
 	table->AddDriver("urglaser", URGLaserDriver_Init);
