@@ -141,6 +141,17 @@ them named:
       - 1 : Stall on front bumper contact.
       - 2 : Stall on rear bumper contact.
       - 3 : Stall on either bumper contact.
+- pulse (integer)
+  - Default: -1
+  - Specify a pulse for keeping the robot alive. Pioneer robots have a built-in watchdog in
+    the onboard controller. After a timeout period specified in the robot's FLASH, if no commands
+    have been received from the player server, the robot will stop. By specifying a positive value
+    here, the Player server will send a regular pulse command to the robot to let it know the client
+    is still alive. The value should be in seconds, with decimal places allowed (eg 0.5 = half a
+    second). Note that if this value is greater than the Pioneer's onboard value, it will still
+    time out.
+  - Specifying a value of -1 turns off the pulse, meaning that if you do not send regular commands
+    from your client program, the robot's onboard controller will time out and stop.
 - joystick (integer)
   - Default: 0
   - Use direct joystick control
@@ -282,9 +293,8 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->actarray_id, 0, sizeof(player_devaddr_t));
   memset(&this->limb_id, 0, sizeof(player_devaddr_t));
 
-  memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
-
   this->position_subscriptions = this->sonar_subscriptions = this->actarray_subscriptions = 0;
+  this->pulse = -1;
 
   // intialise members
   sippacket = NULL;
@@ -446,6 +456,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   // Read config file options
   this->bumpstall = cf->ReadInt(section,"bumpstall",-1);
+  this->pulse = cf->ReadFloat(section,"pulse",-1);
   this->rot_kp = cf->ReadInt(section, "rot_kp", -1);
   this->rot_kv = cf->ReadInt(section, "rot_kv", -1);
   this->rot_ki = cf->ReadInt(section, "rot_ki", -1);
@@ -1272,6 +1283,8 @@ P2OS::Main()
   int last_sonar_subscrcount=0;
   int last_position_subscrcount=0;
   int last_actarray_subscrcount=0;
+  double currentTime;
+  struct timeval timeVal;
 
   for(;;)
   {
@@ -1342,10 +1355,15 @@ P2OS::Main()
     {
       ProcessMessages();
     }
-    else
+
+    // Check if need to send a pulse to the robot
+    gettimeofday (&timeVal, NULL);
+    currentTime = static_cast<double> (timeVal.tv_sec) + (static_cast<double> (timeVal.tv_usec) / 1e6);
+    if ((this->pulse != -1) && ((currentTime - lastPulseTime) > this->pulse))
     {
-      // if no pending msg, resend the last position cmd.
-      this->HandlePositionCommand(this->last_position_cmd);
+      SendPulse ();
+      // Update the time of last pulse/command
+      lastPulseTime = currentTime;
     }
   }
 }
@@ -2217,6 +2235,16 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
   }
 }
 
+void P2OS::SendPulse (void)
+{
+  unsigned char command;
+  P2OSPacket packet;
+
+  command = PULSE;
+  packet.Build(&command, 1);
+  SendReceive(&packet);
+}
+
 void
 P2OS::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 {
@@ -2625,6 +2653,9 @@ void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
 int
 P2OS::HandleCommand(player_msghdr * hdr, void* data)
 {
+  int retVal = -1;
+  struct timeval timeVal;
+
   if(Message::MatchMessage(hdr,
                            PLAYER_MSGTYPE_CMD,
                            PLAYER_POSITION2D_CMD_VEL,
@@ -2634,7 +2665,7 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     player_position2d_cmd_vel_t position_cmd;
     position_cmd = *(player_position2d_cmd_vel_t*)data;
     this->HandlePositionCommand(position_cmd);
-    return(0);
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,
                                 PLAYER_MSGTYPE_CMD,
@@ -2645,7 +2676,7 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     player_gripper_cmd_t gripper_cmd;
     gripper_cmd = *(player_gripper_cmd_t*)data;
     this->HandleGripperCommand(gripper_cmd);
-    return(0);
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,
                                 PLAYER_MSGTYPE_CMD,
@@ -2656,14 +2687,14 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     player_sound_cmd_t sound_cmd;
     sound_cmd = *(player_sound_cmd_t*)data;
     this->HandleSoundCommand(sound_cmd);
-    return(0);
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
   {
     player_actarray_position_cmd_t cmd;
     cmd = *(player_actarray_position_cmd_t*) data;
     this->HandleActArrayPosCmd (cmd);
-    return 0;
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_SPEED_CMD,this->actarray_id))
   {
@@ -2673,38 +2704,45 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     player_actarray_home_cmd_t cmd;
     cmd = *(player_actarray_home_cmd_t*) data;
     this->HandleActArrayHomeCmd (cmd);
-    return 0;
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_HOME_CMD,this->limb_id))
   {
     this->HandleLimbHomeCmd ();
-    return 0;
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_STOP_CMD,this->limb_id))
   {
     this->HandleLimbStopCmd ();
-    return 0;
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSE_CMD,this->limb_id))
   {
     player_limb_setpose_cmd_t cmd;
     cmd = *(player_limb_setpose_cmd_t*) data;
     this->HandleLimbSetPoseCmd (cmd);
-    return 0;
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
   {
     player_limb_setposition_cmd_t cmd;
     cmd = *(player_limb_setposition_cmd_t*) data;
     this->HandleLimbSetPositionCmd (cmd);
-    return 0;
+    retVal = 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
   {
     player_limb_vecmove_cmd_t cmd;
     cmd = *(player_limb_vecmove_cmd_t*) data;
     this->HandleLimbVecMoveCmd (cmd);
-    return 0;
+    retVal = 0;
   }
-  return(-1);
+
+  // Update the time of last pulse/command on successful handling of commands
+  if (retVal == 0)
+  {
+    gettimeofday (&timeVal, NULL);
+    lastPulseTime = static_cast<double> (timeVal.tv_sec) + (static_cast<double> (timeVal.tv_usec) / 1e6);
+  }
+  return retVal;
 }
