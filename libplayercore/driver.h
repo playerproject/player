@@ -259,9 +259,16 @@ class Driver
     
     Call this to automatically process messages using registered handler,
     Driver::ProcessMessage.
-    Processes messages until no messages remaining in the queue or
-    a message with no handler is reached */
-    void ProcessMessages();
+
+    @param maxmsgs The maximum number of messages to process.  If -1, then process until the queue is empty (this may result in an infinite loop if messages are being added to the queue faster than they are processed).  If 0, then check the current length and process up to that many messages.  If > 0, process up to the indicated number of messages.
+    */
+    void ProcessMessages(int maxmsgs);
+
+    /** @brief Process pending messages.
+
+      Equivalent to ProcessMessages(0).
+      */
+    void ProcessMessages(void);
 	
     /** @brief Message handler.
     

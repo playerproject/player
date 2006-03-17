@@ -309,15 +309,22 @@ int Driver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
   return -1;
 }
 
+void Driver::ProcessMessages(void)
+{
+  this->ProcessMessages(0);
+}
+
 /// Call this to automatically process messages using registered handler
 /// Processes messages until no messages remaining in the queue or
 /// a message with no handler is reached
-void Driver::ProcessMessages()
+void Driver::ProcessMessages(int maxmsgs)
 {
-  // If we have subscriptions, then see if we have any pending messages
-  // and process them
+  // See if we have any pending messages and process them
+  if(maxmsgs == 0)
+    maxmsgs = this->InQueue->GetLength();
+  int currmsg = 0;
   Message* msg;
-  while((msg = this->InQueue->Pop()))
+  while(((maxmsgs < 0) || (currmsg < maxmsgs)) && (msg = this->InQueue->Pop()))
   {
     player_msghdr * hdr = msg->GetHeader();
     void * data = msg->GetPayload();
@@ -344,6 +351,7 @@ void Driver::ProcessMessages()
     }
     delete msg;
     pthread_testcancel();
+    currmsg++;
   }
 }
 
