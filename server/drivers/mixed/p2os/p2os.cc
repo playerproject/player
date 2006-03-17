@@ -1359,13 +1359,16 @@ P2OS::Main()
     }
 
     // Check if need to send a pulse to the robot
-    gettimeofday (&timeVal, NULL);
-    currentTime = static_cast<double> (timeVal.tv_sec) + (static_cast<double> (timeVal.tv_usec) / 1e6);
-    if ((this->pulse != -1) && ((currentTime - lastPulseTime) > this->pulse))
+    if (this->pulse != -1)
     {
-      SendPulse ();
-      // Update the time of last pulse/command
-      lastPulseTime = currentTime;
+      gettimeofday (&timeVal, NULL);
+      currentTime = static_cast<double> (timeVal.tv_sec) + (static_cast<double> (timeVal.tv_usec) / 1e6);
+      if ((currentTime - lastPulseTime) > this->pulse)
+      {
+        SendPulse ();
+        // Update the time of last pulse/command
+        lastPulseTime = currentTime;
+      }
     }
   }
 }
@@ -2741,7 +2744,7 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
   }
 
   // Update the time of last pulse/command on successful handling of commands
-  if (retVal == 0)
+  if (retVal == 0 && pulse != -1)
   {
     gettimeofday (&timeVal, NULL);
     lastPulseTime = static_cast<double> (timeVal.tv_sec) + (static_cast<double> (timeVal.tv_usec) / 1e6);
