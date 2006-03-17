@@ -305,6 +305,9 @@ class MessageQueue
     void SetPull (bool _pull) { this->pull = _pull; }
     /// Mark all messages in the queue as ready to be sent
     void MarkAllReady (void);
+    
+    /// @brief Get current length of queue, in elements.
+    size_t GetLength(void);
   private:
     /// @brief Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(&lock);};

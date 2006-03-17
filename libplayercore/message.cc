@@ -296,6 +296,15 @@ MessageQueue::SetFilter(int host, int robot, int interf,
   this->filter_on = true;
 }
 
+size_t 
+MessageQueue::GetLength(void)
+{
+  size_t len;
+  this->Lock();
+  len = this->Length;
+  this->Unlock();
+  return(len);
+}
 
 void MessageQueue::MarkAllReady (void)
 {
