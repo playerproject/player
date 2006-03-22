@@ -139,3 +139,27 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   *a =  cfg.pose.pa;
   return 0;
 }
+
+// Set an integer property value */
+int playerc_simulation_set_property_int(playerc_simulation_t *device, 
+					char* name,
+					char* property,
+					int value )
+{
+  player_simulation_property_int_req_t req;
+
+  memset(&req, 0, sizeof(req));
+  strncpy(req.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  req.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.name_count = strlen(req.name) + 1;
+  
+  strncpy(req.property, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  req.property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.property_count = strlen(req.property) + 1;
+
+  req.value = value;
+
+  return playerc_client_request(device->info.client, &device->info, 
+                                PLAYER_SIMULATION_REQ_SET_PROPERTY_INT,
+                                &req, NULL, 0);
+}

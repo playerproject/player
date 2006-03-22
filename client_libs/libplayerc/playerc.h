@@ -2360,24 +2360,44 @@ typedef struct
 } playerc_simulation_t;
 
 
-// Create a new simulation proxy
+/** @brief Create a new simulation proxy */
 playerc_simulation_t *playerc_simulation_create(playerc_client_t *client, int index);
 
-// Destroy a simulation proxy
+/** @brief Destroy a simulation proxy */
 void playerc_simulation_destroy(playerc_simulation_t *device);
 
-// Subscribe to the simulation device
+/** @brief Subscribe to the simulation device */
 int playerc_simulation_subscribe(playerc_simulation_t *device, int access);
 
-// Un-subscribe from the simulation device
+/** @brief Un-subscribe from the simulation device */
 int playerc_simulation_unsubscribe(playerc_simulation_t *device);
 
+/** @brief Set the 2D pose of a named simulation object */
 int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
                                   double gx, double gy, double ga);
 
+/** @brief Get the 2D pose of a named simulation object */
 int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier,
           double *x, double *y, double *a);
 
+/** @brief Set the value of a named integer property of a named
+    simulation object */
+int playerc_simulation_set_property_int(playerc_simulation_t *device, 
+					char* name,
+					char* property,
+					int value );
+/** @brief Set the value of a named floating point property of a named
+    simulation object */
+int playerc_simulation_set_property_double(playerc_simulation_t *device, 
+					   char* name,
+					   char* property,
+					   double value );
+/** @brief Set the value of a named string property of a named
+    simulation object */
+int playerc_simulation_set_property_string(playerc_simulation_t *device, 
+					   char* name,
+					   char* property,
+					   char* value );
 /** @} */
 /***************************************************************************/
 

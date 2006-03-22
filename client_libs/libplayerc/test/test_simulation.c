@@ -45,6 +45,43 @@ int test_simulation(playerc_client_t *client, int index)
   else
     FAIL();
 
+  puts("Sleeping...");
+  sleep(3);
+
+  TEST("returning model robot1 to original pose");
+  if (playerc_simulation_set_pose2d(device, "robot1", x, y, a) == 0)
+    PASS();
+  else
+    FAIL();
+
+  TEST("setting integer property \"fiducial_return\" for model robot1 to 42");
+  if (playerc_simulation_set_property_int(device, "robot1", "fiducial_return", 42) == 0)
+    PASS();
+  else
+    FAIL();
+
+  TEST("setting integer property \"color\" for model robot1 to 0x00FF00 (green)");
+  if (playerc_simulation_set_property_int(device, "robot1", "color", 0xFF00) == 0)
+    PASS();
+  else
+    FAIL();
+
+  sleep(1);
+
+  TEST("setting integer property \"color\" for model robot1 to 0x0000FF (blue)");
+  if (playerc_simulation_set_property_int(device, "robot1", "color", 0xFF) == 0)
+    PASS();
+  else
+    FAIL();
+
+  sleep(1);
+
+  TEST("setting integer property \"color\" for model robot1 to 0xFF0000 (red)");
+  if (playerc_simulation_set_property_int(device, "robot1", "color", 0xFF0000) == 0)
+    PASS();
+  else
+    FAIL();
+
   TEST("unsubscribing");
   if (playerc_simulation_unsubscribe(device) != 0)
   {
