@@ -3599,13 +3599,26 @@ for this interface. Suggestions welcome on playerstage-developers.
 /** @ingroup interface_simulation
  * @{ */
 
-/** the maximum length of a string indentifying a simulation object */
+/** The maximum length of a string indentifying a simulation object or
+    object property. */
 #define PLAYER_SIMULATION_IDENTIFIER_MAXLEN 64
 
 /** Request/reply subtype: set 2D pose */
-#define PLAYER_SIMULATION_REQ_SET_POSE2D        1
+#define PLAYER_SIMULATION_REQ_SET_POSE2D                         1
 /** Request/reply subtype: get 2D pose */
-#define PLAYER_SIMULATION_REQ_GET_POSE2D        2
+#define PLAYER_SIMULATION_REQ_GET_POSE2D                         2
+/** Request/reply subtype: set integer property value */
+#define PLAYER_SIMULATION_REQ_SET_PROPERTY_INT                   3
+/** Request/reply subtype: get integer property value */
+#define PLAYER_SIMULATION_REQ_GET_PROPERTY_INT                   4
+/** Request/reply subtype: set floating point property value */
+#define PLAYER_SIMULATION_REQ_SET_PROPERTY_FLOAT                 5
+/** Request/reply subtype: get floating point property value */
+#define PLAYER_SIMULATION_REQ_GET_PROPERTY_FLOAT                 6
+/** Request/reply subtype: set string property value */
+#define PLAYER_SIMULATION_REQ_SET_PROPERTY_STRING                7
+/** Request/reply subtype: get string property value */
+#define PLAYER_SIMULATION_REQ_GET_PROPERTY_STRING                8
 
 /** @brief Data
 
@@ -3642,6 +3655,67 @@ typedef struct player_simulation_pose2d_req
   /** the desired pose in (m, m, rad) */
   player_pose_t pose;
 } player_simulation_pose2d_req_t;
+
+/** @brief Request/reply: get/set integer property of a named simulation object
+    
+To retrieve an integer property of an object in a simulator, send a
+@ref PLAYER_SIMULATION_REQ_GET_PROPERTY_INT request. The server will
+reply with the integer value filled in. To set a integer property,
+send a completely filled in @ref PLAYER_SIMULATION_REQ_SET_PROPRTY_INT
+request. The server will respond with an ACK if the property was
+successfully set to your value, else a NACK.  */
+typedef struct player_simulation_property_int_req
+{
+  /** Length of name */
+  uint32_t name_count;
+  /** The identifier of the object we want to locate */
+  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** Length of property identifier */
+  uint32_t property_count;
+  /** The identifier of the property we want to get/set */
+  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** The value of the property */
+  int32_t value;
+} player_simulation_property_int_req_t;
+
+/** @brief Request/reply: get/set floating-point property of a named
+    simulation object
+    
+    Behaves identically to the integer version, but for double-precision
+    floating-pont values. */
+typedef struct player_simulation_property_float_req
+{
+  /** Length of name */
+  uint32_t name_count;
+  /** The identifier of the object we want to locate */
+  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** Length of property identifier */
+  uint32_t property_count;
+  /** The identifier of the property we want to get/set */
+  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** The value of the property */
+  double value;
+} player_simulation_property_float_req_t;
+
+/** @brief Request/reply: get/set string property of a named
+    simulation object
+    
+    Behaves identically to the integer version, but for strings.*/
+typedef struct player_simulation_property_string_req
+{
+  /** Length of name */
+  uint32_t name_count;
+  /** The identifier of the object we want to locate */
+  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** Length of property identifier */
+  uint32_t property_count;
+  /** The identifier of the property we want to get/set */
+  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** Length of the data string. */
+  uint32_t value_count;
+  /** The data string. */
+  char value[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+} player_simulation_property_string_req_t;
 
 /** @} */
 

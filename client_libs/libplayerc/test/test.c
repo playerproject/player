@@ -139,12 +139,12 @@ int main(int argc, const char *argv[])
       case PLAYER_RFID_CODE:
         test_rfid(client, client->devinfos[i].addr.index);
         break;
-#if 0
 	// simulation device
       case PLAYER_SIMULATION_CODE:
         test_simulation(client, client->devinfos[i].addr.index);
         break;
 	
+#if 0
 	// Sonar device
       case PLAYER_SONAR_CODE:
         test_sonar(client, client->devinfos[i].addr.index);
