@@ -36,6 +36,7 @@
   #include "config.h"
 #endif
 
+#include <libplayercore/playerconfig.h>
 #include <replace/replace.h>
 //#include <sys/poll.h>
 
