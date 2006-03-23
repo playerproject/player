@@ -574,7 +574,7 @@ int P2OS::Setup()
       return(1);
     }
     struct sockaddr_in addr;
-    assert(h->h_length <= sizeof(addr.sin_addr));
+    assert(h->h_length <= (int) (sizeof(addr.sin_addr)));
     //printf("gethostbyname returned address %d length %d.\n", * h->h_addr, h->h_length);
     memcpy(&(addr.sin_addr), h->h_addr, h->h_length);
     //printf("copied address to addr.sin_addr.s_addr=%d\n", addr.sin_addr.s_addr);
@@ -1370,6 +1370,14 @@ P2OS::Main()
         lastPulseTime = currentTime;
       }
     }
+    else
+    {
+      // Hack fix to get around the fact that if no commands are sent to the robot via SendReceive,
+      // the driver will never read SIP packets and so never send data back to clients.
+      // We need a better way of doing regular checks of the serial port - peek in sendreceive, maybe?
+      // Because if there is no data waiting this will sit around waiting until one comes
+      SendReceive (NULL, true);
+    }
   }
 }
 
@@ -1382,7 +1390,6 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
   // zero the combined data buffer.  it will be filled with the latest data
   // by SIP::Fill()
   memset(&(this->p2os_data),0,sizeof(player_p2os_data_t));
-
   if((this->psos_fd >= 0) && this->sippacket)
   {
     if(pkt)
@@ -1552,7 +1559,6 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
     }
     else
     {
-      PLAYER_WARN("got unknown packet:");
       packet.PrintHex();
     }
   }
@@ -2535,16 +2541,18 @@ void P2OS::HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd)
   P2OSPacket packet;
   EndEffector pose;
 
-//  printf ("Moving limb to pose (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", cmd.pX, cmd.pY, cmd.pZ, cmd.oX, cmd.oY, cmd.oZ, cmd.aX, cmd.aY, cmd.aZ);
+//  printf ("Moving limb to pose (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", cmd.position.px, cmd.position.py, cmd.position.pz, cmd.approach.px, cmd.approach.py, cmd.approach.pz, cmd.orientation.px, cmd.orientation.py, cmd.orientation.pz);
 
   pose.p.x = cmd.position.px - armOffsetX;
   pose.p.y = -(cmd.position.py - armOffsetY);
   pose.p.z = cmd.position.pz - armOffsetZ;
-  pose.o.x = cmd.orientation.px; pose.o.y = -cmd.orientation.py; pose.o.z = cmd.orientation.pz;
-  pose.a.x = cmd.orientation.px; pose.a.y = -cmd.orientation.py; pose.a.z = cmd.orientation.pz;
-  pose.o = kineCalc->Normalise (pose.o);
+  pose.a.x = cmd.approach.px; pose.a.y = cmd.approach.py; pose.a.z = cmd.approach.pz;
+  pose.o.x = cmd.orientation.px; pose.o.y = cmd.orientation.py; pose.o.z = cmd.orientation.pz;
   pose.a = kineCalc->Normalise (pose.a);
+  pose.o = kineCalc->Normalise (pose.o);
   pose.n = kineCalc->CalculateN (pose);
+
+//  printf ("Pose = %f, %f, %f\n", pose.p.x, pose.p.y, pose.p.z);
 
   if (!kineCalc->CalculateIK (pose))
   {
