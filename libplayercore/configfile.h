@@ -176,7 +176,7 @@ class ConfigFile
   public: ~ConfigFile();
 
   /// @internal Intitialization helper
-  private: void ConfigFile::InitFields();
+  private: void InitFields();
 
   /// @brief Load config from file
   /// @param filename Name of file; can be relative or fully qualified path.
