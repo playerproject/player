@@ -222,7 +222,40 @@ void gripper_update(gripper_t *gripper)
 			       1 );
 	  }
 
-
+	
+	// different x location for each beam
+	double ibbx =  paddle_center - 0.3*paddle_length;
+	double obbx =  paddle_center + 0.3*paddle_length;
+	
+	// common y position
+	double bby = gripper->proxy->paddles_open ? gripper_width/2.0 - paddle_width: 0;
+	
+	// size of the paddle indicator lights
+	double led_dx = paddle_width/2.0;
+	
+	if( gripper->proxy->inner_break_beam )
+	  {
+	    rtk_fig_rectangle( gripper->grip_fig, ibbx, bby+led_dx, 0, led_dx, led_dx, 1 );
+	    rtk_fig_rectangle( gripper->grip_fig, ibbx, -bby-led_dx, 0, led_dx, led_dx, 1 );
+	  }
+	else
+	  {
+	    //rtk_fig_line( gripper->grip_fig, ibbx, bby, ibbx, -bby );
+	    rtk_fig_rectangle( gripper->grip_fig, ibbx, bby+led_dx, 0, led_dx, led_dx, 0 );
+	    rtk_fig_rectangle( gripper->grip_fig, ibbx, -bby-led_dx, 0, led_dx, led_dx, 0 );
+	  }
+	
+	if( gripper->proxy->outer_break_beam )
+	  {
+	    rtk_fig_rectangle( gripper->grip_fig, obbx, bby+led_dx, 0, led_dx, led_dx, 1 );
+	    rtk_fig_rectangle( gripper->grip_fig, obbx, -bby-led_dx, 0, led_dx, led_dx, 1 );
+	  }
+	else
+	  {
+	    //rtk_fig_line( gripper->grip_fig, obbx, bby, obbx, -bby );
+	    rtk_fig_rectangle( gripper->grip_fig, obbx, bby+led_dx, 0, led_dx, led_dx, 0 );
+	    rtk_fig_rectangle( gripper->grip_fig, obbx, -bby-led_dx, 0, led_dx, led_dx, 0 );
+	  }
 
       }
     gripper->datatime = gripper->proxy->info.datatime;
