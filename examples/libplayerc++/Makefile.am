@@ -14,10 +14,12 @@ PLAYERCC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
 
 AM_CPPFLAGS = $(PLAYERCC_CFLAGS) -Wall -g
 
-noinst_PROGRAMS =
+exampledir = $(prefix)/share/player/examples/libplayerc++
+
+example_PROGRAMS =
 
 if INCLUDE_PLAYERCC
-  noinst_PROGRAMS += camera \
+  example_PROGRAMS += camera \
                      example0 \
                      grip \
                      ptz \
@@ -28,12 +30,26 @@ if INCLUDE_PLAYERCC
 endif
 
 if INCLUDE_PLAYERCC_BOOST
-  noinst_PROGRAMS += example1 example3 goto
+  example_PROGRAMS += example1 example3 goto
 endif
 
 if INCLUDE_BOOST_SIGNALS
-  noinst_PROGRAMS += example2
+  example_PROGRAMS += example2
 endif
+
+example_DATA = args.h \
+               camera.cc \
+               clientgraphics.cc \
+               example0.cc \
+               example1.cc \
+               example2.cc \
+               example3.cc \
+               goto.cc \
+               grip.cc \
+               laserobstacleavoid.cc \
+               ptz.cc \
+               randomwalk.cc \
+               sonarobstacleavoid.cc
 
 camera_SOURCES = camera.cc args.h
 camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror

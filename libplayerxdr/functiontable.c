@@ -270,8 +270,6 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_device_data_req_pack},
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAMODE,
     (player_pack_fn_t)player_device_datamode_req_pack},
-  {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_DATAFREQ,
-    (player_pack_fn_t)player_device_datafreq_req_pack},
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_AUTH,
     (player_pack_fn_t)player_device_auth_req_pack},
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PLAYER_REQ_NAMESERVICE,

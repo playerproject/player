@@ -87,7 +87,9 @@ received, interpreted, and processed the request.  Any requested data is in
 the body of this response message. */
 #define PLAYER_MSGTYPE_RESP_ACK  4
 
-/** A synch message.  @todo Deprecate this message type? */
+/** A synch message.  Only used in @ref PLAYER_DATAMODE_PULL mode.
+Sent at the end of the set of messages that are sent in response to a
+@ref PLAYER_PLAYER_REQ_DATA request. */
 #define PLAYER_MSGTYPE_SYNCH     5
 
 /** A negative response message.  Such messages are published in response
@@ -2383,8 +2385,6 @@ the @ref driver_lifomcom driver enforces a last-in-first-out stack.
 
 /** size of the data field in messages */
 #define MCOM_DATA_LEN            128
-/** ?? */
-#define MCOM_DATA_BUFFER_SIZE    0
 /** number of buffers to keep per channel */
 #define  MCOM_N_BUFS             10
 /** size of channel name */
@@ -2425,7 +2425,7 @@ typedef struct player_mcom_config
   /** length of channel name */
   uint32_t channel_count;
   /** The name of the channel. */
-  int32_t channel[MCOM_CHANNEL_LEN];
+  char channel[MCOM_CHANNEL_LEN];
   /** The data. */
   player_mcom_data_t data;
 } player_mcom_config_t;
@@ -2438,7 +2438,7 @@ typedef struct player_mcom_return
   /** length of channel name */
   uint32_t channel_count;
   /** The name of the channel. */
-  int32_t channel[MCOM_CHANNEL_LEN];
+  char channel[MCOM_CHANNEL_LEN];
   /** The data. */
   player_mcom_data_t data;
 } player_mcom_return_t;
@@ -2570,7 +2570,6 @@ libraries when they begin reading. */
 
 #define PLAYER_PLAYER_REQ_DATA        4
 #define PLAYER_PLAYER_REQ_DATAMODE    5
-#define PLAYER_PLAYER_REQ_DATAFREQ    6
 #define PLAYER_PLAYER_REQ_AUTH        7
 #define PLAYER_PLAYER_REQ_NAMESERVICE 8
 #define PLAYER_PLAYER_REQ_IDENT       9
@@ -2660,21 +2659,9 @@ typedef struct player_device_datamode_req
 } player_device_datamode_req_t;
 
 
-/** @brief Configuration request: Change data delivery frequency.
-
-By default, the fixed frequency for the PUSH data delivery modes is
-10Hz; thus a client which makes no configuration changes will receive
-sensor data approximately every 100ms. The server can send data faster
-or slower; to change the frequency, send a request with this format.
-The server's reply will be a zero-length acknowledgement. */
-typedef struct player_device_datafreq_req
-{
-  /** requested frequency in Hz */
-  uint32_t frequency;
-} player_device_datafreq_req_t;
-
-
 /** @brief Configuration request: Authentication.
+
+@todo Add support for this mechanism to libplayertcp.  Right now, it's disabled.
 
 If server authentication has been enabled (by providing '-key &lt;key&gt;'
 on the command-line); then each client must
@@ -2713,7 +2700,10 @@ typedef struct player_device_auth_req
 } player_device_auth_req_t;
 
 
-/** Documentation about nameservice goes here. */
+/** @brief Nameservice request.
+ 
+@todo Update this structure and add support for it to libplayertcp.  Right now it's disabled.
+*/
 typedef struct player_device_nameservice_req
 {
   /** Length of robot name */
@@ -3661,7 +3651,7 @@ typedef struct player_simulation_pose2d_req
 To retrieve an integer property of an object in a simulator, send a
 @ref PLAYER_SIMULATION_REQ_GET_PROPERTY_INT request. The server will
 reply with the integer value filled in. To set a integer property,
-send a completely filled in @ref PLAYER_SIMULATION_REQ_SET_PROPRTY_INT
+send a completely filled in @ref PLAYER_SIMULATION_REQ_SET_PROPERTY_INT
 request. The server will respond with an ACK if the property was
 successfully set to your value, else a NACK.  */
 typedef struct player_simulation_property_int_req
