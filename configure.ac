@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.0.0)
+AC_INIT(player,2.0.1)
 
 dnl this is used by libtool to assign version numbers
 PLAYER_VERSION_INFO="-version-info 2:0:0"

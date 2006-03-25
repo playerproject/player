@@ -11,8 +11,12 @@ PLAYERC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
 
 AM_CPPFLAGS = $(PLAYERC_CFLAGS) -Wall -g
 
-noinst_PROGRAMS = simple
+exampledir = $(prefix)/share/player/examples/libplayerc
+
+example_PROGRAMS = simple
+example_DATA = simple.c
 
 simple_SOURCES = simple.c
 simple_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror
 simple_DEPENDENCIES = $(PLAYERC_DEPS)
+
