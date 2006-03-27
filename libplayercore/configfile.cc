@@ -1656,7 +1656,10 @@ const char *ConfigFile::ReadTupleString(int section, const char *name,
   int field = GetField(section, name);
   if (field < 0)
     return value;
-  return GetFieldValue(field, index);
+  const char* svalue = GetFieldValue(field, index);
+  if(!svalue)
+    return value;
+  return svalue;
 }
 
 
@@ -1682,8 +1685,10 @@ int ConfigFile::ReadTupleInt(int section, const char *name,
   int field = GetField(section, name);
   if (field < 0)
     return value;
-  return atoi(GetFieldValue(field, index));
-  
+  const char* svalue = GetFieldValue(field, index);
+  if(!svalue)
+    return value;
+  return atoi(svalue);
 }
 
 
@@ -1706,8 +1711,10 @@ double ConfigFile::ReadTupleFloat(int section, const char *name,
   int field = GetField(section, name);
   if (field < 0)
     return value;
-  return atof(GetFieldValue(field, index));
-  
+  const char* svalue = GetFieldValue(field, index);
+  if(!svalue)
+    return value;
+  return atof(svalue);
 }
 
 
@@ -1730,7 +1737,10 @@ double ConfigFile::ReadTupleLength(int section, const char *name,
   int field = GetField(section, name);
   if (field < 0)
     return value;
-  return atof(GetFieldValue(field, index)) * this->unit_length;
+  const char* svalue = GetFieldValue(field, index);
+  if(!svalue)
+    return value;
+  return atof(svalue) * this->unit_length;
 }
 
 
@@ -1753,7 +1763,10 @@ double ConfigFile::ReadTupleAngle(int section, const char *name,
   int field = GetField(section, name);
   if (field < 0)
     return value;
-  return atof(GetFieldValue(field, index)) * this->unit_angle;
+  const char* svalue = GetFieldValue(field, index);
+  if(!svalue)
+    return value;
+  return atof(svalue) * this->unit_angle;
 }
 
 
