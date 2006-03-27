@@ -127,15 +127,15 @@ public:
 	// get count/degree resolution
 	float GetRes(char type);
 	// get position limit
-	int PTU46::GetLimit(char type, char LimType);
+	int GetLimit(char type, char LimType);
 
 	// get/set position in degrees
 	int GetPos(char type);
 	bool SetPos(char type, int pos, bool Block = false);
 
 	// get/set speed in degrees/sec
-	bool PTU46::SetSpeed(char type, int speed);
-	int PTU46::GetSpeed(char type);
+	bool SetSpeed(char type, int speed);
+	int GetSpeed(char type);
 
 	// get/set move mode
 	bool SetMode(char type);
