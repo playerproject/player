@@ -10,6 +10,9 @@
   #include <config.h>
 #endif
 
+// This header MUST come before <openssl/md5.h>
+#include <sys/types.h>
+
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
   #include <openssl/md5.h>
 #endif
@@ -20,7 +23,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 #include <errno.h>
 
 #include <libplayercore/playercommon.h>
