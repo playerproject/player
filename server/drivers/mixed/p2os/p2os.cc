@@ -78,9 +78,16 @@ them named:
 
 - @ref interface_actarray
   - Controls arm (if equipped)
+  - This driver does not support the player_actarray_speed_cmd and
+    player_actarray_brakes_config messages.
 
 - @ref interface_limb
   - Inverse kinematics interface to arm
+  - This driver does not support the player_limb_setposition_cmd,
+    player_limb_vecmove_cmd, player_limb_brakes_req and
+    player_limb_speed_req messages.
+  - The approach vector is forward along the gripper with the orientation
+    vector up from the gripper's centre.
 
 - @ref interface_bumper
   - Returns data from bumper array (if equipped)
@@ -1108,13 +1115,17 @@ int P2OS::Shutdown()
   puts("P2OS has been shutdown");
   delete this->sippacket;
   this->sippacket = NULL;
-   if (kineCalc)
-   {
-     delete kineCalc;
-     kineCalc = NULL;
-   }
 
   return(0);
+}
+
+P2OS::~P2OS (void)
+{
+  if (kineCalc)
+  {
+    delete kineCalc;
+    kineCalc = NULL;
+  }
 }
 
 int
@@ -2203,6 +2214,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_SPEED_REQ,this->limb_id))
   {
     // FIXME - need to figure out what sort of speed support we should provide through the IK interface
+    // Would need some form of motion control
     // For now, just set all joint speeds - take the value as being rad/s instead of m/s
     float speed = ((player_limb_speed_req_t*) data)->speed;
     for (int ii = 1; ii < 6; ii++)
@@ -2585,7 +2597,8 @@ void P2OS::HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd)
   pose.p.y = -(cmd.position.py - armOffsetY);
   pose.p.z = cmd.position.pz - armOffsetZ;
 
-  // Use the pose info from the last reported arm position
+  // Use the pose info from the last reported arm position (cause the IK calculator doesn't
+  // calculate without full pose data)
   pose.o = kineCalc->GetO ();
   pose.a = kineCalc->GetA ();
   pose.n = kineCalc->GetN ();
@@ -2620,7 +2633,7 @@ void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
   // by the length of the desired move in the direction of the desired vector.
   // Since we lack constant motion control, but are moving over a small range, this
   // should hopefully give an accurate representation of a vector move.
-  // UPDATE: Turns out it doesn't work. Oh well. Maybe I'll have time to rewrite
+  // UPDATE: Turns out it doesn't work. Oh well. Hopefully I'll have time to rewrite
   // this driver in the future so that it can support proper constant motion
   // control without being an unmaintainable mess.
   // As such, this vector move isn't actually a vector move as it is intended in
@@ -2736,20 +2749,20 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     this->HandleLimbSetPoseCmd (cmd);
     retVal = 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
-  {
-    player_limb_setposition_cmd_t cmd;
-    cmd = *(player_limb_setposition_cmd_t*) data;
-    this->HandleLimbSetPositionCmd (cmd);
-    retVal = 0;
-  }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
-  {
-    player_limb_vecmove_cmd_t cmd;
-    cmd = *(player_limb_vecmove_cmd_t*) data;
-    this->HandleLimbVecMoveCmd (cmd);
-    retVal = 0;
-  }
+//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
+//   {
+//     player_limb_setposition_cmd_t cmd;
+//     cmd = *(player_limb_setposition_cmd_t*) data;
+//     this->HandleLimbSetPositionCmd (cmd);
+//     retVal = 0;
+//   }
+//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
+//   {
+//     player_limb_vecmove_cmd_t cmd;
+//     cmd = *(player_limb_vecmove_cmd_t*) data;
+//     this->HandleLimbVecMoveCmd (cmd);
+//     retVal = 0;
+//   }
 
   // Update the time of last pulse/command on successful handling of commands
   if (retVal == 0 && pulse != -1)

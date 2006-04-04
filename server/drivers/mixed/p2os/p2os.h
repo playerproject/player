@@ -283,6 +283,7 @@ class P2OS : public Driver
   public:
 
     P2OS(ConfigFile* cf, int section);
+	~P2OS (void);
 
     virtual int Subscribe(player_devaddr_t id);
     virtual int Unsubscribe(player_devaddr_t id);
