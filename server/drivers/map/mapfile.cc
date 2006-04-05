@@ -77,6 +77,11 @@ delivered via a sequence of configuration requests.
     reading it?  Useful if you're using the same image file as the
     world bitmap for Stage 1.3.x, which has the opposite semantics for
     free/occupied pixels.
+- origin ([length length angle] tuple)
+  - Default: [-width*resolution/2 -height*resolution/2 0]
+  - The real-world coordinates of the lower-left pixel in the image.  
+    The default puts (0,0,0) in the middle of the image.  The angle is 
+    currently ignored.
  
 @par Example 
 
