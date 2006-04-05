@@ -249,6 +249,8 @@ roomba_set_speeds(roomba_comm_t* r, double tv, double rv)
   {
     // General case: convert rv to turn radius
     rad_mm = (int16_t)rint(tv_mm / rv);
+    // The robot seems to turn very slowly with the above 
+    rad_mm /= 2; 
     //printf("real rad_mm: %d\n", rad_mm);
     rad_mm = MAX(rad_mm, -ROOMBA_RADIUS_MAX_MM);
     rad_mm = MIN(rad_mm, ROOMBA_RADIUS_MAX_MM);

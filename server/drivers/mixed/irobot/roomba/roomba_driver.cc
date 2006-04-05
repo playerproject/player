@@ -94,7 +94,7 @@ requires Player to be restarted
 
 #include "roomba_comms.h"
 
-#define CYCLE_TIME_US 100000
+#define CYCLE_TIME_US 200000
 
 class Roomba : public Driver
 {
