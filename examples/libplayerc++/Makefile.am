@@ -52,49 +52,49 @@ example_DATA = args.h \
                sonarobstacleavoid.cc
 
 camera_SOURCES = camera.cc args.h
-camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 camera_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example0_SOURCES = example0.cc
-example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 example0_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example1_SOURCES = example1.cc args.h
-example1_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+example1_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 example1_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example2_SOURCES = example2.cc
-example2_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+example2_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 example2_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example3_SOURCES = example3.cc args.h
-example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 example3_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 goto_SOURCES = goto.cc
-goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 goto_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 grip_SOURCES = grip.cc args.h
-grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 grip_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 clientgraphics_SOURCES = clientgraphics.cc args.h
-clientgraphics_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+clientgraphics_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 clientgraphics_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 laserobstacleavoid_SOURCES = laserobstacleavoid.cc args.h
-laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 laserobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 ptz_SOURCES = ptz.cc args.h
-ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 randomwalk_SOURCES = randomwalk.cc args.h
-randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 randomwalk_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc args.h
-sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror
+sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
