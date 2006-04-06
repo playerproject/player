@@ -60,7 +60,7 @@ The insideM300 driver controls the Inside Contactless M300/R300 2G RFID reader
 
 - rate (integer)
   - Default: 9600
-  - Baud rate. Valid values are 9600, 19600, 38400, 57600 and 115200.
+  - Baud rate. Valid values are 9600, 19200, 38400, 57600 and 115200.
 
 @par Example 
 
@@ -94,7 +94,7 @@ driver
 #include <libplayercore/playercore.h>
 
 #define DEFAULT_RFID_PORT "/dev/ttyS0"
-#define DEFAULT_RFID_RATE 9600
+#define DEFAULT_RFID_RATE B9600
 
 // ISO 7816-4 command set format
 #define CMD_CLASS 0
@@ -267,6 +267,32 @@ int InsideM300::Setup ()
 	options.c_cc[VTIME] = 1;
 	options.c_cc[VMIN] = 0;
 
+	switch (this->portSpeed) {
+	    case 9600:{
+		this->portSpeed = B9600;
+		break;
+	    }
+	    case 19200:{
+		this->portSpeed = B19200;
+		break;
+	    }
+	    case 38400:{
+		this->portSpeed = B38400;
+		break;
+	    }
+	    case 57600:{
+		this->portSpeed = B57600;
+		break;
+	    }
+	    case 115200:{
+		this->portSpeed = B115200;
+		break;
+	    }
+	    default:{
+		this->portSpeed = B9600;
+		break;
+	    }
+	}
 	// Set the baudrate to the given portSpeed
 	cfsetispeed (&options, this->portSpeed);
 	cfsetospeed (&options, this->portSpeed);
