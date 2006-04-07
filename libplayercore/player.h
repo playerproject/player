@@ -155,6 +155,7 @@ in the body.*/
 #define PLAYER_LIMB_CODE           54  // Limb interface
 #define PLAYER_GRAPHICS2D_CODE     55  // Graphics2D interface
 #define PLAYER_RFID_CODE           56  // RFID reader interface
+#define PLAYER_WSN_CODE            57  // Wireless Sensor Networks interface
 /** @} */
 
 /** @ingroup message_basics
@@ -210,6 +211,7 @@ in the body.*/
 #define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
 #define PLAYER_GRAPHICS2D_STRING       "graphics2d"
+#define PLAYER_WSN_STRING             "wsn"
 /** @} */
 
 /** @ingroup message_basics
@@ -4137,6 +4139,131 @@ typedef struct player_rfid_cmd
   uint8_t temp;
 } player_rfid_cmd_t;
 
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_wsn wsn
+ * @brief Wireless Sensor Networks
+
+The WSN interface provides access to a Wireless Sensor Network (driver 
+implementations include WSN's such as Crossbow's MICA2 motes and TeCo's RCore 
+particles).
+
+The current implementation supports a single group of network nodes. Support 
+for multiple groups will be added in the future.
+ */
+
+/** @ingroup interface_wsn
+ * @{ */
+
+/** Data subtypes                                                               */
+#define PLAYER_WSN_DATA           1
+
+/** Command subtype: set device state                                           */
+#define PLAYER_WSN_CMD_DEVSTATE   1
+
+/** Request/reply: put the node in sleep mode (0) or wake it up (1).            */
+#define PLAYER_WSN_REQ_POWER      1
+/** Request/reply: change the data type to RAW or converted metric units.       */
+#define PLAYER_WSN_REQ_DATATYPE   2
+/** Request/reply: change the receiving data frequency.                         */
+#define PLAYER_WSN_REQ_DATAFREQ   3
+
+/** @brief Structure describing the WSN node's data packet.                     */
+typedef struct player_wsn_node_data
+{
+	/** The node's light measurement from a light sensor.                   */
+	float light;
+	/** The node's accoustic measurement from a microphone.                 */
+	float mic;
+	/** The node's acceleration on X-axis from an acceleration sensor.      */
+	float accel_x;
+	/** The node's acceleration on y-axis from an acceleration sensor.      */
+	float accel_y;
+	/** The node's acceleration on Z-axis from an acceleration sensor.      */
+	float accel_z;
+	/** The node's magnetic measurement on X-axis from a magnetometer.      */
+	float magn_x;
+	/** The node's magnetic measurement on Y-axis from a magnetometer.      */
+	float magn_y;
+	/** The node's magnetic measurement on Z-axis from a magnetometer.      */
+	float magn_z;
+	/** The node's templerature measurement from a temperature sensor.      */
+	float temperature;
+	/** The node's remaining battery voltage.                               */
+	float battery;
+} player_wsn_node_data_t;
+
+/** @brief Data (@ref PLAYER_WSN_DATA)
+
+The WSN data packet describes a wireless sensor network node.                   */
+typedef struct player_wsn_data
+{
+	/** The type of WSN node.                                               */
+	uint32_t node_type;
+	/** The ID of the WSN node.                                             */
+	uint32_t node_id;
+	/** The ID of the WSN node's parent (if existing).                      */
+	uint32_t node_parent_id;
+	/** The WSN node's data packet.                                         */
+	player_wsn_node_data_t data_packet;
+} player_wsn_data_t;
+
+/** @brief Command: set device state (@ref PLAYER_WSN_CMD_DEVSTATE)
+This @p wsn command sets the state of the node's indicator lights or 
+its buzzer/sounder (if equipped with one).                                      */
+typedef struct player_wsn_cmd
+{
+	/** The ID of the WSN node. -1 for all.                                 */
+	int32_t node_id;
+	/** The Group ID of the WSN node. -1 for all.                           */
+	int32_t group_id;
+	/** The device number.                                                  */
+	uint32_t device;
+	/** The state: 0=disabled, 1=enabled.                                   */
+	uint8_t enable;
+} player_wsn_cmd_t;
+
+/** @brief Request/reply: Put the node in sleep mode (0) or wake it up (1).
+
+Send a @ref PLAYER_WSN_REQ_POWER request to power or wake up a node in the WSN.
+Null response.                                                                  */
+typedef struct player_wsn_power_config
+{
+	/** The ID of the WSN node. -1 for all.                                 */
+	int32_t node_id;
+	/** The Group ID of the WSN node. -1 for all.                           */
+	int32_t group_id;
+	/** Power setting: 0 for off, 1 for on.                                 */
+	uint8_t value;
+} player_wsn_power_config_t;
+
+/** @brief Request/reply: change the data type to RAW or converted engineering
+units.
+
+Send a @ref PLAYER_WSN_REQ_DATATYPE request to switch between RAW or converted 
+engineering units values in the data packet. Null response.                     */
+typedef struct player_wsn_datatype_config
+{
+	/** Data type setting: 0 for RAW values, 1 for converted units.         */
+	uint8_t value;
+} player_wsn_datatype_config_t;
+
+/** @brief Request/reply: Change data delivery frequency.
+
+By default, the frequency set for receiving data is set on the wireless node.
+Send a @ref PLAYER_WSN_REQ_DATAFREQ request to change the frequency. Fill in 
+the node ID or set -1 for all nodes. Null response.                             */
+typedef struct player_wsn_datafreq_config
+{
+	/** The ID of the WSN node. -1 for all.                                 */
+	int32_t node_id;
+	/** The Group ID of the WSN node. -1 for all.                           */
+	int32_t group_id;
+	/** Requested frequency in Hz.                                          */
+	double  frequency;
+} player_wsn_datafreq_config_t;
 /** @} */
 
 #endif /* PLAYER_H */

@@ -20,6 +20,5 @@ shell \
 speech \
 waveform \
 wifi \
-rfid
-
-
+rfid \
+wsn

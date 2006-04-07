@@ -493,6 +493,7 @@ AC_OUTPUT(Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile
 	  server/drivers/rfid/Makefile
+	  server/drivers/wsn/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
