@@ -404,6 +404,17 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_IWSPY_PING,
     (player_pack_fn_t)player_wifi_iwspy_addr_req_pack},
 
+  /* wsn messages */
+  {PLAYER_WSN_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+    (player_pack_fn_t)player_wsn_data_pack},
+  {PLAYER_WSN_CODE, PLAYER_MSGTYPE_CMD, PLAYER_WSN_CMD_DEVSTATE,
+   (player_pack_fn_t)player_wsn_cmd_pack},
+  {PLAYER_WSN_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WSN_REQ_POWER,
+   (player_pack_fn_t)player_wsn_power_config_pack},
+  {PLAYER_WSN_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WSN_REQ_DATATYPE,
+   (player_pack_fn_t)player_wsn_datatype_config_pack},
+  {PLAYER_WSN_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WSN_REQ_DATAFREQ,
+   (player_pack_fn_t)player_wsn_datafreq_config_pack},
 
   /* This NULL element signals the end of the list; don't remove it */
   {0,0,0,NULL}
