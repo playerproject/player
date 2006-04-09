@@ -23,16 +23,16 @@ int main(int argc, char **argv)
   /* Request sensor data */
   GripperProxy gp(&robot, gIndex);
 
+  int count = 0;
+  bool gripopen = true;
   for(;;)
   {
-    int count = 0;
-    bool gripopen = true;
 
     robot.Read();
 
     std::cout << gp << std::endl;
 
-    if(!(++count % 10))
+    if(!(++count % 100))
     {
       if(gripopen)
       {
@@ -46,7 +46,7 @@ int main(int argc, char **argv)
       }
 
       gripopen=!gripopen;
-      count=0;
+      //count=0;
     }
   }
 
