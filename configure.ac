@@ -509,6 +509,7 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
+	  examples/plugins/opaquedriver/Makefile
 	  examples/libplayerc/Makefile
           examples/libplayerc++/Makefile
           utils/Makefile
