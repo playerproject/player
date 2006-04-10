@@ -298,7 +298,7 @@ fi
 PLAYER_ADD_DRIVER([simpleshape],[no],
                   [],[],[],[OPENCV],[opencv])
 
-PLAYER_ADD_DRIVER([sphere],[no],[linux/videodev.h],[],[])
+PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
 PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/s2types.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])

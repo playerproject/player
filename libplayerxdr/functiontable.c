@@ -249,6 +249,14 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_MAP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_VECTOR,
     (player_pack_fn_t)player_map_data_vector_pack},
 
+  /* opaque messages */
+  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE,
+    (player_pack_fn_t)player_opaque_data_pack},
+  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_CMD,
+    (player_pack_fn_t)player_opaque_data_pack},
+  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_REQ,
+    (player_pack_fn_t)player_opaque_data_pack},
+
   /* planner messages */
   {PLAYER_PLANNER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_PLANNER_DATA_STATE,
     (player_pack_fn_t)player_planner_data_pack},

@@ -1503,6 +1503,43 @@ public:
 #endif
 
 /**
+The @p OpaqueProxy proxy provides an interface to a generic @ref
+interface_opaque. */
+class OpaqueProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_opaque_t *mDevice;
+
+  public:
+
+    /// constructor
+    OpaqueProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~OpaqueProxy();
+
+    /// How long is the data?
+    uint GetCount() const { return GetVar(mDevice->data_count); };
+
+    /// Opaque data
+    void GetData(uint8_t* aDest) const
+      {
+        return GetVarByRef(mDevice->data,
+                           mDevice->data+GetVar(mDevice->data_count),
+                           aDest);
+      };
+
+    /// Send a command
+    void SendCmd(player_opaque_data_t* aData);
+
+};
+
+/**
 The @p PlannerProxy proxy provides an interface to a 2D motion @ref
 interface_planner. */
 class PlannerProxy : public ClientProxy
@@ -1566,7 +1603,7 @@ class PlannerProxy : public ClientProxy
     /// Waypoint[i] location (m)
     double GetIy(int i) const;
     /// Waypoint[i] location (m)
-    double GetIa(int i) const; 
+    double GetIa(int i) const;
 
 
     /// Current waypoint index (handy if you already have the list
@@ -2441,6 +2478,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::LocalizeProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LogProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::MapProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::OpaqueProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PlannerProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position1dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position2dProxy& c);

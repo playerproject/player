@@ -2449,6 +2449,41 @@ typedef struct player_mcom_return
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
+ * @defgroup interface_opaque opaque
+ * @brief A generic interface for user-defined messages
+
+The @p opaque interface allows you to send user-specified messages.  With this
+interface a user can send custom commands to their drivers/plugins.
+*/
+
+/** @ingroup interface_opaque
+ * @{ */
+
+/** Data subtype: generic state */
+#define PLAYER_OPAQUE_DATA_STATE             1
+
+/** Data subtype: generic command */
+#define PLAYER_OPAQUE_CMD                    2
+
+/** Data subtype: generic request */
+#define PLAYER_OPAQUE_REQ                    3
+
+/** Maximum message size is 1 MB */
+#define PLAYER_OPAQUE_MAX_SIZE            1024
+
+/** @brief data */
+typedef struct player_opaque_data
+{
+  /** Size of data as stored in buffer (bytes) */
+  uint32_t data_count;
+  /** The data we will be sending */
+  uint8_t data[PLAYER_OPAQUE_MAX_SIZE];
+} player_opaque_data_t;
+
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
  * @defgroup interface_planner planner
  * @brief A planar path-planner
 
@@ -2703,7 +2738,7 @@ typedef struct player_device_auth_req
 
 
 /** @brief Nameservice request.
- 
+
 @todo Update this structure and add support for it to libplayertcp.  Right now it's disabled.
 */
 typedef struct player_device_nameservice_req
@@ -2845,6 +2880,8 @@ typedef struct player_position1d_cmd_pos
 {
   /** position [m] or [rad] */
   float pos;
+  /** velocity at which to move to the position [m/s] or [rad/s] */
+  float vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
 } player_position1d_cmd_pos_t;
@@ -3047,6 +3084,8 @@ typedef struct player_position2d_cmd_pos
 {
   /** position [m,m,rad] (x, y, yaw)*/
   player_pose_t pos;
+  /** velocity at which to move to the position [m/s] or [rad/s] */
+  player_pose_t vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
 } player_position2d_cmd_pos_t;
@@ -3260,6 +3299,8 @@ typedef struct player_position3d_cmd_pos
 {
   /** (x, y, z, roll, pitch, yaw) position [m, m, m, rad, rad, rad] */
   player_pose3d_t pos;
+  /** velocity at which to move to the position [m/s] or [rad/s] */
+  player_pose3d_t vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
 } player_position3d_cmd_pos_t;
@@ -3649,7 +3690,7 @@ typedef struct player_simulation_pose2d_req
 } player_simulation_pose2d_req_t;
 
 /** @brief Request/reply: get/set integer property of a named simulation object
-    
+
 To retrieve an integer property of an object in a simulator, send a
 @ref PLAYER_SIMULATION_REQ_GET_PROPERTY_INT request. The server will
 reply with the integer value filled in. To set a integer property,
@@ -3672,7 +3713,7 @@ typedef struct player_simulation_property_int_req
 
 /** @brief Request/reply: get/set floating-point property of a named
     simulation object
-    
+
     Behaves identically to the integer version, but for double-precision
     floating-pont values. */
 typedef struct player_simulation_property_float_req
@@ -3691,7 +3732,7 @@ typedef struct player_simulation_property_float_req
 
 /** @brief Request/reply: get/set string property of a named
     simulation object
-    
+
     Behaves identically to the integer version, but for strings.*/
 typedef struct player_simulation_property_string_req
 {
@@ -4146,11 +4187,11 @@ typedef struct player_rfid_cmd
  * @defgroup interface_wsn wsn
  * @brief Wireless Sensor Networks
 
-The WSN interface provides access to a Wireless Sensor Network (driver 
-implementations include WSN's such as Crossbow's MICA2 motes and TeCo's RCore 
+The WSN interface provides access to a Wireless Sensor Network (driver
+implementations include WSN's such as Crossbow's MICA2 motes and TeCo's RCore
 particles).
 
-The current implementation supports a single group of network nodes. Support 
+The current implementation supports a single group of network nodes. Support
 for multiple groups will be added in the future.
  */
 
@@ -4211,7 +4252,7 @@ typedef struct player_wsn_data
 } player_wsn_data_t;
 
 /** @brief Command: set device state (@ref PLAYER_WSN_CMD_DEVSTATE)
-This @p wsn command sets the state of the node's indicator lights or 
+This @p wsn command sets the state of the node's indicator lights or
 its buzzer/sounder (if equipped with one).                                      */
 typedef struct player_wsn_cmd
 {
@@ -4242,7 +4283,7 @@ typedef struct player_wsn_power_config
 /** @brief Request/reply: change the data type to RAW or converted engineering
 units.
 
-Send a @ref PLAYER_WSN_REQ_DATATYPE request to switch between RAW or converted 
+Send a @ref PLAYER_WSN_REQ_DATATYPE request to switch between RAW or converted
 engineering units values in the data packet. Null response.                     */
 typedef struct player_wsn_datatype_config
 {
@@ -4253,7 +4294,7 @@ typedef struct player_wsn_datatype_config
 /** @brief Request/reply: Change data delivery frequency.
 
 By default, the frequency set for receiving data is set on the wireless node.
-Send a @ref PLAYER_WSN_REQ_DATAFREQ request to change the frequency. Fill in 
+Send a @ref PLAYER_WSN_REQ_DATAFREQ request to change the frequency. Fill in
 the node ID or set -1 for all nodes. Null response.                             */
 typedef struct player_wsn_datafreq_config
 {

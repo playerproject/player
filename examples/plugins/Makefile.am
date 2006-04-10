@@ -1,2 +1,2 @@
 
-SUBDIRS = exampledriver multidriver
+SUBDIRS = exampledriver multidriver opaquedriver

@@ -1780,6 +1780,47 @@ int playerc_map_get_vector(playerc_map_t* device);
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_opaque opaque
+
+The opaque proxy provides an interface for generic messages to drivers.
+
+@{
+*/
+
+/** @brief Opaque device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Size of data (bytes) */
+  int data_count;
+
+  /** Data  */
+  uint8_t data[PLAYER_OPAQUE_MAX_SIZE];
+} playerc_opaque_t;
+
+/** @brief Create an opaque device proxy. */
+playerc_opaque_t *playerc_opaque_create(playerc_client_t *client, int index);
+
+/** @brief Destroy an opaque device proxy. */
+void playerc_opaque_destroy(playerc_opaque_t *device);
+
+/** @brief Subscribe to the opaque device */
+int playerc_opaque_subscribe(playerc_opaque_t *device, int access);
+
+/** @brief Un-subscribe from the opaque device */
+int playerc_opaque_unsubscribe(playerc_opaque_t *device);
+
+/** @brief Send a generic command */
+int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
+
+/** @} */
+/**************************************************************************/
+
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
  * @defgroup playerc_proxy_planner planner
 
 The planner proxy provides an interface to a 2D motion planner.
@@ -2382,19 +2423,19 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 
 /** @brief Set the value of a named integer property of a named
     simulation object */
-int playerc_simulation_set_property_int(playerc_simulation_t *device, 
+int playerc_simulation_set_property_int(playerc_simulation_t *device,
 					char* name,
 					char* property,
 					int value );
 /** @brief Set the value of a named floating point property of a named
     simulation object */
-int playerc_simulation_set_property_double(playerc_simulation_t *device, 
+int playerc_simulation_set_property_double(playerc_simulation_t *device,
 					   char* name,
 					   char* property,
 					   double value );
 /** @brief Set the value of a named string property of a named
     simulation object */
-int playerc_simulation_set_property_string(playerc_simulation_t *device, 
+int playerc_simulation_set_property_string(playerc_simulation_t *device,
 					   char* name,
 					   char* property,
 					   char* value );
