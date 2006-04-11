@@ -139,6 +139,7 @@ int main(int argc, const char *argv[])
       case PLAYER_RFID_CODE:
         test_rfid(client, client->devinfos[i].addr.index);
         break;
+	
 	// simulation device
       case PLAYER_SIMULATION_CODE:
         test_simulation(client, client->devinfos[i].addr.index);
@@ -216,7 +217,11 @@ int main(int argc, const char *argv[])
         test_wifi(client, client->devinfos[i].addr.index);
         break;
 #endif
-
+      // WSN device
+      case PLAYER_WSN_CODE:
+        test_wsn(client, client->devinfos[i].addr.index);
+        break;
+	
       default:
         printf("no test for interface [%s]\n",
                playerc_lookup_name(client->devinfos[i].addr.interf));

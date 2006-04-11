@@ -50,7 +50,8 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_simulation.c \
                         dev_sonar.c \
                         dev_speech.c \
-                        dev_wifi.c
+                        dev_wifi.c \
+			dev_wsn.c
 
 #dev_joystick.c
 #dev_truth.c

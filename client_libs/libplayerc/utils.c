@@ -102,6 +102,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_TRUTH_STRING;
     case PLAYER_WIFI_CODE:
       return PLAYER_WIFI_STRING;
+    case PLAYER_WSN_CODE:
+      return PLAYER_WSN_STRING;
     case PLAYER_MAP_CODE:
       return PLAYER_MAP_STRING;
     case PLAYER_LOG_CODE:
@@ -167,6 +169,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_TRUTH_CODE;
   if (strcmp(name, PLAYER_WIFI_STRING) == 0)
     return PLAYER_WIFI_CODE;
+  if (strcmp(name, PLAYER_WSN_STRING) == 0)
+    return PLAYER_WSN_CODE;
   if (strcmp(name, PLAYER_MAP_STRING) == 0)
     return PLAYER_MAP_CODE;
   if (strcmp(name, PLAYER_LOG_STRING) == 0)

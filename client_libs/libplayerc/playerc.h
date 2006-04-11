@@ -2528,7 +2528,7 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 /**************************************************************************/
 /** @defgroup playerc_proxy_rfid rfid
 
-The rfid proxy provides an interface to the digital input/output sensors.
+The rfid proxy provides an interface to a RFID reader.
 
 @{
 */
@@ -2573,6 +2573,63 @@ int playerc_rfid_unsubscribe(playerc_rfid_t *device);
 /** @} */
 /***************************************************************************/
 
+/**************************************************************************/
+/** @defgroup playerc_proxy_wsn wsn
+
+The wsn proxy provides an interface to a Wireless Sensor Network.
+
+@{
+*/
+
+/** Note: the structure describing the WSN node's data packet is declared in 
+          Player. */
+
+/** @brief WSN proxy data. */
+typedef struct
+{
+    /** Device info; must be at the start of all device structures.         */
+    playerc_device_t info;
+
+    /** The type of WSN node.                                               */
+    uint32_t node_type;
+    /** The ID of the WSN node.                                             */
+    uint32_t node_id;
+    /** The ID of the WSN node's parent (if existing).                      */
+    uint32_t node_parent_id;
+    /** The WSN node's data packet.                                         */
+    player_wsn_node_data_t data_packet;
+} playerc_wsn_t;
+
+
+/** @brief Create a wsn proxy. */
+playerc_wsn_t *playerc_wsn_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a wsn proxy. */
+void playerc_wsn_destroy(playerc_wsn_t *device);
+
+/** @brief Subscribe to the wsn device. */
+int playerc_wsn_subscribe(playerc_wsn_t *device, int access);
+
+/** @brief Un-subscribe from the wsn device. */
+int playerc_wsn_unsubscribe(playerc_wsn_t *device);
+
+/** Set the device state. */
+int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id, 
+                             int group_id, int devnr, int state);
+                             
+/** Put the node in sleep mode (0) or wake it up (1). */
+int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id, 
+                      int value);
+
+/** Change the data type to RAW or converted engineering units. */
+int playerc_wsn_datatype(playerc_wsn_t *device, int value);
+
+/** Change data delivery frequency. */
+int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id, 
+                         double frequency);
+
+/** @} */
+/***************************************************************************/
 
 #ifdef __cplusplus
 }

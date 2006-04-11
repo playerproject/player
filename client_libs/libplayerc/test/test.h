@@ -87,4 +87,16 @@ extern int test_fiducial(playerc_client_t *client, int index);
 extern int test_wifi(playerc_client_t *client, int index);
 #endif
 
+// Basic test for Graphics2D.
+extern int test_graphics2d(playerc_client_t *client, int index);
+
+// Basic test for Gripper.
+extern int test_gripper(playerc_client_t *client, int index);
+
+// Basic test for RFID.
+extern int test_rfid(playerc_client_t *client, int index);
+
+// Basic test for WSN.
+extern int test_wsn(playerc_client_t *client, int index);
+
 #endif // TEST_H
