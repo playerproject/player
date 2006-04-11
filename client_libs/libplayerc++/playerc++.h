@@ -2438,6 +2438,37 @@ class RFIDProxy : public ClientProxy
     playerc_rfidtag_t operator [](uint aIndex) const
       { return(GetRFIDTag(aIndex)); }
 };
+/**
+The @p WSNProxy class is used to control a @ref interface_wsn device. */
+class WSNProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_wsn_t *mDevice;
+
+  public:
+    /// constructor
+    WSNProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~WSNProxy();
+
+    uint GetNodeType    () const { return GetVar(mDevice->node_type);      };
+    uint GetNodeID      () const { return GetVar(mDevice->node_id);        };
+    uint GetNodeParentID() const { return GetVar(mDevice->node_parent_id); };
+    
+    player_wsn_node_data_t 
+       GetNodeDataPacket() const { return GetVar(mDevice->data_packet);    };
+    
+    void SetDevState(int nodeID, int groupID, int devNr, int value);
+    void Power(int nodeID, int groupID, int value);
+    void DataType(int value);
+    void DataFreq(int nodeID, int groupID, float frequency);
+};
 /** @} (proxies)*/
 
 } // namespace PlayerCc
@@ -2493,6 +2524,7 @@ namespace std
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::WSNProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
 }
 /** @} (utility) */
