@@ -2,9 +2,6 @@
  *  Player - One Hell of a Robot Server
  *  Copyright (C) 2006 Radu Bogdan Rusu (rusu@cs.tum.edu)
  *
- *  Portions copyright (c) 2004 Crossbow Technology, Inc.
- *  Distributed according to the Intel Open Source License.
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -24,7 +21,8 @@
 /*
  * TinyOS data structures.
  * Borrowed from the TinyOS project (http://www.tinyos.net).
- * Released under the Intel Open Source License.
+ * Portions copyright (c) 2004 Crossbow Technology, Inc.
+ * Distributed according to the Intel Open Source License.
  */
 
 #include <vector>
