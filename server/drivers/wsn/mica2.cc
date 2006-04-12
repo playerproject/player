@@ -215,7 +215,7 @@ Mica2::Mica2 (ConfigFile* cf, int section)
     for (i = 0; i < nodes_count; i++)
     {
     	char node_nr[7];
-	sprintf (node_nr, "node%d", i);
+	sprintf (node_nr, "node%d", (i+1));
 	NodeCalibrationValues n;
 	n.node_id  = cf->ReadTupleInt (section, node_nr, 0, 0);
 	n.group_id = cf->ReadTupleInt (section, node_nr, 1, 0);
