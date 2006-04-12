@@ -19,7 +19,7 @@
  */
 /*
  * Desc: Driver generating dummy data
- * Author: Andrew Howard
+ * Authors: Andrew Howard, Radu Bogdan Rusu
  * Date: 15 Sep 2004
  * CVS: $Id$
  */
@@ -28,9 +28,6 @@
 /** @{ */
 /** @defgroup driver_dummy dummy
  * @brief Dummy driver
-
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
 
 The dummy driver generates dummy data and consumes dummy commands for
 any interface; useful for debugging client libraries and benchmarking
@@ -42,7 +39,8 @@ server performance.
 
 @par Provides
 
-- This driver will support any interface.
+- This driver can support any interface (currently supported are: laser, camera,
+  position2d, and wsn).
 
 @par Requires
 
@@ -54,10 +52,10 @@ server performance.
 
 @par Configuration file options
 
-- rate (float)
+  - rate (float)
   - Default: 10
   - Data rate (Hz); e.g., rate 20 will generate data at 20Hz.
-      
+
 @par Example 
 
 @verbatim
@@ -65,14 +63,14 @@ driver
 (
   name "dummy"
   provides ["laser:0"]  # Generate dummy laser data
-  rate 75              # Generate data at 75Hz
+  rate 75               # Generate data at 75Hz
 )
 @endverbatim
 
-@author Andrew Howard
+@author Andrew Howard, Radu Bogdan Rusu
 */
 /** @} */
-  
+
 #include <assert.h>
 #include <math.h>
 #include <stdlib.h>
@@ -80,50 +78,40 @@ driver
 #include <sys/types.h> // required for in.h on OS X
 #include <netinet/in.h>
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
-#include "interface_util.h"
+// Includes needed for player
+#include <libplayercore/playercore.h>
 
-
-// The logfile driver
+// The Dummy driver
 class Dummy: public Driver 
 {
-  // Constructor
-  public: Dummy(ConfigFile* cf, int section);
+    public:
+        // Constructor
+        Dummy (ConfigFile* cf, int section);
 
-  // Destructor
-  public: ~Dummy();
+        // Destructor
+        ~Dummy ();
 
-  // Initialize the driver
-  public: virtual int Setup();
+        // Implementations of virtual functions
+        virtual int Setup ();
+        virtual int Shutdown ();
 
-  // Finalize the driver
-  public: virtual int Shutdown();
+    private:
 
-  // Device thread
-  private: virtual void Main(void);
+        // Main function for device thread.
+        virtual void Main ();
 
-  // Device id
-  private: player_device_id_t local_id;
-
-  // Data rate
-  private: double rate;
-  
-  // Dummy data buffer
-  private: size_t data_len, cmd_len;
-  private: char *data_buffer;
-  private: char *req_buffer;
+        // Data rate
+        double rate;
 };
 
 
 
-////////////////////////////////////////////////////////////////////////////
-// Create a driver for reading log files
-Driver* ReadDummy_Init(ConfigFile* cf, int section)
+////////////////////////////////////////////////////////////////////////////////
+// Factory creation function. This functions is given as an argument when
+// the driver is added to the driver table
+Driver* Dummy_Init(ConfigFile* cf, int section)
 {
-  return ((Driver*) (new Dummy(cf, section)));
+    return ((Driver*) (new Dummy(cf, section)));
 }
 
 
@@ -131,92 +119,35 @@ Driver* ReadDummy_Init(ConfigFile* cf, int section)
 // Device factory registration
 void Dummy_Register(DriverTable* table)
 {
-  table->AddDriver("dummy", ReadDummy_Init);
-  return;
+    table->AddDriver("dummy", Dummy_Init);
 }
 
 
-////////////////////////////////////////////////////////////////////////////
-// Constructor
+////////////////////////////////////////////////////////////////////////////////
+// Constructor.  Retrieve options from the configuration file and do any
+// pre-Setup() setup.
 Dummy::Dummy(ConfigFile* cf, int section)
-    : Driver(cf, section)
+	: Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
-  // Look for our default device id
-  if (cf->ReadDeviceId(&this->local_id, section, "provides", 0, -1, NULL) != 0)
-  {
-    this->SetError(-1);
+    // Look for our default device id
+    if (cf->ReadDeviceAddr(&this->device_addr, section, "provides", 
+                        0, -1, NULL) != 0)
+    {
+        this->SetError(-1);
+        return;
+    }
+
+    // Add our interface
+    if (this->AddInterface(this->device_addr) != 0)
+    {
+        this->SetError(-1);
+        return;
+    }
+
+    // Data rate
+    this->rate = cf->ReadFloat(section, "rate", 10);
+
     return;
-  }
-  
-  // Add our interface
-  if (this->AddInterface(this->local_id, PLAYER_ALL_MODE) != 0)
-  {
-    this->SetError(-1);
-    return;
-  }
-
-  // Create data buffer
-  this->data_buffer = (char*) calloc(1, PLAYER_MAX_MESSAGE_SIZE);
-
-  // Create config buffer
-  this->req_buffer = (char*) calloc(1, PLAYER_MAX_REQREP_SIZE);
-
-  // Initialize data buffers and lengths with something sensible
-  switch (this->local_id.code)
-  {
-    case PLAYER_CAMERA_CODE:
-    {
-      player_camera_data_t *data = (player_camera_data_t*) this->data_buffer;
-      int w = 320;
-      int h = 240;
-
-      data->width = htons(w);
-      data->height = htons(h);
-      data->bpp = 24;
-      data->format = PLAYER_CAMERA_FORMAT_RGB888;
-      data->compression = PLAYER_CAMERA_COMPRESS_RAW;
-      data->image_size = htonl(w * h * 3);
-
-      for (int j = 0; j < h; j++)
-      {
-        for (int i = 0; i < w; i++)
-        {
-          data->image[(i + j * w) * 3 + 0] = ((i + j) % 2) * 255;
-          data->image[(i + j * w) * 3 + 1] = ((i + j) % 2) * 255;
-          data->image[(i + j * w) * 3 + 2] = ((i + j) % 2) * 255;
-        }
-      }
-      
-      this->data_len = sizeof(*data) - sizeof(data->image) + w * h * 3;
-      this->cmd_len = 0;
-
-      break;
-    }
-    case PLAYER_LASER_CODE:
-    {
-      this->data_len = sizeof(player_laser_data_t);
-      this->cmd_len = 0;
-      break;
-    }
-    case PLAYER_POSITION_CODE:
-    {
-      this->data_len = sizeof(player_position_data_t);
-      this->cmd_len = sizeof(player_position_cmd_t);
-      break;
-    }
-    default:
-    {
-      PLAYER_ERROR1("unsupported interface [%s]",
-                    lookup_interface_name(0, this->local_id.code));
-      this->SetError(-1);
-      return;
-    }
-  }
-  
-  // Data rate
-  this->rate = cf->ReadFloat(section, "rate", 10);  
-
-  return;
 }
 
 
@@ -224,10 +155,7 @@ Dummy::Dummy(ConfigFile* cf, int section)
 // Destructor
 Dummy::~Dummy()
 {
-  free(this->req_buffer);
-  free(this->data_buffer);
-
-  return;
+    return;
 }
 
 
@@ -235,10 +163,10 @@ Dummy::~Dummy()
 // Initialize driver
 int Dummy::Setup()
 {
-  // Start device thread
-  this->StartThread();
+    // Start device thread
+    this->StartThread();
 
-  return 0;
+    return 0;
 }
 
 
@@ -246,10 +174,10 @@ int Dummy::Setup()
 // Finalize the driver
 int Dummy::Shutdown()
 {
-  // Stop the device thread
-  this->StopThread();
-  
-  return 0;
+    // Stop the device thread
+    this->StopThread();
+
+    return 0;
 }
 
 
@@ -257,29 +185,122 @@ int Dummy::Shutdown()
 // Main function for device thread
 void Dummy::Main(void)
 {
-  struct timespec req;
-//  void *client;
+    unsigned int i = 0;
+    struct timespec req;
+    //  void *client;
 
-  req.tv_sec = (time_t) (1.0 / this->rate);
-  req.tv_nsec = (long) (fmod(1e9 / this->rate, 1e9));
+    req.tv_sec = (time_t) (1.0 / this->rate);
+    req.tv_nsec = (long) (fmod(1e9 / this->rate, 1e9));
 
-  while (1)
-  {
-    pthread_testcancel();
-    if (nanosleep(&req, NULL) == -1)
-      continue;
+    while (1)
+    {
+        pthread_testcancel();
+        if (nanosleep(&req, NULL) == -1)
+        continue;
 
-    // Write data
-    this->PutMsg(this->local_id,NULL,PLAYER_MSGTYPE_DATA,0, this->data_buffer, this->data_len, NULL);
-
+//    ProcessMessages();
     // Process pending configuration requests
 /*    while (this->GetConfig(this->local_id, &client, this->req_buffer,
-                           PLAYER_MAX_REQREP_SIZE, NULL))
+    PLAYER_MAX_REQREP_SIZE, NULL))
     {
-      if (this->PutReply(this->local_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-    }*/
-    ProcessMessages();
-  }
-  return;
+    if (this->PutReply(this->local_id, client, PLAYER_MSGTYPE_RESP_NACK, NULL) != 0)
+    PLAYER_ERROR("PutReply() failed");
+}*/
+
+        // Write data
+        switch (this->device_addr.interf)
+        {
+            case PLAYER_CAMERA_CODE:
+            {
+                player_camera_data_t data;
+                int w = 320;
+                int h = 240;
+
+                data.width = w;
+                data.height = h;
+                data.bpp = 24;
+                data.format = PLAYER_CAMERA_FORMAT_RGB888;
+                data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+                data.image_count = w * h * 3;
+
+                for (int j = 0; j < h; j++)
+                {
+                    for (int i = 0; i < w; i++)
+                    {
+                        data.image[(i + j * w) * 3 + 0] = ((i + j) % 2) * 255;
+                        data.image[(i + j * w) * 3 + 1] = ((i + j) % 2) * 255;
+                        data.image[(i + j * w) * 3 + 2] = ((i + j) % 2) * 255;
+                    }
+                }
+
+                int data_len = sizeof(data) - sizeof(data.image) + w * h * 3;
+
+                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                         PLAYER_CAMERA_DATA_STATE, (void*)&data, data_len, 
+                         NULL);
+                break;
+            }
+            case PLAYER_LASER_CODE:
+            {
+                // Bogus data borrowed from Stage
+                player_laser_data_t data;
+                data.min_angle  = -1.5707964;
+                data.max_angle  = 1.5707964;
+                data.resolution = 49;
+                data.max_range  = 4.0;
+                data.ranges_count    = 361;
+                data.intensity_count = 361;
+                for (i = 0; i < data.ranges_count; i++)
+                {
+                    data.ranges[i]    = 1;
+                    data.intensity[i] = 1;
+                }
+                data.id = 1;
+
+                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                         PLAYER_LASER_DATA_SCAN, (void*)&data, sizeof(data), 
+                         NULL);
+                break;
+            }
+            case PLAYER_POSITION2D_CODE:
+            {
+                player_position2d_data_t data;
+                data.pos.px = 1.0;
+                data.pos.py = 1.0;
+                data.pos.pa = 1.0;
+                data.vel.px = 1.0;
+                data.vel.py = 1.0;
+                data.vel.pa = 1.0;
+                data.stall  = 0;
+                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                         PLAYER_POSITION2D_DATA_STATE, (void*)&data, 
+                         sizeof (data), NULL);
+                break;
+            }
+            case PLAYER_WSN_CODE:
+            {
+                player_wsn_data_t data;
+                data.node_type      = 132;
+                data.node_id        = 1;
+                data.node_parent_id = 125;
+                // Fill in the data packet with bogus values
+                data.data_packet.light   = 779;
+                data.data_packet.mic     = 495;
+                data.data_packet.accel_x = 500;
+                data.data_packet.accel_y = 500;
+                data.data_packet.accel_z = 500;
+                data.data_packet.magn_x  = 224;
+                data.data_packet.magn_y  = 224;
+                data.data_packet.magn_z  = 224;
+                data.data_packet.temperature = 500;
+                data.data_packet.battery = 489;
+
+                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                         PLAYER_WSN_DATA, (void*)&data, 
+                         sizeof (data), NULL);
+                break;
+            }
+        }
+    }
+    return;
 }
