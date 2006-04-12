@@ -72,6 +72,8 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_laser
 - @ref interface_sonar
 - @ref interface_position2d
+- @ref interface_wifi
+- @ref interface_wsn
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -84,7 +86,6 @@ disabled because they need to be updated:
 - @ref interface_position3d
 - @ref interface_power
 - @ref interface_truth
-- @ref interface_wifi
 
 @par Configuration requests
 
@@ -201,6 +202,8 @@ class WriteLog: public Driver
   // Write wifi data to file
   private: int WriteWiFi(player_msghdr_t* hdr, void *data);
 
+  // Write WSN data to file
+  private: int WriteWSN(player_msghdr_t* hdr, void *data);
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -694,6 +697,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_WIFI_CODE:
       retval = this->WriteWiFi(hdr, data);
       break;
+    case PLAYER_WSN_CODE:
+      retval = this->WriteWSN(hdr, data);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
@@ -1084,6 +1090,66 @@ WriteLog::WriteWiFi(player_msghdr_t* hdr, void *data)
   }
 }
 
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_wsn WSN format
+
+@brief WSN log format
+
+The format for each @ref interface_wsn message is:
+  - node_type      (int): The type of WSN node
+  - node_id        (int): The ID of the WSN node
+  - node_parent_id (int): The ID of the WSN node's parent (if existing)
+  - data_packet         : The WSN node's data packet
+    - light       (float): light measurement from a light sensor
+    - mic         (float): accoustic measurement from a microphone
+    - accel_x     (float): acceleration on X-axis from an acceleration sensor
+    - accel_y     (float): acceleration on Y-axis from an acceleration sensor
+    - accel_z     (float): acceleration on Z-axis from an acceleration sensor
+    - magn_x      (float): magnetic measurement on X-axis from a magnetometer
+    - magn_y      (float): magnetic measurement on Y-axis from a magnetometer
+    - magn_z      (float): magnetic measurement on Z-axis from a magnetometer
+    - temperature (float): temperature measurement from a temperature sensor
+    - battery     (float): remaining battery voltage
+ */
+int
+WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
+{
+    unsigned int i;
+    player_wsn_data_t* wdata;
+
+  // Check the type
+    switch(hdr->type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+            switch(hdr->subtype)
+            {
+                case PLAYER_WSN_DATA:
+                    wdata = (player_wsn_data_t*)data;
+                    fprintf(this->file,"%d %d %d %f %f %f %f %f %f %f %f %f %f",
+                            wdata->node_type, 
+                            wdata->node_id, 
+                            wdata->node_parent_id,
+                            wdata->data_packet.light,
+                            wdata->data_packet.mic,
+                            wdata->data_packet.accel_x,
+                            wdata->data_packet.accel_y,
+                            wdata->data_packet.accel_z,
+                            wdata->data_packet.magn_x,
+                            wdata->data_packet.magn_y,
+                            wdata->data_packet.magn_z,
+                            wdata->data_packet.temperature,
+                            wdata->data_packet.battery);
+                    return(0);
+
+                default:
+                    return(-1);
+            }
+
+        default:
+            return(-1);
+    }
+}
 
 #if 0
 /** @ingroup tutorial_datalog

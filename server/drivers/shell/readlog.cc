@@ -59,6 +59,8 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_laser
 - @ref interface_position2d
 - @ref interface_sonar
+- @ref interface_wifi
+- @ref interface_wsn
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -69,7 +71,6 @@ disabled because they need to be updated:
 - @ref interface_gps
 - @ref interface_joystick
 - @ref interface_position3d
-- @ref interface_wifi
 
 The driver also provides an interface for controlling the playback:
 
@@ -193,6 +194,11 @@ class ReadLog: public Driver
                                   player_msghdr_t * hdr,
                                   void * data);
 
+  // Process WSN interface configuration requests
+  private: int ProcessWSNConfig(MessageQueue * resp_queue,
+                                player_msghdr_t * hdr,
+                                void * data);
+
   // Parse the header info
   private: int ParseHeader(int linenum, int token_count, char **tokens,
                            player_devaddr_t *id, double *dtime,
@@ -257,6 +263,11 @@ class ReadLog: public Driver
                          unsigned short type, unsigned short subtype,
                          int linenum,
                          int token_count, char **tokens, double time);
+  // Parse WSN data
+  private: int ParseWSN(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time);
 #if 0
 
   // Parse position3d data
@@ -923,6 +934,40 @@ ReadLog::ProcessSonarConfig(MessageQueue * resp_queue,
 }
 
 int
+ReadLog::ProcessWSNConfig(MessageQueue * resp_queue,
+                          player_msghdr_t * hdr,
+                          void * data)
+{
+    switch(hdr->subtype)
+    {
+        case PLAYER_WSN_REQ_DATATYPE:
+        {
+        // Find the right place from which to retrieve it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+                if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+                    break;
+            }
+            if(j>=this->provide_count)
+                return(-1);
+
+            if(!this->provide_metadata[j])
+                return(-1);
+
+            this->Publish(this->provide_ids[j], resp_queue,
+                          PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                          this->provide_metadata[j],
+                          sizeof(player_wsn_datatype_config_t),
+                          NULL);
+            return(0);
+        }
+        default:
+            return(-1);
+    }
+}
+
+int
 ReadLog::ProcessMessage(MessageQueue * resp_queue,
                         player_msghdr_t * hdr,
                         void * data)
@@ -942,6 +987,11 @@ ReadLog::ProcessMessage(MessageQueue * resp_queue,
           (hdr->addr.interf == PLAYER_SONAR_CODE))
   {
     return(this->ProcessSonarConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+           (hdr->addr.interf == PLAYER_WSN_CODE))
+  {
+      return(this->ProcessWSNConfig(resp_queue, hdr, data));
   }
   else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
           (hdr->addr.interf == PLAYER_POSITION2D_CODE))
@@ -1041,6 +1091,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_WIFI_CODE)
     return this->ParseWifi(id, type, subtype, linenum,
                            token_count, tokens, time);
+  else if (id.interf == PLAYER_WSN_CODE)
+      return this->ParseWSN(id, type, subtype, linenum,
+                            token_count, tokens, time);
 
 #if 0
   else if (id.interf == PLAYER_POSITION3D_CODE)
@@ -1677,6 +1730,56 @@ int ReadLog::ParseWifi(player_devaddr_t id,
       PLAYER_ERROR1("unknown wifi message type %d\n", type);
       return(-1);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse WSN data
+int ReadLog::ParseWSN(player_devaddr_t id, 
+                      unsigned short type, unsigned short subtype,
+                      int linenum,
+                      int token_count, char **tokens, double time)
+{
+    player_wsn_data_t data;
+
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_WSN_DATA:
+                {
+                    if(token_count < 20)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+                    data.node_type      = atoi(tokens[7]);
+                    data.node_id        = atoi(tokens[8]);
+                    data.node_parent_id = atoi(tokens[9]);
+
+                    data.data_packet.light       = atof(tokens[10]);
+                    data.data_packet.mic         = atof(tokens[11]);
+                    data.data_packet.accel_x     = atof(tokens[12]);
+                    data.data_packet.accel_y     = atof(tokens[13]);
+                    data.data_packet.accel_z     = atof(tokens[14]);
+                    data.data_packet.magn_x      = atof(tokens[15]);
+                    data.data_packet.magn_y      = atof(tokens[16]);
+                    data.data_packet.magn_z      = atof(tokens[17]);
+                    data.data_packet.temperature = atof(tokens[18]);
+                    data.data_packet.battery     = atof(tokens[19]);
+
+                    this->Publish(id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return(0);
+                }
+                default:
+                    PLAYER_ERROR1("unknown WSN data subtype %d\n", subtype);
+                    return(-1);
+            }
+        default:
+            PLAYER_ERROR1("unknown WSN message type %d\n", type);
+            return(-1);
+    }
 }
 
 #if 0
