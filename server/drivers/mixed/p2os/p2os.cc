@@ -2553,10 +2553,10 @@ void P2OS::HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd)
   P2OSPacket packet;
   EndEffector pose;
 
-//  printf ("Moving limb to pose (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", cmd.position.px, cmd.position.py, cmd.position.pz, cmd.approach.px, cmd.approach.py, cmd.approach.pz, cmd.orientation.px, cmd.orientation.py, cmd.orientation.pz);
+//   printf ("Moving limb to pose (%f, %f, %f), (%f, %f, %f), (%f, %f, %f)\n", cmd.position.px, cmd.position.py, cmd.position.pz, cmd.approach.px, cmd.approach.py, cmd.approach.pz, cmd.orientation.px, cmd.orientation.py, cmd.orientation.pz);
 
   pose.p.x = cmd.position.px - armOffsetX;
-  pose.p.y = -(cmd.position.py - armOffsetY);
+  pose.p.y = cmd.position.py - armOffsetY;
   pose.p.z = cmd.position.pz - armOffsetZ;
   pose.a.x = cmd.approach.px; pose.a.y = cmd.approach.py; pose.a.z = cmd.approach.pz;
   pose.o.x = cmd.orientation.px; pose.o.y = cmd.orientation.py; pose.o.z = cmd.orientation.pz;
@@ -2564,7 +2564,10 @@ void P2OS::HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd)
   pose.o = kineCalc->Normalise (pose.o);
   pose.n = kineCalc->CalculateN (pose);
 
-//  printf ("Pose = %f, %f, %f\n", pose.p.x, pose.p.y, pose.p.z);
+//   printf ("Pose = %f, %f, %f\t", pose.p.x, pose.p.y, pose.p.z);
+//   printf ("Approach = %f, %f, %f\n", pose.a.x, pose.a.y, pose.a.z);
+//   printf ("Orientation = %f, %f, %f\t", pose.o.x, pose.o.y, pose.o.z);
+//   printf ("Normal = %f, %f, %f\n", pose.n.x, pose.n.y, pose.n.z);
 
   if (!kineCalc->CalculateIK (pose))
   {
@@ -2581,12 +2584,13 @@ void P2OS::HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd)
     command[3] = ii + 1;
     packet.Build (command, 4);
     SendReceive (&packet);
-//    printf ("Sent joint %d to %f (%d)\n", ii, kineCalc->GetTheta (ii), command[2]);
+//     printf ("Sent joint %d to %f (%d)\n", ii, kineCalc->GetTheta (ii), command[2]);
   }
 
   limb_data.state = PLAYER_LIMB_STATE_MOVING;
 }
 
+// NOTE: Not functional
 void P2OS::HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd)
 {
   EndEffector pose;
@@ -2623,6 +2627,7 @@ void P2OS::HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd)
   limb_data.state = PLAYER_LIMB_STATE_MOVING;
 }
 
+// NOTE: Not functional
 void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
 {
   EndEffector pose;
@@ -2633,7 +2638,7 @@ void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
   // by the length of the desired move in the direction of the desired vector.
   // Since we lack constant motion control, but are moving over a small range, this
   // should hopefully give an accurate representation of a vector move.
-  // UPDATE: Turns out it doesn't work. Oh well. Hopefully I'll have time to rewrite
+  // UPDATE: Turns out it doesn't work. Hopefully I'll have time to rewrite
   // this driver in the future so that it can support proper constant motion
   // control without being an unmaintainable mess.
   // As such, this vector move isn't actually a vector move as it is intended in
