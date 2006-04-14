@@ -110,8 +110,8 @@ void playerc_gps_putmsg(playerc_gps_t *device,
     device->lon = gps_data->longitude / 1e7;
     device->alt = gps_data->altitude / 1e3;
 
-    device->utm_e = gps_data->utm_e;
-    device->utm_n = gps_data->utm_n;
+    device->utm_e = gps_data->utm_e / 100.0;
+    device->utm_n = gps_data->utm_n / 100.0;
 
     device->hdop = gps_data->hdop / 10.0;
     device->vdop = gps_data->vdop / 10.0;
