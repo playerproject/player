@@ -163,3 +163,19 @@ int playerc_simulation_set_property_int(playerc_simulation_t *device,
                                 PLAYER_SIMULATION_REQ_SET_PROPERTY_INT,
                                 &req, NULL, 0);
 }
+
+int playerc_simulation_set_property_double(playerc_simulation_t *device, 
+					   char* name,
+					   char* property,
+					   double value )
+{
+  return(-1);
+}
+
+int playerc_simulation_set_property_string(playerc_simulation_t *device, 
+					   char* name,
+					   char* property,
+					   char* value )
+{
+  return(-1);
+}
