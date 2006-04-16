@@ -143,6 +143,7 @@ class PlayerTCP
     int HandlePlayerMessage(int cli, Message* msg);
     void DeleteClient(MessageQueue* q);
     bool Listening(int port);
+    uint32_t GetHost() {return host;};
 };
 
 /** @} */
