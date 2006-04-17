@@ -1546,7 +1546,7 @@ Draw some points.
 typedef struct player_graphics2d_cmd_points
 {
   /** Number of points in this packet. */
-  uint16_t count;
+  uint32_t points_count;
   /** Array of points. */
   player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
   /** Color in which the points should be drawn. */
@@ -1559,7 +1559,7 @@ Draw a series of straight line segments between a set of points.
 typedef struct player_graphics2d_cmd_polyline
 {
   /** Number of points in this packet. */
-  uint16_t count;
+  uint32_t points_count;
   /** Array of points to be joined by lines. */
   player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
   /** Color in which the line should be drawn. */
@@ -1572,7 +1572,7 @@ Draw a polygon.
 typedef struct player_graphics2d_cmd_polygon
 {
   /** Number of points in this packet. */
-  uint16_t count;
+  uint32_t points_count;
   /** array of points defining the polygon. */
   player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
   /** Color in which the outline should be drawn. */
