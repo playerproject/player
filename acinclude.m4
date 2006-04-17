@@ -216,6 +216,8 @@ PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([lasersafe],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([laservisualbarcode],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([laservisualbw],[no],[],[],[])
