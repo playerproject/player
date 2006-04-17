@@ -167,6 +167,8 @@ fi
 
 PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 
+PLAYER_ADD_DRIVER([camerauvc],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
 PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])

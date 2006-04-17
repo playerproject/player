@@ -274,6 +274,10 @@ void LifoMCom_Register(DriverTable* table);
 void CameraV4L_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_CAMERAUVC
+void CameraUVC_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_SPHERE
 void SphereDriver_Register(DriverTable *table);
 #endif
@@ -574,6 +578,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_CAMERAV4L
   CameraV4L_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_CAMERAUVC
+  CameraUVC_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SPHERE
