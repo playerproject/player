@@ -143,11 +143,13 @@ FRAMEGRABBER* fg_open( const char* dev )
   // Get frame buffer info
   if ( ioctl( fg->fd, VIDIOCGFBUF, &(fg->fbuffer) ) < 0 )
   {
-    perror( "fg_open(): get framebuffer failed" );
+    perror( "fg_open(): get framebuffer failed; ignoring" );
+    /* VIDIOCGBUF ioctl fails on some webcams, this can be safely ignored
     free( fg->device );
     free( fg->sources );
     free( fg );
     return NULL;
+    */
   }
 
   // Get the memory buffer info
