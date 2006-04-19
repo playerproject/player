@@ -58,6 +58,21 @@ obstacle.
 - forward
   Default: 1
   Indicates if the laser scanner is pointing forwards (1) or backwards (0).
+- boxmode
+  Default: 1
+  If 1, the driver uses a box model for the safety area instead of a radius
+  distance from the laser scanner. This can allow you to, for example, ensure
+  that the robot can pass through narrow passages without driving into an
+  object ahead. Set to 0 to use the radius mode.
+- boxwidth
+  Default: -1
+  The width of the box. If less than zero, the position2d device will be
+  queried for the width of the robot and that will be used as the box width.
+- boxsafety
+  default: 0.1
+  A safety margin to use if getting the width of the robot for box mode. Won't
+  be used if specifying the width of the box manually in the config file. The
+  default of 0.1 is a 10% safety margin, 0.25 would be 25%, and so on.
 
 TODO: Make driver more advanced so that it can find the laser's pose and
 allow movement in the opposite direction to the way the laser is pointing.
@@ -118,6 +133,8 @@ class LaserSafe : public Driver
 
   private:
 
+    bool ScanInRange (double scanDistance, double scanAngle);
+
     // state info
     bool Blocked;
     player_laser_data_t CurrentState;
@@ -136,11 +153,17 @@ class LaserSafe : public Driver
     player_devaddr_t laser_id;
     double laser_time;
     bool laser_subscribed;
+
+    // State info
     double safeDistance;
     unsigned int step;
     unsigned int historyLength;
     unsigned int currentHistSlot;
     bool front;
+    bool boxMode;
+    double boxWidth;
+    double boxSafety;
+    bool needPoseInfo, gotPoseInfo;
 };
 
 // Initialization function
@@ -190,6 +213,12 @@ int LaserSafe::Setup ()
     currentHistSlot = 0;
   }
 
+  // Send a request for the robot's width from the position driver if need it
+  if (needPoseInfo)
+  {
+    position->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, NULL, 0, NULL);
+  }
+
   return 0;
 }
 
@@ -210,7 +239,34 @@ int LaserSafe::Shutdown ()
     history = NULL;
   }
 
+  gotPoseInfo = false;
+
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Check if a laser scan distance is within warning distance
+bool LaserSafe::ScanInRange (double scanDistance, double scanAngle)
+{
+  if (boxMode)
+  {
+    double x, y;
+
+    x = scanDistance * cos (scanAngle);
+    y = scanDistance * sin (scanAngle);
+
+    if (x < safeDistance && fabs (y) < boxWidth)    // Box is centered on laser
+    {
+      return true;
+    }
+    return false;
+  }
+  else
+  {
+    if (scanDistance < safeDistance)
+      return true;
+    return false;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -242,6 +298,7 @@ int LaserSafe::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, v
     if (history)
     {
       double accumulated = 0.0f;
+      double scanAngle = CurrentState.min_angle;
       unsigned int ii = 0;
       for (ii = 0; ii < CurrentState.ranges_count; ii += step)
       {
@@ -251,13 +308,14 @@ int LaserSafe::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, v
           accumulated += history[jj].ranges[ii];
         }
         accumulated += CurrentState.ranges[ii];
-        if ((accumulated / static_cast<double> (historyLength)) < safeDistance)
+        if (ScanInRange (accumulated / static_cast<double> (historyLength), scanAngle))
         {
           hit = true;
           break;
         }
         // The history buffer is circular, so the current data needs to go into the correct index
         history[currentHistSlot].ranges[ii] = CurrentState.ranges[ii];
+        scanAngle += (CurrentState.resolution * step);
       }
       // Copy any remaining history after encountering a hit
       for (; ii < CurrentState.ranges_count; ii += step)
@@ -267,14 +325,16 @@ int LaserSafe::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, v
     }
     else
     {
+      double scanAngle = CurrentState.min_angle;
       // If no history then just check the current data
       for (unsigned int ii = 0; ii < CurrentState.ranges_count; ii += step)
       {
-        if (CurrentState.ranges[ii] < safeDistance)
+        if (ScanInRange (CurrentState.ranges[ii], scanAngle))
         {
           hit = true;
           break;
         }
+        scanAngle += (CurrentState.resolution * step);
       }
     }
 
@@ -317,11 +377,21 @@ int LaserSafe::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, v
   if (Device::MatchDeviceAddress (hdr->addr, position_id) &&
      (hdr->type == PLAYER_MSGTYPE_RESP_ACK || hdr->type == PLAYER_MSGTYPE_RESP_NACK))
   {
-    // Copy in our address and forward the response
-    hdr->addr = device_addr;
-    Publish (ret_queue, hdr, data);
-    // Clear the filter
-    InQueue->ClearFilter ();
+    if (!gotPoseInfo && hdr->type == PLAYER_MSGTYPE_RESP_ACK && hdr->subtype == PLAYER_POSITION2D_REQ_GET_GEOM)
+    {
+      boxWidth = reinterpret_cast<player_position2d_geom_t*> (data)->size.sw;
+	  boxWidth += boxWidth * boxSafety;     // Add safety margin to the robot's width
+      boxWidth /= 2.0f;
+      gotPoseInfo = true;
+    }
+    else
+    {
+      // Copy in our address and forward the response
+      hdr->addr = device_addr;
+      Publish (ret_queue, hdr, data);
+      // Clear the filter
+      InQueue->ClearFilter ();
+    }
     // No response to send; we just sent it ourselves
     return 0;
   }
@@ -435,6 +505,8 @@ LaserSafe::LaserSafe (ConfigFile* cf, int section)
   : Driver (cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   Blocked = false;
+  gotPoseInfo = false;
+  needPoseInfo = false;
 
   position = NULL;
   // Must have a position device
@@ -461,6 +533,15 @@ LaserSafe::LaserSafe (ConfigFile* cf, int section)
   history = NULL;
   int temp = cf->ReadInt (section, "forward", 1);
   front = temp > 0 ? true : false;
+  temp = cf->ReadInt (section, "boxmode", 1);
+  boxMode = temp > 0 ? true : false;
+  boxWidth = cf->ReadFloat (section, "boxwidth", -1.0f);
+  boxSafety = cf->ReadFloat (section, "boxsafety", 0.1);
+
+  if (boxWidth < 0.0f && boxMode)
+    needPoseInfo = true;  // Don't need the pose info if not in box mode or specified in config
+  else
+    boxWidth /= 2.0f;   // Box is always centred on laser
 
   return;
 }
