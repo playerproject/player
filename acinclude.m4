@@ -233,12 +233,12 @@ PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([logfile],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([mapcspace],[no],[],[],[])
+PLAYER_ADD_DRIVER([mapcspace],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([mapfile],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 
-PLAYER_ADD_DRIVER([mapscale],[no],[],
+PLAYER_ADD_DRIVER([mapscale],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
