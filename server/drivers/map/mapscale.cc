@@ -30,9 +30,6 @@
 /** @defgroup driver_mapscale mapscale
  * @brief Scale grid maps
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The mapscale driver reads a occupancy grid map from another @ref
 interface_map device and scales it to produce a new map
 with a different resolution.  The scaling is accomplished with the
