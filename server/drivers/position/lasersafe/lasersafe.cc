@@ -40,8 +40,8 @@ obstacle.
 
 @par Configuration file options
 
-- safedistance (m)
-  Default: 0.2m
+- safedistance
+  Default: 0.4m
   The distance at which to stop
 - step
   Default: 5
@@ -49,7 +49,7 @@ obstacle.
   value will check readings 0, 5, 10, and so on. A value of 10 will
   check readings 0, 10, 20, 30, ...
 - history
-  Default: 1
+  Default: 3
   The driver will use a moving average of range readings to help
   overcome noise issues. This specifies the number of readings to
   consider in total (so a value of 3 gives the current plus the two
@@ -65,7 +65,7 @@ obstacle.
   that the robot can pass through narrow passages without driving into an
   object ahead. Set to 0 to use the radius mode.
 - boxwidth
-  Default: -1
+  Default: -1m
   The width of the box. If less than zero, the position2d device will be
   queried for the width of the robot and that will be used as the box width.
 - boxsafety
@@ -527,7 +527,7 @@ LaserSafe::LaserSafe (ConfigFile* cf, int section)
     return;
   }
   laser_time = 0.0;
-  safeDistance = cf->ReadFloat (section, "safedistance", 0.2);
+  safeDistance = cf->ReadLength (section, "safedistance", 0.4);
   step = cf->ReadInt (section, "step", 5);
   historyLength = cf->ReadInt (section, "history", 1);
   history = NULL;
@@ -535,7 +535,7 @@ LaserSafe::LaserSafe (ConfigFile* cf, int section)
   front = temp > 0 ? true : false;
   temp = cf->ReadInt (section, "boxmode", 1);
   boxMode = temp > 0 ? true : false;
-  boxWidth = cf->ReadFloat (section, "boxwidth", -1.0f);
+  boxWidth = cf->ReadLength (section, "boxwidth", -1.0f);
   boxSafety = cf->ReadFloat (section, "boxsafety", 0.1);
 
   if (boxWidth < 0.0f && boxMode)
