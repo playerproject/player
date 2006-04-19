@@ -289,7 +289,7 @@ if test "x$with_playercc" = "xyes"; then
   fi
   AX_BOOST_THREAD
   if test "x$ax_cv_boost_thread" = "xyes"; then
-      PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS -pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
+      PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS -lpthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
       PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_THREAD_LIB -lpthread"
   fi
   if test "x$ax_cv_boost_signal" = "xyes"; then
@@ -371,7 +371,7 @@ AC_CHECK_LIB(ltdl, lt_dlopenext,
              LIBS="$LIBS -lltdl",
              have_libltdl=no)
 AC_CHECK_LIB(c_r, pthread_create,
-             [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
+             [LIBS="-lc_r -lpthread $LIBS"],[LIBS="-lpthread $LIBS"])
 AC_CHECK_LIB(jpeg,jpeg_read_header,
              have_libjpeg=yes
              AC_DEFINE(HAVE_LIBJPEG, 1, [Define to 1 if you have the jpeg library (-ljpeg). ])
