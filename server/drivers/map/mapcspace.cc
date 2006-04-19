@@ -30,9 +30,6 @@
 /** @defgroup driver_mapcspace mapcspace
  * @brief Grow obstacles in grid maps
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The mapcspace driver reads a occupancy grid map from another @ref
 interface_map device and convolves it with a robot of a particular
 shape and size to create the configuration space (C-space) map.  That is,
