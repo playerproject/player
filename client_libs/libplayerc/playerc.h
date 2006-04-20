@@ -1067,6 +1067,51 @@ void playerc_camera_save(playerc_camera_t *device, const char *filename);
 /** @} */
 /**************************************************************************/
 
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_dio dio
+
+The dio proxy provides an interface to the digital input/output sensors.
+
+@{
+*/
+
+/** Dio proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+    /// The number of valid digital inputs.
+    uint8_t count;
+
+    /// A bitfield of the current digital inputs.
+    uint32_t digin;
+
+} playerc_dio_t;
+
+
+/** Create a dio proxy. */
+playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
+
+/** Destroy a dio proxy. */
+void playerc_dio_destroy(playerc_dio_t *device);
+
+/** Subscribe to the dio device. */
+int playerc_dio_subscribe(playerc_dio_t *device, int access);
+
+/** Un-subscribe from the dio device. */
+int playerc_dio_unsubscribe(playerc_dio_t *device);
+
+/** Set the output for the dio device. */
+int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
+
+
+/** @} */
+/***************************************************************************/
+
+
 /***************************************************************************/
 /** @ingroup playerc_proxies
  * @defgroup playerc_proxy_fiducial fiducial
@@ -1783,7 +1828,8 @@ int playerc_map_get_vector(playerc_map_t* device);
  * @defgroup playerc_proxy_opaque opaque
 
 The opaque proxy provides an interface for generic messages to drivers.
-
+See examples/plugins/opaquedriver for an example of using this interface in
+combination with a custom plugin.
 @{
 */
 
@@ -2392,6 +2438,20 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
 
 
+/** @} */
+/**************************************************************************/
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_simulation simulation
+
+The simulation proxy is used to interact with objects in a simulation.
+
+@todo write playerc_proxy_simulation description
+
+@{
+*/
+
 /** @brief Simulation device proxy. */
 typedef struct
 {
@@ -2439,52 +2499,6 @@ int playerc_simulation_set_property_string(playerc_simulation_t *device,
 					   char* name,
 					   char* property,
 					   char* value );
-/** @} */
-/***************************************************************************/
-
-
-
-
-/**************************************************************************/
-/** @ingroup playerc_proxies
- * @defgroup playerc_proxy_dio dio
-
-The dio proxy provides an interface to the digital input/output sensors.
-
-@{
-*/
-
-/** Dio proxy data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-    /// The number of valid digital inputs.
-    uint8_t count;
-
-    /// A bitfield of the current digital inputs.
-    uint32_t digin;
-
-} playerc_dio_t;
-
-
-/** Create a dio proxy. */
-playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
-
-/** Destroy a dio proxy. */
-void playerc_dio_destroy(playerc_dio_t *device);
-
-/** Subscribe to the dio device. */
-int playerc_dio_subscribe(playerc_dio_t *device, int access);
-
-/** Un-subscribe from the dio device. */
-int playerc_dio_unsubscribe(playerc_dio_t *device);
-
-/** Set the output for the dio device. */
-int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
-
-
 /** @} */
 /***************************************************************************/
 
@@ -2581,7 +2595,7 @@ The wsn proxy provides an interface to a Wireless Sensor Network.
 @{
 */
 
-/** Note: the structure describing the WSN node's data packet is declared in 
+/** Note: the structure describing the WSN node's data packet is declared in
           Player. */
 
 /** @brief WSN proxy data. */
@@ -2614,18 +2628,18 @@ int playerc_wsn_subscribe(playerc_wsn_t *device, int access);
 int playerc_wsn_unsubscribe(playerc_wsn_t *device);
 
 /** Set the device state. */
-int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id, 
+int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id,
                              int group_id, int devnr, int state);
-                             
+
 /** Put the node in sleep mode (0) or wake it up (1). */
-int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id, 
+int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id,
                       int value);
 
 /** Change the data type to RAW or converted engineering units. */
 int playerc_wsn_datatype(playerc_wsn_t *device, int value);
 
 /** Change data delivery frequency. */
-int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id, 
+int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id,
                          double frequency);
 
 /** @} */

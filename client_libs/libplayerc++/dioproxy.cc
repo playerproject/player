@@ -65,16 +65,39 @@ DioProxy::Unsubscribe()
   mDevice = NULL;
 }
 
-std::ostream& std::operator << (std::ostream &os, const PlayerCc::DioProxy &c)
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::DioProxy &c)
 {
   os << "#DIO (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  for (unsigned int i = 0; i < c.GetCount(); ++i)
-    os << i << ": " << ((c.GetDigin() << i) & 0x80000000 ? "1" : "0");
+  uint count = c.GetCount();
+
+  if (count < 0)
+  {
+    os << "WARNING: DioProxy received a negative count value.\n" << std::endl;
+  }
+  else
+  {
+    for (int i = count-1; i >= 0 ; i--)
+    {
+//    os << ((c.GetDigin() << i) & 0x80000000 ? "1" : "0");
+      os << c[i];
+      if (3==(count-1-i)%4)
+        os << " ";
+    }
+  }
   return os;
 }
 
-/// Set the output
-void DioProxy::SetOutput(uint aCount, uint32_t aDigout)
+bool
+DioProxy::GetInput(uint aIndex) const
+{
+  assert(aIndex < GetCount());
+  assert(aIndex >= 0);
+  return (GetVar(mDevice->digin) & (1 << aIndex)) > 0;
+};
+
+void
+DioProxy::SetOutput(uint aCount, uint32_t aDigout)
 {
   scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_dio_set_output(mDevice, aCount, aDigout))

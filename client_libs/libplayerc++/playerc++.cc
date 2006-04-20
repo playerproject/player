@@ -27,8 +27,25 @@
 
 #include "playerc++.h"
 
-/** @ingroup player_clientlib_cplusplus 
-    @defgroup cplusplus_example libplayerc++ example
+/** @ingroup clientlibs
+    @addtogroup player_clientlib_cplusplus libplayerc++
+    @brief A C++ client library for the @ref util_player
+
+The C++ library is built on a "service proxy" model in which the client
+maintains local objects that are proxies for remote services.  This library
+wraps the functionality of @ref player_clientlib_libplayerc with a more
+friendly C++ API.
+
+ *  The core of libplayerc++ is based around the following classes
+ *  - PlayerCc::PlayerClient
+ *  - PlayerCc::ClientProxy
+ *  - PlayerCc::PlayerError
+
+Be sure to see @ref cplusplus_example "this example".
+ */
+
+ /** @ingroup player_clientlib_cplusplus
+    @addtogroup cplusplus_example libplayerc++ example
     @brief An example of using libplayerc++
 
 The C++ library is built on a "service proxy" model in which the client
@@ -82,8 +99,8 @@ programname_LDFLAGS = $(PLAYERCC_LIBS)
 
 */
 
-/** @ingroup player_clientlib_cplusplus 
-    @defgroup player_clientlib_multi Signals & multithreading
+/** @ingroup player_clientlib_cplusplus
+    @addtogroup player_clientlib_multi Signals & multithreading
     @brief Boost signal and thread support
 
 Along with providing access to the basic C functions of @ref player_clientlib_libplayerc
