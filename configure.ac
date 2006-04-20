@@ -368,8 +368,9 @@ AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(ltdl, lt_dlopenext,
              have_libltdl=yes
              AC_DEFINE(HAVE_LIBLTDL, 1, [Define to 1 if you have the ltdl library (-lltdl). ])
-             LIBS="$LIBS -lltdl",
-             have_libltdl=no)
+             LIBS="$LIBS -lltdl -ldl",
+             have_libltdl=no,
+             [-ldl])
 AC_CHECK_LIB(c_r, pthread_create,
              [LIBS="-lc_r -lpthread $LIBS"],[LIBS="-lpthread $LIBS"])
 AC_CHECK_LIB(jpeg,jpeg_read_header,
