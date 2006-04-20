@@ -306,7 +306,7 @@ PLAYER_ADD_DRIVER([simpleshape],[no],
 
 PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/s2types.h"],
+PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/CM_macros.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
