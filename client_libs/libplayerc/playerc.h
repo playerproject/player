@@ -2540,7 +2540,8 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 /***************************************************************************/
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_rfid rfid
+/** @ingroup playerc_proxies
+    @defgroup playerc_proxy_rfid rfid
 
 The rfid proxy provides an interface to a RFID reader.
 
@@ -2588,7 +2589,8 @@ int playerc_rfid_unsubscribe(playerc_rfid_t *device);
 /***************************************************************************/
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_wsn wsn
+/** @ingroup playerc_proxies
+    @defgroup playerc_proxy_wsn wsn
 
 The wsn proxy provides an interface to a Wireless Sensor Network.
 
