@@ -378,7 +378,7 @@ if test "x$with_boost_signals" != "xno"; then
   if test "x$with_boost_signals" != "xyes"; then
     ax_boost_signals_lib="boost_signals-$with_boost_signals $with_boost_signals"
   fi
-  for ax_lib in $ax_boost_signals_lib boost_signals; do
+  for ax_lib in $ax_boost_signals_lib boost_signals boost_signals-gcc-mt ; do
     AC_CHECK_LIB($ax_lib, main, [BOOST_SIGNALS_LIB=$ax_lib break])
   done
   dnl make sure we have a lib
@@ -416,7 +416,7 @@ if test "x$with_boost_thread" != "xno"; then
   if test "x$with_boost_thread" != "xyes"; then
     ax_boost_thread_lib="boost_thread-$with_boost_thread $with_boost_thread"
   fi
-  for ax_lib in $ax_boost_thread_lib boost_thread boost_thread-mt; do
+  for ax_lib in $ax_boost_thread_lib boost_thread boost_thread-mt boost_thread-gcc-mt ; do
     AC_CHECK_LIB($ax_lib, main, [BOOST_THREAD_LIB=$ax_lib break])
   done
   dnl make sure we have a lib
