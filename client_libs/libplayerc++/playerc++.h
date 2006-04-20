@@ -283,6 +283,8 @@ class ClientProxy
     double GetElapsedTime() const
       { return GetVar(mInfo->datatime) - GetVar(mInfo->lasttime); };
 
+    /// Returns a pointer to the Player Client
+    PlayerClient * GetPlayerClient() const { return mPc;}
     /// Returns device index
     uint GetIndex() const { return GetVar(mInfo->addr.index); };
 

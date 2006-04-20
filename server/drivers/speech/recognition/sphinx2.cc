@@ -122,7 +122,8 @@ extern PlayerTime* GlobalTime;
 extern "C" {
 #endif
 
-#include <sphinx2/s2types.h>
+//#include <sphinx2/s2types.h>
+#include "s2types.h"
 #include <sphinx2/CM_macros.h>
 #include <sphinx2/ad.h>
 #include <sphinx2/cont_ad.h>
