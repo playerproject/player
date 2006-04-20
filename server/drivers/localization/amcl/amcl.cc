@@ -126,7 +126,7 @@ The @p amcl driver requires the following interfaces, some of them named:
 - In principle supported, but currently disabled are:
     - @ref interface_fiducial
     - "imu" @ref interface_position2d
-    - @ref interface_sonar 
+    - @ref interface_sonar
     - @ref interface_gps
     - @ref interface_wifi
 
@@ -156,7 +156,7 @@ The @p amcl driver requires the following interfaces, some of them named:
     - Default: [0 0 0] (m m deg)
     - Initial pose estimate (mean value) for the robot.
   - init_pose_var (tuple: [length length angle])
-    - Default: [10^3 10^3 10^2] (m m deg)
+    - Default: [10^3 10^3 10^2] (m m rad)
     - Uncertainty in the initial pose estimate.
   - update_thresh (tuple: [length angle])
     - Default: [0.2 30] (m deg)
@@ -167,7 +167,7 @@ The @p amcl driver requires the following interfaces, some of them named:
       - odom_drift[0] [0.2 0.0 0.0]
       - odom_drift[1] [0.0 0.2 0.0]
       - odom_drift[2] [0.2 0.0 0.2]
-    - Set the 3 rows of the covariance matrix used for odometric drift.  
+    - Set the 3 rows of the covariance matrix used for odometric drift.
 - Laser settings:
   - laser_pose (length tuple)
     - Default: [0 0 0]
@@ -562,8 +562,6 @@ AdaptiveMCL::~AdaptiveMCL(void)
 // Set up the device (called by server thread).
 int AdaptiveMCL::Setup(void)
 {
-  int i;
-
   PLAYER_MSG0(2, "setup");
 
   // Create the particle filter
@@ -571,27 +569,6 @@ int AdaptiveMCL::Setup(void)
   this->pf = pf_alloc(this->pf_min_samples, this->pf_max_samples);
   this->pf->pop_err = this->pf_err;
   this->pf->pop_z = this->pf_z;
-
-  // UGLY HACK: Setting this->driverthread to a non-zero value, so that
-  // this device won't get Update()d during any of the Request()s that may
-  // occur during the sensor Setup()s below.  The problem arises because
-  // each sensor within amcl has its own queue; the condition that
-  // prevents the caller from being updated then doesn't work.
-  this->driverthread = (pthread_t)1;
-
-  // Start sensors
-  for (i = 0; i < this->sensor_count; i++)
-    if (this->sensors[i]->Setup() < 0)
-      return -1;
-
-  this->q_len = 0;
-
-  // No data has yet been pushed, and the
-  // filter has not yet been initialized
-  this->pf_init = false;
-
-  // Initial hypothesis list
-  this->hyp_count = 0;
 
   // Start the driver thread.
   PLAYER_MSG0(2, "running");
@@ -732,6 +709,24 @@ AMCLSensorData *AdaptiveMCL::Pop(void)
 void AdaptiveMCL::Main(void)
 {
   struct timespec sleeptime;
+  int i;
+
+  // Start sensors
+  for (i = 0; i < this->sensor_count; i++)
+    if (this->sensors[i]->Setup() < 0)
+    {
+      PLAYER_ERROR1 ("failed to setup sensor %d", i);
+      return;
+    }
+
+  this->q_len = 0;
+
+  // No data has yet been pushed, and the
+  // filter has not yet been initialized
+  this->pf_init = false;
+
+  // Initial hypothesis list
+  this->hyp_count = 0;
 
   // WARNING: this only works for Linux
   // Run at a lower priority
