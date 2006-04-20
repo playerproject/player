@@ -70,6 +70,23 @@ void ClientProxy::ReadSignal()
   }
 }
 
+// add replace rule
+void ClientProxy::SetReplaceRule(bool aReplace,
+                                 int aType,
+                                 int aSubtype)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (0!=playerc_client_set_replace_rule(mClient,
+                                         mInfo->addr.interf,
+                                         mInfo->addr.index,
+                                         aType,
+                                         aSubtype,
+                                         aReplace))
+  {
+    throw PlayerError("ClientProxy::SetReplaceRule()", playerc_error_str());
+  }
+}
+
 void ClientProxy::NotFresh()
 {
   scoped_lock_t lock(mPc->mMutex);

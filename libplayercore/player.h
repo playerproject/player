@@ -2453,7 +2453,9 @@ typedef struct player_mcom_return
  * @brief A generic interface for user-defined messages
 
 The @p opaque interface allows you to send user-specified messages.  With this
-interface a user can send custom commands to their drivers/plugins.
+interface a user can send custom commands to their drivers/plugins.  See
+examples/plugins/opaquedriver for an example of using this interface in
+a plugin.
 */
 
 /** @ingroup interface_opaque

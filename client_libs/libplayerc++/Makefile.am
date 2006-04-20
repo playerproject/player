@@ -82,4 +82,4 @@ libplayerc___la_LIBADD = $(PLAYERCC_LIB)
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la
 
 libplayerc___includedir = $(includedir)/player-2.0/libplayerc++
-libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h playerc++config.h
+libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h playerc++config.h clientproxy.h utility.h

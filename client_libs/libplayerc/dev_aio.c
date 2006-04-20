@@ -96,10 +96,11 @@ void playerc_aio_putmsg(playerc_aio_t *device, player_msghdr_t *header,
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_AIO_DATA_STATE))
   {
+    assert(data->voltages_count <= PLAYER_AIO_MAX_INPUTS);
     device->voltages_count = data->voltages_count;
     memcpy(device->voltages,
-            data->voltages,
-            PLAYER_AIO_MAX_OUTPUTS*sizeof(float));
+           data->voltages,
+           data->voltages_count*sizeof(float));
   }
 }
 
@@ -119,5 +120,5 @@ int playerc_aio_set_output(playerc_aio_t *device,
                               &device->info,
                               PLAYER_AIO_CMD_STATE,
                               &cmd,
-                              sizeof(cmd));
+                              NULL);
 }
