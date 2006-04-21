@@ -834,28 +834,28 @@ PlayerTCP::ParseBuffer(int cli)
       }
       else
       {
-	if( packfunc )
-	{
-	  decode_msglen =
-	    (*packfunc)(client->readbuffer + PLAYERXDR_MSGHDR_SIZE,
+        if( packfunc )
+        {
+          decode_msglen =
+            (*packfunc)(client->readbuffer + PLAYERXDR_MSGHDR_SIZE,
 			msglen - PLAYERXDR_MSGHDR_SIZE,
 			(void*)this->decode_readbuffer,
 			PLAYERXDR_DECODE);
-	}
-	else // no packing function? this had better be an empty message
-	{
-	    if( hdr.size == 0 )
-	      decode_msglen = 0; // an empty message decoded is still empty
-	    else
+        }
+        else // no packing function? this had better be an empty message
+        {
+          if( hdr.size == 0 )
+	        decode_msglen = 0; // an empty message decoded is still empty
+          else
 	      decode_msglen = -1; // indicate error
-	}
+        }
 
-	if( decode_msglen < 0 )
-	{
-	  PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
+        if( decode_msglen < 0 )
+        {
+          PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
 		       hdr.addr.interf, hdr.addr.index, hdr.subtype);
-	}
-	else
+        }
+        else
         {
           // update the message size and send it off
           hdr.size = decode_msglen;
