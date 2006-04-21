@@ -36,16 +36,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLSensor::AMCLSensor()
+AMCLSensor::AMCLSensor(AdaptiveMCL & aAMCL) : AMCL(aAMCL)
 {
-  this->InQueue = new MessageQueue(false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
-  assert(this->InQueue);
   return;
 }
 
 AMCLSensor::~AMCLSensor()
 {
-  delete this->InQueue;
 }
 
 
@@ -83,11 +80,11 @@ int AMCLSensor::Shutdown(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get new sensor data (non-blocking)
-AMCLSensorData *AMCLSensor::GetData(void)
+/*AMCLSensorData *AMCLSensor::GetData(void)
 {
   return NULL;
 }
-
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Apply the action model
