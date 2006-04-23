@@ -508,8 +508,6 @@ int AdaptiveMCL::Setup(void)
   this->pf->pop_err = this->pf_err;
   this->pf->pop_z = this->pf_z;
 
-  printf("setting up sensors\n");
-
   // Start sensors
   for (int i = 0; i < this->sensor_count; i++)
     if (this->sensors[i]->Setup() < 0)
@@ -1186,7 +1184,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
                   (void*)&resp, sizeof(resp), NULL);
     return(0);
   }
-  
+
   // pass on the rest of the messages to the sensors
   for (int i = 0; i < this->sensor_count; i++)
   {
@@ -1194,7 +1192,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
     if (ret >= 0)
     	return ret;
   }
-    
+
   return(-1);
 }
 
