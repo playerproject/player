@@ -9,7 +9,7 @@ extern double mapupdatefreq;
 
 /* Parse command line arguments, of the form host:port */
 int
-parse_args(int argc, char** argv, size_t* num_bots, char** hostnames, 
+parse_args(int argc, char** argv, size_t* num_bots, char** hostnames,
            int* ports, double* zoom, int* aa, int* map_idx, int* planner_idx)
 {
   char* idx;
@@ -66,32 +66,42 @@ parse_args(int argc, char** argv, size_t* num_bots, char** hostnames,
       return(-1);
   }
 
-  if(i>=argc)
-    return(-1);
+//  if(i>=argc)
+//    return(-1);
 
   *num_bots=0;
-  while(i<argc)
-  {
-    // Look for ':' (colon), and extract the trailing port number.  If not
-    // given, then use the default Player port (6665)
-    if((idx = strchr(argv[i],':')) && (strlen(idx) > 1))
-    {
-      port = atoi(idx+1);
-      hostlen = idx - argv[i];
-    }
-    else
-    {
-      port = 6665;
-      hostlen = strlen(argv[i]);
-    }
 
-    // Store the hostnames and port numbers
-    assert((hostlen > 0) && (hostlen < (MAX_HOSTNAME_LEN - 1)));
-    argv[i][hostlen] = '\0';
-    hostnames[*num_bots] = strdup(argv[i]);
-    ports[*num_bots] = port;
-    (*num_bots)++;
-    i++;
+  if (i< argc)
+  {
+    while(i<argc)
+    {
+      // Look for ':' (colon), and extract the trailing port number.  If not
+      // given, then use the default Player port (6665)
+      if((idx = strchr(argv[i],':')) && (strlen(idx) > 1))
+      {
+        port = atoi(idx+1);
+        hostlen = idx - argv[i];
+      }
+      else
+      {
+        port = 6665;
+        hostlen = strlen(argv[i]);
+      }
+
+      // Store the hostnames and port numbers
+      assert((hostlen > 0) && (hostlen < (MAX_HOSTNAME_LEN - 1)));
+      argv[i][hostlen] = '\0';
+      hostnames[*num_bots] = strdup(argv[i]);
+      ports[*num_bots] = port;
+      (*num_bots)++;
+      i++;
+    }
+  }
+  else
+  {
+    hostnames[*num_bots] = strdup("localhost");
+    ports[*num_bots] = 6665;
+    *num_bots=1;
   }
 
   return(0);
