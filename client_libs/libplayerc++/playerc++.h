@@ -1246,48 +1246,107 @@ class PlannerProxy : public ClientProxy
     /// Have we arrived at the goal?
     uint GetPathDone() const { return GetVar(mDevice->path_done); };
 
-    /// Current pose (m)
+    /// @brief Current pose (m)
+    /// @deprecated use GetPose() instead
     double GetPx() const { return GetVar(mDevice->px); };
-    /// Current pose (m)
+    /// @brief Current pose (m)
+    /// @deprecated use GetPose() instead
     double GetPy() const { return GetVar(mDevice->py); };
-    /// Current pose (m)
+    /// @brief Current pose (radians)
+    /// @deprecated use GetPose() instead
     double GetPa() const { return GetVar(mDevice->pa); };
 
-    /// Goal location (radians)
+    /// Get the current pose
+    player_pose_t GetPose() const
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->px;
+      p.py = mDevice->py;
+      p.pa = mDevice->pa;
+      return(p);
+    }
+
+    /// @brief Goal location (m)
+    /// @deprecated use GetGoal() instead
     double GetGx() const { return GetVar(mDevice->gx); };
-    /// Goal location (radians)
+    /// @brief Goal location (m)
+    /// @deprecated use GetGoal() instead
     double GetGy() const { return GetVar(mDevice->gy); };
-    /// Goal location (radians)
+    /// @brief Goal location (radians)
+    /// @deprecated use GetGoal() instead
     double GetGa() const { return GetVar(mDevice->ga); };
 
-    /// Current waypoint location (m)
+    /// Get the goal
+    player_pose_t GetGoal() const
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->gx;
+      p.py = mDevice->gy;
+      p.pa = mDevice->ga;
+      return(p);
+    }
+
+    /// @brief Current waypoint location (m)
+    /// @deprecated use GetCurWaypoint() instead
     double GetWx() const { return GetVar(mDevice->wx); };
-    /// Current waypoint location (m)
+    /// @brief Current waypoint location (m)
+    /// @deprecated use GetCurWaypoint() instead
     double GetWy() const { return GetVar(mDevice->wy); };
-    /// Current waypoint location (m)
+    /// @brief Current waypoint location (rad)
+    /// @deprecated use GetCurWaypoint() instead
     double GetWa() const { return GetVar(mDevice->wa); };
 
-    /// Waypoint[i] location (m)
+    /// Get the current waypoint
+    player_pose_t GetCurrentWaypoint() const
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->wx;
+      p.py = mDevice->wy;
+      p.pa = mDevice->wa;
+      return(p);
+    }
+
+    /// @brief Grab a particular waypoint location (m)
+    /// @deprecated use GetWaypoint() instead
     double GetIx(int i) const;
-    /// Waypoint[i] location (m)
+    /// @brief Grab a particular waypoint location (m)
+    /// @deprecated use GetWaypoint() instead
     double GetIy(int i) const;
-    /// Waypoint[i] location (m)
+    /// @brief Grab a particular waypoint location (rad)
+    /// @deprecated use GetWaypoint() instead
     double GetIa(int i) const;
 
+    /// Get the waypoint
+    player_pose_t GetWaypoint(uint aIndex) const
+    {
+      assert(aIndex < GetWaypointCount());
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->waypoints[aIndex][0];
+      p.py = mDevice->waypoints[aIndex][1];
+      p.pa = mDevice->waypoints[aIndex][2];
+      return(p);
+    }
 
     /// Current waypoint index (handy if you already have the list
     /// of waypoints). May be negative if there's no plan, or if
     /// the plan is done
-    uint GetCurrentWaypoint() const
+    int GetCurrentWaypointId() const
       { return GetVar(mDevice->curr_waypoint); };
 
     /// Number of waypoints in the plan
     uint GetWaypointCount() const
       { return GetVar(mDevice->waypoint_count); };
 
-    // Get a waypoints in the current plan (m,m,radians).
-    //uint GetWaypoint(uint aIndex) const
-      //{ return GetVar(mDevice->waypoints[aIndex]); };
+    /// Waypoint access operator
+    /// This operator provides an alternate way of access the waypoint data.
+    /// For example, given a @p PlannerProxy named @p pp, the following
+    /// expressions are equivalent: @p pp.GetWaypoint(0) and @p pp[0].
+    player_pose_t operator [](uint aIndex) const
+      { return GetWaypoint(aIndex); }
 
 };
 
@@ -1327,7 +1386,7 @@ class Position1dProxy : public ClientProxy
     void RequestGeom();
 
     /// Accessor for the pose (fill it in by calling RequestGeom)
-    player_pose_t GetPose()
+    player_pose_t GetPose() const
     {
       player_pose_t p;
       scoped_lock_t lock(mPc->mMutex);
@@ -1338,7 +1397,7 @@ class Position1dProxy : public ClientProxy
     }
 
     /// Accessor for the size (fill it in by calling RequestGeom)
-    player_bbox_t GetSize()
+    player_bbox_t GetSize() const
     {
       player_bbox_t b;
       scoped_lock_t lock(mPc->mMutex);
@@ -1747,6 +1806,39 @@ class PtzProxy : public ClientProxy
 };
 
 /**
+The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
+class RFIDProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_rfid_t *mDevice;
+
+  public:
+    /// constructor
+    RFIDProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~RFIDProxy();
+
+    /// returns the number of RFID tags
+    uint GetTagsCount() const { return GetVar(mDevice->tags_count); };
+    /// returns a RFID tag
+    playerc_rfidtag_t GetRFIDTag(uint aIndex) const
+      { return GetVar(mDevice->tags[aIndex]);};
+
+    /// RFID data access operator.
+    ///    This operator provides an alternate way of access the actuator data.
+    ///    For example, given a @p RFIDProxy named @p rp, the following
+    ///    expressions are equivalent: @p rp.GetRFIDTag[0] and @p rp[0].
+    playerc_rfidtag_t operator [](uint aIndex) const
+      { return(GetRFIDTag(aIndex)); }
+};
+
+/**
 The @p SimulationProxy proxy provides access to a
 @ref interface_simulation device.
 */
@@ -2002,38 +2094,7 @@ class WiFiProxy: public ClientProxy
 //
 //     char access_point[32];
 };
-/**
-The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
-class RFIDProxy : public ClientProxy
-{
 
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_rfid_t *mDevice;
-
-  public:
-    /// constructor
-    RFIDProxy(PlayerClient *aPc, uint aIndex=0);
-    /// destructor
-    ~RFIDProxy();
-
-    /// returns the number of RFID tags
-    uint GetTagsCount() const { return GetVar(mDevice->tags_count); };
-    /// returns a RFID tag
-    playerc_rfidtag_t GetRFIDTag(uint aIndex) const
-      { return GetVar(mDevice->tags[aIndex]);};
-
-    /// RFID data access operator.
-    ///    This operator provides an alternate way of access the actuator data.
-    ///    For example, given a @p RFIDProxy named @p rp, the following
-    ///    expressions are equivalent: @p rp.GetRFIDTag[0] and @p rp[0].
-    playerc_rfidtag_t operator [](uint aIndex) const
-      { return(GetRFIDTag(aIndex)); }
-};
 /**
 The @p WSNProxy class is used to control a @ref interface_wsn device. */
 class WSNProxy : public ClientProxy
