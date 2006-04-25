@@ -75,6 +75,7 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
   mClient = playerc_client_create(NULL, aHostname.c_str(), aPort);
   if (0 != playerc_client_connect(mClient))
   {
+  	playerc_client_destroy(mClient);
     throw PlayerError("PlayerClient::Connect()", playerc_error_str());
   }
   EVAL(mClient);
