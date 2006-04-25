@@ -379,10 +379,29 @@ AC_CHECK_LIB(jpeg,jpeg_read_header,
              LIBS="$LIBS -ljpeg",
              have_libjpeg=no)
 AM_CONDITIONAL(INCLUDE_JPEG, test "x$have_libjpeg" = "xyes")
+AC_CHECK_LIB(GL,glBegin,
+             have_libGL=yes
+             AC_DEFINE(HAVE_LIBGL, 1, [Define to 1 if you have the GL library (-lGL). ])
+             LIBS="$LIBS -lGL",
+             have_libGL=no)
+AM_CONDITIONAL(INCLUDE_GL, test "x$have_libGL" = "xyes")
+AC_CHECK_LIB(GLU,main,
+             have_libGLU=yes
+             AC_DEFINE(HAVE_LIBGLU, 1, [Define to 1 if you have the GLU library (-lGLU). ])
+             LIBS="$LIBS -lGLU",
+             have_libGLU=no)
+AM_CONDITIONAL(INCLUDE_GLU, test "x$have_libGLU" = "xyes")
+AC_CHECK_LIB(glut,main,
+             have_libglut=yes
+             AC_DEFINE(HAVE_LIBGLUT, 1, [Define to 1 if you have the GLUT library (-lGglut). ])
+             LIBS="$LIBS -lglut",
+             have_libglut=no)
+AM_CONDITIONAL(INCLUDE_GLUT, test "x$have_libglut" = "xyes")
+
 
 dnl Check for OpenCV
 if test "x$have_pkg_config" = "xyes"; then
-   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_gtk=no)
+   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_opencv=no)
    if test "x$with_opencv" = "xyes"; then
       AC_DEFINE(HAVE_OPENCV, 1, [OpenCV library is present])
    fi
@@ -395,6 +414,16 @@ if test "x$have_pkg_config" = "xyes"; then
                     with_imagemagick=no)
 fi
 AM_CONDITIONAL(WITH_IMAGEMAGICK, test "x$with_imagemagick" = "xyes")
+
+dnl check for gsl 
+if test "x$have_pkg_config" = "xyes"; then
+   PKG_CHECK_MODULES(GSL, gsl, with_gsl=yes, with_gsl=no)
+   if test "x$with_gsl" = "xyes"; then
+      AC_DEFINE(HAVE_GSL, 1, [GSL library is present])
+   fi
+fi
+AM_CONDITIONAL(WITH_GSL, test "x$with_gsl" = "xyes")
+
 
 dnl Optionally build python bindings to libplayerc (libplayerc-py)
 AC_ARG_ENABLE(libplayerc-py,
@@ -523,6 +552,7 @@ dnl          client_libs/libplayerpacket/Makefile
           utils/playernav/Makefile
           utils/playerprint/Makefile
           utils/playervcr/Makefile
+          utils/pmap/Makefile
           utils/dgps_server/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)

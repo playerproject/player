@@ -241,7 +241,11 @@ range finder:
 driver
 (
   name "p2os_position"
+<<<<<<< amcl.cc
+  provides ["odometry:::position:0"]
+=======
   provides ["odometry:::position2d:0"]
+>>>>>>> 1.72
   port "/dev/ttyS0"
 )
 driver
