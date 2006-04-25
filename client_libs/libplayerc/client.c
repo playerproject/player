@@ -172,6 +172,7 @@ int playerc_client_connect(playerc_client_t *client)
   entp = gethostbyname(client->host);
   if (entp == NULL)
   {
+  	close(client->sock);
     PLAYERC_ERR1("gethostbyname failed with error [%s]", strerror(errno));
     return -1;
   }
@@ -182,6 +183,7 @@ int playerc_client_connect(playerc_client_t *client)
   // Connect the socket
   if (connect(client->sock, (struct sockaddr*) &server, sizeof(server)) < 0)
   {
+  	close(client->sock);
     PLAYERC_ERR3("connect call on [%s:%d] failed with error [%s]",
                  client->host, client->port, strerror(errno));
     return -1;
@@ -190,19 +192,12 @@ int playerc_client_connect(playerc_client_t *client)
   // Get the banner
   if (recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
   {
+  	close(client->sock);
     PLAYERC_ERR("incomplete initialization string");
     return -1;
   }
 
-#if 0
-  // Default to async data mode
-  if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_ASYNC) != 0)
-  {
-    PLAYERC_ERR("unable to set push_async data mode");
-    return -1;
-  }
-#endif
-  // PLAYERC_MSG3("[%s] connected on [%s:%d]", banner, client->hostname, client->port);
+  PLAYER_MSG3(2,"[%s] connected on [%s:%d]", banner, client->host, client->port);
   return 0;
 }
 
