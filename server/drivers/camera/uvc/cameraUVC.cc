@@ -115,7 +115,7 @@ int CameraUVC::Setup()
 {   
   printf("CameraUVC: Driver initialising\n");
 
-  videoIn = (struct vdIn *) calloc(1, sizeof(struct vdIn));
+  videoIn = new vdIn;
   if (init_videoIn(videoIn, (char *) videoDevice, width, height, format, grabmethod) < 0)
   {
     PLAYER_ERROR("CameraUVC: Error setting up video capture!");
@@ -139,7 +139,8 @@ int CameraUVC::Shutdown()
 
   StopThread();
   close_v4l2(videoIn);
-  free(videoIn);
+  delete videoIn;
+  videoIn = NULL;
 
   printf("CameraUVC: Driver shutdown complete\n");
   return(0);

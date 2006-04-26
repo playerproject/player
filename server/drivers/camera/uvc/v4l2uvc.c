@@ -262,7 +262,7 @@ static int video_enable(struct vdIn *vd)
 static int video_disable(struct vdIn *vd)
 {
     int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    int ret;
+    int i,ret;
 
     ret = ioctl(vd->fd, VIDIOC_STREAMOFF, &type);
     if (ret < 0) {
@@ -270,12 +270,12 @@ static int video_disable(struct vdIn *vd)
        return ret;
     }
     vd->isstreaming = 0;
+    
     return 0;
 }
 
 static int convertframe(struct vdIn *vd)
 {
-    int erreur = 0;
     switch (vd->formatIn) {
     case V4L2_PIX_FMT_MJPEG:
        if (jpeg_decode
@@ -351,8 +351,31 @@ int uvcGrab(struct vdIn *vd)
 }
 int close_v4l2(struct vdIn *vd)
 {
+	int i,ret;
+		
     if (vd->isstreaming)
        video_disable(vd);
+
+    /* unmap the buffers */
+    for (i = 0; i < NB_BUFFER; i++) {
+       memset(&vd->buf, 0, sizeof(struct v4l2_buffer));
+       vd->buf.index = i;
+       vd->buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+       vd->buf.memory = V4L2_MEMORY_MMAP;
+       ret = ioctl(vd->fd, VIDIOC_QUERYBUF, &vd->buf);
+       if (ret < 0) {
+           printf("Unable to query buffer (%d).\n", errno);
+           continue;
+       }
+       ret = munmap(vd->mem[i], vd->buf.length);
+       if (ret < 0) {
+           printf("Unable to UNmap buffer (%d)\n", errno);
+       }
+    }
+
+
+    close(vd->fd);
+
     if (vd->tmpbuffer)
        free(vd->tmpbuffer);
     vd->tmpbuffer = NULL;
