@@ -884,30 +884,7 @@ complete description of the drivers that support this interface.
 @{
 */
 
-/** @brief Description of a single blob. */
-typedef struct
-{
-  /** The blob id; e.g. the color class this blob belongs to. */
-  unsigned int id;
-
-  /** A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
-      0x00RRGGBB. */
-  uint32_t color;
-
-  /** Blob centroid (image coordinates). */
-  unsigned int x, y;
-
-  /** Bounding box for blob (image coordinates). */
-  unsigned int left, top, right, bottom;
-
-  /** Blob area (pixels). */
-  unsigned int area;
-
-  /** Blob range (m). */
-  double range;
-
-} playerc_blobfinder_blob_t;
-
+typedef player_blobfinder_blob_t playerc_blobfinder_blob_t;
 
 /** @brief Blobfinder device data. */
 typedef struct
@@ -920,7 +897,7 @@ typedef struct
 
   /** A list of detected blobs. */
   unsigned int blobs_count;
-  playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
+  playerc_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
 
 } playerc_blobfinder_t;
 

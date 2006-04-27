@@ -198,11 +198,6 @@ render_camera(gpointer data)
     gdk_pixbuf_unref(blobbuf);
   }
 
-  gdk_draw_pixbuf(GTK_WIDGET(drawing_area)->window, gc,
-                    g_pixbuf, 0, 0, 0, 0, g_width, g_height,
-                    GDK_RGB_DITHER_NONE, 0, 0);
-
-
   // scale everything at the end
   if ((g_width==g_window_width)&&(g_height==g_window_height))
   { // we don't need to worry about scaling
@@ -339,7 +334,7 @@ main(int argc, char *argv[])
 int
 player_init(int argc, char *argv[])
 {
-  int csize, usize;
+  int csize, usize, i;
 
   if(get_options(argc, argv) < 0)
   {
@@ -389,8 +384,8 @@ player_init(int argc, char *argv[])
     exit(-1);
   }
 
-  // Get 1 image for the image size
-  if (NULL != playerc_client_read(g_client))
+  // Get up to 10 images until we have a valid frame (g_wdith > 0)
+  for (i=0, g_width=0; i < 10 && g_width==0 && NULL != playerc_client_read(g_client); ++i)
   {
     if (NULL != g_camera)
     {
@@ -479,7 +474,7 @@ player_update()
       if ((g_width  != g_blobfinder->width) ||
           (g_height != g_blobfinder->height))
       {
-        g_print("camera and blobfinder height or width do not match\n");
+        g_print("camera and blobfinder height or width do not match %d,%d != %d,%d\n",g_width,g_height,g_blobfinder->width,g_blobfinder->height);
         // should we die here?
         //exit(-1);
       }
