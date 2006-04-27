@@ -25,20 +25,64 @@
     PyErr_SetString(PyExc_ValueError,"Size mismatch. Expected $1_dim0 elements");
     return NULL;
   }
-  for (i = 0; i < $1_dim0; i++) 
+  for (i = 0; i < $1_dim0; i++)
   {
     PyObject *o = PySequence_GetItem($input,i);
-    if (PyNumber_Check(o)) 
+    if (PyNumber_Check(o))
     {
       temp[i] = (float) PyFloat_AsDouble(o);
-    } 
-    else 
+    }
+    else
     {
-      PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
+      PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");
       return NULL;
     }
   }
   $1 = temp;
+}
+
+// typemap for passing points into the graphics2d interface
+%typemap(python,in) player_point_2d_t pts[]
+{
+	// Check if is a list
+	if (PyList_Check ($input))
+	{
+		int size = PyList_Size ($input);
+		int ii = 0;
+		$1 = (player_point_2d_t*) malloc (size * sizeof (player_point_2d_t));
+		for (ii = 0; ii < size; ii++)
+		{
+			PyObject *o = PyList_GetItem ($input, ii);
+			if (PyTuple_Check (o))
+			{
+				if (PyTuple_GET_SIZE (o) != 2)
+				{
+					PyErr_SetString (PyExc_ValueError, "tuples must have 2 items");
+					free ($1);
+					return NULL;
+				}
+				$1[ii].px = PyFloat_AsDouble (PyTuple_GET_ITEM (o, 0));
+				$1[ii].py = PyFloat_AsDouble (PyTuple_GET_ITEM (o, 1));
+			}
+			else
+			{
+				PyErr_SetString (PyExc_TypeError, "list must contain tuples");
+				free ($1);
+				return NULL;
+			}
+		}
+	}
+	else
+	{
+		PyErr_SetString (PyExc_TypeError, "not a list");
+		return NULL;
+	}
+}
+
+// typemap to free the array created in the previous typemap
+%typemap(python,freearg) player_point2d_t pts[]
+{
+	free ((player_point2d_t*) $input);
 }
 
 // Provide array (write) access
@@ -54,7 +98,7 @@
     PyErr_SetString(PyExc_ValueError,"Size mismatch. Expected $1_dim0 elements");
     return NULL;
   }
-  for (i = 0; i < $1_dim0; i++) 
+  for (i = 0; i < $1_dim0; i++)
   {
     PyObject *olist = PySequence_GetItem($input,i);
     if (!PySequence_Check(olist))
@@ -67,17 +111,17 @@
       return NULL;
     }
 
-    for (j = 0; j < $1_dim1; j++) 
+    for (j = 0; j < $1_dim1; j++)
     {
       PyObject *o = PySequence_GetItem(olist,j);
 
-      if (PyNumber_Check(o)) 
+      if (PyNumber_Check(o))
       {
         temp[i][j] = (float) PyFloat_AsDouble(o);
-      } 
-      else 
+      }
+      else
       {
-        PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");      
+        PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");
         return NULL;
       }
     }
@@ -107,22 +151,22 @@
 }
 
 // Provide array access
-%typemap(out) double [ANY] 
+%typemap(out) double [ANY]
 {
   int i;
   $result = PyList_New($1_dim0);
-  for (i = 0; i < $1_dim0; i++) 
+  for (i = 0; i < $1_dim0; i++)
   {
     PyObject *o = PyFloat_FromDouble((double) $1[i]);
     PyList_SetItem($result,i,o);
   }
 }
 
-%typemap(out) uint8_t [ANY] 
+%typemap(out) uint8_t [ANY]
 {
   int i;
   $result = PyList_New($1_dim0);
-  for (i = 0; i < $1_dim0; i++) 
+  for (i = 0; i < $1_dim0; i++)
   {
     PyObject *o = PyInt_FromLong((long) (unsigned char) $1[i]);
     PyList_SetItem($result,i,o);
@@ -130,11 +174,11 @@
 }
 
 // Provide array access doubly-dimensioned arrays
-%typemap(out) double [ANY][ANY] 
+%typemap(out) double [ANY][ANY]
 {
   int i, j;
   $result = PyList_New($1_dim0);
-  for (i = 0; i < $1_dim0; i++) 
+  for (i = 0; i < $1_dim0; i++)
   {
     PyObject *l = PyList_New($1_dim1);
     for (j = 0; j < $1_dim1; j++)
@@ -152,7 +196,7 @@
 {
  int i;
   $result = PyTuple_New($1_dim0);
-  for (i = 0; i < $1_dim0; i++) 
+  for (i = 0; i < $1_dim0; i++)
   {
     PyObject *o = SWIG_NewPointerObj($1 + i, $1_descriptor, 0);
     PyTuple_SetItem($result,i,o);
