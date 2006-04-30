@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -73,10 +73,10 @@ typedef struct
 {
   const char *host;
   int port;
-  
+
   // The rtk canvas
   rtk_canvas_t *canvas;
-  
+
   // The grid figure (fixed to cs)
   rtk_fig_t *grid_fig;
 
@@ -87,7 +87,7 @@ typedef struct
   // Menu containing file options
   rtk_menu_t *file_menu;
   rtk_menuitem_t *exit_item;
-  
+
   // The stills menu
   rtk_menu_t *stills_menu;
   rtk_menuitem_t *stills_jpeg_menuitem;
@@ -112,10 +112,10 @@ typedef struct
   rtk_menuitem_t *view_item_10m;
   rtk_menuitem_t *view_item_2f;
   rtk_menuitem_t *view_item_ego;
-  
+
   // Menu containing the device list
   rtk_menu_t *device_menu;
-  
+
 } mainwnd_t;
 
 
@@ -147,7 +147,7 @@ typedef struct
 
   // Driver name
   char *drivername;
-  
+
   // Handle to the GUI proxy for this device.
   void *proxy;
 
@@ -157,7 +157,7 @@ typedef struct
 
   // Non-zero if should be subscribed.
   int subscribe;
-  
+
 } device_t;
 
 
@@ -180,7 +180,7 @@ void create_proxy(device_t *device, opt_t *opt,
    rtk_menu_t *menu;
    rtk_menuitem_t *subscribe_item;
 
-   // Figures for drawing the bumper 
+   // Figures for drawing the bumper
    rtk_fig_t *scan_fig[PLAYERC_BUMPER_MAX_SAMPLES];
 
    // Bumper device proxy
@@ -213,13 +213,13 @@ typedef struct
 {
   // Driver name
   char *drivername;
-  
+
   // Laser device proxy
   playerc_laser_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
-  
+
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
@@ -227,7 +227,7 @@ typedef struct
   rtk_menuitem_t *range_mm_item, *range_cm_item, *range_dm_item;
   // Figure for drawing the scan
   rtk_fig_t *scan_fig;
-  
+
 } laser_t;
 
 
@@ -250,7 +250,7 @@ typedef struct
 {
   // Pointer to the main window
   mainwnd_t *mainwnd;
-  
+
   // Driver name
   char *drivername;
 
@@ -274,10 +274,10 @@ typedef struct
   rtk_fig_t *control_fig;
   rtk_fig_t *path_fig;
   rtk_fig_t *stats_fig;
-  
+
   // Goal point for position2d mode
   double goal_px, goal_py, goal_pa;
-  
+
 } position2d_t;
 
 
@@ -315,12 +315,12 @@ typedef struct
 
   // Figure for drawing the fiducials.
   rtk_fig_t *fig;
-    
+
 } fiducial_t;
 
 
 // Create a fiducial device
-fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client, 
+fiducial_t *fiducial_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                             int index,  const char *drivername, int subscribe);
 
 // Destroy a fiducial device
@@ -338,7 +338,7 @@ typedef struct
 {
   // Pointer to the main window
   mainwnd_t *mainwnd;
-  
+
   // Driver name
   char *drivername;
 
@@ -358,7 +358,7 @@ typedef struct
 
   // Figures
   rtk_fig_t *grip_fig;
-  
+
 } gripper_t;
 
 
@@ -394,7 +394,7 @@ typedef struct
 
   // Figures
   rtk_fig_t *fig;
-  
+
 } power_t;
 
 
@@ -431,10 +431,10 @@ typedef struct
   rtk_fig_t *data_fig_tilt;
   rtk_fig_t *cmd_fig;
   rtk_fig_t *cmd_fig_tilt;
-  
+
   // Timestamp on most recent data
   double datatime;
-  
+
 } ptz_t;
 
 
@@ -465,13 +465,13 @@ typedef struct
 
   // Figures for drawing the sonar scan
   rtk_fig_t *scan_fig[PLAYERC_SONAR_MAX_SAMPLES];
-  
+
   // Sonar device proxy
   playerc_sonar_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
-  
+
 } sonar_t;
 
 
@@ -504,13 +504,13 @@ typedef struct
 
   // Figures for drawing the sonar scan
   rtk_fig_t *scan_fig[PLAYERC_IR_MAX_SAMPLES];
-  
+
   // Sonar device proxy
   playerc_ir_t *proxy;
 
   // Timestamp on most recent data
   double datatime;
-  
+
 } ir_t;
 
 
@@ -549,10 +549,10 @@ typedef struct
 
   // Image scale (m/pixel)
   double scale;
-  
+
   // Timestamp on most recent data
   double datatime;
-  
+
 } blobfinder_t;
 
 
@@ -576,7 +576,7 @@ typedef struct
 {
   // Main window
   mainwnd_t *mainwnd;
-  
+
   // Driver name
   char *drivername;
 
@@ -602,7 +602,7 @@ typedef struct
 
   // Timestamp on most recent data
   double datatime;
-  
+
 } localize_t;
 
 
@@ -640,7 +640,7 @@ typedef struct
 
   // Figures
   rtk_fig_t *fig;
-  
+
 } wifi_t;
 
 
@@ -653,6 +653,42 @@ void wifi_destroy(wifi_t *wifi);
 
 // Update a wifi device
 void wifi_update(wifi_t *wifi);
+
+/***************************************************************************
+ * Dio device
+ ***************************************************************************/
+
+// Dio device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // dio device proxy
+  playerc_dio_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures
+  rtk_fig_t *fig;
+
+} dio_t;
+
+
+// Create a wifi device
+dio_t *dio_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                   int index,  const char *drivername, int subscribe);
+
+// Destroy a wifi device
+void dio_destroy(dio_t *dio);
+
+// Update a wifi device
+void dio_update(dio_t *dio);
 
 
 
@@ -678,7 +714,7 @@ typedef struct
 
   // Figures
   rtk_fig_t *fig;
-  
+
 } map_t;
 
 
