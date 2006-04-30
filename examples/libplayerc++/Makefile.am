@@ -26,7 +26,8 @@ if INCLUDE_PLAYERCC
                      laserobstacleavoid \
                      randomwalk \
                      clientgraphics \
-                     sonarobstacleavoid
+                     sonarobstacleavoid \
+		     speech
 endif
 
 if INCLUDE_PLAYERCC_BOOST
@@ -98,3 +99,7 @@ randomwalk_DEPENDENCIES = $(PLAYERCC_DEPS)
 sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc args.h
 sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+speech_SOURCES = speech.cc args.h
+speech_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+speech_DEPENDENCIES = $(PLAYERCC_DEPS)

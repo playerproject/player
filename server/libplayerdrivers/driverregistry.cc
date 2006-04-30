@@ -90,6 +90,10 @@ void SickLMS200_Register(DriverTable* table);
 void Roomba_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_GARCIA
+void GarciaDriver_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SICKPLS
 void SickPLS_Register(DriverTable* table);
 #endif
@@ -246,7 +250,7 @@ void InertiaCube2_Register(DriverTable* table);
 void MicroStrain3DMG_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_MICA2 
+#ifdef INCLUDE_MICA2
 void Mica2_Register(DriverTable* table);
 #endif
 
@@ -391,6 +395,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_LASERPOSEINTERPOLATOR
   LaserPoseInterp_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_GARCIA
+  GarciaDriver_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKLMS200
@@ -556,7 +564,7 @@ player_register_drivers()
   MicroStrain3DMG_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_MICA2 
+#ifdef INCLUDE_MICA2
   Mica2_Register(driverTable);
 #endif
 
