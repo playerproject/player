@@ -35,6 +35,8 @@ class GarciaDriver : public Driver
     // Constructor; need that
     GarciaDriver(ConfigFile* cf, int section);
 
+    virtual ~GarciaDriver();
+
     // Must implement the following methods.
     int Setup();
     int Shutdown();
@@ -46,9 +48,14 @@ class GarciaDriver : public Driver
                                player_msghdr * hdr,
                                void * data);
     //void ProcessConfig();
-    void ProcessPos2dCommand(player_msghdr_t* hdr, player_position2d_cmd_t &data);
+    void ProcessPos2dPosCmd(player_msghdr_t* hdr, player_position2d_cmd_pos_t &data);
+    void ProcessPos2dVelCmd(player_msghdr_t* hdr, player_position2d_cmd_vel_t &data);
     void ProcessSpeechCommand(player_msghdr_t* hdr, player_speech_cmd_t &data);
     void ProcessDioCommand(player_msghdr_t* hdr, player_dio_cmd_t &data);
+
+    void ProcessPos2dGeomReq(player_msghdr_t* hdr);
+    void ProcessIrPoseReq(player_msghdr_t* hdr);
+
     void RefreshData();
 
  private:
@@ -56,16 +63,15 @@ class GarciaDriver : public Driver
     // position2d interface
     player_devaddr_t           mPos2dAddr;
     player_position2d_data_t   mPos2dData;
-    player_position2d_cmd_t    mPos2dCmd;
+    player_position2d_cmd_pos_t    mPos2dPosCmd;
+    player_position2d_cmd_vel_t    mPos2dVelCmd;
 
     // ir interface
     player_devaddr_t       mIrAddr;
     player_ir_data_t       mIrData;
-    player_ir_cmd_t        mIrCmd;
 
     // speech interface
     player_devaddr_t       mSpeechAddr;
-    player_speech_data_t   mSpeechData;
     player_speech_cmd_t    mSpeechCmd;
 
     // dio interface
@@ -73,9 +79,20 @@ class GarciaDriver : public Driver
     player_dio_data_t      mDioData;
     player_dio_cmd_t       mDioCmd;
 
+    // power interface
+    player_devaddr_t       mPowerAddr;
+    player_power_data_t      mPowerData;
+
     int32_t mSleep;
 
-    acpGarcia* mGarcia;
+    double mLength;
+    double mWidth;
+    double mWheelBase;
+    double mWheelRadius;
 
-    const char *mConfigPath;
+    acpValue mSpeed;
+    acpValue mPitch;
+    acpValue mVolume;
+
+    acpGarcia* mGarcia;
 };

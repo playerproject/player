@@ -194,6 +194,7 @@ PLAYER_ADD_DRIVER([flockofbirds],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([garcia],[no],
                   [],[],[],[GARCIA],[libgarcia])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GARCIA_LIBS"
 
 PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
