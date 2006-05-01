@@ -400,8 +400,8 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SPEECH_RECOGNITION_DATA_STRING,
     (player_pack_fn_t)player_speech_recognition_data_pack},
 
-  /* speech recognition messages */
-  {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WAVEFORM_DATA_SAMPLE,
+  /* waveform messages */
+  {PLAYER_WAVEFORM_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WAVEFORM_DATA_SAMPLE,
     (player_pack_fn_t)player_waveform_data_pack},
 
   /* wifi messages */
