@@ -163,6 +163,10 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POLYLINE,
    (player_pack_fn_t)player_graphics2d_cmd_polyline_pack},
 
+  /* graphics3d messages */
+  {PLAYER_GRAPHICS3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS3D_CMD_DRAW,
+   (player_pack_fn_t)player_graphics3d_cmd_draw_pack},
+
   /* gripper messages */
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_GRIPPER_DATA_STATE,
    (player_pack_fn_t)player_gripper_data_pack},

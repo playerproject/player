@@ -1271,6 +1271,55 @@ int playerc_graphics2d_clear(playerc_graphics2d_t *device );
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_graphics3d graphics3d
+
+The graphics3d proxy provides an interface to the graphics3d
+
+@{
+*/
+
+/** @brief Graphics3d device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** current drawing color */
+  player_color_t color;
+
+} playerc_graphics3d_t;
+
+
+/** @brief Create a graphics3d device proxy. */
+playerc_graphics3d_t *playerc_graphics3d_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a graphics3d device proxy. */
+void playerc_graphics3d_destroy(playerc_graphics3d_t *device);
+
+/** @brief Subscribe to the graphics3d device */
+int playerc_graphics3d_subscribe(playerc_graphics3d_t *device, int access);
+
+/** @brief Un-subscribe from the graphics3d device */
+int playerc_graphics3d_unsubscribe(playerc_graphics3d_t *device);
+
+/** @brief Set the current drawing color */
+int playerc_graphics3d_setcolor(playerc_graphics3d_t *device,
+                                player_color_t col );
+
+/** @brief Draw some points in the given mode */
+int playerc_graphics3d_draw(playerc_graphics3d_t *device,
+           player_graphics3d_draw_mode_t mode, 
+           player_point_3d_t pts[],
+           int count );
+
+/** @brief Clear the canvas */
+int playerc_graphics3d_clear(playerc_graphics3d_t *device );
+
+
+/** @} */
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
  * @defgroup playerc_proxy_gripper gripper
 
 The gripper proxy provides an interface to the gripper

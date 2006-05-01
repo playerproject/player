@@ -26,8 +26,9 @@ if INCLUDE_PLAYERCC
                      laserobstacleavoid \
                      randomwalk \
                      clientgraphics \
+                     clientgraphics3d \
                      sonarobstacleavoid \
-		     speech
+				     speech
 endif
 
 if INCLUDE_PLAYERCC_BOOST
@@ -41,6 +42,7 @@ endif
 example_DATA = args.h \
                camera.cc \
                clientgraphics.cc \
+               clientgraphics3d.cc \
                example0.cc \
                example1.cc \
                example2.cc \
@@ -83,6 +85,11 @@ grip_DEPENDENCIES = $(PLAYERCC_DEPS)
 clientgraphics_SOURCES = clientgraphics.cc args.h
 clientgraphics_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 clientgraphics_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+clientgraphics3d_SOURCES = clientgraphics3d.cc args.h
+clientgraphics3d_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+clientgraphics3d_DEPENDENCIES = $(PLAYERCC_DEPS)
+
 
 laserobstacleavoid_SOURCES = laserobstacleavoid.cc args.h
 laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc

@@ -710,6 +710,44 @@ class Graphics2dProxy : public ClientProxy
 };
 
 /**
+ * The @p Graphics3dProxy class is used to draw simple graphics into a
+ * rendering device provided by Player using the graphics3d
+ * interface. 
+ */
+class Graphics3dProxy : public ClientProxy
+{
+
+  private:
+
+    // Subscribe
+    void Subscribe(uint aIndex);
+    // Unsubscribe
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_graphics3d_t *mDevice;
+
+  public:
+    // Constructor
+    Graphics3dProxy(PlayerClient *aPc, uint aIndex=0);
+    // Destructor
+    ~Graphics3dProxy();
+
+    /// Set the current pen color
+    void Color(player_color_t col);
+
+    /// Set the current pen color
+    void Color(uint8_t red,  uint8_t green,  uint8_t blue,  uint8_t alpha);
+
+    /// Clear the drawing area
+    void Clear(void);
+
+    /// Draw a set of verticies
+    void Draw(player_graphics3d_draw_mode_t mode, player_point_3d_t pts[], int count);
+
+};
+
+/**
 The @p GripperProxy class is used to control a @ref
 interface_gripper device.  The latest gripper data held in a
 handful of class attributes.  A single method provides user control.
