@@ -156,6 +156,7 @@ in the body.*/
 #define PLAYER_GRAPHICS2D_CODE     55  // Graphics2D interface
 #define PLAYER_RFID_CODE           56  // RFID reader interface
 #define PLAYER_WSN_CODE            57  // Wireless Sensor Networks interface
+#define PLAYER_GRAPHICS3D_CODE     58  // Graphics3D interface
 /** @} */
 
 /** @ingroup message_basics
@@ -182,6 +183,8 @@ in the body.*/
 #define PLAYER_GRIPPER_STRING         "gripper"
 #define PLAYER_FIDUCIAL_STRING        "fiducial"
 #define PLAYER_GPS_STRING             "gps"
+#define PLAYER_GRAPHICS2D_STRING       "graphics2d"
+#define PLAYER_GRAPHICS3D_STRING       "graphics3d"
 #define PLAYER_IR_STRING              "ir"
 #define PLAYER_JOYSTICK_STRING        "joystick"
 #define PLAYER_LASER_STRING           "laser"
@@ -210,8 +213,8 @@ in the body.*/
 #define PLAYER_TRUTH_STRING           "truth"
 #define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
-#define PLAYER_GRAPHICS2D_STRING       "graphics2d"
 #define PLAYER_WSN_STRING             "wsn"
+
 /** @} */
 
 /** @ingroup message_basics
@@ -1004,8 +1007,6 @@ in images.
 /** Request/reply subtype: set imager parameters */
 #define PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS 2
 
-//#define PLAYER_BLOBFINDER_DATA_BLOBS 1
-
 
 /** @brief Structure describing a single blob. */
 typedef struct player_blobfinder_blob
@@ -1586,6 +1587,71 @@ typedef struct player_graphics2d_cmd_polygon
 /** @} */
 
 
+////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_graphics3d graphics3d
+ * @brief Three-dimensional graphics interface
+
+The @p graphics3d interface provides an interface to graphics
+devices. Drivers can implement this interface to provide clients and
+other drivers with graphics output. 
+
+The interface uses an openGL style of command where a type is specified along 
+with a series of verticies. The interpretation depends on the command type
+
+Graphics items should be accumulated until an explicit clear command is issued
+*/
+
+/** @ingroup interface_graphics3d
+ * @{ */
+
+/** The maximum number of points that can be described in a packet. */
+#define PLAYER_GRAPHICS3D_MAX_POINTS 64
+
+/** Command subtype: clear the drawing area (send an empty message) */
+#define PLAYER_GRAPHICS3D_CMD_CLEAR 1
+/** Command subtype: draw items */
+#define PLAYER_GRAPHICS3D_CMD_DRAW 2
+
+
+/** Drawmode: enumeration that defines the drawing mode */
+typedef enum player_graphics3d_draw_mode
+{
+	PLAYER_DRAW_POINTS,
+	PLAYER_DRAW_LINES,
+	PLAYER_DRAW_LINE_STRIP,
+	PLAYER_DRAW_LINE_LOOP,
+	PLAYER_DRAW_TRIANGLES,
+	PLAYER_DRAW_TRIANGLE_STRIP,
+	PLAYER_DRAW_TRIANGLE_FAN,
+	PLAYER_DRAW_QUADS,
+	PLAYER_DRAW_QUAD_STRIP,
+	PLAYER_DRAW_POLYGON
+} player_graphics3d_draw_mode_t;
+
+
+/** @brief Data: This interface produces no data. */
+
+/** @brief Requests: This interface accepts no requests. */
+
+/** @brief Command: Draw points (@ref PLAYER_GRAPHICS2D_CMD_POINTS)
+Draw some points.
+*/
+typedef struct player_graphics3d_cmd_draw
+{
+  /** The drawing mode defining how teh verticies should be interpreted */
+  uint32_t draw_mode;
+  /** Number of points in this packet. */
+  uint32_t points_count;
+  /** Array of points. */
+  player_point_3d_t points[PLAYER_GRAPHICS3D_MAX_POINTS];
+  /** Color in which the points should be drawn. */
+  player_color_t color;
+  
+} player_graphics3d_cmd_draw_t;
+
+
+/** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces

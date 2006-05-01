@@ -37,6 +37,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               fiducialproxy.cc \
                               gpsproxy.cc \
                               graphics2dproxy.cc \
+                              graphics3dproxy.cc \
                               gripperproxy.cc \
                               irproxy.cc \
                               laserproxy.cc \
