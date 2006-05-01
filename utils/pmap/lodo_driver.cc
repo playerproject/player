@@ -470,7 +470,7 @@ int LodoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, vo
   }
 
   // Forward responses (success or failure) from the position device
-  if(Device::MatchDeviceAddress(hdr->addr,position2d_id) &&
+  else if(Device::MatchDeviceAddress(hdr->addr,position2d_id) &&
     (hdr->type == PLAYER_MSGTYPE_RESP_ACK || hdr->type == PLAYER_MSGTYPE_RESP_NACK))
   {
       // Copy in our address and forward the response
@@ -481,7 +481,11 @@ int LodoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, vo
       // No response to send; we just sent it ourselves
       return(0);
   }
-
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, -1, this->out_position2d_id))
+  {
+    // Forward the message
+    position2d_driver->PutMsg(this->InQueue, hdr, data);
+  }
   // set reply to value so the reply for this message goes straight to the given client
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, -1, this->out_laser_id))
   {
@@ -502,7 +506,7 @@ int LodoDriver::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, vo
   }
 
   // Forward responses (success or failure) from the position device
-  if(Device::MatchDeviceAddress(hdr->addr,laser_id) &&
+  else if(Device::MatchDeviceAddress(hdr->addr,laser_id) &&
     (hdr->type == PLAYER_MSGTYPE_RESP_ACK || hdr->type == PLAYER_MSGTYPE_RESP_NACK))
   {
       // Copy in our address and forward the response
