@@ -530,19 +530,22 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   b = RTOD(data.min_angle);
   db = RTOD(data.resolution);
 
-  this->laser_count = data.ranges_count;
+  this->laser_count = 181;
   assert(this->laser_count <
          (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
 
   for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
     this->laser_ranges[i][0] = -1;
 
-  b += 90.0;
-  for(i = 0; i < this->laser_count; i++)
+  // vfh seems to be very oriented around 180 degree scans so interpolate to get 180 degrees
+//  b += 90.0;
+  for(i = 0; i < 181; i++)
   {
-    this->laser_ranges[(int)rint(b * 2)][0] = data.ranges[i] * 1e3;
-    this->laser_ranges[(int)rint(b * 2)][1] = b;
-    b += db;
+  	unsigned int index = rint(i/db);
+  	assert(index >= 0 && index < data.ranges_count);
+    this->laser_ranges[i*2][0] = data.ranges[index] * 1e3;
+//    this->laser_ranges[i*2][1] = index;
+//    b += db;
   }
 
   r = 1000000.0;
