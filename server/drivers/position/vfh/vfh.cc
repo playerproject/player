@@ -568,6 +568,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   double b, r;
   double cone_width = 30.0;
   int count = 361;
+  float sonarDistToCenter = 0.0;
 
   this->laser_count = count;
   assert(this->laser_count <
@@ -585,7 +586,14 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
     {
       if((b < 0) || (rint(b*2) >= count))
         continue;
-      this->laser_ranges[(int)rint(b * 2)][0] = data.ranges[i] * 1e3;
+      // Sonars give distance readings from the perimeter of the robot while lasers give distance
+      // from the laser; hence, typically the distance from a single point, like the center.
+      // Since this version of the VFH+ algorithm was written for lasers and we pass the algorithm
+      // laser ranges, we must make the sonar ranges appear like laser ranges. To do this, we take
+      // into account the offset of a sonar's geometry from the center. Simply add the distance from
+      // the center of the robot to a sonar to the sonar's range reading.
+      sonarDistToCenter = sqrt(pow(this->sonar_poses[i].px,2) + pow(this->sonar_poses[i].py,2));
+      this->laser_ranges[(int)rint(b * 2)][0] = (sonarDistToCenter + data.ranges[i]) * 1e3;
       this->laser_ranges[(int)rint(b * 2)][1] = b;
     }
   }
