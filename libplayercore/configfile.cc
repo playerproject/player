@@ -443,6 +443,12 @@ bool ConfigFile::LoadTokenWord(FILE *file, int *line, int include)
         if (!LoadTokenInclude(file, line, include))
           return false;
       }
+      else if(strcmp(token, "true") == 0 || strcmp(token, "false") == 0 || 
+              strcmp(token, "yes") == 0  || strcmp(token, "no") == 0) 
+      {
+        ungetc(ch, file);
+        AddToken(TokenBool, token, include);
+      }
       else
       {
         ungetc(ch, file);
@@ -963,6 +969,7 @@ bool ConfigFile::ParseTokenWord(int section, int *index, int *line)
       case TokenNum:
       case TokenString:
       case TokenOpenTuple:
+      case TokenBool:
         return ParseTokenField(section, index, line);
       default:
         PARSE_ERR("syntax error 2", *line);
@@ -1095,6 +1102,11 @@ bool ConfigFile::ParseTokenField(int section, int *index, int *line)
         field = AddField(section, GetTokenValue(name), *line);
         if (!ParseTokenTuple(section, field, &i, line))
           return false;
+        *index = i;
+        return true;
+      case TokenBool:
+        field = AddField(section, GetTokenValue(name), *line);
+        AddFieldValue(field, 0, i);
         *index = i;
         return true;
       case TokenSpace:
@@ -1514,6 +1526,41 @@ void ConfigFile::WriteInt(int section, const char *name, int value)
   WriteString(section, name, default_str);
 }
 
+///////////////////////////////////////////////////////////////////////////
+// Read a boolean
+bool ConfigFile::ReadBool(int section, const char* name, bool value)
+{
+  int field = GetField(section, name);
+  if(field < 0) return value;
+  const char* s = GetFieldValue(field, 0);
+  if( strcmp(s, "yes") == 0 || strcmp(s, "true") == 0 || strcmp(s, "1") == 0)
+    return true;
+  else if( strcmp(s, "no") == 0 || strcmp(s, "false") == 0 || strcmp(s, "0") == 0)
+    return false;
+  else
+  {
+    printf("player: Warning: error in config file section %d field %s: Invalid boolean value.", section, name);
+    return value;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Write a boolean
+void ConfigFile::WriteBool(int section, const char *name, bool value)
+{
+  char str[4];
+  snprintf(str, sizeof(str), "%s", value ? "yes" : "no");
+  WriteString(section, name, str);
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Write a boolean compatibly
+void ConfigFile::WriteBool_Compat(int section, const char *name, bool value)
+{
+  char str[2];
+  snprintf(str, sizeof(str), "%s", value ? "1" : "0");
+  WriteString(section, name, str);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // Read a float
