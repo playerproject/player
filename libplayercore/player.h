@@ -3772,9 +3772,9 @@ typedef struct player_simulation_property_int_req
   /** The identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
+  uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** The value of the property */
   int32_t value;
 } player_simulation_property_int_req_t;
@@ -3791,9 +3791,9 @@ typedef struct player_simulation_property_float_req
   /** The identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
+  uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** The value of the property */
   double value;
 } player_simulation_property_float_req_t;
@@ -3809,9 +3809,9 @@ typedef struct player_simulation_property_string_req
   /** The identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
+  uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of the data string. */
   uint32_t value_count;
   /** The data string. */
