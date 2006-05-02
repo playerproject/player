@@ -61,8 +61,7 @@
 #include "playerc.h"
 #include "error.h"
 
-// TODO: expose this timeout value somewhere
-#define REQUEST_TIMEOUT 10.0
+uint request_timeout = 10;
 
 // Have we done one-time intialization work yet?
 static int init_done;
@@ -403,7 +402,7 @@ int playerc_client_request(playerc_client_t *client,
   if (playerc_client_writepacket(client, &req_header, req_data) < 0)
     return -1;
 
-  t = REQUEST_TIMEOUT;
+  t = request_timeout;
 
   // Read packets until we get a reply.  Data packets get queued up
   // for later processing.
@@ -907,5 +906,11 @@ void *playerc_client_dispatch(playerc_client_t *client,
     }
   }
   return NULL;
+}
+
+//  Set the request timeout
+void playerc_client_set_request_timeout(uint seconds)
+{
+  request_timeout = seconds;
 }
 

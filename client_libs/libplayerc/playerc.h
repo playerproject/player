@@ -663,6 +663,12 @@ never return the ID of a proxy other than the client.
 void *playerc_client_read(playerc_client_t *client);
 
 
+/** @brief Set the timeout for client requests. 
+
+@param seconds Seconds to wait for a reply.
+
+*/
+void playerc_client_set_request_timeout(uint seconds);
 
 /** @brief Write data to the server.  @internal
 */
