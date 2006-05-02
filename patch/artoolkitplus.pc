@@ -1,0 +1,8 @@
+prefix=/usr/local/src/artoolkitplus
+
+Name: artoolkitplus
+Description: ARToolkitPlus Augmented Reality library
+Version: 2.0.2
+Requires: 
+Libs: -L${prefix}/lib -lARToolKitPlus
+Cflags: -I${prefix}/include/
