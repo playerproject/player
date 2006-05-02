@@ -191,6 +191,20 @@ class ConfigFile
   /// @returns Returns true if there are unused fields.
   public: bool WarnUnused();
 
+  /// @brief Read a boolean value (one of: yes, no, true, false, 1, 0)
+  /// @param section Section to read.
+  /// @param name Field name
+  /// @param Default value if this field is not present in the file
+  /// @return Returns the field value
+  public: bool ReadBool(int section, const char *name, bool value);
+
+  // Write a bool as "yes" or "no"
+  private: void WriteBool(int section, const char* name, bool value);
+
+  // Write a bool as "1" or "0" (for backward compatability)
+  private: void WriteBool_Compat(int section, const char* name, bool value);
+
+
   /// @brief Read a string value
   /// @param section Section to read.
   /// @param name Field name
@@ -555,7 +569,7 @@ class ConfigFile
   private: enum
     {
       TokenComment,
-      TokenWord, TokenNum, TokenString,
+      TokenWord, TokenNum, TokenString, TokenBool,
       TokenOpenSection, TokenCloseSection,
       TokenOpenTuple, TokenCloseTuple,
       TokenSpace, TokenEOL
