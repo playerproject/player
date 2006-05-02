@@ -61,8 +61,6 @@
 #include "playerc.h"
 #include "error.h"
 
-uint request_timeout = 10;
-
 // Have we done one-time intialization work yet?
 static int init_done;
 
@@ -137,6 +135,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   /* this is the server's default */
   client->mode = PLAYER_DATAMODE_PUSH;
+
+  client->request_timeout = 10.0;
 
   return client;
 }
@@ -402,7 +402,7 @@ int playerc_client_request(playerc_client_t *client,
   if (playerc_client_writepacket(client, &req_header, req_data) < 0)
     return -1;
 
-  t = request_timeout;
+  t = client->request_timeout;
 
   // Read packets until we get a reply.  Data packets get queued up
   // for later processing.
@@ -909,8 +909,8 @@ void *playerc_client_dispatch(playerc_client_t *client,
 }
 
 //  Set the request timeout
-void playerc_client_set_request_timeout(uint seconds)
+void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds)
 {
-  request_timeout = seconds;
+  client->request_timeout = seconds;
 }
 

@@ -472,6 +472,8 @@ typedef struct _playerc_client_t
   /** Server time stamp on the previous packet. */
   double lasttime;
 
+  double request_timeout;
+
 } playerc_client_t;
 
 
@@ -668,7 +670,7 @@ void *playerc_client_read(playerc_client_t *client);
 @param seconds Seconds to wait for a reply.
 
 */
-void playerc_client_set_request_timeout(uint seconds);
+void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds);
 
 /** @brief Write data to the server.  @internal
 */
