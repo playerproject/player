@@ -190,9 +190,6 @@ PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
 PLAYER_ADD_DRIVER([festival],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([fixedtones],[no],[rfftw.h],[],
-                  ["-lrfftw -lfftw"])
-
 PLAYER_ADD_DRIVER([flockofbirds],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([garcia],[no],

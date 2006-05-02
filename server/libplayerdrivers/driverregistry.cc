@@ -226,10 +226,6 @@ void REB_Register(DriverTable *table);
 void Khepera_Register(DriverTable *table);
 #endif
 
-#ifdef INCLUDE_FIXEDTONES
-void FixedTones_Register(DriverTable* table);
-#endif
-
 #ifdef INCLUDE_ACOUSTICS
 void Acoustics_Register(DriverTable* table);
 #endif
@@ -519,10 +515,6 @@ player_register_drivers()
 
 #ifdef INCLUDE_P2OS
   P2OS_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_FIXEDTONES
-  FixedTones_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ACOUSTICS
