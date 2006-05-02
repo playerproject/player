@@ -171,8 +171,9 @@ player_read_func(gpointer* arg)
   // read new data
   if(playerc_mclient_read(gui_data->mclient,-1) <= 0)
   {
-    fprintf(stderr, "Error on read\n");
-    gtk_main_quit();
+    //fprintf(stderr, "Error on read\n");
+    //gtk_main_quit();
+    return(TRUE);
   }
   for(i=0;i<gui_data->num_robots;i++)
   {
