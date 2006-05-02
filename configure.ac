@@ -469,6 +469,7 @@ AC_OUTPUT(Makefile
           server/libplayerdrivers/Makefile
           server/libplayerdrivers/playerdrivers.pc
           server/drivers/Makefile
+          server/drivers/base/Makefile
           server/drivers/gps/Makefile
           server/drivers/shell/Makefile
           server/drivers/mixed/Makefile
@@ -488,6 +489,7 @@ AC_OUTPUT(Makefile
           server/drivers/laser/Makefile
           server/drivers/waveform/Makefile
           server/drivers/blobfinder/Makefile
+          server/drivers/blobfinder/artoolkitplus/Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
           server/drivers/blobfinder/simpleshape/Makefile
@@ -524,8 +526,8 @@ AC_OUTPUT(Makefile
           server/drivers/service_adv/Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile
-	  server/drivers/rfid/Makefile
-	  server/drivers/wsn/Makefile
+          server/drivers/rfid/Makefile
+          server/drivers/wsn/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
@@ -541,8 +543,8 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
-	  examples/plugins/opaquedriver/Makefile
-	  examples/libplayerc/Makefile
+          examples/plugins/opaquedriver/Makefile
+          examples/libplayerc/Makefile
           examples/libplayerc++/Makefile
           utils/Makefile
           utils/playercam/Makefile
