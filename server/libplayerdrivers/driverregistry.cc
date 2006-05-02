@@ -30,6 +30,10 @@
 #include <libplayercore/playercore.h>
 
 /* prototype driver-specific init funcs */
+#ifdef INCLUDE_ARTOOLKITPLUS
+void ARToolkitPlusDriver_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_BUMPERSAFE
 void BumperSafe_Register(DriverTable *table);
 #endif
@@ -300,6 +304,7 @@ void ImageSeq_Register(DriverTable* table);
 
 #ifdef INCLUDE_CAMERACOMPRESS
 void CameraCompress_Register(DriverTable* table);
+void CameraUncompress_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_MDNS
@@ -345,6 +350,10 @@ void SkyetekM1_Register(DriverTable *driverTable);
 void
 player_register_drivers()
 {
+#ifdef INCLUDE_ARTOOLKITPLUS
+  ARToolkitPlusDriver_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_BUMPERSAFE
   BumperSafe_Register(driverTable);
 #endif
@@ -614,6 +623,7 @@ player_register_drivers()
 
 #ifdef INCLUDE_CAMERACOMPRESS
   CameraCompress_Register(driverTable);
+  CameraUncompress_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_MDNS

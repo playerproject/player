@@ -14,7 +14,7 @@ player_DEPENDENCIES = $(top_builddir)/server/libplayerdrivers/libplayerdrivers.l
 # separate lines with backslashes.  It makes the link line look like shit and 
 # hard to parse.  - BPG
 #
-player_LDADD   = -lm $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/libreplace.la
+player_LDADD   = -lm $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/libreplace.la @ARTOOLKITPLUS_LIBS@
 #player_LDADD   = -lm $(top_builddir)/server/libplayerdrivers/.libs/libplayerdrivers.a $(top_builddir)/libplayercore/.libs/libplayercore.a $(top_builddir)/libplayercore/.libs/libplayererror.a $(top_builddir)/libplayertcp/.libs/libplayertcp.a $(top_builddir)/libplayerxdr/.libs/libplayerxdr.a @PLAYER_DRIVER_EXTRA_LIBS@ $(RTKGUI_LIBS) $(top_builddir)/replace/.libs/libreplace.a
 
 player_LDFLAGS = -export-dynamic
