@@ -132,6 +132,9 @@ PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
 
 PLAYER_ADD_DRIVER([amtecpowercube],[no],[],[],[])
 
+PLAYER_ADD_DRIVER([artoolkitplus],[yes],[],[],[],[ARTOOLKITPLUS],[artoolkitplus >= 2.0.2])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
+
 PLAYER_ADD_DRIVER([aodv],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
@@ -284,8 +287,9 @@ PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
-PLAYER_ADD_DRIVER([shapetracker],[no],[],[],[],
+PLAYER_ADD_DRIVER([shapetracker],[yes],[],[],[],
                   [OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([sicklms200],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
@@ -302,8 +306,9 @@ if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[disable 500Kbps comms with SICK])
 fi
 
-PLAYER_ADD_DRIVER([simpleshape],[no],
+PLAYER_ADD_DRIVER([simpleshape],[yes],
                   [],[],[],[OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
@@ -312,8 +317,9 @@ PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/CM_macros.h"],
 
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([upcbarcode],[no],[],[],[],
+PLAYER_ADD_DRIVER([upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
 if  test "x$enable_urglaser" = "xyes"; then
