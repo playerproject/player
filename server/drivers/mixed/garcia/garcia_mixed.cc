@@ -55,7 +55,7 @@ The garcia driver captures
 
 @par Configuration requests
 
-- @ref player_interface_position2d
+- @ref interface_position2d
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_SET_ODOM_REQ :
   - PLAYER_POSITION_RESET_ODOM_REQ :

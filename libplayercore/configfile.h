@@ -194,7 +194,7 @@ class ConfigFile
   /// @brief Read a boolean value (one of: yes, no, true, false, 1, 0)
   /// @param section Section to read.
   /// @param name Field name
-  /// @param Default value if this field is not present in the file
+  /// @param value Default value if this field is not present in the file
   /// @return Returns the field value
   public: bool ReadBool(int section, const char *name, bool value);
 
