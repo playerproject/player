@@ -79,6 +79,45 @@
 	}
 }
 
+// typemap for passing 3d points into the graphics3d interface
+%typemap(python,in) player_point_3d_t pts[]
+{
+	// Check if is a list
+	if (PyList_Check ($input))
+	{
+		int size = PyList_Size ($input);
+		int ii = 0;
+		$1 = (player_point_3d_t*) malloc (size * sizeof (player_point_3d_t));
+		for (ii = 0; ii < size; ii++)
+		{
+			PyObject *o = PyList_GetItem ($input, ii);
+			if (PyTuple_Check (o))
+			{
+				if (PyTuple_GET_SIZE (o) != 3)
+				{
+					PyErr_SetString (PyExc_ValueError, "tuples must have 3 items");
+					free ($1);
+					return NULL;
+				}
+				$1[ii].px = PyFloat_AsDouble (PyTuple_GET_ITEM (o, 0));
+				$1[ii].py = PyFloat_AsDouble (PyTuple_GET_ITEM (o, 1));
+				$1[ii].pz = PyFloat_AsDouble (PyTuple_GET_ITEM (o, 2));
+			}
+			else
+			{
+				PyErr_SetString (PyExc_TypeError, "list must contain tuples");
+				free ($1);
+				return NULL;
+			}
+		}
+	}
+	else
+	{
+		PyErr_SetString (PyExc_TypeError, "not a list");
+		return NULL;
+	}
+}
+
 // typemap to free the array created in the previous typemap
 %typemap(python,freearg) player_point2d_t pts[]
 {
