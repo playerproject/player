@@ -52,9 +52,13 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <netdb.h>       // for gethostbyname()
 #include <errno.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 
 #include <replace/replace.h>  // for poll(2)
 
@@ -90,13 +94,28 @@ int playerc_client_pop(playerc_client_t *client,
                        player_msghdr_t *header, void *data);
 void *playerc_client_dispatch(playerc_client_t *client,
                               player_msghdr_t *header, void *data);
-#if 0
-void *playerc_client_dispatch_geom(playerc_client_t *client,
-                              player_msghdr_t *header, void *data, int len);
-void *playerc_client_dispatch_config(playerc_client_t *client,
-                              player_msghdr_t *header, void *data, int len);
-#endif
 
+int timed_recv(int s, void *buf, size_t len, int flags);
+
+// this method performs a select before the read so we can have a timeout
+// this stops the client hanging forever if the target disappears from the network
+int timed_recv(int s, void *buf, size_t len, int flags)
+{
+  struct pollfd ufd;
+  int ret;
+  
+  ufd.fd = s;
+  ufd.events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
+  
+  ret = poll (&ufd, 1, 30000);
+  if (ret <= 0)
+  {
+    printf("poll returned %d\n",ret);
+    return ret;
+  }
+  
+  return recv(s,buf,len,flags);
+}
 
 // Create a player client
 playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *host, int port)
@@ -146,6 +165,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 void playerc_client_destroy(playerc_client_t *client)
 {
   free(client->data);
+  free(client->xdrdata);
   free(client->host);
   free(client);
   return;
@@ -158,12 +178,29 @@ int playerc_client_connect(playerc_client_t *client)
   struct hostent* entp;
   struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
+  int old_flags;
+  int ret;
+  double t;
+  struct timeval last;
+  struct timeval curr;
 
   // Construct socket
   client->sock = socket(PF_INET, SOCK_STREAM, 0);
   if (client->sock < 0)
   {
     PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+    return -1;
+  }
+
+  // set socket to be non blocking
+  if ((old_flags = fcntl(client->sock, F_GETFL)) < 0)
+  {
+    PLAYERC_ERR1("error getting socket flags [%s]", strerror(errno));
+    return -1;
+  }
+  if (fcntl(client->sock, F_SETFL, old_flags | O_NONBLOCK) < 0)
+  {
+    PLAYERC_ERR1("error setting socket non-blocking [%s]", strerror(errno));
     return -1;
   }
 
@@ -180,16 +217,31 @@ int playerc_client_connect(playerc_client_t *client)
   server.sin_port = htons(client->port);
 
   // Connect the socket
-  if (connect(client->sock, (struct sockaddr*) &server, sizeof(server)) < 0)
+  t = client->request_timeout;
+  do
   {
-  	playerc_client_disconnect(client);
-    PLAYERC_ERR3("connect call on [%s:%d] failed with error [%s]",
-                 client->host, client->port, strerror(errno));
+    if (t <= 0)
+    {
+      PLAYERC_ERR2("connect call on [%s:%d] timed out",
+                   client->host, client->port);
+      return -1;
+    }
+    gettimeofday(&last,NULL);
+    ret = connect(client->sock, (struct sockaddr*) &server, sizeof(server));
+    gettimeofday(&curr,NULL);
+    t -= ((curr.tv_sec + curr.tv_usec/1e6) -
+        (last.tv_sec + last.tv_usec/1e6));
+  } while (ret == -1 && (errno == EALREADY || errno == EAGAIN || errno == EINPROGRESS));
+  if (ret < 0)
+  {
+    playerc_client_disconnect(client);
+    PLAYERC_ERR4("connect call on [%s:%d] failed with error [%d:%s]",
+                 client->host, client->port, errno, strerror(errno));
     return -1;
   }
 
   // Get the banner
-  if (recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
+  if (timed_recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
   {
   	playerc_client_disconnect(client);
     PLAYERC_ERR("incomplete initialization string");
@@ -670,7 +722,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   // Read header
   for (bytes = 0; bytes < PLAYERXDR_MSGHDR_SIZE;)
   {
-    nbytes = recv(client->sock, client->xdrdata + bytes,
+    nbytes = timed_recv(client->sock, client->xdrdata + bytes,
                   PLAYERXDR_MSGHDR_SIZE - bytes, 0);
     if (nbytes <= 0)
     {
@@ -706,7 +758,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   total_bytes = 0;
   while (total_bytes < header->size)
   {
-    bytes = recv(client->sock,
+    bytes = timed_recv(client->sock,
                  client->xdrdata + PLAYERXDR_MSGHDR_SIZE + total_bytes,
                  header->size - total_bytes, 0);
     if (bytes <= 0)
