@@ -26,11 +26,14 @@
 
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_lifomcom lifomcom
+/** @defgroup driver_lifomcom lifomcom (deprecated)
  * @brief Queue-based client-client communication
 
 @todo This driver is currently disabled because it needs to be updated to
 the Player 2.0 API.
+
+@deprecated Some of the functionality of this interface can be achieved through the @ref
+driver_relay driver, or writing a virtual driver.
 
 The lifomcom driver provides a last-in-first-out (LIFO) multi-stack
 communication system with which clients can exchange data through an

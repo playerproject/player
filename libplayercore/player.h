@@ -2434,8 +2434,11 @@ typedef struct player_map_data_vector
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
- * @defgroup interface_mcom mcom
+ * @defgroup interface_mcom mcom (deprecated)
  * @brief Client - client communication.
+
+@deprecated Most of the functionality of this interface can be achieved through the @ref
+interface_opaque interface.
 
 The @p mcom interface is designed for exchanging information between
 clients.  A client sends a message of a given "type" and "channel". This
@@ -2530,11 +2533,11 @@ a plugin.
 /** Data subtype: generic state */
 #define PLAYER_OPAQUE_DATA_STATE             1
 
-/** Data subtype: generic command */
-#define PLAYER_OPAQUE_CMD                    2
+/** Cmd subtype: generic command */
+#define PLAYER_OPAQUE_CMD                    1
 
-/** Data subtype: generic request */
-#define PLAYER_OPAQUE_REQ                    3
+/** Req subtype: generic request */
+#define PLAYER_OPAQUE_REQ                    1
 
 /** Maximum message size is 1 MB */
 #define PLAYER_OPAQUE_MAX_SIZE            1024

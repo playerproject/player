@@ -45,6 +45,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               localizeproxy.cc \
                               logproxy.cc \
                               mapproxy.cc \
+                              opaqueproxy.cc \
                               plannerproxy.cc \
                               position1dproxy.cc \
                               position2dproxy.cc \
@@ -56,7 +57,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               sonarproxy.cc \
                               speechproxy.cc \
                               wifiproxy.cc \
-			      wsnproxy.cc
+                              wsnproxy.cc
 
 # not in libplayerc yet \
                               aioproxy.cc \

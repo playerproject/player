@@ -46,6 +46,10 @@ void GarminNMEA_Register(DriverTable* table);
 void MapFile_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_RELAY
+void Relay_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_VMAPFILE
 void VMapFile_Register(DriverTable* table);
 #endif
@@ -364,6 +368,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_MAPFILE
   MapFile_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_RELAY
+  Relay_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_VMAPFILE
