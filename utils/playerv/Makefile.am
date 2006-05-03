@@ -15,6 +15,7 @@ playerv_SOURCES = playerv.c \
                   error.h \
                   opt.c \
                   opt.h \
+		  dev_aio.c \
                   dev_blobfinder.c \
                   dev_bumper.c \
                   dev_dio.c \
