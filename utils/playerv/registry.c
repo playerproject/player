@@ -31,6 +31,15 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
 {
   switch (device->addr.interf)
   {
+    case PLAYER_AIO_CODE:
+      device->proxy = aio_create(mainwnd, opt, client,
+                                    device->addr.index,
+                                    device->drivername,
+                                    device->subscribe);
+      device->fndestroy = (fndestroy_t) aio_destroy;
+      device->fnupdate = (fnupdate_t) aio_update;
+      break;
+
      case PLAYER_BUMPER_CODE:
        device->proxy = bumper_create(mainwnd, opt, client,
                                    device->addr.index,

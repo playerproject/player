@@ -140,8 +140,8 @@ void dio_draw(dio_t *dio)
     }
   }
 
-   rtk_fig_color_rgb32(dio->fig, COLOR_WIFI);
-   rtk_fig_text(dio->fig, +1, +1, 0, str);
+   rtk_fig_color_rgb32(dio->fig, COLOR_DIO);
+   rtk_fig_text(dio->fig, +1, +0.5, 0, str);
 
   return;
 }

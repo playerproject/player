@@ -43,6 +43,8 @@
 
 #define COLOR_GRID_MAJOR         0xC0C0C0
 #define COLOR_GRID_MINOR         0xE0E0E0
+#define COLOR_AIO                0x000000
+#define COLOR_DIO                0x000000
 #define COLOR_LASER              0x0000C0
 #define COLOR_LASER_EMP          0xD0D0FF
 #define COLOR_LASER_OCC          0x0000C0
@@ -655,6 +657,43 @@ void wifi_destroy(wifi_t *wifi);
 void wifi_update(wifi_t *wifi);
 
 /***************************************************************************
+ * Aio device
+ ***************************************************************************/
+
+// Aio device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // aio device proxy
+  playerc_aio_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+
+  // Figures
+  rtk_fig_t *fig;
+
+} aio_t;
+
+
+// Create a aio device
+aio_t *aio_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                  int index,  const char *drivername, int subscribe);
+
+// Destroy a aio device
+void aio_destroy(aio_t *aio);
+
+// Update a aio device
+void aio_update(aio_t *aio);
+
+
+/***************************************************************************
  * Dio device
  ***************************************************************************/
 
@@ -680,14 +719,14 @@ typedef struct
 } dio_t;
 
 
-// Create a wifi device
+// Create a dio device
 dio_t *dio_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
                    int index,  const char *drivername, int subscribe);
 
-// Destroy a wifi device
+// Destroy a dio device
 void dio_destroy(dio_t *dio);
 
-// Update a wifi device
+// Update a dio device
 void dio_update(dio_t *dio);
 
 
