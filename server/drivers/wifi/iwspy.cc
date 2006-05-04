@@ -35,9 +35,6 @@
 /** @defgroup driver_iwspy iwspy
  * @brief Linux iwspy access
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 This driver works like iwspy; it uses the linux wireless extensions
 to get signal strengths to wireless NICS.
 
