@@ -174,7 +174,7 @@ PLAYER_ADD_DRIVER([camerauvc],[yes],[linux/videodev.h],[],[])
 
 PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
-PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])
+PLAYER_ADD_DRIVER([canonvcc4],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
 
