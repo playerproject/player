@@ -135,7 +135,7 @@ PLAYER_ADD_DRIVER([amtecpowercube],[yes],[],[],[])
 PLAYER_ADD_DRIVER([artoolkitplus],[yes],[],[],[],[ARTOOLKITPLUS],[artoolkitplus >= 2.0.2])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
 
-PLAYER_ADD_DRIVER([aodv],[no],[],[],[])
+PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
