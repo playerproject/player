@@ -99,7 +99,7 @@ AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 
 dnl Do we have Python development tools?
 AC_MSG_CHECKING([for the distutils Python package])
-  ac_distutils_result=`python -c "import distutils" 2>&1`
+  ac_distutils_result=`python -c "import distutils" 2>&1 | grep ImportError`
   if test -z "$ac_distutils_result"; then
     AC_MSG_RESULT([yes])
     have_pythondev=yes
