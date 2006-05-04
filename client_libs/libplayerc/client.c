@@ -95,11 +95,11 @@ int playerc_client_pop(playerc_client_t *client,
 void *playerc_client_dispatch(playerc_client_t *client,
                               player_msghdr_t *header, void *data);
 
-int timed_recv(int s, void *buf, size_t len, int flags);
+int timed_recv(int s, void *buf, size_t len, int flags, int timeout);
 
 // this method performs a select before the read so we can have a timeout
 // this stops the client hanging forever if the target disappears from the network
-int timed_recv(int s, void *buf, size_t len, int flags)
+int timed_recv(int s, void *buf, size_t len, int flags, int timeout)
 {
   struct pollfd ufd;
   int ret;
@@ -107,10 +107,10 @@ int timed_recv(int s, void *buf, size_t len, int flags)
   ufd.fd = s;
   ufd.events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
   
-  ret = poll (&ufd, 1, 30000);
+  ret = poll (&ufd, 1, timeout);
   if (ret <= 0)
   {
-    printf("poll returned %d\n",ret);
+    PLAYERC_ERR2("poll call failed with error [%d:%s]", errno, strerror(errno));
     return ret;
   }
   
@@ -240,15 +240,28 @@ int playerc_client_connect(playerc_client_t *client)
     return -1;
   }
 
+  // set socket to be blocking
+  if ((old_flags = fcntl(client->sock, F_GETFL)) < 0)
+  {
+    PLAYERC_ERR1("error getting socket flags [%s]", strerror(errno));
+    return -1;
+  }
+  if (fcntl(client->sock, F_SETFL, old_flags & ~O_NONBLOCK) < 0)
+  {
+    PLAYERC_ERR1("error setting socket non-blocking [%s]", strerror(errno));
+    return -1;
+  }
+ 
+  
   // Get the banner
-  if (timed_recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
+  if (timed_recv(client->sock, banner, sizeof(banner), 0, 30000) < sizeof(banner))
   {
   	playerc_client_disconnect(client);
     PLAYERC_ERR("incomplete initialization string");
     return -1;
   }
 
-  //printf("[%s] connected on [%s:%d] with sock %d", banner, client->host, client->port, client->sock);
+  PLAYER_MSG4(3,"[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
   return 0;
 }
 
@@ -514,7 +527,7 @@ int playerc_client_request(playerc_client_t *client,
     }
   }
 
-  PLAYERC_ERR("timed out waiting for server reply to request");
+  PLAYERC_ERR4("timed out waiting for server reply to request %d:%d:%d:%d", req_header.addr.interf, req_header.addr.index, req_header.type, req_header.subtype);
   return -1;
 }
 
@@ -723,7 +736,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   for (bytes = 0; bytes < PLAYERXDR_MSGHDR_SIZE;)
   {
     nbytes = timed_recv(client->sock, client->xdrdata + bytes,
-                  PLAYERXDR_MSGHDR_SIZE - bytes, 0);
+                        PLAYERXDR_MSGHDR_SIZE - bytes, 0, client->request_timeout*1e3);
     if (nbytes <= 0)
     {
       PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
@@ -760,7 +773,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   {
     bytes = timed_recv(client->sock,
                  client->xdrdata + PLAYERXDR_MSGHDR_SIZE + total_bytes,
-                 header->size - total_bytes, 0);
+                 header->size - total_bytes, 0, client->request_timeout*1e3);
     if (bytes <= 0)
     {
       PLAYERC_ERR1("recv on body failed with error [%s]", strerror(errno));
@@ -801,7 +814,7 @@ int playerc_client_readpacket(playerc_client_t *client,
 int playerc_client_writepacket(playerc_client_t *client,
                                player_msghdr_t *header, char *data)
 {
-  int bytes;
+  int bytes, ret, length;
   player_pack_fn_t packfunc;
   int encode_msglen;
   struct timeval curr;
@@ -853,20 +866,23 @@ int playerc_client_writepacket(playerc_client_t *client,
   }
 
   // Send the message
-  bytes = send(client->sock, client->xdrdata,
-               PLAYERXDR_MSGHDR_SIZE + encode_msglen, 0);
-  if (bytes < 0)
+  length = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
+  bytes = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
+  do 
   {
-    PLAYERC_ERR1("send on body failed with error [%s]", strerror(errno));
-    playerc_client_disconnect(client);
-    return -1;
-  }
-  else if (bytes < (PLAYERXDR_MSGHDR_SIZE + encode_msglen))
-  {
-    PLAYERC_ERR2("sent incomplete message, %d of %d bytes",
-                 bytes, PLAYERXDR_MSGHDR_SIZE + encode_msglen);
-    return -1;
-  }
+    ret = send(client->sock, &client->xdrdata[length-bytes],
+               bytes, 0);
+    if (ret > 0)
+    {
+      bytes -= ret;
+    }
+    else if (ret < 0 && (errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK))
+    {
+      PLAYERC_ERR2("send on body failed with error [%d:%s]", errno, strerror(errno));
+      playerc_client_disconnect(client);
+      return -1;
+    }
+  } while (bytes);
 
   return 0;
 }
