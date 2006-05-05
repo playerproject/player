@@ -198,7 +198,8 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GARCIA_LIBS"
 
 PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([imageseq],[no],[],[],[],[OPENCV],[opencv])
+PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
                   [],["-lisense"])
