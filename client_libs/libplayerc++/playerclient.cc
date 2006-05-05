@@ -41,10 +41,12 @@
 
 using namespace PlayerCc;
 
-PlayerClient::PlayerClient(const std::string aHostname, uint aPort) :
+PlayerClient::PlayerClient(const std::string aHostname, uint aPort, 
+                           int aTransport) :
   mClient(NULL),
   mHostname(aHostname),
-  mPort(aPort)
+  mPort(aPort),
+  mTransport(aTransport)
 {
 #ifdef HAVE_BOOST_THREAD
   mIsStop=true;
@@ -73,6 +75,7 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
   LOG("Connecting " << *this);
 
   mClient = playerc_client_create(NULL, aHostname.c_str(), aPort);
+  playerc_client_set_transport(mClient, mTransport);
   if (mClient == NULL)
   {
     throw PlayerError("PlayerClient::Connect()", playerc_error_str());

@@ -142,6 +142,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   // TODO: make this memory allocation more conservative
   client->data = (char*)malloc(PLAYER_MAX_MESSAGE_SIZE);
   client->xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
+  client->xdrdata_len = 0;
   assert(client->data);
   assert(client->xdrdata);
 
@@ -155,7 +156,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   /* this is the server's default */
   client->mode = PLAYER_DATAMODE_PUSH;
 
-  client->request_timeout = 10.0;
+  client->request_timeout = 1.0;
 
   return client;
 }
@@ -172,49 +173,71 @@ void playerc_client_destroy(playerc_client_t *client)
 }
 
 
+// Set the transport type
+void playerc_client_set_transport(playerc_client_t* client,
+                                  unsigned int transport)
+{
+  client->transport = transport;
+}
+
 // Connect to the server
 int playerc_client_connect(playerc_client_t *client)
 {
   struct hostent* entp;
-  struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
   int old_flags;
   int ret;
   double t;
   struct timeval last;
   struct timeval curr;
+  struct sockaddr_in clientaddr;
 
   // Construct socket
-  client->sock = socket(PF_INET, SOCK_STREAM, 0);
-  if (client->sock < 0)
+  if(client->transport == PLAYERC_TRANSPORT_UDP)
   {
-    PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
-    return -1;
-  }
+    if((client->sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+      PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+      return -1;
+    }
+    /* 
+     * INADDR_ANY indicates that any network interface (IP address)
+     * for the local host may be used (presumably the OS will choose the 
+     * right one).
+     *
+     * Specifying sin_port = 0 allows the system to choose the port.
+     */
+    clientaddr.sin_family = PF_INET;
+    clientaddr.sin_addr.s_addr = INADDR_ANY;
+    clientaddr.sin_port = 0;
 
-  // set socket to be non blocking
-  if ((old_flags = fcntl(client->sock, F_GETFL)) < 0)
-  {
-    PLAYERC_ERR1("error getting socket flags [%s]", strerror(errno));
-    return -1;
+    if(bind(client->sock, 
+            (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < -1) 
+    {
+      PLAYERC_ERR1("bind call failed with error [%s]", strerror(errno));
+      return(-1);
+    }
   }
-  if (fcntl(client->sock, F_SETFL, old_flags | O_NONBLOCK) < 0)
+  else
   {
-    PLAYERC_ERR1("error setting socket non-blocking [%s]", strerror(errno));
-    return -1;
+    if((client->sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+    {
+      PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+      return -1;
+    }
   }
 
   // Construct server address
   entp = gethostbyname(client->host);
   if (entp == NULL)
   {
-  	playerc_client_disconnect(client);
+    playerc_client_disconnect(client);
     PLAYERC_ERR1("gethostbyname failed with error [%s]", strerror(errno));
     return -1;
   }
-  server.sin_family = PF_INET;
-  memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
-  server.sin_port = htons(client->port);
+  client->server.sin_family = PF_INET;
+  memcpy(&client->server.sin_addr, entp->h_addr_list[0], entp->h_length);
+  client->server.sin_port = htons(client->port);
 
   // Connect the socket
   t = client->request_timeout;
@@ -227,10 +250,11 @@ int playerc_client_connect(playerc_client_t *client)
       return -1;
     }
     gettimeofday(&last,NULL);
-    ret = connect(client->sock, (struct sockaddr*) &server, sizeof(server));
+    ret = connect(client->sock, (struct sockaddr*)&client->server, 
+                  sizeof(client->server));
     gettimeofday(&curr,NULL);
     t -= ((curr.tv_sec + curr.tv_usec/1e6) -
-        (last.tv_sec + last.tv_usec/1e6));
+          (last.tv_sec + last.tv_usec/1e6));
   } while (ret == -1 && (errno == EALREADY || errno == EAGAIN || errno == EINPROGRESS));
   if (ret < 0)
   {
@@ -238,6 +262,16 @@ int playerc_client_connect(playerc_client_t *client)
     PLAYERC_ERR4("connect call on [%s:%d] failed with error [%d:%s]",
                  client->host, client->port, errno, strerror(errno));
     return -1;
+  }
+
+  // For UDP, send an empty msg to get things going
+  if(client->transport == PLAYERC_TRANSPORT_UDP)
+  {
+    if(send(client->sock, NULL, 0, 0) < 0)
+    {
+      PLAYERC_ERR1("gethostbyname failed with error [%s]", strerror(errno));
+      return -1;
+    }
   }
 
   // set socket to be blocking
@@ -256,7 +290,7 @@ int playerc_client_connect(playerc_client_t *client)
   // Get the banner
   if (timed_recv(client->sock, banner, sizeof(banner), 0, 30000) < sizeof(banner))
   {
-  	playerc_client_disconnect(client);
+    playerc_client_disconnect(client);
     PLAYERC_ERR("incomplete initialization string");
     return -1;
   }
@@ -722,7 +756,7 @@ int playerc_client_readpacket(playerc_client_t *client,
                               player_msghdr_t *header,
                               char *data)
 {
-  int nbytes, bytes, total_bytes;
+  int nbytes;
   player_pack_fn_t packfunc;
   int decode_msglen;
 
@@ -731,25 +765,19 @@ int playerc_client_readpacket(playerc_client_t *client,
     PLAYERC_WARN("no socket to write to");
     return -1;
   }
-
-  // Read header
-  for (bytes = 0; bytes < PLAYERXDR_MSGHDR_SIZE;)
+  
+  while(client->xdrdata_len < PLAYERXDR_MSGHDR_SIZE)
   {
-    nbytes = timed_recv(client->sock, client->xdrdata + bytes,
-                        PLAYERXDR_MSGHDR_SIZE - bytes, 0, client->request_timeout*1e3);
+    nbytes = timed_recv(client->sock, client->xdrdata + client->xdrdata_len,
+                        PLAYERXDR_MAX_MESSAGE_SIZE - client->xdrdata_len,
+                        0, client->request_timeout * 1e3);
     if (nbytes <= 0)
     {
-      PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
+      PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
       playerc_client_disconnect(client);
       return -1;
     }
-    bytes += nbytes;
-  }
-  if (bytes < PLAYERXDR_MSGHDR_SIZE)
-  {
-    PLAYERC_ERR2("got incomplete header, %d of %u bytes",
-                 bytes, PLAYERXDR_MSGHDR_SIZE);
-    return -1;
+    client->xdrdata_len += nbytes;
   }
 
   // Unpack the header
@@ -760,27 +788,30 @@ int playerc_client_readpacket(playerc_client_t *client,
     PLAYERC_ERR("failed to unpack header");
     return -1;
   }
-
   if (header->size > PLAYERXDR_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE)
   {
     PLAYERC_ERR1("packet is too large, %d bytes", header->size);
     return -1;
   }
 
-  // Read in the body of the packet
-  total_bytes = 0;
-  while (total_bytes < header->size)
+  // Slide over the header
+  memmove(client->xdrdata, 
+          client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
+          client->xdrdata_len - PLAYERXDR_MSGHDR_SIZE);
+  client->xdrdata_len -= PLAYERXDR_MSGHDR_SIZE;
+
+  while(client->xdrdata_len < header->size)
   {
-    bytes = timed_recv(client->sock,
-                 client->xdrdata + PLAYERXDR_MSGHDR_SIZE + total_bytes,
-                 header->size - total_bytes, 0, client->request_timeout*1e3);
-    if (bytes <= 0)
+    nbytes = timed_recv(client->sock, client->xdrdata + client->xdrdata_len,
+                        PLAYERXDR_MAX_MESSAGE_SIZE - client->xdrdata_len,
+                        0, client->request_timeout*1e3);
+    if (nbytes <= 0)
     {
-      PLAYERC_ERR1("recv on body failed with error [%s]", strerror(errno));
+      PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
       playerc_client_disconnect(client);
       return -1;
     }
-    total_bytes += bytes;
+    client->xdrdata_len += nbytes;
   }
 
   // Locate the appropriate unpacking function for the message body
@@ -795,16 +826,23 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Unpack the body
-  if((decode_msglen = (*packfunc)(client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
+  if((decode_msglen = (*packfunc)(client->xdrdata,
                                   header->size, data, PLAYERXDR_DECODE)) < 0)
   {
-    PLAYERC_ERR3("deconding failed on message from %u:%u with type %u",
+    PLAYERC_ERR3("decoding failed on message from %u:%u with type %u",
                  header->addr.interf, header->addr.index, header->subtype);
     return(-1);
   }
 
+  // Slide over the body
+  memmove(client->xdrdata, 
+          client->xdrdata + header->size,
+          client->xdrdata_len - header->size);
+  client->xdrdata_len -= header->size;
+
   // Rewrite the header with the decoded message length
   header->size = decode_msglen;
+
 
   return 0;
 }

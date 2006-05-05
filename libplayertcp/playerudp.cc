@@ -39,18 +39,18 @@
 #include <libplayercore/playercore.h>
 #include <libplayerxdr/playerxdr.h>
 
-#include "playertcp.h"
+#include "playerudp.h"
 #include "socket_util.h"
-#include "remote_driver.h"
+//#include "remote_driver.h"
 
-typedef struct playertcp_listener
+typedef struct playerudp_listener
 {
   int fd;
   int port;
-} playertcp_listener_t;
+} playerudp_listener_t;
 
-/** @brief A TCP Connection */
-typedef struct playertcp_conn
+/** @brief A UDP Connection */
+typedef struct playerudp_conn
 {
   /** Marked for deletion? */
   int del;
@@ -88,16 +88,16 @@ typedef struct playertcp_conn
    * TCPRemoteDriver uses this flag to know when the connection has been
    * closed, and thus that it should stop publishing to its queue. */
   int* kill_flag;
-} playertcp_conn_t;
+} playerudp_conn_t;
 
 
-PlayerTCP::PlayerTCP()
+PlayerUDP::PlayerUDP()
 {
   this->thread = pthread_self();
   this->size_clients = 0;
   this->num_clients = 0;
-  this->clients = (playertcp_conn_t*)NULL;
-  this->client_ufds = (struct pollfd*)NULL;
+  this->clients = (playerudp_conn_t*)NULL;
+  //this->client_ufds = (struct pollfd*)NULL;
 
   pthread_mutexattr_t mutex_attr;
   pthread_mutexattr_init(&mutex_attr);
@@ -108,13 +108,14 @@ PlayerTCP::PlayerTCP()
   pthread_mutex_init(&this->clients_mutex,&mutex_attr);
 
   this->num_listeners = 0;
-  this->listeners = (playertcp_listener_t*)NULL;
+  this->listeners = (playerudp_listener_t*)NULL;
   this->listen_ufds = (struct pollfd*)NULL;
 
   // Create a buffer to hold decoded incoming messages
   this->decode_readbuffersize = PLAYER_MAX_MESSAGE_SIZE;
   this->decode_readbuffer = (char*)malloc(this->decode_readbuffersize);
   assert(this->decode_readbuffer);
+  this->decode_readbufferlen = 0;
 
   if(hostname_to_packedaddr(&this->host,"localhost") < 0)
   {
@@ -122,28 +123,28 @@ PlayerTCP::PlayerTCP()
     this->host = 0;
   }
 
-  deviceTable->AddRemoteDriverFn(TCPRemoteDriver::TCPRemoteDriver_Init,this);
+  //deviceTable->AddRemoteDriverFn(TCPRemoteDriver::TCPRemoteDriver_Init,this);
 }
 
-PlayerTCP::~PlayerTCP()
+PlayerUDP::~PlayerUDP()
 {
   for(int i=0;i<this->num_clients;i++)
     this->Close(i);
   free(this->clients);
-  free(this->client_ufds);
+  //free(this->client_ufds);
   free(this->listeners);
   free(this->listen_ufds);
   free(this->decode_readbuffer);
 }
 
 int
-PlayerTCP::Listen(int* ports, int num_ports)
+PlayerUDP::Listen(int* ports, int num_ports)
 {
   int tmp = this->num_listeners;
   this->num_listeners += num_ports;
-  this->listeners = (playertcp_listener_t*)realloc(this->listeners,
+  this->listeners = (playerudp_listener_t*)realloc(this->listeners,
                                                    this->num_listeners *
-                                                   sizeof(playertcp_listener_t));
+                                                   sizeof(playerudp_listener_t));
   this->listen_ufds = (struct pollfd*)realloc(this->listen_ufds,
                                               this->num_listeners *
                                               sizeof(struct pollfd));
@@ -153,8 +154,8 @@ PlayerTCP::Listen(int* ports, int num_ports)
   for(int i=tmp;i<this->num_listeners;i++)
   {
     if((this->listeners[i].fd =
-        create_and_bind_socket(1,this->host,ports[i],
-                               PLAYER_TRANSPORT_TCP,200)) < 0)
+        create_and_bind_socket(0,this->host,ports[i],
+                               PLAYER_TRANSPORT_UDP,200)) < 0)
     {
       PLAYER_ERROR("create_and_bind_socket() failed");
       return(-1);
@@ -171,47 +172,39 @@ PlayerTCP::Listen(int* ports, int num_ports)
 
 // Should be called with client_mutex locked
 MessageQueue*
-PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
+PlayerUDP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
                      unsigned int local_port,
-                     int newsock,
+                     int sock,
                      bool send_banner,
                      int* kill_flag)
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
+  socklen_t addrlen = sizeof(struct sockaddr_in);
 
   int j = this->num_clients;
   // Do we need to allocate another spot?
   if(j == this->size_clients)
   {
     this->size_clients++;
-    this->clients = (playertcp_conn_t*)realloc(this->clients,
+    this->clients = (playerudp_conn_t*)realloc(this->clients,
                                                this->size_clients *
-                                               sizeof(playertcp_conn_t));
+                                               sizeof(playerudp_conn_t));
     assert(this->clients);
-
-    this->client_ufds = (struct pollfd*)realloc(this->client_ufds,
-                                                this->size_clients *
-                                                sizeof(struct pollfd));
-    assert(this->client_ufds);
   }
 
-  memset(this->clients + j, 0, sizeof(playertcp_conn_t));
+  memset(this->clients + j, 0, sizeof(playerudp_conn_t));
   // Store the client's info
   this->clients[j].valid = 1;
   this->clients[j].del = 0;
   this->clients[j].host = local_host;
   this->clients[j].port = local_port;
-  this->clients[j].fd = newsock;
-  if(cliaddr)
-    this->clients[j].addr = *cliaddr;
+  this->clients[j].fd = sock;
+  assert(cliaddr);
+  this->clients[j].addr = *cliaddr;
   this->clients[j].dev_subs = NULL;
   this->clients[j].num_dev_subs = 0;
   this->clients[j].kill_flag = kill_flag;
-
-  // Set up for later use of poll
-  this->client_ufds[j].fd = this->clients[j].fd;
-  this->client_ufds[j].events = POLLIN;
 
   // Create an outgoing queue for this client
   this->clients[j].queue =
@@ -219,14 +212,14 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   assert(this->clients[j].queue);
 
   // Create a buffer to hold incoming messages
-  this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;
+  this->clients[j].readbuffersize = PLAYERUDP_READBUFFER_SIZE;
   this->clients[j].readbuffer =
           (char*)calloc(1,this->clients[j].readbuffersize);
   assert(this->clients[j].readbuffer);
   this->clients[j].readbufferlen = 0;
 
   // Create a buffer to hold outgoing messages
-  this->clients[j].writebuffersize = PLAYERTCP_WRITEBUFFER_SIZE;
+  this->clients[j].writebuffersize = PLAYERUDP_WRITEBUFFER_SIZE;
   this->clients[j].writebuffer =
           (char*)calloc(1,this->clients[j].writebuffersize);
   assert(this->clients[j].writebuffer);
@@ -239,83 +232,24 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
     memset(data,0,sizeof(data));
     snprintf((char*)data, sizeof(data)-1, "%s%s",
              PLAYER_IDENT_STRING, playerversion);
-    if(write(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN) < 0)
+    if(sendto(this->clients[j].fd, (void*)data, PLAYER_IDENT_STRLEN, 0,
+              (struct sockaddr*)&this->clients[j].addr, addrlen) < 0)
     {
       PLAYER_ERROR("failed to send ident string");
     }
   }
 
-  PLAYER_MSG3(1, "accepted TCP client %d on port %d, fd %d",
-              j, this->clients[j].port, this->clients[j].fd);
+  PLAYER_MSG2(1, "accepted UDP client %d on port %d", j, this->clients[j].port);
 
   return(this->clients[j].queue);
 }
 
-int
-PlayerTCP::Accept(int timeout)
-{
-  int num_accepts;
-  int newsock;
-  struct sockaddr_in cliaddr;
-  socklen_t sender_len;
-
-  // Look for new connections
-  if((num_accepts = poll(this->listen_ufds, num_listeners, timeout)) < 0)
-  {
-    // Got interrupted by a signal; no problem
-    if(errno == EINTR)
-      return(0);
-
-    // A genuine problem
-    PLAYER_ERROR1("poll() failed: %s", strerror(errno));
-    return(-1);
-  }
-
-  if(!num_accepts)
-    return(0);
-
-  for(int i=0; (i<num_listeners) && (num_accepts>0); i++)
-  {
-    if(this->listen_ufds[i].revents & POLLIN)
-    {
-      sender_len = sizeof(cliaddr);
-      memset(&cliaddr, 0, sizeof(cliaddr));
-
-      // Shouldn't block here
-      if((newsock = accept(this->listen_ufds[i].fd,
-                           (struct sockaddr*)&cliaddr,
-                           &sender_len)) == -1)
-      {
-        PLAYER_ERROR1("accept() failed: %s", strerror(errno));
-        return(-1);
-      }
-
-      // make the socket non-blocking
-      if(fcntl(newsock, F_SETFL, O_NONBLOCK) == -1)
-      {
-        PLAYER_ERROR1("fcntl() failed: %s", strerror(errno));
-        close(newsock);
-        return(-1);
-      }
-
-      this->AddClient(&cliaddr,
-                      this->host,
-                      this->listeners[i].port,
-                      newsock, true, NULL);
-
-      num_accepts--;
-    }
-  }
-
-  return(0);
-}
-
 void
-PlayerTCP::Close(int cli)
+PlayerUDP::Close(int cli)
 {
   assert((cli >= 0) && (cli < this->num_clients));
 
-  PLAYER_MSG2(1, "closing TCP connection to client %d on port %d",
+  PLAYER_MSG2(1, "closing UDP connection to client %d on port %d",
               cli, this->clients[cli].port);
 
   for(size_t i=0;i<this->clients[cli].num_dev_subs;i++)
@@ -327,8 +261,6 @@ PlayerTCP::Close(int cli)
     }
   }
   free(this->clients[cli].dev_subs);
-  if(close(this->clients[cli].fd) < 0)
-    PLAYER_WARN1("close() failed: %s", strerror(errno));
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
   // FIXME
@@ -348,23 +280,17 @@ PlayerTCP::Close(int cli)
 }
 
 int
-PlayerTCP::Read(int timeout)
+PlayerUDP::Read(int timeout)
 {
+  struct sockaddr_in fromaddr;
+  socklen_t fromlen = sizeof(fromaddr);
   int num_available;
-
-  if(!this->num_clients)
-  {
-    usleep(timeout);
-    return(0);
-  }
-
-  pthread_mutex_lock(&this->clients_mutex);
+  playerudp_conn_t* client;
+  int cli;
 
   // Poll for incoming messages
-  if((num_available = poll(this->client_ufds, this->num_clients, timeout)) < 0)
+  if((num_available = poll(this->listen_ufds, num_listeners, timeout)) < 0)
   {
-    pthread_mutex_unlock(&this->clients_mutex);
-
     // Got interrupted by a signal; no problem
     if(errno == EINTR)
       return(0);
@@ -375,42 +301,121 @@ PlayerTCP::Read(int timeout)
   }
 
   if(!num_available)
-  {
-    pthread_mutex_unlock(&this->clients_mutex);
     return(0);
-  }
 
-  for(int i=0; (i<this->num_clients) && (num_available>0); i++)
+  for(int i=0; (i<this->num_listeners) && (num_available>0); i++)
   {
-    if(((this->client_ufds[i].revents & POLLERR) ||
-        (this->client_ufds[i].revents & POLLHUP) ||
-        (this->client_ufds[i].revents & POLLNVAL)))
+    if(this->listen_ufds[i].revents & POLLIN)
     {
-      PLAYER_WARN1("other error on client %d", i);
-      this->clients[i].del = 1;
-      num_available--;
-    }
-    else if(this->client_ufds[i].revents & POLLIN)
-    {
-      if(this->ReadClient(i) < 0)
+      /* Read into the decode_readbuffer, which is big enough to hold a
+       * single UDP datagram */
+      if((this->decode_readbufferlen = recvfrom(this->listen_ufds[i].fd,
+                                                this->decode_readbuffer,
+                                                PLAYERUDP_READBUFFER_SIZE,
+                                                0,
+                                                (struct sockaddr*)&fromaddr,
+                                                &fromlen)) < 0)
       {
-        PLAYER_MSG1(2,"failed to read from client %d", i);
-        this->clients[i].del = 1;
+        PLAYER_ERROR2("recvfrom() failed on port %d: %s",
+                      this->listeners[i].port,
+                      strerror(errno));
       }
-      num_available--;
+      else
+      {
+        pthread_mutex_lock(&this->clients_mutex);
+
+        // Do we know about this one already?
+        for(cli=0; cli<this->num_clients; cli++)
+        {
+          client = this->clients + cli;
+          if((client->addr.sin_addr.s_addr == fromaddr.sin_addr.s_addr) &&
+             (client->addr.sin_port == fromaddr.sin_port))
+          {
+            // Matched.
+
+            // An empty datagram signals a new client, even if he's 
+            // using an old port
+            if(!this->decode_readbufferlen)
+            {
+              client->del = 1;
+              cli = this->num_clients;
+              break;
+            }
+            
+            // Might we need more room to assemble the current partial message?
+            if((client->readbuffersize - client->readbufferlen) <
+               this->decode_readbufferlen)
+            {
+              // Get twice as much space.
+              client->readbuffersize *= 2;
+              // Did we hit the limit (or overflow and become negative)?
+              if((client->readbuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
+                 (client->readbuffersize < 0))
+              {
+                PLAYER_WARN2("allocating maximum %d bytes to client %d's read buffer",
+                             PLAYERXDR_MAX_MESSAGE_SIZE, cli);
+                client->readbuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
+              }
+              client->readbuffer = (char*)realloc(client->readbuffer,
+                                                  client->readbuffersize);
+              assert(client->readbuffer);
+              memset(client->readbuffer + client->readbufferlen, 0,
+                     client->readbuffersize - client->readbufferlen);
+            }
+
+            // Having allocated more space, are we full?
+            if((client->readbuffersize - client->readbufferlen) < 
+               this->decode_readbufferlen)
+            {
+              PLAYER_WARN2("client %d's buffer is full (%d bytes)",
+                           cli, client->readbufferlen);
+            }
+            else
+            {
+              // Copy the new datagram into the client's buffer
+              memcpy(client->readbuffer + client->readbufferlen,
+                     this->decode_readbuffer, this->decode_readbufferlen);
+              client->readbufferlen += this->decode_readbufferlen;
+
+              // Try to parse the data received so far
+              this->ParseBuffer(cli);
+            }
+
+            break;
+          }
+        }
+
+        this->DeleteClients();
+
+        if(cli >= this->num_clients)
+        {
+          // No match; must be a new client
+          this->AddClient(&fromaddr, 
+                          this->host,
+                          this->listeners[i].port,
+                          this->listeners[i].fd,
+                          true, NULL);
+
+          if(this->decode_readbufferlen > 0)
+          {
+            PLAYER_WARN1("non-empty (%u bytes) initial message from UDP client",
+                         this->decode_readbufferlen);
+          }
+        }
+
+        num_available--;
+
+        pthread_mutex_unlock(&this->clients_mutex);
+      }
     }
   }
-
-
-  this->DeleteClients();
-  pthread_mutex_unlock(&this->clients_mutex);
 
   return(0);
 }
 
 // Should be called with clients_mutex lock held
 void
-PlayerTCP::DeleteClients()
+PlayerUDP::DeleteClients()
 {
   int num_deleted=0;
   // Delete those connections that generated errors in this iteration
@@ -442,24 +447,24 @@ PlayerTCP::DeleteClients()
     {
       memmove(this->clients + j,
               this->clients + j + 1,
-              (this->size_clients - j - 1) * sizeof(playertcp_conn_t));
-      memmove(this->client_ufds + j,
-              this->client_ufds + j + 1,
-              (this->size_clients - j - 1) * sizeof(struct pollfd));
+              (this->size_clients - j - 1) * sizeof(playerudp_conn_t));
+      //memmove(this->client_ufds + j,
+              //this->client_ufds + j + 1,
+              //(this->size_clients - j - 1) * sizeof(struct pollfd));
     }
     else
       j++;
   }
   assert(this->num_clients <= this->size_clients);
   memset(this->clients + this->num_clients, 0,
-         (this->size_clients - this->num_clients) * sizeof(playertcp_conn_t));
-  memset(this->client_ufds + this->num_clients, 0,
-         (this->size_clients - this->num_clients) * sizeof(struct pollfd));
+         (this->size_clients - this->num_clients) * sizeof(playerudp_conn_t));
+  //memset(this->client_ufds + this->num_clients, 0,
+         //(this->size_clients - this->num_clients) * sizeof(struct pollfd));
 }
 
 // Should be called with clients_mutex lock held
 void
-PlayerTCP::DeleteClient(MessageQueue* q)
+PlayerUDP::DeleteClient(MessageQueue* q)
 {
   // Find the client and mark it for deletion.
   int i;
@@ -474,7 +479,7 @@ PlayerTCP::DeleteClient(MessageQueue* q)
 }
 
 bool
-PlayerTCP::Listening(int port)
+PlayerUDP::Listening(int port)
 {
   for(int i=0;i<this->num_listeners;i++)
   {
@@ -485,18 +490,21 @@ PlayerTCP::Listening(int port)
 }
 
 int
-PlayerTCP::WriteClient(int cli)
+PlayerUDP::WriteClient(int cli)
 {
   int numwritten;
-  playertcp_conn_t* client;
+  playerudp_conn_t* client;
   Message* msg;
   player_pack_fn_t packfunc;
   player_msghdr_t hdr;
   void* payload;
   int encode_msglen;
+  socklen_t addrlen = sizeof(struct sockaddr_in);
 #if HAVE_ZLIB_H
   player_map_data_t* zipped_data=NULL;
 #endif
+
+  //printf("WriteClient(%d)\n", cli);
 
   client = this->clients + cli;
   for(;;)
@@ -504,10 +512,11 @@ PlayerTCP::WriteClient(int cli)
     // try to send any bytes leftover from last time.
     if(client->writebufferlen)
     {
-      numwritten = write(client->fd,
-                         client->writebuffer,
-                         MIN(client->writebufferlen,
-                             PLAYERTCP_WRITEBUFFER_SIZE));
+      numwritten = sendto(client->fd,
+                          client->writebuffer,
+                          MIN(client->writebufferlen,
+                              PLAYERUDP_WRITEBUFFER_SIZE), 0,
+                          (struct sockaddr*)&client->addr, addrlen);
 
       if(numwritten < 0)
       {
@@ -518,7 +527,7 @@ PlayerTCP::WriteClient(int cli)
         }
         else
         {
-          PLAYER_MSG1(2,"write() failed: %s", strerror(errno));
+          PLAYER_MSG1(2,"sendto() failed: %s", strerror(errno));
           return(-1);
         }
       }
@@ -665,12 +674,15 @@ PlayerTCP::WriteClient(int cli)
 #endif
     }
     else
+    {
+      //puts("no messages");
       return(0);
+    }
   }
 }
 
 int
-PlayerTCP::Write()
+PlayerUDP::Write()
 {
   pthread_mutex_lock(&this->clients_mutex);
 
@@ -690,84 +702,11 @@ PlayerTCP::Write()
   return(0);
 }
 
-int
-PlayerTCP::ReadClient(int cli)
-{
-  int numread;
-  playertcp_conn_t* client;
-
-  assert((cli >= 0) && (cli < this->num_clients));
-
-  client = this->clients + cli;
-
-  // Read until there's nothing left to read.
-  for(;;)
-  {
-    // Might we need more room to assemble the current partial message?
-    if((client->readbuffersize - client->readbufferlen) <
-       PLAYERTCP_READBUFFER_SIZE)
-    {
-      // Get twice as much space.
-      client->readbuffersize *= 2;
-      // Did we hit the limit (or overflow and become negative)?
-      if((client->readbuffersize >= PLAYERXDR_MAX_MESSAGE_SIZE) ||
-         (client->readbuffersize < 0))
-      {
-        PLAYER_WARN2("allocating maximum %d bytes to client %d's read buffer",
-                    PLAYERXDR_MAX_MESSAGE_SIZE, cli);
-        client->readbuffersize = PLAYERXDR_MAX_MESSAGE_SIZE;
-      }
-      client->readbuffer = (char*)realloc(client->readbuffer,
-                                          client->readbuffersize);
-      assert(client->readbuffer);
-      memset(client->readbuffer + client->readbufferlen, 0,
-             client->readbuffersize - client->readbufferlen);
-    }
-
-    // Having allocated more space, are we full?
-    if(client->readbuffersize == client->readbufferlen)
-    {
-      PLAYER_WARN2("client %d's buffer is full (%d bytes)",
-                   cli, client->readbuffersize);
-      break;
-    }
-
-    numread = read(client->fd,
-                   client->readbuffer + client->readbufferlen,
-                   client->readbuffersize - client->readbufferlen);
-
-    if(numread < 0)
-    {
-      if(errno == EAGAIN)
-      {
-        // No more data available.
-        break;
-      }
-      else
-      {
-        PLAYER_MSG1(2,"read() failed: %s", strerror(errno));
-        return(-1);
-      }
-    }
-    else if(numread == 0)
-    {
-      PLAYER_MSG0(2, "read() read zero bytes");
-      return(-1);
-    }
-    else
-      client->readbufferlen += numread;
-  }
-
-  // Try to parse the data received so far
-  this->ParseBuffer(cli);
-  return(0);
-}
-
 void
-PlayerTCP::ParseBuffer(int cli)
+PlayerUDP::ParseBuffer(int cli)
 {
   player_msghdr_t hdr;
-  playertcp_conn_t* client=NULL;
+  playerudp_conn_t* client=NULL;
   player_pack_fn_t packfunc=NULL;
   int msglen=0;
   int decode_msglen=0;
@@ -928,11 +867,11 @@ PlayerTCP::ParseBuffer(int cli)
 }
 
 int
-PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
+PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
 {
   player_msghdr_t* hdr;
   void* payload;
-  playertcp_conn_t* client;
+  playerudp_conn_t* client;
   int sub_result;
 
   player_msghdr_t resphdr;

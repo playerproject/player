@@ -465,6 +465,7 @@ AC_OUTPUT(Makefile
           libplayertcp/bindings/Makefile
           libplayertcp/bindings/java/Makefile
           libplayertcp/playertcp.pc
+          libplayertcp/playerudp.pc
           server/Makefile
           server/libplayerdrivers/Makefile
           server/libplayerdrivers/playerdrivers.pc

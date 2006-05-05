@@ -1,3 +1,4 @@
 Makefile
 Makefile.in
 playertcp.pc
+playerudp.pc
