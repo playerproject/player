@@ -458,6 +458,8 @@ class CameraProxy : public ClientProxy
     virtual ~CameraProxy();
 
     /// Save the frame
+    /// @arg aPrefix is the string prefix to name the image.
+    /// @arg aWidth is the number of 0s to pad the image numbering with.
     void SaveFrame(const std::string aPrefix, uint aWidth=4);
 
     /// decompress the image
@@ -472,13 +474,21 @@ class CameraProxy : public ClientProxy
     /// Image dimensions (pixels)
     uint GetHeight() const { return GetVar(mDevice->height); };
 
-    /// Image format (e.g., RGB888)
+    /// @brief Image format 
+    /// Possible values include
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO8
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO16
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB565
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB888
     uint GetFormat() const { return GetVar(mDevice->format); };
 
     /// Size of the image (bytes)
     uint GetImageSize() const { return GetVar(mDevice->image_count); };
 
-    /// Image data
+    /// @brief Image data
+    /// This function copies the image data into the data buffer aImage.
+    /// The buffer should be allocated according to the width, height, and 
+    /// depth of the image.  The size can be found by calling @ref GetImageSize().
     void GetImage(uint8_t* aImage) const
       {
         return GetVarByRef(mDevice->image,
@@ -486,7 +496,10 @@ class CameraProxy : public ClientProxy
                            aImage);
       };
 
-    /// What is the compression type
+    /// @brief What is the compression type?
+    /// Currently supported compression types are:
+    /// - @ref PLAYER_CAMERA_COMPRESS_RAW
+    /// - @ref PLAYER_CAMERA_COMPRESS_JPEG
     uint GetCompression() const { return GetVar(mDevice->compression); };
 
 };
