@@ -200,8 +200,9 @@ void LaserBar_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBar::LaserBar( ConfigFile* cf, int section)
-  : Driver(cf, section) 
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE) 
 {
+
   // Must have an input laser
   if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
                        PLAYER_LASER_CODE, -1, NULL) != 0)
@@ -220,6 +221,7 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserBar::Setup()
 {
+
   this->laser_device = deviceTable->GetDevice(this->laser_addr);
 
   if (!this->laser_device)
@@ -263,7 +265,7 @@ void LaserBar::Main()
   while (true)
   {
     // Let the laser drive update rate
-    //this->laser_device->Wait();
+    this->Wait();
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
@@ -271,7 +273,7 @@ void LaserBar::Main()
     // Process any pending requests.
     this->ProcessMessages();
 
-    usleep(100000);
+    //usleep(100000);
   }
 
   return;
@@ -283,7 +285,7 @@ void LaserBar::Main()
 // Process an incoming message
 int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data)
 {
-  
+
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
                             PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
@@ -297,18 +299,30 @@ int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void 
     this->ldata.resolution = laser_data->resolution;
     this->ldata.max_range = laser_data->max_range;
     this->ldata.ranges_count = laser_data->ranges_count;
+    this->ldata.intensity_count = laser_data->intensity_count;
 
     for (unsigned int i = 0; i < laser_data->ranges_count; i++)
+    {
       this->ldata.ranges[i] = laser_data->ranges[i];
+      this->ldata.intensity[i] = laser_data->intensity[i];
+    }
 
     // Analyse the laser data
     this->Find();
 
-    this->Publish(this->device_addr, resp_queue, 
-                  PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
-                  (void*)&fdata, sizeof(fdata), &hdr->timestamp);
 
   	this->Unlock();
+
+    uint size = sizeof(this->fdata) - sizeof(this->fdata.fiducials) +
+      this->fdata.fiducials_count * sizeof(this->fdata.fiducials[0]);
+
+    printf("Count[%d]\n",this->fdata.fiducials_count);
+
+    this->Publish(this->device_addr, NULL, 
+                  PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
+                  reinterpret_cast<void*>(&this->fdata), 
+                  size, &hdr->timestamp);
+
 
   	return 0;
   }
@@ -349,6 +363,7 @@ int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void 
 
     return 0;
   }
+
   return -1;
 }
 
@@ -487,7 +502,7 @@ LaserBar::PutConfig(player_device_id_t id, void *client,
 // Analyze the laser data to find reflectors.
 void LaserBar::Find()
 {
-  int i;
+  unsigned int i;
   int h;
   double r, b;
   double mn, mr, mb, mrr, mbb;
@@ -508,7 +523,7 @@ void LaserBar::Find()
   for (i = 0; i < this->ldata.ranges_count; i++)
   {
     r = (double) (this->ldata.ranges[i]);
-    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) * M_PI / 180;
     h = (int) (this->ldata.intensity[i]);
 
     // If there is a reflection...
