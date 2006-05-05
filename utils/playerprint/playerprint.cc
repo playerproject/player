@@ -89,6 +89,7 @@ std::string g_hostname= PlayerCc::PLAYER_HOSTNAME;
 int32_t g_port        = PlayerCc::PLAYER_PORTNUM;
 int16_t g_index       = 0;
 int16_t g_rate        = 10;
+uint32_t g_transport  = PLAYERC_TRANSPORT_TCP;
 
 std::string g_device("");
 
@@ -107,7 +108,7 @@ int
 get_options(int argc, char **argv)
 {
   int ch=0, errflg=0;
-  const char* optflags = "i:h:p:r:";
+  const char* optflags = "i:h:p:r:t:";
 
   while((ch=getopt(argc, argv, optflags))!=-1)
   {
@@ -126,6 +127,9 @@ get_options(int argc, char **argv)
       case 'r':
           std::cerr << "Data rate not yet implemented!" << std::endl;
           g_rate = atoi(optarg);
+          break;
+      case 't':
+          g_transport = atoi(optarg);
           break;
       case '?':
       case ':':
@@ -156,7 +160,7 @@ main(int argc, char **argv)
   ClientProxy* cp;
 
   // connect to Player
-  PlayerClient client(g_hostname, g_port);
+  PlayerClient client(g_hostname, g_port, g_transport);
 
   int code = client.LookupCode(g_device);
 

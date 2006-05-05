@@ -2,12 +2,12 @@ AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir)
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = playertcp.pc
+pkgconfig_DATA = playertcp.pc playerudp.pc
 
-EXTRA_DIST = playertcp.pc.in
-CLEANFILES = playertcp.pc
+EXTRA_DIST = playertcp.pc.in playerudp.pc.in
+CLEANFILES = playertcp.pc playerudp.pc
 
-lib_LTLIBRARIES = libplayertcp.la
+lib_LTLIBRARIES = libplayertcp.la libplayerudp.la
 
 libplayertcp_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
@@ -18,6 +18,14 @@ libplayertcp_la_SOURCES = socket_util.c socket_util.h \
 libplayertcp_la_LIBADD = $(top_builddir)/replace/*.lo
 libplayertcp_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-pkgincludedir = $(includedir)/player-2.0/libplayertcp
+libplayerudp_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-pkginclude_HEADERS = playertcp.h
+libplayerudp_la_SOURCES = socket_util.c socket_util.h \
+                          playerudp.cc playerudp.h
+#		  remote_driver.cc remote_driver.h
+
+libplayerudp_la_LIBADD = $(top_builddir)/replace/*.lo
+libplayerudp_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
+
+pkgincludedir = $(includedir)/player-2.0/libplayertcp
+pkginclude_HEADERS = playertcp.h playerudp.h

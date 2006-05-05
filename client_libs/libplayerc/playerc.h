@@ -81,6 +81,9 @@ extern "C" {
 #define PLAYERC_DATAMODE_PUSH PLAYER_DATAMODE_PUSH
 #define PLAYERC_DATAMODE_PULL PLAYER_DATAMODE_PULL
 
+/** The valid transports */
+#define PLAYERC_TRANSPORT_TCP 1
+#define PLAYERC_TRANSPORT_UDP 2
 
 
 /***************************************************************************
@@ -443,6 +446,8 @@ typedef struct _playerc_client_t
   /** Server address. */
   char *host;
   int port;
+  int transport;
+  struct sockaddr_in server;
 
   /** @internal Socket descriptor */
   int sock;
@@ -466,6 +471,7 @@ typedef struct _playerc_client_t
   /** @internal Temp buffers for incoming / outgoing packets. */
   char *data;
   char *xdrdata;
+  size_t xdrdata_len;
 
   /** Server time stamp on the last packet. */
   double datatime;
@@ -501,6 +507,13 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 
 */
 void playerc_client_destroy(playerc_client_t *client);
+
+/** @brief Set the transport type.
+
+@param transport Either PLAYERC_TRANSPORT_UDP or PLAYERC_TRANSPORT_TCP
+*/
+void playerc_client_set_transport(playerc_client_t* client,
+                                  unsigned int transport);
 
 /** @brief Connect to the server.
 

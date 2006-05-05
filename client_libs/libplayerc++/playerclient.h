@@ -93,6 +93,9 @@ class PlayerClient
     // The port number of the server, stored for convenience
     uint mPort;
 
+    // Which transport (TCP or UDP) we're using
+    unsigned int mTransport;
+
     // Is the thread currently stopped or stopping?
     bool mIsStop;
 
@@ -106,7 +109,8 @@ class PlayerClient
 
     /// Make a client and connect it as indicated.
     PlayerClient(const std::string aHostname=PLAYER_HOSTNAME,
-                 uint aPort=PLAYER_PORTNUM);
+                 uint aPort=PLAYER_PORTNUM,
+                 int transport=PLAYERC_TRANSPORT_TCP);
 
     /// destructor
     ~PlayerClient();
