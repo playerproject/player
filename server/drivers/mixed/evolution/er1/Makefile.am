@@ -1,7 +1,9 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server -I$(top_srcdir)/replace
+noinst_LTLIBRARIES = 
+if INCLUDE_ER1
+noinst_LTLIBRARIES += liber1.la
+endif
 
-noinst_LIBRARIES = @ER1_LIB@ 
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -I$(top_srcdir)/replace
 
-EXTRA_LIBRARIES = liber1.a
+liber1_la_SOURCES = er.cc er.h
 
-liber1_a_SOURCES = er.cc er.h
