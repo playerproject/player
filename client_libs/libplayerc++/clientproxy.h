@@ -209,6 +209,12 @@ class ClientProxy
                         int aType = -1,
                         int aSubtype = -1);
 
+    /// @brief Request capabilities of device.
+    ///
+    /// Send a message asking if the device supports the given message
+    /// type and subtype. If it does, the return value will be 1, and 0 otherwise.
+    int HasCapability(uint aType, uint aSubtype);
+
     /// Connect a signal to this proxy
     /// For more information check out @ref player_clientlib_multi
     template<typename T>

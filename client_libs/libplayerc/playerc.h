@@ -776,6 +776,10 @@ int playerc_device_subscribe(playerc_device_t *device, int access);
 /** @brief Unsubscribe the device. @internal */
 int playerc_device_unsubscribe(playerc_device_t *device);
 
+/** @brief Request capabilities of device */
+int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype);
+
+
 /** @} */
 /**************************************************************************/
 

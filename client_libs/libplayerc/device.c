@@ -101,3 +101,13 @@ int playerc_device_unsubscribe(playerc_device_t *device)
                                     device->addr.index);
 }
 
+// Query the capabilities of a device
+int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype)
+{
+  player_capabilities_req_t capreq;
+  capreq.type = type;
+  capreq.subtype = subtype;
+
+  return playerc_client_request(device->client, device, PLAYER_CAPABILTIES_REQ,
+                            NULL, (void*)&capreq, sizeof(capreq)) >= 0 ? 1 : 0;
+}

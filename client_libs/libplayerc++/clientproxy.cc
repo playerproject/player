@@ -87,6 +87,11 @@ void ClientProxy::SetReplaceRule(bool aReplace,
   }
 }
 
+int ClientProxy::HasCapability(uint aType, uint aSubtype)
+{
+  return playerc_device_hascapability (mInfo, aType, aSubtype);
+}
+
 void ClientProxy::NotFresh()
 {
   scoped_lock_t lock(mPc->mMutex);
