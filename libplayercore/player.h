@@ -400,6 +400,12 @@ This request takes a data structure that defines the message type and subtype of
 capability you wish to query. The driver will respond with a NACK if the capability
 is not supported and an ACK if it is.
 
+The HANDLE_CAPABILITY_REQUEST macro (from driver.h) can be used to make this process 
+simpler, an example call would be something like this at the start of ProcessMessage
+
+HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
+
 */
 
 #define PLAYER_CAPABILTIES_REQ 255

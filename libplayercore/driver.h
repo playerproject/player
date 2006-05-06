@@ -36,6 +36,33 @@
 #include <libplayercore/message.h>
 #include <libplayercore/player.h>
 
+/** 
+@brief capabilities request handler macro
+
+This macro tests the current message to see if its a capabilities 
+request and creates an ACK message if it is and matches the defined 
+capability.
+
+    @param device_addr The device address for the capability
+    @param queue The queue of the recieved message
+    @param hdr The recieved header
+    @param data The recieved data
+    @param cap_type The supported capability type
+    @param cap_subtype The supported capability subtype
+
+*/
+#define HANDLE_CAPABILITY_REQUEST(device_addr, queue, hdr, data, cap_type, cap_subtype) \
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ, device_addr)) \
+  { \
+    player_capabilities_req_t & cap_req = * reinterpret_cast<player_capabilities_req_t *> (data);\
+    if (cap_req.type == cap_type && cap_req.subtype == cap_subtype) \
+    { \
+      Publish(device_addr, queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_CAPABILTIES_REQ); \
+      return 0; \
+    } \
+  } 
+
+
 // Forward declarations
 class ConfigFile;
 class Driver;
