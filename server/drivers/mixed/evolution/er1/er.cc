@@ -115,7 +115,8 @@ driver
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <player.h>
+
+#include <libplayercore/playercore.h>
 
 static void StopRobot(void* erdev);
 
@@ -140,17 +141,16 @@ ER::ER(ConfigFile* cf, int section) :
 
 
   // zero ids, so that we'll know later which interfaces were requested
-  memset(&this->position_id, 0, sizeof(player_device_id_t));
+  memset(&this->position_id, 0, sizeof(position_id));
   this->position_subscriptions = 0;
   
   printf( "discovering drivers\n" );
   
-  // Do we create a robot position interface?
-  if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
-                      PLAYER_POSITION_CODE,-1,NULL) == 0)
+  // Do we create a position interface?
+  if(cf->ReadDeviceAddr(&(this->position_id), section, "provides", 
+                      PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
-    printf("found position\n" );
-    if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
+    if(this->AddInterface(this->position_id) != 0)
     {
       this->SetError(-1);    
       return;
@@ -447,13 +447,6 @@ ER::Setup()
   struct termios term;
   int flags;
   //int ltics,rtics,lvel,rvel;
-  player_position_cmd_t cmd;
-  player_position_data_t data;
-
-  cmd.xpos = cmd.ypos = cmd.yaw = 0;
-  cmd.xspeed = cmd.yspeed = cmd.yawspeed = 0;
-  data.xpos = data.ypos = data.yaw = 0;
-  data.xspeed = data.yspeed = data.yawspeed = 0;
 
   this->_px = this->_py = this->_pa = 0.0;
   this->_odom_initialized = false;
@@ -521,12 +514,6 @@ ER::Setup()
 		this->_fd = -1;
 		return -1;
 	}
-
-	// zero the command buffer
-/*	player_position_cmd_t zero;
-	memset(&zero,0,sizeof(player_position_cmd_t));
-	this->PutCommand(this->position_id,(void*)&zero,
-	                 sizeof(player_position_cmd_t),NULL);*/
 
 	// start the thread to talk with the robot
 	this->StartThread();
@@ -737,7 +724,7 @@ void
 ER::Main()
 {
 
-	player_position_data_t data;
+	player_position2d_data_t data;
 	int rtics, ltics, lvel, rvel;
 	double lvel_mps, rvel_mps;
 	pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
@@ -799,22 +786,23 @@ ER::Main()
 
 
 		double tmp_angle;
-		data.xpos = htonl((int32_t)rint(this->_px * 1e3));
-		data.ypos = htonl((int32_t)rint(this->_py * 1e3));
+		data.pos.px = this->_px;
+		data.pos.py = this->_py;
 		if(this->_pa < 0)
 			tmp_angle = this->_pa + 2*M_PI;
 		else
 			tmp_angle = this->_pa;
 
-		data.yaw = htonl((int32_t)floor(RTOD(tmp_angle)));
+		data.pos.pa = tmp_angle;
 
-		data.yspeed = 0;
+		data.vel.py = 0;
 		lvel_mps = lvel * ER_MPS_PER_TICK;
 		rvel_mps = rvel * ER_MPS_PER_TICK;
-		data.xspeed = htonl((int32_t)rint(1e3 * (lvel_mps + rvel_mps) / 2.0));
-		data.yawspeed = htonl((int32_t)rint(RTOD((rvel_mps-lvel_mps) / 
-                                             _axle_length)));
+		data.vel.px = (lvel_mps + rvel_mps) / 2.0;
+		data.vel.pa = (rvel_mps-lvel_mps) / 
+                                             _axle_length;
 
+                Publish(position_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data));
 //		PutData((unsigned char*)&data,sizeof(data),0,0);
 
 
@@ -828,72 +816,53 @@ ER::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ER::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int ER::ProcessMessage(MessageQueue * resp_queue,
+                               player_msghdr * hdr,
+                               void * data)
 {
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
 	
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_id))
   {
-  	assert(*resp_len >= sizeof(player_position_geom_t));
-  	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);
-    *resp_len = sizeof(player_position_geom_t);
+  	player_position2d_geom_t geom;
 
     //TODO : get values from somewhere.
-	geom.pose[0] = htons((short) (-100));
-	geom.pose[1] = htons((short) (0));
-	geom.pose[2] = htons((short) (0));
-	geom.size[0] = htons((short) (250));
-	geom.size[1] = htons((short) (425));    
-	
-    return PLAYER_MSGTYPE_RESP_ACK;
-  }
-  
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
-  {
-  	assert(hdr->size >= sizeof(player_position_power_config_t));
-  	player_position_power_config_t * powercfg = reinterpret_cast<player_position_power_config_t *> (data);
-    *resp_len = 0;
+	geom.pose.px = -0.1;//htons((short) (-100));
+	geom.pose.py = 0;//htons((short) (0));
+	geom.pose.pa = 0;//htons((short) (0));
+	geom.size.sw = 0.25;//htons((short) (250));
+	geom.size.sl = 0.425;//htons((short) (425));    
+    Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_GET_GEOM, &geom, sizeof(geom));	
 
-    printf("got motor power req: %d\n", powercfg->value);
-	if(ChangeMotorState(powercfg->value) < 0)
-	  return PLAYER_MSGTYPE_RESP_NACK;
-	else
-	  return PLAYER_MSGTYPE_RESP_ACK;
-  }
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
-  {
-  	assert(hdr->size >= sizeof(player_position_cmd_t));
-  	player_position_cmd_t & position_cmd = *reinterpret_cast<player_position_cmd_t *> (data);
-    *resp_len = 0;
-    HandlePositionCommand(position_cmd);
     return 0;
   }
   
-  *resp_len = 0;
-  return -1;
-}
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_id))
+  {
+  	player_position2d_power_config_t * powercfg = reinterpret_cast<player_position2d_power_config_t *> (data);
 
-void
-ER::HandlePositionCommand(player_position_cmd_t position_cmd)
-{
+    printf("got motor power req: %d\n", powercfg->state);
+	if(ChangeMotorState(powercfg->state) < 0)
+	  Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+	else
+	  Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return 0;
+  }
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, position_id))
+  {
+  	player_position2d_cmd_vel_t & position_cmd = *reinterpret_cast<player_position2d_cmd_vel_t *> (data);
 
 	double rotational_term;
 	double command_rvel, command_lvel;
 	double final_lvel = 0, final_rvel = 0;
 	double last_final_lvel = 0, last_final_rvel = 0;
 
-
-	position_cmd.yawspeed = ntohl(position_cmd.yawspeed) / 1;
-	position_cmd.xspeed = ntohl(position_cmd.xspeed) / 1;
-		
 	// convert (tv,rv) to (lv,rv) and send to robot
-	rotational_term = (position_cmd.yawspeed * M_PI / 180.0) * (_axle_length*1000.0) / 2.0;
-	command_rvel = (position_cmd.xspeed) + rotational_term;
-	command_lvel = (position_cmd.xspeed) - rotational_term;
+	rotational_term = (position_cmd.vel.pa * M_PI / 180.0) * (_axle_length*1000.0) / 2.0;
+	command_rvel = (position_cmd.vel.px) + rotational_term;
+	command_lvel = (position_cmd.vel.px) - rotational_term;
     
 //	printf( "position_cmd.xspeed: %d position_cmd.yawspeed: %d\n", position_cmd.xspeed, position_cmd.yawspeed );
 	
@@ -941,7 +910,7 @@ ER::HandlePositionCommand(player_position_cmd_t position_cmd)
 			printf("failed to set velocity\n");
 			pthread_exit(NULL);
 		}
-		if( (int) position_cmd.xspeed == 0 && (int) position_cmd.yawspeed == 0 )
+		if( (int) position_cmd.vel.px == 0 && (int) position_cmd.vel.pa == 0 )
 		{
 			printf( "STOP\n" );
 			Stop( FULL_STOP+1 );			
@@ -951,7 +920,16 @@ ER::HandlePositionCommand(player_position_cmd_t position_cmd)
 		last_final_rvel = final_rvel;
 		MotorSpeed();
 	}
+
+
+    return 0;
+  }
+  
+  return -1;
 }
+
+
+
 ////////////////////
 // util fcns
 ////////////////////

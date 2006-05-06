@@ -184,7 +184,7 @@ PLAYER_ADD_DRIVER([cmvision],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([dummy],[no],[],[],[])
 
-PLAYER_ADD_DRIVER([er1],[no],[asm/ioctls.h],[],[])
+PLAYER_ADD_DRIVER([er1],[yes],[asm/ioctls.h],[],[])
 
 PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
