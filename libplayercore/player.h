@@ -388,6 +388,31 @@ system
 
 */
 
+
+/**
+@ingroup message_basics
+@defgroup capabilities Capabilities
+Querying driver capabilities.
+
+All drivers will respond to the universal request subtype, PLAYER_CAPABILTIES_REQ.
+
+This request takes a data structure that defines the message type and subtype of the 
+capability you wish to query. The driver will respond with a NACK if the capability
+is not supported and an ACK if it is.
+
+*/
+
+#define PLAYER_CAPABILTIES_REQ 255
+
+/** @brief Structure containing a single capability request */
+typedef struct player_capabilities_req
+{
+  /** The type of the requested capability (i.e. PLAYER_MSGTYPE_REQ). */
+  uint32_t type;
+  /** The subtype of the requested capability (i.e. PLAYER_ACTARRAY_SPEED_REQ. */
+  uint32_t subtype;
+} player_capabilities_req_t;
+
 // /////////////////////////////////////////////////////////////////////////////
 //
 //             Here starts the alphabetical list of interfaces

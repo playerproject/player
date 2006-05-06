@@ -40,6 +40,9 @@
 static playerxdr_function_t init_ftable[] =
 {
   /* This list is currently alphabetized, please keep it that way! */
+  /* universal messages */
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ,
+   (player_pack_fn_t)player_capabilities_req_pack},
 
   /* actarray messages */
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_DATA, PLAYER_ACTARRAY_DATA_STATE,
@@ -518,7 +521,8 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
   {
     curr = ftable + i;
     // Make sure the interface and subtype match exactly.
-    if(curr->interf == interf &&
+    // match anyway if interface = 0 (universal data types)
+    if((curr->interf == interf || curr->interf == 0) &&
       curr->type == type &&
       curr->subtype == subtype)
       return(curr->func);
