@@ -121,7 +121,7 @@ PLAYER_ADD_DRIVER([acoustics],[no],
                   ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([acts],[no],[],[],[])
+PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
 
 dnl TODO: handle pkg-config location of gsl.  Some, but not all,
 dnl installation of gsl have a .pc file.
