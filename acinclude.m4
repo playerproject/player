@@ -220,9 +220,9 @@ PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lasersafe],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laservisualbarcode],[no],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbarcode],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laservisualbw],[no],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbw],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
