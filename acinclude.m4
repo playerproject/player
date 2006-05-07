@@ -208,9 +208,9 @@ PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laserbar],[no],[],[],[])
+PLAYER_ADD_DRIVER([laserbar],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laserbarcode],[no],[],[],[])
+PLAYER_ADD_DRIVER([laserbarcode],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 

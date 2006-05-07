@@ -37,9 +37,6 @@
 /** @defgroup driver_laserbar laserbar
  * @brief Laser bar detector.
  
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The laser bar detector searches for retro-reflective targets in the
 laser range finder data.  Targets can be either planar or cylindrical,
 as shown below. For planar targets, the range, bearing and orientation
