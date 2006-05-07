@@ -201,7 +201,7 @@ PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
-PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
+PLAYER_ADD_DRIVER([isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
 PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
