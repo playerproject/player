@@ -124,6 +124,30 @@
 	free ((player_point2d_t*) $input);
 }
 
+// typemap for tuples to colours
+%typemap(python,in) player_color_t (player_color_t temp)
+{
+	// Check it is a tuple
+	if (PyTuple_Check ($input))
+	{
+		// Check the tuple has four elements
+		if (PyTuple_GET_SIZE ($input) != 4)
+		{
+			PyErr_SetString (PyExc_ValueError, "tuple must have 4 items");
+			return NULL;
+		}
+		temp.alpha = PyInt_AsLong (PyTuple_GET_ITEM ($input, 0));
+		temp.red = PyInt_AsLong (PyTuple_GET_ITEM ($input, 1));
+		temp.green = PyInt_AsLong (PyTuple_GET_ITEM ($input, 2));
+		temp.blue = PyInt_AsLong (PyTuple_GET_ITEM ($input, 3));
+	}
+	else
+	{
+		PyErr_SetString (PyExc_TypeError, "not a tuple");
+		return NULL;
+	}
+}
+
 // Provide array (write) access
 %typemap(in) double [ANY][ANY] (double temp[$1_dim0][$1_dim1])
 {
