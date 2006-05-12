@@ -68,10 +68,39 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AIO_CMD_STATE,
    (player_pack_fn_t)player_aio_cmd_pack},
 
+  /* aio messages */
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD,
+   (player_pack_fn_t)player_audio_mixer_channel_list_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_MIXER_CHANNEL_DATA,
+   (player_pack_fn_t)player_audio_mixer_channel_list_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ,
+   (player_pack_fn_t)player_audio_mixer_channel_list_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ,
+   (player_pack_fn_t)player_audio_mixer_channel_list_detail_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ,
+   (player_pack_fn_t)player_audio_sample_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD,
+   (player_pack_fn_t)player_audio_sample_item_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_REC_REQ,
+   (player_pack_fn_t)player_audio_sample_item_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ,
+   (player_pack_fn_t)player_audio_sample_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_SEQ_DATA,
+   (player_pack_fn_t)player_audio_seq_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SEQ_PLAY_CMD,
+   (player_pack_fn_t)player_audio_seq_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD,
+   (player_pack_fn_t)player_audio_wav_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_WAV_REC_DATA,
+   (player_pack_fn_t)player_audio_wav_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_WAV_REC_REQ,
+   (player_pack_fn_t)player_audio_wav_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD,
+   (player_pack_fn_t)player_bool_pack},
 
 
   /* audiodsp messages */
-  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIODSP_DATA_TONES,
+/*  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIODSP_DATA_TONES,
    (player_pack_fn_t)player_audiodsp_data_pack},
   {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_TONE,
    (player_pack_fn_t)player_audiodsp_cmd_pack},
@@ -82,10 +111,10 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_GET_CONFIG,
    (player_pack_fn_t)player_audiodsp_config_pack},
   {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_SET_CONFIG,
-   (player_pack_fn_t)player_audiodsp_config_pack},
+   (player_pack_fn_t)player_audiodsp_config_pack},*/
 
   /* audiomixer messages */
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MASTER,
+/*  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MASTER,
    (player_pack_fn_t)player_audiomixer_cmd_pack},
   {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_PCM,
    (player_pack_fn_t)player_audiomixer_cmd_pack},
@@ -98,7 +127,7 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_OGAIN,
    (player_pack_fn_t)player_audiomixer_cmd_pack},
   {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIOMIXER_GET_LEVELS,
-   (player_pack_fn_t)player_audiomixer_config_pack},
+   (player_pack_fn_t)player_audiomixer_config_pack},*/
 
   /* blinkenlight messages */
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLINKENLIGHT_DATA_STATE,

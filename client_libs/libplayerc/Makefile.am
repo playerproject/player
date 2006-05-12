@@ -25,6 +25,7 @@ libplayerc_la_SOURCES = playerc.h \
                         error.h \
                         dev_actarray.c \
                         dev_aio.c \
+                        dev_audio.c \
                         dev_bumper.c \
                         dev_blobfinder.c \
                         dev_camera.c \

@@ -146,7 +146,7 @@ in the body.*/
 #define PLAYER_PLANNER_CODE        44  // 2D motion planner
 #define PLAYER_LOG_CODE            45  // log read/write control
 #define PLAYER_ENERGY_CODE         46  // energy consumption
-//#define PLAYER_MOTOR_CODE          47  // motor interface
+#define PLAYER_MOTOR_CODE          47  // motor interface
 #define PLAYER_JOYSTICK_CODE       49  // Joytstick
 #define PLAYER_SPEECH_RECOGNITION_CODE  50  // speech recognition
 #define PLAYER_OPAQUE_CODE         51  // plugin interface
@@ -360,6 +360,12 @@ typedef struct player_color
   uint8_t blue;
 } player_color_t;
 
+/** @brief A boolean variable, 0 for false anything else for true */
+typedef struct player_bool
+{
+  /** state */
+  uint8_t state;
+} player_bool_t;
 
 /** @} */
 
@@ -686,56 +692,265 @@ typedef struct player_aio_cmd
 /**
 @ingroup interfaces
 @defgroup interface_audio audio
-@brief Audible tone emission / detection (deprecated)
+@brief Interface to an audio system
 
-@deprecated Use the @ref interface_audiodsp interface instead
+The @p audio interface is used to control sound hardware.
 
-The @p audio interface is used to control sound hardware, if equipped.
+The inteface provides four sets of functionality:
+ - raw wav playback and recording
+ - sample playback (and loading)
+ - sequencer support (tone playback and recording)
+ - mixer interface (control of sound levels)
+
 */
 
 /**
 @ingroup interface_audio
 @{ */
 
-/** Data buffer size */
-#define PLAYER_AUDIO_DATA_BUFFER_SIZE    20
-/** Command buffer size */
-#define PLAYER_AUDIO_COMMAND_BUFFER_SIZE (3*sizeof(short))
-/** Number of frequency / amplitude pairs to report */
-#define PLAYER_AUDIO_PAIRS               5
+/** Raw WAV data buffer size */
+#define PLAYER_AUDIO_WAV_BUFFER_SIZE        1048576
 
-/** @brief Data: tones detected
+/** Mixer channel name length */
+#define PLAYER_AUDIO_MIXER_CHANNEL_NAME_SIZE     64
 
-The @p audio interface reads the audio stream from @p /dev/audio (which
-is assumed to be associated with a sound card connected to a microphone)
-and performs some analysis on it.  @ref PLAYER_AUDIO_PAIRS number
-of frequency/amplitude pairs are then returned as data. */
-typedef struct player_audio_data
+/** Mixer channel list length */
+#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE     16
+
+/** Sequencer sequence length */
+#define PLAYER_AUDIO_SEQ_LENGTH                  64
+
+
+/** Data subtype:    wav_rec_data, recorded data block
+
+data is a @ref player_audio_wav_t structure*/
+#define PLAYER_AUDIO_WAV_REC_DATA        1
+
+/** Data subtype:    seq_data, recorded sequence of notes 
+
+data is a @ref player_audio_seq_t structure*/
+#define PLAYER_AUDIO_SEQ_DATA            2
+
+/** Data subtype:    mixer_channel_data, audio channel levels 
+
+data is a @ref player_audio_mixer_channel_list_t structure*/
+#define PLAYER_AUDIO_MIXER_CHANNEL_DATA  3
+
+
+
+/** Command subtype: wav_play_cmd, play a raw data block, in structure player_audio_wav_t  
+
+data is a @ref player_audio_wav_t structure*/
+#define PLAYER_AUDIO_WAV_PLAY_CMD        1
+
+/** Command subtype: wav_stream_rec_cmd, start/stop recording, data will be returned as data blocks  
+
+data is a @ref player_bool_t */
+#define PLAYER_AUDIO_WAV_STREAM_REC_CMD  2
+
+/** Command subtype: sample_play_cmd, play a pre stored audio sample  
+
+data is a @ref player_audio_sample_item_t structure*/
+#define PLAYER_AUDIO_SAMPLE_PLAY_CMD     3
+
+/** Command subtype: seq_play_cmd, play a sequence of tones  
+
+data is a @ref player_audio_seq_t structure*/
+#define PLAYER_AUDIO_SEQ_PLAY_CMD        4
+
+/** Command subtype: mixer_channel_cmd, audio channel levels  
+
+data is a @ref player_audio_mixer_channel_list_t structure*/
+#define PLAYER_AUDIO_MIXER_CHANNEL_CMD   5
+
+
+
+/** Request subtype: wav_rec_req, record a fixed size data block, in structure player_audio_wav_t  
+
+data is a @ref player_audio_wav_t structure*/
+#define PLAYER_AUDIO_WAV_REC_REQ              1
+
+/** Request subtype: sample_load_req, store a sample  
+
+data is a @ref player_audio_sample_t structure*/
+#define PLAYER_AUDIO_SAMPLE_LOAD_REQ          2
+
+/** Request subtype: sample_retrieve_req, retrieve a stored sample  
+
+data is a @ref player_audio_sample_t structure*/
+#define PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ      3
+
+/** Request subtype: sample_rec_req, record a new sample  
+
+data is a @ref player_audio_sample_item_t structure*/
+#define PLAYER_AUDIO_SAMPLE_REC_REQ           4
+
+/** Request subtype: mixer_channel_list_req, request the list of channels  
+
+data is a @ref player_audio_mixer_channel_list_detail_t structure*/
+#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ   5
+
+/** Request subtype: mixer_channel_level_req, request the channel levels  
+
+data is a @ref player_audio_mixer_channel_list_t structure*/
+#define PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ  6
+
+
+/** Audio formats */
+/** Raw 8 bit 44 khz encoding */
+#define PLAYER_AUDIO_WAV_FORMAT_RAW_8BIT_44KHZ  1
+/** mp3 encoded */
+#define PLAYER_AUDIO_WAV_FORMAT_MP3             2
+
+
+/** @brief Data: Raw audio data
+
+This data is used in the PLAYER_AUDIO_WAV_PLAY_CMD, and returned as 
+PLAYER_AUDIO_WAV_REC_DATA when stream recording is enabled 
+*/
+typedef struct player_audio_wav
 {
-  /** Number of frequencies */
-  uint32_t frequency_count;
-  /** [Hz] */
-  float frequency[PLAYER_AUDIO_PAIRS];
-  /** Number of amplitudes */
-  uint32_t amplitude_count;
-  /** [dB] */
-  float amplitude[PLAYER_AUDIO_PAIRS];
-} player_audio_data_t;
+  /** length of raw data */
+  uint32_t data_count;
+  /** raw data */
+  uint8_t data[PLAYER_AUDIO_WAV_BUFFER_SIZE];
+  /** Raw data format */
+  uint32_t format;
+} player_audio_wav_t;
 
-/** @brief Command: tone to emit
 
-The @p audio interface accepts commands to produce fixed-frequency tones
-through @p /dev/dsp (which is assumed to be associated with a sound card
-to which a speaker is attached). */
-typedef struct player_audio_cmd
+/** @brief Player audio sequence item
+
+This describes a single sequence element, the link field is used for chord type
+playback when a series of notes are to be played together. Set link to true
+for all but the last notes to be player together.
+
+*/
+typedef struct player_audio_seq_item
 {
-  /** Frequency to play [Hz] */
-  float frequency;
-  /** Amplitude to play [dB] */
-  float amplitude;
-  /** Duration to play [s] */
+  /** Frequency of the note [Hz]*/
+  float freq;
+  /** duration [s]*/
   float duration;
-} player_audio_cmd_t;
+  /** amplitude */
+  float amplitude;
+  /** link to next note, true to play both ntoes together (or if both were recieved together) */
+  player_bool_t link;
+} player_audio_seq_item_t;
+
+
+/** @brief Player audio sequence
+
+Describes a sequence of notes to be played or which have been recieved
+
+*/
+typedef struct player_audio_seq
+{
+  /** number of tones in list */
+  uint32_t tones_count;
+  /** the tones*/
+  player_audio_seq_item_t tones[PLAYER_AUDIO_SEQ_LENGTH];
+} player_audio_seq_t;
+
+
+/** @brief Player mixer channel
+
+Describes the state of a mixer channel
+
+*/
+typedef struct player_audio_mixer_channel
+{
+  /** level (normalised 0 to 1) */
+  float amplitude;
+  /** active (set to false to mute channel) */
+  player_bool_t active;
+} player_audio_mixer_channel_t;
+
+
+
+/** @brief Player mixer channels
+
+Describes the state of a set of mixer channels
+
+*/
+typedef struct player_audio_mixer_channel_list
+{
+  /** number of channels in list */
+  uint32_t channels_count;
+  /** the channels*/
+  player_audio_mixer_channel_t channels[PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE];
+} player_audio_mixer_channel_list_t;
+
+
+
+/** Input audio channel */
+#define PLAYER_AUDIO_MIXER_CHANNEL_TYPE_INPUT 1
+/** Output audio channel */
+#define PLAYER_AUDIO_MIXER_CHANNEL_TYPE_OUTPUT 2
+/** Special audio channel */
+#define PLAYER_AUDIO_MIXER_CHANNEL_TYPE_SPECIAL 3
+
+/** @brief Player mixer channel detail
+
+Describes the state of a mixer channel
+
+*/
+typedef struct player_audio_mixer_channel_detail
+{
+  /** name length */
+  uint32_t name_count;
+  /** Descriptive channel name */
+  uint8_t name;
+  /** Channel type (input, output or special)*/
+  uint8_t type;
+} player_audio_mixer_channel_detail_t;
+
+
+
+/** @brief Player mixer channels
+
+Describes the state of a set of mixer channels details
+
+*/
+typedef struct player_audio_mixer_channel_list_detail
+{
+  /** number of tones in list */
+  uint32_t details_count;
+  /** the tones*/
+  player_audio_mixer_channel_detail_t details[PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE];
+  /** default output channel (-1 for none) */
+  int32_t default_output;
+  /** default input channel (-1 for none) */
+  int32_t default_input;
+} player_audio_mixer_channel_list_detail_t;
+
+
+
+/** @brief Player audio sample
+
+Describes an audio sample, if the index is set to -1 the next available slot is used
+and the index is returned in the response.
+
+*/
+typedef struct player_audio_sample
+{
+  /** the audio sample data */
+  player_audio_wav_t sample;
+  /** index to store it at or retrieve from (-1 for next available where valid) */
+  int32_t index;
+} player_audio_sample_t;
+
+/** @brief Player audio sample selection
+
+Describes a pre-stored audio sample, use -1 for the index when recording 
+if you wish the next available slot to be used
+
+*/
+typedef struct player_audio_sample_item
+{
+  /** index to store it at or record to (-1 for next available where valid) */
+  int32_t index;
+} player_audio_sample_item_t;
 
 /** @} */
 
@@ -743,7 +958,9 @@ typedef struct player_audio_cmd
 /**
 @ingroup interfaces
 @defgroup interface_audiodsp audiodsp
-@brief Audible tone emission / detection
+@brief Audible tone emission / detection (deprecated)
+
+@deprecated Use the @ref interface_audio interface instead
 
 The @p audiodsp interface is used to control sound hardware, if equipped.
 */
@@ -841,7 +1058,9 @@ typedef struct player_audiodsp_config
 /**
 @ingroup interfaces
 @defgroup interface_audiomixer audiomixer
-@brief Sound level control
+@brief Sound level control (deprecated)
+
+@deprecated Use the @ref interface_audio interface instead
 
 The @p audiomixer interface is used to control sound levels.
 */
@@ -3920,7 +4139,9 @@ typedef struct player_sonar_power_config
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
  * @defgroup interface_sound sound
- * @brief Play sound clips
+ * @brief Play sound clips (deprecated)
+
+@deprecated Use the @ref interface_audio interface instead
 
 The @p sound interface allows playback of a pre-recorded sound (e.g.,
 on an Amigobot).
@@ -4067,8 +4288,8 @@ typedef struct player_truth_fiducial_id
  * @defgroup interface_waveform waveform
  * @brief Digital waveforms
 
-The @p waveform interface is used to receive arbitrary digital samples,
-say from a digital audio device.
+The @p waveform interface is used to receive arbitrary digital samples. For audio data 
+you should probably use the audio interface.
 */
 
 /** @ingroup interface_waveform

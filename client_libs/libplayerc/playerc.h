@@ -901,6 +901,91 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float s
 /** @} */
 /**************************************************************************/
 
+/***************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_audio audio
+
+The audio proxy provides access to drivers supporting the @ref audio_interface.
+See the Player User Manual for a complete description of the drivers that support 
+this interface.
+
+@{
+*/
+
+/** @brief Audio device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Details of the channels from the mixer. */
+  player_audio_mixer_channel_list_detail_t channel_details_list;
+
+  /** last block of recorded data */
+  player_audio_wav_t wav_data;
+
+  /** last block of seq data */
+  player_audio_seq_t seq_data;
+
+  /** current channel data */
+  player_audio_mixer_channel_list_t mixer_data;
+
+
+} playerc_audio_t;
+
+/** @brief Create an audio proxy. */
+playerc_audio_t *playerc_audio_create(playerc_client_t *client, int index);
+
+/** @brief Destroy an audio proxy. */
+void playerc_audio_destroy(playerc_audio_t *device);
+
+/** @brief Subscribe to the audio device. */
+int playerc_audio_subscribe(playerc_audio_t *device, int access);
+
+/** @brief Un-subscribe from the audio device. */
+int playerc_audio_unsubscribe(playerc_audio_t *device);
+
+/** @brief Command to play an audio block */
+int playerc_audio_wav_play_cmd(playerc_audio_t *device, player_audio_wav_t * data);
+
+/** @brief Command to set recording state */
+int playerc_audio_wav_stream_rec_cmd(playerc_audio_t *device, uint8_t state);
+
+/** @brief Command to play prestored sample */
+int playerc_audio_sample_play_cmd(playerc_audio_t *device, int index);
+
+/** @brief Command to play sequence of tones */
+int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * tones);
+
+/** @brief Command to set mixer levels */
+int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels);
+
+/** @brief Request to record a single audio block
+Value is returned into wav_data, block length is determined by device */
+int playerc_audio_wav_rec(playerc_audio_t *device);
+
+/** @brief Request to load an audio sample */
+int playerc_audio_sample_load(playerc_audio_t *device, int index, player_audio_wav_t * data);
+
+/** @brief Request to retrieve an audio sample 
+Data is stored in wav_data */
+int playerc_audio_sample_retrieve(playerc_audio_t *device, int index);
+
+/** @brief Request to record new sample */
+int playerc_audio_sample_rec(playerc_audio_t *device, int index);
+
+/** @brief Request mixer channel data 
+result is stored in mixer_data*/
+int playerc_audio_get_mixer_levels(playerc_audio_t *device);
+
+/** @brief Request mixer channel details list 
+result is stored in channel_details_list*/
+int playerc_audio_get_mixer_details(playerc_audio_t *device);
+
+/** @} */
+/**************************************************************************/
+
+
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
