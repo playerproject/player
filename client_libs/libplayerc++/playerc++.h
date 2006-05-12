@@ -909,9 +909,9 @@ class LaserProxy : public ClientProxy
 
 
     /// Scan range for the latest set of data (radians)
-    double GetMaxAngle() const { return GetVar(mDevice->scan_start); };
+    double GetMinAngle() const { return GetVar(mDevice->scan_start); };
     /// Scan range for the latest set of data (radians)
-    double GetMinAngle() const
+    double GetMaxAngle() const
     {
       scoped_lock_t lock(mPc->mMutex);
       return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
