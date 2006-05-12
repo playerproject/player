@@ -141,10 +141,12 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   // TODO: make this memory allocation more conservative
   client->data = (char*)malloc(PLAYER_MAX_MESSAGE_SIZE);
-  client->xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
-  client->xdrdata_len = 0;
+  client->write_xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
+  client->read_xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
+  client->read_xdrdata_len = 0;
   assert(client->data);
-  assert(client->xdrdata);
+  assert(client->write_xdrdata);
+  assert(client->read_xdrdata);
 
   client->qfirst = 0;
   client->qlen = 0;
@@ -155,8 +157,9 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   /* this is the server's default */
   client->mode = PLAYER_DATAMODE_PUSH;
+  client->transport = PLAYERC_TRANSPORT_TCP;
 
-  client->request_timeout = 1.0;
+  client->request_timeout = 5.0;
 
   return client;
 }
@@ -166,7 +169,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 void playerc_client_destroy(playerc_client_t *client)
 {
   free(client->data);
-  free(client->xdrdata);
+  free(client->write_xdrdata);
+  free(client->read_xdrdata);
   free(client->host);
   free(client);
   return;
@@ -388,13 +392,13 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
   if (count < 0)
   {
     PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
-    playerc_client_disconnect(client);
+    //playerc_client_disconnect(client);
     return -1;
   }
   if (count > 0 && (fd.revents & POLLHUP))
   {
     PLAYERC_ERR("socket disconnected");
-  	playerc_client_disconnect(client);
+    //playerc_client_disconnect(client);
     return -1;
   }
   return count;
@@ -440,6 +444,12 @@ void *playerc_client_read(playerc_client_t *client)
         }
       default:
         PLAYERC_WARN1 ("unexpected message type [%d]", header.type);
+        printf("address: %u:%u:%u:%u\nsize: %u",
+               header.addr.host,
+               header.addr.robot,
+               header.addr.interf,
+               header.addr.index,
+               header.size);
         return NULL;
     }
   }
@@ -766,22 +776,23 @@ int playerc_client_readpacket(playerc_client_t *client,
     return -1;
   }
   
-  while(client->xdrdata_len < PLAYERXDR_MSGHDR_SIZE)
+  while(client->read_xdrdata_len < PLAYERXDR_MSGHDR_SIZE)
   {
-    nbytes = timed_recv(client->sock, client->xdrdata + client->xdrdata_len,
-                        PLAYERXDR_MAX_MESSAGE_SIZE - client->xdrdata_len,
+    nbytes = timed_recv(client->sock, 
+                        client->read_xdrdata + client->read_xdrdata_len,
+                        PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
                         0, client->request_timeout * 1e3);
     if (nbytes <= 0)
     {
       PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
-      playerc_client_disconnect(client);
+      //playerc_client_disconnect(client);
       return -1;
     }
-    client->xdrdata_len += nbytes;
+    client->read_xdrdata_len += nbytes;
   }
 
   // Unpack the header
-  if(player_msghdr_pack(client->xdrdata,
+  if(player_msghdr_pack(client->read_xdrdata,
                         PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_DECODE) < 0)
   {
@@ -795,23 +806,24 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Slide over the header
-  memmove(client->xdrdata, 
-          client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
-          client->xdrdata_len - PLAYERXDR_MSGHDR_SIZE);
-  client->xdrdata_len -= PLAYERXDR_MSGHDR_SIZE;
+  memmove(client->read_xdrdata, 
+          client->read_xdrdata + PLAYERXDR_MSGHDR_SIZE,
+          client->read_xdrdata_len - PLAYERXDR_MSGHDR_SIZE);
+  client->read_xdrdata_len -= PLAYERXDR_MSGHDR_SIZE;
 
-  while(client->xdrdata_len < header->size)
+  while(client->read_xdrdata_len < header->size)
   {
-    nbytes = timed_recv(client->sock, client->xdrdata + client->xdrdata_len,
-                        PLAYERXDR_MAX_MESSAGE_SIZE - client->xdrdata_len,
+    nbytes = timed_recv(client->sock, 
+                        client->read_xdrdata + client->read_xdrdata_len,
+                        PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
                         0, client->request_timeout*1e3);
     if (nbytes <= 0)
     {
       PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
-      playerc_client_disconnect(client);
+      //playerc_client_disconnect(client);
       return -1;
     }
-    client->xdrdata_len += nbytes;
+    client->read_xdrdata_len += nbytes;
   }
 
   // Locate the appropriate unpacking function for the message body
@@ -826,7 +838,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Unpack the body
-  if((decode_msglen = (*packfunc)(client->xdrdata,
+  if((decode_msglen = (*packfunc)(client->read_xdrdata,
                                   header->size, data, PLAYERXDR_DECODE)) < 0)
   {
     PLAYERC_ERR3("decoding failed on message from %u:%u with type %u",
@@ -835,14 +847,13 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Slide over the body
-  memmove(client->xdrdata, 
-          client->xdrdata + header->size,
-          client->xdrdata_len - header->size);
-  client->xdrdata_len -= header->size;
+  memmove(client->read_xdrdata, 
+          client->read_xdrdata + header->size,
+          client->read_xdrdata_len - header->size);
+  client->read_xdrdata_len -= header->size;
 
   // Rewrite the header with the decoded message length
   header->size = decode_msglen;
-
 
   return 0;
 }
@@ -879,7 +890,7 @@ int playerc_client_writepacket(playerc_client_t *client,
     }
 
     if((encode_msglen =
-        (*packfunc)(client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
+        (*packfunc)(client->write_xdrdata + PLAYERXDR_MSGHDR_SIZE,
                     PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
                     data, PLAYERXDR_ENCODE)) < 0)
     {
@@ -896,7 +907,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   gettimeofday(&curr,NULL);
   header->timestamp = curr.tv_sec + curr.tv_usec / 1e6;
   // Pack the header
-  if(player_msghdr_pack(client->xdrdata, PLAYERXDR_MSGHDR_SIZE,
+  if(player_msghdr_pack(client->write_xdrdata, PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_ENCODE) < 0)
   {
     PLAYERC_ERR("failed to pack header");
@@ -908,7 +919,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   bytes = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
   do 
   {
-    ret = send(client->sock, &client->xdrdata[length-bytes],
+    ret = send(client->sock, &client->write_xdrdata[length-bytes],
                bytes, 0);
     if (ret > 0)
     {
@@ -917,7 +928,7 @@ int playerc_client_writepacket(playerc_client_t *client,
     else if (ret < 0 && (errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK))
     {
       PLAYERC_ERR2("send on body failed with error [%d:%s]", errno, strerror(errno));
-      playerc_client_disconnect(client);
+      //playerc_client_disconnect(client);
       return -1;
     }
   } while (bytes);

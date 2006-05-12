@@ -94,6 +94,7 @@ int32_t g_port             = 6665;
 int16_t g_camera_index     = 0;
 int16_t g_blobfinder_index = 0;
 int16_t g_rate             = 30;
+int16_t g_transport        = PLAYERC_TRANSPORT_TCP;
 
 playerc_client_t* g_client         = NULL;
 playerc_camera_t* g_camera         = NULL;
@@ -118,7 +119,7 @@ int
 get_options(int argc, char **argv)
 {
   int ch=0, errflg=0;
-  const char* optflags = "i:h:p:r:b:";
+  const char* optflags = "i:h:p:r:b:t:";
 
   while((ch=getopt(argc, argv, optflags))!=-1)
   {
@@ -136,6 +137,17 @@ get_options(int argc, char **argv)
           break;
       case 'r':
           g_rate = atoi(optarg);
+          break;
+      case 't':
+          if(!strcasecmp(optarg,"tcp"))
+            g_transport = PLAYERC_TRANSPORT_TCP;
+          else if(!strcasecmp(optarg,"udp"))
+            g_transport = PLAYERC_TRANSPORT_UDP;
+          else
+          {
+            printf("unknown transport \"%s\"", optarg);
+            return(-1);
+          }
           break;
       case 'b':
           g_blobfinder_index = atoi(optarg);
@@ -162,7 +174,8 @@ print_usage()
          "  -p <port>      : the port number of the host\n"
          "  -i <index>     : the index of the camera\n"
          "  -b <index>     : the index of the blobfinder\n"
-         "  -r <rate>      : the refresh rate of the video\n\n"
+         "  -r <rate>      : the refresh rate of the video\n"
+         "  -t <transport> : transport to use (either \"tcp\" or \"udp\")\n\n"
          "Currently supports RGB888 and 8-bit grey scale images.\n\n");
 }
 
@@ -345,6 +358,7 @@ player_init(int argc, char *argv[])
   // Create a g_client object and connect to the server; the server must
   // be running on "localhost" at port 6665
   g_client = playerc_client_create(NULL, g_hostname, g_port);
+  playerc_client_set_transport(g_client, g_transport);
   if (0 != playerc_client_connect(g_client))
   {
     fprintf(stderr, "error: %s\n", playerc_error_str());
@@ -483,7 +497,7 @@ player_update()
   else
   {
     g_print("ERROR reading player g_client\n");
-    exit(-1);
+    //exit(-1);
   }
 }
 
