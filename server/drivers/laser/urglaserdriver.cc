@@ -244,6 +244,12 @@ int URGLaserDriver::ProcessMessage(MessageQueue* resp_queue,
 	{
 		Publish(device_addr,resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype,&Geom,sizeof(Geom),NULL);
 	}
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+		PLAYER_LASER_REQ_GET_CONFIG,
+	   this->device_addr))
+	{
+		Publish(device_addr,resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype,&Conf,sizeof(Conf),NULL);
+	}
 	else
 	{
 		return -1;
