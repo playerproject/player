@@ -23,61 +23,209 @@
 /*
  * $Id$
  *
- * client-side blobfinder device
  */
 
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <cassert>
+#include <sstream>
+#include <iomanip>
+
 #include "playerc++.h"
+#include "debug.h"
 
-void
-AudioProxy::FillData(player_msghdr_t hdr, const char *buffer)
+using namespace PlayerCc;
+
+AudioProxy::AudioProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
-  if(hdr.size != sizeof(player_audio_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: AudioProxy expected %d bytes of "
-              "audio data, but received %d. Unexpected results may "
-              "ensue.\n",
-              sizeof(player_audio_data_t),hdr.size);
-  }
-
-  frequency0 = ntohs(((player_audio_data_t*)buffer)->frequency0);
-  amplitude0 = ntohs(((player_audio_data_t*)buffer)->amplitude0);
-  frequency1 = ntohs(((player_audio_data_t*)buffer)->frequency1);
-  amplitude1 = ntohs(((player_audio_data_t*)buffer)->amplitude1);
-  frequency2 = ntohs(((player_audio_data_t*)buffer)->frequency2);
-  amplitude2 = ntohs(((player_audio_data_t*)buffer)->amplitude2);
-  frequency3 = ntohs(((player_audio_data_t*)buffer)->frequency3);
-  amplitude3 = ntohs(((player_audio_data_t*)buffer)->amplitude3);
-  frequency4 = ntohs(((player_audio_data_t*)buffer)->frequency4);
-  amplitude4 = ntohs(((player_audio_data_t*)buffer)->amplitude4);
+  Subscribe(aIndex);
+  mInfo = &(mDevice->info);
 }
 
-int
-AudioProxy::PlayTone(unsigned short freq,
-                     unsigned short amp,
-                     unsigned short dur)
+AudioProxy::~AudioProxy()
 {
-  player_audio_cmd_t cmd;
+  Unsubscribe();
+}
 
-  cmd.frequency = htons(freq);
-  cmd.amplitude = htons(amp);
-  cmd.duration = htons(dur);
+void AudioProxy::Subscribe(uint aIndex)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  mDevice = playerc_audio_create(mClient, aIndex);
+  if (mDevice==NULL)
+    throw PlayerError("AudioProxy::AudioProxy()", "could not create");
 
-  return(client->Write(m_device_id,
-                       (const char*)&cmd,sizeof(cmd)));
+  if (playerc_audio_subscribe(mDevice, PLAYER_OPEN_MODE) != 0)
+    throw PlayerError("AudioProxy::AudioProxy()", "could not subscribe");
+}
+
+void AudioProxy::Unsubscribe(void)
+{
+  assert(mDevice!=NULL);
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_unsubscribe(mDevice);
+  playerc_audio_destroy(mDevice);
+  mDevice = NULL;
 }
 
 // interface that all proxies SHOULD provide
-void
-AudioProxy::Print()
+std::ostream& std::operator << (std::ostream& os, const PlayerCc::AudioProxy& a)
 {
-  printf("#Audio(%d:%d) - %c\n", m_device_id.code,
-         m_device_id.index, access);
-  printf("(%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u) (%6u,%6u)\n",
-         frequency0,amplitude0,
-         frequency1,amplitude1,
-         frequency2,amplitude2,
-         frequency3,amplitude3,
-         frequency4,amplitude4);
+  player_audio_mixer_channel_detail_t channel_detail;
+  player_audio_mixer_channel_t channel;
+
+  int old_precision = os.precision(3);
+  std::_Ios_Fmtflags old_flags = os.flags();
+  os.setf(std::ios::fixed);
+
+  int NumChannelDetails = a.GetMixerDetailsCount();
+  int NumChannels = a.GetChannelCount();
+  int MinChan = NumChannels < NumChannelDetails ? NumChannels : NumChannelDetails;
+
+  os << MinChan << " channels:" << std::endl;
+  os << "Index\tValue\tState\tType\tName" << std::endl;
+  for (int ii = 0; ii < MinChan; ii++)
+  {
+    channel_detail = a.GetMixerDetails(ii);
+    channel = a.GetChannel(ii);
+    os <<  ii << '\t'
+       << channel.amplitude << '\t'
+       << channel.active.state << '\t'
+       << channel_detail.type << '\t'
+       << channel_detail.name
+       << std::endl;
+  }
+
+  os.precision(old_precision);
+  os.flags(old_flags);
+
+  return os;
 }
 
+
+
+
+/** @brief Command to play an audio block */
+void AudioProxy::PlayWav(player_audio_wav_t * aData)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_wav_play_cmd(mDevice, aData);
+}
+
+/** @brief Command to set recording state */
+void AudioProxy::SetWavStremRec(bool aState)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_wav_stream_rec_cmd(mDevice, aState);
+}
+
+/** @brief Command to play prestored sample */
+void AudioProxy::PlaySample(int aIndex)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_sample_play_cmd(mDevice, aIndex);
+}
+
+/** @brief Command to play sequence of tones */
+void AudioProxy::PlaySeq(player_audio_seq_t * aTones)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_seq_play_cmd(mDevice, aTones);
+}
+
+/** @brief Command to set mixer levels */
+void AudioProxy::SetMixerLevels(player_audio_mixer_channel_list_t * aLevels)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_mixer_channel_cmd(mDevice, aLevels);
+}
+
+/** @brief Request to record a single audio block
+result is stored in wav_data */
+void AudioProxy::RecordWav()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_audio_wav_rec(mDevice);
+
+  if (ret == -2)
+    throw PlayerError("AudioProxy::RecordWav", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("AudioProxy::RecordWav",
+                      playerc_error_str(),
+                      ret);
+}
+
+/** @brief Request to load an audio sample */
+void AudioProxy::LoadSample(int aIndex, player_audio_wav_t * aData)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_audio_sample_load(mDevice, aIndex, aData);
+
+  if (ret == -2)
+    throw PlayerError("AudioProxy::LoadSample", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("AudioProxy::LoadSample",
+                      playerc_error_str(),
+                      ret);
+}
+/** @brief Request to retrieve an audio sample 
+  Data is stored in wav_data */
+void AudioProxy::GetSample(int aIndex)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_audio_sample_retrieve(mDevice, aIndex);
+
+  if (ret == -2)
+    throw PlayerError("AudioProxy::GetSample", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("AudioProxy::GetSample",
+                      playerc_error_str(),
+                      ret);
+}
+
+/** @brief Request to record new sample */
+void AudioProxy::RecordSample(int aIndex)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_audio_sample_rec(mDevice, aIndex);
+
+  if (ret == -2)
+    throw PlayerError("AudioProxy::RecordSample", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("AudioProxy::RecordSample",
+                      playerc_error_str(),
+                      ret);
+}
+
+/** @brief Request mixer channel data 
+result is stored in mixer_data*/
+void AudioProxy::GetMixerLevels()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_audio_get_mixer_levels(mDevice);
+
+  if (ret == -2)
+    throw PlayerError("AudioProxy::GetMixerLevels", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("AudioProxy::GetMixerLevels",
+                      playerc_error_str(),
+                      ret);
+}
+
+/** @brief Request mixer channel details list 
+result is stored in channel_details_list*/
+void AudioProxy::GetMixerDetails()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  int ret = playerc_audio_get_mixer_details(mDevice);
+
+  if (ret == -2)
+    throw PlayerError("AudioProxy::GetMixerDetails", "NACK", ret);
+  else if (ret != 0)
+    throw PlayerError("AudioProxy::GetMixerDetails",
+                      playerc_error_str(),
+                      ret);
+}

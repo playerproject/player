@@ -30,6 +30,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               clientproxy.cc \
                               actarrayproxy.cc \
                               aioproxy.cc \
+                              audioproxy.cc \
                               blobfinderproxy.cc \
                               bumperproxy.cc \
                               cameraproxy.cc \
@@ -60,20 +61,12 @@ libplayerc___la_SOURCES =     playerc++.h \
                               wsnproxy.cc
 
 # not in libplayerc yet \
-                              aioproxy.cc \
-                              audioproxy.cc \
-                              audiodspproxy.cc \
-                              audiomixerproxy.cc \
                               blinkenlightproxy.cc \
                               energyproxy.cc \
                               mcomproxy.cc \
-                              motorproxy.cc \
-                              soundproxy.cc \
                               speechrecognitionproxy.cc \
-                              truthproxy.cc \
                               waveformproxy.cc
 
-# motorproxy.cc
 
 #PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
 #                  -L${top_builddir}/client_libs/libplayerc

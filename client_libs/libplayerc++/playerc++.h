@@ -191,35 +191,97 @@ class AioProxy : public ClientProxy
 };
 
 
-// /**
-// The @p AudioProxy class controls an @ref interface_audio device.
-// */
-// class AudioProxy : public ClientProxy
-// {
-//
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_audio_t *mDevice;
-//
-//   public:
-//
-//     AudioProxy(PlayerClient *aPc, uint aIndex=0)
-//     ~AudioProxy();
-//
-//     uint GetCount() const { return(GetVar(mDevice->count)); };
-//
-//     double GetFrequency(uint aIndex) const
-//       { return(GetVar(mDevice->frequency[aIndex])); };
-//     double GetAmplitude(uint aIndex) const
-//       { return(GetVar(mDevice->amplitude[aIndex])); };
-//
-//     // Play a fixed-frequency tone
-//     void PlayTone(uint aFreq, uint aAmp, uint aDur);
-// };
+/**
+The @p AudioProxy class controls an @ref interface_audio device.
+*/
+class AudioProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_audio_t *mDevice;
+
+  public:
+
+    AudioProxy(PlayerClient *aPc, uint aIndex=0);
+    ~AudioProxy();
+
+    /** @brief Get Mixer Details Count */
+    uint GetMixerDetailsCount() const {return(GetVar(mDevice->channel_details_list.details_count));};
+    /** @brief Get Mixer Detail */
+    player_audio_mixer_channel_detail_t GetMixerDetails(int aIndex) const  {return(GetVar(mDevice->channel_details_list.details[aIndex]));};
+    /** @brief Get Default output Channel */
+    uint GetDefaultOutputChannel() const  {return(GetVar(mDevice->channel_details_list.default_output));};
+    /** @brief Get Default input Channel */
+    uint GetDefaultInputChannel() const {return(GetVar(mDevice->channel_details_list.default_input));};
+
+    /** @brief Get Wav data length */
+    uint GetWavDataLength() const {return(GetVar(mDevice->wav_data.data_count));};
+    /// @brief Get Wav data
+    /// This function copies the wav data into the buffer aImage.
+    /// The buffer should be allocated according to the length of the wav data
+    /// The size can be found by calling @ref GetWavDataLength().
+    void GetWavData(uint8_t* aData) const
+      {
+        return GetVarByRef(mDevice->wav_data.data,
+                           mDevice->wav_data.data+GetWavDataLength(),
+                           aData);
+      };
+
+    /** @brief Get Seq data count */
+    uint GetSeqCount() const {return(GetVar(mDevice->seq_data.tones_count));};
+    /** @brief Get Sequence item */
+    player_audio_seq_item_t GetSeqItem(int aIndex) const  {return(GetVar(mDevice->seq_data.tones[aIndex]));};
+
+    /** @brief Get Channel data count */
+    uint GetChannelCount() const {return(GetVar(mDevice->mixer_data.channels_count));};
+    /** @brief Get Sequence item */
+    player_audio_mixer_channel_t GetChannel(int aIndex) const  {return(GetVar(mDevice->mixer_data.channels[aIndex]));};
+
+
+
+    /** @brief Command to play an audio block */
+    void PlayWav(player_audio_wav_t * aData);
+    
+    /** @brief Command to set recording state */
+    void SetWavStremRec(bool aState);
+
+    /** @brief Command to play prestored sample */
+    void PlaySample(int aIndex);
+
+    /** @brief Command to play sequence of tones */
+    void PlaySeq(player_audio_seq_t * aTones);
+
+    /** @brief Command to set mixer levels */
+    void SetMixerLevels(player_audio_mixer_channel_list_t * aLevels);
+
+    /** @brief Request to record a single audio block
+    result is stored in wav_data */
+    void RecordWav();
+
+    /** @brief Request to load an audio sample */
+    void LoadSample(int aIndex, player_audio_wav_t * aData);
+
+    /** @brief Request to retrieve an audio sample 
+      Data is stored in wav_data */
+    void GetSample(int aIndex);
+
+    /** @brief Request to record new sample */
+    void RecordSample(int aIndex);
+
+    /** @brief Request mixer channel data 
+    result is stored in mixer_data*/
+    void GetMixerLevels();
+
+    /** @brief Request mixer channel details list 
+    result is stored in channel_details_list*/
+    void GetMixerDetails();
+
+};
 
 // /**
 // The @p AudioDspProxy class controls an @ref interface_audiodsp device.
@@ -909,9 +971,9 @@ class LaserProxy : public ClientProxy
 
 
     /// Scan range for the latest set of data (radians)
-    double GetMinAngle() const { return GetVar(mDevice->scan_start); };
+    double GetMaxAngle() const { return GetVar(mDevice->scan_start); };
     /// Scan range for the latest set of data (radians)
-    double GetMaxAngle() const
+    double GetMinAngle() const
     {
       scoped_lock_t lock(mPc->mMutex);
       return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
@@ -2193,8 +2255,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::ActArrayProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::AioProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioDspProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::AudioMixerProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::AudioProxy& a);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::BlinkenLightProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::BlobfinderProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
@@ -2219,14 +2280,12 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SoundProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WSNProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
 }
 
 #endif
