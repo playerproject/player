@@ -11,7 +11,7 @@ endif
 endif
 endif
 
-EXTRA_DIST = pmap.dox
+#EXTRA_DIST = pmap.dox
 
 libpmap_la_SOURCES = logfile.cpp omap.cpp pmap.cpp rmap.cpp slap.cpp
 libpmap_la_CFLAGS = @GSL_CFLAGS@ --fast-math

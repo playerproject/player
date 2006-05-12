@@ -40,8 +40,9 @@
 #include <libplayerxdr/playerxdr.h>
 
 #include "playerudp.h"
-#include "socket_util.h"
 //#include "remote_driver.h"
+
+int _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum);
 
 typedef struct playerudp_listener
 {
@@ -154,10 +155,9 @@ PlayerUDP::Listen(int* ports, int num_ports)
   for(int i=tmp;i<this->num_listeners;i++)
   {
     if((this->listeners[i].fd =
-        create_and_bind_socket(0,this->host,ports[i],
-                               PLAYER_TRANSPORT_UDP,200)) < 0)
+        _create_and_bind_udp_socket(0,this->host,ports[i])) < 0)
     {
-      PLAYER_ERROR("create_and_bind_socket() failed");
+      PLAYER_ERROR("_create_and_bind_udp_socket() failed");
       return(-1);
     }
     this->listeners[i].port = ports[i];
@@ -1170,3 +1170,88 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
   return(0);
 }
 
+int
+_create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
+{
+  int sock;                   /* socket we're creating */
+  int flags;                  /* temp for old socket access flags */
+
+  struct sockaddr_in serverp;
+
+  int socktype;
+
+  socktype = SOCK_DGRAM;
+
+  memset(&serverp,0,sizeof(serverp));
+  serverp.sin_addr.s_addr = host;
+  serverp.sin_port = htons(portnum);
+
+  /* 
+   * Create the INET socket.  
+   * 
+   */
+  if((sock = socket(PF_INET, socktype, 0)) == -1) 
+  {
+    perror("create_and_bind_socket:socket() failed; socket not created.");
+    return(-1);
+  }
+
+  /*
+   * let's say that our process should get the SIGIO's when it's
+   * readable
+   */
+  if(fcntl(sock, F_SETOWN, getpid()) == -1)
+  {
+    /* I'm making this non-fatal because it always fails under Cygwin and
+     * yet doesn't seem to matter -BPG */
+    PLAYER_WARN("fcntl() failed while setting socket pid ownership");
+  }
+
+  if(!blocking)
+  {
+    /*
+     * get the current access flags
+     */
+    if((flags = fcntl(sock, F_GETFL)) == -1)
+    { 
+      perror("create_and_bind_socket():fcntl() while getting socket "
+                      "access flags; socket not created.");
+      close(sock);
+      return(-1);
+    }
+    /*
+     * OR the current flags with O_NONBLOCK (so we won't block), 
+     * and write them back
+     */
+    if(fcntl(sock, F_SETFL, flags | O_NONBLOCK ) == -1)
+    {
+      perror("create_and_bind_socket():fcntl() failed while setting socket "
+                      "access flags; socket not created.");
+      close(sock);
+      return(-1);
+    }
+  }
+
+  /* 
+   * Bind it to the port indicated
+   * INADDR_ANY indicates that any network interface (IP address)
+   * for the local host may be used (presumably the OS will choose the 
+   * right one).
+   *
+   * Specifying sin_port = 0 would allow the system to choose the port.
+   */
+  serverp.sin_family = PF_INET;
+  serverp.sin_addr.s_addr = INADDR_ANY;
+
+  if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1) 
+  {
+    perror ("create_and_bind_socket():bind() failed; socket not created.");
+    close(sock);
+    return(-1);
+  }
+
+  /*
+   * return the fd for the newly bound socket 
+   */
+  return(sock);
+}
