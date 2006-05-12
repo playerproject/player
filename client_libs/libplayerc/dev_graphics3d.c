@@ -78,6 +78,7 @@ int playerc_graphics3d_setcolor(playerc_graphics3d_t *device,
 			     player_color_t col )
 {
   device->color = col;
+  return 0;
 }
 
 int  playerc_graphics3d_draw(playerc_graphics3d_t *device,

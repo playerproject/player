@@ -102,7 +102,7 @@ void playerc_ir_putmsg(playerc_ir_t *device,
                           player_msghdr_t *header,
                           void *data)
 {
-  int i;
+  //int i;
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_IR_DATA_RANGES))
   {
