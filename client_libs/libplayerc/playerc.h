@@ -48,6 +48,8 @@ client writers.
 #define PLAYERC_H
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 // Get the message structures from Player
 #include <libplayercore/player.h>
