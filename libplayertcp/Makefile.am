@@ -20,8 +20,7 @@ libplayertcp_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir
 
 libplayerudp_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-libplayerudp_la_SOURCES = socket_util.c socket_util.h \
-                          playerudp.cc playerudp.h
+libplayerudp_la_SOURCES = playerudp.cc playerudp.h
 #		  remote_driver.cc remote_driver.h
 
 libplayerudp_la_LIBADD = $(top_builddir)/replace/*.lo
