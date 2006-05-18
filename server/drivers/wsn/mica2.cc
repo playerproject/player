@@ -56,7 +56,7 @@ MTS310 and MTS510 boards are supported.
   - Serial port to which the Crossbow MIB510 is attached.  If you are
     using a USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
 
-- rate (integer)
+- speed (integer)
   - Default: 57600
   - Baud rate. Valid values are 19200 for MICA2DOT and 57600 for MICA2.
 
@@ -75,6 +75,15 @@ MTS310 and MTS510 boards are supported.
                       calibration_positive_1g_z_axis
                      ]
 
+- converted (integer)
+  - Default: 1.
+  - Fill the data buffer with converted engineering units (1) or RAW (0) values.
+
+- filterbasenode (integer)
+  - Default: 0.
+  - Filter the base node (ID 0) in case there is another application != TOSBase
+    installed on it.
+  
 @par Example 
 
 @verbatim
@@ -83,11 +92,15 @@ driver
   name "mica2"
   provides ["wsn:0"]
   port "/dev/ttyS0"
-  rate "57600"
+  speed "57600"
   # Calibrate node 0 from group 125 (default) with X={419,532} and Y={440,552}
   node [0 125 419 532 440 552 0 0]
   # Calibrate node 2 from group 125 (default) with X={447,557} and Y={410,520}
   node [2 125 447 557 410 520 0 0]
+  # Use RAW values
+  converted 0
+  # Filter the base node (in case TOSBase is not installed on it)
+  filterbasenode 1
 )
 @endverbatim
 
@@ -147,13 +160,16 @@ class Mica2 : public Driver
 	// Is the base node awake or sleeping?
 	int               base_node_status;
 
-	// RFID interface
+	// WSN interface
 	player_wsn_data_t data;
 	player_wsn_cmd_t  cmd;
 		
 	const char*       port_name;
 	int               port_speed;
-		
+	
+	// Filter base node from readings ?
+	int               filterbasenode;
+
 	// Calibration values
 	int               nodes_count;
 	NCV               ncv;
@@ -177,8 +193,8 @@ class Mica2 : public Driver
 		
 	void ChangeNodeState (int node_id, int group_id, unsigned char state, 
 			      int device, int enable, double rate);
-	float ConvertAccel (unsigned short raw_accel, int neg_1g, int pos_1g);
-		
+	float ConvertAccel (unsigned short raw_accel, int neg_1g, int pos_1g,
+		              int converted);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -225,8 +241,10 @@ Mica2::Mica2 (ConfigFile* cf, int section)
     }
 
     // Defaults to converted values
-    raw_or_converted = 1;
+    raw_or_converted = cf->ReadInt (section, "converted", 1);
 	
+    // Filter base node from readings ?
+    filterbasenode   = cf->ReadInt (section, "filterbasenode", 0);
     return;
 }
 
@@ -386,14 +404,17 @@ int Mica2::ProcessMessage (MessageQueue* resp_queue,
 	// Change the data type to RAW or converted metric units
 	player_wsn_datatype_config *datatype = 
 			(player_wsn_datatype_config*)data;
-	if (datatype->value == 1)
-	    raw_or_converted = 1;
-	else
-	    raw_or_converted = 0;
 
-	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, 
-		 hdr->subtype);
-	return 0;
+    if ((datatype->value > -1) && (datatype->value < 3))
+    {
+        raw_or_converted = datatype->value;
+        Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, 
+                 hdr->subtype);
+    }
+    else
+        Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, 
+                 hdr->subtype);
+    return 0;
     }
     else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
 	 PLAYER_WSN_REQ_DATAFREQ, device_addr))
@@ -567,6 +588,9 @@ void Mica2::RefreshData ()
 
     data = DecodeSerial (buffer, length);
 
+    if ((data.node_id == 0) && (filterbasenode == 1))
+        return;
+
     // Write the WSN data
     Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
 	     &data, sizeof (player_wsn_data_t), NULL);
@@ -636,7 +660,7 @@ NodeCalibrationValues Mica2::FindNodeValues (unsigned int nodeID)
     	n = ncv.at (i);
 	
 	if (n.node_id == nodeID)
-			break;
+	    break;
 	}
 	
 	return n;
@@ -696,18 +720,18 @@ player_wsn_data_t Mica2::DecodeSerial (unsigned char *buffer, int length)
 				     data->sound[4]) / 5;
 			temp_data.data_packet.mic         = sound;
 						
-			if (raw_or_converted == 1)
+			if (raw_or_converted != 0)
 			{
 			    node_values = FindNodeValues (packet->node_id);
 							
 			    temp_data.data_packet.accel_x = ConvertAccel 
-				(data->accelX, 
-				 node_values.c_values[0], 
-				 node_values.c_values[1]);
+				    (data->accelX, 
+				    node_values.c_values[0], 
+                		    node_values.c_values[1], raw_or_converted);
 			    temp_data.data_packet.accel_y = ConvertAccel 
-				(data->accelY,
-				node_values.c_values[2],
-				node_values.c_values[3]);
+				    (data->accelY,
+				    node_values.c_values[2],
+            			    node_values.c_values[3], raw_or_converted);
 
 //			    temp_data.data_packet.battery     =
 // 				(unsigned short)(614400 / (float)data->vref);
@@ -737,18 +761,18 @@ player_wsn_data_t Mica2::DecodeSerial (unsigned char *buffer, int length)
 				
 			temp_data.data_packet.mic         = data->mic;
 				
-		    	if (raw_or_converted == 1)
+		    	if (raw_or_converted != 0)
 			{
 			    node_values = FindNodeValues (packet->node_id);
 							
 			    temp_data.data_packet.accel_x = ConvertAccel 
-				(data->accelX,
-				 node_values.c_values[0],
-				 node_values.c_values[1]);
+				    (data->accelX,
+				    node_values.c_values[0],
+            			    node_values.c_values[1], raw_or_converted);
 			    temp_data.data_packet.accel_y = ConvertAccel 
-				(data->accelY,
-				 node_values.c_values[2],
-				 node_values.c_values[3]);
+				    (data->accelY,
+				    node_values.c_values[2],
+				    node_values.c_values[3], raw_or_converted);
 
 			    // Convert battery to Volts
 			    temp_data.data_packet.battery     =
@@ -805,7 +829,8 @@ player_wsn_data_t Mica2::DecodeSerial (unsigned char *buffer, int length)
 
 ////////////////////////////////////////////////////////////////////////////////
 // ConvertAccel function - convert RAW accel. data to metric units (m/s^2)
-float Mica2::ConvertAccel (unsigned short raw_accel, int neg_1g, int pos_1g)
+float Mica2::ConvertAccel (unsigned short raw_accel, 
+                           int neg_1g, int pos_1g, int converted)
 {
     if (neg_1g == 0)
 	neg_1g = 450;
@@ -815,7 +840,10 @@ float Mica2::ConvertAccel (unsigned short raw_accel, int neg_1g, int pos_1g)
     float sensitivity  = (pos_1g - neg_1g) / 2.0f;
     float offset       = (pos_1g + neg_1g) / 2.0f;
     float acceleration = (raw_accel - offset) / sensitivity;
-    return acceleration * 9.81;
+    if (converted == 1)
+        return acceleration * 9.81;
+    else
+        return acceleration;
 }
 //------------------------------------------------------------------------------
 
