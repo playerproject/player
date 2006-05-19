@@ -682,7 +682,7 @@ never return the ID of a proxy other than the client.
 void *playerc_client_read(playerc_client_t *client);
 
 
-/** @brief Set the timeout for client requests. 
+/** @brief Set the timeout for client requests.
 
 @param seconds Seconds to wait for a reply.
 
@@ -906,7 +906,7 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float s
  * @defgroup playerc_proxy_audio audio
 
 The audio proxy provides access to drivers supporting the @ref audio_interface.
-See the Player User Manual for a complete description of the drivers that support 
+See the Player User Manual for a complete description of the drivers that support
 this interface.
 
 @{
@@ -967,18 +967,18 @@ int playerc_audio_wav_rec(playerc_audio_t *device);
 /** @brief Request to load an audio sample */
 int playerc_audio_sample_load(playerc_audio_t *device, int index, player_audio_wav_t * data);
 
-/** @brief Request to retrieve an audio sample 
+/** @brief Request to retrieve an audio sample
 Data is stored in wav_data */
 int playerc_audio_sample_retrieve(playerc_audio_t *device, int index);
 
 /** @brief Request to record new sample */
 int playerc_audio_sample_rec(playerc_audio_t *device, int index);
 
-/** @brief Request mixer channel data 
+/** @brief Request mixer channel data
 result is stored in mixer_data*/
 int playerc_audio_get_mixer_levels(playerc_audio_t *device);
 
-/** @brief Request mixer channel details list 
+/** @brief Request mixer channel details list
 result is stored in channel_details_list*/
 int playerc_audio_get_mixer_details(playerc_audio_t *device);
 
@@ -1422,7 +1422,7 @@ int playerc_graphics3d_setcolor(playerc_graphics3d_t *device,
 
 /** @brief Draw some points in the given mode */
 int playerc_graphics3d_draw(playerc_graphics3d_t *device,
-           player_graphics3d_draw_mode_t mode, 
+           player_graphics3d_draw_mode_t mode,
            player_point_3d_t pts[],
            int count );
 
@@ -1835,7 +1835,7 @@ int playerc_localize_unsubscribe(playerc_localize_t *device);
 /** @brief Set the the robot pose (mean and covariance). */
 int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3]);
 
-/* @brief Get the particle set.  Caller must supply sufficient storage for
+/** @brief Request the particle set.  Caller must supply sufficient storage for
    the result. */
 int playerc_localize_get_particles(playerc_localize_t *device);
 
@@ -2153,9 +2153,18 @@ int playerc_position1d_get_geom(playerc_position1d_t *device);
 int playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
                                    double vel, int state);
 
-/** Set the target position. */
+/** @brief Set the target position.
+    -@arg pos The position to move to
+ */
 int playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
                                    double pos, int state);
+
+/** @brief Set the target position with movement velocity
+    -@arg pos The position to move to
+    -@arg vel The speed at which to move to the position
+ */
+int playerc_position1d_set_cmd_pos_with_vel(playerc_position1d_t *device,
+                                            double pos, double vel, int state);
 
 /** Set the odometry offset */
 int playerc_position1d_set_odom(playerc_position1d_t *device,
@@ -2228,6 +2237,12 @@ int playerc_position2d_get_geom(playerc_position2d_t *device);
 int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
                                    double vx, double vy, double va, int state);
 
+/** Set the target pose with given motion vel */
+int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
+                                             player_pose_t pos,
+                                             player_pose_t vel,
+                                             int state);
+
 /** Set the target pose (gx, gy, ga) is the target pose in the
     odometric coordinate system. */
 int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
@@ -2235,7 +2250,7 @@ int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
 
 /** Set the target cmd for car like position */
 int playerc_position2d_set_cmd_car(playerc_position2d_t *device,
-                                    double vx,double a);
+                                    double vx, double a);
 
 /** Set the odometry offset */
 int playerc_position2d_set_odom(playerc_position2d_t *device,
@@ -2290,7 +2305,7 @@ typedef struct
 
 /** Create a position3d device proxy. */
 playerc_position3d_t *playerc_position3d_create(playerc_client_t *client,
-            int index);
+                                                int index);
 
 /** Destroy a position3d device proxy. */
 void playerc_position3d_destroy(playerc_position3d_t *device);
@@ -2314,7 +2329,8 @@ int playerc_position3d_get_geom(playerc_position3d_t *device);
     All speeds are defined in the robot coordinate system. */
 int playerc_position3d_set_velocity(playerc_position3d_t *device,
                                     double vx, double vy, double vz,
-                                    double vr, double vp, double vt, int state);
+                                    double vr, double vp, double vt,
+                                    int state);
 
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_speed(playerc_position3d_t *device,
@@ -2326,9 +2342,24 @@ int playerc_position3d_set_pose(playerc_position3d_t *device,
                                 double gx, double gy, double gz,
                                 double gr, double gp, double gt);
 
+
+/** Set the target pose (pos,vel) define desired position and motion speed */
+int playerc_position3d_set_pose_with_vel(playerc_position3d_t *device,
+                                         player_pose3d_t pos,
+                                         player_pose3d_t vel);
+
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
                                     double gx, double gy, double gz);
+
+/** Set the velocity mode. This is driver dependent. */
+int playerc_position3d_set_vel_mode(playerc_position3d_t *device, int mode);
+
+/** Set the odometry offset */
+int playerc_position3d_set_odom(playerc_position3d_t *device,
+                                double ox, double oy, double oz,
+                                double oroll, double opitch, double oyaw);
+
 
 /** @} */
 /**************************************************************************/

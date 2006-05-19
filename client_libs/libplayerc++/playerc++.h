@@ -246,7 +246,7 @@ class AudioProxy : public ClientProxy
 
     /** @brief Command to play an audio block */
     void PlayWav(player_audio_wav_t * aData);
-    
+
     /** @brief Command to set recording state */
     void SetWavStremRec(bool aState);
 
@@ -266,18 +266,18 @@ class AudioProxy : public ClientProxy
     /** @brief Request to load an audio sample */
     void LoadSample(int aIndex, player_audio_wav_t * aData);
 
-    /** @brief Request to retrieve an audio sample 
+    /** @brief Request to retrieve an audio sample
       Data is stored in wav_data */
     void GetSample(int aIndex);
 
     /** @brief Request to record new sample */
     void RecordSample(int aIndex);
 
-    /** @brief Request mixer channel data 
+    /** @brief Request mixer channel data
     result is stored in mixer_data*/
     void GetMixerLevels();
 
-    /** @brief Request mixer channel details list 
+    /** @brief Request mixer channel details list
     result is stored in channel_details_list*/
     void GetMixerDetails();
 
@@ -536,7 +536,7 @@ class CameraProxy : public ClientProxy
     /// Image dimensions (pixels)
     uint GetHeight() const { return GetVar(mDevice->height); };
 
-    /// @brief Image format 
+    /// @brief Image format
     /// Possible values include
     /// - @ref PLAYER_CAMERA_FORMAT_MONO8
     /// - @ref PLAYER_CAMERA_FORMAT_MONO16
@@ -549,7 +549,7 @@ class CameraProxy : public ClientProxy
 
     /// @brief Image data
     /// This function copies the image data into the data buffer aImage.
-    /// The buffer should be allocated according to the width, height, and 
+    /// The buffer should be allocated according to the width, height, and
     /// depth of the image.  The size can be found by calling @ref GetImageSize().
     void GetImage(uint8_t* aImage) const
       {
@@ -787,7 +787,7 @@ class Graphics2dProxy : public ClientProxy
 /**
  * The @p Graphics3dProxy class is used to draw simple graphics into a
  * rendering device provided by Player using the graphics3d
- * interface. 
+ * interface.
  */
 class Graphics3dProxy : public ClientProxy
 {
@@ -1492,7 +1492,8 @@ class Position1dProxy : public ClientProxy
 
     /// Send a motor command for position control mode.  Specify the
     /// desired pose of the robot in [m] or [rad]
-    void GoTo(double aPos);
+    /// desired motion in [m/s] or [rad/s]
+    void GoTo(double aPos, double aVel);
 
     /// Get the device's geometry; it is read into the
     /// relevant class attributes.
@@ -1525,8 +1526,8 @@ class Position1dProxy : public ClientProxy
     /// room with the charger still attached.
     void SetMotorEnable(bool enable);
 
-    /// Sets the odometry to the pose @p (x, y, yaw).
-    /// Note that @p x and @p y are in m and @p yaw is in radians.
+    /// Sets the odometry to the pose @p aPos.
+    /// @note aPos is in either [m] or [rad] depending on the actuator type
     void SetOdometry(double aPos);
 
     /// Reset odometry to 0.
@@ -1618,9 +1619,23 @@ class Position2dProxy : public ClientProxy
     void SetSpeed(double aXSpeed, double aYawSpeed)
         { return SetSpeed(aXSpeed, 0, aYawSpeed);}
 
+    /// Overloaded SetSpeed that takes player_pose_t as an argument
+    void SetSpeed(player_pose_t vel)
+        { return SetSpeed(vel.px, vel.py, vel.pa);}
+
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in m, m, radians.
-    void GoTo(double aX, double aY, double aYaw);
+    /// desired pose of the robot as a player_pose_t.
+    /// desired motion speed  as a player_pose_t.
+    void GoTo(player_pose_t pos, player_pose_t vel);
+
+    /// Same as the previous GoTo(), but doesn't take speed
+    void GoTo(player_pose_t pos)
+      {GoTo(pos,(player_pose_t) {0,0,0}); }
+
+    /// Same as the previous GoTo(), but only takes position arguments,
+    /// no motion speed setting
+    void GoTo(double aX, double aY, double aYaw)
+      {GoTo((player_pose_t) {aX,aY,aYaw},(player_pose_t) {0,0,0}); }
 
     /// Sets command for carlike robot
     void SetCarlike(double aXSpeed, double aDriveAngle);
@@ -1771,11 +1786,27 @@ class Position3dProxy : public ClientProxy
     void SetSpeed(double aXSpeed, double aYawSpeed)
       { SetSpeed(aXSpeed,0,0,0,0,aYawSpeed);}
 
+    /// Overloaded SetSpeed that takes player_pose3d_t as input
+    void SetSpeed(player_pose3d_t vel)
+      { SetSpeed(vel.px,vel.py,vel.pz,vel.proll,vel.ppitch,vel.pyaw);}
 
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in m, m, m, rad, rad, rad.
+    /// desired pose of the robot as a player_pose3d_t structure
+    /// desired motion speed as a player_pose3d_t structure
+    void GoTo(player_pose3d_t aPos, player_pose3d_t aVel);
+
+    /// Same as the previous GoTo(), but does'n take vel argument
+    void GoTo(player_pose3d_t aPos)
+      { GoTo(aPos, (player_pose3d_t) {0,0,0,0,0,0}); }
+
+
+    /// Same as the previous GoTo(), but only takes position arguments,
+    /// no motion speed setting
     void GoTo(double aX, double aY, double aZ,
-              double aRoll, double aPitch, double aYaw);
+              double aRoll, double aPitch, double aYaw)
+      { GoTo((player_pose3d_t) {aX,aY,aZ,aRoll,aPitch,aYaw},
+              (player_pose3d_t) {0,0,0,0,0,0});
+      }
 
     /// Enable/disable the motors.
     /// Set @p state to 0 to disable or 1 to enable.
@@ -1783,18 +1814,18 @@ class Position3dProxy : public ClientProxy
     /// to run across the room with the charger still attached.
     void SetMotorEnable(bool aEnable);
 
-    // Select velocity control mode.
-    // This is driver dependent.
-    //void SelectVelocityControl(unsigned char mode);
+    /// Select velocity control mode.
+    /// This is driver dependent.
+    void SelectVelocityControl(int aMode);
 
-    // Reset odometry to (0,0,0).
-//    void ResetOdometry() {SetOdometry(0,0,0);};
+    /// Reset odometry to (0,0,0).
+    void ResetOdometry() {SetOdometry(0,0,0,0,0,0);};
 
-    // Sets the odometry to the pose @p (x, y, z, roll, pitch, yaw).
-    // Note that @p x, @p y, and @p z are in m and @p roll,
-    // @p pitch, and @p yaw are in radians.
-//    void SetOdometry(double aX, double aY, double aZ,
-//                     double aRoll, double aPitch, double aYaw);
+    /// Sets the odometry to the pose @p (x, y, z, roll, pitch, yaw).
+    /// Note that @p x, @p y, and @p z are in m and @p roll,
+    /// @p pitch, and @p yaw are in radians.
+    void SetOdometry(double aX, double aY, double aZ,
+                     double aRoll, double aPitch, double aYaw);
 
     // Select position mode
     // Set @p mode for 0 for velocity mode, 1 for position mode.
