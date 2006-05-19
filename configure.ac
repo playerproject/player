@@ -97,6 +97,8 @@ if test "x$have_python" = "xno"; then
 fi
 AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 
+dnl Check for python c header
+AC_CHECK_HEADER(Python.h,
 dnl Do we have Python development tools?
 AC_MSG_CHECKING([for the distutils Python package])
   ac_distutils_result=`python -c "import distutils" 2>&1 | grep ImportError`
@@ -104,9 +106,11 @@ AC_MSG_CHECKING([for the distutils Python package])
     AC_MSG_RESULT([yes])
     have_pythondev=yes
   else
-    AC_MSG_RESULT([no; Python extensions will not be built])
+    AC_MSG_RESULT([Python extensions will not be built])
     have_pythondev=no
   fi
+,    AC_MSG_RESULT([no; Python extensions will not be built])
+    have_pythondev=no)
 AM_CONDITIONAL(HAVE_PYTHONDEV, test "x$have_pythondev" = "xyes")
 
 dnl Where are the JNI headers?
