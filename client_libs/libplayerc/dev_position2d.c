@@ -187,6 +187,25 @@ playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 
 // Set the target pose
 int
+playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
+                                         player_pose_t pos, player_pose_t vel,
+                                         int state)
+{
+  player_position2d_cmd_pos_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  cmd.pos = pos;
+  cmd.vel = vel;
+  cmd.state = state;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_POSITION2D_CMD_POS,
+                              &cmd, NULL);
+}
+
+
+// Set the target pose
+int
 playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
                                 double gx, double gy, double ga, int state)
 {

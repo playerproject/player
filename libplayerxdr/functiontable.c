@@ -383,6 +383,23 @@ static playerxdr_function_t init_ftable[] =
   /* position3d messages */
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
     (player_pack_fn_t)player_position3d_data_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_GEOMETRY,
+    (player_pack_fn_t)player_position3d_data_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_CMD_SET_POS,
+    (player_pack_fn_t)player_position3d_cmd_pos_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_CMD_SET_VEL,
+    (player_pack_fn_t)player_position3d_cmd_vel_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_MOTOR_POWER,
+    (player_pack_fn_t)player_position3d_power_config_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_POSITION_MODE,
+    (player_pack_fn_t)player_position3d_position_mode_req_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_RESET_ODOM,
+    (player_pack_fn_t)player_position3d_set_odom_req_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_SET_ODOM,
+    (player_pack_fn_t)player_position3d_reset_odom_config_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_VELOCITY_MODE,
+    (player_pack_fn_t)player_position3d_velocity_mode_config_pack},
+  
 
   /* power messages */
   {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,

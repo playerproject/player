@@ -88,11 +88,10 @@ Position3dProxy::SetSpeed(double aXSpeed, double aYSpeed, double aZSpeed,
 }
 
 void
-Position3dProxy::GoTo(double aX, double aY, double aZ,
-                      double aRoll, double aPitch, double aYaw)
+Position3dProxy::GoTo(player_pose3d_t aPos, player_pose3d_t aVel)
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_position3d_set_pose(mDevice, aX, aY, aZ, aRoll, aPitch, aYaw);
+  playerc_position3d_set_pose_with_vel(mDevice, aPos, aVel);
 }
 
 void
@@ -102,3 +101,16 @@ Position3dProxy::SetMotorEnable(bool aEnable)
   playerc_position3d_enable(mDevice,aEnable);
 }
 
+void
+Position3dProxy::SelectVelocityControl(int mode)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_position3d_set_vel_mode(mDevice, mode);
+}
+
+void Position3dProxy::SetOdometry(double aX, double aY, double aZ,
+                     double aRoll, double aPitch, double aYaw)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_position3d_set_odom(mDevice, aX, aY, aZ, aRoll, aPitch, aYaw);
+}
