@@ -394,9 +394,9 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_POSITION_MODE,
     (player_pack_fn_t)player_position3d_position_mode_req_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_RESET_ODOM,
-    (player_pack_fn_t)player_position3d_set_odom_req_pack},
-  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_SET_ODOM,
     (player_pack_fn_t)player_position3d_reset_odom_config_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_SET_ODOM,
+    (player_pack_fn_t)player_position3d_set_odom_req_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_VELOCITY_MODE,
     (player_pack_fn_t)player_position3d_velocity_mode_config_pack},
   

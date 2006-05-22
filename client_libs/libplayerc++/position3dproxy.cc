@@ -114,3 +114,10 @@ void Position3dProxy::SetOdometry(double aX, double aY, double aZ,
   scoped_lock_t lock(mPc->mMutex);
   playerc_position3d_set_odom(mDevice, aX, aY, aZ, aRoll, aPitch, aYaw);
 }
+
+void Position3dProxy::ResetOdometry()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_position3d_reset_odom(mDevice);
+}
+

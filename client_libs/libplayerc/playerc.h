@@ -2360,6 +2360,8 @@ int playerc_position3d_set_odom(playerc_position3d_t *device,
                                 double ox, double oy, double oz,
                                 double oroll, double opitch, double oyaw);
 
+/** Reset the odometry offset */
+int playerc_position3d_reset_odom(playerc_position3d_t *device);
 
 /** @} */
 /**************************************************************************/
