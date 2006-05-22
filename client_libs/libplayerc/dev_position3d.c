@@ -325,6 +325,22 @@ playerc_position3d_set_odom(playerc_position3d_t *device,
                               PLAYER_POSITION3D_SET_ODOM,
                               &config,
                               &config,
-                              sizeof(player_position3d_set_odom_req_t));
+                              sizeof(config));
 
+}
+
+int playerc_position3d_reset_odom(playerc_position3d_t *device)
+{
+  player_position3d_reset_odom_config_t config;
+  
+  memset(&config, 0, sizeof(config));
+  
+  
+  
+  return playerc_client_request(device->info.client,
+                              	&device->info, 
+				PLAYER_POSITION3D_RESET_ODOM, 
+				&config, 
+				&config,
+				sizeof(config));
 }

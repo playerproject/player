@@ -1818,8 +1818,8 @@ class Position3dProxy : public ClientProxy
     /// This is driver dependent.
     void SelectVelocityControl(int aMode);
 
-    /// Reset odometry to (0,0,0).
-    void ResetOdometry() {SetOdometry(0,0,0,0,0,0);};
+    /// Reset odometry to (0,0,0,0,0,0).
+    void ResetOdometry();
 
     /// Sets the odometry to the pose @p (x, y, z, roll, pitch, yaw).
     /// Note that @p x, @p y, and @p z are in m and @p roll,
