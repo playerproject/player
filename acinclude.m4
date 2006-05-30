@@ -254,6 +254,8 @@ PLAYER_ADD_DRIVER([obot],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([erratic],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([wbr914],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([passthrough],[no],[],[],
