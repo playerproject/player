@@ -1214,6 +1214,9 @@ RFLEX::Main()
             NULL);
 
     pthread_testcancel();
+
+       // release cpu somewhat so other threads can run.
+       usleep(1000);
   }
   pthread_exit(NULL);
 }

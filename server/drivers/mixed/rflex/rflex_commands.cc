@@ -162,6 +162,8 @@ static void cmdSend( int fd, int port, int id, int opcode, int len, unsigned cha
 		if (count > 0 ) 
 			start = now;
 		count = (now.tv_sec - start.tv_sec) * 1000000 + (now.tv_usec - start.tv_usec);
+               // release somewhat so other threads can run.
+               usleep(500);
 	} while (count < 10000);
 
   
