@@ -262,6 +262,10 @@ void MicroStrain3DMG_Register(DriverTable* table);
 void Mica2_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_RCORE_XBRIDGE
+void RCore_XBridge_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_INAV
 void INav_Register(DriverTable *table);
 #endif
@@ -583,6 +587,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_MICA2
   Mica2_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_RCORE_XBRIDGE
+  RCore_XBridge_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_INAV
