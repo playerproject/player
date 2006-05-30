@@ -206,6 +206,10 @@ void ReadLog_Register(DriverTable* table);
 void P2OS_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ERRATIC
+void Erratic_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_RFLEX
 void RFLEX_Register(DriverTable* table);
 #endif
@@ -535,6 +539,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_P2OS
   P2OS_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ERRATIC
+  Erratic_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ACOUSTICS
