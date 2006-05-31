@@ -98,7 +98,13 @@ fi
 AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 
 dnl Check for python c header
-AC_CHECK_HEADER(Python.h,
+PYTHON_VERSION=`python -V 2>&1 | grep -o "[[0-9]].[[0-9]]"`
+PYTHON_HEADER="python"$PYTHON_VERSION"/Python.h"
+if test ! -f "/usr/include/$PYTHON_HEADER"; then 
+	PYTHON_HEADER=python/Python.h
+fi
+
+AC_CHECK_HEADER($PYTHON_HEADER,
 dnl Do we have Python development tools?
 AC_MSG_CHECKING([for the distutils Python package])
   ac_distutils_result=`python -c "import distutils" 2>&1 | grep ImportError`
