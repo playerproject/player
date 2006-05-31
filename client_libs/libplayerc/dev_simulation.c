@@ -153,9 +153,9 @@ int playerc_simulation_set_property_int(playerc_simulation_t *device,
   req.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
   req.name_count = strlen(req.name) + 1;
   
-  strncpy(req.property, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  req.property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
-  req.property_count = strlen(req.property) + 1;
+  strncpy(req.prop, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  req.prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.prop_count = strlen(req.prop) + 1;
 
   req.value = value;
 
