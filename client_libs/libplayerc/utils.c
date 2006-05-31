@@ -94,6 +94,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_POWER_STRING;
     case PLAYER_PTZ_CODE:
       return PLAYER_PTZ_STRING;
+    case PLAYER_RFID_CODE:
+      return PLAYER_RFID_STRING;
     case PLAYER_SONAR_CODE:
       return PLAYER_SONAR_STRING;
     case PLAYER_SPEECH_CODE:
@@ -161,6 +163,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_POWER_CODE;
   if (strcmp(name, PLAYER_PTZ_STRING) == 0)
     return PLAYER_PTZ_CODE;
+  if (strcmp(name, PLAYER_RFID_STRING) == 0)
+    return PLAYER_RFID_CODE;
   if (strcmp(name, PLAYER_SONAR_STRING) == 0)
     return PLAYER_SONAR_CODE;
   if (strcmp(name, PLAYER_SPEECH_STRING) == 0)
