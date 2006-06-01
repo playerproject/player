@@ -123,7 +123,7 @@ PLAYER_ADD_DRIVER([acoustics],[no],
 
 PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([alsa],[no],[],[],[])
+PLAYER_ADD_DRIVER([alsa],[no],[alsa/asoundlib.h],[],[-lasound]) 
 
 dnl TODO: handle pkg-config location of gsl.  Some, but not all,
 dnl installation of gsl have a .pc file.
