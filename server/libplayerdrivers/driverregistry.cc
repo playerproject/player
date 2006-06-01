@@ -30,6 +30,10 @@
 #include <libplayercore/playercore.h>
 
 /* prototype driver-specific init funcs */
+#ifdef INCLUDE_ALSA
+void Alsa_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_ARTOOLKITPLUS
 void ARToolkitPlusDriver_Register(DriverTable *table);
 #endif
@@ -362,6 +366,10 @@ void SkyetekM1_Register(DriverTable *driverTable);
 void
 player_register_drivers()
 {
+#ifdef INCLUDE_ALSA
+  Alsa_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_ARTOOLKITPLUS
   ARToolkitPlusDriver_Register(driverTable);
 #endif
