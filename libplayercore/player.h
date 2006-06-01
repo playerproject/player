@@ -797,10 +797,37 @@ data is a @ref player_audio_mixer_channel_list_t structure*/
 
 
 /** Audio formats */
-/** Raw 8 bit 44 khz encoding */
-#define PLAYER_AUDIO_WAV_FORMAT_RAW_8BIT_44KHZ  1
-/** mp3 encoded */
-#define PLAYER_AUDIO_WAV_FORMAT_MP3             2
+
+/** Raw Audio bit flags */
+#define PLAYER_AUDIO_DESCRIPTION_BITS		0xFF
+#define PLAYER_AUDIO_BITS			0x03
+/** 8 bit */
+#define PLAYER_AUDIO_8BIT 			0
+/** 16 bit */
+#define PLAYER_AUDIO_16BIT 			1
+/** 24 bit */
+#define PLAYER_AUDIO_24BIT 			2
+/** Mono */
+#define PLAYER_AUDIO_MONO 			0
+/** Stereo */
+#define PLAYER_AUDIO_STEREO 			4
+/** Frequency */
+#define PLAYER_AUDIO_FREQ			0x18
+#define PLAYER_AUDIO_FREQ_44k 			0
+#define PLAYER_AUDIO_FREQ_11k 			8
+#define PLAYER_AUDIO_FREQ_22k 			16
+#define PLAYER_AUDIO_FREQ_48k 			24
+
+/** AUDIO format */
+#define PLAYER_AUDIO_FORMAT_BITS		0xFF00
+
+#define PLAYER_AUDIO_FORMAT_NULL		0x0000
+#define PLAYER_AUDIO_FORMAT_RAW			0x0100
+#define PLAYER_AUDIO_FORMAT_MP3			0x0200
+#define PLAYER_AUDIO_FORMAT_OGG			0x0300
+#define PLAYER_AUDIO_FORMAT_FLAC		0x0400
+#define PLAYER_AUDIO_FORMAT_AAC			0x0500
+
 
 
 /** @brief Data: Raw audio data
