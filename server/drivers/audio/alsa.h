@@ -20,12 +20,15 @@
  *
  */
 
+#include <alsa/asoundlib.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class Alsa : public Driver
 {
 	public:
 		Alsa (ConfigFile* cf, int section);
+		~Alsa (void);
 
 		virtual int Setup (void);
 		virtual int Shutdown (void);
@@ -35,6 +38,18 @@ class Alsa : public Driver
 	private:
 		virtual void Main (void);
 
+		// Command handling
+		int HandleWavePlayCmd (player_audio_wav_t *waveData);
+
 		// Driver options
-		bool block;
+		bool block;						// If should block while playing or return immediatly
+		unsigned int pbRate;			// Sample rate for playback
+		int pbNumChannels;				// Number of sound channels for playback
+		snd_pcm_uframes_t periodSize;	// Period size of the output buffer
+
+		// ALSA variables
+		snd_pcm_t *pcmHandle;			// Handle to the PCM device
+		snd_pcm_stream_t pbStream;		// Stream for playback
+		snd_pcm_hw_params_t *hwparams;	// Hardware parameters
+		char *pcmName;					// Name of the sound interface
 };
