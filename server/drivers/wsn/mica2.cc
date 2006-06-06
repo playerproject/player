@@ -1122,7 +1122,7 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 	}
     }
 	
-    if ((wsn_data.node_id == 0) && (filterbasenode == 1))
+    if ((wsn_data.node_id == 0) && (filterbasenode == 1) && (!rfidPacket))
         return -1;
 
     if ((provideRFID) && (rfidPacket))
