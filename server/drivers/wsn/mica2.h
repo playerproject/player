@@ -20,9 +20,8 @@
 
 /*
  * TinyOS data structures.
- * Borrowed from the TinyOS project (http://www.tinyos.net).
- * Portions copyright (c) 2004 Crossbow Technology, Inc.
- * Distributed according to the Intel Open Source License.
+ * Portions borrowed from the TinyOS project (http://www.tinyos.net), 
+ * distributed according to the Intel Open Source License.
  */
 
 #include <vector>
@@ -63,6 +62,19 @@ typedef struct
     unsigned short sound[5];
 } MTS510Data;
 
+// ---[ M1-mini RFID reader command packet structure ]---
+// (Attn: ASCII mode ! make time to change to BINARY!)
+typedef struct
+{
+    unsigned char flags  [2];
+    unsigned char request[2];
+    unsigned char type   [2];
+    unsigned char TID    [16];
+    unsigned char start  [2];
+    unsigned char length [2];
+    unsigned char data   [8];
+} M1miniCommand;
+
 // ---[ Generic sensor data packet structure ]---
 typedef struct
 {
@@ -96,8 +108,8 @@ typedef struct
 	unsigned char rf_channel;  // XCOMMAND_SET_RF_CHANNEL
 	struct
 	{
-	    unsigned short device; // device: LEDs, speaker, etc
-	    unsigned short state;  // state : on/off, etc
+		unsigned short device; // device: LEDs, speaker, etc
+		unsigned short state;  // state : on/off, etc
 	} actuate;
     } param;
 } __attribute__ ((packed)) XCommandOp;
@@ -109,6 +121,17 @@ typedef struct
     unsigned short destination_id;  // 0xFFFF for all
     XCommandOp     inst[1];
 } __attribute__ ((packed)) XCommandMsg;
+
+// ---[ RFID data packet structure] ---
+typedef struct{
+    TOSMsgHeader   tos;
+    unsigned char  ptotal;			// num of packets
+    unsigned char  pi;				// index of current packet
+    unsigned short RID;				// receive id
+    unsigned short SG;				// signal strength
+    unsigned char  data[23];
+    unsigned short crc;
+} __attribute__ ((packed)) RFIDMsg;
 
 // ---[ Health data packet structure ]---
 /*typedef struct
@@ -128,4 +151,3 @@ typedef struct
     DBGEstEntry    est_list[4];
 } HealthData;
 */
-
