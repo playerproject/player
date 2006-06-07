@@ -300,7 +300,7 @@ if test "x$with_playercc" = "xyes"; then
   AX_BOOST_THREAD
   if test "x$ax_cv_boost_thread" = "xyes"; then
       PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
-      PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_THREAD_LIB -lpthread"
+      PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_THREAD_LIB"
   fi
   if test "x$ax_cv_boost_signal" = "xyes"; then
     if test "x$ax_cv_boost_thread" = "xyes"; then
