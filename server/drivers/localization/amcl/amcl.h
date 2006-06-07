@@ -60,7 +60,7 @@ typedef struct
 
   // Covariance of pose estimate
   pf_matrix_t pf_pose_cov;
-  
+
 } amcl_hyp_t;
 
 
@@ -82,7 +82,7 @@ class AdaptiveMCL : public Driver
   // Setup/shutdown routines.
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
-  
+
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top
   // and bottom halfs.
@@ -102,13 +102,13 @@ class AdaptiveMCL : public Driver
   private: AMCLSensorData *Pop(void);
 
   // MessageHandler
-  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
-                                     player_msghdr * hdr, 
+  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+                                     player_msghdr * hdr,
                                      void * data);
 
   // Check for updated sensor data
   public: virtual void UpdateSensorData(void);
-  
+
   // Main function for device thread.
   private: virtual void Main(void);
 
@@ -126,6 +126,9 @@ class AdaptiveMCL : public Driver
 
   // Put new position data
   private: void PutDataPosition(pf_vector_t delta);
+
+  // Send back geometry data
+  private: void ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr);
 
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI
@@ -148,7 +151,7 @@ class AdaptiveMCL : public Driver
   // interfaces we might be using
   private: player_devaddr_t position_addr;
   private: player_devaddr_t localize_addr;
-  
+
   // List of all sensors
   private: int sensor_count;
   private: AMCLSensor *sensors[16];
@@ -167,7 +170,7 @@ class AdaptiveMCL : public Driver
   // Sensor data queue
   private: int q_size, q_start, q_len;
   private: AMCLSensorData **q_data;
-  
+
   // Current particle filter pose estimates
   private: int hyp_count;
   private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
