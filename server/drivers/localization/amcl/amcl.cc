@@ -241,11 +241,7 @@ range finder:
 driver
 (
   name "p2os_position"
-<<<<<<< amcl.cc
-  provides ["odometry:::position:0"]
-=======
   provides ["odometry:::position2d:0"]
->>>>>>> 1.72
   port "/dev/ttyS0"
 )
 driver
@@ -659,8 +655,6 @@ AMCLSensorData *AdaptiveMCL::Pop(void)
 // Main function for device thread
 void AdaptiveMCL::Main(void)
 {
-  struct timespec sleeptime;
-
   this->q_len = 0;
 
   // No data has yet been pushed, and the
@@ -699,8 +693,7 @@ void AdaptiveMCL::Main(void)
 #endif
 
     // Sleep for 1ms (will actually take longer than this).
-    sleeptime.tv_sec = 0;
-    sleeptime.tv_nsec = 1000000L;
+    const struct timespec sleeptime = {0, 1000000L};
     nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.  This is the
@@ -958,7 +951,7 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // Encode data to send to server
     this->PutDataLocalize(ts);
-    //this->PutDataPosition(ts, delta);
+    this->PutDataPosition(delta);
 
     return true;
   }
@@ -977,11 +970,9 @@ bool AdaptiveMCL::UpdateFilter(void)
       delete data; data = NULL;
     }
 
-#if 0
     // Encode data to send to server; only the position interface
-    // gets updates every cycle
-    this->PutDataPosition(ts, delta);
-#endif
+    // gets updated every cycle
+    this->PutDataPosition(delta);
 
     return false;
   }
@@ -1187,6 +1178,12 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                   (void*)&resp, sizeof(resp), NULL);
     return(0);
+  } else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                  PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))
+  {
+    assert(hdr->size == 0);
+    ProcessGeom(resp_queue, hdr);
+    return(0);
   }
 
   // pass on the rest of the messages to the sensors
@@ -1198,6 +1195,23 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
   }
 
   return(-1);
+}
+
+void
+AdaptiveMCL::ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr)
+{
+  player_position2d_geom_t geom;
+  // just return a point so we don't get errors from playerv
+  geom.pose.px = 0;
+  geom.pose.py = 0;
+  geom.pose.pa = 0;
+  geom.size.sl = 0.01;
+  geom.size.sw = 0.01;
+
+  Publish(this->position_addr, resp_queue,
+          PLAYER_MSGTYPE_RESP_ACK,
+          PLAYER_POSITION2D_REQ_GET_GEOM,
+          &geom, sizeof(geom), NULL);
 }
 
 #ifdef INCLUDE_RTKGUI
