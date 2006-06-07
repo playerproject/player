@@ -119,7 +119,7 @@ ClodBuster_Register(DriverTable* table)
 
 
 ClodBuster::ClodBuster( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   clodbuster_fd = -1;
 
@@ -229,15 +229,7 @@ int ClodBuster::Setup()
   packet.Send(clodbuster_fd);
   // reset odometry
   ResetRawPositions();
-
-/*  player_position_cmd_t zero_cmd;
-  memset(&zero_cmd,0,sizeof(player_position_cmd_t));
-  memset(&this->position_data,0,sizeof(player_position_data_t));
-  this->PutCommand(this->device_id,(void*)&zero_cmd,
-                   sizeof(player_position_cmd_t),NULL);
-  this->PutData((void*)&this->position_data,
-                sizeof(player_position_data_t),NULL);*/
-  
+ 
   direct_command_control = true;
   
   /* now spawn reading thread */
@@ -269,118 +261,112 @@ int ClodBuster::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ClodBuster::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int ClodBuster::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
+
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
 	
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, device_addr))
   {
-    assert(hdr->size == sizeof(player_position_set_odom_req_t));
-	player_position_set_odom_req_t & set_odom_req = *((player_position_set_odom_req_t*)data);
-		
-	this->position_data.xpos=(set_odom_req.x);
-	this->position_data.ypos=(set_odom_req.y);
-	this->position_data.yaw= set_odom_req.theta>>8;
-	
-	*resp_len = 0;
-	return PLAYER_MSGTYPE_RESP_ACK;
+    assert(hdr->size == sizeof(player_position2d_set_odom_req_t));
+    player_position2d_set_odom_req_t & set_odom_req = *((player_position2d_set_odom_req_t*)data);
+    
+    this->position_data.pos = set_odom_req.pose;
+
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))
   {
-    assert(*resp_len >= sizeof(player_position_geom_t));
-	player_position_geom_t & geom = *((player_position_geom_t*)resp_data);
-	*resp_len = sizeof(player_position_geom_t);
+    player_position2d_geom_t geom;
 	
     // TODO : get values from somewhere.
-    geom.pose[0] = htons((short) (-100));
-    geom.pose[1] = htons((short) (0));
-    geom.pose[2] = htons((short) (0));
-    geom.size[0] = htons((short) (2 * 250));
-    geom.size[1] = htons((short) (2 * 225));
+    geom.pose.px = -0.1;//htons((short) (-100));
+    geom.pose.py = 0;//htons((short) (0));
+    geom.pose.pa = 0;//htons((short) (0));
+    geom.size.sw = 0.5;//htons((short) (2 * 250));
+    geom.size.sl = 0.45;//htons((short) (2 * 225));
 
-    return PLAYER_MSGTYPE_RESP_ACK;
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_GET_GEOM, &geom, sizeof(geom));
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, device_addr))
   {
-    assert(hdr->size == sizeof(player_position_power_config_t));
-	player_position_power_config_t & power_config = *((player_position_power_config_t*)data);
+    assert(hdr->size == sizeof(player_position2d_power_config_t));
+    player_position2d_power_config_t & power_config = *((player_position2d_power_config_t*)data);
     GRASPPacket packet; 
 		
-    if(power_config.value==1)
-	  packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
-	else 
-	  packet.Build(SET_SLEEP_MODE,SLEEP_MODE_ON);
-		  
-	packet.Send(clodbuster_fd);
+    if(power_config.state==1)
+      packet.Build(SET_SLEEP_MODE,SLEEP_MODE_OFF);
+    else 
+       packet.Build(SET_SLEEP_MODE,SLEEP_MODE_ON);
 
-	*resp_len = 0;
-	return PLAYER_MSGTYPE_RESP_ACK;
+    packet.Send(clodbuster_fd);
+
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return 0;
   }
 
-		  /* velocity control mode:
-		   *   0 = direct wheel velocity control (default)
-		   *   1 = separate translational and rotational control
-		   */
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, device_id))
+  /* velocity control mode:
+   *   0 = direct wheel velocity control (default)
+   *   1 = separate translational and rotational control
+   */
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, device_addr))
   {
-    assert(hdr->size == sizeof(player_position_velocitymode_config_t));
-	player_position_velocitymode_config_t & velmode_config = *((player_position_velocitymode_config_t*)data);
+    assert(hdr->size == sizeof(player_position2d_velocity_mode_config_t));
+    player_position2d_velocity_mode_config_t & velmode_config = *((player_position2d_velocity_mode_config_t*)data);
 		
     if(velmode_config.value)
-	  direct_command_control = false;
-	else
-	  direct_command_control = true;
+      direct_command_control = false;
+    else
+      direct_command_control = true;
 
-	*resp_len = 0;
-	return PLAYER_MSGTYPE_RESP_ACK;
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_VELOCITY_MODE);
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM, device_addr))
   {
     ResetRawPositions();
 
-	*resp_len = 0;
-	return PLAYER_MSGTYPE_RESP_ACK;
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_RESET_ODOM);
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SPEED_PID, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PID, device_addr))
   {
-    assert(hdr->size == sizeof(player_position_speed_pid_req_t));
-	player_position_speed_pid_req_t & pid = *((player_position_speed_pid_req_t*)data);
+    assert(hdr->size == sizeof(player_position2d_speed_pid_req_t));
+	player_position2d_speed_pid_req_t & pid = *((player_position2d_speed_pid_req_t*)data);
 		
-    kp = ntohl(pid.kp);
-	ki = ntohl(pid.ki);
-	kd = ntohl(pid.kd);
+    kp = pid.kp;
+    ki = pid.ki;
+    kd = pid.kd;
 
-	*resp_len = 0;
-	return PLAYER_MSGTYPE_RESP_ACK;
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SPEED_PID);
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, device_addr))
   {
-    assert(hdr->size == sizeof(player_position_cmd_t));
-	player_position_cmd_t & command = *((player_position_cmd_t*)data);
+    assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
+	player_position2d_cmd_vel_t & command = *((player_position2d_cmd_vel_t*)data);
 		
     newmotorspeed = false;
-    if( speedDemand != (int) ntohl(command.xspeed))
+    if( speedDemand != (int) command.vel.px)
       newmotorspeed = true;
-    speedDemand = (int) ntohl(command.xspeed);
+    speedDemand = (int) command.vel.px;
       
     newmotorturn = false;
-    if(turnRateDemand != (int) ntohl(command.yawspeed))
+    if(turnRateDemand != (int) command.vel.pa)
       newmotorturn = true;
-    turnRateDemand = (int) ntohl(command.yawspeed);	
+    turnRateDemand = (int) command.vel.pa;	
 
-	*resp_len = 0;
-	return 0;
+    return 0;
   }	
   
-  *resp_len = 0;
   return -1;
 }
 
@@ -421,8 +407,8 @@ ClodBuster::Main()
       // remember old values
       old_encoder_measurement = encoder_measurement;
       
-      this->PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&this->position_data,
-                    sizeof(player_position_data_t),NULL);
+      Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,(void*)&this->position_data,
+                    sizeof(player_position2d_data_t),NULL);
       //      printf("left: %d , right %d count: %u\n",encoder_measurement.left,encoder_measurement.right,encoder_measurement.time_count);
       //      printf("left: %d , right %d\n",encoder_measurement.left-encoder_offset.left,encoder_measurement.right-encoder_offset.right);
 
@@ -623,11 +609,11 @@ void ClodBuster::IntegrateEncoders()
   float dEl = encoder_measurement.left-old_encoder_measurement.left; 
   float L = Kenc*(dEr+dEl)*.5;
   float D = Kenc*(dEr-dEl)/WheelSeparation;
-  float Phi = M_PI/180.0*this->position_data.yaw+0.5*D;
+  float Phi = this->position_data.pos.pa+0.5*D;
 
-  this->position_data.xpos += (int32_t) (L*cos(Phi)*1.0e3);
-  this->position_data.ypos += (int32_t) (L*sin(Phi)*1.0e3);
-  this->position_data.yaw += (int32_t) (D*180.0/M_PI);
+  this->position_data.pos.px += L*cos(Phi);
+  this->position_data.pos.py += L*sin(Phi);
+  this->position_data.pos.pa += D;
 }
 
 void ClodBuster::DifferenceEncoders()

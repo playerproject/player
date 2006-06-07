@@ -31,9 +31,6 @@
 /** @defgroup driver_imageseq imageseq
  * @brief Image file sequencer
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The imageseq driver simulates a camera by reading an image sequence
 from the filesystem.  The filenames for the image sequence must be
 numbered; e.g.: "image_0000.pnm", "image_0001.pnm", "image_0002.pnm",
@@ -98,15 +95,7 @@ driver
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
-#include "player.h"
-#include "error.h"
-#include "device.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "playertime.h"
-
-#include "playerpacket.h"
-
+#include <libplayercore/playercore.h>
 
 
 class ImageSeq : public Driver
@@ -157,7 +146,7 @@ void ImageSeq_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ImageSeq::ImageSeq(ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   // Data rate
   this->rate = cf->ReadFloat(section, "rate", 10);
@@ -245,12 +234,12 @@ int ImageSeq::LoadImage(const char *filename)
   this->data.bpp = 8;
   this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->data.image_size = this->data.width * this->data.height;
+  this->data.image_count = this->data.width * this->data.height;
   
   // Check image size
-  if (this->data.image_size > PLAYER_CAMERA_IMAGE_SIZE)
+  if (this->data.image_count > PLAYER_CAMERA_IMAGE_SIZE)
   {
-    PLAYER_ERROR1("image size is too large [%d]", this->data.image_size);
+    PLAYER_ERROR1("image size is too large [%d]", this->data.image_count);
     return -1;
   }
 
@@ -272,16 +261,8 @@ void ImageSeq::WriteData()
 {
   size_t size;
   
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_size;
-
-  this->data.width = htons(this->data.width);
-  this->data.height = htons(this->data.height);
-  this->data.bpp = this->data.bpp;
-  this->data.format = this->data.format;
-  this->data.compression = this->data.compression;
-  this->data.image_size = htonl(this->data.image_size);
-      
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->data, size, NULL);
+  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data, size, NULL);
       
   return;
 }

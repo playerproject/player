@@ -34,8 +34,7 @@
 playerv is a GUI client program that visualizes sensor data from
 a player server.  It also provides some teleoperation capabilities.
 
-playerv requires librtk.  To use playerv, you must install librtk before
-building player.
+playerv requires the GTK+-2.0 development libraries and headers.
 
 @par Usage
 

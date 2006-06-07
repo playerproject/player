@@ -121,7 +121,7 @@ PLAYER_ADD_DRIVER([acoustics],[no],
                   ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
                   ["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([acts],[no],[],[],[])
+PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
 
 dnl TODO: handle pkg-config location of gsl.  Some, but not all,
 dnl installation of gsl have a .pc file.
@@ -130,9 +130,12 @@ dnl                   found_gsl=yes,
 dnl                  found_gsl=no)
 PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
 
-PLAYER_ADD_DRIVER([amtecpowercube],[no],[],[],[])
+PLAYER_ADD_DRIVER([amtecpowercube],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([aodv],[no],[],[],[])
+PLAYER_ADD_DRIVER([artoolkitplus],[yes],[],[],[],[ARTOOLKITPLUS],[artoolkitplus >= 2.0.2])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
+
+PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
@@ -167,46 +170,47 @@ fi
 
 PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 
+PLAYER_ADD_DRIVER([camerauvc],[yes],[linux/videodev.h],[],[])
+
 PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
-PLAYER_ADD_DRIVER([canonvcc4],[no],[],[],[])
+PLAYER_ADD_DRIVER([canonvcc4],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([clodbuster],[no],[],[],[])
+PLAYER_ADD_DRIVER([clodbuster],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmucam2],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmvision],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([dummy],[no],[],[],[])
+PLAYER_ADD_DRIVER([dummy],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([er1],[no],[asm/ioctls.h],[],[])
+PLAYER_ADD_DRIVER([er1],[yes],[asm/ioctls.h],[],[])
 
 PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
 PLAYER_ADD_DRIVER([festival],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([fixedtones],[no],[rfftw.h],[],
-                  ["-lrfftw -lfftw"])
-
 PLAYER_ADD_DRIVER([flockofbirds],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([garcia],[no],
                   [],[],[],[GARCIA],[libgarcia])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GARCIA_LIBS"
 
 PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([imageseq],[no],[],[],[],[OPENCV],[opencv])
+PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
-PLAYER_ADD_DRIVER([isense],[no],[isense/isense.h],
+PLAYER_ADD_DRIVER([isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
 PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laserbar],[no],[],[],[])
+PLAYER_ADD_DRIVER([laserbar],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laserbarcode],[no],[],[],[])
+PLAYER_ADD_DRIVER([laserbarcode],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 
@@ -214,9 +218,11 @@ PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laservisualbarcode],[no],[],[],[])
+PLAYER_ADD_DRIVER([lasersafe],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laservisualbw],[no],[],[],[])
+PLAYER_ADD_DRIVER([laservisualbarcode],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([laservisualbw],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
@@ -248,12 +254,18 @@ PLAYER_ADD_DRIVER([obot],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([erratic],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([wbr914],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([passthrough],[no],[],[],
                   ["../client_libs/c/playercclient.o"])
 
 PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([reb],[no],[],[],[])
+
+PLAYER_ADD_DRIVER([relay],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
@@ -279,8 +291,9 @@ PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $HOWL_LIBS"
 
-PLAYER_ADD_DRIVER([shapetracker],[no],[],[],[],
+PLAYER_ADD_DRIVER([shapetracker],[yes],[],[],[],
                   [OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([sicklms200],[yes],[],[],[])
 if  test "x$enable_sicklms200" = "xyes"; then
@@ -297,18 +310,20 @@ if test "x$enable_highspeedsick" = "xno"; then
   AC_DEFINE(DISABLE_HIGHSPEEDSICK,1,[disable 500Kbps comms with SICK])
 fi
 
-PLAYER_ADD_DRIVER([simpleshape],[no],
+PLAYER_ADD_DRIVER([simpleshape],[yes],
                   [],[],[],[OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/s2types.h"],
+PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/CM_macros.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([upcbarcode],[no],[],[],[],
+PLAYER_ADD_DRIVER([upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([urglaser],[yes],[],[],[])
 if  test "x$enable_urglaser" = "xyes"; then
@@ -331,6 +346,7 @@ PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
 
 dnl WSN support
 PLAYER_ADD_DRIVER([mica2],[yes],[],[],[])
+PLAYER_ADD_DRIVER([rcore_xbridge],[yes],[libparticle.h],[],["-lparticle"])
 
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_ARG_ENABLE(md5, [  --disable-md5      Don't use MD5 hashing functions],,

@@ -1,7 +1,8 @@
-AM_CPPFLAGS = -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-noinst_LIBRARIES = @ISENSE_LIB@
+noinst_LTLIBRARIES =
+if INCLUDE_ISENSE
+noinst_LTLIBRARIES += libisense.la
+endif
 
-EXTRA_LIBRARIES = libisense.a
-
-libisense_a_SOURCES = inertiacube2.cc
+libisense_la_SOURCES = inertiacube2.cc

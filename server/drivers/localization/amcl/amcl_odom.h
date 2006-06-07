@@ -48,7 +48,7 @@ class AMCLOdomData : public AMCLSensorData
 class AMCLOdom : public AMCLSensor
 {
   // Default constructor
-  public: AMCLOdom(player_devaddr_t addr);
+  public: AMCLOdom(AdaptiveMCL & aAMCL, player_devaddr_t addr);
 
   // Load the model
   public: virtual int Load(ConfigFile* cf, int section);
@@ -62,8 +62,12 @@ class AMCLOdom : public AMCLSensor
   // Finalize the model
   public: virtual int Shutdown(void);
 
+  // Process message for this interface
+  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * data);
   // Check for new sensor measurements
-  private: virtual AMCLSensorData *GetData(void);
+  //private: virtual AMCLSensorData *GetData(void);
 
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.

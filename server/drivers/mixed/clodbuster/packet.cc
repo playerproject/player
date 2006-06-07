@@ -38,7 +38,7 @@
 
 extern PlayerTime* GlobalTime;
 
-extern bool debug;
+//extern bool debug;
 
 void GRASPPacket::Print() {
   if (packet) {
@@ -123,11 +123,11 @@ int GRASPPacket::Send(int fd)
       return(1);
     }
   
-  if(debug)
+/*  if(debug)
   {
     struct timeval dummy;
     GlobalTime->GetTime(&dummy);
     printf("GRASPPacket::Send():%ld:%ld\n", dummy.tv_sec, dummy.tv_usec);
-  }
+  }*/
   return(0);
 }

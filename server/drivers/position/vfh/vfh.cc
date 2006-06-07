@@ -530,19 +530,22 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   b = RTOD(data.min_angle);
   db = RTOD(data.resolution);
 
-  this->laser_count = data.ranges_count;
+  this->laser_count = 181;
   assert(this->laser_count <
          (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
 
   for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
     this->laser_ranges[i][0] = -1;
 
-  b += 90.0;
-  for(i = 0; i < this->laser_count; i++)
+  // vfh seems to be very oriented around 180 degree scans so interpolate to get 180 degrees
+//  b += 90.0;
+  for(i = 0; i < 181; i++)
   {
-    this->laser_ranges[(int)rint(b * 2)][0] = data.ranges[i] * 1e3;
-    this->laser_ranges[(int)rint(b * 2)][1] = b;
-    b += db;
+  	unsigned int index = rint(i/db);
+  	assert(index >= 0 && index < data.ranges_count);
+    this->laser_ranges[i*2][0] = data.ranges[index] * 1e3;
+//    this->laser_ranges[i*2][1] = index;
+//    b += db;
   }
 
   r = 1000000.0;
@@ -565,6 +568,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   double b, r;
   double cone_width = 30.0;
   int count = 361;
+  float sonarDistToCenter = 0.0;
 
   this->laser_count = count;
   assert(this->laser_count <
@@ -582,7 +586,14 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
     {
       if((b < 0) || (rint(b*2) >= count))
         continue;
-      this->laser_ranges[(int)rint(b * 2)][0] = data.ranges[i] * 1e3;
+      // Sonars give distance readings from the perimeter of the robot while lasers give distance
+      // from the laser; hence, typically the distance from a single point, like the center.
+      // Since this version of the VFH+ algorithm was written for lasers and we pass the algorithm
+      // laser ranges, we must make the sonar ranges appear like laser ranges. To do this, we take
+      // into account the offset of a sonar's geometry from the center. Simply add the distance from
+      // the center of the robot to a sonar to the sonar's range reading.
+      sonarDistToCenter = sqrt(pow(this->sonar_poses[i].px,2) + pow(this->sonar_poses[i].py,2));
+      this->laser_ranges[(int)rint(b * 2)][0] = (sonarDistToCenter + data.ranges[i]) * 1e3;
       this->laser_ranges[(int)rint(b * 2)][1] = b;
     }
   }

@@ -40,7 +40,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLOdom::AMCLOdom(player_devaddr_t addr)
+AMCLOdom::AMCLOdom(AdaptiveMCL & aAMCL, player_devaddr_t addr) : AMCLSensor(aAMCL)
 {
   this->odom_dev = NULL;
   this->action_pdf = NULL;
@@ -93,7 +93,7 @@ int AMCLOdom::Setup(void)
     PLAYER_ERROR("unable to locate suitable position driver");
     return -1;
   }
-  if (this->odom_dev->Subscribe(this->InQueue) != 0)
+  if (this->odom_dev->Subscribe(AMCL.InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to position device");
     return -1;
@@ -108,7 +108,7 @@ int AMCLOdom::Setup(void)
 int AMCLOdom::Shutdown(void)
 {
   // Unsubscribe from device
-  this->odom_dev->Unsubscribe(this->InQueue);
+  this->odom_dev->Unsubscribe(AMCL.InQueue);
   this->odom_dev = NULL;
   
   return 0;
@@ -117,39 +117,22 @@ int AMCLOdom::Shutdown(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get the current odometry reading
-AMCLSensorData *AMCLOdom::GetData(void)
+//AMCLSensorData *AMCLOdom::GetData(void)
+// Process message for this interface
+int AMCLOdom::ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * idata)
 {
   pf_vector_t pose;
-  player_position2d_data_t* data;
   AMCLOdomData *ndata;
-
-  player_msghdr_t* hdr;
-  Message* msg;
-  if(!(msg = this->InQueue->Pop()))
-    return NULL;
-
-  hdr = msg->GetHeader();
-
-  // TODO: I think the check can be removed, given the new messaging model.
-  //       I.e., two messages should not have the same timestamp.
-  //               - BPG
-
-  // See if this is a new reading
-  if(hdr->timestamp == this->time)
-  {
-    delete msg;
-    return NULL;
-  }
 
   if(!Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                             PLAYER_POSITION2D_DATA_STATE, this->odom_addr))
   {
-    PLAYER_WARN("got unexpected message");
-    delete msg;
-    return NULL;
+    return -1;
   }
 
-  data = (player_position2d_data_t*)msg->GetPayload();
+  player_position2d_data_t* data = reinterpret_cast<player_position2d_data_t*> (idata);
 
   // Compute new robot pose
   pose.v[0] = data->pos.px;
@@ -169,9 +152,9 @@ AMCLSensorData *AMCLOdom::GetData(void)
 
   this->time = hdr->timestamp;
 
-  delete msg;
+  AMCL.Push(ndata);
     
-  return ndata;
+  return 0;
 }
 
 

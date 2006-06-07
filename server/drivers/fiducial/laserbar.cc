@@ -37,9 +37,6 @@
 /** @defgroup driver_laserbar laserbar
  * @brief Laser bar detector.
  
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The laser bar detector searches for retro-reflective targets in the
 laser range finder data.  Targets can be either planar or cylindrical,
 as shown below. For planar targets, the range, bearing and orientation
@@ -112,11 +109,14 @@ driver
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0
 
-#include "error.h"
+#include <libplayercore/playercore.h>
+
+/*#include "error.h"
 #include "driver.h"
 #include "devicetable.h"
 #include "drivertable.h"
 #include "clientdata.h"
+*/
 
 // Driver for detecting laser retro-reflectors.
 class LaserBar : public Driver
@@ -129,7 +129,7 @@ class LaserBar : public Driver
   public: virtual int Shutdown();
 
   // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+  int ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data);
 
   // Main function for device thread.
   private: virtual void Main();
@@ -164,8 +164,8 @@ class LaserBar : public Driver
   
   // Pointer to laser to get data from.
   private:
-  Driver *laser_driver;
-  player_device_id_t laser_id;
+  Device *laser_device;
+  player_devaddr_t laser_addr;
 
   // Reflector properties.
   private: double reflector_width;
@@ -197,10 +197,11 @@ void LaserBar_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserBar::LaserBar( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE) 
 {
+
   // Must have an input laser
-  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+  if (cf->ReadDeviceAddr(&this->laser_addr, section, "requires",
                        PLAYER_LASER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
@@ -217,10 +218,19 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserBar::Setup()
 {
-  if (!(this->laser_driver = SubscribeInternal(this->laser_id)))
+
+  this->laser_device = deviceTable->GetDevice(this->laser_addr);
+
+  if (!this->laser_device)
   {
     PLAYER_ERROR("unable to locate suitable laser device");
     return(-1);
+  }
+
+  if (this->laser_device->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to laser device");
+    return -1;
   }
     
   // Subscribe to the laser device, but fail if it fails
@@ -238,8 +248,8 @@ int LaserBar::Setup()
 // Shutdown the device (called by server thread).
 int LaserBar::Shutdown()
 {
-  // Unsubscribe from devices.
-  UnsubscribeInternal(this->laser_id);
+  this->laser_device->Unsubscribe(this->InQueue);
+  this->laser_device = NULL;
 
   return 0;
 }
@@ -251,15 +261,18 @@ void LaserBar::Main()
 {
   while (true)
   {
-    // Let the camera drive update rate
-    this->laser_driver->Wait();
+    // Let the laser drive update rate
+    this->Wait();
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
 
     // Process any pending requests.
     this->ProcessMessages();
+
+    //usleep(100000);
   }
+
   return;
 }
 
@@ -267,71 +280,87 @@ void LaserBar::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserBar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data)
 {
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-  
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, laser_id))
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
+                            PLAYER_LASER_DATA_SCAN, this->laser_addr))
   {
-  	assert(hdr->size == sizeof(player_laser_data_t));
-  	player_laser_data_t * laser_data = reinterpret_cast<player_laser_data_t * > (data);
-  	Lock();
-    // Do some byte swapping
-    this->ldata.resolution = ntohs(laser_data->resolution);
-    this->ldata.range_res = ntohs(laser_data->range_res);
-    this->ldata.min_angle = ntohs(laser_data->min_angle);
-    this->ldata.max_angle = ntohs(laser_data->max_angle);
-    this->ldata.range_count = ntohs(laser_data->range_count);
-    for (int i = 0; i < laser_data->range_count; i++)
-      this->ldata.ranges[i] = ntohs(laser_data->ranges[i]);
+  	//assert(hdr->size == sizeof(player_laser_data_t));
+  	player_laser_data_t *laser_data = reinterpret_cast<player_laser_data_t * > (data);
+
+  	this->Lock();
+
+    this->ldata.min_angle = laser_data->min_angle;
+    this->ldata.max_angle = laser_data->max_angle;
+    this->ldata.resolution = laser_data->resolution;
+    this->ldata.max_range = laser_data->max_range;
+    this->ldata.ranges_count = laser_data->ranges_count;
+    this->ldata.intensity_count = laser_data->intensity_count;
+
+    for (unsigned int i = 0; i < laser_data->ranges_count; i++)
+    {
+      this->ldata.ranges[i] = laser_data->ranges[i];
+      this->ldata.intensity[i] = laser_data->intensity[i];
+    }
 
     // Analyse the laser data
     this->Find();
 
-    // Do some byte-swapping on the fiducial data.
-    for (int i = 0; i < this->fdata.count; i++)
-    {
-      this->fdata.fiducials[i].pos[0] = htonl(this->fdata.fiducials[i].pos[0]);
-      this->fdata.fiducials[i].pos[1] = htonl(this->fdata.fiducials[i].pos[1]);
-      this->fdata.fiducials[i].rot[2] = htonl(this->fdata.fiducials[i].rot[2]);
-    }
-    this->fdata.count = htons(this->fdata.count);
-    struct timeval laser_timestamp={hdr->timestamp_sec,hdr->timestamp_usec};
-    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &fdata, sizeof(fdata),&laser_timestamp);
 
-  	Unlock();
-    *resp_len = 0;
+  	this->Unlock();
+
+    uint size = sizeof(this->fdata) - sizeof(this->fdata.fiducials) +
+      this->fdata.fiducials_count * sizeof(this->fdata.fiducials[0]);
+
+    printf("Count[%d]\n",this->fdata.fiducials_count);
+
+    this->Publish(this->device_addr, NULL, 
+                  PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
+                  reinterpret_cast<void*>(&this->fdata), 
+                  size, &hdr->timestamp);
+
+
   	return 0;
   }
  
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+                            PLAYER_FIDUCIAL_REQ_GET_GEOM, this->device_addr))
   {
-    hdr->device_index = laser_id.index;
-    hdr->subtype = PLAYER_LASER_GET_GEOM;
-    int ret = laser_driver->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
-    hdr->subtype = PLAYER_FIDUCIAL_GET_GEOM;
-    hdr->device_index = device_id.index;
-    
-  	assert(*resp_len == sizeof(player_laser_geom_t));
-  	player_laser_geom_t lgeom = * reinterpret_cast<player_laser_geom_t * > (resp_data);
-  	player_fiducial_geom_t * fgeom = reinterpret_cast<player_fiducial_geom_t * > (resp_data);
+    Message *msg;
 
-    fgeom->pose[0] = lgeom.pose[0];
-    fgeom->pose[1] = lgeom.pose[1];
-    fgeom->pose[2] = lgeom.pose[2];
-    fgeom->size[0] = lgeom.size[0];
-    fgeom->size[1] = lgeom.size[1];
-    fgeom->fiducial_size[0] = ntohs((int) (this->reflector_width * 1000));
-    fgeom->fiducial_size[1] = ntohs((int) (this->reflector_width * 1000));
-  
-  	*resp_len=sizeof(player_fiducial_geom_t);
-  
-    return ret;
+    player_fiducial_geom_t fgeom;
+
+    if (!(msg = this->laser_device->Request(this->InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM, NULL, 0, NULL, false)))
+    {
+      PLAYER_WARN("failed to get laer geometry");
+      fgeom.pose.px = 0.0;
+      fgeom.pose.py = 0.0;
+      fgeom.pose.pa = 0.0;
+    }
+    else
+    {
+      player_laser_geom_t *lgeom = (player_laser_geom_t*)msg->GetPayload();
+
+      fgeom.pose.px = lgeom->pose.px;
+      fgeom.pose.py = lgeom->pose.py;
+      fgeom.pose.pa = lgeom->pose.pa;
+      fgeom.size.sw = lgeom->size.sw;
+      fgeom.size.sl = lgeom->size.sl;
+    }
+
+    fgeom.fiducial_size.sw = this->reflector_width;
+    fgeom.fiducial_size.sl = this->reflector_width;
+
+    delete msg;
+
+    this->Publish(this->device_addr, resp_queue, 
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_FIDUCIAL_REQ_GET_GEOM, 
+                  (void*)&fgeom, sizeof(fgeom), NULL);
+
+    return 0;
   }
+
   return -1;
 }
 
@@ -470,7 +499,7 @@ LaserBar::PutConfig(player_device_id_t id, void *client,
 // Analyze the laser data to find reflectors.
 void LaserBar::Find()
 {
-  int i;
+  unsigned int i;
   int h;
   double r, b;
   double mn, mr, mb, mrr, mbb;
@@ -478,7 +507,7 @@ void LaserBar::Find()
   double ur, ub, uo;
 
   // Empty the fiducial list.
-  this->fdata.count = 0;
+  this->fdata.fiducials_count = 0;
   
   // Initialise patch statistics.
   mn = 0.0;
@@ -488,10 +517,10 @@ void LaserBar::Find()
   mbb = 0.0;
     
   // Look for a candidate patch in scan.
-  for (i = 0; i < this->ldata.range_count; i++)
+  for (i = 0; i < this->ldata.ranges_count; i++)
   {
-    r = (double) (this->ldata.ranges[i] * this->ldata.range_res) / 1000;
-    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
+    r = (double) (this->ldata.ranges[i]);
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) * M_PI / 180;
     h = (int) (this->ldata.intensity[i]);
 
     // If there is a reflection...
@@ -575,8 +604,8 @@ void LaserBar::FitCircle(int first, int last,
 
   for (i = first; i <= last; i++)
   {
-    r = (double) (this->ldata.ranges[i] * this->ldata.range_res) / 1000;
-    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) / 100.0 * M_PI / 180;
+    r = (double) (this->ldata.ranges[i]);
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) * M_PI / 180;
 
     if (r < mr)
       mr = r;
@@ -593,7 +622,7 @@ void LaserBar::FitCircle(int first, int last,
 
   // TODO: put in proper uncertainty estimates.
   *ur = 0.02;  
-  *ub = this->ldata.resolution / 100.0 * M_PI / 180;
+  *ub = this->ldata.resolution * M_PI / 180;
   *uo = 1e6;
   
   return;
@@ -610,12 +639,14 @@ void LaserBar::Add(double pr, double pb, double po,
 
   //printf("adding %f %f %f\n", pr, pb, po);
   
-  assert(this->fdata.count < ARRAYSIZE(this->fdata.fiducials));
-  fiducial = this->fdata.fiducials + this->fdata.count++;
+  //assert(this->fdata.count < ARRAYSIZE(this->fdata.fiducials));
+
+  fiducial = this->fdata.fiducials + this->fdata.fiducials_count++;
   fiducial->id = (int16_t) -1;
-  fiducial->pos[0] = (int32_t) (int) (pr * cos(pb) * 1000);
-  fiducial->pos[1] = (int32_t) (int) (pr * sin(pb) * 1000);
-  fiducial->rot[2] = (int32_t) (int) (po * 1000);
+
+  fiducial->pose.px = pr * cos(pb);
+  fiducial->pose.py = pr * sin(pb);
+  fiducial->pose.pyaw = po;
 
   return;
 }
