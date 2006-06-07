@@ -13,14 +13,15 @@ endif
 
 #EXTRA_DIST = pmap.dox
 
-libpmap_la_SOURCES = logfile.cpp omap.cpp pmap.cpp rmap.cpp slap.cpp
+libpmap_la_SOURCES = logfile.cpp omap.cpp pmap.cpp rmap.cpp slap.cpp \
+                     lodo.h omap.h pmap.h rmap.h slap.h logfile.h
 libpmap_la_CFLAGS = @GSL_CFLAGS@ --fast-math
 
-liblodo_la_SOURCES = lodo.cpp
+liblodo_la_SOURCES = lodo.cpp lodo.h
 liblodo_la_CFLAGS = @GSL_CFLAGS@ --fast-math
 liblodo_la_LIBADD = libpmap.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-pmaptest_SOURCES = pmap_test.cpp
+pmaptest_SOURCES = pmap_test.cpp lodo.h pmap.h rmap.h omap.h
 pmaptest_LDADD = @GSL_LIBS@ -lpmap -llodo
 
 doc:

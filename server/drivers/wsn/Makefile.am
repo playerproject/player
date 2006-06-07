@@ -10,5 +10,5 @@ endif
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir) -fno-strict-aliasing
 
-libmica2_la_SOURCES = mica2.cc
-librcore_xbridge_la_SOURCES = rcore_xbridge.cc
+libmica2_la_SOURCES = mica2.cc mica2.h
+librcore_xbridge_la_SOURCES = rcore_xbridge.cc rcore_xbridge.h
