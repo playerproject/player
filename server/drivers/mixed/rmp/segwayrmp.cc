@@ -495,7 +495,7 @@ SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
 // returns 1 to indicate we wrote to the CAN bus
 // returns 0 to indicate we did NOT write to CAN bus
 int
-SegwayRMP::HandlePositionConfig(MessageQueue* client, unsigned int subtype, void* buffer, size_t len)
+SegwayRMP::HandlePositionConfig(MessageQueue* client, uint32_t subtype, void* buffer, size_t len)
 {
   uint16_t rmp_cmd,rmp_val;
   //player_rmp_config_t *rmp;

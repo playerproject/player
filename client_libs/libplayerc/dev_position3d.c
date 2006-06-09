@@ -61,7 +61,8 @@ void playerc_position3d_putmsg(playerc_position3d_t *device,
 
 
 // Create a new position3d proxy
-playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int index)
+playerc_position3d_t
+*playerc_position3d_create(playerc_client_t *client, int index)
 {
   playerc_position3d_t *device;
 
@@ -76,7 +77,8 @@ playerc_position3d_t *playerc_position3d_create(playerc_client_t *client, int in
 
 
 // Destroy a position3d proxy
-void playerc_position3d_destroy(playerc_position3d_t *device)
+void
+playerc_position3d_destroy(playerc_position3d_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
@@ -86,23 +88,26 @@ void playerc_position3d_destroy(playerc_position3d_t *device)
 
 
 // Subscribe to the position3d device
-int playerc_position3d_subscribe(playerc_position3d_t *device, int access)
+int
+playerc_position3d_subscribe(playerc_position3d_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 
 // Un-subscribe from the position3d device
-int playerc_position3d_unsubscribe(playerc_position3d_t *device)
+int
+playerc_position3d_unsubscribe(playerc_position3d_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
 
 // Process incoming data
-void playerc_position3d_putmsg(playerc_position3d_t *device,
-                               player_msghdr_t *header,
-                               player_position3d_data_t *data, size_t len)
+void
+playerc_position3d_putmsg(playerc_position3d_t *device,
+                          player_msghdr_t *header,
+                          player_position3d_data_t *data, size_t len)
 {
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_POSITION3D_DATA_STATE))
@@ -159,7 +164,8 @@ void playerc_position3d_putgeom(playerc_position3d_t *device, player_msghdr_t *h
 #endif
 
 // Enable/disable the motors
-int playerc_position3d_enable(playerc_position3d_t *device, int enable)
+int
+playerc_position3d_enable(playerc_position3d_t *device, int enable)
 {
   player_position3d_power_config_t config;
 
@@ -176,7 +182,8 @@ int playerc_position3d_enable(playerc_position3d_t *device, int enable)
 
 // Get the position3d geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int playerc_position3d_get_geom(playerc_position3d_t *device)
+int
+playerc_position3d_get_geom(playerc_position3d_t *device)
 {
   int len;
   player_position3d_geom_t config;
@@ -184,7 +191,8 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
   memset(&config, 0, sizeof(config));
   //config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
 
-  len = playerc_client_request(device->info.client, &device->info,PLAYER_POSITION3D_GET_GEOM,
+  len = playerc_client_request(device->info.client, &device->info,
+                               PLAYER_POSITION3D_GET_GEOM,
                                NULL, &config, sizeof(config));
   if (len < 0)
     return -1;
@@ -194,9 +202,10 @@ int playerc_position3d_get_geom(playerc_position3d_t *device)
 
 
 // Set the robot speed
-int playerc_position3d_set_velocity(playerc_position3d_t *device,
-                     double vx, double vy, double vz,
-                     double vr, double vp, double vt, int state)
+int
+playerc_position3d_set_velocity(playerc_position3d_t *device,
+                                double vx, double vy, double vz,
+                                double vr, double vp, double vt, int state)
 {
   player_position3d_cmd_vel_t cmd;
 
@@ -212,14 +221,38 @@ int playerc_position3d_set_velocity(playerc_position3d_t *device,
   cmd.state = state;
 
   return playerc_client_write(device->info.client,
-                              &device->info, PLAYER_POSITION3D_CMD_SET_VEL,&cmd,NULL);
+                              &device->info,
+                              PLAYER_POSITION3D_CMD_SET_VEL,
+                              &cmd,
+                              NULL);
+}
+
+// Set the target pose (pos,vel)
+int
+playerc_position3d_set_pose_with_vel(playerc_position3d_t *device,
+                                     player_pose3d_t pos,
+                                     player_pose3d_t vel)
+{
+  player_position3d_cmd_pos_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+
+  cmd.pos = pos;
+  cmd.vel = vel;
+
+  return playerc_client_write(device->info.client,
+                              &device->info,
+                              PLAYER_POSITION3D_CMD_SET_POS,
+                              &cmd,
+                              NULL);
 }
 
 
-// Set the target pose
-int playerc_position3d_set_pose(playerc_position3d_t *device,
-                        double gx, double gy, double gz,
-                        double gr, double gp, double gt)
+// Set the target pose (px,py,pz,pr,pp,pt)
+int
+playerc_position3d_set_pose(playerc_position3d_t *device,
+                            double gx, double gy, double gz,
+                            double gr, double gp, double gt)
 {
   player_position3d_cmd_pos_t cmd;
 
@@ -233,21 +266,81 @@ int playerc_position3d_set_pose(playerc_position3d_t *device,
   cmd.pos.pyaw = gt;
 
   return playerc_client_write(device->info.client,
-                              &device->info, PLAYER_POSITION3D_CMD_SET_POS,&cmd,NULL);
+                              &device->info,
+                              PLAYER_POSITION3D_CMD_SET_POS,
+                              &cmd,
+                              NULL);
 }
 
 /** For compatibility with old position3d interface */
-int playerc_position3d_set_speed(playerc_position3d_t *device,
-                                 double vx, double vy, double vz, int state)
+int
+playerc_position3d_set_speed(playerc_position3d_t *device,
+                             double vx, double vy, double vz, int state)
 {
   return playerc_position3d_set_velocity(device,vx,vy,vz,0,0,0, state);
 }
 
 /** For compatibility with old position3d interface */
-int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
-                                    double gx, double gy, double gz)
+int
+playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
+                                double gx, double gy, double gz)
 {
   return playerc_position3d_set_pose(device,gx,gy,gz,0,0,0);
 }
 
+int
+playerc_position3d_set_vel_mode(playerc_position3d_t *device, int aMode)
+{
+  player_position3d_velocity_mode_config_t config;
+  memset(&config, 0, sizeof(config));
+  config.value = aMode;
 
+  return playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_POSITION3D_VELOCITY_MODE,
+                                &config,
+                                &config,
+                                sizeof(config));
+}
+
+int
+playerc_position3d_set_odom(playerc_position3d_t *device,
+                            double ox, double oy, double oz,
+                            double oroll, double opitch, double oyaw)
+{
+  player_position3d_set_odom_req_t config;
+
+  memset(&config, 0, sizeof(config));
+
+  config.pos.px = ox;
+  config.pos.py = oy;
+  config.pos.pz = oz;
+
+  config.pos.proll = oroll;
+  config.pos.ppitch = opitch;
+  config.pos.pyaw = oyaw;
+
+  return playerc_client_request(device->info.client,
+                              &device->info,
+                              PLAYER_POSITION3D_SET_ODOM,
+                              &config,
+                              &config,
+                              sizeof(config));
+
+}
+
+int playerc_position3d_reset_odom(playerc_position3d_t *device)
+{
+  player_position3d_reset_odom_config_t config;
+  
+  memset(&config, 0, sizeof(config));
+  
+  
+  
+  return playerc_client_request(device->info.client,
+                              	&device->info, 
+				PLAYER_POSITION3D_RESET_ODOM, 
+				&config, 
+				&config,
+				sizeof(config));
+}

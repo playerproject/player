@@ -77,7 +77,7 @@ void playerc_wsn_putmsg (playerc_wsn_t *device,
 			 player_msghdr_t *header,
 			 void *data)
 {
-    int i, j;
+//    int i, j;
 	
     if((header->type == PLAYER_MSGTYPE_DATA) &&
        (header->subtype == PLAYER_WSN_DATA))
