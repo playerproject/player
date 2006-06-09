@@ -129,10 +129,14 @@ void PlayerClient::RunThread()
   PRINT("starting run");
   while (!mIsStop)
   {
-    if (Peek())
-    {
+    if( mClient->mode == PLAYER_DATAMODE_PUSH){
+      if (Peek())
+      {
+        Read();
+      }  
+    } else {
       Read();
-    }
+    };
     boost::xtime xt;
     boost::xtime_get(&xt, boost::TIME_UTC);
     // we sleep for 0 seconds
@@ -152,10 +156,14 @@ void PlayerClient::Run(uint aTimeout)
   PRINT("starting run");
   while (!mIsStop)
   {
-    if (Peek())
-    {
+    if( mClient->mode == PLAYER_DATAMODE_PUSH){
+      if (Peek())
+      {
+        Read();
+      }  
+    } else {
       Read();
-    }
+    };
     nanosleep(&sleep, NULL);
   }
 }

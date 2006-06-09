@@ -6,17 +6,6 @@
 
 namespace PlayerCc
 {
-/** @addtogroup player_clientlib_cplusplus libplayerc++
-
- @{
-
- */
-
-/** @addtogroup player_clientlib_cplusplus_core Core functionality
-
- @{
-
- */
 
 /** @brief The C++ exception class
  *
@@ -49,9 +38,6 @@ class PlayerError
     /// default destructor
     ~PlayerError();
 };
-/** }@ (core) */
-
-/** }@ (c++) */
 
 }
 

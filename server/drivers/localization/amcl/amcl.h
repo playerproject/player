@@ -45,8 +45,9 @@
 #include <libplayercore/playercore.h>
 
 #include "pf/pf.h"
-#include "amcl_sensor.h"
-
+//#include "amcl_sensor.h"
+class AMCLSensor;
+class AMCLSensorData;
 
 // Pose hypothesis
 typedef struct
@@ -81,21 +82,18 @@ class AdaptiveMCL : public Driver
   // Setup/shutdown routines.
   public: virtual int Setup(void);
   public: virtual int Shutdown(void);
-  // MessageHandler
-  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
-                                     player_msghdr * hdr, 
-                                     void * data);
-
-  // Check for updated sensor data
-  public: virtual void Update(void);
   
   ///////////////////////////////////////////////////////////////////////////
   // Middle methods: these methods facilitate communication between the top
   // and bottom halfs.
   ///////////////////////////////////////////////////////////////////////////
 
+  ///////////////////////////////////////////////////////////////////////////
+  // Bottom half methods; these methods run in the device thread
+  ///////////////////////////////////////////////////////////////////////////
+
   // Push data onto the queue
-  private: void Push(AMCLSensorData *data);
+  public: void Push(AMCLSensorData *data);
 
   // Take a peek at the queue
   private: AMCLSensorData *Peek(void);
@@ -103,9 +101,13 @@ class AdaptiveMCL : public Driver
   // Pop data from the queue
   private: AMCLSensorData *Pop(void);
 
-  ///////////////////////////////////////////////////////////////////////////
-  // Bottom half methods; these methods run in the device thread
-  ///////////////////////////////////////////////////////////////////////////
+  // MessageHandler
+  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * data);
+
+  // Check for updated sensor data
+  public: virtual void UpdateSensorData(void);
   
   // Main function for device thread.
   private: virtual void Main(void);

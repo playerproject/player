@@ -44,6 +44,10 @@ The garcia driver captures
 - @ref interface_ir
 - @ref interface_speech
 - @ref interface_dio
+- @ref interface_power
+- @ref interface_ptz (not yet implemented)
+- @ref interface_position1d (not yet implemented)
+
 
 @par Requires
 
@@ -51,25 +55,52 @@ The garcia driver captures
 
 @par Configuration requests
 
-- none
+- @ref interface_position2d
+  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION_SET_ODOM_REQ :
+  - PLAYER_POSITION_RESET_ODOM_REQ :
+  - PLAYER_POSITION_POWER_REQ :
+  - PLAYER_POSITION_SPEED_PID_REQ :
+  - PLAYER_POSITION_POSITION_PID_REQ :
+  - PLAYER_POSITION_SPEED_PROF_REQ :
+  - PLAYER_IR_GET_GEOM_REQ :
 
 @par Configuration file options
 
-- config_path (filename)
-  - Default: "garcia.config"
-  - Path to Garcia configuration file
+- port (filename)
+  - Default: "ttyS0"
+  - Path to the serial port
+- baud (int)
+  - Default: 38400
+  - Baudrate of the serial port
+- speed (float)
+  - Default: 0.7f
+  - The speed for speaking the phrase.  Values have a range of 0.0 to 1.0 and
+    will be clamped to this range. 0.0 is the slowest and 1.0 is the fastest
+    speed for saying the phrase.
+- pitch (float)
+  - Default: 0.6f
+  - The pitch for speaking the phrase.  Values have a range of 0.0 to 1.0 and
+    will be clamped to this range. 0.0 is the lowest and 1.0 is the highest
+    pitch for saying the phrase.
+- volume (float)
+  - Default: 1.0f
+  - The volume for speaking the phrase.  Values have a range of 0.0 to 1.0 and
+    will be clamped to this range. 0.0 is the quietest and 1.0 is the loudest
+    volume for saying the phrase.
 
 @par Example
 
 @verbatim
 driver
 (
-  name "garciadriver"
+  name "garcia"
   provides ["position2d:0"
             "ir:0"
             "dio:0"
             "speech:0"]
-  port "/dev/ttyS0"
+  port "ttyS0"
+  baud "38400"
 )
 @endverbatim
 
@@ -97,9 +128,12 @@ driver
 #include <time.h>
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 using namespace std;
 
-const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms) => max 100 fps
+#include <iostream> // only used for debugging, so remove when done
+
+const timespec NSLEEP_TIME = {0, 20000000}; // (0s, 20 ms) => max 50 hz
 
 ////////////////////////////////////////////////////////////////////////////////
 // Now the driver
@@ -130,11 +164,15 @@ GarciaDriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
-    : Driver(cf, section)
+    : Driver(cf, section),
+      mLength(0.28),
+      mWidth(0.20),
+      mWheelBase(0.182),
+      mWheelRadius(0.1)
 {
   // Create position2d interface
-  if (0 != cf->ReadDeviceAddr(&(mPos2dAddr),section,"provides",
-                              PLAYER_POSITION2D_CODE,-1,NULL))
+  if (0 != cf->ReadDeviceAddr(&mPos2dAddr, section, "provides",
+                              PLAYER_POSITION2D_CODE, -1, NULL))
   {
     PLAYER_ERROR("Could not read position2d ID ");
     SetError(-1);
@@ -148,8 +186,8 @@ GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
   }
 
   // Create ir interface
-  if (0 != cf->ReadDeviceAddr(&(mIrAddr),section,"provides",
-                              PLAYER_IR_CODE,-1,NULL))
+  if (0 != cf->ReadDeviceAddr(&mIrAddr, section, "provides",
+                              PLAYER_IR_CODE, -1, NULL))
   {
     PLAYER_ERROR("Could not read ir ID ");
     SetError(-1);
@@ -163,8 +201,8 @@ GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
   }
 
   // Create speech interface
-  if (0 != cf->ReadDeviceAddr(&(mSpeechAddr),section,"provides",
-                              PLAYER_SPEECH_CODE,-1,NULL))
+  if (0 != cf->ReadDeviceAddr(&mSpeechAddr, section, "provides",
+                              PLAYER_SPEECH_CODE, -1, NULL))
   {
     PLAYER_ERROR("Could not read speech ID ");
     SetError(-1);
@@ -179,7 +217,7 @@ GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
 
   // Create dio interface
   if (0 != cf->ReadDeviceAddr(&(mDioAddr),section,"provides",
-                              PLAYER_Dio_CODE,-1,NULL))
+                              PLAYER_DIO_CODE,-1,NULL))
   {
     PLAYER_ERROR("Could not read dio ID ");
     SetError(-1);
@@ -192,13 +230,50 @@ GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
     return;
   }
 
-  /// @todo is there a replacement clear command?
-  //ClearCommand(mPosition2dAddr);
+  // Create power interface
+  if (0 != cf->ReadDeviceAddr(&mPowerAddr,
+                            section,
+                            "provides",
+                            PLAYER_POWER_CODE,
+                            -1,
+                            NULL))
+  {
+    PLAYER_ERROR("could not read power address");
+    SetError(-1);
+    return;
+  }
+
+  if (0 != AddInterface(mPowerAddr))
+  {
+    PLAYER_ERROR("could not add power interface");
+    SetError(-1);
+    return;
+  }
 
   // Read options from the configuration file
-  mConfigPath = cf->ReadFilename(section, "config_path", "garcia.config");
+  const char* portname = cf->ReadFilename(section, "portname", "ttyS0");
+  int baudrate = cf->ReadInt(section, "baudrate", 38400);
+
+  // let's just create the config file wherever we are:
+  static FILE* config_file;
+  config_file = fopen("garcia_api.config", "a+");
+
+  fprintf(config_file, "portname=%s\n", portname);
+  fprintf(config_file, "baudrate=%i\n", baudrate);
+
+  mSpeed = static_cast<float>(cf->ReadFloat(section, "speed", 0.7f));
+  mPitch = static_cast<float>(cf->ReadFloat(section, "pitch", 0.6f));
+  mVolume = static_cast<float>(cf->ReadFloat(section, "volume", 1.0f));
+
+  fclose(config_file);
 
   return;
+}
+
+GarciaDriver::~GarciaDriver()
+{
+  // get rid of the Acroname config file
+  //remove("garcia_api.config");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -206,6 +281,24 @@ GarciaDriver::GarciaDriver(ConfigFile* cf, int section)
 int
 GarciaDriver::Setup()
 {
+
+  cout << "Setting up Garcia driver" << flush;
+  mGarcia = new acpGarcia;
+
+  while (!mGarcia->getNamedValue("active")->getBoolVal())
+  {
+    cout << "." << flush;
+    nanosleep(&NSLEEP_TIME, NULL);
+  }
+
+  // enable the IR sensors
+  acpValue enable(1);
+  mGarcia->setNamedValue("front-ranger-enable", &enable);
+  mGarcia->setNamedValue("side-ranger-enable", &enable);
+  mGarcia->setNamedValue("rear-ranger-enable", &enable);
+
+
+  puts("finished!");
 
   // Start the device thread; spawns a new thread and executes
   // GarciaDriver::Main(), which contains the main loop for the driver.
@@ -240,17 +333,6 @@ GarciaDriver::Shutdown()
 void
 GarciaDriver::Main()
 {
-  puts("Setting up Garcia driver");
-  mGarcia = new acpRobot("garcia", mConfigPath);
-
-  puts("waiting for garcia");
-  while (!mGarcia.isActive())
-  {
-    puts("still waiting");
-    nanosleep(&NSLEEP_TIME, NULL);
-  }
-  puts("Garcia driver ready");
-
 
   // The main loop; interact with the device here
   for(;;)
@@ -281,25 +363,44 @@ GarciaDriver::ProcessMessage(MessageQueue* resp_queue,
   assert(hdr);
   assert(data);
 
-  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
-                           PLAYER_PTZ_CMD_STATE, mPos2dAddr))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                           PLAYER_POSITION2D_CMD_POS, mPos2dAddr))
   {
-    assert(hdr->size == sizeof(player_position2d_cmd_t));
-    ProcessPos2dCommand(hdr, *reinterpret_cast<player_position2d_cmd_t *>(data));
+    assert(hdr->size == sizeof(player_position2d_cmd_pos_t));
+    ProcessPos2dPosCmd(hdr, *reinterpret_cast<player_position2d_cmd_pos_t *>(data));
     return(0);
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
-                                PLAYER_SPEECH_CMD_STATE, mSpeechAddr))
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                           PLAYER_POSITION2D_CMD_VEL, mPos2dAddr))
+  {
+    assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
+    ProcessPos2dVelCmd(hdr, *reinterpret_cast<player_position2d_cmd_vel_t *>(data));
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                PLAYER_SPEECH_CMD_SAY, mSpeechAddr))
   {
     assert(hdr->size == sizeof(player_speech_cmd_t));
     ProcessSpeechCommand(hdr, *reinterpret_cast<player_speech_cmd_t *>(data));
     return(0);
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
-                                PLAYER_DIO_CMD_STATE, mDioAddr))
+                                PLAYER_DIO_CMD_VALUES, mDioAddr))
   {
     assert(hdr->size == sizeof(player_dio_cmd_t));
     ProcessDioCommand(hdr, *reinterpret_cast<player_dio_cmd_t *>(data));
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_GET_GEOM, mPos2dAddr))
+  {
+    ProcessPos2dGeomReq(hdr);
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_IR_POSE, mIrAddr))
+  {
+    ProcessIrPoseReq(hdr);
     return(0);
   }
   else
@@ -311,43 +412,192 @@ GarciaDriver::ProcessMessage(MessageQueue* resp_queue,
 }
 
 void
-GarciaDriver::ProcessPos2dCommand(player_msghdr_t* hdr,
-                                  player_position2d_cmd_t &data)
+GarciaDriver::ProcessPos2dPosCmd(player_msghdr_t* hdr,
+                                 player_position2d_cmd_pos_t &data)
 {
+  printf("Position commands currently not implemented\n");
 
+/*
+  // this code could be used to implement the position control,
+  // but it will need to be modified
+
+  double rho(0),alpha(0),beta(0);
+  double delta_x(0),delta_y(0);
+  double v, omega;
+  // To be locally exponentially stable:
+  //  k_rho  > 0
+  //  k_beta < 0
+  //  k_alpha-k_rho > 0
+
+  delta_x = x-mPosX;
+  delta_y = y-mPosY;
+
+  // If we're within 1 cm, stop (for now)
+  if ((fabs(delta_x) > mTranslateDeadzone)||
+      (fabs(delta_y) > mTranslateDeadzone)||
+      (fabs(mPosTheta-theta) > mRotateDeadzone))
+  {
+    rho   = sqrt(pow(delta_x,2) + pow(delta_y,2));
+
+    if (fabs(atan2(delta_y, delta_x) - mPosTheta) < M_PI/2)
+    {
+
+      alpha = atan2(delta_y,delta_x) - mPosTheta;
+      alpha = fmod(alpha, M_PI_2); // M_PI/2 == M_PI_2
+
+      beta  = -fmod(alpha,M_PI) - mPosTheta + theta;
+      beta  = fmod(beta, M_PI);
+
+      v     = mKRho * rho;
+      omega = mKAlpha * alpha + mKBeta*beta;
+    }
+    else
+    {
+      alpha = atan2(-delta_y,-delta_x) - mPosTheta;
+      alpha = fmod(alpha, M_PI_2); // M_PI/2 == M_PI_2
+
+      beta  = -alpha - mPosTheta + theta;
+      beta  = fmod(beta, M_PI);
+
+      v     = -mKRho * rho;
+      omega = mKAlpha * alpha + mKBeta*beta;
+    }
+
+    SetTargetVelocity(v, omega);
+  }
+  else
+    SetTargetVelocity(0,0);
+*/
+
+}
+
+void
+GarciaDriver::ProcessPos2dVelCmd(player_msghdr_t* hdr,
+                                 player_position2d_cmd_vel_t &data)
+{
+  double v(data.vel.px);
+  double omega(data.vel.pa);
+
+  acpValue vl(static_cast<float>(v - mWheelBase*omega/2.0));
+  acpValue vr(static_cast<float>(v + mWheelBase*omega/2.0));
+
+  mGarcia->setNamedValue("damped-speed-left", &vl);
+  mGarcia->setNamedValue("damped-speed-right", &vr);
+
+  // do we have to do this each time, or only once?
+  acpObject* behavior;
+  behavior = mGarcia->createNamedBehavior("null", "vel");
+  mGarcia->queueBehavior(behavior);
 }
 
 void
 GarciaDriver::ProcessSpeechCommand(player_msghdr_t* hdr,
                                    player_speech_cmd_t &data)
 {
+  // todo, there is currently a problem if we receive messages too quickly
+  cout << data.string << endl;
 
+  acpValue phrase(data.string);
+  acpObject* behavior;
+
+  behavior = mGarcia->createNamedBehavior("say", data.string);
+  behavior->setNamedValue("phrase", &phrase);
+  behavior->setNamedValue("speed", &mSpeed);
+  behavior->setNamedValue("pitch", &mPitch);
+  behavior->setNamedValue("volume", &mVolume);
+  mGarcia->queueBehavior(behavior);
 }
 
 void
 GarciaDriver::ProcessDioCommand(player_msghdr_t* hdr,
                                 player_dio_cmd_t &data)
 {
+  PLAYER_WARN("Garcia driver currently doesn't support DIO commands");
+}
+
+void
+GarciaDriver::ProcessPos2dGeomReq(player_msghdr_t* hdr)
+{
+  player_position2d_geom_t geom;
+
+  geom.pose.px = 0.03; // [m]
+  geom.pose.py = 0.00; // [m]
+  geom.pose.pa = 0;    // [rad]
+  geom.size.sl = mLength;  // [m]
+  geom.size.sw = mWidth;  // [m]
+
+  Publish(mPos2dAddr, NULL,
+          PLAYER_MSGTYPE_RESP_ACK,
+          PLAYER_POSITION2D_REQ_GET_GEOM,
+          &geom, sizeof(geom), NULL);
+}
+
+void
+GarciaDriver::ProcessIrPoseReq(player_msghdr_t* hdr)
+{
+  player_pose_t poses[6] = {{ 0.105, 0.045, M_PI/6}, //   front-left
+                            { 0.105,-0.045,-M_PI/6}, //   front-right
+                            { 0.080, 0.020, M_PI_2}, //   side-left
+                            { 0.080,-0.020,-M_PI_2}, //   side-right
+                            {-0.050, 0.070, M_PI},   //   rear-left
+                            {-0.050,-0.070,-M_PI}};  //   rear-right
+
+  player_ir_pose_t pose;
+  pose.poses_count = 6;
+  memcpy(pose.poses, poses, 6*sizeof(player_pose_t));
+
+  Publish(mIrAddr, NULL,
+          PLAYER_MSGTYPE_RESP_ACK,
+          PLAYER_IR_POSE,
+          &pose, sizeof(pose), NULL);
 
 }
 
 void
 GarciaDriver::RefreshData()
 {
+  // how do we update these?
+  mPos2dData.pos.px  = 0.0;
+  mPos2dData.pos.py  = 0.0;
+  mPos2dData.pos.pa  = 0.0;
+
+  mPos2dData.vel.px  = 0.0;
+  mPos2dData.vel.py  = 0.0;
+  mPos2dData.vel.pa  = 0.0;
+
   Publish(mPos2dAddr, NULL,
           PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
-          reinterpret_cast<void*>(&mPos2dData), size, NULL);
+          reinterpret_cast<void*>(&mPos2dData), sizeof(mPos2dData), NULL);
+
+  // update the IR data
+  mIrData.voltages_count = 0;
+  mIrData.ranges_count = 6;
+
+  mIrData.ranges[0] = mGarcia->getNamedValue("front-ranger-left")->getFloatVal();
+  mIrData.ranges[1] = mGarcia->getNamedValue("front-ranger-right")->getFloatVal();
+  mIrData.ranges[2] = mGarcia->getNamedValue("side-ranger-left")->getFloatVal();
+  mIrData.ranges[3] = mGarcia->getNamedValue("side-ranger-right")->getFloatVal();
+  mIrData.ranges[4] = mGarcia->getNamedValue("rear-ranger-left")->getFloatVal();
+  mIrData.ranges[5] = mGarcia->getNamedValue("rear-ranger-right")->getFloatVal();
 
   Publish(mIrAddr, NULL,
-          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_STATE,
+          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
           reinterpret_cast<void*>(&mIrData), sizeof(mIrData), NULL);
 
-  Publish(mSpeechAddr, NULL,
-          PLAYER_MSGTYPE_DATA, PLAYER_SPEECH_DATA_STATE,
-          reinterpret_cast<void*>(&mSpeechData), sizeof(mSpeechData), NULL);
+  // do we currently have a dio device?
+  static int dio_test = 0;
+  mDioData.count = 16;
+  mDioData.digin = ++dio_test;
 
   Publish(mDioAddr, NULL,
-          PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_STATE,
+          PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES,
           reinterpret_cast<void*>(&mDioData), sizeof(mDioData), NULL);
 
+  mPowerData.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
+  mPowerData.volts = mGarcia->getNamedValue("battery-voltage")->getFloatVal();
+  mPowerData.percent = mGarcia->getNamedValue("battery-level")->getFloatVal();
+
+  Publish(mPowerAddr, NULL,
+          PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
+          reinterpret_cast<void*>(&mPowerData), sizeof(mPowerData), NULL);
 }

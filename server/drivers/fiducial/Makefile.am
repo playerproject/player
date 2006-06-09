@@ -1,12 +1,22 @@
-noinst_LIBRARIES = @LASERBAR_LIB@ @LASERBARCODE_LIB@ @LASERVISUALBARCODE_LIB@ @LASERVISUALBW_LIB@
+noinst_LTLIBRARIES = 
+if INCLUDE_LASERBAR
+noinst_LTLIBRARIES += liblaserbar.la
+endif
+if INCLUDE_LASERBARCODE
+noinst_LTLIBRARIES += liblaserbarcode.la
+endif
+if INCLUDE_LASERVISUALBARCODE
+noinst_LTLIBRARIES += liblaservisualbarcode.la
+endif
+if INCLUDE_LASERVISUALBW
+noinst_LTLIBRARIES += liblaservisualbw.la
+endif
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir)/server
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 EXTRA_DIST = beacon.jpg laservisualbeacon.jpg
 
-EXTRA_LIBRARIES = liblaserbar.a liblaserbarcode.a liblaservisualbarcode.a liblaservisualbw.a
-
-liblaserbar_a_SOURCES = laserbar.cc
-liblaserbarcode_a_SOURCES = laserbarcode.cc
-liblaservisualbarcode_a_SOURCES = laservisualbarcode.cc
-liblaservisualbw_a_SOURCES = laservisualbw.cc
+liblaserbar_la_SOURCES = laserbar.cc
+liblaserbarcode_la_SOURCES = laserbarcode.cc
+liblaservisualbarcode_la_SOURCES = laservisualbarcode.cc
+liblaservisualbw_la_SOURCES = laservisualbw.cc

@@ -21,12 +21,15 @@ example_PROGRAMS =
 if INCLUDE_PLAYERCC
   example_PROGRAMS += camera \
                      example0 \
+                     example4 \
                      grip \
                      ptz \
                      laserobstacleavoid \
                      randomwalk \
                      clientgraphics \
-                     sonarobstacleavoid
+                     sonarobstacleavoid \
+                     speech \
+                     wallfollow
 endif
 
 if INCLUDE_PLAYERCC_BOOST
@@ -44,12 +47,15 @@ example_DATA = args.h \
                example1.cc \
                example2.cc \
                example3.cc \
+               example4.cc \
                goto.cc \
                grip.cc \
                laserobstacleavoid.cc \
                ptz.cc \
                randomwalk.cc \
-               sonarobstacleavoid.cc
+               sonarobstacleavoid.cc \
+               speech.cc \
+               wallfollow.cc
 
 camera_SOURCES = camera.cc args.h
 camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
@@ -70,6 +76,10 @@ example2_DEPENDENCIES = $(PLAYERCC_DEPS)
 example3_SOURCES = example3.cc args.h
 example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 example3_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+example4_SOURCES = example4.cc
+example4_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+example4_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 goto_SOURCES = goto.cc
 goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
@@ -98,3 +108,11 @@ randomwalk_DEPENDENCIES = $(PLAYERCC_DEPS)
 sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc args.h
 sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+speech_SOURCES = speech.cc args.h
+speech_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+speech_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+wallfollow_SOURCES = wallfollow.cc args.h
+wallfollow_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+wallfollow_DEPENDENCIES = $(PLAYERCC_DEPS)

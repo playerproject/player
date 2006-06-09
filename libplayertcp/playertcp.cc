@@ -169,6 +169,7 @@ PlayerTCP::Listen(int* ports, int num_ports)
   return(0);
 }
 
+// Should be called with client_mutex locked
 MessageQueue*
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
@@ -178,8 +179,6 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      int* kill_flag)
 {
   unsigned char data[PLAYER_IDENT_STRLEN];
-
-  pthread_mutex_lock(&this->clients_mutex);
 
   int j = this->num_clients;
   // Do we need to allocate another spot?
@@ -234,8 +233,6 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   this->clients[j].writebufferlen = 0;
 
   this->num_clients++;
-
-  pthread_mutex_unlock(&this->clients_mutex);
 
   if(send_banner)
   {
@@ -411,6 +408,7 @@ PlayerTCP::Read(int timeout)
   return(0);
 }
 
+// Should be called with clients_mutex lock held
 void
 PlayerTCP::DeleteClients()
 {
@@ -459,11 +457,10 @@ PlayerTCP::DeleteClients()
          (this->size_clients - this->num_clients) * sizeof(struct pollfd));
 }
 
+// Should be called with clients_mutex lock held
 void
 PlayerTCP::DeleteClient(MessageQueue* q)
 {
-  pthread_mutex_lock(&this->clients_mutex);
-
   // Find the client and mark it for deletion.
   int i;
   for(i=0;i<this->num_clients;i++)
@@ -474,8 +471,6 @@ PlayerTCP::DeleteClient(MessageQueue* q)
       break;
     }
   }
-
-  pthread_mutex_unlock(&this->clients_mutex);
 }
 
 bool
@@ -1096,7 +1091,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
               PLAYER_WARN("truncating available device list");
               break;
             }
-            if((int)device->addr.robot == client->port)
+            if((int)device->addr.robot == client->port && (device->addr.host==host))
               devlist.devices[numdevices++] = device->addr;
           }
           devlist.devices_count = numdevices;

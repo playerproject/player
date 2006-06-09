@@ -151,12 +151,9 @@ driver
 #include <string.h>  /* for strncpy(3),memcpy(3) */
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
-#include <socket_util.h>
+//#include <socket_util.h>
 
-#include "drivertable.h"
-#include "driver.h"
-#include "error.h"
-#include "player.h"
+#include <libplayercore/playercore.h>
 
 #define ACTS_NUM_CHANNELS 32
 #define ACTS_HEADER_SIZE_1_0 2*ACTS_NUM_CHANNELS  
@@ -333,7 +330,7 @@ void QuitACTS(void* visiondevice);
 
 
 Acts::Acts( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE, PLAYER_ALL_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE)
 {
   char tmpstr[MAX_FILENAME_SIZE];
   int tmpint;
@@ -866,7 +863,7 @@ Acts::Main()
 
         // TODO: put a descriptive color in here (I'm not sure where
         // to get it from).
-        acts_data.blobs[i].color = htonl(0xFF0000);
+        acts_data.blobs[i].color = 0xFF0000;
         
         // get the 4-byte area first
         acts_data.blobs[i].area = 0;
@@ -875,26 +872,14 @@ Acts::Main()
           acts_data.blobs[i].area = acts_data.blobs[i].area << 6;
           acts_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        acts_data.blobs[i].area = htonl(acts_data.blobs[i].area);
 
-        // convert the other 6 one-byte entries to byte-swapped shorts
+        // store the 1 byte values
         acts_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].x = htons(acts_data.blobs[i].x);
-
         acts_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].y = htons(acts_data.blobs[i].y);
-
         acts_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].left = htons(acts_data.blobs[i].left);
-
         acts_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].right = htons(acts_data.blobs[i].right);
-
         acts_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].top = htons(acts_data.blobs[i].top);
-
         acts_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].bottom = htons(acts_data.blobs[i].bottom);
       }
     }
     else
@@ -908,8 +893,8 @@ Acts::Main()
         int ch = 0;
         for (int j = 0; j < ACTS_MAX_CHANNELS; j++)
         {
-          if (i >= ntohs(acts_data.header[j].index) &&
-              i < ntohs(acts_data.header[j].index) + ntohs(acts_data.header[j].num))
+          if (i >= acts_data.header[j].index &&
+              i < acts_data.header[j].index + acts_data.header[j].num)
           {
             ch = j;
             break;
@@ -918,9 +903,9 @@ Acts::Main()
 
         // Put in a descriptive color.
         if (ch < (int) (sizeof(colors) / sizeof(colors[0])))
-          acts_data.blobs[i].color = htonl(colors[ch]);            
+          acts_data.blobs[i].color = colors[ch];            
         else
-          acts_data.blobs[i].color = htonl(0xFF0000);
+          acts_data.blobs[i].color = 0xFF0000;
         
         // get the 4-byte area first
         acts_data.blobs[i].area = 0;
@@ -929,51 +914,44 @@ Acts::Main()
           acts_data.blobs[i].area = acts_data.blobs[i].area << 6;
           acts_data.blobs[i].area |= acts_blob_buf[tmpptr++] - 1;
         }
-        acts_data.blobs[i].area = htonl(acts_data.blobs[i].area);
         
-        // convert the other 6 two-byte entries to byte-swapped shorts
+        // Get the other 2 byte values
         acts_data.blobs[i].x = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].x = acts_data.blobs[i].x << 6;
         acts_data.blobs[i].x |= acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].x = htons(acts_data.blobs[i].x);
 
         acts_data.blobs[i].y = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].y = acts_data.blobs[i].y << 6;
         acts_data.blobs[i].y |= acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].y = htons(acts_data.blobs[i].y);
 
         acts_data.blobs[i].left = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].left = acts_data.blobs[i].left << 6;
         acts_data.blobs[i].left |= acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].left = htons(acts_data.blobs[i].left);
 
         acts_data.blobs[i].right = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].right = acts_data.blobs[i].right << 6;
         acts_data.blobs[i].right |= acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].right = htons(acts_data.blobs[i].right);
 
         acts_data.blobs[i].top = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].top = acts_data.blobs[i].top << 6;
         acts_data.blobs[i].top |= acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].top = htons(acts_data.blobs[i].top);
 
         acts_data.blobs[i].bottom = acts_blob_buf[tmpptr++] - 1;
         acts_data.blobs[i].bottom = acts_data.blobs[i].bottom << 6;
         acts_data.blobs[i].bottom |= acts_blob_buf[tmpptr++] - 1;
-        acts_data.blobs[i].bottom = htons(acts_data.blobs[i].bottom);
       }
     }
     
     // Convert data to interface format
     local_data.width = acts_data.width;
     local_data.height = acts_data.height;
-    local_data.blob_count = htons(num_blobs);
+    local_data.blobs_count = num_blobs;
       
     for (i = 0; i < num_blobs; i++)
     {
       src = acts_data.blobs + i;
       dst = local_data.blobs + i;
-      dst->id = htons(0);
+      dst->id = 0;
       dst->color = src->color;
       dst->x = src->x;
       dst->y = src->y;
@@ -981,12 +959,12 @@ Acts::Main()
       dst->right = src->right;
       dst->top = src->top;
       dst->bottom = src->bottom;
-      dst->range = htons(0);
+      dst->range = 0;
     }
 
     /* got the data. now fill it in */
-    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
-            ntohs(local_data.blob_count) * sizeof(local_data.blobs[0]), NULL);
+    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
+            (local_data.blobs_count) * sizeof(local_data.blobs[0]), NULL);
   }
 
   pthread_cleanup_pop(1);

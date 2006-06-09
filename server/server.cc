@@ -54,7 +54,7 @@ $ player pioneer.cfg
 
 * Part of the Player/Stage/Gazebo Project
 * [http://playerstage.sourceforge.net].
-* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,
+* Copyright (C) 2000 - 2006 Brian Gerkey, Richard Vaughan, Andrew Howard,
 * Nate Koenig, and contributors. Released under the GNU General Public
 * License.
 * Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
@@ -243,7 +243,7 @@ void
 PrintCopyrightMsg()
 {
   fprintf(stderr,"\n* Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net].\n");
-  fprintf(stderr, "* Copyright (C) 2000 - 2005 Brian Gerkey, Richard Vaughan, Andrew Howard,\n* Nate Koenig, and contributors.");
+  fprintf(stderr, "* Copyright (C) 2000 - 2006 Brian Gerkey, Richard Vaughan, Andrew Howard,\n* Nate Koenig, and contributors.");
   fprintf(stderr," Released under the GNU General Public License.\n");
   fprintf(stderr,"* Player comes with ABSOLUTELY NO WARRANTY.  This is free software, and you\n* are welcome to redistribute it under certain conditions; see COPYING\n* for details.\n\n");
 }
@@ -257,15 +257,9 @@ PrintUsage()
   fprintf(stderr, "USAGE:  player [options] [<configfile>]\n\n");
   fprintf(stderr, "Where [options] can be:\n");
   fprintf(stderr, "  -h             : print this message.\n");
-  fprintf(stderr, "  -u <rate>      : set server update rate to <rate> in Hz\n");
   fprintf(stderr, "  -d <level>     : debug message level (0 = none, 1 = default, 9 = all).\n");
-  fprintf(stderr, "  -t {tcp | udp} : transport protocol to use.  Default: tcp\n");
   fprintf(stderr, "  -p <port>      : port where Player will listen. "
           "Default: %d\n", PLAYERTCP_DEFAULT_PORT);
-  fprintf(stderr, "  -r <logfile>   : read data from <logfile> (readlog driver)\n");
-  fprintf(stderr, "  -f <speed>     : readlog speed factor (e.g., 1 for normal speed, 2 for twice normal speed).\n");
-  fprintf(stderr, "  -k <key>       : require client authentication with the "
-          "given key\n");
   fprintf(stderr, "  -q             : quiet mode: minimizes the console output on startup.\n");
   fprintf(stderr, "  <configfile>   : load the the indicated config file\n");
   fprintf(stderr, "\nThe following %d drivers were compiled into Player:\n\n    ",

@@ -5,10 +5,14 @@ example0
 example1
 example2
 example3
+example4
 goto
 grip
 ptz
 laserobstacleavoid
 randomwalk
 clientgraphics
+clientgraphics3d
 sonarobstacleavoid
+speech
+wallfollow

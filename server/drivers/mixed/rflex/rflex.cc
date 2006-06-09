@@ -514,6 +514,13 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     Lock();
     command = *reinterpret_cast<player_position2d_cmd_vel_t *> (data);
     Unlock();
+ 
+    // reset command_type since we have a new 
+    // velocity command so we can get into the 
+    // velocity control section in RFLEX::Main()
+    
+    command_type = 0;
+    
     return 0;
   }
 
@@ -1156,6 +1163,10 @@ RFLEX::Main()
     break;
   }
   Unlock();
+
+  // release cpu somewhat so other threads can run.
+  usleep(1000);
+  
   }
   pthread_exit(NULL);
 }

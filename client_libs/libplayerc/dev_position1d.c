@@ -168,13 +168,14 @@ playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
 
 // Set the target pose
 int
-playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
-                               double pos, int state)
+playerc_position1d_set_cmd_pos_with_vel(playerc_position1d_t *device,
+                                        double pos, double vel, int state)
 {
   player_position1d_cmd_pos_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
   cmd.pos = pos;
+  cmd.vel = vel;
   cmd.state = state;
 
   return playerc_client_write(device->info.client, &device->info,
@@ -195,6 +196,13 @@ playerc_position1d_set_odom(playerc_position1d_t *device,
                                 &device->info,
                                 PLAYER_POSITION1D_REQ_SET_ODOM,
                                 &req, NULL, 0));
+}
+
+int
+playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
+                               double pos, int state)
+{
+  return playerc_position1d_set_cmd_pos_with_vel(device, pos, 0, state);
 }
 
 void playerc_position1d_print( playerc_position1d_t * device,

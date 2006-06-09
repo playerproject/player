@@ -92,6 +92,13 @@ Transport (HT)</a></td>
 <td>Clodbuster</td>
 <td>@ref driver_clodbuster</td>
 </tr>
+
+<tr>
+<td><a href="http://www.videredesign.com/robotics">Videre Design</a></td>
+<td>ERRATIC mobile robot platform</td>
+<td>@ref driver_erratic</td>
+</tr>
+
 </table>
 
 <h4><a name="player_hardware_mischw">Miscellaneous hardware</a></h4>

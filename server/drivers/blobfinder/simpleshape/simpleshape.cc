@@ -100,26 +100,10 @@ driver
 */
 /** @} */
 
-#include "player.h"
-
-#include <errno.h>
-#include <string.h>
-#include <math.h>
-#include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
-#include <unistd.h>
+#include "../../base/imagebase.h"
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "clientdata.h"
-#include "clientmanager.h"
-
-extern ClientManager* clientmanager;
 
 // Invariant feature set for a contour
 class FeatureSet
@@ -151,32 +135,21 @@ class Shape
 
 
 // Driver for detecting laser retro-reflectors.
-class SimpleShape : public Driver
+class SimpleShape : public ImageBase
 {
-  // Constructor
-  public: SimpleShape( ConfigFile* cf, int section);
+  public: 
+    // Constructor
+    SimpleShape( ConfigFile* cf, int section);
 
-  // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
-
-  // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
-
-  // Main function for device thread.
-  private: virtual void Main();
-
-  // Process requests.  Returns 1 if the configuration has changed.
-  //private: int HandleRequests();
-  
-  // Grab new camera data.
-  //private: bool UpdateCamera();
+    // Setup/shutdown routines.
+    virtual int Setup();
+    virtual int Shutdown();
 
   // Load a shape model
   private: int LoadModel();
 
   // Process the image
-  private: void ProcessImage();
+  private: int ProcessFrame();
 
   // Having pre-processed the image, find some shapes
   private: void FindShapes();
@@ -189,26 +162,6 @@ class SimpleShape : public Driver
 
   // Write the outgoing blobfinder data
   private: void WriteBlobfinderData();
-
-  // Write the outgoing camera data
-  private: void WriteCameraData();
-
-  // Output devices
-  private: player_device_id_t blobfinder_id;
-  private: player_device_id_t out_camera_id;
-
-  // Input camera stuff
-  private:
-  Driver *camera;
-  player_device_id_t camera_id;
-  struct timeval cameraTime;  
-  player_camera_data_t cameraData;
-  bool NewCamData;
-	
-  ClientDataInternal * BaseClient;
-
-  // Output camera stuff
-  private: player_camera_data_t outCameraData;
 
   // Model data (this is the shape to search for)
   private: const char *modelFilename;
@@ -249,54 +202,8 @@ void SimpleShape_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SimpleShape::SimpleShape( ConfigFile* cf, int section)
-    : Driver(cf, section)
+	: ImageBase(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE)
 {
-  memset(&this->camera_id.code, 0, sizeof(player_device_id_t));
-  memset(&this->blobfinder_id.code, 0, sizeof(player_device_id_t));
-  memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
-
-  // Must have a blobfinder interface
-  if (cf->ReadDeviceId(&this->blobfinder_id, section, "provides",
-                       PLAYER_BLOBFINDER_CODE, -1, NULL) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-  if(this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
-  // Optionally have a camera interface
-  if (cf->ReadDeviceId(&this->out_camera_id, section, "provides",
-                       PLAYER_CAMERA_CODE, -1, NULL) == 0)
-  {
-    if(this->AddInterface(this->out_camera_id, PLAYER_READ_MODE) != 0)
-    {
-      this->SetError(-1);    
-      return;
-    }
-  }
-  else
-    memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
-
-
-  // Must have an input camera
-  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
-                       PLAYER_CAMERA_CODE, -1, NULL) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-  this->cameraTime.tv_sec = 0;
-  this->cameraTime.tv_usec = 0;
-
-  // Other camera settings
-  this->camera = NULL;
-  this->BaseClient = NULL;
-  this->NewCamData = false;
-
   this->inpImage = NULL;
   this->outImage = NULL;
   this->workImage = NULL;
@@ -321,28 +228,11 @@ SimpleShape::SimpleShape( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int SimpleShape::Setup()
 {
-  BaseClient = new ClientDataInternal(this);
-  clientmanager->AddClient(BaseClient);
-
-  // Subscribe to the camera.
-  this->camera = deviceTable->GetDriver(this->camera_id);
-  if (!this->camera)
-  {
-    PLAYER_ERROR("unable to locate suitable camera device");
-    return(-1);
-  }
-  if (BaseClient->Subscribe(this->camera_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to camera device");
-    return(-1);
-  }
-
   // Load the shape model
   if (this->LoadModel() != 0)
     return -1;
 
-  // Start the driver thread.
-  this->StartThread();
+  return ImageBase::Setup();
 
   return 0;
 }
@@ -352,15 +242,7 @@ int SimpleShape::Setup()
 // Shutdown the device (called by server thread).
 int SimpleShape::Shutdown()
 {
-  // Stop the driver thread.
-  StopThread();
-  
-  // Unsubscribe from devices.
-  BaseClient->Unsubscribe(this->camera_id);
-
-  clientmanager->RemoveClient(BaseClient);
-  delete BaseClient;
-  BaseClient = NULL;
+  ImageBase::Shutdown();
   
   // Free images
   if (this->inpImage)
@@ -370,116 +252,6 @@ int SimpleShape::Shutdown()
 
   return 0;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Main function for device thread
-void SimpleShape::Main() 
-{
-
-  while (true)
-  {
-    // Let the camera drive update rate
-    this->camera->Wait();
-
-    // Test if we are supposed to cancel this thread.
-    pthread_testcancel();
-
-    // Process any new camera data.
-    Lock();
-    if (NewCamData)
-    {
-      NewCamData = false;
-      Unlock();
-      // Find all the shapes in the image
-      this->ProcessImage();
-
-      // Write the results to the client
-      this->WriteBlobfinderData();
-      this->WriteCameraData();
-    }
-    else
-      Unlock();
-
-    // Process any pending requests.
-    ProcessMessages();
-    //this->HandleRequests();
-  }
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Process an incoming message
-int SimpleShape::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len)
-{
-  assert(hdr);
-  assert(data);
-  assert(resp_data);
-  assert(resp_len);
-  assert(*resp_len==PLAYER_MAX_MESSAGE_SIZE);
-  
-  *resp_len = 0;
-
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, camera_id))
-  {
-  	assert(hdr->size == sizeof(this->cameraData));
-  	player_camera_data_t * cam_data = reinterpret_cast<player_camera_data_t * > (data);
-  	Lock();
-    this->cameraData.width = ntohs(cam_data->width);
-    this->cameraData.height = ntohs(cam_data->height); 
-    this->cameraData.bpp = cam_data->bpp;
-    this->cameraData.image_size = ntohl(cam_data->image_size);
-    this->cameraData.format = cam_data->format;
-    this->cameraData.compression = cam_data->compression; 
-    this->NewCamData=true;
-  	Unlock();
-    if (this->cameraData.compression != PLAYER_CAMERA_COMPRESS_RAW)
-    {
-      PLAYER_WARN("camera data is compressed");
-      return false;
-    }
-    return 0;
-  }
-  
-  return -1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Grag new camera data; returns true if there is new data to process.
-/*bool SimpleShape::UpdateCamera()
-{
-  size_t size;
-  struct timeval time;
-  
-  // Get the camera data.
-  size = this->camera->GetData(this->camera_id, &this->cameraData,
-                               sizeof(this->cameraData), &time);
-  if (size == 0)
-    return false;
-
-  if (time.tv_sec == this->cameraTime.tv_sec &&
-      time.tv_usec == this->cameraTime.tv_usec)
-    return false;
-
-  this->cameraTime = time;
-  
-  // Do some byte swapping
-  this->cameraData.width = ntohs(this->cameraData.width);
-  this->cameraData.height = ntohs(this->cameraData.height);
-  this->cameraData.bpp = this->cameraData.bpp;
-  this->cameraData.format = this->cameraData.format;
-  this->cameraData.compression = this->cameraData.compression;
-  this->cameraData.image_size = ntohl(this->cameraData.image_size);
-
-  if (this->cameraData.compression != PLAYER_CAMERA_COMPRESS_RAW)
-  {
-    PLAYER_WARN("camera data is compressed");
-    return false;
-  }
-
-  return true;
-}*/
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -545,13 +317,13 @@ int SimpleShape::LoadModel()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Look for stuff in the image.
-void SimpleShape::ProcessImage()
+int SimpleShape::ProcessFrame()
 {
   CvSize size;
   int width, height;
   
-  width = this->cameraData.width;
-  height = this->cameraData.height;
+  width = this->stored_data.width;
+  height = this->stored_data.height;
   assert(width > 0 && height > 0);
     
   // Create input and output image if it doesnt exist
@@ -569,28 +341,28 @@ void SimpleShape::ProcessImage()
   }
 
   // Create a main image and copy in the pixels
-  switch (this->cameraData.format)
+  switch (this->stored_data.format)
   {
     case PLAYER_CAMERA_FORMAT_MONO8:
     {
       // Copy pixels to input image (grayscale)
-      assert(this->inpImage->imageSize >= (int) this->cameraData.image_size);
-      memcpy(this->inpImage->imageData, this->cameraData.image, this->inpImage->imageSize);
+      assert(this->inpImage->imageSize >= (int) this->stored_data.image_count);
+      memcpy(this->inpImage->imageData, this->stored_data.image, this->inpImage->imageSize);
       break;
     }
     default:
     {
-      PLAYER_WARN1("image format [%d] is not supported", this->cameraData.format);
-      return;
+      PLAYER_WARN1("image format [%d] is not supported", this->stored_data.format);
+      return -1;
     }
   }
 
   // Copy original image to output
-  if (this->out_camera_id.port)
+/*  if (this->out_camera_id.port)
   {
     cvSetZero(this->outImage);
     cvCopy(this->inpImage, this->outSubImages + 0);
-  }
+  }*/
 
   // Clone the input image to our workspace
   this->workImage = cvCloneImage(this->inpImage);
@@ -601,8 +373,10 @@ void SimpleShape::ProcessImage()
   // Free temp storage
   cvReleaseImage(&this->workImage);
   this->workImage = NULL;
+
+  WriteBlobfinderData();
     
-  return;
+  return 0;
 }
 
 
@@ -625,8 +399,8 @@ void SimpleShape::FindShapes()
   cvCanny(this->workImage, this->workImage, this->cannyThresh1, this->cannyThresh2);
 
   // Copy edges to output image
-  if (this->out_camera_id.port)
-    cvCopy(this->workImage, this->outSubImages + 1);
+/*  if (this->out_camera_id.port)
+    cvCopy(this->workImage, this->outSubImages + 1);*/
 
   // Find contours on a binary image
   storage = cvCreateMemStorage(0);
@@ -652,9 +426,9 @@ void SimpleShape::FindShapes()
 
     
     // Draw eligable contour on the output image; useful for debugging
-    if (this->out_camera_id.port)
+/*    if (this->out_camera_id.port)
       cvDrawContours(this->outSubImages + 2, contour, CV_RGB(255, 255, 255),
-                     CV_RGB(255, 255, 255), 0, 1, 8);
+                     CV_RGB(255, 255, 255), 0, 1, 8);*/
 
     // Compute the contour features
     this->ExtractFeatureSet((CvContour*) contour, &featureSet);
@@ -665,13 +439,13 @@ void SimpleShape::FindShapes()
       continue;
 
     // Draw contour on the main image; useful for debugging
-    if (this->out_camera_id.port)
+/*    if (this->out_camera_id.port)
     {
       cvDrawContours(this->outSubImages + 3, contour, CV_RGB(128, 128, 128),
                      CV_RGB(128, 128, 128), 0, 1, 8);
       cvRectangle(this->outSubImages + 3, cvPoint(rect.x, rect.y),
                   cvPoint(rect.x + rect.width, rect.y + rect.height), CV_RGB(255, 255, 255), 1);
-    }
+    }*/
 
     // Check for overrun
     if (this->shapeCount >= sizeof(this->shapes) / sizeof(this->shapes[0]))
@@ -821,36 +595,38 @@ int SimpleShape::MatchFeatureSet(FeatureSet *a, FeatureSet *b)
 void SimpleShape::WriteBlobfinderData()
 {
   unsigned int i;
-  size_t size;
+  //size_t size;
   Shape *shape;
   player_blobfinder_data_t data;
 
   // Se the image dimensions
-  data.width = htons(this->cameraData.width);
-  data.height = htons(this->cameraData.height);
+  data.width = (this->stored_data.width);
+  data.height = (this->stored_data.height);
 
-  data.blob_count = htons(this->shapeCount);
+  data.blobs_count = (this->shapeCount);
     
   for (i = 0; i < this->shapeCount; i++)
   {
     shape = this->shapes + i;
 
     // Set the data to pass back
-    data.blobs[i].id = 0;  // TODO
+    data.blobs[i].id = shape->id;  // TODO
     data.blobs[i].color = 0;  // TODO
-    data.blobs[i].area = htonl((int) ((shape->bx - shape->ax) * (shape->by - shape->ay)));
-    data.blobs[i].x = htons((int) ((shape->bx + shape->ax) / 2));
-    data.blobs[i].y = htons((int) ((shape->by + shape->ay) / 2));
-    data.blobs[i].left = htons((int) (shape->ax));
-    data.blobs[i].top = htons((int) (shape->ay));
-    data.blobs[i].right = htons((int) (shape->bx));
-    data.blobs[i].bottom = htons((int) (shape->by));
-    data.blobs[i].range = htons(0);
+    data.blobs[i].area = ((int) ((shape->bx - shape->ax) * (shape->by - shape->ay)));
+    data.blobs[i].x = ((int) ((shape->bx + shape->ax) / 2));
+    data.blobs[i].y = ((int) ((shape->by + shape->ay) / 2));
+    data.blobs[i].left = ((int) (shape->ax));
+    data.blobs[i].top = ((int) (shape->ay));
+    data.blobs[i].right = ((int) (shape->bx));
+    data.blobs[i].bottom = ((int) (shape->by));
+    data.blobs[i].range = (0);
   }
 
+  // Copy data to server.
+  Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
   // Copy data to server
-  size = sizeof(data) - sizeof(data.blobs) + this->shapeCount * sizeof(data.blobs[0]);
-  this->PutMsg(this->blobfinder_id, NULL, PLAYER_MSGTYPE_DATA, 0, &data, size, &this->cameraTime);
+/*  size = sizeof(data) - sizeof(data.blobs) + this->shapeCount * sizeof(data.blobs[0]);
+  this->PutMsg(this->blobfinder_id, NULL, PLAYER_MSGTYPE_DATA, 0, &data, size, &this->cameraTime);*/
   
   return;
 }
@@ -859,7 +635,7 @@ void SimpleShape::WriteBlobfinderData()
 ////////////////////////////////////////////////////////////////////////////////
 // Write camera data; this is a little bit naughty: we re-use the
 // input camera data, but modify the pixels
-void SimpleShape::WriteCameraData()
+/*void SimpleShape::WriteCameraData()
 {
   size_t size;
   
@@ -887,6 +663,6 @@ void SimpleShape::WriteCameraData()
   this->PutMsg(this->out_camera_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->outCameraData, size, &this->cameraTime);
   
   return;
-}
+}*/
 
 

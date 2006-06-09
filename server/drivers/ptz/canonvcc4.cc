@@ -25,9 +25,6 @@
 /** @defgroup driver_canonvcc4 canonvcc4
  * @brief Canon VC-C4 pan-tilt-zoom camera
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The canonvcc4 driver controls a Canon VC-C4 PTZ camera.
 
 The canonvcc4 driver operates over a direct serial link, not
@@ -110,10 +107,8 @@ values can be set up.
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include "replace.h" /* for poll(2) and cfmakeraw(3) */
-#include "driver.h"
-#include "drivertable.h"
-#include "player.h"
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 
 
 #define CAM_ERROR_NONE 0x30
@@ -183,8 +178,8 @@ class canonvcc4:public Driver
   void ProcessCommand(player_ptz_cmd_t & command);
   int pandemand , tiltdemand , zoomdemand ;
 
-  // MessageHandler
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+    // MessageHandler
+    int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 
   virtual int Setup();
   virtual int Shutdown();
@@ -209,7 +204,7 @@ canonvcc4_Register(DriverTable* table)
 /************************************************************************/
 
 canonvcc4::canonvcc4(ConfigFile* cf, int section) 
- : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   pandemand = 0; tiltdemand = 0; zoomdemand = 0;
   ptz_fd = -1;
@@ -328,16 +323,7 @@ canonvcc4::Setup()
   //  ptz_fd_blocking = true;
   puts("Done.");
   
-  // zero the command and data buffers
-  /*player_ptz_data_t data;
-  player_ptz_cmd_t cmd;
-
-  data.pan = data.tilt = data.zoom = 0;
-  cmd.pan = cmd.tilt = cmd.zoom = 0;
-
-  PutData((void*)&data,sizeof(data),NULL);
-  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);*/
-  
+ 
   //request_state = IDLE;
   // start the thread to talk with the camera
   StartThread();
@@ -920,19 +906,19 @@ void canonvcc4::ProcessCommand(player_ptz_cmd_t & command)
   bool newpantilt = true, newzoom = true;
   int err;
    
-      if(pandemand != (short)ntohs((unsigned short)(command.pan)))
+      if(pandemand != (short)((unsigned short)(command.pan)))
 	{
-	  pandemand = (short)ntohs((unsigned short)(command.pan));
+	  pandemand = (short)((unsigned short)(command.pan));
 	  newpantilt = true;
 	}
-      if(tiltdemand != (short)ntohs((unsigned short)(command.tilt)))
+      if(tiltdemand != (short)((unsigned short)(command.tilt)))
 	{
-	  tiltdemand = (short)ntohs((unsigned short)(command.tilt));
+	  tiltdemand = (short)((unsigned short)(command.tilt));
 	  newpantilt = true;
 	}
-      if(zoomdemand != (short)ntohs((unsigned short)(command.zoom)))
+      if(zoomdemand != (short)((unsigned short)(command.zoom)))
 	{
-	  zoomdemand = (short) ntohs((unsigned short)(command.zoom));
+	  zoomdemand = (short) ((unsigned short)(command.zoom));
 	  newzoom = true;
 	}
       
@@ -1003,35 +989,31 @@ canonvcc4::Main()
       
       
       // Copy the data.
-      data.pan = htons((unsigned short)pan);
-      data.tilt = htons((unsigned short)tilt);
-      data.zoom = htons((unsigned short)zoom);
+      data.pan = ((unsigned short)pan);
+      data.tilt = ((unsigned short)tilt);
+      data.zoom = ((unsigned short)zoom);
       
       /* test if we are supposed to cancel */
       pthread_testcancel();
-      PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_ptz_data_t),NULL);
+      Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_PTZ_DATA_STATE,(void*)&data, sizeof(player_ptz_data_t),NULL);
       
      
       usleep(PTZ_SLEEP_TIME_USEC);
     }
 }
 
-int canonvcc4::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int canonvcc4::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
-	assert(hdr);
-	assert(data);
-	assert(resp_data);
-	assert(resp_len);
+  assert(hdr);
+  assert(data);
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
 	{
 	  assert(hdr->size == sizeof(player_ptz_cmd_t));
 	  ProcessCommand(*reinterpret_cast<player_ptz_cmd_t *> (data));
-      *resp_len = 0;
       return 0;
 	}
 	
-	*resp_len = 0;
 	return -1;
 }
 

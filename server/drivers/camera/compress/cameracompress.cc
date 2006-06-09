@@ -218,15 +218,23 @@ int CameraCompress::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr
   
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
-  	assert(hdr->size == sizeof(this->camera_data));
-  	Lock();
-  	camera_data = *reinterpret_cast<player_camera_data_t * > (data);
+    assert(hdr->size >= sizeof(this->camera_data)-sizeof(camera_data.image));
+    Lock();
+    player_camera_data_t * recv = reinterpret_cast<player_camera_data_t * > (data);
+    camera_data.width = recv->width;
+    camera_data.height = recv->height;
+    camera_data.bpp = recv->bpp;
+    camera_data.format = recv->format;
+    camera_data.fdiv = recv->fdiv;
+    camera_data.compression = recv->compression;
+    camera_data.image_count = recv->image_count;
+    memcpy(camera_data.image, recv->image, recv->image_count);
     this->NewCamData=true;
-  	Unlock();
+    Unlock();
     if (this->camera_data.compression != PLAYER_CAMERA_COMPRESS_RAW)
       PLAYER_WARN("compressing already compressed camera images (not good)");
   	
-  	return 0;
+    return 0;
   }
  
   return -1;
