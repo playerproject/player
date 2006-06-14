@@ -12,11 +12,13 @@ int main(int argc, char** argv)
     PlayerCc::SpeechProxy sp(&client, gIndex);
 
     sp.Say("All the world is a stage\n");
+    usleep(1000000);
     sp.Say("And all the men and women merely players\n");
+    usleep(1000000);
     sp.Say("They have their exits and their entrances\n");
+    usleep(1000000);
     sp.Say("And one man in his time plays many parts\n");
-    //client.Read();
-
+    usleep(1000000);
   }
   catch (PlayerCc::PlayerError e)
   {
