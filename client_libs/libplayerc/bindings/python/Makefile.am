@@ -51,7 +51,7 @@ install-data-hook: $(PYTHONINSTALL)
 
 # use distutils to install
 pythoninstall:
-	python $(srcdir)/setup.py install --prefix=$(DESTDIR)
+	python $(srcdir)/setup.py install --prefix=$(DESTDIR)/$(prefix)
 
 # seems that distutils doesn't support 'uninstall', oh well
 uninstall-local:

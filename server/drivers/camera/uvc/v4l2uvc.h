@@ -30,7 +30,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/select.h>
-#include <linux/videodev.h>
+#include <linux/videodev2.h>
 
 #define NB_BUFFER 2
 #define DHT_SIZE 432
