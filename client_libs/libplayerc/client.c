@@ -1015,3 +1015,8 @@ void *playerc_client_dispatch(playerc_client_t *client,
   return NULL;
 }
 
+//  Set the request timeout
+void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds)
+{
+  client->request_timeout = seconds;
+}
