@@ -245,7 +245,7 @@ class AudioProxy : public ClientProxy
 
 
     /** @brief Command to play an audio block */
-    void PlayWav(player_audio_wav_t * aData);
+    void PlayWav(uint32_t aDataCount, uint8_t *aData, uint32_t aFormat);
 
     /** @brief Command to set recording state */
     void SetWavStremRec(bool aState);
@@ -256,15 +256,18 @@ class AudioProxy : public ClientProxy
     /** @brief Command to play sequence of tones */
     void PlaySeq(player_audio_seq_t * aTones);
 
-    /** @brief Command to set mixer levels */
-    void SetMixerLevels(player_audio_mixer_channel_list_t * aLevels);
+    /** @brief Command to set multiple mixer levels */
+    void SetMultMixerLevels(player_audio_mixer_channel_list_t * aLevels);
+
+    /** @brief Command to set a single mixer level */
+    void SetMixerLevel(uint32_t index, float amplitude, uint8_t active);
 
     /** @brief Request to record a single audio block
     result is stored in wav_data */
     void RecordWav();
 
     /** @brief Request to load an audio sample */
-    void LoadSample(int aIndex, player_audio_wav_t * aData);
+    void LoadSample(int aIndex, uint32_t aDataCount, uint8_t *aData, uint32_t aFormat);
 
     /** @brief Request to retrieve an audio sample
       Data is stored in wav_data */
