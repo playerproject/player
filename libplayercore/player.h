@@ -402,11 +402,11 @@ Querying driver capabilities.
 
 All drivers will respond to the universal request subtype, PLAYER_CAPABILTIES_REQ.
 
-This request takes a data structure that defines the message type and subtype of the 
+This request takes a data structure that defines the message type and subtype of the
 capability you wish to query. The driver will respond with a NACK if the capability
 is not supported and an ACK if it is.
 
-The HANDLE_CAPABILITY_REQUEST macro (from driver.h) can be used to make this process 
+The HANDLE_CAPABILITY_REQUEST macro (from driver.h) can be used to make this process
 simpler, an example call would be something like this at the start of ProcessMessage
 
 HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
@@ -715,7 +715,7 @@ The inteface provides four sets of functionality:
 #define PLAYER_AUDIO_MIXER_CHANNEL_NAME_SIZE     64
 
 /** Mixer channel list length */
-#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE     16
+#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE     48
 
 /** Sequencer sequence length */
 #define PLAYER_AUDIO_SEQ_LENGTH                  64
@@ -726,71 +726,71 @@ The inteface provides four sets of functionality:
 data is a @ref player_audio_wav_t structure*/
 #define PLAYER_AUDIO_WAV_REC_DATA        1
 
-/** Data subtype:    seq_data, recorded sequence of notes 
+/** Data subtype:    seq_data, recorded sequence of notes
 
 data is a @ref player_audio_seq_t structure*/
 #define PLAYER_AUDIO_SEQ_DATA            2
 
-/** Data subtype:    mixer_channel_data, audio channel levels 
+/** Data subtype:    mixer_channel_data, audio channel levels
 
 data is a @ref player_audio_mixer_channel_list_t structure*/
 #define PLAYER_AUDIO_MIXER_CHANNEL_DATA  3
 
 
 
-/** Command subtype: wav_play_cmd, play a raw data block, in structure player_audio_wav_t  
+/** Command subtype: wav_play_cmd, play a raw data block, in structure player_audio_wav_t
 
 data is a @ref player_audio_wav_t structure*/
 #define PLAYER_AUDIO_WAV_PLAY_CMD        1
 
-/** Command subtype: wav_stream_rec_cmd, start/stop recording, data will be returned as data blocks  
+/** Command subtype: wav_stream_rec_cmd, start/stop recording, data will be returned as data blocks
 
 data is a @ref player_bool_t */
 #define PLAYER_AUDIO_WAV_STREAM_REC_CMD  2
 
-/** Command subtype: sample_play_cmd, play a pre stored audio sample  
+/** Command subtype: sample_play_cmd, play a pre stored audio sample
 
 data is a @ref player_audio_sample_item_t structure*/
 #define PLAYER_AUDIO_SAMPLE_PLAY_CMD     3
 
-/** Command subtype: seq_play_cmd, play a sequence of tones  
+/** Command subtype: seq_play_cmd, play a sequence of tones
 
 data is a @ref player_audio_seq_t structure*/
 #define PLAYER_AUDIO_SEQ_PLAY_CMD        4
 
-/** Command subtype: mixer_channel_cmd, audio channel levels  
+/** Command subtype: mixer_channel_cmd, audio channel levels
 
 data is a @ref player_audio_mixer_channel_list_t structure*/
 #define PLAYER_AUDIO_MIXER_CHANNEL_CMD   5
 
 
 
-/** Request subtype: wav_rec_req, record a fixed size data block, in structure player_audio_wav_t  
+/** Request subtype: wav_rec_req, record a fixed size data block, in structure player_audio_wav_t
 
 data is a @ref player_audio_wav_t structure*/
 #define PLAYER_AUDIO_WAV_REC_REQ              1
 
-/** Request subtype: sample_load_req, store a sample  
+/** Request subtype: sample_load_req, store a sample
 
 data is a @ref player_audio_sample_t structure*/
 #define PLAYER_AUDIO_SAMPLE_LOAD_REQ          2
 
-/** Request subtype: sample_retrieve_req, retrieve a stored sample  
+/** Request subtype: sample_retrieve_req, retrieve a stored sample
 
 data is a @ref player_audio_sample_t structure*/
 #define PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ      3
 
-/** Request subtype: sample_rec_req, record a new sample  
+/** Request subtype: sample_rec_req, record a new sample
 
 data is a @ref player_audio_sample_item_t structure*/
 #define PLAYER_AUDIO_SAMPLE_REC_REQ           4
 
-/** Request subtype: mixer_channel_list_req, request the list of channels  
+/** Request subtype: mixer_channel_list_req, request the list of channels
 
 data is a @ref player_audio_mixer_channel_list_detail_t structure*/
 #define PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ   5
 
-/** Request subtype: mixer_channel_level_req, request the channel levels  
+/** Request subtype: mixer_channel_level_req, request the channel levels
 
 data is a @ref player_audio_mixer_channel_list_t structure*/
 #define PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ  6
@@ -832,8 +832,8 @@ data is a @ref player_audio_mixer_channel_list_t structure*/
 
 /** @brief Data: Raw audio data
 
-This data is used in the PLAYER_AUDIO_WAV_PLAY_CMD, and returned as 
-PLAYER_AUDIO_WAV_REC_DATA when stream recording is enabled 
+This data is used in the PLAYER_AUDIO_WAV_PLAY_CMD, and returned as
+PLAYER_AUDIO_WAV_REC_DATA when stream recording is enabled
 */
 typedef struct player_audio_wav
 {
@@ -891,6 +891,8 @@ typedef struct player_audio_mixer_channel
   float amplitude;
   /** active (set to false to mute channel) */
   player_bool_t active;
+  /** channel index */
+  uint32_t index;
 } player_audio_mixer_channel_t;
 
 
@@ -915,7 +917,7 @@ typedef struct player_audio_mixer_channel_list
 /** Output audio channel */
 #define PLAYER_AUDIO_MIXER_CHANNEL_TYPE_OUTPUT 2
 /** Special audio channel */
-#define PLAYER_AUDIO_MIXER_CHANNEL_TYPE_SPECIAL 3
+#define PLAYER_AUDIO_MIXER_CHANNEL_TYPE_SPECIAL 4
 
 /** @brief Player mixer channel detail
 
@@ -927,9 +929,9 @@ typedef struct player_audio_mixer_channel_detail
   /** name length */
   uint32_t name_count;
   /** Descriptive channel name */
-  uint8_t name;
+  char name[PLAYER_AUDIO_MIXER_CHANNEL_NAME_SIZE];
   /** Channel type (input, output or special)*/
-  uint8_t type;
+  uint8_t caps;
 } player_audio_mixer_channel_detail_t;
 
 
@@ -969,7 +971,7 @@ typedef struct player_audio_sample
 
 /** @brief Player audio sample selection
 
-Describes a pre-stored audio sample, use -1 for the index when recording 
+Describes a pre-stored audio sample, use -1 for the index when recording
 if you wish the next available slot to be used
 
 */
@@ -1871,9 +1873,9 @@ typedef struct player_graphics2d_cmd_polygon
 
 The @p graphics3d interface provides an interface to graphics
 devices. Drivers can implement this interface to provide clients and
-other drivers with graphics output. 
+other drivers with graphics output.
 
-The interface uses an openGL style of command where a type is specified along 
+The interface uses an openGL style of command where a type is specified along
 with a series of verticies. The interpretation depends on the command type
 
 Graphics items should be accumulated until an explicit clear command is issued
@@ -1924,7 +1926,7 @@ typedef struct player_graphics3d_cmd_draw
   player_point_3d_t points[PLAYER_GRAPHICS3D_MAX_POINTS];
   /** Color in which the points should be drawn. */
   player_color_t color;
-  
+
 } player_graphics3d_cmd_draw_t;
 
 
@@ -4315,7 +4317,7 @@ typedef struct player_truth_fiducial_id
  * @defgroup interface_waveform waveform
  * @brief Digital waveforms
 
-The @p waveform interface is used to receive arbitrary digital samples. For audio data 
+The @p waveform interface is used to receive arbitrary digital samples. For audio data
 you should probably use the audio interface.
 */
 
