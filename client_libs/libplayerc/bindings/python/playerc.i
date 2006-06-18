@@ -30,8 +30,7 @@
     PyObject *o = PySequence_GetItem($input,i);
     if (PyNumber_Check(o))
     {
-      temp[i] = (float) PyFloat_AsDouble(o);
-    }
+      temp[i] = (float) PyFloat_AsDouble(o);    }
     else
     {
       PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");
@@ -40,6 +39,40 @@
   }
   $1 = temp;
 }
+
+%typemap(python,in) uint8_t data[]
+{
+	int temp = 0;
+	// Check if is a list
+			if (PyList_Check ($input))
+	{
+		int size = PyList_Size ($input);
+		int ii = 0;
+		$1 = (uint8_t*) malloc (size * sizeof (uint8_t));
+		for (ii = 0; ii < size; ii++)
+		{
+			PyObject *o = PyList_GetItem ($input, ii);
+			temp = PyInt_AsLong (o);
+			if (temp == -1 && PyErr_Occurred ())
+			{
+				free ($1);
+				return NULL;
+			}
+			$1[ii] = (uint8_t) temp;
+		}
+	}
+	else
+	{
+		PyErr_SetString (PyExc_TypeError, "not a list");
+		return NULL;
+	}
+}
+
+/*// typemap to free the array created in the previous typemap
+%typemap(python,freearg) uint8_t data[]
+{
+	if ($input) free ((uint8_t*) $input);
+}*/
 
 // typemap for passing points into the graphics2d interface
 %typemap(python,in) player_point_2d_t pts[]
@@ -121,7 +154,7 @@
 // typemap to free the array created in the previous typemap
 %typemap(python,freearg) player_point2d_t pts[]
 {
-	free ((player_point2d_t*) $input);
+	if ($input) free ((player_point2d_t*) $input);
 }
 
 // typemap for tuples to colours
@@ -195,6 +228,11 @@
 %typemap(in) uint8_t
 {
   $1 = (uint8_t) PyLong_AsLong($input);
+}
+
+%typemap(in) uint32_t
+{
+  $1 = (uint32_t) PyLong_AsLong ($input);
 }
 
 // Integer types
