@@ -55,6 +55,32 @@ typedef struct AudioSample
 } AudioSample;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Describes an ALSA mixer element
+typedef uint32_t ElemCap;
+const ElemCap ELEMCAP_CAN_PLAYBACK		= 0x0001;
+const ElemCap ELEMCAP_CAN_CAPTURE		= 0x0002;
+const ElemCap ELEMCAP_COMMON			= 0x0004;	// Has a single volume control for both playback and record
+const ElemCap ELEMCAP_PLAYBACK_VOL		= 0x0008;
+const ElemCap ELEMCAP_CAPTURE_VOL		= 0x0010;
+const ElemCap ELEMCAP_COMMON_VOL		= 0x0020;
+const ElemCap ELEMCAP_PLAYBACK_SWITCH	= 0x0040;
+const ElemCap ELEMCAP_CAPTURE_SWITCH	= 0x0080;
+const ElemCap ELEMCAP_COMMON_SWITCH		= 0x0100;
+// const ElemCap ELEMCAP_PB_JOINED_SWITCH	= 0x0200;
+// const ElemCap ELEMCAP_CAP_JOINED_SWITCH	= 0x0400;
+
+typedef struct MixerElement
+{
+	snd_mixer_elem_t *elem;			// ALSA Mixer element structure
+	long minPlayVol, curPlayVol, maxPlayVol;	// min, current and max volume levels for playback
+	long minCapVol, curCapVol, maxCapVol;		// min, current and max volume levels for capture
+	long minComVol, curComVol, maxComVol;		// min, current and max volume levels for common
+	bool playMute, capMute, comMute;			// Current mute status
+	char *name;						// Name of the element
+	ElemCap caps;					// Capabilities
+} MixerElement;
+
+////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class Alsa : public Driver
 {
@@ -70,6 +96,7 @@ class Alsa : public Driver
 	private:
 		// Driver options
 		bool block;						// If should block while playing or return immediatly
+		char *device;					// Name of the mixer device to attach to
 //		uint32_t pbRate;				// Sample rate for playback
 //		int pbNumChannels;				// Number of sound channels for playback
 		AudioSample *samplesHead, *samplesTail;	// Stored samples
@@ -78,6 +105,9 @@ class Alsa : public Driver
 		snd_pcm_t *pcmHandle;			// Handle to the PCM device
 		snd_pcm_stream_t pbStream;		// Stream for playback
 		char *pcmName;					// Name of the sound interface
+		snd_mixer_t *mixerHandle;		// Mixer for controlling volume levels
+		MixerElement *mixerElements;	// Elements of the mixer
+		uint32_t numElements;			// Number of elements
 
 		// Other driver data
 		int nextSampleIdx;				// Next free index to store a sample at
@@ -85,8 +115,11 @@ class Alsa : public Driver
 		// Command and request handling
 		int HandleWavePlayCmd (player_audio_wav_t *waveData);
 		int HandleSamplePlayCmd (player_audio_sample_item_t *data);
+		int HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data);
 		int HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_queue);
 		int HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *resp_queue);
+		int HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue);
+		int HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue);
 
 		// Internal functions
 		virtual void Main (void);
@@ -102,4 +135,19 @@ class Alsa : public Driver
 		// Sound functions
 		bool SetHWParams (WaveData *wave);
 		bool PlayWave (WaveData *wave);
+
+		// Mixer functions
+		bool SetupMixer (void);
+		bool EnumMixerElements (void);
+		bool EnumElementCaps (MixerElement *element);
+		MixerElement* SplitElements (MixerElement *elements, uint32_t &count);
+		void CleanUpMixerElements (MixerElement *elements, uint32_t count);
+		void MixerDetailsToPlayer (player_audio_mixer_channel_list_detail_t *dest);
+		void MixerLevelsToPlayer (player_audio_mixer_channel_list_t *dest);
+		void SetElementLevel (uint32_t index, float level);
+		void SetElementMute (uint32_t index, player_bool_t mute);
+		void PublishMixerData (void);
+		float LevelToPlayer (long min, long max, long level);
+		long LevelFromPlayer (long min, long max, float level);
+		void PrintMixerElements (MixerElement *elements, uint32_t count);
 };

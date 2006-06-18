@@ -37,13 +37,16 @@ Not all of the audio interface is supported. Currently supported features are:
 
 PLAYER_AUDIO_WAV_PLAY_CMD - Play raw PCM wave data
 PLAYER_AUDIO_SAMPLE_PLAY_CMD - Play locally stored and remotely provided samples
+PLAYER_AUDIO_MIXER_CHANNEL_CMD - Change volume levels
 PLAYER_AUDIO_SAMPLE_LOAD_REQ - Store samples provided by remote clients (max 1MB)
+PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ - Get channel details
+PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ - Get volume levels
 PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ - Send stored samples to remote clients (max 1MB)
 
 Planned future support includes:
+- The callback method of managing buffers (to allow for blocking/nonblocking and
+less skippy playback).
 - Recording.
-- The callback method of managing buffers (to allow for blocking/nonblocking).
-- Mixer functionality.
 
 @par Samples
 
@@ -79,6 +82,9 @@ The driver provides a single @ref interface_audio interface.
 - interface (string)
   - Default: "plughw:0,0"
   - The sound interface to use for playback/recording.
+- mixerdevice (string)
+  - Default: "default"
+  - The device to attach the mixer interface to
 - samples (tuple of strings)
   - Default: empty
   - The path of wave files to have as locally stored samples.
@@ -723,6 +729,540 @@ bool Alsa::PlayWave (WaveData *wave)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//	Mixer functions (finding channels, setting levels, etc)
+////////////////////////////////////////////////////////////////////////////////
+
+// Opens the mixer interface and enumerates the mixer capabilities
+bool Alsa::SetupMixer (void)
+{
+	// Open the mixer interface
+	if (snd_mixer_open (&mixerHandle, 0) < 0)
+	{
+		PLAYER_WARN ("Could not open mixer");
+		return false;
+	}
+
+	// Attach it to the device?
+	if (snd_mixer_attach (mixerHandle, device) < 0)
+	{
+		PLAYER_WARN ("Could not attach mixer");
+		return false;
+	}
+
+	// Register... something
+	if (snd_mixer_selem_register (mixerHandle, NULL, NULL) < 0)
+	{
+		PLAYER_WARN ("Could not register mixer");
+		return false;
+	}
+
+	// Load elements
+	if (snd_mixer_load (mixerHandle) < 0)
+	{
+		PLAYER_WARN ("Could not load mixer elements");
+		return false;
+	}
+
+	// Enumerate the elements
+	if (!EnumMixerElements ())
+		return false;
+
+	return true;
+}
+
+// Enumerates the mixer elements - i.e. finds out what each is
+// Prepares the found data to be used with player
+bool Alsa::EnumMixerElements (void)
+{
+	MixerElement *elements = NULL;
+	snd_mixer_elem_t *elem = NULL;
+	uint32_t count = 0;
+
+	// Count the number of elements to store
+	for (elem = snd_mixer_first_elem (mixerHandle); elem != NULL; elem = snd_mixer_elem_next (elem))
+	{
+		if (snd_mixer_elem_get_type (elem) == SND_MIXER_ELEM_SIMPLE && snd_mixer_selem_is_active (elem))
+			count++;
+		else
+			printf ("Skipping element\n");
+	}
+
+// 	printf ("Found %d elements to enumerate\n", count);
+
+	// Allocate space to store the elements
+	if (count <= 0)
+	{
+		PLAYER_WARN ("Found zero or less mixer elements");
+		return false;
+	}
+	if ((elements = new MixerElement[count]) == NULL)
+	{
+		PLAYER_WARN1 ("Failed to allocate memory to store %d elements", count);
+		return false;
+	}
+	memset (elements, 0, sizeof (MixerElement) * count);
+
+	// Get each element and its capabilities
+	uint32_t ii = 0;
+	for (elem = snd_mixer_first_elem (mixerHandle); elem != NULL; elem = snd_mixer_elem_next (elem), ii++)
+	{
+		if (snd_mixer_elem_get_type (elem) == SND_MIXER_ELEM_SIMPLE && snd_mixer_selem_is_active (elem))
+		{
+			elements[ii].elem = elem;
+			if (!EnumElementCaps (&(elements[ii])))
+			{
+				CleanUpMixerElements (elements, count);
+				return false;
+			}
+		}
+	}
+	uint32_t newCount = count;
+	// Split channels capable of both playback and capture (makes it easier to manage via player)
+	if ((mixerElements = SplitElements (elements, newCount)) == NULL)
+	{
+		PLAYER_WARN ("Error splitting mixer elements");
+		CleanUpMixerElements (elements, count);
+		return false;
+	}
+	numElements = newCount;
+
+	CleanUpMixerElements (elements, count);
+
+// 	PrintMixerElements (mixerElements, numElements);
+	return true;
+}
+
+// Enumerates the capabilities of a single element
+bool Alsa::EnumElementCaps (MixerElement *element)
+{
+	int temp = 0;
+	snd_mixer_elem_t *elem = element->elem;
+	if (!elem)
+	{
+		PLAYER_WARN ("Attempted to enumerate NULL element pointer");
+		return false;
+	}
+
+	// Get the element name
+	element->name = strdup (snd_mixer_selem_get_name (elem));
+	// Get capabilities
+	// Volumes
+	if (snd_mixer_selem_has_playback_volume (elem))
+		element->caps |= ELEMCAP_PLAYBACK_VOL;
+	if (snd_mixer_selem_has_capture_volume (elem))
+		element->caps |= ELEMCAP_CAPTURE_VOL;
+	if (snd_mixer_selem_has_common_volume (elem))
+		element->caps |= ELEMCAP_COMMON_VOL;
+	// Switches
+	if (snd_mixer_selem_has_playback_switch (elem))
+		element->caps |= ELEMCAP_PLAYBACK_SWITCH;
+	if (snd_mixer_selem_has_capture_switch (elem))
+		element->caps |= ELEMCAP_CAPTURE_SWITCH;
+	if (snd_mixer_selem_has_common_switch (elem))
+		element->caps |= ELEMCAP_COMMON_SWITCH;
+	// Joined switches
+// 	if (snd_mixer_selem_has_playback_switch (elem))
+// 		mixerElements[index].caps |= ELEMCAP_PB_JOINED_SWITCH;
+// 	if (snd_mixer_selem_has_capture_switch (elem))
+// 		mixerElements[index].caps |= ELEMCAP_CAP_JOINED_SWITCH;
+
+	element->playMute = true;
+	element->capMute = true;
+	element->comMute = true;
+
+// 	printf ("Found mixer element: %s\n", element->name);
+	// Find channels for this element
+	for (int ii = -1; ii <= (int) SND_MIXER_SCHN_LAST; ii++)
+	{
+		if (snd_mixer_selem_has_playback_channel (elem, static_cast<snd_mixer_selem_channel_id_t> (ii)))
+		{
+// 			printf ("Element has playback channel %d: %s\n", ii, snd_mixer_selem_channel_name (static_cast<snd_mixer_selem_channel_id_t> (ii)));
+			element->caps |= ELEMCAP_CAN_PLAYBACK;
+			// Get the current volume of this channel and make it the element one, if don't have that yet
+			if (!element->curPlayVol)
+				snd_mixer_selem_get_playback_volume (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &(element->curPlayVol));
+			// Get the mute status of this channel - if unmuted, then set element to unmuted
+			if (element->caps & ELEMCAP_PLAYBACK_SWITCH)
+			{
+				snd_mixer_selem_get_playback_switch (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &temp);
+				if (temp)
+					element->playMute = false;
+			}
+		}
+		if (snd_mixer_selem_has_capture_channel (elem, static_cast<snd_mixer_selem_channel_id_t> (ii)))
+		{
+// 			printf ("Element has capture channel %d: %s\n", ii, snd_mixer_selem_channel_name (static_cast<snd_mixer_selem_channel_id_t> (ii)));
+			element->caps |= ELEMCAP_CAN_CAPTURE;
+			// Get the current volume of this channel and make it the element one, if don't have that yet
+			if (!element->curCapVol)
+				snd_mixer_selem_get_capture_volume (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &(element->curCapVol));
+			// Get the mute status of this channel - if unmuted, then set element to unmuted
+			if (element->caps & ELEMCAP_CAPTURE_SWITCH)
+			{
+				snd_mixer_selem_get_playback_switch (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &temp);
+				if (temp)
+					element->capMute = false;
+			}
+		}
+	}
+
+	// Get volume ranges
+	if ((element->caps & ELEMCAP_CAN_PLAYBACK) && (element->caps & ELEMCAP_PLAYBACK_VOL))
+	{
+		snd_mixer_selem_get_playback_volume_range (elem, &(element->minPlayVol), &(element->maxPlayVol));
+	}
+	if ((element->caps & ELEMCAP_CAN_CAPTURE) && (element->caps & ELEMCAP_CAPTURE_VOL))
+	{
+		snd_mixer_selem_get_capture_volume_range (elem, &(element->minCapVol), &(element->maxCapVol));
+	}
+	if (element->caps & ELEMCAP_COMMON_VOL)
+	{
+		// If statement on next line isn't a typo, min vol will probably be zero whether it's been filled in or not, max won't
+		element->minComVol = element->maxPlayVol ? element->minPlayVol : element->minCapVol;
+		element->maxComVol = element->maxPlayVol ? element->maxPlayVol : element->maxCapVol;
+	}
+
+	// Common mute status
+	if (element->caps & ELEMCAP_COMMON_SWITCH)
+		element->comMute = element->playMute ? element->playMute : element->capMute;
+
+// 	printf ("Element volume levels:\n");
+// 	printf ("Playback:\t%ld, %ld, %ld, %s\n", element->minPlayVol, element->curPlayVol, element->maxPlayVol, element->playMute ? "Muted" : "Unmuted");
+// 	printf ("Capture:\t%ld, %ld, %ld, %s\n", element->minCapVol, element->curCapVol, element->maxCapVol, element->capMute ? "Muted" : "Unmuted");
+// 	printf ("Common:\t%ld, %ld, %ld, %s\n", element->minComVol, element->curComVol, element->maxComVol, element->comMute ? "Muted" : "Unmuted");
+
+	return true;
+}
+
+// Splits elements into two separate elements for those elements that are capable
+// of entirely separate playback and capture
+MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
+{
+	MixerElement *result = NULL;
+	// Count the number of elements we will get as a result:
+	// Each current element adds 2 if it does both with separate controls, 1 otherwise
+	uint32_t numSplitElements = 0;
+	for (uint32_t ii = 0; ii < count; ii++)
+	{
+		if ((elements[ii].caps & ELEMCAP_CAN_PLAYBACK) && (elements[ii].caps & ELEMCAP_CAN_CAPTURE) &&
+				!(elements[ii].caps & ELEMCAP_COMMON_VOL) && !(elements[ii].caps & ELEMCAP_COMMON_SWITCH))
+			numSplitElements += 2;
+		else
+			numSplitElements += 1;
+	}
+
+	// Allocate space for the new array of elements
+	if (numSplitElements <= 0)
+	{
+		PLAYER_WARN ("Found zero or less split mixer elements");
+		return NULL;
+	}
+	if ((result = new MixerElement[numSplitElements]) == NULL)
+	{
+		PLAYER_WARN1 ("Failed to allocate memory to store %d split elements", numSplitElements);
+		return NULL;
+	}
+	memset (result, 0, sizeof (MixerElement) * numSplitElements);
+
+	// Copy relevant data across
+	uint32_t currentIndex = 0;
+	for (uint32_t ii = 0; ii < count; ii++)
+	{
+		// Element capable of separate playback and record
+		if ((elements[ii].caps & ELEMCAP_CAN_PLAYBACK) && (elements[ii].caps & ELEMCAP_CAN_CAPTURE) &&
+				!(elements[ii].caps & ELEMCAP_COMMON_VOL) && !(elements[ii].caps & ELEMCAP_COMMON_SWITCH))
+		{
+			// In this case, split the element, so will set data for currentIndex and currentIndex+1
+			// Playback element
+			result[currentIndex].elem = elements[ii].elem;
+			result[currentIndex].caps = ELEMCAP_CAN_PLAYBACK;
+			result[currentIndex].minPlayVol = elements[ii].minPlayVol;
+			result[currentIndex].curPlayVol = elements[ii].curPlayVol;
+			result[currentIndex].maxPlayVol = elements[ii].maxPlayVol;
+			result[currentIndex].playMute = elements[ii].playMute;
+			result[currentIndex].name = reinterpret_cast<char*> (malloc (strlen (elements[ii].name) + strlen (" (Playback)") + 1));
+			strncpy (result[currentIndex].name, elements[ii].name, strlen (elements[ii].name) + 1);
+			strncpy (&(result[currentIndex].name[strlen (elements[ii].name)]), " (Playback)", strlen (" (Playback)") + 1);
+
+			// Capture element
+			result[currentIndex + 1].elem = elements[ii].elem;
+			result[currentIndex + 1].caps = ELEMCAP_CAN_CAPTURE;
+			result[currentIndex + 1].minCapVol = elements[ii].minCapVol;
+			result[currentIndex + 1].curCapVol = elements[ii].curCapVol;
+			result[currentIndex + 1].maxCapVol = elements[ii].maxCapVol;
+			result[currentIndex + 1].capMute = elements[ii].capMute;
+			result[currentIndex + 1].name = reinterpret_cast<char*> (malloc (strlen (elements[ii].name) + strlen (" (Capture)") + 1));
+			strncpy (result[currentIndex + 1].name, elements[ii].name, strlen (elements[ii].name) + 1);
+			strncpy (&(result[currentIndex + 1].name[strlen (elements[ii].name)]), " (Capture)", strlen (" (Capture)") + 1);
+
+			currentIndex += 2;
+		}
+		// Element that can only playback
+		else if ((elements[ii].caps & ELEMCAP_CAN_PLAYBACK) && !(elements[ii].caps & ELEMCAP_CAN_CAPTURE))
+		{
+			// Just copy in this case
+			result[currentIndex].elem = elements[ii].elem;
+			result[currentIndex].caps = ELEMCAP_CAN_PLAYBACK;
+			result[currentIndex].minPlayVol = elements[ii].minPlayVol;
+			result[currentIndex].curPlayVol = elements[ii].curPlayVol;
+			result[currentIndex].maxPlayVol = elements[ii].maxPlayVol;
+			result[currentIndex].playMute = elements[ii].playMute;
+			result[currentIndex].name = strdup (elements[ii].name);
+
+			currentIndex += 1;
+		}
+		// Element that can only capture
+		else if (!(elements[ii].caps & ELEMCAP_CAN_PLAYBACK) && (elements[ii].caps & ELEMCAP_CAN_CAPTURE))
+		{
+			// Just copy in this case
+			result[currentIndex].elem = elements[ii].elem;
+			result[currentIndex].caps = ELEMCAP_CAN_CAPTURE;
+			result[currentIndex].minCapVol = elements[ii].minCapVol;
+			result[currentIndex].curCapVol = elements[ii].curCapVol;
+			result[currentIndex].maxCapVol = elements[ii].maxCapVol;
+			result[currentIndex].capMute = elements[ii].capMute;
+			result[currentIndex].name = strdup (elements[ii].name);
+
+			currentIndex += 1;
+		}
+		// Element that can do both but cannot set independent volumes
+		else
+		{
+			result[currentIndex].elem = elements[ii].elem;
+			result[currentIndex].caps = ELEMCAP_CAN_PLAYBACK & ELEMCAP_CAN_CAPTURE & ELEMCAP_COMMON;
+			result[currentIndex].minComVol = elements[ii].minComVol;
+			result[currentIndex].curComVol = elements[ii].curComVol;
+			result[currentIndex].maxComVol = elements[ii].maxComVol;
+			result[currentIndex].comMute = elements[ii].comMute;
+			result[currentIndex].name = strdup (elements[ii].name);
+
+			currentIndex += 1;
+		}
+	}
+
+	count = numSplitElements;
+	return result;
+}
+
+// Cleans up mixer element data
+void Alsa::CleanUpMixerElements (MixerElement *elements, uint32_t count)
+{
+	for (uint32_t ii = 0; ii < count; ii++)
+	{
+		if (elements[ii].name)
+			free (elements[ii].name);
+	}
+	delete[] elements;
+}
+
+// Converts mixer information to player details
+void Alsa::MixerDetailsToPlayer (player_audio_mixer_channel_list_detail_t *dest)
+{
+	memset (dest, 0, sizeof (player_audio_mixer_channel_list_detail_t));
+
+	dest->details_count = numElements;
+	dest->default_output = 0;
+	dest->default_input = 0;	// TODO: figure out what the default is... driver option maybe?
+
+	for (uint32_t ii = 0; ii < numElements; ii++)
+	{
+		dest->details[ii].name_count = strlen (mixerElements[ii].name);
+		strncpy (dest->details[ii].name, mixerElements[ii].name, strlen (mixerElements[ii].name) + 1);
+		if ((mixerElements[ii].caps & ELEMCAP_CAN_PLAYBACK) && !(mixerElements[ii].caps & ELEMCAP_CAN_CAPTURE))
+			dest->details[ii].caps = PLAYER_AUDIO_MIXER_CHANNEL_TYPE_OUTPUT;
+		else if (!(mixerElements[ii].caps & ELEMCAP_CAN_PLAYBACK) && (mixerElements[ii].caps & ELEMCAP_CAN_CAPTURE))
+			dest->details[ii].caps = PLAYER_AUDIO_MIXER_CHANNEL_TYPE_INPUT;
+		else
+			dest->details[ii].caps = PLAYER_AUDIO_MIXER_CHANNEL_TYPE_INPUT & PLAYER_AUDIO_MIXER_CHANNEL_TYPE_OUTPUT;
+	}
+}
+
+// Converts mixer information to player levels
+void Alsa::MixerLevelsToPlayer (player_audio_mixer_channel_list_t *dest)
+{
+	memset (dest, 0, sizeof (player_audio_mixer_channel_list_t));
+
+	dest->channels_count = numElements;
+
+	for (uint32_t ii = 0; ii < numElements; ii++)
+	{
+		long min = 0, cur = 0, max = 0;
+		bool mute = false;
+		if (mixerElements[ii].caps & ELEMCAP_CAN_PLAYBACK)
+		{
+			min = mixerElements[ii].minPlayVol;
+			cur = mixerElements[ii].curPlayVol;
+			max = mixerElements[ii].maxPlayVol;
+			mute = mixerElements[ii].playMute;
+		}
+		else if (mixerElements[ii].caps & ELEMCAP_CAN_CAPTURE)
+		{
+			min = mixerElements[ii].minCapVol;
+			cur = mixerElements[ii].curCapVol;
+			max = mixerElements[ii].maxCapVol;
+			mute = mixerElements[ii].capMute;
+		}
+		else if (mixerElements[ii].caps & ELEMCAP_COMMON)
+		{
+			min = mixerElements[ii].minComVol;
+			cur = mixerElements[ii].curComVol;
+			max = mixerElements[ii].maxComVol;
+			mute = mixerElements[ii].comMute;
+		}
+		dest->channels[ii].amplitude = LevelToPlayer (min, max, cur);
+		dest->channels[ii].active.state = mute ? 0 : 1;
+		dest->channels[ii].index = ii;
+	}
+}
+
+// Sets the volume level of an element
+void Alsa::SetElementLevel (uint32_t index, float level)
+{
+	long newValue = 0;
+
+	if (mixerElements[index].caps & ELEMCAP_CAN_PLAYBACK)
+	{
+		// Calculate the new level
+		newValue = LevelFromPlayer (mixerElements[index].minPlayVol, mixerElements[index].maxPlayVol, level);
+		// Set the volume for all channels in this element
+		if (snd_mixer_selem_set_playback_volume_all (mixerElements[index].elem, newValue) < 0)
+		{
+			PLAYER_WARN1 ("Error setting playback level for element %d", index);
+		}
+		else
+			mixerElements[index].curPlayVol = newValue;
+	}
+	else if (mixerElements[index].caps & ELEMCAP_CAN_CAPTURE)
+	{
+		// Calculate the new level
+		newValue = LevelFromPlayer (mixerElements[index].minCapVol, mixerElements[index].maxCapVol, level);
+		// Set the volume for all channels in this element
+		if (snd_mixer_selem_set_capture_volume_all (mixerElements[index].elem, newValue) < 0)
+		{
+			PLAYER_WARN1 ("Error setting capture level for element %d", index);
+		}
+		else
+			mixerElements[index].curCapVol = newValue;
+	}
+	else if (mixerElements[index].caps & ELEMCAP_COMMON)
+	{
+		// Calculate the new level
+		newValue = LevelFromPlayer (mixerElements[index].minComVol, mixerElements[index].maxComVol, level);
+		// Set the volume for all channels in this element
+		if (snd_mixer_selem_set_playback_volume_all (mixerElements[index].elem, newValue) < 0)
+		{
+			PLAYER_WARN1 ("Error setting common level for element %d", index);
+		}
+		else
+			mixerElements[index].curComVol = newValue;
+	}
+}
+
+// Sets mute for an element
+void Alsa::SetElementMute (uint32_t index, player_bool_t mute)
+{
+	if (mixerElements[index].caps & ELEMCAP_CAN_PLAYBACK)
+	{
+		// Set the mute for all channels in this element
+		if (snd_mixer_selem_set_playback_switch_all (mixerElements[index].elem, mute.state ? 1 : 0) < 0)
+		{
+			PLAYER_WARN1 ("Error setting playback mute for element %d", index);
+		}
+		else
+			mixerElements[index].playMute = mute.state ? true : false;
+	}
+	else if (mixerElements[index].caps & ELEMCAP_CAN_CAPTURE)
+	{
+		// Set the mute for all channels in this element
+		if (snd_mixer_selem_set_capture_volume_all (mixerElements[index].elem, mute.state ? 1 : 0) < 0)
+		{
+			PLAYER_WARN1 ("Error setting capture mute for element %d", index);
+		}
+		else
+			mixerElements[index].capMute = mute.state ? true : false;
+	}
+	else if (mixerElements[index].caps & ELEMCAP_COMMON)
+	{
+		// Set the mute for all channels in this element
+		if (snd_mixer_selem_set_playback_volume_all (mixerElements[index].elem, mute.state ? 1 : 0) < 0)
+		{
+			PLAYER_WARN1 ("Error setting common mute for element %d", index);
+		}
+		else
+			mixerElements[index].comMute = mute.state ? true : false;
+	}
+}
+
+// Publishes mixer information as a data message
+void Alsa::PublishMixerData (void)
+{
+	player_audio_mixer_channel_list_t data;
+
+	MixerLevelsToPlayer (&data);
+	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_MIXER_CHANNEL_DATA, reinterpret_cast<void*> (&data), sizeof (player_audio_mixer_channel_list_t), NULL);
+}
+
+// Converts an element level from a long to a float between 0 and 1
+float Alsa::LevelToPlayer (long min, long max, long level)
+{
+	float result = 0.0f;
+	if ((max - min) != 0)
+		result = static_cast<float> (level - min) / static_cast<float> (max - min);
+	return result;
+}
+
+// Converts an element level from a float between 0 and 1 to a long between min and max
+long Alsa::LevelFromPlayer (long min, long max, float level)
+{
+	long result = static_cast<long> ((max - min) * level);
+	return result;
+}
+
+// Handy debug function
+void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
+{
+	long min, cur, max;
+	bool mute;
+	printf ("Mixer elements:\n");
+	for (uint32_t ii = 0; ii < count; ii++)
+	{
+		if (elements[ii].caps & ELEMCAP_CAN_PLAYBACK)
+		{
+			min = elements[ii].minPlayVol;
+			cur = elements[ii].curPlayVol;
+			max = elements[ii].maxPlayVol;
+			mute = elements[ii].playMute;
+		}
+		else if (elements[ii].caps & ELEMCAP_CAN_CAPTURE)
+		{
+			min = elements[ii].minCapVol;
+			cur = elements[ii].curCapVol;
+			max = elements[ii].maxCapVol;
+			mute = elements[ii].capMute;
+		}
+		else if (elements[ii].caps & ELEMCAP_COMMON)
+		{
+			min = elements[ii].minComVol;
+			cur = elements[ii].curComVol;
+			max = elements[ii].maxComVol;
+			mute = elements[ii].comMute;
+		}
+		printf ("Element %d:\t%s\n", ii, elements[ii].name);
+		printf ("Capabilities:\t");
+		if (elements[ii].caps & ELEMCAP_CAN_PLAYBACK)
+			printf ("playback\t");
+		if (elements[ii].caps & ELEMCAP_CAN_CAPTURE)
+			printf ("capture\t");
+		if (elements[ii].caps & ELEMCAP_COMMON)
+			printf ("common");
+		printf ("\n");
+		printf ("Volume range:\t%ld->%ld\n", min, max);
+		printf ("Current volume:\t%ld\n", cur);
+		printf ("Active:\t%s\n", mute ? "No" : "Yes");
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
 //	Driver management
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -731,13 +1271,15 @@ bool Alsa::PlayWave (WaveData *wave)
 Alsa::Alsa (ConfigFile* cf, int section)
     : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIO_CODE)
 {
-	pcmName = NULL;
+	pcmName = device = NULL;
 	samplesHead = samplesTail = NULL;
 	nextSampleIdx = 0;
+	mixerElements = NULL;
 
 	// Read the config file options - see header for descriptions if not here
 	block = cf->ReadBool (section, "block", true);
 	pcmName = strdup (cf->ReadString (section, "interface", "plughw:0,0"));
+	device = strdup (cf->ReadString (section, "mixerdevice", "default"));
 //	pbRate = cf->ReadInt (section, "pb_rate", 44100);
 //	pbNumChannels = cf->ReadInt (section, "pb_numchannels", 2);
 	// Read sample names
@@ -762,6 +1304,8 @@ Alsa::~ Alsa (void)
 {
 	if (pcmName)
 		free (pcmName);
+	if (device)
+		free (device);
 	if (samplesHead)
 	{
 		AudioSample *currentSample = samplesHead;
@@ -795,6 +1339,12 @@ int Alsa::Setup (void)
 		return -1;
 	}
 
+	if (!SetupMixer ())
+	{
+		PLAYER_WARN ("Error opening mixer, mixer interface will not be available");
+		mixerHandle = NULL;
+	}
+
 	StartThread ();
 //	printf ("Alsa driver initialised\n");
 	return 0;
@@ -807,6 +1357,27 @@ int Alsa::Shutdown (void)
 //	printf ("Alsa driver shutting down\n");
 
 	StopThread ();
+
+	if (mixerHandle)
+	{
+		if (numElements > 0)
+		{
+			CleanUpMixerElements (mixerElements, numElements);
+		}
+		if (snd_mixer_detach (mixerHandle, device) < 0)
+			PLAYER_WARN ("Error detaching mixer interface");
+		else
+		{
+			if (snd_mixer_close (mixerHandle) < 0)
+				PLAYER_WARN ("Error closing mixer interface");
+			else
+			{
+				// TODO: Figure out why this causes a segfault
+// 				snd_mixer_free (mixerHandle);
+			}
+		}
+	}
+
 	snd_pcm_close (pcmHandle);
 
 	return 0;
@@ -819,6 +1390,9 @@ int Alsa::Shutdown (void)
 
 void Alsa::Main (void)
 {
+	// If mixer is enabled, send out some mixer data
+/*	if (mixerHandle)
+		PublishMixerData ();*/
 	while (1)
 	{
 		pthread_testcancel ();
@@ -899,6 +1473,19 @@ int Alsa::HandleSamplePlayCmd (player_audio_sample_item_t *data)
 		if (!PlayWave (sample->memData))
 			return -1;
 	}
+	return 0;
+}
+
+int Alsa::HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data)
+{
+	for (uint32_t ii = 0; ii < data->channels_count; ii++)
+	{
+		SetElementLevel (data->channels[ii].index, data->channels[ii].amplitude);
+		SetElementMute (data->channels[ii].index, data->channels[ii].active);
+	}
+
+	PublishMixerData ();
+
 	return 0;
 }
 
@@ -1028,6 +1615,24 @@ int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *re
 	return -1;
 }
 
+int Alsa::HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue)
+{
+	player_audio_mixer_channel_list_detail_t result;
+	MixerDetailsToPlayer (&result);
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, &result, sizeof (player_audio_mixer_channel_list_detail_t), NULL);
+
+	return 0;
+}
+
+int Alsa::HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue)
+{
+	player_audio_mixer_channel_list_t result;
+	MixerLevelsToPlayer (&result);
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ, &result, sizeof (player_audio_mixer_channel_list_t), NULL);
+
+	return 0;
+}
+
 // Message processing
 int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *data)
 {
@@ -1035,8 +1640,11 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD);
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD);
+	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD);
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ);
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ);
+	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ);
+	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ);
 
 	// Commands
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD, this->device_addr))
@@ -1049,6 +1657,11 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 		HandleSamplePlayCmd (reinterpret_cast<player_audio_sample_item_t*> (data));
 		return 0;
 	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD, this->device_addr))
+	{
+		HandleMixerChannelCmd (reinterpret_cast<player_audio_mixer_channel_list_t*> (data));
+		return 0;
+	}
 	// Requests
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ, this->device_addr))
 	{
@@ -1058,6 +1671,15 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 	{
 		return HandleSampleRetrieveReq (reinterpret_cast<player_audio_sample_t*> (data), resp_queue);
 	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, this->device_addr))
+	{
+		return HandleMixerChannelListReq (reinterpret_cast<player_audio_mixer_channel_list_detail_t*> (data), resp_queue);
+	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ, this->device_addr))
+	{
+		return HandleMixerChannelLevelReq (reinterpret_cast<player_audio_mixer_channel_list_t*> (data), resp_queue);
+	}
+
 
 	return -1;
 }
