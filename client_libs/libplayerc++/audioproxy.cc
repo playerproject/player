@@ -94,7 +94,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::AudioProxy& a)
     os <<  ii << '\t'
        << channel.amplitude << '\t'
        << channel.active.state << '\t'
-       << channel_detail.type << '\t'
+       << channel_detail.caps << '\t'
        << channel_detail.name
        << std::endl;
   }
@@ -109,10 +109,10 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::AudioProxy& a)
 
 
 /** @brief Command to play an audio block */
-void AudioProxy::PlayWav(player_audio_wav_t * aData)
+void AudioProxy::PlayWav(uint32_t aDataCount, uint8_t *aData, uint32_t aFormat)
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_audio_wav_play_cmd(mDevice, aData);
+  playerc_audio_wav_play_cmd(mDevice, aDataCount, aData, aFormat);
 }
 
 /** @brief Command to set recording state */
@@ -136,11 +136,18 @@ void AudioProxy::PlaySeq(player_audio_seq_t * aTones)
   playerc_audio_seq_play_cmd(mDevice, aTones);
 }
 
-/** @brief Command to set mixer levels */
-void AudioProxy::SetMixerLevels(player_audio_mixer_channel_list_t * aLevels)
+/** @brief Command to set multiple mixer levels */
+void AudioProxy::SetMultMixerLevels(player_audio_mixer_channel_list_t * aLevels)
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_audio_mixer_channel_cmd(mDevice, aLevels);
+  playerc_audio_mixer_multchannels_cmd(mDevice, aLevels);
+}
+
+/** @brief Command to set a single mixer level */
+void AudioProxy::SetMixerLevel(uint32_t index, float amplitude, uint8_t active)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_audio_mixer_channel_cmd(mDevice, index, amplitude, active);
 }
 
 /** @brief Request to record a single audio block
@@ -159,10 +166,10 @@ void AudioProxy::RecordWav()
 }
 
 /** @brief Request to load an audio sample */
-void AudioProxy::LoadSample(int aIndex, player_audio_wav_t * aData)
+void AudioProxy::LoadSample(int aIndex, uint32_t aDataCount, uint8_t *aData, uint32_t aFormat)
 {
   scoped_lock_t lock(mPc->mMutex);
-  int ret = playerc_audio_sample_load(mDevice, aIndex, aData);
+  int ret = playerc_audio_sample_load(mDevice, aIndex, aDataCount, aData, aFormat);
 
   if (ret == -2)
     throw PlayerError("AudioProxy::LoadSample", "NACK", ret);
@@ -171,7 +178,8 @@ void AudioProxy::LoadSample(int aIndex, player_audio_wav_t * aData)
                       playerc_error_str(),
                       ret);
 }
-/** @brief Request to retrieve an audio sample 
+
+/** @brief Request to retrieve an audio sample
   Data is stored in wav_data */
 void AudioProxy::GetSample(int aIndex)
 {
@@ -200,7 +208,7 @@ void AudioProxy::RecordSample(int aIndex)
                       ret);
 }
 
-/** @brief Request mixer channel data 
+/** @brief Request mixer channel data
 result is stored in mixer_data*/
 void AudioProxy::GetMixerLevels()
 {
@@ -215,7 +223,7 @@ void AudioProxy::GetMixerLevels()
                       ret);
 }
 
-/** @brief Request mixer channel details list 
+/** @brief Request mixer channel details list
 result is stored in channel_details_list*/
 void AudioProxy::GetMixerDetails()
 {

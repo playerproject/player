@@ -112,11 +112,17 @@ void playerc_audio_putmsg(playerc_audio_t *device,
 }
 
 /** @brief Command to play an audio block */
-int playerc_audio_wav_play_cmd(playerc_audio_t *device, player_audio_wav_t * data)
+int playerc_audio_wav_play_cmd(playerc_audio_t *device, uint32_t data_count, uint8_t data[], uint32_t format)
 {
+  player_audio_wav_t wave_data;
+  memset (&wave_data, 0, sizeof (player_audio_wav_t));
+  wave_data.data_count = data_count;
+  memcpy (&wave_data.data, data, wave_data.data_count);
+  wave_data.format = format;
+
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_AUDIO_WAV_PLAY_CMD,
-                              data, NULL);
+                              &wave_data, NULL);
 }
 
 /** @brief Command to set recording state */
@@ -148,12 +154,27 @@ int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * ton
                               tones, NULL);
 }
 
-/** @brief Command to set mixer levels */
-int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels)
+/** @brief Command to set multiple mixer levels */
+int playerc_audio_mixer_multchannels_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels)
 {
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_AUDIO_MIXER_CHANNEL_CMD,
                               levels, NULL);
+}
+
+/** @brief Command to set a single mixer level */
+int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, uint32_t index, float amplitude, uint8_t active)
+{
+  player_audio_mixer_channel_list_t cmd;
+  memset (&cmd, 0, sizeof (player_audio_mixer_channel_list_t));
+  cmd.channels_count = 1;
+  cmd.channels[0].amplitude = amplitude;
+  cmd.channels[0].active.state = active;
+  cmd.channels[0].index = index;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_AUDIO_MIXER_CHANNEL_CMD,
+                              &cmd, NULL);
 }
 
 
@@ -173,23 +194,22 @@ int playerc_audio_wav_rec(playerc_audio_t *device)
 
 
 /** @brief Request to load an audio sample */
-int playerc_audio_sample_load(playerc_audio_t *device, int index, player_audio_wav_t * data)
+int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_count, uint8_t data[], uint32_t format)
 {
   int result = 0;
   player_audio_sample_t req;
-  req.sample.data_count = data->data_count;
-  memcpy(req.sample.data, data->data, req.sample.data_count * sizeof(req.sample.data[0]));
-  req.sample.format = data->format;
+  req.sample.data_count = data_count;
+  memcpy(req.sample.data, data, req.sample.data_count * sizeof(req.sample.data[0]));
+  req.sample.format = format;
   req.index = index;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_SAMPLE_LOAD_REQ,
-                            &req, NULL, 0)) < 0)
+                            PLAYER_AUDIO_SAMPLE_LOAD_REQ, &req, NULL, 0)) < 0)
     return result;
 
   return 0;
 }
 
-/** @brief Request to retrieve an audio sample 
+/** @brief Request to retrieve an audio sample
 Data is stored in wav_data */
 int playerc_audio_sample_retrieve(playerc_audio_t *device, int index)
 {
@@ -223,14 +243,14 @@ int playerc_audio_sample_rec(playerc_audio_t *device, int index)
   return 0;
 }
 
-/** @brief Request mixer channel data 
+/** @brief Request mixer channel data
 result is stored in mixer_data*/
 int playerc_audio_get_mixer_levels(playerc_audio_t *device)
 {
   int result = 0;
   player_audio_mixer_channel_list_t req;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ ,
+                            PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ ,
                             NULL, &req, sizeof(req))) < 0)
     return result;
 
@@ -241,7 +261,7 @@ int playerc_audio_get_mixer_levels(playerc_audio_t *device)
   return 0;
 }
 
-/** @brief Request mixer channel details list 
+/** @brief Request mixer channel details list
 result is stored in channel_details_list*/
 int playerc_audio_get_mixer_details(playerc_audio_t *device)
 {

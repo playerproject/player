@@ -946,7 +946,7 @@ int playerc_audio_subscribe(playerc_audio_t *device, int access);
 int playerc_audio_unsubscribe(playerc_audio_t *device);
 
 /** @brief Command to play an audio block */
-int playerc_audio_wav_play_cmd(playerc_audio_t *device, player_audio_wav_t * data);
+int playerc_audio_wav_play_cmd(playerc_audio_t *device, uint32_t data_count, uint8_t data[], uint32_t format);
 
 /** @brief Command to set recording state */
 int playerc_audio_wav_stream_rec_cmd(playerc_audio_t *device, uint8_t state);
@@ -957,15 +957,18 @@ int playerc_audio_sample_play_cmd(playerc_audio_t *device, int index);
 /** @brief Command to play sequence of tones */
 int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * tones);
 
-/** @brief Command to set mixer levels */
-int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels);
+/** @brief Command to set mixer levels for multiple channels */
+int playerc_audio_mixer_multchannels_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels);
+
+/** @brief Command to set mixer levels for a single channel */
+int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, uint32_t index, float amplitude, uint8_t active);
 
 /** @brief Request to record a single audio block
 Value is returned into wav_data, block length is determined by device */
 int playerc_audio_wav_rec(playerc_audio_t *device);
 
 /** @brief Request to load an audio sample */
-int playerc_audio_sample_load(playerc_audio_t *device, int index, player_audio_wav_t * data);
+int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_count, uint8_t data[], uint32_t format);
 
 /** @brief Request to retrieve an audio sample
 Data is stored in wav_data */
