@@ -144,6 +144,11 @@ class ActArrayProxy : public ClientProxy
     player_actarray_actuator_t GetActuatorData(uint aJoint) const;
     /// Same again for getting actuator geometry
     player_actarray_actuatorgeom_t GetActuatorGeom(uint aJoint) const;
+    /// Accessor method for getting the base position
+    player_point_3d_t GetBasePos(void) const { return GetVar(mDevice->base_pos); }
+    /// Accessor method for getting the base orientation
+    player_orientation_3d_t GetBaseOrientation(void) const { return GetVar(mDevice->base_orientation); }
+
 
     /// Actuator data access operator.
     ///    This operator provides an alternate way of access the actuator data.

@@ -90,6 +90,9 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
     geom = a.GetActuatorGeom(ii);
     os <<  ii << '\t'
        << (geom.type ? "Linear" : "Rotary") << '\t'
+       << geom.offset << '\t'
+       << "(" << geom.orientation.proll << ", " << geom.orientation.ppitch << ", " << geom.orientation.pyaw << ")\t"
+       << "(" << geom.axis.px << ", " << geom.axis.py << ", " << geom.axis.pz << ")\t"
        << geom.min << '\t'
        << geom.centre << '\t'
        << geom.max << '\t'
@@ -101,6 +104,8 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
        << '\t' << (geom.hasbrakes ? "Y" : "N")
        << std::endl;
   }
+  os << "(" << a.GetBasePos().px << ", " << a.GetBasePos().py << ", " << a.GetBasePos().pz << ")" << std::endl;
+  os << "(" << a.GetBaseOrientation().proll << ", " << a.GetBaseOrientation().ppitch << ", " << a.GetBaseOrientation().pyaw << ")" << std::endl;
 
   os.precision(old_precision);
   os.flags(old_flags);
