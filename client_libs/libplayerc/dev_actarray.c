@@ -115,6 +115,13 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
   for (ii = 0; ii < device->actuators_count; ii++)
   {
     device->actuators_geom[ii].type = geom.actuators[ii].type;
+    device->actuators_geom[ii].offset = geom.actuators[ii].offset;
+    device->actuators_geom[ii].orientation.proll = geom.actuators[ii].orientation.proll;
+    device->actuators_geom[ii].orientation.ppitch = geom.actuators[ii].orientation.ppitch;
+    device->actuators_geom[ii].orientation.pyaw = geom.actuators[ii].orientation.pyaw;
+    device->actuators_geom[ii].axis.px = geom.actuators[ii].axis.px;
+    device->actuators_geom[ii].axis.py = geom.actuators[ii].axis.py;
+    device->actuators_geom[ii].axis.pz = geom.actuators[ii].axis.pz;
     device->actuators_geom[ii].min = geom.actuators[ii].min;
     device->actuators_geom[ii].centre = geom.actuators[ii].centre;
     device->actuators_geom[ii].max = geom.actuators[ii].max;
@@ -122,6 +129,8 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
     device->actuators_geom[ii].config_speed = geom.actuators[ii].config_speed;
     device->actuators_geom[ii].hasbrakes = geom.actuators[ii].hasbrakes;
   }
+  device->base_pos = geom.base_pos;
+  device->base_orientation = geom.base_orientation;
   return 0;
 }
 
