@@ -226,6 +226,11 @@ class P2OS : public Driver
 
     /////////////////
     // Actarray stuff
+    double aaOffsets[6];
+    double aaOrients[18];
+    double aaAxes[18];
+    player_point_3d_t aaBasePos;
+    player_orientation_3d_t aaBaseOrient;
     inline double TicksToDegrees (int joint, unsigned char ticks);
     inline unsigned char DegreesToTicks (int joint, double degrees);
     inline double TicksToRadians (int joint, unsigned char ticks);

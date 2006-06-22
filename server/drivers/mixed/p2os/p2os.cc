@@ -88,6 +88,11 @@ them named:
     player_limb_speed_req messages.
   - The approach vector is forward along the gripper with the orientation
     vector up from the gripper's centre.
+  - The kinematics calculator is based on the analytical method by Gan et al. See:
+    J.Q. Gan, E. Oyama, E.M. Rosales, and H. Hu, "A complete analytical
+    solution to the inverse kinematics of the Pioneer 2 robotic arm,"
+    Robotica, vol.23, no.1, pp.123-129, 2005.
+
 
 - @ref interface_bumper
   - Returns data from bumper array (if equipped)
@@ -224,6 +229,27 @@ them named:
 - use_vel_band (integer)
   - Default: 0
   - Use velocity bands
+- aa_basepos (3 floats)
+  - Default: 0, 0, 0
+  - Position of the base of the arm from the robot centre in metres.
+- aa_baseorient (3 floats)
+  - Default: 0, 0, 0
+  - Orientation of the base of the arm from the robot centre in radians.
+- aa_offsets (6 floats)
+  - Default: all zero TODO: measure them
+  - Offsets for the actarray.  Taken from previous actuator to current actuator
+    (first should be from the actarray's base position). Each offset is a
+    straight line, not measured per axis.
+- aa_orients (3x6 floats)
+  - Default: all zero TODO: measure them
+  - Orientation of each actuator when it is at 0. Measured by taking a line from
+    this actuator to the next and measuring its angles about the 3 axes of the
+    previous actuator's coordinate space.
+  - Each set of three values is a single orientation.
+- aa_axes (3x6 floats)
+  - Default: all zero TODO: measure them
+  - The axis of rotation for each joint in the actarray.
+  - Each set of three values is a vector along the axis of rotation.
 - limb_pos (3 floats)
   - Default: 0, 0, 0
   - Position of the base of the arm from the robot centre in metres.
@@ -234,7 +260,8 @@ them named:
 - limb_offsets (5 floats)
   - Default: 0, 0, 0, 0, 0
   - Angular offset of each joint from desired position to actual position (calibration data).
-  - Taken by commanding joints to 0rad with actarray interface, then measuring their actual angle.
+  - Possibly taken by commanding joints to 0rad with actarray interface, then measuring
+    their actual angle.
 
 
 
@@ -503,6 +530,22 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
 
+  // Actarray configuration
+  for (int ii = 0; ii < 6; ii++)
+  {
+    aaOffsets[ii] = cf->ReadTupleFloat(section, "aa_offsets", ii, 0.0f);
+  }
+  for (int ii = 0; ii < 18; ii++)
+  {
+    aaOrients[ii] = cf->ReadTupleFloat(section, "aa_orients", ii, 0.0f);
+    aaAxes[ii] = cf->ReadTupleFloat(section, "aa_axes", ii, 0.0f);
+  }
+  aaBasePos.px = cf->ReadTupleFloat(section, "aa_basepos", 0, 0.0f);
+  aaBasePos.py = cf->ReadTupleFloat(section, "aa_basepos", 1, 0.0f);
+  aaBasePos.pz = cf->ReadTupleFloat(section, "aa_basepos", 2, 0.0f);
+  aaBaseOrient.proll = cf->ReadTupleFloat(section, "aa_baseorient", 0, 0.0f);
+  aaBaseOrient.ppitch = cf->ReadTupleFloat(section, "aa_baseorient", 1, 0.0f);
+  aaBaseOrient.pyaw = cf->ReadTupleFloat(section, "aa_baseorient", 2, 0.0f);
   // Limb configuration
   if(kineCalc)
   {
@@ -2169,6 +2212,13 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     for (int ii = 0; ii < sippacket->armNumJoints; ii++)
     {
       aaGeom.actuators[ii].type = PLAYER_ACTARRAY_TYPE_ROTARY;
+      aaGeom.actuators[ii].offset = aaOffsets[ii];
+      aaGeom.actuators[ii].orientation.proll = aaOrients[ii * 3];
+      aaGeom.actuators[ii].orientation.ppitch = aaOrients[ii * 3 + 1];
+      aaGeom.actuators[ii].orientation.pyaw = aaOrients[ii * 3 + 2];
+      aaGeom.actuators[ii].axis.px = aaAxes[ii * 3];
+      aaGeom.actuators[ii].axis.py = aaAxes[ii * 3 + 1];
+      aaGeom.actuators[ii].axis.pz = aaAxes[ii * 3 + 2];
       aaGeom.actuators[ii].min = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].min));
       aaGeom.actuators[ii].centre = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].centre));
       aaGeom.actuators[ii].max = static_cast<float> (TicksToRadians (ii, sippacket->armJoints[ii].max));
@@ -2176,6 +2226,13 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       aaGeom.actuators[ii].config_speed = static_cast<float> (SecsPerTicktoRadsPerSec (ii, sippacket->armJoints[ii].speed));
       aaGeom.actuators[ii].hasbrakes = 0;
     }
+
+    aaGeom.base_pos.px = aaBasePos.px;
+    aaGeom.base_pos.py = aaBasePos.py;
+    aaGeom.base_pos.pz = aaBasePos.pz;
+    aaGeom.base_orientation.proll = aaBaseOrient.proll;
+    aaGeom.base_orientation.ppitch = aaBaseOrient.ppitch;
+    aaGeom.base_orientation.pyaw = aaBaseOrient.pyaw;
 
     this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_GET_GEOM_REQ, &aaGeom, sizeof (aaGeom), NULL);
     return 0;
