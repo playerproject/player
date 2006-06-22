@@ -860,6 +860,10 @@ typedef struct
   /** The actuator data and geometry. */
   player_actarray_actuator_t actuators_data[PLAYER_ACTARRAY_NUM_ACTUATORS];
   player_actarray_actuatorgeom_t actuators_geom[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  /** The position of the base of the actarray. */
+  player_point_3d_t base_pos;
+  /** The orientation of the base of the actarray. */
+  player_orientation_3d_t base_orientation;
 } playerc_actarray_t;
 
 /** @brief Create an actarray proxy. */
