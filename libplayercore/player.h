@@ -286,6 +286,18 @@ typedef struct player_point_3d
 } player_point_3d_t;
 
 
+/** @brief An angle in 3D space */
+typedef struct player_orientation_3d
+{
+  /** roll [rad] */
+  float proll;
+  /** pitch [rad] */
+  float ppitch;
+  /** yaw [rad] */
+  float pyaw;
+} player_orientation_3d_t;
+
+
 /** @brief A pose in the plane */
 typedef struct player_pose
 {
@@ -546,6 +558,16 @@ typedef struct player_actarray_actuatorgeom
 {
   /** The type of the actuator - linear or rotary. */
   uint8_t type;
+  /** The offset of this actuator from the previous actuator in the array. */
+  float offset;
+  /** The orientation of this actuator when it is in its rest position. When
+  combined with the offset of the next actuator, this will give the position in
+  space of the next actuator in the array in the coordinate space of this
+  actuator. */
+  player_orientation_3d_t orientation;
+  /** The axis of rotation for this actuator if it is rotary, or axis along
+  which it moves if it is linear. In both cases, it is a vector. */
+  player_point_3d_t axis;
   /** The range of motion of the actuator, in m or rad depending on the type. */
   float min;
   /** The range of motion of the actuator, in m or rad depending on the type. */
@@ -570,6 +592,10 @@ typedef struct player_actarray_geom
   uint32_t actuators_count;
   /** The geometry information for each actuator in the array. */
   player_actarray_actuatorgeom_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  /** The position of the base of the actarray. */
+  player_point_3d_t base_pos;
+  /** The orientation of the base of the actarray. */
+  player_orientation_3d_t base_orientation;
 } player_actarray_geom_t;
 
 /** @brief Command: Joint position control (@ref PLAYER_ACTARRAY_POS_CMD)
