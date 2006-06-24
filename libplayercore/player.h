@@ -2845,7 +2845,7 @@ a plugin.
 #define PLAYER_OPAQUE_REQ                    1
 
 /** Maximum message size is 1 MB */
-#define PLAYER_OPAQUE_MAX_SIZE            1024
+#define PLAYER_OPAQUE_MAX_SIZE            1048576
 
 /** @brief data */
 typedef struct player_opaque_data
