@@ -200,6 +200,7 @@ main(int argc, char **argv)
       break;
     case PLAYER_LIMB_CODE:
       cp = (ClientProxy*)new LimbProxy(&client,g_index);
+	  reinterpret_cast<LimbProxy*> (cp)->RequestGeometry();
       break;
     case PLAYER_LOCALIZE_CODE:
       cp = (ClientProxy*)new LocalizeProxy(&client,g_index);
