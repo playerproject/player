@@ -2344,7 +2344,7 @@ The limb interface provides access to a multi-jointed limb
   The limb data packet. */
 typedef struct player_limb_data
 {
-  /** The position of the end effector. */
+	/** The position of the end effector (in robot coordiantes). */
   player_point_3d_t position;
   /** The approach vector of the end effector. */
   player_point_3d_t approach;
