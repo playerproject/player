@@ -88,6 +88,9 @@ them named:
     player_limb_speed_req messages.
   - The approach vector is forward along the gripper with the orientation
     vector up from the gripper's centre.
+  - The limb takes pose commands in robot coordinates (offset from the robot's
+    centre, not the limb's base) and returns pose data in the same coordinate
+    space.
   - The kinematics calculator is based on the analytical method by Gan et al. See:
     J.Q. Gan, E. Oyama, E.M. Rosales, and H. Hu, "A complete analytical
     solution to the inverse kinematics of the Pioneer 2 robotic arm,"
