@@ -1570,13 +1570,13 @@ P2OS::SendReceive(P2OSPacket* pkt, bool publish_data)
         {
           kineCalc->CalculateFK (joints);
           limb_data.position.px = kineCalc->GetP ().x + armOffsetX;
-          limb_data.position.py = -kineCalc->GetP ().y + armOffsetY;
+          limb_data.position.py = kineCalc->GetP ().y + armOffsetY;
           limb_data.position.pz = kineCalc->GetP ().z + armOffsetZ;
           limb_data.approach.px = kineCalc->GetA ().x;
-          limb_data.approach.py = -kineCalc->GetA ().y;
+          limb_data.approach.py = kineCalc->GetA ().y;
           limb_data.approach.pz = kineCalc->GetA ().z;
           limb_data.orientation.px = kineCalc->GetO ().x;
-          limb_data.orientation.py = -kineCalc->GetO ().y;
+          limb_data.orientation.py = kineCalc->GetO ().y;
           limb_data.orientation.pz = kineCalc->GetO ().z;
           if (limb_data.state != PLAYER_LIMB_STATE_OOR && limb_data.state != PLAYER_LIMB_STATE_COLL)
           {
