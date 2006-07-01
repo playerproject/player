@@ -72,6 +72,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_laser
 - @ref interface_sonar
 - @ref interface_position2d
+- @ref interface_ptz
 - @ref interface_wifi
 - @ref interface_wsn
 
@@ -196,6 +197,9 @@ class WriteLog: public Driver
   // Write position data to file
   private: int WritePosition(player_msghdr_t* hdr, void *data);
 
+  // Write PTZ data to file
+  private: int WritePTZ(player_msghdr_t* hdr, void *data);
+  
   // Write sonar data to file
   private: int WriteSonar(player_msghdr_t* hdr, void *data);
 
@@ -691,6 +695,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_POSITION2D_CODE:
       retval = this->WritePosition(hdr, data);
       break;
+    case PLAYER_PTZ_CODE:
+      retval = this->WritePTZ(hdr, data);
+      break;
     case PLAYER_SONAR_CODE:
       retval = this->WriteSonar(hdr, data);
       break;
@@ -932,6 +939,49 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
   }
 }
 
+
+/** @ingroup tutorial_datalog
+ @defgroup player_driver_writelog_ptz ptz format
+ 
+@brief PTZ log format
+The format for each @ref interface_wsn message is:
+  - pan       (float): The pan angle/value
+  - tilt      (float): The tilt angle/value
+  - zoom      (float): The zoom factor
+  - panspeed  (float): The current panning speed
+  - tiltspeed (float): The current tilting speed
+ */
+int
+WriteLog::WritePTZ (player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_PTZ_DATA_STATE:
+          {
+            player_ptz_data_t* pdata =
+                    (player_ptz_data_t*)data;
+            fprintf(this->file,
+                    "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f",
+                    pdata->pan,
+                    pdata->tilt,
+                    pdata->zoom,
+                    pdata->panspeed,
+                    pdata->tiltspeed);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+ 
 /** @ingroup tutorial_datalog
  @defgroup player_driver_writelog_sonar sonar format
 
@@ -1114,7 +1164,6 @@ The format for each @ref interface_wsn message is:
 int
 WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
 {
-    unsigned int i;
     player_wsn_data_t* wdata;
 
   // Check the type
