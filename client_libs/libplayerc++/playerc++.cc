@@ -118,6 +118,20 @@ can best be illustrated through the use of an example:
 
 */
 
+/** @ingroup player_clientlib_cplusplus
+    @addtogroup player_clientlib_mclient MultiClient
+    @brief How to easily connect to multiple servers
+
+The C++ does not have a specific Client class for connecting to multiple
+servers.  This is because the task can be easily accomplished with classes
+already contained in the STL.  The following example shows how this can be
+done.  After the initial setup and adding the clients to the list, the
+for_each loop needs to be called each time a multi-read is performed.
+
+@include example3.cc
+
+*/
+
 std::ostream&
 std::operator << (std::ostream& os, const player_point_2d_t& c)
 {
