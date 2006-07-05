@@ -40,7 +40,7 @@ server performance.
 @par Provides
 
 - This driver can support any interface (currently supported are: laser, camera,
-  position2d, and wsn).
+  position2d, ptz, and wsn).
 
 @par Requires
 
@@ -274,6 +274,19 @@ void Dummy::Main(void)
                 data.stall  = 0;
                 Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
                          PLAYER_POSITION2D_DATA_STATE, (void*)&data, 
+                         sizeof (data), NULL);
+                break;
+            }
+            case PLAYER_PTZ_CODE:
+            {
+                player_ptz_data_t data;
+                data.pan  = 1.0;
+                data.tilt = 1.0;
+                data.zoom = 1.0;
+                data.panspeed  = 1.0;
+                data.tiltspeed = 1.0;
+                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                         PLAYER_PTZ_DATA_STATE, (void*)&data, 
                          sizeof (data), NULL);
                 break;
             }
