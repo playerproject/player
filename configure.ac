@@ -377,7 +377,7 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(ltdl, lt_dlopenext,
              have_libltdl=yes
-             LIBLTDL_FLAG=-ltdl
+             LIBLTDL_FLAG=-lltdl
              AC_DEFINE(HAVE_LIBLTDL, 1, [Define to 1 if you have the ltdl library (-lltdl). ])
              LIBS="$LIBS -lltdl -ldl",
              have_libltdl=no

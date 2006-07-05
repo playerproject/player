@@ -274,6 +274,10 @@ void Mica2_Register(DriverTable* table);
 void RCore_XBridge_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ACCEL_CALIB
+void Accel_Calib_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_INAV
 void INav_Register(DriverTable *table);
 #endif
@@ -609,6 +613,10 @@ player_register_drivers()
   RCore_XBridge_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_ACCEL_CALIB
+  Accel_Calib_Register(driverTable);
+#endif
+  
 #ifdef INCLUDE_INAV
   INav_Register(driverTable);
 #endif
