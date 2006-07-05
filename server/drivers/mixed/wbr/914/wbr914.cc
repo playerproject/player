@@ -86,23 +86,24 @@ driver
   #include "config.h"
 #endif
 
+#include <unistd.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <stdlib.h>  /* for abs() */
+
 #include <fcntl.h>
+#include <linux/serial.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <math.h>
-#include <stdlib.h>  /* for abs() */
 #include <netinet/in.h>
+#include <termio.h>
 #include <termios.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netdb.h>
-  //#include <inttypes.h>
-#include <stdint.h>
-  //#include <assert.h>
 
 #include "wbr914.h"
 
@@ -179,14 +180,15 @@ wbr914::wbr914(ConfigFile* cf, int section)
 
   // Constrain torque (power to motor phases) between 0 and 100.
   // Smaller numbers mean less torque, but less power used and less
-  // heat generated.
+  // heat generated. Not much use reducing the torque setting below
+  // 20%.
   if ( _percentTorque > 100 )
   {
     _percentTorque = 100;
   }
-  else if ( _percentTorque < 0 )
+  else if ( _percentTorque < 20 )
   {
-    _percentTorque = 0;
+    _percentTorque = 20;
   }
 
   // Set up the robot geometry
@@ -199,9 +201,9 @@ wbr914::wbr914(ConfigFile* cf, int section)
   _robot2d_geom.pose.pa     = 0.0;
 
   // Width in meters
-  _robot2d_geom.size.sw     = 0.3;
+  _robot2d_geom.size.sw     = 0.37;
   // Length in meters
-  _robot2d_geom.size.sl     = 0.3;
+  _robot2d_geom.size.sl     = 0.42;
 
   _robot3d_geom.pose.px     = _robot2d_geom.pose.px;
   _robot3d_geom.pose.py     = _robot2d_geom.pose.py;
@@ -217,37 +219,38 @@ wbr914::wbr914(ConfigFile* cf, int section)
   // Set up the IR array geometry
   _ir_geom.poses_count = NUM_IR_SENSORS;
 
-  _ir_geom.poses[ 0 ].px = 0.100;
-  _ir_geom.poses[ 0 ].py = 0.200;
-  _ir_geom.poses[ 0 ].pa = DTOR( 90 );
+  _ir_geom.poses[ 0 ].px = 0.030;
+  _ir_geom.poses[ 0 ].py = -0.190;
+  _ir_geom.poses[ 0 ].pa = DTOR( -90 );
 
-  _ir_geom.poses[ 1 ].px = 0.180;
-  _ir_geom.poses[ 1 ].py = 0.170;
-  _ir_geom.poses[ 1 ].pa = DTOR( 60 );
+  _ir_geom.poses[ 1 ].px = 0.190;
+  _ir_geom.poses[ 1 ].py = -0.090;
+  _ir_geom.poses[ 1 ].pa = DTOR( -30 );
 
-  _ir_geom.poses[ 2 ].px = 0.230;
-  _ir_geom.poses[ 2 ].py = 0.110;
-  _ir_geom.poses[ 2 ].pa = DTOR( 30 );
+  _ir_geom.poses[ 2 ].px = 0.210;
+  _ir_geom.poses[ 2 ].py = 0.0;
+  _ir_geom.poses[ 2 ].pa = DTOR( 0 );
 
-  _ir_geom.poses[ 3 ].px = 0.250;
-  _ir_geom.poses[ 3 ].py = 0.030;
-  _ir_geom.poses[ 3 ].pa = DTOR( 0 );
+  _ir_geom.poses[ 3 ].px = 0.190;
+  _ir_geom.poses[ 3 ].py = 0.090;
+  _ir_geom.poses[ 3 ].pa = DTOR( 30 );
 
-  _ir_geom.poses[ 4 ].px = 0.250;
-  _ir_geom.poses[ 4 ].py = -0.030;
-  _ir_geom.poses[ 4 ].pa = DTOR( 0 );
+  _ir_geom.poses[ 4 ].px = 0.030;
+  _ir_geom.poses[ 4 ].py = 0.190;
+  _ir_geom.poses[ 4 ].pa = DTOR( 90 );
 
-  _ir_geom.poses[ 5 ].px = 0.230;
-  _ir_geom.poses[ 5 ].py = -0.110;
-  _ir_geom.poses[ 5 ].pa = DTOR( -30 );
+  // These 3 sensor have a z value of 0.35m and a pitch of 30 degrees down
+  _ir_geom.poses[ 5 ].px = 0.200;
+  _ir_geom.poses[ 5 ].py = -0.060;
+  _ir_geom.poses[ 5 ].pa = DTOR( -60 );
 
-  _ir_geom.poses[ 6 ].px = 0.180;
-  _ir_geom.poses[ 6 ].py = -0.170;
-  _ir_geom.poses[ 6 ].pa = DTOR( -60 );
+  _ir_geom.poses[ 6 ].px = 0.210;
+  _ir_geom.poses[ 6 ].py = 0.0;
+  _ir_geom.poses[ 6 ].pa = DTOR( 0 );
 
-  _ir_geom.poses[ 7 ].px = 0.100;
-  _ir_geom.poses[ 7 ].py = -0.200;
-  _ir_geom.poses[ 7 ].pa = DTOR( -90 );
+  _ir_geom.poses[ 7 ].px = 0.200;
+  _ir_geom.poses[ 7 ].py = 0.060;
+  _ir_geom.poses[ 7 ].pa = DTOR( 60 );
 }
 
 /**
@@ -285,8 +288,8 @@ int wbr914::Setup()
   }
 
   cfmakeraw( &term );
-  cfsetispeed( &term, B115200 );
-  cfsetospeed( &term, B115200 );
+  cfsetispeed( &term, B38400 );
+  cfsetospeed( &term, B38400 );
 
   // 2 stop bits
   term.c_cflag |= CSTOPB | CLOCAL | CREAD;
@@ -300,8 +303,28 @@ int wbr914::Setup()
     return(-1);
   }
 
+  {
+    struct serial_struct serial_info;
+
+    // Custom baud rate of 416666 baud, the max the
+    // motor controller will handle.
+    // round off to get the closest divisor.
+    serial_info.flags = ASYNC_SPD_CUST | ASYNC_LOW_LATENCY;
+    serial_info.custom_divisor = (int)((float)24000000.0/(float)416666.0 + 0.5);
+    if ( _debug )
+      printf( "Custom divisor = %d\n", serial_info.custom_divisor );
+
+    if ( ioctl( _fd, TIOCSSERIAL, &serial_info ) < 0)
+    {
+      perror("config_serial_port: ioctl TIOCSSERIAL");
+      return(-1);
+    }
+  }
+
   _fd_blocking = false;
-  printf( "InitRobot\n" );
+
+  if ( _debug )
+    printf( "InitRobot\n" );
   fflush(stdout);
   if(InitRobot() < 0)
   {
@@ -349,16 +372,19 @@ int wbr914::Setup()
 
   
   /*  This might be a good time to reset the odometry values */
-  printf( "ResetRawPositions\n" );
+  if ( _debug )
+    printf( "ResetRawPositions\n" );
   fflush( stdout );
   ResetRawPositions();
 
-  printf( "SetAccelerationProfile\n" );
+  if ( _debug )
+    printf( "SetAccelerationProfile\n" );
   SetAccelerationProfile();
   UpdateM3();
 
   /* now spawn reading thread */
-  printf( "Starting Thread...\n" );
+  if ( _debug )
+    printf( "Starting Thread...\n" );
   StartThread();
   return(0);
 }
@@ -373,7 +399,8 @@ int wbr914::InitRobot()
   sendCmd0( LEFT_MOTOR, RESET, 2, buf );
   sendCmd0( RIGHT_MOTOR, RESET, 2, buf );
 
-  printf( "GetVersion\n" );
+  if ( _debug )
+    printf( "GetVersion\n" );
   if( sendCmd0( LEFT_MOTOR, GETVERSION, 6, buf ) < 0)
   {
     printf("failed to initialize robot\n");
@@ -381,7 +408,8 @@ int wbr914::InitRobot()
   }
 
   /* TODO check return value to match 0x00A934100013 */
-  printf( "GetVersion\n" );
+  if ( _debug )
+    printf( "GetVersion\n" );
   if(sendCmd0( RIGHT_MOTOR, GETVERSION, 6, buf ) < 0)
   {
     printf("failed to initialize robot\n");
@@ -495,7 +523,8 @@ void wbr914::Main()
 {
   int last_position_subscrcount=0;
 
-  PLAYER_MSG0( 0, "Main\n" );
+  if ( _debug )
+    PLAYER_MSG0( 0, "Main\n" );
 
   for(;;)
   {
@@ -512,7 +541,8 @@ void wbr914::Main()
     else if(last_position_subscrcount && !(this->position_subscriptions))
     {
       // enable motor power
-  PLAYER_MSG0( 0, "enabling motors\n" );
+      if ( _debug )
+	PLAYER_MSG0( 0, "enabling motors\n" );
       this->EnableMotors( true );
     }
     last_position_subscrcount = this->position_subscriptions;
@@ -522,7 +552,8 @@ void wbr914::Main()
     // handle pending messages
     if(!this->InQueue->Empty())
     {
-  PLAYER_MSG0( 0, "processing messages\n" );
+      if ( _debug )
+	PLAYER_MSG0( 0, "processing messages\n" );
       ProcessMessages();
     }
     else
@@ -532,9 +563,14 @@ void wbr914::Main()
       //      this->HandlePositionCommand( this->last_position_cmd );
     }
 
-  PLAYER_MSG0( 0, "GetAllData\n" );
+    if ( _debug )
+      PLAYER_MSG0( 0, "GetAllData\n" );
+
     GetAllData();
-  PLAYER_MSG0( 0, "PublishData\n" );
+
+    if ( _debug )
+      PLAYER_MSG0( 0, "PublishData\n" );
+
     PublishData();
   }
 }
@@ -557,7 +593,9 @@ int wbr914::HandleConfig(MessageQueue* resp_queue,
 			 player_msghdr * hdr,
 			 void * data)
 {
-  printf( "HandleConfig\n" );
+  if ( _debug )
+    printf( "HandleConfig\n" );
+
   // check for position config requests
   if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                            PLAYER_POSITION2D_REQ_SET_ODOM,
@@ -671,7 +709,7 @@ void wbr914::HandleVelocityCommand(player_position2d_cmd_vel_t* velcmd)
   int32_t leftvel = transvel - rotvel;
   int32_t rightvel = transvel + rotvel;
 
-  printf( "VelCmd: px=%1.3f, pa=%1.3f, trvel=%d, rotvel=%d, rvel=%d, lvel=%d\n", velcmd->vel.px, velcmd->vel.pa, transvel, rotvel, leftvel, rightvel );
+  //  printf( "VelCmd: px=%1.3f, pa=%1.3f, trvel=%d, rotvel=%d, rvel=%d, lvel=%d\n", velcmd->vel.px, velcmd->vel.pa, transvel, rotvel, leftvel, rightvel );
   SetContourMode( VelocityContouringProfile );
 
   // now we set the speed
@@ -785,14 +823,14 @@ void wbr914::GetIRData(player_ir_data_t * d)
   // At 10cm delta increase in voltage Vmin=1.75V Vtyp=2.0V Vmax=2.25V
   // Therefore lets choose V=0.25V at 80cm and V=2.8V (2.25+0.55) at 10cm
   // Assume the formula for mm = 270 * (voltage)^-1.1 for 80cm to 10cm
-  // Assume DAC max output is 5.0V at full (10bit) count (1024)
+  // Assume ADC input of 5.0V gives max value of 1023
 
   //  float v80 = 0.25;
   //  float deltaV = 2.25;
   //  float v10 = v80+deltaV;
-  float dacLo = 0.0;
-  float dacHi = 5.0;
-  float vPerCount = (dacHi-dacLo)/1024.0;
+  float adcLo = 0.0;
+  float adcHi = 5.0;
+  float vPerCount = (adcHi-adcLo)/1023.0;
   //  float mmPerVolt = (800.0-100.0)/(v80-v10); 
 
   d->voltages_count = NUM_IR_SENSORS;
@@ -802,17 +840,35 @@ void wbr914::GetIRData(player_ir_data_t * d)
   {
     int16_t val = 0;
 
-    GetAnalogSensor( i, &val );
+    GetAnalogSensor( i+8, &val );
     float voltage = (float)val*vPerCount;
     d->voltages[ i ] = voltage;
 
-    // Convert 10 bit value to a distance in meters
-    float meters = 0.27*pow(voltage,-1.1);
-    d->ranges[ i ] = meters;
+    // Range values are useless further out than 80-90 cm
+    // with the Sharp sensors, so truncate them accordingly
+    if ( val < 80 )
+    {
+      val = 80;
+    }
 
-    //printf("(%d,%d) ",ntohs(d->ir.ranges[i]),ntohs(d->ir.voltages[i]));
+    // Convert 10 bit value to a distance in meters
+    float meters;
+
+    // Formula for range conversion is different for long range
+    // sensors than short range ones. Use appropriate formula.
+    if ( i == 5 || i == 7 )
+    {
+      // Beak side firing sensors are longer range sensors
+      // Sharp GP2Y0A02 sensors 20-150cm
+      meters = ((16933.0/((float)val - 8.0)) - 13.0)/100.0;
+    }
+    else
+    {
+      // Sharp GP2Y0A21 sensors 10-80cm
+      meters = ((6787.0/((float)val - 3.0)) - 4.0)/100.0;
+    }
+    d->ranges[ i ] = meters;
   }
-  //printf("\n");
 }
 
 //-------------------------------------------------------
@@ -831,7 +887,7 @@ const char* wbr914::GetPMDErrorString( int rc )
     "Flash",
     "Block Out of Bounds",
     "Trace buffer zero",
-    "Bad cmd checksum",
+    "Bad checksum",
     "Not primary port",
     "Invalid negative value",
     "Invalid parameter change",
@@ -851,12 +907,14 @@ const char* wbr914::GetPMDErrorString( int rc )
 
 int wbr914::ResetRawPositions()
 {
-  printf("Reset Odometry\n");
+  if ( _debug )
+    printf("Reset Odometry\n");
   int Values[2];
   Values[0] = 0;
   Values[1] = 0;
 
-  printf( "SetActualPositionInTicks\n" );
+  if ( _debug )
+    printf( "SetActualPositionInTicks\n" );
   SetActualPositionInTicks( 0, 0 );
   UpdateM3();
 
@@ -939,7 +997,7 @@ int wbr914::ReadBuf(unsigned char* s, size_t len)
   }
 
   // PMD 3410 error code in first byte
-  if ( s[0] != 0 )
+  if ( s[0] != 0 && s[0] != 1 )
   {
     const char* err = GetPMDErrorString( s[0] );
     printf( "Cmd error: %s\n", err );
@@ -1256,7 +1314,9 @@ void wbr914::Stop( int StopMode ) {
         
   unsigned char ret[8];
   
-  printf( "Stop\n" );
+  if ( _debug )
+    printf( "Stop\n" );
+
   /* Start with motor 0*/
   _stopped = true;
   

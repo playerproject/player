@@ -349,6 +349,7 @@ PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
 dnl WSN support
 PLAYER_ADD_DRIVER([mica2],[yes],[],[],[])
 PLAYER_ADD_DRIVER([rcore_xbridge],[yes],[libparticle.h],[],["-lparticle"])
+PLAYER_ADD_DRIVER([accel_calib],[yes],[],[],[])
 
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_ARG_ENABLE(md5, [  --disable-md5      Don't use MD5 hashing functions],,
