@@ -377,10 +377,13 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(ltdl, lt_dlopenext,
              have_libltdl=yes
+             LIBLTDL_FLAG=-lltdl
              AC_DEFINE(HAVE_LIBLTDL, 1, [Define to 1 if you have the ltdl library (-lltdl). ])
              LIBS="$LIBS -lltdl -ldl",
-             have_libltdl=no,
+             have_libltdl=no
+             LIBLTDL_FLAG=,
              [-ldl])
+AC_SUBST(LIBLTDL_FLAG)
 AC_CHECK_LIB(c_r, pthread_create,
              [LIBS="-lc_r -lpthread $LIBS"],[LIBS="-lpthread $LIBS"])
 AC_CHECK_LIB(jpeg,jpeg_read_header,
