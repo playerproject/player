@@ -258,7 +258,7 @@ PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([erratic],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([wbr914],[yes],[],[],[])
+PLAYER_ADD_DRIVER([wbr914],[yes],[linux/serial.h],[],[])
 
 PLAYER_ADD_DRIVER([passthrough],[no],[],[],
                   ["../client_libs/c/playercclient.o"])
