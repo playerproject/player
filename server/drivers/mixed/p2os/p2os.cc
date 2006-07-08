@@ -239,10 +239,9 @@ them named:
   - Default: 0, 0, 0
   - Orientation of the base of the arm from the robot centre in radians.
 - aa_offsets (6 floats)
-  - Default: (0, 0.06875, 0.16, 0, 0.13775, 0.11321)
-  - Offsets for the actarray.  Taken from previous actuator to current actuator
-    (first should be from the actarray's base position). Each offset is a
-    straight line, not measured per axis.
+  - Default: (0.06875, 0.16, 0, 0.13775, 0.11321, 0)
+  - Offsets for the actarray.  Taken from current actuator to next actuator.
+    Each offset is a straight line, not measured per axis.
 - aa_orients (3x6 floats)
   - Default: all zero
   - Orientation of each actuator when it is at 0. Measured by taking a line from
@@ -535,12 +534,12 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   // Actarray configuration
   // Offsets
-  aaOffsets[0] = cf->ReadTupleFloat(section, "aa_offsets", 0, 0.0f);
-  aaOffsets[1] = cf->ReadTupleFloat(section, "aa_offsets", 1, 0.06875f);
-  aaOffsets[2] = cf->ReadTupleFloat(section, "aa_offsets", 2, 0.16f);
-  aaOffsets[3] = cf->ReadTupleFloat(section, "aa_offsets", 3, 0.0925f);
-  aaOffsets[4] = cf->ReadTupleFloat(section, "aa_offsets", 4, 0.05f);
-  aaOffsets[5] = cf->ReadTupleFloat(section, "aa_offsets", 5, 0.085f);
+  aaLengths[0] = cf->ReadTupleFloat(section, "aa_offsets", 1, 0.06875f);
+  aaLengths[1] = cf->ReadTupleFloat(section, "aa_offsets", 2, 0.16f);
+  aaLengths[2] = cf->ReadTupleFloat(section, "aa_offsets", 3, 0.0925f);
+  aaLengths[3] = cf->ReadTupleFloat(section, "aa_offsets", 4, 0.05f);
+  aaLengths[4] = cf->ReadTupleFloat(section, "aa_offsets", 5, 0.085f);
+  aaLengths[5] = cf->ReadTupleFloat(section, "aa_offsets", 0, 0.0f);
   // Orientations default: all zeros
   for (int ii = 0; ii < 18; ii++)
   {
@@ -2243,7 +2242,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     for (int ii = 0; ii < sippacket->armNumJoints; ii++)
     {
       aaGeom.actuators[ii].type = PLAYER_ACTARRAY_TYPE_ROTARY;
-      aaGeom.actuators[ii].offset = aaOffsets[ii];
+      aaGeom.actuators[ii].length = aaLengths[ii];
       aaGeom.actuators[ii].orientation.proll = aaOrients[ii * 3];
       aaGeom.actuators[ii].orientation.ppitch = aaOrients[ii * 3 + 1];
       aaGeom.actuators[ii].orientation.pyaw = aaOrients[ii * 3 + 2];
