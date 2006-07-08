@@ -82,7 +82,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
   os.setf(std::ios::fixed);
 
   os << a.GetCount () << " actuators:" << std::endl;
-  os << "Act \tType\tMin\tCentre\tMax\tHome"
+  os << "Act \tType\tOffset\tOrientation\t\tAxis\t\t\tMin\tCentre\tMax\tHome"
         "\tCfgSpd\tPos\tSpeed\tState\tBrakes" << std::endl;
   for (uint ii = 0; ii < a.GetCount (); ii++)
   {
