@@ -115,7 +115,7 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
   for (ii = 0; ii < device->actuators_count; ii++)
   {
     device->actuators_geom[ii].type = geom.actuators[ii].type;
-    device->actuators_geom[ii].offset = geom.actuators[ii].offset;
+	device->actuators_geom[ii].length = geom.actuators[ii].length;
     device->actuators_geom[ii].orientation.proll = geom.actuators[ii].orientation.proll;
     device->actuators_geom[ii].orientation.ppitch = geom.actuators[ii].orientation.ppitch;
     device->actuators_geom[ii].orientation.pyaw = geom.actuators[ii].orientation.pyaw;

@@ -82,7 +82,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
   os.setf(std::ios::fixed);
 
   os << a.GetCount () << " actuators:" << std::endl;
-  os << "Act \tType\tOffset\tOrientation\t\tAxis\t\t\tMin\tCentre\tMax\tHome"
+  os << "Act \tType\tLength\tOrientation\t\tAxis\t\t\tMin\tCentre\tMax\tHome"
         "\tCfgSpd\tPos\tSpeed\tState\tBrakes" << std::endl;
   for (uint ii = 0; ii < a.GetCount (); ii++)
   {
@@ -90,7 +90,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
     geom = a.GetActuatorGeom(ii);
     os <<  ii << '\t'
        << (geom.type ? "Linear" : "Rotary") << '\t'
-       << geom.offset << '\t'
+       << geom.length << '\t'
        << "(" << geom.orientation.proll << ", " << geom.orientation.ppitch << ", " << geom.orientation.pyaw << ")\t"
        << "(" << geom.axis.px << ", " << geom.axis.py << ", " << geom.axis.pz << ")\t"
        << geom.min << '\t'

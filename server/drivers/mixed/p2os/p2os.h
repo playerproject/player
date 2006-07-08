@@ -226,7 +226,7 @@ class P2OS : public Driver
 
     /////////////////
     // Actarray stuff
-    double aaOffsets[6];
+    double aaLengths[6];
     double aaOrients[18];
     double aaAxes[18];
     player_point_3d_t aaBasePos;
