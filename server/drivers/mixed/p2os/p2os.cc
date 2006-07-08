@@ -233,35 +233,35 @@ them named:
   - Default: 0
   - Use velocity bands
 - aa_basepos (3 floats)
-  - Default: 0, 0, 0
+  - Default: (0.105, 0, 0.3185)
   - Position of the base of the arm from the robot centre in metres.
 - aa_baseorient (3 floats)
   - Default: 0, 0, 0
   - Orientation of the base of the arm from the robot centre in radians.
 - aa_offsets (6 floats)
-  - Default: all zero TODO: measure them
+  - Default: (0, 0.06875, 0.16, 0, 0.13775, 0.11321)
   - Offsets for the actarray.  Taken from previous actuator to current actuator
     (first should be from the actarray's base position). Each offset is a
     straight line, not measured per axis.
 - aa_orients (3x6 floats)
-  - Default: all zero TODO: measure them
+  - Default: all zero
   - Orientation of each actuator when it is at 0. Measured by taking a line from
     this actuator to the next and measuring its angles about the 3 axes of the
     previous actuator's coordinate space.
   - Each set of three values is a single orientation.
 - aa_axes (3x6 floats)
-  - Default: all zero TODO: measure them
+  - Default: ((0,0,1), (0,1,0), (0,1,0), (0,1,0), (1,0,0), (0,1,0), (0,0,1))
   - The axis of rotation for each joint in the actarray.
   - Each set of three values is a vector along the axis of rotation.
 - limb_pos (3 floats)
-  - Default: 0, 0, 0
+  - Default: (0.105, 0, 0.3185)
   - Position of the base of the arm from the robot centre in metres.
 - limb_links (5 floats)
-  - Default: 0.06875, 0.16, 0, 0.13775, 0.11321
+  - Default: (0.06875, 0.16, 0, 0.13775, 0.11321)
   - Offset from previous joint to this joint in metres.
     e.g. the offset from joint 0 to joint 1 is 0.06875m, and from joint 1 to joint 2 is 0.16m.
 - limb_offsets (5 floats)
-  - Default: 0, 0, 0, 0, 0
+  - Default: (0, 0, 0, 0, 0)
   - Angular offset of each joint from desired position to actual position (calibration data).
   - Possibly taken by commanding joints to 0rad with actarray interface, then measuring
     their actual angle.
@@ -534,18 +534,46 @@ P2OS::P2OS(ConfigFile* cf, int section)
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
 
   // Actarray configuration
-  for (int ii = 0; ii < 6; ii++)
-  {
-    aaOffsets[ii] = cf->ReadTupleFloat(section, "aa_offsets", ii, 0.0f);
-  }
+  // Offsets
+  aaOffsets[0] = cf->ReadTupleFloat(section, "aa_offsets", 0, 0.0f);
+  aaOffsets[1] = cf->ReadTupleFloat(section, "aa_offsets", 1, 0.06875f);
+  aaOffsets[2] = cf->ReadTupleFloat(section, "aa_offsets", 2, 0.16f);
+  aaOffsets[3] = cf->ReadTupleFloat(section, "aa_offsets", 3, 0.0925f);
+  aaOffsets[4] = cf->ReadTupleFloat(section, "aa_offsets", 4, 0.05f);
+  aaOffsets[5] = cf->ReadTupleFloat(section, "aa_offsets", 5, 0.085f);
+  // Orientations default: all zeros
   for (int ii = 0; ii < 18; ii++)
   {
     aaOrients[ii] = cf->ReadTupleFloat(section, "aa_orients", ii, 0.0f);
-    aaAxes[ii] = cf->ReadTupleFloat(section, "aa_axes", ii, 0.0f);
   }
-  aaBasePos.px = cf->ReadTupleFloat(section, "aa_basepos", 0, 0.0f);
+  // Joint 0 default: (0, 0, 1)
+    aaAxes[0] = cf->ReadTupleFloat(section, "aa_axes", 0, 0.0f);
+    aaAxes[1] = cf->ReadTupleFloat(section, "aa_axes", 1, 0.0f);
+    aaAxes[2] = cf->ReadTupleFloat(section, "aa_axes", 2, 1.0f);
+  // Joint 1 default: (0, 1, 0)
+    aaAxes[3] = cf->ReadTupleFloat(section, "aa_axes", 3, 0.0f);
+    aaAxes[4] = cf->ReadTupleFloat(section, "aa_axes", 4, 1.0f);
+    aaAxes[5] = cf->ReadTupleFloat(section, "aa_axes", 5, 0.0f);
+  // Joint 2 default: (0, 1, 0)
+    aaAxes[6] = cf->ReadTupleFloat(section, "aa_axes", 6, 0.0f);
+    aaAxes[7] = cf->ReadTupleFloat(section, "aa_axes", 7, 1.0f);
+    aaAxes[8] = cf->ReadTupleFloat(section, "aa_axes", 8, 0.0f);
+  // Joint 3 default: (1, 0, 0)
+    aaAxes[9] = cf->ReadTupleFloat(section, "aa_axes", 9, 1.0f);
+    aaAxes[10] = cf->ReadTupleFloat(section, "aa_axes", 10, 0.0f);
+    aaAxes[11] = cf->ReadTupleFloat(section, "aa_axes", 11, 0.0f);
+  // Joint 4 default: (0, 1, 0)
+    aaAxes[12] = cf->ReadTupleFloat(section, "aa_axes", 12, 0.0f);
+    aaAxes[13] = cf->ReadTupleFloat(section, "aa_axes", 13, 1.0f);
+    aaAxes[14] = cf->ReadTupleFloat(section, "aa_axes", 14, 0.0f);
+  // Joint 5 default: (0, 0, 1)
+    aaAxes[15] = cf->ReadTupleFloat(section, "aa_axes", 15, 0.0f);
+    aaAxes[16] = cf->ReadTupleFloat(section, "aa_axes", 16, 0.0f);
+    aaAxes[17] = cf->ReadTupleFloat(section, "aa_axes", 17, 1.0f);
+  // Joint base position, orientation
+  aaBasePos.px = cf->ReadTupleFloat(section, "aa_basepos", 0, 0.105f);
   aaBasePos.py = cf->ReadTupleFloat(section, "aa_basepos", 1, 0.0f);
-  aaBasePos.pz = cf->ReadTupleFloat(section, "aa_basepos", 2, 0.0f);
+  aaBasePos.pz = cf->ReadTupleFloat(section, "aa_basepos", 2, 0.3185f);
   aaBaseOrient.proll = cf->ReadTupleFloat(section, "aa_baseorient", 0, 0.0f);
   aaBaseOrient.ppitch = cf->ReadTupleFloat(section, "aa_baseorient", 1, 0.0f);
   aaBaseOrient.pyaw = cf->ReadTupleFloat(section, "aa_baseorient", 2, 0.0f);
@@ -553,9 +581,9 @@ P2OS::P2OS(ConfigFile* cf, int section)
   if(kineCalc)
   {
     limb_data.state = PLAYER_LIMB_STATE_IDLE;
-    armOffsetX = cf->ReadTupleFloat(section, "limb_pos", 0, 0.0f);
+    armOffsetX = cf->ReadTupleFloat(section, "limb_pos", 0, 0.105f);
     armOffsetY = cf->ReadTupleFloat(section, "limb_pos", 1, 0.0f);
-    armOffsetZ = cf->ReadTupleFloat(section, "limb_pos", 2, 0.0f);
+    armOffsetZ = cf->ReadTupleFloat(section, "limb_pos", 2, 0.3185f);
     double temp1 = cf->ReadTupleFloat(section, "limb_links", 0, 0.06875f);
     double temp2 = cf->ReadTupleFloat(section, "limb_links", 1, 0.16f);
     double temp3 = cf->ReadTupleFloat(section, "limb_links", 2, 0.0f);
