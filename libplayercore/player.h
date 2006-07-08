@@ -558,12 +558,13 @@ typedef struct player_actarray_actuatorgeom
 {
   /** The type of the actuator - linear or rotary. */
   uint8_t type;
-  /** The offset of this actuator from the previous actuator in the array. */
-  float offset;
+  /** The length of this actuator's link to the next actuator. For linear
+  actuators, this should be its length when at 0 position. */
+  float length;
   /** The orientation of this actuator when it is in its rest position. When
-  combined with the offset of the next actuator, this will give the position in
-  space of the next actuator in the array in the coordinate space of this
-  actuator. */
+  combined with the length of the actuator's link, this will give the position
+  in space of the next actuator in the array in the coordinate space of this
+  actuator (i.e., it is the direction to the next actuator). */
   player_orientation_3d_t orientation;
   /** The axis of rotation for this actuator if it is rotary, or axis along
   which it moves if it is linear. In both cases, it is a vector. */
@@ -592,9 +593,11 @@ typedef struct player_actarray_geom
   uint32_t actuators_count;
   /** The geometry information for each actuator in the array. */
   player_actarray_actuatorgeom_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
-  /** The position of the base of the actarray. */
+  /** The position of the base of the actarray. This should always be the
+  position of the first actuator in the array. */
   player_point_3d_t base_pos;
-  /** The orientation of the base of the actarray. */
+  /** The orientation of the base of the actarray. This is distinct from the
+  orientation of the first actuator in the array. */
   player_orientation_3d_t base_orientation;
 } player_actarray_geom_t;
 
