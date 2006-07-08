@@ -548,14 +548,14 @@ P2OS::P2OS(ConfigFile* cf, int section)
   // Joint 0 default: (0, 0, 1)
     aaAxes[0] = cf->ReadTupleFloat(section, "aa_axes", 0, 0.0f);
     aaAxes[1] = cf->ReadTupleFloat(section, "aa_axes", 1, 0.0f);
-    aaAxes[2] = cf->ReadTupleFloat(section, "aa_axes", 2, 1.0f);
+    aaAxes[2] = cf->ReadTupleFloat(section, "aa_axes", 2, -1.0f);
   // Joint 1 default: (0, 1, 0)
     aaAxes[3] = cf->ReadTupleFloat(section, "aa_axes", 3, 0.0f);
-    aaAxes[4] = cf->ReadTupleFloat(section, "aa_axes", 4, 1.0f);
+    aaAxes[4] = cf->ReadTupleFloat(section, "aa_axes", 4, -1.0f);
     aaAxes[5] = cf->ReadTupleFloat(section, "aa_axes", 5, 0.0f);
   // Joint 2 default: (0, 1, 0)
     aaAxes[6] = cf->ReadTupleFloat(section, "aa_axes", 6, 0.0f);
-    aaAxes[7] = cf->ReadTupleFloat(section, "aa_axes", 7, 1.0f);
+    aaAxes[7] = cf->ReadTupleFloat(section, "aa_axes", 7, -1.0f);
     aaAxes[8] = cf->ReadTupleFloat(section, "aa_axes", 8, 0.0f);
   // Joint 3 default: (1, 0, 0)
     aaAxes[9] = cf->ReadTupleFloat(section, "aa_axes", 9, 1.0f);
