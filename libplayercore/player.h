@@ -1914,7 +1914,7 @@ Graphics items should be accumulated until an explicit clear command is issued
  * @{ */
 
 /** The maximum number of points that can be described in a packet. */
-#define PLAYER_GRAPHICS3D_MAX_POINTS 64
+#define PLAYER_GRAPHICS3D_MAX_POINTS 1024
 
 /** Command subtype: clear the drawing area (send an empty message) */
 #define PLAYER_GRAPHICS3D_CMD_CLEAR 1
