@@ -192,7 +192,7 @@ class LaserVisualBW : public Driver
   private: int UpdateCamera(player_camera_data_t * data, double timestamp);
 
   // Extract a bit string from the image.  
-  private: int ExtractSymbols(int x, int symbol_max_count, int symbols[]);
+  private: int ExtractSymbols(int x, unsigned int symbol_max_count, int symbols[]);
 
   // Extract a code from a symbol string.
   private: int ExtractCode(int symbol_count, int symbols[]);
@@ -788,7 +788,7 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 int LaserVisualBW::UpdateCamera(player_camera_data_t * data, double timestamp)
 {
   int id, best_id;
-  int x;
+  unsigned int x;
   int symbol_count;
   int symbols[480];
 
@@ -838,9 +838,10 @@ int LaserVisualBW::UpdateCamera(player_camera_data_t * data, double timestamp)
 ////////////////////////////////////////////////////////////////////////////////
 // Extract a bit string from the image.  Takes a vertical column in
 // the image and thresholds it.
-int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
+int LaserVisualBW::ExtractSymbols(int x, unsigned int symbol_max_count, int symbols[])
 {
-  int i, j, off, inc, pix;
+  unsigned int i;
+  int j, off, inc, pix;
   double fn, fv;
   int state, start, symbol_count;
   double kernel[] = {+1, +2, 0, -2, -1};
