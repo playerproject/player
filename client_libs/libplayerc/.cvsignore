@@ -2,3 +2,4 @@ Makefile
 Makefile.in
 playerc.pc
 libplayerc.pc
+libplayerc.pc.in
