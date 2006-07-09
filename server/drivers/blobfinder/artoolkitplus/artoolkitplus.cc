@@ -108,8 +108,8 @@ class ARToolkitPlusDriver : public ImageBase
 	protected: 
 		int ProcessFrame();
 
-		int LastFrameWidth;
-		int LastFrameHeight;
+		unsigned int LastFrameWidth;
+		unsigned int LastFrameHeight;
 
 		// ar toolkit plus bits
     	int minfocnt;				//< number of minfo structures returned last time
@@ -156,11 +156,10 @@ ARToolkitPlusDriver::ARToolkitPlusDriver( ConfigFile* cf, int section)
     // create a tracker that does:
     //  - 6x6 sized marker images
     //  - samples at a maximum of 6x6
-    //  - works with luminance (gray) images
     //  - can load a maximum of 1 patterns
     //  - can detect a maximum of 8 patterns in one image
     //  - with an arbitrary default image size
-    tracker = new ARToolKitPlus::TrackerSingleMarkerImpl<6,6,6,ARToolKitPlus::PIXEL_FORMAT_LUM, 1, 8>(LastFrameWidth,LastFrameHeight);
+    tracker = new ARToolKitPlus::TrackerSingleMarkerImpl<6,6,6, 1, 8>(LastFrameWidth,LastFrameHeight);
     
     // set a logger so we can output error messages
     //
@@ -201,7 +200,7 @@ int ARToolkitPlusDriver::ProcessFrame()
 	if (stored_data.format == PLAYER_CAMERA_FORMAT_RGB888)
 	{
 		// convert to grayscale	
-		for (int i = 0; i < stored_data.width * stored_data.height; ++i)
+		for (unsigned int i = 0; i < stored_data.width * stored_data.height; ++i)
 		{
 			stored_data.image[i] = (stored_data.image[i*3] + stored_data.image[i*3+1] + stored_data.image[i*3+2]) / 3;
 		}
@@ -244,29 +243,29 @@ int ARToolkitPlusDriver::ProcessFrame()
 		blobs.blobs[blobs.blobs_count].id = tmp_markers[i].id;
 		blobs.blobs[blobs.blobs_count].color = 0x000000FF;
 		blobs.blobs[blobs.blobs_count].area = tmp_markers[i].area;
-		blobs.blobs[blobs.blobs_count].x = (tmp_markers[i].vertex[0][0] + tmp_markers[i].vertex[2][0])/2;
-		blobs.blobs[blobs.blobs_count].y = (tmp_markers[i].vertex[0][1] + tmp_markers[i].vertex[2][1])/2;
-		blobs.blobs[blobs.blobs_count].left = tmp_markers[i].vertex[0][0];
-		blobs.blobs[blobs.blobs_count].right = tmp_markers[i].vertex[0][0];
-		blobs.blobs[blobs.blobs_count].top = tmp_markers[i].vertex[0][1];
-		blobs.blobs[blobs.blobs_count].bottom = tmp_markers[i].vertex[0][1];
+		blobs.blobs[blobs.blobs_count].x = static_cast<unsigned int> ((tmp_markers[i].vertex[0][0] + tmp_markers[i].vertex[2][0])/2);
+		blobs.blobs[blobs.blobs_count].y = static_cast<unsigned int> ((tmp_markers[i].vertex[0][1] + tmp_markers[i].vertex[2][1])/2);
+		blobs.blobs[blobs.blobs_count].left = static_cast<unsigned int> (tmp_markers[i].vertex[0][0]);
+		blobs.blobs[blobs.blobs_count].right = static_cast<unsigned int> (tmp_markers[i].vertex[0][0]);
+		blobs.blobs[blobs.blobs_count].top = static_cast<unsigned int> (tmp_markers[i].vertex[0][1]);
+		blobs.blobs[blobs.blobs_count].bottom = static_cast<unsigned int> (tmp_markers[i].vertex[0][1]);
 		for (int j = 1; j < 4; ++j)
 		{
 			if (tmp_markers[i].vertex[j][0] < blobs.blobs[blobs.blobs_count].left)
-				blobs.blobs[blobs.blobs_count].left = tmp_markers[i].vertex[j][0];
+				blobs.blobs[blobs.blobs_count].left = static_cast<unsigned int> (tmp_markers[i].vertex[j][0]);
 			if (tmp_markers[i].vertex[j][0] > blobs.blobs[blobs.blobs_count].right)
-				blobs.blobs[blobs.blobs_count].right = tmp_markers[i].vertex[j][0];
+				blobs.blobs[blobs.blobs_count].right = static_cast<unsigned int> (tmp_markers[i].vertex[j][0]);
 			if (tmp_markers[i].vertex[j][1] < blobs.blobs[blobs.blobs_count].top)
-				blobs.blobs[blobs.blobs_count].top = tmp_markers[i].vertex[j][1];
+				blobs.blobs[blobs.blobs_count].top = static_cast<unsigned int> (tmp_markers[i].vertex[j][1]);
 			if (tmp_markers[i].vertex[j][1] > blobs.blobs[blobs.blobs_count].bottom)
-				blobs.blobs[blobs.blobs_count].bottom = tmp_markers[i].vertex[j][1];
+				blobs.blobs[blobs.blobs_count].bottom = static_cast<unsigned int> (tmp_markers[i].vertex[j][1]);
 		}
 		
 		++blobs.blobs_count;
 	}
 	
 	Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&blobs,sizeof(blobs));
-	
+
 	return 0;	
 }
 
