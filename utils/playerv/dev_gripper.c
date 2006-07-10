@@ -1,4 +1,4 @@
-/* 
+/*
  *  PlayerViewer
  *  Copyright (C) Andrew Howard 2002
  *
@@ -52,7 +52,7 @@ gripper_t *gripper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *clie
   char label[64];
   char section[64];
   gripper_t *gripper;
-  
+
   gripper = malloc(sizeof(gripper_t));
   gripper->proxy = playerc_gripper_create(client, index);
   gripper->drivername = strdup(drivername);
@@ -80,17 +80,17 @@ gripper_t *gripper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *clie
 void gripper_destroy(gripper_t *gripper)
 {
   int i;
-  
+
   if( gripper->grip_fig )
     {
       rtk_fig_clear(gripper->grip_fig);
       rtk_fig_destroy(gripper->grip_fig);
     }
-  
+
   if (gripper->proxy->info.subscribed)
     playerc_gripper_unsubscribe(gripper->proxy);
   playerc_gripper_destroy(gripper->proxy);
- 
+
   rtk_menuitem_destroy(gripper->subscribe_item);
   rtk_menu_destroy(gripper->menu);
 
@@ -103,7 +103,7 @@ void gripper_destroy(gripper_t *gripper)
 void gripper_update(gripper_t *gripper)
 {
   int i;
-  
+
   // Update the device subscription
   if (rtk_menuitem_ischecked(gripper->subscribe_item))
   {
@@ -111,21 +111,21 @@ void gripper_update(gripper_t *gripper)
     {
       if (playerc_gripper_subscribe(gripper->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("subscribe failed : %s", playerc_error_str());
-      
+
       // Get the gripper geometry
       if (playerc_gripper_get_geom(gripper->proxy) != 0)
-	PRINT_ERR1("get_geom failed : %s", playerc_error_str());          
-      
+	PRINT_ERR1("get_geom failed : %s", playerc_error_str());
+
       // draw the gripper body
-      rtk_fig_origin(  gripper->grip_fig, 
-		       gripper->proxy->pose[0],
-		       gripper->proxy->pose[1],
-		       gripper->proxy->pose[2] );
-      
-      rtk_fig_rectangle( gripper->grip_fig, 
+      rtk_fig_origin(  gripper->grip_fig,
+		       gripper->proxy->pose.px,
+		       gripper->proxy->pose.py,
+		       gripper->proxy->pose.pyaw );
+
+      rtk_fig_rectangle( gripper->grip_fig,
 			 0,0,0,
-			 gripper->proxy->size[0],
-			 gripper->proxy->size[1],
+			 gripper->proxy->outer_size.sw,
+			 gripper->proxy->outer_size.sl,
 			 0 );
     }
   }
@@ -143,76 +143,76 @@ void gripper_update(gripper_t *gripper)
     if (gripper->proxy->info.datatime != gripper->datatime)
       {
 	//playerc_gripper_printout( gripper->proxy, NULL );
-	
+
 	rtk_fig_clear( gripper->grip_fig );
-	
+
 	// draw paddles
-	
-	double gripper_length = gripper->proxy->size[0];
-	double gripper_width = gripper->proxy->size[1];
-	
+
+	double gripper_length = gripper->proxy->outer_size.sw;
+	double gripper_width = gripper->proxy->outer_size.sl;
+
 	double paddle_center = gripper_length * (1.0/6.0);
 	double paddle_length = gripper_length * (2.0/3.0);
 	double paddle_width = gripper_width * 0.15;
-	       	
+
 	rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
-	rtk_fig_rectangle( gripper->grip_fig, 
+	rtk_fig_rectangle( gripper->grip_fig,
 			   gripper_length * -2.0/6.0,0,0,
 			   gripper_length/3.0,
 			   gripper_width,
 			   1 );
 
 	rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_LINE );
-	rtk_fig_rectangle( gripper->grip_fig, 
+	rtk_fig_rectangle( gripper->grip_fig,
 			   gripper_length * -2.0/6.0,0,0,
 			   gripper_length/3.0,
 			   gripper_width,
 			   0 );
-	
-	if( gripper->proxy->paddles_open )
-	  {	    
+
+	if( gripper->proxy->state == PLAYER_GRIPPER_STATE_OPEN )
+	  {
 	    double paddle_pos = gripper_width/2.0 - paddle_width/2.0;
-	    
+
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
-	    rtk_fig_rectangle(gripper->grip_fig, 
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, paddle_pos, 0,
-			      paddle_length, paddle_width, 1 );	    
-	    rtk_fig_rectangle(gripper->grip_fig, 
+			      paddle_length, paddle_width, 1 );
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, -paddle_pos, 0,
 			      paddle_length, paddle_width, 1 );
 
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_LINE );
-	    rtk_fig_rectangle(gripper->grip_fig, 
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, paddle_pos, 0,
-			      paddle_length, paddle_width, 0 );	    
-	    rtk_fig_rectangle(gripper->grip_fig, 
+			      paddle_length, paddle_width, 0 );
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, -paddle_pos, 0,
 			      paddle_length, paddle_width, 0 );
 	  }
-	
-	
-	if( gripper->proxy->paddles_closed )
-	  {	    
+
+
+	if( gripper->proxy->state == PLAYER_GRIPPER_STATE_CLOSED )
+	  {
 	    double paddle_pos = paddle_width/2.0;
-	    
+
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
-	    rtk_fig_rectangle(gripper->grip_fig, 
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, paddle_pos, 0,
-			      paddle_length, paddle_width, 1 );	    
-	    rtk_fig_rectangle(gripper->grip_fig, 
+			      paddle_length, paddle_width, 1 );
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, -paddle_pos, 0,
 			      paddle_length, paddle_width, 1 );
 
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_LINE );
-	    rtk_fig_rectangle(gripper->grip_fig, 
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, paddle_pos, 0,
-			      paddle_length, paddle_width, 0 );	    
-	    rtk_fig_rectangle(gripper->grip_fig, 
+			      paddle_length, paddle_width, 0 );
+	    rtk_fig_rectangle(gripper->grip_fig,
 			      paddle_center, -paddle_pos, 0,
 			      paddle_length, paddle_width, 0 );
 	  }
-	
-	if( gripper->proxy->paddles_moving )
+
+	if( gripper->proxy->state == PLAYER_GRIPPER_STATE_MOVING )
 	  {
 	    rtk_fig_color_rgb32( gripper->grip_fig, GRIPPER_COLOR_FILL );
 	    rtk_fig_rectangle( gripper->grip_fig,
@@ -222,18 +222,18 @@ void gripper_update(gripper_t *gripper)
 			       1 );
 	  }
 
-	
+
 	// different x location for each beam
 	double ibbx =  paddle_center - 0.3*paddle_length;
 	double obbx =  paddle_center + 0.3*paddle_length;
-	
+
 	// common y position
-	double bby = gripper->proxy->paddles_open ? gripper_width/2.0 - paddle_width: 0;
-	
+	double bby = (gripper->proxy->state == PLAYER_GRIPPER_STATE_OPEN) ? gripper_width/2.0 - paddle_width: 0;
+
 	// size of the paddle indicator lights
 	double led_dx = paddle_width/2.0;
-	
-	if( gripper->proxy->inner_break_beam )
+
+	if( gripper->proxy->beams & 0x00000001 )
 	  {
 	    rtk_fig_rectangle( gripper->grip_fig, ibbx, bby+led_dx, 0, led_dx, led_dx, 1 );
 	    rtk_fig_rectangle( gripper->grip_fig, ibbx, -bby-led_dx, 0, led_dx, led_dx, 1 );
@@ -244,8 +244,8 @@ void gripper_update(gripper_t *gripper)
 	    rtk_fig_rectangle( gripper->grip_fig, ibbx, bby+led_dx, 0, led_dx, led_dx, 0 );
 	    rtk_fig_rectangle( gripper->grip_fig, ibbx, -bby-led_dx, 0, led_dx, led_dx, 0 );
 	  }
-	
-	if( gripper->proxy->outer_break_beam )
+
+	if( gripper->proxy->beams & 0x00000002 )
 	  {
 	    rtk_fig_rectangle( gripper->grip_fig, obbx, bby+led_dx, 0, led_dx, led_dx, 1 );
 	    rtk_fig_rectangle( gripper->grip_fig, obbx, -bby-led_dx, 0, led_dx, led_dx, 1 );

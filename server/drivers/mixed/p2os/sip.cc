@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -47,16 +47,16 @@ void SIP::Fill(player_p2os_data_t* data)
   data->position.pos.py = this->y_offset / 1e3;
   // now transform current position by rotation if there is one
   // and add to offset
-  if(this->angle_offset != 0) 
+  if(this->angle_offset != 0)
   {
     double rot = DTOR(this->angle_offset);    // convert rotation to radians
-    data->position.pos.px +=  ((this->xpos/1e3) * cos(rot) - 
+    data->position.pos.px +=  ((this->xpos/1e3) * cos(rot) -
                                (this->ypos/1e3) * sin(rot));
-    data->position.pos.py +=  ((this->xpos/1e3) * sin(rot) + 
+    data->position.pos.py +=  ((this->xpos/1e3) * sin(rot) +
                                (this->ypos/1e3) * cos(rot));
     data->position.pos.pa = DTOR(this->angle_offset + angle);
   }
-  else 
+  else
   {
     data->position.pos.px += this->xpos / 1e3;
     data->position.pos.py += this->ypos / 1e3;
@@ -86,18 +86,57 @@ void SIP::Fill(player_p2os_data_t* data)
 
   ///////////////////////////////////////////////////////////////
   // gripper
-  data->gripper.state = (unsigned char)(this->timer >> 8);
-  data->gripper.beams = (unsigned char)this->digin;
+  unsigned char gripState = timer >> 8;
+  if ((gripState & 0x01) && (gripState & 0x02) && !(gripState & 0x04))
+    data->gripper.state = PLAYER_GRIPPER_STATE_ERROR;
+  else
+    data->gripper.state = (gripState & 0x01) ? PLAYER_GRIPPER_STATE_OPEN :
+      ((gripState & 0x02) ? PLAYER_GRIPPER_STATE_CLOSED :
+      ((gripState & 0x04) ? PLAYER_GRIPPER_STATE_MOVING : PLAYER_GRIPPER_STATE_ERROR));
+  data->gripper.beams = (digin & 0x02) & (digin & 0x04);
+  data->gripper.stored = 0;
+
+  ///////////////////////////////////////////////////////////////
+  // lift
+  data->lift.actuators_count = 1;
+  data->lift.actuators[0].speed = 0;
+  if ((gripState & 0x10) && (gripState & 0x20) && !(gripState & 0x40))
+  {
+    // In this case, the lift is somewhere in between, so
+    // must be at an intermediate carry position. Use last commanded position.
+    data->lift.actuators[0].state = PLAYER_ACTARRAY_ACTSTATE_IDLE;
+    data->lift.actuators[0].position = lastLiftPos;
+  }
+  else if (gripState & 0x10)  // Up
+  {
+    data->lift.actuators[0].state = PLAYER_ACTARRAY_ACTSTATE_IDLE;
+    data->lift.actuators[0].position = 1.0f;
+  }
+  else if (gripState & 0x20)  // Down
+  {
+    data->lift.actuators[0].state = PLAYER_ACTARRAY_ACTSTATE_IDLE;
+    data->lift.actuators[0].position = 0.0f;
+  }
+  else if (gripState & 0x40)  // Moving
+  {
+    data->lift.actuators[0].state = PLAYER_ACTARRAY_ACTSTATE_MOVING;
+    // There is no way to know where it is for sure, so use last commanded position.
+    data->lift.actuators[0].position = lastLiftPos;
+  }
+  else    // Assume stalled
+  {
+    data->lift.actuators[0].state = PLAYER_ACTARRAY_ACTSTATE_STALLED;
+  }
 
   ///////////////////////////////////////////////////////////////
   // bumper
   data->bumper.bumpers_count = 10;
   int j = 0;
   for(int i=4;i>=0;i--)
-    data->bumper.bumpers[j++] = 
+    data->bumper.bumpers[j++] =
       (unsigned char)((this->frontbumpers >> i) & 0x01);
   for(int i=4;i>=0;i--)
-    data->bumper.bumpers[j++] = 
+    data->bumper.bumpers[j++] =
       (unsigned char)((this->rearbumpers >> i) & 0x01);
 
   ///////////////////////////////////////////////////////////////
@@ -111,7 +150,7 @@ void SIP::Fill(player_p2os_data_t* data)
   // digital I/O
   data->dio.count = (unsigned char)8;
   data->dio.digin = (unsigned int)this->digin;
-  
+
   ///////////////////////////////////////////////////////////////
   // analog I/O
   //TODO: should do this smarter, based on which analog input is selected
@@ -120,7 +159,7 @@ void SIP::Fill(player_p2os_data_t* data)
 
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob
   ** (and therefore one channel too), so everything else is zero.  All
-  ** data is storde in the blobfinder packet in Network byte order.  
+  ** data is storde in the blobfinder packet in Network byte order.
   ** Note: In CMUcam terminology, X is horizontal and Y is vertical, with
   ** (0,0) being TOP-LEFT (from the camera's perspective).  Also,
   ** since CMUcam doesn't have range information, but does have a
@@ -146,30 +185,43 @@ void SIP::Fill(player_p2os_data_t* data)
   else
     data->blobfinder.blobs_count = 0;
 
+  ///////////////////////////////////////////////////////////////
   // Fill in arm data
-  memset (data->actarray.actuators, 0, sizeof (player_actarray_actuator_t) * PLAYER_ACTARRAY_NUM_ACTUATORS);
-  data->actarray.actuators_count = armNumJoints;
+  memset (data->actArray.actuators, 0, sizeof (player_actarray_actuator_t) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+  data->actArray.actuators_count = armNumJoints;
   for (int ii = 0; ii < armNumJoints; ii++)
   {
-    data->actarray.actuators[ii].position = armJointPosRads[ii];
-    data->actarray.actuators[ii].speed = 0;
+    data->actArray.actuators[ii].position = armJointPosRads[ii];
+    data->actArray.actuators[ii].speed = 0;
     // State is complex. It can be idle, moving, or stalled (we don't have brakes so don't need to worry about the brake state).
     // Moving means have moving state from status packet
     // Idle means have not moving state from status packet and are at target position
     // Stalled means have not moving state from status packet and are not at target position
     if (armJointMoving[ii])
-      data->actarray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_MOVING;
+      data->actArray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_MOVING;
+    else if (armJointPos[ii] == armJointTargetPos[ii])
+      data->actArray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_IDLE;
     else
-    {
-      if (armJointPos[ii] == armJointTargetPos[ii])
-        data->actarray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_IDLE;
-      else
-        data->actarray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_STALLED;
-    }
+      data->actArray.actuators[ii].state = PLAYER_ACTARRAY_ACTSTATE_STALLED;
   }
+
+  ///////////////////////////////////////////////////////////////
+  // Fill in arm gripper data
+  memset (&(data->armGripper), 0, sizeof (player_gripper_data_t));
+  if (armJointMoving[5])
+    data->armGripper.state = PLAYER_GRIPPER_STATE_MOVING;
+  else if (armJointPos[5] == armJointTargetPos[5])
+    if (armJointPos[5] > 128)    // Position is between 0 and 255
+      data->armGripper.state = PLAYER_GRIPPER_STATE_OPEN;
+    else
+      data->armGripper.state = PLAYER_GRIPPER_STATE_CLOSED;
+  else
+    data->armGripper.state = PLAYER_GRIPPER_STATE_ERROR;
+  data->armGripper.beams = 0;
+  data->armGripper.stored = 0;
 }
 
-int SIP::PositionChange( unsigned short from, unsigned short to ) 
+int SIP::PositionChange( unsigned short from, unsigned short to )
 {
   int diff1, diff2;
 
@@ -183,14 +235,14 @@ int SIP::PositionChange( unsigned short from, unsigned short to )
     diff2 = 4096 - from + to;
   }
 
-  if ( abs(diff1) < abs(diff2) ) 
+  if ( abs(diff1) < abs(diff2) )
     return(diff1);
   else
     return(diff2);
 
 }
 
-void SIP::Print() 
+void SIP::Print()
 {
   int i;
 
@@ -221,18 +273,18 @@ void SIP::Print()
   printf("battery: %d compass: %d sonarreadings: %d\n", battery, compass, sonarreadings);
   printf("xpos: %d ypos:%d ptu:%hu timer:%hu\n", xpos, ypos, ptu, timer);
   printf("angle: %d lvel: %d rvel: %d control: %d\n", angle, lvel, rvel, control);
-  
+
   PrintSonars();
   PrintArmInfo ();
   PrintArm ();
 }
 
-void SIP::PrintSonars() 
+void SIP::PrintSonars()
 {
   printf("Sonars: ");
   for(int i = 0; i < 16; i++){
     printf("%hu ", sonars[i]);
-  } 
+  }
   puts("");
 }
 
@@ -253,7 +305,7 @@ void SIP::PrintArmInfo ()
 		printf ("%d |\t%d\t%d\t%d\t%d\t%d\t%d\n", ii, armJoints[ii].speed, armJoints[ii].home, armJoints[ii].min, armJoints[ii].centre, armJoints[ii].max, armJoints[ii].ticksPer90);
 }
 
-void SIP::Parse( unsigned char *buffer ) 
+void SIP::Parse( unsigned char *buffer )
 {
   int cnt = 0, change;
   unsigned short newxpos, newypos;
@@ -261,7 +313,7 @@ void SIP::Parse( unsigned char *buffer )
   status = buffer[cnt];
   cnt += sizeof(unsigned char);
   /*
-   * Remember P2OS uses little endian: 
+   * Remember P2OS uses little endian:
    * for a 2 byte short (called integer on P2OS)
    * byte0 is low byte, byte1 is high byte
    * The following code is host-machine endian independant
@@ -273,16 +325,16 @@ void SIP::Parse( unsigned char *buffer )
    */
   newxpos = ((buffer[cnt] | (buffer[cnt+1] << 8))
 	     & 0xEFFF) % 4096; /* 15 ls-bits */
-  
+
   if (xpos!=INT_MAX) {
-    change = (int) rint(PositionChange( rawxpos, newxpos ) * 
+    change = (int) rint(PositionChange( rawxpos, newxpos ) *
 			PlayerRobotParams[param_idx].DistConvFactor);
     if (abs(change)>100)
       PLAYER_WARN1("invalid odometry change [%d]; odometry values are tainted", change);
     else
       xpos += change;
   }
-  else 
+  else
     xpos = 0;
   rawxpos = newxpos;
   cnt += sizeof(short);
@@ -320,11 +372,11 @@ void SIP::Parse( unsigned char *buffer )
 
   battery = buffer[cnt];
   cnt += sizeof(unsigned char);
-  
+
   lwstall = buffer[cnt] & 0x01;
   rearbumpers = buffer[cnt] >> 1;
   cnt += sizeof(unsigned char);
-  
+
   rwstall = buffer[cnt] & 0x01;
   frontbumpers = buffer[cnt] >> 1;
   cnt += sizeof(unsigned char);
@@ -351,7 +403,7 @@ void SIP::Parse( unsigned char *buffer )
       rint((buffer[cnt+1] | (buffer[cnt+2] << 8)) *
 	   PlayerRobotParams[param_idx].RangeConvFactor);
     //printf("%d %hu:",buffer[cnt],*((unsigned short *)&buffer[cnt+1]));
-    //     
+    //
     //printf("%hu %hu %hu\n", buffer[cnt], buffer[cnt+1], buffer[cnt+2]);
     //printf("index %d value %hu\n", buffer[cnt], sonars[buffer[cnt]]);
     cnt += 3*sizeof(unsigned char);
@@ -375,7 +427,7 @@ void SIP::Parse( unsigned char *buffer )
 
 
 /** Parse a SERAUX SIP packet.  For a CMUcam, this will have blob
- **  tracking messages in the format (all one-byte values, no spaces): 
+ **  tracking messages in the format (all one-byte values, no spaces):
  **
  **      255 M mx my x1 y1 x2 y2 pixels confidence  (10-bytes)
  **
@@ -383,7 +435,7 @@ void SIP::Parse( unsigned char *buffer )
  **
  **      255 S Rval Gval Bval Rvar Gvar Bvar    (8-bytes)
  */
-void SIP::ParseSERAUX( unsigned char *buffer ) 
+void SIP::ParseSERAUX( unsigned char *buffer )
 {
   unsigned char type = buffer[1];
   if (type != SERAUX && type != SERAUX2)
@@ -439,7 +491,7 @@ void SIP::ParseSERAUX( unsigned char *buffer )
      return;
   }
 
-  printf("ERROR: Unknown blob tracker packet type: %c\n", buffer[ix+1]); 
+  printf("ERROR: Unknown blob tracker packet type: %c\n", buffer[ix+1]);
   return;
 }
 
@@ -484,7 +536,7 @@ SIP::ParseGyro(unsigned char* buffer)
   // probably should) be done here, like filtering, calibration, conversion
   // from the gyro's arbitrary units to something meaningful, etc.
   //
-  // As a first cut, we'll just average all the rate measurements in this 
+  // As a first cut, we'll just average all the rate measurements in this
   // set, and ignore the temperatures.
   float ratesum = 0;
   int bufferpos = 3;

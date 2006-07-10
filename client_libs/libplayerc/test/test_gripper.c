@@ -15,7 +15,7 @@ int test_gripper(playerc_client_t *client, int index)
   int t;
   void *rdevice;
   playerc_gripper_t *device;
-  
+
   printf("device [gripper] index [%d]\n", index);
 
   device = playerc_gripper_create(client, index);
@@ -50,7 +50,7 @@ int test_gripper(playerc_client_t *client, int index)
   }
 
   TEST("closing gripper");
-  if(playerc_gripper_set_cmd(device, GRIPclose, 0 ) < 0)
+  if(playerc_gripper_close_cmd(device) < 0)
     FAIL();
   else
   {
@@ -67,7 +67,7 @@ int test_gripper(playerc_client_t *client, int index)
 
 
   TEST("opening gripper");
-  if(playerc_gripper_set_cmd(device, GRIPopen, 0 ) < 0)
+  if(playerc_gripper_open_cmd(device) < 0)
     FAIL();
   else
   {
@@ -82,7 +82,7 @@ int test_gripper(playerc_client_t *client, int index)
     PASS();
   }
 
-  
+
   TEST("unsubscribing");
   if (playerc_gripper_unsubscribe(device) != 0)
   {
@@ -90,9 +90,9 @@ int test_gripper(playerc_client_t *client, int index)
     return -1;
   }
   PASS();
-  
+
   playerc_gripper_destroy(device);
-  
+
   return 0;
 }
 

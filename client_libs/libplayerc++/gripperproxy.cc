@@ -71,24 +71,68 @@ GripperProxy::Unsubscribe()
 std::ostream& std::operator << (std::ostream &os, const PlayerCc::GripperProxy &c)
 {
   os << "#Gripper (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  os << (c.GetState() ? "open" : "closed") << " ";
-  os << (c.GetInnerBreakBeam() ? "broken" : "clear") << " ";
-  os << (c.GetOuterBreakBeam() ? "broken" : "clear") << std::endl;
+  os << (c.GetState() == PLAYER_GRIPPER_STATE_OPEN ? "open" :
+    (c.GetState() == PLAYER_GRIPPER_STATE_CLOSED ? "closed" :
+      (c.GetState() == PLAYER_GRIPPER_STATE_MOVING ? "moving" : "error"))) << ", ";
+  os << c.GetBeams() << " beams, storage " << c.GetCapacity () << "/" << c.GetStored () << ", ";
+  os << "Pose: (" << c.GetPose().px << ", " << c.GetPose().py << ", " << c.GetPose().pz << "), (";
+  os << c.GetPose().proll << ", " << c.GetPose().ppitch << ", " << c.GetPose().pyaw << ") ";
+  os << "Outer size: (" << c.GetOuterSize().sw << ", " << c.GetOuterSize().sl << ", " << c.GetOuterSize().sh << ") ";
+  os << "Inner size: (" << c.GetInnerSize().sw << ", " << c.GetInnerSize().sl << ", " << c.GetInnerSize().sh << ") ";
+  os << std::endl;
 
   return os;
 }
 
-
-// send a gripper command
-//
-// Returns:
-//   0 if everything's ok
-//   -1 otherwise (that's bad)
-void GripperProxy::SetGrip(uint8_t aCmd, uint8_t aArg)
+void GripperProxy::RequestGeometry()
 {
   scoped_lock_t lock(mPc->mMutex);
-  if (0 != playerc_gripper_set_cmd(mDevice,aCmd,aArg))
-    throw PlayerError("GripperProxy::SetGrip()", "error setting grip");
+  if (playerc_gripper_get_geom(mDevice) != 0)
+    throw PlayerError("GripperProxy::RequestGeometry()", "error getting geometry");
   return;
 }
 
+// Send the open command
+void GripperProxy::Open()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (playerc_gripper_open_cmd(mDevice) != 0)
+    throw PlayerError("GripperProxy::Open()", "error sending open command");
+  return;
+}
+
+// Send the close command
+void GripperProxy::Close()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (playerc_gripper_close_cmd(mDevice) != 0)
+    throw PlayerError("GripperProxy::Close()", "error sending close command");
+  return;
+}
+
+// Send the stop command
+void GripperProxy::Stop()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (playerc_gripper_stop_cmd(mDevice) != 0)
+    throw PlayerError("GripperProxy::Stop()", "error sending stop command");
+  return;
+}
+
+// Send the store command
+void GripperProxy::Store()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (playerc_gripper_store_cmd(mDevice) != 0)
+    throw PlayerError("GripperProxy::Store()", "error sending store command");
+  return;
+}
+
+// Send the retrieve command
+void GripperProxy::Retrieve()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (playerc_gripper_retrieve_cmd(mDevice) != 0)
+    throw PlayerError("GripperProxy::Retrieve()", "error sending retrieve command");
+  return;
+}

@@ -162,6 +162,7 @@ bool use_keyboard = false;
 // create a gripper proxy and keys to control it?
 bool use_gripper = false;
 GripperProxy *gp = NULL;
+ActArrayProxy *lp = NULL;
 
 // joystick fd
 int jfd;
@@ -327,7 +328,7 @@ keyboard_handler(void* arg)
   if(use_gripper)
     {
       puts("r/v : gripper open/close");
-      puts("t/b : gripper up/down");
+      puts("t/b : lift up/down");
     }
   puts("");
   puts("anything else : stop");
@@ -423,19 +424,19 @@ keyboard_handler(void* arg)
         break;
     case KEYCODE_R:
       // open gripper
-      if( gp ) gp->SetGrip(GRIPopen);
+      if( gp ) gp->Open();
       break;
     case KEYCODE_V:
       // close gripper
-      if( gp ) gp->SetGrip(GRIPclose);
+      if( gp ) gp->Close();
       break;
     case KEYCODE_B:
       // open gripper
-      if( gp ) gp->SetGrip(LIFTdown);
+      if( lp ) lp->MoveTo(0, 1.0f);
       break;
     case KEYCODE_T:
       // open gripper
-      if( gp ) gp->SetGrip(LIFTup);
+      if( lp ) lp->MoveTo(0, 0.0f);
       break;
     default:
       speed = 0;
@@ -475,9 +476,14 @@ Client::Client(char* host, int port )
     {
       gp = new GripperProxy(player,0);
       assert(gp);
+      lp = new ActArrayProxy(player,0);
+      assert(lp);
     }
   else
+  {
     gp = NULL;
+    lp = NULL;
+  }
 
   // try a few reads
   for( int i=0; i<4; i++ )

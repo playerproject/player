@@ -1961,115 +1961,125 @@ typedef struct player_graphics3d_cmd_draw
 
 /** @} */
 
-// /////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
  * @defgroup interface_gripper gripper
- * @brief An actuated gripper
-
-The @p gripper interface provides access to a robotic gripper.
-
-@todo This interface is VERY Pioneer-specific, and should really be generalized.
-*/
-
+ * @brief Gripper interface
+  
+The @p gripper interface provides access to a robotic gripper. A gripper is a
+device capable of closing around and carrying an object of suitable size and
+shape. On a mobile robot, a gripper is typically mounted near the floor on the
+front, or on the end of a robotic limb. Grippers typically have two "fingers"
+that close around an object. Some grippers can detect whether an objcet is
+within the gripper (using, for example, light beams). Some grippers also have
+the ability to move the a carried object into a storage system, freeing the
+gripper to pick up a new object, and move objects from the storage system back
+into the gripper.  */
+  
 /** @ingroup interface_gripper
- * @{ */
+* @{ */
+  
+/** Gripper state: open */
+#define PLAYER_GRIPPER_STATE_OPEN 1
+/** Gripper state: closed */
+#define PLAYER_GRIPPER_STATE_CLOSED 2
+/** Gripper state: moving */
+#define PLAYER_GRIPPER_STATE_MOVING 3
+/** Gripper state: error */
+#define PLAYER_GRIPPER_STATE_ERROR 4
 
 /** Data subtype: state */
 #define PLAYER_GRIPPER_DATA_STATE 1
-
-/** Command subtype: state */
-#define PLAYER_GRIPPER_CMD_STATE 1
-
-/** Request/reply subtype: get geometry*/
+  
+/** Request subtype: get geometry */
 #define PLAYER_GRIPPER_REQ_GET_GEOM 1
-
-/** Command codes */
-#define GRIPopen   1
-/** Command codes */
-#define GRIPclose  2
-/** Command codes */
-#define GRIPstop   3
-/** Command codes */
-#define LIFTup     4
-/** Command codes */
-#define LIFTdown   5
-/** Command codes */
-#define LIFTstop   6
-/** Command codes */
-#define GRIPstore  7
-/** Command codes */
-#define GRIPdeploy 8
-/** Command codes */
-#define GRIPhalt   15
-/** Command codes */
-#define GRIPpress  16
-/** Command codes */
-#define LIFTcarry  17
-
+  
+/** Command subtype: open */
+#define PLAYER_GRIPPER_CMD_OPEN 1
+/** Command subtype: close */
+#define PLAYER_GRIPPER_CMD_CLOSE 2
+/** Command subtype: stop */
+#define PLAYER_GRIPPER_CMD_STOP 3
+/** Command subtype: store object to the storage system*/
+#define PLAYER_GRIPPER_CMD_STORE 4
+/** Command subtype: retrieve object from the storage system */
+#define PLAYER_GRIPPER_CMD_RETRIEVE 5
+  
 /** @brief Data: state (@ref PLAYER_GRIPPER_DATA_STATE)
-
-The @p gripper interface returns 2 bytes that represent the current
-state of the gripper; the format is given below.  Note that the exact
-interpretation of this data may vary depending on the details of your
-gripper and how it is connected to your robot (e.g., General I/O vs. User
-I/O for the Pioneer gripper).
-
-The following list defines how the data can be interpreted for some
-Pioneer robots and Stage:
-
-- state (unsigned byte)
-  - bit 0: Paddles open
-  - bit 1: Paddles closed
-  - bit 2: Paddles moving
-  - bit 3: Paddles error
-  - bit 4: Lift is up
-  - bit 5: Lift is down
-  - bit 6: Lift is moving
-  - bit 7: Lift error
-- beams (unsigned byte)
-  - bit 0: Gripper limit reached
-  - bit 1: Lift limit reached
-  - bit 2: Outer beam obstructed
-  - bit 3: Inner beam obstructed
-  - bit 4: Left paddle open
-  - bit 5: Right paddle open
+  
+The @p gripper interface returns the current state of the gripper
+and information on a potential object in the gripper.
+state may be @ref PLAYER_GRIPPER_STATE_OPEN, @ref PLAYER_GRIPPER_STATE_CLOSED,
+@ref PLAYER_GRIPPER_STAGE_MOVING or @ref PLAYER_GRIPPER_STATE_ERROR.
+beams provides information on how far into the gripper an object is. For most
+grippers, this will be a bit mask, with each bit representing whether a beam
+has been interrupted or not.
 */
 typedef struct player_gripper_data
 {
-  /** The current gripper lift*/
-  uint32_t state;
-  /** The current gripper breakbeam state */
+  /** The gripper's state */
+  uint8_t state;
+  /** The position of the object in the gripper */
   uint32_t beams;
+  /** Number of currently stored objects */
+  uint8_t stored;
 } player_gripper_data_t;
-
-/** @brief Command: state (@ref PLAYER_GRIPPER_CMD_STATE)
-
-The @p gripper interface accepts 2-byte commands, the format of which
-is given below.  These two bytes are sent directly to the gripper;
-refer to Table 3-3 page 10 in the Pioneer 2 Gripper Manual for a list of
-commands. The first byte is the command. The second is the argument for
-the LIFTcarry and GRIPpress commands, but for all others it is ignored. */
-typedef struct player_gripper_cmd
-{
-  /** the command */
-  uint32_t cmd;
-  /** optional argument */
-  uint32_t arg;
-} player_gripper_cmd_t;
-
-
+  
 /** @brief Request/reply: get geometry
-
-The geometry (pose and size) of the gripper device can be queried
-by sending a null @ref PLAYER_GRIPPER_REQ_GET_GEOM request.
-*/
+  
+The geometry (pose, outer size and inner size) of the gripper device can be
+queried by sending a null @ref PLAYER_GRIPPER_REQ_GET_GEOM request.
+  */
 typedef struct player_gripper_geom
 {
-  /** Gripper pose, in robot cs (m, m, rad). */
-  player_pose_t pose;
-  /** Gripper dimensions (m, m). */
-  player_bbox_t size;
+  /** Gripper pose, in robot cs (m, m, m, rad, rad, rad). */
+  player_pose3d_t pose;
+  /** Outside dimensions of gripper (m, m, m). */
+  player_bbox3d_t outer_size;
+  /** Inside dimensions of gripper, i.e. the size of the space between the
+    fingers when they are fully open (m, m, m) */
+  player_bbox3d_t inner_size;
+  /** Number of breakbeams the gripper has */
+  uint8_t num_beams;
+  /** Capacity for storing objects - if 0, then the gripper can't store */
+  uint8_t capacity;
 } player_gripper_geom_t;
+  
+/** @brief Command: Open (@ref PLAYER_GRIPPER_CMD_OPEN)
+
+Tells the gripper to open. */
+typedef struct player_gripper_cmd_open
+{
+} player_gripper_cmd_open_t;
+
+/** @brief Command: Close (@ref PLAYER_GRIPPER_CMD_CLOSE)
+
+Tells the gripper to close. */
+typedef struct player_gripper_cmd_close
+{
+} player_gripper_cmd_close_t;
+
+/** @brief Command: Stop (@ref PLAYER_GRIPPER_CMD_STOP)
+
+Tells the gripper to stop. */
+typedef struct player_gripper_cmd_stop
+{
+} player_gripper_cmd_stop_t;
+
+/** @brief Command: Store (@ref PLAYER_GRIPPER_CMD_STORE)
+
+Tells the gripper to store whatever it is holding. */
+typedef struct player_gripper_cmd_store
+{
+} player_gripper_cmd_store_t;
+
+/** @brief Command: Retrieve (@ref PLAYER_GRIPPER_CMD_RETRIEVE)
+
+Tells the gripper to retrieve a stored object (so that it can
+be put back into the world). The opposite of store. */
+typedef struct player_gripper_cmd_retrieve
+{
+} player_gripper_cmd_retrieve_t;
 
 /** @} */
 

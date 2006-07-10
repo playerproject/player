@@ -831,9 +831,8 @@ class Graphics3dProxy : public ClientProxy
 };
 
 /**
-The @p GripperProxy class is used to control a @ref
-interface_gripper device.  The latest gripper data held in a
-handful of class attributes.  A single method provides user control.
+The @p GripperProxy class is used to control a @ref interface_gripper device.
+The latest gripper data is held in a handful of class attributes.
 */
 class GripperProxy : public ClientProxy
 {
@@ -853,40 +852,37 @@ class GripperProxy : public ClientProxy
     /// destructor
     ~GripperProxy();
 
-    ///
-    uint GetState() const { return GetVar(mDevice->state); };
-    ///
-    uint GetBeams() const { return GetVar(mDevice->beams); };
-    ///
-    uint GetOuterBreakBeam() const
-      { return GetVar(mDevice->outer_break_beam); };
-    ///
-    uint GetInnerBreakBeam() const
-      { return GetVar(mDevice->inner_break_beam); };
-    ///
-    uint GetPaddlesOpen() const
-      { return GetVar(mDevice->paddles_open); };
-    ///
-    uint GetPaddlesClosed() const
-      { return GetVar(mDevice->paddles_closed); };
-    ///
-    uint GetPaddlesMoving() const
-      { return GetVar(mDevice->paddles_moving); };
-    ///
-    uint GetGripperError() const
-      { return GetVar(mDevice->gripper_error); };
-    ///
-    uint GetLiftUp() const { return GetVar(mDevice->lift_up); };
-    ///
-    uint GetLiftDown() const { return GetVar(mDevice->lift_down); };
-    ///
-    uint GetLiftMoving() const { return GetVar(mDevice->lift_moving); };
-    ///
-    uint GetLiftError() const { return GetVar(mDevice->lift_error); };
+    /// Geometry request - call before getting the
+    /// geometry of the gripper through an accessor method
+    void RequestGeometry(void);
 
-    /// Send a gripper command.  Look in the Player user manual for details
-    /// on the command and argument.
-    void SetGrip(uint8_t aCmd, uint8_t aArg=0);
+    /// Get the gripper state
+    uint GetState() const { return GetVar(mDevice->state); };
+    /// Get the gripper break beam info
+    uint GetBeams() const { return GetVar(mDevice->beams); };
+    /// Get the pose of the gripper
+    player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
+    /// Get the outer size of the gripper
+    player_bbox3d_t GetOuterSize() const { return GetVar(mDevice->outer_size); };
+    /// Get the inner size of the gripper
+    player_bbox3d_t GetInnerSize() const { return GetVar(mDevice->inner_size); };
+    /// Get the number of breakbeams in the gripper
+    uint GetNumBeams() const { return GetVar(mDevice->num_beams); };
+    /// Get the capacity of the gripper's storage
+    uint GetCapacity() const { return GetVar(mDevice->capacity); };
+    /// Get the number of currently-stored objects
+    uint GetStored() const { return GetVar(mDevice->stored); };
+
+    /// Command the gripper to open
+    void Open();
+    /// Command the gripper to close
+    void Close();
+    /// Command the gripper to stop
+    void Stop();
+    /// Command the gripper to store
+    void Store();
+    /// Command the gripper to retrieve
+    void Retrieve();
 };
 
 

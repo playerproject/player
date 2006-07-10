@@ -30,7 +30,6 @@
  *   data out of shared buffers.
  */
 
-
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_p2os p2os
@@ -73,10 +72,14 @@ them named:
 - @ref interface_dio
   - Returns data from digital I/O ports (if equipped)
 
-- @ref interface_gripper
+- "gripper" @ref interface_gripper
   - Controls gripper (if equipped)
 
-- @ref interface_actarray
+- "lift" @ref interface_actarray
+  - Controls a lift on the gripper (if gripper equipped)
+  - The lift is controlled by actuator 0. Position 1.0 is up and 0.0 is down.
+
+- "arm" @ref interface_actarray
   - Controls arm (if equipped)
   - This driver does not support the player_actarray_speed_cmd and
     player_actarray_brakes_config messages.
@@ -97,6 +100,10 @@ them named:
     Robotica, vol.23, no.1, pp.123-129, 2005.
 
 
+- "armgrip" @ref interface_gripper
+  - Controls the gripper on the end of the arm (if equipped)
+  - Good for using in conjunction with the @ref interface_limb
+
 - @ref interface_bumper
   - Returns data from bumper array (if equipped)
 
@@ -104,7 +111,7 @@ them named:
   - Controls a CMUCam2 connected to the AUX port on the P2OS board
     (if equipped).
 
-- @ref interface_sound
+- @ref interface_audio
   - Controls the sound system of the AmigoBot, which can play back
     recorded wav files.
 
@@ -259,11 +266,28 @@ them named:
   - Default: (0.06875, 0.16, 0, 0.13775, 0.11321)
   - Offset from previous joint to this joint in metres.
     e.g. the offset from joint 0 to joint 1 is 0.06875m, and from joint 1 to joint 2 is 0.16m.
-- limb_offsets (5 floats)
+  - The default is correct for the standard Pioneer arm at time of writing.
+- limb_offsets (5 floats, metres)
   - Default: (0, 0, 0, 0, 0)
   - Angular offset of each joint from desired position to actual position (calibration data).
   - Possibly taken by commanding joints to 0rad with actarray interface, then measuring
     their actual angle.
+- gripper_pose (6 floats - 3 in metres, 3 in rads)
+  - Default: (0, 0, 0, 0, 0, 0)
+  - 3D pose of the standard gripper
+- gripper_outersize (3 floats, metres)
+  - Default: (0.315, 0.195, 0.035)
+  - Size of the outside of the standard gripper
+- gripper_innersize (3 floats, metres)
+  - Default: (0.205, 0.095, 1.0)
+  - Size of the inside of the standard gripper's fingers when fully open,
+    i.e. the largest object it can pick up.
+- armgrip_outersize (3 floats, metres)
+  - Default: (0.09, 0.09, 0.041)
+  - Size of the outside of the arm's gripper
+- armgrip_innersize (3 floats, metres)
+  - Default: (0.054, 0.025, 1.0)
+  - Size of the inside of the arm's gripper (largest object it can hold)
 
 
 
@@ -327,7 +351,7 @@ P2OS::P2OS(ConfigFile* cf, int section)
   memset(&this->compass_id, 0, sizeof(player_devaddr_t));
   memset(&this->gyro_id, 0, sizeof(player_devaddr_t));
   memset(&this->blobfinder_id, 0, sizeof(player_devaddr_t));
-  memset(&this->sound_id, 0, sizeof(player_devaddr_t));
+  memset(&this->audio_id, 0, sizeof(player_devaddr_t));
   memset(&this->actarray_id, 0, sizeof(player_devaddr_t));
   memset(&this->limb_id, 0, sizeof(player_devaddr_t));
 
@@ -407,9 +431,20 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   // Do we create a gripper interface?
   if(cf->ReadDeviceAddr(&(this->gripper_id), section, "provides",
-                      PLAYER_GRIPPER_CODE, -1, NULL) == 0)
+                      PLAYER_GRIPPER_CODE, -1, "gripper") == 0)
   {
     if(this->AddInterface(this->gripper_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create an actarray interface for the gripper lift?
+  if(cf->ReadDeviceAddr(&(this->lift_id), section, "provides",
+     PLAYER_ACTARRAY_CODE, -1, "lift") == 0)
+  {
+    if(this->AddInterface(this->lift_id) != 0)
     {
       this->SetError(-1);
       return;
@@ -449,11 +484,11 @@ P2OS::P2OS(ConfigFile* cf, int section)
     }
   }
 
-  // Do we create a sound interface?
-  if(cf->ReadDeviceAddr(&(this->sound_id), section, "provides",
-                      PLAYER_SOUND_CODE, -1, NULL) == 0)
+  // Do we create a audio interface?
+  if(cf->ReadDeviceAddr(&(this->audio_id), section, "provides",
+                      PLAYER_AUDIO_CODE, -1, NULL) == 0)
   {
-    if(this->AddInterface(this->sound_id) != 0)
+    if(this->AddInterface(this->audio_id) != 0)
     {
       this->SetError(-1);
       return;
@@ -474,9 +509,20 @@ P2OS::P2OS(ConfigFile* cf, int section)
   else
     kineCalc = NULL;
 
-  // Do we create an actarray interface? Note that if we have a limb interface, this implies an actarray interface
-  if((cf->ReadDeviceAddr(&(this->actarray_id), section, "provides", PLAYER_ACTARRAY_CODE, -1, NULL) == 0) ||
-      (this->limb_id.interf))
+  // Do we create an arm gripper interface?
+  if(cf->ReadDeviceAddr(&(this->armgripper_id), section, "provides", PLAYER_GRIPPER_CODE, -1, "armgrip") == 0)
+  {
+    if(this->AddInterface(this->armgripper_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create an actarray interface? Note that if we have a limb or arm gripper interface,
+  // this implies an actarray interface
+  if((cf->ReadDeviceAddr(&(this->actarray_id), section, "provides", PLAYER_ACTARRAY_CODE, -1, "arm") == 0) ||
+      this->limb_id.interf || this->armgripper_id.interf)
   {
     if(this->AddInterface(this->actarray_id) != 0)
     {
@@ -531,6 +577,28 @@ P2OS::P2OS(ConfigFile* cf, int section)
                                                              0)));
 
   this->use_vel_band = cf->ReadInt(section, "use_vel_band", 0);
+
+  // Gripper configuration
+  gripperPose.px = cf->ReadTupleFloat(section, "gripper_pose", 0, 0.0f);
+  gripperPose.py = cf->ReadTupleFloat(section, "gripper_pose", 1, 0.0f);
+  gripperPose.pz = cf->ReadTupleFloat(section, "gripper_pose", 2, 0.0f);
+  gripperPose.proll = cf->ReadTupleFloat(section, "gripper_pose", 3, 0.0f);
+  gripperPose.ppitch = cf->ReadTupleFloat(section, "gripper_pose", 4, 0.0f);
+  gripperPose.pyaw = cf->ReadTupleFloat(section, "gripper_pose", 5, 0.0f);
+  gripperOuterSize.sw = cf->ReadTupleFloat(section, "gripper_outersize", 0, 0.315f);
+  gripperOuterSize.sl = cf->ReadTupleFloat(section, "gripper_outersize", 1, 0.195f);
+  gripperOuterSize.sh = cf->ReadTupleFloat(section, "gripper_outersize", 2, 0.035f);
+  gripperInnerSize.sw = cf->ReadTupleFloat(section, "gripper_innersize", 0, 0.205f);
+  gripperInnerSize.sl = cf->ReadTupleFloat(section, "gripper_innersize", 1, 0.095f);
+  gripperInnerSize.sh = cf->ReadTupleFloat(section, "gripper_innersize", 2, 0.035f);
+
+  // Arm gripper configuration
+  armGripperOuterSize.sw = cf->ReadTupleFloat(section, "armgrip_outersize", 0, 0.09f);
+  armGripperOuterSize.sl = cf->ReadTupleFloat(section, "armgrip_outersize", 1, 0.09f);
+  armGripperOuterSize.sh = cf->ReadTupleFloat(section, "armgrip_outersize", 2, 0.041f);
+  armGripperInnerSize.sw = cf->ReadTupleFloat(section, "armgrip_innersize", 0, 0.054f);
+  armGripperInnerSize.sl = cf->ReadTupleFloat(section, "armgrip_innersize", 1, 0.025f);
+  armGripperInnerSize.sh = cf->ReadTupleFloat(section, "armgrip_innersize", 2, 1.0f);
 
   // Actarray configuration
   // Offsets
@@ -598,10 +666,11 @@ P2OS::P2OS(ConfigFile* cf, int section)
 
   this->psos_fd = -1;
 
-  this->sent_gripper_cmd = false;
-  this->last_actarray_cmd_was_pos = true;
-  memset (&last_actarray_pos_cmd, 0, sizeof (player_actarray_position_cmd_t));
-  memset (&last_actarray_home_cmd, 0, sizeof (player_actarray_home_cmd_t));
+  sentGripperCmd = false;
+  sentArmGripperCmd = true;
+  lastGripperCmd = lastLiftCmd = lastArmGripperCmd = lastActArrayCmd = 255;
+  memset (&lastLiftPosCmd, 0, sizeof (player_actarray_position_cmd_t));
+  memset (&lastActArrayPosCmd, 0, sizeof (player_actarray_position_cmd_t));
 }
 
 int P2OS::Setup()
@@ -1214,11 +1283,11 @@ P2OS::Subscribe(player_devaddr_t id)
       this->position_subscriptions++;
     else if(Device::MatchDeviceAddress(id, this->sonar_id))
       this->sonar_subscriptions++;
-    else if(Device::MatchDeviceAddress(id, this->actarray_id))
-      this->actarray_subscriptions++;
-    else if(Device::MatchDeviceAddress(id, this->limb_id))
-      // We use the actarray subscriptions count for the limb
-      // interface too since they're the same physical hardware
+    else if(Device::MatchDeviceAddress(id, this->actarray_id) ||
+            Device::MatchDeviceAddress(id, this->limb_id) ||
+            Device::MatchDeviceAddress(id, this->armgripper_id))
+      // We use the actarray subscriptions count for the limb and arm gripper
+      // interfaces too since they're the same physical hardware
       this->actarray_subscriptions++;
   }
 
@@ -1244,12 +1313,9 @@ P2OS::Unsubscribe(player_devaddr_t id)
       this->sonar_subscriptions--;
       assert(this->sonar_subscriptions >= 0);
     }
-    else if(Device::MatchDeviceAddress(id, this->actarray_id))
-    {
-      this->actarray_subscriptions--;
-      assert(this->actarray_subscriptions >= 0);
-    }
-    else if(Device::MatchDeviceAddress(id, this->limb_id))
+    else if(Device::MatchDeviceAddress(id, this->actarray_id) ||
+            Device::MatchDeviceAddress(id, this->limb_id) ||
+            Device::MatchDeviceAddress(id, this->armgripper_id))
     {
       // We use the actarray subscriptions count for the limb
       // interface too since they're the same physical hardware
@@ -1306,6 +1372,14 @@ P2OS::PutData(void)
                 sizeof(player_gripper_data_t),
                 NULL);
 
+  // put lift data
+  this->Publish(this->lift_id, NULL,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_ACTARRAY_DATA_STATE,
+                (void*)&(this->p2os_data.lift),
+                sizeof(player_actarray_data_t),
+                NULL);
+
   // put bumper data
   this->Publish(this->bumper_id, NULL,
                 PLAYER_MSGTYPE_DATA,
@@ -1350,7 +1424,7 @@ P2OS::PutData(void)
   this->Publish(this->actarray_id, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_ACTARRAY_DATA_STATE,
-                (void*)&(this->p2os_data.actarray),
+                (void*)&(this->p2os_data.actArray),
                 sizeof(player_actarray_data_t),
                 NULL);
 
@@ -1360,6 +1434,14 @@ P2OS::PutData(void)
                 PLAYER_LIMB_DATA,
                 (void*)&(this->limb_data),
                 sizeof(player_limb_data_t),
+                NULL);
+
+  // put arm gripper data
+  this->Publish(this->armgripper_id, NULL,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_GRIPPER_DATA_STATE,
+                (void*)&(this->p2os_data.armGripper),
+                sizeof(player_gripper_data_t),
                 NULL);
 }
 
@@ -1944,7 +2026,41 @@ P2OS::ProcessMessage(MessageQueue * resp_queue,
                      player_msghdr * hdr,
                      void * data)
 {
-  // Look for configuration requests
+  // Check for capabilities requests first
+  HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  HANDLE_CAPABILITY_REQUEST (armgripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
+  // Position2d caps
+  HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
+  // Act array caps
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_POWER_REQ);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_GET_GEOM_REQ);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_SPEED_REQ);
+  // Lift caps
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_GET_GEOM_REQ);
+  // Limb caps
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_HOME_CMD);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_STOP_CMD);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_SETPOSE_CMD);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_POWER_REQ);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_GEOM_REQ);
+  // Gripper caps
+  HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN);
+  HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE);
+  HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STOP);
+  // Arm gripper caps
+  HANDLE_CAPABILITY_REQUEST (armgripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN);
+  HANDLE_CAPABILITY_REQUEST (armgripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE);
+  HANDLE_CAPABILITY_REQUEST (armgripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STOP);
+
+  // Process other messages
   if(hdr->type == PLAYER_MSGTYPE_REQ)
     return(this->HandleConfig(resp_queue,hdr,data));
   else if(hdr->type == PLAYER_MSGTYPE_CMD)
@@ -2222,11 +2338,6 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_POWER_REQ);
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_BRAKES_REQ,this->actarray_id))
-  {
-    // We don't have any brakes
-    return 0;
-  }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_GET_GEOM_REQ,this->actarray_id))
   {
     // First ask for an ARMINFOpac (because we need to get any updates to speed settings)
@@ -2338,6 +2449,52 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
                   (void*)&geom, sizeof(geom), NULL);
     return(0);
   }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_GET_GEOM_REQ,this->lift_id))
+  {
+    player_actarray_geom_t aaGeom;
+
+    aaGeom.actuators_count = 1;
+    memset (aaGeom.actuators, 0, sizeof (player_actarray_actuator_t) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+
+    aaGeom.actuators[0].type = PLAYER_ACTARRAY_TYPE_LINEAR;
+    aaGeom.actuators[0].min = 0.0f;
+    aaGeom.actuators[0].centre = 0.5f;
+    aaGeom.actuators[0].max = 1.0f;
+    aaGeom.actuators[0].home = 1.0f;
+    aaGeom.actuators[0].config_speed = 0.02f; // 2cm/s, according to the manual
+    aaGeom.actuators[0].hasbrakes = 0;
+
+    this->Publish(this->lift_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_GET_GEOM_REQ, &aaGeom, sizeof (aaGeom), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_GRIPPER_REQ_GET_GEOM,this->gripper_id))
+  {
+    player_gripper_geom_t geom;
+    memset (&geom, 0, sizeof (player_gripper_geom_t));
+
+    geom.pose = gripperPose;
+    geom.outer_size = gripperOuterSize;
+    geom.inner_size = gripperInnerSize;
+    geom.num_beams = 2;
+    geom.capacity = 0;
+
+    this->Publish(this->gripper_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GRIPPER_REQ_GET_GEOM, &geom, sizeof (geom), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_GRIPPER_REQ_GET_GEOM,this->armgripper_id))
+  {
+    player_gripper_geom_t geom;
+    memset (&geom, 0, sizeof (player_gripper_geom_t));
+
+    memset (&(geom.pose), 0, sizeof (player_pose3d_t));  // Hard to know since it's on the end of the arm
+    geom.outer_size = armGripperOuterSize;
+    geom.inner_size = armGripperInnerSize;
+    geom.num_beams = 0;
+    geom.capacity = 0;
+
+    this->Publish(this->armgripper_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GRIPPER_REQ_GET_GEOM, &geom, sizeof (geom), NULL);
+    return 0;
+  }
   else
   {
     PLAYER_WARN("unknown config request to p2os driver");
@@ -2354,6 +2511,10 @@ void P2OS::SendPulse (void)
   packet.Build(&command, 1);
   SendReceive(&packet);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//  Command handling
+///////////////////////////////////////////////////////////////////////////////
 
 void
 P2OS::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
@@ -2502,61 +2663,15 @@ P2OS::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 }
 
 void
-P2OS::HandleGripperCommand(player_gripper_cmd_t gripper_cmd)
-{
-  bool newgrippercommand;
-  unsigned char gripcommand[4];
-  P2OSPacket grippacket;
-
-  if(!this->sent_gripper_cmd)
-    newgrippercommand = true;
-  else
-  {
-    newgrippercommand = false;
-    if(gripper_cmd.cmd != this->last_gripper_cmd.cmd ||
-       gripper_cmd.arg != this->last_gripper_cmd.arg)
-    {
-      newgrippercommand = true;
-    }
-  }
-
-  if(newgrippercommand)
-  {
-    //puts("sending gripper command");
-    // gripper command
-    gripcommand[0] = GRIPPER;
-    gripcommand[1] = ARGINT;
-    gripcommand[2] = gripper_cmd.cmd & 0x00FF;
-    gripcommand[3] = (gripper_cmd.cmd & 0xFF00) >> 8;
-    grippacket.Build(gripcommand, 4);
-    SendReceive(&grippacket);
-
-    // pass extra value to gripper if needed
-    if(gripper_cmd.cmd == GRIPpress || gripper_cmd.cmd == LIFTcarry )
-    {
-      gripcommand[0] = GRIPPERVAL;
-      gripcommand[1] = ARGINT;
-      gripcommand[2] = gripper_cmd.arg & 0x00FF;
-      gripcommand[3] = (gripper_cmd.arg & 0xFF00) >> 8;
-      grippacket.Build(gripcommand, 4);
-      SendReceive(&grippacket);
-    }
-
-    this->sent_gripper_cmd = true;
-    this->last_gripper_cmd = gripper_cmd;
-  }
-}
-
-void
-P2OS::HandleSoundCommand(player_sound_cmd_t sound_cmd)
+P2OS::HandleAudioCommand(player_audio_sample_item_t audio_cmd)
 {
   unsigned char soundcommand[4];
   P2OSPacket soundpacket;
   unsigned short soundindex;
 
-  soundindex = ntohs(sound_cmd.index);
+  soundindex = audio_cmd.index;
 
-  if(!this->sent_sound_cmd || (soundindex != this->last_sound_cmd.index))
+  if(!this->sent_audio_cmd || (soundindex != this->last_audio_cmd.index))
   {
     soundcommand[0] = SOUND;
     soundcommand[1] = ARGINT;
@@ -2566,17 +2681,20 @@ P2OS::HandleSoundCommand(player_sound_cmd_t sound_cmd)
     SendReceive(&soundpacket);
     fflush(stdout);
 
-    this->last_sound_cmd.index = soundindex;
+    this->last_audio_cmd.index = soundindex;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//  Arm actuator array commands
 
 void P2OS::HandleActArrayPosCmd (player_actarray_position_cmd_t cmd)
 {
   unsigned char command[4];
   P2OSPacket packet;
 
-  if (!last_actarray_cmd_was_pos || (last_actarray_cmd_was_pos &&
-       (cmd.joint != last_actarray_pos_cmd.joint || cmd.position != last_actarray_pos_cmd.position)))
+  if (!(lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) || ((lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) &&
+       (cmd.joint != lastActArrayPosCmd.joint || cmd.position != lastActArrayPosCmd.position)))
   {
     command[0] = ARM_POS;
     command[1] = ARGINT;
@@ -2593,7 +2711,8 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
   unsigned char command[4];
   P2OSPacket packet;
 
-  if (last_actarray_cmd_was_pos || (!last_actarray_cmd_was_pos && (cmd.joint != last_actarray_home_cmd.joint)))
+  if ((lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) || (!(lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) &&
+       (cmd.joint != lastActArrayHomeCmd.joint)))
   {
     command[0] = ARM_HOME;
     command[1] = ARGINT;
@@ -2603,6 +2722,30 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
     SendReceive(&packet);
   }
 }
+
+int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
+{
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
+  {
+    player_actarray_position_cmd_t cmd;
+    cmd = *(player_actarray_position_cmd_t*) data;
+    this->HandleActArrayPosCmd (cmd);
+    lastActArrayCmd = PLAYER_ACTARRAY_POS_CMD;
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->actarray_id))
+  {
+    player_actarray_home_cmd_t cmd;
+    cmd = *(player_actarray_home_cmd_t*) data;
+    this->HandleActArrayHomeCmd (cmd);
+    lastActArrayCmd = PLAYER_ACTARRAY_HOME_CMD;
+    return 0;
+  }
+  return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Limb commands
 
 void P2OS::HandleLimbHomeCmd (void)
 {
@@ -2768,6 +2911,302 @@ void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
   limb_data.state = PLAYER_LIMB_STATE_MOVING;
 }
 
+int P2OS::HandleLimbCommand (player_msghdr *hdr, void *data)
+{
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_HOME_CMD,this->limb_id))
+  {
+    this->HandleLimbHomeCmd ();
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_STOP_CMD,this->limb_id))
+  {
+    this->HandleLimbStopCmd ();
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSE_CMD,this->limb_id))
+  {
+    player_limb_setpose_cmd_t cmd;
+    cmd = *(player_limb_setpose_cmd_t*) data;
+    this->HandleLimbSetPoseCmd (cmd);
+    return 0;
+  }
+//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
+//   {
+//     player_limb_setposition_cmd_t cmd;
+//     cmd = *(player_limb_setposition_cmd_t*) data;
+//     this->HandleLimbSetPositionCmd (cmd);
+//     retVal = 0;
+//   }
+//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
+//   {
+//     player_limb_vecmove_cmd_t cmd;
+//     cmd = *(player_limb_vecmove_cmd_t*) data;
+//     this->HandleLimbVecMoveCmd (cmd);
+//     retVal = 0;
+//   }
+  return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Lift commands
+
+int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->lift_id))
+  {
+    player_actarray_position_cmd_t cmd;
+    cmd = *(player_actarray_position_cmd_t*) data;
+
+    // If not the first joint, return error
+    if (cmd.joint > 0)
+      return -1;
+
+    if (lastLiftCmd == PLAYER_ACTARRAY_POS_CMD && lastLiftPosCmd.position == cmd.position)
+      return 0;
+
+    command[0] = GRIPPER;
+    command[1] = ARGINT;
+
+    // If the position is 1 or 0, then it's easy: just use LIFTup or LIFTdown
+    if (cmd.position <= 0.0)
+    {
+      command[2] = GRIPPER;
+      command[3] = LIFTdown;
+      packet.Build (command, 4);
+      SendReceive (&packet);
+    }
+    else if (cmd.position >= 1.0)
+    {
+      command[2] = GRIPPER;
+      command[3] = LIFTup;
+      packet.Build (command, 4);
+      SendReceive (&packet);
+    }
+    else
+    {
+      // Lift position is a range from 0 to 1. 0 corresponds to down, 1 corresponds to up.
+      // Setting positions in between is done using the carry time.
+      // According to the manual, the lift can move 7cm at a rate of 2cm/s (in ideal conditions).
+      // So to figure out the lift time for a given position, we consider an AA position of 1 to
+      // correspond to a lift position of 7cm and 0 to 0cm. Given a speed of 2cm/s, this means
+      // the lift takes 3.5s to move over its full range. So an AA position is converted to a
+      // time by 3.5 * cmd.pos. For example, 0.5 is 3.5 * 0.5 = 1.75s travel time.
+      // We then use the LIFTcarry command to set this travel time. LIFTcarry is specified as
+      // an integer, with each step equal to 20ms of travel time. So the LIFTcarry value
+      // becomes travel time / 0.02.
+      // It is important to remember that the LIFTcarry is (if my reading of the manul is correct)
+      // an offset command, not absolute position command. So we have to track the last commanded
+      // position of the lift and work from that to get the correct travel time (and direction).
+
+      double offset = cmd.position - lastLiftPosCmd.position;
+      double travelTime = offset * 3.5f;
+      short liftCarryVal = static_cast<short> (travelTime / 0.02f);
+
+      // Send the LIFTcarry command
+      command[2] = GRIPPER;
+      command[3] = LIFTcarry;
+      packet.Build (command, 4);
+      SendReceive (&packet);
+
+      // Followed by the carry time
+      command[0] = GRIPPERVAL;
+      command[2] = liftCarryVal & 0x00FF;
+      command[3] = liftCarryVal & 0xFF00;
+      packet.Build (command, 4);
+      SendReceive (&packet);
+    }
+
+    lastLiftCmd = PLAYER_ACTARRAY_POS_CMD;
+    lastLiftPosCmd = cmd;
+    sippacket->lastLiftPos = cmd.position;
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->lift_id))
+  {
+    if (lastLiftCmd == PLAYER_ACTARRAY_HOME_CMD)
+      return 0;
+
+    // For home, just send the lift to up position
+    command[0] = GRIPPER;
+    command[1] = ARGINT;
+    command[2] = GRIPPER;
+    command[3] = LIFTup;
+    packet.Build (command, 4);
+    SendReceive (&packet);
+    lastLiftCmd = PLAYER_ACTARRAY_HOME_CMD;
+    lastLiftPosCmd.position = 1.0f;
+    return 0;
+  }
+  return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Gripper commands
+
+void P2OS::OpenGripper (void)
+{
+  unsigned char cmd[4];
+  P2OSPacket packet;
+
+  if (sentGripperCmd && lastGripperCmd == PLAYER_GRIPPER_CMD_OPEN)
+    return;
+
+  cmd[0] = GRIPPER;
+  cmd[1] = ARGINT;
+  cmd[2] = GRIPPER;
+  cmd[3] = GRIPopen;
+  packet.Build (cmd, 4);
+  SendReceive (&packet);
+
+  sentGripperCmd = true;
+  lastGripperCmd = PLAYER_GRIPPER_CMD_OPEN;
+}
+
+void P2OS::CloseGripper (void)
+{
+  unsigned char cmd[4];
+  P2OSPacket packet;
+
+  if (sentGripperCmd && lastGripperCmd == PLAYER_GRIPPER_CMD_CLOSE)
+    return;
+
+  cmd[0] = GRIPPER;
+  cmd[1] = ARGINT;
+  cmd[2] = GRIPPER;
+  cmd[3] = GRIPclose;
+  packet.Build (cmd, 4);
+  SendReceive (&packet);
+
+  sentGripperCmd = true;
+  lastGripperCmd = PLAYER_GRIPPER_CMD_CLOSE;
+}
+
+void P2OS::StopGripper (void)
+{
+  unsigned char cmd[4];
+  P2OSPacket packet;
+
+  if (sentGripperCmd && lastGripperCmd == PLAYER_GRIPPER_CMD_STOP)
+    return;
+
+  cmd[0] = GRIPPER;
+  cmd[1] = ARGINT;
+  cmd[2] = GRIPPER;
+  cmd[3] = GRIPstop;
+  packet.Build (cmd, 4);
+  SendReceive (&packet);
+
+  sentGripperCmd = true;
+  lastGripperCmd = PLAYER_GRIPPER_CMD_STOP;
+}
+
+int P2OS::HandleGripperCommand (player_msghdr * hdr, void * data)
+{
+  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN, this->gripper_id))
+  {
+    OpenGripper ();
+    return 0;
+  }
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE, this->gripper_id))
+  {
+    CloseGripper ();
+    return 0;
+  }
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STOP, this->gripper_id))
+  {
+    StopGripper ();
+    return 0;
+  }
+  return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+//  Arm gripper commands
+
+void P2OS::OpenArmGripper (void)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  if (sentArmGripperCmd && lastArmGripperCmd == PLAYER_GRIPPER_CMD_OPEN)
+    return;
+
+  command[0] = ARM_POS;
+  command[1] = ARGINT;
+  command[2] = sippacket->armJoints[5].max;
+  command[3] = 6;
+  packet.Build(command, 4);
+  SendReceive(&packet);
+
+  sippacket->armJointTargetPos[5] = command[2];
+  sentArmGripperCmd = true;
+  lastArmGripperCmd = PLAYER_GRIPPER_CMD_OPEN;
+}
+
+void P2OS::CloseArmGripper (void)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  if (sentArmGripperCmd && lastArmGripperCmd == PLAYER_GRIPPER_CMD_CLOSE)
+    return;
+
+  command[0] = ARM_POS;
+  command[1] = ARGINT;
+  command[2] = sippacket->armJoints[5].min;
+  command[3] = 6;
+  packet.Build(command, 4);
+  SendReceive(&packet);
+
+  sippacket->armJointTargetPos[5] = command[2];
+  sentArmGripperCmd = true;
+  lastArmGripperCmd = PLAYER_GRIPPER_CMD_CLOSE;
+}
+
+void P2OS::StopArmGripper (void)
+{
+  unsigned char command[4];
+  P2OSPacket packet;
+
+  if (sentArmGripperCmd && lastArmGripperCmd == PLAYER_GRIPPER_CMD_STOP)
+    return;
+
+  command[0] = ARM_STOP;
+  command[1] = ARGINT;
+  command[2] = 6;
+  command[3] = 0;
+  packet.Build(command, 4);
+  SendReceive(&packet);
+
+  sentArmGripperCmd = true;
+  lastArmGripperCmd = PLAYER_GRIPPER_CMD_STOP;
+}
+
+int P2OS::HandleArmGripperCommand (player_msghdr *hdr, void *data)
+{
+  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN, this->armgripper_id))
+  {
+    OpenArmGripper ();
+    return 0;
+  }
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE, this->armgripper_id))
+  {
+    CloseArmGripper ();
+    return 0;
+  }
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STOP, this->armgripper_id))
+  {
+    StopArmGripper ();
+    return 0;
+  }
+  return -1;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 int
 P2OS::HandleCommand(player_msghdr * hdr, void* data)
 {
@@ -2785,76 +3224,38 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     this->HandlePositionCommand(position_cmd);
     retVal = 0;
   }
-  else if(Message::MatchMessage(hdr,
-                                PLAYER_MSGTYPE_CMD,
-                                PLAYER_GRIPPER_CMD_STATE,
-                                this->gripper_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD, this->audio_id))
   {
-    // get and send the latest gripper command, if it's new
-    player_gripper_cmd_t gripper_cmd;
-    gripper_cmd = *(player_gripper_cmd_t*)data;
-    this->HandleGripperCommand(gripper_cmd);
+    // get and send the latest audio command, if it's new
+    player_audio_sample_item_t audio_cmd;
+    audio_cmd = *(player_audio_sample_item_t*)data;
+    this->HandleAudioCommand(audio_cmd);
     retVal = 0;
   }
-  else if(Message::MatchMessage(hdr,
-                                PLAYER_MSGTYPE_CMD,
-                                PLAYER_SOUND_CMD_IDX,
-                                this->sound_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, -1, actarray_id))
   {
-    // get and send the latest sound command, if it's new
-    player_sound_cmd_t sound_cmd;
-    sound_cmd = *(player_sound_cmd_t*)data;
-    this->HandleSoundCommand(sound_cmd);
-    retVal = 0;
+    retVal = HandleActArrayCommand (hdr, data);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, -1, limb_id))
   {
-    player_actarray_position_cmd_t cmd;
-    cmd = *(player_actarray_position_cmd_t*) data;
-    this->HandleActArrayPosCmd (cmd);
-    retVal = 0;
+    retVal = HandleLimbCommand (hdr, data);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_SPEED_CMD,this->actarray_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, -1, lift_id))
   {
+    retVal = HandleLiftCommand (hdr, data);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->actarray_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, -1, gripper_id))
   {
-    player_actarray_home_cmd_t cmd;
-    cmd = *(player_actarray_home_cmd_t*) data;
-    this->HandleActArrayHomeCmd (cmd);
-    retVal = 0;
+    retVal = HandleGripperCommand (hdr, data);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_HOME_CMD,this->limb_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, -1, gripper_id))
   {
-    this->HandleLimbHomeCmd ();
-    retVal = 0;
+    retVal = HandleGripperCommand(hdr, data);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_STOP_CMD,this->limb_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, -1, armgripper_id))
   {
-    this->HandleLimbStopCmd ();
-    retVal = 0;
+    retVal = HandleArmGripperCommand (hdr, data);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSE_CMD,this->limb_id))
-  {
-    player_limb_setpose_cmd_t cmd;
-    cmd = *(player_limb_setpose_cmd_t*) data;
-    this->HandleLimbSetPoseCmd (cmd);
-    retVal = 0;
-  }
-//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
-//   {
-//     player_limb_setposition_cmd_t cmd;
-//     cmd = *(player_limb_setposition_cmd_t*) data;
-//     this->HandleLimbSetPositionCmd (cmd);
-//     retVal = 0;
-//   }
-//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
-//   {
-//     player_limb_vecmove_cmd_t cmd;
-//     cmd = *(player_limb_vecmove_cmd_t*) data;
-//     this->HandleLimbVecMoveCmd (cmd);
-//     retVal = 0;
-//   }
 
   // Update the time of last pulse/command on successful handling of commands
   if (retVal == 0 && pulse != -1)

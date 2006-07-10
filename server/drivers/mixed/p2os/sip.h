@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ typedef struct ArmJoint
 	unsigned char ticksPer90;
 } ArmJoint;
 
-class SIP 
+class SIP
 {
  private:
   int PositionChange( unsigned short, unsigned short );
@@ -53,7 +53,7 @@ class SIP
   // these values are returned in every standard SIP
   bool lwstall, rwstall;
   unsigned char status, battery, sonarreadings, analog, digin, digout;
-  unsigned short ptu, compass, timer, rawxpos; 
+  unsigned short ptu, compass, timer, rawxpos;
   unsigned short rawypos, frontbumpers, rearbumpers;
   short angle, lvel, rvel, control;
   unsigned short sonars[PLAYER_SONAR_MAX_SAMPLES];
@@ -80,6 +80,9 @@ class SIP
   unsigned char armNumJoints;
   ArmJoint *armJoints;
 
+  // Need this value to calculate approx position of lift when in between up and down
+  double lastLiftPos;
+
   /* returns 0 if Parsed correctly otherwise 1 */
   void Parse( unsigned char *buffer );
   void ParseSERAUX( unsigned char *buffer );
@@ -92,16 +95,16 @@ class SIP
   void PrintArmInfo ();
   void Fill(player_p2os_data_t* data);
 
-  SIP(int idx) 
+  SIP(int idx)
   {
     param_idx = idx;
-    for(int i=0;i<ARRAYSIZE(sonars);i++) 
+    for(int i=0;i<ARRAYSIZE(sonars);i++)
       sonars[i] = 0;
 
     xpos = INT_MAX;
     ypos = INT_MAX;
 
-    // intialise some of the internal values 
+    // intialise some of the internal values
     blobmx = blobmy = blobx1 = blobx2 = bloby1 = bloby2 = blobarea = blobconf = blobcolor = 0;
     armPowerOn = armConnected = false;
     armVersionString = NULL;

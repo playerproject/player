@@ -1454,28 +1454,29 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  /** Gripper geometry in the robot cs: pose gives the position and
-      orientation, size gives the extent.  These values are initially
-      zero, but can be filled in by calling
+  /** Gripper geometry in the robot cs:
+      pose gives the position and orientation,
+      outer_size gives the extent when open
+      inner_size gives the size of the space between the open fingers
+      These values are initially zero, but can be filled in by calling
       playerc_gripper_get_geom(). */
-  double pose[3];
-  double size[2];
+  player_pose3d_t pose;
+  player_bbox3d_t outer_size;
+  player_bbox3d_t inner_size;
+  /** The number of breakbeams the gripper has */
+  uint8_t num_beams;
+  /** The capacity of the gripper's store - if 0, the gripper cannot store */
+  uint8_t capacity;
 
-  unsigned char state;
-  unsigned char beams;
-  int outer_break_beam;
-  int inner_break_beam;
-  int paddles_open;
-  int paddles_closed;
-  int paddles_moving;
-  int gripper_error;
-  int lift_up;
-  int lift_down;
-  int lift_moving;
-  int lift_error;
-
+  /** The gripper's state: may be one of PLAYER_GRIPPER_STATE_OPEN,
+    PLAYER_GRIPPER_STATE_CLOSED, PLAYER_GRIPPER_STATE_MOVING
+    or PLAYER_GRIPPER_STATE_ERROR. */
+  uint8_t state;
+  /** The position of the object in the gripper */
+  uint32_t beams;
+  /** The number of currently-stored objects */
+  uint8_t stored;
 } playerc_gripper_t;
-
 
 /** @brief Create a gripper device proxy. */
 playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index);
@@ -1489,13 +1490,30 @@ int playerc_gripper_subscribe(playerc_gripper_t *device, int access);
 /** @brief Un-subscribe from the gripper device */
 int playerc_gripper_unsubscribe(playerc_gripper_t *device);
 
-/** @brief Send the gripper a command */
-int playerc_gripper_set_cmd(playerc_gripper_t *device, uint8_t cmd, uint8_t arg);
+/** @brief Command the gripper to open */
+int playerc_gripper_open_cmd(playerc_gripper_t *device);
+
+/** @brief Command the gripper to close */
+int playerc_gripper_close_cmd(playerc_gripper_t *device);
+
+/** @brief Command the gripper to stop */
+int playerc_gripper_stop_cmd(playerc_gripper_t *device);
+
+/** @brief Command the gripper to store */
+int playerc_gripper_store_cmd(playerc_gripper_t *device);
+
+/** @brief Command the gripper to retrieve */
+int playerc_gripper_retrieve_cmd(playerc_gripper_t *device);
 
 /** @brief Print a human-readable version of the gripper state. If
     set, the string &lt;prefix&gt; is printed before the state string. */
-void playerc_gripper_printout( playerc_gripper_t *device, const char* prefix );
+void playerc_gripper_printout(playerc_gripper_t *device, const char* prefix);
 
+/** @brief Get the gripper geometry.
+
+This writes the result into the proxy rather than returning it to the
+caller. */
+int playerc_gripper_get_geom(playerc_gripper_t *device);
 
 /** @} */
 /**************************************************************************/
