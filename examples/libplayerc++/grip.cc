@@ -37,12 +37,12 @@ int main(int argc, char **argv)
       if(gripopen)
       {
         std::cout << "OPEN" << std::endl;
-        gp.SetGrip(GRIPopen,0);
+        gp.Open();
       }
       else
       {
         std::cout << "CLOSE" << std::endl;
-        gp.SetGrip(GRIPclose,0);
+        gp.Close();
       }
 
       gripopen=!gripopen;

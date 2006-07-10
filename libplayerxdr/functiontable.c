@@ -206,10 +206,18 @@ static playerxdr_function_t init_ftable[] =
   /* gripper messages */
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_GRIPPER_DATA_STATE,
    (player_pack_fn_t)player_gripper_data_pack},
-  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STATE,
-   (player_pack_fn_t)player_gripper_cmd_pack},
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_GRIPPER_REQ_GET_GEOM,
    (player_pack_fn_t)player_gripper_geom_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN,
+   (player_pack_fn_t)player_gripper_cmd_open_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE,
+   (player_pack_fn_t)player_gripper_cmd_close_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STOP,
+   (player_pack_fn_t)player_gripper_cmd_stop_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_STORE,
+   (player_pack_fn_t)player_gripper_cmd_store_pack},
+  {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_RETRIEVE,
+   (player_pack_fn_t)player_gripper_cmd_retrieve_pack},
 
   /* ir messages */
   {PLAYER_IR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
@@ -399,7 +407,7 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position3d_set_odom_req_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_VELOCITY_MODE,
     (player_pack_fn_t)player_position3d_velocity_mode_config_pack},
-  
+
 
   /* power messages */
   {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,

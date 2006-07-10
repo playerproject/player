@@ -148,6 +148,7 @@ typedef struct player_p2os_data
   player_position2d_data_t position;
   player_sonar_data_t sonar;
   player_gripper_data_t gripper;
+  player_gripper_data_t armGripper;
   player_power_data_t power;
   player_bumper_data_t bumper;
   player_dio_data_t dio;
@@ -155,7 +156,8 @@ typedef struct player_p2os_data
   player_blobfinder_data_t blobfinder;
   player_position2d_data_t compass;
   player_position2d_data_t gyro;
-  player_actarray_data_t actarray;
+  player_actarray_data_t lift;
+  player_actarray_data_t actArray;
 } __attribute__ ((packed)) player_p2os_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -178,27 +180,31 @@ class P2OS : public Driver
     player_devaddr_t aio_id;
     player_devaddr_t dio_id;
     player_devaddr_t gripper_id;
+    player_devaddr_t lift_id;
     player_devaddr_t bumper_id;
     player_devaddr_t power_id;
     player_devaddr_t compass_id;
     player_devaddr_t gyro_id;
     player_devaddr_t blobfinder_id;
-    player_devaddr_t sound_id;
+    player_devaddr_t audio_id;
     player_devaddr_t actarray_id;
     player_devaddr_t limb_id;
+    player_devaddr_t armgripper_id;
 
-    // bookkeeping to only send new gripper I/O commands
-    bool sent_gripper_cmd;
-    player_gripper_cmd_t last_gripper_cmd;
+    // Book keeping to only send new commands
+    bool sentGripperCmd;
+    uint8_t lastGripperCmd;
+    uint8_t lastLiftCmd;
+    player_actarray_position_cmd_t lastLiftPosCmd;
+    bool sentArmGripperCmd;
+    uint8_t lastArmGripperCmd;
+    uint8_t lastActArrayCmd;
+    player_actarray_position_cmd_t lastActArrayPosCmd;
+    player_actarray_home_cmd_t lastActArrayHomeCmd;
 
-    // Same for actarray commands
-    bool last_actarray_cmd_was_pos;
-    player_actarray_position_cmd_t last_actarray_pos_cmd;
-    player_actarray_home_cmd_t last_actarray_home_cmd;
-
-    // bookkeeping to only send new sound I/O commands
-    bool sent_sound_cmd;
-    player_sound_cmd_t last_sound_cmd;
+    // bookkeeping to only send new audio I/O commands
+    bool sent_audio_cmd;
+    player_audio_sample_item_t last_audio_cmd;
     // PID settings
     int rot_kp, rot_kv, rot_ki, trans_kp, trans_kv, trans_ki;
 
@@ -221,8 +227,24 @@ class P2OS : public Driver
     int HandleCommand(player_msghdr * hdr, void * data);
     void PutData(void);
     void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
-    void HandleGripperCommand(player_gripper_cmd_t gripper_cmd);
-    void HandleSoundCommand(player_sound_cmd_t sound_cmd);
+    int HandleGripperCommand (player_msghdr *hdr, void *data);
+    int HandleLiftCommand (player_msghdr *hdr, void *data);
+    int HandleArmGripperCommand (player_msghdr *hdr, void *data);
+    void HandleAudioCommand(player_audio_sample_item_t audio_cmd);
+
+    /////////////////
+    // Gripper stuff
+    player_pose3d_t gripperPose;
+    player_bbox3d_t gripperOuterSize;
+    player_bbox3d_t gripperInnerSize;
+    player_bbox3d_t armGripperOuterSize;
+    player_bbox3d_t armGripperInnerSize;
+    void OpenGripper (void);
+    void CloseGripper (void);
+    void StopGripper (void);
+    void OpenArmGripper (void);
+    void CloseArmGripper (void);
+    void StopArmGripper (void);
 
     /////////////////
     // Actarray stuff
@@ -241,6 +263,7 @@ class P2OS : public Driver
     void SetActArrayJointSpeed (int joint, double speed);             // Set a joint speed
     void HandleActArrayPosCmd (player_actarray_position_cmd_t cmd);
     void HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd);
+    int HandleActArrayCommand (player_msghdr * hdr, void * data);
 
     /////////////////
     // Limb stuff
@@ -248,12 +271,12 @@ class P2OS : public Driver
     float armOffsetX, armOffsetY, armOffsetZ;
     // This is here because we don't want it zeroed every time someone fills in some other data
     player_limb_data_t limb_data;
-
     void HandleLimbHomeCmd (void);
     void HandleLimbStopCmd (void);
     void HandleLimbSetPoseCmd (player_limb_setpose_cmd_t cmd);
     void HandleLimbSetPositionCmd (player_limb_setposition_cmd_t cmd);
     void HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd);
+    int HandleLimbCommand (player_msghdr * hdr, void * data);
 
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel

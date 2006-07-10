@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -53,143 +53,138 @@
 #include "error.h"
 
 // Local declarations
-void playerc_gripper_putmsg(playerc_gripper_t *device, 
-			     player_msghdr_t *header,
-			     void* generic );
+void playerc_gripper_putmsg (playerc_gripper_t *device,
+           player_msghdr_t *header, void* generic);
 
 // Create a new gripper proxy
-playerc_gripper_t *playerc_gripper_create(playerc_client_t *client, int index)
+playerc_gripper_t *playerc_gripper_create (playerc_client_t *client, int index)
 {
   playerc_gripper_t *device;
 
-  device = malloc(sizeof(playerc_gripper_t));
-  memset(device, 0, sizeof(playerc_gripper_t));
-  playerc_device_init(&device->info, client, PLAYER_GRIPPER_CODE, index,
+  device = malloc (sizeof (playerc_gripper_t));
+  memset (device, 0, sizeof (playerc_gripper_t));
+  playerc_device_init (&device->info, client, PLAYER_GRIPPER_CODE, index,
                       (playerc_putmsg_fn_t) playerc_gripper_putmsg);
   return device;
 }
 
 
 // Destroy a gripper proxy
-void playerc_gripper_destroy(playerc_gripper_t *device)
+void playerc_gripper_destroy (playerc_gripper_t *device)
 {
-  playerc_device_term(&device->info);
-  free(device);
+  playerc_device_term (&device->info);
+  free (device);
   return;
 }
 
 
 // Subscribe to the gripper device
-int playerc_gripper_subscribe(playerc_gripper_t *device, int access)
+int playerc_gripper_subscribe (playerc_gripper_t *device, int access)
 {
-  return playerc_device_subscribe(&device->info, access);
+  return playerc_device_subscribe (&device->info, access);
 }
 
 
 // Un-subscribe from the gripper device
-int playerc_gripper_unsubscribe(playerc_gripper_t *device)
+int playerc_gripper_unsubscribe (playerc_gripper_t *device)
 {
-  return playerc_device_unsubscribe(&device->info);
+  return playerc_device_unsubscribe (&device->info);
 }
 
 
 // Process incoming data
-void playerc_gripper_putmsg(playerc_gripper_t *device, 
-			     player_msghdr_t *header,
-			     void* generic )
+void playerc_gripper_putmsg (playerc_gripper_t *device, player_msghdr_t *header, void *generic)
 {
-  
-  if( header->type == PLAYER_MSGTYPE_DATA &&
-      header->subtype == PLAYER_GRIPPER_DATA_STATE )
+  if (header->type == PLAYER_MSGTYPE_DATA &&
+      header->subtype == PLAYER_GRIPPER_DATA_STATE)
   {
-    player_gripper_data_t * data = (player_gripper_data_t * ) generic;
+    player_gripper_data_t * data = (player_gripper_data_t*) generic;
 
     device->state = data->state;
     device->beams = data->beams;
-    device->outer_break_beam = (data->beams & 0x04) ? 1 : 0;
-    device->inner_break_beam = (data->beams & 0x08) ? 1 : 0;
-    device->paddles_open = (device->state & 0x01) ? 1 : 0;
-    device->paddles_closed = (device->state & 0x02) ? 1 : 0;
-    device->paddles_moving = (device->state & 0x04) ? 1 : 0;
-    device->gripper_error = (device->state & 0x08) ? 1 : 0;
-    device->lift_up = (device->state & 0x10) ? 1 : 0;
-    device->lift_down = (device->state & 0x20) ? 1 : 0;
-    device->lift_moving = (device->state & 0x40) ? 1 : 0;
-    device->lift_error = (device->state & 0x80) ? 1 : 0;
+    device->stored = data->stored;
   }
 }
 
-// Set a cmd
-int playerc_gripper_set_cmd(playerc_gripper_t *device, 
-			    uint8_t command, 
-			    uint8_t arg)
+// Command the gripper to open
+int playerc_gripper_open_cmd (playerc_gripper_t *device)
 {
-  player_gripper_cmd_t cmd;
+  player_gripper_cmd_open_t cmd;
 
-  memset(&cmd, 0, sizeof(cmd));
-  cmd.cmd = command;
-  cmd.arg = arg;
-  
-  return playerc_client_write(device->info.client, &device->info, 
-			      PLAYER_GRIPPER_CMD_STATE, 
-			      &cmd, NULL );
+  memset (&cmd, 0, sizeof (cmd));
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_OPEN, &cmd, NULL);
 }
 
+// Command the gripper to close
+int playerc_gripper_close_cmd (playerc_gripper_t *device)
+{
+  player_gripper_cmd_close_t cmd;
+
+  memset (&cmd, 0, sizeof (cmd));
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_CLOSE, &cmd, NULL);
+}
+
+// Command the gripper to stop
+int playerc_gripper_stop_cmd (playerc_gripper_t *device)
+{
+  player_gripper_cmd_stop_t cmd;
+
+  memset (&cmd, 0, sizeof (cmd));
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_STOP, &cmd, NULL);
+}
+
+// Command the gripper to store
+int playerc_gripper_store_cmd (playerc_gripper_t *device)
+{
+  player_gripper_cmd_store_t cmd;
+
+  memset (&cmd, 0, sizeof (cmd));
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_STORE, &cmd, NULL);
+}
+
+// Command the gripper to retrieve
+int playerc_gripper_retrieve_cmd (playerc_gripper_t *device)
+{
+  player_gripper_cmd_retrieve_t cmd;
+
+  memset (&cmd, 0, sizeof (cmd));
+  return playerc_client_write (device->info.client, &device->info, PLAYER_GRIPPER_CMD_RETRIEVE, &cmd, NULL);
+}
 
 // Get the geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
-int
-playerc_gripper_get_geom(playerc_gripper_t *device)
+int playerc_gripper_get_geom (playerc_gripper_t *device)
 {
   player_gripper_geom_t config;
-  
-  if(playerc_client_request(device->info.client, 
-                            &device->info,PLAYER_GRIPPER_REQ_GET_GEOM,
-                            NULL, &config, sizeof(config)) < 0)
+
+  if(playerc_client_request(device->info.client,&device->info, PLAYER_GRIPPER_REQ_GET_GEOM,
+                            NULL, &config, sizeof (config)) < 0)
     return -1;
 
-  device->pose[0] = config.pose.px;
-  device->pose[1] = config.pose.py;
-  device->pose[2] = config.pose.pa;
-  device->size[0] = config.size.sl;
-  device->size[1] = config.size.sw;
-  
+  device->pose = config.pose;
+  device->outer_size = config.outer_size;
+  device->inner_size = config.inner_size;
+  device->num_beams = config.num_beams;
+  device->capacity = config.capacity;
+
   return 0;
 }
 
-
-
-// print human-readable state 
-void playerc_gripper_printout(playerc_gripper_t *device, 
-			   const char* prefix )
+// print human-readable state
+void playerc_gripper_printout (playerc_gripper_t *device, const char* prefix)
 {
-  if( prefix )
-    printf( "%s: ", prefix );
-  
-  printf("[%14.3f]"
-	 " pose[%.2f,%.2f,%.2f]"
-	 " size[%.2f,%.2f]"
-	 " outer_break_beam: %d"
-	 " inner_break_beam: %d"
-	 " paddles_open: %d"
-	 " paddles_closed: %d"
-	 " paddles_moving: %d"
-	 " gripper_error: %d"
-	 " lift_up: %d"
-	 " lift_down: %d"
-	 " lift_moving: %d"
-	 " lift_error: %d\n",	    
-	 device->info.datatime, 
-	 device->pose[0], device->pose[1], device->pose[2],
-	 device->size[0], device->size[1],
-	 device->outer_break_beam,
-	 device->inner_break_beam,
-	 device->paddles_open,
-	 device->paddles_closed,
-	 device->paddles_moving,
-	 device->gripper_error,
-	 device->lift_up,
-	 device->lift_down,
-	 device->lift_moving,
-	 device->lift_error );	     
+  if (prefix)
+    printf ("%s: ", prefix);
+
+  printf ("[%14.3f] pose[(%.2f,%.2f,%.2f),(%.2f,%.2f,%.2f)] outer_size[%.2f,%.2f,%.2f]"
+    " inner_size[%.2f,%.2f,%.2f] state[%s] beams[%32X]\n",
+    device->info.datatime,
+    device->pose.px, device->pose.py, device->pose.pz,
+    device->pose.proll, device->pose.ppitch, device->pose.pyaw,
+    device->outer_size.sw, device->outer_size.sl, device->outer_size.sh,
+    device->inner_size.sw, device->inner_size.sl, device->inner_size.sh,
+    (device->state == PLAYER_GRIPPER_STATE_OPEN ? "open" :
+      (device->state == PLAYER_GRIPPER_STATE_CLOSED ? "closed" :
+        (device->state == PLAYER_GRIPPER_STATE_MOVING ? "moving" : "error"))),
+    device->beams);
 }
