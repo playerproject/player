@@ -928,15 +928,24 @@ int Camera1394::Setup()
   if (!this->forceRaw)
   {
   	// first set parameters that are common between format 7 and other modes
-  	if (DC1394_SUCCESS == dc1394_video_set_framerate(camera,frameRate))
+  	if (DC1394_SUCCESS != dc1394_video_set_framerate(camera,frameRate))
+	{
+		PLAYER_WARN("1394 failed to set frameRate");
   		DMA_Success = false;
-  	if (DC1394_SUCCESS == dc1394_video_set_iso_speed(camera,speed))
-  		DMA_Success = false;
-  	if (DC1394_SUCCESS == dc1394_video_set_mode(camera,mode))
-  		DMA_Success = false;
+	}
+  	if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,speed))
+	{
+		PLAYER_WARN("1394 failed to set iso speed");
+		DMA_Success = false;
+	}
+	if (DC1394_SUCCESS != dc1394_video_set_mode(camera,mode))
+	{
+		PLAYER_WARN("1394 failed to set mode");
+		DMA_Success = false;
+	}
   	
   	// now start capture
-  	if (DC1394_SUCCESS == dc1394_capture_setup_dma(camera, NUM_DMA_BUFFERS, 1))
+  	if (DC1394_SUCCESS != dc1394_capture_setup_dma(camera, NUM_DMA_BUFFERS, 1))
   		DMA_Success = false;
   }
   if (DMA_Success)
