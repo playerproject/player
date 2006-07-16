@@ -22,37 +22,25 @@
 
 #include <alsa/asoundlib.h>
 
-////////////////////////////////////////////////////////////////////////////////
-// Detailed description of wave data
-// This is more advanced than the player wave data structure: it can store
-// actual sample rate values, etc, making it more flexible and so useful for
-// locally loaded wave data
-typedef struct WaveData
-{
-	uint16_t numChannels;	// Number of channels in the data
-	uint32_t sampleRate;	// Number of samples per second
-	uint32_t byteRate;		// Number of bytes per second
-	uint16_t blockAlign;	// Number of bytes for one sample over all channels (i.e. frame size)
-	uint16_t bitsPerSample;	// Number of bits per sample (eg 8, 16, 24, ...)
-	uint32_t numFrames;		// Number of frames (divide by sampleRate to get time)
-	uint32_t dataLength;	// Length of data in bytes
-	uint8_t *data;
-} WaveData;
+#include "audio_sample.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-// Describes an audio sample
-typedef int SampleType;
-const SampleType SAMPLE_TYPE_LOCAL = 0;		// Local samples are stored in a file
-const SampleType SAMPLE_TYPE_REMOTE = 1;	// Remote samples are stored in memory
-
-typedef struct AudioSample
+// Describes a prestored sample for playing with PLAYER_AUDIO_SAMPLE_PLAY_CMD
+typedef struct StoredSample
 {
-	SampleType type;			// Type of sample - local file or stored in memory
-	char *localPath;			// Path to local file if local
-	WaveData *memData;			// Stored audio data if sample is memory
+	AudioSample *sample;
 	int index;					// Index of sample
-	struct AudioSample *next;	// Next sample in the linked list
-} AudioSample;
+	struct StoredSample *next;	// Next sample in the linked list
+} StoredSample;
+
+////////////////////////////////////////////////////////////////////////////////
+// An item on the queue of waves to play
+typedef struct QueueItem
+{
+	AudioSample *sample;	// Audio sample at this position in the queue
+	bool temp;				// If true, the AudioSample will be deleted after playback completes
+	struct QueueItem *next;	// Next item in the queue
+} QueueItem;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Describes an ALSA mixer element
@@ -75,10 +63,18 @@ typedef struct MixerElement
 	long minPlayVol, curPlayVol, maxPlayVol;	// min, current and max volume levels for playback
 	long minCapVol, curCapVol, maxCapVol;		// min, current and max volume levels for capture
 	long minComVol, curComVol, maxComVol;		// min, current and max volume levels for common
-	bool playMute, capMute, comMute;			// Current mute status
+	int playSwitch, capSwitch, comSwitch;		// Current switch status
 	char *name;						// Name of the element
 	ElemCap caps;					// Capabilities
 } MixerElement;
+
+////////////////////////////////////////////////////////////////////////////////
+// State of the playback system
+typedef uint8_t PBState;
+const PBState PB_STATE_STOPPED		= 0;	// Not playing anything
+const PBState PB_STATE_PLAYING		= 1;	// Playing
+const PBState PB_STATE_DRAIN		= 2;	// Draining current wave
+const PBState PB_STATE_RECORDING	= 3;	// Recording
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -95,46 +91,84 @@ class Alsa : public Driver
 
 	private:
 		// Driver options
-		bool block;						// If should block while playing or return immediatly
-		char *device;					// Name of the mixer device to attach to
-//		uint32_t pbRate;				// Sample rate for playback
-//		int pbNumChannels;				// Number of sound channels for playback
-		AudioSample *samplesHead, *samplesTail;	// Stored samples
+		bool useQueue;					// If should use a queue for playback or just stop currently playing
+		char *pbDevice;					// Name of the playback device
+		char *mixerDevice;				// Name of the mixer device
+		char *recDevice;				// Name of the record device
+		uint32_t cfgPBPeriodTime;		// Length of a playback period in milliseconds (configured value)
+		uint32_t cfgPBBufferTime;		// Length of the playback buffer in milliseconds (configured value)
+		uint32_t silenceTime;			// Length of silence to put between samples in the queue
+		uint32_t cfgRecBufferTime;		// Length of the record buffer in milliseconds (configured value)
+		uint32_t cfgRecPeriodTime;		// Length of a record period in milliseconds (configured value)
+		uint8_t recNumChannels;			// Number of channels for recording
+		uint32_t recSampleRate;			// Sample rate for recording
+		uint8_t recBits;				// Sample bits for recording
 
 		// ALSA variables
-		snd_pcm_t *pcmHandle;			// Handle to the PCM device
-		snd_pcm_stream_t pbStream;		// Stream for playback
-		char *pcmName;					// Name of the sound interface
+		// Playback
+		snd_pcm_t *pbHandle;			// Handle to the PCM device for playback
+		int numPBFDs;					// Number of playback file descriptors
+		struct pollfd *pbFDs;			// Playback file descriptors for polling
+		uint32_t actPBBufferTime;		// Length of the playback buffer in microseconds (actual value)
+		uint32_t actPBPeriodTime;		// Length of a playback period in microseconds (actual value)
+		snd_pcm_uframes_t pbPeriodSize;	// Size of a playback period (used for filling the buffer)
+		uint8_t *periodBuffer;			// A buffer used to copy data from samples to the playback buffer
+		// Record
+		snd_pcm_t *recHandle;			// Handle to the PCM device for recording
+		int numRecFDs;					// Number of record file descriptors
+		struct pollfd *recFDs;			// Record file descriptors for polling
+		uint32_t actRecBufferTime;		// Length of the record buffer in microseconds (actual value)
+		uint32_t actRecPeriodTime;		// Length of a record period in microseconds (actual value)
+		snd_pcm_uframes_t recPeriodSize;	// Size of a record period (used for filling the buffer)
+		// Mixer
 		snd_mixer_t *mixerHandle;		// Mixer for controlling volume levels
 		MixerElement *mixerElements;	// Elements of the mixer
 		uint32_t numElements;			// Number of elements
 
 		// Other driver data
-		int nextSampleIdx;				// Next free index to store a sample at
-
-		// Command and request handling
-		int HandleWavePlayCmd (player_audio_wav_t *waveData);
-		int HandleSamplePlayCmd (player_audio_sample_item_t *data);
-		int HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data);
-		int HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_queue);
-		int HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *resp_queue);
-		int HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue);
-		int HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue);
+		int nextSampleIdx;					// Next free index to store a sample at
+		StoredSample *samplesHead, *samplesTail;	// Stored samples
+		QueueItem *queueHead, *queueTail;	// Queue of audio data waiting to play
+		PBState playState;				// Playback state
+		PBState recState;				// Record state
+// 		AudioSample *recData;			// Somewhere to store recorded data before it goes to the client
+		player_audio_wav_t *recData;	// Somewhere to store recorded data before it goes to the client
 
 		// Internal functions
 		virtual void Main (void);
-		bool AddSample (AudioSample *newSample);
-		bool AddFileSample (const char *path);
-		bool AddMemorySample (player_audio_wav_t *sampleData);
-		AudioSample* GetSampleAtIndex (int index);
-		WaveData* LoadWaveFromFile (char *fileName);
-		bool WaveDataToPlayer (WaveData *source, player_audio_wav_t *dest);
-		bool PlayerToWaveData (player_audio_wav_t *source, WaveData *dest);
-		void PrintWaveData (WaveData *wave);
 
-		// Sound functions
-		bool SetHWParams (WaveData *wave);
-		bool PlayWave (WaveData *wave);
+		// Stored sample functions
+		bool AddStoredSample (StoredSample *newSample);
+		bool AddStoredSample (player_audio_wav_t *waveData);
+		bool AddStoredSample (const char *filePath);
+		StoredSample* GetSampleAtIndex (int index);
+
+		// Queue functions
+		void ClearQueue (void);
+		bool AddToQueue (QueueItem *newItem);
+		bool AddToQueue (player_audio_wav_t *waveData);
+		bool AddToQueue (AudioSample *sample);
+		bool AddSilence (uint32_t time, AudioSample *format);
+		void AdvanceQueue (void);
+
+		// Playback functions
+// 		bool SetGeneralParams (void);
+// 		bool SetWaveHWParams (AudioSample *sample);
+		bool SetupPlayBack (void);
+		bool SetPBParams (AudioSample *sample);
+		void PlaybackCallback (int numFrames);
+
+		// Record functions
+		bool SetupRecord (void);
+		bool SetRecParams (void);
+		void RecordCallback (int numFrames);
+		void PublishRecordedData (void);
+
+		// Playback/record control functions
+		void StartPlayback (void);
+		void StopPlayback (void);
+		void StartRecording (void);
+		void StopRecording (void);
 
 		// Mixer functions
 		bool SetupMixer (void);
@@ -145,9 +179,19 @@ class Alsa : public Driver
 		void MixerDetailsToPlayer (player_audio_mixer_channel_list_detail_t *dest);
 		void MixerLevelsToPlayer (player_audio_mixer_channel_list_t *dest);
 		void SetElementLevel (uint32_t index, float level);
-		void SetElementMute (uint32_t index, player_bool_t mute);
+		void SetElementSwitch (uint32_t index, player_bool_t active);
 		void PublishMixerData (void);
 		float LevelToPlayer (long min, long max, long level);
 		long LevelFromPlayer (long min, long max, float level);
 		void PrintMixerElements (MixerElement *elements, uint32_t count);
+
+		// Command and request handling
+		int HandleWavePlayCmd (player_audio_wav_t *waveData);
+		int HandleSamplePlayCmd (player_audio_sample_item_t *data);
+		int HandleRecordCmd (player_bool_t *data);
+		int HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data);
+		int HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_queue);
+		int HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *resp_queue);
+		int HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue);
+		int HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue);
 };

@@ -43,10 +43,9 @@ PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ - Get channel details
 PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ - Get volume levels
 PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ - Send stored samples to remote clients (max 1MB)
 
-Planned future support includes:
-- The callback method of managing buffers (to allow for blocking/nonblocking and
-less skippy playback).
-- Recording.
+Known bugs:
+- Sounds may skip just as they finish playing. This is something to do with the
+  call to snd_pcm_drain, but I haven't figured out why yet.
 
 @par Samples
 
@@ -79,15 +78,67 @@ The driver provides a single @ref interface_audio interface.
 
 @par Configuration file options
 
-- interface (string)
-  - Default: "plughw:0,0"
-  - The sound interface to use for playback/recording.
+- pbdevice (string)
+  - Default: none
+  - The device to use for playback.
+  - If none, playback functionality will not be available.
+  - e.g. "plughw:0,0"
+  - The order of arguments in this string, according to the ALSA documentation,
+    are card number or identifier, device number and subdevice.
 - mixerdevice (string)
-  - Default: "default"
+  - Default: none
   - The device to attach the mixer interface to
+  - If none, mixer functionality will not be available.
+  - e.g. "default"
+- recdevice (string)
+  - Default: none
+  - The device to use for recording.
+  - If none, record functionality will not be available.
+  - e.g. "plughw:0,0"
+  - The order of arguments in this string, according to the ALSA documentation,
+    are card number or identifier, device number and subdevice.
 - samples (tuple of strings)
   - Default: empty
   - The path of wave files to have as locally stored samples.
+- pb_bufferlength (integer)
+  - Default: 500ms
+  - The length of the playback buffer. A longer buffer means less chance of
+    skipping during playback.
+- pb_periodlength (integer)
+  - Default: 50ms
+  - The length of a period. This is used to change how frequently the buffer is
+    written to. The longer the period, the longer it takes to write, but also
+    the less frequently it will be done.
+- pb_silence (integer)
+  - Default: 0ms
+  - The length of silence to play between consecutive sounds. Useful if you
+    don't want your sounds played right up next to eachother, but bad if you're
+    streaming a sound that's bigger than a single wave data message.
+  - If usequeue is false, this will be ignored.
+- usequeue (boolean)
+  - Default: true
+  - Turns the queuing system on/off. When true, all PLAYER_AUDIO_WAV_PLAY_CMD
+    and PLAYER_AUDIO_SAMPLE_PLAY_CMD commands will be added to a queue and
+    played in order of request. When off, sending a new command will stop the
+    currently playing sound and start the new one.
+- rec_bufferlength (integer)
+  - Default: 500ms
+  - The length of the record buffer. A longer buffer means less chance of
+    an underrun while recording.
+- rec_periodlength (integer)
+  - Default: 50ms
+  - The length of a period for recording. This is used to change how frequently
+    the buffer is read from. The longer the period, the longer between reads,
+    but also the less frequently it will be done.
+- rec_nch (integer)
+  - Default: 1
+  - Number of recording channels.
+- rec_sr (integer)
+  - Default: 44100
+  - Recording sample rate.
+- rec_bits (integer)
+  - Default: 16
+  - Bits per sample for recording.
 
 @par Example
 
@@ -105,10 +156,9 @@ driver
 /** @} */
 
 #include <libplayercore/playercore.h>
+#include <sys/time.h>
 
 #include "alsa.h"
-
-#include <errno.h>
 
 // Initialisation function
 Driver* Alsa_Init (ConfigFile* cf, int section)
@@ -123,11 +173,11 @@ void Alsa_Register (DriverTable* table)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//	Utility functions
+//	Stored sample functions
 ////////////////////////////////////////////////////////////////////////////////
 
-// Adds a new sample (already initialised) to the linked list
-bool Alsa::AddSample (AudioSample *newSample)
+// Adds a new stored sample (already initialised) to the linked list
+bool Alsa::AddStoredSample (StoredSample *newSample)
 {
 	if (samplesHead == NULL)
 	{
@@ -142,67 +192,72 @@ bool Alsa::AddSample (AudioSample *newSample)
 	return true;
 }
 
-// Adds a new sample that is stored locally in a wave-format file
-bool Alsa::AddFileSample (const char *path)
+bool Alsa::AddStoredSample (player_audio_wav_t *waveData)
 {
-	AudioSample *newSample = NULL;
-	if ((newSample = new AudioSample) == NULL)
+	StoredSample *newSample = NULL;
+	if ((newSample = new StoredSample) == NULL)
 	{
-		PLAYER_WARN ("Failed to allocate memory for new audio sample");
+		PLAYER_ERROR ("Failed to allocate memory for new stored sample");
 		return false;
 	}
 
-	newSample->type = SAMPLE_TYPE_LOCAL;
-	newSample->localPath = strdup (path);
-	newSample->memData = NULL;
+	if ((newSample->sample = new AudioSample) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for new stored audio sample");
+		delete newSample;
+		return false;
+	}
+
+	if (!newSample->sample->FromPlayer (waveData))
+	{
+		delete newSample->sample;
+		delete newSample;
+		return false;
+	}
+
 	newSample->index = nextSampleIdx++;
 	newSample->next = NULL;
 
-	printf ("ALSA: Added sample %s to list at index %d\n", newSample->localPath, newSample->index);
-
-	return AddSample (newSample);
+	printf ("ALSA: Added stored sample to list at index %d\n", newSample->index);
+	return AddStoredSample (newSample);
 }
 
-// Adds a new sample who's wave data is stored in memory
-bool Alsa::AddMemorySample (player_audio_wav_t *sampleData)
+bool Alsa::AddStoredSample (const char *filePath)
 {
-	AudioSample *newSample = NULL;
-	if ((newSample = new AudioSample) == NULL)
+	StoredSample *newSample = NULL;
+	if ((newSample = new StoredSample) == NULL)
 	{
-		PLAYER_ERROR ("Failed to allocate memory for new audio sample");
+		PLAYER_ERROR ("Failed to allocate memory for new stored sample");
 		return false;
 	}
-	if ((newSample->memData = new WaveData) == NULL)
+
+	if ((newSample->sample = new AudioSample) == NULL)
 	{
+		PLAYER_ERROR ("Failed to allocate memory for new stored audio sample");
 		delete newSample;
-		PLAYER_ERROR ("Failed to allocate memory for new audio sample");
 		return false;
 	}
 
-	// Copy the wave data into the new WaveData struct
-	memset (newSample->memData, 0, sizeof (WaveData));
-	if (!PlayerToWaveData (sampleData, newSample->memData))
+	if (!newSample->sample->LoadFile (filePath))
 	{
-		PLAYER_ERROR ("Error copying new sample over old");
+		delete newSample->sample;
+		delete newSample;
 		return false;
 	}
 
-	newSample->type = SAMPLE_TYPE_LOCAL;
-	newSample->localPath = NULL;
 	newSample->index = nextSampleIdx++;
 	newSample->next = NULL;
 
-//	printf ("ALSA: Added wave data to sample list at index %d\n", newSample->index);
-
-	return AddSample (newSample);
+	printf ("ALSA: Added stored sample %s list at index %d\n", filePath, newSample->index);
+	return AddStoredSample (newSample);
 }
 
 // Finds the sample with the specified index
-AudioSample* Alsa::GetSampleAtIndex (int index)
+StoredSample* Alsa::GetSampleAtIndex (int index)
 {
 	if (samplesHead)
 	{
-		AudioSample *currentSample = samplesHead;
+		StoredSample *currentSample = samplesHead;
 		while (currentSample != NULL)
 		{
 			if (currentSample->index == index)
@@ -213,417 +268,240 @@ AudioSample* Alsa::GetSampleAtIndex (int index)
 	return NULL;
 }
 
-// Loads a wave file
-WaveData* Alsa::LoadWaveFromFile (char *fileName)
+////////////////////////////////////////////////////////////////////////////////
+//	Queue management functions
+////////////////////////////////////////////////////////////////////////////////
+
+// Deletes all data stored in the queue
+void Alsa::ClearQueue (void)
 {
-	WaveData *wave = NULL;
-	FILE *fin = NULL;
-	char tag[5];
-	uint16_t tempUShort = 0;
-	uint32_t tempUInt = 0, subChunk1Size = 0;
+	QueueItem *currentItem = queueHead;
+	QueueItem *previousItem = NULL;
 
-	// Try to open the wave file
-	if ((fin = fopen (fileName, "r")) == NULL)
+	while (currentItem != NULL)
 	{
-		PLAYER_ERROR1 ("Couldn't open wave file for reading: %s", strerror (errno));
-		return NULL;
+		if (currentItem->temp)
+			delete currentItem->sample;
+		previousItem = currentItem;
+		currentItem = currentItem->next;
+		delete previousItem;
 	}
-
-	// Wave file should be in the format (header, format chunk, data chunk), where:
-	// header = 4+4+4 bytes: "RIFF", size, "WAVE"
-	// format = 4+4+2+2+4+4+2+2[+2] bytes:
-	//          "fmt ", size, 1, numChannels, sampleRate, byteRate, blockAlign,
-	//          bitsPerSample, [extraParamsSize] (not present for PCM)
-	// data = 4+4+? bytes: "data", size, data bytes...
-
-	// Read the header - first the RIFF tag
-	if (fgets (tag, 5, fin) == NULL)
-	{
-		PLAYER_ERROR ("Error reading tag from wave file");
-		return NULL;
-	}
-	if (strcmp (tag, "RIFF") != 0)
-	{
-		PLAYER_ERROR ("Bad WAV format: missing RIFF tag");
-		return NULL;
-	}
-	// Get the size of the file
-	if (fread (&tempUInt, 4, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV header");
-		else
-			PLAYER_ERROR ("Error reading WAV header");
-		return NULL;
-	}
-	// Check the file size isn't stupid - should at least have size of all
-	// chunks (excluding 2 fields already done)
-	if (tempUInt < 36)
-	{
-		PLAYER_ERROR ("WAV file too short: missing chunk information");
-		return NULL;
-	}
-	// Next tag should say "WAVE"
-	if (fgets (tag, 5, fin) == NULL)
-	{
-		PLAYER_ERROR ("Error reading tag from wave file");
-		return NULL;
-	}
-	if (strcmp (tag, "WAVE") != 0)
-	{
-		PLAYER_ERROR ("Bad WAV format: missing WAVE tag");
-		return NULL;
-	}
-
-	// Next is the format information chunk, starting with a "fmt " tag
-	if (fgets (tag, 5, fin) == NULL)
-	{
-		PLAYER_ERROR ("Error reading tag from wave file");
-		return NULL;
-	}
-	if (strcmp (tag, "fmt ") != 0)
-	{
-		PLAYER_ERROR ("Bad WAV format: missing fmt  tag");
-		return NULL;
-	}
-	// Followed by size of this chunk - should be 16, may be 18 if not quite
-	// following the format correctly
-	if (fread (&subChunk1Size, 4, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV format");
-		else
-			PLAYER_ERROR ("Error reading WAV format");
-		return NULL;
-	}
-	if (subChunk1Size != 16 && subChunk1Size != 18)
-	{
-		PLAYER_ERROR ("WAV file too short: missing chunk information");
-		return NULL;
-	}
-	// Audio format is next - if not 1, can't read this file cause it isn't PCM
-	if (fread (&tempUShort, 2, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV format");
-		else
-			PLAYER_ERROR ("Error reading WAV format");
-		return NULL;
-	}
-	if (tempUShort != 1)
-	{
-		PLAYER_ERROR ("WAV file not in PCM format");
-		return NULL;
-	}
-	// Having got this far, we can now start reading data we want to keep,
-	// so allocate memory for the wave information
-	if ((wave = new WaveData) == NULL)
-	{
-		PLAYER_ERROR ("Failed to allocate memory for new wave data");
-		return NULL;
-	}
-	// Read the number of channels
-	if (fread (&wave->numChannels, 2, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV num channels");
-		else
-			PLAYER_ERROR ("Error reading WAV num channels");
-		delete wave;
-		return NULL;
-	}
-	// Read the sample rate
-	if (fread (&wave->sampleRate, 4, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV sample rate");
-		else
-			PLAYER_ERROR ("Error reading WAV sample rate");
-		delete wave;
-		return NULL;
-	}
-	// Read the byte rate
-	if (fread (&wave->byteRate, 4, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV byte rate");
-		else
-			PLAYER_ERROR ("Error reading WAV byte rate");
-		delete wave;
-		return NULL;
-	}
-	// Read the block align
-	if (fread (&wave->blockAlign, 2, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV block align");
-		else
-			PLAYER_ERROR ("Error reading WAV block align");
-		delete wave;
-		return NULL;
-	}
-	// Read the bits per sample
-	if (fread (&wave->bitsPerSample, 2, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV bits per sample");
-		else
-			PLAYER_ERROR ("Error reading WAV bits per sample");
-		delete wave;
-		return NULL;
-	}
-	// If the size of this chunk was 18, get those extra two bytes
-	if (subChunk1Size == 18)
-	{
-		if (fread (&tempUShort, 2, 1, fin) != 1)
-		{
-			if (feof (fin))
-				PLAYER_ERROR ("End of file reading blank 2 bytes");
-			else
-				PLAYER_ERROR ("Error reading WAV blank 2 bytes");
-			delete wave;
-			return NULL;
-		}
-	}
-
-	// On to the data chunk, again starting with a tag
-	if (fgets (tag, 5, fin) == NULL)
-	{
-		PLAYER_ERROR ("Error reading tag from wave file");
-		delete wave;
-		return NULL;
-	}
-	if (strcmp (tag, "data") != 0)
-	{
-		PLAYER_ERROR ("Bad WAV format: missing data tag");
-		delete wave;
-		return NULL;
-	}
-	// Size of the wave data
-	if (fread (&wave->dataLength, 4, 1, fin) != 1)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV data size");
-		else
-			PLAYER_ERROR ("Error reading WAV data size");
-		delete wave;
-		return NULL;
-	}
-	// Allocate the memory for the data
-	if ((wave->data = new uint8_t[wave->dataLength]) == NULL)
-	{
-		PLAYER_ERROR ("Failed to allocate memory for wave data");
-		delete wave;
-		return NULL;
-	}
-	// Read the wave data
-	if (fread (wave->data, 1, wave->dataLength, fin) != wave->dataLength)
-	{
-		if (feof (fin))
-			PLAYER_ERROR ("End of file reading WAV data");
-		else
-			PLAYER_ERROR ("Error reading WAV data");
-		delete[] wave->data;
-		delete wave;
-		return NULL;
-	}
-
-	// All done with reading, close the wave file
-	fclose (fin);
-	// Calculate the number of frames in the data
-	wave->numFrames = wave->dataLength / (wave->numChannels * (wave->bitsPerSample / 8));
-	// Set the format value
-	switch (wave->bitsPerSample)
-	{
-	}
-
-//	printf ("Loaded wave file:\n");
-//	PrintWaveData (wave);
-
-	// Return the result
-	return wave;
+	queueHead = NULL;
+	queueTail = NULL;
 }
 
-// Copies the data from a loaded wave file to the player struct for wave data
-// If the wave data doesn't match one of the possible formats supported by the
-// player format flags, the copy isn't performed and an error is returned
-bool Alsa::WaveDataToPlayer (WaveData *source, player_audio_wav_t *dest)
+bool Alsa::AddToQueue (QueueItem *newItem)
 {
-	// Set the format flags
-	dest->format = PLAYER_AUDIO_FORMAT_RAW;
-	if (source->numChannels == 2)
-		dest->format |= PLAYER_AUDIO_STEREO;
-	else if (source->numChannels != 1)
+	if (!useQueue)	// If configured to not use a queue, clear out current queue first
 	{
-		PLAYER_ERROR ("Cannot convert wave to player struct: wrong number of channels");
-		return false;
-	}
-	switch (source->sampleRate)
-	{
-		case 11025:
-			dest->format |= PLAYER_AUDIO_FREQ_11k;
-			break;
-		case 22050:
-			dest->format |= PLAYER_AUDIO_FREQ_22k;
-			break;
-		case 44100:
-			dest->format |= PLAYER_AUDIO_FREQ_44k;
-			break;
-		case 48000:
-			dest->format |= PLAYER_AUDIO_FREQ_48k;
-			break;
-		default:
-			PLAYER_ERROR ("Cannot convert wave to player struct: wrong sample rate");
-			return false;
+		StopPlayback ();	// Must stop playback before deleting the data being played
+		ClearQueue ();
 	}
 
-	switch (source->bitsPerSample)
+	if (queueHead == NULL)
 	{
-		case 8:
-			dest->format |= PLAYER_AUDIO_8BIT;
-			break;
-		case 16:
-			dest->format |= PLAYER_AUDIO_16BIT;
-			break;
-		case 24:
-			dest->format |= PLAYER_AUDIO_24BIT;
-			break;
-		default:
-			PLAYER_ERROR ("Cannot convert wave to player struct: wrong format (bits per sample)");
-			return false;
+		queueHead = queueTail = newItem;
 	}
-
-	// Copy at most PLAYER_AUDIO_WAV_BUFFER_SIZE bytes of data
-	uint32_t bytesToCopy = PLAYER_AUDIO_WAV_BUFFER_SIZE;
-	if (source->dataLength < bytesToCopy)
-		bytesToCopy = source->dataLength;
-	memcpy (&dest->data, source->data, bytesToCopy);
-	dest->data_count = source->dataLength;
-	return true;
-}
-
-bool Alsa::PlayerToWaveData (player_audio_wav_t *source, WaveData *dest)
-{
-	// Set format information
-	if ((source->format & PLAYER_AUDIO_FORMAT_BITS) != PLAYER_AUDIO_FORMAT_RAW)
-	{
-		// Can't handle non-raw data
-		PLAYER_ERROR ("Cannot play non-raw audio data");
-		return false;
-	}
-
-	if (source->format & PLAYER_AUDIO_STEREO)
-		dest->numChannels = 2;
 	else
-		dest->numChannels = 1;
-
-	if ((source->format & PLAYER_AUDIO_FREQ) == PLAYER_AUDIO_FREQ_11k)
-		dest->sampleRate = 11025;
-	else if ((source->format & PLAYER_AUDIO_FREQ) == PLAYER_AUDIO_FREQ_22k)
-		dest->sampleRate = 22050;
-	else if ((source->format & PLAYER_AUDIO_FREQ) == PLAYER_AUDIO_FREQ_44k)
-		dest->sampleRate = 44100;
-	else if ((source->format & PLAYER_AUDIO_FREQ) == PLAYER_AUDIO_FREQ_48k)
-		dest->sampleRate = 48000;
-
-	if ((source->format & PLAYER_AUDIO_BITS) == PLAYER_AUDIO_8BIT)
 	{
-		dest->bitsPerSample = 8;
-	}
-	else if ((source->format & PLAYER_AUDIO_BITS) == PLAYER_AUDIO_16BIT)
-	{
-		dest->bitsPerSample = 16;
-	}
-	else if ((source->format & PLAYER_AUDIO_BITS) == PLAYER_AUDIO_24BIT)
-	{
-		dest->bitsPerSample = 24;
+		queueTail->next = newItem;
+		queueTail = newItem;
 	}
 
-	// Calculate the other format info
-	dest->blockAlign = dest->numChannels * (dest->bitsPerSample / 8);
-	dest->byteRate = dest->sampleRate * dest->blockAlign;
-
-	// Allocate memory for the data if necessary
-	if (dest->data == NULL)
-	{
-		if ((dest->data = new uint8_t[source->data_count]) == NULL)
-		{
-			PLAYER_ERROR ("Failed to allocate memory for wave data");
-			return false;
-		}
-	}
-	// Copy the wave data across
-	memcpy (dest->data, source->data, source->data_count);
-	dest->dataLength = source->data_count;
-	dest->numFrames = dest->dataLength / dest->blockAlign;
-
-/*	printf ("Converted audio data to WaveData:\n");
-	PrintWaveData (dest);*/
 	return true;
 }
 
-// Print wave data info - it's a handy function to have around
-void Alsa::PrintWaveData (WaveData *wave)
+bool Alsa::AddToQueue (player_audio_wav_t *waveData)
 {
-	printf ("Num channels:\t%d\n", wave->numChannels);
-	printf ("Sample rate:\t%d\n", wave->sampleRate);
-	printf ("Byte rate:\t%d\n", wave->byteRate);
-	printf ("Block align:\t%d\n", wave->blockAlign);
-	printf ("Format:\t\t");
-	switch (wave->bitsPerSample)
+	QueueItem *newItem = NULL;
+
+	if ((newItem = new QueueItem) == NULL)
 	{
-		case 8:
-			printf ("Unsigned 8 bit\n");
-			break;
-		case 16:
-			printf ("Signed 16 bit little-endian\n");
-			break;
-		case 24:
-			if ((wave->blockAlign / wave->numChannels) == 3)
-				printf ("Signed 24 bit 3-byte little-endian\n");
-			else
-				printf ("Signed 24 bit little-endian\n");
-			break;
-		case 32:
-			printf ("Signed 32 bit little-endian\n");
-			break;
-		default:
-			printf ("Unplayable format: %d bit\n", wave->bitsPerSample);
+		PLAYER_ERROR ("Failed to allocate memory for new queue item");
+		return false;
 	}
-	printf ("Num frames:\t%d\n", wave->numFrames);
-	printf ("Data length:\t%d\n", wave->dataLength);
+
+	if ((newItem->sample = new AudioSample) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for new audio sample");
+		delete newItem;
+		return false;
+	}
+
+	if (!newItem->sample->FromPlayer (waveData))
+	{
+		delete newItem->sample;
+		delete newItem;
+		return false;
+	}
+
+	newItem->temp = true;
+	newItem->next = NULL;
+
+	// If silence is wanted between samples, add it now (but only if not
+	// the first thing in the queue)
+	if (silenceTime != 0 && queueHead != NULL)
+	{
+		if (!AddSilence (silenceTime, newItem->sample))
+		{
+			delete newItem->sample;
+			delete newItem;
+			return false;
+		}
+	}
+
+	return AddToQueue (newItem);
+}
+
+bool Alsa::AddToQueue (AudioSample *sample)
+{
+	QueueItem *newItem = NULL;
+
+	if ((newItem = new QueueItem) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for new queue item");
+		return false;
+	}
+
+	newItem->sample = sample;
+	newItem->temp = false;
+	newItem->next = NULL;
+
+	// If silence is wanted between samples, add it now (but only if not
+	// the first thing in the queue)
+	if (silenceTime != 0 && queueHead != NULL)
+	{
+		if (!AddSilence (silenceTime, sample))
+		{
+			delete newItem;
+			return false;
+		}
+	}
+
+	return AddToQueue (newItem);
+}
+
+// Adds a block of silence into the queue as an audio sample
+// time: The length of silence to add
+// format: A pointer to another audio sample who's format should be copied
+// Returns: true on success, false otherwise
+bool Alsa::AddSilence (uint32_t time, AudioSample *format)
+{
+	QueueItem *newItem = NULL;
+
+	if ((newItem = new QueueItem) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for silence queue item");
+		return false;
+	}
+
+	if ((newItem->sample = new AudioSample) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for silence audio sample");
+		delete newItem;
+		return false;
+	}
+
+	newItem->temp = true;
+	newItem->next = NULL;
+
+	// Empty the new sample
+	newItem->sample->ClearSample ();
+	// Copy the format of the provided sample
+	newItem->sample->CopyFormat (format);
+	// Fill it up with silence
+	if (!newItem->sample->FillSilence (time))
+	{
+		delete newItem->sample;
+		delete newItem;
+		return false;
+	}
+	// Add it to the queue
+	return AddToQueue (newItem);
+}
+
+void Alsa::AdvanceQueue (void)
+{
+	// Move the queue head forward one
+	QueueItem *oldHead = queueHead;
+	queueHead = queueHead->next;
+
+	// Delete the old head, including sample if necessary
+	if (oldHead->temp)
+		delete oldHead->sample;
+	else
+		// If the sample wasn't temp, rewind it
+		oldHead->sample->SetDataPosition (0);
+	delete oldHead;
+
+/*	if (queueHead != NULL)
+	{
+		printf ("Playing sample:\n");
+		queueHead->sample->PrintWaveInfo ();
+	}*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//	Sound functions (setting params, writing data to the buffer, etc)
+//	Playback functions (setting params, writing data to the buffer, etc)
 ////////////////////////////////////////////////////////////////////////////////
+
+bool Alsa::SetupPlayBack (void)
+{
+	// If no device configured, return
+	if (!pbDevice)
+		return false;
+
+	// Open the pcm device in blocking mode
+	if (snd_pcm_open (&pbHandle, pbDevice, SND_PCM_STREAM_PLAYBACK, 0) < 0)
+	{
+		PLAYER_ERROR1 ("Error opening PCM device %s for playback", pbDevice);
+		return false;
+	}
+
+	// Set parameters for the pcm device
+// 	if (!SetGeneralParams ())
+// 		return -1;
+
+	// Setup polling file descriptors
+	numPBFDs = snd_pcm_poll_descriptors_count (pbHandle);
+	if ((pbFDs = (struct pollfd*) new struct pollfd[numPBFDs]) == NULL)
+	{
+		PLAYER_ERROR ("Error allocating memory for playback file descriptors");
+		return false;
+	}
+	snd_pcm_poll_descriptors (pbHandle, pbFDs, numPBFDs);
+
+	return true;
+}
 
 // Sets the hardware parameters of the sound device to the provided wave data's format
-bool Alsa::SetHWParams (WaveData *wave)
+bool Alsa::SetPBParams (AudioSample *sample)
 {
 	snd_pcm_hw_params_t *hwparams;			// Hardware parameters
-	snd_pcm_hw_params_alloca(&hwparams);	// Allocate params structure on stack
+	snd_pcm_sw_params_t *swparams;			// Software parameters
+
+	// Allocate params structure on stack
+	snd_pcm_hw_params_alloca(&hwparams);
 
 	// Init parameters
-	if (snd_pcm_hw_params_any (pcmHandle, hwparams) < 0)
+	if (snd_pcm_hw_params_any (pbHandle, hwparams) < 0)
 	{
-		PLAYER_ERROR ("Cannot configure this PCM device");
+		PLAYER_ERROR ("Cannot configure this playback device");
 		return false;
 	}
 
 	unsigned int exactRate;	// Sample rate returned by snd_pcm_hw_params_set_rate_near
-	int periods = 2;		// Number of periods
-	snd_pcm_uframes_t periodSize = 8192;	// Periodsize (bytes) of the output buffer
 
 	// Use interleaved access
-	if (snd_pcm_hw_params_set_access (pcmHandle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+	if (snd_pcm_hw_params_set_access (pbHandle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
 	{
-		PLAYER_ERROR ("Error setting interleaved access");
+		PLAYER_ERROR ("Error setting interleaved access for playback device");
 		return false;
 	}
+
 	// Set sound format
 	snd_pcm_format_t format;
-	switch (wave->bitsPerSample)
+	switch (sample->GetBitsPerSample ())
 	{
 		case 8:
 			format = SND_PCM_FORMAT_U8;
@@ -632,7 +510,7 @@ bool Alsa::SetHWParams (WaveData *wave)
 			format = SND_PCM_FORMAT_S16_LE;
 			break;
 		case 24:
-			if ((wave->blockAlign / wave->numChannels) == 3)
+			if ((sample->GetBlockAlign () / sample->GetNumChannels ()) == 3)
 				format = SND_PCM_FORMAT_S24_3LE;
 			else
 				format = SND_PCM_FORMAT_S24_LE;
@@ -644,88 +522,685 @@ bool Alsa::SetHWParams (WaveData *wave)
 			PLAYER_ERROR ("Cannot play audio with this format");
 			return false;
 	}
-	if (snd_pcm_hw_params_set_format (pcmHandle, hwparams, format) < 0)
+	if (snd_pcm_hw_params_set_format (pbHandle, hwparams, format) < 0)
 	{
-		PLAYER_ERROR ("Error setting format");
+		PLAYER_ERROR ("Error setting format for playback device");
 		return false;
 	}
 	// Set sample rate
-	exactRate = wave->sampleRate;
-	if (snd_pcm_hw_params_set_rate_near (pcmHandle, hwparams, &exactRate, 0) < 0)
+	exactRate = sample->GetSampleRate ();
+	if (snd_pcm_hw_params_set_rate_near (pbHandle, hwparams, &exactRate, 0) < 0)
 	{
-		PLAYER_ERROR ("Error setting sample rate");
+		PLAYER_ERROR ("Error setting sample rate for playback device");
 		return false;
 	}
-	if (exactRate != wave->sampleRate)
-		PLAYER_WARN2 ("Rate %dHz not supported by hardware, using %dHz instead", wave->sampleRate, exactRate);
+	if (exactRate != sample->GetSampleRate ())
+		PLAYER_WARN2 ("Rate %dHz not supported by hardware for playback device, using %dHz instead", sample->GetSampleRate (), exactRate);
 
 	// Set number of channels
-	if (snd_pcm_hw_params_set_channels(pcmHandle, hwparams, wave->numChannels) < 0)
+	if (snd_pcm_hw_params_set_channels(pbHandle, hwparams, sample->GetNumChannels ()) < 0)
 	{
-		PLAYER_ERROR ("Error setting channels");
+		PLAYER_ERROR ("Error setting channels for playback device");
 		return false;
 	}
 
-	// Set number of periods
-	if (snd_pcm_hw_params_set_periods(pcmHandle, hwparams, periods, 0) < 0)
+	// Set the length of the buffer
+	actPBBufferTime = cfgPBBufferTime * 1000;
+	if (snd_pcm_hw_params_set_buffer_time_near (pbHandle, hwparams, &actPBBufferTime, 0) < 0)
 	{
-		PLAYER_ERROR ("Error setting periods");
+		PLAYER_ERROR ("Error setting periods for playback device");
 		return false;
 	}
+	if (actPBBufferTime < cfgPBBufferTime * 900)	// cfgPBBufferTime * 1000 * 9/10
+		PLAYER_WARN2 ("Buffer length for playback device reduced from %dus to %dus", cfgPBBufferTime * 1000, actPBBufferTime);
 
-	// Set the buffer size in frames TODO: update this to take into account pbNumChannels
-	if (snd_pcm_hw_params_set_buffer_size (pcmHandle, hwparams, (periodSize * periods) >> 2) < 0)
+// 	snd_pcm_hw_params_get_buffer_size (hwparams, &pbPeriodSize);
+
+	// Set the length of a period
+	actPBPeriodTime = cfgPBPeriodTime * 1000;
+	if (actPBPeriodTime > (actPBBufferTime / 2))
 	{
-		PLAYER_ERROR ("Error setting buffersize");
+		actPBPeriodTime = (actPBBufferTime / 2);
+		PLAYER_WARN1 ("Period time for playback device too long, reduced to %dms", actPBPeriodTime / 1000);
+	}
+	if (snd_pcm_hw_params_set_period_time_near (pbHandle, hwparams, &actPBPeriodTime, 0) < 0)
+	{
+		PLAYER_ERROR ("Error setting period time for playback device");
+		return false;
+	}
+	if (actPBPeriodTime < cfgPBPeriodTime * 900)	// cfgPBPeriodTime * 1000 * 9/10
+		PLAYER_WARN2 ("Period length for playback device reduced from %dms to %dms", cfgPBPeriodTime, actPBPeriodTime / 1000);
+
+	snd_pcm_hw_params_get_period_size (hwparams, &pbPeriodSize, 0);
+
+	// Allocate a buffer the size of one period
+	if (periodBuffer != NULL)
+		delete[] periodBuffer;
+	if ((periodBuffer = new uint8_t[pbPeriodSize * sample->GetBlockAlign ()]) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for period buffer");
 		return false;
 	}
 
 	// Apply hwparams to the pcm device
-	if (snd_pcm_hw_params (pcmHandle, hwparams) < 0)
+	if (snd_pcm_hw_params (pbHandle, hwparams) < 0)
 	{
-		PLAYER_ERROR ("Error setting HW params");
+		PLAYER_ERROR ("Error setting HW params for playback device");
 		return false;
 	}
 
-	// Don't need this anymore (I think) TODO: figure out why this causes glib errors
-// 	snd_pcm_hw_params_free (hwparams);
+	// Set software parameters for the pcm device
+	snd_pcm_sw_params_alloca (&swparams);	// Allocate params structure on stack
+	// Get the current software parameters
+	if (snd_pcm_sw_params_current (pbHandle, swparams) < 0)
+	{
+		PLAYER_ERROR ("Error getting current SW params for playback device");
+		return false;
+	}
+	// Set notification of pbBufSize bytes available for writing
+	if (snd_pcm_sw_params_set_avail_min (pbHandle, swparams, pbPeriodSize) < 0)
+	{
+		PLAYER_ERROR ("Error setting avil_min notification for playback device");
+		return false;
+	}
+	// Set the paramters on the device
+	if (snd_pcm_sw_params (pbHandle, swparams) < 0)
+	{
+		PLAYER_ERROR ("Error setting SW params for playback device");
+		return false;
+	}
 
 	return true;
 }
 
-// Plays some wave data
-bool Alsa::PlayWave (WaveData *wave)
-{
-	int pcmReturn = 0;
-	uint8_t *dataPos = wave->data;
+// // Sets the general hardware parameters of the sound device
+// // (Those not affected by wave format)
+// bool Alsa::SetGeneralParams (void)
+// {
+// 	snd_pcm_sw_params_t *swparams;			// Software parameters
+// 	snd_pcm_hw_params_t *hwparams;			// Hardware parameters
+// 	snd_pcm_hw_params_alloca (&hwparams);	// Allocate params structure on stack
+//
+// 	// Init parameters
+// 	if (snd_pcm_hw_params_any (pbHandle, hwparams) < 0)
+// 	{
+// 		PLAYER_ERROR ("Cannot configure this PCM device");
+// 		return false;
+// 	}
+//
+// // 	int periods = 2;		// Number of periods
+// // 	snd_pcm_uframes_t periodSize = 8192;	// Periodsize (bytes) of the output buffer
+//
+// 	// Use interleaved access
+// 	if (snd_pcm_hw_params_set_access (pbHandle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting interleaved access");
+// 		return false;
+// 	}
+//
+// 	// Set number of periods
+// 	if (snd_pcm_hw_params_set_periods(pbHandle, hwparams, pbNumPeriods, 0) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting periods");
+// 		return false;
+// 	}
+//
+// 	// Set the size of a period
+// 	if (snd_pcm_hw_params_set_period_size (pbHandle, hwparams, pbPeriodSize, 0) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting period size");
+// 		return false;
+// 	}
+//
+// 	// Apply hwparams to the pcm device
+// 	if (snd_pcm_hw_params (pbHandle, hwparams) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting HW params");
+// 		return false;
+// 	}
+//
+// 	// Don't need this anymore (I think) TODO: figure out why this causes glib errors
+// // 	snd_pcm_hw_params_free (hwparams);
+//
+// 	// Set software parameters for the pcm device
+// 	snd_pcm_sw_params_alloca (&swparams);	// Allocate params structure on stack
+// 	// Get the current software parameters
+// 	if (snd_pcm_sw_params_current (pbHandle, swparams) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error getting current SW params");
+// 		return false;
+// 	}
+// 	// Set notification of pbBufSize bytes available for writing
+// 	if (snd_pcm_sw_params_set_avail_min (pbHandle, swparams, pbPeriodSize) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting avil_min notification");
+// 		return false;
+// 	}
+// 	// Set the paramters on the device
+// 	if (snd_pcm_sw_params (pbHandle, swparams) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting SW params");
+// 		return false;
+// 	}
+//
+// 	return true;
+// }
+//
+// // Sets the hardware parameters of the sound device to the provided wave data's format
+// bool Alsa::SetWaveHWParams (AudioSample *sample)
+// {
+// 	snd_pcm_hw_params_t *hwparams;			// Hardware parameters
+// 	snd_pcm_hw_params_alloca(&hwparams);	// Allocate params structure on stack
+//
+// 	// Init parameters
+// 	if (snd_pcm_hw_params_any (pbHandle, hwparams) < 0)
+// 	{
+// 		PLAYER_ERROR ("Cannot configure this PCM device");
+// 		return false;
+// 	}
+//
+// 	unsigned int exactRate;	// Sample rate returned by snd_pcm_hw_params_set_rate_near
+//
+// 	printf ("Stream state is %d\n", snd_pcm_state (pbHandle));
+//
+// 	// Set sound format
+// 	snd_pcm_format_t format;
+// 	switch (sample->GetBitsPerSample ())
+// 	{
+// 		case 8:
+// 			format = SND_PCM_FORMAT_U8;
+// 			break;
+// 		case 16:
+// 			format = SND_PCM_FORMAT_S16_LE;
+// 			break;
+// 		case 24:
+// 			if ((sample->GetBlockAlign () / sample->GetNumChannels ()) == 3)
+// 				format = SND_PCM_FORMAT_S24_3LE;
+// 			else
+// 				format = SND_PCM_FORMAT_S24_LE;
+// 			break;
+// 		case 32:
+// 			format = SND_PCM_FORMAT_S32_LE;
+// 			break;
+// 		default:
+// 			PLAYER_ERROR ("Cannot play audio with this format");
+// 			return false;
+// 	}
+// 	if (snd_pcm_hw_params_set_format (pbHandle, hwparams, format) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting format");
+// 		return false;
+// 	}
+// 	// Set sample rate
+// 	exactRate = sample->GetSampleRate ();
+// 	if (snd_pcm_hw_params_set_rate_near (pbHandle, hwparams, &exactRate, 0) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting sample rate");
+// 		return false;
+// 	}
+// 	if (exactRate != sample->GetSampleRate ())
+// 		PLAYER_WARN2 ("Rate %dHz not supported by hardware, using %dHz instead", sample->GetSampleRate (), exactRate);
+//
+// 	// Set number of channels
+// 	if (snd_pcm_hw_params_set_channels(pbHandle, hwparams, sample->GetNumChannels ()) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting channels");
+// 		return false;
+// 	}
+//
+// 	// Apply hwparams to the pcm device
+// 	if (snd_pcm_hw_params (pbHandle, hwparams) < 0)
+// 	{
+// 		PLAYER_ERROR ("Error setting HW params");
+// 		return false;
+// 	}
+//
+// 	return true;
+// }
 
-	// Write the data until there is none left
-	unsigned int framesToWrite = wave->numFrames;
-	do
+// Called to write data to the playback buffer when it is ready for writing
+// numFrames: The number of frames that can be written
+void Alsa::PlaybackCallback (int numFrames)
+{
+	int framesToWrite = 0;
+
+	// Get frames from audio samples until filled the buffer, or hit a sample
+	// with a different format to the current sample
+	while (framesToWrite < numFrames && playState == PB_STATE_PLAYING)
 	{
-		pcmReturn = snd_pcm_writei (pcmHandle, dataPos, framesToWrite);
-		if (pcmReturn < 0)
+		int framesToCopy = numFrames - framesToWrite;
+		// Request frames from the sample
+		// Want to get the number of frames not yet filled in the buffer and
+		// place them however far into the buffer the last lot got up to
+		int framesCopied = queueHead->sample->GetData (framesToCopy, &periodBuffer[framesToWrite * queueHead->sample->GetBlockAlign ()]);
+		// If got no frames, something went wrong with this sample
+		if (framesCopied < 0)
 		{
-			snd_pcm_prepare (pcmHandle);
-			printf ("BUFFER UNDERRUN!\t%s\n", snd_strerror (pcmReturn));
+			// If no frames copied so far, nothing to write so drain
+			// The write after this won't happen because of the while loop condition
+			PLAYER_ERROR ("Error reading wave data");
+			playState = PB_STATE_DRAIN;
+		}
+		// If got less than requested, end of the current sample
+		else if (framesCopied < framesToCopy)
+		{
+			// If the next sample has the same format as the current one, advance
+			// the queue and begin copying from that instead
+			if (queueHead->next != NULL)
+			{
+				if (queueHead->sample->SameFormat (queueHead->next->sample))
+					AdvanceQueue ();
+				// If it doesn't, move to drain state
+				else
+					playState = PB_STATE_DRAIN;
+			}
+			// If it doesn't, move to drain state
+			else
+			{
+				playState = PB_STATE_DRAIN;
+			}
+			// Add the number of frames copied to the number to write
+			framesToWrite += framesCopied;
+		}
+		// Got the requested number, so not much to do
+		else
+			framesToWrite += framesCopied;
+	}
+
+	// Keep writing until all the data we got has been written to the playback buffer
+	uint8_t *dataPos = periodBuffer;
+	while (framesToWrite > 0)
+	{
+		int framesWritten = snd_pcm_writei (pbHandle, dataPos, framesToWrite);
+		if (framesWritten > 0 && framesWritten <= framesToWrite)
+		{	// Not all was written
+			snd_pcm_wait (pbHandle, 100);
+			// Calculate how many frames remain unwritten
+			framesToWrite -= framesWritten;
+			// Move the data pointer appropriately
+			dataPos += framesWritten * queueHead->sample->GetBlockAlign ();
+		}
+		else if (framesWritten == -EAGAIN)
+		{	// Nothing was written, but not a disasterous error?
+			snd_pcm_wait (pbHandle, 100);
+		}
+		else if (framesWritten == -EPIPE)
+		{
+			PLAYER_WARN ("Buffer underrun occured during playback");
+			// Need to prepare the device again after an xrun
+			snd_pcm_prepare (pbHandle);
 		}
 		else
 		{
-			// Calculate how many frames remain unwritten
-			framesToWrite = framesToWrite - pcmReturn;
-			// Move the data pointer appropriately
-			dataPos += pcmReturn;
+			PLAYER_ERROR2 ("Error writing to playback buffer: (%d) %s", framesWritten, snd_strerror (framesWritten));
 		}
+	};
 
-//		printf ("pcmReturn = %d\tframesToWrite = %d\n", pcmReturn, framesToWrite);
-		fflush (stdout);
+// 	struct timeval timeVal;
+// 	gettimeofday (&timeVal, NULL);
+// 	printf ("%d.%d: Wrote %d bytes in total\n", timeVal.tv_sec, timeVal.tv_usec, totalFrames);
+// 	fflush (NULL);
+
+	// If state has moved to drain
+	if (playState == PB_STATE_DRAIN)
+	{
+		// Tell the pcm device to drain the buffer
+		snd_pcm_drain (pbHandle);
+// 		struct timeval timeVal;
+// 		gettimeofday (&timeVal, NULL);
+// 		printf ("%d.%d: Set to drain\n", timeVal.tv_sec, timeVal.tv_usec);
+// 		fflush (NULL);
 	}
-	while (framesToWrite > 0);
+}
 
-	// Drain the remaining data once finished writing and stop playback
-	snd_pcm_drain (pcmHandle);
+////////////////////////////////////////////////////////////////////////////////
+//	Record functions (setting params, reading data from the buffer, etc)
+////////////////////////////////////////////////////////////////////////////////
 
-	return 0;
+bool Alsa::SetupRecord (void)
+{
+	// If no device configured, return
+	if (!recDevice)
+		return false;
+
+	// Open the pcm device in blocking mode
+	if (snd_pcm_open (&recHandle, recDevice, SND_PCM_STREAM_CAPTURE, 0) < 0)
+	{
+		PLAYER_ERROR1 ("Error opening PCM device %s for recording", recDevice);
+		return false;
+	}
+
+	// Set hardware/software parameters
+	if (!SetRecParams ())
+		return false;
+
+	// Setup polling file descriptors
+	numRecFDs = snd_pcm_poll_descriptors_count (recHandle);
+	if ((recFDs = (struct pollfd*) new struct pollfd[numRecFDs]) == NULL)
+	{
+		PLAYER_ERROR ("Error allocating memory for record file descriptors");
+		return false;
+	}
+	snd_pcm_poll_descriptors (recHandle, recFDs, numRecFDs);
+
+	return true;
+}
+
+// Sets the hardware parameters of the sound device to the provided wave data's format
+bool Alsa::SetRecParams (void)
+{
+	snd_pcm_hw_params_t *hwparams;			// Hardware parameters
+	snd_pcm_sw_params_t *swparams;			// Software parameters
+
+	// Allocate params structure on stack
+	snd_pcm_hw_params_alloca(&hwparams);
+
+	// Init parameters
+	if (snd_pcm_hw_params_any (recHandle, hwparams) < 0)
+	{
+		PLAYER_ERROR ("Cannot configure this recording device");
+		return false;
+	}
+
+	unsigned int exactRate;	// Sample rate returned by snd_pcm_hw_params_set_rate_near
+
+	// Use interleaved access
+	if (snd_pcm_hw_params_set_access (recHandle, hwparams, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+	{
+		PLAYER_ERROR ("Error setting interleaved access for recording device");
+		return false;
+	}
+
+	// Set sound format
+	snd_pcm_format_t format;
+	switch (recBits)
+	{
+		case 8:
+			format = SND_PCM_FORMAT_U8;
+			break;
+		case 16:
+			format = SND_PCM_FORMAT_S16_LE;
+			break;
+		case 24:
+			format = SND_PCM_FORMAT_S24_LE;
+			break;
+		case 32:
+			format = SND_PCM_FORMAT_S32_LE;
+			break;
+		default:
+			PLAYER_ERROR ("Cannot record audio with this format");
+			return false;
+	}
+	if (snd_pcm_hw_params_set_format (recHandle, hwparams, format) < 0)
+	{
+		PLAYER_ERROR ("Error setting format for recording device");
+		return false;
+	}
+	// Set sample rate
+	exactRate = recSampleRate;
+	if (snd_pcm_hw_params_set_rate_near (recHandle, hwparams, &exactRate, 0) < 0)
+	{
+		PLAYER_ERROR ("Error setting sample rate for recording device");
+		return false;
+	}
+	if (exactRate != recSampleRate)
+		PLAYER_WARN2 ("Rate %dHz not supported by hardware for recording device, using %dHz instead", recSampleRate, exactRate);
+	recSampleRate = exactRate;
+
+	// Set number of channels
+	if (snd_pcm_hw_params_set_channels (recHandle, hwparams, recNumChannels) < 0)
+	{
+		PLAYER_ERROR ("Error setting channels for recording device");
+		return false;
+	}
+
+	// Set the length of the buffer
+	actRecBufferTime = cfgRecBufferTime * 1000;
+	if (snd_pcm_hw_params_set_buffer_time_near (recHandle, hwparams, &actRecBufferTime, 0) < 0)
+	{
+		PLAYER_ERROR ("Error setting periods for recording device");
+		return false;
+	}
+	if (actRecBufferTime < cfgRecBufferTime * 900)	// cfgPBBufferTime * 1000 * 9/10
+		PLAYER_WARN2 ("Buffer length for recording device reduced from %dus to %dus", cfgRecBufferTime * 1000, actRecBufferTime);
+
+// 	snd_pcm_hw_params_get_buffer_size (hwparams, &recPeriodSize);
+
+	// Set the length of a period
+	actRecPeriodTime = cfgRecPeriodTime * 1000;
+	if (actRecPeriodTime > (actRecBufferTime / 2))
+	{
+		actRecPeriodTime = (actRecBufferTime / 2);
+		PLAYER_WARN1 ("Period time for recording device too long, reduced to %dms", actRecPeriodTime / 1000);
+	}
+	if (snd_pcm_hw_params_set_period_time_near (recHandle, hwparams, &actRecPeriodTime, 0) < 0)
+	{
+		PLAYER_ERROR ("Error setting period time for recording device");
+		return false;
+	}
+	if (actRecPeriodTime < cfgRecPeriodTime * 900)	// cfgPBPeriodTime * 1000 * 9/10
+		PLAYER_WARN2 ("Period length for recording device reduced from %dms to %dms", cfgRecPeriodTime, actRecPeriodTime / 1000);
+
+	snd_pcm_hw_params_get_period_size (hwparams, &recPeriodSize, 0);
+
+	// Apply hwparams to the pcm device
+	if (snd_pcm_hw_params (recHandle, hwparams) < 0)
+	{
+		PLAYER_ERROR ("Error setting HW params for recording device");
+		return false;
+	}
+
+	// Set software parameters for the pcm device
+	snd_pcm_sw_params_alloca (&swparams);	// Allocate params structure on stack
+	// Get the current software parameters
+	if (snd_pcm_sw_params_current (recHandle, swparams) < 0)
+	{
+		PLAYER_ERROR ("Error getting current SW params for recording device");
+		return false;
+	}
+	// Set notification of pbBufSize bytes available for writing
+	if (snd_pcm_sw_params_set_avail_min (recHandle, swparams, recPeriodSize) < 0)
+	{
+		PLAYER_ERROR ("Error setting avil_min notification for recording device");
+		return false;
+	}
+	// Set the paramters on the device
+	if (snd_pcm_sw_params (recHandle, swparams) < 0)
+	{
+		PLAYER_ERROR ("Error setting SW params for recording device");
+		return false;
+	}
+
+	return true;
+}
+
+// Called to write data to the playback buffer when it is ready for writing
+// numFrames: The number of frames that can be written
+void Alsa::RecordCallback (int numFrames)
+{
+	int totalRead = 0;
+
+	// If nowhere to save the data, return
+	if (!recData)
+	{
+		PLAYER_ERROR ("Tried to record to NULL data buffer");
+		return;
+	}
+
+	while (totalRead < numFrames)
+	{
+		int framesToRead = numFrames - totalRead;
+		if (snd_pcm_frames_to_bytes (recHandle, framesToRead) + recData->data_count > PLAYER_AUDIO_WAV_BUFFER_SIZE)
+			// Don't read past the end of the buffer
+			framesToRead = snd_pcm_bytes_to_frames (recHandle, PLAYER_AUDIO_WAV_BUFFER_SIZE - recData->data_count);
+		int framesRead = snd_pcm_readi (recHandle, &recData->data[recData->data_count], framesToRead);
+		// If got data
+		if (framesRead > 0)
+		{
+			recData->data_count += snd_pcm_frames_to_bytes (recHandle, framesRead);
+			totalRead += framesRead;
+			// If this buffer is full, publish the data (resetting the buffer to zero)
+			if (recData->data_count == PLAYER_AUDIO_WAV_BUFFER_SIZE)
+				PublishRecordedData ();
+		}
+		// Overrun
+		else if (framesRead == -EPIPE)
+		{
+			PLAYER_WARN ("Buffer overrun occured during recording");
+			// Need to prepare the device again after an xrun
+			snd_pcm_prepare (recHandle);
+		}
+		// Some other error
+		else
+		{
+			PLAYER_ERROR2 ("Error reading from record buffer: (%d) %s", framesRead, snd_strerror (framesRead));
+			StopRecording ();
+		}
+	}
+}
+
+void Alsa::PublishRecordedData (void)
+{
+	// Don't do anything if there is no data
+	if (!recData)
+		return;
+	if (recData->data_count == 0)
+		return;
+	// Publish the recorded data
+	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_WAV_REC_DATA, reinterpret_cast<void*> (recData), sizeof (player_audio_wav_t), NULL);
+	// Reset record position
+	recData->data_count = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//	Playback/record control functions
+////////////////////////////////////////////////////////////////////////////////
+
+// Start outputting sound (if there is some to output)
+void Alsa::StartPlayback (void)
+{
+	// Don't do anything if already playing or no device
+	if (playState != PB_STATE_STOPPED || !pbHandle)
+		return;
+
+	// If there is data in the queue
+	if (queueHead != NULL)
+	{
+// 		printf ("Playing sample:\n");
+// 		queueHead->sample->PrintWaveInfo ();
+		// Set the parameters for the head of the queue
+		SetPBParams (queueHead->sample);
+		// Set playback state to PLAYING
+		playState = PB_STATE_PLAYING;
+	}
+}
+
+// Stop outputting sound - actually more like a pause, as doesn't reset the
+// queue position
+void Alsa::StopPlayback (void)
+{
+	// Set playback to false
+	playState = PB_STATE_STOPPED;
+	// Drop anything currently in the buffer and stop the card
+	snd_pcm_drop (pbHandle);
+}
+
+// Start recording sound
+void Alsa::StartRecording (void)
+{
+	// Don't do anything if already recording or no device
+	if (recState != PB_STATE_STOPPED || !recHandle)
+		return;
+
+	// Allocate a data storage area
+	if (recData)
+		PLAYER_WARN ("recData not empty before starting recording");
+	if ((recData = new player_audio_wav_t) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for recorded data buffer");
+		return;
+	}
+	recData->data_count = 0;
+	// Set the format field of the data structure
+/*	recData->ClearSample ();
+	recData->SetType (SAMPLE_TYPE_MEM);
+	recData->SetNumChannels (recNumChannels);
+	recData->SetSampleRate (recSampleRate);
+	recData->SetBitsPerSample (recBits);
+	recData->SetBlockAlign ((recBits * recNumChannels) / 8);*/
+	recData->format = PLAYER_AUDIO_FORMAT_RAW;
+	if (recNumChannels == 2)
+		recData->format |= PLAYER_AUDIO_STEREO;
+	else if (recNumChannels != 1)
+	{
+		PLAYER_ERROR ("Cannot convert wave to player struct: wrong number of channels");
+		delete recData;
+		recData = NULL;
+		return;
+	}
+	switch (recSampleRate)
+	{
+		case 11025:
+			recData->format |= PLAYER_AUDIO_FREQ_11k;
+			break;
+		case 22050:
+			recData->format |= PLAYER_AUDIO_FREQ_22k;
+			break;
+		case 44100:
+			recData->format |= PLAYER_AUDIO_FREQ_44k;
+			break;
+		case 48000:
+			recData->format |= PLAYER_AUDIO_FREQ_48k;
+			break;
+		default:
+			PLAYER_ERROR ("Cannot convert wave to player struct: wrong sample rate");
+			delete recData;
+			recData = NULL;
+			return;
+	}
+
+	switch (recBits)
+	{
+		case 8:
+			recData->format |= PLAYER_AUDIO_8BIT;
+			break;
+		case 16:
+			recData->format |= PLAYER_AUDIO_16BIT;
+			break;
+		case 24:
+			recData->format |= PLAYER_AUDIO_24BIT;
+			break;
+		default:
+			PLAYER_ERROR ("Cannot convert wave to player struct: wrong format (bits per sample)");
+			delete recData;
+			recData = NULL;
+			return;
+	}
+	// Prepare the recording device
+	snd_pcm_prepare (recHandle);
+	// Start the recording device
+	int result = 0;
+	if ((result = snd_pcm_start (recHandle)) < 0)
+	{
+		PLAYER_ERROR2 ("Error starting recording: (%d) %s", result, snd_strerror (result));
+		delete recData;
+		return;
+	}
+	// Move to recording state
+	recState = PB_STATE_RECORDING;
+}
+
+// Stop recording sound
+void Alsa::StopRecording (void)
+{
+	// Stop the device
+	snd_pcm_drop (recHandle);
+	// Move to stopped state
+	recState = PB_STATE_STOPPED;
+	// If there is data left over, publish it
+	PublishRecordedData ();
+	delete recData;
+	recData = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -742,8 +1217,8 @@ bool Alsa::SetupMixer (void)
 		return false;
 	}
 
-	// Attach it to the device?
-	if (snd_mixer_attach (mixerHandle, device) < 0)
+	// Attach it to the device
+	if (snd_mixer_attach (mixerHandle, mixerDevice) < 0)
 	{
 		PLAYER_WARN ("Could not attach mixer");
 		return false;
@@ -835,7 +1310,6 @@ bool Alsa::EnumMixerElements (void)
 // Enumerates the capabilities of a single element
 bool Alsa::EnumElementCaps (MixerElement *element)
 {
-	int temp = 0;
 	snd_mixer_elem_t *elem = element->elem;
 	if (!elem)
 	{
@@ -866,9 +1340,9 @@ bool Alsa::EnumElementCaps (MixerElement *element)
 // 	if (snd_mixer_selem_has_capture_switch (elem))
 // 		mixerElements[index].caps |= ELEMCAP_CAP_JOINED_SWITCH;
 
-	element->playMute = true;
-	element->capMute = true;
-	element->comMute = true;
+	element->playSwitch = 1;
+	element->capSwitch = 1;
+	element->comSwitch = 1;
 
 // 	printf ("Found mixer element: %s\n", element->name);
 	// Find channels for this element
@@ -881,13 +1355,9 @@ bool Alsa::EnumElementCaps (MixerElement *element)
 			// Get the current volume of this channel and make it the element one, if don't have that yet
 			if (!element->curPlayVol)
 				snd_mixer_selem_get_playback_volume (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &(element->curPlayVol));
-			// Get the mute status of this channel - if unmuted, then set element to unmuted
+			// Get the switch status of this channel
 			if (element->caps & ELEMCAP_PLAYBACK_SWITCH)
-			{
-				snd_mixer_selem_get_playback_switch (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &temp);
-				if (temp)
-					element->playMute = false;
-			}
+				snd_mixer_selem_get_playback_switch (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &element->playSwitch);
 		}
 		if (snd_mixer_selem_has_capture_channel (elem, static_cast<snd_mixer_selem_channel_id_t> (ii)))
 		{
@@ -896,13 +1366,9 @@ bool Alsa::EnumElementCaps (MixerElement *element)
 			// Get the current volume of this channel and make it the element one, if don't have that yet
 			if (!element->curCapVol)
 				snd_mixer_selem_get_capture_volume (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &(element->curCapVol));
-			// Get the mute status of this channel - if unmuted, then set element to unmuted
+			// Get the switch status of this channel
 			if (element->caps & ELEMCAP_CAPTURE_SWITCH)
-			{
-				snd_mixer_selem_get_playback_switch (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &temp);
-				if (temp)
-					element->capMute = false;
-			}
+				snd_mixer_selem_get_capture_switch (elem, static_cast<snd_mixer_selem_channel_id_t> (ii), &element->capSwitch);
 		}
 	}
 
@@ -922,14 +1388,14 @@ bool Alsa::EnumElementCaps (MixerElement *element)
 		element->maxComVol = element->maxPlayVol ? element->maxPlayVol : element->maxCapVol;
 	}
 
-	// Common mute status
+	// Common switch status
 	if (element->caps & ELEMCAP_COMMON_SWITCH)
-		element->comMute = element->playMute ? element->playMute : element->capMute;
+		element->comSwitch = element->playSwitch ? element->playSwitch : element->capSwitch;
 
 // 	printf ("Element volume levels:\n");
-// 	printf ("Playback:\t%ld, %ld, %ld, %s\n", element->minPlayVol, element->curPlayVol, element->maxPlayVol, element->playMute ? "Muted" : "Unmuted");
-// 	printf ("Capture:\t%ld, %ld, %ld, %s\n", element->minCapVol, element->curCapVol, element->maxCapVol, element->capMute ? "Muted" : "Unmuted");
-// 	printf ("Common:\t%ld, %ld, %ld, %s\n", element->minComVol, element->curComVol, element->maxComVol, element->comMute ? "Muted" : "Unmuted");
+// 	printf ("Playback:\t%ld, %ld, %ld, %s\n", element->minPlayVol, element->curPlayVol, element->maxPlayVol, element->playSwitch ? "Active" : "Inactive");
+// 	printf ("Capture:\t%ld, %ld, %ld, %s\n", element->minCapVol, element->curCapVol, element->maxCapVol, element->capSwitch ? "Active" : "Inactive");
+// 	printf ("Common:\t%ld, %ld, %ld, %s\n", element->minComVol, element->curComVol, element->maxComVol, element->comSwitch ? "Active" : "Inactive");
 
 	return true;
 }
@@ -979,7 +1445,7 @@ MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
 			result[currentIndex].minPlayVol = elements[ii].minPlayVol;
 			result[currentIndex].curPlayVol = elements[ii].curPlayVol;
 			result[currentIndex].maxPlayVol = elements[ii].maxPlayVol;
-			result[currentIndex].playMute = elements[ii].playMute;
+			result[currentIndex].playSwitch = elements[ii].playSwitch;
 			result[currentIndex].name = reinterpret_cast<char*> (malloc (strlen (elements[ii].name) + strlen (" (Playback)") + 1));
 			strncpy (result[currentIndex].name, elements[ii].name, strlen (elements[ii].name) + 1);
 			strncpy (&(result[currentIndex].name[strlen (elements[ii].name)]), " (Playback)", strlen (" (Playback)") + 1);
@@ -990,7 +1456,7 @@ MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
 			result[currentIndex + 1].minCapVol = elements[ii].minCapVol;
 			result[currentIndex + 1].curCapVol = elements[ii].curCapVol;
 			result[currentIndex + 1].maxCapVol = elements[ii].maxCapVol;
-			result[currentIndex + 1].capMute = elements[ii].capMute;
+			result[currentIndex + 1].capSwitch = elements[ii].capSwitch;
 			result[currentIndex + 1].name = reinterpret_cast<char*> (malloc (strlen (elements[ii].name) + strlen (" (Capture)") + 1));
 			strncpy (result[currentIndex + 1].name, elements[ii].name, strlen (elements[ii].name) + 1);
 			strncpy (&(result[currentIndex + 1].name[strlen (elements[ii].name)]), " (Capture)", strlen (" (Capture)") + 1);
@@ -1006,7 +1472,7 @@ MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
 			result[currentIndex].minPlayVol = elements[ii].minPlayVol;
 			result[currentIndex].curPlayVol = elements[ii].curPlayVol;
 			result[currentIndex].maxPlayVol = elements[ii].maxPlayVol;
-			result[currentIndex].playMute = elements[ii].playMute;
+			result[currentIndex].playSwitch = elements[ii].playSwitch;
 			result[currentIndex].name = strdup (elements[ii].name);
 
 			currentIndex += 1;
@@ -1020,7 +1486,7 @@ MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
 			result[currentIndex].minCapVol = elements[ii].minCapVol;
 			result[currentIndex].curCapVol = elements[ii].curCapVol;
 			result[currentIndex].maxCapVol = elements[ii].maxCapVol;
-			result[currentIndex].capMute = elements[ii].capMute;
+			result[currentIndex].capSwitch = elements[ii].capSwitch;
 			result[currentIndex].name = strdup (elements[ii].name);
 
 			currentIndex += 1;
@@ -1033,7 +1499,7 @@ MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
 			result[currentIndex].minComVol = elements[ii].minComVol;
 			result[currentIndex].curComVol = elements[ii].curComVol;
 			result[currentIndex].maxComVol = elements[ii].maxComVol;
-			result[currentIndex].comMute = elements[ii].comMute;
+			result[currentIndex].comSwitch = elements[ii].comSwitch;
 			result[currentIndex].name = strdup (elements[ii].name);
 
 			currentIndex += 1;
@@ -1087,30 +1553,30 @@ void Alsa::MixerLevelsToPlayer (player_audio_mixer_channel_list_t *dest)
 	for (uint32_t ii = 0; ii < numElements; ii++)
 	{
 		long min = 0, cur = 0, max = 0;
-		bool mute = false;
+		int switchStatus = 0;
 		if (mixerElements[ii].caps & ELEMCAP_CAN_PLAYBACK)
 		{
 			min = mixerElements[ii].minPlayVol;
 			cur = mixerElements[ii].curPlayVol;
 			max = mixerElements[ii].maxPlayVol;
-			mute = mixerElements[ii].playMute;
+			switchStatus = mixerElements[ii].playSwitch;
 		}
 		else if (mixerElements[ii].caps & ELEMCAP_CAN_CAPTURE)
 		{
 			min = mixerElements[ii].minCapVol;
 			cur = mixerElements[ii].curCapVol;
 			max = mixerElements[ii].maxCapVol;
-			mute = mixerElements[ii].capMute;
+			switchStatus = mixerElements[ii].capSwitch;
 		}
 		else if (mixerElements[ii].caps & ELEMCAP_COMMON)
 		{
 			min = mixerElements[ii].minComVol;
 			cur = mixerElements[ii].curComVol;
 			max = mixerElements[ii].maxComVol;
-			mute = mixerElements[ii].comMute;
+			switchStatus = mixerElements[ii].comSwitch;
 		}
 		dest->channels[ii].amplitude = LevelToPlayer (min, max, cur);
-		dest->channels[ii].active.state = mute ? 0 : 1;
+		dest->channels[ii].active.state = switchStatus;
 		dest->channels[ii].index = ii;
 	}
 }
@@ -1158,38 +1624,38 @@ void Alsa::SetElementLevel (uint32_t index, float level)
 	}
 }
 
-// Sets mute for an element
-void Alsa::SetElementMute (uint32_t index, player_bool_t mute)
+// Sets the switch for an element
+void Alsa::SetElementSwitch (uint32_t index, player_bool_t active)
 {
 	if (mixerElements[index].caps & ELEMCAP_CAN_PLAYBACK)
 	{
-		// Set the mute for all channels in this element
-		if (snd_mixer_selem_set_playback_switch_all (mixerElements[index].elem, mute.state ? 1 : 0) < 0)
+		// Set the switch for all channels in this element
+		if (snd_mixer_selem_set_playback_switch_all (mixerElements[index].elem, active.state) < 0)
 		{
-			PLAYER_WARN1 ("Error setting playback mute for element %d", index);
+			PLAYER_WARN1 ("Error setting playback switch for element %d", index);
 		}
 		else
-			mixerElements[index].playMute = mute.state ? true : false;
+			mixerElements[index].playSwitch = active.state;
 	}
 	else if (mixerElements[index].caps & ELEMCAP_CAN_CAPTURE)
 	{
-		// Set the mute for all channels in this element
-		if (snd_mixer_selem_set_capture_volume_all (mixerElements[index].elem, mute.state ? 1 : 0) < 0)
+		// Set the switch for all channels in this element
+		if (snd_mixer_selem_set_capture_switch_all (mixerElements[index].elem, active.state) < 0)
 		{
-			PLAYER_WARN1 ("Error setting capture mute for element %d", index);
+			PLAYER_WARN1 ("Error setting capture switch for element %d", index);
 		}
 		else
-			mixerElements[index].capMute = mute.state ? true : false;
+			mixerElements[index].capSwitch = active.state;
 	}
 	else if (mixerElements[index].caps & ELEMCAP_COMMON)
 	{
-		// Set the mute for all channels in this element
-		if (snd_mixer_selem_set_playback_volume_all (mixerElements[index].elem, mute.state ? 1 : 0) < 0)
+		// Set the switch for all channels in this element
+		if (snd_mixer_selem_set_playback_switch_all (mixerElements[index].elem, active.state) < 0)
 		{
-			PLAYER_WARN1 ("Error setting common mute for element %d", index);
+			PLAYER_WARN1 ("Error setting common switch for element %d", index);
 		}
 		else
-			mixerElements[index].comMute = mute.state ? true : false;
+			mixerElements[index].comSwitch = active.state;
 	}
 }
 
@@ -1222,7 +1688,7 @@ long Alsa::LevelFromPlayer (long min, long max, float level)
 void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 {
 	long min, cur, max;
-	bool mute;
+	int switchStatus;
 	printf ("Mixer elements:\n");
 	for (uint32_t ii = 0; ii < count; ii++)
 	{
@@ -1231,21 +1697,21 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 			min = elements[ii].minPlayVol;
 			cur = elements[ii].curPlayVol;
 			max = elements[ii].maxPlayVol;
-			mute = elements[ii].playMute;
+			switchStatus = elements[ii].playSwitch;
 		}
 		else if (elements[ii].caps & ELEMCAP_CAN_CAPTURE)
 		{
 			min = elements[ii].minCapVol;
 			cur = elements[ii].curCapVol;
 			max = elements[ii].maxCapVol;
-			mute = elements[ii].capMute;
+			switchStatus = elements[ii].capSwitch;
 		}
 		else if (elements[ii].caps & ELEMCAP_COMMON)
 		{
 			min = elements[ii].minComVol;
 			cur = elements[ii].curComVol;
 			max = elements[ii].maxComVol;
-			mute = elements[ii].comMute;
+			switchStatus = elements[ii].comSwitch;
 		}
 		printf ("Element %d:\t%s\n", ii, elements[ii].name);
 		printf ("Capabilities:\t");
@@ -1258,7 +1724,7 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 		printf ("\n");
 		printf ("Volume range:\t%ld->%ld\n", min, max);
 		printf ("Current volume:\t%ld\n", cur);
-		printf ("Active:\t%s\n", mute ? "No" : "Yes");
+		printf ("Active:\t%s\n", switchStatus ? "Yes" : "No");
 	}
 }
 
@@ -1271,24 +1737,63 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 Alsa::Alsa (ConfigFile* cf, int section)
     : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIO_CODE)
 {
-	pcmName = device = NULL;
+	pbDevice = mixerDevice = recDevice = NULL;
+	pbHandle = NULL;
+	recHandle = NULL;
+	mixerHandle = NULL;
 	samplesHead = samplesTail = NULL;
+	queueHead = queueTail = NULL;
 	nextSampleIdx = 0;
 	mixerElements = NULL;
+	periodBuffer = NULL;
+	pbFDs = recFDs = NULL;
+	recData = NULL;
 
 	// Read the config file options - see header for descriptions if not here
-	block = cf->ReadBool (section, "block", true);
-	pcmName = strdup (cf->ReadString (section, "interface", "plughw:0,0"));
-	device = strdup (cf->ReadString (section, "mixerdevice", "default"));
-//	pbRate = cf->ReadInt (section, "pb_rate", 44100);
-//	pbNumChannels = cf->ReadInt (section, "pb_numchannels", 2);
+	useQueue = cf->ReadBool (section, "usequeue", true);
+	pbDevice = strdup (cf->ReadString (section, "pbdevice", NULL));
+	mixerDevice = strdup (cf->ReadString (section, "mixerdevice", NULL));
+	recDevice = strdup (cf->ReadString (section, "recdevice", NULL));
+	cfgPBPeriodTime = cf->ReadInt (section, "pb_periodlength", 50);
+	cfgPBBufferTime = cf->ReadInt (section, "pb_bufferlength", 500);
+	// Don't have silence if not using the queue system
+	silenceTime = useQueue? cf->ReadInt (section, "pb_silence", 0) : 0;
+	cfgRecPeriodTime = cf->ReadInt (section, "rec_periodlength", 50);
+	cfgRecBufferTime = cf->ReadInt (section, "rec_bufferlength", 500);
+	recNumChannels = cf->ReadInt (section, "rec_nch", 1);
+	recSampleRate = cf->ReadInt (section, "rec_sr", 44100);
+	recBits = cf->ReadInt (section, "rec_bits", 16);
+
+	// Check recording rates are sane
+	if (recNumChannels != 1 && recNumChannels != 2)
+	{
+		PLAYER_WARN ("Recording channels must be 1 or 2; recording functionality will not be available");
+		if (recDevice)
+			free (recDevice);
+		recDevice = NULL;
+	}
+	if (recSampleRate != 11025 && recSampleRate != 22050 && recSampleRate != 44100 && recSampleRate != 48000)
+	{
+		PLAYER_WARN ("Recording sample rate must be one of 11025Hz, 22050Hz, 44100Hz, 48000Hz; recording functionality will not be available");
+		if (recDevice)
+			free (recDevice);
+		recDevice = NULL;
+	}
+	if (recBits != 8 && recBits != 16)
+	{
+		PLAYER_WARN ("Recording bits per sample must be 8 or 16; recording functionality will not be available");
+		if (recDevice)
+			free (recDevice);
+		recDevice = NULL;
+	}
+
 	// Read sample names
 	int numSamples = cf->GetTupleCount (section, "samples");
 	if (numSamples > 0)
 	{
 		for (int ii = 0; ii < numSamples; ii++)
 		{
-			if (!AddFileSample (cf->ReadTupleString (section, "samples", ii, "")))
+			if (!AddStoredSample (cf->ReadTupleString (section, "samples", ii, "error_bad_sample_path")))
 			{
 				PLAYER_ERROR1 ("Could not add audio sample %d", cf->ReadTupleString (section, "samples", ii, ""));
 				return;
@@ -1302,24 +1807,20 @@ Alsa::Alsa (ConfigFile* cf, int section)
 // Destructor
 Alsa::~ Alsa (void)
 {
-	if (pcmName)
-		free (pcmName);
-	if (device)
-		free (device);
+	if (pbDevice)
+		free (pbDevice);
+	if (mixerDevice)
+		free (mixerDevice);
+	if (recDevice)
+		free (recDevice);
 	if (samplesHead)
 	{
-		AudioSample *currentSample = samplesHead;
-		AudioSample *previousSample = currentSample;
+		StoredSample *currentSample = samplesHead;
+		StoredSample *previousSample = currentSample;
 		while (currentSample != NULL)
 		{
-			if (currentSample->localPath)
-				free (currentSample->localPath);
-			if (currentSample->memData)
-			{
-				if (currentSample->memData->data)
-					delete[] currentSample->memData->data;
-				delete currentSample->memData;
-			}
+			if (currentSample->sample)
+				delete currentSample->sample;
 			previousSample = currentSample;
 			currentSample = currentSample->next;
 			delete previousSample;
@@ -1330,23 +1831,43 @@ Alsa::~ Alsa (void)
 // Set up the device. Return 0 if things go well, and -1 otherwise.
 int Alsa::Setup (void)
 {
-	pbStream = SND_PCM_STREAM_PLAYBACK;	// Make the playback stream
+	// Clear queue and set to initial values
+	ClearQueue ();
 
-	// Open the pcm device for either blocking or non-blocking mode
-	if (snd_pcm_open (&pcmHandle, pcmName, pbStream, block ? 0 : SND_PCM_NONBLOCK) < 0)
+	// Only setup playback if a playback name was configured
+	if (pbDevice)
 	{
-		PLAYER_ERROR1 ("Error opening PCM device %s for playback", pcmName);
-		return -1;
+		if (!SetupPlayBack ())
+		{
+			PLAYER_WARN ("Error opening playback device, playback functionality will not be available");
+			pbHandle = NULL;
+		}
 	}
 
-	if (!SetupMixer ())
+	// Only setup mixer if a mixer name was configured
+	if (mixerDevice)
 	{
-		PLAYER_WARN ("Error opening mixer, mixer interface will not be available");
-		mixerHandle = NULL;
+		if (!SetupMixer ())
+		{
+			PLAYER_WARN ("Error opening mixer, mixer functionality will not be available");
+			mixerHandle = NULL;
+		}
 	}
+
+	// Only setup recording if a recorder name was configured
+	if (recDevice)
+	{
+		if (!SetupRecord ())
+		{
+			PLAYER_WARN ("Error opening record device, record functionality will not be available");
+			recHandle = NULL;
+		}
+	}
+
+	playState = PB_STATE_STOPPED;
+	recState = PB_STATE_STOPPED;
 
 	StartThread ();
-//	printf ("Alsa driver initialised\n");
 	return 0;
 }
 
@@ -1354,9 +1875,35 @@ int Alsa::Setup (void)
 // Shutdown the device
 int Alsa::Shutdown (void)
 {
-//	printf ("Alsa driver shutting down\n");
-
 	StopThread ();
+
+	// Stop playback
+	StopPlayback ();
+
+	// Clean up PCM file descriptors
+	if (pbFDs)
+		delete[] pbFDs;
+	pbFDs = NULL;
+	if (recFDs)
+		delete[] recFDs;
+	recFDs = NULL;
+	// Close the playback handle
+	if (pbHandle)
+		snd_pcm_close (pbHandle);
+	// Clean up periodBuffer
+	if (periodBuffer != NULL)
+	{
+		delete[] periodBuffer;
+		periodBuffer = NULL;
+	}
+	// Close the record handle
+	if (recHandle)
+		snd_pcm_close (recHandle);
+	// Clean up the record data buffer
+	if (recData)
+		delete recData;
+	// Remove any queued sample data
+	ClearQueue ();
 
 	if (mixerHandle)
 	{
@@ -1364,7 +1911,7 @@ int Alsa::Shutdown (void)
 		{
 			CleanUpMixerElements (mixerElements, numElements);
 		}
-		if (snd_mixer_detach (mixerHandle, device) < 0)
+		if (snd_mixer_detach (mixerHandle, mixerDevice) < 0)
 			PLAYER_WARN ("Error detaching mixer interface");
 		else
 		{
@@ -1378,8 +1925,6 @@ int Alsa::Shutdown (void)
 		}
 	}
 
-	snd_pcm_close (pcmHandle);
-
 	return 0;
 }
 
@@ -1390,17 +1935,80 @@ int Alsa::Shutdown (void)
 
 void Alsa::Main (void)
 {
-	// If mixer is enabled, send out some mixer data
-/*	if (mixerHandle)
-		PublishMixerData ();*/
 	while (1)
 	{
 		pthread_testcancel ();
 
+		// Check playback state
+		// Check if draining the current sample
+		if (playState == PB_STATE_DRAIN)
+		{
+			// If so, need to wait until it finishes
+			if (snd_pcm_state (pbHandle) == SND_PCM_STATE_DRAINING)
+			{
+				// Do nothing if still draining
+// 				printf ("Still draining\n");
+			}
+			// The state after draining is complete is SETUP
+			else if (snd_pcm_state (pbHandle) == SND_PCM_STATE_SETUP || snd_pcm_state (pbHandle) == SND_PCM_STATE_PREPARED)
+			{
+				// Then move on to the next
+				AdvanceQueue ();
+				// If there is a next, set it up for playing
+				if (queueHead != NULL)
+				{
+					// Set parameters for the new sample
+					SetPBParams (queueHead->sample);
+					// Finished draining, so set to playing (the next if will catch this and start immediately)
+					playState = PB_STATE_PLAYING;
+				}
+				// If nothing left, moved to STOPPED state
+				else
+					playState = PB_STATE_STOPPED;
+			}
+			else
+			{
+				PLAYER_WARN1 ("Unexpected PCM state for drain: %d", snd_pcm_state (pbHandle));
+				playState = PB_STATE_STOPPED;
+			}
+		}
+		// If playing, check if the buffer is ready for more data
+		if (playState == PB_STATE_PLAYING)
+		{
+			if (poll (pbFDs, numPBFDs, 5) > 0)
+			{
+// 				struct timeval timeVal;
+// 				gettimeofday (&timeVal, NULL);
+// 				printf ("%d.%d: Buffer is ready to write\n", timeVal.tv_sec, timeVal.tv_usec);
+// 				fflush (NULL);
+				// If it is, check each file descriptor
+				for (int ii = 0; ii < numPBFDs; ii++)
+					if (pbFDs[ii].revents > 0)
+						PlaybackCallback (pbPeriodSize);
+			}
+		}
+
+		// Check record state
+		if (recState == PB_STATE_RECORDING)
+		{
+			if (poll (recFDs, numRecFDs, 5) > 0)
+			{
+// 				struct timeval timeVal;
+// 				gettimeofday (&timeVal, NULL);
+// 				printf ("%d.%d: Buffer is ready to read\n", timeVal.tv_sec, timeVal.tv_usec);
+// 				fflush (NULL);
+				// If it is, check each file descriptor
+				for (int ii = 0; ii < numRecFDs; ii++)
+					if (recFDs[ii].revents > 0)
+						RecordCallback (recPeriodSize);
+			}
+		}
+
 	    // Handle pending messages
 		if (!InQueue->Empty ())
 		{
-			ProcessMessages ();
+			// Process one message at a time before checking sound buffer states
+			ProcessMessages (1);
 		}
 	}
 }
@@ -1412,67 +2020,48 @@ void Alsa::Main (void)
 
 int Alsa::HandleWavePlayCmd (player_audio_wav_t *data)
 {
-	WaveData wave;
-	wave.data = NULL;
-
-	if (!PlayerToWaveData (data, &wave))
-		return -1;
-	// Set hardware parameters for the wave data
-	if (SetHWParams (&wave))
+	// Add the wave to the queue
+	if (!AddToQueue (data))
 	{
-		if (PlayWave (&wave))
-		{
-			delete[] wave.data;
-			return 0;	// Success
-		}
+		PLAYER_WARN ("Unable to add wave data to queue");
+		return -1;
 	}
-	delete[] wave.data;
-	// Failure
-	return -1;
+	// Start playback
+	StartPlayback ();
+
+	return 0;
 }
 
 int Alsa::HandleSamplePlayCmd (player_audio_sample_item_t *data)
 {
-	AudioSample *sample;
-	WaveData *wave = NULL;
+	StoredSample *sample;
 	// Find the sample to be retrieved
 	if ((sample = GetSampleAtIndex (data->index)) == NULL)
 	{
 		PLAYER_ERROR1 ("Couldn't find sample at index %d", data->index);
 		return -1;
 	}
-	if (sample->type == SAMPLE_TYPE_LOCAL)
+
+	// Add the sample to the queue
+	if (!AddToQueue (sample->sample))
 	{
-		// Load the file
-		if ((wave = LoadWaveFromFile (sample->localPath)) == NULL)
-		{
-			PLAYER_ERROR1 ("Couldn't load sample at index %d", data->index);
-			return -1;
-		}
-		// Set hardware parameters for this wave data
-		if (!SetHWParams (wave))
-		{
-			delete[] wave->data;
-			delete wave;
-			return -1;
-		}
-		// Play the file
-		if (!PlayWave (wave))
-		{
-			delete[] wave->data;
-			delete wave;
-			return -1;
-		}
+		PLAYER_WARN ("Unable to add sample to queue");
+		return -1;
 	}
+
+	// Start playback
+	StartPlayback ();
+
+	return 0;
+}
+
+int Alsa::HandleRecordCmd (player_bool_t *data)
+{
+	if (data->state)
+		StartRecording ();
 	else
-	{
-		// Set hardware parameters for the wave data
-		if (!SetHWParams (sample->memData))
-			return -1;
-		// Wave file is in memory, play that
-		if (!PlayWave (sample->memData))
-			return -1;
-	}
+		StopRecording ();
+
 	return 0;
 }
 
@@ -1481,7 +2070,7 @@ int Alsa::HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data)
 	for (uint32_t ii = 0; ii < data->channels_count; ii++)
 	{
 		SetElementLevel (data->channels[ii].index, data->channels[ii].amplitude);
-		SetElementMute (data->channels[ii].index, data->channels[ii].active);
+		SetElementSwitch (data->channels[ii].index, data->channels[ii].active);
 	}
 
 	PublishMixerData ();
@@ -1494,13 +2083,10 @@ int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_q
 	// If the requested index to store at is at end or -1, append to the list
 	if (data->index == nextSampleIdx || data->index == -1)
 	{
-		if (AddMemorySample (&data->sample))
+		if (AddStoredSample (&data->sample))
 			return 0;	// All happy
 		else
-		{
-			PLAYER_ERROR ("Failed to load new sample");
 			return -1;	// Error occured
-		}
 	}
 	// If the sample is negative (but not -1) or beyond the end, error
 	else if (data->index < -1 || data->index > nextSampleIdx)
@@ -1511,46 +2097,30 @@ int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_q
 	else
 	{
 		// Find the sample to be replaced
-		AudioSample *oldSample;
+		StoredSample *oldSample;
 		if ((oldSample = GetSampleAtIndex (data->index)) == NULL)
 		{
 			PLAYER_ERROR1 ("Couldn't find sample at index %d", data->index);
 			return -1;
 		}
-		// Replace it with the new one, freeing the old one first
-		if (oldSample->type == SAMPLE_TYPE_LOCAL)
+		// Replace it with the new one, freeing the old one
+		// First create the new sample
+		AudioSample *newSample = NULL;
+		if ((newSample = new AudioSample) == NULL)
 		{
-			// Create here first so don't delete the old one if have an error
-			WaveData *newData;
-			if ((newData = new WaveData) == NULL)
-			{
-				PLAYER_ERROR ("Failed to allocate memory for new audio sample");
-				return -1;
-			}
-
-			free (oldSample->localPath);
-			oldSample->memData = newData;
-			memset (oldSample->memData, 0, sizeof (WaveData));
-			if (!PlayerToWaveData (&data->sample, oldSample->memData))
-			{
-				PLAYER_ERROR ("Error copying new sample over old");
-				return -1;
-			}
-			oldSample->type = SAMPLE_TYPE_REMOTE;
+			PLAYER_ERROR ("Failed to allocate memory for new audio sample");
+			return -1;
 		}
-		else
+		if (!newSample->FromPlayer (&data->sample))
 		{
-			// Clear out the old sample
-			delete[] oldSample->memData->data;
-			memset (oldSample->memData, 0, sizeof (WaveData));
-			// Copy the new sample into its place
-			if (!PlayerToWaveData (&data->sample, oldSample->memData))
-			{
-				PLAYER_ERROR ("Error copying new sample over old");
-				return -1;
-			}
-			oldSample->type = SAMPLE_TYPE_REMOTE;
+			PLAYER_ERROR ("Failed to copy new audio sample");
+			return -1;
 		}
+		// Delete the old sample
+		if (oldSample->sample)
+			delete oldSample->sample;
+		// Update the pointer
+		oldSample->sample = newSample;
 	}
 	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_LOAD_REQ, NULL, 0, NULL);
 	return 0;
@@ -1567,50 +2137,18 @@ int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *re
 	else
 	{
 		// Find the sample to be retrieved
-		AudioSample *sample;
+		StoredSample *sample;
 		if ((sample = GetSampleAtIndex (data->index)) == NULL)
 		{
 			PLAYER_ERROR1 ("Couldn't find sample at index %d", data->index);
 			return -1;
 		}
-		// Create a structure to return to the client if local, otherwise just
-		// return the existing stored struct
-		if (sample->type == SAMPLE_TYPE_LOCAL)
-		{
-			// Load the wave file from disc
-			WaveData *wave = NULL;
-			if ((wave = LoadWaveFromFile (sample->localPath)) == NULL)
-			{
-				PLAYER_ERROR1 ("Couldn't load sample at index %d", data->index);
-				return -1;
-			}
-
-			// Build the result to return to the client
-			player_audio_sample_t result;
-			memset (&result, 0, sizeof (player_audio_sample_t));
-			result.index = data->index;
-			// Copy the loaded data into the result
-			WaveDataToPlayer (wave, &result.sample);
-
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, &result, sizeof (player_audio_sample_t), NULL);
-
-			// Delete the loaded wave data
-			delete[] wave->data;
-			delete wave;
-			return 0;
-		}
-		else
-		{
-			// Build the result to return to the client
-			player_audio_sample_t result;
-			memset (&result, 0, sizeof (player_audio_sample_t));
-			result.index = data->index;
-			// Copy the stored data into the result
-			WaveDataToPlayer (sample->memData, &result.sample);
-
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, &result, sizeof (player_audio_sample_t), NULL);
-			return 0;
-		}
+		// Convert the data to a player struct
+		player_audio_sample_t result;
+		memset (&result, 0, sizeof (player_audio_sample_t));
+		result.index = data->index;
+		sample->sample->ToPlayer (&result.sample);
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, &result, sizeof (player_audio_sample_t), NULL);
 	}
 	return -1;
 }
@@ -1638,44 +2176,59 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 {
 	// Check for capabilities requests first
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ);
-	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ);
+	if (pbHandle)
+	{
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ);
+	}
+	if (recHandle)
+	{
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD);
+	}
+	if (mixerHandle)
+	{
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ);
+	}
 
 	// Commands
-	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD, this->device_addr))
+	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD, device_addr) && pbHandle)
 	{
 		HandleWavePlayCmd (reinterpret_cast<player_audio_wav_t*> (data));
 		return 0;
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD, this->device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD, device_addr) && pbHandle)
 	{
 		HandleSamplePlayCmd (reinterpret_cast<player_audio_sample_item_t*> (data));
 		return 0;
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD, this->device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD, device_addr) && recHandle)
+	{
+		HandleRecordCmd (reinterpret_cast<player_bool_t*> (data));
+		return 0;
+	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD, device_addr) && mixerHandle)
 	{
 		HandleMixerChannelCmd (reinterpret_cast<player_audio_mixer_channel_list_t*> (data));
 		return 0;
 	}
 	// Requests
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ, this->device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ, device_addr) && pbHandle)
 	{
 		return HandleSampleLoadReq (reinterpret_cast<player_audio_sample_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, this->device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, device_addr) && pbHandle)
 	{
 		return HandleSampleRetrieveReq (reinterpret_cast<player_audio_sample_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, this->device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, device_addr) && mixerHandle)
 	{
 		return HandleMixerChannelListReq (reinterpret_cast<player_audio_mixer_channel_list_detail_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ, this->device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ, device_addr) && mixerHandle)
 	{
 		return HandleMixerChannelLevelReq (reinterpret_cast<player_audio_mixer_channel_list_t*> (data), resp_queue);
 	}
