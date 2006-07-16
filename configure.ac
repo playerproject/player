@@ -437,6 +437,9 @@ if test "x$have_pkg_config" = "xyes"; then
 fi
 AM_CONDITIONAL(WITH_GSL, test "x$with_gsl" = "xyes")
 
+dnl Do we have XMMS (used for xmms plugin)?
+AC_CHECK_PROG(have_xmms,xmms-config,yes,no)
+AM_CONDITIONAL(HAVE_XMMS, test "x$have_xmms" = "xyes")
 
 dnl Optionally build python bindings to libplayerc (libplayerc-py)
 AC_ARG_ENABLE(libplayerc-py,
@@ -573,6 +576,7 @@ dnl          client_libs/libplayerpacket/Makefile
           utils/playervcr/Makefile
           utils/pmap/Makefile
           utils/dgps_server/Makefile
+          utils/xmms-plugin/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)
 
