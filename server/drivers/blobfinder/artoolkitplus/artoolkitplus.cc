@@ -161,6 +161,9 @@ ARToolkitPlusDriver::ARToolkitPlusDriver( ConfigFile* cf, int section)
     //  - with an arbitrary default image size
     tracker = new ARToolKitPlus::TrackerSingleMarkerImpl<6,6,6, 1, 8>(LastFrameWidth,LastFrameHeight);
     
+	tracker->setPixelFormat(ARToolKitPlus::PIXEL_FORMAT_LUM);
+
+	
     // set a logger so we can output error messages
     //
     tracker->setLogger(&logger);
