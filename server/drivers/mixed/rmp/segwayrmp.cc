@@ -322,6 +322,7 @@ SegwayRMP::Main()
   for(;;)
   {
     pthread_testcancel();
+	ProcessMessages();
     
     // Read from the RMP
     if(Read() < 0)
