@@ -256,7 +256,7 @@ them named:
     previous actuator's coordinate space.
   - Each set of three values is a single orientation.
 - aa_axes (3x6 floats)
-  - Default: ((0,0,1), (0,1,0), (0,1,0), (0,1,0), (1,0,0), (0,1,0), (0,0,1))
+  - Default: ((0,0,-1), (0,-1,0), (0,-1,0), (1,0,0), (0,1,0), (0,0,1))
   - The axis of rotation for each joint in the actarray.
   - Each set of three values is a vector along the axis of rotation.
 - limb_pos (3 floats)
