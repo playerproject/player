@@ -744,7 +744,7 @@ The inteface provides four sets of functionality:
 #define PLAYER_AUDIO_MIXER_CHANNEL_NAME_SIZE     64
 
 /** Mixer channel list length */
-#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE     48
+#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE     64
 
 /** Sequencer sequence length */
 #define PLAYER_AUDIO_SEQ_LENGTH                  64
