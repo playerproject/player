@@ -8,4 +8,4 @@ AM_CPPFLAGS = -Wall -I$(top_srcdir)
 liberratic_la_SOURCES = erratic.cc erratic.h \
                      packet.h packet.cc \
                      robot_params.cc robot_params.h \
-                     sip.cc sip.h replace.h
+                     sip.cc sip.h
