@@ -49,7 +49,7 @@
 /** The maximum number of devices the server will support. */
 #define PLAYER_MAX_DEVICES             256
 /** Default maximum length for a message queue */
-#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 32
+#define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 1024
 /** String that is spit back as a banner on connection */
 #define PLAYER_IDENT_STRING    "Player v."
 /** Length of string that is spit back as a banner on connection */
@@ -3001,6 +3001,12 @@ libraries when they begin reading. */
 #define PLAYER_PLAYER_REQ_IDENT       9
 #define PLAYER_PLAYER_REQ_ADD_REPLACE_RULE 10
 
+
+/** A replace rule can either accept, replace or ignore 
+a message.*/
+#define PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT  0
+#define PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE 1
+#define PLAYER_PLAYER_MSG_REPLACE_RULE_IGNORE  2
 
 /** @brief Request/reply: Get the list of available devices.
 

@@ -158,7 +158,7 @@ class MessageReplaceRule
     int type, subtype;
   public:
     MessageReplaceRule(int _host, int _robot, int _interf, int _index,
-                       int _type, int _subtype, bool _replace) :
+                       int _type, int _subtype, int _replace) :
             host(_host), robot(_robot), interf(_interf), index(_index),
             type(_type), subtype(_subtype), replace(_replace), next(NULL) {}
 
@@ -180,13 +180,13 @@ class MessageReplaceRule
 
     bool Equivalent (int _host, int _robot, int _interf, int _index, int _type, int _subtype)
     {
-      return (host == _host && robot == _robot && _interf && index == _index &&
+      return (host == _host && robot == _robot && interf ==_interf && index == _index &&
           type == _type && subtype == _subtype);
     }
 
     // To replace, or not to replace
     // That is the question
-    bool replace;
+    int replace;
     // Next rule in the list
     MessageReplaceRule* next;
 };
@@ -251,11 +251,13 @@ class MessageQueue
     ~MessageQueue();
     /// Check whether a queue is empty
     bool Empty() { return(this->head == NULL); }
-    /** Push a message onto the queue.  Returns a pointer to the new last
-    element in the queue. UseReserved should only be set true when pushing sync
+    /** Push a message onto the queue.  Returns the success state of the Push 
+    operation (true if successful, false otherwise).
+    UseReserved should only be set true when pushing sync
     messages on to the queue. If UseReserved is false then a single message slot
     is reserved on the queue for a sync message */
-    MessageQueueElement * Push(Message& msg, bool UseReserved = false);
+    bool Push(Message& msg, bool UseReserved = false);
+    
     /** Pop a message off the queue.
     Pop the head (i.e., the first-inserted) message from the queue.
     Returns pointer to said message, or NULL if the queue is empty */
@@ -276,17 +278,17 @@ class MessageQueue
      * occur.  Set any of the first 6 arguments to -1 to indicate don't
      * care. */
     void AddReplaceRule(int _host, int _robot, int _interf, int _index,
-                        int _type, int _subtype, bool _replace);
+                        int _type, int _subtype, int _replace);
     /** Add a replacement rule to the list.  Use this version if you
      * already have the device address assembled in a player_devaddr_t
      * structure.  The tradeoff is that you cannot use -1 to indicate don't
      * care for those values (the fields in that structure are unsigned).
      * */
     void AddReplaceRule(const player_devaddr_t &device,
-                        int _type, int _subtype, bool _replace);
+                        int _type, int _subtype, int _replace);
     /// @brief Check whether a message with the given header should replace
-    /// any existing message of the same signature.
-    bool CheckReplace(player_msghdr_t* hdr);
+    /// any existing message of the same signature, be ignored or accepted.
+    int CheckReplace(player_msghdr_t* hdr);
     /** Wait on this queue.  This method blocks until new data is available
     (as indicated by a call to DataAvailable()). */
     void Wait(void);
