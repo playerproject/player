@@ -397,6 +397,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position3d_cmd_pos_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_CMD_SET_VEL,
     (player_pack_fn_t)player_position3d_cmd_vel_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_GET_GEOM,
+    (player_pack_fn_t)player_position3d_geom_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_MOTOR_POWER,
     (player_pack_fn_t)player_position3d_power_config_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_POSITION_MODE,
@@ -407,7 +409,12 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position3d_set_odom_req_pack},
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_VELOCITY_MODE,
     (player_pack_fn_t)player_position3d_velocity_mode_config_pack},
-
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_SPEED_PID,
+    (player_pack_fn_t)player_position3d_speed_pid_req_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_POSITION_PID,
+    (player_pack_fn_t)player_position3d_position_pid_req_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_SPEED_PROF,
+    (player_pack_fn_t)player_position3d_speed_prof_req_pack},
 
   /* power messages */
   {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
@@ -567,6 +574,17 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
   if(!ftable_len)
     return(NULL);
 
+  for(i=0;i<ftable_len;i++)
+  {
+    curr = ftable + i;
+    // Make sure the interface and subtype match exactly.
+    // match anyway if interface = 0 (universal data types)
+    if((curr->interf == interf || curr->interf == 0) &&
+      curr->type == type &&
+      curr->subtype == subtype)
+      return(curr->func);
+  }
+  
   // The supplied type can be RESP_ACK if the registered type is REQ.
   if (type == PLAYER_MSGTYPE_RESP_ACK || type == PLAYER_MSGTYPE_RESP_NACK)
     type = PLAYER_MSGTYPE_REQ;

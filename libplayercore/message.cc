@@ -162,7 +162,7 @@ MessageQueue::~MessageQueue()
 /// @brief Add a replacement rule to the list
 void
 MessageQueue::AddReplaceRule(int _host, int _robot, int _interf, int _index,
-                             int _type, int _subtype, bool _replace)
+                             int _type, int _subtype, int _replace)
 {
   MessageReplaceRule* curr;
   for(curr=this->replaceRules;curr;curr=curr->next)
@@ -198,13 +198,13 @@ MessageQueue::AddReplaceRule(int _host, int _robot, int _interf, int _index,
 /// @brief Add a replacement rule to the list
 void
 MessageQueue::AddReplaceRule(const player_devaddr_t &device,
-                             int _type, int _subtype, bool _replace)
+                             int _type, int _subtype, int _replace)
 {
   this->AddReplaceRule (device.host, device.robot, device.interf, device.index,
                         _type, _subtype, _replace);
 }
 
-bool
+int
 MessageQueue::CheckReplace(player_msghdr_t* hdr)
 {
   // First look through the replacement rules
@@ -221,11 +221,11 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
      (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
      (hdr->type == PLAYER_MSGTYPE_RESP_NACK) ||
      (hdr->type == PLAYER_MSGTYPE_SYNCH))
-    return(false);
+    return(PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
   // Replace data and command according to the this->Replace flag
   else if((hdr->type == PLAYER_MSGTYPE_DATA) ||
           (hdr->type == PLAYER_MSGTYPE_CMD))
-    return(this->Replace);
+    return(this->Replace ? PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE : PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
   else
   {
     PLAYER_ERROR1("encountered unknown message type %u", hdr->type);
@@ -352,7 +352,7 @@ MessageQueue::DataAvailable(void)
   pthread_mutex_unlock(&this->condMutex);
 }
 
-MessageQueueElement*
+bool
 MessageQueue::Push(Message & msg, bool UseReserved)
 {
   player_msghdr_t* hdr;
@@ -361,7 +361,13 @@ MessageQueue::Push(Message & msg, bool UseReserved)
   this->Lock();
   hdr = msg.GetHeader();
   // Should we try to replace an older message of the same signature?
-  if(this->CheckReplace(hdr))
+  int replaceOp = this->CheckReplace(hdr);
+  if (replaceOp == PLAYER_PLAYER_MSG_REPLACE_RULE_IGNORE)
+  {
+    this->Unlock();
+    return(true);
+  }
+  else if (replaceOp == PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE)
   {
     for(MessageQueueElement* el = this->tail;
         el != NULL;
@@ -384,7 +390,7 @@ MessageQueue::Push(Message & msg, bool UseReserved)
     this->Unlock();
     if(!this->filter_on)
       this->DataAvailable();
-    return(NULL);
+    return(false);
   }
   else
   {
@@ -411,7 +417,7 @@ MessageQueue::Push(Message & msg, bool UseReserved)
     this->Unlock();
     if(!this->filter_on || this->Filter(msg))
       this->DataAvailable();
-    return(newelt);
+    return(true);
   }
 }
 
