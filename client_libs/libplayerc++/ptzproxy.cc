@@ -82,6 +82,14 @@ void PtzProxy::SetCam(double aPan, double aTilt, double aZoom)
   playerc_ptz_set(mDevice, aPan, aTilt, aZoom);
 }
 
+void PtzProxy::SelectControlMode(uint aMode)
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+  if (0 != playerc_ptz_set_control_mode(mDevice, aMode))
+    throw PlayerError("PtzProxy::SelectControlMode()", "error setting control mode");
+  return;
+}
+
 /** Specify new target velocities */
 void PtzProxy::SetSpeed(double aPanSpeed, double aTiltSpeed, double aZoomSpeed)
 {

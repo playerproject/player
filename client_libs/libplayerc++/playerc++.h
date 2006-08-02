@@ -1855,9 +1855,9 @@ class PtzProxy : public ClientProxy
     /// Specify new target velocities
     void SetSpeed(double aPanSpeed=0, double aTiltSpeed=0, double aZoomSpeed=0);
 
-    // Select new control mode.  Use either PLAYER_PTZ_POSITION_CONTROL
-    // or PLAYER_PTZ_VELOCITY_CONTROL.
-    //void SelectControlMode(uint aMode);
+    /// Select new control mode.  Use either @ref PLAYER_PTZ_POSITION_CONTROL
+    /// or @ref PLAYER_PTZ_VELOCITY_CONTROL.
+    void SelectControlMode(uint aMode);
 
     /// Return Pan (rad)
     double GetPan() const { return GetVar(mDevice->pan); };

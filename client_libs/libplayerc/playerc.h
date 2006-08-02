@@ -2384,6 +2384,14 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom)
 int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zoom,
                        double panspeed, double tiltspeed);
 
+/** @brief Change control mode (select velocity or position control)
+
+  @param device Pointer to proxy object.
+  @param mode Desired mode (@ref PLAYER_PTZ_VELOCITY_CONTROL or @ref PLAYER_PTZ_POSITION_CONTROL)
+
+  @returns 0 on success, -1 on error, -2 on NACK.
+*/
+int playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode);
 
 /** @} */
 /**************************************************************************/
