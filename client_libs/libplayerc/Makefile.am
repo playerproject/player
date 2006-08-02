@@ -52,6 +52,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_simulation.c \
                         dev_sonar.c \
                         dev_speech.c \
+                        dev_speech_recognition.c \
                         dev_wifi.c \
 			dev_wsn.c
 

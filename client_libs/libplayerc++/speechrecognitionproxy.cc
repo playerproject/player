@@ -26,63 +26,55 @@
 
 #include "playerc++.h"
 
-SpeechRecognitionProxy::SpeechRecognitionProxy (PlayerClient *pc, unsigned short index, unsigned char access)
-: ClientProxy( pc, PLAYER_SPEECH_RECOGNITION_CODE, index, access)
+using namespace PlayerCc;
+
+SpeechRecognitionProxy::SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex)
+  : ClientProxy(aPc, aIndex),
+  mDevice(NULL)
 {
+  Subscribe(aIndex);
+  // how can I get this into the clientproxy.cc?
+  // right now, we're dependent on knowing its device type
+  mInfo = &(mDevice->info);
 }
 
-// Destructor
 SpeechRecognitionProxy::~SpeechRecognitionProxy()
 {
+  Unsubscribe();
 }
 
-// interface that all proxies must provide
-void SpeechRecognitionProxy::FillData (player_msghdr_t hdr, const char *buffer)
+void
+SpeechRecognitionProxy::Subscribe(uint aIndex)
 {
-  int i,j;
-  int startIndex = 0;
+  scoped_lock_t lock(mPc->mMutex);
+  mDevice = playerc_speech_recognition_create(mClient, aIndex);
+  if (NULL==mDevice)
+    throw PlayerError("SpeechRecognitionProxy::SpeechRecognitionProxy()", "could not create");
 
-  player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;
-
-  if(hdr.size != sizeof(player_speech_recognition_data_t))
-  {
-    if(player_debug_level(-1) >= 1)
-      fprintf(stderr,"WARNING: expected %d bytes of speech recognition data, but "
-              "received %d. Unexpected results may ensue.\n",
-              sizeof(player_speech_recognition_data_t),hdr.size);
-  }
-
-  this->wordCount = 0;
-
-  printf ("Text[%s] Length[%d]\n",data->text, strlen(data->text));
-
-  // Split the text string into words
-  for (i=0; i<strlen(data->text); i++)
-  {
-    // If space, then reached a word boundary. So create a new word
-    if (data->text[i] == ' ' && i > startIndex)
-    {
-      // Copy the word
-      for (j=startIndex; j<i; j++)
-        this->words[this->wordCount][j-startIndex] = data->text[j];
-
-      // Add string termination character
-      this->words[this->wordCount][i-startIndex] = '\0';
-
-      //printf("Word[%s]\n",this->words[this->wordCount]);
-
-      startIndex = i+1;
-      this->wordCount++;
-    }
-  }
+  if (0 != playerc_speech_recognition_subscribe(mDevice, PLAYER_OPEN_MODE))
+    throw PlayerError("SpeechRecognitionProxy::SpeechRecognitionProxy()", "could not subscribe");
 }
 
-void SpeechRecognitionProxy::Clear()
+void
+SpeechRecognitionProxy::Unsubscribe()
 {
-  this->wordCount = 0;
-
-  for (int i=0; i<20; i++)
-  {
-    memset(this->words[i],0,30);
-  }
+  assert(NULL!=mDevice);
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_speech_recognition_unsubscribe(mDevice);
+  playerc_speech_recognition_destroy(mDevice);
+  mDevice = NULL;
 }
+
+std::ostream&
+std::operator << (std::ostream &os, const PlayerCc::SpeechRecognitionProxy &c)
+{
+  os << "#SpeechRecognition (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
+  os << " words [" << c.GetCount() << "]: ";
+  for (uint i=0; i < c.GetCount(); i++)
+  {
+    std::cout << c.GetWord(i) << " " ;
+  }
+  os << std::endl;
+  return os;
+}
+
