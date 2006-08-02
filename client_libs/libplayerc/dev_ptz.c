@@ -137,3 +137,17 @@ int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt,
                               PLAYER_PTZ_CMD_STATE, &cmd, NULL);
 }
 
+// Change control mode
+int
+playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode)
+{
+  player_ptz_req_control_mode_t config;
+
+  config.mode = mode;
+
+  return(playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_PTZ_REQ_CONTROL_MODE,
+                                &config, NULL, 0));
+}
+
