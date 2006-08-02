@@ -203,7 +203,7 @@ Sphinx2::Sphinx2( ConfigFile *cf, int section )
   this->lmFile = cf->ReadFilename( section, "lm_file",
       "/usr/local/share/sphinx2/model/lm/turtle/turtle.lm");
   this->dictFile = cf->ReadFilename( section, "dict_file",
-      "/usr/local/share/sphinx2/model/lm/turtle/turtle.dict");
+      "/usr/local/share/sphinx2/model/lm/turtle/turtle.dic");
 }
 
 Sphinx2::~Sphinx2()
@@ -212,11 +212,11 @@ Sphinx2::~Sphinx2()
 
 int Sphinx2::Setup()
 {
-  int argc = 72;
+  int argc = 70;
 
   // Here are all the available options. Maybe at some point this will
   // become config file options...
-  const char *argv[72] = {
+  const char *argv[70] = {
                   "-hmmdir", this->hmmDir,
                   "-hmmdirlist", this->hmmDir,
                   "-cbdir", this->hmmDir,
@@ -251,7 +251,7 @@ int Sphinx2::Setup()
                   "-fwdflatnwbeam", "0.0003",
                   "-bestpath", "TRUE",
                   "-8bsen", "TRUE",
-                  "-maxwpf", "1"
+                  "-maxwpf", "1" // < max word repeat by sentence.
                  };
 
   /* Initialize recognition engine */
@@ -402,12 +402,15 @@ void Sphinx2::Main()
       PLAYER_ERROR("uttproc_result failed\n");
       //continue;
     }
-
+    
     strncpy(data.text, hypothesis, PLAYER_SPEECH_RECOGNITION_TEXT_LEN);
 
-    printf ("%d: %s\n", frames, data.text); fflush (stdout);
+//    printf ("%d: %s\n", frames, data.text); fflush (stdout);
+    data.text[strlen(data.text)]='\0';
+    data.text_count = strlen(data.text)+1;
 
-//    PutData( (uint8_t*)&data, sizeof(data), &time);
+    printf("data.text[%d] = %s\n",data.text_count,data.text);
+
     Publish(device_addr,NULL,
         PLAYER_MSGTYPE_DATA,PLAYER_SPEECH_RECOGNITION_DATA_STRING,
         (uint8_t*)&data, sizeof(data), NULL);

@@ -30,11 +30,12 @@ if INCLUDE_PLAYERCC
                      clientgraphics3d \
                      sonarobstacleavoid \
                      speech \
+                     speech_cpp_client \
                      wallfollow
 endif
 
 if INCLUDE_PLAYERCC_BOOST
-  example_PROGRAMS += example1 example3 goto
+  example_PROGRAMS += example1 example3 goto speech_cpp_client
 endif
 
 if INCLUDE_BOOST_SIGNALS
@@ -57,6 +58,7 @@ example_DATA = args.h \
                randomwalk.cc \
                sonarobstacleavoid.cc \
                speech.cc \
+               speech_cpp_client.cc \
                wallfollow.cc
 
 camera_SOURCES = camera.cc args.h
@@ -119,6 +121,10 @@ sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 speech_SOURCES = speech.cc args.h
 speech_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
 speech_DEPENDENCIES = $(PLAYERCC_DEPS)
+
+speech_cpp_client_SOURCES = speech_cpp_client.cc
+speech_cpp_client_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+speech_cpp_client_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 wallfollow_SOURCES = wallfollow.cc args.h
 wallfollow_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
