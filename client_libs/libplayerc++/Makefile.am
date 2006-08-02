@@ -56,6 +56,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               simulationproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
+                              speechrecognitionproxy.cc \
                               wifiproxy.cc \
                               wsnproxy.cc
 
@@ -66,7 +67,6 @@ libplayerc___la_SOURCES =     playerc++.h \
                               blinkenlightproxy.cc \
                               energyproxy.cc \
                               mcomproxy.cc \
-                              speechrecognitionproxy.cc \
                               waveformproxy.cc
 
 

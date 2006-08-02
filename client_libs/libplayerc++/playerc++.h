@@ -2031,29 +2031,33 @@ class SpeechProxy : public ClientProxy
     void Say(std::string aStr);
 };
 
-// /**
-// The @p SpeechRecognition proxy provides access to a @ref interface_speech_recognition device.
-// */
-// class SpeechRecognitionProxy : public ClientProxy
-// {
-//
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_speech_t *mDevice;
-//
-//   public:
-//     // Constructor
-//     SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);
-//
-//     ~SpeechRecognitionProxy();
-//
-//   std::string GetText();
-//
-// };
+/**
+ The @p SpeechRecognition proxy provides access to a @ref interface_speech_recognition device.
+ */
+class SpeechRecognitionProxy : public ClientProxy
+{
+   void Subscribe(uint aIndex);
+   void Unsubscribe();
+
+   ///libplayerc data structure
+   playerc_speech_recognition_t *mDevice;
+  public:
+   ///Constructor
+   SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);
+   ~SpeechRecognitionProxy();
+   /// Accessor method for getting speech recognition data i.e. words.
+   std::string GetWord(uint aWord) const{ 
+     scoped_lock_t lock(mPc->mMutex);
+     return std::string(mDevice->words[aWord]); 
+   }
+
+   /// Gets the number of words.
+   uint GetCount(void) const { return GetVar(mDevice->wordCount); }
+
+   /// Word access operator.
+   ///    This operator provides an alternate way of access the speech recognition data.
+   std::string operator [](uint aWord) { return(GetWord(aWord)); }
+};
 
 // /**
 // The @p WaveformProxy class is used to read raw digital waveforms from
@@ -2232,7 +2236,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);

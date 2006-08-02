@@ -2620,6 +2620,44 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 
 /**************************************************************************/
 /** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_speech speech recognition
+
+The speech recognition proxy provides an interface to a speech recognition system.
+
+@{
+*/
+
+/** Speech recognition proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  char rawText[PLAYER_SPEECH_RECOGNITION_TEXT_LEN];
+  // Just estimating that no more than 20 words will be spoken between updates.
+  // Assuming that the longest word is <= 30 characters.
+  char words[20][30];
+  int wordCount;
+} playerc_speech_recognition_t;
+
+
+/** Create a speech recognition proxy. */
+playerc_speech_recognition_t *playerc_speech_recognition_create(playerc_client_t *client, int index);
+
+/** Destroy a speech recognition proxy. */
+void playerc_speech_recognition_destroy(playerc_speech_recognition_t *device);
+
+/** Subscribe to the speech recognition device. */
+int playerc_speech_recognition_subscribe(playerc_speech_recognition_t *device, int access);
+
+/** Un-subscribe from the speech recognition device */
+int playerc_speech_recognition_unsubscribe(playerc_speech_recognition_t *device);
+  
+/** @} */
+/***************************************************************************/
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
     @defgroup playerc_proxy_rfid rfid
 
 The rfid proxy provides an interface to a RFID reader.
