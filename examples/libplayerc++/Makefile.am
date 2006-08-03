@@ -30,7 +30,6 @@ if INCLUDE_PLAYERCC
                      clientgraphics3d \
                      sonarobstacleavoid \
                      speech \
-                     speech_cpp_client \
                      wallfollow
 endif
 
