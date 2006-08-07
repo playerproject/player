@@ -157,6 +157,7 @@ in the body.*/
 #define PLAYER_RFID_CODE           56  // RFID reader interface
 #define PLAYER_WSN_CODE            57  // Wireless Sensor Networks interface
 #define PLAYER_GRAPHICS3D_CODE     58  // Graphics3D interface
+#define PLAYER_HEALTH_CODE	   59  // Statgrab Health interface
 /** @} */
 
 /** @ingroup message_basics
@@ -183,8 +184,9 @@ in the body.*/
 #define PLAYER_GRIPPER_STRING         "gripper"
 #define PLAYER_FIDUCIAL_STRING        "fiducial"
 #define PLAYER_GPS_STRING             "gps"
-#define PLAYER_GRAPHICS2D_STRING       "graphics2d"
-#define PLAYER_GRAPHICS3D_STRING       "graphics3d"
+#define PLAYER_GRAPHICS2D_STRING      "graphics2d"
+#define PLAYER_GRAPHICS3D_STRING      "graphics3d"
+#define PLAYER_HEALTH_STRING	      "health"
 #define PLAYER_IR_STRING              "ir"
 #define PLAYER_JOYSTICK_STRING        "joystick"
 #define PLAYER_LASER_STRING           "laser"
@@ -2082,6 +2084,59 @@ typedef struct player_gripper_cmd_retrieve
 } player_gripper_cmd_retrieve_t;
 
 /** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_health health
+ * @brief Statgrab - System Infos
+
+The HEALTH driver allows for a user to get general systems data concerning a 
+specific robot. Allows a user to look at cpu and memory usage of the robot. 
+
+ */
+
+/** @ingroup interface_health
+ * @{ */
+
+/** Data subtypes                                                               */
+#define PLAYER_HEALTH_DATA           1
+
+/** @brief Structure describing the cpu */
+typedef struct player_health_cpu
+{
+    /** The idle cpu load                                                   */
+    float idle;
+    /** The system cpu load                                                 */
+    float system;
+    /** The user's cpu load						    */
+    float user;
+} player_health_cpu_t;
+
+/** @brief Structure describing the memory */
+typedef struct player_health_memory
+{
+    /** Total memory 								*/
+    int64_t total;
+    /** Used memory 								*/
+    int64_t used;
+    /** Free memory 								*/
+    int64_t free;
+} player_health_memory_t;
+/** @brief Structure describing the HEALTH's data packet.                       */
+
+typedef struct player_health_data
+{
+    /** The current cpu usage							*/
+    player_health_cpu_t cpu_usage;
+    /** The memory stats							*/
+    player_health_memory_t mem;
+    /** The swap stats								*/
+    player_health_memory_t swap;
+    
+} player_health_data_t;
+/** @} */
+
+
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
