@@ -60,9 +60,8 @@ driver.
 #include <unistd.h>
 #include <string.h>
 #include <netinet/in.h>
-#include <player/drivertable.h>
-#include <player/driver.h>
-#include <player.h>
+#include <libplayercore/playercore.h>
+#include <libplayercore/error.h>
 
 #include <stdio.h>
 #include <stdlib.h>
