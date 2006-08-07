@@ -172,7 +172,7 @@ fi
 
 PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 
-PLAYER_ADD_DRIVER([camerauvc],[yes],[linux/videodev2.h],[],[])
+PLAYER_ADD_DRIVER([camerauvc],[no],[linux/videodev2.h],[],[])
 
 PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
@@ -197,10 +197,6 @@ PLAYER_ADD_DRIVER([flockofbirds],[yes],[],[],[])
 PLAYER_ADD_DRIVER([garcia],[no],
                   [],[],[],[GARCIA],[libgarcia])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GARCIA_LIBS"
-
-PLAYER_ADD_DRIVER([statgrab],[yes],
-                  [],[],[],[STATGRAB],[libstatgrab])
-PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STATGRAB_LIBS"
 
 PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
@@ -326,6 +322,10 @@ PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/CM_macros.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([statgrab],[yes],
+                  [],[],[],[STATGRAB],[libstatgrab])
+		  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STATGRAB_LIBS"
 
 PLAYER_ADD_DRIVER([upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
