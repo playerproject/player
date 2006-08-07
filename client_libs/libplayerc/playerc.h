@@ -1518,6 +1518,48 @@ int playerc_gripper_get_geom(playerc_gripper_t *device);
 /** @} */
 /**************************************************************************/
 
+/***************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_health health
+
+The health proxy provides an interface to the HEALTH Module.
+@{
+*/
+
+
+/** Note: the structure describing the HEALTH's data packet is declared in
+          Player. */
+
+
+/** @brief HEALTH proxy data. */
+typedef struct
+{
+    /** Device info; must be at the start of all device structures.         */
+    playerc_device_t info;   
+    /** The current cpu usage						*/
+    player_health_cpu_t cpu_usage;
+    /** The memory stats						*/
+    player_health_memory_t mem;
+    /** The swap stats							*/
+    player_health_memory_t swap;
+} playerc_health_t;
+
+
+/** @brief Create a health proxy. */
+playerc_health_t *playerc_health_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a health proxy. */
+void playerc_health_destroy(playerc_health_t *device);
+
+/** @brief Subscribe to the health device. */
+int playerc_health_subscribe(playerc_health_t *device, int access);
+
+/** @brief Un-subscribe from the health device. */
+int playerc_health_unsubscribe(playerc_health_t *device);
+
+
+/** @} */
+/***************************************************************************/
 
 
 /***************************************************************************/

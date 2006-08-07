@@ -126,6 +126,10 @@ void Acts_Register(DriverTable* table);
 void CMVision_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_STATGRAB
+void StatGrabDriver_Register(DriverTable* table);
+#endif
+
 
 #ifdef INCLUDE_CMUCAM2
 void Cmucam2_Register(DriverTable* table);
@@ -464,6 +468,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_CMVISION
   CMVision_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_STATGRAB
+  StatGrabDriver_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_CMUCAM2

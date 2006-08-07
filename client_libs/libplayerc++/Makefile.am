@@ -40,6 +40,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               graphics2dproxy.cc \
                               graphics3dproxy.cc \
                               gripperproxy.cc \
+                              healthproxy.cc \
                               irproxy.cc \
                               laserproxy.cc \
                               limbproxy.cc \
@@ -59,7 +60,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               speechproxy.cc \
                               speechrecognitionproxy.cc \
                               wifiproxy.cc \
-                              wsnproxy.cc
+			      wsnproxy.cc 
 
 # not in libplayerc yet \
                               blinkenlightproxy.cc \

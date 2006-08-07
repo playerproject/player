@@ -198,6 +198,10 @@ PLAYER_ADD_DRIVER([garcia],[no],
                   [],[],[],[GARCIA],[libgarcia])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GARCIA_LIBS"
 
+PLAYER_ADD_DRIVER([statgrab],[yes],
+                  [],[],[],[STATGRAB],[libstatgrab])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STATGRAB_LIBS"
+
 PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])

@@ -7,6 +7,7 @@ blobfinder \
 camera \
 fiducial \
 gps \
+health \
 joystick \
 laser \
 localization \

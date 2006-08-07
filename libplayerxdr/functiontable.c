@@ -219,6 +219,10 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_RETRIEVE,
    (player_pack_fn_t)player_gripper_cmd_retrieve_pack},
 
+  /* health messages */
+  {PLAYER_HEALTH_CODE, PLAYER_MSGTYPE_DATA, PLAYER_HEALTH_DATA,
+   (player_pack_fn_t)player_health_data_pack},
+
   /* ir messages */
   {PLAYER_IR_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
     (player_pack_fn_t)player_ir_data_pack},

@@ -885,6 +885,62 @@ class GripperProxy : public ClientProxy
     void Retrieve();
 };
 
+/**
+The @p HealthProxy class is used to get infos of the player-server. */
+class HealthProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_health_t *mDevice;
+
+  public:
+    /// constructor
+    HealthProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~HealthProxy();
+   
+    /// Get idle CPU load in percents
+    float GetIdleCPU();	
+    
+    /// Get system CPU load in percents
+    float GetSystemCPU();
+    
+    /// Get user CPU load in percents
+    float GetUserCPU();
+    
+    /// Get total amount of memory
+    int64_t GetMemTotal();
+    
+    /// Get amount of memory used
+    int64_t GetMemUsed();
+    
+    /// Get amount of free memory
+    int64_t GetMemFree();
+    
+    /// Get total amount of swap
+    int64_t GetSwapTotal();
+    
+    /// Get amount of swap used
+    int64_t GetSwapUsed();
+    
+    /// Get amount of free swap space
+    int64_t GetSwapFree();
+    
+    /// Get percentage of used RAM
+    float GetPercMemUsed();
+    
+    /// Get percentage of used SWAP
+    float GetPercSwapUsed();
+    
+    /// Get percentage of totally used memory (swap and ram)
+    float GetPercTotalUsed();
+};
+
 
 
 /**
