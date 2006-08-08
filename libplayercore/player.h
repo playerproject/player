@@ -158,6 +158,7 @@ in the body.*/
 #define PLAYER_WSN_CODE            57  // Wireless Sensor Networks interface
 #define PLAYER_GRAPHICS3D_CODE     58  // Graphics3D interface
 #define PLAYER_HEALTH_CODE	   59  // Statgrab Health interface
+#define PLAYER_IMU_CODE            60  // Inertial Measurement Unit interface
 /** @} */
 
 /** @ingroup message_basics
@@ -186,6 +187,7 @@ in the body.*/
 #define PLAYER_GPS_STRING             "gps"
 #define PLAYER_GRAPHICS2D_STRING      "graphics2d"
 #define PLAYER_GRAPHICS3D_STRING      "graphics3d"
+#define PLAYER_IMU_STRING             "imu"
 #define PLAYER_HEALTH_STRING	      "health"
 #define PLAYER_IR_STRING              "ir"
 #define PLAYER_JOYSTICK_STRING        "joystick"
@@ -2140,6 +2142,111 @@ typedef struct player_health_data
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
+ * @defgroup interface_imu imu
+ * @brief Inertial Measurement Unit
+
+The @p imu interface provides access to an Inertial Measurement Unit sensor 
+(such as the XSens MTx/MTi).
+ */
+
+/** @ingroup interface_imu
+ * @{ */
+
+/** Data subtype: IMU position/orientation data */
+#define PLAYER_IMU_DATA_STATE 1
+/** Data subtype: Calibrated IMU data           */
+#define PLAYER_IMU_DATA_CALIB 2
+/** Data subtype: Quaternions orientation data  */
+#define PLAYER_IMU_DATA_QUAT  3
+/** Data subtype: Euler orientation data        */
+#define PLAYER_IMU_DATA_EULER 4
+
+/** Request/reply subtype: set data type */
+#define PLAYER_IMU_REQ_SET_DATATYPE 1
+
+/** @brief Data: calibrated IMU data (@ref PLAYER_IMU_DATA_STATE)
+
+The @p imu interface returns the complete 3D coordinates + angles position in 
+space, of the IMU sensor. */
+typedef struct player_imu_data_state
+{
+    /** The complete pose of the IMU in 3D coordinates + angles */
+    player_pose3d_t pose;
+} player_imu_data_state_t;
+
+/** @brief Data: calibrated IMU data (@ref PLAYER_IMU_DATA_CALIB)
+
+The @p imu interface returns calibrated acceleration, gyro and magnetic values 
+from the IMU sensor. */
+typedef struct player_imu_data_calib
+{
+    /** The IMU's calibrated acceleration value on X-axis. */
+    float accel_x;
+    /** The IMU's calibrated acceleration value on Y-axis. */
+    float accel_y;
+    /** The IMU's calibrated acceleration value on Z-axis. */
+    float accel_z;
+    /** The IMU's calibrated gyro value on X-axis.         */
+    float gyro_x;
+    /** The IMU's calibrated gyro value on Y-axis.         */
+    float gyro_y;
+    /** The IMU's calibrated gyro value on Z-axis.         */
+    float gyro_z;
+    /** The IMU's calibrated magnetic value on X-axis.     */
+    float magn_x;
+    /** The IMU's calibrated magnetic value on Y-axis.     */
+    float magn_y;
+    /** The IMU's calibrated magnetic value on Z-axis.     */
+    float magn_z;
+} player_imu_data_calib_t;
+
+/** @brief Data: Quaternions orientation data (@ref PLAYER_IMU_DATA_QUAT)
+
+The @p imu interface returns calibrated IMU values as well as orientation data
+as quaternions. */
+typedef struct player_imu_data_quat
+{
+    /** Calibrated IMU data (accel, gyro, magnetometer) */
+    player_imu_data_calib_t calib_data;
+	
+    /** Orientation data as quaternions */
+    float q0;
+    float q1;
+    float q2;
+    float q3;
+} player_imu_data_quat_t;
+
+ /** @brief Data: Euler orientation data (@ref PLAYER_IMU_DATA_EULER)
+
+The @p imu interface returns calibrated IMU values as well as orientation data
+as Euler angles. */
+typedef struct player_imu_data_euler
+{
+    /** Calibrated IMU data (accel, gyro, magnetometer) */
+    player_imu_data_calib_t calib_data;
+	
+    /** Orientation data as Euler angles */
+    player_orientation_3d_t orientation;
+} player_imu_data_euler_t;
+
+/** @brief Request/reply: change the data type to one of the predefined data
+structures.
+
+Send a @ref PLAYER_IMU_REQ_SET_DATATYPE request to switch between calibrated 
+data, 3D pose and orientation, Euler orientation or Quaternions orientation
+in the data packet. Null response.                     */
+typedef struct player_imu_datatype_config
+{
+    /** Data type setting: 1 for pose/orientation, 2 for calibrated (raw) data, 
+      3 for quaternions, 4 for Euler.
+    */
+    uint8_t value;
+} player_imu_datatype_config_t;
+
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
  * @defgroup interface_ir ir
  * @brief Array of infrared rangers
 
@@ -2268,9 +2375,9 @@ of scan width and angular resolution.
 
 /** Request/reply subtype: get geometry */
 #define PLAYER_LASER_REQ_GET_GEOM     1
-/** Request/reply subtype: get configuration */
-#define PLAYER_LASER_REQ_SET_CONFIG   2
 /** Request/reply subtype: set configuration */
+#define PLAYER_LASER_REQ_SET_CONFIG   2
+/** Request/reply subtype: get configuration */
 #define PLAYER_LASER_REQ_GET_CONFIG   3
 /** Request/reply subtype: set power */
 #define PLAYER_LASER_REQ_POWER        4
@@ -4672,7 +4779,7 @@ typedef struct player_wsn_node_data
 	float mic;
 	/** The node's acceleration on X-axis from an acceleration sensor.      */
 	float accel_x;
-	/** The node's acceleration on y-axis from an acceleration sensor.      */
+	/** The node's acceleration on Y-axis from an acceleration sensor.      */
 	float accel_y;
 	/** The node's acceleration on Z-axis from an acceleration sensor.      */
 	float accel_z;

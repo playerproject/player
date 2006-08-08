@@ -270,6 +270,10 @@ void InertiaCube2_Register(DriverTable* table);
 void MicroStrain3DMG_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_YARPIMAGE
+void Yarp_Image_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_MICA2
 void Mica2_Register(DriverTable* table);
 #endif
@@ -280,6 +284,10 @@ void RCore_XBridge_Register(DriverTable* table);
 
 #ifdef INCLUDE_ACCEL_CALIB
 void Accel_Calib_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_XSENSMT
+void XSensMT_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_INAV
@@ -613,6 +621,10 @@ player_register_drivers()
   MicroStrain3DMG_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_YARPIMAGE
+  Yarp_Image_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_MICA2
   Mica2_Register(driverTable);
 #endif
@@ -623,6 +635,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_ACCEL_CALIB
   Accel_Calib_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_XSENSMT
+  XSensMT_Register(driverTable);
 #endif
   
 #ifdef INCLUDE_INAV

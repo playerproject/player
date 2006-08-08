@@ -23,4 +23,6 @@ speech \
 waveform \
 wifi \
 rfid \
-wsn
+wsn \
+imu
+
