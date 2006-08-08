@@ -503,6 +503,7 @@ AC_OUTPUT(Makefile
           server/drivers/camera/imageseq/Makefile
           server/drivers/camera/sphere/Makefile
           server/drivers/camera/uvc/Makefile
+          server/drivers/camera/yarp/Makefile
           server/drivers/fiducial/Makefile
           server/drivers/ptz/Makefile
           server/drivers/laser/Makefile
@@ -550,6 +551,7 @@ AC_OUTPUT(Makefile
           server/drivers/joystick/Makefile
           server/drivers/rfid/Makefile
           server/drivers/wsn/Makefile
+          server/drivers/imu/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
