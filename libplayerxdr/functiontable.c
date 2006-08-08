@@ -339,6 +339,10 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_SYNCH, 0,
     (player_pack_fn_t)player_add_replace_rule_req_pack},
 
+  /* pointcloud3d messages */
+  {PLAYER_POINTCLOUD3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POINTCLOUD3D_DATA_STATE,
+    (player_pack_fn_t)player_pointcloud3d_data_pack},
+
   /* position1d messages */
   {PLAYER_POSITION1D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION1D_DATA_STATE,
     (player_pack_fn_t)player_position1d_data_pack},

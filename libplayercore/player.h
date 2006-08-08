@@ -159,6 +159,7 @@ in the body.*/
 #define PLAYER_GRAPHICS3D_CODE     58  // Graphics3D interface
 #define PLAYER_HEALTH_CODE	   59  // Statgrab Health interface
 #define PLAYER_IMU_CODE            60  // Inertial Measurement Unit interface
+#define PLAYER_POINTCLOUD3D_CODE   61  // 3-D point cloud
 /** @} */
 
 /** @ingroup message_basics
@@ -188,6 +189,7 @@ in the body.*/
 #define PLAYER_GRAPHICS2D_STRING      "graphics2d"
 #define PLAYER_GRAPHICS3D_STRING      "graphics3d"
 #define PLAYER_IMU_STRING             "imu"
+#define PLAYER_POINTCLOUD3D_STRING    "pointcloud3d"
 #define PLAYER_HEALTH_STRING	      "health"
 #define PLAYER_IR_STRING              "ir"
 #define PLAYER_JOYSTICK_STRING        "joystick"
@@ -3332,6 +3334,53 @@ typedef struct player_add_replace_rule_req
   int32_t replace ;
 } player_add_replace_rule_req_t;
 
+
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_pointcloud3d pointcloud3d
+ * @brief A 3-D point cloud
+
+The @p pointcloud3d interface is used to transmit 3-D point cloud data
+(e.g., from a 3-D range sensor).
+*/
+
+/** @ingroup interface_pointcloud3d
+ * @{ */
+
+/** Maximum number of points that can be included in a data packet */
+#define PLAYER_POINTCLOUD3D_MAX_POINTS 8192
+
+/** Data subtype: state */
+#define PLAYER_POINTCLOUD3D_DATA_STATE 1
+
+/** @brief 3D Pointcloud element structure
+ * An element as stored in a 3D pointcloud, containing a 3D position 
+ * plus other corresponding information. */
+typedef struct player_pointcloud3d_element
+{
+  player_point_3d_t point;
+  player_color_t color;
+  /** Add other data here as necessary */
+  /** Storage area for generic user data (temperature, 
+   *  intensity, polygon association, flags, etc.)
+   *  Probably best left until when variable sized 
+   *  structures are fully implemented so we
+   *  don't unnecessarily allocate huge
+   *  amounts of data per point */
+  //uint32_t data_count; 
+  //uchar data[PLAYER_3DPOINTCLOUD_MAX_DATA]
+} player_pointcloud3d_element_t;
+
+/** @brief Data: Get cloud (@ref
+  PLAYER_POINTCLOUD3D_DATA_STATE)
+  The basic 3dcloudpoint data packet.  */
+typedef struct player_pointcloud3d_data
+{
+  uint32_t points_count;
+  player_pointcloud3d_element_t points[PLAYER_POINTCLOUD3D_MAX_POINTS];
+} player_pointcloud3d_data_t;
 
 /** @} */
 
