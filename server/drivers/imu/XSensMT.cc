@@ -406,6 +406,8 @@ player_imu_data_calib_t XSensMT::GetCalibValues (const unsigned char data[]) {
 
     return calib_data;
 }
+
+#if 0
 //------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////////////
 // Extra stuff for building a shared object.
@@ -418,3 +420,4 @@ extern "C" {
         return(0);
     }
 }
+#endif
