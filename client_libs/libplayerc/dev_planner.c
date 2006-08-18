@@ -104,19 +104,19 @@ void playerc_planner_putdata(playerc_planner_t *device, player_msghdr_t *header,
   device->path_valid = data->valid;
   device->path_done = data->done;
 
-  device->px = (long) ntohl(data->px) / 1000.0;
-  device->py = (long) ntohl(data->py) / 1000.0;
-  device->pa = (long) ntohl(data->pa) * M_PI / 180.0;
+  device->px = (int) ntohl(data->px) / 1000.0;
+  device->py = (int) ntohl(data->py) / 1000.0;
+  device->pa = (int) ntohl(data->pa) * M_PI / 180.0;
   device->pa = atan2(sin(device->pa), cos(device->pa));
 
-  device->gx = (long) ntohl(data->gx) / 1000.0;
-  device->gy = (long) ntohl(data->gy) / 1000.0;
-  device->ga = (long) ntohl(data->ga) * M_PI / 180.0;
+  device->gx = (int) ntohl(data->gx) / 1000.0;
+  device->gy = (int) ntohl(data->gy) / 1000.0;
+  device->ga = (int) ntohl(data->ga) * M_PI / 180.0;
   device->ga = atan2(sin(device->ga), cos(device->ga));
 
-  device->wx = (long) ntohl(data->wx) / 1000.0;
-  device->wy = (long) ntohl(data->wy) / 1000.0;
-  device->wa = (long) ntohl(data->wa) * M_PI / 180.0;
+  device->wx = (int) ntohl(data->wx) / 1000.0;
+  device->wy = (int) ntohl(data->wy) / 1000.0;
+  device->wa = (int) ntohl(data->wa) * M_PI / 180.0;
   device->wa = atan2(sin(device->wa), cos(device->wa));
 
   device->curr_waypoint = (int)ntohs(data->curr_waypoint);
