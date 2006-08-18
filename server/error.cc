@@ -31,23 +31,31 @@ void ErrorPrint(int msgType, int level, const char *file, int line, const char *
 {
   va_list ap;
   
-  va_start(ap, fmt);
 
   if (msgType == PLAYER_ERR_ERR || msgType == PLAYER_ERR_WARN)
   {
+    va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
+    va_end(ap);
     fprintf(msgFile, "%s:%d ", file, line);
+    va_start(ap, fmt);
     vfprintf(msgFile, fmt, ap);
+    va_end(ap);
   }
   else if (msgType == PLAYER_ERR_MSG)
   {
     if (level <= msgLevel)
+    {
+      va_start(ap, fmt);
       vfprintf(stderr, fmt, ap);
+      va_end(ap);
+    }
     fprintf(msgFile, "%s:%d ", file, line);
+    va_start(ap, fmt);
     vfprintf(msgFile, fmt, ap);
+    va_end(ap);
   }
   
-  va_end(ap);
   
   return;
 }
