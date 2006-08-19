@@ -160,7 +160,7 @@ int playerc_simulation_set_property(playerc_simulation_t *device,
 
   if( value_len > PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN )
     {
-      PRINT_WARN1( "Simulation property data exceeds maximum length (%d/%d bytes).",
+      PLAYER_WARN2( "Simulation property data exceeds maximum length (%d/%d bytes).",
 		   value_len,  PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN );
       value_len = PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN;
     }
