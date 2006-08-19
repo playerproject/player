@@ -1,4 +1,4 @@
-/*
+/* 
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *
+ *                      
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -97,7 +97,7 @@ int playerc_simulation_unsubscribe(playerc_simulation_t *device)
 void playerc_simulation_putmsg(playerc_simulation_t *device, player_msghdr_t *header,
                               player_simulation_data_t *data, size_t len)
 {
-  // device->data
+  // device->data 
 }
 
 
@@ -115,22 +115,22 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
   cmd.pose.py = gy;
   cmd.pose.pa = ga;
 
-  return playerc_client_request(device->info.client, &device->info,
+  return playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_SET_POSE2D,
                                 &cmd, NULL, 0);
 }
 
 // Get the current pose
-int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier,
+int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier, 
 				  double *x, double *y, double *a)
 {
   player_simulation_pose2d_req_t cfg;
-
+  
   memset(&cfg, 0, sizeof(cfg));
   strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
   cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
   cfg.name_count = strlen(cfg.name) + 1;
-  if (playerc_client_request(device->info.client, &device->info,
+  if (playerc_client_request(device->info.client, &device->info, 
                              PLAYER_SIMULATION_REQ_GET_POSE2D,
 			     &cfg, &cfg, sizeof(cfg)) < 0)
     return (-1);
@@ -140,42 +140,36 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   return 0;
 }
 
-// Set an integer property value */
-int playerc_simulation_set_property_int(playerc_simulation_t *device,
-					char* name,
-					char* property,
-					int value )
+// Set a property value */
+int playerc_simulation_set_property(playerc_simulation_t *device, 
+				    char* name,
+				    char* property,
+				    void* value,
+				    size_t value_len )
 {
-  player_simulation_property_int_req_t req;
+  player_simulation_property_req_t req;
 
   memset(&req, 0, sizeof(req));
   strncpy(req.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
   req.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
   req.name_count = strlen(req.name) + 1;
+  
+  strncpy(req.property, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  req.property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.property_count = strlen(req.property) + 1;
 
-  strncpy(req.prop, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  req.prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
-  req.prop_count = strlen(req.prop) + 1;
-
-  req.value = value;
-
-  return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_SIMULATION_REQ_SET_PROPERTY_INT,
+  if( value_len > PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN )
+    {
+      PRINT_WARN1( "Simulation property data exceeds maximum length (%d/%d bytes).",
+		   value_len,  PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN );
+      value_len = PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN;
+    }
+  
+  memcpy( req.value, value, value_len );
+  req.value_count = value_len;
+  
+  return playerc_client_request(device->info.client, &device->info, 
+                                PLAYER_SIMULATION_REQ_SET_PROPERTY,
                                 &req, NULL, 0);
 }
 
-int playerc_simulation_set_property_double(playerc_simulation_t *device,
-					   char* name,
-					   char* property,
-					   double value )
-{
-  return(-1);
-}
-
-int playerc_simulation_set_property_string(playerc_simulation_t *device,
-					   char* name,
-					   char* property,
-					   char* value )
-{
-  return(-1);
-}
