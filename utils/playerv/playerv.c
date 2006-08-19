@@ -165,7 +165,8 @@ int main(int argc, char **argv)
   device_t devices[PLAYER_MAX_DEVICES];
   device_t *device;
   void *proxy;
-  struct timeval tv, tc, st = {0, 0};
+  struct timeval tv, tc = {0, 0};
+  struct timespec st = {0,0};
 
   printf("PlayerViewer %s\n", VERSION);
 
