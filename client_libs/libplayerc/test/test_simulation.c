@@ -53,35 +53,39 @@ int test_simulation(playerc_client_t *client, int index)
     PASS();
   else
     FAIL();
-
-  TEST("setting integer property \"fiducial_return\" for model robot1 to 42");
-  if (playerc_simulation_set_property_int(device, "robot1", "fiducial_return", 42) == 0)
+  
+  TEST("setting property \"fiducial_return\" for model robot1 to 42");
+  int fr = 42;
+  if (playerc_simulation_set_property(device, "robot1", "_mp_fiducial_return", &fr, sizeof(fr) ) == 0)
     PASS();
   else
     FAIL();
-
+  
+  int col =  0xFF00;
   TEST("setting integer property \"color\" for model robot1 to 0x00FF00 (green)");
-  if (playerc_simulation_set_property_int(device, "robot1", "color", 0xFF00) == 0)
+  if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col) ) == 0)
     PASS();
   else
     FAIL();
-
+  
   sleep(1);
-
+  
+  col = 0xFF;
   TEST("setting integer property \"color\" for model robot1 to 0x0000FF (blue)");
-  if (playerc_simulation_set_property_int(device, "robot1", "color", 0xFF) == 0)
+  if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col)) == 0)
     PASS();
   else
     FAIL();
-
+  
   sleep(1);
 
+  col = 0xFF0000;
   TEST("setting integer property \"color\" for model robot1 to 0xFF0000 (red)");
-  if (playerc_simulation_set_property_int(device, "robot1", "color", 0xFF0000) == 0)
+  if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col)) == 0)
     PASS();
   else
     FAIL();
-
+  
   TEST("unsubscribing");
   if (playerc_simulation_unsubscribe(device) != 0)
   {
