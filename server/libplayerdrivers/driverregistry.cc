@@ -290,6 +290,10 @@ void Accel_Calib_Register(DriverTable* table);
 void XSensMT_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_LASERPTZCLOUD
+void LaserPTZCloud_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_INAV
 void INav_Register(DriverTable *table);
 #endif
@@ -639,6 +643,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_XSENSMT
   XSensMT_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LASERPTZCLOUD
+  LaserPTZCloud_Register(driverTable);
 #endif
   
 #ifdef INCLUDE_INAV
