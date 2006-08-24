@@ -106,6 +106,12 @@ void playerc_audio_putmsg(playerc_audio_t *device,
     device->mixer_data.channels_count = wdata->channels_count;
     memcpy(device->mixer_data.channels, wdata->channels, wdata->channels_count * sizeof(device->mixer_data.channels[0]));
   }
+  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_STATE_DATA))
+  {
+    assert(header->size > 0);
+    player_audio_state_t *sdata = (player_audio_state_t *) data;
+    device->state = sdata->state;
+  }
   else
     PLAYERC_WARN2("skipping audio message with unknown type/subtype: %d/%d\n",
                   header->type, header->subtype);

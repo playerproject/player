@@ -934,6 +934,8 @@ typedef struct
   /** current channel data */
   player_audio_mixer_channel_list_t mixer_data;
 
+  /** current driver state */
+  uint32_t state;
 
 } playerc_audio_t;
 
@@ -1535,7 +1537,7 @@ The health proxy provides an interface to the HEALTH Module.
 typedef struct
 {
     /** Device info; must be at the start of all device structures.         */
-    playerc_device_t info;   
+    playerc_device_t info;
     /** The current cpu usage						*/
     player_health_cpu_t cpu_usage;
     /** The memory stats						*/
@@ -2821,7 +2823,7 @@ int playerc_speech_recognition_subscribe(playerc_speech_recognition_t *device, i
 
 /** Un-subscribe from the speech recognition device */
 int playerc_speech_recognition_unsubscribe(playerc_speech_recognition_t *device);
-  
+
 /** @} */
 /***************************************************************************/
 
