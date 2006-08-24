@@ -68,7 +68,7 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AIO_CMD_STATE,
    (player_pack_fn_t)player_aio_cmd_pack},
 
-  /* aio messages */
+  /* audio messages */
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD,
    (player_pack_fn_t)player_audio_mixer_channel_list_pack},
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_MIXER_CHANNEL_DATA,
@@ -97,6 +97,8 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_audio_wav_pack},
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD,
    (player_pack_fn_t)player_bool_pack},
+  {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_STATE_DATA,
+   (player_pack_fn_t)player_audio_state_pack},
 
 
   /* audiodsp messages */
@@ -584,7 +586,7 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
       curr->subtype == subtype)
       return(curr->func);
   }
-  
+
   // The supplied type can be RESP_ACK if the registered type is REQ.
   if (type == PLAYER_MSGTYPE_RESP_ACK || type == PLAYER_MSGTYPE_RESP_NACK)
     type = PLAYER_MSGTYPE_REQ;

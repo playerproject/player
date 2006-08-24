@@ -771,6 +771,11 @@ data is a @ref player_audio_seq_t structure*/
 data is a @ref player_audio_mixer_channel_list_t structure*/
 #define PLAYER_AUDIO_MIXER_CHANNEL_DATA  3
 
+/** Data subtype:    state_data, driver state data (eg playing, stopped, ...)
+
+data is a @ref player_audio_state_t structure*/
+#define PLAYER_AUDIO_STATE_DATA          4
+
 
 
 /** Command subtype: wav_play_cmd, play a raw data block, in structure player_audio_wav_t
@@ -830,6 +835,11 @@ data is a @ref player_audio_mixer_channel_list_detail_t structure*/
 data is a @ref player_audio_mixer_channel_list_t structure*/
 #define PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ  6
 
+/** Driver states */
+
+#define PLAYER_AUDIO_STATE_STOPPED            0x00
+#define PLAYER_AUDIO_STATE_PLAYING            0x01
+#define PLAYER_AUDIO_STATE_RECORDING          0x02
 
 /** Audio formats */
 
@@ -1015,6 +1025,18 @@ typedef struct player_audio_sample_item
   /** index to store it at or record to (-1 for next available where valid) */
   int32_t index;
 } player_audio_sample_item_t;
+
+/** @brief Player audio driver state
+
+Describes the current state of the audio driver. Usually only sent when state
+changes.
+
+*/
+typedef struct player_audio_state
+{
+	/** The state of the driver: will be a bitmask of PLAYER_AUDIO_STATE_* values */
+	uint32_t state;
+} player_audio_state_t;
 
 /** @} */
 
@@ -1971,7 +1993,7 @@ typedef struct player_graphics3d_cmd_draw
 /** @ingroup interfaces
  * @defgroup interface_gripper gripper
  * @brief Gripper interface
-  
+
 The @p gripper interface provides access to a robotic gripper. A gripper is a
 device capable of closing around and carrying an object of suitable size and
 shape. On a mobile robot, a gripper is typically mounted near the floor on the
@@ -1981,10 +2003,10 @@ within the gripper (using, for example, light beams). Some grippers also have
 the ability to move the a carried object into a storage system, freeing the
 gripper to pick up a new object, and move objects from the storage system back
 into the gripper.  */
-  
+
 /** @ingroup interface_gripper
 * @{ */
-  
+
 /** Gripper state: open */
 #define PLAYER_GRIPPER_STATE_OPEN 1
 /** Gripper state: closed */
@@ -1996,10 +2018,10 @@ into the gripper.  */
 
 /** Data subtype: state */
 #define PLAYER_GRIPPER_DATA_STATE 1
-  
+
 /** Request subtype: get geometry */
 #define PLAYER_GRIPPER_REQ_GET_GEOM 1
-  
+
 /** Command subtype: open */
 #define PLAYER_GRIPPER_CMD_OPEN 1
 /** Command subtype: close */
@@ -2010,9 +2032,9 @@ into the gripper.  */
 #define PLAYER_GRIPPER_CMD_STORE 4
 /** Command subtype: retrieve object from the storage system */
 #define PLAYER_GRIPPER_CMD_RETRIEVE 5
-  
+
 /** @brief Data: state (@ref PLAYER_GRIPPER_DATA_STATE)
-  
+
 The @p gripper interface returns the current state of the gripper
 and information on a potential object in the gripper.
 state may be @ref PLAYER_GRIPPER_STATE_OPEN, @ref PLAYER_GRIPPER_STATE_CLOSED,
@@ -2030,9 +2052,9 @@ typedef struct player_gripper_data
   /** Number of currently stored objects */
   uint8_t stored;
 } player_gripper_data_t;
-  
+
 /** @brief Request/reply: get geometry
-  
+
 The geometry (pose, outer size and inner size) of the gripper device can be
 queried by sending a null @ref PLAYER_GRIPPER_REQ_GET_GEOM request.
   */
@@ -2050,7 +2072,7 @@ typedef struct player_gripper_geom
   /** Capacity for storing objects - if 0, then the gripper can't store */
   uint8_t capacity;
 } player_gripper_geom_t;
-  
+
 /** @brief Command: Open (@ref PLAYER_GRIPPER_CMD_OPEN)
 
 Tells the gripper to open. */
@@ -2094,8 +2116,8 @@ typedef struct player_gripper_cmd_retrieve
  * @defgroup interface_health health
  * @brief Statgrab - System Infos
 
-The HEALTH driver allows for a user to get general systems data concerning a 
-specific robot. Allows a user to look at cpu and memory usage of the robot. 
+The HEALTH driver allows for a user to get general systems data concerning a
+specific robot. Allows a user to look at cpu and memory usage of the robot.
 
  */
 
@@ -2136,7 +2158,7 @@ typedef struct player_health_data
     player_health_memory_t mem;
     /** The swap stats								*/
     player_health_memory_t swap;
-    
+
 } player_health_data_t;
 /** @} */
 
@@ -2147,7 +2169,7 @@ typedef struct player_health_data
  * @defgroup interface_imu imu
  * @brief Inertial Measurement Unit
 
-The @p imu interface provides access to an Inertial Measurement Unit sensor 
+The @p imu interface provides access to an Inertial Measurement Unit sensor
 (such as the XSens MTx/MTi).
  */
 
@@ -2168,7 +2190,7 @@ The @p imu interface provides access to an Inertial Measurement Unit sensor
 
 /** @brief Data: calibrated IMU data (@ref PLAYER_IMU_DATA_STATE)
 
-The @p imu interface returns the complete 3D coordinates + angles position in 
+The @p imu interface returns the complete 3D coordinates + angles position in
 space, of the IMU sensor. */
 typedef struct player_imu_data_state
 {
@@ -2178,7 +2200,7 @@ typedef struct player_imu_data_state
 
 /** @brief Data: calibrated IMU data (@ref PLAYER_IMU_DATA_CALIB)
 
-The @p imu interface returns calibrated acceleration, gyro and magnetic values 
+The @p imu interface returns calibrated acceleration, gyro and magnetic values
 from the IMU sensor. */
 typedef struct player_imu_data_calib
 {
@@ -2210,7 +2232,7 @@ typedef struct player_imu_data_quat
 {
     /** Calibrated IMU data (accel, gyro, magnetometer) */
     player_imu_data_calib_t calib_data;
-	
+
     /** Orientation data as quaternions */
     float q0;
     float q1;
@@ -2226,7 +2248,7 @@ typedef struct player_imu_data_euler
 {
     /** Calibrated IMU data (accel, gyro, magnetometer) */
     player_imu_data_calib_t calib_data;
-	
+
     /** Orientation data as Euler angles */
     player_orientation_3d_t orientation;
 } player_imu_data_euler_t;
@@ -2234,12 +2256,12 @@ typedef struct player_imu_data_euler
 /** @brief Request/reply: change the data type to one of the predefined data
 structures.
 
-Send a @ref PLAYER_IMU_REQ_SET_DATATYPE request to switch between calibrated 
+Send a @ref PLAYER_IMU_REQ_SET_DATATYPE request to switch between calibrated
 data, 3D pose and orientation, Euler orientation or Quaternions orientation
 in the data packet. Null response.                     */
 typedef struct player_imu_datatype_config
 {
-    /** Data type setting: 1 for pose/orientation, 2 for calibrated (raw) data, 
+    /** Data type setting: 1 for pose/orientation, 2 for calibrated (raw) data,
       3 for quaternions, 4 for Euler.
     */
     uint8_t value;
@@ -3166,7 +3188,7 @@ libraries when they begin reading. */
 #define PLAYER_PLAYER_REQ_ADD_REPLACE_RULE 10
 
 
-/** A replace rule can either accept, replace or ignore 
+/** A replace rule can either accept, replace or ignore
 a message.*/
 #define PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT  0
 #define PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE 1
@@ -3356,20 +3378,20 @@ The @p pointcloud3d interface is used to transmit 3-D point cloud data
 #define PLAYER_POINTCLOUD3D_DATA_STATE 1
 
 /** @brief 3D Pointcloud element structure
- * An element as stored in a 3D pointcloud, containing a 3D position 
+ * An element as stored in a 3D pointcloud, containing a 3D position
  * plus other corresponding information. */
 typedef struct player_pointcloud3d_element
 {
   player_point_3d_t point;
   player_color_t color;
   /** Add other data here as necessary */
-  /** Storage area for generic user data (temperature, 
+  /** Storage area for generic user data (temperature,
    *  intensity, polygon association, flags, etc.)
-   *  Probably best left until when variable sized 
+   *  Probably best left until when variable sized
    *  structures are fully implemented so we
    *  don't unnecessarily allocate huge
    *  amounts of data per point */
-  //uint32_t data_count; 
+  //uint32_t data_count;
   //uchar data[PLAYER_3DPOINTCLOUD_MAX_DATA]
 } player_pointcloud3d_element_t;
 
