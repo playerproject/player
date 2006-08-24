@@ -84,6 +84,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::AudioProxy& a)
   int NumChannelDetails = a.GetMixerDetailsCount();
   int NumChannels = a.GetChannelCount();
   int MinChan = NumChannels < NumChannelDetails ? NumChannels : NumChannelDetails;
+  uint32_t state = a.GetState();
 
   os << MinChan << " channels:" << std::endl;
   os << "Index\tValue\tState\tType\tName" << std::endl;
@@ -98,6 +99,15 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::AudioProxy& a)
        << channel_detail.name
        << std::endl;
   }
+
+  cout << "State:\t";
+  if (state & PLAYER_AUDIO_STATE_PLAYING)
+    cout << "Playing\t";
+  if (state & PLAYER_AUDIO_STATE_RECORDING)
+    cout << "Recording";
+  if (state == PLAYER_AUDIO_STATE_STOPPED)
+    cout << "Stopped";
+  cout << std::endl;
 
   os.precision(old_precision);
   os.flags(old_flags);
