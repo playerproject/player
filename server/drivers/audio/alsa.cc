@@ -1093,6 +1093,9 @@ void Alsa::StartPlayback (void)
 		// Set playback state to PLAYING
 		playState = PB_STATE_PLAYING;
 	}
+
+	// Update clients about state
+	SendStateMessage ();
 }
 
 // Stop outputting sound - actually more like a pause, as doesn't reset the
@@ -1103,6 +1106,9 @@ void Alsa::StopPlayback (void)
 	playState = PB_STATE_STOPPED;
 	// Drop anything currently in the buffer and stop the card
 	snd_pcm_drop (pbHandle);
+
+	// Update clients about state
+	SendStateMessage ();
 }
 
 // Start recording sound
@@ -1188,6 +1194,9 @@ void Alsa::StartRecording (void)
 	}
 	// Move to recording state
 	recState = PB_STATE_RECORDING;
+
+	// Update clients about state
+	SendStateMessage ();
 }
 
 // Stop recording sound
@@ -1201,6 +1210,9 @@ void Alsa::StopRecording (void)
 	PublishRecordedData ();
 	delete recData;
 	recData = NULL;
+
+	// Update clients about state
+	SendStateMessage ();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1964,12 +1976,16 @@ void Alsa::Main (void)
 				}
 				// If nothing left, moved to STOPPED state
 				else
+				{
 					playState = PB_STATE_STOPPED;
+					SendStateMessage ();
+				}
 			}
 			else
 			{
 				PLAYER_WARN1 ("Unexpected PCM state for drain: %d", snd_pcm_state (pbHandle));
 				playState = PB_STATE_STOPPED;
+				SendStateMessage ();
 			}
 		}
 		// If playing, check if the buffer is ready for more data
@@ -1977,10 +1993,6 @@ void Alsa::Main (void)
 		{
 			if (poll (pbFDs, numPBFDs, 5) > 0)
 			{
-// 				struct timeval timeVal;
-// 				gettimeofday (&timeVal, NULL);
-// 				printf ("%d.%d: Buffer is ready to write\n", timeVal.tv_sec, timeVal.tv_usec);
-// 				fflush (NULL);
 				// If it is, check each file descriptor
 				for (int ii = 0; ii < numPBFDs; ii++)
 					if (pbFDs[ii].revents > 0)
@@ -1993,10 +2005,6 @@ void Alsa::Main (void)
 		{
 			if (poll (recFDs, numRecFDs, 5) > 0)
 			{
-// 				struct timeval timeVal;
-// 				gettimeofday (&timeVal, NULL);
-// 				printf ("%d.%d: Buffer is ready to read\n", timeVal.tv_sec, timeVal.tv_usec);
-// 				fflush (NULL);
 				// If it is, check each file descriptor
 				for (int ii = 0; ii < numRecFDs; ii++)
 					if (recFDs[ii].revents > 0)
@@ -2011,6 +2019,21 @@ void Alsa::Main (void)
 			ProcessMessages (1);
 		}
 	}
+}
+
+
+// Sends a PLAYER_AUDIO_STATE_DATA message describing the current state of the driver
+void Alsa::SendStateMessage (void)
+{
+	player_audio_state_t msg;
+
+	msg.state = 0;
+	if (playState == PB_STATE_PLAYING || playState == PB_STATE_DRAIN)
+		msg.state |= PLAYER_AUDIO_STATE_PLAYING;
+	if (recState == PB_STATE_RECORDING)
+		msg.state |= PLAYER_AUDIO_STATE_RECORDING;
+
+	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_STATE_DATA, reinterpret_cast<void*> (&msg), sizeof (player_audio_state_t), NULL);
 }
 
 
