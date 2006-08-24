@@ -136,6 +136,7 @@ class Alsa : public Driver
 
 		// Internal functions
 		virtual void Main (void);
+		void SendStateMessage (void);
 
 		// Stored sample functions
 		bool AddStoredSample (StoredSample *newSample);
