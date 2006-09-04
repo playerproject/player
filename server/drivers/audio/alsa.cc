@@ -151,7 +151,7 @@ driver
 )
 @endverbatim
 
-@author Geoffrey Biggs
+@author Geoffrey Biggs, Lorenz Moesenlechner
  */
 /** @} */
 
@@ -1040,7 +1040,7 @@ void Alsa::RecordCallback (int numFrames)
 			recData->data_count += snd_pcm_frames_to_bytes (recHandle, framesRead);
 			totalRead += framesRead;
 			// If this buffer is full, publish the data (resetting the buffer to zero)
-			if (recData->data_count == PLAYER_AUDIO_WAV_BUFFER_SIZE)
+			if (recData->data_count >= ((recSampleRate * cfgRecBufferTime)/1000) * recNumChannels * recBits/8)
 				PublishRecordedData ();
 		}
 		// Overrun
@@ -1105,7 +1105,8 @@ void Alsa::StopPlayback (void)
 	// Set playback to false
 	playState = PB_STATE_STOPPED;
 	// Drop anything currently in the buffer and stop the card
-	snd_pcm_drop (pbHandle);
+    if( pbHandle )
+        snd_pcm_drop (pbHandle);
 
 	// Update clients about state
 	SendStateMessage ();
@@ -1760,13 +1761,23 @@ Alsa::Alsa (ConfigFile* cf, int section)
 	periodBuffer = NULL;
 	pbFDs = recFDs = NULL;
 	recData = NULL;
+    const char *str;
 
 	// Read the config file options - see header for descriptions if not here
 	useQueue = cf->ReadBool (section, "usequeue", true);
-	pbDevice = strdup (cf->ReadString (section, "pbdevice", NULL));
-	mixerDevice = strdup (cf->ReadString (section, "mixerdevice", NULL));
-	recDevice = strdup (cf->ReadString (section, "recdevice", NULL));
-	cfgPBPeriodTime = cf->ReadInt (section, "pb_periodlength", 50);
+    str = cf->ReadString (section, "pbdevice", NULL);
+    if( str )
+        pbDevice = strdup(str);
+    
+    str = cf->ReadString (section, "mixerdevice", NULL);
+    if( str )
+	    mixerDevice = strdup ( str );
+
+    str = cf->ReadString (section, "recdevice", NULL);
+    if( str )
+        recDevice = strdup (str);
+
+    cfgPBPeriodTime = cf->ReadInt (section, "pb_periodlength", 50);
 	cfgPBBufferTime = cf->ReadInt (section, "pb_bufferlength", 500);
 	// Don't have silence if not using the queue system
 	silenceTime = useQueue? cf->ReadInt (section, "pb_silence", 0) : 0;
