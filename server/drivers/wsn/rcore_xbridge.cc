@@ -105,7 +105,6 @@ driver
 extern "C" {
 #endif
 
-#include <libparticle/_packet.h>
 #include <libparticle.h>
 
 #ifdef __cplusplus
@@ -388,16 +387,18 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
 {
     NodeCalibrationValues node_values;
     player_wsn_data_t temp_data;
-    struct p_acl_tuple *tuple;
     short accelX[MAXREADPPACKET], accelY[MAXREADPPACKET], accelZ[MAXREADPPACKET];
     int i;
+    const uint8_t *srcid = p_pkt_get_srcid(pkt);
+    struct p_acl_tuple *tuple;
+    uint8_t *acl_data;
+    const uint8_t *acl_type;
+    uint16_t acl_len;
     
     char gid[12];
     char nid[12];
-    sprintf (gid, "%d%d%d%d", pkt->p_src_id[0], pkt->p_src_id[1],
-             pkt->p_src_id[2], pkt->p_src_id[3]);
-    sprintf (nid, "%d%d%d%d", pkt->p_src_id[4], pkt->p_src_id[5],
-             pkt->p_src_id[6], pkt->p_src_id[7]);
+    sprintf (gid, "%d%d%d%d", srcid[0], srcid[1], srcid[2], srcid[3] );
+    sprintf (nid, "%d%d%d%d", srcid[4], srcid[5], srcid[6], srcid[7] );
 
     temp_data.node_type      = 1;
     temp_data.node_id        = atol (nid);
@@ -406,16 +407,17 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     tuple = p_acl_first(pkt);
 
     // Parse all the tuples
-    while (tuple != NULL) {
-        if ((tuple->acl_type[0] == 234) && (tuple->acl_type[1] == 128)) // SGX
-	    for (i = 0; i < readppacket; i++)
-	    {
-                accelX[i] = ParseTuple (tuple->acl_data[0+(i*6)], tuple->acl_data[1+(i*6)]);
-	        accelY[i] = ParseTuple (tuple->acl_data[2+(i*6)], tuple->acl_data[3+(i*6)]);
-        	accelZ[i] = ParseTuple (tuple->acl_data[4+(i*6)], tuple->acl_data[5+(i*6)]);
-	    }
-
-        tuple = p_acl_next(pkt, tuple);
+    for (tuple = p_acl_first (pkt); tuple != NULL; tuple = p_acl_next (pkt, tuple))
+    {
+      acl_type = p_acl_get_type (tuple);
+      acl_len  = p_acl_get_data (tuple, &acl_data);
+      if ((acl_type[0] == 234) && (acl_type[1] == 128)) // SGX
+        for (i = 0; i < readppacket; i++)
+        {
+            accelX[i] = ParseTuple (acl_data[0+(i*6)], acl_data[1+(i*6)]);
+            accelY[i] = ParseTuple (acl_data[2+(i*6)], acl_data[3+(i*6)]);
+            accelZ[i] = ParseTuple (acl_data[4+(i*6)], acl_data[5+(i*6)]);
+        }
     }
 
     temp_data.data_packet.light       = -1;
