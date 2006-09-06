@@ -102,6 +102,7 @@ extern "C" {
 #define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
 #define PLAYERC_RFID_MAX_TAGS           PLAYER_RFID_MAX_TAGS
 #define PLAYERC_RFID_MAX_GUID           PLAYER_RFID_MAX_GUID
+#define PLAYERC_POINTCLOUD3D_MAX_POINTS PLAYER_POINTCLOUD3D_MAX_POINTS
 
 /** @} */
 
@@ -2872,6 +2873,47 @@ int playerc_rfid_subscribe(playerc_rfid_t *device, int access);
 
 /** @brief Un-subscribe from the rfid device. */
 int playerc_rfid_unsubscribe(playerc_rfid_t *device);
+
+/** @} */
+/***************************************************************************/
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
+    @defgroup playerc_proxy_pointcloud3d pointcloud3d
+
+The pointcloud3d proxy provides an interface to a pointcloud3d device.
+
+@{
+*/
+
+/** @brief Structure describing a single 3D pointcloud element. */
+typedef player_pointcloud3d_element_t playerc_pointcloud3d_element_t;
+
+/** @brief pointcloud3d proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** The number of 3D pointcloud elementS found. */
+  uint16_t points_count;
+
+  /** The list of 3D pointcloud elements. */
+  playerc_pointcloud3d_element_t points[PLAYERC_POINTCLOUD3D_MAX_POINTS];
+} playerc_pointcloud3d_t;
+
+
+/** @brief Create a pointcloud3d proxy. */
+playerc_pointcloud3d_t *playerc_pointcloud3d_create (playerc_client_t *client, int index);
+
+/** @brief Destroy a pointcloud3d proxy. */
+void playerc_pointcloud3d_destroy (playerc_pointcloud3d_t *device);
+
+/** @brief Subscribe to the pointcloud3d device. */
+int playerc_pointcloud3d_subscribe (playerc_pointcloud3d_t *device, int access);
+
+/** @brief Un-subscribe from the pointcloud3d device. */
+int playerc_pointcloud3d_unsubscribe (playerc_pointcloud3d_t *device);
 
 /** @} */
 /***************************************************************************/

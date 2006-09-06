@@ -44,6 +44,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_map.c \
                         dev_opaque.c \
                         dev_planner.c \
+			dev_pointcloud3d.c \
                         dev_position1d.c \
                         dev_position2d.c \
                         dev_position3d.c \
