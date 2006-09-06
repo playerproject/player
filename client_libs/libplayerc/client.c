@@ -428,6 +428,8 @@ void *playerc_client_read(playerc_client_t *client)
 
     switch(header.type)
     {
+      case PLAYER_MSGTYPE_RESP_ACK:
+        break;
       case PLAYER_MSGTYPE_SYNCH:
         client->lasttime = client->datatime;
         client->datatime = header.timestamp;
