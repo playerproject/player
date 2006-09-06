@@ -77,7 +77,8 @@ using the XBridge. The SSimp Full board is supported.
 - readppacket (integer)
   - Default: 8.
   - How many readings does the Particle send in one packet? (using multiple readings 
-    per packet, will increase the sample rate).
+    per packet, will increase the sample rate). Note: Use 0 as a special value for 
+    enabling the standard TeCo SSIMP mode (multiple tuples).
 
 @par Example 
 
@@ -180,7 +181,7 @@ class RCore_XBridge : public Driver
         int               calibration_node_id;
 
         NodeCalibrationValues FindNodeValues (unsigned int nodeID);
-        short ParseTuple (short b1, short b2);
+        short ParseTuple (unsigned char b1, unsigned char b2);
         player_wsn_data_t DecodePacket (struct p_packet *pkt);
         float ConvertAccel (unsigned short raw_accel, int neg_1g, int pos_1g,
                             int converted);
@@ -322,10 +323,11 @@ int RCore_XBridge::ProcessMessage (MessageQueue* resp_queue,
 	// Change the data type to RAW or converted metric units
         player_wsn_datatype_config *datatype = 
                 (player_wsn_datatype_config*)data;
-
-        if ((datatype->value > -1) && (datatype->value < 3))
+	unsigned int val = datatype->value;
+	
+        if ((val >= 0) && (val < 3))
         {
-            raw_or_converted = datatype->value;
+            raw_or_converted = val;
             Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, 
                      hdr->subtype);
         }
@@ -372,7 +374,7 @@ void RCore_XBridge::RefreshData ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ParseTuple function - return the value of a tuple
-short RCore_XBridge::ParseTuple (short b1, short b2)
+short RCore_XBridge::ParseTuple (unsigned char b1, unsigned char b2)
 {
     long value;
     value  = b1 << 8;
@@ -406,20 +408,11 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
 
     tuple = p_acl_first(pkt);
 
-    // Parse all the tuples
-    for (tuple = p_acl_first (pkt); tuple != NULL; tuple = p_acl_next (pkt, tuple))
-    {
-      acl_type = p_acl_get_type (tuple);
-      acl_len  = p_acl_get_data (tuple, &acl_data);
-      if ((acl_type[0] == 234) && (acl_type[1] == 128)) // SGX
-        for (i = 0; i < readppacket; i++)
-        {
-            accelX[i] = ParseTuple (acl_data[0+(i*6)], acl_data[1+(i*6)]);
-            accelY[i] = ParseTuple (acl_data[2+(i*6)], acl_data[3+(i*6)]);
-            accelZ[i] = ParseTuple (acl_data[4+(i*6)], acl_data[5+(i*6)]);
-        }
-    }
-
+    // Standard TeCO SSIMP software includes the following tuples:
+    // sgx, sgy, sgz = acceleration values for X, Y and Z axis
+    // sli = sensor light
+    // ste = sensor temperatures
+    // svc = sensor voltage
     temp_data.data_packet.light       = -1;
     temp_data.data_packet.mic         = -1;
     temp_data.data_packet.magn_x      = -1;
@@ -428,32 +421,72 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     temp_data.data_packet.temperature = -1;
     temp_data.data_packet.battery     = -1;
     
-    for (i = 0; i < readppacket; i++)
+    // Parse all the tuples
+    for (tuple = p_acl_first (pkt); tuple != NULL; tuple = p_acl_next (pkt, tuple))
     {
-	if (raw_or_converted != 0)
-        {
-	    node_values = FindNodeValues (temp_data.node_id);
-    	    temp_data.data_packet.accel_x = ConvertAccel (accelX[i], 
-        	    node_values.c_values[0], node_values.c_values[1], 
-            	    raw_or_converted);
-            temp_data.data_packet.accel_y = ConvertAccel (accelY[i], 
-	            node_values.c_values[2], node_values.c_values[3],
-    	            raw_or_converted);
-	    temp_data.data_packet.accel_z = ConvertAccel (accelZ[i], 
-        	    node_values.c_values[4], node_values.c_values[5],
-            	    raw_or_converted);
-	}
-        else
-	{
-	    temp_data.data_packet.accel_x = accelX[i];
-    	    temp_data.data_packet.accel_y = accelY[i];
-            temp_data.data_packet.accel_z = accelZ[i];
-        }
-    
-	// Publish the WSN data (each packet goes separately)
+      acl_type = p_acl_get_type (tuple);
+      acl_len  = p_acl_get_data (tuple, &acl_data);
+      
+      if (readppacket == 0)	// Assume normal, standard SSIMP mode
+      {
+        if ((acl_type[0] == 234) && (acl_type[1] == 128))	// SGX
+	    temp_data.data_packet.accel_x = ParseTuple (acl_data[0], acl_data[1]);
+        if ((acl_type[0] == 240) && (acl_type[1] == 192))	// SGY
+    	    temp_data.data_packet.accel_y = ParseTuple (acl_data[0], acl_data[1]);
+        if ((acl_type[0] == 247) && (acl_type[1] == 0))		// SGZ
+            temp_data.data_packet.accel_z = ParseTuple (acl_data[0], acl_data[1]);
+        if ((acl_type[0] == 141) && (acl_type[1] == 136))	// SLI
+    	    temp_data.data_packet.light = acl_data[1];
+	if ((acl_type[0] == 117) && (acl_type[1] == 200))	// STE
+	    temp_data.data_packet.temperature = acl_data[0];
+	if ((acl_type[0] == 105) && (acl_type[1] == 152))	// SVC
+	    temp_data.data_packet.battery = ParseTuple (acl_data[0], acl_data[1]);
+	if ((acl_type[0] == 214) && (acl_type[1] == 208))	// SAU
+	    temp_data.data_packet.mic = acl_data[1];
+      }
+      else			// Using a single tuple, defaulting to SGX
+        if ((acl_type[0] == 234) && (acl_type[1] == 128)) // SGX
+    	    for (i = 0; i < readppacket; i++)
+    	    {
+        	accelX[i] = ParseTuple (acl_data[0+(i*6)], acl_data[1+(i*6)]);
+        	accelY[i] = ParseTuple (acl_data[2+(i*6)], acl_data[3+(i*6)]);
+        	accelZ[i] = ParseTuple (acl_data[4+(i*6)], acl_data[5+(i*6)]);
+    	    }
+    }
+
+    // If multiple tuples/single packet mode enabled...
+    if (readppacket == 0)
+	// Publish the WSN data
 	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
 	         &temp_data, sizeof (player_wsn_data_t), NULL);
-    }
+    else
+	// If single tuple/multiple packets mode enabled...
+	for (i = 0; i < readppacket; i++)
+	{
+	    if (raw_or_converted != 0)
+    	    {
+		node_values = FindNodeValues (temp_data.node_id);
+    		temp_data.data_packet.accel_x = ConvertAccel (accelX[i], 
+        	    node_values.c_values[0], node_values.c_values[1], 
+            	    raw_or_converted);
+        	temp_data.data_packet.accel_y = ConvertAccel (accelY[i], 
+	            node_values.c_values[2], node_values.c_values[3],
+    	            raw_or_converted);
+		temp_data.data_packet.accel_z = ConvertAccel (accelZ[i], 
+        	    node_values.c_values[4], node_values.c_values[5],
+            	    raw_or_converted);
+	    }
+    	    else
+	    {
+		temp_data.data_packet.accel_x = accelX[i];
+    		temp_data.data_packet.accel_y = accelY[i];
+        	temp_data.data_packet.accel_z = accelZ[i];
+    	    }
+    
+	    // Publish the WSN data (each packet goes separately)
+	    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+	         &temp_data, sizeof (player_wsn_data_t), NULL);
+	}
 
     p_pkt_free (packet);
     return temp_data;
