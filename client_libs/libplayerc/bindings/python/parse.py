@@ -97,9 +97,12 @@ def compile(prefix):
     # Create rule for regular functions
     rule = Rule()
     rule.type = 'method'
-    rule.patterns += [re.compile('\w*\s*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
-    rule.patterns += [re.compile('\w*\s*\w*\s*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
-    rule.patterns += [re.compile('\w*\s*\*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    #rule.patterns += [re.compile('\w*\s*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*%s_[a-zA-Z0-9]*\s*\(.*?;' % prefix, re.DOTALL)]
+    #rule.patterns += [re.compile('\w*\s*\w*\s*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*\w*\s*%s_[a-zA-Z0-9]*\s*\(.*?;' % prefix, re.DOTALL)]
+    #rule.patterns += [re.compile('\w*\s*\*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*\*%s_[a-zA-Z0-9]*\s*\(.*?;' % prefix, re.DOTALL)]
 
     rule.head = '\n%%extend %s\n{\n' % prefix
     rule.foot = '\n}\n'
