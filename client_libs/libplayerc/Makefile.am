@@ -36,6 +36,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_graphics3d.c \
                         dev_gripper.c \
                         dev_health.c \
+			dev_imu.c \
                         dev_ir.c \
                         dev_laser.c \
                         dev_limb.c \

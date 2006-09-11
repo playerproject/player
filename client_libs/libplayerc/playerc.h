@@ -2920,6 +2920,52 @@ int playerc_pointcloud3d_unsubscribe (playerc_pointcloud3d_t *device);
 
 /**************************************************************************/
 /** @ingroup playerc_proxies
+    @defgroup playerc_proxy_imu imu
+
+The imu proxy provides an interface to an Inertial Measurement Unit.
+
+@{
+*/
+
+/** @brief IMU proxy state data. */
+typedef struct
+{
+    /** Device info; must be at the start of all device structures.         */
+    playerc_device_t info;
+
+    /** The complete pose of the IMU in 3D coordinates + angles             */
+    player_pose3d_t pose;
+
+    /** Calibrated IMU data (accel, gyro, magnetometer)                     */
+    player_imu_data_calib_t calib_data;
+
+    /** Orientation data as quaternions                                     */
+    float q0, q1, q2, q3;
+} playerc_imu_t;
+
+/** @brief Create a imu proxy. */
+playerc_imu_t *playerc_imu_create (playerc_client_t *client, int index);
+
+/** @brief Destroy a imu proxy. */
+void playerc_imu_destroy (playerc_imu_t *device);
+
+/** @brief Subscribe to the imu device. */
+int playerc_imu_subscribe (playerc_imu_t *device, int access);
+
+/** @brief Un-subscribe from the imu device. */
+int playerc_imu_unsubscribe (playerc_imu_t *device);
+
+/** Change the data type to one of the predefined data structures. */
+int playerc_imu_datatype (playerc_imu_t *device, int value);
+
+/**  Reset orientation. */
+int playerc_imu_reset_orientation (playerc_imu_t *device, int value);
+
+/** @} */
+/***************************************************************************/
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
     @defgroup playerc_proxy_wsn wsn
 
 The wsn proxy provides an interface to a Wireless Sensor Network.
