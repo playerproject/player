@@ -75,6 +75,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_ptz
 - @ref interface_wifi
 - @ref interface_wsn
+- @ref interface_imu
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -124,7 +125,7 @@ driver
 )
 @endverbatim
 
-@author Andrew Howard
+@author Andrew Howard, Radu Bogdan Rusu
 
 */
 /** @} */
@@ -207,7 +208,10 @@ class WriteLog: public Driver
   private: int WriteWiFi(player_msghdr_t* hdr, void *data);
 
   // Write WSN data to file
-  private: int WriteWSN(player_msghdr_t* hdr, void *data);
+  private: int WriteWSN (player_msghdr_t* hdr, void *data);
+  
+  // Write IMU data to file
+  private: int WriteIMU (player_msghdr_t* hdr, void *data);
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -707,6 +711,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_WSN_CODE:
       retval = this->WriteWSN(hdr, data);
       break;
+    case PLAYER_IMU_CODE:
+      retval = this->WriteIMU (hdr, data);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
@@ -1197,6 +1204,109 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
 
         default:
             return(-1);
+    }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_imu IMU format
+
+@brief IMU log format
+
+The format for each @ref interface_wsn message is:
+    - magn_x      (float): magnetic measurement on X-axis from a magnetometer
+    - magn_y      (float): magnetic measurement on Y-axis from a magnetometer
+    - magn_z      (float): magnetic measurement on Z-axis from a magnetometer
+    - temperature (float): temperature measurement from a temperature sensor
+    - battery     (float): remaining battery voltage
+ */
+int
+WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+    switch(hdr->type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+            switch(hdr->subtype)
+            {
+                case PLAYER_IMU_DATA_STATE:
+		{
+		    player_imu_data_state_t* idata;
+                    idata = (player_imu_data_state_t*)data;
+                    fprintf (this->file,"%f %f %f %f %f %f",
+                            idata->pose.px, 
+                            idata->pose.py, 
+                            idata->pose.pz, 
+                            idata->pose.proll, 
+                            idata->pose.ppitch, 
+                            idata->pose.pyaw);
+                    return (0);
+		}
+
+                case PLAYER_IMU_DATA_CALIB:
+		{
+		    player_imu_data_calib_t* idata;
+                    idata = (player_imu_data_calib_t*)data;
+                    fprintf (this->file,"%f %f %f %f %f %f %f %f %f",
+                            idata->accel_x, 
+                            idata->accel_y, 
+                            idata->accel_z, 
+                            idata->gyro_x, 
+                            idata->gyro_y, 
+			    idata->gyro_z,
+			    idata->magn_x,
+			    idata->magn_y,
+                            idata->magn_z);
+                    return (0);
+		}
+
+                case PLAYER_IMU_DATA_QUAT:
+		{
+		    player_imu_data_quat_t* idata;
+                    idata = (player_imu_data_quat_t*)data;
+                    fprintf (this->file,"%f %f %f %f %f %f %f %f %f %f %f %f %f",
+                            idata->calib_data.accel_x, 
+                            idata->calib_data.accel_y, 
+                            idata->calib_data.accel_z, 
+                            idata->calib_data.gyro_x, 
+                            idata->calib_data.gyro_y, 
+			    idata->calib_data.gyro_z,
+			    idata->calib_data.magn_x,
+			    idata->calib_data.magn_y,
+                            idata->calib_data.magn_z,
+                            idata->q0, 
+                            idata->q1, 
+                            idata->q2, 
+                            idata->q3);
+                    return (0);
+		}
+		
+                case PLAYER_IMU_DATA_EULER:
+		{
+		    player_imu_data_euler_t* idata;
+                    idata = (player_imu_data_euler_t*)data;
+                    fprintf (this->file,"%f %f %f %f %f %f %f %f %f %f %f %f",
+                            idata->calib_data.accel_x, 
+                            idata->calib_data.accel_y, 
+                            idata->calib_data.accel_z, 
+                            idata->calib_data.gyro_x, 
+                            idata->calib_data.gyro_y, 
+			    idata->calib_data.gyro_z,
+			    idata->calib_data.magn_x,
+			    idata->calib_data.magn_y,
+                            idata->calib_data.magn_z,
+                            idata->orientation.proll, 
+                            idata->orientation.ppitch, 
+                            idata->orientation.pyaw);
+                    return (0);
+		}
+		
+                default:
+                    return (-1);
+            }
+
+        default:
+            return (-1);
     }
 }
 
