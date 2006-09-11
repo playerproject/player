@@ -139,7 +139,12 @@ int main(int argc, const char *argv[])
       case PLAYER_RFID_CODE:
         test_rfid(client, client->devinfos[i].addr.index);
         break;
-	
+
+        // imu device
+      case PLAYER_IMU_CODE:
+        test_imu (client, client->devinfos[i].addr.index);
+	break;
+		      	
 	// simulation device
       case PLAYER_SIMULATION_CODE:
         test_simulation(client, client->devinfos[i].addr.index);
