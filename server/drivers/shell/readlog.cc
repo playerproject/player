@@ -61,6 +61,7 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_sonar
 - @ref interface_wifi
 - @ref interface_wsn
+- @ref interface_imu
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -118,7 +119,7 @@ driver
 )
 @endverbatim
 
-@author Andrew Howard
+@author Andrew Howard, Radu Bogdan Rusu
 
 */
 /** @} */
@@ -199,6 +200,11 @@ class ReadLog: public Driver
                                 player_msghdr_t * hdr,
                                 void * data);
 
+  // Process IMU interface configuration requests
+  private: int ProcessIMUConfig(MessageQueue * resp_queue,
+                                player_msghdr_t * hdr,
+                                void * data);
+
   // Parse the header info
   private: int ParseHeader(int linenum, int token_count, char **tokens,
                            player_devaddr_t *id, double *dtime,
@@ -265,6 +271,12 @@ class ReadLog: public Driver
                          int token_count, char **tokens, double time);
   // Parse WSN data
   private: int ParseWSN(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time);
+
+  // Parse IMU data
+  private: int ParseIMU(player_devaddr_t id,
                         unsigned short type, unsigned short subtype,
                         int linenum,
                         int token_count, char **tokens, double time);
@@ -968,6 +980,40 @@ ReadLog::ProcessWSNConfig(MessageQueue * resp_queue,
 }
 
 int
+ReadLog::ProcessIMUConfig(MessageQueue * resp_queue,
+                          player_msghdr_t * hdr,
+                          void * data)
+{
+    switch(hdr->subtype)
+    {
+        case PLAYER_IMU_REQ_SET_DATATYPE:
+        {
+        // Find the right place from which to retrieve it
+            int j;
+            for(j=0;j<this->provide_count;j++)
+            {
+                if(Device::MatchDeviceAddress(this->provide_ids[j], hdr->addr))
+                    break;
+            }
+            if(j>=this->provide_count)
+                return(-1);
+
+            if(!this->provide_metadata[j])
+                return(-1);
+
+            this->Publish(this->provide_ids[j], resp_queue,
+                          PLAYER_MSGTYPE_RESP_ACK, hdr->subtype,
+                          this->provide_metadata[j],
+                          sizeof(player_imu_datatype_config_t),
+                          NULL);
+            return(0);
+        }
+        default:
+            return(-1);
+    }
+}
+
+int
 ReadLog::ProcessMessage(MessageQueue * resp_queue,
                         player_msghdr_t * hdr,
                         void * data)
@@ -992,6 +1038,11 @@ ReadLog::ProcessMessage(MessageQueue * resp_queue,
            (hdr->addr.interf == PLAYER_WSN_CODE))
   {
       return(this->ProcessWSNConfig(resp_queue, hdr, data));
+  }
+  else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
+           (hdr->addr.interf == PLAYER_IMU_CODE))
+  {
+      return(this->ProcessIMUConfig(resp_queue, hdr, data));
   }
   else if((hdr->type == PLAYER_MSGTYPE_REQ) &&
           (hdr->addr.interf == PLAYER_POSITION2D_CODE))
@@ -1093,6 +1144,9 @@ int ReadLog::ParseData(player_devaddr_t id,
                            token_count, tokens, time);
   else if (id.interf == PLAYER_WSN_CODE)
       return this->ParseWSN(id, type, subtype, linenum,
+                            token_count, tokens, time);
+  else if (id.interf == PLAYER_IMU_CODE)
+      return this->ParseIMU (id, type, subtype, linenum,
                             token_count, tokens, time);
 
 #if 0
@@ -1779,6 +1833,127 @@ int ReadLog::ParseWSN(player_devaddr_t id,
         default:
             PLAYER_ERROR1("unknown WSN message type %d\n", type);
             return(-1);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse IMU data
+int ReadLog::ParseIMU (player_devaddr_t id, 
+                      unsigned short type, unsigned short subtype,
+                      int linenum,
+                      int token_count, char **tokens, double time)
+{
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_IMU_DATA_STATE:
+                {
+                    if (token_count < 13)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    player_imu_data_state_t data;
+		    
+		    data.pose.px = atof (tokens[7]);
+		    data.pose.py = atof (tokens[8]);
+		    data.pose.pz = atof (tokens[9]);
+		    data.pose.proll  = atof (tokens[10]);
+		    data.pose.ppitch = atof (tokens[11]);
+		    data.pose.pyaw   = atof (tokens[12]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+                }
+		
+		case PLAYER_IMU_DATA_CALIB:
+		{
+                    if (token_count < 16)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    player_imu_data_calib_t data;
+		    
+		    data.accel_x = atof (tokens[7]);
+		    data.accel_y = atof (tokens[8]);
+		    data.accel_z = atof (tokens[9]);
+		    data.gyro_x  = atof (tokens[10]);
+		    data.gyro_y  = atof (tokens[11]);
+		    data.gyro_z  = atof (tokens[12]);
+		    data.magn_x  = atof (tokens[13]);
+		    data.magn_y  = atof (tokens[14]);
+		    data.magn_z  = atof (tokens[15]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+		}
+		
+		case PLAYER_IMU_DATA_QUAT:
+		{
+                    if (token_count < 20)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    player_imu_data_quat_t data;
+		    
+		    data.calib_data.accel_x = atof (tokens[7]);
+		    data.calib_data.accel_y = atof (tokens[8]);
+		    data.calib_data.accel_z = atof (tokens[9]);
+		    data.calib_data.gyro_x  = atof (tokens[10]);
+		    data.calib_data.gyro_y  = atof (tokens[11]);
+		    data.calib_data.gyro_z  = atof (tokens[12]);
+		    data.calib_data.magn_x  = atof (tokens[13]);
+		    data.calib_data.magn_y  = atof (tokens[14]);
+		    data.calib_data.magn_z  = atof (tokens[15]);
+		    data.q0      = atof (tokens[16]);
+		    data.q1      = atof (tokens[17]);
+		    data.q2      = atof (tokens[18]);
+		    data.q3      = atof (tokens[19]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+		}
+		
+		case PLAYER_IMU_DATA_EULER:
+		{
+                    if (token_count < 19)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    player_imu_data_euler_t data;
+		    
+		    data.calib_data.accel_x = atof (tokens[7]);
+		    data.calib_data.accel_y = atof (tokens[8]);
+		    data.calib_data.accel_z = atof (tokens[9]);
+		    data.calib_data.gyro_x  = atof (tokens[10]);
+		    data.calib_data.gyro_y  = atof (tokens[11]);
+		    data.calib_data.gyro_z  = atof (tokens[12]);
+		    data.calib_data.magn_x  = atof (tokens[13]);
+		    data.calib_data.magn_y  = atof (tokens[14]);
+		    data.calib_data.magn_z  = atof (tokens[15]);
+		    data.orientation.proll  = atof (tokens[16]);
+		    data.orientation.ppitch = atof (tokens[17]);
+		    data.orientation.pyaw   = atof (tokens[18]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+		}
+                default:
+                    PLAYER_ERROR1 ("unknown IMU data subtype %d\n", subtype);
+                    return (-1);
+            }
+        default:
+            PLAYER_ERROR1 ("unknown IMU message type %d\n", type);
+            return (-1);
     }
 }
 
