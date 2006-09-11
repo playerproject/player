@@ -62,6 +62,7 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_wifi
 - @ref interface_wsn
 - @ref interface_imu
+- @ref interface_pointcloud3d
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -276,10 +277,16 @@ class ReadLog: public Driver
                         int token_count, char **tokens, double time);
 
   // Parse IMU data
-  private: int ParseIMU(player_devaddr_t id,
-                        unsigned short type, unsigned short subtype,
-                        int linenum,
-                        int token_count, char **tokens, double time);
+  private: int ParseIMU (player_devaddr_t id,
+                         unsigned short type, unsigned short subtype,
+                         int linenum,
+                         int token_count, char **tokens, double time);
+
+  // Parse PointCloud3D data
+  private: int ParsePointCloud3d (player_devaddr_t id,
+                    		  unsigned short type, unsigned short subtype,
+                    		  int linenum,
+                    		  int token_count, char **tokens, double time);
 #if 0
 
   // Parse position3d data
@@ -1148,6 +1155,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_IMU_CODE)
       return this->ParseIMU (id, type, subtype, linenum,
                             token_count, tokens, time);
+  else if (id.interf == PLAYER_POINTCLOUD3D_CODE)
+      return this->ParsePointCloud3d (id, type, subtype, linenum,
+                                      token_count, tokens, time);
 
 #if 0
   else if (id.interf == PLAYER_POSITION3D_CODE)
@@ -1953,6 +1963,54 @@ int ReadLog::ParseIMU (player_devaddr_t id,
             }
         default:
             PLAYER_ERROR1 ("unknown IMU message type %d\n", type);
+            return (-1);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse PointCloud3d data
+int ReadLog::ParsePointCloud3d (player_devaddr_t id, 
+                                unsigned short type, unsigned short subtype,
+                                int linenum,
+                                int token_count, char **tokens, double time)
+{
+    unsigned int i;
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_POINTCLOUD3D_DATA_STATE:
+                {
+		    player_pointcloud3d_data_t data;
+		    data.points_count = atoi (tokens[7]);
+                    if (token_count < (int)(7+data.points_count))
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    for (i = 0; i < data.points_count; i++)
+		    {
+			player_pointcloud3d_element element;
+			player_point_3d_t point;
+			point.px = atof (tokens[8+i]);
+			point.py = atof (tokens[9+i]);
+			point.pz = atof (tokens[10+i]);
+			element.point = point;
+			data.points[i] = element;
+		    }
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+                }
+		
+                default:
+                    PLAYER_ERROR1 ("unknown PointCloud3d data subtype %d\n", subtype);
+                    return (-1);
+            }
+        default:
+            PLAYER_ERROR1 ("unknown PointCloud3d message type %d\n", type);
             return (-1);
     }
 }

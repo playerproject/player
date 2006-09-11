@@ -76,6 +76,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_wifi
 - @ref interface_wsn
 - @ref interface_imu
+- @ref interface_pointcloud3d
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -212,6 +213,9 @@ class WriteLog: public Driver
   
   // Write IMU data to file
   private: int WriteIMU (player_msghdr_t* hdr, void *data);
+  
+  // Write PointCloud3D data to file
+  private: int WritePointCloud3d (player_msghdr_t* hdr, void *data);
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -714,6 +718,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_IMU_CODE:
       retval = this->WriteIMU (hdr, data);
       break;
+    case PLAYER_POINTCLOUD3D_CODE:
+      retval = this->WritePointCloud3d (hdr, data);
+      break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
       this->WriteBlobfinder((player_blobfinder_data_t*) data);
@@ -1212,12 +1219,48 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
 
 @brief IMU log format
 
-The format for each @ref interface_wsn message is:
-    - magn_x      (float): magnetic measurement on X-axis from a magnetometer
-    - magn_y      (float): magnetic measurement on Y-axis from a magnetometer
-    - magn_z      (float): magnetic measurement on Z-axis from a magnetometer
-    - temperature (float): temperature measurement from a temperature sensor
-    - battery     (float): remaining battery voltage
+The format for each @ref interface_imu message is:
+    - for PLAYER_IMU_DATA_STATE (player_imu_data_state_t):
+	-> px     (float): X pose
+	-> py     (float): Y pose
+	-> pz     (float): Z pose
+	-> proll  (float): roll angle
+	-> ppitch (float): pitch angle
+	-> pyaw   (float): yaw angle
+    - for PLAYER_IMU_DATA_CALIB (player_imu_data_calib_t):
+	-> accel_x (float): acceleration value for X axis
+	-> accel_y (float): acceleration value for Y axis
+	-> accel_z (float): acceleration value for Z axis
+	-> gyro_x  (float): gyroscope value for X axis
+	-> gyro_y  (float): gyroscope value for Y axis
+	-> gyro_z  (float): gyroscope value for Z axis
+	-> magn_x  (float): magnetometer value for X axis
+	-> magn_y  (float): magnetometer value for Y axis
+	-> magn_z  (float): magnetometer value for Z axis
+    - for PLAYER_IMU_DATA_QUAT (player_imu_data_quat_t):
+	-> accel_x (float): acceleration value for X axis
+	-> accel_y (float): acceleration value for Y axis
+	-> accel_z (float): acceleration value for Z axis
+	-> gyro_x  (float): gyroscope value for X axis
+	-> gyro_y  (float): gyroscope value for Y axis
+	-> gyro_z  (float): gyroscope value for Z axis
+	-> magn_x  (float): magnetometer value for X axis
+	-> magn_y  (float): magnetometer value for Y axis
+	-> magn_z  (float): magnetometer value for Z axis
+	-> q0, q1, q2, q3 (floats): quaternion values
+    - for PLAYER_IMU_DATA_EULER (player_imu_data_euler_t):
+	-> accel_x (float): acceleration value for X axis
+	-> accel_y (float): acceleration value for Y axis
+	-> accel_z (float): acceleration value for Z axis
+	-> gyro_x  (float): gyroscope value for X axis
+	-> gyro_y  (float): gyroscope value for Y axis
+	-> gyro_z  (float): gyroscope value for Z axis
+	-> magn_x  (float): magnetometer value for X axis
+	-> magn_y  (float): magnetometer value for Y axis
+	-> magn_z  (float): magnetometer value for Z axis
+	-> proll   (float): roll angle
+	-> ppitch  (float): pitch angle
+	-> pyaw    (float): yaw angle
  */
 int
 WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
@@ -1301,6 +1344,51 @@ WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
                     return (0);
 		}
 		
+                default:
+                    return (-1);
+            }
+
+        default:
+            return (-1);
+    }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_pointcloud3d pointcloud3d format
+
+@brief PointCloud3D log format
+
+The format for each @ref interface_pointcloud3d message is:
+    - points_count (int): the number of elements in the 3d point cloud
+    - list of elements; for each element:
+	- point.px (float): X [m]
+	- point.py (float): Y [m]
+	- point.pz (float): Z [m]
+ */
+int
+WriteLog::WritePointCloud3d (player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  // Check the type
+    switch(hdr->type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+            switch(hdr->subtype)
+            {
+                case PLAYER_POINTCLOUD3D_DATA_STATE:
+		{
+		    player_pointcloud3d_data_t* pdata;
+                    pdata = (player_pointcloud3d_data_t*)data;
+		    fprintf (this->file, "%d ", pdata->points_count);
+		    for (i = 0; i < pdata->points_count; i++)
+			fprintf (this->file,"%f %f %f ",
+                            pdata->points[i].point.px, 
+                            pdata->points[i].point.py, 
+                            pdata->points[i].point.pz);
+                    return (0);
+		}
+
                 default:
                     return (-1);
             }
