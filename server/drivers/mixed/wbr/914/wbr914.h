@@ -41,6 +41,8 @@
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
+#define ACCELERATION_DEFAULT 2
+#define DECELERATION_DEFAULT 10
 
 /* PMD3410 command codes */
 #define NOOP                0x00
@@ -57,6 +59,8 @@
 #define SETPHASECOUNTS      0x75
 #define SETMOTORCMD         0x77
 #define SETLIMITSWITCHMODE  0x80
+#define WRITEDIGITAL        0x82
+#define READDIGITAL         0x83
 #define GETVERSION          0x8F
 #define SETACCEL            0x90
 #define SETDECEL            0x91
@@ -123,6 +127,8 @@ typedef struct
 {
   player_position2d_data_t position;
   player_ir_data_t         ir;
+  player_aio_data_t        aio;
+  player_dio_data_t        dio;
 } __attribute__ ((packed)) player_data_t;
 
 
@@ -168,15 +174,21 @@ class wbr914 : public Driver
     int  HandleConfig(MessageQueue* resp_queue,
 			      player_msghdr * hdr,
 			      void* data);
-    int  HandleCommand(player_msghdr * hdr, void * data);
 
+    // Command handlers
+    int  HandleCommand(player_msghdr * hdr, void * data);
+    void HandleVelocityCommand(player_position2d_cmd_vel_t* cmd );
+    void HandleDigitalOutCommand( player_dio_cmd_t* doutCmd );
+    void SetDigitalData( player_dio_cmd_t * d );
+
+    // Robot data retrievers
     void GetAllData( void );
     void GetPositionData( player_position2d_data_t* d );
     void GetIRData( player_ir_data_t * d );
+    void GetAnalogData( player_aio_data_t * d );
+    void GetDigitalData( player_dio_data_t * d );
 
     void PublishData(void);
-
-    void HandleVelocityCommand(player_position2d_cmd_vel_t* cmd );
 
     /* Robot commands */
     const char* GetPMDErrorString( int rc );
@@ -203,6 +215,8 @@ class wbr914 : public Driver
     void SetAccelerationProfile();
     void StopRobot();
     int  GetAnalogSensor(int s, short * val );
+    void GetDigitalIn( unsigned short* digIn );
+    void SetDigitalOut( unsigned short digOut );
     void SetOdometry( player_position2d_set_odom_req_t* od );
     void SetContourMode( ProfileMode_t prof );
     void SetMicrosteps();
@@ -225,11 +239,14 @@ class wbr914 : public Driver
 
     player_devaddr_t position_id;
     player_devaddr_t ir_id;
+    player_devaddr_t aio_id;
+    player_devaddr_t dio_id;
 
-    // bookkeeping to only send new sound I/O commands
-
+    // bookkeeping to track whether an interface has been subscribed
     int position_subscriptions;
     int ir_subscriptions;
+    int aio_subscriptions;
+    int dio_subscriptions;
 
     int param_idx;  // index in the RobotParams table for this robot
     int direct_wheel_vel_control; // false -> separate trans and rot vel
@@ -265,6 +282,8 @@ class wbr914 : public Driver
     double  _velocityK;
     double  _positionK;
     int     _percentTorque;
+
+    uint16_t _lastDigOut;
 };
 
 

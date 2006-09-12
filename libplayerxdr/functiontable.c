@@ -498,6 +498,20 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_WSN_CODE, PLAYER_MSGTYPE_REQ, PLAYER_WSN_REQ_DATAFREQ,
    (player_pack_fn_t)player_wsn_datafreq_config_pack},
 
+  /* imu messages */
+  {PLAYER_IMU_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_STATE,
+    (player_pack_fn_t)player_imu_data_state_pack},
+  {PLAYER_IMU_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_CALIB,
+   (player_pack_fn_t)player_imu_data_calib_pack},
+  {PLAYER_IMU_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_QUAT,
+   (player_pack_fn_t)player_imu_data_quat_pack},
+  {PLAYER_IMU_CODE, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_EULER,
+   (player_pack_fn_t)player_imu_data_euler_pack},
+  {PLAYER_IMU_CODE, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_SET_DATATYPE,
+   (player_pack_fn_t)player_imu_datatype_config_pack},
+  {PLAYER_IMU_CODE, PLAYER_MSGTYPE_REQ, PLAYER_IMU_REQ_RESET_ORIENTATION,
+   (player_pack_fn_t)player_imu_reset_orientation_config_pack},
+
   /* This NULL element signals the end of the list; don't remove it */
   {0,0,0,NULL}
 };
