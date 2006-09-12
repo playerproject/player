@@ -2186,7 +2186,9 @@ The @p imu interface provides access to an Inertial Measurement Unit sensor
 #define PLAYER_IMU_DATA_EULER 4
 
 /** Request/reply subtype: set data type */
-#define PLAYER_IMU_REQ_SET_DATATYPE 1
+#define PLAYER_IMU_REQ_SET_DATATYPE      1
+/** Request/reply subtype: reset orientation */
+#define PLAYER_IMU_REQ_RESET_ORIENTATION 2
 
 /** @brief Data: calibrated IMU data (@ref PLAYER_IMU_DATA_STATE)
 
@@ -2266,6 +2268,16 @@ typedef struct player_imu_datatype_config
     */
     uint8_t value;
 } player_imu_datatype_config_t;
+
+/** @brief Request/reply: Reset orientation.
+
+To reset the IMU's orientation, send a @ref PLAYER_IMU_REQ_RESET_ORIENTATION
+request.  Null response. */
+typedef struct player_imu_reset_orientation_config
+{
+  /** driver-specific */
+  uint32_t value;
+} player_imu_reset_orientation_config_t;
 
 /** @} */
 

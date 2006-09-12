@@ -29,11 +29,13 @@
 
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_wbr914 wbr914 TODO
+/** @defgroup driver_wbr914 wbr914
  * @brief White Box Robotics Model 914 robot
 
 The White Box Robotics Model 914 computer communicates with the M3 I/O and
-motor control board over a serial-to-USB driver.
+motor control board over a serial-to-USB driver. The serial commands are
+used to communicate with two PMD motion control chips that drive the
+stepper motors and control the onboard I/O.
 
 @par Compile-time dependencies
 
@@ -46,9 +48,17 @@ them named:
 
 - @ref interface_position2d
   - This interface returns position data, and accepts velocity commands.
+    - PLAYER_POSITION2D_CMD_VEL
 
 - @ref interface_ir
   - This interface returns the IR range data.
+
+- @ref interface_aio
+  - This interface returns the analog input data from the optional 2nd I/O board.
+
+- @ref interface_dio
+  - This interface returns the digital input information and allows control of the digital outputs on all installed White Box Robotics I/O boards. The first I/O board supplies 8 digital inputs and outputs and the optional second I/O board supplies an additional 8 digital inputs and outputs.
+
 
 @par Supported configuration requests
 
@@ -61,6 +71,15 @@ them named:
 - @ref interface_ir :
   - PLAYER_IR_POSE
 
+@par Supported commands
+
+- @ref interface_position2d :
+  - PLAYER_POSITION2D_CMD_VEL
+
+- @ref interface_dio :
+  - PLAYER_DIO_CMD_VALUES
+
+
 @par Configuration file options
 
 - port (string)
@@ -72,7 +91,7 @@ them named:
 driver
 (
   name "wbr914"
-  provides [ "position2d:0" "ir:0" ]
+  provides [ "position2d:0" "ir:0" "aio:0" "dio:0" ]
   port "/dev/ttyUSB0"
 )
 
@@ -130,10 +149,9 @@ void wbr914_Register(DriverTable* table)
 }
 
 wbr914::wbr914(ConfigFile* cf, int section)
-        : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
+  : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+    _stopped( true ), _motorsEnabled( false ), _lastDigOut( 0 )
 {
-  _stopped = true;
-  _motorsEnabled = false;
   last_lpos = 0;
   last_rpos = 0;
 
@@ -165,6 +183,28 @@ wbr914::wbr914(ConfigFile* cf, int section)
                       PLAYER_IR_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->ir_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create an Analog I/O interface?
+  if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides",
+                      PLAYER_AIO_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->aio_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a Digital I/O interface?
+  if(cf->ReadDeviceAddr(&(this->dio_id), section, "provides",
+                      PLAYER_DIO_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->dio_id) != 0)
     {
       this->SetError(-1);
       return;
@@ -240,6 +280,8 @@ wbr914::wbr914(ConfigFile* cf, int section)
   _ir_geom.poses[ 4 ].pa = DTOR( 90 );
 
   // These 3 sensor have a z value of 0.35m and a pitch of 30 degrees down
+  // This type of pose is not currently handled by Player so do the best we
+  // can with what we have.
   _ir_geom.poses[ 5 ].px = 0.200;
   _ir_geom.poses[ 5 ].py = -0.060;
   _ir_geom.poses[ 5 ].pa = DTOR( -60 );
@@ -407,17 +449,14 @@ int wbr914::InitRobot()
     return -1;
   }
 
-  /* TODO check return value to match 0x00A934100013 */
   if ( _debug )
     printf( "GetVersion\n" );
+
   if(sendCmd0( RIGHT_MOTOR, GETVERSION, 6, buf ) < 0)
   {
     printf("failed to initialize robot\n");
     return -1;
   }
-  /* TODO check return value to match 0x00A934100013 */
-
-
 
   _stopped = true;
   return(0);
@@ -463,6 +502,14 @@ int wbr914::Subscribe( player_devaddr_t id )
     {
       this->ir_subscriptions++;
     }
+    else if(Device::MatchDeviceAddress(id, this->aio_id))
+    {
+      this->aio_subscriptions++;
+    }
+    else if(Device::MatchDeviceAddress(id, this->dio_id))
+    {
+      this->dio_subscriptions++;
+    }
   }
 
   return( rc );
@@ -473,19 +520,28 @@ int wbr914::Unsubscribe( player_devaddr_t id )
   int shutdownResult = Driver::Unsubscribe(id);
 
   // do the unsubscription
+  // and decrement the appropriate subscription counter
   if( shutdownResult == 0 )
   {
-    // also decrement the appropriate subscription counter
     if(Device::MatchDeviceAddress(id, this->position_id))
     {
       this->position_subscriptions--;
       assert(this->position_subscriptions >= 0);
     }
-    // also decrement the appropriate subscription counter
     else if(Device::MatchDeviceAddress(id, this->ir_id))
     {
       this->ir_subscriptions--;
       assert(this->ir_subscriptions >= 0);
+    }
+    else if(Device::MatchDeviceAddress(id, this->aio_id))
+    {
+      this->aio_subscriptions--;
+      assert(this->aio_subscriptions >= 0);
+    }
+    else if(Device::MatchDeviceAddress(id, this->dio_id))
+    {
+      this->dio_subscriptions--;
+      assert(this->dio_subscriptions >= 0);
     }
   }
 
@@ -515,6 +571,28 @@ void wbr914::PublishData(void)
 		  PLAYER_IR_DATA_RANGES,
 		  (void*)&(_data.ir),
 		  sizeof(_data.ir),
+		  NULL);
+  }
+
+  if ( aio_subscriptions )
+  {
+    // put Analog Input data
+    this->Publish(this->aio_id, NULL,
+		  PLAYER_MSGTYPE_DATA,
+		  PLAYER_AIO_DATA_STATE,
+		  (void*)&(_data.aio),
+		  sizeof(_data.aio),
+		  NULL);
+  }
+
+  if ( dio_subscriptions )
+  {
+    // put Digital Input data
+    this->Publish(this->dio_id, NULL,
+		  PLAYER_MSGTYPE_DATA,
+		  PLAYER_DIO_DATA_VALUES,
+		  (void*)&(_data.dio),
+		  sizeof(_data.dio),
 		  NULL);
   }
 }
@@ -698,6 +776,16 @@ int wbr914::HandleCommand(player_msghdr * hdr, void* data)
     UpdateM3();
     return(0);
   }
+  else if ( Message::MatchMessage(hdr,
+				  PLAYER_MSGTYPE_CMD,
+				  PLAYER_DIO_CMD_VALUES,
+				  this->dio_id))
+  {
+    HandleDigitalOutCommand( (player_dio_cmd_t*)data );
+    return(0);
+  }
+
+
   return(-1);
 }
 
@@ -714,12 +802,19 @@ void wbr914::HandleVelocityCommand(player_position2d_cmd_vel_t* velcmd)
 
   // now we set the speed
   if ( this->_motorsEnabled )
+  {
     SetVelocityInTicks( leftvel, rightvel );
+  }
   else
   {
     SetVelocityInTicks( 0, 0 );
     printf( "Motors not enabled\n" );
   }
+}
+
+void wbr914::HandleDigitalOutCommand( player_dio_cmd_t* doutCmd )
+{
+  SetDigitalData( doutCmd );
 }
 
 void wbr914::GetAllData( void )
@@ -733,6 +828,16 @@ void wbr914::GetAllData( void )
   if ( ir_subscriptions )
   {
     GetIRData( &_data.ir );
+  }
+
+  if ( aio_subscriptions )
+  {
+    GetAnalogData( &_data.aio );
+  }
+
+  if ( dio_subscriptions )
+  {
+    GetDigitalData( &_data.dio );
   }
 }
 
@@ -825,12 +930,12 @@ void wbr914::GetIRData(player_ir_data_t * d)
   // Assume the formula for mm = 270 * (voltage)^-1.1 for 80cm to 10cm
   // Assume ADC input of 5.0V gives max value of 1023
 
-  //  float v80 = 0.25;
-  //  float deltaV = 2.25;
-  //  float v10 = v80+deltaV;
   float adcLo = 0.0;
   float adcHi = 5.0;
   float vPerCount = (adcHi-adcLo)/1023.0;
+  //  float v80 = 0.25;
+  //  float deltaV = 2.25;
+  //  float v10 = v80+deltaV;
   //  float mmPerVolt = (800.0-100.0)/(v80-v10); 
 
   d->voltages_count = NUM_IR_SENSORS;
@@ -869,6 +974,88 @@ void wbr914::GetIRData(player_ir_data_t * d)
     }
     d->ranges[ i ] = meters;
   }
+}
+
+/*
+  Update the Analog input part of the client data
+
+  We cannot reliably detect whether there is an I/O
+  board attached to the M3 so blindly return the data.
+ */
+void wbr914::GetAnalogData(player_aio_data_t * d)
+{
+  // Read the 8 analog inputs on the second I/O board
+  d->voltages_count = 8;
+
+  float adcLo = 0.0;
+  float adcHi = 5.0;
+  float vPerCount = (adcHi-adcLo)/1023.0;
+
+  for (uint32_t i=0; i < d->voltages_count; i++)
+  {
+    int16_t val = 0;
+
+    GetAnalogSensor( i, &val );
+    float voltage = (float)val*vPerCount;
+    d->voltages[ i ] = voltage;
+  }
+}
+
+/*
+  Update the Digital input part of the client data
+
+  We cannot reliably detect whether there is an I/O
+  board attached to the M3 so blindly return the data.
+ */
+void wbr914::GetDigitalData(player_dio_data_t * d)
+{
+  // Read the 16 digital inputs
+  uint16_t din;
+
+  d->count = 16;
+  GetDigitalIn( &din );
+
+  // Byte flip the data to make the Input from the
+  // optional I/O board show up in the upper byte.
+  d->digin = (uint32_t)( (din>>8) | (din<<8));
+}
+
+/*
+  Set the Digital outputs on the robot
+
+  We cannot reliably detect whether there is an I/O
+  board attached to the M3 so blindly set the data.
+ */
+void wbr914::SetDigitalData( player_dio_cmd_t * d )
+{
+  // We only have 16 bits of Dig out, so strip extra bits
+  uint16_t data = d->digout & 0xFFFF;
+
+  // Different number of digital bits being requested to
+  // be set than we must actually set in the hardware.
+  // Handle by using part of the last sent data.
+  if ( d->count < 16 )
+  {
+    // Keep the last dig out bits that have not changed
+    uint16_t mask = (0xffff << d->count);
+    uint16_t oldPart = _lastDigOut & mask;
+
+    // Invert the mask and keep the bits that are to change.
+    mask = mask ^ 0xFFFF;
+    data &= mask;
+
+    // Build the output data
+    data |= oldPart;
+  }
+
+  _lastDigOut = data;
+
+  // Byte flip the data to make the Output to from the
+  // optional I/O board show up in the upper byte.
+  data = ( (data>>8) | (data<<8) );
+
+  // Always set 16 bits of data
+  SetDigitalOut( data );
 }
 
 //-------------------------------------------------------
@@ -1188,6 +1375,22 @@ int wbr914::GetAnalogSensor(int s, short * val )
 }
 
 
+void wbr914::GetDigitalIn( uint16_t* d )
+{
+  unsigned char ret[6];
+
+  sendCmd16( 0, READDIGITAL, 0, 6, ret );
+
+  *d = (uint16_t)BytesToInt16(  &(ret[2]) );
+}
+
+void wbr914::SetDigitalOut( uint16_t d )
+{
+  unsigned char ret[2];
+
+  sendCmd32( 0, WRITEDIGITAL, d, 2, ret );
+}
+
 /*
   Robot commands
  */
@@ -1303,10 +1506,11 @@ void wbr914::SetAccelerationProfile()
   uint8_t ret[2];
   int32_t accel = (int32_t)MOTOR_TICKS_PER_STEP*2;
 
-  sendCmd32( LEFT_MOTOR,  SETACCEL, accel, 2, ret );
-  sendCmd32( RIGHT_MOTOR, SETACCEL, accel, 2, ret );
-  sendCmd32( LEFT_MOTOR,  SETDECEL, accel, 2, ret );
-  sendCmd32( RIGHT_MOTOR, SETDECEL, accel, 2, ret );
+  // Decelerate faster than accelerating.
+  sendCmd32( LEFT_MOTOR,  SETACCEL, accel, ACCELERATION_DEFAULT, ret );
+  sendCmd32( RIGHT_MOTOR, SETACCEL, accel, ACCELERATION_DEFAULT, ret );
+  sendCmd32( LEFT_MOTOR,  SETDECEL, accel, DECELERATION_DEFAULT, ret );
+  sendCmd32( RIGHT_MOTOR, SETDECEL, accel, DECELERATION_DEFAULT, ret );
   SetContourMode( TrapezoidalProfile );
 }
 
@@ -1325,14 +1529,14 @@ void wbr914::Stop( int StopMode ) {
     sendCmd16( LEFT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret );
     sendCmd16( LEFT_MOTOR, SETSTOPMODE, AbruptStopMode, 2, ret );
     sendCmd32( LEFT_MOTOR, SETVEL, 0, 2, ret );
-    sendCmd32( LEFT_MOTOR, SETACCEL, 0, 2, ret );
-    sendCmd32( LEFT_MOTOR, SETDECEL, 0, 2, ret );
+    sendCmd32( LEFT_MOTOR, SETACCEL, 0, ACCELERATION_DEFAULT, ret );
+    sendCmd32( LEFT_MOTOR, SETDECEL, 0, DECELERATION_DEFAULT, ret );
 
     sendCmd16( RIGHT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret );
     sendCmd16( RIGHT_MOTOR, SETSTOPMODE, AbruptStopMode, 2, ret );
     sendCmd32( RIGHT_MOTOR, SETVEL, 0, 2, ret );
-    sendCmd32( RIGHT_MOTOR, SETACCEL, 0, 2, ret );
-    sendCmd32( RIGHT_MOTOR, SETDECEL, 0, 2, ret );
+    sendCmd32( RIGHT_MOTOR, SETACCEL, 0, ACCELERATION_DEFAULT, ret );
+    sendCmd32( RIGHT_MOTOR, SETDECEL, 0, DECELERATION_DEFAULT, ret );
 
     SetContourMode( VelocityContouringProfile );
 
