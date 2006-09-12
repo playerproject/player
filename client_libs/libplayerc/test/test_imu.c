@@ -47,7 +47,7 @@ int test_imu (playerc_client_t *client, int index)
     }
   }
 
-/*  TEST ("resetting the orientation (global reset)...");
+  TEST ("resetting the orientation (global reset)...");
   if (playerc_imu_reset_orientation (device, 2) < 0)
     FAIL ();
   else
@@ -55,7 +55,7 @@ int test_imu (playerc_client_t *client, int index)
     sleep (3);
     PASS ();
   }
-*/  
+  
   for (t = 0; t < 10; t++)
   {
     TEST1 ("reading data (attempt %d)", t);

@@ -148,7 +148,7 @@ playerc_imu_datatype (playerc_imu_t *device, int value)
 }
 
 // Reset orientation
-/*int
+int
 playerc_imu_reset_orientation (playerc_imu_t *device, int value)
 {
   player_imu_reset_orientation_config_t config;
@@ -160,4 +160,3 @@ playerc_imu_reset_orientation (playerc_imu_t *device, int value)
                                  PLAYER_IMU_REQ_RESET_ORIENTATION,
                                  &config, NULL, 0));
 }
-*/
