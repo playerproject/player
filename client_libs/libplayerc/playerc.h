@@ -452,6 +452,15 @@ typedef struct _playerc_client_t
   int transport;
   struct sockaddr_in server;
 
+  /** How many times we'll try to reconnect after a socket error.  Use @ref
+   * playerc_client_set_retry_limit() to set this value. Set to -1 for
+   * infinite retry. */
+  int retry_limit;
+
+  /** How long to sleep, in seconds, to sleep between reconnect attempts.
+   * Use @ref playerc_client_set_retry_time() to set this value. */
+  double retry_time;
+
   /** @internal Socket descriptor */
   int sock;
 
@@ -539,6 +548,14 @@ playerc_error_str() to get a descriptive error message.
 
 */
 int playerc_client_disconnect(playerc_client_t *client);
+
+/** @brief Disconnect from the server, with potential retry. @internal
+
+@param client Pointer to client object.
+
+@returns Returns 0 on success, non-zero otherwise.
+*/
+int playerc_client_disconnect_retry(playerc_client_t *client);
 
 /** @brief Change the server's data delivery mode.
 
@@ -689,6 +706,21 @@ void *playerc_client_read(playerc_client_t *client);
 
 */
 void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds);
+
+/** @brief Set the connection retry limit.
+
+@param client Pointer to the client object
+@param limit The number of times to attempt to reconnect to the server.  Give -1 for 
+       infinite retry.
+*/
+void playerc_client_set_retry_limit(playerc_client_t* client, int limit);
+
+/** @brief Set the connection retry sleep time.
+
+@param client Pointer to the client object
+@param time The amount of time, in seconds, to sleep between reconnection attempts.
+*/
+void playerc_client_set_retry_time(playerc_client_t* client, double time);
 
 /** @brief Write data to the server.  @internal
 */

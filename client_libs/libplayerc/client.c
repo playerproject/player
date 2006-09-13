@@ -71,6 +71,7 @@ static int init_done;
 // TODO: get rid of this structure
 // Player message structure for subscibing to devices.  This one is
 // easier to use than the one defined in messages.h.
+/*
 typedef struct
 {
   uint16_t subtype;
@@ -78,6 +79,7 @@ typedef struct
   uint16_t index;
   uint8_t access;
 } __attribute__ ((packed)) playerc_msg_subscribe_t;
+*/
 
 
 // Local functions
@@ -160,6 +162,9 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->transport = PLAYERC_TRANSPORT_TCP;
 
   client->request_timeout = 5.0;
+
+  client->retry_limit = 0;
+  client->retry_time = 2.0;
 
   return client;
 }
@@ -303,6 +308,69 @@ int playerc_client_connect(playerc_client_t *client)
   return 0;
 }
 
+// Disconnect from the server, with potential retry
+int playerc_client_disconnect_retry(playerc_client_t *client)
+{
+  int retval;
+  int i;
+  int j;
+
+  /* Disconnect */
+  if((retval = playerc_client_disconnect(client)) != 0)
+    PLAYER_WARN("playerc_client_disconnect() failed");
+
+  for(j=0; (client->retry_limit < 0) || (j<client->retry_limit); j++)
+  {
+    PLAYER_WARN1("Reconnecting, attempt %d", j);
+    /* Reconnect */
+    if((retval = playerc_client_connect(client)) != 0)
+      PLAYER_WARN("playerc_client_connect() failed");
+    else
+    {
+      /* Clean out buffers */
+      client->read_xdrdata_len = 0;
+      
+      /* TODO: re-establish replacement rules, delivery modes, etc. */
+
+      /* Re-subscribe to devices */
+      for(i=0;i<client->device_count;i++)
+      {
+        if(client->device[i]->subscribed)
+        {
+          // TODO: what should access be here?
+          if((retval = playerc_device_subscribe(client->device[i],
+                                                PLAYERC_OPEN_MODE)) != 0)
+          {
+            PLAYER_WARN2("playerc_device_subscribe() failed for %d:%d",
+                         client->device[i]->addr.interf,
+                         client->device[i]->addr.index);
+
+            // TODO: Subscription failed for one device; should we give up?
+            if(playerc_client_disconnect(client) != 0)
+              PLAYER_WARN("playerc_client_disconnect() failed");
+            break;
+          }
+        }
+      }
+      // Did we get all of them?
+      if(i == client->device_count)
+        break;
+    }
+
+    usleep((uint)rint(client->retry_time * 1e6));
+  }
+
+  if((client->retry_limit < 0) || (j < client->retry_limit))
+  {
+    PLAYER_WARN("successfully reconnected");
+    return(0);
+  }
+  else
+  {
+    PLAYER_WARN("failed to reconnect");
+    return(-1);
+  }
+}
 
 // Disconnect from the server
 int playerc_client_disconnect(playerc_client_t *client)
@@ -788,7 +856,8 @@ int playerc_client_readpacket(playerc_client_t *client,
     {
       PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
       //playerc_client_disconnect(client);
-      return -1;
+      if(playerc_client_disconnect_retry(client) != 0)
+        return -1;
     }
     client->read_xdrdata_len += nbytes;
   }
@@ -1033,3 +1102,14 @@ void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds)
   client->request_timeout = seconds;
 }
 
+//  Set the retry limit
+void playerc_client_set_retry_limit(playerc_client_t* client, int limit)
+{
+  client->retry_limit = limit;
+}
+
+//  Set the retry time
+void playerc_client_set_retry_time(playerc_client_t* client, double time)
+{
+  client->retry_time = time;
+}

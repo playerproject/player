@@ -163,6 +163,11 @@ main(int argc, char **argv)
   // connect to Player
   PlayerClient client(g_hostname, g_port, g_transport);
 
+  /*
+  client.SetRetryLimit(-1);
+  client.SetRetryTime(1.0);
+  */
+
   int code = client.LookupCode(g_device);
 
   // this code would be much cleaner w/ callbacks on read :)
