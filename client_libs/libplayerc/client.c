@@ -50,6 +50,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <signal.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/poll.h>
@@ -81,6 +82,10 @@ typedef struct
 } __attribute__ ((packed)) playerc_msg_subscribe_t;
 */
 
+void dummy(int sig)
+{
+  printf("got %d\n", sig);
+}
 
 // Local functions
 int playerc_client_get_driverinfo(playerc_client_t *client);
@@ -196,10 +201,14 @@ int playerc_client_connect(playerc_client_t *client)
   char banner[PLAYER_IDENT_STRLEN];
   int old_flags;
   int ret;
-  double t;
+  //double t;
+  /*
   struct timeval last;
   struct timeval curr;
+  */
+  struct itimerval timer;
   struct sockaddr_in clientaddr;
+  struct sigaction sigact;
 
   // Construct socket
   if(client->transport == PLAYERC_TRANSPORT_UDP)
@@ -247,8 +256,9 @@ int playerc_client_connect(playerc_client_t *client)
   client->server.sin_family = PF_INET;
   memcpy(&client->server.sin_addr, entp->h_addr_list[0], entp->h_length);
   client->server.sin_port = htons(client->port);
-
+  
   // Connect the socket
+  /*
   t = client->request_timeout;
   do
   {
@@ -259,12 +269,58 @@ int playerc_client_connect(playerc_client_t *client)
       return -1;
     }
     gettimeofday(&last,NULL);
+    puts("calling connect");
     ret = connect(client->sock, (struct sockaddr*)&client->server, 
                   sizeof(client->server));
     gettimeofday(&curr,NULL);
     t -= ((curr.tv_sec + curr.tv_usec/1e6) -
           (last.tv_sec + last.tv_usec/1e6));
   } while (ret == -1 && (errno == EALREADY || errno == EAGAIN || errno == EINPROGRESS));
+  */
+
+  /* Set up a timer to interrupt the connection process */
+  timer.it_interval.tv_sec = 0;
+  timer.it_interval.tv_usec = 0;
+  timer.it_value.tv_sec = (int)floor(client->request_timeout);
+  timer.it_value.tv_usec = 
+          (int)rint(fmod(client->request_timeout,timer.it_value.tv_sec)*1e6);
+  if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
+    PLAYER_WARN("failed to set up connection timer; "
+                "indefinite hang may result");
+
+  /* Turn off system call restart so that connect() will terminate when the
+   * alarm goes off */
+  if(sigaction(SIGALRM, NULL, &sigact) != 0)
+    PLAYER_WARN("failed to get SIGALRM action data; "
+                "unexpected exit may result");
+  else
+  {
+    sigact.sa_handler = dummy;
+    sigact.sa_flags &= ~SA_RESTART;
+    if(sigaction(SIGALRM, &sigact, NULL) != 0)
+      PLAYER_WARN("failed to set SIGALRM action data; "
+                  "unexpected exit may result");
+  }
+
+  puts("calling connect");
+  ret = connect(client->sock, (struct sockaddr*)&client->server, 
+                sizeof(client->server));
+  puts("done");
+
+  /* Turn off timer */
+  timer.it_value.tv_sec = 0;
+  timer.it_value.tv_usec = 0;
+  if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
+    PLAYER_WARN("failed to turn off connection timer; "
+                "unexpected exit may result");
+
+  /* Restore normal SIGALRM behavior */
+  sigact.sa_handler = SIG_DFL;
+  sigact.sa_flags |= SA_RESTART;
+  if(sigaction(SIGALRM, &sigact, NULL) != 0)
+    PLAYER_WARN("failed to reset SIGALRM action data; "
+                "unexpected behavior may result");
+
   if (ret < 0)
   {
     playerc_client_disconnect(client);
@@ -297,7 +353,7 @@ int playerc_client_connect(playerc_client_t *client)
  
   
   // Get the banner
-  if (timed_recv(client->sock, banner, sizeof(banner), 0, 30000) < sizeof(banner))
+  if (timed_recv(client->sock, banner, sizeof(banner), 0, 2000) < sizeof(banner))
   {
     playerc_client_disconnect(client);
     PLAYERC_ERR("incomplete initialization string");
@@ -327,6 +383,7 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
       PLAYER_WARN("playerc_client_connect() failed");
     else
     {
+      puts("playerc_client_connect() succeeded");
       /* Clean out buffers */
       client->read_xdrdata_len = 0;
       
@@ -357,6 +414,7 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
         break;
     }
 
+    puts("sleeping");
     usleep((uint)rint(client->retry_time * 1e6));
   }
 
@@ -461,13 +519,13 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
   {
     PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
     //playerc_client_disconnect(client);
-    return -1;
+    return(playerc_client_disconnect_retry(client));
   }
   if (count > 0 && (fd.revents & POLLHUP))
   {
     PLAYERC_ERR("socket disconnected");
     //playerc_client_disconnect(client);
-    return -1;
+    return(playerc_client_disconnect_retry(client));
   }
   return count;
 }
@@ -856,8 +914,10 @@ int playerc_client_readpacket(playerc_client_t *client,
     {
       PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
       //playerc_client_disconnect(client);
-      if(playerc_client_disconnect_retry(client) != 0)
-        return -1;
+      if(playerc_client_disconnect_retry(client) < 0)
+        return(-1);
+      else
+        continue;
     }
     client->read_xdrdata_len += nbytes;
   }
@@ -892,7 +952,14 @@ int playerc_client_readpacket(playerc_client_t *client,
     {
       PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
       //playerc_client_disconnect(client);
-      return -1;
+      if(playerc_client_disconnect_retry(client) < 0)
+        return(-1);
+      else
+      {
+        /* Need to start over; the easiest way is to recursively call
+         * myself.  Might be problematic... */
+        return(playerc_client_readpacket(client,header,data));
+      }
     }
     client->read_xdrdata_len += nbytes;
   }
@@ -1000,7 +1067,7 @@ int playerc_client_writepacket(playerc_client_t *client,
     {
       PLAYERC_ERR2("send on body failed with error [%d:%s]", errno, strerror(errno));
       //playerc_client_disconnect(client);
-      return -1;
+      return(playerc_client_disconnect_retry(client));
     }
   } while (bytes);
 
