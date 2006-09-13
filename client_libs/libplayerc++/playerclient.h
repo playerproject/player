@@ -142,6 +142,23 @@ class PlayerClient
     /// - true if there is data waiting
     bool Peek(uint timeout=0);
 
+    /// @brief Set connection retry limit, which is the number of times
+    /// that we'll try to reconnect to the server after a socket error.
+    /// Set to -1 for inifinite retry.
+    void SetRetryLimit(int limit) { playerc_client_set_retry_limit(this->mClient,limit); }
+
+    /// @brief Get connection retry limit, which is the number of times
+    /// that we'll try to reconnect to the server after a socket error.
+    int GetRetryLimit() { return(this->mClient->retry_limit); }
+
+    /// @brief Set connection retry time, which is number of seconds to
+    /// wait between reconnection attempts.
+    void SetRetryTime(double time) { playerc_client_set_retry_time(this->mClient,time); }
+
+    /// @brief Get connection retry time, which is number of seconds to
+    /// wait between reconnection attempts.
+    double GetRetryTime() { return(this->mClient->retry_time); }
+
     /// @brief A blocking Read
     ///
     /// Use this method to read data from the server, blocking until at
