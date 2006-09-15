@@ -125,7 +125,7 @@ int robot_moving_idx;
 double dumpfreq;
 int dumpp;
 int showparticlesp;
-double mapupdatefreq;
+double mapupdatefreq=0.0;
 int get_waypoints=1;
 
 void update_map(gui_data_t* gui_data);
@@ -159,11 +159,27 @@ player_read_func(gpointer* arg)
     memset(lastgoal,0,sizeof(lastgoal));
   }
 
+  // update map
+
+  if(mapupdatefreq)
+  {
+    gettimeofday(&curr,NULL);
+    diff = (curr.tv_sec + curr.tv_usec/1e6) - 
+            (lastmapupdate.tv_sec + lastmapupdate.tv_usec/1e6);
+    if(diff >= 1.0/mapupdatefreq)
+    {
+      update_map(gui_data);
+      lastmapupdate = curr;
+    }
+  }
+
+
   peek = playerc_mclient_peek(gui_data->mclient,10);
   if(peek < 0)
   {
-    fprintf(stderr, "Error on read\n");
-    gtk_main_quit();
+    //fprintf(stderr, "Error on peek\n");
+    //gtk_main_quit();
+    return(TRUE);
   }
   else if(peek == 0)
     return(TRUE);
@@ -177,13 +193,6 @@ player_read_func(gpointer* arg)
   }
   for(i=0;i<gui_data->num_robots;i++)
   {
-#if 0
-    if(gui_data->localizes[i] && gui_data->localizes[i]->info.fresh)
-    {
-      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean.px;
-      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean.py;
-      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean.pa;
-#endif
 
     if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
     {
@@ -288,18 +297,6 @@ player_read_func(gpointer* arg)
     }
   }
 
-  // update map
-  if(mapupdatefreq)
-  {
-    gettimeofday(&curr,NULL);
-    diff = (curr.tv_sec + curr.tv_usec/1e6) - 
-            (lastmapupdate.tv_sec + lastmapupdate.tv_usec/1e6);
-    if(diff >= 1.0/mapupdatefreq)
-    {
-      update_map(gui_data);
-      lastmapupdate = curr;
-    }
-  }
 
   count++;
   return(TRUE);
