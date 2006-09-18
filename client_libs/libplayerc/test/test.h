@@ -99,4 +99,7 @@ extern int test_rfid(playerc_client_t *client, int index);
 // Basic test for WSN.
 extern int test_wsn(playerc_client_t *client, int index);
 
+// Basic test for IMU.
+extern int test_imu(playerc_client_t *client, int index);
+
 #endif // TEST_H
