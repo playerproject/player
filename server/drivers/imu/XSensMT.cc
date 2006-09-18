@@ -46,6 +46,7 @@ internal 3-axis accelerometer, 3-axis gyroscope and 3-axis magnetometer.
 @par Configuration requests
 
 - PLAYER_IMU_REQ_SET_DATATYPE
+- PLAYER_IMU_REQ_RESET_ORIENTATION
 
 @par Configuration file options
 
@@ -188,7 +189,7 @@ int XSensMT::Setup ()
     unsigned short tmpDataLength;
 
     // Put MTi/MTx in Config State
-    if(mtcomm.writeMessage (MID_GOTOCONFIG) != MTRV_OK){
+    if (mtcomm.writeMessage (MID_GOTOCONFIG) != MTRV_OK){
         PLAYER_ERROR ("No device connected!");
         return false;
     }
@@ -278,6 +279,10 @@ int XSensMT::ProcessMessage (MessageQueue* resp_queue,
 {
     assert (hdr);
     assert (data);
+    
+    // this holds possible error messages returned by mtcomm.writeMessage
+    int err;
+    
     if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
         PLAYER_IMU_REQ_SET_DATATYPE, device_addr))
     {
@@ -288,6 +293,89 @@ int XSensMT::ProcessMessage (MessageQueue* resp_queue,
         if ((datatype->value > 0) && (datatype->value < 5))
         {
             dataType = datatype->value;
+	    
+	    int outputSettings = OUTPUTSETTINGS_ORIENTMODE_EULER;
+	    switch (dataType)
+	    {
+		case 1:
+		{
+		    outputSettings = OUTPUTSETTINGS_ORIENTMODE_EULER;
+		    break;
+		}
+		case 2:
+		{
+		    break;
+		}
+		case 3:
+		{
+		    outputSettings = OUTPUTSETTINGS_ORIENTMODE_QUATERNION;
+		    break;
+		}
+		case 4:
+		{
+		    outputSettings = OUTPUTSETTINGS_ORIENTMODE_EULER;
+		    break;
+		}
+		default:
+		{
+		    outputSettings = OUTPUTSETTINGS_ORIENTMODE_EULER;
+		}
+		
+	    }
+	    // Put MTi/MTx in Config State
+	    if (mtcomm.writeMessage (MID_GOTOCONFIG) != MTRV_OK)
+	    {
+    		PLAYER_ERROR ("No device connected!");
+        	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
+                     hdr->subtype);
+		return (-1);
+	    }
+	    
+	    int outputMode = OUTPUTMODE_CALIB + OUTPUTMODE_ORIENT;
+	    // Set output mode and output settings for the MTi/MTx
+	    if (mtcomm.setDeviceMode (outputMode, outputSettings, BID_MASTER) != MTRV_OK) {
+    		PLAYER_ERROR ("Could not set device mode(s)!");
+    		return false;
+	    }
+
+	    // Put MTi/MTx in Measurement State
+	    mtcomm.writeMessage (MID_GOTOMEASUREMENT);
+            
+	    Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
+                     hdr->subtype);
+        }
+        else
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
+                     hdr->subtype);
+
+        return 0;
+    }
+    else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+        PLAYER_IMU_REQ_RESET_ORIENTATION, device_addr))
+    {
+        // Change the data type according to the user's preferences
+        player_imu_reset_orientation_config *rconfig =
+                (player_imu_reset_orientation_config*)data;
+
+	// 0 = store current settings
+	// 1 = heading reset
+	// 2 = global reset
+	// 3 = object reset
+	// 4 = align reset
+        if ((rconfig->value >= 0) && (rconfig->value <= 4))
+        {
+	    // Force <global reset> until further tests.
+            rconfig->value = 2;
+	    
+	    if ((err = mtcomm.writeMessage (MID_RESETORIENTATION, 
+		RESETORIENTATION_GLOBAL, LEN_RESETORIENTATION, BID_MASTER)) != MTRV_OK)
+	    {
+    		PLAYER_ERROR1 ("Could not put reset orientation on device! Error 0x%x\n", err);
+        	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK,
+                     hdr->subtype);
+		return (-1);
+	    }
+	    
             Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK,
                      hdr->subtype);
         }
@@ -348,9 +436,9 @@ void XSensMT::RefreshData ()
         {
             float quaternion_data[4] = {0};
             // Parse and get value (quaternion orientation)
-            mtcomm.getValue (VALUE_ORIENT_QUAT, quaternion_data, data, BID_MASTER);
-
             imu_data_quat.calib_data = GetCalibValues (data);
+	    
+            mtcomm.getValue (VALUE_ORIENT_QUAT, quaternion_data, data, BID_MASTER);
             imu_data_quat.q0 = quaternion_data[0];
             imu_data_quat.q1 = quaternion_data[1];
             imu_data_quat.q2 = quaternion_data[2];
@@ -406,18 +494,3 @@ player_imu_data_calib_t XSensMT::GetCalibValues (const unsigned char data[]) {
 
     return calib_data;
 }
-
-#if 0
-//------------------------------------------------------------------------------
-////////////////////////////////////////////////////////////////////////////////
-// Extra stuff for building a shared object.
-
-/* need the extern to avoid C++ name-mangling  */
-extern "C" {
-    int player_driver_init (DriverTable* table)
-    {
-        XSensMT_Register (table);
-        return(0);
-    }
-}
-#endif
