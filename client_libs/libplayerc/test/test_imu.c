@@ -10,7 +10,7 @@
 // Basic IMU test
 int test_imu (playerc_client_t *client, int index)
 {
-  int t, i, j;
+  int t;
   void *rdevice;
   playerc_imu_t *device;
 
@@ -52,7 +52,7 @@ int test_imu (playerc_client_t *client, int index)
     FAIL ();
   else
   {
-    sleep (3);
+    usleep(3000000);
     PASS ();
   }
   
