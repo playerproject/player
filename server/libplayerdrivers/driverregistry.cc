@@ -98,6 +98,10 @@ void LaserPoseInterp_Register(DriverTable* table);
 void SickLMS200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SICKNAV200
+void SickNAV200_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SICKS3000
 void SickS3000_Register(DriverTable* table);
 #endif
@@ -462,6 +466,14 @@ player_register_drivers()
   SickLMS200_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_SICKNAV200
+  SickNAV200_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SICKPLS
+  SickPLS_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_SICKS3000
   SickS3000_Register(driverTable);
 #endif
@@ -472,10 +484,6 @@ player_register_drivers()
 
 #ifdef INCLUDE_ROOMBA
   Roomba_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_SICKPLS
-  SickPLS_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_URGLASER

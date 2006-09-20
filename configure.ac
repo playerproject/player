@@ -537,12 +537,13 @@ AC_OUTPUT(Makefile
 	  server/drivers/health/statgrab/Makefile
           server/drivers/planner/Makefile
           server/drivers/planner/wavefront/Makefile
-          server/drivers/position/isense/Makefile
           server/drivers/position/microstrain/Makefile
-          server/drivers/position/vfh/Makefile
           server/drivers/position/ascension/Makefile
           server/drivers/position/bumpersafe/Makefile
+          server/drivers/position/isense/Makefile
           server/drivers/position/lasersafe/Makefile
+          server/drivers/position/nav200/Makefile
+          server/drivers/position/vfh/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile
