@@ -50,10 +50,16 @@ over a normal serial port using the @ref driver_sicklms200 driver).
 
 - none
 
+@par Supported commands
+
+- PLAYER_POSITION2D_CMD_VEL
+- PLAYER_POSITION2D_CMD_CAR
+
 @par Supported configuration requests
 
-- PLAYER_POSITION_GET_GEOM_REQ
-- PLAYER_POSITION_MOTOR_POWER_REQ
+- PLAYER_POSITION2D_REQ_GET_GEOM
+- PLAYER_POSITION2D_REQ_SET_ODOM
+- PLAYER_POSITION2D_REQ_RESET_ODOM
 
 @par Configuration file options
 
@@ -81,6 +87,16 @@ over a normal serial port using the @ref driver_sicklms200 driver).
   - Default: 0
   - If non-zero, then assume that the motors and encoders connections
     are swapped.
+
+- car_angle_deadzone (angle)
+  - Default: 5.0 degrees
+  - Minimum angular error required to induce servoing when in car-like
+    command mode.
+
+- car_angle_p (float)
+  - Default: 1.0
+  - Value to be multiplied by angular error (in rad) to produce angular 
+    velocity command (in rad/sec) when in car-like command mode
   
 @par Example 
 
@@ -135,6 +151,13 @@ class Obot : public Driver
     bool motors_swapped;
     int max_accel;
 
+    // Minimum angular error required to induce servoing when in car-like
+    // command mode.
+    double car_angle_deadzone;
+    // Value to be multiplied by angular error (in rad) to produce angular 
+    // velocity command (in rad/sec) when in car-like command mode
+    double car_angle_p;
+
     // Robot geometry (size and rotational offset)
     player_bbox_t robot_size;
     player_pose_t robot_pose;
@@ -154,9 +177,12 @@ class Obot : public Driver
     int OpenTerm();
     int InitRobot();
     int GetBatteryVoltage(int* voltage);
+    double angle_diff(double a, double b);
 
+    player_position2d_cmd_car_t last_car_cmd;
     int last_final_lvel, last_final_rvel;
     bool sent_new_command;
+    bool car_command_mode;
 
   public:
     int fd; // device file descriptor
@@ -168,6 +194,7 @@ class Obot : public Driver
     Obot(ConfigFile* cf, int section);
 
     void ProcessCommand(player_position2d_cmd_vel_t * cmd);
+    void ProcessCarCommand(player_position2d_cmd_car_t * cmd);
 
     // Process incoming messages from clients 
     int ProcessMessage(MessageQueue * resp_queue, 
@@ -225,6 +252,10 @@ Obot::Obot( ConfigFile* cf, int section)
                                             1, DTOR(40.0));
     this->motors_swapped = cf->ReadInt(section, "motors_swapped", 0);
     this->max_accel = cf->ReadInt(section, "max_accel", 5);
+
+    this->car_angle_deadzone = cf->ReadAngle(section, "car_angle_deadzone",
+                                             DTOR(5.0));
+    this->car_angle_p = cf->ReadFloat(section, "car_angle_p", 1.0);
   }
 
   // Do we create a power interface?
@@ -324,6 +355,7 @@ Obot::Setup()
   this->odom_initialized = false;
   this->last_final_rvel = this->last_final_lvel = 0;
   this->sent_new_command = false;
+  this->car_command_mode = false;
 
   printf("Botrics Obot connection initializing (%s)...", serial_port);
   fflush(stdout);
@@ -433,8 +465,19 @@ Obot::Main()
     ProcessMessages();
     if(!this->sent_new_command)
     {
-      if(this->SetVelocity(this->last_final_lvel, this->last_final_rvel) < 0)
-        PLAYER_ERROR("failed to set velocity");
+      // Which mode are we in?
+      if(this->car_command_mode)
+      {
+        // Car-like command mode.  Re-compute angular vel based on target
+        // heading
+        this->ProcessCarCommand(&this->last_car_cmd);
+      }
+      else
+      {
+        // Direct velocity command mode.  Re-send last set of velocities.
+        if(this->SetVelocity(this->last_final_lvel, this->last_final_rvel) < 0)
+          PLAYER_ERROR("failed to set velocity");
+      }
     }
     
     // Update and publish odometry info
@@ -488,6 +531,33 @@ Obot::Main()
     //usleep(OBOT_DELAY_US);
   }
   pthread_cleanup_pop(0);
+}
+
+// Process car-like command, which sets an angular position target and
+// translational velocity target.  The basic idea is to compute angular
+// velocity so as to servo (with P-control) to target angle.  Then pass the
+// two velocities to ProcessCommand() for thresholding and unit conversion.
+void 
+Obot::ProcessCarCommand(player_position2d_cmd_car_t * cmd)
+{
+  // Cache this command for later reuse
+  this->last_car_cmd = *cmd;
+
+  // Build up a cmd_vel structure to pass to ProcessCommand()
+  player_position2d_cmd_vel_t vel_cmd;
+  memset(&vel_cmd,0,sizeof(vel_cmd));
+
+  // Pass through trans vel unmodified
+  vel_cmd.vel.px = cmd->velocity;
+
+  // Compute rot vel
+  double da = this->angle_diff(cmd->angle, this->pa);
+  if(fabs(da) < DTOR(this->car_angle_deadzone))
+    vel_cmd.vel.pa = 0.0;
+  else
+    vel_cmd.vel.pa = this->car_angle_p * da;
+
+  this->ProcessCommand(&vel_cmd);
 }
 
 void
@@ -603,6 +673,22 @@ int Obot::ProcessMessage(MessageQueue * resp_queue,
       assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
       this->ProcessCommand((player_position2d_cmd_vel_t*)data);
       this->sent_new_command = true;
+      this->car_command_mode = false;
+    }
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+                                PLAYER_POSITION2D_CMD_CAR, 
+                                this->position_addr))
+  {
+    // Only take the first new command (should probably take the last,
+    // but...)
+    if(!this->sent_new_command)
+    {
+      assert(hdr->size == sizeof(player_position2d_cmd_vel_t));
+      this->ProcessCarCommand((player_position2d_cmd_car_t*)data);
+      this->sent_new_command = true;
+      this->car_command_mode = true;
     }
     return(0);
   }
@@ -641,6 +727,46 @@ int Obot::ProcessMessage(MessageQueue * resp_queue,
     this->Publish(this->position_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, 
                   PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_SET_ODOM,
+                                this->position_addr))
+  {
+    if(hdr->size != sizeof(player_position2d_set_odom_req_t))
+    {
+      PLAYER_WARN("Arg to odometry set requests wrong size; ignoring");
+      return(-1);
+    }
+    player_position2d_set_odom_req_t* set_odom_req =
+            (player_position2d_set_odom_req_t*)data;
+
+    // Just overwrite our current odometric pose.
+    this->px = set_odom_req->pose.px;
+    this->py = set_odom_req->pose.py;
+    this->pa = set_odom_req->pose.pa;
+
+    this->Publish(this->position_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                PLAYER_POSITION2D_REQ_RESET_ODOM,
+                                this->position_addr))
+  {
+    if(hdr->size != sizeof(player_position2d_reset_odom_config_t))
+    {
+      PLAYER_WARN("Arg to odometry reset requests wrong size; ignoring");
+      return(-1);
+    }
+
+    // Just overwrite our current odometric pose.
+    this->px = 0.0;
+    this->py = 0.0;
+    this->pa = 0.0;
+
+    this->Publish(this->position_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_RESET_ODOM);
     return(0);
   }
   else
@@ -1073,3 +1199,19 @@ StopRobot(void* obotdev)
     PLAYER_ERROR("failed to stop robot on thread exit");
 }
 
+// computes the signed minimum difference between the two angles.
+double
+Obot::angle_diff(double a, double b)
+{
+  double d1, d2;
+  a = NORMALIZE(a);
+  b = NORMALIZE(b);
+  d1 = a-b;
+  d2 = 2*M_PI - fabs(d1);
+  if(d1 > 0)
+    d2 *= -1.0;
+  if(fabs(d1) < fabs(d2))
+    return(d1);
+  else
+    return(d2);
+}
