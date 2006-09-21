@@ -763,10 +763,6 @@ int playerc_device_subscribe(playerc_device_t *device, int access);
 /** @brief Unsubscribe the device. @internal */
 int playerc_device_unsubscribe(playerc_device_t *device);
 
-/** @brief Request capabilities of device */
-int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype);
-
-
 /** @} */
 /**************************************************************************/
 
@@ -2638,20 +2634,20 @@ typedef struct
   // Assuming that the longest word is <= 30 characters.
   char words[20][30];
   int wordCount;
-} playerc_speech_recognition_t;
+} playerc_speechrecognition_t;
 
 
 /** Create a speech recognition proxy. */
-playerc_speech_recognition_t *playerc_speech_recognition_create(playerc_client_t *client, int index);
+playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *client, int index);
 
 /** Destroy a speech recognition proxy. */
-void playerc_speech_recognition_destroy(playerc_speech_recognition_t *device);
+void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device);
 
 /** Subscribe to the speech recognition device. */
-int playerc_speech_recognition_subscribe(playerc_speech_recognition_t *device, int access);
+int playerc_speechrecognition_subscribe(playerc_speechrecognition_t *device, int access);
 
 /** Un-subscribe from the speech recognition device */
-int playerc_speech_recognition_unsubscribe(playerc_speech_recognition_t *device);
+int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device);
   
 /** @} */
 /***************************************************************************/

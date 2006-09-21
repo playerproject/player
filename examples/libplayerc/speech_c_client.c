@@ -6,7 +6,7 @@ main(int argc, const char **argv)
 {
   int i;
   playerc_client_t *client;
-  playerc_speech_recognition_t *speech_recognition;
+  playerc_speechrecognition_t *speech_recognition;
 
   // Create a client and connect it to the server.
   client = playerc_client_create(NULL, "localhost", 6665);
@@ -14,8 +14,8 @@ main(int argc, const char **argv)
     return -1;
 
   // Create and subscribe to a speech_recognition device.
-  speech_recognition = playerc_speech_recognition_create(client, 0);
-  if (playerc_speech_recognition_subscribe(speech_recognition, PLAYER_OPEN_MODE))
+  speech_recognition = playerc_speechrecognition_create(client, 0);
+  if (playerc_speechrecognition_subscribe(speech_recognition, PLAYER_OPEN_MODE))
     return -1;
 
   for (;;)
@@ -27,8 +27,8 @@ main(int argc, const char **argv)
   }
 
   // Shutdown
-  playerc_speech_recognition_unsubscribe(speech_recognition);
-  playerc_speech_recognition_destroy(speech_recognition);
+  playerc_speechrecognition_unsubscribe(speech_recognition);
+  playerc_speechrecognition_destroy(speech_recognition);
   playerc_client_disconnect(client);
   playerc_client_destroy(client);
 
