@@ -4343,18 +4343,18 @@ performed. Use with caution.
   */
 typedef struct player_simulation_property_req
 {
-  /** The identifier of the object we want to locate */
-  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of name */
   uint32_t name_count;
-  /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** The identifier of the object we want to locate */
+  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
-  /** The value of the property */
-  char value[PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN];
+  uint32_t prop_count;
+  /** The identifier of the property we want to get/set */
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** The length of the value data in bytes */
   uint32_t value_count;
+  /** The value of the property */
+  char value[PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN];
 } player_simulation_property_req_t;
 
 
