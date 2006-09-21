@@ -7,15 +7,15 @@
 #include "error.h"
 
 // Local declarations
-void playerc_speech_recognition_putmsg(playerc_speech_recognition_t *device, player_msghdr_t *header,player_speech_recognition_data_t *data, size_t len);
+void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, player_msghdr_t *header,player_speech_recognition_data_t *data, size_t len);
 
 // Create a new speech_recognition proxy
-playerc_speech_recognition_t *playerc_speech_recognition_create(playerc_client_t *client, int index)
+playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *client, int index)
 {
-  playerc_speech_recognition_t *device;
+  playerc_speechrecognition_t *device;
 
-  device = malloc(sizeof(playerc_speech_recognition_t));
-  memset(device, 0, sizeof(playerc_speech_recognition_t));
+  device = malloc(sizeof(playerc_speechrecognition_t));
+  memset(device, 0, sizeof(playerc_speechrecognition_t));
   playerc_device_init(&device->info, client, PLAYER_SPEECH_RECOGNITION_CODE, index,
                       (playerc_putmsg_fn_t) playerc_speech_recognition_putmsg);
   return device;
@@ -23,7 +23,7 @@ playerc_speech_recognition_t *playerc_speech_recognition_create(playerc_client_t
 
 
 // Destroy a speech_recognition proxy
-void playerc_speech_recognition_destroy(playerc_speech_recognition_t *device)
+void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device)
 {
   playerc_device_term(&device->info);
   free(device);
@@ -31,18 +31,18 @@ void playerc_speech_recognition_destroy(playerc_speech_recognition_t *device)
 }
 
 // Subscribe to the speech_recognition device
-int playerc_speech_recognition_subscribe(playerc_speech_recognition_t *device, int access)
+int playerc_speechrecognition_subscribe(playerc_speechrecognition_t *device, int access)
 {
   return playerc_device_subscribe(&device->info, access);
 }
 
 // Un-subscribe from the speech_recognition device
-int playerc_speech_recognition_unsubscribe(playerc_speech_recognition_t *device)
+int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device)
 {
   return playerc_device_unsubscribe(&device->info);
 }
 
-void playerc_speech_recognition_putmsg(playerc_speech_recognition_t *device, player_msghdr_t *hdr, player_speech_recognition_data_t *buffer, size_t len)
+void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, player_msghdr_t *hdr, player_speech_recognition_data_t *buffer, size_t len)
 {
   memset(device->words,0,30*20);
   player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;

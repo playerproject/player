@@ -2183,7 +2183,7 @@ class SpeechRecognitionProxy : public ClientProxy
    void Unsubscribe();
 
    ///libplayerc data structure
-   playerc_speech_recognition_t *mDevice;
+   playerc_speechrecognition_t *mDevice;
   public:
    ///Constructor
    SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);

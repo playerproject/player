@@ -47,11 +47,11 @@ void
 SpeechRecognitionProxy::Subscribe(uint aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
-  mDevice = playerc_speech_recognition_create(mClient, aIndex);
+  mDevice = playerc_speechrecognition_create(mClient, aIndex);
   if (NULL==mDevice)
     throw PlayerError("SpeechRecognitionProxy::SpeechRecognitionProxy()", "could not create");
 
-  if (0 != playerc_speech_recognition_subscribe(mDevice, PLAYER_OPEN_MODE))
+  if (0 != playerc_speechrecognition_subscribe(mDevice, PLAYER_OPEN_MODE))
     throw PlayerError("SpeechRecognitionProxy::SpeechRecognitionProxy()", "could not subscribe");
 }
 
@@ -60,8 +60,8 @@ SpeechRecognitionProxy::Unsubscribe()
 {
   assert(NULL!=mDevice);
   scoped_lock_t lock(mPc->mMutex);
-  playerc_speech_recognition_unsubscribe(mDevice);
-  playerc_speech_recognition_destroy(mDevice);
+  playerc_speechrecognition_unsubscribe(mDevice);
+  playerc_speechrecognition_destroy(mDevice);
   mDevice = NULL;
 }
 
