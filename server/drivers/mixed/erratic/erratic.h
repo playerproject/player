@@ -1,8 +1,13 @@
 // -*- mode:C++; tab-width:8; c-basic-offset:2; indent-tabs-mode:1; -*-
 
 /**
-	*  Erratic Erratic robot driver for Player
-	*
+  *  Copyright (C) 2006
+  *     Videre Design
+  *  Copyright (C) 2000  
+  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+  *
+  *  Videre Erratic robot driver for Player
+  *
 	*  This program is free software; you can redistribute it and/or modify
 	*  it under the terms of the GNU General Public License as published by
 	*  the Free Software Foundation; either version 2 of the License, or
@@ -18,25 +23,30 @@
 	*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 **/
 
-#ifndef _P2OSDEVICE_H
-#define _P2OSDEVICE_H
+#ifndef _ERRATICDEVICE_H
+#define _ERRATICDEVICE_H
 
+#ifndef ERRATIC_VERSION
+#define ERRATIC_VERSION "1.0b"
+#endif
+
+#ifndef ERRATIC_DATE
+#define ERRATIC_DATE "2006-05-07"
+#endif
 
 #include <pthread.h>
 #include <sys/time.h>
 #include <queue>
 
 #include <libplayercore/playercore.h>
-#include <replace/replace.h>
+#include <replace.h>
 
 #include "packet.h"
 #include "robot_params.h"
 
 #include <stdint.h>
 
-// Version
-#define ERRATIC_VERSION "1.0b"
-#define ERRATIC_DATE "2006-05-07"
+#define CPU_VOLTAGE 3.5
 
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
@@ -104,14 +114,15 @@ typedef struct player_erratic_data
   player_position2d_data_t position;
   player_power_data_t power;
 	player_aio_data_t aio;
+	player_ir_data ir;
 } __attribute__ ((packed)) player_erratic_data_t;
 
 // this is here because we need the above typedef's before including it.
-#include "sip.h"
+#include "motorpacket.h"
 
 extern bool debug_mode;
 
-class erSIP;
+class ErraticMotorPacket;
 
 class Erratic : public Driver 
 {
@@ -121,19 +132,18 @@ class Erratic : public Driver
     player_devaddr_t position_id;
     player_devaddr_t power_id;
     player_devaddr_t aio_id;
+		player_devaddr_t ir_id;
 
     int position_subscriptions;
-		int aio_subscriptions;
+		int aio_ir_subscriptions;
 
-    //erSIP* sippacket;
-		erSIP *motor_packet;
+    //ErraticMotorPacket* sippacket;
+		ErraticMotorPacket *motor_packet;
 		pthread_mutex_t motor_packet_mutex;
 		
 		int Connect();
 		int Disconnect();
 		
-		
-    int SendReceiveOLD(ErraticPacket* pkt, bool publish_data=true);
     void ResetRawPositions();
     void ToggleMotorPower(unsigned char val);
 
@@ -147,6 +157,9 @@ class Erratic : public Driver
 		void PublishPosition2D();
 		void PublishPower();
 		void PublishAIn();
+		void PublishIR();
+		
+		float IRRangeFromVoltage(float voltage);
 		
 		void StartThreads();
 		void StopThreads();
@@ -157,11 +170,8 @@ class Erratic : public Driver
 		void ReceiveThread();
 		static void *ReceiveThreadDummy(void *driver);
 
-    int direct_wheel_vel_control;    // false -> separate trans and rot vel
-
     int read_fd, write_fd;
     const char* psos_serial_port;
-    struct timeval lastblob_tv;
 
     player_position2d_cmd_vel_t last_position_cmd;
 
@@ -173,6 +183,8 @@ class Erratic : public Driver
 		pthread_t receive_thread;
 
 		// Parameters
+
+		bool direct_wheel_vel_control;
 
 		bool print_all_packets;
 		bool print_status_summary;

@@ -1,10 +1,12 @@
 // -*- mode:C++; tab-width:2; c-basic-offset:2; indent-tabs-mode:1; -*-
 
 /**
-	*  Player - One Hell of a Robot Server
+	*  Copyright (C) 2006
+	*     Videre Design
 	*  Copyright (C) 2000  
 	*     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
-	*                      
+	*
+	*  Videre Erratic robot driver for Player
 	*
 	*  This program is free software; you can redistribute it and/or modify
 	*  it under the terms of the GNU General Public License as published by
@@ -27,6 +29,8 @@
 #include <string.h>
 #include "packet.h"
 #include <unistd.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <stdlib.h> /* for exit() */
 //#include <sys/poll.h>
 
@@ -58,7 +62,14 @@ bool ErraticPacket::Check() {
 	uint16_t received_chksum = packet[size-2] << 8 | packet[size-1];
 
 	if ( chksum == received_chksum ) 
-		return(true);
+		{
+			if (debug_mode) 
+			{
+				printf("Good packet: ");
+				PrintHex();
+			}
+			return(true);
+		}
 
 	if (debug_mode) {
 		printf("This packet failed checksum control (%i instead of %i): ", received_chksum, chksum);
@@ -89,13 +100,46 @@ int ErraticPacket::Receive( int fd, uint16_t wait ) {
 	uint32_t skipped;
 	uint16_t cnt;
 
+	if (debug_mode)
+		printf("Check for packets in Receive()\n");
+
 	memset(packet,0,sizeof(packet));
 	struct pollfd readpoll;
-	readpoll.fd = fd; readpoll.events = POLLIN | POLLERR | POLLHUP | POLLNVAL; readpoll.revents = 0;
+	readpoll.fd = fd; 
+	readpoll.events = POLLIN | POLLPRI;
+	readpoll.revents = 0;
 	
+	fd_set read_set, error_set;
+	struct timeval tv;
+#ifdef USE_SELECT
+	FD_ZERO(&read_set); 
+	FD_ZERO(&error_set);
+	FD_SET(fd, &read_set); 
+	FD_SET(fd, &error_set);
+	tv.tv_sec = 0;
+	tv.tv_usec = 0;
+	if (wait >= 1000)
+		tv.tv_sec = wait/1000;
+	else
+		tv.tv_usec = wait*1000;
+#endif
+
 	// This block will terminate or move on when there is data to read
 	if (wait) {
 		while (1) {
+#ifdef USE_SELECT
+			int ret = select(fd+1, &read_set, 0, &error_set, &tv);
+			if (ret)
+				{
+					if (debug_mode)
+						printf("Data waiting\n");
+					break;
+				}
+			else
+				if (debug_mode)
+					printf("No data\n");
+#endif
+
 			int8_t stuff = poll(&readpoll, 1, wait);
 			
 			if (stuff < 0) {
@@ -125,10 +169,25 @@ int ErraticPacket::Receive( int fd, uint16_t wait ) {
 			cnt = 0;
 			
 			// Once we've started receiving a packet, we have a tight timeout
+			// Trouble with FTDI USB interface: needs longer timeout
 			while( cnt!=1 ) {
 				if (wait) {
 					while (1) {
-						int8_t stuff = poll(&readpoll, 1, 3);
+
+#ifdef USE_SELECT						
+						FD_ZERO(&read_set); 
+						FD_ZERO(&error_set);
+						FD_SET(fd, &read_set); 
+						FD_SET(fd, &error_set);
+						tv.tv_sec = 0;
+						tv.tv_usec = 100*1000; // in usec's
+
+						int ret = select(fd+1, &read_set, 0, &error_set, &tv);
+						if (ret)
+							break;
+#endif
+
+						int8_t stuff = poll(&readpoll, 1, 100);
 
 						if (stuff < 0) {
 							if (errno == EINTR) {
@@ -151,6 +210,8 @@ int ErraticPacket::Receive( int fd, uint16_t wait ) {
 				
 				
 				int newcnt = read( fd, &prefix[2], 1 );
+				if (debug_mode)
+					printf("Read %d byte: %02x\n", newcnt, prefix[2]);
 
 				if (newcnt < 0 && errno == EAGAIN)
 					continue;
@@ -180,7 +241,20 @@ int ErraticPacket::Receive( int fd, uint16_t wait ) {
 		{
 			if (wait) {
 				while (1) {
-					int8_t stuff = poll(&readpoll, 1, 3);
+#ifdef USE_SELECT
+					FD_ZERO(&read_set); 
+					FD_ZERO(&error_set);
+					FD_SET(fd, &read_set); 
+					FD_SET(fd, &error_set);
+					tv.tv_sec = 0;
+					tv.tv_usec = 100*1000;				// in usec's
+
+					int ret = select(fd+1, &read_set, 0, &error_set, &tv);
+					if (ret)
+						break;
+#endif
+
+					int8_t stuff = poll(&readpoll, 1, 100);
 
 					if (stuff < 0) {
 						if (errno == EINTR) {
@@ -202,6 +276,16 @@ int ErraticPacket::Receive( int fd, uint16_t wait ) {
 			}
 			
 			int newcnt = read( fd, &packet[3+cnt], prefix[2]-cnt );
+			if (debug_mode)
+				{
+					printf("Read %d bytes packet\n", newcnt);
+					if (newcnt > 0)
+						{
+							for (int i=0; i<newcnt; i++)
+								printf("%02x ", packet[3+i]);
+							printf("\n");
+						}
+				}
 
 			if (newcnt < 0 && errno == EAGAIN)
 				continue;
