@@ -1,6 +1,11 @@
 // -*- mode:C++; tab-width:2; c-basic-offset:2; indent-tabs-mode:1; -*-
 
 /**
+  *  Copyright (C) 2006
+  *     Videre Design
+  *  Copyright (C) 2000  
+  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
+  *
 	*  Videre Erratic robot driver for Player
 	*
 	*  This program is free software; you can redistribute it and/or modify
@@ -19,17 +24,142 @@
 **/
 
 /**
-  *  This driver is adapted from the p2os driver of player 1.6. Major changes
-  *  throughout, as well as removed many uneccessary interfaces. In particular,
-  *  communication with robot is threaded and fully responsive.
+  *  This driver is adapted from the p2os driver of player 1.6.
 **/
+
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_erratic erratic
+ * @brief Erratic
+
+This driver talks to the embedded computer in the Erratic robot, which
+mediates communication to the devices of the robot.
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+The erratic driver provides the following device interfaces, some of
+them named:
+
+- "odometry" @ref interface_position2d
+  - This interface returns odometry data, and accepts velocity commands.
+
+- @ref interface_power
+  - Returns the current battery voltage (12 V when fully charged).
+
+- @ref interface_aio
+  - Returns data from analog input pins
+
+- @ref interface_ir
+  - Returns ranges from IR sensors, assuming they're connected to the analog input pins
+
+@par Supported configuration requests
+
+- "odometry" @ref interface_position2d :
+  - PLAYER_POSITION_SET_ODOM_REQ
+  - PLAYER_POSITION_MOTOR_POWER_REQ
+  - PLAYER_POSITION_RESET_ODOM_REQ
+  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION_VELOCITY_MODE_REQ
+- @ref interface_ir :
+  - PLAYER_SONAR_GET_GEOM_REQ
+
+@par Configuration file options
+
+- port (string)
+  - Default: "/dev/ttyS0"
+- direct_wheel_vel_control (integer)
+  - Default: 0
+  - Send direct wheel velocity commands to Erratic (as opposed to sending
+    translational and rotational velocities and letting Erratic smoothly
+    achieve them).
+- max_trans_vel (length)
+  - Default: 0.5 m/s
+  - Maximum translational velocity
+- max_rot_vel (angle)
+  - Default: 100 deg/s
+  - Maximum rotational velocity
+- trans_acc (length)
+  - Default: 0
+  - Maximum translational acceleration, in length/sec/sec; nonnegative.
+    Zero means use the robot's default value.
+- trans_decel (length)
+  - Default: trans_acc
+  - Maximum translational deceleration, in length/sec/sec; nonpositive.
+    Zero means use the robot's default value.
+- rot_acc (angle)
+  - Default: 0
+  - Maximum rotational acceleration, in angle/sec/sec; nonnegative.
+    Zero means use the robot's default value.
+- rot_decel (angle)
+  - Default: rot_acc
+  - Maximum rotational deceleration, in angle/sec/sec; nonpositive.
+    Zero means use the robot's default value.
+- pid_trans_p (integer)
+  - Default: -1
+  - Translational PID setting; proportional gain.
+    Negative means use the robot's default value.
+- pid_trans_d (integer)
+  - Default: -1
+  - Translational PID setting; derivative gain.
+    Negative means use the robot's default value.
+- pid_rot_p (integer)
+  - Default: -1
+  - Rotational PID setting; proportional gain.
+    Negative means use the robot's default value.
+- pid_rot_d (integer)
+  - Default: -1
+  - Rotational PID setting; derivative gain.
+    Negative means use the robot's default value.
+- motor_pwm_frequency (integer)
+  - Default: -1
+  - Frequency of motor PWM.
+    Bounds determined by robot.
+    Negative means use the robot's default value.
+- motor_pwm_max_on (float)
+  - Default: 1
+  - Maximum motor duty cycle.
+- save_settings_in_robot (integer)
+  - Default: 0
+  - A value of 1 installs current settings as default values in the robot.
+
+
+@par Example
+
+@verbatim
+driver
+(
+	name "erratic"
+	plugin "erratic"
+
+	provides [ "position2d:0"
+	           "power:0"
+	           "aio:0"
+	           "ir:0" ]
+
+	port "/dev/ttyUSB0"
+
+	max_trans_vel 3
+	max_rot_vel 720
+
+	trans_acc 1
+	rot_acc 200
+
+	direct_wheel_vel_control 0
+)
+@endverbatim
+
+@author Joakim Arfvidsson, Brian Gerkey, Kasper Stoy, James McKenna
+*/
+/** @} */
+
+
 
 // This must be first per pthread reference
 #include <pthread.h>
-
-#ifdef HAVE_CONFIG_H
-  #include "config.h"
-#endif
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -38,6 +168,10 @@
 #include <termios.h>
 
 #include "erratic.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 bool debug_mode = FALSE;
 
@@ -52,7 +186,6 @@ Driver* Erratic_Init(ConfigFile* cf, int section) {
 void Erratic_Register(DriverTable* table) {
 	table->AddDriver("erratic", Erratic_Init);
 }
-
 #if 0
 extern "C" {
 	int player_driver_init(DriverTable* table)
@@ -76,7 +209,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 	memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
 
 	this->position_subscriptions = 0;
-	this->aio_subscriptions = 0;
+	this->aio_ir_subscriptions = 0;
 
 	// intialise members
 	motor_packet = NULL;
@@ -100,6 +233,14 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 	// Do we create a aio interface?
 	if(cf->ReadDeviceAddr(&(this->aio_id), section, "provides", PLAYER_AIO_CODE, -1, NULL) == 0) {
 		if(this->AddInterface(this->aio_id) != 0) {
+			this->SetError(-1);
+			return;
+		}
+	}
+
+	// Do we create an ir interface?
+	if(cf->ReadDeviceAddr(&(this->ir_id), section, "provides", PLAYER_IR_CODE, -1, NULL) == 0) {
+		if(this->AddInterface(this->ir_id) != 0) {
 			this->SetError(-1);
 			return;
 		}
@@ -327,8 +468,8 @@ int Erratic::Connect() {
 	// Set the robot type statically for now (there is only one!)
 	param_idx = 0;
 
-	// Create a packet and set initial odometry position (the SIP is persistent)
-	this->motor_packet = new erSIP(param_idx);
+	// Create a packet and set initial odometry position (the ErraticMotorPacket is persistent)
+	this->motor_packet = new ErraticMotorPacket(param_idx);
 	this->motor_packet->x_offset = 0;
 	this->motor_packet->y_offset = 0;
 	this->motor_packet->angle_offset = 0;
@@ -579,7 +720,10 @@ int Erratic::Subscribe(player_devaddr_t id) {
 			this->position_subscriptions++;
 		
 		if(Device::MatchDeviceAddress(id, this->aio_id))
-			this->aio_subscriptions++;
+			this->aio_ir_subscriptions++;
+
+		if(Device::MatchDeviceAddress(id, this->ir_id))
+			this->aio_ir_subscriptions++;
 	}                                    
                                        
 	return(setupResult);                 
@@ -598,7 +742,10 @@ int Erratic::Unsubscribe(player_devaddr_t id) {
 		}
 
 		if(Device::MatchDeviceAddress(id, this->aio_id))
-			this->aio_subscriptions--;
+			this->aio_ir_subscriptions--;
+
+		if(Device::MatchDeviceAddress(id, this->ir_id))
+			this->aio_ir_subscriptions--;
 	}
 
 	return(shutdownResult);
@@ -620,7 +767,7 @@ void Erratic::ReceiveThread() {
 		uint8_t error_code;
 		while ((error_code = packet.Receive(this->read_fd, 5000))) {
 			waited += 5;
-			printf("Lost serial communication with Erratic - no data received for %i seconds\n", waited);
+			printf("Lost serial communication with Erratic (%d) - no data received for %i seconds\n", error_code, waited);
 		}
 		
 		if (waited)
@@ -649,12 +796,19 @@ void Erratic::ReceiveThread() {
 				
 				break;
 			case (reply_e)ain:
+				// This data goes in two places, analog input and ir rangers
 				erratic_data.aio.voltages_count = packet.packet[4];
+				erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
+				erratic_data.ir.ranges_count = 2;
 				for (unsigned int i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) {
 					erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
-						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0);
+						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+					erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
+						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+					erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
 				}
 				PublishAIn();
+				PublishIR();
 				break;
 			case (reply_e)debug:
 				if (debug_mode) {
@@ -702,7 +856,7 @@ void Erratic::SendThread() {
 		// Send the packet and destroy it
 		if (packet) {
 			if (print_all_packets) {
-				printf("Just about to send:\n");
+				printf("Just about to send: ");
 				packet->Print();
 			}
 			packet->Send(this->write_fd);
@@ -767,7 +921,7 @@ void Erratic::ToggleAIn(unsigned char val) {
 	unsigned char command[4];
 	ErraticPacket *packet = new ErraticPacket();
 
-	command[0] = (command_e)ain;
+	command[0] = (command_e)set_analog;
 	command[1] = (argtype_e)argint;
 	command[2] = val ? 1 : 0;
 	command[3] = 0;
@@ -776,6 +930,11 @@ void Erratic::ToggleAIn(unsigned char val) {
 	Send(packet);	
 }
 
+// This describes the IR hardware
+float Erratic::IRRangeFromVoltage(float voltage) {
+	// This is values for the Sharp 2Y0A02, 150 cm ranger
+	return -.2475 + .1756 * voltage + .7455 / voltage - .0446 * voltage * voltage;
+}
 
 
 /** Talking to the Player architecture **/
@@ -783,7 +942,7 @@ void Erratic::ToggleAIn(unsigned char val) {
 // Main entry point for the worker thread
 void Erratic::Main() {
 	int last_position_subscrcount=0;
-	int last_aio_subscriptions=0;
+	int last_aio_ir_subscriptions=0;
 
 	for(;;)
 	{
@@ -809,14 +968,14 @@ void Erratic::Main() {
 		}
 		last_position_subscrcount = this->position_subscriptions;
 
+
 		// We'll ask the robot to enable analog packets if we just got our
 		// first subscriber
-		if(!last_aio_subscriptions && this->aio_subscriptions)
+		if(!last_aio_ir_subscriptions && this->aio_ir_subscriptions)
 			this->ToggleAIn(1);
-		else if(last_aio_subscriptions && !(this->aio_subscriptions))
+		else if(last_aio_ir_subscriptions && !(this->aio_ir_subscriptions))
 			this->ToggleAIn(0);
-		last_aio_subscriptions = this->aio_subscriptions;
-		
+		last_aio_ir_subscriptions = this->aio_ir_subscriptions;
 
 
 		this->Unlock();
@@ -866,34 +1025,19 @@ void Erratic::PublishAIn() {
 		sizeof(player_aio_data_t),
 		NULL);
 }
-
-// This publishes all data we have (this is dumb)
+void Erratic::PublishIR() {
+	this->Publish(this->ir_id, NULL,
+		PLAYER_MSGTYPE_DATA,
+		PLAYER_IR_DATA_RANGES,
+		(void*)&(this->erratic_data.ir),
+		sizeof(player_ir_data_t),
+		NULL);
+}
 void Erratic::PublishAllData() {
-	// TODO: something smarter about timestamping.
-
-	// put odometry data
-	this->Publish(this->position_id, NULL,
-		PLAYER_MSGTYPE_DATA,
-		PLAYER_POSITION2D_DATA_STATE,
-		(void*)&(this->erratic_data.position),
-		sizeof(player_position2d_data_t),
-		NULL);
-
-	// put power data
-	this->Publish(this->power_id, NULL,
-		PLAYER_MSGTYPE_DATA,
-		PLAYER_POWER_DATA_STATE,
-		(void*)&(this->erratic_data.power),
-		sizeof(player_power_data_t),
-		NULL);
-	
-	// put aio data
-	this->Publish(this->aio_id, NULL,
-		PLAYER_MSGTYPE_DATA,
-		PLAYER_AIO_DATA_STATE,
-		(void*)&(this->erratic_data.aio),
-		sizeof(player_aio_data_t),
-		NULL);	
+	this->PublishPosition2D();
+	this->PublishPower();
+	this->PublishAIn();
+	this->PublishIR();
 }
 
 // Gets called from ProcessMessages to handle one message
@@ -912,8 +1056,8 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 
 	// check for position config requests
 	if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-		PLAYER_POSITION2D_REQ_SET_ODOM,
-		this->position_id))
+	                             PLAYER_POSITION2D_REQ_SET_ODOM,
+	                             this->position_id))
 	{
 		if(hdr->size != sizeof(player_position2d_set_odom_req_t))
 		{
@@ -923,27 +1067,21 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		player_position2d_set_odom_req_t* set_odom_req =
 			(player_position2d_set_odom_req_t*)data;
 
-		this->motor_packet->x_offset = ((int)rint(set_odom_req->pose.px*1e3)) -
-			this->motor_packet->xpos;
-		this->motor_packet->y_offset = ((int)rint(set_odom_req->pose.py*1e3)) -
-			this->motor_packet->ypos;
-		this->motor_packet->angle_offset = ((int)rint(RTOD(set_odom_req->pose.pa))) -
-			this->motor_packet->angle;
+		this->motor_packet->x_offset = ((int)rint(set_odom_req->pose.px*1e3))
+			                           - this->motor_packet->xpos;
+		this->motor_packet->y_offset = ((int)rint(set_odom_req->pose.py*1e3))
+		                             - this->motor_packet->ypos;
+		this->motor_packet->angle_offset = ((int)rint(RTOD(set_odom_req->pose.pa)))
+		                                 - this->motor_packet->angle;
 
 		this->Publish(this->position_id, resp_queue,
-			PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
+		              PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
 		return(0);
 	}
 	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-		PLAYER_POSITION2D_REQ_MOTOR_POWER,
-		this->position_id))
-	{
-		/* motor state change request
-		*   1 = enable motors
-			*   0 = disable motors (default)
-		*/
-			if(hdr->size != sizeof(player_position2d_power_config_t))
-		{
+	                                  PLAYER_POSITION2D_REQ_MOTOR_POWER,
+	                                  this->position_id)) {
+		if(hdr->size != sizeof(player_position2d_power_config_t)) {
 			PLAYER_WARN("Arg to motor state change request wrong size; ignoring");
 			return(-1);
 		}
@@ -952,19 +1090,17 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		this->ToggleMotorPower(power_config->state);
 
 		this->Publish(this->position_id, resp_queue,
-			PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+		              PLAYER_MSGTYPE_RESP_ACK,
+		              PLAYER_POSITION2D_REQ_MOTOR_POWER);
 		return(0);
-	}
-	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-		PLAYER_POSITION2D_REQ_RESET_ODOM,
-		this->position_id))
-	{
-		/* reset position to 0,0,0: no args */
-		if(hdr->size != 0)
-		{
+	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+	                                    PLAYER_POSITION2D_REQ_RESET_ODOM,
+	                                    this->position_id)) {
+		if(hdr->size != 0) {
 			PLAYER_WARN("Arg to reset position request is wrong size; ignoring");
 			return(-1);
 		}
+
 		ResetRawPositions();
 
 		this->Publish(this->position_id, resp_queue,
@@ -972,40 +1108,35 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		return(0);
 	}
 	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-		PLAYER_POSITION2D_REQ_GET_GEOM,
-		this->position_id))
-	{
+	                                  PLAYER_POSITION2D_REQ_GET_GEOM,
+	                                  this->position_id)) {
 		/* Return the robot geometry. */
-		if(hdr->size != 0)
-		{
+		if(hdr->size != 0) {
 			PLAYER_WARN("Arg get robot geom is wrong size; ignoring");
 			return(-1);
 		}
 		player_position2d_geom_t geom;
-		// TODO: Figure out this rotation offset somehow; it's not
-		//       given in the Saphira parameters.  For now, -0.1 is
-		//       about right for a Pioneer 2DX.
-		geom.pose.px = -0.1;
+
+		geom.pose.px = -RobotParams[param_idx]->RobotAxleOffset / 1e3;
 		geom.pose.py = 0.0;
 		geom.pose.pa = 0.0;
-		// get dimensions from the parameter table
+
 		geom.size.sl = RobotParams[param_idx]->RobotLength / 1e3;
 		geom.size.sw = RobotParams[param_idx]->RobotWidth / 1e3;
 
 		this->Publish(this->position_id, resp_queue,
-			PLAYER_MSGTYPE_RESP_ACK,
-			PLAYER_POSITION2D_REQ_GET_GEOM,
-			(void*)&geom, sizeof(geom), NULL);
+		              PLAYER_MSGTYPE_RESP_ACK,
+		              PLAYER_POSITION2D_REQ_GET_GEOM,
+		              (void*)&geom, sizeof(geom), NULL);
 		return(0);
 	}
 	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-		PLAYER_POSITION2D_REQ_VELOCITY_MODE,
-		this->position_id))
-	{
+	                                  PLAYER_POSITION2D_REQ_VELOCITY_MODE,
+	                                  this->position_id)) {
 		/* velocity control mode:
-		*   0 = direct wheel velocity control (default)
-			*   1 = separate translational and rotational control
-		*/
+		 *   0 = direct wheel velocity control
+		 *   1 = separate translational and rotational control
+		 */
 			if(hdr->size != sizeof(player_position2d_velocity_mode_config_t))
 		{
 			PLAYER_WARN("Arg to velocity control mode change request is wrong "
@@ -1021,7 +1152,24 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 			direct_wheel_vel_control = true;
 
 		this->Publish(this->position_id, resp_queue,
-			PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_VELOCITY_MODE);
+		              PLAYER_MSGTYPE_RESP_ACK,
+		              PLAYER_POSITION2D_REQ_VELOCITY_MODE);
+		return(0);
+	}
+	
+	// Request for getting IR locations
+	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+	                                  PLAYER_IR_POSE,
+	                                  this->ir_id)) {
+		player_ir_pose_t pose;
+		pose.poses_count = RobotParams[param_idx]->NumIR;
+		for (uint16_t i = 0; i < pose.poses_count ;i++)
+			pose.poses[i] = RobotParams[param_idx]->IRPose[i];
+		
+		this->Publish(this->ir_id, resp_queue,
+		              PLAYER_MSGTYPE_RESP_ACK,
+		              PLAYER_IR_POSE,
+		              (void*)&pose, sizeof(pose), NULL);
 		return(0);
 	}
 	else
