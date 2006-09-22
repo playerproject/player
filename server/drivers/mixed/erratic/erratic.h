@@ -39,7 +39,7 @@
 #include <queue>
 
 #include <libplayercore/playercore.h>
-#include <replace.h>
+#include <replace/replace.h>
 
 #include "packet.h"
 #include "robot_params.h"
