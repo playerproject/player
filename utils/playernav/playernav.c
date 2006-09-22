@@ -302,9 +302,10 @@ player_read_func(gpointer* arg)
     }
 
     // raise the robot's canvas item, so that the user can select it
-    //if(gui_data->localizes[i])
-    if(gui_data->planners[i])
+    if(gui_data->localizes[i] || gui_data->planners[i])
+    {
       gnome_canvas_item_raise_to_top(gui_data->robot_items[i]);
+    }
   }
 
   // dump screenshot
@@ -419,8 +420,7 @@ main(int argc, char** argv)
 
   for(i=0;i<gui_data.num_robots;i++)
   {
-    //if(gui_data.localizes[i])
-    if(gui_data.planners[i])
+    if(gui_data.localizes[i] || gui_data.planners[i])
     {
       robot_pose.px = 0.0;
       robot_pose.py = 0.0;
