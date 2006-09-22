@@ -68,7 +68,7 @@ driver
 
 @section driver_options Driver-independent options
 
-There are four driver-independent options:
+There are five driver-independent options:
 - @b name (string) : The name of the driver to instantiate, as it was provided to
   DriverTable::AddDriver().  This option is mandatory.
 - @b plugin (string) : The name of a shared library (i.e., a "plugin") that
@@ -78,6 +78,12 @@ There are four driver-independent options:
 - @b provides (tuple of strings): The device address(es) through which the driver can be
   accessed.  This option is mandatory.
 - @b requires (tuple of strings): The device address(es) to which the driver will subscribe.
+- @b alwayson (int): If 1, then the driver will be setup when the @ref
+  util_player starts, without waiting for any client connection.  This
+  option is useful for front-loading startup delays, verifying upfront that
+  hardware is connected and functioning, and for using drivers that don't
+  normally have a client connected (e.g., @ref driver_linuxjoystick, @ref
+  driver_writelog).
 
 @subsection provides provides
 
