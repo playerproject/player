@@ -541,7 +541,7 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
 //  b += 90.0;
   for(i = 0; i < 181; i++)
   {
-  	unsigned int index = rint(i/db);
+  	unsigned int index = (int)rint(i/db);
   	assert(index >= 0 && index < data.ranges_count);
     this->laser_ranges[i*2][0] = data.ranges[index] * 1e3;
 //    this->laser_ranges[i*2][1] = index;
