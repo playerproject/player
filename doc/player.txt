@@ -193,6 +193,6 @@ develop your robot control program if, like most people, you're using the
 @ref util_player (whether with hardware or simulation).
 
 Be sure to also check for 
-<a href="http://playerstage.sourceforge.net/index.php?src=contrib">contributed
+<a href="http://playerstage.sourceforge.net/wiki/PlayerClientLibraries">contributed
 libraries</a>.
 */
