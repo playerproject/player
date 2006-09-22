@@ -18,6 +18,8 @@ extern PlayerTime *GlobalTime;
 /** @defgroup driver_vfh vfh
  * @brief Vector Field Histogram local navigation algorithm
 
+@note This driver may take several seconds to start up, especially on slower machines.  You may want to set the 'alwayson' option for vfh to '1' in your configuration file in order to front-load this delay.  Otherwise, your client may experience a timeout in trying to subscribe to this device.
+
 The vfh driver implements the Vector Field Histogram Plus local
 navigation method by Ulrich and Borenstein.  VFH+ provides real-time
 obstacle avoidance and path following capabilities for mobile robots.
@@ -67,6 +69,11 @@ or sector_angle.
 
 - all position2d requests (as long as the underlying position2d device
   supports them)
+
+@par Supported commands
+
+- PLAYER_POSITION2D_CMD_POS : Position control.  This is the normal way to use vfh.  Velocity commands will be sent to the underlying @ref interface_position2d device to drive it toward the given pose.
+- PLAYER_POSITION2D_CMD_VEL : Velocity control.  Position control is disabled and the velocities are passed directly through to the underlyin @ref interface_position2d device.
 
 @par Configuration file options
 
@@ -541,7 +548,7 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
 //  b += 90.0;
   for(i = 0; i < 181; i++)
   {
-  	unsigned int index = rint(i/db);
+  	unsigned int index = (int)rint(i/db);
   	assert(index >= 0 && index < data.ranges_count);
     this->laser_ranges[i*2][0] = data.ranges[index] * 1e3;
 //    this->laser_ranges[i*2][1] = index;

@@ -667,6 +667,7 @@ void *playerc_client_read(playerc_client_t *client);
 
 /** @brief Set the timeout for client requests.
 
+@param client Pointer to client object.
 @param seconds Seconds to wait for a reply.
 
 */
@@ -2616,7 +2617,7 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 
 /**************************************************************************/
 /** @ingroup playerc_proxies
- * @defgroup playerc_proxy_speech speech recognition
+ * @defgroup playerc_proxy_speech_recognition speech recognition
 
 The speech recognition proxy provides an interface to a speech recognition system.
 
