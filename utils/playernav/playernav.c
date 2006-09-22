@@ -194,12 +194,30 @@ player_read_func(gpointer* arg)
   for(i=0;i<gui_data->num_robots;i++)
   {
 
+    int have_robot = 0;
+
+    // Try to get the pose from the planner
     if(gui_data->planners[i] && gui_data->planners[i]->info.fresh)
     {
       robot_pose.px = gui_data->planners[i]->px;
       robot_pose.py = gui_data->planners[i]->py;
       robot_pose.pa = gui_data->planners[i]->pa;
+      have_robot = 1;
+    }
+    // Fall back on getting the pose from the localizer
+    else if(gui_data->localizes[i] && 
+            gui_data->localizes[i]->info.fresh &&
+            gui_data->localizes[i]->hypoth_count)
+    {
+      robot_pose.px = gui_data->localizes[i]->hypoths[0].mean.px;
+      robot_pose.py = gui_data->localizes[i]->hypoths[0].mean.py;
+      robot_pose.pa = gui_data->localizes[i]->hypoths[0].mean.pa;
+      have_robot = 1;
+    }
 
+    // If we got the robot's pose from somewhere
+    if(have_robot)
+    {
       // is the robot localized within the map?
       onmap = (robot_pose.px >=
                gui_data->mapdev->origin[0]) &&
@@ -225,10 +243,9 @@ player_read_func(gpointer* arg)
            (gui_data->robot_poses[i].py != robot_pose.py) ||
            (gui_data->robot_poses[i].pa != robot_pose.pa))
         {
-          //printf("moving robot %d\n", i);
           move_item(gui_data->robot_items[i],robot_pose,1);
 
-          //if(onmap && showparticlesp && gui_data->localizes[i])
+          // If we have a localizer, retrieve and draw particle cloud
           if(showparticlesp && gui_data->localizes[i])
           {
             playerc_localize_get_particles(gui_data->localizes[i]);
@@ -239,43 +256,49 @@ player_read_func(gpointer* arg)
 
       // regardless, store this pose for comparison on next iteration
       gui_data->robot_poses[i] = robot_pose;
-      // if the current goal or waypoint changed, get the whole list 
-      // of waypoints again
-      if((lastwaypt[i].px != gui_data->planners[i]->wx) ||
-         (lastwaypt[i].py != gui_data->planners[i]->wy) ||
-         (lastwaypt[i].pa != gui_data->planners[i]->wa) ||
-         (lastgoal[i].px != gui_data->planners[i]->gx) ||
-         (lastgoal[i].py != gui_data->planners[i]->gy) ||
-         (lastgoal[i].pa != gui_data->planners[i]->ga))
+
+      // If we have a planner
+      if(gui_data->planners[i])
       {
-        if(get_waypoints)
+        // If the current goal or waypoint changed, get the whole list 
+        // of waypoints again
+        if((lastwaypt[i].px != gui_data->planners[i]->wx) ||
+           (lastwaypt[i].py != gui_data->planners[i]->wy) ||
+           (lastwaypt[i].pa != gui_data->planners[i]->wa) ||
+           (lastgoal[i].px != gui_data->planners[i]->gx) ||
+           (lastgoal[i].py != gui_data->planners[i]->gy) ||
+           (lastgoal[i].pa != gui_data->planners[i]->ga))
         {
-          if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
+          if(get_waypoints)
           {
-            fprintf(stderr, "error while getting waypoints for robot %d\n", i);
-            //gtk_main_quit();
-            //break;
+            if(playerc_planner_get_waypoints(gui_data->planners[i]) < 0)
+            {
+              fprintf(stderr, 
+                      "error while getting waypoints for robot %d\n", i);
+            }
+            else
+            {
+              draw_waypoints(gui_data,i);
+            }
           }
           else
-          {
-            //puts("drawing waypoints");
-            draw_waypoints(gui_data,i);
+            draw_goal(gui_data,i);
 
-          }
+          // Cache goal and waypoint info
+          lastwaypt[i].px = gui_data->planners[i]->wx;
+          lastwaypt[i].py = gui_data->planners[i]->wy;
+          lastwaypt[i].pa = gui_data->planners[i]->wa;
+          lastgoal[i].px = gui_data->planners[i]->gx;
+          lastgoal[i].py = gui_data->planners[i]->gy;
+          lastgoal[i].pa = gui_data->planners[i]->ga;
         }
-        else
-          draw_goal(gui_data,i);
-
-        lastwaypt[i].px = gui_data->planners[i]->wx;
-        lastwaypt[i].py = gui_data->planners[i]->wy;
-        lastwaypt[i].pa = gui_data->planners[i]->wa;
-        lastgoal[i].px = gui_data->planners[i]->gx;
-        lastgoal[i].py = gui_data->planners[i]->gy;
-        lastgoal[i].pa = gui_data->planners[i]->ga;
       }
 
-      gui_data->planners[i]->info.fresh = 0;
-      //gui_data->localizes[i]->info.fresh = 0;
+      // Reset freshness flag(s)
+      if(gui_data->planners[i])
+        gui_data->planners[i]->info.fresh = 0;
+      if(gui_data->localizes[i])
+        gui_data->localizes[i]->info.fresh = 0;
     }
 
     // raise the robot's canvas item, so that the user can select it
