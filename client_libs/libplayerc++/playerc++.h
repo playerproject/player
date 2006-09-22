@@ -1434,7 +1434,7 @@ class Position1dProxy : public ClientProxy
     /// Send a motor command for position control mode.  Specify the
     /// desired pose of the robot in [m] or [rad]
     /// desired motion in [m/s] or [rad/s]
-    void GoTo(double aPos);
+    void GoTo(double aPos, double aVel);
 
     /// Get the device's geometry; it is read into the
     /// relevant class attributes.
@@ -1565,8 +1565,18 @@ class Position2dProxy : public ClientProxy
         { return SetSpeed(vel.px, vel.py, vel.pa);}
 
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in m, m, radians.
-    void GoTo(double aX, double aY, double aYaw);
+    /// desired pose of the robot as a player_pose_t.
+    /// desired motion speed  as a player_pose_t.
+    void GoTo(player_pose_t pos, player_pose_t vel);
+
+    /// Same as the previous GoTo(), but doesn't take speed
+    void GoTo(player_pose_t pos)
+      {GoTo(pos,(player_pose_t) {0,0,0}); }
+
+    /// Same as the previous GoTo(), but only takes position arguments,
+    /// no motion speed setting
+    void GoTo(double aX, double aY, double aYaw)
+      {GoTo((player_pose_t) {aX,aY,aYaw},(player_pose_t) {0,0,0}); }
 
     /// Sets command for carlike robot
     void SetCarlike(double aXSpeed, double aDriveAngle);
@@ -1723,9 +1733,22 @@ class Position3dProxy : public ClientProxy
 
 
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in m, m, m, rad, rad, rad.
+    /// desired pose of the robot as a player_pose3d_t structure
+    /// desired motion speed as a player_pose3d_t structure
+    void GoTo(player_pose3d_t aPos, player_pose3d_t aVel);
+
+    /// Same as the previous GoTo(), but does'n take vel argument
+    void GoTo(player_pose3d_t aPos)
+      { GoTo(aPos, (player_pose3d_t) {0,0,0,0,0,0}); }
+
+
+    /// Same as the previous GoTo(), but only takes position arguments,
+    /// no motion speed setting
     void GoTo(double aX, double aY, double aZ,
-              double aRoll, double aPitch, double aYaw);
+              double aRoll, double aPitch, double aYaw)
+      { GoTo((player_pose3d_t) {aX,aY,aZ,aRoll,aPitch,aYaw},
+              (player_pose3d_t) {0,0,0,0,0,0});
+      }
 
     /// Enable/disable the motors.
     /// Set @p state to 0 to disable or 1 to enable.

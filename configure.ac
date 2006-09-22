@@ -2,10 +2,10 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.0.2)
+AC_INIT(player,2.0.3)
 
 dnl this is used by libtool to assign version numbers
-PLAYER_VERSION_INFO="-version-number 2:0:2"
+PLAYER_VERSION_INFO="-version-number 2:0:3"
 AC_SUBST(PLAYER_VERSION_INFO)
 
 AC_CONFIG_SRCDIR(server/server.cc)
@@ -536,6 +536,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/ascension/Makefile
           server/drivers/position/bumpersafe/Makefile
           server/drivers/position/lasersafe/Makefile
+          server/drivers/position/nav200/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile

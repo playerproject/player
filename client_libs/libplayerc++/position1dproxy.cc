@@ -82,10 +82,10 @@ Position1dProxy::SetSpeed(double aVel)
 }
 
 void
-Position1dProxy::GoTo(double aPos)
+Position1dProxy::GoTo(double aPos, double aVel=0)
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_position1d_set_cmd_pos(mDevice,aPos,0);
+  playerc_position1d_set_cmd_pos_with_vel(mDevice, aPos, aVel,0);
 }
 
 void
