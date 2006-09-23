@@ -85,6 +85,7 @@ void CameraUVC_Register(DriverTable* table)
   table->AddDriver("camerauvc", CameraUVC_Init);
 }
 
+#if 0
 extern "C" {
   int player_driver_init(DriverTable* table)
   {
@@ -92,6 +93,7 @@ extern "C" {
     return(0);
   } 
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Also reads config file. 

@@ -137,6 +137,9 @@ cameras.
   - Sets the manual camera white balance setting. Only valid option:
     - a string containing two suitable blue and red value unsigned integers 
 
+- dma_buffers
+  - Default: 4
+  - the number of DMA buffers to use
 @par Example 
 
 @verbatim
@@ -323,6 +326,10 @@ class Camera1394 : public Driver
   private: unsigned int format;
   private: unsigned int mode;
 #endif
+
+  // number of DMA buffers to use
+  private: unsigned int num_dma_buffers;
+
   // Write frames to disk?
   private: int save;
 
@@ -635,6 +642,10 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
 
+  // Number of DMA buffers?
+  this->num_dma_buffers = cf->ReadInt(section, "dma_buffers", NUM_DMA_BUFFERS);
+
+  
   return;
 }
 
@@ -652,11 +663,12 @@ void Camera1394::SafeCleanup()
     switch (this->method)
     {
     case methodRaw:
-      dc1394_release_camera(this->camera);
+      //dc1394_release_camera(this->camera);
       break;
     case methodVideo:
       //dc1394_dma_unlisten(this->camera);
-      dc1394_dma_release_camera(this->camera);
+      //dc1394_dma_release_camera(this->camera);
+      break;
     }
     dc1394_free_camera(this->camera);
   }
@@ -912,37 +924,40 @@ int Camera1394::Setup()
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
                                this->format, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1, NULL,
+                               this->frameRate, this->num_dma_buffers, 1, NULL,
                                &this->camera) == DC1394_SUCCESS)
 #elif DC1394_DMA_SETUP_CAPTURE_ARGS == 12
   // Set camera to use DMA, improves performance.
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
                                this->format, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1, 0, NULL,
+                               this->frameRate, this->num_dma_buffers, 1, 0, NULL,
                                &this->camera) == DC1394_SUCCESS)
 #elif LIBDC1394_VERSION == 0200
   // Set camera to use DMA, improves performance.
-  bool DMA_Success = false;
+  bool DMA_Success = true;
   if (!this->forceRaw)
   {
-    if (FORMAT_7 == format)
-    {
-      if (DC1394_SUCCESS == dc1394_dma_setup_format7_capture(camera, mode, DC1394_COLOR_CODING_RAW8, speed,
-            (uint_t)DC1394_QUERY_FROM_CAMERA, (uint_t)DC1394_QUERY_FROM_CAMERA, 
-            (uint_t)DC1394_QUERY_FROM_CAMERA, (uint_t)DC1394_QUERY_FROM_CAMERA, 
-            (uint_t)DC1394_QUERY_FROM_CAMERA, NUM_DMA_BUFFERS, 1))      {
-        DMA_Success = true;
-      }
-    }
-    else
-    {
-      if (DC1394_SUCCESS == dc1394_dma_setup_capture(this->camera, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1))
-      {
-        DMA_Success = true;
-      }
-    }
+  	// first set parameters that are common between format 7 and other modes
+  	if (DC1394_SUCCESS != dc1394_video_set_framerate(camera,frameRate))
+	{
+		PLAYER_WARN("1394 failed to set frameRate");
+  		DMA_Success = false;
+	}
+  	if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,speed))
+	{
+		PLAYER_WARN("1394 failed to set iso speed");
+		DMA_Success = false;
+	}
+	if (DC1394_SUCCESS != dc1394_video_set_mode(camera,mode))
+	{
+		PLAYER_WARN("1394 failed to set mode");
+		DMA_Success = false;
+	}
+  	
+  	// now start capture
+	if (DC1394_SUCCESS != dc1394_capture_setup_dma(camera, this->num_dma_buffers, DC1394_RING_BUFFER_LAST))
+  		DMA_Success = false;
   }
   if (DMA_Success)
 #else
@@ -1109,7 +1124,7 @@ int Camera1394::GrabFrame()
     break;
   case methodVideo:
 #if LIBDC1394_VERSION == 0200
-    if (dc1394_dma_capture(&this->camera,1,DC1394_VIDEO1394_WAIT) != DC1394_SUCCESS)
+    if (dc1394_capture_dma(&this->camera,1,DC1394_VIDEO1394_WAIT) != DC1394_SUCCESS)
 #else
     if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
 #endif
@@ -1127,9 +1142,9 @@ int Camera1394::GrabFrame()
   unsigned int frame_height;
   int * capture_buffer;
 #if LIBDC1394_VERSION == 0200
-  frame_width = camera->capture.frame_width;
-  frame_height = camera->capture.frame_height;
-  capture_buffer = (int *) camera->capture.capture_buffer;
+  frame_width = dc1394_capture_get_width(camera);
+  frame_height = dc1394_capture_get_height(camera);
+  capture_buffer = (int *) dc1394_capture_get_dma_buffer(camera);
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
@@ -1311,7 +1326,7 @@ int Camera1394::GrabFrame()
     return -1;
   }
 #if LIBDC1394_VERSION == 0200
-  if (this->method == methodVideo) dc1394_dma_done_with_buffer(this->camera);
+  if (this->method == methodVideo) dc1394_capture_dma_done_with_buffer(this->camera);
 #else
   if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
 #endif

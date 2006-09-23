@@ -347,6 +347,8 @@ PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([yarpimage],[yes],["yarp/os/all.h yarp/sig/all.h"],[],["-lYARP_sig -lYARP_OS"])
+
 dnl RFID support
 PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])
 PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
