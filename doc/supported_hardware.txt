@@ -99,6 +99,13 @@ Transport (HT)</a></td>
 <td>@ref driver_erratic</td>
 </tr>
 
+<tr>
+<td><a href="http://www.whiteboxrobotics.com">White Box Robotics</a></td>
+<td><a href="http://www.whiteboxrobotics.com/2006/PCBOTs/914PC_BOT.htm">914 
+PC-BOT</a></td>
+<td>@ref driver_wbr914</td>
+</tr>
+
 </table>
 
 <h4><a name="player_hardware_mischw">Miscellaneous hardware</a></h4>
