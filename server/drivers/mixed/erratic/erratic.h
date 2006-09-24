@@ -69,12 +69,14 @@ typedef enum command {
 	set_max_trans_acc =         5,
 	set_max_position_velocity = 6,
 	reset_origo =               7,
-	trans_vel =                 11,
+	trans_vel =                 11,	// mm/s
+	rot_pos   =                 12,	// deg
+	rot_dpos  =                 13,	// deg
 	configuration =             18,
-	rot_vel =                   21,
+	rot_vel =                   21,	// deg/s
 	set_max_rot_acc =           23,
 	stop =                      29,
-	wheel_vel =                 32,
+	wheel_vel =                 32,	// mm/s
 	set_analog =                71,
 	save_config =               72,
 	set_pwm_freq =              73,
@@ -152,6 +154,7 @@ class Erratic : public Driver
     int HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void* data);
     int HandleCommand(player_msghdr * hdr, void * data);
     void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
+    void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
 
     void PublishAllData();
 		void PublishPosition2D();
@@ -174,6 +177,7 @@ class Erratic : public Driver
     const char* psos_serial_port;
 
     player_position2d_cmd_vel_t last_position_cmd;
+    player_position2d_cmd_car_t last_car_cmd;
 
 		std::queue<ErraticPacket *> send_queue;
 		pthread_mutex_t send_queue_mutex;
