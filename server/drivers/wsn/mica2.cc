@@ -364,7 +364,7 @@ int Mica2::Setup ()
 
     // Change port settings
     struct termios options;
-    bzero (&options, sizeof (options));  // clear the struct for new settings
+    memset (&options, 0, sizeof (options));  // clear the struct for new settings
     // read satisfied if one char received
     options.c_cc[VMIN] = 1;
     options.c_cflag = CS8 | CLOCAL | CREAD;

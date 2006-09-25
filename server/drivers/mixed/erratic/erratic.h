@@ -44,7 +44,7 @@
 #include "packet.h"
 #include "robot_params.h"
 
-#include <stdint.h>
+//#include <stdint.h>
 
 #define CPU_VOLTAGE 3.5
 
