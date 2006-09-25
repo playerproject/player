@@ -24,7 +24,8 @@
  * $Id$
  */
 
- #include <stdint.h>
+ //#include <stdint.h>
+ #include <libplayercore/playerconfig.h>
 
  typedef struct
 {
