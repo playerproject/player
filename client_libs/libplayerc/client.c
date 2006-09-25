@@ -50,19 +50,21 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <signal.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <sys/poll.h>
 #include <netdb.h>       // for gethostbyname()
 #include <errno.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <fcntl.h>
+
 
 #include <replace/replace.h>  // for poll(2)
 
 #include "playerc.h"
 #include "error.h"
-
-// TODO: expose this timeout value somewhere
-#define REQUEST_TIMEOUT 10.0
 
 // Have we done one-time intialization work yet?
 static int init_done;
@@ -70,6 +72,7 @@ static int init_done;
 // TODO: get rid of this structure
 // Player message structure for subscibing to devices.  This one is
 // easier to use than the one defined in messages.h.
+/*
 typedef struct
 {
   uint16_t subtype;
@@ -77,7 +80,12 @@ typedef struct
   uint16_t index;
   uint8_t access;
 } __attribute__ ((packed)) playerc_msg_subscribe_t;
+*/
 
+void dummy(int sig)
+{
+  printf("got %d\n", sig);
+}
 
 // Local functions
 int playerc_client_get_driverinfo(playerc_client_t *client);
@@ -93,13 +101,28 @@ int playerc_client_pop(playerc_client_t *client,
                        player_msghdr_t *header, void *data);
 void *playerc_client_dispatch(playerc_client_t *client,
                               player_msghdr_t *header, void *data);
-#if 0
-void *playerc_client_dispatch_geom(playerc_client_t *client,
-                              player_msghdr_t *header, void *data, int len);
-void *playerc_client_dispatch_config(playerc_client_t *client,
-                              player_msghdr_t *header, void *data, int len);
-#endif
 
+int timed_recv(int s, void *buf, size_t len, int flags, int timeout);
+
+// this method performs a select before the read so we can have a timeout
+// this stops the client hanging forever if the target disappears from the network
+int timed_recv(int s, void *buf, size_t len, int flags, int timeout)
+{
+  struct pollfd ufd;
+  int ret;
+  
+  ufd.fd = s;
+  ufd.events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
+  
+  ret = poll (&ufd, 1, timeout);
+  if (ret <= 0)
+  {
+    PLAYERC_ERR2("poll call failed with error [%d:%s]", errno, strerror(errno));
+    return ret;
+  }
+  
+  return recv(s,buf,len,flags);
+}
 
 // Create a player client
 playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *host, int port)
@@ -125,9 +148,12 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   // TODO: make this memory allocation more conservative
   client->data = (char*)malloc(PLAYER_MAX_MESSAGE_SIZE);
-  client->xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
+  client->write_xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
+  client->read_xdrdata = (char*)malloc(PLAYERXDR_MAX_MESSAGE_SIZE);
+  client->read_xdrdata_len = 0;
   assert(client->data);
-  assert(client->xdrdata);
+  assert(client->write_xdrdata);
+  assert(client->read_xdrdata);
 
   client->qfirst = 0;
   client->qlen = 0;
@@ -138,6 +164,12 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 
   /* this is the server's default */
   client->mode = PLAYER_DATAMODE_PUSH;
+  client->transport = PLAYERC_TRANSPORT_TCP;
+
+  client->request_timeout = 5.0;
+
+  client->retry_limit = 0;
+  client->retry_time = 2.0;
 
   return client;
 }
@@ -147,65 +179,256 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
 void playerc_client_destroy(playerc_client_t *client)
 {
   free(client->data);
+  free(client->write_xdrdata);
+  free(client->read_xdrdata);
   free(client->host);
   free(client);
   return;
 }
 
 
+// Set the transport type
+void playerc_client_set_transport(playerc_client_t* client,
+                                  unsigned int transport)
+{
+  client->transport = transport;
+}
+
 // Connect to the server
 int playerc_client_connect(playerc_client_t *client)
 {
   struct hostent* entp;
-  struct sockaddr_in server;
   char banner[PLAYER_IDENT_STRLEN];
+  int old_flags;
+  int ret;
+  //double t;
+  /*
+  struct timeval last;
+  struct timeval curr;
+  */
+  struct itimerval timer;
+  struct sockaddr_in clientaddr;
+  struct sigaction sigact;
 
   // Construct socket
-  client->sock = socket(PF_INET, SOCK_STREAM, 0);
-  if (client->sock < 0)
+  if(client->transport == PLAYERC_TRANSPORT_UDP)
   {
-    PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
-    return -1;
+    if((client->sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+      PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+      return -1;
+    }
+    /* 
+     * INADDR_ANY indicates that any network interface (IP address)
+     * for the local host may be used (presumably the OS will choose the 
+     * right one).
+     *
+     * Specifying sin_port = 0 allows the system to choose the port.
+     */
+    clientaddr.sin_family = PF_INET;
+    clientaddr.sin_addr.s_addr = INADDR_ANY;
+    clientaddr.sin_port = 0;
+
+    if(bind(client->sock, 
+            (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < -1) 
+    {
+      PLAYERC_ERR1("bind call failed with error [%s]", strerror(errno));
+      return(-1);
+    }
+  }
+  else
+  {
+    if((client->sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+    {
+      PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
+      return -1;
+    }
   }
 
   // Construct server address
   entp = gethostbyname(client->host);
   if (entp == NULL)
   {
+    playerc_client_disconnect(client);
     PLAYERC_ERR1("gethostbyname failed with error [%s]", strerror(errno));
     return -1;
   }
-  server.sin_family = PF_INET;
-  memcpy(&server.sin_addr, entp->h_addr_list[0], entp->h_length);
-  server.sin_port = htons(client->port);
-
+  client->server.sin_family = PF_INET;
+  memcpy(&client->server.sin_addr, entp->h_addr_list[0], entp->h_length);
+  client->server.sin_port = htons(client->port);
+  
   // Connect the socket
-  if (connect(client->sock, (struct sockaddr*) &server, sizeof(server)) < 0)
+  /*
+  t = client->request_timeout;
+  do
   {
-    PLAYERC_ERR3("connect call on [%s:%d] failed with error [%s]",
-                 client->host, client->port, strerror(errno));
+    if (t <= 0)
+    {
+      PLAYERC_ERR2("connect call on [%s:%d] timed out",
+                   client->host, client->port);
+      return -1;
+    }
+    gettimeofday(&last,NULL);
+    puts("calling connect");
+    ret = connect(client->sock, (struct sockaddr*)&client->server, 
+                  sizeof(client->server));
+    gettimeofday(&curr,NULL);
+    t -= ((curr.tv_sec + curr.tv_usec/1e6) -
+          (last.tv_sec + last.tv_usec/1e6));
+  } while (ret == -1 && (errno == EALREADY || errno == EAGAIN || errno == EINPROGRESS));
+  */
+
+  /* Set up a timer to interrupt the connection process */
+  timer.it_interval.tv_sec = 0;
+  timer.it_interval.tv_usec = 0;
+  timer.it_value.tv_sec = (int)floor(client->request_timeout);
+  timer.it_value.tv_usec = 
+          (int)rint(fmod(client->request_timeout,timer.it_value.tv_sec)*1e6);
+  if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
+    PLAYER_WARN("failed to set up connection timer; "
+                "indefinite hang may result");
+
+  /* Turn off system call restart so that connect() will terminate when the
+   * alarm goes off */
+  if(sigaction(SIGALRM, NULL, &sigact) != 0)
+    PLAYER_WARN("failed to get SIGALRM action data; "
+                "unexpected exit may result");
+  else
+  {
+    sigact.sa_handler = dummy;
+    sigact.sa_flags &= ~SA_RESTART;
+    if(sigaction(SIGALRM, &sigact, NULL) != 0)
+      PLAYER_WARN("failed to set SIGALRM action data; "
+                  "unexpected exit may result");
+  }
+
+  puts("calling connect");
+  ret = connect(client->sock, (struct sockaddr*)&client->server, 
+                sizeof(client->server));
+  puts("done");
+
+  /* Turn off timer */
+  timer.it_value.tv_sec = 0;
+  timer.it_value.tv_usec = 0;
+  if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
+    PLAYER_WARN("failed to turn off connection timer; "
+                "unexpected exit may result");
+
+  /* Restore normal SIGALRM behavior */
+  sigact.sa_handler = SIG_DFL;
+  sigact.sa_flags |= SA_RESTART;
+  if(sigaction(SIGALRM, &sigact, NULL) != 0)
+    PLAYER_WARN("failed to reset SIGALRM action data; "
+                "unexpected behavior may result");
+
+  if (ret < 0)
+  {
+    playerc_client_disconnect(client);
+    PLAYERC_ERR4("connect call on [%s:%d] failed with error [%d:%s]",
+                 client->host, client->port, errno, strerror(errno));
     return -1;
   }
 
-  // Get the banner
-  if (recv(client->sock, banner, sizeof(banner), 0) < sizeof(banner))
+  // For UDP, send an empty msg to get things going
+  if(client->transport == PLAYERC_TRANSPORT_UDP)
   {
+    if(send(client->sock, NULL, 0, 0) < 0)
+    {
+      PLAYERC_ERR1("gethostbyname failed with error [%s]", strerror(errno));
+      return -1;
+    }
+  }
+
+  // set socket to be blocking
+  if ((old_flags = fcntl(client->sock, F_GETFL)) < 0)
+  {
+    PLAYERC_ERR1("error getting socket flags [%s]", strerror(errno));
+    return -1;
+  }
+  if (fcntl(client->sock, F_SETFL, old_flags & ~O_NONBLOCK) < 0)
+  {
+    PLAYERC_ERR1("error setting socket non-blocking [%s]", strerror(errno));
+    return -1;
+  }
+ 
+  
+  // Get the banner
+  if (timed_recv(client->sock, banner, sizeof(banner), 0, 2000) < sizeof(banner))
+  {
+    playerc_client_disconnect(client);
     PLAYERC_ERR("incomplete initialization string");
     return -1;
   }
 
-#if 0
-  // Default to async data mode
-  if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_ASYNC) != 0)
-  {
-    PLAYERC_ERR("unable to set push_async data mode");
-    return -1;
-  }
-#endif
-  // PLAYERC_MSG3("[%s] connected on [%s:%d]", banner, client->hostname, client->port);
+  PLAYER_MSG4(3,"[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
   return 0;
 }
 
+// Disconnect from the server, with potential retry
+int playerc_client_disconnect_retry(playerc_client_t *client)
+{
+  int retval;
+  int i;
+  int j;
+
+  /* Disconnect */
+  if((retval = playerc_client_disconnect(client)) != 0)
+    PLAYER_WARN("playerc_client_disconnect() failed");
+
+  for(j=0; (client->retry_limit < 0) || (j<client->retry_limit); j++)
+  {
+    PLAYER_WARN1("Reconnecting, attempt %d", j);
+    /* Reconnect */
+    if((retval = playerc_client_connect(client)) != 0)
+      PLAYER_WARN("playerc_client_connect() failed");
+    else
+    {
+      puts("playerc_client_connect() succeeded");
+      /* Clean out buffers */
+      client->read_xdrdata_len = 0;
+      
+      /* TODO: re-establish replacement rules, delivery modes, etc. */
+
+      /* Re-subscribe to devices */
+      for(i=0;i<client->device_count;i++)
+      {
+        if(client->device[i]->subscribed)
+        {
+          // TODO: what should access be here?
+          if((retval = playerc_device_subscribe(client->device[i],
+                                                PLAYERC_OPEN_MODE)) != 0)
+          {
+            PLAYER_WARN2("playerc_device_subscribe() failed for %d:%d",
+                         client->device[i]->addr.interf,
+                         client->device[i]->addr.index);
+
+            // TODO: Subscription failed for one device; should we give up?
+            if(playerc_client_disconnect(client) != 0)
+              PLAYER_WARN("playerc_client_disconnect() failed");
+            break;
+          }
+        }
+      }
+      // Did we get all of them?
+      if(i == client->device_count)
+        break;
+    }
+
+    puts("sleeping");
+    usleep((uint)rint(client->retry_time * 1e6));
+  }
+
+  if((client->retry_limit < 0) || (j < client->retry_limit))
+  {
+    PLAYER_WARN("successfully reconnected");
+    return(0);
+  }
+  else
+  {
+    PLAYER_WARN("failed to reconnect");
+    return(-1);
+  }
+}
 
 // Disconnect from the server
 int playerc_client_disconnect(playerc_client_t *client)
@@ -213,8 +436,10 @@ int playerc_client_disconnect(playerc_client_t *client)
   if (close(client->sock) < 0)
   {
     PLAYERC_ERR1("close failed with error [%s]", strerror(errno));
+    client->sock = -1;
     return -1;
   }
+  client->sock = -1;
   return 0;
 }
 
@@ -228,8 +453,6 @@ int playerc_client_set_replace_rule(playerc_client_t *client, int interf, int in
   req.type = type;
   req.subtype = subtype;
   req.replace = replace;
-
-
 
   if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_ADD_REPLACE_RULE, &req, NULL, 0) < 0)
     return -1;
@@ -254,24 +477,6 @@ int playerc_client_datamode(playerc_client_t *client, uint8_t mode)
   return 0;
 }
 
-#if 0
-
-// Change the server's data delivery frequency (freq is in Hz)
-int playerc_client_datafreq(playerc_client_t *client, int freq)
-{
-  player_device_datafreq_req_t req;
-
-//  req.subtype = htons(PLAYER_PLAYER_DATAFREQ_REQ);
-  req.frequency = htons(freq);
-
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_DATAFREQ,  &req, sizeof(req), NULL, 0) < 0)
-    return -1;
-
-  return 0;
-}
-
-#endif
-
 // Request a round of data; only valid when in a request/reply
 // (aka PULL) mode
 int
@@ -291,6 +496,13 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
 
   playerc_client_item_t *item;
 
+  if (client->sock < 0)
+  {
+    PLAYERC_WARN("no socket to write to");
+    return -1;
+  }
+  
+
   if (client->qlen > 0)
   {
     item = client->qitems + client->qfirst;
@@ -306,12 +518,14 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
   if (count < 0)
   {
     PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
-    return -1;
+    //playerc_client_disconnect(client);
+    return(playerc_client_disconnect_retry(client));
   }
   if (count > 0 && (fd.revents & POLLHUP))
   {
     PLAYERC_ERR("socket disconnected");
-    return -1;
+    //playerc_client_disconnect(client);
+    return(playerc_client_disconnect_retry(client));
   }
   return count;
 }
@@ -340,6 +554,8 @@ void *playerc_client_read(playerc_client_t *client)
 
     switch(header.type)
     {
+      case PLAYER_MSGTYPE_RESP_ACK:
+        break;
       case PLAYER_MSGTYPE_SYNCH:
         client->lasttime = client->datatime;
         client->datatime = header.timestamp;
@@ -356,6 +572,12 @@ void *playerc_client_read(playerc_client_t *client)
         }
       default:
         PLAYERC_WARN1 ("unexpected message type [%d]", header.type);
+        printf("address: %u:%u:%u:%u\nsize: %u",
+               header.addr.host,
+               header.addr.robot,
+               header.addr.interf,
+               header.addr.index,
+               header.size);
         return NULL;
     }
   }
@@ -417,7 +639,7 @@ int playerc_client_request(playerc_client_t *client,
   if (playerc_client_writepacket(client, &req_header, req_data) < 0)
     return -1;
 
-  t = REQUEST_TIMEOUT;
+  t = client->request_timeout;
 
   // Read packets until we get a reply.  Data packets get queued up
   // for later processing.
@@ -477,116 +699,9 @@ int playerc_client_request(playerc_client_t *client,
     }
   }
 
-  PLAYERC_ERR("timed out waiting for server reply to request");
+  PLAYERC_ERR4("timed out waiting for server reply to request %d:%d:%d:%d", req_header.addr.interf, req_header.addr.index, req_header.type, req_header.subtype);
   return -1;
 }
-
-#if 0
-// Issue request and await reply (blocking).
-int playerc_client_request(playerc_client_t *client,
-                           playerc_device_t *deviceinfo, uint8_t reqtype,
-                           void *req_data, int req_len, void *rep_data,
-                           int rep_len)
-{
-  int resptype;
-  player_msghdr_t req_header;
-
-  req_header.stx = PLAYER_STXX;
-  req_header.type = PLAYER_MSGTYPE_REQ;
-  req_header.subtype = reqtype;
-  req_header.size = req_len;
-
-  if (deviceinfo == NULL)
-  {
-    req_header.device = PLAYER_PLAYER_CODE;
-    req_header.device_index = 0;
-  }
-  else
-  {
-    req_header.device = deviceinfo->code;
-    req_header.device_index = deviceinfo->index;
-  }
-
-  if (playerc_client_writepacket(client, &req_header, req_data, req_len) < 0)
-    return -1;
-
-  resptype = playerc_client_getresponse(client, req_header.device,
-                                        req_header.device_index, 0, NULL,
-                                        rep_data, rep_len);
-  return resptype;
-}
-
-
-int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
-                               uint16_t  index, uint16_t sequence,
-                               uint8_t * resptype, uint8_t * resp_data,
-                               int resp_len)
-{
-  player_msghdr_t rep_header;
-  playerc_client_item_t *item;
-  int i;
-  int len;
-  // First we check through the stored messages to see if one matches
-  for(i = 0; i < client->qlen; ++i)
-  {
-    item = &client->qitems[(i + client->qfirst) % client->qsize];
-    // need to add sequence to list to be checked
-    if (item->header.device == device && item->header.device_index == index)
-    {
-      if (resptype)
-        *resptype = item->header.subtype;
-      // need to deal with removing items from the queue
-      // circular buffer is not best option for this
-      // so either need to use linked list
-      // or just tag items as read and remove in read method
-      if (item->header.type == PLAYER_MSGTYPE_RESP_NACK)
-        return -1;
-      else if (item->header.type == PLAYER_MSGTYPE_RESP_ACK)
-      {
-        if (item->len > resp_len)
-          return -2;
-        memcpy(resp_data, item->data, item->len);
-        return item->len;
-      }
-    }
-  }
-
-  // then start reading in new messages, store in queue if they are
-  // not the one we are waiting for
-  for (i = 0; i < 1000; i++)
-  {
-    len = PLAYER_MAX_MESSAGE_SIZE;
-    if (playerc_client_readpacket(client, &rep_header, client->data, &len) < 0)
-      return -1;
-
-    // need to add sequence to list to be checked
-    if (rep_header.device == device && rep_header.device_index == index)
-    {
-      if (resptype)
-        *resptype = rep_header.subtype;
-      // need to deal with removing items from the queue
-      // circular buffer is not best option for this
-      // so either need to use linked list
-      // or just tag items as read and remove in read method
-      if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
-        return -1;
-      else if (rep_header.type == PLAYER_MSGTYPE_RESP_ACK)
-      {
-        if (len > resp_len)
-          return -2;
-        memcpy(resp_data, client->data, len);
-        return len;
-      }
-    }
-    // Queue up any incoming data packets for later dispatch
-    playerc_client_push(client, &rep_header, client->data, len);
-  }
-
-  PLAYERC_ERR("timed out waiting for server reply to request");
-  return -1;
-}
-#endif
-
 
 // Add a device proxy
 int playerc_client_adddevice(playerc_client_t *client, playerc_device_t *device)
@@ -779,57 +894,74 @@ int playerc_client_readpacket(playerc_client_t *client,
                               player_msghdr_t *header,
                               char *data)
 {
-  int nbytes, bytes, total_bytes;
+  int nbytes;
   player_pack_fn_t packfunc;
   int decode_msglen;
 
-  // Read header
-  for (bytes = 0; bytes < PLAYERXDR_MSGHDR_SIZE;)
+  if (client->sock < 0)
   {
-    nbytes = recv(client->sock, client->xdrdata + bytes,
-                  PLAYERXDR_MSGHDR_SIZE - bytes, 0);
+    PLAYERC_WARN("no socket to write to");
+    return -1;
+  }
+  
+  while(client->read_xdrdata_len < PLAYERXDR_MSGHDR_SIZE)
+  {
+    nbytes = timed_recv(client->sock, 
+                        client->read_xdrdata + client->read_xdrdata_len,
+                        PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
+                        0, client->request_timeout * 1e3);
     if (nbytes <= 0)
     {
-      PLAYERC_ERR1("recv on header failed with error [%s]", strerror(errno));
-      return -1;
+      PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
+      //playerc_client_disconnect(client);
+      if(playerc_client_disconnect_retry(client) < 0)
+        return(-1);
+      else
+        continue;
     }
-    bytes += nbytes;
-  }
-  if (bytes < PLAYERXDR_MSGHDR_SIZE)
-  {
-    PLAYERC_ERR2("got incomplete header, %d of %u bytes",
-                 bytes, PLAYERXDR_MSGHDR_SIZE);
-    return -1;
+    client->read_xdrdata_len += nbytes;
   }
 
   // Unpack the header
-  if(player_msghdr_pack(client->xdrdata,
+  if(player_msghdr_pack(client->read_xdrdata,
                         PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_DECODE) < 0)
   {
     PLAYERC_ERR("failed to unpack header");
     return -1;
   }
-
   if (header->size > PLAYERXDR_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE)
   {
     PLAYERC_ERR1("packet is too large, %d bytes", header->size);
     return -1;
   }
 
-  // Read in the body of the packet
-  total_bytes = 0;
-  while (total_bytes < header->size)
+  // Slide over the header
+  memmove(client->read_xdrdata, 
+          client->read_xdrdata + PLAYERXDR_MSGHDR_SIZE,
+          client->read_xdrdata_len - PLAYERXDR_MSGHDR_SIZE);
+  client->read_xdrdata_len -= PLAYERXDR_MSGHDR_SIZE;
+
+  while(client->read_xdrdata_len < header->size)
   {
-    bytes = recv(client->sock,
-                 client->xdrdata + PLAYERXDR_MSGHDR_SIZE + total_bytes,
-                 header->size - total_bytes, 0);
-    if (bytes <= 0)
+    nbytes = timed_recv(client->sock, 
+                        client->read_xdrdata + client->read_xdrdata_len,
+                        PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
+                        0, client->request_timeout*1e3);
+    if (nbytes <= 0)
     {
-      PLAYERC_ERR1("recv on body failed with error [%s]", strerror(errno));
-      return -1;
+      PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
+      //playerc_client_disconnect(client);
+      if(playerc_client_disconnect_retry(client) < 0)
+        return(-1);
+      else
+      {
+        /* Need to start over; the easiest way is to recursively call
+         * myself.  Might be problematic... */
+        return(playerc_client_readpacket(client,header,data));
+      }
     }
-    total_bytes += bytes;
+    client->read_xdrdata_len += nbytes;
   }
 
   // Locate the appropriate unpacking function for the message body
@@ -844,13 +976,19 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Unpack the body
-  if((decode_msglen = (*packfunc)(client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
+  if((decode_msglen = (*packfunc)(client->read_xdrdata,
                                   header->size, data, PLAYERXDR_DECODE)) < 0)
   {
-    PLAYERC_ERR3("deconding failed on message from %u:%u with type %u",
+    PLAYERC_ERR3("decoding failed on message from %u:%u with type %u",
                  header->addr.interf, header->addr.index, header->subtype);
     return(-1);
   }
+
+  // Slide over the body
+  memmove(client->read_xdrdata, 
+          client->read_xdrdata + header->size,
+          client->read_xdrdata_len - header->size);
+  client->read_xdrdata_len -= header->size;
 
   // Rewrite the header with the decoded message length
   header->size = decode_msglen;
@@ -863,10 +1001,16 @@ int playerc_client_readpacket(playerc_client_t *client,
 int playerc_client_writepacket(playerc_client_t *client,
                                player_msghdr_t *header, char *data)
 {
-  int bytes;
+  int bytes, ret, length;
   player_pack_fn_t packfunc;
   int encode_msglen;
   struct timeval curr;
+
+  if (client->sock < 0)
+  {
+    PLAYERC_WARN("no socket to write to");
+    return -1;
+  }
 
   // Encode the body first, if it's non-NULL
   if(data)
@@ -884,7 +1028,7 @@ int playerc_client_writepacket(playerc_client_t *client,
     }
 
     if((encode_msglen =
-        (*packfunc)(client->xdrdata + PLAYERXDR_MSGHDR_SIZE,
+        (*packfunc)(client->write_xdrdata + PLAYERXDR_MSGHDR_SIZE,
                     PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
                     data, PLAYERXDR_ENCODE)) < 0)
     {
@@ -901,7 +1045,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   gettimeofday(&curr,NULL);
   header->timestamp = curr.tv_sec + curr.tv_usec / 1e6;
   // Pack the header
-  if(player_msghdr_pack(client->xdrdata, PLAYERXDR_MSGHDR_SIZE,
+  if(player_msghdr_pack(client->write_xdrdata, PLAYERXDR_MSGHDR_SIZE,
                         header, PLAYERXDR_ENCODE) < 0)
   {
     PLAYERC_ERR("failed to pack header");
@@ -909,19 +1053,23 @@ int playerc_client_writepacket(playerc_client_t *client,
   }
 
   // Send the message
-  bytes = send(client->sock, client->xdrdata,
-               PLAYERXDR_MSGHDR_SIZE + encode_msglen, 0);
-  if (bytes < 0)
+  length = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
+  bytes = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
+  do 
   {
-    PLAYERC_ERR1("send on body failed with error [%s]", strerror(errno));
-    return -1;
-  }
-  else if (bytes < (PLAYERXDR_MSGHDR_SIZE + encode_msglen))
-  {
-    PLAYERC_ERR2("sent incomplete message, %d of %d bytes",
-                 bytes, PLAYERXDR_MSGHDR_SIZE + encode_msglen);
-    return -1;
-  }
+    ret = send(client->sock, &client->write_xdrdata[length-bytes],
+               bytes, 0);
+    if (ret > 0)
+    {
+      bytes -= ret;
+    }
+    else if (ret < 0 && (errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK))
+    {
+      PLAYERC_ERR2("send on body failed with error [%d:%s]", errno, strerror(errno));
+      //playerc_client_disconnect(client);
+      return(playerc_client_disconnect_retry(client));
+    }
+  } while (bytes);
 
   return 0;
 }
@@ -1019,4 +1167,16 @@ void *playerc_client_dispatch(playerc_client_t *client,
 void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds)
 {
   client->request_timeout = seconds;
+}
+
+//  Set the retry limit
+void playerc_client_set_retry_limit(playerc_client_t* client, int limit)
+{
+  client->retry_limit = limit;
+}
+
+//  Set the retry time
+void playerc_client_set_retry_time(playerc_client_t* client, double time)
+{
+  client->retry_time = time;
 }

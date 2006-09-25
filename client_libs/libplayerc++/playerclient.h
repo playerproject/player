@@ -93,6 +93,9 @@ class PlayerClient
     // The port number of the server, stored for convenience
     uint mPort;
 
+    // Which transport (TCP or UDP) we're using
+    unsigned int mTransport;
+
     // Is the thread currently stopped or stopping?
     bool mIsStop;
 
@@ -106,7 +109,8 @@ class PlayerClient
 
     /// Make a client and connect it as indicated.
     PlayerClient(const std::string aHostname=PLAYER_HOSTNAME,
-                 uint aPort=PLAYER_PORTNUM);
+                 uint aPort=PLAYER_PORTNUM,
+                 int transport=PLAYERC_TRANSPORT_TCP);
 
     /// destructor
     ~PlayerClient();
@@ -137,6 +141,23 @@ class PlayerClient
     /// - false if there is no data waiting
     /// - true if there is data waiting
     bool Peek(uint timeout=0);
+
+    /// @brief Set connection retry limit, which is the number of times
+    /// that we'll try to reconnect to the server after a socket error.
+    /// Set to -1 for inifinite retry.
+    void SetRetryLimit(int limit) { playerc_client_set_retry_limit(this->mClient,limit); }
+
+    /// @brief Get connection retry limit, which is the number of times
+    /// that we'll try to reconnect to the server after a socket error.
+    int GetRetryLimit() { return(this->mClient->retry_limit); }
+
+    /// @brief Set connection retry time, which is number of seconds to
+    /// wait between reconnection attempts.
+    void SetRetryTime(double time) { playerc_client_set_retry_time(this->mClient,time); }
+
+    /// @brief Get connection retry time, which is number of seconds to
+    /// wait between reconnection attempts.
+    double GetRetryTime() { return(this->mClient->retry_time); }
 
     /// @brief A blocking Read
     ///
@@ -175,25 +196,26 @@ class PlayerClient
     /// @exception throws PlayerError if unsuccessfull
     void SetDataMode(uint aMode);
 
-    /// Set a replace rule for the clients queue on the server.
-	/// If a rule with the same pattern already exists, it will be replaced with
-	/// the new rule (i.e., its setting to replace will be updated).
+    /// @brief Set a replace rule for the clients queue on the server.
     ///
-	/// @param aInterf Interface to set replace rule for (-1 for wildcard)
-	///
-	/// @param aIndex index to set replace rule for (-1 for wildcard)
-	///
-	/// @param aType type to set replace rule for (-1 for wildcard),
-	/// i.e. PLAYER_MSGTYPE_DATA
-	///
-	/// @param aSubtype message subtype to set replace rule for (-1 for wildcard)
-	///
-	/// @param aReplace Should we replace these messages
-	///
-	/// @returns Returns 0 on success, non-zero otherwise.  Use
+    /// If a rule with the same pattern already exists, it will be replaced
+    /// with the new rule (i.e., its setting to replace will be updated).
+    /// @param aReplace Should we replace these messages? true/false
+    /// @param aType type of message to set replace rule for
+    ///          (-1 for wildcard).  See @ref message_types.
+    /// @param aSubtype message subtype to set replace rule for (-1 for
+    ///          wildcard).
+    /// @param aInterf Interface to set replace rule for (-1 for wildcard).
+    ///          This can be used to set the replace rule for all members of a
+    ///          certain interface type.  See @ref interfaces.
     ///
     /// @exception throws PlayerError if unsuccessfull
-    void SetReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace);
+    ///
+    /// @see ClientProxy::SetReplaceRule, PlayerClient::SetDataMode
+    void SetReplaceRule(bool aReplace,
+                        int aType = -1,
+                        int aSubtype = -1,
+                        int aInterf = -1);
 
     /// Get the list of available device ids. The data is written into the
     /// proxy structure rather than retured to the caller.

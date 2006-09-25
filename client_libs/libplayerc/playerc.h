@@ -83,6 +83,10 @@ extern "C" {
 #define PLAYERC_DATAMODE_PUSH PLAYER_DATAMODE_PUSH
 #define PLAYERC_DATAMODE_PULL PLAYER_DATAMODE_PULL
 
+/** The valid transports */
+#define PLAYERC_TRANSPORT_TCP 1
+#define PLAYERC_TRANSPORT_UDP 2
+
 /***************************************************************************
  * Array sizes
  **************************************************************************/
@@ -443,6 +447,17 @@ typedef struct _playerc_client_t
   /** Server address. */
   char *host;
   int port;
+  int transport;
+  struct sockaddr_in server;
+
+  /** How many times we'll try to reconnect after a socket error.  Use @ref
+   * playerc_client_set_retry_limit() to set this value. Set to -1 for
+   * infinite retry. */
+  int retry_limit;
+
+  /** How long to sleep, in seconds, to sleep between reconnect attempts.
+   * Use @ref playerc_client_set_retry_time() to set this value. */
+  double retry_time;
 
   /** @internal Socket descriptor */
   int sock;
@@ -465,7 +480,10 @@ typedef struct _playerc_client_t
 
   /** @internal Temp buffers for incoming / outgoing packets. */
   char *data;
-  char *xdrdata;
+  char *write_xdrdata;
+  char *read_xdrdata;
+  size_t read_xdrdata_len;
+
 
   /** Server time stamp on the last packet. */
   double datatime;
@@ -501,6 +519,13 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 
 */
 void playerc_client_destroy(playerc_client_t *client);
+
+/** @brief Set the transport type.
+
+@param transport Either PLAYERC_TRANSPORT_UDP or PLAYERC_TRANSPORT_TCP
+*/
+void playerc_client_set_transport(playerc_client_t* client,
+                                  unsigned int transport);
 
 /** @brief Connect to the server.
 
@@ -672,6 +697,21 @@ void *playerc_client_read(playerc_client_t *client);
 
 */
 void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds);
+
+/** @brief Set the connection retry limit.
+
+@param client Pointer to the client object
+@param limit The number of times to attempt to reconnect to the server.  Give -1 for 
+       infinite retry.
+*/
+void playerc_client_set_retry_limit(playerc_client_t* client, int limit);
+
+/** @brief Set the connection retry sleep time.
+
+@param client Pointer to the client object
+@param time The amount of time, in seconds, to sleep between reconnection attempts.
+*/
+void playerc_client_set_retry_time(playerc_client_t* client, double time);
 
 /** @brief Write data to the server.  @internal
 */

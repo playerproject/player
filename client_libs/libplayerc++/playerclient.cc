@@ -41,10 +41,12 @@
 
 using namespace PlayerCc;
 
-PlayerClient::PlayerClient(const std::string aHostname, uint aPort) :
+PlayerClient::PlayerClient(const std::string aHostname, uint aPort, 
+                           int aTransport) :
   mClient(NULL),
   mHostname(aHostname),
-  mPort(aPort)
+  mPort(aPort),
+  mTransport(aTransport)
 {
 #ifdef HAVE_BOOST_THREAD
   mIsStop=true;
@@ -73,8 +75,14 @@ void PlayerClient::Connect(const std::string aHostname, uint aPort)
   LOG("Connecting " << *this);
 
   mClient = playerc_client_create(NULL, aHostname.c_str(), aPort);
+  playerc_client_set_transport(mClient, mTransport);
+  if (mClient == NULL)
+  {
+    throw PlayerError("PlayerClient::Connect()", playerc_error_str());
+  }
   if (0 != playerc_client_connect(mClient))
   {
+  	playerc_client_destroy(mClient);
     throw PlayerError("PlayerClient::Connect()", playerc_error_str());
   }
   EVAL(mClient);
@@ -133,7 +141,7 @@ void PlayerClient::RunThread()
       if (Peek())
       {
         Read();
-      }  
+      }
     } else {
       Read();
     };
@@ -160,7 +168,7 @@ void PlayerClient::Run(uint aTimeout)
       if (Peek())
       {
         Read();
-      }  
+      }
     } else {
       Read();
     };
@@ -226,26 +234,13 @@ std::list<playerc_device_info_t> PlayerClient::GetDeviceList()
   return dev_list;
 }
 
-// change continuous data rate (freq is in Hz)
-// void PlayerClient::SetFrequency(uint aFreq)
-// {
-//   std::cerr << "PlayerClient::SetFrequency() not implemented in libplayerc"
-//             << std::endl;
-//   /*
-//   if (0!=playerc_client_datafreq(mClient, aFreq))
-//   {
-//     throw PlayerError("PlayerClient::SetFrequency()", playerc_error_str());
-//   }
-//   */
-// }
-
 // change data delivery mode
 // valid modes are given in include/messages.h
 void PlayerClient::SetDataMode(uint aMode)
 {
-/*  std::cerr << "PlayerClient::SetDataMode() not implemented in libplayerc"
-            << std::endl;*/
+  assert((aMode==PLAYER_DATAMODE_PULL)||(aMode==PLAYER_DATAMODE_PUSH));
 
+  ClientProxy::scoped_lock_t lock(mMutex);
   if (0!=playerc_client_datamode(mClient, aMode))
   {
     throw PlayerError("PlayerClient::SetDataMode()", playerc_error_str());
@@ -254,9 +249,18 @@ void PlayerClient::SetDataMode(uint aMode)
 }
 
 // add replace rule
-void PlayerClient::SetReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace)
+void PlayerClient::SetReplaceRule(bool aReplace,
+                                  int aType,
+                                  int aSubtype,
+                                  int aInterf)
 {
-  if (0!=playerc_client_set_replace_rule(mClient, aInterf,aIndex,aType,aSubtype,aReplace))
+  ClientProxy::scoped_lock_t lock(mMutex);
+  if (0!=playerc_client_set_replace_rule(mClient,
+                                         aInterf,
+                                         -1,
+                                         aType,
+                                         aSubtype,
+                                         aReplace))
   {
     throw PlayerError("PlayerClient::SetReplaceRule()", playerc_error_str());
   }
