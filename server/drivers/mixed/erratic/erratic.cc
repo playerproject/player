@@ -207,6 +207,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 	memset(&this->aio_id, 0, sizeof(player_devaddr_t));
 
 	memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
+	memset(&this->last_car_cmd, 0, sizeof(player_position2d_cmd_car_t));
 
 	this->position_subscriptions = 0;
 	this->aio_ir_subscriptions = 0;
@@ -1179,6 +1180,68 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 	}
 }
 
+// Process car-like command, which sets an angular position target and
+// translational velocity target.
+// Erratic handles this natively
+//
+void 
+Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
+{
+	int speedDemand, angleDemand;
+	unsigned short absspeedDemand, absangleDemand;
+	unsigned char motorcommand[4];
+	ErraticPacket *motorpacket;
+
+	speedDemand = (int)rint(cmd.velocity * 1e3);	// convert to mm/s
+	angleDemand = (int)rint(RTOD(cmd.angle)); // convert to deg heading
+	angleDemand -= this->motor_packet->angle_offset;	// check for angle offset of odometry
+	if (angleDemand > 360)				// normalize
+		angleDemand -= 360;
+	if (angleDemand < 0)
+		angleDemand += 360;
+
+	// do separate trans and rot vels
+	motorcommand[0] = (command_e)trans_vel;
+	if(speedDemand >= 0)
+		motorcommand[1] = (argtype_e)argint;
+	else
+		motorcommand[1] = (argtype_e)argnint;
+
+	absspeedDemand = (unsigned short)abs(speedDemand);
+	if(absspeedDemand < this->motor_max_speed)
+		{
+			motorcommand[2] = absspeedDemand & 0x00FF;
+			motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
+		}
+	else
+		{
+			motorcommand[2] = this->motor_max_speed & 0x00FF;
+			motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
+		}
+		
+		motorpacket = new ErraticPacket();
+		motorpacket->Build(motorcommand, 4);
+		Send(motorpacket);
+
+
+	// do separate trans and rot vels
+	motorcommand[0] = (command_e)rot_pos;
+	if(angleDemand >= 0)
+		motorcommand[1] = (argtype_e)argint;
+	else
+		motorcommand[1] = (argtype_e)argnint;
+
+	absangleDemand = (unsigned short)abs(angleDemand);
+	motorcommand[2] = absangleDemand & 0x00FF;
+	motorcommand[3] = (absangleDemand & 0xFF00) >> 8;
+		
+	motorpacket = new ErraticPacket();
+	motorpacket->Build(motorcommand, 4);
+	Send(motorpacket);
+}
+
+
+
 // Handles one Player command detailing a velocity
 void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 	int speedDemand, turnRateDemand;
@@ -1289,9 +1352,6 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 	else
 	{
 		// do separate trans and rot vels
-
-
-
 		motorcommand[0] = (command_e)trans_vel;
 		if(speedDemand >= 0)
 			motorcommand[1] = (argtype_e)argint;
@@ -1341,11 +1401,16 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 
 // Switchboard for robot commands, called from ProcessMessage
 int Erratic::HandleCommand(player_msghdr * hdr, void* data) {
-	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, this->position_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, this->position_id))
 	{
 		player_position2d_cmd_vel_t position_cmd = *(player_position2d_cmd_vel_t*)data;
 		this->HandlePositionCommand(position_cmd);
+	} else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_CAR, this->position_id))
+	{
+		player_position2d_cmd_car_t position_cmd = *(player_position2d_cmd_car_t*)data;
+		this->HandleCarCommand(position_cmd);
 	} else
+
 		return(-1);
 
 	return(0);
