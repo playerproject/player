@@ -1194,6 +1194,11 @@ Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
 
 	speedDemand = (int)rint(cmd.velocity * 1e3);	// convert to mm/s
 	angleDemand = (int)rint(RTOD(cmd.angle)); // convert to deg heading
+	angleDemand -= this->motor_packet->angle_offset;	// check for angle offset of odometry
+	if (angleDemand > 360)				// normalize
+		angleDemand -= 360;
+	if (angleDemand < 0)
+		angleDemand += 360;
 
 	// do separate trans and rot vels
 	motorcommand[0] = (command_e)trans_vel;
