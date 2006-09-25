@@ -1,5 +1,4 @@
 #include <iostream>
-#include <stdint.h>
 #include <libplayerc++/playerc++.h>
 
 const uint WALL_FOLLOWING = 0;

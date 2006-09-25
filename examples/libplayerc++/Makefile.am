@@ -29,7 +29,6 @@ if INCLUDE_PLAYERCC
                      clientgraphics \
                      sonarobstacleavoid \
                      speech \
-                     speech_cpp_client \
                      wallfollow
 endif
 
