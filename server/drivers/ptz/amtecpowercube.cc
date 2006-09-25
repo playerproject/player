@@ -104,6 +104,7 @@ driver
 #include <math.h>
 
 #include <libplayercore/playercore.h>
+#include <replace/replace.h>
 
 
 #define AMTEC_DEFAULT_PORT "/dev/ttyS0"

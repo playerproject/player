@@ -26,7 +26,8 @@
 #define _PACKET_H
 
 #include <string.h>
-#include <stdint.h>
+#include <libplayercore/playercore.h>
+//#include <stdint.h>
 
 #define PACKET_LEN 256
 

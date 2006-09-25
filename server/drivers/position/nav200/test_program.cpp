@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include "nav200.h"
 
-#define MIN 100
-#define MAX 1000
+#define XMIN 100
+#define XMAX 1000
 
 int main(int argc,char ** argv)
 {
@@ -20,7 +20,7 @@ int main(int argc,char ** argv)
     if(testing.EnterPositioning())
     {
         printf("\n\n\nEntered positioning mode\n\n");
-        if(testing.SetActionRadii(MIN,MAX))
+        if(testing.SetActionRadii(XMIN,XMAX))
           printf("changed operation radii\n");
         if(testing.GetPositionAuto(laser))
           printf("Position of the laser scanner: X=%d, Y=%d, orientation=%d, quality=%d, number of reflectors = %d\n",laser.pos.x,laser.pos.y,laser.orientation,laser.quality,laser.number);

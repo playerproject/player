@@ -326,7 +326,9 @@ int Erratic::Connect() {
 		} 
 		
 		cfmakeraw(&read_term);
-		cfsetspeed(&read_term, bauds[currbaud]);
+		//cfsetspeed(&read_term, bauds[currbaud]);
+		cfsetispeed(&read_term, bauds[currbaud]);
+		cfsetospeed(&read_term, bauds[currbaud]);
 			
 		if(tcsetattr(this->read_fd, TCSAFLUSH, &read_term ) < 0) {
 			perror("Erratic::Setup():tcsetattr(read channel):");
