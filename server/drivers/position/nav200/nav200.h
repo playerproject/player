@@ -22,7 +22,8 @@ interfaces was later added by Toby Collett.
 #include <string.h>
 #include <pthread.h>
 #include <math.h>
-#include <stdint.h>
+#include <libplayercore/playercore.h>
+//#include <stdint.h>
 
 #define DEFAULT_PORT "/dev/ttyS0"
 #define DEFAULT_RATE B19200
