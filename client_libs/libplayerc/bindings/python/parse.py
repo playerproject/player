@@ -14,11 +14,11 @@ class Rule:
         self.head = ''
         self.foot = ''
         return
-    
+
 
 class Replace:
     pass
-    
+
 
 
 def compile_comment():
@@ -97,9 +97,12 @@ def compile(prefix):
     # Create rule for regular functions
     rule = Rule()
     rule.type = 'method'
-    rule.patterns += [re.compile('\w*\s*%s_\w*\(.*?;' % prefix, re.DOTALL)]
-    rule.patterns += [re.compile('\w*\s*\w*\s*%s_\w*\(.*?;' % prefix, re.DOTALL)]
-    rule.patterns += [re.compile('\w*\s*\*%s_\w*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    #rule.patterns += [re.compile('\w*\s*%s_[a-zA-Z0-9]*\s*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*\w*\s*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    #rule.patterns += [re.compile('\w*\s*\w*\s*%s_[a-zA-Z0-9]*\s*\(.*?;' % prefix, re.DOTALL)]
+    rule.patterns += [re.compile('\w*\s*\*%s_\w*\s*\(.*?;' % prefix, re.DOTALL)]
+    #rule.patterns += [re.compile('\w*\s*\*%s_[a-zA-Z0-9]*\s*\(.*?;' % prefix, re.DOTALL)]
 
     rule.head = '\n%%extend %s\n{\n' % prefix
     rule.foot = '\n}\n'
@@ -148,14 +151,13 @@ def parse_file(instream, rules):
 
     outstream = ''
     current_struct = None
-    
+
     while instream:
 
         line = instream
         m = None
-        
-        for rule in rules:
 
+        for rule in rules:
             # See if this line matches the rule
             for pattern in rule.patterns:
                 m = pattern.match(line)
@@ -165,7 +167,7 @@ def parse_file(instream, rules):
                 continue
 
             func = line[m.start():m.end()]
-            
+
             # Parse comment blocks
             if rule.type == 'comment':
                 #print instream[m.start():m.end()]
@@ -200,15 +202,15 @@ def parse_file(instream, rules):
                 if not mm:
                     continue
                 sig = sig[:mm.start()] + rep.dst + sig[mm.end():]
-                
+
             #print rval, name, sig
 
             outstream += rule.head
             outstream += '%s %s %s' % (rval, name, sig)
             outstream += rule.foot
-            
+
             instream = instream[m.end():]
-            
+
             break
 
         # If no rule matches
@@ -217,7 +219,7 @@ def parse_file(instream, rules):
             instream = instream[1:]
 
     return outstream
-    
+
 
 
 

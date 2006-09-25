@@ -8,13 +8,14 @@ uint         gIndex(0);
 uint         gDebug(0);
 uint         gFrequency(10); // Hz
 uint         gDataMode(PLAYER_DATAMODE_PUSH);
+bool         gUseLaser(false);
 
 void print_usage(int argc, char** argv);
 
 int parse_args(int argc, char** argv)
 {
   // set the flags
-  const char* optflags = "h:p:i:d:u:m:";
+  const char* optflags = "h:p:i:d:u:lm:";
   int ch;
 
   // use getopt to parse the flags
@@ -41,6 +42,9 @@ int parse_args(int argc, char** argv)
       case 'm': // datamode
           gDataMode = atoi(optarg);
           break;
+      case 'l': // datamode
+          gUseLaser = true;
+          break;
       case '?': // help
       case ':':
       default:  // unknown
@@ -66,6 +70,8 @@ void print_usage(int argc, char** argv)
   cerr << "  -d <level>     : debug message level (0 = none -- 9 = all)"
        << endl;
   cerr << "  -u <rate>      : set server update rate to <rate> in Hz"
+       << endl;
+  cerr << "  -l      : Use laser if applicable"
        << endl;
   cerr << "  -m <datamode>  : set server data delivery mode"
        << endl;

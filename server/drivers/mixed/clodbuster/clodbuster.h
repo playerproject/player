@@ -34,17 +34,8 @@
 #include <pthread.h>
 #include <sys/time.h>
 
-#include <driver.h>
-#include <drivertable.h>
-#include <packet.h>
-#include <player.h>
-//#include <robot_params.h>
-/*  
-#define P2OS_MOTORS_REQUEST_ON 0
-#define P2OS_MOTORS_ON 1
-#define P2OS_MOTORS_REQUEST_OFF 2
-#define P2OS_MOTORS_OFF 3
-*/
+#include <libplayercore/playercore.h>
+
 /* data for the clodbuster */
 #define CLODBUSTER_CYCLETIME_USEC 50000
 
@@ -137,7 +128,7 @@ class PIDGains
 class ClodBuster:public Driver 
 {
   private:
-    player_position_data_t position_data;
+    player_position2d_data_t position_data;
     void ResetRawPositions();
     clodbuster_encoder_data_t ReadEncoders();
 
@@ -193,8 +184,8 @@ class ClodBuster:public Driver
     /* the main thread */
     virtual void Main();
 
-	// MessageHandler
-	int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+    // Process incoming messages from clients 
+    int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
 
     virtual int Setup();
     virtual int Shutdown();

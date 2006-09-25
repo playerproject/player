@@ -58,6 +58,7 @@ The readlog driver can provide the following device interfaces.
 
 - @ref interface_laser
 - @ref interface_position2d
+- @ref interface_ptz
 - @ref interface_sonar
 - @ref interface_wifi
 - @ref interface_wsn
@@ -268,6 +269,12 @@ class ReadLog: public Driver
                         unsigned short type, unsigned short subtype,
                         int linenum,
                         int token_count, char **tokens, double time);
+
+  // Parse PTZ data
+  private: int ParsePTZ (player_devaddr_t id,
+                         unsigned short type, unsigned short subtype,
+                         int linenum,
+                         int token_count, char **tokens, double time);
 #if 0
 
   // Parse position3d data
@@ -1094,6 +1101,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_WSN_CODE)
       return this->ParseWSN(id, type, subtype, linenum,
                             token_count, tokens, time);
+  else if (id.interf == PLAYER_PTZ_CODE)
+      return this->ParsePTZ (id, type, subtype, linenum,
+                            token_count, tokens, time);
 
 #if 0
   else if (id.interf == PLAYER_POSITION3D_CODE)
@@ -1779,6 +1789,48 @@ int ReadLog::ParseWSN(player_devaddr_t id,
         default:
             PLAYER_ERROR1("unknown WSN message type %d\n", type);
             return(-1);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse PTZ data
+int ReadLog::ParsePTZ (player_devaddr_t id, 
+                      unsigned short type, unsigned short subtype,
+                      int linenum,
+                      int token_count, char **tokens, double time)
+{
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_PTZ_DATA_STATE:
+                {
+                    if (token_count < 12)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    player_ptz_data_t data;
+		    
+		    data.pan  = atof (tokens[7]);
+		    data.tilt = atof (tokens[8]);
+		    data.zoom = atof (tokens[9]);
+		    data.panspeed  = atof (tokens[10]);
+		    data.tiltspeed = atof (tokens[11]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+                }
+		
+                default:
+                    PLAYER_ERROR1 ("unknown PTZ data subtype %d\n", subtype);
+                    return (-1);
+            }
+        default:
+            PLAYER_ERROR1 ("unknown PTZ message type %d\n", type);
+            return (-1);
     }
 }
 

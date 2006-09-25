@@ -35,9 +35,6 @@
 /** @defgroup driver_iwspy iwspy
  * @brief Linux iwspy access
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 This driver works like iwspy; it uses the linux wireless extensions
 to get signal strengths to wireless NICS.
 
@@ -327,7 +324,7 @@ int Iwspy::InitIwSpy()
   pid_t pid;
   int argc;
   char *args[16];
-
+  
   // Fork here
   pid = fork();
 
@@ -461,10 +458,15 @@ void Iwspy::Parse(int fd)
     //printf("[%s]\n", line);
 
     // Get data for each registered NIC
-    if (sscanf(line, " %s : Quality%*c%d/%*d Signal level%*c%d/%*d Noise level%*c%d/%*d",
+    if (sscanf(line, " %s : Quality%*c%d%*s Signal level%*c%d%*s Noise level%*c%d%*s",
                mac, &link, &level, &noise) < 4)
     {
-      continue;
+      link = 0;
+      if (sscanf(line, " %s : Signal level%*c%d%*s Noise level%*c%d%*s",
+                 mac, &level, &noise) < 3)
+      {
+        continue;
+      }
     }
 
     //printf("mac [%s]\n", mac);

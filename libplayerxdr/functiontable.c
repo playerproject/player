@@ -156,12 +156,20 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_gps_data_pack},
 
   /* graphics2d messages */
+  {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_CLEAR,
+   (player_pack_fn_t)player_graphics2d_cmd_points_pack},
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POINTS,
    (player_pack_fn_t)player_graphics2d_cmd_points_pack},
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POLYGON,
    (player_pack_fn_t)player_graphics2d_cmd_polygon_pack},
   {PLAYER_GRAPHICS2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS2D_CMD_POLYLINE,
    (player_pack_fn_t)player_graphics2d_cmd_polyline_pack},
+
+  /* graphics3d messages */
+  {PLAYER_GRAPHICS3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS3D_CMD_CLEAR,
+   (player_pack_fn_t)player_graphics3d_cmd_draw_pack},
+  {PLAYER_GRAPHICS3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_GRAPHICS3D_CMD_DRAW,
+   (player_pack_fn_t)player_graphics3d_cmd_draw_pack},
 
   /* gripper messages */
   {PLAYER_GRIPPER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_GRIPPER_DATA_STATE,
@@ -252,9 +260,9 @@ static playerxdr_function_t init_ftable[] =
   /* opaque messages */
   {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE,
     (player_pack_fn_t)player_opaque_data_pack},
-  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_CMD,
+  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD,
     (player_pack_fn_t)player_opaque_data_pack},
-  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_REQ,
+  {PLAYER_OPAQUE_CODE, PLAYER_MSGTYPE_REQ, PLAYER_OPAQUE_REQ,
     (player_pack_fn_t)player_opaque_data_pack},
 
   /* planner messages */
@@ -343,6 +351,23 @@ static playerxdr_function_t init_ftable[] =
   /* position3d messages */
   {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
     (player_pack_fn_t)player_position3d_data_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_GEOMETRY,
+    (player_pack_fn_t)player_position3d_data_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_CMD_SET_POS,
+    (player_pack_fn_t)player_position3d_cmd_pos_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION3D_CMD_SET_VEL,
+    (player_pack_fn_t)player_position3d_cmd_vel_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_MOTOR_POWER,
+    (player_pack_fn_t)player_position3d_power_config_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_POSITION_MODE,
+    (player_pack_fn_t)player_position3d_position_mode_req_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_RESET_ODOM,
+    (player_pack_fn_t)player_position3d_reset_odom_config_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_SET_ODOM,
+    (player_pack_fn_t)player_position3d_set_odom_req_pack},
+  {PLAYER_POSITION3D_CODE, PLAYER_MSGTYPE_REQ, PLAYER_POSITION3D_VELOCITY_MODE,
+    (player_pack_fn_t)player_position3d_velocity_mode_config_pack},
+  
 
   /* power messages */
   {PLAYER_POWER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
@@ -396,8 +421,8 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SPEECH_RECOGNITION_DATA_STRING,
     (player_pack_fn_t)player_speech_recognition_data_pack},
 
-  /* speech recognition messages */
-  {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WAVEFORM_DATA_SAMPLE,
+  /* waveform messages */
+  {PLAYER_WAVEFORM_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WAVEFORM_DATA_SAMPLE,
     (player_pack_fn_t)player_waveform_data_pack},
 
   /* wifi messages */
@@ -510,7 +535,8 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
   {
     curr = ftable + i;
     // Make sure the interface and subtype match exactly.
-    if(curr->interf == interf &&
+    // match anyway if interface = 0 (universal data types)
+    if((curr->interf == interf || curr->interf == 0) &&
       curr->type == type &&
       curr->subtype == subtype)
       return(curr->func);

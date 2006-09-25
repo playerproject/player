@@ -108,24 +108,10 @@ void playerc_blobfinder_putmsg(playerc_blobfinder_t *device,
       device->height = data->height;
       
       // threshold the number of blobs to avoid overunning the array
-      device->blobs_count 
-	= MIN( data->blobs_count, PLAYERC_BLOBFINDER_MAX_BLOBS );
+      device->blobs_count = MIN( data->blobs_count, PLAYERC_BLOBFINDER_MAX_BLOBS );
 
-      unsigned int b;
-      for( b=0; b<device->blobs_count; b++ )
-	{
-	  device->blobs[b].x = data->blobs[b].x;
-	  device->blobs[b].y = data->blobs[b].y;
+      memcpy(device->blobs, data->blobs, sizeof (player_blobfinder_blob_t)*device->blobs_count);
 
-	  device->blobs[b].left = data->blobs[b].left;
-	  device->blobs[b].right = data->blobs[b].right;
-	  device->blobs[b].top = data->blobs[b].top;
-	  device->blobs[b].bottom = data->blobs[b].bottom;
-	  device->blobs[b].color = data->blobs[b].color;
-
-	  device->blobs[b].area = data->blobs[b].area;
-	  device->blobs[b].range = data->blobs[b].range;
-	}      
     }
 
   return;

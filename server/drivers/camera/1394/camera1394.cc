@@ -137,6 +137,9 @@ cameras.
   - Sets the manual camera white balance setting. Only valid option:
     - a string containing two suitable blue and red value unsigned integers 
 
+- dma_buffers
+  - Default: 4
+  - the number of DMA buffers to use
 @par Example 
 
 @verbatim
@@ -162,8 +165,11 @@ driver
 #include <stddef.h>       // for NULL
 #include <unistd.h>
 #include <libraw1394/raw1394.h>
+#if DC1394_DMA_SETUP_CAPTURE_ARGS == 20
+#include <dc1394/dc1394_control.h>
+#else
 #include <libdc1394/dc1394_control.h>
-
+#endif
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 
@@ -185,46 +191,46 @@ driver
 #define FRAMERATE_120 DC1394_FRAMERATE_120
 #define FRAMERATE_240 DC1394_FRAMERATE_240
 
-// Format
-#define FORMAT_VGA_NONCOMPRESSED DC1394_FORMAT0
-#define FORMAT_SVGA_NONCOMPRESSED_1 DC1394_FORMAT1
-#define FORMAT_SVGA_NONCOMPRESSED_2 DC1394_FORMAT2
-#define FORMAT_6 DC1394_FORMAT6
-#define FORMAT_7 DC1394_FORMAT7
+// Format - not used in new API
+#define FORMAT_VGA_NONCOMPRESSED 0
+#define FORMAT_SVGA_NONCOMPRESSED_1 0
+#define FORMAT_SVGA_NONCOMPRESSED_2 0
+#define FORMAT_6 0
+#define FORMAT_7 0
 
 // mode enumneration
-#define 	  MODE_160x120_YUV444	  DC1394_MODE_160x120_YUV444
-#define 	  MODE_320x240_YUV422	  DC1394_MODE_320x240_YUV422
-#define 	  MODE_640x480_YUV411	  DC1394_MODE_640x480_YUV411
-#define 	  MODE_640x480_YUV422	  DC1394_MODE_640x480_YUV422
-#define 	  MODE_640x480_RGB	  DC1394_MODE_640x480_RGB8
-#define 	  MODE_640x480_MONO	  DC1394_MODE_640x480_MONO8
-#define 	  MODE_640x480_MONO16	  DC1394_MODE_640x480_MONO16
-#define 	  MODE_800x600_YUV422	  DC1394_MODE_800x600_YUV422
-#define 	  MODE_800x600_RGB	  DC1394_MODE_800x600_RGB8
-#define 	  MODE_800x600_MONO	  DC1394_MODE_800x600_MONO8
-#define 	  MODE_1024x768_YUV422	  DC1394_MODE_1024x768_YUV422
-#define 	  MODE_1024x768_RGB	  DC1394_MODE_1024x768_RGB8
-#define 	  MODE_1024x768_MONO	  DC1394_MODE_1024x768_MONO8
-#define 	  MODE_800x600_MONO16	  DC1394_MODE_800x600_MONO16
-#define 	  MODE_1024x768_MONO16	  DC1394_MODE_1024x768_MONO16
-#define 	  MODE_1280x960_YUV422	  DC1394_MODE_1280x960_YUV422
-#define 	  MODE_1280x960_RGB	  DC1394_MODE_1280x960_RGB8
-#define 	  MODE_1280x960_MONO	  DC1394_MODE_1280x960_MONO8
-#define 	  MODE_1600x1200_YUV422	  DC1394_MODE_1600x1200_YUV422
-#define 	  MODE_1600x1200_RGB	  DC1394_MODE_1600x1200_RGB8
-#define 	  MODE_1600x1200_MONO	  DC1394_MODE_1600x1200_MONO8
-#define 	  MODE_1280x960_MONO16	  DC1394_MODE_1280x960_MONO16
-#define 	  MODE_1600x1200_MONO16	  DC1394_MODE_1600x1200_MONO16
-#define 	  MODE_EXIF	          DC1394_MODE_EXIF
-#define 	  MODE_FORMAT7_0	  DC1394_MODE_FORMAT7_0
-#define 	  MODE_FORMAT7_1	  DC1394_MODE_FORMAT7_1
-#define 	  MODE_FORMAT7_2	  DC1394_MODE_FORMAT7_2
-#define 	  MODE_FORMAT7_3	  DC1394_MODE_FORMAT7_3
-#define 	  MODE_FORMAT7_4	  DC1394_MODE_FORMAT7_4
-#define 	  MODE_FORMAT7_5	  DC1394_MODE_FORMAT7_5
-#define 	  MODE_FORMAT7_6	  DC1394_MODE_FORMAT7_6
-#define 	  MODE_FORMAT7_7	  DC1394_MODE_FORMAT7_7
+#define 	  MODE_160x120_YUV444	  DC1394_VIDEO_MODE_160x120_YUV444
+#define 	  MODE_320x240_YUV422	  DC1394_VIDEO_MODE_320x240_YUV422
+#define 	  MODE_640x480_YUV411	  DC1394_VIDEO_MODE_640x480_YUV411
+#define 	  MODE_640x480_YUV422	  DC1394_VIDEO_MODE_640x480_YUV422
+#define 	  MODE_640x480_RGB	  DC1394_VIDEO_MODE_640x480_RGB8
+#define 	  MODE_640x480_MONO	  DC1394_VIDEO_MODE_640x480_MONO8
+#define 	  MODE_640x480_MONO16	  DC1394_VIDEO_MODE_640x480_MONO16
+#define 	  MODE_800x600_YUV422	  DC1394_VIDEO_MODE_800x600_YUV422
+#define 	  MODE_800x600_RGB	  DC1394_VIDEO_MODE_800x600_RGB8
+#define 	  MODE_800x600_MONO	  DC1394_VIDEO_MODE_800x600_MONO8
+#define 	  MODE_1024x768_YUV422	  DC1394_VIDEO_MODE_1024x768_YUV422
+#define 	  MODE_1024x768_RGB	  DC1394_VIDEO_MODE_1024x768_RGB8
+#define 	  MODE_1024x768_MONO	  DC1394_VIDEO_MODE_1024x768_MONO8
+#define 	  MODE_800x600_MONO16	  DC1394_VIDEO_MODE_800x600_MONO16
+#define 	  MODE_1024x768_MONO16	  DC1394_VIDEO_MODE_1024x768_MONO16
+#define 	  MODE_1280x960_YUV422	  DC1394_VIDEO_MODE_1280x960_YUV422
+#define 	  MODE_1280x960_RGB	  DC1394_VIDEO_MODE_1280x960_RGB8
+#define 	  MODE_1280x960_MONO	  DC1394_VIDEO_MODE_1280x960_MONO8
+#define 	  MODE_1600x1200_YUV422	  DC1394_VIDEO_MODE_1600x1200_YUV422
+#define 	  MODE_1600x1200_RGB	  DC1394_VIDEO_MODE_1600x1200_RGB8
+#define 	  MODE_1600x1200_MONO	  DC1394_VIDEO_MODE_1600x1200_MONO8
+#define 	  MODE_1280x960_MONO16	  DC1394_VIDEO_MODE_1280x960_MONO16
+#define 	  MODE_1600x1200_MONO16	  DC1394_VIDEO_MODE_1600x1200_MONO16
+#define 	  MODE_EXIF	          DC1394_VIDEO_MODE_EXIF
+#define 	  MODE_FORMAT7_0	  DC1394_VIDEO_MODE_FORMAT7_0
+#define 	  MODE_FORMAT7_1	  DC1394_VIDEO_MODE_FORMAT7_1
+#define 	  MODE_FORMAT7_2	  DC1394_VIDEO_MODE_FORMAT7_2
+#define 	  MODE_FORMAT7_3	  DC1394_VIDEO_MODE_FORMAT7_3
+#define 	  MODE_FORMAT7_4	  DC1394_VIDEO_MODE_FORMAT7_4
+#define 	  MODE_FORMAT7_5	  DC1394_VIDEO_MODE_FORMAT7_5
+#define 	  MODE_FORMAT7_6	  DC1394_VIDEO_MODE_FORMAT7_6
+#define 	  MODE_FORMAT7_7	  DC1394_VIDEO_MODE_FORMAT7_7
 
 // Feature enumeration
 #define	  FEATURE_BRIGHTNESS	  DC1394_FEATURE_BRIGHTNESS
@@ -250,6 +256,13 @@ driver
 #define	  FEATURE_CAPTURE_SIZE	  DC1394_FEATURE_CAPTURE_SIZE
 #define	  FEATURE_CAPTURE_QUALITY	  DC1394_FEATURE_CAPTURE_QUALITY
 
+// speed enumerations
+#define DC1394_SPEED_100 DC1394_ISO_SPEED_100
+#define DC1394_SPEED_200 DC1394_ISO_SPEED_200,
+#define DC1394_SPEED_400 DC1394_ISO_SPEED_400,
+#define DC1394_SPEED_800 DC1394_ISO_SPEED_800,
+#define DC1394_SPEED_1600 DC1394_ISO_SPEED_1600,
+#define DC1394_SPEED_3200 DC1394_ISO_SPEED_3200
 
 #endif
 
@@ -304,12 +317,18 @@ class Camera1394 : public Driver
   private: int method;
   private: bool forceRaw;
 
-  // Framerate.An  enum defined in libdc1394/dc1394_control.h
+#if LIBDC1394_VERSION == 0200
+  private: dc1394framerate_t frameRate;
+  private: unsigned int format;
+  private: dc1394video_mode_t mode;
+#else
   private: unsigned int frameRate;
-
-  // Format & Mode. An enum defined in libdc1394/dc1394_control.h
   private: unsigned int format;
   private: unsigned int mode;
+#endif
+
+  // number of DMA buffers to use
+  private: unsigned int num_dma_buffers;
 
   // Write frames to disk?
   private: int save;
@@ -623,6 +642,10 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
 
+  // Number of DMA buffers?
+  this->num_dma_buffers = cf->ReadInt(section, "dma_buffers", NUM_DMA_BUFFERS);
+
+  
   return;
 }
 
@@ -636,14 +659,16 @@ void Camera1394::SafeCleanup()
 #if LIBDC1394_VERSION == 0200
   if (this->camera)
   {
+    dc1394_cleanup_iso_channels_and_bandwidth(camera);
     switch (this->method)
     {
     case methodRaw:
-      dc1394_release_camera(this->camera);
+      //dc1394_release_camera(this->camera);
       break;
     case methodVideo:
-      dc1394_dma_unlisten(this->camera);
-      dc1394_dma_release_camera(this->camera);
+      //dc1394_dma_unlisten(this->camera);
+      //dc1394_dma_release_camera(this->camera);
+      break;
     }
     dc1394_free_camera(this->camera);
   }
@@ -671,18 +696,43 @@ void Camera1394::SafeCleanup()
 // Set up the device (called by server thread).
 int Camera1394::Setup()
 {
+#if LIBDC1394_VERSION == 0200
+  dc1394speed_t speed;
+#else
   unsigned int channel, speed;
+#endif
 
   // Create a handle for the given port (port will be zero on most
   // machines)
 #if LIBDC1394_VERSION == 0200
-  this->camera = dc1394_new_camera(this->port,this->node);
+  // First we try to find a camera
+  int err;
+  dc1394camera_t **dccameras=NULL;
+  unsigned int camnum=0;	
+  if ((err=dc1394_find_cameras(&dccameras,&camnum)) != DC1394_SUCCESS)
+  {
+    PLAYER_ERROR1("Could not get Camera List: %d\n", err);	
+    return -1;
+  }
+  if (camnum <=0)
+    return -1;
+
+  // we just use the first one returned and then free the rest
+  camera = dccameras[0];
+
+  for (unsigned int i=1;i<camnum;i++)
+    free(dccameras[i]);
+  if (camnum>0)
+	  free(dccameras);	
+  dc1394_cleanup_iso_channels_and_bandwidth(camera);
+
   if (this->camera == NULL)
   {
     PLAYER_ERROR("Unable to acquire a dc1394 camera");
     this->SafeCleanup();
     return -1;
   }
+
 #else
   this->handle = dc1394_create_handle(this->port);
   if (this->handle == NULL)
@@ -838,7 +888,7 @@ int Camera1394::Setup()
   if (FORMAT_7==this->format && DC1394_SUCCESS!=dc1394_format7_get_modeset(camera, &modeset))
   {
     bool HasMode7 = false;
-    for (unsigned int i=0;i<DC1394_MODE_FORMAT7_NUM;i++) 
+    for (unsigned int i=0;i<DC1394_VIDEO_MODE_FORMAT7_NUM;i++) 
     {
       if (modeset.mode[i].present!=0) 
       {
@@ -857,8 +907,7 @@ int Camera1394::Setup()
 
   // Get the ISO channel and speed of the video
 #if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_video_get_iso_channel_and_speed(this->camera, 
-                                                         &channel, &speed))
+  if (DC1394_SUCCESS != dc1394_video_get_iso_speed(this->camera, &speed))
 #else
   if (DC1394_SUCCESS != dc1394_get_iso_channel_and_speed(this->handle, this->camera.node, 
                                                          &channel, &speed))
@@ -875,38 +924,40 @@ int Camera1394::Setup()
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
                                this->format, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1, NULL,
+                               this->frameRate, this->num_dma_buffers, 1, NULL,
                                &this->camera) == DC1394_SUCCESS)
 #elif DC1394_DMA_SETUP_CAPTURE_ARGS == 12
   // Set camera to use DMA, improves performance.
   if (!this->forceRaw &&
       dc1394_dma_setup_capture(this->handle, this->camera.node, channel,
                                this->format, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1, 0, NULL,
+                               this->frameRate, this->num_dma_buffers, 1, 0, NULL,
                                &this->camera) == DC1394_SUCCESS)
 #elif LIBDC1394_VERSION == 0200
   // Set camera to use DMA, improves performance.
-  bool DMA_Success = false;
+  bool DMA_Success = true;
   if (!this->forceRaw)
   {
-    if (FORMAT_7 == format)
-    {
-      if (DC1394_SUCCESS == dc1394_dma_setup_format7_capture(camera, channel, mode, speed,
-            (uint_t)DC1394_QUERY_FROM_CAMERA, (uint_t)DC1394_QUERY_FROM_CAMERA, 
-            (uint_t)DC1394_QUERY_FROM_CAMERA, (uint_t)DC1394_QUERY_FROM_CAMERA, 
-//            (uint_t)DC1394_QUERY_FROM_CAMERA, NUM_DMA_BUFFERS, 1, NULL))
-            (uint_t)DC1394_QUERY_FROM_CAMERA, 10, 0, NULL))      {
-        DMA_Success = true;
-      }
-    }
-    else
-    {
-      if (DC1394_SUCCESS == dc1394_dma_setup_capture(this->camera, channel, this->mode, speed,
-                               this->frameRate, NUM_DMA_BUFFERS, 1, NULL))
-      {
-        DMA_Success = true;
-      }
-    }
+  	// first set parameters that are common between format 7 and other modes
+  	if (DC1394_SUCCESS != dc1394_video_set_framerate(camera,frameRate))
+	{
+		PLAYER_WARN("1394 failed to set frameRate");
+  		DMA_Success = false;
+	}
+  	if (DC1394_SUCCESS != dc1394_video_set_iso_speed(camera,speed))
+	{
+		PLAYER_WARN("1394 failed to set iso speed");
+		DMA_Success = false;
+	}
+	if (DC1394_SUCCESS != dc1394_video_set_mode(camera,mode))
+	{
+		PLAYER_WARN("1394 failed to set mode");
+		DMA_Success = false;
+	}
+  	
+  	// now start capture
+	if (DC1394_SUCCESS != dc1394_capture_setup_dma(camera, this->num_dma_buffers, DC1394_RING_BUFFER_LAST))
+  		DMA_Success = false;
   }
   if (DMA_Success)
 #else
@@ -921,8 +972,7 @@ int Camera1394::Setup()
           
     // Set camera to use RAW method (fallback)
 #if LIBDC1394_VERSION == 0200
-    if (dc1394_setup_capture(this->camera, channel,
-                             this->mode, DC1394_SPEED_400, this->frameRate) == DC1394_SUCCESS)
+    if (0)
 #else
     if (dc1394_setup_capture(this->handle, this->camera.node, channel,
                              this->format, this->mode, SPEED_400, this->frameRate,
@@ -1074,7 +1124,7 @@ int Camera1394::GrabFrame()
     break;
   case methodVideo:
 #if LIBDC1394_VERSION == 0200
-    if (dc1394_dma_capture(&this->camera,1,DC1394_VIDEO1394_WAIT) != DC1394_SUCCESS)
+    if (dc1394_capture_dma(&this->camera,1,DC1394_VIDEO1394_WAIT) != DC1394_SUCCESS)
 #else
     if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
 #endif
@@ -1092,9 +1142,9 @@ int Camera1394::GrabFrame()
   unsigned int frame_height;
   int * capture_buffer;
 #if LIBDC1394_VERSION == 0200
-  frame_width = camera->capture.frame_width;
-  frame_height = camera->capture.frame_height;
-  capture_buffer = (int *) camera->capture.capture_buffer;
+  frame_width = dc1394_capture_get_width(camera);
+  frame_height = dc1394_capture_get_height(camera);
+  capture_buffer = (int *) dc1394_capture_get_dma_buffer(camera);
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
@@ -1276,7 +1326,7 @@ int Camera1394::GrabFrame()
     return -1;
   }
 #if LIBDC1394_VERSION == 0200
-  if (this->method == methodVideo) dc1394_dma_done_with_buffer(this->camera);
+  if (this->method == methodVideo) dc1394_capture_dma_done_with_buffer(this->camera);
 #else
   if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
 #endif

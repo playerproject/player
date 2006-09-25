@@ -110,10 +110,7 @@ driver
 
 #include <isense/isense.h>
 
-#include "player.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
 
 
 // Driver for detecting laser retro-reflectors.
@@ -143,17 +140,11 @@ class InertiaCube2 : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
-  // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
-
-  // Handle geometry requests.
-  private: void HandleGetGeom(void *client, void *req, int reqlen);
+  // Process incoming messages from clients 
+  int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
 
   // Update the InertiaCube.
   private: void UpdateImu();
-
-  // Update the position device (returns non-zero if changed).
-  private: int UpdatePosition();
 
   // Generate a new pose estimate.
   private: void UpdatePose();
@@ -162,7 +153,7 @@ class InertiaCube2 : public Driver
   private: void UpdateData();
 
   // Geometry of underlying position device.
-  private: player_position_geom_t geom;
+  private: player_position2d_geom_t geom;
 
   // Compass setting (0 = off, 1 = partial, 2 = full).
   private: int compass;
@@ -171,11 +162,11 @@ class InertiaCube2 : public Driver
   private: const char *port;
 
   // Position device info (the one we are subscribed to).
-  private: player_device_id_t position_id;
-  private: Driver *position;
+  private: player_devaddr_t position_id;
+  private: Device *position;
   private: double position_time;
-  private: double position_old_pose[3];
-  private: double position_new_pose[3];
+  private: player_pose_t position_old_pose;
+  private: player_pose_t position_new_pose;
 
   // Handle to the imu tracker.
   private: ISD_TRACKER_HANDLE imu;
@@ -183,19 +174,13 @@ class InertiaCube2 : public Driver
   private: double imu_new_orient;
 
   // Combined pose estimate.
-  private: double pose[3];
+  private: player_pose_t pose;
 };
 
 
 // Initialization function
 Driver* InertiaCube2_Init( ConfigFile* cf, int section)
 {
-  if (strcmp( PLAYER_POSITION_STRING) != 0)
-  {
-    PLAYER_ERROR1("driver \"inertiacube2\" does not support interface \"%s\"\n",
-                  interface);
-    return (NULL);
-  }
   return ((Driver*) (new InertiaCube2( cf, section)));
 }
 
@@ -203,20 +188,20 @@ Driver* InertiaCube2_Init( ConfigFile* cf, int section)
 // a driver registration function
 void InertiaCube2_Register(DriverTable* table)
 {
-  table->AddDriver("inertiacube2", PLAYER_READ_MODE, InertiaCube2_Init);
+  table->AddDriver("inertiacube2", InertiaCube2_Init);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 InertiaCube2::InertiaCube2( ConfigFile* cf, int section)
-    : Driver(cf, section, sizeof(player_position_data_t), 0, 10, 10)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   this->port = cf->ReadString(section, "port", "/dev/ttyS3");
 
   // Must have a position device
-  if (cf->ReadDeviceId(&this->position_id, section, "requires",
-                       PLAYER_POSITION_CODE, -1, NULL) != 0)
+  if (cf->ReadDeviceAddr(&this->position_id, section, "requires",
+                       PLAYER_POSITION2D_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -270,16 +255,20 @@ int InertiaCube2::Shutdown()
 // Set up the underlying position device.
 int InertiaCube2::SetupPosition()
 {
-  // Subscribe to the position device.
-  this->position = deviceTable->GetDriver(this->position_id);
-  if (!this->position)
+  // Subscribe to the positino device.
+  if (Device::MatchDeviceAddress (position_id, device_addr))
   {
-    PLAYER_ERROR("unable to locate suitable position device");
+    PLAYER_ERROR ("attempt to subscribe to self");
     return -1;
   }
-  if (this->position->Subscribe(this) != 0)
+  if (!(position = deviceTable->GetDevice (position_id)))
   {
-    PLAYER_ERROR("unable to subscribe to position device");
+    PLAYER_ERROR ("unable to locate suitable camera device");
+    return -1;
+  }
+  if (position->Subscribe (InQueue) != 0)
+  {
+    PLAYER_ERROR ("unable to subscribe to camera device");
     return -1;
   }
 
@@ -291,7 +280,7 @@ int InertiaCube2::SetupPosition()
 int InertiaCube2::ShutdownPosition()
 {
   // Unsubscribe from devices.
-  this->position->Unsubscribe(this);
+  this->position->Unsubscribe(InQueue);
 
   return 0;
 }
@@ -451,109 +440,33 @@ void InertiaCube2::Main()
     pthread_testcancel();
 
     // Process any pending requests.
-    HandleRequests();
+    ProcessMessages();
 
     // Update the InertiaCube
     UpdateImu();
-
-    // See if there is any new position data.  If there is, generate a
-    // new pose estimate.
-    if (UpdatePosition())
-    {
-      // Generate a new pose estimate.
-      UpdatePose();
-
-      // TESTING
-      printf("%.3f %.3f %.0f  :  ",
-             this->position_new_pose[0],
-             this->position_new_pose[1],
-             this->position_new_pose[2] * 180 / M_PI);
-      printf("%.3f %.3f %.0f            \r",
-             this->pose[0],
-             this->pose[1],
-             this->pose[2] * 180 / M_PI);
-
-      // Expose the new estimate to the server.
-      UpdateData();
-    }
   }
   return;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-int InertiaCube2::HandleRequests()
+// Process an incoming message
+int InertiaCube2::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
-  int len;
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
+  assert(hdr);
+  assert(data);
 
-  while ((len = GetConfig(&client, &request, sizeof(request))) > 0)
+  if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA , PLAYER_POSITION2D_DATA_STATE, position_id))
   {
-    switch (request[0])
-    {
-      /* TODO
-      case PLAYER_POSITION_GET_GEOM_REQ:
-        HandleGetGeom(client, request, len);
-        break;
-      */
-
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-    }
+    player_position2d_data_t & pos_data = *reinterpret_cast<player_position2d_data_t *> (data);
+    position_new_pose = pos_data.pos;
+    UpdatePose();
+    UpdateData();
+    return 0;
   }
-  return 0;
+  return -1;
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-void InertiaCube2::HandleGetGeom(void *client, void *request, int len)
-{
-  /* TODO
-  player_device_id_t id;
-  uint8_t req;
-  player_position_geom_t geom;
-  struct timeval ts;
-  uint16_t reptype;
-
-  if (len != 1)
-  {
-    PLAYER_ERROR2("geometry request len is invalid (%d != %d)", len, 1);
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  id.code = PLAYER_POSITION_CODE;
-  id.index = this->position_index;
-  id.port = this->device_id.port;
-
-  // Get underlying device geometry.
-  req = PLAYER_POSITION_GET_GEOM_REQ;
-  if (this->Request(&id, this, &req, 1, &reptype, &ts, &geom, sizeof(geom)) != 0)
-  {
-    PLAYER_ERROR("unable to get position device geometry");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-  if (reptype != PLAYER_MSGTYPE_RESP_ACK)
-  {
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK) != 0)
-      PLAYER_ERROR("PutReply() failed");
-    return;
-  }
-
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL, &geom, sizeof(geom)) != 0)
-    PLAYER_ERROR("PutReply() failed");
-  */
-
-  return;
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -583,37 +496,6 @@ void InertiaCube2::UpdateImu()
 }
 
 
-////////////////////////////////////////////////////////////////////////////////
-// Update the position device (returns non-zero if changed).
-int InertiaCube2::UpdatePosition()
-{
-  int i;
-  size_t size;
-  player_position_data_t data;
-  uint32_t timesec, timeusec;
-  double time;
-
-  // Get the position device data.
-  size = this->position->GetData(this,(unsigned char*) &data, sizeof(data), &timesec, &timeusec);
-  time = (double) timesec + ((double) timeusec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (time - this->position_time < 0.001)
-    return 0;
-  this->position_time = time;
-
-  // Byte swap
-  data.xpos = ntohl(data.xpos);
-  data.ypos = ntohl(data.ypos);
-  data.yaw = ntohl(data.yaw);
-
-  this->position_new_pose[0] = (double) data.xpos / 1000.0;
-  this->position_new_pose[1] = (double) data.ypos / 1000.0;
-  this->position_new_pose[2] = (double) data.yaw * M_PI / 180;
-
-  return 1;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Generate a new pose estimate.
@@ -625,20 +507,18 @@ void InertiaCube2::UpdatePose()
   double tx, ty;
 
   // Compute change in pose relative to previous pose.
-  dx = this->position_new_pose[0] - this->position_old_pose[0];
-  dy = this->position_new_pose[1] - this->position_old_pose[1];
-  da = this->position_old_pose[2];
+  dx = this->position_new_pose.px - this->position_old_pose.px;
+  dy = this->position_new_pose.py - this->position_old_pose.py;
+  da = this->position_old_pose.pa;
   tx =  dx * cos(da) + dy * sin(da);
   ty = -dx * sin(da) + dy * cos(da);
 
   // Add this to the previous pose esimate.
-  this->pose[0] += tx * cos(this->imu_old_orient) - ty * sin(this->imu_old_orient);
-  this->pose[1] += tx * sin(this->imu_old_orient) + ty * cos(this->imu_old_orient);
-  this->pose[2] = this->imu_new_orient;
+  this->pose.px += tx * cos(this->imu_old_orient) - ty * sin(this->imu_old_orient);
+  this->pose.py += tx * sin(this->imu_old_orient) + ty * cos(this->imu_old_orient);
+  this->pose.pa = this->imu_new_orient;
 
-  this->position_old_pose[0] = this->position_new_pose[0];
-  this->position_old_pose[1] = this->position_new_pose[1];
-  this->position_old_pose[2] = this->position_new_pose[2];
+  this->position_old_pose = this->position_new_pose;
   this->imu_old_orient = this->imu_new_orient;
 
   return;
@@ -650,23 +530,12 @@ void InertiaCube2::UpdatePose()
 void InertiaCube2::UpdateData()
 {
   uint32_t timesec, timeusec;
-  player_position_data_t data;
+  player_position2d_data_t data;
 
-  data.xpos = (int32_t) (this->pose[0] * 1000);
-  data.ypos = (int32_t) (this->pose[1] * 1000);
-  data.yaw = (int32_t) (this->pose[2] * 180 / M_PI);
-
-  // Byte swap
-  data.xpos = htonl(data.xpos);
-  data.ypos = htonl(data.ypos);
-  data.yaw = htonl(data.yaw);
-
-  // Compute time.  Use the position device's time.
-  timesec = (uint32_t) this->position_time;
-  timeusec = (uint32_t) (fmod(this->position_time, 1.0) * 1e6);
+  data.pos = pose;
 
   // Copy data to server.
-  PutData((unsigned char*) &data, sizeof(data), timesec, timeusec);
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (unsigned char*) &data, sizeof(data), &position_time);
 
   return;
 }

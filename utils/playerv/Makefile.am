@@ -15,8 +15,10 @@ playerv_SOURCES = playerv.c \
                   error.h \
                   opt.c \
                   opt.h \
+		  dev_aio.c \
                   dev_blobfinder.c \
                   dev_bumper.c \
+                  dev_dio.c \
                   dev_fiducial.c \
                   dev_ir.c \
                   dev_laser.c \
@@ -27,7 +29,7 @@ playerv_SOURCES = playerv.c \
                   dev_sonar.c \
                   dev_wifi.c \
                   dev_gripper.c
-#dev_localize.c 
+#dev_localize.c
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                        $(top_builddir)/libplayerxdr/libplayerxdr.la \

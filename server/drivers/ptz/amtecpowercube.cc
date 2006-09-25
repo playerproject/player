@@ -27,9 +27,6 @@
 /** @defgroup driver_amtecpowercube amtecpowercube
  * @brief Amtec PowerCube pan-tilt unit
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The amtecpowercube driver controls the Amtec PowerCube Wrist,
 a powerful pan-tilt unit that can, for example, carry a SICK laser
 (@ref driver_sicklms200).
@@ -106,11 +103,9 @@ driver
 #include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include "driver.h"
-#include "error.h"
-#include "drivertable.h"
-#include "player.h"
-#include "replace.h"
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
+
 
 #define AMTEC_DEFAULT_PORT "/dev/ttyS0"
 
@@ -218,7 +213,7 @@ class AmtecPowerCube:public Driver
     AmtecPowerCube( ConfigFile* cf, int section);
 
     // MessageHandler
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+    int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -238,7 +233,7 @@ AmtecPowerCube_Register(DriverTable* table)
 }
 
 AmtecPowerCube::AmtecPowerCube( ConfigFile* cf, int section) 
- : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   fd = -1;
 /*  player_ptz_data_t data;
@@ -1003,14 +998,13 @@ AmtecPowerCube::SetTiltVel(short tiltspeed)
   return(0);
 }
 
-int AmtecPowerCube::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
-{
-	assert(hdr);
-	assert(data);
-	assert(resp_data);
-	assert(resp_len);
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
+int AmtecPowerCube::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+{
+  assert(hdr);
+  assert(data);
+
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
 	{
       short newpan, newtilt;
 
@@ -1021,8 +1015,8 @@ int AmtecPowerCube::ProcessMessage(ClientData * client, player_msghdr * hdr, uin
       if(this->controlmode == PLAYER_PTZ_POSITION_CONTROL)
       {
         // reverse pan angle, to increase ccw
-        newpan = -(short)ntohs(command.pan);
-        newtilt = (short)ntohs(command.tilt);
+        newpan = -(short)(command.pan);
+        newtilt = (short)(command.tilt);
 
         if(newpan != lastpan)
         {
@@ -1051,8 +1045,8 @@ int AmtecPowerCube::ProcessMessage(ClientData * client, player_msghdr * hdr, uin
       else if(this->controlmode == PLAYER_PTZ_VELOCITY_CONTROL)
       {
         // reverse pan angle, to increase ccw
-        newpanspeed = -(short)ntohs(command.panspeed);
-        newtiltspeed = (short)ntohs(command.tiltspeed);
+        newpanspeed = -(short)(command.panspeed);
+        newtiltspeed = (short)(command.tiltspeed);
 
         if(newpanspeed != lastpanspeed)
         {
@@ -1084,31 +1078,29 @@ int AmtecPowerCube::ProcessMessage(ClientData * client, player_msghdr * hdr, uin
          pthread_exit(NULL);
       }
 
-      *resp_len = 0;
   	  return 0;
 	}
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_CONTROL_MODE, device_id))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE, device_addr))
 	{
-	  assert(hdr->size == sizeof(player_ptz_controlmode_config));
-	  player_ptz_controlmode_config * cfg = reinterpret_cast<player_ptz_controlmode_config *> (data);
+	  player_ptz_req_control_mode_t * cfg = reinterpret_cast<player_ptz_req_control_mode_t *> (data);
 
       if((cfg->mode != PLAYER_PTZ_VELOCITY_CONTROL) &&
           (cfg->mode != PLAYER_PTZ_POSITION_CONTROL))
       {
         PLAYER_WARN1("unknown control mode requested: %d", cfg->mode);
-        *resp_len = 0;
-        return PLAYER_MSGTYPE_RESP_NACK;
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_PTZ_REQ_CONTROL_MODE);
+
+        return 0;
       }
       else
       {
         controlmode = cfg->mode;
-        *resp_len = 0;
-        return PLAYER_MSGTYPE_RESP_ACK;          
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_PTZ_REQ_CONTROL_MODE);
+        return 0;
       }
 	}
     
-    *resp_len = 0;
     return -1;
 }
  
@@ -1154,13 +1146,13 @@ AmtecPowerCube::Main()
       pthread_exit(NULL);
     }
 
-    data.pan = htons(currpan);
-    data.tilt = htons(currtilt);
+    data.pan = (currpan);
+    data.tilt = (currtilt);
     data.zoom = 0;
-    data.panspeed = htons(currpanspeed);
-    data.tiltspeed = htons(currtiltspeed);
+    data.panspeed = (currpanspeed);
+    data.tiltspeed = (currtiltspeed);
 
-    PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
+    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
 
     // get the module state (for debugging and warning)
     unsigned int state;
@@ -1181,49 +1173,3 @@ AmtecPowerCube::Main()
     usleep(AMTEC_SLEEP_TIME_USEC);
   }
 }
-/*
-void 
-AmtecPowerCube::HandleConfig(void *client, unsigned char *buf, size_t len)
-{
-  player_ptz_controlmode_config* cfg;
-  player_ptz_cmd_t cmd;
-
-  switch(buf[0])
-  {
-    case PLAYER_PTZ_CONTROL_MODE_REQ:
-      cfg = (player_ptz_controlmode_config*)buf;
-      if(len != sizeof(player_ptz_controlmode_config))
-      {
-        PLAYER_WARN("control mode request is wrong size; ignoring");
-	if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-	  PLAYER_ERROR("Failed to PutReply\n");
-      }
-      else
-      {
-        if((cfg->mode != PLAYER_PTZ_VELOCITY_CONTROL) &&
-           (cfg->mode != PLAYER_PTZ_POSITION_CONTROL))
-        {
-          PLAYER_WARN1("unknown control mode requested: %d", cfg->mode);
-          if(PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-            PLAYER_ERROR("Failed to PutReply\n");
-        }
-        else
-        {
-          // change mode, and zero existing commands, to avoid unexpected
-          // consequences.
-          controlmode = cfg->mode;
-          memset(&cmd,0,sizeof(cmd));
-          PutCommand(this->device_id,(unsigned char*)&cmd,sizeof(cmd),NULL);
-          if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK,NULL))
-            PLAYER_ERROR("Failed to PutReply\n");
-        }
-      }
-      break;
-    default:
-      PLAYER_WARN1("unknown config request: %d", buf[0]);
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL))
-        PLAYER_ERROR("Failed to PutReply\n");
-      break;
-  }
-}
-*/

@@ -29,6 +29,8 @@
 #ifndef AMCL_SENSOR_H
 #define AMCL_SENSOR_H
 
+#include "amcl.h"
+
 #include <libplayercore/playercore.h>
 #include "pf/pf.h"
 
@@ -41,7 +43,7 @@ class AMCLSensorData;
 class AMCLSensor
 {
   // Default constructor
-  public: AMCLSensor();
+  public: AMCLSensor(AdaptiveMCL & aAMCL);
          
   // Default destructor
   public: virtual ~AMCLSensor();
@@ -58,8 +60,11 @@ class AMCLSensor
   // Finalize the model
   public: virtual int Shutdown(void);
 
-  // Get new sensor data (non-blocking)
-  public: virtual AMCLSensorData *GetData(void);
+  // Process message for this interface
+  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * data) = 0;  
+//  public: virtual AMCLSensorData *GetData(void);
   
   // Update the filter based on the action model.  Returns true if the filter
   // has been updated.
@@ -79,8 +84,8 @@ class AMCLSensor
   // Action pose (action sensors only)
   public: pf_vector_t pose;
 
-  // Queue on which readings from the sensor will arrive
-  protected: MessageQueue* InQueue;
+  // AMCL Base
+  protected: AdaptiveMCL & AMCL;
 
 #ifdef INCLUDE_RTKGUI
   // Setup the GUI
