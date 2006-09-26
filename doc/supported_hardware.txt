@@ -7,7 +7,8 @@ supported by Player.
 </p>
 <p>
 These tables should generally be up to date with respect to the current
-code in CVS, and thus may be newer than the latest official release.
+code in CVS, and thus may be newer than the latest official release.  Also
+check the @ref drivers list.
 </p>
 <p>
 Please post additions and corrections to these tables to our 
@@ -48,6 +49,13 @@ developers' mailing list</a>.
 </tr>
 
 <tr>
+<td><a href="http://www.irobot.com">iRobot</a></td>
+<td><a href="http://www.irobot.com/sp.cfm?pageid=122">Roomba vaccuming 
+robot</a></td>
+<td>@ref driver_roomba</td>
+</tr>
+
+<tr>
 <td><a href="http://www.k-team.com">K-Team</a></td>
 <td>Robotics Extension Board (REB)</a> attached to Kameleon 376BC</a></td>
 <td>@ref driver_reb</td>
@@ -69,6 +77,12 @@ integrated accessories, including a
 <a href="http://www-2.cs.cmu.edu/~cmucam">CMUcam</a> connected to the AUX
 port.</td>
 <td>@ref driver_p2os</td>
+</tr>
+
+<tr>
+<td>Nomadics</tr>
+<td>NOMAD200 (and possibly related) mobile robots</td>
+<td>@ref driver_nomad</td>
 </tr>
 
 <tr>
@@ -117,10 +131,38 @@ PC-BOT</a></td>
 </tr>
 
 <tr>
-<td><a href="http://www.amtec-robotics.com//">Amtec</a></td>
+<td><a href="http://www.amtec-robotics.com/">Amtec</a></td>
 <td><a href="http://www.amtec-robotics.com/1275.html">PowerCube</a>
-pan-tilt unit</a></td>
+pan-tilt unit</td>
 <td>@ref driver_amtecpowercube</td>
+</tr>
+
+<tr>
+<td><a href="http://www.ascension-tech.com/">Ascension</a></td>
+<td><a href="http://www.ascension-tech.com/products/flockofbirds.php">Flock
+of Birds</a> position tracker</td>
+<td>@ref driver_flockofbirds</td>
+</tr>
+
+<tr>
+<td><a href="http://www.canon.com/">Canon</a></td>
+<td><a href="http://www.usa.canon.com/consumer/controller?act=ModelDetailAct&fcategoryid=158&modelid=7402">
+VC-C4</a> pan-tilt-zoom camera</td>
+<td>@ref driver_canonvcc4</td>
+</tr>
+
+<tr>
+<td><a href="http://www.xbow.com/">Crossbow</a></td>
+<td><a href="http://www.xbow.com/Products/productsdetails.aspx?sid=62">Mica2 / 
+Mica2DOT</a> mote sensor nodes</td>
+<td>@ref driver_mica2</td>
+</tr>
+
+<tr>
+<td><a href="http://www.dperception.com">DirectedPerception</a></td>
+<td><a href="http://www.dperception.com/products.html">
+PTU-D46</a> pan-tilt unit</td>
+<td>@ref driver_ptu46</td>
 </tr>
 
 <tr>
@@ -136,6 +178,12 @@ units)</td>
 <td><a href="http://www.hokuyo-aut.jp/products/urg/urg.htm">URG</a> laser 
 range finder</td>
 <td>@ref driver_urglaser</td>
+</tr>
+
+<tr>
+<td><a href="http://www.insidecontactless.com/">Inside Contactless</a></td>
+<td><a href="http://www.insidecontactless.com/products/readers_couplers.php">M300/R300 2G</a> RFID reader (13.56MHz)</td>
+<td>@ref driver_insideM300</td>
 </tr>
 
 <tr>
@@ -162,7 +210,14 @@ InertiaCube2</a> IMU</td>
 <td><a href="http://www.sickoptic.com">SICK</a></td>
 <td><a href="http://www.sickoptic.com/live/master/datasheet.asp?PN=1015850&FAM=Measurement">
 LMS 200</a> laser range-finder (and possibly other SICK lasers)</td>
-<td>@ref driver_sicklms200</td>
+<td>@ref driver_sicklms200, @ref driver_sickpls, @ref driver_sicks3000,
+@ref driver_sicknav200</td>
+</tr>
+
+<tr>
+<td><a href="http://www.skyetek.com/">SkyeTek</a></td>
+<td><a href="http://www.skyetek.com/ProductsServices/Modules/SkyeModuleM1/tabid/82/Default.aspx">M1/M1-mini</a> RFID readers (13.56MHz)</td>
+<td>@ref driver_skyetekM1</td>
 </tr>
 
 <tr>
@@ -172,6 +227,13 @@ EVID30</a> and
 <a href="http://bssc.sel.sony.com/BroadcastandBusiness/DisplayModel?id=63134">EVID100</a>
 pan-tilt-zoom cameras</td>
 <td>@ref driver_sonyevid30</td>
+</tr>
+
+<tr>
+<td><a href="http://particle.teco.edu">TeCo</a></td>
+<td><a href="http://particle.teco.edu/software/bridge/index.html">Particle
+Router Core (XBridge)</a> sensor node</td>
+<td>@ref driver_rcore_xbridge</td>
 </tr>
 
 <tr>
@@ -225,6 +287,12 @@ about the wireless hardware (e.g., signal quality).</td>
 
 <tr>
 <td>Various</td>
+<td>Cameras supported by Video4Linux</td>
+<td>@ref driver_camerav4l</td>
+</tr>
+
+<tr>
+<td>Various</td>
 <td>Generic Linux joystick. Allows access to axis and button state.
 <td>@ref driver_linuxjoystick</td>
 </tr>
@@ -256,11 +324,25 @@ ActivMedia Color Tracking System (ACTS)</a> blob-tracking software</td>
 </tr>
 
 <tr>
+<td>MIT / LIRA-Lab</td>
+<td><a href="http://yarp0.sourceforge.net/">YARP</a>
+image capture</td>
+<td>@ref driver_yarp_image</td>
+</tr>
+
+<tr>
 <td><a href="http://www.cstr.ed.ac.uk/">The Centre for Speech 
 Technology Research, University of Edinburgh</a></td>
 <td><a href="http://www.cstr.ed.ac.uk/projects/festival/">
 Festival</a> speech-synthesis software</td>
 <td>@ref driver_festival</td>
+</tr>
+
+<tr>
+<td><a href="http://www.speech.cs.cmu.edu/">Speech at CMU</a></td>
+<td><a href="http://cmusphinx.sourceforge.net/html/cmusphinx.php">
+Sphinx2</a> speech-recognition software</td>
+<td>@ref driver_sphinx2</td>
 </tr>
 
 <tr>
