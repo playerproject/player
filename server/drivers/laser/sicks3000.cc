@@ -422,8 +422,13 @@ void SickS3000::Main()
     ProcessMessages();
     
     // read data into our ring buffer and then process it
-    ReadLaserData();
-    ProcessLaserData();
+    int ret = ReadLaserData();
+	if (ret < 0)
+	{
+		PLAYER_WARN("Error reading from S3000 device");
+	}
+	else if (ret > 0)
+    	ProcessLaserData();
   }
 }
 
@@ -609,7 +614,7 @@ int SickS3000::ReadLaserData()
   if (len == 0)
   {
     PLAYER_MSG0(2, "empty packet");
-    return 1;
+    return 0;
   }
   if (len < 0)
   {
@@ -619,7 +624,7 @@ int SickS3000::ReadLaserData()
 
   rx_count += len;
    
-  return 0;
+  return len;
 }
 
 
@@ -661,8 +666,7 @@ int SickS3000::ProcessLaserData()
     if (packet_checksum != calc_checksum)
     {
       PLAYER_WARN("Checksum's dont match, thats bad\n");
-      memmove(rx_buffer, &rx_buffer[1], 1);
-      rx_count -= 1;
+      memmove(rx_buffer, &rx_buffer[1], --rx_count);
       continue;
     }
     else
