@@ -50,6 +50,12 @@ The roomba driver provides the following device interfaces:
 - @ref interface_position2d
   - This interface returns odometry data, and accepts velocity commands.
 
+- @ref interface_power
+  - This interface returns battery levels
+
+- @ref interface_bumper
+  - This interface returns bumper data
+
 @par Supported configuration requests
 
 - None
@@ -70,7 +76,7 @@ The roomba driver provides the following device interfaces:
 driver
 (
   name "roomba"
-  provides ["position2d:0"]
+  provides ["position2d:0" "power:0" "bumper:0"]
   port "/dev/ttyS2"
   safe 1
 )
