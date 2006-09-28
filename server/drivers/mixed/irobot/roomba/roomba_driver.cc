@@ -55,7 +55,7 @@ The roomba driver provides the following device interfaces:
   - This interface returns battery levels (PLAYER_POWER_DATA_STATE).
 
 - @ref interface_bumper
-  - This interface returns bumper data
+  - This interface returns bumper data (PLAYER_BUMPER_DATA_STATE).
 
 @par Supported configuration requests
 
