@@ -76,7 +76,7 @@ The roomba driver provides the following device interfaces:
 driver
 (
   name "roomba"
-  provides ["position2d:0"]
+  provides ["position2d:0" "power:0" "bumper:0"]
   port "/dev/ttyS2"
   safe 1
 )
