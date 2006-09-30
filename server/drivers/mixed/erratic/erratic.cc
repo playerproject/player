@@ -890,12 +890,18 @@ void Erratic::ResetRawPositions() {
 	ErraticPacket *pkt;
 	unsigned char erraticcommand[4];
 
+	//**************************
+	//	printf("Reset raw odometry\n");
+
 	if(this->motor_packet) {
 		pkt = new ErraticPacket();
 		this->motor_packet->rawxpos = 0;
 		this->motor_packet->rawypos = 0;
 		this->motor_packet->xpos = 0;
 		this->motor_packet->ypos = 0;
+		this->motor_packet->x_offset = 0;
+		this->motor_packet->y_offset = 0;
+		this->motor_packet->angle_offset = 0;
 		erraticcommand[0] = (command_e)reset_origo;
 		erraticcommand[1] = (argtype_e)argint;
 
@@ -1076,6 +1082,11 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		                             - this->motor_packet->ypos;
 		this->motor_packet->angle_offset = ((int)rint(RTOD(set_odom_req->pose.pa)))
 		                                 - this->motor_packet->angle;
+
+		//**************************
+		//		printf("Reset odometry: %f %f %f\n", set_odom_req->pose.px, set_odom_req->pose.py, set_odom_req->pose.pa);
+		//		printf("Reset odometry: %d %d %d\n", motor_packet->x_offset, motor_packet->y_offset, motor_packet->angle_offset);
+		
 
 		this->Publish(this->position_id, resp_queue,
 		              PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
