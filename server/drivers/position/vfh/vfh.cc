@@ -59,8 +59,11 @@ or sector_angle.
 - @ref interface_position2d : the underlying robot that will be
   controlled by vfh.
 
-- @ref interface_laser : the laser that will be used to avoid
-  obstacles
+- Exactly one of:
+  - @ref interface_laser : the laser that will be used to avoid
+    obstacles
+  - @ref interface_sonar : the sonar that will be used to avoid
+    obstacles
 
 - @todo : add support for getting the robot's true global pose via the
   @ref interface_simulation interface
