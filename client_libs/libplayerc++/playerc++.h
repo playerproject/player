@@ -1024,6 +1024,9 @@ class LaserProxy : public ClientProxy
 
     /// Number of points in scan
     uint GetCount() const { return GetVar(mDevice->scan_count); };
+    
+    /// Max range for the latest set of data (meters)
+    double GetMaxRange() const { return GetVar(mDevice->max_range); };
 
     /// Angular resolution of scan (radians)
     double GetScanRes() const { return GetVar(mDevice->scan_res); };
