@@ -181,6 +181,7 @@ class Obot : public Driver
 
     player_position2d_cmd_car_t last_car_cmd;
     int last_final_lvel, last_final_rvel;
+    bool position_unsub;
     bool sent_new_command;
     bool car_command_mode;
 
@@ -203,6 +204,7 @@ class Obot : public Driver
 
     virtual int Setup();
     virtual int Shutdown();
+    virtual int Unsubscribe(player_devaddr_t addr);
 };
 
 
@@ -354,6 +356,7 @@ Obot::Setup()
   this->px = this->py = this->pa = 0.0;
   this->odom_initialized = false;
   this->last_final_rvel = this->last_final_lvel = 0;
+  this->position_unsub = false;
   this->sent_new_command = false;
   this->car_command_mode = false;
 
@@ -441,6 +444,24 @@ Obot::Shutdown()
   return(0);
 }
 
+int
+Obot::Unsubscribe(player_devaddr_t id)
+{
+  int shutdownResult;
+
+  // do the unsubscription
+  if((shutdownResult = Driver::Unsubscribe(id)) == 0)
+  {
+    // If it's the position2d interface, stop the robot for safety
+    if(Device::MatchDeviceAddress(id, this->position_addr))
+    {
+      this->position_unsub = true;
+    }
+  }
+
+  return(shutdownResult);
+}
+
 void 
 Obot::Main()
 {
@@ -463,6 +484,15 @@ Obot::Main()
     
     this->sent_new_command = false;
     ProcessMessages();
+
+    // Did somebody just unsubscribe from the position2d interface?
+    if(this->position_unsub)
+    {
+      this->sent_new_command = false;
+      this->last_final_lvel = this->last_final_rvel = 0;
+      this->position_unsub = false;
+    }
+    
     if(!this->sent_new_command)
     {
       // Which mode are we in?
@@ -479,7 +509,7 @@ Obot::Main()
           PLAYER_ERROR("failed to set velocity");
       }
     }
-    
+
     // Update and publish odometry info
     if(this->GetOdom(&ltics,&rtics,&lvel,&rvel) < 0)
     {
