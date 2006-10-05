@@ -97,6 +97,11 @@ over a normal serial port using the @ref driver_sicklms200 driver).
   - Default: 1.0
   - Value to be multiplied by angular error (in rad) to produce angular 
     velocity command (in rad/sec) when in car-like command mode
+
+- watchdog_timeout (float, seconds)
+  - Default: 1.0
+  - How long since receiving the last command before the robot is stopped,
+    for safety.  Set to -1.0 for no watchdog (DANGEROUS!).
   
 @par Example 
 
@@ -158,6 +163,10 @@ class Obot : public Driver
     // velocity command (in rad/sec) when in car-like command mode
     double car_angle_p;
 
+    // How long since receiving the last command before we stop the robot, 
+    // for safety.
+    double watchdog_timeout;
+
     // Robot geometry (size and rotational offset)
     player_bbox_t robot_size;
     player_pose_t robot_pose;
@@ -181,6 +190,7 @@ class Obot : public Driver
 
     player_position2d_cmd_car_t last_car_cmd;
     int last_final_lvel, last_final_rvel;
+    double last_cmd_time;
     bool sent_new_command;
     bool car_command_mode;
 
@@ -256,6 +266,7 @@ Obot::Obot( ConfigFile* cf, int section)
     this->car_angle_deadzone = cf->ReadAngle(section, "car_angle_deadzone",
                                              DTOR(5.0));
     this->car_angle_p = cf->ReadFloat(section, "car_angle_p", 1.0);
+    this->watchdog_timeout = cf->ReadFloat(section, "watchdog_timeout", 1.0);
   }
 
   // Do we create a power interface?
@@ -354,6 +365,7 @@ Obot::Setup()
   this->px = this->py = this->pa = 0.0;
   this->odom_initialized = false;
   this->last_final_rvel = this->last_final_lvel = 0;
+  this->last_cmd_time = -1.0;
   this->sent_new_command = false;
   this->car_command_mode = false;
 
@@ -465,18 +477,29 @@ Obot::Main()
     ProcessMessages();
     if(!this->sent_new_command)
     {
-      // Which mode are we in?
-      if(this->car_command_mode)
+      // Have we received a command lately?
+      GlobalTime->GetTimeDouble(&t);
+      if((this->last_cmd_time > 0.0) &&  (this->watchdog_timeout > 0.0) &&
+         ((t - this->last_cmd_time) >= this->watchdog_timeout))
       {
-        // Car-like command mode.  Re-compute angular vel based on target
-        // heading
-        this->ProcessCarCommand(&this->last_car_cmd);
+        if(this->SetVelocity(0,0) < 0)
+          PLAYER_ERROR("failed to set velocity");
       }
       else
       {
-        // Direct velocity command mode.  Re-send last set of velocities.
-        if(this->SetVelocity(this->last_final_lvel, this->last_final_rvel) < 0)
-          PLAYER_ERROR("failed to set velocity");
+        // Which mode are we in?
+        if(this->car_command_mode)
+        {
+          // Car-like command mode.  Re-compute angular vel based on target
+          // heading
+          this->ProcessCarCommand(&this->last_car_cmd);
+        }
+        else
+        {
+          // Direct velocity command mode.  Re-send last set of velocities.
+          if(this->SetVelocity(this->last_final_lvel, this->last_final_rvel) < 0)
+            PLAYER_ERROR("failed to set velocity");
+        }
       }
     }
     
@@ -642,6 +665,9 @@ Obot::ProcessCommand(player_position2d_cmd_vel_t * cmd)
     else
       final_lvel = -OBOT_MIN_WHEELSPEED_TICKS;
   }
+
+  // Record that we got a command at this time
+  GlobalTime->GetTimeDouble(&(this->last_cmd_time));
 
   if((final_lvel != last_final_lvel) ||
      (final_rvel != last_final_rvel))
@@ -1164,7 +1190,7 @@ Obot::SetVelocity(int lvel, int rvel)
 {
   int retval;
   
-  //printf("SetVelocity: %d %d\n", lvel, rvel);
+  printf("SetVelocity: %d %d\n", lvel, rvel);
 
   if(!this->motors_swapped)
     retval = SendCommand(OBOT_SET_VELOCITIES,lvel,rvel);
@@ -1175,6 +1201,7 @@ Obot::SetVelocity(int lvel, int rvel)
     PLAYER_ERROR("failed to set velocities");
     return(-1);
   }
+
   return(0);
 }
 
