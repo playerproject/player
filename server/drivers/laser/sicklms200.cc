@@ -59,9 +59,9 @@ The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
   - Serial port to which laser is attached.  If you are using a
     USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
 
-- connect_rate (integer)
-  - Rate used when stablishing connection with the laser.
-  - Default: 9600 
+- connect_rate (integer tuple)
+  - Ordered list of rates to be tried when establishing connection with the laser.
+  - Default: [9600 38400 500000]
   - Baud rate.  Valid values are 9600, 38400 (RS232 or RS422) and
     500000 (RS422 only).
 
@@ -163,6 +163,7 @@ extern PlayerTime* GlobalTime;
 #define DEFAULT_LASER_CONNECT_RATE 9600
 #define DEFAULT_LASER_TRANSFER_RATE 38400
 #define DEFAULT_LASER_RETRIES 3
+#define MAX_CONNECT_RATES 8
 
 
 // The laser device class.
@@ -283,7 +284,9 @@ class SickLMS200 : public Driver
     int invert;
 
     bool can_do_hi_speed;
-    int connect_rate;  // Desired rate for first connection
+    int connect_rates[MAX_CONNECT_RATES]; // Ordered list of connection rates
+    int num_connect_rates;  // Length of connect_rates
+    int connect_rate; // The final connection rate that we settle on
     int transfer_rate; // Desired rate for operation
     int current_rate;  // Current rate
 
@@ -335,7 +338,28 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
 
   // Serial rate
-  this->connect_rate = cf->ReadInt(section, "connect_rate", DEFAULT_LASER_CONNECT_RATE);
+  if(cf->GetTupleCount(section, "connect_rate") == 0)
+  {
+    this->connect_rates[0] = 9600;
+    this->connect_rates[1] = 38400;
+    this->connect_rates[2] = 500000;
+    this->num_connect_rates = 3;
+  }
+  else
+  {
+    this->connect_rates[0] = cf->ReadTupleInt(section, "connect_rate", 0,
+                                              DEFAULT_LASER_CONNECT_RATE);
+    this->num_connect_rates = 1;
+    for(int i=1;
+        (i<cf->GetTupleCount(section, "connect_rate")) && (i<MAX_CONNECT_RATES);
+        i++)
+    {
+      this->connect_rates[i] = cf->ReadTupleInt(section, "connect_rate", i,
+                                                DEFAULT_LASER_CONNECT_RATE);
+      this->num_connect_rates++;
+    }
+  }
+
   this->transfer_rate = cf->ReadInt(section, "transfer_rate", DEFAULT_LASER_TRANSFER_RATE);
   this->current_rate = 0;
   this->retry_limit = cf->ReadInt(section, "retry", 0) + 1;
@@ -346,18 +370,11 @@ SickLMS200::SickLMS200(ConfigFile* cf, int section)
   this->can_do_hi_speed = false;
 #endif
 
-  if (!this->can_do_hi_speed && this->connect_rate > 38400)
-  {
-    PLAYER_ERROR1("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to %d bps.",
-		    DEFAULT_LASER_CONNECT_RATE);
-    this->connect_rate = DEFAULT_LASER_CONNECT_RATE;
-  }
-
   if (!this->can_do_hi_speed && this->transfer_rate > 38400)
   {
     PLAYER_ERROR1("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to %d bps.",
 		    DEFAULT_LASER_TRANSFER_RATE);
-    this->connect_rate = DEFAULT_LASER_TRANSFER_RATE;
+    this->transfer_rate = DEFAULT_LASER_TRANSFER_RATE;
   }
 
   // Set default configuration
@@ -401,17 +418,30 @@ int SickLMS200::Setup()
   // for the laser to initialized
   sleep(this->startup_delay);
   
-  for(int i=0;i<this->retry_limit;i++)
+  // Try connecting at each rate, in order
+  for(int j=0;j<this->num_connect_rates;j++)
   {
-    // Try connecting at the given rate
-    PLAYER_MSG1(2, "connecting at %d", this->connect_rate);
-    if (ChangeTermSpeed(this->connect_rate))
-      return 1;
-    if (SetLaserMode() == 0)
-      this->current_rate = this->connect_rate;
-    else if (SetLaserMode() == 0)
-      this->current_rate = this->connect_rate;
+    this->connect_rate = this->connect_rates[j];
 
+    if (!this->can_do_hi_speed && this->connect_rate > 38400)
+    {
+      PLAYER_ERROR1("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to %d bps.",
+                    DEFAULT_LASER_CONNECT_RATE);
+      this->connect_rate = DEFAULT_LASER_CONNECT_RATE;
+    }
+
+    for(int i=0;i<this->retry_limit;i++)
+    {
+      // Try connecting at the given rate
+      PLAYER_MSG1(2, "connecting at %d", this->connect_rate);
+      if (ChangeTermSpeed(this->connect_rate))
+        continue;
+      if (SetLaserMode() == 0)
+        this->current_rate = this->connect_rate;
+
+      if(this->current_rate != 0)
+        break;
+    }
     if(this->current_rate != 0)
       break;
   }
@@ -826,7 +856,7 @@ int SickLMS200::ChangeTermSpeed(int speed)
 {
   struct termios term;
 
-  current_rate = speed;
+  //current_rate = speed;
 
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct serial;
@@ -958,7 +988,7 @@ int SickLMS200::SetLaserMode()
     // This could take a while...
     //
     PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 2000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1005,7 +1035,7 @@ int SickLMS200::SetLaserSpeed(int speed)
             
     // Wait for laser to return ack
     //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), true, 20000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 10000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1048,7 +1078,7 @@ int SickLMS200::GetLaserType(char *buffer, size_t bufflen)
       return 1;
 
     // Wait for laser to return data
-    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 2000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1103,7 +1133,7 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for laser to return data
     //PLAYER_MSG0(2, "waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 2000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1153,7 +1183,7 @@ int SickLMS200::SetLaserConfig(bool intensity)
 
     // Wait for the change to "take"
     //PLAYER_MSG0(2, "waiting for acknowledge");
-    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 2000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1206,7 +1236,7 @@ int SickLMS200::SetLaserRes(int width, int res)
 
     // Wait for laser to return data
     //PLAYER_MSG0(2, "waiting for reply");
-    len = ReadFromLaser(packet, sizeof(packet), false, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), false, 2000);
     if (len < 0)
       return 1;
     else if (len < 1)
@@ -1280,7 +1310,7 @@ int SickLMS200::RequestLaserData(int min_segment, int max_segment)
 
     // Wait for laser to return ack
     // This should be fairly prompt
-    len = ReadFromLaser(packet, sizeof(packet), true, 10000);
+    len = ReadFromLaser(packet, sizeof(packet), true, 2000);
     if (len < 0)
       return 1;
     else if (len < 1)
