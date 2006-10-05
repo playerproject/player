@@ -463,6 +463,7 @@ Obot::Main()
   int ltics, rtics;
   double last_publish_time = 0.0;
   double t;
+  bool stopped=false;
 
   pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED,NULL);
 
@@ -482,11 +483,17 @@ Obot::Main()
       if((this->last_cmd_time > 0.0) &&  (this->watchdog_timeout > 0.0) &&
          ((t - this->last_cmd_time) >= this->watchdog_timeout))
       {
+        if(!stopped)
+        {
+          PLAYER_WARN("Watchdog timer stopping robot");
+          stopped = true;
+        }
         if(this->SetVelocity(0,0) < 0)
           PLAYER_ERROR("failed to set velocity");
       }
       else
       {
+        stopped = false;
         // Which mode are we in?
         if(this->car_command_mode)
         {
