@@ -1197,7 +1197,7 @@ Obot::SetVelocity(int lvel, int rvel)
 {
   int retval;
   
-  printf("SetVelocity: %d %d\n", lvel, rvel);
+  //printf("SetVelocity: %d %d\n", lvel, rvel);
 
   if(!this->motors_swapped)
     retval = SendCommand(OBOT_SET_VELOCITIES,lvel,rvel);
