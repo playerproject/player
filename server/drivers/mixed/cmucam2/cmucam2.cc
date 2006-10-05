@@ -194,7 +194,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 	memset (&this->cam_id,        0, sizeof (player_devaddr_t));
 			
 	BlobORCamera = cf->ReadInt (section, "bloborcamera", 1);
-	if ((BlobORCamera != 1) || (BlobORCamera != 2))
+	if ((BlobORCamera != 1) && (BlobORCamera != 2))
 		BlobORCamera = 1;
 	
 	// Outgoing blobfinder interface
