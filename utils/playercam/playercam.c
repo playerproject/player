@@ -79,7 +79,6 @@ value at that place will be written to standard out.
   #include "config.h"
 #endif
 
-#include <stdint.h>
 #include <assert.h>
 #include <unistd.h>
 #include <math.h>
@@ -88,6 +87,7 @@ value at that place will be written to standard out.
 #include <gtk/gtk.h>
 
 #include <libplayerc/playerc.h>
+#include <libplayercore/playerconfig.h>
 
 char g_hostname[255]       = "localhost";
 int32_t g_port             = 6665;
