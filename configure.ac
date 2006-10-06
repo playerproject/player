@@ -583,6 +583,7 @@ dnl          client_libs/libplayerpacket/Makefile
           utils/pmap/Makefile
           utils/dgps_server/Makefile
           utils/xmms-plugin/Makefile
+          utils/logsplitter/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)
 
