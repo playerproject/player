@@ -330,7 +330,6 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
       else
       {
         totalnumread += numread;
-        printf("TotalNumRead[%d]\n",totalnumread);
         /*printf("read %d bytes; buffer so far:\n", numread);
         for(i=0;i<totalnumread;i++)
           printf("%x ", databuf[i]);
