@@ -78,7 +78,7 @@ roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
 
   // Open it.  non-blocking at first, in case there's no roomba
   if((r->fd = open(r->serial_port, 
-                   O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+                    O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     perror("roomba_open():open():");
     return(-1);
@@ -303,7 +303,9 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
   totalnumread = 0;
   while(totalnumread < sizeof(databuf))
   {
-    if((retval = poll(ufd,1,timeout)) < 0)
+    retval = poll(ufd,1,timeout);
+
+    if(retval < 0)
     {
       if(errno == EINTR)
         continue;
@@ -314,7 +316,10 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
       }
     }
     else if(retval == 0)
+    {
+      printf("roomba_get_sensors: poll timeout\n");
       return(-1);
+    }
     else
     {
       if((numread = read(r->fd,databuf+totalnumread,sizeof(databuf)-totalnumread)) < 0)
@@ -325,8 +330,8 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
       else
       {
         totalnumread += numread;
-        /*
-        printf("read %d bytes; buffer so far:\n", numread);
+        printf("TotalNumRead[%d]\n",totalnumread);
+        /*printf("read %d bytes; buffer so far:\n", numread);
         for(i=0;i<totalnumread;i++)
           printf("%x ", databuf[i]);
         puts("");
@@ -375,7 +380,7 @@ roomba_parse_sensor_packet(roomba_comm_t* r, unsigned char* buf, size_t buflen)
   r->overcurrent_vacuum = (flag >> 1) & 0x01;
   r->overcurrent_mainbrush = (flag >> 2) & 0x01;
   r->overcurrent_driveright = (flag >> 3) & 0x01;
-  r->overcurrent_driveleft = (flag >> 3) & 0x01;
+  r->overcurrent_driveleft = (flag >> 4) & 0x01;
 
   r->dirtdetector_left = buf[idx++];
   r->dirtdetector_right = buf[idx++];

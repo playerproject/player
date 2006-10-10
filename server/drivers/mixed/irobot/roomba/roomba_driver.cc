@@ -129,6 +129,7 @@ class Roomba : public Driver
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
     player_devaddr_t bumper_addr;
+    player_devaddr_t ir_addr;
 
     // The underlying roomba object
     roomba_comm_t* roomba_dev;
@@ -152,6 +153,7 @@ Roomba::Roomba(ConfigFile* cf, int section)
   memset(&this->position_addr,0,sizeof(player_devaddr_t));
   memset(&this->power_addr,0,sizeof(player_devaddr_t));
   memset(&this->bumper_addr,0,sizeof(player_devaddr_t));
+  memset(&this->ir_addr,0,sizeof(player_devaddr_t));
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -185,6 +187,18 @@ Roomba::Roomba(ConfigFile* cf, int section)
       return;
     }
   }
+
+  // Do we create a IR interface?
+  if(cf->ReadDeviceAddr(&(this->ir_addr), section, "provides",
+                        PLAYER_IR_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->ir_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
 
   this->serial_port = cf->ReadString(section, "port", "/dev/ttyS0");
   this->safe = cf->ReadInt(section, "safe", 1);
@@ -285,6 +299,28 @@ Roomba::Main()
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
                    (void*)&bumperdata, sizeof(bumperdata), NULL);
 
+     ////////////////////////////
+     // Update IR data
+     player_ir_data_t irdata;
+     memset(&irdata,0,sizeof(irdata));
+
+     irdata.ranges_count = 11;
+     irdata.ranges[0] = (float)this->roomba_dev->wall;
+     irdata.ranges[1] = (float)this->roomba_dev->cliff_left;
+     irdata.ranges[2] = (float)this->roomba_dev->cliff_frontleft;
+     irdata.ranges[3] = (float)this->roomba_dev->cliff_frontright;
+     irdata.ranges[4] = (float)this->roomba_dev->cliff_right;
+     irdata.ranges[5] = (float)this->roomba_dev->virtual_wall;
+     irdata.ranges[6] = (float)this->roomba_dev->dirtdetector_right;
+     irdata.ranges[7] = (float)this->roomba_dev->dirtdetector_left;
+     irdata.ranges[8] = (float)this->roomba_dev->wheeldrop_caster;
+     irdata.ranges[9] = (float)this->roomba_dev->wheeldrop_left;
+     irdata.ranges[10] = (float)this->roomba_dev->wheeldrop_right;
+
+     this->Publish(this->ir_addr, NULL,
+         PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
+         (void*)&irdata, sizeof(irdata), NULL);
+
 
      usleep(CYCLE_TIME_US);
   }
@@ -359,6 +395,28 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
                   PLAYER_BUMPER_GET_GEOM,
                   (void*)&geom, sizeof(geom), NULL);
 
+    return(0);
+  }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+                                    PLAYER_IR_POSE,
+                                    this->ir_addr))
+  {
+    player_ir_pose poses;
+
+    poses.poses_count = 11;
+
+    // TODO: Fill in proper values
+    for (int i=0; i<11; i++)
+    {
+      poses.poses[i].px = 0.0;
+      poses.poses[i].py = 0.0;
+      poses.poses[i].pa = 0.0;
+    }
+
+    this->Publish(this->ir_addr, resp_queue, 
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_IR_POSE,
+                  (void*)&poses, sizeof(poses), NULL);
     return(0);
   }
   else
