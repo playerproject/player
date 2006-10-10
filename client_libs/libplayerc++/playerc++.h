@@ -1966,6 +1966,20 @@ class PowerProxy : public ClientProxy
     /// Returns the current charge.
     double GetCharge() const { return GetVar(mDevice->charge); };
 
+    /// Returns the percent of power
+    double GetPercent() const {return GetVar(mDevice->percent); };
+
+    /// Returns the joules
+    double GetJoules() const {return GetVar(mDevice->joules); };
+
+    /// Returns the watts
+    double GetWatts() const {return GetVar(mDevice->watts); };
+
+    /// Returns whether charging is taking place
+    bool GetCharging() const {return GetVar(mDevice->charging);};
+
+    // Return whether the power data is valid
+    bool IsValid() const {return GetVar(mDevice->valid);};
 };
 
 /**
