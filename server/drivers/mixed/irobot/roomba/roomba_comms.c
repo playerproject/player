@@ -472,3 +472,44 @@ roomba_print(roomba_comm_t* r)
          r->voltage, r->current, r->temperature, r->charge, r->capacity);
 
 }
+
+int roomba_set_song(roomba_comm_t* r, unsigned char songNumber, unsigned char songLength, unsigned char *notes, unsigned char *noteLengths)
+{
+  int size = 2*songLength+3;
+  unsigned char cmdbuf[size];
+  unsigned char i;
+
+  cmdbuf[0] = ROOMBA_OPCODE_SONG;
+  cmdbuf[1] = songNumber;
+  cmdbuf[2] = songLength;
+
+  for (i=0; i < songLength; i++)
+  {
+    cmdbuf[3+(2*i)] = notes[i];
+    cmdbuf[3+(2*i)+1] = noteLengths[i];
+  }
+
+  if(write(r->fd, cmdbuf, size) < 0)
+  {
+    perror("roomba_set_song():write():");
+    return(-1);
+  }
+  else
+    return(0);
+}
+
+int roomba_play_song(roomba_comm_t *r, unsigned char songNumber)
+{
+  unsigned char cmdbuf[2];
+
+  cmdbuf[0] = ROOMBA_OPCODE_PLAY;
+  cmdbuf[1] = songNumber;
+
+  if(write(r->fd, cmdbuf, 2) < 0)
+  {
+    perror("roomba_set_song():write():");
+    return(-1);
+  }
+  else
+    return(0);
+}

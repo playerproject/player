@@ -57,6 +57,11 @@ The roomba driver provides the following device interfaces:
 - @ref interface_bumper
   - This interface returns bumper data (PLAYER_BUMPER_DATA_STATE).
 
+- @ref interface_opaque
+  - This driver supports programming and playing songs. 
+  - Play song data format in bytes: [1][song_number]
+  - Program song data format in bytes: [2][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n]. 
+
 @par Supported configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
@@ -78,11 +83,12 @@ The roomba driver provides the following device interfaces:
 driver
 (
   name "roomba"
-  provides ["position2d:0" "power:0" "bumper:0"]
+  provides ["position2d:0" "power:0" "bumper:0" "ir:0" "opaque:0"]
   port "/dev/ttyS2"
   safe 1
 )
 @endverbatim
+
 
 @todo
 - Add support for IRs, vacuum motors, etc.
@@ -130,6 +136,7 @@ class Roomba : public Driver
     player_devaddr_t power_addr;
     player_devaddr_t bumper_addr;
     player_devaddr_t ir_addr;
+    player_devaddr_t opaque_addr;
 
     // The underlying roomba object
     roomba_comm_t* roomba_dev;
@@ -154,6 +161,7 @@ Roomba::Roomba(ConfigFile* cf, int section)
   memset(&this->power_addr,0,sizeof(player_devaddr_t));
   memset(&this->bumper_addr,0,sizeof(player_devaddr_t));
   memset(&this->ir_addr,0,sizeof(player_devaddr_t));
+  memset(&this->opaque_addr,0,sizeof(player_devaddr_t));
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -193,6 +201,17 @@ Roomba::Roomba(ConfigFile* cf, int section)
                         PLAYER_IR_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->ir_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a Sound interface?
+  if(cf->ReadDeviceAddr(&(this->opaque_addr), section, "provides",
+                        PLAYER_OPAQUE_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->opaque_addr) != 0)
     {
       this->SetError(-1);
       return;
@@ -321,7 +340,6 @@ Roomba::Main()
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
          (void*)&irdata, sizeof(irdata), NULL);
 
-
      usleep(CYCLE_TIME_US);
   }
 }
@@ -349,6 +367,14 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
       PLAYER_ERROR("failed to set speeds to roomba");
     }
     return(0);
+  }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+        PLAYER_POSITION2D_REQ_MOTOR_POWER,
+        this->position_addr))
+  {
+    this->Publish(this->position_addr, resp_queue,
+        PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
+    return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                 PLAYER_POSITION2D_REQ_GET_GEOM,
@@ -419,6 +445,44 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
                   (void*)&poses, sizeof(poses), NULL);
     return(0);
   }
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,
+                                    PLAYER_OPAQUE_CMD,
+                                    this->opaque_addr))
+  {
+    player_opaque_data_t opaque_data;
+
+    opaque_data = *(player_opaque_data_t*)data;
+
+    // Play Command
+    if (opaque_data.data[0] == 1 )
+    {
+      uint8_t song_index;
+
+      song_index = opaque_data.data[1];
+
+      roomba_play_song(this->roomba_dev, song_index);
+    }
+    // Program song command
+    else if (opaque_data.data[0] == 2)
+    {
+      uint8_t index = opaque_data.data[1];
+      uint8_t length = opaque_data.data[2];
+      uint8_t notes[length];
+      uint8_t note_lengths[length];
+
+      for (unsigned int i=0; i<length; i++)
+      {
+        notes[i] = opaque_data.data[3+i*2];
+        note_lengths[i] = opaque_data.data[4+i*2];
+      }
+
+      roomba_set_song(this->roomba_dev, index, length, 
+          notes, note_lengths);
+    }
+
+    return 0;
+  }
+
   else
     return(-1);
 }
