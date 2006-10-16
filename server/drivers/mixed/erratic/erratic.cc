@@ -1282,7 +1282,7 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 	// throttle back on commands
 	int ms = getms();
 	if (mcount == 0) mcount = ms-200;
-	if (ms < mcount + 100)				// at least 100 ms have to elapse
+	if (ms < mcount + 50)					// at least 100 ms have to elapse
 		return;
 	mcount = ms;
 
