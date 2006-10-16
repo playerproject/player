@@ -129,6 +129,7 @@ class ErraticMotorPacket;
 class Erratic : public Driver 
 {
   private:
+  int mcount;
     player_erratic_data_t erratic_data;
 
     player_devaddr_t position_id;
