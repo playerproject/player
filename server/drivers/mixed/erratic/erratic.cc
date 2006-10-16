@@ -214,6 +214,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 
 	// intialise members
 	motor_packet = NULL;
+  mcount = 0;
 
 	// Do we create a robot position interface?
 	if(cf->ReadDeviceAddr(&(this->position_id), section, "provides", PLAYER_POSITION2D_CODE, -1, NULL) == 0) {
@@ -1254,6 +1255,14 @@ Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
 }
 
 
+// function to get the time in ms
+int getms()
+{
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	return tv.tv_sec*1000 + tv.tv_usec/1000;
+}
+
 
 // Handles one Player command detailing a velocity
 void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
@@ -1264,11 +1273,18 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 	unsigned char motorcommand[4];
 	ErraticPacket *motorpacket;
 
-	speedDemand = (int)rint(position_cmd.vel.px * 1e3);
+	speedDemand = (int)rint(posaition_cmd.vel.px * 1e3);
 	turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
 
 	//speedDemand = 0;
 	//turnRateDemand = 768;
+
+	// throttle back on commands
+	int ms = getms();
+	if (mcount == 0) mcount = ms-200;
+	if (ms < mcount + 100)				// at least 100 ms have to elapse
+		return;
+	mcount = ms;
 
 	//if (debug_mode)
 	//	printf("Will VW, %i and %i\n", speedDemand, turnRateDemand);
