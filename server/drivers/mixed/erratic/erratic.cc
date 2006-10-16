@@ -1273,7 +1273,7 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 	unsigned char motorcommand[4];
 	ErraticPacket *motorpacket;
 
-	speedDemand = (int)rint(posaition_cmd.vel.px * 1e3);
+	speedDemand = (int)rint(position_cmd.vel.px * 1e3);
 	turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
 
 	//speedDemand = 0;
