@@ -101,6 +101,7 @@ Relay_Register(DriverTable* table)
 
 int Relay::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, hdr->subtype, data, hdr->size);
+  //Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, hdr->subtype, data, hdr->size);
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, data, hdr->size);
   return 0;
 }
