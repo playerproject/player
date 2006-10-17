@@ -498,7 +498,8 @@ int roomba_set_song(roomba_comm_t* r, unsigned char songNumber, unsigned char so
     return(0);
 }
 
-int roomba_play_song(roomba_comm_t *r, unsigned char songNumber)
+int 
+roomba_play_song(roomba_comm_t *r, unsigned char songNumber)
 {
   unsigned char cmdbuf[2];
 
@@ -513,3 +514,40 @@ int roomba_play_song(roomba_comm_t *r, unsigned char songNumber)
   else
     return(0);
 }
+
+int
+roomba_vacuum(roomba_comm_t *r, int state)
+{
+  unsigned char cmdbuf[2];
+
+  cmdbuf[0] = ROOMBA_OPCODE_MOTORS;
+  cmdbuf[1] = state;
+
+  if (write(r->fd, cmdbuf, 2) < 0)
+  {
+    perror("roomba_vacuum():write():");
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+roomba_set_leds(roomba_comm_t *r, uint8_t dirt_detect, uint8_t max, uint8_t clean, uint8_t spot, uint8_t status, uint8_t power_color, uint8_t power_intensity )
+{
+  unsigned char cmdbuf[5];
+  cmdbuf[0] = ROOMBA_OPCODE_LEDS;
+  cmdbuf[1] = dirt_detect | max<<1 | clean<<2 | spot<<3 | status<<4;
+  cmdbuf[2] = power_color;
+  cmdbuf[3] = power_intensity;
+
+  printf("Set LEDS[%d][%d][%d]\n",cmdbuf[1], cmdbuf[2], cmdbuf[3]);
+  if (write(r->fd, cmdbuf, 4) < 0)
+  {
+    perror("roomba_set_leds():write():");
+    return -1;
+  }
+
+  return 0;
+}
+

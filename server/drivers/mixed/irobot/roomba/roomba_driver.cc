@@ -58,9 +58,10 @@ The roomba driver provides the following device interfaces:
   - This interface returns bumper data (PLAYER_BUMPER_DATA_STATE).
 
 - @ref interface_opaque
-  - This driver supports programming and playing songs. 
-  - Play song data format in bytes: [1][song_number]
-  - Program song data format in bytes: [2][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n]. 
+  - This driver supports programming song, playing songs, and setting the LEDs. 
+  - Play song data format in bytes: [0][song_number]
+  - Program song data format in bytes: [1][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n]. 
+  - Set LEDS format in bytes: [2][dirt_dectect(0/1)][max_bool(0/1)][clean(0/1)][spot(0/1)][status(0=off,1=red,2=green,3=amber)][power_color(0-255)][power_intensity(0-255)]
 
 @par Supported configuration requests
 
@@ -137,6 +138,7 @@ class Roomba : public Driver
     player_devaddr_t bumper_addr;
     player_devaddr_t ir_addr;
     player_devaddr_t opaque_addr;
+    player_devaddr_t gripper_addr;
 
     // The underlying roomba object
     roomba_comm_t* roomba_dev;
@@ -162,6 +164,7 @@ Roomba::Roomba(ConfigFile* cf, int section)
   memset(&this->bumper_addr,0,sizeof(player_devaddr_t));
   memset(&this->ir_addr,0,sizeof(player_devaddr_t));
   memset(&this->opaque_addr,0,sizeof(player_devaddr_t));
+  //memset(&this->gripper_addr,0,sizeof(player_devaddr_t));
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -207,11 +210,22 @@ Roomba::Roomba(ConfigFile* cf, int section)
     }
   }
 
-  // Do we create a Sound interface?
+  // Do we create a Opaque interface?
   if(cf->ReadDeviceAddr(&(this->opaque_addr), section, "provides",
                         PLAYER_OPAQUE_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->opaque_addr) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a gripper interface?
+  if(cf->ReadDeviceAddr(&(this->gripper_addr), section, "provides",
+                        PLAYER_GRIPPER_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->gripper_addr) != 0)
     {
       this->SetError(-1);
       return;
@@ -236,6 +250,10 @@ Roomba::Setup()
     PLAYER_ERROR("failed to connect to roomba");
     return(-1);
   }
+
+  /*printf("HERE\n");
+  roomba_set_leds(this->roomba_dev, 1, 0, 1, 0, 2, 128, 255);
+  */
 
   this->StartThread();
 
@@ -339,6 +357,38 @@ Roomba::Main()
      this->Publish(this->ir_addr, NULL,
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
          (void*)&irdata, sizeof(irdata), NULL);
+
+
+     ////////////////////////////
+     // Update Gripper data
+     player_gripper_data_t gripperdata;
+     memset(&gripperdata,0,sizeof(gripperdata));
+
+     gripperdata.state=this->roomba_dev->overcurrent_vacuum;
+     gripperdata.beams=this->roomba_dev->dirtdetector_right+this->roomba_dev->dirtdetector_left;
+     gripperdata.stored=0;
+
+     this->Publish(this->gripper_addr, NULL,
+         PLAYER_MSGTYPE_DATA,
+         PLAYER_GRIPPER_DATA_STATE,
+         (void*) &gripperdata, sizeof(gripperdata), NULL);
+
+     ////////////////////////////
+     // Update Opaque-Control data
+     player_opaque_data_t cpdata;
+     memset(&cpdata,0,sizeof(cpdata));
+
+     cpdata.data_count=5;
+
+     cpdata.data[0]=this->roomba_dev->button_max;
+     cpdata.data[1]=this->roomba_dev->button_clean;
+     cpdata.data[2]=this->roomba_dev->button_spot;
+     cpdata.data[3]=this->roomba_dev->button_power;
+     cpdata.data[4]=this->roomba_dev->remote_opcode;
+
+     this->Publish(this->opaque_addr, NULL,
+         PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
+         (void*)&cpdata, sizeof(cpdata), NULL);
 
      usleep(CYCLE_TIME_US);
   }
@@ -449,12 +499,17 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
                                     PLAYER_OPAQUE_CMD,
                                     this->opaque_addr))
   {
+    printf("Opaque\n");
     player_opaque_data_t opaque_data;
 
+    printf("1\n");
     opaque_data = *(player_opaque_data_t*)data;
 
+    printf("2\n");
+    printf("Opaque Command\n");
+
     // Play Command
-    if (opaque_data.data[0] == 1 )
+    if (opaque_data.data[0] == 0 )
     {
       uint8_t song_index;
 
@@ -463,7 +518,7 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
       roomba_play_song(this->roomba_dev, song_index);
     }
     // Program song command
-    else if (opaque_data.data[0] == 2)
+    else if (opaque_data.data[0] == 1)
     {
       uint8_t index = opaque_data.data[1];
       uint8_t length = opaque_data.data[2];
@@ -479,10 +534,47 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
       roomba_set_song(this->roomba_dev, index, length, 
           notes, note_lengths);
     }
+    // Set the LEDs
+    else if (opaque_data.data[0] == 2)
+    {
+      printf("Setting the LEDS\n");
+      uint8_t dirt_detect = opaque_data.data[1] == 0 ? 0 : 1;
+      uint8_t max = opaque_data.data[2] == 0 ? 0 : 1;
+      uint8_t clean = opaque_data.data[3] == 0 ? 0 : 1;
+      uint8_t spot = opaque_data.data[4] == 0 ? 0 : 1;
+      uint8_t status = opaque_data.data[5];
+      uint8_t power_color = opaque_data.data[6];
+      uint8_t power_intensity = opaque_data.data[7];
+
+      if (status > 3)
+        status = 3;
+
+      if (roomba_set_leds(this->roomba_dev, dirt_detect, max, clean, spot, 
+            status, power_color, power_intensity) < 0)
+      {
+        PLAYER_ERROR("failed to set roomba leds");
+        return -1;
+      }
+    }
 
     return 0;
   }
-
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRIPPER_CMD_OPEN,
+                                 this->gripper_addr))
+  {
+    roomba_vacuum(this->roomba_dev,7);
+    return 0;
+  }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
+                                 PLAYER_GRIPPER_CMD_CLOSE,
+                                 this->gripper_addr))
+  {
+    roomba_vacuum(this->roomba_dev,0);
+    return 0;
+  }
   else
+  {
     return(-1);
+  }
 }
