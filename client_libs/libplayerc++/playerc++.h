@@ -946,6 +946,37 @@ class HealthProxy : public ClientProxy
 
 
 /**
+The @p ImuProxy class is used to control an @ref interface_imu
+device.
+ */
+class ImuProxy : public ClientProxy
+{
+
+	private:
+
+		void Subscribe(uint aIndex);
+		void Unsubscribe();
+
+    // libplayerc data structure
+		playerc_imu_t *mDevice;
+
+	public:
+
+    /// Constructor
+		ImuProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+		~ImuProxy();
+
+    /// get the processed pos of the imu
+		player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
+    /// get the raw values
+		player_imu_data_calib_t GetRawValues() const
+		{ return GetVar(mDevice->calib_data); };
+
+};
+
+
+/**
 The @p IrProxy class is used to control an @ref interface_ir
 device.
 */
@@ -2379,6 +2410,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::ImuProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::IrProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LaserProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::LimbProxy& c);
