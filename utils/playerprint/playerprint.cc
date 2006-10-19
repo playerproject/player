@@ -46,6 +46,7 @@ playerprint can print out data for the following kinds of devices:
 - @ref interface_dio
 - @ref interface_fiducial
 - @ref interface_gripper
+- @ref interface_imu
 - @ref interface_ir
 - @ref interface_laser
 - @ref interface_limb
@@ -197,6 +198,9 @@ main(int argc, char **argv)
     case PLAYER_GRIPPER_CODE:
       cp = (ClientProxy*)new GripperProxy(&client,g_index);
       break;
+    case PLAYER_IMU_CODE:
+      cp = (ClientProxy*)new ImuProxy(&client,g_index);
+      break;
     case PLAYER_IR_CODE:
       cp = (ClientProxy*)new IrProxy(&client,g_index);
       break;
@@ -282,6 +286,9 @@ main(int argc, char **argv)
         break;
       case PLAYER_GRIPPER_CODE:
         std::cout << *reinterpret_cast<GripperProxy *> (cp);
+        break;
+      case PLAYER_IMU_CODE:
+        std::cout << *reinterpret_cast<ImuProxy *> (cp);
         break;
       case PLAYER_IR_CODE:
         std::cout << *reinterpret_cast<IrProxy *> (cp);

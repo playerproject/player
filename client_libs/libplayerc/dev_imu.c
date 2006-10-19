@@ -78,7 +78,6 @@ void playerc_imu_putmsg (playerc_imu_t *device,
 			 void *data)
 {
 //    int i, j;
-	
     if (header->type == PLAYER_MSGTYPE_DATA) 
 	switch (header->subtype)
 	{

@@ -41,6 +41,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               graphics3dproxy.cc \
                               gripperproxy.cc \
                               healthproxy.cc \
+                              imuproxy.cc \
                               irproxy.cc \
                               laserproxy.cc \
                               limbproxy.cc \
