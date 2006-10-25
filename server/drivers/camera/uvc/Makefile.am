@@ -5,5 +5,5 @@ if INCLUDE_CAMERAUVC
 noinst_LTLIBRARIES += libcamerauvc.la
 endif
 
-libcamerauvc_la_SOURCES = cameraUVC.cc utils.h v4l2uvc.h utils.c v4l2uvc.c
+libcamerauvc_la_SOURCES = cameraUVC.cc cameraUVC.h UvcInterface.h UvcInterface.cc
 
