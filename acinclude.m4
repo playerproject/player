@@ -172,7 +172,8 @@ fi
 
 PLAYER_ADD_DRIVER([cameracompress],[yes],[jpeglib.h],[],[-ljpeg])
 
-PLAYER_ADD_DRIVER([camerauvc],[yes],[linux/videodev2.h],[],[])
+PLAYER_ADD_DRIVER([camerauvc],[yes],["linux/types.h linux/time.h linux/videodev2.h"],[],[],[],[],[[#include <linux/types.h>
+#include <linux/time.h>]])
 
 PLAYER_ADD_DRIVER([camerav4l],[yes],[linux/videodev.h],[],[])
 
