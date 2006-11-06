@@ -36,6 +36,10 @@
 #define HASH_LEN (MD5_DIGEST_LENGTH / sizeof(unsigned int))
 #endif
 
+#if 0
+void draw_cspace(plan_t* plan, const char* fname);
+#endif
+
 // Create a planner
 plan_t *plan_alloc(double abs_min_radius, double des_min_radius,
                    double max_radius, double dist_penalty)
@@ -245,6 +249,62 @@ plan_update_cspace_naive(plan_t* plan)
 }
 
 #if 0
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
+void
+draw_cspace(plan_t* plan, const char* fname)
+{
+  GdkPixbuf* pixbuf;
+  GError* error = NULL;
+  guchar* pixels;
+  int p;
+  int paddr;
+  int i, j;
+
+  pixels = (guchar*)malloc(sizeof(guchar)*plan->size_x*plan->size_y*3);
+
+  p=0;
+  for(j=plan->size_y-1;j>=0;j--)
+  {
+    for(i=0;i<plan->size_x;i++,p++)
+    {
+      paddr = p * 3;
+      if(plan->cells[PLAN_INDEX(plan,i,j)].occ_state == 1)
+      {
+        pixels[paddr] = 255;
+        pixels[paddr+1] = 0;
+        pixels[paddr+2] = 0;
+      }
+      else if(plan->cells[PLAN_INDEX(plan,i,j)].occ_dist < plan->max_radius)
+      {
+        pixels[paddr] = 0;
+        pixels[paddr+1] = 0;
+        pixels[paddr+2] = 255;
+      }
+      else
+      {
+        pixels[paddr] = 255;
+        pixels[paddr+1] = 255;
+        pixels[paddr+2] = 255;
+      }
+    }
+  }
+
+  pixbuf = gdk_pixbuf_new_from_data(pixels, 
+                                    GDK_COLORSPACE_RGB,
+                                    0,8,
+                                    plan->size_x,
+                                    plan->size_y,
+                                    plan->size_x * 3,
+                                    NULL, NULL);
+  
+  gdk_pixbuf_save(pixbuf,fname,"png",&error,NULL);
+  gdk_pixbuf_unref(pixbuf);
+  free(pixels);
+}
+#endif
+
+#if 0
 void
 plan_update_cspace_dp(plan_t* plan)
 {
@@ -376,6 +436,9 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
     {
       // Reading from the cache file worked; we're done here.
       PLAYER_MSG1(2,"Successfully read c-space from file %s", cachefile);
+#if 0
+      draw_cspace(plan,"plan_cspace.png");
+#endif
       return;
     }
     PLAYER_MSG1(2, "Failed to read c-space from file %s", cachefile);
@@ -391,6 +454,10 @@ plan_update_cspace(plan_t *plan, const char* cachefile)
 #endif
 
   PLAYER_MSG0(2,"Done.");
+
+#if 0
+  draw_cspace(plan,"plan_cspace.png");
+#endif
 }
 
 #if HAVE_OPENSSL_MD5_H && HAVE_LIBCRYPTO
