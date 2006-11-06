@@ -100,6 +100,8 @@ void SIP::Fill(player_p2os_data_t* data)
   // lift
   data->lift.actuators_count = 1;
   data->lift.actuators[0].speed = 0;
+  data->lift.actuators[0].acceleration = -1;
+  data->lift.actuators[0].current = -1;
   if ((gripState & 0x10) && (gripState & 0x20) && !(gripState & 0x40))
   {
     // In this case, the lift is somewhere in between, so
@@ -193,6 +195,8 @@ void SIP::Fill(player_p2os_data_t* data)
   {
     data->actArray.actuators[ii].position = armJointPosRads[ii];
     data->actArray.actuators[ii].speed = 0;
+    data->actArray.actuators[ii].acceleration = -1;
+    data->actArray.actuators[ii].current = -1;
     // State is complex. It can be idle, moving, or stalled (we don't have brakes so don't need to worry about the brake state).
     // Moving means have moving state from status packet
     // Idle means have not moving state from status packet and are at target position

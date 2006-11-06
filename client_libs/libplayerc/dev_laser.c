@@ -258,6 +258,23 @@ playerc_laser_get_geom(playerc_laser_t *device)
   return 0;
 }
 
+// Get the laser IDentification information.  The writes the result into 
+// the proxy rather than returning it to the caller.
+int
+  playerc_laser_get_id (playerc_laser_t *device)
+{
+  player_laser_get_id_config_t config;
+
+  if (playerc_client_request(device->info.client, 
+                            &device->info,PLAYER_LASER_REQ_GET_ID,
+                            NULL, &config, sizeof(config)) < 0)
+    return -1;
+
+  device->laser_id = config.serial_number;
+  
+  return 0;
+}
+
 void playerc_laser_printout( playerc_laser_t * device, 
 			  const char* prefix )
 {

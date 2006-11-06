@@ -55,12 +55,22 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_actarray_geom_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_SPEED_REQ,
    (player_pack_fn_t)player_actarray_speed_config_pack},
+  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_ACCEL_REQ,
+   (player_pack_fn_t)player_actarray_accel_config_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD,
    (player_pack_fn_t)player_actarray_position_cmd_pack},
+  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_MULTI_POS_CMD,
+   (player_pack_fn_t)player_actarray_multi_position_cmd_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_SPEED_CMD,
    (player_pack_fn_t)player_actarray_speed_cmd_pack},
+  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD,  PLAYER_ACTARRAY_MULTI_SPEED_CMD,
+   (player_pack_fn_t)player_actarray_multi_speed_cmd_pack},
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD,
    (player_pack_fn_t)player_actarray_home_cmd_pack},
+  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CURRENT_CMD,
+   (player_pack_fn_t)player_actarray_current_cmd_pack},
+  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_MULTI_CURRENT_CMD,
+   (player_pack_fn_t)player_actarray_multi_current_cmd_pack},
 
   /* aio messages */
   {PLAYER_AIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE,
@@ -250,6 +260,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_laser_config_pack},
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_POWER,
     (player_pack_fn_t)player_laser_power_config_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_ID,
+    (player_pack_fn_t)player_laser_get_id_config_pack},
 
   /* limb messages */
   {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,

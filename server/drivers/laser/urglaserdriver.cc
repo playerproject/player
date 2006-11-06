@@ -45,6 +45,7 @@ Communication with the laser can be either via USB or RS232.
 - PLAYER_LASER_REQ_GET_GEOM
 - PLAYER_LASER_REQ_GET_CONFIG
 - PLAYER_LASER_REQ_SET_CONFIG
+- PLAYER_LASER_REQ_GET_ID
 
 @par Configuration file options
 
@@ -245,10 +246,19 @@ int URGLaserDriver::ProcessMessage(MessageQueue* resp_queue,
 		Publish(device_addr,resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype,&Geom,sizeof(Geom),NULL);
 	}
 	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-		PLAYER_LASER_REQ_GET_CONFIG,
-	   this->device_addr))
+		PLAYER_LASER_REQ_GET_CONFIG, this->device_addr))
 	{
 		Publish(device_addr,resp_queue, PLAYER_MSGTYPE_RESP_ACK,hdr->subtype,&Conf,sizeof(Conf),NULL);
+	}
+	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+		PLAYER_LASER_REQ_GET_ID, this->device_addr))
+	{
+	    player_laser_get_id_config_t player_ID_conf;
+	    // Get laser identification information
+	    player_ID_conf.serial_number = Laser.GetIDInfo ();
+		
+            Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, 
+		     &player_ID_conf, sizeof (player_ID_conf), NULL);
 	}
 	else
 	{

@@ -1711,6 +1711,9 @@ typedef struct
 
   /** ID for this scan */
   int scan_id;
+  
+  /** Laser IDentification information */
+  int laser_id;
 
 } playerc_laser_t;
 
@@ -1785,6 +1788,12 @@ caller.
 
 */
 int playerc_laser_get_geom(playerc_laser_t *device);
+
+/** @brief Get the laser IDentification information.
+
+This writes the result into the proxy rather than returning it to the
+caller. */
+int playerc_laser_get_id (playerc_laser_t *device);
 
 /** @brief Print a human-readable summary of the laser state on
     stdout. */

@@ -239,7 +239,7 @@ bool urg_laser::PortOpen()
 
 
 int 
-urg_laser::GetReadings(urg_laser_readings_t * readings)
+  urg_laser::GetReadings(urg_laser_readings_t * readings)
 {
   unsigned char Buffer[11];
   memset(Buffer,0,11);
@@ -299,4 +299,66 @@ urg_laser::GetReadings(urg_laser_readings_t * readings)
   }
 
   return 0;
+}
+
+int 
+  urg_laser::GetIDInfo ()
+{
+  unsigned char Buffer [18];
+  memset (Buffer, 0, 18);
+  int i;
+  
+  if (!PortOpen ())
+    return -3;
+
+  tcflush (fileno( laser_port), TCIFLUSH);
+  // send the command
+  fprintf (laser_port, "V\n");
+
+  int file = fileno (laser_port);
+
+  // check the returned command
+  ReadUntil (file, Buffer, 2, -1);
+
+  if (strncmp ((const char *) Buffer, "V", 1))
+  {
+    printf ("Error reading command result: %s\n", Buffer);
+    tcflush (fileno (laser_port), TCIFLUSH);
+    return (-1);
+  }
+
+  // check the returned status
+  ReadUntil (file, Buffer, 2, -1);
+  
+  if (Buffer[0] != '0')
+    return Buffer[0] - '0';
+
+  Buffer[0] = 0;
+  // Read the rest of the values
+  for (i = 0; i < 4; i++)
+  {
+    do 
+    {
+      ReadUntil (file, &Buffer[0], 1, -1);
+    } while (Buffer[0] != 0xa);
+  }
+  
+  // Read "SERI:H" 
+  ReadUntil (file, Buffer, 6, -1);
+  // Read the serial number value
+  for (i = 0; ; i++)
+  {
+    ReadUntil (file, &Buffer[i], 1, -1);
+    if (Buffer[i] == 0xa)
+      break;
+  }
+  
+  int id = atol ((const char*)Buffer);
+//  Buffer[i]='\0';
+//  printf ("Read: %s %ld\n",Buffer, id);
+
+  // Read the last LF
+  ReadUntil (file, Buffer, 1, -1);
+
+  return id;
 }
