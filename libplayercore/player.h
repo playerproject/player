@@ -526,13 +526,24 @@ The actuator array interface provides access to an array of actuators.
 #define PLAYER_ACTARRAY_GET_GEOM_REQ      3
 /** Request subtype: speed */
 #define PLAYER_ACTARRAY_SPEED_REQ         4
+/** Request subtype: acceleration */
+#define PLAYER_ACTARRAY_ACCEL_REQ         5
 
 /** Command subtype: position */
 #define PLAYER_ACTARRAY_POS_CMD           1
+/** Command subtype: position for all the actuators in the array */
+#define PLAYER_ACTARRAY_MULTI_POS_CMD     2
 /** Command subtype: speed */
-#define PLAYER_ACTARRAY_SPEED_CMD         2
+#define PLAYER_ACTARRAY_SPEED_CMD         3
+/** Command subtype: speed for all the actuators in the array */
+#define PLAYER_ACTARRAY_MULTI_SPEED_CMD   4
 /** Command subtype: home */
-#define PLAYER_ACTARRAY_HOME_CMD          3
+#define PLAYER_ACTARRAY_HOME_CMD          5
+/** Command subtype: current */
+#define PLAYER_ACTARRAY_CURRENT_CMD       6
+/** Command subtype: current for all the actuators in the array */
+#define PLAYER_ACTARRAY_MULTI_CURRENT_CMD 7
+
 
 /** Data subtype: state */
 #define PLAYER_ACTARRAY_DATA_STATE        1
@@ -544,6 +555,10 @@ typedef struct player_actarray_actuator
   float position;
   /** The speed of the actuator in m/s or rad/s depending on the type. */
   float speed;
+  /** The acceleration of the actuator in m/s^2 or rad/s^2 depending on the type. */
+  float acceleration;
+  /** The current of the actuator in A. */
+  float current;
   /** The current state of the actuator. */
   uint8_t state;
 } player_actarray_actuator_t;
@@ -607,36 +622,84 @@ typedef struct player_actarray_geom
   player_orientation_3d_t base_orientation;
 } player_actarray_geom_t;
 
+
 /** @brief Command: Joint position control (@ref PLAYER_ACTARRAY_POS_CMD)
 
-Tells a joint to attempt to move to a requested position. */
+Tells a joint/actuator to attempt to move to a requested position. */
 typedef struct player_actarray_position_cmd
 {
-  /** The joint to command. */
+  /** The joint/actuator to command. */
   int32_t joint;
   /** The position to move to. */
   float position;
 } player_actarray_position_cmd_t;
 
+/** @brief Command: Multiple Joint position control (@ref PLAYER_ACTARRAY_MULTI_POS_CMD)
+
+Tells all joints/actuators to attempt to move to the given positions. */
+typedef struct player_actarray_multi_position_cmd
+{
+  /** The number of actuators in the array. */
+  uint32_t actuators_count;
+  /** The positions for each joint/actuator. */
+  float positions[PLAYER_ACTARRAY_NUM_ACTUATORS];
+} player_actarray_multi_position_cmd_t;
+
 /** @brief Command: Joint speed control (@ref PLAYER_ACTARRAY_SPEED_CMD)
 
-Tells a joint to attempt to move at a requested speed. */
+Tells a joint/actuator to attempt to move with the given speed. */
 typedef struct player_actarray_speed_cmd
 {
-  /** The joint to command. */
+  /** The joint/actuator to command. */
   int32_t joint;
-  /** The speed to move at. */
+  /** The speed to move with. */
   float speed;
 } player_actarray_speed_cmd_t;
 
+/** @brief Command: Multiple Joint speed control (@ref PLAYER_ACTARRAY_MULTI_SPEED_CMD)
+
+Tells all joints/actuators to attempt to move with the given velocities. */
+typedef struct player_actarray_multi_speed_cmd
+{
+  /** The number of actuators in the array. */
+  uint32_t actuators_count;
+  /** The speed to move with. */
+  float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS];
+} player_actarray_multi_speed_cmd_t;
+
 /** @brief Command: Joint home (@ref PLAYER_ACTARRAY_HOME_CMD)
 
-Tells a joint (or the whole array) to go to home position. */
+Tells a joint/actuator (or the whole array) to go to home position. */
 typedef struct player_actarray_home_cmd
 {
-  /** The joint to command - set to -1 to command all. */
+  /** The joint/actuator to command - set to -1 to command all. */
   int32_t joint;
 } player_actarray_home_cmd_t;
+
+/** @brief Command: Joint current control (@ref PLAYER_ACTARRAY_CURRENT_CMD)
+
+Tells a joint/actuator to attempt to move with the given current. */
+typedef struct player_actarray_current_cmd
+{
+  /** The joint/actuator to command - set to -1 to command all. */
+  int32_t joint;
+  /** The current to move with. */
+  float current;
+} player_actarray_current_cmd_t;
+
+/** @brief Command: Multiple Joint current control (@ref PLAYER_ACTARRAY_MULTI_CURRENT_CMD)
+
+Tells all joints/actuators to attempt to move with the given current. */
+typedef struct player_actarray_multi_current_cmd
+{
+  /** The number of actuators in the array. */
+  uint32_t actuators_count;
+  /** The current for the motors of the whole array */
+  float currents[PLAYER_ACTARRAY_NUM_ACTUATORS];
+} player_actarray_multi_current_cmd_t;
+
+
+
 
 /** @brief Request/reply: Power.
 
@@ -653,10 +716,10 @@ typedef struct player_actarray_power_config
 /** @brief Request/reply: Brakes.
 
 Send a @ref PLAYER_ACTARRAY_BRAKES_REQ request to turn the brakes of all
-actuators in the array that have them on or off. Null response.*/
+actuators in the array (that have them) on or off. Null response.*/
 typedef struct player_actarray_brakes_config
 {
-  /** Brakes setting; 0 for off, 1 for on. */
+  /** Brake setting; 0 for off, 1 for on. */
   uint8_t value;
 } player_actarray_brakes_config_t;
 
@@ -668,9 +731,24 @@ typedef struct player_actarray_speed_config
 {
   /** Joint to set speed for. */
   int32_t joint;
-  /** Speed setting in mrad/s. */
+  /** Speed setting in m/s or mrad/s. */
   float speed;
 } player_actarray_speed_config_t;
+
+
+/** @brief Request/reply: Acceleration.
+
+Send a @ref PLAYER_ACTARRAY_ACCEL_REQ request to set the acceleration of a joint for
+all subsequent movements. Null response. */
+typedef struct player_actarray_accel_config
+{
+  /** Joint to set acceleration for. */
+  int32_t joint;
+  /** Acceleration setting in m/s^2 or mrad/s^2. */
+  float accel;
+} player_actarray_accel_config_t;
+
+
 /** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
@@ -2417,6 +2495,8 @@ of scan width and angular resolution.
 #define PLAYER_LASER_REQ_GET_CONFIG   3
 /** Request/reply subtype: set power */
 #define PLAYER_LASER_REQ_POWER        4
+/** Request/reply subtype: get IDentification information */
+#define PLAYER_LASER_REQ_GET_ID       5
 
 /** @brief Data: scan (@ref PLAYER_LASER_DATA_SCAN)
 
@@ -2500,6 +2580,16 @@ typedef struct player_laser_power_config
   /** FALSE to turn laser off, TRUE to turn laser on */
   uint8_t state;
 } player_laser_power_config_t;
+
+/** @brief Request/reply: Get IDentification information.
+
+Send a @ref PLAYER_LASER_REQ_GET_ID request to receive the laser's serial number
+or any other relevant identification information (assuming your hardware supports it). */
+typedef struct player_laser_get_id_config
+{
+  /** Laser device serial number. */
+  uint32_t serial_number;
+} player_laser_get_id_config_t;
 
 /** @} */
 
@@ -3384,7 +3474,7 @@ The @p pointcloud3d interface is used to transmit 3-D point cloud data
  * @{ */
 
 /** Maximum number of points that can be included in a data packet */
-#define PLAYER_POINTCLOUD3D_MAX_POINTS 8192
+#define PLAYER_POINTCLOUD3D_MAX_POINTS 32768
 
 /** Data subtype: state */
 #define PLAYER_POINTCLOUD3D_DATA_STATE 1

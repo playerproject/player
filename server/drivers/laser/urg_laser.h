@@ -4,7 +4,7 @@
 
 typedef struct urg_laser_readings
 {
-	unsigned short Readings[MAX_READINGS];
+    unsigned short Readings[MAX_READINGS];
 } urg_laser_readings_t;
 
 class urg_laser
@@ -22,7 +22,8 @@ class urg_laser
 		
 		bool PortOpen();
 
-		int GetReadings(urg_laser_readings_t * readings);
+		int GetReadings (urg_laser_readings_t * readings);
+		int GetIDInfo   ();
 		
 				
 	private:
