@@ -328,7 +328,7 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/CM_macros.h"],
+PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/ckd_alloc.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
@@ -356,7 +356,10 @@ PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([yarpimage],[yes],["yarp/os/all.h yarp/sig/all.h"],[],["-lYARP_sig -lYARP_OS"])
+save_ac_ext=$ac_ext
+ac_ext=cc # otherwise only C (and not C++) header files will work
+PLAYER_ADD_DRIVER([yarpimage],[yes],["yarp/os/all.h yarp/sig/all.h"],[],["-lYARP_sig -lYARP_OS -lACE"])
+ac_ext=$save_ac_ext
 
 dnl RFID support
 PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])

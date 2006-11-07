@@ -24,10 +24,10 @@
 */
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_yarp_image yarp_image
+/** @defgroup driver_yarp_image yarpimage
  * @brief Driver for connecting to a YARP server and getting an Image.
 
-The yarp_image driver connects to a YARP server using a specified port 
+The yarpimage driver connects to a YARP server using a specified port 
 name, gets image data, and puts it on a Player camera interface.
 
 @par Compile-time dependencies
@@ -72,12 +72,12 @@ name, gets image data, and puts it on a Player camera interface.
 @verbatim
 driver
 (
-  name "yarp_image"
+  name "yarpimage"
   provides ["camera:0"]
   # Set the port name
   carrier "tcp"
-  port "/images"
-  port "/viewer"
+  image_port "/images"
+  port "/player"
   image_format 1
 )
 @endverbatim
@@ -303,6 +303,7 @@ void Yarp_Image::RefreshData ()
 // Extra stuff for building a shared object.
 
 /* need the extern to avoid C++ name-mangling  */
+#if 0
 extern "C" {
     int player_driver_init (DriverTable* table)
     {
@@ -310,3 +311,4 @@ extern "C" {
         return(0);
     }
 }
+#endif
