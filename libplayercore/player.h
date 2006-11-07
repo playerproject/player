@@ -572,6 +572,8 @@ typedef struct player_actarray_data
   uint32_t actuators_count;
   /** The actuator data. */
   player_actarray_actuator_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  /** power state */
+  uint8_t motor_state;
 } player_actarray_data_t;
 
 /** @brief Actuator geometry */
@@ -640,7 +642,7 @@ Tells all joints/actuators to attempt to move to the given positions. */
 typedef struct player_actarray_multi_position_cmd
 {
   /** The number of actuators in the array. */
-  uint32_t actuators_count;
+  uint32_t positions_count;
   /** The positions for each joint/actuator. */
   float positions[PLAYER_ACTARRAY_NUM_ACTUATORS];
 } player_actarray_multi_position_cmd_t;
@@ -662,7 +664,7 @@ Tells all joints/actuators to attempt to move with the given velocities. */
 typedef struct player_actarray_multi_speed_cmd
 {
   /** The number of actuators in the array. */
-  uint32_t actuators_count;
+  uint32_t speeds_count;
   /** The speed to move with. */
   float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS];
 } player_actarray_multi_speed_cmd_t;
@@ -693,7 +695,7 @@ Tells all joints/actuators to attempt to move with the given current. */
 typedef struct player_actarray_multi_current_cmd
 {
   /** The number of actuators in the array. */
-  uint32_t actuators_count;
+  uint32_t currents_count;
   /** The current for the motors of the whole array */
   float currents[PLAYER_ACTARRAY_NUM_ACTUATORS];
 } player_actarray_multi_current_cmd_t;
