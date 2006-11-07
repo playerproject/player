@@ -883,6 +883,15 @@ complete description of the drivers that support this interface.
 @{
 */
 
+#define PLAYERC_ACTARRAY_NUM_ACTUATORS PLAYER_ACTARRAY_NUM_ACTUATORS
+#define PLAYERC_ACTARRAY_ACTSTATE_IDLE PLAYER_ACTARRAY_ACTSTATE_IDLE
+#define PLAYERC_ACTARRAY_ACTSTATE_MOVING PLAYER_ACTARRAY_ACTSTATE_MOVING
+#define PLAYERC_ACTARRAY_ACTSTATE_BRAKED PLAYER_ACTARRAY_ACTSTATE_BRAKED
+#define PLAYERC_ACTARRAY_ACTSTATE_STALLED PLAYER_ACTARRAY_ACTSTATE_STALLED
+#define PLAYERC_ACTARRAY_TYPE_LINEAR PLAYER_ACTARRAY_TYPE_LINEAR
+#define PLAYERC_ACTARRAY_TYPE_ROTARY PLAYER_ACTARRAY_TYPE_ROTARY
+
+
 /** @brief Actarray device data. */
 typedef struct
 {
@@ -891,9 +900,11 @@ typedef struct
 
   /** The number of actuators in the array. */
   uint32_t actuators_count;
-  /** The actuator data and geometry. */
+  /** The actuator data, geometry and motor state. */
   player_actarray_actuator_t actuators_data[PLAYER_ACTARRAY_NUM_ACTUATORS];
   player_actarray_actuatorgeom_t actuators_geom[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  /** Reports if the actuators are off (0) or on (1) */
+  uint8_t motor_state;
   /** The position of the base of the actarray. */
   player_point_3d_t base_pos;
   /** The orientation of the base of the actarray. */
@@ -919,11 +930,24 @@ int playerc_actarray_get_geom(playerc_actarray_t *device);
 /** @brief Command a joint in the array to move to a specified position. */
 int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position);
 
+/** @brief Command all joints in the array to move to specified positions. */
+int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float positions[PLAYER_ACTARRAY_NUM_ACTUATORS]);
+
 /** @brief Command a joint in the array to move at a specified speed. */
 int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed);
 
+/** @brief Command a joint in the array to move at a specified speed. */
+int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS]);
+
 /** @brief Command a joint (or, if joint is -1, the whole array) to go to its home position. */
 int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
+
+/** @brief Command a joint in the array to move with a specified current. */
+int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float current);
+
+/** @brief Command all joints in the array to move with specified currents. */
+int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float currents[PLAYER_ACTARRAY_NUM_ACTUATORS]);
+
 
 /** @brief Turn the power to the array on or off. Be careful
 when turning power on that the array is not obstructed from its home

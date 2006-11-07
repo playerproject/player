@@ -93,8 +93,11 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
     {
       device->actuators_data[i].position = data->actuators[i].position;
       device->actuators_data[i].speed = data->actuators[i].speed;
+      device->actuators_data[i].acceleration = data->actuators[i].acceleration;
       device->actuators_data[i].state = data->actuators[i].state;
+      device->actuators_data[i].current = data->actuators[i].current;
     }
+    device->motor_state = data->motor_state;
   }
   else
     PLAYERC_WARN2("skipping actarray message with unknown type/subtype: %d/%d\n",
@@ -115,7 +118,7 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
   for (ii = 0; ii < device->actuators_count; ii++)
   {
     device->actuators_geom[ii].type = geom.actuators[ii].type;
-	device->actuators_geom[ii].length = geom.actuators[ii].length;
+    device->actuators_geom[ii].length = geom.actuators[ii].length;
     device->actuators_geom[ii].orientation.proll = geom.actuators[ii].orientation.proll;
     device->actuators_geom[ii].orientation.ppitch = geom.actuators[ii].orientation.ppitch;
     device->actuators_geom[ii].orientation.pyaw = geom.actuators[ii].orientation.pyaw;
@@ -148,6 +151,21 @@ int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float p
                               &cmd, NULL);
 }
 
+// Command all joints in the array to move with a specified current
+int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float positions[PLAYER_ACTARRAY_NUM_ACTUATORS])
+{
+  player_actarray_multi_position_cmd_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  memcpy(&cmd.positions,positions, sizeof(float) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+  cmd.positions_count = device->actuators_count;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_ACTARRAY_MULTI_POS_CMD,
+                              &cmd, NULL);
+}
+
+
 // Command a joint in the array to move at a specified speed
 int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed)
 {
@@ -162,6 +180,22 @@ int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float spee
                               &cmd, NULL);
 }
 
+
+// Command all joints in the array to move with a specified current
+int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS])
+{
+  player_actarray_multi_speed_cmd_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  memcpy(&cmd.speeds,speeds,sizeof(float) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+  cmd.speeds_count = device->actuators_count;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_ACTARRAY_MULTI_SPEED_CMD,
+                              &cmd, NULL);
+}
+
+
 // Command a joint (or, if joint is -1, the whole array) to go to its home position
 int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint)
 {
@@ -172,6 +206,34 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint)
 
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_ACTARRAY_HOME_CMD,
+                              &cmd, NULL);
+}
+
+// Command a joint in the array to move with a specified current
+int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float current)
+{
+  player_actarray_current_cmd_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  cmd.joint = joint;
+  cmd.current = current;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_ACTARRAY_CURRENT_CMD,
+                              &cmd, NULL);
+}
+
+// Command all joints in the array to move with a specified current
+int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float currents[PLAYER_ACTARRAY_NUM_ACTUATORS])
+{
+  player_actarray_multi_current_cmd_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  memcpy(&cmd.currents,currents,sizeof(float) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+  cmd.currents_count = device->actuators_count;
+
+  return playerc_client_write(device->info.client, &device->info,
+                              PLAYER_ACTARRAY_MULTI_CURRENT_CMD,
                               &cmd, NULL);
 }
 
@@ -211,3 +273,19 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float s
                                 PLAYER_ACTARRAY_SPEED_REQ,
                                 &config, NULL, 0);
 }
+
+// Set the speed of a joint (-1 for all joints) for all subsequent movement commands
+int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float accel)
+{
+  player_actarray_accel_config_t config;
+
+  config.joint = joint;
+  config.accel = accel;
+
+  return playerc_client_request(device->info.client, &device->info,
+                                PLAYER_ACTARRAY_ACCEL_REQ,
+                                &config, NULL, 0);
+}
+
+
+
