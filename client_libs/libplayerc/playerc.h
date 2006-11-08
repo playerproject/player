@@ -960,6 +960,10 @@ int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable);
 /** @brief Set the speed of a joint (-1 for all joints) for all subsequent movement commands. */
 int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float speed);
 
+// Set the accelration of a joint (-1 for all joints) for all subsequent movement commands
+int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float accel);
+
+
 /** @} */
 /**************************************************************************/
 

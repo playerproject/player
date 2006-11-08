@@ -291,6 +291,25 @@ PLAYER_ADD_DRIVER([segwayrmp],[no],
   [$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
   [$SEGWAYRMP_EXTRA_LDFLAGS])
 
+dnl Where's AMTECM5?
+AC_ARG_WITH(amtecM5, [  --with-amtecM5=dir      Location of the AMTEC M5 headers and libraries],
+AMTECM5_DIR=$with_amtecM5,AMTECM5_DIR=NONE)
+if test "x$AMTECM5_DIR" = "xNONE" -o "x$AMTECM5_DIR" = "xno"; then
+  AMTECM5_HEADER="Device.h"
+  AMTECM5_EXTRA_CPPFLAGS=
+  AMTECM5_EXTRA_LDFLAGS="device.a ntcan.a util.a"
+else
+  AMTECM5_HEADER="$AMTECM5_DIR/Device/Device.h"
+  AMTECM5_EXTRA_CPPFLAGS="-I$AMTECM5_DIR/include -I$AMTECM5_DIR/Device"
+  AMTECM5_EXTRA_LDFLAGS="$AMTECM5_DIR/lib/device.a $AMTECM5_DIR/lib/libntcan.a $AMTECM5_DIR/lib/util.a"
+fi
+
+dnl PLAYER_ADD_DRIVER([amtecM5],[yes],[$AMTECM5_HEADER],[$AMTECM5_EXTRA_CPPFLAGS],[$AMTECM5_EXTRA_LDFLAGS])
+dnl PLAYER_ADD_DRIVER(name,default,[header],[cppadd],[ldadd],
+dnl                   [pkgvar],[pkg],[default-includes])
+
+AC_CHECK_FILE([$AMTECM5_HEADER],[PLAYER_ADD_DRIVER([amtecM5],[yes], [],[$AMTECM5_EXTRA_CPPFLAGS],[$AMTECM5_EXTRA_LDFLAGS])], [PLAYER_ADD_DRIVER([amtecM5],[no], [],[$AMTECM5_EXTRA_CPPFLAGS],[$AMTECM5_EXTRA_LDFLAGS])])
+
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])

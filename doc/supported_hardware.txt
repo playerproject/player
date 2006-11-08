@@ -134,7 +134,7 @@ PC-BOT</a></td>
 <td><a href="http://www.amtec-robotics.com/">Amtec</a></td>
 <td><a href="http://www.amtec-robotics.com/1275.html">PowerCube</a>
 pan-tilt unit</td>
-<td>@ref driver_amtecpowercube</td>
+<td>@ref driver_amtecpowercube <br> @ref driver_amtecM5 </td>
 </tr>
 
 <tr>

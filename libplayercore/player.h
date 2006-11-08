@@ -733,7 +733,7 @@ typedef struct player_actarray_speed_config
 {
   /** Joint to set speed for. */
   int32_t joint;
-  /** Speed setting in m/s or mrad/s. */
+  /** Speed setting in m/s or rad/s. */
   float speed;
 } player_actarray_speed_config_t;
 
@@ -746,7 +746,7 @@ typedef struct player_actarray_accel_config
 {
   /** Joint to set acceleration for. */
   int32_t joint;
-  /** Acceleration setting in m/s^2 or mrad/s^2. */
+  /** Acceleration setting in m/s^2 or rad/s^2. */
   float accel;
 } player_actarray_accel_config_t;
 

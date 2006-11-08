@@ -493,6 +493,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/wbr/Makefile
           server/drivers/mixed/wbr/914/Makefile
           server/drivers/position/Makefile
+          server/drivers/actarray/Makefile
           server/drivers/audio/Makefile
           server/drivers/audiodsp/Makefile
           server/drivers/audiomixer/Makefile
