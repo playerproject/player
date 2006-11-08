@@ -378,6 +378,7 @@ MessageQueue::Push(Message & msg, bool UseReserved)
       if(el->msg->Compare(msg) && (!el->msg->Ready () || !pull))
       {
         this->Remove(el);
+        delete el->msg;
         delete el;
         break;
       }
