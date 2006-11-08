@@ -433,8 +433,8 @@ player_init(int argc, char *argv[])
   assert(g_width>0);
   assert(g_height>0);
 
-  //playerc_client_datamode(g_client,PLAYER_DATAMODE_PULL); 
-  //playerc_client_set_replace_rule(g_client,-1,-1,PLAYER_MSGTYPE_DATA,-1,1);
+  playerc_client_datamode(g_client,PLAYER_DATAMODE_PULL); 
+  playerc_client_set_replace_rule(g_client,-1,-1,PLAYER_MSGTYPE_DATA,-1,1);
 }
 
 int
