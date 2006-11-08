@@ -290,6 +290,10 @@ void Yarp_Image_Register(DriverTable* table);
 void Mica2_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_AMTECM5
+void AmtecM5_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_RCORE_XBRIDGE
 void RCore_XBridge_Register(DriverTable* table);
 #endif
@@ -655,6 +659,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_MICA2
   Mica2_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_AMTECM5
+  AmtecM5_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_RCORE_XBRIDGE

@@ -1,4 +1,5 @@
 SUBDIRS = \
+actarray \
 base \
 audio \
 audiodsp \
