@@ -77,6 +77,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_wsn
 - @ref interface_imu
 - @ref interface_pointcloud3d
+- @ref interface_actarray
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -216,6 +217,9 @@ class WriteLog: public Driver
   
   // Write PointCloud3D data to file
   private: int WritePointCloud3d (player_msghdr_t* hdr, void *data);
+  
+  // Write Actarray data to file
+  private: int WriteActarray (player_msghdr_t* hdr, void *data);
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -720,6 +724,9 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_POINTCLOUD3D_CODE:
       retval = this->WritePointCloud3d (hdr, data);
+      break;
+    case PLAYER_ACTARRAY_CODE:
+      retval = this->WriteActarray (hdr, data);
       break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
@@ -1386,6 +1393,57 @@ WriteLog::WritePointCloud3d (player_msghdr_t* hdr, void *data)
                             pdata->points[i].point.px, 
                             pdata->points[i].point.py, 
                             pdata->points[i].point.pz);
+                    return (0);
+		}
+
+                default:
+                    return (-1);
+            }
+
+        default:
+            return (-1);
+    }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_actarray actarray format
+
+@brief Actarray log format
+
+The format for each @ref interface_actarray message is:
+    - actuators_count (int): the number of actuators in the array
+    - list of actuators; for each actuator:
+	- position (float)     : the position of the actuator
+	- speed (float)        : the speed of the actuator
+	- acceleration (float) : the acceleration of the actuator
+	- current (float)      : the current of the actuator
+	- state (byte)         : the current state of the actuator
+    - motor_state (byte): power state
+ */
+int
+WriteLog::WriteActarray (player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  // Check the type
+    switch(hdr->type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+            switch(hdr->subtype)
+            {
+                case PLAYER_ACTARRAY_DATA_STATE:
+		{
+		    player_actarray_data_t* pdata;
+                    pdata = (player_actarray_data_t*)data;
+		    fprintf (this->file, "%d ", pdata->actuators_count);
+		    for (i = 0; i < pdata->actuators_count; i++)
+			fprintf (this->file,"%f %f %f %f %d ",
+			    pdata->actuators[i].position, 
+			    pdata->actuators[i].speed, 
+			    pdata->actuators[i].acceleration, 
+			    pdata->actuators[i].current, 
+			    pdata->actuators[i].state);
+		    fprintf (this->file, "%d ", pdata->motor_state);
                     return (0);
 		}
 
