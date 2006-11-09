@@ -64,6 +64,7 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_imu
 - @ref interface_pointcloud3d
 - @ref interface_ptz
+- @ref interface_actarray
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -294,6 +295,12 @@ class ReadLog: public Driver
                          unsigned short type, unsigned short subtype,
                          int linenum,
                          int token_count, char **tokens, double time);
+
+  // Parse Actarray data
+  private: int ParseActarray (player_devaddr_t id,
+                              unsigned short type, unsigned short subtype,
+                              int linenum,
+                              int token_count, char **tokens, double time);
 #if 0
 
   // Parse position3d data
@@ -1169,6 +1176,9 @@ int ReadLog::ParseData(player_devaddr_t id,
       return this->ParsePTZ (id, type, subtype, linenum,
                             token_count, tokens, time);
 
+  else if (id.interf == PLAYER_ACTARRAY_CODE)
+      return this->ParseActarray (id, type, subtype, linenum,
+                                  token_count, tokens, time);
 #if 0
   else if (id.interf == PLAYER_POSITION3D_CODE)
     return this->ParsePosition3d(id, type, subtype, linenum,
@@ -1294,18 +1304,18 @@ int ReadLog::ParseFiducial(player_devaddr_t id, int linenum,
   for( int i = 0; i < fiducial_count; i++ )
   {
     data.fiducials[i].id = NINT16( atof(tokens[13*i + 7]) );
-  data.fiducials[i].pos[0] = NINT32(M_MM(atof(tokens[13*i+ 8])));
-  data.fiducials[i].pos[1] = NINT32(M_MM(atof(tokens[13*i+ 9])));
-  data.fiducials[i].pos[2] = NINT32(M_MM(atof(tokens[13*i+10])));
-  data.fiducials[i].rot[0] = NINT32(M_MM(atof(tokens[13*i+11])));
-  data.fiducials[i].rot[1] = NINT32(M_MM(atof(tokens[13*i+12])));
-  data.fiducials[i].rot[2] = NINT32(M_MM(atof(tokens[13*i+13])));
-  data.fiducials[i].upos[0] = NINT32(M_MM(atof(tokens[13*i+14])));
-  data.fiducials[i].upos[1] = NINT32(M_MM(atof(tokens[13*i+15])));
-  data.fiducials[i].upos[2] = NINT32(M_MM(atof(tokens[13*i+16])));
-  data.fiducials[i].urot[0] = NINT32(M_MM(atof(tokens[13*i+17])));
-  data.fiducials[i].urot[1] = NINT32(M_MM(atof(tokens[13*i+18])));
-  data.fiducials[i].urot[2] = NINT32(M_MM(atof(tokens[13*i+19])));
+    data.fiducials[i].pos[0] = NINT32(M_MM(atof(tokens[13*i+ 8])));
+    data.fiducials[i].pos[1] = NINT32(M_MM(atof(tokens[13*i+ 9])));
+    data.fiducials[i].pos[2] = NINT32(M_MM(atof(tokens[13*i+10])));
+    data.fiducials[i].rot[0] = NINT32(M_MM(atof(tokens[13*i+11])));
+    data.fiducials[i].rot[1] = NINT32(M_MM(atof(tokens[13*i+12])));
+    data.fiducials[i].rot[2] = NINT32(M_MM(atof(tokens[13*i+13])));
+    data.fiducials[i].upos[0] = NINT32(M_MM(atof(tokens[13*i+14])));
+    data.fiducials[i].upos[1] = NINT32(M_MM(atof(tokens[13*i+15])));
+    data.fiducials[i].upos[2] = NINT32(M_MM(atof(tokens[13*i+16])));
+    data.fiducials[i].urot[0] = NINT32(M_MM(atof(tokens[13*i+17])));
+    data.fiducials[i].urot[1] = NINT32(M_MM(atof(tokens[13*i+18])));
+    data.fiducials[i].urot[2] = NINT32(M_MM(atof(tokens[13*i+19])));
   }
 
   this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
@@ -2063,6 +2073,55 @@ int ReadLog::ParsePTZ (player_devaddr_t id,
             }
         default:
             PLAYER_ERROR1 ("unknown PTZ message type %d\n", type);
+            return (-1);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse Actarray data
+int ReadLog::ParseActarray (player_devaddr_t id, 
+                    	    unsigned short type, unsigned short subtype,
+                            int linenum,
+                            int token_count, char **tokens, double time)
+{
+    unsigned int i;
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_ACTARRAY_DATA_STATE:
+                {
+		    player_actarray_data_t data;
+		    data.actuators_count = atoi (tokens[7]);
+                    if (token_count < (int)(7+data.actuators_count))
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    for (i = 0; i < data.actuators_count; i++)
+		    {
+			player_actarray_actuator actuator;
+			actuator.position     = atof (tokens[8+i]);
+			actuator.speed        = atof (tokens[9+i]);
+			actuator.acceleration = atof (tokens[10+i]);
+			actuator.current      = atof (tokens[11+i]);
+			actuator.state        = atoi (tokens[12+i]);
+			data.actuators[i] = actuator;
+		    }
+		    actuators.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+                }
+		
+                default:
+                    PLAYER_ERROR1 ("unknown Actarray data subtype %d\n", subtype);
+                    return (-1);
+            }
+        default:
+            PLAYER_ERROR1 ("unknown Actarray message type %d\n", type);
             return (-1);
     }
 }
