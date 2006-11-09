@@ -2109,7 +2109,7 @@ int ReadLog::ParseActarray (player_devaddr_t id,
 			actuator.state        = atoi (tokens[12+i]);
 			data.actuators[i] = actuator;
 		    }
-		    actuators.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
+		    data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
 		    
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
