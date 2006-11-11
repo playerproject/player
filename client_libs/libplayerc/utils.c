@@ -114,6 +114,8 @@ const char *playerc_lookup_name(int code)
       return PLAYER_SIMULATION_STRING;
     case PLAYER_IMU_CODE:
       return PLAYER_IMU_STRING;
+    case PLAYER_POINTCLOUD3D_CODE:
+      return PLAYER_POINTCLOUD3D_STRING;
 
     default:
       break;
@@ -185,6 +187,8 @@ int playerc_lookup_code(const char *name)
     return PLAYER_SIMULATION_CODE;
   if (strcmp(name, PLAYER_IMU_STRING) == 0)
     return PLAYER_IMU_CODE;
+  if (strcmp(name, PLAYER_POINTCLOUD3D_STRING) == 0)
+    return PLAYER_POINTCLOUD3D_CODE;
   return -1;
 }
 
