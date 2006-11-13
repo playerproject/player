@@ -1625,6 +1625,26 @@ byte-aligned).
 /** Compression method: jpeg */
 #define PLAYER_CAMERA_COMPRESS_JPEG 1
 
+/** Request/reply subtype: set auto-illumination                          */
+#define PLAYER_CAMERA_REQ_SET_AUTOILLUMINATION     1
+/** Request/reply subtype: set modulation frequency                       */
+#define PLAYER_CAMERA_REQ_SET_MODULATION_FREQ      2
+/** Request/reply subtype: get modulation frequency                       */
+#define PLAYER_CAMERA_REQ_GET_MODULATION_FREQ      3
+/** Request/reply subtype: set integration time                           */
+#define PLAYER_CAMERA_REQ_SET_INTEGRATION_TIME     4
+/** Request/reply subtype: get integration time                           */
+#define PLAYER_CAMERA_REQ_GET_INTEGRATION_TIME     5
+/** Request/reply subtype: set threshold (eg. saturation, amplitude, etc) */
+#define PLAYER_CAMERA_REQ_SET_THRESHOLD            6
+/** Request/reply subtype: set IIR                                        */
+#define PLAYER_CAMERA_REQ_SET_TEMPORAL_IIR         7
+
+/** Threshold subtype: set saturation threshold */
+#define PLAYER_CAMERA_REQ_SET_SATURATION_THRESHOLD 1
+/** Threshold subtype: set amplitude threshold  */
+#define PLAYER_CAMERA_REQ_SET_AMPLITUDE_THRESHOLD  2
+
 /** @brief Data: state (@ref PLAYER_CAMERA_DATA_STATE) */
 typedef struct player_camera_data
 {
@@ -1650,6 +1670,75 @@ typedef struct player_camera_data
       to network byte ordering. */
   uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
 } player_camera_data_t;
+
+/** @brief Request: Set the auto-illumination option on/off.
+
+Send a @ref PLAYER_CAMERA_REQ_SET_AUTOILLUMINATION request to turn the 
+auto-illumination option on/off. Null response. */
+typedef struct player_camera_autoillumination_config
+{
+    /** Auto-illumination setting: 0=off, 1=on */
+    uint8_t value;
+} player_camera_autoillumination_config_t;
+
+/** @brief Request/reply: Set/Get the modulation frequency.
+
+The modulation frequency can be set using the @ref 
+PLAYER_CAMERA_REQ_SET_MODULATION_FREQ request (response will be null), and queried
+using a null @ref PLAYER_CAMERA_REQ_GET_MODULATION_FREQ request. */
+typedef struct player_camera_modulation_freq_config
+{
+    /** Modulation frequency setting. Note: The SwissRanger SR3000 employs the 
+       following values: 
+    	40MHz  -> 3.75 m, 
+    	30MHz  -> 5.0  m, 
+    	21MHz  -> 7.1  m, 
+    	20MHz  -> 7.5  m,
+    	19MHz  -> 7.9  m,
+    	10MHz  -> 15.0 m,
+    	6.6MHz -> 22.5 m,
+    	5MHz   -> 30.0 m.
+     */
+    uint8_t value;
+} player_camera_modulation_freq_config_t;
+
+/** @brief Request/reply: Set/Get the integration time.
+
+The integration time can be set using the @ref
+PLAYER_CAMERA_REQ_SET_INTEGRATION_TIME request (response will be null), and
+queried using a null @ref PLAYER_CAMERA_REQ_GET_INTEGRATION_TIME request. */
+typedef struct player_camera_integration_time_config {
+
+    /** Integration time setting: 0-255. */
+    uint8_t value;
+} player_camera_integration_time_config_t;
+
+/** @brief Request: Set various thresholds (such as amplitude or saturation).
+
+Send a @ref PLAYER_CAMERA_REQ_SET_THRESHOLD request, together with a subtype
+(@ref PLAYER_CAMERA_REQ_SET_SATURATION_THRESHOLD for saturaton or @ref
+PLAYER_CAMERA_REQ_SET_AMPLITUDE_THRESHOLD for amplitude) to set threshold
+values on the device. Null response. */
+typedef struct player_camera_threshold_config
+{
+    /** Threshold subtype */
+    uint8_t subtype;
+    /** Threshold value */
+    uint32_t value;
+} player_camera_threshold_config_t;
+
+/** @brief Request: Set the IIR values.
+
+Send a @ref PLAYER_CAMERA_REQ_SET_TEMPORAL_IIR request to change the
+temporal IIR values of the camera (where implemented). Null response. */
+typedef struct player_camera_iir_config
+{
+    /** static_delay value: 0.0-1.0. */
+    float static_delay;
+    /** dynamic_delay value: 0.0-1.0. */
+    float dynamic_delay;
+} player_camera_iir_config_t;
+
 
 /** @} */
 
