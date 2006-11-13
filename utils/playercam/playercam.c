@@ -62,6 +62,7 @@ $ playercam -i=1
 playercam can visualize data from devices that support the following
 colorspaces:
 - @ref PLAYER_CAMERA_FORMAT_MONO8
+- @ref PLAYER_CAMERA_FORMAT_MONO16
 - @ref PLAYER_CAMERA_FORMAT_RGB888
 
 Any time a user clicks on the image display, the pixel location and color
@@ -176,7 +177,7 @@ print_usage()
          "  -b <index>     : the index of the blobfinder\n"
          "  -r <rate>      : the refresh rate of the video\n"
          "  -t <transport> : transport to use (either \"tcp\" or \"udp\")\n\n"
-         "Currently supports RGB888 and 8-bit grey scale images.\n\n");
+         "Currently supports RGB888 and 8/16-bit grey scale images.\n\n");
 }
 
 gint
@@ -460,6 +461,18 @@ player_update()
             memcpy(g_img+i*3, g_camera->image+i, 3);
           }
           break;
+        case PLAYER_CAMERA_FORMAT_MONO16:
+	{
+	  int j = 0;
+	  // Transform to MONO8
+	  for (i = 0; i < g_camera->image_count; i++, j+=2)
+	  {
+	    g_img[i*3+1] = g_img[i*3+2] = g_img[i*3+3] = 
+		((unsigned char)(g_camera->image[j]) << 8) + 
+		 (unsigned char)(g_camera->image[j+1]);
+	  }
+          break;
+	}
         case PLAYER_CAMERA_FORMAT_RGB888:
           // do nothing
           memcpy(g_img, g_camera->image, g_camera->image_count);

@@ -298,6 +298,10 @@ void AmtecM5_Register(DriverTable* table);
 void RCore_XBridge_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SR3000
+void SR3000_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_ACCEL_CALIB
 void Accel_Calib_Register(DriverTable* table);
 #endif
@@ -667,6 +671,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_RCORE_XBRIDGE
   RCore_XBridge_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SR3000
+  SR3000_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ACCEL_CALIB
