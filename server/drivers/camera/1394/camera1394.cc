@@ -166,7 +166,7 @@ driver
 #include <unistd.h>
 #include <libraw1394/raw1394.h>
 #if DC1394_DMA_SETUP_CAPTURE_ARGS == 20
-#include <dc1394/dc1394_control.h>
+#include <dc1394/control.h>
 #else
 #include <libdc1394/dc1394_control.h>
 #endif
@@ -956,7 +956,7 @@ int Camera1394::Setup()
 	}
   	
   	// now start capture
-	if (DC1394_SUCCESS != dc1394_capture_setup_dma(camera, this->num_dma_buffers, DC1394_RING_BUFFER_LAST))
+	if (DC1394_SUCCESS != dc1394_capture_setup_dma(camera, this->num_dma_buffers))
   		DMA_Success = false;
   }
   if (DMA_Success)
@@ -1108,6 +1108,7 @@ int Camera1394::GrabFrame()
   uint f, c;
   int  i, j;
   unsigned char * ptr1, * ptr2, * dst;
+  dc1394video_frame_t * frame = NULL;
 
   switch (this->method)
   {
@@ -1124,7 +1125,8 @@ int Camera1394::GrabFrame()
     break;
   case methodVideo:
 #if LIBDC1394_VERSION == 0200
-    if (dc1394_capture_dma(&this->camera,1,DC1394_VIDEO1394_WAIT) != DC1394_SUCCESS)
+    frame = dc1394_capture_dequeue_dma (camera, DC1394_VIDEO1394_WAIT);
+    if (!frame) 
 #else
     if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
 #endif
@@ -1142,9 +1144,9 @@ int Camera1394::GrabFrame()
   unsigned int frame_height;
   int * capture_buffer;
 #if LIBDC1394_VERSION == 0200
-  frame_width = dc1394_capture_get_width(camera);
-  frame_height = dc1394_capture_get_height(camera);
-  capture_buffer = (int *) dc1394_capture_get_dma_buffer(camera);
+  frame_width = frame->size[0];
+  frame_height = frame->size[1];
+  capture_buffer = (int *) frame->image;
 #else
   frame_width = this->camera.frame_width;
   frame_height = this->camera.frame_height;
@@ -1326,7 +1328,7 @@ int Camera1394::GrabFrame()
     return -1;
   }
 #if LIBDC1394_VERSION == 0200
-  if (this->method == methodVideo) dc1394_capture_dma_done_with_buffer(this->camera);
+  if (this->method == methodVideo) dc1394_capture_enqueue_dma(camera, frame);
 #else
   if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
 #endif
