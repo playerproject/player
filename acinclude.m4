@@ -152,6 +152,11 @@ if test "x$enable_camera1394" = "xyes"; then
   dc1394_dma_setup_args="0"
 
   AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
+    [[#include "dc1394/control.h"]],
+    []),
+    dc1394_dma_setup_args="20")
+
+  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
     [[#include "libdc1394/dc1394_control.h"]],
     [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="11")
@@ -160,11 +165,6 @@ if test "x$enable_camera1394" = "xyes"; then
     [[#include "libdc1394/dc1394_control.h"]],
     [[dc1394_dma_setup_capture(NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL)]]),
     dc1394_dma_setup_args="12")
-
-  AC_COMPILE_IFELSE(AC_LANG_PROGRAM(
-    [[#include "dc1394/dc1394_control.h"]],
-    []),
-    dc1394_dma_setup_args="20")
 
   AC_DEFINE_UNQUOTED(DC1394_DMA_SETUP_CAPTURE_ARGS, $dc1394_dma_setup_args,
               [arg count for dma capture function])

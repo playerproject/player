@@ -1108,8 +1108,9 @@ int Camera1394::GrabFrame()
   uint f, c;
   int  i, j;
   unsigned char * ptr1, * ptr2, * dst;
+#if LIBDC1394_VERSION == 0200
   dc1394video_frame_t * frame = NULL;
-
+#endif
   switch (this->method)
   {
   case methodRaw:
