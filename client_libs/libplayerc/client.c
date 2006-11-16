@@ -110,17 +110,17 @@ int timed_recv(int s, void *buf, size_t len, int flags, int timeout)
 {
   struct pollfd ufd;
   int ret;
-  
+
   ufd.fd = s;
   ufd.events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
-  
+
   ret = poll (&ufd, 1, timeout);
   if (ret <= 0)
   {
     PLAYERC_ERR2("poll call failed with error [%d:%s]", errno, strerror(errno));
     return ret;
   }
-  
+
   return recv(s,buf,len,flags);
 }
 
@@ -218,9 +218,9 @@ int playerc_client_connect(playerc_client_t *client)
       PLAYERC_ERR1("socket call failed with error [%s]", strerror(errno));
       return -1;
     }
-    /* 
+    /*
      * INADDR_ANY indicates that any network interface (IP address)
-     * for the local host may be used (presumably the OS will choose the 
+     * for the local host may be used (presumably the OS will choose the
      * right one).
      *
      * Specifying sin_port = 0 allows the system to choose the port.
@@ -229,8 +229,8 @@ int playerc_client_connect(playerc_client_t *client)
     clientaddr.sin_addr.s_addr = INADDR_ANY;
     clientaddr.sin_port = 0;
 
-    if(bind(client->sock, 
-            (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < -1) 
+    if(bind(client->sock,
+            (struct sockaddr*)&clientaddr, sizeof(clientaddr)) < -1)
     {
       PLAYERC_ERR1("bind call failed with error [%s]", strerror(errno));
       return(-1);
@@ -256,7 +256,7 @@ int playerc_client_connect(playerc_client_t *client)
   client->server.sin_family = PF_INET;
   memcpy(&client->server.sin_addr, entp->h_addr_list[0], entp->h_length);
   client->server.sin_port = htons(client->port);
-  
+
   // Connect the socket
   /*
   t = client->request_timeout;
@@ -270,7 +270,7 @@ int playerc_client_connect(playerc_client_t *client)
     }
     gettimeofday(&last,NULL);
     puts("calling connect");
-    ret = connect(client->sock, (struct sockaddr*)&client->server, 
+    ret = connect(client->sock, (struct sockaddr*)&client->server,
                   sizeof(client->server));
     gettimeofday(&curr,NULL);
     t -= ((curr.tv_sec + curr.tv_usec/1e6) -
@@ -282,7 +282,7 @@ int playerc_client_connect(playerc_client_t *client)
   timer.it_interval.tv_sec = 0;
   timer.it_interval.tv_usec = 0;
   timer.it_value.tv_sec = (int)floor(client->request_timeout);
-  timer.it_value.tv_usec = 
+  timer.it_value.tv_usec =
           (int)rint(fmod(client->request_timeout,timer.it_value.tv_sec)*1e6);
   if(setitimer(ITIMER_REAL, &timer, NULL) != 0)
     PLAYER_WARN("failed to set up connection timer; "
@@ -303,7 +303,7 @@ int playerc_client_connect(playerc_client_t *client)
   }
 
   puts("calling connect");
-  ret = connect(client->sock, (struct sockaddr*)&client->server, 
+  ret = connect(client->sock, (struct sockaddr*)&client->server,
                 sizeof(client->server));
   puts("done");
 
@@ -350,8 +350,8 @@ int playerc_client_connect(playerc_client_t *client)
     PLAYERC_ERR1("error setting socket non-blocking [%s]", strerror(errno));
     return -1;
   }
- 
-  
+
+
   // Get the banner
   if (timed_recv(client->sock, banner, sizeof(banner), 0, 2000) < sizeof(banner))
   {
@@ -386,7 +386,7 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
       puts("playerc_client_connect() succeeded");
       /* Clean out buffers */
       client->read_xdrdata_len = 0;
-      
+
       /* TODO: re-establish replacement rules, delivery modes, etc. */
 
       /* Re-subscribe to devices */
@@ -501,7 +501,7 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
     PLAYERC_WARN("no socket to write to");
     return -1;
   }
-  
+
 
   if (client->qlen > 0)
   {
@@ -557,10 +557,10 @@ void *playerc_client_read(playerc_client_t *client)
       case PLAYER_MSGTYPE_RESP_ACK:
         break;
       case PLAYER_MSGTYPE_SYNCH:
-        client->lasttime = client->datatime;
-        client->datatime = header.timestamp;
         return client->id;
       case PLAYER_MSGTYPE_DATA:
+        client->lasttime = client->datatime;
+        client->datatime = header.timestamp;
         if (client->mode == PLAYER_DATAMODE_PUSH)
           // If in push mode, handle and return
           return playerc_client_dispatch (client, &header, client->data);
@@ -903,10 +903,10 @@ int playerc_client_readpacket(playerc_client_t *client,
     PLAYERC_WARN("no socket to write to");
     return -1;
   }
-  
+
   while(client->read_xdrdata_len < PLAYERXDR_MSGHDR_SIZE)
   {
-    nbytes = timed_recv(client->sock, 
+    nbytes = timed_recv(client->sock,
                         client->read_xdrdata + client->read_xdrdata_len,
                         PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
                         0, client->request_timeout * 1e3);
@@ -937,14 +937,14 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Slide over the header
-  memmove(client->read_xdrdata, 
+  memmove(client->read_xdrdata,
           client->read_xdrdata + PLAYERXDR_MSGHDR_SIZE,
           client->read_xdrdata_len - PLAYERXDR_MSGHDR_SIZE);
   client->read_xdrdata_len -= PLAYERXDR_MSGHDR_SIZE;
 
   while(client->read_xdrdata_len < header->size)
   {
-    nbytes = timed_recv(client->sock, 
+    nbytes = timed_recv(client->sock,
                         client->read_xdrdata + client->read_xdrdata_len,
                         PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
                         0, client->request_timeout*1e3);
@@ -985,7 +985,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Slide over the body
-  memmove(client->read_xdrdata, 
+  memmove(client->read_xdrdata,
           client->read_xdrdata + header->size,
           client->read_xdrdata_len - header->size);
   client->read_xdrdata_len -= header->size;
@@ -1055,7 +1055,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   // Send the message
   length = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
   bytes = PLAYERXDR_MSGHDR_SIZE + encode_msglen;
-  do 
+  do
   {
     ret = send(client->sock, &client->write_xdrdata[length-bytes],
                bytes, 0);
