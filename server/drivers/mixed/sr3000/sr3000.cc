@@ -125,8 +125,6 @@ class SR3000:public Driver
     player_pointcloud3d_data_t pcloud_data;
     player_camera_data_t       d_cam_data, i_cam_data;
     bool providePCloud, provideDCam, provideICam;
-    // should we attempt to color the points/images?
-    bool colorizer;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +156,6 @@ SR3000::SR3000 (ConfigFile* cf, int section)
   memset (&this->i_cam_addr,  0, sizeof (player_devaddr_t));
 
   providePCloud = FALSE; provideDCam = FALSE; provideICam = FALSE;
-  colorizer = FALSE;
 
   // Outgoing pointcloud interface
   if (cf->ReadDeviceAddr (&(this->pcloud_addr), section, "provides",
@@ -474,14 +471,10 @@ void SR3000::RefreshData ()
       element.point.py = yp[i];
       element.point.pz = zp[i];
 
-      if (colorizer);
-      else
-      {
-        element.color.alpha = 255; 
-        element.color.red   = 255; 
-        element.color.green = 255;
-        element.color.blue  = 255;
-      }
+      element.color.alpha = 255; 
+      element.color.red   = 255; 
+      element.color.green = 255;
+      element.color.blue  = 255;
       pcloud_data.points[i] = element; 
     } 
     // Write the Pointcloud3d data
