@@ -98,7 +98,7 @@ fi
 AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 
 dnl Check for python c header
-PYTHON_VERSION=`python -V 2>&1 | grep -o "[[0-9]]\.[[0-9]]"`
+PYTHON_VERSION=`python -V 2>&1 | grep -o "[[0-9]][\.][[0-9]]"`
 PYTHON_HEADER="python"$PYTHON_VERSION"/Python.h"
 if test ! -f "/usr/include/$PYTHON_HEADER"; then 
 	PYTHON_HEADER=python/Python.h

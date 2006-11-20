@@ -150,10 +150,14 @@ void wbr914_Register(DriverTable* table)
 
 wbr914::wbr914(ConfigFile* cf, int section)
   : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN),
+    _tioChanged( false ),
     _stopped( true ), _motorsEnabled( false ), _lastDigOut( 0 )
 {
   last_lpos = 0;
   last_rpos = 0;
+
+  // Baud rate
+  _baud = 416666;
 
   ErrorInit( 9 );
 
@@ -164,7 +168,7 @@ wbr914::wbr914(ConfigFile* cf, int section)
 
   memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
 
-  this->position_subscriptions = 0;
+ this->position_subscriptions = 0;
   this->ir_subscriptions       = 0;
 
   // Do we create a robot position interface?
@@ -300,6 +304,8 @@ wbr914::wbr914(ConfigFile* cf, int section)
  */
 wbr914::~wbr914()
 {
+  if ( _tioChanged )
+    tcsetattr( this->_fd, TCSADRAIN, &_old_tio);
   Shutdown();
 }
 
@@ -315,7 +321,7 @@ int wbr914::Setup()
   PLAYER_MSG0( 0, "Starting WBR driver\n" );
 
   // open it.  non-blocking at first, in case there's no robot
-  if((this->_fd = open(_serial_port, O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+  if((this->_fd = open(_serial_port, O_RDWR | O_NOCTTY, S_IRUSR | S_IWUSR )) < 0 )
   {
     printf("open() failed: %s\n", strerror(errno));
     return(-1);
@@ -329,6 +335,8 @@ int wbr914::Setup()
     return(-1);
   }
 
+  tcgetattr( this->_fd, &_old_tio);
+
   cfmakeraw( &term );
   cfsetispeed( &term, B38400 );
   cfsetospeed( &term, B38400 );
@@ -336,6 +344,10 @@ int wbr914::Setup()
   // 2 stop bits
   term.c_cflag |= CSTOPB | CLOCAL | CREAD;
   term.c_iflag |= IGNPAR;
+
+  // Set timeout to .1 sec
+  term.c_cc[ VTIME ] = 1;
+  term.c_cc[ VMIN ]  = 0;
 
   if(tcsetattr(this->_fd, TCSADRAIN, &term) < 0 )
   {
@@ -345,6 +357,8 @@ int wbr914::Setup()
     return(-1);
   }
 
+  _tioChanged = true;
+
   {
     struct serial_struct serial_info;
 
@@ -352,7 +366,7 @@ int wbr914::Setup()
     // motor controller will handle.
     // round off to get the closest divisor.
     serial_info.flags = ASYNC_SPD_CUST | ASYNC_LOW_LATENCY;
-    serial_info.custom_divisor = (int)((float)24000000.0/(float)416666.0 + 0.5);
+    serial_info.custom_divisor = (int)((float)24000000.0/(float)_baud + 0.5);
     if ( _debug )
       printf( "Custom divisor = %d\n", serial_info.custom_divisor );
 
@@ -409,9 +423,11 @@ int wbr914::Setup()
   SetMicrosteps();
 
   // PWM sign magnitude mode
-  sendCmd16( LEFT_MOTOR, SETOUTPUTMODE, 1, 2, ret );
-  sendCmd16( RIGHT_MOTOR, SETOUTPUTMODE, 1, 2, ret );
-
+  if ( (sendCmd16( LEFT_MOTOR, SETOUTPUTMODE, 1, 2, ret ) < 0 ) ||
+       (sendCmd16( RIGHT_MOTOR, SETOUTPUTMODE, 1, 2, ret ) < 0 ))
+  {
+    printf( "Error setting sign-magnitude mode\n" );
+  }
   
   /*  This might be a good time to reset the odometry values */
   if ( _debug )
@@ -438,23 +454,18 @@ int wbr914::InitRobot()
   unsigned char buf[6];
   usleep( DELAY_US);
 
-  sendCmd0( LEFT_MOTOR, RESET, 2, buf );
-  sendCmd0( RIGHT_MOTOR, RESET, 2, buf );
-
-  if ( _debug )
-    printf( "GetVersion\n" );
-  if( sendCmd0( LEFT_MOTOR, GETVERSION, 6, buf ) < 0)
+  if ( (sendCmd0( LEFT_MOTOR, RESET, 2, buf )<0 ) ||
+       (sendCmd0( RIGHT_MOTOR, RESET, 2, buf )<0 ))
   {
-    printf("failed to initialize robot\n");
-    return -1;
+    printf( "Error Resetting motors\n" );
   }
 
   if ( _debug )
     printf( "GetVersion\n" );
-
-  if(sendCmd0( RIGHT_MOTOR, GETVERSION, 6, buf ) < 0)
+  if( (sendCmd0( LEFT_MOTOR, GETVERSION, 6, buf ) < 0)||
+      (sendCmd0( RIGHT_MOTOR, GETVERSION, 6, buf )<0 ))
   {
-    printf("failed to initialize robot\n");
+    printf("Cannot get version\n");
     return -1;
   }
 
@@ -772,6 +783,12 @@ int wbr914::HandleCommand(player_msghdr * hdr, void* data)
                            PLAYER_POSITION2D_CMD_VEL,
                            this->position_id))
   {
+    /*
+    struct timeval now;
+    gettimeofday( &now, NULL );
+    double t = now.tv_sec + now.tv_usec/1e9;
+    printf( "Vel cmd at %lf\n", t );
+    */
     HandleVelocityCommand( (player_position2d_cmd_vel_t*)data );
     UpdateM3();
     return(0);
@@ -1118,15 +1135,87 @@ int wbr914::ResetRawPositions()
   return 0;
 }
 
+bool wbr914::RecvBytes( unsigned char*s, int len )
+{
+  int nbytes;
+  int bytesRead = 0;
+
+  // max 10 retries
+  for ( int i=0; i<10; i++ )
+  {
+    nbytes = read( _fd, s+bytesRead, len-bytesRead );
+    if ( nbytes < 0 )
+    {
+      if ( errno != EAGAIN )
+      {
+	printf( "M3 Read error: %s\n", strerror( errno ));
+	return false;
+      }
+      else
+      {
+	nbytes = 0;
+      }
+    }
+
+    bytesRead += nbytes;
+    if ( bytesRead == len )
+    {
+      return true;
+    }
+
+    // wait for the rest of the byte
+    // calc time based on number of bytes left to read,
+    // baud rate and num bits/byte
+    int t = ( len-bytesRead )*11*1000/_baud;
+    usleep( t*1000 );
+  }
+
+  printf( "Read timeout; Got %d bytes, expected %d\n",
+	  bytesRead, len );
+
+  return false;
+}
 
 int wbr914::ReadBuf(unsigned char* s, size_t len)
 {
+  // Get error code
+  bool rc = RecvBytes( s, 1 );
+  if ( !rc )
+  {
+    return -1;
+  }
 
-  ssize_t numread = 0;
-  ssize_t newread = 0;
-  bool    readSlipped = false;
-  int     i;
+  // PMD 3410 error code in first byte
+  if ( *s != 0 && *s != 1 )
+  {
+    const char* err = GetPMDErrorString( *s );
+    printf( "Cmd error: %s\n", err );
+    return( -(*s) );
+  }
 
+  // Read the rest of the response
+  rc = RecvBytes( s+1, len-1 );
+  if ( !rc )
+  {
+    return -1;
+  }
+
+  uint8_t chksum = 0;
+
+  // Verify the checksum is correct
+  for ( unsigned i=0; i<len; i++ )
+  {
+    chksum += *(s+i);
+  }
+  if ( chksum != 0 )
+  {
+    printf( "Read checksum error\n" );
+    return -1;
+  }
+
+  return len;
+
+#ifdef FOO
 //      printf( "len=%d numread=%d\n", len, numread );
   while ( numread < (int)len )
   {
@@ -1192,6 +1281,7 @@ int wbr914::ReadBuf(unsigned char* s, size_t len)
   }
 
   return( numread );
+#endif
 }
 
 int wbr914::WriteBuf(unsigned char* s, size_t len)
@@ -1210,6 +1300,28 @@ int wbr914::WriteBuf(unsigned char* s, size_t len)
   printf( "\n" );
 #endif
 
+  for ( int i=0; i<10; i++ )
+  {
+    thisnumwritten = write( _fd, s+numwritten, len-numwritten);
+    numwritten += thisnumwritten;
+
+    if ( numwritten == len )
+    {
+      return numwritten;
+    }
+    else if ( thisnumwritten < 0 )
+    {
+      printf( "Write error; %s\n", strerror( errno ));
+      return -1;
+    }
+  }
+    
+  printf( "Write timeout; wrote %d bytes, tried to write %d\n",
+	  numwritten, len );
+
+  return numwritten;
+
+#ifdef FOO
   while(numwritten < len)
   {
     if((thisnumwritten = write(this->_fd,s+numwritten,len-numwritten)) < 0)
@@ -1225,17 +1337,9 @@ int wbr914::WriteBuf(unsigned char* s, size_t len)
     }
     numwritten += thisnumwritten;
   }
-  /*
-  ioctl( this->_fd, TIOCMSET, _tc_num );
-  if( _tc_num[0] == 2 )
-  {
-    _tc_num[0] = 0;
-  }
-  else
-  {
-    _tc_num[0] = 2;
-  }
-  */
+
+
+#endif
 
   return numwritten;
 }
@@ -1297,8 +1401,8 @@ int wbr914::sendCmdCom( unsigned char address, unsigned char c,
     if( (rc = ReadBuf( ret, ret_num )) < 0 )
     {
       //      printf( "failed to read response\n" );
+      result = -1;
     }
-    //    else
   }
 
 //      PLAYER_WARN1( "cmd: 0x%4x", *((int *) cmd) );
@@ -1350,17 +1454,21 @@ void wbr914::SetOdometry( player_position2d_set_odom_req_t* od )
   int32_t leftPos = Meters2Ticks( x );
   int32_t rightPos = Meters2Ticks( y );
 
-  int rc;
-
-  rc = sendCmd32( LEFT_MOTOR, SETACTUALPOS, leftPos, 2, ret ); 
-  rc = sendCmd32( LEFT_MOTOR, SETACTUALPOS, rightPos, 2, ret ); 
+  if ( (sendCmd32( LEFT_MOTOR, SETACTUALPOS, leftPos, 2, ret )<0)||
+       (sendCmd32( LEFT_MOTOR, SETACTUALPOS, rightPos, 2, ret )<0 ))
+  {
+    printf( "Error setting actual position\n" );
+  }
 }
 
 int wbr914::GetAnalogSensor(int s, short * val )
 {
   unsigned char ret[6];
 
-  sendCmd16( s / 8, READANALOG, s % 8, 6, ret );
+  if ( sendCmd16( s / 8, READANALOG, s % 8, 6, ret )<0 )
+  {
+    printf( "Error reading Analog values\n" );
+  }
 
   // Analog sensor values are 10 bit values that have been left shifted
   // 6 bits, so right-shift them back
@@ -1379,7 +1487,10 @@ void wbr914::GetDigitalIn( uint16_t* d )
 {
   unsigned char ret[6];
 
-  sendCmd16( 0, READDIGITAL, 0, 6, ret );
+  if ( sendCmd16( 0, READDIGITAL, 0, 6, ret )<0)
+  {
+    printf( "Error reading Digital input values\n" );
+  }
 
   *d = (uint16_t)BytesToInt16(  &(ret[2]) );
 }
@@ -1388,7 +1499,10 @@ void wbr914::SetDigitalOut( uint16_t d )
 {
   unsigned char ret[2];
 
-  sendCmd32( 0, WRITEDIGITAL, d, 2, ret );
+  if ( sendCmd32( 0, WRITEDIGITAL, d, 2, ret ) < 0 )
+  {
+    printf( "Error setting Digital output values\n" );
+  }
 }
 
 /*
@@ -1399,8 +1513,11 @@ void wbr914::UpdateM3()
 {
   unsigned char ret[2];
 
-  sendCmd0( LEFT_MOTOR,  UPDATE, 2, ret );
-  sendCmd0( RIGHT_MOTOR, UPDATE, 2, ret );
+  if ( (sendCmd0( LEFT_MOTOR,  UPDATE, 2, ret )<0 ) ||
+       (sendCmd0( RIGHT_MOTOR, UPDATE, 2, ret )<0 ))
+  {
+    printf( "Error updating M3\n" );
+  }
 }
 
 void wbr914::SetVelocity( uint8_t chan, float mps )
@@ -1411,22 +1528,31 @@ void wbr914::SetVelocity( uint8_t chan, float mps )
   {
     flip = -1;
   }
-  sendCmd32( chan, SETVEL, MPS2Vel( mps )*flip, 2, ret );
+  if ( sendCmd32( chan, SETVEL, MPS2Vel( mps )*flip, 2, ret )<0 )
+  {
+    printf( "Error setting velocity\n" );
+  }
 }
 
 void wbr914::SetVelocity( float mpsL, float mpsR )
 {
   uint8_t ret[2];
 
-  sendCmd32( LEFT_MOTOR,  SETVEL, -MPS2Vel( mpsL ), 2, ret );
-  sendCmd32( RIGHT_MOTOR, SETVEL, MPS2Vel( mpsR ), 2, ret );
+  if ( (sendCmd32( LEFT_MOTOR,  SETVEL, -MPS2Vel( mpsL ), 2, ret )<0)||
+       (sendCmd32( RIGHT_MOTOR, SETVEL, MPS2Vel( mpsR ), 2, ret )<0))
+  {
+    printf( "Error setting L/R velocity\n" );
+  }
 }
 
 void wbr914::SetVelocityInTicks( int32_t left, int32_t right )
 {
   uint8_t ret[2];
-  sendCmd32( LEFT_MOTOR,  SETVEL, -left, 2, ret );
-  sendCmd32( RIGHT_MOTOR, SETVEL, right, 2, ret );
+  if ( (sendCmd32( LEFT_MOTOR,  SETVEL, -left, 2, ret )<0)||
+       (sendCmd32( RIGHT_MOTOR, SETVEL, right, 2, ret )<0))
+  {
+    printf( "Error setting velocity in ticks\n" );
+  }
 }
 
 void wbr914::Move( uint8_t chan, float meters )
@@ -1439,10 +1565,16 @@ void wbr914::Move( uint8_t chan, float meters )
     flip = -1;
   }
 
-  sendCmd0( chan, GETACTUALPOS, 6, ret );
+  if ( sendCmd0( chan, GETACTUALPOS, 6, ret )< 0 )
+  {
+    printf( "Error getting actual position\n" );
+  }
   int32_t loc = BytesToInt32( &ret[2] );
   loc += (flip*Meters2Ticks( meters ));
-  sendCmd32( chan, SETPOS, loc, 2, ret );
+  if ( ( sendCmd32( chan, SETPOS, loc, 2, ret )<0))
+  {
+    printf( "Error setting actual position for Move\n" );
+  }
 }
 
 void wbr914::Move( float metersL, float metersR )
@@ -1460,7 +1592,10 @@ void wbr914::SetPosition( uint8_t chan, float meters )
     flip = -1;
   }
 
-  sendCmd32( chan, SETPOS, flip*Meters2Ticks( meters ), 2, ret );
+  if ( sendCmd32( chan, SETPOS, flip*Meters2Ticks( meters ), 2, ret )<0)
+  {
+    printf( "Error issuing SetPosition\n" );
+  }
 }
 
 void wbr914::SetPosition( float metersL, float metersR )
@@ -1472,32 +1607,50 @@ void wbr914::SetPosition( float metersL, float metersR )
 void wbr914::SetActualPositionInTicks( int32_t left, int32_t right )
 {
   uint8_t ret[6];
-  sendCmd32( LEFT_MOTOR, SETACTUALPOS, -left, 6, ret );
-  sendCmd32( RIGHT_MOTOR, SETACTUALPOS, right, 6, ret );
+  if ( (sendCmd32( LEFT_MOTOR, SETACTUALPOS, -left, 2, ret )<0)||
+       (sendCmd32( RIGHT_MOTOR, SETACTUALPOS, right, 2, ret )<0))
+  {
+    printf( "Error in SetActualPositionInTicks\n" );
+  }
 }
 
 void wbr914::SetActualPosition( float metersL, float metersR )
 {
   uint8_t ret[6];
-  sendCmd32( LEFT_MOTOR, SETACTUALPOS, -Meters2Ticks( metersL ), 6, ret );
-  sendCmd32( RIGHT_MOTOR, SETACTUALPOS, Meters2Ticks( metersL ), 6, ret );
+  if ( (sendCmd32( LEFT_MOTOR, SETACTUALPOS, -Meters2Ticks( metersL ), 2, ret )<0)||
+       (sendCmd32( RIGHT_MOTOR, SETACTUALPOS, Meters2Ticks( metersL ), 2, ret )<0))
+  {
+    printf( "Error in L/R SetActualPosition\n" );
+  }
 }
 
 void wbr914::GetPositionInTicks( int32_t* left, int32_t* right )
 {
   uint8_t ret[6];
-  sendCmd0( LEFT_MOTOR, GETACTUALPOS, 6, ret );
+  if ( sendCmd0( LEFT_MOTOR, GETACTUALPOS, 6, ret )<0)
+  {
+    printf( "Error in Left GetPositionInTicks\n" );
+  }
   *left = -BytesToInt32( &ret[2] );
-  sendCmd0( RIGHT_MOTOR, GETACTUALPOS, 6, ret );
+  if ( sendCmd0( RIGHT_MOTOR, GETACTUALPOS, 6, ret )<0 )
+  {
+    printf( "Error in Right GetPositionInTicks\n" );
+  }
   *right = BytesToInt32( &ret[2] );
 }
 
 void wbr914::GetVelocityInTicks( int32_t* left, int32_t* right )
 {
   uint8_t ret[6];
-  sendCmd0( LEFT_MOTOR, GETACTUALVEL, 6, ret );
+  if ( sendCmd0( LEFT_MOTOR, GETACTUALVEL, 6, ret )<0 )
+  {
+    printf( "Error in Left GetVelocityInTicks\n" );
+  }
   *left = -BytesToInt32( &ret[2] );
-  sendCmd0( RIGHT_MOTOR, GETACTUALVEL, 6, ret );
+  if ( sendCmd0( RIGHT_MOTOR, GETACTUALVEL, 6, ret )<0 )
+  {
+    printf( "Error in Left GetVelocityInTicks\n" );
+  }
   *right = BytesToInt32( &ret[2] );
 }
 
@@ -1507,10 +1660,16 @@ void wbr914::SetAccelerationProfile()
   int32_t accel = (int32_t)MOTOR_TICKS_PER_STEP*2;
 
   // Decelerate faster than accelerating.
-  sendCmd32( LEFT_MOTOR,  SETACCEL, accel, ACCELERATION_DEFAULT, ret );
-  sendCmd32( RIGHT_MOTOR, SETACCEL, accel, ACCELERATION_DEFAULT, ret );
-  sendCmd32( LEFT_MOTOR,  SETDECEL, accel, DECELERATION_DEFAULT, ret );
-  sendCmd32( RIGHT_MOTOR, SETDECEL, accel, DECELERATION_DEFAULT, ret );
+  if ( (sendCmd32( LEFT_MOTOR,  SETACCEL, ACCELERATION_DEFAULT, 2, ret )<0)||
+       (sendCmd32( RIGHT_MOTOR, SETACCEL, ACCELERATION_DEFAULT, 2, ret )<0))
+  {
+    printf( "Error setting Accelleration profile\n" );
+  }
+  if ((sendCmd32( LEFT_MOTOR,  SETDECEL, DECELERATION_DEFAULT, 2, ret )<0)||
+      (sendCmd32( RIGHT_MOTOR, SETDECEL, DECELERATION_DEFAULT, 2, ret )<0))
+  {
+    printf( "Error setting Decelleration profile\n" );
+  }
   SetContourMode( TrapezoidalProfile );
 }
 
@@ -1526,39 +1685,88 @@ void wbr914::Stop( int StopMode ) {
   
   if( StopMode == FULL_STOP )
   {
-    sendCmd16( LEFT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret );
-    sendCmd16( LEFT_MOTOR, SETSTOPMODE, AbruptStopMode, 2, ret );
-    sendCmd32( LEFT_MOTOR, SETVEL, 0, 2, ret );
-    sendCmd32( LEFT_MOTOR, SETACCEL, 0, ACCELERATION_DEFAULT, ret );
-    sendCmd32( LEFT_MOTOR, SETDECEL, 0, DECELERATION_DEFAULT, ret );
+    if (sendCmd16( LEFT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret )<0 )
+    {
+      printf( "Error resetting event status\n" );
+    }
+    if ( sendCmd16( LEFT_MOTOR, SETSTOPMODE, AbruptStopMode, 2, ret )<0 )
+    {
+      printf( "Error setting stop mode\n" );
+    }
+    if ( sendCmd32( LEFT_MOTOR, SETVEL, 0, 2, ret )<0)
+    {
+      printf( "Error resetting motor velocity\n" );
+    }
+    if ( sendCmd32( LEFT_MOTOR, SETACCEL, 0, 2, ret )<0 )
+    {
+      printf( "Error resetting acceleration\n" );
+    }
+    if ( sendCmd32( LEFT_MOTOR, SETDECEL, 0, 2, ret )<0 )
+    {
+      printf( "Error resetting deceleration\n" );
+    }
 
-    sendCmd16( RIGHT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret );
-    sendCmd16( RIGHT_MOTOR, SETSTOPMODE, AbruptStopMode, 2, ret );
-    sendCmd32( RIGHT_MOTOR, SETVEL, 0, 2, ret );
-    sendCmd32( RIGHT_MOTOR, SETACCEL, 0, ACCELERATION_DEFAULT, ret );
-    sendCmd32( RIGHT_MOTOR, SETDECEL, 0, DECELERATION_DEFAULT, ret );
+
+    if ( sendCmd16( RIGHT_MOTOR, RESETEVENTSTATUS, 0x0000, 2, ret )<0 )
+    {
+      printf( "Error resetting event status\n" );
+    }
+    if ( sendCmd16( RIGHT_MOTOR, SETSTOPMODE, AbruptStopMode, 2, ret )<0 )
+    {
+      printf( "Error setting stop mode\n" );
+    }
+    if ( sendCmd32( RIGHT_MOTOR, SETVEL, 0, 2, ret )<0 )
+    {
+      printf( "Error resetting motor velocity\n" );
+    }
+    if ( sendCmd32( RIGHT_MOTOR, SETACCEL, 0, 2, ret )<0 )
+    {
+      printf( "Error resetting acceleration\n" );
+    }
+    if ( sendCmd32( RIGHT_MOTOR, SETDECEL, 0, 2, ret )<0 )
+    {
+      printf( "Error resetting deceleration\n" );
+    }
 
     SetContourMode( VelocityContouringProfile );
 
     EnableMotors( false );
     UpdateM3();
 
-    sendCmd0( LEFT_MOTOR, RESET, 2, ret );
-    sendCmd0( RIGHT_MOTOR, RESET, 2, ret );
+    if ((sendCmd0( LEFT_MOTOR, RESET, 2, ret )<0)||
+	(sendCmd0( RIGHT_MOTOR, RESET, 2, ret )<0))
+    {
+      printf( "Error resetting motor\n" );
+    }
 
   }
   else
   {
-    sendCmd16( LEFT_MOTOR, RESETEVENTSTATUS, 0x0700, 2, ret );
-    sendCmd32( LEFT_MOTOR, SETVEL, 0, 2, ret );
+    if ( sendCmd16( LEFT_MOTOR, RESETEVENTSTATUS, 0x0700, 2, ret )<0 )
+    {
+      printf( "Error resetting event status\n" );
+    }
+    if ( sendCmd32( LEFT_MOTOR, SETVEL, 0, 2, ret )<0 )
+    {
+      printf( "Error resetting motor velocity\n" );
+    }
 
-    sendCmd16( RIGHT_MOTOR, RESETEVENTSTATUS, 0x0700, 2, ret );
-    sendCmd32( RIGHT_MOTOR, SETVEL, 0, 2, ret );
+    if ( sendCmd16( RIGHT_MOTOR, RESETEVENTSTATUS, 0x0700, 2, ret )<0 )
+    {
+      printf( "Error resetting event status\n" );
+    }
+    if ( sendCmd32( RIGHT_MOTOR, SETVEL, 0, 2, ret )<0)
+    {
+      printf( "Error resetting motor velocity\n" );
+    }
 
     UpdateM3();
 
-    sendCmd0( LEFT_MOTOR, RESET, 2, ret );
-    sendCmd0( RIGHT_MOTOR, RESET, 2, ret );
+    if ((sendCmd0( LEFT_MOTOR, RESET, 2, ret )<0)||
+	(sendCmd0( RIGHT_MOTOR, RESET, 2, ret )<0))
+    {
+      printf( "Error resetting motor\n" );
+    }
   }
 }
 
@@ -1573,7 +1781,6 @@ bool wbr914::EnableMotors( bool enable )
 {
   unsigned char ret[2];
   long torque = 0;
-  int rc;
 
   if ( enable )
   {
@@ -1583,19 +1790,28 @@ bool wbr914::EnableMotors( bool enable )
   }
 
   // Need to turn off motors to change the torque
-  rc = sendCmd16( LEFT_MOTOR,  SETMOTORMODE, 0, 2, ret );
-  rc = sendCmd16( RIGHT_MOTOR, SETMOTORMODE, 0, 2, ret );
+  if ( ( sendCmd16( LEFT_MOTOR,  SETMOTORMODE, 0, 2, ret )<0)||
+       ( sendCmd16( RIGHT_MOTOR, SETMOTORMODE, 0, 2, ret )<0))
+  {
+    printf( "Error resetting motor mode\n" );
+  }
 
-  rc = sendCmd16( LEFT_MOTOR, SETMOTORCMD, (short)torque, 2, ret );
-  rc = sendCmd16( RIGHT_MOTOR, SETMOTORCMD, (short)torque, 2, ret );
+  if ((sendCmd16( LEFT_MOTOR, SETMOTORCMD, (short)torque, 2, ret )<0)||
+      (sendCmd16( RIGHT_MOTOR, SETMOTORCMD, (short)torque, 2, ret )<0))
+  {
+    printf( "Error setting motor mode\n" );
+  }
 
   // Update the torque setting
   UpdateM3();
 
   if ( enable )
   {
-    rc = sendCmd16( LEFT_MOTOR,  SETMOTORMODE, 1, 2, ret );
-    rc = sendCmd16( RIGHT_MOTOR, SETMOTORMODE, 1, 2, ret );
+    if ((sendCmd16( LEFT_MOTOR,  SETMOTORMODE, 1, 2, ret )<0)||
+	(sendCmd16( RIGHT_MOTOR, SETMOTORMODE, 1, 2, ret )<0))
+    {
+      printf( "Error setting motor mode\n" );
+    }
   }
 
   _motorsEnabled = enable;
@@ -1607,8 +1823,11 @@ void wbr914::SetContourMode( ProfileMode_t prof )
 {
   uint8_t ret[2];
 
-  sendCmd16( LEFT_MOTOR, SETPROFILEMODE, prof, 2, ret);
-  sendCmd16( RIGHT_MOTOR, SETPROFILEMODE, prof, 2, ret);
+  if ( (sendCmd16( LEFT_MOTOR, SETPROFILEMODE, prof, 2, ret)<0)||
+       (sendCmd16( RIGHT_MOTOR, SETPROFILEMODE, prof, 2, ret)<0))
+  {
+    printf( "Error setting profile mode\n" );
+  }
 }
 
 
@@ -1616,8 +1835,11 @@ void wbr914::SetMicrosteps()
 {
   uint8_t ret[2];
 
-  sendCmd16( LEFT_MOTOR, SETPHASECOUNTS, (short)MOTOR_TICKS_PER_STEP*4, 2, ret);
-  sendCmd16( RIGHT_MOTOR, SETPHASECOUNTS, (short)MOTOR_TICKS_PER_STEP*4, 2, ret);
+  if ( (sendCmd16( LEFT_MOTOR, SETPHASECOUNTS, (short)MOTOR_TICKS_PER_STEP*4, 2, ret)<0)||
+       (sendCmd16( RIGHT_MOTOR, SETPHASECOUNTS, (short)MOTOR_TICKS_PER_STEP*4, 2, ret)<0))
+  {
+    printf( "Error setting phase counts\n" );
+  }
 }
 
 

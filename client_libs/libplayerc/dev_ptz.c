@@ -121,6 +121,22 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan,
 
 }
 
+// Query the pan and tilt status.
+int playerc_ptz_status(playerc_ptz_t *device)
+{
+  player_ptz_req_status_t cmd;
+
+  if(playerc_client_request(device->info.client, &device->info,
+                            PLAYER_PTZ_REQ_STATUS,
+                            NULL, 
+                            &cmd, sizeof(player_ptz_req_status_t)) < 0)
+
+    return -1;
+
+  device->status = cmd.status;
+  return 0;
+}
+
 // Set the pan, tilt and zoom values with speed as well.
 int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt,
                        double zoom, double panspeed, double tiltspeed)

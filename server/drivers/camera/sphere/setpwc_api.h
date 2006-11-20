@@ -44,13 +44,15 @@ void not_supported(char *what);
 
 void dump_current_settings(int fd);
 
-void query_pan_tilt_status(int fd);
+void query_pan_tilt_status(int fd, int *status);
 
 void reset_pan_tilt(int fd, int what);
 
 void get_pan_or_tilt_limits(int fd, char what, int *min, int *max);
 
 void set_pan_or_tilt(int fd, char what, int value);
+
+void set_pan_and_tilt(int fd, int pan, int tilt);
 
 void set_framerate(int fd, int framerate);
 

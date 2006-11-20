@@ -4347,6 +4347,8 @@ The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 #define PLAYER_PTZ_REQ_AUTOSERVO       3
 /** Request/reply subtype: geometry */
 #define PLAYER_PTZ_REQ_GEOM            4
+/** Request/reply subtype: status */
+#define PLAYER_PTZ_REQ_STATUS      5 
 
 /** Data subtype: state */
 #define PLAYER_PTZ_DATA_STATE      1
@@ -4372,6 +4374,8 @@ typedef struct player_ptz_data
   float panspeed;
   /** Current tilt velocity [rad/s] */
   float tiltspeed;
+  /** Current pan / tilt status */
+  uint32_t status;
 } player_ptz_data_t;
 
 /** @brief Command: state (@ref PLAYER_PTZ_CMD_STATE)
@@ -4391,6 +4395,14 @@ typedef struct player_ptz_cmd
   /** Desired tilt velocity [rad/s] */
   float tiltspeed;
 } player_ptz_cmd_t;
+
+/** @brief Request/reply: Query pan/tilt status.
+
+To request pan/tilt status of the unit, send a null @ref PLAYER_PTZ_REQ_STATUS request. */
+typedef struct player_ptz_req_status
+{
+	uint32_t status;
+} player_ptz_req_status_t;
 
 /** @brief Request/reply: Query geometry.
 

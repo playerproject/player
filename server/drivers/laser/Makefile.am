@@ -17,9 +17,9 @@ endif
 if INCLUDE_LASERRESCAN
 noinst_LTLIBRARIES += liblaserrescan.la
 endif
-#if INCLUDE_LASERCUTTER
-#noinst_LTLIBRARIES += liblasercutter.la
-#endif
+if INCLUDE_LASERCUTTER
+noinst_LTLIBRARIES += liblasercutter.la
+endif
 if INCLUDE_URGLASER
 noinst_LTLIBRARIES += liburglaser.la
 endif
@@ -34,5 +34,5 @@ libsickpls_la_SOURCES = sickpls.cc
 liblaserposeinterpolator_la_SOURCES = laserposeinterpolator.cc
 liblasercspace_la_SOURCES = lasercspace.cc lasertransform.h lasertransform.cc
 liblaserrescan_la_SOURCES = laserrescan.cc lasertransform.h lasertransform.cc
-#liblasercutter_la_SOURCES = lasercutter.cc lasertransform.h lasertransform.cc
+liblasercutter_la_SOURCES = lasercutter.cc lasertransform.h lasertransform.cc
 liburglaser_la_SOURCES = urg_laser.cc urg_laser.h urglaserdriver.cc
