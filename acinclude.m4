@@ -220,6 +220,7 @@ PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
+PLAYER_ADD_DRIVER([lasercutter],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lasersafe],[yes],[],[],[])
 

@@ -373,8 +373,7 @@ int SphereDriver::Shutdown()
   StopThread();
 
   // Set to 0,0
-  set_pan_or_tilt(mFg->fd, SET_PAN, 0);
-  set_pan_or_tilt(mFg->fd, SET_TILT, 0);
+  set_pan_and_tilt(mFg->fd, 0, 0);
 
   // Free resources
   if (mFrame != NULL)
@@ -432,6 +431,22 @@ int SphereDriver::ProcessMessage(MessageQueue* resp_queue,
     ProcessCommand(hdr, *reinterpret_cast<player_ptz_cmd_t *>(data));
     return(0);
   }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_PTZ_REQ_STATUS, mPtzAddr))
+  {
+    player_ptz_req_status_t ptz_status;
+    int status;
+
+    query_pan_tilt_status(mFg->fd, &status);
+    ptz_status.status = (uint32_t) status;
+
+    Publish(device_addr, resp_queue,
+      PLAYER_MSGTYPE_RESP_ACK,
+      PLAYER_PTZ_REQ_STATUS,
+      (void*)&status, sizeof(status), NULL
+      );
+    return(0);
+  }
   else
   {
     PLAYER_ERROR1("SphereDriver received unknown message: %s", hdr->type);
@@ -460,8 +475,7 @@ void SphereDriver::ProcessCommand(player_msghdr_t* hdr, player_ptz_cmd_t &data)
   mPtzData.tiltspeed = -1;
 
   // pan is inverted
-  set_pan_or_tilt(mFg->fd, SET_PAN,  -pan);
-  set_pan_or_tilt(mFg->fd, SET_TILT, tilt);
+  set_pan_and_tilt(mFg->fd, -pan, tilt);
 }
 
 void SphereDriver::RefreshData()

@@ -2607,6 +2607,8 @@ typedef struct
   /** The current zoom value (field of view angle). */
   double zoom;
 
+  /** The current pan and tilt status */
+  int status;
 } playerc_ptz_t;
 
 
@@ -2631,6 +2633,13 @@ int playerc_ptz_unsubscribe(playerc_ptz_t *device);
 
 */
 int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom);
+
+/** @brief Query the pan and tilt status.
+
+@param device Pointer to proxy object.
+
+*/
+int playerc_ptz_query_status(playerc_ptz_t *device);
 
 /** @brief Set the pan, tilt and zoom values (and speed)
 

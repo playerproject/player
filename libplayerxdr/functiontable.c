@@ -465,6 +465,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_ptz_data_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE,
     (player_pack_fn_t)player_ptz_cmd_pack},
+  {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_STATUS,
+    (player_pack_fn_t)player_ptz_req_status_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GEOM,
     (player_pack_fn_t)player_ptz_geom_pack},
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_GENERIC,

@@ -189,6 +189,10 @@ void LaserCSpace_Register(DriverTable* table);
 void LaserRescan_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_LASERCUTTER
+void LaserCutter_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_LASERSAFE
 void LaserSafe_Register(DriverTable *table);
 #endif
@@ -562,6 +566,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_LASERRESCAN
   LaserRescan_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LASERCUTTER
+  LaserCutter_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_LASERSAFE

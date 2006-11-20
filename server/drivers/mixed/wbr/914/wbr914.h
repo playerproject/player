@@ -32,6 +32,7 @@
 #ifndef _WBR914_H
 #define _WBR914_H
 
+#include <termios.h>
 #include <pthread.h>
 #include <sys/time.h>
 
@@ -39,10 +40,10 @@
 #include <replace/replace.h>
 
 // Default max speeds
-#define MOTOR_DEF_MAX_SPEED 0.5
+#define MOTOR_DEF_MAX_SPEED 0.3
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
-#define ACCELERATION_DEFAULT 2
-#define DECELERATION_DEFAULT 10
+#define ACCELERATION_DEFAULT 100
+#define DECELERATION_DEFAULT 250
 
 /* PMD3410 command codes */
 #define NOOP                0x00
@@ -155,6 +156,7 @@ class wbr914 : public Driver
 
   // Private Member Functions
   private:
+    bool RecvBytes( unsigned char*s, int len );
     int  ReadBuf(unsigned char* s, size_t len);
     int  WriteBuf(unsigned char* s, size_t len);
     int  sendCmdCom( unsigned char address, unsigned char c, 
@@ -231,9 +233,13 @@ class wbr914 : public Driver
  // Private Data members
  private:
     // Comm info for connection to M3 controller
+    struct termios     _old_tio;
+    bool               _tioChanged;
+
     int                _fd;
     bool               _fd_blocking;
     const char*        _serial_port; // name of serial port device
+    int                _baud;
 
     player_data_t    _data;
 
