@@ -2011,11 +2011,11 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
                     }
 		    for (i = 0; i < data.points_count; i++)
 		    {
-			player_pointcloud3d_element element;
+			player_pointcloud3d_element_t element;
 			player_point_3d_t point;
-			point.px = atof (tokens[8+i]);
-			point.py = atof (tokens[9+i]);
-			point.pz = atof (tokens[10+i]);
+			point.px = atof (tokens[8+i*3]);
+			point.py = atof (tokens[9+i*3]);
+			point.pz = atof (tokens[10+i*3]);
 			element.point = point;
 			data.points[i] = element;
 		    }
@@ -2102,11 +2102,11 @@ int ReadLog::ParseActarray (player_devaddr_t id,
 		    for (i = 0; i < data.actuators_count; i++)
 		    {
 			player_actarray_actuator actuator;
-			actuator.position     = atof (tokens[8+i]);
-			actuator.speed        = atof (tokens[9+i]);
-			actuator.acceleration = atof (tokens[10+i]);
-			actuator.current      = atof (tokens[11+i]);
-			actuator.state        = atoi (tokens[12+i]);
+			actuator.position     = atof (tokens[5*i+8]);
+			actuator.speed        = atof (tokens[5*i+9]);
+			actuator.acceleration = atof (tokens[5*i+10]);
+			actuator.current      = atof (tokens[5*i+11]);
+			actuator.state        = atoi (tokens[5*i+12]);
 			data.actuators[i] = actuator;
 		    }
 		    data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
