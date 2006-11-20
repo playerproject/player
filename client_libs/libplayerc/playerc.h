@@ -1224,7 +1224,26 @@ void playerc_camera_decompress(playerc_camera_t *device);
 /** @brief Saves the image to disk as a .ppm */
 void playerc_camera_save(playerc_camera_t *device, const char *filename);
 
+/** @brief Set the auto-illumination option on/off */
+int playerc_camera_autoillumination(playerc_camera_t *device, int value);
 
+/** @brief Set the modulation frequency */
+int playerc_camera_set_modulationfreq(playerc_camera_t *device, int value);
+
+/** @brief Get the modulation frequency */
+int playerc_camera_get_modulationfreq(playerc_camera_t *device, int *value);
+
+/** @brief Set the integration time */
+int playerc_camera_set_integrationtime(playerc_camera_t *device, int value);
+
+/** @brief Get the integration time */
+int playerc_camera_get_integrationtime(playerc_camera_t *device, int *value);
+
+/** @brief Set threshold (eg. saturation, amplitude, etc) */
+int playerc_camera_threshold(playerc_camera_t *device, int subtype, int value);
+
+/** @brief Set IIR */
+int playerc_camera_iir(playerc_camera_t *device, float static_delay, float dynamic_delay);
 
 /** @} */
 /**************************************************************************/
