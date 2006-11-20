@@ -206,5 +206,103 @@ void playerc_camera_save(playerc_camera_t *device, const char *filename)
   return;
 }
 
+// Set the auto-illumination option on/off
+int
+playerc_camera_autoillumination(playerc_camera_t *device, int value)
+{
+  player_camera_autoillumination_config_t config;
 
+  config.value = value;
+
+  return(playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_CAMERA_REQ_SET_AUTOILLUMINATION,
+                                &config, NULL, 0));
+}
+
+// Set the modulation frequency
+int
+playerc_camera_set_modulationfreq(playerc_camera_t *device, int value)
+{
+  player_camera_modulation_freq_config_t config;
+
+  config.value = value;
+
+  return(playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_CAMERA_REQ_SET_MODULATION_FREQ,
+                                &config, NULL, 0));
+}
+
+// Get the modulation frequency
+int 
+playerc_camera_get_modulationfreq(playerc_camera_t *device, int *value)
+{
+  player_camera_modulation_freq_config_t config;
+  memset(&config, 0, sizeof(config));
+  if (playerc_client_request(device->info.client, &device->info, 
+                             PLAYER_CAMERA_REQ_GET_MODULATION_FREQ,
+			     &config, &config, sizeof(config)) < 0)
+    return (-1);
+  *value = config.value;
+  return 0;
+}
+
+// Set the integration time
+int
+playerc_camera_set_integrationtime(playerc_camera_t *device, int value)
+{
+  player_camera_integration_time_config_t config;
+
+  config.value = value;
+
+  return(playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_CAMERA_REQ_SET_INTEGRATION_TIME,
+                                &config, NULL, 0));
+}
+
+// Get the integration time
+int 
+playerc_camera_get_integrationtime(playerc_camera_t *device, int *value)
+{
+  player_camera_integration_time_config_t config;
+  memset(&config, 0, sizeof(config));
+  if (playerc_client_request(device->info.client, &device->info, 
+                             PLAYER_CAMERA_REQ_GET_INTEGRATION_TIME,
+			     &config, &config, sizeof(config)) < 0)
+    return (-1);
+  *value = config.value;
+  return 0;
+}
+
+// Set threshold (eg. saturation, amplitude, etc)
+int
+playerc_camera_threshold(playerc_camera_t *device, int subtype, int value)
+{
+  player_camera_threshold_config_t config;
+
+  config.subtype = subtype;
+  config.value   = value;
+
+  return(playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_CAMERA_REQ_SET_THRESHOLD,
+                                &config, NULL, 0));
+}
+
+// Set IIR
+int
+playerc_camera_iir(playerc_camera_t *device, float static_delay, float dynamic_delay)
+{
+  player_camera_iir_config_t config;
+
+  config.static_delay  = static_delay;
+  config.dynamic_delay = dynamic_delay;
+
+  return(playerc_client_request(device->info.client,
+                                &device->info,
+                                PLAYER_CAMERA_REQ_SET_TEMPORAL_IIR,
+                                &config, NULL, 0));
+}
 
