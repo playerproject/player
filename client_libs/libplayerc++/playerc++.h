@@ -2119,6 +2119,16 @@ class SimulationProxy : public ClientProxy
     /// get the pose of an object in the simulator, identified by the
     /// std::string Returns 0 on success, else a non-zero error code.
     void GetPose2d(char* identifier, double& x, double& y, double& a);
+
+    /// set the 3D pose of an object in the simulator, identified by the
+    /// std::string. Returns 0 on success, else a non-zero error code.
+    void SetPose3d(char* identifier, double x, double y, double z, 
+                   double roll, double pitch, double yaw);
+
+    /// get the 3D pose of an object in the simulator, identified by the
+    /// std::string Returns 0 on success, else a non-zero error code.
+    void GetPose3d(char* identifier, double& x, double& y, double& z, 
+                   double& roll, double& pitch, double& yaw, double& time);
 };
 
 

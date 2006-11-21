@@ -2828,7 +2828,17 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name,
 
 /** @brief Get the 2D pose of a named simulation object */
 int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier,
-          double *x, double *y, double *a);
+				  double *x, double *y, double *a);
+
+/** @brief Set the 3D pose of a named simulation object */
+int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name,
+				  double gx, double gy, double gz, 
+				  double groll, double gpitch, double gyaw);
+
+/** @brief Get the 3D pose of a named simulation object */
+int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier,
+				  double *x, double *y, double *z, 
+				  double *roll, double *pitch, double *yaw, double *time);
 
 /** @brief Set a property value */
 int playerc_simulation_set_property(playerc_simulation_t *device, 

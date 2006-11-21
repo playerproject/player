@@ -1,8 +1,14 @@
 /***************************************************************************
  * Desc: Tests for the position2d device
+<<<<<<< test_simulation.c
+ * Author: Richard Vaughan
+ * Date: 1 June 2006
+ # CVS: $Id$
+=======
  * Author: Andrew Howard
  * Date: 23 May 2002
  # CVS: $Id$
+>>>>>>> 1.3
  **************************************************************************/
 
 #include <libplayercore/playercommon.h>
@@ -62,8 +68,8 @@ int test_simulation(playerc_client_t *client, int index)
     FAIL();
   
   int col =  0xFF00;
-  TEST("setting integer property \"color\" for model robot1 to 0x00FF00 (green)");
-  if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col) ) == 0)
+  TEST("setting property \"color\" for model robot1 to 0x00FF00 (green)");
+  if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col) ) == 0)    
     PASS();
   else
     FAIL();
@@ -71,7 +77,7 @@ int test_simulation(playerc_client_t *client, int index)
   sleep(1);
   
   col = 0xFF;
-  TEST("setting integer property \"color\" for model robot1 to 0x0000FF (blue)");
+  TEST("setting property \"color\" for model robot1 to 0x0000FF (blue)");
   if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col)) == 0)
     PASS();
   else
@@ -79,8 +85,9 @@ int test_simulation(playerc_client_t *client, int index)
   
   sleep(1);
 
+
   col = 0xFF0000;
-  TEST("setting integer property \"color\" for model robot1 to 0xFF0000 (red)");
+  TEST("setting property \"color\" for model robot1 to 0xFF0000 (red)");
   if (playerc_simulation_set_property(device, "robot1", "_mp_color", &col, sizeof(col)) == 0)
     PASS();
   else

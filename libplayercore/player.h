@@ -4468,16 +4468,21 @@ for this interface. Suggestions welcome on playerstage-developers.
 /** The maximum length of a string indentifying a simulation object or
     object property. */
 #define PLAYER_SIMULATION_IDENTIFIER_MAXLEN 64 // 64 bytes - change as needed
+/** The maximum length of a blob of data for a property */
 #define PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN 32767  // 32K - change as needed
 
 /** Request/reply subtype: set 2D pose */
 #define PLAYER_SIMULATION_REQ_SET_POSE2D                     1
 /** Request/reply subtype: get 2D pose */
 #define PLAYER_SIMULATION_REQ_GET_POSE2D                     2
+/** Request/reply subtype: set 2D pose */
+#define PLAYER_SIMULATION_REQ_SET_POSE3D                     3
+/** Request/reply subtype: get 2D pose */
+#define PLAYER_SIMULATION_REQ_GET_POSE3D                     4
 /** Request/reply subtype: set property value */
-#define PLAYER_SIMULATION_REQ_SET_PROPERTY                   3
+#define PLAYER_SIMULATION_REQ_SET_PROPERTY                   5
 /** Request/reply subtype: get property value */
-#define PLAYER_SIMULATION_REQ_GET_PROPERTY                   4
+#define PLAYER_SIMULATION_REQ_GET_PROPERTY                   6
 
 /** @brief Data
 
@@ -4515,7 +4520,27 @@ typedef struct player_simulation_pose2d_req
   player_pose_t pose;
 } player_simulation_pose2d_req_t;
 
+/** @brief Request/reply: get/set 3D pose of a named simulation object
+
+To retrieve the pose of an object in a 3D simulator, send a null
+@ref PLAYER_SIMULATION_REQ_GET_POSE3D request.  To set the pose of an object
+in a 3D simulator, send a @ref PLAYER_SIMULATION_REQ_SET_POSE3D request (response
+will be null). */
+typedef struct player_simulation_pose3d_req
+{
+  /** Length of name */
+  uint32_t name_count;
+  /** the identifier of the object we want to locate */
+  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  /** the desired pose in (m, m, m, rad, rad, rad) */
+  player_pose3d_t pose;
+  /** simulation time when PLAYER_SIMULATION_REQ_GET_POSE3D was serviced. */
+  double simtime;
+} player_simulation_pose3d_req_t;
+
 /** @brief Request/reply: get/set a property of a named simulation object
+
+@par To retrieve an property of an object in a simulator, send a @ref
 
 @par To retrieve an property of an object in a simulator, send a @ref
 PLAYER_SIMULATION_REQ_GET_PROPERTY request. The server will reply with
@@ -4533,7 +4558,8 @@ not work correctly if the simulator is running on a different
 architecture than your client. The value bytes are transmitted as a
 raw binary object: no architecture-specific type conversions are
 performed. Use with caution.
-  */
+*/
+
 typedef struct player_simulation_property_req
 {
   /** Length of name */

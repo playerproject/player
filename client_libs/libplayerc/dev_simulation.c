@@ -140,6 +140,52 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   return 0;
 }
 
+// Set the target pose in 3D
+int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name, double gx, double gy,
+                                  double gz, double groll, double gpitch, double gyaw)
+{
+  player_simulation_pose3d_req_t cmd;
+
+  memset(&cmd, 0, sizeof(cmd));
+  strncpy(cmd.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  cmd.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  cmd.name_count = strlen(cmd.name) + 1;
+  cmd.pose.px = gx;
+  cmd.pose.py = gy;
+  cmd.pose.pz = gz;
+  cmd.pose.ppitch = gpitch;
+  cmd.pose.proll = groll;
+  cmd.pose.pyaw = gyaw;
+
+  return playerc_client_request(device->info.client, &device->info, 
+                                PLAYER_SIMULATION_REQ_SET_POSE3D,
+                                &cmd, NULL, 0);
+}
+
+// Get the current pose in 3D
+int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier, 
+          double *x, double *y, double *z, double *roll, double *pitch, double *yaw, double *time)
+{
+  player_simulation_pose3d_req_t cfg;
+  
+  memset(&cfg, 0, sizeof(cfg));
+  strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  cfg.name_count = strlen(cfg.name) + 1;
+  if (playerc_client_request(device->info.client, &device->info, 
+                             PLAYER_SIMULATION_REQ_GET_POSE3D,
+           &cfg, &cfg, sizeof(cfg)) < 0)
+    return (-1);
+  *x =  cfg.pose.px;
+  *y =  cfg.pose.py;
+  *z =  cfg.pose.pz;
+  *pitch =  cfg.pose.ppitch;
+  *roll =  cfg.pose.proll;
+  *yaw =  cfg.pose.pyaw;
+  *time = cfg.simtime;
+  return 0;
+}
+
 // Set a property value */
 int playerc_simulation_set_property(playerc_simulation_t *device, 
 				    char* name,
