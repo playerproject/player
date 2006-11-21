@@ -84,3 +84,14 @@ void SimulationProxy::GetPose2d(char* identifier, double& x, double& y, double& 
   playerc_simulation_get_pose2d(mDevice,identifier, &x,&y,&a);
 }
 
+void SimulationProxy::SetPose3d(char* identifier, double x, double y, double z, double roll, double pitch, double yaw)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_set_pose3d(mDevice,identifier, x,y,z,roll,pitch,yaw);
+}
+
+void SimulationProxy::GetPose3d(char* identifier, double& x, double& y, double& z, double& roll, double& pitch, double& yaw, double& time)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_get_pose3d(mDevice,identifier, &x,&y,&z,&roll,&pitch,&yaw,&time);
+}
