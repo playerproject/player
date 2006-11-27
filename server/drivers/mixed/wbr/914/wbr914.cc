@@ -362,6 +362,13 @@ int wbr914::Setup()
   {
     struct serial_struct serial_info;
 
+    if ( ioctl( _fd, TIOCGSERIAL, &serial_info ) < 0)
+    {
+      // get the serial info
+      perror("config_serial_port: ioctl TIOCGSERIAL");
+      return(-1);
+    }
+
     // Custom baud rate of 416666 baud, the max the
     // motor controller will handle.
     // round off to get the closest divisor.
@@ -809,10 +816,35 @@ int wbr914::HandleCommand(player_msghdr * hdr, void* data)
 void wbr914::HandleVelocityCommand(player_position2d_cmd_vel_t* velcmd)
 {
   // need to calculate the left and right velocities
-  int32_t transvel = MPS2Vel( velcmd->vel.px );
-  int32_t rotvel = MPS2Vel( velcmd->vel.pa * DEFAULT_AXLE_LENGTH/2.0 );
-  int32_t leftvel = transvel - rotvel;
-  int32_t rightvel = transvel + rotvel;
+  float trans = velcmd->vel.px;
+  float rot = velcmd->vel.pa * DEFAULT_AXLE_LENGTH/2.0;
+  float l = trans - rot;
+  float r = trans + rot;
+
+  // Reduce the speed on each wheel to the max
+  // speed to prevent the stepper motors from stalling
+  // Scale the speed of the other wheel to keep the
+  // turn of the same rate. Note the turn geometry
+  // will be affected.
+  if ( fabs( l ) > MOTOR_DEF_MAX_SPEED )
+  {
+    float dir = l/fabs(l);
+    float scale = l/MOTOR_DEF_MAX_SPEED;
+    l = dir*MOTOR_DEF_MAX_SPEED;
+    r = r/fabs(scale);
+  }
+
+  if ( fabs( r ) > MOTOR_DEF_MAX_SPEED )
+  {
+    float dir = r/fabs(r);
+    float scale = r/MOTOR_DEF_MAX_SPEED;
+    r = dir*MOTOR_DEF_MAX_SPEED;
+    l = l/fabs(scale);
+  }
+
+  int32_t leftvel = MPS2Vel( l );
+  int32_t rightvel = MPS2Vel( r );
+
 
   //  printf( "VelCmd: px=%1.3f, pa=%1.3f, trvel=%d, rotvel=%d, rvel=%d, lvel=%d\n", velcmd->vel.px, velcmd->vel.pa, transvel, rotvel, leftvel, rightvel );
   SetContourMode( VelocityContouringProfile );
@@ -1465,7 +1497,7 @@ int wbr914::GetAnalogSensor(int s, short * val )
 {
   unsigned char ret[6];
 
-  if ( sendCmd16( s / 8, READANALOG, s % 8, 6, ret )<0 )
+  if ( sendCmd16( s / 8, READANALOG, s % 8, 4, ret )<0 )
   {
     printf( "Error reading Analog values\n" );
   }
@@ -1487,7 +1519,7 @@ void wbr914::GetDigitalIn( uint16_t* d )
 {
   unsigned char ret[6];
 
-  if ( sendCmd16( 0, READDIGITAL, 0, 6, ret )<0)
+  if ( sendCmd16( 0, READDIGITAL, 0, 4, ret )<0)
   {
     printf( "Error reading Digital input values\n" );
   }
