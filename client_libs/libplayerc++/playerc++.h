@@ -970,6 +970,16 @@ class ImuProxy : public ClientProxy
     /// get the processed pos of the imu
 		player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
     /// get the raw values
+		float GetXAccel();
+		float GetYAccel();
+		float GetZAccel();
+		float GetXGyro();
+		float GetYGyro();
+		float GetZGyro();
+		float GetXMagn();
+		float GetYMagn();
+		float GetZMagn();
+
 		player_imu_data_calib_t GetRawValues() const
 		{ return GetVar(mDevice->calib_data); };
 

@@ -65,6 +65,60 @@ ImuProxy::Unsubscribe()
   mDevice = NULL;
 }
 
+float ImuProxy::GetXAccel()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.accel_x;
+}
+
+float ImuProxy::GetYAccel()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.accel_y;
+}
+
+float ImuProxy::GetZAccel()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.accel_z;
+}
+
+float ImuProxy::GetXGyro()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.gyro_x;
+}
+
+float ImuProxy::GetYGyro()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.gyro_y;
+}
+
+float ImuProxy::GetZGyro()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.gyro_z;
+}
+
+float ImuProxy::GetXMagn()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.magn_x;
+}
+
+float ImuProxy::GetYMagn()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.magn_y;
+}
+
+float ImuProxy::GetZMagn()
+{
+      player_imu_data_calib_t data = GetRawValues();
+      return data.magn_z;
+}
+
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::ImuProxy &c)
 {
