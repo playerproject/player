@@ -893,8 +893,9 @@ void wbr914::GetAllData( void )
 void wbr914::GetPositionData( player_position2d_data_t* d )
 {
   // calculate position data
-  int32_t left_pos;
-  int32_t right_pos;
+  int32_t left_pos = -57;
+  int32_t right_pos = -57;
+  const double TWOPI = 2.0*M_PI;
 
   GetPositionInTicks( &left_pos, &right_pos );
 
@@ -910,32 +911,21 @@ void wbr914::GetPositionData( player_position2d_data_t* d )
   double transchange = Ticks2Meters( (change_left + change_right)>>1 );
   double rotchange = Ticks2Meters( (change_left - change_right)>>1 );
 
-  double dx,dy,Theta;
-  // Radius of the wheels
-  double r = WHEEL_RADIUS;
+  // Radius of the robotwheels
+  double r = DEFAULT_AXLE_LENGTH/2.0;
 
-  // No translation
-  if (transchange == 0)
-  {
-    // Theta = 2pi rads * rotchange/ (2pi * wheel radius)
-    Theta = rotchange/r;
-    dx = dy= 0;
-  }
-  // No rotation
-  else if (rotchange == 0)
-  {
-    dx = transchange;
-    dy = 0;
-    Theta = 0;
-  }
-  // Translation and rotation
-  else
-  {
-    Theta = rotchange/r;
-    double R = transchange * r / rotchange;
-    dy = R - R*cos(Theta);
-    dx = R*sin(Theta);
-  }
+  // calc total yaw, constraining from 0 to 2pi
+  _yaw += rotchange/r;
+  if ( _yaw < 0 )
+    _yaw += TWOPI;
+
+  if ( _yaw > TWOPI )
+    _yaw -= TWOPI;
+
+  // calc current x and y position
+  _x += ( transchange * cos( _yaw )); 
+  _y += ( transchange * sin( _yaw )); 
+
 
   // add code to read in the speed data
   int32_t left_vel, right_vel;
@@ -944,26 +934,13 @@ void wbr914::GetPositionData( player_position2d_data_t* d )
 
   double lv = Vel2MPS( left_vel );
   double rv = Vel2MPS( right_vel );
-  double trans_vel = 100 * (lv + rv)/2;
+  double trans_vel = (lv + rv)/2;
   double rot_vel = (lv - rv)/2;
-  double rot_vel_rad = 100 * rot_vel/(r);
+  double rot_vel_rad = rot_vel/(r);
 
-  // now write data
-  double rad_Theta = DTOR(yaw);
-  x+=(dx*cos(rad_Theta) + dy*sin(rad_Theta));
-  y+=(dy*cos(rad_Theta) + dx*sin(rad_Theta));
-
-  yaw += Theta;
-
-  while (yaw > 2*M_PI)
-    yaw -= 2*M_PI;
-
-  while (yaw < 0)
-    yaw += 2*M_PI;
-
-  d->pos.px = x;
-  d->pos.py = y;
-  d->pos.pa = yaw;
+  d->pos.px = _x;
+  d->pos.py = _y;
+  d->pos.pa = _yaw;
   d->vel.px = trans_vel;
   d->vel.pa = rot_vel_rad;
 }
@@ -1161,9 +1138,9 @@ int wbr914::ResetRawPositions()
   memset(&data,0,sizeof(player_position2d_data_t));
   Publish( position_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data),NULL);
   */
-  x   = 0;
-  y   = 0;
-  yaw = 0;
+  _x   = 0;
+  _y   = 0;
+  _yaw = 0;
   return 0;
 }
 
@@ -1479,12 +1456,12 @@ void wbr914::SetOdometry( player_position2d_set_odom_req_t* od )
 {
   unsigned char ret[2];
 
-  x = od->pose.px;
-  y = od->pose.py;
-  yaw = od->pose.pa;
+  _x = od->pose.px;
+  _y = od->pose.py;
+  _yaw = od->pose.pa;
 
-  int32_t leftPos = Meters2Ticks( x );
-  int32_t rightPos = Meters2Ticks( y );
+  int32_t leftPos = Meters2Ticks( _x );
+  int32_t rightPos = Meters2Ticks( _y );
 
   if ( (sendCmd32( LEFT_MOTOR, SETACTUALPOS, leftPos, 2, ret )<0)||
        (sendCmd32( LEFT_MOTOR, SETACTUALPOS, rightPos, 2, ret )<0 ))
@@ -1597,7 +1574,7 @@ void wbr914::Move( uint8_t chan, float meters )
     flip = -1;
   }
 
-  if ( sendCmd0( chan, GETACTUALPOS, 6, ret )< 0 )
+  if ( sendCmd0( chan, GETCMDPOS, 6, ret )< 0 )
   {
     printf( "Error getting actual position\n" );
   }
@@ -1659,12 +1636,12 @@ void wbr914::SetActualPosition( float metersL, float metersR )
 void wbr914::GetPositionInTicks( int32_t* left, int32_t* right )
 {
   uint8_t ret[6];
-  if ( sendCmd0( LEFT_MOTOR, GETACTUALPOS, 6, ret )<0)
+  if ( sendCmd0( LEFT_MOTOR, GETCMDPOS, 6, ret )<0)
   {
     printf( "Error in Left GetPositionInTicks\n" );
   }
   *left = -BytesToInt32( &ret[2] );
-  if ( sendCmd0( RIGHT_MOTOR, GETACTUALPOS, 6, ret )<0 )
+  if ( sendCmd0( RIGHT_MOTOR, GETCMDPOS, 6, ret )<0 )
   {
     printf( "Error in Right GetPositionInTicks\n" );
   }
@@ -1674,12 +1651,12 @@ void wbr914::GetPositionInTicks( int32_t* left, int32_t* right )
 void wbr914::GetVelocityInTicks( int32_t* left, int32_t* right )
 {
   uint8_t ret[6];
-  if ( sendCmd0( LEFT_MOTOR, GETACTUALVEL, 6, ret )<0 )
+  if ( sendCmd0( LEFT_MOTOR, GETCMDVEL, 6, ret )<0 )
   {
     printf( "Error in Left GetVelocityInTicks\n" );
   }
   *left = -BytesToInt32( &ret[2] );
-  if ( sendCmd0( RIGHT_MOTOR, GETACTUALVEL, 6, ret )<0 )
+  if ( sendCmd0( RIGHT_MOTOR, GETCMDVEL, 6, ret )<0 )
   {
     printf( "Error in Left GetVelocityInTicks\n" );
   }
@@ -1689,7 +1666,7 @@ void wbr914::GetVelocityInTicks( int32_t* left, int32_t* right )
 void wbr914::SetAccelerationProfile()
 {
   uint8_t ret[2];
-  int32_t accel = (int32_t)MOTOR_TICKS_PER_STEP*2;
+  //  int32_t accel = (int32_t)MOTOR_TICKS_PER_STEP*2;
 
   // Decelerate faster than accelerating.
   if ( (sendCmd32( LEFT_MOTOR,  SETACCEL, ACCELERATION_DEFAULT, 2, ret )<0)||

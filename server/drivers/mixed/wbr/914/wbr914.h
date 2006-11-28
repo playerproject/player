@@ -51,6 +51,7 @@
 #define SETVEL              0x11
 #define UPDATE              0x1A
 #define GETCMDPOS           0x1D
+#define GETCMDVEL           0x1E
 #define GETEVENTSTATUS      0x31
 #define RESETEVENTSTATUS    0x34
 #define GETACTUALPOS        0x37
@@ -99,18 +100,18 @@ typedef enum {
 /* robot-specific info */
 #define DEFAULT_MOTOR_0_DIR             -1
 #define DEFAULT_MOTOR_1_DIR             1
-#define DEFAULT_AXLE_LENGTH             .301
+#define DEFAULT_AXLE_LENGTH             (0.301)
 
 #define MAX_TICKS               48000
-#define WHEEL_DIAMETER          0.125
+#define WHEEL_DIAMETER          (0.125)
 #define WHEEL_RADIUS            (WHEEL_DIAMETER/2.0)
 #define WHEEL_CIRC              (M_PI*WHEEL_DIAMETER)
 #define MOTOR_STEP              (1.8/MOTOR_TICKS_PER_STEP)
-#define GEAR_RATIO              4.8
+#define GEAR_RATIO              (4.8)
 #define WHEEL_STEP              (MOTOR_STEP/GEAR_RATIO)
 #define M_PER_TICK              (WHEEL_RADIUS/WHEEL_STEP)
-#define MOTOR_TICKS_PER_STEP    64.0
-#define MOTOR_TICKS_PER_REV     200.0*MOTOR_TICKS_PER_STEP
+#define MOTOR_TICKS_PER_STEP    (64.0)
+#define MOTOR_TICKS_PER_REV     (200.0*MOTOR_TICKS_PER_STEP)
 #define NUM_IR_SENSORS          8
 
 /* for safety */
@@ -276,9 +277,9 @@ class wbr914 : public Driver
     // Odometry stuff
     int32_t last_lpos;
     int32_t last_rpos;
-    double  x;
-    double  y;
-    double  yaw;
+    double  _x;
+    double  _y;
+    double  _yaw;
 
     // State
     bool    _stopped;
