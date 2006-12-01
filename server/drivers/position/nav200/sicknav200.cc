@@ -184,8 +184,8 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_PORT));
 
   // nav200 parameters, conver to cm
-  this->min_radius = static_cast<int> (cf->ReadLength(section, "min_radius", 1) * 1000);
-  this->max_radius = static_cast<int> (cf->ReadLength(section, "max_radius", 30) * 1000);
+  this->min_radius = static_cast<int> (cf->ReadLength(section, "min_radius", 1) * 100);
+  this->max_radius = static_cast<int> (cf->ReadLength(section, "max_radius", 30) * 100);
 
   return;
 }
@@ -284,12 +284,21 @@ void SickNAV200::Main()
     // process any pending messages
     ProcessMessages();
     
-	// get update and publish result
+    // get update and publish result
     if(Laser.GetPositionAuto(Reading))
     {
       data_packet.pos.px = static_cast<double> (Reading.pos.x)/1000;
       data_packet.pos.py = static_cast<double> (Reading.pos.y)/1000;
       data_packet.pos.pa = static_cast<double> (Reading.orientation)/1000;
+
+      if(Reading.quality==0xFF || Reading.quality==0xFE || Reading.quality==0x00)
+      {
+	data_packet.stall = 1;
+      }
+      else
+      {
+	data_packet.stall = 0;
+      }
 
       this->Publish(this->device_addr,
                    NULL,
