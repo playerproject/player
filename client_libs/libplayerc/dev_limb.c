@@ -94,7 +94,7 @@ void playerc_limb_putmsg(playerc_limb_t *device,
     device->data.approach.py = data->approach.py;
     device->data.approach.pz = data->approach.pz;
 
-    device->data.orientation.pz = data->orientation.px;
+    device->data.orientation.px = data->orientation.px;
     device->data.orientation.py = data->orientation.py;
     device->data.orientation.pz = data->orientation.pz;
 
