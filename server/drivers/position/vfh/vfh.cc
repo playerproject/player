@@ -395,7 +395,7 @@ int VFH_Class::SetupOdom()
 
   delete msg;
 
-  vfh_Algorithm->SetRobotRadius( robot_radius );
+  vfh_Algorithm->SetRobotRadius( robot_radius * 1e3 );
 
   this->odom_pose[0] = this->odom_pose[1] = this->odom_pose[2] = 0.0;
   this->odom_vel[0] = this->odom_vel[1] = this->odom_vel[2] = 0.0;
