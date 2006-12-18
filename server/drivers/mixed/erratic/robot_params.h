@@ -88,9 +88,10 @@ typedef struct
   int TransVelMax; // 
   int Vel2Divisor; // 
   double VelConvFactor; // 
+  int NumSonars;
   sonar_pose_t sonar_pose[32];
-	int NumIR;
-	player_pose_t IRPose[8];
+  int NumIR;
+  player_pose_t IRPose[8];
 } RobotParams_t;
 
 

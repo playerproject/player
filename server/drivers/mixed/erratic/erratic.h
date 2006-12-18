@@ -109,14 +109,14 @@ typedef enum reply {
 } reply_e;
 
 
-#define DEFAULT_VIDERE_PORT "/dev/ttyS0"
+#define DEFAULT_VIDERE_PORT "/dev/erratic"
 
 typedef struct player_erratic_data
 {
   player_position2d_data_t position;
   player_power_data_t power;
-	player_aio_data_t aio;
-	player_ir_data ir;
+  player_aio_data_t aio;
+  player_ir_data ir;
 } __attribute__ ((packed)) player_erratic_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -128,109 +128,109 @@ class ErraticMotorPacket;
 
 class Erratic : public Driver 
 {
-  private:
+private:
   int mcount;
-    player_erratic_data_t erratic_data;
+  player_erratic_data_t erratic_data;
 
-    player_devaddr_t position_id;
-    player_devaddr_t power_id;
-    player_devaddr_t aio_id;
-		player_devaddr_t ir_id;
+  player_devaddr_t position_id;
+  player_devaddr_t power_id;
+  player_devaddr_t aio_id;
+  player_devaddr_t ir_id;
 
-    int position_subscriptions;
-		int aio_ir_subscriptions;
+  int position_subscriptions;
+  int aio_ir_subscriptions;
 
-    //ErraticMotorPacket* sippacket;
-		ErraticMotorPacket *motor_packet;
-		pthread_mutex_t motor_packet_mutex;
+  //ErraticMotorPacket* sippacket;
+  ErraticMotorPacket *motor_packet;
+  pthread_mutex_t motor_packet_mutex;
 		
-		int Connect();
-		int Disconnect();
+  int Connect();
+  int Disconnect();
 		
-    void ResetRawPositions();
-    void ToggleMotorPower(unsigned char val);
+  void ResetRawPositions();
+  void ToggleMotorPower(unsigned char val);
 
-		void ToggleAIn(unsigned char val);
+  void ToggleAIn(unsigned char val);
 
-    int HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void* data);
-    int HandleCommand(player_msghdr * hdr, void * data);
-    void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
-    void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
+  int HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void* data);
+  int HandleCommand(player_msghdr * hdr, void * data);
+  void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
+  void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
 
-    void PublishAllData();
-		void PublishPosition2D();
-		void PublishPower();
-		void PublishAIn();
-		void PublishIR();
+  void PublishAllData();
+  void PublishPosition2D();
+  void PublishPower();
+  void PublishAIn();
+  void PublishIR();
 		
-		float IRRangeFromVoltage(float voltage);
+  float IRRangeFromVoltage(float voltage);
 		
-		void StartThreads();
-		void StopThreads();
+  void StartThreads();
+  void StopThreads();
 		
-		void Send(ErraticPacket *packet);
-		void SendThread();
-		static void *SendThreadDummy(void *driver);
-		void ReceiveThread();
-		static void *ReceiveThreadDummy(void *driver);
+  void Send(ErraticPacket *packet);
+  void SendThread();
+  static void *SendThreadDummy(void *driver);
+  void ReceiveThread();
+  static void *ReceiveThreadDummy(void *driver);
 
-    int read_fd, write_fd;
-    const char* psos_serial_port;
+  int read_fd, write_fd;
+  const char* psos_serial_port;
 
-    player_position2d_cmd_vel_t last_position_cmd;
-    player_position2d_cmd_car_t last_car_cmd;
+  player_position2d_cmd_vel_t last_position_cmd;
+  player_position2d_cmd_car_t last_car_cmd;
 
-		std::queue<ErraticPacket *> send_queue;
-		pthread_mutex_t send_queue_mutex;
-		pthread_cond_t send_queue_cond;
+  std::queue<ErraticPacket *> send_queue;
+  pthread_mutex_t send_queue_mutex;
+  pthread_cond_t send_queue_cond;
 
-		pthread_t send_thread;
-		pthread_t receive_thread;
+  pthread_t send_thread;
+  pthread_t receive_thread;
 
-		// Parameters
+  // Parameters
 
-		bool direct_wheel_vel_control;
+  bool direct_wheel_vel_control;
 
-		bool print_all_packets;
-		bool print_status_summary;
+  bool print_all_packets;
+  bool print_status_summary;
 		
-		bool save_settings_in_robot;
+  bool save_settings_in_robot;
 
-    int param_idx;  // index in the RobotParams table for this robot
+  int param_idx;  // index in the RobotParams table for this robot
 		
-    // Max motor speeds (mm/sec,deg/sec)
-    int motor_max_speed;
-    int motor_max_turnspeed;
+  // Max motor speeds (mm/sec,deg/sec)
+  int motor_max_speed;
+  int motor_max_turnspeed;
 
-		// Customized control settings for the robot
-		int16_t pid_trans_p, pid_trans_v, pid_trans_i;
-		int16_t pid_rot_p, pid_rot_v, pid_rot_i;
+  // Customized control settings for the robot
+  int16_t pid_trans_p, pid_trans_v, pid_trans_i;
+  int16_t pid_rot_p, pid_rot_v, pid_rot_i;
 
-		// This is a fairly low-level setting that is exposed
-		uint16_t motor_pwm_frequency, motor_pwm_max_on;
+  // This is a fairly low-level setting that is exposed
+  uint16_t motor_pwm_frequency, motor_pwm_max_on;
 
-    // Bound the command velocities
-    bool use_vel_band; 
+  // Bound the command velocities
+  bool use_vel_band; 
 
-    // Max motor accel/decel (mm/sec/sec, deg/sec/sec)
-    short motor_max_trans_accel, motor_max_trans_decel;
-    short motor_max_rot_accel, motor_max_rot_decel;
+  // Max motor accel/decel (mm/sec/sec, deg/sec/sec)
+  short motor_max_trans_accel, motor_max_trans_decel;
+  short motor_max_rot_accel, motor_max_rot_decel;
 
-  public:
+public:
 
-    Erratic(ConfigFile* cf, int section);
+  Erratic(ConfigFile* cf, int section);
 
-    virtual int Subscribe(player_devaddr_t id);
-    virtual int Unsubscribe(player_devaddr_t id);
+  virtual int Subscribe(player_devaddr_t id);
+  virtual int Unsubscribe(player_devaddr_t id);
 
-    /* the main thread */
-    virtual void Main();
+  /* the main thread */
+  virtual void Main();
 
-    virtual int Setup();
-    virtual int Shutdown();
+  virtual int Setup();
+  virtual int Shutdown();
 
-    // MessageHandler
-    virtual int ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+  // MessageHandler
+  virtual int ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data);
 };
 
 
