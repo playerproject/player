@@ -980,7 +980,6 @@ float Erratic::IRRangeFromVoltage(float voltage)
 
 float Erratic::IRFloorRange(float value) 
 {
-	printf("Floor value: %0.1f\n", value);
 	// floor range is 1 (floor present) or 0 (no floor)
 	if (value >= 0.9)
 		return 0.10;								// approximate location of floor from sensors
