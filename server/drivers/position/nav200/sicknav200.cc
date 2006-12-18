@@ -183,7 +183,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   // Serial port
   this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_PORT));
 
-  // nav200 parameters, conver to cm
+  // nav200 parameters, convert to cm
   this->min_radius = static_cast<int> (cf->ReadLength(section, "min_radius", 1) * 100);
   this->max_radius = static_cast<int> (cf->ReadLength(section, "max_radius", 30) * 100);
 
@@ -289,8 +289,8 @@ void SickNAV200::Main()
     {
       data_packet.pos.px = static_cast<double> (Reading.pos.x)/1000;
       data_packet.pos.py = static_cast<double> (Reading.pos.y)/1000;
-      data_packet.pos.pa = static_cast<double> (Reading.orientation)/1000;
-
+      double angle = M_PI + Reading.orientation/32768.0*M_PI;
+      data_packet.pos.pa = atan2(sin(angle), cos(angle));
       if(Reading.quality==0xFF || Reading.quality==0xFE || Reading.quality==0x00)
       {
 	data_packet.stall = 1;
