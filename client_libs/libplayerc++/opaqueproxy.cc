@@ -70,6 +70,19 @@ OpaqueProxy::SendCmd(player_opaque_data_t* aData)
   playerc_opaque_cmd(mDevice, aData);
 }
 
+int
+OpaqueProxy::SendReq(player_opaque_data_t* aRequest)
+{
+  player_opaque_data_t aReply;
+  int result = playerc_opaque_req(mDevice, aRequest, &aReply);
+  if (result == 0)
+  {
+    memcpy(mDevice->data, aReply.data, aReply.data_count);
+    mDevice->data_count = aReply.data_count;
+  }
+  return result;
+}
+
 void
 OpaqueProxy::Unsubscribe()
 {

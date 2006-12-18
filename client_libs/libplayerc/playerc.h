@@ -2160,6 +2160,9 @@ int playerc_opaque_unsubscribe(playerc_opaque_t *device);
 /** @brief Send a generic command */
 int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
 
+/** @brief Send a generic request */
+int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t *reply);
+
 /** @} */
 /**************************************************************************/
 
