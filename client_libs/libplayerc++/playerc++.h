@@ -1425,6 +1425,9 @@ class OpaqueProxy : public ClientProxy
     /// Send a command
     void SendCmd(player_opaque_data_t* aData);
 
+    /// Send a request
+    int SendReq(player_opaque_data_t* aRequest);
+
 };
 
 /**
