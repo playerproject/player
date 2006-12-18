@@ -8,7 +8,7 @@ int main(int argc,char ** argv)
   //Standby mode
   PositionXY reflector;
   Nav200 testing;
-  testing.Initialise();
+  testing.Initialise("/dev/ttyS1");
   if (testing.EnterStandby())
   {
     printf("\n\n\nEntered Standby\n\n");
