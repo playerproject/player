@@ -164,6 +164,7 @@ private:
   void PublishIR();
 		
   float IRRangeFromVoltage(float voltage);
+  float IRFloorRange(float value);
 		
   void StartThreads();
   void StopThreads();
