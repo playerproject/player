@@ -51,10 +51,13 @@ them named:
   - Returns the current battery voltage (12 V when fully charged).
 
 - @ref interface_aio
-  - Returns data from analog input pins
+  - Returns data from analog and digital input pins 
 
 - @ref interface_ir
   - Returns ranges from IR sensors, assuming they're connected to the analog input pins
+
+- @ref interface_sonar
+  - Returns ranges from sonar sensors
 
 @par Supported configuration requests
 
@@ -65,6 +68,8 @@ them named:
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
 - @ref interface_ir :
+  - PLAYER_IR_POSE_REQ
+- @ref interface_sonar :
   - PLAYER_SONAR_GET_GEOM_REQ
 
 @par Configuration file options
@@ -807,12 +812,30 @@ void Erratic::ReceiveThread() {
 				unsigned int i_voltage;
 				for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
 					{
+						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
+							continue;
 						erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
 									+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
 						erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
 						      + 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
 						erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
 					}
+
+				// add digital inputs, four E port bits
+				for (int i=0; i < 4; i++) 
+					{
+						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
+							continue;
+						erratic_data.aio.voltages[i_voltage+i] = 
+							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1 : 0;
+						erratic_data.ir.voltages[i_voltage+1] = 
+							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1 : 0;
+						erratic_data.ir.ranges[i_voltage+i] = 
+               IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage+i]);
+					}
+
+					
+
 				PublishAIn();
 				PublishIR();
 				break;
