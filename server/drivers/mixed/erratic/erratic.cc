@@ -804,13 +804,15 @@ void Erratic::ReceiveThread() {
 				erratic_data.aio.voltages_count = packet.packet[4];
 				erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
 				erratic_data.ir.ranges_count = 2;
-				for (unsigned int i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) {
-					erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
-						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
-					erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
-						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
-					erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
-				}
+				unsigned int i_voltage;
+				for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
+					{
+						erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
+									+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+						erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
+						      + 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+						erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
+					}
 				PublishAIn();
 				PublishIR();
 				break;
