@@ -472,7 +472,7 @@ int Erratic::Connect() {
 		usleep(ROBOT_CYCLETIME);
 	}
 
-	printf(" done.\n  Connected to \"%s\", a %s %s\n", name, type, subtype);
+	printf(" done.\n  Connected to <%s>, a %s %s\n", name, type, subtype);
 
 	// Set the robot type statically for now (there is only one!)
 	param_idx = 0;
@@ -690,7 +690,7 @@ int Erratic::Disconnect() {
 		this->motor_packet = NULL;
 	}
 	
-	printf("Erratic has been shutdown");
+	printf("Erratic has been shut down");
 
 	return(0);
 }
@@ -791,7 +791,8 @@ void Erratic::ReceiveThread() {
 		// Process the packet
 		//Lock();
 		
-		switch(packet.packet[3]) {
+		switch(packet.packet[3]) 
+			{
 			case (reply_e)motor:
 			case (reply_e)motor+2:
 			case (reply_e)motor+3:
@@ -801,14 +802,15 @@ void Erratic::ReceiveThread() {
 					PublishPower();
 				}
 				break;
+
 			case (reply_e)config:
-				
 				break;
+
 			case (reply_e)ain:
 				// This data goes in two places, analog input and ir rangers
 				erratic_data.aio.voltages_count = packet.packet[4];
 				erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
-				erratic_data.ir.ranges_count = 2;
+				erratic_data.ir.ranges_count = RobotParams[this->param_idx]->NumIR;;
 				unsigned int i_voltage;
 				for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
 					{
@@ -817,21 +819,22 @@ void Erratic::ReceiveThread() {
 						erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
 									+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
 						erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
-						      + 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
-						erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
+									+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+//						erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
 					}
 
 				// add digital inputs, four E port bits
+				erratic_data.aio.voltages_count += 4;
 				for (int i=0; i < 4; i++) 
 					{
 						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
 							continue;
 						erratic_data.aio.voltages[i_voltage+i] = 
-							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1 : 0;
-						erratic_data.ir.voltages[i_voltage+1] = 
-							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1 : 0;
-						erratic_data.ir.ranges[i_voltage+i] = 
-               IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage+i]);
+							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
+						erratic_data.ir.voltages[i] = 
+							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
+						erratic_data.ir.ranges[i] = 
+							IRFloorRange(erratic_data.ir.voltages[i]);
 					}
 
 					
@@ -839,6 +842,7 @@ void Erratic::ReceiveThread() {
 				PublishAIn();
 				PublishIR();
 				break;
+
 			case (reply_e)debug:
 				if (debug_mode) {
 					printf("Debug message: ");
@@ -847,12 +851,13 @@ void Erratic::ReceiveThread() {
 					printf("\n");
 				}
 				break;
+
 			default:
 				if (debug_mode) {
 					printf("Unrecognized packet: ");
 					packet.Print();
 				}
-		}
+			}
 		
 		//Unlock();
 	}
@@ -952,7 +957,8 @@ void Erratic::ToggleMotorPower(unsigned char val) {
 }
 
 // Enable or disable analog input reporting
-void Erratic::ToggleAIn(unsigned char val) {
+void Erratic::ToggleAIn(unsigned char val) 
+{
 	unsigned char command[4];
 	ErraticPacket *packet = new ErraticPacket();
 
@@ -966,9 +972,19 @@ void Erratic::ToggleAIn(unsigned char val) {
 }
 
 // This describes the IR hardware
-float Erratic::IRRangeFromVoltage(float voltage) {
-	// This is values for the Sharp 2Y0A02, 150 cm ranger
+float Erratic::IRRangeFromVoltage(float voltage) 
+{
+	// This is for the Sharp 2Y0A02, 150 cm ranger
 	return -.2475 + .1756 * voltage + .7455 / voltage - .0446 * voltage * voltage;
+}
+
+float Erratic::IRFloorRange(float value) 
+{
+	// floor range is 1 (floor present) or 0 (no floor)
+	if (value >= 0.9)
+		return 0.10;								// approximate location of floor from sensors
+	else
+		return 1.0;									// far away
 }
 
 
@@ -984,7 +1000,8 @@ void Erratic::Main() {
 		pthread_testcancel();
 
 		// Wait for some instructions
-		Wait();
+		//		Wait();
+		usleep(10000);							// Wait() blocks too much, doesn't get subscriptions
 
 		this->Lock();
 
