@@ -117,8 +117,13 @@ int timed_recv(int s, void *buf, size_t len, int flags, int timeout)
   ret = poll (&ufd, 1, timeout);
   if (ret <= 0)
   {
-    PLAYERC_ERR2("poll call failed with error [%d:%s]", errno, strerror(errno));
-    return ret;
+    if(errno == EINTR)
+      return(0);
+    else
+    {
+      PLAYERC_ERR2("poll call failed with error [%d:%s]", errno, strerror(errno));
+      return ret;
+    }
   }
 
   return recv(s,buf,len,flags);
@@ -517,9 +522,14 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
   count = poll(&fd, 1, timeout);
   if (count < 0)
   {
-    PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
-    //playerc_client_disconnect(client);
-    return(playerc_client_disconnect_retry(client));
+    if(errno == EINTR)
+      return(0);
+    else
+    {
+      PLAYERC_ERR1("poll returned error [%s]", strerror(errno));
+      //playerc_client_disconnect(client);
+      return(playerc_client_disconnect_retry(client));
+    }
   }
   if (count > 0 && (fd.revents & POLLHUP))
   {
@@ -912,12 +922,17 @@ int playerc_client_readpacket(playerc_client_t *client,
                         0, client->request_timeout * 1e3);
     if (nbytes <= 0)
     {
-      PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
-      //playerc_client_disconnect(client);
-      if(playerc_client_disconnect_retry(client) < 0)
-        return(-1);
-      else
+      if(errno == EINTR)
         continue;
+      else
+      {
+        PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
+        //playerc_client_disconnect(client);
+        if(playerc_client_disconnect_retry(client) < 0)
+          return(-1);
+        else
+          continue;
+      }
     }
     client->read_xdrdata_len += nbytes;
   }
@@ -950,15 +965,19 @@ int playerc_client_readpacket(playerc_client_t *client,
                         0, client->request_timeout*1e3);
     if (nbytes <= 0)
     {
-      PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
-      //playerc_client_disconnect(client);
-      if(playerc_client_disconnect_retry(client) < 0)
-        return(-1);
-      else
+      if(errno == EINTR)
+        continue;
       {
-        /* Need to start over; the easiest way is to recursively call
-         * myself.  Might be problematic... */
-        return(playerc_client_readpacket(client,header,data));
+        PLAYERC_ERR1("recv failed with error [%s]", strerror(errno));
+        //playerc_client_disconnect(client);
+        if(playerc_client_disconnect_retry(client) < 0)
+          return(-1);
+        else
+        {
+          /* Need to start over; the easiest way is to recursively call
+           * myself.  Might be problematic... */
+          return(playerc_client_readpacket(client,header,data));
+        }
       }
     }
     client->read_xdrdata_len += nbytes;
