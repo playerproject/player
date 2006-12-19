@@ -51,10 +51,13 @@ them named:
   - Returns the current battery voltage (12 V when fully charged).
 
 - @ref interface_aio
-  - Returns data from analog input pins
+  - Returns data from analog and digital input pins 
 
 - @ref interface_ir
   - Returns ranges from IR sensors, assuming they're connected to the analog input pins
+
+- @ref interface_sonar
+  - Returns ranges from sonar sensors
 
 @par Supported configuration requests
 
@@ -65,6 +68,8 @@ them named:
   - PLAYER_POSITION_GET_GEOM_REQ
   - PLAYER_POSITION_VELOCITY_MODE_REQ
 - @ref interface_ir :
+  - PLAYER_IR_POSE_REQ
+- @ref interface_sonar :
   - PLAYER_SONAR_GET_GEOM_REQ
 
 @par Configuration file options
@@ -214,6 +219,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 
 	// intialise members
 	motor_packet = NULL;
+  mcount = 0;
 
 	// Do we create a robot position interface?
 	if(cf->ReadDeviceAddr(&(this->position_id), section, "provides", PLAYER_POSITION2D_CODE, -1, NULL) == 0) {
@@ -803,13 +809,33 @@ void Erratic::ReceiveThread() {
 				erratic_data.aio.voltages_count = packet.packet[4];
 				erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
 				erratic_data.ir.ranges_count = 2;
-				for (unsigned int i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) {
-					erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
-						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
-					erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
-						+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
-					erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
-				}
+				unsigned int i_voltage;
+				for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
+					{
+						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
+							continue;
+						erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
+									+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+						erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
+						      + 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
+						erratic_data.ir.ranges[i_voltage] = IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage]);
+					}
+
+				// add digital inputs, four E port bits
+				for (int i=0; i < 4; i++) 
+					{
+						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
+							continue;
+						erratic_data.aio.voltages[i_voltage+i] = 
+							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1 : 0;
+						erratic_data.ir.voltages[i_voltage+1] = 
+							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1 : 0;
+						erratic_data.ir.ranges[i_voltage+i] = 
+               IRRangeFromVoltage(erratic_data.ir.voltages[i_voltage+i]);
+					}
+
+					
+
 				PublishAIn();
 				PublishIR();
 				break;
@@ -890,12 +916,18 @@ void Erratic::ResetRawPositions() {
 	ErraticPacket *pkt;
 	unsigned char erraticcommand[4];
 
+	//**************************
+	//	printf("Reset raw odometry\n");
+
 	if(this->motor_packet) {
 		pkt = new ErraticPacket();
 		this->motor_packet->rawxpos = 0;
 		this->motor_packet->rawypos = 0;
 		this->motor_packet->xpos = 0;
 		this->motor_packet->ypos = 0;
+		this->motor_packet->x_offset = 0;
+		this->motor_packet->y_offset = 0;
+		this->motor_packet->angle_offset = 0;
 		erraticcommand[0] = (command_e)reset_origo;
 		erraticcommand[1] = (argtype_e)argint;
 
@@ -1077,6 +1109,11 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		this->motor_packet->angle_offset = ((int)rint(RTOD(set_odom_req->pose.pa)))
 		                                 - this->motor_packet->angle;
 
+		//**************************
+		//		printf("Reset odometry: %f %f %f\n", set_odom_req->pose.px, set_odom_req->pose.py, set_odom_req->pose.pa);
+		//		printf("Reset odometry: %d %d %d\n", motor_packet->x_offset, motor_packet->y_offset, motor_packet->angle_offset);
+		
+
 		this->Publish(this->position_id, resp_queue,
 		              PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
 		return(0);
@@ -1243,6 +1280,14 @@ Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
 }
 
 
+// function to get the time in ms
+int getms()
+{
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	return tv.tv_sec*1000 + tv.tv_usec/1000;
+}
+
 
 // Handles one Player command detailing a velocity
 void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
@@ -1258,6 +1303,13 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 
 	//speedDemand = 0;
 	//turnRateDemand = 768;
+
+	// throttle back on commands
+	int ms = getms();
+	if (mcount == 0) mcount = ms-200;
+	if (ms < mcount + 50)					// at least 100 ms have to elapse
+		return;
+	mcount = ms;
 
 	//if (debug_mode)
 	//	printf("Will VW, %i and %i\n", speedDemand, turnRateDemand);

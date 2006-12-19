@@ -106,7 +106,7 @@ bool ErraticMotorPacket::Parse( unsigned char *buffer, int length )
   cnt += 3;
 
 	//if (debug_mode)
-	//	printf("Just parsed, new xpos: %i ypos: %i\n", xpos, ypos);
+  //  printf("Just parsed, new xpos: %i ypos: %i\n", xpos, ypos);
 
   angle = (short)
     rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
