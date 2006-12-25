@@ -1331,6 +1331,7 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd) {
 	//if (debug_mode)
 	//	printf("Will VW, %i and %i\n", speedDemand, turnRateDemand);
 
+	// TODO: interpret this command as 2 velocities
 	if(this->direct_wheel_vel_control)
 	{
 		// convert xspeed and yawspeed into wheelspeeds
