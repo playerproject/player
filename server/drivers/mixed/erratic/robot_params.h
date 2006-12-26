@@ -34,14 +34,6 @@ void initialize_robot_params(void);
 
 typedef struct
 {
-  double x;
-  double y;
-  double th;
-} sonar_pose_t;
-
-
-typedef struct
-{
   double AngleConvFactor; // 
   char* Class;
   double DiffConvFactor; // 
@@ -89,7 +81,7 @@ typedef struct
   int Vel2Divisor; // 
   double VelConvFactor; // 
   int NumSonars;
-  sonar_pose_t sonar_pose[32];
+  player_pose_t sonar_pose[32];
   int NumIR;
   player_pose_t IRPose[8];
 } RobotParams_t;

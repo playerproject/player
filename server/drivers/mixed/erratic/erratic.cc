@@ -216,6 +216,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 
 	this->position_subscriptions = 0;
 	this->aio_ir_subscriptions = 0;
+	this->sonar_subscriptions = 0;
 
 	// intialise members
 	motor_packet = NULL;
@@ -253,6 +254,13 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 		}
 	}
 
+	// Do we create a sonar interface?
+	if(cf->ReadDeviceAddr(&(this->sonar_id), section, "provides", PLAYER_SONAR_CODE, -1, NULL) == 0) {
+		if(this->AddInterface(this->sonar_id) != 0) {
+			this->SetError(-1);
+			return;
+		}
+	}
 	// build the table of robot parameters.
 	initialize_robot_params();
 
@@ -733,6 +741,9 @@ int Erratic::Subscribe(player_devaddr_t id) {
 
 		if(Device::MatchDeviceAddress(id, this->ir_id))
 			this->aio_ir_subscriptions++;
+
+		if(Device::MatchDeviceAddress(id, this->sonar_id))
+			this->sonar_subscriptions++;
 	}                                    
                                        
 	return(setupResult);                 
@@ -755,6 +766,9 @@ int Erratic::Unsubscribe(player_devaddr_t id) {
 
 		if(Device::MatchDeviceAddress(id, this->ir_id))
 			this->aio_ir_subscriptions--;
+
+		if(Device::MatchDeviceAddress(id, this->sonar_id))
+			this->sonar_subscriptions--;
 	}
 
 	return(shutdownResult);
@@ -766,7 +780,8 @@ int Erratic::Unsubscribe(player_devaddr_t id) {
 /** Talking to the robot **/
 
 // Listens to the robot
-void Erratic::ReceiveThread() {
+void Erratic::ReceiveThread() 
+{
 	for (;;) {
 		pthread_testcancel();
 
@@ -791,6 +806,7 @@ void Erratic::ReceiveThread() {
 		// Process the packet
 		//Lock();
 		
+		int count;
 		switch(packet.packet[3]) 
 			{
 			case (reply_e)motor:
@@ -841,6 +857,24 @@ void Erratic::ReceiveThread() {
 
 				PublishAIn();
 				PublishIR();
+				break;
+
+			case (reply_e)sonar:
+				// Sonar packet
+				count = RobotParams[this->param_idx]->NumSonars;
+				erratic_data.sonar.ranges_count = count;
+				for (int i = 0; i < count; i++) 
+					{
+						if (i >= PLAYER_SONAR_MAX_SAMPLES)
+							continue;
+						int ch = packet.packet[5+i*3]; // channel number
+						if (ch >= count)
+							continue;					// bad channel number
+						erratic_data.sonar.ranges[ch] = .001 * (double)(packet.packet[6+i*3]
+																														+ 256*packet.packet[7+i*3]);
+					}
+
+				PublishSonar();
 				break;
 
 			case (reply_e)debug:
@@ -971,6 +1005,21 @@ void Erratic::ToggleAIn(unsigned char val)
 	Send(packet);	
 }
 
+// Enable or disable sonar reporting
+void Erratic::ToggleSonar(unsigned char val) 
+{
+	unsigned char command[4];
+	ErraticPacket *packet = new ErraticPacket();
+
+	command[0] = (command_e)set_sonar;
+	command[1] = (argtype_e)argint;
+	command[2] = val ? 1 : 0;
+	command[3] = 0;
+	packet->Build(command, 4);
+	
+	Send(packet);	
+}
+
 // This describes the IR hardware
 float Erratic::IRRangeFromVoltage(float voltage) 
 {
@@ -994,6 +1043,7 @@ float Erratic::IRFloorRange(float value)
 void Erratic::Main() {
 	int last_position_subscrcount=0;
 	int last_aio_ir_subscriptions=0;
+	int last_sonar_subscriptions=0;
 
 	for(;;)
 	{
@@ -1028,6 +1078,15 @@ void Erratic::Main() {
 		else if(last_aio_ir_subscriptions && !(this->aio_ir_subscriptions))
 			this->ToggleAIn(0);
 		last_aio_ir_subscriptions = this->aio_ir_subscriptions;
+
+
+		// We'll ask the robot to enable sonar packets if we just got our
+		// first subscriber
+		if(!last_sonar_subscriptions && this->sonar_subscriptions)
+			this->ToggleSonar(1);
+		else if(last_sonar_subscriptions && !(this->sonar_subscriptions))
+			this->ToggleSonar(0);
+		last_sonar_subscriptions = this->sonar_subscriptions;
 
 
 		this->Unlock();
@@ -1085,11 +1144,20 @@ void Erratic::PublishIR() {
 		sizeof(player_ir_data_t),
 		NULL);
 }
+void Erratic::PublishSonar() {
+	this->Publish(this->sonar_id, NULL,
+		PLAYER_MSGTYPE_DATA,
+		PLAYER_SONAR_DATA_RANGES,
+		(void*)&(this->erratic_data.sonar),
+		sizeof(player_sonar_data_t),
+		NULL);
+}
 void Erratic::PublishAllData() {
 	this->PublishPosition2D();
 	this->PublishPower();
 	this->PublishAIn();
 	this->PublishIR();
+	this->PublishSonar();
 }
 
 // Gets called from ProcessMessages to handle one message
@@ -1226,6 +1294,21 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		this->Publish(this->ir_id, resp_queue,
 		              PLAYER_MSGTYPE_RESP_ACK,
 		              PLAYER_IR_POSE,
+		              (void*)&pose, sizeof(pose), NULL);
+		return(0);
+	}
+	// Request for getting sonar locations
+	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+	                                  PLAYER_SONAR_DATA_GEOM,
+	                                  this->sonar_id)) {
+		player_sonar_geom_t pose;
+		pose.poses_count = RobotParams[param_idx]->NumSonars;
+		for (uint16_t i = 0; i < pose.poses_count ;i++)
+			pose.poses[i] = RobotParams[param_idx]->sonar_pose[i];
+		
+		this->Publish(this->sonar_id, resp_queue,
+		              PLAYER_MSGTYPE_RESP_ACK,
+		              PLAYER_SONAR_DATA_GEOM,
 		              (void*)&pose, sizeof(pose), NULL);
 		return(0);
 	}

@@ -75,6 +75,7 @@ typedef enum command {
 	configuration =             18,
 	rot_vel =                   21,	// deg/s
 	set_max_rot_acc =           23,
+	set_sonar =                 28,
 	stop =                      29,
 	wheel_vel =                 32,	// mm/s
 	set_analog =                71,
@@ -105,7 +106,8 @@ typedef enum reply {
 	moving =  0x33,
 	motor =   0x80,
 	encoder = 0x90,
-	ain =     0x9a
+	ain =     0x9a,
+	sonar =   0x9b
 } reply_e;
 
 
@@ -117,6 +119,7 @@ typedef struct player_erratic_data
   player_power_data_t power;
   player_aio_data_t aio;
   player_ir_data ir;
+  player_sonar_data sonar;
 } __attribute__ ((packed)) player_erratic_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -136,9 +139,11 @@ private:
   player_devaddr_t power_id;
   player_devaddr_t aio_id;
   player_devaddr_t ir_id;
+  player_devaddr_t sonar_id;
 
   int position_subscriptions;
   int aio_ir_subscriptions;
+  int sonar_subscriptions;
 
   //ErraticMotorPacket* sippacket;
   ErraticMotorPacket *motor_packet;
@@ -151,6 +156,7 @@ private:
   void ToggleMotorPower(unsigned char val);
 
   void ToggleAIn(unsigned char val);
+  void ToggleSonar(unsigned char val);
 
   int HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void* data);
   int HandleCommand(player_msghdr * hdr, void * data);
@@ -162,6 +168,7 @@ private:
   void PublishPower();
   void PublishAIn();
   void PublishIR();
+  void PublishSonar();
 		
   float IRRangeFromVoltage(float voltage);
   float IRFloorRange(float value);
