@@ -185,12 +185,16 @@ bool debug_mode = FALSE;
 /** Setting up, tearing down **/
 
 // These get the driver in where it belongs, loading
-Driver* Erratic_Init(ConfigFile* cf, int section) {
+Driver* Erratic_Init(ConfigFile* cf, int section) 
+{
   return (Driver*)(new Erratic(cf,section));
 }
-void Erratic_Register(DriverTable* table) {
+
+void Erratic_Register(DriverTable* table) 
+{
 	table->AddDriver("erratic", Erratic_Init);
 }
+
 #if 0
 extern "C" {
 	int player_driver_init(DriverTable* table)
@@ -205,11 +209,14 @@ extern "C" {
 #endif
 
 // Constructor of the driver from configuration entry
-Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN) {
+Erratic::Erratic(ConfigFile* cf, int section) 
+	: Driver(cf,section,true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN) 
+{
 	// zero ids, so that we'll know later which interfaces were requested
 	memset(&this->position_id, 0, sizeof(player_devaddr_t));
 	memset(&this->power_id, 0, sizeof(player_devaddr_t));
 	memset(&this->aio_id, 0, sizeof(player_devaddr_t));
+	memset(&this->sonar_id, 0, sizeof(player_devaddr_t));
 
 	memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
 	memset(&this->last_car_cmd, 0, sizeof(player_position2d_cmd_car_t));
@@ -300,10 +307,11 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 	pthread_cond_init(&send_queue_cond, 0);
 	pthread_mutex_init(&motor_packet_mutex, 0);
 	
-	if (Connect()) {
-		printf("Error connecting to Erratic robot\n");
-		exit(1);
-	}
+	if (Connect()) 
+		{
+			printf("Error connecting to Erratic robot\n");
+			exit(1);
+		}
 }
 
 // Called by player when the driver is asked to connect
@@ -313,7 +321,8 @@ int Erratic::Setup() {
 }
 
 // Establishes connection and starts threads
-int Erratic::Connect() {
+int Erratic::Connect() 
+{
 	printf("  Erratic connection initializing (%s)...",this->psos_serial_port); fflush(stdout);
 
 	//Try opening both our file descriptors
@@ -1298,25 +1307,46 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		return(0);
 	}
 	// Request for getting sonar locations
-	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+	// two types of requests...
+	else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
 	                                  PLAYER_SONAR_DATA_GEOM,
-	                                  this->sonar_id)) {
-		player_sonar_geom_t pose;
-		pose.poses_count = RobotParams[param_idx]->NumSonars;
-		for (uint16_t i = 0; i < pose.poses_count ;i++)
-			pose.poses[i] = RobotParams[param_idx]->sonar_pose[i];
+	                                  this->sonar_id)) 
+		{
+			player_sonar_geom_t pose;
+			pose.poses_count = RobotParams[param_idx]->NumSonars;
+			for (uint16_t i = 0; i < pose.poses_count ;i++)
+				pose.poses[i] = RobotParams[param_idx]->sonar_pose[i];
 		
-		this->Publish(this->sonar_id, resp_queue,
-		              PLAYER_MSGTYPE_RESP_ACK,
-		              PLAYER_SONAR_DATA_GEOM,
-		              (void*)&pose, sizeof(pose), NULL);
-		return(0);
-	}
+			this->Publish(this->sonar_id, resp_queue,
+										PLAYER_MSGTYPE_RESP_ACK,
+										PLAYER_SONAR_DATA_GEOM,
+										(void*)&pose, sizeof(pose), NULL);
+			return(0);
+		}
+
+	// Request for getting sonar locations
+	// two types of requests...
+	else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
+	                                  PLAYER_SONAR_REQ_GET_GEOM,
+	                                  this->sonar_id)) 
+		{
+			player_sonar_geom_t pose;
+			pose.poses_count = RobotParams[param_idx]->NumSonars;
+			for (uint16_t i = 0; i < pose.poses_count ;i++)
+				pose.poses[i] = RobotParams[param_idx]->sonar_pose[i];
+		
+			this->Publish(this->sonar_id, resp_queue,
+										PLAYER_MSGTYPE_RESP_ACK,
+										PLAYER_SONAR_REQ_GET_GEOM,
+										(void*)&pose, sizeof(pose), NULL);
+			return(0);
+		}
+
 	else
-	{
-		PLAYER_WARN("unknown config request to erratic driver");
-		return(-1);
-	}
+		{
+			PLAYER_WARN("unknown config request to erratic driver");
+			return(-1);
+		}
 }
 
 // Process car-like command, which sets an angular position target and
