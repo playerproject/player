@@ -357,6 +357,8 @@ typedef struct
   rtk_menuitem_t *pose_mode_item;
   rtk_menuitem_t *enable_item, *disable_item;
   rtk_menuitem_t *frame_item;
+ rtk_menuitem_t *open_item;
+ rtk_menuitem_t *close_item;
 
   // Figures
   rtk_fig_t *grip_fig;
