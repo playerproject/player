@@ -3011,15 +3011,15 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
     // If the position is 1 or 0, then it's easy: just use LIFTup or LIFTdown
     if (cmd.position <= 0.0)
     {
-      command[2] = GRIPPER;
-      command[3] = LIFTdown;
+     command[2] = LIFTdown;
+     command[3] = 0;
       packet.Build (command, 4);
       SendReceive (&packet);
     }
     else if (cmd.position >= 1.0)
     {
-      command[2] = GRIPPER;
       command[3] = LIFTup;
+     command[3] = 0;
       packet.Build (command, 4);
       SendReceive (&packet);
     }
@@ -3044,8 +3044,8 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
       short liftCarryVal = static_cast<short> (travelTime / 0.02f);
 
       // Send the LIFTcarry command
-      command[2] = GRIPPER;
-      command[3] = LIFTcarry;
+     command[2] = LIFTcarry;
+     command[3] = 0;
       packet.Build (command, 4);
       SendReceive (&packet);
 
@@ -3070,8 +3070,8 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
     // For home, just send the lift to up position
     command[0] = GRIPPER;
     command[1] = ARGINT;
-    command[2] = GRIPPER;
-    command[3] = LIFTup;
+   command[2] = LIFTup;
+   command[3] = 0;
     packet.Build (command, 4);
     SendReceive (&packet);
     lastLiftCmd = PLAYER_ACTARRAY_HOME_CMD;
@@ -3089,13 +3089,15 @@ void P2OS::OpenGripper (void)
   unsigned char cmd[4];
   P2OSPacket packet;
 
+ /*
   if (sentGripperCmd && lastGripperCmd == PLAYER_GRIPPER_CMD_OPEN)
     return;
+ */
 
   cmd[0] = GRIPPER;
   cmd[1] = ARGINT;
-  cmd[2] = GRIPPER;
-  cmd[3] = GRIPopen;
+ cmd[2] = GRIPopen;  // low bits of unsigned 16bit int
+ cmd[3] = 0;         // high bits of unsigned 16bit int
   packet.Build (cmd, 4);
   SendReceive (&packet);
 
@@ -3108,13 +3110,15 @@ void P2OS::CloseGripper (void)
   unsigned char cmd[4];
   P2OSPacket packet;
 
+ /*
   if (sentGripperCmd && lastGripperCmd == PLAYER_GRIPPER_CMD_CLOSE)
     return;
+ */
 
   cmd[0] = GRIPPER;
   cmd[1] = ARGINT;
-  cmd[2] = GRIPPER;
-  cmd[3] = GRIPclose;
+ cmd[2] = GRIPclose; // low bits of unsigned 16 bit int
+ cmd[3] = 0;         // high bits of unsigned 16bit int
   packet.Build (cmd, 4);
   SendReceive (&packet);
 
@@ -3132,8 +3136,8 @@ void P2OS::StopGripper (void)
 
   cmd[0] = GRIPPER;
   cmd[1] = ARGINT;
-  cmd[2] = GRIPPER;
-  cmd[3] = GRIPstop;
+ cmd[2] = GRIPstop;
+ cmd[3] = 0;
   packet.Build (cmd, 4);
   SendReceive (&packet);
 

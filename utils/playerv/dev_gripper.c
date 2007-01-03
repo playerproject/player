@@ -64,6 +64,9 @@ gripper_t *gripper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *clie
   snprintf(label, sizeof(label), "gripper:%d (%s)", index, gripper->drivername);
   gripper->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   gripper->subscribe_item = rtk_menuitem_create(gripper->menu, "Subscribe", 1);
+ gripper->open_item = rtk_menuitem_create(gripper->menu, "Open Gripper", 0);
+ gripper->close_item = rtk_menuitem_create(gripper->menu, "Close Gripper", 0);
+
 
   // Set the initial menu state
   // Set initial device state
@@ -265,6 +268,23 @@ void gripper_update(gripper_t *gripper)
     // Dont draw the gripper.
     rtk_fig_clear(gripper->grip_fig);
   }
-}
 
+ if(gripper->proxy->info.subscribed)
+ {
+   if(rtk_menuitem_isactivated(gripper->open_item))
+   {
+     puts("opening gripper...");
+     if(playerc_gripper_open_cmd(gripper->proxy) != 0)
+       PRINT_ERR1("libplayerc error opening gripper: %s", playerc_error_str());
+   }
+
+   if(rtk_menuitem_isactivated(gripper->close_item))
+   {
+     puts("closing gripper...");
+     if(playerc_gripper_close_cmd(gripper->proxy) != 0)
+       PRINT_ERR1("libplayerc error closing gripper: %s", playerc_error_str());
+   }
+ }
+
+}
 
