@@ -815,7 +815,7 @@ void Erratic::ReceiveThread()
 		// Process the packet
 		//Lock();
 		
-		int count;
+		int count, maxcount;
 		switch(packet.packet[3]) 
 			{
 			case (reply_e)motor:
@@ -870,14 +870,15 @@ void Erratic::ReceiveThread()
 
 			case (reply_e)sonar:
 				// Sonar packet
-				count = RobotParams[this->param_idx]->NumSonars;
+				maxcount = RobotParams[this->param_idx]->NumSonars;
+				count = packet.packet[4];
 				erratic_data.sonar.ranges_count = count;
 				for (int i = 0; i < count; i++) 
 					{
 						if (i >= PLAYER_SONAR_MAX_SAMPLES)
 							continue;
 						int ch = packet.packet[5+i*3]; // channel number
-						if (ch >= count)
+						if (ch >= maxcount)
 							continue;					// bad channel number
 						erratic_data.sonar.ranges[ch] = .001 * (double)(packet.packet[6+i*3]
 																														+ 256*packet.packet[7+i*3]);
