@@ -872,7 +872,7 @@ void Erratic::ReceiveThread()
 				// Sonar packet
 				maxcount = RobotParams[this->param_idx]->NumSonars;
 				count = packet.packet[4];
-				erratic_data.sonar.ranges_count = count;
+				erratic_data.sonar.ranges_count = maxcount;
 				for (int i = 0; i < count; i++) 
 					{
 						if (i >= PLAYER_SONAR_MAX_SAMPLES)
@@ -882,6 +882,7 @@ void Erratic::ReceiveThread()
 							continue;					// bad channel number
 						erratic_data.sonar.ranges[ch] = .001 * (double)(packet.packet[6+i*3]
 																														+ 256*packet.packet[7+i*3]);
+						//						printf("Sonar %d: %.2f\n", ch, erratic_data.sonar.ranges[ch]);
 					}
 
 				PublishSonar();
