@@ -125,7 +125,7 @@ class AdaptiveMCL : public Driver
   private: void PutDataLocalize(double time);
 
   // Put new position data
-  private: void PutDataPosition(pf_vector_t delta);
+  private: void PutDataPosition(pf_vector_t delta, double time);
 
   // Send back geometry data
   private: void ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr);
