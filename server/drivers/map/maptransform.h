@@ -40,7 +40,7 @@
 #define MAP_IDX(mf, i, j) ((mf.width) * (j) + (i))
 
 // check that given coords are valid (i.e., on the map)
-#define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf.width) && (j >= 0) && (j < mf.width))
+#define MAP_VALID(mf, i, j) ((i >= 0) && (i < mf.width) && (j >= 0) && (j < mf.height))
 
 class MapTransform : public Driver
 {

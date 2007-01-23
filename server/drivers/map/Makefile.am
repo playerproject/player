@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@
+AM_CPPFLAGS = -g -Wall -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@
 
 noinst_LTLIBRARIES = 
 if INCLUDE_MAPFILE
