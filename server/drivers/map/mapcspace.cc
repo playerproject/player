@@ -191,7 +191,7 @@ MapCspace::Transform()
       state = this->source_data[MAP_IDX(source_map,i,j)];
 
       // grow both occupied and unknown regions
-      if(state <= 0)
+      if(state >= 0)
       {
         for(dj = -r; dj <= r; dj++)
         {
@@ -206,7 +206,7 @@ MapCspace::Transform()
               continue;
 
             // don't change occupied to uknown
-            if(this->new_data[MAP_IDX(new_map,i+di,j+dj)] > state)
+            if(this->new_data[MAP_IDX(new_map,i+di,j+dj)] < state)
             {
               this->new_data[MAP_IDX(new_map,i+di,j+dj)] = state;
             }
