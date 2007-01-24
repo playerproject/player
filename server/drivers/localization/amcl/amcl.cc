@@ -882,7 +882,7 @@ bool AdaptiveMCL::UpdateFilter(void)
           //return false;
           usleep(1000);
           ProcessMessages();
-          UpdateSensorData();
+          //UpdateSensorData();
           continue;
         }
         else
@@ -951,7 +951,8 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // Encode data to send to server
     this->PutDataLocalize(ts);
-    this->PutDataPosition(delta);
+    delta = pf_vector_zero();
+    this->PutDataPosition(delta,ts);
 
     return true;
   }
@@ -972,7 +973,7 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // Encode data to send to server; only the position interface
     // gets updated every cycle
-    this->PutDataPosition(delta);
+    this->PutDataPosition(delta,ts);
 
     return false;
   }
@@ -1055,13 +1056,13 @@ void AdaptiveMCL::PutDataLocalize(double time)
   this->Publish(this->localize_addr, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LOCALIZE_DATA_HYPOTHS,
-                (void*)&data,datalen,NULL);
+                (void*)&data,datalen,&time);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the position interface
-void AdaptiveMCL::PutDataPosition(pf_vector_t delta)
+void AdaptiveMCL::PutDataPosition(pf_vector_t delta, double time)
 {
   pf_vector_t pose;
   player_position2d_data_t data;
@@ -1084,7 +1085,7 @@ void AdaptiveMCL::PutDataPosition(pf_vector_t delta)
   this->Publish(this->position_addr, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
-                (void*)&data,sizeof(data),NULL);
+                (void*)&data,sizeof(data),&time);
 }
 
 // MessageHandler
