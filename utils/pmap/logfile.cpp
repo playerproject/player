@@ -77,18 +77,18 @@ int logfile_read(logfile_t *self)
 
   // Skip blank lines
   if (self->token_count == 0)
-    return 0;
+    return 1;
 
   // Discard comments
   if (strcmp(self->tokens[0], "#") == 0 || strcmp(self->tokens[0], "##") == 0)
-    return 0;
+    return 1;
 
   assert(self->token_count >= 3);
   self->interface = self->tokens[3];
 
   // Skip sync packets
   if (strcmp(self->interface, "sync") == 0)
-    return 0;
+    return 1;
 
   assert(self->token_count >= 5);
   self->index = atoi(self->tokens[4]);
@@ -106,7 +106,7 @@ int logfile_read(logfile_t *self)
   {
     // Ignore anything but PLAYER_POSITION2D_DATA_STATE messages
     if (atoi(self->tokens[5]) != 1 || atoi(self->tokens[6]) != 1)
-      return 0;
+      return 1;
     assert(self->token_count >= 14);
     self->position_pose[0] = atof(self->tokens[7]);
     self->position_pose[1] = atof(self->tokens[8]);
@@ -122,7 +122,7 @@ int logfile_read(logfile_t *self)
   {
     // Ignore anything but PLAYER_LASER_DATA_SCAN messages
     if (atoi(self->tokens[5]) != 1 || atoi(self->tokens[6]) != 1)
-      return 0;
+      return 1;
     assert(self->token_count >= 13);
     self->laser_range_count = atoi(self->tokens[12]);
     assert(self->token_count >= 13 + self->laser_range_count * 2);

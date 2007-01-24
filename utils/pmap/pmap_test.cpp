@@ -426,11 +426,14 @@ int process_coarse()
   
   while (1)
   {
-    if (logfile_read(logfile) != 0)
+    int logresult = logfile_read(logfile); 
+    if (logresult < 0)
     {
       fprintf(stderr, "\n");
       return -1;
     }
+    else if(logresult > 0)
+      continue;
     
     if (start_time == 0.0 && logfile->dtime > 0.0)
       start_time = logfile->dtime;
