@@ -520,7 +520,7 @@ void LaserBar::Find()
   for (i = 0; i < this->ldata.ranges_count; i++)
   {
     r = (double) (this->ldata.ranges[i]);
-    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) * M_PI / 180;
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution);
     h = (int) (this->ldata.intensity[i]);
 
     // If there is a reflection...
@@ -605,7 +605,7 @@ void LaserBar::FitCircle(int first, int last,
   for (i = first; i <= last; i++)
   {
     r = (double) (this->ldata.ranges[i]);
-    b = (double) (this->ldata.min_angle + i * this->ldata.resolution) * M_PI / 180;
+    b = (double) (this->ldata.min_angle + i * this->ldata.resolution);
 
     if (r < mr)
       mr = r;
@@ -622,7 +622,7 @@ void LaserBar::FitCircle(int first, int last,
 
   // TODO: put in proper uncertainty estimates.
   *ur = 0.02;  
-  *ub = this->ldata.resolution * M_PI / 180;
+  *ub = this->ldata.resolution;
   *uo = 1e6;
   
   return;
