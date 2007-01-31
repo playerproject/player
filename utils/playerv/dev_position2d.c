@@ -40,6 +40,9 @@ void position2d_nodraw(position2d_t *self);
 // Servo the robot (position2d control)
 void position2d_servo_pos(position2d_t *self);
 
+// Servo the robot (car control)
+void position2d_servo_car(position2d_t *self);
+
 // Servo the robot (velocity control)
 void position2d_servo_vel(position2d_t *self);
 
