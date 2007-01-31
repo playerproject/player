@@ -75,7 +75,7 @@ static playerxdr_function_t init_ftable[] =
   /* aio messages */
   {PLAYER_AIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE,
    (player_pack_fn_t)player_aio_data_pack},
-  {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AIO_CMD_STATE,
+  {PLAYER_AIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AIO_CMD_STATE,
    (player_pack_fn_t)player_aio_cmd_pack},
 
   /* audio messages */
@@ -631,6 +631,7 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
     curr = ftable + i;
     // Make sure the interface and subtype match exactly.
     // match anyway if interface = 0 (universal data types)
+ 
     if((curr->interf == interf || curr->interf == 0) &&
       curr->type == type &&
       curr->subtype == subtype)
