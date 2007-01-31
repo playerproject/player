@@ -132,13 +132,13 @@ void SIP::Fill(player_p2os_data_t* data)
 
   ///////////////////////////////////////////////////////////////
   // bumper
-  data->bumper.bumpers_count = 10;
+  data->bumper.bumpers_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
   int j = 0;
-  for(int i=4;i>=0;i--)
-    data->bumper.bumpers[j++] =
+  for(int i=PlayerRobotParams[param_idx].NumFrontBumpers-1;i>=0;i--)
+    data->bumper.bumpers[j++] = 
       (unsigned char)((this->frontbumpers >> i) & 0x01);
-  for(int i=4;i>=0;i--)
-    data->bumper.bumpers[j++] =
+  for(int i=PlayerRobotParams[param_idx].NumRearBumpers-1;i>=0;i--)
+    data->bumper.bumpers[j++] = 
       (unsigned char)((this->rearbumpers >> i) & 0x01);
 
   ///////////////////////////////////////////////////////////////
