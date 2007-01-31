@@ -40,6 +40,7 @@ For example:
 
 playerprint can print out data for the following kinds of devices:
 - @ref interface_actarray
+- @ref interface_aio
 - @ref interface_blobfinder
 - @ref interface_bumper
 - @ref interface_camera
@@ -170,6 +171,9 @@ main(int argc, char **argv)
     case PLAYER_ACTARRAY_CODE:
       cp = (ClientProxy*)new ActArrayProxy(&client,g_index);
       break;
+    case PLAYER_AIO_CODE:
+      cp = (ClientProxy*)new AioProxy(&client,g_index);
+      break;
     case PLAYER_BLOBFINDER_CODE:
       cp = (ClientProxy*)new BlobfinderProxy(&client,g_index);
       break;
@@ -254,6 +258,9 @@ main(int argc, char **argv)
     {
       case PLAYER_ACTARRAY_CODE:
         std::cout << *reinterpret_cast<ActArrayProxy *> (cp);
+        break;
+      case PLAYER_AIO_CODE:
+        std::cout << *reinterpret_cast<AioProxy *> (cp);
         break;
       case PLAYER_BLOBFINDER_CODE:
         std::cout << *reinterpret_cast<BlobfinderProxy *> (cp);
