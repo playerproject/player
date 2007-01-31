@@ -67,6 +67,7 @@ position2d_t *position2d_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t
   self->subscribe_item = rtk_menuitem_create(self->menu, "Subscribe", 1);
   self->command_item = rtk_menuitem_create(self->menu, "Command", 1);
   self->pose_mode_item = rtk_menuitem_create(self->menu, "Position mode", 1);
+  self->car_mode_item = rtk_menuitem_create(self->menu, "Car mode", 1); 
   self->enable_item = rtk_menuitem_create(self->menu, "Enable", 0);
   self->disable_item = rtk_menuitem_create(self->menu, "Disable", 0);
   self->stats_item = rtk_menuitem_create(self->menu, "Show values", 1);
@@ -192,6 +193,9 @@ void position2d_update(position2d_t *self)
   // Servo to the goal
   if (rtk_menuitem_ischecked(self->pose_mode_item))
     position2d_servo_pos(self);
+  else if (rtk_menuitem_ischecked(self->car_mode_item)) {
+    position2d_servo_car(self);
+  }
   else
     position2d_servo_vel(self);
   
@@ -407,7 +411,97 @@ void position2d_servo_vel(position2d_t *self)
   return;
 }
 
+// Servo the robot (car control)
+void position2d_servo_car(position2d_t *self)
+{
+  double d;
+  double rx, ry, ra;
+  double kr, ka;
+  double vr, va;
+  double min_vr, max_vr;
+  double min_va, max_va;
 
+  // Only servo if we are subscribed and have enabled commands.
+  if (self->proxy->info.subscribed &&
+      rtk_menuitem_ischecked(self->command_item))    
+  {
+    rtk_fig_show(self->control_fig, 1);
+    rtk_fig_show(self->path_fig, 1);
+  }
+  else
+  {
+    rtk_fig_show(self->control_fig, 0);
+    rtk_fig_show(self->path_fig, 0);
+    return;
+  }
+
+  // Good for P2DX
+  min_vr = -0.10;
+  max_vr = 0.50;
+  min_va = -M_PI/4;
+  max_va = +M_PI/4;
+  kr = max_vr / 1.00;
+  ka = max_va / 1.00;
+
+  /*
+  // Good for P2AT
+  min_vr = -2.00;
+  max_vr = +2.00;
+  min_va = -2 * M_PI;
+  max_va = +2 * M_PI;
+  kr = max_vr / 2.00;
+  ka = max_va / 2.00;
+  */
+
+  if (rtk_fig_mouse_selected(self->control_fig))
+  {
+    // Get goal pose in robot cs
+    rtk_fig_get_origin(self->control_fig, &rx, &ry, &ra);
+  }
+  else
+  { 
+    // Reset the goal figure
+    rx = ry = ra = 0;
+    rtk_fig_origin(self->control_fig, rx, ry, ra);
+  }
+
+  vr = kr * rx;
+  va = ka * ry;
+
+  if (vr < 0)
+    va *= -1;
+  
+  // Bound the speed
+  if (vr > max_vr)
+    vr = max_vr;
+  if (vr < min_vr)
+    vr = min_vr;
+  if (va > max_va)
+    va = max_va;
+  if (va < min_va)
+    va = min_va;
+    
+  //printf("%f %f\n", vr, va);
+      
+  // Set the new speed
+  //playerc_position2d_set_cmd_vel(self->proxy, vr, 0, va, 1);
+  playerc_position2d_set_cmd_car(self->proxy,vr,va);
+  // Draw in the path
+  d = 0.30;
+  rtk_fig_clear(self->path_fig);
+  rtk_fig_color_rgb32(self->path_fig, COLOR_POSITION_CONTROL);
+  if (rx >= 0)
+  {
+    rtk_fig_line(self->path_fig, 0, 0, d, 0);
+    rtk_fig_line(self->path_fig, d, 0, rx, ry);
+  }
+  else
+  {
+    rtk_fig_line(self->path_fig, 0, 0, -d, 0);
+    rtk_fig_line(self->path_fig, -d, 0, rx, ry);
+  }
+  return;
+}
 
 
 

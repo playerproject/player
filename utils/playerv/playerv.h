@@ -34,8 +34,11 @@
 // Local headers
 #include "error.h"
 #include "opt.h"
+/***************************************************************************
+ * Default colors
+ ***************************************************************************/
 
-
+#define MAP_UPDATE_TIME 1.0
 
 /***************************************************************************
  * Default colors
@@ -114,7 +117,6 @@ typedef struct
   rtk_menuitem_t *view_item_10m;
   rtk_menuitem_t *view_item_2f;
   rtk_menuitem_t *view_item_ego;
-
   // Menu containing the device list
   rtk_menu_t *device_menu;
 
@@ -267,6 +269,7 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *command_item;
   rtk_menuitem_t *pose_mode_item;
+  rtk_menuitem_t *car_mode_item;
   rtk_menuitem_t *enable_item, *disable_item;
   rtk_menuitem_t *frame_item;
   rtk_menuitem_t *stats_item;
@@ -750,7 +753,7 @@ typedef struct
   // Menu stuff
   rtk_menu_t *menu;
   rtk_menuitem_t *subscribe_item;
-
+  rtk_menuitem_t *continuous_item;
   // Figures
   rtk_fig_t *fig;
 
