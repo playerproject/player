@@ -56,7 +56,7 @@ map_t *map_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   snprintf(label, sizeof(label), "map:%d (%s)", index, map->drivername);
   map->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   map->subscribe_item = rtk_menuitem_create(map->menu, "Subscribe", 1);
-
+  map->continuous_item = rtk_menuitem_create(map->menu, "continuous update", 1);
   // Set the initial menu state
   rtk_menuitem_check(map->subscribe_item, subscribe);
   
@@ -108,11 +108,24 @@ void map_update(map_t *map)
 
   if (map->proxy->info.subscribed)
   {
-    // Draw in the map scan if it has been changed.
-    if (map->proxy->info.datatime != map->datatime)
+    if(rtk_menuitem_ischecked(map->continuous_item))
     {
-      //map_draw(map);
-      map->datatime = map->proxy->info.datatime;
+			static struct timeval old_time = {0,0};
+			struct timeval time;
+			double time_diff = 0.0;
+			gettimeofday(&time, NULL);
+			// i don't use (map->proxy->info.datatime != map->datatime))
+			// because some drivers return strange datatimes
+			// and the map may change to often for the current map format
+			// in playerv.h you can adjust MAP_UPDATE_TIME (default 1 sec)
+			time_diff = (double)(time.tv_sec - old_time.tv_sec) +
+				(double)(time.tv_usec - old_time.tv_usec)/1000000;
+			if (time_diff > MAP_UPDATE_TIME)
+			{
+				playerc_map_get_map(map->proxy);
+				map_draw(map);
+				old_time = time;
+			}
     }
   }
   else
