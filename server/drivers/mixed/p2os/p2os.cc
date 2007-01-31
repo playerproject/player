@@ -2471,7 +2471,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       return(-1);
     }
     player_bumper_geom_t geom;
-    geom.bumper_def_count = PlayerRobotParams[param_idx].FrontBumpers + PlayerRobotParams[param_idx].RearBumpers;
+    geom.bumper_def_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
     for(unsigned int ii = 0; ii < geom.bumper_def_count; ii++)
     {
       bumper_def_t def = PlayerRobotParams[param_idx].bumper_geom[ii];
