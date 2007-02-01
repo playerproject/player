@@ -305,11 +305,9 @@ else
   AMTECM5_EXTRA_LDFLAGS="$AMTECM5_DIR/lib/device.a $AMTECM5_DIR/lib/libntcan.a $AMTECM5_DIR/lib/util.a"
 fi
 
-dnl PLAYER_ADD_DRIVER([amtecM5],[yes],[$AMTECM5_HEADER],[$AMTECM5_EXTRA_CPPFLAGS],[$AMTECM5_EXTRA_LDFLAGS])
-dnl PLAYER_ADD_DRIVER(name,default,[header],[cppadd],[ldadd],
-dnl                   [pkgvar],[pkg],[default-includes])
-
-AC_CHECK_FILE([$AMTECM5_HEADER],[PLAYER_ADD_DRIVER([amtecM5],[yes], [],[$AMTECM5_EXTRA_CPPFLAGS],[$AMTECM5_EXTRA_LDFLAGS])], [PLAYER_ADD_DRIVER([amtecM5],[no], [],[$AMTECM5_EXTRA_CPPFLAGS],[$AMTECM5_EXTRA_LDFLAGS])])
+PLAYER_ADD_DRIVER([amtecM5],[yes],
+  [$AMTECM5_HEADER], [$AMTECM5_EXTRA_CPPFLAGS],
+  [$AMTECM5_EXTRA_LDFLAGS])
 
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[no],
