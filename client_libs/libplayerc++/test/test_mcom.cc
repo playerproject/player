@@ -4,7 +4,6 @@
  * a test for the C++ MComProxy
  */
 
-#include "playerclient.h"
 #include "test.h"
 #include <unistd.h>
 #include <math.h>

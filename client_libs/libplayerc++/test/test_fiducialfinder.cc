@@ -4,7 +4,6 @@
  * a test for the C++ FiducialFinder proxy
  */
 
-#include "playerclient.h"
 #include "test.h"
 #include <unistd.h>
 

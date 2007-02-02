@@ -4,7 +4,6 @@
  * a test for the C++ GpsProxy
  */
 
-#include "playerclient.h"
 #include "test.h"
 
 int

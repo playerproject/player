@@ -59,6 +59,10 @@ int test_blinkenlight(PlayerClient* client, int index);
 int test_camera(PlayerClient* client, int index);
 int test_rfid(PlayerClient* client, int index);
 int test_wsn(PlayerClient* client, int index);
+int test_position2d_holdsubscribe(PlayerClient* client, int index);
+int test_gripper_holdsubscribe(PlayerClient* client, int index);
+int test_actarray(PlayerClient* client, int index);
+
 //int test_bps(PlayerClient* client, int index);
 
 #endif // TEST_H

@@ -4,7 +4,6 @@
  * a test for the C++ TpsProxy
  */
 
-#include "playerclient.h"
 #include "test.h"
 
 int

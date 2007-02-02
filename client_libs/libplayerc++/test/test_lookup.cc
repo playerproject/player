@@ -4,7 +4,6 @@
  * a test for the player robot nameservice
  */
 
-#include "playerclient.h"
 #include "test.h"
 
 int
