@@ -110,7 +110,7 @@ int
 Driver::AddInterface(player_devaddr_t addr)
 {
   // Add ourself to the device table
-  if(deviceTable->AddDevice(addr, this) != 0)
+  if(deviceTable->AddDevice(addr, this) == NULL)
   {
     PLAYER_ERROR("failed to add interface");
     return -1;

@@ -61,18 +61,8 @@ class DeviceTable
     // id is the id for the device (e.g, 's' for sonar)
     // devicep is the controlling object (e.g., sonarDevice for sonar)
     //  
-    int AddDevice(player_devaddr_t addr, Driver* driver, bool havelock=false);
+    Device* AddDevice(player_devaddr_t addr, Driver* driver, bool havelock=false);
     
-#if 0
-    // returns the controlling object for the given id 
-    // (returns NULL on failure)
-    Driver* GetDriver(player_devaddr_t addr);
-
-    // returns the string name of the driver in use for the given id 
-    // (returns NULL on failure)
-    const char* GetDriverName(player_devaddr_t addr);
-#endif
-
     // find a device, based on id, and return the pointer (or NULL on
     // failure)
     Device* GetDevice(player_devaddr_t addr, bool lookup_remote=true);

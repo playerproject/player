@@ -75,7 +75,7 @@ DeviceTable::~DeviceTable()
 }
     
 // this is the 'base' AddDevice method, which sets all the fields
-int 
+Device*
 DeviceTable::AddDevice(player_devaddr_t addr, 
                        Driver* driver, bool havelock)
 {
@@ -100,7 +100,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
                   addr.index);
     if(!havelock)
       pthread_mutex_unlock(&mutex);
-    return(-1);
+    return(NULL);
   }
     
   // Create a new device entry
@@ -114,7 +114,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
 
   if(!havelock)
     pthread_mutex_unlock(&mutex);
-  return(0);
+  return(thisentry);
 }
 
 // find a device entry, based on addr, and return the pointer (or NULL
@@ -137,7 +137,7 @@ DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
     Driver* rdriver = (*this->remote_driver_fn)(addr,this->remote_driver_arg);
     if(rdriver != NULL)
     {
-      if(this->AddDevice(addr, rdriver, true) < 0)
+      if(this->AddDevice(addr, rdriver, true) == NULL)
       {
         PLAYER_ERROR("failed to add remote device");
         delete rdriver;

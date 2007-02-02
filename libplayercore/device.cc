@@ -58,6 +58,12 @@ Device::Device(player_devaddr_t addr, Driver *device)
   {
     this->driver->entries++;
     this->driver->device_addr = addr;
+    this->InQueue = this->driver->InQueue;
+  }
+  else
+  {
+    this->InQueue = new MessageQueue(false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+    assert(this->InQueue);
   }
 
   // Start with just a couple of entries; we'll double the size as
@@ -86,7 +92,8 @@ Device::Subscribe(MessageQueue* sub_queue)
   int retval;
   size_t i;
 
-  this->driver->Lock();
+  if(this->driver)
+    this->driver->Lock();
 
   // find an empty spot to put the new queue
   for(i=0;i<this->len_queues;i++)
@@ -110,16 +117,19 @@ Device::Subscribe(MessageQueue* sub_queue)
   // add the subscriber's queue to the list
   this->queues[i] = sub_queue;
 
-  if((retval = this->driver->Subscribe(this->addr)))
+  if(this->driver)
   {
-    // remove the subscriber's queue, since the subscription failed
-    this->queues[i] = NULL;
+    if((retval = this->driver->Subscribe(this->addr)))
+    {
+      // remove the subscriber's queue, since the subscription failed
+      this->queues[i] = NULL;
+      this->driver->Unlock();
+      return(retval);
+    }
+
     this->driver->Unlock();
-    return(retval);
   }
 
-
-  this->driver->Unlock();
   return(0);
 }
 
@@ -128,12 +138,15 @@ Device::Unsubscribe(MessageQueue* sub_queue)
 {
   int retval;
 
-  this->driver->Lock();
-
-  if((retval = this->driver->Unsubscribe(this->addr)))
+  if(this->driver)
   {
-    this->driver->Unlock();
-    return(retval);
+    this->driver->Lock();
+
+    if((retval = this->driver->Unsubscribe(this->addr)))
+    {
+      this->driver->Unlock();
+      return(retval);
+    }
   }
   // look for the given queue
   for(size_t i=0;i<this->len_queues;i++)
@@ -141,12 +154,14 @@ Device::Unsubscribe(MessageQueue* sub_queue)
     if(this->queues[i] == sub_queue)
     {
       this->queues[i] = NULL;
-      this->driver->Unlock();
+      if(this->driver)
+        this->driver->Unlock();
       return(0);
     }
   }
   //PLAYER_ERROR("tried to unsubscribed not-subscribed queue");
-  this->driver->Unlock();
+  if(this->driver)
+    this->driver->Unlock();
   return(-1);
 }
 
@@ -158,7 +173,8 @@ Device::PutMsg(MessageQueue* resp_queue,
   hdr->addr = this->addr;
   Message msg(*hdr,src,hdr->size,resp_queue);
   // don't need to lock here, because the queue does its own locking in Push
-  if(!this->driver->InQueue->Push(msg))
+  //if(!this->driver->InQueue->Push(msg))
+  if(!this->InQueue->Push(msg))
   {
     PLAYER_ERROR4("tried to push %d/%d from/onto %d/%d\n",
                   hdr->type, hdr->subtype,
@@ -256,7 +272,8 @@ Device::Request(MessageQueue* resp_queue,
       {
         Driver* dri = dev->driver;
         // don't update the requester
-        if(dri->InQueue == resp_queue)
+        //if(dri->InQueue == resp_queue)
+        if(!dri || dev->InQueue == resp_queue)
           continue;
         if(!dri->driverthread && ((dri->subscriptions > 0) || dri->alwayson))
           dri->Update();

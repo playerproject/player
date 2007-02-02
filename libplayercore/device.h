@@ -160,6 +160,9 @@ class Device
 
     /// Pointer to the underlying driver
     Driver* driver;
+    
+    /// Pointer to the underlying driver's queue
+    MessageQueue* InQueue;
 
     /// Linked list of subscribed queues
     MessageQueue** queues;
