@@ -4,7 +4,6 @@
  * a test for the C++ Blobfinder Proxy
  */
 
-#include "playerclient.h"
 #include "test.h"
 #include <unistd.h>
 
