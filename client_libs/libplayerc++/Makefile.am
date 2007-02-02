@@ -50,6 +50,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               mapproxy.cc \
                               opaqueproxy.cc \
                               plannerproxy.cc \
+															pointcloud3d.cc \
                               position1dproxy.cc \
                               position2dproxy.cc \
                               position3dproxy.cc \
