@@ -1573,6 +1573,40 @@ class PlannerProxy : public ClientProxy
 };
 
 /**
+The Pointcloud3d proxy provides an interface to a pointcloud3d device.
+*/
+class Pointcloud3dProxy : public ClientProxy
+{
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_pointcloud3d_t *mDevice;
+
+  public:
+    /// constructor
+    Pointcloud3dProxy(PlayerClient *aPc, uint aIndex=0);
+
+    /// destructor
+    ~Pointcloud3dProxy();
+
+    /// return the point count
+    uint GetCount() const { return GetVar(mDevice->points_count); };
+
+    /// return a particular scan value
+    player_pointcloud3d_element_t GetPoint(uint aIndex) const
+      { return GetVar(mDevice->points[aIndex]); };
+
+    /// This operator provides an alternate way of access the scan data.
+    /// For example, SonarProxy[0] == SonarProxy.GetRange(0)
+    player_pointcloud3d_element_t operator [] (uint aIndex) const { return GetPoint(aIndex); }
+
+};
+
+
+/**
 The @p Position1dProxy class is used to control a @ref
 interface_position1d device.  The latest position data is contained
 in the attributes pos, vel , etc.  */
