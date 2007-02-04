@@ -71,7 +71,6 @@ typedef struct
   int RotVelMax; // 
   int SettableAccsDecs; // 
   int SettableVelMaxes; // 
-  int SonarNum; // 
   char* Subclass;
   int SwitchToBaudRate; // 
   int TableSensingIR; // 

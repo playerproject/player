@@ -29,7 +29,7 @@
 RobotParams_t erratic_params = 
 {
 	0.001534,
-	"Videre",
+	"Erratic",
 	0.011,
 	0.780, //This is the empirically correct value, but doesn't match wheel size calculation
 	0,
@@ -56,17 +56,16 @@ RobotParams_t erratic_params =
 	0,
 	0,
 	120,
-	392, // length
-	180,
-	415, // width
-	61, // axle distance to center of robot (positive forward)
+	392,			// length, mm
+	180,			// radius, mm
+	415,			// width, mm
+	61,			// axle distance to center of robot (positive forward)
 	0,
 	0,
 	0,
 	1,
 	1,
-	8,
-	"erratic",
+	"Rev E",
 	38400,
 	0,
 	0,

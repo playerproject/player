@@ -82,6 +82,7 @@ typedef enum command {
 	save_config =               72,
 	set_pwm_freq =              73,
 	set_pwm_max_on =            74,
+	servo_pos      =            75,
 	set_pid_trans_p =           80,
 	set_pid_trans_v =           81,
 	set_pid_trans_i =           82,
@@ -140,10 +141,12 @@ private:
   player_devaddr_t aio_id;
   player_devaddr_t ir_id;
   player_devaddr_t sonar_id;
+  player_devaddr_t ptz_id;
 
   int position_subscriptions;
   int aio_ir_subscriptions;
   int sonar_subscriptions;
+  int ptz_subscriptions;
 
   //ErraticMotorPacket* sippacket;
   ErraticMotorPacket *motor_packet;
@@ -162,6 +165,7 @@ private:
   int HandleCommand(player_msghdr * hdr, void * data);
   void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
   void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
+  void HandlePtzCommand(player_ptz_cmd_t ptz_cmd);
 
   void PublishAllData();
   void PublishPosition2D();
