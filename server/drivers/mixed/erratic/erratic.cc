@@ -1621,10 +1621,10 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 // Currently no position or velocity feedback
 //
 
-#define SERVO_NEUTRAL 1000	// in servo counts
-#define SERVO_COUNTS_PER_DEGREE 20
-#define SERVO_MAX_COUNT 2000
-#define SERVO_MIN_COUNT 0
+#define SERVO_NEUTRAL 1650	// in servo counts
+#define SERVO_COUNTS_PER_DEGREE 6.5
+#define SERVO_MAX_COUNT 2300
+#define SERVO_MIN_COUNT 1100
 
 
 void 
@@ -1635,38 +1635,35 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
   ErraticPacket *packet;
 
   // send pan command
-  pan = (int)(cmd.pan);
-  pan = pan*SERVO_COUNTS_PER_DEGREE + SERVO_NEUTRAL;
+  pan = (int)(RTOD(cmd.pan));
+  pan = (int)((double)pan*SERVO_COUNTS_PER_DEGREE + SERVO_NEUTRAL);
   if (pan > SERVO_MAX_COUNT)
     pan = SERVO_MAX_COUNT;
   if (pan < SERVO_MIN_COUNT)
     pan = SERVO_MIN_COUNT;
 
-	printf("Send command to servo %d: %d\n", 0, pan);
+	//	printf("Send command to servo %d: %d / %d\n", 0, (int)(RTOD(cmd.pan)), pan);
 
-#if 0
   packet = new ErraticPacket();
   payload[0] = (command_e)servo_pos;
   payload[1] = (argtype_e)argstr;
   payload[2] = 3;		// 3 bytes in string
-  payload[3] = 0;		// servo #0
+  payload[3] = 2;		// servo #2
   payload[4] = pan&0xff;
   payload[5] = (pan&0xff00)>>8;
   packet->Build(payload, 6);
   this->Send(packet);
-#endif
 
   // send tilt command
-  tilt = (int)(cmd.tilt);
-  tilt = tilt*SERVO_COUNTS_PER_DEGREE + SERVO_NEUTRAL;
+  tilt = (int)(RTOD(cmd.tilt));
+  tilt = (int)((double)tilt*SERVO_COUNTS_PER_DEGREE + SERVO_NEUTRAL);
   if (tilt > SERVO_MAX_COUNT)
     tilt = SERVO_MAX_COUNT;
   if (tilt < SERVO_MIN_COUNT)
     tilt = SERVO_MIN_COUNT;
 
-	printf("Send command to servo %d: %d\n", 1, tilt);
+	// printf("Send command to servo %d: %d / %d\n", 1, (int)(RTOD(cmd.tilt)), tilt);
 
-#if
   packet = new ErraticPacket();
   payload[0] = (command_e)servo_pos;
   payload[1] = (argtype_e)argstr;
@@ -1676,7 +1673,6 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
   payload[5] = (tilt&0xff00)>>8;
   packet->Build(payload, 6);
   this->Send(packet);
-#endif
 }
 
 
