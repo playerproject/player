@@ -147,9 +147,10 @@ driver
              "sonar:0"
              "aio:0"
              "ir:0"
-             "ptz:0" ]
+             "ptz:0" 
+             "ptz:1" ]
 
-  port "/dev/ttyUSB0"
+  port "/dev/erratic"
 
   max_trans_vel 3
   max_rot_vel 720
@@ -1078,7 +1079,6 @@ void Erratic::Main() {
   int last_position_subscrcount=0;
   int last_aio_ir_subscriptions=0;
   int last_sonar_subscriptions=0;
-  int last_ptz_subscriptions=0;
 
   for(;;)
   {
@@ -1635,13 +1635,16 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
   ErraticPacket *packet;
 
   // send pan command
-  pan = cmd.pan;
+  pan = (int)(cmd.pan);
   pan = pan*SERVO_COUNTS_PER_DEGREE + SERVO_NEUTRAL;
   if (pan > SERVO_MAX_COUNT)
     pan = SERVO_MAX_COUNT;
   if (pan < SERVO_MIN_COUNT)
     pan = SERVO_MIN_COUNT;
 
+	printf("Send command to servo %d: %d\n", 0, pan);
+
+#if 0
   packet = new ErraticPacket();
   payload[0] = (command_e)servo_pos;
   payload[1] = (argtype_e)argstr;
@@ -1651,15 +1654,19 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
   payload[5] = (pan&0xff00)>>8;
   packet->Build(payload, 6);
   this->Send(packet);
+#endif
 
   // send tilt command
-  tilt = cmd.tilt;
+  tilt = (int)(cmd.tilt);
   tilt = tilt*SERVO_COUNTS_PER_DEGREE + SERVO_NEUTRAL;
   if (tilt > SERVO_MAX_COUNT)
     tilt = SERVO_MAX_COUNT;
   if (tilt < SERVO_MIN_COUNT)
     tilt = SERVO_MIN_COUNT;
 
+	printf("Send command to servo %d: %d\n", 1, tilt);
+
+#if
   packet = new ErraticPacket();
   payload[0] = (command_e)servo_pos;
   payload[1] = (argtype_e)argstr;
@@ -1669,6 +1676,7 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
   payload[5] = (tilt&0xff00)>>8;
   packet->Build(payload, 6);
   this->Send(packet);
+#endif
 }
 
 
