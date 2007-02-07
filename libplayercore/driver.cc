@@ -68,6 +68,10 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
   this->alwayson = false;
 
+  // The InQueue MUST be created before calling AddInterface
+  this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
+  assert(InQueue);
+
   // Create an interface 
   if(this->AddInterface(this->device_addr) != 0)
   {
@@ -75,8 +79,6 @@ Driver::Driver(ConfigFile *cf, int section,
     return;
   }
 
-  this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
-  assert(InQueue);
   pthread_mutex_init(&this->accessMutex,NULL);
 }
     
