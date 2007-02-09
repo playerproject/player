@@ -51,8 +51,8 @@ using the XBridge. The SSimp Full board is supported.
 
 @par Configuration file options
 
-- port (string)
-  - Default: "5555"
+- port (integer)
+  - Default: 5555
   - TCP port to which the XBridge data gets broadcasted.
 
 - node (integer tupple)
