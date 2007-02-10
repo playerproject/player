@@ -190,8 +190,6 @@ int CameraCompress::Setup()
     return(-1);
   }
 
-  return 0;
-
   // Start the driver thread.
   this->StartThread();
 
