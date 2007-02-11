@@ -92,7 +92,7 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD,
    (player_pack_fn_t)player_audio_sample_item_pack},
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_REC_REQ,
-   (player_pack_fn_t)player_audio_sample_item_pack},
+   (player_pack_fn_t)player_audio_sample_rec_req_pack},
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ,
    (player_pack_fn_t)player_audio_sample_pack},
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_SEQ_DATA,
@@ -631,7 +631,7 @@ playerxdr_get_func(uint16_t interf, uint8_t type, uint8_t subtype)
     curr = ftable + i;
     // Make sure the interface and subtype match exactly.
     // match anyway if interface = 0 (universal data types)
- 
+
     if((curr->interf == interf || curr->interf == 0) &&
       curr->type == type &&
       curr->subtype == subtype)

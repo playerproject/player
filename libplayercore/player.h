@@ -1096,15 +1096,28 @@ typedef struct player_audio_sample
 
 /** @brief Player audio sample selection
 
-Describes a pre-stored audio sample, use -1 for the index when recording
-if you wish the next available slot to be used
+Describes a pre-stored audio sample index
 
 */
 typedef struct player_audio_sample_item
 {
-  /** index to store it at or record to (-1 for next available where valid) */
+  /** index of the sample */
   int32_t index;
 } player_audio_sample_item_t;
+
+/** @brief Player audio sample record request
+
+Request to record a sample and store it locally.
+
+*/
+typedef struct player_audio_sample_rec_req
+{
+  /** Index to store at (-1 for next available). Ack will contain actual index
+  stored at. */
+  int32_t index;
+  /** Length of sample to record in ms. */
+  uint32_t length;
+} player_audio_sample_rec_req_t;
 
 /** @brief Player audio driver state
 
@@ -1673,7 +1686,7 @@ typedef struct player_camera_data
 
 /** @brief Request: Set the auto-illumination option on/off.
 
-Send a @ref PLAYER_CAMERA_REQ_SET_AUTOILLUMINATION request to turn the 
+Send a @ref PLAYER_CAMERA_REQ_SET_AUTOILLUMINATION request to turn the
 auto-illumination option on/off. Null response. */
 typedef struct player_camera_autoillumination_config
 {
@@ -1683,16 +1696,16 @@ typedef struct player_camera_autoillumination_config
 
 /** @brief Request/reply: Set/Get the modulation frequency.
 
-The modulation frequency can be set using the @ref 
+The modulation frequency can be set using the @ref
 PLAYER_CAMERA_REQ_SET_MODULATION_FREQ request (response will be null), and queried
 using a null @ref PLAYER_CAMERA_REQ_GET_MODULATION_FREQ request. */
 typedef struct player_camera_modulation_freq_config
 {
-    /** Modulation frequency setting. Note: The SwissRanger SR3000 employs the 
-       following values: 
-    	40MHz  -> 3.75 m, 
-    	30MHz  -> 5.0  m, 
-    	21MHz  -> 7.1  m, 
+    /** Modulation frequency setting. Note: The SwissRanger SR3000 employs the
+       following values:
+    	40MHz  -> 3.75 m,
+    	30MHz  -> 5.0  m,
+    	21MHz  -> 7.1  m,
     	20MHz  -> 7.5  m,
     	19MHz  -> 7.9  m,
     	10MHz  -> 15.0 m,
@@ -4348,7 +4361,7 @@ The ptz interface is used to control a pan-tilt-zoom unit, such as a camera.
 /** Request/reply subtype: geometry */
 #define PLAYER_PTZ_REQ_GEOM            4
 /** Request/reply subtype: status */
-#define PLAYER_PTZ_REQ_STATUS      5 
+#define PLAYER_PTZ_REQ_STATUS      5
 
 /** Data subtype: state */
 #define PLAYER_PTZ_DATA_STATE      1
