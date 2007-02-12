@@ -205,10 +205,10 @@ void AudioProxy::GetSample(int aIndex)
 }
 
 /** @brief Request to record new sample */
-void AudioProxy::RecordSample(int aIndex)
+void AudioProxy::RecordSample(int aIndex, uint32_t aLength)
 {
   scoped_lock_t lock(mPc->mMutex);
-  int ret = playerc_audio_sample_rec(mDevice, aIndex);
+  int ret = playerc_audio_sample_rec(mDevice, aIndex, aLength);
 
   if (ret == -2)
     throw PlayerError("AudioProxy::RecordSample", "NACK", ret);

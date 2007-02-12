@@ -281,7 +281,7 @@ class AudioProxy : public ClientProxy
     void GetSample(int aIndex);
 
     /** @brief Request to record new sample */
-    void RecordSample(int aIndex);
+    void RecordSample(int aIndex, uint32_t aLength);
 
     /** @brief Request mixer channel data
     result is stored in mixer_data*/
@@ -1065,7 +1065,7 @@ class LaserProxy : public ClientProxy
 
     /// Number of points in scan
     uint GetCount() const { return GetVar(mDevice->scan_count); };
-    
+
     /// Max range for the latest set of data (meters)
     double GetMaxRange() const { return GetVar(mDevice->max_range); };
 
@@ -2169,12 +2169,12 @@ class SimulationProxy : public ClientProxy
 
     /// set the 3D pose of an object in the simulator, identified by the
     /// std::string. Returns 0 on success, else a non-zero error code.
-    void SetPose3d(char* identifier, double x, double y, double z, 
+    void SetPose3d(char* identifier, double x, double y, double z,
                    double roll, double pitch, double yaw);
 
     /// get the 3D pose of an object in the simulator, identified by the
     /// std::string Returns 0 on success, else a non-zero error code.
-    void GetPose3d(char* identifier, double& x, double& y, double& z, 
+    void GetPose3d(char* identifier, double& x, double& y, double& z,
                    double& roll, double& pitch, double& yaw, double& time);
 };
 

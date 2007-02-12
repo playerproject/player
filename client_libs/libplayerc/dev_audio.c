@@ -236,16 +236,21 @@ int playerc_audio_sample_retrieve(playerc_audio_t *device, int index)
 }
 
 /** @brief Request to record new sample */
-int playerc_audio_sample_rec(playerc_audio_t *device, int index)
+int playerc_audio_sample_rec(playerc_audio_t *device, int index, uint32_t length)
 {
   int result = 0;
-  player_audio_sample_item_t req;
+  player_audio_sample_rec_req_t req;
+  player_audio_sample_rec_req_t rep;
+  memset (&rep, 0, sizeof (player_audio_sample_rec_req_t));
   req.index = index;
+  req.length = length;
   if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_AUDIO_SAMPLE_REC_REQ,
-                            &req, NULL, 0)) < 0)
+                            &req, &rep, sizeof (player_audio_sample_rec_req_t))) < 0)
     return result;
 
+//  *index = req.index;
+  device->last_index = rep.index;
   return 0;
 }
 
