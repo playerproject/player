@@ -287,7 +287,7 @@ Erratic::Erratic(ConfigFile* cf, int section)
   }
 
   // Do we create the second ptz interface?
-  if(cf->ReadDeviceAddr(&(this->ptz2_id), section, "provides", PLAYER_PTZ_CODE, -1, NULL) == 0) {
+  if(cf->ReadDeviceAddr(&(this->ptz2_id), section, "provides", PLAYER_PTZ_CODE, -1, "tilt") == 0) {
     if(this->AddInterface(this->ptz2_id) != 0) {
       this->SetError(-1);
       return;
