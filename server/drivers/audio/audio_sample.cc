@@ -24,6 +24,9 @@
 #include "audio_sample.h"
 
 #include <stdlib.h>
+#include <iostream>
+
+using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
 //	Class functions
@@ -48,6 +51,68 @@ AudioSample::AudioSample (void)
 	headerSize = 0;
 	dataLength = 0;
 	data = NULL;
+}
+
+// Constructor from Player type
+AudioSample::AudioSample (const player_audio_wav_t *source)
+{
+	// Set the sample type to none
+	type = SAMPLE_TYPE_NONE;
+	// Blank wave data
+	numChannels = 0;
+	sampleRate = 0;
+	byteRate = 0;
+	blockAlign = 0;
+	bitsPerSample = 0;
+	numFrames = 0;
+	// Blank storage variables
+	position = 0;
+	waveFile = NULL;
+	filePath = NULL;
+	headerSize = 0;
+	dataLength = 0;
+	data = NULL;
+
+	if (!FromPlayer (source))
+		PLAYER_ERROR ("unable to create audio sample from Player data");
+}
+
+// Constructor from raw data
+// source: the data to copy from
+// length: number of _bytes_ in the data (not frames)
+// channels: number of channels in the data
+// sr: sample rate
+// bps: bits per sample (8, 16, etc)
+AudioSample::AudioSample (const uint8_t *source, uint32_t length, uint16_t channels, uint32_t sr, uint16_t bps)
+{
+	// Set the sample type to memory
+	type = SAMPLE_TYPE_MEM;
+	// Set wave info
+	numChannels = channels;
+	sampleRate = sr;
+	bitsPerSample = bps;
+	// Calculate the other format info
+	blockAlign = numChannels * (bitsPerSample / 8);
+	byteRate = sampleRate * blockAlign;
+
+	// Blank other storage variables
+	position = 0;
+	waveFile = NULL;
+	filePath = NULL;
+	headerSize = 0;
+	dataLength = 0;
+	data = NULL;
+
+	// Allocate memory for the data
+	if ((data = new uint8_t[length]) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for wave data");
+		return;
+	}
+	// Copy the wave data across
+	memcpy (data, source, length);
+	dataLength = length;
+	numFrames = dataLength / blockAlign;
 }
 
 // Destructor
@@ -102,10 +167,10 @@ uint32_t AudioSample::GetDataLength (void) const
 }
 
 // Get a block of wave data
-// count: The number of _frames_ to get (not bytes!)
+// frameCount: The number of _frames_ to get (not bytes!)
 // buffer: The buffer to store the frames in (must allocate enough)
 // Returns: the number of frames actually stored in buffer
-int AudioSample::GetData (int count, uint8_t *buffer)
+int AudioSample::GetData (int frameCount, uint8_t *buffer)
 {
 	int bytesCopied = 0;
 
@@ -117,7 +182,7 @@ int AudioSample::GetData (int count, uint8_t *buffer)
 	}
 
 	// Number of bytes to copy is number of frames to copy * frame size
-	int bytesCount = count * blockAlign;
+	int bytesCount = frameCount * blockAlign;
 
 	if (type == SAMPLE_TYPE_NONE)
 	{
@@ -133,7 +198,7 @@ int AudioSample::GetData (int count, uint8_t *buffer)
 			PLAYER_ERROR1 ("Error seeking to current position in wave file: %s", strerror (errno));
 			return -1;
 		}
-		// Number of bytes to copy shouldn't take us beyond the end of the array
+		// Number of bytes to copy shouldn't take us beyond the end of the data
 		int bytesToCopy = (position + bytesCount) > dataLength ? (dataLength - position) : bytesCount;
 		// Read into the buffer provided the number of bytes to copy
 		if ((bytesCopied = fread (buffer, 1, bytesToCopy, waveFile)) == 0)
@@ -146,7 +211,7 @@ int AudioSample::GetData (int count, uint8_t *buffer)
 		}
 		else if (bytesCopied < bytesToCopy)
 		{
-			printf ("Error reading wave data from file (didn't get enough bytes): %s\n", strerror (errno));
+			PLAYER_ERROR1 ("Error reading wave data from file (didn't get enough bytes): %s\n", strerror (errno));
 			// Return what we got, driver will assume end of data and move to next sample in queue
 		}
 	}
@@ -243,7 +308,9 @@ bool AudioSample::FillSilence (uint32_t time)
 // player format flags, the copy isn't performed and an error is returned
 bool AudioSample::ToPlayer (player_audio_wav_t *dest)
 {
-	if (type == SAMPLE_TYPE_NONE || data == NULL)
+
+
+	if (type == SAMPLE_TYPE_NONE || (type == SAMPLE_TYPE_MEM && data == NULL) || (type == SAMPLE_TYPE_FILE && filePath == NULL))
 	{
 		PLAYER_WARN ("No sample to convert to player format");
 		return false;
@@ -293,10 +360,10 @@ bool AudioSample::ToPlayer (player_audio_wav_t *dest)
 			return false;
 	}
 
-	// Copy at most PLAYER_AUDIO_WAV_BUFFER_SIZE bytes of data
-	uint32_t bytesToCopy = PLAYER_AUDIO_WAV_BUFFER_SIZE;
-	if (dataLength < bytesToCopy)
-		bytesToCopy = dataLength;
+	// Copy as many frames as can fit into PLAYER_AUDIO_WAV_BUFFER_SIZE bytes
+	uint32_t framesToCopy = PLAYER_AUDIO_WAV_BUFFER_SIZE / blockAlign;
+	if (numFrames < framesToCopy)
+		framesToCopy = numFrames;
 	if (type == SAMPLE_TYPE_FILE)
 	{
 		// Remember the current data position
@@ -304,16 +371,16 @@ bool AudioSample::ToPlayer (player_audio_wav_t *dest)
 		// Move to the start of the wave
 		SetDataPosition (0);
 		// Grab some data, put it in the player struct
-		GetData (bytesToCopy, dest->data);
+		printf ("copied %d frames\n", GetData (framesToCopy, dest->data));
 		// Move back to where we were
 		SetDataPosition (currentPos);
 	}
 	else
 	{
 		// Just copy. Nice and easy.
-		memcpy (&dest->data, data, bytesToCopy);
+		memcpy (&dest->data, data, framesToCopy * blockAlign);
 	}
-	dest->data_count = bytesToCopy;
+	dest->data_count = framesToCopy * blockAlign;
 
 	return true;
 }
@@ -640,38 +707,38 @@ void AudioSample::CopyFormat (const AudioSample *rhs)
 void AudioSample::PrintWaveInfo (void)
 {
 	if (type == SAMPLE_TYPE_FILE)
-		printf ("File sample, path: %s\n", filePath);
+		cout << "File sample, path: " << filePath << endl;
 	else if (type == SAMPLE_TYPE_MEM)
-		printf ("Memory sample\n");
+		cout << "Memory sample" << endl;
 	else
-		printf ("Empty sample\n");
-	printf ("Num channels:\t%d\n", numChannels);
-	printf ("Sample rate:\t%d\n", sampleRate);
-	printf ("Byte rate:\t%d\n", byteRate);
-	printf ("Block align:\t%d\n", blockAlign);
-	printf ("Format:\t\t");
+		cout << "Empty sample" << endl;
+	cout << "Num channels:\t" << numChannels << endl;
+	cout << "Sample rate:\t" << sampleRate << endl;
+	cout << "Byte rate:\t" << byteRate << endl;
+	cout << "Block align:\t" << blockAlign << endl;
+	cout << "Format:\t\t" << endl;
 	switch (bitsPerSample)
 	{
 		case 8:
-			printf ("Unsigned 8 bit\n");
+			cout << "Unsigned 8 bit" << endl;
 			break;
 		case 16:
-			printf ("Signed 16 bit little-endian\n");
+			cout << "Signed 16 bit little-endian" << endl;
 			break;
 		case 24:
 			if ((blockAlign / numChannels) == 3)
-				printf ("Signed 24 bit 3-byte little-endian\n");
+				cout << "Signed 24 bit 3-byte little-endian" << endl;
 			else
-				printf ("Signed 24 bit little-endian\n");
+				cout << "Signed 24 bit little-endian" << endl;
 			break;
 		case 32:
-			printf ("Signed 32 bit little-endian\n");
+			cout << "Signed 32 bit little-endian" << endl;
 			break;
 		default:
-			printf ("Unplayable format: %d bit\n", bitsPerSample);
+			cout << "Unplayable format: " << bitsPerSample << " bit" << endl;
 	}
-	printf ("Num frames:\t%d\n", numFrames);
-	printf ("Data length:\t%d\n", dataLength);
+	cout << "Num frames:\t" << numFrames << endl;
+	cout << "Data length:\t" << dataLength << endl;
 	if (type == SAMPLE_TYPE_FILE)
-		printf ("Data starts at:\t%d\n", headerSize);
+		cout << "Frames start at:\t" << headerSize << endl;
 }
