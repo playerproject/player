@@ -711,7 +711,7 @@ void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds);
 /** @brief Set the connection retry limit.
 
 @param client Pointer to the client object
-@param limit The number of times to attempt to reconnect to the server.  Give -1 for 
+@param limit The number of times to attempt to reconnect to the server.  Give -1 for
        infinite retry.
 */
 void playerc_client_set_retry_limit(playerc_client_t* client, int limit);
@@ -999,6 +999,8 @@ typedef struct
   /** current driver state */
   uint32_t state;
 
+  int last_index;
+
 } playerc_audio_t;
 
 /** @brief Create an audio proxy. */
@@ -1043,7 +1045,7 @@ Data is stored in wav_data */
 int playerc_audio_sample_retrieve(playerc_audio_t *device, int index);
 
 /** @brief Request to record new sample */
-int playerc_audio_sample_rec(playerc_audio_t *device, int index);
+int playerc_audio_sample_rec(playerc_audio_t *device, int index, uint32_t length);
 
 /** @brief Request mixer channel data
 result is stored in mixer_data*/
@@ -1758,7 +1760,7 @@ typedef struct
 
   /** ID for this scan */
   int scan_id;
-  
+
   /** Laser IDentification information */
   int laser_id;
 
@@ -2835,16 +2837,16 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
 
 /** @brief Set the 3D pose of a named simulation object */
 int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name,
-				  double gx, double gy, double gz, 
+				  double gx, double gy, double gz,
 				  double groll, double gpitch, double gyaw);
 
 /** @brief Get the 3D pose of a named simulation object */
 int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier,
-				  double *x, double *y, double *z, 
+				  double *x, double *y, double *z,
 				  double *roll, double *pitch, double *yaw, double *time);
 
 /** @brief Set a property value */
-int playerc_simulation_set_property(playerc_simulation_t *device, 
+int playerc_simulation_set_property(playerc_simulation_t *device,
                                     char* name,
                                     char* property,
                                     void* value,
