@@ -30,22 +30,24 @@
  * @brief Linux ALSA sound system driver
 
 This driver provides access to sound playing and recording functionality through
-the Advanced linux Sound Architecture (ALSA) system available on 2.6 series
+the Advanced Linux Sound Architecture (ALSA) system available on 2.6 series
 kernels (and before via patches/separate libraries).
 
 Not all of the audio interface is supported. Currently supported features are:
 
 PLAYER_AUDIO_WAV_PLAY_CMD - Play raw PCM wave data
 PLAYER_AUDIO_SAMPLE_PLAY_CMD - Play locally stored and remotely provided samples
+PLAYER_AUDIO_WAV_STREAM_REC_CMD - Toggle streamed-to-client recording
 PLAYER_AUDIO_MIXER_CHANNEL_CMD - Change volume levels
-PLAYER_AUDIO_SAMPLE_LOAD_REQ - Store samples provided by remote clients (max 1MB)
 PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ - Get channel details
 PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ - Get volume levels
+PLAYER_AUDIO_SAMPLE_LOAD_REQ - Store samples provided by remote clients (max 1MB)
 PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ - Send stored samples to remote clients (max 1MB)
+PLAYER_AUDIO_SAMPLE_REC_REQ - Record new samples directly on the server
 
 Known bugs:
 - Sounds may skip just as they finish playing. This is something to do with the
-  call to snd_pcm_drain, but I haven't figured out why yet.
+  call to snd_pcm_drain.
 
 @par Samples
 
@@ -64,12 +66,17 @@ seconds of audio data at 44100Hz, 16 bit, stereo. Local samples can be as big
 as you have memory. A future version of the driver will implement play-on-read,
 meaning local samples will only be limited by disc space to store them.
 
-When using the PLAYER_AUDIO_SAMPLE_LOAD_REQ message to store samples, currently
-only appending and overwriting existing samples is allowed. Trying to store at
-a specific index greater than the number of currently stored samples will result
-in an error. Note that the samples indices are 0-based, so if there are 5
-samples stored and you request to store one at index 5 (technically beyond the
-end of the list), it will append to the end and become the sample at index 5.
+When retrieving samples from the server via the PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ
+request, note that any sample with a data length greater than
+PLAYER_AUDIO_WAV_BUFFER_SIZE will be truncated to this size.
+
+When using the PLAYER_AUDIO_SAMPLE_LOAD_REQ and PLAYER_AUDIO_SAMPLE_REC_REQ
+messages to store samples, currently only appending and overwriting existing
+samples is allowed. Trying to store at a specific index greater than the number
+of currently stored samples will result in an error. Note that the samples
+indices are 0-based, so if there are 5 samples stored and you request to store
+one at index 5 (technically beyond the end of the list), it will append to the
+end and become the sample at index 5.
 TODO: Talk to Toby to clarify his intentions for the index in this message.
 
 @par Provides
@@ -78,6 +85,9 @@ The driver provides a single @ref interface_audio interface.
 
 @par Configuration file options
 
+- samples (tuple of strings)
+  - Default: empty
+  - The path of wave files to have as locally stored samples.
 - pbdevice (string)
   - Default: none
   - The device to use for playback.
@@ -85,21 +95,6 @@ The driver provides a single @ref interface_audio interface.
   - e.g. "plughw:0,0"
   - The order of arguments in this string, according to the ALSA documentation,
     are card number or identifier, device number and subdevice.
-- mixerdevice (string)
-  - Default: none
-  - The device to attach the mixer interface to
-  - If none, mixer functionality will not be available.
-  - e.g. "default"
-- recdevice (string)
-  - Default: none
-  - The device to use for recording.
-  - If none, record functionality will not be available.
-  - e.g. "plughw:0,0"
-  - The order of arguments in this string, according to the ALSA documentation,
-    are card number or identifier, device number and subdevice.
-- samples (tuple of strings)
-  - Default: empty
-  - The path of wave files to have as locally stored samples.
 - pb_bufferlength (integer)
   - Default: 500ms
   - The length of the playback buffer. A longer buffer means less chance of
@@ -121,10 +116,21 @@ The driver provides a single @ref interface_audio interface.
     and PLAYER_AUDIO_SAMPLE_PLAY_CMD commands will be added to a queue and
     played in order of request. When off, sending a new command will stop the
     currently playing sound and start the new one.
+- recdevice (string)
+  - Default: none
+  - The device to use for recording.
+  - If none, record functionality will not be available.
+  - e.g. "plughw:0,0"
+  - The order of arguments in this string, according to the ALSA documentation,
+    are card number or identifier, device number and subdevice.
 - rec_bufferlength (integer)
   - Default: 500ms
   - The length of the record buffer. A longer buffer means less chance of
     an underrun while recording.
+- rec_storelength (integer)
+  - Default: Same as rec_bufferlength
+  - The length of recorded data to store before sending that data to clients.
+    Can be less than rec_bufferlength.
 - rec_periodlength (integer)
   - Default: 50ms
   - The length of a period for recording. This is used to change how frequently
@@ -139,6 +145,30 @@ The driver provides a single @ref interface_audio interface.
 - rec_bits (integer)
   - Default: 16
   - Bits per sample for recording.
+- mixerdevice (string)
+  - Default: none
+  - The device to attach the mixer interface to
+  - If none, mixer functionality will not be available.
+  - e.g. "default"
+- mixerfilters (tuple of strings)
+  - Default: none
+  - A typical ALSA mixer contains a large number of elements, providing detailed
+    control over all aspects of the sound system. The disadvantage of this is
+    that many of them will be irrelevant to your needs. This driver option
+    allows the list of available elements presented to clients to be filtered
+    by name. Only those elements whose names include one of the strings in this
+    list will be seen by clients.
+  - The strings in this list are case insensitive, and by default do not need to
+    match an element's entire name. If you want to change this, use the
+    mixerfilterexact option.
+  - The best way to find the names of the elements you need is to run without a
+    filter list first, get the elements from the server and print them out. Then
+    check which ones you need and use those as the filters.
+- mixerfilterexact (bool)
+  - Default: false
+  - When set to false, filters listed in mixerfilters will not need to match an
+    element's entire name nor be case sensitive.
+  - When set to true, an element's name must exactly match a filter to pass.
 
 @par Example
 
@@ -148,6 +178,7 @@ driver
   name "alsa"
   provides ["audio:0"]
   samples ["sample1.wav" "sample2.wav" "sample3.wav"]
+  mixerfilters ["master" "pcm" "capture"]
 )
 @endverbatim
 
@@ -155,8 +186,20 @@ driver
  */
 /** @} */
 
+/* Debug info levels:
+ * 0	None
+ * 1	Samples loaded at startup, mixer filters
+ * 2	Mixer elements enumerated + capabilities
+ * 3	Sample info
+ * 4	Recording start/stop, message handling
+ * 5	Ludicrous amounts of info
+ */
+
 #include <libplayercore/playercore.h>
 #include <sys/time.h>
+#include <string.h>
+#include <iostream>
+using namespace std;
 
 #include "alsa.h"
 
@@ -218,7 +261,10 @@ bool Alsa::AddStoredSample (player_audio_wav_t *waveData)
 	newSample->index = nextSampleIdx++;
 	newSample->next = NULL;
 
-	printf ("ALSA: Added stored sample to list at index %d\n", newSample->index);
+	if (debugLevel >= 1)
+		 cout << "ALSA: Added stored sample to list at index " << newSample->index << endl;
+	if (debugLevel >= 3)
+		 newSample->sample->PrintWaveInfo ();
 	return AddStoredSample (newSample);
 }
 
@@ -248,7 +294,10 @@ bool Alsa::AddStoredSample (const char *filePath)
 	newSample->index = nextSampleIdx++;
 	newSample->next = NULL;
 
-	printf ("ALSA: Added stored sample %s list at index %d\n", filePath, newSample->index);
+	if (debugLevel >= 1)
+		cout << "ALSA: Added stored sample " << filePath << " to list at index " << newSample->index << endl;
+	if (debugLevel >= 3)
+		newSample->sample->PrintWaveInfo ();
 	return AddStoredSample (newSample);
 }
 
@@ -1014,6 +1063,31 @@ bool Alsa::SetRecParams (void)
 	return true;
 }
 
+// Created a buffer to store recorded data into
+// length: the size of the buffer in ms
+bool Alsa::SetupRecordBuffer (uint32_t length)
+{
+	// If recData exists, delete it
+	if (recData)
+	{
+		PLAYER_WARN ("recData not empty before starting recording");
+		delete[] recData;
+	}
+	// Allocate a data storage area big enough for the time required
+	uint32_t bytesPerSec = recNumChannels * (recBits / 8) * recSampleRate;
+	recDataLength = static_cast<uint32_t> (bytesPerSec * (length / 1000.0f));
+	// Need to ensure the length is a multiple of the frame size
+	recDataLength = recDataLength - (recDataLength % ((recBits / 8) * recNumChannels));
+	if ((recData = new uint8_t[recDataLength]) == NULL)
+	{
+		PLAYER_ERROR ("Failed to allocate memory for recorded data buffer");
+		return false;
+	}
+	recDataOffset = 0;
+
+	return true;
+}
+
 // Called to write data to the playback buffer when it is ready for writing
 // numFrames: The number of frames that can be written
 void Alsa::RecordCallback (int numFrames)
@@ -1030,18 +1104,18 @@ void Alsa::RecordCallback (int numFrames)
 	while (totalRead < numFrames)
 	{
 		int framesToRead = numFrames - totalRead;
-		if (snd_pcm_frames_to_bytes (recHandle, framesToRead) + recData->data_count > PLAYER_AUDIO_WAV_BUFFER_SIZE)
+		if (snd_pcm_frames_to_bytes (recHandle, framesToRead) + recDataOffset > recDataLength)
 			// Don't read past the end of the buffer
-			framesToRead = snd_pcm_bytes_to_frames (recHandle, PLAYER_AUDIO_WAV_BUFFER_SIZE - recData->data_count);
-		int framesRead = snd_pcm_readi (recHandle, &recData->data[recData->data_count], framesToRead);
+			framesToRead = snd_pcm_bytes_to_frames (recHandle, recDataLength - recDataOffset);
+		int framesRead = snd_pcm_readi (recHandle, &recData[recDataOffset], framesToRead);
 		// If got data
 		if (framesRead > 0)
 		{
-			recData->data_count += snd_pcm_frames_to_bytes (recHandle, framesRead);
+			recDataOffset += snd_pcm_frames_to_bytes (recHandle, framesRead);
 			totalRead += framesRead;
 			// If this buffer is full, publish the data (resetting the buffer to zero)
-			if (recData->data_count >= ((recSampleRate * cfgRecBufferTime)/1000) * recNumChannels * recBits/8)
-				PublishRecordedData ();
+			if (recDataOffset >= recDataLength)
+				HandleRecordedData ();
 		}
 		// Overrun
 		else if (framesRead == -EPIPE)
@@ -1059,17 +1133,135 @@ void Alsa::RecordCallback (int numFrames)
 	}
 }
 
+// Handles data recorded by sending it to the current recording destination
+void Alsa::HandleRecordedData (void)
+{
+	// If the destination is a client, publish the data and keep recording
+	if (recDest < 0)
+	{
+		PublishRecordedData ();
+		return;
+	}
+
+	// Otherwise it must be for a sample, so store it (overwriting as necessary)
+	// The StoredSample for the sample on the list will already be present because
+	// if replacing, just reuse the StoredSample struct, if not replacing then
+	// there will be a placeholder StoredSample waiting
+
+	// Find the sample slot
+	StoredSample *sampleSlot;
+	if ((sampleSlot = GetSampleAtIndex (recDest)) == NULL)
+	{
+		PLAYER_ERROR1 ("Couldn't find sample at index %d", recDest);
+	}
+	else
+	{
+		// Create the new sample
+		AudioSample *newSample = NULL;
+		if ((newSample = new AudioSample (recData, recDataLength, recNumChannels, recSampleRate, recBits)) == NULL)
+		{
+			PLAYER_ERROR ("Failed to allocate memory for new audio sample");
+		}
+		else
+		{
+			// Delete the old sample if there is one
+			if (sampleSlot->sample)
+				delete sampleSlot->sample;
+			// Update the pointer
+			sampleSlot->sample = newSample;
+		}
+	}
+
+	// All done (for better or for worse), clean up
+	delete[] recData;	// Have to do this before called StopRecording to avoid recursion
+	recData = NULL;
+	StopRecording ();	// Because only recording one sample, can stop recording now
+}
+
+// Publishes recorded data to clients
 void Alsa::PublishRecordedData (void)
 {
 	// Don't do anything if there is no data
-	if (!recData)
+	if (!recData || recDataOffset == 0)
 		return;
-	if (recData->data_count == 0)
+
+	// Create a data structure for sending data to clients
+	player_audio_wav_t packet;
+	memset (&packet, 0, sizeof (player_audio_wav_t));
+
+	// Set the format field of the data structure
+	packet.format = PLAYER_AUDIO_FORMAT_RAW;
+	if (recNumChannels == 2)
+		packet.format |= PLAYER_AUDIO_STEREO;
+	else if (recNumChannels != 1)
+	{
+		PLAYER_ERROR ("Cannot convert wave to player struct: wrong number of channels");
+		delete recData;
+		recData = NULL;
+		StopRecording ();
 		return;
-	// Publish the recorded data
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_WAV_REC_DATA, reinterpret_cast<void*> (recData), sizeof (player_audio_wav_t), NULL);
-	// Reset record position
-	recData->data_count = 0;
+	}
+	switch (recSampleRate)
+	{
+		case 11025:
+			packet.format |= PLAYER_AUDIO_FREQ_11k;
+			break;
+		case 22050:
+			packet.format |= PLAYER_AUDIO_FREQ_22k;
+			break;
+		case 44100:
+			packet.format |= PLAYER_AUDIO_FREQ_44k;
+			break;
+		case 48000:
+			packet.format |= PLAYER_AUDIO_FREQ_48k;
+			break;
+		default:
+			PLAYER_ERROR ("Cannot convert wave to player struct: wrong sample rate");
+			delete recData;
+			recData = NULL;
+			StopRecording ();
+			return;
+	}
+	switch (recBits)
+	{
+		case 8:
+			packet.format |= PLAYER_AUDIO_8BIT;
+			break;
+		case 16:
+			packet.format |= PLAYER_AUDIO_16BIT;
+			break;
+		case 24:
+			packet.format |= PLAYER_AUDIO_24BIT;
+			break;
+		default:
+			PLAYER_ERROR ("Cannot convert wave to player struct: wrong format (bits per sample)");
+			delete recData;
+			recData = NULL;
+			StopRecording ();
+			return;
+	}
+
+	// Publish the data, splitting as necessary
+	uint32_t copiedOffset = 0;
+	while (copiedOffset < recDataOffset)
+	{
+		// Clear the packet's data
+		memset (&(packet.data), 0, PLAYER_AUDIO_WAV_BUFFER_SIZE);
+		// Copy from copiedOffset to whichever is closer of recDataOffset and PLAYER_AUDIO_WAV_BUFFER_SIZE
+		uint32_t bytesToCopy;
+		if ((recDataOffset - copiedOffset) < PLAYER_AUDIO_WAV_BUFFER_SIZE)
+			bytesToCopy = recDataOffset - copiedOffset;	// Copy until the end of the recorded data
+		else
+			bytesToCopy = PLAYER_AUDIO_WAV_BUFFER_SIZE;	// Copy another chunk out
+		memcpy (&(packet.data), &recData[copiedOffset], bytesToCopy);
+		copiedOffset += bytesToCopy;
+		packet.data_count = bytesToCopy;
+
+		// Publish this packet
+		Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_WAV_REC_DATA, reinterpret_cast<void*> (&packet), sizeof (player_audio_wav_t), NULL);
+	}
+	// Set the local record buffer position back to the start
+	recDataOffset = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1086,8 +1278,11 @@ void Alsa::StartPlayback (void)
 	// If there is data in the queue
 	if (queueHead != NULL)
 	{
-// 		printf ("Playing sample:\n");
-// 		queueHead->sample->PrintWaveInfo ();
+		if (debugLevel >= 4)
+		{
+			cout << "ALSA: Starting playback, sample info:" << endl;
+			queueHead->sample->PrintWaveInfo ();
+		}
 		// Set the parameters for the head of the queue
 		SetPBParams (queueHead->sample);
 		// Set playback state to PLAYING
@@ -1102,10 +1297,13 @@ void Alsa::StartPlayback (void)
 // queue position
 void Alsa::StopPlayback (void)
 {
+	if (debugLevel >= 4)
+		cout << "ALSA: Stopping playback" << endl;
+
 	// Set playback to false
 	playState = PB_STATE_STOPPED;
 	// Drop anything currently in the buffer and stop the card
-    if( pbHandle )
+    if (pbHandle)
         snd_pcm_drop (pbHandle);
 
 	// Update clients about state
@@ -1118,71 +1316,17 @@ void Alsa::StartRecording (void)
 	// Don't do anything if already recording or no device
 	if (recState != PB_STATE_STOPPED || !recHandle)
 		return;
-
-	// Allocate a data storage area
-	if (recData)
-		PLAYER_WARN ("recData not empty before starting recording");
-	if ((recData = new player_audio_wav_t) == NULL)
+	// Also an error if nowhere to record to
+	if (!recData)
 	{
-		PLAYER_ERROR ("Failed to allocate memory for recorded data buffer");
+		PLAYER_ERROR ("Tried to start recording with no local data buffer");
 		return;
 	}
-	recData->data_count = 0;
-	// Set the format field of the data structure
-/*	recData->ClearSample ();
-	recData->SetType (SAMPLE_TYPE_MEM);
-	recData->SetNumChannels (recNumChannels);
-	recData->SetSampleRate (recSampleRate);
-	recData->SetBitsPerSample (recBits);
-	recData->SetBlockAlign ((recBits * recNumChannels) / 8);*/
-	recData->format = PLAYER_AUDIO_FORMAT_RAW;
-	if (recNumChannels == 2)
-		recData->format |= PLAYER_AUDIO_STEREO;
-	else if (recNumChannels != 1)
-	{
-		PLAYER_ERROR ("Cannot convert wave to player struct: wrong number of channels");
-		delete recData;
-		recData = NULL;
-		return;
-	}
-	switch (recSampleRate)
-	{
-		case 11025:
-			recData->format |= PLAYER_AUDIO_FREQ_11k;
-			break;
-		case 22050:
-			recData->format |= PLAYER_AUDIO_FREQ_22k;
-			break;
-		case 44100:
-			recData->format |= PLAYER_AUDIO_FREQ_44k;
-			break;
-		case 48000:
-			recData->format |= PLAYER_AUDIO_FREQ_48k;
-			break;
-		default:
-			PLAYER_ERROR ("Cannot convert wave to player struct: wrong sample rate");
-			delete recData;
-			recData = NULL;
-			return;
-	}
 
-	switch (recBits)
-	{
-		case 8:
-			recData->format |= PLAYER_AUDIO_8BIT;
-			break;
-		case 16:
-			recData->format |= PLAYER_AUDIO_16BIT;
-			break;
-		case 24:
-			recData->format |= PLAYER_AUDIO_24BIT;
-			break;
-		default:
-			PLAYER_ERROR ("Cannot convert wave to player struct: wrong format (bits per sample)");
-			delete recData;
-			recData = NULL;
-			return;
-	}
+	if (debugLevel >= 4)
+		cout << "ALSA: Starting recording, destination: " << ((recDest < 0) ? "clients" : "sample") << endl;
+
+	recDataOffset = 0;
 	// Prepare the recording device
 	snd_pcm_prepare (recHandle);
 	// Start the recording device
@@ -1191,6 +1335,7 @@ void Alsa::StartRecording (void)
 	{
 		PLAYER_ERROR2 ("Error starting recording: (%d) %s", result, snd_strerror (result));
 		delete recData;
+		recData = NULL;
 		return;
 	}
 	// Move to recording state
@@ -1203,14 +1348,21 @@ void Alsa::StartRecording (void)
 // Stop recording sound
 void Alsa::StopRecording (void)
 {
+	if (debugLevel >= 4)
+		cout << "ALSA: Stopping recording" << endl;
+
 	// Stop the device
 	snd_pcm_drop (recHandle);
 	// Move to stopped state
 	recState = PB_STATE_STOPPED;
-	// If there is data left over, publish it
-	PublishRecordedData ();
-	delete recData;
-	recData = NULL;
+	// If there is data left over, handle it
+	if (recData)
+	{
+		HandleRecordedData ();
+		delete[] recData;
+		recData = NULL;
+	}
+	recDataOffset = 0;
 
 	// Update clients about state
 	SendStateMessage ();
@@ -1237,7 +1389,7 @@ bool Alsa::SetupMixer (void)
 		return false;
 	}
 
-	// Register... something
+	// Register... something that the alsa docs weren't very clear on
 	if (snd_mixer_selem_register (mixerHandle, NULL, NULL) < 0)
 	{
 		PLAYER_WARN ("Could not register mixer");
@@ -1271,11 +1423,12 @@ bool Alsa::EnumMixerElements (void)
 	{
 		if (snd_mixer_elem_get_type (elem) == SND_MIXER_ELEM_SIMPLE && snd_mixer_selem_is_active (elem))
 			count++;
-		else
-			printf ("Skipping element\n");
+		else if (debugLevel >= 5)
+			cout << "ALSA: Skipping non-SND_MIXER_ELEM_SIMPLE or inactive element" << endl;
 	}
 
-// 	printf ("Found %d elements to enumerate\n", count);
+	if (debugLevel >= 5)
+		cout << "ALSA: Found " << count << " elements to enumerate" << endl;
 
 	// Allocate space to store the elements
 	if (count <= 0)
@@ -1304,19 +1457,40 @@ bool Alsa::EnumMixerElements (void)
 			}
 		}
 	}
-	uint32_t newCount = count;
+
 	// Split channels capable of both playback and capture (makes it easier to manage via player)
-	if ((mixerElements = SplitElements (elements, newCount)) == NULL)
+	MixerElement *splitElems = NULL;
+	uint32_t newCount = count;
+	if ((splitElems = SplitElements (elements, newCount)) == NULL)
 	{
 		PLAYER_WARN ("Error splitting mixer elements");
 		CleanUpMixerElements (elements, count);
 		return false;
 	}
-	numElements = newCount;
 
+	// Done with the old elements list now
 	CleanUpMixerElements (elements, count);
 
-// 	PrintMixerElements (mixerElements, numElements);
+	// Filter elements by mixerFilters if necessary
+	// Needs to be done after splitting them to ensure we have got the most accurate element names
+	uint32_t newNewCount = newCount;
+	if (mixerFilters)
+	{
+		if ((mixerElements = FilterElements (splitElems, newNewCount)) == NULL)
+		{
+			PLAYER_WARN ("Error filtering mixer elements");
+			CleanUpMixerElements (splitElems, newCount);
+			return false;
+		}
+		// Note that FilterElements will take care of cleaning up any unused elements for us
+	}
+	else
+		mixerElements = splitElems;
+
+	numElements = newNewCount;
+
+	if (debugLevel >= 2)
+		PrintMixerElements (mixerElements, numElements);
 	return true;
 }
 
@@ -1357,7 +1531,8 @@ bool Alsa::EnumElementCaps (MixerElement *element)
 	element->capSwitch = 1;
 	element->comSwitch = 1;
 
-// 	printf ("Found mixer element: %s\n", element->name);
+	if (debugLevel >= 5)
+		cout << "ALSA: Found mixer element: " << element->name << endl;
 	// Find channels for this element
 	for (int ii = -1; ii <= (int) SND_MIXER_SCHN_LAST; ii++)
 	{
@@ -1520,6 +1695,82 @@ MixerElement* Alsa::SplitElements (MixerElement *elements, uint32_t &count)
 	}
 
 	count = numSplitElements;
+	return result;
+}
+
+// Filters elements by their name according to the strings in mixerFilters
+// This function will clean up memory used by any unused entries in elements itself
+MixerElement* Alsa::FilterElements (MixerElement *elements, uint32_t &count)
+{
+	MixerElement *result = NULL;
+	bool *keep = NULL;
+
+	// Allocate an array of bools to mark each element as keep or delete
+	if ((keep = new bool[count]) == NULL)
+	{
+		PLAYER_WARN ("Failed to allocate memory to check elements for filter matches");
+		return NULL;
+	}
+	memset (keep, 0, sizeof (bool) * count);
+
+	if (debugLevel >= 5)
+		cout << "Checking " << count << " mixer elements for filter matches" << endl;
+
+	// Go through the list of elements
+	uint32_t filteredCount = 0;
+	for (uint32_t ii = 0; ii < count; ii++)
+	{
+		// For this element, check its name against every string in mixerFilters until a match is found
+		for (uint32_t jj = 0; mixerFilters[jj] != NULL; jj++)
+		{
+			if ((!mixerFilterExact && strcasestr (elements[ii].name, mixerFilters[jj]) != NULL) ||
+				(mixerFilterExact && strcmp (elements[ii].name, mixerFilters[jj]) == 0))
+			{
+				if (debugLevel >= 5)
+					cout << "Found match between " << elements[ii].name << " (" << ii << ") and " << mixerFilters[jj] << endl;
+				// Found a match, mark it as keep and break
+				keep[ii] = true;
+				filteredCount++;
+				break;
+			}
+		}
+	}
+
+	// Allocate memory for the final list
+	if ((result = new MixerElement[filteredCount]) == NULL)
+	{
+		PLAYER_WARN ("Failed to allocate memory to store final list of filtered elements");
+		return NULL;
+	}
+	if (debugLevel >= 5)
+		cout << "Keeping " << filteredCount << " mixer elements" << endl;
+	// Go through the keep array, and for each index marked as true, copy to the result
+	// For those marked as false, delete the element's memory
+	filteredCount = 0;
+	for (uint32_t ii = 0; ii < count; ii++)
+	{
+		if (keep[ii])
+		{
+			memcpy (&result[filteredCount], &elements[ii], sizeof (MixerElement));
+			if (debugLevel >= 5)
+				cout << "Keeping mixer element \"" << result[filteredCount].name << "\" (" << ii << ")" << endl;
+			filteredCount++;
+		}
+		else
+		{
+			if (debugLevel >= 5)
+				cout << "Deleting mixer element \"" << elements[ii].name << "\" (" << ii << ")" << endl;
+			if (elements[ii].name)
+				free (elements[ii].name);
+		}
+	}
+	count = filteredCount;
+
+	// Clean up the old list
+	delete[] elements;
+	// Also clean up the keep array
+	delete[] keep;
+
 	return result;
 }
 
@@ -1702,7 +1953,7 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 {
 	long min, cur, max;
 	int switchStatus;
-	printf ("Mixer elements:\n");
+	cout << "ALSA: Mixer elements:" << endl;
 	for (uint32_t ii = 0; ii < count; ii++)
 	{
 		if (elements[ii].caps & ELEMCAP_CAN_PLAYBACK)
@@ -1726,18 +1977,18 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 			max = elements[ii].maxComVol;
 			switchStatus = elements[ii].comSwitch;
 		}
-		printf ("Element %d:\t%s\n", ii, elements[ii].name);
-		printf ("Capabilities:\t");
+		cout << "\tElement " << ii << ":\t" << elements[ii].name << endl;
+		cout << "\tCapabilities:\t";
 		if (elements[ii].caps & ELEMCAP_CAN_PLAYBACK)
-			printf ("playback\t");
+			cout << "playback\t";
 		if (elements[ii].caps & ELEMCAP_CAN_CAPTURE)
-			printf ("capture\t");
+			cout << "capture\t";
 		if (elements[ii].caps & ELEMCAP_COMMON)
-			printf ("common");
-		printf ("\n");
-		printf ("Volume range:\t%ld->%ld\n", min, max);
-		printf ("Current volume:\t%ld\n", cur);
-		printf ("Active:\t%s\n", switchStatus ? "Yes" : "No");
+			cout << "common";
+		cout << endl;
+		cout << "\tVolume range:\t" << min << "->" << max << endl;
+		cout << "\tCurrent volume:\t" << cur << endl;
+		cout << "\tActive:\t" << (switchStatus ? "Yes" : "No") << endl;
 	}
 }
 
@@ -1748,7 +1999,7 @@ void Alsa::PrintMixerElements (MixerElement *elements, uint32_t count)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 Alsa::Alsa (ConfigFile* cf, int section)
-    : Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIO_CODE)
+	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_AUDIO_CODE)
 {
 	pbDevice = mixerDevice = recDevice = NULL;
 	pbHandle = NULL;
@@ -1756,26 +2007,29 @@ Alsa::Alsa (ConfigFile* cf, int section)
 	mixerHandle = NULL;
 	samplesHead = samplesTail = NULL;
 	queueHead = queueTail = NULL;
+	mixerFilters = NULL;
 	nextSampleIdx = 0;
 	mixerElements = NULL;
 	periodBuffer = NULL;
 	pbFDs = recFDs = NULL;
 	recData = NULL;
-    const char *str;
+	const char *str;
 
 	// Read the config file options - see header for descriptions if not here
 	useQueue = cf->ReadBool (section, "usequeue", true);
-    str = cf->ReadString (section, "pbdevice", NULL);
-    if( str )
-        pbDevice = strdup(str);
-    
-    str = cf->ReadString (section, "mixerdevice", NULL);
-    if( str )
-	    mixerDevice = strdup ( str );
+	debugLevel = cf->ReadInt (section, "debug", 0);
+	mixerFilterExact = cf->ReadBool (section, "mixerfilterexact", false);
+	str = cf->ReadString (section, "pbdevice", NULL);
+	if (str)
+		pbDevice = strdup(str);
 
-    str = cf->ReadString (section, "recdevice", NULL);
-    if( str )
-        recDevice = strdup (str);
+	str = cf->ReadString (section, "mixerdevice", NULL);
+	if (str)
+	    mixerDevice = strdup (str);
+
+	str = cf->ReadString (section, "recdevice", NULL);
+	if (str)
+		recDevice = strdup (str);
 
     cfgPBPeriodTime = cf->ReadInt (section, "pb_periodlength", 50);
 	cfgPBBufferTime = cf->ReadInt (section, "pb_bufferlength", 500);
@@ -1783,6 +2037,7 @@ Alsa::Alsa (ConfigFile* cf, int section)
 	silenceTime = useQueue? cf->ReadInt (section, "pb_silence", 0) : 0;
 	cfgRecPeriodTime = cf->ReadInt (section, "rec_periodlength", 50);
 	cfgRecBufferTime = cf->ReadInt (section, "rec_bufferlength", 500);
+	cfgRecStoreTime = cf->ReadInt (section, "rec_storelength", cfgRecBufferTime);
 	recNumChannels = cf->ReadInt (section, "rec_nch", 1);
 	recSampleRate = cf->ReadInt (section, "rec_sr", 44100);
 	recBits = cf->ReadInt (section, "rec_bits", 16);
@@ -1824,11 +2079,37 @@ Alsa::Alsa (ConfigFile* cf, int section)
 		}
 	}
 
+	// Read mixer filter list
+	int numMixerFilters = cf->GetTupleCount (section, "mixerfilters");
+	if (numMixerFilters > 0)
+	{
+		// Create space to store the filters plus the null terminator
+		if ((mixerFilters = new char*[numMixerFilters + 1]) == NULL)
+			PLAYER_ERROR1 ("Could not create space to store %d mixer filters", numMixerFilters);
+		else
+		{
+			int ii;
+			// Add each filter to the list
+			for (ii = 0; ii < numMixerFilters; ii++)
+			{
+				str = cf->ReadTupleString (section, "mixerfilters", ii, NULL);
+				if (str)
+				{
+					mixerFilters[ii] = strdup (str);
+					if (debugLevel >= 1)
+						cout << "ALSA: Added mixer filter: " << mixerFilters[ii] << endl;
+				}
+			}
+			// Null terminate the list (for ease of cleanup)
+			mixerFilters[ii] = NULL;
+		}
+	}
+
 	return;
 }
 
 // Destructor
-Alsa::~ Alsa (void)
+Alsa::~Alsa (void)
 {
 	if (pbDevice)
 		free (pbDevice);
@@ -1848,6 +2129,12 @@ Alsa::~ Alsa (void)
 			currentSample = currentSample->next;
 			delete previousSample;
 		}
+	}
+	if (mixerFilters)
+	{
+		for (int ii = 0; mixerFilters[ii] != NULL; ii++)
+			free (mixerFilters[ii]);
+		delete[] mixerFilters;
 	}
 }
 
@@ -1900,9 +2187,6 @@ int Alsa::Shutdown (void)
 {
 	StopThread ();
 
-	// Stop playback
-	StopPlayback ();
-
 	// Clean up PCM file descriptors
 	if (pbFDs)
 		delete[] pbFDs;
@@ -1912,7 +2196,11 @@ int Alsa::Shutdown (void)
 	recFDs = NULL;
 	// Close the playback handle
 	if (pbHandle)
+	{
+		// Stop playback
+		StopPlayback ();
 		snd_pcm_close (pbHandle);
+	}
 	// Clean up periodBuffer
 	if (periodBuffer != NULL)
 	{
@@ -1921,7 +2209,10 @@ int Alsa::Shutdown (void)
 	}
 	// Close the record handle
 	if (recHandle)
+	{
+		StopRecording ();
 		snd_pcm_close (recHandle);
+	}
 	// Clean up the record data buffer
 	if (recData)
 		delete recData;
@@ -2043,6 +2334,8 @@ void Alsa::SendStateMessage (void)
 		msg.state |= PLAYER_AUDIO_STATE_PLAYING;
 	if (recState == PB_STATE_RECORDING)
 		msg.state |= PLAYER_AUDIO_STATE_RECORDING;
+	if (msg.state == 0)
+		msg.state = PLAYER_AUDIO_STATE_STOPPED;
 
 	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_STATE_DATA, reinterpret_cast<void*> (&msg), sizeof (player_audio_state_t), NULL);
 }
@@ -2060,6 +2353,7 @@ int Alsa::HandleWavePlayCmd (player_audio_wav_t *data)
 		PLAYER_WARN ("Unable to add wave data to queue");
 		return -1;
 	}
+
 	// Start playback
 	StartPlayback ();
 
@@ -2092,7 +2386,18 @@ int Alsa::HandleSamplePlayCmd (player_audio_sample_item_t *data)
 int Alsa::HandleRecordCmd (player_bool_t *data)
 {
 	if (data->state)
+	{
+		// Set recording destination to -1 for clients
+		recDest = -1;
+		// Create a local buffer of suitable length
+		if (!SetupRecordBuffer (cfgRecStoreTime))
+		{
+			PLAYER_ERROR ("Failed to setup local recording buffer");
+			return 0;
+		}
+		// Start recording
 		StartRecording ();
+	}
 	else
 		StopRecording ();
 
@@ -2117,10 +2422,9 @@ int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_q
 	// If the requested index to store at is at end or -1, append to the list
 	if (data->index == nextSampleIdx || data->index == -1)
 	{
-		if (AddStoredSample (&data->sample))
-			return 0;	// All happy
-		else
+		if (!AddStoredSample (&data->sample))
 			return -1;	// Error occured
+		// If no error, all happy so fall through to the end of the function and send ack
 	}
 	// If the sample is negative (but not -1) or beyond the end, error
 	else if (data->index < -1 || data->index > nextSampleIdx)
@@ -2183,8 +2487,63 @@ int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *re
 		result.index = data->index;
 		sample->sample->ToPlayer (&result.sample);
 		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, &result, sizeof (player_audio_sample_t), NULL);
+		return 0;
 	}
 	return -1;
+}
+
+// Handle a request to record a sample and store it locally in the sample store
+int Alsa::HandleSampleRecordReq (player_audio_sample_rec_req_t *data, MessageQueue *resp_queue)
+{
+	// Can't record to sample and clients at the same time (yet)
+	if (recState == PB_STATE_RECORDING)
+	{
+		PLAYER_WARN ("Tried to record a sample while already recording");
+		return -1;
+	}
+	// Set the recording destination appropriately
+	// (Just set recDest for now, will actually store when recording is complete)
+	if (data->index < 0 || data->index == nextSampleIdx)
+	{	// Store at next available
+		// Add a placeholder sample on the list so that any other additions to the
+		// queue while recording don't cause problems - can just fill in the sample pointer later
+		StoredSample *placeHolder = NULL;
+		if ((placeHolder = new StoredSample) == NULL)
+		{
+			PLAYER_ERROR ("Failed to allocate sample storage");
+			return -1;
+		}
+		recDest = nextSampleIdx++;	// Incremement next sample index
+		memset (placeHolder, 0, sizeof (StoredSample));
+		placeHolder->index = recDest;
+		AddStoredSample (placeHolder);
+	}
+	else if (data->index > nextSampleIdx)
+	{
+		// Error - can't store beyond end of list (like with load requests)
+		PLAYER_ERROR2 ("Can't add sample at index %d, greater than %d", data->index, nextSampleIdx);
+		return -1;
+	}
+	else
+	{	// Replace
+		recDest = data->index;
+	}
+	if (debugLevel >= 4)
+		cout << "ALSA: Recording new sample to index " << recDest << endl;
+	// Create a buffer to store data in until recording is complete
+	if (!SetupRecordBuffer (data->length))
+	{
+		PLAYER_ERROR ("Failed to setup local recording buffer");
+		return -1;
+	}
+	// Start recording
+	StartRecording ();
+	// Send the response
+	player_audio_sample_rec_req_t response;
+	response.index = recDest;
+	response.length = data->length;
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_REC_REQ, &response, sizeof (player_audio_sample_rec_req_t), NULL);
+	return 0;
 }
 
 int Alsa::HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue)
@@ -2220,6 +2579,7 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 	if (recHandle)
 	{
 		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_REC_REQ);
 	}
 	if (mixerHandle)
 	{
@@ -2258,6 +2618,10 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 	{
 		return HandleSampleRetrieveReq (reinterpret_cast<player_audio_sample_t*> (data), resp_queue);
 	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_REC_REQ, device_addr) && recHandle)
+	{
+		return HandleSampleRecordReq (reinterpret_cast<player_audio_sample_rec_req_t*> (data), resp_queue);
+	}
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, device_addr) && mixerHandle)
 	{
 		return HandleMixerChannelListReq (reinterpret_cast<player_audio_mixer_channel_list_detail_t*> (data), resp_queue);
@@ -2266,7 +2630,6 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 	{
 		return HandleMixerChannelLevelReq (reinterpret_cast<player_audio_mixer_channel_list_t*> (data), resp_queue);
 	}
-
 
 	return -1;
 }

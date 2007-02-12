@@ -43,7 +43,7 @@ typedef struct QueueItem
 } QueueItem;
 
 ////////////////////////////////////////////////////////////////////////////////
-// Describes an ALSA mixer element
+// Capabilities of a mixer element
 typedef uint32_t ElemCap;
 const ElemCap ELEMCAP_CAN_PLAYBACK		= 0x0001;
 const ElemCap ELEMCAP_CAN_CAPTURE		= 0x0002;
@@ -57,6 +57,7 @@ const ElemCap ELEMCAP_COMMON_SWITCH		= 0x0100;
 // const ElemCap ELEMCAP_PB_JOINED_SWITCH	= 0x0200;
 // const ElemCap ELEMCAP_CAP_JOINED_SWITCH	= 0x0400;
 
+// Describes an ALSA mixer element
 typedef struct MixerElement
 {
 	snd_mixer_elem_t *elem;			// ALSA Mixer element structure
@@ -92,17 +93,21 @@ class Alsa : public Driver
 	private:
 		// Driver options
 		bool useQueue;					// If should use a queue for playback or just stop currently playing
+		uint8_t debugLevel;				// Debug info level
+		char **mixerFilters;			// Null-terminated array of strings to filter mixer elements by
+		bool mixerFilterExact;			// If mixer filters need to match element names exactly
 		char *pbDevice;					// Name of the playback device
 		char *mixerDevice;				// Name of the mixer device
 		char *recDevice;				// Name of the record device
-		uint32_t cfgPBPeriodTime;		// Length of a playback period in milliseconds (configured value)
-		uint32_t cfgPBBufferTime;		// Length of the playback buffer in milliseconds (configured value)
+		uint32_t cfgPBPeriodTime;		// Length of a playback period in milliseconds
+		uint32_t cfgPBBufferTime;		// Length of the playback buffer in milliseconds
 		uint32_t silenceTime;			// Length of silence to put between samples in the queue
-		uint32_t cfgRecBufferTime;		// Length of the record buffer in milliseconds (configured value)
-		uint32_t cfgRecPeriodTime;		// Length of a record period in milliseconds (configured value)
+		uint32_t cfgRecBufferTime;		// Length of the record buffer in milliseconds
+		uint32_t cfgRecStoreTime;		// Length of time to store recorded data before sending to clients
+		uint32_t cfgRecPeriodTime;		// Length of a record period in milliseconds
 		uint8_t recNumChannels;			// Number of channels for recording
 		uint32_t recSampleRate;			// Sample rate for recording
-		uint8_t recBits;				// Sample bits for recording
+		uint8_t recBits;				// Sample bits per frame for recording
 
 		// ALSA variables
 		// Playback
@@ -126,13 +131,16 @@ class Alsa : public Driver
 		uint32_t numElements;			// Number of elements
 
 		// Other driver data
-		int nextSampleIdx;					// Next free index to store a sample at
+		int nextSampleIdx;				// Next free index to store a sample at
 		StoredSample *samplesHead, *samplesTail;	// Stored samples
 		QueueItem *queueHead, *queueTail;	// Queue of audio data waiting to play
 		PBState playState;				// Playback state
 		PBState recState;				// Record state
-// 		AudioSample *recData;			// Somewhere to store recorded data before it goes to the client
-		player_audio_wav_t *recData;	// Somewhere to store recorded data before it goes to the client
+		uint32_t recDataLength;			// Length of recorded data buffer (in bytes)
+		uint32_t recDataOffset;			// Current end of recorded data in recData
+		uint8_t *recData;				// Somewhere to store recorded data before it goes to the client
+		int recDest;					// Destination of recorded data: -ve for to clients via data packets,
+										// >=0 for to stored sample at that index
 
 		// Internal functions
 		virtual void Main (void);
@@ -162,7 +170,9 @@ class Alsa : public Driver
 		// Record functions
 		bool SetupRecord (void);
 		bool SetRecParams (void);
+		bool SetupRecordBuffer (uint32_t length);
 		void RecordCallback (int numFrames);
+		void HandleRecordedData (void);
 		void PublishRecordedData (void);
 
 		// Playback/record control functions
@@ -176,6 +186,7 @@ class Alsa : public Driver
 		bool EnumMixerElements (void);
 		bool EnumElementCaps (MixerElement *element);
 		MixerElement* SplitElements (MixerElement *elements, uint32_t &count);
+		MixerElement* FilterElements (MixerElement *elements, uint32_t &count);
 		void CleanUpMixerElements (MixerElement *elements, uint32_t count);
 		void MixerDetailsToPlayer (player_audio_mixer_channel_list_detail_t *dest);
 		void MixerLevelsToPlayer (player_audio_mixer_channel_list_t *dest);
@@ -193,6 +204,7 @@ class Alsa : public Driver
 		int HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data);
 		int HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_queue);
 		int HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *resp_queue);
+		int HandleSampleRecordReq (player_audio_sample_rec_req_t *data, MessageQueue *resp_queue);
 		int HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue);
 		int HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue);
 };

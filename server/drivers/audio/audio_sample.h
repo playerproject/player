@@ -33,13 +33,15 @@ class AudioSample
 {
 	public:
 		AudioSample (void);
+		AudioSample (const player_audio_wav_t *source);
+		AudioSample (const uint8_t *source, uint32_t length, uint16_t channels, uint32_t sr, uint16_t bps);
 		~AudioSample (void);
 
 		// Data management functions
 		void SetDataPosition (uint32_t newPosition);	// Set current position in the data (in frames, not bytes)
 		uint32_t GetDataPosition (void) const;		// Get current position in the data (in frames, not bytes)
 		uint32_t GetDataLength (void) const;		// Get length of data (in frames, not bytes)
-		int GetData (int count, uint8_t *buffer);	// Get a block of data
+		int GetData (int frameCount, uint8_t *buffer);	// Get a block of data from current position
 		void ClearSample (void);					// Clear the entire sample (including format), making this a SAMPLE_TYPE_NONE
 		bool FillSilence (uint32_t time);			// Fill the sample with silence
 
