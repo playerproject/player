@@ -23,6 +23,7 @@
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include <xmms/plugin.h>
 #include <xmms/xmmsctrl.h>
@@ -45,15 +46,18 @@ static guint32 server_port = 6665;
 static guint32 server_index = 0;
 static playerc_client_t *client;
 static playerc_audio_t *audio_proxy;
-static guint64 written = 0;
+static guint32 written = 0;
 static AFormat afmt;
 static guint32 sampleRate = 44100;
 static guint8 numChannels = 2;
-static guint32 bytesPerSecond = 176400;
+static gint bytesPerSecond = 176400;
 static guint8 *buffer = NULL;
 static guint32 bufferTime = 5000;
 static guint32 bufferLength = 0;
 static guint32 bufferPos = 0;
+static double startTime = 0.0f;
+static double pauseStartTime = 0.0f;
+static double pausedTime = 0.0f;
 gint ctrlsocket_get_session_id(void);		/* FIXME */
 
 static void playerout_init(void);
@@ -145,6 +149,8 @@ static gint playerout_open(AFormat fmt, gint rate, gint nch)
 	afmt = fmt;
 	sampleRate = rate;
 	numChannels = nch;
+	startTime = 0.0f;
+	pausedTime = 0.0f;
 
 	if (xmms_check_realtime_priority())
 	{
@@ -174,7 +180,19 @@ static gint playerout_open(AFormat fmt, gint rate, gint nch)
 		return 0;
 	}
 
-	bytesPerSecond = sampleRate * numChannels;
+	// Set to PULL data mode
+	if (playerc_client_datamode (client, PLAYERC_DATAMODE_PULL) != 0)
+	{
+		fprintf(stderr, "error: %s\n", playerc_error_str());
+		return 0;
+	}
+	if (playerc_client_set_replace_rule (client, -1, -1, PLAYER_MSGTYPE_DATA, -1, 1) != 0)
+	{
+		fprintf(stderr, "error: %s\n", playerc_error_str());
+		return 0;
+	}
+
+	bytesPerSecond = rate * nch;
 	if (fmt == FMT_S16_LE || fmt == FMT_S16_BE || fmt == FMT_S16_NE ||
 		   fmt == FMT_U16_LE || fmt == FMT_U16_BE || fmt == FMT_U16_NE)
 		bytesPerSecond *= 2;
@@ -245,6 +263,12 @@ static void playerout_write(void *ptr, gint length)
 {
 	unsigned int format = 0;
 
+	if (startTime == 0.0f)
+	{
+		struct timeval timeVal;
+		gettimeofday (&timeVal, NULL);
+		startTime = (double) timeVal.tv_sec + ((double) timeVal.tv_usec) / 1e6;
+	}
 
 	// Add to buffer if there is space
 	if (length + bufferPos > bufferLength)
@@ -289,6 +313,7 @@ static void playerout_write(void *ptr, gint length)
 	memcpy (&buffer[bufferPos], ptr, length);
 	bufferPos += length;
 	written += length;
+
 }
 
 static void playerout_close(void)
@@ -315,8 +340,25 @@ static void playerout_flush(gint time)
 
 static void playerout_pause(short p)
 {
-	// Don't really need to do anything for pausing/unpausing
-	printf ("Told to %s\n", p ? "pause" : "unpause");
+	// Audio protocol doesn't support pausing playback
+/*	printf ("Told to %s\n", p ? "pause" : "unpause");
+	if (p)
+	{
+		struct timeval timeVal;
+		gettimeofday (&timeVal, NULL);
+		pauseStartTime = (double) timeVal.tv_sec + ((double) timeVal.tv_usec) / 1e6;
+		printf ("started pause at %f\n", pauseStartTime);
+	}
+	else
+	{
+		double thisPausedTime = 0.0f;
+		struct timeval timeVal;
+		gettimeofday (&timeVal, NULL);
+		thisPausedTime = (double) timeVal.tv_sec + ((double) timeVal.tv_usec) / 1e6;
+		thisPausedTime -= pauseStartTime;
+		pausedTime += thisPausedTime;
+		printf ("paused for %f\n", thisPausedTime);
+	}*/
 }
 
 static gint playerout_free(void)
@@ -327,26 +369,32 @@ static gint playerout_free(void)
 
 static gint playerout_playing(void)
 {
-	return TRUE;
+	playerc_client_read (client);
+	if (audio_proxy->state & PLAYER_AUDIO_STATE_PLAYING)
+		return 1;
+	else
+		return 0;
 }
 
 static gint playerout_get_written_time(void)
 {
-/*	double bps = -1, result = -1;
-	printf ("written = %d\tsr = %d\tnch = %d\tbps = %f\tresult = %f\n", written, sampleRate, numChannels, 44100 * 2, result);
-	bps = 44100 * 2;
-	result = ((double) written) / bps;
-	printf ("written = %d\tsr = %d\tnch = %d\tbps = %f\tresult = %f\n", written, sampleRate, numChannels, 44100 * 2, result);
+	double result = 0;
+	result = ((double) written) / (sampleRate * numChannels);
 	if (afmt == FMT_S16_LE || afmt == FMT_S16_BE || afmt == FMT_S16_NE ||
 			afmt == FMT_U16_LE || afmt == FMT_U16_BE || afmt == FMT_U16_NE)
 		result /= 2.0f;
-	return (gint) result;*/
-	return 0;
+	return result;
 }
 
 static gint playerout_get_output_time(void)
 {
-	return playerout_get_written_time();
+	if (startTime == 0.0f)
+		return 0;
+
+	struct timeval timeVal;
+	gettimeofday (&timeVal, NULL);
+	double currentTime = (double) timeVal.tv_sec + ((double) timeVal.tv_usec) / 1e6;
+	return (currentTime - startTime);// - pausedTime);
 }
 
 static void configure_ok_cb(gpointer data)
