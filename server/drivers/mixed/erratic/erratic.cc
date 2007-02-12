@@ -223,6 +223,7 @@ Erratic::Erratic(ConfigFile* cf, int section)
   memset(&this->aio_id, 0, sizeof(player_devaddr_t));
   memset(&this->sonar_id, 0, sizeof(player_devaddr_t));
   memset(&this->ptz_id, 0, sizeof(player_devaddr_t));
+  memset(&this->ptz2_id, 0, sizeof(player_devaddr_t));
 
   memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
   memset(&this->last_car_cmd, 0, sizeof(player_position2d_cmd_car_t));
@@ -231,6 +232,7 @@ Erratic::Erratic(ConfigFile* cf, int section)
   this->aio_ir_subscriptions = 0;
   this->sonar_subscriptions = 0;
   this->ptz_subscriptions = 0;
+  this->ptz2_subscriptions = 0;
 
   // intialise members
   motor_packet = NULL;
@@ -279,6 +281,14 @@ Erratic::Erratic(ConfigFile* cf, int section)
   // Do we create a ptz interface?
   if(cf->ReadDeviceAddr(&(this->ptz_id), section, "provides", PLAYER_PTZ_CODE, -1, NULL) == 0) {
     if(this->AddInterface(this->ptz_id) != 0) {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create the second ptz interface?
+  if(cf->ReadDeviceAddr(&(this->ptz2_id), section, "provides", PLAYER_PTZ_CODE, -1, NULL) == 0) {
+    if(this->AddInterface(this->ptz2_id) != 0) {
       this->SetError(-1);
       return;
     }
@@ -772,6 +782,9 @@ int Erratic::Subscribe(player_devaddr_t id) {
 
     if(Device::MatchDeviceAddress(id, this->ptz_id))
       this->ptz_subscriptions++;
+
+    if(Device::MatchDeviceAddress(id, this->ptz2_id))
+      this->ptz2_subscriptions++;
   }                                    
                                        
   return(setupResult);                 
@@ -800,6 +813,10 @@ int Erratic::Unsubscribe(player_devaddr_t id) {
 
     if(Device::MatchDeviceAddress(id, this->ptz_id))
       this->ptz_subscriptions--;
+
+    if(Device::MatchDeviceAddress(id, this->ptz2_id))
+      this->ptz2_subscriptions--;
+
   }
 
   return(shutdownResult);
@@ -1613,7 +1630,11 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 //
 // Process PTZ command
 // Zoom is not used
-// Pan is on servo 0, tilt on servo 1
+// For PTZ #0:
+//    Pan is on servo 1, tilt on servo 2
+// For PTZ #1:
+//    Pan is on servo 0
+//
 // Commands are in degrees, positive and negative
 // Conversions are handled through the Erratic parameter structure,
 //   which has parameters for conversion of degrees to servo counts
@@ -1628,9 +1649,9 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 
 
 void 
-Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
+Erratic::HandlePtzCommand(player_ptz_cmd_t cmd, player_devaddr_t id)
 {
-  int pan, tilt;
+  int pan, tilt, servo;
   unsigned char payload[6];
   ErraticPacket *packet;
 
@@ -1643,16 +1664,18 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
     pan = SERVO_MIN_COUNT;
 
 	//	printf("Send command to servo %d: %d / %d\n", 0, (int)(RTOD(cmd.pan)), pan);
-
-  packet = new ErraticPacket();
-  payload[0] = (command_e)servo_pos;
-  payload[1] = (argtype_e)argstr;
-  payload[2] = 3;		// 3 bytes in string
-  payload[3] = 2;		// servo #2
-  payload[4] = pan&0xff;
-  payload[5] = (pan&0xff00)>>8;
-  packet->Build(payload, 6);
-  this->Send(packet);
+	if (Device::MatchDeviceAddress(id,this->ptz_id))				// 1st pan/tilt unit
+		{
+			packet = new ErraticPacket();
+			payload[0] = (command_e)servo_pos;
+			payload[1] = (argtype_e)argstr;	
+			payload[2] = 3;						// 3 bytes in string
+			payload[3] = 2;						// servo #2
+			payload[4] = pan&0xff;
+			payload[5] = (pan&0xff00)>>8;
+			packet->Build(payload, 6);
+			this->Send(packet);
+		}
 
   // send tilt command
   tilt = (int)(RTOD(cmd.tilt));
@@ -1663,12 +1686,16 @@ Erratic::HandlePtzCommand(player_ptz_cmd_t cmd)
     tilt = SERVO_MIN_COUNT;
 
 	// printf("Send command to servo %d: %d / %d\n", 1, (int)(RTOD(cmd.tilt)), tilt);
+	if (Device::MatchDeviceAddress(id,this->ptz_id))
+		servo = 1;
+	else if (Device::MatchDeviceAddress(id,this->ptz2_id))
+		servo = 0;
 
   packet = new ErraticPacket();
   payload[0] = (command_e)servo_pos;
   payload[1] = (argtype_e)argstr;
-  payload[2] = 3;		// 3 bytes in string
-  payload[3] = 1;		// servo #1
+  payload[2] = 3;								// 3 bytes in string
+  payload[3] = servo;						// servo number
   payload[4] = tilt&0xff;
   payload[5] = (tilt&0xff00)>>8;
   packet->Build(payload, 6);
@@ -1693,7 +1720,12 @@ int Erratic::HandleCommand(player_msghdr * hdr, void* data)
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, this->ptz_id))
     {
       player_ptz_cmd_t ptz_cmd = *(player_ptz_cmd_t*)data;
-      this->HandlePtzCommand(ptz_cmd);
+      this->HandlePtzCommand(ptz_cmd, this->ptz_id);
+    }
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, this->ptz2_id))
+    {
+      player_ptz_cmd_t ptz_cmd = *(player_ptz_cmd_t*)data;
+      this->HandlePtzCommand(ptz_cmd, this->ptz2_id);
     }
   else
     return(-1);

@@ -141,12 +141,13 @@ private:
   player_devaddr_t aio_id;
   player_devaddr_t ir_id;
   player_devaddr_t sonar_id;
-  player_devaddr_t ptz_id;
+  player_devaddr_t ptz_id, ptz2_id;
 
   int position_subscriptions;
   int aio_ir_subscriptions;
   int sonar_subscriptions;
   int ptz_subscriptions;
+  int ptz2_subscriptions;
 
   //ErraticMotorPacket* sippacket;
   ErraticMotorPacket *motor_packet;
@@ -165,7 +166,7 @@ private:
   int HandleCommand(player_msghdr * hdr, void * data);
   void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
   void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
-  void HandlePtzCommand(player_ptz_cmd_t ptz_cmd);
+  void HandlePtzCommand(player_ptz_cmd_t ptz_cmd, player_devaddr_t id);
 
   void PublishAllData();
   void PublishPosition2D();
