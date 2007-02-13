@@ -276,6 +276,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_laser_power_config_pack},
   {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_ID,
     (player_pack_fn_t)player_laser_get_id_config_pack},
+  {PLAYER_LASER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_FILTER,
+    (player_pack_fn_t)player_laser_set_filter_config_pack},
 
   /* limb messages */
   {PLAYER_LIMB_CODE, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,

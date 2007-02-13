@@ -323,6 +323,7 @@ if  test "x$enable_sicklms200" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
+PLAYER_ADD_DRIVER([sicklms400],[no],[],[],[])
 PLAYER_ADD_DRIVER([sicknav200],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([sickpls],[yes],[],[],[])

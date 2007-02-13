@@ -2601,6 +2601,15 @@ of scan width and angular resolution.
 #define PLAYER_LASER_REQ_POWER        4
 /** Request/reply subtype: get IDentification information */
 #define PLAYER_LASER_REQ_GET_ID       5
+/** Request/reply subtype: set filter settings */
+#define PLAYER_LASER_REQ_SET_FILTER   6
+
+/** Filter setings */
+#define PLAYER_LASER_MAX_FILTER_PARAMS 8
+#define PLAYER_LASER_FILTER_MEDIAN 1
+#define PLAYER_LASER_FILTER_EDGE   2
+#define PLAYER_LASER_FILTER_RANGE  3
+#define PLAYER_LASER_FILTER_MEAN   4
 
 /** @brief Data: scan (@ref PLAYER_LASER_DATA_SCAN)
 
@@ -2673,6 +2682,8 @@ typedef struct player_laser_config
   float range_res;
   /** Enable reflection intensity data. */
   uint8_t  intensity;
+  /** Scanning frequency [Hz] */
+  float scanning_frequency;
 } player_laser_config_t;
 
 /** @brief Request/reply: Turn power on/off.
@@ -2694,6 +2705,33 @@ typedef struct player_laser_get_id_config
   /** Laser device serial number. */
   uint32_t serial_number;
 } player_laser_get_id_config_t;
+
+/** @brief Request/reply: Set filter settings.
+
+Send a @ref PLAYER_LASER_REQ_SET_FILTER request to set the laser's internal
+filter parameters (assuming your hardware supports it). Currently the
+finally settings can be applied to the SICK LMS400:
+ a) median filter - PLAYER_LASER_FILTER_MEDIAN, no parameters
+ b) edge filter   - PLAYER_LASER_FILTER_EDGE, no parameters
+ c) range filter  - PLAYER_LASER_FILTER_RANGE 
+    p1 = BottomLimit (700-3000 in mm), p2 = TopLimit (700-3000 in mm)
+ d) mean filter   - PLAYER_LASER_FILTER_MEAN
+    p1 = number of means (2-200)
+
+Note: You can combine the filters as required. If several filters are
+active, then the filters act one after the other on the result of the
+previous filter. The processing in this case follows the following sequence:
+edge filter, median filter, range filter, mean filter.
+*/
+typedef struct player_laser_set_filter_config
+{
+  /** Filter type. */
+  uint8_t filter_type;
+  /** The number of filter parameters */
+  uint32_t parameters_count;
+  /** Filter parameters */
+  float parameters[PLAYER_LASER_MAX_FILTER_PARAMS];
+} player_laser_set_filter_config_t;
 
 /** @} */
 

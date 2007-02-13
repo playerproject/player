@@ -102,6 +102,10 @@ void LaserPoseInterp_Register(DriverTable* table);
 void SickLMS200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_SICKLMS400
+void SickLMS400_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_SICKNAV200
 void SickNAV200_Register(DriverTable* table);
 #endif
@@ -488,6 +492,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SICKLMS400
+  SickLMS400_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKNAV200
