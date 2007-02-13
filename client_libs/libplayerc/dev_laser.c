@@ -186,7 +186,8 @@ playerc_laser_set_config(playerc_laser_t *device,
                          double max_angle,
                          double resolution, 
                          double range_res, 
-                         unsigned char intensity)
+                         unsigned char intensity,
+                         double scanning_frequency)
 {
   player_laser_config_t config;
 
@@ -195,6 +196,7 @@ playerc_laser_set_config(playerc_laser_t *device,
   config.resolution = resolution;
   config.intensity = (intensity ? 1 : 0);
   config.range_res = range_res;
+  config.scanning_frequency = scanning_frequency;
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_LASER_REQ_SET_CONFIG,
@@ -206,6 +208,7 @@ playerc_laser_set_config(playerc_laser_t *device,
   device->scan_res = config.resolution;
   device->range_res = config.range_res;
   device->intensity_on = config.intensity;
+  device->scanning_frequency = config.scanning_frequency;
 
   return 0;
 }
@@ -217,7 +220,8 @@ playerc_laser_get_config(playerc_laser_t *device,
                          double *max_angle,
                          double *resolution, 
                          double *range_res, 
-                         unsigned char *intensity)
+                         unsigned char *intensity,
+                         double *scanning_frequency)
 {
   player_laser_config_t config;
 
@@ -232,6 +236,7 @@ playerc_laser_get_config(playerc_laser_t *device,
   device->scan_res = *resolution;
   *intensity = device->intensity_on = config.intensity;
   *range_res = config.range_res;
+  *scanning_frequency = config.scanning_frequency;
   device->range_res = *range_res;
   device->max_range = config.max_range;
   return 0;
