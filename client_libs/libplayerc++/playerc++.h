@@ -1053,7 +1053,7 @@ class LaserProxy : public ClientProxy
     double aMinRight;
 
     // local storage of config
-    double min_angle, max_angle, scan_res, range_res;
+    double min_angle, max_angle, scan_res, range_res, scanning_frequency;
     bool intensity;
 
   public:
@@ -1075,6 +1075,8 @@ class LaserProxy : public ClientProxy
     /// Range resolution of scan (mm)
     double GetRangeRes() const { return GetVar(mDevice->range_res); };
 
+    /// Scanning Frequency (Hz)
+    double GetScanningFrequency() const { return GetVar(mDevice->scanning_frequency); };
 
     /// Scan range for the latest set of data (radians)
     double GetMinAngle() const { return GetVar(mDevice->scan_start); };
@@ -1117,11 +1119,13 @@ class LaserProxy : public ClientProxy
     /// 100 (1 deg).  @p range_res is measured in mm; valid values
     /// are: 1, 10, 100.  Set @p intensity to @p true to
     /// enable intensity measurements, or @p false to disable.
+    /// @p scanning_frequency is measured in Hz
     void Configure(double aMinAngle,
                    double aMaxAngle,
                    uint aScanRes,
                    uint aRangeRes,
-                   bool aIntensity);
+                   bool aIntensity,
+                   double aScanningFrequency);
 
     /// Get the current laser configuration; it is read into the
     /// relevant class attributes.

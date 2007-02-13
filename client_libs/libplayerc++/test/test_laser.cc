@@ -26,7 +26,8 @@ test_laser(PlayerClient* client, int index)
   int resolution = 100;
   int range_res = 1;
   bool intensity = true;
-  lp.Configure(DTOR(min), DTOR(max), resolution, range_res, intensity);
+  double scanning_frequency = 10;
+  lp.Configure(DTOR(min), DTOR(max), resolution, range_res, intensity, scanning_frequency);
 
   TEST("get configuration");
   lp.RequestConfigure();

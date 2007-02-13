@@ -75,11 +75,12 @@ LaserProxy::Configure(double min_angle,
                       double max_angle,
                       uint scan_res,
                       uint range_res,
-                      bool intensity)
+                      bool intensity,
+                      double aScanningFrequency)
 {
   scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_laser_set_config(mDevice, min_angle, max_angle,
-                                    scan_res, range_res, intensity?1:0))
+                                    scan_res, range_res, intensity?1:0,aScanningFrequency))
     throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
 }
 
@@ -89,7 +90,7 @@ LaserProxy::RequestConfigure()
   scoped_lock_t lock(mPc->mMutex);
   unsigned char temp_int;
   if (0 != playerc_laser_get_config(mDevice, &min_angle, &max_angle,
-                                     &scan_res, &range_res, &temp_int))
+                                     &scan_res, &range_res, &temp_int, &scanning_frequency))
     throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
   intensity = temp_int == 0 ? false : true;
   return;
