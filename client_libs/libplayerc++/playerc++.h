@@ -1131,7 +1131,8 @@ class LaserProxy : public ClientProxy
     /// relevant class attributes.
     void RequestGeom();
 
-    /// Accessor for the pose (fill it in by calling RequestGeom)
+    /// Accessor for the pose of the laser with respect to its parent
+    /// object (e.g., a robot).  Fill it in by calling RequestGeom.
     player_pose_t GetPose()
     {
       player_pose_t p;
@@ -1140,6 +1141,19 @@ class LaserProxy : public ClientProxy
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
       p.pa = mDevice->pose[2];
+      return(p);
+    }
+    
+    /// Accessor for the pose of the laser's parent object (e.g., a robot).
+    /// Filled in by some (but not all) laser data messages.
+    player_pose_t GetRobotPose()
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+
+      p.px = mDevice->robot_pose[0];
+      p.py = mDevice->robot_pose[1];
+      p.pa = mDevice->robot_pose[2];
       return(p);
     }
 
