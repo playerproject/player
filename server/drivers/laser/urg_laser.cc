@@ -589,8 +589,8 @@ bool
 int 
   urg_laser::GetReadings (urg_laser_readings_t * readings, int min_i, int max_i)
 {
-  unsigned char Buffer[11];
-  memset (Buffer, 0, 11);
+  unsigned char Buffer[16];
+  //memset (Buffer, 0, 11);
   assert (readings);
 
   if (!PortOpen ())
@@ -673,7 +673,7 @@ int
     {
       ReadUntil (file, Buffer, 3, -1);
     
-//      printf ("[%d] 0x%x 0x%x 0x%x\n", i, Buffer[0], Buffer[1], Buffer [2]);
+      //printf ("[%d of %d] 0x%x 0x%x 0x%x\n", i, MAX_READINGS, Buffer[0], Buffer[1], Buffer [2]);
         
       if ((Buffer[1] == '\n') && (Buffer[2] == '\n'))
         break;
@@ -684,10 +684,15 @@ int
       }
       else if (Buffer[0] == '\n')
       {
-        readings->Readings[i - 1] = ((readings->Readings[i - 1] & 0xFFC0) | (Buffer[1]-0x30));
-        Buffer [0] = Buffer [2];
-	if (ReadUntil (file, &Buffer[1], 2, -1) < 0)
-          return (-1);
+	if (i <= MAX_READINGS)
+	{
+		readings->Readings[i - 1] = ((readings->Readings[i - 1] & 0xFFC0) | (Buffer[1]-0x30));
+		Buffer [0] = Buffer [2];
+		if (ReadUntil (file, &Buffer[1], 2, -1) < 0)
+		return (-1);
+	}
+	else
+	        printf ("> E: Got too many readings! %d\n",i);
       }
       else if (Buffer[1] == '\n')
       {
@@ -706,7 +711,6 @@ int
         printf ("> E: Got too many readings! %d\n",i);
     }
   }
-  
   return (0);
 }
 
