@@ -1,25 +1,37 @@
 noinst_LTLIBRARIES = 
+
 if INCLUDE_SICKLMS200
 noinst_LTLIBRARIES += libsicklms200.la
 endif
+
+if INCLUDE_SICKLMS400
+noinst_LTLIBRARIES += libsicklms400.la
+endif
+
 if INCLUDE_SICKS3000
 noinst_LTLIBRARIES += libsicks3000.la
 endif
+
 if INCLUDE_LASERCSPACE
 noinst_LTLIBRARIES += liblasercspace.la
 endif
+
 if INCLUDE_SICKPLS
 noinst_LTLIBRARIES += libsickpls.la
 endif
+
 if INCLUDE_LASERPOSEINTERPOLATOR
 noinst_LTLIBRARIES += liblaserposeinterpolator.la
 endif
+
 if INCLUDE_LASERRESCAN
 noinst_LTLIBRARIES += liblaserrescan.la
 endif
+
 if INCLUDE_LASERCUTTER
 noinst_LTLIBRARIES += liblasercutter.la
 endif
+
 if INCLUDE_URGLASER
 noinst_LTLIBRARIES += liburglaser.la
 endif
@@ -29,6 +41,7 @@ EXTRA_DIST = lasercspace-1.jpg lasercspace-2.jpg
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 libsicklms200_la_SOURCES = sicklms200.cc
+libsicklms400_la_SOURCES = lms400_cola.h lms400_cola.cc sicklms400.cc
 libsicks3000_la_SOURCES = sicks3000.cc
 libsickpls_la_SOURCES = sickpls.cc
 liblaserposeinterpolator_la_SOURCES = laserposeinterpolator.cc
