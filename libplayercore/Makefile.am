@@ -19,7 +19,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           playercommon.h player.h playerconfig.h.in \
                           message.h message.cc \
                           wallclocktime.cc wallclocktime.h playertime.h \
-                          interface_util.cc interface_util.h \
+                          interface_util.c interface_util.h \
                           plugins.cc plugins.h \
                           globals.cc globals.h \
                           addr_util.c addr_util.h

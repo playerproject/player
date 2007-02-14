@@ -24,8 +24,12 @@
 
 #include <libplayercore/playerconfig.h>  // for uint16_t type
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // available interfaces are stored in an array of these, defined in
-// interface_util.cc
+// interface_util.c
 typedef struct 
 {
   uint16_t interf;
@@ -54,5 +58,9 @@ lookup_interface_code(int code, player_interface_t* interface);
  */
 const char*
 lookup_interface_name(unsigned int startpos, int code);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
