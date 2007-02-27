@@ -572,11 +572,18 @@ void *playerc_client_read(playerc_client_t *client)
         client->lasttime = client->datatime;
         client->datatime = header.timestamp;
         if (client->mode == PLAYER_DATAMODE_PUSH)
+        {
           // If in push mode, handle and return
-          return playerc_client_dispatch (client, &header, client->data);
+          void *result = playerc_client_dispatch (client, &header, client->data);
+          // Need to ensure that any dynamic data made during unpacking is cleaned up
+          playerxdr_delete_message(client->data, header.addr.interf, header.type, header.subtype);
+          return result;
+        }
         else  // PULL mode, so keep on going
         {
-          if (playerc_client_dispatch (client, &header, client->data) == NULL)
+          void *result = playerc_client_dispatch (client, &header, client->data);
+          playerxdr_delete_message(client->data, header.addr.interf, header.type, header.subtype);
+          if (result == NULL)
             return NULL;
           continue;
         }
@@ -984,7 +991,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   }
 
   // Locate the appropriate unpacking function for the message body
-  if(!(packfunc = playerxdr_get_func(header->addr.interf, header->type,
+  if(!(packfunc = playerxdr_get_packfunc(header->addr.interf, header->type,
                                      header->subtype)))
   {
     // TODO: Allow the user to register a callback to handle unsupported
@@ -1035,7 +1042,7 @@ int playerc_client_writepacket(playerc_client_t *client,
   if(data)
   {
     // Locate the appropriate packing function for the message body
-    if(!(packfunc = playerxdr_get_func(header->addr.interf,
+    if(!(packfunc = playerxdr_get_packfunc(header->addr.interf,
                                        header->type,
                                        header->subtype)))
     {

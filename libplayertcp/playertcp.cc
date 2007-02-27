@@ -508,7 +508,6 @@ PlayerTCP::WriteClient(int cli)
                          client->writebuffer,
                          MIN(client->writebufferlen,
                              PLAYERTCP_WRITEBUFFER_SIZE));
-
       if(numwritten < 0)
       {
         if(errno == EAGAIN)
@@ -541,7 +540,7 @@ PlayerTCP::WriteClient(int cli)
       hdr = *msg->GetHeader();
       payload = msg->GetPayload();
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr.addr.interf,
+      if(!(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
                                          hdr.type, hdr.subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
@@ -552,8 +551,8 @@ PlayerTCP::WriteClient(int cli)
       else
       {
         // Make sure there's room in the buffer for the encoded messsage.
-        // 4 times the message is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * hdr.size);
+        // 4 times the message (including dynamic data) is a safe upper bound
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * (msg->GetPayloadSize() + msg->GetDynDataSize()));
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
@@ -635,10 +634,9 @@ PlayerTCP::WriteClient(int cli)
         // Rewrite the size in the header with the length of the encoded
         // body, then encode the header.
         hdr.size = encode_msglen;
-	if((encode_msglen =
-	    player_msghdr_pack(client->writebuffer,
-			       PLAYERXDR_MSGHDR_SIZE, &hdr,
-			       PLAYERXDR_ENCODE)) < 0)
+        if((encode_msglen = player_msghdr_pack(client->writebuffer,
+                   PLAYERXDR_MSGHDR_SIZE, &hdr,
+                   PLAYERXDR_ENCODE)) < 0)
         {
           PLAYER_ERROR("failed to encode msg header");
 #if HAVE_ZLIB_H
@@ -823,7 +821,7 @@ PlayerTCP::ParseBuffer(int cli)
       // Iff there's a payload to pack, locate the appropriate packing
       // function
       if( hdr.size > 0 &&
-	  !(packfunc = playerxdr_get_func(hdr.addr.interf,
+	  !(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
 					  hdr.type,
 					  hdr.subtype)))
       {
@@ -915,6 +913,11 @@ PlayerTCP::ParseBuffer(int cli)
             else
               device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
           }
+          // Need to ensure that the copy of any dynamic data made during unpacking
+          // is cleaned up (putting message bodies into a Message class, as with PutMsg,
+          // makes another copy of this data that will be cleaned up when that Message
+          // class destructs).
+          playerxdr_delete_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
         }
       }
     }

@@ -59,7 +59,8 @@ class Message
     Message(const struct player_msghdr & Header,
             const void* data,
             unsigned int data_size,
-            MessageQueue* _queue = NULL);
+            MessageQueue* _queue = NULL,
+            bool do_deepcopy = true);
     /// Copy pointers from existing message and increment refcount.
     Message(const Message & rhs);
 
@@ -92,6 +93,8 @@ class Message
     void* GetPayload() {return (void*)(&Data[sizeof(player_msghdr_t)]);};
     /// Get Payload size.
     size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
+    /// Get dynamic data size.
+    size_t GetDynDataSize() {return DynDataSize;};
     /// Size of message data.
     unsigned int GetSize() {return Size;};
     /// Compare type, subtype, device, and device_index.
@@ -101,7 +104,7 @@ class Message
     /// Set ready to send
     void SetReady ()            { ready = true; }
     /// Check if ready to send
-		bool Ready (void) const     { return ready; }
+    bool Ready (void) const     { return ready; }
 
     /// queue to which any response to this message should be directed
     MessageQueue* Queue;
@@ -114,6 +117,8 @@ class Message
     uint8_t * Data;
     /// Length (in bytes) of Data.
     unsigned int Size;
+    /// Length (in bytes) of any dynamic data the message uses
+    unsigned int DynDataSize;
     /// Used to lock access to Data.
     pthread_mutex_t * Lock;
     /// Marks if the message is ready to be sent to the client
@@ -251,13 +256,13 @@ class MessageQueue
     ~MessageQueue();
     /// Check whether a queue is empty
     bool Empty() { return(this->head == NULL); }
-    /** Push a message onto the queue.  Returns the success state of the Push 
+    /** Push a message onto the queue.  Returns the success state of the Push
     operation (true if successful, false otherwise).
     UseReserved should only be set true when pushing sync
     messages on to the queue. If UseReserved is false then a single message slot
     is reserved on the queue for a sync message */
     bool Push(Message& msg, bool UseReserved = false);
-    
+
     /** Pop a message off the queue.
     Pop the head (i.e., the first-inserted) message from the queue.
     Returns pointer to said message, or NULL if the queue is empty */
@@ -307,7 +312,7 @@ class MessageQueue
     void SetPull (bool _pull) { this->pull = _pull; }
     /// Mark all messages in the queue as ready to be sent
     void MarkAllReady (void);
-    
+
     /// @brief Get current length of queue, in elements.
     size_t GetLength(void);
   private:

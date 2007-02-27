@@ -333,7 +333,7 @@ PlayerUDP::Read(int timeout)
           {
             // Matched.
 
-            // An empty datagram signals a new client, even if he's 
+            // An empty datagram signals a new client, even if he's
             // using an old port
             if(!this->decode_readbufferlen)
             {
@@ -341,7 +341,7 @@ PlayerUDP::Read(int timeout)
               cli = this->num_clients;
               break;
             }
-            
+
             // Might we need more room to assemble the current partial message?
             if((client->readbuffersize - client->readbufferlen) <
                this->decode_readbufferlen)
@@ -364,7 +364,7 @@ PlayerUDP::Read(int timeout)
             }
 
             // Having allocated more space, are we full?
-            if((client->readbuffersize - client->readbufferlen) < 
+            if((client->readbuffersize - client->readbufferlen) <
                this->decode_readbufferlen)
             {
               PLAYER_WARN2("client %d's buffer is full (%d bytes)",
@@ -390,7 +390,7 @@ PlayerUDP::Read(int timeout)
         if(cli >= this->num_clients)
         {
           // No match; must be a new client
-          this->AddClient(&fromaddr, 
+          this->AddClient(&fromaddr,
                           this->host,
                           this->listeners[i].port,
                           this->listeners[i].fd,
@@ -550,7 +550,7 @@ PlayerUDP::WriteClient(int cli)
       hdr = *msg->GetHeader();
       payload = msg->GetPayload();
       // Locate the appropriate packing function
-      if(!(packfunc = playerxdr_get_func(hdr.addr.interf,
+      if(!(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
                                          hdr.type, hdr.subtype)))
       {
         // TODO: Allow the user to register a callback to handle unsupported
@@ -562,7 +562,7 @@ PlayerUDP::WriteClient(int cli)
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * hdr.size);
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * (msg->GetPayloadSize() + msg->GetDynDataSize()));
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
@@ -762,7 +762,7 @@ PlayerUDP::ParseBuffer(int cli)
       // Iff there's a payload to pack, locate the appropriate packing
       // function
       if( hdr.size > 0 &&
-	  !(packfunc = playerxdr_get_func(hdr.addr.interf,
+	  !(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
 					  hdr.type,
 					  hdr.subtype)))
       {
@@ -854,6 +854,11 @@ PlayerUDP::ParseBuffer(int cli)
             else
               device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
           }
+          // Need to ensure that the copy of any dynamic data made during unpacking
+          // is cleaned up (putting message bodies into a Message class, as with PutMsg,
+          // makes another copy of this data that will be cleaned up when that Message
+          // class destructs).
+          playerxdr_delete_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
         }
       }
     }
@@ -1186,11 +1191,11 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
   serverp.sin_addr.s_addr = host;
   serverp.sin_port = htons(portnum);
 
-  /* 
-   * Create the INET socket.  
-   * 
+  /*
+   * Create the INET socket.
+   *
    */
-  if((sock = socket(PF_INET, socktype, 0)) == -1) 
+  if((sock = socket(PF_INET, socktype, 0)) == -1)
   {
     perror("create_and_bind_socket:socket() failed; socket not created.");
     return(-1);
@@ -1213,14 +1218,14 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
      * get the current access flags
      */
     if((flags = fcntl(sock, F_GETFL)) == -1)
-    { 
+    {
       perror("create_and_bind_socket():fcntl() while getting socket "
                       "access flags; socket not created.");
       close(sock);
       return(-1);
     }
     /*
-     * OR the current flags with O_NONBLOCK (so we won't block), 
+     * OR the current flags with O_NONBLOCK (so we won't block),
      * and write them back
      */
     if(fcntl(sock, F_SETFL, flags | O_NONBLOCK ) == -1)
@@ -1232,10 +1237,10 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
     }
   }
 
-  /* 
+  /*
    * Bind it to the port indicated
    * INADDR_ANY indicates that any network interface (IP address)
-   * for the local host may be used (presumably the OS will choose the 
+   * for the local host may be used (presumably the OS will choose the
    * right one).
    *
    * Specifying sin_port = 0 would allow the system to choose the port.
@@ -1243,7 +1248,7 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
   serverp.sin_family = PF_INET;
   serverp.sin_addr.s_addr = INADDR_ANY;
 
-  if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1) 
+  if(bind(sock, (struct sockaddr*)&serverp, sizeof(serverp)) == -1)
   {
     perror ("create_and_bind_socket():bind() failed; socket not created.");
     close(sock);
@@ -1251,7 +1256,7 @@ _create_and_bind_udp_socket(char blocking, unsigned int host, int portnum)
   }
 
   /*
-   * return the fd for the newly bound socket 
+   * return the fd for the newly bound socket
    */
   return(sock);
 }
