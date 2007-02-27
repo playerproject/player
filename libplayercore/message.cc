@@ -33,11 +33,13 @@
 #include <libplayercore/message.h>
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
+#include <libplayerxdr/playerxdr.h>
 
 Message::Message(const struct player_msghdr & Header,
                  const void * data,
                  unsigned int data_size,
-                 MessageQueue* _queue)
+                 MessageQueue* _queue,
+                 bool do_deepcopy)
 {
   this->Queue = _queue;
   this->Lock = new pthread_mutex_t;
@@ -45,6 +47,7 @@ Message::Message(const struct player_msghdr & Header,
   pthread_mutex_init(this->Lock,NULL);
   this->Size = sizeof(struct player_msghdr)+data_size;
   assert(this->Size);
+  this->DynDataSize = 0;
   this->Data = new unsigned char[this->Size];
   assert(this->Data);
 
@@ -54,6 +57,20 @@ Message::Message(const struct player_msghdr & Header,
   ((player_msghdr *) Data)->size = data_size;
 
   memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
+  // Perform deep copy if necessary
+  if (do_deepcopy && data != NULL)
+  {
+    player_dpcpy_fn_t dpcpyfunc = NULL;
+    if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
+    {
+      if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
+      {
+        // Possible error
+        PLAYER_WARN3 ("copied zero bytes in deep copy of message %d: %d, %d", Header.addr.interf, Header.type, Header.subtype);
+      }
+    }
+  }
+
   this->RefCount = new unsigned int;
   assert(this->RefCount);
   *this->RefCount = 1;
@@ -70,6 +87,7 @@ Message::Message(const Message & rhs)
   Lock = rhs.Lock;
   Data = rhs.Data;
   Size = rhs.Size;
+  DynDataSize = rhs.DynDataSize;
   Queue = rhs.Queue;
   RefCount = rhs.RefCount;
   (*RefCount)++;
@@ -102,6 +120,8 @@ Message::DecRef()
   assert((*RefCount) >= 0);
   if((*RefCount)==0)
   {
+    if (this->GetPayloadSize() > 0 && DynDataSize > 0)
+      playerxdr_delete_message (this->GetPayload(), this->GetHeader()->addr.interf, this->GetHeader()->type, this->GetHeader()->subtype);
     delete [] Data;
     delete RefCount;
     pthread_mutex_unlock(Lock);
@@ -296,7 +316,7 @@ MessageQueue::SetFilter(int host, int robot, int interf,
   this->filter_on = true;
 }
 
-size_t 
+size_t
 MessageQueue::GetLength(void)
 {
   size_t len;
