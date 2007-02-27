@@ -41,7 +41,7 @@ playerv requires the GTK+-2.0 development libraries and headers.
 playerv is installed alongside player in $prefix/bin, so if player is
 in your PATH, then playerv should also be.  Command-line usage is:
 @verbatim
-$ playerv [-h <hostname>] [-p <port>] [--<device>:<index>] [--<device>:<index>] ...
+$ playerv [-h <hostname>] [-p <port>] [-pull <0|1>] [--<device>:<index>] [--<device>:<index>] ...
 @endverbatim
 For example, to connect to Player on localhost at the default port
 (6665), and subscribe to the 0th position and sonar devices:
@@ -53,6 +53,10 @@ To connect to Player on another machine (foo) at a non-default port
 @verbatim
 $ playerv -h foo -p 7000
 @endverbatim
+
+If pull is set to 1, it will set the server's replace rule to true, and only
+deliver data when a read is requested.  This is sometimes useful on slow
+connections or with slow computers that cannot keep up.
 
 When playerv starts, a window will pop up.  Click and drag with the left
 mouse button to pan the window.  Click and drag with the right mouse
@@ -117,6 +121,7 @@ playerv provides teleoperation of the following kinds of devices:
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include "playerv.h"
 
 
@@ -135,7 +140,7 @@ void print_usage()
 {
   printf("\nPlayerViewer %s, ", VERSION);
   printf("a visualization tool for the Player robot device server.\n");
-  printf("Usage  : playerv [-h <hostname>] [-p <port>]\n");
+  printf("Usage  : playerv [-h <hostname>] [-p <port>] [-pull <0|1>]\n");
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
   printf("Example: playerv -p 6665 --position:0 --sonar:0\n");
   printf("\n");
@@ -154,11 +159,14 @@ int main(int argc, char **argv)
   int i;
   int rate;
   int count;
+  int pull;
   char section[256];
   int device_count;
   device_t devices[PLAYER_MAX_DEVICES];
   device_t *device;
   void *proxy;
+  struct timeval tv, tc = {0, 0};
+  struct timespec st = {0,0};
 
   printf("PlayerViewer %s\n", VERSION);
 
@@ -188,6 +196,8 @@ int main(int argc, char **argv)
   if (port < 0)
     port = opt_get_int(opt, "", "p", 6665);
 
+  pull = opt_get_int(opt, "", "pull", 0);
+
   // Connect to the server
   printf("Connecting to [%s:%d]\n", host, port);
   client = playerc_client_create(NULL, host, port);
@@ -198,14 +208,26 @@ int main(int argc, char **argv)
     return -1;
   }
 
-#if 0
-  // Change the server's data delivery mode.
-  if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH_NEW) != 0)
+  if (0 != pull)
   {
-    PRINT_ERR1("%s", playerc_error_str());
-    return -1;
+    printf("Setting delivery mode to PLAYER_DATAMODE_PULL\n", host, port);
+    // Change the server's data delivery mode.
+    if (playerc_client_set_replace_rule(client, -1, -1, -1, -1, 1) != 0)
+    {
+      PRINT_ERR1("%s", playerc_error_str());
+      return -1;
+    }
+
+    // Change the server's data delivery mode.
+    // PLAYERC_DATAMODE_PUSH, PLAYERC_DATAMODE_PULL
+    if (playerc_client_datamode(client, PLAYERC_DATAMODE_PULL) != 0)
+    {
+      PRINT_ERR1("%s", playerc_error_str());
+      return -1;
+    }
+
+    gettimeofday(&tv, NULL);
   }
-#endif
 
   // Get the available devices.
   if (playerc_client_get_devlist(client) != 0)
@@ -297,21 +319,47 @@ int main(int argc, char **argv)
     // Let gui process messages
     rtk_app_main_loop(app);
 
-    // see if there's data
-    count = playerc_client_peek(client, 50);
-    if (count < 0)
+    if (0 == pull)  // if we're in push mode
     {
-      PRINT_ERR1("%s", playerc_error_str());
-      break;
-    }
-    if (count > 0)
-    {
-      proxy = playerc_client_read(client);
-      // NULL return from playerc_client_read() means an error in the
-      // connection to the server (I think)
-      if(!proxy)
+      // see if there's data
+      count = playerc_client_peek(client, 50);
+      if (count < 0)
+      {
+        PRINT_ERR1("%s", playerc_error_str());
         break;
+      }
+      if (count > 0)
+      {
+        proxy = playerc_client_read(client);
+        // NULL return from playerc_client_read() means an error in the
+        // connection to the server (I think)
+        if(!proxy)
+          break;
+      }
     }
+    else // we're in pull mode
+    {
+      // we only want to request new data at roughly 20 Hz
+      gettimeofday(&tc, NULL);
+      if ((tc.tv_sec > tv.tv_sec) || (tc.tv_usec > tv.tv_usec + 50000))
+      {
+        tv = tc;
+        // this requests a round of data from the server to be read
+        proxy = playerc_client_read(client);
+        // NULL return from playerc_client_read() means an error in the
+        // connection to the server (I think)
+        if(!proxy)
+          break;
+
+       }
+       else
+       {
+        // sleep for the minimum time we can, so we don't use up too much
+        // processor
+        nanosleep(&st, NULL);
+       }
+    }
+
 
     // Update the devices
     for (i = 0; i < device_count; i++)
