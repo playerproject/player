@@ -2541,7 +2541,7 @@ interface a user can send custom commands to their drivers/plugins.
 #define PLAYER_OPAQUE_REQ                    3
 
 /** Maximum message size is 1 MB */
-#define PLAYER_OPAQUE_MAX_SIZE            1024
+#define PLAYER_OPAQUE_MAX_SIZE            1048576
 
 /** @brief data */
 typedef struct player_opaque_data
