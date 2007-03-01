@@ -47,9 +47,8 @@ the Player 2.0 API.
 */
 /** @} */
 
-#include "player.h"
-
-#include "../../base/imagebase.h"
+#include <libplayercore/playercore.h>
+#include <base/imagebase.h>
 
 #include <opencv/cv.h>
 //#include <opencv/highgui.h>

@@ -135,10 +135,7 @@ driver
 
 #define PLAYER_ENABLE_MSG 0
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
 
 #include "rmp_frame.h"
 #include "segwayrmp.h"

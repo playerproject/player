@@ -91,12 +91,7 @@ driver
 #include <unistd.h>
 #include <signal.h>
 
-#include <driver.h>
-#include <error.h>
-#include <configfile.h>
-#include <playertime.h>
-#include <drivertable.h>
-#include <player.h>
+#include <libplayercore/playercore.h>
 
 extern PlayerTime *GlobalTime;
 

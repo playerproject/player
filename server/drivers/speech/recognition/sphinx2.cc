@@ -111,12 +111,7 @@ driver
 #include <pthread.h>  /* for pthread stuff */
 #include <libplayertcp/socket_util.h>
 
-#include <playertime.h>
-#include <player.h>
-#include <error.h>
-#include <driver.h>
-#include <drivertable.h>
-extern PlayerTime* GlobalTime;
+#include <libplayercore/player.h>
 
 #ifdef __cplusplus
 extern "C" {

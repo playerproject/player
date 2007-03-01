@@ -107,13 +107,7 @@ driver
 
 #include <howl.h>
 
-#include "playercommon.h"
-#include "drivertable.h"
-#include "devicetable.h"
-#include "player.h"
-#include "interface_util.h"
-#include "globals.h"
-
+#include <libplayercore/playercore.h>
 
 #define MDNS_SERVICE_TYPE "_player2._tcp."
 

@@ -34,9 +34,6 @@
 #include <unistd.h>
 #include <stdlib.h> /* for exit() */
 #include "clodbuster.h"
-#include <playertime.h>
-
-extern PlayerTime* GlobalTime;
 
 //extern bool debug;
 
