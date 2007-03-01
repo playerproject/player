@@ -25,7 +25,7 @@ libplayertcp_java_la_LDFLAGS = $(top_builddir)/libplayertcp/libplayertcp.la $(to
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayertcp
 java_DATA = 
 if ENABLE_JPLAYER
-java_DATA += net/sourceforge/playerstage/Jplayertcp/*.java
+java_DATA += $(srcdir)/net/sourceforge/playerstage/Jplayertcp/*.java
 endif
 
 dist-hook:

@@ -347,7 +347,7 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
 PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
-PLAYER_ADD_DRIVER([sphinx2],[yes],["sphinx2/ckd_alloc.h"],
+PLAYER_ADD_DRIVER([sphinx2],[no],["sphinx2/ckd_alloc.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])

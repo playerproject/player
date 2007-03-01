@@ -46,7 +46,7 @@ libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayercore
 java_DATA = 
 if ENABLE_JPLAYER
-java_DATA += net/sourceforge/playerstage/Jplayercore/*.java
+java_DATA += $(srcdir)/net/sourceforge/playerstage/Jplayercore/*.java
 endif
 
 dist-hook:
