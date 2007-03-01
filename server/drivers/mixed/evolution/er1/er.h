@@ -76,11 +76,7 @@
 #define STOP		1
 
 
-#include <player.h>
-
-#include <driver.h>
-#include <drivertable.h>
-
+#include <libplayercore/playercore.h>
 
 typedef struct
 {

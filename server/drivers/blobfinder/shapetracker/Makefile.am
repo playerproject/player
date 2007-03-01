@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir) @OPENCV_CFLAGS@
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -I$(srcdir)/../.. @OPENCV_CFLAGS@
 
 noinst_LTLIBRARIES =
 if INCLUDE_SHAPETRACKER

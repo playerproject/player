@@ -34,7 +34,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <playercore.h>
+#include <libplayercore/playercore.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(mf, i, j) ((mf.width) * (j) + (i))

@@ -5,8 +5,7 @@
  CVS: $Id$
 */
 #include <netdb.h> 
-#include <libplayercore/player.h>
-#include <libplayercore/playercommon.h>
+#include <libplayercore/playercore.h>
 
 #include "lms400_cola.h"
 

@@ -43,12 +43,9 @@
 #include <errno.h>
 
 // for poll
-#include <replace.h>
+#include <replace/replace.h>
+#include <libplayercore/playercore.h>
 
-#include <driver.h>
-#include <playercommon.h>
-#include <player.h>
-#include <drivertable.h>
 #include <reb_params.h>
 
 

@@ -91,18 +91,10 @@ driver
 #include <netinet/in.h> // socket things...
 #include <termios.h> // serial port things
 
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 #include "clodbuster.h"
 #include "packet.h" // What's this for?
-#include "playertime.h"
-extern PlayerTime* GlobalTime;
-
-// so we can access the deviceTable and extract pointers to the sonar
-// and position objects
-#include "driver.h"
-#include "drivertable.h"
-#include "devicetable.h"
-#include "error.h"
-#include "replace.h"
 
 // initialization function
 Driver* ClodBuster_Init( ConfigFile* cf, int section)
