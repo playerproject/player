@@ -20,9 +20,7 @@
 
 #include "canio.h"
 #include "canio_kvaser.h"
-#include "player.h"
-#include "device.h"
-#include "configfile.h"
+#include <libplayercore/playercore.h>
 
 
 // Forward declarations

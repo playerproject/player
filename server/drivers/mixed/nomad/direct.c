@@ -40,7 +40,7 @@ char cvsid_host_client_Ndirect_c[] = "$Header$";
 #include <stdlib.h> // for abs(3)
 
 #include "Nclient.h"
-#include "player.h"
+#include <libplayercore/playercore.h>
 
 /* defines */
 

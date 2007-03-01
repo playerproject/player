@@ -135,10 +135,7 @@ driver
 
 #define PLAYER_ENABLE_MSG 0
 
-#include "player.h"
-#include "error.h"
-#include "driver.h"
-#include "drivertable.h"
+#include <libplayercore/playercore.h>
 
 #include "rmp_frame.h"
 #include "segwayrmp.h"
@@ -322,6 +319,7 @@ SegwayRMP::Main()
   for(;;)
   {
     pthread_testcancel();
+	ProcessMessages();
     
     // Read from the RMP
     if(Read() < 0)

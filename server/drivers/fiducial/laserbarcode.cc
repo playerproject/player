@@ -124,8 +124,6 @@ driver
 #define PLAYER_ENABLE_TRACE 0
 #define PLAYER_ENABLE_MSG 0
 
-#include "player.h"
-
 #include <errno.h>
 #include <string.h>
 #include <math.h>
