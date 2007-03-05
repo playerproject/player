@@ -26,7 +26,7 @@
 
 #define DTOR(x) (M_PI * x / 180.0)
 
-RobotParams_t erratic_params = 
+RobotParams_t erratic_params_rev_E = 
 {
 	0.001534,
 	"Erratic",
@@ -92,4 +92,75 @@ RobotParams_t erratic_params =
 };
 
 
-RobotParams_t *RobotParams[1] = {&erratic_params};
+//
+// Rev G
+// Sonar position changes
+//
+
+RobotParams_t erratic_params_rev_G = 
+{
+	0.001534,
+	"Erratic",
+	0.011,
+	0.780, //This is the empirically correct value, but doesn't match wheel size calculation
+	0,
+	1.626,
+	1,
+	1,
+	0,
+	0,
+	0,
+	"",
+	"",
+	0,
+	1,
+	0,
+	0,
+	0,
+	300,
+	1000,
+	0,
+	5,
+	5,
+	1,
+	0,
+	0,
+	0,
+	120,
+	392,			// length, mm
+	180,			// radius, mm
+	415,			// width, mm
+	61,			// axle distance to center of robot (positive forward)
+	0,
+	0,
+	0,
+	1,
+	1,
+	"Rev G",
+	38400,
+	0,
+	0,
+	0,
+	0,
+	20,
+	1.20482,
+	8,
+	{			// sonar poses, in m and rads
+		{ 0.180, 0.120,  DTOR(90) },
+		{ 0.200, 0.100,  DTOR(53) },
+		{ 0.205, 0.065,  DTOR(24) },
+		{ 0.210, 0.045,  DTOR(0) },
+		{ 0.210, -0.045, DTOR(0) },
+		{ 0.205, -0.065, DTOR(-24) },
+		{ 0.200, -0.100, DTOR(-53) },
+		{ 0.180, -0.120, DTOR(-90) },
+	},
+	2,
+	{
+		{0.1, 0.1, 0},	// ir poses in m and deg
+		{0.1, -0.1, 0},
+	}
+};
+
+
+RobotParams_t *RobotParams[2] = {&erratic_params_rev_E, &erratic_params_rev_G};

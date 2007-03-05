@@ -515,10 +515,15 @@ int Erratic::Connect()
     usleep(ROBOT_CYCLETIME);
   }
 
-  printf(" done.\n  Connected to <%s>, a %s %s\n", name, type, subtype);
+  printf(" done.\n  Connected to <%s>, an %s %s\n", name, type, subtype);
 
-  // Set the robot type statically for now (there is only one!)
-  param_idx = 0;
+  // Set the robot type
+	if (subtype == "Rev G")
+		param_idx = 1;
+	else if (subtype == "Rev E")
+		param_idx = 0;
+	else
+		param_idx = 0;
 
   // Create a packet and set initial odometry position (the ErraticMotorPacket is persistent)
   this->motor_packet = new ErraticMotorPacket(param_idx);
