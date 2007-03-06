@@ -28,6 +28,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <math.h>
+
 /* Include values from the configure script */
 #include "playerconfig.h"
 
@@ -3097,8 +3099,9 @@ maps are delivered in tiles, via a sequence of requests.
 
 /** The maximum size of a grid map tile, in cells
 
-2097152 - 30 (msg header) - 20 (meta-data to accompany the tile) = 2097102 */
-#define PLAYER_MAP_MAX_TILE_SIZE 2097102
+(max_payload - 12 (zlib header)) / 1.001 (zlib overhead) -  20 (tile meta-data)
+*/
+#define PLAYER_MAP_MAX_TILE_SIZE (((int)((PLAYER_MAX_PAYLOAD_SIZE-12)/1.001)) - 20 - 1)
 
 /** The maximum number of segments in a vector map
 
