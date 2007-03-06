@@ -28,8 +28,6 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include <math.h>
-
 /* Include values from the configure script */
 #include "playerconfig.h"
 
