@@ -445,7 +445,7 @@ double pmap_entropy(pmap_t *self, int scan_count)
 void pmap_resample(pmap_t *self, int scan_count)
 {
   int i, n;
-  double e, p, norm;
+  double e, p, norm=0.0;
   gsl_ran_discrete_t *dist=NULL;
   pmap_sample_t *oldset=NULL, *newset=NULL;
   pmap_sample_t *old=NULL, *newsample=NULL;
