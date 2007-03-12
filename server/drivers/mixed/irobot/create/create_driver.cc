@@ -103,6 +103,7 @@ requires Player to be restarted
 
 
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <libplayercore/playercore.h>
 
@@ -169,7 +170,7 @@ Create::Create(ConfigFile* cf, int section)
   memset(&this->opaque_addr,0,sizeof(player_devaddr_t));
   //memset(&this->gripper_addr,0,sizeof(player_devaddr_t));
 
-  this->cpdata = malloc(sizeof(player_opaque_data_t));
+  this->cpdata = (player_opaque_data_t*)malloc(sizeof(player_opaque_data_t));
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
