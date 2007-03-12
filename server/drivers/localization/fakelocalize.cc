@@ -109,12 +109,16 @@ class FakeLocalize : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
   public: virtual void Main();
+  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+                                     player_msghdr * hdr,
+                                     void * data);
+
 
   // Simulation stuff.
   private: int UpdateData();
-  private: void HandleRequests();
   private: Device *sim;
   private: player_devaddr_t sim_id;
+  private: player_devaddr_t localize_addr;
   private: const char* model;
 };
 
@@ -136,7 +140,7 @@ void FakeLocalize_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LOCALIZE_CODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // Must have an input sim
   if (cf->ReadDeviceAddr(&this->sim_id, section, "requires",
@@ -146,6 +150,19 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
     return;
   }
   this->sim = NULL;
+
+  memset(&this->localize_addr, 0, sizeof(player_devaddr_t));
+  // Do we create a localize interface?
+  if(cf->ReadDeviceAddr(&(this->localize_addr), section, "provides",
+                        PLAYER_LOCALIZE_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->localize_addr))
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
 
   if(!(this->model = cf->ReadString(section, "model", NULL)))
   {
@@ -266,7 +283,111 @@ FakeLocalize::Main()
       PLAYER_ERROR("failed to get pose from simulation device");
       pthread_exit(NULL);
     }
+    this->ProcessMessages();
     //HandleRequests();
     usleep(SLEEPTIME_US);
   }
 }
+
+int FakeLocalize::ProcessMessage(MessageQueue * resp_queue,
+				 player_msghdr * hdr,
+				 void * data) 
+{
+  player_localize_set_pose_t* setposereq;
+
+  // Is it a request to set the filter's pose?
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                           PLAYER_LOCALIZE_REQ_SET_POSE,
+                           this->localize_addr))
+    {
+      if(hdr->size != sizeof(player_localize_set_pose_t))
+	{
+	  PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+			hdr->size, sizeof(player_localize_set_pose_t));
+	  return(-1);
+	}
+      setposereq = (player_localize_set_pose_t*)data;
+      player_simulation_pose2d_req_t req; 
+            
+      req.pose.px = setposereq->mean.px;
+      req.pose.py = setposereq->mean.py;
+      req.pose.pa = setposereq->mean.pa;
+      
+      strcpy(req.name, this->model); 
+      // look up the named model
+      Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, 
+				     PLAYER_SIMULATION_REQ_SET_POSE2D,
+				     (void *) &req, sizeof(req), NULL);
+      if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
+	{
+	  // Send an ACK
+	  this->Publish(this->localize_addr, resp_queue,
+			PLAYER_MSGTYPE_RESP_ACK,
+			PLAYER_LOCALIZE_REQ_SET_POSE);
+	  return(0);
+	}
+      else
+	{
+	  delete (Reply);
+	  return -1;
+	}
+    }
+  // Is it a request for the current particle set?
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                                this->localize_addr))
+    {
+      player_simulation_pose2d_req_t cfg;
+      if(hdr->size != 0)
+	{
+	  PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+			hdr->size, 0);
+	  return(PLAYER_MSGTYPE_RESP_NACK);
+	}
+
+      // Request pose
+      strncpy(cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+      cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN - 1] = '\0';
+      cfg.name_count = min(strlen(cfg.name),PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1) + 1;
+      
+      Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
+				     (void *) &cfg, sizeof(cfg), NULL);
+      
+      if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
+	{
+	  assert(Reply->GetPayloadSize() == sizeof(cfg));
+	  player_simulation_pose2d_req_t * ans = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
+	  
+	  player_localize_get_particles_t resp;
+	  resp.mean.px = ans->pose.px;
+	  resp.mean.py = ans->pose.py;
+	  resp.mean.pa = ans->pose.pa;
+	  resp.variance = 0;
+	  
+	  resp.particles_count = 1;
+	  for(uint i=0;i<resp.particles_count;i++)
+	    {
+	      resp.particles[i].pose.px = ans->pose.px;
+	      resp.particles[i].pose.py = ans->pose.py;
+	      resp.particles[i].pose.pa = ans->pose.pa;
+	      resp.particles[i].alpha = 1;
+	    }
+	  
+	  this->Publish(this->localize_addr, resp_queue,
+			PLAYER_MSGTYPE_RESP_ACK,
+			PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+			(void*)&resp, sizeof(resp), NULL);
+	  delete Reply;
+	  Reply = NULL;
+	  
+	  return(0);
+	}
+      else 
+	{
+	  delete Reply;
+	  return -1;
+	}
+    } 
+  return(-1);
+}
+
