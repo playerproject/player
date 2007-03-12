@@ -73,7 +73,7 @@ create_open(create_comm_t* r, unsigned char fullcontrol)
     return(-1);
   }
 
-  printf("Opening connection to Roomba on %s...", r->serial_port);
+  printf("Opening connection to Create on %s...", r->serial_port);
   fflush(stdout);
 
   // Open it.  non-blocking at first, in case there's no create
