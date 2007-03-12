@@ -114,6 +114,7 @@ class Create : public Driver
 {
   public:
     Create(ConfigFile* cf, int section);
+    ~Create();
 
     int Setup();
     int Shutdown();
@@ -140,6 +141,8 @@ class Create : public Driver
     player_devaddr_t opaque_addr;
     player_devaddr_t gripper_addr;
 
+    player_opaque_data_t *cpdata;
+
     // The underlying create object
     create_comm_t* create_dev;
 };
@@ -165,6 +168,8 @@ Create::Create(ConfigFile* cf, int section)
   memset(&this->ir_addr,0,sizeof(player_devaddr_t));
   memset(&this->opaque_addr,0,sizeof(player_devaddr_t));
   //memset(&this->gripper_addr,0,sizeof(player_devaddr_t));
+
+  this->cpdata = malloc(sizeof(player_opaque_data_t));
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -238,6 +243,11 @@ Create::Create(ConfigFile* cf, int section)
   this->create_dev = NULL;
 }
 
+Create::~Create()
+{
+  free (this->cpdata);
+}
+
 int
 Create::Setup()
 {
@@ -250,10 +260,6 @@ Create::Setup()
     PLAYER_ERROR("failed to connect to create");
     return(-1);
   }
-
-  /*printf("HERE\n");
-  create_set_leds(this->create_dev, 1, 0, 1, 0, 2, 128, 255);
-  */
 
   this->StartThread();
 
@@ -375,20 +381,19 @@ Create::Main()
 
      ////////////////////////////
      // Update Opaque-Control data
-     player_opaque_data_t cpdata;
-     memset(&cpdata,0,sizeof(cpdata));
+     memset(this->cpdata,0,sizeof(cpdata));
 
-     cpdata.data_count=5;
+     this->cpdata->data_count=5;
 
-     cpdata.data[0]=this->create_dev->button_max;
-     cpdata.data[1]=this->create_dev->button_clean;
-     cpdata.data[2]=this->create_dev->button_spot;
-     cpdata.data[3]=this->create_dev->button_power;
-     cpdata.data[4]=this->create_dev->remote_opcode;
+     this->cpdata->data[0]=this->create_dev->button_max;
+     this->cpdata->data[1]=this->create_dev->button_clean;
+     this->cpdata->data[2]=this->create_dev->button_spot;
+     this->cpdata->data[3]=this->create_dev->button_power;
+     this->cpdata->data[4]=this->create_dev->remote_opcode;
 
      this->Publish(this->opaque_addr, NULL,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
-         (void*)&cpdata, sizeof(cpdata), NULL);
+         (void*)this->cpdata, sizeof(*this->cpdata), NULL);
 
      usleep(CYCLE_TIME_US);
   }
@@ -499,14 +504,9 @@ Create::ProcessMessage(MessageQueue * resp_queue,
                                     PLAYER_OPAQUE_CMD,
                                     this->opaque_addr))
   {
-    printf("Opaque\n");
     player_opaque_data_t opaque_data;
 
-    printf("1\n");
     opaque_data = *(player_opaque_data_t*)data;
-
-    printf("2\n");
-    printf("Opaque Command\n");
 
     // Play Command
     if (opaque_data.data[0] == 0 )
@@ -537,7 +537,6 @@ Create::ProcessMessage(MessageQueue * resp_queue,
     // Set the LEDs
     else if (opaque_data.data[0] == 2)
     {
-      printf("Setting the LEDS\n");
       uint8_t dirt_detect = opaque_data.data[1] == 0 ? 0 : 1;
       uint8_t max = opaque_data.data[2] == 0 ? 0 : 1;
       uint8_t clean = opaque_data.data[3] == 0 ? 0 : 1;
