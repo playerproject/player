@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 /*
  * $Id$
  *
- *   class to keep track of available devices.  
+ *   class to keep track of available devices.
  */
 #include <string.h> // for strncpy(3)
 
@@ -69,14 +69,14 @@ DeviceTable::~DeviceTable()
     thisentry = tmpentry;
   }
   pthread_mutex_unlock(&mutex);
-  
+
   // destroy the mutex.
   pthread_mutex_destroy(&mutex);
 }
-    
+
 // this is the 'base' AddDevice method, which sets all the fields
 Device*
-DeviceTable::AddDevice(player_devaddr_t addr, 
+DeviceTable::AddDevice(player_devaddr_t addr,
                        Driver* driver, bool havelock)
 {
   Device* thisentry;
@@ -86,7 +86,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
     pthread_mutex_lock(&mutex);
 
   // Check for duplicate entries (not allowed)
-  for(thisentry = head,preventry=NULL; thisentry; 
+  for(thisentry = head,preventry=NULL; thisentry;
       preventry=thisentry, thisentry=thisentry->next)
   {
     if(Device::MatchDeviceAddress(thisentry->addr, addr))
@@ -96,13 +96,13 @@ DeviceTable::AddDevice(player_devaddr_t addr,
   {
     PLAYER_ERROR4("duplicate device addr %X:%d:%s:%d",
                   addr.host, addr.robot,
-                  lookup_interface_name(0, addr.interf), 
+                  interf_to_str(addr.interf),
                   addr.index);
     if(!havelock)
       pthread_mutex_unlock(&mutex);
     return(NULL);
   }
-    
+
   // Create a new device entry
   thisentry = new Device(addr, driver);
   thisentry->next = NULL;
@@ -119,7 +119,7 @@ DeviceTable::AddDevice(player_devaddr_t addr,
 
 // find a device entry, based on addr, and return the pointer (or NULL
 // on failure)
-Device* 
+Device*
 DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
 {
   Device* thisentry;
@@ -150,7 +150,7 @@ DeviceTable::GetDevice(player_devaddr_t addr, bool lookup_remote)
             break;
         }
         assert(thisentry);
-        strncpy(thisentry->drivername, "remote", 
+        strncpy(thisentry->drivername, "remote",
                 sizeof(thisentry->drivername));
       }
     }
@@ -193,8 +193,8 @@ DeviceTable::StartAlwaysonDrivers()
     {
       if(thisentry->Subscribe(NULL) != 0)
       {
-        PLAYER_ERROR2("initial subscription failed for device %d:%d",
-                      thisentry->addr.interf, thisentry->addr.index);
+        PLAYER_ERROR2("initial subscription failed for device %s:%d",
+                      interf_to_str(thisentry->addr.interf), thisentry->addr.index);
         return(-1);
       }
     }
@@ -206,7 +206,7 @@ DeviceTable::StartAlwaysonDrivers()
 // GetDevice fails to find a device in the deviceTable.  This function
 // might, for example, locate the device on a remote host (in a
 // transport-dependent manner).
-void 
+void
 DeviceTable::AddRemoteDriverFn(remote_driver_fn_t rdf, void* arg)
 {
   this->remote_driver_fn = rdf;

@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -34,7 +34,7 @@
 #include "error.h"
 
 // Process incoming data
-void playerc_health_putmsg (playerc_health_t *device, 
+void playerc_health_putmsg (playerc_health_t *device,
                          player_msghdr_t *header,
 			 player_health_data_t *data, size_t len);
 
@@ -42,7 +42,7 @@ void playerc_health_putmsg (playerc_health_t *device,
 playerc_health_t *playerc_health_create(playerc_client_t *client, int index)
 {
     playerc_health_t *device;
-    
+
     device = malloc(sizeof(playerc_health_t));
     memset(device, 0, sizeof(playerc_health_t));
     playerc_device_init(&device->info, client, PLAYER_HEALTH_CODE, index,
@@ -74,14 +74,14 @@ int playerc_health_unsubscribe(playerc_health_t *device)
 }
 
 // Process incoming data
-void playerc_health_putmsg (playerc_health_t *device, 
+void playerc_health_putmsg (playerc_health_t *device,
 			 player_msghdr_t *header,
 			 player_health_data_t *data, size_t len)
-{    
-	
+{
+
     if((header->type == PLAYER_MSGTYPE_DATA) &&
        (header->subtype == PLAYER_HEALTH_DATA))
-    {		
+    {
 	device->cpu_usage.idle    = data->cpu_usage.idle;
 	device->cpu_usage.system    = data->cpu_usage.system;
 	device->cpu_usage.user    = data->cpu_usage.user;
@@ -93,6 +93,6 @@ void playerc_health_putmsg (playerc_health_t *device,
     	device->swap.free    = data->swap.free;
     }
     else
-	PLAYERC_WARN2("skipping health message with unknown type/subtype: %d/%d\n",
-	    header->type, header->subtype);
+	PLAYERC_WARN2("skipping health message with unknown type/subtype: %s/%d\n",
+	    msgtype_to_str(header->type), header->subtype);
 }

@@ -131,8 +131,8 @@ playerc_position3d_putmsg(playerc_position3d_t *device,
     device->stall = data->stall;
   }
   else
-    PLAYERC_WARN2("skipping position3d message with unknown type/subtype: %d/%d\n",
-                  header->type, header->subtype);
+    PLAYERC_WARN2("skipping position3d message with unknown type/subtype: %s/%d\n",
+                  msgtype_to_str(header->type), header->subtype);
 }
 
 
@@ -332,15 +332,15 @@ playerc_position3d_set_odom(playerc_position3d_t *device,
 int playerc_position3d_reset_odom(playerc_position3d_t *device)
 {
   player_position3d_reset_odom_config_t config;
-  
+
   memset(&config, 0, sizeof(config));
-  
-  
-  
+
+
+
   return playerc_client_request(device->info.client,
-                              	&device->info, 
-				PLAYER_POSITION3D_RESET_ODOM, 
-				&config, 
+                              	&device->info,
+				PLAYER_POSITION3D_RESET_ODOM,
+				&config,
 				&config,
 				sizeof(config));
 }

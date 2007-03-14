@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -101,8 +101,8 @@ void playerc_limb_putmsg(playerc_limb_t *device,
     device->data.state = data->state;
   }
   else
-    PLAYERC_WARN2("skipping limb message with unknown type/subtype: %d/%d\n",
-                  header->type, header->subtype);
+    PLAYERC_WARN2("skipping limb message with unknown type/subtype: %s/%d\n",
+                  msgtype_to_str(header->type), header->subtype);
 }
 
 // Get the limb geometry

@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -55,7 +55,7 @@
 #include "error.h"
 
 // Process incoming data
-void playerc_laser_putmsg(playerc_laser_t *device, 
+void playerc_laser_putmsg(playerc_laser_t *device,
                           player_msghdr_t *header,
                           void *data);
 
@@ -105,7 +105,7 @@ int playerc_laser_unsubscribe(playerc_laser_t *device)
 
 
 // Process incoming data
-void playerc_laser_putmsg(playerc_laser_t *device, 
+void playerc_laser_putmsg(playerc_laser_t *device,
                           player_msghdr_t *header,
                           void *data)
 {
@@ -144,7 +144,7 @@ void playerc_laser_putmsg(playerc_laser_t *device,
   else if((header->type == PLAYER_MSGTYPE_DATA) &&
           (header->subtype == PLAYER_LASER_DATA_SCANPOSE))
   {
-    player_laser_data_scanpose_t* scan_data = 
+    player_laser_data_scanpose_t* scan_data =
             (player_laser_data_scanpose_t*)data;
     assert(scan_data->scan.ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
 
@@ -174,18 +174,18 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     device->robot_pose[2] = scan_data->pose.pa;
   }
   else
-    PLAYERC_WARN2("skipping laser message with unknown type/subtype: %d/%d\n",
-                 header->type, header->subtype);
+    PLAYERC_WARN2("skipping laser message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
 }
 
 
 // Configure the laser.
 int
-playerc_laser_set_config(playerc_laser_t *device, 
-                         double min_angle, 
+playerc_laser_set_config(playerc_laser_t *device,
+                         double min_angle,
                          double max_angle,
-                         double resolution, 
-                         double range_res, 
+                         double resolution,
+                         double range_res,
                          unsigned char intensity,
                          double scanning_frequency)
 {
@@ -215,11 +215,11 @@ playerc_laser_set_config(playerc_laser_t *device,
 
 // Get the laser configuration.
 int
-playerc_laser_get_config(playerc_laser_t *device, 
-                         double *min_angle, 
+playerc_laser_get_config(playerc_laser_t *device,
+                         double *min_angle,
                          double *max_angle,
-                         double *resolution, 
-                         double *range_res, 
+                         double *resolution,
+                         double *range_res,
                          unsigned char *intensity,
                          double *scanning_frequency)
 {
@@ -249,7 +249,7 @@ playerc_laser_get_geom(playerc_laser_t *device)
 {
   player_laser_geom_t config;
 
-  if(playerc_client_request(device->info.client, 
+  if(playerc_client_request(device->info.client,
                             &device->info,PLAYER_LASER_REQ_GET_GEOM,
                             NULL, &config, sizeof(config)) < 0)
     return -1;
@@ -259,38 +259,38 @@ playerc_laser_get_geom(playerc_laser_t *device)
   device->pose[2] = config.pose.pa;
   device->size[0] = config.size.sl;
   device->size[1] = config.size.sw;
-  
+
   return 0;
 }
 
-// Get the laser IDentification information.  The writes the result into 
+// Get the laser IDentification information.  The writes the result into
 // the proxy rather than returning it to the caller.
 int
   playerc_laser_get_id (playerc_laser_t *device)
 {
   player_laser_get_id_config_t config;
 
-  if (playerc_client_request(device->info.client, 
+  if (playerc_client_request(device->info.client,
                             &device->info,PLAYER_LASER_REQ_GET_ID,
                             NULL, &config, sizeof(config)) < 0)
     return -1;
 
   device->laser_id = config.serial_number;
-  
+
   return 0;
 }
 
-void playerc_laser_printout( playerc_laser_t * device, 
+void playerc_laser_printout( playerc_laser_t * device,
 			  const char* prefix )
 {
   if( prefix )
     printf( "%s: ", prefix );
-  
+
   printf("[%14.3f] scan_id: %d  scan_count: %d\n",
 	 device->info.datatime,
-	 device->scan_id, 
+	 device->scan_id,
 	 device->scan_count );
-  
+
   printf( "# ranges\n" );
   int i;
   for( i=0; i<device->scan_count; i++ )

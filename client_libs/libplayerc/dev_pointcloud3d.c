@@ -32,7 +32,7 @@
 #include "error.h"
 
 // Process incoming data
-void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device, 
+void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device,
                                   player_msghdr_t *header,
 	                          void *data);
 
@@ -73,7 +73,7 @@ int playerc_pointcloud3d_unsubscribe (playerc_pointcloud3d_t *device)
 }
 
 // Process incoming data
-void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device, 
+void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device,
 			          player_msghdr_t *header,
 		                  void *data)
 {
@@ -82,10 +82,10 @@ void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device,
     {
 	player_pointcloud3d_data_t* pc3_data = (player_pointcloud3d_data_t*)data;
         device->points_count = MIN (pc3_data->points_count, PLAYERC_POINTCLOUD3D_MAX_POINTS);
-        memcpy (device->points, pc3_data->points, 
+        memcpy (device->points, pc3_data->points,
         	sizeof (player_pointcloud3d_element_t)*device->points_count);
     }
     else
-	PLAYERC_WARN2("skipping pointcloud3d message with unknown type/subtype: %d/%d\n",
-	    header->type, header->subtype);
+	PLAYERC_WARN2("skipping pointcloud3d message with unknown type/subtype: %s/%d\n",
+	    msgtype_to_str(header->type), header->subtype);
 }

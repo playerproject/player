@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -34,7 +34,7 @@
 #include "error.h"
 
 // Process incoming data
-void playerc_wsn_putmsg (playerc_wsn_t *device, 
+void playerc_wsn_putmsg (playerc_wsn_t *device,
                          player_msghdr_t *header,
 			 void *data);
 
@@ -73,12 +73,12 @@ int playerc_wsn_unsubscribe(playerc_wsn_t *device)
 }
 
 // Process incoming data
-void playerc_wsn_putmsg (playerc_wsn_t *device, 
+void playerc_wsn_putmsg (playerc_wsn_t *device,
 			 player_msghdr_t *header,
 			 void *data)
 {
 //    int i, j;
-	
+
     if((header->type == PLAYER_MSGTYPE_DATA) &&
        (header->subtype == PLAYER_WSN_DATA))
     {
@@ -89,8 +89,8 @@ void playerc_wsn_putmsg (playerc_wsn_t *device,
 	device->data_packet    = wsn_data->data_packet;
     }
     else
-	PLAYERC_WARN2("skipping wsn message with unknown type/subtype: %d/%d\n",
-	    header->type, header->subtype);
+	PLAYERC_WARN2("skipping wsn message with unknown type/subtype: %s/%d\n",
+	    msgtype_to_str(header->type), header->subtype);
 }
 
 // Set the device state.
@@ -143,7 +143,7 @@ playerc_wsn_datatype(playerc_wsn_t *device, int value)
 
 // Change data delivery frequency.
 int
-playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id, 
+playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id,
                      double frequency)
 {
   player_wsn_datafreq_config_t config;

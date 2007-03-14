@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -68,7 +68,7 @@ playerc_gps_t *playerc_gps_create(playerc_client_t *client, int index)
   memset(device, 0, sizeof(playerc_gps_t));
   playerc_device_init(&device->info, client, PLAYER_GPS_CODE, index,
                       (playerc_putmsg_fn_t) playerc_gps_putmsg);
-    
+
   return device;
 }
 
@@ -123,8 +123,8 @@ void playerc_gps_putmsg(playerc_gps_t *device,
     device->sat_count = gps_data->num_sats;
   }
   else
-    PLAYERC_WARN2("skipping gps message with unknown type/subtype: %d/%d\n",
-                 header->type, header->subtype);
+    PLAYERC_WARN2("skipping gps message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
   return;
 }
 

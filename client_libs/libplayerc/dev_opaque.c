@@ -110,8 +110,8 @@ void playerc_opaque_putmsg(playerc_opaque_t *device, player_msghdr_t *header,
     memcpy(device->data, data->data, device->data_count);
   }
   else
-    PLAYERC_WARN2("skipping opaque message with unknown type/subtype: %d/%d\n",
-                 header->type, header->subtype);
+    PLAYERC_WARN2("skipping opaque message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
   return;
 }
 

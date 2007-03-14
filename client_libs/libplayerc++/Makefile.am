@@ -18,7 +18,7 @@ EXTRA_DIST = playerc++.pc.in
 CLEANFILES = playerc++.pc
 
 # the +'s are turned into _'s by automake
-libplayerc___la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/client_libs/libplayerc/libplayerc.la
+libplayerc___la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/client_libs/libplayerc/libplayerc.la $(top_builddir)/libplayercore/libplayerutils.la
 
 libplayerc___la_SOURCES =     playerc++.h \
                               debug.h \
@@ -62,7 +62,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               speechproxy.cc \
                               speechrecognitionproxy.cc \
                               wifiproxy.cc \
-			      wsnproxy.cc 
+			      wsnproxy.cc
 
 # not in libplayerc yet \
                               blinkenlightproxy.cc \

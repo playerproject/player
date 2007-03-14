@@ -42,6 +42,7 @@
 #include "libplayerc++/playerclient.h"
 #include "libplayerc++/playererror.h"
 #include "libplayerc++/clientproxy.h"
+#include "libplayercore/interface_util.h"
 
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
@@ -1147,7 +1148,7 @@ class LaserProxy : public ClientProxy
       p.pa = mDevice->pose[2];
       return(p);
     }
-    
+
     /// Accessor for the pose of the laser's parent object (e.g., a robot).
     /// Filled in by some (but not all) laser data messages.
     player_pose_t GetRobotPose()

@@ -965,7 +965,7 @@ typedef struct player_audio_wav
   /** length of raw data */
   uint32_t data_count;
   /** raw data */
-  uint8_t data[PLAYER_AUDIO_WAV_BUFFER_SIZE];
+  uint8_t *data;
   /** Raw data format */
   uint32_t format;
 } player_audio_wav_t;
@@ -2713,7 +2713,7 @@ filter parameters (assuming your hardware supports it). Currently the
 finally settings can be applied to the SICK LMS400:
  a) median filter - PLAYER_LASER_FILTER_MEDIAN, no parameters
  b) edge filter   - PLAYER_LASER_FILTER_EDGE, no parameters
- c) range filter  - PLAYER_LASER_FILTER_RANGE 
+ c) range filter  - PLAYER_LASER_FILTER_RANGE
     p1 = BottomLimit (700-3000 in mm), p2 = TopLimit (700-3000 in mm)
  d) mean filter   - PLAYER_LASER_FILTER_MEAN
     p1 = number of means (2-200)

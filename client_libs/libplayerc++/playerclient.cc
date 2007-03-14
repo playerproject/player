@@ -41,7 +41,7 @@
 
 using namespace PlayerCc;
 
-PlayerClient::PlayerClient(const std::string aHostname, uint aPort, 
+PlayerClient::PlayerClient(const std::string aHostname, uint aPort,
                            int aTransport) :
   mClient(NULL),
   mHostname(aHostname),
@@ -268,12 +268,12 @@ void PlayerClient::SetReplaceRule(bool aReplace,
 
 int PlayerClient::LookupCode(std::string aName) const
 {
-  return playerc_lookup_code(aName.c_str());
+  return str_to_interf(aName.c_str());
 }
 
 std::string PlayerClient::LookupName(int aCode) const
 {
-  return std::string(playerc_lookup_name(aCode));
+  return std::string(interf_to_str(aCode));
 }
 
 std::ostream&
