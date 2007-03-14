@@ -139,7 +139,7 @@ class SickNAV200 : public Driver
     double size[2];
     
     // Name of device used to communicate with the laser
-    const char *device_name;
+    char *device_name;
     
     // storage for outgoing data
     player_position2d_data_t data_packet;
@@ -192,7 +192,7 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
 
 SickNAV200::~SickNAV200()
 {
-  delete device_name;
+  free(device_name);
 }
 
 
