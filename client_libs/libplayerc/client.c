@@ -588,11 +588,11 @@ void *playerc_client_read(playerc_client_t *client)
           continue;
         }
       default:
-        PLAYERC_WARN1 ("unexpected message type [%d]", header.type);
-        printf("address: %u:%u:%u:%u\nsize: %u",
+        PLAYERC_WARN1 ("unexpected message type [%s]", msgtype_to_str(header.type));
+        printf("address: %u:%u:%s:%u\nsize: %u",
                header.addr.host,
                header.addr.robot,
-               header.addr.interf,
+               interf_to_str(header.addr.interf),
                header.addr.index,
                header.size);
         return NULL;
@@ -716,7 +716,7 @@ int playerc_client_request(playerc_client_t *client,
     }
   }
 
-  PLAYERC_ERR4("timed out waiting for server reply to request %d:%d:%d:%d", req_header.addr.interf, req_header.addr.index, req_header.type, req_header.subtype);
+  PLAYERC_ERR4("timed out waiting for server reply to request %s:%d:%s:%d", interf_to_str(req_header.addr.interf), req_header.addr.index, msgtype_to_str(req_header.type), req_header.subtype);
   return -1;
 }
 
@@ -996,8 +996,8 @@ int playerc_client_readpacket(playerc_client_t *client,
   {
     // TODO: Allow the user to register a callback to handle unsupported
     // messages
-    PLAYERC_ERR3("skipping message from %u:%u with unsupported type %u",
-                 header->addr.interf, header->addr.index, header->subtype);
+    PLAYERC_ERR4("skipping message from %s:%u with unsupported type %s:%u",
+                 interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
     return(-1);
   }
 
@@ -1005,8 +1005,8 @@ int playerc_client_readpacket(playerc_client_t *client,
   if((decode_msglen = (*packfunc)(client->read_xdrdata,
                                   header->size, data, PLAYERXDR_DECODE)) < 0)
   {
-    PLAYERC_ERR3("decoding failed on message from %u:%u with type %u",
-                 header->addr.interf, header->addr.index, header->subtype);
+    PLAYERC_ERR4("decoding failed on message from %s:%u with type %s:%u",
+                 interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
     return(-1);
   }
 
@@ -1048,8 +1048,8 @@ int playerc_client_writepacket(playerc_client_t *client,
     {
       // TODO: Allow the user to register a callback to handle unsupported
       // messages
-      PLAYERC_ERR3("skipping message to %u:%u with unsupported type %u",
-                   header->addr.interf, header->addr.index, header->subtype);
+      PLAYERC_ERR4("skipping message to %s:%u with unsupported type %s:%u",
+                   interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
       return(-1);
     }
 
@@ -1058,8 +1058,8 @@ int playerc_client_writepacket(playerc_client_t *client,
                     PLAYER_MAX_MESSAGE_SIZE - PLAYERXDR_MSGHDR_SIZE,
                     data, PLAYERXDR_ENCODE)) < 0)
     {
-      PLAYERC_ERR4("encoding failed on message from %u:%u with type %u:%u",
-                   header->addr.interf, header->addr.index, header->type, header->subtype);
+      PLAYERC_ERR4("encoding failed on message from %s:%u with type %s:%u",
+                   interf_to_str(header->addr.interf), header->addr.index, msgtype_to_str(header->type), header->subtype);
       return(-1);
     }
   }

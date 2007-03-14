@@ -111,8 +111,8 @@ void playerc_motor_putmsg(playerc_motor_t *device,
     device->stall = data->stall;
   }
   else
-    PLAYERC_WARN2("skipping motor message with unknown type/subtype: %d/%d\n",
-                 header->type, header->subtype);
+    PLAYERC_WARN2("skipping motor message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
 }
 
 // Enable/disable the motors

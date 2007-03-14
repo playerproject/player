@@ -120,8 +120,8 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
     memcpy(device->image, data->image, device->image_count);
   }
   else
-    PLAYERC_WARN2("skipping camera message with unknown type/subtype: %d/%d\n",
-                 header->type, header->subtype);
+    PLAYERC_WARN2("skipping camera message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
   return;
 }
 
@@ -235,12 +235,12 @@ playerc_camera_set_modulationfreq(playerc_camera_t *device, int value)
 }
 
 // Get the modulation frequency
-int 
+int
 playerc_camera_get_modulationfreq(playerc_camera_t *device, int *value)
 {
   player_camera_modulation_freq_config_t config;
   memset(&config, 0, sizeof(config));
-  if (playerc_client_request(device->info.client, &device->info, 
+  if (playerc_client_request(device->info.client, &device->info,
                              PLAYER_CAMERA_REQ_GET_MODULATION_FREQ,
 			     &config, &config, sizeof(config)) < 0)
     return (-1);
@@ -263,12 +263,12 @@ playerc_camera_set_integrationtime(playerc_camera_t *device, int value)
 }
 
 // Get the integration time
-int 
+int
 playerc_camera_get_integrationtime(playerc_camera_t *device, int *value)
 {
   player_camera_integration_time_config_t config;
   memset(&config, 0, sizeof(config));
-  if (playerc_client_request(device->info.client, &device->info, 
+  if (playerc_client_request(device->info.client, &device->info,
                              PLAYER_CAMERA_REQ_GET_INTEGRATION_TIME,
 			     &config, &config, sizeof(config)) < 0)
     return (-1);

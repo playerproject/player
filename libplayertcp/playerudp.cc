@@ -555,8 +555,8 @@ PlayerUDP::WriteClient(int cli)
       {
         // TODO: Allow the user to register a callback to handle unsupported
         // messages
-        PLAYER_WARN4("skipping message from %u:%u with unsupported type %u:%u",
-                     hdr.addr.interf, hdr.addr.index, hdr.type, hdr.subtype);
+        PLAYER_WARN4("skipping message from %s:%u with unsupported type %s:%u",
+                     interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
       }
       else
       {
@@ -627,8 +627,8 @@ PlayerUDP::WriteClient(int cli)
                         maxsize - PLAYERXDR_MSGHDR_SIZE,
                         payload, PLAYERXDR_ENCODE)) < 0)
         {
-          PLAYER_WARN4("encoding failed on message from %u:%u with type %u:%u",
-                       hdr.addr.interf, hdr.addr.index, hdr.type, hdr.subtype);
+          PLAYER_WARN4("encoding failed on message from %s:%u with type %s:%u",
+                       interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
 #if HAVE_ZLIB_H
           if(zipped_data)
           {
@@ -752,10 +752,10 @@ PlayerUDP::ParseBuffer(int cli)
     device = deviceTable->GetDevice(hdr.addr,false);
     if(!device && (hdr.addr.interf != PLAYER_PLAYER_CODE))
     {
-      PLAYER_WARN5("skipping message of type %u to unknown device %u:%u:%u:%u",
-                   hdr.subtype,
+      PLAYER_WARN6("skipping message of type %s:%u to unknown device %u:%u:%s:%u",
+                   msgtype_to_str(hdr.type), hdr.subtype,
                    hdr.addr.host, hdr.addr.robot,
-                   hdr.addr.interf, hdr.addr.index);
+                   interf_to_str(hdr.addr.interf), hdr.addr.index);
     }
     else
     {
@@ -768,8 +768,8 @@ PlayerUDP::ParseBuffer(int cli)
       {
 	  // TODO: Allow the user to register a callback to handle unsupported
 	  // messages
-	  PLAYER_WARN3("skipping message to %u:%u with unsupported type %u",
-		       hdr.addr.interf, hdr.addr.index, hdr.subtype);
+	  PLAYER_WARN4("skipping message to %s:%u with unsupported type %s:%u",
+		       interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
       }
       else
       {
@@ -791,8 +791,8 @@ PlayerUDP::ParseBuffer(int cli)
 
         if( decode_msglen < 0 )
         {
-          PLAYER_WARN3("decoding failed on message to %u:%u with type %u",
-		       hdr.addr.interf, hdr.addr.index, hdr.subtype);
+          PLAYER_WARN4("decoding failed on message to %s:%u with type %s:%u",
+		       interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
         }
         else
         {
@@ -912,8 +912,8 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
           devreq->addr.robot = client->port;
           if(!(device = deviceTable->GetDevice(devreq->addr,false)))
           {
-            PLAYER_WARN2("skipping subscription to unknown device %u:%u",
-                         devreq->addr.interf, devreq->addr.index);
+            PLAYER_WARN2("skipping subscription to unknown device %s:%u",
+                         interf_to_str(devreq->addr.interf), devreq->addr.index);
             resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
             player_device_req_t devresp = *devreq;
             devresp.access = PLAYER_ERROR_MODE;
@@ -953,8 +953,8 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
 
                 if(sub_result < 0)
                 {
-                  PLAYER_WARN2("subscription failed for device %u:%u",
-                               devreq->addr.interf, devreq->addr.index);
+                  PLAYER_WARN2("subscription failed for device %s:%u",
+                               interf_to_str(devreq->addr.interf), devreq->addr.index);
                 }
                 else
                 {
@@ -983,8 +983,8 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
               case PLAYER_CLOSE_MODE:
                 if(device->Unsubscribe(client->queue) != 0)
                 {
-                  PLAYER_WARN2("unsubscription failed for device %u:%u",
-                               devreq->addr.interf, devreq->addr.index);
+                  PLAYER_WARN2("unsubscription failed for device %s:%u",
+                               interf_to_str(devreq->addr.interf), devreq->addr.index);
                 }
                 else
                 {
@@ -1003,8 +1003,8 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
                 }
                 break;
               default:
-                PLAYER_WARN3("unknown access mode %u requested for device %u:%u",
-                             devreq->access, devreq->addr.interf,
+                PLAYER_WARN3("unknown access mode %u requested for device %s:%u",
+                             devreq->access, interf_to_str(devreq->addr.interf),
                              devreq->addr.index);
                 break;
             }
@@ -1066,8 +1066,8 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
           inforeq->addr.robot = client->port;
           if(!(device = deviceTable->GetDevice(inforeq->addr,false)))
           {
-            PLAYER_WARN2("skipping info request for unknown device %u:%u",
-                         inforeq->addr.interf, inforeq->addr.index);
+            PLAYER_WARN2("skipping info request for unknown device %s:%u",
+                         interf_to_str(inforeq->addr.interf), inforeq->addr.index);
             resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
 
             // Make up and push out the reply
@@ -1161,7 +1161,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
       break;
     default:
       PLAYER_WARN1("player interface discarding message of unsupported type %u",
-                   hdr->type);
+                   msgtype_to_str(hdr->type));
       resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
       GlobalTime->GetTimeDouble(&resphdr.timestamp);
       resphdr.size = 0;

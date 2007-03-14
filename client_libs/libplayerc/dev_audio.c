@@ -89,8 +89,15 @@ void playerc_audio_putmsg(playerc_audio_t *device,
     assert(header->size > 0);
     player_audio_wav_t * wdata = (player_audio_wav_t *) data;
     device->wav_data.data_count = wdata->data_count;
-    memcpy(device->wav_data.data, wdata->data, wdata->data_count * sizeof(device->wav_data.data[0]));
-    device->wav_data.format = wdata->format;
+    if (device->wav_data.data != NULL)
+      free (device->wav_data.data);
+    if ((device->wav_data.data = (uint8_t*) malloc (wdata->data_count)) == NULL)
+      PLAYER_ERROR("Failed to allocate space to store wave data locally");
+    else
+    {
+      memcpy(device->wav_data.data, wdata->data, wdata->data_count * sizeof(device->wav_data.data[0]));
+      device->wav_data.format = wdata->format;
+    }
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_SEQ_DATA))
   {
@@ -113,8 +120,8 @@ void playerc_audio_putmsg(playerc_audio_t *device,
     device->state = sdata->state;
   }
   else
-    PLAYERC_WARN2("skipping audio message with unknown type/subtype: %d/%d\n",
-                  header->type, header->subtype);
+    PLAYERC_WARN2("skipping audio message with unknown type/subtype: %s/%d\n",
+                  msgtype_to_str(header->type), header->subtype);
 }
 
 /** @brief Command to play an audio block */
@@ -123,7 +130,8 @@ int playerc_audio_wav_play_cmd(playerc_audio_t *device, uint32_t data_count, uin
   player_audio_wav_t wave_data;
   memset (&wave_data, 0, sizeof (player_audio_wav_t));
   wave_data.data_count = data_count;
-  memcpy (&wave_data.data, data, wave_data.data_count);
+  // Use passed in array, as it will be copied by pack function - saves us having to malloc and free ourselves
+  wave_data.data = data;
   wave_data.format = format;
 
   return playerc_client_write(device->info.client, &device->info,
@@ -205,7 +213,8 @@ int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_
   int result = 0;
   player_audio_sample_t req;
   req.sample.data_count = data_count;
-  memcpy(req.sample.data, data, req.sample.data_count * sizeof(req.sample.data[0]));
+  // Use passed in array, as it will be copied by pack function - saves us having to malloc and free ourselves
+  req.sample.data = data;
   req.sample.format = format;
   req.index = index;
   if((result = playerc_client_request(device->info.client, &device->info,
@@ -229,6 +238,13 @@ int playerc_audio_sample_retrieve(playerc_audio_t *device, int index)
     return result;
 
   device->wav_data.data_count = req.sample.data_count;
+  if (device->wav_data.data != NULL)
+    free (device->wav_data.data);
+  if ((device->wav_data.data = (uint8_t*) malloc (req.sample.data_count)) == NULL)
+  {
+    PLAYER_ERROR("Failed to allocate space to store wave data locally");
+    return -1;
+  }
   memcpy(device->wav_data.data, req.sample.data, req.sample.data_count * sizeof(device->wav_data.data[0]));
   device->wav_data.format = req.sample.format;
 

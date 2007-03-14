@@ -173,7 +173,7 @@ std::ostream&
 std::operator << (std::ostream& os, const playerc_device_info_t& c)
 {
   os << c.drivername << "("
-     << playerc_lookup_name(c.addr.interf) << ":" << c.addr.index
+     << interf_to_str(c.addr.interf) << ":" << c.addr.index
      << ")";
   return os;
 }

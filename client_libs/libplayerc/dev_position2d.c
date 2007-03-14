@@ -115,8 +115,8 @@ void playerc_position2d_putmsg(playerc_position2d_t *device,
     device->stall = data->stall;
   }
   else
-    PLAYERC_WARN2("skipping position2d message with unknown type/subtype: %d/%d\n",
-                 header->type, header->subtype);
+    PLAYERC_WARN2("skipping position2d message with unknown type/subtype: %s/%d\n",
+                 msgtype_to_str(header->type), header->subtype);
 }
 
 // Enable/disable the motors

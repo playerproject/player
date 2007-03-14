@@ -83,7 +83,7 @@ int main(int argc, const char *argv[])
       index = (sindex ? atoi(sindex) : 0);
 
       client->devinfos[client->devinfo_count].addr.interf =
-        playerc_lookup_code(device);
+        str_to_interf(device);
       client->devinfos[client->devinfo_count].addr.index = index;
       client->devinfo_count++;
 
@@ -96,7 +96,7 @@ int main(int argc, const char *argv[])
   for (i = 0; i < client->devinfo_count; i++)
     printf("  %d:%s:%d (%s)\n",
            client->devinfos[i].addr.robot,
-           playerc_lookup_name(client->devinfos[i].addr.interf),
+           interf_to_str(client->devinfos[i].addr.interf),
            client->devinfos[i].addr.index,
            client->devinfos[i].drivername);
 
@@ -109,12 +109,12 @@ int main(int argc, const char *argv[])
       case PLAYER_LASER_CODE:
         test_laser(client, client->devinfos[i].addr.index);
         break;
-	
+
 	// Position device
       case PLAYER_POSITION2D_CODE:
         test_position2d(client, client->devinfos[i].addr.index);
         break;
-	
+
 	// Position device
       case PLAYER_POSITION3D_CODE:
         test_position3d(client, client->devinfos[i].addr.index);
@@ -124,7 +124,7 @@ int main(int argc, const char *argv[])
       case PLAYER_LOG_CODE:
 	test_log(client, client->devinfos[i].addr.index);
 	break;
-	
+
 	// gripper device
       case PLAYER_GRAPHICS2D_CODE:
 	test_graphics2d(client, client->devinfos[i].addr.index);
@@ -134,7 +134,7 @@ int main(int argc, const char *argv[])
       case PLAYER_GRIPPER_CODE:
 	test_gripper(client, client->devinfos[i].addr.index);
 	break;
-	
+
 	// rfid device
       case PLAYER_RFID_CODE:
         test_rfid(client, client->devinfos[i].addr.index);
@@ -144,12 +144,12 @@ int main(int argc, const char *argv[])
       case PLAYER_IMU_CODE:
         test_imu (client, client->devinfos[i].addr.index);
 	break;
-		      	
+
 	// simulation device
       case PLAYER_SIMULATION_CODE:
         test_simulation(client, client->devinfos[i].addr.index);
         break;
-	
+
 #if 0
 	// Sonar device
       case PLAYER_SONAR_CODE:
@@ -226,10 +226,10 @@ int main(int argc, const char *argv[])
       case PLAYER_WSN_CODE:
         test_wsn(client, client->devinfos[i].addr.index);
         break;
-	
+
       default:
         printf("no test for interface [%s]\n",
-               playerc_lookup_name(client->devinfos[i].addr.interf));
+               interf_to_str(client->devinfos[i].addr.interf));
         break;
     }
   }

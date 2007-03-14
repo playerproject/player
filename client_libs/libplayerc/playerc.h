@@ -55,6 +55,7 @@ client writers.
 #include <libplayercore/player.h>
 #include <libplayercore/playercommon.h>
 #include <libplayercore/error.h>
+#include <libplayercore/interface_util.h>
 #include <libplayerxdr/playerxdr.h>
 
 #ifndef MIN
@@ -1797,7 +1798,7 @@ underlyling driver.
 
 @param intensity Intensity flag; set to 1 to enable reflection intensity data.
 
-@param scanning_frequency Scanning frequency in Hz. Valid values depend on the 
+@param scanning_frequency Scanning frequency in Hz. Valid values depend on the
 underlyling driver.
 
 @returns Returns 0 on success, non-zero otherwise.  Use

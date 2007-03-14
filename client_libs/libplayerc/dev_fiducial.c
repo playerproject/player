@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -35,8 +35,8 @@
 #include "error.h"
 
 
-// Process incoming data     
-void playerc_fiducial_putmsg(playerc_fiducial_t *device, 
+// Process incoming data
+void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 			     player_msghdr_t *header,
 			     void *data);
 
@@ -49,12 +49,12 @@ playerc_fiducial_t *playerc_fiducial_create(playerc_client_t *client, int index)
   memset(device, 0, sizeof(playerc_fiducial_t));
   playerc_device_init(&device->info, client, PLAYER_FIDUCIAL_CODE, index,
                       (playerc_putmsg_fn_t) playerc_fiducial_putmsg );
-  
+
   memset( &device->fiducial_geom, 0, sizeof(device->fiducial_geom));
   // default size of detected fiducials
   device->fiducial_geom.size.sl = 0.1;
   device->fiducial_geom.size.sw = 0.01;
-  
+
   return device;
 }
 
@@ -82,23 +82,23 @@ int playerc_fiducial_unsubscribe(playerc_fiducial_t *device)
 
 
 // Process incoming data
-void playerc_fiducial_putmsg(playerc_fiducial_t *device, 
+void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 			     player_msghdr_t *header,
 			     void* generic )
 {
-  
+
   if( header->type == PLAYER_MSGTYPE_DATA &&
       header->subtype == PLAYER_FIDUCIAL_DATA_SCAN )
     {
       player_fiducial_data_t* data = (player_fiducial_data_t*)generic;
 
       device->fiducials_count = data->fiducials_count;
-      
+
       int i;
       for (i = 0; i < device->fiducials_count; i++)
 	{
 	  player_fiducial_item_t *fiducial = data->fiducials + i;
-	  
+
 	  device->fiducials[i] = *fiducial;
 
 /*	  device->fiducials[i].id = fiducial->id;
@@ -115,7 +115,7 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 	  device->fiducials[i].urot[0] = fiducial->urot[0];
 	  device->fiducials[i].urot[1] = fiducial->urot[1];
 	  device->fiducials[i].urot[2] = fiducial->urot[2];
-	  
+
 	  // get the polar coordinates too. handy!
 	  device->fiducials[i].range = sqrt(device->fiducials[i].pos[0] * device->fiducials[i].pos[0] +
 					    device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
@@ -123,10 +123,10 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 	  device->fiducials[i].orient = device->fiducials[i].rot[2];*/
 	}
     }
-  
+
   else
-    PLAYERC_WARN2("skipping fiducial message with unknown type/subtype: %d/%d\n",
-		  header->type, header->subtype);
+    PLAYERC_WARN2("skipping fiducial message with unknown type/subtype: %s/%d\n",
+		  msgtype_to_str(header->type), header->subtype);
 }
 
 
@@ -135,7 +135,7 @@ void playerc_fiducial_putgeom(playerc_fiducial_t *device, player_msghdr_t *heade
                          player_fiducial_geom_t *data, size_t len)
 {
   PLAYERC_WARN( "playerc_fiducial_putgeom is not yet implemented" );
-  
+
 /*   if (len != sizeof(player_fiducial_geom_t)) */
 /*   { */
 /*     PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_fiducial_geom_t)); */
@@ -160,13 +160,13 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device)
 
 //  config.subtype = PLAYER_FIDUCIAL_GET_GEOM;
 
-  len = playerc_client_request(device->info.client, 
+  len = playerc_client_request(device->info.client,
 			       &device->info,
 			       PLAYER_FIDUCIAL_REQ_GET_GEOM,
                                NULL, &config, sizeof(config));
   if (len < 0)
     return -1;
-  
+
   // ?
   //while(device->info.freshgeom == 0)
   // playerc_client_read(device->info.client);
@@ -180,6 +180,6 @@ int playerc_fiducial_get_geom(playerc_fiducial_t *device)
 
   device->fiducial_size[0] = config.fiducial_size.sl;
   device->fiducial_size[1] = config.fiducial_size.sw;*/
-  
+
   return 0;
 }

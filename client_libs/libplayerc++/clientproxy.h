@@ -190,7 +190,7 @@ class ClientProxy
 
     /// Returns device interface
     std::string GetInterfaceStr() const
-      { return playerc_lookup_name(GetVar(mInfo->addr.interf)); };
+      { return interf_to_str(GetVar(mInfo->addr.interf)); };
 
     /// @brief Set a replace rule for this proxy on the server.
     ///

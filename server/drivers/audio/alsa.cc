@@ -1245,20 +1245,28 @@ void Alsa::PublishRecordedData (void)
 	uint32_t copiedOffset = 0;
 	while (copiedOffset < recDataOffset)
 	{
-		// Clear the packet's data
-		memset (&(packet.data), 0, PLAYER_AUDIO_WAV_BUFFER_SIZE);
 		// Copy from copiedOffset to whichever is closer of recDataOffset and PLAYER_AUDIO_WAV_BUFFER_SIZE
 		uint32_t bytesToCopy;
-		if ((recDataOffset - copiedOffset) < PLAYER_AUDIO_WAV_BUFFER_SIZE)
-			bytesToCopy = recDataOffset - copiedOffset;	// Copy until the end of the recorded data
+		if ((recDataOffset - copiedOffset) < (PLAYER_MAX_PAYLOAD_SIZE - sizeof (player_audio_wav_t)))
+			bytesToCopy = recDataOffset - copiedOffset; // Copy until the end of the recorded data
 		else
-			bytesToCopy = PLAYER_AUDIO_WAV_BUFFER_SIZE;	// Copy another chunk out
-		memcpy (&(packet.data), &recData[copiedOffset], bytesToCopy);
+			bytesToCopy = (PLAYER_MAX_PAYLOAD_SIZE - sizeof (player_audio_wav_t)); // Copy another chunk out
+		// Allocate this much space
+		if ((packet.data = new uint8_t[bytesToCopy]) == NULL)
+		{
+			PLAYER_ERROR ("Failed to allocate temp space");
+			delete recData;
+			recData = NULL;
+			StopRecording ();
+			return;
+		}
+		memcpy (packet.data, &recData[copiedOffset], bytesToCopy);
 		copiedOffset += bytesToCopy;
 		packet.data_count = bytesToCopy;
 
 		// Publish this packet
 		Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_WAV_REC_DATA, reinterpret_cast<void*> (&packet), sizeof (player_audio_wav_t), NULL);
+		delete[] packet.data;
 	}
 	// Set the local record buffer position back to the start
 	recDataOffset = 0;

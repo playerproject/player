@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,20 +30,20 @@ extern "C" {
 
 // available interfaces are stored in an array of these, defined in
 // interface_util.c
-typedef struct 
+typedef struct
 {
   uint16_t interf;
   const char* name;
 } player_interface_t;
 
-/* 
+/*
  * looks through the array of available interfaces for one which the given
  * name.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
  */
 int lookup_interface(const char* name, player_interface_t* interface);
 
-/* 
+/*
  * looks through the array of available interfaces for one which the given
  * code.  if found, interface is filled out (the caller must provide storage)
  * and zero is returned.  otherwise, -1 is returned.
@@ -58,6 +58,34 @@ lookup_interface_code(int code, player_interface_t* interface);
  */
 const char*
 lookup_interface_name(unsigned int startpos, int code);
+
+/*
+ * Returns the name of an interface given its code. The result string must
+ * not be altered.
+ */
+const char*
+interf_to_str(uint16_t code);
+
+/*
+ * Returns the code for an interface, given a string. If the name is not found,
+ * 0xFFFF is returned.
+ */
+uint16_t
+str_to_interf(const char *name);
+
+/*
+ * Returns the name of a message type given its code. The result string must
+ * not be altered.
+ */
+const char*
+msgtype_to_str(uint8_t code);
+
+/*
+ * Returns the code for a message type, given a string. If the name is not
+ * found, 0xFF is returned.
+ */
+uint8_t
+str_to_msgtype(const char *name);
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -34,7 +34,7 @@
 #include "error.h"
 
 // Process incoming data
-void playerc_rfid_putmsg (playerc_rfid_t *device, 
+void playerc_rfid_putmsg (playerc_rfid_t *device,
                           player_msghdr_t *header,
 			  void *data);
 
@@ -73,12 +73,12 @@ int playerc_rfid_unsubscribe(playerc_rfid_t *device)
 }
 
 // Process incoming data
-void playerc_rfid_putmsg (playerc_rfid_t *device, 
+void playerc_rfid_putmsg (playerc_rfid_t *device,
 			  player_msghdr_t *header,
 			  void *data)
 {
     int i, j;
-	
+
     if((header->type == PLAYER_MSGTYPE_DATA) &&
        (header->subtype == PLAYER_RFID_DATA))
     {
@@ -94,7 +94,7 @@ void playerc_rfid_putmsg (playerc_rfid_t *device,
 	}
     }
     else
-	PLAYERC_WARN2("skipping rfid message with unknown type/subtype: %d/%d\n",
-	    header->type, header->subtype);
+	PLAYERC_WARN2("skipping rfid message with unknown type/subtype: %s/%d\n",
+	    msgtype_to_str(header->type), header->subtype);
 }
 

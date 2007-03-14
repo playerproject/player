@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -43,6 +43,7 @@
 #include <libplayercore/devicetable.h>
 #include <libplayercore/globals.h>
 #include <libplayercore/error.h>
+#include <libplayercore/interface_util.h>
 
 // Constructor
 Device::Device(player_devaddr_t addr, Driver *device)
@@ -69,13 +70,13 @@ Device::Device(player_devaddr_t addr, Driver *device)
   // Start with just a couple of entries; we'll double the size as
   // necessary in the future.
   this->len_queues = 2;
-  this->queues = (MessageQueue**)calloc(this->len_queues, 
+  this->queues = (MessageQueue**)calloc(this->len_queues,
                                         sizeof(MessageQueue*));
   assert(this->queues);
 }
 
 
-Device::~Device() 
+Device::~Device()
 {
   if(this->driver)
   {
@@ -107,8 +108,8 @@ Device::Subscribe(MessageQueue* sub_queue)
   {
     size_t tmp = this->len_queues;
     this->len_queues *= 2;
-    this->queues = (MessageQueue**)realloc(this->queues, 
-                                           (this->len_queues * 
+    this->queues = (MessageQueue**)realloc(this->queues,
+                                           (this->len_queues *
                                             sizeof(MessageQueue*)));
     memset(this->queues+tmp,0,(this->len_queues-tmp)*sizeof(MessageQueue*));
     assert(this->queues);
@@ -176,14 +177,14 @@ Device::PutMsg(MessageQueue* resp_queue,
   //if(!this->driver->InQueue->Push(msg))
   if(!this->InQueue->Push(msg))
   {
-    PLAYER_ERROR4("tried to push %d/%d from/onto %d/%d\n",
-                  hdr->type, hdr->subtype,
-                  hdr->addr.interf, hdr->addr.index);
+    PLAYER_ERROR4("tried to push %s/%d from/onto %s/%d\n",
+                  msgtype_to_str(hdr->type), hdr->subtype,
+                  interf_to_str(hdr->addr.interf), hdr->addr.index);
   }
 }
 
 
-void 
+void
 Device::PutMsg(MessageQueue* resp_queue,
                uint8_t type,
                uint8_t subtype,
@@ -194,7 +195,7 @@ Device::PutMsg(MessageQueue* resp_queue,
   struct timeval ts;
   double t;
   player_msghdr_t hdr;
-  
+
 
   // Fill in the current time if not supplied
   if(timestamp)

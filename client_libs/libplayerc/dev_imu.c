@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -34,7 +34,7 @@
 #include "error.h"
 
 // Process incoming data
-void playerc_imu_putmsg (playerc_imu_t *device, 
+void playerc_imu_putmsg (playerc_imu_t *device,
                          player_msghdr_t *header,
 			 void *data);
 
@@ -73,12 +73,12 @@ int playerc_imu_unsubscribe(playerc_imu_t *device)
 }
 
 // Process incoming data
-void playerc_imu_putmsg (playerc_imu_t *device, 
+void playerc_imu_putmsg (playerc_imu_t *device,
 			 player_msghdr_t *header,
 			 void *data)
 {
 //    int i, j;
-    if (header->type == PLAYER_MSGTYPE_DATA) 
+    if (header->type == PLAYER_MSGTYPE_DATA)
 	switch (header->subtype)
 	{
 	    case PLAYER_IMU_DATA_STATE:
@@ -128,8 +128,8 @@ void playerc_imu_putmsg (playerc_imu_t *device,
 	    }
 	}
     else
-	PLAYERC_WARN2 ("skipping imu message with unknown type/subtype: %d/%d\n",
-	    header->type, header->subtype);
+	PLAYERC_WARN2 ("skipping imu message with unknown type/subtype: %s/%d\n",
+	    msgtype_to_str(header->type), header->subtype);
 }
 
 // Change the data type to one of the predefined data structures.

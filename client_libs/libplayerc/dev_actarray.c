@@ -100,8 +100,8 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
     device->motor_state = data->motor_state;
   }
   else
-    PLAYERC_WARN2("skipping actarray message with unknown type/subtype: %d/%d\n",
-                  header->type, header->subtype);
+    PLAYERC_WARN2("skipping actarray message with unknown type/subtype: %s/%d\n",
+                  msgtype_to_str(header->type), header->subtype);
 }
 
 // Get the actarray geometry
