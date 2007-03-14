@@ -58,7 +58,7 @@ Currently, only ISO 15693 tags are supported.
   - Serial port to which the SkyeTek M1/M1-mini reader is attached.  If you are 
     using a USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
 
-- rate (integer)
+- speed (integer)
   - Default: 9600
   - Baud rate. Valid values are 9600, 19200, 38400 and 57600.
 
@@ -70,7 +70,7 @@ driver
   name "skyetekM1"
   provides ["rfid:0"]
   port "/dev/ttyS0"
-  rate "9600"
+  speed "9600"
 )
 @endverbatim
 
@@ -88,7 +88,7 @@ driver
 #include <libplayercore/playercore.h>
 
 #define DEFAULT_RFID_PORT "/dev/ttyS0"
-#define DEFAULT_RFID_RATE B9600
+#define DEFAULT_RFID_RATE 9600
 
 // The SkyetekM1 device class.
 class SkyetekM1 : public Driver
