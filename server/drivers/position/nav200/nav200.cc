@@ -591,9 +591,8 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
   if (fd < 0)
     return -1;
 
-  uint8_t * buffer;
   int length = dataLength+5;
-  buffer = new uint8_t[length];
+  uint8_t * buffer = new uint8_t[length];
 
   // Create header
   buffer[0] = STX;
@@ -617,6 +616,7 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
     fprintf(stderr,"Error changing to blocking write (%d - %s), disabling\n",errno,strerror(errno));
     tcsetattr(fd, TCSANOW, &oldtio);
     fd = -1;
+    delete [] buffer;
     return -1;
   }
 
@@ -625,6 +625,7 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
     fprintf(stderr,"Error writing to FOB (%d - %s), disabling\n",errno,strerror(errno));
     tcsetattr(fd, TCSANOW, &oldtio);
     fd = -1;
+    delete [] buffer;
     return -1;
   }
 
@@ -634,8 +635,11 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
     fprintf(stderr,"Error restoring file mode (%d - %s), disabling\n",errno,strerror(errno));
     tcsetattr(fd, TCSANOW, &oldtio);
     fd = -1;
+    delete [] buffer;
     return -1;
   }
+
+  delete [] buffer;
 
   return 0;
 }
