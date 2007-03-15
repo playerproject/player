@@ -4,6 +4,7 @@
  Date: 9 Mar 2007
  CVS: $Id$
 */
+#include <termios.h>
 #include <sys/types.h>
 #include <libplayercore/playercore.h>
 
@@ -44,6 +45,9 @@ class rfi341_protocol
     int number_of_tags;
     char **tags;
 
+    // Initial serial port attributes
+    struct termios initial_options;
+
     // Internal Parameters:
     int verbose;
     int fd;
@@ -53,6 +57,7 @@ class rfi341_protocol
     // for reading:
     unsigned char buffer[4096];
     unsigned int bufferlength;
+    int checksum;
     
     // for sending:
     unsigned char command[BUF_SIZE];

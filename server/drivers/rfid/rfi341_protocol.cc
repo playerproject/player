@@ -16,9 +16,9 @@
 // Constructor.
 rfi341_protocol::rfi341_protocol (const char* port_name, int debug_mode)
 {
-  port   = port_name;
-  verbose  = debug_mode;
-  tags = (char**)NULL;
+  port    = port_name;
+  verbose = debug_mode;
+  tags    = (char**)NULL;
   number_of_tags = 0;
 }
 
@@ -32,20 +32,20 @@ int
   fd = open (port, O_RDWR);
   if (fd < 0)
   {
-  PLAYER_ERROR2 ("> Connecting to SICK RFI341 on [%s]; [%s]...[failed!]",
-           (char*) port, strerror (errno));
-  return (-1);
+    PLAYER_ERROR2 ("> Connecting to SICK RFI341 on [%s]; [%s]...[failed!]",
+                   (char*) port, strerror (errno));
+    return (-1);
   }
-  PLAYER_MSG0 (1, "> Connecting to SICK RFI341...[done]");
   
   // Change port settings
   struct termios options;
   memset (&options, 0, sizeof (options));// clear the struct for new port settings
   // Get the current port settings
   if (tcgetattr (fd, &options) != 0) {
-  PLAYER_ERROR (">> Unable to get serial port attributes !");
-  return (-1);
+    PLAYER_ERROR (">> Unable to get serial port attributes !");
+    return (-1);
   }
+  tcgetattr (fd, &initial_options);
 
   // turn off break sig, cr->nl, parity off, 8 bit strip, flow control
   options.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
@@ -107,14 +107,15 @@ int
   cfsetospeed (&options, portspeed);
 
   // Activate the settings for the port
-  if (tcsetattr (this->fd, TCSAFLUSH, &options) < 0)
+  if (tcsetattr (fd, TCSAFLUSH, &options) < 0)
   {
     PLAYER_ERROR (">> Unable to set serial port attributes !");
     return (-1);
   }
 
+  PLAYER_MSG1 (1, "> Connecting to SICK RFI341 at %dbps...[done]", port_speed);
   // Make sure queues are empty before we begin
-  tcflush (this->fd, TCIOFLUSH);
+  tcflush (fd, TCIOFLUSH);
   
   return (0);
 }
@@ -125,9 +126,13 @@ int
 int
   rfi341_protocol::Disconnect ()
 {
+  // Close the serial port
+  tcsetattr (fd, TCSANOW, &initial_options);
   return (close (fd));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Changes the transfer speed (or other parameters) of the RFI341 unit.
 int
   rfi341_protocol::SetupSensor (int transfer_speed)
 {
@@ -193,16 +198,20 @@ int
   
   // Tell sensor to change the baud rate
   char *c = (char*) malloc (10); 
-  sprintf (c, "1003%s", transferspeed_string);
-  SendCommand (c);
-  ReadResult ();
+  while (strncmp ((const char*)buffer, "1003", 4) != 0)
+  {
+    sprintf (c, "1003%s", transferspeed_string);
+    SendCommand (c);
+    ReadResult ();
+  }
   
-  //OK, we told the sensor to change baud rate, so let's do it also
+  // OK, we told the sensor to change baud rate, so let's do it also
   struct termios options;
-  memset (&options, 0, sizeof (options));// clear the struct for new port settings
+  // clear the struct for new port settings
+  memset (&options, 0, sizeof (options));
   
   // Get the current port settings
-  if (tcgetattr (this->fd, &options) != 0) {
+  if (tcgetattr (fd, &options) != 0) {
     PLAYER_ERROR (">> Unable to get serial port attributes !");
     return (-1);
   }
@@ -211,23 +220,22 @@ int
   cfsetospeed (&options, transferspeed_const);
 
   // Activate the settings for the port
-  if (tcsetattr (this->fd, TCSAFLUSH, &options) < 0)
+  if (tcsetattr (fd, TCSAFLUSH, &options) < 0)
   {
     PLAYER_ERROR (">> Unable to set serial port attributes !");
     return (-1);
   }
 
-  // Make sure queues are empty before we begin
-  tcflush (this->fd, TCIOFLUSH);
-  
-//  usleep (1000);
   // issue Interface Test request so the sensor knows the baud rate change went fine
-  if (buffer[0] == 0x06) // got ACK?
+  if (checksum == 0x05) // if checksum == 5, then it's only STX "1003" ETX
   {
     SendCommand ("1002");
     ReadResult  ();
+    PLAYER_MSG1 (1, "> Changing transfer speed to %dbps...[done]", transfer_speed);
     return (0);
   }
+  else
+    PLAYER_WARN1 ("> Checksum error [0x%x]!", checksum); 
   return (-1);
 }
 
@@ -260,29 +268,28 @@ int
   bzero (buffer, 256);
   // Read ACK
   int n = read (fd, buffer, 1);
-  if (n < 0)
-    printf ("Error!\n");
-//  else
-//  printf ("Read one byte: %s\n",(buffer[0]==0x06)?"ACK":"no ack... :(");
+  if (verbose && ((n < 0) || (buffer[0] != ACK)))
+    printf (">> Error reading ACK [0x%x]!\n", buffer[0]);
 
   // Read STX
   n = read (fd, buffer, 1);
+  if (verbose && ((n < 0) || (buffer[0] != STX)))
+    printf (">> Error reading STX [0x%x]!\n", buffer[0]);
 
   int read_count = 0;
-  do // read until we find ETX
+  do	// read until we find ETX
   {
     n = read (fd, &buffer[read_count], 1);
     read_count += n;
-  } while (buffer[read_count-1]!=0x03);
+  } while (buffer[read_count-1] != ETX);
 
   // don't forget to read checksum
   n = read (fd, &buffer[read_count], 1);
-  int checksum = buffer[read_count];
-  read_count+=n;
+  checksum = buffer[read_count];
+  read_count += n;
   
-  //TODO: check the checksum (that's what it's for!)
-
-  buffer[read_count-2]=0x00;
+  // TODO: check the checksum (that's what it's for!)
+  buffer[read_count-2] = 0x00;
   bufferlength = read_count-2;
 
   if (verbose)
@@ -291,27 +298,26 @@ int
     printf ("%s ", buffer);
     printf ("ETX 0x%X\n", checksum); 
   }
-//  printf ("> %s\n", buffer);
   return (0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// adds a header and the checksum to the command to be sent
+// Adds a header and the checksum to the command to be sent
 int
   rfi341_protocol::assemblecommand (unsigned char* cmd, int len)
 {
   unsigned char checksum = 0;
   int index = 0;
   
-  command[0]  = STX;      // Messages start with STX
+  command[0] = STX;		// Messages start with STX
   
   for (index = 0; index < len; index++)
-  command[index + 1]  = cmd[index];
+    command[index + 1]  = cmd[index];
 
-  command[1 + len] = ETX;     // Messages end with ETX
+  command[1 + len] = ETX;	// Messages end with ETX
   
   for (int i = 0; i < len+2; i++)
-  checksum ^= command[i];
+    checksum ^= command[i];
   
   command[2 + len] = checksum;
   
@@ -320,6 +326,9 @@ int
   return (0);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Create an inventory of tags from the reader, fill in the Player data packet
+// and return it
 player_rfid_data_t
   rfi341_protocol::ReadTags ()
 {
@@ -327,24 +336,23 @@ player_rfid_data_t
   unsigned int hexnumber;
   
   // create inventory, single mode
-  SendCommand("6C20s");
-  ReadResult();
+  SendCommand ("6C20s");
+  ReadResult  ();
         
   // get inventory
-  SendCommand("6C21");
-  ReadResult();
+  SendCommand ("6C21");
+  ReadResult  ();
   
-  if (tags!=NULL)
+  if (tags != NULL)
   {
-    for (int i=0; i < number_of_tags; i++)
+    for (int i = 0; i < number_of_tags; i++)
       free (tags[i]);
     free (tags);
   }
 
   // read number of tags:
-  memcpy (buf, &buffer[4],4);
-  buf[4]=0;
-
+  memcpy (buf, &buffer[4], 4);
+  buf[4] = 0;
   number_of_tags = atol(buf);
   
   // allocate memory for the tags
@@ -353,30 +361,29 @@ player_rfid_data_t
     tags[i] = (char*) malloc (17*sizeof(char));
 
   // read the tag UID's
-  for (int i=0; i < number_of_tags; i++)
+  for (int i = 0; i < number_of_tags; i++)
   {
     memcpy (tags[i], &buffer[8+i*16], 16);
-    tags[i][16]=0;
+    tags[i][16] = 0;
   }
 
   // fill in player structure and return it
   player_rfid_data_t player_data;
   player_data.tags_count = number_of_tags;
-    player_rfid_tag_t tag;
+  
+  player_rfid_tag_t tag;
   for (int i=0; i < number_of_tags; i++)
   {
-    tag.type = 1;
+    tag.type       = 1;
     tag.guid_count = 8;
-    for (int j=0; j<8; j++)
+    for (int j = 0; j < 8; j++)
     {
       // transfer ASCII 0x30 into a char '0', f. ex.
       // this is done in steps of two digits (1 char)
-      sscanf(tags[i]+j*2 , "%2X", &hexnumber);
+      sscanf (tags[i]+j*2, "%2X", &hexnumber);
       tag.guid[7-j] = (char) hexnumber;
     }
-    player_data.tags[i]=tag;
+    player_data.tags[i] = tag;
   }
   return player_data;
-
 }
-
