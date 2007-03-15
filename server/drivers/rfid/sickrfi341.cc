@@ -117,7 +117,9 @@ class SickRFI341 : public Driver
     
     // connection parameters
     const char* portName;
-    int         portSpeed;
+    int         connect_rate;
+    int         transfer_rate;
+    int         current_rate;
     
     int debug;
 };
@@ -130,8 +132,10 @@ SickRFI341::SickRFI341 (ConfigFile* cf, int section)
               PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_RFID_CODE)
 {
   // Read connection settings
-  portName  = cf->ReadString (section, "port", DEFAULT_RFI341_PORT);
-  portSpeed = cf->ReadInt    (section, "speed", DEFAULT_RFI341_RATE);
+  portName = cf->ReadString (section, "port", DEFAULT_RFI341_PORT);
+  connect_rate  = cf->ReadInt (section, "connect_rate", DEFAULT_RFI341_RATE);
+  transfer_rate = cf->ReadInt (section, "transfer_rate", DEFAULT_RFI341_RATE);
+  current_rate  = 0;
   
   debug = cf->ReadInt (section, "debug", 0);
 }
@@ -151,8 +155,19 @@ int
   rfi341 = new rfi341_protocol (portName, debug);
 
   // Attempt to connect to the rfid unit
-  if (rfi341->Connect (portSpeed) != 0)
+  if (rfi341->Connect (connect_rate) != 0)
     return (-1);
+
+  current_rate = connect_rate;
+  
+  if (connect_rate != transfer_rate)
+  {
+    // Attempt to connect to the rfid unit
+    if (rfi341->SetupSensor (transfer_rate) != 0)
+      return (-1);
+    else
+      current_rate = transfer_rate;
+  }
 
   // Start the device thread
   StartThread ();
@@ -168,6 +183,10 @@ int
   // shutdown rfid device
   StopThread ();
  
+  // Change back to the original speed
+  if (current_rate != connect_rate)
+    rfi341->SetupSensor (connect_rate);
+  
   // Disconnect from the rfid unit
   rfi341->Disconnect ();
   
