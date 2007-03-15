@@ -385,6 +385,7 @@ ac_ext=$save_ac_ext
 dnl RFID support
 PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])
 PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
+PLAYER_ADD_DRIVER([sickrfi341],[yes],[],[],[])
 
 dnl WSN support
 PLAYER_ADD_DRIVER([mica2],[yes],[],[],[])
