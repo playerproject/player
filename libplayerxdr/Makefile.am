@@ -25,6 +25,11 @@ playerxdr.c: playerxdrgen.py $(top_srcdir)/libplayercore/player.h
 	python $(srcdir)/playerxdrgen.py -distro $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h
 
 libplayerxdr_la_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
-libplayerxdr_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la
+# Can't use libplayererror here because of an unresolved circular build
+# dependency
+#libplayerxdr_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la
+libplayerxdr_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir)
 
-libplayerxdr_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la
+# Can't use libplayererror here because of an unresolved circular build
+# dependency
+#libplayerxdr_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la
