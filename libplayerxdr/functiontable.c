@@ -32,7 +32,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <libplayercore/error.h>
+// Can't use libplayererror here because of an unresolved circular build
+// dependency
+//#include <libplayercore/error.h>
 
 #include "playerxdr.h"
 #include "functiontable.h"
@@ -605,7 +607,10 @@ playerxdr_ftable_add(playerxdr_function_t f, int replace)
           return(0);
         }
       }
-      PLAYER_ERROR("unable to find entry to replace");
+      // Can't use libplayererror here because of an unresolved circular build
+      // dependency
+      //PLAYER_ERROR("unable to find entry to replace");
+      puts("playerxdr_ftable_add: unable to find entry to replace");
       return(-1);
     }
   }

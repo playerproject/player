@@ -5,6 +5,6 @@ prefix=@prefix@
 Name: playerxdr
 Description: Player XDR messaging library - part of the Player/Stage Project
 Version: @VERSION@
-Requires: playererror
+Requires:
 Libs: -L${prefix}/lib -lplayerxdr
 Cflags: -I${prefix}/include/player-2.0
