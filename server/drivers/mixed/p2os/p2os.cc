@@ -2075,6 +2075,7 @@ P2OS::ProcessMessage(MessageQueue * resp_queue,
   HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
   // Act array caps
   HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_MULTI_POS_CMD);
   HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD);
   HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_POWER_REQ);
   HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_GET_GEOM_REQ);
@@ -2763,7 +2764,7 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
 
 int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
 {
-  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->actarray_id))
+  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD, this->actarray_id))
   {
     player_actarray_position_cmd_t cmd;
     cmd = *(player_actarray_position_cmd_t*) data;
@@ -2771,7 +2772,7 @@ int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
     lastActArrayCmd = PLAYER_ACTARRAY_POS_CMD;
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->actarray_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD, this->actarray_id))
   {
     player_actarray_home_cmd_t cmd;
     cmd = *(player_actarray_home_cmd_t*) data;
@@ -2779,6 +2780,19 @@ int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
     lastActArrayCmd = PLAYER_ACTARRAY_HOME_CMD;
     return 0;
   }
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_MULTI_POS_CMD, this->actarray_id))
+  {
+    player_actarray_multi_position_cmd_t cmd = *(player_actarray_multi_position_cmd_t*) data;
+    player_actarray_position_cmd_t singleCmd;
+    for (int ii = 0; ii < cmd.positions_count && ii < 6; ii++)
+    {
+      singleCmd.joint = ii;
+      singleCmd.position = cmd.positions[ii];
+      this->HandleActArrayPosCmd (singleCmd);
+    }
+    lastActArrayCmd = PLAYER_ACTARRAY_MULTI_POS_CMD;
+  }
+
   return -1;
 }
 

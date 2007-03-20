@@ -40,6 +40,33 @@
   $1 = temp;
 }
 
+%typemap(in) float [ANY] (float temp[$1_dim0])
+{
+  int i;
+  if (!PySequence_Check($input))
+  {
+    PyErr_SetString(PyExc_ValueError,"Expected a sequence");
+    return NULL;
+  }
+  if (PySequence_Length($input) != $1_dim0) {
+    PyErr_SetString(PyExc_ValueError,"Size mismatch. Expected $1_dim0 elements");
+    return NULL;
+  }
+  for (i = 0; i < $1_dim0; i++)
+  {
+    PyObject *o = PySequence_GetItem($input,i);
+    if (PyNumber_Check(o))
+    {
+      temp[i] = (float) PyFloat_AsDouble(o);    }
+    else
+    {
+      PyErr_SetString(PyExc_ValueError,"Sequence elements must be numbers");
+      return NULL;
+    }
+  }
+  $1 = temp;
+}
+
 %typemap(python,in) uint8_t data[]
 {
 	int temp = 0;
