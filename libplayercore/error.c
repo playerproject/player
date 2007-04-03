@@ -26,6 +26,7 @@ ErrorInit(int _msgLevel)
   msgFile = fopen(".player", "a+");
 }
 
+#define MSG_MAX 1024
 
 // Function for printing and logging errors.
 void ErrorPrint(int msgType, int level, const char *file, int line, const char *fmt, ...)
@@ -40,10 +41,11 @@ void ErrorPrint(int msgType, int level, const char *file, int line, const char *
   }
   if (msgFile)
   {
-    fprintf(msgFile, "%s:%d ", file, line);
+    char msgBuf[MSG_MAX];
     va_start(ap, fmt);
-    vfprintf(msgFile, fmt, ap);
+    vsnprintf(msgBuf, MSG_MAX, fmt, ap);
     va_end(ap);
+    fprintf(msgFile, "%s:%d %s", file, line, msgBuf);
   }
   
   return;
