@@ -158,7 +158,7 @@ void power_draw(power_t *power)
   if( power->proxy->valid & PLAYER_POWER_MASK_WATTS )
     {
       snprintf(buf, sizeof(buf), " Watts: %4.1f", 
-	       power->proxy->joules);
+	       power->proxy->watts);
       strncat( text, buf, sizeof(text) );
     }
   
