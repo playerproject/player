@@ -15,7 +15,7 @@ test_dio(PlayerClient* client, int index)
   TEST("dio");
   DioProxy dp(client,index);
 
-  for(int t = 0; t < 3; t++)
+  for(int t = 0; t < 5; t++)
   {
     TEST1("reading data (attempt %d)", t);
 
@@ -28,6 +28,30 @@ test_dio(PlayerClient* client, int index)
 
   PASS();
 
+
+  TEST("dio: setting outputs");
+  unsigned int value(0);
+  const unsigned int do_count(8);
+
+  for(int t = 0; t < 5; t++)
+  {
+    TEST1("writing data (attempt %d)", t);
+    TEST1("value: %d", value);
+
+    dp.SetOutput(do_count,value);
+    ++value;
+
+    PASS();
+    usleep(200000);
+  }
+
+  PASS();
+
+  //turn all outputs off
+  value=0;
+  dp.SetOutput(do_count,value);
+  
+  
   return(0);
 }
 

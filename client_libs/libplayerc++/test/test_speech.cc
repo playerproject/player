@@ -1,54 +1,40 @@
 /*
- * $Id$
- *
- * a test for the C++ SonarProxy
+ * Testing the Speech Proxy. Alexis Maldonado. May 4 2007.
  */
 
 #include "test.h"
 #include <unistd.h>
+#include <string>
+
+using namespace std;
+
+using namespace PlayerCc;
 
 int
 test_speech(PlayerClient* client, int index)
 {
-  unsigned char access;
-  SpeechProxy sp(client,index,'c');
+  TEST("speech");
+  SpeechProxy sp(client,index);
 
-  printf("device [speech] index [%d]\n", index);
+  TEST("speech: saying something");
 
-  TEST("subscribing (write)");
-  if((sp.ChangeAccess(PLAYER_WRITE_MODE,&access) < 0) ||
-     (access != PLAYER_WRITE_MODE))
-  {
-    FAIL();
-    printf("DRIVER: %s\n", sp.driver_name);
-    return -1;
-  }
-  PASS();
-  printf("DRIVER: %s\n", sp.driver_name);
+  string hello("Hello World!");
+  string numbers("12345678901234567890123456789012345678901234567890");
 
-  for(int t = 0; t < 3; t++)
-  {
-    TEST1("sending \"hello\" (attempt %d)", t);
 
-    if(sp.Say("hello") < 0)
-    {
-      FAIL();
-      return(-1);
-    }
-    sleep(2);
-    PASS();
-  }
+  TEST1("writing data (attempt %d)", 1);
 
-  TEST("unsubscribing");
-  if((sp.ChangeAccess(PLAYER_CLOSE_MODE,&access) < 0) ||
-     (access != PLAYER_CLOSE_MODE))
-  {
-    FAIL();
-    return -1;
-  }
+  sp.Say(hello.c_str());
 
   PASS();
+  usleep(1000000);
 
+  TEST1("writing data (attempt %d)", 2);
+
+  sp.Say(numbers.c_str());
+
+  PASS();
+  
   return(0);
 }
 

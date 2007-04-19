@@ -26,8 +26,8 @@ endif
 test_SOURCES = test.cc \
                test.h \
                test_camera.cc \
-							 test_rfid.cc \
-							 test_wsn.cc \
+               test_rfid.cc \
+               test_wsn.cc \
                test_gripper.cc \
                test_laser.cc \
                test_position2d.cc \
@@ -36,9 +36,12 @@ test_SOURCES = test.cc \
                test_power.cc \
                test_dio.cc \
                test_bumper.cc \
-							 test_position2d_holdsub.cc \
-							 test_gripper_holdsub.cc \
-							 test_actarray.cc
+               test_position2d_holdsub.cc \
+               test_gripper_holdsub.cc \
+               test_actarray.cc \
+               test_aio.cc \
+               test_speech.cc 
+
 
 
 # These tests are broken and need to be fixed or removed:

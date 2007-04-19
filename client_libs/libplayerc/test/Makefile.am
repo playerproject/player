@@ -29,7 +29,10 @@ test_SOURCES = \
 	test_sonar.c \
 	test_rfid.c \
 	test_wsn.c \
-	test_imu.c
+	test_imu.c \
+	test_aio.c \
+	test_dio.c \
+	test_speech.c
 
 #test_camera.c \
 #test_fiducial.c \
