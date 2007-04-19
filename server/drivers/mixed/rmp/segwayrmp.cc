@@ -135,7 +135,10 @@ driver
 
 #define PLAYER_ENABLE_MSG 0
 
-#include <libplayercore/playercore.h>
+#include "player.h"
+#include "error.h"
+#include "driver.h"
+#include "drivertable.h"
 
 #include "rmp_frame.h"
 #include "segwayrmp.h"
@@ -208,7 +211,7 @@ SegwayRMP::SegwayRMP(ConfigFile* cf, int section)
 
   this->canio = NULL;
   this->caniotype = cf->ReadString(section, "canio", "kvaser");
-  this->max_xspeed = (int) (1000 * cf->ReadLength(section, "max_xspeed", 0.5));
+  this->max_xspeed = (int) (1000.0 * cf->ReadLength(section, "max_xspeed", 0.5));
   if(this->max_xspeed < 0)
     this->max_xspeed = -this->max_xspeed;
   this->max_yawspeed = (int) (RTOD(cf->ReadAngle(section, "max_yawspeed", 40)));
@@ -319,8 +322,7 @@ SegwayRMP::Main()
   for(;;)
   {
     pthread_testcancel();
-	ProcessMessages();
-    
+    ProcessMessages(); 
     // Read from the RMP
     if(Read() < 0)
     {
@@ -453,8 +455,8 @@ SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
                            this->position_id))
   {
     player_position2d_cmd_vel_t* cmd = (player_position2d_cmd_vel_t*)data;
-    this->curr_xspeed = cmd->vel.px;
-    this->curr_yawspeed = cmd->vel.pa;
+    this->curr_xspeed = cmd->vel.px * 1000.0; //Added multiply by 1000.0, BMS.
+    this->curr_yawspeed = cmd->vel.pa * 180.0/M_PI;  //Added multiply by 1000.0, BMS.
     this->motor_enabled = cmd->state & this->motor_allow_enable;
     this->timeout_counter = 0;
     return 0;
@@ -465,8 +467,8 @@ SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
                            this->position3d_id))
   {
     player_position3d_cmd_vel_t* cmd = (player_position3d_cmd_vel_t*)data;
-    this->curr_xspeed = cmd->vel.px;
-    this->curr_yawspeed = cmd->vel.pyaw;
+    this->curr_xspeed = cmd->vel.px * 1000.0; //Added multiply by 1000.0, BMS.
+    this->curr_yawspeed = cmd->vel.pyaw * 180.0/M_PI; ////Added multiply by 1000.0, BMS.
     this->motor_enabled = cmd->state & this->motor_allow_enable;
     this->timeout_counter = 0;
     return 0;
@@ -493,7 +495,7 @@ SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
 // returns 1 to indicate we wrote to the CAN bus
 // returns 0 to indicate we did NOT write to CAN bus
 int
-SegwayRMP::HandlePositionConfig(MessageQueue* client, unsigned int subtype, void* buffer, size_t len)
+SegwayRMP::HandlePositionConfig(MessageQueue* client, uint32_t subtype, void* buffer, size_t len)
 {
   uint16_t rmp_cmd,rmp_val;
   //player_rmp_config_t *rmp;
