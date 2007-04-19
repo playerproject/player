@@ -227,6 +227,22 @@ int main(int argc, const char *argv[])
         test_wsn(client, client->devinfos[i].addr.index);
         break;
 
+      // AIO device
+      case PLAYER_AIO_CODE:
+        test_aio(client, client->devinfos[i].addr.index);
+        break;
+
+      // DIO device
+      case PLAYER_DIO_CODE:
+        test_dio(client, client->devinfos[i].addr.index);
+        break;
+
+      // SPEECH device
+      case PLAYER_SPEECH_CODE:
+        test_speech(client, client->devinfos[i].addr.index);
+        break;
+
+
       default:
         printf("no test for interface [%s]\n",
                interf_to_str(client->devinfos[i].addr.interf));

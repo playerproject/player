@@ -66,6 +66,8 @@ int main(int argc, const char *argv[])
         "  gripper\n"\
         "  camera\n"\
         "  actarray\n"\
+        "  aio\n"\
+        "  speech\n"\
         "  position2d-subscribe  (subscribe to position2d indefinitely)\n"\
         "  gripper-subscribe     (subscribe to gripper indefinitely)\n"\
         "");
@@ -152,9 +154,10 @@ int main(int argc, const char *argv[])
       if(strcmp(device, "ptz") == 0 || strcmp(device, "all") == 0)
         test_ptz(&client, index);
 
-      /*
+      
       if(strcmp(device, "speech") == 0 || strcmp(device, "all") == 0)
         test_speech(&client, index);
+      /*
 
       if(strcmp(device, "vision") == 0 || strcmp(device, "all") == 0)
         test_vision(&client, index);
@@ -228,6 +231,10 @@ int main(int argc, const char *argv[])
 
       if(strcmp(device, "actarray") == 0 || strcmp(device, "all") == 0)
         test_actarray(&client, index);
+
+      if(strcmp(device, "aio") == 0 || strcmp(device, "all") == 0) 
+        test_aio(&client, index);
+
 
     } catch(std::exception& e) {
       FAIL();
