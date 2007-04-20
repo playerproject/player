@@ -219,3 +219,39 @@ int playerc_simulation_set_property(playerc_simulation_t *device,
                                 &req, NULL, 0);
 }
 
+// Get a property value */
+int playerc_simulation_get_property(playerc_simulation_t *device, 
+				    char* name,
+				    char* property,
+				    void* value,
+				    size_t value_len )
+{
+  player_simulation_property_req_t req;
+
+  memset(&req, 0, sizeof(req));
+  strncpy(req.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  req.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.name_count = strlen(req.name) + 1;
+  
+  strncpy(req.prop, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
+  req.prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.prop_count = strlen(req.prop) + 1;
+
+  if( value_len > PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN )
+    {
+      PLAYER_WARN2( "Simulation property data exceeds maximum length (%d/%d bytes).",
+		   value_len,  PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN );
+      value_len = PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN;
+    }
+  
+  req.value_count = value_len;
+  
+  if( playerc_client_request(device->info.client, &device->info, 
+                                PLAYER_SIMULATION_REQ_GET_PROPERTY,
+                                &req, &req, sizeof(req)) < 0)
+    return -1;
+
+  memcpy(value, req.value, value_len);
+
+  return 0;
+}

@@ -2195,6 +2195,9 @@ class SimulationProxy : public ClientProxy
     /// std::string Returns 0 on success, else a non-zero error code.
     void GetPose3d(char* identifier, double& x, double& y, double& z,
                    double& roll, double& pitch, double& yaw, double& time);
+
+    /// Get a simulation property 
+    void GetProperty(char* identifier, char *name, void *value, size_t value_len );
 };
 
 

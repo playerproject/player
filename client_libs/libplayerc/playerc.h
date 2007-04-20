@@ -2863,6 +2863,13 @@ int playerc_simulation_set_property(playerc_simulation_t *device,
                                     char* property,
                                     void* value,
 				    size_t value_len);
+
+/** @brief Get a property value */
+int playerc_simulation_get_property(playerc_simulation_t *device,
+                                    char* name,
+                                    char* property,
+                                    void* value,
+                                    size_t value_len);
 /** @} */
 /***************************************************************************/
 
