@@ -95,3 +95,10 @@ void SimulationProxy::GetPose3d(char* identifier, double& x, double& y, double& 
   scoped_lock_t lock(mPc->mMutex);
   playerc_simulation_get_pose3d(mDevice,identifier, &x,&y,&z,&roll,&pitch,&yaw,&time);
 }
+
+void SimulationProxy::GetProperty(char* identifier, char *name, void *value, size_t value_len )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_get_property(mDevice, identifier, name, value, value_len);
+}
+
