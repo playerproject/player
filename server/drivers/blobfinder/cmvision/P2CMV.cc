@@ -114,6 +114,7 @@ Ben Grocholsky, Brad Kratochvil
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
+#include <libplayerjpeg/playerjpeg.h>
 
 #include "conversions.h"
 #include "cmvision.h"
@@ -138,6 +139,7 @@ class CMVisionBF: public Driver
     uint16_t         mWidth;
     uint16_t         mHeight;     // the image dimensions
     uint8_t*         mImg;
+    uint8_t*         mTmp;
     const char*      mColorFile;
 
     player_blobfinder_data_t   mData;
@@ -156,6 +158,7 @@ class CMVisionBF: public Driver
     int Shutdown();
     // constructor
     CMVisionBF(ConfigFile* cf, int section);
+    virtual ~CMVisionBF();
     // This method will be invoked on each incoming message
     virtual int ProcessMessage(MessageQueue* resp_queue,
                                player_msghdr * hdr,
@@ -184,6 +187,7 @@ CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
            mWidth(0),
            mHeight(0),
            mImg(NULL),
+           mTmp(NULL),
            mColorFile(NULL),
            mCameraDev(NULL),
            mVision(NULL)
@@ -199,9 +203,21 @@ CMVisionBF::CMVisionBF( ConfigFile* cf, int section)
   }
 }
 
+CMVisionBF::~CMVisionBF()
+{
+  if (mVision) delete mVision;
+  if (mImg) delete []mImg;
+  if (mTmp) delete []mTmp;
+}
+
 int
 CMVisionBF::Setup()
 {
+  if (mVision)
+  {
+    PLAYER_ERROR("CMVision server already initialized");
+    return -1;
+  }
   printf("CMVision server initializing...");
   fflush(stdout);
   // Subscribe to the camera device
@@ -216,7 +232,7 @@ CMVisionBF::Setup()
     return(-1);
   }
 
-  mVision = new CMVision;
+  mVision = new CMVision();
   // clean our data
   memset(&mData,0,sizeof(mData));
   puts("done.");
@@ -234,11 +250,10 @@ CMVisionBF::Shutdown()
 
   StopThread();
 
-    // Unsubscribe from the laser
+  // Unsubscribe from the camera
   this->mCameraDev->Unsubscribe(this->InQueue);
 
-  delete mVision;
-  delete mImg;
+  delete mVision; mVision = NULL;
 
   puts("CMVision server has been shutdown");
   return(0);
@@ -265,11 +280,10 @@ CMVisionBF::Main()
 void
 CMVisionBF::ProcessImageData()
 {
+    assert(mVision);
     // this shouldn't change often
     if ((mData.width != mWidth) || (mData.height != mHeight))
     {
-      //printf("CMVision server initializing...");
-      fflush(stdout);
       if(!(mVision->initialize(mWidth, mHeight)))
       {
         PLAYER_ERROR("Vision init failed.");
@@ -400,29 +414,44 @@ CMVisionBF::ProcessMessage(MessageQueue* resp_queue,
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
                            this->mCameraAddr))
   {
+    // Lock();
     // we can't quite do this so easily with camera data
     // because the images are different than the max size
     //assert(hdr->size == sizeof(player_camera_data_t));
-    player_camera_data_t* camera_data;
-    camera_data = reinterpret_cast<player_camera_data_t *>(data);
+    player_camera_data_t* camera_data = reinterpret_cast<player_camera_data_t *>(data);
+    uint8_t* ptr;
 
-    mWidth  = camera_data->width;
-    mHeight = camera_data->height;
-
-    if (NULL == mImg)
+    assert(camera_data);
+    assert(camera_data->bpp == 24);
+    if ((camera_data->width) && (camera_data->height))
     {
-      // we need to allocate some memory
-      mImg = new uint8_t[mWidth*mHeight*2];
-    }
-    else
-    {
+      if ((mWidth != camera_data->width) || (mHeight != camera_data->height) || (!mImg) || (!mTmp))
+      {
+        mWidth  = camera_data->width;
+        mHeight = camera_data->height;
+        if (mImg) delete []mImg; mImg = NULL;
+        if (mTmp) delete []mTmp; mTmp = NULL;
+        // we need to allocate some memory
+        if (!mImg) mImg = new uint8_t[mWidth*mHeight*2];
+        if (!mTmp) mTmp = new uint8_t[mWidth*mHeight*3];
+      }
+      ptr = camera_data->image;
+      if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
+      {
+	jpeg_decompress((unsigned char*)mTmp, 
+      			PLAYER_CAMERA_IMAGE_SIZE,
+                        camera_data->image,
+                        camera_data->image_count
+                       );
+        ptr = mTmp;
+      }
       // now deal with the data
-      rgb2uyvy(camera_data->image, mImg, mWidth*mHeight);
+      rgb2uyvy(ptr, mImg, mWidth*mHeight);
+
+      // we have a new image,
+      ProcessImageData();
     }
-
-    // we have a new image,
-    ProcessImageData();
-
+    // Unlock();
     return(0);
   }
 
