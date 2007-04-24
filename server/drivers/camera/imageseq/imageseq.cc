@@ -227,30 +227,75 @@ int ImageSeq::LoadImage(const char *filename)
   IplImage *image;
   
   // Load image; currently forces the image to mono
-  image = cvLoadImage(filename, 0);
+  image = cvLoadImage(filename, -1);
+  if(image == NULL)
+  {
+  		PLAYER_ERROR1("Could not load image file: %s", filename);
+		return -1;
+  }
 
   this->data.width = image->width;
   this->data.height = image->height;
-  this->data.bpp = 8;
-  this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->data.image_count = this->data.width * this->data.height;
   
+
+  this->data.image_count = image->imageSize;
+  switch (image->depth)
+  {
+	case IPL_DEPTH_8U:
+	case IPL_DEPTH_8S:
+	  if (image->nChannels == 1)
+	  {
+	    this->data.bpp = 8;
+		 this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+	  }
+	  else if (image->nChannels == 3)
+	  {
+	    this->data.bpp = 24;
+		 this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+	  }
+	break;
+	case IPL_DEPTH_16S:
+	  if (image->nChannels == 1)
+	  {
+	    this->data.bpp = 16;
+		 this->data.format = PLAYER_CAMERA_FORMAT_MONO16;
+	  }
+	break;
+	case IPL_DEPTH_32S:
+	case IPL_DEPTH_32F:
+	case IPL_DEPTH_64F:
+	default:
+	break;
+  }
   // Check image size
   if (this->data.image_count > PLAYER_CAMERA_IMAGE_SIZE)
   {
     PLAYER_ERROR1("image size is too large [%d]", this->data.image_count);
     return -1;
   }
-
   // Copy the pixels
-  for (i = 0; i < image->height; i++)
-  {
-    src = image->imageData + i * image->widthStep;
-    dst = this->data.image + i * this->data.width;
-    memcpy(dst, src, this->data.width);
+  if (image->nChannels == 1) {
+    for (i = 0; i < image->height; i++)
+    {
+      src = image->imageData + i * image->widthStep;
+      dst = this->data.image + i * image->widthStep;
+      memcpy(dst, src, this->data.width);
+    }
   }
-  
+  else if (image->nChannels == 3)
+  {
+	  for (int i = 0; i < image->height; i++)
+			for (int j = 0; j < image->width; j++)
+			{
+				int index = i*image->widthStep + 3*j;
+				// Convert BGR to RGB
+				this->data.image[index + 0] = image->imageData[index + 2];
+				this->data.image[index + 1] = image->imageData[index + 1];
+				this->data.image[index + 2] = image->imageData[index + 0];
+		   }
+  }
+  cvReleaseImage(&image);
   return 0;
 }
 
