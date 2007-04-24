@@ -228,16 +228,14 @@ void dump_current_settings(int fd)
 }
 
 
-void query_pan_tilt_status(fd)
+void query_pan_tilt_status(int fd, int *status)
 {
   struct pwc_mpt_status pms;
 
   if (ioctl(fd, VIDIOCPWCMPTSTATUS, &pms) == -1)
     error_exit("VIDIOCPWCMPTSTATUS");
 
-  printf("Status: %d\n", pms.status);
-  printf("Time pan: %d\n", pms.time_pan);
-  printf("Time tilt: %d\n", pms.time_tilt);
+  *status = pms.status;
 }
 
 void reset_pan_tilt(int fd, int what)
@@ -258,6 +256,21 @@ void set_pan_or_tilt(int fd, char what, int value)
     pma.pan = value;
   else if (what == SET_TILT)
     pma.tilt = value;
+
+  if (ioctl(fd, VIDIOCPWCMPTSANGLE, &pma) == -1)
+    error_exit("VIDIOCPWCMPTSANGLE");
+}
+
+void set_pan_and_tilt(int fd, int pan, int tilt)
+{
+  struct pwc_mpt_angles pma;
+
+  pma.absolute=1;
+  if (ioctl(fd, VIDIOCPWCMPTGANGLE, &pma) == -1)
+    error_exit("VIDIOCPWCMPTGANGLE");
+
+  pma.pan = pan;
+  pma.tilt = tilt;
 
   if (ioctl(fd, VIDIOCPWCMPTSANGLE, &pma) == -1)
     error_exit("VIDIOCPWCMPTSANGLE");
