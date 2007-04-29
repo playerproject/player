@@ -818,6 +818,24 @@ int playerc_device_unsubscribe(playerc_device_t *device);
 /** @brief Request capabilities of device */
 int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32_t subtype);
 
+/** @brief Request an integer property */
+int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value);
+
+/** @brief Set an integer property */
+int playerc_device_set_intprop(playerc_device_t *device, char *property, int32_t value);
+
+/** @brief Request a double property */
+int playerc_device_get_dblprop(playerc_device_t *device, char *property, double *value);
+
+/** @brief Set a double property */
+int playerc_device_set_dblprop(playerc_device_t *device, char *property, double value);
+
+/** @brief Request a string property */
+int playerc_device_get_strprop(playerc_device_t *device, char *property, char **value);
+
+/** @brief Set a string property */
+int playerc_device_set_strprop(playerc_device_t *device, char *property, const char *value);
+
 
 /** @} */
 /**************************************************************************/

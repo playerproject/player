@@ -1,8 +1,8 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2000  
+ *  Copyright (C) 2000
  *     Brian Gerkey, Kasper Stoy, Richard Vaughan, & Andrew Howard
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 
 /*
  * $Id$
- *  
+ *
  *  the base class from which all device classes inherit.  here
  *  we implement some generic methods that most devices will not need
  *  to override
@@ -46,24 +46,26 @@
 #include <libplayercore/devicetable.h>
 #include <libplayercore/configfile.h>
 #include <libplayercore/globals.h>
+#include <libplayercore/property.h>
+#include <libplayercore/interface_util.h>
 
 // Default constructor for single-interface drivers.  Specify the
 // interface code and buffer sizes.
-Driver::Driver(ConfigFile *cf, int section, 
-               bool overwrite_cmds, size_t queue_maxlen, 
+Driver::Driver(ConfigFile *cf, int section,
+               bool overwrite_cmds, size_t queue_maxlen,
                int interf)
 {
   this->error = 0;
   this->driverthread = 0;
-  
+
   // Look for our default device id
-  if(cf->ReadDeviceAddr(&this->device_addr, section, "provides", 
+  if(cf->ReadDeviceAddr(&this->device_addr, section, "provides",
                         interf, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
   }
-  
+
   this->subscriptions = 0;
   this->entries = 0;
   this->alwayson = false;
@@ -72,25 +74,25 @@ Driver::Driver(ConfigFile *cf, int section,
   this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
   assert(InQueue);
 
-  // Create an interface 
+  // Create an interface
   if(this->AddInterface(this->device_addr) != 0)
   {
-    this->SetError(-1);    
+    this->SetError(-1);
     return;
   }
 
   pthread_mutex_init(&this->accessMutex,NULL);
 }
-    
+
 // this is the other constructor, used by multi-interface drivers.
 Driver::Driver(ConfigFile *cf, int section,
                bool overwrite_cmds, size_t queue_maxlen)
 {
   this->error = 0;
   this->driverthread = 0;
-  
+
   this->device_addr.interf = UINT_MAX;
-  
+
   this->subscriptions = 0;
   this->alwayson = false;
   this->entries = 0;
@@ -108,7 +110,7 @@ Driver::~Driver()
 }
 
 // Add an interface
-int 
+int
 Driver::AddInterface(player_devaddr_t addr)
 {
   // Add ourself to the device table
@@ -121,7 +123,7 @@ Driver::AddInterface(player_devaddr_t addr)
 }
 
 void
-Driver::Publish(MessageQueue* queue, 
+Driver::Publish(MessageQueue* queue,
                 player_msghdr_t* hdr,
                 void* src)
 {
@@ -171,11 +173,11 @@ Driver::Publish(MessageQueue* queue,
 }
 
 void
-Driver::Publish(player_devaddr_t addr, 
-                MessageQueue* queue, 
-                uint8_t type, 
+Driver::Publish(player_devaddr_t addr,
+                MessageQueue* queue,
+                uint8_t type,
                 uint8_t subtype,
-                void* src, 
+                void* src,
                 size_t len,
                 double* timestamp)
 {
@@ -207,23 +209,23 @@ void Driver::Unlock()
 {
   pthread_mutex_unlock(&accessMutex);
 }
-    
+
 int Driver::Subscribe(player_devaddr_t addr)
 {
   int setupResult;
 
-  if(subscriptions == 0) 
+  if(subscriptions == 0)
   {
     setupResult = Setup();
-    if (setupResult == 0 ) 
-      subscriptions++; 
+    if (setupResult == 0 )
+      subscriptions++;
   }
-  else 
+  else
   {
     subscriptions++;
     setupResult = 0;
   }
-  
+
   return(setupResult);
 }
 
@@ -231,31 +233,31 @@ int Driver::Unsubscribe(player_devaddr_t addr)
 {
   int shutdownResult;
 
-  if(subscriptions == 0) 
+  if(subscriptions == 0)
     shutdownResult = -1;
-  else if ( subscriptions == 1) 
+  else if ( subscriptions == 1)
   {
     shutdownResult = Shutdown();
     subscriptions--;
   }
-  else 
+  else
   {
     subscriptions--;
     shutdownResult = 0;
   }
-  
+
   return( shutdownResult );
 }
 
 /* start a thread that will invoke Main() */
-void 
+void
 Driver::StartThread(void)
 {
   pthread_create(&driverthread, NULL, &DummyMain, this);
 }
 
 /* cancel (and wait for termination) of the thread */
-void 
+void
 Driver::StopThread(void)
 {
   void* dummy;
@@ -269,7 +271,7 @@ Driver::StopThread(void)
 }
 
 /* Dummy main (just calls real main) */
-void* 
+void*
 Driver::DummyMain(void *devicep)
 {
   // Install a cleanup function
@@ -280,7 +282,7 @@ Driver::DummyMain(void *devicep)
 
   // Run the uninstall cleanup function
   pthread_cleanup_pop(1);
-  
+
   return NULL;
 }
 
@@ -293,19 +295,19 @@ Driver::DummyMainQuit(void *devicep)
 }
 
 void
-Driver::Main() 
+Driver::Main()
 {
   PLAYER_ERROR("You have called StartThread(), "
                "but didn't provide your own Main()!");
 }
 
 void
-Driver::MainQuit() 
+Driver::MainQuit()
 {
 }
 
 // Default message handler
-int Driver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+int Driver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
                            void * data)
 {
   return -1;
@@ -337,18 +339,22 @@ void Driver::ProcessMessages(int maxmsgs)
                    msg->GetPayloadSize(), hdr->size);
     }
 
+    // First check if it's an internal message
+    if (ProcessInternalMessages(msg->Queue, hdr, data) == 0)
+      continue;
+
     int ret = this->ProcessMessage(msg->Queue, hdr, data);
     if(ret < 0)
     {
       PLAYER_WARN7("Unhandled message for driver "
-                   "device=%d:%d:%d:%d type=%d subtype=%d len=%d\n",
+                   "device=%d:%d:%s:%d type=%s subtype=%d len=%d\n",
                    hdr->addr.host, hdr->addr.robot,
-                   hdr->addr.interf, hdr->addr.index, 
-                   hdr->type, hdr->subtype, hdr->size);
+                   interf_to_str(hdr->addr.interf), hdr->addr.index,
+                   msgtype_to_str(hdr->type), hdr->subtype, hdr->size);
 
       // If it was a request, reply with an empty NACK
       if(hdr->type == PLAYER_MSGTYPE_REQ)
-        this->Publish(hdr->addr, msg->Queue, PLAYER_MSGTYPE_RESP_NACK, 
+        this->Publish(hdr->addr, msg->Queue, PLAYER_MSGTYPE_RESP_NACK,
                       hdr->subtype, NULL, 0, NULL);
     }
     delete msg;
@@ -357,3 +363,76 @@ void Driver::ProcessMessages(int maxmsgs)
   }
 }
 
+int Driver::ProcessInternalMessages(MessageQueue* resp_queue,
+                                    player_msghdr * hdr, void * data)
+{
+  Property *property = NULL;
+
+  if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ, device_addr))
+  {
+    player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->GetValueToMessage (reinterpret_cast<void*> (&req));
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_INTPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_intprop_req_t), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, device_addr))
+  {
+    player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ, device_addr))
+  {
+    player_dblprop_req_t req = *reinterpret_cast<player_dblprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->GetValueToMessage (reinterpret_cast<void*> (&req));
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_dblprop_req_t), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ, device_addr))
+  {
+    player_dblprop_req_t req = *reinterpret_cast<player_dblprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_DBLPROP_REQ, NULL, 0, NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_STRPROP_REQ, device_addr))
+  {
+    player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->GetValueToMessage (reinterpret_cast<void*> (&req));
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_STRPROP_REQ, reinterpret_cast<void*> (&req), sizeof(player_strprop_req_t), NULL);
+    return 0;
+  }
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ, device_addr))
+  {
+    player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
+    if ((property = propertyBag.GetProperty (req.key)) == NULL)
+      return -1;
+    property->SetValueFromMessage (reinterpret_cast<void*> (&req));
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_SET_STRPROP_REQ, NULL, 0, NULL);
+    return 0;
+  }
+
+  return -1;
+}
+
+bool Driver::RegisterProperty(char *key, Property *prop, ConfigFile* cf, int section)
+{
+  if (!propertyBag.AddProperty (key, prop))
+    return false;
+
+  if (cf != NULL)
+    prop->ReadConfig (cf, section);
+
+  return true;
+}

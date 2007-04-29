@@ -93,6 +93,42 @@ int ClientProxy::HasCapability(uint aType, uint aSubtype)
   return playerc_device_hascapability (mInfo, aType, aSubtype);
 }
 
+int ClientProxy::GetIntProp(char *aProperty, int32_t *aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_get_intprop (mInfo, aProperty, aValue);
+}
+
+int ClientProxy::SetIntProp(char *aProperty, int32_t aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_set_intprop (mInfo, aProperty, aValue);
+}
+
+int ClientProxy::GetDblProp(char *aProperty, double *aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_get_dblprop (mInfo, aProperty, aValue);
+}
+
+int ClientProxy::SetDblProp(char *aProperty, double aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_set_dblprop (mInfo, aProperty, aValue);
+}
+
+int ClientProxy::GetStrProp(char *aProperty, char **aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_get_strprop (mInfo, aProperty, aValue);
+}
+
+int ClientProxy::SetStrProp(char *aProperty, const char *aValue)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_device_set_strprop (mInfo, aProperty, aValue);
+}
+
 void ClientProxy::NotFresh()
 {
   scoped_lock_t lock(mPc->mMutex);

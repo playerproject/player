@@ -215,6 +215,24 @@ class ClientProxy
     /// type and subtype. If it does, the return value will be 1, and 0 otherwise.
     int HasCapability(uint aType, uint aSubtype);
 
+    /// @brief Request an integer property
+    int GetIntProp(char *aProperty, int32_t *aValue);
+
+    /// @brief Set an integer property
+    int SetIntProp(char *aProperty, int32_t aValue);
+
+    /// @brief Request a double property
+    int GetDblProp(char *aProperty, double *aValue);
+
+    /// @brief Set a double property
+    int SetDblProp(char *aProperty, double aValue);
+
+    /// @brief Request a string property
+    int GetStrProp(char *aProperty, char **aValue);
+
+    /// @brief Set a string property
+    int SetStrProp(char *aProperty, const char *aValue);
+
     /// Connect a signal to this proxy
     /// For more information check out @ref player_clientlib_multi
     template<typename T>
