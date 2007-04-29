@@ -1393,7 +1393,7 @@ bool Alsa::SetupMixer (void)
 	// Attach it to the device
 	if (snd_mixer_attach (mixerHandle, mixerDevice) < 0)
 	{
-		PLAYER_WARN ("Could not attach mixer");
+		PLAYER_WARN1 ("Could not attach mixer to mixer device %s", mixerDevice);
 		return false;
 	}
 
@@ -2049,6 +2049,12 @@ Alsa::Alsa (ConfigFile* cf, int section)
 	recNumChannels = cf->ReadInt (section, "rec_nch", 1);
 	recSampleRate = cf->ReadInt (section, "rec_sr", 44100);
 	recBits = cf->ReadInt (section, "rec_bits", 16);
+	if (debugLevel > 1)
+	{
+		cout << "Playback device: " << pbDevice << endl;
+		cout << "Mixer device: " << mixerDevice << endl;
+		cout << "Record device: " << recDevice << endl;
+	}
 
 	// Check recording rates are sane
 	if (recNumChannels != 1 && recNumChannels != 2)
