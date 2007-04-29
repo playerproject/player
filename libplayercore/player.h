@@ -443,6 +443,56 @@ typedef struct player_capabilities_req
   uint32_t subtype;
 } player_capabilities_req_t;
 
+
+/**
+@ingroup message_basics
+@defgroup propbags Property Bags
+Querying driver properties
+
+*/
+
+#define PLAYER_GET_INTPROP_REQ 254
+#define PLAYER_SET_INTPROP_REQ 253
+#define PLAYER_GET_DBLPROP_REQ 252
+#define PLAYER_SET_DBLPROP_REQ 251
+#define PLAYER_GET_STRPROP_REQ 250
+#define PLAYER_SET_STRPROP_REQ 249
+
+/** @brief Request to get an integer property */
+typedef struct player_intprop_req
+{
+	/** The property key's length */
+	uint32_t key_count;
+	/** The property key */
+	char *key;
+	/** The property value */
+	int32_t value;
+} player_intprop_req_t;
+
+/** @brief Request to get a double property */
+typedef struct player_dblprop_req
+{
+	/** The property key's length */
+	uint32_t key_count;
+	/** The property key */
+	char *key;
+	/** The property value */
+	double value;
+} player_dblprop_req_t;
+
+/** @brief Request to get a string property */
+typedef struct player_strprop_req
+{
+	/** The property key's length */
+	uint32_t key_count;
+	/** The property key */
+	char *key;
+	/** The property's length */
+	uint32_t value_count;
+	/** The property value */
+	char *value;
+} player_strprop_req_t;
+
 // /////////////////////////////////////////////////////////////////////////////
 //
 //             Here starts the alphabetical list of interfaces

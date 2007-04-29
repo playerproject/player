@@ -100,7 +100,7 @@ AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 dnl Check for python c header
 PYTHON_VERSION=`python -V 2>&1 | grep -o "[[0-9]][\.][[0-9]]"`
 PYTHON_HEADER="python"$PYTHON_VERSION"/Python.h"
-if test ! -f "/usr/include/$PYTHON_HEADER"; then 
+if test ! -f "/usr/include/$PYTHON_HEADER"; then
 	PYTHON_HEADER=python/Python.h
 fi
 
@@ -428,7 +428,7 @@ if test "x$have_pkg_config" = "xyes"; then
 fi
 AM_CONDITIONAL(WITH_IMAGEMAGICK, test "x$with_imagemagick" = "xyes")
 
-dnl check for gsl 
+dnl check for gsl
 if test "x$have_pkg_config" = "xyes"; then
    PKG_CHECK_MODULES(GSL, gsl, with_gsl=yes, with_gsl=no)
    if test "x$with_gsl" = "xyes"; then
@@ -587,6 +587,7 @@ dnl          client_libs/libplayerpacket/Makefile
           utils/dgps_server/Makefile
           utils/xmms-plugin/Makefile
           utils/logsplitter/Makefile
+          utils/playerprop/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)
 

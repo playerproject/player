@@ -44,7 +44,19 @@ static playerxdr_function_t init_ftable[] =
   /* This list is currently alphabetized, please keep it that way! */
   /* universal messages */
   {0, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ,
-   (player_pack_fn_t)player_capabilities_req_pack},
+   (player_pack_fn_t)player_capabilities_req_pack, NULL, NULL},
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ,
+   (player_pack_fn_t)player_intprop_req_pack, (player_dpcpy_fn_t)player_intprop_req_t_dpcpy, (player_cleanup_fn_t)player_intprop_req_t_cleanup},
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ,
+   (player_pack_fn_t)player_intprop_req_pack, (player_dpcpy_fn_t)player_intprop_req_t_dpcpy, (player_cleanup_fn_t)player_intprop_req_t_cleanup},
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ,
+   (player_pack_fn_t)player_dblprop_req_pack, (player_dpcpy_fn_t)player_dblprop_req_t_dpcpy, (player_cleanup_fn_t)player_dblprop_req_t_cleanup},
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ,
+   (player_pack_fn_t)player_dblprop_req_pack, (player_dpcpy_fn_t)player_dblprop_req_t_dpcpy, (player_cleanup_fn_t)player_dblprop_req_t_cleanup},
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_STRPROP_REQ,
+   (player_pack_fn_t)player_strprop_req_pack, (player_dpcpy_fn_t)player_strprop_req_t_dpcpy, (player_cleanup_fn_t)player_strprop_req_t_cleanup},
+  {0, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ,
+   (player_pack_fn_t)player_strprop_req_pack, (player_dpcpy_fn_t)player_strprop_req_t_dpcpy, (player_cleanup_fn_t)player_strprop_req_t_cleanup},
 
   /* actarray messages */
   {PLAYER_ACTARRAY_CODE, PLAYER_MSGTYPE_DATA, PLAYER_ACTARRAY_DATA_STATE,

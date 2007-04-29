@@ -1,7 +1,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2002-2003
- *                      
+ *
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -82,8 +82,8 @@ void playerc_device_term(playerc_device_t *device)
 // Subscribe/unsubscribe the device
 int playerc_device_subscribe(playerc_device_t *device, int access)
 {
-  if (playerc_client_subscribe(device->client, device->addr.interf, 
-                               device->addr.index, access, 
+  if (playerc_client_subscribe(device->client, device->addr.interf,
+                               device->addr.index, access,
                                device->drivername, sizeof(device->drivername)) != 0)
     return -1;
   device->subscribed = 1;
@@ -96,8 +96,8 @@ int playerc_device_subscribe(playerc_device_t *device, int access)
 int playerc_device_unsubscribe(playerc_device_t *device)
 {
   device->subscribed = 0;
-  return playerc_client_unsubscribe(device->client, 
-                                    device->addr.interf, 
+  return playerc_client_unsubscribe(device->client,
+                                    device->addr.interf,
                                     device->addr.index);
 }
 
@@ -110,4 +110,110 @@ int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32
 
   return playerc_client_request(device->client, device, PLAYER_CAPABILTIES_REQ,
                             NULL, (void*)&capreq, sizeof(capreq)) >= 0 ? 1 : 0;
+}
+
+int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value)
+{
+  int result = 0;
+
+  player_intprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = 0;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_GET_INTPROP_REQ, &req, &req, sizeof(req))) < 0)
+    return result;
+
+  *value = req.value;
+  return 0;
+}
+
+int playerc_device_set_intprop(playerc_device_t *device, char *property, int32_t value)
+{
+  int result = 0;
+
+  player_intprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = value;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_SET_INTPROP_REQ, &req, NULL, 0)) < 0)
+    return result;
+
+  return 0;
+}
+
+int playerc_device_get_dblprop(playerc_device_t *device, char *property, double *value)
+{
+  int result = 0;
+
+  player_dblprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = 0;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_GET_DBLPROP_REQ, &req, &req, sizeof(req))) < 0)
+    return result;
+
+  *value = req.value;
+  return 0;
+}
+
+int playerc_device_set_dblprop(playerc_device_t *device, char *property, double value)
+{
+  int result = 0;
+
+  player_dblprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = value;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_SET_DBLPROP_REQ, &req, NULL, 0)) < 0)
+    return result;
+
+  return 0;
+}
+
+int playerc_device_get_strprop(playerc_device_t *device, char *property, char **value)
+{
+  int result = 0;
+
+  player_strprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = NULL;
+  req.value_count = 0;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_GET_STRPROP_REQ, &req, &req, sizeof(req))) < 0)
+    return result;
+
+  if (((*value) = strdup (req.value)) == NULL)
+  {
+    PLAYER_ERROR ("Failed to allocate memory to store property value");
+    return -1;
+  }
+
+  return 0;
+}
+
+int playerc_device_set_strprop(playerc_device_t *device, char *property, const char *value)
+{
+  int result = 0;
+
+  player_strprop_req_t req;
+  req.key = property;
+  req.key_count = strlen (property) + 1;
+  req.value = value;
+  req.value_count = strlen (value) + 1;
+
+  if((result = playerc_client_request(device->client, device,
+                            PLAYER_SET_STRPROP_REQ, &req, NULL, 0)) < 0)
+    return result;
+
+  return 0;
 }
