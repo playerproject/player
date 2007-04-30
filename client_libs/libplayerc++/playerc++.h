@@ -923,8 +923,8 @@ class LaserProxy : public ClientProxy
       return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
     };
 
-//    /// Whether or not reflectance (i.e., intensity) values are being returned.
-//    bool IsIntensity() const { return GetVar(mDevice->intensity); };
+    /// Whether or not reflectance (i.e., intensity) values are being returned.
+    bool IntensityOn() const { return GetVar(mDevice->intensity_on); };
 
 //    /// Scan data (polar): range (m) and bearing (radians)
 //    double GetScan(uint aIndex) const
