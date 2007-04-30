@@ -1,3 +1,159 @@
+/** @ingroup drivers */
+/** @{ */
+/** @defgroup driver_nd nd
+ * @brief Nearness Diagram Navigation
+
+This driver implements the Nearness Diagram Navigation algorithm.
+This algorithm handles local collision-avoidance and goal-seeking and is
+designed for non-holonomic, non-circular robots operating in tight spaces.
+The algorithm is in the following papers:
+
+- J. Minguez, L. Montano. Nearness Diagram Navigation (ND): Collision
+Avoidance in Troublesome Scenarios. IEEE Transactions on Robotics and
+Automation, pp 154, 2004.
+<a href="http://webdiis.unizar.es/~jminguez/TRAND.pdf">PDF</a>
+
+- J. Minguez, J. Osuna, L. Montano.  A Divide and Conquer Strategy based
+on Situations to Achieve Reactive Collision Avoidance in Troublesome
+Scenarios.  IEEE International Conference on Robotics and Automation
+(ICRA 2004), 2004. New Orleans, USA.
+<a href="http://webdiis.unizar.es/~jminguez/810.pdf">PDF</a>
+
+This driver reads pose information from a @ref interface_position2d
+device, sensor data from a @ref interface_laser device and/or @ref
+interface_sonar device, and writes commands to a @ref interface_position2d
+device.  The two @ref interface_position2d devices can be the same.
+At least one device of type @ref interface_laser or @ref interface_sonar must
+be provided.
+
+The driver itself supports the @interface_position2d interface.  Send
+@ref PLAYER_POSITION2D_CMD_POS commands to set the goal pose.  The driver
+also accepts @ref PLAYER_POSITION2D_CMD_VEL commands, simply passing them
+through to the underlying output device.
+
+
+@par Compile-time dependencies
+
+- none
+
+@par Provides
+
+- @ref interface_position2d
+
+@par Requires
+
+- "input" @ref interface_position2d : source of pose and velocity information
+- "output" @ref interface_position2d : sink for velocity commands to control the robot
+- @ref interface_laser : the laser to read from
+- @ref interface_sonar : the sonar to read from
+
+@par Configuration requests
+
+- all @ref interface_position2d requests are passed through to the
+underlying "output" @ref interface_position2d device.
+
+@par Configuration file options
+
+- goal_tol (tuple: [length angle])
+  - Default: [0.5 10.0] (m deg)
+  - Respectively, translational and rotational goal tolerance.  When the
+    robot is within these bounds of the current target pose, it will
+    be stopped.
+
+- max_speed (tuple: [length/sec angle/sec])
+  - Default: [0.3 45.0] (m/s deg/s)
+  - Respectively, maximum absolute translational and rotational velocities
+    to be used in commanding the robot.
+
+- min_speed (tuple: [length/sec angle/sec])
+  - Default: [0.05 10.0] (m/s deg/s)
+  - Respectively, minimum absolute non-zero translational and rotational
+    velocities to be used in commanding the robot.
+
+- avoid_dist (length)
+  - Default: 0.5 m
+  - Distance at which obstacle avoidance begins
+
+- safety_dist (length)
+  - Default: 0.0 m
+  - Extra extent added to the robot on all sides when doing obstacle
+    avoidance.
+
+- rotate_stuck_time (float)
+  - Default: 2.0 seconds
+  - How long the robot is allowed to rotate in place without making any
+    progress toward the goal orientation before giving up.
+
+- translate_stuck_time (float)
+  - Default: 2.0 seconds         
+  - How long the robot is allowed to translate without making sufficient
+    progress toward the goal position before giving up.
+
+- translate_stuck_dist (length)
+  - Default: 0.25 m
+  - How far the robot must translate during translate stuck time in
+    order to not give up.
+
+- translate_stuck_angle (angle)
+  - Default: 20 deg
+  - How far the robot must rotate during translate stuck time in order
+    to not give up.
+
+- wait_on_stall (integer)
+  - Default: 0
+  - Should local navigation be paused if the stall flag is set on the
+    input:::position2d device? This option is useful if the robot's pose
+    is being read from a SLAM system that sets the stall flag when it
+    is performing intensive computation and can no longer guarantee the
+    validity of pose estimates.
+
+- laser_buffer (integer)
+  - Default: 10          
+  - How many recent laser scans to consider in the local navigation.
+
+
+- sonar_buffer (integer)
+  - Default: 10
+  - How many recent sonar scans to consider in the local navigation
+
+- sonar_bad_transducers (tuple [integers])
+  - Default: [] (empty tuple)
+  - Indices of sonar transducers that should be ignored. This option is
+    useful when particular sonars are known to be bad, or if they tend
+    to give returns from the robot's body (usually the wheels), or if they
+    are just not needed because of overlap with the laser.
+
+@par Example
+
+@verbatim
+driver
+(
+  name "nd"
+  provides ["position2d:1"]
+  requires ["output:::position2d:0" "input:::position2d:0" "laser:0" "sonar:0"]
+
+  max_speed [0.3 30.0]
+  min_speed [0.1 10.0]
+  goal_tol [0.3 15.0]
+  wait_on_stall 1
+
+  rotate_stuck_time 5.0
+  translate_stuck_time 5.0
+  translate_stuck_dist 0.15
+  translate_stuck_angle 10.0
+
+  avoid_dist 0.4
+  safety_dist 0.0
+
+  laser_buffer 1
+  sonar_buffer 1
+)
+@endverbatim
+
+@author Javier Minguez (underlying algorithm), Brian Gerkey (driver integration)
+
+*/
+/** @} */
 #include <math.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -138,7 +294,7 @@ ND::ND( ConfigFile* cf, int section)
   : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   this->dist_eps = cf->ReadTupleLength(section, "goal_tol", 0, 0.5);
-  this->ang_eps = cf->ReadTupleAngle(section, "goal_tol", 1, 10.0);
+  this->ang_eps = cf->ReadTupleAngle(section, "goal_tol", 1, DTOR(10.0));
 
   this->vx_max = cf->ReadTupleLength(section, "max_speed", 0, 0.3);
   this->va_max = cf->ReadTupleAngle(section, "max_speed", 1, DTOR(45.0));
