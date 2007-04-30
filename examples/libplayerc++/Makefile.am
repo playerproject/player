@@ -59,65 +59,65 @@ example_DATA = args.h \
                wallfollow.cc
 
 camera_SOURCES = camera.cc args.h
-camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+camera_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 camera_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example0_SOURCES = example0.cc
-example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+example0_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 example0_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example1_SOURCES = example1.cc args.h
-example1_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+example1_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 example1_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example2_SOURCES = example2.cc
-example2_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+example2_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 example2_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example3_SOURCES = example3.cc args.h
-example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+example3_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 example3_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 example4_SOURCES = example4.cc
-example4_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+example4_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 example4_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 goto_SOURCES = goto.cc
-goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+goto_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 goto_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 grip_SOURCES = grip.cc args.h
-grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+grip_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 grip_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 clientgraphics_SOURCES = clientgraphics.cc args.h
-clientgraphics_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+clientgraphics_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 clientgraphics_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 laserobstacleavoid_SOURCES = laserobstacleavoid.cc args.h
-laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+laserobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 laserobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 ptz_SOURCES = ptz.cc args.h
-ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+ptz_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 ptz_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 randomwalk_SOURCES = randomwalk.cc args.h
-randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+randomwalk_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 randomwalk_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 sonarobstacleavoid_SOURCES = sonarobstacleavoid.cc args.h
-sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+sonarobstacleavoid_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 sonarobstacleavoid_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 speech_SOURCES = speech.cc args.h
-speech_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+speech_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 speech_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 speech_cpp_client_SOURCES = speech_cpp_client.cc
-speech_cpp_client_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+speech_cpp_client_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 speech_cpp_client_DEPENDENCIES = $(PLAYERCC_DEPS)
 
 wallfollow_SOURCES = wallfollow.cc args.h
-wallfollow_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayererror -lplayerc
+wallfollow_LDADD = $(PLAYERCC_LIB_DIRS) $(PLAYERCC_LIB) -lplayerc++ -lplayerxdr -lplayerc -lplayererror
 wallfollow_DEPENDENCIES = $(PLAYERCC_DEPS)
