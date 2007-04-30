@@ -363,6 +363,20 @@ Zeroconf networking library</td>
 </tr>
 
 <tr>
+<td>Nearness Diagram (ND) Navigation</td>
+<td>goal-seeking obstacle-avoidance, especially suited for non-holonomic,
+non-circular robots in tight spaces</td>
+<td>Minguez & Montano (2004),
+<a href="http://webdiis.unizar.es/~jminguez/TRAND.pdf">Nearness Diagram
+Navigation (ND): Collision Avoidance in Troublesome Scenarios</a><br>
+Minguez, Osuna, & Montano (2004), 
+<a href="http://webdiis.unizar.es/~jminguez/810.pdf">A Divide and Conquer
+Strategy based on Situations to Achieve Reactive Collision Avoidance in
+Troublesome Scenarios</a>.</td>
+<td>@ref driver_nd</td>
+</tr>
+
+<tr>
 <td>configuration space</td>
 <td>Modulates raw laser data according to the robot's dimensions in order
 to represent the empty area in the robot's configuration space.</td>
