@@ -139,6 +139,8 @@ PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([nd],[yes],[],[],[])
+
 dnl Check to see if we have version 1 or 2 API for dc1394
 AC_CHECK_HEADER(dc1394/dc1394_control.h,[PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h dc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394"])],
 	[PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h libdc1394/dc1394_control.h"],[],["-lraw1394 -ldc1394_control"])])

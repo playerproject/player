@@ -1,1 +1,1 @@
-SUBDIRS = isense microstrain vfh ascension bumpersafe lasersafe nav200
+SUBDIRS = isense microstrain vfh ascension bumpersafe lasersafe nav200 nd

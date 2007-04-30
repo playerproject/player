@@ -536,6 +536,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/vfh/Makefile
           server/drivers/position/ascension/Makefile
           server/drivers/position/bumpersafe/Makefile
+          server/drivers/position/nd/Makefile
           server/drivers/position/lasersafe/Makefile
           server/drivers/position/nav200/Makefile
           server/drivers/mcom/Makefile
