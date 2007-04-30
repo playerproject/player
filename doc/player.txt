@@ -4,7 +4,7 @@
 */
 
 /**
-@mainpage The Player Robot %Device Interface
+@mainpage The Player Robot Device Interface
 
 <p>Copyright Brian Gerkey and contributors 1999-2006, and beyond.
 <p>Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net]
