@@ -81,7 +81,7 @@ LaserProxy::Configure(double min_angle,
   scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_laser_set_config(mDevice, min_angle, max_angle,
                                     scan_res, range_res, intensity?1:0,aScanningFrequency))
-    throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
+    throw PlayerError("LaserProxy::Configure()", "error setting config");
 }
 
 void

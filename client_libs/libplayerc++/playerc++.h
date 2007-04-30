@@ -1088,6 +1088,11 @@ class LaserProxy : public ClientProxy
       return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
     };
 
+    /// Scan range from the laser config (call RequestConfigure first) (radians)
+    double GetConfMinAngle() const { return min_angle; };
+    /// Scan range from the laser config (call RequestConfigure first) (radians)
+    double GetConfMaxAngle() const { return max_angle; };
+
     /// Whether or not reflectance (i.e., intensity) values are being returned.
     bool IntensityOn() const { return GetVar(mDevice->intensity_on); };
 
