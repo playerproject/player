@@ -215,7 +215,7 @@ main(int argc, char** argv)
       break;
     }
 
-    if(ptcp->Read(1) < 0)
+    if(ptcp->Read(100) < 0)
     {
       PLAYER_ERROR("failed while reading from TCP clients");
       break;
