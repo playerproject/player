@@ -22,8 +22,8 @@
 	**/
 /** @ingroup drivers */
 /** @{ */
-/** @defgroup driver_logger
-	* @brief Karto logger plugin
+/** @defgroup driver_kartowriter kartowriter
+	* @brief Karto logger
 
 	@par Compile-time dependencies
 
