@@ -102,6 +102,7 @@ driver
 #include <math.h>
 #include <termios.h>
 
+#include <replace/replace.h>
 #include <vector>
 using namespace std;
 
