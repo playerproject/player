@@ -105,6 +105,7 @@ driver
 #include <vector>
 using namespace std;
 
+#include <replace/replace.h>
 #include "urg_laser.h"
 
 #define URG04_MIN_STEP 44

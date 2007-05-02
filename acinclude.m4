@@ -270,6 +270,8 @@ PLAYER_ADD_DRIVER([reb],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([relay],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([kartowriter],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
 dnl Where's CANLIB?

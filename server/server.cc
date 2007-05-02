@@ -76,7 +76,6 @@ Listening on ports: 6665
 
 #include <libplayercore/playercore.h>
 #include <libplayertcp/playertcp.h>
-#include <libplayertcp/playerudp.h>
 #include <libplayerxdr/functiontable.h>
 #include <libplayerdrivers/driverregistry.h>
 
@@ -96,7 +95,6 @@ void Cleanup();
 
 
 PlayerTCP* ptcp;
-PlayerUDP* pudp;
 ConfigFile* cf;
 
 int
@@ -127,9 +125,6 @@ main(int argc, char** argv)
 
   ptcp = new PlayerTCP();
   assert(ptcp);
-
-  pudp = new PlayerUDP();
-  assert(pudp);
 
   if(ParseArgs(&port, &debuglevel, &cfgfilename, &gz_serverid, argc, argv) < 0)
   {
@@ -193,13 +188,6 @@ main(int argc, char** argv)
     exit(-1);
   }
 
-  if(pudp->Listen(ports, num_ports) < 0)
-  {
-    PLAYER_ERROR("failed to listen on requested UDP ports");
-    Cleanup();
-    exit(-1);
-  }
-
   printf("Listening on ports: ");
   for(int i=0;i<num_ports;i++)
     printf("%d ", ports[i]);
@@ -221,23 +209,11 @@ main(int argc, char** argv)
       break;
     }
 
-    if(pudp->Read(0) < 0)
-    {
-      PLAYER_ERROR("failed while reading from UDP clients");
-      break;
-    }
-
     deviceTable->UpdateDevices();
 
     if(ptcp->Write() < 0)
     {
       PLAYER_ERROR("failed while writing to TCP clients");
-      break;
-    }
-
-    if(pudp->Write() < 0)
-    {
-      PLAYER_ERROR("failed while writing to UDP clients");
       break;
     }
   }
@@ -253,7 +229,6 @@ void
 Cleanup()
 {
   delete ptcp;
-  delete pudp;
   player_globals_fini();
   delete cf;
 }
