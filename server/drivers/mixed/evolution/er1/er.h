@@ -76,15 +76,11 @@
 #define STOP		1
 
 
-#include <player.h>
-
-#include <driver.h>
-#include <drivertable.h>
-
+#include <libplayercore/playercore.h>
 
 typedef struct
 {
-  player_position_data_t position;
+  player_position2d_data_t position;
 } __attribute__ ((packed)) player_er1_data_t;
 
 
@@ -94,7 +90,7 @@ class ER : public Driver
   private:
     player_er1_data_t er1_data;
     
-    player_device_id_t position_id;
+    player_devaddr_t position_id;
     int position_subscriptions;
 
   public:
@@ -111,9 +107,10 @@ class ER : public Driver
     //void PutData(void);
     
     // MessageHandler
-    int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
-
-    void HandlePositionCommand(player_position_cmd_t position_cmd);
+    virtual int ProcessMessage(MessageQueue * resp_queue,
+                               player_msghdr * hdr,
+                               void * data);
+    //void HandlePositionCommand(player_position2d_cmd_t position_cmd);
 
         
   private:

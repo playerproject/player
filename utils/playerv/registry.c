@@ -31,70 +31,88 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
 {
   switch (device->addr.interf)
   {
+    case PLAYER_AIO_CODE:
+      device->proxy = aio_create(mainwnd, opt, client,
+                                    device->addr.index,
+                                    device->drivername,
+                                    device->subscribe);
+      device->fndestroy = (fndestroy_t) aio_destroy;
+      device->fnupdate = (fnupdate_t) aio_update;
+      break;
+
      case PLAYER_BUMPER_CODE:
        device->proxy = bumper_create(mainwnd, opt, client,
-                                   device->addr.index, 
-                                   device->drivername, 
+                                   device->addr.index,
+                                   device->drivername,
                                    device->subscribe);
        device->fndestroy = (fndestroy_t) bumper_destroy;
        device->fnupdate = (fnupdate_t) bumper_update;
        break;
 
+     case PLAYER_DIO_CODE:
+       device->proxy = dio_create(mainwnd, opt, client,
+                                  device->addr.index,
+                                  device->drivername,
+                                  device->subscribe);
+       device->fndestroy = (fndestroy_t) dio_destroy;
+       device->fnupdate = (fnupdate_t) dio_update;
+       break;
+
     case PLAYER_IR_CODE:
-      device->proxy = ir_create(mainwnd, opt, client, 
+      device->proxy = ir_create(mainwnd, opt, client,
                                    device->addr.index, device->drivername, device->subscribe);
       device->fndestroy = (fndestroy_t) ir_destroy;
       device->fnupdate = (fnupdate_t) ir_update;
       break;
 
     case PLAYER_LASER_CODE:
-      device->proxy = laser_create(mainwnd, opt, client, 
-                                   device->addr.index, 
-                                   device->drivername, 
+      device->proxy = laser_create(mainwnd, opt, client,
+                                   device->addr.index,
+                                   device->drivername,
                                    device->subscribe);
       device->fndestroy = (fndestroy_t) laser_destroy;
       device->fnupdate = (fnupdate_t) laser_update;
       break;
 
     case PLAYER_POWER_CODE:
-      device->proxy = power_create(mainwnd, opt, client, 
-                                   device->addr.index, 
+      device->proxy = power_create(mainwnd, opt, client,
+                                   device->addr.index,
                                    device->drivername, device->subscribe);
       device->fndestroy = (fndestroy_t) power_destroy;
       device->fnupdate = (fnupdate_t) power_update;
       break;
 
     case PLAYER_POSITION2D_CODE:
-      device->proxy = position2d_create(mainwnd, opt, client, 
-                                        device->addr.index, 
-                                        device->drivername, 
+      device->proxy = position2d_create(mainwnd, opt, client,
+                                        device->addr.index,
+                                        device->drivername,
                                         device->subscribe);
       device->fndestroy = (fndestroy_t) position2d_destroy;
       device->fnupdate = (fnupdate_t) position2d_update;
       break;
 
     case PLAYER_PTZ_CODE:
-      device->proxy = ptz_create(mainwnd, opt, client, 
-                                        device->addr.index, 
-                                        device->drivername, 
+      device->proxy = ptz_create(mainwnd, opt, client,
+                                        device->addr.index,
+                                        device->drivername,
                                         device->subscribe);
       device->fndestroy = (fndestroy_t) ptz_destroy;
       device->fnupdate = (fnupdate_t) ptz_update;
       break;
 
     case PLAYER_SONAR_CODE:
-      device->proxy = sonar_create(mainwnd, opt, client, 
-                                   device->addr.index, 
-                                   device->drivername, 
+      device->proxy = sonar_create(mainwnd, opt, client,
+                                   device->addr.index,
+                                   device->drivername,
                                    device->subscribe);
       device->fndestroy = (fndestroy_t) sonar_destroy;
       device->fnupdate = (fnupdate_t) sonar_update;
       break;
 
     case PLAYER_WIFI_CODE:
-      device->proxy = wifi_create(mainwnd, opt, client, 
-                                        device->addr.index, 
-                                        device->drivername, 
+      device->proxy = wifi_create(mainwnd, opt, client,
+                                        device->addr.index,
+                                        device->drivername,
                                         device->subscribe);
       device->fndestroy = (fndestroy_t) wifi_destroy;
       device->fnupdate = (fnupdate_t) wifi_update;
@@ -103,34 +121,34 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
     case PLAYER_BLOBFINDER_CODE:
       device->proxy = blobfinder_create(mainwnd, opt, client,
 					device->addr.index,
-                                        device->drivername, 
+                                        device->drivername,
 					device->subscribe);
       device->fndestroy = (fndestroy_t) blobfinder_destroy;
       device->fnupdate = (fnupdate_t) blobfinder_update;
       break;
 
     case PLAYER_FIDUCIAL_CODE:
-      device->proxy = fiducial_create(mainwnd, opt, client, 
-                                      device->addr.index, 
-				      device->drivername, 
+      device->proxy = fiducial_create(mainwnd, opt, client,
+                                      device->addr.index,
+				      device->drivername,
 				      device->subscribe);
       device->fndestroy = (fndestroy_t) fiducial_destroy;
       device->fnupdate = (fnupdate_t) fiducial_update;
       break;
 
     case PLAYER_GRIPPER_CODE:
-      device->proxy = gripper_create(mainwnd, opt, client, 
-				     device->addr.index, 
-				     device->drivername, 
+      device->proxy = gripper_create(mainwnd, opt, client,
+				     device->addr.index,
+				     device->drivername,
 				     device->subscribe);
       device->fndestroy = (fndestroy_t) gripper_destroy;
       device->fnupdate = (fnupdate_t) gripper_update;
       break;
 
     case PLAYER_MAP_CODE:
-      device->proxy = map_create(mainwnd, opt, client, 
-				 device->addr.index, 
-				 device->drivername, 
+      device->proxy = map_create(mainwnd, opt, client,
+				 device->addr.index,
+				 device->drivername,
 				 device->subscribe);
       device->fndestroy = (fndestroy_t) map_destroy;
       device->fnupdate = (fnupdate_t) map_update;
@@ -138,7 +156,7 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
 
 #if 0
     case PLAYER_LOCALIZE_CODE:
-      device->proxy = localize_create(mainwnd, opt, client, 
+      device->proxy = localize_create(mainwnd, opt, client,
                                  device->index, device->drivername, device->subscribe);
       device->fndestroy = (fndestroy_t) localize_destroy;
       device->fnupdate = (fnupdate_t) localize_update;

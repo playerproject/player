@@ -5,4 +5,4 @@ endif
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-libsphinx2_la_SOURCES = sphinx2.cc
+libsphinx2_la_SOURCES = sphinx2.cc s2types.h

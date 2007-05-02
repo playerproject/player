@@ -51,10 +51,10 @@ AioProxy::Subscribe(uint aIndex)
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_aio_create(mClient, aIndex);
   if (NULL==mDevice)
-    throw PlayerError("LaserProxy::LaserProxy()", "could not create");
+    throw PlayerError("AioProxy::AioProxy()", "could not create");
 
   if (0 != playerc_aio_subscribe(mDevice, PLAYER_OPEN_MODE))
-    throw PlayerError("LaserProxy::LaserProxy()", "could not subscribe");
+    throw PlayerError("AioProxy::AioProxy()", "could not subscribe");
 }
 
 void
@@ -78,7 +78,7 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::AioProxy &c)
 {
   os << "#AIO (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  os << c.GetCount() << std::endl;
+  //os << c.GetCount() << std::endl;
   if (c.GetCount() < 0)
   {
     os << "WARNING: AioProxy received a negative count value.\n" << std::endl;

@@ -31,9 +31,6 @@
 /** @defgroup driver_aodv aodv
  * @brief Linux AODV ad hoc networking
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The aodv driver reports signal strengths for AODV ah-hoc network software.
 
 @par Compile-time dependencies
@@ -76,12 +73,7 @@ driver
 #include <string.h>
 #include <netinet/in.h>
 
-#include "driver.h"
-#include "configfile.h"
-#include "playertime.h"
-#include "drivertable.h"
-#include "player.h"
-#include "error.h"
+#include <libplayercore/playercore.h>
 
 extern PlayerTime *GlobalTime;
 
@@ -98,9 +90,7 @@ class Aodv : public Driver
   public: virtual int Shutdown();
 
   // Get the current readings
-  public: virtual size_t GetData(player_device_id_t id,
-                                 void* dest, size_t len,
-                                 struct timeval* timestamp);
+  public: virtual void Update();
 
   // File handle for the /proc file system entry
   protected: FILE *file;
@@ -124,7 +114,7 @@ void Aodv_Register(DriverTable *table)
 
 // Constructor
 Aodv::Aodv( ConfigFile *cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_WIFI_CODE)
 {
   return;
 }
@@ -154,9 +144,7 @@ int Aodv::Shutdown()
 
 
 // Get new data
-size_t Aodv::GetData(player_device_id_t id,
-                     void* dest, size_t maxsize,
-                     struct timeval* timestamp)
+void Aodv::Update()
 {
   int n, link_count;
   player_wifi_link_t *link;
@@ -165,7 +153,7 @@ size_t Aodv::GetData(player_device_id_t id,
   int seq, hop;
   int qual, level, noise;
 
-  struct timeval curr;
+  //struct timeval curr;
 
   // Rewind to start of file
   rewind(this->file);
@@ -190,21 +178,16 @@ size_t Aodv::GetData(player_device_id_t id,
     printf("aodv %s : %d\n", ip, level);
 
     link = data.links + link_count++;
-    strncpy(link->ip, ip, sizeof(link->ip));
+    strncpy((char*)link->ip, ip, sizeof(link->ip));
     //link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
-    link->qual = htons(qual);
-    link->level = htons(level);
-    link->noise = htons(noise);
+    link->qual = (qual);
+    link->noise = (noise);
   }
-  data.link_count = htons(link_count);
+  data.links_count = (link_count);
 
   // Copy data to the server's buffer
-  assert(sizeof(data) < maxsize);
-  memcpy(dest, &data, sizeof(data));
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE, &data, sizeof(data), NULL);
 
-  // Set the data timestamp
-  GlobalTime->GetTime(&curr);
-  *timestamp = curr;
 
-  return (sizeof(data));
+  return;
 }

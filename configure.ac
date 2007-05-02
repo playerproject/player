@@ -2,10 +2,10 @@ dnl Process this file with autoconf to produce a configure script.
 
 dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
-AC_INIT(player,2.0.1)
+AC_INIT(player,2.0.4)
 
 dnl this is used by libtool to assign version numbers
-PLAYER_VERSION_INFO="-version-info 2:0:0"
+PLAYER_VERSION_INFO="-version-number 2:0:4"
 AC_SUBST(PLAYER_VERSION_INFO)
 
 AC_CONFIG_SRCDIR(server/server.cc)
@@ -97,16 +97,26 @@ if test "x$have_python" = "xno"; then
 fi
 AM_CONDITIONAL(HAVE_PYTHON, test "x$have_python" = "xyes")
 
+dnl Check for python c header
+PYTHON_VERSION=`python -V 2>&1 | grep -o "[[0-9]][\.][[0-9]]"`
+PYTHON_HEADER="python"$PYTHON_VERSION"/Python.h"
+if test ! -f "/usr/include/$PYTHON_HEADER"; then 
+	PYTHON_HEADER=python/Python.h
+fi
+
+AC_CHECK_HEADER($PYTHON_HEADER,
 dnl Do we have Python development tools?
 AC_MSG_CHECKING([for the distutils Python package])
-  ac_distutils_result=`python -c "import distutils" 2>&1`
+  ac_distutils_result=`python -c "import distutils" 2>&1 | grep ImportError`
   if test -z "$ac_distutils_result"; then
     AC_MSG_RESULT([yes])
     have_pythondev=yes
   else
-    AC_MSG_RESULT([no; Python extensions will not be built])
+    AC_MSG_RESULT([Python extensions will not be built])
     have_pythondev=no
   fi
+,    AC_MSG_RESULT([no; Python extensions will not be built])
+    have_pythondev=no)
 AM_CONDITIONAL(HAVE_PYTHONDEV, test "x$have_pythondev" = "xyes")
 
 dnl Where are the JNI headers?
@@ -289,8 +299,8 @@ if test "x$with_playercc" = "xyes"; then
   fi
   AX_BOOST_THREAD
   if test "x$ax_cv_boost_thread" = "xyes"; then
-      PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS -pthread -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
-      PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_THREAD_LIB -lpthread"
+      PLAYERCC_EXTRA_CFLAGS="$PLAYERCC_EXTRA_CFLAGS -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
+      PLAYERCC_LIB="$PLAYERCC_LIB -l$BOOST_THREAD_LIB"
   fi
   if test "x$ax_cv_boost_signal" = "xyes"; then
     if test "x$ax_cv_boost_thread" = "xyes"; then
@@ -367,21 +377,44 @@ AC_CHECK_LIB(nsl, gethostbyname)
 AC_CHECK_LIB(socket, connect)
 AC_CHECK_LIB(ltdl, lt_dlopenext,
              have_libltdl=yes
+             LIBLTDL_FLAG=-lltdl
              AC_DEFINE(HAVE_LIBLTDL, 1, [Define to 1 if you have the ltdl library (-lltdl). ])
-             LIBS="$LIBS -lltdl",
-             have_libltdl=no)
+             LIBS="$LIBS -lltdl -ldl",
+             have_libltdl=no
+             LIBLTDL_FLAG=,
+             [-ldl])
+AC_SUBST(LIBLTDL_FLAG)
 AC_CHECK_LIB(c_r, pthread_create,
-             [LIBS="-lc_r -pthread $LIBS"],[LIBS="-lpthread $LIBS"])
+             [LIBS="-lc_r -lpthread $LIBS"],[LIBS="-lpthread $LIBS"])
 AC_CHECK_LIB(jpeg,jpeg_read_header,
              have_libjpeg=yes
              AC_DEFINE(HAVE_LIBJPEG, 1, [Define to 1 if you have the jpeg library (-ljpeg). ])
              LIBS="$LIBS -ljpeg",
              have_libjpeg=no)
 AM_CONDITIONAL(INCLUDE_JPEG, test "x$have_libjpeg" = "xyes")
+AC_CHECK_LIB(GL,glBegin,
+             have_libGL=yes
+             AC_DEFINE(HAVE_LIBGL, 1, [Define to 1 if you have the GL library (-lGL). ])
+             LIBS="$LIBS -lGL",
+             have_libGL=no)
+AM_CONDITIONAL(INCLUDE_GL, test "x$have_libGL" = "xyes")
+AC_CHECK_LIB(GLU,main,
+             have_libGLU=yes
+             AC_DEFINE(HAVE_LIBGLU, 1, [Define to 1 if you have the GLU library (-lGLU). ])
+             LIBS="$LIBS -lGLU",
+             have_libGLU=no)
+AM_CONDITIONAL(INCLUDE_GLU, test "x$have_libGLU" = "xyes")
+AC_CHECK_LIB(glut,main,
+             have_libglut=yes
+             AC_DEFINE(HAVE_LIBGLUT, 1, [Define to 1 if you have the GLUT library (-lGglut). ])
+             LIBS="$LIBS -lglut",
+             have_libglut=no)
+AM_CONDITIONAL(INCLUDE_GLUT, test "x$have_libglut" = "xyes")
+
 
 dnl Check for OpenCV
 if test "x$have_pkg_config" = "xyes"; then
-   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_gtk=no)
+   PKG_CHECK_MODULES(OPENCV, opencv, with_opencv=yes, with_opencv=no)
    if test "x$with_opencv" = "xyes"; then
       AC_DEFINE(HAVE_OPENCV, 1, [OpenCV library is present])
    fi
@@ -394,6 +427,16 @@ if test "x$have_pkg_config" = "xyes"; then
                     with_imagemagick=no)
 fi
 AM_CONDITIONAL(WITH_IMAGEMAGICK, test "x$with_imagemagick" = "xyes")
+
+dnl check for gsl 
+if test "x$have_pkg_config" = "xyes"; then
+   PKG_CHECK_MODULES(GSL, gsl, with_gsl=yes, with_gsl=no)
+   if test "x$with_gsl" = "xyes"; then
+      AC_DEFINE(HAVE_GSL, 1, [GSL library is present])
+   fi
+fi
+AM_CONDITIONAL(WITH_GSL, test "x$with_gsl" = "xyes")
+
 
 dnl Optionally build python bindings to libplayerc (libplayerc-py)
 AC_ARG_ENABLE(libplayerc-py,
@@ -439,9 +482,12 @@ AC_OUTPUT(Makefile
           server/libplayerdrivers/Makefile
           server/libplayerdrivers/playerdrivers.pc
           server/drivers/Makefile
+          server/drivers/base/Makefile
           server/drivers/gps/Makefile
           server/drivers/shell/Makefile
           server/drivers/mixed/Makefile
+          server/drivers/mixed/wbr/Makefile
+          server/drivers/mixed/wbr/914/Makefile
           server/drivers/position/Makefile
           server/drivers/audio/Makefile
           server/drivers/audiodsp/Makefile
@@ -452,11 +498,14 @@ AC_OUTPUT(Makefile
           server/drivers/camera/compress/Makefile
           server/drivers/camera/imageseq/Makefile
           server/drivers/camera/sphere/Makefile
+          server/drivers/camera/uvc/Makefile
+          server/drivers/camera/yarp/Makefile
           server/drivers/fiducial/Makefile
           server/drivers/ptz/Makefile
           server/drivers/laser/Makefile
           server/drivers/waveform/Makefile
           server/drivers/blobfinder/Makefile
+          server/drivers/blobfinder/artoolkitplus/Makefile
           server/drivers/blobfinder/cmvision/Makefile
           server/drivers/blobfinder/upcbarcode/Makefile
           server/drivers/blobfinder/simpleshape/Makefile
@@ -467,6 +516,7 @@ AC_OUTPUT(Makefile
           server/drivers/speech/recognition/Makefile
           server/drivers/mixed/cmucam2/Makefile
           server/drivers/mixed/p2os/Makefile
+          server/drivers/mixed/erratic/Makefile
           server/drivers/mixed/rflex/Makefile
           server/drivers/mixed/reb/Makefile
           server/drivers/mixed/khepera/Makefile
@@ -486,14 +536,17 @@ AC_OUTPUT(Makefile
           server/drivers/position/vfh/Makefile
           server/drivers/position/ascension/Makefile
           server/drivers/position/bumpersafe/Makefile
+          server/drivers/position/nd/Makefile
+          server/drivers/position/lasersafe/Makefile
+          server/drivers/position/nav200/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile
           server/drivers/service_adv/Makefile
           server/drivers/map/Makefile
           server/drivers/joystick/Makefile
-	  server/drivers/rfid/Makefile
-	  server/drivers/wsn/Makefile
+          server/drivers/rfid/Makefile
+          server/drivers/wsn/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
@@ -509,8 +562,8 @@ dnl          client_libs/libplayerpacket/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
-	  examples/plugins/opaquedriver/Makefile
-	  examples/libplayerc/Makefile
+          examples/plugins/opaquedriver/Makefile
+          examples/libplayerc/Makefile
           examples/libplayerc++/Makefile
           utils/Makefile
           utils/playercam/Makefile
@@ -520,6 +573,7 @@ dnl          client_libs/libplayerpacket/Makefile
           utils/playernav/Makefile
           utils/playerprint/Makefile
           utils/playervcr/Makefile
+          utils/pmap/Makefile
           utils/dgps_server/Makefile
 dnl          utils/barcodes/Makefile
           config/Makefile)

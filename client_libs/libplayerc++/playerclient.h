@@ -6,6 +6,7 @@
 #define PLAYERCLIENT_H
 
 #include "libplayerc++/playerc++config.h"
+#include "libplayerc++/utility.h"
 
 #include <string>
 #include <list>
@@ -46,22 +47,6 @@
 
 namespace PlayerCc
 {
-/** @addtogroup player_clientlib_cplusplus libplayerc++
-
- @{
-
- */
-
-/** @addtogroup player_clientlib_cplusplus_core Core functionality
-
- @{
-
- */
-
-/** The default port number for PlayerClient */
-const int PLAYER_PORTNUM(6665);
-/** The default hostname for PlayerClient */
-const std::string PLAYER_HOSTNAME("localhost");
 
 class ClientProxy;
 
@@ -108,6 +93,9 @@ class PlayerClient
     // The port number of the server, stored for convenience
     uint mPort;
 
+    // Which transport (TCP or UDP) we're using
+    unsigned int mTransport;
+
     // Is the thread currently stopped or stopping?
     bool mIsStop;
 
@@ -121,7 +109,8 @@ class PlayerClient
 
     /// Make a client and connect it as indicated.
     PlayerClient(const std::string aHostname=PLAYER_HOSTNAME,
-                 uint aPort=PLAYER_PORTNUM);
+                 uint aPort=PLAYER_PORTNUM,
+                 int transport=PLAYERC_TRANSPORT_TCP);
 
     /// destructor
     ~PlayerClient();
@@ -145,7 +134,7 @@ class PlayerClient
     /// Stops the @ref Run() loop
     void Stop();
 
-    /// Check whether there is data waiting on the connection, blocking
+    /// @brief Check whether there is data waiting on the connection, blocking
     /// for up to @p timeout milliseconds (set to 0 to not block).
     ///
     /// @returns
@@ -153,7 +142,24 @@ class PlayerClient
     /// - true if there is data waiting
     bool Peek(uint timeout=0);
 
-    /// A blocking Read
+    /// @brief Set connection retry limit, which is the number of times
+    /// that we'll try to reconnect to the server after a socket error.
+    /// Set to -1 for inifinite retry.
+    void SetRetryLimit(int limit) { playerc_client_set_retry_limit(this->mClient,limit); }
+
+    /// @brief Get connection retry limit, which is the number of times
+    /// that we'll try to reconnect to the server after a socket error.
+    int GetRetryLimit() { return(this->mClient->retry_limit); }
+
+    /// @brief Set connection retry time, which is number of seconds to
+    /// wait between reconnection attempts.
+    void SetRetryTime(double time) { playerc_client_set_retry_time(this->mClient,time); }
+
+    /// @brief Get connection retry time, which is number of seconds to
+    /// wait between reconnection attempts.
+    double GetRetryTime() { return(this->mClient->retry_time); }
+
+    /// @brief A blocking Read
     ///
     /// Use this method to read data from the server, blocking until at
     /// least one message is received.  Use @ref PlayerClient::Peek() to check
@@ -162,49 +168,54 @@ class PlayerClient
     /// been received, ensuring as up to date data as possible.
     void Read();
 
-    /// A nonblocking Read
+    /// @brief A nonblocking Read
     ///
     /// Use this method if you want to read in a nonblocking manner.  This
     /// is the equivalent of checking if Peek is true and then reading
     void ReadIfWaiting();
 
-    /// You can change the rate at which your client receives data from the
-    /// server with this method.  The value of @p freq is interpreted as Hz;
-    /// this will be the new rate at which your client receives data (when in
-    /// continuous mode).
-    ///
-    /// @exception throws PlayerError if unsuccessfull
+//    /// @brief You can change the rate at which your client receives data from the
+//    /// server with this method.  The value of @p freq is interpreted as Hz;
+//    /// this will be the new rate at which your client receives data (when in
+//    /// continuous mode).
+//    ///
+//    /// @exception throws PlayerError if unsuccessfull
 //     void SetFrequency(uint aFreq);
 
+    /// @brief Set whether the client operates in Push/Pull modes
+    ///
     /// You can toggle the mode in which the server sends data to your
     /// client with this method.  The @p mode should be one of
     ///   - @ref PLAYER_DATAMODE_PUSH (all data)
     ///   - @ref PLAYER_DATAMODE_PULL (data on demand)
     /// When in pull mode, it is highly recommended that a replace rule is set
     /// for data packets to prevent the server message queue becoming flooded.
+    /// For a more detailed description of data modes, see @ref
+    /// libplayerc_datamodes.
     ///
     /// @exception throws PlayerError if unsuccessfull
     void SetDataMode(uint aMode);
 
-    /// Set a replace rule for the clients queue on the server.
-	/// If a rule with the same pattern already exists, it will be replaced with
-	/// the new rule (i.e., its setting to replace will be updated).
+    /// @brief Set a replace rule for the clients queue on the server.
     ///
-	/// @param aInterf Interface to set replace rule for (-1 for wildcard)
-	///
-	/// @param aIndex index to set replace rule for (-1 for wildcard)
-	///
-	/// @param aType type to set replace rule for (-1 for wildcard),
-	/// i.e. PLAYER_MSGTYPE_DATA
-	///
-	/// @param aSubtype message subtype to set replace rule for (-1 for wildcard)
-	///
-	/// @param aReplace Should we replace these messages
-	///
-	/// @returns Returns 0 on success, non-zero otherwise.  Use
+    /// If a rule with the same pattern already exists, it will be replaced
+    /// with the new rule (i.e., its setting to replace will be updated).
+    /// @param aReplace Should we replace these messages? true/false
+    /// @param aType type of message to set replace rule for
+    ///          (-1 for wildcard).  See @ref message_types.
+    /// @param aSubtype message subtype to set replace rule for (-1 for
+    ///          wildcard).
+    /// @param aInterf Interface to set replace rule for (-1 for wildcard).
+    ///          This can be used to set the replace rule for all members of a
+    ///          certain interface type.  See @ref interfaces.
     ///
     /// @exception throws PlayerError if unsuccessfull
-    void SetReplaceRule(int aInterf, int aIndex, int aType, int aSubtype, int aReplace);
+    ///
+    /// @see ClientProxy::SetReplaceRule, PlayerClient::SetDataMode
+    void SetReplaceRule(bool aReplace,
+                        int aType = -1,
+                        int aSubtype = -1,
+                        int aInterf = -1);
 
     /// Get the list of available device ids. The data is written into the
     /// proxy structure rather than retured to the caller.
@@ -225,8 +236,7 @@ class PlayerClient
     std::string LookupName(int aCode) const;
 };
 
-/** }@ (core) */
-/** }@ (c++) */
+
 
 }
 

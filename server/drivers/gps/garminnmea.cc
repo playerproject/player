@@ -135,6 +135,10 @@ driver
 #define NMEA_GPBOD "GPBOD"
 #define NMEA_GPRTE "GPRTE"
 
+// these are standard NMEA sentences that come
+// out of other units (NovaTel)
+#define NMEA_GPGST "GPGST"
+
 // these are the proprietary NMEA sentences that 
 // come out of the geko 201
 #define NMEA_PGRME "PGRME"
@@ -142,7 +146,7 @@ driver
 #define NMEA_PSLIB "PSLIB"
 
 // spec says 82, but that done mean squat. Make it big
-#define NMEA_MAX_SENTENCE_LEN 83
+#define NMEA_MAX_SENTENCE_LEN 128
 
 #define NMEA_START_CHAR '$'
 #define NMEA_END_CHAR '\n'
@@ -219,6 +223,7 @@ class GarminNMEA:public Driver
     int ParseGPGGA(const char *buf);
     int ParseGPRMC(const char *buf);
     int ParsePGRME(const char *buf);
+    int ParseGPGST(const char *buf);
     char* GetNextField(char* field, size_t len, const char* ptr);
 
     // utility functions to convert geodetic to UTM position
@@ -364,6 +369,21 @@ GarminNMEA::SetupSerial()
   {
     cfsetispeed(&term, B38400);
     cfsetospeed(&term, B38400);
+  }
+  else if (gps_baud == 57600)
+  {
+    cfsetispeed(&term, B57600);
+	 cfsetospeed(&term, B57600);
+  }
+  else if (gps_baud == 115200)
+  {
+    cfsetispeed(&term, B115200);
+	 cfsetospeed(&term, B115200);
+  }
+  else if (gps_baud == 230400)
+  {
+    cfsetispeed(&term, B230400);
+	 cfsetospeed(&term, B230400);
   }
   else
   {
@@ -837,9 +857,13 @@ GarminNMEA::ParseSentence(const char* buf)
   if(!strcmp(tmp,NMEA_GPRMC))
     ParseGPRMC(ptr);
 
-  // the PGRME msg has the error
+  // the PGRME msg has the error (Garmin)
   if(!strcmp(tmp,NMEA_PGRME))
     ParsePGRME(ptr);
+
+  // the GPGST msg has the error (NMEA)
+  if(!strcmp(tmp,NMEA_GPGST))
+    ParseGPGST(ptr);
 
   return(0);
 }
@@ -1128,6 +1152,67 @@ int GarminNMEA::ParsePGRME(const char *buf)
 
   return 0;
 }
+
+/*
+ * Parse the GPGST sentence, which has esimated position error.
+ */
+int GarminNMEA::ParseGPGST(const char *buf)
+{
+  const char *ptr = buf;
+  char field[32];
+  double err;
+  double utc;
+  
+//  printf("got GPGST (%s)\n", buf);
+//  fflush(stdout);
+  
+  if(!(ptr = GetNextField(field, sizeof(field), ptr)))
+    return(-1);
+  
+  // First field is UTC time
+  utc = atof(field);
+  /* Maybe do a check to make sure current packet is the right packet */
+
+  if(!(ptr = GetNextField(field, sizeof(field), ptr)))
+	 return(-1);
+  
+  // Second field is RMS deviation
+  err = atof(field);
+
+  if(!(ptr = GetNextField(field, sizeof(field), ptr)))
+	 return(-1);
+  
+  // Third field is Semi-minor deviation
+  err = atof(field);
+
+  if(!(ptr = GetNextField(field, sizeof(field), ptr)))
+	 return(-1);
+  
+  // Fourth field is Semi-major deviation
+  err = atof(field);
+
+  if(!(ptr = GetNextField(field, sizeof(field), ptr)))
+	 return(-1);
+  
+  // Fifth field is Latitude error deviation
+  err = atof(field);
+  data.err_horz = (uint32_t) ( err * 1000);
+
+
+  // Sixth field is Longitude error deviation
+  err = atof(field);
+  data.err_vert = (uint32_t) ( err * 1000);
+
+  // Seventh field is Altitude error deviation
+  err = atof(field);
+
+  /* Dont write here
+  PutData(&data,sizeof(player_gps_data_t),0,0);
+  */
+
+  return 0;
+}
+
 
 
 /*

@@ -41,6 +41,7 @@ Where options can be:
 - -udp : use UDP instead of TCP (deprecated, currently disabled)
 - -speed     : maximum linear speed (m/sec)
 - -turnspeed : maximum angular speed (deg/sec)
+- -dev &lt;dev&gt; : Joystick device file (default /dev/js0)
 - &lt;host:port&gt; : connect to a Player on this host and port
 
 playerjoy supports both joystick and keyboard control, although joysticks
@@ -110,6 +111,7 @@ using namespace PlayerCc;
   "       -udp : use UDP instead of TCP (deprecated, currently disabled)\n" \
   "       -speed     : maximum linear speed (m/sec)\n" \
   "       -turnspeed : maximum angular speed (deg/sec)\n" \
+  "       -dev <dev> : joystick device file (default /dev/js0)\n" \
   "       <host:port> : connect to a Player on this host and port\n"
 
 
@@ -162,6 +164,7 @@ bool use_keyboard = false;
 // create a gripper proxy and keys to control it?
 bool use_gripper = false;
 GripperProxy *gp = NULL;
+ActArrayProxy *lp = NULL;
 
 // joystick fd
 int jfd;
@@ -206,6 +209,9 @@ typedef std::list<Client*> ClientList;
 // at full joystick depression you'll go this fast
 double max_speed = 0.500; // m/second
 double max_turn = DTOR(60); // rad/second
+char jsdev[PATH_MAX]; // joystick device file
+
+#define DEFAULT_DEV "/dev/js0"
 
 // this is the speed that the camera will pan when you press the
 // hatswitches in degrees/sec
@@ -327,7 +333,7 @@ keyboard_handler(void* arg)
   if(use_gripper)
     {
       puts("r/v : gripper open/close");
-      puts("t/b : gripper up/down");
+      puts("t/b : lift up/down");
     }
   puts("");
   puts("anything else : stop");
@@ -475,9 +481,14 @@ Client::Client(char* host, int port )
     {
       gp = new GripperProxy(player,0);
       assert(gp);
+      lp = new ActArrayProxy(player,0);
+      assert(lp);
     }
   else
+  {
     gp = NULL;
+    lp = NULL;
+  }
 
   // try a few reads
   for( int i=0; i<4; i++ )
@@ -624,6 +635,16 @@ int main(int argc, char** argv)
       exit(-1);
     }
       }
+    else if( strcmp( argv[i], "-dev" ) == 0 )
+      {
+        if(i++ < argc)
+          strncpy(jsdev,argv[i],PATH_MAX);
+        else
+        {
+          puts(USAGE);
+          exit(-1);
+        }
+      }
 /*    else if( strcmp( argv[i], "-udp" ) == 0 )
       protocol = PLAYER_TRANSPORT_UDP;*/
     else
@@ -646,7 +667,10 @@ int main(int argc, char** argv)
   if(!use_keyboard)
   {
 #if JOYSTICK_SUPPORT
-    jfd = open ("/dev/js0", O_RDONLY);
+    if(!strlen(jsdev))
+      jfd = open (DEFAULT_DEV, O_RDONLY);
+    else
+      jfd = open (jsdev, O_RDONLY);
 
     if(jfd < 1)
     {

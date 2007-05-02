@@ -16,10 +16,10 @@ exampledir = $(prefix)/share/player/examples/plugins/opaquedriver
 example_LTLIBRARIES = libopaquedriver.la
 example_PROGRAMS = opaque_client
 example_DATA = opaquedriver.cc opaque.cfg
-EXTRA_DIST =
+EXTRA_DIST = opaque.cfg
 
-libopaquedriver_la_SOURCES = opaquedriver.cc
+libopaquedriver_la_SOURCES = opaquedriver.cc sharedstruct.h
 
-opaque_client_SOURCES = opaque.c
+opaque_client_SOURCES = opaque.c sharedstruct.h
 opaque_client_LDADD = $(PLAYERC_LIB_DIRS) -lplayerc -lm -lplayerxdr -lplayererror
 opaque_client_DEPENDENCIES = $(PLAYERC_DEPS)

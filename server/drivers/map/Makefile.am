@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@
+AM_CPPFLAGS = -g -Wall -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@
 
 noinst_LTLIBRARIES = 
 if INCLUDE_MAPFILE
@@ -16,5 +16,5 @@ endif
 
 libmapfile_la_SOURCES = mapfile.cc 
 libvmapfile_la_SOURCES = vmapfile.cc 
-libmapcspace_la_SOURCES = mapcspace.cc 
-libmapscale_la_SOURCES = mapscale.cc 
+libmapcspace_la_SOURCES = maptransform.cc mapcspace.cc maptransform.h
+libmapscale_la_SOURCES = maptransform.cc mapscale.cc maptransform.h

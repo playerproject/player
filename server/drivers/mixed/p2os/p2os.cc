@@ -633,7 +633,44 @@ int P2OS::Setup()
     cfsetispeed(&term, bauds[currbaud]);
     cfsetospeed(&term, bauds[currbaud]);
 
+#if defined (__APPLE__)
+               /* CLOCAL:      Local connection (no modem control) */
+               /* CREAD:       Enable the receiver */
+               term.c_cflag |= (CLOCAL | CREAD);
 
+               /* PARENB:      Use NO parity */
+               /* CSTOPB:      Use 1 stop bit */
+               /* CSIZE:       Next two constants: */
+               /* CS8:         Use 8 data bits */
+               term.c_cflag &= ~PARENB;
+               term.c_cflag &= ~CSTOPB;
+               term.c_cflag &= ~CSIZE;
+               term.c_cflag |= CS8;
+
+               /* IGNPAR:      Ignore bytes with parity errors */
+               /* ICRNL:       Map CR to NL (otherwise a CR input on  the other computer will not terminate input) */
+               term.c_iflag |= (IGNPAR | IGNBRK);
+
+               /* No flags at all for output control  */
+               term.c_oflag = 0;
+
+               /* IXON:        Disable software flow control  (incoming) */
+               /* IXOFF:       Disable software flow control  (outgoing) */
+               /* IXANY:       Disable software flow control (any  character can start flow control */
+               term.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+               /* NO FLAGS AT ALL FOR LFLAGS */
+               term.c_lflag = 0;
+
+               /* Clean the modem line and activate new port  settings */
+               tcflush(this->psos_fd, TCIOFLUSH);
+               if (tcsetattr(this->psos_fd, TCSANOW, &term) < 0) {
+                       perror("P2OS::Setup():tcsetattr()");
+                       close(this->psos_fd);
+                       this->psos_fd = -1;
+                       return(1);
+               }
+#else
     if(tcsetattr(this->psos_fd, TCSAFLUSH, &term ) < 0)
     {
       perror("P2OS::Setup():tcsetattr():");
@@ -657,6 +694,7 @@ int P2OS::Setup()
       this->psos_fd = -1;
       return(1);
     }
+#endif
 
     // radio modem initialization code, courtesy of Kim Jinsuck
     //   <jinsuckk@cs.tamu.edu>
@@ -2235,7 +2273,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       return(-1);
     }
     player_bumper_geom_t geom;
-    geom.bumper_def_count = PlayerRobotParams[param_idx].FrontBumpers + PlayerRobotParams[param_idx].RearBumpers;
+    geom.bumper_def_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
     for(unsigned int ii = 0; ii < geom.bumper_def_count; ii++)
     {
       bumper_def_t def = PlayerRobotParams[param_idx].bumper_geom[ii];

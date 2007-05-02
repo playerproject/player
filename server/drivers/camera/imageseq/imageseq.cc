@@ -31,9 +31,6 @@
 /** @defgroup driver_imageseq imageseq
  * @brief Image file sequencer
 
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
 The imageseq driver simulates a camera by reading an image sequence
 from the filesystem.  The filenames for the image sequence must be
 numbered; e.g.: "image_0000.pnm", "image_0001.pnm", "image_0002.pnm",
@@ -98,15 +95,7 @@ driver
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
-#include "player.h"
-#include "error.h"
-#include "device.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "playertime.h"
-
-#include "playerpacket.h"
-
+#include <libplayercore/playercore.h>
 
 
 class ImageSeq : public Driver
@@ -157,7 +146,7 @@ void ImageSeq_Register(DriverTable *table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ImageSeq::ImageSeq(ConfigFile *cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_CAMERA_CODE)
 {
   // Data rate
   this->rate = cf->ReadFloat(section, "rate", 10);
@@ -238,30 +227,75 @@ int ImageSeq::LoadImage(const char *filename)
   IplImage *image;
   
   // Load image; currently forces the image to mono
-  image = cvLoadImage(filename, 0);
+  image = cvLoadImage(filename, -1);
+  if(image == NULL)
+  {
+  		PLAYER_ERROR1("Could not load image file: %s", filename);
+		return -1;
+  }
 
   this->data.width = image->width;
   this->data.height = image->height;
-  this->data.bpp = 8;
-  this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->data.image_size = this->data.width * this->data.height;
   
-  // Check image size
-  if (this->data.image_size > PLAYER_CAMERA_IMAGE_SIZE)
+
+  this->data.image_count = image->imageSize;
+  switch (image->depth)
   {
-    PLAYER_ERROR1("image size is too large [%d]", this->data.image_size);
+	case IPL_DEPTH_8U:
+	case IPL_DEPTH_8S:
+	  if (image->nChannels == 1)
+	  {
+	    this->data.bpp = 8;
+		 this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
+	  }
+	  else if (image->nChannels == 3)
+	  {
+	    this->data.bpp = 24;
+		 this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+	  }
+	break;
+	case IPL_DEPTH_16S:
+	  if (image->nChannels == 1)
+	  {
+	    this->data.bpp = 16;
+		 this->data.format = PLAYER_CAMERA_FORMAT_MONO16;
+	  }
+	break;
+	case IPL_DEPTH_32S:
+	case IPL_DEPTH_32F:
+	case IPL_DEPTH_64F:
+	default:
+	break;
+  }
+  // Check image size
+  if (this->data.image_count > PLAYER_CAMERA_IMAGE_SIZE)
+  {
+    PLAYER_ERROR1("image size is too large [%d]", this->data.image_count);
     return -1;
   }
-
   // Copy the pixels
-  for (i = 0; i < image->height; i++)
-  {
-    src = image->imageData + i * image->widthStep;
-    dst = this->data.image + i * this->data.width;
-    memcpy(dst, src, this->data.width);
+  if (image->nChannels == 1) {
+    for (i = 0; i < image->height; i++)
+    {
+      src = image->imageData + i * image->widthStep;
+      dst = this->data.image + i * image->widthStep;
+      memcpy(dst, src, this->data.width);
+    }
   }
-  
+  else if (image->nChannels == 3)
+  {
+	  for (int i = 0; i < image->height; i++)
+			for (int j = 0; j < image->width; j++)
+			{
+				int index = i*image->widthStep + 3*j;
+				// Convert BGR to RGB
+				this->data.image[index + 0] = image->imageData[index + 2];
+				this->data.image[index + 1] = image->imageData[index + 1];
+				this->data.image[index + 2] = image->imageData[index + 0];
+		   }
+  }
+  cvReleaseImage(&image);
   return 0;
 }
 
@@ -272,16 +306,8 @@ void ImageSeq::WriteData()
 {
   size_t size;
   
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_size;
-
-  this->data.width = htons(this->data.width);
-  this->data.height = htons(this->data.height);
-  this->data.bpp = this->data.bpp;
-  this->data.format = this->data.format;
-  this->data.compression = this->data.compression;
-  this->data.image_size = htonl(this->data.image_size);
-      
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, &this->data, size, NULL);
+  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data, size, NULL);
       
   return;
 }

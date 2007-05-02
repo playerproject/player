@@ -4,9 +4,9 @@
 */
 
 /**
-@mainpage The Player Robot %Device Interface
+@mainpage The Player Robot Device Interface
 
-<p>Copyright Brian Gerkey and contributors 1999-2006, and beyond.
+<p>Copyright Brian Gerkey and contributors 1999-2007, and beyond.
 <p>Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net]
 
 \section Overview
@@ -193,6 +193,6 @@ develop your robot control program if, like most people, you're using the
 @ref util_player (whether with hardware or simulation).
 
 Be sure to also check for 
-<a href="http://playerstage.sourceforge.net/index.php?src=contrib">contributed
+<a href="http://playerstage.sourceforge.net/wiki/PlayerClientLibraries">contributed
 libraries</a>.
 */

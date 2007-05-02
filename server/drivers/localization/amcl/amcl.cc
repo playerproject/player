@@ -126,7 +126,7 @@ The @p amcl driver requires the following interfaces, some of them named:
 - In principle supported, but currently disabled are:
     - @ref interface_fiducial
     - "imu" @ref interface_position2d
-    - @ref interface_sonar 
+    - @ref interface_sonar
     - @ref interface_gps
     - @ref interface_wifi
 
@@ -153,13 +153,13 @@ The @p amcl driver requires the following interfaces, some of them named:
     - Default: 3
     - Control parameter for the particle set size.  See notes below.
   - init_pose (tuple: [length length angle])
-    - Default: [0 0 0] (m m deg)
+    - Default: [0 0 0] (m m rad)
     - Initial pose estimate (mean value) for the robot.
   - init_pose_var (tuple: [length length angle])
-    - Default: [10^3 10^3 10^2] (m m deg)
+    - Default: [1 1 2pi] (m m rad)
     - Uncertainty in the initial pose estimate.
   - update_thresh (tuple: [length angle])
-    - Default: [0.2 30] (m deg)
+    - Default: [0.2 pi/6] (m rad)
     - Minimum change required in action sensor to force update in
       particle filter.
   - odom_drift[0-2] (float tuples)
@@ -167,7 +167,7 @@ The @p amcl driver requires the following interfaces, some of them named:
       - odom_drift[0] [0.2 0.0 0.0]
       - odom_drift[1] [0.0 0.2 0.0]
       - odom_drift[2] [0.2 0.0 0.2]
-    - Set the 3 rows of the covariance matrix used for odometric drift.  
+    - Set the 3 rows of the covariance matrix used for odometric drift.
 - Laser settings:
   - laser_pose (length tuple)
     - Default: [0 0 0]
@@ -241,7 +241,7 @@ range finder:
 driver
 (
   name "p2os_position"
-  provides ["odometry::position:0"]
+  provides ["odometry:::position2d:0"]
   port "/dev/ttyS0"
 )
 driver
@@ -261,73 +261,11 @@ driver
 (
   name "amcl"
   provides ["localize:0"]
-  requires ["odometry::position:0" "laser:0" "laser::map:0"]
+  requires ["odometry:::position2d:0" "laser:0" "laser:::map:0"]
 )
 @endverbatim
 Naturally, the @p port, @p filename and @p resolution values should be
 changed to match your particular configuration.
-
-
-@par Example: Using the amcl driver with Stage 1.3.x
-
-The @p amcl driver is not supported natively in Stage 1.3.x.  Users must
-therefore employ a second Player server configured to use the @ref
-driver_passthrough driver.  The basic procedure is as follows.
-- Start Stage with a world file something like this:
-@verbatim
-...
-bitmap (file "cave.pnm" resolution 0.03)
-position (port 6665 laser ())
-...
-@endverbatim
-Stage will create one robot (position device) with a laser, and create
-a Player server on port 6665.
-- Start another Player server using the command
-@verbatim
-player -p 7000 amcl.cfg
-@endverbatim
-where the configuration file @p amcl.cfg looks like this:
-@verbatim
-driver
-(
-  name "passthrough"
-  provides ["position:0"]
-  remote_host "localhost"
-  remote_port 6665
-  remote_index 0
-  access "a"
-)
-driver
-(
-  name "passthrough"
-  provides ["laser:0"]
-  remote_host "localhost"
-  remote_port 6665
-  remote_index 0
-  access "r"
-)
-driver
-(
-  name "mapfile"
-  provides ["map:0"]
-  filename "cave.pnm"
-  resolution 0.03
-  negate 1
-)
-driver
-(
-  name "amcl"
-  provides ["localize:0"]
-  requires ["odometry::position:0" "laser:0" "laser::map:0"]
-)
-@endverbatim
-The second Player server will listen on port 7000; clients connecting
-to this server will see a robot with @ref interface_position2d,
-@ref interface_laser and @ref interface_localize devices.
-The map file @p cave.pnm can be the same file used by Stage to create the
-world bitmap (note the @p negate option to the @ref driver_mapfile
-driver, which inverts the colors in the image; this is necessary because
-Stage interprets black pixels as free and white pixels as obstacles).
 
 @author Andrew Howard
 
@@ -436,7 +374,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
     this->action_sensor = this->sensor_count;
     if (cf->ReadInt(section, "odom_init", 1))
       this->init_sensor = this->sensor_count;
-    sensor = new AMCLOdom(odom_addr);
+    sensor = new AMCLOdom(*this,odom_addr);
     sensor->is_action = 1;
     this->sensors[this->sensor_count++] = sensor;
   }
@@ -445,7 +383,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   if(cf->ReadDeviceAddr(&laser_addr, section, "requires",
                         PLAYER_LASER_CODE, -1, NULL) == 0)
   {
-    sensor = new AMCLLaser(laser_addr);
+    sensor = new AMCLLaser(*this,laser_addr);
     sensor->is_action = 0;
     this->sensors[this->sensor_count++] = sensor;
   }
@@ -510,9 +448,9 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
   this->pf_init_pose_mean.v[2] = cf->ReadTupleAngle(section, "init_pose", 2, 0);
 
   // Initial pose covariance
-  u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 1e3);
-  u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 1e3);
-  u[2] = cf->ReadTupleAngle(section, "init_pose_var", 2, 1e2);
+  u[0] = cf->ReadTupleLength(section, "init_pose_var", 0, 1);
+  u[1] = cf->ReadTupleLength(section, "init_pose_var", 1, 1);
+  u[2] = cf->ReadTupleAngle(section, "init_pose_var", 2, 2*M_PI);
   this->pf_init_pose_cov = pf_matrix_zero();
   this->pf_init_pose_cov.m[0][0] = u[0] * u[0];
   this->pf_init_pose_cov.m[1][1] = u[1] * u[1];
@@ -520,7 +458,7 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   // Update distances
   this->min_dr = cf->ReadTupleLength(section, "update_thresh", 0, 0.20);
-  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 1, 30 * M_PI / 180);
+  this->min_da = cf->ReadTupleAngle(section, "update_thresh", 1, M_PI/6);
 
   // Initial hypothesis list
   this->hyp_count = 0;
@@ -562,8 +500,6 @@ AdaptiveMCL::~AdaptiveMCL(void)
 // Set up the device (called by server thread).
 int AdaptiveMCL::Setup(void)
 {
-  int i;
-
   PLAYER_MSG0(2, "setup");
 
   // Create the particle filter
@@ -572,26 +508,14 @@ int AdaptiveMCL::Setup(void)
   this->pf->pop_err = this->pf_err;
   this->pf->pop_z = this->pf_z;
 
-  // UGLY HACK: Setting this->driverthread to a non-zero value, so that
-  // this device won't get Update()d during any of the Request()s that may
-  // occur during the sensor Setup()s below.  The problem arises because
-  // each sensor within amcl has its own queue; the condition that
-  // prevents the caller from being updated then doesn't work.
-  this->driverthread = (pthread_t)1;
-
   // Start sensors
-  for (i = 0; i < this->sensor_count; i++)
+  for (int i = 0; i < this->sensor_count; i++)
     if (this->sensors[i]->Setup() < 0)
+    {
+      PLAYER_ERROR1 ("failed to setup sensor %d", i);
       return -1;
+    }
 
-  this->q_len = 0;
-
-  // No data has yet been pushed, and the
-  // filter has not yet been initialized
-  this->pf_init = false;
-
-  // Initial hypothesis list
-  this->hyp_count = 0;
 
   // Start the driver thread.
   PLAYER_MSG0(2, "running");
@@ -627,8 +551,9 @@ int AdaptiveMCL::Shutdown(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Check for updated sensor data
-void AdaptiveMCL::Update(void)
+void AdaptiveMCL::UpdateSensorData(void)
 {
+/*
   int i;
   AMCLSensorData *data;
   pf_vector_t pose, delta;
@@ -658,8 +583,7 @@ void AdaptiveMCL::Update(void)
       }
     }
   }
-
-  return;
+  return;*/
 }
 
 
@@ -731,7 +655,14 @@ AMCLSensorData *AdaptiveMCL::Pop(void)
 // Main function for device thread
 void AdaptiveMCL::Main(void)
 {
-  struct timespec sleeptime;
+  this->q_len = 0;
+
+  // No data has yet been pushed, and the
+  // filter has not yet been initialized
+  this->pf_init = false;
+
+  // Initial hypothesis list
+  this->hyp_count = 0;
 
   // WARNING: this only works for Linux
   // Run at a lower priority
@@ -762,23 +693,19 @@ void AdaptiveMCL::Main(void)
 #endif
 
     // Sleep for 1ms (will actually take longer than this).
-    sleeptime.tv_sec = 0;
-    sleeptime.tv_nsec = 1000000L;
+    const struct timespec sleeptime = {0, 1000000L};
     nanosleep(&sleeptime, NULL);
 
     // Test if we are supposed to cancel this thread.  This is the
     // only place we can cancel from if we are running the GUI.
     pthread_testcancel();
 
+    // Process any pending messages
     this->ProcessMessages();
+    //UpdateSensorData();
 
 #ifdef INCLUDE_RTKGUI
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-#endif
-
-    // Process any pending requests.
-#if 0
-    this->HandleRequests();
 #endif
 
     // Initialize the filter if we havent already done so
@@ -952,7 +879,10 @@ bool AdaptiveMCL::UpdateFilter(void)
           }
           // avoid a busy loop while waiting for a sensor reading to
           // process
-          usleep(10000);
+          //return false;
+          usleep(1000);
+          ProcessMessages();
+          //UpdateSensorData();
           continue;
         }
         else
@@ -1021,7 +951,8 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // Encode data to send to server
     this->PutDataLocalize(ts);
-    //this->PutDataPosition(ts, delta);
+    delta = pf_vector_zero();
+    this->PutDataPosition(delta,ts);
 
     return true;
   }
@@ -1040,11 +971,9 @@ bool AdaptiveMCL::UpdateFilter(void)
       delete data; data = NULL;
     }
 
-#if 0
     // Encode data to send to server; only the position interface
-    // gets updates every cycle
-    this->PutDataPosition(ts, delta);
-#endif
+    // gets updated every cycle
+    this->PutDataPosition(delta,ts);
 
     return false;
   }
@@ -1127,13 +1056,13 @@ void AdaptiveMCL::PutDataLocalize(double time)
   this->Publish(this->localize_addr, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LOCALIZE_DATA_HYPOTHS,
-                (void*)&data,datalen,NULL);
+                (void*)&data,datalen,&time);
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Output data on the position interface
-void AdaptiveMCL::PutDataPosition(pf_vector_t delta)
+void AdaptiveMCL::PutDataPosition(pf_vector_t delta, double time)
 {
   pf_vector_t pose;
   player_position2d_data_t data;
@@ -1156,7 +1085,7 @@ void AdaptiveMCL::PutDataPosition(pf_vector_t delta)
   this->Publish(this->position_addr, NULL,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
-                (void*)&data,sizeof(data),NULL);
+                (void*)&data,sizeof(data),&time);
 }
 
 // MessageHandler
@@ -1250,9 +1179,40 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                   (void*)&resp, sizeof(resp), NULL);
     return(0);
+  } else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                  PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))
+  {
+    assert(hdr->size == 0);
+    ProcessGeom(resp_queue, hdr);
+    return(0);
+  }
+
+  // pass on the rest of the messages to the sensors
+  for (int i = 0; i < this->sensor_count; i++)
+  {
+    int ret = this->sensors[i]->ProcessMessage(resp_queue, hdr, data);
+    if (ret >= 0)
+    	return ret;
   }
 
   return(-1);
+}
+
+void
+AdaptiveMCL::ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr)
+{
+  player_position2d_geom_t geom;
+  // just return a point so we don't get errors from playerv
+  geom.pose.px = 0;
+  geom.pose.py = 0;
+  geom.pose.pa = 0;
+  geom.size.sl = 0.01;
+  geom.size.sw = 0.01;
+
+  Publish(this->position_addr, resp_queue,
+          PLAYER_MSGTYPE_RESP_ACK,
+          PLAYER_POSITION2D_REQ_GET_GEOM,
+          &geom, sizeof(geom), NULL);
 }
 
 #ifdef INCLUDE_RTKGUI

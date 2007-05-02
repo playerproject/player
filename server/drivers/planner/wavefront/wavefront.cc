@@ -156,7 +156,7 @@ on a laser-equipped Pioneer.
 driver
 (
   name "p2os"
-  provides ["odometry::position:1"]
+  provides ["odometry:::position2d:0"]
   port "/dev/ttyS0"
 )
 driver
@@ -175,14 +175,14 @@ driver
 driver
 (
   name "amcl"
-  provides ["localize:0"]
-  requires ["odometry::position:1" "laser:0" "laser::map:0"]
+  provides ["position2d:2"]
+  requires ["odometry:::position2d:1" "laser:0" "laser:::map:0"]
 )
 driver
 (
   name "vfh"
-  provides ["position:0"]
-  requires ["position:1" "laser:0"]
+  provides ["position2d:1"]
+  requires ["position2d:0" "laser:0"]
   safety_dist 0.1
   distance_epsilon 0.3
   angle_epsilon 5
@@ -191,7 +191,7 @@ driver
 (
   name "wavefront"
   provides ["planner:0"]
-  requires ["position:0" "localize:0" "map:0"]
+  requires ["output:::position2d:1" "input:::position2d:2" "map:0"]
   safety_dist 0.15
   distance_epsilon 0.5
   angle_epsilon 10
@@ -377,7 +377,7 @@ Wavefront::Wavefront( ConfigFile* cf, int section)
   this->replan_min_time = cf->ReadFloat(section,"replan_min_time",2.0);
   this->request_map = cf->ReadInt(section,"request_map",1);
   this->cspace_fname = cf->ReadFilename(section,"cspace_file","player.cspace");
-  this->always_insert_rotational_waypoints = 
+  this->always_insert_rotational_waypoints =
           cf->ReadInt(section, "add_rotational_waypoints", 1);
 }
 
@@ -909,7 +909,7 @@ void Wavefront::Main()
         this->curr_waypoint++;
 
         this->waypoint_a = this->target_a;
-        if(this->always_insert_rotational_waypoints || 
+        if(this->always_insert_rotational_waypoints ||
            (this->curr_waypoint == 2))
         {
           dist = sqrt((this->waypoint_x - this->localize_x) *

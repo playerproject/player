@@ -30,8 +30,16 @@
 #include <libplayercore/playercore.h>
 
 /* prototype driver-specific init funcs */
+#ifdef INCLUDE_ARTOOLKITPLUS
+void ARToolkitPlusDriver_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_BUMPERSAFE
 void BumperSafe_Register(DriverTable *table);
+#endif
+
+#ifdef INCLUDE_ND
+void ND_Register(DriverTable *table);
 #endif
 
 #ifdef INCLUDE_GARMINNMEA
@@ -40,6 +48,10 @@ void GarminNMEA_Register(DriverTable* table);
 
 #ifdef INCLUDE_MAPFILE
 void MapFile_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_RELAY
+void Relay_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_VMAPFILE
@@ -86,8 +98,16 @@ void LaserPoseInterp_Register(DriverTable* table);
 void SickLMS200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_WBR914
+void wbr914_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_ROOMBA
 void Roomba_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_GARCIA
+void GarciaDriver_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SICKPLS
@@ -153,6 +173,10 @@ void LaserCSpace_Register(DriverTable* table);
 void LaserRescan_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_LASERSAFE
+void LaserSafe_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_SONYEVID30
 void SonyEVID30_Register(DriverTable* table);
 #endif
@@ -182,8 +206,16 @@ void WriteLog_Register(DriverTable* table);
 void ReadLog_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_KARTOWRITER
+void KartoLogger_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_P2OS
 void P2OS_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_ERRATIC
+void Erratic_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_RFLEX
@@ -214,10 +246,6 @@ void REB_Register(DriverTable *table);
 void Khepera_Register(DriverTable *table);
 #endif
 
-#ifdef INCLUDE_FIXEDTONES
-void FixedTones_Register(DriverTable* table);
-#endif
-
 #ifdef INCLUDE_ACOUSTICS
 void Acoustics_Register(DriverTable* table);
 #endif
@@ -242,8 +270,12 @@ void InertiaCube2_Register(DriverTable* table);
 void MicroStrain3DMG_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_MICA2 
+#ifdef INCLUDE_MICA2
 void Mica2_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_RCORE_XBRIDGE
+void RCore_XBridge_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_INAV
@@ -274,6 +306,10 @@ void LifoMCom_Register(DriverTable* table);
 void CameraV4L_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_CAMERAUVC
+void CameraUVC_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_SPHERE
 void SphereDriver_Register(DriverTable *table);
 #endif
@@ -288,6 +324,7 @@ void ImageSeq_Register(DriverTable* table);
 
 #ifdef INCLUDE_CAMERACOMPRESS
 void CameraCompress_Register(DriverTable* table);
+void CameraUncompress_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_MDNS
@@ -333,8 +370,16 @@ void SkyetekM1_Register(DriverTable *driverTable);
 void
 player_register_drivers()
 {
+#ifdef INCLUDE_ARTOOLKITPLUS
+  ARToolkitPlusDriver_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_BUMPERSAFE
   BumperSafe_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_ND
+  ND_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GARMINNMEA
@@ -343,6 +388,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_MAPFILE
   MapFile_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_RELAY
+  Relay_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_VMAPFILE
@@ -385,8 +434,16 @@ player_register_drivers()
   LaserPoseInterp_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_GARCIA
+  GarciaDriver_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_SICKLMS200
   SickLMS200_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_WBR914
+  wbr914_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ROOMBA
@@ -455,6 +512,10 @@ player_register_drivers()
   LaserRescan_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_LASERSAFE
+  LaserSafe_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_RFLEX
   RFLEX_Register(driverTable);
 #endif
@@ -488,12 +549,16 @@ player_register_drivers()
   ReadLog_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_KARTOWRITER
+  KartoLogger_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_P2OS
   P2OS_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_FIXEDTONES
-  FixedTones_Register(driverTable);
+#ifdef INCLUDE_ERRATIC
+  Erratic_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_ACOUSTICS
@@ -544,8 +609,12 @@ player_register_drivers()
   MicroStrain3DMG_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_MICA2 
+#ifdef INCLUDE_MICA2
   Mica2_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_RCORE_XBRIDGE
+  RCore_XBridge_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_INAV
@@ -576,6 +645,10 @@ player_register_drivers()
   CameraV4L_Register(driverTable);
 #endif
 
+#ifdef INCLUDE_CAMERAUVC
+  CameraUVC_Register(driverTable);
+#endif
+
 #ifdef INCLUDE_SPHERE
   SphereDriver_Register(driverTable);
 #endif
@@ -590,6 +663,7 @@ player_register_drivers()
 
 #ifdef INCLUDE_CAMERACOMPRESS
   CameraCompress_Register(driverTable);
+  CameraUncompress_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SERVICE_ADV_MDNS

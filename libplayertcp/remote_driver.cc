@@ -58,7 +58,7 @@ TCPRemoteDriver::Setup()
                          this->device_addr.host);
 
   // We can't talk to ourselves
-  if(this->ptcp->Listening(this->device_addr.robot))
+  if(this->ptcp->GetHost() == this->device_addr.host && this->ptcp->Listening(this->device_addr.robot))
   {
     PLAYER_ERROR4("tried to connect to self (%s:%d:%d:%d)\n",
                   this->ipaddr,
@@ -131,6 +131,8 @@ TCPRemoteDriver::Setup()
     return(-1);
   }
 
+  PLAYER_MSG0(5,"Adding new TCPRemoteDriver to the PlayerTCP Client List");
+
   // Add this socket for monitoring
   this->kill_flag = 0;
   this->queue = this->ptcp->AddClient(NULL, 
@@ -139,6 +141,7 @@ TCPRemoteDriver::Setup()
                                       this->sock, 
                                       false,
                                       &this->kill_flag);
+  PLAYER_MSG0(5,"Adding new TCPRemoteDriver to the PlayerTCP Client List...Success");
 
   return(0);
 }

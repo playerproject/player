@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir) -I../v4l
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -I$(srcdir)/../v4l
 
 noinst_LTLIBRARIES =
 if INCLUDE_SPHERE

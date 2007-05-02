@@ -72,6 +72,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_laser
 - @ref interface_sonar
 - @ref interface_position2d
+- @ref interface_ptz
 - @ref interface_wifi
 - @ref interface_wsn
 
@@ -196,6 +197,9 @@ class WriteLog: public Driver
   // Write position data to file
   private: int WritePosition(player_msghdr_t* hdr, void *data);
 
+  // Write PTZ data to file
+  private: int WritePTZ(player_msghdr_t* hdr, void *data);
+
   // Write sonar data to file
   private: int WriteSonar(player_msghdr_t* hdr, void *data);
 
@@ -204,6 +208,16 @@ class WriteLog: public Driver
 
   // Write WSN data to file
   private: int WriteWSN(player_msghdr_t* hdr, void *data);
+
+  /* HHAA 15-02-2007 */
+  // Write bumper data to file
+  private: int WriteBumper(player_msghdr_t* hdr, void *data);
+
+  /* HHAA 15-02-2007 */
+  // Write fixed range IRs data to file
+  private: int WriteIR(player_msghdr_t* hdr, void *data);
+
+
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -497,6 +511,47 @@ void WriteLog::WriteGeometries()
         delete msg;
       }
     }
+    /* HHAA 15-02-2007 */
+    else if (device->addr.interf == PLAYER_BUMPER_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_BUMPER_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get bumper geometry");
+      }      
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+    /* HHAA 15-02-2007 */
+    else if (device->addr.interf == PLAYER_IR_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_IR_POSE,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get ir geometry");
+      }      
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+
   }
 }
 
@@ -691,6 +746,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_POSITION2D_CODE:
       retval = this->WritePosition(hdr, data);
       break;
+    case PLAYER_PTZ_CODE:
+      retval = this->WritePTZ(hdr, data);
+      break;
     case PLAYER_SONAR_CODE:
       retval = this->WriteSonar(hdr, data);
       break;
@@ -699,6 +757,13 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_WSN_CODE:
       retval = this->WriteWSN(hdr, data);
+      break;
+    /* HHAA 15-02-2007 */
+    case PLAYER_BUMPER_CODE:
+      retval = this->WriteBumper(hdr, data);
+      break;
+    case PLAYER_IR_CODE:
+      retval = this->WriteIR(hdr, data);
       break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
@@ -933,6 +998,48 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
+ @defgroup player_driver_writelog_ptz ptz format
+ 
+@brief PTZ log format
+The format for each @ref interface_wsn message is:
+  - pan       (float): The pan angle/value
+  - tilt      (float): The tilt angle/value
+  - zoom      (float): The zoom factor
+  - panspeed  (float): The current panning speed
+  - tiltspeed (float): The current tilting speed
+ */
+int
+WriteLog::WritePTZ (player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_PTZ_DATA_STATE:
+          {
+            player_ptz_data_t* pdata =
+                    (player_ptz_data_t*)data;
+            fprintf(this->file,
+                    "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f",
+                    pdata->pan,
+                    pdata->tilt,
+                    pdata->zoom,
+                    pdata->panspeed,
+                    pdata->tiltspeed);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+/** @ingroup tutorial_datalog
  @defgroup player_driver_writelog_sonar sonar format
 
 @brief sonar log format
@@ -1114,7 +1221,7 @@ The format for each @ref interface_wsn message is:
 int
 WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
 {
-    unsigned int i;
+    //unsigned int i;
     player_wsn_data_t* wdata;
 
   // Check the type
@@ -1150,6 +1257,139 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
             return(-1);
     }
 }
+
+int
+WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  player_ir_pose_t* geom;
+  player_ir_data_t* ir_data;
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+/*        case PLAYER_IR_DATA_GEOM:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_ir_pose_t*)data;
+          fprintf(this->file, "%u ", geom->poses_count);
+          for(i=0;i<geom->poses_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
+                    geom->poses[i].px,
+                    geom->poses[i].py,
+                    geom->poses[i].pa);
+          return(0);
+*/
+        case PLAYER_IR_DATA_RANGES:
+          // Format:
+          //   bumpers_count bumper0 bumper1 ...
+          ir_data = ( player_ir_data_t*)data;            
+          fprintf(this->file, "%u ", ir_data->ranges_count);
+          for(i=0;i<ir_data->ranges_count;i++)
+            // P2OS infrared lights are binary but I will use the %3.3f format 
+            fprintf(this->file, "%3.3f ", ir_data->ranges[i]);
+
+          return(0);
+        default:
+          return(-1);
+      }
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_IR_POSE:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_ir_pose_t*)data;
+          fprintf(this->file, "%u ", geom->poses_count);
+          for(i=0;i<geom->poses_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
+                    geom->poses[i].px,
+                    geom->poses[i].py,
+                    geom->poses[i].pa);
+          return(0);
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+
+
+int
+WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  player_bumper_geom_t* geom;
+  player_bumper_data_t* bumper_data;
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_BUMPER_DATA_GEOM:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_bumper_geom_t*)data;
+          fprintf(this->file, "%u ", geom->bumper_def_count);
+          for(i=0;i<geom->bumper_def_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f %+07.4f %+07.4f ",
+                    geom->bumper_def[i].pose.px,
+                    geom->bumper_def[i].pose.py,
+                    geom->bumper_def[i].pose.pa,
+		    geom->bumper_def[i].length,
+		    geom->bumper_def[i].radius);
+          return(0);
+
+        case PLAYER_BUMPER_DATA_STATE:
+          // Format:
+          //   bumpers_count bumper0 bumper1 ...
+          bumper_data = ( player_bumper_data_t*)data;
+          fprintf(this->file, "%u ", bumper_data->bumpers_count);
+          for(i=0;i<bumper_data->bumpers_count;i++)
+            fprintf(this->file, "%u ", bumper_data->bumpers[i]);
+
+          return(0);
+        default:
+          return(-1);
+      }
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_BUMPER_GET_GEOM:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_bumper_geom_t*)data;
+          fprintf(this->file, "%u ", geom->bumper_def_count);
+          for(i=0;i<geom->bumper_def_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f %+07.4f %+07.4f ",
+                    geom->bumper_def[i].pose.px,
+                    geom->bumper_def[i].pose.py,
+                    geom->bumper_def[i].pose.pa,
+		    geom->bumper_def[i].length,
+		    geom->bumper_def[i].radius);
+
+          return(0);
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
 
 #if 0
 /** @ingroup tutorial_datalog
