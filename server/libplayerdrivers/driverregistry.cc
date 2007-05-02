@@ -242,6 +242,10 @@ void WriteLog_Register(DriverTable* table);
 void ReadLog_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_KARTOWRITER
+void KartoLogger_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_P2OS
 void P2OS_Register(DriverTable* table);
 #endif
@@ -639,6 +643,10 @@ player_register_drivers()
 #ifdef INCLUDE_LOGFILE
   WriteLog_Register(driverTable);
   ReadLog_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_KARTOWRITER
+  KartoLogger_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_P2OS
