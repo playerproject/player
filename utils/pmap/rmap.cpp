@@ -33,12 +33,8 @@
 
 #include <config.h>
 
-#ifdef HAVE_LIBGL
-#ifdef HAVE_LIBGLU
 #ifdef HAVE_LIBGLUT
 #include <GL/glut.h>
-#endif
-#endif
 #endif
 
 #include "rmap.h"
@@ -576,6 +572,7 @@ void rmap_interpolate(rmap_t *self)
 // Draw the current map
 void rmap_draw_map(rmap_t *self)
 {
+#ifdef HAVE_LIBGLUT
   int i, j;
   rmap_scan_t *scan;
   vector2_t p;
@@ -604,7 +601,7 @@ void rmap_draw_map(rmap_t *self)
 
     glPopMatrix();
   }
-
+#endif
   return;
 }
 
@@ -612,6 +609,7 @@ void rmap_draw_map(rmap_t *self)
 // Draw constraints
 void rmap_draw_cons(rmap_t *self)
 {
+#ifdef HAVE_LIBGLUT
   int i;
   rmap_constraint_t *con;
   vector2_t pa, pb;
@@ -643,7 +641,7 @@ void rmap_draw_cons(rmap_t *self)
   }
   glEnd();
   */
-
+#endif
   return;
 }
 

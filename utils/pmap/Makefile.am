@@ -1,14 +1,14 @@
 AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs -I$(top_srcdir)
 
 if WITH_GSL
-if INCLUDE_GL
-if INCLUDE_GLU
-if INCLUDE_GLUT
+#if INCLUDE_GL
+#if INCLUDE_GLU
+#if INCLUDE_GLUT
 bin_PROGRAMS = pmaptest
 lib_LTLIBRARIES = libpmap.la liblodo.la
-endif
-endif
-endif
+#endif
+#endif
+#endif
 endif
 
 #EXTRA_DIST = pmap.dox

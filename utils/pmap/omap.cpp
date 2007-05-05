@@ -23,6 +23,11 @@
   CVS: $Id$
  */
 
+
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <math.h>
@@ -30,7 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef ENABLE_GL
+#ifdef HAVE_LIBGLUT
 #include <GL/glut.h>
 #endif
 
@@ -202,7 +207,8 @@ int omap_save_pgm(omap_t *self, const char *filename)
 // Draw the current map
 void omap_draw_map(omap_t *self, double scale)
 {
-#ifdef ENABLE_GL
+#ifdef HAVE_LIBGLUT
+#error LIBGLUT defined
   int i, j;
 
   // Set pixel zoom factor so DrawPixel ops align

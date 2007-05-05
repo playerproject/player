@@ -24,6 +24,10 @@
   CVS: $Id$
 */
 
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
+
 #include <assert.h>
 #include <math.h>
 #include <float.h>
@@ -33,11 +37,11 @@
 
 #include <gsl/gsl_errno.h>
 
-#ifdef ENABLE_GL
+#include "lodo.h"
+
+#ifdef HAVE_LIBGLUT
 #include <GL/glut.h>
 #endif
-
-#include "lodo.h"
 
 
 // GSL-styled callback function for minimization
@@ -672,7 +676,7 @@ void lodo_print_err(lodo_t *self)
 // Draw a scan
 void lodo_draw_scan(lodo_t *self, lodo_scan_t *scan)
 {
-#ifdef ENABLE_GL
+#ifdef HAVE_LIBGLUT
   int i;
   vector2_t p;
 
@@ -709,7 +713,7 @@ void lodo_draw_scan(lodo_t *self, lodo_scan_t *scan)
 // Draw current map (hits)
 void lodo_draw_map(lodo_t *self)
 {
-#ifdef ENABLE_GL
+#ifdef HAVE_LIBGLUT
   int i;
   vector3_t p;
 

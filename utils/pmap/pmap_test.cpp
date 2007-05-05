@@ -144,6 +144,9 @@ $ pmap_test -g --num_samples 500 --grid_width 50 --grid_height 25 <logfile>
 @endverbatim
 
 */
+#if HAVE_CONFIG_H
+  #include "config.h"
+#endif
 
 #include <assert.h>
 #include <math.h>
@@ -155,7 +158,9 @@ $ pmap_test -g --num_samples 500 --grid_width 50 --grid_height 25 <logfile>
 #include <unistd.h>
 #include <sys/time.h>
 
+#ifdef HAVE_LIBGLUT
 #include <GL/glut.h>
+#endif
 
 #include "logfile.h"
 #include "lodo.h"
@@ -222,6 +227,7 @@ static void save_fine();
 // Key callback
 void win_key(unsigned char key, int x, int y)
 {
+#ifdef HAVE_LIBGLUT
   // Show the samples
   if (key == 'T' || key == 't')
   {
@@ -274,7 +280,7 @@ void win_key(unsigned char key, int x, int y)
   {
     save();
   }
-  
+#endif  
   return;
 }
 
@@ -283,6 +289,8 @@ void win_key(unsigned char key, int x, int y)
 // Mouse callback
 void win_mouse(int button, int state, int x, int y)
 {
+#ifdef HAVE_LIBGLUT
+
   if (state == GLUT_DOWN)
   {
     mouse_offset.x = 2 * x * opt_scale;
@@ -294,7 +302,7 @@ void win_mouse(int button, int state, int x, int y)
     viewport_offset.y -= 2 * y * opt_scale - mouse_offset.y;
     glutPostRedisplay();
   }
-
+#endif
   return;
 }
 
@@ -302,10 +310,12 @@ void win_mouse(int button, int state, int x, int y)
 // Handle window reshape events
 void win_reshape(int width, int height)
 {
+#ifdef HAVE_LIBGLUT
+
   glViewport(0, 0, width, height);
   viewport_width = width;
   viewport_height = height;
-
+#endif
   return;
 }
 
@@ -313,6 +323,8 @@ void win_reshape(int width, int height)
 // Redraw the window
 void win_redraw()
 {
+#ifdef HAVE_LIBGLUT
+
   double left, right, top, bot;
 
   glClearColor(0.7, 0.7, 0.7, 1);
@@ -367,7 +379,7 @@ void win_redraw()
   }
 
   glutSwapBuffers();
-    
+#endif    
   return;
 }
 
@@ -378,7 +390,9 @@ void win_idle()
   if (!gui_pause)
   {
     process();
+	#ifdef HAVE_LIBGLUT
     glutPostRedisplay();      
+	#endif
   }
   else
     usleep(100000);
@@ -390,6 +404,8 @@ void win_idle()
 // Run the GUI
 int win_run(int *argc, char **argv)
 {
+#ifdef HAVE_LIBGLUT
+
   glutInit(argc, argv);
     
   // Create a window
@@ -408,6 +424,7 @@ int win_run(int *argc, char **argv)
   glutIdleFunc(win_idle);
 
   glutMainLoop();
+#endif
   return 0;
 }
 
