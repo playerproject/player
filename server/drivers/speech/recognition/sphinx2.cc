@@ -111,7 +111,7 @@ driver
 #include <pthread.h>  /* for pthread stuff */
 #include <libplayertcp/socket_util.h>
 
-#include <libplayercore/player.h>
+#include <libplayercore/playercore.h>
 
 #ifdef __cplusplus
 extern "C" {
