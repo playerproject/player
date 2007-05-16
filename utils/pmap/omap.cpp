@@ -208,7 +208,6 @@ int omap_save_pgm(omap_t *self, const char *filename)
 void omap_draw_map(omap_t *self, double scale)
 {
 #ifdef HAVE_LIBGLUT
-#error LIBGLUT defined
   int i, j;
 
   // Set pixel zoom factor so DrawPixel ops align
