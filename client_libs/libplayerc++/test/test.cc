@@ -68,6 +68,7 @@ int main(int argc, const char *argv[])
         "  actarray\n"\
         "  aio\n"\
         "  speech\n"\
+        "  ranger\n"\
         "  position2d-subscribe  (subscribe to position2d indefinitely)\n"\
         "  gripper-subscribe     (subscribe to gripper indefinitely)\n"\
         "");
@@ -234,6 +235,9 @@ int main(int argc, const char *argv[])
 
       if(strcmp(device, "aio") == 0 || strcmp(device, "all") == 0) 
         test_aio(&client, index);
+
+      if(strcmp(device, "ranger") == 0 || strcmp(device, "all") == 0)
+        test_ranger(&client, index);
 
 
     } catch(std::exception& e) {

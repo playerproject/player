@@ -56,6 +56,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               position3dproxy.cc \
                               powerproxy.cc \
                               ptzproxy.cc \
+                              rangerproxy.cc \
                               rfidproxy.cc \
                               simulationproxy.cc \
                               sonarproxy.cc \

@@ -339,13 +339,14 @@ void Driver::ProcessMessages(int maxmsgs)
                    msg->GetPayloadSize(), hdr->size);
     }
 
-    // First check if it's an internal message
-    if (ProcessInternalMessages(msg->Queue, hdr, data) == 0)
-      continue;
-
+    // Try the driver's process function first
+    // Drivers can override internal message handlers this way
     int ret = this->ProcessMessage(msg->Queue, hdr, data);
     if(ret < 0)
     {
+      // Check if it's an internal message, if that doesn't handle it, give a warning
+      if (ProcessInternalMessages(msg->Queue, hdr, data) != 0)
+      {
       PLAYER_WARN7("Unhandled message for driver "
                    "device=%d:%d:%s:%d type=%s subtype=%d len=%d\n",
                    hdr->addr.host, hdr->addr.robot,
@@ -356,6 +357,7 @@ void Driver::ProcessMessages(int maxmsgs)
       if(hdr->type == PLAYER_MSGTYPE_REQ)
         this->Publish(hdr->addr, msg->Queue, PLAYER_MSGTYPE_RESP_NACK,
                       hdr->subtype, NULL, 0, NULL);
+    }
     }
     delete msg;
     pthread_testcancel();

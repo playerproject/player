@@ -63,6 +63,7 @@ int test_position2d_holdsubscribe(PlayerClient* client, int index);
 int test_gripper_holdsubscribe(PlayerClient* client, int index);
 int test_actarray(PlayerClient* client, int index);
 int test_aio(PlayerClient* client, int index);
+int test_ranger(PlayerClient* client, int index);
 
 //int test_bps(PlayerClient* client, int index);
 

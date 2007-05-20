@@ -87,6 +87,7 @@ playerv can visualize data from the following kinds of devices:
 - @ref interface_position2d
 - @ref interface_power
 - @ref interface_ptz
+- @ref interface_ranger
 - @ref interface_sonar
 - @ref interface_wifi
 

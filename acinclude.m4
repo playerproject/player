@@ -403,6 +403,10 @@ dnl POINTCLOUD3D support
 PLAYER_ADD_DRIVER([laserptzcloud],[yes],[],[],[])
 PLAYER_ADD_DRIVER([sr3000],[yes],[libusbSR.h],[],["-lusbSR"])
 
+dnl Ranger support
+PLAYER_ADD_DRIVER([lasertoranger],[no],[],[],[])
+PLAYER_ADD_DRIVER([sonartoranger],[no],[],[],[])
+
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_ARG_ENABLE(md5, [  --disable-md5      Don't use MD5 hashing functions],,
 enable_md5=yes)

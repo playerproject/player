@@ -2703,6 +2703,80 @@ int playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode);
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_ranger ranger
+
+The ranger proxy provides an interface to ranger sensor devices.
+
+@{
+*/
+
+/** @brief Ranger proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** Number of individual range sensors in the device. */
+  uint32_t sensor_count;
+
+  /** Device geometry in the robot CS: pose gives the position and orientation,
+      size gives the extent. These values are filled in by calling
+      playerc_ranger_get_geom(), or from pose-stamped data. */
+  player_pose3d_t device_pose;
+  player_bbox3d_t device_size;
+  /** Geometry of each individual range sensor in the device (e.g. a single
+      sonar sensor in a sonar array). These values are filled in by calling
+      playerc_ranger_get_geom(), or from pose-stamped data. */
+  player_pose3d_t *sensor_poses;
+  player_bbox3d_t *sensor_sizes;
+
+  /** Number of individual ranges in a scan. */
+  uint32_t ranges_count;
+  /** Range data [m]. */
+  double *ranges;
+
+  /** Number of individual intensities in a scan. */
+  uint32_t intensities_count;
+  /** Intensity data [m]. Note that this data may require setting of the
+  suitable property on the driver to before it will be filled. Possible
+  properties include intns_on for laser devices and volt_on for IR devices. */
+  double *intensities;
+
+} playerc_ranger_t;
+
+/** @brief Create a ranger proxy. */
+playerc_ranger_t *playerc_ranger_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a ranger proxy. */
+void playerc_ranger_destroy(playerc_ranger_t *device);
+
+/** @brief Subscribe to the ranger device. */
+int playerc_ranger_subscribe(playerc_ranger_t *device, int access);
+
+/** @brief Un-subscribe from the ranger device. */
+int playerc_ranger_unsubscribe(playerc_ranger_t *device);
+
+/** @brief Get the ranger geometry.
+
+This writes the result into the proxy rather than returning it to the caller.
+*/
+int playerc_ranger_get_geom(playerc_ranger_t *device);
+
+/** @brief Turn device power on or off.
+
+@param value Set to TRUE to turn power on, FALSE to turn power off. */
+int playerc_ranger_power_config(playerc_ranger_t *device, uint8_t value);
+
+/** @brief Turn intensity data on or off.
+
+@param value Set to TRUE to turn the data on, FALSE to turn the data off. */
+int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value);
+
+/** @} */
+/**************************************************************************/
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
  * @defgroup playerc_proxy_sonar sonar
 
 The sonar proxy provides an interface to the sonar range sensors built

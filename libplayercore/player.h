@@ -160,6 +160,7 @@ in the body.*/
 #define PLAYER_HEALTH_CODE	   59  // Statgrab Health interface
 #define PLAYER_IMU_CODE            60  // Inertial Measurement Unit interface
 #define PLAYER_POINTCLOUD3D_CODE   61  // 3-D point cloud
+#define PLAYER_RANGER_CODE         62  // Range sensor device
 /** @} */
 
 /** @ingroup message_basics
@@ -220,6 +221,7 @@ in the body.*/
 #define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
 #define PLAYER_WSN_STRING             "wsn"
+#define PLAYER_RANGER_STRING          "ranger"
 
 /** @} */
 
@@ -4543,6 +4545,149 @@ typedef struct player_ptz_req_control_mode
       @ref PLAYER_PTZ_POSITION_CONTROL. */
   uint32_t mode;
 } player_ptz_req_control_mode_t;
+
+/** @} */
+
+// /////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_ranger ranger
+ * @brief A range sensor
+
+Receive data from a range sensor, such as a laser scannar, sonar array or IR
+array.
+
+@section properties Recommended Properties
+
+The following properties are recommended to be provided by drivers supporting
+this interface, depending on device type.
+
+@subsection laserprops Laser scanner devices
+
+(double) min_angle:  Start angle of scans [rad].
+(double) max_angle:  End angle of scans [rad].
+(double) resolution: Scan resolution [rad].
+(double) max_range:  Maximum range [m].
+(double) range_res:  Range resolution [m].
+(double) frequency:  Scanning frequency [Hz].
+
+@subsection sonarprops Sonar array devices
+
+(double) max_range:  Maximum range [m].
+(double) range_res:  Range resolution [m].
+
+@subsection irprops IR array devices
+
+(double) max_range:  Maximum range [m].
+(double) range_res:  Range resolution [m].
+
+*/
+
+/** @ingroup interface_ranger
+ * @{ */
+
+/** Data subtype: range scan */
+#define PLAYER_RANGER_DATA_RANGE        1
+/** Data subtype: pose-stamped range scan */
+#define PLAYER_RANGER_DATA_RANGEPOSE    2
+/** Data subtype: intensity scan */
+#define PLAYER_RANGER_DATA_INTNS        3
+/** Data subtype: pose-stamped intensity scan */
+#define PLAYER_RANGER_DATA_INTNSPOSE    4
+/** Data subtype: sensor geometry */
+#define PLAYER_RANGER_DATA_GEOM         5
+
+/** Request/reply subtype: get geometry */
+#define PLAYER_RANGER_REQ_GET_GEOM      1
+/** Request/reply subtype: power config */
+#define PLAYER_RANGER_REQ_POWER         2
+/** Request/reply subtype: intensity data config */
+#define PLAYER_RANGER_REQ_INTNS         3
+
+/** @brief Data and Request/reply: Get geometry. (@ref PLAYER_RANGER_REQ_GET_GEOM)
+
+The ranger device position, orientation and size. */
+typedef struct player_ranger_geom
+{
+  /** Device centre pose in robot CS [m, m, m, rad, rad, rad]. */
+  player_pose3d_t pose;
+  /** Size of the device [m, m, m]. */
+  player_bbox3d_t size;
+  /** Number of individual range sensors that make up the device. */
+  uint32_t sensor_poses_count;
+  /** Pose of each individual range sensor that makes up the device (in device CS). */
+  player_pose3d_t *sensor_poses;
+  /** Number of individual range sensors that make up the device. */
+  uint32_t sensor_sizes_count;
+  /** Size of each individual range sensor that makes up the device. */
+  player_bbox3d_t *sensor_sizes;
+} player_ranger_geom_t;
+
+/** @brief Data: range scan (@ref PLAYER_RANGER_DATA_RANGE)
+
+The basic ranger scan data packet, containing a set of range readings. */
+typedef struct player_ranger_data_range
+{
+  /** Number of range readings. */
+  uint32_t ranges_count;
+  /** Range readings [m]. */
+  double *ranges;
+} player_ranger_data_range_t;
+
+/** @brief Data: post-stamped range scan (@ref PLAYER_RANGER_DATA_RANGEPOSE)
+
+A range scan with the (possibly estimated) pose of the device when the scan was
+acquired. */
+typedef struct player_ranger_data_rangepose
+{
+  /** The scan data. */
+  player_ranger_data_range_t data;
+  /** The geometry of the device at the time the scan was acquired. */
+  player_ranger_geom_t geom;
+} player_ranger_data_rangepose_t;
+
+/** @brief Data: intensity scan (@ref PLAYER_RANGER_DATA_INTNS)
+
+A set of intensity readings. */
+typedef struct player_ranger_data_intns
+{
+  /** Number of intensity readings. */
+  uint32_t intensities_count;
+  /** Intensity readings. */
+  double *intensities;
+} player_ranger_data_intns_t;
+
+/** @brief Data: post-stamped intensity scan (@ref PLAYER_RANGER_DATA_INTNSPOSE)
+
+An intensity scan with the (possibly estimated) pose of the device when the scan
+was acquired. */
+typedef struct player_ranger_data_intnspose
+{
+  /** The scan data. */
+  player_ranger_data_intns_t data;
+  /** The geometry of the device at the time the scan was acquired. */
+  player_ranger_geom_t geom;
+} player_ranger_data_intnspose_t;
+
+/** @brief Request/reply: Turn power on/off (@ref PLAYER_RANGER_REQ_POWER)
+
+If the device supports it, use this message to turn the power on or off. */
+typedef struct player_ranger_power_config
+{
+  /** TRUE to turn device on, FALSE to turn device off. */
+  uint8_t state;
+} player_ranger_power_config_t;
+
+/** @brief Request/reply: Turn intensity data on/off for devices that provide it
+(@ref PLAYER_RANGER_REQ_INTNS)
+
+If the device is capable of providing intensity information (such as laser
+reflection intensity or IR voltage), this will enable the transmission of the
+data in the @ref PLAYER_RANGER_DATA_INTNS data message. */
+typedef struct player_ranger_intns_config
+{
+  /** TRUE to turn data on, FALSE to turn data off. */
+  uint8_t state;
+} player_ranger_intns_config_t;
 
 /** @} */
 

@@ -229,6 +229,7 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
   rtk_menuitem_t *res025_item, *res050_item, *res100_item;
   rtk_menuitem_t *range_mm_item, *range_cm_item, *range_dm_item;
+  rtk_menuitem_t *style_item;
   // Figure for drawing the scan
   rtk_fig_t *scan_fig;
 
@@ -530,6 +531,51 @@ void ir_destroy(ir_t *ir);
 
 // Update a sonar device
 void ir_update(ir_t *ir);
+
+
+/***************************************************************************
+ * Ranger
+ ***************************************************************************/
+
+// Ranger device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Ranger device proxy
+  playerc_ranger_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *style_item;
+  rtk_menuitem_t *intns_item;
+  rtk_menuitem_t *device_item;
+  // Figure for drawing the scan
+  rtk_fig_t **scan_fig;
+  // Need to track this for creating figures
+  mainwnd_t *mainwnd;
+
+  // Properties from the device that may be necessary
+  double start_angle;
+  double resolution;
+
+} ranger_t;
+
+
+// Create a ranger device
+ranger_t *ranger_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                        int index,  const char *drivername, int subscribe);
+
+// Destroy a ranger device
+void ranger_destroy(ranger_t *ranger);
+
+// Update a ranger device
+void ranger_update(ranger_t *ranger);
 
 
 /***************************************************************************
