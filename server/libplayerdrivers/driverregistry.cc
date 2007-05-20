@@ -422,6 +422,14 @@ void InsideM300_Register(DriverTable *driverTable);
 void SkyetekM1_Register(DriverTable *driverTable);
 #endif
 
+#ifdef INCLUDE_LASERTORANGER
+void LaserToRanger_Register (DriverTable* table);
+#endif
+
+#ifdef INCLUDE_SONARTORANGER
+void SonarToRanger_Register (DriverTable* table);
+#endif
+
 /*
  * this function will be called at startup.  all available devices should
  * be added to the driverTable here.  they will be instantiated later as
@@ -820,5 +828,13 @@ player_register_drivers()
 
 #ifdef INCLUDE_SKYETEKM1
   SkyetekM1_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_LASERTORANGER
+  LaserToRanger_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_SONARTORANGER
+  SonarToRanger_Register(driverTable);
 #endif
 }

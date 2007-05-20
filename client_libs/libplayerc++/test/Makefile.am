@@ -40,7 +40,8 @@ test_SOURCES = test.cc \
                test_gripper_holdsub.cc \
                test_actarray.cc \
                test_aio.cc \
-               test_speech.cc 
+               test_speech.cc \
+               test_ranger.cc
 
 
 

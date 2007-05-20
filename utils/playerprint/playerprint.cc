@@ -60,6 +60,7 @@ playerprint can print out data for the following kinds of devices:
 - @ref interface_position3d
 - @ref interface_power
 - @ref interface_ptz
+- @ref interface_ranger
 - @ref interface_simulation
 - @ref interface_sonar
 - @ref interface_speech
@@ -242,6 +243,9 @@ main(int argc, char **argv)
     case PLAYER_PTZ_CODE:
       cp = (ClientProxy*)new PtzProxy(&client,g_index);
       break;
+    case PLAYER_RANGER_CODE:
+      cp = (ClientProxy*)new RangerProxy(&client,g_index);
+      break;
     case PLAYER_SIMULATION_CODE:
       cp = (ClientProxy*)new SimulationProxy(&client,g_index);
       break;
@@ -333,6 +337,8 @@ main(int argc, char **argv)
       case PLAYER_PTZ_CODE:
         std::cout << *reinterpret_cast<PtzProxy *> (cp);
         break;
+      case PLAYER_RANGER_CODE:
+        std::cout << *reinterpret_cast<RangerProxy *> (cp);
       case PLAYER_SIMULATION_CODE:
         std::cout << *reinterpret_cast<SimulationProxy *> (cp);
         break;

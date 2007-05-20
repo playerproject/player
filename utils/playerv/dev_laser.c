@@ -58,6 +58,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   snprintf(label, sizeof(label), "laser:%d (%s)", index, laser->drivername);
   laser->menu = rtk_menu_create_sub(mainwnd->device_menu, label);
   laser->subscribe_item = rtk_menuitem_create(laser->menu, "Subscribe", 1);
+  laser->style_item = rtk_menuitem_create(laser->menu, "Filled", 1);
 #if 0
   laser->res025_item = rtk_menuitem_create(laser->menu, "0.25 deg resolution", 1);
   laser->res050_item = rtk_menuitem_create(laser->menu, "0.50 deg resolution", 1);
@@ -70,6 +71,7 @@ laser_t *laser_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
 
   // Set the initial menu state
   rtk_menuitem_check(laser->subscribe_item, subscribe);
+  rtk_menuitem_check(laser->style_item, 1);
 
   // Construct figures
   laser->scan_fig = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 0);
@@ -96,6 +98,7 @@ void laser_destroy(laser_t *laser)
   rtk_menuitem_destroy(laser->range_dm_item);
 #endif
   rtk_menuitem_destroy(laser->subscribe_item);
+  rtk_menuitem_destroy(laser->style_item);
   rtk_menu_destroy(laser->menu);
 
   free(laser->drivername);
@@ -225,13 +228,7 @@ void laser_draw(laser_t *laser)
   rtk_fig_show(laser->scan_fig, 1);      
   rtk_fig_clear(laser->scan_fig);
 
-  // TESTING (should use menu option)
-  if (laser->proxy->info.addr.index == 0)
-    style = 1;
-  else
-    style = 0;
-
-  if (style == 0)
+  if (!rtk_menuitem_ischecked(laser->style_item))
   {
     rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_OCC);
       
@@ -250,7 +247,7 @@ void laser_draw(laser_t *laser)
       ay = by;
     }
   }
-  else if (style == 1)
+  else
   {
     res = laser->proxy->scan_res / 2;
           

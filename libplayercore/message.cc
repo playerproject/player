@@ -33,6 +33,7 @@
 #include <libplayercore/message.h>
 #include <libplayercore/player.h>
 #include <libplayercore/error.h>
+#include <libplayercore/interface_util.h>
 #include <libplayerxdr/playerxdr.h>
 
 Message::Message(const struct player_msghdr & Header,
@@ -66,7 +67,7 @@ Message::Message(const struct player_msghdr & Header,
       if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
       {
         // Possible error
-        PLAYER_WARN3 ("copied zero bytes in deep copy of message %d: %d, %d", Header.addr.interf, Header.type, Header.subtype);
+        PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
       }
     }
   }

@@ -30,7 +30,7 @@ class Property
 {
 	public:
 		Property (void);
-		Property (const char *newKey);
+		Property (const char *newKey, bool readOnly);
 		virtual ~Property (void);
 
 		// Accessor functions
@@ -44,6 +44,7 @@ class Property
 
 	protected:
 		char *key;			// Key for this property
+		bool readonly;		// true if this property is read-only
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -53,10 +54,10 @@ class Property
 class IntProperty : public Property
 {
 	public:
-		IntProperty (const char *newKey, int newValue);
+		IntProperty (const char *newKey, int newValue, bool readOnly);
 
 		int GetValue (void) const			{ return value; }
-		void SetValue (int newValue)		{ value = newValue; }
+		void SetValue (int newValue);
 		void GetValueToMessage (void *data) const;
 		void SetValueFromMessage (const void *data);
 
@@ -66,7 +67,7 @@ class IntProperty : public Property
 		// Operators
 		operator int (void)				{ return value; }
 		const IntProperty& operator= (const IntProperty &rhs);
-		int operator= (int rhs)				{ value = rhs; return value; }
+		int operator= (int rhs);
 
 	private:
 		int value;
@@ -79,10 +80,10 @@ class IntProperty : public Property
 class DoubleProperty : public Property
 {
 	public:
-		DoubleProperty (const char *newKey, double newValue);
+		DoubleProperty (const char *newKey, double newValue, bool readOnly);
 
 		double GetValue (void) const		{ return value; }
-		void SetValue (double newValue)		{ value = newValue; }
+		void SetValue (double newValue);
 		void GetValueToMessage (void *data) const;
 		void SetValueFromMessage (const void *data);
 
@@ -92,7 +93,7 @@ class DoubleProperty : public Property
 		// Operators
 		operator double (void)				{ return value; }
 		const DoubleProperty& operator= (const DoubleProperty &rhs);
-		double operator= (double rhs)		{ value = rhs; return value; }
+		double operator= (double rhs);
 
 	private:
 		double value;
@@ -104,7 +105,7 @@ class DoubleProperty : public Property
 class StringProperty : public Property
 {
 	public:
-		StringProperty (const char *newKey, const char *newValue);
+		StringProperty (const char *newKey, const char *newValue, bool readOnly);
 		~StringProperty (void);
 
 		const char* GetValue (void) const	{ return value; }

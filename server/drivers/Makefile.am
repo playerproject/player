@@ -26,4 +26,5 @@ wifi \
 rfid \
 wsn \
 imu \
-pointcloud3d
+pointcloud3d \
+ranger

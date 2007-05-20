@@ -51,6 +51,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_position3d.c \
                         dev_power.c \
                         dev_ptz.c \
+                        dev_ranger.c \
                         dev_rfid.c \
                         dev_simulation.c \
                         dev_sonar.c \

@@ -490,6 +490,24 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_PTZ_CODE, PLAYER_MSGTYPE_REQ, PLAYER_PTZ_REQ_CONTROL_MODE,
     (player_pack_fn_t)player_ptz_req_control_mode_pack, NULL, NULL},
 
+  /* ranger messages */
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE,
+   (player_pack_fn_t)player_ranger_data_range_pack, (player_dpcpy_fn_t)player_ranger_data_range_t_dpcpy, (player_cleanup_fn_t)player_ranger_data_range_t_cleanup},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGEPOSE,
+   (player_pack_fn_t)player_ranger_data_rangepose_pack, (player_dpcpy_fn_t)player_ranger_data_rangepose_t_dpcpy, (player_cleanup_fn_t)player_ranger_data_rangepose_t_cleanup},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS,
+   (player_pack_fn_t)player_ranger_data_intns_pack, (player_dpcpy_fn_t)player_ranger_data_intns_t_dpcpy, (player_cleanup_fn_t)player_ranger_data_intns_t_cleanup},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNSPOSE,
+   (player_pack_fn_t)player_ranger_data_intnspose_pack, (player_dpcpy_fn_t)player_ranger_data_intnspose_t_dpcpy, (player_cleanup_fn_t)player_ranger_data_intnspose_t_cleanup},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_GEOM,
+   (player_pack_fn_t)player_ranger_geom_pack, (player_dpcpy_fn_t)player_ranger_geom_t_dpcpy, (player_cleanup_fn_t)player_ranger_geom_t_cleanup},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM,
+   (player_pack_fn_t)player_ranger_geom_pack, (player_dpcpy_fn_t)player_ranger_geom_t_dpcpy, (player_cleanup_fn_t)player_ranger_geom_t_cleanup},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER,
+   (player_pack_fn_t)player_ranger_power_config_pack, NULL, NULL},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS,
+   (player_pack_fn_t)player_ranger_intns_config_pack, NULL, NULL},
+
   /* rfid messages */
   {PLAYER_RFID_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA,
     (player_pack_fn_t)player_rfid_data_pack, NULL, NULL},

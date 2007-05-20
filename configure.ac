@@ -558,6 +558,7 @@ AC_OUTPUT(Makefile
           server/drivers/wsn/Makefile
           server/drivers/imu/Makefile
           server/drivers/pointcloud3d/Makefile
+          server/drivers/ranger/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc

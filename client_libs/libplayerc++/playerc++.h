@@ -2131,6 +2131,61 @@ class PtzProxy : public ClientProxy
 };
 
 /**
+The @p RangerProxy class is used to control a @ref interface_ranger device. */
+class RangerProxy : public ClientProxy
+{
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_ranger_t *mDevice;
+
+  public:
+    /// constructor
+    RangerProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~RangerProxy();
+
+    /// Return the individual range sensor count
+    uint GetSensorCount() const { return GetVar(mDevice->sensor_count); };
+
+    /// Return the device pose
+    player_pose3d_t GetDevicePose() const { return GetVar(mDevice->device_pose); };
+    /// Return the device size
+    player_bbox3d_t GetDeviceSize() const { return GetVar(mDevice->device_size); };
+
+    /// Return the pose of an individual sensor
+    player_pose3d_t GetSensorPose(uint aIndex) const;
+    /// Return the size of an individual sensor
+    player_bbox3d_t GetSensorSize(uint aIndex) const;
+
+    /// Return the number of range readings
+    uint GetRangeCount() const { return GetVar(mDevice->ranges_count); };
+    /// Get a range reading
+    double GetRange(uint aIndex) const;
+    /// Operator to get a range reading
+    double operator[] (uint aIndex) const { return GetRange(aIndex); }
+
+    /// Return the number of intensity readings
+    uint GetIntensityCount() const { return GetVar(mDevice->intensities_count); } ;
+    /// Get an intensity reading
+    double GetIntensity(uint aIndex) const;
+
+    /// Turn the device power on or off.
+    /// Set @p state to true to enable, false to disable.
+    void SetPower(bool aEnable);
+
+    /// Turn intensity data on or off.
+    /// Set @p state to true to enable, false to disable.
+    void SetIntensityData(bool aEnable);
+
+    /// Request the ranger geometry.
+    void RequestGeom();
+};
+
+/**
 The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
 class RFIDProxy : public ClientProxy
 {
@@ -2508,6 +2563,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::Position3dProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PowerProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
+  std::ostream& operator << (std::ostream &os, const PlayerCc::RangerProxy &c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);

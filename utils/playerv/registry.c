@@ -100,6 +100,15 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) ptz_update;
       break;
 
+    case PLAYER_RANGER_CODE:
+      device->proxy = ranger_create(mainwnd, opt, client,
+                                    device->addr.index,
+                                    device->drivername,
+                                    device->subscribe);
+      device->fndestroy = (fndestroy_t) ranger_destroy;
+      device->fnupdate = (fnupdate_t) ranger_update;
+      break;
+
     case PLAYER_SONAR_CODE:
       device->proxy = sonar_create(mainwnd, opt, client,
                                    device->addr.index,
