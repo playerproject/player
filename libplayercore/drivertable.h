@@ -41,8 +41,8 @@ class ConfigFile;
 /// @brief Function signature for driver factory functions
 typedef Driver* (*DriverInitFn) (ConfigFile *cf, int section);
 
-/// @brief Function signature for plugin initialization functions
-typedef int (*PluginInitFn) (DriverTable* table);
+/// @brief Function signature for driver plugin initialization functions
+typedef int (*DriverPluginInitFn) (DriverTable* table);
 
 
 /// @brief Info about an individual driver class

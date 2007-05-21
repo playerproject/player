@@ -138,6 +138,8 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   if(!init_done)
   {
     playerxdr_ftable_init();
+    if (itable_init () != 0)
+      return NULL;
     init_done = 1;
   }
 

@@ -30,6 +30,8 @@
 #ifndef _FUNCTIONTABLE_H_
 #define _FUNCTIONTABLE_H_
 
+#include <libplayercore/playerconfig.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -84,6 +86,16 @@ player_cleanup_fn_t playerxdr_get_cleanupfunc(uint16_t interf, uint8_t type,
  * signature, but @p replace was 0)
  */
 int playerxdr_ftable_add(playerxdr_function_t f, int replace);
+
+/** @brief Add multiple entries to the function table.
+ *
+ * @param f : a pointer to the function table entries to add (NULL terminated
+ *            array).
+ * @param replace : whether any existing functions should be replaced.
+ *
+ * @returns 0 on success, -1 on failure
+ */
+int playerxdr_ftable_add_multi(playerxdr_function_t *flist, int replace);
 
 /** @brief Initialize the XDR function table.
  *

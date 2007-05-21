@@ -124,6 +124,7 @@ main(int argc, char** argv)
   player_globals_init();
   player_register_drivers();
   playerxdr_ftable_init();
+  itable_init();
 
   ptcp = new PlayerTCP();
   assert(ptcp);
@@ -150,9 +151,15 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+  if(!cf->ParseAllInterfaces())
+  {
+    PLAYER_ERROR1("failed to parse config file %s interface blocks", cfgfilename);
+    exit(-1);
+  }
+
   if(!cf->ParseAllDrivers())
   {
-    PLAYER_ERROR1("failed to parse config file %s", cfgfilename);
+    PLAYER_ERROR1("failed to parse config file %s driver blocks", cfgfilename);
     exit(-1);
   }
 

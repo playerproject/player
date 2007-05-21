@@ -47,6 +47,7 @@
 #include <libplayercore/globals.h>
 #include <libplayercore/plugins.h>
 #include <libplayercore/addr_util.h>
+#include <libplayerxdr/functiontable.h>
 
 //extern int global_playerport;
 
@@ -2057,6 +2058,7 @@ ConfigFile::ParseDriver(int section)
   Driver *driver;
   Device *device;
   int count;
+  lt_dlhandle handle;
 
   entry = NULL;
   driver = NULL;
@@ -2065,9 +2067,14 @@ ConfigFile::ParseDriver(int section)
   pluginname = this->ReadString(section, "plugin", NULL);
   if (pluginname != NULL)
   {
-    if(!LoadPlugin(pluginname,this->filename))
+    if((handle = LoadPlugin(pluginname,this->filename)) == NULL)
     {
       PLAYER_ERROR1("failed to load plugin: %s", pluginname);
+      return (false);
+    }
+    if(!InitDriverPlugin(handle))
+    {
+      PLAYER_ERROR1("failed to initialise plugin: %s", pluginname);
       return (false);
     }
   }
@@ -2131,4 +2138,87 @@ ConfigFile::ParseDriver(int section)
   return true;
 }
 
+// Parse all interface blocks
+bool
+ConfigFile::ParseAllInterfaces()
+{
+  for(int i = 1; i < this->GetSectionCount(); i++)
+  {
+    // Check for new-style device block
+    if(strcmp(this->GetSectionType(i), "interface") == 0)
+    {
+      if(!this->ParseInterface(i))
+        return false;
+    }
+  }
+  return true;
+}
 
+// Parse an interface block, and update the interface systems accordingly
+bool
+ConfigFile::ParseInterface(int section)
+{
+  const char *pluginname;
+  const char *interfacename;
+  int interfacecode;
+  int replace;
+  lt_dlhandle handle;
+  playerxdr_function_t *flist;
+
+  // Check if this interface is replacing an existing one's messages
+  replace = this->ReadInt(section, "replace", 0);
+
+  // Get the interface name
+  interfacename = this->ReadString(section, "name", NULL);
+  if (interfacename == NULL)
+  {
+    PLAYER_ERROR1("No interface name specified in section %d", section);
+    return false;
+  }
+
+  // Get the interface code
+  interfacecode = this->ReadInt(section, "code", -1);
+  if (interfacecode == -1)
+  {
+    PLAYER_ERROR1("No interface code specified in section %d", section);
+    return false;
+  }
+
+  // Find the plugin name
+  pluginname = this->ReadString(section, "plugin", NULL);
+  if (pluginname == NULL)
+  {
+    PLAYER_ERROR1("No plugin name specified for plugin interface in section %d", section);
+    return false;
+  }
+
+  // Load the plugin
+  if((handle = LoadPlugin(pluginname,this->filename)) == NULL)
+  {
+    PLAYER_ERROR1("failed to load plugin: %s", pluginname);
+    return false;
+  }
+
+  // Get the function table list
+  if((flist = InitInterfacePlugin(handle)) == NULL)
+  {
+    PLAYER_ERROR1("failed to initialise plugin: %s", pluginname);
+    return false;
+  }
+
+  // Add the function table list
+  if(playerxdr_ftable_add_multi(flist, replace) < 0)
+  {
+    PLAYER_ERROR1("Failed to add interface functions for plugin interface %s", interfacename);
+    return false;
+  }
+
+  // Add the interface name to the interface names table
+  if(itable_add (interfacename, interfacecode, replace) < 0)
+  {
+    PLAYER_ERROR2("Failed to add interface name/code: %s/%d", interfacename, interfacecode);
+    return false;
+  }
+
+  return true;
+}

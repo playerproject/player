@@ -656,6 +656,21 @@ playerxdr_ftable_add(playerxdr_function_t f, int replace)
   }
 }
 
+int
+playerxdr_ftable_add_multi(playerxdr_function_t *flist, int replace)
+{
+  playerxdr_function_t* f;
+
+  for (f = flist; f->packfunc; f++)
+  {
+    if (playerxdr_ftable_add (*f, replace) < 0)
+    {
+      puts("Failed to add new function to XDR function table");
+      return(-1);
+    }
+  }
+}
+
 playerxdr_function_t*
 playerxdr_get_ftrow(uint16_t interf, uint8_t type, uint8_t subtype)
 {
@@ -691,10 +706,6 @@ playerxdr_get_ftrow(uint16_t interf, uint8_t type, uint8_t subtype)
       curr->subtype == subtype)
       return(curr);
   }
-
-  printf( "interface %d %d\n", curr->interf, interf );
-  printf( "type %d %d\n", curr->type, type );
-  printf( "subtype %d %d\n", curr->subtype, subtype );
 
   return(NULL);
 }

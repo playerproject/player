@@ -33,8 +33,29 @@ extern "C" {
 typedef struct
 {
   uint16_t interf;
-  const char* name;
+  char* name;
 } player_interface_t;
+
+/*
+ * Initialises the interface names/codes table.
+ */
+int itable_init (void);
+
+/*
+ * Grows the interface table to newSize, filling each interface between the
+ * old end and the new end with (0xFFFF, "nointerfXX").
+ */
+int itable_grow (int newSize);
+
+/*
+ * Destroys the interface names/codes table.
+ */
+void itable_destroy (void);
+
+/*
+ * Add a new interface to the interface table.
+ */
+int itable_add (const char *name, int code, int replace);
 
 /*
  * looks through the array of available interfaces for one which the given

@@ -429,8 +429,14 @@ class ConfigFile
   // Parse a driver block, and update the deviceTable accordingly
   public: bool ParseDriver(int section);
 
+  // Parse an interface block, and update the interface systems accordingly
+  public: bool ParseInterface(int section);
+
   // Parse all driver blocks
   public: bool ParseAllDrivers();
+
+  // Parse all interface blocks
+  public: bool ParseAllInterfaces();
 
   /// @brief Get the number of sections.
   public: int GetSectionCount();

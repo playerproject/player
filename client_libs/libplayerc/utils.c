@@ -44,9 +44,15 @@
  **************************************************************************/
 
 #include <string.h>
+#include <libplayerxdr/functiontable.h>
 
 #include "playerc.h"
 #include "error.h"
+
+int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace)
+{
+  return playerxdr_ftable_add_multi(flist, replace);
+}
 
 
 // Get the name for a given device code.

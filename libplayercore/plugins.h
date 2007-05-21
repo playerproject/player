@@ -19,5 +19,19 @@
  *
  */
 
-bool LoadPlugin(const char* pluginname, const char* cfgfile);
+#if HAVE_LIBLTDL
+  #include <ltdl.h>
+#else
+  #define lt_dlhandle int
+#endif
 
+#include <libplayerxdr/functiontable.h>
+
+/// @brief Function signature for interface plugin initialization functions
+typedef playerxdr_function_t* (*InterfPluginInitFn) (void);
+
+lt_dlhandle LoadPlugin(const char* pluginname, const char* cfgfile);
+
+bool InitDriverPlugin(lt_dlhandle handle);
+
+playerxdr_function_t* InitInterfacePlugin(lt_dlhandle handle);
