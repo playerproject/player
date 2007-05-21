@@ -220,13 +220,15 @@ void StatGrabDriver::RefreshData()
 ////////////////////////////////////////////////////////////////////////////////
 // Extra stuff for building a shared object.
 
+// leftover from when this was a standalone plugin
+
 /* need the extern to avoid C++ name-mangling  */
-extern "C" {
-  int player_driver_init(DriverTable* table)
-  {
-    puts("StatGrab driver initializing");
-    StatGrabDriver_Register(table);
-    puts("StatGrab driver done");
-    return(0);
-  }
-}
+//extern "C" {
+//  int player_driver_init(DriverTable* table)
+//  {
+//    puts("StatGrab driver initializing");
+//    StatGrabDriver_Register(table);
+//    puts("StatGrab driver done");
+//    return(0);
+//  }
+//}
