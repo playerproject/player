@@ -57,6 +57,7 @@ client writers.
 #include <libplayercore/error.h>
 #include <libplayercore/interface_util.h>
 #include <libplayerxdr/playerxdr.h>
+#include <libplayerxdr/functiontable.h>
 
 #ifndef MIN
   #define MIN(a,b) ((a < b) ? a : b)
@@ -337,6 +338,9 @@ const char *playerc_lookup_name(int code);
 
 /** Get the interface code for a given name. */
 int playerc_lookup_code(const char *name);
+
+/** Add new entries to the XDR function table. */
+int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace);
 
 /** @}*/
 /***************************************************************************/
