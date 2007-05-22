@@ -171,6 +171,7 @@ int itable_grow (int newSize)
   }
   // Set the new length
   itable_len = newSize;
+  return 0;
 }
 
 /*
@@ -229,6 +230,7 @@ int itable_add (const char *name, int code, int replace)
     }
     return 0;
   }
+  return 0;
 }
 
 /*
