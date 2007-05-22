@@ -572,6 +572,7 @@ AC_OUTPUT(Makefile
 dnl          client_libs/libplayerpacket/Makefile
           examples/Makefile
           examples/plugins/Makefile
+          examples/plugins/exampleinterface/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
           examples/plugins/opaquedriver/Makefile

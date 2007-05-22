@@ -17,7 +17,7 @@ example_PROGRAMS = example_client
 example_DATA = eginterf_client.c eginterf.c eginterf_xdr.c eginterf_driver.cc Makefile.example example.cfg
 EXTRA_DIST = Makefile.example example.cfg
 
-example_LTLIBRARIES = libeginterfdriver.la libeginterf
+example_LTLIBRARIES = libeginterfdriver.la
 libeginterfdriver_la_SOURCES = eginterf_driver.cc
 libeginterf_la_SOURCEs = eginterf_client.c eginterf.c eginterf_xdr.c
 
