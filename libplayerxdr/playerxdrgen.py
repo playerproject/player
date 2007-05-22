@@ -85,6 +85,7 @@ if __name__ == '__main__':
 
     sourcefile.write('#include <libplayerxdr/' + headerfilename + '>\n')
     sourcefile.write('#include <string.h>\n\n')
+    sourcefile.write('#include <stdlib.h>\n\n')
   else:
     ifndefsymbol = '_'
     for i in range(0,len(string.split(infilename,'.')[0])):
@@ -98,6 +99,7 @@ if __name__ == '__main__':
     sourcefile.write('#include <rpc/xdr.h>\n\n')
     sourcefile.write('#include "' + headerfilename + '"\n')
     sourcefile.write('#include <string.h>')
+    sourcefile.write('#include <stdlib.h>\n\n')
 
   contentspattern = re.compile('.*\{\s*(.*?)\s*\}', re.MULTILINE | re.DOTALL)
   declpattern = re.compile('\s*([^;]*?;)', re.MULTILINE)
