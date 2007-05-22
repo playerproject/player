@@ -1,0 +1,28 @@
+CSOURCES=eginterf_client.c \
+         eginterf.c \
+         eginterf_xdr.c
+COBJECTS=eginterf_client.o \
+         eginterf.o \
+         eginterf_xdr.o
+CCSOURCES=eginterf_driver.cc
+CCOBJECTS=eginterf_driver.o
+
+all: libeginterf.so libeginterfdriver.so example_client
+
+$(COBJECTS): $(CSOURCES)
+	$(CC) `pkg-config --cflags playercore` -Wall -fpic -g3 `pkg-config --cflags playercore` -c $^
+
+$(CCOBJECTS): $(CCSOURCES)
+	$(CXX) -Wall -fpic -g3 `pkg-config --cflags playercore` -c $<
+
+libeginterf.so: $(COBJECTS)
+	$(CC) -shared -nostartfiles -o $@ $^
+
+libeginterfdriver.so: $(CCOBJECTS)
+	$(CXX) -shared -nostartfiles -o $@ $^
+
+example_client: example_client.c
+	$(CC) -g3 -o $@ `pkg-config --cflags playerc` $< `pkg-config --libs playerc` -L. -leginterf
+
+clean:
+	rm -f *.o *.so example_client
