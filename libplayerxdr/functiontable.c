@@ -669,6 +669,7 @@ playerxdr_ftable_add_multi(playerxdr_function_t *flist, int replace)
       return(-1);
     }
   }
+  return(0);
 }
 
 playerxdr_function_t*
