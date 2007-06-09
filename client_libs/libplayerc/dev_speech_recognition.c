@@ -1,7 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-//#include <sys/types.h>
-//#include <netinet/in.h>
 
 #include "playerc.h"
 #include "error.h"
@@ -20,7 +18,6 @@ playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *
                       (playerc_putmsg_fn_t) playerc_speech_recognition_putmsg);
   return device;
 }
-
 
 // Destroy a speech_recognition proxy
 void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device)
@@ -44,23 +41,50 @@ int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device)
 
 void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, player_msghdr_t *hdr, player_speech_recognition_data_t *buffer, size_t len)
 {
-  memset(device->words,0,30*20);
-  player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;
+//   memset(device->words,0,30*20);
+//   player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;
+// 
+//   if((hdr->type == PLAYER_MSGTYPE_DATA) && (hdr->subtype == PLAYER_SPEECH_RECOGNITION_DATA_STRING ))
+//   {
+//     char * str1;
+//     int i;
+//     device->wordCount = 0;
+// //    printf("data->text %s\n",data->text);
+// 
+//     for (str1 = strtok((*data).text, " ") ; str1 != NULL ; str1 = strtok(NULL, " ") )
+//     {
+//       for (i=0;i<strlen(str1);i++)
+//       {
+// //        printf("str1[%d]=%c",i,str1[i]);
+// //        printf("device->words[%i][%i]=%c\n",device->wordCount,i,device->words[device->wordCount][i]);
+//         device->words[device->wordCount][i]=str1[i];
+//       }
+//       device->wordCount++;
+//     }
+//   }
+//   return;
+// 
 
   if((hdr->type == PLAYER_MSGTYPE_DATA) && (hdr->subtype == PLAYER_SPEECH_RECOGNITION_DATA_STRING ))
   {
-    char * str1;
+    player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;
+    char * str1=NULL;
     int i;
+    memset(device->rawText,0,PLAYER_SPEECH_RECOGNITION_TEXT_LEN*sizeof(char));
+    memset(device->words,0,30*20*sizeof(char));
     device->wordCount = 0;
-//    printf("data->text %s\n",data->text);
+   printf("data->text %s\n",data->text);
+    for (i=0;i<data->text_count;i++)
+      device->rawText[i]=data->text[i];
 
-    for (str1 = strtok((*data).text, " ") ; str1 != NULL ; str1 = strtok(NULL, " ") )
+    for (str1 = strtok(device->rawText, " ") ; str1 != NULL ; str1 = strtok(NULL, " ") )
     {
       for (i=0;i<strlen(str1);i++)
       {
-//        printf("str1[%d]=%c",i,str1[i]);
-//        printf("device->words[%i][%i]=%c\n",device->wordCount,i,device->words[device->wordCount][i]);
         device->words[device->wordCount][i]=str1[i];
+       printf("str1[%d]=%c",i,str1[i]);
+       printf("device->words[%i][%i]=%c\n",device->wordCount,i,device->words[device->wordCount][i]);
+
       }
       device->wordCount++;
     }
