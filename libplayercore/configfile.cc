@@ -1976,7 +1976,7 @@ int ConfigFile::ReadDeviceAddr(player_devaddr_t *addr, int section,
       else
       {
         // No; assume it's a string containing a hostname or IP address
-        if(hostname_to_packedaddr(&host, tokens[1]) < 0)
+        if(hostname_to_packedaddr((uint32_t *) &host, tokens[1]) < 0)
         {
           PLAYER_ERROR1("name lookup failed for host \"%s\"", tokens[1]);
           return -1;
