@@ -114,6 +114,15 @@ void SickLMS400_Register(DriverTable* table);
 void SickNAV200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_PHIDGETRFID
+void PhidgetRFID_Register(DriverTable* table);
+#endif
+
+#ifdef INCLUDE_PHIDGETIFK
+void PhidgetIFK_Register(DriverTable* table);
+#endif
+
+
 #ifdef INCLUDE_SICKRFI341
 void SickRFI341_Register(DriverTable* table);
 #endif
@@ -528,6 +537,14 @@ player_register_drivers()
 
 #ifdef INCLUDE_SICKPLS
   SickPLS_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_PHIDGETRFID
+  PhidgetRFID_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_PHIDGETIFK
+  PhidgetIFK_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKRFI341

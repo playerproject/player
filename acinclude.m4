@@ -391,6 +391,28 @@ PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])
 PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
 PLAYER_ADD_DRIVER([sickrfi341],[yes],[],[],[])
 
+dnl Where's libphidget?
+AC_ARG_WITH(phidgetRFID, [  --with-libphidget=dir      Location of the Phidget (from www.phidgets.com) headers and libraries],
+LIBPHIDGET_DIR=$with_libphidget,LIBPHIDGET_DIR=NONE)
+if test "x$LIBPHIDGET_DIR" = "xNONE" -o "x$LIBPHIDGET_DIR" = "xno"; then
+  LIBPHIDGET_HEADER="phidget21.h"
+  LIBPHIDGET_EXTRA_CPPFLAGS=
+  LIBPHIDGET_EXTRA_LDFLAGS="-lphidget21"
+else
+  LIBPHIDGET_HEADER="$LIBPHIDGET_DIR/phidget21.h"
+  LIBPHIDGET_EXTRA_CPPFLAGS="-I$LIBPHIDGET_DIR/include"
+  LIBPHIDGET_EXTRA_LDFLAGS="-L$LIBPHIDGET_DIR/lib -lphidget21"
+fi
+
+PLAYER_ADD_DRIVER([phidgetRFID],[yes],
+  [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
+  [$LIBPHIDGET_EXTRA_LDFLAGS])
+
+PLAYER_ADD_DRIVER([phidgetIFK],[yes],
+  [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
+  [$LIBPHIDGET_EXTRA_LDFLAGS])
+
+
 dnl WSN support
 PLAYER_ADD_DRIVER([mica2],[yes],[],[],[])
 PLAYER_ADD_DRIVER([rcore_xbridge],[yes],[libparticle.h],[],["-lparticle"])
