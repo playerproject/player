@@ -499,6 +499,7 @@ AC_OUTPUT(Makefile
           server/drivers/gps/Makefile
           server/drivers/shell/Makefile
           server/drivers/mixed/Makefile
+          server/drivers/mixed/phidgetIFK/Makefile
           server/drivers/mixed/wbr/Makefile
           server/drivers/mixed/wbr/914/Makefile
           server/drivers/position/Makefile
