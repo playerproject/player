@@ -109,6 +109,7 @@ driver
 #include <string.h>  /* for strncpy(3),memcpy(3) */
 #include <stdlib.h>  /* for atexit(3),atoi(3) */
 #include <pthread.h>  /* for pthread stuff */
+#include <asm/byteorder.h>
 
 #include <libplayercore/playercore.h>
 

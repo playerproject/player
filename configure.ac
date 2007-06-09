@@ -51,6 +51,9 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_C_BIGENDIAN
 
+AC_ENABLE_SHARED
+AC_LIBTOOL_DLOPEN
+AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
 dnl by default, don't build any shared libs
@@ -337,6 +340,12 @@ AC_CHECK_LIB(z,compress2,
              LIBS="$LIBS -lz",
              have_libz=no)
 AM_CONDITIONAL(HAVE_LIBZ, test "x$have_libz" = "xyes")
+AC_CHECK_LIB(rpc,xdrmem_create,
+             have_librpc=yes
+             AC_DEFINE(HAVE_LIBRPC, 1, [Define to 1 if you have the rpc library (-lrpc). ])
+             LIBS="$LIBS -lrpc",
+             have_librpc=no)
+AM_CONDITIONAL(HAVE_LIBRPC, test "x$have_librpc" = "xyes")
 AC_CHECK_FUNC(compressBound, have_compressBound=yes, have_compressBound=no)
 if test "x$have_compressBound" = "xno"; then
   AC_LIBOBJ(compressBound)
