@@ -255,6 +255,9 @@ main(int argc, char **argv)
     case PLAYER_SPEECH_CODE:
       cp = (ClientProxy*)new SpeechProxy(&client,g_index);
       break;
+    case PLAYER_GPS_CODE:
+      cp = (ClientProxy*)new GpsProxy(&client,g_index);
+      break;
 //    case PLAYER_TRUTH_CODE:
 //      cp = (ClientProxy*)new TruthProxy(&client,g_index);
 //      break;
@@ -348,6 +351,9 @@ main(int argc, char **argv)
       case PLAYER_SPEECH_CODE:
         std::cout << *reinterpret_cast<SpeechProxy *> (cp);
         break;
+      case PLAYER_GPS_CODE:
+        std::cout << *reinterpret_cast<GpsProxy *> (cp);
+       break;
 //      case PLAYER_TRUTH_CODE:
 //        std::cout << *reinterpret_cast<TruthProxy *> (cp);
 //        break;

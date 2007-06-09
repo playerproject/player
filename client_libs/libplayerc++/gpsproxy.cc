@@ -25,7 +25,8 @@
  */
 
 #include "playerc++.h"
-
+#include <sstream>
+#include <iomanip>
 using namespace PlayerCc;
 
 GpsProxy::GpsProxy(PlayerClient *aPc, uint aIndex)
@@ -69,9 +70,10 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::GpsProxy &c)
 {
   os << "#GPS (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  os << "#lat|long|alt|utm_e|utm_n|err_horz|err_vert|num_sats" << std::endl;
-  os << c.GetLatitude() << " " << c.GetLongitude() << " " << c.GetAltitude() << " " ;
-  os << c.GetUtmEasting() << " " << c.GetUtmNorthing() << " " << c.GetErrHorizontal() << " ";
-  os << c.GetErrVertical() << " " << c.GetSatellites() << std::endl;
+  os << "#lat|long|alt|utm_e|utm_n|err_horz|err_vert|num_sats|quality" << std::endl;
+  os << std::setw(11) << std::setprecision(10) << c.GetLatitude() << " " << std::setw(11) << std::setprecision(10) <<  c.GetLongitude() << " " << std::setw(6) << std::setprecision(5) << c.GetAltitude() << " " ;
+
+  os << std::setw(11) << std::setprecision(10) << c.GetUtmEasting() << " " << std::setw(11) << std::setprecision(10) << c.GetUtmNorthing() << " " << std::setw(6) << std::setprecision(5) << c.GetErrHorizontal() << " ";
+  os << std::setw(6) << std::setprecision(5) << c.GetErrVertical() << " " << setw(3) << c.GetSatellites() << " " << std::setw(3) << c.GetQuality() << std::endl;
   return os;
 }
