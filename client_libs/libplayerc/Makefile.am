@@ -13,8 +13,8 @@ EXTRA_DIST = playerc.pc.in
 CLEANFILES = playerc.pc
 
 lib_LTLIBRARIES = libplayerc.la
-libplayerc_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayerutils.la
-libplayerc_la_DEPENDENCIES = $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayerutils.la
+libplayerc_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayerutils.la $(top_builddir)/libplayercore/libplayererror.la -lm
+libplayerc_la_DEPENDENCIES = $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayerutils.la $(top_builddir)/libplayercore/libplayererror.la
 
 libplayerc_la_SOURCES = playerc.h \
                         mclient.c \

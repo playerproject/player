@@ -14,7 +14,7 @@ lib_LTLIBRARIES = libplayerdrivers.la
 AM_CPPFLAGS = -fPIC -Wall -I$(top_srcdir)
 
 libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
-libplayerdrivers_la_LIBADD = @PLAYER_DRIVER_EXTRA_LIBS@
+libplayerdrivers_la_LIBADD = @PLAYER_DRIVER_EXTRA_LIBS@ $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la
 
 # This is ugly, but it works.  
 # We link with *.lo in server/drivers, which
