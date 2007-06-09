@@ -301,6 +301,24 @@ class ReadLog: public Driver
                               unsigned short type, unsigned short subtype,
                               int linenum,
                               int token_count, char **tokens, double time);
+
+  // Parse AIO data
+  private: int ParseAIO(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum, int token_count, char **tokens,
+                        double time);
+
+  // Parse DIO data
+  private: int ParseDIO(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum, int token_count, char **tokens,
+                        double time);
+
+  // Parse RFID data
+  private: int ParseRFID(player_devaddr_t id,
+                         unsigned short type, unsigned short subtype,
+                         int linenum, int token_count, char **tokens,
+                         double time);
 #if 0
 
   // Parse position3d data
@@ -1179,6 +1197,15 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_ACTARRAY_CODE)
       return this->ParseActarray (id, type, subtype, linenum,
                                   token_count, tokens, time);
+  else if (id.interf == PLAYER_AIO_CODE)
+      return this->ParseAIO(id, type, subtype, linenum, token_count, tokens,
+                            time);
+  else if (id.interf == PLAYER_DIO_CODE)
+      return this->ParseDIO(id, type, subtype, linenum, token_count, tokens,
+                            time);
+  else if (id.interf == PLAYER_RFID_CODE)
+      return this->ParseRFID(id, type, subtype, linenum, token_count, tokens,
+                            time);
 #if 0
   else if (id.interf == PLAYER_POSITION3D_CODE)
     return this->ParsePosition3d(id, type, subtype, linenum,
@@ -2124,6 +2151,169 @@ int ReadLog::ParseActarray (player_devaddr_t id,
             PLAYER_ERROR1 ("unknown Actarray message type %d\n", type);
             return (-1);
     }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse AIO data
+int ReadLog::ParseAIO(player_devaddr_t id, unsigned short type,
+                      unsigned short subtype, int linenum, int token_count,
+                      char **tokens, double time)
+{
+  switch (type) {
+    case PLAYER_MSGTYPE_DATA:
+      switch (subtype) {
+        case PLAYER_AIO_DATA_STATE: {
+            player_aio_data_t inputs;
+
+            if (token_count < 8) {
+              PLAYER_ERROR2("invalid line at %s:%d: count missing", filename,
+                            linenum);
+              return -1;
+            }
+
+            inputs.voltages_count = atoi(tokens[7]);
+
+            if (token_count - 8 != (int)inputs.voltages_count) {
+              PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
+                            "match count", filename, linenum);
+              return -1;
+            }
+
+            if (inputs.voltages_count > PLAYER_AIO_MAX_INPUTS) {
+              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
+                            filename, linenum);
+              return -1;
+            }
+
+            char **t(tokens + 8);
+            for (float *v(inputs.voltages);
+                 v != inputs.voltages + inputs.voltages_count; ++v, ++t)
+              *v = atof(*t);
+
+            Publish(id, NULL, type, subtype, (void *)&inputs, sizeof(inputs),
+                    &time);
+            return 0;
+          }
+        default:
+          PLAYER_WARN3("cannot parse log of unknown aio data subtype '%d' at "
+                       "%s:%d", subtype, filename, linenum);
+          return -1;
+      }
+      default:
+        PLAYER_WARN3("cannot parse log unknown of aio message type '%d' at "
+                     "%s:%d", type, filename, linenum);
+        return -1;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse DIO data
+int ReadLog::ParseDIO(player_devaddr_t id, unsigned short type,
+                      unsigned short subtype, int linenum, int token_count,
+                      char **tokens, double time)
+{
+  switch (type) {
+    case PLAYER_MSGTYPE_DATA:
+      switch (subtype) {
+        case PLAYER_DIO_DATA_VALUES: {
+            player_dio_data_t inputs;
+
+            if (token_count < 8) {
+              PLAYER_ERROR2("invalid line at %s:%d: count missing", filename,
+                            linenum);
+              return -1;
+            }
+
+            inputs.count = atoi(tokens[7]);
+            inputs.digin = 0;
+
+            if (token_count - 8 != static_cast<int>(inputs.count)) {
+              PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
+                            "match count", filename, linenum);
+              return -1;
+            }
+
+            if (inputs.count > 32 /* MAX_INPUTS */) {
+              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
+                            filename, linenum);
+              return -1;
+            }
+
+            char **t(tokens + 8);
+            for (uint32_t mask(1); mask != (1ul << inputs.count);
+                 mask <<=1, ++t) {
+              if (strcmp(*t, "1") == 0) inputs.digin |= mask;
+            }
+
+            Publish(id, NULL, type, subtype, (void *)&inputs, sizeof(inputs),
+                    &time);
+            return 0;
+          }
+        default:
+          PLAYER_WARN3("cannot parse log of unknown dio data subtype '%d' at "
+                       "%s:%d", subtype, filename, linenum);
+          return -1;
+      }
+      default:
+        PLAYER_WARN3("cannot parse log of unknown dio message type '%d' at "
+                     "%s:%d", type, filename, linenum);
+        return -1;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse RFID data
+int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
+                      unsigned short subtype, int linenum, int token_count,
+                      char **tokens, double time)
+{
+  switch (type) {
+    case PLAYER_MSGTYPE_DATA:
+      switch (subtype) {
+        case PLAYER_RFID_DATA: {
+            player_rfid_data_t rdata;
+
+            if (token_count < 8) {
+              PLAYER_ERROR2("invalid line at %s:%d: count missing",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            rdata.tags_count = atoi(tokens[7]);
+
+            if (token_count - 8 != static_cast<int>(rdata.tags_count)) {
+              PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
+                            "match count", this->filename, linenum);
+              return -1;
+            }
+
+            if (rdata.tags_count > PLAYER_RFID_MAX_TAGS) {
+              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            char **t(tokens + 8);
+            for (player_rfid_tag_t *r(rdata.tags);
+                 r != rdata.tags + rdata.tags_count; ++r, ++t) {
+              r->guid_count = strlen(*t) / 2;
+              DecodeHex(r->guid, PLAYER_RFID_MAX_GUID, *t, strlen(*t));
+            }
+
+            Publish(id, NULL, type, subtype, (void *)&rdata, sizeof(rdata),
+                    &time);
+            return 0;
+          }
+        default:
+          PLAYER_WARN3("cannot parse log of unknown rfid data subtype '%d' at "
+                       "%s:%d", subtype, filename, linenum);
+          return -1;
+      }
+      default:
+        PLAYER_WARN3("cannot parse log of unknown rfid message type '%d' at "
+                     "%s:%d", type, filename, linenum);
+        return -1;
+  }
 }
 
 #if 0

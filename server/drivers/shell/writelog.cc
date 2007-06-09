@@ -228,6 +228,16 @@ class WriteLog: public Driver
   
   // Write Actarray data to file
   private: int WriteActarray (player_msghdr_t* hdr, void *data);
+
+  // Write AIO data to file
+  private: int WriteAIO(player_msghdr_t* hdr, void *data);
+
+  // Write AIO data to file
+  private: int WriteDIO(player_msghdr_t* hdr, void *data);
+
+  // Write RFID data to file
+  private: int WriteRFID(player_msghdr_t* hdr, void *data);
+
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -776,6 +786,15 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_ACTARRAY_CODE:
       retval = this->WriteActarray (hdr, data);
+      break;
+    case PLAYER_AIO_CODE:
+      retval = this->WriteAIO(hdr, data);
+      break;
+    case PLAYER_DIO_CODE:
+      retval = this->WriteDIO(hdr, data);
+      break;
+    case PLAYER_RFID_CODE:
+      retval = this->WriteRFID(hdr, data);
       break;
     /* HHAA 15-02-2007 */
     case PLAYER_BUMPER_CODE:
@@ -1510,6 +1529,156 @@ WriteLog::WriteActarray (player_msghdr_t* hdr, void *data)
         default:
             return (-1);
     }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_aio aio format
+
+@brief AIO log format
+
+The format for each @ref interface_aio message is:
+  - voltages_count (int): the numer of analog input voltages
+  - list of inputs; for each input:
+    - voltage (float): the voltage on that input
+
+ */
+int
+WriteLog::WriteAIO(player_msghdr_t* hdr, void* data)
+{
+  // Check the type
+  switch (hdr->type) {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch (hdr->subtype) {
+        case PLAYER_AIO_DATA_STATE: {
+            player_aio_data_t* inputs(static_cast<player_aio_data_t*>(data));
+
+            // check for buffer overrun
+            if (inputs->voltages_count > PLAYER_AIO_MAX_INPUTS) {
+                // this shouldn't happen
+                PLAYER_ERROR("count too big for buffer");
+                return -1;
+            }
+
+            fprintf(this->file, "%04d ", inputs->voltages_count);
+
+            for (float *v(inputs->voltages);
+                 v != inputs->voltages + inputs->voltages_count; ++v)
+              fprintf(this->file, "%.3f ", *v);
+
+            return 0;
+          }
+        default:
+          PLAYER_WARN1("cannot log unknown aio data subtype '%d'",
+                       hdr->subtype);
+          return -1;
+      }
+    default:
+      PLAYER_WARN1("cannot log unknown aio message type '%d'", hdr->type);
+      return -1;
+  }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_dio dio format
+
+@brief DIO log format
+
+The format for each @ref interface_dio message is:
+  - count (int): the numer of digital inputs
+  - list of input signals; for each input:
+      state (string): '0' or '1'
+
+ */
+int
+WriteLog::WriteDIO(player_msghdr_t* hdr, void* data)
+{
+  // Check the type
+  switch (hdr->type) {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch (hdr->subtype) {
+        case PLAYER_DIO_DATA_VALUES: {
+            player_dio_data_t* inputs(static_cast<player_dio_data_t*>(data));
+
+            // check for buffer overrun
+            if (inputs->count > /* MAX_INPUTS */ 32) {
+                // this shouldn't happen
+                PLAYER_ERROR("count too big for bitfield");
+                return -1;
+            }
+
+            fprintf(this->file, "%04d ", inputs->count);
+
+            for (uint32_t mask(1); mask != (1ul << inputs->count); mask <<= 1)
+              fprintf(this->file, "%d ", !!(mask & inputs->digin));
+
+            return 0;
+          }
+        default:
+          PLAYER_WARN1("cannot log unknown dio data subtype '%d'",
+                       hdr->subtype);
+          return -1;
+      }
+    default:
+      PLAYER_WARN1("cannot log unknown dio message type '%d'", hdr->type);
+      return -1;
+  }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_rfid rfid format
+
+@brief RFID log format
+
+The format for each @ref interface_rfid message is:
+  - tags_count (int): the numer of tags found
+  - list of tags; for each tag:
+    - guid (string): tag guid in hex
+
+ */
+int
+WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
+{
+  // Check the type
+  switch (hdr->type) {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch (hdr->subtype) {
+        case PLAYER_RFID_DATA: {
+            player_rfid_data_t* rdata(static_cast<player_rfid_data_t*>(data));
+
+            if (rdata->tags_count > PLAYER_RFID_MAX_TAGS) {
+                // this shouldn't happen
+                PLAYER_ERROR("count too big for buffer");
+                return -1;
+            }
+
+            fprintf(file, "%04d ", rdata->tags_count);
+
+            for (player_rfid_tag_t *t(rdata->tags);
+                 t != rdata->tags + rdata->tags_count; ++t) {
+              if (t->guid_count > PLAYER_RFID_MAX_GUID) {
+                PLAYER_ERROR("guid count too big for buffer");
+                return -1;
+              }
+              char str[PLAYER_RFID_MAX_GUID * 2 + 1];
+              memset(str, '\0', sizeof(str));
+              EncodeHex(str, sizeof(str), t->guid, t->guid_count);
+              fprintf(file, "%s ", str);
+            }
+
+            return 0;
+          }
+        default:
+          PLAYER_WARN1("cannot log unknown rfid data subtype '%d'",
+                       hdr->subtype);
+          return -1;
+      }
+    default:
+      PLAYER_WARN1("cannot log unknown rfid message type '%d'", hdr->type);
+      return -1;
+  }
 }
 
 int
