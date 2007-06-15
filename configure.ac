@@ -506,7 +506,7 @@ AC_OUTPUT(Makefile
           server/drivers/actarray/Makefile
           server/drivers/audio/Makefile
           server/drivers/audiodsp/Makefile
-          server/drivers/audiomixer/Makefile
+dnl          server/drivers/audiomixer/Makefile
           server/drivers/camera/Makefile
           server/drivers/camera/v4l/Makefile
           server/drivers/camera/1394/Makefile
