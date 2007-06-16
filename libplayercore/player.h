@@ -131,12 +131,9 @@ in the body.*/
 #define PLAYER_AIO_CODE            21  // analog I/O
 #define PLAYER_IR_CODE             22  // IR array
 #define PLAYER_WIFI_CODE           23  // wifi card status
-#define PLAYER_WAVEFORM_CODE       24  // fetch raw waveforms
 #define PLAYER_LOCALIZE_CODE       25  // localization
 #define PLAYER_MCOM_CODE           26  // multicoms
 #define PLAYER_SOUND_CODE          27  // sound file playback
-#define PLAYER_AUDIODSP_CODE       28  // audio dsp I/O
-#define PLAYER_AUDIOMIXER_CODE     29  // audio I/O
 #define PLAYER_POSITION3D_CODE     30  // 3-D position
 #define PLAYER_SIMULATION_CODE     31  // simulators
 #define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights
@@ -176,8 +173,6 @@ in the body.*/
 #define PLAYER_ACTARRAY_STRING        "actarray"
 #define PLAYER_AIO_STRING             "aio"
 #define PLAYER_AUDIO_STRING           "audio"
-#define PLAYER_AUDIODSP_STRING        "audiodsp"
-#define PLAYER_AUDIOMIXER_STRING      "audiomixer"
 #define PLAYER_BLINKENLIGHT_STRING    "blinkenlight"
 #define PLAYER_BLOBFINDER_STRING      "blobfinder"
 #define PLAYER_BUMPER_STRING          "bumper"
@@ -218,7 +213,6 @@ in the body.*/
 #define PLAYER_SPEECH_STRING          "speech"
 #define PLAYER_SPEECH_RECOGNITION_STRING  "speech_recognition"
 #define PLAYER_TRUTH_STRING           "truth"
-#define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
 #define PLAYER_WSN_STRING             "wsn"
 #define PLAYER_RANGER_STRING          "ranger"
@@ -976,34 +970,34 @@ data is a @ref player_audio_mixer_channel_list_t structure*/
 /** Audio formats */
 
 /** Raw Audio bit flags */
-#define PLAYER_AUDIO_DESCRIPTION_BITS		0xFF
-#define PLAYER_AUDIO_BITS			0x03
+#define PLAYER_AUDIO_DESCRIPTION_BITS         0xFF
+#define PLAYER_AUDIO_BITS                     0x03
 /** 8 bit */
-#define PLAYER_AUDIO_8BIT 			0
+#define PLAYER_AUDIO_8BIT                     0
 /** 16 bit */
-#define PLAYER_AUDIO_16BIT 			1
+#define PLAYER_AUDIO_16BIT                    1
 /** 24 bit */
-#define PLAYER_AUDIO_24BIT 			2
+#define PLAYER_AUDIO_24BIT                    2
 /** Mono */
-#define PLAYER_AUDIO_MONO 			0
+#define PLAYER_AUDIO_MONO                     0
 /** Stereo */
-#define PLAYER_AUDIO_STEREO 			4
+#define PLAYER_AUDIO_STEREO                   4
 /** Frequency */
-#define PLAYER_AUDIO_FREQ			0x18
-#define PLAYER_AUDIO_FREQ_44k 			0
-#define PLAYER_AUDIO_FREQ_11k 			8
-#define PLAYER_AUDIO_FREQ_22k 			16
-#define PLAYER_AUDIO_FREQ_48k 			24
+#define PLAYER_AUDIO_FREQ                     0x18
+#define PLAYER_AUDIO_FREQ_44k                 0
+#define PLAYER_AUDIO_FREQ_11k                 8
+#define PLAYER_AUDIO_FREQ_22k                 16
+#define PLAYER_AUDIO_FREQ_48k                 24
 
 /** AUDIO format */
-#define PLAYER_AUDIO_FORMAT_BITS		0xFF00
+#define PLAYER_AUDIO_FORMAT_BITS              0xFF00
 
-#define PLAYER_AUDIO_FORMAT_NULL		0x0000
-#define PLAYER_AUDIO_FORMAT_RAW			0x0100
-#define PLAYER_AUDIO_FORMAT_MP3			0x0200
-#define PLAYER_AUDIO_FORMAT_OGG			0x0300
-#define PLAYER_AUDIO_FORMAT_FLAC		0x0400
-#define PLAYER_AUDIO_FORMAT_AAC			0x0500
+#define PLAYER_AUDIO_FORMAT_NULL              0x0000
+#define PLAYER_AUDIO_FORMAT_RAW               0x0100
+#define PLAYER_AUDIO_FORMAT_MP3               0x0200
+#define PLAYER_AUDIO_FORMAT_OGG               0x0300
+#define PLAYER_AUDIO_FORMAT_FLAC              0x0400
+#define PLAYER_AUDIO_FORMAT_AAC               0x0500
 
 
 
@@ -1182,187 +1176,6 @@ typedef struct player_audio_state
 	/** The state of the driver: will be a bitmask of PLAYER_AUDIO_STATE_* values */
 	uint32_t state;
 } player_audio_state_t;
-
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
-/**
-@ingroup interfaces
-@defgroup interface_audiodsp audiodsp
-@brief Audible tone emission / detection (deprecated)
-
-@deprecated Use the @ref interface_audio interface instead
-
-The @p audiodsp interface is used to control sound hardware, if equipped.
-*/
-
-/**
-@ingroup interface_audiodsp
-@{ */
-
-/** Maximum number of frequencies to report */
-#define PLAYER_AUDIODSP_MAX_FREQS 8
-/** Maximum length of a BPSK bitstring to emit */
-#define PLAYER_AUDIODSP_MAX_BITSTRING_LEN 64
-
-/** Request/reply subtype: set configuration */
-#define PLAYER_AUDIODSP_SET_CONFIG 1
-/** Request/reply subtype: get configuration */
-#define PLAYER_AUDIODSP_GET_CONFIG 2
-
-/** Command subtype: play tone */
-#define PLAYER_AUDIODSP_PLAY_TONE  1
-/** Command subtype: play chirp */
-#define PLAYER_AUDIODSP_PLAY_CHIRP 2
-/** Command subtype: replay (last tone, last chirp ?) */
-#define PLAYER_AUDIODSP_REPLAY     3
-
-/** Data subtype: detected tones */
-#define PLAYER_AUDIODSP_DATA_TONES 1
-
-/** @brief Data: detected tones (@ref PLAYER_AUDIODSP_DATA_TONES)
-
-The @p audiodsp interface reads the audio stream from @p /dev/dsp (which
-is assumed to be associated with a sound card connected to a microphone)
-and performs some analysis on it.  @ref PLAYER_AUDIODSP_MAX_FREQS number of
-frequency/amplitude pairs are then returned as data. */
-typedef struct player_audiodsp_data
-{
-  /** Number of frequencies */
-  uint32_t frequency_count;
-  /** [Hz] */
-  float frequency[PLAYER_AUDIODSP_MAX_FREQS];
-  /** Number of amplitudes */
-  uint32_t amplitude_count;
-  /** [Db] */
-  float amplitude[PLAYER_AUDIODSP_MAX_FREQS];
-
-} player_audiodsp_data_t;
-
-/** @brief Command: tone / chirp to play
-
-The @p audiodsp interface accepts commands to produce fixed-frequency
-tones or binary phase shift keyed(BPSK) chirps through @p /dev/dsp
-(which is assumed to be associated with a sound card to which a speaker is
-attached). The command subtype, which should be @ref PLAYER_AUDIODSP_PLAY_TONE,
-@ref PLAYER_AUDIODSP_PLAY_CHIRP, or @ref PLAYER_AUDIODSP_REPLAY, determines what
-to do.*/
-typedef struct player_audiodsp_cmd
-{
-  /** Frequency to play [Hz] */
-  float frequency;
-  /** Amplitude to play [dB] */
-  float amplitude;
-  /** Duration to play [s] */
-  float duration;
-  /** Length of bit string */
-  uint32_t bit_string_count;
-  /** BitString to encode in sine wave */
-  uint8_t bit_string[PLAYER_AUDIODSP_MAX_BITSTRING_LEN];
-} player_audiodsp_cmd_t;
-
-/** @brief Request/reply : Get/set audio properties.
-
-Send a null @ref PLAYER_AUDIODSP_GET_CONFIG request to receive the audiodsp
-configuration.  Send a full @ref PLAYER_AUDIODSP_SET_CONFIG request to modify
-the configuration (and receive a null response).
-
-The sample format is defined in sys/soundcard.h, and defines the byte
-size and endian format for each sample.
-
-The sample rate defines the Hertz at which to sample.
-
-Mono or stereo sampling is defined in the channels parameter where
-1==mono and 2==stereo. */
-typedef struct player_audiodsp_config
-{
-  /** Format with which to sample */
-  int32_t format;
-  /** Sample rate [Hz] */
-  float frequency;
-  /** Number of channels to use. 1=mono, 2=stereo */
-  uint32_t channels;
-} player_audiodsp_config_t;
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
-/**
-@ingroup interfaces
-@defgroup interface_audiomixer audiomixer
-@brief Sound level control (deprecated)
-
-@deprecated Use the @ref interface_audio interface instead
-
-The @p audiomixer interface is used to control sound levels.
-*/
-
-/**
-@ingroup interface_audiomixer
-@{ */
-
-/** Command subtype: set master level */
-#define PLAYER_AUDIOMIXER_SET_MASTER 1
-/** Command subtype: set PCM level */
-#define PLAYER_AUDIOMIXER_SET_PCM    2
-/** Command subtype: set line in level */
-#define PLAYER_AUDIOMIXER_SET_LINE   3
-/** Command subtype: set microphone level */
-#define PLAYER_AUDIOMIXER_SET_MIC    4
-/** Command subtype: set input gain level */
-#define PLAYER_AUDIOMIXER_SET_IGAIN  5
-/** Command subtype: set output gain level */
-#define PLAYER_AUDIOMIXER_SET_OGAIN  6
-
-/** Request/reply subtype: get levels */
-#define PLAYER_AUDIOMIXER_GET_LEVELS 1
-
-/** @brief Command: set level
-
-The @p audiomixer interface accepts commands to set the left and right
-volume levels of various channels. The channel is determined by the
-subtype of the command: @ref PLAYER_AUDIOMIXER_SET_MASTER for the master volume,
-@ref PLAYER_AUDIOMIXER_SET_PCM for the PCM volume, @ref PLAYER_AUDIOMIXER_SET_LINE for
-the line in volume, @ref PLAYER_AUDIOMIXER_SET_MIC for the microphone volume,
-@ref PLAYER_AUDIOMIXER_SET_IGAIN for the input gain, and @ref PLAYER_AUDIOMIXER_SET_OGAIN
-for the output gain.
-*/
-typedef struct player_audiomixer_cmd
-{
-  /** Left level */
-  uint32_t left;
-  /** Right level */
-  uint32_t right;
-
-} player_audiomixer_cmd_t;
-
-/** @brief Request/reply: Get levels
-
-Send a null @ref PLAYER_AUDIOMIXER_GET_LEVELS request to receive the
-current state of the mixer levels.
-*/
-typedef struct player_audiomixer_config
-{
-  /** Levels */
-  uint32_t master_left;
-  /** Levels */
-  uint32_t master_right;
-  /** Levels */
-  uint32_t pcm_left;
-  /** Levels */
-  uint32_t pcm_right;
-  /** Levels */
-  uint32_t line_left;
-  /** Levels */
-  uint32_t line_right;
-  /** Levels */
-  uint32_t mic_left;
-  /** Levels */
-  uint32_t mic_right;
-  /** Levels */
-  uint32_t i_gain;
-  /** Levels */
-  uint32_t o_gain;
-} player_audiomixer_config_t;
 
 /** @} */
 
@@ -5033,42 +4846,6 @@ typedef struct player_truth_fiducial_id
   /** the fiducial ID */
   int16_t id;
 }  player_truth_fiducial_id_t;
-
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
-/** @ingroup interfaces
- * @defgroup interface_waveform waveform
- * @brief Digital waveforms
-
-The @p waveform interface is used to receive arbitrary digital samples. For audio data
-you should probably use the audio interface.
-*/
-
-/** @ingroup interface_waveform
- * @{ */
-
-/** Maximum length of waveform */
-#define PLAYER_WAVEFORM_DATA_MAX 4096
-
-/** Data subtype: sample */
-#define PLAYER_WAVEFORM_DATA_SAMPLE 1
-
-/** @brief Data: sample (@ref PLAYER_WAVEFORM_DATA_SAMPLE)
-
-The @p waveform interface reads a digitized waveform from the target
-device.*/
-typedef struct player_waveform_data
-{
-  /** Bit rate - bits per second */
-  uint32_t rate;
-  /** Depth - bits per sample */
-  uint32_t depth;
-  /** Samples - the number of bytes of raw data */
-  uint32_t data_count;
-  /** data - an array of raw data */
-  uint8_t data[PLAYER_WAVEFORM_DATA_MAX];
-} player_waveform_data_t;
 
 /** @} */
 

@@ -505,8 +505,6 @@ AC_OUTPUT(Makefile
           server/drivers/position/Makefile
           server/drivers/actarray/Makefile
           server/drivers/audio/Makefile
-          server/drivers/audiodsp/Makefile
-dnl          server/drivers/audiomixer/Makefile
           server/drivers/camera/Makefile
           server/drivers/camera/v4l/Makefile
           server/drivers/camera/1394/Makefile
@@ -518,7 +516,6 @@ dnl          server/drivers/audiomixer/Makefile
           server/drivers/fiducial/Makefile
           server/drivers/ptz/Makefile
           server/drivers/laser/Makefile
-          server/drivers/waveform/Makefile
           server/drivers/blobfinder/Makefile
           server/drivers/blobfinder/artoolkitplus/Makefile
           server/drivers/blobfinder/cmvision/Makefile
@@ -546,8 +543,8 @@ dnl          server/drivers/audiomixer/Makefile
           server/drivers/mixed/irobot/roomba/Makefile
           server/drivers/mixed/irobot/create/Makefile
           server/drivers/mixed/sr3000/Makefile
-	  server/drivers/health/Makefile
-	  server/drivers/health/statgrab/Makefile
+          server/drivers/health/Makefile
+          server/drivers/health/statgrab/Makefile
           server/drivers/planner/Makefile
           server/drivers/planner/wavefront/Makefile
           server/drivers/position/microstrain/Makefile

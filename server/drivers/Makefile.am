@@ -2,8 +2,6 @@ SUBDIRS = \
 actarray \
 base \
 audio \
-audiodsp \
-audiomixer \
 blobfinder \
 camera \
 fiducial \
@@ -21,7 +19,6 @@ ptz \
 service_adv \
 shell \
 speech \
-waveform \
 wifi \
 rfid \
 wsn \
