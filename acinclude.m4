@@ -117,13 +117,9 @@ fi
 
 
 
-PLAYER_ADD_DRIVER([acoustics],[no],
-                  ["gsl/gsl_fft_real.h sys/soundcard.h"],[],
-                  ["-lgsl -lgslcblas"])
-
 PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([alsa],[no],[alsa/asoundlib.h],[],[-lasound]) 
+PLAYER_ADD_DRIVER([alsa],[no],[alsa/asoundlib.h],[],[-lasound])
 
 dnl TODO: handle pkg-config location of gsl.  Some, but not all,
 dnl installation of gsl have a .pc file.
@@ -372,8 +368,6 @@ fi
 PLAYER_ADD_DRIVER([vfh],[yes],)
 
 PLAYER_ADD_DRIVER([vmapfile],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([waveaudio],[no],[sys/soundcard.h],[],[])
 
 PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
 

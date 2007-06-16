@@ -291,10 +291,6 @@ void REB_Register(DriverTable *table);
 void Khepera_Register(DriverTable *table);
 #endif
 
-#ifdef INCLUDE_ACOUSTICS
-void Acoustics_Register(DriverTable* table);
-#endif
-
 #ifdef INCLUDE_MIXER
 void Mixer_Register(DriverTable* table);
 #endif
@@ -353,10 +349,6 @@ void INav_Register(DriverTable *table);
 
 #ifdef INCLUDE_VFH
 void VFH_Register(DriverTable *table);
-#endif
-
-#ifdef INCLUDE_WAVEAUDIO
-void Waveaudio_Register(DriverTable* table);
 #endif
 
 #ifdef INCLUDE_MCL
@@ -682,10 +674,6 @@ player_register_drivers()
   Erratic_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_ACOUSTICS
-  Acoustics_Register(driverTable);
-#endif
-
 #ifdef INCLUDE_MIXER
   Mixer_Register(driverTable);
 #endif
@@ -761,17 +749,13 @@ player_register_drivers()
 #ifdef INCLUDE_LASERPTZCLOUD
   LaserPTZCloud_Register(driverTable);
 #endif
-  
+
 #ifdef INCLUDE_INAV
   INav_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_VFH
   VFH_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_WAVEAUDIO
-  Waveaudio_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_MCL
