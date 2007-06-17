@@ -124,37 +124,6 @@ static playerxdr_function_t init_ftable[] =
   {PLAYER_AUDIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_STATE_DATA,
    (player_pack_fn_t)player_audio_state_pack, NULL, NULL},
 
-
-  /* audiodsp messages */
-/*  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_DATA, PLAYER_AUDIODSP_DATA_TONES,
-   (player_pack_fn_t)player_audiodsp_data_pack},
-  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_TONE,
-   (player_pack_fn_t)player_audiodsp_cmd_pack},
-  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_PLAY_CHIRP,
-   (player_pack_fn_t)player_audiodsp_cmd_pack},
-  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIODSP_REPLAY,
-   (player_pack_fn_t)player_audiodsp_cmd_pack},
-  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_GET_CONFIG,
-   (player_pack_fn_t)player_audiodsp_config_pack},
-  {PLAYER_AUDIODSP_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIODSP_SET_CONFIG,
-   (player_pack_fn_t)player_audiodsp_config_pack},*/
-
-  /* audiomixer messages */
-/*  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MASTER,
-   (player_pack_fn_t)player_audiomixer_cmd_pack},
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_PCM,
-   (player_pack_fn_t)player_audiomixer_cmd_pack},
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_LINE,
-   (player_pack_fn_t)player_audiomixer_cmd_pack},
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_MIC,
-   (player_pack_fn_t)player_audiomixer_cmd_pack},
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_IGAIN,
-   (player_pack_fn_t)player_audiomixer_cmd_pack},
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_CMD, PLAYER_AUDIOMIXER_SET_OGAIN,
-   (player_pack_fn_t)player_audiomixer_cmd_pack},
-  {PLAYER_AUDIOMIXER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_AUDIOMIXER_GET_LEVELS,
-   (player_pack_fn_t)player_audiomixer_config_pack},*/
-
   /* blinkenlight messages */
   {PLAYER_BLINKENLIGHT_CODE, PLAYER_MSGTYPE_DATA, PLAYER_BLINKENLIGHT_DATA_STATE,
    (player_pack_fn_t)player_blinkenlight_data_pack, NULL, NULL},
@@ -507,6 +476,12 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_ranger_power_config_pack, NULL, NULL},
   {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS,
    (player_pack_fn_t)player_ranger_intns_config_pack, NULL, NULL},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS,
+   (player_pack_fn_t)player_ranger_intns_config_pack, NULL, NULL},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG,
+   (player_pack_fn_t)player_ranger_config_pack, NULL, NULL},
+  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_SET_CONFIG,
+   (player_pack_fn_t)player_ranger_config_pack, NULL, NULL},
 
   /* rfid messages */
   {PLAYER_RFID_CODE, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA,
@@ -539,10 +514,6 @@ static playerxdr_function_t init_ftable[] =
   /* speech recognition messages */
   {PLAYER_SPEECH_RECOGNITION_CODE, PLAYER_MSGTYPE_DATA, PLAYER_SPEECH_RECOGNITION_DATA_STRING,
     (player_pack_fn_t)player_speech_recognition_data_pack, NULL, NULL},
-
-  /* waveform messages */
-  {PLAYER_WAVEFORM_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WAVEFORM_DATA_SAMPLE,
-    (player_pack_fn_t)player_waveform_data_pack, NULL, NULL},
 
   /* wifi messages */
   {PLAYER_WIFI_CODE, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE,
