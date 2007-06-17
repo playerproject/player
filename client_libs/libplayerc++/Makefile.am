@@ -69,8 +69,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               blinkenlightproxy.cc \
                               energyproxy.cc \
                               mcomproxy.cc \
-                              speechrecognitionproxy.cc \
-                              waveformproxy.cc
+                              speechrecognitionproxy.cc
 
 
 #PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
