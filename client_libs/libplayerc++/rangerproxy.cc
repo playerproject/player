@@ -110,6 +110,22 @@ void RangerProxy::RequestGeom()
     throw PlayerError("RangerProxy::RequestGeom()", "error requesting geometry");
 }
 
+void RangerProxy::Configure(double aMinAngle, double aMaxAngle, double aResolution,
+                            double aMaxRange, double aRangeRes, double aFrequency)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (0 != playerc_ranger_set_config(mDevice, aMinAngle, aMaxAngle, aResolution,
+                                     aMaxRange, aRangeRes, aFrequency))
+    throw PlayerError("RangerProxy::Configure()", "error setting config");
+}
+
+void RangerProxy::RequestConfigure()
+{
+  scoped_lock_t lock(mPc->mMutex);
+  if (0 != playerc_ranger_get_config(mDevice, NULL, NULL, NULL, NULL, NULL, NULL))
+    throw PlayerError("RangerProxy::RequestConfigure()", "error getting config");
+}
+
 
 std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c)
 {

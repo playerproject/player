@@ -116,11 +116,18 @@ void ranger_update(ranger_t *ranger)
       if (playerc_ranger_get_geom(ranger->proxy) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
 
-      // Try to get the min_angle and resolution properties (don't care if can't get them)
-      if (playerc_device_get_dblprop(&ranger->proxy->info, "min_angle", &ranger->start_angle) != 0)
+      // Request the device config for min angle and resolution
+      if (playerc_ranger_get_config(ranger->proxy, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
+      {
+        PRINT_ERR1("libplayerc error: %s", playerc_error_str());
         ranger->start_angle = 0.0f;
-      if (playerc_device_get_dblprop(&ranger->proxy->info, "resolution", &ranger->resolution) != 0)
         ranger->resolution = 0.0f;
+      }
+      else
+      {
+        ranger->start_angle = ranger->proxy->min_angle;
+        ranger->resolution = ranger->proxy->resolution;
+      }
 
       // Delete any current figures
       ranger_delete_figures(ranger);

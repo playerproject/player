@@ -56,13 +56,6 @@ int ToRanger::Setup (void)
 {
 	// Clean output
 	memset (&deviceGeom, 0, sizeof (deviceGeom));
-	// Clean properties
-	minAngle = 0.0f;
-	maxAngle = 0.0f;
-	resolution = 0.0f;
-	maxRange = 0.0f;
-	rangeRes = 0.0f;
-	frequency = 0.0f;
 
 	return 0;
 }
@@ -95,11 +88,7 @@ int ToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void 
 	// Check for capabilities requests first
 	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
 
-	// Override default handling of properties
-	if (ProcessProperty (respQueue, hdr, data) == 0)
-		return 0;
-
-	// Pass other property get/set messages through to the input device
+	// Pass property get/set messages through to the input device
 	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ, device_addr) ||
 			Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ, device_addr) ||
 			Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ, device_addr) ||
@@ -127,61 +116,6 @@ int ToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void 
 	{
 		hdr->addr = device_addr;
 		Publish (ret_queue, hdr, data);
-		return 0;
-	}
-
-	return -1;
-}
-
-// Property processing
-// This overrides the default handling of properties from the Driver class.
-// It only handles double properties, and only those we know about (the 5 member variables).
-// Anything else returns -1, so the Driver class property handling will catch it.
-int ToRanger::ProcessProperty (MessageQueue *respQueue, player_msghdr *hdr, void *data)
-{
-	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ, device_addr))
-	{
-		player_dblprop_req_t *req = reinterpret_cast<player_dblprop_req_t*> (data);
-		if (strcmp (req->key, "min_angle") == 0)
-			req->value = minAngle;
-		else if (strcmp (req->key, "max_angle") == 0)
-			req->value = maxAngle;
-		else if (strcmp (req->key, "resolution") == 0)
-			req->value = resolution;
-		else if (strcmp (req->key, "max_range") == 0)
-			req->value = maxRange;
-		else if (strcmp (req->key, "range_res") == 0)
-			req->value = rangeRes;
-		else if (strcmp (req->key, "frequency") == 0)
-			req->value = frequency;
-		else
-			return -1;
-
-		printf ("Handling prop get request for property %s, returning value %f\n", req->key, req->value);
-		Publish (device_addr, respQueue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_GET_DBLPROP_REQ, reinterpret_cast<void*> (req), sizeof(player_dblprop_req_t), NULL);
-		return 0;
-	}
-	else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ, device_addr))
-	{
-		player_dblprop_req_t *req = reinterpret_cast<player_dblprop_req_t*> (data);
-		if (strcmp (req->key, "min_angle") == 0)
-			minAngle = req->value;
-		else if (strcmp (req->key, "max_angle") == 0)
-			maxAngle = req->value;
-		else if (strcmp (req->key, "resolution") == 0)
-			resolution = req->value;
-		else if (strcmp (req->key, "max_range") == 0)
-			maxRange = req->value;
-		else if (strcmp (req->key, "range_res") == 0)
-			rangeRes = req->value;
-		else if (strcmp (req->key, "frequency") == 0)
-			frequency = req->value;
-		else
-			return -1;
-
-		// Notify the input device of the new property
-		// Prop set request ACK will be sent when a reply is received from the input device
-		PropertyChanged ();
 		return 0;
 	}
 

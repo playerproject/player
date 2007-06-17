@@ -251,3 +251,69 @@ int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value)
 
   return 0;
 }
+
+// Ranger set config
+int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
+                              double max_angle, double resolution,
+                              double max_range, double range_res,
+                              double frequency)
+{
+  player_ranger_config_t config;
+
+  config.min_angle = min_angle;
+  config.max_angle = max_angle;
+  config.resolution = resolution;
+  config.max_range = max_range;
+  config.range_res = range_res;
+  config.frequency = frequency;
+
+  if(playerc_client_request(device->info.client, &device->info,
+                            PLAYER_RANGER_REQ_SET_CONFIG,
+                            (void*)&config, &config, sizeof(config)) < 0)
+    return -1;
+
+  device->min_angle = config.min_angle;
+  device->max_angle = config.max_angle;
+  device->resolution = config.resolution;
+  device->max_range = config.max_range;
+  device->range_res = config.range_res;
+  device->frequency = config.frequency;
+
+  return 0;
+}
+
+// Ranger get config
+int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
+                              double *max_angle, double *resolution,
+                              double *max_range, double *range_res,
+                              double *frequency)
+{
+  player_ranger_config_t config;
+
+  if(playerc_client_request(device->info.client, &device->info,
+                            PLAYER_RANGER_REQ_GET_CONFIG,
+                            NULL, &config, sizeof(config)) < 0)
+    return(-1);
+
+  device->min_angle = config.min_angle;
+  device->max_angle = config.max_angle;
+  device->resolution = config.resolution;
+  device->max_range = config.max_range;
+  device->range_res = config.range_res;
+  device->frequency = config.frequency;
+
+  if (min_angle != NULL)
+    *min_angle = device->min_angle;
+  if (max_angle != NULL)
+    *max_angle = device->max_angle;
+  if (resolution != NULL)
+    *resolution = device->resolution;
+  if (max_range != NULL)
+    *max_range = device->max_range;
+  if (range_res != NULL)
+    *range_res = device->range_res;
+  if (frequency != NULL)
+    *frequency = device->frequency;
+
+  return 0;
+}

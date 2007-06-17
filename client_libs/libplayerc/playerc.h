@@ -2723,6 +2723,19 @@ typedef struct
   /** Number of individual range sensors in the device. */
   uint32_t sensor_count;
 
+  /** Start angle of scans [rad]. May be unfilled. */
+  double min_angle;
+  /** End angle of scans [rad]. May be unfilled. */
+  double max_angle;
+  /** Scan resolution [rad]. May be unfilled. */
+  double resolution;
+  /** Maximum range [m]. May be unfilled. */
+  double max_range;
+  /** Range resolution [m]. May be unfilled. */
+  double range_res;
+  /** Scanning frequency [Hz]. May be unfilled. */
+  double frequency;
+
   /** Device geometry in the robot CS: pose gives the position and orientation,
       size gives the extent. These values are filled in by calling
       playerc_ranger_get_geom(), or from pose-stamped data. */
@@ -2775,6 +2788,32 @@ int playerc_ranger_power_config(playerc_ranger_t *device, uint8_t value);
 
 @param value Set to TRUE to turn the data on, FALSE to turn the data off. */
 int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value);
+
+/** @brief Set the ranger device's configuration. Not all values may be used.
+
+@param min_angle Start angle of scans [rad].
+@param max_angle End angle of scans [rad].
+@param resolution Scan resolution [rad].
+@param max_range Maximum range [m].
+@param range_res Range resolution [m].
+@param frequency Scanning frequency [Hz]. */
+int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
+                              double max_angle, double resolution,
+                              double max_range, double range_res,
+                              double frequency);
+
+/** @brief Get the ranger device's configuration. Not all values may be filled.
+
+@param min_angle Start angle of scans [rad].
+@param max_angle End angle of scans [rad].
+@param resolution Scan resolution [rad].
+@param max_range Maximum range [m].
+@param range_res Range resolution [m].
+@param frequency Scanning frequency [Hz]. */
+int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
+                              double *max_angle, double *resolution,
+                              double *max_range, double *range_res,
+                              double *frequency);
 
 /** @} */
 /**************************************************************************/

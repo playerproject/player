@@ -4376,22 +4376,15 @@ this interface, depending on device type.
 
 @subsection laserprops Laser scanner devices
 
-(double) min_angle:  Start angle of scans [rad].
-(double) max_angle:  End angle of scans [rad].
-(double) resolution: Scan resolution [rad].
-(double) max_range:  Maximum range [m].
-(double) range_res:  Range resolution [m].
-(double) frequency:  Scanning frequency [Hz].
+(string) type:     Type of device. For human debugging rather than client usage.
 
 @subsection sonarprops Sonar array devices
 
-(double) max_range:  Maximum range [m].
-(double) range_res:  Range resolution [m].
+(string) type:     Type of device. For human debugging rather than client usage.
 
 @subsection irprops IR array devices
 
-(double) max_range:  Maximum range [m].
-(double) range_res:  Range resolution [m].
+(string) type:     Type of device. For human debugging rather than client usage.
 
 */
 
@@ -4415,6 +4408,10 @@ this interface, depending on device type.
 #define PLAYER_RANGER_REQ_POWER         2
 /** Request/reply subtype: intensity data config */
 #define PLAYER_RANGER_REQ_INTNS         3
+/** Request/reply subtype: set configuration */
+#define PLAYER_RANGER_REQ_SET_CONFIG    4
+/** Request/reply subtype: get configuration */
+#define PLAYER_RANGER_REQ_GET_CONFIG    5
 
 /** @brief Data and Request/reply: Get geometry. (@ref PLAYER_RANGER_REQ_GET_GEOM)
 
@@ -4501,6 +4498,25 @@ typedef struct player_ranger_intns_config
   /** TRUE to turn data on, FALSE to turn data off. */
   uint8_t state;
 } player_ranger_intns_config_t;
+
+/** @brief Device configuration request (@ref PLAYER_RANGER_REQ_GET_CONFIG)
+
+Request and change the device's configuration. */
+typedef struct player_ranger_config
+{
+  /** Start angle of scans [rad]. May be unfilled. */
+  double min_angle;
+  /** End angle of scans [rad]. May be unfilled. */
+  double max_angle;
+  /** Scan resolution [rad]. May be unfilled. */
+  double resolution;
+  /** Maximum range [m]. May be unfilled. */
+  double max_range;
+  /** Range resolution [m]. May be unfilled. */
+  double range_res;
+  /** Scanning frequency [Hz]. May be unfilled. */
+  double frequency;
+} player_ranger_config_t;
 
 /** @} */
 
