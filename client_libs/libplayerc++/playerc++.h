@@ -295,80 +295,6 @@ class AudioProxy : public ClientProxy
 };
 
 // /**
-// The @p AudioDspProxy class controls an @ref interface_audiodsp device.
-//
-// @todo can we make this a subclass of @ref AudioProxy?
-// */
-// class AudioDspProxy : public ClientProxy
-// {
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_audiodsp_t *mDevice;
-//
-//   public:
-//     AudioDspProxy(PlayerClient *aPc, uint aIndex=0);
-//     ~AudioDspProxy
-//
-//     /** Format code of each sample */
-//     uint SetFormat(int aFormat);
-//
-//     /** Rate at which to sample (Hz) */
-//     uint SetRate(uint aRate);
-//
-//     uint GetCount() const { return(GetVar(mDevice->count)); };
-//
-//     double GetFrequency(uint aIndex) const
-//       { return(GetVar(mDevice->frequency[aIndex])); };
-//     double GetAmplitude(uint aIndex) const
-//       { return(GetVar(mDevice->amplitude[aIndex])); };
-//
-//     void Configure(uint aChan, uint aRate, int16_t aFormat=0xFFFFFFFF);
-//
-//     void RequestConfigure();
-//
-//     /// Play a fixed-frequency tone
-//     void PlayTone(uint aFreq, uint aAmp, uint aDur);
-//     void PlayChirp(uint aFreq, uint aAmp, uint aDur,
-//                    const uint8_t aBitString, uint aBitStringLen);
-//     void Replay();
-//
-//     /// Print the current data.
-//     void Print ();
-// };
-
-// /**
-// The @p AudioMixerProxy class controls an @ref interface_audiomixer device.
-// */
-// class AudioMixerProxy : public ClientProxy
-// {
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_audiodsp_t *mDevice;
-//
-//   public:
-//
-//     AudioMixerProxy (PlayerClient *aPc, uint aIndex=0);
-//
-//     void GetConfigure();
-//
-//     void SetMaster(uint aLeft, uint aRight);
-//     void SetPCM(uint aLeft, uint aRight);
-//     void SetLine(uint aLeft, uint aRight);
-//     void SetMic(uint aLeft, uint aRight);
-//     void SetIGain(uint aGain);
-//     void SetOGain(uint aGain);
-//
-// };
-
-// /**
 // The @p BlinkenlightProxy class is used to enable and disable
 // a flashing indicator light, and to set its period, via a @ref
 // interface_blinkenlight device */
@@ -2183,6 +2109,39 @@ class RangerProxy : public ClientProxy
 
     /// Request the ranger geometry.
     void RequestGeom();
+
+    /// Configure the ranger scan pattern. Angles @p aMinAngle and
+    /// @p aMaxAngle are measured in radians. @p aResolution is measured in
+    /// radians. @p aMaxRange and @p aRangeRes is measured in metres.
+    /// @p aFrequency is measured in Hz.
+    void Configure(double aMinAngle,
+                   double aMaxAngle,
+                   double aResolution,
+                   double aMaxRange,
+                   double aRangeRes,
+                   double aFrequency);
+
+    /// Get the current ranger configuration; it is read into the
+    /// relevant class attributes.
+    void RequestConfigure();
+
+    /// Start angle of a scan (configured value)
+    double GetMinAngle() const { return GetVar(mDevice->min_angle); };
+
+    /// Stop angle of a scan (configured value)
+    double GetMaxAngle() const { return GetVar(mDevice->max_angle); };
+
+    /// Angular resolution of a scan (configured value)
+    double GetResolution() const { return GetVar(mDevice->resolution); };
+
+    /// Maximum detectable range of a scan (configured value)
+    double GetMaxRange() const { return GetVar(mDevice->max_range); };
+
+    /// Linear resolution (configured value)
+    double GetRangeRes() const { return GetVar(mDevice->range_res); };
+
+    /// Scanning frequency (configured value)
+    double GetFrequency() const { return GetVar(mDevice->frequency); };
 };
 
 /**
@@ -2256,7 +2215,7 @@ class SimulationProxy : public ClientProxy
     void GetPose3d(char* identifier, double& x, double& y, double& z,
                    double& roll, double& pitch, double& yaw, double& time);
 
-    /// Get a simulation property 
+    /// Get a simulation property
     void GetProperty(char* identifier, char *name, void *value, size_t value_len );
 };
 

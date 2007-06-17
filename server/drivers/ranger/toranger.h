@@ -44,22 +44,8 @@ class ToRanger : public Driver
 		virtual int Shutdown (void);
 
 	protected:
-		// Function called when a property has been changed so it can be passed on to the input driver
-		virtual bool PropertyChanged (void) = 0;
-
-		// Property request processor
-		int ProcessProperty (MessageQueue *respQueue, player_msghdr *hdr, void *data);
-
 		// Ranger interface stuff - should be filled by ProcessMessage()
 		player_ranger_geom_t deviceGeom;			// Geometry of the device
-
-		// Properties - should be set by GetDataFromSource()
-		double minAngle;							// Minimum scan angle
-		double maxAngle;							// Maximum scan angle
-		double resolution;							// Scan resolution
-		double maxRange;							// Scan range (m)
-		double rangeRes;							// Range resolution (m)
-		double frequency;							// Scanning frequency
 
 		// Input device
 		Device *inputDevice;						// Input device interface
