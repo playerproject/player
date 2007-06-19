@@ -131,6 +131,11 @@ int main(int argc, const char *argv[])
 	break;
 
 	// gripper device
+      case PLAYER_GRAPHICS3D_CODE:
+	test_graphics3d(client, client->devinfos[i].addr.index);
+	break;
+
+	// gripper device
       case PLAYER_GRIPPER_CODE:
 	test_gripper(client, client->devinfos[i].addr.index);
 	break;
