@@ -32,20 +32,32 @@ int test_graphics3d(playerc_client_t *client, int index)
   }
   PASS();
 
+
+  TEST("changing color");
+  player_color_t col;
+  col.red = 0;
+  col.green = 0;
+  col.blue = 255;
+  col.alpha = 255;
+
+  if(playerc_graphics3d_setcolor(device, col) < 0)
+    FAIL();
+  else
+    PASS();
   
   player_point_3d_t pts[RAYS];
   
   double r;
   for( r=0; r<1.0; r+=0.05 )
     {
-      TEST("drawing points");
+      TEST("drawing line loop");
       
       int p;
       for( p=0; p<RAYS; p++ )
 	{
-	  pts[p].px = 100 * r * cos(p * M_PI/(RAYS/2));
-	  pts[p].py = 100 * r * sin(p * M_PI/(RAYS/2));
-	  pts[p].pz = 0;
+	  pts[p].px = 5 * r * cos(p * M_PI/(RAYS/2));
+	  pts[p].py = 5 * r * sin(p * M_PI/(RAYS/2));
+	  pts[p].pz = 5 * r;
 
 	  printf( "vertex [%.2f,%.2f,%.2f]\n",
 		  pts[p].px,
@@ -54,78 +66,61 @@ int test_graphics3d(playerc_client_t *client, int index)
 	}	
       
       if( playerc_graphics3d_draw(device, 
-				  PLAYER_DRAW_POINTS, 
+				  PLAYER_DRAW_LINE_LOOP, 
 				  pts, RAYS) < 0)
 	FAIL();
       else
 	PASS();
 
-      usleep(100000);
+      usleep(50000);
     }
   
   TEST("changing color");
-  player_color_t col;
-  col.red = 0;
-  col.green = 255;
-  col.blue = 0;
-  col.alpha = 0;
+  col.alpha = 60;
 
   if(playerc_graphics3d_setcolor(device, col) < 0)
     FAIL();
   else
     PASS();
 
-  TEST("drawing polyline");
+  TEST("drawing polygon");
   
   if(playerc_graphics3d_draw(device, 
-			     PLAYER_DRAW_LINE_LOOP,
+			     PLAYER_DRAW_POLYGON,
 			     pts, RAYS) < 0)
     FAIL();
   else
     PASS();
   
-  usleep(500000);
+  sleep(1);
   
-  TEST("changing color");      
-  col.red = 0;
-  col.green = 128;
-  col.blue = 255;
-  col.alpha = 0;
+  TEST("changing color");
+  col.red = 0;//random() % 255;
+  col.green = 255;//random() % 255;
+  col.blue = 0;//random() % 255;
+  col.alpha = 255;
   
   if(playerc_graphics3d_setcolor(device, col) < 0)
     FAIL();
   else
     PASS();
-
-  for( r=1.0; r>0; r-=0.1 )
+  
+  for( r=0; r<300; r++ )
     {
-      TEST("drawing polygon");
+      player_point_3d_t pt;
+      pt.px = fmod( rand(), 100 ) / 50.0 - 1.0;
+      pt.py = fmod( rand(), 100 ) / 50.0 - 1.0;
+      pt.pz = fmod( rand(), 100 ) / 30;
       
-      player_point_3d_t pts[4];
-      pts[0].px = -r;
-      pts[0].py = -r;
-      pts[0].pz = 0;
-      pts[1].px = r;
-      pts[1].py = -r;
-      pts[1].pz = 0;
-      pts[2].px = r;
-      pts[2].py = r;
-      pts[2].pz = 0;
-      pts[3].px = -r;
-      pts[3].py = r;
-      pts[3].pz = 0;
-      
-      if(playerc_graphics3d_draw(device, 
-				 PLAYER_DRAW_POLYGON,
-				 pts, 4 ) < 0)
+      if( playerc_graphics3d_draw(device, 
+				  PLAYER_DRAW_POINTS, 
+				  &pt, 1) < 0)
 	FAIL();
       else
 	PASS();
-      
-      usleep(100000);
     }
 
-  sleep(2);
+  sleep(5);
 
 
   TEST("clearing");
@@ -135,6 +130,7 @@ int test_graphics3d(playerc_client_t *client, int index)
   else
     PASS();
 
+  sleep( 1 );
 
   TEST("unsubscribing");
   if (playerc_graphics3d_unsubscribe(device) != 0)
