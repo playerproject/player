@@ -1989,13 +1989,20 @@ Graphics items should be accumulated until an explicit clear command is issued
  * @{ */
 
 /** The maximum number of points that can be described in a packet. */
-#define PLAYER_GRAPHICS3D_MAX_POINTS 1024
+#define PLAYER_GRAPHICS3D_MAX_POINTS 256 // 1024 (i think this is too big - rtv)
 
 /** Command subtype: clear the drawing area (send an empty message) */
 #define PLAYER_GRAPHICS3D_CMD_CLEAR 1
 /** Command subtype: draw items */
 #define PLAYER_GRAPHICS3D_CMD_DRAW 2
-
+/** Command subtype: translate coordinate system */
+#define PLAYER_GRAPHICS3D_CMD_TRANSLATE 3
+/** Command subtype: rotate coordinate system */
+#define PLAYER_GRAPHICS3D_CMD_ROTATE 4
+/** Command subtype: push current coordinate system onto stack */
+#define PLAYER_GRAPHICS3D_CMD_PUSH 5
+/** Command subtype: pop coordinate system from stack to become current */
+#define PLAYER_GRAPHICS3D_CMD_POP 6
 
 /** Drawmode: enumeration that defines the drawing mode */
 typedef enum player_graphics3d_draw_mode
@@ -2017,7 +2024,7 @@ typedef enum player_graphics3d_draw_mode
 
 /** @brief Requests: This interface accepts no requests. */
 
-/** @brief Command: Draw points (@ref PLAYER_GRAPHICS2D_CMD_POINTS)
+/** @brief Command: Draw points (@ref PLAYER_GRAPHICS3D_CMD_POINTS)
 Draw some points.
 */
 typedef struct player_graphics3d_cmd_draw
@@ -2032,6 +2039,27 @@ typedef struct player_graphics3d_cmd_draw
   player_color_t color;
 
 } player_graphics3d_cmd_draw_t;
+
+/** @brief Command: Translate coordinate system (@ref PLAYER_GRAPHICS3D_CMD_TRANSLATE)
+Translate the current coordinate system.
+*/
+typedef struct player_graphics3d_cmd_translate
+{
+  double x; /** translate distance along x axis */
+  double y; /** translate distance along y axis */
+  double z; /** translate distance along z axis */
+} player_graphics3d_cmd_translate_t;
+
+/** @brief Command: Rotate coordinate system (@ref PLAYER_GRAPHICS3D_CMD_ROTATE)
+Rotate the current coordinate system by a given angle around the given vector.
+*/
+typedef struct player_graphics3d_cmd_rotate
+{
+  double a; /** angle to rotate in radians */
+  double x; /** x component of the vector around which we rotate */
+  double y; /** y component of the vector around which we rotate */
+  double z; /** z component of the vector around which we rotate */
+} player_graphics3d_cmd_rotate_t;
 
 
 /** @} */
