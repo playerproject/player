@@ -285,6 +285,15 @@ int SonarToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 		ret_queue = respQueue;
 		return 0;
 	}
+	// Config get request
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG, device_addr))
+	{
+		// No config for this device, so send back a pile of zeroes
+		player_ranger_config_t resp;
+		memset (&resp, 0, sizeof (resp));
+		Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG, &resp, sizeof (resp), NULL);
+		return 0;
+	}
 
 
 	// Messages from the sonar interface

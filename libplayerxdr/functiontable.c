@@ -476,8 +476,6 @@ static playerxdr_function_t init_ftable[] =
    (player_pack_fn_t)player_ranger_power_config_pack, NULL, NULL},
   {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS,
    (player_pack_fn_t)player_ranger_intns_config_pack, NULL, NULL},
-  {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS,
-   (player_pack_fn_t)player_ranger_intns_config_pack, NULL, NULL},
   {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG,
    (player_pack_fn_t)player_ranger_config_pack, NULL, NULL},
   {PLAYER_RANGER_CODE, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_SET_CONFIG,
