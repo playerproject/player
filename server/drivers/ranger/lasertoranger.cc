@@ -109,7 +109,7 @@ class LaserToRanger : public ToRanger
 		// Convert geometry data
 		bool HandleGeomRequest (player_laser_geom_t *geom);
 		// Handle config values
-		void HandleGetConfigResp (player_laser_config_t *data);
+		void HandleConfigResp (player_ranger_config_t *dest, player_laser_config_t *data);
 
 		player_laser_config_t laserConfig;	// Stored laser config
 
@@ -314,6 +314,19 @@ bool LaserToRanger::HandleGeomRequest (player_laser_geom_t *data)
 	return true;
 }
 
+void LaserToRanger::HandleConfigResp (player_ranger_config_t *dest, player_laser_config_t *data)
+{
+	// Save a copy of the laser config, we need it to set intensity and/or config later
+	memcpy (&laserConfig, data, sizeof (player_laser_config_t));
+	// Copy it into the destination
+	dest->min_angle = data->min_angle;
+	dest->max_angle = data->max_angle;
+	dest->resolution = data->resolution;
+	dest->max_range = data->max_range;
+	dest->range_res = data->range_res;
+	dest->frequency = data->scanning_frequency;
+}
+
 int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void *data)
 {
 	// Check the parent message handler
@@ -324,6 +337,8 @@ int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_POWER);
 	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_INTNS);
 	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_GEOM);
+	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_SET_CONFIG);
+	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_RANGER_REQ_GET_CONFIG);
 
 	// Messages from the ranger interface
 	// Power config request
@@ -344,6 +359,7 @@ int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 		laserConfig.intensity = reinterpret_cast<player_ranger_intns_config_t*> (data)->state;
 		inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG, &laserConfig, sizeof (laserConfig), 0);
 		lastReqType = PLAYER_RANGER_REQ_INTNS;
+		ret_queue = respQueue;
 		return 0;
 	}
 	// Geometry request
@@ -367,6 +383,7 @@ int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 		laserConfig.scanning_frequency = req->frequency;
 		inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_SET_CONFIG, &laserConfig, sizeof (laserConfig), 0);
 		lastReqType = PLAYER_RANGER_REQ_SET_CONFIG;
+		ret_queue = respQueue;
 		return 0;
 	}
 	// Config get request
@@ -375,6 +392,7 @@ int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 		// Forward the request onto the laser device, will handle the response when it comes
 		inputDevice->PutMsg (InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_CONFIG, NULL, 0, NULL);
 		lastReqType = PLAYER_RANGER_REQ_GET_CONFIG;
+		ret_queue = respQueue;
 		return 0;
 	}
 
@@ -390,16 +408,26 @@ int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LASER_REQ_SET_CONFIG, inputDeviceAddr))
 	{
 		// Set config may have been triggered by either a ranger set config request or a ranger set intensity request
-		memcpy (&laserConfig, data, sizeof (player_laser_config_t));
-		Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, lastReqType, &laserConfig, sizeof (laserConfig), NULL);
+		player_ranger_config_t resp;
+		HandleConfigResp (&resp, reinterpret_cast<player_laser_config_t*> (data));
+		if (lastReqType == PLAYER_RANGER_REQ_SET_CONFIG)
+			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_SET_CONFIG, &resp, sizeof (resp), NULL);
+		else if (lastReqType == PLAYER_RANGER_REQ_INTNS)
+			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_INTNS, NULL, 0, NULL);
 		return 0;
 	}
 	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LASER_REQ_GET_CONFIG, inputDeviceAddr))
 	{
 		// Only way to get a get config response from the laser is via a ranger get config request, or in startup
-		memcpy (&laserConfig, data, sizeof (player_laser_config_t));
+/*		printf ("Got laser config from device:\nmin_angle = %f\tmax_angle = %f\tresolution = %f\tmax_range = %f\trange_res = %f\tintensity = %d\tscanning_frequency = %f\n",
+				reinterpret_cast<player_laser_config_t*> (data)->min_angle, reinterpret_cast<player_laser_config_t*> (data)->max_angle,
+				reinterpret_cast<player_laser_config_t*> (data)->resolution, reinterpret_cast<player_laser_config_t*> (data)->max_range,
+				reinterpret_cast<player_laser_config_t*> (data)->range_res, reinterpret_cast<player_laser_config_t*> (data)->intensity,
+				reinterpret_cast<player_laser_config_t*> (data)->scanning_frequency);*/
+		player_ranger_config_t resp;
+		HandleConfigResp (&resp, reinterpret_cast<player_laser_config_t*> (data));
 		if (lastReqType == PLAYER_RANGER_REQ_GET_CONFIG && startupComplete)
-			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG, &laserConfig, sizeof (laserConfig), NULL);
+			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_CONFIG, &resp, sizeof (resp), NULL);
 		else if (!startupComplete)
 		{
 			PLAYER_MSG0 (1, "LaserToRanger startup complete");
@@ -414,6 +442,7 @@ int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, &deviceGeom, sizeof (deviceGeom), NULL);
 		else
 			Publish (device_addr, ret_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_RANGER_REQ_GET_GEOM, NULL, 0, NULL);
+		return 0;
 	}
 
 	// Request NACKs
