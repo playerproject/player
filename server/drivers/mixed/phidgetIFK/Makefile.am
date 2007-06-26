@@ -6,4 +6,4 @@ endif
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
-libphidgetIFK_la_SOURCES = phidgetIFK.cc phidgetIFK.h
+libphidgetIFK_la_SOURCES = phidgetIFK.cc
