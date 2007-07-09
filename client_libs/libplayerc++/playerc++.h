@@ -1313,7 +1313,7 @@ class MapProxy : public ClientProxy
     { return y*GetWidth() + x; };
 
     /// Get the (x,y) cell
-    unsigned char GetCell(int x, int y) const
+    char GetCell(int x, int y) const
     { return GetVar(mDevice->cells[GetCellIndex(x,y)]); };
 
     /// Map resolution, m/cell
