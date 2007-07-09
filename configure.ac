@@ -180,6 +180,12 @@ fi
 
 AM_CONDITIONAL(ENABLE_JPLAYER, test "x$enable_jplayer" = "xyes")
 
+dnl TCP_NODELAY (low-latency) is not used by default
+AC_ARG_ENABLE(tcpnodelay,   [  --disable-tcpnodelay      Turn on Nagel's buffering algorithm (may increase socket latency)],, enable_tcpnodelay=yes)
+if test "x$enable_tcpnodelay" = "xyes"; then
+  AC_DEFINE(ENABLE_TCP_NODELAY,1,[enable TCP_NODELAY])
+fi
+
 dnl client tests are compiled by default
 AC_ARG_ENABLE(tests,   [  --disable-tests          Don't build client tests],,
 enable_tests=yes)

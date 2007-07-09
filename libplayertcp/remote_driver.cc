@@ -20,10 +20,18 @@
  *
  */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <errno.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#if ENABLE_TCP_NODELAY
+  #include <netinet/tcp.h>
+#endif
 
 #include <libplayercore/globals.h>
 #include <libplayercore/error.h>
@@ -101,6 +109,17 @@ TCPRemoteDriver::Setup()
     close(this->sock);
     return(-1);
   }
+
+#if ENABLE_TCP_NODELAY
+  // Disable Nagel's algorithm for lower latency
+  int yes = 1;
+  if( setsockopt(this->sock, IPPROTO_TCP, TCP_NODELAY, &yes,
+                 sizeof(int)) == -1 )
+  {
+    PLAYER_ERROR("failed to enable TCP_NODELAY - setsockopt failed");
+    return(-1);
+  }
+#endif
 
   // Get the banner.
   GlobalTime->GetTimeDouble(&t1);
