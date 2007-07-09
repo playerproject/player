@@ -431,11 +431,8 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
                                 this->position_addr))
   {
     /* Return the robot geometry. */
-    player_position2d_geom_t geom;
-    // Assume that it turns about its geometric center
-    geom.pose.px = 0.0;
-    geom.pose.py = 0.0;
-    geom.pose.pa = 0.0;
+    player_position2d_geom_t geom={{0}};
+    // Assume that it turns about its geometric center, so zeros are fine
 
     geom.size.sl = ROOMBA_DIAMETER;
     geom.size.sw = ROOMBA_DIAMETER;
@@ -456,13 +453,13 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
 
     geom.bumper_def[0].pose.px = 0.0;
     geom.bumper_def[0].pose.py = 0.0;
-    geom.bumper_def[0].pose.pa = 0.0;
+    geom.bumper_def[0].pose.pyaw = 0.0;
     geom.bumper_def[0].length = 0.0;
     geom.bumper_def[0].radius = ROOMBA_DIAMETER/2.0;
 
     geom.bumper_def[1].pose.px = 0.0;
     geom.bumper_def[1].pose.py = 0.0;
-    geom.bumper_def[1].pose.pa = 0.0;
+    geom.bumper_def[1].pose.pyaw = 0.0;
     geom.bumper_def[1].length = 0.0;
     geom.bumper_def[1].radius = ROOMBA_DIAMETER/2.0;
 
@@ -486,7 +483,7 @@ Roomba::ProcessMessage(MessageQueue * resp_queue,
     {
       poses.poses[i].px = 0.0;
       poses.poses[i].py = 0.0;
-      poses.poses[i].pa = 0.0;
+      poses.poses[i].pyaw = 0.0;
     }
 
     this->Publish(this->ir_addr, resp_queue, 

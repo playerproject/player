@@ -70,7 +70,7 @@ typedef struct rflex_config_t{
   int *num_sonars_in_bank;
   // pose of each sonar on the robot (x,y,t) in rad and mm
   // note i is forwards, j is left
-  player_pose_t *mrad_sonar_poses;
+  player_pose3d_t *mrad_sonar_poses;
   //not sure what these do yet actually
   long sonar_echo_delay;
   long sonar_ping_delay;

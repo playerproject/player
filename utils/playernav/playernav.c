@@ -146,8 +146,8 @@ player_read_func(gpointer* arg)
   gui_data_t* gui_data = (gui_data_t*)arg;
   static struct timeval lastdump = {0, 0};
   static struct timeval lastmapupdate = {0, 0};
-  static player_pose_t lastwaypt[MAX_NUM_ROBOTS];
-  static player_pose_t lastgoal[MAX_NUM_ROBOTS];
+  static player_pose2d_t lastwaypt[MAX_NUM_ROBOTS];
+  static player_pose2d_t lastgoal[MAX_NUM_ROBOTS];
   struct timeval curr;
   double diff;
   gboolean onmap;

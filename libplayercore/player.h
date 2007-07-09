@@ -270,9 +270,9 @@ typedef struct player_msghdr
 typedef struct player_point_2d
 {
   /** X [m] */
-  float px;
+  double px;
   /** Y [m] */
-  float py;
+  double py;
 } player_point_2d_t;
 
 
@@ -280,11 +280,11 @@ typedef struct player_point_2d
 typedef struct player_point_3d
 {
   /** X [m] */
-  float px;
+  double px;
   /** Y [m] */
-  float py;
+  double py;
   /** Z [m] */
-  float pz;
+  double pz;
 } player_point_3d_t;
 
 
@@ -292,73 +292,72 @@ typedef struct player_point_3d
 typedef struct player_orientation_3d
 {
   /** roll [rad] */
-  float proll;
+  double proll;
   /** pitch [rad] */
-  float ppitch;
+  double ppitch;
   /** yaw [rad] */
-  float pyaw;
+  double pyaw;
 } player_orientation_3d_t;
 
-
 /** @brief A pose in the plane */
-typedef struct player_pose
+typedef struct player_pose2d
 {
   /** X [m] */
-  float px;
+  double px;
   /** Y [m] */
-  float py;
+  double py;
   /** yaw [rad] */
-  float pa;
-} player_pose_t;
+  double pa;
+} player_pose2d_t;
 
 /** @brief A pose in space */
 typedef struct player_pose3d
 {
   /** X [m] */
-  float px;
+  double px;
   /** Y [m] */
-  float py;
+  double py;
   /** Z [m] */
-  float pz;
+  double pz;
   /** roll [rad] */
-  float proll;
+  double proll;
   /** pitch [rad] */
-  float ppitch;
+  double ppitch;
   /** yaw [rad] */
-  float pyaw;
+  double pyaw;
 } player_pose3d_t;
 
 /** @brief A rectangular bounding box, used to define the size of an object */
-typedef struct player_bbox
+typedef struct player_bbox2d
 {
   /** Width [m] */
-  float sw;
+  double sw;
   /** Length [m] */
-  float sl;
-} player_bbox_t;
+  double sl;
+} player_bbox2d_t;
 
 /** @brief A rectangular bounding box, used to define the size of an object */
 typedef struct player_bbox3d
 {
   /** Width [m] */
-  float sw;
+  double sw;
   /** Length [m] */
-  float sl;
+  double sl;
   /** Height [m] */
-  float sh;
+  double sh;
 } player_bbox3d_t;
 
 /** @brief A line segment, used to construct vector-based maps */
 typedef struct player_segment
 {
   /** Endpoints [m] */
-  float x0;
+  double x0;
   /** Endpoints [m] */
-  float y0;
+  double y0;
   /** Endpoints [m] */
-  float x1;
+  double x1;
   /** Endpoints [m] */
-  float y1;
+  double y1;
 } player_segment_t;
 
 /** @brief A color descriptor */
@@ -1440,7 +1439,7 @@ typedef struct player_bumper_data
 typedef struct player_bumper_define
 {
   /** the local pose of a single bumper */
-  player_pose_t pose;
+  player_pose3d_t pose;
   /** length of the sensor [m] */
   float length;
   /** radius of curvature [m] - zero for straight lines */
@@ -1790,11 +1789,11 @@ sending a null @ref PLAYER_FIDUCIAL_REQ_GET_GEOM request.
 typedef struct player_fiducial_geom
 {
   /** Pose of the detector in the robot cs */
-  player_pose_t pose;
+  player_pose3d_t pose;
   /** Size of the detector */
-  player_bbox_t size;
-  /** Dimensions of the fiducials in units of (m, m). */
-  player_bbox_t fiducial_size;
+  player_bbox3d_t size;
+  /** Dimensions of the fiducials in units of (m). */
+  player_bbox2d_t fiducial_size;
 } player_fiducial_geom_t;
 
 /** @brief Request/reply: Get/set sensor field of view.
@@ -2402,7 +2401,7 @@ typedef struct player_ir_pose
   /** the number of ir samples returned by this robot */
   uint32_t poses_count;
   /** the pose of each IR detector on this robot */
-  player_pose_t poses[PLAYER_IR_MAX_SAMPLES];
+  player_pose3d_t poses[PLAYER_IR_MAX_SAMPLES];
 } player_ir_pose_t;
 
 /** @brief Request/reply: set power
@@ -2538,7 +2537,7 @@ typedef struct player_laser_data_scanpose
   /** The scan data */
   player_laser_data_t scan;
   /** The global pose of the laser at the time the scan was acquired */
-  player_pose_t pose;
+  player_pose2d_t pose;
 } player_laser_data_scanpose_t;
 
 /** @brief Request/reply: Get geometry.
@@ -2547,10 +2546,10 @@ The laser geometry (position and size) can be queried by sending a
 null @ref PLAYER_LASER_REQ_GET_GEOM request. */
 typedef struct player_laser_geom
 {
-  /** Laser pose, in robot cs (m, m, rad). */
-  player_pose_t pose;
-  /** Laser dimensions (m, m). */
-  player_bbox_t size;
+  /** Laser pose, in robot cs (m, m, m, rad, rad, rad). */
+  player_pose3d_t pose;
+  /** Laser dimensions (m, m, m). */
+  player_bbox3d_t size;
 } player_laser_geom_t;
 
 /** @brief Request/reply: Get/set scan properties.
@@ -2823,7 +2822,7 @@ capable of returning more that one hypothesis. */
 typedef struct player_localize_hypoth
 {
   /** The mean value of the pose estimate (m, m, rad). */
-  player_pose_t mean;
+  player_pose2d_t mean;
   /** The covariance matrix pose estimate (m$^2$, rad$^2$). */
   double cov[3];
   /** The weight coefficient for linear combination (alpha) */
@@ -2853,7 +2852,7 @@ Set the current robot pose hypothesis by sending a
 typedef struct player_localize_set_pose
 {
   /** The mean value of the pose estimate (m, m, rad). */
-  player_pose_t mean;
+  player_pose2d_t mean;
   /** The diagonal elements of the covariance matrix pose estimate
       (m$^2$, rad$^2$). */
   double cov[3];
@@ -2863,7 +2862,7 @@ typedef struct player_localize_set_pose
 typedef struct player_localize_particle
 {
   /** The particle's pose (m,m,rad) */
-  player_pose_t pose;
+  player_pose2d_t pose;
   /** The weight coefficient for linear combination (alpha) */
   double alpha;
 } player_localize_particle_t;
@@ -2876,7 +2875,7 @@ the underlying driver uses a particle filter), send a null
 typedef struct player_localize_get_particles
 {
   /** The best (?) pose (mm, mm, arc-seconds). */
-  player_pose_t mean;
+  player_pose2d_t mean;
   /** The variance of the best (?) pose (mm^2) */
   double variance;
   /** The number of particles included */
@@ -3026,7 +3025,7 @@ typedef struct player_map_info
   uint32_t height;
   /** The origin of the map [m, m, rad]. That is, the real-world pose of
    * cell (0,0) in the map */
-  player_pose_t origin;
+  player_pose2d_t origin;
 } player_map_info_t;
 
 /** @brief Request/reply: get grid map tile
@@ -3231,11 +3230,11 @@ typedef struct player_planner_data
   /** Have we arrived at the goal? */
   uint8_t done;
   /** Current location (m,m,rad) */
-  player_pose_t pos;
+  player_pose2d_t pos;
   /** Goal location (m,m,rad) */
-  player_pose_t goal;
+  player_pose2d_t goal;
   /** Current waypoint location (m,m,rad) */
-  player_pose_t waypoint;
+  player_pose2d_t waypoint;
   /** Current waypoint index (handy if you already have the list
       of waypoints). May be negative if there's no plan, or if
       the plan is done */
@@ -3250,7 +3249,7 @@ The @p planner interface accepts a new goal. */
 typedef struct player_planner_cmd
 {
   /** Goal location (m,m,rad) */
-  player_pose_t goal;
+  player_pose2d_t goal;
 } player_planner_cmd_t;
 
 /** @brief Request/reply: Get waypoints
@@ -3263,7 +3262,7 @@ typedef struct player_planner_waypoints_req
   /** Number of waypoints to follow */
   uint32_t waypoints_count;
   /** The waypoints */
-  player_pose_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
+  player_pose2d_t waypoints[PLAYER_PLANNER_MAX_WAYPOINTS];
 } player_planner_waypoints_req_t;
 
 /** @brief Request/reply: Enable/disable robot motion
@@ -3658,10 +3657,10 @@ To request robot geometry, send a null
 @ref PLAYER_POSITION1D_REQ_GET_GEOM. */
 typedef struct player_position1d_geom
 {
-  /** Pose of the robot base, in the robot cs (m, m, rad). */
-  player_pose_t pose;
-  /** Dimensions of the base (m, m). */
-  player_bbox_t size;
+  /** Pose of the robot base, in the robot cs (m, m, m, rad, rad, rad). */
+  player_pose3d_t pose;
+  /** Dimensions of the base (m, m, m). */
+  player_bbox3d_t size;
 } player_position1d_geom_t;
 
 /** @brief Request/reply: Motor power.
@@ -3821,9 +3820,9 @@ velocity of the robot, as well as motor stall information. */
 typedef struct player_position2d_data
 {
   /** position [m,m,rad] (x, y, yaw)*/
-  player_pose_t pos;
+  player_pose2d_t pos;
   /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
-  player_pose_t vel;
+  player_pose2d_t vel;
   /** Are the motors stalled? */
   uint8_t stall;
 } player_position2d_data_t;
@@ -3836,7 +3835,7 @@ or both). */
 typedef struct player_position2d_cmd_vel
 {
   /** translational velocities [m/s,m/s,rad/s] (x, y, yaw)*/
-  player_pose_t vel;
+  player_pose2d_t vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
 } player_position2d_cmd_vel_t;
@@ -3849,9 +3848,9 @@ or both). */
 typedef struct player_position2d_cmd_pos
 {
   /** position [m,m,rad] (x, y, yaw)*/
-  player_pose_t pos;
+  player_pose2d_t pos;
   /** velocity at which to move to the position [m/s] or [rad/s] */
-  player_pose_t vel;
+  player_pose2d_t vel;
   /** Motor state (FALSE is either off or locked, depending on the driver). */
   uint8_t state;
 } player_position2d_cmd_pos_t;
@@ -3876,10 +3875,10 @@ request.  Depending on the underlying driver, this message may also be
 sent as data, with subtype @ref PLAYER_POSITION2D_DATA_GEOM. */
 typedef struct player_position2d_geom
 {
-  /** Pose of the robot base, in the robot cs (m, m, rad). */
-  player_pose_t pose;
-  /** Dimensions of the base (m, m). */
-  player_bbox_t size;
+  /** Pose of the robot base, in the robot cs (m, rad). */
+  player_pose3d_t pose;
+  /** Dimensions of the base (m). */
+  player_bbox3d_t size;
 } player_position2d_geom_t;
 
 /** @brief Request/reply: Motor power.
@@ -3955,7 +3954,7 @@ To set the robot's odometry to a particular state, send a
 typedef struct player_position2d_set_odom_req
 {
   /** (x, y, yaw) [m, m, rad] */
-  player_pose_t pose;
+  player_pose2d_t pose;
 } player_position2d_set_odom_req_t;
 
 /** @brief Request/reply: Set velocity PID parameters.
@@ -4621,7 +4620,7 @@ typedef struct player_simulation_pose2d_req
   /** the identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** the desired pose in (m, m, rad) */
-  player_pose_t pose;
+  player_pose2d_t pose;
 } player_simulation_pose2d_req_t;
 
 /** @brief Request/reply: get/set 3D pose of a named simulation object
@@ -4731,7 +4730,7 @@ typedef struct player_sonar_geom
   /** The number of valid poses. */
   uint32_t poses_count;
   /** Pose of each sonar, in robot cs */
-  player_pose_t poses[PLAYER_SONAR_MAX_SAMPLES];
+  player_pose3d_t poses[PLAYER_SONAR_MAX_SAMPLES];
 } player_sonar_geom_t;
 
 /** @brief Request/reply: Sonar power.

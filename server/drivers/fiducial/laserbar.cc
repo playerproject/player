@@ -332,19 +332,14 @@ int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void 
     if (!(msg = this->laser_device->Request(this->InQueue, PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM, NULL, 0, NULL, false)))
     {
       PLAYER_WARN("failed to get laer geometry");
-      fgeom.pose.px = 0.0;
-      fgeom.pose.py = 0.0;
-      fgeom.pose.pa = 0.0;
+      memset(&fgeom.pose,0,sizeof(fgeom.pose));
     }
     else
     {
       player_laser_geom_t *lgeom = (player_laser_geom_t*)msg->GetPayload();
 
-      fgeom.pose.px = lgeom->pose.px;
-      fgeom.pose.py = lgeom->pose.py;
-      fgeom.pose.pa = lgeom->pose.pa;
-      fgeom.size.sw = lgeom->size.sw;
-      fgeom.size.sl = lgeom->size.sl;
+      fgeom.pose = lgeom->pose;
+      fgeom.size = lgeom->size;
     }
 
     fgeom.fiducial_size.sw = this->reflector_width;

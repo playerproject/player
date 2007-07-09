@@ -140,7 +140,7 @@ std::operator << (std::ostream& os, const player_point_2d_t& c)
 }
 
 std::ostream&
-std::operator << (std::ostream& os, const player_pose_t& c)
+std::operator << (std::ostream& os, const player_pose2d_t& c)
 {
   os << "pose: " << c.px << "," << c.py << "," << c.pa;
   return os;
@@ -155,11 +155,19 @@ std::operator << (std::ostream& os, const player_pose3d_t& c)
 }
 
 std::ostream&
-std::operator << (std::ostream& os, const player_bbox_t& c)
+std::operator << (std::ostream& os, const player_bbox2d_t& c)
 {
   os << "bbox: " << c.sw << "," << c.sl;
   return os;
 }
+
+std::ostream&
+std::operator << (std::ostream& os, const player_bbox3d_t& c)
+{
+  os << "bbox: " << c.sw << "," << c.sl << "," << c.sh;
+  return os;
+}
+
 
 std::ostream&
 std::operator << (std::ostream& os, const player_segment_t& c)

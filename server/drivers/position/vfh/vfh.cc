@@ -280,7 +280,7 @@ class VFH_Class : public Driver
     Device *sonar;
     player_devaddr_t sonar_addr;
     int num_sonars;
-    player_pose_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
+    player_pose3d_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
 
     // Laser range and bearing values
     int laser_count;
@@ -590,8 +590,8 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   //b += 90.0;
   for(i = 0; i < (int)data.ranges_count; i++)
   {
-    for(b = RTOD(this->sonar_poses[i].pa) + 90.0 - cone_width/2.0;
-        b < RTOD(this->sonar_poses[i].pa) + 90.0 + cone_width/2.0;
+    for(b = RTOD(this->sonar_poses[i].pyaw) + 90.0 - cone_width/2.0;
+        b < RTOD(this->sonar_poses[i].pyaw) + 90.0 + cone_width/2.0;
         b+=0.5)
     {
       if((b < 0) || (rint(b*2) >= count))

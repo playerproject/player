@@ -256,7 +256,7 @@ playerc_laser_get_geom(playerc_laser_t *device)
 
   device->pose[0] = config.pose.px;
   device->pose[1] = config.pose.py;
-  device->pose[2] = config.pose.pa;
+  device->pose[2] = config.pose.pyaw;
   device->size[0] = config.size.sl;
   device->size[1] = config.size.sw;
 

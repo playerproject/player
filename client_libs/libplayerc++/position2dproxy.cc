@@ -84,7 +84,7 @@ Position2dProxy::SetSpeed(double aXSpeed, double aYSpeed, double aYawSpeed)
 }
 
 
-void Position2dProxy::GoTo(player_pose_t pos, player_pose_t vel)
+void Position2dProxy::GoTo(player_pose2d_t pos, player_pose2d_t vel)
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_position2d_set_cmd_pose_with_vel(mDevice,pos,vel,1);

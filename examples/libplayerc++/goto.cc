@@ -35,7 +35,7 @@ uint         gIndex(0);
 uint         gDebug(0);
 uint         gFrequency(10); // Hz
 
-player_pose_t gTarget = {0, 0, 0};
+player_pose2d_t gTarget = {0, 0, 0};
 
 void
 print_usage(int argc, char** argv)
@@ -95,7 +95,7 @@ parse_args(int argc, char** argv)
  * sets global 'gGotoDone' when it's done
  */
 void
-position_goto(player_pose_t target)
+position_goto(player_pose2d_t target)
 {
   using namespace PlayerCc;
 

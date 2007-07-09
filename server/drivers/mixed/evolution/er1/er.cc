@@ -825,12 +825,12 @@ int ER::ProcessMessage(MessageQueue * resp_queue,
 	
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, position_id))
   {
-  	player_position2d_geom_t geom;
+  	player_position2d_geom_t geom={{0}};
 
     //TODO : get values from somewhere.
 	geom.pose.px = -0.1;//htons((short) (-100));
 	geom.pose.py = 0;//htons((short) (0));
-	geom.pose.pa = 0;//htons((short) (0));
+	geom.pose.pyaw = 0;//htons((short) (0));
 	geom.size.sw = 0.25;//htons((short) (250));
 	geom.size.sl = 0.425;//htons((short) (425));    
     Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_GET_GEOM, &geom, sizeof(geom));	

@@ -2193,7 +2193,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     //       about right for a Pioneer 2DX.
     geom.pose.px = -0.1;
     geom.pose.py = 0.0;
-    geom.pose.pa = 0.0;
+    geom.pose.pyaw = 0.0;
     // get dimensions from the parameter table
     geom.size.sl = PlayerRobotParams[param_idx].RobotLength / 1e3;
     geom.size.sw = PlayerRobotParams[param_idx].RobotWidth / 1e3;
@@ -2269,7 +2269,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
       geom.poses[i].px = pose.x / 1e3;
       geom.poses[i].py = pose.y / 1e3;
-      geom.poses[i].pa = DTOR(pose.th);
+      geom.poses[i].pyaw = DTOR(pose.th);
     }
 
     this->Publish(this->sonar_id, resp_queue,
@@ -2478,7 +2478,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       bumper_def_t def = PlayerRobotParams[param_idx].bumper_geom[ii];
       geom.bumper_def[ii].pose.px = def.x;
       geom.bumper_def[ii].pose.py = def.y;
-      geom.bumper_def[ii].pose.pa = DTOR(def.th);
+      geom.bumper_def[ii].pose.pyaw = DTOR(def.th);
       geom.bumper_def[ii].length = def.length;
       geom.bumper_def[ii].radius = def.radius;
     }
@@ -2784,7 +2784,7 @@ int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
   {
     player_actarray_multi_position_cmd_t cmd = *(player_actarray_multi_position_cmd_t*) data;
     player_actarray_position_cmd_t singleCmd;
-    for (int ii = 0; ii < cmd.positions_count && ii < 6; ii++)
+    for (unsigned int ii = 0; ii < cmd.positions_count && ii < 6; ii++)
     {
       singleCmd.joint = ii;
       singleCmd.position = cmd.positions[ii];

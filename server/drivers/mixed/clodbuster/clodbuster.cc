@@ -272,12 +272,12 @@ int ClodBuster::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, 
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))
   {
-    player_position2d_geom_t geom;
+    player_position2d_geom_t geom={{0}};
 	
     // TODO : get values from somewhere.
     geom.pose.px = -0.1;//htons((short) (-100));
     geom.pose.py = 0;//htons((short) (0));
-    geom.pose.pa = 0;//htons((short) (0));
+    geom.pose.pyaw = 0;//htons((short) (0));
     geom.size.sw = 0.5;//htons((short) (2 * 250));
     geom.size.sl = 0.45;//htons((short) (2 * 225));
 
@@ -333,9 +333,9 @@ int ClodBuster::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, 
     assert(hdr->size == sizeof(player_position2d_speed_pid_req_t));
 	player_position2d_speed_pid_req_t & pid = *((player_position2d_speed_pid_req_t*)data);
 		
-    kp = pid.kp;
-    ki = pid.ki;
-    kd = pid.kd;
+    kp = static_cast<int> (pid.kp);
+    ki = static_cast<int> (pid.ki);
+    kd = static_cast<int> (pid.kd);
 
     Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SPEED_PID);
     return 0;

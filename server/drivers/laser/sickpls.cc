@@ -614,11 +614,12 @@ SickPLS::ProcessMessage(MessageQueue * resp_queue,
                            this->device_addr))
   {
     player_laser_geom_t geom;
-    geom.pose.px = this->pose[0];
-    geom.pose.py = this->pose[1];
-    geom.pose.pa = this->pose[2];
-    geom.size.sl = this->size[0];
-    geom.size.sw = this->size[1];
+    memset(&geom, 0, sizeof(geom));
+    geom.pose.px = pose[0];
+    geom.pose.py = pose[1];
+    geom.pose.pyaw = pose[2];
+    geom.size.sl = size[0];
+    geom.size.sw = size[1];
 
     this->Publish(this->device_addr,
                   resp_queue,

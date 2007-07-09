@@ -91,7 +91,7 @@ typedef struct
   int NumSonars;
   sonar_pose_t sonar_pose[32];
   int NumIR;
-  player_pose_t IRPose[8];
+  player_pose3d_t IRPose[8];
 } RobotParams_t;
 
 

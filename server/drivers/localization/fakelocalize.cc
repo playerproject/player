@@ -229,7 +229,7 @@ FakeLocalize::UpdateData()
   player_localize_data_t loc_data;
   player_simulation_pose2d_req_t cfg;
 //  int replen;
-  unsigned short reptype;
+//  unsigned short reptype;
 //  struct timeval ts;
   
   // Request pose

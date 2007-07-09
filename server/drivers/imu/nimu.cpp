@@ -21,13 +21,13 @@ int nimu::Open()
 	if (ret < 0)
 		return ret;
 	int NumDevices = usb_find_devices();
-	if (ret < 0)
-		return ret;
+	if (NumDevices < 0)
+		return NumDevices;
 	
 	struct usb_bus *busses = usb_get_busses();
 
 	struct usb_bus *bus;
-	int c, i, a;
+//	int c, i, a;
 
 	/* ... */
 

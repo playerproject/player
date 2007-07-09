@@ -231,7 +231,7 @@ class ClientProxy
     int GetStrProp(char *aProperty, char **aValue);
 
     /// @brief Set a string property
-    int SetStrProp(char *aProperty, const char *aValue);
+    int SetStrProp(char *aProperty, char *aValue);
 
     /// Connect a signal to this proxy
     /// For more information check out @ref player_clientlib_multi

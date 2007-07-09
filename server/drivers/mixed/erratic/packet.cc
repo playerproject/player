@@ -109,9 +109,9 @@ int ErraticPacket::Receive( int fd, uint16_t wait ) {
 	readpoll.events = POLLIN | POLLPRI;
 	readpoll.revents = 0;
 	
+#ifdef USE_SELECT
 	fd_set read_set, error_set;
 	struct timeval tv;
-#ifdef USE_SELECT
 	FD_ZERO(&read_set); 
 	FD_ZERO(&error_set);
 	FD_SET(fd, &read_set); 

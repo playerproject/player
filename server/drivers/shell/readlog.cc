@@ -1532,7 +1532,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
 
             geom->pose.px = atof(tokens[7]);
             geom->pose.py = atof(tokens[8]);
-            geom->pose.pa = atof(tokens[9]);
+            geom->pose.pyaw = atof(tokens[9]);
             geom->size.sl = atof(tokens[10]);
             geom->size.sw = atof(tokens[11]);
 
@@ -1616,7 +1616,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             {
               geom.poses[count].px = atof(tokens[i]);
               geom.poses[count].py = atof(tokens[i+1]);
-              geom.poses[count].pa = atof(tokens[i+2]);
+              geom.poses[count].pyaw = atof(tokens[i+2]);
               count++;
             }
             if(count != (int)geom.poses_count)
@@ -1655,7 +1655,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
             {
               geom->poses[count].px = atof(tokens[i]);
               geom->poses[count].py = atof(tokens[i+1]);
-              geom->poses[count].pa = atof(tokens[i+2]);
+              geom->poses[count].pyaw = atof(tokens[i+2]);
               count++;
             }
             if(count != (int)geom->poses_count)
@@ -1749,7 +1749,7 @@ ReadLog::ParsePosition(player_devaddr_t id,
 
             geom->pose.px = atof(tokens[7]);
             geom->pose.py = atof(tokens[8]);
-            geom->pose.pa = atof(tokens[9]);
+            geom->pose.pyaw = atof(tokens[9]);
             geom->size.sl = atof(tokens[10]);
             geom->size.sw = atof(tokens[11]);
 
