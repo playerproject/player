@@ -42,6 +42,9 @@
  * Date: 13 May 2002
  * CVS: $Id$
  **************************************************************************/
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
 
 #include <assert.h>
 #include <math.h>
@@ -52,6 +55,9 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <netinet/in.h>
+#if ENABLE_TCP_NODELAY
+  #include <netinet/tcp.h>
+#endif
 #include <sys/socket.h>
 #include <sys/poll.h>
 #include <netdb.h>       // for gethostbyname()
@@ -251,6 +257,19 @@ int playerc_client_connect(playerc_client_t *client)
       return -1;
     }
   }
+
+#if ENABLE_TCP_NODELAY
+  // Disable Nagel's algorithm for lower latency
+  {
+    int yes = 1;
+    if(setsockopt(client->sock, IPPROTO_TCP, TCP_NODELAY, &yes,
+                  sizeof(int)) == -1)
+    {
+      PLAYERC_ERR("failed to enable TCP_NODELAY - setsockopt failed");
+      return -1;
+    }
+  }
+#endif
 
   // Construct server address
   entp = gethostbyname(client->host);

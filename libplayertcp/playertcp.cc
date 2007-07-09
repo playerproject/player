@@ -30,6 +30,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#if ENABLE_TCP_NODELAY
+  #include <netinet/tcp.h>
+#endif
 
 #if HAVE_ZLIB_H
   #include <zlib.h>
@@ -289,6 +292,17 @@ PlayerTCP::Accept(int timeout)
         PLAYER_ERROR1("accept() failed: %s", strerror(errno));
         return(-1);
       }
+
+#if ENABLE_TCP_NODELAY
+      // Disable Nagel's algorithm for lower latency
+      int yes = 1;
+      if( setsockopt(newsock, IPPROTO_TCP, TCP_NODELAY, &yes,
+                     sizeof(int)) == -1 )
+      {
+        PLAYER_ERROR("failed to enable TCP_NODELAY - setsockopt failed");
+        return(-1);
+      }
+#endif
 
       // make the socket non-blocking
       if(fcntl(newsock, F_SETFL, O_NONBLOCK) == -1)
