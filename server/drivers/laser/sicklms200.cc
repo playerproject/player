@@ -629,9 +629,10 @@ SickLMS200::ProcessMessage(MessageQueue * resp_queue,
       return(PLAYER_MSGTYPE_RESP_NACK);
     }
     player_laser_geom_t geom;
+    memset(&geom, 0, sizeof(geom));
     geom.pose.px = this->pose[0];
     geom.pose.py = this->pose[1];
-    geom.pose.pa = this->pose[2];
+    geom.pose.pyaw = this->pose[2];
     geom.size.sl = this->size[0];
     geom.size.sw = this->size[1];
 

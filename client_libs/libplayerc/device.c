@@ -201,7 +201,7 @@ int playerc_device_get_strprop(playerc_device_t *device, char *property, char **
   return 0;
 }
 
-int playerc_device_set_strprop(playerc_device_t *device, char *property, const char *value)
+int playerc_device_set_strprop(playerc_device_t *device, char *property, char *value)
 {
   int result = 0;
 

@@ -142,7 +142,7 @@ playerc_position1d_get_geom(playerc_position1d_t *device)
 
   device->pose[0] = geom.pose.px;
   device->pose[1] = geom.pose.py;
-  device->pose[2] = geom.pose.pa;
+  device->pose[2] = geom.pose.pyaw;
   device->size[0] = geom.size.sl;
   device->size[1] = geom.size.sw;
 

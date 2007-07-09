@@ -838,7 +838,7 @@ int playerc_device_set_dblprop(playerc_device_t *device, char *property, double 
 int playerc_device_get_strprop(playerc_device_t *device, char *property, char **value);
 
 /** @brief Set a string property */
-int playerc_device_set_strprop(playerc_device_t *device, char *property, const char *value);
+int playerc_device_set_strprop(playerc_device_t *device, char *property, char *value);
 
 
 /** @} */
@@ -2437,8 +2437,8 @@ int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 
 /** Set the target pose with given motion vel */
 int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
-                                             player_pose_t pos,
-                                             player_pose_t vel,
+                                             player_pose2d_t pos,
+                                             player_pose2d_t vel,
                                              int state);
 
 /** Set the target pose (gx, gy, ga) is the target pose in the
@@ -2839,7 +2839,7 @@ typedef struct
 
   /** Pose of each sonar relative to robot (m, m, radians).  This
       structure is filled by calling playerc_sonar_get_geom(). */
-  player_pose_t poses[PLAYERC_SONAR_MAX_SAMPLES];
+  player_pose3d_t poses[PLAYERC_SONAR_MAX_SAMPLES];
 
   /** Number of points in the scan. */
   int scan_count;

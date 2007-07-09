@@ -1172,11 +1172,9 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 			PLAYER_WARN("Arg get robot geom is wrong size; ignoring");
 			return(-1);
 		}
-		player_position2d_geom_t geom;
+		player_position2d_geom_t geom={{0}};
 
 		geom.pose.px = -RobotParams[param_idx]->RobotAxleOffset / 1e3;
-		geom.pose.py = 0.0;
-		geom.pose.pa = 0.0;
 
 		geom.size.sl = RobotParams[param_idx]->RobotLength / 1e3;
 		geom.size.sw = RobotParams[param_idx]->RobotWidth / 1e3;

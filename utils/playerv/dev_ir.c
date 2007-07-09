@@ -116,7 +116,7 @@ void ir_update(ir_t *ir)
         rtk_fig_origin(ir->scan_fig[i],
                        ir->proxy->poses.poses[i].px,
                        ir->proxy->poses.poses[i].py,
-                       ir->proxy->poses.poses[i].pa);
+                       ir->proxy->poses.poses[i].pyaw);
 	  }
     }
   }

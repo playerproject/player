@@ -237,66 +237,65 @@ wbr914::wbr914(ConfigFile* cf, int section)
 
   // Set up the robot geometry
 
+  memset(&_robot2d_geom, 0, sizeof(_robot2d_geom));
   // X location in meters
-  _robot2d_geom.pose.px     = 0.0;
+//   _robot2d_geom.pose.px     = 0.0;
   // Y location in meters
-  _robot2d_geom.pose.py     = 0.0;
+//   _robot2d_geom.pose.py     = 0.0;
   // yaw in rads
-  _robot2d_geom.pose.pa     = 0.0;
+//   _robot2d_geom.pose.pyaw     = 0.0;
 
   // Width in meters
   _robot2d_geom.size.sw     = 0.37;
   // Length in meters
   _robot2d_geom.size.sl     = 0.42;
+  _robot2d_geom.size.sh     = 0.3;
 
-  _robot3d_geom.pose.px     = _robot2d_geom.pose.px;
-  _robot3d_geom.pose.py     = _robot2d_geom.pose.py;
-  _robot3d_geom.pose.pz     = 0.0;
-  _robot3d_geom.pose.proll  = 0.0;
-  _robot3d_geom.pose.ppitch = 0.0;
-  _robot3d_geom.pose.pyaw   = _robot2d_geom.pose.pa;
+  _robot3d_geom.pose             = _robot2d_geom.pose;
+  _robot3d_geom.size             = _robot2d_geom.size;
 
+/*
   _robot3d_geom.size.sw     = _robot2d_geom.size.sw;
   _robot3d_geom.size.sl     = _robot2d_geom.size.sl;
-  _robot3d_geom.size.sh     = 0.3;
+  _robot3d_geom.size.sh     = 0.3;*/
 
   // Set up the IR array geometry
   _ir_geom.poses_count = NUM_IR_SENSORS;
 
   _ir_geom.poses[ 0 ].px = 0.030;
   _ir_geom.poses[ 0 ].py = -0.190;
-  _ir_geom.poses[ 0 ].pa = DTOR( -90 );
+  _ir_geom.poses[ 0 ].pyaw = DTOR( -90 );
 
   _ir_geom.poses[ 1 ].px = 0.190;
   _ir_geom.poses[ 1 ].py = -0.090;
-  _ir_geom.poses[ 1 ].pa = DTOR( -30 );
+  _ir_geom.poses[ 1 ].pyaw = DTOR( -30 );
 
   _ir_geom.poses[ 2 ].px = 0.210;
   _ir_geom.poses[ 2 ].py = 0.0;
-  _ir_geom.poses[ 2 ].pa = DTOR( 0 );
+  _ir_geom.poses[ 2 ].pyaw = DTOR( 0 );
 
   _ir_geom.poses[ 3 ].px = 0.190;
   _ir_geom.poses[ 3 ].py = 0.090;
-  _ir_geom.poses[ 3 ].pa = DTOR( 30 );
+  _ir_geom.poses[ 3 ].pyaw = DTOR( 30 );
 
   _ir_geom.poses[ 4 ].px = 0.030;
   _ir_geom.poses[ 4 ].py = 0.190;
-  _ir_geom.poses[ 4 ].pa = DTOR( 90 );
+  _ir_geom.poses[ 4 ].pyaw = DTOR( 90 );
 
   // These 3 sensor have a z value of 0.35m and a pitch of 30 degrees down
   // This type of pose is not currently handled by Player so do the best we
   // can with what we have.
   _ir_geom.poses[ 5 ].px = 0.200;
   _ir_geom.poses[ 5 ].py = -0.060;
-  _ir_geom.poses[ 5 ].pa = DTOR( -60 );
+  _ir_geom.poses[ 5 ].pyaw = DTOR( -60 );
 
   _ir_geom.poses[ 6 ].px = 0.210;
   _ir_geom.poses[ 6 ].py = 0.0;
-  _ir_geom.poses[ 6 ].pa = DTOR( 0 );
+  _ir_geom.poses[ 6 ].pyaw = DTOR( 0 );
 
   _ir_geom.poses[ 7 ].px = 0.200;
   _ir_geom.poses[ 7 ].py = 0.060;
-  _ir_geom.poses[ 7 ].pa = DTOR( 60 );
+  _ir_geom.poses[ 7 ].pyaw = DTOR( 60 );
 }
 
 /**

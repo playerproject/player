@@ -599,15 +599,15 @@ class FiducialProxy : public ClientProxy
       { return GetVar(mDevice->fiducials[aIndex]);};
 
     /// The pose of the sensor
-    player_pose_t GetSensorPose() const
+    player_pose3d_t GetSensorPose() const
       { return GetVar(mDevice->fiducial_geom.pose);};
 
     /// The size of the sensor
-    player_bbox_t GetSensorSize() const
+    player_bbox3d_t GetSensorSize() const
       { return GetVar(mDevice->fiducial_geom.size);};
 
     /// The size of the most recently detected fiducial
-    player_bbox_t GetFiducialSize() const
+    player_bbox2d_t GetFiducialSize() const
       { return GetVar(mDevice->fiducial_geom.fiducial_size);};
 
     /// Get the sensor's geometry configuration
@@ -946,7 +946,7 @@ class IrProxy : public ClientProxy
     /// get the number of poses
     uint GetPoseCount() const { return GetVar(mDevice->poses.poses_count); };
     /// get a particular pose
-    player_pose_t GetPose(uint aIndex) const
+    player_pose3d_t GetPose(uint aIndex) const
       {return GetVar(mDevice->poses.poses[aIndex]);};
 
     /// Request IR pose information
@@ -1069,34 +1069,34 @@ class LaserProxy : public ClientProxy
 
     /// Accessor for the pose of the laser with respect to its parent
     /// object (e.g., a robot).  Fill it in by calling RequestGeom.
-    player_pose_t GetPose()
+    player_pose3d_t GetPose()
     {
-      player_pose_t p;
+      player_pose3d_t p;
       scoped_lock_t lock(mPc->mMutex);
 
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
-      p.pa = mDevice->pose[2];
+      p.pyaw = mDevice->pose[2];
       return(p);
     }
 
     /// Accessor for the pose of the laser's parent object (e.g., a robot).
     /// Filled in by some (but not all) laser data messages.
-    player_pose_t GetRobotPose()
+    player_pose3d_t GetRobotPose()
     {
-      player_pose_t p;
+      player_pose3d_t p;
       scoped_lock_t lock(mPc->mMutex);
 
       p.px = mDevice->robot_pose[0];
       p.py = mDevice->robot_pose[1];
-      p.pa = mDevice->robot_pose[2];
+      p.pyaw = mDevice->robot_pose[2];
       return(p);
     }
 
     /// Accessor for the size (fill it in by calling RequestGeom)
-    player_bbox_t GetSize()
+    player_bbox3d_t GetSize()
     {
-      player_bbox_t b;
+      player_bbox3d_t b;
       scoped_lock_t lock(mPc->mMutex);
 
       b.sl = mDevice->size[0];
@@ -1231,7 +1231,7 @@ class LocalizeProxy : public ClientProxy
       { return playerc_localize_get_particles(mDevice); }
 
     /// Get the Pose of a particle
-    player_pose_t GetParticlePose(int index) const;
+    player_pose2d_t GetParticlePose(int index) const;
 
     /// Set the current pose hypothesis (m, m, radians).
     void SetPose(double pose[3], double cov[3]);
@@ -1429,9 +1429,9 @@ class PlannerProxy : public ClientProxy
     double GetPa() const { return GetVar(mDevice->pa); };
 
     /// Get the current pose
-    player_pose_t GetPose() const
+    player_pose2d_t GetPose() const
     {
-      player_pose_t p;
+      player_pose2d_t p;
       scoped_lock_t lock(mPc->mMutex);
       p.px = mDevice->px;
       p.py = mDevice->py;
@@ -1450,9 +1450,9 @@ class PlannerProxy : public ClientProxy
     double GetGa() const { return GetVar(mDevice->ga); };
 
     /// Get the goal
-    player_pose_t GetGoal() const
+    player_pose2d_t GetGoal() const
     {
-      player_pose_t p;
+      player_pose2d_t p;
       scoped_lock_t lock(mPc->mMutex);
       p.px = mDevice->gx;
       p.py = mDevice->gy;
@@ -1471,9 +1471,9 @@ class PlannerProxy : public ClientProxy
     double GetWa() const { return GetVar(mDevice->wa); };
 
     /// Get the current waypoint
-    player_pose_t GetCurrentWaypoint() const
+    player_pose2d_t GetCurrentWaypoint() const
     {
-      player_pose_t p;
+      player_pose2d_t p;
       scoped_lock_t lock(mPc->mMutex);
       p.px = mDevice->wx;
       p.py = mDevice->wy;
@@ -1492,10 +1492,10 @@ class PlannerProxy : public ClientProxy
     double GetIa(int i) const;
 
     /// Get the waypoint
-    player_pose_t GetWaypoint(uint aIndex) const
+    player_pose2d_t GetWaypoint(uint aIndex) const
     {
       assert(aIndex < GetWaypointCount());
-      player_pose_t p;
+      player_pose2d_t p;
       scoped_lock_t lock(mPc->mMutex);
       p.px = mDevice->waypoints[aIndex][0];
       p.py = mDevice->waypoints[aIndex][1];
@@ -1517,7 +1517,7 @@ class PlannerProxy : public ClientProxy
     /// This operator provides an alternate way of access the waypoint data.
     /// For example, given a @p PlannerProxy named @p pp, the following
     /// expressions are equivalent: @p pp.GetWaypoint(0) and @p pp[0].
-    player_pose_t operator [](uint aIndex) const
+    player_pose2d_t operator [](uint aIndex) const
       { return GetWaypoint(aIndex); }
 
 };
@@ -1593,20 +1593,20 @@ class Position1dProxy : public ClientProxy
     void RequestGeom();
 
     /// Accessor for the pose (fill it in by calling RequestGeom)
-    player_pose_t GetPose() const
+    player_pose3d_t GetPose() const
     {
-      player_pose_t p;
+      player_pose3d_t p;
       scoped_lock_t lock(mPc->mMutex);
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
-      p.pa = mDevice->pose[2];
+      p.pyaw = mDevice->pose[2];
       return(p);
     }
 
     /// Accessor for the size (fill it in by calling RequestGeom)
-    player_bbox_t GetSize() const
+    player_bbox3d_t GetSize() const
     {
-      player_bbox_t b;
+      player_bbox3d_t b;
       scoped_lock_t lock(mPc->mMutex);
       b.sl = mDevice->size[0];
       b.sw = mDevice->size[1];
@@ -1712,23 +1712,23 @@ class Position2dProxy : public ClientProxy
     void SetSpeed(double aXSpeed, double aYawSpeed)
         { return SetSpeed(aXSpeed, 0, aYawSpeed);}
 
-    /// Overloaded SetSpeed that takes player_pose_t as an argument
-    void SetSpeed(player_pose_t vel)
+    /// Overloaded SetSpeed that takes player_pose2d_t as an argument
+    void SetSpeed(player_pose2d_t vel)
         { return SetSpeed(vel.px, vel.py, vel.pa);}
 
     /// Send a motor command for position control mode.  Specify the
     /// desired pose of the robot as a player_pose_t.
     /// desired motion speed  as a player_pose_t.
-    void GoTo(player_pose_t pos, player_pose_t vel);
+    void GoTo(player_pose2d_t pos, player_pose2d_t vel);
 
     /// Same as the previous GoTo(), but doesn't take speed
-    void GoTo(player_pose_t pos)
-      {GoTo(pos,(player_pose_t) {0,0,0}); }
+    void GoTo(player_pose2d_t pos)
+      {GoTo(pos,(player_pose2d_t) {0,0,0}); }
 
     /// Same as the previous GoTo(), but only takes position arguments,
     /// no motion speed setting
     void GoTo(double aX, double aY, double aYaw)
-      {GoTo((player_pose_t) {aX,aY,aYaw},(player_pose_t) {0,0,0}); }
+      {GoTo((player_pose2d_t) {aX,aY,aYaw},(player_pose2d_t) {0,0,0}); }
 
     /// Sets command for carlike robot
     void SetCarlike(double aXSpeed, double aDriveAngle);
@@ -1738,20 +1738,20 @@ class Position2dProxy : public ClientProxy
     void RequestGeom();
 
     /// Accessor for the pose (fill it in by calling RequestGeom)
-    player_pose_t GetPose()
+    player_pose3d_t GetPose()
     {
-      player_pose_t p;
+      player_pose3d_t p;
       scoped_lock_t lock(mPc->mMutex);
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
-      p.pa = mDevice->pose[2];
+      p.pyaw = mDevice->pose[2];
       return(p);
     }
 
     /// Accessor for the size (fill it in by calling RequestGeom)
-    player_bbox_t GetSize()
+    player_bbox3d_t GetSize()
     {
-      player_bbox_t b;
+      player_bbox3d_t b;
       scoped_lock_t lock(mPc->mMutex);
       b.sl = mDevice->size[0];
       b.sw = mDevice->size[1];
@@ -2255,7 +2255,7 @@ class SonarProxy : public ClientProxy
     uint GetPoseCount() const { return GetVar(mDevice->pose_count); };
 
     /// Sonar poses (m,m,radians)
-    player_pose_t GetPose(uint aIndex) const
+    player_pose3d_t GetPose(uint aIndex) const
       { return GetVar(mDevice->poses[aIndex]); };
 
     // Enable/disable the sonars.
@@ -2489,9 +2489,10 @@ class WSNProxy : public ClientProxy
 namespace std
 {
   std::ostream& operator << (std::ostream& os, const player_point_2d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_pose_t& c);
+  std::ostream& operator << (std::ostream& os, const player_pose2d_t& c);
   std::ostream& operator << (std::ostream& os, const player_pose3d_t& c);
-  std::ostream& operator << (std::ostream& os, const player_bbox_t& c);
+  std::ostream& operator << (std::ostream& os, const player_bbox2d_t& c);
+  std::ostream& operator << (std::ostream& os, const player_bbox3d_t& c);
   std::ostream& operator << (std::ostream& os, const player_segment_t& c);
   std::ostream& operator << (std::ostream& os, const playerc_device_info_t& c);
 

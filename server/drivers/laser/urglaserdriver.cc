@@ -168,7 +168,7 @@ URGLaserDriver::URGLaserDriver (ConfigFile* cf, int section)
   // read options from config file
   Geom.pose.px = (cf->ReadTupleLength (section, "pose", 0, 0));
   Geom.pose.py = (cf->ReadTupleLength (section, "pose", 1, 0));
-  Geom.pose.pa = (cf->ReadTupleAngle  (section, "pose", 2, 0));
+  Geom.pose.pyaw = (cf->ReadTupleAngle  (section, "pose", 2, 0));
 
   // set up config structure
   Conf.min_angle = cf->ReadAngle (section, "min_angle", DTOR (-120));

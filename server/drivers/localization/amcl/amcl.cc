@@ -915,7 +915,7 @@ bool AdaptiveMCL::UpdateFilter(void)
 
     // Read out the current hypotheses
     double max_weight = 0.0;
-    pf_vector_t max_weight_pose;
+    pf_vector_t max_weight_pose={{0.0,0.0,0.0}};
     this->hyp_count = 0;
     for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
     {
@@ -1201,11 +1201,8 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
 void
 AdaptiveMCL::ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr)
 {
-  player_position2d_geom_t geom;
+  player_position2d_geom_t geom={{0}};
   // just return a point so we don't get errors from playerv
-  geom.pose.px = 0;
-  geom.pose.py = 0;
-  geom.pose.pa = 0;
   geom.size.sl = 0.01;
   geom.size.sw = 0.01;
 

@@ -252,10 +252,10 @@ SickNAV200::ProcessMessage(MessageQueue * resp_queue,
                     hdr->size, 0);
       return(PLAYER_MSGTYPE_RESP_NACK);
     }
-    player_position2d_geom_t geom;
+    player_position2d_geom_t geom={{0}};
     geom.pose.px = this->pose[0];
     geom.pose.py = this->pose[1];
-    geom.pose.pa = this->pose[2];
+    geom.pose.pyaw = this->pose[2];
     geom.size.sl = this->size[0];
     geom.size.sw = this->size[1];
 

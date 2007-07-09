@@ -945,7 +945,7 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
           fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f",
                   geom->pose.px,
                   geom->pose.py,
-                  geom->pose.pa,
+                  geom->pose.pyaw,
                   geom->size.sl,
                   geom->size.sw);
           return(0);
@@ -1020,7 +1020,7 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
                     "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f",
                     gdata->pose.px,
                     gdata->pose.py,
-                    gdata->pose.pa,
+                    gdata->pose.pyaw,
                     gdata->size.sl,
                     gdata->size.sw);
 
@@ -1127,7 +1127,7 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
             fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
                     geom->poses[i].px,
                     geom->poses[i].py,
-                    geom->poses[i].pa);
+                    geom->poses[i].pyaw);
           return(0);
 
         case PLAYER_SONAR_DATA_RANGES:
@@ -1155,7 +1155,7 @@ WriteLog::WriteSonar(player_msghdr_t* hdr, void *data)
             fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
                     geom->poses[i].px,
                     geom->poses[i].py,
-                    geom->poses[i].pa);
+                    geom->poses[i].pyaw);
 
           return(0);
         default:
@@ -1734,7 +1734,7 @@ WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
             fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
                     geom->poses[i].px,
                     geom->poses[i].py,
-                    geom->poses[i].pa);
+                    geom->poses[i].pyaw);
           return(0);
         default:
           return(-1);
@@ -1770,7 +1770,7 @@ WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
             fprintf(this->file, "%+07.3f %+07.3f %+07.4f %+07.4f %+07.4f ",
                     geom->bumper_def[i].pose.px,
                     geom->bumper_def[i].pose.py,
-                    geom->bumper_def[i].pose.pa,
+                    geom->bumper_def[i].pose.pyaw,
 		    geom->bumper_def[i].length,
 		    geom->bumper_def[i].radius);
           return(0);
@@ -1800,7 +1800,7 @@ WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
             fprintf(this->file, "%+07.3f %+07.3f %+07.4f %+07.4f %+07.4f ",
                     geom->bumper_def[i].pose.px,
                     geom->bumper_def[i].pose.py,
-                    geom->bumper_def[i].pose.pa,
+                    geom->bumper_def[i].pose.pyaw,
 		    geom->bumper_def[i].length,
 		    geom->bumper_def[i].radius);
 

@@ -598,7 +598,7 @@ void fg_dump_info(FRAMEGRABBER* fg)
   // mmap
 
   // Dump out frame buffer setup
-	printf( "  fbuffer.base         = 0x%08x\n", (int)fg->fbuffer.base );
+	printf( "  fbuffer.base         = 0x%p\n", fg->fbuffer.base );
   printf( "  fbuffer.width        = %u\n", fg->fbuffer.width );
 	printf( "  fbuffer.height       = %u\n", fg->fbuffer.height );
 	printf( "  fbuffer.depth        = %u\n", fg->fbuffer.depth );
@@ -612,7 +612,7 @@ void fg_dump_info(FRAMEGRABBER* fg)
     printf( "  mbuf.offsets[%u] = %u\n", i, fg->mbuf.offsets[i] );
   }
 
-  printf( "  mb_map      = 0x%08x\n", (int)(fg->mb_map) );
+  printf( "  mb_map      = 0x%p\n", (fg->mb_map) );
 }
 
 //==========================================================================

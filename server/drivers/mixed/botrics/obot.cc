@@ -168,8 +168,8 @@ class Obot : public Driver
     double watchdog_timeout;
 
     // Robot geometry (size and rotational offset)
-    player_bbox_t robot_size;
-    player_pose_t robot_pose;
+    player_bbox3d_t robot_size;
+    player_pose3d_t robot_pose;
 
     // methods for internal use
     int WriteBuf(unsigned char* s, size_t len);
@@ -253,7 +253,7 @@ Obot::Obot( ConfigFile* cf, int section)
                                               0, OBOT_POSE_X);
     this->robot_pose.py = cf->ReadTupleLength(section, "offset",
                                               1, OBOT_POSE_Y);
-    this->robot_pose.pa = cf->ReadTupleAngle(section, "offset",
+    this->robot_pose.pyaw = cf->ReadTupleAngle(section, "offset",
                                              2, OBOT_POSE_A);
 
     this->max_xspeed = cf->ReadTupleLength(section, "max_speed",

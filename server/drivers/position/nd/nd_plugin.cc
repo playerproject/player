@@ -191,10 +191,10 @@ class ND : public Driver
   private:
     bool active_goal;
     int dir;
-    player_pose_t goal;
-    player_pose_t last_odom_pose;
-    player_pose_t odom_pose;
-    player_pose_t odom_vel;
+    player_pose2d_t goal;
+    player_pose2d_t last_odom_pose;
+    player_pose2d_t odom_pose;
+    player_pose2d_t odom_vel;
     bool odom_stall;
     int current_dir;
     TParametersND NDparametros;
@@ -260,14 +260,14 @@ class ND : public Driver
     // Laser device info
     Device *laser;
     player_devaddr_t laser_addr;
-    player_pose_t laser_pose;
+    player_pose3d_t laser_pose;
     int laser_buffer;
 
     // Sonar device info
     Device *sonar;
     player_devaddr_t sonar_addr;
     int num_sonars;
-    player_pose_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
+    player_pose3d_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
     // indices of known bad sonars
     int bad_sonars[PLAYER_SONAR_MAX_SAMPLES];
     int bad_sonar_count;
@@ -473,13 +473,13 @@ int ND::SetupOdom()
          this->robot_geom.size.sw,
          this->robot_geom.pose.px,
          this->robot_geom.pose.py,
-         RTOD(this->robot_geom.pose.pa));
+         RTOD(this->robot_geom.pose.pyaw));
          
 
   delete msg;
 
-  memset(&this->odom_pose, 0, sizeof(player_pose_t));
-  memset(&this->odom_vel, 0, sizeof(player_pose_t));
+  memset(&this->odom_pose, 0, sizeof(this->odom_pose));
+  memset(&this->odom_vel, 0, sizeof(this->odom_vel));
   this->odom_stall = false;
 
   return 0;
@@ -706,11 +706,11 @@ ND::ProcessLaser(player_msghdr_t* hdr, player_laser_data_t* scan)
 
     // convert to the robot's frame
     rx = (this->laser_pose.px + 
-          x * cos(this->laser_pose.pa) -
-          y * sin(this->laser_pose.pa));
+          x * cos(this->laser_pose.pyaw) -
+          y * sin(this->laser_pose.pyaw));
     ry = (this->laser_pose.py + 
-          x * sin(this->laser_pose.pa) +
-          y * cos(this->laser_pose.pa));
+          x * sin(this->laser_pose.pyaw) +
+          y * cos(this->laser_pose.pyaw));
 
     // convert to the odometric frame and add to the obstacle list
     this->laser_obstacles[idx].punto[i].x = (this->odom_pose.px + 
@@ -767,11 +767,11 @@ ND::ProcessSonar(player_msghdr_t* hdr, player_sonar_data_t* scan)
 
     // convert to the robot's frame
     rx = (this->sonar_poses[i].px + 
-          x * cos(this->sonar_poses[i].pa) -
-          y * sin(this->sonar_poses[i].pa));
+          x * cos(this->sonar_poses[i].pyaw) -
+          y * sin(this->sonar_poses[i].pyaw));
     ry = (this->sonar_poses[i].py + 
-          x * sin(this->sonar_poses[i].pa) +
-          y * cos(this->sonar_poses[i].pa));
+          x * sin(this->sonar_poses[i].pyaw) +
+          y * cos(this->sonar_poses[i].pyaw));
 
     // convert to the odometric frame and add to the obstacle list
     this->sonar_obstacles[idx].punto[count].x = (this->odom_pose.px + 

@@ -270,7 +270,7 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   // Load position config
   geometry->position.pose.px = cf->ReadTupleFloat(section,"position_pose",0,0) * geometry->scale;
   geometry->position.pose.py = cf->ReadTupleFloat(section,"position_pose",1,0) * geometry->scale;
-  geometry->position.pose.pa = cf->ReadTupleFloat(section,"position_pose",2,0) * geometry->scale;
+  geometry->position.pose.pyaw = cf->ReadTupleFloat(section,"position_pose",2,0) * geometry->scale;
 
   // load dimension of the base
   geometry->position.size.sw = cf->ReadTupleFloat(section,"position_size",0,57) * geometry->scale;
@@ -283,35 +283,35 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
     // load the default ir geometry
     geometry->ir.poses[0].px = 10/1000*geometry->scale;
     geometry->ir.poses[0].py = 24/1000*geometry->scale;
-    geometry->ir.poses[0].pa = DTOR(90);
+    geometry->ir.poses[0].pyaw = DTOR(90);
 
     geometry->ir.poses[1].px = 19/1000*geometry->scale;
     geometry->ir.poses[1].py = 17/1000*geometry->scale;
-    geometry->ir.poses[1].pa = DTOR(45);
+    geometry->ir.poses[1].pyaw = DTOR(45);
 
     geometry->ir.poses[2].px = 25/1000*geometry->scale;
     geometry->ir.poses[2].py = 6/1000*geometry->scale;
-    geometry->ir.poses[2].pa = DTOR(0);
+    geometry->ir.poses[2].pyaw = DTOR(0);
 
     geometry->ir.poses[3].px = 25/1000*geometry->scale;
     geometry->ir.poses[3].py = -6/1000*geometry->scale;
-    geometry->ir.poses[3].pa = DTOR(0);
+    geometry->ir.poses[3].pyaw = DTOR(0);
 
     geometry->ir.poses[4].px = 19/1000*geometry->scale;
     geometry->ir.poses[4].py = -17/1000*geometry->scale;
-    geometry->ir.poses[4].pa = DTOR(-45);
+    geometry->ir.poses[4].pyaw = DTOR(-45);
 
     geometry->ir.poses[5].px = 10/1000*geometry->scale;
     geometry->ir.poses[5].py = -24/1000*geometry->scale;
-    geometry->ir.poses[5].pa = DTOR(-90);
+    geometry->ir.poses[5].pyaw = DTOR(-90);
 
     geometry->ir.poses[6].px = -24/1000*geometry->scale;
     geometry->ir.poses[6].py = -10/1000*geometry->scale;
-    geometry->ir.poses[6].pa = DTOR(180);
+    geometry->ir.poses[6].pyaw = DTOR(180);
 
     geometry->ir.poses[7].px = -24/1000*geometry->scale;
     geometry->ir.poses[7].py = 10/1000*geometry->scale;
-    geometry->ir.poses[7].pa = DTOR(180);
+    geometry->ir.poses[7].pyaw = DTOR(180);
   }
   else
   {
@@ -320,7 +320,7 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
     {
       geometry->ir.poses[i].px = cf->ReadTupleFloat(section,"ir_poses",3*i,0)*geometry->scale;
       geometry->ir.poses[i].py = cf->ReadTupleFloat(section,"ir_poses",3*i+1,0)*geometry->scale;
-      geometry->ir.poses[i].pa = cf->ReadTupleFloat(section,"ir_poses",3*i+2,0);
+      geometry->ir.poses[i].pyaw = cf->ReadTupleFloat(section,"ir_poses",3*i+2,0);
     }				
   }
   // laod ir calibration from config file

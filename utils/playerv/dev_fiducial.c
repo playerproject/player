@@ -141,7 +141,7 @@ void fiducial_draw(fiducial_t *fiducial)
   rtk_fig_origin(fiducial->fig,
                  fiducial->proxy->fiducial_geom.pose.px,
                  fiducial->proxy->fiducial_geom.pose.py,
-                 fiducial->proxy->fiducial_geom.pose.pa);
+                 fiducial->proxy->fiducial_geom.pose.pyaw);
   rtk_fig_rectangle(fiducial->fig, 0, 0, 0,
                     fiducial->proxy->fiducial_geom.size.sw,                    
                     fiducial->proxy->fiducial_geom.size.sl, 0);

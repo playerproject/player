@@ -497,10 +497,7 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
   {
     assert(hdr->size == 0);
 
-    player_position2d_geom_t geom;
-    geom.pose.px = 0;
-    geom.pose.py = 0;
-    geom.pose.pa = 0;
+    player_position2d_geom_t geom={{0}};
     Lock();
     geom.size.sl = rflex_configs.m_length;
     geom.size.sw = rflex_configs.m_width;
@@ -739,14 +736,14 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
           cf->ReadInt(section, "sonar_ping_delay",0);
   rflex_configs.sonar_set_delay=
           cf->ReadInt(section, "sonar_set_delay", 0);
-  rflex_configs.mrad_sonar_poses=(player_pose_t *) malloc(rflex_configs.num_sonars*sizeof(player_pose_t));
+  rflex_configs.mrad_sonar_poses=(player_pose3d_t *) malloc(rflex_configs.num_sonars*sizeof(player_pose3d_t));
   for(x=0;x<rflex_configs.num_sonars;x++)
   {
     rflex_configs.mrad_sonar_poses[x].px=
             cf->ReadTupleFloat(section, "mrad_sonar_poses",3*x+1,0.0);
     rflex_configs.mrad_sonar_poses[x].py=
             cf->ReadTupleFloat(section, "mrad_sonar_poses",3*x+2,0.0);
-    rflex_configs.mrad_sonar_poses[x].pa=
+    rflex_configs.mrad_sonar_poses[x].pyaw=
             cf->ReadTupleFloat(section, "mrad_sonar_poses",3*x,0.0);
   }
   rflex_configs.sonar_2nd_bank_start=cf->ReadInt(section, "sonar_2nd_bank_start", 0);
@@ -779,7 +776,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   {
     rflex_configs.ir_poses.poses[i].px= cf->ReadTupleFloat(section, "poses",i*3,0);
     rflex_configs.ir_poses.poses[i].py= cf->ReadTupleFloat(section, "poses",i*3+1,0);
-    rflex_configs.ir_poses.poses[i].pa= cf->ReadTupleFloat(section, "poses",i*3+2,0);
+    rflex_configs.ir_poses.poses[i].pyaw= cf->ReadTupleFloat(section, "poses",i*3+2,0);
 
     // Calibration parameters for ir in form range=(a*voltage)^b
     rflex_configs.ir_a[i] = cf->ReadTupleFloat(section, "rflex_ir_calib",i*2,1);
@@ -794,7 +791,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   {
     rflex_configs.bumper_def[x].pose.px =  (cf->ReadTupleFloat(section, "bumper_def",5*x,0)); //m
     rflex_configs.bumper_def[x].pose.py =  (cf->ReadTupleFloat(section, "bumper_def",5*x+1,0)); //m
-    rflex_configs.bumper_def[x].pose.pa =  (cf->ReadTupleFloat(section, "bumper_def",5*x+2,0)); //rad
+    rflex_configs.bumper_def[x].pose.pyaw =  (cf->ReadTupleFloat(section, "bumper_def",5*x+2,0)); //rad
     rflex_configs.bumper_def[x].length =  (cf->ReadTupleFloat(section, "bumper_def",5*x+3,0)); //m
     rflex_configs.bumper_def[x].radius =  (cf->ReadTupleFloat(section, "bumper_def",5*x+4,0));  //m
   }
@@ -1075,7 +1072,7 @@ RFLEX::Main()
 
     /* Get data from robot */
   static float LastYaw = 0;
-    player_rflex_data_t rflex_data = {0};
+    player_rflex_data_t rflex_data = {{{0}}};
 
   Lock();
     update_everything(&rflex_data);
@@ -1108,10 +1105,10 @@ RFLEX::Main()
         geom.poses_count = rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start;
         for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
         {
-      SonarRotate(rad_odo_theta, rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].px,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].py,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].pa,NewGeom,&NewGeom[1],&NewGeom[2]);
+      SonarRotate(rad_odo_theta, rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].px,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].py,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].pyaw,NewGeom,&NewGeom[1],&NewGeom[2]);
           geom.poses[i].px = NewGeom[0];
           geom.poses[i].py = NewGeom[1];
-          geom.poses[i].pa = NewGeom[2];
+          geom.poses[i].pyaw = NewGeom[2];
         }
         Unlock();
         if (sonar_id_2.interf)

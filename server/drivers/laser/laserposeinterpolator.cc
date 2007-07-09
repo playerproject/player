@@ -163,7 +163,7 @@ class LaserPoseInterp : public Driver
     double* scantimes;
     player_position2d_data_t lastpose;
     double lastposetime;
-    player_pose_t lastpublishpose;
+    player_pose2d_t lastpublishpose;
     double lastpublishposetime;
     double update_thresh[2];
     double update_interval;
@@ -299,9 +299,7 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
 
       // Tag this scan with the last received pose and push it out
       player_laser_data_scanpose_t scanpose;
-      scanpose.pose.px = this->lastpose.pos.px;
-      scanpose.pose.py = this->lastpose.pos.py;
-      scanpose.pose.pa = this->lastpose.pos.pa;
+      scanpose.pose = this->lastpose.pos;
       scanpose.scan = *((player_laser_data_t*)data);
 
       this->Publish(this->device_addr, NULL,

@@ -116,7 +116,7 @@ void bumper_update(bumper_t *bumper)
         rtk_fig_origin(bumper->scan_fig[i],
                        bumper->proxy->poses[i].pose.px, // convert mm to m
                        bumper->proxy->poses[i].pose.py,
-                       bumper->proxy->poses[i].pose.pa); // convert deg to rad
+                       bumper->proxy->poses[i].pose.pyaw); // convert deg to rad
 					   
       }
     }

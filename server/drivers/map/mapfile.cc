@@ -128,7 +128,7 @@ class MapFile : public Driver
     double resolution;
     int negate;
     int size_x, size_y;
-    player_pose_t origin;
+    player_pose2d_t origin;
     char* mapdata;
     
     // Handle map info request
@@ -138,7 +138,7 @@ class MapFile : public Driver
 
   public:
     MapFile(ConfigFile* cf, int section, const char* file, 
-            double res, int neg, player_pose_t o);
+            double res, int neg, player_pose2d_t o);
     ~MapFile();
     int Setup();
     int Shutdown();
@@ -156,7 +156,7 @@ MapFile_Init(ConfigFile* cf, int section)
   const char* filename;
   double resolution;
   int negate;
-  player_pose_t origin;
+  player_pose2d_t origin;
 
   if(!(filename = cf->ReadFilename(section,"filename", NULL)))
   {
@@ -188,7 +188,7 @@ MapFile_Register(DriverTable* table)
 
 // this one has no data or commands, just configs
 MapFile::MapFile(ConfigFile* cf, int section, const char* file, 
-                 double res, int neg, player_pose_t o) 
+                 double res, int neg, player_pose2d_t o) 
   : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_MAP_CODE)
 {
   this->mapdata = NULL;

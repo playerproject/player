@@ -123,7 +123,7 @@ int ClientProxy::GetStrProp(char *aProperty, char **aValue)
   return playerc_device_get_strprop (mInfo, aProperty, aValue);
 }
 
-int ClientProxy::SetStrProp(char *aProperty, const char *aValue)
+int ClientProxy::SetStrProp(char *aProperty, char *aValue)
 {
   scoped_lock_t lock(mPc->mMutex);
   return playerc_device_set_strprop (mInfo, aProperty, aValue);

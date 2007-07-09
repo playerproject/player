@@ -159,7 +159,7 @@ playerc_position2d_get_geom(playerc_position2d_t *device)
 
   device->pose[0] = geom.pose.px;
   device->pose[1] = geom.pose.py;
-  device->pose[2] = geom.pose.pa;
+  device->pose[2] = geom.pose.pyaw;
   device->size[0] = geom.size.sl;
   device->size[1] = geom.size.sw;
 
@@ -188,7 +188,7 @@ playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
 // Set the target pose
 int
 playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
-                                         player_pose_t pos, player_pose_t vel,
+                                         player_pose2d_t pos, player_pose2d_t vel,
                                          int state)
 {
   player_position2d_cmd_pos_t cmd;
