@@ -34,6 +34,8 @@
 
 The sicklms200 driver controls the SICK LMS 200 scanning laser range-finder.
 
+@note LMS200 lasers may take several seconds to start up.  You may want to set the 'alwayson' option for sicklms200  to '1' in your configuration file in order start the laser when player starts.  Otherwise, your client may experience a timeout in trying to subscribe to this device.
+
 @par Compile-time dependencies
 
 - none
