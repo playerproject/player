@@ -102,6 +102,10 @@ Ben Grocholsky, Brad Kratochvil
 
 /** @} */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>  /* close(2),fcntl(2),getpid(2),usleep(3),execvp(3),fork(2)*/
@@ -114,7 +118,10 @@ Ben Grocholsky, Brad Kratochvil
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <libplayerjpeg/playerjpeg.h>
+
+#if HAVE_JPEGLIB_H 
+  #include <libplayerjpeg/playerjpeg.h>
+#endif
 
 #include "conversions.h"
 #include "cmvision.h"
@@ -422,6 +429,15 @@ CMVisionBF::ProcessMessage(MessageQueue* resp_queue,
     uint8_t* ptr;
 
     assert(camera_data);
+
+#if !HAVE_JPEGLIB_H 
+    if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
+    {
+      PLAYER_ERROR("No support for jpeg decompression");
+      return(-1);
+    }
+#endif
+
     assert(camera_data->bpp == 24);
     if ((camera_data->width) && (camera_data->height))
     {
@@ -438,11 +454,13 @@ CMVisionBF::ProcessMessage(MessageQueue* resp_queue,
       ptr = camera_data->image;
       if (camera_data->compression == PLAYER_CAMERA_COMPRESS_JPEG)
       {
+#if HAVE_JPEGLIB_H 
 	jpeg_decompress((unsigned char*)mTmp, 
       			PLAYER_CAMERA_IMAGE_SIZE,
                         camera_data->image,
                         camera_data->image_count
                        );
+#endif
         ptr = mTmp;
       }
       // now deal with the data
