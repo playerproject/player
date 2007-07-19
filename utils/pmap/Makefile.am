@@ -5,7 +5,7 @@ if WITH_GSL
 #if INCLUDE_GLU
 #if INCLUDE_GLUT
 bin_PROGRAMS = pmaptest
-lib_LTLIBRARIES = libpmap.la liblodo.la
+lib_LTLIBRARIES = libpmap.la liblodo.la liblododriver.la 
 #endif
 #endif
 #endif
@@ -22,6 +22,8 @@ liblodo_la_LIBADD = libpmap.la $(top_builddir)/libplayercore/libplayererror.la $
 
 pmaptest_SOURCES = pmap_test.cpp
 pmaptest_LDADD = @GSL_LIBS@ -lpmap -llodo
+
+liblododriver_la_SOURCES = lodo_driver.cc
 
 doc:
 	doxygen pmap.dox
