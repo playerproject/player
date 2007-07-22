@@ -1638,7 +1638,7 @@ void Erratic::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 // For PTZ #0:
 //    Pan is on servo 1, tilt on servo 2
 // For PTZ #1:
-//    Pan is on servo 0
+//    Tilt is on servo 0
 //
 // Commands are in degrees, positive and negative
 // Conversions are handled through the Erratic parameter structure,
