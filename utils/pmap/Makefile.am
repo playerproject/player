@@ -24,6 +24,7 @@ pmaptest_SOURCES = pmap_test.cpp
 pmaptest_LDADD = @GSL_LIBS@ -lpmap -llodo
 
 liblododriver_la_SOURCES = lodo_driver.cc
+liblododriver_la_LIBADD = liblodo.la
 
 doc:
 	doxygen pmap.dox
