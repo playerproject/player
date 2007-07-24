@@ -956,7 +956,7 @@ int Camera1394::Setup()
 	}
   	
   	// now start capture
-	if (DC1394_SUCCESS != dc1394_capture_setup_dma(camera, this->num_dma_buffers))
+	if (DC1394_SUCCESS != dc1394_capture_setup(camera, this->num_dma_buffers, DC1394_CAPTURE_FLAGS_DEFAULT))
   		DMA_Success = false;
   }
   if (DMA_Success)
@@ -1115,7 +1115,7 @@ int Camera1394::GrabFrame()
   {
   case methodRaw:
 #if LIBDC1394_VERSION == 0200
-    if (dc1394_capture(&this->camera, 1) != DC1394_SUCCESS)
+    if (1)
 #else
     if (dc1394_single_capture(this->handle, &this->camera) != DC1394_SUCCESS)
 #endif
@@ -1126,7 +1126,7 @@ int Camera1394::GrabFrame()
     break;
   case methodVideo:
 #if LIBDC1394_VERSION == 0200
-    frame = dc1394_capture_dequeue_dma (camera, DC1394_VIDEO1394_WAIT);
+    dc1394_capture_dequeue (camera, DC1394_CAPTURE_POLICY_WAIT, &frame);
     if (!frame) 
 #else
     if (dc1394_dma_single_capture(&this->camera) != DC1394_SUCCESS)
@@ -1329,7 +1329,7 @@ int Camera1394::GrabFrame()
     return -1;
   }
 #if LIBDC1394_VERSION == 0200
-  if (this->method == methodVideo) dc1394_capture_enqueue_dma(camera, frame);
+  if (this->method == methodVideo) dc1394_capture_enqueue(camera, frame);
 #else
   if (this->method == methodVideo) dc1394_dma_done_with_buffer(&this->camera);
 #endif
