@@ -460,7 +460,7 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
 
     player_position2d_set_odom_req * set_odom_req = reinterpret_cast<player_position2d_set_odom_req*> (data);
     Lock();
-    set_odometry((long) (1000*set_odom_req->pose.px),(long) (1000*set_odom_req->pose.py),(short) (1000*set_odom_req->pose.pa));
+    set_odometry(set_odom_req->pose.px,set_odom_req->pose.py,set_odom_req->pose.pa);
     Unlock();
     Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
     return 0;
