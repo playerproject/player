@@ -1129,8 +1129,7 @@ class LaserProxy : public ClientProxy
     /// Range access operator.  This operator provides an alternate
     /// way of access the range data.  For example, given an @p
     /// LaserProxy named @p lp, the following expressions are
-    /// equivalent: @p lp.ranges[0], @p lp.Ranges(0),
-    /// and @p lp[0].
+    /// equivalent: @p lp.GetRange(0) and @p lp[0].
     double operator [] (uint index) const
       { return GetRange(index);}
 
