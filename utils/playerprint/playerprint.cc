@@ -79,6 +79,7 @@ playerprint can print out data for the following kinds of devices:
 #include <stdlib.h>  // for atoi(3)
 //#include <libplayerc/playerc.h>      // for libplayerc client stuff
 #include <libplayerc++/playerc++.h>  // for libplayerc++ client stuff
+#include <sys/time.h>
 
 #include <assert.h>
 
@@ -92,7 +93,7 @@ playerprint can print out data for the following kinds of devices:
 std::string g_hostname= PlayerCc::PLAYER_HOSTNAME;
 int32_t g_port        = PlayerCc::PLAYER_PORTNUM;
 int16_t g_index       = 0;
-int16_t g_rate        = 10;
+double g_rate        = 0;
 uint32_t g_transport  = PLAYERC_TRANSPORT_TCP;
 
 std::string g_device("");
@@ -129,8 +130,7 @@ get_options(int argc, char **argv)
           g_port = atoi(optarg);
           break;
       case 'r':
-          std::cerr << "Data rate not yet implemented!" << std::endl;
-          g_rate = atoi(optarg);
+          g_rate = strtod(optarg,NULL);
           break;
       case 't':
           g_transport = atoi(optarg);
@@ -270,9 +270,18 @@ main(int argc, char **argv)
   }
   assert(cp);
 
+  // set up timing loop and replace rules
+  struct timeval now, then;
+  if (g_rate > 0)
+  {
+    client.SetDataMode(PLAYER_DATAMODE_PULL);
+    client.SetReplaceRule(0);
+    gettimeofday(&then,NULL);
+  }
+
   for(;;)
   {
-    /* this blocks until new data comes; 10Hz by default */
+    /* this blocks until new data comes; */
     client.Read();
 
     switch(code)
@@ -363,6 +372,21 @@ main(int argc, char **argv)
     }
 
     std::cout << std::endl;
+
+    /* delay if we are reading faster than rate */
+    if (g_rate > 0)
+    {
+      gettimeofday(&now,NULL);
+      int delta = (now.tv_sec - then.tv_sec)*1000000 + (now.tv_usec - then.tv_usec);
+      int period = static_cast<int> (1e6/g_rate);
+      if (delta < period)
+      {
+        usleep(period-delta);
+        gettimeofday(&now,NULL);
+      }
+
+      then = now;
+    }
   }
 }
 
