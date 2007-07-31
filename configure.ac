@@ -51,6 +51,8 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_C_BIGENDIAN
 
+AC_LANG(C++)
+
 AC_ENABLE_SHARED
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
@@ -535,8 +537,9 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/cmucam2/Makefile
           server/drivers/mixed/p2os/Makefile
           server/drivers/mixed/erratic/Makefile
-          server/drivers/mixed/rflex/Makefile
           server/drivers/mixed/reb/Makefile
+          server/drivers/mixed/rflex/Makefile
+          server/drivers/mixed/robotino/Makefile
           server/drivers/mixed/khepera/Makefile
           server/drivers/mixed/rmp/Makefile
           server/drivers/mixed/garcia/Makefile
@@ -560,7 +563,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/isense/Makefile
           server/drivers/position/lasersafe/Makefile
           server/drivers/position/nav200/Makefile
-	  server/drivers/position/roboteq/Makefile
+          server/drivers/position/roboteq/Makefile
           server/drivers/position/vfh/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
@@ -583,10 +586,8 @@ AC_OUTPUT(Makefile
           client_libs/libplayerc/test/Makefile
           client_libs/libplayerc/bindings/Makefile
           client_libs/libplayerc/bindings/python/Makefile
-dnl          client_libs/libplayerpacket/Makefile
           examples/Makefile
           examples/plugins/Makefile
-dnl          examples/plugins/exampleinterface/Makefile
           examples/plugins/exampledriver/Makefile
           examples/plugins/multidriver/Makefile
           examples/plugins/opaquedriver/Makefile
@@ -605,7 +606,6 @@ dnl          examples/plugins/exampleinterface/Makefile
           utils/xmms-plugin/Makefile
           utils/logsplitter/Makefile
           utils/playerprop/Makefile
-dnl          utils/barcodes/Makefile
           config/Makefile)
 
 dnl should use AC_MSG_NOTICE(), but that's apparently not defined in
