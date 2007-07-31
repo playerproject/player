@@ -448,6 +448,10 @@ void LaserToRanger_Register (DriverTable* table);
 void SonarToRanger_Register (DriverTable* table);
 #endif
 
+#ifdef INCLUDE_ROBOTEQ
+void roboteq_Register (DriverTable* table);
+#endif
+
 /*
  * this function will be called at startup.  all available devices should
  * be added to the driverTable here.  they will be instantiated later as
@@ -854,5 +858,9 @@ player_register_drivers()
 
 #ifdef INCLUDE_SONARTORANGER
   SonarToRanger_Register(driverTable);
+#endif
+  
+#ifdef INCLUDE_ROBOTEQ
+  roboteq_Register(driverTable);
 #endif
 }
