@@ -119,3 +119,8 @@ void SimulationProxy::GetProperty(char* identifier, char *name, void *value, siz
   playerc_simulation_get_property(mDevice, identifier, name, value, value_len);
 }
 
+void SimulationProxy::SetProperty(char* identifier, char *name, void *value, size_t value_len )
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_set_property(mDevice, identifier, name, value, value_len);
+}

@@ -2233,6 +2233,9 @@ class SimulationProxy : public ClientProxy
 
     /// Get a simulation property
     void GetProperty(char* identifier, char *name, void *value, size_t value_len );
+
+    /// Set a simulation property
+    void SetProperty(char* identifier, char *name, void *value, size_t value_len );
 };
 
 
