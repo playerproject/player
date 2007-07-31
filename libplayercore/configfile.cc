@@ -68,7 +68,7 @@
 
 //extern int global_playerport;
 
-#define COLOR_DATABASE "/usr/X11R6/lib/X11/rgb.txt"
+const char * COLOR_DATABASE[5] = {"/usr/X11R6/lib/X11/rgb.txt","/usr/share/X11/rgb.txt","/etc/X11/rgb.txt","/usr/lib/X11/rgb.txt", NULL};
 
 ///////////////////////////////////////////////////////////////////////////
 // the isblank() macro is not standard - it's a GNU extension
@@ -1871,17 +1871,24 @@ uint32_t ConfigFile::ReadTupleColor(int section, const char *name, int index, ui
 uint32_t ConfigFile::LookupColor(const char *name)
 {
   FILE *file;
-  const char *filename;
 
-  filename = COLOR_DATABASE;
-  file = fopen(filename, "r");
+  for (int i=0; COLOR_DATABASE[i] != NULL; ++i)
+  {
+    file = fopen(COLOR_DATABASE[i], "r");
+    if (file)
+      break;
+  }
   if (!file)
   {
-    PLAYER_ERROR2("unable to open color database %s : %s",
-                  filename, strerror(errno));
+    PLAYER_ERROR("unable to open color database: tried the following files");
+    for (int i=0; COLOR_DATABASE[i] != NULL; ++i)
+    {
+      PLAYER_ERROR1("\t: %s", COLOR_DATABASE[i]);
+    }
     fclose(file);
     return 0xFFFFFF;
   }
+  
   
   while (true)
   {
