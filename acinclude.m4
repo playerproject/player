@@ -275,6 +275,8 @@ PLAYER_ADD_DRIVER([kartowriter],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([roboteq],[yes],[],[],[])
+
 dnl Where's CANLIB?
 AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],
 CANLIB_DIR=$with_canlib,CANLIB_DIR=NONE)

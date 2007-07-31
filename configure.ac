@@ -560,6 +560,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/isense/Makefile
           server/drivers/position/lasersafe/Makefile
           server/drivers/position/nav200/Makefile
+	  server/drivers/position/roboteq/Makefile
           server/drivers/position/vfh/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
