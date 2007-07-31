@@ -1,5 +1,9 @@
 noinst_LTLIBRARIES = 
 
+if INCLUDE_PBSLASER
+noinst_LTLIBRARIES += libpbslaser.la
+endif
+
 if INCLUDE_SICKLMS200
 noinst_LTLIBRARIES += libsicklms200.la
 endif
@@ -40,6 +44,7 @@ EXTRA_DIST = lasercspace-1.jpg lasercspace-2.jpg
 
 AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
+libpbslaser_la_SOURCES = pbs_driver.cc
 libsicklms200_la_SOURCES = sicklms200.cc
 libsicklms400_la_SOURCES = lms400_cola.h lms400_cola.cc sicklms400.cc
 libsicks3000_la_SOURCES = sicks3000.cc

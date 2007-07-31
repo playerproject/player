@@ -659,15 +659,3 @@ void RobotinoDriver::Main ()
       }
 }
       
-/// Extra stuff for building a shared object.
-/** 
-    Needed to avoid C++ name-mangling
-*/
-extern "C"
-{
-  int player_driver_init (DriverTable * table)
-  {
-    RobotinoDriver_Register (table);
-    return (0);
-  }
-}

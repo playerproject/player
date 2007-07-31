@@ -456,6 +456,10 @@ void roboteq_Register (DriverTable* table);
 void robotino_Register (DriverTable* table);
 #endif
 
+#ifdef INCLUDE_PBSLASER
+void PBSDriver_Register (DriverTable* table);
+#endif
+
 
 /*
  * this function will be called at startup.  all available devices should
@@ -871,5 +875,9 @@ player_register_drivers()
 
 #ifdef INCLUDE_ROBOTINO
   robotino_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_PBSLASER
+  PBSDriver_Register(driverTable);
 #endif
 }
