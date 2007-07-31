@@ -277,6 +277,9 @@ PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([roboteq],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([robotino],[yes],["robotinocom.h xtimer.h xthread.h"],[],["-lxtimer -lrobotinocom -lxthread -lpthread"])
+
+
 dnl Where's CANLIB?
 AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],
 CANLIB_DIR=$with_canlib,CANLIB_DIR=NONE)
@@ -498,6 +501,7 @@ if test "x$with_boost_thread" != "xno"; then
   AC_CACHE_CHECK(whether the Boost::Thread library is available,
       ax_cv_boost_thread,
       [AC_LANG_SAVE
+        CXXFLAGS_SAVE=$CXXFLAGS
         AC_LANG_CPLUSPLUS
         AC_COMPILE_IFELSE(AC_LANG_PROGRAM([[#include "confdefs.h"
                                             #include <boost/thread/thread.hpp>]],
