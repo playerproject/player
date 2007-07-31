@@ -267,6 +267,8 @@ PLAYER_ADD_DRIVER([passthrough],[no],[],[],
 
 PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([pbslaser],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([reb],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([relay],[yes],[],[],[])
