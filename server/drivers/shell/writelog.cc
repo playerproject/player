@@ -32,8 +32,8 @@
  * @brief Logging data
 
 The writelog driver will write data from another device to a log file.
-Each data message is written to a separate line.  The format for the 
-file is given in the 
+Each data message is written to a separate line.  The format for the
+file is given in the
 @ref tutorial_datalog "data logging tutorial".
 
 The @ref driver_readlog driver can be used to replay the data
@@ -89,7 +89,6 @@ disabled because they need to be updated:
 - @ref interface_joystick
 - @ref interface_position3d
 - @ref interface_power
-- @ref interface_truth
 
 @par Configuration requests
 
@@ -202,7 +201,7 @@ class WriteLog: public Driver
 
   // Write PTZ data to file
   private: int WritePTZ(player_msghdr_t* hdr, void *data);
-  
+
   // Write sonar data to file
   private: int WriteSonar(player_msghdr_t* hdr, void *data);
 
@@ -219,13 +218,13 @@ class WriteLog: public Driver
   /* HHAA 15-02-2007 */
   // Write fixed range IRs data to file
   private: int WriteIR(player_msghdr_t* hdr, void *data);
-  
+
   // Write IMU data to file
   private: int WriteIMU (player_msghdr_t* hdr, void *data);
-  
+
   // Write PointCloud3D data to file
   private: int WritePointCloud3d (player_msghdr_t* hdr, void *data);
-  
+
   // Write Actarray data to file
   private: int WriteActarray (player_msghdr_t* hdr, void *data);
 
@@ -543,7 +542,7 @@ void WriteLog::WriteGeometries()
       {
         // oh well.
         PLAYER_WARN("unable to get bumper geometry");
-      }      
+      }
       else
       {
         // log it
@@ -563,7 +562,7 @@ void WriteLog::WriteGeometries()
       {
         // oh well.
         PLAYER_WARN("unable to get ir geometry");
-      }      
+      }
       else
       {
         // log it
@@ -1038,7 +1037,7 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 
 /** @ingroup tutorial_datalog
  @defgroup player_driver_writelog_ptz ptz format
- 
+
 @brief PTZ log format
 The format for each @ref interface_wsn message is:
   - pan       (float): The pan angle/value
@@ -1077,7 +1076,7 @@ WriteLog::WritePTZ (player_msghdr_t* hdr, void *data)
       return(-1);
   }
 }
- 
+
 /** @ingroup tutorial_datalog
  @defgroup player_driver_writelog_sonar sonar format
 
@@ -1215,10 +1214,10 @@ WriteLog::WriteWiFi(player_msghdr_t* hdr, void *data)
 	    memcpy(mac, wdata->links[i].mac, wdata->links[i].mac_count);
 	    memcpy(ip, wdata->links[i].ip, wdata->links[i].ip_count);
             memcpy(essid, wdata->links[i].essid, wdata->links[i].essid_count);
-        
+
             fprintf(this->file, "'%s' '%s' '%s' %d %d %d %d %d %d ",
                     mac, ip, essid,
-                    wdata->links[i].mode, 
+                    wdata->links[i].mode,
                     wdata->links[i].freq,
                     wdata->links[i].encrypt,
                     wdata->links[i].qual,
@@ -1272,8 +1271,8 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
                 case PLAYER_WSN_DATA:
                     wdata = (player_wsn_data_t*)data;
                     fprintf(this->file,"%d %d %d %f %f %f %f %f %f %f %f %f %f",
-                            wdata->node_type, 
-                            wdata->node_id, 
+                            wdata->node_type,
+                            wdata->node_id,
                             wdata->node_parent_id,
                             wdata->data_packet.light,
                             wdata->data_packet.mic,
@@ -1359,11 +1358,11 @@ WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
 		    player_imu_data_state_t* idata;
                     idata = (player_imu_data_state_t*)data;
                     fprintf (this->file,"%f %f %f %f %f %f",
-                            idata->pose.px, 
-                            idata->pose.py, 
-                            idata->pose.pz, 
-                            idata->pose.proll, 
-                            idata->pose.ppitch, 
+                            idata->pose.px,
+                            idata->pose.py,
+                            idata->pose.pz,
+                            idata->pose.proll,
+                            idata->pose.ppitch,
                             idata->pose.pyaw);
                     return (0);
 		}
@@ -1373,11 +1372,11 @@ WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
 		    player_imu_data_calib_t* idata;
                     idata = (player_imu_data_calib_t*)data;
                     fprintf (this->file,"%f %f %f %f %f %f %f %f %f",
-                            idata->accel_x, 
-                            idata->accel_y, 
-                            idata->accel_z, 
-                            idata->gyro_x, 
-                            idata->gyro_y, 
+                            idata->accel_x,
+                            idata->accel_y,
+                            idata->accel_z,
+                            idata->gyro_x,
+                            idata->gyro_y,
 			    idata->gyro_z,
 			    idata->magn_x,
 			    idata->magn_y,
@@ -1390,42 +1389,42 @@ WriteLog::WriteIMU (player_msghdr_t* hdr, void *data)
 		    player_imu_data_quat_t* idata;
                     idata = (player_imu_data_quat_t*)data;
                     fprintf (this->file,"%f %f %f %f %f %f %f %f %f %f %f %f %f",
-                            idata->calib_data.accel_x, 
-                            idata->calib_data.accel_y, 
-                            idata->calib_data.accel_z, 
-                            idata->calib_data.gyro_x, 
-                            idata->calib_data.gyro_y, 
+                            idata->calib_data.accel_x,
+                            idata->calib_data.accel_y,
+                            idata->calib_data.accel_z,
+                            idata->calib_data.gyro_x,
+                            idata->calib_data.gyro_y,
 			    idata->calib_data.gyro_z,
 			    idata->calib_data.magn_x,
 			    idata->calib_data.magn_y,
                             idata->calib_data.magn_z,
-                            idata->q0, 
-                            idata->q1, 
-                            idata->q2, 
+                            idata->q0,
+                            idata->q1,
+                            idata->q2,
                             idata->q3);
                     return (0);
 		}
-		
+
                 case PLAYER_IMU_DATA_EULER:
 		{
 		    player_imu_data_euler_t* idata;
                     idata = (player_imu_data_euler_t*)data;
                     fprintf (this->file,"%f %f %f %f %f %f %f %f %f %f %f %f",
-                            idata->calib_data.accel_x, 
-                            idata->calib_data.accel_y, 
-                            idata->calib_data.accel_z, 
-                            idata->calib_data.gyro_x, 
-                            idata->calib_data.gyro_y, 
+                            idata->calib_data.accel_x,
+                            idata->calib_data.accel_y,
+                            idata->calib_data.accel_z,
+                            idata->calib_data.gyro_x,
+                            idata->calib_data.gyro_y,
 			    idata->calib_data.gyro_z,
 			    idata->calib_data.magn_x,
 			    idata->calib_data.magn_y,
                             idata->calib_data.magn_z,
-                            idata->orientation.proll, 
-                            idata->orientation.ppitch, 
+                            idata->orientation.proll,
+                            idata->orientation.ppitch,
                             idata->orientation.pyaw);
                     return (0);
 		}
-		
+
                 default:
                     return (-1);
             }
@@ -1465,8 +1464,8 @@ WriteLog::WritePointCloud3d (player_msghdr_t* hdr, void *data)
 		    fprintf (this->file, "%d ", pdata->points_count);
 		    for (i = 0; i < pdata->points_count; i++)
 			fprintf (this->file,"%f %f %f ",
-                            pdata->points[i].point.px, 
-                            pdata->points[i].point.py, 
+                            pdata->points[i].point.px,
+                            pdata->points[i].point.py,
                             pdata->points[i].point.pz);
                     return (0);
 		}
@@ -1513,10 +1512,10 @@ WriteLog::WriteActarray (player_msghdr_t* hdr, void *data)
 		    fprintf (this->file, "%d ", pdata->actuators_count);
 		    for (i = 0; i < pdata->actuators_count; i++)
 			fprintf (this->file,"%f %f %f %f %d ",
-			    pdata->actuators[i].position, 
-			    pdata->actuators[i].speed, 
-			    pdata->actuators[i].acceleration, 
-			    pdata->actuators[i].current, 
+			    pdata->actuators[i].position,
+			    pdata->actuators[i].speed,
+			    pdata->actuators[i].acceleration,
+			    pdata->actuators[i].current,
 			    pdata->actuators[i].state);
 		    fprintf (this->file, "%d ", pdata->motor_state);
                     return (0);
@@ -1711,10 +1710,10 @@ WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
         case PLAYER_IR_DATA_RANGES:
           // Format:
           //   bumpers_count bumper0 bumper1 ...
-          ir_data = ( player_ir_data_t*)data;            
+          ir_data = ( player_ir_data_t*)data;
           fprintf(this->file, "%u ", ir_data->ranges_count);
           for(i=0;i<ir_data->ranges_count;i++)
-            // P2OS infrared lights are binary but I will use the %3.3f format 
+            // P2OS infrared lights are binary but I will use the %3.3f format
             fprintf(this->file, "%3.3f ", ir_data->ranges[i]);
 
           return(0);

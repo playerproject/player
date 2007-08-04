@@ -561,33 +561,6 @@ class DioProxy : public ClientProxy
       { return GetInput(aIndex); }
 };
 
-// /**
-// The @p EnergyProxy class is used to read from an @ref
-// interface_energy device.
-// */
-// class EnergyProxy : public ClientProxy
-// {
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_energy_t *mDevice;
-//
-// public:
-//
-//     EnergyProxy(PlayerClient *aPc, uint aIndex=0);
-//     ~EnergyProxy();
-//
-//     /** These members give the current amount of energy stored [Joules] */
-//     uint GetJoules() const { return GetVar(mDevice->joules); };
-//     /** the amount of energy current being consumed [Watts] */
-//     uint GetWatts() const { return GetVar(mDevice->watts); };
-//     /** The charging flag is true if we are currently charging, else false. */
-//     bool GetCharging() const { return GetVar(mDevice->charging); };
-// };
-
 /**
 The @p FiducialProxy class is used to control @ref
 interface_fiducial devices.  The latest set of detected beacons
@@ -2288,31 +2261,6 @@ class SonarProxy : public ClientProxy
     void RequestGeom();
 };
 
-// /**
-// The @p SoundProxy class is used to control a @ref interface_sound
-// device, which allows you to play pre-recorded sound files on a robot.
-// */
-// class SoundProxy : public ClientProxy
-// {
-//
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_sound_t *mDevice;
-//
-//   public:
-//     // Constructor
-//     SoundProxy(PlayerClient *aPc, uint aIndex=0);
-//
-//     ~SoundProxy();
-//
-//     /** Play the sound indicated by the index. */
-//     void Play(int aIndex);
-// };
-
 /**
 The @p SpeechProxy class is used to control a @ref interface_speech
 device.  Use the say method to send things to say.
@@ -2366,57 +2314,6 @@ class SpeechRecognitionProxy : public ClientProxy
    ///    This operator provides an alternate way of access the speech recognition data.
    std::string operator [](uint aWord) { return(GetWord(aWord)); }
 };
-
-// /**
-// The @p WaveformProxy class is used to read raw digital waveforms from
-// a @ref interface_waveform device.  */
-// class WaveformProxy : public ClientProxy
-// {
-//
-//   private:
-//
-//     void Subscribe(uint aIndex);
-//     void Unsubscribe();
-//
-//     // libplayerc data structure
-//     playerc_waveform_t *mDevice;
-//
-//   public:
-//     /// Constructor
-//     WaveformProxy(PlayerClient *aPc, uint aIndex=0);
-//
-//     /// Destructor
-//     ~WaveformProxy();
-//
-//     /// How many samples?
-//     uint GetCount() const { return GetVar(mDevice->data_count); };
-//
-//     /// sample rate in bits per second
-//     uint GetBitRate() const { return GetVar(mDevice->rate); };
-//
-//     /// sample depth in bits
-//     uint GetDepth() const { return GetVar(mDevice->depth); };
-//
-//     /// the data is buffered here for playback
-//     void GetImage(uint8_t* aBuffer) const
-//     {
-//       return GetVarByRef(mDevice->data,
-//                          mDevice->data+GetCount(),
-//                          aBuffer);
-//     };
-//
-//     // dsp file descriptor
-//     //uint GetFd() const { return GetVar(mDevice->fd); };
-//
-//     /// set up the DSP to the current bitrate and depth
-//     void ConfigureDSP(uint aBitRate, uint aDepth);
-//
-//     /// open the sound device
-//     void OpenDSPforWrite();
-//
-//     /// Play the waveform through the DSP
-//     void Play();
-// };
 
 /**
 The @p WiFiProxy class controls a @ref interface_wifi device.  */
@@ -2524,7 +2421,6 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::BumperProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::CameraProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::DioProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::EnergyProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::FiducialProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::GpsProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::GripperProxy& c);

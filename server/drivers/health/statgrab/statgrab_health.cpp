@@ -14,7 +14,7 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
- 
+
 /** Player driver for the health of a robot.
   *
   * @author Raphael Sznitman
@@ -23,10 +23,10 @@
 /** @ingroup drivers */
 /** @{ */
 /**
-  * @defgroup driver_statgrab statgrab 
- 
+  * @defgroup driver_statgrab statgrab
+
 The @p health driver allows for a user to get general systems data concerning a specific robot.
-Allows a user to look at cpu and memory usage of the robot. 
+Allows a user to look at cpu and memory usage of the robot.
 
 @par Provides
 - @ref player_interface_health : Interface to the health
@@ -35,22 +35,22 @@ Allows a user to look at cpu and memory usage of the robot.
 @par Configuration file options:
 - frequency (int)
   - Default: 100
-   
+
 @par Notes
 
 @par libstatgrab:
-The driver uses the library libstatgrab in order to fetch data concerning the cpu and the 
-memory usage. Documentation on this library can be found at: http://www.i-scream.org/libstatgrab/. 
- 
+The driver uses the library libstatgrab in order to fetch data concerning the cpu and the
+memory usage. Documentation on this library can be found at: http://www.i-scream.org/libstatgrab/.
+
 @par Example: The following configuration file should demonstrate the use of this
-driver. 
- 
+driver.
+
 @include health.cfg
- 
+
 @todo
 - Test this code more!
 - Allow for the driver to return the temperature of the system in multiple location of the robot.
-- Also allow for the battery voltage to be monitored. 
+- Also allow for the battery voltage to be monitored.
 */
 
 /** @} */
@@ -83,7 +83,7 @@ StatGrabDriver_Init(ConfigFile* cf, int section)
 {
   // Create and return a new instance of this driver
   return((Driver*)(new StatGrabDriver(cf, section)));
-  
+
 }
 
 // A driver registration function, again declared outside of the class so
@@ -103,21 +103,21 @@ StatGrabDriver::StatGrabDriver(ConfigFile* cf, int section)
 {
 
   // For Health Interface
-  if(cf->ReadDeviceAddr(&mHealthId, section, "provides", 
+  if(cf->ReadDeviceAddr(&mHealthId, section, "provides",
                         PLAYER_HEALTH_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(mHealthId))
     {
-      this->SetError(-1);    
+      this->SetError(-1);
       return;
     }
   }
 
-  
-  // Allow to just have to change the config file if you want to adjust the sleep 
+
+  // Allow to just have to change the config file if you want to adjust the sleep
   // duration.
-  mSleep = static_cast<int32_t>((1e6/cf->ReadInt(section, "frequency", 100)));    
-  
+  mSleep = static_cast<int32_t>((1e6/cf->ReadInt(section, "frequency", 100)));
+
   return;
 }
 
@@ -128,14 +128,14 @@ int StatGrabDriver::Setup()
   // Initialise statgrab
   sg_init();
   /* Drop setuid/setgid privileges. */
-  if (sg_drop_privileges() != 0) 
+  if (sg_drop_privileges() != 0)
   {
     perror("Error. Failed to drop privileges");
    return 1;
   }
 
   puts("Health driver ready");
-  
+
   StartThread();
 
   return(0);
@@ -148,12 +148,11 @@ int StatGrabDriver::Shutdown()
 
   puts("Shutting health driver down");
 
-  sg_shutdown();
   // Stop and join the driver thread
   StopThread();
 
   puts("Health driver has been shutdown");
-  
+
   return(0);
 }
 
@@ -161,21 +160,21 @@ int StatGrabDriver::Shutdown()
 // Main function for device thread
 void StatGrabDriver::Main()
 {
- 
+
   // The main loop; interact with the device here
   for(;;)
   {
     // test if we are supposed to cancel
     pthread_testcancel();
-    
+
     usleep(mSleep);
-    
+
     ProcessMessages();
-    
+
     // Write outgoing data
     RefreshData();
 
-    
+
   }
   return;
 }
@@ -189,26 +188,26 @@ void StatGrabDriver::RefreshData()
 	cpu_percent = sg_get_cpu_percents();
 
 	cpuIdle =  cpu_percent->idle;
-	mHealth.cpu_usage.idle = cpuIdle; 
+	mHealth.cpu_usage.idle = cpuIdle;
 	cpuServer = cpu_percent->kernel + cpu_percent->iowait + cpu_percent->swap;
-	mHealth.cpu_usage.system = cpuServer; 
+	mHealth.cpu_usage.system = cpuServer;
 	cpuUser = cpu_percent->nice+ cpu_percent->user;
 	mHealth.cpu_usage.user = cpuUser;
 
-	
-	
+
+
 	//Virtual Memory
-	mem_data     = sg_get_mem_stats();    
-	swap_stats   = sg_get_swap_stats();    
-	
+	mem_data     = sg_get_mem_stats();
+	swap_stats   = sg_get_swap_stats();
+
 	mHealth.mem.total = mem_data->total;
 	mHealth.mem.used =  mem_data->used;
-	mHealth.mem.free = mem_data->free;    
-	
+	mHealth.mem.free = mem_data->free;
+
 	mHealth.swap.total = swap_stats->total;
 	mHealth.swap.used = swap_stats->used;
 	mHealth.swap.free = swap_stats->free;
-    
+
    // Other data which should be retrieved here!
 
     Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_HEALTH_DATA ,
