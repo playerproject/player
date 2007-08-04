@@ -327,12 +327,6 @@ class ReadLog: public Driver
                                int linenum,
                                int token_count, char **tokens, double time);
 
-  // Parse truth data
-  private: int ParseTruth(player_devaddr_t id,
-                          unsigned short type, unsigned short subtype,
-                          int linenum,
-                          int token_count, char **tokens, double time);
-
 #endif
 
   // List of provided devices
@@ -1210,9 +1204,6 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_POSITION3D_CODE)
     return this->ParsePosition3d(id, type, subtype, linenum,
                                  token_count, tokens, time);
-  else if (id.interf == PLAYER_TRUTH_CODE)
-    return this->ParseTruth(id, type, subtype, linenum,
-                            token_count, tokens, time);
 #endif
 
   PLAYER_WARN1("unknown interface code [%s]",
@@ -1782,7 +1773,7 @@ ReadLog::ParsePosition(player_devaddr_t id,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
-int ReadLog::ParseWifi(player_devaddr_t id, 
+int ReadLog::ParseWifi(player_devaddr_t id,
                        unsigned short type, unsigned short subtype,
                        int linenum,
                        int token_count, char **tokens, double time)
@@ -1845,7 +1836,7 @@ int ReadLog::ParseWifi(player_devaddr_t id,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse WSN data
-int ReadLog::ParseWSN(player_devaddr_t id, 
+int ReadLog::ParseWSN(player_devaddr_t id,
                       unsigned short type, unsigned short subtype,
                       int linenum,
                       int token_count, char **tokens, double time)
@@ -1895,7 +1886,7 @@ int ReadLog::ParseWSN(player_devaddr_t id,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse IMU data
-int ReadLog::ParseIMU (player_devaddr_t id, 
+int ReadLog::ParseIMU (player_devaddr_t id,
                       unsigned short type, unsigned short subtype,
                       int linenum,
                       int token_count, char **tokens, double time)
@@ -1913,19 +1904,19 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                         return -1;
                     }
 		    player_imu_data_state_t data;
-		    
+
 		    data.pose.px = atof (tokens[7]);
 		    data.pose.py = atof (tokens[8]);
 		    data.pose.pz = atof (tokens[9]);
 		    data.pose.proll  = atof (tokens[10]);
 		    data.pose.ppitch = atof (tokens[11]);
 		    data.pose.pyaw   = atof (tokens[12]);
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
-		
+
 		case PLAYER_IMU_DATA_CALIB:
 		{
                     if (token_count < 16)
@@ -1934,7 +1925,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                         return -1;
                     }
 		    player_imu_data_calib_t data;
-		    
+
 		    data.accel_x = atof (tokens[7]);
 		    data.accel_y = atof (tokens[8]);
 		    data.accel_z = atof (tokens[9]);
@@ -1944,12 +1935,12 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.magn_x  = atof (tokens[13]);
 		    data.magn_y  = atof (tokens[14]);
 		    data.magn_z  = atof (tokens[15]);
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
-		
+
 		case PLAYER_IMU_DATA_QUAT:
 		{
                     if (token_count < 20)
@@ -1958,7 +1949,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                         return -1;
                     }
 		    player_imu_data_quat_t data;
-		    
+
 		    data.calib_data.accel_x = atof (tokens[7]);
 		    data.calib_data.accel_y = atof (tokens[8]);
 		    data.calib_data.accel_z = atof (tokens[9]);
@@ -1972,12 +1963,12 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.q1      = atof (tokens[17]);
 		    data.q2      = atof (tokens[18]);
 		    data.q3      = atof (tokens[19]);
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
-		
+
 		case PLAYER_IMU_DATA_EULER:
 		{
                     if (token_count < 19)
@@ -1986,7 +1977,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
                         return -1;
                     }
 		    player_imu_data_euler_t data;
-		    
+
 		    data.calib_data.accel_x = atof (tokens[7]);
 		    data.calib_data.accel_y = atof (tokens[8]);
 		    data.calib_data.accel_z = atof (tokens[9]);
@@ -1999,7 +1990,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.orientation.proll  = atof (tokens[16]);
 		    data.orientation.ppitch = atof (tokens[17]);
 		    data.orientation.pyaw   = atof (tokens[18]);
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
@@ -2016,7 +2007,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse PointCloud3d data
-int ReadLog::ParsePointCloud3d (player_devaddr_t id, 
+int ReadLog::ParsePointCloud3d (player_devaddr_t id,
                                 unsigned short type, unsigned short subtype,
                                 int linenum,
                                 int token_count, char **tokens, double time)
@@ -2046,12 +2037,12 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
 			element.point = point;
 			data.points[i] = element;
 		    }
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
-		
+
                 default:
                     PLAYER_ERROR1 ("unknown PointCloud3d data subtype %d\n", subtype);
                     return (-1);
@@ -2064,7 +2055,7 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse PTZ data
-int ReadLog::ParsePTZ (player_devaddr_t id, 
+int ReadLog::ParsePTZ (player_devaddr_t id,
                       unsigned short type, unsigned short subtype,
                       int linenum,
                       int token_count, char **tokens, double time)
@@ -2082,18 +2073,18 @@ int ReadLog::ParsePTZ (player_devaddr_t id,
                         return -1;
                     }
 		    player_ptz_data_t data;
-		    
+
 		    data.pan  = atof (tokens[7]);
 		    data.tilt = atof (tokens[8]);
 		    data.zoom = atof (tokens[9]);
 		    data.panspeed  = atof (tokens[10]);
 		    data.tiltspeed = atof (tokens[11]);
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
-		
+
                 default:
                     PLAYER_ERROR1 ("unknown PTZ data subtype %d\n", subtype);
                     return (-1);
@@ -2106,7 +2097,7 @@ int ReadLog::ParsePTZ (player_devaddr_t id,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse Actarray data
-int ReadLog::ParseActarray (player_devaddr_t id, 
+int ReadLog::ParseActarray (player_devaddr_t id,
                     	    unsigned short type, unsigned short subtype,
                             int linenum,
                             int token_count, char **tokens, double time)
@@ -2137,12 +2128,12 @@ int ReadLog::ParseActarray (player_devaddr_t id,
 			data.actuators[i] = actuator;
 		    }
 		    data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
-		    
+
                     this->Publish (id, NULL, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
-		
+
                 default:
                     PLAYER_ERROR1 ("unknown Actarray data subtype %d\n", subtype);
                     return (-1);
@@ -2352,33 +2343,6 @@ int ReadLog::ParsePosition3d(player_devaddr_t id, int linenum,
 
   return 0;
 }
-
-////////////////////////////////////////////////////////////////////////////
-// Parse truth data
-int ReadLog::ParseTruth(player_devaddr_t id, int linenum,
-                             int token_count, char **tokens, struct timeval time)
-{
- player_truth_data_t data;
-
-  if (token_count < 11)
-  {
-    PLAYER_ERROR2("incomplete line at %s:%d", this->filename, linenum);
-    return -1;
-  }
-
-  data.pos[0] = NINT32(M_MM(atof(tokens[6])));
-  data.pos[1] = NINT32(M_MM(atof(tokens[7])));
-  data.pos[2] = NINT32(M_MM(atof(tokens[8])));
-
-  data.rot[0] = NINT32(M_MM(atof(tokens[9])));
-  data.rot[1] = NINT32(M_MM(atof(tokens[10])));
-  data.rot[2] = NINT32(M_MM(atof(tokens[11])));
-
-  this->PutMsg(id,NULL,PLAYER_MSGTYPE_DATA,0, &data, sizeof(data), &time);
-
-  return 0;
-}
-
 
 #endif
 

@@ -144,14 +144,12 @@ in the body.*/
 #define PLAYER_SPEECH_CODE         12  // speech I/O
 #define PLAYER_GPS_CODE            13  // GPS unit
 #define PLAYER_BUMPER_CODE         14  // bumper array
-#define PLAYER_TRUTH_CODE          15  // ground-truth (via Stage;
 #define PLAYER_DIO_CODE            20  // digital I/O
 #define PLAYER_AIO_CODE            21  // analog I/O
 #define PLAYER_IR_CODE             22  // IR array
 #define PLAYER_WIFI_CODE           23  // wifi card status
 #define PLAYER_LOCALIZE_CODE       25  // localization
 #define PLAYER_MCOM_CODE           26  // multicoms
-#define PLAYER_SOUND_CODE          27  // sound file playback
 #define PLAYER_POSITION3D_CODE     30  // 3-D position
 #define PLAYER_SIMULATION_CODE     31  // simulators
 #define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights
@@ -160,7 +158,6 @@ in the body.*/
 #define PLAYER_MAP_CODE            42  // get a map
 #define PLAYER_PLANNER_CODE        44  // 2D motion planner
 #define PLAYER_LOG_CODE            45  // log read/write control
-#define PLAYER_ENERGY_CODE         46  // energy consumption
 #define PLAYER_MOTOR_CODE          47  // motor interface
 #define PLAYER_JOYSTICK_CODE       49  // Joytstick
 #define PLAYER_SPEECH_RECOGNITION_CODE  50  // speech recognition
@@ -195,7 +192,6 @@ in the body.*/
 #define PLAYER_BLOBFINDER_STRING      "blobfinder"
 #define PLAYER_BUMPER_STRING          "bumper"
 #define PLAYER_CAMERA_STRING          "camera"
-#define PLAYER_ENERGY_STRING          "energy"
 #define PLAYER_DIO_STRING             "dio"
 #define PLAYER_GRIPPER_STRING         "gripper"
 #define PLAYER_FIDUCIAL_STRING        "fiducial"
@@ -227,10 +223,8 @@ in the body.*/
 #define PLAYER_RFID_STRING            "rfid"
 #define PLAYER_SIMULATION_STRING      "simulation"
 #define PLAYER_SONAR_STRING           "sonar"
-#define PLAYER_SOUND_STRING            "sound"
 #define PLAYER_SPEECH_STRING          "speech"
 #define PLAYER_SPEECH_RECOGNITION_STRING  "speech_recognition"
-#define PLAYER_TRUTH_STRING           "truth"
 #define PLAYER_WIFI_STRING            "wifi"
 #define PLAYER_WSN_STRING             "wsn"
 #define PLAYER_RANGER_STRING          "ranger"
@@ -1678,66 +1672,6 @@ typedef struct player_dio_cmd
   /** output bitfield */
   uint32_t digout;
 } player_dio_cmd_t;
-
-/** @} */
-
-/* REMOVE ENERGY DEVICE - USE POWER INSTEAD - RTV 2005.12.04 */
-
-// /////////////////////////////////////////////////////////////////////////////
-/** @ingroup interfaces
- * @defgroup interface_energy energy
- * @brief Energy storage / consumption
-
-DEPRECATED: THE FUNCTIONALITY OF THE ENERGY DEVICE HAS BEEN FOLDED INTO THE
-POWER DEVICE. YOU SHOULD CONSIDER USING THE POWER DEVICE INSTEAD. NO
-NEW DEVELOPMENT SHOULD BE DONE ON THE ENERGY DEVICE AND IT WILL BE
-REMOVED FROM HERE VERY SOON.
-
-The @p energy interface provides data about energy storage, consumption
-and charging.  This interface accepts no commands.
-*/
-
-/** @ingroup interface_energy
- * @{ */
-
-/** Data subtype: state */
-#define PLAYER_ENERGY_DATA_STATE 1
-
-/** Request subtype: set charging policy */
-#define PLAYER_ENERGY_SET_CHARGING_POLICY_REQ 1
-
-/** @brief Data: state (@ref PLAYER_ENERGY_DATA_STATE)
-
-The @p energy interface reports he amount of energy stored, current rate
-of energy consumption or aquisition, and whether or not the device is
-connected to a charger. */
-typedef struct player_energy_data
-{
-  /** energy stored [J]. */
-  float joules;
-  /** estimated current power consumption (negative values) or
-      aquisition (positive values) [W]. */
-  float watts;
-  /** charge exchange status: if 1, the device is currently receiving
-      charge from another energy device. If -1 the device is currently
-      providing charge to another energy device. If 0, the device is
-      not exchanging charge with an another device. */
-  int32_t charging;
-} player_energy_data_t;
-
-/** @brief Request/reply: set charging policy
- *
- * Send a @ref PLAYER_ENERGY_SET_CHARGING_POLICY_REQ request to change the
- * charging policy. */
-typedef struct player_energy_chargepolicy_config
-{
-  /** uint8_tean controlling recharging. If FALSE, recharging is
-      disabled. Defaults to TRUE */
-  uint8_t enable_input;
-  /** uint8_tean controlling whether others can recharge from this
-      device. If FALSE, charging others is disabled. Defaults to TRUE.*/
-  uint8_t enable_output;
-} player_energy_chargepolicy_config_t;
 
 /** @} */
 
@@ -4217,8 +4151,7 @@ typedef struct player_position3d_speed_prof_req
  * @brief Power system
 
 The @p power interface provides access to a robot's power
-subsystem. Includes the functionality of the old Player @p energy device, which is
-now deprecated.
+subsystem.
 */
 
 /** @ingroup interface_power
@@ -4765,35 +4698,6 @@ typedef struct player_sonar_power_config
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
- * @defgroup interface_sound sound
- * @brief Play sound clips (deprecated)
-
-@deprecated Use the @ref interface_audio interface instead
-
-The @p sound interface allows playback of a pre-recorded sound (e.g.,
-on an Amigobot).
-*/
-
-/** @ingroup interface_sound
- * @{ */
-
-/** Commmand subtype: play clip */
-#define PLAYER_SOUND_CMD_IDX 1
-
-/** @brief Command: play clip (@ref PLAYER_SOUND_CMD_IDX)
-
-The @p sound interface accepts an index of a pre-recorded sound file
-to play.  */
-typedef struct player_sound_cmd
-{
-  /** Index of sound to be played. */
-  uint32_t index;
-} player_sound_cmd_t;
-
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
-/** @ingroup interfaces
  * @defgroup interface_speech speech
  * @brief Speech synthesis
 
@@ -4851,62 +4755,6 @@ typedef struct player_speech_recognition_data
   /** Recognized text */
   char text[PLAYER_SPEECH_RECOGNITION_TEXT_LEN];
 } player_speech_recognition_data_t;
-
-/** @} */
-
-// /////////////////////////////////////////////////////////////////////////////
-/** @ingroup interfaces
-@defgroup interface_truth truth (deprecated)
-@brief Access to true state
-
-@deprecated This interface has been superceded by the @ref
-interface_simulation interface.
-
-The @p truth interface provides access to the absolute state of entities.
-Note that, unless your robot has superpowers, @p truth devices are
-only avilable in simulation.
-*/
-
-/** @ingroup interface_truth
- * @{ */
-
-/** Data subtype */
-#define PLAYER_TRUTH_DATA_POSE 0x01
-/** Data subtype */
-#define PLAYER_TRUTH_DATA_FIDUCIAL_ID 0x02
-
-/** Request subtypes. */
-#define PLAYER_TRUTH_REQ_SET_POSE 0x03
-/** Request subtypes. */
-#define PLAYER_TRUTH_REQ_SET_FIDUCIAL_ID 0x04
-/** Request subtypes. */
-#define PLAYER_TRUTH_REQ_GET_FIDUCIAL_ID 0x05
-
-/** @brief Data
-
-The @p truth interface returns data concerning the current state of an
-entity. */
-typedef struct player_truth_pose
-{
-  /** Object pose in the world . */
-  player_pose3d_t pose;
-}  player_truth_pose_t;
-
-/** @brief Configuration request: Get/set fiducial ID number.
-
-To get the fiducial ID of an object, use the following request, filling
-in only the subtype with @ref PLAYER_TRUTH_REQ_GET_FIDUCIAL_ID. The server will
-respond with the ID field filled in.  To set the fiducial ID, set the
-subtype to @ref PLAYER_TRUTH_REQ_SET_FIDUCIAL_ID and fill in the ID field with
-the desired value. */
-typedef struct player_truth_fiducial_id
-{
-  /** Packet subtype.  Must be either @ref PLAYER_TRUTH_REQ_GET_FIDUCIAL_ID or
-    @ref PLAYER_TRUTH_REQ_SET_FIDUCIAL_ID */
-  uint8_t subtype;
-  /** the fiducial ID */
-  int16_t id;
-}  player_truth_fiducial_id_t;
 
 /** @} */
 
