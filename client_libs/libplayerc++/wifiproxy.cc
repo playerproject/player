@@ -82,6 +82,15 @@ WiFiProxy::Unsubscribe()
   mDevice = NULL;
 }
 
+
+const playerc_wifi_link_t *
+WiFiProxy::GetLink(int aLink)
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+
+  return playerc_wifi_get_link(mDevice, aLink);
+}
+
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::WiFiProxy &c)
 {

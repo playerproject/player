@@ -114,3 +114,13 @@ void PtzProxy::SetSpeed(double aPanSpeed, double aTiltSpeed, double aZoomSpeed)
   playerc_ptz_set_ws(mDevice, 0, 0, 0, aPanSpeed, aTiltSpeed);
 }
 
+int
+PtzProxy::GetStatus()
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+
+  if (0 != playerc_ptz_query_status(mDevice))
+    throw PlayerError("PtzProxy::GetStatus()", "error getting status");
+  return GetVar(mDevice->status);
+}
+

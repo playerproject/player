@@ -49,6 +49,7 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 
 #include "playerc++.h"
 #include "debug.h"
@@ -179,6 +180,19 @@ void ActArrayProxy::MoveTo(uint aJoint, float aPosition)
   playerc_actarray_position_cmd(mDevice, aJoint, aPosition);
 }
 
+// Send an actuator to a position
+void ActArrayProxy::MoveToMulti(std::vector<float> aPosition)
+{
+  assert(aPosition.size() < PLAYER_ACTARRAY_NUM_ACTUATORS);
+  float values[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  unsigned int i = 0;
+  for (std::vector<float>::const_iterator itr = aPosition.begin(); itr != aPosition.end(); ++itr)
+    values[i++] = *itr;
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_actarray_multi_position_cmd(mDevice, values);
+}
+
+
 // Move an actuator at a speed
 void ActArrayProxy::MoveAtSpeed(uint aJoint, float aSpeed)
 {
@@ -186,11 +200,42 @@ void ActArrayProxy::MoveAtSpeed(uint aJoint, float aSpeed)
   playerc_actarray_speed_cmd(mDevice, aJoint, aSpeed);
 }
 
+// Send an actuator to a position
+void ActArrayProxy::MoveAtSpeedMulti(std::vector<float> aSpeed)
+{
+  assert(aSpeed.size() < PLAYER_ACTARRAY_NUM_ACTUATORS);
+  float values[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  unsigned int i = 0;
+  for (std::vector<float>::const_iterator itr = aSpeed.begin(); itr != aSpeed.end(); ++itr)
+    values[i++] = *itr;
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_actarray_multi_speed_cmd(mDevice, values);
+}
+
 // Send an actuator, or all actuators, home
 void ActArrayProxy::MoveHome(int aJoint)
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_home_cmd(mDevice, aJoint);
+}
+
+// Move an actuator at a speed
+void ActArrayProxy::SetActuatorCurrent(uint aJoint, float aCurrent)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_actarray_current_cmd(mDevice, aJoint, aCurrent);
+}
+
+// Send an actuator to a position
+void ActArrayProxy::SetActuatorCurrentMulti(std::vector<float> aCurrent)
+{
+  assert(aCurrent.size() < PLAYER_ACTARRAY_NUM_ACTUATORS);
+  float values[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  unsigned int i = 0;
+  for (std::vector<float>::const_iterator itr = aCurrent.begin(); itr != aCurrent.end(); ++itr)
+    values[i++] = *itr;
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_actarray_multi_current_cmd(mDevice, values);
 }
 
 player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const

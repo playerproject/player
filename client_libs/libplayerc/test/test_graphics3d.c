@@ -16,8 +16,8 @@
 // Basic test for graphics3d device.
 int test_graphics3d(playerc_client_t *client, int index)
 {
-  int t;
-  void *rdevice;
+/*  int t;
+  void *rdevice;*/
   playerc_graphics3d_t *device;
 
   printf("device [graphics3d] index [%d]\n", index);

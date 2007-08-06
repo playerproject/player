@@ -52,6 +52,7 @@
 #include <cmath>
 #include <string>
 #include <list>
+#include <vector>
 
 #include "libplayerc/playerc.h"
 #include "libplayerc++/utility.h"
@@ -151,10 +152,18 @@ class ActArrayProxy : public ClientProxy
 
     /// Send an actuator to a position
     void MoveTo(uint aJoint, float aPos);
+    /// Send actuators 0 thru n to the designated positions
+    void MoveToMulti(std::vector<float> aPos);
     /// Move an actuator at a speed
     void MoveAtSpeed(uint aJoint, float aSpeed);
+    /// Move actuators 0 thru n at the designated speeds
+    void MoveAtSpeedMulti(std::vector<float> aSpeed);
     /// Send an actuator, or all actuators, home
     void MoveHome(int aJoint);
+    /// Set an actuator to a given current
+    void SetActuatorCurrent(uint aJoint, float aCurrent);
+    /// Set actuators 0 thru n to the given currents
+    void SetActuatorCurrentMulti(std::vector<float> aCurrent);
 
     /// Gets the number of actuators in the array
     uint GetCount(void) const { return GetVar(mDevice->actuators_count); }
@@ -868,37 +877,42 @@ device.
  */
 class ImuProxy : public ClientProxy
 {
-
-	private:
-
-		void Subscribe(uint aIndex);
-		void Unsubscribe();
+  private:
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
 
     // libplayerc data structure
-		playerc_imu_t *mDevice;
+    playerc_imu_t *mDevice;
 
-	public:
+  public:
 
     /// Constructor
-		ImuProxy(PlayerClient *aPc, uint aIndex=0);
+    ImuProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
-		~ImuProxy();
+    ~ImuProxy();
 
     /// get the processed pos of the imu
-		player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
+    player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
     /// get the raw values
-		float GetXAccel();
-		float GetYAccel();
-		float GetZAccel();
-		float GetXGyro();
-		float GetYGyro();
-		float GetZGyro();
-		float GetXMagn();
-		float GetYMagn();
-		float GetZMagn();
+    float GetXAccel();
+    float GetYAccel();
+    float GetZAccel();
+    float GetXGyro();
+    float GetYGyro();
+    float GetZGyro();
+    float GetXMagn();
+    float GetYMagn();
+    float GetZMagn();
 
-		player_imu_data_calib_t GetRawValues() const
-		{ return GetVar(mDevice->calib_data); };
+    player_imu_data_calib_t GetRawValues() const
+    { return GetVar(mDevice->calib_data); };
+
+    /** Change the data type to one of the predefined data structures. */
+    void SetDatatype(int aDatatype);
+
+    /**  Reset orientation. */
+    void ResetOrientation(int aValue);
+    
 
 };
 
@@ -1033,6 +1047,11 @@ class LaserProxy : public ClientProxy
     /// get the intensity
     int GetIntensity(uint aIndex) const
       { return GetVar(mDevice->intensity[aIndex]); };
+
+    /// get the laser ID, call RequestConfigure first
+    int GetID() const
+      { return GetVar(mDevice->laser_id); };
+
 
     /// Configure the laser scan pattern.  Angles @p min_angle and
     /// @p max_angle are measured in radians.
@@ -1909,6 +1928,10 @@ class Position3dProxy : public ClientProxy
     void SetOdometry(double aX, double aY, double aZ,
                      double aRoll, double aPitch, double aYaw);
 
+    /// Get the device's geometry; it is read into the
+    /// relevant class attributes.
+    void RequestGeom();
+
     // Select position mode
     // Set @p mode for 0 for velocity mode, 1 for position mode.
     //void SelectPositionMode(unsigned char mode);
@@ -2042,6 +2065,10 @@ class PtzProxy : public ClientProxy
     double GetTilt() const { return GetVar(mDevice->tilt); };
     /// Return Zoom
     double GetZoom() const { return GetVar(mDevice->zoom); };
+
+    /// Return Status
+    int GetStatus();
+
 
 };
 
@@ -2333,6 +2360,8 @@ class WiFiProxy: public ClientProxy
     WiFiProxy(PlayerClient *aPc, uint aIndex=0);
     /// destructor
     ~WiFiProxy();
+
+    const playerc_wifi_link_t *GetLink(int aLink);
 
 //     int GetLinkQuality(char/// ip = NULL);
 //     int GetLevel(char/// ip = NULL);

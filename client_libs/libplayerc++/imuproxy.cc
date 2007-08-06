@@ -136,6 +136,25 @@ float ImuProxy::GetZMagn()
       return data.magn_z;
 }
 
+void
+ImuProxy::SetDatatype(int aDatatype)
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+
+  if (0 != playerc_imu_datatype(mDevice, aDatatype))
+    throw PlayerError("ImuProxy::SetDatatype()", "error setting datatype");
+}
+
+void
+ImuProxy::ResetOrientation(int aValue)
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+
+  if (0 != playerc_imu_reset_orientation(mDevice, aValue))
+    throw PlayerError("ImuProxy::ResetOrientation()", "error resetting orientation");
+}
+
+
 std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::ImuProxy &c)
 {

@@ -138,3 +138,13 @@ void Position3dProxy::ResetOdometry()
   playerc_position3d_reset_odom(mDevice);
 }
 
+
+void
+Position3dProxy::RequestGeom()
+{
+  boost::mutex::scoped_lock lock(mPc->mMutex);
+
+  if (0 != playerc_position3d_get_geom(mDevice))
+    throw PlayerError("Position3dProxy::RequestGeom()", "error getting geom");
+  return;
+}
