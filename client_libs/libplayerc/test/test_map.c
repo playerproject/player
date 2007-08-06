@@ -13,8 +13,8 @@
 // Basic test for map device.
 int test_map(playerc_client_t *client, int index)
 {
-  int t;
-  void *rdevice;
+//   int t;
+//   void *rdevice;
   playerc_map_t *device;
 
   printf("device [map] index [%d]\n", index);

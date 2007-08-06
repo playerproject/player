@@ -14,7 +14,7 @@
 int test_log(playerc_client_t *client, int index)
 {
   int t;
-  int isplayback=0;
+//   int isplayback=0;
   playerc_log_t *device;
 
   printf("device [log] index [%d]\n", index);

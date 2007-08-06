@@ -16,8 +16,8 @@
 // Basic test for graphics2d device.
 int test_graphics2d(playerc_client_t *client, int index)
 {
-  int t;
-  void *rdevice;
+/*  int t;
+  void *rdevice;*/
   playerc_graphics2d_t *device;
 
   printf("device [graphics2d] index [%d]\n", index);
