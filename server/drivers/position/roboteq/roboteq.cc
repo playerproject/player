@@ -274,7 +274,7 @@ roboteq::Setup()
       options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);    // non-canonical
 
       tcsetattr(roboteq_fd, TCSANOW, &options);
-      ioctl(roboteq_fd, TCFLSH, 2);
+      ioctl(roboteq_fd, TCIOFLUSH, 2);
   }
 
 
