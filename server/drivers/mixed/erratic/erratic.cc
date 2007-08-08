@@ -278,17 +278,21 @@ Erratic::Erratic(ConfigFile* cf, int section)
     }
   }
 
-  // Do we create a ptz interface?
-  if(cf->ReadDeviceAddr(&(this->ptz_id), section, "provides", PLAYER_PTZ_CODE, -1, NULL) == 0) {
-    if(this->AddInterface(this->ptz_id) != 0) {
+  // Do we create a tilt-only ptz interface?
+	// Must have a key of "tilt", e.g., "tilt:::ptz:1"
+	// This device must be listed after the default PTZ device
+  if(cf->ReadDeviceAddr(&(this->ptz2_id), section, "provides", PLAYER_PTZ_CODE, -1, "tilt") == 0) {
+    if(this->AddInterface(this->ptz2_id) != 0) {
       this->SetError(-1);
       return;
     }
   }
 
-  // Do we create the second ptz interface?
-  if(cf->ReadDeviceAddr(&(this->ptz2_id), section, "provides", PLAYER_PTZ_CODE, -1, "tilt") == 0) {
-    if(this->AddInterface(this->ptz2_id) != 0) {
+  // Do we create a standard ptz interface?
+	// NOTE: this interface has no key, it picks up the default PTZ device
+	// MUST BE LISTED FIRST of all PTZ devices
+  if(cf->ReadDeviceAddr(&(this->ptz_id), section, "provides", PLAYER_PTZ_CODE, -1, NULL) == 0) {
+    if(this->AddInterface(this->ptz_id) != 0) {
       this->SetError(-1);
       return;
     }
@@ -518,9 +522,11 @@ int Erratic::Connect()
   printf(" done.\n  Connected to <%s>, an %s %s\n", name, type, subtype);
 
   // Set the robot type
-	if (subtype == "Rev G")
+	if (strcmp(subtype,"Rev H")==0)
+		param_idx = 2;
+	else 	if (strcmp(subtype,"Rev G")==0)
 		param_idx = 1;
-	else if (subtype == "Rev E")
+	else 	if (strcmp(subtype,"Rev E")==0)
 		param_idx = 0;
 	else
 		param_idx = 0;

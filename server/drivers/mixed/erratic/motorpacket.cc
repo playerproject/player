@@ -65,14 +65,15 @@ bool ErraticMotorPacket::Parse( unsigned char *buffer, int length )
   int cnt = 0, change;
   unsigned short newxpos, newypos;
 
-	// Check type and length
-	if (length < 20) return false;
+  // Check type and length
+  if (length < 20) return false;
 
   status = buffer[cnt];
   cnt += sizeof(unsigned char);
 
-  // This driver does its own integration, and only cares for the lower bits of the odometry updates
-	// Integers from robot are little-endian
+  // This driver does its own integration, and only cares for the lower bits 
+  // of the odometry updates
+  // Integers from robot are little-endian
   newxpos = buffer[cnt] + 0x100*(buffer[cnt+1]&0x0F);
 
   if (xpos!=INT_MAX) {

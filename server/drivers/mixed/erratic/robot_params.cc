@@ -163,4 +163,77 @@ RobotParams_t erratic_params_rev_G =
 };
 
 
-RobotParams_t *RobotParams[2] = {&erratic_params_rev_E, &erratic_params_rev_G};
+//
+// Rev H
+// Shayang-Ye motors
+// DistConvFactor and DiffConvFactor changes
+//
+
+RobotParams_t erratic_params_rev_H = 
+{
+	0.001534,
+	"Erratic",
+	0.011,
+	0.930, //This is the empirically correct value, but doesn't match wheel size calculation
+	0,
+	1.626,
+	1,
+	1,
+	0,
+	0,
+	0,
+	"",
+	"",
+	0,
+	1,
+	0,
+	0,
+	0,
+	300,
+	1000,
+	0,
+	5,
+	5,
+	1,
+	0,
+	0,
+	0,
+	120,
+	392,			// length, mm
+	180,			// radius, mm
+	415,			// width, mm
+	61,			// axle distance to center of robot (positive forward)
+	0,
+	0,
+	0,
+	1,
+	1,
+	"Rev H",
+	38400,
+	0,
+	0,
+	0,
+	0,
+	20,
+	1.20482,
+	8,
+	{			// sonar poses, in m and rads
+		{ 0.180, 0.120,  DTOR(90) },
+		{ 0.200, 0.100,  DTOR(53) },
+		{ 0.205, 0.065,  DTOR(24) },
+		{ 0.210, 0.045,  DTOR(0) },
+		{ 0.210, -0.045, DTOR(0) },
+		{ 0.205, -0.065, DTOR(-24) },
+		{ 0.200, -0.100, DTOR(-53) },
+		{ 0.180, -0.120, DTOR(-90) },
+	},
+	2,
+	{
+		{0.1, 0.1, 0},	// ir poses in m and deg
+		{0.1, -0.1, 0},
+	}
+};
+
+
+RobotParams_t *RobotParams[3] = {&erratic_params_rev_E, &erratic_params_rev_G, 
+				 &erratic_params_rev_H};
