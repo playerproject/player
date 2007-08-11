@@ -56,6 +56,8 @@ class Property
 		virtual void GetValueToMessage (void *data) const = 0;
 		virtual void SetValueFromMessage (const void *data) = 0;
 
+		virtual const bool KeyIsEqual (const char *rhs);
+
 		// Config file read method
 		virtual bool ReadConfig (ConfigFile *cf, int section) = 0;
 

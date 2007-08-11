@@ -174,20 +174,6 @@ static playerxdr_function_t init_ftable[] =
   /* camera messages */
   {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
    (player_pack_fn_t)player_camera_data_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_SET_AUTOILLUMINATION,
-   (player_pack_fn_t)player_camera_autoillumination_config_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_SET_MODULATION_FREQ,
-   (player_pack_fn_t)player_camera_modulation_freq_config_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_GET_MODULATION_FREQ,
-   (player_pack_fn_t)player_camera_modulation_freq_config_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_SET_INTEGRATION_TIME,
-   (player_pack_fn_t)player_camera_integration_time_config_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_GET_INTEGRATION_TIME,
-   (player_pack_fn_t)player_camera_integration_time_config_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_SET_THRESHOLD,
-   (player_pack_fn_t)player_camera_threshold_config_pack, NULL, NULL},
-  {PLAYER_CAMERA_CODE, PLAYER_MSGTYPE_REQ, PLAYER_CAMERA_REQ_SET_TEMPORAL_IIR,
-   (player_pack_fn_t)player_camera_iir_config_pack, NULL, NULL},
 
  /* dio messages */
   {PLAYER_DIO_CODE, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES,
