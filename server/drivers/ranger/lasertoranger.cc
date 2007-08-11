@@ -208,7 +208,7 @@ int LaserToRanger::Shutdown (void)
 int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 {
 	player_laser_data_t *scanData = NULL;
-	player_pose_t *pose = NULL;
+	player_pose2d_t *pose = NULL;
 	player_ranger_data_rangepose_t rangeData;
 	player_ranger_data_intnspose_t intensityData;
 
@@ -300,13 +300,13 @@ bool LaserToRanger::HandleGeomRequest (player_laser_geom_t *data)
 {
 	deviceGeom.pose.px = data->pose.px;
 	deviceGeom.pose.py = data->pose.py;
-	deviceGeom.pose.pz = 0.0f;
-	deviceGeom.pose.proll = 0.0f;
-	deviceGeom.pose.ppitch = 0.0f;
-	deviceGeom.pose.pyaw = data->pose.pa;
+	deviceGeom.pose.pz = data->pose.pz;
+	deviceGeom.pose.proll = data->pose.proll;
+	deviceGeom.pose.ppitch = data->pose.ppitch;
+	deviceGeom.pose.pyaw = data->pose.pyaw;
 	deviceGeom.size.sw = data->size.sw;
 	deviceGeom.size.sl = data->size.sl;
-	deviceGeom.size.sh = 0.0f;
+	deviceGeom.size.sh = data->size.sh;
 
 	*(deviceGeom.sensor_poses) = deviceGeom.pose;
 	*(deviceGeom.sensor_sizes) = deviceGeom.size;

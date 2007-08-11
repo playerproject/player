@@ -185,7 +185,7 @@ bool SonarToRanger::PropertyChanged (void)
 
 int SonarToRanger::ConvertGeom (player_sonar_geom_t *geom)
 {
-	double minX = 0.0f, maxX = 0.0f, minY = 0.0f, maxY = 0.0f;
+	double minX = 0.0f, maxX = 0.0f, minY = 0.0f, maxY = 0.0f, minZ = 0.0f, maxZ = 0.0f;
 
 	// Prepare some space for storing geometry data - the parent class will clean this up when necessary
 	if (deviceGeom.sensor_poses != NULL)
@@ -219,13 +219,19 @@ int SonarToRanger::ConvertGeom (player_sonar_geom_t *geom)
 		minY = (geom->poses[ii].py < minY) ? geom->poses[ii].py : minY;
 		maxY = (geom->poses[ii].py > maxY) ? geom->poses[ii].py : maxY;
 		deviceGeom.sensor_poses[ii].py = geom->poses[ii].py;
-		deviceGeom.sensor_poses[ii].pyaw = geom->poses[ii].pa;
+    minZ = (geom->poses[ii].pz < minZ) ? geom->poses[ii].pz : minZ;
+    maxZ = (geom->poses[ii].pz > maxZ) ? geom->poses[ii].pz : maxZ;
+    deviceGeom.sensor_poses[ii].pz = geom->poses[ii].pz;
+    deviceGeom.sensor_poses[ii].proll = geom->poses[ii].proll;
+    deviceGeom.sensor_poses[ii].ppitch = geom->poses[ii].ppitch;
+		deviceGeom.sensor_poses[ii].pyaw = geom->poses[ii].pyaw;
 	}
 	// Even though the sensor sizes are all zero, they're still there
 	deviceGeom.sensor_sizes_count = geom->poses_count;
 	// Set the device size
 	deviceGeom.size.sw = maxX - minX;
 	deviceGeom.size.sl = maxY - minY;
+  deviceGeom.size.sh = maxZ - minZ;
 
 	return 0;
 }
