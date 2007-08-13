@@ -1870,7 +1870,7 @@ uint32_t ConfigFile::ReadTupleColor(int section, const char *name, int index, ui
 // Look up the color in a data based (transform color name -> color value).
 uint32_t ConfigFile::LookupColor(const char *name)
 {
-  FILE *file;
+  FILE *file = NULL;
 
   for (int i=0; COLOR_DATABASE[i] != NULL; ++i)
   {
