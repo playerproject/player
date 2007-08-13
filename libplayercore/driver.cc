@@ -108,7 +108,7 @@ Driver::Driver(ConfigFile *cf, int section,
   this->error = 0;
   this->driverthread = 0;
 
-  this->device_addr.interf = UINT_MAX;
+  this->device_addr.interf = 0xFFFF;
 
   this->subscriptions = 0;
   this->alwayson = false;
