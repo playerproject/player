@@ -256,13 +256,13 @@ int main(int argc, char **argv)
 
     // See if the device should be subscribed immediately.
     snprintf(section, sizeof(section), "%s:%d",
-             playerc_lookup_name(device->addr.interf), device->addr.index);
+             interf_to_str(device->addr.interf), device->addr.index);
     device->subscribe = opt_get_int(opt, section, "", 0);
     device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
     if (device->addr.index == 0)
     {
       snprintf(section, sizeof(section), "%s",
-               playerc_lookup_name(device->addr.interf));
+               interf_to_str(device->addr.interf));
       device->subscribe = opt_get_int(opt, section, "", device->subscribe);
       device->subscribe = opt_get_int(opt, section, "subscribe", device->subscribe);
     }
@@ -294,7 +294,7 @@ int main(int argc, char **argv)
   {
     device = devices + i;
     snprintf(section, sizeof(section), "%s:%d",
-             playerc_lookup_name(device->addr.interf), device->addr.index);
+             interf_to_str(device->addr.interf), device->addr.index);
     printf("%-16s %-40s", section, device->drivername);
     if (device->proxy)
     {

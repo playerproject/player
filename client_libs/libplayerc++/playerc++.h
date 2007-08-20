@@ -2343,6 +2343,37 @@ class SpeechRecognitionProxy : public ClientProxy
 };
 
 /**
+* The @p VectorMapProxy class is used to interface to a vectormap.
+*/
+class VectorMapProxy : public ClientProxy
+{
+
+  private:
+
+    // Subscribe
+    void Subscribe(uint aIndex);
+    // Unsubscribe
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_vectormap_t *mDevice;
+
+    bool map_info_cached;
+  public:
+    // Constructor
+    VectorMapProxy(PlayerClient *aPc, uint aIndex=0);
+    // Destructor
+    ~VectorMapProxy();
+
+    void GetMapInfo();
+    void GetLayerData(unsigned layer_index);
+
+    int GetLayerCount() const;
+    std::vector<std::string> GetLayerNames() const;
+    int GetFeatureCount(unsigned layer_index) const;
+};
+
+/**
 The @p WiFiProxy class controls a @ref interface_wifi device.  */
 class WiFiProxy: public ClientProxy
 {
@@ -2439,6 +2470,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const player_bbox2d_t& c);
   std::ostream& operator << (std::ostream& os, const player_bbox3d_t& c);
   std::ostream& operator << (std::ostream& os, const player_segment_t& c);
+  std::ostream& operator << (std::ostream& os, const player_extent2d_t& c);
   std::ostream& operator << (std::ostream& os, const playerc_device_info_t& c);
 
   std::ostream& operator << (std::ostream& os, const PlayerCc::ClientProxy& c);
@@ -2472,6 +2504,7 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::VectorMapProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);

@@ -13,8 +13,12 @@ AM_CPPFLAGS = $(PLAYERC_CFLAGS) -Wall -g
 
 exampledir = $(prefix)/share/player/examples/libplayerc
 
-example_PROGRAMS = simple speech_c_client
-example_DATA = simple.c speech_c_client.c
+example_PROGRAMS = vmap simple speech_c_client
+example_DATA = vmap.c simple.c speech_c_client.c
+
+vmap_SOURCES = vmap.c
+vmap_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror
+vmap_DEPENDENCIES = $(PLAYERC_DEPS)
 
 simple_SOURCES = simple.c
 simple_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror

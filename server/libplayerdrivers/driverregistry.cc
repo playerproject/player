@@ -79,10 +79,6 @@ void NIMU_Register(DriverTable* table);
 void Relay_Register(DriverTable* table);
 #endif
 
-#ifdef INCLUDE_VMAPFILE
-void VMapFile_Register(DriverTable* table);
-#endif
-
 #ifdef INCLUDE_MAPCSPACE
 void MapCspace_Register(DriverTable* table);
 #endif
@@ -460,6 +456,9 @@ void robotino_Register (DriverTable* table);
 void PBSDriver_Register (DriverTable* table);
 #endif
 
+#ifdef INCLUDE_POSTGIS
+void PostGIS_Register (DriverTable* table);
+#endif
 
 /*
  * this function will be called at startup.  all available devices should
@@ -499,10 +498,6 @@ player_register_drivers()
 
 #ifdef INCLUDE_RELAY
   Relay_Register(driverTable);
-#endif
-
-#ifdef INCLUDE_VMAPFILE
-  VMapFile_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_MAPCSPACE
@@ -879,5 +874,9 @@ player_register_drivers()
 
 #ifdef INCLUDE_PBSLASER
   PBSDriver_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_POSTGIS
+  PostGIS_Register(driverTable);
 #endif
 }

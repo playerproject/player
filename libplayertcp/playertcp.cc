@@ -948,7 +948,8 @@ PlayerTCP::ParseBuffer(int cli)
           // is cleaned up (putting message bodies into a Message class, as with PutMsg,
           // makes another copy of this data that will be cleaned up when that Message
           // class destructs).
-          playerxdr_delete_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
+          if (decode_msglen > 0)
+            playerxdr_delete_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
         }
       }
     }

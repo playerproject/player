@@ -184,11 +184,18 @@ std::operator << (std::ostream& os, const player_bbox3d_t& c)
   return os;
 }
 
-
 std::ostream&
 std::operator << (std::ostream& os, const player_segment_t& c)
 {
   os << "segment: (" << c.x0 << "," << c.y0 << ") - ("
+     << c.x1 << "," << c.y1 << ")";
+  return os;
+}
+
+std::ostream&
+std::operator << (std::ostream& os, const player_extent2d_t& c)
+{
+  os << "extent: (" << c.x0 << "," << c.y0 << ") - ("
      << c.x1 << "," << c.y1 << ")";
   return os;
 }

@@ -54,7 +54,7 @@ int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace)
   return playerxdr_ftable_add_multi(flist, replace);
 }
 
-
+/*
 // Get the name for a given device code.
 const char *playerc_lookup_name(int code)
 {
@@ -193,5 +193,5 @@ int playerc_lookup_code(const char *name)
     return PLAYER_POINTCLOUD3D_CODE;
   return -1;
 }
-
+*/
 

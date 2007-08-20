@@ -166,7 +166,7 @@ if __name__ == '__main__':
         headerfile.write('unsigned int ' + typename + '_dpcpy(const ' + typename + '* src, ' + typename + '* dest);\n')
         sourcefile.write('unsigned int\n' + typename + '_dpcpy(const ' + typename + '* src, ' + typename + '* dest)\n{\n')
         #sourcefile.write('  printf ("' + typename + '_dpcpy starting\\n"); fflush(NULL);\n')
-        sourcefile.write('  if(src == NULL)\n    return(0);\n')
+        sourcefile.write('  unsigned ii;\nif(src == NULL)\n    return(0);\n')
         sourcefile.write('  unsigned int size = 0;\n')
       else:
         # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         headerfile.write('void ' + typename + '_cleanup(' + typename + '* msg);\n')
         sourcefile.write('void\n' + typename + '_cleanup(' + typename + '* msg)\n{\n')
         #sourcefile.write('  printf("' + typename + '_cleanup starting\\n"); fflush(NULL);\n')
-        sourcefile.write('  if(msg == NULL)\n    return;\n')
+        sourcefile.write('  unsigned ii;\nif(msg == NULL)\n    return;\n')
 
       varlist = []
 
@@ -293,14 +293,14 @@ if __name__ == '__main__':
                 sourcefile.write('    size += src->' + countvar + '*sizeof(' + typestring + ');\n  }\n')
                 sourcefile.write('  else\n    dest->' + varstring + ' = NULL;\n')
                 if typestring in hasdynamic:    # Need to deep copy embedded structures
-                  sourcefile.write('  for(int ii = 0; ii < src->' + countvar + '; ii++)\n  {\n')
+                  sourcefile.write('  for(ii = 0; ii < src->' + countvar + '; ii++)\n  {\n')
                   sourcefile.write('    size += ' + typestring + '_dpcpy(&(src->' + varstring + '[ii]), &(dest->' + varstring + '[ii]));\n  }\n')
               elif i == 3:
                 sourcefile.write('  if(msg->' + varstring + ' == NULL)\n    return;\n')
-                sourcefile.write('  free(msg->' + varstring + ');\n')
                 if typestring in hasdynamic:    # Need to clean up embedded structures
-                  sourcefile.write('  for(int ii = 0; ii < msg->' + countvar + '; ii++)\n  {\n')
+                  sourcefile.write('  for(ii = 0; ii < msg->' + countvar + '; ii++)\n  {\n')
                   sourcefile.write('    ' + typestring + '_cleanup(&(msg->' + varstring + '[ii]));\n  }\n')
+                sourcefile.write('  free(msg->' + varstring + ');\n')
             else:           # Handle a static array
               # Was a _count variable declared? If so, we'll encode as a
               # variable-length array (with xdr_array); otherwise we'll
@@ -351,10 +351,10 @@ if __name__ == '__main__':
                     sourcefile.write('  }\n')
                   if typestring in hasdynamic:    # Need to deep copy/clean up embedded structures
                     if i == 2:
-                      sourcefile.write('  for(int ii = 0; ii < src->' + countvar + '; ii++)\n  {\n')
+                      sourcefile.write('  for(ii = 0; ii < src->' + countvar + '; ii++)\n  {\n')
                       sourcefile.write('    size += ' + typestring + '_dpcpy(&(src->' + varstring + '[ii]), &(dest->' + varstring + '[ii]));\n  }\n')
                     elif i == 3:
-                      sourcefile.write('  for(int ii = 0; ii < msg->' + countvar + '; ii++)\n  {\n')
+                      sourcefile.write('  for(ii = 0; ii < msg->' + countvar + '; ii++)\n  {\n')
                       sourcefile.write('    ' + typestring + '_cleanup(&(msg->' + varstring + '[ii]));\n  }\n')
               else:
                 # Is it an array of bytes?  If so, then we'll encode
@@ -380,10 +380,10 @@ if __name__ == '__main__':
                                     xdr_proc + ') != 1)\n    return(-1);\n')
                   if typestring in hasdynamic:    # Need to deep copy/clean up embedded structures
                     if i == 2:
-                      sourcefile.write('  for(int ii = 0; ii < ' + arraysize + '; ii++)\n  {\n')
+                      sourcefile.write('  for(ii = 0; ii < ' + arraysize + '; ii++)\n  {\n')
                       sourcefile.write('    size += ' + typestring + '_dpcpy(&(src->' + varstring + '[ii]), &(dest->' + varstring + '[ii]));\n  }\n')
                     elif i == 3:
-                      sourcefile.write('  for(int ii = 0; ii < ' + arraysize + '; ii++)\n  {\n')
+                      sourcefile.write('  for(ii = 0; ii < ' + arraysize + '; ii++)\n  {\n')
                       sourcefile.write('    ' + typestring + '_cleanup(&(msg->' + varstring + '[ii]_);\n  }\n')
           else:
             if i == 0:

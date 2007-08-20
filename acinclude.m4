@@ -265,9 +265,12 @@ PLAYER_ADD_DRIVER([wbr914],[yes],[linux/serial.h],[],[])
 PLAYER_ADD_DRIVER([passthrough],[no],[],[],
                   ["../client_libs/c/playercclient.o"])
 
-PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
+PLAYER_ADD_DRIVER([postgis],[yes],[],[],["-lgeos"],[LIBPQXX],[libpqxx])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $LIBPQXX_LIBS"
 
 PLAYER_ADD_DRIVER([pbslaser],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([reb],[no],[],[],[])
 
@@ -280,7 +283,6 @@ PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 PLAYER_ADD_DRIVER([roboteq],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([robotino],[yes],["robotinocom.h xtimer.h xthread.h"],[],["-lxtimer -lrobotinocom -lxthread -lpthread"])
-
 
 dnl Where's CANLIB?
 AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],

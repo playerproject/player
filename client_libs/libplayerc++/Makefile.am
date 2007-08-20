@@ -62,6 +62,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               sonarproxy.cc \
                               speechproxy.cc \
                               speechrecognitionproxy.cc \
+                              vectormapproxy.cc \
                               wifiproxy.cc \
 			      wsnproxy.cc
 

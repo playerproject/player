@@ -77,7 +77,7 @@ Message::Message(const struct player_msghdr & Header,
 
   memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
   // Perform deep copy if necessary
-  if (do_deepcopy && data != NULL)
+  if (do_deepcopy && data != NULL && data_size > 0)
   {
     player_dpcpy_fn_t dpcpyfunc = NULL;
     if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
@@ -86,6 +86,7 @@ Message::Message(const struct player_msghdr & Header,
       {
         // Possible error
         PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
+        assert(0);
       }
     }
   }

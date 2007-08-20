@@ -50,6 +50,14 @@ client writers.
 #include <stdio.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <config.h>
+
+#ifdef HAVE_GEOS
+#include <geos_c.h>
+#else
+typedef void * GEOSGeom;
+#endif
+
 
 // Get the message structures from Player
 #include <libplayercore/player.h>
@@ -334,10 +342,10 @@ the new packet pushed onto the end of the queue.
 const char *playerc_error_str(void);
 
 /** Get the name for a given interface code. */
-const char *playerc_lookup_name(int code);
+//const char *playerc_lookup_name(int code);
 
 /** Get the interface code for a given name. */
-int playerc_lookup_code(const char *name);
+//int playerc_lookup_code(const char *name);
 
 /** Add new entries to the XDR function table. */
 int playerc_add_xdr_ftable(playerxdr_function_t *flist, int replace);
@@ -2111,7 +2119,6 @@ typedef struct
   player_segment_t* segments;
 } playerc_map_t;
 
-
 /** @brief Convert from a cell position to a map index.
  */
 #define PLAYERC_MAP_INDEX(dev, i, j) ((dev->width) * (j) + (i))
@@ -2136,6 +2143,57 @@ int playerc_map_get_vector(playerc_map_t* device);
 
 /** @} */
 /**************************************************************************/
+
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_vectormap vectormap
+
+The vectormap proxy provides an interface to a map of geometric features.
+
+@{ */
+
+/** @brief Vectormap proxy. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+  /** Spatial reference identifier. Use '0' if you are not using spatial references. */
+  uint32_t srid;
+  /** Boundary area. */
+  player_extent2d_t extent;
+  /** The number of layers. */
+  uint32_t layers_count;
+  /** Layer data. */
+  player_vectormap_layer_data_t** layers;
+} playerc_vectormap_t;
+
+/** @brief Create a vectormap proxy. */
+playerc_vectormap_t *playerc_vectormap_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a vectormap proxy. */
+void playerc_vectormap_destroy(playerc_vectormap_t *device);
+
+/** @brief Subscribe to the vectormap device. */
+int playerc_vectormap_subscribe(playerc_vectormap_t *device, int access);
+
+/** @brief Un-subscribe from the vectormap device. */
+int playerc_vectormap_unsubscribe(playerc_vectormap_t *device);
+
+/** @brief Get the vectormap metadata, which is stored in the proxy. */
+int playerc_vectormap_get_map_info(playerc_vectormap_t* device);
+
+/** @brief Get the layer info by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
+int playerc_vectormap_get_layer_info(playerc_vectormap_t *device, unsigned layer_index);
+
+/** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_layer_info. */
+int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index);
+
+/** @brief Clean up the dynamically allocated memory for the vectormap. */
+void playerc_vectormap_cleanup(playerc_vectormap_t *device);
+
+/** @brief Get an individual feature as a geos geometry. Must only be used after a successful call to playerc_vectormap_get_layer_data. */
+GEOSGeom playerc_vectormap_get_feature_data(playerc_vectormap_t *device, unsigned layer_index, unsigned feature_index);
+
+/** @} */
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
