@@ -309,7 +309,7 @@ void Dummy::Main(void)
                 data.data_packet.battery = 489;
 
                 Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
-                         PLAYER_WSN_DATA, (void*)&data, 
+                         PLAYER_WSN_DATA_STATE, (void*)&data, 
                          sizeof (data), NULL);
                 break;
             }

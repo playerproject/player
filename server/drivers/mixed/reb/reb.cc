@@ -108,18 +108,18 @@ The reb driver provides the following device interfaces:
 @par Supported configuration requests
 
 - The @ref interface_position2d interface supports:
-  - PLAYER_POSITION_GET_GEOM_REQ
-  - PLAYER_POSITION_MOTOR_POWER_REQ
-  - PLAYER_POSITION_VELOCITY_MODE_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_POSITION_MODE_REQ
-  - PLAYER_POSITION_SET_ODOM_REQ
-  - PLAYER_POSITION_SPEED_PID_REQ
-  - PLAYER_POSITION_POSITION_PID_REQ
-  - PLAYER_POSITION_SPEED_PROF_REQ
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+  - PLAYER_POSITION2D_REQ_VELOCITY_MODE
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_POSITION_MODE
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_SPEED_PID
+  - PLAYER_POSITION2D_REQ_POSITION_PID
+  - PLAYER_POSITION2D_REQ_SPEED_PROF
 - The @ref interface_ir interface supports:
-  - PLAYER_IR_POWER_REQ
-  - PLAYER_IR_POSE_REQ
+  - PLAYER_IR_REQ_POWER
+  - PLAYER_IR_REQ_POSE
 
 @par Configuration file options
 
@@ -221,7 +221,7 @@ REB::REB(ConfigFile *cf, int section)
 
   // Do we create a robot position interface?
   if(cf->ReadDeviceId(&(this->position_id), section, "provides", 
-                      PLAYER_POSITION_CODE, -1, NULL) == 0)
+                      PLAYER_POSITION2D_CODE, -1, NULL) == 0)
   {
     if(this->AddInterface(this->position_id, PLAYER_ALL_MODE) != 0)
     {
@@ -375,7 +375,7 @@ REB::Subscribe(player_device_id_t id)
     // also increment the appropriate subscription counter
     switch(id.code)
     {
-      case PLAYER_POSITION_CODE:
+      case PLAYER_POSITION2D_CODE:
         this->position_subscriptions++;
         break;
       case PLAYER_IR_CODE:
@@ -398,7 +398,7 @@ REB::Unsubscribe(player_device_id_t id)
     // also decrement the appropriate subscription counter
     switch(id.code)
     {
-      case PLAYER_POSITION_CODE:
+      case PLAYER_POSITION2D_CODE:
         assert(--this->position_subscriptions >= 0);
         break;
       case PLAYER_IR_CODE:
@@ -750,7 +750,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
 	return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POWER, ir_id))
   {
   	assert(hdr->size == sizeof(player_ir_power_req_t));
   	player_ir_power_req_t * powreq = reinterpret_cast<player_ir_power_req_t *> (data);
@@ -764,7 +764,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_id))
   {
   	assert(*resp_len >= sizeof(player_ir_pose_t));
   	player_ir_pose_t & irpose = *reinterpret_cast<player_ir_pose_t *> (resp_data);
@@ -782,7 +782,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER2D_POSITION_REQ_GET_GEOM, position_id))
   {
 /*  	assert(hdr->size == sizeof(player_position_geom_t));
   	player_position_geom_t * req = reinterpret_cast<player_position_geom_t *> (data);*/
@@ -799,7 +799,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_MOTOR_POWER, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_MOTOR_POWER, position_id))
   {
   	assert(hdr->size == sizeof(player_position_power_config_t));
   	player_position_power_config_t * mpowreq = reinterpret_cast<player_position_power_config_t *> (data);
@@ -817,7 +817,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
           // select method of velocity control
           // 0 for direct velocity control (trans and rot applied directly)
           // 1 for builtin velocity based heading PD controller
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_VELOCITY_MODE, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_VELOCITY_MODE, position_id))
   {
     assert(hdr->size == sizeof(player_position_velocitymode_config_t));
   	player_position_velocitymode_config_t * velcont = reinterpret_cast<player_position_velocitymode_config_t *> (data);
@@ -835,7 +835,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_RESET_ODOM, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_RESET_ODOM, position_id))
   {
     SetOdometry(0,0,0);
 
@@ -843,7 +843,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_POSITION_MODE, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_MODE, position_id))
   {
   	assert(hdr->size == sizeof(player_position_position_mode_req_t));
   	player_position_position_mode_req_t * posmode = reinterpret_cast<player_position_position_mode_req_t *> (data);
@@ -858,7 +858,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
           
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SET_ODOM, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SET_ODOM, position_id))
   {
   	assert(hdr->size == sizeof(player_position_set_odom_req_t));
   	player_position_set_odom_req_t * req = reinterpret_cast<player_position_set_odom_req_t *> (data);
@@ -878,7 +878,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SPEED_PID, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PID, position_id))
   {
   	assert(hdr->size == sizeof(player_position_speed_pid_req_t));
   	player_position_speed_pid_req_t * pid = reinterpret_cast<player_position_speed_pid_req_t *> (data);
@@ -898,7 +898,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_POSITION_PID, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_POSITION_PID, position_id))
   {
   	assert(hdr->size == sizeof(player_position_position_pid_req_t));
   	player_position_position_pid_req_t * pid = reinterpret_cast<player_position_position_pid_req_t *> (data);
@@ -918,7 +918,7 @@ int REB::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data
     return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_SPEED_PROF, position_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_SPEED_PROF, position_id))
   {
   	assert(hdr->size == sizeof(player_position_speed_prof_req_t));
   	player_position_speed_prof_req_t * prof = reinterpret_cast<player_position_speed_prof_req_t *> (data);
@@ -987,7 +987,7 @@ REB::ReadConfig()
     // figure out which command
     switch(config_buffer[0]) 
     {
-      case PLAYER_IR_POWER_REQ: 
+      case PLAYER_IR_REQ_POWER: 
         {
           // request to change IR state
           // 1 means turn on
@@ -1016,7 +1016,7 @@ REB::ReadConfig()
         }
         break;
       
-      case PLAYER_IR_POSE_REQ: 
+      case PLAYER_IR_REQ_POSE: 
         {
           // request the pose of the IR sensors in robot-centric coords
           if(config_size != sizeof(player_ir_pose_req_t)) 
@@ -1068,7 +1068,7 @@ REB::ReadConfig()
 #endif
     switch (config_buffer[0]) 
     {
-      case PLAYER_POSITION_GET_GEOM_REQ: 
+      case PLAYER_POSITION2D_REQ_GET_GEOM: 
         {
           // get geometry of robot
           if (config_size != sizeof(player_position_geom_t)) 
@@ -1085,7 +1085,7 @@ REB::ReadConfig()
 #endif
 
           player_position_geom_t geom;
-          geom.subtype = PLAYER_POSITION_GET_GEOM_REQ;
+          geom.subtype = PLAYER_POSITION2D_REQ_GET_GEOM;
           geom.pose[0] = htons(0);
           geom.pose[1] = htons(0);
           geom.pose[2] = htons(0);
@@ -1098,7 +1098,7 @@ REB::ReadConfig()
         }
         break;
 
-      case PLAYER_POSITION_MOTOR_POWER_REQ: 
+      case PLAYER_POSITION2D_REQ_MOTOR_POWER: 
         {
           // change motor state
           // 1 for on 
@@ -1132,7 +1132,7 @@ REB::ReadConfig()
         }
         break;
 
-      case PLAYER_POSITION_VELOCITY_MODE_REQ: 
+      case PLAYER_POSITION2D_REQ_VELOCITY_MODE: 
         {
           // select method of velocity control
           // 0 for direct velocity control (trans and rot applied directly)
@@ -1168,7 +1168,7 @@ REB::ReadConfig()
         }
         break;
 
-      case PLAYER_POSITION_RESET_ODOM_REQ: 
+      case PLAYER_POSITION2D_REQ_RESET_ODOM: 
         {
           // reset the odometry
           if (config_size != sizeof(player_position_resetodom_config_t)) 
@@ -1192,7 +1192,7 @@ REB::ReadConfig()
         }
         break;
       
-      case PLAYER_POSITION_POSITION_MODE_REQ: 
+      case PLAYER_POSITION2D_REQ_POSITION_MODE: 
         {
           // select velocity or position mode
           // 0 for velocity mode
@@ -1223,7 +1223,7 @@ REB::ReadConfig()
         }
         break;
 
-      case PLAYER_POSITION_SET_ODOM_REQ: 
+      case PLAYER_POSITION2D_REQ_SET_ODOM: 
         {
           // set the odometry to a given position
           if (config_size != sizeof(player_position_set_odom_req_t)) 
@@ -1256,7 +1256,7 @@ REB::ReadConfig()
         }
         break;
 
-      case PLAYER_POSITION_SPEED_PID_REQ: 
+      case PLAYER_POSITION2D_REQ_SPEED_PID: 
         {
           // set up the velocity PID on the REB
           // kp, ki, kd are used
@@ -1288,7 +1288,7 @@ REB::ReadConfig()
         }
         break;
       
-      case PLAYER_POSITION_POSITION_PID_REQ: 
+      case PLAYER_POSITION2D_REQ_POSITION_PID: 
         {
           // set up the position PID on the REB
           // kp, ki, kd are used
@@ -1320,7 +1320,7 @@ REB::ReadConfig()
         }
         break;
 
-      case PLAYER_POSITION_SPEED_PROF_REQ: 
+      case PLAYER_POSITION2D_REQ_SPEED_PROF: 
         {
           // set the speed profile for position mode 
           // speed is max speed

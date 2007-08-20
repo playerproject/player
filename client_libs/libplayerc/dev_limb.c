@@ -84,7 +84,7 @@ void playerc_limb_putmsg(playerc_limb_t *device,
                          player_msghdr_t *header,
                          player_limb_data_t *data, size_t len)
 {
-  if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_LIMB_DATA))
+  if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_LIMB_DATA_STATE))
   {
     device->data.position.px = data->position.px;
     device->data.position.py = data->position.py;
@@ -111,7 +111,7 @@ int playerc_limb_get_geom(playerc_limb_t *device)
   player_limb_geom_req_t geom;
 
   if(playerc_client_request(device->info.client, &device->info,
-     PLAYER_LIMB_GEOM_REQ,
+     PLAYER_LIMB_REQ_GEOM,
      NULL, (void*)&geom, sizeof(geom)) < 0)
     return -1;
 
@@ -125,24 +125,24 @@ int playerc_limb_get_geom(playerc_limb_t *device)
 // Command the end effector to move home
 int playerc_limb_home_cmd(playerc_limb_t *device)
 {
-  player_limb_home_cmd_t cmd;
+  player_null_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_LIMB_HOME_CMD,
+                              PLAYER_LIMB_CMD_HOME,
                               &cmd, NULL);
 }
 
 // Command the end effector to stop immediatly
 int playerc_limb_stop_cmd(playerc_limb_t *device)
 {
-  player_limb_stop_cmd_t cmd;
+  player_null_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_LIMB_STOP_CMD,
+                              PLAYER_LIMB_CMD_STOP,
                               &cmd, NULL);
 }
 
@@ -157,7 +157,7 @@ int playerc_limb_setpose_cmd(playerc_limb_t *device, float pX, float pY, float p
   cmd.orientation.px = oX;  cmd.orientation.py = oY;  cmd.orientation.pz = oZ;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_LIMB_SETPOSE_CMD,
+                              PLAYER_LIMB_CMD_SETPOSE,
                               &cmd, NULL);
 }
 
@@ -172,7 +172,7 @@ int playerc_limb_setposition_cmd(playerc_limb_t *device, float pX, float pY, flo
   cmd.position.pz = pZ;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_LIMB_SETPOSITION_CMD,
+                              PLAYER_LIMB_CMD_SETPOSITION,
                               &cmd, NULL);
 }
 
@@ -188,7 +188,7 @@ int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, 
   cmd.length = length;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_LIMB_VECMOVE_CMD,
+                              PLAYER_LIMB_CMD_VECMOVE,
                               &cmd, NULL);
 }
 
@@ -200,7 +200,7 @@ int playerc_limb_power(playerc_limb_t *device, uint enable)
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_LIMB_POWER_REQ,
+                                PLAYER_LIMB_REQ_POWER,
                                 &config, NULL, 0);
 }
 
@@ -212,7 +212,7 @@ int playerc_limb_brakes(playerc_limb_t *device, uint enable)
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_LIMB_BRAKES_REQ,
+                                PLAYER_LIMB_REQ_BRAKES,
                                 &config, NULL, 0);
 }
 
@@ -224,6 +224,6 @@ int playerc_limb_speed_config(playerc_limb_t *device, float speed)
   config.speed = speed;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_LIMB_SPEED_REQ,
+                                PLAYER_LIMB_REQ_SPEED,
                                 &config, NULL, 0);
 }

@@ -57,15 +57,15 @@
  * \par Configuration requests:
  * \par
  *  \b interface_position2d
- * - PLAYER_POSITION_GET_GEOM_REQ
+ * - PLAYER_POSITION2D_REQ_GET_GEOM
  * - PLAYER_POSITION2D_REQ_SET_ODOM
  * - PLAYER_POSITION2D_REQ_MOTOR_POWER
  *  \par
  *  \b interface_bumper :
- * - PLAYER_BUMPER_GET_GEOM
+ * - PLAYER_BUMPER_REQ_GET_GEOM
  *  \par
  *  \b interface_ir :
- * - PLAYER_IR_POSE
+ * - PLAYER_IR_REQ_POSE
  *  \b interface_power :
  * - PLAYER_POSITION2D_REQ_MOTOR_POWER
  * 
@@ -439,7 +439,7 @@ ProcessMessage (MessageQueue * resp_queue,player_msghdr * hdr,void *data)
   
     // Interface - bumper
     else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_BUMPER_GET_GEOM,
+                                PLAYER_BUMPER_REQ_GET_GEOM,
                                 this->bumper_addr))
   {
     player_bumper_geom_t geom;
@@ -455,14 +455,14 @@ ProcessMessage (MessageQueue * resp_queue,player_msghdr * hdr,void *data)
 
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_BUMPER_GET_GEOM,
+                  PLAYER_BUMPER_REQ_GET_GEOM,
                   (void*)&geom, sizeof(geom), NULL);
 
     return(0);
    }
   // Interface - ir
   else if (Message::MatchMessage (hdr,PLAYER_MSGTYPE_REQ,
-				  PLAYER_IR_POSE,
+				  PLAYER_IR_REQ_POSE,
 				  this->ir_addr))
     {
       player_ir_pose_t geom;
@@ -478,7 +478,7 @@ ProcessMessage (MessageQueue * resp_queue,player_msghdr * hdr,void *data)
 	}
       this->Publish(this->ir_addr, resp_queue,
 		    PLAYER_MSGTYPE_RESP_ACK,
-		    PLAYER_IR_POSE,
+		    PLAYER_IR_REQ_POSE,
 		    (void *) &geom,
 		    sizeof(geom),
 		    NULL);

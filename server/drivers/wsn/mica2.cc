@@ -177,7 +177,7 @@ class Mica2 : public Driver
 
 	// RFID interface
 	player_devaddr_t   rfid_addr;
-	player_rfid_cmd_t  rfid_cmd;
+	player_rfid_data_t  rfid_cmd;
 	bool               provideRFID;
 	int                rfid_subscriptions;
 
@@ -1121,12 +1121,12 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 
     if ((provideRFID) && (rfidPacket))
 	// Write the RFID data
-	Publish (rfid_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA,
+	Publish (rfid_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
 		&rfid_data, sizeof (player_rfid_data_t), NULL);
 
     if ((provideWSN) && (wsnPacket))
 	// Write the WSN data
-	Publish (wsn_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+	Publish (wsn_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
 		&wsn_data, sizeof (player_wsn_data_t), NULL);
 
     return 0;

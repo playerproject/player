@@ -111,8 +111,7 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
   int ii = 0, result = 0;
 
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_ACTARRAY_GET_GEOM_REQ,
-                            NULL, (void*)&geom, sizeof(geom))) < 0)
+      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom, sizeof(geom))) < 0)
     return result;
 
   for (ii = 0; ii < device->actuators_count; ii++)
@@ -147,7 +146,7 @@ int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float p
   cmd.position = position;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_POS_CMD,
+                              PLAYER_ACTARRAY_CMD_POS,
                               &cmd, NULL);
 }
 
@@ -161,7 +160,7 @@ int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float positi
   cmd.positions_count = device->actuators_count;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_MULTI_POS_CMD,
+                              PLAYER_ACTARRAY_CMD_MULTI_POS,
                               &cmd, NULL);
 }
 
@@ -176,7 +175,7 @@ int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float spee
   cmd.speed = speed;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_SPEED_CMD,
+                              PLAYER_ACTARRAY_CMD_SPEED,
                               &cmd, NULL);
 }
 
@@ -191,7 +190,7 @@ int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float speeds[PL
   cmd.speeds_count = device->actuators_count;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_MULTI_SPEED_CMD,
+                              PLAYER_ACTARRAY_CMD_MULTI_SPEED,
                               &cmd, NULL);
 }
 
@@ -205,7 +204,7 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint)
   cmd.joint = joint;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_HOME_CMD,
+                              PLAYER_ACTARRAY_CMD_HOME,
                               &cmd, NULL);
 }
 
@@ -219,7 +218,7 @@ int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float cu
   cmd.current = current;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_CURRENT_CMD,
+                              PLAYER_ACTARRAY_CMD_CURRENT,
                               &cmd, NULL);
 }
 
@@ -233,7 +232,7 @@ int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float current
   cmd.currents_count = device->actuators_count;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_ACTARRAY_MULTI_CURRENT_CMD,
+                              PLAYER_ACTARRAY_CMD_MULTI_CURRENT,
                               &cmd, NULL);
 }
 
@@ -245,7 +244,7 @@ int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable)
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_ACTARRAY_POWER_REQ,
+                                PLAYER_ACTARRAY_REQ_POWER,
                                 &config, NULL, 0);
 }
 
@@ -257,7 +256,7 @@ int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable)
   config.value = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_ACTARRAY_BRAKES_REQ,
+                                PLAYER_ACTARRAY_REQ_BRAKES,
                                 &config, NULL, 0);
 }
 
@@ -270,7 +269,7 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float s
   config.speed = speed;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_ACTARRAY_SPEED_REQ,
+                                PLAYER_ACTARRAY_REQ_SPEED,
                                 &config, NULL, 0);
 }
 
@@ -283,7 +282,7 @@ int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float a
   config.accel = accel;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_ACTARRAY_ACCEL_REQ,
+                                PLAYER_ACTARRAY_REQ_ACCEL,
                                 &config, NULL, 0);
 }
 

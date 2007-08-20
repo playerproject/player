@@ -80,7 +80,7 @@ void playerc_wsn_putmsg (playerc_wsn_t *device,
 //    int i, j;
 
     if((header->type == PLAYER_MSGTYPE_DATA) &&
-       (header->subtype == PLAYER_WSN_DATA))
+       (header->subtype == PLAYER_WSN_DATA_STATE))
     {
 	player_wsn_data_t* wsn_data = (player_wsn_data_t*)data;
 	device->node_type      = wsn_data->node_type;

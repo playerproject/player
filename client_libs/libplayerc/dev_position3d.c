@@ -170,11 +170,11 @@ playerc_position3d_enable(playerc_position3d_t *device, int enable)
   player_position3d_power_config_t config;
 
   memset(&config, 0, sizeof(config));
-//  config.request = PLAYER_POSITION3D_MOTOR_POWER_REQ;
+//  config.request = PLAYER_POSITION3D_REQ_MOTOR_POWER;
   config.state = enable;
 
   return playerc_client_request(device->info.client, &device->info,
-                                PLAYER_POSITION3D_MOTOR_POWER,
+                                PLAYER_POSITION3D_REQ_MOTOR_POWER,
                                 &config,
                                 &config, sizeof(config));
 }
@@ -192,7 +192,7 @@ playerc_position3d_get_geom(playerc_position3d_t *device)
   //config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
 
   len = playerc_client_request(device->info.client, &device->info,
-                               PLAYER_POSITION3D_GET_GEOM,
+                               PLAYER_POSITION3D_REQ_GET_GEOM,
                                NULL, &config, sizeof(config));
   if (len < 0)
     return -1;
@@ -297,7 +297,7 @@ playerc_position3d_set_vel_mode(playerc_position3d_t *device, int aMode)
 
   return playerc_client_request(device->info.client,
                                 &device->info,
-                                PLAYER_POSITION3D_VELOCITY_MODE,
+                                PLAYER_POSITION3D_REQ_VELOCITY_MODE,
                                 &config,
                                 &config,
                                 sizeof(config));
@@ -322,7 +322,7 @@ playerc_position3d_set_odom(playerc_position3d_t *device,
 
   return playerc_client_request(device->info.client,
                               &device->info,
-                              PLAYER_POSITION3D_SET_ODOM,
+                              PLAYER_POSITION3D_REQ_SET_ODOM,
                               &config,
                               &config,
                               sizeof(config));
@@ -339,7 +339,7 @@ int playerc_position3d_reset_odom(playerc_position3d_t *device)
 
   return playerc_client_request(device->info.client,
                               	&device->info,
-				PLAYER_POSITION3D_RESET_ODOM,
+				PLAYER_POSITION3D_REQ_RESET_ODOM,
 				&config,
 				&config,
 				sizeof(config));

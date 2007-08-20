@@ -69,9 +69,9 @@ driver (eventually).
 
 @par Configuration requests
 
-- PLAYER_LASER_GET_GEOM
-- PLAYER_LASER_GET_CONFIG
-- PLAYER_LASER_SET_CONFIG
+- PLAYER_LASER_REQ_GET_GEOM
+- PLAYER_LASER_REQ_GET_CONFIG
+- PLAYER_LASER_REQ_SET_CONFIG
   
 @par Configuration file options
 
@@ -646,7 +646,7 @@ SickPLS::ProcessMessage(MessageQueue * resp_queue,
   {
     switch (buffer[0])
     {
-      case PLAYER_LASER_SET_CONFIG:
+      case PLAYER_LASER_REQ_SET_CONFIG:
       {
         if (len != sizeof(player_laser_config_t))
         {
@@ -678,7 +678,7 @@ SickPLS::ProcessMessage(MessageQueue * resp_queue,
         break;
       }
 
-      case PLAYER_LASER_GET_CONFIG:
+      case PLAYER_LASER_REQ_GET_CONFIG:
       {
         if (len != 1)
         {
@@ -700,7 +700,7 @@ SickPLS::ProcessMessage(MessageQueue * resp_queue,
         break;
       }
 
-      case PLAYER_LASER_GET_GEOM:
+      case PLAYER_LASER_REQ_GET_GEOM:
       {
         if (len != 1)
         {

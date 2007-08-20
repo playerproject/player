@@ -55,7 +55,7 @@ ahead the 'area of interest'.
 
 @par Configuration requests
 
-- PLAYER_LASER_GET_GEOM
+- PLAYER_LASER_REQ_GET_GEOM
   
 @par Configuration file options
 - min_angle (float)

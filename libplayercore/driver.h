@@ -227,7 +227,7 @@ class Driver
     @param section Current section in configuration file
     @param overwrite_cmds Do new commands overwrite old ones?
     @param queue_maxlen How long can the incoming queue grow?
-    @param interf Player interface code; e.g., PLAYER_POSITION_CODE */
+    @param interf Player interface code; e.g., PLAYER_POSITION2D_CODE */
     Driver(ConfigFile *cf,
            int section,
            bool overwrite_cmds,

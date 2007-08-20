@@ -62,15 +62,15 @@ them named:
 @par Supported configuration requests
 
 - "odometry" @ref interface_position2d :
-  - PLAYER_POSITION_SET_ODOM_REQ
-  - PLAYER_POSITION_MOTOR_POWER_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_GET_GEOM_REQ
-  - PLAYER_POSITION_VELOCITY_MODE_REQ
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_VELOCITY_MODE
 - @ref interface_ir :
-  - PLAYER_IR_POSE_REQ
+  - PLAYER_IR_REQ_POSE
 - @ref interface_sonar :
-  - PLAYER_SONAR_GET_GEOM_REQ
+  - PLAYER_SONAR_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -1214,7 +1214,7 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 	
 	// Request for getting IR locations
 	else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-	                                  PLAYER_IR_POSE,
+	                                  PLAYER_IR_REQ_POSE,
 	                                  this->ir_id)) {
 		player_ir_pose_t pose;
 		pose.poses_count = RobotParams[param_idx]->NumIR;
@@ -1223,7 +1223,7 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
 		
 		this->Publish(this->ir_id, resp_queue,
 		              PLAYER_MSGTYPE_RESP_ACK,
-		              PLAYER_IR_POSE,
+		              PLAYER_IR_REQ_POSE,
 		              (void*)&pose, sizeof(pose), NULL);
 		return(0);
 	}

@@ -92,9 +92,9 @@ disabled because they need to be updated:
 
 @par Configuration requests
 
-- PLAYER_LOG_SET_WRITE_STATE
-- PLAYER_LOG_GET_STATE
-- PLAYER_LOG_SET_FILENAME
+- PLAYER_LOG_REQ_SET_WRITE_STATE
+- PLAYER_LOG_REQ_SET_STATE
+- PLAYER_LOG_REQ_SET_FILENAME
 
 @par Configuration file options
 
@@ -537,7 +537,7 @@ void WriteLog::WriteGeometries()
       Message* msg;
       if(!(msg = device->device->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
-                                         PLAYER_BUMPER_GET_GEOM,
+                                         PLAYER_BUMPER_REQ_GET_GEOM,
                                          NULL, 0, NULL, true)))
       {
         // oh well.
@@ -557,7 +557,7 @@ void WriteLog::WriteGeometries()
       Message* msg;
       if(!(msg = device->device->Request(this->InQueue,
                                          PLAYER_MSGTYPE_REQ,
-                                         PLAYER_IR_POSE,
+                                         PLAYER_IR_REQ_POSE,
                                          NULL, 0, NULL, true)))
       {
         // oh well.
@@ -1268,7 +1268,7 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
       // Check the subtype
             switch(hdr->subtype)
             {
-                case PLAYER_WSN_DATA:
+                case PLAYER_WSN_DATA_STATE:
                     wdata = (player_wsn_data_t*)data;
                     fprintf(this->file,"%d %d %d %f %f %f %f %f %f %f %f %f %f",
                             wdata->node_type,
@@ -1610,7 +1610,7 @@ WriteLog::WriteDIO(player_msghdr_t* hdr, void* data)
             fprintf(this->file, "%04d ", inputs->count);
 
             for (uint32_t mask(1); mask != (1ul << inputs->count); mask <<= 1)
-              fprintf(this->file, "%d ", !!(mask & inputs->digin));
+              fprintf(this->file, "%d ", !!(mask & inputs->bits));
 
             return 0;
           }
@@ -1644,7 +1644,7 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
     case PLAYER_MSGTYPE_DATA:
       // Check the subtype
       switch (hdr->subtype) {
-        case PLAYER_RFID_DATA: {
+        case PLAYER_RFID_DATA_TAGS: {
             player_rfid_data_t* rdata(static_cast<player_rfid_data_t*>(data));
 
             if (rdata->tags_count > PLAYER_RFID_MAX_TAGS) {
@@ -1695,18 +1695,7 @@ WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
       // Check the subtype
       switch(hdr->subtype)
       {
-/*        case PLAYER_IR_DATA_GEOM:
-          // Format:
-          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
-          geom = (player_ir_pose_t*)data;
-          fprintf(this->file, "%u ", geom->poses_count);
-          for(i=0;i<geom->poses_count;i++)
-            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
-                    geom->poses[i].px,
-                    geom->poses[i].py,
-                    geom->poses[i].pa);
-          return(0);
-*/
+
         case PLAYER_IR_DATA_RANGES:
           // Format:
           //   bumpers_count bumper0 bumper1 ...
@@ -1724,7 +1713,7 @@ WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
     case PLAYER_MSGTYPE_RESP_ACK:
       switch(hdr->subtype)
       {
-        case PLAYER_IR_POSE:
+        case PLAYER_IR_REQ_POSE:
           // Format:
           //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
           geom = (player_ir_pose_t*)data;
@@ -1790,7 +1779,7 @@ WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
     case PLAYER_MSGTYPE_RESP_ACK:
       switch(hdr->subtype)
       {
-        case PLAYER_BUMPER_GET_GEOM:
+        case PLAYER_BUMPER_REQ_GET_GEOM:
           // Format:
           //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
           geom = (player_bumper_geom_t*)data;

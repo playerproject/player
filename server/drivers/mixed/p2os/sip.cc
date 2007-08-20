@@ -151,7 +151,7 @@ void SIP::Fill(player_p2os_data_t* data)
   ///////////////////////////////////////////////////////////////
   // digital I/O
   data->dio.count = (unsigned char)8;
-  data->dio.digin = (unsigned int)this->digin;
+  data->dio.bits = (unsigned int)this->digin;
 
   ///////////////////////////////////////////////////////////////
   // analog I/O

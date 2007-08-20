@@ -56,13 +56,13 @@ TODO:
 @par Supported configuration requests
 
 - The @ref interface_position2d interface supports:
-  - PLAYER_POSITION_GET_GEOM_REQ
-  - PLAYER_POSITION_MOTOR_POWER_REQ
-  - PLAYER_POSITION_VELOCITY_MODE_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_SET_ODOM_REQ
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+  - PLAYER_POSITION2D_REQ_VELOCITY_MODE
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_SET_ODOM
 - The @ref interface_ir interface supports:
-  - PLAYER_IR_POSE_REQ
+  - PLAYER_IR_REQ_POSE
 
 @par Configuration file options
 
@@ -163,7 +163,7 @@ int Khepera::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void
 	assert(hdr);
 	assert(data);
 
-	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_addr))
+	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_addr))
 	{
 		Publish(ir_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geometry->ir, sizeof(geometry->ir));
 		return 0;
@@ -261,9 +261,6 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
     geometry->PortName = strdup(cf->ReadString(section, "port", KHEPERA_DEFAULT_SERIAL_PORT));
   if (geometry->scale == 0)
     geometry->scale = cf->ReadFloat(section, "scale_factor", KHEPERA_DEFAULT_SCALE);
-
-  // set sub type here
-//  geometry->position.subtype = PLAYER_POSITION_GET_GEOM_REQ;
 
   geometry->encoder_res = cf->ReadFloat(section,"encoder_res", KHEPERA_DEFAULT_ENCODER_RES);
 

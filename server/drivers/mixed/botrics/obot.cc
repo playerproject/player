@@ -787,7 +787,7 @@ int Obot::ProcessMessage(MessageQueue * resp_queue,
                                 PLAYER_POSITION2D_REQ_RESET_ODOM,
                                 this->position_addr))
   {
-    if(hdr->size != sizeof(player_position2d_reset_odom_config_t))
+    if(hdr->size != sizeof(player_null_t))
     {
       PLAYER_WARN("Arg to odometry reset requests wrong size; ignoring");
       return(-1);

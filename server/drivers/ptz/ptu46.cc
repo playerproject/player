@@ -41,7 +41,7 @@ the RWI b21r robot). This driver will probably work with other directed
 perceptions pan tilt units, please let me know if you have tested it.
 
 The ptu46 driver supports both position and velocity control, via the
-PLAYER_PTZ_CONTROL_MODE_REQ request.
+PLAYER_PTZ_REQ_CONTROL_MODE request.
 
 @par Compile-time dependencies
 
@@ -57,7 +57,7 @@ PLAYER_PTZ_CONTROL_MODE_REQ request.
 
 @par Configuration requests
 
-- PLAYER_PTZ_CONTROL_MODE_REQ 
+- PLAYER_PTZ_REQ_CONTROL_MODE 
 
 @par Configuration file options
 

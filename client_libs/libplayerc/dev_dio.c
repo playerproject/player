@@ -97,19 +97,19 @@ void playerc_dio_putmsg(playerc_dio_t *device, player_msghdr_t *header,
      (header->subtype == PLAYER_DIO_DATA_VALUES))
   {
     device->count = data->count;
-    device->digin = data->digin;
+    device->digin = data->bits;
   }
 }
 
 /* Set the output for the dio device. */
-int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout)
+int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t bits)
 {
-  player_dio_cmd_t cmd;
+  player_dio_data_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
 
   cmd.count = output_count;
-  cmd.digout = digout;
+  cmd.bits = bits;
 
   return playerc_client_write(device->info.client,
     &device->info, PLAYER_DIO_CMD_VALUES,&cmd,NULL);

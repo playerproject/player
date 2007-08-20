@@ -33,7 +33,7 @@ obstacle.
 
 @par Configuration requests
 
-- PLAYER_POSITION2D_MOTOR_POWER_REQ : if motor is switched on then we
+- PLAYER_POSITION2D_REQ_MOTOR_POWER : if motor is switched on then we
   reset the 'safe state' so robot can move with a bump panel active
 - all other requests are just passed on to the underlying @ref
   interface_position2d device

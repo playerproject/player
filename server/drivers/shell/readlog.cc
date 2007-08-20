@@ -1848,7 +1848,7 @@ int ReadLog::ParseWSN(player_devaddr_t id,
         case PLAYER_MSGTYPE_DATA:
             switch(subtype)
             {
-                case PLAYER_WSN_DATA:
+                case PLAYER_WSN_DATA_STATE:
                 {
                     if(token_count < 20)
                     {
@@ -2216,7 +2216,7 @@ int ReadLog::ParseDIO(player_devaddr_t id, unsigned short type,
             }
 
             inputs.count = atoi(tokens[7]);
-            inputs.digin = 0;
+            inputs.bits = 0;
 
             if (token_count - 8 != static_cast<int>(inputs.count)) {
               PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
@@ -2233,7 +2233,7 @@ int ReadLog::ParseDIO(player_devaddr_t id, unsigned short type,
             char **t(tokens + 8);
             for (uint32_t mask(1); mask != (1ul << inputs.count);
                  mask <<=1, ++t) {
-              if (strcmp(*t, "1") == 0) inputs.digin |= mask;
+              if (strcmp(*t, "1") == 0) inputs.bits |= mask;
             }
 
             Publish(id, NULL, type, subtype, (void *)&inputs, sizeof(inputs),
@@ -2261,7 +2261,7 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
   switch (type) {
     case PLAYER_MSGTYPE_DATA:
       switch (subtype) {
-        case PLAYER_RFID_DATA: {
+        case PLAYER_RFID_DATA_TAGS: {
             player_rfid_data_t rdata;
 
             if (token_count < 8) {

@@ -25,7 +25,7 @@
 #include "audio_sample.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-// Describes a prestored sample for playing with PLAYER_AUDIO_SAMPLE_PLAY_CMD
+// Describes a prestored sample for playing with PLAYER_AUDIO_CMD_SAMPLE_PLAY
 typedef struct StoredSample
 {
 	AudioSample *sample;

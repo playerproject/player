@@ -80,7 +80,7 @@ void playerc_rfid_putmsg (playerc_rfid_t *device,
     int i, j;
 
     if((header->type == PLAYER_MSGTYPE_DATA) &&
-       (header->subtype == PLAYER_RFID_DATA))
+       (header->subtype == PLAYER_RFID_DATA_TAGS))
     {
 	player_rfid_data_t* rfid_data = (player_rfid_data_t*)data;
 	device->tags_count = rfid_data->tags_count;

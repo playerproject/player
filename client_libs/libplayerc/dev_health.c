@@ -80,7 +80,7 @@ void playerc_health_putmsg (playerc_health_t *device,
 {
 
     if((header->type == PLAYER_MSGTYPE_DATA) &&
-       (header->subtype == PLAYER_HEALTH_DATA))
+       (header->subtype == PLAYER_HEALTH_DATA_STATE))
     {
 	device->cpu_usage.idle    = data->cpu_usage.idle;
 	device->cpu_usage.system    = data->cpu_usage.system;

@@ -464,7 +464,7 @@ int CameraV4L::ProcessMessage(MessageQueue* resp_queue,
 
   /* We currently don't support any messages, but if we do...
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                           PLAYER_CAMERA_GET_GEOM, this->device_addr))
+                           PLAYER_CAMERA_REQ_GET_GEOM, this->device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_data_t));
     ProcessGetGeom(hdr, *reinterpret_cast<player_camera_data_t *> (data));

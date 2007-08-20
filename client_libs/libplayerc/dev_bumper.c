@@ -113,7 +113,7 @@ void playerc_bumper_putmsg(playerc_bumper_t *device,
       device->bumpers[i] = bdata->bumpers[i];
   }
   else if((header->type == PLAYER_MSGTYPE_RESP_ACK) &&
-     (header->subtype == PLAYER_BUMPER_GET_GEOM))
+     (header->subtype == PLAYER_BUMPER_REQ_GET_GEOM))
   {
   	player_bumper_geom_t * bgeom = (player_bumper_geom_t *) data;
   	
@@ -132,9 +132,9 @@ int playerc_bumper_get_geom(playerc_bumper_t *device)
   int i;
   player_bumper_geom_t config;
 
-//  config.subtype = PLAYER_BUMPER_GET_GEOM_REQ;
+//  config.subtype = PLAYER_BUMPER_REQ_GET_GEOM;
 
-  if (playerc_client_request(device->info.client, &device->info, PLAYER_BUMPER_GET_GEOM,
+  if (playerc_client_request(device->info.client, &device->info, PLAYER_BUMPER_REQ_GET_GEOM,
                                NULL, &config, sizeof(config)) < 0)
     return -1;
   device->pose_count = config.bumper_def_count;

@@ -49,8 +49,8 @@ gdk_pixbuf_scale_simple() function, using the GDK_INTERP_HYPER algorithm.
 
 @par Configuration requests
 
-- PLAYER_MAP_GET_INFO_REQ
-- PLAYER_MAP_GET_DATA_REQ
+- PLAYER_MAP_REQ_GET_INFO
+- PLAYER_MAP_REQ_GET_DATA
 
 @par Configuration file options
 

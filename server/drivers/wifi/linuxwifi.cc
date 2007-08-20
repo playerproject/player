@@ -51,7 +51,7 @@ our own orinoco cards.
 
 @par Configuration requests
 
-- PLAYER_WIFI_MAC_REQ
+- PLAYER_WIFI_REQ_MAC
 
 @par Configuration file options
 
@@ -274,7 +274,7 @@ int LinuxWiFi::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, vo
 	assert(hdr);
 	assert(data);
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_MAC, device_addr))
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_WIFI_REQ_MAC, device_addr))
 	{
 		player_wifi_mac_req_t req;
   		GetMACAddress((char *)req.mac,32);

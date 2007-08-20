@@ -59,11 +59,11 @@ if we're reading drive commands, for example, we can be sure to get a
 
 @par Configuration requests
 
-- PLAYER_MCOM_PUSH_REQ
-- PLAYER_MCOM_POP_REQ
-- PLAYER_MCOM_READ_REQ
-- PLAYER_MCOM_CLEAR_REQ
-- PLAYER_MCOM_SET_CAPACITY_REQ
+- PLAYER_MCOM_REQ_PUSH
+- PLAYER_MCOM_REQ_POP
+- PLAYER_MCOM_REQ_READ
+- PLAYER_MCOM_REQ_CLEAR
+- PLAYER_MCOM_REQ_SET_CAPACITY
 
 @par Configuration file options
 
@@ -132,14 +132,14 @@ int LifoMCom::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
   player_mcom_config_t* cfg = reinterpret_cast<player_mcom_config_t*> (data);
   cfg->type = ntohs(cfg->type);
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_PUSH, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_REQ_PUSH, device_id))
   {
     Data.Push(cfg->data, cfg->type, cfg->channel);
   	*resp_len = 0;
   	return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_POP, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_REQ_POP, device_id))
   {
   	assert(*resp_data >= sizeof(player_mcom_return_t));
   	player_mcom_return_t & ret = *reinterpret_cast<player_mcom_return_t *> (resp_data);
@@ -158,7 +158,7 @@ int LifoMCom::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
     }
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_READ, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_REQ_READ, device_id))
   {
   	assert(*resp_data >= sizeof(player_mcom_return_t));
   	player_mcom_return_t & ret = *reinterpret_cast<player_mcom_return_t *> (resp_data);
@@ -179,14 +179,14 @@ int LifoMCom::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t *
     }
   }      
       
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_CLEAR, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_REQ_CLEAR, device_id))
   {
     Data.Clear(cfg->type, cfg->channel);
   	*resp_len = 0;
   	return PLAYER_MSGTYPE_RESP_ACK;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_SET_CAPACITY, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MCOM_REQ_SET_CAPACITY, device_id))
   {
     Data.SetCapacity(cfg->type, cfg->channel, cfg->data.data[0]);
   	*resp_len = 0;
@@ -209,11 +209,11 @@ LifoMCom::PutConfig(player_device_id_t id, void *client,
 
     // arguments to PutReply are: (void* client, ushort replytype, struct timeval* ts, void* data, size_t datalen)
     switch(cfg->command) {
-        case PLAYER_MCOM_PUSH_REQ:
+        case PLAYER_MCOM_REQ_PUSH:
             Data.Push(cfg->data, cfg->type, cfg->channel);
             PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL);
             return 0;
-        case PLAYER_MCOM_POP_REQ:
+        case PLAYER_MCOM_REQ_POP:
             player_mcom_return_t ret;
             ret.data = Data.Pop(cfg->type, cfg->channel);
             if(ret.data.full) {
@@ -226,7 +226,7 @@ LifoMCom::PutConfig(player_device_id_t id, void *client,
                 return 0;
             }
             break;
-        case PLAYER_MCOM_READ_REQ:
+        case PLAYER_MCOM_REQ_READ:
             ret.data = Data.Read(cfg->type, cfg->channel);
             if(ret.data.full) {
                 ret.type = htons(cfg->type);
@@ -240,12 +240,12 @@ LifoMCom::PutConfig(player_device_id_t id, void *client,
                 return 0;
             }
             break;
-         case PLAYER_MCOM_CLEAR_REQ:
+         case PLAYER_MCOM_REQ_CLEAR:
 	    Data.Clear(cfg->type, cfg->channel);
             PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL);
             return 0;
 	    
-    case PLAYER_MCOM_SET_CAPACITY_REQ:
+    case PLAYER_MCOM_REQ_SET_CAPACITY:
       
       Data.SetCapacity(cfg->type, cfg->channel, cfg->data.data[0]);
       PutReply(client, PLAYER_MSGTYPE_RESP_ACK, NULL);

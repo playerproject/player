@@ -41,12 +41,12 @@ http://prt.fernuni-hagen.de/lehre/KURSE/PRT001/course_main/node15.html for
 more details).
 
 When a positioning command of the limb is received via
-PLAYER_LIMB_SETPOSITION_CMD or PLAYER_LIMB_SETPOSE_CMD, the driver computes
+PLAYER_LIMB_CMD_SETPOSITION or PLAYER_LIMB_CMD_SETPOSE, the driver computes
 the joint commands and sends them in ascending order (base to end effector)
-to the actarray interface using PLAYER_ACTARRAY_POS_CMD.
+to the actarray interface using PLAYER_ACTARRAY_CMD_POS.
 
-When a homing command of the limb is received via PLAYER_LIMB_HOME_CMD, the
-driver will send a PLAYER_ACTARRAY_HOME_CMD to every joint provided by the
+When a homing command of the limb is received via PLAYER_LIMB_CMD_HOME, the
+driver will send a PLAYER_ACTARRAY_CMD_HOME to every joint provided by the
 actarray interface in descending order (end effector to base).
 
 The driver also computes the current pose of the end effector using forward
@@ -67,7 +67,7 @@ interface) and returns it as a data packet.
 
 @par Configuration requests
 
-- PLAYER_LIMB_SPEED_REQ
+- PLAYER_LIMB_REQ_SPEED
   
 @par Configuration file options
 
@@ -499,7 +499,7 @@ void
 
     this->actarray_device->PutMsg (this->InQueue, 
                                    PLAYER_MSGTYPE_CMD,
-                                   PLAYER_ACTARRAY_HOME_CMD,
+                                   PLAYER_ACTARRAY_CMD_HOME,
                                    (void*)&cmd,
                                    sizeof (cmd), NULL);
     if (debug)
@@ -581,7 +581,7 @@ void
     
     this->actarray_device->PutMsg (this->InQueue, 
                                    PLAYER_MSGTYPE_CMD,
-                                   PLAYER_ACTARRAY_POS_CMD,
+                                   PLAYER_ACTARRAY_CMD_POS,
                                    (void*)&cmd,
                                    sizeof (cmd), NULL);
     int p_state = actarray_state[i];
@@ -615,10 +615,10 @@ int
 {
   // Check for capabilities requests first
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
-  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_SPEED_REQ);
-  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_SETPOSE_CMD);
-  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_SETPOSITION_CMD);
-  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_HOME_CMD);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_REQ_SPEED);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_SETPOSE);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_SETPOSITION);
+  HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_HOME);
   
   // First look whether we have incoming data from the actarray interface
   if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, 
@@ -631,7 +631,7 @@ int
 
   // Set the desired position to the actarray driver
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
-    PLAYER_LIMB_SETPOSE_CMD, device_addr))
+    PLAYER_LIMB_CMD_SETPOSE, device_addr))
   {
     player_limb_setpose_cmd_t & command = 
       *reinterpret_cast<player_limb_setpose_cmd_t * > (data);
@@ -656,7 +656,7 @@ int
 
   // Set the desired position to the actarray driver
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
-    PLAYER_LIMB_SETPOSITION_CMD, device_addr))
+    PLAYER_LIMB_CMD_SETPOSITION, device_addr))
   {
     player_limb_setposition_cmd_t & command = 
       *reinterpret_cast<player_limb_setposition_cmd_t * > (data);
@@ -679,7 +679,7 @@ int
 
   // Home the limb (we do this by homing all the joints)
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
-    PLAYER_LIMB_HOME_CMD, device_addr))
+    PLAYER_LIMB_CMD_HOME, device_addr))
   {
     homing_thread = true;
     // Start the actarray homing thread
@@ -690,7 +690,7 @@ int
 
   // POWER_REQ not implemented
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
-	PLAYER_LIMB_POWER_REQ, device_addr))
+	PLAYER_LIMB_REQ_POWER, device_addr))
   {
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
     return (-1);
@@ -698,7 +698,7 @@ int
 
   // BRAKES_REQ not implemented
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
-	PLAYER_LIMB_BRAKES_REQ, device_addr))
+	PLAYER_LIMB_REQ_BRAKES, device_addr))
   {
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
     return (-1);
@@ -706,7 +706,7 @@ int
 
   // GEOM_REQ not implemented
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
-	PLAYER_LIMB_GEOM_REQ, device_addr))
+	PLAYER_LIMB_REQ_GEOM, device_addr))
   {
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
     return (-1);
@@ -714,7 +714,7 @@ int
 
   // SPEED_REQ - Set the speed on all joints equal to the EE
   else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
-	PLAYER_LIMB_SPEED_REQ, device_addr))
+	PLAYER_LIMB_REQ_SPEED, device_addr))
   {
     player_limb_speed_req_t & cfg = 
       *reinterpret_cast<player_limb_speed_req_t *> (data);
@@ -729,7 +729,7 @@ int
       Message *msg;
       if (!(msg = this->actarray_device->Request (this->InQueue, 
                                                   PLAYER_MSGTYPE_REQ,
-                                                  PLAYER_ACTARRAY_SPEED_REQ,
+                                                  PLAYER_ACTARRAY_REQ_SPEED,
                                                   (void*)&act_cfg,
                                                   sizeof (act_cfg), NULL, false)))
       {

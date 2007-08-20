@@ -115,7 +115,7 @@ void playerc_ir_putmsg(playerc_ir_t *device,
 // rather than returning it to the caller.
 int playerc_ir_get_geom(playerc_ir_t *device)
 {
-  return playerc_client_request(device->info.client, &device->info,PLAYER_IR_POSE,
+  return playerc_client_request(device->info.client, &device->info,PLAYER_IR_REQ_POSE,
                                0, &device->poses, sizeof(device->poses));
 }
 

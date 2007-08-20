@@ -66,22 +66,22 @@ The rflex driver provides the following device interfaces, some of them named:
 @par Supported configuration requests
 
 - The @ref interface_position2d interface supports:
-  - PLAYER_POSITION_SET_ODOM_REQ
-  - PLAYER_POSITION_MOTOR_POWER_REQ
-  - PLAYER_POSITION_VELOCITY_MODE_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+  - PLAYER_POSITION2D_REQ_VELOCITY_MODE
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_GET_GEOM
 - The @ref interface_ir interface supports:
-  - PLAYER_IR_POWER_REQ
-  - PLAYER_IR_POSE_REQ
+  - PLAYER_IR_REQ_POWER
+  - PLAYER_IR_REQ_POSE
 - The "sonar" @ref interface_sonar interface supports:
-  - PLAYER_SONAR_POWER_REQ
-  - PLAYER_SONAR_GET_GEOM_REQ
+  - PLAYER_SONAR_REQ_POWER
+  - PLAYER_SONAR_REQ_GET_GEOM
 - The "sonar2" @ref interface_sonar interface supports:
-  - PLAYER_SONAR_POWER_REQ
-  - PLAYER_SONAR_GET_GEOM_REQ
+  - PLAYER_SONAR_REQ_POWER
+  - PLAYER_SONAR_REQ_GET_GEOM
 - The @ref interface_bumper interface supports:
-  - PLAYER_BUMPER_GET_GEOM_REQ
+  - PLAYER_BUMPER_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -418,7 +418,7 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     Publish(sonar_id_2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM,
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_REQ_GET_GEOM,
                         bumper_id))
   {
     assert(hdr->size == 0);
@@ -434,14 +434,14 @@ int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
     Publish(bumper_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POSE, ir_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_id))
   {
     Lock();
     Publish(ir_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &rflex_configs.ir_poses,sizeof(rflex_configs.ir_poses));
     Unlock();
     return 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_POWER, ir_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POWER, ir_id))
   {
     assert(hdr->size == sizeof(player_ir_power_req_t));
     player_ir_power_req_t * req = reinterpret_cast<player_ir_power_req_t*> (data);

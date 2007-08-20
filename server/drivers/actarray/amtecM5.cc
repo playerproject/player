@@ -517,7 +517,7 @@ int AmtecM5::HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* 
 
         bool handled(false);
         
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_POWER_REQ, device_addr))	{
+	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_POWER, device_addr))	{
 		//Got a Power-Request
 		int value =  ((reinterpret_cast<player_actarray_power_config_t*>(data))->value);
 		//Do something with the powercubes to turn them on and off
@@ -559,10 +559,10 @@ int AmtecM5::HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* 
 		}
 
 		//Respond with an acknowledgment
-		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_POWER_REQ);
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_POWER);
                 handled=true;
 
-	}  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_GET_GEOM_REQ,device_addr))  {
+	}  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_GET_GEOM,device_addr))  {
 
 		//printf("Get-Geom Request.\n");
 
@@ -625,10 +625,10 @@ int AmtecM5::HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* 
 		aaGeom.base_orientation.ppitch = 0;
 		aaGeom.base_orientation.pyaw = 0;
 
-		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_GET_GEOM_REQ, &aaGeom, sizeof (aaGeom), NULL);
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_GET_GEOM, &aaGeom, sizeof (aaGeom), NULL);
                 handled=true;
 
-	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_SPEED_REQ,device_addr)) {
+	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_SPEED,device_addr)) {
 		//printf("Speed Request. (Configuration of the speed for the next movements)\n");
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -653,10 +653,10 @@ int AmtecM5::HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* 
 
 
 
-		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_SPEED_REQ);
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_SPEED);
                 handled=true;
 
-	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_ACCEL_REQ,device_addr)) {
+	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_ACCEL,device_addr)) {
 		
                 //printf("Accel Request. (Configuration of the acceleration for the next movements)\n");
 
@@ -682,16 +682,16 @@ int AmtecM5::HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* 
 
 		}
 
-		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_ACCEL_REQ);
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_ACCEL);
                 handled=true;
 
-	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_BRAKES_REQ,device_addr)) {
+	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_BRAKES,device_addr)) {
                 if (debug_level) {
                         printf("Brakes Request!\n");
                         printf("  Brakes are handled automatically by the powercubes. Nothing to do.\n");
                 }
 
-		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_BRAKES_REQ);
+		Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_BRAKES);
                 handled=true;
 	}
 
@@ -712,7 +712,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
         bool handled(false);
         
 	//If the command matches any of the following, an action is taken. If not, -1 is returned
-	if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,device_addr)) {
+	if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_POS,device_addr)) {
 		//All we get is a void pointer. Cast it to the right structure
 		player_actarray_position_cmd_t * cmd = reinterpret_cast<player_actarray_position_cmd_t*>(data);
 
@@ -748,7 +748,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 		}
                 handled=true;
                 
-	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_SPEED_CMD,device_addr)) {
+	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_SPEED,device_addr)) {
 		//We received a speed-cmd
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -773,7 +773,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 
                 handled=true;
 
-	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,device_addr)) {
+	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_HOME,device_addr)) {
 		//We received a home-cmd
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -806,7 +806,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 		}
                 handled=true;
 
-	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CURRENT_CMD,device_addr)) {
+	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_CURRENT,device_addr)) {
 		//We received a current-cmd
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -831,7 +831,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 
                 handled=true;
 
-	}  else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_MULTI_CURRENT_CMD,device_addr)) {
+	}  else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_MULTI_CURRENT,device_addr)) {
 		//We received a current-cmd for several joints
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -864,7 +864,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                         cout << "WARNING: multi_current_cmd: The # of current commands must equal the # of modules or to the maximum # of modules (PLAYER_ACTARRAY_NUM_ACTUATORS). Ignoring command.\n";
                 }
                 
-	}  else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_MULTI_POS_CMD,device_addr)) {
+	}  else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_MULTI_POS,device_addr)) {
 		//We received a position-cmd for several joints
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -914,7 +914,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                 }
                 
 
-	}   else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_MULTI_SPEED_CMD,device_addr)) {
+	}   else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_MULTI_SPEED,device_addr)) {
 		//We received a position-cmd for several joints
 
 		//All we get is a void pointer. Cast it to the right structure

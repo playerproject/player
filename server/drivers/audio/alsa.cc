@@ -35,15 +35,15 @@ kernels (and before via patches/separate libraries).
 
 Not all of the audio interface is supported. Currently supported features are:
 
-PLAYER_AUDIO_WAV_PLAY_CMD - Play raw PCM wave data
-PLAYER_AUDIO_SAMPLE_PLAY_CMD - Play locally stored and remotely provided samples
-PLAYER_AUDIO_WAV_STREAM_REC_CMD - Toggle streamed-to-client recording
-PLAYER_AUDIO_MIXER_CHANNEL_CMD - Change volume levels
-PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ - Get channel details
-PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ - Get volume levels
-PLAYER_AUDIO_SAMPLE_LOAD_REQ - Store samples provided by remote clients (max 1MB)
-PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ - Send stored samples to remote clients (max 1MB)
-PLAYER_AUDIO_SAMPLE_REC_REQ - Record new samples directly on the server
+PLAYER_AUDIO_CMD_WAV_PLAY - Play raw PCM wave data
+PLAYER_AUDIO_CMD_SAMPLE_PLAY - Play locally stored and remotely provided samples
+PLAYER_AUDIO_CMD_WAV_STREAM_REC - Toggle streamed-to-client recording
+PLAYER_AUDIO_CMD_MIXER_CHANNEL - Change volume levels
+PLAYER_AUDIO_REQ_MIXER_CHANNEL_LIST - Get channel details
+PLAYER_AUDIO_REQ_MIXER_CHANNEL_LEVEL - Get volume levels
+PLAYER_AUDIO_REQ_SAMPLE_LOAD - Store samples provided by remote clients (max 1MB)
+PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE - Send stored samples to remote clients (max 1MB)
+PLAYER_AUDIO_REQ_SAMPLE_REC - Record new samples directly on the server
 
 Known bugs:
 - Sounds may skip just as they finish playing. This is something to do with the
@@ -52,7 +52,7 @@ Known bugs:
 @par Samples
 
 Locally stored samples are preferred to samples loaded over the network or using
-the PLAYER_AUDIO_WAV_PLAY_CMD message for a number of reasons:
+the PLAYER_AUDIO_CMD_WAV_PLAY message for a number of reasons:
 
 - It takes time to transfer large quantities of wave data over the network.
 - Remotely provided samples are stored in memory, local samples are only loaded
@@ -66,11 +66,11 @@ seconds of audio data at 44100Hz, 16 bit, stereo. Local samples can be as big
 as you have memory. A future version of the driver will implement play-on-read,
 meaning local samples will only be limited by disc space to store them.
 
-When retrieving samples from the server via the PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ
+When retrieving samples from the server via the PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE
 request, note that any sample with a data length greater than
 PLAYER_AUDIO_WAV_BUFFER_SIZE will be truncated to this size.
 
-When using the PLAYER_AUDIO_SAMPLE_LOAD_REQ and PLAYER_AUDIO_SAMPLE_REC_REQ
+When using the PLAYER_AUDIO_REQ_SAMPLE_LOAD and PLAYER_AUDIO_REQ_SAMPLE_REC
 messages to store samples, currently only appending and overwriting existing
 samples is allowed. Trying to store at a specific index greater than the number
 of currently stored samples will result in an error. Note that the samples
@@ -112,8 +112,8 @@ The driver provides a single @ref interface_audio interface.
   - If usequeue is false, this will be ignored.
 - usequeue (boolean)
   - Default: true
-  - Turns the queuing system on/off. When true, all PLAYER_AUDIO_WAV_PLAY_CMD
-    and PLAYER_AUDIO_SAMPLE_PLAY_CMD commands will be added to a queue and
+  - Turns the queuing system on/off. When true, all PLAYER_AUDIO_CMD_WAV_PLAY
+    and PLAYER_AUDIO_CMD_SAMPLE_PLAY commands will be added to a queue and
     played in order of request. When off, sending a new command will stop the
     currently playing sound and start the new one.
 - recdevice (string)
@@ -1265,7 +1265,7 @@ void Alsa::PublishRecordedData (void)
 		packet.data_count = bytesToCopy;
 
 		// Publish this packet
-		Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_WAV_REC_DATA, reinterpret_cast<void*> (&packet), sizeof (player_audio_wav_t), NULL);
+		Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_WAV_REC, reinterpret_cast<void*> (&packet), sizeof (player_audio_wav_t), NULL);
 		delete[] packet.data;
 	}
 	// Set the local record buffer position back to the start
@@ -1937,7 +1937,7 @@ void Alsa::PublishMixerData (void)
 	player_audio_mixer_channel_list_t data;
 
 	MixerLevelsToPlayer (&data);
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_MIXER_CHANNEL_DATA, reinterpret_cast<void*> (&data), sizeof (player_audio_mixer_channel_list_t), NULL);
+	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_MIXER_CHANNEL, reinterpret_cast<void*> (&data), sizeof (player_audio_mixer_channel_list_t), NULL);
 }
 
 // Converts an element level from a long to a float between 0 and 1
@@ -2338,7 +2338,7 @@ void Alsa::Main (void)
 }
 
 
-// Sends a PLAYER_AUDIO_STATE_DATA message describing the current state of the driver
+// Sends a PLAYER_AUDIO_DATA_STATE message describing the current state of the driver
 void Alsa::SendStateMessage (void)
 {
 	player_audio_state_t msg;
@@ -2351,7 +2351,7 @@ void Alsa::SendStateMessage (void)
 	if (msg.state == 0)
 		msg.state = PLAYER_AUDIO_STATE_STOPPED;
 
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_STATE_DATA, reinterpret_cast<void*> (&msg), sizeof (player_audio_state_t), NULL);
+	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_STATE, reinterpret_cast<void*> (&msg), sizeof (player_audio_state_t), NULL);
 }
 
 
@@ -2474,7 +2474,7 @@ int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_q
 		// Update the pointer
 		oldSample->sample = newSample;
 	}
-	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_LOAD_REQ, NULL, 0, NULL);
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_REQ_SAMPLE_LOAD, NULL, 0, NULL);
 	return 0;
 }
 
@@ -2500,7 +2500,7 @@ int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *re
 		memset (&result, 0, sizeof (player_audio_sample_t));
 		result.index = data->index;
 		sample->sample->ToPlayer (&result.sample);
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, &result, sizeof (player_audio_sample_t), NULL);
+		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE, &result, sizeof (player_audio_sample_t), NULL);
 		return 0;
 	}
 	return -1;
@@ -2556,7 +2556,7 @@ int Alsa::HandleSampleRecordReq (player_audio_sample_rec_req_t *data, MessageQue
 	player_audio_sample_rec_req_t response;
 	response.index = recDest;
 	response.length = data->length;
-	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_SAMPLE_REC_REQ, &response, sizeof (player_audio_sample_rec_req_t), NULL);
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_REQ_SAMPLE_REC, &response, sizeof (player_audio_sample_rec_req_t), NULL);
 	return 0;
 }
 
@@ -2564,7 +2564,7 @@ int Alsa::HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *d
 {
 	player_audio_mixer_channel_list_detail_t result;
 	MixerDetailsToPlayer (&result);
-	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, &result, sizeof (player_audio_mixer_channel_list_detail_t), NULL);
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_REQ_MIXER_CHANNEL_LIST, &result, sizeof (player_audio_mixer_channel_list_detail_t), NULL);
 
 	return 0;
 }
@@ -2573,7 +2573,7 @@ int Alsa::HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, M
 {
 	player_audio_mixer_channel_list_t result;
 	MixerLevelsToPlayer (&result);
-	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ, &result, sizeof (player_audio_mixer_channel_list_t), NULL);
+	Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_AUDIO_REQ_MIXER_CHANNEL_LEVEL, &result, sizeof (player_audio_mixer_channel_list_t), NULL);
 
 	return 0;
 }
@@ -2585,62 +2585,62 @@ int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *da
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);
 	if (pbHandle)
 	{
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD);
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD);
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ);
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_WAV_PLAY);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_SAMPLE_PLAY);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_SAMPLE_LOAD);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE);
 	}
 	if (recHandle)
 	{
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD);
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_REC_REQ);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_WAV_STREAM_REC);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_SAMPLE_REC);
 	}
 	if (mixerHandle)
 	{
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD);
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ);
-		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_MIXER_CHANNEL);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_MIXER_CHANNEL_LIST);
+		HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_MIXER_CHANNEL_LEVEL);
 	}
 
 	// Commands
-	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_PLAY_CMD, device_addr) && pbHandle)
+	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_WAV_PLAY, device_addr) && pbHandle)
 	{
 		HandleWavePlayCmd (reinterpret_cast<player_audio_wav_t*> (data));
 		return 0;
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD, device_addr) && pbHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_SAMPLE_PLAY, device_addr) && pbHandle)
 	{
 		HandleSamplePlayCmd (reinterpret_cast<player_audio_sample_item_t*> (data));
 		return 0;
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_WAV_STREAM_REC_CMD, device_addr) && recHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_WAV_STREAM_REC, device_addr) && recHandle)
 	{
 		HandleRecordCmd (reinterpret_cast<player_bool_t*> (data));
 		return 0;
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_MIXER_CHANNEL_CMD, device_addr) && mixerHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_MIXER_CHANNEL, device_addr) && mixerHandle)
 	{
 		HandleMixerChannelCmd (reinterpret_cast<player_audio_mixer_channel_list_t*> (data));
 		return 0;
 	}
 	// Requests
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_LOAD_REQ, device_addr) && pbHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_SAMPLE_LOAD, device_addr) && pbHandle)
 	{
 		return HandleSampleLoadReq (reinterpret_cast<player_audio_sample_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ, device_addr) && pbHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE, device_addr) && pbHandle)
 	{
 		return HandleSampleRetrieveReq (reinterpret_cast<player_audio_sample_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_SAMPLE_REC_REQ, device_addr) && recHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_SAMPLE_REC, device_addr) && recHandle)
 	{
 		return HandleSampleRecordReq (reinterpret_cast<player_audio_sample_rec_req_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ, device_addr) && mixerHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_MIXER_CHANNEL_LIST, device_addr) && mixerHandle)
 	{
 		return HandleMixerChannelListReq (reinterpret_cast<player_audio_mixer_channel_list_detail_t*> (data), resp_queue);
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ, device_addr) && mixerHandle)
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_AUDIO_REQ_MIXER_CHANNEL_LEVEL, device_addr) && mixerHandle)
 	{
 		return HandleMixerChannelLevelReq (reinterpret_cast<player_audio_mixer_channel_list_t*> (data), resp_queue);
 	}

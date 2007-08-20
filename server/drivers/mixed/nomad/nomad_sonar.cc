@@ -53,7 +53,7 @@ information and an example.
 
 @par Configuration requests
 
-- PLAYER_POSITION_GET_GEOM_REQ
+- PLAYER_POSITION2D_REQ_GET_GEOM
   
 @par Configuration file options
 
@@ -185,7 +185,7 @@ int NomadSonar::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t
   assert(resp_data);
   assert(resp_len);
 	
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_GET_GEOM, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM, device_id))
   {
   	assert(*resp_len >= sizeof(player_sonar_geom_t));
   	player_sonar_geom_t & geom = *reinterpret_cast<player_sonar_geom_t *> (resp_data);
