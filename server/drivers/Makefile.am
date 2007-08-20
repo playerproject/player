@@ -24,4 +24,5 @@ rfid \
 wsn \
 imu \
 pointcloud3d \
-ranger
+ranger \
+vectormap

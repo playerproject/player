@@ -819,4 +819,40 @@ void map_destroy(map_t *map);
 void map_update(map_t *map);
 
 
+/***************************************************************************
+ * Vector Map device
+ ***************************************************************************/
+
+// Vector Map device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Map device proxy
+  playerc_vectormap_t *proxy;
+
+  // Timestamp on most recent data
+  double datatime;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  // Figures
+  rtk_fig_t *fig;
+
+} vectormap_t;
+
+
+// Create a map device
+vectormap_t *vectormap_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                    int index,  const char *drivername, int subscribe);
+
+// Destroy a map device
+void vectormap_destroy(vectormap_t *map);
+
+// Update a map device
+void vectormap_update(vectormap_t *map);
+
+
 #endif

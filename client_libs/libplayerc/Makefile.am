@@ -36,7 +36,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_graphics3d.c \
                         dev_gripper.c \
                         dev_health.c \
-			dev_imu.c \
+                        dev_imu.c \
                         dev_ir.c \
                         dev_laser.c \
                         dev_limb.c \
@@ -45,7 +45,7 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_map.c \
                         dev_opaque.c \
                         dev_planner.c \
-			dev_pointcloud3d.c \
+                        dev_pointcloud3d.c \
                         dev_position1d.c \
                         dev_position2d.c \
                         dev_position3d.c \
@@ -57,8 +57,9 @@ libplayerc_la_SOURCES = playerc.h \
                         dev_sonar.c \
                         dev_speech.c \
                         dev_speech_recognition.c \
+                        dev_vectormap.c \
                         dev_wifi.c \
-			dev_wsn.c
+                        dev_wsn.c
 
 #dev_joystick.c
 #dev_truth.c
@@ -70,6 +71,11 @@ libplayerc_la_LIBADD = $(top_builddir)/replace/*.lo
 if INCLUDE_JPEG
 libplayerc_la_LIBADD += $(top_builddir)/libplayerjpeg/*.lo
 endif
+if HAVE_GEOS
+libplayerc_la_LIBADD += $(GEOS_LIBS)
+endif
+
+
 
 libplayerc_includedir = $(includedir)/player-2.0/libplayerc
 libplayerc_include_HEADERS = playerc.h

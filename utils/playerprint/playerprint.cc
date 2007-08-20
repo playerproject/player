@@ -65,6 +65,7 @@ playerprint can print out data for the following kinds of devices:
 - @ref interface_sonar
 - @ref interface_speech
 - @ref interface_truth
+- @ref interface_vectormap
 - @ref interface_wifi
 
 @author Brian Gerkey
@@ -258,6 +259,9 @@ main(int argc, char **argv)
     case PLAYER_GPS_CODE:
       cp = (ClientProxy*)new GpsProxy(&client,g_index);
       break;
+    case PLAYER_VECTORMAP_CODE:
+      cp = (ClientProxy*)new VectorMapProxy(&client,g_index);
+      break;
 //    case PLAYER_TRUTH_CODE:
 //      cp = (ClientProxy*)new TruthProxy(&client,g_index);
 //      break;
@@ -362,6 +366,9 @@ main(int argc, char **argv)
         break;
       case PLAYER_GPS_CODE:
         std::cout << *reinterpret_cast<GpsProxy *> (cp);
+       break;
+      case PLAYER_VECTORMAP_CODE:
+        std::cout << *reinterpret_cast<VectorMapProxy *> (cp);
        break;
 //      case PLAYER_TRUTH_CODE:
 //        std::cout << *reinterpret_cast<TruthProxy *> (cp);

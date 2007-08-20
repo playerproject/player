@@ -377,6 +377,22 @@ typedef struct player_segment
   double y1;
 } player_segment_t;
 
+/** @brief A rectangular bounding box, used to define the origin and bounds of an object.
+* It is expected that x0 is less than x1 and y0 is less than y1. The points (x0,y0) and (x1,y1)
+* represent opposite sides of the rectangle.
+*/
+typedef struct player_extent2d
+{
+  /** Origin x [m] */
+  double x0;
+  /** Origin y [m] */
+  double y0;
+  /** Endpoints [m] */
+  double x1;
+  /** Endpoints [m] */
+  double y1;
+} player_extent2d_t;
+
 /** @brief A color descriptor */
 typedef struct player_color
 {

@@ -360,6 +360,14 @@ if test "x$have_compressBound" = "xno"; then
   AC_DEFINE(NEED_COMPRESSBOUND, 1, [Define to 1 if you do NOT have the compressBound function in libz])
 fi
 
+dnl Look for compress2 and compressBound in libz
+AC_CHECK_LIB(geos_c,GEOSGeomFromWKB_buf,
+             have_libgeos=yes
+             AC_DEFINE(HAVE_GEOS, 1, [Define to 1 if you have the geos library (libgeos_c). ])
+             AC_SUBST(GEOS_LIBS, -lgeos_c),
+             have_libgeos=no)
+AM_CONDITIONAL(HAVE_GEOS, test "x$have_libgeos" = "xyes")
+
 dnl Test for socklen_t and define it to int if it's not there.
 dnl Note that we can't simply use AC_CHECK_TYPE because socklen_t
 dnl isn't in the standard headers (autoconf-2.5 has better methods for this)
@@ -576,6 +584,7 @@ AC_OUTPUT(Makefile
           server/drivers/imu/Makefile
           server/drivers/pointcloud3d/Makefile
           server/drivers/ranger/Makefile
+          server/drivers/vectormap/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc
