@@ -69,7 +69,7 @@ See also the @ref driver_laserbarcode and
 
 @par Configuration requests
 
-- PLAYER_FIDUCIAL_GET_GEOM
+- PLAYER_FIDUCIAL_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -435,7 +435,7 @@ LaserBar::PutConfig(player_device_id_t id, void *client,
   subtype = ((uint8_t*) src)[0];
   switch (subtype)
   {
-    case PLAYER_FIDUCIAL_GET_GEOM:
+    case PLAYER_FIDUCIAL_REQ_GET_GEOM:
     {
       HandleGetGeom(client, src, len);
       break;

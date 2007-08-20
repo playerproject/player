@@ -68,7 +68,7 @@ the FOV setting in the configuration file.
 
 @par Configuration requests
 
-- PLAYER_PTZ_GENERIC_CONFIG_REQ
+- PLAYER_PTZ_REQ_GENERIC
 
 @par Configuration file options
 

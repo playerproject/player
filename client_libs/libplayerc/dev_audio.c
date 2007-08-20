@@ -84,7 +84,7 @@ void playerc_audio_putmsg(playerc_audio_t *device,
                              player_msghdr_t *header,
                              uint8_t *data, size_t len)
 {
-  if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_WAV_REC_DATA))
+  if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_WAV_REC))
   {
     assert(header->size > 0);
     player_audio_wav_t * wdata = (player_audio_wav_t *) data;
@@ -99,21 +99,21 @@ void playerc_audio_putmsg(playerc_audio_t *device,
       device->wav_data.format = wdata->format;
     }
   }
-  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_SEQ_DATA))
+  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_SEQ))
   {
     assert(header->size > 0);
     player_audio_seq_t * sdata = (player_audio_seq_t *) data;
     device->seq_data.tones_count = sdata->tones_count;
     memcpy(device->seq_data.tones, sdata->tones, sdata->tones_count * sizeof(device->seq_data.tones[0]));
   }
-  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_MIXER_CHANNEL_DATA))
+  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_MIXER_CHANNEL))
   {
     assert(header->size > 0);
     player_audio_mixer_channel_list_t * wdata = (player_audio_mixer_channel_list_t *) data;
     device->mixer_data.channels_count = wdata->channels_count;
     memcpy(device->mixer_data.channels, wdata->channels, wdata->channels_count * sizeof(device->mixer_data.channels[0]));
   }
-  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_STATE_DATA))
+  else if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_AUDIO_DATA_STATE))
   {
     assert(header->size > 0);
     player_audio_state_t *sdata = (player_audio_state_t *) data;
@@ -135,7 +135,7 @@ int playerc_audio_wav_play_cmd(playerc_audio_t *device, uint32_t data_count, uin
   wave_data.format = format;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_AUDIO_WAV_PLAY_CMD,
+                              PLAYER_AUDIO_CMD_WAV_PLAY,
                               &wave_data, NULL);
 }
 
@@ -145,7 +145,7 @@ int playerc_audio_wav_stream_rec_cmd(playerc_audio_t *device, uint8_t state)
   player_bool_t cmd;
   cmd.state = state;
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_AUDIO_WAV_STREAM_REC_CMD,
+                              PLAYER_AUDIO_CMD_WAV_STREAM_REC,
                               &cmd, NULL);
 }
 
@@ -156,7 +156,7 @@ int playerc_audio_sample_play_cmd(playerc_audio_t *device, int index)
   player_audio_sample_item_t cmd;
   cmd.index = index;
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_AUDIO_SAMPLE_PLAY_CMD,
+                              PLAYER_AUDIO_CMD_SAMPLE_PLAY,
                               &cmd, NULL);
 }
 
@@ -164,7 +164,7 @@ int playerc_audio_sample_play_cmd(playerc_audio_t *device, int index)
 int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * tones)
 {
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_AUDIO_SEQ_PLAY_CMD,
+                              PLAYER_AUDIO_CMD_SEQ_PLAY,
                               tones, NULL);
 }
 
@@ -172,7 +172,7 @@ int playerc_audio_seq_play_cmd(playerc_audio_t *device, player_audio_seq_t * ton
 int playerc_audio_mixer_multchannels_cmd(playerc_audio_t *device, player_audio_mixer_channel_list_t * levels)
 {
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_AUDIO_MIXER_CHANNEL_CMD,
+                              PLAYER_AUDIO_CMD_MIXER_CHANNEL,
                               levels, NULL);
 }
 
@@ -187,7 +187,7 @@ int playerc_audio_mixer_channel_cmd(playerc_audio_t *device, uint32_t index, flo
   cmd.channels[0].index = index;
 
   return playerc_client_write(device->info.client, &device->info,
-                              PLAYER_AUDIO_MIXER_CHANNEL_CMD,
+                              PLAYER_AUDIO_CMD_MIXER_CHANNEL,
                               &cmd, NULL);
 }
 
@@ -199,7 +199,7 @@ int playerc_audio_wav_rec(playerc_audio_t *device)
   int result = 0;
 
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_WAV_REC_REQ,
+                            PLAYER_AUDIO_REQ_WAV_REC,
                             NULL, (void*)&device->wav_data, sizeof(device->wav_data))) < 0)
     return result;
 
@@ -218,7 +218,7 @@ int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_
   req.sample.format = format;
   req.index = index;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_SAMPLE_LOAD_REQ, &req, NULL, 0)) < 0)
+                            PLAYER_AUDIO_REQ_SAMPLE_LOAD, &req, NULL, 0)) < 0)
     return result;
 
   return 0;
@@ -233,7 +233,7 @@ int playerc_audio_sample_retrieve(playerc_audio_t *device, int index)
   req.sample.data_count = 0;
   req.index = index;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_SAMPLE_RETRIEVE_REQ,
+                            PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE,
                             &req, &req, sizeof(req))) < 0)
     return result;
 
@@ -261,7 +261,7 @@ int playerc_audio_sample_rec(playerc_audio_t *device, int index, uint32_t length
   req.index = index;
   req.length = length;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_SAMPLE_REC_REQ,
+                            PLAYER_AUDIO_REQ_SAMPLE_REC,
                             &req, &rep, sizeof (player_audio_sample_rec_req_t))) < 0)
     return result;
 
@@ -277,7 +277,7 @@ int playerc_audio_get_mixer_levels(playerc_audio_t *device)
   int result = 0;
   player_audio_mixer_channel_list_t req;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_MIXER_CHANNEL_LEVEL_REQ ,
+                            PLAYER_AUDIO_REQ_MIXER_CHANNEL_LEVEL ,
                             NULL, &req, sizeof(req))) < 0)
     return result;
 
@@ -295,7 +295,7 @@ int playerc_audio_get_mixer_details(playerc_audio_t *device)
   int result;
   player_audio_mixer_channel_list_detail_t req;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_MIXER_CHANNEL_LIST_REQ ,
+                            PLAYER_AUDIO_REQ_MIXER_CHANNEL_LIST ,
                             NULL, &req, sizeof(req))) < 0)
     return result;
 

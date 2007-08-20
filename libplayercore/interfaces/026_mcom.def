@@ -1,0 +1,79 @@
+description {
+ * @brief Client - client communication.
+
+@deprecated Most of the functionality of this interface can be achieved through the @ref
+interface_opaque interface.
+
+The @p mcom interface is designed for exchanging information between
+clients.  A client sends a message of a given "type" and "channel". This
+device stores adds the message to that channel's stack.  A second client
+can then request data of a given "type" and "channel".  Push, Pop,
+Read, and Clear operations are defined, but their semantics can vary,
+based on the stack discipline of the underlying driver.  For example,
+the @ref driver_lifomcom driver enforces a last-in-first-out stack.
+
+@todo Is this interface used and/or needed any more?
+}
+
+/** request ids */
+message { REQ, PUSH, 1, player_map_info_t };
+/** request ids */
+message { REQ, POP, 2, player_map_info_t };
+/** request ids */
+message { REQ, READ, 3, player_map_info_t };
+/** request ids */
+message { REQ, CLEAR, 4, player_map_info_t };
+/** request ids */
+message { REQ, SET_CAPACITY, 5, player_map_info_t };
+
+
+/** size of the data field in messages */
+#define MCOM_DATA_LEN            128
+/** number of buffers to keep per channel */
+#define  MCOM_N_BUFS             10
+/** size of channel name */
+#define MCOM_CHANNEL_LEN        8
+/** returns this if empty */
+#define  MCOM_EMPTY_STRING          "(EMPTY)"
+/** ?? */
+#define MCOM_COMMAND_BUFFER_SIZE (sizeof(player_mcom_config_t))
+
+/** @brief A piece of data. */
+typedef struct player_mcom_data
+{
+  /** a flag */
+  char full;
+  /** length of data */
+  uint32_t data_count;
+  /** the data */
+  char data[MCOM_DATA_LEN];
+} player_mcom_data_t;
+
+/** @brief Configuration request to the device. */
+typedef struct player_mcom_config
+{
+  /** Which request.  Should be one of the defined request ids. */
+  uint32_t command;
+  /** The "type" of the data. */
+  uint32_t type;
+  /** length of channel name */
+  uint32_t channel_count;
+  /** The name of the channel. */
+  char channel[MCOM_CHANNEL_LEN];
+  /** The data. */
+  player_mcom_data_t data;
+} player_mcom_config_t;
+
+/** @brief Configuration reply from the device. */
+typedef struct player_mcom_return
+{
+  /** The "type" of the data */
+  uint32_t type;
+  /** length of channel name */
+  uint32_t channel_count;
+  /** The name of the channel. */
+  char channel[MCOM_CHANNEL_LEN];
+  /** The data. */
+  player_mcom_data_t data;
+} player_mcom_return_t;
+

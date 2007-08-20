@@ -53,7 +53,7 @@ information and an example.
 
 @par Configuration requests
 
-- PLAYER_POSITION_GET_GEOM_REQ
+- PLAYER_POSITION2D_REQ_GET_GEOM
   
 @par Configuration file options
 
@@ -121,7 +121,7 @@ void NomadPosition_Register(DriverTable* table)
 
 
 NomadPosition::NomadPosition( ConfigFile* cf, int section)
-        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION_CODE, PLAYER_ALL_MODE)
+        : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE, PLAYER_ALL_MODE)
 {
   // Must have a nomad
   if (cf->ReadDeviceId(&this->nomad_id, section, "requires",
@@ -185,7 +185,7 @@ int NomadPosition::ProcessMessage(ClientData * client, player_msghdr * hdr, uint
   assert(resp_data);
   assert(resp_len);
 	
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION_GET_GEOM, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_POSITION2D_REQ_GET_GEOM, device_id))
   {
   	assert(*resp_len >= sizeof(player_position_geom_t));
   	player_position_geom_t & geom = *reinterpret_cast<player_position_geom_t *> (resp_data);

@@ -87,7 +87,7 @@ driver_laserbarcode drivers.
 
 @par Configuration requests
 
-- PLAYER_FIDUCIAL_GET_GEOM
+- PLAYER_FIDUCIAL_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -434,9 +434,9 @@ int LaserVisualBarcode::ProcessMessage (MessageQueue * resp_queue, player_msghdr
   }
 
 /* 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM, device_id))
   {
-    int ret = laser->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_LASER_GET_GEOM, laser_id, 0, resp_data, resp_data, resp_len);
+    int ret = laser->ProcessMessage(PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM, laser_id, 0, resp_data, resp_data, resp_len);
     if (ret != PLAYER_MSGTYPE_RESP_ACK)
     	return ret;
   	assert(*resp_len == sizeof(player_laser_geom_t));

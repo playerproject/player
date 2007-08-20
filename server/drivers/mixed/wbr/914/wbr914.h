@@ -181,8 +181,8 @@ class wbr914 : public Driver
     // Command handlers
     int  HandleCommand(player_msghdr * hdr, void * data);
     void HandleVelocityCommand(player_position2d_cmd_vel_t* cmd );
-    void HandleDigitalOutCommand( player_dio_cmd_t* doutCmd );
-    void SetDigitalData( player_dio_cmd_t * d );
+    void HandleDigitalOutCommand( player_dio_data_t* doutCmd );
+    void SetDigitalData( player_dio_data_t * d );
 
     // Robot data retrievers
     void GetAllData( void );

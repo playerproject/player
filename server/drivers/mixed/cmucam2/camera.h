@@ -88,7 +88,7 @@ typedef struct
 **************************************************************************/
 typedef struct           // camera's internal register controlling image quality
 { 
-	uint8_t subtype;     // must be PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ.
+	uint8_t subtype;     // must be PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS.
 	int16_t brightness;  // contrast:      -1 = no change.  (0-255)
 	int16_t contrast;    // brightness:    -1 = no change.  (0-255)
 	int8_t  colormode;   // color mode:    -1 = no change.
@@ -106,7 +106,7 @@ typedef struct           // camera's internal register controlling image quality
 **************************************************************************/
 typedef struct
 { 
-	uint8_t subtype;                 // must be PLAYER_BLOBFINDER_SET_COLOR_REQ.
+	uint8_t subtype;                 // must be PLAYER_BLOBFINDER_REQ_SET_COLOR.
 	int16_t rmin, rmax;              // RGB minimum and max values (0-255)
 	int16_t gmin, gmax;
 	int16_t bmin, bmax;

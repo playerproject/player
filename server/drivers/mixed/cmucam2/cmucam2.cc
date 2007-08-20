@@ -329,21 +329,21 @@ int Cmucam2::ProcessMessage (MessageQueue* resp_queue,
 		return 0;
 	}	
 
-	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
-		PLAYER_PTZ_REQ_AUTOSERVO, ptz_id))
-	{
-		player_ptz_req_control_mode *servo = (player_ptz_req_control_mode*)data;
-		auto_servoing (fd, servo->mode);
-		if(servo->mode)
-			PLAYER_MSG0 (1, "Auto servoing is enabled.");
-		else
-			PLAYER_MSG0 (1, "Auto servoing is disabled.");
-
-		Publish (this->ptz_id, resp_queue,
-				 PLAYER_MSGTYPE_RESP_ACK,
-				 PLAYER_PTZ_REQ_AUTOSERVO);
-		return PLAYER_MSGTYPE_RESP_ACK;
-	}
+// 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
+// 		PLAYER_PTZ_REQ_AUTOSERVO, ptz_id))
+// 	{
+// 		player_ptz_req_control_mode *servo = (player_ptz_req_control_mode*)data;
+// 		auto_servoing (fd, servo->mode);
+// 		if(servo->mode)
+// 			PLAYER_MSG0 (1, "Auto servoing is enabled.");
+// 		else
+// 			PLAYER_MSG0 (1, "Auto servoing is disabled.");
+// 
+// 		Publish (this->ptz_id, resp_queue,
+// 				 PLAYER_MSGTYPE_RESP_ACK,
+// 				 PLAYER_PTZ_REQ_AUTOSERVO);
+// 		return PLAYER_MSGTYPE_RESP_ACK;
+// 	}
 
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, 
 		PLAYER_BLOBFINDER_REQ_SET_COLOR, blobfinder_id))

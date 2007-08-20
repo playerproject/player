@@ -52,7 +52,7 @@ a potentially dangerous machine.  Be @e very careful with it.
 
 - Although the RMP does not actually support motor power control from 
 software, for safety you must explicitly enable the motors using a
-@p PLAYER_POSITION_MOTOR_POWER_REQ or @p PLAYER_POSITION3D_MOTOR_POWER_REQ
+@p PLAYER_POSITION2D_REQ_MOTOR_POWER or @p PLAYER_POSITION3D_REQ_MOTOR_POWER
 (depending on which interface you are using).  You must @e also enable
 the motors in the command packet, by setting the @p state field to 1.
 
@@ -86,10 +86,10 @@ straightforward to add support for other CAN cards.
 @par Configuration requests
 
 - position interface
-  - PLAYER_POSITION_POWER_REQ
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
 
 - position3d interface
-  - PLAYER_POSITION_POWER_REQ
+  - PLAYER_POSITION3D_REQ_MOTOR_POWER
 
 @par Requires
 
@@ -717,7 +717,7 @@ SegwayRMP::HandlePosition3DConfig(MessageQueue* client, uint32_t subtype, void* 
 {
   switch(subtype) 
   {
-    case PLAYER_POSITION3D_MOTOR_POWER:
+    case PLAYER_POSITION3D_REQ_MOTOR_POWER:
       // just set a flag telling us whether we should
       // act on motor commands
       // set the commands to 0... think it will automatically
@@ -729,7 +729,7 @@ SegwayRMP::HandlePosition3DConfig(MessageQueue* client, uint32_t subtype, void* 
 
       printf("SEGWAYRMP: motors state: %d\n", this->motor_allow_enable);
 
-      Publish(this->position3d_id, client, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION3D_MOTOR_POWER);
+      Publish(this->position3d_id, client, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION3D_REQ_MOTOR_POWER);
       return 0;
 
     default:

@@ -508,7 +508,7 @@ int playerc_client_datamode(playerc_client_t *client, uint8_t mode)
 int
 playerc_client_requestdata(playerc_client_t* client)
 {
-  player_device_data_req_t req;
+  player_null_t req;
 
 //  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
   return(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL, 0));

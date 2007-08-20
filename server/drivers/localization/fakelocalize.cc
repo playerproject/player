@@ -55,7 +55,7 @@ cost of actually running a localization algorithm.
 
 @par Configuration requests
 
-- PLAYER_LOCALIZE_SET_POSE_REQ : acknowledged, but ignored
+- PLAYER_LOCALIZE_REQ_SET_POSE : acknowledged, but ignored
   
 @par Configuration file options
 

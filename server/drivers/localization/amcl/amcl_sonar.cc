@@ -79,7 +79,7 @@ int AdaptiveMCL::SetupSonar(void)
   }
 
   // Get the sonar geometry
-  req = PLAYER_SONAR_GET_GEOM_REQ;
+  req = PLAYER_SONAR_REQ_GET_GEOM;
   if (this->sonar->Request(&id, this, &req, 1, &reptype, &tv, &geom, sizeof(geom)) < 0)
   {
     PLAYER_ERROR("unable to get sonar geometry");

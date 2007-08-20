@@ -56,14 +56,14 @@ The garcia driver captures
 @par Configuration requests
 
 - @ref interface_position2d
-  - PLAYER_POSITION_GET_GEOM_REQ
-  - PLAYER_POSITION_SET_ODOM_REQ :
-  - PLAYER_POSITION_RESET_ODOM_REQ :
-  - PLAYER_POSITION_POWER_REQ :
-  - PLAYER_POSITION_SPEED_PID_REQ :
-  - PLAYER_POSITION_POSITION_PID_REQ :
-  - PLAYER_POSITION_SPEED_PROF_REQ :
-  - PLAYER_IR_GET_GEOM_REQ :
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_SET_ODOM :
+  - PLAYER_POSITION2D_REQ_RESET_ODOM :
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER :
+  - PLAYER_POSITION2D_REQ_SPEED_PID :
+  - PLAYER_POSITION2D_REQ_POSITION_PID :
+  - PLAYER_POSITION2D_REQ_SPEED_PROF :
+  - PLAYER_IR_REQ_POSE :
 
 @par Configuration file options
 
@@ -398,7 +398,7 @@ GarciaDriver::ProcessMessage(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                                PLAYER_IR_POSE, mIrAddr))
+                                PLAYER_IR_REQ_POSE, mIrAddr))
   {
     ProcessIrPoseReq(hdr);
     return(0);
@@ -548,7 +548,7 @@ GarciaDriver::ProcessIrPoseReq(player_msghdr_t* hdr)
 
   Publish(mIrAddr, NULL,
           PLAYER_MSGTYPE_RESP_ACK,
-          PLAYER_IR_POSE,
+          PLAYER_IR_REQ_POSE,
           &pose, sizeof(pose), NULL);
 
 }

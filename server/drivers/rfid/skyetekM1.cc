@@ -122,7 +122,7 @@ class SkyetekM1 : public Driver
 
 		// RFID interface
 		player_rfid_data_t Data;
-		player_rfid_cmd_t  Cmd;
+		player_rfid_data_t  Cmd;
 		
 		const char*        portName;
 		int                portSpeed;
@@ -367,7 +367,7 @@ void SkyetekM1::RefreshData ()
 	Wake ();
 
 	// Write the RFID data
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA, 
+	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS, 
 			 &Data, sizeof (player_rfid_data_t), NULL);
 	
 	return;

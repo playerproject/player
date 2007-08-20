@@ -66,8 +66,8 @@ by all means contribute it.  It would be welcome to the mix.
 
 @par Supported configuration requests
 
-- PLAYER_POSITION_GET_GEOM_REQ
-- PLAYER_POSITION_MOTOR_POWER_REQ
+- PLAYER_POSITION2D_REQ_GET_GEOM
+- PLAYER_POSITION2D_REQ_MOTOR_POWER
 
 @par Configuration file options
 

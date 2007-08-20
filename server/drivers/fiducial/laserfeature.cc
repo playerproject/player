@@ -698,7 +698,7 @@ int LaserFeature::PutConfig(player_device_id_t* device, void *client, void *data
   
   switch (subtype)
   {
-    case PLAYER_FIDUCIAL_GET_GEOM:
+    case PLAYER_FIDUCIAL_REQ_GET_GEOM:
       HandleGetGeom(client, data, len);
       break;
     default:

@@ -203,7 +203,7 @@ AMCLFiducial::SetupMap(void)
   unsigned short reptype;
   player_map_info_t info;
   struct timeval ts;
-  info.subtype = PLAYER_MAP_GET_INFO_REQ;
+  info.subtype = PLAYER_MAP_REQ_GET_INFO;
   if((replen = mapdriver->Request(this->map_id, this, 
                                   &info, sizeof(info.subtype), NULL,
                                   &reptype, &info, sizeof(info), &ts)) == 0)
@@ -231,7 +231,7 @@ AMCLFiducial::SetupMap(void)
   int sx,sy;
   int si,sj;
 
-  data_req.subtype = PLAYER_MAP_GET_DATA_REQ;
+  data_req.subtype = PLAYER_MAP_REQ_GET_DATA;
   
   // Tile size
   sy = sx = (int)sqrt(sizeof(data_req.data));

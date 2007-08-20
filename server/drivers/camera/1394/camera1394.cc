@@ -1089,7 +1089,7 @@ int Camera1394::ProcessMessage(MessageQueue* resp_queue,
 
   /* We currently don't support any messages, but if we do...
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-                           PLAYER_FIDUCIAL_GET_GEOM, this->device_addr))
+                           PLAYER_FIDUCIAL_REQ_GET_GEOM, this->device_addr))
   {
     assert(hdr->size == sizeof(player_position2d_data_t));
     ProcessOdom(hdr, *reinterpret_cast<player_position2d_data_t *> (data));

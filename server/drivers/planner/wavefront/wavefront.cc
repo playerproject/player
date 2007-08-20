@@ -84,7 +84,7 @@ be the same.
 
 @par Configuration requests
 
-- PLAYER_PLANNER_GET_WAYPOINTS_REQ
+- PLAYER_PLANNER_REQ_GET_WAYPOINTS
 
 @par Configuration file options
 

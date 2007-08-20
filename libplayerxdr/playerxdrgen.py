@@ -9,7 +9,7 @@ import re
 import string
 import sys
 
-USAGE = 'USAGE: playerxdrgen.y [-distro] <interface-spec.h> <pack.c> <pack.h>'
+USAGE = 'USAGE: playerxdrgen.y [-distro] <interface-spec.h> [<extra_interface-spec.h>] <pack.c> <pack.h>'
 
 if __name__ == '__main__':
 
@@ -20,24 +20,31 @@ if __name__ == '__main__':
   distro = 0
 
   idx = 1
-  if len(sys.argv) == 5:
-    if sys.argv[idx] == '-distro':
-      distro = 1
-      idx += 1
-    else:
+  if sys.argv[1] == '-distro':
+    if len(sys.argv) < 5:
       print USAGE
       sys.exit(-1)
+    distro = 1
+    idx += 1
 
-  infilename = sys.argv[idx]
+  infilenames = [sys.argv[idx],]
   idx += 1
   sourcefilename = sys.argv[idx]
   idx += 1
   headerfilename = sys.argv[idx]
+  idx += 1
+  if len(sys.argv) > idx:
+    for opt in sys.argv[idx:]:
+      infilenames.append(opt)
+      print "processeing extra file ", opt
+
 
   # Read in the entire file
-  infile = open(infilename, 'r')
-  instream = infile.read()
-  infile.close()
+  instream = ""
+  for f in infilenames:
+    infile = open(f, 'r')
+    instream += infile.read()
+    infile.close()
 
   sourcefile = open(sourcefilename, 'w+')
   headerfile = open(headerfilename, 'w+')
@@ -154,6 +161,7 @@ if __name__ == '__main__':
       elif i == 2:
         # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
         if typename not in hasdynamic:
+          headerfile.write('#define ' + typename + '_dpcpy NULL\n')
           continue
         headerfile.write('unsigned int ' + typename + '_dpcpy(const ' + typename + '* src, ' + typename + '* dest);\n')
         sourcefile.write('unsigned int\n' + typename + '_dpcpy(const ' + typename + '* src, ' + typename + '* dest)\n{\n')
@@ -163,6 +171,7 @@ if __name__ == '__main__':
       else:
         # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
         if typename not in hasdynamic:
+          headerfile.write('#define ' + typename + '_cleanup NULL\n')
           continue
         headerfile.write('void ' + typename + '_cleanup(' + typename + '* msg);\n')
         sourcefile.write('void\n' + typename + '_cleanup(' + typename + '* msg)\n{\n')

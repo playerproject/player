@@ -63,13 +63,13 @@ them named:
 @par Supported configuration requests
 
 - @ref interface_position2d :
-  - PLAYER_POSITION_SET_ODOM_REQ
-  - PLAYER_POSITION_MOTOR_POWER_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_GET_GEOM_REQ
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_GET_GEOM
 
 - @ref interface_ir :
-  - PLAYER_IR_POSE
+  - PLAYER_IR_REQ_POSE
 
 @par Supported commands
 
@@ -765,7 +765,7 @@ int wbr914::HandleConfig(MessageQueue* resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_IR_POSE,
+                                PLAYER_IR_REQ_POSE,
                                 ir_id))
   {
     /* Return the ir pose info */
@@ -804,7 +804,7 @@ int wbr914::HandleCommand(player_msghdr * hdr, void* data)
 				  PLAYER_DIO_CMD_VALUES,
 				  this->dio_id))
   {
-    HandleDigitalOutCommand( (player_dio_cmd_t*)data );
+    HandleDigitalOutCommand( (player_dio_data_t*)data );
     return(0);
   }
 
@@ -860,7 +860,7 @@ void wbr914::HandleVelocityCommand(player_position2d_cmd_vel_t* velcmd)
   }
 }
 
-void wbr914::HandleDigitalOutCommand( player_dio_cmd_t* doutCmd )
+void wbr914::HandleDigitalOutCommand( player_dio_data_t* doutCmd )
 {
   SetDigitalData( doutCmd );
 }
@@ -1042,7 +1042,7 @@ void wbr914::GetDigitalData(player_dio_data_t * d)
 
   // Byte flip the data to make the Input from the
   // optional I/O board show up in the upper byte.
-  d->digin = (uint32_t)( (din>>8) | (din<<8));
+  d->bits = (uint32_t)( (din>>8) | (din<<8));
 }
 
 /*
@@ -1051,10 +1051,10 @@ void wbr914::GetDigitalData(player_dio_data_t * d)
   We cannot reliably detect whether there is an I/O
   board attached to the M3 so blindly set the data.
  */
-void wbr914::SetDigitalData( player_dio_cmd_t * d )
+void wbr914::SetDigitalData( player_dio_data_t * d )
 {
   // We only have 16 bits of Dig out, so strip extra bits
-  uint16_t data = d->digout & 0xFFFF;
+  uint16_t data = d->bits & 0xFFFF;
 
   // Different number of digital bits being requested to
   // be set than we must actually set in the hardware.

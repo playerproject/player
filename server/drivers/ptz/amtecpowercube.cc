@@ -36,7 +36,7 @@ the newer CAN-based units.  Please submit a patch to support the CAN
 protocol.
 
 The amtecpowercube driver supports both position and velocity control,
-via the PLAYER_PTZ_CONTROL_MODE_REQ request.  For constant swiveling,
+via the PLAYER_PTZ_REQ_CONTROL_MODE request.  For constant swiveling,
 the PowerCube works better under velocity control.
 
 Note that this driver is relatively new and not thoroughly tested.
@@ -55,7 +55,7 @@ Note that this driver is relatively new and not thoroughly tested.
 
 @par Configuration requests
 
-- PLAYER_PTZ_CONTROL_MODE_REQ
+- PLAYER_PTZ_REQ_CONTROL_MODE
 
 @par Configuration file options
 

@@ -6,7 +6,7 @@ pkgincludedir = $(includedir)/player-2.0/libplayerxdr
 
 BUILT_SOURCES =
 if HAVE_PYTHON
-BUILT_SOURCES += playerxdr.c playerxdr.h
+BUILT_SOURCES += playerxdr.c playerxdr.h functiontable_gen.c
 endif
 
 lib_LTLIBRARIES = libplayerxdr.la
@@ -19,10 +19,16 @@ EXTRA_DIST = playerxdr.pc.in playerxdr.html playerxdr.c playerxdr.h
 
 CLEANFILES = playerxdr.pc
 
+functiontable_gen.c: $(top_srcdir)/libplayercore/playerinterfacegen.py $(top_srcdir)/libplayercore/interfaces/*
+	if ! $(top_srcdir)/libplayercore/playerinterfacegen.py --functiontable $(top_srcdir)/libplayercore/interfaces/ > functiontable_gen.c; then rm functiontable_gen.c; fi
+
+$(top_srcdir)/libplayercore/player_interfaces.h: $(top_srcdir)/libplayercore/interfaces/*
+	make -C $(top_srcdir)/libplayercore/ player_interfaces.h
+
 playerxdr.h: playerxdr.c
 
-playerxdr.c: playerxdrgen.py $(top_srcdir)/libplayercore/player.h
-	python $(srcdir)/playerxdrgen.py -distro $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h
+playerxdr.c: playerxdrgen.py $(top_srcdir)/libplayercore/player.h $(top_srcdir)/libplayercore/player_interfaces.h
+	python $(srcdir)/playerxdrgen.py -distro $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h $(top_srcdir)/libplayercore/player_interfaces.h
 
 libplayerxdr_la_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
 # Can't use libplayererror here because of an unresolved circular build

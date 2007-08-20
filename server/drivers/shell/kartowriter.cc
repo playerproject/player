@@ -54,9 +54,9 @@
 
 	@par Configuration requests
 
-	- PLAYER_LOG_SET_WRITE_STATE
-	- PLAYER_LOG_GET_STATE
-	- PLAYER_LOG_SET_FILENAME (not yet implemented)
+	- PLAYER_LOG_REQ_SET_WRITE_STATE
+	- PLAYER_LOG_REQ_GET_STATE
+	- PLAYER_LOG_REQ_SET_FILENAME (not yet implemented)
 
 	@par Example
 

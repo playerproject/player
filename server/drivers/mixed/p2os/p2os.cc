@@ -118,19 +118,19 @@ them named:
 @par Supported configuration requests
 
 - "odometry" @ref interface_position2d :
-  - PLAYER_POSITION_SET_ODOM_REQ
-  - PLAYER_POSITION_MOTOR_POWER_REQ
-  - PLAYER_POSITION_RESET_ODOM_REQ
-  - PLAYER_POSITION_GET_GEOM_REQ
-  - PLAYER_POSITION_VELOCITY_MODE_REQ
+  - PLAYER_POSITION2D_REQ_SET_ODOM
+  - PLAYER_POSITION2D_REQ_MOTOR_POWER
+  - PLAYER_POSITION2D_REQ_RESET_ODOM
+  - PLAYER_POSITION2D_REQ_GET_GEOM
+  - PLAYER_POSITION2D_REQ_VELOCITY_MODE
 - @ref interface_sonar :
-  - PLAYER_SONAR_POWER_REQ
-  - PLAYER_SONAR_GET_GEOM_REQ
+  - PLAYER_SONAR_REQ_POWER
+  - PLAYER_SONAR_REQ_GET_GEOM
 - @ref interface_bumper :
-  - PLAYER_BUMPER_GET_GEOM
+  - PLAYER_BUMPER_REQ_GET_GEOM
 - @ref interface_blobfinder :
-  - PLAYER_BLOBFINDER_SET_COLOR_REQ
-  - PLAYER_BLOBFINDER_SET_IMAGER_PARAMS_REQ
+  - PLAYER_BLOBFINDER_REQ_SET_COLOR
+  - PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS
 
 @par Configuration file options
 
@@ -530,9 +530,9 @@ P2OS::P2OS(ConfigFile* cf, int section)
       return;
     }
     // Stop actarray messages in the queue from being overwritten
-    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD, false);
-    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_SPEED_CMD, false);
-    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD, false);
+    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_POS, false);
+    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_SPEED, false);
+    this->InQueue->AddReplaceRule (this->actarray_id, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_HOME, false);
   }
 
   // build the table of robot parameters.
@@ -1469,7 +1469,7 @@ P2OS::PutData(void)
   // put limb data
   this->Publish(this->limb_id, NULL,
                 PLAYER_MSGTYPE_DATA,
-                PLAYER_LIMB_DATA,
+                PLAYER_LIMB_DATA_STATE,
                 (void*)&(this->limb_data),
                 sizeof(player_limb_data_t),
                 NULL);
@@ -2074,22 +2074,22 @@ P2OS::ProcessMessage(MessageQueue * resp_queue,
   // Position2d caps
   HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
   // Act array caps
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD);
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_MULTI_POS_CMD);
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD);
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_POWER_REQ);
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_GET_GEOM_REQ);
-  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_SPEED_REQ);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_POS);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_MULTI_POS);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_HOME);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_POWER);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_GET_GEOM);
+  HANDLE_CAPABILITY_REQUEST (actarray_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_SPEED);
   // Lift caps
-  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD);
-  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD);
-  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_GET_GEOM_REQ);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_POS);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_HOME);
+  HANDLE_CAPABILITY_REQUEST (lift_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_GET_GEOM);
   // Limb caps
-  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_HOME_CMD);
-  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_STOP_CMD);
-  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_SETPOSE_CMD);
-  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_POWER_REQ);
-  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_GEOM_REQ);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_HOME);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_STOP);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_SETPOSE);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_REQ_POWER);
+  HANDLE_CAPABILITY_REQUEST (limb_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_LIMB_REQ_GEOM);
   // Gripper caps
   HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_OPEN);
   HANDLE_CAPABILITY_REQUEST (gripper_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_GRIPPER_CMD_CLOSE);
@@ -2371,13 +2371,13 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
                   PLAYER_BLOBFINDER_REQ_SET_IMAGER_PARAMS);
     return(0);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_POWER_REQ,this->actarray_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_POWER,this->actarray_id))
   {
     ToggleActArrayPower (((player_actarray_power_config_t*) data)->value);
-    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_POWER_REQ);
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_POWER);
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_GET_GEOM_REQ,this->actarray_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_GET_GEOM,this->actarray_id))
   {
     // First ask for an ARMINFOpac (because we need to get any updates to speed settings)
     P2OSPacket aaPacket;
@@ -2414,30 +2414,30 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     aaGeom.base_orientation.ppitch = aaBaseOrient.ppitch;
     aaGeom.base_orientation.pyaw = aaBaseOrient.pyaw;
 
-    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_GET_GEOM_REQ, &aaGeom, sizeof (aaGeom), NULL);
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_GET_GEOM, &aaGeom, sizeof (aaGeom), NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_SPEED_REQ,this->actarray_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_SPEED,this->actarray_id))
   {
     joint = ((player_actarray_speed_config_t*) data)->joint + 1;
     newSpeed = RadsPerSectoSecsPerTick (joint, ((player_actarray_speed_config_t*) data)->speed);
     SetActArrayJointSpeed (joint, newSpeed);
 
-    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_SPEED_REQ);
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_SPEED);
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_POWER_REQ,this->limb_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_REQ_POWER,this->limb_id))
   {
     ToggleActArrayPower (((player_actarray_power_config_t*) data)->value);
-    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_POWER_REQ);
+    this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_REQ_POWER);
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_BRAKES_REQ,this->limb_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_REQ_BRAKES,this->limb_id))
   {
     // We don't have any brakes
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_GEOM_REQ,this->limb_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_REQ_GEOM,this->limb_id))
   {
     player_limb_geom_req_t limbGeom;
 
@@ -2445,10 +2445,10 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     limbGeom.basePos.py = armOffsetY;
     limbGeom.basePos.pz = armOffsetZ;
 
-    this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_GEOM_REQ, &limbGeom, sizeof (limbGeom), NULL);
+    this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_REQ_GEOM, &limbGeom, sizeof (limbGeom), NULL);
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_SPEED_REQ,this->limb_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_LIMB_REQ_SPEED,this->limb_id))
   {
     // FIXME - need to figure out what sort of speed support we should provide through the IK interface
     // Would need some form of motion control
@@ -2460,10 +2460,10 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
       SetActArrayJointSpeed (ii, newSpeed);
     }
 
-    this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_SPEED_REQ);
+    this->Publish(this->limb_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_LIMB_REQ_SPEED);
     return 0;
   }
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_GET_GEOM, this->bumper_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_REQ_GET_GEOM, this->bumper_id))
   {
     /* Return the bumper geometry. */
     if(hdr->size != 0)
@@ -2484,11 +2484,11 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     }
 
     this->Publish(this->bumper_id, resp_queue,
-                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_BUMPER_GET_GEOM,
+                  PLAYER_MSGTYPE_RESP_ACK, PLAYER_BUMPER_REQ_GET_GEOM,
                   (void*)&geom, sizeof(geom), NULL);
     return(0);
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_GET_GEOM_REQ,this->lift_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_GET_GEOM,this->lift_id))
   {
     player_actarray_geom_t aaGeom;
 
@@ -2503,7 +2503,7 @@ P2OS::HandleConfig(MessageQueue* resp_queue,
     aaGeom.actuators[0].config_speed = 0.02f; // 2cm/s, according to the manual
     aaGeom.actuators[0].hasbrakes = 0;
 
-    this->Publish(this->lift_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_GET_GEOM_REQ, &aaGeom, sizeof (aaGeom), NULL);
+    this->Publish(this->lift_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_GET_GEOM, &aaGeom, sizeof (aaGeom), NULL);
     return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_GRIPPER_REQ_GET_GEOM,this->gripper_id))
@@ -2732,7 +2732,7 @@ void P2OS::HandleActArrayPosCmd (player_actarray_position_cmd_t cmd)
   unsigned char command[4];
   P2OSPacket packet;
 
-  if (!(lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) || ((lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) &&
+  if (!(lastActArrayCmd == PLAYER_ACTARRAY_CMD_POS) || ((lastActArrayCmd == PLAYER_ACTARRAY_CMD_POS) &&
        (cmd.joint != lastActArrayPosCmd.joint || cmd.position != lastActArrayPosCmd.position)))
   {
     command[0] = ARM_POS;
@@ -2750,7 +2750,7 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
   unsigned char command[4];
   P2OSPacket packet;
 
-  if ((lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) || (!(lastActArrayCmd == PLAYER_ACTARRAY_POS_CMD) &&
+  if ((lastActArrayCmd == PLAYER_ACTARRAY_CMD_POS) || (!(lastActArrayCmd == PLAYER_ACTARRAY_CMD_POS) &&
        (cmd.joint != lastActArrayHomeCmd.joint)))
   {
     command[0] = ARM_HOME;
@@ -2764,23 +2764,23 @@ void P2OS::HandleActArrayHomeCmd (player_actarray_home_cmd_t cmd)
 
 int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
 {
-  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_POS_CMD, this->actarray_id))
+  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_POS, this->actarray_id))
   {
     player_actarray_position_cmd_t cmd;
     cmd = *(player_actarray_position_cmd_t*) data;
     this->HandleActArrayPosCmd (cmd);
-    lastActArrayCmd = PLAYER_ACTARRAY_POS_CMD;
+    lastActArrayCmd = PLAYER_ACTARRAY_CMD_POS;
     return 0;
   }
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_HOME_CMD, this->actarray_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_HOME, this->actarray_id))
   {
     player_actarray_home_cmd_t cmd;
     cmd = *(player_actarray_home_cmd_t*) data;
     this->HandleActArrayHomeCmd (cmd);
-    lastActArrayCmd = PLAYER_ACTARRAY_HOME_CMD;
+    lastActArrayCmd = PLAYER_ACTARRAY_CMD_HOME;
     return 0;
   }
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_MULTI_POS_CMD, this->actarray_id))
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_ACTARRAY_CMD_MULTI_POS, this->actarray_id))
   {
     player_actarray_multi_position_cmd_t cmd = *(player_actarray_multi_position_cmd_t*) data;
     player_actarray_position_cmd_t singleCmd;
@@ -2790,7 +2790,7 @@ int P2OS::HandleActArrayCommand (player_msghdr * hdr, void * data)
       singleCmd.position = cmd.positions[ii];
       this->HandleActArrayPosCmd (singleCmd);
     }
-    lastActArrayCmd = PLAYER_ACTARRAY_MULTI_POS_CMD;
+    lastActArrayCmd = PLAYER_ACTARRAY_CMD_MULTI_POS;
   }
 
   return -1;
@@ -2965,37 +2965,23 @@ void P2OS::HandleLimbVecMoveCmd (player_limb_vecmove_cmd_t cmd)
 
 int P2OS::HandleLimbCommand (player_msghdr *hdr, void *data)
 {
-  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_HOME_CMD,this->limb_id))
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_CMD_HOME,this->limb_id))
   {
     this->HandleLimbHomeCmd ();
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_STOP_CMD,this->limb_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_CMD_STOP,this->limb_id))
   {
     this->HandleLimbStopCmd ();
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSE_CMD,this->limb_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_CMD_SETPOSE,this->limb_id))
   {
     player_limb_setpose_cmd_t cmd;
     cmd = *(player_limb_setpose_cmd_t*) data;
     this->HandleLimbSetPoseCmd (cmd);
     return 0;
   }
-//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_SETPOSITION_CMD,this->limb_id))
-//   {
-//     player_limb_setposition_cmd_t cmd;
-//     cmd = *(player_limb_setposition_cmd_t*) data;
-//     this->HandleLimbSetPositionCmd (cmd);
-//     retVal = 0;
-//   }
-//   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_LIMB_VECMOVE_CMD,this->limb_id))
-//   {
-//     player_limb_vecmove_cmd_t cmd;
-//     cmd = *(player_limb_vecmove_cmd_t*) data;
-//     this->HandleLimbVecMoveCmd (cmd);
-//     retVal = 0;
-//   }
   return -1;
 }
 
@@ -3007,7 +2993,7 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
   unsigned char command[4];
   P2OSPacket packet;
 
-  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_POS_CMD,this->lift_id))
+  if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_POS,this->lift_id))
   {
     player_actarray_position_cmd_t cmd;
     cmd = *(player_actarray_position_cmd_t*) data;
@@ -3016,7 +3002,7 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
     if (cmd.joint > 0)
       return -1;
 
-    if (lastLiftCmd == PLAYER_ACTARRAY_POS_CMD && lastLiftPosCmd.position == cmd.position)
+    if (lastLiftCmd == PLAYER_ACTARRAY_CMD_POS && lastLiftPosCmd.position == cmd.position)
       return 0;
 
     command[0] = GRIPPER;
@@ -3071,14 +3057,14 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
       SendReceive (&packet);
     }
 
-    lastLiftCmd = PLAYER_ACTARRAY_POS_CMD;
+    lastLiftCmd = PLAYER_ACTARRAY_CMD_POS;
     lastLiftPosCmd = cmd;
     sippacket->lastLiftPos = cmd.position;
     return 0;
   }
-  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_HOME_CMD,this->lift_id))
+  else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_HOME,this->lift_id))
   {
-    if (lastLiftCmd == PLAYER_ACTARRAY_HOME_CMD)
+    if (lastLiftCmd == PLAYER_ACTARRAY_CMD_HOME)
       return 0;
 
     // For home, just send the lift to up position
@@ -3088,7 +3074,7 @@ int P2OS::HandleLiftCommand (player_msghdr *hdr, void *data)
    command[3] = 0;
     packet.Build (command, 4);
     SendReceive (&packet);
-    lastLiftCmd = PLAYER_ACTARRAY_HOME_CMD;
+    lastLiftCmd = PLAYER_ACTARRAY_CMD_HOME;
     lastLiftPosCmd.position = 1.0f;
     return 0;
   }
@@ -3280,7 +3266,7 @@ P2OS::HandleCommand(player_msghdr * hdr, void* data)
     this->HandlePositionCommand(position_cmd);
     retVal = 0;
   }
-  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_SAMPLE_PLAY_CMD, this->audio_id))
+  else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_AUDIO_CMD_SAMPLE_PLAY, this->audio_id))
   {
     // get and send the latest audio command, if it's new
     player_audio_sample_item_t audio_cmd;

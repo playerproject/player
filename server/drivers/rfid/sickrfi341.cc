@@ -226,7 +226,7 @@ void
     player_rfid_data_t data = rfi341->ReadTags ();
     
     // Make data available
-    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA,
+    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
             &data, sizeof (data), NULL);
             
     nanosleep (&sleepTime, NULL);

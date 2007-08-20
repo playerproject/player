@@ -81,7 +81,7 @@ See also the @ref driver_laserbar and
 
 @par Configuration requests
 
-- PLAYER_FIDUCIAL_GET_GEOM
+- PLAYER_FIDUCIAL_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -288,12 +288,12 @@ int LaserBarcode::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr
     return 0;
   }
  
-/*  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
+/*  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM, device_id))
   {
     hdr->device_index = laser_id.index;
-    hdr->subtype = PLAYER_LASER_GET_GEOM;
+    hdr->subtype = PLAYER_LASER_REQ_GET_GEOM;
     int ret = laser_driver->ProcessMessage(BaseClient, hdr, data, resp_data, resp_len);
-    hdr->subtype = PLAYER_FIDUCIAL_GET_GEOM;
+    hdr->subtype = PLAYER_FIDUCIAL_REQ_GET_GEOM;
     hdr->device_index = device_id.index;
     
   	assert(*resp_len == sizeof(player_laser_geom_t));
@@ -566,7 +566,7 @@ void LaserBarcode::WriteFiducial()
     
     switch (subtype)
     {
-      case PLAYER_FIDUCIAL_GET_GEOM:
+      case PLAYER_FIDUCIAL_REQ_GET_GEOM:
       {
         HandleGetGeom(client, req, len);
         break;

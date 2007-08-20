@@ -66,7 +66,7 @@ The create driver provides the following device interfaces:
 @par Supported configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
-- PLAYER_BUMPER_GET_GEOM
+- PLAYER_BUMPER_REQ_GET_GEOM
 
 @par Configuration file options
 
@@ -450,7 +450,7 @@ Create::ProcessMessage(MessageQueue * resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_BUMPER_GET_GEOM,
+                                PLAYER_BUMPER_REQ_GET_GEOM,
                                 this->bumper_addr))
   {
     player_bumper_geom_t geom;
@@ -471,13 +471,13 @@ Create::ProcessMessage(MessageQueue * resp_queue,
 
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_BUMPER_GET_GEOM,
+                  PLAYER_BUMPER_REQ_GET_GEOM,
                   (void*)&geom, sizeof(geom), NULL);
 
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                    PLAYER_IR_POSE,
+                                    PLAYER_IR_REQ_POSE,
                                     this->ir_addr))
   {
     player_ir_pose poses;
@@ -494,7 +494,7 @@ Create::ProcessMessage(MessageQueue * resp_queue,
 
     this->Publish(this->ir_addr, resp_queue, 
                   PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_IR_POSE,
+                  PLAYER_IR_REQ_POSE,
                   (void*)&poses, sizeof(poses), NULL);
     return(0);
   }

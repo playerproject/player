@@ -1,0 +1,24 @@
+description {
+ * @brief Speech recognition
+
+The speech recognition interface provides access to a speech recognition
+server.
+}
+
+/** Maximum length of string to recognize */
+#define PLAYER_SPEECH_RECOGNITION_TEXT_LEN 256
+
+/** Data subtype: recognized string */
+message { DATA, STRING, 1, player_speech_recognition_data_t };
+
+/** @brief Data: recognized string (@ref PLAYER_SPEECH_MAX_STRING_LEN)
+
+The speech recognition data packet.  */
+typedef struct player_speech_recognition_data
+{
+  /** Length of text */
+  uint32_t text_count;
+  /** Recognized text */
+  char text[PLAYER_SPEECH_RECOGNITION_TEXT_LEN];
+} player_speech_recognition_data_t;
+

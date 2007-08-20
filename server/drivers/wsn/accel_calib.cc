@@ -301,7 +301,7 @@ int Accel_Calib::ProcessMessage (MessageQueue* resp_queue,
     assert (data);
 
     // Handle new data from the WSN device
-    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA, 
+    if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, 
        wsn_addr))
     {
         original_wsn_data = reinterpret_cast<player_wsn_data_t *>(data);
@@ -346,7 +346,7 @@ int Accel_Calib::ProcessMessage (MessageQueue* resp_queue,
         new_wsn_data.data_packet.battery     = -1;
 
         // Write the WSN data
-        Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA, 
+        Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, 
                  &new_wsn_data, sizeof (player_wsn_data_t), NULL);
 
         return 0;
