@@ -4,6 +4,7 @@
  * by playerxdrgen.py, then cleaned up.
  */
 
+#include <stdlib.h>
 #include "eginterf.h"
 
 int xdr_player_eginterf_data(XDR* xdrs, player_eginterf_data* msg);

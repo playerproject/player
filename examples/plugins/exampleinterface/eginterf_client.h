@@ -3,6 +3,10 @@
  * are defined in eginterf_client.c.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
 	/* Device info; must be at the start of all device structures. */
@@ -25,3 +29,7 @@ int eginterf_unsubscribe (eginterf_t *device);
 int eginterf_cmd (eginterf_t *device, char value);
 
 int eginterf_req (eginterf_t *device, int blah);
+
+#ifdef __cplusplus
+}
+#endif

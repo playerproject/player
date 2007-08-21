@@ -1,6 +1,6 @@
 SUBDIRS = . test bindings doc
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir) -g
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -g -I$(top_builddir)/client_libs
 
 # TODO: figure out how to handle the jpeg wrappers
 # -I$(top_srcdir)/client_libs/libplayerpacket
@@ -78,4 +78,4 @@ endif
 
 
 libplayerc_includedir = $(includedir)/player-2.0/libplayerc
-libplayerc_include_HEADERS = playerc.h
+libplayerc_include_HEADERS = playerc.h playercconfig.h
