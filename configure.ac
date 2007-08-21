@@ -39,7 +39,7 @@ dnl
 dnl Also create playerconfig.h, replacing a couple of C defines with the right
 dnl values.  This will be included by player.h
 dnl
-AC_CONFIG_HEADERS(config.h libplayercore/playerconfig.h client_libs/libplayerc++/playerc++config.h)
+AC_CONFIG_HEADERS(config.h libplayercore/playerconfig.h client_libs/libplayerc++/playerc++config.h client_libs/libplayerc/playercconfig.h)
 
 dnl Find basic tools
 AC_PROG_CC
@@ -573,6 +573,7 @@ AC_OUTPUT(Makefile
           server/drivers/position/nav200/Makefile
           server/drivers/position/roboteq/Makefile
           server/drivers/position/vfh/Makefile
+          server/drivers/position/mbicp/Makefile
           server/drivers/mcom/Makefile
           server/drivers/localization/Makefile
           server/drivers/localization/amcl/Makefile
@@ -598,6 +599,7 @@ AC_OUTPUT(Makefile
           examples/Makefile
           examples/plugins/Makefile
           examples/plugins/exampledriver/Makefile
+          examples/plugins/exampleinterface/Makefile
           examples/plugins/multidriver/Makefile
           examples/plugins/opaquedriver/Makefile
           examples/libplayerc/Makefile

@@ -63,6 +63,10 @@ void BumperSafe_Register(DriverTable *table);
 void ND_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_MBICP
+void mbicp_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_GARMINNMEA
 void GarminNMEA_Register(DriverTable* table);
 #endif
@@ -482,6 +486,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_ND
   ND_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_MBICP
+  mbicp_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_GARMINNMEA

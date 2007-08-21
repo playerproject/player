@@ -50,7 +50,8 @@ client writers.
 #include <stdio.h>
 #include <sys/types.h>
 #include <netinet/in.h>
-#include <config.h>
+
+#include <libplayerc/playercconfig.h>
 
 #ifdef HAVE_GEOS
 #include <geos_c.h>

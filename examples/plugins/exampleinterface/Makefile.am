@@ -17,10 +17,10 @@ example_PROGRAMS = example_client
 example_DATA = eginterf_client.c eginterf.c eginterf_xdr.c eginterf_driver.cc Makefile.example example.cfg
 EXTRA_DIST = Makefile.example example.cfg
 
-example_LTLIBRARIES = libeginterfdriver.la
+example_LTLIBRARIES = libeginterfdriver.la libeginterf.la
 libeginterfdriver_la_SOURCES = eginterf_driver.cc
-libeginterf_la_SOURCEs = eginterf_client.c eginterf.c eginterf_xdr.c
+libeginterf_la_SOURCES = eginterf_client.c eginterf.c eginterf_xdr.c
 
 example_client_SOURCES = example_client.c
-example_client_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lplayerxdr -lplayererror
+example_client_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lplayerxdr -lplayererror libeginterf.la
 example_client_DEPENDENCIES = $(PLAYERC_DEPS)

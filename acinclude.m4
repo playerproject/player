@@ -376,6 +376,8 @@ fi
 
 PLAYER_ADD_DRIVER([vfh],[yes],)
 
+PLAYER_ADD_DRIVER([mbicp],[yes],)
+
 PLAYER_ADD_DRIVER([vmapfile],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
