@@ -2,3 +2,4 @@ Makefile
 Makefile.in
 simple
 speech_c_client
+vmap
