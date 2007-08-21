@@ -98,6 +98,7 @@ Listening on ports: 6665
 #include <libplayerdrivers/driverregistry.h>
 
 
+void PrintVersion();
 void PrintCopyrightMsg();
 void PrintUsage();
 int ParseArgs(int* port, int* debuglevel, 
@@ -149,6 +150,7 @@ main(int argc, char** argv)
   pudp = new PlayerUDP();
   assert(pudp);
 
+  PrintVersion();
   if(ParseArgs(&port, &debuglevel, &cfgfilename, &gz_serverid, argc, argv) < 0)
   {
     PrintUsage();
@@ -286,6 +288,12 @@ void
 Quit(int signum)
 {
   player_quit = true;
+}
+
+void
+PrintVersion()
+{
+  fprintf(stderr, "Player v.%s\n", PACKAGE_VERSION);
 }
 
 void
