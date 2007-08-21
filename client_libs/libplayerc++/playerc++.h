@@ -1215,7 +1215,7 @@ class MapProxy : public ClientProxy
     { return y*GetWidth() + x; };
 
     /// Get the (x,y) cell
-    char GetCell(int x, int y) const
+    int8_t GetCell(int x, int y) const
     { return GetVar(mDevice->cells[GetCellIndex(x,y)]); };
 
     /// Map resolution, m/cell
