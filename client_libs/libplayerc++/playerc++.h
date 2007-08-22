@@ -1742,11 +1742,12 @@ class Position2dProxy : public ClientProxy
     void SetCarlike(double aXSpeed, double aDriveAngle);
 
     /// Get the device's geometry; it is read into the
-    /// relevant class attributes.
+    /// relevant class attributes.  Call GetOffset() to access this data.
     void RequestGeom();
 
-    /// Accessor for the pose (fill it in by calling RequestGeom)
-    player_pose3d_t GetPose()
+    /// Accessor for the robot's pose with respect to its
+    //  body (fill it in by calling RequestGeom()).
+    player_pose3d_t GetOffset()
     {
       player_pose3d_t p;
       scoped_lock_t lock(mPc->mMutex);

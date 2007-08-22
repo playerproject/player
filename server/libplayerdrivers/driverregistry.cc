@@ -131,6 +131,10 @@ void SickLMS400_Register(DriverTable* table);
 void SickNAV200_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_RS4LEUZE
+void RS4LeuzeLaserDriver_Register(DriverTable* table);
+#endif
+
 #ifdef INCLUDE_PHIDGETRFID
 void PhidgetRFID_Register(DriverTable* table);
 #endif
@@ -558,6 +562,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_SICKNAV200
   SickNAV200_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_RS4LEUZE
+  RS4LeuzeLaserDriver_Register(driverTable);
 #endif
 
 #ifdef INCLUDE_SICKPLS

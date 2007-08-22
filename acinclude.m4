@@ -374,6 +374,8 @@ if  test "x$enable_urglaser" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
+PLAYER_ADD_DRIVER([rs4leuze],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([vfh],[yes],)
 
 PLAYER_ADD_DRIVER([mbicp],[yes],)
