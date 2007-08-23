@@ -17,7 +17,7 @@ if top_builddir == '':
 #      bindings.
 module = Extension('_playerc',
                    sources = ['playerc.i'],
-                   include_dirs = [srcdir + '/../..', top_srcdir],
+                   include_dirs = [srcdir + '/../..', top_srcdir, top_builddir + '/client_libs'],
                    library_dirs = [builddir + '/../../.libs', 
                                    top_builddir + '/libplayerxdr/.libs',
                                    top_builddir + '/libplayercore/.libs',
