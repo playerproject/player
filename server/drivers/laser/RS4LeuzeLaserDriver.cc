@@ -165,7 +165,7 @@ public:
 	//The drivers re-implements the ProcessMessage method to provide support for 
 	//handling request and commands(4)
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage(MessageQueue* resp_queue,
+	virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -340,7 +340,7 @@ int RS4LeuzeLaserDriver::Shutdown() {
 }
 
 
-int RS4LeuzeLaserDriver::ProcessMessage(MessageQueue* resp_queue,
+int RS4LeuzeLaserDriver::ProcessMessage(QueuePointer &resp_queue,
                                   player_msghdr * hdr,
                                   void * data)
 {
@@ -415,7 +415,7 @@ void RS4LeuzeLaserDriver::Main()
 			cout << endl;
 		
 
-		Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
+		Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
 			&Data, sizeof(player_laser_data_t), NULL);
 		//cout << endl << "Data RS4leuze passed ";
 

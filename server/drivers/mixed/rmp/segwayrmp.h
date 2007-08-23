@@ -38,7 +38,7 @@ class SegwayRMP : public Driver
     // Setup/shutdown routines.
     virtual int Setup();
     virtual int Shutdown();
-    virtual int ProcessMessage(MessageQueue * resp_queue,
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -83,10 +83,10 @@ class SegwayRMP : public Driver
     double odom_x, odom_y, odom_yaw;
 
     // helper to handle config requests
-    int HandlePositionConfig(MessageQueue* resp_queue, uint32_t subtype, void* data, size_t len);
+    int HandlePositionConfig(QueuePointer &resp_queue, uint32_t subtype, void* data, size_t len);
 
     // helper to handle config requests
-    int HandlePosition3DConfig(MessageQueue* resp_queue, uint32_t subtype, void* data, size_t len);
+    int HandlePosition3DConfig(QueuePointer &resp_queue, uint32_t subtype, void* data, size_t len);
 
     // helper to read a cycle of data from the RMP
     int Read();

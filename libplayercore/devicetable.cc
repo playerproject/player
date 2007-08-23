@@ -208,7 +208,8 @@ DeviceTable::StartAlwaysonDrivers()
   {
     if(thisentry->driver->alwayson)
     {
-      if(thisentry->Subscribe(NULL) != 0)
+    	  QueuePointer Temp = QueuePointer();
+      if(thisentry->Subscribe(Temp) != 0)
       {
         PLAYER_ERROR2("initial subscription failed for device %s:%d",
                       interf_to_str(thisentry->addr.interf), thisentry->addr.index);

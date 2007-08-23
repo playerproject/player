@@ -180,7 +180,7 @@ void CameraUvc::Main()
 		size_t size=sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
 
 		// Write data to the client (through the server)
-		Publish (device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_CAMERA_DATA_STATE,&data,size,NULL);
+		Publish (device_addr,PLAYER_MSGTYPE_DATA,PLAYER_CAMERA_DATA_STATE,&data,size,NULL);
 	}
 }
 
@@ -188,7 +188,7 @@ void CameraUvc::Main()
 // Process requests.  Returns 1 if the configuration has changed.
 // Ignore all requests for now. 
 ////////////////////////////////////////////////////////////////////////////////
-int CameraUvc::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *data)
+int CameraUvc::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
   return -1;
 }

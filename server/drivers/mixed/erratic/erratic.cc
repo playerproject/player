@@ -1054,7 +1054,7 @@ void Erratic::Main() {
 
 // Publishes the indicated interface data
 void Erratic::PublishPosition2D() {
-	this->Publish(this->position_id, NULL,
+	this->Publish(this->position_id,
 		PLAYER_MSGTYPE_DATA,
 		PLAYER_POSITION2D_DATA_STATE,
 		(void*)&(this->erratic_data.position),
@@ -1062,7 +1062,7 @@ void Erratic::PublishPosition2D() {
 		NULL);
 }
 void Erratic::PublishPower() {
-	this->Publish(this->power_id, NULL,
+	this->Publish(this->power_id,
 		PLAYER_MSGTYPE_DATA,
 		PLAYER_POWER_DATA_STATE,
 		(void*)&(this->erratic_data.power),
@@ -1070,7 +1070,7 @@ void Erratic::PublishPower() {
 		NULL);
 }
 void Erratic::PublishAIn() {
-	this->Publish(this->aio_id, NULL,
+	this->Publish(this->aio_id,
 		PLAYER_MSGTYPE_DATA,
 		PLAYER_AIO_DATA_STATE,
 		(void*)&(this->erratic_data.aio),
@@ -1078,7 +1078,7 @@ void Erratic::PublishAIn() {
 		NULL);
 }
 void Erratic::PublishIR() {
-	this->Publish(this->ir_id, NULL,
+	this->Publish(this->ir_id,
 		PLAYER_MSGTYPE_DATA,
 		PLAYER_IR_DATA_RANGES,
 		(void*)&(this->erratic_data.ir),
@@ -1093,7 +1093,7 @@ void Erratic::PublishAllData() {
 }
 
 // Gets called from ProcessMessages to handle one message
-int Erratic::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data) {
+int Erratic::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data) {
 	// Look for configuration requests
 	if(hdr->type == PLAYER_MSGTYPE_REQ)
 		return(this->HandleConfig(resp_queue,hdr,data));
@@ -1104,7 +1104,7 @@ int Erratic::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void
 }
 
 // Handles one Player command with a configuration request
-int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * data) {
+int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * data) {
 
 	// check for position config requests
 	if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,

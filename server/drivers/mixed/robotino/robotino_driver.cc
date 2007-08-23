@@ -146,7 +146,7 @@ public:
   virtual int Shutdown ();
   
   // This method will be invoked on each incoming message
-  virtual int ProcessMessage (MessageQueue * resp_queue,
+  virtual int ProcessMessage (QueuePointer &resp_queue,
 			      player_msghdr * hdr, void *data);
 
    // Holders for desired velocities 
@@ -346,7 +346,7 @@ int RobotinoDriver::Shutdown ()
 
 /// Process messages
 int RobotinoDriver::
-ProcessMessage (MessageQueue * resp_queue,player_msghdr * hdr,void *data)
+ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
 {
   //! Send a response if necessary, using Publish().
   //! If you handle the message successfully, return 0.  Otherwise,
@@ -596,7 +596,7 @@ void RobotinoDriver::Main ()
  
       timerEuler.start();
      
-      this->Publish(this->position_addr,NULL,
+      this->Publish(this->position_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
 		    (void*)&posdata,sizeof(posdata), NULL);
 
@@ -607,7 +607,7 @@ void RobotinoDriver::Main ()
       powerdata.valid = (PLAYER_POWER_MASK_VOLTS |
 			 PLAYER_POWER_MASK_WATTS);
       
-      this->Publish(this->power_addr, NULL,
+      this->Publish(this->power_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
 		    (void*)&powerdata, sizeof(powerdata), NULL);
      
@@ -618,7 +618,7 @@ void RobotinoDriver::Main ()
       
       //PLAYER_MSG1(2,"Robotino(R) :: Bumper = %d",bumperdata.bumpers[0]);
       
-      this->Publish(this->bumper_addr, NULL,
+      this->Publish(this->bumper_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
 		    (void*)&bumperdata, sizeof(bumperdata), NULL);
       

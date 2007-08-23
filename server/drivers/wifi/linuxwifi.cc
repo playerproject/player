@@ -110,7 +110,7 @@ public:
   int Shutdown();
 
   // MessageHandler
-  int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+  int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
 
 
 protected:
@@ -269,7 +269,7 @@ LinuxWiFi::Shutdown()
   return 0;
 }
 
-int LinuxWiFi::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int LinuxWiFi::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);
@@ -438,7 +438,7 @@ LinuxWiFi::Update(void)
  
   wifi_data.qual_type = qual_type;
 
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,PLAYER_WIFI_DATA_STATE,(void*)&wifi_data, sizeof(player_wifi_data_t),NULL);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA,PLAYER_WIFI_DATA_STATE,(void*)&wifi_data, sizeof(player_wifi_data_t),NULL);
 }
 
 

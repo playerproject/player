@@ -197,7 +197,7 @@ MapTransform::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int MapTransform::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver");
 

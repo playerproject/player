@@ -191,7 +191,7 @@ public:
     virtual int Setup();
     virtual int Shutdown();
 
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
                                void * data);
 private:
@@ -446,7 +446,7 @@ void mbicp::Main(){
 
 
 ////////////////////////////////////////////////////////////////////////////////
-int mbicp::ProcessMessage(MessageQueue* resp_queue,player_msghdr * hdr, void * data){
+int mbicp::ProcessMessage(QueuePointer &resp_queue,player_msghdr * hdr, void * data){
 
    	// PLAYER_LASER_DATA_SCANPOSE
    	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,PLAYER_LASER_DATA_SCANPOSE, laser_addr))
@@ -467,7 +467,7 @@ int mbicp::ProcessMessage(MessageQueue* resp_queue,player_msghdr * hdr, void * d
 		assert(hdr->size == sizeof(player_position2d_data_t));
       		player_msghdr_t newhdr = *hdr;
       		newhdr.addr = device_addr;
-      		Publish(NULL, &newhdr, (void*)&data);
+      		Publish(&newhdr, (void*)&data);
    	}else 
 
    	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,/*PLAYER_POSITION2D_CMD_VEL*/ -1, device_addr))
@@ -538,7 +538,7 @@ void mbicp::ProcessOdom(player_msghdr_t* hdr,player_position2d_data_t &data)
 	
 	player_msghdr_t newhdr = *hdr;
    	newhdr.addr = device_addr;
-   	Publish(NULL, &newhdr, (void*)&data);
+   	Publish(&newhdr, (void*)&data);
 }
 
 

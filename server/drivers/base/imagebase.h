@@ -72,7 +72,7 @@ class ImageBase : public Driver
 		virtual int Shutdown();
 
 		// Process incoming messages from clients 
-		int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+		int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 	protected: 
 		virtual int ProcessFrame() = 0;

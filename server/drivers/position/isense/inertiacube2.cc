@@ -141,7 +141,7 @@ class InertiaCube2 : public Driver
   private: virtual void Main();
 
   // Process incoming messages from clients 
-  int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+  int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Update the InertiaCube.
   private: void UpdateImu();
@@ -451,7 +451,7 @@ void InertiaCube2::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int InertiaCube2::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int InertiaCube2::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
@@ -535,7 +535,7 @@ void InertiaCube2::UpdateData()
   data.pos = pose;
 
   // Copy data to server.
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (unsigned char*) &data, sizeof(data), &position_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (unsigned char*) &data, sizeof(data), &position_time);
 
   return;
 }

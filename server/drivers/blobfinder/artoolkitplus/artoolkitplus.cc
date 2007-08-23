@@ -267,7 +267,7 @@ int ARToolkitPlusDriver::ProcessFrame()
 		++blobs.blobs_count;
 	}
 	
-	Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&blobs,sizeof(blobs));
+	Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&blobs,sizeof(blobs));
 
 	return 0;	
 }

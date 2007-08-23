@@ -56,7 +56,7 @@ class MultiDriver : public Driver
     // Must implement the following methods.
     virtual int Setup();
     virtual int Shutdown();
-    virtual int ProcessMessage(MessageQueue * resp_queue, 
+    virtual int ProcessMessage(QueuePointer & resp_queue, 
                                player_msghdr * hdr, 
                                void * data);
 
@@ -230,7 +230,7 @@ void MultiDriver::Main()
     posdata.vel.pa = -M_PI/6.0;
     posdata.stall = 0;
 
-    this->Publish(this->m_position_addr, NULL,
+    this->Publish(this->m_position_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                   (void*)&posdata, sizeof(posdata), NULL);
 
@@ -242,7 +242,7 @@ void MultiDriver::Main()
 }
 
 
-int MultiDriver::ProcessMessage(MessageQueue * resp_queue, 
+int MultiDriver::ProcessMessage(QueuePointer & resp_queue, 
                                 player_msghdr * hdr, 
                                 void * data)
 {

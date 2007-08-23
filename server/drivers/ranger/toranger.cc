@@ -83,7 +83,7 @@ int ToRanger::Shutdown (void)
 ////////////////////////////////////////////////////////////////////////////////
 
 // Message processing
-int ToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void *data)
+int ToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data)
 {
 	// Check for capabilities requests first
 	HANDLE_CAPABILITY_REQUEST (device_addr, respQueue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);

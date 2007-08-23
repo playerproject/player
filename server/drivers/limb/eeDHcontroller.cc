@@ -148,7 +148,7 @@ class EEDHController : public Driver
     virtual int Shutdown ();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage (MessageQueue* resp_queue, 
+    virtual int ProcessMessage (QueuePointer &resp_queue, 
                                 player_msghdr * hdr,
                                 void * data);
 
@@ -467,7 +467,7 @@ void
     limb_data.orientation.py = pose (2); 
     limb_data.orientation.pz = pose (3); 
   
-    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,
+    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,
              &limb_data, sizeof (limb_data), NULL);
 
     actarray_data_received = false;
@@ -609,7 +609,7 @@ void
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
 int
-  EEDHController::ProcessMessage (MessageQueue* resp_queue, 
+  EEDHController::ProcessMessage (QueuePointer &resp_queue, 
                           player_msghdr * hdr,
                           void * data)
 {

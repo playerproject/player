@@ -177,7 +177,7 @@ class SickPLS : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
   private:
@@ -537,7 +537,7 @@ void SickPLS::Main()
       }
 
       // Make data available
-      this->Publish(this->device_addr, NULL, 
+      this->Publish(this->device_addr,  
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                     (void*)&data, sizeof(data), NULL);
     }
@@ -549,7 +549,7 @@ void SickPLS::Main()
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
 int 
-SickPLS::ProcessMessage(MessageQueue * resp_queue, 
+SickPLS::ProcessMessage(QueuePointer & resp_queue, 
                            player_msghdr * hdr,
                            void * data)
 {

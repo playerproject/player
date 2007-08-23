@@ -253,7 +253,7 @@ int ClodBuster::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ClodBuster::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int ClodBuster::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
 
   assert(hdr);
@@ -399,7 +399,7 @@ ClodBuster::Main()
       // remember old values
       old_encoder_measurement = encoder_measurement;
       
-      Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,(void*)&this->position_data,
+      Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,(void*)&this->position_data,
                     sizeof(player_position2d_data_t),NULL);
       //      printf("left: %d , right %d count: %u\n",encoder_measurement.left,encoder_measurement.right,encoder_measurement.time_count);
       //      printf("left: %d , right %d\n",encoder_measurement.left-encoder_offset.left,encoder_measurement.right-encoder_offset.right);

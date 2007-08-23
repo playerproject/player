@@ -498,7 +498,7 @@ void ShapeTracker::WriteData()
   }
 
   // Copy data to server.
-  Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
+  Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
   
   
   return;

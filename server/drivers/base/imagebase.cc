@@ -108,7 +108,7 @@ int ImageBase::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ImageBase::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);

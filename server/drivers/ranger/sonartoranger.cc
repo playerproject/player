@@ -97,11 +97,11 @@ class SonarToRanger : public ToRanger
 
 	protected:
 		// Child message handler, for handling messages from the input device
-		int ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void *data);
+		int ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data);
 		// Function called when a property has been changed so it can be passed on to the input driver
 		bool PropertyChanged (void);
 		// Set power state
-		int SetPower (MessageQueue *respQueue, player_msghdr *hdr, uint8_t state);
+		int SetPower (QueuePointer &respQueue, player_msghdr *hdr, uint8_t state);
 		// Convert sonar geometry to ranger geometry
 		int ConvertGeom (player_sonar_geom_t *geom);
 		// Convert sonar data to ranger data
@@ -253,7 +253,7 @@ int SonarToRanger::ConvertData (player_sonar_data_t *data)
 		rangeData.ranges[ii] = data->ranges[ii];
 
 	// Publish the data
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE, reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE, reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
 
 	// Clean up
 	delete[] rangeData.ranges;
@@ -261,7 +261,7 @@ int SonarToRanger::ConvertData (player_sonar_data_t *data)
 	return 0;
 }
 
-int SonarToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void *data)
+int SonarToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data)
 {
 	// Check the parent message handler
 	if (ToRanger::ProcessMessage (respQueue, hdr, data) == 0)
@@ -315,7 +315,7 @@ int SonarToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 		// Geometry request - need to manage the info we just got
 		if (ConvertGeom (reinterpret_cast<player_sonar_geom_t*> (data)) == 0)
 		{
-			Publish (device_addr, NULL, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, reinterpret_cast<void*> (&deviceGeom), sizeof (deviceGeom), NULL);
+			Publish (device_addr, PLAYER_MSGTYPE_RESP_ACK, PLAYER_RANGER_REQ_GET_GEOM, reinterpret_cast<void*> (&deviceGeom), sizeof (deviceGeom), NULL);
 			return 0;
 		}
 		else
@@ -348,7 +348,7 @@ int SonarToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, 
 	{
 		if (ConvertGeom (reinterpret_cast<player_sonar_geom_t*> (data)) == 0)
 		{
-			Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_GEOM, reinterpret_cast<void*> (&deviceGeom), sizeof (deviceGeom), NULL);
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_GEOM, reinterpret_cast<void*> (&deviceGeom), sizeof (deviceGeom), NULL);
 			return 0;
 		}
 	}

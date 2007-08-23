@@ -553,7 +553,7 @@ class PTU46_Device:public Driver
 	virtual int Shutdown ();
 
 	// MessageHandler
-	int ProcessMessage (MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+	int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 };
   
 ////////////////////////////////////////////////////////////////////////////////
@@ -629,7 +629,7 @@ PTU46_Device::Shutdown ()
 
 ////////////////////////////////////////////////////////////////////////////////
 int
-PTU46_Device::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+PTU46_Device::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
     assert (hdr);
     assert (data);
@@ -752,7 +752,7 @@ PTU46_Device::Main ()
 	data.panspeed  = DTOR (pantilt->GetSpeed (PTU46_PAN));
 	data.tiltspeed = DTOR (pantilt->GetSpeed (PTU46_TILT));
 
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, 
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, 
 	    &data, sizeof (player_ptz_data_t), NULL);
 
 	// repeat frequency (default to 10 Hz)

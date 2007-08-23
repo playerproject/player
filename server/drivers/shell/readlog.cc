@@ -175,36 +175,36 @@ class ReadLog: public Driver
   // Main loop
   public: virtual void Main();
 
-  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+  public: virtual int ProcessMessage(QueuePointer & resp_queue,
                                      player_msghdr_t * hdr,
                                      void * data);
   // Process log interface configuration requests
-  private: int ProcessLogConfig(MessageQueue * resp_queue,
+  private: int ProcessLogConfig(QueuePointer & resp_queue,
                                 player_msghdr_t * hdr,
                                 void * data);
 
   // Process position interface configuration requests
-  private: int ProcessPositionConfig(MessageQueue * resp_queue,
+  private: int ProcessPositionConfig(QueuePointer & resp_queue,
                                      player_msghdr_t * hdr,
                                      void * data);
 
   // Process laser interface configuration requests
-  private: int ProcessLaserConfig(MessageQueue * resp_queue,
+  private: int ProcessLaserConfig(QueuePointer & resp_queue,
                                   player_msghdr_t * hdr,
                                   void * data);
 
   // Process sonar interface configuration requests
-  private: int ProcessSonarConfig(MessageQueue * resp_queue,
+  private: int ProcessSonarConfig(QueuePointer & resp_queue,
                                   player_msghdr_t * hdr,
                                   void * data);
 
   // Process WSN interface configuration requests
-  private: int ProcessWSNConfig(MessageQueue * resp_queue,
+  private: int ProcessWSNConfig(QueuePointer & resp_queue,
                                 player_msghdr_t * hdr,
                                 void * data);
 
   // Process IMU interface configuration requests
-  private: int ProcessIMUConfig(MessageQueue * resp_queue,
+  private: int ProcessIMUConfig(QueuePointer &resp_queue,
                                 player_msghdr_t * hdr,
                                 void * data);
 
@@ -811,7 +811,7 @@ void ReadLog::Main()
 
 ////////////////////////////////////////////////////////////////////////////
 // Process configuration requests
-int ReadLog::ProcessLogConfig(MessageQueue * resp_queue,
+int ReadLog::ProcessLogConfig(QueuePointer & resp_queue,
                               player_msghdr_t * hdr,
                               void * data)
 {
@@ -871,7 +871,7 @@ int ReadLog::ProcessLogConfig(MessageQueue * resp_queue,
 }
 
 int
-ReadLog::ProcessPositionConfig(MessageQueue * resp_queue,
+ReadLog::ProcessPositionConfig(QueuePointer & resp_queue,
                                player_msghdr_t * hdr,
                                void * data)
 {
@@ -905,7 +905,7 @@ ReadLog::ProcessPositionConfig(MessageQueue * resp_queue,
 }
 
 int
-ReadLog::ProcessLaserConfig(MessageQueue * resp_queue,
+ReadLog::ProcessLaserConfig(QueuePointer & resp_queue,
                             player_msghdr_t * hdr,
                             void * data)
 {
@@ -945,7 +945,7 @@ ReadLog::ProcessLaserConfig(MessageQueue * resp_queue,
 }
 
 int
-ReadLog::ProcessSonarConfig(MessageQueue * resp_queue,
+ReadLog::ProcessSonarConfig(QueuePointer & resp_queue,
                             player_msghdr_t * hdr,
                             void * data)
 {
@@ -979,7 +979,7 @@ ReadLog::ProcessSonarConfig(MessageQueue * resp_queue,
 }
 
 int
-ReadLog::ProcessWSNConfig(MessageQueue * resp_queue,
+ReadLog::ProcessWSNConfig(QueuePointer & resp_queue,
                           player_msghdr_t * hdr,
                           void * data)
 {
@@ -1013,7 +1013,7 @@ ReadLog::ProcessWSNConfig(MessageQueue * resp_queue,
 }
 
 int
-ReadLog::ProcessIMUConfig(MessageQueue * resp_queue,
+ReadLog::ProcessIMUConfig(QueuePointer &resp_queue,
                           player_msghdr_t * hdr,
                           void * data)
 {
@@ -1047,7 +1047,7 @@ ReadLog::ProcessIMUConfig(MessageQueue * resp_queue,
 }
 
 int
-ReadLog::ProcessMessage(MessageQueue * resp_queue,
+ReadLog::ProcessMessage(QueuePointer & resp_queue,
                         player_msghdr_t * hdr,
                         void * data)
 {
@@ -1451,7 +1451,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
             }
-            this->Publish(id, NULL, type, subtype,
+            this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -1493,7 +1493,7 @@ int ReadLog::ParseLaser(player_devaddr_t id,
               return -1;
             }
 
-            this->Publish(id, NULL, type, subtype,
+            this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -1589,7 +1589,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
             }
-            this->Publish(id, NULL, type, subtype,
+            this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -1616,7 +1616,7 @@ int ReadLog::ParseSonar(player_devaddr_t id,
                             this->filename, linenum);
               return -1;
             }
-            this->Publish(id, NULL, type, subtype,
+            this->Publish(id, type, subtype,
                           (void*)&geom, sizeof(geom), &time);
             return(0);
           }
@@ -1714,7 +1714,7 @@ ReadLog::ParsePosition(player_devaddr_t id,
             data.vel.pa = atof(tokens[12]);
             data.stall = atoi(tokens[13]);
 
-            this->Publish(id, NULL, type, subtype,
+            this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -1820,7 +1820,7 @@ int ReadLog::ParseWifi(player_devaddr_t id,
             if(data.links_count != reported_count)
               PLAYER_WARN("read fewer wifi link entries than expected");
 
-            this->Publish(id, NULL, type, subtype,
+            this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
             return(0);
           }
@@ -1870,7 +1870,7 @@ int ReadLog::ParseWSN(player_devaddr_t id,
                     data.data_packet.temperature = atof(tokens[18]);
                     data.data_packet.battery     = atof(tokens[19]);
 
-                    this->Publish(id, NULL, type, subtype,
+                    this->Publish(id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return(0);
                 }
@@ -1911,8 +1911,8 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.pose.proll  = atof (tokens[10]);
 		    data.pose.ppitch = atof (tokens[11]);
 		    data.pose.pyaw   = atof (tokens[12]);
-
-                    this->Publish (id, NULL, type, subtype,
+		    
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -1935,8 +1935,8 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.magn_x  = atof (tokens[13]);
 		    data.magn_y  = atof (tokens[14]);
 		    data.magn_z  = atof (tokens[15]);
-
-                    this->Publish (id, NULL, type, subtype,
+		    
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
@@ -1963,8 +1963,8 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.q1      = atof (tokens[17]);
 		    data.q2      = atof (tokens[18]);
 		    data.q3      = atof (tokens[19]);
-
-                    this->Publish (id, NULL, type, subtype,
+		    
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
@@ -1990,8 +1990,8 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.orientation.proll  = atof (tokens[16]);
 		    data.orientation.ppitch = atof (tokens[17]);
 		    data.orientation.pyaw   = atof (tokens[18]);
-
-                    this->Publish (id, NULL, type, subtype,
+		    
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
 		}
@@ -2037,8 +2037,7 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
 			element.point = point;
 			data.points[i] = element;
 		    }
-
-                    this->Publish (id, NULL, type, subtype,
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -2079,8 +2078,7 @@ int ReadLog::ParsePTZ (player_devaddr_t id,
 		    data.zoom = atof (tokens[9]);
 		    data.panspeed  = atof (tokens[10]);
 		    data.tiltspeed = atof (tokens[11]);
-
-                    this->Publish (id, NULL, type, subtype,
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -2128,8 +2126,8 @@ int ReadLog::ParseActarray (player_devaddr_t id,
 			data.actuators[i] = actuator;
 		    }
 		    data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
-
-                    this->Publish (id, NULL, type, subtype,
+		    
+                    this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
                 }
@@ -2181,7 +2179,7 @@ int ReadLog::ParseAIO(player_devaddr_t id, unsigned short type,
                  v != inputs.voltages + inputs.voltages_count; ++v, ++t)
               *v = atof(*t);
 
-            Publish(id, NULL, type, subtype, (void *)&inputs, sizeof(inputs),
+            Publish(id, type, subtype, (void *)&inputs, sizeof(inputs),
                     &time);
             return 0;
           }
@@ -2236,7 +2234,7 @@ int ReadLog::ParseDIO(player_devaddr_t id, unsigned short type,
               if (strcmp(*t, "1") == 0) inputs.bits |= mask;
             }
 
-            Publish(id, NULL, type, subtype, (void *)&inputs, sizeof(inputs),
+            Publish(id, type, subtype, (void *)&inputs, sizeof(inputs),
                     &time);
             return 0;
           }
@@ -2291,7 +2289,7 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
               DecodeHex(r->guid, PLAYER_RFID_MAX_GUID, *t, strlen(*t));
             }
 
-            Publish(id, NULL, type, subtype, (void *)&rdata, sizeof(rdata),
+            Publish(id, type, subtype, (void *)&rdata, sizeof(rdata),
                     &time);
             return 0;
           }

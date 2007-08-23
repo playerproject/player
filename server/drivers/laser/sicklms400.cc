@@ -196,7 +196,7 @@ class SickLMS400 : public Driver
     int Shutdown ();
 
     // MessageHandler
-    int ProcessMessage (MessageQueue* resp_queue, 
+    int ProcessMessage (QueuePointer &resp_queue, 
 		        player_msghdr* hdr, 
 		        void* data);
   private:
@@ -385,7 +385,7 @@ int
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
 int 
-  SickLMS400::ProcessMessage (MessageQueue* resp_queue, 
+  SickLMS400::ProcessMessage (QueuePointer &resp_queue, 
                               player_msghdr* hdr,
                               void* data)
 {
@@ -669,7 +669,7 @@ void
   
       if (data.ranges_count != (unsigned int)-1)
         // Make data available
-        Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
+        Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                  &data, sizeof (data), NULL);
     }
   }

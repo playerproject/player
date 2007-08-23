@@ -142,7 +142,7 @@ class Festival:public Driver
     virtual int Unsubscribe(player_devaddr_t id);
 
     // MessageHandler
-    int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+    int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
 };
 
 
@@ -382,7 +382,7 @@ Festival::Unsubscribe(player_devaddr_t device)
 	return retval;
 }
 
-int Festival::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int Festival::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);

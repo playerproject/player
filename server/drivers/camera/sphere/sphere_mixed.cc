@@ -416,11 +416,10 @@ void SphereDriver::Main()
 }
 
 // Process an incoming message
-int SphereDriver::ProcessMessage(MessageQueue* resp_queue,
+int SphereDriver::ProcessMessage(QueuePointer & resp_queue,
                                  player_msghdr* hdr,
                                  void* data)
 {
-  assert(resp_queue);
   assert(hdr);
   assert(data);
 
@@ -519,11 +518,11 @@ void SphereDriver::RefreshData()
   // Copy data to server
   size = sizeof(mCameraData) - sizeof(mCameraData.image) + image_size;
 
-  Publish(mCameraAddr, NULL,
+  Publish(mCameraAddr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&mCameraData), size, NULL);
 
-  Publish(mPtzAddr, NULL,
+  Publish(mPtzAddr, 
           PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
           reinterpret_cast<void*>(&mPtzData), sizeof(mPtzData), NULL);
 

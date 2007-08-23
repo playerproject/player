@@ -84,7 +84,7 @@ class BumperSafe : public Driver
     int ShutdownBumper();
 
     // Message Handler
-  int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
+  int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                                void * data);
 
   private:
@@ -146,9 +146,6 @@ int BumperSafe::Setup()
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device (called by server thread).
 int BumperSafe::Shutdown() {
-  // Stop the driver thread.
-  this->StopThread();
-
   // Stop the laser
   this->ShutdownPosition();
 
@@ -160,7 +157,7 @@ int BumperSafe::Shutdown() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int BumperSafe::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
+int BumperSafe::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                                void * data)
 {
   assert(hdr);

@@ -212,7 +212,7 @@ class AmtecPowerCube:public Driver
     AmtecPowerCube( ConfigFile* cf, int section);
 
     // MessageHandler
-    int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+    int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
     virtual int Setup();
     virtual int Shutdown();
@@ -998,7 +998,7 @@ AmtecPowerCube::SetTiltVel(short tiltspeed)
 }
 
 
-int AmtecPowerCube::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int AmtecPowerCube::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
@@ -1151,7 +1151,7 @@ AmtecPowerCube::Main()
     data.panspeed = (currpanspeed);
     data.tiltspeed = (currtiltspeed);
 
-    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, (unsigned char*)&data, sizeof(player_ptz_data_t),NULL);
 
     // get the module state (for debugging and warning)
     unsigned int state;

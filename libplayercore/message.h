@@ -56,6 +56,55 @@
 
 class MessageQueue;
 
+/** @brief An autopointer for the message queue
+
+Using an autopointer allows the queue to be released by the client and still exist 
+until no drivers have messages relating to the queue still pending.
+
+**/
+class QueuePointer
+{
+  public:
+    /// Create a NULL autopointer;
+    QueuePointer();
+    /// Create an empty message queue and an auto pointer to it.
+    QueuePointer(bool _Replace, size_t _Maxlen);
+    /// Destroy our reference to the message queue.
+	~QueuePointer();
+	/// Create a new reference to a message queue
+	QueuePointer(const QueuePointer & CopyFrom);
+	
+	/// assign reference to our message queue
+	QueuePointer & operator = (const QueuePointer & rhs);
+	/// retrieve underlying object for use
+	MessageQueue * operator -> ();
+	/// retrieve underlying object for use
+	MessageQueue & operator * ();
+	/// check if pointers are equal
+	bool operator == (const QueuePointer & rhs);
+	/// check if pointers are equal
+	bool operator == (void * pointer);
+	/// check if pointers are equal
+	bool operator != (const QueuePointer & rhs);
+	/// check if pointers are equal
+	bool operator != (void * pointer);
+	
+  private:
+    /// Decrement ref count
+    void DecRef();
+
+    /// The queue we are pointing to
+    MessageQueue * Queue;
+
+    /// Reference count.
+    unsigned int * RefCount;
+
+    /// Used to lock access to refcount.
+    pthread_mutex_t * Lock;
+};
+
+
+
 /** @brief Reference-counted message objects
 
 All Player messages are transferred between drivers as pointers to Message
@@ -77,8 +126,15 @@ class Message
     Message(const struct player_msghdr & Header,
             const void* data,
             unsigned int data_size,
-            MessageQueue* _queue = NULL,
             bool do_deepcopy = true);
+
+    /// Create a new message with an associated queue
+    Message(const struct player_msghdr & Header,
+            const void* data,
+            unsigned int data_size,
+            QueuePointer &_queue,
+            bool do_deepcopy = true);
+
     /// Copy pointers from existing message and increment refcount.
     Message(const Message & rhs);
 
@@ -125,7 +181,7 @@ class Message
     bool Ready (void) const     { return ready; }
 
     /// queue to which any response to this message should be directed
-    MessageQueue* Queue;
+    QueuePointer Queue;
 
     /// Reference count.
     unsigned int * RefCount;
@@ -370,5 +426,8 @@ class MessageQueue
     /// but pull is the recommended method to avoid getting delays in data on the client.
     bool pull;
 };
+
+
+
 
 #endif

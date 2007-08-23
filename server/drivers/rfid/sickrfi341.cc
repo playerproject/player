@@ -105,7 +105,7 @@ class SickRFI341 : public Driver
     int Shutdown ();
 
     // MessageHandler
-    int ProcessMessage (MessageQueue* resp_queue, 
+    int ProcessMessage (QueuePointer &resp_queue, 
 		        player_msghdr* hdr, 
 		        void* data);
   private:
@@ -198,7 +198,7 @@ int
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
 int 
-  SickRFI341::ProcessMessage (MessageQueue* resp_queue, 
+  SickRFI341::ProcessMessage (QueuePointer &resp_queue, 
                               player_msghdr* hdr,
                               void* data)
 {
@@ -226,7 +226,7 @@ void
     player_rfid_data_t data = rfi341->ReadTags ();
     
     // Make data available
-    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
+    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
             &data, sizeof (data), NULL);
             
     nanosleep (&sleepTime, NULL);

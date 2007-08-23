@@ -124,7 +124,7 @@ class SickNAV200 : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer &resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
   private:
@@ -238,7 +238,7 @@ int SickNAV200::Shutdown()
 
 
 int 
-SickNAV200::ProcessMessage(MessageQueue * resp_queue, 
+SickNAV200::ProcessMessage(QueuePointer &resp_queue, 
                            player_msghdr * hdr,
                            void * data)
 {
@@ -301,7 +301,6 @@ void SickNAV200::Main()
       }
 
       this->Publish(this->device_addr,
-                   NULL,
                    PLAYER_MSGTYPE_DATA,
                    PLAYER_POSITION2D_DATA_STATE,
                    (void*)&data_packet, sizeof(data_packet), NULL);

@@ -121,7 +121,7 @@ public:
   //unsigned char ReadStatus(int, int *, int *);
 
 		// MessageHandler
-		int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+		int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
 
 private:
   player_devaddr_t ir_addr;

@@ -572,7 +572,7 @@ void wbr914::PublishData(void)
   if ( position_subscriptions )
   {
     // put odometry data
-    this->Publish(this->position_id, NULL,
+    this->Publish(this->position_id,
 		  PLAYER_MSGTYPE_DATA,
 		  PLAYER_POSITION2D_DATA_STATE,
 		  (void*)&(this->_data.position),
@@ -583,7 +583,7 @@ void wbr914::PublishData(void)
   if ( ir_subscriptions )
   {
     // put ir data
-    this->Publish(this->ir_id, NULL,
+    this->Publish(this->ir_id,
 		  PLAYER_MSGTYPE_DATA,
 		  PLAYER_IR_DATA_RANGES,
 		  (void*)&(_data.ir),
@@ -594,7 +594,7 @@ void wbr914::PublishData(void)
   if ( aio_subscriptions )
   {
     // put Analog Input data
-    this->Publish(this->aio_id, NULL,
+    this->Publish(this->aio_id,
 		  PLAYER_MSGTYPE_DATA,
 		  PLAYER_AIO_DATA_STATE,
 		  (void*)&(_data.aio),
@@ -605,7 +605,7 @@ void wbr914::PublishData(void)
   if ( dio_subscriptions )
   {
     // put Digital Input data
-    this->Publish(this->dio_id, NULL,
+    this->Publish(this->dio_id,
 		  PLAYER_MSGTYPE_DATA,
 		  PLAYER_DIO_DATA_VALUES,
 		  (void*)&(_data.dio),
@@ -670,7 +670,7 @@ void wbr914::Main()
   }
 }
 
-int wbr914::ProcessMessage(MessageQueue * resp_queue,
+int wbr914::ProcessMessage(QueuePointer &resp_queue,
 			   player_msghdr * hdr,
 			   void * data)
 {
@@ -684,7 +684,7 @@ int wbr914::ProcessMessage(MessageQueue * resp_queue,
   return(-1);
 }
 
-int wbr914::HandleConfig(MessageQueue* resp_queue,
+int wbr914::HandleConfig(QueuePointer &resp_queue,
 			 player_msghdr * hdr,
 			 void * data)
 {
@@ -1135,7 +1135,7 @@ int wbr914::ResetRawPositions()
   /*
   player_position2d_data_t data;
   memset(&data,0,sizeof(player_position2d_data_t));
-  Publish( position_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data),NULL);
+  Publish( position_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data),NULL);
   */
   _x   = 0;
   _y   = 0;

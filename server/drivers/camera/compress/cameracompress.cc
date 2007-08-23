@@ -55,13 +55,7 @@ interface.
 
 @par Configuration file options
 
-- save (int)
-  - Default: 0
-  - If non-zero, compressed images are saved to disk (with a .ppm extension?)
-
-- image_quality (float)
-  - Default: 0.8
-  - JPEG image quality (0.0 - 1.0)
+- none
       
 @par Example 
 
@@ -100,7 +94,7 @@ class CameraCompress : public Driver
   public: virtual int Shutdown();
 
   // This method will be invoked on each incoming message
-  public: virtual int ProcessMessage(MessageQueue* resp_queue,
+  public: virtual int ProcessMessage(QueuePointer & resp_queue,
                                      player_msghdr * hdr,
                                      void * data);
 
@@ -201,7 +195,7 @@ int CameraCompress::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraCompress::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, 
                                void * data)
 {
   assert(hdr);
@@ -304,6 +298,6 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
   this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
   this->data.image_count = (this->data.image_count);
   
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
 
 }

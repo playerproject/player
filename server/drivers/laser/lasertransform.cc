@@ -67,7 +67,6 @@ int LaserTransform::Setup()
     PLAYER_ERROR("unable to subscribe to laser device");
     return(-1);
   }
-
   return 0;
 }
 
@@ -84,7 +83,7 @@ int LaserTransform::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserTransform::ProcessMessage(MessageQueue * resp_queue, 
+int LaserTransform::ProcessMessage(QueuePointer & resp_queue, 
                                 player_msghdr * hdr, 
                                 void * data)
 {

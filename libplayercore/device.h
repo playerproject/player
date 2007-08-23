@@ -76,12 +76,12 @@ class Device
     /// @brief Subscribe the given queue to this device.
     ///
     /// @returns 0 on success, non-zero otherwise.
-    int Subscribe(MessageQueue* sub_queue);
+    int Subscribe(QueuePointer &sub_queue);
 
     /// @brief Unsubscribe the given queue from this device.
     ///
     /// @returns 0 on success, non-zero otherwise.
-    int Unsubscribe(MessageQueue* sub_queue);
+    int Unsubscribe(QueuePointer &sub_queue);
 
     /// @brief Send a message to this device.
     ///
@@ -96,7 +96,7 @@ class Device
     /// @param len : Length of the message payload
     /// @param timestamp : If non-NULL, the timestamp to attach to the
     /// message; otherwise, the current time is filled in.
-    void PutMsg(MessageQueue* resp_queue,
+    void PutMsg(QueuePointer &resp_queue,
                 uint8_t type, 
                 uint8_t subtype,
                 void* src, 
@@ -111,7 +111,7 @@ class Device
     /// @param resp_queue Where to push any reply
     /// @param hdr The message header.
     /// @param src The message body (its size is stored in hdr->size).
-    void PutMsg(MessageQueue* resp_queue,
+    void PutMsg(QueuePointer &resp_queue,
                 player_msghdr_t* hdr,
                 void* src);
 
@@ -137,7 +137,7 @@ class Device
     ///
     /// @returns A pointer to the reply message.  The caller is responsible
     ///          for deleting this pointer.
-    Message* Request(MessageQueue* resp_queue,
+    Message* Request(QueuePointer &resp_queue,
                      uint8_t type,
                      uint8_t subtype,
                      void* src,
@@ -179,10 +179,10 @@ class Device
     Driver* driver;
     
     /// Pointer to the underlying driver's queue
-    MessageQueue* InQueue;
+    QueuePointer InQueue;
 
     /// Linked list of subscribed queues
-    MessageQueue** queues;
+    QueuePointer* queues;
 
     /// Length of @p queues
     size_t len_queues;

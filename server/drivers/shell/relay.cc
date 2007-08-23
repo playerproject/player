@@ -80,7 +80,7 @@ class Relay:public Driver
 
   private:
     // MessageHandler
-    int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+    int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 };
 
@@ -98,8 +98,8 @@ Relay_Register(DriverTable* table)
   table->AddDriver("relay",  Relay_Init);
 }
 
-int Relay::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int Relay::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, hdr->subtype, data, hdr->size);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, hdr->subtype, data, hdr->size);
   return 0;
 }

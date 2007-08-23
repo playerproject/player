@@ -469,8 +469,8 @@ class SonyEVID30:public Driver
 //  int HandleConfig(void *client, unsigned char *buf, size_t len);
 
   // MessageHandler
-  int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
-  int ProcessGenericRequest(MessageQueue * resp_queue,
+  int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
+  int ProcessGenericRequest(QueuePointer &resp_queue,
 									player_msghdr *hdr,
 									player_ptz_req_generic_t *req);
   int ProcessPtzRequest(player_ptz_cmd_t *cmd);
@@ -1266,7 +1266,7 @@ int SonyEVID30::SendAbsZoom(short zoom)
   return(SendCommand(command, 7));
 }
 
-int SonyEVID30::ProcessGenericRequest(MessageQueue *resp_queue,
+int SonyEVID30::ProcessGenericRequest(QueuePointer &resp_queue,
 									player_msghdr *hdr,
 									player_ptz_req_generic_t *req)
 {
@@ -1375,7 +1375,7 @@ int SonyEVID30::ProcessPtzRequest(player_ptz_cmd_t *cmd)
 	return 0;
 }
 
-int SonyEVID30::ProcessMessage(MessageQueue * resp_queue,
+int SonyEVID30::ProcessMessage(QueuePointer &resp_queue,
 							   player_msghdr * hdr, void *data)
 {
   assert(hdr);
@@ -1517,7 +1517,7 @@ void SonyEVID30::Main()
     
     /* test if we are supposed to cancel */
     pthread_testcancel();
-    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
        
     usleep(PTZ_SLEEP_TIME_USEC);
     }

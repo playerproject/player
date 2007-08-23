@@ -186,7 +186,7 @@ public:
 	virtual int Unsubscribe(Device* id);
 
 	// MessageHandler
-	int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+	int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 };
 
 void computeQuaternion(double heading, double attitude, double bank ,double* x,double* y, double* z, double* w);
@@ -214,7 +214,7 @@ int
 	return(device->Unsubscribe(this->InQueue));
 }
 
-int KartoLogger::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int KartoLogger::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
 	//writelog control
 	if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,

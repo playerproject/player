@@ -105,14 +105,14 @@ class SR3000:public Driver
     int Shutdown ();
 
     // MessageHandler
-    virtual int ProcessMessage (MessageQueue * resp_queue,
-                                player_msghdr * hdr,
+    virtual int ProcessMessage (QueuePointer &resp_queue, 
+                                player_msghdr * hdr, 
                                 void * data);
 
   private:
 
     // Camera MessageHandler
-    int ProcessMessageCamera (MessageQueue* resp_queue,
+    int ProcessMessageCamera (QueuePointer &resp_queue,
                               player_msghdr * hdr,
                               void * data,
                               player_devaddr_t cam_addr);
@@ -295,7 +295,7 @@ int
 ////////////////////////////////////////////////////////////////////////////////
 // Process messages from/for a camera interface
 int
-    SR3000::ProcessMessageCamera (MessageQueue* resp_queue,
+    SR3000::ProcessMessageCamera (QueuePointer &resp_queue, 
                                   player_msghdr * hdr,
                                   void * data,
                                   player_devaddr_t cam_addr)
@@ -471,8 +471,7 @@ int
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
-int
-    SR3000::ProcessMessage (MessageQueue* resp_queue,
+int SR3000::ProcessMessage (QueuePointer &resp_queue, 
                             player_msghdr * hdr,
                             void * data)
 {
@@ -538,8 +537,8 @@ void SR3000::RefreshData ()
       pcloud_data.points[i] = element;
     }
     // Write the Pointcloud3d data
-    Publish (pcloud_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POINTCLOUD3D_DATA_STATE,
-             &pcloud_data, 4 + pcloud_data.points_count*sizeof (player_pointcloud3d_element_t),
+    Publish (pcloud_addr, PLAYER_MSGTYPE_DATA, PLAYER_POINTCLOUD3D_DATA_STATE,
+             &pcloud_data, 4 + pcloud_data.points_count*sizeof (player_pointcloud3d_element_t), 
              NULL);
 
   }
@@ -557,7 +556,7 @@ void SR3000::RefreshData ()
     memcpy (d_cam_data.image, (unsigned char*)buffer, rows*cols*2);
 
     // Write the distance camera data
-    Publish (d_cam_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+    Publish (d_cam_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
              &d_cam_data, 28+(d_cam_data.image_count), NULL);
   }
 
@@ -574,7 +573,7 @@ void SR3000::RefreshData ()
     memcpy (i_cam_data.image, (unsigned char*)buffer + buffer_size/2, rows*cols*2);
 
     // Write the intensity camera data
-    Publish (i_cam_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+    Publish (i_cam_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
              &i_cam_data, 28+(i_cam_data.image_count), NULL);
   }
 

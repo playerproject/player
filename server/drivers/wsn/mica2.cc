@@ -150,7 +150,7 @@ class Mica2 : public Driver
 	virtual int Unsubscribe (player_devaddr_t id);
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage (MessageQueue* resp_queue, 
+	virtual int ProcessMessage (QueuePointer & resp_queue, 
 				    player_msghdr * hdr,
 				    void * data);
     private:
@@ -447,7 +447,7 @@ void Mica2::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int Mica2::ProcessMessage (MessageQueue* resp_queue, 
+int Mica2::ProcessMessage (QueuePointer & resp_queue, 
 			   player_msghdr * hdr,
 			   void * data)
 {	
@@ -1121,12 +1121,12 @@ int Mica2::DecodeSerial (unsigned char *buffer, int length)
 
     if ((provideRFID) && (rfidPacket))
 	// Write the RFID data
-	Publish (rfid_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
+	Publish (rfid_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
 		&rfid_data, sizeof (player_rfid_data_t), NULL);
 
     if ((provideWSN) && (wsnPacket))
 	// Write the WSN data
-	Publish (wsn_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
+	Publish (wsn_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
 		&wsn_data, sizeof (player_wsn_data_t), NULL);
 
     return 0;

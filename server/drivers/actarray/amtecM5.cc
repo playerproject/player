@@ -94,11 +94,11 @@ class AmtecM5 : public Driver {
 		virtual int Shutdown();
 
 		// This method will be invoked on each incoming message
-		virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 
 	private:
-		int HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* data);
+		int HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* data);
 		int HandleCommand(player_msghdr * hdr, void * data);
                 int ModuleSyncMotion(int state);
                 float normalize_angle(float angle);
@@ -496,7 +496,7 @@ int AmtecM5::Shutdown() {
 	return(0);
 }
 
-int AmtecM5::ProcessMessage(MessageQueue* resp_queue,
+int AmtecM5::ProcessMessage(QueuePointer &resp_queue,
                                 player_msghdr * hdr,
                                 void * data) {
 	// Process messages here.  Send a response if necessary, using Publish().
@@ -512,7 +512,7 @@ int AmtecM5::ProcessMessage(MessageQueue* resp_queue,
 	else
 		return(-1);
 }
-int AmtecM5::HandleRequest(MessageQueue* resp_queue, player_msghdr * hdr, void* data) {
+int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* data) {
 	//puts("Asked to handle a Request.");
 
         bool handled(false);
@@ -1223,7 +1223,7 @@ void AmtecM5::Main() {
 		}
 
 		//Broadcast our data
-		Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_ACTARRAY_DATA_STATE, (unsigned char*)&data, sizeof(player_actarray_data_t),NULL);
+		Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_ACTARRAY_DATA_STATE, (unsigned char*)&data, sizeof(player_actarray_data_t),NULL);
 
 
 		//point to calculate how much to sleep, call nanosleep, after sleep restart the timer

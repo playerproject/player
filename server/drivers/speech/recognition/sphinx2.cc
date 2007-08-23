@@ -148,7 +148,7 @@ class Sphinx2 : public Driver
     int Shutdown();
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage(MessageQueue* resp_queue, 
+	virtual int ProcessMessage(QueuePointer & resp_queue, 
                                player_msghdr * hdr,
                                void * data);
 
@@ -277,7 +277,7 @@ int Sphinx2::Shutdown()
 }
 
 
-int Sphinx2::ProcessMessage(MessageQueue* resp_queue, 
+int Sphinx2::ProcessMessage(QueuePointer & resp_queue, 
                                   player_msghdr * hdr,
                                   void * data)
 {	
@@ -406,7 +406,7 @@ void Sphinx2::Main()
 
     printf("data.text[%d] = %s\n",data.text_count,data.text);
 
-    Publish(device_addr,NULL,
+    Publish(device_addr,
         PLAYER_MSGTYPE_DATA,PLAYER_SPEECH_RECOGNITION_DATA_STRING,
         (uint8_t*)&data, sizeof(data), NULL);
 

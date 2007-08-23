@@ -88,7 +88,7 @@ class Alsa : public Driver
 		virtual int Setup (void);
 		virtual int Shutdown (void);
 
-		virtual int ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *data);
+		virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
 	private:
 		// Driver options
@@ -202,9 +202,9 @@ class Alsa : public Driver
 		int HandleSamplePlayCmd (player_audio_sample_item_t *data);
 		int HandleRecordCmd (player_bool_t *data);
 		int HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data);
-		int HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_queue);
-		int HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *resp_queue);
-		int HandleSampleRecordReq (player_audio_sample_rec_req_t *data, MessageQueue *resp_queue);
-		int HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue);
-		int HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue);
+		int HandleSampleLoadReq (player_audio_sample_t *data, QueuePointer &resp_queue);
+		int HandleSampleRetrieveReq (player_audio_sample_t *data, QueuePointer &resp_queue);
+		int HandleSampleRecordReq (player_audio_sample_rec_req_t *data, QueuePointer &resp_queue);
+		int HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, QueuePointer &resp_queue);
+		int HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, QueuePointer &resp_queue);
 };

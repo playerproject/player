@@ -96,7 +96,7 @@ class VMapFile : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
 
@@ -249,7 +249,7 @@ VMapFile::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int VMapFile::ProcessMessage(MessageQueue * resp_queue, 
+int VMapFile::ProcessMessage(QueuePointer & resp_queue, 
                              player_msghdr * hdr, 
                              void * data)
 {

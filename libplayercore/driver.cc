@@ -70,7 +70,7 @@
 // interface code and buffer sizes.
 Driver::Driver(ConfigFile *cf, int section,
                bool overwrite_cmds, size_t queue_maxlen,
-               int interf)
+               int interf) : InQueue(overwrite_cmds, queue_maxlen)
 {
   this->error = 0;
   this->driverthread = 0;
@@ -87,10 +87,6 @@ Driver::Driver(ConfigFile *cf, int section,
   this->entries = 0;
   this->alwayson = false;
 
-  // The InQueue MUST be created before calling AddInterface
-  this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
-  assert(InQueue);
-
   // Create an interface
   if(this->AddInterface(this->device_addr) != 0)
   {
@@ -103,7 +99,7 @@ Driver::Driver(ConfigFile *cf, int section,
 
 // this is the other constructor, used by multi-interface drivers.
 Driver::Driver(ConfigFile *cf, int section,
-               bool overwrite_cmds, size_t queue_maxlen)
+               bool overwrite_cmds, size_t queue_maxlen) : InQueue(overwrite_cmds, queue_maxlen)
 {
   this->error = 0;
   this->driverthread = 0;
@@ -114,16 +110,12 @@ Driver::Driver(ConfigFile *cf, int section,
   this->alwayson = false;
   this->entries = 0;
 
-  this->InQueue = new MessageQueue(overwrite_cmds, queue_maxlen);
-  assert(InQueue);
-
   pthread_mutex_init(&this->accessMutex,NULL);
 }
 
 // destructor, to free up allocated queue.
 Driver::~Driver()
 {
-  delete this->InQueue;
 }
 
 // Add an interface
@@ -140,58 +132,58 @@ Driver::AddInterface(player_devaddr_t addr)
 }
 
 void
-Driver::Publish(MessageQueue* queue,
+Driver::Publish(QueuePointer &queue,
                 player_msghdr_t* hdr,
+                void* src)
+{
+  Message msg(*hdr,src,hdr->size);
+  // push onto the given queue, which provides its own locking
+  if(!queue->Push(msg))
+  {
+    PLAYER_ERROR4("tried to push %d/%d from %d:%d",
+                  hdr->type, hdr->subtype,
+                  hdr->addr.interf, hdr->addr.index);
+  }
+}
+
+void
+Driver::Publish(player_msghdr_t* hdr,
                 void* src)
 {
   Device* dev;
 
   Message msg(*hdr,src,hdr->size);
-
-  if(queue)
+  // lock here, because we're accessing our device's queue list
+  this->Lock();
+  // push onto each queue subscribed to the given device
+  if(!(dev = deviceTable->GetDevice(hdr->addr,false)))
   {
-    // push onto the given queue, which provides its own locking
-    if(!queue->Push(msg))
-    {
-      PLAYER_ERROR4("tried to push %d/%d from %d:%d",
-                    hdr->type, hdr->subtype,
-                    hdr->addr.interf, hdr->addr.index);
-    }
+    // This is generally ok, because a driver might call Publish on all
+    // of its possible interfaces, even though some have not been
+    // requested.
+    //
+    //PLAYER_ERROR2("tried to publish message via non-existent device %d:%d", hdr->addr.interf, hdr->addr.index);
+    this->Unlock();
+    return;
   }
-  else
+  for(size_t i=0;i<dev->len_queues;i++)
   {
-    // lock here, because we're accessing our device's queue list
-    this->Lock();
-    // push onto each queue subscribed to the given device
-    if(!(dev = deviceTable->GetDevice(hdr->addr,false)))
+    if(dev->queues[i] != NULL)
     {
-      // This is generally ok, because a driver might call Publish on all
-      // of its possible interfaces, even though some have not been
-      // requested.
-      //
-      //PLAYER_ERROR2("tried to publish message via non-existent device %d:%d", hdr->addr.interf, hdr->addr.index);
-      this->Unlock();
-      return;
-    }
-    for(size_t i=0;i<dev->len_queues;i++)
-    {
-      if(dev->queues[i])
+      if(!dev->queues[i]->Push(msg))
       {
-        if(!dev->queues[i]->Push(msg))
-        {
-          PLAYER_ERROR4("tried to push %d/%d from %d:%d",
-                        hdr->type, hdr->subtype,
-                        hdr->addr.interf, hdr->addr.index);
-        }
+        PLAYER_ERROR4("tried to push %d/%d from %d:%d",
+                      hdr->type, hdr->subtype,
+                      hdr->addr.interf, hdr->addr.index);
       }
     }
-    this->Unlock();
   }
+  this->Unlock();
 }
 
 void
 Driver::Publish(player_devaddr_t addr,
-                MessageQueue* queue,
+                QueuePointer &queue,
                 uint8_t type,
                 uint8_t subtype,
                 void* src,
@@ -215,6 +207,33 @@ Driver::Publish(player_devaddr_t addr,
   hdr.size = len;
 
   this->Publish(queue, &hdr, src);
+}
+
+void
+Driver::Publish(player_devaddr_t addr, 
+                uint8_t type, 
+                uint8_t subtype,
+                void* src, 
+                size_t len,
+                double* timestamp)
+{
+  double t;
+
+  // Fill in the time structure if not supplied
+  if(timestamp)
+    t = *timestamp;
+  else
+    GlobalTime->GetTimeDouble(&t);
+
+  player_msghdr_t hdr;
+  memset(&hdr,0,sizeof(player_msghdr_t));
+  hdr.addr = addr;
+  hdr.type = type;
+  hdr.subtype = subtype;
+  hdr.timestamp = t;
+  hdr.size = len;
+
+  this->Publish(&hdr, src);
 }
 
 void Driver::Lock()
@@ -324,7 +343,7 @@ Driver::MainQuit()
 }
 
 // Default message handler
-int Driver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
+int Driver::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
                            void * data)
 {
   return -1;
@@ -382,7 +401,7 @@ void Driver::ProcessMessages(int maxmsgs)
   }
 }
 
-int Driver::ProcessInternalMessages(MessageQueue* resp_queue,
+int Driver::ProcessInternalMessages(QueuePointer &resp_queue,
                                     player_msghdr * hdr, void * data)
 {
   Property *property = NULL;

@@ -151,7 +151,7 @@ class wbr914 : public Driver
     virtual int  Shutdown();
 
     // MessageHandler
-    virtual int  ProcessMessage(MessageQueue * resp_queue, 
+    virtual int  ProcessMessage(QueuePointer &resp_queue, 
 				player_msghdr * hdr, 
 				void * data);
 
@@ -174,7 +174,7 @@ class wbr914 : public Driver
     int16_t BytesToInt16( unsigned char *ptr );
 
     int  ResetRawPositions();
-    int  HandleConfig(MessageQueue* resp_queue,
+    int  HandleConfig(QueuePointer &resp_queue,
 			      player_msghdr * hdr,
 			      void* data);
 

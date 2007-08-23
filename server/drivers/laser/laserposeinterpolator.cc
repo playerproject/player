@@ -144,7 +144,7 @@ class LaserPoseInterp : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
   private:
@@ -281,7 +281,7 @@ int LaserPoseInterp::Shutdown()
 
 
 int 
-LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue, 
+LaserPoseInterp::ProcessMessage(QueuePointer & resp_queue, 
                                 player_msghdr * hdr,
                                 void * data)
 {
@@ -302,7 +302,7 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
       scanpose.pose = this->lastpose.pos;
       scanpose.scan = *((player_laser_data_t*)data);
 
-      this->Publish(this->device_addr, NULL,
+      this->Publish(this->device_addr, 
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
                     (void*)&scanpose, sizeof(scanpose), &hdr->timestamp);
       return(0);
@@ -374,7 +374,7 @@ LaserPoseInterp::ProcessMessage(MessageQueue * resp_queue,
               ((this->scantimes[i] - this->lastpublishposetime) >=
                this->update_interval)))
           {
-            this->Publish(this->device_addr, NULL,
+            this->Publish(this->device_addr, 
                           PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCANPOSE,
                           (void*)&scanpose, sizeof(scanpose), 
                           this->scantimes + i);

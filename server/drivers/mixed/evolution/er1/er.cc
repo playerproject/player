@@ -802,7 +802,7 @@ ER::Main()
 		data.vel.pa = (rvel_mps-lvel_mps) / 
                                              _axle_length;
 
-                Publish(position_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data));
+                Publish(position_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data));
 //		PutData((unsigned char*)&data,sizeof(data),0,0);
 
 
@@ -816,7 +816,7 @@ ER::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ER::ProcessMessage(MessageQueue * resp_queue,
+int ER::ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
                                void * data)
 {

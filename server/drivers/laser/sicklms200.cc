@@ -180,7 +180,7 @@ class SickLMS200 : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
   private:
@@ -531,7 +531,7 @@ int SickLMS200::Shutdown()
 
 
 int 
-SickLMS200::ProcessMessage(MessageQueue * resp_queue, 
+SickLMS200::ProcessMessage(QueuePointer & resp_queue, 
                            player_msghdr * hdr,
                            void * data)
 {
@@ -735,7 +735,7 @@ void SickLMS200::Main()
       data.id = this->scan_id++;
       
       // Make data available
-      this->Publish(this->device_addr, NULL, 
+      this->Publish(this->device_addr,  
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                     (void*)&data, sizeof(data), &time);
     }

@@ -163,7 +163,7 @@ class Driver
     Pointer to a queue to which this driver owes a reply.  Used mainly
     by non-threaded drivers to cache the return address for requests
     that get forwarded to other devices. */
-    MessageQueue* ret_queue;
+    QueuePointer ret_queue;
 
     /** @brief Publish a message via one of this driver's interfaces.
 
@@ -179,23 +179,52 @@ class Driver
     @param timestamp Timestamp for the message body (if NULL, then the
     current time will be filled in) */
     void Publish(player_devaddr_t addr,
-                 MessageQueue* queue,
+                 QueuePointer &queue,
                  uint8_t type,
                  uint8_t subtype,
                  void* src=NULL,
                  size_t len=0,
                  double* timestamp=NULL);
 
+     /** @brief Publish a message via one of this driver's interfaces.
+     
+     This form of Publish will assemble the message header for you.
+     The message is broadcast to all interested parties
+     
+     @param addr The origin address
+     @param type The message type
+     @param subtype The message subtype
+     @param src The message body
+     @param len Length of the message body
+     @param timestamp Timestamp for the message body (if NULL, then the
+     current time will be filled in) */
+     void Publish(player_devaddr_t addr, 
+                  uint8_t type, 
+                  uint8_t subtype,
+                  void* src=NULL, 
+                  size_t len=0,
+                  double* timestamp=NULL);
+ 
+ 
+
     /** @brief Publish a message via one of this driver's interfaces.
 
     Use this form of Publish if you already have the message header
-    assembled.
-    @param queue If non-NULL, the target queue; if NULL,
-    then the message is sent to all interested parties.
+    assembled and have a target queue to send to.
+    @param queue the target queue.
     @param hdr The message header
     @param src The message body */
-    void Publish(MessageQueue* queue,
+    void Publish(QueuePointer &queue,
                  player_msghdr_t* hdr,
+                 void* src);
+
+    /** @brief Publish a message via one of this driver's interfaces.
+
+    Use this form of Publish if you already have the message header
+    assembled and wish to broadcast the message to all subscribed parties.
+    @param hdr The message header
+    @param src The message body */
+    void Publish(player_msghdr_t* hdr,
                  void* src);
 
 
@@ -219,7 +248,7 @@ class Driver
     bool alwayson;
 
     /** @brief Queue for all incoming messages for this driver */
-    MessageQueue* InQueue;
+    QueuePointer InQueue;
 
     /** @brief Constructor for single-interface drivers.
 
@@ -328,7 +357,7 @@ class Driver
     @param resp_queue The queue to which any response should go.
     @param hdr The message header
     @param data The message body */
-    virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr,
+    virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr,
                                void * data);
 
     /** @brief Update non-threaded drivers. */
@@ -345,7 +374,7 @@ class Driver
     @param resp_queue The queue to which any response should go.
     @param hdr The message header
     @param data The message body */
-    virtual int ProcessInternalMessages(MessageQueue* resp_queue,
+    virtual int ProcessInternalMessages(QueuePointer& resp_queue,
                                         player_msghdr * hdr,
                                         void * data);
 

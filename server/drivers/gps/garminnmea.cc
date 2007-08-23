@@ -994,7 +994,7 @@ int GarminNMEA::ParseGPGGA(const char *buf)
   data.utm_e = (int32_t) rint(utm_e * 100);
   data.utm_n = (int32_t) rint(utm_n * 100);
 
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_GPS_DATA_STATE, &data,sizeof(player_gps_data_t),NULL);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_GPS_DATA_STATE, &data,sizeof(player_gps_data_t),NULL);
 
   return 0;
 }

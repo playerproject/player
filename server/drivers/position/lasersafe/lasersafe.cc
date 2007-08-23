@@ -1,7 +1,7 @@
 /** @ingroup drivers */
 /** @{ */
 /** @defgroup driver_lasersafe lasersafe
- * @brief laser monitor
+ * @brief Bumper monitor
 
 This is a low level safety 'driver' that temporarily disables
 velocity commands if a laser range is detected within a specified
@@ -129,7 +129,7 @@ class LaserSafe : public Driver
     int ShutdownLaser ();
 
     // Message Handler
-    int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+    int ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, void * data);
 
   private:
 
@@ -271,7 +271,7 @@ bool LaserSafe::ScanInRange (double scanDistance, double scanAngle)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserSafe::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);

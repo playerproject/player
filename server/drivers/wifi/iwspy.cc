@@ -303,7 +303,7 @@ void Iwspy::Main()
     data.links_count = data.links_count;
 
     // Send data
-    this->Publish(this->device_addr,NULL,PLAYER_MSGTYPE_DATA,
+    this->Publish(this->device_addr,PLAYER_MSGTYPE_DATA,
                   PLAYER_WIFI_DATA_STATE, &data, sizeof(data), &time);
   }
   return;

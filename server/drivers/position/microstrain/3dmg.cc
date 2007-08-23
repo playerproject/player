@@ -263,7 +263,7 @@ void MicroStrain3DMG::Main()
     data.pos.pyaw = e[2];
 
     // Make data available
-    this->Publish(this->device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
+    this->Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
                   (void*)&data, sizeof(data), &time);
   }
   return;

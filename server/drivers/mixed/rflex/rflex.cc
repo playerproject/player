@@ -354,7 +354,7 @@ RFLEX_Register(DriverTable *table)
 // Message handler functions
 ///////////////////////////////
 void PrintHeader(player_msghdr_t hdr);
-int RFLEX::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr,
+int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
                            void * data)
 {
   assert(hdr);
@@ -1080,14 +1080,14 @@ RFLEX::Main()
 
   if (position_id.interf != 0)
   {
-    Publish(this->position_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,
+    Publish(this->position_id,PLAYER_MSGTYPE_DATA,PLAYER_POSITION2D_DATA_STATE,
             (unsigned char*)&rflex_data.position,
             sizeof(player_position2d_data_t),
             NULL);
   }
   if (sonar_id.interf != 0)
   {
-      Publish(this->sonar_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_SONAR_DATA_RANGES,
+      Publish(this->sonar_id,PLAYER_MSGTYPE_DATA,PLAYER_SONAR_DATA_RANGES,
             (unsigned char*)&rflex_data.sonar,
             sizeof(player_sonar_data_t),
             NULL);
@@ -1112,41 +1112,41 @@ RFLEX::Main()
         }
         Unlock();
         if (sonar_id_2.interf)
-        Publish(this->sonar_id_2, NULL, PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_GEOM,
+        Publish(this->sonar_id_2,  PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_GEOM,
         (unsigned char*)&geom, sizeof(player_sonar_geom_t), NULL);
   }
   LastYaw = rflex_data.position.pos.pa;
 
   if (sonar_id_2.interf)
-      Publish(this->sonar_id_2,NULL,PLAYER_MSGTYPE_DATA,PLAYER_SONAR_DATA_RANGES,
+      Publish(this->sonar_id_2,PLAYER_MSGTYPE_DATA,PLAYER_SONAR_DATA_RANGES,
             (unsigned char*)&rflex_data.sonar2,
             sizeof(player_sonar_data_t),
             NULL);
   if (ir_id.interf)
-      Publish(this->ir_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_IR_DATA_RANGES,
+      Publish(this->ir_id,PLAYER_MSGTYPE_DATA,PLAYER_IR_DATA_RANGES,
             (unsigned char*)&rflex_data.ir,
             sizeof(player_ir_data_t),
             NULL);
   if (bumper_id.interf)
-      Publish(this->bumper_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BUMPER_DATA_STATE,
+      Publish(this->bumper_id,PLAYER_MSGTYPE_DATA,PLAYER_BUMPER_DATA_STATE,
             (unsigned char*)&rflex_data.bumper,
             sizeof(player_bumper_data_t),
             NULL);
   if (power_id.interf)
-    Publish(this->power_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_POWER_DATA_STATE,
+    Publish(this->power_id,PLAYER_MSGTYPE_DATA,PLAYER_POWER_DATA_STATE,
             (unsigned char*)&rflex_data.power,
             sizeof(player_power_data_t),
             NULL);
   if (aio_id.interf != 0)
   {
-      Publish(this->aio_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_AIO_DATA_STATE,
+      Publish(this->aio_id,PLAYER_MSGTYPE_DATA,PLAYER_AIO_DATA_STATE,
             (unsigned char*)&rflex_data.aio,
             sizeof(player_aio_data_t),
             NULL);
   }
   if (dio_id.interf != 0)
   {
-      Publish(this->dio_id,NULL,PLAYER_MSGTYPE_DATA,PLAYER_DIO_DATA_VALUES,
+      Publish(this->dio_id,PLAYER_MSGTYPE_DATA,PLAYER_DIO_DATA_VALUES,
             (unsigned char*)&rflex_data.dio,
             sizeof(player_dio_data_t),
             NULL);

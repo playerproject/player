@@ -49,7 +49,7 @@ class LaserTransform : public Driver
   public: LaserTransform( ConfigFile* cf, int section);
 
     // MessageHandler
-  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+  public: virtual int ProcessMessage(QueuePointer & resp_queue, 
                               player_msghdr * hdr, 
                               void * data);
 

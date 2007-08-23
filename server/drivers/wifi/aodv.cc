@@ -186,7 +186,7 @@ void Aodv::Update()
   data.links_count = (link_count);
 
   // Copy data to the server's buffer
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE, &data, sizeof(data), NULL);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE, &data, sizeof(data), NULL);
 
 
   return;

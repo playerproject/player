@@ -355,7 +355,7 @@ GarciaDriver::Main()
 
 // Process an incoming message
 int
-GarciaDriver::ProcessMessage(MessageQueue* resp_queue,
+GarciaDriver::ProcessMessage(QueuePointer & resp_queue,
                              player_msghdr* hdr,
                              void* data)
 {
@@ -526,7 +526,7 @@ GarciaDriver::ProcessPos2dGeomReq(player_msghdr_t* hdr)
   geom.size.sl = mLength;  // [m]
   geom.size.sw = mWidth;  // [m]
 
-  Publish(mPos2dAddr, NULL,
+  Publish(mPos2dAddr,
           PLAYER_MSGTYPE_RESP_ACK,
           PLAYER_POSITION2D_REQ_GET_GEOM,
           &geom, sizeof(geom), NULL);
@@ -546,7 +546,7 @@ GarciaDriver::ProcessIrPoseReq(player_msghdr_t* hdr)
   pose.poses_count = 6;
   memcpy(pose.poses, poses, 6*sizeof(player_pose_t));
 
-  Publish(mIrAddr, NULL,
+  Publish(mIrAddr,
           PLAYER_MSGTYPE_RESP_ACK,
           PLAYER_IR_REQ_POSE,
           &pose, sizeof(pose), NULL);
@@ -565,7 +565,7 @@ GarciaDriver::RefreshData()
   mPos2dData.vel.py  = 0.0;
   mPos2dData.vel.pa  = 0.0;
 
-  Publish(mPos2dAddr, NULL,
+  Publish(mPos2dAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
           reinterpret_cast<void*>(&mPos2dData), sizeof(mPos2dData), NULL);
 
@@ -580,7 +580,7 @@ GarciaDriver::RefreshData()
   mIrData.ranges[4] = mGarcia->getNamedValue("rear-ranger-left")->getFloatVal();
   mIrData.ranges[5] = mGarcia->getNamedValue("rear-ranger-right")->getFloatVal();
 
-  Publish(mIrAddr, NULL,
+  Publish(mIrAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
           reinterpret_cast<void*>(&mIrData), sizeof(mIrData), NULL);
 
@@ -589,7 +589,7 @@ GarciaDriver::RefreshData()
   mDioData.count = 16;
   mDioData.digin = ++dio_test;
 
-  Publish(mDioAddr, NULL,
+  Publish(mDioAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES,
           reinterpret_cast<void*>(&mDioData), sizeof(mDioData), NULL);
 
@@ -597,7 +597,7 @@ GarciaDriver::RefreshData()
   mPowerData.volts = mGarcia->getNamedValue("battery-voltage")->getFloatVal();
   mPowerData.percent = mGarcia->getNamedValue("battery-level")->getFloatVal();
 
-  Publish(mPowerAddr, NULL,
+  Publish(mPowerAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
           reinterpret_cast<void*>(&mPowerData), sizeof(mPowerData), NULL);
 }

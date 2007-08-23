@@ -84,7 +84,7 @@ typedef struct playerudp_conn
   /** Remote address */
   struct sockaddr_in addr;
   /** Outgoing queue for this connection */
-  MessageQueue* queue;
+  QueuePointer queue;
   /** Buffer in which to store partial incoming messages */
   char* readbuffer;
   /** Total size of @p readbuffer */
@@ -188,7 +188,7 @@ PlayerUDP::Listen(int* ports, int num_ports)
 }
 
 // Should be called with client_mutex locked
-MessageQueue*
+QueuePointer
 PlayerUDP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
                      unsigned int local_port,
@@ -225,8 +225,7 @@ PlayerUDP::AddClient(struct sockaddr_in* cliaddr,
 
   // Create an outgoing queue for this client
   this->clients[j].queue =
-          new MessageQueue(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
-  assert(this->clients[j].queue);
+          QueuePointer(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
 
   // Create a buffer to hold incoming messages
   this->clients[j].readbuffersize = PLAYERUDP_READBUFFER_SIZE;

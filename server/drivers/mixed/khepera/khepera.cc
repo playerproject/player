@@ -158,7 +158,7 @@ Khepera_Register(DriverTable *table)
   table->AddDriver("khepera", Khepera_Init);
 }
 
-int Khepera::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int Khepera::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
 	assert(hdr);
 	assert(data);
@@ -490,12 +490,12 @@ Khepera::UpdateData()
   UpdatePosData(&position_data);
 
   // put position data
-  Publish(position_addr,NULL,PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (unsigned char *) &position_data, sizeof(player_position2d_data_t),NULL);
+  Publish(position_addr,PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, (unsigned char *) &position_data, sizeof(player_position2d_data_t),NULL);
 
   UpdateIRData(&ir_data);
 
   // put ir data
-  Publish(position_addr,NULL,PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES, (unsigned char *) &ir_data, sizeof(ir_data),NULL);
+  Publish(position_addr,PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES, (unsigned char *) &ir_data, sizeof(ir_data),NULL);
 }
 
 /* this will update the IR part of the client data
@@ -600,7 +600,7 @@ Khepera::ResetOdometry()
 
   player_position2d_data_t data;
   memset(&data,0,sizeof(player_position2d_data_t));
-  Publish(position_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data),NULL);
+  Publish(position_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data),NULL);
 
   x=y=yaw=0;
   return 0;

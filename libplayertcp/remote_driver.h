@@ -50,7 +50,7 @@ class TCPRemoteDriver : public Driver
   private:
     PlayerTCP* ptcp;
     int sock;
-    MessageQueue* queue;
+    QueuePointer queue, ret_queue;
     char ipaddr[256];
     int kill_flag;
     double setup_timeout;
@@ -64,7 +64,7 @@ class TCPRemoteDriver : public Driver
     virtual int Setup();
     virtual int Shutdown();
     virtual void Update();
-    virtual int ProcessMessage(MessageQueue* resp_queue, 
+    virtual int ProcessMessage(QueuePointer & resp_queue, 
                                player_msghdr * hdr, 
                                void * data);
 

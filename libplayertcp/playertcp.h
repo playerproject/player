@@ -143,7 +143,7 @@ class PlayerTCP
     pthread_t thread;
 
     int Listen(int* ports, int num_ports);
-    MessageQueue* AddClient(struct sockaddr_in* cliaddr,
+    QueuePointer AddClient(struct sockaddr_in* cliaddr, 
                             unsigned int local_host,
                             unsigned int local_port,
                             int newsock,
@@ -158,7 +158,7 @@ class PlayerTCP
     void DeleteClients();
     void ParseBuffer(int cli);
     int HandlePlayerMessage(int cli, Message* msg);
-    void DeleteClient(MessageQueue* q);
+    void DeleteClient(QueuePointer &q);
     bool Listening(int port);
     uint32_t GetHost() {return host;};
 };

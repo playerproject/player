@@ -145,7 +145,7 @@ class RCore_XBridge : public Driver
         int Shutdown ();
 
         // This method will be invoked on each incoming message
-        virtual int ProcessMessage (MessageQueue* resp_queue, 
+        virtual int ProcessMessage (QueuePointer &resp_queue, 
                                     player_msghdr * hdr,
                                     void * data);
     private:
@@ -305,7 +305,7 @@ void RCore_XBridge::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int RCore_XBridge::ProcessMessage (MessageQueue* resp_queue, 
+int RCore_XBridge::ProcessMessage (QueuePointer &resp_queue, 
                            player_msghdr * hdr,
                            void * data)
 {	
@@ -457,7 +457,7 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     // If multiple tuples/single packet mode enabled...
     if (readppacket == 0)
 	// Publish the WSN data
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
 	         &temp_data, sizeof (player_wsn_data_t), NULL);
     else
 	// If single tuple/multiple packets mode enabled...
@@ -484,7 +484,7 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     	    }
     
 	    // Publish the WSN data (each packet goes separately)
-	    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+	    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
 	         &temp_data, sizeof (player_wsn_data_t), NULL);
 	}
 

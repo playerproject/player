@@ -100,7 +100,7 @@ int EgInterfDriver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr
 				resp.stuff[ii] = temp;
 				printf ("\t%f\n", resp.stuff[ii]);
 			}
-			Publish (device_addr, resp_queue, PLAYER_MSGTYPE_DATA, EGINTERF_DATA, &resp, sizeof (resp), NULL);
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, EGINTERF_DATA, &resp, sizeof (resp), NULL);
 		}
 		delete[] resp.stuff;
 	}
@@ -109,7 +109,7 @@ int EgInterfDriver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr
 		printf ("EgInterfDriver: Got request: %d\n", reinterpret_cast<player_eginterf_req*> (data)->value);
 		reqResp.value = RAND_MAX;
 		printf ("EgInterfDriver: Sending response: %d\n", reqResp.value);
-		Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, EGINTERF_REQ, &reqResp, sizeof (reqResp), NULL);
+		Publish (device_addr,  PLAYER_MSGTYPE_RESP_ACK, EGINTERF_REQ, &reqResp, sizeof (reqResp), NULL);
 	}
 
 	return(0);

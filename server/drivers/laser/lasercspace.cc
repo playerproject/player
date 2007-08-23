@@ -186,7 +186,7 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   for (i = 0; i < data->ranges_count; i++)
     this->data.ranges[i]  = this->FreeRange(data,i);
 
-  this->Publish(this->device_addr, NULL, 
+  this->Publish(this->device_addr,  
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 (void*)&this->data, sizeof(this->data), NULL);
 

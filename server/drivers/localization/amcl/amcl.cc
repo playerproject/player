@@ -1053,7 +1053,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
              data.hypoths_count * sizeof(data.hypoths[0]));
 
   // Push data out
-  this->Publish(this->localize_addr, NULL,
+  this->Publish(this->localize_addr, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LOCALIZE_DATA_HYPOTHS,
                 (void*)&data,datalen,&time);
@@ -1082,7 +1082,7 @@ void AdaptiveMCL::PutDataPosition(pf_vector_t delta, double time)
   data.pos.pa = pose.v[2];
 
   // Push data out
-  this->Publish(this->position_addr, NULL,
+  this->Publish(this->position_addr, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&data,sizeof(data),&time);
@@ -1090,7 +1090,7 @@ void AdaptiveMCL::PutDataPosition(pf_vector_t delta, double time)
 
 // MessageHandler
 int
-AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
+AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
                             player_msghdr * hdr,
                             void * data)
 {
@@ -1199,7 +1199,7 @@ AdaptiveMCL::ProcessMessage(MessageQueue * resp_queue,
 }
 
 void
-AdaptiveMCL::ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr)
+AdaptiveMCL::ProcessGeom(QueuePointer &resp_queue, player_msghdr_t* hdr)
 {
   player_position2d_geom_t geom={{0}};
   // just return a point so we don't get errors from playerv

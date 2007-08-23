@@ -88,7 +88,7 @@ class canonvcc4:public Driver
   int pandemand , tiltdemand , zoomdemand ;
 
   // MessageHandler  
-int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
   // int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
   virtual int Setup();
@@ -860,13 +860,13 @@ canonvcc4::Main()
       data.zoom = (unsigned short) (zoom - 3056)/ZOOM_CONV_FACTOR; 
       pthread_testcancel();
       
-      Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
+      Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
 
       usleep(PTZ_SLEEP_TIME_USEC);
     }
 }
 
-int canonvcc4::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int canonvcc4::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);

@@ -55,7 +55,7 @@ class OpaqueDriver : public Driver
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -152,7 +152,7 @@ int OpaqueDriver::Shutdown()
   return(0);
 }
 
-int OpaqueDriver::ProcessMessage(MessageQueue* resp_queue,
+int OpaqueDriver::ProcessMessage(QueuePointer & resp_queue,
                                  player_msghdr* hdr,
                                  void* data)
 {
@@ -198,7 +198,7 @@ void OpaqueDriver::RefreshData()
 
   // only send the data we need to
   uint size = sizeof(mData) - sizeof(mData.data) + mData.data_count;
-  Publish(device_addr, NULL,
+  Publish(device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE,
           reinterpret_cast<void*>(&mData), size, NULL);
 }

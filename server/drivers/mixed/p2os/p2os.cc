@@ -723,7 +723,7 @@ int P2OS::Setup()
       return(1);
     }
     struct sockaddr_in addr;
-    assert(h->h_length <= (int) (sizeof(addr.sin_addr)));
+    assert((size_t)h->h_length <= sizeof(addr.sin_addr));
     //printf("gethostbyname returned address %d length %d.\n", * h->h_addr, h->h_length);
     memcpy(&(addr.sin_addr), h->h_addr, h->h_length);
     //printf("copied address to addr.sin_addr.s_addr=%d\n", addr.sin_addr.s_addr);
@@ -1371,7 +1371,7 @@ P2OS::PutData(void)
   // TODO: something smarter about timestamping.
 
   // put odometry data
-  this->Publish(this->position_id, NULL,
+  this->Publish(this->position_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.position),
@@ -1379,7 +1379,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put sonar data
-  this->Publish(this->sonar_id, NULL,
+  this->Publish(this->sonar_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_SONAR_DATA_RANGES,
                 (void*)&(this->p2os_data.sonar),
@@ -1387,7 +1387,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put aio data
-  this->Publish(this->aio_id, NULL,
+  this->Publish(this->aio_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_AIO_DATA_STATE,
                 (void*)&(this->p2os_data.aio),
@@ -1395,7 +1395,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put dio data
-  this->Publish(this->dio_id, NULL,
+  this->Publish(this->dio_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_DIO_DATA_VALUES,
                 (void*)&(this->p2os_data.dio),
@@ -1403,7 +1403,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put gripper data
-  this->Publish(this->gripper_id, NULL,
+  this->Publish(this->gripper_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_GRIPPER_DATA_STATE,
                 (void*)&(this->p2os_data.gripper),
@@ -1411,7 +1411,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put lift data
-  this->Publish(this->lift_id, NULL,
+  this->Publish(this->lift_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_ACTARRAY_DATA_STATE,
                 (void*)&(this->p2os_data.lift),
@@ -1419,7 +1419,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put bumper data
-  this->Publish(this->bumper_id, NULL,
+  this->Publish(this->bumper_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BUMPER_DATA_STATE,
                 (void*)&(this->p2os_data.bumper),
@@ -1427,7 +1427,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put power data
-  this->Publish(this->power_id, NULL,
+  this->Publish(this->power_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POWER_DATA_STATE,
                 (void*)&(this->p2os_data.power),
@@ -1435,7 +1435,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put compass data
-  this->Publish(this->compass_id, NULL,
+  this->Publish(this->compass_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.compass),
@@ -1443,7 +1443,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put gyro data
-  this->Publish(this->gyro_id, NULL,
+  this->Publish(this->gyro_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.gyro),
@@ -1451,7 +1451,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put blobfinder data
-  this->Publish(this->blobfinder_id, NULL,
+  this->Publish(this->blobfinder_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BLOBFINDER_DATA_BLOBS,
                 (void*)&(this->p2os_data.blobfinder),
@@ -1459,7 +1459,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put actarray data
-  this->Publish(this->actarray_id, NULL,
+  this->Publish(this->actarray_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_ACTARRAY_DATA_STATE,
                 (void*)&(this->p2os_data.actArray),
@@ -1467,7 +1467,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put limb data
-  this->Publish(this->limb_id, NULL,
+  this->Publish(this->limb_id, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LIMB_DATA_STATE,
                 (void*)&(this->limb_data),
@@ -1475,7 +1475,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put arm gripper data
-  this->Publish(this->armgripper_id, NULL,
+  this->Publish(this->armgripper_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_GRIPPER_DATA_STATE,
                 (void*)&(this->p2os_data.armGripper),
@@ -2060,7 +2060,7 @@ void P2OS::SetActArrayJointSpeed (int joint, double speed)
 
 
 int
-P2OS::ProcessMessage(MessageQueue * resp_queue,
+P2OS::ProcessMessage(QueuePointer & resp_queue,
                      player_msghdr * hdr,
                      void * data)
 {
@@ -2109,7 +2109,7 @@ P2OS::ProcessMessage(MessageQueue * resp_queue,
 }
 
 int
-P2OS::HandleConfig(MessageQueue* resp_queue,
+P2OS::HandleConfig(QueuePointer & resp_queue,
                    player_msghdr * hdr,
                    void * data)
 {

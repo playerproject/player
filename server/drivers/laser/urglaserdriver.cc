@@ -127,7 +127,7 @@ class URGLaserDriver : public Driver
 	int Shutdown();
 
 	// This method will be invoked on each incoming message
-	virtual int ProcessMessage(MessageQueue* resp_queue,
+	virtual int ProcessMessage(QueuePointer & resp_queue, 
                                player_msghdr * hdr,
                                void * data);
 
@@ -281,7 +281,7 @@ int
 
 ////////////////////////////////////////////////////////////////////////////////
 int
-  URGLaserDriver::ProcessMessage (MessageQueue* resp_queue,
+  URGLaserDriver::ProcessMessage (QueuePointer &resp_queue,
                                   player_msghdr * hdr,
                                   void * data)
 {
@@ -343,7 +343,7 @@ void
       Data.ranges[i]  = Readings->Readings[i+min_i] < 20 ? (Data.max_range*1000) : (Readings->Readings[i+min_i]);
       Data.ranges[i] /= 1000;
     }
-    Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
+    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
              &Data, sizeof(player_laser_data_t), NULL);
 
     // Sleep (you might, for example, block on a read() instead)

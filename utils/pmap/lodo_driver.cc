@@ -181,7 +181,7 @@ class LodoDriver : public Driver
   public: int Shutdown();
 
   /// @brief Message handler
-  public: int ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *data);
+  public: int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
   /// Laser offset in robot cs
   private: pose2_t laser_pose;
@@ -383,7 +383,7 @@ int LodoDriver::Shutdown()
 }
 
 
-int LodoDriver::ProcessMessage (MessageQueue * resp_queue, player_msghdr *hdr, void *data)
+int LodoDriver::ProcessMessage (QueuePointer & resp_queue, player_msghdr *hdr, void *data)
 {
   pose2_t pose;
 
@@ -396,7 +396,7 @@ int LodoDriver::ProcessMessage (MessageQueue * resp_queue, player_msghdr *hdr, v
   {
     laser_data = *reinterpret_cast<player_laser_data_t*> (data);
     this->laser_time = hdr->timestamp;
-    Publish (out_laser_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, &laser_data, sizeof (player_laser_data_t), &laser_time);
+    Publish (out_laser_id, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, &laser_data, sizeof (player_laser_data_t), &laser_time);
 
     // Auto-detect range count and create lodo object
     if (this->lodo == NULL)
@@ -446,7 +446,7 @@ int LodoDriver::ProcessMessage (MessageQueue * resp_queue, player_msghdr *hdr, v
     this->out_position2d_data.pos.px = this->robot_pose.pos.x;
     this->out_position2d_data.pos.py = this->robot_pose.pos.y;
     this->out_position2d_data.pos.pa = this->robot_pose.rot;
-    Publish (out_position2d_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &out_position2d_data, sizeof (player_position2d_data_t), &laser_time);
+    Publish (out_position2d_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &out_position2d_data, sizeof (player_position2d_data_t), &laser_time);
 
     return 0;
   }
