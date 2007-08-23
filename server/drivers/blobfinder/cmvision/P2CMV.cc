@@ -168,7 +168,7 @@ class CMVisionBF: public Driver
     CMVisionBF(ConfigFile* cf, int section);
     virtual ~CMVisionBF();
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
     virtual void Main();
@@ -369,7 +369,7 @@ CMVisionBF::ProcessImageData()
                 mData.blobs_count * sizeof(mData.blobs[0]);
 
 
-    Publish(device_addr, NULL,
+    Publish(device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS,
           reinterpret_cast<void*>(&mData), size, NULL);
 }
@@ -414,7 +414,7 @@ CMVisionBF::Print()
 }
 
 int
-CMVisionBF::ProcessMessage(MessageQueue* resp_queue,
+CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
                            player_msghdr* hdr,
                            void* data)
 {

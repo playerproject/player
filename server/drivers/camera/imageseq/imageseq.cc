@@ -307,7 +307,7 @@ void ImageSeq::WriteData()
   size_t size;
   
   size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data, size, NULL);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data, size, NULL);
       
   return;
 }

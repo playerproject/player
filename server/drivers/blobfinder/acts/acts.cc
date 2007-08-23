@@ -963,7 +963,7 @@ Acts::Main()
     }
 
     /* got the data. now fill it in */
-    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
             (local_data.blobs_count) * sizeof(local_data.blobs[0]), NULL);
   }
 

@@ -182,7 +182,7 @@ class ND : public Driver
     virtual int Shutdown();
 
     // Process incoming messages from clients 
-    virtual int ProcessMessage(MessageQueue* resp_queue, 
+    virtual int ProcessMessage(QueuePointer &resp_queue, 
                                player_msghdr * hdr, 
                                void * data);
     // Main function for device thread.
@@ -659,7 +659,7 @@ ND::ProcessInputOdom(player_msghdr_t* hdr, player_position2d_data_t* data)
   if(this->stall)
     newdata.stall = 1;
 
-  this->Publish(NULL, &newhdr, &newdata);
+  this->Publish(&newhdr, &newdata);
 }
 
 void
@@ -849,7 +849,7 @@ ND::SetDirection(int dir)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ND::ProcessMessage(MessageQueue* resp_queue, 
+int ND::ProcessMessage(QueuePointer &resp_queue, 
                        player_msghdr * hdr, 
                        void * data)
 {

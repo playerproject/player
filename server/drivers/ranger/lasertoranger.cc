@@ -99,11 +99,11 @@ class LaserToRanger : public ToRanger
 
 	protected:
 		// Child message handler, for handling messages from the input device
-		int ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void *data);
+		int ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data);
 		// Set power state
-		int SetPower (MessageQueue *respQueue, player_msghdr *hdr, uint8_t state);
+		int SetPower (QueuePointer &respQueue, player_msghdr *hdr, uint8_t state);
 		// Set intensity data state
-		int SetIntensity (MessageQueue *respQueue, player_msghdr *hdr, uint8_t state);
+		int SetIntensity (QueuePointer &respQueue, player_msghdr *hdr, uint8_t state);
 		// Convert laser data to ranger data
 		int ConvertData (player_msghdr *hdr, void *data);
 		// Convert geometry data
@@ -259,11 +259,11 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 				rangeData.data.ranges[ii] = scanData->ranges[ii];
 			// Send off this chunk of data, with pose if necessary
 			if (pose == NULL)
-				Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE, reinterpret_cast<void*> (&rangeData.data), sizeof (rangeData.data), NULL);
+				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGE, reinterpret_cast<void*> (&rangeData.data), sizeof (rangeData.data), NULL);
 			else
 			{
 				rangeData.geom = deviceGeom;
-				Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGEPOSE, reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
+				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_RANGEPOSE, reinterpret_cast<void*> (&rangeData), sizeof (rangeData), NULL);
 			}
 			// Delete the space we allocated for the data
 			delete[] rangeData.data.ranges;
@@ -282,11 +282,11 @@ int LaserToRanger::ConvertData (player_msghdr *hdr, void *data)
 				intensityData.data.intensities[ii] = scanData->intensity[ii];
 			// Send off this chunk of data, with pose if necessary
 			if (pose == NULL)
-				Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS, reinterpret_cast<void*> (&intensityData.data), sizeof (intensityData.data), NULL);
+				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNS, reinterpret_cast<void*> (&intensityData.data), sizeof (intensityData.data), NULL);
 			else
 			{
 				rangeData.geom = deviceGeom;
-				Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNSPOSE, reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
+				Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RANGER_DATA_INTNSPOSE, reinterpret_cast<void*> (&intensityData), sizeof (intensityData), NULL);
 			}
 			// Delete the space we allocated for the data
 			delete[] intensityData.data.intensities;
@@ -327,7 +327,7 @@ void LaserToRanger::HandleConfigResp (player_ranger_config_t *dest, player_laser
 	dest->frequency = data->scanning_frequency;
 }
 
-int LaserToRanger::ProcessMessage (MessageQueue *respQueue, player_msghdr *hdr, void *data)
+int LaserToRanger::ProcessMessage (QueuePointer &respQueue, player_msghdr *hdr, void *data)
 {
 	// Check the parent message handler
 	if (ToRanger::ProcessMessage (respQueue, hdr, data) == 0)

@@ -293,7 +293,7 @@ void Yarp_Image::RefreshData ()
                 break;
             }
         }
-        Publish (this->cam_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
+        Publish (this->cam_id, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
                  &cam_data, sizeof (player_camera_data_t), NULL);
     }
 }

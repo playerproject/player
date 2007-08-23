@@ -52,7 +52,7 @@ class ExampleDriver : public Driver
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(MessageQueue* resp_queue, 
+    virtual int ProcessMessage(QueuePointer &resp_queue, 
                                player_msghdr * hdr,
                                void * data);
 
@@ -135,7 +135,7 @@ int ExampleDriver::Shutdown()
   return(0);
 }
 
-int ExampleDriver::ProcessMessage(MessageQueue* resp_queue, 
+int ExampleDriver::ProcessMessage(QueuePointer & resp_queue, 
                                   player_msghdr * hdr,
                                   void * data)
 {

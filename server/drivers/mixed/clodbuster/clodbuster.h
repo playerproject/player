@@ -185,7 +185,7 @@ class ClodBuster:public Driver
     virtual void Main();
 
     // Process incoming messages from clients 
-    int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+    int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
     virtual int Setup();
     virtual int Shutdown();

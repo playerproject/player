@@ -55,9 +55,46 @@
 #include <libplayerxdr/playerxdr.h>
 
 Message::Message(const struct player_msghdr & Header,
+                  const void * data,
+                  unsigned int data_size,
+                  bool do_deepcopy)
+{
+  this->Lock = new pthread_mutex_t;
+  assert(this->Lock);
+  pthread_mutex_init(this->Lock,NULL);
+  this->Size = sizeof(struct player_msghdr)+data_size;
+  assert(this->Size);
+  this->Data = new unsigned char[this->Size];
+  assert(this->Data);
+
+  // copy the header and then the data into out message data buffer
+  memcpy(this->Data,&Header,sizeof(struct player_msghdr));
+  // Force header size to be same as data size
+  ((player_msghdr *) Data)->size = data_size;
+
+  memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
+  if (do_deepcopy && data != NULL)
+  {
+    player_dpcpy_fn_t dpcpyfunc = NULL;
+    if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
+    {
+      if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
+      {
+        // Possible error
+        PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
+      }
+    }
+  }
+
+  this->RefCount = new unsigned int;
+  assert(this->RefCount);
+  *this->RefCount = 1;
+}
+
+Message::Message(const struct player_msghdr & Header,
                  const void * data,
                  unsigned int data_size,
-                 MessageQueue* _queue,
+                 QueuePointer &_queue,
                  bool do_deepcopy)
 {
   this->Queue = _queue;
@@ -143,10 +180,13 @@ Message::DecRef()
     if (this->GetPayloadSize() > 0 && DynDataSize > 0)
       playerxdr_delete_message (this->GetPayload(), this->GetHeader()->addr.interf, this->GetHeader()->type, this->GetHeader()->subtype);
     delete [] Data;
+    Data = NULL;
     delete RefCount;
+    RefCount = NULL;
     pthread_mutex_unlock(Lock);
     pthread_mutex_destroy(Lock);
     delete Lock;
+    Lock = NULL;
   }
   else
     pthread_mutex_unlock(Lock);
@@ -250,6 +290,7 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
   // First look through the replacement rules
   for(MessageReplaceRule* curr=this->replaceRules;curr;curr=curr->next)
   {
+  	assert(curr);
     if(curr->Match(hdr))
       return(curr->replace);
   }
@@ -532,3 +573,146 @@ MessageQueue::Remove(MessageQueueElement* el)
   this->Length--;
 }
 
+/// Create an empty message queue and an auto pointer to it.
+QueuePointer::QueuePointer()
+{
+  Lock = NULL;
+  RefCount = NULL;
+  Queue = NULL;
+}
+
+/// Create an empty message queue and an auto pointer to it.
+QueuePointer::QueuePointer(bool _Replace, size_t _Maxlen)
+{
+  this->Lock = new pthread_mutex_t;
+  assert(this->Lock);
+  pthread_mutex_init(this->Lock,NULL);
+  this->Queue = new MessageQueue(_Replace, _Maxlen);
+  assert(this->Queue);
+
+  this->RefCount = new unsigned int;
+  assert(this->RefCount);
+  *this->RefCount = 1;		
+}
+
+/// Destroy our reference to the message queue.
+/// and our queue if there are no more references
+QueuePointer::~QueuePointer()
+{
+	DecRef();
+}
+
+/// Create a new reference to a message queue
+QueuePointer::QueuePointer(const QueuePointer & rhs)
+{
+  if (rhs.Queue == NULL)
+  {
+    Lock = NULL;
+    RefCount = NULL;
+    Queue = NULL;      	
+  }
+  else
+  {
+    assert(rhs.Lock);
+    pthread_mutex_lock(rhs.Lock);
+
+    assert(rhs.Queue);
+    assert(rhs.RefCount);
+    assert(*(rhs.RefCount));
+    Lock = rhs.Lock;
+    Queue = rhs.Queue;
+    RefCount = rhs.RefCount;
+    (*RefCount)++;
+    pthread_mutex_unlock(Lock);	
+  }
+}
+	
+/// assign reference to our message queue
+QueuePointer & QueuePointer::operator = (const QueuePointer & rhs)
+{
+  // first remove our current reference
+  DecRef();
+  
+  if (rhs.Queue == NULL)
+  	return *this;
+  
+  // then copy the rhs
+  assert(rhs.Lock);
+  pthread_mutex_lock(rhs.Lock);
+
+  assert(rhs.Queue);
+  assert(rhs.RefCount);
+  assert(*(rhs.RefCount));
+  Lock = rhs.Lock;
+  Queue = rhs.Queue;
+  RefCount = rhs.RefCount;
+  (*RefCount)++;
+  pthread_mutex_unlock(Lock);	
+  return *this;
+}
+
+/// retrieve underlying object for use
+MessageQueue * QueuePointer::operator -> ()
+{
+  assert(Queue);
+  return Queue;		
+}
+
+/// retrieve underlying object for use
+MessageQueue & QueuePointer::operator * ()
+{
+  assert(Queue);
+  return *Queue;		
+}
+
+/// check if pointers are equal
+bool QueuePointer::operator == (const QueuePointer & rhs)
+{
+  return rhs.Queue == Queue;	
+}
+
+/// check if pointers are equal
+bool QueuePointer::operator == (void * pointer)
+{
+  return Queue == pointer;	
+}
+
+/// check if pointers are equal
+bool QueuePointer::operator != (const QueuePointer & rhs)
+{
+  return rhs.Queue != Queue;	
+}
+
+/// check if pointers are equal
+bool QueuePointer::operator != (void * pointer)
+{
+  return Queue != pointer;	
+}
+
+void QueuePointer::DecRef()
+{
+  if (Queue == NULL)
+    return;
+    
+  pthread_mutex_lock(Lock);
+  (*RefCount)--;
+  assert((*RefCount) >= 0);
+  if((*RefCount)==0)
+  {
+    delete Queue;
+    Queue = NULL;
+    delete RefCount;
+    RefCount = NULL;
+    pthread_mutex_unlock(Lock);
+    pthread_mutex_destroy(Lock);
+    delete Lock;
+    Lock = NULL;
+  }
+  else
+  {
+    Queue = NULL;
+    RefCount = NULL;
+    pthread_mutex_unlock(Lock);		
+    Lock = NULL;
+  }
+}

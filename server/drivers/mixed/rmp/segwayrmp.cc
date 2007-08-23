@@ -340,11 +340,11 @@ SegwayRMP::Main()
     // TODO: report better timestamps, possibly using time info from the RMP
 
     // Send data to clients
-    Publish(this->position_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
+    Publish(this->position_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
               &this->position_data, sizeof(this->position_data), NULL);
-    Publish(this->position3d_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
+    Publish(this->position3d_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION3D_DATA_STATE,
               &this->position3d_data, sizeof(this->position3d_data), NULL);
-    Publish(this->power_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
+    Publish(this->power_id, PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
               &this->power_data, sizeof(this->power_data), NULL);
     
 /*    // check for config requests from the position interface
@@ -442,7 +442,7 @@ SegwayRMP::Main()
 }
 
 int
-SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
+SegwayRMP::ProcessMessage(QueuePointer & resp_queue,
                           player_msghdr * hdr,
                           void * data)
 {
@@ -495,7 +495,7 @@ SegwayRMP::ProcessMessage(MessageQueue * resp_queue,
 // returns 1 to indicate we wrote to the CAN bus
 // returns 0 to indicate we did NOT write to CAN bus
 int
-SegwayRMP::HandlePositionConfig(MessageQueue* client, uint32_t subtype, void* buffer, size_t len)
+SegwayRMP::HandlePositionConfig(QueuePointer &client, uint32_t subtype, void* buffer, size_t len)
 {
   uint16_t rmp_cmd,rmp_val;
   //player_rmp_config_t *rmp;
@@ -713,7 +713,7 @@ SegwayRMP::HandlePositionConfig(MessageQueue* client, uint32_t subtype, void* bu
 // returns 1 to indicate we wrote to the CAN bus
 // returns 0 to indicate we did NOT write to CAN bus
 int
-SegwayRMP::HandlePosition3DConfig(MessageQueue* client, uint32_t subtype, void* buffer, size_t len)
+SegwayRMP::HandlePosition3DConfig(QueuePointer &client, uint32_t subtype, void* buffer, size_t len)
 {
   switch(subtype) 
   {

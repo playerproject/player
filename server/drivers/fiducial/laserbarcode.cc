@@ -145,7 +145,7 @@ class LaserBarcode : public Driver
   public: virtual int Shutdown();
 
   // Process incoming messages from clients 
-  int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+  int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Main function for device thread
   //private: virtual void Main(void);
@@ -269,7 +269,7 @@ int LaserBarcode::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserBarcode::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int LaserBarcode::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
@@ -545,7 +545,7 @@ int LaserBarcode::IdentBeacon(int a, int b, double ox, double oy, double oth,
 void LaserBarcode::WriteFiducial()
 {
   // Write the data with the laser timestamp
-  this->Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, &this->data, sizeof(this->data));
+  this->Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, &this->data, sizeof(this->data));
   
   return;
 }

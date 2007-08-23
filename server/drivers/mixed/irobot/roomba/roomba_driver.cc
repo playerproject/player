@@ -119,7 +119,7 @@ class Roomba : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
 
@@ -297,7 +297,7 @@ Roomba::Main()
      posdata.pos.py = this->roomba_dev->oy;
      posdata.pos.pa = this->roomba_dev->oa;
 
-     this->Publish(this->position_addr, NULL,
+     this->Publish(this->position_addr, 
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
 
@@ -319,7 +319,7 @@ Roomba::Main()
                         PLAYER_POWER_MASK_PERCENT |
                         PLAYER_POWER_MASK_CHARGING);
 
-     this->Publish(this->power_addr, NULL,
+     this->Publish(this->power_addr, 
                    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
                    (void*)&powerdata, sizeof(powerdata), NULL);
 
@@ -332,7 +332,7 @@ Roomba::Main()
      bumperdata.bumpers[0] = this->roomba_dev->bumper_left;
      bumperdata.bumpers[1] = this->roomba_dev->bumper_right;
 
-     this->Publish(this->bumper_addr, NULL,
+     this->Publish(this->bumper_addr, 
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
                    (void*)&bumperdata, sizeof(bumperdata), NULL);
 
@@ -354,7 +354,7 @@ Roomba::Main()
      irdata.ranges[9] = (float)this->roomba_dev->wheeldrop_left;
      irdata.ranges[10] = (float)this->roomba_dev->wheeldrop_right;
 
-     this->Publish(this->ir_addr, NULL,
+     this->Publish(this->ir_addr,
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
          (void*)&irdata, sizeof(irdata), NULL);
 
@@ -368,7 +368,7 @@ Roomba::Main()
      gripperdata.beams=this->roomba_dev->dirtdetector_right+this->roomba_dev->dirtdetector_left;
      gripperdata.stored=0;
 
-     this->Publish(this->gripper_addr, NULL,
+     this->Publish(this->gripper_addr,
          PLAYER_MSGTYPE_DATA,
          PLAYER_GRIPPER_DATA_STATE,
          (void*) &gripperdata, sizeof(gripperdata), NULL);
@@ -386,7 +386,7 @@ Roomba::Main()
      cpdata.data[3]=this->roomba_dev->button_power;
      cpdata.data[4]=this->roomba_dev->remote_opcode;
 
-     this->Publish(this->opaque_addr, NULL,
+     this->Publish(this->opaque_addr,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
          (void*)&cpdata, sizeof(cpdata), NULL);
 
@@ -395,7 +395,7 @@ Roomba::Main()
 }
 
 int
-Roomba::ProcessMessage(MessageQueue * resp_queue, 
+Roomba::ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data)
 {

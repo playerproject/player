@@ -210,7 +210,7 @@ class VFH_Class : public Driver
     virtual int Shutdown();
 
     // Process incoming messages from clients
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
     // Main function for device thread.
@@ -526,7 +526,7 @@ VFH_Class::ProcessOdom(player_msghdr_t* hdr, player_position2d_data_t &data)
   // Also change this info out for use by others
   player_msghdr_t newhdr = *hdr;
   newhdr.addr = this->device_addr;
-  this->Publish(NULL, &newhdr, (void*)&data);
+  this->Publish(&newhdr, (void*)&data);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -666,7 +666,7 @@ VFH_Class::PutCommand( int cmd_speed, int cmd_turnrate )
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int VFH_Class::ProcessMessage(MessageQueue* resp_queue,
+int VFH_Class::ProcessMessage(QueuePointer & resp_queue,
                               player_msghdr * hdr,
                               void * data)
 {

@@ -44,7 +44,7 @@ class GarciaDriver : public Driver
     virtual void Main();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
     //void ProcessConfig();

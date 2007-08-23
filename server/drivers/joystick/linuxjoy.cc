@@ -193,7 +193,7 @@ class LinuxJoystick : public Driver
   // Main function for device thread.
   private: virtual void Main();
 
-  public: virtual int ProcessMessage(MessageQueue* resp_queue, 
+  public: virtual int ProcessMessage(QueuePointer & resp_queue, 
                                      player_msghdr * hdr, 
                                      void * data) {return -1;}
 
@@ -512,7 +512,7 @@ void LinuxJoystick::RefreshData()
     this->joy_data.xscale = this->xaxis_max;
     this->joy_data.yscale = this->yaxis_max;
     this->joy_data.buttons = this->buttons;
-    this->Publish(this->joystick_addr, NULL,
+    this->Publish(this->joystick_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_JOYSTICK_DATA_STATE,
                   (void*)&this->joy_data, sizeof(this->joy_data), NULL);
   }
@@ -522,7 +522,7 @@ void LinuxJoystick::RefreshData()
     memset(&(this->pos_data),0,sizeof(player_position2d_data_t));
     this->pos_data.pos.px = this->xpos;
     this->pos_data.pos.py = -this->ypos;
-    this->Publish(this->position_addr, NULL,
+    this->Publish(this->position_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                   (void*)&this->pos_data, sizeof(this->pos_data), NULL);
   }

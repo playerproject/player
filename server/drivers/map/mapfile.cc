@@ -144,7 +144,7 @@ class MapFile : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
 
@@ -283,7 +283,7 @@ MapFile::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int MapFile::ProcessMessage(MessageQueue * resp_queue, 
+int MapFile::ProcessMessage(QueuePointer & resp_queue, 
                             player_msghdr * hdr, 
                             void * data)
 {

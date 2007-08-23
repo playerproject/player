@@ -105,7 +105,7 @@ class XSensMT : public Driver
         virtual int Shutdown ();
 
         // This method will be invoked on each incoming message
-        virtual int ProcessMessage (MessageQueue* resp_queue,
+        virtual int ProcessMessage (QueuePointer &resp_queue,
                                     player_msghdr * hdr,
                                     void * data);
     private:
@@ -273,7 +273,7 @@ void XSensMT::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int XSensMT::ProcessMessage (MessageQueue* resp_queue,
+int XSensMT::ProcessMessage (QueuePointer &resp_queue,
                              player_msghdr * hdr,
                              void * data)
 {
@@ -420,7 +420,7 @@ void XSensMT::RefreshData ()
             imu_data_state.pose.ppitch = euler_data[1];
             imu_data_state.pose.pyaw   = euler_data[2];
 
-            Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_STATE,
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_STATE,
                      &imu_data_state, sizeof (player_imu_data_state_t), NULL);
             break;
         }
@@ -428,7 +428,7 @@ void XSensMT::RefreshData ()
         {
             imu_data_calib = GetCalibValues (data);
 
-            Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_CALIB,
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_CALIB,
                      &imu_data_calib, sizeof (player_imu_data_calib_t), NULL);
             break;
         }
@@ -444,7 +444,7 @@ void XSensMT::RefreshData ()
             imu_data_quat.q2 = quaternion_data[2];
             imu_data_quat.q3 = quaternion_data[3];
 
-            Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_QUAT,
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_QUAT,
                      &imu_data_quat, sizeof (player_imu_data_quat_t), NULL);
             break;
         }
@@ -459,7 +459,7 @@ void XSensMT::RefreshData ()
             imu_data_euler.orientation.ppitch = euler_data[1];
             imu_data_euler.orientation.pyaw   = euler_data[2];
 
-            Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_EULER,
+            Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_EULER,
                      &imu_data_euler, sizeof (player_imu_data_euler_t), NULL);
             break;
         }

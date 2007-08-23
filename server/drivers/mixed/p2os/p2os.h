@@ -221,7 +221,7 @@ class P2OS : public Driver
     void ToggleSonarPower(unsigned char val);
     /* toggle motors on/off, according to val */
     void ToggleMotorPower(unsigned char val);
-    int HandleConfig(MessageQueue* resp_queue,
+    int HandleConfig(QueuePointer & resp_queue,
                      player_msghdr * hdr,
                      void* data);
     int HandleCommand(player_msghdr * hdr, void * data);
@@ -323,8 +323,8 @@ class P2OS : public Driver
     virtual int Shutdown();
 
     // MessageHandler
-    virtual int ProcessMessage(MessageQueue * resp_queue,
-                               player_msghdr * hdr,
+    virtual int ProcessMessage(QueuePointer & resp_queue, 
+                               player_msghdr * hdr, 
                                void * data);
 
     void CMUcamReset(bool doLock = true);

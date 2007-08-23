@@ -229,6 +229,7 @@ TCPRemoteDriver::SubscribeRemote(unsigned char mode)
   // Send the request
   GlobalTime->GetTimeDouble(&t1);
   numbytes = 0;
+
   while(numbytes < encode_msglen)
   {
     if((thisnumbytes = write(this->sock, buf+numbytes, 
@@ -377,7 +378,7 @@ TCPRemoteDriver::Update()
 }
 
 int 
-TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue, 
+TCPRemoteDriver::ProcessMessage(QueuePointer &resp_queue, 
                                 player_msghdr * hdr, 
                                 void * data)
 {
@@ -388,7 +389,7 @@ TCPRemoteDriver::ProcessMessage(MessageQueue* resp_queue,
                            this->device_addr))
   {
     // Re-publish the message for local consumers
-    this->Publish(NULL, hdr, data);
+    this->Publish(hdr, data);
     return(0);
   }
   // Is it a command for the remote device?

@@ -61,7 +61,7 @@ class AMCLSensor
   public: virtual int Shutdown(void);
 
   // Process message for this interface
-  public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+  public: virtual int ProcessMessage(QueuePointer &resp_queue, 
                                      player_msghdr * hdr, 
                                      void * data) = 0;  
 //  public: virtual AMCLSensorData *GetData(void);

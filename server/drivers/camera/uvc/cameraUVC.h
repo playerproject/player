@@ -15,7 +15,7 @@ class CameraUvc : public Driver
 		int Setup();
 		int Shutdown();
 
-		int ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data);
+		int ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 	private:
 		virtual void Main();
 		

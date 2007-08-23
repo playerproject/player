@@ -62,7 +62,7 @@ class MapTransform : public Driver
     virtual ~MapTransform();
 
     // MessageHandler
-    public: virtual int ProcessMessage(MessageQueue * resp_queue, 
+    public: virtual int ProcessMessage(QueuePointer &resp_queue, 
                                      player_msghdr * hdr, 
                                      void * data);   
                                      

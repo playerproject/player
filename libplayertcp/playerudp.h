@@ -112,7 +112,7 @@ class PlayerUDP
     pthread_t thread;
 
     int Listen(int* ports, int num_ports);
-    MessageQueue* AddClient(struct sockaddr_in* cliaddr,
+    QueuePointer AddClient(struct sockaddr_in* cliaddr,
                             unsigned int local_host,
                             unsigned int local_port,
                             int sock,

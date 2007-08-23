@@ -80,15 +80,14 @@ Device::Device(player_devaddr_t addr, Driver *device)
   }
   else
   {
-    this->InQueue = new MessageQueue(false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
-    assert(this->InQueue);
+    this->InQueue = QueuePointer(false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
   }
 
   // Start with just a couple of entries; we'll double the size as
   // necessary in the future.
   this->len_queues = 2;
-  this->queues = (MessageQueue**)calloc(this->len_queues,
-                                        sizeof(MessageQueue*));
+  this->queues = (QueuePointer*)calloc(this->len_queues,
+                                        sizeof(QueuePointer));
   assert(this->queues);
 }
 
@@ -105,7 +104,7 @@ Device::~Device()
 }
 
 int
-Device::Subscribe(MessageQueue* sub_queue)
+Device::Subscribe(QueuePointer &sub_queue)
 {
   int retval;
   size_t i;
@@ -116,7 +115,7 @@ Device::Subscribe(MessageQueue* sub_queue)
   // find an empty spot to put the new queue
   for(i=0;i<this->len_queues;i++)
   {
-    if(!this->queues[i])
+    if(this->queues[i] == NULL)
       break;
   }
 
@@ -125,10 +124,10 @@ Device::Subscribe(MessageQueue* sub_queue)
   {
     size_t tmp = this->len_queues;
     this->len_queues *= 2;
-    this->queues = (MessageQueue**)realloc(this->queues,
+    this->queues = (QueuePointer*)realloc(this->queues,
                                            (this->len_queues *
-                                            sizeof(MessageQueue*)));
-    memset(this->queues+tmp,0,(this->len_queues-tmp)*sizeof(MessageQueue*));
+                                            sizeof(QueuePointer)));
+    memset(this->queues+tmp,0,(this->len_queues-tmp)*sizeof(QueuePointer));
     assert(this->queues);
   }
 
@@ -140,7 +139,7 @@ Device::Subscribe(MessageQueue* sub_queue)
     if((retval = this->driver->Subscribe(this->addr)))
     {
       // remove the subscriber's queue, since the subscription failed
-      this->queues[i] = NULL;
+      this->queues[i] = QueuePointer();
       this->driver->Unlock();
       return(retval);
     }
@@ -152,7 +151,7 @@ Device::Subscribe(MessageQueue* sub_queue)
 }
 
 int
-Device::Unsubscribe(MessageQueue* sub_queue)
+Device::Unsubscribe(QueuePointer &sub_queue)
 {
   int retval;
 
@@ -171,7 +170,7 @@ Device::Unsubscribe(MessageQueue* sub_queue)
   {
     if(this->queues[i] == sub_queue)
     {
-      this->queues[i] = NULL;
+      this->queues[i] = QueuePointer();
       if(this->driver)
         this->driver->Unlock();
       return(0);
@@ -184,7 +183,7 @@ Device::Unsubscribe(MessageQueue* sub_queue)
 }
 
 void
-Device::PutMsg(MessageQueue* resp_queue,
+Device::PutMsg(QueuePointer &resp_queue,
                player_msghdr_t* hdr,
                void* src)
 {
@@ -202,7 +201,7 @@ Device::PutMsg(MessageQueue* resp_queue,
 
 
 void
-Device::PutMsg(MessageQueue* resp_queue,
+Device::PutMsg(QueuePointer &resp_queue,
                uint8_t type,
                uint8_t subtype,
                void* src,
@@ -234,7 +233,7 @@ Device::PutMsg(MessageQueue* resp_queue,
 }
 
 Message*
-Device::Request(MessageQueue* resp_queue,
+Device::Request(QueuePointer &resp_queue,
                 uint8_t type,
                 uint8_t subtype,
                 void* src,

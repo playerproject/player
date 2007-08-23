@@ -86,7 +86,7 @@ typedef struct playertcp_conn
   /** Remote address */
   struct sockaddr_in addr;
   /** Outgoing queue for this connection */
-  MessageQueue* queue;
+  QueuePointer queue;
   /** Buffer in which to store partial incoming messages */
   char* readbuffer;
   /** Total size of @p readbuffer */
@@ -189,8 +189,8 @@ PlayerTCP::Listen(int* ports, int num_ports)
   return(0);
 }
 
-// Should be called with client_mutex locked
-MessageQueue*
+// should be called with client_mutex locked
+QueuePointer
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
                      unsigned int local_port,
@@ -235,8 +235,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 
   // Create an outgoing queue for this client
   this->clients[j].queue =
-          new MessageQueue(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
-  assert(this->clients[j].queue);
+          QueuePointer(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
 
   // Create a buffer to hold incoming messages
   this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;
@@ -362,16 +361,7 @@ PlayerTCP::Close(int cli)
     PLAYER_WARN1("close() failed: %s", strerror(errno));
   this->clients[cli].fd = -1;
   this->clients[cli].valid = 0;
-  // FIXME
-  // We can't delete the queue here, because there may be one or more
-  // drivers that have pending requests from this client.  Such a driver
-  // will try to push the reply onto this queue, causing a segfault or
-  // deadlock.  So we'll empty the queue and just leave it hanging around,
-  // which is a (small) memory leak.
-  //delete this->clients[cli].queue;
-  Message* msg;
-  while((msg = this->clients[cli].queue->Pop()))
-    delete msg;
+  this->clients[cli].queue = QueuePointer();
   free(this->clients[cli].readbuffer);
   free(this->clients[cli].writebuffer);
   if(this->clients[cli].kill_flag)
@@ -490,7 +480,7 @@ PlayerTCP::DeleteClients()
 
 // Should be called with clients_mutex lock held
 void
-PlayerTCP::DeleteClient(MessageQueue* q)
+PlayerTCP::DeleteClient(QueuePointer &q)
 {
   // Find the client and mark it for deletion.
   int i;

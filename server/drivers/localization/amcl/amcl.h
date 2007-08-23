@@ -102,7 +102,7 @@ class AdaptiveMCL : public Driver
   private: AMCLSensorData *Pop(void);
 
   // MessageHandler
-  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+  public: virtual int ProcessMessage(QueuePointer &resp_queue,
                                      player_msghdr * hdr,
                                      void * data);
 
@@ -128,7 +128,7 @@ class AdaptiveMCL : public Driver
   private: void PutDataPosition(pf_vector_t delta, double time);
 
   // Send back geometry data
-  private: void ProcessGeom(MessageQueue* resp_queue, player_msghdr_t* hdr);
+  private: void ProcessGeom(QueuePointer &resp_queue, player_msghdr_t* hdr);
 
 #ifdef INCLUDE_RTKGUI
   // Set up the GUI

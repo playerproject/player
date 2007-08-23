@@ -321,7 +321,7 @@ class Wavefront : public Driver
     virtual int Shutdown();
 
     // Process incoming messages from clients
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer & resp_queue,
                                player_msghdr * hdr,
                                void * data);
 };
@@ -554,7 +554,7 @@ Wavefront::PutPlannerData()
     data.waypoints_count = this->waypoint_count;
   }
 
-  this->Publish(this->device_addr, NULL,
+  this->Publish(this->device_addr, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_PLANNER_DATA_STATE,
                 (void*)&data,sizeof(data),NULL);
@@ -1204,7 +1204,7 @@ Wavefront::ShutdownMap()
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
 int
-Wavefront::ProcessMessage(MessageQueue* resp_queue,
+Wavefront::ProcessMessage(QueuePointer & resp_queue,
                           player_msghdr * hdr,
                           void * data)
 {

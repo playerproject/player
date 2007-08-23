@@ -127,7 +127,7 @@ class LaserBar : public Driver
   public: virtual int Shutdown();
 
   // Process incoming messages from clients 
-  int ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data);
+  int ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
   // Main function for device thread.
   private: virtual void Main();
@@ -278,7 +278,7 @@ void LaserBar::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void *data)
+int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 
@@ -313,7 +313,7 @@ int LaserBar::ProcessMessage(MessageQueue *resp_queue, player_msghdr *hdr, void 
 
     printf("Count[%d]\n",this->fdata.fiducials_count);
 
-    this->Publish(this->device_addr, NULL, 
+    this->Publish(this->device_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
                   reinterpret_cast<void*>(&this->fdata), 
                   size, &hdr->timestamp);

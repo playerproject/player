@@ -111,7 +111,7 @@ class PlayerNIMU : public Driver
 		virtual int Shutdown ();
 
         // This method will be invoked on each incoming message
-		virtual int ProcessMessage (MessageQueue* resp_queue,
+		virtual int ProcessMessage (QueuePointer &resp_queue,
 									player_msghdr * hdr,
 									void * data);
 	private:
@@ -236,7 +236,7 @@ void PlayerNIMU::Main ()
 		imu_data_calib.magn_y = GET_VALUE_IN_UNITS(data.MagY,MagRange);
 		imu_data_calib.magn_z = GET_VALUE_IN_UNITS(data.MagZ,MagRange);
 		
-		Publish( device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_CALIB, &imu_data_calib, sizeof(imu_data_calib));
+		Publish( device_addr, PLAYER_MSGTYPE_DATA, PLAYER_IMU_DATA_CALIB, &imu_data_calib, sizeof(imu_data_calib));
 		
 		nanosleep (&sleepTime, NULL);
 	}
@@ -244,7 +244,7 @@ void PlayerNIMU::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int PlayerNIMU::ProcessMessage (MessageQueue* resp_queue,
+int PlayerNIMU::ProcessMessage (QueuePointer &resp_queue,
 							 player_msghdr * hdr,
 							 void * data)
 {

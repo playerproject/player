@@ -123,7 +123,7 @@ class Phidgetrfid : public Driver {
 		virtual int Setup();
 		virtual int Shutdown();
 
-		virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+		virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
 	private:
 
@@ -252,7 +252,7 @@ int Phidgetrfid::Shutdown() {
     return(0);
 }
 
-int Phidgetrfid::ProcessMessage(MessageQueue* resp_queue,
+int Phidgetrfid::ProcessMessage(QueuePointer &resp_queue,
                                       player_msghdr * hdr,
                                       void * data) {
 
@@ -400,7 +400,7 @@ void Phidgetrfid::Main() {
 
         //Publishing data.
         if (rfid_id.interf !=0) {
-            Publish(rfid_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA, (unsigned char*)&data_rfid, sizeof(player_rfid_data_t), NULL);
+            Publish(rfid_id, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA, (unsigned char*)&data_rfid, sizeof(player_rfid_data_t), NULL);
         }
 
         //point to calculate how much to sleep, call nanosleep, after sleep restart the timer

@@ -107,7 +107,7 @@ class ER : public Driver
     //void PutData(void);
     
     // MessageHandler
-    virtual int ProcessMessage(MessageQueue * resp_queue,
+    virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
                                void * data);
     //void HandlePositionCommand(player_position2d_cmd_t position_cmd);

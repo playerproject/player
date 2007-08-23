@@ -127,7 +127,7 @@ public:
     virtual int Shutdown();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage(MessageQueue* resp_queue,
+    virtual int ProcessMessage(QueuePointer &resp_queue,
                                player_msghdr * hdr,
                                void * data);
 
@@ -316,7 +316,7 @@ int PhidgetIFK::Shutdown() {
     return(0);
 }
 
-int PhidgetIFK::ProcessMessage(MessageQueue* resp_queue,
+int PhidgetIFK::ProcessMessage(QueuePointer &resp_queue,
                                      player_msghdr * hdr,
                                      void * data) {
     // Process messages here.  Send a response if necessary, using Publish().
@@ -541,11 +541,11 @@ void PhidgetIFK::Main() {
 
         //Time to publish the packets! (only for the interfaces defined in the config file)
         if (aio_id.interf !=0) {
-            Publish(aio_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE, (unsigned char*)&data_ai, sizeof(player_aio_data_t), NULL);
+            Publish(aio_id, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE, (unsigned char*)&data_ai, sizeof(player_aio_data_t), NULL);
         }
 
         if (dio_id.interf != 0) {
-            Publish(dio_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES, (unsigned char*)&data_di, sizeof(player_dio_data_t), NULL);
+            Publish(dio_id, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES, (unsigned char*)&data_di, sizeof(player_dio_data_t), NULL);
         }
 
         //point to calculate how much to sleep, call nanosleep, after sleep restart the timer

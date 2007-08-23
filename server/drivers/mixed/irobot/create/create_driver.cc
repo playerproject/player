@@ -121,7 +121,7 @@ class Create : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer &resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
 
@@ -304,7 +304,7 @@ Create::Main()
      posdata.pos.py = this->create_dev->oy;
      posdata.pos.pa = this->create_dev->oa;
 
-     this->Publish(this->position_addr, NULL,
+     this->Publish(this->position_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
 
@@ -326,7 +326,7 @@ Create::Main()
                         PLAYER_POWER_MASK_PERCENT |
                         PLAYER_POWER_MASK_CHARGING);
 
-     this->Publish(this->power_addr, NULL,
+     this->Publish(this->power_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
                    (void*)&powerdata, sizeof(powerdata), NULL);
 
@@ -339,7 +339,7 @@ Create::Main()
      bumperdata.bumpers[0] = this->create_dev->bumper_left;
      bumperdata.bumpers[1] = this->create_dev->bumper_right;
 
-     this->Publish(this->bumper_addr, NULL,
+     this->Publish(this->bumper_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
                    (void*)&bumperdata, sizeof(bumperdata), NULL);
 
@@ -361,7 +361,7 @@ Create::Main()
      irdata.ranges[9] = (float)this->create_dev->wheeldrop_left;
      irdata.ranges[10] = (float)this->create_dev->wheeldrop_right;
 
-     this->Publish(this->ir_addr, NULL,
+     this->Publish(this->ir_addr,
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
          (void*)&irdata, sizeof(irdata), NULL);
 
@@ -375,7 +375,7 @@ Create::Main()
      gripperdata.beams=this->create_dev->dirtdetector_right+this->create_dev->dirtdetector_left;
      gripperdata.stored=0;
 
-     this->Publish(this->gripper_addr, NULL,
+     this->Publish(this->gripper_addr,
          PLAYER_MSGTYPE_DATA,
          PLAYER_GRIPPER_DATA_STATE,
          (void*) &gripperdata, sizeof(gripperdata), NULL);
@@ -392,7 +392,7 @@ Create::Main()
      this->cpdata->data[3]=this->create_dev->button_power;
      this->cpdata->data[4]=this->create_dev->remote_opcode;
 
-     this->Publish(this->opaque_addr, NULL,
+     this->Publish(this->opaque_addr,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
          (void*)this->cpdata, sizeof(*this->cpdata), NULL);
 
@@ -401,7 +401,7 @@ Create::Main()
 }
 
 int
-Create::ProcessMessage(MessageQueue * resp_queue, 
+Create::ProcessMessage(QueuePointer &resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data)
 {

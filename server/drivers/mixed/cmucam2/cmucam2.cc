@@ -162,7 +162,7 @@ class Cmucam2:public Driver
 		Cmucam2( ConfigFile* cf, int section);
 
 		// Process incoming messages from clients 
-		virtual int ProcessMessage(MessageQueue * resp_queue, 
+		virtual int ProcessMessage(QueuePointer & resp_queue, 
 								   player_msghdr * hdr, 
 								   void * data);
 
@@ -296,7 +296,7 @@ int Cmucam2::Shutdown()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-int Cmucam2::ProcessMessage (MessageQueue* resp_queue, 
+int Cmucam2::ProcessMessage (QueuePointer & resp_queue, 
 								player_msghdr * hdr,
 								void * data)
 {
@@ -462,7 +462,7 @@ void Cmucam2::RefreshDataBlobfinder ()
 	blobfinder_data.blobs_count = blobs_observed;
   
 	/* got the data. now fill it in */
-	Publish (this->blobfinder_id, NULL, PLAYER_MSGTYPE_DATA, 
+	Publish (this->blobfinder_id, PLAYER_MSGTYPE_DATA, 
 			 PLAYER_BLOBFINDER_DATA_BLOBS, &blobfinder_data, 
 			 sizeof (player_blobfinder_data), NULL);
 	return;
@@ -485,7 +485,7 @@ void Cmucam2::RefreshDataPtz        ()
 	ptz_data.pan   = ptz_data.pan;
 	ptz_data.tilt  = ptz_data.tilt; 
 
-	Publish (this->ptz_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, 
+	Publish (this->ptz_id, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, 
 			 &ptz_data, sizeof (player_ptz_data_t), NULL);
 	
 	return;
@@ -511,7 +511,7 @@ void Cmucam2::RefreshDataCamera     ()
 	get_image (camera_packet, &cam_data);
         free(camera_packet);
 
-	Publish (this->cam_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, 
+	Publish (this->cam_id, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, 
 			 &cam_data, sizeof (player_camera_data_t), NULL);
 	return;
 }

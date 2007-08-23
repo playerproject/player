@@ -235,7 +235,7 @@ void Dummy::Main(void)
 
                 int data_len = sizeof(data) - sizeof(data.image) + w * h * 3;
 
-                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_CAMERA_DATA_STATE, (void*)&data, data_len, 
                          NULL);
                 break;
@@ -257,7 +257,7 @@ void Dummy::Main(void)
                 }
                 data.id = 1;
 
-                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_LASER_DATA_SCAN, (void*)&data, sizeof(data), 
                          NULL);
                 break;
@@ -272,7 +272,7 @@ void Dummy::Main(void)
                 data.vel.py = 1.0;
                 data.vel.pa = 1.0;
                 data.stall  = 0;
-                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_POSITION2D_DATA_STATE, (void*)&data, 
                          sizeof (data), NULL);
                 break;
@@ -285,7 +285,7 @@ void Dummy::Main(void)
                 data.zoom = 1.0;
                 data.panspeed  = 1.0;
                 data.tiltspeed = 1.0;
-                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_PTZ_DATA_STATE, (void*)&data, 
                          sizeof (data), NULL);
                 break;
@@ -308,7 +308,7 @@ void Dummy::Main(void)
                 data.data_packet.temperature = 500;
                 data.data_packet.battery = 489;
 
-                Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+                Publish (device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_WSN_DATA_STATE, (void*)&data, 
                          sizeof (data), NULL);
                 break;

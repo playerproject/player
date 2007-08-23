@@ -157,7 +157,7 @@ class LaserVisualBW : public Driver
   };
 
   // Process incoming messages from clients 
-  int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+  int ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 
   // Process laser data.
   // Returns non-zero if the laser data has been updated.
@@ -385,7 +385,7 @@ int LaserVisualBW::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserVisualBW::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
@@ -1082,7 +1082,7 @@ void LaserVisualBW::WriteData()
   timestamp = this->laser_time;
   
   // Copy data to server.
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, (void*) &data, sizeof(data), &timestamp);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, (void*) &data, sizeof(data), &timestamp);
 }
 
 

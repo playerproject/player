@@ -190,7 +190,7 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
 		
 	}
 
-  this->Publish(this->device_addr, NULL, 
+  this->Publish(this->device_addr,  
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 &this->data, sizeof(this->data), NULL);
 

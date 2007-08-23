@@ -38,7 +38,7 @@ class ToRanger : public Driver
 		~ToRanger (void);
 
 		// Message processor - must be called first by child classes if overridden
-		virtual int ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *data);
+		virtual int ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data);
 
 		virtual int Setup (void);
 		virtual int Shutdown (void);

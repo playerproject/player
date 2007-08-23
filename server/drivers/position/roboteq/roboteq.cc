@@ -159,7 +159,7 @@ class roboteq:public Driver
   public:
     roboteq( ConfigFile* cf, int section);
     
-    virtual int ProcessMessage(MessageQueue * resp_queue, 
+    virtual int ProcessMessage(QueuePointer &resp_queue, 
 						player_msghdr * hdr, void * data);
     virtual int Setup();
     virtual int Shutdown();
@@ -358,7 +358,7 @@ int roboteq::Shutdown()
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
 ////////////////////////////////////////////////////////////////////////////////
-int roboteq::ProcessMessage (MessageQueue* resp_queue, player_msghdr * hdr, void * data)
+int roboteq::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
     assert(hdr);
 	assert(data);
@@ -419,7 +419,7 @@ void roboteq::Main()
     ProcessMessages();
 	pthread_testcancel();
     // publish dummy data
-    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
 			  (unsigned char*) &data, sizeof(data), &position_time);
     usleep(10);
   }

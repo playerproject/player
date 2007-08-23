@@ -96,7 +96,7 @@ class CameraUncompress : public Driver
   public: virtual int Shutdown();
 
   // This method will be invoked on each incoming message
-  public: virtual int ProcessMessage(MessageQueue* resp_queue,
+  public: virtual int ProcessMessage(QueuePointer &resp_queue,
                                      player_msghdr * hdr,
                                      void * data);
 
@@ -194,7 +194,7 @@ int CameraUncompress::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraUncompress::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, 
+int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
                                void * data)
 {
   assert(hdr);
@@ -259,6 +259,6 @@ void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
   this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   
-  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
 
 }

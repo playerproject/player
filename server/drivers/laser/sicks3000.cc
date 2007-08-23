@@ -142,7 +142,7 @@ class SickS3000 : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer &resp_queue, 
 		       player_msghdr * hdr, 
 		       void * data);
   private:
@@ -359,7 +359,7 @@ int SickS3000::Shutdown()
 
 
 int 
-SickS3000::ProcessMessage(MessageQueue * resp_queue, 
+SickS3000::ProcessMessage(QueuePointer &resp_queue, 
                            player_msghdr * hdr,
                            void * data)
 {
@@ -696,7 +696,6 @@ int SickS3000::ProcessLaserData()
           }
           
           this->Publish(this->device_addr,
-                        NULL,
                         PLAYER_MSGTYPE_DATA,
                         PLAYER_LASER_DATA_SCAN,
                         (void*)&data_packet, sizeof(data_packet), NULL);

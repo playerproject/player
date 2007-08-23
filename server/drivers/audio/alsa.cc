@@ -1265,7 +1265,7 @@ void Alsa::PublishRecordedData (void)
 		packet.data_count = bytesToCopy;
 
 		// Publish this packet
-		Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_WAV_REC, reinterpret_cast<void*> (&packet), sizeof (player_audio_wav_t), NULL);
+		Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_WAV_REC, reinterpret_cast<void*> (&packet), sizeof (player_audio_wav_t), NULL);
 		delete[] packet.data;
 	}
 	// Set the local record buffer position back to the start
@@ -1937,7 +1937,7 @@ void Alsa::PublishMixerData (void)
 	player_audio_mixer_channel_list_t data;
 
 	MixerLevelsToPlayer (&data);
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_MIXER_CHANNEL, reinterpret_cast<void*> (&data), sizeof (player_audio_mixer_channel_list_t), NULL);
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_MIXER_CHANNEL, reinterpret_cast<void*> (&data), sizeof (player_audio_mixer_channel_list_t), NULL);
 }
 
 // Converts an element level from a long to a float between 0 and 1
@@ -2351,7 +2351,7 @@ void Alsa::SendStateMessage (void)
 	if (msg.state == 0)
 		msg.state = PLAYER_AUDIO_STATE_STOPPED;
 
-	Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_STATE, reinterpret_cast<void*> (&msg), sizeof (player_audio_state_t), NULL);
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_AUDIO_DATA_STATE, reinterpret_cast<void*> (&msg), sizeof (player_audio_state_t), NULL);
 }
 
 
@@ -2431,7 +2431,7 @@ int Alsa::HandleMixerChannelCmd (player_audio_mixer_channel_list_t *data)
 	return 0;
 }
 
-int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_queue)
+int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, QueuePointer &resp_queue)
 {
 	// If the requested index to store at is at end or -1, append to the list
 	if (data->index == nextSampleIdx || data->index == -1)
@@ -2478,7 +2478,7 @@ int Alsa::HandleSampleLoadReq (player_audio_sample_t *data, MessageQueue *resp_q
 	return 0;
 }
 
-int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *resp_queue)
+int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, QueuePointer &resp_queue)
 {
 	// If the requested index to retrieve is beyond the end or negative, error
 	if (data->index >= nextSampleIdx || data->index < 0)
@@ -2507,7 +2507,7 @@ int Alsa::HandleSampleRetrieveReq (player_audio_sample_t *data, MessageQueue *re
 }
 
 // Handle a request to record a sample and store it locally in the sample store
-int Alsa::HandleSampleRecordReq (player_audio_sample_rec_req_t *data, MessageQueue *resp_queue)
+int Alsa::HandleSampleRecordReq (player_audio_sample_rec_req_t *data, QueuePointer &resp_queue)
 {
 	// Can't record to sample and clients at the same time (yet)
 	if (recState == PB_STATE_RECORDING)
@@ -2560,7 +2560,7 @@ int Alsa::HandleSampleRecordReq (player_audio_sample_rec_req_t *data, MessageQue
 	return 0;
 }
 
-int Alsa::HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, MessageQueue *resp_queue)
+int Alsa::HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *data, QueuePointer &resp_queue)
 {
 	player_audio_mixer_channel_list_detail_t result;
 	MixerDetailsToPlayer (&result);
@@ -2569,7 +2569,7 @@ int Alsa::HandleMixerChannelListReq (player_audio_mixer_channel_list_detail_t *d
 	return 0;
 }
 
-int Alsa::HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, MessageQueue *resp_queue)
+int Alsa::HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, QueuePointer &resp_queue)
 {
 	player_audio_mixer_channel_list_t result;
 	MixerLevelsToPlayer (&result);
@@ -2579,7 +2579,7 @@ int Alsa::HandleMixerChannelLevelReq (player_audio_mixer_channel_list_t *data, M
 }
 
 // Message processing
-int Alsa::ProcessMessage (MessageQueue *resp_queue, player_msghdr *hdr, void *data)
+int Alsa::ProcessMessage (QueuePointer &resp_queue, player_msghdr *hdr, void *data)
 {
 	// Check for capabilities requests first
 	HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ);

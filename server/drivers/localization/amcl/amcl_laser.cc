@@ -277,7 +277,7 @@ int AMCLLaser::Shutdown(void)
 // Get the current laser reading
 //AMCLSensorData *AMCLLaser::GetData(void)
 // Process message for this interface
-int AMCLLaser::ProcessMessage(MessageQueue * resp_queue, 
+int AMCLLaser::ProcessMessage(QueuePointer &resp_queue, 
                                      player_msghdr * hdr, 
                                      void * idata)
 {

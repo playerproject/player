@@ -119,7 +119,7 @@ int AMCLOdom::Shutdown(void)
 // Get the current odometry reading
 //AMCLSensorData *AMCLOdom::GetData(void)
 // Process message for this interface
-int AMCLOdom::ProcessMessage(MessageQueue * resp_queue, 
+int AMCLOdom::ProcessMessage(QueuePointer &resp_queue, 
                                      player_msghdr * hdr, 
                                      void * idata)
 {

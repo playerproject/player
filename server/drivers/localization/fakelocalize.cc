@@ -109,7 +109,7 @@ class FakeLocalize : public Driver
   public: virtual int Setup();
   public: virtual int Shutdown();
   public: virtual void Main();
-  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+  public: virtual int ProcessMessage(QueuePointer &resp_queue,
                                      player_msghdr * hdr,
                                      void * data);
 
@@ -257,7 +257,7 @@ FakeLocalize::UpdateData()
     memset(loc_data.hypoths[0].cov,0,sizeof(int64_t)*9);
     loc_data.hypoths[0].alpha = htonl((uint32_t)1e6);
 
-    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,&loc_data,sizeof(loc_data));
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,&loc_data,sizeof(loc_data));
     delete Reply;
     	Reply = NULL;
   }
@@ -289,7 +289,7 @@ FakeLocalize::Main()
   }
 }
 
-int FakeLocalize::ProcessMessage(MessageQueue * resp_queue,
+int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 				 player_msghdr * hdr,
 				 void * data) 
 {

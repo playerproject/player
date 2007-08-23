@@ -584,7 +584,7 @@ void UPCBarcode::WriteBlobfinderData()
   }
     
   // Copy data to server.
-  Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
+  Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
   // Copy data to server
 /*  size = sizeof(data) - sizeof(data.blobs) + this->blobCount * sizeof(data.blobs[0]);
   PutMsg(blobfinder_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*) &data, size, &this->cameraTime);		

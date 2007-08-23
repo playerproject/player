@@ -119,7 +119,7 @@ class PostGIS : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue * resp_queue,
+    int ProcessMessage(QueuePointer &resp_queue,
 		       player_msghdr * hdr,
 		       void * data);
 
@@ -260,7 +260,7 @@ int PostGIS::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int PostGIS::ProcessMessage(MessageQueue * resp_queue,
+int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                             player_msghdr * hdr,
                             void * data)
 {

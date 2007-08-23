@@ -177,7 +177,7 @@ class CameraV4L : public Driver
   public: virtual int Shutdown();
 
   // This method will be invoked on each incoming message
-  public: virtual int ProcessMessage(MessageQueue* resp_queue,
+  public: virtual int ProcessMessage(QueuePointer & resp_queue,
                                      player_msghdr * hdr,
                                      void * data);
 
@@ -454,11 +454,10 @@ void CameraV4L::Main()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int CameraV4L::ProcessMessage(MessageQueue* resp_queue,
+int CameraV4L::ProcessMessage(QueuePointer & resp_queue,
                               player_msghdr * hdr,
                               void * data)
 {
-  assert(resp_queue);
   assert(hdr);
   assert(data);
 
@@ -553,7 +552,7 @@ void CameraV4L::RefreshData()
 
 
   /* We should do this to be efficient */
-  Publish(this->device_addr, NULL,
+  Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&this->data), size, NULL);
 

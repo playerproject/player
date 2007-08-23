@@ -130,7 +130,7 @@ class Accel_Calib : public Driver
         virtual int Setup       ();
         virtual int Shutdown    ();
         // This method will be invoked on each incoming message
-        virtual int ProcessMessage (MessageQueue* resp_queue, 
+        virtual int ProcessMessage (QueuePointer &resp_queue, 
                                     player_msghdr * hdr,
                                     void * data);
 
@@ -289,7 +289,7 @@ void Accel_Calib::Main ()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
-int Accel_Calib::ProcessMessage (MessageQueue* resp_queue, 
+int Accel_Calib::ProcessMessage (QueuePointer &resp_queue, 
                                  player_msghdr * hdr,
                                  void * data)
 {
@@ -346,7 +346,7 @@ int Accel_Calib::ProcessMessage (MessageQueue* resp_queue,
         new_wsn_data.data_packet.battery     = -1;
 
         // Write the WSN data
-        Publish (device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, 
+        Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE, 
                  &new_wsn_data, sizeof (player_wsn_data_t), NULL);
 
         return 0;

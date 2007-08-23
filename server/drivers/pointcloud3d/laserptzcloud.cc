@@ -97,7 +97,7 @@ class LaserPTZCloud : public Driver
         int Shutdown();
 
         // MessageHandler
-        int ProcessMessage (MessageQueue * resp_queue, 
+        int ProcessMessage (QueuePointer &resp_queue, 
                             player_msghdr * hdr, 
                             void * data);
     private:
@@ -265,7 +265,7 @@ int LaserPTZCloud::Shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage
-int LaserPTZCloud::ProcessMessage (MessageQueue * resp_queue, 
+int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue, 
                                           player_msghdr * hdr,
                                           void * data)
 {
@@ -352,7 +352,7 @@ int LaserPTZCloud::ProcessMessage (MessageQueue * resp_queue,
             	    for (int j=0; j < counter; j++)
                 	cloud_data.points[j] = all_elements[j];
 		
-            	    Publish (this->device_addr, NULL, PLAYER_MSGTYPE_DATA, 
+            	    Publish (this->device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data, 
                          sizeof (player_pointcloud3d_data_t), NULL);
         	}

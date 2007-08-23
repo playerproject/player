@@ -152,7 +152,7 @@ private:
 
   void ToggleAIn(unsigned char val);
 
-  int HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void* data);
+  int HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void* data);
   int HandleCommand(player_msghdr * hdr, void * data);
   void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
   void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
@@ -231,7 +231,7 @@ public:
   virtual int Shutdown();
 
   // MessageHandler
-  virtual int ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data);
+  virtual int ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data);
 };
 
 

@@ -207,7 +207,7 @@ class Obot : public Driver
     void ProcessCarCommand(player_position2d_cmd_car_t * cmd);
 
     // Process incoming messages from clients 
-    int ProcessMessage(MessageQueue * resp_queue, 
+    int ProcessMessage(QueuePointer & resp_queue, 
                        player_msghdr * hdr, 
                        void * data);
 
@@ -542,7 +542,7 @@ Obot::Main()
              //data.pos.px,
              //data.pos.py,
              //RTOD(data.pos.pa));
-      this->Publish(this->position_addr, NULL, 
+      this->Publish(this->position_addr,  
                     PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, 
                     (void*)&data,sizeof(data),NULL);
       
@@ -550,7 +550,7 @@ Obot::Main()
       charge_data.volts = ((float)volt) / 1e1;
       charge_data.percent = 1e2 * (charge_data.volts / 
                                    OBOT_NOMINAL_VOLTAGE);
-      this->Publish(this->power_addr, NULL, 
+      this->Publish(this->power_addr,  
                     PLAYER_MSGTYPE_DATA,
                     PLAYER_POWER_DATA_STATE,
                     (void*)&charge_data, sizeof(player_power_data_t), NULL);
@@ -691,7 +691,7 @@ Obot::ProcessCommand(player_position2d_cmd_vel_t * cmd)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int Obot::ProcessMessage(MessageQueue * resp_queue, 
+int Obot::ProcessMessage(QueuePointer & resp_queue, 
                          player_msghdr * hdr, 
                          void * data)
 {

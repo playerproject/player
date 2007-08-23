@@ -425,7 +425,7 @@ class FlockOfBirds_Device : public Driver
     virtual int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+    int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
 };
 
 // initialization function
@@ -490,7 +490,7 @@ FlockOfBirds_Device::Shutdown()
   return(0);
 }
 
-int FlockOfBirds_Device::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
+int FlockOfBirds_Device::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
@@ -541,7 +541,7 @@ FlockOfBirds_Device::Main()
       data.pos.ppitch = PosData[4]*1000.0;
       data.pos.pyaw = PosData[5]*1000.0;
 
-      Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA,PLAYER_POSITION3D_DATA_STATE,(void*)&data, sizeof(player_position3d_data_t),NULL);
+      Publish(device_addr, PLAYER_MSGTYPE_DATA,PLAYER_POSITION3D_DATA_STATE,(void*)&data, sizeof(player_position3d_data_t),NULL);
     }
 
     // repeat frequency (default to 10 Hz)

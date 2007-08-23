@@ -166,7 +166,7 @@ class WriteLog: public Driver
   public: ~WriteLog();
 
   // MessageHandler
-  public: virtual int ProcessMessage(MessageQueue * resp_queue,
+  public: virtual int ProcessMessage(QueuePointer & resp_queue,
                                      player_msghdr * hdr,
                                      void * data);
 
@@ -586,7 +586,7 @@ WriteLog::CloseFile()
 }
 
 int
-WriteLog::ProcessMessage(MessageQueue * resp_queue,
+WriteLog::ProcessMessage(QueuePointer & resp_queue,
                          player_msghdr * hdr,
                          void * data)
 {
