@@ -12,6 +12,7 @@ class CameraUvc : public Driver
 {
 	public:
 		CameraUvc(ConfigFile* cf, int section);
+    ~CameraUvc();
 		int Setup();
 		int Shutdown();
 

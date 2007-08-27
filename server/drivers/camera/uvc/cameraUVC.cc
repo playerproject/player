@@ -115,6 +115,12 @@ CameraUvc::CameraUvc(ConfigFile* cf, int section)
 						cf->ReadTupleInt( section, "size", 1, 240));
 }
 
+CameraUvc::~CameraUvc()
+{
+  delete ui;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 // Also starts the mainloop. 
@@ -174,13 +180,11 @@ void CameraUvc::Main()
 		data.fdiv=1; 
 		data.compression=PLAYER_CAMERA_COMPRESS_JPEG;
 		data.image_count=ui->GetFrameSize(); 
+    assert(data.image_count <= PLAYER_CAMERA_IMAGE_SIZE); 
 		ui->CopyFrame(data.image);
-  
-		// Work out the data size; do this BEFORE byteswapping
-		size_t size=sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
 
 		// Write data to the client (through the server)
-		Publish (device_addr,PLAYER_MSGTYPE_DATA,PLAYER_CAMERA_DATA_STATE,&data,size,NULL);
+		Publish (device_addr,PLAYER_MSGTYPE_DATA,PLAYER_CAMERA_DATA_STATE,&data,sizeof(data),NULL);
 	}
 }
 

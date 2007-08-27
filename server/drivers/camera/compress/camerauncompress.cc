@@ -202,7 +202,11 @@ int CameraUncompress::ProcessMessage(QueuePointer &resp_queue, player_msghdr * h
   
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
-    assert(hdr->size >= sizeof(player_camera_data_t));
+    if(hdr->size < sizeof(player_camera_data_t))
+    {
+      PLAYER_WARN("Not enough camera data recieved");
+      return -1;
+    }
     player_camera_data_t * camera_data = reinterpret_cast<player_camera_data_t *> (data);
     if (camera_data->compression != PLAYER_CAMERA_COMPRESS_JPEG)
     {
@@ -242,6 +246,13 @@ void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
                     compdata.image,
                     compdata.image_count);
 
+  this->data.width = (compdata.width);
+  this->data.height = (compdata.height);
+  this->data.image_count = data.width*data.height*3;
+  this->data.bpp = 24;
+  this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+
   if (this->save)
   {
     snprintf(filename, sizeof(filename), "click-%04d.ppm",this->frameno++);
@@ -250,15 +261,6 @@ void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
     fclose(fp);
   }
 
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
-
-  this->data.width = (compdata.width);
-  this->data.height = (compdata.height);
-  this->data.image_count = data.width*data.height*3;
-  this->data.bpp = 24;
-  this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, sizeof(this->data), &this->camera_time);
 
 }
