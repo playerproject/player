@@ -131,13 +131,13 @@ def process_for_utils(targetfile):
 static player_interface_t interfaces[] = {  
   """
   interfaces.sort()
-  last_code = 0
+  last_code = -1 # start at -1 so that we generate and entry for 0
   for interface in interfaces:
-    while interface[0] > last_code + 1:
+    last_code += 1
+    while interface[0] > last_code:
       print """  {0xFFFF, "nointerf%d"},""" % last_code
       last_code += 1
     print """  {PLAYER_%(i)s_CODE, PLAYER_%(i)s_STRING},""" % {"i" : interface[1].upper() }
-    last_code += 1
   print """
   {0,NULL}
 };""" 
