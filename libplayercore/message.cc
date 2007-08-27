@@ -57,7 +57,7 @@
 Message::Message(const struct player_msghdr & Header,
                   const void * data,
                   unsigned int data_size,
-                  bool do_deepcopy)
+                  bool do_deepcopy) : DynDataSize(0)
 {
   this->Lock = new pthread_mutex_t;
   assert(this->Lock);
@@ -66,6 +66,7 @@ Message::Message(const struct player_msghdr & Header,
   assert(this->Size);
   this->Data = new unsigned char[this->Size];
   assert(this->Data);
+  
 
   // copy the header and then the data into out message data buffer
   memcpy(this->Data,&Header,sizeof(struct player_msghdr));
@@ -95,7 +96,7 @@ Message::Message(const struct player_msghdr & Header,
                  const void * data,
                  unsigned int data_size,
                  QueuePointer &_queue,
-                 bool do_deepcopy)
+                 bool do_deepcopy) : DynDataSize(0)
 {
   this->Queue = _queue;
   this->Lock = new pthread_mutex_t;
@@ -103,7 +104,6 @@ Message::Message(const struct player_msghdr & Header,
   pthread_mutex_init(this->Lock,NULL);
   this->Size = sizeof(struct player_msghdr)+data_size;
   assert(this->Size);
-  this->DynDataSize = 0;
   this->Data = new unsigned char[this->Size];
   assert(this->Data);
 
