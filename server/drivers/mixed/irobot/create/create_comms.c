@@ -400,7 +400,7 @@ create_parse_sensor_packet(create_comm_t* r, unsigned char* buf, size_t buflen)
   memcpy(&signed_int, buf+idx, 2);
   idx += 2;
   signed_int = (int16_t)ntohs((uint16_t)signed_int);
-  angle = (2.0 * (signed_int / 1e3)) / CREATE_AXLE_LENGTH;
+  angle = DTOR(singned_int);
 
   /* First-order odometric integration */
   r->oa = NORMALIZE(r->oa + angle);
