@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include "playercommon.h"
 
 #ifdef HAVE_CONFIG_H
   #include "config.h"
@@ -400,7 +401,7 @@ create_parse_sensor_packet(create_comm_t* r, unsigned char* buf, size_t buflen)
   memcpy(&signed_int, buf+idx, 2);
   idx += 2;
   signed_int = (int16_t)ntohs((uint16_t)signed_int);
-  angle = DTOR(singned_int);
+  angle = DTOR(signed_int);
 
   /* First-order odometric integration */
   r->oa = NORMALIZE(r->oa + angle);
