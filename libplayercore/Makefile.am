@@ -4,7 +4,9 @@ AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_src
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = playercore.pc playererror.pc
 
-EXTRA_DIST = playercore.pc.in playererror.pc.in
+dist_bin_SCRIPTS = playerinterfacegen.py
+
+EXTRA_DIST = playercore.pc.in playererror.pc.in interfaces/ADDING_INTERFACES interfaces/*.def
 
 BUILT_SOURCES = playerconfig.h player_interfaces.h interface_table.c
 CLEANFILES = playerconfig.h playercore.pc playererror.pc
