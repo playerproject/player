@@ -14,8 +14,8 @@ AM_CPPFLAGS = -Wall -g $(PLAYERC_CFLAGS)
 exampledir = $(prefix)/share/player/examples/plugins/exampleinterface
 
 example_PROGRAMS = example_client
-example_DATA = eginterf_client.c eginterf.c eginterf_xdr.c eginterf_driver.cc Makefile.example example.cfg
-EXTRA_DIST = Makefile.example example.cfg
+example_DATA = eginterf_client.c eginterf.c eginterf_xdr.c eginterf_driver.cc Makefile.example example.cfg 
+EXTRA_DIST = Makefile.example example.cfg eginterf_client.h eginterf.h eginterf_xdr.h
 
 example_LTLIBRARIES = libeginterfdriver.la libeginterf.la
 libeginterfdriver_la_SOURCES = eginterf_driver.cc
