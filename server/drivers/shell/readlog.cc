@@ -256,6 +256,12 @@ class ReadLog: public Driver
                           int linenum,
                           int token_count, char **tokens, double time);
 
+  // Parse localize data    
+  private: int ParseLocalize(player_devaddr_t id, unsigned short type, 
+			     unsigned short subtype,
+			     int linenum, int token_count, 
+			     char **tokens, double time);
+
   // Parse sonar data
   private: int ParseSonar(player_devaddr_t id,
                           unsigned short type, unsigned short subtype,
@@ -345,6 +351,12 @@ class ReadLog: public Driver
   private: gzFile gzfile;
 #endif
 
+  // localize particles
+  private: player_localize_get_particles_t particles;
+  private: bool particles_set;
+  private: player_devaddr_t localize_addr;
+  
+
   // Input buffer
   private: size_t line_size;
   private: char *line;
@@ -405,6 +417,8 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
   memset(&this->log_id, 0, sizeof(this->log_id));
   memset(this->provide_metadata,0,sizeof(this->provide_metadata));
 
+  particles_set = false;
+
   // Get a list of devices to provide
   for (i = 0; i < 1024; i++)
   {
@@ -449,6 +463,11 @@ ReadLog::ReadLog(ConfigFile* cf, int section)
     if(this->provide_ids[i].interf == PLAYER_SONAR_CODE)
       assert((this->provide_metadata[i] =
               calloc(sizeof(player_sonar_geom_t),1)));
+
+    // if it's localize, remember address
+    if(this->provide_ids[i].interf == PLAYER_LOCALIZE_CODE){
+      this->localize_addr = this->provide_ids[i];
+    }
   }
 
   // Get replay options
@@ -1082,6 +1101,26 @@ ReadLog::ProcessMessage(QueuePointer & resp_queue,
   {
     return(this->ProcessPositionConfig(resp_queue, hdr, data));
   }
+  else if(particles_set &&
+          Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
+                                PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                                this->localize_addr))
+  {
+    if(hdr->size != 0)
+    {
+      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
+                    hdr->size, 0);
+      return(PLAYER_MSGTYPE_RESP_NACK);
+    }
+
+
+
+    this->Publish(this->localize_addr, resp_queue,
+                  PLAYER_MSGTYPE_RESP_ACK,
+                  PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                  (void*)&particles, sizeof(particles), NULL);
+    return(0);
+  }
   else
     return -1;
 }
@@ -1166,6 +1205,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   if (id.interf == PLAYER_LASER_CODE)
     return this->ParseLaser(id, type, subtype, linenum,
                             token_count, tokens, time);
+  else if (id.interf == PLAYER_LOCALIZE_CODE)
+    return this->ParseLocalize(id, type, subtype, linenum,
+                               token_count, tokens, time);
   else if (id.interf == PLAYER_SONAR_CODE)
     return this->ParseSonar(id, type, subtype, linenum,
                             token_count, tokens, time);
@@ -1556,6 +1598,124 @@ int ReadLog::ParseLaser(player_devaddr_t id,
       return(-1);
   }
 }
+
+
+
+////////////////////////////////////////////////////////////////////////////
+// Parse localize data
+int ReadLog::ParseLocalize(player_devaddr_t id,
+                           unsigned short type, unsigned short subtype,
+                           int linenum,
+                           int token_count, char **tokens, double time)
+{
+  int i, count;
+
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_LOCALIZE_DATA_HYPOTHS:
+          {
+	    player_localize_data_t hypoths;
+
+            if (token_count < 10)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+
+	    hypoths.pending_count = atoi(tokens[7]);
+	    hypoths.pending_time = atof(tokens[8]);
+	    hypoths.hypoths_count = atoi(tokens[9]);
+	    
+            count = 0;
+            for (i = 10; i < token_count; i += 7)
+            {
+	      hypoths.hypoths[count].mean.px = atof(tokens[i + 0]);
+	      hypoths.hypoths[count].mean.py = atof(tokens[i + 1]); 
+	      hypoths.hypoths[count].mean.pa = atof(tokens[i + 2]);
+	      hypoths.hypoths[count].cov[0] = atof(tokens[i + 3]);
+	      hypoths.hypoths[count].cov[1] = atof(tokens[i + 4]); 
+	      hypoths.hypoths[count].cov[2] = atof(tokens[i + 5]);
+	      hypoths.hypoths[count].alpha = atof(tokens[i + 6]);
+              count += 1;
+            }
+
+            if (count != (int)hypoths.hypoths_count)
+            {
+              PLAYER_ERROR2("hypoths count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+
+            }
+
+            this->Publish(id,  type, subtype,
+                          (void*)&hypoths, sizeof(hypoths), &time);
+            return(0);
+          }
+
+
+        default:
+          PLAYER_ERROR1("unknown localize data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(subtype)
+      {
+        case PLAYER_LOCALIZE_REQ_GET_PARTICLES:
+          {
+            if(token_count < 12)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+
+	    particles.mean.px = atof(tokens[7]);
+	    particles.mean.py = atof(tokens[8]);
+	    particles.mean.pa = atof(tokens[9]);
+	    particles.variance = atof(tokens[10]);
+	    particles.particles_count = atoi(tokens[11]);
+
+            count = 0;
+            for (i = 12; i < token_count; i += 4)
+            {
+              particles.particles[count].pose.px = atof(tokens[i + 0]);
+	      particles.particles[count].pose.py = atof(tokens[i + 1]);
+	      particles.particles[count].pose.pa = atof(tokens[i + 2]);
+	      particles.particles[count].alpha = atof(tokens[i + 3]);
+              count += 1;
+            }
+
+            if (count != (int)particles.particles_count)
+            {
+              PLAYER_ERROR2("particles count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+	    particles_set = true;
+
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown localize reply subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown localize msg type %d\n", type);
+      return(-1);
+  }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse sonar data
@@ -2127,6 +2287,7 @@ int ReadLog::ParseActarray (player_devaddr_t id,
 		    }
 		    data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
 		    
+
                     this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);

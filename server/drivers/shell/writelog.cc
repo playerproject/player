@@ -189,12 +189,18 @@ class WriteLog: public Driver
   // Flush and close this->file
   private: void CloseFile();
 
+  // Write localize particles to file
+  private: void WriteLocalizeParticles();
+
   // Write data to file
   private: void Write(WriteLogDevice *device,
                       player_msghdr_t* hdr, void *data);
 
   // Write laser data to file
   private: int WriteLaser(player_msghdr_t* hdr, void *data);
+
+  // Write localize data to file
+  private: int WriteLocalize(player_msghdr_t* hdr, void *data);
 
   // Write position data to file
   private: int WritePosition(player_msghdr_t* hdr, void *data);
@@ -274,6 +280,12 @@ class WriteLog: public Driver
   private: int device_count;
   private: WriteLogDevice devices[1024];
 
+  // Log particles (in case a localize interface is provided)
+  public: bool write_particles;
+
+  private: bool write_particles_now;
+  private: WriteLogDevice* localize_device;
+
   // Is writing enabled? (client can start/stop)
   private: bool enable;
   private: bool enable_default;
@@ -341,6 +353,13 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
 
   this->device_count = 0;
 
+  //write particles in case the localize interface is provided
+  this->write_particles = cf->ReadInt(section, "write_particles", 0);
+
+  this->write_particles_now = false;
+
+
+  localize_device = NULL;
   // Get a list of input devices
   for (i = 0; i < cf->GetTupleCount(section, "requires"); i++)
   {
@@ -570,6 +589,10 @@ void WriteLog::WriteGeometries()
         delete msg;
       }
     }
+     else if (device->addr.interf == PLAYER_LOCALIZE_CODE)
+    {
+      localize_device = device;
+    }
 
   }
 }
@@ -724,6 +747,12 @@ WriteLog::Main(void)
     // Wait on my queue
     this->Wait();
 
+
+    if (write_particles_now){
+      WriteLocalizeParticles();
+      write_particles_now = false;
+    }
+
     // Process all new messages (calls ProcessMessage on each)
     this->ProcessMessages();
   }
@@ -761,6 +790,9 @@ void WriteLog::Write(WriteLogDevice *device,
   {
     case PLAYER_LASER_CODE:
       retval = this->WriteLaser(hdr, data);
+      break;
+    case PLAYER_LOCALIZE_CODE:
+      retval = this->WriteLocalize(hdr, data);
       break;
     case PLAYER_POSITION2D_CODE:
       retval = this->WritePosition(hdr, data);
@@ -848,6 +880,32 @@ void WriteLog::Write(WriteLogDevice *device,
 
   return;
 }
+
+
+void 
+WriteLog::WriteLocalizeParticles()
+
+{
+  Message* msg;
+
+  assert(localize_device != NULL);
+
+  if(!(msg = localize_device->device->Request(this->InQueue,
+                                              PLAYER_MSGTYPE_REQ,
+                                              PLAYER_LOCALIZE_REQ_GET_PARTICLES,
+                                              NULL, 0, NULL, true)))
+  {
+    // oh well.
+    PLAYER_WARN("unable to get localize particles");
+  }
+  else
+  {
+    // log it
+    this->Write(localize_device, msg->GetHeader(), msg->GetPayload());
+    delete msg;
+  }
+}
+
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_laser laser format
@@ -947,6 +1005,107 @@ WriteLog::WriteLaser(player_msghdr_t* hdr, void *data)
                   geom->pose.pyaw,
                   geom->size.sl,
                   geom->size.sw);
+          return(0);
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_localize localize format
+
+@brief laser log format
+
+The following type:subtype laser messages can be logged:
+- 1:1 (PLAYER_LOCALIZE_DATA_HYPOTHS) - A set of pose hypotheses.  The format is:
+  - pending_count (int): number of pending (unprocessed observations)
+  - pending time (float): time stamp of the last observation processed
+  - hypoths_coun (int): number of pose hypotheses
+  - list of hypotheses; for each hypothesis
+    - px (float): X coordinate of the mean value of the pose estimate (in m)
+    - py (float): Y coordinate of the mean value of the pose estimate (in m)
+    - pa (float): yaw coordinate of the mean value of the pose estimate (in rad)
+    - cov[0] (float): X coordinate of the covariance matrix pose estimate
+    - cov[1] (float): Y coordinate of the covariance matrix pose estimate
+    - cov[2] (float): yaw coordinate of the covariance matrix pose estimate
+    - alpha (float): weight coefficient for linear combination
+
+- 4:2 (PLAYER_LOCALIZE_REQ_GET_PARTICLES) - Current particle set. The format is:
+  - px (float): X coordinate of best (?) pose (in m?)
+  - py (float): Y coordinate of best (?) pose (in m?)
+  - pa (float): yaw coordinate of best (?) pose (in ??)
+  - variance (float): variance of the best(?) pose
+  - particles_count (int): number of particles; for each particle:
+    - px (float: X coordinate of particle's pose (in m)
+    - py (float: Y coordinate of particle's pose (in m)
+    - pa (float: yaw coordinate of particle's pose (in rad)
+    - alpha (float): weight coefficient for linear combination
+*/
+
+
+int
+WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
+{
+  size_t i;
+  player_localize_data_t* hypoths;
+  player_localize_get_particles_t* particles;
+
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_LOCALIZE_DATA_HYPOTHS:
+          hypoths = (player_localize_data_t*)data;
+          // Note that, in this format, we need a lot of precision in the
+          // resolution field.
+
+         
+          fprintf(this->file, "%10d %+07.3f %2d ",
+                  hypoths->pending_count, hypoths->pending_time,
+                  hypoths->hypoths_count);
+
+          for (i = 0; i < hypoths->hypoths_count; i++)
+            fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f %7.3f %7.3f ",
+                    hypoths->hypoths[i].mean.px, 
+		    hypoths->hypoths[i].mean.py, 
+		    hypoths->hypoths[i].mean.pa,
+		    hypoths->hypoths[i].cov[0], 
+		    hypoths->hypoths[i].cov[1], 
+		    hypoths->hypoths[i].cov[2],
+		    hypoths->hypoths[i].alpha);
+          if (write_particles)
+	    // every time we receive localize data also write localize particles
+	    write_particles_now = true;
+	  return(0);
+
+        default:
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_LOCALIZE_REQ_GET_PARTICLES:
+          particles = (player_localize_get_particles_t*)data;
+          fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %10d ",
+                  particles->mean.px,
+                  particles->mean.py,
+                  particles->mean.pa,
+		  particles->variance,
+		  particles->particles_count);
+
+          for (i = 0; i < particles->particles_count; i++)
+	    fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f ",
+                    particles->particles[i].pose.px, 
+		    particles->particles[i].pose.py, 
+		    particles->particles[i].pose.pa,
+		    particles->particles[i].alpha);
           return(0);
         default:
           return(-1);
