@@ -25,10 +25,6 @@ message { CMD, PUSH, 5, player_null_t };
 message { CMD, POP, 6, player_null_t };
 
 
-/** The maximum number of points that can be described in a packet. */
-#define PLAYER_GRAPHICS3D_MAX_POINTS 256 // 1024 (i think this is too big - rtv)
-
-
 /** Drawmode: enumeration that defines the drawing mode */
 typedef enum player_graphics3d_draw_mode
 {
@@ -59,7 +55,7 @@ typedef struct player_graphics3d_cmd_draw
   /** Number of points in this packet. */
   uint32_t points_count;
   /** Array of points. */
-  player_point_3d_t points[PLAYER_GRAPHICS3D_MAX_POINTS];
+  player_point_3d_t *points;
   /** Color in which the points should be drawn. */
   player_color_t color;
 

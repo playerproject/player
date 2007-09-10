@@ -23,10 +23,6 @@ message { CMD, STATE, 1, player_ptz_cmd_t };
 
 
 
-/** Maximum command length for use with @ref PLAYER_PTZ_REQ_GENERIC request;
-    based on the Sony EVID30 camera right now. */
-#define PLAYER_PTZ_MAX_CONFIG_LEN  32
-
 /** Control mode, for use with @ref PLAYER_PTZ_REQ_CONTROL_MODE */
 #define PLAYER_PTZ_VELOCITY_CONTROL 0
 /** Control mode, for use with @ref PLAYER_PTZ_REQ_CONTROL_MODE */
@@ -101,7 +97,7 @@ typedef struct player_ptz_req_generic
   /** Length of data in config buffer */
   uint32_t  config_count;
   /** Buffer for command/reply */
-  uint32_t  config[PLAYER_PTZ_MAX_CONFIG_LEN];
+  uint32_t  *config;
 } player_ptz_req_generic_t;
 
 /** @brief Request/reply: Control mode.

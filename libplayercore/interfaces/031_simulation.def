@@ -29,12 +29,6 @@ message { REQ, GET_PROPERTY, 5, player_simulation_property_req_t };
 message { REQ, SET_PROPERTY, 6, player_simulation_property_req_t };
 
 
-/** The maximum length of a string indentifying a simulation object or
-    object property. */
-#define PLAYER_SIMULATION_IDENTIFIER_MAXLEN 64 // 64 bytes - change as needed
-/** The maximum length of a blob of data for a property */
-#define PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN 32767  // 32K - change as needed
-
 
 /** @brief Data
 
@@ -67,7 +61,7 @@ typedef struct player_simulation_pose2d_req
   /** Length of name */
   uint32_t name_count;
   /** the identifier of the object we want to locate */
-  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char *name;
   /** the desired pose in (m, m, rad) */
   player_pose2d_t pose;
 } player_simulation_pose2d_req_t;
@@ -83,7 +77,7 @@ typedef struct player_simulation_pose3d_req
   /** Length of name */
   uint32_t name_count;
   /** the identifier of the object we want to locate */
-  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char *name;
   /** the desired pose in (m, m, m, rad, rad, rad) */
   player_pose3d_t pose;
   /** simulation time when PLAYER_SIMULATION_REQ_GET_POSE3D was serviced. */
@@ -117,14 +111,14 @@ typedef struct player_simulation_property_req
   /** Length of name */
   uint32_t name_count;
   /** The identifier of the object we want to locate */
-  char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char *name;
   /** Length of property identifier */
   uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char *prop;
   /** The length of the value data in bytes */
   uint32_t value_count;
   /** The value of the property */
-  char value[PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN];
+  char *value;
 } player_simulation_property_req_t;
 

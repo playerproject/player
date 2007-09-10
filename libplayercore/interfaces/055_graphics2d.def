@@ -16,9 +16,6 @@ message { CMD, POLYLINE, 3, player_graphics2d_cmd_polyline_t };
 /** Command subtype: draw a polygon */
 message { CMD, POLYGON, 4, player_graphics2d_cmd_polygon_t };
 
-/** The maximum number of points that can be described in a packet. */
-#define PLAYER_GRAPHICS2D_MAX_POINTS 64
-
 /** @brief Data: This interface produces no data. */
 
 /** @brief Requests: This interface accepts no requests. */
@@ -31,7 +28,7 @@ typedef struct player_graphics2d_cmd_points
   /** Number of points in this packet. */
   uint32_t points_count;
   /** Array of points. */
-  player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
+  player_point_2d_t *points;
   /** Color in which the points should be drawn. */
   player_color_t color;
 } player_graphics2d_cmd_points_t;
@@ -44,7 +41,7 @@ typedef struct player_graphics2d_cmd_polyline
   /** Number of points in this packet. */
   uint32_t points_count;
   /** Array of points to be joined by lines. */
-  player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
+  player_point_2d_t *points;
   /** Color in which the line should be drawn. */
   player_color_t color;
 } player_graphics2d_cmd_polyline_t;
@@ -57,7 +54,7 @@ typedef struct player_graphics2d_cmd_polygon
   /** Number of points in this packet. */
   uint32_t points_count;
   /** array of points defining the polygon. */
-  player_point_2d_t points[PLAYER_GRAPHICS2D_MAX_POINTS];
+  player_point_2d_t *points;
   /** Color in which the outline should be drawn. */
   player_color_t color;
   /** Color in which the polygon should be filled. */

@@ -99,22 +99,6 @@ extern "C" {
 #define PLAYERC_TRANSPORT_UDP 2
 
 
-/***************************************************************************
- * Array sizes
- **************************************************************************/
-
-#define PLAYERC_MAX_DEVICES             PLAYER_MAX_DEVICES
-#define PLAYERC_LASER_MAX_SAMPLES       PLAYER_LASER_MAX_SAMPLES
-#define PLAYERC_FIDUCIAL_MAX_SAMPLES    PLAYER_FIDUCIAL_MAX_SAMPLES
-#define PLAYERC_SONAR_MAX_SAMPLES       PLAYER_SONAR_MAX_SAMPLES
-#define PLAYERC_BUMPER_MAX_SAMPLES      PLAYER_BUMPER_MAX_SAMPLES
-#define PLAYERC_IR_MAX_SAMPLES          PLAYER_IR_MAX_SAMPLES
-#define PLAYERC_BLOBFINDER_MAX_BLOBS    PLAYER_BLOBFINDER_MAX_BLOBS
-#define PLAYERC_WIFI_MAX_LINKS          PLAYER_WIFI_MAX_LINKS
-#define PLAYERC_RFID_MAX_TAGS           PLAYER_RFID_MAX_TAGS
-#define PLAYERC_RFID_MAX_GUID           PLAYER_RFID_MAX_GUID
-#define PLAYERC_POINTCLOUD3D_MAX_POINTS PLAYER_POINTCLOUD3D_MAX_POINTS
-
 /** @} */
 
 /**
@@ -483,7 +467,7 @@ typedef struct _playerc_client_t
 
   /** List of available (but not necessarily subscribed) devices.
       This list is filled in by playerc_client_get_devlist(). */
-  playerc_device_info_t devinfos[PLAYERC_MAX_DEVICES];
+  playerc_device_info_t devinfos[PLAYER_MAX_DEVICES];
   int devinfo_count;
 
   /** List of subscribed devices */
@@ -880,7 +864,7 @@ typedef struct
   uint8_t voltages_count;
 
   /// A bitfield of the current digital inputs.
-  float voltages[PLAYER_AIO_MAX_INPUTS];
+  float *voltages;
 
 } playerc_aio_t;
 
@@ -933,8 +917,8 @@ typedef struct
   /** The number of actuators in the array. */
   uint32_t actuators_count;
   /** The actuator data, geometry and motor state. */
-  player_actarray_actuator_t actuators_data[PLAYER_ACTARRAY_NUM_ACTUATORS];
-  player_actarray_actuatorgeom_t actuators_geom[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  player_actarray_actuator_t *actuators_data;
+  player_actarray_actuatorgeom_t *actuators_geom;
   /** Reports if the actuators are off (0) or on (1) */
   uint8_t motor_state;
   /** The position of the base of the actarray. */
@@ -963,13 +947,13 @@ int playerc_actarray_get_geom(playerc_actarray_t *device);
 int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float position);
 
 /** @brief Command all joints in the array to move to specified positions. */
-int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float positions[PLAYER_ACTARRAY_NUM_ACTUATORS]);
+int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float *positions, int positions_count);
 
 /** @brief Command a joint in the array to move at a specified speed. */
 int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float speed);
 
 /** @brief Command a joint in the array to move at a specified speed. */
-int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS]);
+int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float *speeds, int speeds_count);
 
 /** @brief Command a joint (or, if joint is -1, the whole array) to go to its home position. */
 int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
@@ -978,7 +962,7 @@ int playerc_actarray_home_cmd(playerc_actarray_t *device, int joint);
 int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float current);
 
 /** @brief Command all joints in the array to move with specified currents. */
-int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float currents[PLAYER_ACTARRAY_NUM_ACTUATORS]);
+int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float *currents, int currents_count);
 
 
 /** @brief Turn the power to the array on or off. Be careful
@@ -1116,7 +1100,7 @@ typedef struct
 
   /** A list of detected blobs. */
   unsigned int blobs_count;
-  playerc_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
+  playerc_blobfinder_blob_t *blobs;
 
 } playerc_blobfinder_t;
 
@@ -1160,13 +1144,13 @@ typedef struct
   /** Pose of each bumper relative to robot (mm, mm, deg, mm, mm).
       This structure is filled by calling playerc_bumper_get_geom().
       values are x,y (of center) ,normal,length,curvature */
-  player_bumper_define_t poses[PLAYERC_BUMPER_MAX_SAMPLES];
+  player_bumper_define_t *poses;
 
   /** Number of points in the scan. */
   int bumper_count;
 
   /** Bump data: unsigned char, either boolean or code indicating corner. */
-  uint8_t bumpers[PLAYERC_BUMPER_MAX_SAMPLES];
+  uint8_t *bumpers;
 
 } playerc_bumper_t;
 
@@ -1235,7 +1219,7 @@ typedef struct
       formats (such as MONO16) are automatically converted to the
       correct host byte ordering.
   */
-  uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
+  uint8_t *image;
 
 } playerc_camera_t;
 
@@ -1334,7 +1318,7 @@ typedef struct
 
   /** List of detected beacons. */
   int fiducials_count;
-  player_fiducial_item_t fiducials[PLAYERC_FIDUCIAL_MAX_SAMPLES];
+  player_fiducial_item_t *fiducials;
 
 } playerc_fiducial_t;
 
@@ -1759,18 +1743,18 @@ typedef struct
   double scanning_frequency;
 
   /** Raw range data; range (m). */
-  double ranges[PLAYERC_LASER_MAX_SAMPLES];
+  double *ranges;
 
   /** Scan data; range (m) and bearing (radians). */
-  double scan[PLAYERC_LASER_MAX_SAMPLES][2];
+  double *scan[2];
 
   /** Scan data; x, y position (m). */
-  player_point_2d_t point[PLAYERC_LASER_MAX_SAMPLES];
+  player_point_2d_t *point;
 
   /** Scan reflection intensity values (0-3).  Note that the intensity
       values will only be filled if intensity information is enabled
       (using the set_config function). */
-  int intensity[PLAYERC_LASER_MAX_SAMPLES];
+  int *intensity;
 
   /** ID for this scan */
   int scan_id;
@@ -1993,12 +1977,12 @@ typedef struct
 
   /** List of possible poses. */
   int hypoth_count;
-  player_localize_hypoth_t hypoths[PLAYER_LOCALIZE_MAX_HYPOTHS];
+  player_localize_hypoth_t *hypoths;
 
   double mean[3];
   double variance;
   int num_particles;
-  playerc_localize_particle_t particles[PLAYER_LOCALIZE_PARTICLES_MAX];
+  playerc_localize_particle_t *particles;
 
 } playerc_localize_t;
 
@@ -2216,7 +2200,7 @@ typedef struct
   int data_count;
 
   /** Data  */
-  uint8_t data[PLAYER_OPAQUE_MAX_SIZE];
+  uint8_t *data;
 } playerc_opaque_t;
 
 /** @brief Create an opaque device proxy. */
@@ -2281,7 +2265,7 @@ typedef struct
 
   /** List of waypoints in the current plan (m,m,radians).  Call
       playerc_planner_get_waypoints() to fill this in. */
-  double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][3];
+  double *waypoints[3];
 
 } playerc_planner_t;
 
@@ -2877,13 +2861,13 @@ typedef struct
 
   /** Pose of each sonar relative to robot (m, m, radians).  This
       structure is filled by calling playerc_sonar_get_geom(). */
-  player_pose3d_t poses[PLAYERC_SONAR_MAX_SAMPLES];
+  player_pose3d_t *poses;
 
   /** Number of points in the scan. */
   int scan_count;
 
   /** Scan data: range (m). */
-  double scan[PLAYERC_SONAR_MAX_SAMPLES];
+  double *scan;
 
 } playerc_sonar_t;
 
@@ -2955,7 +2939,7 @@ typedef struct
   playerc_device_t info;
 
   /** A list containing info for each link. */
-  playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
+  playerc_wifi_link_t *links;
   int link_count;
 
 } playerc_wifi_t;
@@ -3098,10 +3082,10 @@ typedef struct
   /** Device info; must be at the start of all device structures. */
   playerc_device_t info;
 
-  char rawText[PLAYER_SPEECH_RECOGNITION_TEXT_LEN];
+  char *rawText;
   // Just estimating that no more than 20 words will be spoken between updates.
   // Assuming that the longest word is <= 30 characters.
-  char words[20][30];
+  char **words;
   int wordCount;
 } playerc_speechrecognition_t;
 
@@ -3138,7 +3122,7 @@ typedef struct
     /** GUID count. */
     uint32_t guid_count;
     /** The Globally Unique IDentifier (GUID) of the tag. */
-    uint8_t guid[PLAYERC_RFID_MAX_GUID];
+    uint8_t *guid;
 }  playerc_rfidtag_t;
 
 /** @brief RFID proxy data. */
@@ -3151,7 +3135,7 @@ typedef struct
   uint16_t tags_count;
 
   /** The list of RFID tags. */
-  playerc_rfidtag_t tags[PLAYERC_RFID_MAX_TAGS];
+  playerc_rfidtag_t *tags;
 } playerc_rfid_t;
 
 
@@ -3192,7 +3176,7 @@ typedef struct
   uint16_t points_count;
 
   /** The list of 3D pointcloud elements. */
-  playerc_pointcloud3d_element_t points[PLAYERC_POINTCLOUD3D_MAX_POINTS];
+  playerc_pointcloud3d_element_t *points;
 } playerc_pointcloud3d_t;
 
 

@@ -15,10 +15,6 @@ message { DATA, RANGES, 1, player_sonar_data_t };
 /** Data subtype: geometry */
 message { DATA, GEOM, 2, player_sonar_geom_t };
 
-/** maximum number of sonar samples in a data packet */
-#define PLAYER_SONAR_MAX_SAMPLES 64
-
-
 /** @brief Data: ranges (@ref PLAYER_SONAR_DATA_RANGES)
 
 The @p sonar interface returns up to @ref PLAYER_SONAR_MAX_SAMPLES range
@@ -28,7 +24,7 @@ typedef struct player_sonar_data
   /** The number of valid range readings. */
   uint32_t ranges_count;
   /** The range readings [m] */
-  float ranges[PLAYER_SONAR_MAX_SAMPLES];
+  float *ranges;
 } player_sonar_data_t;
 
 /** @brief Data AND Request/reply: geometry.
@@ -42,7 +38,7 @@ typedef struct player_sonar_geom
   /** The number of valid poses. */
   uint32_t poses_count;
   /** Pose of each sonar, in robot cs */
-  player_pose3d_t poses[PLAYER_SONAR_MAX_SAMPLES];
+  player_pose3d_t *poses;
 } player_sonar_geom_t;
 
 /** @brief Request/reply: Sonar power.

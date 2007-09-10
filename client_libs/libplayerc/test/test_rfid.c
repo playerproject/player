@@ -38,7 +38,7 @@ int test_rfid(playerc_client_t *client, int index)
       printf("rfid tags count: [%d] \n", device->tags_count);
       for (i = 0; i < device->tags_count; i++)
       {
-        for (j = 0; j < PLAYERC_RFID_MAX_GUID; j++)
+        for (j = 0; j < device->tags[i].guid_count; j++)
     	    printf("[%2x] ", device->tags[i].guid[j]);
         printf ("\n");
       }

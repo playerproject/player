@@ -47,9 +47,9 @@
   #include <config.h>
 #endif
 
-#if HAVE_ZLIB_H
-  #include <zlib.h>
-#endif
+//#if HAVE_ZLIB_H
+//  #include <zlib.h>
+//#endif
 
 #include <assert.h>
 #include <math.h>
@@ -103,13 +103,13 @@ int playerc_map_get_map(playerc_map_t* device)
   size_t repsize;
   int i,j;
   int oi,oj;
-  int sx,sy;
+//  int sx,sy;
   int si,sj;
   char* cell;
-#if HAVE_ZLIB_H
-  uLongf unzipped_data_len;
-  char* unzipped_data;
-#endif
+//#if HAVE_ZLIB_H
+//  uLongf unzipped_data_len;
+//  char* unzipped_data;
+//#endif
 
 
   // first, get the map info
@@ -129,9 +129,7 @@ int playerc_map_get_map(playerc_map_t* device)
   device->origin[1] = info_req.origin.py;
 
   // Allocate space for the whole map
-  if(device->cells)
-    free(device->cells);
-  device->cells = (char*)malloc(sizeof(char) *
+  device->cells = (char*)realloc(device->cells, sizeof(char) *
                                 device->width * device->height);
   assert(device->cells);
 
@@ -144,21 +142,21 @@ int playerc_map_get_map(playerc_map_t* device)
   data_req = (player_map_data_t*)malloc(repsize);
   assert(data_req);
 
-#if HAVE_ZLIB_H
-  // Allocate a buffer into which we'll decompress the map data
-  unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
-  unzipped_data = (char*)malloc(unzipped_data_len);
-  assert(unzipped_data);
-#endif
+//#if HAVE_ZLIB_H
+//  // Allocate a buffer into which we'll decompress the map data
+//  unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
+//  unzipped_data = (char*)malloc(unzipped_data_len);
+//  assert(unzipped_data);
+//#endif
 
   // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)(PLAYER_MAP_MAX_TILE_SIZE));
+//  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
+//  assert(sx * sy < (int)(PLAYER_MAP_MAX_TILE_SIZE));
   oi=oj=0;
   while((oi < device->width) && (oj < device->height))
   {
-    si = MIN(sx, device->width - oi);
-    sj = MIN(sy, device->height - oj);
+    si = device->width - oi;
+    sj = device->height - oj;
 
     memset(data_req,0,repsize);
     data_req->col = oi;
@@ -173,24 +171,24 @@ int playerc_map_get_map(playerc_map_t* device)
       PLAYERC_ERR("failed to get map data");
       free(data_req);
       free(device->cells);
-#if HAVE_ZLIB_H
-      free(unzipped_data);
-#endif
+//#if HAVE_ZLIB_H
+//      free(unzipped_data);
+//#endif
       return(-1);
     }
 
-#if HAVE_ZLIB_H
-    unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
-    if(uncompress((Bytef*)unzipped_data, &unzipped_data_len,
-                  data_req->data, data_req->data_count) != Z_OK)
-    {
-      PLAYERC_ERR("failed to decompress map data");
-      free(data_req);
-      free(device->cells);
-      free(unzipped_data);
-      return(-1);
-    }
-#endif
+//#if HAVE_ZLIB_H
+//    unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
+//    if(uncompress((Bytef*)unzipped_data, &unzipped_data_len,
+//                  data_req->data, data_req->data_count) != Z_OK)
+//    {
+//      PLAYERC_ERR("failed to decompress map data");
+//      free(data_req);
+//      free(device->cells);
+//      free(unzipped_data);
+//      return(-1);
+//    }
+//#endif
 
     // copy the map data
     for(j=0;j<sj;j++)
@@ -198,11 +196,11 @@ int playerc_map_get_map(playerc_map_t* device)
       for(i=0;i<si;i++)
       {
         cell = device->cells + PLAYERC_MAP_INDEX(device,oi+i,oj+j);
-#if HAVE_ZLIB_H
-        *cell = unzipped_data[j*si + i];
-#else
+//#if HAVE_ZLIB_H
+//        *cell = unzipped_data[j*si + i];
+//#else
         *cell = data_req->data[j*si + i];
-#endif
+//#endif
       }
     }
 
@@ -214,9 +212,9 @@ int playerc_map_get_map(playerc_map_t* device)
     }
   }
 
-#if HAVE_ZLIB_H
-  free(unzipped_data);
-#endif
+//#if HAVE_ZLIB_H
+//  free(unzipped_data);
+//#endif
   free(data_req);
 
   return(0);

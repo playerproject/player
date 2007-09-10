@@ -17,9 +17,6 @@ the laser (0 degrees is forward).  The laser can return a maximum of
 of scan width and angular resolution.
 }
 
-/** The maximum number of laser range values */
-#define PLAYER_LASER_MAX_SAMPLES  1024
-
 /** Data subtype: scan */
 message { DATA, SCAN, 1, player_laser_data_t };
 /** Data subtype: pose-stamped scan */
@@ -61,11 +58,11 @@ typedef struct player_laser_data
   /** Number of range readings.  */
   uint32_t ranges_count;
   /** Range readings [m]. */
-  float ranges[PLAYER_LASER_MAX_SAMPLES];
+  float *ranges;
   /** Number of intensity readings */
   uint32_t intensity_count;
   /** Intensity readings. */
-  uint8_t intensity[PLAYER_LASER_MAX_SAMPLES];
+  uint8_t *intensity;
   /** A unique, increasing, ID for the scan */
   uint32_t id;
 } player_laser_data_t;
