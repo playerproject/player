@@ -614,7 +614,7 @@ PlayerUDP::WriteClient(int cli)
           zipped_data->row = raw_data->row;
           zipped_data->width = raw_data->width;
           zipped_data->height = raw_data->height;
-          uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
+          uLongf count = raw_data->data_count;
           assert(count >= compressBound(raw_data->data_count));
 
           // compress the tile
@@ -847,7 +847,8 @@ PlayerUDP::ParseBuffer(int cli)
               raw_data->row = zipped_data->row;
               raw_data->width = zipped_data->width;
               raw_data->height = zipped_data->height;
-              uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
+              uLongf count = 10*zipped_data->data_count;
+              raw_data->data = (int8_t*)calloc(count,sizeof(int8_t));
 
               // uncompress the tile
               if(uncompress((Bytef*)raw_data->data,&count,
@@ -861,6 +862,7 @@ PlayerUDP::ParseBuffer(int cli)
                 raw_data->data_count = count;
                 device->PutMsg(client->queue, &hdr, raw_data);
               }
+              free(raw_data->data);
               free(raw_data);
 #else
               PLAYER_WARN("not uncompressing map data, because zlib was not found at compile time");

@@ -73,6 +73,7 @@ playerc_aio_t *playerc_aio_create(playerc_client_t *client, int index)
 void playerc_aio_destroy(playerc_aio_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->voltages);
   free(device);
 }
 
@@ -96,8 +97,8 @@ void playerc_aio_putmsg(playerc_aio_t *device, player_msghdr_t *header,
   if((header->type == PLAYER_MSGTYPE_DATA) &&
      (header->subtype == PLAYER_AIO_DATA_STATE))
   {
-    assert(data->voltages_count <= PLAYER_AIO_MAX_INPUTS);
     device->voltages_count = data->voltages_count;
+    device->voltages = realloc(device->voltages, device->voltages_count * sizeof(device->voltages[0]));
     memcpy(device->voltages,
            data->voltages,
            data->voltages_count*sizeof(float));

@@ -8,9 +8,6 @@ The @p pointcloud3d interface is used to transmit 3-D point cloud data
 /** Data subtype: state */
 message { DATA, STATE, 1, player_pointcloud3d_data_t };
 
-/** Maximum number of points that can be included in a data packet */
-#define PLAYER_POINTCLOUD3D_MAX_POINTS 32768
-
 /** @brief 3D Pointcloud element structure
  * An element as stored in a 3D pointcloud, containing a 3D position
  * plus other corresponding information. */
@@ -26,7 +23,7 @@ typedef struct player_pointcloud3d_element
    *  don't unnecessarily allocate huge
    *  amounts of data per point */
   //uint32_t data_count;
-  //uchar data[PLAYER_3DPOINTCLOUD_MAX_DATA]
+  //uchar data;
 } player_pointcloud3d_element_t;
 
 /** @brief Data: Get cloud (@ref
@@ -35,6 +32,6 @@ typedef struct player_pointcloud3d_element
 typedef struct player_pointcloud3d_data
 {
   uint32_t points_count;
-  player_pointcloud3d_element_t points[PLAYER_POINTCLOUD3D_MAX_POINTS];
+  player_pointcloud3d_element_t *points;
 } player_pointcloud3d_data_t;
 

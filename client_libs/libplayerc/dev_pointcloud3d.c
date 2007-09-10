@@ -54,6 +54,7 @@ playerc_pointcloud3d_t *playerc_pointcloud3d_create (playerc_client_t *client, i
 void playerc_pointcloud3d_destroy (playerc_pointcloud3d_t *device)
 {
   playerc_device_term (&device->info);
+  free (device->points);
   free (device);
 
   return;
@@ -81,7 +82,8 @@ void playerc_pointcloud3d_putmsg (playerc_pointcloud3d_t *device,
        (header->subtype == PLAYER_POINTCLOUD3D_DATA_STATE))
     {
 	player_pointcloud3d_data_t* pc3_data = (player_pointcloud3d_data_t*)data;
-        device->points_count = MIN (pc3_data->points_count, PLAYERC_POINTCLOUD3D_MAX_POINTS);
+        device->points_count = pc3_data->points_count;
+        device->points = realloc(device->points, device->points_count*sizeof(device->points[0]));
         memcpy (device->points, pc3_data->points,
         	sizeof (player_pointcloud3d_element_t)*device->points_count);
     }

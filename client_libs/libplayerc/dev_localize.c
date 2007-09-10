@@ -74,9 +74,10 @@ playerc_localize_t *playerc_localize_create(playerc_client_t *client, int index)
 // Destroy a localize proxy
 void playerc_localize_destroy(playerc_localize_t *device)
 {
-  if (device->map_cells)
-    free(device->map_cells);
   playerc_device_term(&device->info);
+  free(device->map_cells);
+  free(device->hypoths);
+  free(device->particles);
   free(device);
   return;
 }
@@ -104,18 +105,12 @@ void playerc_localize_putmsg(playerc_localize_t *device, player_msghdr_t *header
   
   device->pending_count = data->pending_count;
   device->pending_time = data->pending_time;
+  device->hypoth_count = data->hypoths_count;
+  device->hypoths = realloc(device->hypoths,device->hypoth_count*sizeof(device->hypoths[0]));
   for (i = 0; i < data->hypoths_count; i++)
   {
-    //device->hypoths[i].weight = data->hypoths[i].alpha;
-
     device->hypoths[i] = data->hypoths[i];
-/*    device->hypoths[i].mean[1] = data->hypoths[i].mean.py;
-    device->hypoths[i].mean[2] = data->hypoths[i].mean.pa;
-    memset(device->hypoths[i].cov, 0, sizeof(double)*9);
-    for (k = 0; k < 3; k++)
-      device->hypoths[i].cov[k] = data->hypoths[i].cov[k];*/
   }
-  device->hypoth_count = data->hypoths_count;
   
   return;
 }
@@ -168,16 +163,10 @@ int playerc_localize_get_particles(playerc_localize_t *device)
   device->variance = req.variance;
 
   device->num_particles = req.particles_count;
+  device->particles = realloc(device->particles,req.particles_count*sizeof(device->particles[0]));
 
   for(i=0;i<device->num_particles;i++)
   {
-    if(i >= PLAYER_LOCALIZE_PARTICLES_MAX)
-    {
-      device->num_particles = i;
-      PLAYERC_WARN("too many particles");
-      break;
-    }
-
     device->particles[i].pose[0] = req.particles[i].pose.px;
     device->particles[i].pose[1] = req.particles[i].pose.py;
     device->particles[i].pose[2] = req.particles[i].pose.pa;
