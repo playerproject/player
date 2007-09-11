@@ -487,7 +487,7 @@ typedef struct _playerc_client_t
   int devinfo_count;
 
   /** List of subscribed devices */
-  struct _playerc_device_t *device[32];
+  struct _playerc_device_t *device[PLAYERC_MAX_DEVICES];
   int device_count;
 
   /** @internal A circular queue used to buffer incoming data packets. */
