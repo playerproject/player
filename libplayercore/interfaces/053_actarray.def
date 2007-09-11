@@ -26,9 +26,9 @@ message { DATA, STATE, 1, player_actarray_data_t };
 /** Moving state code */
 #define PLAYER_ACTARRAY_ACTSTATE_MOVING   2
 /** Braked state code */
-#define PLAYER_ACTARRAY_ACTSTATE_BRAKED   3
+#define PLAYER_ACTARRAY_ACTSTATE_BRAKED   4
 /** Stalled state code */
-#define PLAYER_ACTARRAY_ACTSTATE_STALLED  4
+#define PLAYER_ACTARRAY_ACTSTATE_STALLED  8
 
 /** Linear type code */
 #define PLAYER_ACTARRAY_TYPE_LINEAR       1
