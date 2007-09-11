@@ -65,7 +65,7 @@
 /** Maximum length for a driver name */
 #define PLAYER_MAX_DRIVER_STRING_LEN 64
 /** The maximum number of devices the server will support. */
-#define PLAYER_MAX_DEVICES             256
+#define PLAYER_MAX_DEVICES             4096
 /** Default maximum length for a message queue */
 #define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 1024
 /** String that is spit back as a banner on connection */
