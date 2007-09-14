@@ -882,7 +882,7 @@ void WriteLog::Write(WriteLogDevice *device,
 }
 
 
-void 
+void
 WriteLog::WriteLocalizeParticles()
 
 {
@@ -1066,18 +1066,18 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
           // Note that, in this format, we need a lot of precision in the
           // resolution field.
 
-         
+
           fprintf(this->file, "%10d %+07.3f %2d ",
                   hypoths->pending_count, hypoths->pending_time,
                   hypoths->hypoths_count);
 
           for (i = 0; i < hypoths->hypoths_count; i++)
             fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f %7.3f %7.3f ",
-                    hypoths->hypoths[i].mean.px, 
-		    hypoths->hypoths[i].mean.py, 
+                    hypoths->hypoths[i].mean.px,
+		    hypoths->hypoths[i].mean.py,
 		    hypoths->hypoths[i].mean.pa,
-		    hypoths->hypoths[i].cov[0], 
-		    hypoths->hypoths[i].cov[1], 
+		    hypoths->hypoths[i].cov[0],
+		    hypoths->hypoths[i].cov[1],
 		    hypoths->hypoths[i].cov[2],
 		    hypoths->hypoths[i].alpha);
           if (write_particles)
@@ -1102,8 +1102,8 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
 
           for (i = 0; i < particles->particles_count; i++)
 	    fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f ",
-                    particles->particles[i].pose.px, 
-		    particles->particles[i].pose.py, 
+                    particles->particles[i].pose.px,
+		    particles->particles[i].pose.py,
 		    particles->particles[i].pose.pa,
 		    particles->particles[i].alpha);
           return(0);
@@ -1660,32 +1660,30 @@ WriteLog::WriteActarray (player_msghdr_t* hdr, void *data)
   // Check the type
     switch(hdr->type)
     {
-        case PLAYER_MSGTYPE_DATA:
-      // Check the subtype
-            switch(hdr->subtype)
-            {
-                case PLAYER_ACTARRAY_DATA_STATE:
-		{
-		    player_actarray_data_t* pdata;
-                    pdata = (player_actarray_data_t*)data;
-		    fprintf (this->file, "%d ", pdata->actuators_count);
-		    for (i = 0; i < pdata->actuators_count; i++)
-			fprintf (this->file,"%f %f %f %f %d ",
-			    pdata->actuators[i].position,
-			    pdata->actuators[i].speed,
-			    pdata->actuators[i].acceleration,
-			    pdata->actuators[i].current,
-			    pdata->actuators[i].state);
-		    fprintf (this->file, "%d ", pdata->motor_state);
-                    return (0);
-		}
-
-                default:
-                    return (-1);
-            }
-
-        default:
+      case PLAYER_MSGTYPE_DATA:
+        // Check the subtype
+        switch(hdr->subtype)
+        {
+          case PLAYER_ACTARRAY_DATA_STATE:
+            player_actarray_data_t* pdata;
+            pdata = (player_actarray_data_t*)data;
+            fprintf (this->file, "%d ", pdata->actuators_count);
+            for (i = 0; i < pdata->actuators_count; i++)
+              fprintf (this->file,"%f %f %f %f %d ",
+                        pdata->actuators[i].position,
+                        pdata->actuators[i].speed,
+                        pdata->actuators[i].acceleration,
+                        pdata->actuators[i].current,
+                        pdata->actuators[i].state);
+              fprintf (this->file, "%d ", pdata->motor_state);
+            delete[] pdata->actuators;
+            return (0);
+          default:
             return (-1);
+        }
+        break;
+      default:
+        return (-1);
     }
 }
 

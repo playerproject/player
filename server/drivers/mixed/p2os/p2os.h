@@ -323,8 +323,8 @@ class P2OS : public Driver
     virtual int Shutdown();
 
     // MessageHandler
-    virtual int ProcessMessage(QueuePointer & resp_queue, 
-                               player_msghdr * hdr, 
+    virtual int ProcessMessage(QueuePointer & resp_queue,
+                               player_msghdr * hdr,
                                void * data);
 
     void CMUcamReset(bool doLock = true);

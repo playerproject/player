@@ -37,6 +37,11 @@
 
 #include "sip.h"
 
+// Variable with constant lifetime to store lift actuator data
+static player_actarray_actuator_t liftActuator;
+// Same thing for blobs
+static player_blobfinder_blob_t cmucamBlob;
+
 void SIP::Fill(player_p2os_data_t* data)
 {
   ///////////////////////////////////////////////////////////////
@@ -81,6 +86,7 @@ void SIP::Fill(player_p2os_data_t* data)
   ///////////////////////////////////////////////////////////////
   // sonar
   data->sonar.ranges_count = PlayerRobotParams[param_idx].SonarNum;
+  data->sonar.ranges = new float[data->sonar.ranges_count];
   for(int i=0;i<MIN(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
     data->sonar.ranges[i] = this->sonars[i] / 1e3;
 
@@ -99,6 +105,7 @@ void SIP::Fill(player_p2os_data_t* data)
   ///////////////////////////////////////////////////////////////
   // lift
   data->lift.actuators_count = 1;
+  data->lift.actuators = &liftActuator;
   data->lift.actuators[0].speed = 0;
   data->lift.actuators[0].acceleration = -1;
   data->lift.actuators[0].current = -1;
@@ -135,10 +142,10 @@ void SIP::Fill(player_p2os_data_t* data)
   data->bumper.bumpers_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
   int j = 0;
   for(int i=PlayerRobotParams[param_idx].NumFrontBumpers-1;i>=0;i--)
-    data->bumper.bumpers[j++] = 
+    data->bumper.bumpers[j++] =
       (unsigned char)((this->frontbumpers >> i) & 0x01);
   for(int i=PlayerRobotParams[param_idx].NumRearBumpers-1;i>=0;i--)
-    data->bumper.bumpers[j++] = 
+    data->bumper.bumpers[j++] =
       (unsigned char)((this->rearbumpers >> i) & 0x01);
 
   ///////////////////////////////////////////////////////////////
@@ -166,8 +173,9 @@ void SIP::Fill(player_p2os_data_t* data)
   ** (0,0) being TOP-LEFT (from the camera's perspective).  Also,
   ** since CMUcam doesn't have range information, but does have a
   ** confidence value, I'm passing it back as range. */
+  data->blobfinder.blobs = &cmucamBlob;
   memset(data->blobfinder.blobs,0,
-         sizeof(player_blobfinder_blob_t)*PLAYER_BLOBFINDER_MAX_BLOBS);
+         sizeof(player_blobfinder_blob_t));
   data->blobfinder.width = CMUCAM_IMAGE_WIDTH;
   data->blobfinder.height = CMUCAM_IMAGE_HEIGHT;
 
@@ -189,8 +197,9 @@ void SIP::Fill(player_p2os_data_t* data)
 
   ///////////////////////////////////////////////////////////////
   // Fill in arm data
-  memset (data->actArray.actuators, 0, sizeof (player_actarray_actuator_t) * PLAYER_ACTARRAY_NUM_ACTUATORS);
   data->actArray.actuators_count = armNumJoints;
+  data->actArray.actuators = new player_actarray_actuator_t[armNumJoints];  // This will be cleaned up in P2OS::PutData
+  memset (data->actArray.actuators, 0, sizeof (player_actarray_actuator_t) * armNumJoints);
   for (int ii = 0; ii < armNumJoints; ii++)
   {
     data->actArray.actuators[ii].position = armJointPosRads[ii];
@@ -398,6 +407,24 @@ void SIP::Parse( unsigned char *buffer )
     compass = (buffer[cnt]-1)*2;
   cnt += sizeof(unsigned char);
 
+  if (buffer[cnt] == 0 && sonars != NULL)
+  {
+    // No sonar readings
+    delete[] sonars;
+    sonars = NULL;
+  }
+  else if (sonars == NULL)
+  {
+    // No space for sonar readings yet but need some
+    sonars = new unsigned short[buffer[cnt]];
+  }
+  else if (buffer[cnt] != sonarreadings)
+  {
+    // Sonar readings count has changed, reallocate the sonar readings array
+    if (sonars != NULL)
+      delete[] sonars;
+    sonars = new unsigned short[buffer[cnt]];
+  }
   sonarreadings = buffer[cnt];
   cnt += sizeof(unsigned char);
 
