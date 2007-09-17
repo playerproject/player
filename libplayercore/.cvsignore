@@ -6,3 +6,8 @@ playercore.pc
 playererror.pc
 interface_table.c
 player_interfaces.h
+.libs
+.deps
+*.lo
+*.a
+*.la

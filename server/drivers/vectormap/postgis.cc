@@ -97,12 +97,20 @@ For more information see http://postgis.refractions.net/
 #ifdef HAVE_GEOS
 #include <geos_c.h>
 #endif
+#include <stdarg.h>
 
 /** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
-void geosprint(const char *text, ...)
+inline void geosprint(const char* format, ...)
 {
-  return;
-}
+	va_list ap;
+	va_start(ap,format);
+	fprintf(stderr,"GEOSError: ");
+	vfprintf(stderr,format, ap);
+	fflush(stderr);
+	va_end(ap);
+
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 class PostGIS : public Driver
 {
@@ -289,33 +297,6 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   NULL);
     return(0);
   }
-  // Request for layer info /////////////////////////////////////////////////////////
-  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-           PLAYER_VECTORMAP_REQ_GET_LAYER_INFO,
-           this->device_addr))
-  {
-
-    if (hdr->size != sizeof(player_vectormap_layer_info_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return -1;
-    }
-
-    const player_vectormap_layer_info_t* request = reinterpret_cast<player_vectormap_layer_info_t*>(data);
-    LayerInfoHolder info = RequestLayerInfo(request->name);
-    const player_vectormap_layer_info_t* response = info.Convert();
-
-    this->Publish(this->device_addr,
-                  resp_queue,
-                  PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_VECTORMAP_REQ_GET_LAYER_INFO,
-                  (void*)response,
-                   sizeof(player_vectormap_layer_info_t),
-                          NULL);
-
-    return(0);
-  }
   // Request for layer data /////////////////////////////////////////////////////////
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                       PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
@@ -329,7 +310,7 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
     }
 
     player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
-    LayerDataHolder ldata = RequestLayerData(request->info.name);
+    LayerDataHolder ldata = RequestLayerData(request->name);
     const player_vectormap_layer_data_t* response = ldata.Convert();
 
     this->Publish(this->device_addr,

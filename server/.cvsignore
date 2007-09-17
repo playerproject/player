@@ -5,3 +5,5 @@ stamp-h*
 player.pc
 playerconfig.h
 
+.deps
+.libs

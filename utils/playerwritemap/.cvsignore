@@ -2,3 +2,5 @@ Makefile
 Makefile.in
 playerwritemap
 
+.libs
+.deps

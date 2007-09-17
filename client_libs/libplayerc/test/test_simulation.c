@@ -21,7 +21,7 @@
 int test_simulation(playerc_client_t *client, int index)
 {
   double x,y,a;
-  void *rdevice;
+  //void *rdevice;
   playerc_simulation_t *device;
 
   printf("device [simulation] index [%d]\n", index);

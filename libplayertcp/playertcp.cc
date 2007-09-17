@@ -1120,7 +1120,6 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
               devlist.devices[numdevices++] = device->addr;
           }
           devlist.devices_count = numdevices;
-
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           // Make up and push out the reply
           resp = new Message(resphdr, (void*)&devlist,

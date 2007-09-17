@@ -238,7 +238,7 @@ void CameraUncompress::Main()
 
 void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
 {
-  size_t size;
+//  size_t size;
   char filename[256];
 
   jpeg_decompress( (unsigned char*)this->data.image, 
