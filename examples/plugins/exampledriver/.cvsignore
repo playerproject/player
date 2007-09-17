@@ -14,3 +14,7 @@ depcomp
 install-sh
 ltmain.sh
 missing
+.libs
+.deps
+*.la
+*.lo

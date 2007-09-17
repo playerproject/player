@@ -35,12 +35,18 @@ class FeatureDataHolder
 class LayerInfoHolder
 {
   public:
-    LayerInfoHolder(){};
+    LayerInfoHolder(){memset(&layer_info,0,sizeof(layer_info));};
     LayerInfoHolder(string name)
     {
       this->name = name;
+      layer_info.name = strdup(name.c_str());
+      layer_info.name_count = name.size() +1;
       memset(&extent, 0, sizeof(extent));
     };
+    ~LayerInfoHolder()
+    {
+      free(layer_info.name);
+    }
 
     const player_vectormap_layer_info_t* Convert();
 
@@ -52,18 +58,21 @@ class LayerInfoHolder
 class LayerDataHolder
 {
   public:
-    LayerDataHolder(){};
-    ~LayerDataHolder();
-    LayerDataHolder(LayerInfoHolder info)
+    LayerDataHolder(){memset(&layer_data,0,sizeof(layer_data));};
+    LayerDataHolder(string name)
     {
-      this->info = info;
+      memset(&layer_data,0,sizeof(layer_data));
+      this->name = name;
+      layer_data.name = strdup(name.c_str());
+      layer_data.name_count = name.size() +1;
     };
+    ~LayerDataHolder();
 
     const player_vectormap_layer_data_t* Convert();
 
-    LayerInfoHolder info;
     vector<FeatureDataHolder> features;
     player_vectormap_layer_data_t layer_data;
+    string name;
 };
 
 class VectorMapInfoHolder
@@ -76,7 +85,7 @@ class VectorMapInfoHolder
     const player_vectormap_info_t* Convert();
 
     uint32_t srid;
-    vector<LayerDataHolder> layers;
+    vector<LayerInfoHolder> layers;
     BoundingBox extent;
     player_vectormap_info_t info;
 };

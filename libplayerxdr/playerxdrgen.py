@@ -19,7 +19,7 @@ hasdynamic = []    # A list of types that contain dynamic data. During pass 1,
                     # other types, necessary deep copy/clean up functions can
                     # be created and called.
 
-class DataTypeMember():
+class DataTypeMember:
   arraypattern = re.compile('\[(.*?)\]')
   pointerpattern = re.compile('\*')
   
@@ -46,7 +46,7 @@ class DataTypeMember():
     self.countvar = self.Name + '_count'
   
 # multiple variables can occur with single type, i.e. int a,b,c so we first get the type and then add each variable to the entry
-class DataTypeMemberSet():
+class DataTypeMemberSet:
   typepattern = re.compile('\s*\w+')
   variablepattern = re.compile('\s*([^,;]+?)\s*[,;]')
   
@@ -75,7 +75,7 @@ class DataTypeMemberSet():
         self.hasarray = True
           
 
-class DataType():
+class DataType:
   contentspattern = re.compile('.*\{\s*(.*?)\s*\}', re.MULTILINE | re.DOTALL)
   declpattern = re.compile('\s*([^;]*?;)', re.MULTILINE)
   
@@ -125,7 +125,7 @@ class DataType():
     return False
 
 
-class MethodGenerator():
+class MethodGenerator:
   def __init__(self,headerfile,sourcefile):
     self.headerfile = headerfile
     self.sourcefile = sourcefile
@@ -237,14 +237,13 @@ int xdr_%(typename)s (XDR* xdrs, %(typename)s * msg)
           sourcefile.write('  if(' + xdr_proc + '(xdrs,&msg->' +
                               var.Name + ') != 1)\n    return(0);\n')
         #varlist.append(varstring)
-    sourcefile.write('  return(1);\n}\n\n')
+    sourcefile.write('  return(1);\n}\n')
     
     
   def gen_external_pack(self,datatype):
     self.headerfile.write("int %(prefix)s_pack(void* buf, size_t buflen, %(typename)s * msg, int op);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
     
-    self.sourcefile.write("""
-int 
+    self.sourcefile.write("""int 
 %(prefix)s_pack(void* buf, size_t buflen, %(typename)s * msg, int op)
 {
   XDR xdrs;
@@ -265,17 +264,23 @@ int
     
   def gen_copy(self,datatype):
     # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
+    self.headerfile.write("unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
     if datatype.typename not in hasdynamic:
-      self.headerfile.write('#define ' + datatype.typename + '_dpcpy NULL\n')
+      self.sourcefile.write("""
+unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src)
+{
+  if (dest == NULL || src == NULL)
+    return 0;
+  memcpy(dest,src,sizeof(%(typename)s));
+  return sizeof(%(typename)s);
+} """ % {"typename":datatype.typename})
     else:
-      self.headerfile.write("unsigned int %(typename)s_dpcpy(const %(typename)s *src, %(typename)s *dest);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
-      
       if datatype.HasDynamicArray():
         itrdec = "unsigned ii;"
       else:
         itrdec = ""
       self.sourcefile.write("""
-unsigned int %(typename)s_dpcpy(const %(typename)s *src, %(typename)s *dest)
+unsigned int %(typename)s_copy(%(typename)s *dest, const %(typename)s *src)
 {      
   %(itrdec)s
   unsigned int size = 0;
@@ -312,7 +317,7 @@ unsigned int %(typename)s_dpcpy(const %(typename)s *src, %(typename)s *dest)
               sourcefile.write("""
   for(ii = 0; ii < %(arraysize)s; ii++)""" % subs)
             sourcefile.write("""
-  {size += %(typestring)s_dpcpy(&src->%(varstring)s%(index)s, &dest->%(varstring)s%(index)s);}""" % subs)
+  {size += %(typestring)s_copy(&dest->%(varstring)s%(index)s, &src->%(varstring)s%(index)s);}""" % subs)
   
   
           else: #plain old variable or array
@@ -328,11 +333,13 @@ unsigned int %(typename)s_dpcpy(const %(typename)s *src, %(typename)s *dest)
   
   def gen_cleanup(self,datatype):
     # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
+    self.headerfile.write("void %(typename)s_cleanup(const %(typename)s *msg);\n" % {"typename":datatype.typename})
     if datatype.typename not in hasdynamic:
-      self.headerfile.write('#define ' + datatype.typename + '_cleanup NULL\n')
+      self.sourcefile.write("""
+void %(typename)s_cleanup(const %(typename)s *msg)
+{
+} """ % {"typename":datatype.typename})      
     else:
-      self.headerfile.write("void %(typename)s_cleanup(const %(typename)s *msg);\n" % {"typename":datatype.typename, "prefix":datatype.prefix})
-      
       if datatype.HasDynamicArray():
         itrdec = "unsigned ii;"
       else:
@@ -369,10 +376,26 @@ void %(typename)s_cleanup(const %(typename)s *msg)
       sourcefile.write("\n}")
     
   def gen_clone(self,datatype):
-    pass
+    # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
+    self.headerfile.write("%(typename)s * %(typename)s_clone(const %(typename)s *msg);\n" % {"typename":datatype.typename})
+    self.sourcefile.write("""
+%(typename)s * %(typename)s_clone(const %(typename)s *msg)
+{      
+  %(typename)s * clone = malloc(sizeof(%(typename)s));
+  if (clone)
+    %(typename)s_copy(clone,msg);
+  return clone;
+}""" % {"typename":datatype.typename})
     
   def gen_free(self,datatype):
-    pass
+    # If type is not in hasdynamic, not going to write a function so may as well just continue with the next struct
+    self.headerfile.write("void %(typename)s_free(%(typename)s *msg);\n" % {"typename":datatype.typename})
+    self.sourcefile.write("""
+void %(typename)s_free(%(typename)s *msg)
+{      
+  %(typename)s_cleanup(msg);
+  free(msg);
+}""" % {"typename":datatype.typename})
 
     
 if __name__ == '__main__':
@@ -486,31 +509,23 @@ if __name__ == '__main__':
 
   gen = MethodGenerator(headerfile,sourcefile)
   
-  i = 0
   for s in structs:
-    #i += 1
-    #if i > 5:
-      #break
     # extract prefix for packing function name and type of struct
-    #try:
     current = DataType(s)
-    #except:
-     # print "Got Exception"
-      #continue
 
     # Generate the methods
     gen.gen_internal_pack(current)
     gen.gen_external_pack(current)
     gen.gen_copy(current)
     gen.gen_cleanup(current)
-    #gen.gen_clone(current)
-    #gen.gen_free(current)    
+    gen.gen_clone(current)
+    gen.gen_free(current)    
+    sourcefile.write('\n')
     
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')
   headerfile.write('#endif\n')
   if distro:
     headerfile.write('/** @} */\n')
-  sourcefile.write('\n')
 
   sourcefile.close()
   headerfile.close()

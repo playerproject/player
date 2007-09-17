@@ -87,12 +87,14 @@ void VectorMapProxy::Unsubscribe()
 
 void VectorMapProxy::GetMapInfo()
 {
+  scoped_lock_t lock(mPc->mMutex);
   playerc_vectormap_get_map_info(mDevice);
   map_info_cached = true;
 }
 
 int VectorMapProxy::GetLayerCount() const
 {
+  scoped_lock_t lock(mPc->mMutex);
   if (map_info_cached)
     return mDevice->layers_count;
   else
@@ -101,6 +103,7 @@ int VectorMapProxy::GetLayerCount() const
 
 vector<string> VectorMapProxy::GetLayerNames() const
 {
+  scoped_lock_t lock(mPc->mMutex);
   vector<string> names;
   int layerCount = GetLayerCount();
   if (layerCount < 1)
@@ -108,7 +111,7 @@ vector<string> VectorMapProxy::GetLayerNames() const
 
   for (int i=0; i<layerCount; ++i)
   {
-    names.push_back(string(mDevice->layers[i]->info.name));
+    names.push_back(string(mDevice->layers_info[i]->name));
   }
 
   return names;
@@ -126,8 +129,16 @@ int VectorMapProxy::GetFeatureCount(unsigned layer_index) const
   if (layerCount < 1)
     return -1;
 
-  return mDevice->layers[layer_index]->features_count;
+  scoped_lock_t lock(mPc->mMutex);
+  return mDevice->layers_data[layer_index]->features_count;
 }
+
+GEOSGeom VectorMapProxy::GetFeatureData(unsigned layer_index, unsigned feature_index) const
+{
+  scoped_lock_t lock(mPc->mMutex);
+  return playerc_vectormap_get_feature_data(mDevice, layer_index, feature_index);
+}
+
 
 ostream&
     std::operator << (ostream &os, const VectorMapProxy &c)

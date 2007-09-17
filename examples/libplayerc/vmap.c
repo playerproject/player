@@ -43,14 +43,6 @@ int main()
   }
 
   PrintMapInfo(vmap);
-
-  printf("Getting layer info\n");
-  if (playerc_vectormap_get_layer_info(vmap, 0))
-  {
-    printf("Error getting layer info\n");
-  }
-
-  PrintMapInfo(vmap);
   PrintLayerInfo(vmap);
 
   printf("Getting layer data\n");
@@ -92,20 +84,20 @@ void PrintMapInfo(playerc_vectormap_t* vmap)
 void PrintLayerInfo(playerc_vectormap_t* vmap)
 {
   printf("LayerInfo\n");
-  player_extent2d_t extent = vmap->layers[0]->info.extent;
+  player_extent2d_t extent = vmap->layers_info[0]->extent;
   printf("extent = (%f %f, %f %f)\n", extent.x0, extent.y0, extent.x1, extent.y1);
-  printf("name = %s\n", vmap->layers[0]->info.name);
+  printf("name = %s\n", vmap->layers_info[0]->name);
 }
 
 void PrintLayerData(playerc_vectormap_t* vmap)
 {
   printf("LayerData\n");
-  printf("feature count = %d\n", vmap->layers[0]->features_count);
+  printf("feature count = %d\n", vmap->layers_data[0]->features_count);
 }
 
 void PrintFeatureData(playerc_vectormap_t* vmap)
 {
   printf("FeatureData\n");
-  printf("wkb count = %d\n", vmap->layers[0]->features[0].wkb_count);
-  printf("name = %s\n", vmap->layers[0]->features[0].name);
+  printf("wkb count = %d\n", vmap->layers_data[0]->features[0].wkb_count);
+  printf("name = %s\n", vmap->layers_data[0]->features[0].name);
 }

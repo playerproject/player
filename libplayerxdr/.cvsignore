@@ -4,3 +4,8 @@ playerxdr.c
 playerxdr.h
 playerxdr.pc
 functiontable_gen.c
+.deps
+.libs
+*.lo
+*.la
+*.a

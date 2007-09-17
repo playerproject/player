@@ -4,3 +4,4 @@ Makefile.in
 *.java
 net
 playertcp_java_wrap.cc
+.deps

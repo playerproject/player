@@ -17,8 +17,8 @@ int test_laser(playerc_client_t *client, int index)
   void *rdevice;
   playerc_laser_t *device;
 
-  double min, max, scanning_frequency;
-  unsigned char resolution, range_res, intensity;
+  double min, max, scanning_frequency, resolution, range_res;
+  unsigned char intensity;
 
   printf("device [laser] index [%d]\n", index);
 

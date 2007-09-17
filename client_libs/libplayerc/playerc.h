@@ -2164,7 +2164,10 @@ typedef struct
   /** The number of layers. */
   uint32_t layers_count;
   /** Layer data. */
-  player_vectormap_layer_data_t** layers;
+  player_vectormap_layer_data_t** layers_data;
+  /** Layer info. */
+  player_vectormap_layer_info_t** layers_info;
+
 } playerc_vectormap_t;
 
 /** @brief Create a vectormap proxy. */
@@ -2182,10 +2185,7 @@ int playerc_vectormap_unsubscribe(playerc_vectormap_t *device);
 /** @brief Get the vectormap metadata, which is stored in the proxy. */
 int playerc_vectormap_get_map_info(playerc_vectormap_t* device);
 
-/** @brief Get the layer info by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
-int playerc_vectormap_get_layer_info(playerc_vectormap_t *device, unsigned layer_index);
-
-/** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_layer_info. */
+/** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
 int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index);
 
 /** @brief Clean up the dynamically allocated memory for the vectormap. */

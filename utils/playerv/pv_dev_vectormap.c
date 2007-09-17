@@ -63,7 +63,6 @@ vectormap_t *vectormap_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *
 
   // Construct figures
   map->fig = rtk_fig_create(mainwnd->canvas, NULL, 1);
-  printf("Created figure: %p\n", map->fig);
 
   return map;
 }
@@ -100,15 +99,14 @@ void vectormap_update(vectormap_t *map)
       // get the map info
       playerc_vectormap_get_map_info( map->proxy );
 
-      // download intial map
+      // download intial map data
       for (ii = 0;  ii < map->proxy->layers_count; ++ii)
       {
-        playerc_vectormap_get_layer_info( map->proxy, ii );
-      }
-
-      for (ii = 0;  ii < map->proxy->layers_count; ++ii)
-      {
-        playerc_vectormap_get_layer_data( map->proxy, ii );
+        if (playerc_vectormap_get_layer_data( map->proxy, ii ))
+        {
+          PRINT_ERR1("libplayerc error: %s", playerc_error_str());
+          return;
+        }
       }
       vectormap_draw( map );
     }
@@ -128,19 +126,14 @@ void vectormap_update(vectormap_t *map)
     rtk_fig_show(map->fig, 0);
 }
 
-//extern GEOSGeometry GEOS_DLL *GEOSGeomFromWKB_buf(const unsigned char *wkb, size_t size);
-
 // Draw the map scan
 void vectormap_draw(vectormap_t *map)
 {
   unsigned ii, jj;
   GEOSGeom feature;
-  printf("Calling draw on vectormap\n");
 
   rtk_fig_show(map->fig, 1);
   rtk_fig_clear(map->fig);
-
-  puts( "map draw" );
 
   // draw map data
   uint32_t colour = 0xFF0000;
@@ -151,7 +144,7 @@ void vectormap_draw(vectormap_t *map)
     rtk_fig_color_rgb32(map->fig, colour);
 
     // render the features
-    for (jj = 0;  jj < map->proxy->layers[ii]->features_count; ++jj)
+    for (jj = 0; jj < map->proxy->layers_data[ii]->features_count; ++jj)
     {
       feature = playerc_vectormap_get_feature_data( map->proxy, ii, jj );
       if (feature)
@@ -195,13 +188,11 @@ void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom)
       break;
     case GEOS_LINESTRING:
     case GEOS_LINEARRING:
-      printf("Got a line string\n");
       seq = GEOSGeom_getCoordSeq(geom);
       if(GEOSCoordSeq_getSize(seq, &numcoords))
       {
         GEOSCoordSeq_getX(seq, ii, &x2);
         GEOSCoordSeq_getY(seq, ii, &y2);
-        printf("first point: %f %f\n", x2,y2);
         if (numcoords < 2)
         {
           rtk_fig_point( map->fig, x2, y2 );
@@ -214,7 +205,6 @@ void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom)
             y = y2;
             GEOSCoordSeq_getX(seq, ii, &x2);
             GEOSCoordSeq_getY(seq, ii, &y2);
-            printf("drawing line from %f,%f to %f,%f\n",x,y,x2,y2);
             rtk_fig_line( map->fig, x, y ,x2, y2);
           }
         }

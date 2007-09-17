@@ -58,7 +58,7 @@ extern "C" {
 /** Generic Prototype for a player XDR packing function */
 typedef int (*player_pack_fn_t) (void* buf, size_t buflen, void* msg, int op);
 /** Generic Prototype for a player message structure deep copy function */
-typedef unsigned int (*player_dpcpy_fn_t) (const void* src, void* dest);
+typedef unsigned int (*player_copy_fn_t) (void* dest, const void* src);
 /** Generic Prototype for a player message structure cleanup function */
 typedef void (*player_cleanup_fn_t) (void* msg);
 
@@ -70,7 +70,7 @@ typedef struct
   uint8_t type;
   uint8_t subtype;
   player_pack_fn_t packfunc;
-  player_dpcpy_fn_t dpcpyfunc;
+  player_copy_fn_t copyfunc;
   player_cleanup_fn_t cleanupfunc;
 } playerxdr_function_t;
 
@@ -86,7 +86,7 @@ typedef struct
 player_pack_fn_t playerxdr_get_packfunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
-player_dpcpy_fn_t playerxdr_get_dpcpyfunc(uint16_t interf, uint8_t type,
+player_copy_fn_t playerxdr_get_copyfunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 player_cleanup_fn_t playerxdr_get_cleanupfunc(uint16_t interf, uint8_t type,

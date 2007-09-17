@@ -4,7 +4,7 @@
 int
 main(int argc, const char **argv)
 {
-  int i;
+  //int i;
   playerc_client_t *client;
   playerc_speechrecognition_t *speech_recognition;
 

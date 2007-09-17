@@ -73,18 +73,21 @@ Message::Message(const struct player_msghdr & Header,
   // Force header size to be same as data size
   ((player_msghdr *) Data)->size = data_size;
 
-  memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
-  if (do_deepcopy && data != NULL)
+  if (do_deepcopy && data != NULL && data_size > 0)
   {
-    player_dpcpy_fn_t dpcpyfunc = NULL;
-    if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
+    player_copy_fn_t copyfunc = NULL;
+    if((copyfunc = playerxdr_get_copyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
     {
-      if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
+      if((this->DynDataSize = (*copyfunc)(this->GetPayload(),data)) == 0)
       {
         // Possible error
         PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
       }
     }
+  }
+  else
+  {
+    memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
   }
 
   this->RefCount = new unsigned int;
@@ -112,20 +115,21 @@ Message::Message(const struct player_msghdr & Header,
   // Force header size to be same as data size
   ((player_msghdr *) Data)->size = data_size;
 
-  memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
-  // Perform deep copy if necessary
   if (do_deepcopy && data != NULL && data_size > 0)
   {
-    player_dpcpy_fn_t dpcpyfunc = NULL;
-    if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
+    player_copy_fn_t copyfunc = NULL;
+    if((copyfunc = playerxdr_get_copyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
     {
-      if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
+      if((this->DynDataSize = (*copyfunc)(this->GetPayload(),data)) == 0)
       {
         // Possible error
         PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
-        assert(0);
       }
     }
+  }
+  else
+  {
+    memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
   }
 
   this->RefCount = new unsigned int;

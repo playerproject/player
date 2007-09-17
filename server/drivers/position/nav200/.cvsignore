@@ -3,3 +3,5 @@ Makefile.in
 test
 test_program
 test_program_init
+.deps
+*.la
