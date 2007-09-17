@@ -1,7 +1,7 @@
 #ifndef __DBCONN_H_
 #define __DBCONN_H_
 
-#include <postgresql/libpq-fe.h>
+#include <libpq-fe.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 #include <vector>
