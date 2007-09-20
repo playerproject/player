@@ -278,7 +278,7 @@ typedef struct player_msghdr
  * These structures often appear inside other structures.
  * @{ */
 
-/** @breif A null structure for parsing completeness */
+/** @brief A null structure for parsing completeness */
 typedef struct player_null
 {
 } player_null_t;

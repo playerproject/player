@@ -135,6 +135,8 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
 
 PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([localbb],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([nd],[yes],[],[],[])
