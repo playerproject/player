@@ -116,8 +116,7 @@ int playerc_vectormap_unsubscribe(playerc_vectormap_t *device)
 int playerc_vectormap_get_map_info(playerc_vectormap_t* device)
 {
   int ii;
-  player_vectormap_info_t info_req;
-  memset(&info_req, 0, sizeof(info_req));
+  player_vectormap_info_t *info_req;
 
   // try to get map info
   if (playerc_client_request(
@@ -125,17 +124,16 @@ int playerc_vectormap_get_map_info(playerc_vectormap_t* device)
       &device->info,
       PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
       NULL,
-      &info_req,
-      sizeof(player_vectormap_info_t)) < 0)
+      (void**)&info_req) < 0)
   {
     PLAYERC_ERR("failed to get vectormap info");
     return -1;
   }
 
   playerc_vectormap_cleanup(device);
-  device->srid = info_req.srid;
-  device->extent = info_req.extent;
-  device->layers_count = info_req.layers_count;
+  device->srid = info_req->srid;
+  device->extent = info_req->extent;
+  device->layers_count = info_req->layers_count;
 
   device->layers_data = calloc(device->layers_count, sizeof(player_vectormap_layer_data_t*));
   device->layers_info = calloc(device->layers_count, sizeof(player_vectormap_layer_info_t*));
@@ -147,15 +145,16 @@ int playerc_vectormap_get_map_info(playerc_vectormap_t* device)
 
   for (ii=0; ii<device->layers_count; ++ii)
   {
-    device->layers_info[ii] = player_vectormap_layer_info_t_clone(&info_req.layers[ii]);
-  }  
+    device->layers_info[ii] = player_vectormap_layer_info_t_clone(&info_req->layers[ii]);
+  }
+  player_vectormap_info_t_free(info_req);
   return 0;
 }
 
 // Get layer data
 int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index)
 {
-  player_vectormap_layer_data_t data_req;
+  player_vectormap_layer_data_t data_req, *data_resp;
   memset(&data_req, 0, sizeof(data_req));
 
   data_req.name = strdup(device->layers_info[layer_index]->name);
@@ -166,15 +165,14 @@ int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer
       &device->info,
       PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
       &data_req,
-      &data_req,
-      sizeof(data_req)) < 0)
+      (void**)&data_resp) < 0)
   {
     PLAYERC_ERR("failed to get layer data");
     free(data_req.name);
     return -1;
   }
   player_vectormap_layer_data_t_free(device->layers_data[layer_index]);
-  device->layers_data[layer_index] = player_vectormap_layer_data_t_clone(&data_req);
+  device->layers_data[layer_index] = data_resp;
 
   return 0;
 }

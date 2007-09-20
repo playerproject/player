@@ -124,16 +124,17 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan,
 // Query the pan and tilt status.
 int playerc_ptz_query_status(playerc_ptz_t *device)
 {
-  player_ptz_req_status_t cmd;
+  player_ptz_req_status_t *cmd;
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_PTZ_REQ_STATUS,
                             NULL,
-                            &cmd, sizeof(player_ptz_req_status_t)) < 0)
+                            (void**)&cmd) < 0)
 
     return -1;
 
-  device->status = cmd.status;
+  device->status = cmd->status;
+  player_ptz_req_status_t_free(cmd);
   return 0;
 }
 
@@ -164,5 +165,5 @@ playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode)
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_PTZ_REQ_CONTROL_MODE,
-                                &config, NULL, 0));
+                                &config, NULL));
 }

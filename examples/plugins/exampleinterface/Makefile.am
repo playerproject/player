@@ -17,6 +17,12 @@ example_PROGRAMS = example_client
 example_DATA = eginterf_client.c eginterf.c eginterf_xdr.c eginterf_driver.cc Makefile.example example.cfg 
 EXTRA_DIST = Makefile.example example.cfg eginterf_client.h eginterf.h eginterf_xdr.h
 
+eginterf_xdr.c: eginterf.h ${top_builddir}/libplayerxdr/playerxdrgen.py
+	python ${top_builddir}/libplayerxdr/playerxdrgen.py eginterf.h eginterf_xdr.c eginterf_xdr.h
+
+eginterf_xdr.h: eginterf.h ${top_builddir}/libplayerxdr/playerxdrgen.py
+	python ${top_builddir}/libplayerxdr/playerxdrgen.py eginterf.h eginterf_xdr.c eginterf_xdr.h
+
 example_LTLIBRARIES = libeginterfdriver.la libeginterf.la
 libeginterfdriver_la_SOURCES = eginterf_driver.cc
 libeginterf_la_SOURCES = eginterf_client.c eginterf.c eginterf_xdr.c

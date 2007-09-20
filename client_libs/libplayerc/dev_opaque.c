@@ -123,12 +123,9 @@ int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data)
 }
 
 // Send a generic request
-int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t *reply)
+int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t **reply)
 {
-/*int playerc_client_request(playerc_client_t *client,
-                           struct _playerc_device_t *device, uint8_t reqtype,
-                           void *req_data, void *rep_data, int rep_len);*/
   return playerc_client_request(device->info.client, &device->info,
                             PLAYER_OPAQUE_REQ,
-                            (void*)request, (void*)reply, sizeof(player_opaque_data_t));
+                            (void*)request, (void**)reply);
 }

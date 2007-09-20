@@ -136,19 +136,6 @@ void playerc_fiducial_putgeom(playerc_fiducial_t *device, player_msghdr_t *heade
 {
   PLAYERC_WARN( "playerc_fiducial_putgeom is not yet implemented" );
 
-/*   if (len != sizeof(player_fiducial_geom_t)) */
-/*   { */
-/*     PLAYERC_ERR2("reply has unexpected length (%d != %d)", len, sizeof(player_fiducial_geom_t)); */
-/*     return; */
-/*   } */
-
-/*   device->pose[0] = ((int16_t) ntohs(data->pose[0])) / 1000.0; */
-/*   device->pose[1] = ((int16_t) ntohs(data->pose[1])) / 1000.0; */
-/*   device->pose[2] = ((int16_t) ntohs(data->pose[2])) * M_PI / 180; */
-/*   device->size[0] = ((int16_t) ntohs(data->size[0])) / 1000.0; */
-/*   device->size[1] = ((int16_t) ntohs(data->size[1])) / 1000.0; */
-/*   device->fiducial_size[0] = ((int16_t) ntohs(data->fiducial_size[0])) / 1000.0; */
-/*   device->fiducial_size[1] = ((int16_t) ntohs(data->fiducial_size[1])) / 1000.0; */
 }
 
 // Get the fiducial geometry.  The writes the result into the proxy
@@ -156,30 +143,17 @@ void playerc_fiducial_putgeom(playerc_fiducial_t *device, player_msghdr_t *heade
 int playerc_fiducial_get_geom(playerc_fiducial_t *device)
 {
   int len;
-  player_fiducial_geom_t config;
-
-//  config.subtype = PLAYER_FIDUCIAL_REQ_GET_GEOM;
+  player_fiducial_geom_t *config;
 
   len = playerc_client_request(device->info.client,
 			       &device->info,
 			       PLAYER_FIDUCIAL_REQ_GET_GEOM,
-                               NULL, &config, sizeof(config));
+                               NULL, (void**)&config);
   if (len < 0)
     return -1;
 
-  // ?
-  //while(device->info.freshgeom == 0)
-  // playerc_client_read(device->info.client);
-
-  device->fiducial_geom = config;
-/*  device->pose[1] = config.pose.py;
-  device->pose[2] = config.pose.pa;
-
-  device->size[0] = config.size.sl;
-  device->size[1] = config.size.sw;
-
-  device->fiducial_size[0] = config.fiducial_size.sl;
-  device->fiducial_size[1] = config.fiducial_size.sw;*/
+  player_fiducial_geom_t_copy(&device->fiducial_geom, config);
+  player_fiducial_geom_t_free(config);
 
   return 0;
 }

@@ -124,7 +124,7 @@ playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id, int value)
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_WSN_REQ_POWER,
-                                &config, NULL, 0));
+                                &config, NULL));
 }
 
 // Change the data type to RAW or converted engineering units.
@@ -138,7 +138,7 @@ playerc_wsn_datatype(playerc_wsn_t *device, int value)
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_WSN_REQ_DATATYPE,
-                                &config, NULL, 0));
+                                &config, NULL));
 }
 
 // Change data delivery frequency.
@@ -155,5 +155,5 @@ playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id,
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_WSN_REQ_DATAFREQ,
-                                &config, NULL, 0));
+                                &config, NULL));
 }

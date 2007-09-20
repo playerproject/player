@@ -117,14 +117,14 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
 
   return playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_SET_POSE2D,
-                                &cmd, NULL, 0);
+                                &cmd, NULL);
 }
 
 // Get the current pose
 int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier, 
 				  double *x, double *y, double *a)
 {
-  player_simulation_pose2d_req_t cfg;
+  player_simulation_pose2d_req_t cfg, *resp;
   
   memset(&cfg, 0, sizeof(cfg));
   strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
@@ -132,11 +132,12 @@ int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier
   cfg.name_count = strlen(cfg.name) + 1;
   if (playerc_client_request(device->info.client, &device->info, 
                              PLAYER_SIMULATION_REQ_GET_POSE2D,
-			     &cfg, &cfg, sizeof(cfg)) < 0)
+			     &cfg, (void**)&resp) < 0)
     return (-1);
-  *x =  cfg.pose.px;
-  *y =  cfg.pose.py;
-  *a =  cfg.pose.pa;
+  *x =  resp->pose.px;
+  *y =  resp->pose.py;
+  *a =  resp->pose.pa;
+  player_simulation_pose2d_req_t_free(resp);
   return 0;
 }
 
@@ -159,14 +160,14 @@ int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name, doub
 
   return playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_SET_POSE3D,
-                                &cmd, NULL, 0);
+                                &cmd, NULL);
 }
 
 // Get the current pose in 3D
 int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier, 
           double *x, double *y, double *z, double *roll, double *pitch, double *yaw, double *time)
 {
-  player_simulation_pose3d_req_t cfg;
+  player_simulation_pose3d_req_t cfg, *resp;
   
   memset(&cfg, 0, sizeof(cfg));
   strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
@@ -174,15 +175,16 @@ int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier
   cfg.name_count = strlen(cfg.name) + 1;
   if (playerc_client_request(device->info.client, &device->info, 
                              PLAYER_SIMULATION_REQ_GET_POSE3D,
-           &cfg, &cfg, sizeof(cfg)) < 0)
+           &cfg, (void**)&resp) < 0)
     return (-1);
-  *x =  cfg.pose.px;
-  *y =  cfg.pose.py;
-  *z =  cfg.pose.pz;
-  *pitch =  cfg.pose.ppitch;
-  *roll =  cfg.pose.proll;
-  *yaw =  cfg.pose.pyaw;
-  *time = cfg.simtime;
+  *x =  resp->pose.px;
+  *y =  resp->pose.py;
+  *z =  resp->pose.pz;
+  *pitch =  resp->pose.ppitch;
+  *roll =  resp->pose.proll;
+  *yaw =  resp->pose.pyaw;
+  *time = resp->simtime;
+  player_simulation_pose3d_req_t_free(resp);
   return 0;
 }
 
@@ -216,7 +218,7 @@ int playerc_simulation_set_property(playerc_simulation_t *device,
   
   return playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_SET_PROPERTY,
-                                &req, NULL, 0);
+                                &req, NULL);
 }
 
 // Get a property value */
@@ -226,7 +228,7 @@ int playerc_simulation_get_property(playerc_simulation_t *device,
 				    void* value,
 				    size_t value_len )
 {
-  player_simulation_property_req_t req;
+  player_simulation_property_req_t req, *resp;
 
   memset(&req, 0, sizeof(req));
   strncpy(req.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
@@ -248,10 +250,10 @@ int playerc_simulation_get_property(playerc_simulation_t *device,
   
   if( playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_GET_PROPERTY,
-                                &req, &req, sizeof(req)) < 0)
+                                &req, (void**)&resp) < 0)
     return -1;
 
-  memcpy(value, req.value, value_len);
-
+  memcpy(value, resp->value, value_len);
+  player_simulation_property_req_t_free(resp);
   return 0;
 }

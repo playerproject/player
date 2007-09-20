@@ -90,13 +90,14 @@ OpaqueProxy::SendCmd(player_opaque_data_t* aData)
 int
 OpaqueProxy::SendReq(player_opaque_data_t* aRequest)
 {
-  player_opaque_data_t aReply;
+  player_opaque_data_t *aReply;
   int result = playerc_opaque_req(mDevice, aRequest, &aReply);
   if (result == 0)
   {
-    memcpy(mDevice->data, aReply.data, aReply.data_count);
-    mDevice->data_count = aReply.data_count;
+    memcpy(mDevice->data, aReply->data, aReply->data_count);
+    mDevice->data_count = aReply->data_count;
   }
+  player_opaque_data_t_free(aReply);
   return result;
 }
 

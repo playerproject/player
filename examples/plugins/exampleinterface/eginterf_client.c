@@ -17,6 +17,7 @@
 #include <libplayercore/error.h>
 
 #include "eginterf.h"
+#include "eginterf_xdr.h"
 #include "eginterf_client.h"
 
 void eginterf_putmsg (eginterf_t *device, player_msghdr_t *header, uint8_t *data, size_t len);
@@ -82,12 +83,13 @@ int eginterf_req (eginterf_t *device, int blah)
 {
 	int result = 0;
 	player_eginterf_req req;
-	player_eginterf_req rep;
+	player_eginterf_req *rep;
 	memset (&rep, 0, sizeof (player_eginterf_req));
 	req.value = blah;
-	if ((result = playerc_client_request (device->info.client, &device->info, EGINTERF_REQ, &req, &rep, sizeof (player_eginterf_req))) < 0)
+	if ((result = playerc_client_request (device->info.client, &device->info, EGINTERF_REQ, &req, (void**)&rep)) < 0)
 		return result;
 
-	device->value = rep.value;
+	device->value = rep->value;
+	player_eginterf_req_free(rep);
 	return 0;
 }
