@@ -668,12 +668,17 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 /** @brief Issue a request to the server and await a reply (blocking). @internal
 
+The rep_data pointer is filled with a pointer to the response data recieved. It is
+the callers responisbility to free this memory with the approriate player _free method.
+
+If an error is returned then no data will have been stored in rep_data.
+
 @returns Returns -1 on error and -2 on NACK.
 
 */
 int playerc_client_request(playerc_client_t *client,
                            struct _playerc_device_t *device, uint8_t reqtype,
-                           void *req_data, void *rep_data, int rep_len);
+                           void *req_data, void **rep_data);
 
 /** @brief Wait for response from server (blocking).
 
@@ -2273,8 +2278,13 @@ int playerc_opaque_unsubscribe(playerc_opaque_t *device);
 /** @brief Send a generic command */
 int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
 
-/** @brief Send a generic request */
-int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t *reply);
+/** @brief Send a generic request 
+ * 
+ * If a non null value is passed for reply memory for the response will be allocated
+ * and its pointer stored in reply. The caller is responsible for freeing this memory
+ * 
+ * If an error is returned no memory will have been allocated*/
+int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t **reply);
 
 /** @} */
 /**************************************************************************/

@@ -108,17 +108,17 @@ void playerc_limb_putmsg(playerc_limb_t *device,
 // Get the limb geometry
 int playerc_limb_get_geom(playerc_limb_t *device)
 {
-  player_limb_geom_req_t geom;
+  player_limb_geom_req_t *geom;
 
   if(playerc_client_request(device->info.client, &device->info,
      PLAYER_LIMB_REQ_GEOM,
-     NULL, (void*)&geom, sizeof(geom)) < 0)
+     NULL, (void**)&geom) < 0)
     return -1;
 
-  device->geom.basePos.px = geom.basePos.px;
-  device->geom.basePos.py = geom.basePos.py;
-  device->geom.basePos.pz = geom.basePos.pz;
-
+  device->geom.basePos.px = geom->basePos.px;
+  device->geom.basePos.py = geom->basePos.py;
+  device->geom.basePos.pz = geom->basePos.pz;
+  player_limb_geom_req_t_free(geom);
   return 0;
 }
 
@@ -201,7 +201,7 @@ int playerc_limb_power(playerc_limb_t *device, uint enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_LIMB_REQ_POWER,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Turn the brakes of all actuators in the limb that have them on or off
@@ -213,7 +213,7 @@ int playerc_limb_brakes(playerc_limb_t *device, uint enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_LIMB_REQ_BRAKES,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Set the speed of the end effector for all subsequent movement commands
@@ -225,5 +225,5 @@ int playerc_limb_speed_config(playerc_limb_t *device, float speed)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_LIMB_REQ_SPEED,
-                                &config, NULL, 0);
+                                &config, NULL);
 }

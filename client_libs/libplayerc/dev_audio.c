@@ -197,12 +197,16 @@ Value is returned into wav_data, block length is determined by device */
 int playerc_audio_wav_rec(playerc_audio_t *device)
 {
   int result = 0;
+  player_audio_wav_t * resp;
 
   if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_AUDIO_REQ_WAV_REC,
-                            NULL, (void*)&device->wav_data, sizeof(device->wav_data))) < 0)
+                            NULL,(void**) &resp)) < 0)
     return result;
-
+  player_audio_wav_t_cleanup(&device->wav_data);
+  player_audio_wav_t_copy(&device->wav_data, resp);
+  player_audio_wav_t_free(resp);
+  
   return 0;
 }
 
@@ -218,7 +222,7 @@ int playerc_audio_sample_load(playerc_audio_t *device, int index, uint32_t data_
   req.sample.format = format;
   req.index = index;
   if((result = playerc_client_request(device->info.client, &device->info,
-                            PLAYER_AUDIO_REQ_SAMPLE_LOAD, &req, NULL, 0)) < 0)
+                            PLAYER_AUDIO_REQ_SAMPLE_LOAD, &req, NULL)) < 0)
     return result;
 
   return 0;
@@ -230,24 +234,27 @@ int playerc_audio_sample_retrieve(playerc_audio_t *device, int index)
 {
   int result = 0;
   player_audio_sample_t req;
+  player_audio_sample_t * resp;
   req.sample.data_count = 0;
   req.index = index;
   if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_AUDIO_REQ_SAMPLE_RETRIEVE,
-                            &req, &req, sizeof(req))) < 0)
+                            &req, (void**)&resp)) < 0)
     return result;
 
-  device->wav_data.data_count = req.sample.data_count;
+  device->wav_data.data_count = resp->sample.data_count;
   if (device->wav_data.data != NULL)
     free (device->wav_data.data);
-  if ((device->wav_data.data = (uint8_t*) malloc (req.sample.data_count)) == NULL)
+  if ((device->wav_data.data = (uint8_t*) malloc (resp->sample.data_count)) == NULL)
   {
+    player_audio_sample_t_free(resp);
     PLAYER_ERROR("Failed to allocate space to store wave data locally");
     return -1;
   }
-  memcpy(device->wav_data.data, req.sample.data, req.sample.data_count * sizeof(device->wav_data.data[0]));
-  device->wav_data.format = req.sample.format;
-
+  memcpy(device->wav_data.data, resp->sample.data, resp->sample.data_count * sizeof(device->wav_data.data[0]));
+  device->wav_data.format = resp->sample.format;
+  player_audio_sample_t_free(resp);
+  
   return 0;
 }
 
@@ -256,17 +263,18 @@ int playerc_audio_sample_rec(playerc_audio_t *device, int index, uint32_t length
 {
   int result = 0;
   player_audio_sample_rec_req_t req;
-  player_audio_sample_rec_req_t rep;
+  player_audio_sample_rec_req_t *rep;
   memset (&rep, 0, sizeof (player_audio_sample_rec_req_t));
   req.index = index;
   req.length = length;
   if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_AUDIO_REQ_SAMPLE_REC,
-                            &req, &rep, sizeof (player_audio_sample_rec_req_t))) < 0)
+                            &req, (void**)&rep)) < 0)
     return result;
 
 //  *index = req.index;
-  device->last_index = rep.index;
+  device->last_index = rep->index;
+  player_audio_sample_rec_req_t_free(rep);
   return 0;
 }
 
@@ -275,16 +283,16 @@ result is stored in mixer_data*/
 int playerc_audio_get_mixer_levels(playerc_audio_t *device)
 {
   int result = 0;
-  player_audio_mixer_channel_list_t req;
+  player_audio_mixer_channel_list_t *resp;
   if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_AUDIO_REQ_MIXER_CHANNEL_LEVEL ,
-                            NULL, &req, sizeof(req))) < 0)
+                            NULL, (void**)&resp)) < 0)
     return result;
 
 
-  device->mixer_data.channels_count = req.channels_count;
-  memcpy(device->mixer_data.channels, req.channels, req.channels_count * sizeof(device->mixer_data.channels[0]));
-
+  device->mixer_data.channels_count = resp->channels_count;
+  memcpy(device->mixer_data.channels, resp->channels, resp->channels_count * sizeof(device->mixer_data.channels[0]));
+  player_audio_mixer_channel_list_t_free(resp);
   return 0;
 }
 
@@ -293,18 +301,19 @@ result is stored in channel_details_list*/
 int playerc_audio_get_mixer_details(playerc_audio_t *device)
 {
   int result;
-  player_audio_mixer_channel_list_detail_t req;
+  player_audio_mixer_channel_list_detail_t *rep;
   if((result = playerc_client_request(device->info.client, &device->info,
                             PLAYER_AUDIO_REQ_MIXER_CHANNEL_LIST ,
-                            NULL, &req, sizeof(req))) < 0)
+                            NULL, (void**)&rep)) < 0)
     return result;
 
 
-  device->channel_details_list.details_count = req.details_count;
-  memcpy(device->channel_details_list.details, req.details, req.details_count * sizeof(device->channel_details_list.details[0]));
-  device->channel_details_list.default_output = req.default_output;
-  device->channel_details_list.default_input = req.default_input;
-
+  device->channel_details_list.details_count = rep->details_count;
+  memcpy(device->channel_details_list.details, rep->details, rep->details_count * sizeof(device->channel_details_list.details[0]));
+  device->channel_details_list.default_output = rep->default_output;
+  device->channel_details_list.default_input = rep->default_input;
+  
+  player_audio_mixer_channel_list_detail_t_free(rep);
   return 0;
 }
 

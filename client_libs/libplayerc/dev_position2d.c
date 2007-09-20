@@ -130,7 +130,7 @@ playerc_position2d_enable(playerc_position2d_t *device, int enable)
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_POSITION2D_REQ_MOTOR_POWER,
-                                &config, NULL, 0));
+                                &config, NULL));
 }
 
 int
@@ -142,7 +142,7 @@ playerc_position2d_position_control(playerc_position2d_t *device, int type)
 
   return(playerc_client_request(device->info.client, &device->info,
                                 PLAYER_POSITION2D_REQ_VELOCITY_MODE,
-                                &config, NULL, 0));
+                                &config, NULL));
 }
 
 // Get the position2d geometry.  The writes the result into the proxy
@@ -150,19 +150,19 @@ playerc_position2d_position_control(playerc_position2d_t *device, int type)
 int
 playerc_position2d_get_geom(playerc_position2d_t *device)
 {
-  player_position2d_geom_t geom;
+  player_position2d_geom_t *geom;
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_POSITION2D_REQ_GET_GEOM,
-                            NULL, (void*)&geom, sizeof(geom)) < 0)
+                            NULL, (void**)&geom) < 0)
     return(-1);
 
-  device->pose[0] = geom.pose.px;
-  device->pose[1] = geom.pose.py;
-  device->pose[2] = geom.pose.pyaw;
-  device->size[0] = geom.size.sl;
-  device->size[1] = geom.size.sw;
-
+  device->pose[0] = geom->pose.px;
+  device->pose[1] = geom->pose.py;
+  device->pose[2] = geom->pose.pyaw;
+  device->size[0] = geom->size.sl;
+  device->size[1] = geom->size.sw;
+  player_position2d_geom_t_free(geom);
   return(0);
 }
 
@@ -250,7 +250,7 @@ playerc_position2d_set_odom(playerc_position2d_t *device,
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_POSITION2D_REQ_SET_ODOM,
-                                &req, NULL, 0));
+                                &req, NULL));
 }
 
 void playerc_position2d_print( playerc_position2d_t * device,

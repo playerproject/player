@@ -155,18 +155,18 @@ int playerc_gripper_retrieve_cmd (playerc_gripper_t *device)
 // rather than returning it to the caller.
 int playerc_gripper_get_geom (playerc_gripper_t *device)
 {
-  player_gripper_geom_t config;
+  player_gripper_geom_t *config;
 
   if(playerc_client_request(device->info.client,&device->info, PLAYER_GRIPPER_REQ_GET_GEOM,
-                            NULL, &config, sizeof (config)) < 0)
+                            NULL, (void**)&config) < 0)
     return -1;
 
-  device->pose = config.pose;
-  device->outer_size = config.outer_size;
-  device->inner_size = config.inner_size;
-  device->num_beams = config.num_beams;
-  device->capacity = config.capacity;
-
+  device->pose = config->pose;
+  device->outer_size = config->outer_size;
+  device->inner_size = config->inner_size;
+  device->num_beams = config->num_beams;
+  device->capacity = config->capacity;
+  player_gripper_geom_t_free(config);
   return 0;
 }
 

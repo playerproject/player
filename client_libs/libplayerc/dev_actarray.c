@@ -107,32 +107,33 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
 // Get the actarray geometry
 int playerc_actarray_get_geom(playerc_actarray_t *device)
 {
-  player_actarray_geom_t geom;
+  player_actarray_geom_t *geom;
   int ii = 0, result = 0;
 
   if((result = playerc_client_request(device->info.client, &device->info,
-      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom, sizeof(geom))) < 0)
+      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void**)&geom)) < 0)
     return result;
 
   for (ii = 0; ii < device->actuators_count; ii++)
   {
-    device->actuators_geom[ii].type = geom.actuators[ii].type;
-    device->actuators_geom[ii].length = geom.actuators[ii].length;
-    device->actuators_geom[ii].orientation.proll = geom.actuators[ii].orientation.proll;
-    device->actuators_geom[ii].orientation.ppitch = geom.actuators[ii].orientation.ppitch;
-    device->actuators_geom[ii].orientation.pyaw = geom.actuators[ii].orientation.pyaw;
-    device->actuators_geom[ii].axis.px = geom.actuators[ii].axis.px;
-    device->actuators_geom[ii].axis.py = geom.actuators[ii].axis.py;
-    device->actuators_geom[ii].axis.pz = geom.actuators[ii].axis.pz;
-    device->actuators_geom[ii].min = geom.actuators[ii].min;
-    device->actuators_geom[ii].centre = geom.actuators[ii].centre;
-    device->actuators_geom[ii].max = geom.actuators[ii].max;
-    device->actuators_geom[ii].home = geom.actuators[ii].home;
-    device->actuators_geom[ii].config_speed = geom.actuators[ii].config_speed;
-    device->actuators_geom[ii].hasbrakes = geom.actuators[ii].hasbrakes;
+    device->actuators_geom[ii].type = geom->actuators[ii].type;
+    device->actuators_geom[ii].length = geom->actuators[ii].length;
+    device->actuators_geom[ii].orientation.proll = geom->actuators[ii].orientation.proll;
+    device->actuators_geom[ii].orientation.ppitch = geom->actuators[ii].orientation.ppitch;
+    device->actuators_geom[ii].orientation.pyaw = geom->actuators[ii].orientation.pyaw;
+    device->actuators_geom[ii].axis.px = geom->actuators[ii].axis.px;
+    device->actuators_geom[ii].axis.py = geom->actuators[ii].axis.py;
+    device->actuators_geom[ii].axis.pz = geom->actuators[ii].axis.pz;
+    device->actuators_geom[ii].min = geom->actuators[ii].min;
+    device->actuators_geom[ii].centre = geom->actuators[ii].centre;
+    device->actuators_geom[ii].max = geom->actuators[ii].max;
+    device->actuators_geom[ii].home = geom->actuators[ii].home;
+    device->actuators_geom[ii].config_speed = geom->actuators[ii].config_speed;
+    device->actuators_geom[ii].hasbrakes = geom->actuators[ii].hasbrakes;
   }
-  device->base_pos = geom.base_pos;
-  device->base_orientation = geom.base_orientation;
+  device->base_pos = geom->base_pos;
+  device->base_orientation = geom->base_orientation;
+  player_actarray_geom_t_free(geom);
   return 0;
 }
 
@@ -245,7 +246,7 @@ int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_POWER,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Turn the brakes of all actuators in the array that have them on or off
@@ -257,7 +258,7 @@ int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_BRAKES,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Set the speed of a joint (-1 for all joints) for all subsequent movement commands
@@ -270,7 +271,7 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float s
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_SPEED,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Set the speed of a joint (-1 for all joints) for all subsequent movement commands
@@ -283,7 +284,7 @@ int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float a
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_ACCEL,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 

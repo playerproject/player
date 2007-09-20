@@ -144,21 +144,22 @@ playerc_planner_set_cmd_pose(playerc_planner_t *device,
 int playerc_planner_get_waypoints(playerc_planner_t *device)
 {
   int i;
-  player_planner_waypoints_req_t config;
+  player_planner_waypoints_req_t *config;
 
   if(playerc_client_request(device->info.client, 
                             &device->info,
                             PLAYER_PLANNER_REQ_GET_WAYPOINTS,
-                            NULL, &config, sizeof(config)) < 0)
+                            NULL, (void**)&config) < 0)
     return -1;
   
-  device->waypoint_count = config.waypoints_count;
+  device->waypoint_count = config->waypoints_count;
   for(i=0;i<device->waypoint_count;i++)
   {
-    device->waypoints[i][0] = config.waypoints[i].px;
-    device->waypoints[i][1] = config.waypoints[i].py;
-    device->waypoints[i][2] = config.waypoints[i].pa;
+    device->waypoints[i][0] = config->waypoints[i].px;
+    device->waypoints[i][1] = config->waypoints[i].py;
+    device->waypoints[i][2] = config->waypoints[i].pa;
   }
+  player_planner_waypoints_req_t_free(config);
   return 0;
 }
 
@@ -171,7 +172,7 @@ int playerc_planner_enable(playerc_planner_t *device, int state)
 
   if(playerc_client_request(device->info.client, &device->info, 
                             PLAYER_PLANNER_REQ_ENABLE,
-                            &config, NULL, 0) < 0)
+                            &config, NULL) < 0)
     return(-1);
   else
     return(0);

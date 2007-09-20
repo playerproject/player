@@ -89,19 +89,19 @@ int playerc_log_unsubscribe(playerc_log_t *device)
 // Get logging/playback state; the result is written into the proxy
 int playerc_log_get_state(playerc_log_t* device)
 {
-  player_log_get_state_t req;
+  player_log_get_state_t *req;
 
   if(playerc_client_request(device->info.client, 
                             &device->info,
                             PLAYER_LOG_REQ_GET_STATE,
-                            NULL, &req, sizeof(req)) < 0)
+                            NULL, (void**)&req) < 0)
   {
     PLAYERC_ERR("failed to get logging/playback state");
     return(-1);
   }
-  device->type = req.type;
-  device->state = req.state;
-
+  device->type = req->type;
+  device->state = req->state;
+  player_log_get_state_t_free(req);
   return(0);
 }
 
@@ -114,7 +114,7 @@ int playerc_log_set_write_state(playerc_log_t* device, int state)
 
   if(playerc_client_request(device->info.client, 
                             &device->info,PLAYER_LOG_REQ_SET_WRITE_STATE,
-                            &req, &req, sizeof(req)) < 0)
+                            &req, NULL) < 0)
   {
     PLAYERC_ERR("failed to start/stop data logging");
     return(-1);
@@ -131,7 +131,7 @@ int playerc_log_set_read_state(playerc_log_t* device, int state)
 
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_READ_STATE,
-                            &req, NULL, 0) < 0)
+                            &req, NULL) < 0)
   {
     PLAYERC_ERR("failed to start/stop data playback");
     return(-1);
@@ -144,7 +144,7 @@ int playerc_log_set_read_rewind(playerc_log_t* device)
 {
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_READ_REWIND,
-                            NULL, NULL, 0) < 0)
+                            NULL, NULL) < 0)
   {
     PLAYERC_ERR("failed to rewind data playback");
     return(-1);
@@ -168,7 +168,7 @@ int playerc_log_set_filename(playerc_log_t* device, const char* fname)
 
   if(playerc_client_request(device->info.client, 
                             &device->info, PLAYER_LOG_REQ_SET_FILENAME,
-                            &req, NULL, 0) < 0)
+                            &req, NULL) < 0)
   {
     PLAYERC_ERR("failed to set logfile name");
     return(-1);

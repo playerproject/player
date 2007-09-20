@@ -143,7 +143,7 @@ playerc_imu_datatype (playerc_imu_t *device, int value)
   return (playerc_client_request(device->info.client,
                                  &device->info,
                                  PLAYER_IMU_REQ_SET_DATATYPE,
-                                 &config, NULL, 0));
+                                 &config, NULL));
 }
 
 // Reset orientation
@@ -157,5 +157,5 @@ playerc_imu_reset_orientation (playerc_imu_t *device, int value)
   return (playerc_client_request(device->info.client,
                                  &device->info,
                                  PLAYER_IMU_REQ_RESET_ORIENTATION,
-                                 &config, NULL, 0));
+                                 &config, NULL));
 }

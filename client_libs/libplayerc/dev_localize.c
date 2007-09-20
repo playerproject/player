@@ -137,7 +137,7 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
   if(playerc_client_request(device->info.client, 
                             &device->info,
                             PLAYER_LOCALIZE_REQ_SET_POSE,
-                            &req, NULL, 0) < 0)
+                            &req, NULL) < 0)
   {
     printf("%s\n", playerc_error_str());
     return -1;
@@ -151,23 +151,22 @@ int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double
 int playerc_localize_get_particles(playerc_localize_t *device)
 {
   int i;
-  player_localize_get_particles_t req;
+  player_localize_get_particles_t *req;
 
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_LOCALIZE_REQ_GET_PARTICLES,
-                            NULL, 
-                            &req, sizeof(player_localize_get_particles_t)) < 0)
+                            NULL, (void**) &req) < 0)
 
     return -1;
 
-  device->mean[0] = req.mean.px;
-  device->mean[1] = req.mean.py;
-  device->mean[2] = req.mean.pa;
+  device->mean[0] = req->mean.px;
+  device->mean[1] = req->mean.py;
+  device->mean[2] = req->mean.pa;
 
-  device->variance = req.variance;
+  device->variance = req->variance;
 
-  device->num_particles = req.particles_count;
+  device->num_particles = req->particles_count;
 
   for(i=0;i<device->num_particles;i++)
   {
@@ -178,11 +177,11 @@ int playerc_localize_get_particles(playerc_localize_t *device)
       break;
     }
 
-    device->particles[i].pose[0] = req.particles[i].pose.px;
-    device->particles[i].pose[1] = req.particles[i].pose.py;
-    device->particles[i].pose[2] = req.particles[i].pose.pa;
-    device->particles[i].weight = req.particles[i].alpha;
+    device->particles[i].pose[0] = req->particles[i].pose.px;
+    device->particles[i].pose[1] = req->particles[i].pose.py;
+    device->particles[i].pose[2] = req->particles[i].pose.pa;
+    device->particles[i].weight = req->particles[i].alpha;
   }
-
+  player_localize_get_particles_t_free(req);
   return 0;
 }

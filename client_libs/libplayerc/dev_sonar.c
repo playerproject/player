@@ -139,18 +139,19 @@ int playerc_sonar_get_geom(playerc_sonar_t *device)
 {
   int i;	
 	
-  player_sonar_geom_t config;
+  player_sonar_geom_t *config;
 
   if(playerc_client_request(device->info.client, 
                             &device->info,
                             PLAYER_SONAR_REQ_GET_GEOM,
-                            NULL, &config, sizeof(config)) < 0)
+                            NULL, (void**)&config) < 0)
     return -1;
 
-  device->pose_count = config.poses_count;
+  device->pose_count = config->poses_count;
   for (i = 0; i < device->pose_count; i++)
   {
-    device->poses[i] = config.poses[i];
+    device->poses[i] = config->poses[i];
   }
-   return 0;
+  player_sonar_geom_t_free(config);
+  return 0;
 }

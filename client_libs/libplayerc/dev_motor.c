@@ -126,7 +126,7 @@ playerc_motor_enable(playerc_motor_t *device, int enable)
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_MOTOR_REQ_POWER,
-                                &config, NULL, 0));
+                                &config, NULL));
 }
 
 int
@@ -138,7 +138,7 @@ playerc_motor_position_control(playerc_motor_t *device, int type)
 
   return(playerc_client_request(device->info.client, &device->info,
                                 PLAYER_MOTOR_REQ_VELOCITY_MODE,
-                                &config, NULL, 0));
+                                &config, NULL));
 }
 
 // Set the robot speed
@@ -186,7 +186,7 @@ playerc_motor_set_odom(playerc_motor_t *device, double ot)
   return(playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_MOTOR_REQ_SET_ODOM,
-                                &req, NULL, 0));
+                                &req, NULL));
 }
 
 void playerc_motor_print( playerc_motor_t * device,

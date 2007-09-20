@@ -213,13 +213,14 @@ void playerc_ranger_putmsg(playerc_ranger_t *device, player_msghdr_t *header,
 // rather than returning it to the caller.
 int playerc_ranger_get_geom(playerc_ranger_t *device)
 {
-  player_ranger_geom_t geom;
+  player_ranger_geom_t *geom;
 
   if(playerc_client_request(device->info.client, &device->info, PLAYER_RANGER_REQ_GET_GEOM,
-                            NULL, &geom, sizeof(geom)) < 0)
+                            NULL, (void**)&geom) < 0)
     return -1;
 
-  playerc_ranger_copy_geom(device, &geom);
+  playerc_ranger_copy_geom(device, geom);
+  player_ranger_geom_t_free(geom);
   return 0;
 }
 
@@ -232,7 +233,7 @@ int playerc_ranger_power_config(playerc_ranger_t *device, uint8_t value)
   req.state = value;
 
   if(playerc_client_request(device->info.client, &device->info, PLAYER_RANGER_REQ_POWER,
-                            &req, NULL, 0) < 0)
+                            &req, NULL) < 0)
     return -1;
 
   return 0;
@@ -246,7 +247,7 @@ int playerc_ranger_intns_config(playerc_ranger_t *device, uint8_t value)
   req.state = value;
 
   if(playerc_client_request(device->info.client, &device->info, PLAYER_RANGER_REQ_INTNS,
-                            &req, NULL, 0) < 0)
+                            &req, NULL) < 0)
     return -1;
 
   return 0;
@@ -258,7 +259,7 @@ int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
                               double max_range, double range_res,
                               double frequency)
 {
-  player_ranger_config_t config;
+  player_ranger_config_t config, *resp;
 
   config.min_angle = min_angle;
   config.max_angle = max_angle;
@@ -269,16 +270,16 @@ int playerc_ranger_set_config(playerc_ranger_t *device, double min_angle,
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_RANGER_REQ_SET_CONFIG,
-                            (void*)&config, &config, sizeof(config)) < 0)
+                            (void*)&config, (void**)&resp) < 0)
     return -1;
 
-  device->min_angle = config.min_angle;
-  device->max_angle = config.max_angle;
-  device->resolution = config.resolution;
-  device->max_range = config.max_range;
-  device->range_res = config.range_res;
-  device->frequency = config.frequency;
-
+  device->min_angle = resp->min_angle;
+  device->max_angle = resp->max_angle;
+  device->resolution = resp->resolution;
+  device->max_range = resp->max_range;
+  device->range_res = resp->range_res;
+  device->frequency = resp->frequency;
+  player_ranger_config_t_free(resp);
   return 0;
 }
 
@@ -288,20 +289,20 @@ int playerc_ranger_get_config(playerc_ranger_t *device, double *min_angle,
                               double *max_range, double *range_res,
                               double *frequency)
 {
-  player_ranger_config_t config;
+  player_ranger_config_t *config;
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_RANGER_REQ_GET_CONFIG,
-                            NULL, &config, sizeof(config)) < 0)
+                            NULL, (void**)&config) < 0)
     return(-1);
 
-  device->min_angle = config.min_angle;
-  device->max_angle = config.max_angle;
-  device->resolution = config.resolution;
-  device->max_range = config.max_range;
-  device->range_res = config.range_res;
-  device->frequency = config.frequency;
-
+  device->min_angle = config->min_angle;
+  device->max_angle = config->max_angle;
+  device->resolution = config->resolution;
+  device->max_range = config->max_range;
+  device->range_res = config->range_res;
+  device->frequency = config->frequency;
+  player_ranger_config_t_free(config);
   if (min_angle != NULL)
     *min_angle = device->min_angle;
   if (max_angle != NULL)
