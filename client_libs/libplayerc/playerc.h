@@ -1090,7 +1090,46 @@ int playerc_audio_get_mixer_details(playerc_audio_t *device);
 /** @} */
 /**************************************************************************/
 
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_blackboard blackboard
 
+The blackboard proxy provides an interface to a simple data-store in a similar fashion to a hash-map.
+Data is set and retrieved by using a label. Any player message structure can be stored in the blackboard.
+At this time it is up to the user to pack and unpack the entry data. The xdr functions can be used to do
+this.
+@{ */
+
+/** @brief BlackBoard proxy. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+  /** Function to be called when a key is updated. */
+  void (*on_blackboard_event)(player_blackboard_entry_t);
+} playerc_blackboard_t;
+
+/** @brief Create a blackboard proxy. */
+playerc_blackboard_t *playerc_blackboard_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a blackboard proxy. */
+void playerc_blackboard_destroy(playerc_blackboard_t *device);
+
+/** @brief Subscribe to the blackboard device. */
+int playerc_blackboard_subscribe(playerc_blackboard_t *device, int access);
+
+/** @brief Un-subscribe from the blackboard device. */
+int playerc_blackboard_unsubscribe(playerc_blackboard_t *device);
+
+/** @brief Subscribe to a key. */
+int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, player_blackboard_entry_t* entry);
+
+/** @brief Unsubscribe from a key. */
+int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key);
+
+/** @brief Set an entry value. */
+int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
+
+/** @} */
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
