@@ -76,7 +76,25 @@ driver
 @endverbatim
 
 @par Creating a PostGIS Database
-///TODO: Add documentation
+The PostGIS extension and Postgres database come in a single package in Ubuntu called postgresql-8.1-postgis. PostGIS isn't supported by Postgres-8.2 at the time of writing. After the package has been installed the database should be running and a new user 'postgres' should
+have been added to the system.
+
+After the database has been installed, you will need to install the PL/pgSQL language extension and load the PostGIS definitions.
+- To do this do a 'sudo su' to the postgres user.
+- Change to the directory holding lwpostgis.sql (Should be '/usr/share/postgres-8.1-postgis/lwpostgis.sql')
+- Add the PL/pgSQL language extension: createlang plpgsql template1
+- Load the PostGIS definitions: psql -d template1 -f lwpostgis.sql
+- Create a database: createdb gis
+- Add a user account:
+    - psql gis
+    - CREATE ROLE username WITH LOGIN CREATEDB CREATEROLE;
+- Create a table for your geometry data
+    - CREATE TABLE obstacles_geom(ID int4, NAME varchar(25))
+- Let the PostGIS extension know about your data
+    - SELECT AddGeometryColumn('public', 'obstacles_geom', 'geom', 423, 'LINESTRING', 2)
+
+Each geometry column refers to one layer in the configuration file.
+
 For more information see http://postgis.refractions.net/
 
 @par Database schema
