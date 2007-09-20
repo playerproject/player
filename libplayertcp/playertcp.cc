@@ -573,7 +573,7 @@ PlayerTCP::WriteClient(int cli)
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message (including dynamic data) is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * (msg->GetPayloadSize() + msg->GetDynDataSize()));
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * msg->GetDynDataSize());
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
