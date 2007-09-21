@@ -110,6 +110,13 @@ typedef struct playertcp_conn
   int* kill_flag;
 } playertcp_conn_t;
 
+void
+PlayerTCP::InitGlobals(void)
+{
+  player_globals_init();
+  ErrorInit(9);
+  playerxdr_ftable_init();
+}
 
 PlayerTCP::PlayerTCP()
 {
@@ -187,6 +194,13 @@ PlayerTCP::Listen(int* ports, int num_ports)
   }
 
   return(0);
+}
+
+int
+PlayerTCP::Listen(int port)
+{
+  int p = port;
+  return(this->Listen(&p,1));
 }
 
 // should be called with client_mutex locked
