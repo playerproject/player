@@ -573,7 +573,7 @@ PlayerTCP::WriteClient(int cli)
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message (including dynamic data) is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * msg->GetDynDataSize());
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * msg->GetDataSize());
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
@@ -632,26 +632,32 @@ PlayerTCP::WriteClient(int cli)
 #endif
         }
 
-        // Encode the body first
-        if((encode_msglen =
-            (*packfunc)(client->writebuffer + PLAYERXDR_MSGHDR_SIZE,
+        if (payload)
+          {
+          // Encode the body first
+          if((encode_msglen =
+              (*packfunc)(client->writebuffer + PLAYERXDR_MSGHDR_SIZE,
                         maxsize - PLAYERXDR_MSGHDR_SIZE,
                         payload, PLAYERXDR_ENCODE)) < 0)
-        {
-          PLAYER_WARN4("encoding failed on message from %s:%u with type %s:%u",
+          {
+            PLAYER_WARN4("encoding failed on message from %s:%u with type %s:%u",
                        interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
 #if HAVE_ZLIB_H
-          if(zipped_data)
-          {
-            free(zipped_data);
-            zipped_data=NULL;
-          }
+            if(zipped_data)
+            {
+              free(zipped_data);
+              zipped_data=NULL;
+            }
 #endif
-          client->writebufferlen = 0;
-          delete msg;
-          return(0);
+            client->writebufferlen = 0;
+            delete msg;
+            return(0);
+          }
         }
-
+        else
+        {
+          encode_msglen = 0;
+        }
         // Rewrite the size in the header with the length of the encoded
         // body, then encode the header.
         hdr.size = encode_msglen;
@@ -880,8 +886,7 @@ PlayerTCP::ParseBuffer(int cli)
           hdr.size = decode_msglen;
           if(hdr.addr.interf == PLAYER_PLAYER_CODE)
           {
-            Message* msg = new Message(hdr, this->decode_readbuffer,
-                                       hdr.size, client->queue);
+            Message* msg = new Message(hdr, this->decode_readbuffer, client->queue);
             assert(msg);
             this->HandlePlayerMessage(cli, msg);
             delete msg;
@@ -939,7 +944,7 @@ PlayerTCP::ParseBuffer(int cli)
           // makes another copy of this data that will be cleaned up when that Message
           // class destructs).
           if (decode_msglen > 0)
-            playerxdr_delete_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
+            playerxdr_cleanup_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
         }
       }
     }
@@ -1001,7 +1006,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
             devresp.driver_name_count = 0;
 
             // Make up and push out the reply
-            resp = new Message(resphdr, &devresp, sizeof(devresp));
+            resp = new Message(resphdr, &devresp);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1151,7 +1156,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
             resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
 
             // Make up and push out the reply
-            resp = new Message(resphdr, NULL, 0);
+            resp = new Message(resphdr, NULL);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1186,7 +1191,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
 
           // Make up and push out the reply
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1205,7 +1210,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
             PLAYER_WARN1 ("unknown data mode requsted: %d", req->mode);
           // Make up and push out the reply
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1216,7 +1221,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
         case PLAYER_PLAYER_REQ_DATA:
           // Make up and push out the reply
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1232,7 +1237,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           GlobalTime->GetTimeDouble(&resphdr.timestamp);
           resphdr.size = 0;
           // Make up and push out the reply
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1246,7 +1251,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
       GlobalTime->GetTimeDouble(&resphdr.timestamp);
       resphdr.size = 0;
       // Make up and push out the reply
-      resp = new Message(resphdr, NULL, 0);
+      resp = new Message(resphdr, NULL);
       assert(resp);
       client->queue->Push(*resp);
       delete resp;

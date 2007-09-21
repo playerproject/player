@@ -175,7 +175,7 @@ class Driver
     @param type The message type
     @param subtype The message subtype
     @param src The message body
-    @param len Length of the message body
+    @param deprecated Used to be the length of the message this is now calculated
     @param timestamp Timestamp for the message body (if NULL, then the
     current time will be filled in) */
     void Publish(player_devaddr_t addr,
@@ -183,7 +183,7 @@ class Driver
                  uint8_t type,
                  uint8_t subtype,
                  void* src=NULL,
-                 size_t len=0,
+                 size_t deprecated=0,
                  double* timestamp=NULL);
 
      /** @brief Publish a message via one of this driver's interfaces.
@@ -195,14 +195,14 @@ class Driver
      @param type The message type
      @param subtype The message subtype
      @param src The message body
-     @param len Length of the message body
+     @param deprecated Used to be the length of the message this is now calculated
      @param timestamp Timestamp for the message body (if NULL, then the
      current time will be filled in) */
      void Publish(player_devaddr_t addr, 
                   uint8_t type, 
                   uint8_t subtype,
                   void* src=NULL, 
-                  size_t len=0,
+                  size_t deprecated=0,
                   double* timestamp=NULL);
  
  
@@ -213,19 +213,23 @@ class Driver
     assembled and have a target queue to send to.
     @param queue the target queue.
     @param hdr The message header
-    @param src The message body */
+    @param src The message body 
+    @param copy if set to false the data will be claimed and the caller should no longer use or free it */
     void Publish(QueuePointer &queue,
                  player_msghdr_t* hdr,
-                 void* src);
+                 void* src,
+                 bool copy = true);
 
     /** @brief Publish a message via one of this driver's interfaces.
 
     Use this form of Publish if you already have the message header
     assembled and wish to broadcast the message to all subscribed parties.
     @param hdr The message header
-    @param src The message body */
+    @param src The message body 
+    @param copy if set to false the data will be claimed and the caller should no longer use or free it */ 
     void Publish(player_msghdr_t* hdr,
-                 void* src);
+                 void* src,
+                 bool copy = true);
 
 
     /** @brief Default device address (single-interface drivers) */

@@ -597,13 +597,13 @@ void *playerc_client_read(playerc_client_t *client)
           // If in push mode, handle and return
           void *result = playerc_client_dispatch (client, &header, client->data);
           // Need to ensure that any dynamic data made during unpacking is cleaned up
-          playerxdr_delete_message(client->data, header.addr.interf, header.type, header.subtype);
+          playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
           return result;
         }
         else  // PULL mode, so keep on going
         {
           void *result = playerc_client_dispatch (client, &header, client->data);
-          playerxdr_delete_message(client->data, header.addr.interf, header.type, header.subtype);
+          playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
           if (result == NULL)
             return NULL;
           continue;
@@ -713,11 +713,13 @@ int playerc_client_request(playerc_client_t *client,
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
       }
-      memcpy(rep_data, client->data, rep_header.size);
-      if (rep_data)
+      if (rep_header.size > 0)
       {
-        *rep_data = client->data;
-        client->data = NULL;
+        if (rep_data)
+        {
+          *rep_data = playerxdr_clone_message(client->data,rep_header.addr.interf, rep_header.type, rep_header.subtype);
+        }
+        playerxdr_cleanup_message(client->data,rep_header.addr.interf, rep_header.type, rep_header.subtype);
       }
       return(0);
     }
@@ -779,12 +781,10 @@ int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device)
 int playerc_client_get_devlist(playerc_client_t *client)
 {
   int i;
-  player_device_devlist_t config, *rep_config;
-
-  memset(&config,0,sizeof(config));
+  player_device_devlist_t *rep_config;
 
   if(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEVLIST,
-                            &config, (void**)&rep_config) < 0)
+                            NULL, (void**)&rep_config) < 0)
   {
     PLAYERC_ERR("failed to get response");
     return(-1);

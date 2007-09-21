@@ -397,6 +397,59 @@ void %(typename)s_free(%(typename)s *msg)
   free(msg);
 }""" % {"typename":datatype.typename})
 
+
+  def gen_sizeof(self,datatype):
+    self.headerfile.write("unsigned int %(typename)s_sizeof(%(typename)s *msg);\n" % {"typename":datatype.typename})
+    if datatype.typename not in hasdynamic:
+      self.sourcefile.write("""
+unsigned int %(typename)s_sizeof(%(typename)s *msg)
+{
+  return sizeof(%(typename)s);
+} """ % {"typename":datatype.typename})
+    else:
+      if datatype.HasDynamicArray():
+        itrdec = "unsigned ii;"
+      else:
+        itrdec = ""
+      self.sourcefile.write("""
+unsigned int %(typename)s_sizeof(%(typename)s *msg)
+{
+  %(itrdec)s
+  unsigned int size = 0;
+  if(msg == NULL)
+    return(0);""" % {"typename":datatype.typename, "itrdec" : itrdec} )
+    
+      for member in datatype.members:
+        for var in member.variables:
+          subs = {"varstring" : var.Name, "countvar" : var.countvar, "typestring" : member.typename, "arraysize" : var.arraysize }
+          if var.array:
+            subs["amp"] = ""
+            subs["index"] = "[ii]"
+            if var.countvar in datatype.GetVarNames():
+              subs["arraysize"] = "msg->"+var.countvar
+            else:
+              subs["arraysize"] = var.arraysize
+          else:
+            subs["arraysize"] = 1
+            subs["amp"] = "&"
+            subs["index"] = ""
+          
+          if member.dynamic:
+            if var.array:
+              sourcefile.write("""
+  for(ii = 0; ii < %(arraysize)s; ii++)""" % subs)
+            sourcefile.write("""
+  {size += %(typestring)s_sizeof(&msg->%(varstring)s%(index)s);}""" % subs)
+  
+  
+          else: #plain old variable or array
+            sourcefile.write("""
+  size += sizeof(%(typestring)s)*%(arraysize)s; """ % subs)
+      
+      sourcefile.write("""
+  return(size);
+}""")
+  
     
 if __name__ == '__main__':
 
@@ -520,6 +573,7 @@ if __name__ == '__main__':
     gen.gen_cleanup(current)
     gen.gen_clone(current)
     gen.gen_free(current)    
+    gen.gen_sizeof(current)    
     sourcefile.write('\n')
     
   headerfile.write('\n#ifdef __cplusplus\n}\n#endif\n\n')

@@ -617,12 +617,6 @@ WriteLog::ProcessMessage(QueuePointer & resp_queue,
                            PLAYER_LOG_REQ_SET_WRITE_STATE,
                            this->device_addr))
   {
-    if(hdr->size != sizeof(player_log_set_write_state_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, sizeof(player_log_set_write_state_t));
-      return(-1);
-    }
     player_log_set_write_state_t* sreq = (player_log_set_write_state_t*)data;
 
     if(sreq->state)
@@ -645,13 +639,6 @@ WriteLog::ProcessMessage(QueuePointer & resp_queue,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOG_REQ_GET_STATE, this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(-1);
-    }
-
     player_log_get_state_t greq;
 
     greq.type = PLAYER_LOG_TYPE_WRITE;
@@ -670,12 +657,6 @@ WriteLog::ProcessMessage(QueuePointer & resp_queue,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOG_REQ_SET_FILENAME, this->device_addr))
   {
-    if(hdr->size < sizeof(uint32_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d < %d); ignoring",
-                    hdr->size, sizeof(uint32_t));
-      return(-1);
-    }
     player_log_set_filename_t* freq = (player_log_set_filename_t*)data;
 
     if(this->enable)

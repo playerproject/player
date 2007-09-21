@@ -578,7 +578,7 @@ PlayerUDP::WriteClient(int cli)
       {
         // Make sure there's room in the buffer for the encoded messsage.
         // 4 times the message is a safe upper bound
-        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * (msg->GetPayloadSize() + msg->GetDynDataSize()));
+        size_t maxsize = PLAYERXDR_MSGHDR_SIZE + (4 * msg->GetDataSize());
         if(maxsize > (size_t)(client->writebuffersize))
         {
           // Get at least twice as much space
@@ -816,8 +816,7 @@ PlayerUDP::ParseBuffer(int cli)
           hdr.size = decode_msglen;
           if(hdr.addr.interf == PLAYER_PLAYER_CODE)
           {
-            Message* msg = new Message(hdr, this->decode_readbuffer,
-                                       hdr.size, client->queue);
+            Message* msg = new Message(hdr, this->decode_readbuffer, client->queue);
             assert(msg);
             this->HandlePlayerMessage(cli, msg);
             delete msg;
@@ -874,7 +873,7 @@ PlayerUDP::ParseBuffer(int cli)
           // is cleaned up (putting message bodies into a Message class, as with PutMsg,
           // makes another copy of this data that will be cleaned up when that Message
           // class destructs).
-          playerxdr_delete_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
+          playerxdr_cleanup_message(this->decode_readbuffer, hdr.addr.interf, hdr.type, hdr.subtype);
         }
       }
     }
@@ -936,7 +935,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
             devresp.driver_name_count = 0;
 
             // Make up and push out the reply
-            resp = new Message(resphdr, &devresp, sizeof(devresp));
+            resp = new Message(resphdr, &devresp);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1087,7 +1086,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
             resphdr.type = PLAYER_MSGTYPE_RESP_NACK;
 
             // Make up and push out the reply
-            resp = new Message(resphdr, NULL, 0);
+            resp = new Message(resphdr, NULL);
             assert(resp);
             client->queue->Push(*resp);
             delete resp;
@@ -1122,7 +1121,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
 
           // Make up and push out the reply
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1141,7 +1140,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
             PLAYER_WARN1 ("unknown data mode requsted: %d", req->mode);
           // Make up and push out the reply
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1152,7 +1151,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
         case PLAYER_PLAYER_REQ_DATA:
           // Make up and push out the reply
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1168,7 +1167,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
           GlobalTime->GetTimeDouble(&resphdr.timestamp);
           resphdr.size = 0;
           // Make up and push out the reply
-          resp = new Message(resphdr, NULL, 0);
+          resp = new Message(resphdr, NULL);
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
@@ -1182,7 +1181,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
       GlobalTime->GetTimeDouble(&resphdr.timestamp);
       resphdr.size = 0;
       // Make up and push out the reply
-      resp = new Message(resphdr, NULL, 0);
+      resp = new Message(resphdr, NULL);
       assert(resp);
       client->queue->Push(*resp);
       delete resp;

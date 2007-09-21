@@ -134,9 +134,9 @@ Driver::AddInterface(player_devaddr_t addr)
 void
 Driver::Publish(QueuePointer &queue,
                 player_msghdr_t* hdr,
-                void* src)
+                void* src, bool copy)
 {
-  Message msg(*hdr,src,hdr->size);
+  Message msg(*hdr,src);
   // push onto the given queue, which provides its own locking
   if(!queue->Push(msg))
   {
@@ -148,11 +148,11 @@ Driver::Publish(QueuePointer &queue,
 
 void
 Driver::Publish(player_msghdr_t* hdr,
-                void* src)
+                void* src, bool copy)
 {
   Device* dev;
 
-  Message msg(*hdr,src,hdr->size);
+  Message msg(*hdr,src);
   // lock here, because we're accessing our device's queue list
   this->Lock();
   // push onto each queue subscribed to the given device
@@ -187,7 +187,7 @@ Driver::Publish(player_devaddr_t addr,
                 uint8_t type,
                 uint8_t subtype,
                 void* src,
-                size_t len,
+                size_t deprecated,
                 double* timestamp)
 {
   double t;
@@ -204,7 +204,7 @@ Driver::Publish(player_devaddr_t addr,
   hdr.type = type;
   hdr.subtype = subtype;
   hdr.timestamp = t;
-  hdr.size = len;
+  hdr.size = 0;
 
   this->Publish(queue, &hdr, src);
 }
@@ -214,7 +214,7 @@ Driver::Publish(player_devaddr_t addr,
                 uint8_t type, 
                 uint8_t subtype,
                 void* src, 
-                size_t len,
+                size_t deprecated,
                 double* timestamp)
 {
   double t;
@@ -231,7 +231,7 @@ Driver::Publish(player_devaddr_t addr,
   hdr.type = type;
   hdr.subtype = subtype;
   hdr.timestamp = t;
-  hdr.size = len;
+  hdr.size = 0;
 
   this->Publish(&hdr, src);
 }
@@ -368,12 +368,6 @@ void Driver::ProcessMessages(int maxmsgs)
   {
     player_msghdr * hdr = msg->GetHeader();
     void * data = msg->GetPayload();
-
-    if (msg->GetPayloadSize() != hdr->size)
-    {
-      PLAYER_WARN2("Message Size does not match msg header, %d != %d\n",
-                   msg->GetPayloadSize(), hdr->size);
-    }
 
     // Try the driver's process function first
     // Drivers can override internal message handlers this way

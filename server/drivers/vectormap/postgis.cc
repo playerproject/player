@@ -295,14 +295,6 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                   PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
                                   this->device_addr))
   {
-
-    if (hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                 hdr->size, 0);
-      return -1;
-    }
-
     VectorMapInfoHolder info = RequestVectorMapInfo();
     const player_vectormap_info_t* response = info.Convert();
 
@@ -320,13 +312,6 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                       PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
                                       this->device_addr))
   {
-    if (hdr->size != sizeof(player_vectormap_layer_data_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return -1;
-    }
-
     player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
     LayerDataHolder ldata = RequestLayerData(request->name);
     const player_vectormap_layer_data_t* response = ldata.Convert();
@@ -346,12 +331,6 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                       PLAYER_VECTORMAP_REQ_WRITE_LAYER,
                                       this->device_addr))
   {
-    if (hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return -1;
-    }
     player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
     RequestLayerWrite(request);
 
