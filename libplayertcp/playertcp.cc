@@ -180,7 +180,7 @@ PlayerTCP::Listen(int* ports, int num_ports)
   for(int i=tmp;i<this->num_listeners;i++)
   {
     if((this->listeners[i].fd =
-        create_and_bind_socket(1,this->host,ports[i],
+        create_and_bind_socket(1,this->host,ports+i,
                                PLAYER_TRANSPORT_TCP,200)) < 0)
     {
       PLAYER_ERROR("create_and_bind_socket() failed");

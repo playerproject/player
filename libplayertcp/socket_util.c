@@ -82,7 +82,7 @@
 
 
 int
-create_and_bind_socket(char blocking, unsigned int host, int portnum, 
+create_and_bind_socket(char blocking, unsigned int host, int* portnum, 
                        int playersocktype, int backlog)
 {
   int sock;                   /* socket we're creating */
@@ -105,7 +105,7 @@ create_and_bind_socket(char blocking, unsigned int host, int portnum,
 
   memset(&serverp,0,sizeof(serverp));
   serverp.sin_addr.s_addr = host;
-  serverp.sin_port = htons(portnum);
+  serverp.sin_port = htons(*portnum);
 
   /* 
    * Create the INET socket.  
@@ -182,6 +182,9 @@ create_and_bind_socket(char blocking, unsigned int host, int portnum,
     close(sock);
     return(-1);
   }
+
+  // Copy back the selected port (in case the OS changed it)
+  *portnum = ntohs(serverp.sin_port);
 
   /* if it's TCP, go ahead with listen() */
   if(socktype == SOCK_STREAM)
