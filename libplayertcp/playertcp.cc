@@ -285,6 +285,16 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 }
 
 int
+PlayerTCP::Update(int timeout)
+{
+  int ret;
+  this->Write();
+  if((ret = this->Accept(0)))
+    return(ret);
+  return(this->Read(timeout));
+}
+
+int
 PlayerTCP::Accept(int timeout)
 {
   int num_accepts;
