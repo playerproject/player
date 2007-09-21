@@ -6,7 +6,7 @@ pkgconfig_DATA = playercore.pc playererror.pc
 
 dist_bin_SCRIPTS = playerinterfacegen.py
 
-EXTRA_DIST = playercore.pc.in playererror.pc.in interfaces/ADDING_INTERFACES interfaces/*.def player_interfaces.h interface_table.c
+EXTRA_DIST = playercore.pc.in playererror.pc.in interfaces/ADDING_INTERFACES player_interfaces.h interface_table.c $(shell find $(srcdir)/interfaces -name "*.def")
 
 BUILT_SOURCES = playerconfig.h player_interfaces.h interface_table.c
 CLEANFILES = playerconfig.h playercore.pc playererror.pc
