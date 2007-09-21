@@ -4,10 +4,7 @@ AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir) -fno-strict-aliasing
 pkgconfigdir = $(libdir)/pkgconfig
 pkgincludedir = $(includedir)/player-2.0/libplayerxdr
 
-BUILT_SOURCES =
-if HAVE_PYTHON
-BUILT_SOURCES += playerxdr.c playerxdr.h functiontable_gen.c
-endif
+BUILT_SOURCES = playerxdr.c playerxdr.h functiontable_gen.c
 
 lib_LTLIBRARIES = libplayerxdr.la
 pkgconfig_DATA = playerxdr.pc
@@ -15,15 +12,16 @@ pkginclude_HEADERS = playerxdr.h functiontable.h
 
 dist_bin_SCRIPTS = playerxdrgen.py
 
-EXTRA_DIST = playerxdr.pc.in playerxdr.html playerxdr.c playerxdr.h
+EXTRA_DIST = playerxdr.pc.in playerxdr.html playerxdr.c playerxdr.h functiontable_gen.c
 
 CLEANFILES = playerxdr.pc
 
 functiontable_gen.c: $(top_srcdir)/libplayercore/playerinterfacegen.py $(top_srcdir)/libplayercore/interfaces/*
-	if ! $(top_srcdir)/libplayercore/playerinterfacegen.py --functiontable $(top_srcdir)/libplayercore/interfaces/ > functiontable_gen.c; then rm functiontable_gen.c; fi
+	python $(top_srcdir)/libplayercore/playerinterfacegen.py --functiontable $(top_srcdir)/libplayercore/interfaces/ > $(top_builddir)/libplayerxdr/functiontable_gen.c
+#	if ! $(top_srcdir)/libplayercore/playerinterfacegen.py --functiontable $(top_srcdir)/libplayercore/interfaces/ > functiontable_gen.c; then rm functiontable_gen.c; fi
 
-$(top_srcdir)/libplayercore/player_interfaces.h: $(top_srcdir)/libplayercore/interfaces/*
-	make -C $(top_srcdir)/libplayercore/ player_interfaces.h
+#$(top_srcdir)/libplayercore/player_interfaces.h: $(top_srcdir)/libplayercore/interfaces/*
+#	make -C $(top_srcdir)/libplayercore/ player_interfaces.h
 
 playerxdr.h: playerxdr.c
 
