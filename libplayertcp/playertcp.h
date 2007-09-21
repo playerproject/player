@@ -152,6 +152,7 @@ class PlayerTCP
                             int newsock,
                             bool send_banner,
                             int* kill_flag);
+    int Update(int timeout);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);
