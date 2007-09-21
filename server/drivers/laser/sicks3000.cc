@@ -367,12 +367,6 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
                                  PLAYER_LASER_REQ_GET_CONFIG,
                                  this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(-1);
-    }
     this->Publish(this->device_addr,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
@@ -384,12 +378,6 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
                                  PLAYER_LASER_REQ_GET_GEOM,
                                  this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
     player_laser_geom_t geom;
     memset(&geom, 0, sizeof(geom));
     geom.pose.px = pose[0];

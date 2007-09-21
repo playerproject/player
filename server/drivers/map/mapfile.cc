@@ -291,12 +291,6 @@ int MapFile::ProcessMessage(QueuePointer & resp_queue,
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_MAP_REQ_GET_INFO, 
                            this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, sizeof(player_laser_config_t));
-      return(-1);
-    }
     player_map_info_t info;
     info.scale = this->resolution;
     info.width = this->size_x;

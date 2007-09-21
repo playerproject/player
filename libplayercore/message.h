@@ -122,18 +122,18 @@ message header matches a given signature.
 class Message
 {
   public:
-    /// Create a new message.
+    /// Create a new message. If copy is set to false then the pointer is claimed by the message, 
+    /// otherwise it is copied.
     Message(const struct player_msghdr & Header,
-            const void* data,
-            unsigned int data_size,
-            bool do_deepcopy = true);
+            void* data,
+            bool copy = true);
 
-    /// Create a new message with an associated queue
+    /// Create a new message with an associated queue. If copy is set to false then the pointer is 
+    /// claimed by the message, otherwise it is copied.
     Message(const struct player_msghdr & Header,
-            const void* data,
-            unsigned int data_size,
+            void* data,
             QueuePointer &_queue,
-            bool do_deepcopy = true);
+            bool copy = true);
 
     /// Copy pointers from existing message and increment refcount.
     Message(const Message & rhs);
@@ -159,18 +159,12 @@ class Message
              (hdr->addr.index == addr.index));
     }
 
-    /// GetData from message.
-    void* GetData() {return (void*)Data;};
     /// Get pointer to header.
-    player_msghdr_t * GetHeader() {return reinterpret_cast<player_msghdr_t *> (Data);};
+    player_msghdr_t * GetHeader() {return &Header;};
     /// Get pointer to payload.
-    void* GetPayload() {return (void*)(&Data[sizeof(player_msghdr_t)]);};
-    /// Get Payload size.
-    size_t GetPayloadSize() {return Size - sizeof(player_msghdr_t);};
-    /// Get dynamic data size.
-    size_t GetDynDataSize() {return DynDataSize;};
+    void* GetPayload() {return (void*)Data;};
     /// Size of message data.
-    unsigned int GetSize() {return Size;};
+    unsigned int GetDataSize() {return Header.size;};
     /// Compare type, subtype, device, and device_index.
     bool Compare(Message &other);
     /// Decrement ref count
@@ -187,12 +181,14 @@ class Message
     unsigned int * RefCount;
 
   private:
+    void CreateMessage(const struct player_msghdr & Header,
+            void* data,
+            bool copy = true);
+	  
+    /// message header
+    player_msghdr_t Header;
     /// Pointer to the message data.
     uint8_t * Data;
-    /// Length (in bytes) of Data.
-    unsigned int Size;
-    /// Length (in bytes) of any dynamic data the message uses
-    unsigned int DynDataSize;
     /// Used to lock access to Data.
     pthread_mutex_t * Lock;
     /// Marks if the message is ready to be sent to the client

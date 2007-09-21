@@ -111,9 +111,11 @@ class Device
     /// @param resp_queue Where to push any reply
     /// @param hdr The message header.
     /// @param src The message body (its size is stored in hdr->size).
+    /// @param copy If copy is false then the message will be claimed by the device
     void PutMsg(QueuePointer &resp_queue,
                 player_msghdr_t* hdr,
-                void* src);
+                void* src,
+                bool copy=true);
 
     /// @brief Make a request of another device.
     ///

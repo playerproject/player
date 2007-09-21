@@ -76,6 +76,16 @@ void player_eginterf_data_free(player_eginterf_data *msg)
   player_eginterf_data_cleanup(msg);
   free(msg);
 }
+unsigned int player_eginterf_data_sizeof(player_eginterf_data *msg)
+{
+  
+  unsigned int size = 0;
+  if(msg == NULL)
+    return(0);
+  size += sizeof(uint32_t)*1; 
+  size += sizeof(double)*msg->stuff_count; 
+  return(size);
+}
 
 int xdr_player_eginterf_req (XDR* xdrs, player_eginterf_req * msg)
 {   if(xdr_int(xdrs,&msg->value) != 1)
@@ -121,6 +131,10 @@ void player_eginterf_req_free(player_eginterf_req *msg)
   player_eginterf_req_cleanup(msg);
   free(msg);
 }
+unsigned int player_eginterf_req_sizeof(player_eginterf_req *msg)
+{
+  return sizeof(player_eginterf_req);
+} 
 
 int xdr_player_eginterf_cmd (XDR* xdrs, player_eginterf_cmd * msg)
 {   if(xdr_char(xdrs,&msg->doStuff) != 1)
@@ -166,3 +180,7 @@ void player_eginterf_cmd_free(player_eginterf_cmd *msg)
   player_eginterf_cmd_cleanup(msg);
   free(msg);
 }
+unsigned int player_eginterf_cmd_sizeof(player_eginterf_cmd *msg)
+{
+  return sizeof(player_eginterf_cmd);
+} 

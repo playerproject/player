@@ -61,6 +61,12 @@ typedef int (*player_pack_fn_t) (void* buf, size_t buflen, void* msg, int op);
 typedef unsigned int (*player_copy_fn_t) (void* dest, const void* src);
 /** Generic Prototype for a player message structure cleanup function */
 typedef void (*player_cleanup_fn_t) (void* msg);
+/** Generic Prototype for a player message structure clone function */
+typedef void * (*player_clone_fn_t) (void* msg);
+/** Generic Prototype for a player message structure free function */
+typedef void (*player_free_fn_t) (void* msg);
+/** Generic Prototype for a player message structure sizeof function */
+typedef unsigned int (*player_sizeof_fn_t) (void* msg);
 
 /** Structure to link an (interface,type,subtype) tuple with an XDR
  * pack/unpack function, a deep copy function and a delete function */
@@ -72,6 +78,9 @@ typedef struct
   player_pack_fn_t packfunc;
   player_copy_fn_t copyfunc;
   player_cleanup_fn_t cleanupfunc;
+  player_clone_fn_t clonefunc;
+  player_free_fn_t freefunc;
+  player_sizeof_fn_t sizeoffunc;
 } playerxdr_function_t;
 
 /** @brief Look up the XDR packing function for a given message signature.
@@ -90,6 +99,15 @@ player_copy_fn_t playerxdr_get_copyfunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 player_cleanup_fn_t playerxdr_get_cleanupfunc(uint16_t interf, uint8_t type,
+                                    uint8_t subtype);
+
+player_clone_fn_t playerxdr_get_clonefunc(uint16_t interf, uint8_t type,
+                                    uint8_t subtype);
+
+player_free_fn_t playerxdr_get_freefunc(uint16_t interf, uint8_t type,
+                                    uint8_t subtype);
+
+player_sizeof_fn_t playerxdr_get_sizeoffunc(uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 /** @brief Add an entry to the function table.
@@ -137,18 +155,38 @@ void playerxdr_ftable_init(void);
 unsigned int playerxdr_deepcopy_message(void* src, void* dest, uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
+/** @brief Clones a message structure.
+ *
+ * Allocates memory for and copies the src message. The caller is responsible for player_type_free'ing the returned data
+ *
+ * @param src : The source message
+ *
+ * @returns : The message clone
+ */
+void * playerxdr_clone_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype);
+
 /** @brief Delete a message structure's dynamic elements.
  *
- * Deletes any dynamically allocated data used by a message structure. NOTE:
- * Does not delete the message structure itself, even if it is dynamically
- * allocated. Only data pointed to by the message structure's members will be
- * deleted.
+ * Deletes any dynamically allocated data used by a message structure and then
+ * frees the structure itself
  *
  * @param msg : The message to clean up.
  *
  * @returns: Nothing.
  */
-void playerxdr_delete_message(void* msg, uint16_t interf, uint8_t type,
+void playerxdr_free_message(void* msg, uint16_t interf, uint8_t type,
+                                    uint8_t subtype);
+
+/** @brief Cleanup a message structure's dynamic elements.
+ *
+ * Deletes any dynamically allocated data used by a message structure, It does not 
+ * free the structure itself.
+ *
+ * @param msg : The message to clean up.
+ *
+ * @returns: Nothing.
+ */
+void playerxdr_cleanup_message(void* msg, uint16_t interf, uint8_t type,
                                     uint8_t subtype);
 
 /** @} */

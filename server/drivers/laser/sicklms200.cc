@@ -539,13 +539,6 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
                            PLAYER_LASER_REQ_SET_CONFIG, 
                            this->device_addr))
   {
-    if(hdr->size != sizeof(player_laser_config_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, sizeof(player_laser_config_t));
-      return(-1);
-    }
-
     player_laser_config_t * config = 
             reinterpret_cast<player_laser_config_t *> (data);
     this->intensity = config->intensity;
@@ -589,12 +582,6 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
                                  PLAYER_LASER_REQ_GET_CONFIG,
                                  this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(-1);
-    }
     player_laser_config_t config;
     config.intensity = this->intensity;
     config.resolution = DTOR(this->scan_res)/100;
@@ -624,12 +611,6 @@ SickLMS200::ProcessMessage(QueuePointer & resp_queue,
                                  PLAYER_LASER_REQ_GET_GEOM,
                                  this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
     player_laser_geom_t geom;
     memset(&geom, 0, sizeof(geom));
     geom.pose.px = this->pose[0];

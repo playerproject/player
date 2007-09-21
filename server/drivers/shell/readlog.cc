@@ -1106,15 +1106,6 @@ ReadLog::ProcessMessage(QueuePointer & resp_queue,
                                 PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                                 this->localize_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
-
-
-
     this->Publish(this->localize_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
