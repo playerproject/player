@@ -457,7 +457,7 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     // If multiple tuples/single packet mode enabled...
     if (readppacket == 0)
 	// Publish the WSN data
-	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+	Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
 	         &temp_data, sizeof (player_wsn_data_t), NULL);
     else
 	// If single tuple/multiple packets mode enabled...
@@ -484,7 +484,7 @@ player_wsn_data_t RCore_XBridge::DecodePacket (struct p_packet *pkt)
     	    }
     
 	    // Publish the WSN data (each packet goes separately)
-	    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA,
+	    Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WSN_DATA_STATE,
 	         &temp_data, sizeof (player_wsn_data_t), NULL);
 	}
 
