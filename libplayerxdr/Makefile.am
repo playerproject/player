@@ -27,8 +27,8 @@ $(top_builddir)/libplayercore/player_interfaces.h: $(top_srcdir)/libplayercore/i
 
 playerxdr.h: playerxdr.c
 
-playerxdr.c: playerxdrgen.py $(top_srcdir)/libplayercore/player.h $(top_srcdir)/libplayercore/player_interfaces.h
-	python $(srcdir)/playerxdrgen.py -distro $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h $(top_srcdir)/libplayercore/player_interfaces.h
+playerxdr.c: playerxdrgen.py $(top_srcdir)/libplayercore/player.h $(top_builddir)/libplayercore/player_interfaces.h
+	python $(srcdir)/playerxdrgen.py -distro $(top_srcdir)/libplayercore/player.h playerxdr.c playerxdr.h $(top_builddir)/libplayercore/player_interfaces.h
 
 libplayerxdr_la_SOURCES = playerxdr.c playerxdr.h functiontable.h functiontable.c
 # Can't use libplayererror here because of an unresolved circular build
