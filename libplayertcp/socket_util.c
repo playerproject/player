@@ -90,6 +90,7 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
   int one = 1;
 
   struct sockaddr_in serverp;
+  socklen_t serverp_len;
 
   int socktype;
 
@@ -183,9 +184,6 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
     return(-1);
   }
 
-  // Copy back the selected port (in case the OS changed it)
-  *portnum = ntohs(serverp.sin_port);
-
   /* if it's TCP, go ahead with listen() */
   if(socktype == SOCK_STREAM)
   {
@@ -196,6 +194,19 @@ create_and_bind_socket(char blocking, unsigned int host, int* portnum,
       return(-1);
     }
   }
+
+  memset(&serverp,0,sizeof(serverp));
+  serverp_len = sizeof(serverp);
+
+  // Copy back the selected port (in case the OS changed it)
+  if(getsockname(sock,(struct sockaddr*)&serverp, &serverp_len) == -1)
+    perror("create_and_bind_socket():getsockname failed; continuing.");
+  else
+  {
+    *portnum = ntohs(serverp.sin_port);
+    printf("listening on %d\n", *portnum);
+  }
+
 
   /*
    * return the fd for the newly bound socket 

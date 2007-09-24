@@ -124,6 +124,7 @@ main(int argc, char** argv)
   int port = PLAYERTCP_DEFAULT_PORT;
   int gz_serverid = -1;
   int* ports;
+  int* new_ports;
   int num_ports;
   char* cfgfilename;
 
@@ -194,6 +195,8 @@ main(int argc, char** argv)
   // Collect the list of ports on which we should listen
   ports = (int*)calloc(deviceTable->Size(),sizeof(int));
   assert(ports);
+  new_ports = (int*)calloc(deviceTable->Size(),sizeof(int));
+  assert(new_ports);
   num_ports = 0;
   for(Device* device = deviceTable->GetFirstDevice();
       device;
@@ -212,7 +215,7 @@ main(int argc, char** argv)
       ports[num_ports++] = device->addr.robot;
   }
 
-  if(ptcp->Listen(ports, num_ports) < 0)
+  if(ptcp->Listen(ports, num_ports, new_ports) < 0)
   {
     PLAYER_ERROR("failed to listen on requested TCP ports");
     Cleanup();
@@ -226,12 +229,37 @@ main(int argc, char** argv)
     exit(-1);
   }
 
+  // Go back through and relabel the devices for which ports got
+  // auto-assigned during Listen().
+  // TODO: currently this only works for port=0.  Should add support to
+  // specify multiple auto-assigned ports (e.g., with unique negative numbers).
+  for(int i=0;i<num_ports;i++)
+  {
+    // Get the old port and the new port
+    int oport = ports[i];
+    int nport = new_ports[i];
+
+    // If the old and new ports are the same, nothing to do
+    if(oport == nport)
+      continue;
+
+    // Iterate the device table, looking for devices with the old port
+    for(Device* device = deviceTable->GetFirstDevice();
+        device;
+        device = deviceTable->GetNextDevice(device))
+    {
+      if(device->addr.robot == oport)
+        device->addr.robot = nport;
+    }
+  }
+
   printf("Listening on ports: ");
   for(int i=0;i<num_ports;i++)
-    printf("%d ", ports[i]);
+    printf("%d ", new_ports[i]);
   puts("");
 
   free(ports);
+  free(new_ports);
 
   while(!player_quit)
   {

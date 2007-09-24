@@ -144,7 +144,7 @@ class PlayerTCP
 
     pthread_t thread;
 
-    int Listen(int* ports, int num_ports);
+    int Listen(int* ports, int num_ports, int* new_ports=NULL);
     int Listen(int port);
     QueuePointer AddClient(struct sockaddr_in* cliaddr, 
                             unsigned int local_host,

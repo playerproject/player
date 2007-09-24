@@ -164,7 +164,7 @@ PlayerTCP::~PlayerTCP()
 }
 
 int
-PlayerTCP::Listen(int* ports, int num_ports)
+PlayerTCP::Listen(int* ports, int num_ports, int* new_ports)
 {
   int tmp = this->num_listeners;
   this->num_listeners += num_ports;
@@ -179,14 +179,16 @@ PlayerTCP::Listen(int* ports, int num_ports)
 
   for(int i=tmp;i<this->num_listeners;i++)
   {
+    int p = ports[i];
     if((this->listeners[i].fd =
-        create_and_bind_socket(1,this->host,ports+i,
-                               PLAYER_TRANSPORT_TCP,200)) < 0)
+        create_and_bind_socket(1,this->host,&p,PLAYER_TRANSPORT_TCP,200)) < 0)
     {
       PLAYER_ERROR("create_and_bind_socket() failed");
       return(-1);
     }
-    this->listeners[i].port = ports[i];
+    if(new_ports)
+      new_ports[i] = p;
+    this->listeners[i].port = p;
 
     // set up for later use of poll() to accept() connections on this port
     this->listen_ufds[i].fd = this->listeners[i].fd;
