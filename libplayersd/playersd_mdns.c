@@ -209,7 +209,7 @@ player_sd_register(player_sd_t* sd,
   while(sdErr == kDNSServiceErr_NameConflict)
   {
     sdErr = DNSServiceRegister(&(dev->regRef), 
-                               kDNSServiceFlagsNoAutoRename,
+                               0,
                                0,
                                nameBuf,
                                PLAYER_SD_SERVICENAME,
@@ -228,6 +228,12 @@ player_sd_register(player_sd_t* sd,
       snprintf(nameBuf,sizeof(nameBuf),"%s (%d)",
                name,dev->nameIdx++);
     }
+  }
+
+  if(sdErr != kDNSServiceErr_NoError)
+  {
+    PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
+    return(-1);
   }
 
   // mDNSResponder will return the kDNSServiceErr_NameConflict by callback.
@@ -257,12 +263,6 @@ player_sd_register(player_sd_t* sd,
       // Timed out.  Not necessarily an error.
       break;
     }
-  }
-
-  if(sdErr != kDNSServiceErr_NoError)
-  {
-    PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
-    return(-1);
   }
 
   if(dev->fail)
