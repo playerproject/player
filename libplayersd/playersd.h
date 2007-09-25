@@ -47,8 +47,11 @@
 extern "C" {
 #endif
 
+#include <libplayercore/player.h>
+
 #define PLAYER_SD_SERVICENAME "_player2._tcp"
 #define PLAYER_SD_NAME_MAXLEN 256
+#define PLAYER_SD_TXT_MAXLEN 256
 
 // A device, represented by its name and address
 typedef struct
@@ -81,6 +84,12 @@ void player_sd_fini(player_sd_t* sd);
 int player_sd_register(player_sd_t* sd, 
                        const char* name, 
                        player_devaddr_t addr);
+
+// Unregister (terminate) the named device.  Returns 0 on success, non-zero 
+// on error.  Name may be automatically changed in case of conflict.
+int player_sd_unregister(player_sd_t* sd, 
+                         const char* name, 
+                         player_devaddr_t addr);
 
 // Prototype for a callback function that can be invoked when devices are
 // added or removed.
