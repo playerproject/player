@@ -83,8 +83,7 @@ void player_sd_fini(player_sd_t* sd);
 // Name may be automatically changed in case of conflict.
 int player_sd_register(player_sd_t* sd, 
                        const char* name, 
-                       player_devaddr_t addr,
-                       int timeout);
+                       player_devaddr_t addr);
 
 // Unregister (terminate) the named device.  Returns 0 on success, non-zero 
 // on error.  Name may be automatically changed in case of conflict.
