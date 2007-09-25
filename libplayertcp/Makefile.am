@@ -26,5 +26,5 @@ libplayerudp_la_SOURCES = playerudp.cc playerudp.h
 libplayerudp_la_LIBADD = $(top_builddir)/replace/*.lo
 libplayerudp_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la $(top_builddir)/libplayerxdr/libplayerxdr.la
 
-pkgincludedir = $(includedir)/player-2.0/libplayertcp
+pkgincludedir = $(includedir)/player-$(PLAYER_MAJOR_VERSION).$(PLAYER_MINOR_VERSION)/libplayertcp
 pkginclude_HEADERS = playertcp.h playerudp.h

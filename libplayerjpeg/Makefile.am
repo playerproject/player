@@ -1,7 +1,7 @@
 AM_CPPFLAGS = -I$(top_srcdir) -Wall
 lib_LTLIBRARIES =
 
-pkgincludedir = $(includedir)/player-2.0/libplayerjpeg
+pkgincludedir = $(includedir)/player-$(PLAYER_MAJOR_VERSION).$(PLAYER_MINOR_VERSION)/libplayerjpeg
 pkginclude_HEADERS =
 
 if INCLUDE_JPEG

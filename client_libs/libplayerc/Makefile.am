@@ -78,5 +78,5 @@ endif
 
 
 
-libplayerc_includedir = $(includedir)/player-2.0/libplayerc
+libplayerc_includedir = $(includedir)/player-$(PLAYER_MAJOR_VERSION).$(PLAYER_MINOR_VERSION)/libplayerc
 libplayerc_include_HEADERS = playerc.h playercconfig.h

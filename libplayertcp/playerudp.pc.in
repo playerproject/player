@@ -7,4 +7,4 @@ Description: Player UDP messaging library - part of the Player/Stage Project
 Version: @VERSION@
 Requires: playererror playercore
 Libs: -L${prefix}/lib -lplayerudp
-Cflags: -I${prefix}/include/player-2.0
+Cflags: -I${prefix}/include/player-@PLAYER_MAJOR_VERSION@.@PLAYER_MINOR_VERSION@
