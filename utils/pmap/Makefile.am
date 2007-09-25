@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs -I$(top_srcdir)
+AM_CPPFLAGS = -Wall -g -I$(top_builddir)/client_libs -I$(top_srcdir)/client_libs -I$(top_srcdir)
 
 if WITH_GSL
 #if INCLUDE_GL

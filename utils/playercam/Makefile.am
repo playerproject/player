@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/client_libs @GTK_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_builddir)/client_libs -I$(top_srcdir)/client_libs @GTK_CFLAGS@
 
 bin_PROGRAMS =
 

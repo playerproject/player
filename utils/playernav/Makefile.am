@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs -I$(top_srcdir) @GNOMECANVAS_CFLAGS@ -fno-strict-aliasing
+AM_CPPFLAGS = -Wall -g -I$(top_builddir)/client_libs -I$(top_srcdir)/client_libs -I$(top_srcdir) @GNOMECANVAS_CFLAGS@ -fno-strict-aliasing
 
 if WITH_GNOMECANVAS
 bin_PROGRAMS = playernav

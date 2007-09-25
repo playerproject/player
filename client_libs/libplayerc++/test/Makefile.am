@@ -1,4 +1,5 @@
-AM_CPPFLAGS = -I$(top_srcdir) \
+AM_CPPFLAGS = -I$(top_builddir)/client_libs \
+              -I$(top_srcdir) \
               -I$(top_srcdir)/client_libs \
               -Wall -g $(PLAYERCC_EXTRA_CFLAGS)
 

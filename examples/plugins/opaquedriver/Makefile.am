@@ -1,5 +1,6 @@
 PLAYERC_CFLAGS = -I$(top_srcdir) \
-                 -I$(top_srcdir)/client_libs/
+                 -I$(top_builddir)/client_libs/ \
+		 -I$(top_srcdir)/client_libs/
 
 PLAYERC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
                  -L${top_builddir}/libplayercore \

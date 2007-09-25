@@ -6,7 +6,8 @@ if INCLUDE_PLAYERCC
 endif
 
 #pthread goes last because it needs to define some stuff
-AM_CPPFLAGS = -I$(top_srcdir) \
+AM_CPPFLAGS = -I$(top_builddir)/client_libs \
+              -I$(top_srcdir) \
               -I$(top_srcdir)/client_libs \
               -Wall -g $(PLAYERCC_EXTRA_CFLAGS)
 
