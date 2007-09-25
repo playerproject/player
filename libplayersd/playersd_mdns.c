@@ -151,6 +151,7 @@ player_sd_register(player_sd_t* sd,
   int i,j;
   player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
   player_sd_mdns_dev_t* dev;
+  char nameBuf[PLAYER_SD_NAME_MAXLEN];
 
   // Find a spot for this device
   for(i=0;i<mdns->mdnsDevs_len;i++)
@@ -194,39 +195,44 @@ player_sd_register(player_sd_t* sd,
     return(-1);
   }
 
-  if((sdErr = DNSServiceRegister(&(dev->regRef), 
-                                 0,
-                                 0,
-                                 name,
-                                 PLAYER_SD_SERVICENAME,
-                                 NULL,
-                                 NULL,
-                                 addr.robot,
-                                 TXTRecordGetLength(&(dev->txtRecord)),
-                                 TXTRecordGetBytesPtr(&(dev->txtRecord)),
-                                 registerCB,
-                                 (void*)dev)) != kDNSServiceErr_NoError)
+  memset(nameBuf,0,sizeof(nameBuf));
+  strncpy(nameBuf,name,sizeof(nameBuf)-1);
+  sdErr = kDNSServiceErr_NameConflict;
+
+  while(sdErr == kDNSServiceErr_NameConflict)
+  {
+    sdErr = DNSServiceRegister(&(dev->regRef), 
+                               0,
+                               0,
+                               nameBuf,
+                               PLAYER_SD_SERVICENAME,
+                               NULL,
+                               NULL,
+                               addr.robot,
+                               TXTRecordGetLength(&(dev->txtRecord)),
+                               TXTRecordGetBytesPtr(&(dev->txtRecord)),
+                               registerCB,
+                               (void*)dev);
+
+    if(sdErr == kDNSServiceErr_NameConflict)
+    {
+      // Pick a new name
+      memset(nameBuf,0,sizeof(nameBuf));
+      snprintf(nameBuf,sizeof(nameBuf),"%s (%d)",
+               name,dev->nameIdx++);
+    }
+  }
+
+  if(sdErr != kDNSServiceErr_NoError)
   {
     PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
     return(-1);
   }
-
-  while(!dev->valid && !dev->fail)
-  {
-    if((sdErr = DNSServiceProcessResult(dev->regRef)) != kDNSServiceErr_NoError)
-    {
-      PLAYER_ERROR1("DNSServiceProcessResult returned error: %d", sdErr);
-      return(-1);
-    }
-  }
-
-  if(dev->fail)
-  {
-    PLAYER_ERROR1("Registration of %s failed", name);
-    return(-1);
-  }
   else
   {
+    if(strcmp(nameBuf,name))
+      PLAYER_WARN2("Changing service name of %s to %s\n",
+                   name,nameBuf);
     PLAYER_MSG1(2,"Registration of %s successful", name);
     return(0);
   }
@@ -241,9 +247,15 @@ registerCB(DNSServiceRef sdRef,
            const char *domain, 
            void *context)
 {
+  // It seems that Avahi returns the NameConflict immediately from
+  // DNSServiceRegister(), and that mDNSResponder never complains about it,
+  // even in the callback (!).  However, we have to keep this callback
+  // defined, because Avahi will abort if we pass NULL.
+#if 0
   DNSServiceErrorType sdErr;
   player_sd_mdns_dev_t* dev = (player_sd_mdns_dev_t*)context;
-  char nameBuf[PLAYER_SD_NAME_MAXLEN];
+
+  puts("registerCB");
 
   if(errorCode == kDNSServiceErr_NoError)
   {
@@ -285,4 +297,5 @@ registerCB(DNSServiceRef sdRef,
     PLAYER_ERROR1("registerCB received error: %d", errorCode);
     dev->fail = 1;
   }
+#endif
 }
