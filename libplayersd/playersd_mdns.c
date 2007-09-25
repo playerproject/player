@@ -147,8 +147,7 @@ player_sd_fini(player_sd_t* sd)
 int 
 player_sd_register(player_sd_t* sd, 
                    const char* name, 
-                   player_devaddr_t addr,
-                   int timeout)
+                   player_devaddr_t addr)
 {
   DNSServiceErrorType sdErr;
   char recordval[PLAYER_SD_TXT_MAXLEN];
@@ -156,8 +155,6 @@ player_sd_register(player_sd_t* sd,
   player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
   player_sd_mdns_dev_t* dev;
   char nameBuf[PLAYER_SD_NAME_MAXLEN];
-  //struct pollfd ufds[1];
-  //int numready;
 
   // Find a spot for this device
   for(i=0;i<mdns->mdnsDevs_len;i++)
@@ -235,42 +232,6 @@ player_sd_register(player_sd_t* sd,
     PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
     return(-1);
   }
-#if 0
-  // mDNSResponder will return the kDNSServiceErr_NameConflict by callback.
-  // Unfortunately, Avahi never invokes our callback (!).  So we poll
-  // with timeout.
-  while(!dev->valid && !dev->fail)
-  {
-    ufds[0].fd = DNSServiceRefSockFD(dev->regRef);
-    ufds[0].events = POLLIN;
-    if((numready = poll(ufds,1,timeout)) < 0)
-    {
-      if(errno == EAGAIN)
-        continue;
-      else
-      {
-        PLAYER_ERROR1("poll returned error: %s\n", strerror(errno));
-        DNSServiceRefDeallocate(dev->regRef);
-        return(-1);
-      }
-    }
-    else if(numready > 0)
-    {
-      DNSServiceProcessResult(dev->regRef);
-    }
-    else
-    {
-      // Timed out.  Not necessarily an error.
-      break;
-    }
-  }
-
-  if(dev->fail)
-  {
-    PLAYER_ERROR1("Registration of %s failed", name);
-    return(-1);
-  }
-#endif
   else
   {
     dev->valid = 1;
@@ -291,51 +252,5 @@ registerCB(DNSServiceRef sdRef,
            const char *domain, 
            void *context)
 {
-#if 0
-  DNSServiceErrorType sdErr;
-  player_sd_mdns_dev_t* dev = (player_sd_mdns_dev_t*)context;
-  char nameBuf[PLAYER_SD_NAME_MAXLEN];
-
-  printf("registerCB: %d\n", errorCode);
-  if(errorCode == kDNSServiceErr_NoError)
-  {
-    dev->valid = 1;
-  }
-  else if(errorCode == kDNSServiceErr_NameConflict)
-  {
-    // Pick a new name
-    memset(nameBuf,0,sizeof(nameBuf));
-    snprintf(nameBuf,sizeof(nameBuf),"%s(%d)",
-             dev->sdDev.name,dev->nameIdx++);
-
-    PLAYER_WARN2("Renaming device %s to %s", 
-                 dev->sdDev.name, nameBuf);
-    
-    // Close the old connection
-    DNSServiceRefDeallocate(dev->regRef);
-
-    // Redo the registration
-    if((sdErr = DNSServiceRegister(&(dev->regRef), 
-                                   0,
-                                   0,
-                                   nameBuf,
-                                   PLAYER_SD_SERVICENAME,
-                                   NULL,
-                                   NULL,
-                                   dev->sdDev.addr.robot,
-                                   TXTRecordGetLength(&(dev->txtRecord)),
-                                   TXTRecordGetBytesPtr(&(dev->txtRecord)),
-                                   registerCB,
-                                   (void*)dev)) != kDNSServiceErr_NoError)
-    {
-      PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
-      dev->fail = 1;
-    }
-  }
-  else
-  {
-    PLAYER_ERROR1("registerCB received error: %d", errorCode);
-    dev->fail = 1;
-  }
-#endif
+  // Don't need to do anything here
 }
