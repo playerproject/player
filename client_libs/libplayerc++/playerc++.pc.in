@@ -7,4 +7,4 @@ Description: C++ wrapper for libplayerc
 Version: @VERSION@
 Requires: playerxdr playerc
 Libs: -L${prefix}/lib -lplayerc++ @PLAYERCC_LIB@
-Cflags: -I${prefix}/include/player-2.0 @PLAYERCC_EXTRA_CFLAGS@
+Cflags: -I${prefix}/include/player-@PLAYER_MAJOR_VERSION@.@PLAYER_MINOR_VERSION@ @PLAYERCC_EXTRA_CFLAGS@

@@ -2,14 +2,14 @@ AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_src
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = playercore.pc playererror.pc
+pkgconfig_DATA = playercore.pc playererror.pc playerutils.pc
 
 dist_bin_SCRIPTS = playerinterfacegen.py
 
-EXTRA_DIST = playercore.pc.in playererror.pc.in interfaces/ADDING_INTERFACES player_interfaces.h interface_table.c $(shell find $(srcdir)/interfaces -name "*.def")
+EXTRA_DIST = playercore.pc.in playererror.pc.in playerutils.pc.in interfaces/ADDING_INTERFACES player_interfaces.h interface_table.c $(shell find $(srcdir)/interfaces -name "*.def")
 
 BUILT_SOURCES = playerconfig.h player_interfaces.h interface_table.c
-CLEANFILES = playerconfig.h playercore.pc playererror.pc
+CLEANFILES = playerconfig.h playercore.pc playererror.pc playerutils.pc
 
 lib_LTLIBRARIES = libplayererror.la libplayerutils.la libplayercore.la
 
@@ -36,7 +36,7 @@ libplayerutils_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir)
 libplayerutils_la_DEPENDENCIES = interface_table.c
 
 
-coreincludedir = $(includedir)/player-2.0/libplayercore
+coreincludedir = $(includedir)/player-$(PLAYER_MAJOR_VERSION).$(PLAYER_MINOR_VERSION)/libplayercore
 coreinclude_HEADERS = configfile.h \
                       device.h \
                       devicetable.h \

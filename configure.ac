@@ -4,6 +4,17 @@ dnl Initialize autoconf with name and version of package to be built.
 dnl PACKAGE and VERSION will be so defined in <config.h>.
 AC_INIT(player,2.1.0)
 
+dnl Player version information.  In an ideal world, we would just declare
+dnl the following 3 values, then reuse them throughout.  Unfortunately,
+dnl the substitution gets ugly if we use these in AC_INIT or
+dnl PLAYER_VERSION_INFO.  So, just be damned sure that they all agree!
+PLAYER_MAJOR_VERSION="2"
+PLAYER_MINOR_VERSION="1"
+PLAYER_MICRO_VERSION="0"
+AC_SUBST(PLAYER_MAJOR_VERSION)
+AC_SUBST(PLAYER_MINOR_VERSION)
+AC_SUBST(PLAYER_MICRO_VERSION)
+
 dnl this is used by libtool to assign version numbers
 PLAYER_VERSION_INFO="-version-number 2:1:0"
 AC_SUBST(PLAYER_VERSION_INFO)
@@ -500,6 +511,7 @@ AC_OUTPUT(Makefile
           libplayercore/bindings/java/Makefile
           libplayercore/playercore.pc
           libplayercore/playererror.pc
+          libplayercore/playerutils.pc
           libplayerxdr/Makefile
           libplayerxdr/playerxdr.pc
           libplayertcp/Makefile

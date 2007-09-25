@@ -29,5 +29,5 @@ if INCLUDE_JPEG
 libplayerdrivers_la_LIBADD += $(top_builddir)/libplayerjpeg/libplayerjpeg.la
 endif
 
-pkgincludedir = $(includedir)/player-2.0/libplayerdrivers
+pkgincludedir = $(includedir)/player-$(PLAYER_MAJOR_VERSION).$(PLAYER_MINOR_VERSION)/libplayerdrivers
 pkginclude_HEADERS = driverregistry.h

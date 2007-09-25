@@ -2,7 +2,7 @@ AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir) -fno-strict-aliasing
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
-pkgincludedir = $(includedir)/player-2.0/libplayerxdr
+pkgincludedir = $(includedir)/player-$(PLAYER_MAJOR_VERSION).$(PLAYER_MINOR_VERSION)/libplayerxdr
 
 BUILT_SOURCES = playerxdr.c playerxdr.h functiontable_gen.c
 
