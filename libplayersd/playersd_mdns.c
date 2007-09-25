@@ -44,6 +44,9 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <errno.h>
+
+#include <sys/poll.h>
 
 #include <dns_sd.h>
 
@@ -144,7 +147,8 @@ player_sd_fini(player_sd_t* sd)
 int 
 player_sd_register(player_sd_t* sd, 
                    const char* name, 
-                   player_devaddr_t addr)
+                   player_devaddr_t addr,
+                   int timeout)
 {
   DNSServiceErrorType sdErr;
   char recordval[PLAYER_SD_TXT_MAXLEN];
@@ -152,6 +156,8 @@ player_sd_register(player_sd_t* sd,
   player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
   player_sd_mdns_dev_t* dev;
   char nameBuf[PLAYER_SD_NAME_MAXLEN];
+  struct pollfd ufds[1];
+  int numready;
 
   // Find a spot for this device
   for(i=0;i<mdns->mdnsDevs_len;i++)
@@ -199,10 +205,11 @@ player_sd_register(player_sd_t* sd,
   strncpy(nameBuf,name,sizeof(nameBuf)-1);
   sdErr = kDNSServiceErr_NameConflict;
 
+  // Avahi can return the kDNSServiceErr_NameConflict immediately.
   while(sdErr == kDNSServiceErr_NameConflict)
   {
     sdErr = DNSServiceRegister(&(dev->regRef), 
-                               0,
+                               kDNSServiceFlagsNoAutoRename,
                                0,
                                nameBuf,
                                PLAYER_SD_SERVICENAME,
@@ -223,9 +230,44 @@ player_sd_register(player_sd_t* sd,
     }
   }
 
+  // mDNSResponder will return the kDNSServiceErr_NameConflict by callback.
+  // Unfortunately, Avahi never invokes our callback (!).  So we poll
+  // with timeout.
+  while(!dev->valid && !dev->fail)
+  {
+    ufds[0].fd = DNSServiceRefSockFD(dev->regRef);
+    ufds[0].events = POLLIN;
+    if((numready = poll(ufds,1,timeout)) < 0)
+    {
+      if(errno == EAGAIN)
+        continue;
+      else
+      {
+        PLAYER_ERROR1("poll returned error: %s\n", strerror(errno));
+        DNSServiceRefDeallocate(dev->regRef);
+        return(-1);
+      }
+    }
+    else if(numready > 0)
+    {
+      DNSServiceProcessResult(dev->regRef);
+    }
+    else
+    {
+      // Timed out.  Not necessarily an error.
+      break;
+    }
+  }
+
   if(sdErr != kDNSServiceErr_NoError)
   {
     PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
+    return(-1);
+  }
+
+  if(dev->fail)
+  {
+    PLAYER_ERROR1("Registration of %s failed", name);
     return(-1);
   }
   else
@@ -247,16 +289,11 @@ registerCB(DNSServiceRef sdRef,
            const char *domain, 
            void *context)
 {
-  // It seems that Avahi returns the NameConflict immediately from
-  // DNSServiceRegister(), and that mDNSResponder never complains about it,
-  // even in the callback (!).  However, we have to keep this callback
-  // defined, because Avahi will abort if we pass NULL.
-#if 0
   DNSServiceErrorType sdErr;
   player_sd_mdns_dev_t* dev = (player_sd_mdns_dev_t*)context;
+  char nameBuf[PLAYER_SD_NAME_MAXLEN];
 
-  puts("registerCB");
-
+  printf("registerCB: %d\n", errorCode);
   if(errorCode == kDNSServiceErr_NoError)
   {
     dev->valid = 1;
@@ -297,5 +334,4 @@ registerCB(DNSServiceRef sdRef,
     PLAYER_ERROR1("registerCB received error: %d", errorCode);
     dev->fail = 1;
   }
-#endif
 }
