@@ -46,7 +46,7 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <sys/poll.h>
+//#include <sys/poll.h>
 
 #include <dns_sd.h>
 
@@ -156,8 +156,8 @@ player_sd_register(player_sd_t* sd,
   player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
   player_sd_mdns_dev_t* dev;
   char nameBuf[PLAYER_SD_NAME_MAXLEN];
-  struct pollfd ufds[1];
-  int numready;
+  //struct pollfd ufds[1];
+  //int numready;
 
   // Find a spot for this device
   for(i=0;i<mdns->mdnsDevs_len;i++)
@@ -235,7 +235,7 @@ player_sd_register(player_sd_t* sd,
     PLAYER_ERROR1("DNSServiceRegister returned error: %d", sdErr);
     return(-1);
   }
-
+#if 0
   // mDNSResponder will return the kDNSServiceErr_NameConflict by callback.
   // Unfortunately, Avahi never invokes our callback (!).  So we poll
   // with timeout.
@@ -270,8 +270,10 @@ player_sd_register(player_sd_t* sd,
     PLAYER_ERROR1("Registration of %s failed", name);
     return(-1);
   }
+#endif
   else
   {
+    dev->valid = 1;
     if(strcmp(nameBuf,name))
       PLAYER_WARN2("Changing service name of %s to %s\n",
                    name,nameBuf);
@@ -289,6 +291,7 @@ registerCB(DNSServiceRef sdRef,
            const char *domain, 
            void *context)
 {
+#if 0
   DNSServiceErrorType sdErr;
   player_sd_mdns_dev_t* dev = (player_sd_mdns_dev_t*)context;
   char nameBuf[PLAYER_SD_NAME_MAXLEN];
@@ -334,4 +337,5 @@ registerCB(DNSServiceRef sdRef,
     PLAYER_ERROR1("registerCB received error: %d", errorCode);
     dev->fail = 1;
   }
+#endif
 }
