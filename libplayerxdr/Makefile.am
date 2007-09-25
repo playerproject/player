@@ -23,7 +23,7 @@ functiontable_gen.c: $(top_srcdir)/libplayercore/playerinterfacegen.py $(top_src
 # This target duplicates one in libplayercore/Makefile.am, but we need it
 # here because libplayerxdr gets built prior to libplayercore
 $(top_builddir)/libplayercore/player_interfaces.h: $(top_srcdir)/libplayercore/interfaces/* $(top_srcdir)/libplayercore/playerinterfacegen.py
-	make -C $(top_srcdir)/libplayercore/ player_interfaces.h
+	python $(top_srcdir)/libplayercore/playerinterfacegen.py $(top_srcdir)/libplayercore/interfaces > $(top_builddir)/libplayercore/player_interfaces.h
 
 playerxdr.h: playerxdr.c
 

@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs -I$(top_srcdir) @GTK_CFLAGS@
+AM_CPPFLAGS = -Wall -g -I$(top_builddir)/client_libs -I$(top_srcdir)/client_libs -I$(top_srcdir) @GTK_CFLAGS@
 
 if WITH_GTK
 bin_PROGRAMS = playervcr

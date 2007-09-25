@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -g -I$(top_srcdir)/client_libs -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@ -fno-strict-aliasing
+AM_CPPFLAGS = -Wall -g -I$(top_builddir)/client_libs -I$(top_srcdir)/client_libs -I$(top_srcdir) @GDK_PIXBUF_CFLAGS@ -fno-strict-aliasing
 
 if WITH_GDKPIXBUF
 bin_PROGRAMS = playerwritemap

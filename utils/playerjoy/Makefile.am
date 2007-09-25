@@ -4,6 +4,7 @@ if INCLUDE_PLAYERCC
 endif
 
 PLAYERCC_CFLAGS = -I$(top_srcdir) \
+                  -I$(top_builddir)/client_libs/ \
                   -I$(top_srcdir)/client_libs/ \
                   $(PLAYERCC_EXTRA_CFLAGS)
 
