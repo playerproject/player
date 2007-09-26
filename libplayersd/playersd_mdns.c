@@ -358,7 +358,10 @@ player_sd_browse(player_sd_t* sd,
     while((timeout < 0.0) || ((currtime - starttime) < timeout))
     {
       // Set up to poll on the DNSSD socket
-      polltime = (int)rint((timeout - (currtime - starttime)) * 1e3);
+      if(timeout > 0.0)
+        polltime = (int)rint((timeout - (currtime - starttime)) * 1e3);
+      else
+        polltime = -1;
       ufds[0].fd = DNSServiceRefSockFD(mdns->browseRef);
       ufds[0].events = POLLIN;
       if((numready = poll(ufds,1,polltime)) < 0)
