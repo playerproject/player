@@ -1,6 +1,6 @@
 SUBDIRS = . test bindings doc
 
-AM_CPPFLAGS = -Wall -I$(top_srcdir) -g -I$(top_builddir)/client_libs
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -g -I$(top_builddir)/client_libs -fno-strict-aliasing
 
 # TODO: figure out how to handle the jpeg wrappers
 # -I$(top_srcdir)/client_libs/libplayerpacket
