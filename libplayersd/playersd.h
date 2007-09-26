@@ -65,6 +65,7 @@ extern "C" {
 #include <libplayercore/player.h>
 
 #define PLAYER_SD_SERVICENAME "_player2._tcp"
+#define PLAYER_SD_DEVICE_TXTNAME "device"
 #define PLAYER_SD_NAME_MAXLEN 256
 #define PLAYER_SD_TXT_MAXLEN 256
 
@@ -77,6 +78,8 @@ typedef struct
   char name[PLAYER_SD_NAME_MAXLEN];
   // Is the address valid?
   uint8_t addr_valid;
+  // Did address resolution fail?
+  uint8_t addr_fail;
   // Address of the device
   player_devaddr_t addr;
 } player_sd_dev_t;

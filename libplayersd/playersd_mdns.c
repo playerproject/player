@@ -61,6 +61,7 @@
 
 #include <libplayercore/error.h>
 #include <libplayercore/interface_util.h>
+#include <libplayercore/addr_util.h>
 
 #include <replace/replace.h> // for poll(2)
 
@@ -426,6 +427,8 @@ browseCB(DNSServiceRef sdRef,
   player_sd_dev_t* sddev;
   DNSServiceRef resolveRef;
   DNSServiceErrorType sdErr;
+  struct pollfd ufds[1];
+  int numready;
 
   // Got a browse event.  
   if(flags & kDNSServiceFlagsAdd)
@@ -441,10 +444,10 @@ browseCB(DNSServiceRef sdRef,
     // Record the name
     sddev->valid = 1;
     sddev->addr_valid = 0;
+    sddev->addr_fail = 0;
     memset(sddev->name,0,sizeof(sddev->name));
     strncpy(sddev->name,serviceName,sizeof(sddev->name)-1);
 
-    printf("Resolving %s\n", serviceName);
     // Resolve its address
     if((sdErr = DNSServiceResolve(&resolveRef,
                                   0,
@@ -459,16 +462,30 @@ browseCB(DNSServiceRef sdRef,
       return;
     }
 
-    puts("Calling DNSServiceProcessResult");
-    
-    // Wait for the resolution response.
-    // TODO: test whether this can block for a long time
-    if((sdErr = DNSServiceProcessResult(resolveRef)) != kDNSServiceErr_NoError)
+    ufds[0].fd = DNSServiceRefSockFD(resolveRef);
+    ufds[0].events = POLLIN;
+    while(!sddev->addr_valid && !sddev->addr_fail)
     {
-      PLAYER_ERROR1("DNSServiceProcessResult returned error: %d\n", sdErr);
-      return;
+      if((numready = poll(ufds,1,-1)) < 0)
+      {
+        if(errno == EAGAIN)
+          continue;
+        else
+        {
+          PLAYER_ERROR1("poll returned error: %s", strerror(errno));
+          sddev->addr_fail = 1;
+        }
+      }
+      else if(numready > 0)
+      {
+        if((sdErr = DNSServiceProcessResult(resolveRef)) != 
+           kDNSServiceErr_NoError)
+        {
+          PLAYER_ERROR1("DNSServiceProcessResult returned error: %d\n", sdErr);
+          return;
+        }
+      }
     }
-    puts("done");
   }
   else
   {
@@ -479,10 +496,7 @@ browseCB(DNSServiceRef sdRef,
     }
   }
 
-  puts("***************************************************");
-  puts("Device cache:");
   player_sd_printcache(sd);
-  puts("***************************************************");
 }
 
 void 
@@ -497,6 +511,55 @@ resolveCB(DNSServiceRef sdRef,
           const char *txtRecord, 
           void *context)
 {
+  player_sd_dev_t* sddev = (player_sd_dev_t*)context;
+  const char* value;
+  uint8_t value_len;
+  char* colon;
+  char buf[PLAYER_SD_TXT_MAXLEN];
+
   // Handle resolution result
-  printf("resolveCB: %s\n", fullname);
+  if(errorCode == kDNSServiceErr_NoError)
+  {
+    // Fill in the address info
+    if(hostname_to_packedaddr(&(sddev->addr.host), hosttarget) != 0)
+    {
+      PLAYER_ERROR1("Failed to resolve IP address for host %s\n",
+                    hosttarget);
+      sddev->addr_fail = 1;
+      return;
+    }
+    sddev->addr.robot = port;
+    if(!(value = (const char*)TXTRecordGetValuePtr(txtLen,
+                                                   txtRecord,
+                                                   PLAYER_SD_DEVICE_TXTNAME,
+                                                   &value_len)))
+    {
+      PLAYER_ERROR1("Failed to find TXT info for service %s\n", sddev->name);
+      sddev->addr_fail = 1;
+      return;
+    }
+    if(!(colon = strchr(value,':')) ||
+       ((colon-value) <= 0) ||
+       ((value_len - (colon-value+1)) <= 0))
+    {
+      PLAYER_ERROR2("Failed to parse TXT info \"%s\" for service %s\n",
+                    value, sddev->name);
+      sddev->addr_fail = 1;
+      return;
+    }
+    memset(buf,0,sizeof(buf));
+    strncpy(buf,value,(colon-value));
+    sddev->addr.interf = str_to_interf(buf);
+
+    memset(buf,0,sizeof(buf));
+    strncpy(buf,colon,(value_len-(colon-value+1)));
+    sddev->addr.index = atoi(buf);
+
+    sddev->addr_valid = 1;
+  }
+  else
+  {
+    // Something went wrong.
+    sddev->addr_fail = 1;
+  }
 }
