@@ -102,6 +102,8 @@ typedef struct
   size_t mdnsDevs_len;
   // User's browse callback
   player_sd_browse_callback_fn_t callb;
+  // Last set of flags that we got in the browse callback
+  DNSServiceFlags flags;
 } player_sd_mdns_t;
 
 static void registerCB(DNSServiceRef sdRef, 
@@ -149,6 +151,7 @@ player_sd_init(void)
   mdns->mdnsDevs = NULL;
   mdns->mdnsDevs_len = 0;
   mdns->callb = NULL;
+  mdns->flags = 0;
   sd->sdRef = mdns;
 
   return(sd);
@@ -332,6 +335,7 @@ player_sd_browse(player_sd_t* sd,
     mdns->browseRef_valid = 0;
   }
 
+  mdns->flags = 0;
   // Initiate the browse session
   if((sdErr = DNSServiceBrowse(&(mdns->browseRef),
                                0,
@@ -404,6 +408,82 @@ player_sd_browse(player_sd_t* sd,
   return(0);
 }
 
+int
+player_sd_browse_stop(player_sd_t* sd)
+
+{
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)sd->sdRef;
+
+  if(mdns->browseRef_valid)
+  {
+    DNSServiceRefDeallocate(mdns->browseRef);
+    mdns->browseRef_valid = 0;
+  }
+  return(0);
+}
+
+int 
+player_sd_update(player_sd_t* sd, double timeout)
+{
+  struct pollfd ufds[1];
+  int numready;
+  int polltime;
+  DNSServiceErrorType sdErr;
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)sd->sdRef;
+
+  if(!mdns->browseRef_valid)
+  {
+    PLAYER_ERROR("Can't update without a valid browsing session");
+    return(-1);
+  }
+
+  ufds[0].fd = DNSServiceRefSockFD(mdns->browseRef);
+  ufds[0].events = POLLIN;
+
+  if(timeout < 0)
+    polltime = -1;
+  else if (timeout == 0.0)
+    polltime = 0;
+  else
+    polltime = (int)rint(timeout * 1e3);
+
+  for(;;)
+  {
+    if((numready = poll(ufds,1,polltime)) < 0)
+    {
+      if(errno == EAGAIN)
+        continue;
+      else
+      {
+        PLAYER_ERROR1("poll returned error: %s", strerror(errno));
+        return(-1);
+      }
+    }
+    else if(numready > 0)
+    {
+      // Read all queued up responses
+      if((sdErr = DNSServiceProcessResult(mdns->browseRef)) != 
+         kDNSServiceErr_NoError)
+      {
+        PLAYER_ERROR1("DNSServiceProcessResult returned error: %d", sdErr);
+        return(-1);
+      }
+      while(mdns->flags & kDNSServiceFlagsMoreComing)
+      {
+        if((sdErr = DNSServiceProcessResult(mdns->browseRef)) != 
+           kDNSServiceErr_NoError)
+        {
+          PLAYER_ERROR1("DNSServiceProcessResult returned error: %d", sdErr);
+          return(-1);
+        }
+      }
+    }
+    else
+      break;
+  }
+  return(0);
+}
+
 void 
 registerCB(DNSServiceRef sdRef, 
            DNSServiceFlags flags, 
@@ -427,11 +507,15 @@ browseCB(DNSServiceRef sdRef,
          void *context)
 {
   player_sd_t* sd = (player_sd_t*)context;
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)sd->sdRef;
   player_sd_dev_t* sddev;
   DNSServiceRef resolveRef;
   DNSServiceErrorType sdErr;
   struct pollfd ufds[1];
   int numready;
+
+  mdns->flags = flags;
+  printf("browseCB: %x\n", mdns->flags);
 
   // Got a browse event.  
   if(flags & kDNSServiceFlagsAdd)
@@ -485,9 +569,15 @@ browseCB(DNSServiceRef sdRef,
            kDNSServiceErr_NoError)
         {
           PLAYER_ERROR1("DNSServiceProcessResult returned error: %d\n", sdErr);
-          return;
+          sddev->addr_fail = 1;
         }
       }
+    }
+    DNSServiceRefDeallocate(resolveRef);
+    if(sddev->addr_valid)
+    {
+      // Invoke the users' callback
+      (mdns->callb)(sd,sddev);
     }
   }
   else
@@ -496,6 +586,9 @@ browseCB(DNSServiceRef sdRef,
     if((sddev = player_sd_get_device(sd, serviceName)))
     {
       sddev->valid = 0;
+      sddev->addr_valid = 0;
+      // Invoke the users' callback
+      (mdns->callb)(sd,sddev);
     }
   }
 

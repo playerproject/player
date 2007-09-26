@@ -84,6 +84,10 @@ Listening on ports: 6665
 */
 /** @} */
 
+#if HAVE_CONFIG_H
+  #include <config.h>
+#endif
+
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
@@ -92,10 +96,15 @@ Listening on ports: 6665
 #include <errno.h>
 
 #include <libplayercore/playercore.h>
+#include <libplayercore/interface_util.h>
 #include <libplayertcp/playertcp.h>
 #include <libplayertcp/playerudp.h>
 #include <libplayerxdr/functiontable.h>
 #include <libplayerdrivers/driverregistry.h>
+
+#if HAVE_PLAYERSD
+  #include <libplayersd/playersd.h>
+#endif
 
 
 void PrintVersion();
@@ -116,6 +125,10 @@ void Cleanup();
 PlayerTCP* ptcp;
 PlayerUDP* pudp;
 ConfigFile* cf;
+
+#if HAVE_PLAYERSD
+player_sd_t* sd;
+#endif
 
 int
 main(int argc, char** argv)
@@ -236,8 +249,8 @@ main(int argc, char** argv)
   for(int i=0;i<num_ports;i++)
   {
     // Get the old port and the new port
-    int oport = ports[i];
-    int nport = new_ports[i];
+    unsigned int oport = ports[i];
+    unsigned int nport = new_ports[i];
 
     // If the old and new ports are the same, nothing to do
     if(oport == nport)
@@ -252,6 +265,27 @@ main(int argc, char** argv)
         device->addr.robot = nport;
     }
   }
+
+#if HAVE_PLAYERSD
+  sd = player_sd_init();
+  char servicename[PLAYER_SD_NAME_MAXLEN];
+  char host[PLAYER_SD_NAME_MAXLEN];
+  if(gethostname(host,sizeof(host)) == -1)
+    strcpy(host,"localhost");
+
+  // Register all devices with zerconf
+  for(Device* device = deviceTable->GetFirstDevice();
+      device;
+      device = deviceTable->GetNextDevice(device))
+  {
+    snprintf(servicename,sizeof(servicename),"%s %s:%u",
+             host, interf_to_str(device->addr.interf), device->addr.index);
+    if(player_sd_register(sd,servicename,device->addr) != 0)
+    {
+      PLAYER_WARN("player_sd_register returned error");
+    }
+  }
+#endif
 
   printf("Listening on ports: ");
   for(int i=0;i<num_ports;i++)
@@ -310,6 +344,10 @@ Cleanup()
   delete pudp;
   player_globals_fini();
   delete cf;
+#if HAVE_PLAYERSD
+  if(sd)
+    player_sd_fini(sd);
+#endif
 }
 
 void

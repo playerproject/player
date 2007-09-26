@@ -64,7 +64,7 @@ extern "C" {
 
 #include <libplayercore/player.h>
 
-#define PLAYER_SD_SERVICENAME "_player2._tcp"
+#define PLAYER_SD_SERVICENAME "_player21._tcp"
 #define PLAYER_SD_DEVICE_TXTNAME "device"
 #define PLAYER_SD_NAME_MAXLEN 256
 #define PLAYER_SD_TXT_MAXLEN 256
@@ -117,8 +117,7 @@ int player_sd_unregister(player_sd_t* sd,
 /// Prototype for a callback function that can be invoked when devices are
 /// added or removed.
 typedef void (*player_sd_browse_callback_fn_t)(player_sd_t* sd,
-                                               const char* name,
-                                               player_devaddr_t addr);
+                                               player_sd_dev_t* dev);
 
 /// Browse for player devices.  Browses for timeout s, accruing the results
 /// into the sd object.  If keepalive is non-zero, then the browsing session
@@ -126,8 +125,12 @@ typedef void (*player_sd_browse_callback_fn_t)(player_sd_t* sd,
 /// Otherwise, the browsing session is closed before returning.
 /// If cb is non-NULL, then it is registered and
 /// invoked whenever new device notifications are received (call
-/// player_sd_update to give this a chance to happen).  Returns 0 on
-/// success, non-zero on error.
+/// player_sd_update to give this a chance to happen).  
+///
+/// NOTE: Because device hostnames are resolved as they are discovered,
+/// this call may block for an unpredictable amount of time.
+///
+/// Returns 0 on success, non-zero on error.
 int player_sd_browse(player_sd_t* sd,
                      double timeout, 
                      int keepalive,
@@ -136,8 +139,12 @@ int player_sd_browse(player_sd_t* sd,
 /// Check for new device updates, waiting for timeout s.  Contents of sd
 /// are updated, and if a callback was passed to player_sd_browse, then this
 /// function is also called for each discovered device.  Only makes sense to
-/// call this function after a call to player_sd_browse.  Returns 0 on
-/// success, non-zero on error.
+/// call this function after a call to player_sd_browse.  
+///
+/// NOTE: Because device hostnames are resolved as they are discovered,
+/// this call may block for an unpredictable amount of time.
+///
+/// Returns 0 on success, non-zero on error.
 int player_sd_update(player_sd_t* sd, double timeout);
 
 /// Stop browsing.  Returns 0 on success, non-zero on error.
