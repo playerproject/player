@@ -101,10 +101,9 @@ int player_sd_register(player_sd_t* sd,
                        player_devaddr_t addr);
 
 /// Unregister (terminate) the named device.  Returns 0 on success, non-zero 
-/// on error.  Name may be automatically changed in case of conflict.
+/// on error.
 int player_sd_unregister(player_sd_t* sd, 
-                         const char* name, 
-                         player_devaddr_t addr);
+                         const char* name);
 
 /// Prototype for a callback function that can be invoked when devices are
 /// added or removed.
