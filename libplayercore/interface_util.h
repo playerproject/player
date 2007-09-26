@@ -37,6 +37,15 @@
  *
  ********************************************************************/
 
+/** @defgroup libplayerutils libplayerutils
+ * @brief Player utility library
+
+This library provides miscellaneous utilities functions
+*/
+
+/** @ingroup libplayerutils
+@{ */
+
 #ifndef _INTERFACE_UTIL_H
 #define _INTERFACE_UTIL_H
 
@@ -129,5 +138,7 @@ str_to_msgtype(const char *name);
 #ifdef __cplusplus
 }
 #endif
+
+/** @} */
 
 #endif
