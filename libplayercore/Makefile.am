@@ -23,7 +23,6 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           wallclocktime.cc wallclocktime.h playertime.h \
                           plugins.cc plugins.h \
                           globals.cc globals.h \
-                          addr_util.c addr_util.h \
                           property.cpp property.h
 libplayercore_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la
 libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayerutils.la player_interfaces.h
@@ -31,7 +30,8 @@ libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la 
 libplayererror_la_SOURCES = error.h error.c
 libplayererror_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir)
 
-libplayerutils_la_SOURCES = interface_util.c interface_util.h 
+libplayerutils_la_SOURCES = interface_util.c interface_util.h \
+                            addr_util.c addr_util.h 
 libplayerutils_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir)
 libplayerutils_la_DEPENDENCIES = interface_table.c
 

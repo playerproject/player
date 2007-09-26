@@ -77,7 +77,7 @@ typedef struct
   // Did registration fail?
   uint8_t fail;
   // Identifying information, as provided by user when registering
-  player_sd_device_t sdDev;
+  player_sd_dev_t sdDev;
   // Index appended to sdDev.name to make it unique
   int nameIdx;
   // Session reference used for registration.  We deallocate to terminate
@@ -120,6 +120,16 @@ static void browseCB(DNSServiceRef sdRef,
                      const char *replyDomain, 
                      void *context);
 
+static void resolveCB(DNSServiceRef sdRef, 
+                      DNSServiceFlags flags, 
+                      uint32_t interfaceIndex, 
+                      DNSServiceErrorType errorCode, 
+                      const char *fullname, 
+                      const char *hosttarget, 
+                      uint16_t port, 
+                      uint16_t txtLen, 
+                      const char *txtRecord, 
+                      void *context);  
 
 player_sd_t* 
 player_sd_init(void)
@@ -129,6 +139,9 @@ player_sd_init(void)
 
   sd = (player_sd_t*)malloc(sizeof(player_sd_t));
   assert(sd);
+  sd->devs = NULL;
+  sd->devs_len = 0;
+
   mdns = (player_sd_mdns_t*)malloc(sizeof(player_sd_mdns_t));
   assert(mdns);
   mdns->browseRef_valid = 0;
@@ -325,7 +338,7 @@ player_sd_browse(player_sd_t* sd,
                                PLAYER_SD_SERVICENAME,
                                NULL,
                                browseCB,
-                               (void*)mdns)) != kDNSServiceErr_NoError)
+                               (void*)sd)) != kDNSServiceErr_NoError)
   {
     PLAYER_ERROR1("DNSServiceBrowse returned error: %d", sdErr);
     return(-1);
@@ -335,13 +348,13 @@ player_sd_browse(player_sd_t* sd,
   mdns->callb = cb;
 
   // Should we wait here for responses?
-  if(timeout > 0.0)
+  if(timeout != 0.0)
   {
     // Record the current time
     gettimeofday(&curr,NULL);
     starttime = currtime = curr.tv_sec + curr.tv_usec / 1e6;
 
-    while((currtime - starttime) < timeout)
+    while((timeout < 0.0) || ((currtime - starttime) < timeout))
     {
       // Set up to poll on the DNSSD socket
       polltime = (int)rint((timeout - (currtime - starttime)) * 1e3);
@@ -409,4 +422,81 @@ browseCB(DNSServiceRef sdRef,
          const char *replyDomain, 
          void *context)
 {
+  player_sd_t* sd = (player_sd_t*)context;
+  player_sd_dev_t* sddev;
+  DNSServiceRef resolveRef;
+  DNSServiceErrorType sdErr;
+
+  // Got a browse event.  
+  if(flags & kDNSServiceFlagsAdd)
+  {
+    // A new service was added.  First check whether we already have an
+    // entry for a device with this name.
+    if(!(sddev = player_sd_get_device(sd, serviceName)))
+    {
+      // No existing entry.  Add one
+      sddev = _player_sd_add_device(sd, serviceName);
+    }
+
+    // Record the name
+    sddev->valid = 1;
+    sddev->addr_valid = 0;
+    memset(sddev->name,0,sizeof(sddev->name));
+    strncpy(sddev->name,serviceName,sizeof(sddev->name)-1);
+
+    printf("Resolving %s\n", serviceName);
+    // Resolve its address
+    if((sdErr = DNSServiceResolve(&resolveRef,
+                                  0,
+                                  interfaceIndex, 
+                                  serviceName, 
+                                  regtype, 
+                                  replyDomain,
+                                  resolveCB,
+                                  (void*)sddev)) != kDNSServiceErr_NoError)
+    {
+      PLAYER_ERROR1("DNSServiceResolve returned error: %d\n", sdErr);
+      return;
+    }
+
+    puts("Calling DNSServiceProcessResult");
+    
+    // Wait for the resolution response.
+    // TODO: test whether this can block for a long time
+    if((sdErr = DNSServiceProcessResult(resolveRef)) != kDNSServiceErr_NoError)
+    {
+      PLAYER_ERROR1("DNSServiceProcessResult returned error: %d\n", sdErr);
+      return;
+    }
+    puts("done");
+  }
+  else
+  {
+    // An existing service was removed.  Delete our records for it.
+    if((sddev = player_sd_get_device(sd, serviceName)))
+    {
+      sddev->valid = 0;
+    }
+  }
+
+  puts("***************************************************");
+  puts("Device cache:");
+  player_sd_printcache(sd);
+  puts("***************************************************");
+}
+
+void 
+resolveCB(DNSServiceRef sdRef, 
+          DNSServiceFlags flags, 
+          uint32_t interfaceIndex, 
+          DNSServiceErrorType errorCode, 
+          const char *fullname, 
+          const char *hosttarget, 
+          uint16_t port, 
+          uint16_t txtLen, 
+          const char *txtRecord, 
+          void *context)
+{
+  // Handle resolution result
+  printf("resolveCB: %s\n", fullname);
 }

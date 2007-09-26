@@ -71,9 +71,15 @@ extern "C" {
 /// A device, represented by its name and address
 typedef struct
 {
+  // Is this entry valid?
+  uint8_t valid;
+  // Name of the device
   char name[PLAYER_SD_NAME_MAXLEN];
+  // Is the address valid?
+  uint8_t addr_valid;
+  // Address of the device
   player_devaddr_t addr;
-} player_sd_device_t;
+} player_sd_dev_t;
 
 /// Service discovery object
 typedef struct
@@ -82,9 +88,9 @@ typedef struct
   /// will vary by zeroconf implementation.
   void* sdRef;
   /// List of devices discovered by browsing
-  player_sd_device_t* devs;
+  player_sd_dev_t* devs;
   /// Number of devices discovered
-  size_t numdevs;
+  size_t devs_len;
 } player_sd_t;
 
 /// Initialize service discovery, passing back a pointer that will be passed
@@ -133,6 +139,20 @@ int player_sd_update(player_sd_t* sd, double timeout);
 
 /// Stop browsing.  Returns 0 on success, non-zero on error.
 int player_sd_browse_stop(player_sd_t* sd);
+
+////////////////////////////////////////////////////////////////////////////
+// Common functions, implemented in playersd.c
+
+/// Look up a device by name.  This functions only consults the local cache 
+/// of registered devices, which was filled by player_sd_browse().
+player_sd_dev_t* player_sd_get_device(player_sd_t* sd, const char* name);
+
+/// Add a device to the local cache.  The user should not call this
+/// function.  It will be invoked by the playersd implementation.
+player_sd_dev_t* _player_sd_add_device(player_sd_t* sd, const char* name);
+
+/// Print the contents of the local device cache to the console.
+void player_sd_printcache(player_sd_t* sd);
 
 #ifdef __cplusplus
 }
