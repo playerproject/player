@@ -40,6 +40,14 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*
+ * libplayersd implementation based on Apple's mDNSResponder (aka Bonjour).
+ * This library works with either mDNSResponder or the Avahi mDNSResponder
+ * compatibility layer.
+ *
+ * $Id$
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -240,6 +248,37 @@ player_sd_register(player_sd_t* sd,
                    name,nameBuf);
     PLAYER_MSG1(2,"Registration of %s successful", name);
     return(0);
+  }
+}
+
+int 
+player_sd_unregister(player_sd_t* sd, 
+                     const char* name)
+{
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
+  player_sd_mdns_dev_t* dev = NULL;
+  int i;
+
+  for(i=0;i<mdns->mdnsDevs_len;i++)
+  {
+    if(mdns->mdnsDevs[i].valid && !strcmp(name,mdns->mdnsDevs[i].sdDev.name))
+    {
+      dev = mdns->mdnsDevs + i;
+      break;
+    }
+  }
+
+  if(dev)
+  {
+    DNSServiceRefDeallocate(dev->regRef);
+    dev->valid = 0;
+    PLAYER_MSG1(2,"Unregistration of %s successful", name);
+    return(0);
+  }
+  else
+  {
+    PLAYER_ERROR1("Failed to find and unregister device %s", name);
+    return(-1);
   }
 }
 
