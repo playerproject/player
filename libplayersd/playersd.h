@@ -111,7 +111,7 @@ typedef void (*player_sd_browse_callback_fn_t)(player_sd_t* sd,
                                                const char* name,
                                                player_devaddr_t addr);
 
-/// Browse for player devices.  Browses for timeout ms, accruing the results
+/// Browse for player devices.  Browses for timeout s, accruing the results
 /// into the sd object.  If keepalive is non-zero, then the browsing session
 /// is left open and can be updated by future calls to player_sd_update().
 /// Otherwise, the browsing session is closed before returning.
@@ -120,16 +120,16 @@ typedef void (*player_sd_browse_callback_fn_t)(player_sd_t* sd,
 /// player_sd_update to give this a chance to happen).  Returns 0 on
 /// success, non-zero on error.
 int player_sd_browse(player_sd_t* sd,
-                     int timeout, 
+                     double timeout, 
                      int keepalive,
                      player_sd_browse_callback_fn_t cb);
 
-/// Check for new device updates, waiting for timeout ms.  Contents of sd
+/// Check for new device updates, waiting for timeout s.  Contents of sd
 /// are updated, and if a callback was passed to player_sd_browse, then this
 /// function is also called for each discovered device.  Only makes sense to
 /// call this function after a call to player_sd_browse.  Returns 0 on
 /// success, non-zero on error.
-int player_sd_update(player_sd_t* sd, int timeout);
+int player_sd_update(player_sd_t* sd, double timeout);
 
 /// Stop browsing.  Returns 0 on success, non-zero on error.
 int player_sd_browse_stop(player_sd_t* sd);

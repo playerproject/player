@@ -49,17 +49,20 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/time.h>
 
-//#include <sys/poll.h>
 
 #include <dns_sd.h>
 
 #include <libplayercore/error.h>
 #include <libplayercore/interface_util.h>
+
+#include <replace/replace.h> // for poll(2)
 
 #include "playersd.h"
 
@@ -96,6 +99,8 @@ typedef struct
   player_sd_mdns_dev_t* mdnsDevs;
   // Length of list
   size_t mdnsDevs_len;
+  // User's browse callback
+  player_sd_browse_callback_fn_t callb;
 } player_sd_mdns_t;
 
 static void registerCB(DNSServiceRef sdRef, 
@@ -105,6 +110,15 @@ static void registerCB(DNSServiceRef sdRef,
                        const char *regtype, 
                        const char *domain, 
                        void *context);  
+
+static void browseCB(DNSServiceRef sdRef, 
+                     DNSServiceFlags flags, 
+                     uint32_t interfaceIndex, 
+                     DNSServiceErrorType errorCode, 
+                     const char *serviceName, 
+                     const char *regtype, 
+                     const char *replyDomain, 
+                     void *context);
 
 
 player_sd_t* 
@@ -120,6 +134,7 @@ player_sd_init(void)
   mdns->browseRef_valid = 0;
   mdns->mdnsDevs = NULL;
   mdns->mdnsDevs_len = 0;
+  mdns->callb = NULL;
   sd->sdRef = mdns;
 
   return(sd);
@@ -282,6 +297,96 @@ player_sd_unregister(player_sd_t* sd,
   }
 }
 
+int 
+player_sd_browse(player_sd_t* sd,
+                 double timeout, 
+                 int keepalive,
+                 player_sd_browse_callback_fn_t cb)
+{
+  DNSServiceErrorType sdErr;
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
+  struct pollfd ufds[1];
+  int numready;
+  struct timeval curr;
+  double currtime, starttime;
+  int polltime;
+  
+  // Close any previously open session
+  if(mdns->browseRef_valid)
+  {
+    DNSServiceRefDeallocate(mdns->browseRef);
+    mdns->browseRef_valid = 0;
+  }
+
+  // Initiate the browse session
+  if((sdErr = DNSServiceBrowse(&(mdns->browseRef),
+                               0,
+                               0,
+                               PLAYER_SD_SERVICENAME,
+                               NULL,
+                               browseCB,
+                               (void*)mdns)) != kDNSServiceErr_NoError)
+  {
+    PLAYER_ERROR1("DNSServiceBrowse returned error: %d", sdErr);
+    return(-1);
+  }
+
+  mdns->browseRef_valid = 1;
+  mdns->callb = cb;
+
+  // Should we wait here for responses?
+  if(timeout > 0.0)
+  {
+    // Record the current time
+    gettimeofday(&curr,NULL);
+    starttime = currtime = curr.tv_sec + curr.tv_usec / 1e6;
+
+    while((currtime - starttime) < timeout)
+    {
+      // Set up to poll on the DNSSD socket
+      polltime = (int)rint((timeout - (currtime - starttime)) * 1e3);
+      ufds[0].fd = DNSServiceRefSockFD(mdns->browseRef);
+      ufds[0].events = POLLIN;
+      if((numready = poll(ufds,1,polltime)) < 0)
+      {
+        if(errno == EAGAIN)
+          continue;
+        else
+        {
+          PLAYER_ERROR1("poll returned error: %s\n", strerror(errno));
+          DNSServiceRefDeallocate(mdns->browseRef);
+          mdns->browseRef_valid = 0;
+          return(-1);
+        }
+      }
+      else if(numready > 0)
+      {
+        // Input is ready; collect it.   Our callback (browseCB) will be
+        // invoked.
+        if((sdErr = DNSServiceProcessResult(mdns->browseRef)) != 
+           kDNSServiceErr_NoError)
+        {
+          PLAYER_ERROR1("DNSServiceProcessResult returned error: %d", sdErr);
+          DNSServiceRefDeallocate(mdns->browseRef);
+          mdns->browseRef_valid = 0;
+          return(-1);
+        }
+      }
+
+      gettimeofday(&curr,NULL);
+      currtime = curr.tv_sec + curr.tv_usec / 1e6;
+    }
+  }
+
+  // Should we leave the session open?
+  if(!keepalive)
+  {
+    DNSServiceRefDeallocate(mdns->browseRef);
+    mdns->browseRef_valid = 0;
+  }
+  return(0);
+}
+
 void 
 registerCB(DNSServiceRef sdRef, 
            DNSServiceFlags flags, 
@@ -292,4 +397,16 @@ registerCB(DNSServiceRef sdRef,
            void *context)
 {
   // Don't need to do anything here
+}
+
+void 
+browseCB(DNSServiceRef sdRef, 
+         DNSServiceFlags flags, 
+         uint32_t interfaceIndex, 
+         DNSServiceErrorType errorCode, 
+         const char *serviceName, 
+         const char *regtype, 
+         const char *replyDomain, 
+         void *context)
+{
 }
