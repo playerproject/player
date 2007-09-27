@@ -4,6 +4,7 @@ PLAYERC_CFLAGS = -I$(top_srcdir) \
 
 PLAYERC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
                  -L${top_builddir}/libplayercore \
+                 -L${top_builddir}/libplayersd \
                  -L${top_builddir}/client_libs/libplayerc
 
 PLAYERC_DEPS = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
@@ -15,7 +16,10 @@ AM_CPPFLAGS = $(PLAYERC_CFLAGS) -Wall -g
 exampledir = $(prefix)/share/player/examples/libplayerc
 
 example_PROGRAMS = vmap simple speech_c_client
-example_DATA = vmap.c simple.c speech_c_client.c
+if HAVE_PLAYERSD
+example_PROGRAMS += service_discovery
+endif
+example_DATA = vmap.c simple.c speech_c_client.c service_discovery.c
 
 vmap_SOURCES = vmap.c
 vmap_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror
@@ -28,3 +32,7 @@ simple_DEPENDENCIES = $(PLAYERC_DEPS)
 speech_c_client_SOURCES = speech_c_client.c
 speech_c_client_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror
 speech_c_client_DEPENDENCIES = $(PLAYERC_DEPS)
+
+service_discovery_SOURCES = service_discovery.c
+service_discovery_LDADD = -lplayerc $(PLAYERC_LIB_DIRS) -lm -lplayerxdr -lplayererror -lplayersd -lplayerutils
+service_discovery_DEPENDENCIES = $(PLAYERC_DEPS) $(top_builddir)/libplayersd/libplayersd.la
