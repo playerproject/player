@@ -121,10 +121,11 @@ player_sd_printcache(player_sd_t* sd)
         packedaddr_to_dottedip(ip,sizeof(ip),sd->devs[i].addr.host);
         printf("    host:    %s\n"
                "    robot:   %d\n"
-               "    interf:  %s\n"
+               "    interf:  %d(%s)\n"
                "    index:   %d\n",
                ip, 
                sd->devs[i].addr.robot, 
+               sd->devs[i].addr.interf, 
                interf_to_str(sd->devs[i].addr.interf), 
                sd->devs[i].addr.index);
       }

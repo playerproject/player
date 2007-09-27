@@ -515,7 +515,6 @@ browseCB(DNSServiceRef sdRef,
   int numready;
 
   mdns->flags = flags;
-  printf("browseCB: %x\n", mdns->flags);
 
   // Got a browse event.  
   if(flags & kDNSServiceFlagsAdd)
@@ -577,7 +576,8 @@ browseCB(DNSServiceRef sdRef,
     if(sddev->addr_valid)
     {
       // Invoke the users' callback
-      (mdns->callb)(sd,sddev);
+      if(mdns->callb)
+        (mdns->callb)(sd,sddev);
     }
   }
   else
@@ -588,7 +588,8 @@ browseCB(DNSServiceRef sdRef,
       sddev->valid = 0;
       sddev->addr_valid = 0;
       // Invoke the users' callback
-      (mdns->callb)(sd,sddev);
+      if(mdns->callb)
+        (mdns->callb)(sd,sddev);
     }
   }
 
