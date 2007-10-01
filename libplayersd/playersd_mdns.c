@@ -154,6 +154,13 @@ player_sd_init(void)
   mdns->flags = 0;
   sd->sdRef = mdns;
 
+  // Initialize the interface table, so that we can decode the interface
+  // strings names that are used in TXT records.
+  itable_init();
+
+  // Pick a default debug level
+  ErrorInit(1);
+
   return(sd);
 }
 
