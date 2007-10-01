@@ -74,6 +74,12 @@ int itable_init (void)
 {
   int ii;
 
+  // An indirect way of avoiding duplicate initialization.  It would 
+  // probably be better to delete the old table, but there may be some
+  // pointers hanging around that refer to the old table.
+  if(itable)
+    return(0);
+
   for (itable_len = 0; interfaces[itable_len].interf; itable_len++);
 
   if ((itable = (player_interface_t*) calloc (itable_len, sizeof (player_interface_t))) == NULL)
