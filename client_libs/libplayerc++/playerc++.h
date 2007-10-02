@@ -1581,6 +1581,17 @@ class Position2dProxy : public ClientProxy
     void SetSpeed(player_pose_t vel)
         { return SetSpeed(vel.px, vel.py, vel.pa);}
 
+    /// Send a motor command for velocity/heading control mode.
+    /// Specify the forward and sideways velocity (m/sec), and angular
+    /// heading (rads).
+    void SetVelHead(double aXSpeed, double aYSpeed, double aYawHead);
+
+    /// Same as the previous SetVelHead(), but doesn't take the yspeed speed
+    /// (so use this one for non-holonomic robots).
+    void SetVelHead(double aXSpeed, double aYawHead)
+        { return SetVelHead(aXSpeed, 0, aYawHead);}
+
+
     /// Send a motor command for position control mode.  Specify the
     /// desired pose of the robot as a player_pose_t.
     /// desired motion speed  as a player_pose_t.

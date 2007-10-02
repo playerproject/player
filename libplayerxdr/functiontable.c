@@ -327,6 +327,8 @@ static playerxdr_function_t init_ftable[] =
     (player_pack_fn_t)player_position2d_data_pack},
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL,
     (player_pack_fn_t)player_position2d_cmd_vel_pack},
+  {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL_HEAD,
+    (player_pack_fn_t)player_position2d_cmd_vel_head_pack},
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_POS,
     (player_pack_fn_t)player_position2d_cmd_pos_pack},
   {PLAYER_POSITION2D_CODE, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_CAR,

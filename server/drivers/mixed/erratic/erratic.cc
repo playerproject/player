@@ -1728,6 +1728,11 @@ int Erratic::HandleCommand(player_msghdr * hdr, void* data)
       player_position2d_cmd_car_t position_cmd = *(player_position2d_cmd_car_t*)data;
       this->HandleCarCommand(position_cmd);
     } 
+  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL_HEAD, this->position_id))
+    {
+      player_position2d_cmd_car_t position_cmd = *(player_position2d_cmd_car_t*)data;
+      this->HandleCarCommand(position_cmd);
+    } 
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, this->ptz_id))
     {
       player_ptz_cmd_t ptz_cmd = *(player_ptz_cmd_t*)data;

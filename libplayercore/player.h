@@ -3120,6 +3120,8 @@ The @p position2d interface is used to control mobile robot bases in 2D.
 #define PLAYER_POSITION2D_CMD_POS              2
 /** Command subtype: carlike command */
 #define PLAYER_POSITION2D_CMD_CAR              3
+/** Command subtype: velocity and heading command */
+#define PLAYER_POSITION2D_CMD_VEL_HEAD         4
 
 /** @brief Data: state (@ref PLAYER_POSITION2D_DATA_STATE)
 
@@ -3174,6 +3176,18 @@ typedef struct player_position2d_cmd_car
   /** turning angle (rad) */
   double angle;
 } player_position2d_cmd_car_t;
+
+/** @brief Command: vel/head (@ref PLAYER_POSITION2D_CMD_VEL_HEAD)
+
+The @p position interface accepts new velocity+heading commands (speed and angle position)
+for the robot's motors (only supported by some drivers). */
+typedef struct player_position2d_cmd_vel_head
+{
+  /** forward velocity (m/s) */
+  double velocity;
+  /** turning position (rad) */
+  double angle;
+} player_position2d_cmd_vel_head_t;
 
 
 /** @brief Data AND Request/reply: geometry.

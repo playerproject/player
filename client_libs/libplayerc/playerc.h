@@ -2172,6 +2172,13 @@ int playerc_position2d_get_geom(playerc_position2d_t *device);
 int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
                                    double vx, double vy, double va, int state);
 
+/** Set the target speed and heading.  vx : forward speed (m/s).  vy : sideways
+    speed (m/s); this field is used by omni-drive robots only.  pa :
+    rotational heading (rad).  All speeds and angles are defined in the robot
+    coordinate system. */
+int playerc_position2d_set_cmd_vel_head(playerc_position2d_t *device,
+                                   double vx, double vy, double pa, int state);
+
 /** Set the target pose with given motion vel */
 int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
                                              player_pose_t pos,
