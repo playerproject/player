@@ -55,7 +55,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/time.h>
-
+#include <pthread.h>
 
 #include <dns_sd.h>
 
@@ -104,6 +104,8 @@ typedef struct
   player_sd_browse_callback_fn_t callb;
   // Last set of flags that we got in the browse callback
   DNSServiceFlags flags;
+  // Mutex to protect access to this structure
+  pthread_mutex_t mutex;
 } player_sd_mdns_t;
 
 static void registerCB(DNSServiceRef sdRef, 
@@ -154,6 +156,8 @@ player_sd_init(void)
   mdns->flags = 0;
   sd->sdRef = mdns;
 
+  pthread_mutex_init(&(mdns->mutex),NULL);
+
   // Initialize the interface table, so that we can decode the interface
   // strings names that are used in TXT records.
   itable_init();
@@ -185,10 +189,26 @@ player_sd_fini(player_sd_t* sd)
     }
   }
   
+  pthread_mutex_destroy(&(mdns->mutex));
+
   if(mdns->mdnsDevs)
     free(mdns->mdnsDevs);
   free(mdns);
   free(sd);
+}
+
+void 
+player_sd_lock(player_sd_t* sd)
+{
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
+  pthread_mutex_lock(&(mdns->mutex));
+}
+
+void 
+player_sd_unlock(player_sd_t* sd)
+{
+  player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
+  pthread_mutex_unlock(&(mdns->mutex));
 }
 
 int 
@@ -229,7 +249,12 @@ player_sd_register(player_sd_t* sd,
   dev->fail = 0;
   memset(dev->sdDev.name,0,sizeof(dev->sdDev.name));
   strncpy(dev->sdDev.name,name,sizeof(dev->sdDev.name)-1);
-  dev->sdDev.addr = addr;
+  memset(dev->sdDev.hostname,0,sizeof(dev->sdDev.hostname));
+  packedaddr_to_dottedip(dev->sdDev.hostname,sizeof(dev->sdDev.hostname),
+                         addr.host);
+  dev->sdDev.robot = addr.robot;
+  dev->sdDev.interf = addr.interf;
+  dev->sdDev.index = addr.index;
   dev->nameIdx = 1;
 
   TXTRecordCreate(&(dev->txtRecord),sizeof(dev->txtBuf),dev->txtBuf);
@@ -600,7 +625,7 @@ browseCB(DNSServiceRef sdRef,
     }
   }
 
-  player_sd_printcache(sd);
+  //player_sd_printcache(sd);
 }
 
 void 
@@ -625,14 +650,9 @@ resolveCB(DNSServiceRef sdRef,
   if(errorCode == kDNSServiceErr_NoError)
   {
     // Fill in the address info
-    if(hostname_to_packedaddr(&(sddev->addr.host), hosttarget) != 0)
-    {
-      PLAYER_ERROR1("Failed to resolve IP address for host %s\n",
-                    hosttarget);
-      sddev->addr_fail = 1;
-      return;
-    }
-    sddev->addr.robot = port;
+    memset(sddev->hostname,0,sizeof(sddev->hostname));
+    strncpy(sddev->hostname,hosttarget,sizeof(sddev->hostname)-1);
+    sddev->robot = port;
     if(!(value = (const char*)TXTRecordGetValuePtr(txtLen,
                                                    txtRecord,
                                                    PLAYER_SD_DEVICE_TXTNAME,
@@ -653,11 +673,11 @@ resolveCB(DNSServiceRef sdRef,
     }
     memset(buf,0,sizeof(buf));
     strncpy(buf,value,(colon-value));
-    sddev->addr.interf = str_to_interf(buf);
+    sddev->interf = str_to_interf(buf);
 
     memset(buf,0,sizeof(buf));
     strncpy(buf,colon,(value_len-(colon-value+1)));
-    sddev->addr.index = atoi(buf);
+    sddev->index = atoi(buf);
 
     sddev->addr_valid = 1;
   }
