@@ -80,8 +80,11 @@ typedef struct
   uint8_t addr_valid;
   // Did address resolution fail?
   uint8_t addr_fail;
-  // Address of the device
-  player_devaddr_t addr;
+  // Player address components
+  char hostname[PLAYER_SD_NAME_MAXLEN];
+  uint32_t robot;
+  uint16_t interf;
+  uint16_t index;
 } player_sd_dev_t;
 
 /// Service discovery object
@@ -102,6 +105,12 @@ player_sd_t* player_sd_init(void);
 
 /// Finalize service discovery, freeing associated resources.
 void player_sd_fini(player_sd_t* sd);
+
+/// Lock access to playersd structures, such as the local device cache.
+void player_sd_lock(player_sd_t* sd);
+
+/// Unlock access to playersd structures, such as the local device cache.
+void player_sd_unlock(player_sd_t* sd);
 
 /// Register the named device.  Returns 0 on success, non-zero on error.
 /// Name may be automatically changed in case of conflict.
@@ -156,6 +165,30 @@ int player_sd_browse_stop(player_sd_t* sd);
 /// Look up a device by name.  This functions only consults the local cache 
 /// of registered devices, which was filled by player_sd_browse().
 player_sd_dev_t* player_sd_get_device(player_sd_t* sd, const char* name);
+
+/// Find a device in the local cache that matches the given criteria.
+///
+///  - sd: a player_sd_t* returned by player_sd_init()
+///  - result: a caller-supplied array to store the matching device(s) in
+///  - result_len: the length of the result array
+///  - name: the Zeroconf name of the device; NULL for don't care
+///  - hostname: the hostname where the device resides; NULL for don't care
+///  - robot: the 'robot' field of the Player address; -1 for don't care
+///  - interf: the 'interf' field of the Player address; -1 for don't care
+///  - index: the 'index' field of the Player address; -1 for don't care
+///
+/// The first result_len devices in the local cache that match the criteria
+/// are copied into the result array.
+///
+/// Returns: the number of devices copied into result.
+int player_sd_find_devices(player_sd_t* sd, 
+                           player_sd_dev_t* result,
+                           size_t result_len,
+                           const char* name,
+                           const char* hostname,
+                           int robot,
+                           int interf,
+                           int index);
 
 /// Add a device to the local cache.  The user should not call this
 /// function.  It will be invoked by the playersd implementation.

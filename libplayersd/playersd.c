@@ -58,6 +58,55 @@
 #define PLAYER_SD_DEVS_LEN_INITIAL 4
 #define PLAYER_SD_DEVS_LEN_MULTIPLIER 2
 
+int
+player_sd_find_devices(player_sd_t* sd, 
+                       player_sd_dev_t* result,
+                       size_t result_len,
+                       const char* name,
+                       const char* hostname,
+                       int robot,
+                       int interf,
+                       int index)
+{
+  int i,j;
+
+  for(i=0,j=0;i<sd->devs_len;i++)
+  {
+    // Are we over the limit?
+    if(j == result_len)
+      return(i);
+
+    // Is this entry valid?
+    if(!sd->devs[i].valid)
+      continue;
+
+    // Check the device name
+    if(name && strcmp(sd->devs[i].name,name))
+      continue;
+
+    // Check the host name
+    if(hostname && strcmp(sd->devs[i].hostname,hostname))
+      continue;
+
+    // Check the robot (port)
+    if((robot >= 0) && (robot != ((uint32_t)sd->devs[i].robot)))
+      continue;
+    
+    // Check the interface
+    if((interf >= 0) && (interf != ((uint16_t)sd->devs[i].interf)))
+      continue;
+    
+    // Check the index
+    if((index >= 0) && (index != ((uint16_t)sd->devs[i].index)))
+      continue;
+
+    // If we get here, then all the checks passed, to append it to the list
+    result[j++] = sd->devs[i];
+  }
+  
+  return(j);
+}
+
 player_sd_dev_t* 
 player_sd_get_device(player_sd_t* sd, const char* name)
 {
@@ -107,7 +156,6 @@ _player_sd_add_device(player_sd_t* sd, const char* name)
 void
 player_sd_printcache(player_sd_t* sd)
 {
-  char ip[16];
   int i;
 
   puts("Device cache:");
@@ -118,16 +166,15 @@ player_sd_printcache(player_sd_t* sd)
       printf("  name:%s\n", sd->devs[i].name);
       if(sd->devs[i].addr_valid)
       {
-        packedaddr_to_dottedip(ip,sizeof(ip),sd->devs[i].addr.host);
         printf("    host:    %s\n"
                "    robot:   %d\n"
                "    interf:  %d(%s)\n"
                "    index:   %d\n",
-               ip, 
-               sd->devs[i].addr.robot, 
-               sd->devs[i].addr.interf, 
-               interf_to_str(sd->devs[i].addr.interf), 
-               sd->devs[i].addr.index);
+               sd->devs[i].hostname,
+               sd->devs[i].robot, 
+               sd->devs[i].interf, 
+               interf_to_str(sd->devs[i].interf), 
+               sd->devs[i].index);
       }
     }
   }
