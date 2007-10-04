@@ -74,7 +74,7 @@ player_sd_find_devices(player_sd_t* sd,
   {
     // Are we over the limit?
     if(j == result_len)
-      return(i);
+      return(j);
 
     // Is this entry valid?
     if(!sd->devs[i].valid)
