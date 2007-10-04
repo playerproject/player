@@ -274,6 +274,7 @@ main(int argc, char** argv)
     strcpy(host,"localhost");
 
   // Register all devices with zerconf
+  int zcnt=0;
   for(Device* device = deviceTable->GetFirstDevice();
       device;
       device = deviceTable->GetNextDevice(device))
@@ -284,7 +285,10 @@ main(int argc, char** argv)
     {
       PLAYER_WARN("player_sd_register returned error");
     }
+    else
+      zcnt++;
   }
+  printf("registered %d devices\n", zcnt);
 #endif
 
   printf("Listening on ports: ");

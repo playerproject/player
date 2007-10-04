@@ -259,7 +259,7 @@ player_sd_register(player_sd_t* sd,
 
   TXTRecordCreate(&(dev->txtRecord),sizeof(dev->txtBuf),dev->txtBuf);
   memset(recordval,0,sizeof(recordval));
-  snprintf(recordval, sizeof(recordval), "%s:%d",
+  snprintf(recordval, sizeof(recordval), "%s:%u",
            interf_to_str(addr.interf), addr.index);
   if((sdErr = TXTRecordSetValue(&(dev->txtRecord),
                                 "device",
@@ -354,11 +354,10 @@ player_sd_browse(player_sd_t* sd,
 {
   DNSServiceErrorType sdErr;
   player_sd_mdns_t* mdns = (player_sd_mdns_t*)(sd->sdRef);
-  struct pollfd ufds[1];
-  int numready;
+  int retval=0;
   struct timeval curr;
   double currtime, starttime;
-  int polltime;
+  double polltime;
   
   // Close any previously open session
   if(mdns->browseRef_valid)
@@ -391,40 +390,17 @@ player_sd_browse(player_sd_t* sd,
     gettimeofday(&curr,NULL);
     starttime = currtime = curr.tv_sec + curr.tv_usec / 1e6;
 
+    // Update until the requested time has elapsed
     while((timeout < 0.0) || ((currtime - starttime) < timeout))
     {
       // Set up to poll on the DNSSD socket
       if(timeout > 0.0)
-        polltime = (int)rint((timeout - (currtime - starttime)) * 1e3);
+        polltime = timeout - (currtime - starttime);
       else
-        polltime = -1;
-      ufds[0].fd = DNSServiceRefSockFD(mdns->browseRef);
-      ufds[0].events = POLLIN;
-      if((numready = poll(ufds,1,polltime)) < 0)
-      {
-        if(errno == EAGAIN)
-          continue;
-        else
-        {
-          PLAYER_ERROR1("poll returned error: %s\n", strerror(errno));
-          DNSServiceRefDeallocate(mdns->browseRef);
-          mdns->browseRef_valid = 0;
-          return(-1);
-        }
-      }
-      else if(numready > 0)
-      {
-        // Input is ready; collect it.   Our callback (browseCB) will be
-        // invoked.
-        if((sdErr = DNSServiceProcessResult(mdns->browseRef)) != 
-           kDNSServiceErr_NoError)
-        {
-          PLAYER_ERROR1("DNSServiceProcessResult returned error: %d", sdErr);
-          DNSServiceRefDeallocate(mdns->browseRef);
-          mdns->browseRef_valid = 0;
-          return(-1);
-        }
-      }
+        polltime = -1.0;
+
+      if((retval = player_sd_update(sd,polltime)) != 0)
+        break;
 
       gettimeofday(&curr,NULL);
       currtime = curr.tv_sec + curr.tv_usec / 1e6;
@@ -437,7 +413,7 @@ player_sd_browse(player_sd_t* sd,
     DNSServiceRefDeallocate(mdns->browseRef);
     mdns->browseRef_valid = 0;
   }
-  return(0);
+  return(retval);
 }
 
 int
@@ -472,19 +448,22 @@ player_sd_update(player_sd_t* sd, double timeout)
   ufds[0].fd = DNSServiceRefSockFD(mdns->browseRef);
   ufds[0].events = POLLIN;
 
-  if(timeout < 0)
-    polltime = -1;
-  else if (timeout == 0.0)
-    polltime = 0;
-  else
+  if(timeout > 0.0)
     polltime = (int)rint(timeout * 1e3);
+  else
+    polltime = -1;
+
 
   for(;;)
   {
     if((numready = poll(ufds,1,polltime)) < 0)
     {
       if(errno == EAGAIN)
+      {
+        // TODO: strictly speaking, we should decrement polltime here by
+        // the time that has elapsed so far
         continue;
+      }
       else
       {
         PLAYER_ERROR1("poll returned error: %s", strerror(errno));
@@ -509,9 +488,13 @@ player_sd_update(player_sd_t* sd, double timeout)
           return(-1);
         }
       }
+      break;
     }
     else
+    {
+      // timeout
       break;
+    }
   }
   return(0);
 }
@@ -676,7 +659,7 @@ resolveCB(DNSServiceRef sdRef,
     sddev->interf = str_to_interf(buf);
 
     memset(buf,0,sizeof(buf));
-    strncpy(buf,colon,(value_len-(colon-value+1)));
+    strncpy(buf,colon+1,(value_len-(colon-value+1)));
     sddev->index = atoi(buf);
 
     sddev->addr_valid = 1;
