@@ -70,7 +70,7 @@ extern "C" {
 #define PLAYER_SD_TXT_MAXLEN 256
 
 /// A device, represented by its name and address
-typedef struct
+typedef struct player_sd_dev
 {
   // Is this entry valid?
   uint8_t valid;
@@ -88,7 +88,7 @@ typedef struct
 } player_sd_dev_t;
 
 /// Service discovery object
-typedef struct
+typedef struct player_sd
 {
   /// Opaque pointer to underlying zeroconf client object.  Contents
   /// will vary by zeroconf implementation.

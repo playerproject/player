@@ -42,6 +42,7 @@
 class DeviceTable;
 class PlayerTime;
 class DriverTable;
+struct player_sd;
 
 extern DeviceTable* deviceTable;
 extern PlayerTime* GlobalTime;
@@ -49,6 +50,10 @@ extern DriverTable* driverTable;
 extern char playerversion[];
 extern bool player_quit;
 extern bool player_quiet_startup;
+
+#if HAVE_PLAYERSD
+extern struct player_sd* globalSD;
+#endif
 
 void player_globals_init(void);
 void player_globals_fini();

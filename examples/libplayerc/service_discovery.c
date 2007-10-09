@@ -8,57 +8,58 @@
 #include <libplayercore/interface_util.h>
 #include <libplayerc/playerc.h>
 
+#define MAX_POSITION_DEVS 16
+
+void
+browse_cb(player_sd_t* sd, player_sd_dev_t* dev)
+{
+  printf("found new device: %s:%u:%s:%u\n",
+         dev->hostname,
+         dev->robot,
+         interf_to_str(dev->interf),
+         dev->index);
+}
+
 int
 main(int argc, const char **argv)
 {
   int i;
   playerc_client_t *client=NULL;
   playerc_position2d_t *position2d;
-  struct timeval curr;
-  double starttime, currtime;
 
   // A service discovery object
   player_sd_t* sd;
   // An array to store matching devices
-  player_sd_dev_t positiondevs[16];
+  player_sd_dev_t positiondevs[MAX_POSITION_DEVS];
   int num_positiondevs;
 
   // Initialize service discovery
   sd = player_sd_init();
 
-  gettimeofday(&curr,NULL);
-  starttime = curr.tv_sec + curr.tv_usec / 1e6;
-
   // Look for Player devices
-  if(player_sd_browse(sd, 1.0, 1, NULL) != 0)
+  if(player_sd_browse(sd, 0.0, 1, browse_cb) != 0)
   {
     puts("player_sd_browse error");
     exit(-1);
   }
-  gettimeofday(&curr,NULL);
-  currtime = curr.tv_sec + curr.tv_usec / 1e6;
-  printf("elapsed: %.6f\n", currtime - starttime);
-  //player_sd_printcache(sd);
 
-  // Did we find any position2d devices?
-  /*
-  while((num_positiondevs = player_sd_find_devices(sd, positiondevs, 16,
-                                                NULL, NULL, -1,
-                                                PLAYER_POSITION2D_CODE, -1)) < 9)
+  while((num_positiondevs = player_sd_find_devices(sd, positiondevs, 
+                                                   MAX_POSITION_DEVS,
+                                                   NULL, NULL, -1,
+                                                   PLAYER_POSITION2D_CODE, 
+                                                   -1)) < 1)
   {
+    // Update name service
     puts("player_sd_update");
-    player_sd_update(sd,0.5);
+    player_sd_update(sd,0.1);
   }
-  */
-
-  num_positiondevs = player_sd_find_devices(sd, positiondevs, 16,
-                                            NULL, NULL, -1,
-                                            PLAYER_POSITION2D_CODE, -1);
 
   printf("found %d position2d devices\n", num_positiondevs);
 
   // Subscribe to the first one
-  client = playerc_client_create(NULL, positiondevs[0].hostname, positiondevs[0].robot);
+  client = playerc_client_create(NULL, 
+                                 positiondevs[0].hostname,
+                                 positiondevs[0].robot);
   if(0 != playerc_client_connect(client))
     exit(-1);
 
@@ -68,13 +69,16 @@ main(int argc, const char **argv)
     exit(-1);
 
   // Make the robot move
-  if (0 != playerc_position2d_set_cmd_vel(position2d, 0.35, 0, DTOR(40.0), 1))
+  if(0 != playerc_position2d_set_cmd_vel(position2d, 0.35, 0, DTOR(40.0), 1))
     return -1;
 
-  for (i = 0; i < 200; i++)
+  for(i = 0; i < 200; i++)
   {
     // Wait for new data from server
     playerc_client_read(client);
+
+    // Update name service
+    player_sd_update(sd,0.0);
 
     // Print current robot pose
     printf("position2d : %f %f %f\n",

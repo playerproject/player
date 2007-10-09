@@ -126,9 +126,6 @@ PlayerTCP* ptcp;
 PlayerUDP* pudp;
 ConfigFile* cf;
 
-#if HAVE_PLAYERSD
-player_sd_t* sd;
-#endif
 
 int
 main(int argc, char** argv)
@@ -267,7 +264,6 @@ main(int argc, char** argv)
   }
 
 #if HAVE_PLAYERSD
-  sd = player_sd_init();
   char servicename[PLAYER_SD_NAME_MAXLEN];
   char host[PLAYER_SD_NAME_MAXLEN];
   if(gethostname(host,sizeof(host)) == -1)
@@ -281,7 +277,7 @@ main(int argc, char** argv)
   {
     snprintf(servicename,sizeof(servicename),"%s %s:%u",
              host, interf_to_str(device->addr.interf), device->addr.index);
-    if(player_sd_register(sd,servicename,device->addr) != 0)
+    if(player_sd_register(globalSD,servicename,device->addr) != 0)
     {
       PLAYER_WARN("player_sd_register returned error");
     }
@@ -348,10 +344,6 @@ Cleanup()
   delete pudp;
   player_globals_fini();
   delete cf;
-#if HAVE_PLAYERSD
-  if(sd)
-    player_sd_fini(sd);
-#endif
 }
 
 void

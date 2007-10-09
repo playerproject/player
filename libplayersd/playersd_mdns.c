@@ -448,7 +448,7 @@ player_sd_update(player_sd_t* sd, double timeout)
   ufds[0].fd = DNSServiceRefSockFD(mdns->browseRef);
   ufds[0].events = POLLIN;
 
-  if(timeout > 0.0)
+  if(timeout >= 0.0)
     polltime = (int)rint(timeout * 1e3);
   else
     polltime = -1;
