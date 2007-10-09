@@ -52,6 +52,10 @@
 #include <libplayercore/playertime.h>
 #include <libplayercore/wallclocktime.h>
 
+#if HAVE_PLAYERSD
+  #include <libplayersd/playersd.h>
+#endif
+
 // this table holds all the currently *instantiated* devices
 DeviceTable* deviceTable;
 
@@ -68,6 +72,10 @@ char playerversion[32];
 bool player_quit;
 bool player_quiet_startup;
 
+#if HAVE_PLAYERSD
+struct player_sd* globalSD;
+#endif
+
 void
 player_globals_init()
 {
@@ -77,6 +85,9 @@ player_globals_init()
   strncpy(playerversion, VERSION, sizeof(playerversion));
   player_quit = false;
   player_quiet_startup = false;
+#if HAVE_PLAYERSD
+  globalSD = player_sd_init();
+#endif
 }
 
 void
@@ -88,6 +99,10 @@ player_globals_fini()
     delete driverTable;
   if(GlobalTime)
     delete GlobalTime;
+#if HAVE_PLAYERSD
+  if(globalSD)
+    player_sd_fini(globalSD);
+#endif
 }
 
 #endif
