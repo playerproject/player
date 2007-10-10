@@ -43,6 +43,8 @@
 
 #include "create_comms.h"
 
+#define DTOR(d) ((d) * M_PI / 180)
+
 create_comm_t*
 create_create(const char* serial_port)
 {
@@ -52,6 +54,8 @@ create_create(const char* serial_port)
   assert(r);
   r->fd = -1;
   r->mode = CREATE_MODE_OFF;
+  r->oa = r->ox = r->oy = 0;
+
   strncpy(r->serial_port,serial_port,sizeof(r->serial_port)-1);
   return(r);
 }
@@ -120,7 +124,8 @@ create_open(create_comm_t* r, unsigned char fullcontrol)
     return(-1);
   }
 
-  if(create_get_sensors(r, 1000) < 0)
+
+  if(create_get_sensors(r, 10000) < 0)
   {
     puts("create_open():failed to get data");
     close(r->fd);
@@ -128,8 +133,10 @@ create_open(create_comm_t* r, unsigned char fullcontrol)
     return(-1);
   }
 
-  /* We know the robot is there; switch to blocking */
-  /* ok, we got data, so now set NONBLOCK, and continue */
+  r->oa = r->ox = r->oy = 0;
+
+  // We know the robot is there; switch to blocking 
+  // ok, we got data, so now set NONBLOCK, and continue
   if((flags = fcntl(r->fd, F_GETFL)) < 0)
   {
     perror("create_open():fcntl():");
@@ -155,7 +162,7 @@ create_init(create_comm_t* r, unsigned char fullcontrol)
 {
   unsigned char cmdbuf[1];
 
-  usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
+  //usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
 
   cmdbuf[0] = CREATE_OPCODE_START;
   if(write(r->fd, cmdbuf, 1) < 0)
@@ -167,18 +174,9 @@ create_init(create_comm_t* r, unsigned char fullcontrol)
 
   usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
   
-  cmdbuf[0] = CREATE_OPCODE_CONTROL;
-  if(write(r->fd, cmdbuf, 1) < 0)
+  if (fullcontrol)
   {
-    perror("create_init():write():");
-    return(-1);
-  }
-  r->mode = CREATE_MODE_SAFE;
-
-  usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
-
-  if(fullcontrol)
-  {
+    printf("Setting full control\n");
     cmdbuf[0] = CREATE_OPCODE_FULL;
     if(write(r->fd, cmdbuf, 1) < 0)
     {
@@ -187,6 +185,8 @@ create_init(create_comm_t* r, unsigned char fullcontrol)
     }
     r->mode = CREATE_MODE_FULL;
   }
+
+  usleep(100000);
 
   return(0);
 }
@@ -199,16 +199,6 @@ create_close(create_comm_t* r)
   create_set_speeds(r, 0.0, 0.0);
 
   usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
-
-  /*
-  cmdbuf[0] = CREATE_OPCODE_POWER;
-  if(write(r->fd, cmdbuf, 1) < 0)
-  {
-    perror("create_close():write():");
-  }
-
-  usleep(CREATE_DELAY_MODECHANGE_MS * 1e3);
-  */
 
   if(close(r->fd) < 0)
   {
@@ -435,19 +425,6 @@ create_parse_sensor_packet(create_comm_t* r, unsigned char* buf, size_t buflen)
   return(0);
 }
 
-int
-create_clean(create_comm_t* r)
-{
-  unsigned char cmdbuf[1];
-
-  cmdbuf[0] = CREATE_OPCODE_CLEAN;
-  if(write(r->fd, cmdbuf, 1) < 0)
-  {
-    perror("create_clean():write():");
-    return(-1);
-  }
-  return(0);
-}
 
 void
 create_print(create_comm_t* r)
@@ -551,3 +528,16 @@ create_set_leds(create_comm_t *r, uint8_t dirt_detect, uint8_t max, uint8_t clea
   return 0;
 }
 
+int
+create_run_demo(create_comm_t *r, uint8_t num)
+{
+  unsigned char cmdbuf[2];
+  cmdbuf[0] = CREATE_OPCODE_DEMO;
+  cmdbuf[1] = num;
+
+  if (write(r->fd, cmdbuf, 2) < 0)
+  {
+    perror("create_run_demo():write():");
+    return -1;
+  }
+}
