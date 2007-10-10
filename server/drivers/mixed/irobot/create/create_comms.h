@@ -32,25 +32,21 @@ extern "C" {
 /* command opcodes */
 #define CREATE_OPCODE_START            128
 #define CREATE_OPCODE_BAUD             129
-#define CREATE_OPCODE_CONTROL          130
 #define CREATE_OPCODE_SAFE             131
 #define CREATE_OPCODE_FULL             132
-#define CREATE_OPCODE_POWER            133
 #define CREATE_OPCODE_SPOT             134
-#define CREATE_OPCODE_CLEAN            135
-#define CREATE_OPCODE_MAX              136
+#define CREATE_OPCODE_COVER            135
+#define CREATE_OPCODE_DEMO             136
 #define CREATE_OPCODE_DRIVE            137
 #define CREATE_OPCODE_MOTORS           138
 #define CREATE_OPCODE_LEDS             139
 #define CREATE_OPCODE_SONG             140
 #define CREATE_OPCODE_PLAY             141
 #define CREATE_OPCODE_SENSORS          142
-#define CREATE_OPCODE_FORCEDOCK        143
-
+#define CREATE_OPCODE_COVERDOCK        143
 #define CREATE_OPCODE_PWM_MOTORS       144
 #define CREATE_OPCODE_DRIVE_WHEELS     145
-#define CREATE_OPCODE_DRIVE_PWM        146
-#define CREATE_OPCODE_OUTPUTS          147
+#define CREATE_OPCODE_DIGITAL_OUTPUTS  147
 #define CREATE_OPCODE_STREAM           148
 #define CREATE_OPCODE_QUERY_LIST       149
 #define CREATE_OPCODE_DO_STREAM        150
@@ -62,6 +58,7 @@ extern "C" {
 #define CREATE_OPCODE_WAIT_DISTANCE    156
 #define CREATE_OPCODE_WAIT_ANGLE       157
 #define CREATE_OPCODE_WAIT_EVENT       158
+
 
 #define CREATE_DELAY_MODECHANGE_MS      20
 
@@ -147,7 +144,6 @@ int create_parse_sensor_packet(create_comm_t* r,
                                unsigned char* buf, size_t buflen);
 int create_get_sensors(create_comm_t* r, int timeout);
 void create_print(create_comm_t* r);
-int create_clean(create_comm_t* r);
 
 int create_set_song(create_comm_t* r, unsigned char songNumber, 
                     unsigned char songLength, unsigned char *notes, 
@@ -158,6 +154,8 @@ int create_vacuum(create_comm_t *r, int state);
 int create_set_leds(create_comm_t *r, uint8_t dirt_detect, uint8_t max, 
                     uint8_t clean, uint8_t spot, uint8_t status, 
                     uint8_t power_color, uint8_t power_intensity );
+
+int create_run_demo(create_comm_t *r, uint8_t num);
 
 #ifdef __cplusplus
 }

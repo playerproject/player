@@ -58,10 +58,12 @@ The create driver provides the following device interfaces:
   - This interface returns bumper data (PLAYER_BUMPER_DATA_STATE).
 
 - @ref interface_opaque
-  - This driver supports programming song, playing songs, and setting the LEDs. 
+  - This driver supports programming song, playing songs, setting the LEDs,
+    and running demo scripts. 
   - Play song data format in bytes: [0][song_number]
   - Program song data format in bytes: [1][song_number][length(n)][note_1][length_note_1]...[note_n][length_note_n]. 
   - Set LEDS format in bytes: [2][dirt_dectect(0/1)][max_bool(0/1)][clean(0/1)][spot(0/1)][status(0=off,1=red,2=green,3=amber)][power_color(0-255)][power_intensity(0-255)]
+  - Run a demo script in bytes: [3][demo number]
 
 @par Supported configuration requests
 
@@ -386,11 +388,11 @@ Create::Main()
 
      this->cpdata->data_count=5;
 
-     this->cpdata->data[0]=this->create_dev->button_max;
-     this->cpdata->data[1]=this->create_dev->button_clean;
-     this->cpdata->data[2]=this->create_dev->button_spot;
-     this->cpdata->data[3]=this->create_dev->button_power;
-     this->cpdata->data[4]=this->create_dev->remote_opcode;
+     this->cpdata->data[0] = this->create_dev->button_max;
+     this->cpdata->data[1] = this->create_dev->button_clean;
+     this->cpdata->data[2] = this->create_dev->button_spot;
+     this->cpdata->data[3] = this->create_dev->button_power;
+     this->cpdata->data[4] = this->create_dev->remote_opcode;
 
      this->Publish(this->opaque_addr,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
@@ -425,8 +427,8 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     return(0);
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-        PLAYER_POSITION2D_REQ_MOTOR_POWER,
-        this->position_addr))
+                                 PLAYER_POSITION2D_REQ_MOTOR_POWER,
+                                 this->position_addr))
   {
     this->Publish(this->position_addr, resp_queue,
         PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_MOTOR_POWER);
@@ -550,6 +552,16 @@ Create::ProcessMessage(QueuePointer &resp_queue,
             status, power_color, power_intensity) < 0)
       {
         PLAYER_ERROR("failed to set create leds");
+        return -1;
+      }
+    }
+    // Run a demo script
+    else if (opaque_data.data[0] == 3)
+    {
+      uint8_t demo_num = opaque_data.data[1];
+      if (create_run_demo(this->create_dev, demo_num)<0)
+      {
+        PLAYER_ERROR("failed to run create demo");
         return -1;
       }
     }
