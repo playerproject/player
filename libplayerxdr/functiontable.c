@@ -63,21 +63,27 @@ static playerxdr_function_t init_ftable[] =
   {0, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILTIES_REQ,
    (player_pack_fn_t)player_capabilities_req_pack, NULL, NULL},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_INTPROP_REQ,
-   (player_pack_fn_t)player_intprop_req_pack, (player_dpcpy_fn_t)player_intprop_req_t_dpcpy, (player_cleanup_fn_t)player_intprop_req_t_cleanup},
+   (player_pack_fn_t)player_intprop_req_pack, (player_copy_fn_t)player_intprop_req_t_copy, (player_cleanup_fn_t)player_intprop_req_t_cleanup, 
+   (player_clone_fn_t)player_intprop_req_t_clone,(player_free_fn_t)player_intprop_req_t_free,(player_sizeof_fn_t)player_intprop_req_t_sizeof},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_SET_INTPROP_REQ,
-   (player_pack_fn_t)player_intprop_req_pack, (player_dpcpy_fn_t)player_intprop_req_t_dpcpy, (player_cleanup_fn_t)player_intprop_req_t_cleanup},
+   (player_pack_fn_t)player_intprop_req_pack, (player_copy_fn_t)player_intprop_req_t_copy, (player_cleanup_fn_t)player_intprop_req_t_cleanup,
+   (player_clone_fn_t)player_intprop_req_t_clone,(player_free_fn_t)player_intprop_req_t_free,(player_sizeof_fn_t)player_intprop_req_t_sizeof},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_DBLPROP_REQ,
-   (player_pack_fn_t)player_dblprop_req_pack, (player_dpcpy_fn_t)player_dblprop_req_t_dpcpy, (player_cleanup_fn_t)player_dblprop_req_t_cleanup},
+   (player_pack_fn_t)player_dblprop_req_pack, (player_copy_fn_t)player_dblprop_req_t_copy, (player_cleanup_fn_t)player_dblprop_req_t_cleanup,
+   (player_clone_fn_t)player_dblprop_req_t_clone,(player_free_fn_t)player_dblprop_req_t_free,(player_sizeof_fn_t)player_dblprop_req_t_sizeof},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_SET_DBLPROP_REQ,
-   (player_pack_fn_t)player_dblprop_req_pack, (player_dpcpy_fn_t)player_dblprop_req_t_dpcpy, (player_cleanup_fn_t)player_dblprop_req_t_cleanup},
+   (player_pack_fn_t)player_dblprop_req_pack, (player_copy_fn_t)player_dblprop_req_t_copy, (player_cleanup_fn_t)player_dblprop_req_t_cleanup,
+   (player_clone_fn_t)player_dblprop_req_t_clone,(player_free_fn_t)player_dblprop_req_t_free,(player_sizeof_fn_t)player_dblprop_req_t_sizeof},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_GET_STRPROP_REQ,
-   (player_pack_fn_t)player_strprop_req_pack, (player_dpcpy_fn_t)player_strprop_req_t_dpcpy, (player_cleanup_fn_t)player_strprop_req_t_cleanup},
+   (player_pack_fn_t)player_strprop_req_pack, (player_copy_fn_t)player_strprop_req_t_copy, (player_cleanup_fn_t)player_strprop_req_t_cleanup,
+   (player_clone_fn_t)player_strprop_req_t_clone,(player_free_fn_t)player_strprop_req_t_free,(player_sizeof_fn_t)player_strprop_req_t_sizeof},
   {0, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ,
-   (player_pack_fn_t)player_strprop_req_pack, (player_dpcpy_fn_t)player_strprop_req_t_dpcpy, (player_cleanup_fn_t)player_strprop_req_t_cleanup},
+   (player_pack_fn_t)player_strprop_req_pack, (player_copy_fn_t)player_strprop_req_t_copy, (player_cleanup_fn_t)player_strprop_req_t_cleanup,
+   (player_clone_fn_t)player_strprop_req_t_clone,(player_free_fn_t)player_strprop_req_t_free,(player_sizeof_fn_t)player_strprop_req_t_sizeof},
 
   /* Special messages */
   {PLAYER_PLAYER_CODE, PLAYER_MSGTYPE_SYNCH, 0,
-    (player_pack_fn_t)player_add_replace_rule_req_pack, NULL, NULL},
+    (player_pack_fn_t)player_add_replace_rule_req_pack, NULL, NULL, NULL, NULL, NULL},
 
   /* generated messages from the interface definitions */
 #include "functiontable_gen.c"
@@ -131,9 +137,7 @@ playerxdr_ftable_add(playerxdr_function_t f, int replace)
            (curr->subtype == f.subtype) &&
            (curr->type == f.type))
         {
-          curr->packfunc = f.packfunc;
-          curr->dpcpyfunc = f.dpcpyfunc;
-          curr->cleanupfunc = f.cleanupfunc;
+          *curr = f;
           return(0);
         }
       }
@@ -222,13 +226,13 @@ playerxdr_get_packfunc(uint16_t interf, uint8_t type, uint8_t subtype)
   return(NULL);
 }
 
-player_dpcpy_fn_t
-playerxdr_get_dpcpyfunc(uint16_t interf, uint8_t type, uint8_t subtype)
+player_copy_fn_t
+playerxdr_get_copyfunc(uint16_t interf, uint8_t type, uint8_t subtype)
 {
   playerxdr_function_t* row=NULL;
 
   if ((row = playerxdr_get_ftrow (interf, type, subtype)) != NULL)
-    return(row->dpcpyfunc);
+    return(row->copyfunc);
 
   return(NULL);
 }
@@ -244,21 +248,75 @@ playerxdr_get_cleanupfunc(uint16_t interf, uint8_t type, uint8_t subtype)
   return(NULL);
 }
 
+player_clone_fn_t
+playerxdr_get_clonefunc(uint16_t interf, uint8_t type, uint8_t subtype)
+{
+  playerxdr_function_t* row=NULL;
+
+  if ((row = playerxdr_get_ftrow (interf, type, subtype)) != NULL)
+    return(row->clonefunc);
+
+  return(NULL);
+}
+
+player_free_fn_t
+playerxdr_get_freefunc(uint16_t interf, uint8_t type, uint8_t subtype)
+{
+  playerxdr_function_t* row=NULL;
+
+  if ((row = playerxdr_get_ftrow (interf, type, subtype)) != NULL)
+    return(row->freefunc);
+
+  return(NULL);
+}
+
+player_sizeof_fn_t
+playerxdr_get_sizeoffunc(uint16_t interf, uint8_t type, uint8_t subtype)
+{
+  playerxdr_function_t* row=NULL;
+
+  if ((row = playerxdr_get_ftrow (interf, type, subtype)) != NULL)
+    return(row->sizeoffunc);
+
+  return(NULL);
+}
+
 // Deep copy a message structure
 unsigned int
 playerxdr_deepcopy_message(void* src, void* dest, uint16_t interf, uint8_t type, uint8_t subtype)
 {
-  player_dpcpy_fn_t dpcpyfunc = NULL;
+  player_copy_fn_t copyfunc = NULL;
 
-  if ((dpcpyfunc = playerxdr_get_dpcpyfunc(interf, type, subtype)) == NULL)
+  if ((copyfunc = playerxdr_get_copyfunc(interf, type, subtype)) == NULL)
     return 0;
 
-  return (*dpcpyfunc)(src, dest);
+  return (*copyfunc)(dest, src);
 }
 
-// Delete any dynamically allocated data in a message structure
+void *
+playerxdr_clone_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype)
+{
+  player_clone_fn_t clonefunc = NULL;
+
+  if ((clonefunc = playerxdr_get_clonefunc(interf, type, subtype)) == NULL)
+    return NULL;
+
+  return (*clonefunc)(msg);
+}
+
+
 void
-playerxdr_delete_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype)
+playerxdr_free_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype)
+{
+  player_free_fn_t freefunc = NULL;
+
+  if ((freefunc = playerxdr_get_freefunc(interf, type, subtype)) == NULL)
+    return;
+
+  (*freefunc)(msg);
+}
+void
+playerxdr_cleanup_message(void* msg, uint16_t interf, uint8_t type, uint8_t subtype)
 {
   player_cleanup_fn_t cleanupfunc = NULL;
 

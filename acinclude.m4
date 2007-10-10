@@ -135,6 +135,8 @@ PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
 
 PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([localbb],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([nd],[yes],[],[],[])
@@ -261,8 +263,7 @@ PLAYER_ADD_DRIVER([erratic],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([wbr914],[yes],[linux/serial.h],[],[])
 
-PLAYER_ADD_DRIVER([passthrough],[no],[],[],
-                  ["../client_libs/c/playercclient.o"])
+PLAYER_ADD_DRIVER([passthrough],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([postgis],[yes],[],[],["-lgeos"],[LIBPQXX],[libpqxx])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $LIBPQXX_LIBS"

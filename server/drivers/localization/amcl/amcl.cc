@@ -1101,12 +1101,6 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
                            PLAYER_LOCALIZE_REQ_SET_POSE,
                            this->localize_addr))
   {
-    if(hdr->size != sizeof(player_localize_set_pose_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, sizeof(player_localize_set_pose_t));
-      return(-1);
-    }
     setposereq = (player_localize_set_pose_t*)data;
 
     pf_vector_t pose;
@@ -1137,14 +1131,6 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
                                 PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                                 this->localize_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
-
-
     pf_vector_t mean;
     double var;
     player_localize_get_particles_t resp;

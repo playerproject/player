@@ -34,11 +34,11 @@
 static playerxdr_function_t eginterf_ftable[] =
 {
   {PLAYER_EGINTERF_CODE, PLAYER_MSGTYPE_DATA, EGINTERF_DATA,
-   (player_pack_fn_t)player_eginterf_data_pack, (player_dpcpy_fn_t)player_eginterf_data_dpcpy, (player_cleanup_fn_t)player_eginterf_data_cleanup},
+   (player_pack_fn_t)player_eginterf_data_pack, (player_copy_fn_t)player_eginterf_data_copy, (player_cleanup_fn_t)player_eginterf_data_cleanup},
   {PLAYER_EGINTERF_CODE, PLAYER_MSGTYPE_REQ, EGINTERF_REQ,
-   (player_pack_fn_t)player_eginterf_req_pack, NULL, NULL},
+   (player_pack_fn_t)player_eginterf_req_pack, (player_copy_fn_t)player_eginterf_req_copy, (player_cleanup_fn_t)player_eginterf_req_cleanup},
   {PLAYER_EGINTERF_CODE, PLAYER_MSGTYPE_CMD, EGINTERF_CMD,
-   (player_pack_fn_t)player_eginterf_cmd_pack, NULL, NULL},
+   (player_pack_fn_t)player_eginterf_cmd_pack, (player_copy_fn_t)player_eginterf_cmd_copy, (player_cleanup_fn_t)player_eginterf_cmd_cleanup},
 
   /* This NULL element signals the end of the list */
   {0,0,0,NULL,NULL,NULL}

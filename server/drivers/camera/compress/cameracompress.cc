@@ -274,6 +274,7 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
     PLAYER_WARN("unsupported image depth (not good)");
     return;
   }
+  this->data.image = new unsigned char [rawdata.width*rawdata.width*3];
   this->data.image_count = jpeg_compress( (char*)this->data.image, 
                                           ptr,
                                           rawdata.width, 
@@ -289,15 +290,14 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
     fclose(fp);
   }
 
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
-
   this->data.width = (rawdata.width);
   this->data.height = (rawdata.height);
   this->data.bpp = 24;
   this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
   this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
-  this->data.image_count = (this->data.image_count);
+  delete [] this->data.image;
+  this->data.image = NULL;
   
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, &this->camera_time);
 
 }

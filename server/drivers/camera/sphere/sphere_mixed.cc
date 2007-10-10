@@ -442,8 +442,8 @@ int SphereDriver::ProcessMessage(QueuePointer & resp_queue,
     Publish(device_addr, resp_queue,
       PLAYER_MSGTYPE_RESP_ACK,
       PLAYER_PTZ_REQ_STATUS,
-      (void*)&status, sizeof(status), NULL
-      );
+      (void*)&status
+    );
     return(0);
   }
   else
@@ -491,13 +491,12 @@ void SphereDriver::RefreshData()
   mCameraData.bpp    = mDepth;
   mCameraData.compression = PLAYER_CAMERA_COMPRESS_RAW;
   mCameraData.image_count = image_size;
+  mCameraData.image = new unsigned char [image_size];
 
-  assert(image_size <= sizeof(mCameraData.image));
 
   // Copy the image pixels
   if (0 == strcasecmp(mPalette, "GREY"))
   {
-    assert(image_size <= (size_t) mFrame->size);
     memcpy(mCameraData.image, mFrame->data, image_size);
   }
   else if (0 == strcasecmp(mPalette, "YUV420P"))
@@ -515,16 +514,13 @@ void SphereDriver::RefreshData()
     memcpy(mCameraData.image, mRGBFrame->data, image_size);
   }
 
-  // Copy data to server
-  size = sizeof(mCameraData) - sizeof(mCameraData.image) + image_size;
-
   Publish(mCameraAddr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&mCameraData), size, NULL);
+          reinterpret_cast<void*>(&mCameraData));
 
   Publish(mPtzAddr, 
           PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE,
-          reinterpret_cast<void*>(&mPtzData), sizeof(mPtzData), NULL);
+          reinterpret_cast<void*>(&mPtzData));
 
   // Save frames
   if (FALSE!=mSave)
@@ -533,6 +529,7 @@ void SphereDriver::RefreshData()
     snprintf(filename, sizeof(filename), "click-%04d.ppm", mFrameNumber++);
     frame_save(mFrame, filename);
   }
+  delete [] mCameraData.image;
 
 }
 

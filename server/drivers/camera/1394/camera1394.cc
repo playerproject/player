@@ -645,6 +645,7 @@ Camera1394::Camera1394(ConfigFile* cf, int section)
   // Number of DMA buffers?
   this->num_dma_buffers = cf->ReadInt(section, "dma_buffers", NUM_DMA_BUFFERS);
 
+  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   
   return;
 }
@@ -1155,7 +1156,9 @@ int Camera1394::GrabFrame()
 
   if (frameSize == 0)
     frameSize = frame_width * frame_height;
-
+  
+  delete [] this->data.image;
+  this->data.image = NULL;
   switch (this->mode)
   {
   case MODE_320x240_YUV422:
@@ -1163,9 +1166,9 @@ int Camera1394::GrabFrame()
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
+    this->data.image = new unsigned char [this->data.image_count];
     this->data.width = frame_width;
     this->data.height = frame_height;
-    assert(this->data.image_count <= sizeof(this->data.image));
     uyvy2rgb((unsigned char *)capture_buffer, this->data.image, (frame_width) * (frame_height));
     break;
   case MODE_1024x768_YUV422:
@@ -1175,6 +1178,7 @@ int Camera1394::GrabFrame()
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
+    this->data.image = new unsigned char [this->data.image_count];
     this->data.width = frame_width / 2;
     this->data.height = frame_height / 2;
     assert(this->data.image_count <= sizeof(this->data.image));
@@ -1200,9 +1204,9 @@ int Camera1394::GrabFrame()
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
+    this->data.image = new unsigned char [this->data.image_count];
     this->data.width = 600;
     this->data.height = 450;
-    assert(this->data.image_count <= sizeof(this->data.image));
     uyvy2rgb((unsigned char *)capture_buffer, this->resized, (frame_width) * (frame_height));
     ptr1 = this->resized;
     ptr2 = this->data.image;
@@ -1227,9 +1231,9 @@ int Camera1394::GrabFrame()
     this->data.bpp = 24;
     this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
     this->data.image_count = this->frameSize;
+    this->data.image = new unsigned char [this->data.image_count];
     this->data.width = frame_width;
     this->data.height = frame_height;
-    assert(this->data.image_count <= sizeof(this->data.image));
     memcpy(this->data.image, (unsigned char *)capture_buffer, this->data.image_count);
     break;
   case MODE_640x480_MONO:
@@ -1242,47 +1246,36 @@ int Camera1394::GrabFrame()
       this->data.bpp = 8;
       this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
       this->data.image_count = this->frameSize;
+      this->data.image = new unsigned char [this->data.image_count];
       this->data.width = frame_width;
       this->data.height = frame_height;
-      assert(this->data.image_count <= sizeof(this->data.image));
       memcpy(this->data.image, (unsigned char *)capture_buffer, this->data.image_count);
     } 
     else
     {
       this->data.bpp = 24;
       this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-      if ((frame_width) > PLAYER_CAMERA_IMAGE_WIDTH)
-      {
-        if (resized == NULL)
-          resized = new unsigned char[this->frameSize * 3];
-        dst = this->resized;
-      }
-      else 
-      {
-        dst = this->data.image;
-      }
+      dst = this->data.image;
       switch (this->BayerMethod)
       {
       case BAYER_DECODING_DOWNSAMPLE:
         // quarter of the image but 3 bytes per pixel
 	this->data.image_count = this->frameSize/4*3;
-	assert(this->data.image_count <= sizeof(this->data.image));
 	BayerDownsample((unsigned char *)capture_buffer, this->data.image,
 					frame_width/2, frame_height/2,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_NEAREST:
-        if ((frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_count = this->frameSize/4*3;
-	else this->data.image_count = this->frameSize * 3;
-	assert(this->data.image_count <= sizeof(this->data.image));
-	BayerNearestNeighbor((unsigned char *)capture_buffer, dst,
+        this->data.image_count = this->frameSize * 3;
+        BayerNearestNeighbor((unsigned char *)capture_buffer, dst,
 					frame_width, frame_height,
 					(bayer_pattern_t)this->BayerPattern);
 	break;
       case BAYER_DECODING_EDGE_SENSE:
-        if ((frame_width) > PLAYER_CAMERA_IMAGE_WIDTH) this->data.image_count = this->frameSize/4*3;
-        else this->data.image_count = this->frameSize * 3;
-	assert(this->data.image_count <= sizeof(this->data.image));
+        this->data.image_count = this->frameSize * 3;
+        delete [] this->data.image;
+        this->data.image = new unsigned char [this->data.image_count];
+        
 	BayerEdgeSense((unsigned char *)capture_buffer, dst,
 					frame_width, frame_height,
 					(bayer_pattern_t)this->BayerPattern);
@@ -1293,33 +1286,13 @@ int Camera1394::GrabFrame()
       }
       if (this->BayerMethod != BAYER_DECODING_DOWNSAMPLE)
       {
-        if ((frame_width) > PLAYER_CAMERA_IMAGE_WIDTH)
-	{
-	  this->data.width = frame_width/2;
-	  this->data.height = frame_height/2;
-          ptr1 = this->resized;
-          ptr2 = this->data.image;
-          for (f = 0; f < (this->data.height); f++)
-          {
-            for (c = 0; c < (this->data.width); c++)
-            {
-	      ptr2[0] = ptr1[0];
-	      ptr2[1] = ptr1[1];
-	      ptr2[2] = ptr1[2];
-	      ptr1 += (3 * 2);
-	      ptr2 += 3;
-            }
-            ptr1 += ((frame_width) * 3);
-          }
-	} else
-	{
-	  this->data.width = frame_width;
-	  this->data.height = frame_height;
-	}
-      } else
+        this->data.width = frame_width;
+        this->data.height = frame_height;
+      } 
+      else
       {    //image is half the size of grabbed frame
-	this->data.width = frame_width/2;
-	this->data.height = frame_height/2;
+        this->data.width = frame_width/2;
+        this->data.height = frame_height/2;
       }
     }
     break;
@@ -1340,22 +1313,9 @@ int Camera1394::GrabFrame()
 // Update the device data (the data going back to the client).
 void Camera1394::RefreshData()
 {
-  size_t size;
-
-  // Work out the data size
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
-
-  // now we just do the byte-swapping
-  this->data.width = this->data.width;
-  this->data.height = this->data.height;
-
-  this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-  this->data.image_count = this->data.image_count;
-
-  /* We should do this to be efficient */
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&this->data), size, NULL);  
+          reinterpret_cast<void*>(&this->data));  
   
   return;
 }

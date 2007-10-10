@@ -6,7 +6,7 @@ pkgconfig_DATA = playercore.pc playererror.pc
 
 dist_bin_SCRIPTS = playerinterfacegen.py
 
-EXTRA_DIST = playercore.pc.in playererror.pc.in interfaces/ADDING_INTERFACES interfaces/*.def
+EXTRA_DIST = playercore.pc.in playererror.pc.in interfaces/ADDING_INTERFACES player_interfaces.h interface_table.c $(shell find $(srcdir)/interfaces -name "*.def")
 
 player_interfaces.h: ./interfaces/* playerinterfacegen.py
 	if ! ./playerinterfacegen.py > player_interfaces.h; then rm player_interfaces.h; fi
@@ -65,9 +65,10 @@ coreinclude_HEADERS = configfile.h \
                       property.h \
                       player_interfaces.h
                       
-player_interfaces.h: ./interfaces/* playerinterfacegen.py
-	if ! ./playerinterfacegen.py > player_interfaces.h; then rm player_interfaces.h; fi
+player_interfaces.h: $(srcdir)/interfaces/* playerinterfacegen.py
+	python $(srcdir)/playerinterfacegen.py > $(top_builddir)/libplayercore/player_interfaces.h
+#	if ! ./playerinterfacegen.py > player_interfaces.h; then rm player_interfaces.h; fi
 
-interface_table.c: ./interfaces/* playerinterfacegen.py
-	if ! ./playerinterfacegen.py --utils > interface_table.c; then rm interface_table.c; fi
-
+interface_table.c: $(srcdir)/interfaces/* playerinterfacegen.py
+	python $(srcdir)/playerinterfacegen.py --utils > $(top_builddir)/libplayercore/interface_table.c
+#	if ! ./playerinterfacegen.py --utils > interface_table.c; then rm interface_table.c; fi

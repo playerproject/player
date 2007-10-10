@@ -490,10 +490,9 @@ void CameraV4L::RefreshData()
   this->data.width       = this->width;
   this->data.height      = this->height;
   this->data.bpp         = this->depth;
-  this->data.image_count  = image_count;
+  this->data.image_count = image_count;
+  this->data.image       = new unsigned char [image_count];
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-
-  assert(image_count <= sizeof(this->data.image));
 
   if (have_ov519)
   {
@@ -547,14 +546,13 @@ void CameraV4L::RefreshData()
     }
   }
 
-  // Copy data to server
-  size = sizeof(this->data) - sizeof(this->data.image) + data.image_count;
-
 
   /* We should do this to be efficient */
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&this->data), size, NULL);
+          reinterpret_cast<void*>(&this->data));
+  delete [] this->data.image;
+
 
   return;
 }

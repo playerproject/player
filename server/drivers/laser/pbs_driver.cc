@@ -347,12 +347,6 @@ int PBSDriver::ProcessMessage(QueuePointer &resp_queue,
                                  PLAYER_LASER_REQ_GET_GEOM,
                                  this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
     // Construct geometry data package
     player_laser_geom_t geom;
     memset(&geom, 0, sizeof(geom));

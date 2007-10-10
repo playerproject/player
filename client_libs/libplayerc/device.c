@@ -109,23 +109,24 @@ int playerc_device_hascapability(playerc_device_t *device, uint32_t type, uint32
   capreq.subtype = subtype;
 
   return playerc_client_request(device->client, device, PLAYER_CAPABILTIES_REQ,
-                            NULL, (void*)&capreq, sizeof(capreq)) >= 0 ? 1 : 0;
+		  &capreq, NULL) >= 0 ? 1 : 0;
 }
 
 int playerc_device_get_intprop(playerc_device_t *device, char *property, int32_t *value)
 {
   int result = 0;
 
-  player_intprop_req_t req;
+  player_intprop_req_t req, *resp;
   req.key = property;
   req.key_count = strlen (property) + 1;
   req.value = 0;
 
   if((result = playerc_client_request(device->client, device,
-                            PLAYER_GET_INTPROP_REQ, &req, &req, sizeof(req))) < 0)
+                            PLAYER_GET_INTPROP_REQ, &req, (void**)&resp)) < 0)
     return result;
 
-  *value = req.value;
+  *value = resp->value;
+  player_intprop_req_t_free(resp);
   return 0;
 }
 
@@ -139,7 +140,7 @@ int playerc_device_set_intprop(playerc_device_t *device, char *property, int32_t
   req.value = value;
 
   if((result = playerc_client_request(device->client, device,
-                            PLAYER_SET_INTPROP_REQ, &req, NULL, 0)) < 0)
+                            PLAYER_SET_INTPROP_REQ, &req, NULL)) < 0)
     return result;
 
   return 0;
@@ -149,16 +150,17 @@ int playerc_device_get_dblprop(playerc_device_t *device, char *property, double 
 {
   int result = 0;
 
-  player_dblprop_req_t req;
+  player_dblprop_req_t req, *resp;
   req.key = property;
   req.key_count = strlen (property) + 1;
   req.value = 0;
 
   if((result = playerc_client_request(device->client, device,
-                            PLAYER_GET_DBLPROP_REQ, &req, &req, sizeof(req))) < 0)
+                            PLAYER_GET_DBLPROP_REQ, &req, (void**)&resp)) < 0)
     return result;
 
-  *value = req.value;
+  *value = resp->value;
+  player_dblprop_req_t_free(resp);
   return 0;
 }
 
@@ -172,7 +174,7 @@ int playerc_device_set_dblprop(playerc_device_t *device, char *property, double 
   req.value = value;
 
   if((result = playerc_client_request(device->client, device,
-                            PLAYER_SET_DBLPROP_REQ, &req, NULL, 0)) < 0)
+                            PLAYER_SET_DBLPROP_REQ, &req, NULL)) < 0)
     return result;
 
   return 0;
@@ -182,22 +184,23 @@ int playerc_device_get_strprop(playerc_device_t *device, char *property, char **
 {
   int result = 0;
 
-  player_strprop_req_t req;
+  player_strprop_req_t req, *resp;
   req.key = property;
   req.key_count = strlen (property) + 1;
   req.value = NULL;
   req.value_count = 0;
 
   if((result = playerc_client_request(device->client, device,
-                            PLAYER_GET_STRPROP_REQ, &req, &req, sizeof(req))) < 0)
+                            PLAYER_GET_STRPROP_REQ, &req, (void**)&resp)) < 0)
     return result;
 
-  if (((*value) = strdup (req.value)) == NULL)
+  if (((*value) = strdup (resp->value)) == NULL)
   {
+    player_strprop_req_t_free(resp);
     PLAYER_ERROR ("Failed to allocate memory to store property value");
     return -1;
   }
-
+  player_strprop_req_t_free(resp);
   return 0;
 }
 
@@ -212,7 +215,7 @@ int playerc_device_set_strprop(playerc_device_t *device, char *property, char *v
   req.value_count = strlen (value) + 1;
 
   if((result = playerc_client_request(device->client, device,
-                            PLAYER_SET_STRPROP_REQ, &req, NULL, 0)) < 0)
+                            PLAYER_SET_STRPROP_REQ, &req, NULL)) < 0)
     return result;
 
   return 0;

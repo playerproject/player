@@ -113,7 +113,7 @@ def processfile(mode, filename):
     print "\n  /* %s messages */" % interface_name
     for m in interface_messages:
       print "  {", interface_def, ",", m.msg_type, ",", m.msg_subtype_string, ","
-      print "    (player_pack_fn_t)%(dt_base)s_pack, (player_dpcpy_fn_t)%(dt)s_dpcpy, (player_cleanup_fn_t)%(dt)s_cleanup}," % { "dt_base": m.datatype[:-2], "dt": m.datatype}
+      print "    (player_pack_fn_t)%(dt_base)s_pack, (player_copy_fn_t)%(dt)s_copy, (player_cleanup_fn_t)%(dt)s_cleanup,(player_clone_fn_t)%(dt)s_clone,(player_free_fn_t)%(dt)s_free,(player_sizeof_fn_t)%(dt)s_sizeof}," % { "dt_base": m.datatype[:-2], "dt": m.datatype}
 
 def process_for_utils(targetfile):
   interfaces = []

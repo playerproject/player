@@ -10,7 +10,7 @@
 // Basic WSN test
 int test_wsn(playerc_client_t *client, int index)
 {
-  int t, i, j;
+  int t;//, i, j;
   void *rdevice;
   playerc_wsn_t *device;
 

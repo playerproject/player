@@ -31,12 +31,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <netinet/in.h>
-#include "playercommon.h"
 
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif
 
+#include <libplayercore/playercommon.h>
 #include <libplayercore/playerconfig.h>
 #include <replace/replace.h>
 //#include <sys/poll.h>

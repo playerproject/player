@@ -65,7 +65,7 @@
 /** Maximum length for a driver name */
 #define PLAYER_MAX_DRIVER_STRING_LEN 64
 /** The maximum number of devices the server will support. */
-#define PLAYER_MAX_DEVICES             256
+#define PLAYER_MAX_DEVICES             4096
 /** Default maximum length for a message queue */
 #define PLAYER_MSGQUEUE_DEFAULT_MAXLEN 1024
 /** String that is spit back as a banner on connection */
@@ -127,110 +127,6 @@ in the body.*/
  * detailed descriptions of each interface.
  */
 
-/** @ingroup message_codes
- * @{ */
-
-//#define PLAYER_NULL_CODE           256 // /dev/null analogue
-//#define PLAYER_PLAYER_CODE         1   // the server itself
-//#define PLAYER_POWER_CODE          2   // power subsystem
-//#define PLAYER_GRIPPER_CODE        3   // gripper
-//#define PLAYER_POSITION2D_CODE     4   // device that moves about in the plane
-//#define PLAYER_SONAR_CODE          5   // fixed range-finder
-//#define PLAYER_LASER_CODE          6   // scanning range-finder
-//#define PLAYER_BLOBFINDER_CODE     7   // visual blobfinder
-//#define PLAYER_PTZ_CODE            8   // pan-tilt-zoom unit
-//#define PLAYER_AUDIO_CODE          9   // audio I/O
-//#define PLAYER_FIDUCIAL_CODE       10  // fiducial detector
-//#define PLAYER_SPEECH_CODE         12  // speech I/O
-//#define PLAYER_GPS_CODE            13  // GPS unit
-//#define PLAYER_BUMPER_CODE         14  // bumper array
-//#define PLAYER_DIO_CODE            20  // digital I/O
-//#define PLAYER_AIO_CODE            21  // analog I/O
-//#define PLAYER_IR_CODE             22  // IR array
-//#define PLAYER_WIFI_CODE           23  // wifi card status
-//#define PLAYER_LOCALIZE_CODE       25  // localization
-//#define PLAYER_MCOM_CODE           26  // multicoms
-//#define PLAYER_POSITION3D_CODE     30  // 3-D position
-//#define PLAYER_SIMULATION_CODE     31  // simulators
-//#define PLAYER_BLINKENLIGHT_CODE   33  // blinking lights
-//#define PLAYER_NOMAD_CODE          34  // Nomad robot
-//#define PLAYER_CAMERA_CODE         40  // camera device
-//#define PLAYER_MAP_CODE            42  // get a map
-//#define PLAYER_PLANNER_CODE        44  // 2D motion planner
-//#define PLAYER_LOG_CODE            45  // log read/write control
-//#define PLAYER_MOTOR_CODE          47  // motor interface
-//#define PLAYER_JOYSTICK_CODE       49  // Joytstick
-//#define PLAYER_SPEECH_RECOGNITION_CODE  50  // speech recognition
-//#define PLAYER_OPAQUE_CODE         51  // plugin interface
-//#define PLAYER_POSITION1D_CODE     52  // 1-D position
-//#define PLAYER_ACTARRAY_CODE       53  // Actuator Array interface
-//#define PLAYER_LIMB_CODE           54  // Limb interface
-//#define PLAYER_GRAPHICS2D_CODE     55  // Graphics2D interface
-//#define PLAYER_RFID_CODE           56  // RFID reader interface
-//#define PLAYER_WSN_CODE            57  // Wireless Sensor Networks interface
-//#define PLAYER_GRAPHICS3D_CODE     58  // Graphics3D interface
-//#define PLAYER_HEALTH_CODE	   59  // Statgrab Health interface
-//#define PLAYER_IMU_CODE            60  // Inertial Measurement Unit interface
-//#define PLAYER_POINTCLOUD3D_CODE   61  // 3-D point cloud
-//#define PLAYER_RANGER_CODE         62  // Range sensor device
-/** @} */
-
-/** @ingroup message_basics
- * @defgroup message_strings Interface string names
- * Used in configuration file parsing and console output, each interface is
- * assigned a string name. See @ref interfaces for
- * detailed descriptions of each interface.
- */
-
-/** @ingroup message_strings
- * @{ */
-
-//#define PLAYER_ACTARRAY_STRING        "actarray"
-//#define PLAYER_AIO_STRING             "aio"
-//#define PLAYER_AUDIO_STRING           "audio"
-//#define PLAYER_BLINKENLIGHT_STRING    "blinkenlight"
-//#define PLAYER_BLOBFINDER_STRING      "blobfinder"
-//#define PLAYER_BUMPER_STRING          "bumper"
-//#define PLAYER_CAMERA_STRING          "camera"
-//#define PLAYER_DIO_STRING             "dio"
-//#define PLAYER_GRIPPER_STRING         "gripper"
-//#define PLAYER_FIDUCIAL_STRING        "fiducial"
-//#define PLAYER_GPS_STRING             "gps"
-//#define PLAYER_GRAPHICS2D_STRING      "graphics2d"
-//#define PLAYER_GRAPHICS3D_STRING      "graphics3d"
-//#define PLAYER_IMU_STRING             "imu"
-//#define PLAYER_POINTCLOUD3D_STRING    "pointcloud3d"
-//#define PLAYER_HEALTH_STRING	      "health"
-//#define PLAYER_IR_STRING              "ir"
-//#define PLAYER_JOYSTICK_STRING        "joystick"
-//#define PLAYER_LASER_STRING           "laser"
-//#define PLAYER_LIMB_STRING            "limb"
-//#define PLAYER_LOCALIZE_STRING        "localize"
-//#define PLAYER_LOG_STRING             "log"
-//#define PLAYER_MAP_STRING             "map"
-//#define PLAYER_MCOM_STRING            "mcom"
-//#define PLAYER_MOTOR_STRING           "motor"
-//#define PLAYER_NOMAD_STRING           "nomad"
-//#define PLAYER_NULL_STRING            "null"
-//#define PLAYER_OPAQUE_STRING          "opaque"
-//#define PLAYER_PLANNER_STRING         "planner"
-//#define PLAYER_PLAYER_STRING          "player"
-//#define PLAYER_POSITION1D_STRING      "position1d"
-//#define PLAYER_POSITION2D_STRING      "position2d"
-//#define PLAYER_POSITION3D_STRING      "position3d"
-//#define PLAYER_POWER_STRING           "power"
-//#define PLAYER_PTZ_STRING             "ptz"
-//#define PLAYER_RFID_STRING            "rfid"
-//#define PLAYER_SIMULATION_STRING      "simulation"
-//#define PLAYER_SONAR_STRING           "sonar"
-//#define PLAYER_SPEECH_STRING          "speech"
-//#define PLAYER_SPEECH_RECOGNITION_STRING  "speech_recognition"
-//#define PLAYER_WIFI_STRING            "wifi"
-//#define PLAYER_WSN_STRING             "wsn"
-//#define PLAYER_RANGER_STRING          "ranger"
-
-/** @} */
-
 /** @ingroup message_basics
  * @defgroup address_structs Address structures
  * %Device and message address structures.
@@ -278,7 +174,7 @@ typedef struct player_msghdr
  * These structures often appear inside other structures.
  * @{ */
 
-/** @breif A null structure for parsing completeness */
+/** @brief A null structure for parsing completeness */
 typedef struct player_null
 {
 } player_null_t;

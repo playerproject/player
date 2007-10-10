@@ -54,83 +54,19 @@
 #include <libplayercore/interface_util.h>
 #include <libplayerxdr/playerxdr.h>
 
-Message::Message(const struct player_msghdr & Header,
-                  const void * data,
-                  unsigned int data_size,
-                  bool do_deepcopy) : DynDataSize(0)
+Message::Message(const struct player_msghdr & aHeader,
+                  void * data,
+                  bool copy) 
 {
-  this->Lock = new pthread_mutex_t;
-  assert(this->Lock);
-  pthread_mutex_init(this->Lock,NULL);
-  this->Size = sizeof(struct player_msghdr)+data_size;
-  assert(this->Size);
-  this->Data = new unsigned char[this->Size];
-  assert(this->Data);
-  
-
-  // copy the header and then the data into out message data buffer
-  memcpy(this->Data,&Header,sizeof(struct player_msghdr));
-  // Force header size to be same as data size
-  ((player_msghdr *) Data)->size = data_size;
-
-  memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
-  if (do_deepcopy && data != NULL)
-  {
-    player_dpcpy_fn_t dpcpyfunc = NULL;
-    if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
-    {
-      if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
-      {
-        // Possible error
-        PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
-      }
-    }
-  }
-
-  this->RefCount = new unsigned int;
-  assert(this->RefCount);
-  *this->RefCount = 1;
+  CreateMessage(aHeader, data, copy);
 }
 
-Message::Message(const struct player_msghdr & Header,
-                 const void * data,
-                 unsigned int data_size,
+Message::Message(const struct player_msghdr & aHeader,
+                 void * data,
                  QueuePointer &_queue,
-                 bool do_deepcopy) : DynDataSize(0)
+                 bool copy) : Queue(_queue)
 {
-  this->Queue = _queue;
-  this->Lock = new pthread_mutex_t;
-  assert(this->Lock);
-  pthread_mutex_init(this->Lock,NULL);
-  this->Size = sizeof(struct player_msghdr)+data_size;
-  assert(this->Size);
-  this->Data = new unsigned char[this->Size];
-  assert(this->Data);
-
-  // copy the header and then the data into out message data buffer
-  memcpy(this->Data,&Header,sizeof(struct player_msghdr));
-  // Force header size to be same as data size
-  ((player_msghdr *) Data)->size = data_size;
-
-  memcpy(&this->Data[sizeof(struct player_msghdr)],data,data_size);
-  // Perform deep copy if necessary
-  if (do_deepcopy && data != NULL && data_size > 0)
-  {
-    player_dpcpy_fn_t dpcpyfunc = NULL;
-    if((dpcpyfunc = playerxdr_get_dpcpyfunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
-    {
-      if((this->DynDataSize = (*dpcpyfunc)(data, this->GetPayload())) == 0)
-      {
-        // Possible error
-        PLAYER_WARN3 ("copied zero bytes in deep copy of message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
-        assert(0);
-      }
-    }
-  }
-
-  this->RefCount = new unsigned int;
-  assert(this->RefCount);
-  *this->RefCount = 1;
+  CreateMessage(aHeader, data, copy);
 }
 
 Message::Message(const Message & rhs)
@@ -138,24 +74,66 @@ Message::Message(const Message & rhs)
   assert(rhs.Lock);
   pthread_mutex_lock(rhs.Lock);
 
-  assert(rhs.Data);
   assert(rhs.RefCount);
   assert(*(rhs.RefCount));
   Lock = rhs.Lock;
   Data = rhs.Data;
-  Size = rhs.Size;
-  DynDataSize = rhs.DynDataSize;
+  Header = rhs.Header;
   Queue = rhs.Queue;
   RefCount = rhs.RefCount;
   (*RefCount)++;
   ready = false;
 
-  pthread_mutex_unlock(Lock);
+  pthread_mutex_unlock(rhs.Lock);
 }
 
 Message::~Message()
 {
   this->DecRef();
+}
+
+void Message::CreateMessage(const struct player_msghdr & aHeader,
+                  void * data,
+                  bool copy) 
+{
+  this->Lock = new pthread_mutex_t;
+  assert(this->Lock);
+  pthread_mutex_init(this->Lock,NULL);
+  this->RefCount = new unsigned int;
+  assert(this->RefCount);
+  *this->RefCount = 1;
+
+  // copy the header and then the data into out message data buffer
+  memcpy(&this->Header,&aHeader,sizeof(struct player_msghdr));
+  if (data == NULL)
+  {
+    Data = NULL;
+    Header.size = 0;
+    return;
+  }
+  // Force header size to be same as data size
+  player_sizeof_fn_t sizeoffunc;
+  if((sizeoffunc = playerxdr_get_sizeoffunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
+  {
+    Header.size = (*sizeoffunc)(data);
+  }
+  
+  //((player_msghdr *) Data)->size = data_size;
+  if (copy)
+  {
+    player_clone_fn_t clonefunc = NULL;
+    if((clonefunc = playerxdr_get_clonefunc(Header.addr.interf, Header.type, Header.subtype)) != NULL)
+    {
+      if ((this->Data = (uint8_t*)(*clonefunc)(data)) == NULL)
+      {
+        PLAYER_ERROR3 ("failed to clone message %s: %s, %d", interf_to_str (Header.addr.interf), msgtype_to_str (Header.type), Header.subtype);
+      }
+    }
+  }
+  else
+  {
+    this->Data = (uint8_t*)data;
+  }
 }
 
 bool
@@ -177,9 +155,8 @@ Message::DecRef()
   assert((*RefCount) >= 0);
   if((*RefCount)==0)
   {
-    if (this->GetPayloadSize() > 0 && DynDataSize > 0)
-      playerxdr_delete_message (this->GetPayload(), this->GetHeader()->addr.interf, this->GetHeader()->type, this->GetHeader()->subtype);
-    delete [] Data;
+    if (Data)
+      playerxdr_free_message (Data, Header.addr.interf, Header.type, Header.subtype);
     Data = NULL;
     delete RefCount;
     RefCount = NULL;

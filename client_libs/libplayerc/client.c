@@ -480,7 +480,7 @@ int playerc_client_set_replace_rule(playerc_client_t *client, int interf, int in
   req.subtype = subtype;
   req.replace = replace;
 
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_ADD_REPLACE_RULE, &req, NULL, 0) < 0)
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_ADD_REPLACE_RULE, &req, NULL) < 0)
     return -1;
 
   return 0;
@@ -494,7 +494,7 @@ int playerc_client_datamode(playerc_client_t *client, uint8_t mode)
 //  req.subtype = htons(PLAYER_PLAYER_DATAMODE_REQ);
   req.mode = mode;
 
-  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATAMODE, &req, NULL, 0) < 0)
+  if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATAMODE, &req, NULL) < 0)
     return -1;
 
   /* cache the change */
@@ -511,7 +511,7 @@ playerc_client_requestdata(playerc_client_t* client)
   player_null_t req;
 
 //  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
-  return(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL, 0));
+  return(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL));
 }
 
 // Test to see if there is pending data.
@@ -597,13 +597,13 @@ void *playerc_client_read(playerc_client_t *client)
           // If in push mode, handle and return
           void *result = playerc_client_dispatch (client, &header, client->data);
           // Need to ensure that any dynamic data made during unpacking is cleaned up
-          playerxdr_delete_message(client->data, header.addr.interf, header.type, header.subtype);
+          playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
           return result;
         }
         else  // PULL mode, so keep on going
         {
           void *result = playerc_client_dispatch (client, &header, client->data);
-          playerxdr_delete_message(client->data, header.addr.interf, header.type, header.subtype);
+          playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
           if (result == NULL)
             return NULL;
           continue;
@@ -651,7 +651,7 @@ int playerc_client_write(playerc_client_t *client,
 int playerc_client_request(playerc_client_t *client,
                            playerc_device_t *deviceinfo,
                            uint8_t subtype,
-                           void *req_data, void *rep_data, int rep_len)
+                           void *req_data, void **rep_data)
 {
   double t;
   struct timeval last;
@@ -713,13 +713,14 @@ int playerc_client_request(playerc_client_t *client,
         PLAYERC_ERR("got the wrong kind of reply (not good).");
         return -1;
       }
-      else if(rep_header.size > rep_len)
+      if (rep_header.size > 0)
       {
-        PLAYERC_ERR2("insufficient space to store the reply (%u > %u)",
-                     rep_header.size, rep_len);
-        return -1;
+        if (rep_data)
+        {
+          *rep_data = playerxdr_clone_message(client->data,rep_header.addr.interf, rep_header.type, rep_header.subtype);
+        }
+        playerxdr_cleanup_message(client->data,rep_header.addr.interf, rep_header.type, rep_header.subtype);
       }
-      memcpy(rep_data, client->data, rep_header.size);
       return(0);
     }
     else if (rep_header.type == PLAYER_MSGTYPE_RESP_NACK)
@@ -780,21 +781,21 @@ int playerc_client_deldevice(playerc_client_t *client, playerc_device_t *device)
 int playerc_client_get_devlist(playerc_client_t *client)
 {
   int i;
-  player_device_devlist_t config;
-
-  memset(&config,0,sizeof(config));
+  player_device_devlist_t *rep_config;
 
   if(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEVLIST,
-                            &config, &config, sizeof(config)) < 0)
+                            NULL, (void**)&rep_config) < 0)
   {
     PLAYERC_ERR("failed to get response");
     return(-1);
   }
 
-  for (i = 0; i < config.devices_count; i++)
-    client->devinfos[i].addr = config.devices[i];
-  client->devinfo_count = config.devices_count;
+  for (i = 0; i < rep_config->devices_count; i++)
+    client->devinfos[i].addr = rep_config->devices[i];
+  client->devinfo_count = rep_config->devices_count;
 
+  player_device_devlist_t_free(rep_config);
+  
   // Now get the driver info
   return playerc_client_get_driverinfo(client);
 }
@@ -805,7 +806,7 @@ int playerc_client_get_devlist(playerc_client_t *client)
 int playerc_client_get_driverinfo(playerc_client_t *client)
 {
   int i;
-  player_device_driverinfo_t req;
+  player_device_driverinfo_t req, *resp;
 
   for (i = 0; i < client->devinfo_count; i++)
   {
@@ -813,15 +814,17 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
     req.addr = client->devinfos[i].addr;
 
     if(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DRIVERINFO,
-                              &req, &req, sizeof(req)) < 0)
+                              &req, (void**)&resp) < 0)
     {
       PLAYERC_ERR("failed to get response");
       return(-1);
     }
 
-    strncpy(client->devinfos[i].drivername, req.driver_name,
-            req.driver_name_count);
-    client->devinfos[i].drivername[req.driver_name_count] = '\0';
+    strncpy(client->devinfos[i].drivername, resp->driver_name,
+      resp->driver_name_count);
+    client->devinfos[i].drivername[resp->driver_name_count] = '\0';
+    
+    player_device_driverinfo_t_free(resp);
   }
 
   return 0;
@@ -832,7 +835,7 @@ int playerc_client_get_driverinfo(playerc_client_t *client)
 int playerc_client_subscribe(playerc_client_t *client, int code, int index,
                              int access, char *drivername, size_t len)
 {
-  player_device_req_t req;
+  player_device_req_t req, *resp;
 
   req.addr.host = 0;
   req.addr.robot = 0;
@@ -842,7 +845,7 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
   req.driver_name_count = 0;
 
   if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEV,
-                             (void*)&req, (void*)&req, sizeof(req)) < 0)
+                             (void*)&req, (void**)&resp) < 0)
   {
     PLAYERC_ERR("failed to get response");
     return -1;
@@ -855,7 +858,8 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
   }
 
   // Copy the driver name
-  strncpy(drivername, req.driver_name, len);
+  strncpy(drivername, resp->driver_name, len);
+  player_device_req_t_free(resp);
 
   return 0;
 }
@@ -864,8 +868,9 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
 // Unsubscribe from a device
 int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
 {
-  player_device_req_t req;
-
+  player_device_req_t req, *resp;
+  int ret;
+  
   req.addr.host = 0;
   req.addr.robot = 0;
   req.addr.interf = code;
@@ -874,16 +879,21 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index)
   req.driver_name_count = 0;
 
   if (playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DEV,
-                             (void*)&req, (void*)&req, sizeof(req)) < 0)
+                             (void*)&req, (void**)&resp) < 0)
     return -1;
 
-  if (req.access != PLAYER_CLOSE_MODE)
+  if (resp->access != PLAYER_CLOSE_MODE)
   {
-    PLAYERC_ERR2("requested [%d] access, but got [%d] access", PLAYER_CLOSE_MODE, req.access);
-    return -1;
+    PLAYERC_ERR2("requested [%d] access, but got [%d] access", PLAYER_CLOSE_MODE, resp->access);
+    ret = -1;
+  }
+  else
+  {
+    ret = 0;
   }
 
-  return 0;
+  player_device_req_t_free(resp);
+  return ret;
 }
 
 

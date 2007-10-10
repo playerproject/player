@@ -238,20 +238,20 @@ void CameraUncompress::Main()
 
 void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
 {
-  size_t size;
   char filename[256];
-
-  jpeg_decompress( (unsigned char*)this->data.image, 
-                    PLAYER_CAMERA_IMAGE_SIZE,
-                    compdata.image,
-                    compdata.image_count);
-
   this->data.width = (compdata.width);
   this->data.height = (compdata.height);
   this->data.image_count = data.width*data.height*3;
   this->data.bpp = 24;
   this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
+  this->data.image = new unsigned char [this->data.image_count];
+
+  jpeg_decompress( (unsigned char*)this->data.image, 
+                    PLAYER_CAMERA_IMAGE_SIZE,
+                    compdata.image,
+                    compdata.image_count);
+
 
   if (this->save)
   {
@@ -261,6 +261,7 @@ void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
     fclose(fp);
   }
 
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, sizeof(this->data), &this->camera_time);
-
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, &this->camera_time);
+  delete [] this->data.image;
+  this->data.image = NULL;
 }

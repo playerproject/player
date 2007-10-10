@@ -586,6 +586,8 @@ AC_OUTPUT(Makefile
           server/drivers/pointcloud3d/Makefile
           server/drivers/ranger/Makefile
           server/drivers/vectormap/Makefile
+          server/drivers/blackboard/Makefile
+          server/drivers/blackboard/localbb/Makefile
           client_libs/Makefile
           client_libs/libplayerc++/Makefile
           client_libs/libplayerc++/playerc++.pc

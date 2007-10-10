@@ -79,9 +79,7 @@ VectorMapInfoHolder PostgresConn::GetVectorMapInfo(vector<string> layerNames)
   VectorMapInfoHolder info(srid, extent);
   for (uint i=0; i<layerNames.size(); ++i)
   {
-    LayerInfoHolder layer_info(layerNames[i]);
-    LayerDataHolder layer_data(layer_info);
-    info.layers.push_back(layer_data);
+    info.layers.push_back(GetLayerInfo(layerNames[i].c_str()));
   }
 
   return info;
@@ -131,8 +129,6 @@ LayerDataHolder PostgresConn::GetLayerData(const char* layer_name)
   // Split into two queries. First get the layer meta-data, then get the feature data.
   // need to get layer name count, layer name, feature count and exteny
   LayerDataHolder data;
-
-  data.info.name = layer_name;
 
   // need to get name count, name, wkb count, wkb
   const char* template_data = "SELECT name, asbinary(geom) FROM %s;";
@@ -231,7 +227,7 @@ const player_vectormap_info_t* VectorMapInfoHolder::Convert()
   info.extent.x1 = extent.x1;
   info.extent.y1 = extent.y1;
   info.layers_count = layers.size();
-  info.layers = new player_vectormap_layer_data_t[layers.size()];
+  info.layers = new player_vectormap_layer_info_t[layers.size()];
   for (uint ii=0; ii<layers.size(); ++ii)
   {
     info.layers[ii] = *(layers[ii].Convert());
@@ -282,7 +278,6 @@ FeatureDataHolder::~FeatureDataHolder()
 
 const player_vectormap_layer_data_t* LayerDataHolder::Convert()
 {
-  layer_data.info = *(info.Convert());
   layer_data.features_count = features.size();
   layer_data.features = new player_vectormap_feature_data_t[features.size()];
   for (uint ii=0; ii<features.size(); ++ii)
@@ -294,6 +289,7 @@ const player_vectormap_layer_data_t* LayerDataHolder::Convert()
 
 LayerDataHolder::~LayerDataHolder()
 {
+  free(layer_data.name);
 //   if (layer_data.features)
 //   {
 //     delete[] layer_data.features;

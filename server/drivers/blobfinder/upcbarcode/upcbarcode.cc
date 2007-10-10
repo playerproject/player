@@ -248,13 +248,13 @@ int UPCBarcode::ProcessFrame()
   int x, step_x;
   int id, min, max;
   int symbol_count;
-  int symbols[PLAYER_CAMERA_IMAGE_HEIGHT][2];
   blob_t *blob;
 
   int width, height;
 
   width = this->stored_data.width;
   height = this->stored_data.height;
+  int symbols[height][2];
 
   // Create input image if it doesnt exist
   if (this->inpImage == NULL)
@@ -566,7 +566,7 @@ void UPCBarcode::WriteBlobfinderData()
   data.height = (this->stored_data.height);
 
   data.blobs_count = (this->blobCount);
-    
+  data.blobs = (player_blobfinder_blob_t*)calloc(blobCount, sizeof(data.blobs[0]));
   for (i = 0; i < this->blobCount; i++)
   {
     blob = this->blobs + i;
@@ -585,10 +585,7 @@ void UPCBarcode::WriteBlobfinderData()
     
   // Copy data to server.
   Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
-  // Copy data to server
-/*  size = sizeof(data) - sizeof(data.blobs) + this->blobCount * sizeof(data.blobs[0]);
-  PutMsg(blobfinder_id, NULL, PLAYER_MSGTYPE_DATA, 0, (unsigned char*) &data, size, &this->cameraTime);		
-  */
+  free(data.blobs);
   return;
 }
 

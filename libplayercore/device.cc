@@ -185,12 +185,12 @@ Device::Unsubscribe(QueuePointer &sub_queue)
 void
 Device::PutMsg(QueuePointer &resp_queue,
                player_msghdr_t* hdr,
-               void* src)
+               void* src,
+               bool copy)
 {
   hdr->addr = this->addr;
-  Message msg(*hdr,src,hdr->size,resp_queue);
+  Message msg(*hdr,src,resp_queue,copy);
   // don't need to lock here, because the queue does its own locking in Push
-  //if(!this->driver->InQueue->Push(msg))
   if(!this->InQueue->Push(msg))
   {
     PLAYER_ERROR4("tried to push %s/%d from/onto %s/%d\n",

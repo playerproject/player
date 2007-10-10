@@ -478,6 +478,7 @@ void ShapeTracker::WriteData()
   data.height = (this->stored_data.height);
 
   data.blobs_count = shapeCount;
+  data.blobs = (player_blobfinder_blob_t*)calloc(shapeCount,sizeof(data.blobs[0]));
   
   // Go through the blobs
   for (i = 0; i < this->shapeCount; i++)
@@ -499,7 +500,7 @@ void ShapeTracker::WriteData()
 
   // Copy data to server.
   Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
-  
+  free(data.blobs);
   
   return;
 }

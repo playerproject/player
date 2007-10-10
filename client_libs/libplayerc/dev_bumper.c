@@ -130,19 +130,20 @@ void playerc_bumper_putmsg(playerc_bumper_t *device,
 int playerc_bumper_get_geom(playerc_bumper_t *device)
 {
   int i;
-  player_bumper_geom_t config;
+  player_bumper_geom_t *config;
 
 //  config.subtype = PLAYER_BUMPER_REQ_GET_GEOM;
 
   if (playerc_client_request(device->info.client, &device->info, PLAYER_BUMPER_REQ_GET_GEOM,
-                               NULL, &config, sizeof(config)) < 0)
+                               NULL, (void**)&config) < 0)
     return -1;
-  device->pose_count = config.bumper_def_count;
+  device->pose_count = config->bumper_def_count;
   for (i = 0; i < device->pose_count; i++)
   {
-    device->poses[i] = config.bumper_def[i];
+    device->poses[i] = config->bumper_def[i];
   }
-	
+
+  player_bumper_geom_t_free(config);
   return 0;
 }
 

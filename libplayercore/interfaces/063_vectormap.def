@@ -15,8 +15,6 @@ For more information about GEOS see http://geos.refractions.net/ro/doxygen_docs/
 
 /** Request/reply subtype: get vectormap meta-data. */
 message { REQ, GET_MAP_INFO, 1, player_vectormap_info_t };
-/** Request/reply subtype: get layer info. */
-message { REQ, GET_LAYER_INFO, 2, player_vectormap_layer_info_t };
 /** Request/reply subtype: get layer data. */
 message { REQ, GET_LAYER_DATA, 3, player_vectormap_layer_data_t };
 /** Request/reply subtype: write layer data. */
@@ -48,7 +46,10 @@ typedef struct player_vectormap_layer_info
 /** @brief Vectormap data. */
 typedef struct player_vectormap_layer_data
 {
-  player_vectormap_layer_info_t info;
+  /** Length of name in bytes */
+  uint32_t name_count;
+  /** Identifier for the layer */
+  char* name;
   /** The number of map features. */
   uint32_t features_count;
   /** Array of map features. */
@@ -63,7 +64,7 @@ typedef struct player_vectormap_info
   /** The number of layers. */
   uint32_t layers_count;
   /** Array of layers. */
-  player_vectormap_layer_data_t* layers;
+  player_vectormap_layer_info_t* layers;
   /** Boundary area. */
   player_extent2d_t extent;
 } player_vectormap_info_t;

@@ -224,7 +224,7 @@ void laser_draw(laser_t *laser)
   double ax, ay, bx, by;
   double r, b, res;
   int point_count;
-  double points[PLAYERC_LASER_MAX_SAMPLES + 1][2];
+  double * points;
   rtk_fig_show(laser->scan_fig, 1);      
   rtk_fig_clear(laser->scan_fig);
 
@@ -252,20 +252,18 @@ void laser_draw(laser_t *laser)
     res = laser->proxy->scan_res / 2;
           
     // Draw in the range scan (empty space)
-    point_count = 0;
-    points[point_count][0] = 0;
-    points[point_count][1] = 0;    
-    point_count++;
+    points = calloc(laser->proxy->scan_count,sizeof(double)*2);
     for (i = 0; i < laser->proxy->scan_count; i++)
     {      
       r = laser->proxy->scan[i][0];
       b = laser->proxy->scan[i][1];
-      points[point_count][0] = r * cos(b - res);
-      points[point_count][1] = r * sin(b - res);
-      point_count++;
+      points[i*2] = r * cos(b - res);
+      points[i*2+1] = r * sin(b - res);
     }
     rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_EMP);
-    rtk_fig_polygon(laser->scan_fig, 0, 0, 0, point_count, points, 1);
+    rtk_fig_polygon(laser->scan_fig, 0, 0, 0, laser->proxy->scan_count, (double *)points, 1);
+    free(points);
+    points = NULL;
               
     // Draw in the range scan (occupied space)
     rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_OCC);

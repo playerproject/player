@@ -7,3 +7,4 @@ playercore_arraysofclasses.i
 *.java
 *.class
 net
+.deps

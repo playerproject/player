@@ -17,3 +17,5 @@ sonarobstacleavoid
 speech
 wallfollow
 speech_cpp_client
+.deps
+.libs

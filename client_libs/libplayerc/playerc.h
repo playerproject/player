@@ -471,7 +471,7 @@ typedef struct _playerc_client_t
   int devinfo_count;
 
   /** List of subscribed devices */
-  struct _playerc_device_t *device[32];
+  struct _playerc_device_t *device[PLAYERC_MAX_DEVICES];
   int device_count;
 
   /** @internal A circular queue used to buffer incoming data packets. */
@@ -652,12 +652,17 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 /** @brief Issue a request to the server and await a reply (blocking). @internal
 
+The rep_data pointer is filled with a pointer to the response data recieved. It is
+the callers responisbility to free this memory with the approriate player _free method.
+
+If an error is returned then no data will have been stored in rep_data.
+
 @returns Returns -1 on error and -2 on NACK.
 
 */
 int playerc_client_request(playerc_client_t *client,
                            struct _playerc_device_t *device, uint8_t reqtype,
-                           void *req_data, void *rep_data, int rep_len);
+                           void *req_data, void **rep_data);
 
 /** @brief Wait for response from server (blocking).
 
@@ -1074,7 +1079,46 @@ int playerc_audio_get_mixer_details(playerc_audio_t *device);
 /** @} */
 /**************************************************************************/
 
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_blackboard blackboard
 
+The blackboard proxy provides an interface to a simple data-store in a similar fashion to a hash-map.
+Data is set and retrieved by using a label. Any player message structure can be stored in the blackboard.
+At this time it is up to the user to pack and unpack the entry data. The xdr functions can be used to do
+this.
+@{ */
+
+/** @brief BlackBoard proxy. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+  /** Function to be called when a key is updated. */
+  void (*on_blackboard_event)(player_blackboard_entry_t);
+} playerc_blackboard_t;
+
+/** @brief Create a blackboard proxy. */
+playerc_blackboard_t *playerc_blackboard_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a blackboard proxy. */
+void playerc_blackboard_destroy(playerc_blackboard_t *device);
+
+/** @brief Subscribe to the blackboard device. */
+int playerc_blackboard_subscribe(playerc_blackboard_t *device, int access);
+
+/** @brief Un-subscribe from the blackboard device. */
+int playerc_blackboard_unsubscribe(playerc_blackboard_t *device);
+
+/** @brief Subscribe to a key. */
+int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, player_blackboard_entry_t* entry);
+
+/** @brief Unsubscribe from a key. */
+int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key);
+
+/** @brief Set an entry value. */
+int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
+
+/** @} */
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
@@ -2148,7 +2192,10 @@ typedef struct
   /** The number of layers. */
   uint32_t layers_count;
   /** Layer data. */
-  player_vectormap_layer_data_t** layers;
+  player_vectormap_layer_data_t** layers_data;
+  /** Layer info. */
+  player_vectormap_layer_info_t** layers_info;
+
 } playerc_vectormap_t;
 
 /** @brief Create a vectormap proxy. */
@@ -2166,10 +2213,7 @@ int playerc_vectormap_unsubscribe(playerc_vectormap_t *device);
 /** @brief Get the vectormap metadata, which is stored in the proxy. */
 int playerc_vectormap_get_map_info(playerc_vectormap_t* device);
 
-/** @brief Get the layer info by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
-int playerc_vectormap_get_layer_info(playerc_vectormap_t *device, unsigned layer_index);
-
-/** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_layer_info. */
+/** @brief Get the layer data by index. Must only be used after a successfull call to playerc_vectormap_get_map_info. */
 int playerc_vectormap_get_layer_data(playerc_vectormap_t *device, unsigned layer_index);
 
 /** @brief Clean up the dynamically allocated memory for the vectormap. */
@@ -2218,8 +2262,13 @@ int playerc_opaque_unsubscribe(playerc_opaque_t *device);
 /** @brief Send a generic command */
 int playerc_opaque_cmd(playerc_opaque_t *device, player_opaque_data_t *data);
 
-/** @brief Send a generic request */
-int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t *reply);
+/** @brief Send a generic request 
+ * 
+ * If a non null value is passed for reply memory for the response will be allocated
+ * and its pointer stored in reply. The caller is responsible for freeing this memory
+ * 
+ * If an error is returned no memory will have been allocated*/
+int playerc_opaque_req(playerc_opaque_t *device, player_opaque_data_t *request, player_opaque_data_t **reply);
 
 /** @} */
 /**************************************************************************/

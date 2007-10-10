@@ -179,12 +179,13 @@ void CameraUvc::Main()
 		data.format=PLAYER_CAMERA_FORMAT_RGB888;
 		data.fdiv=1; 
 		data.compression=PLAYER_CAMERA_COMPRESS_JPEG;
-		data.image_count=ui->GetFrameSize(); 
-    assert(data.image_count <= PLAYER_CAMERA_IMAGE_SIZE); 
+		data.image_count=ui->GetFrameSize();
+		data.image = new unsigned char[data.image_count];
 		ui->CopyFrame(data.image);
 
 		// Write data to the client (through the server)
-		Publish (device_addr,PLAYER_MSGTYPE_DATA,PLAYER_CAMERA_DATA_STATE,&data,sizeof(data),NULL);
+		Publish (device_addr,PLAYER_MSGTYPE_DATA,PLAYER_CAMERA_DATA_STATE,&data);
+		delete [] data.image;
 	}
 }
 

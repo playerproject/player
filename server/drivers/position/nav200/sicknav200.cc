@@ -246,12 +246,6 @@ SickNAV200::ProcessMessage(QueuePointer &resp_queue,
                                  PLAYER_POSITION2D_REQ_GET_GEOM,
                                  this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
     player_position2d_geom_t geom={{0}};
     geom.pose.px = this->pose[0];
     geom.pose.py = this->pose[1];

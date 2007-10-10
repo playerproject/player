@@ -245,6 +245,7 @@ class LaserVisualBW : public Driver
   
   // Local copy of the current fiducial data.
   private: player_fiducial_data_t fdata;
+  int fdata_allocated;
 };
 
 
@@ -330,6 +331,9 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserVisualBW::Setup()
 {
+  fdata_allocated = 0;
+  fdata.fiducials = NULL;
+	
   // Subscribe to the laser.
   if (!(laser = deviceTable->GetDevice (laser_id)))
   {
@@ -379,6 +383,8 @@ int LaserVisualBW::Shutdown()
   ptz->Unsubscribe(InQueue);
   camera->Unsubscribe(InQueue);
 
+  free(fdata->fiducials);
+
   return 0;
 }
 
@@ -414,33 +420,6 @@ int LaserVisualBW::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr
     return 0;
   }
 
-/*
- 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_REQ_GET_GEOM, device_id))
-  {
-    assert(*resp_len>sizeof(player_fiducial_geom_t));
-    assert(*resp_len>sizeof(player_laser_geom_t));
-
-    int ret = laser->ProcessMessage( PLAYER_MSGTYPE_REQ, PLAYER_LASER_REQ_GET_GEOM, 
-           laser_id, 0, resp_data, resp_data, resp_len);
-    if (ret != PLAYER_MSGTYPE_RESP_ACK)
-    	return ret;
-  	assert(*resp_len == sizeof(player_laser_geom_t));
-  	player_laser_geom_t lgeom = * reinterpret_cast<player_laser_geom_t * > (resp_data);
-  	player_fiducial_geom_t * fgeom = reinterpret_cast<player_fiducial_geom_t * > (resp_data);
-
-    fgeom->pose[0] = lgeom.pose[0];
-    fgeom->pose[1] = lgeom.pose[1];
-    fgeom->pose[2] = lgeom.pose[2];
-    fgeom->size[0] = lgeom.size[0];
-    fgeom->size[1] = lgeom.size[1];
-    fgeom->fiducial_size[0] = ntohs((int) (this->barwidth * 1000));
-    fgeom->fiducial_size[1] = ntohs((int) (this->barwidth * 1000));
-  
-  	*resp_len=sizeof(player_fiducial_geom_t);
-  
-    return ret;
-  }*/
   return -1;
 }
 
@@ -606,18 +585,21 @@ void LaserVisualBW::MatchLaserFiducial(double time, double pose[3])
   // If we didnt find a matching fiducial, add a new one.
   if (minfiducial == NULL)
   {
-    if (this->fiducial_count < ARRAYSIZE(this->fiducials))
+    this->fiducial_count++;
+    if (this->fiducial_count+1 > this->fdata_allocated)
     {
-      minfiducial = this->fiducials + this->fiducial_count++;
-      minfiducial->id = -1;
-      minfiducial->pose[0] = pose[0];
-      minfiducial->pose[1] = pose[1];
-      minfiducial->pose[2] = pose[2];
-      minfiducial->laser_time = time;
-      minfiducial->ptz_select_time = -1;
-      minfiducial->ptz_lockon_time = -1;
-      minfiducial->id_time = -1;
+      this->fdata_allocated = this->fiducial_count+1;
+      this->fdata.fiducials = realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
     }
+    minfiducial = &this->fiducials[this->fiducial_count-1] 
+    minfiducial->id = -1;
+    minfiducial->pose[0] = pose[0];
+    minfiducial->pose[1] = pose[1];
+    minfiducial->pose[2] = pose[2];
+    minfiducial->laser_time = time;
+    minfiducial->ptz_select_time = -1;
+    minfiducial->ptz_lockon_time = -1;
+    minfiducial->id_time = -1;
   }
 
   // Otherwise, update the existing fiducial.

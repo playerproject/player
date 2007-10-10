@@ -25,4 +25,5 @@ wsn \
 imu \
 pointcloud3d \
 ranger \
-vectormap
+vectormap \
+blackboard

@@ -76,7 +76,25 @@ driver
 @endverbatim
 
 @par Creating a PostGIS Database
-///TODO: Add documentation
+The PostGIS extension and Postgres database come in a single package in Ubuntu called postgresql-8.1-postgis. PostGIS isn't supported by Postgres-8.2 at the time of writing. After the package has been installed the database should be running and a new user 'postgres' should
+have been added to the system.
+
+After the database has been installed, you will need to install the PL/pgSQL language extension and load the PostGIS definitions.
+- To do this do a 'sudo su' to the postgres user.
+- Change to the directory holding lwpostgis.sql (Should be '/usr/share/postgres-8.1-postgis/lwpostgis.sql')
+- Add the PL/pgSQL language extension: createlang plpgsql template1
+- Load the PostGIS definitions: psql -d template1 -f lwpostgis.sql
+- Create a database: createdb gis
+- Add a user account:
+    - psql gis
+    - CREATE ROLE username WITH LOGIN CREATEDB CREATEROLE;
+- Create a table for your geometry data
+    - CREATE TABLE obstacles_geom(ID int4, NAME varchar(25))
+- Let the PostGIS extension know about your data
+    - SELECT AddGeometryColumn('public', 'obstacles_geom', 'geom', 423, 'LINESTRING', 2)
+
+Each geometry column refers to one layer in the configuration file.
+
 For more information see http://postgis.refractions.net/
 
 @par Database schema
@@ -97,12 +115,20 @@ For more information see http://postgis.refractions.net/
 #ifdef HAVE_GEOS
 #include <geos_c.h>
 #endif
+#include <stdarg.h>
 
 /** Dummy function passed as a function pointer GEOS when it is initialised. GEOS uses this for logging. */
-void geosprint(const char *text, ...)
+inline void geosprint(const char* format, ...)
 {
-  return;
-}
+	va_list ap;
+	va_start(ap,format);
+	fprintf(stderr,"GEOSError: ");
+	vfprintf(stderr,format, ap);
+	fflush(stderr);
+	va_end(ap);
+
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 class PostGIS : public Driver
 {
@@ -269,14 +295,6 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                   PLAYER_VECTORMAP_REQ_GET_MAP_INFO,
                                   this->device_addr))
   {
-
-    if (hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                 hdr->size, 0);
-      return -1;
-    }
-
     VectorMapInfoHolder info = RequestVectorMapInfo();
     const player_vectormap_info_t* response = info.Convert();
 
@@ -289,47 +307,13 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                   NULL);
     return(0);
   }
-  // Request for layer info /////////////////////////////////////////////////////////
-  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
-           PLAYER_VECTORMAP_REQ_GET_LAYER_INFO,
-           this->device_addr))
-  {
-
-    if (hdr->size != sizeof(player_vectormap_layer_info_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return -1;
-    }
-
-    const player_vectormap_layer_info_t* request = reinterpret_cast<player_vectormap_layer_info_t*>(data);
-    LayerInfoHolder info = RequestLayerInfo(request->name);
-    const player_vectormap_layer_info_t* response = info.Convert();
-
-    this->Publish(this->device_addr,
-                  resp_queue,
-                  PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_VECTORMAP_REQ_GET_LAYER_INFO,
-                  (void*)response,
-                   sizeof(player_vectormap_layer_info_t),
-                          NULL);
-
-    return(0);
-  }
   // Request for layer data /////////////////////////////////////////////////////////
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                       PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
                                       this->device_addr))
   {
-    if (hdr->size != sizeof(player_vectormap_layer_data_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return -1;
-    }
-
     player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
-    LayerDataHolder ldata = RequestLayerData(request->info.name);
+    LayerDataHolder ldata = RequestLayerData(request->name);
     const player_vectormap_layer_data_t* response = ldata.Convert();
 
     this->Publish(this->device_addr,
@@ -347,12 +331,6 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                       PLAYER_VECTORMAP_REQ_WRITE_LAYER,
                                       this->device_addr))
   {
-    if (hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return -1;
-    }
     player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
     RequestLayerWrite(request);
 

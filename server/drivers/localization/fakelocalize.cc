@@ -243,7 +243,7 @@ FakeLocalize::UpdateData()
   if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
   {
   	// we got a good reply so update our data
-  	assert(Reply->GetPayloadSize() == sizeof(cfg));
+  	assert(Reply->GetDataSize() == sizeof(cfg));
   	player_simulation_pose2d_req_t * resp = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
   	
     // Fill in loc_data, byteswapping as we go.
@@ -300,12 +300,6 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
                            PLAYER_LOCALIZE_REQ_SET_POSE,
                            this->localize_addr))
     {
-      if(hdr->size != sizeof(player_localize_set_pose_t))
-	{
-	  PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-			hdr->size, sizeof(player_localize_set_pose_t));
-	  return(-1);
-	}
       setposereq = (player_localize_set_pose_t*)data;
       player_simulation_pose2d_req_t req; 
             
@@ -338,12 +332,6 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
                                 this->localize_addr))
     {
       player_simulation_pose2d_req_t cfg;
-      if(hdr->size != 0)
-	{
-	  PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-			hdr->size, 0);
-	  return(PLAYER_MSGTYPE_RESP_NACK);
-	}
 
       // Request pose
       strncpy(cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
@@ -355,7 +343,7 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
       
       if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
 	{
-	  assert(Reply->GetPayloadSize() == sizeof(cfg));
+	  assert(Reply->GetDataSize() == sizeof(cfg));
 	  player_simulation_pose2d_req_t * ans = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
 	  
 	  player_localize_get_particles_t resp;

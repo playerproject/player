@@ -175,8 +175,7 @@ playerc_position3d_enable(playerc_position3d_t *device, int enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_POSITION3D_REQ_MOTOR_POWER,
-                                &config,
-                                &config, sizeof(config));
+                                &config,NULL);
 }
 
 
@@ -186,17 +185,17 @@ int
 playerc_position3d_get_geom(playerc_position3d_t *device)
 {
   int len;
-  player_position3d_geom_t config;
-
-  memset(&config, 0, sizeof(config));
-  //config.subtype = PLAYER_POSITION3D_GET_GEOM_REQ;
+  player_position3d_geom_t *config;
 
   len = playerc_client_request(device->info.client, &device->info,
                                PLAYER_POSITION3D_REQ_GET_GEOM,
-                               NULL, &config, sizeof(config));
+                               NULL, (void**)&config);
   if (len < 0)
     return -1;
 
+  //TODO: Actually store the geometry
+  player_position3d_geom_t_free(config);
+  
   return 0;
 }
 
@@ -298,9 +297,7 @@ playerc_position3d_set_vel_mode(playerc_position3d_t *device, int aMode)
   return playerc_client_request(device->info.client,
                                 &device->info,
                                 PLAYER_POSITION3D_REQ_VELOCITY_MODE,
-                                &config,
-                                &config,
-                                sizeof(config));
+                                &config,NULL);
 }
 
 int
@@ -323,9 +320,7 @@ playerc_position3d_set_odom(playerc_position3d_t *device,
   return playerc_client_request(device->info.client,
                               &device->info,
                               PLAYER_POSITION3D_REQ_SET_ODOM,
-                              &config,
-                              &config,
-                              sizeof(config));
+                              &config,NULL);
 
 }
 
@@ -340,7 +335,5 @@ int playerc_position3d_reset_odom(playerc_position3d_t *device)
   return playerc_client_request(device->info.client,
                               	&device->info,
 				PLAYER_POSITION3D_REQ_RESET_ODOM,
-				&config,
-				&config,
-				sizeof(config));
+				&config,NULL);
 }

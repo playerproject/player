@@ -2372,6 +2372,7 @@ class VectorMapProxy : public ClientProxy
     int GetLayerCount() const;
     std::vector<std::string> GetLayerNames() const;
     int GetFeatureCount(unsigned layer_index) const;
+    GEOSGeom GetFeatureData(unsigned layer_index, unsigned feature_index) const;
 };
 
 /**

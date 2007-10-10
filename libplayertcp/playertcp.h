@@ -140,15 +140,19 @@ class PlayerTCP
     PlayerTCP();
     ~PlayerTCP();
 
+    static void InitGlobals(void);
+
     pthread_t thread;
 
     int Listen(int* ports, int num_ports);
+    int Listen(int port);
     QueuePointer AddClient(struct sockaddr_in* cliaddr, 
                             unsigned int local_host,
                             unsigned int local_port,
                             int newsock,
                             bool send_banner,
                             int* kill_flag);
+    int Update(int timeout);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);

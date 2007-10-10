@@ -15,23 +15,23 @@ playerv_SOURCES = playerv.c \
                   error.h \
                   opt.c \
                   opt.h \
-                  dev_aio.c \
-                  dev_blobfinder.c \
-                  dev_bumper.c \
-                  dev_dio.c \
-                  dev_fiducial.c \
-                  dev_ir.c \
-                  dev_laser.c \
-                  dev_map.c \
-                  dev_position2d.c \
-                  dev_power.c \
-                  dev_ptz.c \
-                  dev_sonar.c \
-                  dev_wifi.c \
-                  dev_gripper.c \
-                  dev_ranger.c \
-									dev_vectormap.c
-#dev_localize.c
+                  pv_dev_aio.c \
+                  pv_dev_blobfinder.c \
+                  pv_dev_bumper.c \
+                  pv_dev_dio.c \
+                  pv_dev_fiducial.c \
+                  pv_dev_ir.c \
+                  pv_dev_laser.c \
+                  pv_dev_map.c \
+                  pv_dev_position2d.c \
+                  pv_dev_power.c \
+                  pv_dev_ptz.c \
+                  pv_dev_sonar.c \
+                  pv_dev_wifi.c \
+                  pv_dev_gripper.c \
+                  pv_dev_ranger.c \
+                  pv_dev_vectormap.c
+#pv_dev_localize.c
 
 playerv_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la \
                        $(top_builddir)/libplayerxdr/libplayerxdr.la \
