@@ -1014,6 +1014,7 @@ void Erratic::Send(ErraticPacket *packet) {
 }
 
 // Tells the robot to reset the odometry center
+// Just resets accumulation in this driver, not the controller
 void Erratic::ResetRawPositions() {
   ErraticPacket *pkt;
   unsigned char erraticcommand[4];
@@ -1023,8 +1024,8 @@ void Erratic::ResetRawPositions() {
 
   if(this->motor_packet) {
     pkt = new ErraticPacket();
-    this->motor_packet->rawxpos = 0;
-    this->motor_packet->rawypos = 0;
+		//    this->motor_packet->rawxpos = 0;
+		//    this->motor_packet->rawypos = 0;
     this->motor_packet->xpos = 0;
     this->motor_packet->ypos = 0;
     this->motor_packet->x_offset = 0;
