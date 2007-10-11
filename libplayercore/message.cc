@@ -117,8 +117,7 @@ void Message::CreateMessage(const struct player_msghdr & aHeader,
   {
     Header.size = (*sizeoffunc)(data);
   }
-  
-  //((player_msghdr *) Data)->size = data_size;
+
   if (copy)
   {
     player_clone_fn_t clonefunc = NULL;

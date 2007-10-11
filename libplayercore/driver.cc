@@ -368,7 +368,7 @@ void Driver::ProcessMessages(int maxmsgs)
   {
     player_msghdr * hdr = msg->GetHeader();
     void * data = msg->GetPayload();
-
+    
     // Try the driver's process function first
     // Drivers can override internal message handlers this way
     int ret = this->ProcessMessage(msg->Queue, hdr, data);
@@ -377,17 +377,17 @@ void Driver::ProcessMessages(int maxmsgs)
       // Check if it's an internal message, if that doesn't handle it, give a warning
       if (ProcessInternalMessages(msg->Queue, hdr, data) != 0)
       {
-      PLAYER_WARN7("Unhandled message for driver "
+        PLAYER_WARN7("Unhandled message for driver "
                    "device=%d:%d:%s:%d type=%s subtype=%d len=%d\n",
                    hdr->addr.host, hdr->addr.robot,
                    interf_to_str(hdr->addr.interf), hdr->addr.index,
                    msgtype_to_str(hdr->type), hdr->subtype, hdr->size);
 
-      // If it was a request, reply with an empty NACK
-      if(hdr->type == PLAYER_MSGTYPE_REQ)
-        this->Publish(hdr->addr, msg->Queue, PLAYER_MSGTYPE_RESP_NACK,
+        // If it was a request, reply with an empty NACK
+        if(hdr->type == PLAYER_MSGTYPE_REQ)
+          this->Publish(hdr->addr, msg->Queue, PLAYER_MSGTYPE_RESP_NACK,
                       hdr->subtype, NULL, 0, NULL);
-    }
+      }
     }
     delete msg;
     pthread_testcancel();

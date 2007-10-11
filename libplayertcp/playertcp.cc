@@ -874,14 +874,13 @@ PlayerTCP::ParseBuffer(int cli)
       // Iff there's a payload to pack, locate the appropriate packing
       // function
       if( hdr.size > 0 &&
-	  !(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
-					  hdr.type,
-					  hdr.subtype)))
+        !(packfunc = playerxdr_get_packfunc(hdr.addr.interf,
+            hdr.type,
+            hdr.subtype)))
       {
-	  // TODO: Allow the user to register a callback to handle unsupported
-	  // messages
-	  PLAYER_WARN4("skipping message to %s:%u with unsupported type %s:%u",
-		       interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
+        // TODO: Allow the user to register a callback to handle unsupported messages
+        PLAYER_WARN4("skipping message to %s:%u with unsupported type %s:%u",
+          interf_to_str(hdr.addr.interf), hdr.addr.index, msgtype_to_str(hdr.type), hdr.subtype);
       }
       else
       {
@@ -896,9 +895,9 @@ PlayerTCP::ParseBuffer(int cli)
         else // no packing function? this had better be an empty message
         {
           if( hdr.size == 0 )
-	        decode_msglen = 0; // an empty message decoded is still empty
+            decode_msglen = 0; // an empty message decoded is still empty
           else
-	      decode_msglen = -1; // indicate error
+            decode_msglen = -1; // indicate error
         }
 
         if( decode_msglen < 0 )
@@ -910,9 +909,10 @@ PlayerTCP::ParseBuffer(int cli)
         {
           // update the message size and send it off
           hdr.size = decode_msglen;
+          void * msg_data = hdr.size? this->decode_readbuffer: NULL;
           if(hdr.addr.interf == PLAYER_PLAYER_CODE)
           {
-            Message* msg = new Message(hdr, this->decode_readbuffer, client->queue);
+            Message* msg = new Message(hdr, msg_data, client->queue);
             assert(msg);
             this->HandlePlayerMessage(cli, msg);
             delete msg;
@@ -959,11 +959,11 @@ PlayerTCP::ParseBuffer(int cli)
               free(raw_data);
 #else
               PLAYER_WARN("not uncompressing map data, because zlib was not found at compile time");
-              device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+              device->PutMsg(client->queue, &hdr, msg_data);
 #endif
             }
             else
-              device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+              device->PutMsg(client->queue, &hdr, msg_data);
           }
           // Need to ensure that the copy of any dynamic data made during unpacking
           // is cleaned up (putting message bodies into a Message class, as with PutMsg,
