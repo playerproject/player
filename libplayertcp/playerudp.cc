@@ -814,9 +814,11 @@ PlayerUDP::ParseBuffer(int cli)
         {
           // update the message size and send it off
           hdr.size = decode_msglen;
+          void * msg_data = hdr.size? this->decode_readbuffer: NULL;
+          
           if(hdr.addr.interf == PLAYER_PLAYER_CODE)
           {
-            Message* msg = new Message(hdr, this->decode_readbuffer, client->queue);
+            Message* msg = new Message(hdr, msg_data, client->queue);
             assert(msg);
             this->HandlePlayerMessage(cli, msg);
             delete msg;
@@ -863,11 +865,11 @@ PlayerUDP::ParseBuffer(int cli)
               free(raw_data);
 #else
               PLAYER_WARN("not uncompressing map data, because zlib was not found at compile time");
-              device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+              device->PutMsg(client->queue, &hdr, msg_data);
 #endif
             }
             else
-              device->PutMsg(client->queue, &hdr, this->decode_readbuffer);
+              device->PutMsg(client->queue, &hdr, msg_data);
           }
           // Need to ensure that the copy of any dynamic data made during unpacking
           // is cleaned up (putting message bodies into a Message class, as with PutMsg,
