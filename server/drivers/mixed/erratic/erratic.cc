@@ -1024,6 +1024,7 @@ void Erratic::ResetRawPositions() {
 
   if(this->motor_packet) {
     pkt = new ErraticPacket();
+		// don't reset raw values, else there will be a jump
 		//    this->motor_packet->rawxpos = 0;
 		//    this->motor_packet->rawypos = 0;
     this->motor_packet->xpos = 0;
