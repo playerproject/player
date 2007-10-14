@@ -178,6 +178,7 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   this->data.max_angle = data->max_angle;
   this->data.max_range = data->max_range;
   this->data.ranges_count = data->ranges_count;
+  this->data.ranges = new double [data->ranges_count];
 
   // Do some precomputations to save time
   this->Precompute(data);
@@ -188,7 +189,8 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
 
   this->Publish(this->device_addr,  
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-                (void*)&this->data, sizeof(this->data), NULL);
+                (void*)&this->data);
+  delete [] this->data.ranges;
 
   return 1;
 }

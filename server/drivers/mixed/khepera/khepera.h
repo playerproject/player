@@ -83,6 +83,7 @@ class Khepera : public Driver
 public:
   
   Khepera(ConfigFile *cf, int section);
+  ~Khepera();
 
   /* the main thread */
   virtual void Main();

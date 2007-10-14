@@ -139,7 +139,13 @@ void SIP::Fill(player_p2os_data_t* data)
 
   ///////////////////////////////////////////////////////////////
   // bumper
-  data->bumper.bumpers_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
+  int bump_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
+  if (data->bumper.bumpers_count != bump_count)
+  {
+    data->bumper.bumpers_count = bump_count;
+    delete [] data->bumper.bumpers;
+    data->bumper.bumpers = new uint8_t[bump_count];
+  }
   int j = 0;
   for(int i=PlayerRobotParams[param_idx].NumFrontBumpers-1;i>=0;i--)
     data->bumper.bumpers[j++] =
@@ -164,6 +170,8 @@ void SIP::Fill(player_p2os_data_t* data)
   // analog I/O
   //TODO: should do this smarter, based on which analog input is selected
   data->aio.voltages_count = (unsigned char)1;
+  if (!data->aio.voltages)
+    data->aio.voltages = new double[1];
   data->aio.voltages[0] = (this->analog / 255.0) * 5.0;
 
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob
@@ -182,6 +190,8 @@ void SIP::Fill(player_p2os_data_t* data)
   if (blobarea > 1)	// With filtering, definition of track is 2 pixels
   {
     data->blobfinder.blobs_count = 1;
+    if (!data->blobfinder.blobs)
+    	data->blobfinder.blobs = new player_blobfinder_blob_t[1];
     data->blobfinder.blobs[0].color = this->blobcolor;
     data->blobfinder.blobs[0].x = this->blobmx;
     data->blobfinder.blobs[0].y = this->blobmy;

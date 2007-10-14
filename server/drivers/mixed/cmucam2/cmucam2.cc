@@ -440,6 +440,7 @@ void Cmucam2::RefreshDataBlobfinder ()
 	blobfinder_data.width       = IMAGE_WIDTH;
 	blobfinder_data.height      = IMAGE_HEIGHT;
 	blobfinder_data.blobs_count = num_of_blobs;
+	blobfinder_data.blobs       = new player_blobfinder_blob_t [blobfinder_data.blobs_count];
 
 	blobs_observed = 0;
 
@@ -465,6 +466,7 @@ void Cmucam2::RefreshDataBlobfinder ()
 	Publish (this->blobfinder_id, PLAYER_MSGTYPE_DATA, 
 			 PLAYER_BLOBFINDER_DATA_BLOBS, &blobfinder_data, 
 			 sizeof (player_blobfinder_data), NULL);
+	delete [] blobfinder_data.blobs;
 	return;
 }
 

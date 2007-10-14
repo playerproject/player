@@ -275,6 +275,7 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
 
   // load ir geometry config
   geometry->ir.poses_count = (cf->ReadInt(section,"ir_pose_count", 8));
+  geometry->ir.poses = new player_pose3d_t[geometry->ir.poses_count];
   if (geometry->ir.poses_count == 8 && cf->ReadTupleFloat(section,"ir_poses",0,-1) == -1)
   {
     // load the default ir geometry
@@ -328,7 +329,6 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
     geometry->ir_calib_a[i] = cf->ReadTupleFloat(section,"ir_calib_a", i, KHEPERA_DEFAULT_IR_CALIB_A);
     geometry->ir_calib_b[i] = cf->ReadTupleFloat(section,"ir_calib_b", i, KHEPERA_DEFAULT_IR_CALIB_B);
   }
-  geometry->ir.poses_count = geometry->ir.poses_count;
 
   // zero position counters
   last_lpos = 0;
@@ -338,6 +338,14 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   last_theta = 0.0;
   
   
+}
+
+Khepera::~Khepera
+{
+  delete geometry->ir.poses;
+  delete geometry->ir_calib_a;
+  delete geometry->ir_calib_b;
+  delete geometry;
 }
 
 int 
@@ -486,6 +494,10 @@ Khepera::UpdateData()
 {
   player_position2d_data_t position_data;
   player_ir_data_t ir_data;
+  ir_data.ranges_count = geometry->ir.poses_count;
+  ir_data.voltages_count = geometry->ir.poses_count;
+  ir_data.ranges = new double[ir_data.ranges_count];
+  ir_data.voltages = new double[ir_data.voltages_count];
 
   UpdatePosData(&position_data);
 
@@ -496,6 +508,7 @@ Khepera::UpdateData()
 
   // put ir data
   Publish(position_addr,PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES, (unsigned char *) &ir_data, sizeof(ir_data),NULL);
+  player_ir_data_t_cleanup(&ir_data);
 }
 
 /* this will update the IR part of the client data
@@ -510,7 +523,6 @@ Khepera::UpdateIRData(player_ir_data_t * d)
 {
   ReadAllIR(d);
 
-  d->ranges_count = geometry->ir.poses_count;
   for (unsigned int i =0; i < geometry->ir.poses_count; i++) 
   {
     d->ranges[i] = geometry->scale * geometry->ir_calib_a[i] * pow(d->voltages[i],geometry->ir_calib_b[i]);

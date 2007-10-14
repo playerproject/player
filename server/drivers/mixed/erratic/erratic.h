@@ -220,6 +220,7 @@ private:
 public:
 
   Erratic(ConfigFile* cf, int section);
+  virtual ~Erratic();
 
   virtual int Subscribe(player_devaddr_t id);
   virtual int Unsubscribe(player_devaddr_t id);

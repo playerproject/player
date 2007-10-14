@@ -1301,6 +1301,20 @@ int P2OS::Shutdown()
 
 P2OS::~P2OS (void)
 {
+  player_position2d_data_t_cleanup(&p2os_data.position);
+  player_sonar_data_t_cleanup (&p2os_data.sonar)
+  player_gripper_data_t_cleanup (&p2os_data.gripper);
+  player_gripper_data_t_cleanup (&p2os_data.armGripper);
+  player_power_data_t_cleanup (&p2os_data.power);
+  player_bumper_data_t_cleanup (&p2os_data.bumper);
+  player_dio_data_t_cleanup (&p2os_data.dio);
+  player_aio_data_t_cleanup (&p2os_data.aio);
+  player_blobfinder_data_t_cleanup (&p2os_data.blobfinder);
+  player_position2d_data_t_cleanup (&p2os_data.compass);
+  player_position2d_data_t_cleanup (&p2os_data.gyro);
+  player_actarray_data_t_cleanup (&p2os_data.lift);
+  player_actarray_data_t_cleanup (&p2os_data.actArray);  
+
   if (kineCalc)
   {
     delete kineCalc;
@@ -2266,6 +2280,7 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     }
     player_sonar_geom_t geom;
     geom.poses_count = PlayerRobotParams[param_idx].SonarNum;
+    geom.poses = new player_pose3d_t[geom.poses_count];
     for(int i = 0; i < PlayerRobotParams[param_idx].SonarNum; i++)
     {
       sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
@@ -2276,7 +2291,8 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
 
     this->Publish(this->sonar_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_SONAR_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
+                  (void*)&geom);
+    delete [] geom.poses;
     return(0);
   }
   // check for blobfinder requests
@@ -2484,6 +2500,7 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     }
     player_bumper_geom_t geom;
     geom.bumper_def_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
+    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
     for(unsigned int ii = 0; ii < geom.bumper_def_count; ii++)
     {
       bumper_def_t def = PlayerRobotParams[param_idx].bumper_geom[ii];
@@ -2496,7 +2513,8 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
 
     this->Publish(this->bumper_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_BUMPER_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
+                  (void*)&geom);
+    delete [] geom.bumper_def;
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_GET_GEOM,this->lift_id))

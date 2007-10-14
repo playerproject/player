@@ -336,6 +336,7 @@ void
     Data.max_range    = Conf.max_range;
     Data.resolution   = Conf.resolution;
     Data.ranges_count = (max_i - min_i) + 1;
+    Data.ranges = new double [Data.ranges_count];
     
     for (unsigned int i = 0; i < Data.ranges_count; ++i)
     {
@@ -344,11 +345,9 @@ void
       Data.ranges[i] /= 1000;
     }
     Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-             &Data, sizeof(player_laser_data_t), NULL);
-
-    // Sleep (you might, for example, block on a read() instead)
-    //usleep(10);
-    }
+             &Data);
+    delete [] Data.ranges;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

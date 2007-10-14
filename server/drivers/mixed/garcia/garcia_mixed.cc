@@ -544,12 +544,14 @@ GarciaDriver::ProcessIrPoseReq(player_msghdr_t* hdr)
 
   player_ir_pose_t pose;
   pose.poses_count = 6;
-  memcpy(pose.poses, poses, 6*sizeof(player_pose_t));
+  pose.poses = new double[pose.poses_count];
+  memcpy(pose.poses, poses, 6*sizeof(player_pose3d_t));
 
   Publish(mIrAddr,
           PLAYER_MSGTYPE_RESP_ACK,
           PLAYER_IR_REQ_POSE,
-          &pose, sizeof(pose), NULL);
+          &pose);
+  delete [] pose.poses;
 
 }
 
@@ -572,7 +574,8 @@ GarciaDriver::RefreshData()
   // update the IR data
   mIrData.voltages_count = 0;
   mIrData.ranges_count = 6;
-
+  mIrData.ranges = new double[mIrData.ranges_count];
+  
   mIrData.ranges[0] = mGarcia->getNamedValue("front-ranger-left")->getFloatVal();
   mIrData.ranges[1] = mGarcia->getNamedValue("front-ranger-right")->getFloatVal();
   mIrData.ranges[2] = mGarcia->getNamedValue("side-ranger-left")->getFloatVal();
@@ -582,7 +585,8 @@ GarciaDriver::RefreshData()
 
   Publish(mIrAddr,
           PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
-          reinterpret_cast<void*>(&mIrData), sizeof(mIrData), NULL);
+          reinterpret_cast<void*>(&mIrData));
+  delete [] mIrData.ranges;
 
   // do we currently have a dio device?
   static int dio_test = 0;

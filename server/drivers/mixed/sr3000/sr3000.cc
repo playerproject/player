@@ -523,6 +523,7 @@ void SR3000::RefreshData ()
     res = SR_CoordTrfFlt (srCam, xp, yp, zp, sizeof (float), sizeof (float), sizeof (float));
 
     pcloud_data.points_count = rows * cols;
+    pcloud_data.points = new player_pointcloud3d_element_t[pcloud_data.points_count];
     for (i = 0; i < rows*cols; i++)
     {
       player_pointcloud3d_element_t element;
@@ -540,6 +541,7 @@ void SR3000::RefreshData ()
     Publish (pcloud_addr, PLAYER_MSGTYPE_DATA, PLAYER_POINTCLOUD3D_DATA_STATE,
              &pcloud_data, 4 + pcloud_data.points_count*sizeof (player_pointcloud3d_element_t), 
              NULL);
+    delete [] pcloud_data.points;
 
   }
 
@@ -553,7 +555,8 @@ void SR3000::RefreshData ()
     d_cam_data.fdiv        = 1;
     d_cam_data.compression = PLAYER_CAMERA_COMPRESS_RAW;
     d_cam_data.image_count = rows*cols*2;
-    memcpy (d_cam_data.image, (unsigned char*)buffer, rows*cols*2);
+    d_cam_data.image = buffer;
+    //memcpy (d_cam_data.image, (unsigned char*)buffer, rows*cols*2);
 
     // Write the distance camera data
     Publish (d_cam_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
@@ -570,7 +573,8 @@ void SR3000::RefreshData ()
     i_cam_data.fdiv        = 1;
     i_cam_data.compression = PLAYER_CAMERA_COMPRESS_RAW;
     i_cam_data.image_count = rows*cols*2;
-    memcpy (i_cam_data.image, (unsigned char*)buffer + buffer_size/2, rows*cols*2);
+    i_cam_data.image = (unsigned char*)buffer + buffer_size/2;
+    //memcpy (i_cam_data.image, (unsigned char*)buffer + buffer_size/2, rows*cols*2);
 
     // Write the intensity camera data
     Publish (i_cam_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,

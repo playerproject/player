@@ -16,15 +16,15 @@ the @ref driver_lifomcom driver enforces a last-in-first-out stack.
 }
 
 /** request ids */
-message { REQ, PUSH, 1, player_map_info_t };
+message { REQ, PUSH, 1, player_mcom_config_t };
 /** request ids */
-message { REQ, POP, 2, player_map_info_t };
+message { REQ, POP, 2, player_mcom_return_t };
 /** request ids */
-message { REQ, READ, 3, player_map_info_t };
+message { REQ, READ, 3, player_mcom_return_t };
 /** request ids */
-message { REQ, CLEAR, 4, player_map_info_t };
+message { REQ, CLEAR, 4, player_mcom_config_t };
 /** request ids */
-message { REQ, SET_CAPACITY, 5, player_map_info_t };
+message { REQ, SET_CAPACITY, 5, player_mcom_config_t };
 
 
 

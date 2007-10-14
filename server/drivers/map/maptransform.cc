@@ -215,7 +215,9 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
   {
     PLAYER_MSG0(9,"ProcessMessage called for MapTransform Driver: PLAYER_MAP_REQ_GET_DATA");
     assert(new_data);
-  	player_map_data_t & map_data = *reinterpret_cast<player_map_data_t *> (data);
+    player_map_data_t & map_data = *reinterpret_cast<player_map_data_t *> (data);
+    player_map_data_t resp_data;
+    memcpy(&resp_data, map_data, sizeof(map_data));
 
     unsigned int i, j;
     unsigned int oi, oj, si, sj;
@@ -226,40 +228,25 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
     si = map_data.width;
     sj = map_data.height;
     PLAYER_MSG4(9,"Block Requested is: %d,%d + %d,%d",oi,oj,si,sj);
+    resp_data.data_count = map_data.width * map_data.height;
+    resp_data.data = new int8_t * [resp_data.data_count];
 
     // Grab the pixels from the map
     for(j = 0; j < sj; j++)
     {
       for(i = 0; i < si; i++)
       {
-        if((i * j) <= PLAYER_MAP_MAX_TILE_SIZE)
-        {
-          if(MAP_VALID(new_map, i + oi, j + oj))
-            map_data.data[i + j * si] = this->new_data[MAP_IDX(new_map, i+oi, j+oj)];
-          else
-          {
-            PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
-            map_data.data[i + j * si] = 0;
-          }
-        }
+        if(MAP_VALID(new_map, i + oi, j + oj))
+          resp_data.data[i + j * si] = this->new_data[MAP_IDX(new_map, i+oi, j+oj)];
         else
         {
-          PLAYER_WARN("requested tile is too large; truncating");
-          if(i == 0)
-          {
-            map_data.width = (si-1);
-            map_data.height = (j-1);
-          }
-          else
-          {
-            map_data.width = (i);
-            map_data.height = (j);
-          }
+          PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
+          resp_data.data[i + j * si] = 0;
         }
       }
     }
-    map_data.data_count = map_data.width * map_data.height;
-  	Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_MAP_REQ_GET_DATA, &map_data, sizeof(map_data),NULL);
+    Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_MAP_REQ_GET_DATA, &resp_data);
+    delete [] resp_data.data;
     return 0;
   }
 

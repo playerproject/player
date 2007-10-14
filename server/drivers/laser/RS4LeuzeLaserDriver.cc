@@ -296,7 +296,7 @@ RS4LeuzeLaserDriver::RS4LeuzeLaserDriver(ConfigFile* cf, int section)
 	laser_ON = 1;
 
 	myLaser=new Claser(ScanPoints);
-;
+	Data.ranges = new double[ScanPoints];
     return;
 }
 
@@ -304,6 +304,7 @@ RS4LeuzeLaserDriver::~RS4LeuzeLaserDriver()
 {
 	//Reading are erased
 	delete myLaser;	
+	delete [] Data.ranges;
 	//delete Readings;
 }
 

@@ -210,6 +210,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 	memset(&this->position_id, 0, sizeof(player_devaddr_t));
 	memset(&this->power_id, 0, sizeof(player_devaddr_t));
 	memset(&this->aio_id, 0, sizeof(player_devaddr_t));
+	memset(&erratic_data, 0, sizeof(erratic_data));
 
 	memset(&this->last_position_cmd, 0, sizeof(player_position2d_cmd_vel_t));
 	memset(&this->last_car_cmd, 0, sizeof(player_position2d_cmd_car_t));
@@ -219,7 +220,7 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 
 	// intialise members
 	motor_packet = NULL;
-  mcount = 0;
+	mcount = 0;
 
 	// Do we create a robot position interface?
 	if(cf->ReadDeviceAddr(&(this->position_id), section, "provides", PLAYER_POSITION2D_CODE, -1, NULL) == 0) {
@@ -296,6 +297,13 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 		printf("Error connecting to Erratic robot\n");
 		exit(1);
 	}
+}
+
+Erratic::~Erratic()
+{
+	player_aio_data_t_cleanup (&erratic_data.aio);
+	player_ir_data_t_cleanup (&erratic_data.ir);
+	
 }
 
 // Called by player when the driver is asked to connect
@@ -808,9 +816,24 @@ void Erratic::ReceiveThread() {
 
 			case (reply_e)ain:
 				// This data goes in two places, analog input and ir rangers
-				erratic_data.aio.voltages_count = packet.packet[4];
-				erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
-				erratic_data.ir.ranges_count = RobotParams[this->param_idx]->NumIR;;
+				if (erratic_data.aio.voltages_count != packet.packet[4])
+				{
+					erratic_data.aio.voltages_count = packet.packet[4];
+					erratic_data.aio.voltages = new double[erratic_data.aio.voltages_count];
+				}
+				if (erratic_data.ir.voltages_count-4 != RobotParams[this->param_idx]->NumIR)
+				{
+					erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
+					erratic_data.ir.voltages = new double[erratic_data.ir.voltages_count+4];
+				}
+				else
+					erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
+					
+				if (erratic_data.ir.ranges_count != RobotParams[this->param_idx]->NumIR)
+				{
+					erratic_data.ir.ranges_count = RobotParams[this->param_idx]->NumIR;
+					erratic_data.ir.ranges = new double[erratic_data.ir.ranges_count];
+				}
 				unsigned int i_voltage;
 				for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
 					{
@@ -1218,13 +1241,15 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
 	                                  this->ir_id)) {
 		player_ir_pose_t pose;
 		pose.poses_count = RobotParams[param_idx]->NumIR;
+		pose.poses = new player_pose3d_t[pose.poses_count]
 		for (uint16_t i = 0; i < pose.poses_count ;i++)
 			pose.poses[i] = RobotParams[param_idx]->IRPose[i];
 		
 		this->Publish(this->ir_id, resp_queue,
 		              PLAYER_MSGTYPE_RESP_ACK,
 		              PLAYER_IR_REQ_POSE,
-		              (void*)&pose, sizeof(pose), NULL);
+		              (void*)&pose);
+		delete [] pose.poses;
 		return(0);
 	}
 	else

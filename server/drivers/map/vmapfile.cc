@@ -161,6 +161,7 @@ VMapFile::Setup()
   assert(this->vmap);
 
   this->vmap->segments_count = 0;
+  this->vmap->segments = NULL;
   got_origin = got_width = got_height = 0;
   while(!feof(fp))
   {
@@ -199,6 +200,7 @@ VMapFile::Setup()
 
     if(sscanf(linebuf, "%d %d %d %d", &x0, &y0, &x1, &y1) == 4)
     {
+      this->vmap->segments = realloc(this->vmap->segments, (this->vmap->segments_count+1)*sizeof(this->vmap->segments_count[0]));
       this->vmap->segments[this->vmap->segments_count].x0 = x0/1e3;
       this->vmap->segments[this->vmap->segments_count].y0 = y0/1e3;
       this->vmap->segments[this->vmap->segments_count].x1 = x1/1e3;
@@ -243,6 +245,7 @@ VMapFile::Setup()
 int
 VMapFile::Shutdown()
 {
+  free(this->vmap->segments;)
   free(this->vmap);
   return(0);
 }
@@ -262,7 +265,7 @@ int VMapFile::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_VECTOR,
-                  (void*)this->vmap, this->vmapsize, NULL);
+                  (void*)this->vmap);
     return(0);
   }
   else

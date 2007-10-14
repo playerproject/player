@@ -250,6 +250,7 @@ FakeLocalize::UpdateData()
     loc_data.pending_count = 0;
     loc_data.pending_time = Reply->GetHeader()->timestamp;
     loc_data.hypoths_count = 1;
+    loc_data.hypoths = new player_localize_hypoth_t;
 
     loc_data.hypoths[0].mean = resp->pose;
 
@@ -258,8 +259,9 @@ FakeLocalize::UpdateData()
     loc_data.hypoths[0].alpha = htonl((uint32_t)1e6);
 
     Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LOCALIZE_DATA_HYPOTHS,&loc_data,sizeof(loc_data));
+    delete loc_data.hypoths;
     delete Reply;
-    	Reply = NULL;
+    Reply = NULL;
   }
   else
   {

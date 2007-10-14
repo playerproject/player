@@ -329,12 +329,14 @@ Roomba::Main()
      memset(&bumperdata,0,sizeof(bumperdata));
 
      bumperdata.bumpers_count = 2;
+     bumperdata.bumpers = new uint8_t[bumperdata.bumpers_count];
      bumperdata.bumpers[0] = this->roomba_dev->bumper_left;
      bumperdata.bumpers[1] = this->roomba_dev->bumper_right;
 
      this->Publish(this->bumper_addr, 
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
-                   (void*)&bumperdata, sizeof(bumperdata), NULL);
+                   (void*)&bumperdata);
+     delete [] bumperdata.bumpers;
 
      ////////////////////////////
      // Update IR data
@@ -342,6 +344,7 @@ Roomba::Main()
      memset(&irdata,0,sizeof(irdata));
 
      irdata.ranges_count = 11;
+     irdata.ranges = new double [irdata.ranges_count];
      irdata.ranges[0] = (float)this->roomba_dev->wall;
      irdata.ranges[1] = (float)this->roomba_dev->cliff_left;
      irdata.ranges[2] = (float)this->roomba_dev->cliff_frontleft;
@@ -356,7 +359,8 @@ Roomba::Main()
 
      this->Publish(this->ir_addr,
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
-         (void*)&irdata, sizeof(irdata), NULL);
+         (void*)&irdata);
+     delete [] irdata.ranges;
 
 
      ////////////////////////////
@@ -379,6 +383,7 @@ Roomba::Main()
      memset(&cpdata,0,sizeof(cpdata));
 
      cpdata.data_count=5;
+     this->cpdata->data = new uint8_t [this->cpdata->data_count];
 
      cpdata.data[0]=this->roomba_dev->button_max;
      cpdata.data[1]=this->roomba_dev->button_clean;
@@ -388,7 +393,8 @@ Roomba::Main()
 
      this->Publish(this->opaque_addr,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
-         (void*)&cpdata, sizeof(cpdata), NULL);
+         (void*)&cpdata);
+     delete [] this->cpdata->data;
 
      usleep(CYCLE_TIME_US);
   }
@@ -450,6 +456,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     player_bumper_geom_t geom;
 
     geom.bumper_def_count = 2;
+    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
 
     geom.bumper_def[0].pose.px = 0.0;
     geom.bumper_def[0].pose.py = 0.0;
@@ -466,7 +473,8 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_BUMPER_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
+                  (void*)&geom);
+    delete [] geom.bumper_def;
 
     return(0);
   }
@@ -477,6 +485,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     player_ir_pose poses;
 
     poses.poses_count = 11;
+    poses.poses = player_pose3d_t[poses.poses_count];
 
     // TODO: Fill in proper values
     for (int i=0; i<11; i++)
@@ -489,7 +498,8 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->ir_addr, resp_queue, 
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
-                  (void*)&poses, sizeof(poses), NULL);
+                  (void*)&poses);
+    delete [] poses.poses;
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,

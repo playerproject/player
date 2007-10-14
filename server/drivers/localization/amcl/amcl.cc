@@ -1013,6 +1013,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
 
   // Encode the hypotheses
   data.hypoths_count = this->hyp_count;
+  data.hypoths = new player_localize_hypoth_t[data.hypoths_count];
   for (i = 0; i < this->hyp_count; i++)
   {
     hyp = this->hyps + i;
@@ -1048,15 +1049,12 @@ void AdaptiveMCL::PutDataLocalize(double time)
   qsort((void*)data.hypoths,data.hypoths_count,
         sizeof(player_localize_hypoth_t),&hypoth_compare);
 
-  // Compute the length of the data packet
-  datalen = (sizeof(data) - sizeof(data.hypoths) +
-             data.hypoths_count * sizeof(data.hypoths[0]));
-
   // Push data out
   this->Publish(this->localize_addr, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LOCALIZE_DATA_HYPOTHS,
-                (void*)&data,datalen,&time);
+                (void*)&data);
+  delete [] data.hypoths;
 }
 
 
@@ -1147,8 +1145,8 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
 
     set = this->pf->sets + this->pf->current_set;
 
-    resp.particles_count =
-            MIN(set->sample_count,PLAYER_LOCALIZE_PARTICLES_MAX);
+    resp.particles_count = set->sample_count;
+    resp.particles = new player_localize_particle_t [resp.particles_count];
 
     // TODO: pick representative particles
     for(i=0;i<resp.particles_count;i++)
@@ -1163,7 +1161,8 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->localize_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
-                  (void*)&resp, sizeof(resp), NULL);
+                  (void*)&resp);
+    delete [] resp->particles;
     return(0);
   } else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                   PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))
