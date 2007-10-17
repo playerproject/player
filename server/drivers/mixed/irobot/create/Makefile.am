@@ -1,5 +1,5 @@
 noinst_LTLIBRARIES = 
-if INCLUDE_ROOMBA
+if INCLUDE_CREATE
 noinst_LTLIBRARIES += libcreate.la
 endif
 
