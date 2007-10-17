@@ -162,6 +162,9 @@ main(int argc, char **argv)
     exit(-1);
   }
 
+  try 
+  {
+  
   ClientProxy* cp;
 
   // connect to Player
@@ -394,6 +397,11 @@ main(int argc, char **argv)
 
       then = now;
     }
+  }
+  }
+  catch (PlayerCc::PlayerError & e)
+  {
+	  std::cout << "Error thrown: " << e << std::endl;
   }
 }
 
