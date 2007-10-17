@@ -79,8 +79,7 @@ playerc_map_t *playerc_map_create(playerc_client_t *client, int index)
 void playerc_map_destroy(playerc_map_t *device)
 {
   playerc_device_term(&device->info);
-  if(device->cells)
-    free(device->cells);
+  free(device->cells);
   free(device);
 }
 
@@ -99,7 +98,7 @@ int playerc_map_unsubscribe(playerc_map_t *device)
 int playerc_map_get_map(playerc_map_t* device)
 {
   player_map_info_t *info_req;
-  player_map_data_t data_req, *data_resp;
+  player_map_data_t *data_req, *data_resp;
 
   int i,j;
   int oi,oj;
@@ -150,26 +149,28 @@ int playerc_map_get_map(playerc_map_t* device)
   sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
   assert(sx * sy < (int)(PLAYER_MAP_MAX_TILE_SIZE));
   oi=oj=0;
+  data_req = (player_map_data_t *)malloc(sizeof(player_map_data_t));
   while((oi < device->width) && (oj < device->height))
   {
     si = MIN(sx, device->width - oi);
     sj = MIN(sy, device->height - oj);
 
-    memset(&data_req,0,sizeof(data_req));
-    data_req.col = oi;
-    data_req.row = oj;
-    data_req.width = si;
-    data_req.height = sj;
+    memset(data_req,0,sizeof(data_req));
+    data_req->col = oi;
+    data_req->row = oj;
+    data_req->width = si;
+    data_req->height = sj;
 
     if(playerc_client_request(device->info.client, &device->info,
                               PLAYER_MAP_REQ_GET_DATA,
-                              (void*)&data_req, (void**)&data_resp) < 0)
+                              (void*)data_req, (void**)&data_resp) < 0)
     {
       PLAYERC_ERR("failed to get map data");
       free(device->cells);
 #if HAVE_ZLIB_H
       free(unzipped_data);
 #endif
+      free(data_req);
       return(-1);
     }
 
@@ -182,6 +183,7 @@ int playerc_map_get_map(playerc_map_t* device)
       player_map_data_t_free(data_resp);
       free(device->cells);
       free(unzipped_data);
+      free(data_req);
       return(-1);
     }
 #endif
@@ -207,6 +209,7 @@ int playerc_map_get_map(playerc_map_t* device)
       oj += sj;
     }
   }
+  free(data_req);
 
 #if HAVE_ZLIB_H
   free(unzipped_data);

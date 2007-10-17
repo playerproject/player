@@ -125,6 +125,11 @@ int timed_recv(int s, void *buf, size_t len, int flags, int timeout)
   {
     if(errno == EINTR)
       return(0);
+    else if (ret == 0)
+    {
+      PLAYERC_ERR("poll call timed out with no data to recieve");
+      return ret;
+    }
     else
     {
       PLAYERC_ERR2("poll call failed with error [%d:%s]", errno, strerror(errno));
@@ -657,13 +662,11 @@ int playerc_client_request(playerc_client_t *client,
   struct timeval last;
   struct timeval curr;
   player_msghdr_t req_header, rep_header;
+  memset(&req_header, 0, sizeof(req_header));
 
   if(deviceinfo == NULL)
   {
-    req_header.addr.host = 0;
-    req_header.addr.robot = 0;
     req_header.addr.interf = PLAYER_PLAYER_CODE;
-    req_header.addr.index = 0;
     req_header.type = PLAYER_MSGTYPE_REQ;
   }
   else
@@ -836,6 +839,7 @@ int playerc_client_subscribe(playerc_client_t *client, int code, int index,
                              int access, char *drivername, size_t len)
 {
   player_device_req_t req, *resp;
+  resp=NULL;
 
   req.addr.host = 0;
   req.addr.robot = 0;
@@ -960,6 +964,8 @@ int playerc_client_readpacket(playerc_client_t *client,
                         0, client->request_timeout * 1e3);
     if (nbytes <= 0)
     {
+      if(nbytes == 0)
+        return -1;
       if(errno == EINTR)
         continue;
       else
