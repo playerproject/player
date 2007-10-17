@@ -176,7 +176,6 @@ create_init(create_comm_t* r, unsigned char fullcontrol)
   
   if (fullcontrol)
   {
-    printf("Setting full control\n");
     cmdbuf[0] = CREATE_OPCODE_FULL;
     if(write(r->fd, cmdbuf, 1) < 0)
     {
@@ -184,6 +183,17 @@ create_init(create_comm_t* r, unsigned char fullcontrol)
       return(-1);
     }
     r->mode = CREATE_MODE_FULL;
+  }
+  else
+  {
+    cmdbuf[0] = CREATE_OPCODE_SAFE;
+    if(write(r->fd, cmdbuf, 1) < 0)
+    {
+      perror("create_init():write():");
+      return(-1);
+    }
+    r->mode = CREATE_MODE_SAFE;
+
   }
 
   usleep(100000);
