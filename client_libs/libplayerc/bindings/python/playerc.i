@@ -7,6 +7,54 @@
 
 %include "typemaps.i"
 
+
+// Provide array access to the RFID tags
+// We will return a list of tuples. Each tuple contains the RFID type, and the RFID ID.
+//  The RFID ID is a Python string containing the unprocessed bytes of the RFID tag.
+//  In Python, use   rfid.tags[i][1].encode('hex')   to see the regular Hex-ASCII representation.
+%typemap(out) playerc_rfidtag_t [ANY]
+{
+  int i;
+  $result = PyList_New($1_dim0);  //we will return a Python List
+
+  //At this level, we don't get the ammount of tags, so we just produce a long list, of size PLAYER_RFID_MAX_TAGS
+  //(this is the size of the array of playerc_rfidtag_t contained in the RFID data packet)
+  for (i = 0; i != $1_dim0; ++i)
+  {
+
+    PyObject *tuple = PyTuple_New(2); // we will make a tuple with 2 fields: type(int) and RFID ID(string)
+
+    const unsigned int blength=PLAYERC_RFID_MAX_GUID;
+    char buffer[blength];
+    memset(buffer, 0, blength );
+
+    //result is of type playerc_rfidtag_t
+    unsigned int j;    
+    unsigned int guid_count=$1[i].guid_count;
+
+    //copy the bytes into the buffer
+    for (j=0 ; j != guid_count ; ++j) {
+	buffer[j]=$1[i].guid[j];
+    }
+
+    //generate a Python string from the buffer
+    PyObject *ostring = PyString_FromStringAndSize(buffer,guid_count);
+
+    //generate an Int from the tag type
+    PyObject *otype = PyInt_FromLong($1[i].type);
+
+    //set the previous objects into the tuple
+    PyTuple_SetItem(tuple,0,otype);
+    PyTuple_SetItem(tuple,1,ostring);
+
+    //set the tupple into the corresponding place of the list
+    PyList_SetItem($result,i,tuple);
+  }
+
+  //$result is the Python List that gets returned automatically at the end of this function
+}
+
+
 // Special rules for functions that return multiple results via pointers
 
 // For playerc_simulation_get_pose2d()
@@ -67,7 +115,7 @@
   $1 = temp;
 }
 
-%typemap(python,in) uint8_t data[]
+%typemap(in) uint8_t data[]
 {
 	int temp = 0;
 	// Check if is a list
@@ -96,13 +144,13 @@
 }
 
 /*// typemap to free the array created in the previous typemap
-%typemap(python,freearg) uint8_t data[]
+%typemap(freearg) uint8_t data[]
 {
 	if ($input) free ((uint8_t*) $input);
 }*/
 
 // typemap for passing points into the graphics2d interface
-%typemap(python,in) player_point_2d_t pts[]
+%typemap(in) player_point_2d_t pts[]
 {
 	// Check if is a list
 	if (PyList_Check ($input))
@@ -140,7 +188,7 @@
 }
 
 // typemap for passing 3d points into the graphics3d interface
-%typemap(python,in) player_point_3d_t pts[]
+%typemap(in) player_point_3d_t pts[]
 {
 	// Check if is a list
 	if (PyList_Check ($input))
@@ -179,13 +227,13 @@
 }
 
 // typemap to free the array created in the previous typemap
-%typemap(python,freearg) player_point2d_t pts[]
+%typemap(freearg) player_point2d_t pts[]
 {
 	if ($input) free ((player_point2d_t*) $input);
 }
 
 // typemap for tuples to colours
-%typemap(python,in) player_color_t (player_color_t temp)
+%typemap(in) player_color_t (player_color_t temp)
 {
 	// Check it is a tuple
 	if (PyTuple_Check ($input))
