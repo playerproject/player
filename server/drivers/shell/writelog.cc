@@ -69,6 +69,7 @@ The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
 The writelog driver can will log data from the following interfaces:
 
+- @ref interface_aio
 - @ref interface_laser
 - @ref interface_sonar
 - @ref interface_position2d
@@ -200,6 +201,9 @@ class WriteLog: public Driver
   // Write data to file
   private: void Write(WriteLogDevice *device,
                       player_msghdr_t* hdr, void *data);
+
+  // Write aio data to file
+  private: int WriteAio(player_msghdr_t* hdr, void *data);
 
   // Write laser data to file
   private: int WriteLaser(player_msghdr_t* hdr, void *data);
@@ -581,8 +585,7 @@ void WriteLog::WriteGeometries()
   }
 }
 
-void
-WriteLog::CloseFile()
+void WriteLog::CloseFile()
 {
   if(this->file)
   {
@@ -766,6 +769,9 @@ void WriteLog::Write(WriteLogDevice *device,
   // Write the data
   switch (iface.interf)
   {
+    case PLAYER_AIO_CODE:
+      retval = this->WriteAio(hdr, data);
+      break;
     case PLAYER_LASER_CODE:
       retval = this->WriteLaser(hdr, data);
       break;
@@ -837,6 +843,47 @@ void WriteLog::Write(WriteLogDevice *device,
 
   return;
 }
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_position aio format
+
+@brief position2d log format
+
+The following type:subtype  aio messages can be logged:
+- 1:1 (PLAYER_POSITION2D_DATA_STATE) Odometry information.  The format is:
+  - voltages_count (unint32_t): Number of valid samples to follow
+  - list of voltages; for each voltage
+    - voltage (float): in volts
+#endif
+*/
+int
+WriteLog::WriteAio(player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_AIO_DATA_STATE:
+          {
+            player_aio_data_t* adata = (player_aio_data_t*)data;
+            fprintf(this->file, "%04d ", adata->voltages_count);
+
+            for (unsigned int i = 0; i < adata->voltages_count; i++)
+               fprintf(this->file, "%10.4f ", adata->voltages[i]);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+
+    default:
+      return(-1);
+  }
+}
+
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_laser laser format

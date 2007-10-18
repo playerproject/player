@@ -56,6 +56,7 @@ playback control.
 
 The readlog driver can provide the following device interfaces.
 
+- @ref interface_aio
 - @ref interface_laser
 - @ref interface_position2d
 - @ref interface_ptz
@@ -241,6 +242,12 @@ class ReadLog: public Driver
                              int linenum,
                         int token_count, char **tokens, double time);
 #endif
+
+  // Parse aio data
+  private: int ParseAio(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time);
 
   // Parse laser data
   private: int ParseLaser(player_devaddr_t id,
@@ -1086,7 +1093,10 @@ int ReadLog::ParseData(player_devaddr_t id,
     return this->ParseJoystick(id, type, subtype, linenum,
                                token_count, tokens, time);
 #endif
-  if (id.interf == PLAYER_LASER_CODE)
+  if (id.interf == PLAYER_AIO_CODE)
+    return this->ParseAio(id, type, subtype, linenum,
+                          token_count, tokens, time);
+  else if (id.interf == PLAYER_LASER_CODE)
     return this->ParseLaser(id, type, subtype, linenum,
                             token_count, tokens, time);
   else if (id.interf == PLAYER_SONAR_CODE)
@@ -1312,6 +1322,62 @@ int ReadLog::ParseJoystick(player_devaddr_t id, int linenum,
 }
 #endif
 
+////////////////////////////////////////////////////////////////////////////
+// Parse aio data
+int ReadLog::ParseAio(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
+{
+  int i, count;
+
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_AIO_DATA_STATE:
+          {
+            player_aio_data_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.voltages_count = atoi(tokens[7]);
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.voltages[count] = atof(tokens[i]);
+              count++;
+            }
+
+            if (count != (int)data.voltages_count)
+            {
+              PLAYER_ERROR2("voltage count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown aio data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown aio msg type %d\n", type);
+      return(-1);
+  }
+}
 ////////////////////////////////////////////////////////////////////////////
 // Parse laser data
 int ReadLog::ParseLaser(player_devaddr_t id,
