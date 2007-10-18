@@ -76,6 +76,7 @@ The writelog driver can will log data from the following interfaces:
 - @ref interface_ptz
 - @ref interface_wifi
 - @ref interface_wsn
+- @ref interface_opaque
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -207,6 +208,9 @@ class WriteLog: public Driver
 
   // Write laser data to file
   private: int WriteLaser(player_msghdr_t* hdr, void *data);
+
+  // Write opaque data to file
+  private: int WriteOpaque(player_msghdr_t* hdr, void *data);
 
   // Write position data to file
   private: int WritePosition(player_msghdr_t* hdr, void *data);
@@ -781,6 +785,9 @@ void WriteLog::Write(WriteLogDevice *device,
     case PLAYER_PTZ_CODE:
       retval = this->WritePTZ(hdr, data);
       break;
+    case PLAYER_OPAQUE_CODE:
+      retval = this->WriteOpaque(hdr, data);
+      break;
     case PLAYER_SONAR_CODE:
       retval = this->WriteSonar(hdr, data);
       break;
@@ -1102,6 +1109,77 @@ WriteLog::WritePTZ (player_msghdr_t* hdr, void *data)
                     pdata->zoom,
                     pdata->panspeed,
                     pdata->tiltspeed);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+/** @ingroup tutorial_datalog
+ @defgroup player_driver_writelog_opaque opaque format
+
+ * @defgroup player_driver_writelog_position aio format
+
+@brief opaque log format
+
+The following type:subtype opaque messages can be logged:
+- 1:1 (PLAYER_OPAQUE_DATA_STATE) Data information.  The format is:
+  - data_count (uint32_t): Number of valid bytes to follow
+  - list of bytes; for each byte:
+    - data uint8_t: 
+
+- 2:2 (PLAYER_OPAQUE_CMD) Command information. The format is:
+  - data_count (uint32_t): Number of valid bytes to follow
+  - list of bytes; for each byte:
+    - data uint8_t:
+ */
+int
+WriteLog::WriteOpaque (player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      printf("Data State:\n");
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_OPAQUE_DATA_STATE:
+          {
+            player_opaque_data_t* odata =
+                    (player_opaque_data_t*)data;
+            fprintf(this->file, "%04d ", odata->data_count);
+
+            for (unsigned int i = 0; i < odata->data_count; i++)
+            {
+               fprintf(this->file, "%03d ", odata->data[i]);
+            }
+
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_CMD:
+      printf("Data Command: \n");
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_OPAQUE_CMD:
+          {
+            player_opaque_data_t* odata =
+                    (player_opaque_data_t*)data;
+            fprintf(this->file, "%04d ", odata->data_count);
+
+            for (unsigned int i = 0; i < odata->data_count; i++)
+            {
+               fprintf(this->file, "%03d ", odata->data[i]);
+            }
+
             return(0);
           }
         default:
