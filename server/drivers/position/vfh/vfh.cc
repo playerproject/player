@@ -160,7 +160,7 @@ or sector_angle.
     - Default: 0.0
     - If non-zero, the time (in seconds) for which an escape attempt will be 
       made.
-  - escape_max_turnspeed (angle / sec)
+  - escape_max_turnrate (angle / sec)
     - Default: 0.0
     - If non-zero, the maximum angular velocity that will be used when 
       trying to escape.
