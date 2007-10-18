@@ -56,6 +56,10 @@
 //
 //--------------------------------------------------------------------------
 
+#ifndef VIDEO_PALETTE_JPEG
+#define VIDEO_PALETTE_JPEG 21
+#endif
+
 typedef struct
 {
     int     width;
