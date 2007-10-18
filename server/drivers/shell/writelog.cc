@@ -1877,6 +1877,7 @@ WriteLog::WriteDIO(player_msghdr_t* hdr, void* data)
 The format for each @ref interface_rfid message is:
   - tags_count (int): the numer of tags found
   - list of tags; for each tag:
+    - type (int): type of the tag
     - guid (string): tag guid in hex
 
  */
@@ -1897,7 +1898,7 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
                 return -1;
             }
 
-            fprintf(file, "%04d ", rdata->tags_count);
+            fprintf(file, "%04lu ", (long)rdata->tags_count);
 
             for (player_rfid_tag_t *t(rdata->tags);
                  t != rdata->tags + rdata->tags_count; ++t) {
@@ -1908,7 +1909,7 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
               char str[PLAYER_RFID_MAX_GUID * 2 + 1];
               memset(str, '\0', sizeof(str));
               EncodeHex(str, sizeof(str), t->guid, t->guid_count);
-              fprintf(file, "%s ", str);
+              fprintf(file, "%04lu %s ", (long)t->type, str);
             }
 
             return 0;
