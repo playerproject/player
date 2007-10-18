@@ -168,8 +168,13 @@ void ranger_update(ranger_t *ranger)
   else
   {
     // Dont draw the scan
+    // This causes a segfault, because the ranger figures were already
+    // deleted above.  I don't know whether commenting it out is the right
+    // thing to do - BPG.
+    /*
     for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
       rtk_fig_show(ranger->scan_fig[ii], 0);
+      */
   }
 }
 
