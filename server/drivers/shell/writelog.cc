@@ -97,10 +97,19 @@ disabled because they need to be updated:
 - PLAYER_LOG_REQ_SET_FILENAME
 
 @par Configuration file options
-
+- log_directory (string)
+  - Default: Directory player is run from.
+  - Name of the directory to store the log file in. Relative paths are 
+    taken from the directory player is run from. Absolute paths work
+    as expected.
+- basename (string)
+  - Default: writelog, produces the logfile: "writelog_YYYY_MM_DD_HH_MM.log", 
+    where YYYY is the year, MM is the month, etc.
+  - Base name of the logfile to attach the time stamp to. If specified the logfile
+    will be "(basename)_YYYY_MM_DD_HH_MM.log".
 - filename (string)
-  - Default: "writelog_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
-    MM is the month, etc.
+  - Default: "(basename)_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
+    MM is the month, etc. If this parameter is specified it will NOT be time stamped.
   - Name of logfile.
 - autorecord (integer)
   - Default: 0
@@ -114,11 +123,12 @@ disabled because they need to be updated:
 @par Example
 
 @verbatim
-# Log data from laser:0 position2d:0 to "mydata.log"
+# Log data from laser:0 position2d:0 to "/home/data/logs/mydata_YYYY_MM_DD_HH_MM.log"
 driver
 (
   name "writelog"
-  filename "mydata.log"
+  log_directory "/home/user/logs"
+  basename "mydata"
   requires ["laser:0" "position2d:0"]
   provides ["log:0"]
   alwayson 1
@@ -271,8 +281,6 @@ class WriteLog: public Driver
 #endif
 
   // File to write data to
-  private: char default_basename[1024];
-  private: char default_filename[1024];
   private: char filename[1024];
   private: FILE *file;
 
@@ -329,21 +337,39 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   time_t t;
   struct tm *ts;
 
+  char time_stamp[32];
+  char basename[1024];
+  char default_filename[1024];
+  char complete_filename[1024];
+  char log_directory[1024];
+
   this->file = NULL;
 
-  // Construct default filename from date and time.  Note that we use
+  // Construct timestamp from date and time.  Note that we use
   // the system time, *not* the Player time.  I think that this is the
   // correct semantics for working with simulators.
   time(&t);
   ts = localtime(&t);
-  strftime(this->default_basename, sizeof(this->default_filename),
-           "writelog_%Y_%m_%d_%H_%M", ts);
-  snprintf(this->default_filename, sizeof(this->default_filename), "%s.log",
-           this->default_basename);
+  strftime(time_stamp, sizeof(time_stamp),
+           "_%Y_%m_%d_%H_%M", ts);
+ 
+  // Let user override default basename
+  strcpy(basename, cf->ReadString(section, "basename", "writelog"));
+
+  // Attach the time stamp
+  snprintf(default_filename, sizeof(default_filename), "%s%s.log",
+           basename, time_stamp);
 
   // Let user override default filename
-  strcpy(this->filename,
-         cf->ReadString(section, "filename", this->default_filename));
+  strcpy(complete_filename,
+         cf->ReadString(section, "filename", default_filename));
+
+  // Let user override log file directory
+  strcpy(log_directory, cf->ReadString(section, "log_directory", "."));
+
+  // Prepend the directory
+  snprintf(this->filename, sizeof(this->filename), "%s/%s",
+           log_directory, complete_filename);
 
   // Default enabled?
   if(cf->ReadInt(section, "autorecord", 1) > 0)
