@@ -127,6 +127,7 @@ class CameraCompress : public Driver
 
     // Output (compressed) camera data
     private: player_camera_data_t data;
+    private: int valid;
 
     // Image quality for JPEG compression
     private: double quality;
@@ -164,6 +165,7 @@ CameraCompress::CameraCompress( ConfigFile *cf, int section)
 
   this->save = cf->ReadInt(section,"save",0);
   this->quality = cf->ReadFloat(section, "image_quality", 0.8);
+  this->valid = 0;
 
   // camera settings
   this->NewCamData = false;
@@ -229,8 +231,10 @@ int CameraCompress::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr
     memcpy(camera_data.image, recv->image, recv->image_count);
     this->NewCamData=true;
     Unlock();
+/*
     if (this->camera_data.compression != PLAYER_CAMERA_COMPRESS_RAW)
       PLAYER_WARN("compressing already compressed camera images (not good)");
+*/
   	
     return 0;
   }
@@ -259,49 +263,66 @@ void CameraCompress::Main()
     // Get the latest camera data
     if (NewCamData)
     {
-      switch (this->camera_data.bpp)
+      if (this->camera_data.compression == PLAYER_CAMERA_COMPRESS_RAW)
       {
-      case 8:
-        l = (this->camera_data.width) * (this->camera_data.height);
-    	ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
-	for (i = 0; i < l; i++)
-	{
-	  ptr[0] = *ptr1;
-	  ptr[1] = *ptr1;
-	  ptr[2] = *ptr1;
-	  ptr += 3; ptr1++;
-	}
-	ptr = this->converted;
-	break;
-      case 24:
-        ptr = (char *)(this->camera_data.image);
-	break;
-      case 32:
-        l = (this->camera_data.width) * (this->camera_data.height);
-	ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
-	for (i = 0; i < l; i++)
-	{
-          ptr[0] = ptr1[0];
-          ptr[1] = ptr1[1];
-	  ptr[2] = ptr1[2];
-	  ptr += 3; ptr1 += 4;
+        switch (this->camera_data.bpp)
+        {
+        case 8:
+          l = (this->camera_data.width) * (this->camera_data.height);
+    	  ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
+	  for (i = 0; i < l; i++)
+	  {
+	    ptr[0] = *ptr1;
+	    ptr[1] = *ptr1;
+	    ptr[2] = *ptr1;
+	    ptr += 3; ptr1++;
+	  }
+	  ptr = this->converted;
+	  break;
+        case 24:
+          ptr = (char *)(this->camera_data.image);
+	  break;
+        case 32:
+          l = (this->camera_data.width) * (this->camera_data.height);
+	  ptr = this->converted; ptr1 = (char *)(this->camera_data.image);
+	  for (i = 0; i < l; i++)
+	  {
+            ptr[0] = ptr1[0];
+            ptr[1] = ptr1[1];
+	    ptr[2] = ptr1[2];
+	    ptr += 3; ptr1 += 4;
+          }
+          ptr = this->converted;
+	  break;
+        default:
+          PLAYER_WARN("unsupported image depth (not good)");
+          return;
         }
-        ptr = this->converted;
-	break;
-      default:
-        PLAYER_WARN("unsupported image depth (not good)");
-        return;
+        this->data.image_count = jpeg_compress( (char*)this->data.image, 
+                                               ptr,
+                                               this->camera_data.width, 
+                                               this->camera_data.height,
+                                               PLAYER_CAMERA_IMAGE_SIZE, 
+                                               (int)(this->quality*100));
+        this->data.width = (this->camera_data.width);
+        this->data.height = (this->camera_data.height);
+        this->data.bpp = 24;
+        this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+        this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
+        this->data.image_count = (this->data.image_count);
+      } else
+      {
+        this->data.width = (this->camera_data.width);
+        this->data.height = (this->camera_data.height);
+        this->data.bpp = (this->camera_data.bpp);
+        this->data.format = (this->camera_data.format);
+        this->data.compression = (this->camera_data.compression);
+        this->data.image_count = (this->camera_data.image_count);
+        memcpy(this->data.image, this->camera_data.image, this->data.image_count);
       }
-      this->data.image_count = jpeg_compress( (char*)this->data.image, 
-                                             ptr,
-                                             this->camera_data.width, 
-                                             this->camera_data.height,
-                                             PLAYER_CAMERA_IMAGE_SIZE, 
-                                             (int)(this->quality*100));
-
       if (this->save)
       {
-        snprintf(filename, sizeof(filename), "click-%04d.ppm",this->frameno++);
+        snprintf(filename, sizeof(filename), "click-%04d.jpeg",this->frameno++);
         FILE *fp = fopen(filename, "w+");
         fwrite (this->data.image, 1, this->data.image_count, fp);
         fclose(fp);
@@ -309,13 +330,6 @@ void CameraCompress::Main()
 
       size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
 
-      this->data.width = (this->camera_data.width);
-      this->data.height = (this->camera_data.height);
-      this->data.bpp = 24;
-      this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
-      this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
-      this->data.image_count = (this->data.image_count);
-      
       Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
     }
   }
