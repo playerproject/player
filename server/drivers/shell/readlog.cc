@@ -1785,7 +1785,7 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             count = 0;
             for (i = 8; i < token_count; i++)
             {
-              data.data[count] = atof(tokens[i]);
+              data.data[count] = atoi(tokens[i]);
               count++;
             }
 
@@ -1825,7 +1825,7 @@ int ReadLog::ParseOpaque(player_devaddr_t id,
             count = 0;
             for (i = 8; i < token_count; i++)
             {
-              data.data[count] = atof(tokens[i]);
+              data.data[count] = atoi(tokens[i]);
               count++;
             }
 
