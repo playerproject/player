@@ -89,6 +89,7 @@ void playerc_rfid_putmsg (playerc_rfid_t *device,
 	    if (i >= PLAYERC_RFID_MAX_TAGS)
 		break;
 	    device->tags[i].type = rfid_data->tags[i].type;
+	    device->tags[i].guid_count=rfid_data->tags[i].guid_count;
 	    for (j = 0; j < PLAYERC_RFID_MAX_GUID; j++)
 		device->tags[i].guid[j] = rfid_data->tags[i].guid[j];
 	}
