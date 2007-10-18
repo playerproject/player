@@ -132,6 +132,7 @@ int roomba_parse_sensor_packet(roomba_comm_t* r,
 int roomba_get_sensors(roomba_comm_t* r, int timeout);
 void roomba_print(roomba_comm_t* r);
 int roomba_clean(roomba_comm_t* r);
+int roomba_forcedock(roomba_comm_t* r);
 
 int roomba_set_song(roomba_comm_t* r, unsigned char songNumber, 
                     unsigned char songLength, unsigned char *notes, 

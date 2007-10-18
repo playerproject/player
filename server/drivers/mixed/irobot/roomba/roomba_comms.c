@@ -449,6 +449,20 @@ roomba_clean(roomba_comm_t* r)
   return(0);
 }
 
+int
+roomba_forcedock(roomba_comm_t* r)
+{
+  unsigned char cmdbuf[1];
+
+  cmdbuf[0] = ROOMBA_OPCODE_FORCEDOCK;
+  if(write(r->fd, cmdbuf, 1) < 0)
+  {
+    perror("roomba_seek_home():write():");
+    return(-1);
+  }
+  return(0);
+}
+
 void
 roomba_print(roomba_comm_t* r)
 {
