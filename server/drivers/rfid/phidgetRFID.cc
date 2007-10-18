@@ -400,7 +400,7 @@ void Phidgetrfid::Main() {
 
         //Publishing data.
         if (rfid_id.interf !=0) {
-            Publish(rfid_id, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA, (unsigned char*)&data_rfid, sizeof(player_rfid_data_t), NULL);
+            Publish(rfid_id, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS, (unsigned char*)&data_rfid, sizeof(player_rfid_data_t), NULL);
         }
 
         //point to calculate how much to sleep, call nanosleep, after sleep restart the timer

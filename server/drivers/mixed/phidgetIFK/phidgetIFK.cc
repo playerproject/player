@@ -536,7 +536,7 @@ void PhidgetIFK::Main() {
         }
         //std::cout << "Bitfield: " << bitfield << "\n";
 
-        data_di.digin=bitfield;
+        data_di.bits=bitfield;
 
 
         //Time to publish the packets! (only for the interfaces defined in the config file)
