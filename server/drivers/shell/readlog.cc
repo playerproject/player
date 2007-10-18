@@ -2512,6 +2512,20 @@ int ReadLog::ParseDIO(player_devaddr_t id, unsigned short type,
 
 ////////////////////////////////////////////////////////////////////////////
 // Parse RFID data
+/*
+  The format changed so the rfid "type" will be saved.
+  To convert the old log files to the new format use this awk filter:
+
+  awk '/rfid/ {
+           split($0, a);
+           for (i=1; i<=length(a); i++)
+               printf(i < 9 ? "%s " : "0001 %s ", a[i]);
+           printf("\n")
+       }
+       !/rfid/ {
+           print $0
+       }'
+*/
 int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
                       unsigned short subtype, int linenum, int token_count,
                       char **tokens, double time)
@@ -2528,9 +2542,9 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            rdata.tags_count = atoi(tokens[7]);
+            rdata.tags_count = strtoul(tokens[7], NULL, 10);
 
-            if (token_count - 8 != static_cast<int>(rdata.tags_count)) {
+            if (token_count - 8 != 2 * static_cast<int>(rdata.tags_count)) {
               PLAYER_ERROR2("invalid line at %s:%d: number of tokens does not "
                             "match count", this->filename, linenum);
               return -1;
@@ -2545,6 +2559,8 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
             char **t(tokens + 8);
             for (player_rfid_tag_t *r(rdata.tags);
                  r != rdata.tags + rdata.tags_count; ++r, ++t) {
+              r->type = strtoul(*t, NULL, 10);
+              ++t;
               r->guid_count = strlen(*t) / 2;
               DecodeHex(r->guid, PLAYER_RFID_MAX_GUID, *t, strlen(*t));
             }
