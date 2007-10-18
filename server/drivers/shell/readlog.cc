@@ -63,6 +63,7 @@ The readlog driver can provide the following device interfaces.
 - @ref interface_wsn
 - @ref interface_imu
 - @ref interface_pointcloud3d
+- @ref interface_opaque
 - @ref interface_ptz
 - @ref interface_actarray
 
@@ -269,6 +270,12 @@ class ReadLog: public Driver
                           int token_count, char **tokens, double time);
   // Parse position data
   private: int ParsePosition(player_devaddr_t id,
+                             unsigned short type, unsigned short subtype,
+                             int linenum,
+                             int token_count, char **tokens, double time);
+
+  // Parse opaque data
+  private: int ParseOpaque(player_devaddr_t id,
                              unsigned short type, unsigned short subtype,
                              int linenum,
                              int token_count, char **tokens, double time);
@@ -1205,6 +1212,9 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_POSITION2D_CODE)
     return this->ParsePosition(id, type, subtype, linenum,
                                token_count, tokens, time);
+  else if (id.interf == PLAYER_OPAQUE_CODE)
+    return this->ParseOpaque(id, type, subtype, linenum,
+                               token_count, tokens, time);
   else if (id.interf == PLAYER_WIFI_CODE)
     return this->ParseWifi(id, type, subtype, linenum,
                            token_count, tokens, time);
@@ -1923,6 +1933,103 @@ ReadLog::ParsePosition(player_devaddr_t id,
 }
 
 ////////////////////////////////////////////////////////////////////////////
+// Parse opaque data
+int ReadLog::ParseOpaque(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
+{
+  int i, count;
+
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_OPAQUE_DATA_STATE:
+          {
+            player_opaque_data_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.data_count = atoi(tokens[7]);
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.data[count] = atoi(tokens[i]);
+              count++;
+            }
+
+            if (count != (int)data.data_count)
+            {
+              PLAYER_ERROR2("data count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+           }
+            this->Publish(id,  type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown opaque data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    case PLAYER_MSGTYPE_CMD:
+      switch(subtype)
+      {
+        case PLAYER_OPAQUE_CMD:
+          {
+            player_opaque_data_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.data_count = atoi(tokens[7]);
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.data[count] = atoi(tokens[i]);
+              count++;
+            }
+
+            if (count != (int)data.data_count)
+            {
+              PLAYER_ERROR2("data count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+           }
+            this->Publish(id,  type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown opaque data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown opaque msg type %d\n", type);
+      return(-1);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
 int ReadLog::ParseWifi(player_devaddr_t id,
                        unsigned short type, unsigned short subtype,
@@ -2181,6 +2288,7 @@ int ReadLog::ParsePointCloud3d (player_devaddr_t id,
 		    for (i = 0; i < data.points_count; i++)
 		    {
 			player_pointcloud3d_element_t element;
+                        memset(&element,0,sizeof(player_pointcloud3d_element_t));
 			player_point_3d_t point;
 			point.px = atof (tokens[8+i*3]);
 			point.py = atof (tokens[9+i*3]);
