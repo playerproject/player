@@ -43,6 +43,11 @@
 
 #include "playerc++.h"
 
+
+/*
+ * methods for the proxy included in playerc++
+ */
+
 using namespace PlayerCc;
 
 WiFiProxy::WiFiProxy(PlayerClient *aPc, uint aIndex)
@@ -59,6 +64,7 @@ WiFiProxy::~WiFiProxy()
 {
   Unsubscribe();
 }
+
 
 void
 WiFiProxy::Subscribe(uint aIndex)
@@ -95,6 +101,6 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::WiFiProxy &c)
 {
   os << "#WiFi (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  return os;
+	return os;
 }
 

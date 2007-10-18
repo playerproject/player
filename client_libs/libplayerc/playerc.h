@@ -2974,13 +2974,13 @@ access points or of other wireless NIC's on an ad-hoc network.
 typedef struct
 {
   /** Mac accress. */
-  char mac[32];
+  uint8_t mac[32];
 
   /** IP address. */
-  char ip[32];
+  uint8_t ip[32];
 
   /** ESSID id */
-  char essid[32];
+  uint8_t essid[32];
 
   /** Mode (master, ad-hoc, etc). */
   int mode;
@@ -3006,7 +3006,7 @@ typedef struct
   /** A list containing info for each link. */
   playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
   int link_count;
-
+  char ip[32];
 } playerc_wifi_t;
 
 
