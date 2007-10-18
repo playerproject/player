@@ -97,8 +97,12 @@ driver
 //To catch the errors of nanosleep
 #include <errno.h>
 
-int TagPresent;  //This variable changes to 1 if a tag is in front of the reader.
+struct tagControlS {
+  int tagPresent;               //This variable changes to 1 if a tag is in front of the reader.
+  CPhidgetRFIDHandle rfid_present;
+};
 
+struct tagControlS tagControl;
 
 //This function returns the difference in mS between two timeval structures
 inline float timediffms(struct timeval start, struct timeval end) {
@@ -178,8 +182,7 @@ Phidgetrfid::Phidgetrfid(ConfigFile* cf, int section)
 
     // Set the phidgetrfid pointer to NULL
     rfid=0;
-    TagPresent=0;
-
+    tagControl.tagPresent=0;
     // Add more code here.
 
     // Read an option from the configuration file
@@ -334,7 +337,7 @@ void Phidgetrfid::Main() {
     gettimeofday( &tv_framerate_start, NULL );  // NULL -> don't want timezone information
     tv_realtime_start = tv_framerate_start;
 
-
+    int tagPresent=0;
     // The main loop; interact with the device here
     while (true)  {
 
@@ -365,10 +368,11 @@ void Phidgetrfid::Main() {
 
         unsigned char tag[20];
         CPhidgetRFID_getLastTag(rfid,tag);
-        //printf("Tag detected: %d\n", rfid->tagPresen);
         int ledstate;
         player_rfid_data_t data_rfid;
-        int tagPresent=TagPresent;
+        if (tagControl.rfid_present==rfid) {
+              tagPresent=tagControl.tagPresent;
+        }
         if (tagPresent!=0) {
             //printf("Tag: %x %x %x %x %x %x\n",tag[0], tag[1], tag[2], tag[3], tag[4], tag[5]);
             data_rfid.tags_count=1;
@@ -437,12 +441,14 @@ void Phidgetrfid::Main() {
 
 //Handler functions to check if there is a new tag there. They are handlers as seen on the Phidget library.
 int TagLost(CPhidgetRFIDHandle rfid,void *dummy, unsigned char *usrchar) {
-    TagPresent=0;
+    tagControl.rfid_present=rfid;
+    tagControl.tagPresent=0;
     return (0);
 }
 
 int TagFound(CPhidgetRFIDHandle rfid,void *dummy, unsigned char *usrchar) {
-    TagPresent=1;
+    tagControl.rfid_present=rfid;
+    tagControl.tagPresent=1;
     return (0);
 }
 
