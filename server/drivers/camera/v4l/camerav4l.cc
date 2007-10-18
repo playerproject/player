@@ -54,7 +54,7 @@ below for notes on specific camera/frame grabber combinations.
 
 - port (string)
   - Default: "/dev/video0"
-  - %Device to read video data from.
+  - Device to read video data from.
 
 - source (integer)
   - Default: 3
@@ -79,6 +79,7 @@ below for notes on specific camera/frame grabber combinations.
     - RGB32 (32-bit RGB; will produce 24-bit color images)
     - YUV420P (planar YUV data converted to 24-bit color images)
     - YUV420P_GREY (planar YUV data; will produce 8-bit monochrome images)
+    - JPEG (for some webcams)
   - Note that not all capture modes are supported by Player's internal image
   format; in these modes, images will be translated to the closest matching
   internal format (e.g., RGB32 -> RGB888).
@@ -92,10 +93,34 @@ below for notes on specific camera/frame grabber combinations.
   - Needed for ovc519 based cameras that send data jpeg compressed on the usb bus.
 
 - max_buffer (integer)
-  - Default: -1 (dont set)
+  - Default: -1 (do not set)
   - Limit the maximum number of buffers to use for grabbing. This reduces latency, but also 
   	potentially reduces throughput. Use this if you are reading slowly from the player
   	driver and dont want to get stale frames
+
+- brightness (integer)
+  - Default: -1 (do not set)
+
+- hue (integer)
+  - Default: -1 (do not set)
+
+- colour (integer)
+  - Default: -1 (do not set)
+
+- contrast (integer)
+  - Default: -1 (do not set)
+
+- read_mode (integer)
+  - Default: 0
+  - Set to 1 if read should be used instead of grab (in most cases it isn't a good idea!)
+
+- publish_interval (integer)
+  - Default: 0
+  - how many second between publishing real images (may break your client app!)
+
+- sleep_nsec (integer)
+  - Default: 10000000 (=10ms which gives max 100 fps)
+  - timespec value for nanosleep()
 
 Note that some of these options may not be honoured by the underlying
 V4L kernel driver (it may not support a given image size, for
@@ -159,12 +184,8 @@ binary driver which is a bonus
 #include "v4lcapture.h"  // For Gavin's libfg; should integrate this
 #include "ccvt.h"        // For YUV420P-->RGB conversion
 
-
-const timespec NSLEEP_TIME = {0, 10000000}; // (0s, 10 ms) => max 100 fps
-
 // Time for timestamps
 extern PlayerTime *GlobalTime;
-
 
 // Driver for detecting laser retro-reflectors.
 class CameraV4L : public Driver
@@ -222,9 +243,25 @@ class CameraV4L : public Driver
 
   // unpack jpeg data from ov519 based cameras
   private: int have_ov519;
-  
+
+  private: int brightness;
+
+  private: int hue;
+
+  private: int colour;
+
+  private: int contrast;
+
+  private: int read_mode;
+
+  private: int publish_interval;
+
+  private: int sleep_nsec;
+
   // Capture timestamp
   private: uint32_t tsec, tusec;
+
+  private: time_t publish_time;
 
   // Data to send to server
   private: player_camera_data_t data;
@@ -252,7 +289,7 @@ CameraV4L::CameraV4L(ConfigFile* cf, int section)
   : Driver(cf,
            section,
            true,
-           PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
+           1, // 1 instead of PLAYER_MSGQUEUE_DEFAULT_MAXLEN
            PLAYER_CAMERA_CODE)
 {
   const char *snorm;
@@ -291,17 +328,27 @@ CameraV4L::CameraV4L(ConfigFile* cf, int section)
   // Palette type
   this->palette = cf->ReadString(section, "mode", "RGB888");
 
+  this->max_buffer = cf->ReadInt(section, "max_buffer", -1);
+
   // Save frames?
   this->save = cf->ReadInt(section, "save", 0);
 
   // unpack ov519
   this->have_ov519 = cf->ReadInt(section, "have_ov519", 0);
 
-  // unpack ov519
-  this->max_buffer = cf->ReadInt(section, "max_buffer", -1);
+  this->brightness = cf->ReadInt(section, "brightness", -1);
 
-  
-  return;
+  this->hue = cf->ReadInt(section, "hue", -1);
+
+  this->colour = cf->ReadInt(section, "colour", -1);
+
+  this->contrast = cf->ReadInt(section, "contrast", -1);
+
+  this->read_mode = cf->ReadInt(section, "read_mode", 0);
+
+  this->publish_interval = cf->ReadInt(section, "publish_interval", 0);
+
+  this->sleep_nsec = cf->ReadInt(section, "sleep_nsec", 10000000);
 }
 
 
@@ -370,6 +417,13 @@ int CameraV4L::Setup()
     this->data.format = PLAYER_CAMERA_FORMAT_MONO8;
     this->depth = 8;
    }
+  else if (strcasecmp(this->palette, "JPEG") == 0)
+  {
+    fg_set_format(this->fg, VIDEO_PALETTE_JPEG );
+    this->frame = frame_new(this->width, this->height, VIDEO_PALETTE_JPEG );
+    this->data.format = PLAYER_CAMERA_FORMAT_RGB888;
+    this->depth = 24;  
+  }
   else
   {
     PLAYER_ERROR2("image depth %d is not supported (add it yourself in %s)",
@@ -408,15 +462,24 @@ int CameraV4L::Shutdown()
 void CameraV4L::Main()
 {
   struct timeval time;
+  struct timespec tspec;
   int frameno;
   char filename[256];
 
+  if (this->brightness > 0) fg_set_brightness(this->fg, this->brightness);
+  if (this->hue > 0) fg_set_hue(this->fg, this->hue);
+  if (this->colour > 0) fg_set_colour(this->fg, this->colour);
+  if (this->contrast > 0) fg_set_contrast(this->fg, this->contrast);
+
+  this->publish_time = 0;
   frameno = 0;
 
   while (true)
   {
     // Go to sleep for a while (this is a polling loop).
-    nanosleep(&NSLEEP_TIME, NULL);
+    tspec.tv_sec = 0;
+    tspec.tv_nsec = this->sleep_nsec;
+    nanosleep(&tspec, NULL);
 
     // Test if we are supposed to cancel this thread.
     pthread_testcancel();
@@ -430,7 +493,13 @@ void CameraV4L::Main()
     this->tusec = time.tv_usec;
 
     // Grab the next frame (blocking)
-    fg_grab_frame(this->fg, this->frame);
+    if (this->read_mode)
+    {
+      fg_read(this->fg, this->frame);
+    } else
+    {
+      fg_grab_frame(this->fg, this->frame);
+    }
 
     // Write data to server
     this->RefreshData();
@@ -480,34 +549,44 @@ int CameraV4L::ProcessMessage(QueuePointer & resp_queue,
 void CameraV4L::RefreshData()
 {
   int i;
-  size_t image_count, size;
+  size_t size;
   unsigned char * ptr1, * ptr2;
-
-  // Compute size of image
-  image_count = this->width * this->height * this->depth / 8;
 
   // Set the image properties
   this->data.width       = this->width;
   this->data.height      = this->height;
   this->data.bpp         = this->depth;
-  this->data.image_count  = image_count;
+  this->data.image_count = this->width * this->height * this->depth / 8;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
 
-  assert(image_count <= sizeof(this->data.image));
+  assert(data.image_count <= sizeof(this->data.image));
 
   if (have_ov519)
   {
     this->data.image_count = (*(unsigned short *)(frame->data))*8;
+    assert(data.image_count > 0);
+    assert(data.image_count <= sizeof(this->data.image));
+    assert(data.image_count <= ((size_t)(this->frame->size)));
     this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
     memcpy(data.image, &(((char*)frame->data)[2]), data.image_count);
+  }
+  else if (this->fg->picture.palette == VIDEO_PALETTE_JPEG)
+  {
+    this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
+    memcpy(&i, this->frame->data, sizeof(int));
+    data.image_count = i;
+    assert(data.image_count > 0);
+    assert(data.image_count <= sizeof(this->data.image));
+    assert(data.image_count <= ((size_t)(this->frame->size)));
+    memcpy(data.image, ((unsigned char *)(this->frame->data)) + sizeof(int), data.image_count);
   }
   else
   {
     // Copy the image pixels
-    if ((this->frame->format == VIDEO_PALETTE_YUV420P)&&
+    if ((this->frame->format == VIDEO_PALETTE_YUV420P) &&
 	(this->data.format == PLAYER_CAMERA_FORMAT_RGB888))
 	 {// do conversion to RGB (which is bgr at the moment for some reason?)
-	      assert(image_count <= (size_t) this->rgb_converted_frame->size);
+	      assert(data.image_count <= (size_t) this->rgb_converted_frame->size);
 	      ccvt_420p_bgr24(this->width, this->height,
 		   (unsigned char*) this->frame->data,
 		   (unsigned char*) this->rgb_converted_frame->data);
@@ -515,7 +594,7 @@ void CameraV4L::RefreshData()
 	 }
     else
 	 {
-	      assert(image_count <= (size_t) this->frame->size);
+	      assert(data.image_count <= (size_t) this->frame->size);
 	      ptr1 = (unsigned char *)this->frame->data;
 	 }
     ptr2 = this->data.image;
@@ -533,7 +612,7 @@ void CameraV4L::RefreshData()
       break;
     case 32:
       for (i = 0; i < ((this->width) * (this->height)); i++)
-     {
+      {
         ptr2[0] = ptr1[2];
         ptr2[1] = ptr1[1];
         ptr2[2] = ptr1[0];
@@ -543,20 +622,29 @@ void CameraV4L::RefreshData()
       }
       break;
     default:
-      memcpy(ptr2, ptr1, image_count);
+      memcpy(ptr2, ptr1, data.image_count);
     }
   }
 
   // Copy data to server
   size = sizeof(this->data) - sizeof(this->data.image) + data.image_count;
-
-
   /* We should do this to be efficient */
+
+  if (this->publish_interval)
+  {
+    if ((time(NULL) - (this->publish_time)) < (this->publish_interval))
+    {
+      this->data.width       = 0;
+      this->data.height      = 0;
+      this->data.bpp         = 0;
+      this->data.image_count = 0;
+      size = sizeof(this->data) - sizeof(this->data.image);
+    } else this->publish_time = time(NULL);
+  }
+
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
           reinterpret_cast<void*>(&this->data), size, NULL);
 
   return;
 }
-
-

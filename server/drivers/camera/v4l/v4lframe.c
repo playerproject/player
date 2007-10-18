@@ -110,6 +110,11 @@ int frame_get_size( FRAME* fr )
       size = pixels + pixels / 2;
       break;
 
+    case VIDEO_PALETTE_JPEG:
+      // 3 bytes per pixel
+      size = pixels * 3;
+      break;
+
     default:
       // Unsupported!
       fprintf( stderr, "frame_get_size(): Unsupported type!\n" );

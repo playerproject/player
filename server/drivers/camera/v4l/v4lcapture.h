@@ -63,6 +63,10 @@ extern "C"
 //  Definitions
 //==========================================================================
 
+#ifndef VIDEO_PALETTE_JPEG
+#define VIDEO_PALETTE_JPEG 21
+#endif
+
 // Standard device for fg_open()
 #define FG_DEFAULT_DEVICE       "/dev/video0"
 
@@ -133,6 +137,7 @@ typedef struct
 
 FRAMEGRABBER* fg_open( const char *dev );
 
+int fg_enable_capture( FRAMEGRABBER* fg, int flag );
 
 //--------------------------------------------------------------------------
 //
@@ -166,6 +171,7 @@ void fg_close( FRAMEGRABBER* fg );
 
 FRAME* fg_grab( FRAMEGRABBER* fg );
 
+int fg_read(FRAMEGRABBER * fg, FRAME * fr);
 
 //--------------------------------------------------------------------------
 //
@@ -324,7 +330,7 @@ int fg_set_capture_window( FRAMEGRABBER* fg,
 //
 //  Description:    Sets the picture brightness to the specified value.
 //
-//  Parameters:     int         br          Brightness (in percent)
+//  Parameters:     int         br          Brightness (integer value)
 //
 //  Returns:        0           Success
 //                  -1          Failure
@@ -340,7 +346,7 @@ int fg_set_brightness( FRAMEGRABBER* fg, int br );
 //
 //  Description:    Sets the picture contrast to the specified value.
 //
-//  Parameters:     int         ct          Contrast (in percent)
+//  Parameters:     int         ct          Contrast (integer value)
 //
 //  Returns:        0           Success
 //                  -1          Failure
@@ -349,6 +355,8 @@ int fg_set_brightness( FRAMEGRABBER* fg, int br );
 
 int fg_set_contrast( FRAMEGRABBER* fg, int ct );
 
+int fg_set_hue( FRAMEGRABBER* fg, int hue );
+int fg_set_colour( FRAMEGRABBER* fg, int clr );
 
 //--------------------------------------------------------------------------
 //

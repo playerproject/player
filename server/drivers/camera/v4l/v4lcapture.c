@@ -380,6 +380,9 @@ FRAME* fg_grab( FRAMEGRABBER* fg )
 FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
 {
     int capture_frame = fg->cur_frame + 1;
+    int i;
+    int insize, count;
+    unsigned char * buf;
 
     //----------------------
     // Very first time only
@@ -437,10 +440,28 @@ FRAME* fg_grab_frame( FRAMEGRABBER* fg, FRAME* fr )
         return NULL;
     }
 
-    // Save video buffer into our own memory
-    memcpy( fr->data,
-            fg->mb_map + fg->mbuf.offsets[fg->cur_frame],
-            frame_get_size( fr ) );
+    if ((fg->picture.palette) == VIDEO_PALETTE_JPEG)
+    {
+        buf = (unsigned char *)(fg->mb_map + fg->mbuf.offsets[fg->cur_frame]);
+	insize = frame_get_size(fr) - sizeof(int);
+	count = insize - 1;
+	for (i = 1024; i < count; i++)
+	{
+	    if (buf[i] == 0xff) if (buf[i + 1] == 0xd9)
+	    {
+		insize = i + 10;
+		break;
+	    }
+	}
+	memcpy(fr->data, &insize, sizeof(int));
+	memcpy(((unsigned char *)(fr->data)) + sizeof(int), buf, insize);
+    } else
+    {
+	// Save video buffer into our own memory
+	memcpy( fr->data,
+        	fg->mb_map + fg->mbuf.offsets[fg->cur_frame],
+        	frame_get_size( fr ) );
+    }
 
     // Move along to the next one
     fg->cur_frame = capture_frame;
@@ -463,11 +484,29 @@ FRAME* fg_grab_read( FRAMEGRABBER* fg )
     return fr;
 }
 
+int fg_read(FRAMEGRABBER * fg, FRAME * fr)
+{
+    int count;
+
+    if ((fg->picture.palette) == VIDEO_PALETTE_JPEG)
+    {
+	count = read(fg->fd, ((unsigned char *)(fr->data)) + sizeof(int), frame_get_size(fr) - sizeof(int));
+	memcpy(fr->data, &count, sizeof(int));
+    } else count = read(fg->fd, fr->data, frame_get_size(fr));
+    return count;
+}
+
 //--------------------------------------------------------------------------
 
 int fg_set_brightness( FRAMEGRABBER* fg, int br )
 {
-    fg->picture.brightness = FG_PERCENT( br );
+    if ( ioctl( fg->fd, VIDIOCGPICT, &(fg->picture) ) < 0 )
+    {
+        perror( "fg_set_brightness(): get attribute failed" );
+        return -1;
+    }
+
+    fg->picture.brightness = br;
 
     if ( ioctl( fg->fd, VIDIOCSPICT, &(fg->picture) ) < 0 )
     {
@@ -480,9 +519,57 @@ int fg_set_brightness( FRAMEGRABBER* fg, int br )
 
 //--------------------------------------------------------------------------
 
+int fg_set_hue( FRAMEGRABBER* fg, int hue )
+{
+    if ( ioctl( fg->fd, VIDIOCGPICT, &(fg->picture) ) < 0 )
+    {
+        perror( "fg_set_hue(): get attribute failed" );
+        return -1;
+    }
+
+    fg->picture.hue = hue;
+
+    if ( ioctl( fg->fd, VIDIOCSPICT, &(fg->picture) ) < 0 )
+    {
+        perror( "fg_set_hue(): set attribute failed" );
+        return -1;
+    }
+
+    return 0;
+}
+
+//--------------------------------------------------------------------------
+
+int fg_set_colour( FRAMEGRABBER* fg, int clr )
+{
+    if ( ioctl( fg->fd, VIDIOCGPICT, &(fg->picture) ) < 0 )
+    {
+        perror( "fg_set_colour(): get attribute failed" );
+        return -1;
+    }
+
+    fg->picture.colour = clr;
+
+    if ( ioctl( fg->fd, VIDIOCSPICT, &(fg->picture) ) < 0 )
+    {
+        perror( "fg_set_colour(): set attribute failed" );
+        return -1;
+    }
+
+    return 0;
+}
+
+//--------------------------------------------------------------------------
+
 int fg_set_contrast( FRAMEGRABBER* fg, int ct )
 {
-    fg->picture.contrast = FG_PERCENT( ct );
+    if ( ioctl( fg->fd, VIDIOCGPICT, &(fg->picture) ) < 0 )
+    {
+        perror( "fg_set_contrast(): get attribute failed" );
+        return -1;
+    }
+
+    fg->picture.contrast = ct;
 
     if ( ioctl( fg->fd, VIDIOCSPICT, &(fg->picture) ) < 0 )
     {
