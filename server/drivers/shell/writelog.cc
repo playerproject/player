@@ -22,7 +22,11 @@
  * Desc: Driver for writing log files.
  * Author: Andrew Howard
  * Date: 14 Jun 2003
+<<<<<<< writelog.cc
  * CVS: $Id$
+=======
+ * CVS: $Id$
+>>>>>>> 1.82.2.1
  *
  */
 
@@ -617,12 +621,6 @@ WriteLog::ProcessMessage(QueuePointer & resp_queue,
                            PLAYER_LOG_REQ_SET_WRITE_STATE,
                            this->device_addr))
   {
-    if(hdr->size != sizeof(player_log_set_write_state_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, sizeof(player_log_set_write_state_t));
-      return(-1);
-    }
     player_log_set_write_state_t* sreq = (player_log_set_write_state_t*)data;
 
     if(sreq->state)
@@ -645,13 +643,6 @@ WriteLog::ProcessMessage(QueuePointer & resp_queue,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOG_REQ_GET_STATE, this->device_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(-1);
-    }
-
     player_log_get_state_t greq;
 
     greq.type = PLAYER_LOG_TYPE_WRITE;
@@ -670,12 +661,6 @@ WriteLog::ProcessMessage(QueuePointer & resp_queue,
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                 PLAYER_LOG_REQ_SET_FILENAME, this->device_addr))
   {
-    if(hdr->size < sizeof(uint32_t))
-    {
-      PLAYER_ERROR2("request is wrong length (%d < %d); ignoring",
-                    hdr->size, sizeof(uint32_t));
-      return(-1);
-    }
     player_log_set_filename_t* freq = (player_log_set_filename_t*)data;
 
     if(this->enable)
@@ -1709,13 +1694,6 @@ WriteLog::WriteAIO(player_msghdr_t* hdr, void* data)
         case PLAYER_AIO_DATA_STATE: {
             player_aio_data_t* inputs(static_cast<player_aio_data_t*>(data));
 
-            // check for buffer overrun
-            if (inputs->voltages_count > PLAYER_AIO_MAX_INPUTS) {
-                // this shouldn't happen
-                PLAYER_ERROR("count too big for buffer");
-                return -1;
-            }
-
             fprintf(this->file, "%04d ", inputs->voltages_count);
 
             for (float *v(inputs->voltages);
@@ -1804,21 +1782,11 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
         case PLAYER_RFID_DATA_TAGS: {
             player_rfid_data_t* rdata(static_cast<player_rfid_data_t*>(data));
 
-            if (rdata->tags_count > PLAYER_RFID_MAX_TAGS) {
-                // this shouldn't happen
-                PLAYER_ERROR("count too big for buffer");
-                return -1;
-            }
-
             fprintf(file, "%04d ", rdata->tags_count);
 
             for (player_rfid_tag_t *t(rdata->tags);
                  t != rdata->tags + rdata->tags_count; ++t) {
-              if (t->guid_count > PLAYER_RFID_MAX_GUID) {
-                PLAYER_ERROR("guid count too big for buffer");
-                return -1;
-              }
-              char str[PLAYER_RFID_MAX_GUID * 2 + 1];
+              char str[t->guid_count * 2 + 1];
               memset(str, '\0', sizeof(str));
               EncodeHex(str, sizeof(str), t->guid, t->guid_count);
               fprintf(file, "%s ", str);

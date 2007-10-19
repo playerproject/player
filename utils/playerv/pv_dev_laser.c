@@ -224,7 +224,7 @@ void laser_draw(laser_t *laser)
   double ax, ay, bx, by;
   double r, b, res;
   int point_count;
-  double * points;
+  double (*points)[2];
   rtk_fig_show(laser->scan_fig, 1);      
   rtk_fig_clear(laser->scan_fig);
 
@@ -257,11 +257,11 @@ void laser_draw(laser_t *laser)
     {      
       r = laser->proxy->scan[i][0];
       b = laser->proxy->scan[i][1];
-      points[i*2] = r * cos(b - res);
-      points[i*2+1] = r * sin(b - res);
+      points[i][0] = r * cos(b - res);
+      points[i][1] = r * sin(b - res);
     }
     rtk_fig_color_rgb32(laser->scan_fig, COLOR_LASER_EMP);
-    rtk_fig_polygon(laser->scan_fig, 0, 0, 0, laser->proxy->scan_count, (double *)points, 1);
+    rtk_fig_polygon(laser->scan_fig, 0, 0, 0, laser->proxy->scan_count, points, 1);
     free(points);
     points = NULL;
               

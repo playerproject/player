@@ -675,7 +675,7 @@ int SickS3000::ProcessLaserData()
         {
           int data_count = (size - 22) / 2;
           data_packet.ranges_count = data_count;
-          data_packet.ranges = new double [data_count];
+          data_packet.ranges = new float [data_count];
           for (int ii = 0; ii < data_count; ++ii)
           {
             unsigned short Distance_CM = (*reinterpret_cast<unsigned short *> (&data[4 + 2*ii]));

@@ -336,7 +336,7 @@ void
     Data.max_range    = Conf.max_range;
     Data.resolution   = Conf.resolution;
     Data.ranges_count = (max_i - min_i) + 1;
-    Data.ranges = new double [Data.ranges_count];
+    Data.ranges = new float [Data.ranges_count];
     
     for (unsigned int i = 0; i < Data.ranges_count; ++i)
     {

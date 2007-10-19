@@ -462,6 +462,8 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   // Initial hypothesis list
   this->hyp_count = 0;
+  this->hyp_alloc = 0;
+  this->hyps = NULL;
   pthread_mutex_init(&this->best_hyp_lock,NULL);
 
 #ifdef INCLUDE_RTKGUI
@@ -482,6 +484,7 @@ AdaptiveMCL::~AdaptiveMCL(void)
 
   // Delete sensor data queue
   delete[] this->q_data;
+  free(hyps);
 
   // Delete sensors
   for (i = 0; i < this->sensor_count; i++)
@@ -924,6 +927,11 @@ bool AdaptiveMCL::UpdateFilter(void)
 
       //pf_vector_fprintf(pose_mean, stdout, "%.3f");
 
+      if (this->hyp_count +1 > this->hyp_alloc)
+      {
+        this->hyp_alloc = this->hyp_count+1;
+        this->hyps = (amcl_hyp_t*)realloc(this->hyps, sizeof(amcl_hyp_t)*this->hyp_alloc);
+      }
       hyp = this->hyps + this->hyp_count++;
       hyp->weight = weight;
       hyp->pf_pose_mean = pose_mean;
@@ -1004,7 +1012,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
   amcl_hyp_t *hyp;
   pf_vector_t pose;
   pf_matrix_t pose_cov;
-  size_t datalen;
+  //size_t datalen;
   player_localize_data_t data;
 
   // Record the number of pending observations
@@ -1162,7 +1170,7 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                   (void*)&resp);
-    delete [] resp->particles;
+    delete [] resp.particles;
     return(0);
   } else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                   PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))

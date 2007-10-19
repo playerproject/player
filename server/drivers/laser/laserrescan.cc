@@ -156,7 +156,7 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
   this->data.min_angle = (min_angle);
   this->data.max_angle = (max_angle);
   this->data.ranges_count = scan_count;
-  this->data.ranges = new double[scan_count];
+  this->data.ranges = new float[scan_count];
   this->data.max_range = data->max_range;
   
   double real_min = data->min_angle;
@@ -194,7 +194,7 @@ int LaserRescan::UpdateLaser(player_laser_data_t * data)
   this->Publish(this->device_addr,  
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                 &this->data);
-  delete [] data.ranges;
+  delete [] this->data.ranges;
   return 1;
 }
 

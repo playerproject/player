@@ -106,20 +106,21 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
 // Get the actarray geometry
 int playerc_actarray_get_geom(playerc_actarray_t *device)
 {
-  player_actarray_geom_t geom;
+  player_actarray_geom_t *geom;
   int ii = 0, result = 0;
 
   if((result = playerc_client_request(device->info.client, &device->info,
-      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom, sizeof(geom))) < 0)
+      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom)) < 0)
     return result;
 
   device->actuators_geom = realloc(device->actuators_geom,device->actuators_count*sizeof(device->actuators_geom[0]));
   for (ii = 0; ii < device->actuators_count; ii++)
   {
-    device->actuators_geom[ii] = geom.actuators[ii];
+    device->actuators_geom[ii] = geom->actuators[ii];
   }
-  device->base_pos = geom.base_pos;
-  device->base_orientation = geom.base_orientation;
+  device->base_pos = geom->base_pos;
+  device->base_orientation = geom->base_orientation;
+  player_actarray_geom_t_free(geom);
   return 0;
 }
 
@@ -232,7 +233,7 @@ int playerc_actarray_power(playerc_actarray_t *device, uint8_t enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_POWER,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Turn the brakes of all actuators in the array that have them on or off
@@ -244,7 +245,7 @@ int playerc_actarray_brakes(playerc_actarray_t *device, uint8_t enable)
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_BRAKES,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Set the speed of a joint (-1 for all joints) for all subsequent movement commands
@@ -257,7 +258,7 @@ int playerc_actarray_speed_config(playerc_actarray_t *device, int joint, float s
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_SPEED,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 // Set the speed of a joint (-1 for all joints) for all subsequent movement commands
@@ -270,7 +271,7 @@ int playerc_actarray_accel_config(playerc_actarray_t *device, int joint, float a
 
   return playerc_client_request(device->info.client, &device->info,
                                 PLAYER_ACTARRAY_REQ_ACCEL,
-                                &config, NULL, 0);
+                                &config, NULL);
 }
 
 

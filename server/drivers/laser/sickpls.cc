@@ -160,6 +160,7 @@ driver
 #define PLAYER_ENABLE_TRACE 0
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 #include <replace/replace.h>
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -503,9 +504,9 @@ void SickPLS::Main()
     // Process incoming data
     player_laser_data_t data;
     data.ranges_count = (this->scan_max_segment - this->scan_min_segment + 1);
-    data.intesity_count = data.ranges_count;
-    data.ranges = new double [data.ranges_count];
-    data.intensity = new double [data.intensity_count];
+    data.intensity_count = data.ranges_count;
+    data.ranges = new float [data.ranges_count];
+    data.intensity = new uint8_t [data.intensity_count];
     uint16_t * TempData = new uint16_t[data.ranges_count];
     if (ReadLaserData(TempData, data.ranges_count) == 0)
     {

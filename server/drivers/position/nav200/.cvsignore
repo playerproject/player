@@ -5,3 +5,5 @@ test_program
 test_program_init
 .deps
 *.la
+.libs
+*.lo

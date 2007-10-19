@@ -480,7 +480,7 @@ int CameraV4L::ProcessMessage(QueuePointer & resp_queue,
 void CameraV4L::RefreshData()
 {
   int i;
-  size_t image_count, size;
+  size_t image_count;
   unsigned char * ptr1, * ptr2;
 
   // Compute size of image

@@ -129,7 +129,7 @@ class Cmucam2:public Driver
 		int fd;
 		int num_of_blobs;
 		const char* devicepath;
-		color_config color[PLAYER_BLOBFINDER_MAX_BLOBS];
+		color_config *color;
 
 		// Blobfinder interface (provides)
 		player_devaddr_t         blobfinder_id;
@@ -160,6 +160,7 @@ class Cmucam2:public Driver
 		// constructor 
 		//
 		Cmucam2( ConfigFile* cf, int section);
+		~Cmucam2();
 
 		// Process incoming messages from clients 
 		virtual int ProcessMessage(QueuePointer & resp_queue, 
@@ -236,6 +237,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 		num_of_blobs = cf->ReadInt (section, "num_blobs", 1);
 		char variable[20];
 
+		color = new color_config[num_of_blobs];
 		for (int i = 0; i < num_of_blobs; i++)
 		{
 			sprintf (variable, "color%d", i);   
@@ -249,6 +251,7 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 	}
 	else
 	{
+		color = new color_config[1];
 		num_of_blobs = 0;
 		color[0].rmin = 0; color[0].rmax = 0;
 		color[0].gmin = 0; color[0].gmax = 0;
@@ -265,7 +268,12 @@ Cmucam2::Cmucam2( ConfigFile* cf, int section)
 		return;
 	}
 }
-    
+
+Cmucam2::~Cmucam2()
+{
+	delete [] color;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 int Cmucam2::Setup()
 {

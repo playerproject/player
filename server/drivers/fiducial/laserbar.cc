@@ -175,7 +175,7 @@ class LaserBar : public Driver
   // Local copy of the current fiducial data.
   private: struct timeval ftimestamp;
   private: player_fiducial_data_t fdata;
-  int fdata_allocated;
+  unsigned int fdata_allocated;
 };
 
 
@@ -251,7 +251,7 @@ int LaserBar::Shutdown()
   this->laser_device->Unsubscribe(this->InQueue);
   this->laser_device = NULL;
 
-  free(fdata->fiducials);
+  free(fdata.fiducials);
   return 0;
 }
 
@@ -315,7 +315,7 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
     this->Publish(this->device_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
-                  reinterpret_cast<void*>(&this->fdata), &hdr->timestamp);
+                  reinterpret_cast<void*>(&this->fdata),0, &hdr->timestamp);
 
   	return 0;
   }
@@ -501,9 +501,9 @@ void LaserBar::Add(double pr, double pb, double po,
   if (this->fdata.fiducials_count > this->fdata_allocated)
   {
     this->fdata_allocated = this->fdata.fiducials_count;
-    this->fdata.fiducials = realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
+    this->fdata.fiducials = (player_fiducial_item_t*)realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
   }
-  fiducial = this->fdata.fiducials[fdata.fiducials_count-1]; 
+  fiducial = &this->fdata.fiducials[fdata.fiducials_count-1]; 
   fiducial->id = (int16_t) -1;
 
   fiducial->pose.px = pr * cos(pb);

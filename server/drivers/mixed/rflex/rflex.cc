@@ -314,6 +314,7 @@ driver
 #include "rflex-io.h"
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 extern PlayerTime* GlobalTime;
 
 extern int               RFLEX::joy_control;
@@ -769,7 +770,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   unsigned int RunningTotal = 0;
   for(int i=0; i < rflex_configs.ir_bank_count; ++i)
     RunningTotal += (rflex_configs.ir_count[i]=(int) cf->ReadTupleFloat(section, "rflex_banks",i,0));
-
+  rflex_configs.ir_total_count = RunningTotal;
   // posecount is actually unnecasary, but for consistancy will juse use it for error checking :)
   if (RunningTotal != rflex_configs.ir_poses.poses_count)
   {
@@ -1173,7 +1174,7 @@ RFLEX::Main()
   player_bumper_data_t_cleanup(&rflex_data.bumper);
   player_dio_data_t_cleanup(&rflex_data.dio);
   player_aio_data_t_cleanup(&rflex_data.aio);
-  player_ir_data_cleanup(&rflex_data.ir);
+  player_ir_data_t_cleanup(&rflex_data.ir);
   Lock();
   if (!ThreadAlive)
   {
@@ -1228,16 +1229,9 @@ void RFLEX::set_odometry(float m_x, float m_y, float rad_theta) {
 void RFLEX::update_everything(player_rflex_data_t* d)
 {
 
-  int arb_ranges[PLAYER_SONAR_MAX_SAMPLES];
-  char abumper_ranges[PLAYER_BUMPER_MAX_SAMPLES];
-  unsigned char air_ranges[PLAYER_IR_MAX_SAMPLES];
-
-  // changed these variable-size array declarations to the
-  // bigger-than-necessary ones above, because older versions of gcc don't
-  // support variable-size arrays.
-  // int arb_ranges[rflex_configs.num_sonars];
-  // char abumper_ranges[rflex_configs.bumper_count];
-  // unsigned char air_ranges[rflex_configs.ir_poses.pose_count];
+  int *arb_ranges = new int[rflex_configs.num_sonars];
+  char *abumper_ranges = new char[rflex_configs.bumper_count];
+  uint8_t *air_ranges = new uint8_t[rflex_configs.ir_total_count];
 
   static int initialized = 0;
 
@@ -1308,7 +1302,7 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     {
       d->sonar.ranges_count=rflex_configs.sonar_1st_bank_end;
       delete [] d->sonar.ranges;
-      d->sonar.ranges = new double[d->sonar.ranges_count];
+      d->sonar.ranges = new float[d->sonar.ranges_count];
     }
     for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++){
       d->sonar.ranges[i] = ARB2M_RANGE_CONV(arb_ranges[i]);
@@ -1317,7 +1311,7 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     {
       d->sonar2.ranges_count=(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
       delete [] d->sonar2.ranges;
-      d->sonar2.ranges = new double[d->sonar2.ranges_count];
+      d->sonar2.ranges = new float[d->sonar2.ranges_count];
     }
     for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++){
       d->sonar2.ranges[i] = ARB2M_RANGE_CONV(arb_ranges[rflex_configs.sonar_2nd_bank_start+i]);
@@ -1335,7 +1329,7 @@ void RFLEX::update_everything(player_rflex_data_t* d)
  //   pthread_testcancel();
 
     d->bumper.bumpers_count=(a_num_bumpers);
-    d->bumper.bumpers = a_num_bumpers;
+    d->bumper.bumpers = (uint8_t*)abumper_ranges;
   }
 
   // if someone is subscribed to irs copy internal data to device
@@ -1354,8 +1348,8 @@ void RFLEX::update_everything(player_rflex_data_t* d)
       d->ir.voltages_count = a_num_ir;
       delete [] d->ir.ranges;
       delete [] d->ir.voltages;
-      d->ir.ranges = new double [a_num_ir];
-      d->ir.voltages = new double [a_num_ir];
+      d->ir.ranges = new float [a_num_ir];
+      d->ir.voltages = new float [a_num_ir];
     }
     for (int i = 0; i < a_num_ir; ++i)
     {

@@ -502,7 +502,7 @@ int SickLMS200::Setup()
   this->scan_id = 0;
 
   PLAYER_MSG0(2, "laser ready");
-  memset(data, 0, sizeof(data));
+  //memset(data, 0, sizeof(data));
   
   // Start the device thread
   StartThread();
@@ -524,8 +524,8 @@ int SickLMS200::Shutdown()
       PLAYER_WARN1("Cannot throttle back to %d bauds", this->connect_rate);
   
   CloseTerm();
-  delete [] data.ranges;
-  delete [] data.intensity;
+  //delete [] data.ranges;
+  //delete [] data.intensity;
   
   PLAYER_MSG0(2, "laser shutdown");
   
@@ -661,8 +661,8 @@ void SickLMS200::Main()
     GlobalTime->GetTimeDouble(&time);
     
     // Process incoming data
-    uint16_t mm_ranges[PLAYER_LASER_MAX_SAMPLES];
-    if (ReadLaserData(mm_ranges, PLAYER_LASER_MAX_SAMPLES) == 0)
+    uint16_t mm_ranges[1024];
+    if (ReadLaserData(mm_ranges, 1024) == 0)
     {
       player_laser_data_t data;
       if (first)
@@ -696,8 +696,8 @@ void SickLMS200::Main()
       {
         delete [] data.ranges;
         delete [] data.intensity;
-        data.ranges = new double[data.ranges_count];
-        data.intensity = new double[data.intensity.count];
+        data.ranges = new float[data.ranges_count];
+        data.intensity = new uint8_t[data.intensity_count];
   
       }
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
@@ -731,6 +731,8 @@ void SickLMS200::Main()
       this->Publish(this->device_addr,  
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
                     (void*)&data, sizeof(data), &time);
+      delete [] data.ranges;
+      delete [] data.intensity;
     }
   }
 }

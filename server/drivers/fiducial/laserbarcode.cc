@@ -180,7 +180,7 @@ class LaserBarcode : public Driver
   
   // Current fiducial data
   private: player_fiducial_data_t data;
-  int fdata_allocated;
+  unsigned int fdata_allocated;
 };
 
 
@@ -231,7 +231,7 @@ LaserBarcode::LaserBarcode( ConfigFile* cf, int section)
 int LaserBarcode::Setup()
 {
   fdata_allocated = 0;
-  fdata.fiducials = NULL;
+  data.fiducials = NULL;
 
   // Subscribe to the laser.
   if (Device::MatchDeviceAddress (laser_id, device_addr))
@@ -265,7 +265,7 @@ int LaserBarcode::Shutdown()
   // Unsubscribe from devices.
   laser->Unsubscribe(InQueue);
 
-  free(fdata->fiducials);
+  free(data.fiducials);
 
   PLAYER_MSG0(2, "laserbarcode device: shutdown");
   return 0;
@@ -369,10 +369,10 @@ void LaserBarcode::FindBeacons(const player_laser_data_t *laser_data,
     if (id < 0)
       continue;
 
-    if (this->fdata.fiducials_count+1 > this->fdata_allocated)
+    if (this->data.fiducials_count+1 > this->fdata_allocated)
     {
-      this->fdata_allocated = this->fdata.fiducials_count+1;
-      this->fdata.fiducials = realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
+      this->fdata_allocated = this->data.fiducials_count+1;
+      this->data.fiducials = (player_fiducial_item_t*)realloc(this->data.fiducials, sizeof(this->data.fiducials[0])*this->fdata_allocated);
     }
     
     double ox = (bx + ax) / 2;

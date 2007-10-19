@@ -280,11 +280,11 @@ class VFH_Class : public Driver
     Device *sonar;
     player_devaddr_t sonar_addr;
     int num_sonars;
-    player_pose3d_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
+    player_pose3d_t * sonar_poses;
 
     // Laser range and bearing values
     int laser_count;
-    double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2];
+    double (*laser_ranges)[2];
 
     // Control velocity
     double con_vel[3];
@@ -435,11 +435,7 @@ int VFH_Class::SetupLaser()
   }
 
   this->laser_count = 0;
-  for(int i=0;i<PLAYER_LASER_MAX_SAMPLES;i++)
-  {
-    this->laser_ranges[i][0] = 0;
-    this->laser_ranges[i][1] = 0;
-  }
+  this->laser_ranges = NULL;
   return 0;
 }
 
@@ -474,6 +470,7 @@ int VFH_Class::SetupSonar()
   // Store the sonar poses
   cfg = (player_sonar_geom_t*)msg->GetPayload();
   this->num_sonars = cfg->poses_count;
+  this->sonar_poses = new player_pose3d_t[num_sonars];
   for(int i=0;i<this->num_sonars;i++)
   {
     this->sonar_poses[i] = cfg->poses[i];
@@ -482,11 +479,7 @@ int VFH_Class::SetupSonar()
   delete msg;
 
   this->laser_count = 0;
-  for(int i=0;i<PLAYER_LASER_MAX_SAMPLES;i++)
-  {
-    this->laser_ranges[i][0] = 0;
-    this->laser_ranges[i][1] = 0;
-  }
+  this->laser_ranges = NULL;
   return 0;
 }
 
@@ -496,6 +489,8 @@ int VFH_Class::SetupSonar()
 int VFH_Class::ShutdownLaser()
 {
   this->laser->Unsubscribe(this->InQueue);
+  delete [] laser_ranges;
+  laser_ranges = NULL;
   return 0;
 }
 
@@ -504,6 +499,10 @@ int VFH_Class::ShutdownLaser()
 int VFH_Class::ShutdownSonar()
 {
   this->sonar->Unsubscribe(this->InQueue);
+  delete [] laser_ranges;
+  laser_ranges = NULL;
+  delete [] sonar_poses;
+  sonar_poses = NULL;
   return 0;
 }
 
@@ -541,10 +540,10 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   db = RTOD(data.resolution);
 
   this->laser_count = 181;
-  assert(this->laser_count <
-         (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
+  if (!laser_ranges)
+	  this->laser_ranges = new double[laser_count][2];
 
-  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
+  for(i = 0; i < laser_count; i++)
     this->laser_ranges[i][0] = -1;
 
   // vfh seems to be very oriented around 180 degree scans so interpolate to get 180 degrees
@@ -559,7 +558,7 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   }
 
   r = 1000000.0;
-  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
+  for (i = 0; i < laser_count; i++)
   {
     if (this->laser_ranges[i][0] != -1) {
       r = this->laser_ranges[i][0];
@@ -581,10 +580,10 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   float sonarDistToCenter = 0.0;
 
   this->laser_count = count;
-  assert(this->laser_count <
-         (int)sizeof(this->laser_ranges) / (int)sizeof(this->laser_ranges[0]));
-
-  for(i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
+  if (!laser_ranges)
+	  this->laser_ranges = new double[laser_count][2];
+  
+  for(i = 0; i < laser_count; i++)
     this->laser_ranges[i][0] = -1;
 
   //b += 90.0;
@@ -609,7 +608,7 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   }
 
   r = 1000000.0;
-  for (i = 0; i < PLAYER_LASER_MAX_SAMPLES; i++)
+  for (i = 0; i < laser_count; i++)
   {
     if (this->laser_ranges[i][0] != -1) {
       r = this->laser_ranges[i][0];

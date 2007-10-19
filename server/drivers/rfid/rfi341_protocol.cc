@@ -370,12 +370,14 @@ player_rfid_data_t
   // fill in player structure and return it
   player_rfid_data_t player_data;
   player_data.tags_count = number_of_tags;
+  player_data.tags = (player_rfid_tag_t*)calloc(player_data.tags_count, sizeof(player_data.tags[0]));
   
   player_rfid_tag_t tag;
   for (int i=0; i < number_of_tags; i++)
   {
     tag.type       = 1;
     tag.guid_count = 8;
+    tag.guid = (char*)calloc(tag.guid_count, sizeof(tag.guid[0]));
     for (int j = 0; j < 8; j++)
     {
       // transfer ASCII 0x30 into a char '0', f. ex.

@@ -173,6 +173,7 @@ driver
 #include <termios.h>
 
 #include "erratic.h"
+#include <libplayerxdr/playerxdr.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -819,12 +820,12 @@ void Erratic::ReceiveThread() {
 				if (erratic_data.aio.voltages_count != packet.packet[4])
 				{
 					erratic_data.aio.voltages_count = packet.packet[4];
-					erratic_data.aio.voltages = new double[erratic_data.aio.voltages_count];
+					erratic_data.aio.voltages = new float[erratic_data.aio.voltages_count];
 				}
 				if (erratic_data.ir.voltages_count-4 != RobotParams[this->param_idx]->NumIR)
 				{
 					erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
-					erratic_data.ir.voltages = new double[erratic_data.ir.voltages_count+4];
+					erratic_data.ir.voltages = new float[erratic_data.ir.voltages_count+4];
 				}
 				else
 					erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
@@ -832,13 +833,11 @@ void Erratic::ReceiveThread() {
 				if (erratic_data.ir.ranges_count != RobotParams[this->param_idx]->NumIR)
 				{
 					erratic_data.ir.ranges_count = RobotParams[this->param_idx]->NumIR;
-					erratic_data.ir.ranges = new double[erratic_data.ir.ranges_count];
+					erratic_data.ir.ranges = new float[erratic_data.ir.ranges_count];
 				}
 				unsigned int i_voltage;
 				for (i_voltage = 0; i_voltage < erratic_data.aio.voltages_count ;i_voltage++) 
 					{
-						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
-							continue;
 						erratic_data.aio.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
 									+ 256*packet.packet[6+i_voltage*2]) * (1.0 / 1024.0) * CPU_VOLTAGE;
 						erratic_data.ir.voltages[i_voltage] = (packet.packet[5+i_voltage*2]
@@ -850,8 +849,6 @@ void Erratic::ReceiveThread() {
 				erratic_data.aio.voltages_count += 4;
 				for (int i=0; i < 4; i++) 
 					{
-						if (i_voltage >= PLAYER_AIO_MAX_INPUTS)
-							continue;
 						erratic_data.aio.voltages[i_voltage+i] = 
 							(packet.packet[5+i_voltage*2] & (0x1 << i+4)) ? 1.0 : 0.0;
 						erratic_data.ir.voltages[i] = 
@@ -1241,7 +1238,7 @@ int Erratic::HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void * 
 	                                  this->ir_id)) {
 		player_ir_pose_t pose;
 		pose.poses_count = RobotParams[param_idx]->NumIR;
-		pose.poses = new player_pose3d_t[pose.poses_count]
+		pose.poses = new player_pose3d_t[pose.poses_count];
 		for (uint16_t i = 0; i < pose.poses_count ;i++)
 			pose.poses[i] = RobotParams[param_idx]->IRPose[i];
 		

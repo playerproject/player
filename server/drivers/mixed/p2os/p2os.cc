@@ -325,6 +325,7 @@ driver
 #include <netdb.h>
 
 #include "p2os.h"
+#include <libplayerxdr/playerxdr.h>
 
 Driver*
 P2OS_Init(ConfigFile* cf, int section)
@@ -1302,7 +1303,7 @@ int P2OS::Shutdown()
 P2OS::~P2OS (void)
 {
   player_position2d_data_t_cleanup(&p2os_data.position);
-  player_sonar_data_t_cleanup (&p2os_data.sonar)
+  player_sonar_data_t_cleanup (&p2os_data.sonar);
   player_gripper_data_t_cleanup (&p2os_data.gripper);
   player_gripper_data_t_cleanup (&p2os_data.armGripper);
   player_power_data_t_cleanup (&p2os_data.power);

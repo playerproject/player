@@ -188,7 +188,7 @@ void ranger_draw(ranger_t *ranger)
   int ii = 0, jj = 0;
   int point_count;
   double point1[2], point2[2]; 
-  double *points;
+  double (*points)[2];
   double current_angle = 0.0f, temp = 0.0f;
   unsigned int ranges_per_sensor = 0;
 
@@ -217,12 +217,12 @@ void ranger_draw(ranger_t *ranger)
 
       // Draw a cone for the first range for each sensor
       // Assume the range is straight ahead (ignore min_angle and resolution properties)
-      points[0] = 0.0f;
-      points[1] = 0.0f;
-      points[2] = ranger->proxy->ranges[ii * ranges_per_sensor] * cos(-temp);
-      points[3] = ranger->proxy->ranges[ii * ranges_per_sensor] * sin(-temp);
-      points[4] = ranger->proxy->ranges[ii * ranges_per_sensor] * cos(temp);
-      points[5] = ranger->proxy->ranges[ii * ranges_per_sensor] * sin(temp);
+      points[0][0] = 0.0f;
+      points[0][1] = 0.0f;
+      points[1][0] = ranger->proxy->ranges[ii * ranges_per_sensor] * cos(-temp);
+      points[1][1] = ranger->proxy->ranges[ii * ranges_per_sensor] * sin(-temp);
+      points[2][0] = ranger->proxy->ranges[ii * ranges_per_sensor] * cos(temp);
+      points[2][1] = ranger->proxy->ranges[ii * ranges_per_sensor] * sin(temp);
       rtk_fig_polygon(ranger->scan_fig[ii], 0, 0, 0, 3, points, 1);
 
       // Draw the sensor itself
@@ -245,14 +245,14 @@ void ranger_draw(ranger_t *ranger)
         rtk_fig_clear(ranger->scan_fig[ii]);
 
         // Draw empty space
-        points[0] = ranger->proxy->sensor_poses[ii].px;
-        points[1] = ranger->proxy->sensor_poses[ii].py;
+        points[0][0] = ranger->proxy->sensor_poses[ii].px;
+        points[0][1] = ranger->proxy->sensor_poses[ii].py;
         point_count = 1;
         current_angle = ranger->start_angle;
         // Loop over the ranges
         for (jj = ii * ranges_per_sensor; jj < (ii + 1) * ranges_per_sensor; jj++)
         {
-          range_to_point(ranger, jj, ii, current_angle, &points[point_count*2]);
+          range_to_point(ranger, jj, ii, current_angle, points[point_count]);
           // Move round to the angle of the next range
           current_angle += ranger->resolution;
           point_count++;

@@ -181,11 +181,11 @@ void Aodv::Update()
 
     if (link_count > data.links_count)
     {
-      data.links = realloc(data.links, sizoef(data.links[0])*link_count);
+      data.links = (player_wifi_link_t*)realloc(data.links, sizeof(data.links[0])*link_count);
       data.links_count++;
     }
     assert(data.links);
-    link = data.links[link_count];
+    link = &data.links[link_count];
     link_count++;
 
     strncpy((char*)link->ip, ip, sizeof(link->ip));

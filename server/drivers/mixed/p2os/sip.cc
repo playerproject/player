@@ -171,7 +171,7 @@ void SIP::Fill(player_p2os_data_t* data)
   //TODO: should do this smarter, based on which analog input is selected
   data->aio.voltages_count = (unsigned char)1;
   if (!data->aio.voltages)
-    data->aio.voltages = new double[1];
+    data->aio.voltages = new float[1];
   data->aio.voltages[0] = (this->analog / 255.0) * 5.0;
 
   /* CMUcam blob tracking interface.  The CMUcam only supports one blob

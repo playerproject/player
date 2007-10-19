@@ -122,6 +122,7 @@ driver
 #include <khepera.h>
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 // we need to debug different things at different times
 //#define DEBUG_POS
@@ -340,7 +341,7 @@ Khepera::Khepera(ConfigFile *cf, int section) : Driver(cf, section)
   
 }
 
-Khepera::~Khepera
+Khepera::~Khepera()
 {
   delete geometry->ir.poses;
   delete geometry->ir_calib_a;
@@ -496,8 +497,8 @@ Khepera::UpdateData()
   player_ir_data_t ir_data;
   ir_data.ranges_count = geometry->ir.poses_count;
   ir_data.voltages_count = geometry->ir.poses_count;
-  ir_data.ranges = new double[ir_data.ranges_count];
-  ir_data.voltages = new double[ir_data.voltages_count];
+  ir_data.ranges = new float[ir_data.ranges_count];
+  ir_data.voltages = new float[ir_data.voltages_count];
 
   UpdatePosData(&position_data);
 
@@ -642,18 +643,16 @@ REB::ReadAD(int channel)
 int
 Khepera::ReadAllIR(player_ir_data_t* d)
 {
-  int Values[PLAYER_IR_MAX_SAMPLES];
+  int * Values;
 
-  // changed these variable-size array declarations to the 
-  // bigger-than-necessary ones above, because older versions of gcc don't
-  // support variable-size arrays.
-
+  Values = new int [geometry->ir.poses_count];
   if(Serial->KheperaCommand('N',0,NULL,geometry->ir.poses_count,Values) < 0)
     return -1;			
   for (unsigned int i=0; i< geometry->ir.poses_count; ++i)
   {
     d->voltages[i] = static_cast<short> (Values[i]);
   }
+  delete [] Values;
   return 0;
 }
 

@@ -139,14 +139,13 @@ int playerc_map_get_map(playerc_map_t* device)
 
 #if HAVE_ZLIB_H
   // Allocate a buffer into which we'll decompress the map data
-  unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
+  unzipped_data_len = device->width*device->height;
   unzipped_data = (char*)malloc(unzipped_data_len);
   assert(unzipped_data);
 #endif
 
   // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)(PLAYER_MAP_MAX_TILE_SIZE));
+  sy = sx = 640;
   oi=oj=0;
   while((oi < device->width) && (oj < device->height))
   {
@@ -172,7 +171,7 @@ int playerc_map_get_map(playerc_map_t* device)
     }
 
 #if HAVE_ZLIB_H
-    unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
+    unzipped_data_len = device->width*device->height;
     if(uncompress((Bytef*)unzipped_data, &unzipped_data_len,
                   (uint8_t*)data_resp->data, data_resp->data_count) != Z_OK)
     {

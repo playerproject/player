@@ -471,7 +471,7 @@ typedef struct _playerc_client_t
   int devinfo_count;
 
   /** List of subscribed devices */
-  struct _playerc_device_t *device[PLAYERC_MAX_DEVICES];
+  struct _playerc_device_t *device[PLAYER_MAX_DEVICES];
   int device_count;
 
   /** @internal A circular queue used to buffer incoming data packets. */
@@ -3110,7 +3110,7 @@ int playerc_speech_subscribe(playerc_speech_t *device, int access);
 int playerc_speech_unsubscribe(playerc_speech_t *device);
 
 /** Set the output for the speech device. */
-int playerc_speech_say (playerc_speech_t *device, const char *);
+int playerc_speech_say (playerc_speech_t *device, char *);
 
 
 /** @} */

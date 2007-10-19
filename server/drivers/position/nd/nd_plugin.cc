@@ -267,9 +267,9 @@ class ND : public Driver
     Device *sonar;
     player_devaddr_t sonar_addr;
     int num_sonars;
-    player_pose3d_t sonar_poses[PLAYER_SONAR_MAX_SAMPLES];
+    player_pose3d_t * sonar_poses;
     // indices of known bad sonars
-    int bad_sonars[PLAYER_SONAR_MAX_SAMPLES];
+    int * bad_sonars;
     int bad_sonar_count;
     int sonar_buffer;
 };
@@ -348,6 +348,7 @@ ND::ND( ConfigFile* cf, int section)
     if((this->bad_sonar_count = 
         cf->GetTupleCount(section, "sonar_bad_transducers")))
     {
+      this->bad_sonars = new int[bad_sonar_count];
       for(int i=0;i<this->bad_sonar_count;i++)
         this->bad_sonars[i] = cf->ReadTupleInt(section, 
                                                "sonar_bad_transducers",
@@ -369,6 +370,7 @@ ND::ND( ConfigFile* cf, int section)
 
 ND::~ND() 
 {
+  delete [] bad_sonars;
   return;
 }
 
@@ -569,6 +571,7 @@ int ND::SetupSonar()
   // Store the sonar poses
   cfg = (player_sonar_geom_t*)msg->GetPayload();
   this->num_sonars = cfg->poses_count;
+  this->sonar_poses = new player_pose3d_t[num_sonars];
   for(int i=0;i<this->num_sonars;i++)
   {
     this->sonar_poses[i] = cfg->poses[i];
@@ -599,6 +602,7 @@ int ND::ShutdownLaser()
 int ND::ShutdownSonar() 
 {
   this->sonar->Unsubscribe(this->InQueue);
+  delete [] sonar_poses;
   free(this->sonar_obstacles);
   return 0;
 }

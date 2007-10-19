@@ -368,6 +368,8 @@ void Phidgetrfid::Main() {
         //printf("Tag detected: %d\n", rfid->tagPresen);
         int ledstate;
         player_rfid_data_t data_rfid;
+        data_rfid.tags = new player_rfid_tag_t[1];
+        data_rfid.tags[0].guid = new char[8];
         int tagPresent=TagPresent;
         if (tagPresent!=0) {
             //printf("Tag: %x %x %x %x %x %x\n",tag[0], tag[1], tag[2], tag[3], tag[4], tag[5]);
@@ -402,6 +404,8 @@ void Phidgetrfid::Main() {
         if (rfid_id.interf !=0) {
             Publish(rfid_id, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA, (unsigned char*)&data_rfid, sizeof(player_rfid_data_t), NULL);
         }
+        delete [] data_rfid.tags[0].guid;
+        delete [] data_rfid.tags;
 
         //point to calculate how much to sleep, call nanosleep, after sleep restart the timer
         //Get the ammount of time passed:

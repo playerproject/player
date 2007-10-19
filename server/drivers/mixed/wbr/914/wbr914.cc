@@ -300,8 +300,8 @@ wbr914::wbr914(ConfigFile* cf, int section)
   
   _data.ir.ranges_count = NUM_IR_SENSORS;
   _data.ir.voltages_count = _data.ir.ranges_count;
-  _data.ir.ranges = new double [_data.ir.ranges_count];
-  _data.ir.voltages = new double [_data.ir.voltages_count];
+  _data.ir.ranges = new float [_data.ir.ranges_count];
+  _data.ir.voltages = new float [_data.ir.voltages_count];
   
 }
 

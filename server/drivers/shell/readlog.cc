@@ -22,7 +22,11 @@
  * Desc: Driver for reading log files.
  * Author: Andrew Howard
  * Date: 17 May 2003
+<<<<<<< readlog.cc
  * CVS: $Id$
+=======
+ * CVS: $Id$
+>>>>>>> 1.52.2.1
  *
  * The writelog driver will write data from another device to a log file.
  * The readlog driver will replay the data as if it can from the real sensors.
@@ -146,6 +150,7 @@ driver
 #endif
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 #include "encode.h"
 #include "readlog_time.h"
@@ -1106,15 +1111,6 @@ ReadLog::ProcessMessage(QueuePointer & resp_queue,
                                 PLAYER_LOCALIZE_REQ_GET_PARTICLES,
                                 this->localize_addr))
   {
-    if(hdr->size != 0)
-    {
-      PLAYER_ERROR2("request is wrong length (%d != %d); ignoring",
-                    hdr->size, 0);
-      return(PLAYER_MSGTYPE_RESP_NACK);
-    }
-
-
-
     this->Publish(this->localize_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
@@ -2327,19 +2323,15 @@ int ReadLog::ParseAIO(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            if (inputs.voltages_count > PLAYER_AIO_MAX_INPUTS) {
-              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
-                            filename, linenum);
-              return -1;
-            }
-
             char **t(tokens + 8);
+            inputs.voltages = new float[inputs.voltages_count];
             for (float *v(inputs.voltages);
                  v != inputs.voltages + inputs.voltages_count; ++v, ++t)
               *v = atof(*t);
 
             Publish(id, type, subtype, (void *)&inputs, sizeof(inputs),
                     &time);
+            delete [] inputs.voltages;
             return 0;
           }
         default:
@@ -2435,21 +2427,19 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            if (rdata.tags_count > PLAYER_RFID_MAX_TAGS) {
-              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
-                            this->filename, linenum);
-              return -1;
-            }
 
             char **t(tokens + 8);
+            rdata.tags = new player_rfid_tag_t[ rdata.tags_count];
             for (player_rfid_tag_t *r(rdata.tags);
                  r != rdata.tags + rdata.tags_count; ++r, ++t) {
               r->guid_count = strlen(*t) / 2;
-              DecodeHex(r->guid, PLAYER_RFID_MAX_GUID, *t, strlen(*t));
+              r->guid = new char [r->guid_count];
+              DecodeHex(r->guid, r->guid_count, *t, strlen(*t));
             }
 
             Publish(id, type, subtype, (void *)&rdata, sizeof(rdata),
                     &time);
+            player_rfid_data_t_cleanup(&rdata);
             return 0;
           }
         default:

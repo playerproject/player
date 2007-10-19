@@ -90,7 +90,7 @@ void playerc_speech_putmsg(playerc_speech_t *device, player_msghdr_t *header,
 }
 
 /* Set the output for the speech device. */
-int playerc_speech_say(playerc_speech_t *device, const char *str)
+int playerc_speech_say(playerc_speech_t *device, char *str)
 {
   player_speech_cmd_t cmd;
   

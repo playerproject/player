@@ -351,7 +351,7 @@ Create::Main()
      memset(&irdata,0,sizeof(irdata));
 
      irdata.ranges_count = 11;
-     irdata.ranges = new double [irdata.ranges_count];
+     irdata.ranges = new float [irdata.ranges_count];
      irdata.ranges[0] = (float)this->create_dev->wall;
      irdata.ranges[1] = (float)this->create_dev->cliff_left;
      irdata.ranges[2] = (float)this->create_dev->cliff_frontleft;
@@ -491,7 +491,7 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     player_ir_pose poses;
 
     poses.poses_count = 11;
-    poses.poses = player_pose3d_t[poses.poses_count];
+    poses.poses = new player_pose3d_t[poses.poses_count];
 
     // TODO: Fill in proper values
     for (int i=0; i<11; i++)

@@ -344,7 +344,7 @@ Roomba::Main()
      memset(&irdata,0,sizeof(irdata));
 
      irdata.ranges_count = 11;
-     irdata.ranges = new double [irdata.ranges_count];
+     irdata.ranges = new float [irdata.ranges_count];
      irdata.ranges[0] = (float)this->roomba_dev->wall;
      irdata.ranges[1] = (float)this->roomba_dev->cliff_left;
      irdata.ranges[2] = (float)this->roomba_dev->cliff_frontleft;
@@ -383,7 +383,7 @@ Roomba::Main()
      memset(&cpdata,0,sizeof(cpdata));
 
      cpdata.data_count=5;
-     this->cpdata->data = new uint8_t [this->cpdata->data_count];
+     cpdata.data = new uint8_t [cpdata.data_count];
 
      cpdata.data[0]=this->roomba_dev->button_max;
      cpdata.data[1]=this->roomba_dev->button_clean;
@@ -394,7 +394,7 @@ Roomba::Main()
      this->Publish(this->opaque_addr,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
          (void*)&cpdata);
-     delete [] this->cpdata->data;
+     delete [] cpdata.data;
 
      usleep(CYCLE_TIME_US);
   }
@@ -485,7 +485,7 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
     player_ir_pose poses;
 
     poses.poses_count = 11;
-    poses.poses = player_pose3d_t[poses.poses_count];
+    poses.poses = new player_pose3d_t[poses.poses_count];
 
     // TODO: Fill in proper values
     for (int i=0; i<11; i++)

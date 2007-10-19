@@ -383,7 +383,7 @@ int LaserVisualBW::Shutdown()
   ptz->Unsubscribe(InQueue);
   camera->Unsubscribe(InQueue);
 
-  free(fdata->fiducials);
+  free(fdata.fiducials);
 
   return 0;
 }
@@ -589,9 +589,9 @@ void LaserVisualBW::MatchLaserFiducial(double time, double pose[3])
     if (this->fiducial_count+1 > this->fdata_allocated)
     {
       this->fdata_allocated = this->fiducial_count+1;
-      this->fdata.fiducials = realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
+      this->fdata.fiducials = (player_fiducial_item_t*)realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
     }
-    minfiducial = &this->fiducials[this->fiducial_count-1] 
+    minfiducial = &this->fiducials[this->fiducial_count-1];
     minfiducial->id = -1;
     minfiducial->pose[0] = pose[0];
     minfiducial->pose[1] = pose[1];

@@ -182,6 +182,7 @@ driver
 #define DEFAULT_LMS400_MAXANGLE     125.0
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 // The SICK LMS 400 laser device class.
 class SickLMS400 : public Driver

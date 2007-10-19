@@ -120,13 +120,11 @@ MapTransform::GetMap()
   unsigned int sx,sy;
   unsigned int si,sj;
 
-  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 4;
-  data_req = (player_map_data_t*)calloc(1, reqlen);
+  data_req = (player_map_data_t*)malloc(sizeof(player_map_data_t));
   assert(data_req);
 
-  // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)PLAYER_MAP_MAX_TILE_SIZE);
+  // Tile size, limit to sensible default of about 640x640
+  sy = sx = 640;
   oi=oj=0;
   while((oi < this->source_map.width) && (oj < this->source_map.height))
   {
@@ -217,7 +215,7 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
     assert(new_data);
     player_map_data_t & map_data = *reinterpret_cast<player_map_data_t *> (data);
     player_map_data_t resp_data;
-    memcpy(&resp_data, map_data, sizeof(map_data));
+    memcpy(&resp_data, &map_data, sizeof(map_data));
 
     unsigned int i, j;
     unsigned int oi, oj, si, sj;
@@ -229,7 +227,7 @@ int MapTransform::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, 
     sj = map_data.height;
     PLAYER_MSG4(9,"Block Requested is: %d,%d + %d,%d",oi,oj,si,sj);
     resp_data.data_count = map_data.width * map_data.height;
-    resp_data.data = new int8_t * [resp_data.data_count];
+    resp_data.data = new int8_t [resp_data.data_count];
 
     // Grab the pixels from the map
     for(j = 0; j < sj; j++)

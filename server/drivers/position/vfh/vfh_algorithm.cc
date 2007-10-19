@@ -403,7 +403,7 @@ int VFH_Algorithm::VFH_Allocate()
   return(1);
 }
 
-int VFH_Algorithm::Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], 
+int VFH_Algorithm::Update_VFH( double (*laser_ranges)[2], 
                                int current_speed, 
                                float goal_direction,
                                float goal_distance,
@@ -857,7 +857,7 @@ void VFH_Algorithm::Print_Hist()
   printf("\n\n");
 }
 
-int VFH_Algorithm::Calculate_Cells_Mag( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed ) 
+int VFH_Algorithm::Calculate_Cells_Mag( double (*laser_ranges)[2], int speed ) 
 {
   int x, y;
 
@@ -909,7 +909,7 @@ printf("%d: %f\n", x, this->laser_ranges[x][0]);
   return(1);
 }
 
-int VFH_Algorithm::Build_Primary_Polar_Histogram( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed ) 
+int VFH_Algorithm::Build_Primary_Polar_Histogram( double (*laser_ranges)[2], int speed ) 
 {
   int x, y;
   unsigned int i;

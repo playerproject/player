@@ -115,9 +115,6 @@ class CameraUncompress : public Driver
     bool camera_subscribed;
     bool NewCamData;
 	
-    // Acquired camera data
-    char converted[PLAYER_CAMERA_IMAGE_SIZE];
-
     // Output (uncompressed) camera data
     private: player_camera_data_t data;
 
@@ -248,9 +245,9 @@ void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
   this->data.image = new unsigned char [this->data.image_count];
 
   jpeg_decompress( (unsigned char*)this->data.image, 
-                    PLAYER_CAMERA_IMAGE_SIZE,
-                    compdata.image,
-                    compdata.image_count);
+    this->data.image_count,
+    compdata.image,
+    compdata.image_count);
 
 
   if (this->save)
@@ -261,7 +258,7 @@ void CameraUncompress::ProcessImage(player_camera_data_t & compdata)
     fclose(fp);
   }
 
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, &this->camera_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, 0, &this->camera_time);
   delete [] this->data.image;
   this->data.image = NULL;
 }

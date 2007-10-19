@@ -481,7 +481,7 @@ void SphereDriver::RefreshData()
 {
   // Grab the next frame (blocking)
   fg_grab_frame(mFg, mFrame);
-  size_t image_size, size;
+  size_t image_size;
 
   // Compute size of image
   image_size = mWidth * mHeight * mDepth / 8;

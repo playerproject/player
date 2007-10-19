@@ -104,6 +104,7 @@ class FakeLocalize : public Driver
 {
   // Constructor
   public: FakeLocalize( ConfigFile* cf, int section);
+  ~FakeLocalize();
 
   // Setup/shutdown/run routines.
   public: virtual int Setup();
@@ -119,7 +120,7 @@ class FakeLocalize : public Driver
   private: Device *sim;
   private: player_devaddr_t sim_id;
   private: player_devaddr_t localize_addr;
-  private: const char* model;
+  private: char* model;
 };
 
 
@@ -164,15 +165,9 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
   }
 
 
-  if(!(this->model = cf->ReadString(section, "model", NULL)))
+  if(!(this->model = strdup(cf->ReadString(section, "model", NULL))))
   {
     PLAYER_ERROR("must specify non-NULL model name");
-    this->SetError(-1);
-    return;
-  }
-  if(strlen(this->model) >= PLAYER_SIMULATION_IDENTIFIER_MAXLEN)
-  {
-    PLAYER_ERROR("model name is too long");
     this->SetError(-1);
     return;
   }
@@ -180,6 +175,10 @@ FakeLocalize::FakeLocalize( ConfigFile* cf, int section)
   return;
 }
 
+FakeLocalize::~FakeLocalize()
+{
+  free (this->model);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device (called by server thread).
@@ -233,9 +232,8 @@ FakeLocalize::UpdateData()
 //  struct timeval ts;
   
   // Request pose
-  strncpy(cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN - 1] = '\0';
-  cfg.name_count = min(strlen(cfg.name),PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1) + 1;
+  cfg.name = this->model;
+  cfg.name_count = strlen(cfg.name);
 
   Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
   		(void *) &cfg, sizeof(cfg), NULL);
@@ -243,7 +241,7 @@ FakeLocalize::UpdateData()
   if (Reply && Reply->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK)
   {
   	// we got a good reply so update our data
-  	assert(Reply->GetDataSize() == sizeof(cfg));
+  	assert(Reply->GetDataSize() > 0);
   	player_simulation_pose2d_req_t * resp = reinterpret_cast<player_simulation_pose2d_req_t *> (Reply->GetPayload());
   	
     // Fill in loc_data, byteswapping as we go.
@@ -336,9 +334,8 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
       player_simulation_pose2d_req_t cfg;
 
       // Request pose
-      strncpy(cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-      cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN - 1] = '\0';
-      cfg.name_count = min(strlen(cfg.name),PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1) + 1;
+      cfg.name = this->model;
+      cfg.name_count = strlen(cfg.name);
       
       Message * Reply = sim->Request(InQueue, PLAYER_MSGTYPE_REQ, PLAYER_SIMULATION_REQ_GET_POSE2D,
 				     (void *) &cfg, sizeof(cfg), NULL);
