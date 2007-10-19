@@ -1979,6 +1979,15 @@ class SimulationProxy : public ClientProxy
     /// get the pose of an object in the simulator, identified by the
     /// std::string Returns 0 on success, else a non-zero error code.
     void GetPose2d(char* identifier, double& x, double& y, double& a);
+
+    /// set the integer property value    
+    void SetProperty(char * name, char * property, int value);
+    
+    /// set the double-precission property value    
+    void SetProperty(char * name, char * property, double value);
+    
+    /// set the string property value    
+    void SetProperty(char * name, char * property, char * value);
 };
 
 
