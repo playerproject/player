@@ -16,6 +16,18 @@ playerc_laser_t* lasers[MAX_DEVS];
 int num_laserdevs;
 
 void
+device_cb(void* data)
+{
+  playerc_laser_t* laser = (playerc_laser_t*)data;
+  printf("received data from %u:%u:%u:%u",
+         laser->info.addr.host, 
+         laser->info.addr.robot, 
+         laser->info.addr.interf, 
+         laser->info.addr.index);
+  printf("  (%d scans)\n", laser->scan_count);
+}
+
+void
 browse_cb(player_sd_t* sd, player_sd_dev_t* dev)
 {
   if(dev->interf == PLAYER_LASER_CODE)
@@ -31,6 +43,12 @@ browse_cb(player_sd_t* sd, player_sd_dev_t* dev)
                                                  dev->index);
     if(playerc_laser_subscribe(lasers[num_laserdevs], PLAYER_OPEN_MODE))
       exit(-1);
+
+    // Add a callback to be invoked whenever we receive new data from this
+    // laser
+    playerc_client_addcallback(clients[num_laserdevs], 
+                               &(lasers[num_laserdevs]->info),
+                               device_cb, lasers[num_laserdevs]);
 
     num_laserdevs++;
     printf("subscribed to: %s:%u:%s:%u\n",
@@ -65,17 +83,11 @@ main(int argc, const char **argv)
 
   for(;;)
   {
-    // Wait for new data from server
-    playerc_mclient_read(mclient,100);
-
     // Update name service
     player_sd_update(sd,0.0);
 
-    /*
-    // Print current robot pose
-    printf("position2d : %f %f %f\n",
-           position2d->px, position2d->py, position2d->pa);
-           */
+    // Wait for new data from server
+    playerc_mclient_read(mclient,100);
   }
 
   // Shutdown
