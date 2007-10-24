@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-GripperProxy::GripperProxy(PlayerClient *aPc, uint aIndex)
+GripperProxy::GripperProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ GripperProxy::~GripperProxy()
 }
 
 void
-GripperProxy::Subscribe(uint aIndex)
+GripperProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_gripper_create(mClient, aIndex);

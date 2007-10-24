@@ -55,7 +55,7 @@
 
 using namespace PlayerCc;
 
-LimbProxy::LimbProxy(PlayerClient *aPc, uint aIndex)
+LimbProxy::LimbProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -68,7 +68,7 @@ LimbProxy::~LimbProxy()
   Unsubscribe();
 }
 
-void LimbProxy::Subscribe(uint aIndex)
+void LimbProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_limb_create(mClient, aIndex);

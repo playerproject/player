@@ -5,6 +5,7 @@
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
 #include <vector>
+#include <string>
 
 #define MAX_PSQL_STRING 256
 
@@ -105,7 +106,7 @@ class PostgresConn
     LayerDataHolder GetLayerData(const char *layer_name);
 
   private:
-    BoundingBox BinaryToBBox(const uint8_t *binary, uint length);
+    BoundingBox BinaryToBBox(const uint8_t *binary, uint32_t length);
     PGconn *conn;
 
 };

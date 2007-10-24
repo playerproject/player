@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     PlayerCc::PlayerClient client(gHostname, gPort);
     PlayerCc::CameraProxy cp(&client, gIndex);
 
-    for (uint i=0; i<10; ++i)
+    for (uint32_t i=0; i<10; ++i)
     {
       client.Read();
       cp.SaveFrame("camera");

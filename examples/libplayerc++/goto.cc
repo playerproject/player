@@ -30,10 +30,10 @@ PlayerCc::SonarProxy* sp;
 bool         gMotorEnable(false);
 bool         gGotoDone(false);
 std::string  gHostname(PlayerCc::PLAYER_HOSTNAME);
-uint         gPort(PlayerCc::PLAYER_PORTNUM);
-uint         gIndex(0);
-uint         gDebug(0);
-uint         gFrequency(10); // Hz
+uint32_t        gPort(PlayerCc::PLAYER_PORTNUM);
+uint32_t        gIndex(0);
+uint32_t        gDebug(0);
+uint32_t        gFrequency(10); // Hz
 
 player_pose2d_t gTarget = {0, 0, 0};
 

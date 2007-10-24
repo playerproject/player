@@ -46,7 +46,7 @@
 #include <iomanip>
 using namespace PlayerCc;
 
-GpsProxy::GpsProxy(PlayerClient *aPc, uint aIndex)
+GpsProxy::GpsProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -62,7 +62,7 @@ GpsProxy::~GpsProxy()
 }
 
 void
-GpsProxy::Subscribe(uint aIndex)
+GpsProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_gps_create(mClient, aIndex);

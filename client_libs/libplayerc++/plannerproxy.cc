@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-PlannerProxy::PlannerProxy(PlayerClient *aPc, uint aIndex)
+PlannerProxy::PlannerProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ PlannerProxy::~PlannerProxy()
 }
 
 void
-PlannerProxy::Subscribe(uint aIndex)
+PlannerProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_planner_create(mClient, aIndex);

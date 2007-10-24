@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-Position1dProxy::Position1dProxy(PlayerClient *aPc, uint aIndex)
+Position1dProxy::Position1dProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ Position1dProxy::~Position1dProxy()
 }
 
 void
-Position1dProxy::Subscribe(uint aIndex)
+Position1dProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_position1d_create(mClient, aIndex);

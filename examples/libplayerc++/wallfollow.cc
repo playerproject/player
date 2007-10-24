@@ -1,8 +1,8 @@
 #include <iostream>
 #include <libplayerc++/playerc++.h>
 
-const uint WALL_FOLLOWING = 0;
-const uint COLLISION_AVOIDANCE = 1;
+const uint32_t WALL_FOLLOWING = 0;
+const uint32_t COLLISION_AVOIDANCE = 1;
 
 // parameters
 const double VEL       = 0.3; // normal_advance_speed
@@ -27,7 +27,7 @@ main(int argc, char *argv[])
     double speed = VEL;
     double turnrate;
     bool escape_direction;
-    uint previous_mode = WALL_FOLLOWING;
+    uint32_t previous_mode = WALL_FOLLOWING;
 
     // read from the proxies
     robot.Read();

@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-Graphics3dProxy::Graphics3dProxy(PlayerClient *aPc, uint aIndex)
+Graphics3dProxy::Graphics3dProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ Graphics3dProxy::~Graphics3dProxy()
 }
 
 void
-Graphics3dProxy::Subscribe(uint aIndex)
+Graphics3dProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_graphics3d_create(mClient, aIndex);

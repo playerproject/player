@@ -118,7 +118,7 @@ class PlayerClient
 
     // Connect to the indicated host and port.
     // @exception throws PlayerError if unsuccessfull
-    void Connect(const std::string aHostname, uint aPort);
+    void Connect(const std::string aHostname, uint32_t aPort);
 
     // Disconnect from server.
     void Disconnect();
@@ -130,7 +130,7 @@ class PlayerClient
     std::string mHostname;
 
     // The port number of the server, stored for convenience
-    uint mPort;
+    uint32_t mPort;
 
     // Which transport (TCP or UDP) we're using
     unsigned int mTransport;
@@ -148,7 +148,7 @@ class PlayerClient
 
     /// Make a client and connect it as indicated.
     PlayerClient(const std::string aHostname=PLAYER_HOSTNAME,
-                 uint aPort=PLAYER_PORTNUM,
+                 uint32_t aPort=PLAYER_PORTNUM,
                  int transport=PLAYERC_TRANSPORT_TCP);
 
     /// destructor
@@ -168,7 +168,7 @@ class PlayerClient
     void StopThread();
 
     /// This starts a blocking loop on @ref Read()
-    void Run(uint aTimeout=10); // aTimeout in ms
+    void Run(uint32_t aTimeout=10); // aTimeout in ms
 
     /// Stops the @ref Run() loop
     void Stop();
@@ -179,7 +179,7 @@ class PlayerClient
     /// @returns
     /// - false if there is no data waiting
     /// - true if there is data waiting
-    bool Peek(uint timeout=0);
+    bool Peek(uint32_t timeout=0);
 
     /// @brief Set connection retry limit, which is the number of times
     /// that we'll try to reconnect to the server after a socket error.
@@ -219,7 +219,7 @@ class PlayerClient
 //    /// continuous mode).
 //    ///
 //    /// @exception throws PlayerError if unsuccessfull
-//     void SetFrequency(uint aFreq);
+//     void SetFrequency(uint32_t aFreq);
 
     /// @brief Set whether the client operates in Push/Pull modes
     ///
@@ -233,7 +233,7 @@ class PlayerClient
     /// libplayerc_datamodes.
     ///
     /// @exception throws PlayerError if unsuccessfull
-    void SetDataMode(uint aMode);
+    void SetDataMode(uint32_t aMode);
 
     /// @brief Set a replace rule for the clients queue on the server.
     ///
@@ -266,7 +266,7 @@ class PlayerClient
     std::string GetHostname() const { return(mHostname); };
 
     /// Returns the port
-    uint GetPort() const { return(mPort); };
+    uint32_t GetPort() const { return(mPort); };
 
     /// Get the interface code for a given name
     int LookupCode(std::string aName) const;

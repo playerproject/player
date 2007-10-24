@@ -58,7 +58,7 @@
 
 using namespace PlayerCc;
 
-PlayerClient::PlayerClient(const std::string aHostname, uint aPort,
+PlayerClient::PlayerClient(const std::string aHostname, uint32_t aPort,
                            int aTransport) :
   mClient(NULL),
   mHostname(aHostname),
@@ -84,7 +84,7 @@ PlayerClient::~PlayerClient()
   Disconnect();
 }
 
-void PlayerClient::Connect(const std::string aHostname, uint aPort)
+void PlayerClient::Connect(const std::string aHostname, uint32_t aPort)
 {
   assert("" != aHostname);
   assert(0  != aPort);
@@ -174,7 +174,7 @@ void PlayerClient::RunThread()
 }
 
 // blocking
-void PlayerClient::Run(uint aTimeout)
+void PlayerClient::Run(uint32_t aTimeout)
 {
   timespec sleep = {0,aTimeout*1000000};
   mIsStop = false;
@@ -198,7 +198,7 @@ void PlayerClient::Stop()
   mIsStop = true;
 }
 
-bool PlayerClient::Peek(uint aTimeout)
+bool PlayerClient::Peek(uint32_t aTimeout)
 {
   ClientProxy::scoped_lock_t lock(mMutex);
   //EVAL(playerc_client_peek(mClient, aTimeout));
@@ -253,7 +253,7 @@ std::list<playerc_device_info_t> PlayerClient::GetDeviceList()
 
 // change data delivery mode
 // valid modes are given in include/messages.h
-void PlayerClient::SetDataMode(uint aMode)
+void PlayerClient::SetDataMode(uint32_t aMode)
 {
   assert((aMode==PLAYER_DATAMODE_PULL)||(aMode==PLAYER_DATAMODE_PUSH));
 

@@ -52,7 +52,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <signal.h>
 #include <netinet/in.h>
 #if ENABLE_TCP_NODELAY
@@ -446,7 +445,7 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
     }
 
     puts("sleeping");
-    usleep((uint)rint(client->retry_time * 1e6));
+    usleep((uint32_t)rint(client->retry_time * 1e6));
   }
 
   if((client->retry_limit < 0) || (j < client->retry_limit))
@@ -1227,7 +1226,7 @@ void *playerc_client_dispatch(playerc_client_t *client,
 }
 
 //  Set the request timeout
-void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds)
+void playerc_client_set_request_timeout(playerc_client_t* client, uint32_t seconds)
 {
   client->request_timeout = seconds;
 }

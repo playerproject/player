@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-SpeechProxy::SpeechProxy(PlayerClient *aPc, uint aIndex)
+SpeechProxy::SpeechProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ SpeechProxy::~SpeechProxy()
 }
 
 void
-SpeechProxy::Subscribe(uint aIndex)
+SpeechProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_speech_create(mClient, aIndex);

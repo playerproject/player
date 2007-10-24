@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-IrProxy::IrProxy(PlayerClient *aPc, uint aIndex)
+IrProxy::IrProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ IrProxy::~IrProxy()
 }
 
 void
-IrProxy::Subscribe(uint aIndex)
+IrProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_ir_create(mClient, aIndex);

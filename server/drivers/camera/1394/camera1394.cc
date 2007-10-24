@@ -1104,7 +1104,7 @@ int Camera1394::ProcessMessage(QueuePointer & resp_queue,
 // Store an image frame into the 'frame' buffer
 int Camera1394::GrabFrame()
 {
-  uint f, c;
+  uint32_t f, c;
   int  i, j;
   unsigned char * ptr1, * ptr2, * dst;
 #if LIBDC1394_VERSION == 0200

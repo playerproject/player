@@ -193,7 +193,7 @@ int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, 
 }
 
 // Turn the power to the limb on or off
-int playerc_limb_power(playerc_limb_t *device, uint enable)
+int playerc_limb_power(playerc_limb_t *device, uint32_t enable)
 {
   player_limb_power_req_t config;
 
@@ -205,7 +205,7 @@ int playerc_limb_power(playerc_limb_t *device, uint enable)
 }
 
 // Turn the brakes of all actuators in the limb that have them on or off
-int playerc_limb_brakes(playerc_limb_t *device, uint enable)
+int playerc_limb_brakes(playerc_limb_t *device, uint32_t enable)
 {
   player_limb_brakes_req_t config;
 

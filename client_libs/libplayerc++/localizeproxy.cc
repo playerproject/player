@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-LocalizeProxy::LocalizeProxy(PlayerClient *aPc, uint aIndex)
+LocalizeProxy::LocalizeProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ LocalizeProxy::~LocalizeProxy()
 }
 
 void
-LocalizeProxy::Subscribe(uint aIndex)
+LocalizeProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_localize_create(mClient, aIndex);

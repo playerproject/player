@@ -3,11 +3,11 @@
 #include <unistd.h>
 
 std::string  gHostname(PlayerCc::PLAYER_HOSTNAME);
-uint         gPort(PlayerCc::PLAYER_PORTNUM);
-uint         gIndex(0);
-uint         gDebug(0);
-uint         gFrequency(10); // Hz
-uint         gDataMode(PLAYER_DATAMODE_PUSH);
+uint32_t        gPort(PlayerCc::PLAYER_PORTNUM);
+uint32_t        gIndex(0);
+uint32_t        gDebug(0);
+uint32_t        gFrequency(10); // Hz
+uint32_t        gDataMode(PLAYER_DATAMODE_PUSH);
 bool         gUseLaser(false);
 
 void print_usage(int argc, char** argv);

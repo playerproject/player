@@ -43,13 +43,13 @@ main(int argc, char **argv)
       robot.Read();
 
       // laser avoid (stolen from esben's java example)
-      uint count = lp.GetCount();
-      for (uint j=0; j < count/2; ++j)
+      uint32_t count = lp.GetCount();
+      for (uint32_t j=0; j < count/2; ++j)
       {
         if (minR > lp[j])
           minR = lp[j];
       }
-      for (uint j = count/2; j < count; ++j)
+      for (uint32_t j = count/2; j < count; ++j)
       {
         if (minL > lp[j])
           minL = lp[j];

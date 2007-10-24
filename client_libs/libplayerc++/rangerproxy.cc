@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-RangerProxy::RangerProxy(PlayerClient *aPc, uint aIndex)
+RangerProxy::RangerProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -58,7 +58,7 @@ RangerProxy::~RangerProxy()
   Unsubscribe();
 }
 
-void RangerProxy::Subscribe(uint aIndex)
+void RangerProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_ranger_create(mClient, aIndex);
@@ -78,28 +78,28 @@ void RangerProxy::Unsubscribe()
   mDevice = NULL;
 }
 
-player_pose3d_t RangerProxy::GetSensorPose(uint aIndex) const
+player_pose3d_t RangerProxy::GetSensorPose(uint32_t aIndex) const
 {
   if (aIndex > mDevice->sensor_count)
     throw PlayerError("RangerProxy::GetSensorPose", "index out of bounds");
   return GetVar(mDevice->sensor_poses[aIndex]);
 }
 
-player_bbox3d_t RangerProxy::GetSensorSize(uint aIndex) const
+player_bbox3d_t RangerProxy::GetSensorSize(uint32_t aIndex) const
 {
   if (aIndex > mDevice->sensor_count)
     throw PlayerError("RangerProxy::GetSensorSize", "index out of bounds");
   return GetVar(mDevice->sensor_sizes[aIndex]);
 }
 
-double RangerProxy::GetRange(uint aIndex) const
+double RangerProxy::GetRange(uint32_t aIndex) const
 {
   if (aIndex > mDevice->ranges_count)
     throw PlayerError("RangerProxy::GetRange", "index out of bounds");
   return GetVar(mDevice->ranges[aIndex]);
 }
 
-double RangerProxy::GetIntensity(uint aIndex) const
+double RangerProxy::GetIntensity(uint32_t aIndex) const
 {
   if (aIndex > mDevice->intensities_count)
     throw PlayerError("RangerProxy::GetIntensity", "index out of bounds");
@@ -158,7 +158,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c
   if (c.GetSensorCount() > 0)
   {
     os << c.GetSensorCount() << " sensors:" << endl;
-    for (uint ii = 0; ii < c.GetSensorCount(); ii++)
+    for (uint32_t ii = 0; ii < c.GetSensorCount(); ii++)
     {
       pose = c.GetSensorPose(ii);
       size = c.GetSensorSize(ii);
@@ -170,7 +170,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c
   if (c.GetRangeCount() > 0)
   {
     os << c.GetRangeCount() << " range readings:" << endl << "  [";
-    uint ii;
+    uint32_t ii;
     for (ii = 0; ii < c.GetRangeCount() - 1; ii++)
       os << c.GetRange(ii) << ", ";
     os << c.GetRange(ii) << "]" << endl;
@@ -178,7 +178,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RangerProxy &c
   if (c.GetIntensityCount() > 0)
   {
     os << c.GetIntensityCount() << " intensity readings:" << endl << "  [";
-    uint ii;
+    uint32_t ii;
     for (ii = 0; ii < c.GetIntensityCount() - 1; ii++)
       os << c.GetIntensity(ii) << ", ";
     os << c.GetIntensity(ii) << "]" << endl;

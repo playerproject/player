@@ -46,7 +46,7 @@
 
 using namespace PlayerCc;
 
-AioProxy::AioProxy(PlayerClient *aPc, uint aIndex)
+AioProxy::AioProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -62,7 +62,7 @@ AioProxy::~AioProxy()
 }
 
 void
-AioProxy::Subscribe(uint aIndex)
+AioProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_aio_create(mClient, aIndex);
@@ -84,7 +84,7 @@ AioProxy::Unsubscribe()
 }
 
 void
-AioProxy::SetVoltage(uint aIndex, double aVoltage)
+AioProxy::SetVoltage(uint32_t aIndex, double aVoltage)
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_aio_set_output(mDevice, aIndex, aVoltage);
@@ -101,7 +101,7 @@ std::operator << (std::ostream &os, const PlayerCc::AioProxy &c)
   }
   else
   {
-    for (uint i=0; i < c.GetCount(); ++i)
+    for (uint32_t i=0; i < c.GetCount(); ++i)
     {
       os << "AIO" << i << " - " << c[i] << std::endl;
     }

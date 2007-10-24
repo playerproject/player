@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-BumperProxy::BumperProxy(PlayerClient *aPc, uint aIndex)
+BumperProxy::BumperProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ BumperProxy::~BumperProxy()
 }
 
 void
-BumperProxy::Subscribe(uint aIndex)
+BumperProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_bumper_create(mClient, aIndex);
@@ -96,7 +96,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::BumperProxy &c
 bool
 BumperProxy::IsAnyBumped()
 {
-  for (uint i=0; (i < GetCount())&&(i < PLAYER_BUMPER_MAX_SAMPLES); ++i)
+  for (uint32_t i=0; (i < GetCount())&&(i < PLAYER_BUMPER_MAX_SAMPLES); ++i)
   {
     if (IsBumped(i))
       return true;

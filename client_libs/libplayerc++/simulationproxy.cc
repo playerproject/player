@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-SimulationProxy::SimulationProxy(PlayerClient *aPc, uint aIndex)
+SimulationProxy::SimulationProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ SimulationProxy::~SimulationProxy()
 }
 
 void
-SimulationProxy::Subscribe(uint aIndex)
+SimulationProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_simulation_create(mClient, aIndex);

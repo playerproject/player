@@ -47,7 +47,7 @@
 
 using namespace PlayerCc;
 
-BlobfinderProxy::BlobfinderProxy(PlayerClient *aPc, uint aIndex)
+BlobfinderProxy::BlobfinderProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -63,7 +63,7 @@ BlobfinderProxy::~BlobfinderProxy()
 }
 
 void
-BlobfinderProxy::Subscribe(uint aIndex)
+BlobfinderProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_blobfinder_create(mClient, aIndex);

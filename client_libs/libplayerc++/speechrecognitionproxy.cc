@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-SpeechRecognitionProxy::SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex)
+SpeechRecognitionProxy::SpeechRecognitionProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ SpeechRecognitionProxy::~SpeechRecognitionProxy()
 }
 
 void
-SpeechRecognitionProxy::Subscribe(uint aIndex)
+SpeechRecognitionProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_speechrecognition_create(mClient, aIndex);
@@ -87,7 +87,7 @@ std::operator << (std::ostream &os, const PlayerCc::SpeechRecognitionProxy &c)
 {
   os << "#SpeechRecognition (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
   os << " words [" << c.GetCount() << "]: ";
-  for (uint i=0; i < c.GetCount(); i++)
+  for (uint32_t i=0; i < c.GetCount(); i++)
   {
     std::cout << c.GetWord(i) << " " ;
   }

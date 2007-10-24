@@ -197,7 +197,7 @@ void OpaqueDriver::RefreshData()
    mTestStruct->doub = sin(mTestStruct->uint8/10.0);
 
   // only send the data we need to
-  uint size = sizeof(mData) - sizeof(mData.data) + mData.data_count;
+  uint32_t size = sizeof(mData) - sizeof(mData.data) + mData.data_count;
   Publish(device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE,
           reinterpret_cast<void*>(&mData), size, NULL);

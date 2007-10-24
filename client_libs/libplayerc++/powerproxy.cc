@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-PowerProxy::PowerProxy(PlayerClient *aPc, uint aIndex)
+PowerProxy::PowerProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ PowerProxy::~PowerProxy()
 }
 
 void
-PowerProxy::Subscribe(uint aIndex)
+PowerProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_power_create(mClient, aIndex);

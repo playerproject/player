@@ -365,7 +365,7 @@ CMVisionBF::ProcessImageData()
       TestPattern();
 
     /* got the data. now publish it */
-    uint size = sizeof(mData) - sizeof(mData.blobs) +
+    uint32_t size = sizeof(mData) - sizeof(mData.blobs) +
                 mData.blobs_count * sizeof(mData.blobs[0]);
 
 
@@ -379,10 +379,10 @@ CMVisionBF::TestPattern()
 {
   mData.blobs_count = 3;
 
-  for (uint i=0; i<mData.blobs_count; ++i)
+  for (uint32_t i=0; i<mData.blobs_count; ++i)
   {
-    uint x = mWidth/5*i + mWidth/5;
-    uint y = mHeight/2;
+    uint32_t x = mWidth/5*i + mWidth/5;
+    uint32_t y = mHeight/2;
 
     mData.blobs[i].x = x;
     mData.blobs[i].y = y;
@@ -400,7 +400,7 @@ void
 CMVisionBF::Print()
 {
   // this is mainly for debugging purposes
-  for (uint i=0; i<mData.blobs_count; ++i)
+  for (uint32_t i=0; i<mData.blobs_count; ++i)
   {
     printf("%i: ", i);
     printf("%i, ", mData.blobs[i].x);

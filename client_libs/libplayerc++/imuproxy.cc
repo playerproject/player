@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-ImuProxy::ImuProxy(PlayerClient *aPc, uint aIndex)
+ImuProxy::ImuProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ ImuProxy::~ImuProxy()
 }
 
 void
-ImuProxy::Subscribe(uint aIndex)
+ImuProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_imu_create(mClient, aIndex);

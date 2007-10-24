@@ -123,8 +123,8 @@ void dio_draw(dio_t *dio)
   int i;
   char ntext[64], str[1024];
 
-  uint digin = dio->proxy->digin;
-  uint count = dio->proxy->count;
+  uint32_t digin = dio->proxy->digin;
+  uint32_t count = dio->proxy->count;
 
   rtk_fig_show(dio->fig, 1);
   rtk_fig_clear(dio->fig);

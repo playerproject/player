@@ -55,7 +55,7 @@
 
 using namespace PlayerCc;
 
-AudioProxy::AudioProxy(PlayerClient *aPc, uint aIndex)
+AudioProxy::AudioProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -68,7 +68,7 @@ AudioProxy::~AudioProxy()
   Unsubscribe();
 }
 
-void AudioProxy::Subscribe(uint aIndex)
+void AudioProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_audio_create(mClient, aIndex);
