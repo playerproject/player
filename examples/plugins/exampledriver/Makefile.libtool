@@ -11,7 +11,7 @@ INSTALL_DIR = /tmp
 all: libexampledriver.la
 
 libexampledriver.la: exampledriver.lo
-	$(LIBTOOL) --mode=link $(CXXLD) -rpath $(INSTALL_DIR) -module -export-dynamic -version-info 0:0:0 $< -o $@
+	$(LIBTOOL) --mode=link $(CXXLD) -rpath $(INSTALL_DIR) -module -export-dynamic -version-info 0:0:0 $^ -o $@
 
 %.lo: %.cc
 	$(LIBTOOL) --mode=compile $(CXX) -c $(PLAYER_CFLAGS) $<
