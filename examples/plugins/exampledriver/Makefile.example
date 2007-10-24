@@ -7,7 +7,7 @@ all: libexampledriver.so
 	$(CXX) -Wall -fpic -g3 `pkg-config --cflags playercore` -c $<
 
 libexampledriver.so: exampledriver.o
-	$(CXX) -shared -nostartfiles -o $@ $<
+	$(CXX) -shared -nostartfiles -o $@ $^
 
 clean:
 	rm -f *.o *.so

@@ -7,7 +7,7 @@ all: libmultidriver.so
 	$(CXX) -Wall -fpic -g3 `pkg-config --cflags playercore` -c $<
 
 libmultidriver.so: multidriver.o
-	$(CXX) -shared -nostartfiles -o $@ $<
+	$(CXX) -shared -nostartfiles -o $@ $^
 
 clean:
 	rm -f *.o *.so
