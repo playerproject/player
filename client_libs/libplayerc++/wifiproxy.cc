@@ -50,7 +50,7 @@
 
 using namespace PlayerCc;
 
-WiFiProxy::WiFiProxy(PlayerClient *aPc, uint aIndex)
+WiFiProxy::WiFiProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -67,7 +67,7 @@ WiFiProxy::~WiFiProxy()
 
 
 void
-WiFiProxy::Subscribe(uint aIndex)
+WiFiProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_wifi_create(mClient, aIndex);

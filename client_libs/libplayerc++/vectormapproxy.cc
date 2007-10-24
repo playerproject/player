@@ -49,7 +49,7 @@ using namespace std;
 using namespace PlayerCc;
 
 // Constructor
-VectorMapProxy::VectorMapProxy(PlayerClient *aPc, uint aIndex) : ClientProxy(aPc, aIndex),
+VectorMapProxy::VectorMapProxy(PlayerClient *aPc, uint32_t aIndex) : ClientProxy(aPc, aIndex),
                                mDevice(NULL)
 {
   Subscribe(aIndex);
@@ -64,7 +64,7 @@ VectorMapProxy::~VectorMapProxy()
 }
 
 // Subscribe
-void VectorMapProxy::Subscribe(uint aIndex)
+void VectorMapProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_vectormap_create(mClient, aIndex);

@@ -353,7 +353,7 @@ int FakeLocalize::ProcessMessage(QueuePointer &resp_queue,
 	  resp.variance = 0;
 	  
 	  resp.particles_count = 1;
-	  for(uint i=0;i<resp.particles_count;i++)
+	  for(uint32_t i=0;i<resp.particles_count;i++)
 	    {
 	      resp.particles[i].pose.px = ans->pose.px;
 	      resp.particles[i].pose.py = ans->pose.py;

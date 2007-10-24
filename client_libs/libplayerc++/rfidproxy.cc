@@ -50,7 +50,7 @@
 
 using namespace PlayerCc;
 
-RFIDProxy::RFIDProxy(PlayerClient *aPc, uint aIndex)
+RFIDProxy::RFIDProxy(PlayerClient *aPc, uint32_t aIndex)
 	: ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -66,7 +66,7 @@ RFIDProxy::~RFIDProxy()
 }
 
 void
-RFIDProxy::Subscribe(uint aIndex)
+RFIDProxy::Subscribe(uint32_t aIndex)
 {
 	scoped_lock_t lock(mPc->mMutex);
 	mDevice = playerc_rfid_create(mClient, aIndex);
@@ -91,7 +91,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::RFIDProxy &c)
 {
 	os << "#RFID(" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
 	os << "Tags count:" << c.GetTagsCount() << std::endl;
-	for (uint i=0;i < c.GetTagsCount();i++)
+	for (uint32_t i=0;i < c.GetTagsCount();i++)
 	{
 		playerc_rfidtag_t tag;
 		tag = c.GetRFIDTag(i);

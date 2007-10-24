@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-Position3dProxy::Position3dProxy(PlayerClient *aPc, uint aIndex)
+Position3dProxy::Position3dProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ Position3dProxy::~Position3dProxy()
 }
 
 void
-Position3dProxy::Subscribe(uint aIndex)
+Position3dProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_position3d_create(mClient, aIndex);

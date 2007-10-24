@@ -54,7 +54,7 @@
 
 using namespace PlayerCc;
 
-OpaqueProxy::OpaqueProxy(PlayerClient *aPc, uint aIndex)
+OpaqueProxy::OpaqueProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -70,7 +70,7 @@ OpaqueProxy::~OpaqueProxy()
 }
 
 void
-OpaqueProxy::Subscribe(uint aIndex)
+OpaqueProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_opaque_create(mClient, aIndex);

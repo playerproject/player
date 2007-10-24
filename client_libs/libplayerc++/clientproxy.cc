@@ -48,7 +48,7 @@
 
 using namespace PlayerCc;
 
-ClientProxy::ClientProxy(PlayerClient* aPc, uint aIndex) :
+ClientProxy::ClientProxy(PlayerClient* aPc, uint32_t aIndex) :
  mPc(aPc),
  mClient(aPc->mClient),
  mFresh(false),
@@ -104,7 +104,7 @@ void ClientProxy::SetReplaceRule(bool aReplace,
   }
 }
 
-int ClientProxy::HasCapability(uint aType, uint aSubtype)
+int ClientProxy::HasCapability(uint32_t aType, uint32_t aSubtype)
 {
   scoped_lock_t lock(mPc->mMutex);
   return playerc_device_hascapability (mInfo, aType, aSubtype);

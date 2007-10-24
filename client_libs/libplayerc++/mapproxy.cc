@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-MapProxy::MapProxy(PlayerClient *aPc, uint aIndex)
+MapProxy::MapProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ MapProxy::~MapProxy()
 }
 
 void
-MapProxy::Subscribe(uint aIndex)
+MapProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_map_create(mClient, aIndex);

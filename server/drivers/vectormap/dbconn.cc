@@ -27,7 +27,7 @@ VectorMapInfoHolder PostgresConn::GetVectorMapInfo(vector<string> layerNames)
   // Get the extent in the first query
   string query_string = "SELECT asbinary(extent(geom)) FROM (SELECT geom FROM ";
 
-  for (uint ii=0; ii<layerNames.size(); ++ii)
+  for (uint32_t ii=0; ii<layerNames.size(); ++ii)
   {
     if (ii == 0)
     {
@@ -58,7 +58,7 @@ VectorMapInfoHolder PostgresConn::GetVectorMapInfo(vector<string> layerNames)
   }
  
   uint8_t* wkb_temp = reinterpret_cast<uint8_t*>(PQgetvalue(res, 0, 0));
-  uint length = PQgetlength(res, 0, 0);
+  uint32_t length = PQgetlength(res, 0, 0);
   uint8_t* wkb = new uint8_t[length];
   memcpy(wkb, wkb_temp, length);
   BoundingBox extent = BinaryToBBox(wkb, length);
@@ -77,7 +77,7 @@ VectorMapInfoHolder PostgresConn::GetVectorMapInfo(vector<string> layerNames)
   PQclear(res);
 
   VectorMapInfoHolder info(srid, extent);
-  for (uint i=0; i<layerNames.size(); ++i)
+  for (uint32_t i=0; i<layerNames.size(); ++i)
   {
     info.layers.push_back(GetLayerInfo(layerNames[i].c_str()));
   }
@@ -113,7 +113,7 @@ LayerInfoHolder PostgresConn::GetLayerInfo(const char* layer_name)
   }
 
   info.name = layer_name;
-  uint length = PQgetlength(res, 0, 0);
+  uint32_t length = PQgetlength(res, 0, 0);
   uint8_t* wkb = new uint8_t[length];
   memcpy(wkb, PQgetvalue(res, 0, 0), length);
 
@@ -167,7 +167,7 @@ LayerDataHolder PostgresConn::GetLayerData(const char* layer_name)
   return data;
 }
 
-BoundingBox PostgresConn::BinaryToBBox(const uint8_t* wkb, uint length)
+BoundingBox PostgresConn::BinaryToBBox(const uint8_t* wkb, uint32_t length)
 {
   BoundingBox res;
   memset(&res, 0, sizeof(BoundingBox));
@@ -228,7 +228,7 @@ const player_vectormap_info_t* VectorMapInfoHolder::Convert()
   info.extent.y1 = extent.y1;
   info.layers_count = layers.size();
   info.layers = new player_vectormap_layer_info_t[layers.size()];
-  for (uint ii=0; ii<layers.size(); ++ii)
+  for (uint32_t ii=0; ii<layers.size(); ++ii)
   {
     info.layers[ii] = *(layers[ii].Convert());
   }
@@ -261,7 +261,7 @@ const player_vectormap_feature_data_t* FeatureDataHolder::Convert()
   feature_data.wkb = new uint8_t[wkb.size()];
   feature_data.wkb_count = wkb.size();
   ///TODO: Make more efficient
-  for (uint ii=0; ii<wkb.size(); ++ii)
+  for (uint32_t ii=0; ii<wkb.size(); ++ii)
   {
     feature_data.wkb[ii] = wkb[ii];
   }
@@ -280,7 +280,7 @@ const player_vectormap_layer_data_t* LayerDataHolder::Convert()
 {
   layer_data.features_count = features.size();
   layer_data.features = new player_vectormap_feature_data_t[features.size()];
-  for (uint ii=0; ii<features.size(); ++ii)
+  for (uint32_t ii=0; ii<features.size(); ++ii)
   {
     layer_data.features[ii] = *(features[ii].Convert());
   }

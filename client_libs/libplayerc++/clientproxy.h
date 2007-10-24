@@ -94,7 +94,7 @@ class ClientProxy
     // @attention Potected, so it can only be instantiated by other clients
     //
     // @throw PlayerError Throws a PlayerError if unable to connect to the client
-    ClientProxy(PlayerClient* aPc, uint aIndex);
+    ClientProxy(PlayerClient* aPc, uint32_t aIndex);
 
     // destructor will try to close access to the device
     virtual ~ClientProxy();
@@ -105,7 +105,7 @@ class ClientProxy
 
     // I wish these could be pure virtual,
     // but they're used in the constructor/destructor
-    virtual void Subscribe(uint aIndex) {};
+    virtual void Subscribe(uint32_t aIndex) {};
 
     // Unsubscribe from the proxy
     // This needs to be defined for every proxy.
@@ -200,10 +200,10 @@ class ClientProxy
     /// Returns a pointer to the Player Client
     PlayerClient * GetPlayerClient() const { return mPc;}
     /// Returns device index
-    uint GetIndex() const { return GetVar(mInfo->addr.index); };
+    uint32_t GetIndex() const { return GetVar(mInfo->addr.index); };
 
     /// Returns device interface
-    uint GetInterface() const { return GetVar(mInfo->addr.interf); };
+    uint32_t GetInterface() const { return GetVar(mInfo->addr.interf); };
 
     /// Returns device interface
     std::string GetInterfaceStr() const
@@ -230,7 +230,7 @@ class ClientProxy
     ///
     /// Send a message asking if the device supports the given message
     /// type and subtype. If it does, the return value will be 1, and 0 otherwise.
-    int HasCapability(uint aType, uint aSubtype);
+    int HasCapability(uint32_t aType, uint32_t aSubtype);
 
     /// @brief Request an integer property
     int GetIntProp(char *aProperty, int32_t *aValue);

@@ -86,7 +86,7 @@ namespace PlayerCc
 //   private:
 //
 //     // Subscribe
-//     void Subscribe(uint aIndex);
+//     void Subscribe(uint32_t aIndex);
 //     // Unsubscribe
 //     void Unsubscribe();
 //
@@ -95,7 +95,7 @@ namespace PlayerCc
 //
 //   public:
 //     // Constructor
-//     SomethingProxy(PlayerClient *aPc, uint aIndex=0);
+//     SomethingProxy(PlayerClient *aPc, uint32_t aIndex=0);
 //     // Destructor
 //     ~SomethingProxy();
 //
@@ -126,7 +126,7 @@ class ActArrayProxy : public ClientProxy
 {
   private:
 
-   void Subscribe(uint aIndex);
+   void Subscribe(uint32_t aIndex);
    void Unsubscribe();
 
    // libplayerc data structure
@@ -135,7 +135,7 @@ class ActArrayProxy : public ClientProxy
   public:
 
     /// Default constructor
-    ActArrayProxy(PlayerClient *aPc, uint aIndex=0);
+    ActArrayProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// Default destructor
     ~ActArrayProxy();
 
@@ -148,29 +148,29 @@ class ActArrayProxy : public ClientProxy
     /// Brakes control
     void SetBrakesConfig(bool aVal);
     /// Speed control
-    void SetSpeedConfig(uint aJoint, float aSpeed);
+    void SetSpeedConfig(uint32_t aJoint, float aSpeed);
 
     /// Send an actuator to a position
-    void MoveTo(uint aJoint, float aPos);
+    void MoveTo(uint32_t aJoint, float aPos);
     /// Send actuators 0 thru n to the designated positions
     void MoveToMulti(std::vector<float> aPos);
     /// Move an actuator at a speed
-    void MoveAtSpeed(uint aJoint, float aSpeed);
+    void MoveAtSpeed(uint32_t aJoint, float aSpeed);
     /// Move actuators 0 thru n at the designated speeds
     void MoveAtSpeedMulti(std::vector<float> aSpeed);
     /// Send an actuator, or all actuators, home
     void MoveHome(int aJoint);
     /// Set an actuator to a given current
-    void SetActuatorCurrent(uint aJoint, float aCurrent);
+    void SetActuatorCurrent(uint32_t aJoint, float aCurrent);
     /// Set actuators 0 thru n to the given currents
     void SetActuatorCurrentMulti(std::vector<float> aCurrent);
 
     /// Gets the number of actuators in the array
-    uint GetCount(void) const { return GetVar(mDevice->actuators_count); }
+    uint32_t GetCount(void) const { return GetVar(mDevice->actuators_count); }
     /// Accessor method for getting an actuator's data
-    player_actarray_actuator_t GetActuatorData(uint aJoint) const;
+    player_actarray_actuator_t GetActuatorData(uint32_t aJoint) const;
     /// Same again for getting actuator geometry
-    player_actarray_actuatorgeom_t GetActuatorGeom(uint aJoint) const;
+    player_actarray_actuatorgeom_t GetActuatorGeom(uint32_t aJoint) const;
     /// Accessor method for getting the base position
     player_point_3d_t GetBasePos(void) const { return GetVar(mDevice->base_pos); }
     /// Accessor method for getting the base orientation
@@ -181,7 +181,7 @@ class ActArrayProxy : public ClientProxy
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p ActArrayProxy named @p ap, the following
     ///    expressions are equivalent: @p ap.GetActuatorData[0] and @p ap[0].
-    player_actarray_actuator_t operator [](uint aJoint)
+    player_actarray_actuator_t operator [](uint32_t aJoint)
       { return(GetActuatorData(aJoint)); }
 };
 
@@ -192,7 +192,7 @@ class AioProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -200,24 +200,24 @@ class AioProxy : public ClientProxy
 
   public:
 
-    AioProxy (PlayerClient *aPc, uint aIndex=0);
+    AioProxy (PlayerClient *aPc, uint32_t aIndex=0);
     ~AioProxy();
 
     /// Accessor function
-    uint GetCount() const { return(GetVar(mDevice->voltages_count)); };
+    uint32_t GetCount() const { return(GetVar(mDevice->voltages_count)); };
 
     /// Accessor function
-    double GetVoltage(uint aIndex)  const
+    double GetVoltage(uint32_t aIndex)  const
       { return(GetVar(mDevice->voltages[aIndex])); };
 
     /// Set the output voltage
-    void SetVoltage(uint aIndex, double aVoltage);
+    void SetVoltage(uint32_t aIndex, double aVoltage);
 
     /// AioProxy data access operator.
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p AioProxy named @p bp, the following
     ///    expressions are equivalent: @p ap.GetVoltage(0) and @p ap[0].
-    double operator [](uint aIndex) const
+    double operator [](uint32_t aIndex) const
       { return GetVoltage(aIndex); }
 
 };
@@ -231,7 +231,7 @@ class AudioProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -239,20 +239,20 @@ class AudioProxy : public ClientProxy
 
   public:
 
-    AudioProxy(PlayerClient *aPc, uint aIndex=0);
+    AudioProxy(PlayerClient *aPc, uint32_t aIndex=0);
     ~AudioProxy();
 
     /** @brief Get Mixer Details Count */
-    uint GetMixerDetailsCount() const {return(GetVar(mDevice->channel_details_list.details_count));};
+    uint32_t GetMixerDetailsCount() const {return(GetVar(mDevice->channel_details_list.details_count));};
     /** @brief Get Mixer Detail */
     player_audio_mixer_channel_detail_t GetMixerDetails(int aIndex) const  {return(GetVar(mDevice->channel_details_list.details[aIndex]));};
     /** @brief Get Default output Channel */
-    uint GetDefaultOutputChannel() const  {return(GetVar(mDevice->channel_details_list.default_output));};
+    uint32_t GetDefaultOutputChannel() const  {return(GetVar(mDevice->channel_details_list.default_output));};
     /** @brief Get Default input Channel */
-    uint GetDefaultInputChannel() const {return(GetVar(mDevice->channel_details_list.default_input));};
+    uint32_t GetDefaultInputChannel() const {return(GetVar(mDevice->channel_details_list.default_input));};
 
     /** @brief Get Wav data length */
-    uint GetWavDataLength() const {return(GetVar(mDevice->wav_data.data_count));};
+    uint32_t GetWavDataLength() const {return(GetVar(mDevice->wav_data.data_count));};
     /// @brief Get Wav data
     /// This function copies the wav data into the buffer aImage.
     /// The buffer should be allocated according to the length of the wav data
@@ -265,12 +265,12 @@ class AudioProxy : public ClientProxy
       };
 
     /** @brief Get Seq data count */
-    uint GetSeqCount() const {return(GetVar(mDevice->seq_data.tones_count));};
+    uint32_t GetSeqCount() const {return(GetVar(mDevice->seq_data.tones_count));};
     /** @brief Get Sequence item */
     player_audio_seq_item_t GetSeqItem(int aIndex) const  {return(GetVar(mDevice->seq_data.tones[aIndex]));};
 
     /** @brief Get Channel data count */
-    uint GetChannelCount() const {return(GetVar(mDevice->mixer_data.channels_count));};
+    uint32_t GetChannelCount() const {return(GetVar(mDevice->mixer_data.channels_count));};
     /** @brief Get Sequence item */
     player_audio_mixer_channel_t GetChannel(int aIndex) const  {return(GetVar(mDevice->mixer_data.channels[aIndex]));};
     /** @brief Get driver state */
@@ -328,7 +328,7 @@ class AudioProxy : public ClientProxy
 // {
 //   private:
 //
-//     void Subscribe(uint aIndex);
+//     void Subscribe(uint32_t aIndex);
 //     void Unsubscribe();
 //
 //     // libplayerc data structure
@@ -338,7 +338,7 @@ class AudioProxy : public ClientProxy
 //     /** Constructor.
 //         Leave the access field empty to start unconnected.
 //     */
-//     BlinkenLightProxy(PlayerClient *aPc, uint aIndex=0);
+//     BlinkenLightProxy(PlayerClient *aPc, uint32_t aIndex=0);
 //     ~BlinkenLightProxy();
 //
 //     // true: indicator light enabled, false: disabled.
@@ -367,7 +367,7 @@ class BlobfinderProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -375,32 +375,32 @@ class BlobfinderProxy : public ClientProxy
 
   public:
     /// default contsructor
-    BlobfinderProxy(PlayerClient *aPc, uint aIndex=0);
+    BlobfinderProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~BlobfinderProxy();
 
     /// returns the number of blobs
-    uint GetCount() const { return GetVar(mDevice->blobs_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->blobs_count); };
     /// returns a blob
-    playerc_blobfinder_blob_t GetBlob(uint aIndex) const
+    playerc_blobfinder_blob_t GetBlob(uint32_t aIndex) const
       { return GetVar(mDevice->blobs[aIndex]);};
 
     /// get the width of the image
-    uint GetWidth() const { return GetVar(mDevice->width); };
+    uint32_t GetWidth() const { return GetVar(mDevice->width); };
     /// get the height of the image
-    uint GetHeight() const { return GetVar(mDevice->height); };
+    uint32_t GetHeight() const { return GetVar(mDevice->height); };
 
     /// Blobfinder data access operator.
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p BlobfinderProxy named @p bp, the following
     ///    expressions are equivalent: @p bp.GetBlob[0] and @p bp[0].
-    playerc_blobfinder_blob_t operator [](uint aIndex) const
+    playerc_blobfinder_blob_t operator [](uint32_t aIndex) const
       { return(GetBlob(aIndex)); }
 
 /*
     /// Set the color to be tracked
-    void SetTrackingColor(uint aReMin=0,   uint aReMax=255, uint aGrMin=0,
-                          uint aGrMax=255, uint aBlMin=0,   uint aBlMax=255);
+    void SetTrackingColor(uint32_t aReMin=0,   uint32_t aReMax=255, uint32_t aGrMin=0,
+                          uint32_t aGrMax=255, uint32_t aBlMin=0,   uint32_t aBlMax=255);
     void SetImagerParams(int aContrast, int aBrightness,
                          int aAutogain, int aColormode);
     void SetContrast(int aC);
@@ -419,7 +419,7 @@ class BumperProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -427,13 +427,13 @@ class BumperProxy : public ClientProxy
 
   public:
 
-    BumperProxy(PlayerClient *aPc, uint aIndex=0);
+    BumperProxy(PlayerClient *aPc, uint32_t aIndex=0);
     ~BumperProxy();
 
-    uint GetCount() const { return GetVar(mDevice->bumper_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->bumper_count); };
 
     /// Returns true if the specified bumper has been bumped, false otherwise.
-    uint IsBumped(uint aIndex) const
+    uint32_t IsBumped(uint32_t aIndex) const
       { return GetVar(mDevice->bumpers[aIndex]); };
 
     /// Returns true if any bumper has been bumped, false otherwise.
@@ -443,17 +443,17 @@ class BumperProxy : public ClientProxy
     void RequestBumperConfig();
 
     /// Returns the number bumper poses
-    uint GetPoseCount() const { return GetVar(mDevice->pose_count); };
+    uint32_t GetPoseCount() const { return GetVar(mDevice->pose_count); };
 
     /// Returns a specific bumper pose
-    player_bumper_define_t GetPose(uint aIndex) const
+    player_bumper_define_t GetPose(uint32_t aIndex) const
       { return GetVar(mDevice->poses[aIndex]); };
 
     /// BumperProxy data access operator.
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p BumperProxy named @p bp, the following
     ///    expressions are equivalent: @p bp.IsBumped[0] and @p bp[0].
-    bool operator [](uint aIndex) const
+    bool operator [](uint32_t aIndex) const
       { return IsBumped(aIndex); }
 
 };
@@ -466,7 +466,7 @@ class CameraProxy : public ClientProxy
 
   private:
 
-    virtual void Subscribe(uint aIndex);
+    virtual void Subscribe(uint32_t aIndex);
     virtual void Unsubscribe();
 
     // libplayerc data structure
@@ -478,26 +478,26 @@ class CameraProxy : public ClientProxy
   public:
 
     /// Constructor
-    CameraProxy (PlayerClient *aPc, uint aIndex=0);
+    CameraProxy (PlayerClient *aPc, uint32_t aIndex=0);
 
     virtual ~CameraProxy();
 
     /// Save the frame
     /// @arg aPrefix is the string prefix to name the image.
     /// @arg aWidth is the number of 0s to pad the image numbering with.
-    void SaveFrame(const std::string aPrefix, uint aWidth=4);
+    void SaveFrame(const std::string aPrefix, uint32_t aWidth=4);
 
     /// decompress the image
     void Decompress();
 
     /// Image color depth
-    uint GetDepth() const { return GetVar(mDevice->bpp); };
+    uint32_t GetDepth() const { return GetVar(mDevice->bpp); };
 
     /// Image dimensions (pixels)
-    uint GetWidth() const { return GetVar(mDevice->width); };
+    uint32_t GetWidth() const { return GetVar(mDevice->width); };
 
     /// Image dimensions (pixels)
-    uint GetHeight() const { return GetVar(mDevice->height); };
+    uint32_t GetHeight() const { return GetVar(mDevice->height); };
 
     /// @brief Image format
     /// Possible values include
@@ -505,10 +505,10 @@ class CameraProxy : public ClientProxy
     /// - @ref PLAYER_CAMERA_FORMAT_MONO16
     /// - @ref PLAYER_CAMERA_FORMAT_RGB565
     /// - @ref PLAYER_CAMERA_FORMAT_RGB888
-    uint GetFormat() const { return GetVar(mDevice->format); };
+    uint32_t GetFormat() const { return GetVar(mDevice->format); };
 
     /// Size of the image (bytes)
-    uint GetImageSize() const { return GetVar(mDevice->image_count); };
+    uint32_t GetImageSize() const { return GetVar(mDevice->image_count); };
 
     /// @brief Image data
     /// This function copies the image data into the data buffer aImage.
@@ -525,7 +525,7 @@ class CameraProxy : public ClientProxy
     /// Currently supported compression types are:
     /// - @ref PLAYER_CAMERA_COMPRESS_RAW
     /// - @ref PLAYER_CAMERA_COMPRESS_JPEG
-    uint GetCompression() const { return GetVar(mDevice->compression); };
+    uint32_t GetCompression() const { return GetVar(mDevice->compression); };
 
 };
 
@@ -538,7 +538,7 @@ class DioProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -546,27 +546,27 @@ class DioProxy : public ClientProxy
 
   public:
     /// constructor
-    DioProxy(PlayerClient *aPc, uint aIndex=0);
+    DioProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~DioProxy();
 
     /// The number of valid digital inputs.
-    uint GetCount() const { return GetVar(mDevice->count); };
+    uint32_t GetCount() const { return GetVar(mDevice->count); };
 
     /// A bitfield of the current digital inputs.
     uint32_t GetDigin() const { return GetVar(mDevice->digin); };
 
     /// Get a specific bit
-    bool GetInput(uint aIndex) const;
+    bool GetInput(uint32_t aIndex) const;
 
     /// Set the output to the bitfield aDigout
-    void SetOutput(uint aCount, uint32_t aDigout);
+    void SetOutput(uint32_t aCount, uint32_t aDigout);
 
     /// DioProxy data access operator.
     ///    This operator provides an alternate way of access the dio data.
     ///    For example, given a @p DioProxy named @p dp, the following
     ///    expressions are equivalent: @p dp.GetInput(0) and @p dp[0].
-    uint operator [](uint aIndex) const
+    uint32_t operator [](uint32_t aIndex) const
       { return GetInput(aIndex); }
 };
 
@@ -578,7 +578,7 @@ is stored in the @p beacons array.
 class FiducialProxy : public ClientProxy
 {
   private:
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -586,15 +586,15 @@ class FiducialProxy : public ClientProxy
 
   public:
     /// constructor
-    FiducialProxy(PlayerClient *aPc, uint aIndex=0);
+    FiducialProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~FiducialProxy();
 
     /// The number of beacons detected
-    uint GetCount() const { return GetVar(mDevice->fiducials_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->fiducials_count); };
 
     /// Get detected beacon description
-    player_fiducial_item_t GetFiducialItem(uint aIndex) const
+    player_fiducial_item_t GetFiducialItem(uint32_t aIndex) const
       { return GetVar(mDevice->fiducials[aIndex]);};
 
     /// The pose of the sensor
@@ -616,7 +616,7 @@ class FiducialProxy : public ClientProxy
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p FiducialProxy named @p fp, the following
     ///    expressions are equivalent: @p fp.GetFiducialItem[0] and @p fp[0].
-    player_fiducial_item_t operator [](uint aIndex) const
+    player_fiducial_item_t operator [](uint32_t aIndex) const
       { return GetFiducialItem(aIndex); }
 };
 
@@ -628,7 +628,7 @@ class GpsProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -637,7 +637,7 @@ class GpsProxy : public ClientProxy
   public:
 
     // Constructor
-    GpsProxy(PlayerClient *aPc, uint aIndex=0);
+    GpsProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
     ~GpsProxy();
 
@@ -649,10 +649,10 @@ class GpsProxy : public ClientProxy
     double GetAltitude() const { return GetVar(mDevice->alt); };
 
     /// Number of satellites in view.
-    uint GetSatellites() const { return GetVar(mDevice->sat_count); };
+    uint32_t GetSatellites() const { return GetVar(mDevice->sat_count); };
 
     /// Fix quality
-    uint GetQuality() const { return GetVar(mDevice->quality); };
+    uint32_t GetQuality() const { return GetVar(mDevice->quality); };
 
     /// Horizontal dilution of position (HDOP)
     double GetHdop() const { return GetVar(mDevice->hdop); };
@@ -685,7 +685,7 @@ class Graphics2dProxy : public ClientProxy
   private:
 
     // Subscribe
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     // Unsubscribe
     void Unsubscribe();
 
@@ -694,7 +694,7 @@ class Graphics2dProxy : public ClientProxy
 
   public:
     // Constructor
-    Graphics2dProxy(PlayerClient *aPc, uint aIndex=0);
+    Graphics2dProxy(PlayerClient *aPc, uint32_t aIndex=0);
     // Destructor
     ~Graphics2dProxy();
 
@@ -731,7 +731,7 @@ class Graphics3dProxy : public ClientProxy
   private:
 
     // Subscribe
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     // Unsubscribe
     void Unsubscribe();
 
@@ -740,7 +740,7 @@ class Graphics3dProxy : public ClientProxy
 
   public:
     // Constructor
-    Graphics3dProxy(PlayerClient *aPc, uint aIndex=0);
+    Graphics3dProxy(PlayerClient *aPc, uint32_t aIndex=0);
     // Destructor
     ~Graphics3dProxy();
 
@@ -767,7 +767,7 @@ class GripperProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -776,7 +776,7 @@ class GripperProxy : public ClientProxy
   public:
 
     /// constructor
-    GripperProxy(PlayerClient *aPc, uint aIndex=0);
+    GripperProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~GripperProxy();
 
@@ -785,9 +785,9 @@ class GripperProxy : public ClientProxy
     void RequestGeometry(void);
 
     /// Get the gripper state
-    uint GetState() const { return GetVar(mDevice->state); };
+    uint32_t GetState() const { return GetVar(mDevice->state); };
     /// Get the gripper break beam info
-    uint GetBeams() const { return GetVar(mDevice->beams); };
+    uint32_t GetBeams() const { return GetVar(mDevice->beams); };
     /// Get the pose of the gripper
     player_pose3d_t GetPose() const { return GetVar(mDevice->pose); };
     /// Get the outer size of the gripper
@@ -795,11 +795,11 @@ class GripperProxy : public ClientProxy
     /// Get the inner size of the gripper
     player_bbox3d_t GetInnerSize() const { return GetVar(mDevice->inner_size); };
     /// Get the number of breakbeams in the gripper
-    uint GetNumBeams() const { return GetVar(mDevice->num_beams); };
+    uint32_t GetNumBeams() const { return GetVar(mDevice->num_beams); };
     /// Get the capacity of the gripper's storage
-    uint GetCapacity() const { return GetVar(mDevice->capacity); };
+    uint32_t GetCapacity() const { return GetVar(mDevice->capacity); };
     /// Get the number of currently-stored objects
-    uint GetStored() const { return GetVar(mDevice->stored); };
+    uint32_t GetStored() const { return GetVar(mDevice->stored); };
 
     /// Command the gripper to open
     void Open();
@@ -820,7 +820,7 @@ class HealthProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -828,7 +828,7 @@ class HealthProxy : public ClientProxy
 
   public:
     /// constructor
-    HealthProxy(PlayerClient *aPc, uint aIndex=0);
+    HealthProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~HealthProxy();
 
@@ -878,7 +878,7 @@ device.
 class ImuProxy : public ClientProxy
 {
   private:
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -887,7 +887,7 @@ class ImuProxy : public ClientProxy
   public:
 
     /// Constructor
-    ImuProxy(PlayerClient *aPc, uint aIndex=0);
+    ImuProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~ImuProxy();
 
@@ -926,7 +926,7 @@ class IrProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -935,22 +935,22 @@ class IrProxy : public ClientProxy
   public:
 
     /// Constructor
-    IrProxy(PlayerClient *aPc, uint aIndex=0);
+    IrProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~IrProxy();
 
     /// get the number of IR rangers
-    uint GetCount() const { return GetVar(mDevice->ranges.ranges_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->ranges.ranges_count); };
     /// get the current range
-    double GetRange(uint aIndex) const
+    double GetRange(uint32_t aIndex) const
       { return GetVar(mDevice->ranges.ranges[aIndex]); };
     /// get the current voltage
-    double GetVoltage(uint aIndex) const
+    double GetVoltage(uint32_t aIndex) const
       { return GetVar(mDevice->ranges.voltages[aIndex]); };
     /// get the number of poses
-    uint GetPoseCount() const { return GetVar(mDevice->poses.poses_count); };
+    uint32_t GetPoseCount() const { return GetVar(mDevice->poses.poses_count); };
     /// get a particular pose
-    player_pose3d_t GetPose(uint aIndex) const
+    player_pose3d_t GetPose(uint32_t aIndex) const
       {return GetVar(mDevice->poses.poses[aIndex]);};
 
     /// Request IR pose information
@@ -960,7 +960,7 @@ class IrProxy : public ClientProxy
     /// This operator provides an alternate way of access the range data.
     /// For example, given a @p IrProxy named @p ip, the following
     /// expressions are equivalent: @p ip.GetRange[0] and @p ip[0].
-    double operator [](uint aIndex) const
+    double operator [](uint32_t aIndex) const
       { return GetRange(aIndex); }
 
 };
@@ -974,7 +974,7 @@ class LaserProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -990,12 +990,12 @@ class LaserProxy : public ClientProxy
   public:
 
     /// constructor
-    LaserProxy(PlayerClient *aPc, uint aIndex=0);
+    LaserProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~LaserProxy();
 
     /// Number of points in scan
-    uint GetCount() const { return GetVar(mDevice->scan_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->scan_count); };
 
     /// Max range for the latest set of data (meters)
     double GetMaxRange() const { return GetVar(mDevice->max_range); };
@@ -1027,25 +1027,25 @@ class LaserProxy : public ClientProxy
     bool IntensityOn() const { return GetVar(mDevice->intensity_on); };
 
 //    /// Scan data (polar): range (m) and bearing (radians)
-//    double GetScan(uint aIndex) const
+//    double GetScan(uint32_t aIndex) const
 //      { return GetVar(mDevice->scan[aIndex]); };
 
     /// Scan data (Cartesian): x,y (m)
-    player_point_2d_t GetPoint(uint aIndex) const
+    player_point_2d_t GetPoint(uint32_t aIndex) const
       { return GetVar(mDevice->point[aIndex]); };
 
 
     /// get the range
-    double GetRange(uint aIndex) const
+    double GetRange(uint32_t aIndex) const
       { return GetVar(mDevice->ranges[aIndex]); };
 
     /// get the bearing
-    double GetBearing(uint aIndex) const
+    double GetBearing(uint32_t aIndex) const
       { return GetVar(mDevice->scan[aIndex][1]); };
 
 
     /// get the intensity
-    int GetIntensity(uint aIndex) const
+    int GetIntensity(uint32_t aIndex) const
       { return GetVar(mDevice->intensity[aIndex]); };
 
     /// get the laser ID, call RequestConfigure first
@@ -1063,8 +1063,8 @@ class LaserProxy : public ClientProxy
     /// @p scanning_frequency is measured in Hz
     void Configure(double aMinAngle,
                    double aMaxAngle,
-                   uint aScanRes,
-                   uint aRangeRes,
+                   uint32_t aScanRes,
+                   uint32_t aRangeRes,
                    bool aIntensity,
                    double aScanningFrequency);
 
@@ -1122,7 +1122,7 @@ class LaserProxy : public ClientProxy
     /// way of access the range data.  For example, given an @p
     /// LaserProxy named @p lp, the following expressions are
     /// equivalent: @p lp.GetRange(0) and @p lp[0].
-    double operator [] (uint index) const
+    double operator [] (uint32_t index) const
       { return GetRange(index);}
 
 };
@@ -1136,7 +1136,7 @@ class LimbProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
    // libplayerc data structure
@@ -1144,7 +1144,7 @@ class LimbProxy : public ClientProxy
 
   public:
 
-    LimbProxy(PlayerClient *aPc, uint aIndex=0);
+    LimbProxy(PlayerClient *aPc, uint32_t aIndex=0);
     ~LimbProxy();
 
     /// Geometry request - call before getting the
@@ -1190,7 +1190,7 @@ class LocalizeProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1199,18 +1199,18 @@ class LocalizeProxy : public ClientProxy
   public:
 
     /// constructor
-    LocalizeProxy(PlayerClient *aPc, uint aIndex=0);
+    LocalizeProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~LocalizeProxy();
 
     /// Map dimensions (cells)
     // @todo should these be in a player_pose_t?
-    uint GetMapSizeX() const { return GetVar(mDevice->map_size_x); };
-    uint GetMapSizeY() const { return GetVar(mDevice->map_size_y); };
+    uint32_t GetMapSizeX() const { return GetVar(mDevice->map_size_x); };
+    uint32_t GetMapSizeY() const { return GetVar(mDevice->map_size_y); };
 
     // @todo should these be in a player_pose_t?
-    uint GetMapTileX() const { return GetVar(mDevice->map_tile_x); };
-    uint GetMapTileY() const { return GetVar(mDevice->map_tile_y); };
+    uint32_t GetMapTileX() const { return GetVar(mDevice->map_tile_x); };
+    uint32_t GetMapTileY() const { return GetVar(mDevice->map_tile_y); };
 
     /// Map scale (m/cell)
     double GetMapScale() const { return GetVar(mDevice->map_scale); };
@@ -1225,13 +1225,13 @@ class LocalizeProxy : public ClientProxy
     //};
 
     /// Number of pending (unprocessed) sensor readings
-    uint GetPendingCount() const { return GetVar(mDevice->pending_count); };
+    uint32_t GetPendingCount() const { return GetVar(mDevice->pending_count); };
 
     /// Number of possible poses
-    uint GetHypothCount() const { return GetVar(mDevice->hypoth_count); };
+    uint32_t GetHypothCount() const { return GetVar(mDevice->hypoth_count); };
 
     /// Array of possible poses.
-    player_localize_hypoth_t GetHypoth(uint aIndex) const
+    player_localize_hypoth_t GetHypoth(uint32_t aIndex) const
       { return GetVar(mDevice->hypoths[aIndex]); };
 
     /// Get the particle set
@@ -1245,11 +1245,11 @@ class LocalizeProxy : public ClientProxy
     void SetPose(double pose[3], double cov[3]);
 
     /// Get the number of localization hypoths.
-    uint GetNumHypoths() const { return GetVar(mDevice->hypoth_count); };
+    uint32_t GetNumHypoths() const { return GetVar(mDevice->hypoth_count); };
 
     /// Get the number of particles (for particle filter-based localization
     /// systems).  Returns the number of particles.
-    uint GetNumParticles() const { return GetVar(mDevice->num_particles); };
+    uint32_t GetNumParticles() const { return GetVar(mDevice->num_particles); };
 };
 
 
@@ -1260,7 +1260,7 @@ class LogProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1268,7 +1268,7 @@ class LogProxy : public ClientProxy
 
   public:
     /// Constructor
-    LogProxy(PlayerClient *aPc, uint aIndex=0);
+    LogProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
     /// Destructor
     ~LogProxy();
@@ -1300,7 +1300,7 @@ class MapProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1308,7 +1308,7 @@ class MapProxy : public ClientProxy
 
   public:
     /// constructor
-    MapProxy(PlayerClient *aPc, uint aIndex=0);
+    MapProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
     /// destructor
     ~MapProxy();
@@ -1329,10 +1329,10 @@ class MapProxy : public ClientProxy
 
     /// Map size, in cells
     ///    @todo should this be returned as a player_size_t?
-    uint GetWidth() const { return GetVar(mDevice->width); };
+    uint32_t GetWidth() const { return GetVar(mDevice->width); };
     /// Map size, in cells
     /// @todo should this be returned as a player_size_t?
-    uint GetHeight() const { return GetVar(mDevice->height); };
+    uint32_t GetHeight() const { return GetVar(mDevice->height); };
 
     double GetOriginX() const { return GetVar(mDevice->origin[0]); };
     double GetOriginY() const { return GetVar(mDevice->origin[1]); };
@@ -1356,7 +1356,7 @@ class OpaqueProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1365,12 +1365,12 @@ class OpaqueProxy : public ClientProxy
   public:
 
     /// constructor
-    OpaqueProxy(PlayerClient *aPc, uint aIndex=0);
+    OpaqueProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~OpaqueProxy();
 
     /// How long is the data?
-    uint GetCount() const { return GetVar(mDevice->data_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->data_count); };
 
     /// Opaque data
     void GetData(uint8_t* aDest) const
@@ -1396,7 +1396,7 @@ class PlannerProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1405,7 +1405,7 @@ class PlannerProxy : public ClientProxy
   public:
 
     /// constructor
-    PlannerProxy(PlayerClient *aPc, uint aIndex=0);
+    PlannerProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~PlannerProxy();
 
@@ -1421,10 +1421,10 @@ class PlannerProxy : public ClientProxy
     void SetEnable(bool aEnable);
 
     /// Did the planner find a valid path?
-    uint GetPathValid() const { return GetVar(mDevice->path_valid); };
+    uint32_t GetPathValid() const { return GetVar(mDevice->path_valid); };
 
     /// Have we arrived at the goal?
-    uint GetPathDone() const { return GetVar(mDevice->path_done); };
+    uint32_t GetPathDone() const { return GetVar(mDevice->path_done); };
 
     /// @brief Current pose (m)
     /// @deprecated use GetPose() instead
@@ -1500,7 +1500,7 @@ class PlannerProxy : public ClientProxy
     double GetIa(int i) const;
 
     /// Get the waypoint
-    player_pose2d_t GetWaypoint(uint aIndex) const
+    player_pose2d_t GetWaypoint(uint32_t aIndex) const
     {
       assert(aIndex < GetWaypointCount());
       player_pose2d_t p;
@@ -1518,14 +1518,14 @@ class PlannerProxy : public ClientProxy
       { return GetVar(mDevice->curr_waypoint); };
 
     /// Number of waypoints in the plan
-    uint GetWaypointCount() const
+    uint32_t GetWaypointCount() const
       { return GetVar(mDevice->waypoint_count); };
 
     /// Waypoint access operator
     /// This operator provides an alternate way of access the waypoint data.
     /// For example, given a @p PlannerProxy named @p pp, the following
     /// expressions are equivalent: @p pp.GetWaypoint(0) and @p pp[0].
-    player_pose2d_t operator [](uint aIndex) const
+    player_pose2d_t operator [](uint32_t aIndex) const
       { return GetWaypoint(aIndex); }
 
 };
@@ -1537,7 +1537,7 @@ class Pointcloud3dProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1545,21 +1545,21 @@ class Pointcloud3dProxy : public ClientProxy
 
   public:
     /// constructor
-    Pointcloud3dProxy(PlayerClient *aPc, uint aIndex=0);
+    Pointcloud3dProxy(PlayerClient *aPc, uint32_t aIndex=0);
 
     /// destructor
     ~Pointcloud3dProxy();
 
     /// return the point count
-    uint GetCount() const { return GetVar(mDevice->points_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->points_count); };
 
     /// return a particular scan value
-    player_pointcloud3d_element_t GetPoint(uint aIndex) const
+    player_pointcloud3d_element_t GetPoint(uint32_t aIndex) const
       { return GetVar(mDevice->points[aIndex]); };
 
     /// This operator provides an alternate way of access the scan data.
     /// For example, SonarProxy[0] == SonarProxy.GetRange(0)
-    player_pointcloud3d_element_t operator [] (uint aIndex) const { return GetPoint(aIndex); }
+    player_pointcloud3d_element_t operator [] (uint32_t aIndex) const { return GetPoint(aIndex); }
 
 };
 
@@ -1573,7 +1573,7 @@ class Position1dProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1582,7 +1582,7 @@ class Position1dProxy : public ClientProxy
   public:
 
     /// constructor
-    Position1dProxy(PlayerClient *aPc, uint aIndex=0);
+    Position1dProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~Position1dProxy();
 
@@ -1697,7 +1697,7 @@ class Position2dProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1706,7 +1706,7 @@ class Position2dProxy : public ClientProxy
   public:
 
     /// constructor
-    Position2dProxy(PlayerClient *aPc, uint aIndex=0);
+    Position2dProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~Position2dProxy();
 
@@ -1853,7 +1853,7 @@ class Position3dProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -1862,7 +1862,7 @@ class Position3dProxy : public ClientProxy
   public:
 
     /// constructor
-    Position3dProxy(PlayerClient *aPc, uint aIndex=0);
+    Position3dProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~Position3dProxy();
 
@@ -1992,7 +1992,7 @@ class PowerProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2000,7 +2000,7 @@ class PowerProxy : public ClientProxy
 
   public:
     /// constructor
-    PowerProxy(PlayerClient *aPc, uint aIndex=0);
+    PowerProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~PowerProxy();
 
@@ -2034,7 +2034,7 @@ class PtzProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2042,7 +2042,7 @@ class PtzProxy : public ClientProxy
 
   public:
     /// constructor
-    PtzProxy(PlayerClient *aPc, uint aIndex=0);
+    PtzProxy(PlayerClient *aPc, uint32_t aIndex=0);
     // destructor
     ~PtzProxy();
 
@@ -2058,7 +2058,7 @@ class PtzProxy : public ClientProxy
 
     /// Select new control mode.  Use either @ref PLAYER_PTZ_POSITION_CONTROL
     /// or @ref PLAYER_PTZ_VELOCITY_CONTROL.
-    void SelectControlMode(uint aMode);
+    void SelectControlMode(uint32_t aMode);
 
     /// Return Pan (rad)
     double GetPan() const { return GetVar(mDevice->pan); };
@@ -2079,7 +2079,7 @@ class RangerProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2087,12 +2087,12 @@ class RangerProxy : public ClientProxy
 
   public:
     /// constructor
-    RangerProxy(PlayerClient *aPc, uint aIndex=0);
+    RangerProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~RangerProxy();
 
     /// Return the individual range sensor count
-    uint GetSensorCount() const { return GetVar(mDevice->sensor_count); };
+    uint32_t GetSensorCount() const { return GetVar(mDevice->sensor_count); };
 
     /// Return the device pose
     player_pose3d_t GetDevicePose() const { return GetVar(mDevice->device_pose); };
@@ -2100,21 +2100,21 @@ class RangerProxy : public ClientProxy
     player_bbox3d_t GetDeviceSize() const { return GetVar(mDevice->device_size); };
 
     /// Return the pose of an individual sensor
-    player_pose3d_t GetSensorPose(uint aIndex) const;
+    player_pose3d_t GetSensorPose(uint32_t aIndex) const;
     /// Return the size of an individual sensor
-    player_bbox3d_t GetSensorSize(uint aIndex) const;
+    player_bbox3d_t GetSensorSize(uint32_t aIndex) const;
 
     /// Return the number of range readings
-    uint GetRangeCount() const { return GetVar(mDevice->ranges_count); };
+    uint32_t GetRangeCount() const { return GetVar(mDevice->ranges_count); };
     /// Get a range reading
-    double GetRange(uint aIndex) const;
+    double GetRange(uint32_t aIndex) const;
     /// Operator to get a range reading
-    double operator[] (uint aIndex) const { return GetRange(aIndex); }
+    double operator[] (uint32_t aIndex) const { return GetRange(aIndex); }
 
     /// Return the number of intensity readings
-    uint GetIntensityCount() const { return GetVar(mDevice->intensities_count); } ;
+    uint32_t GetIntensityCount() const { return GetVar(mDevice->intensities_count); } ;
     /// Get an intensity reading
-    double GetIntensity(uint aIndex) const;
+    double GetIntensity(uint32_t aIndex) const;
 
     /// Turn the device power on or off.
     /// Set @p state to true to enable, false to disable.
@@ -2168,7 +2168,7 @@ class RFIDProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2176,21 +2176,21 @@ class RFIDProxy : public ClientProxy
 
   public:
     /// constructor
-    RFIDProxy(PlayerClient *aPc, uint aIndex=0);
+    RFIDProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~RFIDProxy();
 
     /// returns the number of RFID tags
-    uint GetTagsCount() const { return GetVar(mDevice->tags_count); };
+    uint32_t GetTagsCount() const { return GetVar(mDevice->tags_count); };
     /// returns a RFID tag
-    playerc_rfidtag_t GetRFIDTag(uint aIndex) const
+    playerc_rfidtag_t GetRFIDTag(uint32_t aIndex) const
       { return GetVar(mDevice->tags[aIndex]);};
 
     /// RFID data access operator.
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p RFIDProxy named @p rp, the following
     ///    expressions are equivalent: @p rp.GetRFIDTag[0] and @p rp[0].
-    playerc_rfidtag_t operator [](uint aIndex) const
+    playerc_rfidtag_t operator [](uint32_t aIndex) const
       { return(GetRFIDTag(aIndex)); }
 };
 
@@ -2202,7 +2202,7 @@ class SimulationProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2210,7 +2210,7 @@ class SimulationProxy : public ClientProxy
 
   public:
     /// constructor
-    SimulationProxy(PlayerClient *aPc, uint aIndex=0);
+    SimulationProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~SimulationProxy();
 
@@ -2249,7 +2249,7 @@ class SonarProxy : public ClientProxy
 {
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2257,25 +2257,25 @@ class SonarProxy : public ClientProxy
 
   public:
     /// constructor
-    SonarProxy(PlayerClient *aPc, uint aIndex=0);
+    SonarProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~SonarProxy();
 
     /// return the sensor count
-    uint GetCount() const { return GetVar(mDevice->scan_count); };
+    uint32_t GetCount() const { return GetVar(mDevice->scan_count); };
 
     /// return a particular scan value
-    double GetScan(uint aIndex) const
+    double GetScan(uint32_t aIndex) const
       { return GetVar(mDevice->scan[aIndex]); };
     /// This operator provides an alternate way of access the scan data.
     /// For example, SonarProxy[0] == SonarProxy.GetRange(0)
-    double operator [] (uint aIndex) const { return GetScan(aIndex); }
+    double operator [] (uint32_t aIndex) const { return GetScan(aIndex); }
 
     /// Number of valid sonar poses
-    uint GetPoseCount() const { return GetVar(mDevice->pose_count); };
+    uint32_t GetPoseCount() const { return GetVar(mDevice->pose_count); };
 
     /// Sonar poses (m,m,radians)
-    player_pose3d_t GetPose(uint aIndex) const
+    player_pose3d_t GetPose(uint32_t aIndex) const
       { return GetVar(mDevice->poses[aIndex]); };
 
     // Enable/disable the sonars.
@@ -2298,7 +2298,7 @@ class SpeechProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2306,7 +2306,7 @@ class SpeechProxy : public ClientProxy
 
   public:
     /// constructor
-    SpeechProxy(PlayerClient *aPc, uint aIndex=0);
+    SpeechProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// constructor
     ~SpeechProxy();
 
@@ -2320,27 +2320,27 @@ class SpeechProxy : public ClientProxy
  */
 class SpeechRecognitionProxy : public ClientProxy
 {
-   void Subscribe(uint aIndex);
+   void Subscribe(uint32_t aIndex);
    void Unsubscribe();
 
    ///libplayerc data structure
    playerc_speechrecognition_t *mDevice;
   public:
    ///Constructor
-   SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);
+   SpeechRecognitionProxy(PlayerClient *aPc, uint32_t aIndex=0);
    ~SpeechRecognitionProxy();
    /// Accessor method for getting speech recognition data i.e. words.
-   std::string GetWord(uint aWord) const{
+   std::string GetWord(uint32_t aWord) const{
      scoped_lock_t lock(mPc->mMutex);
      return std::string(mDevice->words[aWord]);
    }
 
    /// Gets the number of words.
-   uint GetCount(void) const { return GetVar(mDevice->wordCount); }
+   uint32_t GetCount(void) const { return GetVar(mDevice->wordCount); }
 
    /// Word access operator.
    ///    This operator provides an alternate way of access the speech recognition data.
-   std::string operator [](uint aWord) { return(GetWord(aWord)); }
+   std::string operator [](uint32_t aWord) { return(GetWord(aWord)); }
 };
 
 /**
@@ -2352,7 +2352,7 @@ class VectorMapProxy : public ClientProxy
   private:
 
     // Subscribe
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     // Unsubscribe
     void Unsubscribe();
 
@@ -2362,7 +2362,7 @@ class VectorMapProxy : public ClientProxy
     bool map_info_cached;
   public:
     // Constructor
-    VectorMapProxy(PlayerClient *aPc, uint aIndex=0);
+    VectorMapProxy(PlayerClient *aPc, uint32_t aIndex=0);
     // Destructor
     ~VectorMapProxy();
 
@@ -2382,7 +2382,7 @@ class WiFiProxy: public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2390,7 +2390,7 @@ class WiFiProxy: public ClientProxy
 
   public:
     /// constructor
-    WiFiProxy(PlayerClient *aPc, uint aIndex=0);
+    WiFiProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~WiFiProxy();
 
@@ -2450,7 +2450,7 @@ class WSNProxy : public ClientProxy
 
   private:
 
-    void Subscribe(uint aIndex);
+    void Subscribe(uint32_t aIndex);
     void Unsubscribe();
 
     // libplayerc data structure
@@ -2458,13 +2458,13 @@ class WSNProxy : public ClientProxy
 
   public:
     /// constructor
-    WSNProxy(PlayerClient *aPc, uint aIndex=0);
+    WSNProxy(PlayerClient *aPc, uint32_t aIndex=0);
     /// destructor
     ~WSNProxy();
 
-    uint GetNodeType    () const { return GetVar(mDevice->node_type);      };
-    uint GetNodeID      () const { return GetVar(mDevice->node_id);        };
-    uint GetNodeParentID() const { return GetVar(mDevice->node_parent_id); };
+    uint32_t GetNodeType    () const { return GetVar(mDevice->node_type);      };
+    uint32_t GetNodeID      () const { return GetVar(mDevice->node_id);        };
+    uint32_t GetNodeParentID() const { return GetVar(mDevice->node_parent_id); };
 
     player_wsn_node_data_t
        GetNodeDataPacket() const { return GetVar(mDevice->data_packet);    };

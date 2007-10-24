@@ -12,7 +12,7 @@ void cb1()
   { std::cout << "cb1" << std::endl; }
 
 // Callbacks can also be passed parameters
-void cb2(uint &aI)
+void cb2(uint32_t &aI)
   { std::cout << "cb2 " << ++aI << std::endl; }
 
 // we can also have callbacks in objects
@@ -29,13 +29,13 @@ class TestCb
     void Cb()
       { std::cout << "TestCb " << mId << std::endl; }
 
-    void Cb(uint aOpt)
+    void Cb(uint32_t aOpt)
       { std::cout << "TestCb " << mId << " " << aOpt << std::endl; }
 
 };
 
 // we'll use this to stop the client
-void stop_cb(PlayerCc::PlayerClient* c, uint &i)
+void stop_cb(PlayerCc::PlayerClient* c, uint32_t &i)
 {
   // after 10 iterations, stop the client
   if (++i>10)
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
     // but you can no longer disconnect them.
     // In order to use a callback with a argument, you need to bind
     // the argument to the callback.
-    uint count = 0;
+    uint32_t count = 0;
     cp.ConnectReadSignal(boost::bind(&cb2, count));
 
     // here we're connecting a signal to a member function
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     // server.  The first is by manually calling Read() each time we would
     // like to process data.
     std::cout << "Read()" << std::endl;
-    for (uint i=0; i<10; ++i)
+    for (uint32_t i=0; i<10; ++i)
     {
       client.Read();
       // an example of disconnecting a signal
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
     // Let's connect our stop_cb() signal.  This signal tells the client
     // to exit after 10 iterations
-    uint i = 0;
+    uint32_t i = 0;
     conn = cp.ConnectReadSignal(boost::bind(&stop_cb, &client, i));
 
     // Now, let's run the client.  This exits when the client->Stop() function
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 
     // Instead of sleeping here, we could also be sending commands and reading
     // directly from the proxy.
-    for (uint j=0; j<10; ++j)
+    for (uint32_t j=0; j<10; ++j)
     {
       cp.SaveFrame("test");
       // all proxies have a iostream operator

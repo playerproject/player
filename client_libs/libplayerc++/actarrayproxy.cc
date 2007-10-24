@@ -56,7 +56,7 @@
 
 using namespace PlayerCc;
 
-ActArrayProxy::ActArrayProxy(PlayerClient *aPc, uint aIndex)
+ActArrayProxy::ActArrayProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -69,7 +69,7 @@ ActArrayProxy::~ActArrayProxy()
   Unsubscribe();
 }
 
-void ActArrayProxy::Subscribe(uint aIndex)
+void ActArrayProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_actarray_create(mClient, aIndex);
@@ -102,7 +102,7 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::ActArrayProxy&
   os << a.GetCount () << " actuators:" << std::endl;
   os << "Act \tType\tLength\tOrientation\t\tAxis\t\t\tMin\tCentre\tMax\tHome"
         "\tCfgSpd\tPos\tSpeed\tState\tBrakes" << std::endl;
-  for (uint ii = 0; ii < a.GetCount (); ii++)
+  for (uint32_t ii = 0; ii < a.GetCount (); ii++)
   {
     data = a.GetActuatorData(ii);
     geom = a.GetActuatorGeom(ii);
@@ -160,7 +160,7 @@ void ActArrayProxy::SetBrakesConfig(bool aVal)
 }
 
 // Speed config
-void ActArrayProxy::SetSpeedConfig (uint aJoint, float aSpeed)
+void ActArrayProxy::SetSpeedConfig (uint32_t aJoint, float aSpeed)
 {
   scoped_lock_t lock(mPc->mMutex);
   int ret = playerc_actarray_speed_config(mDevice, aJoint, aSpeed);
@@ -174,7 +174,7 @@ void ActArrayProxy::SetSpeedConfig (uint aJoint, float aSpeed)
 }
 
 // Send an actuator to a position
-void ActArrayProxy::MoveTo(uint aJoint, float aPosition)
+void ActArrayProxy::MoveTo(uint32_t aJoint, float aPosition)
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_position_cmd(mDevice, aJoint, aPosition);
@@ -194,7 +194,7 @@ void ActArrayProxy::MoveToMulti(std::vector<float> aPosition)
 
 
 // Move an actuator at a speed
-void ActArrayProxy::MoveAtSpeed(uint aJoint, float aSpeed)
+void ActArrayProxy::MoveAtSpeed(uint32_t aJoint, float aSpeed)
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_speed_cmd(mDevice, aJoint, aSpeed);
@@ -220,7 +220,7 @@ void ActArrayProxy::MoveHome(int aJoint)
 }
 
 // Move an actuator at a speed
-void ActArrayProxy::SetActuatorCurrent(uint aJoint, float aCurrent)
+void ActArrayProxy::SetActuatorCurrent(uint32_t aJoint, float aCurrent)
 {
   scoped_lock_t lock(mPc->mMutex);
   playerc_actarray_current_cmd(mDevice, aJoint, aCurrent);
@@ -238,7 +238,7 @@ void ActArrayProxy::SetActuatorCurrentMulti(std::vector<float> aCurrent)
   playerc_actarray_multi_current_cmd(mDevice, values);
 }
 
-player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const
+player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint32_t aJoint) const
 {
   if (aJoint > mDevice->actuators_count)
   {
@@ -252,7 +252,7 @@ player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint aJoint) const
 }
 
 // Same again for getting actuator geometry
-player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint aJoint) const
+player_actarray_actuatorgeom_t ActArrayProxy::GetActuatorGeom(uint32_t aJoint) const
 {
   if (aJoint > mDevice->actuators_count)
   {

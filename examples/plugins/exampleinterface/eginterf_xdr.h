@@ -1,8 +1,8 @@
-#ifndef _EGINTERF_
+#ifndef __
 
 #include <libplayerxdr/playerxdr.h>
 
-#include "eginterf.h"
+#include "./eginterf.h"
 
 #ifdef __cplusplus
 extern "C" {

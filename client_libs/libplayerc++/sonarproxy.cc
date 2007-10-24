@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-SonarProxy::SonarProxy(PlayerClient *aPc, uint aIndex)
+SonarProxy::SonarProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ SonarProxy::~SonarProxy()
 }
 
 void
-SonarProxy::Subscribe(uint aIndex)
+SonarProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_sonar_create(mClient, aIndex);

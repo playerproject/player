@@ -50,7 +50,7 @@
 using namespace PlayerCc;
 
 
-LaserProxy::LaserProxy(PlayerClient *aPc, uint aIndex)
+LaserProxy::LaserProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -66,7 +66,7 @@ LaserProxy::~LaserProxy()
 }
 
 void
-LaserProxy::Subscribe(uint aIndex)
+LaserProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_laser_create(mClient, aIndex);
@@ -90,8 +90,8 @@ LaserProxy::Unsubscribe()
 void
 LaserProxy::Configure(double min_angle,
                       double max_angle,
-                      uint scan_res,
-                      uint range_res,
+                      uint32_t scan_res,
+                      uint32_t range_res,
                       bool intensity,
                       double aScanningFrequency)
 {

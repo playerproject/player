@@ -36,7 +36,7 @@ class test_callback
 
 void read_callback4(PlayerClient* c)
 {
-  static uint i(0);
+  static uint32_t i(0);
   std::cout << "read_client_callback_4: " << i << std::endl;
   if (++i>10)
     c->Stop();

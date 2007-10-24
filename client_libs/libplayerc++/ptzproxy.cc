@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-PtzProxy::PtzProxy(PlayerClient *aPc, uint aIndex)
+PtzProxy::PtzProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ PtzProxy::~PtzProxy()
 }
 
 void
-PtzProxy::Subscribe(uint aIndex)
+PtzProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t  lock(mPc->mMutex);
   mDevice = playerc_ptz_create(mClient, aIndex);
@@ -99,7 +99,7 @@ void PtzProxy::SetCam(double aPan, double aTilt, double aZoom)
   playerc_ptz_set(mDevice, aPan, aTilt, aZoom);
 }
 
-void PtzProxy::SelectControlMode(uint aMode)
+void PtzProxy::SelectControlMode(uint32_t aMode)
 {
   boost::mutex::scoped_lock lock(mPc->mMutex);
   if (0 != playerc_ptz_set_control_mode(mDevice, aMode))

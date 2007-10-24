@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-Graphics2dProxy::Graphics2dProxy(PlayerClient *aPc, uint aIndex)
+Graphics2dProxy::Graphics2dProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ Graphics2dProxy::~Graphics2dProxy()
 }
 
 void
-Graphics2dProxy::Subscribe(uint aIndex)
+Graphics2dProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_graphics2d_create(mClient, aIndex);

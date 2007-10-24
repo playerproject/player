@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-DioProxy::DioProxy(PlayerClient *aPc, uint aIndex)
+DioProxy::DioProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ DioProxy::~DioProxy()
 }
 
 void
-DioProxy::Subscribe(uint aIndex)
+DioProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_dio_create(mClient, aIndex);
@@ -86,7 +86,7 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::DioProxy &c)
 {
   os << "#DIO (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-  uint count = c.GetCount();
+  uint32_t count = c.GetCount();
 
   if (count < 0)
   {
@@ -106,7 +106,7 @@ std::operator << (std::ostream &os, const PlayerCc::DioProxy &c)
 }
 
 bool
-DioProxy::GetInput(uint aIndex) const
+DioProxy::GetInput(uint32_t aIndex) const
 {
   assert(aIndex < GetCount());
   assert(aIndex >= 0);
@@ -114,7 +114,7 @@ DioProxy::GetInput(uint aIndex) const
 };
 
 void
-DioProxy::SetOutput(uint aCount, uint32_t aDigout)
+DioProxy::SetOutput(uint32_t aCount, uint32_t aDigout)
 {
   scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_dio_set_output(mDevice, aCount, aDigout))

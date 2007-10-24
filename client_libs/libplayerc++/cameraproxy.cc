@@ -54,7 +54,7 @@
 
 using namespace PlayerCc;
 
-CameraProxy::CameraProxy(PlayerClient *aPc, uint aIndex)
+CameraProxy::CameraProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL),
   mPrefix("image"),
@@ -72,7 +72,7 @@ CameraProxy::~CameraProxy()
 }
 
 void
-CameraProxy::Subscribe(uint aIndex)
+CameraProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_camera_create(mClient, aIndex);
@@ -94,7 +94,7 @@ CameraProxy::Unsubscribe()
 }
 
 void
-CameraProxy::SaveFrame(const std::string aPrefix, uint aWidth)
+CameraProxy::SaveFrame(const std::string aPrefix, uint32_t aWidth)
 {
   std::ostringstream filename;
   filename.imbue(std::locale(""));

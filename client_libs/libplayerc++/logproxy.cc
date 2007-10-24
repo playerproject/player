@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-LogProxy::LogProxy(PlayerClient *aPc, uint aIndex)
+LogProxy::LogProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ LogProxy::~LogProxy()
 }
 
 void
-LogProxy::Subscribe(uint aIndex)
+LogProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_log_create(mClient, aIndex);

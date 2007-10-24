@@ -50,7 +50,7 @@
 
 using namespace PlayerCc;
 
-WSNProxy::WSNProxy(PlayerClient *aPc, uint aIndex)
+WSNProxy::WSNProxy(PlayerClient *aPc, uint32_t aIndex)
 	: ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -66,7 +66,7 @@ WSNProxy::~WSNProxy()
 }
 
 void
-WSNProxy::Subscribe(uint aIndex)
+WSNProxy::Subscribe(uint32_t aIndex)
 {
     scoped_lock_t lock(mPc->mMutex);
     mDevice = playerc_wsn_create(mClient, aIndex);

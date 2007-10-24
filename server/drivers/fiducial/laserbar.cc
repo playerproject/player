@@ -308,7 +308,7 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
   	this->Unlock();
 
-    uint size = sizeof(this->fdata) - sizeof(this->fdata.fiducials) +
+    uint32_t size = sizeof(this->fdata) - sizeof(this->fdata.fiducials) +
       this->fdata.fiducials_count * sizeof(this->fdata.fiducials[0]);
 
     printf("Count[%d]\n",this->fdata.fiducials_count);

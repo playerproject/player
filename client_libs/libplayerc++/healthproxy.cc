@@ -50,7 +50,7 @@
 
 using namespace PlayerCc;
 
-HealthProxy::HealthProxy(PlayerClient *aPc, uint aIndex)
+HealthProxy::HealthProxy(PlayerClient *aPc, uint32_t aIndex)
 	: ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -66,7 +66,7 @@ HealthProxy::~HealthProxy()
 }
 
 void
-HealthProxy::Subscribe(uint aIndex)
+HealthProxy::Subscribe(uint32_t aIndex)
 {
     scoped_lock_t lock(mPc->mMutex);
     mDevice = playerc_health_create(mClient, aIndex);

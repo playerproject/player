@@ -110,7 +110,6 @@ For more information see http://postgis.refractions.net/
 #include <stdlib.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <playererror.h>
 #include "dbconn.h"
 #ifdef HAVE_GEOS
 #include <geos_c.h>

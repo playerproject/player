@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-FiducialProxy::FiducialProxy(PlayerClient *aPc, uint aIndex)
+FiducialProxy::FiducialProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ FiducialProxy::~FiducialProxy()
 }
 
 void
-FiducialProxy::Subscribe(uint aIndex)
+FiducialProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_fiducial_create(mClient, aIndex);

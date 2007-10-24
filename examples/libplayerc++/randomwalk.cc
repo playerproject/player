@@ -50,7 +50,7 @@ int main(int argc, char** argv)
       if (gUseLaser)
       {
         obs = false;
-        for (uint i = 0; i < lp->GetCount (); i++)
+        for (uint32_t i = 0; i < lp->GetCount (); i++)
         {
           if((*lp)[i] < minfrontdistance)
             obs = true;

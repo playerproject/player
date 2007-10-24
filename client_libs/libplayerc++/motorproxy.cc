@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-MotorProxy::MotorProxy(PlayerClient *aPc, uint aIndex)
+MotorProxy::MotorProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex),
   mDevice(NULL)
 {
@@ -61,7 +61,7 @@ MotorProxy::~MotorProxy()
 }
 
 void
-MotorProxy::Subscribe(uint aIndex)
+MotorProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_motor_create(mClient, aIndex);

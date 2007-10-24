@@ -45,7 +45,7 @@
 
 using namespace PlayerCc;
 
-Pointcloud3dProxy::Pointcloud3dProxy(PlayerClient *aPc, uint aIndex)
+Pointcloud3dProxy::Pointcloud3dProxy(PlayerClient *aPc, uint32_t aIndex)
   : ClientProxy(aPc, aIndex), mDevice(NULL)
 {
   Subscribe(aIndex);
@@ -61,7 +61,7 @@ Pointcloud3dProxy::~Pointcloud3dProxy()
 }
 
 void
-Pointcloud3dProxy::Subscribe(uint aIndex)
+Pointcloud3dProxy::Subscribe(uint32_t aIndex)
 {
   scoped_lock_t lock(mPc->mMutex);
   mDevice = playerc_pointcloud3d_create(mClient, aIndex);

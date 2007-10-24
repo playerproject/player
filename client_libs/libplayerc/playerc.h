@@ -48,8 +48,6 @@ client writers.
 #define PLAYERC_H
 
 #include <stdio.h>
-#include <sys/types.h>
-#include <netinet/in.h>
 
 #include <libplayerc/playercconfig.h>
 
@@ -725,7 +723,7 @@ void *playerc_client_read(playerc_client_t *client);
 @param seconds Seconds to wait for a reply.
 
 */
-void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds);
+void playerc_client_set_request_timeout(playerc_client_t* client, uint32_t seconds);
 
 /** @brief Set the connection retry limit.
 
@@ -1975,10 +1973,10 @@ int playerc_limb_vecmove_cmd(playerc_limb_t *device, float x, float y, float z, 
 /** @brief Turn the power to the limb on or off. Be careful
 when turning power on that the limb is not obstructed from its home
 position in case it moves to it (common behaviour). */
-int playerc_limb_power(playerc_limb_t *device, uint enable);
+int playerc_limb_power(playerc_limb_t *device, uint32_t enable);
 
 /** @brief Turn the brakes of all actuators in the limb that have them on or off. */
-int playerc_limb_brakes(playerc_limb_t *device, uint enable);
+int playerc_limb_brakes(playerc_limb_t *device, uint32_t enable);
 
 /** @brief Set the speed of the end effector (m/s) for all subsequent movement commands. */
 int playerc_limb_speed_config(playerc_limb_t *device, float speed);
