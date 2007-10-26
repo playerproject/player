@@ -1251,16 +1251,16 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
     player_position2d_set_odom_req_t* set_odom_req =
       (player_position2d_set_odom_req_t*)data;
 
-    this->motor_packet->x_offset = ((int)rint(set_odom_req->pose.px*1e3))
-                                 - this->motor_packet->xpos;
+    this->motor_packet->x_offset = ((int )rint(set_odom_req->pose.px*1e3))
+                                    + this->motor_packet->xpos;
     this->motor_packet->y_offset = ((int)rint(set_odom_req->pose.py*1e3))
-                                 - this->motor_packet->ypos;
-    this->motor_packet->angle_offset = ((int)rint(RTOD(set_odom_req->pose.pa)))
-                                     - this->motor_packet->angle;
+                                    + this->motor_packet->ypos;
+    this->motor_packet->angle_offset = ((int)rint(RTOA(set_odom_req->pose.pa)))
+                                     + this->motor_packet->angle;
 
     //**************************
-    //    printf("Reset odometry: %f %f %f\n", set_odom_req->pose.px, set_odom_req->pose.py, set_odom_req->pose.pa);
-    //    printf("Reset odometry: %d %d %d\n", motor_packet->x_offset, motor_packet->y_offset, motor_packet->angle_offset);
+		//    printf("Reset odometry: %f %f %f\n", set_odom_req->pose.px, set_odom_req->pose.py, set_odom_req->pose.pa);
+		//    printf("Reset odometry: %d %d %d\n", motor_packet->x_offset, motor_packet->y_offset, motor_packet->angle_offset);
     
 
     this->Publish(this->position_id, resp_queue,
@@ -1290,7 +1290,11 @@ int Erratic::HandleConfig(MessageQueue* resp_queue, player_msghdr * hdr, void * 
       return(-1);
     }
 
-    ResetRawPositions();
+		this->motor_packet->x_offset = this->motor_packet->xpos;
+		this->motor_packet->y_offset = this->motor_packet->ypos;;
+		this->motor_packet->angle_offset = this->motor_packet->angle;;
+		printf("Resetting odometry offsets: %d %d %d\n", motor_packet->xpos,
+					 motor_packet->ypos, motor_packet->angle);
 
     this->Publish(this->position_id, resp_queue,
       PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_RESET_ODOM);
@@ -1418,10 +1422,10 @@ Erratic::HandleCarCommand(player_position2d_cmd_car_t cmd)
 
   speedDemand = (int)rint(cmd.velocity * 1e3);  // convert to mm/s
   angleDemand = (int)rint(RTOD(cmd.angle)); // convert to deg heading
-  angleDemand -= this->motor_packet->angle_offset;  // check for angle offset of odometry
-  if (angleDemand > 360)        // normalize
+  angleDemand += (int)rint(ATOD(this->motor_packet->angle_offset));  // check for angle offset of odometry
+	while (angleDemand > 360)        // normalize
     angleDemand -= 360;
-  if (angleDemand < 0)
+  while (angleDemand < 0)
     angleDemand += 360;
 
   // do separate trans and rot vels

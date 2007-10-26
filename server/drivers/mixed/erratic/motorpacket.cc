@@ -109,9 +109,11 @@ bool ErraticMotorPacket::Parse( unsigned char *buffer, int length )
 	//if (debug_mode)
   //  printf("Just parsed, new xpos: %i ypos: %i\n", xpos, ypos);
 
-  angle = (short)
-    rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
-	 M_PI/2048.0 * 180.0/M_PI);
+  //  angle = (short)
+  //    rint(((short)(buffer[cnt] | (buffer[cnt+1] << 8))) *
+  //	 M_PI/2048.0 * 180.0/M_PI);
+  angle = (short)(buffer[cnt] | (buffer[cnt+1] << 8)); // keep as 4096 / full turn
+
   cnt += sizeof(short);
 
   lvel = (short)
@@ -144,40 +146,37 @@ bool ErraticMotorPacket::Parse( unsigned char *buffer, int length )
 // Spits out information that was previously parsed
 void ErraticMotorPacket::Fill(player_erratic_data_t* data)
 {
-	// Odometry data
-	{
-		// initialize position to current offset
-		data->position.pos.px = this->x_offset / 1e3;
-		data->position.pos.py = this->y_offset / 1e3;
-		// now transform current position by rotation if there is one
-		// and add to offset
-		if(this->angle_offset != 0) 
-		{
-			double rot = DTOR(this->angle_offset);    // convert rotation to radians
-			data->position.pos.px +=  ((this->xpos/1e3) * cos(rot) - 
-				(this->ypos/1e3) * sin(rot));
-			data->position.pos.py +=  ((this->xpos/1e3) * sin(rot) + 
-				(this->ypos/1e3) * cos(rot));
-			data->position.pos.pa = DTOR(this->angle_offset + angle);
-		}
-		else 
-		{
-			data->position.pos.px += this->xpos / 1e3;
-			data->position.pos.py += this->ypos / 1e3;
-			data->position.pos.pa = DTOR(this->angle);
-		}
-		data->position.vel.px = (((this->lvel) + (this->rvel) ) / 2) / 1e3;
-		data->position.vel.py = 0.0;
-		data->position.vel.pa = (0.596*(double)(this->rvel - this->lvel) /
-			(2.0/RobotParams[param_idx]->DiffConvFactor));
-		data->position.stall = (unsigned char)(this->lwstall || this->rwstall);
-	}
+  // Odometry data
+  {
+    // initialize position to current offset
+    data->position.pos.px = (double)(this->xpos - this->x_offset) / 1e3;
+    data->position.pos.py = (double)(this->ypos - this->y_offset) / 1e3;
+    // now transform current position by rotation if there is one
+    // and add to offset
+    if(this->angle_offset != 0) 
+      {
+	double rot = ATOR(this->angle_offset);    // convert rotation to radians
+	double ax = data->position.pos.px;
+	double ay = data->position.pos.py;
+	data->position.pos.px =  ax * cos(rot) + ay * sin(rot);
+	data->position.pos.py = -ax * sin(rot) + ay * cos(rot);
+	data->position.pos.pa = ATOR(angle - this->angle_offset);
+      }
+    else
+      data->position.pos.pa = ATOR(this->angle);
+
+    data->position.vel.px = (((this->lvel) + (this->rvel) ) / 2) / 1e3;
+    data->position.vel.py = 0.0;
+    data->position.vel.pa = (0.596*(double)(this->rvel - this->lvel) /
+			     (2.0/RobotParams[param_idx]->DiffConvFactor));
+    data->position.stall = (unsigned char)(this->lwstall || this->rwstall);
+  }
 
   // Battery data
-	{
-	  data->power.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
-	data->power.volts = this->battery / 1e1;
-  	data->power.percent = 1e2 * (data->power.volts / VIDERE_NOMINAL_VOLTAGE);
-	}
+  {
+    data->power.valid = PLAYER_POWER_MASK_VOLTS | PLAYER_POWER_MASK_PERCENT;
+    data->power.volts = this->battery / 1e1;
+    data->power.percent = 1e2 * (data->power.volts / VIDERE_NOMINAL_VOLTAGE);
+  }
 }
 

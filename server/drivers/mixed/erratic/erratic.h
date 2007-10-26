@@ -48,6 +48,11 @@
 
 #define CPU_VOLTAGE 3.5
 
+// angular constants, angular units are 4096 / rev
+#define ATOR(x) (M_PI * ((double)(x)) / 2048.0)
+#define ATOD(x) (180.0 * ((double)(x)) / 2048.0)
+#define RTOA(x) ((short)((x) * 2048.0) / M_PI)
+
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
