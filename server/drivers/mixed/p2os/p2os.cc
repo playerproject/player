@@ -1574,14 +1574,11 @@ P2OS::Main()
         lastPulseTime = currentTime;
       }
     }
-    else
-    {
-      // Hack fix to get around the fact that if no commands are sent to the robot via SendReceive,
-      // the driver will never read SIP packets and so never send data back to clients.
-      // We need a better way of doing regular checks of the serial port - peek in sendreceive, maybe?
-      // Because if there is no data waiting this will sit around waiting until one comes
-      SendReceive (NULL, true);
-    }
+    // Hack fix to get around the fact that if no commands are sent to the robot via SendReceive,
+    // the driver will never read SIP packets and so never send data back to clients.
+    // We need a better way of doing regular checks of the serial port - peek in sendreceive, maybe?
+    // Because if there is no data waiting this will sit around waiting until one comes
+    SendReceive (NULL, true);
   }
 }
 
