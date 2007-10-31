@@ -320,6 +320,37 @@ class AudioProxy : public ClientProxy
 
 };
 
+/**
+ * The BlackBoardProxy class is used to subscribe to a blackboard device.
+ * A blackboard is a data-store which sends updates when an entry is changed.
+ * It also returns the current value of an entry when a proxy first subcribes
+ * to that entries key.
+ * If an entry does not exist, the default value of that entry is returned.
+ */
+class BlackBoardProxy : public ClientProxy
+{
+  private:
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_blackboard_t *mDevice;
+
+  public:
+	  /** Constructor */
+  	BlackBoardProxy(PlayerClient *aPc, uint aIndex=0);
+  	/** Destructor */
+  	~BlackBoardProxy();
+  	/** Subscribe to a key. If the key does not exist the default value is returned. The user must free the entry. */
+  	player_blackboard_entry_t *SubscribeToKey(const char *key);
+  	/** Stop receiving updates about this key. */
+  	void UnsubscribeFromKey(const char *key);
+  	/** Set a key value */
+  	void SetEntry(const player_blackboard_entry_t &entry);
+  	/** Set the function pointer which will be called when an entry is updated. */
+  	void SetEventHandler(void (*on_blackboard_event)(player_blackboard_entry_t));
+};
+
 // /**
 // The @p BlinkenlightProxy class is used to enable and disable
 // a flashing indicator light, and to set its period, via a @ref

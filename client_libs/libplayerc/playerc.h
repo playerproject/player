@@ -1123,8 +1123,9 @@ int playerc_blackboard_subscribe(playerc_blackboard_t *device, int access);
 /** @brief Un-subscribe from the blackboard device. */
 int playerc_blackboard_unsubscribe(playerc_blackboard_t *device);
 
-/** @brief Subscribe to a key. */
-int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, player_blackboard_entry_t* entry);
+/** @brief Subscribe to a key. If entry is none null it will be filled in with the response. The caller is
+ * responsible for freeing it. */
+int playerc_blackboard_subscribe_to_key(playerc_blackboard_t *device, const char* key, player_blackboard_entry_t** entry);
 
 /** @brief Unsubscribe from a key. */
 int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const char* key);

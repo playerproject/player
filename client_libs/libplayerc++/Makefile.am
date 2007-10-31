@@ -32,6 +32,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               actarrayproxy.cc \
                               aioproxy.cc \
                               audioproxy.cc \
+                              blackboardproxy.cc \
                               blobfinderproxy.cc \
                               bumperproxy.cc \
                               cameraproxy.cc \
