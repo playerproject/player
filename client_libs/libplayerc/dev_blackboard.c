@@ -90,7 +90,7 @@ int playerc_blackboard_unsubscribe(playerc_blackboard_t *device)
 
 // Subscribe to a blackboard key
 int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char* key,
-		player_blackboard_entry_t* entry_out)
+		player_blackboard_entry_t** entry_out)
 {
 	player_blackboard_entry_t req;
 	memset(&req, 0, sizeof(req));
@@ -101,7 +101,7 @@ int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char
 		device->info.client,
 		&device->info,
 		PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY,
-		&req, NULL) < 0)
+		&req, entry_out) < 0)
 	{
 		free(req.key);
 		PLAYERC_ERR("failed to subscribe to blackboard key");
