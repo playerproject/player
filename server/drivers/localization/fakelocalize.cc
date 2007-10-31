@@ -197,15 +197,6 @@ int FakeLocalize::Setup()
     return(-1);
   }
 
-
-/*  if(this->UpdateData() < 0)
-  {
-    PLAYER_ERROR("unable to get pose from simulation device");
-    this->sim->Unsubscribe(this->InQueue);
-    	sim = NULL;
-//    UnsubscribeInternal(this->sim_id);
-    return(-1);
-  }*/
   this->StartThread();
   return 0;
 }
@@ -215,10 +206,10 @@ int FakeLocalize::Setup()
 // Shutdown the device (called by server thread).
 int FakeLocalize::Shutdown()
 {
+  this->StopThread();
   // Unsubscribe from devices.
   this->sim->Unsubscribe(this->InQueue);
   sim = NULL;
-  //UnsubscribeInternal(this->sim_id);
   
   return 0;
 }
@@ -228,9 +219,6 @@ FakeLocalize::UpdateData()
 {
   player_localize_data_t loc_data;
   player_simulation_pose2d_req_t cfg;
-//  int replen;
-//  unsigned short reptype;
-//  struct timeval ts;
   
   // Request pose
   strncpy(cfg.name, this->model, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
@@ -284,7 +272,7 @@ FakeLocalize::Main()
       pthread_exit(NULL);
     }
     this->ProcessMessages();
-    //HandleRequests();
+
     usleep(SLEEPTIME_US);
   }
 }
