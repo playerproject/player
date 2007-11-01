@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir)
+AM_CPPFLAGS = -g -Wall -I$(top_srcdir)
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig

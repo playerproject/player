@@ -11,7 +11,7 @@ CLEANFILES = playerdrivers.pc
 
 lib_LTLIBRARIES = libplayerdrivers.la
 
-AM_CPPFLAGS = -fPIC -Wall -I$(top_srcdir)
+AM_CPPFLAGS = -Wall -I$(top_srcdir)
 
 libplayerdrivers_la_SOURCES = driverregistry.cc driverregistry.h
 libplayerdrivers_la_LIBADD = @PLAYER_DRIVER_EXTRA_LIBS@

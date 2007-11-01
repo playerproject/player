@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir)
+AM_CPPFLAGS = -g -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir)
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
