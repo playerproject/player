@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -fPIC -Wall -I$(top_srcdir)
+AM_CPPFLAGS = -g -Wall -I$(top_srcdir)
 
 lib_LTLIBRARIES =
 pkgconfig_DATA = 
