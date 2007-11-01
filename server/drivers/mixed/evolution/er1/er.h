@@ -66,17 +66,23 @@
 #define ER_WHEEL_RADIUS		.055
 #define ER_WHEEL_CIRC		.345575197
 #define ER_WHEEL_STEP		.45
-#define ER_M_PER_TICK		.00000602836879
+#define ER_M_PER_TICK 		.0000058351 //JM 12/11/06
+//#define ER_M_PER_TICK		.00000602836879 // NdT 1/4/06
+//#define ER_M_PER_TICK           .000005700      // THC 1/23/06
 
 /* for safety */
-#define ER_MAX_WHEELSPEED   500
+#define ER_MAX_WHEELSPEED       .500
 #define ER_MPS_PER_TICK		1
 
 #define FULL_STOP	0
 #define STOP		1
 
 
-#include <libplayercore/playercore.h>
+#include <player.h>
+
+#include <driver.h>
+#include <drivertable.h>
+
 
 typedef struct
 {
@@ -111,11 +117,11 @@ class ER : public Driver
                                player_msghdr * hdr,
                                void * data);
     //void HandlePositionCommand(player_position2d_cmd_t position_cmd);
-
+    void Test();
         
   private:
     // this function will be run in a separate thread
-	int InitOdom();
+    int InitOdom();
     int InitRobot();
     
     //serial connection
@@ -128,17 +134,21 @@ class ER : public Driver
     int WriteBuf(unsigned char* s, size_t len);
     int ReadBuf(unsigned char* s, size_t len);
     int SendCommand(unsigned char * cmd, int cmd_len, unsigned char * ret_val, int ret_len);
+    int checksum_ok (unsigned char *buf, int len);
+
     int ComputeTickDiff(int from, int to);
     int ChangeMotorState(int state);
     int BytesToInt32(unsigned char *ptr);
     float BytesToFloat(unsigned char *ptr);
     void UpdateOdom(int ltics, int rtics);
     void SpeedCommand( unsigned char address, double speed, int dir );
+    void SetOdometry (long,long,long);
+    void ResetOdometry();
     //periodic functions
-    int GetOdom(int *ltics, int *rtics, int *lvel, int *rvel);
+    int GetOdom(int *ltics, int *rtics);
     int GetBatteryVoltage(int* voltage);
-	int GetRangeSensor( int s, float * val );
-	void MotorSpeed();
+    int GetRangeSensor( int s, float * val );
+    void MotorSpeed();
 
     //er values
     double _axle_length;
@@ -146,12 +156,13 @@ class ER : public Driver
     int _motor_1_dir;
 
     //internal info
-	bool _debug;
-	bool _need_to_set_speed;
+    bool _debug;
+    bool _need_to_set_speed;
     bool _odom_initialized;
-	bool _stopped;
+    bool _stopped;
     int _last_ltics, _last_rtics;
     double _px, _py, _pa;  // integrated odometric pose (m,m,rad)
+    int _powered, _resting; // If _powered is false, no constant updates. _resting means the last update was a 0,0 one.
     
     int send_command( unsigned char address, unsigned char c, int ret_num, unsigned char * ret );
     int send_command_2_arg( unsigned char address, unsigned char c, int arg, int ret_num, unsigned char * ret );
