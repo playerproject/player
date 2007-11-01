@@ -775,7 +775,7 @@ void
     data.stall = _stopped;
         
     if (this->_powered || !this->_resting) {
-      Publish(position_id, NULL, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data));
+      Publish(position_id, PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE, &data, sizeof(data), NULL);
       if (!this->_powered) this->_resting = true;
     }
         
@@ -787,7 +787,7 @@ void
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int ER::ProcessMessage(MessageQueue * resp_queue,
+int ER::ProcessMessage(QueuePointer & resp_queue,
                       player_msghdr * hdr,
                       void * data)
 {
@@ -801,10 +801,10 @@ int ER::ProcessMessage(MessageQueue * resp_queue,
         //TODO : get values from somewhere.
     geom.pose.px = -0.1;//htons((short) (-100));
     geom.pose.py = 0;//htons((short) (0));
-    geom.pose.pa = 0;//htons((short) (0));
+    geom.pose.pyaw = 0;//htons((short) (0));
     geom.size.sw = 0.25;//htons((short) (250));
     geom.size.sl = 0.425;//htons((short) (425));    
-    Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_GET_GEOM, &geom, sizeof(geom));	
+    Publish(position_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_GET_GEOM, &geom, sizeof(geom),NULL);	
         
     return 0;
   }
@@ -1077,3 +1077,4 @@ void
     
       er->Stop (FULL_STOP);
     }
+
