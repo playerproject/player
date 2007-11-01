@@ -113,7 +113,7 @@ class CameraCompress : public Driver
     bool camera_subscribed;
 	
     // scratch for converted data camera data
-    char converted[PLAYER_CAMERA_IMAGE_SIZE];
+    char *converted;
 
     // Output (compressed) camera data
     private: player_camera_data_t data;
@@ -238,10 +238,11 @@ void CameraCompress::Main()
 
 void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
 {
-  size_t size;
   char filename[256];
   char * ptr, * ptr1;
   int i, l;
+  char * buffer = NULL;
+  
 
   if ((rawdata.width <= 0) || (rawdata.height <= 0))
   {
@@ -268,7 +269,7 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
       break;
     case 32:
       l = (rawdata.width) * (rawdata.height);
-      ptr = this->converted; 
+      ptr = buffer = new char[(rawdata.width) * (rawdata.height)*3];
       ptr1 = (char *)(rawdata.image);
       for (i = 0; i < l; i++)
       {
@@ -277,17 +278,18 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
         ptr[2] = ptr1[2];
         ptr += 3; ptr1 += 4;
       }
-      ptr = this->converted;
+      ptr = buffer;
       break;
     default:
       PLAYER_WARN("unsupported image depth (not good)");
       return;
     }
+    this->data.image = new unsigned char [rawdata.width*rawdata.width*3];
     this->data.image_count = jpeg_compress( (char*)this->data.image, 
                                             ptr,
                                             rawdata.width, 
                                             rawdata.height,
-                                            PLAYER_CAMERA_IMAGE_SIZE, 
+                                            rawdata.width*rawdata.width*3, 
                                             (int)(this->quality*100));
     this->data.width = (rawdata.width);
     this->data.height = (rawdata.height);
@@ -305,6 +307,8 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
     this->data.compression = (rawdata.compression);
     this->data.image_count = (rawdata.image_count);
   }
+  delete [] buffer;
+  
   if (this->save)
   {
     snprintf(filename, sizeof(filename), "click-%04d.jpeg",this->frameno++);
@@ -313,8 +317,9 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
     fclose(fp);
   }
 
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
   
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, size, &this->camera_time);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, (void*) &this->data, 0, &this->camera_time);
+  delete [] this->data.image;
+  this->data.image = NULL;
   this->valid = !0;
 }

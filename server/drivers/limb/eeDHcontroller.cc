@@ -19,7 +19,7 @@
  *
  */
 /*
- Desc: Calculates the joint commands for a given End Effector pose using 
+ Desc: Calculates the joint commands for a given End Effector pose using
        ROBOOP's Inverse Kinematics algorithms.
  Author: Radu Bogdan Rusu and Dan Pojar
  Date: 10 May 2007
@@ -29,7 +29,7 @@
 /** @ingroup drivers Drivers */
 /** @{ */
 /** @defgroup driver_eeDHcontroller eeDHcontroller
- * @brief Calculates the joint commands for a given End Effector pose using 
+ * @brief Calculates the joint commands for a given End Effector pose using
 ROBOOP's Inverse Kinematics algorithms.
 
 The roboopIK driver performs inverse kinematics calculations using the
@@ -68,20 +68,20 @@ interface) and returns it as a data packet.
 @par Configuration requests
 
 - PLAYER_LIMB_REQ_SPEED
-  
+
 @par Configuration file options
 
 - nr_joints (integer)
   - The number of joints that we provide DH parameters for (should be the
     same as the number of actuators the actarray interface provides).
-  
+
 - jointX_DH (integer tuple)
   - [ R/P theta d a alfa th_min th_max ] - DH parameters for joint X
 
 - error_pos (float)
   - Default: 0
-  - User allowed error value in position in degrees. This is needed for joints 
-    who do not change their state (eg. they remain idle) when a command is given 
+  - User allowed error value in position in degrees. This is needed for joints
+    who do not change their state (eg. they remain idle) when a command is given
     and the joint is already in that position.
 
 - debug (int)
@@ -89,7 +89,7 @@ interface) and returns it as a data packet.
   - Enable debugging mode (detailed information messages are printed on screen)
     Valid values: 0 (disabled), 1 (enabled).
 
-@par Example 
+@par Example
 
 @verbatim
 driver
@@ -110,7 +110,7 @@ driver
 
   # Allowed positioning error in degrees
   error_pos 0.01
-  
+
   # Enable debug mode
   debug 1
 )
@@ -148,7 +148,7 @@ class EEDHController : public Driver
     virtual int Shutdown ();
 
     // This method will be invoked on each incoming message
-    virtual int ProcessMessage (QueuePointer &resp_queue, 
+    virtual int ProcessMessage (QueuePointer &resp_queue,
                                 player_msghdr * hdr,
                                 void * data);
 
@@ -169,7 +169,7 @@ class EEDHController : public Driver
     // Joints count and their DH parameters
     Matrix DHMatrixModel;
     unsigned int nr_joints;
-    
+
     // Create two Robot objects (for IK and for FK)
     Robot robot_IK, robot_FK;
     ColumnVector q_cmd;
@@ -182,9 +182,9 @@ class EEDHController : public Driver
 
     // Send commands to the actarray
     void CommandJoints (ColumnVector q_cmd);
-    
+
     // Keeping track of whether joints are still moving or not
-    int actarray_state[PLAYER_ACTARRAY_NUM_ACTUATORS];
+    int *actarray_state;
 
     // Threads used for homing or moving the actarray
     pthread_t a_th_home, a_th_cmd;
@@ -197,7 +197,7 @@ class EEDHController : public Driver
     void ACmdLoop  (ColumnVector q);
 
     int debug;
-    
+
     // Allowed positioning error in degrees
     float error_pos;
 };
@@ -212,7 +212,7 @@ Driver* EEDHController_Init (ConfigFile* cf, int section)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Registers the driver in the driver table. Called from the 
+// Registers the driver in the driver table. Called from the
 // player_driver_init function that the loader looks for
 void
   EEDHController_Register (DriverTable* table)
@@ -245,7 +245,9 @@ EEDHController::EEDHController (ConfigFile* cf, int section)
   // Create initial DH parameters model
   DHMatrixModel = Matrix (6, 23);
   DHMatrixModel = 0;
-    
+
+  actarray_state = new int[nr_joints];
+
   for (i = 0; i < nr_joints; i++)
   {
     char joint_nr[10];
@@ -256,18 +258,18 @@ EEDHController::EEDHController (ConfigFile* cf, int section)
       float bla = cf->ReadTupleFloat (section, joint_nr, j, 0);
       DHMatrixModel (i+1, j+1) = bla;
     }
-    
+
     // Set the initial status of joints (IDLE)
     actarray_state[i] = PLAYER_ACTARRAY_ACTSTATE_IDLE;
   }
-    
+
   // Instantiate the robot(s) with the DH parameter matrix
   robot_IK = Robot (DHMatrixModel);
   robot_FK = Robot (DHMatrixModel);
   q_cmd = ColumnVector (nr_joints);
-  
+
   debug = cf->ReadInt (section, "debug", 0);
-  
+
   // Allowed positioning error in degrees
   error_pos = cf->ReadFloat (section, "error_pos", 1.0);
 }
@@ -277,6 +279,10 @@ EEDHController::EEDHController (ConfigFile* cf, int section)
 // Destructor.
 EEDHController::~EEDHController()
 {
+  if (actarray_state != NULL)
+  {
+    delete[] actarray_state;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -300,7 +306,7 @@ int
 
   // Start the device thread
   StartThread ();
-  
+
   return (0);
 }
 
@@ -314,7 +320,7 @@ int
 
   pthread_cancel (a_th_cmd);
   pthread_cancel (a_th_home);
-  
+
   this->actarray_device->Unsubscribe (this->InQueue);
 
   PLAYER_MSG0 (1, "> EEDHController driver shutting down... [done]");
@@ -325,12 +331,12 @@ int
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
 void
-  EEDHController::Main () 
+  EEDHController::Main ()
 {
   timespec sleepTime = {0, 1000};
 
   command_thread = homing_thread = false;
-  
+
   // The main loop; interact with the device here
   while (true)
   {
@@ -349,10 +355,10 @@ void
 
 ////////////////////////////////////////////////////////////////////////////////
 // Compute the joint commands using IK
-int 
-  EEDHController::ComputeQ (unsigned int dof, 
-                            double x, double y, double z, 
-                            double roll, double pitch, double yaw, 
+int
+  EEDHController::ComputeQ (unsigned int dof,
+                            double x, double y, double z,
+                            double roll, double pitch, double yaw,
                             ColumnVector &q)
 {
   // Position/Orientation of the end effector
@@ -372,7 +378,7 @@ int
 
   // Call RoboOp's inv_kin
   bool converged;
-  
+
   q = robot_IK.inv_kin (result, 1, dof, converged);
   if (q.is_zero () && !converged)
     return (1);
@@ -386,7 +392,7 @@ float
   EEDHController::m_atan2 (float a, float b)
 {
   float rad = 0;
-	
+
   if (a == 0)
     rad = b < 0 ? -M_PI/2 : M_PI/2;
   else
@@ -402,7 +408,7 @@ float
 
 ////////////////////////////////////////////////////////////////////////////////
 // Compute the End-Effector pose from the joint's position using FK
-ColumnVector 
+ColumnVector
   EEDHController::ComputeEEPose (ColumnVector q_cmd)
 {
   robot_FK.set_q (q_cmd);
@@ -414,8 +420,8 @@ ColumnVector
   position = robot_FK.kine ();
   // Roll/X, Pitch/Y, Yaw/Z
   ret(1) = m_atan2 (position (3, 3), position (3, 2));
-  ret(2) = m_atan2 (sqrt ((position (3, 2) * position (3, 2)) + 
-                          (position (3, 3) * position (3, 3))), 
+  ret(2) = m_atan2 (sqrt ((position (3, 2) * position (3, 2)) +
+                          (position (3, 3) * position (3, 3))),
                     -position (3, 1));
   ret(3) = m_atan2 (position(1, 1), position (2, 1));
   // X, Y, Z
@@ -435,7 +441,7 @@ void
   if (actarray_data_received)
   {
     assert (nr_joints == actarray_data.actuators_count);
-    
+
     // Set the vector state of the actuators
     limb_data.state = PLAYER_LIMB_STATE_BRAKED;
     for (i = 0; i < nr_joints; i++)
@@ -457,16 +463,16 @@ void
     ColumnVector pose = ComputeEEPose (q_cmd);
 
     // Fill the limb data structure with values and publish it
-    limb_data.position.px = pose (4); 
-    limb_data.position.py = pose (5); 
-    limb_data.position.pz = pose (6); 
-  
-    limb_data.approach.px = -1; limb_data.approach.py = -1; limb_data.approach.pz = -1; 
-  
-    limb_data.orientation.px = pose (1); 
-    limb_data.orientation.py = pose (2); 
-    limb_data.orientation.pz = pose (3); 
-  
+    limb_data.position.px = pose (4);
+    limb_data.position.py = pose (5);
+    limb_data.position.pz = pose (6);
+
+    limb_data.approach.px = -1; limb_data.approach.py = -1; limb_data.approach.pz = -1;
+
+    limb_data.orientation.px = pose (1);
+    limb_data.orientation.py = pose (2);
+    limb_data.orientation.pz = pose (3);
+
     Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_LIMB_DATA,
              &limb_data, sizeof (limb_data), NULL);
 
@@ -491,13 +497,13 @@ void
   timespec sleepTime = {0, 1000};
   player_actarray_home_cmd_t cmd;
   int i;
-  
+
   // Home one joint at a time
   for (i = nr_joints-1; i > -1; i--)
-  { 
+  {
     cmd.joint = i;
 
-    this->actarray_device->PutMsg (this->InQueue, 
+    this->actarray_device->PutMsg (this->InQueue,
                                    PLAYER_MSGTYPE_CMD,
                                    PLAYER_ACTARRAY_CMD_HOME,
                                    (void*)&cmd,
@@ -508,8 +514,8 @@ void
     int c_state = actarray_state[i];
 
     while (! (
-      (p_state != c_state) 
-      && 
+      (p_state != c_state)
+      &&
       (c_state != PLAYER_ACTARRAY_ACTSTATE_MOVING)
       ))
     {
@@ -556,7 +562,7 @@ void
   timespec sleepTime = {0, 1000};
   player_actarray_position_cmd_t cmd;
   int i;
-  
+
   // Write the commands on screen if debug enabled
   if (debug)
   {
@@ -568,7 +574,7 @@ void
 
   // Position one joint at a time
   for (i = 0; i < q_cmd.nrows (); i++)
-  { 
+  {
     cmd.joint    = i;
     cmd.position = q_cmd (i + 1);
 
@@ -578,8 +584,8 @@ void
     // If the current joint is already there +/- some user preferred positioning error
     if (abs(cmd.position - actarray_data.actuators[i].position) < DTOR (error_pos))
       break;
-    
-    this->actarray_device->PutMsg (this->InQueue, 
+
+    this->actarray_device->PutMsg (this->InQueue,
                                    PLAYER_MSGTYPE_CMD,
                                    PLAYER_ACTARRAY_CMD_POS,
                                    (void*)&cmd,
@@ -588,8 +594,8 @@ void
     int c_state = actarray_state[i];
 
     while (! (
-      (p_state != c_state) 
-      && 
+      (p_state != c_state)
+      &&
       (c_state != PLAYER_ACTARRAY_ACTSTATE_MOVING)
       ))
     {
@@ -597,7 +603,7 @@ void
       c_state = actarray_state[i];
       nanosleep (&sleepTime, NULL);
     }
-    
+
     if (debug)
       printf ("[done]\n");
   }
@@ -609,7 +615,7 @@ void
 ////////////////////////////////////////////////////////////////////////////////
 // ProcessMessage function
 int
-  EEDHController::ProcessMessage (QueuePointer &resp_queue, 
+  EEDHController::ProcessMessage (QueuePointer &resp_queue,
                           player_msghdr * hdr,
                           void * data)
 {
@@ -619,9 +625,9 @@ int
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_SETPOSE);
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_SETPOSITION);
   HANDLE_CAPABILITY_REQUEST (device_addr, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_LIMB_CMD_HOME);
-  
+
   // First look whether we have incoming data from the actarray interface
-  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, 
+  if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA,
     PLAYER_ACTARRAY_DATA_STATE, actarray_addr))
   {
     actarray_data = *((player_actarray_data_t*)data);
@@ -630,20 +636,20 @@ int
   }
 
   // Set the desired position to the actarray driver
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD,
     PLAYER_LIMB_CMD_SETPOSE, device_addr))
   {
-    player_limb_setpose_cmd_t & command = 
+    player_limb_setpose_cmd_t & command =
       *reinterpret_cast<player_limb_setpose_cmd_t * > (data);
 
-    int converged = ComputeQ (nr_joints, command.position.px, 
-                              command.position.py, command.position.pz, 
+    int converged = ComputeQ (nr_joints, command.position.px,
+                              command.position.py, command.position.pz,
                               command.orientation.px, command.orientation.py,
                               command.orientation.pz, q_cmd);
     if (converged != 0)
     {
-      PLAYER_WARN6 ("Couldn't find solution for %f,%f,%f/%f,%f,%f", command.position.px, 
-                   command.position.py, command.position.pz, command.orientation.px, 
+      PLAYER_WARN6 ("Couldn't find solution for %f,%f,%f/%f,%f,%f", command.position.px,
+                   command.position.py, command.position.pz, command.orientation.px,
                    command.orientation.py, command.orientation.pz);
       // Do we actually need to send back a NACK ?
       Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
@@ -655,19 +661,19 @@ int
   }
 
   // Set the desired position to the actarray driver
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD,
     PLAYER_LIMB_CMD_SETPOSITION, device_addr))
   {
-    player_limb_setposition_cmd_t & command = 
+    player_limb_setposition_cmd_t & command =
       *reinterpret_cast<player_limb_setposition_cmd_t * > (data);
-    
-    int converged = ComputeQ (nr_joints, command.position.px, 
+
+    int converged = ComputeQ (nr_joints, command.position.px,
                               command.position.py, command.position.pz, 0, 0, 0, q_cmd);
-    
+
     if (converged != 0)
     {
       // Do we actually need to send back a NACK ?
-      PLAYER_WARN3 ("Couldn't find solution for %f,%f,%f", command.position.px, 
+      PLAYER_WARN3 ("Couldn't find solution for %f,%f,%f", command.position.px,
                    command.position.py, command.position.pz);
       Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
       return (-1);
@@ -678,7 +684,7 @@ int
   }
 
   // Home the limb (we do this by homing all the joints)
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD,
     PLAYER_LIMB_CMD_HOME, device_addr))
   {
     homing_thread = true;
@@ -689,7 +695,7 @@ int
 
 
   // POWER_REQ not implemented
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	PLAYER_LIMB_REQ_POWER, device_addr))
   {
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
@@ -697,7 +703,7 @@ int
   }
 
   // BRAKES_REQ not implemented
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	PLAYER_LIMB_REQ_BRAKES, device_addr))
   {
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
@@ -705,7 +711,7 @@ int
   }
 
   // GEOM_REQ not implemented
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	PLAYER_LIMB_REQ_GEOM, device_addr))
   {
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
@@ -713,21 +719,21 @@ int
   }
 
   // SPEED_REQ - Set the speed on all joints equal to the EE
-  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, 
+  else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ,
 	PLAYER_LIMB_REQ_SPEED, device_addr))
   {
-    player_limb_speed_req_t & cfg = 
+    player_limb_speed_req_t & cfg =
       *reinterpret_cast<player_limb_speed_req_t *> (data);
-    
+
     int i;
     player_actarray_speed_config_t act_cfg;
     for (i = 0; i < q_cmd.nrows (); i++)
-    { 
+    {
       act_cfg.joint = i;
       act_cfg.speed = cfg.speed;
 
       Message *msg;
-      if (!(msg = this->actarray_device->Request (this->InQueue, 
+      if (!(msg = this->actarray_device->Request (this->InQueue,
                                                   PLAYER_MSGTYPE_REQ,
                                                   PLAYER_ACTARRAY_REQ_SPEED,
                                                   (void*)&act_cfg,
@@ -738,7 +744,7 @@ int
       else
         delete msg;
     }
-    
+
     Publish (device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
     return (0);
   }

@@ -96,7 +96,7 @@ std::ostream& std::operator << (std::ostream &os, const PlayerCc::BumperProxy &c
 bool
 BumperProxy::IsAnyBumped()
 {
-  for (uint32_t i=0; (i < GetCount())&&(i < PLAYER_BUMPER_MAX_SAMPLES); ++i)
+  for (uint32_t i=0; i < GetCount(); ++i)
   {
     if (IsBumped(i))
       return true;

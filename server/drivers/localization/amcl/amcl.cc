@@ -462,6 +462,8 @@ AdaptiveMCL::AdaptiveMCL( ConfigFile* cf, int section)
 
   // Initial hypothesis list
   this->hyp_count = 0;
+  this->hyp_alloc = 0;
+  this->hyps = NULL;
   pthread_mutex_init(&this->best_hyp_lock,NULL);
 
 #ifdef INCLUDE_RTKGUI
@@ -482,6 +484,7 @@ AdaptiveMCL::~AdaptiveMCL(void)
 
   // Delete sensor data queue
   delete[] this->q_data;
+  free(hyps);
 
   // Delete sensors
   for (i = 0; i < this->sensor_count; i++)
@@ -924,6 +927,11 @@ bool AdaptiveMCL::UpdateFilter(void)
 
       //pf_vector_fprintf(pose_mean, stdout, "%.3f");
 
+      if (this->hyp_count +1 > this->hyp_alloc)
+      {
+        this->hyp_alloc = this->hyp_count+1;
+        this->hyps = (amcl_hyp_t*)realloc(this->hyps, sizeof(amcl_hyp_t)*this->hyp_alloc);
+      }
       hyp = this->hyps + this->hyp_count++;
       hyp->weight = weight;
       hyp->pf_pose_mean = pose_mean;
@@ -1004,7 +1012,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
   amcl_hyp_t *hyp;
   pf_vector_t pose;
   pf_matrix_t pose_cov;
-  size_t datalen;
+  //size_t datalen;
   player_localize_data_t data;
 
   // Record the number of pending observations
@@ -1013,6 +1021,7 @@ void AdaptiveMCL::PutDataLocalize(double time)
 
   // Encode the hypotheses
   data.hypoths_count = this->hyp_count;
+  data.hypoths = new player_localize_hypoth_t[data.hypoths_count];
   for (i = 0; i < this->hyp_count; i++)
   {
     hyp = this->hyps + i;
@@ -1048,15 +1057,12 @@ void AdaptiveMCL::PutDataLocalize(double time)
   qsort((void*)data.hypoths,data.hypoths_count,
         sizeof(player_localize_hypoth_t),&hypoth_compare);
 
-  // Compute the length of the data packet
-  datalen = (sizeof(data) - sizeof(data.hypoths) +
-             data.hypoths_count * sizeof(data.hypoths[0]));
-
   // Push data out
   this->Publish(this->localize_addr, 
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LOCALIZE_DATA_HYPOTHS,
-                (void*)&data,datalen,&time);
+                (void*)&data);
+  delete [] data.hypoths;
 }
 
 
@@ -1147,8 +1153,8 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
 
     set = this->pf->sets + this->pf->current_set;
 
-    resp.particles_count =
-            MIN(set->sample_count,PLAYER_LOCALIZE_PARTICLES_MAX);
+    resp.particles_count = set->sample_count;
+    resp.particles = new player_localize_particle_t [resp.particles_count];
 
     // TODO: pick representative particles
     for(i=0;i<resp.particles_count;i++)
@@ -1163,7 +1169,8 @@ AdaptiveMCL::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->localize_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_LOCALIZE_REQ_GET_PARTICLES,
-                  (void*)&resp, sizeof(resp), NULL);
+                  (void*)&resp);
+    delete [] resp.particles;
     return(0);
   } else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                   PLAYER_POSITION2D_REQ_GET_GEOM, device_addr))

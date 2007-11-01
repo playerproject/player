@@ -77,6 +77,7 @@ playerc_opaque_t *playerc_opaque_create(playerc_client_t *client, int index)
 void playerc_opaque_destroy(playerc_opaque_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->data);
   free(device);
 }
 
@@ -103,8 +104,8 @@ void playerc_opaque_putmsg(playerc_opaque_t *device, player_msghdr_t *header,
      (header->subtype == PLAYER_OPAQUE_DATA_STATE))
   {
     device->data_count   = data->data_count;
+    device->data = realloc(device->data, sizeof(*device->data)*device->data_count);
 
-    assert(device->data_count <= sizeof(device->data));
     memcpy(device->data, data->data, device->data_count);
   }
   else

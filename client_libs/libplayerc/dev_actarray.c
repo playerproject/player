@@ -65,6 +65,8 @@ playerc_actarray_t *playerc_actarray_create(playerc_client_t *client, int index)
 void playerc_actarray_destroy(playerc_actarray_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->actuators_data);
+  free(device->actuators_geom);
   free(device);
 }
 
@@ -89,13 +91,10 @@ void playerc_actarray_putmsg(playerc_actarray_t *device,
   if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_ACTARRAY_DATA_STATE))
   {
     device->actuators_count = data->actuators_count;
+    device->actuators_data = realloc(device->actuators_data,device->actuators_count*sizeof(device->actuators_data[0]));
     for (i = 0; i < device->actuators_count; i++)
     {
-      device->actuators_data[i].position = data->actuators[i].position;
-      device->actuators_data[i].speed = data->actuators[i].speed;
-      device->actuators_data[i].acceleration = data->actuators[i].acceleration;
-      device->actuators_data[i].state = data->actuators[i].state;
-      device->actuators_data[i].current = data->actuators[i].current;
+      device->actuators_data[i] = data->actuators[i];
     }
     device->motor_state = data->motor_state;
   }
@@ -111,25 +110,13 @@ int playerc_actarray_get_geom(playerc_actarray_t *device)
   int ii = 0, result = 0;
 
   if((result = playerc_client_request(device->info.client, &device->info,
-      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void**)&geom)) < 0)
+      PLAYER_ACTARRAY_REQ_GET_GEOM, NULL, (void*)&geom)) < 0)
     return result;
 
+  device->actuators_geom = realloc(device->actuators_geom,device->actuators_count*sizeof(device->actuators_geom[0]));
   for (ii = 0; ii < device->actuators_count; ii++)
   {
-    device->actuators_geom[ii].type = geom->actuators[ii].type;
-    device->actuators_geom[ii].length = geom->actuators[ii].length;
-    device->actuators_geom[ii].orientation.proll = geom->actuators[ii].orientation.proll;
-    device->actuators_geom[ii].orientation.ppitch = geom->actuators[ii].orientation.ppitch;
-    device->actuators_geom[ii].orientation.pyaw = geom->actuators[ii].orientation.pyaw;
-    device->actuators_geom[ii].axis.px = geom->actuators[ii].axis.px;
-    device->actuators_geom[ii].axis.py = geom->actuators[ii].axis.py;
-    device->actuators_geom[ii].axis.pz = geom->actuators[ii].axis.pz;
-    device->actuators_geom[ii].min = geom->actuators[ii].min;
-    device->actuators_geom[ii].centre = geom->actuators[ii].centre;
-    device->actuators_geom[ii].max = geom->actuators[ii].max;
-    device->actuators_geom[ii].home = geom->actuators[ii].home;
-    device->actuators_geom[ii].config_speed = geom->actuators[ii].config_speed;
-    device->actuators_geom[ii].hasbrakes = geom->actuators[ii].hasbrakes;
+    device->actuators_geom[ii] = geom->actuators[ii];
   }
   device->base_pos = geom->base_pos;
   device->base_orientation = geom->base_orientation;
@@ -152,13 +139,13 @@ int playerc_actarray_position_cmd(playerc_actarray_t *device, int joint, float p
 }
 
 // Command all joints in the array to move with a specified current
-int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float positions[PLAYER_ACTARRAY_NUM_ACTUATORS])
+int playerc_actarray_multi_position_cmd(playerc_actarray_t *device, float *positions, int positions_count)
 {
   player_actarray_multi_position_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  memcpy(&cmd.positions,positions, sizeof(float) * PLAYER_ACTARRAY_NUM_ACTUATORS);
-  cmd.positions_count = device->actuators_count;
+  cmd.positions=positions;
+  cmd.positions_count = positions_count;
 
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_ACTARRAY_CMD_MULTI_POS,
@@ -182,13 +169,13 @@ int playerc_actarray_speed_cmd(playerc_actarray_t *device, int joint, float spee
 
 
 // Command all joints in the array to move with a specified current
-int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS])
+int playerc_actarray_multi_speed_cmd(playerc_actarray_t *device, float *speeds, int speeds_count)
 {
   player_actarray_multi_speed_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  memcpy(&cmd.speeds,speeds,sizeof(float) * PLAYER_ACTARRAY_NUM_ACTUATORS);
-  cmd.speeds_count = device->actuators_count;
+  cmd.speeds = speeds;
+  cmd.speeds_count = speeds_count;
 
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_ACTARRAY_CMD_MULTI_SPEED,
@@ -224,13 +211,13 @@ int playerc_actarray_current_cmd(playerc_actarray_t *device, int joint, float cu
 }
 
 // Command all joints in the array to move with a specified current
-int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float currents[PLAYER_ACTARRAY_NUM_ACTUATORS])
+int playerc_actarray_multi_current_cmd(playerc_actarray_t *device, float *currents, int currents_count)
 {
   player_actarray_multi_current_cmd_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  memcpy(&cmd.currents,currents,sizeof(float) * PLAYER_ACTARRAY_NUM_ACTUATORS);
-  cmd.currents_count = device->actuators_count;
+  cmd.currents = currents;
+  cmd.currents_count = currents_count;
 
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_ACTARRAY_CMD_MULTI_CURRENT,

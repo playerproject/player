@@ -192,7 +192,8 @@ void ranger_draw(ranger_t *ranger)
 {
   int ii = 0, jj = 0;
   int point_count;
-  double point1[2], point2[2], points[PLAYER_LASER_MAX_SAMPLES + 1][2];
+  double point1[2], point2[2]; 
+  double (*points)[2];
   double current_angle = 0.0f, temp = 0.0f;
   unsigned int ranges_per_sensor = 0;
 
@@ -211,6 +212,7 @@ void ranger_draw(ranger_t *ranger)
   if (rtk_menuitem_ischecked(ranger->device_item))
   {
     // Draw sonar-like
+    points = calloc(3, sizeof(double)*2);
     temp = 20.0f * M_PI / 180.0f / 2.0f;
     for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
     {
@@ -232,6 +234,8 @@ void ranger_draw(ranger_t *ranger)
       rtk_fig_color_rgb32(ranger->scan_fig[ii], COLOR_LASER);
       rtk_fig_rectangle(ranger->scan_fig[ii], 0, 0, 0, ranger->proxy->sensor_sizes[ii].sw, ranger->proxy->sensor_sizes[ii].sl, 0);
     }
+    free(points);
+    points=NULL;
   }
   else
   {
@@ -239,6 +243,7 @@ void ranger_draw(ranger_t *ranger)
     if (rtk_menuitem_ischecked(ranger->style_item))
     {
       // Draw each sensor in turn
+      points = calloc(ranger->proxy->sensor_count, sizeof(double)*2);
       for (ii = 0; ii < ranger->proxy->sensor_count; ii++)
       {
         rtk_fig_show(ranger->scan_fig[ii], 1);
@@ -271,6 +276,8 @@ void ranger_draw(ranger_t *ranger)
           current_angle += ranger->resolution;
         }
       }
+      free(points);
+      points = NULL;
     }
     else
     {

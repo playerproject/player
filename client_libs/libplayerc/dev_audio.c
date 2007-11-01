@@ -65,6 +65,7 @@ playerc_audio_t *playerc_audio_create(playerc_client_t *client, int index)
 void playerc_audio_destroy(playerc_audio_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->wav_data.data);
   free(device);
 }
 

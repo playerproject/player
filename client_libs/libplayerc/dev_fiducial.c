@@ -85,20 +85,20 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 			     player_msghdr_t *header,
 			     void* generic )
 {
+  int i;
 
   if( header->type == PLAYER_MSGTYPE_DATA &&
       header->subtype == PLAYER_FIDUCIAL_DATA_SCAN )
+  {
+    player_fiducial_data_t* data = (player_fiducial_data_t*)generic;
+
+    device->fiducials_count = data->fiducials_count;
+    device->fiducials = realloc(device->fiducials, sizeof(device->fiducials)*device->fiducials_count);
+
+    for (i = 0; i < device->fiducials_count; i++)
     {
-      player_fiducial_data_t* data = (player_fiducial_data_t*)generic;
-
-      device->fiducials_count = data->fiducials_count;
-
-      int i;
-      for (i = 0; i < device->fiducials_count; i++)
-	{
-	  player_fiducial_item_t *fiducial = data->fiducials + i;
-
-	  device->fiducials[i] = *fiducial;
+      player_fiducial_item_t *fiducial = data->fiducials + i;
+      device->fiducials[i] = *fiducial;
 
 /*	  device->fiducials[i].id = fiducial->id;
 
@@ -120,22 +120,14 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
 					    device->fiducials[i].pos[1] * device->fiducials[i].pos[1]);
 	  device->fiducials[i].bearing = atan2(device->fiducials[i].pos[1], device->fiducials[i].pos[0]);
 	  device->fiducials[i].orient = device->fiducials[i].rot[2];*/
-	}
     }
+  }
 
   else
     PLAYERC_WARN2("skipping fiducial message with unknown type/subtype: %s/%d\n",
 		  msgtype_to_str(header->type), header->subtype);
 }
 
-
-// Process incoming geom
-void playerc_fiducial_putgeom(playerc_fiducial_t *device, player_msghdr_t *header,
-                         player_fiducial_geom_t *data, size_t len)
-{
-  PLAYERC_WARN( "playerc_fiducial_putgeom is not yet implemented" );
-
-}
 
 // Get the fiducial geometry.  The writes the result into the proxy
 // rather than returning it to the caller.

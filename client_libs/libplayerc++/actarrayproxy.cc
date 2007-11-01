@@ -183,13 +183,13 @@ void ActArrayProxy::MoveTo(uint32_t aJoint, float aPosition)
 // Send an actuator to a position
 void ActArrayProxy::MoveToMulti(std::vector<float> aPosition)
 {
-  assert(aPosition.size() < PLAYER_ACTARRAY_NUM_ACTUATORS);
-  float values[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  float * values = new float[aPosition.size()];
   unsigned int i = 0;
   for (std::vector<float>::const_iterator itr = aPosition.begin(); itr != aPosition.end(); ++itr)
     values[i++] = *itr;
   scoped_lock_t lock(mPc->mMutex);
-  playerc_actarray_multi_position_cmd(mDevice, values);
+  playerc_actarray_multi_position_cmd(mDevice, values, aPosition.size());
+  delete [] values;
 }
 
 
@@ -203,13 +203,13 @@ void ActArrayProxy::MoveAtSpeed(uint32_t aJoint, float aSpeed)
 // Send an actuator to a position
 void ActArrayProxy::MoveAtSpeedMulti(std::vector<float> aSpeed)
 {
-  assert(aSpeed.size() < PLAYER_ACTARRAY_NUM_ACTUATORS);
-  float values[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  float * values = new float[aSpeed.size()];
   unsigned int i = 0;
   for (std::vector<float>::const_iterator itr = aSpeed.begin(); itr != aSpeed.end(); ++itr)
     values[i++] = *itr;
   scoped_lock_t lock(mPc->mMutex);
-  playerc_actarray_multi_speed_cmd(mDevice, values);
+  playerc_actarray_multi_speed_cmd(mDevice, values, aSpeed.size());
+  delete [] values;
 }
 
 // Send an actuator, or all actuators, home
@@ -229,13 +229,13 @@ void ActArrayProxy::SetActuatorCurrent(uint32_t aJoint, float aCurrent)
 // Send an actuator to a position
 void ActArrayProxy::SetActuatorCurrentMulti(std::vector<float> aCurrent)
 {
-  assert(aCurrent.size() < PLAYER_ACTARRAY_NUM_ACTUATORS);
-  float values[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  float * values = new float[aCurrent.size()];
   unsigned int i = 0;
   for (std::vector<float>::const_iterator itr = aCurrent.begin(); itr != aCurrent.end(); ++itr)
     values[i++] = *itr;
   scoped_lock_t lock(mPc->mMutex);
-  playerc_actarray_multi_current_cmd(mDevice, values);
+  playerc_actarray_multi_current_cmd(mDevice, values, aCurrent.size());
+  delete [] values;
 }
 
 player_actarray_actuator_t ActArrayProxy::GetActuatorData(uint32_t aJoint) const

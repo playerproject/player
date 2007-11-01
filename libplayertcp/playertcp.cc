@@ -631,12 +631,9 @@ PlayerTCP::WriteClient(int cli)
           assert(zipped_data);
 
           // copy the metadata
-          zipped_data->col = raw_data->col;
-          zipped_data->row = raw_data->row;
-          zipped_data->width = raw_data->width;
-          zipped_data->height = raw_data->height;
-          uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
-          assert(count >= compressBound(raw_data->data_count));
+          *zipped_data = *raw_data;
+          uLongf count = compressBound(raw_data->data_count);
+          zipped_data->data = (int8_t*)malloc(count);
 
           // compress the tile
           if(compress((Bytef*)zipped_data->data,&count,
@@ -671,6 +668,7 @@ PlayerTCP::WriteClient(int cli)
 #if HAVE_ZLIB_H
             if(zipped_data)
             {
+              free(zipped_data->data);
               free(zipped_data);
               zipped_data=NULL;
             }
@@ -695,6 +693,7 @@ PlayerTCP::WriteClient(int cli)
 #if HAVE_ZLIB_H
           if(zipped_data)
           {
+            free(zipped_data->data);
             free(zipped_data);
             zipped_data=NULL;
           }
@@ -710,6 +709,7 @@ PlayerTCP::WriteClient(int cli)
 #if HAVE_ZLIB_H
       if(zipped_data)
       {
+        free(zipped_data->data);
         free(zipped_data);
         zipped_data=NULL;
       }
@@ -942,8 +942,8 @@ PlayerTCP::ParseBuffer(int cli)
               raw_data->row = zipped_data->row;
               raw_data->width = zipped_data->width;
               raw_data->height = zipped_data->height;
-              uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
-
+              uLongf count = 10*zipped_data->data_count;
+              raw_data->data = (int8_t*)calloc(count,sizeof(int8_t));
               // uncompress the tile
               if(uncompress((Bytef*)raw_data->data,&count,
                             (const Bytef*)zipped_data->data,
@@ -956,6 +956,7 @@ PlayerTCP::ParseBuffer(int cli)
                 raw_data->data_count = count;
                 device->PutMsg(client->queue, &hdr, raw_data);
               }
+              free(raw_data->data);
               free(raw_data);
 #else
               PLAYER_WARN("not uncompressing map data, because zlib was not found at compile time");

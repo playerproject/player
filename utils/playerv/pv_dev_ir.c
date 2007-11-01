@@ -54,6 +54,7 @@ ir_t *ir_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   ir->proxy = playerc_ir_create(client, index);
   ir->drivername = strdup(drivername);
   ir->datatime = 0;
+  ir->mainwnd = mainwnd;
 
   snprintf(section, sizeof(section), "ir:%d", index);
 
@@ -66,11 +67,23 @@ ir_t *ir_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   // Set initial device state
   rtk_menuitem_check(ir->subscribe_item, subscribe);
 
-  // Construct figures
-  for (i = 0; i < PLAYERC_IR_MAX_SAMPLES; i++)
-    ir->scan_fig[i] = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  ir->fig_count = 0;
 
   return ir;
+}
+
+
+void ir_allocate_figures(ir_t * ir, int fig_count)
+{
+  int i;
+  if (ir->fig_count <= fig_count)
+    return;
+  ir->scan_fig = realloc(ir->scan_fig,fig_count*sizeof(ir->scan_fig[0]));
+  
+  // Construct figures
+  for (i = ir->fig_count; i < fig_count; i++)
+	  ir->scan_fig[i] = rtk_fig_create(ir->mainwnd->canvas, ir->mainwnd->robot_fig, 1);
+  ir->fig_count = fig_count;
 }
 
 
@@ -83,8 +96,9 @@ void ir_destroy(ir_t *ir)
     playerc_ir_unsubscribe(ir->proxy);
   playerc_ir_destroy(ir->proxy);
 
-  for (i = 0; i < PLAYERC_IR_MAX_SAMPLES; i++)
+  for (i = 0; i < ir->fig_count; i++)
     rtk_fig_destroy(ir->scan_fig[i]);
+  free(ir->scan_fig);
 
   rtk_menuitem_destroy(ir->subscribe_item);
   rtk_menu_destroy(ir->menu);
@@ -111,6 +125,7 @@ void ir_update(ir_t *ir)
       if (playerc_ir_get_geom(ir->proxy) != 0)
         PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
 
+      ir_allocate_figures(ir, ir->proxy->poses.poses_count);
       for (i = 0; i < ir->proxy->poses.poses_count; i++)
 	  {
         rtk_fig_origin(ir->scan_fig[i],

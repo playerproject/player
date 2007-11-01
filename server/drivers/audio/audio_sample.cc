@@ -360,8 +360,8 @@ bool AudioSample::ToPlayer (player_audio_wav_t *dest)
 			return false;
 	}
 
-	// Copy as many frames as can fit into PLAYER_AUDIO_WAV_BUFFER_SIZE bytes
-	uint32_t framesToCopy = PLAYER_AUDIO_WAV_BUFFER_SIZE / blockAlign;
+	// Copy as many frames as can fit into PLAYER_MAX_MESSAGE_SIZE bytes
+	uint32_t framesToCopy = PLAYER_MAX_MESSAGE_SIZE / blockAlign;
 	if (numFrames < framesToCopy)
 		framesToCopy = numFrames;
 	if (type == SAMPLE_TYPE_FILE)

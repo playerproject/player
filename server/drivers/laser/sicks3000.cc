@@ -675,6 +675,7 @@ int SickS3000::ProcessLaserData()
         {
           int data_count = (size - 22) / 2;
           data_packet.ranges_count = data_count;
+          data_packet.ranges = new float [data_count];
           for (int ii = 0; ii < data_count; ++ii)
           {
             unsigned short Distance_CM = (*reinterpret_cast<unsigned short *> (&data[4 + 2*ii]));
@@ -686,7 +687,8 @@ int SickS3000::ProcessLaserData()
           this->Publish(this->device_addr,
                         PLAYER_MSGTYPE_DATA,
                         PLAYER_LASER_DATA_SCAN,
-                        (void*)&data_packet, sizeof(data_packet), NULL);
+                        (void*)&data_packet);
+          delete [] data_packet.ranges;
           
         }
         else if (data[0] == 0xCC)

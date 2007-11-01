@@ -95,6 +95,7 @@ typedef struct rflex_config_t{
   player_ir_pose_t ir_poses;
   int ir_base_bank;
   int ir_bank_count;
+  int ir_total_count;
   int * ir_count; 
   double * ir_a; 
   double * ir_b; 

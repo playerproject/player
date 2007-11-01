@@ -1,14 +1,8 @@
 /***************************************************************************
  * Desc: Tests for the position2d device
-<<<<<<< test_simulation.c
  * Author: Richard Vaughan
  * Date: 1 June 2006
  # CVS: $Id$
-=======
- * Author: Andrew Howard
- * Date: 23 May 2002
- # CVS: $Id$
->>>>>>> 1.3
  **************************************************************************/
 
 #include <libplayercore/playercommon.h>

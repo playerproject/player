@@ -338,12 +338,14 @@ Create::Main()
      memset(&bumperdata,0,sizeof(bumperdata));
 
      bumperdata.bumpers_count = 2;
+     bumperdata.bumpers = new uint8_t[bumperdata.bumpers_count];
      bumperdata.bumpers[0] = this->create_dev->bumper_left;
      bumperdata.bumpers[1] = this->create_dev->bumper_right;
 
      this->Publish(this->bumper_addr,
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
-                   (void*)&bumperdata, sizeof(bumperdata), NULL);
+                   (void*)&bumperdata);
+     delete [] bumperdata.bumpers;
 
      ////////////////////////////
      // Update IR data
@@ -351,6 +353,7 @@ Create::Main()
      memset(&irdata,0,sizeof(irdata));
 
      irdata.ranges_count = 11;
+     irdata.ranges = new float [irdata.ranges_count];
      irdata.ranges[0] = (float)this->create_dev->wall;
      irdata.ranges[1] = (float)this->create_dev->cliff_left;
      irdata.ranges[2] = (float)this->create_dev->cliff_frontleft;
@@ -365,7 +368,8 @@ Create::Main()
 
      this->Publish(this->ir_addr,
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
-         (void*)&irdata, sizeof(irdata), NULL);
+         (void*)&irdata);
+     delete [] irdata.ranges;
 
 
      ////////////////////////////
@@ -387,6 +391,7 @@ Create::Main()
      memset(this->cpdata,0,sizeof(cpdata));
 
      this->cpdata->data_count=5;
+     this->cpdata->data = new uint8_t [this->cpdata->data_count];
 
      this->cpdata->data[0] = this->create_dev->button_max;
      this->cpdata->data[1] = this->create_dev->button_clean;
@@ -397,6 +402,7 @@ Create::Main()
      this->Publish(this->opaque_addr,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
          (void*)this->cpdata, sizeof(*this->cpdata), NULL);
+     delete [] this->cpdata->data;
 
      usleep(CYCLE_TIME_US);
   }
@@ -458,6 +464,7 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     player_bumper_geom_t geom;
 
     geom.bumper_def_count = 2;
+    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
 
     geom.bumper_def[0].pose.px = 0.0;
     geom.bumper_def[0].pose.py = 0.0;
@@ -474,7 +481,8 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_BUMPER_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
+                  (void*)&geom);
+    delete [] geom.bumper_def;
 
     return(0);
   }
@@ -485,6 +493,7 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     player_ir_pose poses;
 
     poses.poses_count = 11;
+    poses.poses = new player_pose3d_t[poses.poses_count];
 
     // TODO: Fill in proper values
     for (int i=0; i<11; i++)
@@ -497,7 +506,8 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     this->Publish(this->ir_addr, resp_queue, 
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
-                  (void*)&poses, sizeof(poses), NULL);
+                  (void*)&poses);
+    delete [] poses.poses;
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,

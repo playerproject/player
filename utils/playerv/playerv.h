@@ -185,7 +185,9 @@ void create_proxy(device_t *device, opt_t *opt,
    rtk_menuitem_t *subscribe_item;
 
    // Figures for drawing the bumper
-   rtk_fig_t *scan_fig[PLAYERC_BUMPER_MAX_SAMPLES];
+   rtk_fig_t **scan_fig;
+   int fig_count;
+   mainwnd_t *mainwnd;
 
    // Bumper device proxy
    playerc_bumper_t *proxy;
@@ -472,7 +474,9 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
 
   // Figures for drawing the sonar scan
-  rtk_fig_t *scan_fig[PLAYERC_SONAR_MAX_SAMPLES];
+  rtk_fig_t **scan_fig;
+  int fig_count;
+  mainwnd_t *mainwnd;
 
   // Sonar device proxy
   playerc_sonar_t *proxy;
@@ -511,7 +515,9 @@ typedef struct
   rtk_menuitem_t *subscribe_item;
 
   // Figures for drawing the sonar scan
-  rtk_fig_t *scan_fig[PLAYERC_IR_MAX_SAMPLES];
+  rtk_fig_t **scan_fig;
+  int fig_count;
+  mainwnd_t *mainwnd;
 
   // Sonar device proxy
   playerc_ir_t *proxy;

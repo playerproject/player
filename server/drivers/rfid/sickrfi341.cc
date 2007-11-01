@@ -88,6 +88,7 @@ driver
 
 #include "rfi341_protocol.h"
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 #define DEFAULT_RFI341_PORT "/dev/ttyS0"
 #define DEFAULT_RFI341_RATE 9600
@@ -229,6 +230,7 @@ void
     Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS,
             &data, sizeof (data), NULL);
             
+    player_rfid_data_t_cleanup(&data);
     nanosleep (&sleepTime, NULL);
   }
 }

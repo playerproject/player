@@ -82,6 +82,7 @@ playerc_camera_t *playerc_camera_create(playerc_client_t *client, int index)
 void playerc_camera_destroy(playerc_camera_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->image);
   free(device);
 }
 
@@ -114,6 +115,7 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
     device->fdiv         = data->fdiv;
     device->compression  = data->compression;
     device->image_count  = data->image_count;
+    device->image        = realloc(device->image, sizeof(device->image[0])*device->image_count);
 
     assert(device->image_count <= sizeof(device->image));
     memcpy(device->image, data->image, device->image_count);
@@ -144,6 +146,7 @@ void playerc_camera_decompress(playerc_camera_t *device)
 
   // Copy uncompress image
   device->image_count = dst_size;
+  device->image = realloc(device->image, sizeof(device->image[0])*device->image_count);
   assert(dst_size <= sizeof device->image);
   memcpy(device->image, dst, dst_size);
   free(dst);

@@ -74,19 +74,6 @@
 // Have we done one-time intialization work yet?
 static int init_done;
 
-// TODO: get rid of this structure
-// Player message structure for subscibing to devices.  This one is
-// easier to use than the one defined in messages.h.
-/*
-typedef struct
-{
-  uint16_t subtype;
-  uint16_t device;
-  uint16_t index;
-  uint8_t access;
-} __attribute__ ((packed)) playerc_msg_subscribe_t;
-*/
-
 void dummy(int sig)
 {
   printf("got %d\n", sig);

@@ -107,8 +107,7 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
   player_simulation_pose2d_req_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  strncpy(cmd.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cmd.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  cmd.name = name;
   cmd.name_count = strlen(cmd.name) + 1;
   cmd.pose.px = gx;
   cmd.pose.py = gy;
@@ -123,20 +122,20 @@ int playerc_simulation_set_pose2d(playerc_simulation_t *device, char* name, doub
 int playerc_simulation_get_pose2d(playerc_simulation_t *device, char* identifier, 
 				  double *x, double *y, double *a)
 {
-  player_simulation_pose2d_req_t cfg, *resp;
+  player_simulation_pose2d_req_t req, *cfg;
   
   memset(&cfg, 0, sizeof(cfg));
-  strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
-  cfg.name_count = strlen(cfg.name) + 1;
+  req.name = identifier;
+  req.name_count = strlen(req.name) + 1;
   if (playerc_client_request(device->info.client, &device->info, 
                              PLAYER_SIMULATION_REQ_GET_POSE2D,
-			     &cfg, (void**)&resp) < 0)
+			     &req, (void*)&cfg) < 0)
     return (-1);
-  *x =  resp->pose.px;
-  *y =  resp->pose.py;
-  *a =  resp->pose.pa;
-  player_simulation_pose2d_req_t_free(resp);
+  *x =  cfg->pose.px;
+  *y =  cfg->pose.py;
+  *a =  cfg->pose.pa;
+  player_simulation_pose2d_req_t_free(cfg);
+
   return 0;
 }
 
@@ -147,8 +146,7 @@ int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name, doub
   player_simulation_pose3d_req_t cmd;
 
   memset(&cmd, 0, sizeof(cmd));
-  strncpy(cmd.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cmd.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  cmd.name = name;
   cmd.name_count = strlen(cmd.name) + 1;
   cmd.pose.px = gx;
   cmd.pose.py = gy;
@@ -166,24 +164,23 @@ int playerc_simulation_set_pose3d(playerc_simulation_t *device, char* name, doub
 int playerc_simulation_get_pose3d(playerc_simulation_t *device, char* identifier, 
           double *x, double *y, double *z, double *roll, double *pitch, double *yaw, double *time)
 {
-  player_simulation_pose3d_req_t cfg, *resp;
+  player_simulation_pose3d_req_t req, *cfg;
   
-  memset(&cfg, 0, sizeof(cfg));
-  strncpy(cfg.name, identifier, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  cfg.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
-  cfg.name_count = strlen(cfg.name) + 1;
+  memset(&req, 0, sizeof(req));
+  req.name = identifier;
+  req.name_count = strlen(req.name) + 1;
   if (playerc_client_request(device->info.client, &device->info, 
                              PLAYER_SIMULATION_REQ_GET_POSE3D,
-           &cfg, (void**)&resp) < 0)
+           &req, (void*)&cfg) < 0)
     return (-1);
-  *x =  resp->pose.px;
-  *y =  resp->pose.py;
-  *z =  resp->pose.pz;
-  *pitch =  resp->pose.ppitch;
-  *roll =  resp->pose.proll;
-  *yaw =  resp->pose.pyaw;
-  *time = resp->simtime;
-  player_simulation_pose3d_req_t_free(resp);
+  *x =  cfg->pose.px;
+  *y =  cfg->pose.py;
+  *z =  cfg->pose.pz;
+  *pitch =  cfg->pose.ppitch;
+  *roll =  cfg->pose.proll;
+  *yaw =  cfg->pose.pyaw;
+  *time = cfg->simtime;
+  player_simulation_pose3d_req_t_free(cfg);
   return 0;
 }
 
@@ -197,22 +194,13 @@ int playerc_simulation_set_property(playerc_simulation_t *device,
   player_simulation_property_req_t req;
 
   memset(&req, 0, sizeof(req));
-  strncpy(req.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  req.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.name = name;
   req.name_count = strlen(req.name) + 1;
   
-  strncpy(req.prop, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  req.prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.prop = property;
   req.prop_count = strlen(req.prop) + 1;
 
-  if( value_len > PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN )
-    {
-      PLAYER_WARN2( "Simulation property data exceeds maximum length (%d/%d bytes).",
-		   value_len,  PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN );
-      value_len = PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN;
-    }
-  
-  memcpy( req.value, value, value_len );
+  req.value = value;
   req.value_count = value_len;
   
   return playerc_client_request(device->info.client, &device->info, 
@@ -230,22 +218,14 @@ int playerc_simulation_get_property(playerc_simulation_t *device,
   player_simulation_property_req_t req, *resp;
 
   memset(&req, 0, sizeof(req));
-  strncpy(req.name, name, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  req.name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.name = name;
   req.name_count = strlen(req.name) + 1;
   
-  strncpy(req.prop, property, PLAYER_SIMULATION_IDENTIFIER_MAXLEN);
-  req.prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN-1]='\0';
+  req.prop = property;
   req.prop_count = strlen(req.prop) + 1;
 
-  if( value_len > PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN )
-    {
-      PLAYER_WARN2( "Simulation property data exceeds maximum length (%d/%d bytes).",
-		   value_len,  PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN );
-      value_len = PLAYER_SIMULATION_PROPERTY_DATA_MAXLEN;
-    }
-  
-  req.value_count = value_len;
+  req.value = NULL;
+  req.value_count = 0;
   
   if( playerc_client_request(device->info.client, &device->info, 
                                 PLAYER_SIMULATION_REQ_GET_PROPERTY,

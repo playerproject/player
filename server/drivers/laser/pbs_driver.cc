@@ -233,8 +233,9 @@ PBSDriver::PBSDriver(ConfigFile* cf, int section)
   data_packet.resolution = DTOR(1.75);
   data_packet.max_range = 3.5;
   data_packet.ranges_count = NUMBER_OF_RANGE_READINGS;
+  data_packet.ranges = new float [NUMBER_OF_RANGE_READINGS];
   data_packet.intensity_count = 0;
-  data_packet.intensity[0] = 0;
+  data_packet.intensity = NULL;
   data_packet.id = 1;
 
 
@@ -252,7 +253,7 @@ PBSDriver::PBSDriver(ConfigFile* cf, int section)
 
 PBSDriver::~PBSDriver()
 {
-
+  delete [] data_packet.ranges;
 }
 
 /// Set up the device.

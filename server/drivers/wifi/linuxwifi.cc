@@ -297,6 +297,7 @@ LinuxWiFi::Update(void)
   int32_t bitrate =0; 
   uint8_t mode = 0;
   player_wifi_data_t wifi_data;
+  player_wifi_link_t wifi_link;
   
   struct timeval curr;
 
@@ -423,6 +424,7 @@ LinuxWiFi::Update(void)
   wifi_data.bitrate = bitrate;
     
   wifi_data.links_count = 1;
+  wifi_data.links = &wifi_link;
   strncpy((char*)wifi_data.links[0].ip, "0.0.0.0", sizeof(wifi_data.links[0].ip));
   wifi_data.links[0].ip_count = sizeof(wifi_data.links[0].ip);
   wifi_data.links[0].qual = wqual;

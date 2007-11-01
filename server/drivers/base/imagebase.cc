@@ -28,6 +28,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "imagebase.h"
+#include <libplayerxdr/playerxdr.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
@@ -118,7 +119,7 @@ int ImageBase::ProcessMessage (QueuePointer &resp_queue, player_msghdr * hdr, vo
   	Lock();
   	if (!HaveData)
   	{
- 		memcpy(&stored_data, data,hdr->size);
+ 		player_camera_data_t_copy(&stored_data, (player_camera_data_t *)data);
  		HaveData = true;
   	}
  	Unlock();

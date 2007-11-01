@@ -261,6 +261,7 @@ wbr914::wbr914(ConfigFile* cf, int section)
 
   // Set up the IR array geometry
   _ir_geom.poses_count = NUM_IR_SENSORS;
+  _ir_geom.poses = new player_pose3d_t[_ir_geom.poses_count];
 
   _ir_geom.poses[ 0 ].px = 0.030;
   _ir_geom.poses[ 0 ].py = -0.190;
@@ -296,6 +297,12 @@ wbr914::wbr914(ConfigFile* cf, int section)
   _ir_geom.poses[ 7 ].px = 0.200;
   _ir_geom.poses[ 7 ].py = 0.060;
   _ir_geom.poses[ 7 ].pyaw = DTOR( 60 );
+  
+  _data.ir.ranges_count = NUM_IR_SENSORS;
+  _data.ir.voltages_count = _data.ir.ranges_count;
+  _data.ir.ranges = new float [_data.ir.ranges_count];
+  _data.ir.voltages = new float [_data.ir.voltages_count];
+  
 }
 
 /**
@@ -306,6 +313,10 @@ wbr914::~wbr914()
   if ( _tioChanged )
     tcsetattr( this->_fd, TCSADRAIN, &_old_tio);
   Shutdown();
+  delete [] _ir_geom.poses;
+  delete [] _data.ir.ranges;
+  delete [] _data.ir.voltages;
+  
 }
 
 int wbr914::Setup()
@@ -962,9 +973,6 @@ void wbr914::GetIRData(player_ir_data_t * d)
   //  float deltaV = 2.25;
   //  float v10 = v80+deltaV;
   //  float mmPerVolt = (800.0-100.0)/(v80-v10); 
-
-  d->voltages_count = NUM_IR_SENSORS;
-  d->ranges_count = d->voltages_count;
 
   for (uint32_t i=0; i < d->ranges_count; i++)
   {

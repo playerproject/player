@@ -264,8 +264,9 @@ class Wavefront : public Driver
     // current odom pose
     double position_x, position_y, position_a;
     // current list of waypoints
-    double waypoints[PLAYER_PLANNER_MAX_WAYPOINTS][2];
+    double (*waypoints)[2];
     int waypoint_count;
+    int waypoints_allocated;
     // current localize pose
     double localize_x, localize_y, localize_a;
     // have we told the underlying position device to stop?
@@ -403,6 +404,7 @@ Wavefront::Setup()
   this->new_goal = false;
 
   this->waypoint_count = 0;
+  this->waypoints_allocated = 0;
 
   if(SetupPosition() < 0)
     return(-1);
@@ -816,12 +818,12 @@ void Wavefront::Main()
           this->waypoint_count = 0;
         }
       }
-      else if(this->plan->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
-      {
-        PLAYER_WARN("Plan exceeds maximum number of waypoints!");
-        this->waypoint_count = PLAYER_PLANNER_MAX_WAYPOINTS;
-      }
       else
+        if (this->plan->waypoint_count > this->waypoints_allocated)
+        {
+          this->waypoints = (double (*)[2])realloc(this->waypoints, sizeof(this->waypoints[0])*this->plan->waypoint_count);
+          this->waypoints_allocated = this->plan->waypoint_count;
+        }
         this->waypoint_count = this->plan->waypoint_count;
 
       if(this->plan->waypoint_count > 0)
@@ -1040,40 +1042,33 @@ Wavefront::GetMap(bool threaded)
   plan_reset(this->plan);
 
   // now, get the map data
-  player_map_data_t* data_req;
-  size_t reqlen;
+  player_map_data_t data_req;
   int i,j;
   int oi,oj;
   int sx,sy;
   int si,sj;
 
-  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE;
-  data_req = (player_map_data_t*)calloc(1, reqlen);
-  assert(data_req);
-
-  // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)PLAYER_MAP_MAX_TILE_SIZE);
+  // Grab 640x640 tiles
+  sy = sx = 640;
   oi=oj=0;
   while((oi < this->plan->size_x) && (oj < this->plan->size_y))
   {
     si = MIN(sx, this->plan->size_x - oi);
     sj = MIN(sy, this->plan->size_y - oj);
 
-    data_req->col = oi;
-    data_req->row = oj;
-    data_req->width = si;
-    data_req->height = sj;
+    data_req.col = oi;
+    data_req.row = oj;
+    data_req.width = si;
+    data_req.height = sj;
 
     Message* msg;
     if(!(msg = this->mapdevice->Request(this->InQueue,
                                         PLAYER_MSGTYPE_REQ,
                                         PLAYER_MAP_REQ_GET_DATA,
-                                        (void*)data_req,reqlen,NULL,
+                                        (void*)&data_req,0,NULL,
                                         threaded)))
     {
       PLAYER_ERROR("failed to get map data");
-      free(data_req);
       free(this->plan->cells);
       return(-1);
     }
@@ -1102,7 +1097,6 @@ Wavefront::GetMap(bool threaded)
       oj += sj;
     }
   }
-  free(data_req);
   return(0);
 }
 
@@ -1244,13 +1238,8 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
   {
     player_planner_waypoints_req_t reply;
 
-    if(this->waypoint_count > PLAYER_PLANNER_MAX_WAYPOINTS)
-    {
-      PLAYER_WARN("too many waypoints; truncating list");
-      reply.waypoints_count = 0;
-    }
-    else
-      reply.waypoints_count = this->waypoint_count;
+    reply.waypoints_count = this->waypoint_count;
+    reply.waypoints = (player_pose2d_t*)calloc(sizeof(reply.waypoints[0]),this->waypoint_count);
     for(int i=0;i<(int)reply.waypoints_count;i++)
     {
       reply.waypoints[i].px = this->waypoints[i][0];
@@ -1262,6 +1251,7 @@ Wavefront::ProcessMessage(QueuePointer & resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_PLANNER_REQ_GET_WAYPOINTS,
                   (void*)&reply, sizeof(reply), NULL);
+    free(reply.waypoints);
     return(0);
   }
   // Is it a request to enable or disable the planner?

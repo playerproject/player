@@ -335,48 +335,28 @@ int MapFile::ProcessMessage(QueuePointer & resp_queue,
     oj = mapresp->row = mapreq->row;
     si = mapresp->width = mapreq->width;
     sj = mapresp->height = mapreq->height;
-
+    mapresp->data_count = mapresp->width * mapresp->height;
+    mapresp->data = new int8_t [mapresp->data_count];
     // Grab the pixels from the map
     for(j = 0; j < sj; j++)
     {
       for(i = 0; i < si; i++)
       {
-        if((i * j) <= PLAYER_MAP_MAX_TILE_SIZE)
-        {
-          if(MAP_VALID(this, i + oi, j + oj))
-            mapresp->data[i + j * si] = this->mapdata[MAP_IDX(this, i+oi, j+oj)];
-          else
-          {
-            PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
-            mapresp->data[i + j * si] = 0;
-          }
-        }
+        if(MAP_VALID(this, i + oi, j + oj))
+          mapresp->data[i + j * si] = this->mapdata[MAP_IDX(this, i+oi, j+oj)];
         else
         {
-          PLAYER_WARN("requested tile is too large; truncating");
-          if(i == 0)
-          {
-            mapresp->width = si-1;
-            mapresp->height = j-1;
-          }
-          else
-          {
-            mapresp->width = i;
-            mapresp->height = j;
-          }
+          PLAYER_WARN2("requested cell (%d,%d) is offmap", i+oi, j+oj);
+          mapresp->data[i + j * si] = 0;
         }
       }
     }
 
-    // recompute size, in case the tile got truncated
-    //mapsize = (sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 
-               //(mapresp->width * mapresp->height));
-    mapresp->data_count = mapresp->width * mapresp->height;
-    
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_DATA,
-                  (void*)mapresp, mapsize, NULL);
+                  (void*)mapresp);
+    delete [] mapresp->data;
     free(mapresp);
     return(0);
   }

@@ -238,6 +238,7 @@ int ARToolkitPlusDriver::ProcessFrame()
 	blobs.width = stored_data.width;
 	blobs.height = stored_data.height;
 	blobs.blobs_count = 0;
+	blobs.blobs = (player_blobfinder_blob_t*)calloc(minfocnt,sizeof(blobs.blobs[0]));
 	for(int i =0 ;i < minfocnt; i++) 
 	{
 		if (tmp_markers[i].id < 0)
@@ -267,8 +268,8 @@ int ARToolkitPlusDriver::ProcessFrame()
 		++blobs.blobs_count;
 	}
 	
-	Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&blobs,sizeof(blobs));
-
+	Publish(device_addr,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&blobs);
+	free(blobs.blobs);
 	return 0;	
 }
 

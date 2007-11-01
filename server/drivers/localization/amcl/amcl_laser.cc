@@ -184,9 +184,10 @@ AMCLLaser::SetupMap(void)
   delete msg;
 
   // allocate space for map cells
-  assert(this->map->cells = (map_cell_t*)malloc(sizeof(map_cell_t) *
-                                                this->map->size_x *
-                                                this->map->size_y));
+  this->map->cells = (map_cell_t*)malloc(sizeof(map_cell_t) *
+                                                  this->map->size_x *
+                                                  this->map->size_y);
+  assert(this->map->cells);
 
   // now, get the map data
   player_map_data_t* data_req;
@@ -196,13 +197,11 @@ AMCLLaser::SetupMap(void)
   int sx,sy;
   int si,sj;
 
-  reqlen = sizeof(player_map_data_t) - PLAYER_MAP_MAX_TILE_SIZE + 4;
-  data_req = (player_map_data_t*)calloc(1, reqlen);
+  data_req = (player_map_data_t*) malloc(sizeof(player_map_data_t));
   assert(data_req);
 
-  // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)PLAYER_MAP_MAX_TILE_SIZE);
+  // Tile size, limit to sensible maximum of 640x640 tiles
+  sy = sx = 640;
   oi=oj=0;
   while((oi < this->map->size_x) && (oj < this->map->size_y))
   {
@@ -302,7 +301,7 @@ int AMCLLaser::ProcessMessage(QueuePointer &resp_queue,
   
   ndata->range_count = data->ranges_count;
   ndata->range_max = data->max_range;
-  assert((size_t) ndata->range_count < sizeof(ndata->ranges) / sizeof(ndata->ranges[0]));
+  ndata->ranges = new double [ndata->range_count][2];
 
   // Read the range data
   for (i = 0; i < ndata->range_count; i++)

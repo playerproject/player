@@ -434,6 +434,9 @@ player_laser_data_t
   player_data.ranges_count    = meas_header.NumberMeasuredValues;
   player_data.intensity_count = meas_header.NumberMeasuredValues;
   player_data.id              = 0;
+  player_data.ranges = new float[  player_data.ranges_count];
+  player_data.intensity = new uint8_t[  player_data.intensity_count];
+  
   memcpy (&player_data.id, &buffer[sizeof(MeasurementHeader_t) + 
                                  meas_header.NumberMeasuredValues * 3 + 
                                  14], 2);

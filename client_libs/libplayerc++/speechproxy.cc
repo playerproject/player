@@ -93,6 +93,9 @@ void
 SpeechProxy::Say(std::string aStr)
 {
   scoped_lock_t lock(mPc->mMutex);
-  playerc_speech_say(mDevice, aStr.c_str());
+  char * str = strdup(aStr.c_str());
+  playerc_speech_say(mDevice, str);
+  free(str);
+
 }
 

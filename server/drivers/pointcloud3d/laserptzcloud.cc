@@ -77,7 +77,7 @@ driver
 #include <libplayercore/error.h>
 
 #define DEFAULT_MAXSCANS    100
-#define DEFAULT_MAXPOINTS   PLAYER_POINTCLOUD3D_MAX_POINTS
+#define DEFAULT_MAXPOINTS   1024
 #define DEFAULT_MAXDISTANCE 10
 
 // PTZ defaults for tilt
@@ -349,12 +349,14 @@ int LaserPTZCloud::ProcessMessage (QueuePointer &resp_queue,
             	    }
 		
             	    cloud_data.points_count = counter;
+            	    cloud_data.points = (player_pointcloud3d_element_t*)calloc(sizeof(cloud_data.points[0]),cloud_data.points_count);
             	    for (int j=0; j < counter; j++)
                 	cloud_data.points[j] = all_elements[j];
 		
             	    Publish (this->device_addr, PLAYER_MSGTYPE_DATA, 
                          PLAYER_POINTCLOUD3D_DATA_STATE, &cloud_data, 
                          sizeof (player_pointcloud3d_data_t), NULL);
+            	    free(cloud_data.points);
         	}
             this->numscans     = 0;
             this->lastpose     = newpose;

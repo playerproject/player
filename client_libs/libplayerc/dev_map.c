@@ -79,6 +79,7 @@ void playerc_map_destroy(playerc_map_t *device)
 {
   playerc_device_term(&device->info);
   free(device->cells);
+  free(device->segments);
   free(device);
 }
 
@@ -129,9 +130,7 @@ int playerc_map_get_map(playerc_map_t* device)
   info_req=NULL;
   
   // Allocate space for the whole map
-  if(device->cells)
-    free(device->cells);
-  device->cells = (char*)malloc(sizeof(char) *
+  device->cells = (char*)realloc(device->cells, sizeof(char) *
                                 device->width * device->height);
   assert(device->cells);
 
@@ -139,14 +138,13 @@ int playerc_map_get_map(playerc_map_t* device)
 
 #if HAVE_ZLIB_H
   // Allocate a buffer into which we'll decompress the map data
-  unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
+  unzipped_data_len = device->width*device->height;
   unzipped_data = (char*)malloc(unzipped_data_len);
   assert(unzipped_data);
 #endif
 
   // Tile size
-  sy = sx = (int)sqrt(PLAYER_MAP_MAX_TILE_SIZE);
-  assert(sx * sy < (int)(PLAYER_MAP_MAX_TILE_SIZE));
+  sy = sx = 640;
   oi=oj=0;
   data_req = (player_map_data_t *)malloc(sizeof(player_map_data_t));
   while((oi < device->width) && (oj < device->height))
@@ -154,7 +152,7 @@ int playerc_map_get_map(playerc_map_t* device)
     si = MIN(sx, device->width - oi);
     sj = MIN(sy, device->height - oj);
 
-    memset(data_req,0,sizeof(data_req));
+    memset(data_req,0,sizeof(*data_req));
     data_req->col = oi;
     data_req->row = oj;
     data_req->width = si;
@@ -165,7 +163,6 @@ int playerc_map_get_map(playerc_map_t* device)
                               (void*)data_req, (void**)&data_resp) < 0)
     {
       PLAYERC_ERR("failed to get map data");
-      free(device->cells);
 #if HAVE_ZLIB_H
       free(unzipped_data);
 #endif
@@ -174,13 +171,12 @@ int playerc_map_get_map(playerc_map_t* device)
     }
 
 #if HAVE_ZLIB_H
-    unzipped_data_len = PLAYER_MAP_MAX_TILE_SIZE;
+    unzipped_data_len = device->width*device->height;
     if(uncompress((Bytef*)unzipped_data, &unzipped_data_len,
                   (uint8_t*)data_resp->data, data_resp->data_count) != Z_OK)
     {
       PLAYERC_ERR("failed to decompress map data");
       player_map_data_t_free(data_resp);
-      free(device->cells);
       free(unzipped_data);
       free(data_req);
       return(-1);

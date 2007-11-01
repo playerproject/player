@@ -75,6 +75,7 @@ playerc_blobfinder_t *playerc_blobfinder_create(playerc_client_t *client, int in
 void playerc_blobfinder_destroy(playerc_blobfinder_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->blobs);
   free(device);
 }
 
@@ -107,8 +108,8 @@ void playerc_blobfinder_putmsg(playerc_blobfinder_t *device,
       device->height = data->height;
       
       // threshold the number of blobs to avoid overunning the array
-      device->blobs_count = MIN( data->blobs_count, PLAYERC_BLOBFINDER_MAX_BLOBS );
-
+      device->blobs_count =data->blobs_count;
+      device->blobs = realloc(device->blobs, device->blobs_count * sizeof(device->blobs[0]));
       memcpy(device->blobs, data->blobs, sizeof (player_blobfinder_blob_t)*device->blobs_count);
 
     }

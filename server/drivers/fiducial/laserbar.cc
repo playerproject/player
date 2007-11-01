@@ -175,6 +175,7 @@ class LaserBar : public Driver
   // Local copy of the current fiducial data.
   private: struct timeval ftimestamp;
   private: player_fiducial_data_t fdata;
+  unsigned int fdata_allocated;
 };
 
 
@@ -216,7 +217,8 @@ LaserBar::LaserBar( ConfigFile* cf, int section)
 // Set up the device (called by server thread).
 int LaserBar::Setup()
 {
-
+  fdata_allocated = 0;
+  fdata.fiducials = NULL;
   this->laser_device = deviceTable->GetDevice(this->laser_addr);
 
   if (!this->laser_device)
@@ -249,6 +251,7 @@ int LaserBar::Shutdown()
   this->laser_device->Unsubscribe(this->InQueue);
   this->laser_device = NULL;
 
+  free(fdata.fiducials);
   return 0;
 }
 
@@ -308,16 +311,11 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
   	this->Unlock();
 
-    uint32_t size = sizeof(this->fdata) - sizeof(this->fdata.fiducials) +
-      this->fdata.fiducials_count * sizeof(this->fdata.fiducials[0]);
-
     printf("Count[%d]\n",this->fdata.fiducials_count);
 
     this->Publish(this->device_addr, 
                   PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, 
-                  reinterpret_cast<void*>(&this->fdata), 
-                  size, &hdr->timestamp);
-
+                  reinterpret_cast<void*>(&this->fdata),0, &hdr->timestamp);
 
   	return 0;
   }
@@ -349,7 +347,7 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
 
     this->Publish(this->device_addr, resp_queue, 
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_FIDUCIAL_REQ_GET_GEOM, 
-                  (void*)&fgeom, sizeof(fgeom), NULL);
+                  (void*)&fgeom);
 
     return 0;
   }
@@ -357,136 +355,6 @@ int LaserBar::ProcessMessage(QueuePointer &resp_queue, player_msghdr *hdr, void 
   return -1;
 }
 
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Get data from buffer (called by server thread).
-/*size_t 
-LaserBar::GetData(player_device_id_t id,
-                  void* dest, size_t len,
-                  struct timeval* timestamp)
-{
-  int i;
-  size_t laser_size;
-  struct timeval laser_timestamp;
-  
-  // Get the laser data.
-  laser_size = this->laser_driver->GetData(this->laser_id, 
-                                           (void*) &this->ldata, 
-                                           sizeof(this->ldata),
-                                           &laser_timestamp);
-  assert(laser_size <= sizeof(this->ldata));
-  
-  // If the laser doesnt have new data, just return a copy of our old
-  // data.
-  if ((laser_timestamp.tv_sec != this->ftimestamp.tv_sec) || 
-      (laser_timestamp.tv_usec != this->ftimestamp.tv_usec))
-  {
-    // Do some byte swapping
-    this->ldata.resolution = ntohs(this->ldata.resolution);
-    this->ldata.range_res = ntohs(this->ldata.range_res);
-    this->ldata.min_angle = ntohs(this->ldata.min_angle);
-    this->ldata.max_angle = ntohs(this->ldata.max_angle);
-    this->ldata.range_count = ntohs(this->ldata.range_count);
-    for (i = 0; i < this->ldata.range_count; i++)
-      this->ldata.ranges[i] = ntohs(this->ldata.ranges[i]);
-
-    // Analyse the laser data
-    this->Find();
-
-    // Do some byte-swapping on the fiducial data.
-    for (i = 0; i < this->fdata.count; i++)
-    {
-      this->fdata.fiducials[i].pos[0] = htonl(this->fdata.fiducials[i].pos[0]);
-      this->fdata.fiducials[i].pos[1] = htonl(this->fdata.fiducials[i].pos[1]);
-      this->fdata.fiducials[i].rot[2] = htonl(this->fdata.fiducials[i].rot[2]);
-    }
-    this->fdata.count = htons(this->fdata.count);
-  }
-
-  // Copy results
-  assert(len >= sizeof(this->fdata));
-  memcpy(dest, &this->fdata, sizeof(this->fdata));
-
-  // Copy the laser timestamp
-  *timestamp = laser_timestamp;
-
-  this->ftimestamp = laser_timestamp;
-  
-  return (sizeof(this->fdata));
-}
-*/
-
-////////////////////////////////////////////////////////////////////////////////
-// Put configuration in buffer (called by server thread)
-/*int 
-LaserBar::PutConfig(player_device_id_t id, void *client, 
-                    void *src, size_t len,
-                    struct timeval* timestamp)
-{
- int subtype;
-
-  if (len < 1)
-  {
-    PLAYER_ERROR("empty requestion; ignoring");
-    return 0;
-  }
-  
-  subtype = ((uint8_t*) src)[0];
-  switch (subtype)
-  {
-    case PLAYER_FIDUCIAL_REQ_GET_GEOM:
-    {
-      HandleGetGeom(client, src, len);
-      break;
-    }
-    default:
-    {
-      if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-        PLAYER_ERROR("PutReply() failed");
-      break;
-    }
-  }
-  
-  return (0);
-}*/
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-/*void LaserBar::HandleGetGeom(void *client, void *request, int len)
-{
-  unsigned short reptype;
-  struct timeval ts;
-  int replen;
-  player_laser_geom_t lgeom;
-  player_fiducial_geom_t fgeom;
-    
-  // Get the geometry from the laser
-  replen = this->laser_driver->Request(this->laser_id, this, 
-                                       request, len, NULL,
-                                       &reptype, &lgeom, sizeof(lgeom), &ts);
-  if (replen <= 0 || replen != sizeof(lgeom))
-  {
-    PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  fgeom.pose[0] = lgeom.pose[0];
-  fgeom.pose[1] = lgeom.pose[1];
-  fgeom.pose[2] = lgeom.pose[2];
-  fgeom.size[0] = lgeom.size[0];
-  fgeom.size[1] = lgeom.size[1];
-  fgeom.fiducial_size[0] = ntohs((int) (this->reflector_width * 1000));
-  fgeom.fiducial_size[1] = ntohs((int) (this->reflector_width * 1000));
-    
-  if (PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &fgeom, sizeof(fgeom),&ts) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data to find reflectors.
@@ -629,12 +497,13 @@ void LaserBar::Add(double pr, double pb, double po,
 
 {
   player_fiducial_item_t *fiducial;
-
-  //printf("adding %f %f %f\n", pr, pb, po);
-  
-  //assert(this->fdata.count < ARRAYSIZE(this->fdata.fiducials));
-
-  fiducial = this->fdata.fiducials + this->fdata.fiducials_count++;
+  this->fdata.fiducials_count++;
+  if (this->fdata.fiducials_count > this->fdata_allocated)
+  {
+    this->fdata_allocated = this->fdata.fiducials_count;
+    this->fdata.fiducials = (player_fiducial_item_t*)realloc(this->fdata.fiducials, sizeof(this->fdata.fiducials[0])*this->fdata_allocated);
+  }
+  fiducial = &this->fdata.fiducials[fdata.fiducials_count-1]; 
   fiducial->id = (int16_t) -1;
 
   fiducial->pose.px = pr * cos(pb);

@@ -398,10 +398,7 @@ void Sphinx2::Main()
       //continue;
     }
     
-    strncpy(data.text, hypothesis, PLAYER_SPEECH_RECOGNITION_TEXT_LEN);
-
-//    printf ("%d: %s\n", frames, data.text); fflush (stdout);
-    data.text[strlen(data.text)]='\0';
+    data.text = hypothesis;
     data.text_count = strlen(data.text)+1;
 
     printf("data.text[%d] = %s\n",data.text_count,data.text);

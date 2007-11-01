@@ -74,6 +74,8 @@ playerc_sonar_t *playerc_sonar_create(playerc_client_t *client, int index)
 void playerc_sonar_destroy(playerc_sonar_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->scan);
+  free(device->poses);
   free(device);
 }
 
@@ -102,34 +104,12 @@ void playerc_sonar_putmsg(playerc_sonar_t *device, player_msghdr_t *header,
      (header->subtype == PLAYER_SONAR_DATA_RANGES))
   {
     device->scan_count = data->ranges_count;
+    device->scan = realloc(device->scan, sizeof(*device->scan)*device->scan_count);
     for (i = 0; i < device->scan_count; i++)
       device->scan[i] = data->ranges[i];
   }
 }
 
-#if 0
-// Process incoming pushed geometry
-void playerc_sonar_putgeom(playerc_sonar_t *device, player_msghdr_t *header,
-                           void *data, size_t len)
-{
-  int i;
-  player_sonar_geom_t * config = (player_sonar_geom_t *) data;
-
-  if (len != sizeof(player_sonar_geom_t))
-  {
-    PLAYERC_ERR2("sonar geom has unexpected length (%d != %d)", len, sizeof(player_sonar_geom_t));
-    return;
-  }
-
-  device->pose_count = htons(config->pose_count);
-  for (i = 0; i < device->pose_count; i++)
-  {
-    device->poses[i][0] = ((int16_t) ntohs(config->poses[i][0])) / 1000.0;
-    device->poses[i][1] = ((int16_t) ntohs(config->poses[i][1])) / 1000.0;
-    device->poses[i][2] = ((int16_t) ntohs(config->poses[i][2])) * M_PI / 180;
-  }
-}
-#endif
 
 // Get the sonar geometry.  The writes the result into the proxy
 // rather than returning it to the caller.
@@ -146,6 +126,8 @@ int playerc_sonar_get_geom(playerc_sonar_t *device)
     return -1;
 
   device->pose_count = config->poses_count;
+  device->poses = realloc(device->poses, sizeof(*device->poses)*device->pose_count);
+
   for (i = 0; i < device->pose_count; i++)
   {
     device->poses[i] = config->poses[i];

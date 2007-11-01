@@ -314,6 +314,7 @@ driver
 #include "rflex-io.h"
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 extern PlayerTime* GlobalTime;
 
 extern int               RFLEX::joy_control;
@@ -394,12 +395,14 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     player_sonar_geom_t geom;
     Lock();
     geom.poses_count = rflex_configs.sonar_1st_bank_end;
+    geom.poses = new player_pose3d_t[geom.poses_count];
     for (int i = 0; i < rflex_configs.sonar_1st_bank_end; i++)
     {
       geom.poses[i] = rflex_configs.mrad_sonar_poses[i];
     }
     Unlock();
     Publish(sonar_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+    delete [] geom.poses;
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_SONAR_REQ_GET_GEOM,
@@ -410,12 +413,14 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     player_sonar_geom_t geom;
     Lock();
     geom.poses_count = (rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+    geom.poses = new player_pose3d_t[geom.poses_count];
     for (int i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
     {
       geom.poses[i] = rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start];
     }
     Unlock();
     Publish(sonar_id_2, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+    delete [] geom.poses;
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_BUMPER_REQ_GET_GEOM,
@@ -426,12 +431,14 @@ int RFLEX::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr,
     player_bumper_geom_t geom;
     Lock();
     geom.bumper_def_count = rflex_configs.bumper_count;
+    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
     for (int i = 0; i < rflex_configs.bumper_count; i++)
     {
       geom.bumper_def[i] = rflex_configs.bumper_def[i];
     }
     Unlock();
     Publish(bumper_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype, &geom,sizeof(geom));
+    delete [] geom.bumper_def;
     return 0;
   }
   else if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_IR_REQ_POSE, ir_id))
@@ -763,7 +770,7 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
   unsigned int RunningTotal = 0;
   for(int i=0; i < rflex_configs.ir_bank_count; ++i)
     RunningTotal += (rflex_configs.ir_count[i]=(int) cf->ReadTupleFloat(section, "rflex_banks",i,0));
-
+  rflex_configs.ir_total_count = RunningTotal;
   // posecount is actually unnecasary, but for consistancy will juse use it for error checking :)
   if (RunningTotal != rflex_configs.ir_poses.poses_count)
   {
@@ -820,6 +827,10 @@ RFLEX::RFLEX(ConfigFile* cf, int section)
 
   rflex_fd = -1;
 
+}
+
+RFLEX::~RFLEX()
+{
 }
 
 int RFLEX::Setup(){
@@ -1103,6 +1114,7 @@ RFLEX::Main()
 
     Lock();
         geom.poses_count = rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start;
+        geom.poses = new player_pose3d_t[geom.poses_count];
         for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++)
         {
       SonarRotate(rad_odo_theta, rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].px,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].py,rflex_configs.mrad_sonar_poses[i+rflex_configs.sonar_2nd_bank_start].pyaw,NewGeom,&NewGeom[1],&NewGeom[2]);
@@ -1114,6 +1126,7 @@ RFLEX::Main()
         if (sonar_id_2.interf)
         Publish(this->sonar_id_2,  PLAYER_MSGTYPE_DATA, PLAYER_SONAR_DATA_GEOM,
         (unsigned char*)&geom, sizeof(player_sonar_geom_t), NULL);
+        delete [] geom.poses;
   }
   LastYaw = rflex_data.position.pos.pa;
 
@@ -1151,8 +1164,17 @@ RFLEX::Main()
             sizeof(player_dio_data_t),
             NULL);
   }
-    ret=pthread_setcancelstate(oldstate,NULL);
 
+  ret=pthread_setcancelstate(oldstate,NULL);
+  player_position2d_data_t_cleanup(&rflex_data.position);
+  player_sonar_data_t_cleanup(&rflex_data.sonar);
+  player_sonar_data_t_cleanup(&rflex_data.sonar2);
+  player_gripper_data_t_cleanup(&rflex_data.gripper);
+  player_power_data_t_cleanup(&rflex_data.power);
+  player_bumper_data_t_cleanup(&rflex_data.bumper);
+  player_dio_data_t_cleanup(&rflex_data.dio);
+  player_aio_data_t_cleanup(&rflex_data.aio);
+  player_ir_data_t_cleanup(&rflex_data.ir);
   Lock();
   if (!ThreadAlive)
   {
@@ -1207,16 +1229,9 @@ void RFLEX::set_odometry(float m_x, float m_y, float rad_theta) {
 void RFLEX::update_everything(player_rflex_data_t* d)
 {
 
-  int arb_ranges[PLAYER_SONAR_MAX_SAMPLES];
-  char abumper_ranges[PLAYER_BUMPER_MAX_SAMPLES];
-  unsigned char air_ranges[PLAYER_IR_MAX_SAMPLES];
-
-  // changed these variable-size array declarations to the
-  // bigger-than-necessary ones above, because older versions of gcc don't
-  // support variable-size arrays.
-  // int arb_ranges[rflex_configs.num_sonars];
-  // char abumper_ranges[rflex_configs.bumper_count];
-  // unsigned char air_ranges[rflex_configs.ir_poses.pose_count];
+  int *arb_ranges = new int[rflex_configs.num_sonars];
+  char *abumper_ranges = new char[rflex_configs.bumper_count];
+  uint8_t *air_ranges = new uint8_t[rflex_configs.ir_total_count];
 
   static int initialized = 0;
 
@@ -1283,11 +1298,21 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     rflex_update_sonar(rflex_fd, a_num_sonars,
            arb_ranges);
 //    pthread_testcancel();
-    d->sonar.ranges_count=(rflex_configs.sonar_1st_bank_end);
+    if (d->sonar.ranges_count!=rflex_configs.sonar_1st_bank_end)
+    {
+      d->sonar.ranges_count=rflex_configs.sonar_1st_bank_end;
+      delete [] d->sonar.ranges;
+      d->sonar.ranges = new float[d->sonar.ranges_count];
+    }
     for (i = 0; i < rflex_configs.sonar_1st_bank_end; i++){
       d->sonar.ranges[i] = ARB2M_RANGE_CONV(arb_ranges[i]);
     }
-    d->sonar2.ranges_count=(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+    if (d->sonar2.ranges_count!=(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start))
+    {
+      d->sonar2.ranges_count=(rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start);
+      delete [] d->sonar2.ranges;
+      d->sonar2.ranges = new float[d->sonar2.ranges_count];
+    }
     for (i = 0; i < rflex_configs.num_sonars - rflex_configs.sonar_2nd_bank_start; i++){
       d->sonar2.ranges[i] = ARB2M_RANGE_CONV(arb_ranges[rflex_configs.sonar_2nd_bank_start+i]);
     }
@@ -1304,7 +1329,7 @@ void RFLEX::update_everything(player_rflex_data_t* d)
  //   pthread_testcancel();
 
     d->bumper.bumpers_count=(a_num_bumpers);
-    memcpy(d->bumper.bumpers,abumper_ranges,a_num_bumpers);
+    d->bumper.bumpers = (uint8_t*)abumper_ranges;
   }
 
   // if someone is subscribed to irs copy internal data to device
@@ -1317,7 +1342,15 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     rflex_update_ir(rflex_fd, a_num_ir, air_ranges);
 //    pthread_testcancel();
 
-    d->ir.ranges_count = (a_num_ir);
+    if (d->ir.ranges_count != a_num_ir)
+    {
+      d->ir.ranges_count = a_num_ir;
+      d->ir.voltages_count = a_num_ir;
+      delete [] d->ir.ranges;
+      delete [] d->ir.voltages;
+      d->ir.ranges = new float [a_num_ir];
+      d->ir.voltages = new float [a_num_ir];
+    }
     for (int i = 0; i < a_num_ir; ++i)
     {
       d->ir.voltages[i] = air_ranges[i];
