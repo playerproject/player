@@ -1079,7 +1079,7 @@ class LaserProxy : public ClientProxy
     int GetIntensity(uint32_t aIndex) const
       { return GetVar(mDevice->intensity[aIndex]); };
 
-    /// get the laser ID, call RequestConfigure first
+    /// get the laser ID, call RequestId first
     int GetID() const
       { return GetVar(mDevice->laser_id); };
 
@@ -1099,9 +1099,12 @@ class LaserProxy : public ClientProxy
                    bool aIntensity,
                    double aScanningFrequency);
 
-    /// Get the current laser configuration; it is read into the
+    /// Request the current laser configuration; it is read into the
     /// relevant class attributes.
     void RequestConfigure();
+    
+    /// Request the ID of the laser; read it with GetID()
+    void RequestID();
 
     /// Get the laser's geometry; it is read into the
     /// relevant class attributes.
