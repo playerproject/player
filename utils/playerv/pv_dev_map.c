@@ -92,10 +92,9 @@ void map_update(map_t *map)
     {
       if (playerc_map_subscribe(map->proxy, PLAYER_OPEN_MODE) != 0)
         PRINT_ERR1("libplayerc error: %s", playerc_error_str());
-      
       // download a map
-      playerc_map_get_map( map->proxy );
-      map_draw( map );
+      if (playerc_map_get_map( map->proxy ) >= 0)	
+        map_draw( map );
     }
   }
   else

@@ -130,6 +130,7 @@ class RFLEX : public Driver
 
   public:
     RFLEX(ConfigFile* cf, int section);
+    ~RFLEX();
 
     /* the main thread */
     virtual void Main();

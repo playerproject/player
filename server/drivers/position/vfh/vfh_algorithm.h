@@ -58,7 +58,7 @@ public:
     //  - goal_distance  in mm.
     //  - goal_distance_tolerance in mm.
     //
-    int Update_VFH( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], 
+    int Update_VFH( double (*laser_ranges)[2], 
                     int current_speed,  
                     float goal_direction,
                     float goal_distance,
@@ -100,9 +100,9 @@ private:
     bool Cant_Turn_To_Goal();
 
     // Returns 0 if something got inside the safety distance, else 1.
-    int Calculate_Cells_Mag( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed );
+    int Calculate_Cells_Mag( double (*laser_ranges)[2], int speed );
     // Returns 0 if something got inside the safety distance, else 1.
-    int Build_Primary_Polar_Histogram( double laser_ranges[PLAYER_LASER_MAX_SAMPLES][2], int speed );
+    int Build_Primary_Polar_Histogram( double (*laser_ranges)[2], int speed );
     int Build_Binary_Polar_Histogram(int speed);
     int Build_Masked_Polar_Histogram(int speed);
     int Select_Candidate_Angle();

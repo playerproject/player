@@ -10,12 +10,6 @@ message { DATA, GEOM, 2, player_bumper_geom_t };
 
 message { REQ, GET_GEOM, 1, player_bumper_geom_t };
 
-/** Compatability defs */
-#define PLAYER_BUMPER_GET_GEOM PLAYER_BUMPER_REQ_GET_GEOM
-
-/** Maximum number of bumper samples */
-#define PLAYER_BUMPER_MAX_SAMPLES 32
-
 /** @brief Data: state (@ref PLAYER_BUMPER_DATA_GEOM)
 
 The @p bumper interface gives current bumper state*/
@@ -24,7 +18,7 @@ typedef struct player_bumper_data
   /** the number of valid bumper readings */
   uint32_t bumpers_count;
   /** array of bumper values */
-  uint8_t bumpers[PLAYER_BUMPER_MAX_SAMPLES];
+  uint8_t *bumpers;
 } player_bumper_data_t;
 
 /** @brief The geometry of a single bumper */
@@ -41,7 +35,7 @@ typedef struct player_bumper_define
 /** @brief Data AND Request/reply: bumper geometry
 
 To query the geometry of a bumper array, send a null
-@ref PLAYER_BUMPER_REQ_GET_GEOM request.  The response will be in this form.  This
+@ref PLAYER_BUMPER_GET_GEOM request.  The response will be in this form.  This
 message may also be sent as data with the subtype @ref PLAYER_BUMPER_DATA_GEOM
 (e.g., from a robot whose bumper can move with respect to its body)
 */
@@ -50,6 +44,6 @@ typedef struct player_bumper_geom
   /** The number of valid bumper definitions. */
   uint32_t bumper_def_count;
   /** geometry of each bumper */
-  player_bumper_define_t bumper_def[PLAYER_BUMPER_MAX_SAMPLES];
+  player_bumper_define_t *bumper_def;
 } player_bumper_geom_t;
 

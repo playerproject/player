@@ -179,6 +179,7 @@ driver
 #include "calcul.h"
 #include "MbICP.h"
 
+#define LASER_MAX_SAMPLES 1024
 
 class mbicp : public Driver
 {
@@ -559,7 +560,7 @@ void mbicp::ProcessSubtypeLaser(player_msghdr_t* hdr,player_laser_data_scanpose_
 	currentScan.intensity_count	= data.scan.intensity_count;	
 	currentScan.id					= data.scan.id;
 	
-	for (int i=0; i < PLAYER_LASER_MAX_SAMPLES; i++){
+	for (int i=0; i < currentScan.ranges_count; i++){
 		currentScan.ranges[i] = data.scan.ranges[i];
 		currentScan.intensity[i] = data.scan.intensity[i];
 	}
@@ -598,8 +599,8 @@ void mbicp::compute()
 		outInversion1,
 		outInversion4;
 			
-	Tpfp	previousScanTpfp[PLAYER_LASER_MAX_SAMPLES],
-		currentScanTpfp[PLAYER_LASER_MAX_SAMPLES];
+	Tpfp	previousScanTpfp[LASER_MAX_SAMPLES],
+		currentScanTpfp[LASER_MAX_SAMPLES];
 			
 	int	salidaMbicp;		
 			

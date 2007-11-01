@@ -94,6 +94,7 @@ class Aodv : public Driver
 
   // File handle for the /proc file system entry
   protected: FILE *file;
+  player_wifi_data_t data;
 };
 
 
@@ -131,6 +132,7 @@ int Aodv::Setup()
                   AODV_INFO_FILE, strerror(errno));
     return -1;
   }
+  memset(&data, 0, sizeof(data));
   return 0;
 }
 
@@ -139,6 +141,7 @@ int Aodv::Setup()
 int Aodv::Shutdown()
 {
   fclose(this->file);
+  free(data.links);
   return 0;
 }
 
@@ -148,7 +151,6 @@ void Aodv::Update()
 {
   int n, link_count;
   player_wifi_link_t *link;
-  player_wifi_data_t data;
   char ip[16], next_ip[16];
   int seq, hop;
   int qual, level, noise;
@@ -177,16 +179,23 @@ void Aodv::Update()
     
     printf("aodv %s : %d\n", ip, level);
 
-    link = data.links + link_count++;
+    if (link_count > data.links_count)
+    {
+      data.links = (player_wifi_link_t*)realloc(data.links, sizeof(data.links[0])*link_count);
+      data.links_count++;
+    }
+    assert(data.links);
+    link = &data.links[link_count];
+    link_count++;
+
     strncpy((char*)link->ip, ip, sizeof(link->ip));
     //link->qual_type = PLAYER_WIFI_QUAL_UNKNOWN;
     link->qual = (qual);
     link->noise = (noise);
   }
-  data.links_count = (link_count);
 
   // Copy data to the server's buffer
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE, &data, sizeof(data), NULL);
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_WIFI_DATA_STATE, &data);
 
 
   return;

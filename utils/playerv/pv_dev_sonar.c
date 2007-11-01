@@ -56,6 +56,7 @@ sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   sonar->proxy = playerc_sonar_create(client, index);
   sonar->drivername = strdup(drivername);
   sonar->datatime = 0;
+  sonar->mainwnd = mainwnd;
 
   snprintf(section, sizeof(section), "sonar:%d", index);
 
@@ -68,11 +69,22 @@ sonar_t *sonar_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
   // Set initial device state
   rtk_menuitem_check(sonar->subscribe_item, subscribe);
 
-  // Construct figures
-  for (i = 0; i < PLAYERC_SONAR_MAX_SAMPLES; i++)
-    sonar->scan_fig[i] = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
+  sonar->fig_count = 0;
 
   return sonar;
+}
+
+void sonar_allocate_figures(sonar_t * sonar, int fig_count)
+{
+  int i;
+  if (fig_count <= sonar->fig_count)
+    return;
+  sonar->scan_fig = realloc(sonar->scan_fig,fig_count*sizeof(sonar->scan_fig[0]));
+  
+  // Construct figures
+  for (i = sonar->fig_count; i < fig_count; i++)
+	  sonar->scan_fig[i] = rtk_fig_create(sonar->mainwnd->canvas, sonar->mainwnd->robot_fig, 1);
+  sonar->fig_count = fig_count;
 }
 
 
@@ -85,7 +97,7 @@ void sonar_destroy(sonar_t *sonar)
     playerc_sonar_unsubscribe(sonar->proxy);
   playerc_sonar_destroy(sonar->proxy);
 
-  for (i = 0; i < PLAYERC_SONAR_MAX_SAMPLES; i++)
+  for (i = 0; i < sonar->fig_count; i++)
     rtk_fig_destroy(sonar->scan_fig[i]);
 
   rtk_menuitem_destroy(sonar->subscribe_item);
@@ -148,11 +160,13 @@ void sonar_update(sonar_t *sonar)
 void sonar_update_geom(sonar_t *sonar)
 {
   int i;
-      for (i = 0; i < sonar->proxy->pose_count; i++)
-        rtk_fig_origin(sonar->scan_fig[i],
-                       sonar->proxy->poses[i].px,
-                       sonar->proxy->poses[i].py,
-                       sonar->proxy->poses[i].pyaw);
+  sonar_allocate_figures(sonar, sonar->proxy->pose_count);
+  for (i = 0; i < sonar->proxy->pose_count; i++)
+    rtk_fig_origin(sonar->scan_fig[i],
+      sonar->proxy->poses[i].px,
+      sonar->proxy->poses[i].py,
+      sonar->proxy->poses[i].pyaw
+    );
 }
 
 

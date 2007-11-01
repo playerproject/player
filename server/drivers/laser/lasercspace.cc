@@ -135,7 +135,7 @@ class LaserCSpace : public LaserTransform
   private: double radius;
 
   // Lookup table for precomputations
-  private: double lu[PLAYER_LASER_MAX_SAMPLES][4];
+  private: double (*lu)[4];
 
 };
 
@@ -178,6 +178,8 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
   this->data.max_angle = data->max_angle;
   this->data.max_range = data->max_range;
   this->data.ranges_count = data->ranges_count;
+  this->data.ranges = new float [data->ranges_count];
+  this->lu = new double[data->ranges_count][4];
 
   // Do some precomputations to save time
   this->Precompute(data);
@@ -188,7 +190,9 @@ int LaserCSpace::UpdateLaser(player_laser_data_t * data)
 
   this->Publish(this->device_addr,  
                 PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-                (void*)&this->data, sizeof(this->data), NULL);
+                (void*)&this->data);
+  delete [] this->data.ranges;
+  delete [] this->lu;
 
   return 1;
 }

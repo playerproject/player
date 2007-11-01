@@ -549,23 +549,24 @@ int CameraV4L::ProcessMessage(QueuePointer & resp_queue,
 void CameraV4L::RefreshData()
 {
   int i;
-  size_t size;
+  size_t image_count;
   unsigned char * ptr1, * ptr2;
+
+  // Compute size of image
+  image_count = this->width * this->height * this->depth / 8;
 
   // Set the image properties
   this->data.width       = this->width;
   this->data.height      = this->height;
   this->data.bpp         = this->depth;
-  this->data.image_count = this->width * this->height * this->depth / 8;
+  this->data.image_count = image_count;
+  this->data.image       = new unsigned char [image_count];
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
-
-  assert(data.image_count <= sizeof(this->data.image));
 
   if (have_ov519)
   {
     this->data.image_count = (*(unsigned short *)(frame->data))*8;
     assert(data.image_count > 0);
-    assert(data.image_count <= sizeof(this->data.image));
     assert(data.image_count <= ((size_t)(this->frame->size)));
     this->data.compression = PLAYER_CAMERA_COMPRESS_JPEG;
     memcpy(data.image, &(((char*)frame->data)[2]), data.image_count);
@@ -576,7 +577,6 @@ void CameraV4L::RefreshData()
     memcpy(&i, this->frame->data, sizeof(int));
     data.image_count = i;
     assert(data.image_count > 0);
-    assert(data.image_count <= sizeof(this->data.image));
     assert(data.image_count <= ((size_t)(this->frame->size)));
     memcpy(data.image, ((unsigned char *)(this->frame->data)) + sizeof(int), data.image_count);
   }
@@ -626,10 +626,6 @@ void CameraV4L::RefreshData()
     }
   }
 
-  // Copy data to server
-  size = sizeof(this->data) - sizeof(this->data.image) + data.image_count;
-  /* We should do this to be efficient */
-
   if (this->publish_interval)
   {
     if ((time(NULL) - (this->publish_time)) < (this->publish_interval))
@@ -638,13 +634,13 @@ void CameraV4L::RefreshData()
       this->data.height      = 0;
       this->data.bpp         = 0;
       this->data.image_count = 0;
-      size = sizeof(this->data) - sizeof(this->data.image);
     } else this->publish_time = time(NULL);
   }
 
   Publish(this->device_addr, 
           PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-          reinterpret_cast<void*>(&this->data), size, NULL);
+          reinterpret_cast<void*>(&this->data));
+  delete [] this->data.image;
 
   return;
 }

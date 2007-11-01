@@ -10,13 +10,6 @@ byte-aligned).
 
 message { DATA, STATE, 1, player_camera_data_t };
 
-/** Maximum image width, in pixels */
-#define PLAYER_CAMERA_IMAGE_WIDTH  1920
-/** Maximum image height, in pixels */
-#define PLAYER_CAMERA_IMAGE_HEIGHT 1080
-/** Maximum image size, in pixels */
-#define PLAYER_CAMERA_IMAGE_SIZE  (PLAYER_CAMERA_IMAGE_WIDTH * PLAYER_CAMERA_IMAGE_HEIGHT * 4)
-
 /** Image format : 8-bit monochrome. */
 #define PLAYER_CAMERA_FORMAT_MONO8  1
 /** Image format : 16-bit monochrome (network byte order). */
@@ -54,5 +47,5 @@ typedef struct player_camera_data
   /** Compressed image data (byte-aligned, row major order).
       Multi-byte image formats (such as MONO16) must be converted
       to network byte ordering. */
-  uint8_t image[PLAYER_CAMERA_IMAGE_SIZE];
+  uint8_t *image;
 } player_camera_data_t;

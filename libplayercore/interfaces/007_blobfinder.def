@@ -11,9 +11,6 @@ message { DATA, BLOBS, 1, player_blobfinder_data_t };
 message { REQ, SET_COLOR, 1, player_blobfinder_color_config_t };
 message { REQ, SET_IMAGER_PARAMS, 2, player_blobfinder_imager_config_t };
 
-/** The maximum number of blobs in total. */
-#define PLAYER_BLOBFINDER_MAX_BLOBS 256
-
 
 /** @brief Structure describing a single blob. */
 typedef struct player_blobfinder_blob
@@ -53,7 +50,7 @@ typedef struct player_blobfinder_data
   /** The number of blobs */
   uint32_t blobs_count;
   /** The list of blobs */
-  player_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
+  player_blobfinder_blob_t *blobs;
 } player_blobfinder_data_t;
 
 

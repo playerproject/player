@@ -86,6 +86,7 @@ driver
 
 // Includes needed for player
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 #define DEFAULT_RFID_PORT "/dev/ttyS0"
 #define DEFAULT_RFID_RATE 9600
@@ -122,6 +123,7 @@ class SkyetekM1 : public Driver
 
 		// RFID interface
 		player_rfid_data_t Data;
+		int allocated_tags;
 		player_rfid_data_t  Cmd;
 		
 		const char*        portName;
@@ -165,7 +167,7 @@ void SkyetekM1_Register (DriverTable* table)
 // pre-Setup() setup.
 SkyetekM1::SkyetekM1 (ConfigFile* cf, int section)
 	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
-			  PLAYER_RFID_CODE)
+			  PLAYER_RFID_CODE), allocated_tags(0)
 {
 	this->portName  = cf->ReadString (section, "port", DEFAULT_RFID_PORT);
 	this->portSpeed = cf->ReadInt (section, "speed", DEFAULT_RFID_RATE);
@@ -173,11 +175,16 @@ SkyetekM1::SkyetekM1 (ConfigFile* cf, int section)
 	// Enable the anticollision mode
 	this->selectTagMultiple = 1;
 	
+	memset(&Data, 0, sizeof(Data));
+	memset(&Cmd, 0, sizeof(Cmd));
+	
 	return;
 }
 
 SkyetekM1::~SkyetekM1()
 {
+	player_rfid_data_t_cleanup(&Data);
+	player_rfid_data_t_cleanup(&Cmd);
 }
 
 
@@ -438,8 +445,18 @@ void SkyetekM1::SelectTags ()
 		
 		if (response_buf[0] == 0x02)
 		{
+			if (this->Data.tags_count >= this->allocated_tags)
+			{
+				this->allocated_tags = this->Data.tags_count+1;
+				this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(this->Data.tags[0])*this->allocated_tags);
+			}
 			this->Data.tags[this->Data.tags_count].type       = TID[0];
-			this->Data.tags[this->Data.tags_count].guid_count = 8;
+			if (this->Data.tags[this->Data.tags_count].guid_count != 8);
+			{
+				this->Data.tags[this->Data.tags_count].guid_count = 8;
+				this->Data.tags[this->Data.tags_count].guid = (char*)malloc(8);
+			}
+			
 			int j;
 			for (j = 0; j < 9; j++)
 				this->Data.tags[this->Data.tags_count].guid[j] = TID[j+1];

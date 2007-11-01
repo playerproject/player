@@ -147,6 +147,7 @@ driver
 #endif
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 
 #include "encode.h"
 #include "readlog_time.h"
@@ -257,10 +258,10 @@ class ReadLog: public Driver
                           int linenum,
                           int token_count, char **tokens, double time);
 
-  // Parse localize data    
-  private: int ParseLocalize(player_devaddr_t id, unsigned short type, 
+  // Parse localize data
+  private: int ParseLocalize(player_devaddr_t id, unsigned short type,
 			     unsigned short subtype,
-			     int linenum, int token_count, 
+			     int linenum, int token_count,
 			     char **tokens, double time);
 
   // Parse sonar data
@@ -362,7 +363,7 @@ class ReadLog: public Driver
   private: player_localize_get_particles_t particles;
   private: bool particles_set;
   private: player_devaddr_t localize_addr;
-  
+
 
   // Input buffer
   private: size_t line_size;
@@ -1631,15 +1632,15 @@ int ReadLog::ParseLocalize(player_devaddr_t id,
 	    hypoths.pending_count = atoi(tokens[7]);
 	    hypoths.pending_time = atof(tokens[8]);
 	    hypoths.hypoths_count = atoi(tokens[9]);
-	    
+
             count = 0;
             for (i = 10; i < token_count; i += 7)
             {
 	      hypoths.hypoths[count].mean.px = atof(tokens[i + 0]);
-	      hypoths.hypoths[count].mean.py = atof(tokens[i + 1]); 
+	      hypoths.hypoths[count].mean.py = atof(tokens[i + 1]);
 	      hypoths.hypoths[count].mean.pa = atof(tokens[i + 2]);
 	      hypoths.hypoths[count].cov[0] = atof(tokens[i + 3]);
-	      hypoths.hypoths[count].cov[1] = atof(tokens[i + 4]); 
+	      hypoths.hypoths[count].cov[1] = atof(tokens[i + 4]);
 	      hypoths.hypoths[count].cov[2] = atof(tokens[i + 5]);
 	      hypoths.hypoths[count].alpha = atof(tokens[i + 6]);
               count += 1;
@@ -2169,7 +2170,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.pose.proll  = atof (tokens[10]);
 		    data.pose.ppitch = atof (tokens[11]);
 		    data.pose.pyaw   = atof (tokens[12]);
-		    
+
                     this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
@@ -2193,7 +2194,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.magn_x  = atof (tokens[13]);
 		    data.magn_y  = atof (tokens[14]);
 		    data.magn_z  = atof (tokens[15]);
-		    
+
                     this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
@@ -2221,7 +2222,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.q1      = atof (tokens[17]);
 		    data.q2      = atof (tokens[18]);
 		    data.q3      = atof (tokens[19]);
-		    
+
                     this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
@@ -2248,7 +2249,7 @@ int ReadLog::ParseIMU (player_devaddr_t id,
 		    data.orientation.proll  = atof (tokens[16]);
 		    data.orientation.ppitch = atof (tokens[17]);
 		    data.orientation.pyaw   = atof (tokens[18]);
-		    
+
                     this->Publish (id, type, subtype,
                                   (void*)&data, sizeof(data), &time);
                     return (0);
@@ -2362,43 +2363,41 @@ int ReadLog::ParseActarray (player_devaddr_t id,
     unsigned int i;
     switch(type)
     {
-        case PLAYER_MSGTYPE_DATA:
-            switch(subtype)
+      case PLAYER_MSGTYPE_DATA:
+        switch(subtype)
+        {
+          case PLAYER_ACTARRAY_DATA_STATE:
+            player_actarray_data_t data;
+            data.actuators_count = atoi (tokens[7]);
+            data.actuators = new player_actarray_actuator[data.actuators_count];
+            if (token_count < (int)(7+data.actuators_count))
             {
-                case PLAYER_ACTARRAY_DATA_STATE:
-                {
-		    player_actarray_data_t data;
-		    data.actuators_count = atoi (tokens[7]);
-                    if (token_count < (int)(7+data.actuators_count))
-                    {
-                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
-                        return -1;
-                    }
-		    for (i = 0; i < data.actuators_count; i++)
-		    {
-			player_actarray_actuator actuator;
-			actuator.position     = atof (tokens[5*i+8]);
-			actuator.speed        = atof (tokens[5*i+9]);
-			actuator.acceleration = atof (tokens[5*i+10]);
-			actuator.current      = atof (tokens[5*i+11]);
-			actuator.state        = atoi (tokens[5*i+12]);
-			data.actuators[i] = actuator;
-		    }
-		    data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
-		    
-
-                    this->Publish (id, type, subtype,
-                                  (void*)&data, sizeof(data), &time);
-                    return (0);
-                }
-
-                default:
-                    PLAYER_ERROR1 ("unknown Actarray data subtype %d\n", subtype);
-                    return (-1);
+                PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                return -1;
             }
-        default:
-            PLAYER_ERROR1 ("unknown Actarray message type %d\n", type);
+            for (i = 0; i < data.actuators_count; i++)
+            {
+              player_actarray_actuator actuator;
+              actuator.position     = atof (tokens[5*i+8]);
+              actuator.speed        = atof (tokens[5*i+9]);
+              actuator.acceleration = atof (tokens[5*i+10]);
+              actuator.current      = atof (tokens[5*i+11]);
+              actuator.state        = atoi (tokens[5*i+12]);
+              data.actuators[i] = actuator;
+            }
+            data.motor_state = atoi (tokens[data.actuators_count*5 + 8]);
+
+            this->Publish (id, type, subtype, (void*)&data, sizeof(data), &time);
+            delete[] data.actuators;
+            return (0);
+          default:
+            PLAYER_ERROR1 ("unknown Actarray data subtype %d\n", subtype);
             return (-1);
+        }
+        break;
+      default:
+        PLAYER_ERROR1 ("unknown Actarray message type %d\n", type);
+        return (-1);
     }
 }
 
@@ -2428,19 +2427,15 @@ int ReadLog::ParseAIO(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            if (inputs.voltages_count > PLAYER_AIO_MAX_INPUTS) {
-              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
-                            filename, linenum);
-              return -1;
-            }
-
             char **t(tokens + 8);
+            inputs.voltages = new float[inputs.voltages_count];
             for (float *v(inputs.voltages);
                  v != inputs.voltages + inputs.voltages_count; ++v, ++t)
               *v = atof(*t);
 
             Publish(id, type, subtype, (void *)&inputs, sizeof(inputs),
                     &time);
+            delete [] inputs.voltages;
             return 0;
           }
         default:
@@ -2550,23 +2545,21 @@ int ReadLog::ParseRFID(player_devaddr_t id, unsigned short type,
               return -1;
             }
 
-            if (rdata.tags_count > PLAYER_RFID_MAX_TAGS) {
-              PLAYER_ERROR2("invalid line at %s:%d: too much data for buffer",
-                            this->filename, linenum);
-              return -1;
-            }
 
             char **t(tokens + 8);
+            rdata.tags = new player_rfid_tag_t[ rdata.tags_count];
             for (player_rfid_tag_t *r(rdata.tags);
                  r != rdata.tags + rdata.tags_count; ++r, ++t) {
               r->type = strtoul(*t, NULL, 10);
               ++t;
               r->guid_count = strlen(*t) / 2;
-              DecodeHex(r->guid, PLAYER_RFID_MAX_GUID, *t, strlen(*t));
+              r->guid = new char [r->guid_count];
+              DecodeHex(r->guid, r->guid_count, *t, strlen(*t));
             }
 
             Publish(id, type, subtype, (void *)&rdata, sizeof(rdata),
                     &time);
+            player_rfid_data_t_cleanup(&rdata);
             return 0;
           }
         default:

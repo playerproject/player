@@ -501,6 +501,7 @@ void PhidgetIFK::Main() {
         player_aio_data_t data_ai;
 
         data_ai.voltages_count=numsensors;
+        data_ai.voltages = new double[numsensors];
 
         for (int i=0; i!=numsensors; ++i) {
             data_ai.voltages[i]=values[i];
@@ -543,7 +544,8 @@ void PhidgetIFK::Main() {
         if (aio_id.interf !=0) {
             Publish(aio_id, PLAYER_MSGTYPE_DATA, PLAYER_AIO_DATA_STATE, (unsigned char*)&data_ai, sizeof(player_aio_data_t), NULL);
         }
-
+        delete [] data_ai.voltages;
+        
         if (dio_id.interf != 0) {
             Publish(dio_id, PLAYER_MSGTYPE_DATA, PLAYER_DIO_DATA_VALUES, (unsigned char*)&data_di, sizeof(player_dio_data_t), NULL);
         }

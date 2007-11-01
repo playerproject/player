@@ -854,6 +854,7 @@ Acts::Main()
       break;
     }
 
+    
     if(acts_version == ACTS_VERSION_1_0)
     {
       // convert 10-byte ACTS 1.0 blobs to new byte-swapped structured array
@@ -946,6 +947,7 @@ Acts::Main()
     local_data.width = acts_data.width;
     local_data.height = acts_data.height;
     local_data.blobs_count = num_blobs;
+    local_data.blobs = (player_blobfinder_blob_t *)calloc(num_blobs, sizeof(local_data.blobs[0]));
       
     for (i = 0; i < num_blobs; i++)
     {
@@ -963,8 +965,8 @@ Acts::Main()
     }
 
     /* got the data. now fill it in */
-    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS, &local_data, sizeof(local_data) - sizeof(local_data.blobs) +
-            (local_data.blobs_count) * sizeof(local_data.blobs[0]), NULL);
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_BLOBFINDER_DATA_BLOBS, &local_data);
+    free(local_data.blobs);
   }
 
   pthread_cleanup_pop(1);

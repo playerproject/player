@@ -105,12 +105,14 @@ class LaserCutter : public LaserTransform
 {
   // Constructor
   public: LaserCutter( ConfigFile* cf, int section);
+  ~LaserCutter();
 
   // Process laser data.  Returns non-zero if the laser data has been
   // updated.
   protected: int UpdateLaser(player_laser_data_t * data);
 
   double min_angle, max_angle;
+  unsigned int allocated_ranges;
 };
 
 
@@ -134,12 +136,18 @@ LaserCutter::LaserCutter( ConfigFile* cf, int section)
     : LaserTransform(cf, section)
 {
   // Settings.
+  allocated_ranges = 0;
+  data.ranges = NULL;
   this->max_angle = cf->ReadAngle(section, "max_angle", M_PI/2.0);
   this->min_angle = cf->ReadAngle(section, "min_angle", -M_PI/2.0);
 
   return;
 }
 
+LaserCutter::~LaserCutter()
+{
+  free(data.ranges);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +168,8 @@ int LaserCutter::UpdateLaser(player_laser_data_t * data)
   this->data.intensity_count = 0;
   
   current_angle = data->min_angle;
+  if (data->ranges_count+1 > allocated_ranges)
+    data->ranges = (float*)realloc(data->ranges,sizeof(data->ranges[0])*(data->ranges_count+1));
   for (i = 0; i < data->ranges_count; i++)
   {
     current_angle += data->resolution;

@@ -267,6 +267,7 @@ void Yarp_Image::RefreshData ()
             {
                 cam_data.format = PLAYER_CAMERA_FORMAT_MONO8;
                 cam_data.image_count = imgIn->getRawImageSize () / 3;
+                cam_data.image = new unsigned char [cam_data.image_count];
 
                 for (int i=0; i <= (imgIn->getRawImageSize ()/3) ; i++) {
                     unsigned char red   = *(unsigned char *)
@@ -284,6 +285,7 @@ void Yarp_Image::RefreshData ()
             {
                 cam_data.format = PLAYER_CAMERA_FORMAT_RGB888;
                 cam_data.image_count = imgIn->getRawImageSize ();
+                cam_data.image = new unsigned char [cam_data.image_count];
                 for (int i=0; i <= (imgIn->getRawImageSize ()) ; i++) {
                     unsigned char value = *(unsigned char *)
                             (imgIn->getRawImage ()+i);
@@ -294,7 +296,9 @@ void Yarp_Image::RefreshData ()
             }
         }
         Publish (this->cam_id, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE,
-                 &cam_data, sizeof (player_camera_data_t), NULL);
+                 &cam_data);
+        delete [] cam_data.image;
+
     }
 }
 

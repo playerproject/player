@@ -56,7 +56,7 @@ class SIP
   unsigned short ptu, compass, timer, rawxpos;
   unsigned short rawypos, frontbumpers, rearbumpers;
   short angle, lvel, rvel, control;
-  unsigned short sonars[PLAYER_SONAR_MAX_SAMPLES];
+  unsigned short *sonars;
   int xpos, ypos;
   int x_offset,y_offset,angle_offset;
 
@@ -98,8 +98,8 @@ class SIP
   SIP(int idx)
   {
     param_idx = idx;
-    for(int i=0;i<ARRAYSIZE(sonars);i++)
-      sonars[i] = 0;
+    sonarreadings = 0;
+    sonars = NULL;
 
     xpos = INT_MAX;
     ypos = INT_MAX;
@@ -117,6 +117,12 @@ class SIP
       armJointPosRads[i] = 0;
       armJointTargetPos[i] = 0;
     }
+  }
+
+  ~SIP(void)
+  {
+    if (sonars != NULL)
+      delete[] sonars;
   }
 };
 

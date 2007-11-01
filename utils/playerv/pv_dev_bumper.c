@@ -54,6 +54,7 @@ bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   bumper->proxy = playerc_bumper_create(client, index);
   bumper->drivername = strdup(drivername);
   bumper->datatime = 0;
+  bumper->mainwnd = mainwnd;
 
   snprintf(section, sizeof(section), "bumper:%d", index);
 
@@ -66,11 +67,21 @@ bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
   // Set initial device state
   rtk_menuitem_check(bumper->subscribe_item, subscribe);
 
-  // Construct figures
-  for (i = 0; i < PLAYERC_BUMPER_MAX_SAMPLES; i++)
-    bumper->scan_fig[i] = rtk_fig_create(mainwnd->canvas, mainwnd->robot_fig, 1);
-
+  bumper->fig_count = 0;
   return bumper;
+}
+
+void bumper_allocate_figures(bumper_t * bumper, int fig_count)
+{
+  int i;
+  if (bumper->fig_count <= fig_count)
+    return;
+  bumper->scan_fig = realloc(bumper->scan_fig,fig_count*sizeof(bumper->scan_fig[0]));
+  
+  // Construct figures
+  for (i = bumper->fig_count; i < fig_count; i++)
+    bumper->scan_fig[i] = rtk_fig_create(bumper->mainwnd->canvas, bumper->mainwnd->robot_fig, 1);
+  bumper->fig_count = fig_count;
 }
 
 
@@ -83,8 +94,9 @@ void bumper_destroy(bumper_t *bumper)
     playerc_bumper_unsubscribe(bumper->proxy);
   playerc_bumper_destroy(bumper->proxy);
 
-  for (i = 0; i < PLAYERC_BUMPER_MAX_SAMPLES; i++)
+  for (i = 0; i < bumper->fig_count; i++)
     rtk_fig_destroy(bumper->scan_fig[i]);
+  free(bumper->scan_fig);
 
   rtk_menuitem_destroy(bumper->subscribe_item);
   rtk_menu_destroy(bumper->menu);
@@ -111,6 +123,7 @@ void bumper_update(bumper_t *bumper)
       if (playerc_bumper_get_geom(bumper->proxy) != 0)
         PRINT_ERR1("get_geom failed : %s", playerc_error_str());    
 
+      bumper_allocate_figures(bumper, bumper->proxy->pose_count);
       for (i = 0; i < bumper->proxy->pose_count; i++){
 	  //fprintf(stderr, "bumper poses %02d: %f %f %f %f %f\n",i,bumper->proxy->poses[i][0],bumper->proxy->poses[i][1],bumper->proxy->poses[i][2],bumper->proxy->poses[i][3],bumper->proxy->poses[i][4]);
         rtk_fig_origin(bumper->scan_fig[i],

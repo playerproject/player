@@ -23,6 +23,8 @@ playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *
 void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->rawText);
+  free(device->words);
   free(device);
   return;
 }
@@ -41,52 +43,31 @@ int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device)
 
 void playerc_speech_recognition_putmsg(playerc_speechrecognition_t *device, player_msghdr_t *hdr, player_speech_recognition_data_t *buffer, size_t len)
 {
-//   memset(device->words,0,30*20);
-//   player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;
-// 
-//   if((hdr->type == PLAYER_MSGTYPE_DATA) && (hdr->subtype == PLAYER_SPEECH_RECOGNITION_DATA_STRING ))
-//   {
-//     char * str1;
-//     int i;
-//     device->wordCount = 0;
-// //    printf("data->text %s\n",data->text);
-// 
-//     for (str1 = strtok((*data).text, " ") ; str1 != NULL ; str1 = strtok(NULL, " ") )
-//     {
-//       for (i=0;i<strlen(str1);i++)
-//       {
-// //        printf("str1[%d]=%c",i,str1[i]);
-// //        printf("device->words[%i][%i]=%c\n",device->wordCount,i,device->words[device->wordCount][i]);
-//         device->words[device->wordCount][i]=str1[i];
-//       }
-//       device->wordCount++;
-//     }
-//   }
-//   return;
-// 
-
+  int ii,jj;
+	
   if((hdr->type == PLAYER_MSGTYPE_DATA) && (hdr->subtype == PLAYER_SPEECH_RECOGNITION_DATA_STRING ))
   {
     player_speech_recognition_data_t *data = (player_speech_recognition_data_t*)buffer;
-    char * str1=NULL;
-    int i;
-    memset(device->rawText,0,PLAYER_SPEECH_RECOGNITION_TEXT_LEN*sizeof(char));
-    memset(device->words,0,30*20*sizeof(char));
-    device->wordCount = 0;
-   printf("data->text %s\n",data->text);
-    for (i=0;i<data->text_count;i++)
-      device->rawText[i]=data->text[i];
 
-    for (str1 = strtok(device->rawText, " ") ; str1 != NULL ; str1 = strtok(NULL, " ") )
+    device->rawText = realloc(device->rawText,data->text_count*sizeof(device->rawText[0]));
+    memcpy(device->rawText, data->text, data->text_count*sizeof(device->rawText[0]));
+    device->rawText[data->text_count-1] = '\0';
+
+    device->wordCount = 1;
+    printf("data->text %s\n",data->text);
+
+    for (ii = 0; ii < data->text_count; ++ii)
     {
-      for (i=0;i<strlen(str1);i++)
-      {
-        device->words[device->wordCount][i]=str1[i];
-       printf("str1[%d]=%c",i,str1[i]);
-       printf("device->words[%i][%i]=%c\n",device->wordCount,i,device->words[device->wordCount][i]);
-
-      }
-      device->wordCount++;
+      if (device->rawText[ii] == ' ')
+        device->wordCount++;
+    }
+    device->words = realloc(device->words,device->wordCount*sizeof(device->words[0]));
+    
+    jj = 0;
+    for (ii = 0; ii < data->text_count; ++ii)
+    {
+      if (device->rawText[ii] == ' ')
+        device->words[jj++] = &device->rawText[ii+1];
     }
   }
 };

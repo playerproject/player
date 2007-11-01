@@ -173,7 +173,8 @@ class AdaptiveMCL : public Driver
 
   // Current particle filter pose estimates
   private: int hyp_count;
-  private: amcl_hyp_t hyps[PLAYER_LOCALIZE_MAX_HYPOTHS];
+  private: int hyp_alloc;
+  private: amcl_hyp_t *hyps;
   private: pf_vector_t best_hyp;
   private: pthread_mutex_t best_hyp_lock;
 

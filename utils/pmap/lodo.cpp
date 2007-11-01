@@ -395,6 +395,7 @@ void lodo_project_map_free(lodo_t *self, lodo_scan_t *scan_m,
       // Transform into data polar frame
       q.x = sqrt(p.x * p.x + p.y * p.y);
       q.y = atan2(p.y, p.x);
+      q.z = 0;
       free->polar = q;
 
       // Transform into polar grid coordinates

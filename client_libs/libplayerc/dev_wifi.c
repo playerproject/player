@@ -73,6 +73,7 @@ playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index)
 void playerc_wifi_destroy(playerc_wifi_t *self)
 {
   playerc_device_term(&self->info);
+  free(self->links);
   free(self);
 }
 
@@ -95,11 +96,12 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *self)
 void playerc_wifi_putmsg(playerc_wifi_t *device, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len)
 {
-  int i,j;
+  int i;
 
   if((header->type == PLAYER_MSGTYPE_DATA))
   {
   	device->link_count = data->links_count;
+  	device->links = realloc(device->links, sizeof(*device->links)*device->link_count);
 		
 		// copy all available link information
   	for (i = 0; i < device->link_count; i++)

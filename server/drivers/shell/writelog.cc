@@ -896,7 +896,7 @@ void WriteLog::Write(WriteLogDevice *device,
 }
 
 
-void 
+void
 WriteLog::WriteLocalizeParticles()
 
 {
@@ -1080,18 +1080,18 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
           // Note that, in this format, we need a lot of precision in the
           // resolution field.
 
-         
+
           fprintf(this->file, "%10d %+07.3f %2d ",
                   hypoths->pending_count, hypoths->pending_time,
                   hypoths->hypoths_count);
 
           for (i = 0; i < hypoths->hypoths_count; i++)
             fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f %7.3f %7.3f %7.3f ",
-                    hypoths->hypoths[i].mean.px, 
-		    hypoths->hypoths[i].mean.py, 
+                    hypoths->hypoths[i].mean.px,
+		    hypoths->hypoths[i].mean.py,
 		    hypoths->hypoths[i].mean.pa,
-		    hypoths->hypoths[i].cov[0], 
-		    hypoths->hypoths[i].cov[1], 
+		    hypoths->hypoths[i].cov[0],
+		    hypoths->hypoths[i].cov[1],
 		    hypoths->hypoths[i].cov[2],
 		    hypoths->hypoths[i].alpha);
           if (write_particles)
@@ -1116,8 +1116,8 @@ WriteLog::WriteLocalize(player_msghdr_t* hdr, void *data)
 
           for (i = 0; i < particles->particles_count; i++)
 	    fprintf(this->file, "%+7.3f %+7.3f %7.3f %7.3f ",
-                    particles->particles[i].pose.px, 
-		    particles->particles[i].pose.py, 
+                    particles->particles[i].pose.px,
+		    particles->particles[i].pose.py,
 		    particles->particles[i].pose.pa,
 		    particles->particles[i].alpha);
           return(0);
@@ -1745,32 +1745,30 @@ WriteLog::WriteActarray (player_msghdr_t* hdr, void *data)
   // Check the type
     switch(hdr->type)
     {
-        case PLAYER_MSGTYPE_DATA:
-      // Check the subtype
-            switch(hdr->subtype)
-            {
-                case PLAYER_ACTARRAY_DATA_STATE:
-		{
-		    player_actarray_data_t* pdata;
-                    pdata = (player_actarray_data_t*)data;
-		    fprintf (this->file, "%d ", pdata->actuators_count);
-		    for (i = 0; i < pdata->actuators_count; i++)
-			fprintf (this->file,"%f %f %f %f %d ",
-			    pdata->actuators[i].position,
-			    pdata->actuators[i].speed,
-			    pdata->actuators[i].acceleration,
-			    pdata->actuators[i].current,
-			    pdata->actuators[i].state);
-		    fprintf (this->file, "%d ", pdata->motor_state);
-                    return (0);
-		}
-
-                default:
-                    return (-1);
-            }
-
-        default:
+      case PLAYER_MSGTYPE_DATA:
+        // Check the subtype
+        switch(hdr->subtype)
+        {
+          case PLAYER_ACTARRAY_DATA_STATE:
+            player_actarray_data_t* pdata;
+            pdata = (player_actarray_data_t*)data;
+            fprintf (this->file, "%d ", pdata->actuators_count);
+            for (i = 0; i < pdata->actuators_count; i++)
+              fprintf (this->file,"%f %f %f %f %d ",
+                        pdata->actuators[i].position,
+                        pdata->actuators[i].speed,
+                        pdata->actuators[i].acceleration,
+                        pdata->actuators[i].current,
+                        pdata->actuators[i].state);
+              fprintf (this->file, "%d ", pdata->motor_state);
+            delete[] pdata->actuators;
+            return (0);
+          default:
             return (-1);
+        }
+        break;
+      default:
+        return (-1);
     }
 }
 
@@ -1795,13 +1793,6 @@ WriteLog::WriteAIO(player_msghdr_t* hdr, void* data)
       switch (hdr->subtype) {
         case PLAYER_AIO_DATA_STATE: {
             player_aio_data_t* inputs(static_cast<player_aio_data_t*>(data));
-
-            // check for buffer overrun
-            if (inputs->voltages_count > PLAYER_AIO_MAX_INPUTS) {
-                // this shouldn't happen
-                PLAYER_ERROR("count too big for buffer");
-                return -1;
-            }
 
             fprintf(this->file, "%04d ", inputs->voltages_count);
 
@@ -1892,21 +1883,11 @@ WriteLog::WriteRFID(player_msghdr_t* hdr, void* data)
         case PLAYER_RFID_DATA_TAGS: {
             player_rfid_data_t* rdata(static_cast<player_rfid_data_t*>(data));
 
-            if (rdata->tags_count > PLAYER_RFID_MAX_TAGS) {
-                // this shouldn't happen
-                PLAYER_ERROR("count too big for buffer");
-                return -1;
-            }
-
             fprintf(file, "%04lu ", (long)rdata->tags_count);
 
             for (player_rfid_tag_t *t(rdata->tags);
                  t != rdata->tags + rdata->tags_count; ++t) {
-              if (t->guid_count > PLAYER_RFID_MAX_GUID) {
-                PLAYER_ERROR("guid count too big for buffer");
-                return -1;
-              }
-              char str[PLAYER_RFID_MAX_GUID * 2 + 1];
+              char str[t->guid_count * 2 + 1];
               memset(str, '\0', sizeof(str));
               EncodeHex(str, sizeof(str), t->guid, t->guid_count);
               fprintf(file, "%04lu %s ", (long)t->type, str);

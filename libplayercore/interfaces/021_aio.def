@@ -7,11 +7,6 @@ The @p aio interface provides access to an analog I/O device.
 message { CMD, STATE, 1, player_aio_cmd_t };
 message { DATA, STATE, 1, player_aio_data_t };
 
-/** The maximum number of analog I/O samples */
-#define PLAYER_AIO_MAX_INPUTS  8
-/** The maximum number of analog I/O samples */
-#define PLAYER_AIO_MAX_OUTPUTS 8
-
 /** @brief Data: state (@ref PLAYER_AIO_DATA_STATE)
 
 The @p aio interface returns data regarding the current state of the
@@ -21,7 +16,7 @@ typedef struct player_aio_data
   /** number of valid samples */
   uint32_t voltages_count;
   /** the samples [V] */
-  float voltages[PLAYER_AIO_MAX_INPUTS];
+  float *voltages;
 } player_aio_data_t;
 
 /** @brief Command: state (@ref PLAYER_AIO_CMD_STATE)

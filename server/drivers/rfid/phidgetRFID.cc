@@ -370,6 +370,8 @@ void Phidgetrfid::Main() {
         CPhidgetRFID_getLastTag(rfid,tag);
         int ledstate;
         player_rfid_data_t data_rfid;
+        data_rfid.tags = new player_rfid_tag_t[1];
+        data_rfid.tags[0].guid = new char[8];
         if (tagControl.rfid_present==rfid) {
               tagPresent=tagControl.tagPresent;
         }
@@ -406,6 +408,8 @@ void Phidgetrfid::Main() {
         if (rfid_id.interf !=0) {
             Publish(rfid_id, PLAYER_MSGTYPE_DATA, PLAYER_RFID_DATA_TAGS, (unsigned char*)&data_rfid, sizeof(player_rfid_data_t), NULL);
         }
+        delete [] data_rfid.tags[0].guid;
+        delete [] data_rfid.tags;
 
         //point to calculate how much to sleep, call nanosleep, after sleep restart the timer
         //Get the ammount of time passed:

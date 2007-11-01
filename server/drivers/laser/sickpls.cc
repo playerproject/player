@@ -160,6 +160,7 @@ driver
 #define PLAYER_ENABLE_TRACE 0
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 #include <replace/replace.h>
 
 #define DEFAULT_LASER_PORT "/dev/ttyS1"
@@ -502,14 +503,17 @@ void SickPLS::Main()
     
     // Process incoming data
     player_laser_data_t data;
-    uint16_t * TempData = new uint16_t[sizeof(data.ranges) / sizeof(data.ranges[0])];
-    if (ReadLaserData(TempData, sizeof(data.ranges) / sizeof(data.ranges[0])) == 0)
+    data.ranges_count = (this->scan_max_segment - this->scan_min_segment + 1);
+    data.intensity_count = data.ranges_count;
+    data.ranges = new float [data.ranges_count];
+    data.intensity = new uint8_t [data.intensity_count];
+    uint16_t * TempData = new uint16_t[data.ranges_count];
+    if (ReadLaserData(TempData, data.ranges_count) == 0)
     {
       // Prepare packet 
       data.min_angle = (this->scan_min_segment * this->scan_res - this->scan_width * 50);
       data.max_angle = (this->scan_max_segment * this->scan_res - this->scan_width * 50);
       data.resolution = (this->scan_res);
-      data.ranges_count = (this->scan_max_segment - this->scan_min_segment + 1);
 //      data.range_res = (this->range_res);
       for (int i = 0; i < this->scan_max_segment - this->scan_min_segment + 1; i++)
       {
@@ -539,9 +543,10 @@ void SickPLS::Main()
       // Make data available
       this->Publish(this->device_addr,  
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-                    (void*)&data, sizeof(data), NULL);
+                    (void*)&data);
     }
     delete TempData;
+    player_laser_data_t_cleanup(&data);
   }
 }
 

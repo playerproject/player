@@ -368,7 +368,7 @@ void Driver::ProcessMessages(int maxmsgs)
   {
     player_msghdr * hdr = msg->GetHeader();
     void * data = msg->GetPayload();
-    
+
     // Try the driver's process function first
     // Drivers can override internal message handlers this way
     int ret = this->ProcessMessage(msg->Queue, hdr, data);

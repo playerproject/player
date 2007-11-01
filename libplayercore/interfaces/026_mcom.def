@@ -16,27 +16,20 @@ the @ref driver_lifomcom driver enforces a last-in-first-out stack.
 }
 
 /** request ids */
-message { REQ, PUSH, 1, player_map_info_t };
+message { REQ, PUSH, 1, player_mcom_config_t };
 /** request ids */
-message { REQ, POP, 2, player_map_info_t };
+message { REQ, POP, 2, player_mcom_return_t };
 /** request ids */
-message { REQ, READ, 3, player_map_info_t };
+message { REQ, READ, 3, player_mcom_return_t };
 /** request ids */
-message { REQ, CLEAR, 4, player_map_info_t };
+message { REQ, CLEAR, 4, player_mcom_config_t };
 /** request ids */
-message { REQ, SET_CAPACITY, 5, player_map_info_t };
+message { REQ, SET_CAPACITY, 5, player_mcom_config_t };
 
 
-/** size of the data field in messages */
-#define MCOM_DATA_LEN            128
-/** number of buffers to keep per channel */
-#define  MCOM_N_BUFS             10
-/** size of channel name */
-#define MCOM_CHANNEL_LEN        8
+
 /** returns this if empty */
 #define  MCOM_EMPTY_STRING          "(EMPTY)"
-/** ?? */
-#define MCOM_COMMAND_BUFFER_SIZE (sizeof(player_mcom_config_t))
 
 /** @brief A piece of data. */
 typedef struct player_mcom_data
@@ -46,7 +39,7 @@ typedef struct player_mcom_data
   /** length of data */
   uint32_t data_count;
   /** the data */
-  char data[MCOM_DATA_LEN];
+  char *data;
 } player_mcom_data_t;
 
 /** @brief Configuration request to the device. */
@@ -59,7 +52,7 @@ typedef struct player_mcom_config
   /** length of channel name */
   uint32_t channel_count;
   /** The name of the channel. */
-  char channel[MCOM_CHANNEL_LEN];
+  char *channel;
   /** The data. */
   player_mcom_data_t data;
 } player_mcom_config_t;
@@ -72,7 +65,7 @@ typedef struct player_mcom_return
   /** length of channel name */
   uint32_t channel_count;
   /** The name of the channel. */
-  char channel[MCOM_CHANNEL_LEN];
+  char *channel;
   /** The data. */
   player_mcom_data_t data;
 } player_mcom_return_t;

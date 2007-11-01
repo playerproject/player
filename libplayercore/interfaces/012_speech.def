@@ -4,9 +4,6 @@ description {
 The @p speech interface provides access to a speech synthesis system.
 }
 
-/** Maximum string length */
-#define PLAYER_SPEECH_MAX_STRING_LEN 256
-
 /** Command subtype: say a string */
 message { CMD, SAY, 1, player_speech_cmd_t };
 
@@ -19,6 +16,6 @@ typedef struct player_speech_cmd
   /** Length of string */
   uint32_t string_count;
   /** The string to say */
-  char string[PLAYER_SPEECH_MAX_STRING_LEN];
+  char *string;
 } player_speech_cmd_t;
 

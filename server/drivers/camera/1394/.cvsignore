@@ -2,3 +2,6 @@ Makefile
 Makefile.in
 .deps
 *.la
+.libs
+*.loT
+*.lo

@@ -152,6 +152,7 @@ class InsideM300 : public Driver
 
 		// RFID interface
 		player_rfid_data_t Data;
+		unsigned int allocated_tags;
 		player_rfid_data_t  Cmd;
 		
 		const char*        portName;
@@ -204,13 +205,15 @@ void InsideM300_Register (DriverTable* table)
 // pre-Setup() setup.
 InsideM300::InsideM300 (ConfigFile* cf, int section)
 	: Driver (cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
-			  PLAYER_RFID_CODE)
+			  PLAYER_RFID_CODE), allocated_tags(0)
 {
 	this->portName  = cf->ReadString (section, "port", DEFAULT_RFID_PORT);
 	this->portSpeed = cf->ReadInt (section, "speed", DEFAULT_RFID_RATE);
 	
 	// Enable the anticollision mode
 	this->selectTagMultiple = 1;
+	
+	memset(&Data,0, sizeof(Data));
 	
 	return;
 }
@@ -220,6 +223,7 @@ InsideM300::InsideM300 (ConfigFile* cf, int section)
 // Destructor.
 InsideM300::~InsideM300()
 {
+	free(Data.tags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -671,6 +675,11 @@ int InsideM300::SelectTags ()
 		switch (iStatus) {
 			case STATUS_OK:
 			{
+				if (this->Data.tags_count >= this->allocated_tags)
+				{
+					this->allocated_tags = this->Data.tags_count+1;
+					this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(this->Data.tags[0])*this->allocated_tags);
+				}
 				this->Data.tags[this->Data.tags_count].type = chipAnswer[1];
 				this->Data.tags[this->Data.tags_count].guid_count = 8;
 				int j;
@@ -746,6 +755,11 @@ void InsideM300::InsideInventory (int maskLength, int chipMask,
 			for (i = 0; i < 8; i++)
 				globalChipAnswer[i] = chipAnswer[i+2];
 			
+			if (this->Data.tags_count >= this->allocated_tags)
+			{
+				this->allocated_tags = this->Data.tags_count+1;
+				this->Data.tags = (player_rfid_tag_t*)realloc(this->Data.tags,sizeof(this->Data.tags[0])*this->allocated_tags);
+			}
 			this->Data.tags[this->Data.tags_count].type = chipAnswer[1];
 			this->Data.tags[this->Data.tags_count].guid_count = 8;
 			int j;

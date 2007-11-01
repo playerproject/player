@@ -75,6 +75,7 @@ playerc_planner_t *playerc_planner_create(playerc_client_t *client, int index)
 void playerc_planner_destroy(playerc_planner_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->waypoints);
   free(device);
 
   return;
@@ -152,6 +153,7 @@ int playerc_planner_get_waypoints(playerc_planner_t *device)
     return -1;
   
   device->waypoint_count = config->waypoints_count;
+  device->waypoints = realloc(device->waypoints,sizeof(*device->waypoints)*device->waypoint_count);
   for(i=0;i<device->waypoint_count;i++)
   {
     device->waypoints[i][0] = config->waypoints[i].px;

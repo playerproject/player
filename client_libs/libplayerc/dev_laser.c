@@ -84,6 +84,10 @@ playerc_laser_t *playerc_laser_create(playerc_client_t *client, int index)
 void playerc_laser_destroy(playerc_laser_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->ranges);
+  free(device->scan);
+  free(device->point);
+  free(device->intensity);
   free(device);
 }
 
@@ -101,6 +105,13 @@ int playerc_laser_unsubscribe(playerc_laser_t *device)
   return playerc_device_unsubscribe(&device->info);
 }
 
+void playerc_laser_reallocate_scans(playerc_laser_t *device)
+{
+  device->ranges = realloc(device->ranges, sizeof(*device->ranges)*device->scan_count);
+  device->scan = realloc(device->scan, sizeof(*device->scan)*device->scan_count);
+  device->point = realloc(device->point, sizeof(*device->point)*device->scan_count);
+  device->intensity = realloc(device->intensity, sizeof(*device->intensity)*device->scan_count);
+}
 
 // Process incoming data
 void playerc_laser_putmsg(playerc_laser_t *device,
@@ -114,7 +125,6 @@ void playerc_laser_putmsg(playerc_laser_t *device,
      (header->subtype == PLAYER_LASER_DATA_SCAN))
   {
     player_laser_data_t* scan_data = (player_laser_data_t*)data;
-    assert(scan_data->ranges_count <= sizeof(device->scan) / sizeof(device->scan[0]));
 
     b = scan_data->min_angle;
     db = scan_data->resolution;
@@ -122,6 +132,9 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     device->scan_start = b;
     device->scan_res = db;
     device->max_range = scan_data->max_range;
+
+    device->scan_count = scan_data->ranges_count;
+    playerc_laser_reallocate_scans(device);
 
     for (i = 0; i < scan_data->ranges_count; i++)
     {
@@ -136,7 +149,6 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       b += db;
     }
 
-    device->scan_count = scan_data->ranges_count;
     device->scan_id = scan_data->id;
   }
   else if((header->type == PLAYER_MSGTYPE_DATA) &&
@@ -152,6 +164,9 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     device->scan_start = b;
     device->scan_res = db;
 
+    device->scan_count = scan_data->scan.ranges_count;
+    playerc_laser_reallocate_scans(device);
+
     for (i = 0; i < scan_data->scan.ranges_count; i++)
     {
       r = scan_data->scan.ranges[i];
@@ -165,7 +180,6 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       b += db;
     }
 
-    device->scan_count = scan_data->scan.ranges_count;
     device->scan_id = scan_data->scan.id;
     device->robot_pose[0] = scan_data->pose.px;
     device->robot_pose[1] = scan_data->pose.py;

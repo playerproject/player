@@ -80,20 +80,6 @@ message { REQ, MIXER_CHANNEL_LIST, 5, player_audio_mixer_channel_list_detail_t }
 data is a @ref player_audio_mixer_channel_list_t structure*/
 message { REQ, MIXER_CHANNEL_LEVEL, 6, player_audio_mixer_channel_list_t };
 
-/** Raw WAV data buffer size */
-#define PLAYER_AUDIO_WAV_BUFFER_SIZE        1048576
-
-/** Mixer channel name length */
-#define PLAYER_AUDIO_MIXER_CHANNEL_NAME_SIZE     64
-
-/** Mixer channel list length */
-#define PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE     64
-
-/** Sequencer sequence length */
-#define PLAYER_AUDIO_SEQ_LENGTH                  64
-
-
-
 /** Driver states */
 
 #define PLAYER_AUDIO_STATE_STOPPED            0x00
@@ -180,7 +166,7 @@ typedef struct player_audio_seq
   /** number of tones in list */
   uint32_t tones_count;
   /** the tones*/
-  player_audio_seq_item_t tones[PLAYER_AUDIO_SEQ_LENGTH];
+  player_audio_seq_item_t *tones;
 } player_audio_seq_t;
 
 
@@ -211,7 +197,7 @@ typedef struct player_audio_mixer_channel_list
   /** number of channels in list */
   uint32_t channels_count;
   /** the channels*/
-  player_audio_mixer_channel_t channels[PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE];
+  player_audio_mixer_channel_t *channels;
 } player_audio_mixer_channel_list_t;
 
 
@@ -233,7 +219,7 @@ typedef struct player_audio_mixer_channel_detail
   /** name length */
   uint32_t name_count;
   /** Descriptive channel name */
-  char name[PLAYER_AUDIO_MIXER_CHANNEL_NAME_SIZE];
+  char *name;
   /** Channel type (input, output or special)*/
   uint8_t caps;
 } player_audio_mixer_channel_detail_t;
@@ -250,7 +236,7 @@ typedef struct player_audio_mixer_channel_list_detail
   /** number of tones in list */
   uint32_t details_count;
   /** the tones*/
-  player_audio_mixer_channel_detail_t details[PLAYER_AUDIO_MIXER_CHANNEL_LIST_SIZE];
+  player_audio_mixer_channel_detail_t *details;
   /** default output channel (-1 for none) */
   int32_t default_output;
   /** default input channel (-1 for none) */

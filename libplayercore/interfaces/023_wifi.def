@@ -17,10 +17,6 @@ message { REQ, IWSPY_PING, 4, player_wifi_iwspy_addr_req_t };
 /** Data subtype: state */
 message { DATA, STATE, 1, player_wifi_data_t };
 
-
-/** The maximum number of remote hosts to report on */
-#define PLAYER_WIFI_MAX_LINKS   32
-
 /** link quality is in dBm */
 #define PLAYER_WIFI_QUAL_DBM     1
 /** link quality is relative */
@@ -81,7 +77,7 @@ typedef struct player_wifi_data
   /** length of said list */
   uint32_t links_count;
   /** A list of links */
-  player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
+  player_wifi_link_t *links;
   /** mysterious throughput calculated by driver */
   uint32_t throughput;
   /** current bitrate of device */

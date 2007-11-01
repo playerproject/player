@@ -605,33 +605,30 @@ PlayerUDP::WriteClient(int cli)
            (hdr.subtype == PLAYER_MAP_REQ_GET_DATA))
         {
 #if HAVE_ZLIB_H
-          player_map_data_t* raw_data = (player_map_data_t*)payload;
-          zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
-          assert(zipped_data);
+            player_map_data_t* raw_data = (player_map_data_t*)payload;
+            zipped_data = (player_map_data_t*)calloc(1,sizeof(player_map_data_t));
+            assert(zipped_data);
 
-          // copy the metadata
-          zipped_data->col = raw_data->col;
-          zipped_data->row = raw_data->row;
-          zipped_data->width = raw_data->width;
-          zipped_data->height = raw_data->height;
-          uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
-          assert(count >= compressBound(raw_data->data_count));
+            // copy the metadata
+            *zipped_data = *raw_data;
+            uLongf count = compressBound(raw_data->data_count);
+            zipped_data->data = (int8_t*)malloc(count);
 
-          // compress the tile
-          if(compress((Bytef*)zipped_data->data,&count,
-                      (const Bytef*)raw_data->data, raw_data->data_count) != Z_OK)
-          {
-            PLAYER_ERROR("failed to compress map data");
-            free(zipped_data);
-            client->writebufferlen = 0;
-            delete msg;
-            return(0);
-          }
+            // compress the tile
+            if(compress((Bytef*)zipped_data->data,&count,
+                        (const Bytef*)raw_data->data, raw_data->data_count) != Z_OK)
+            {
+              PLAYER_ERROR("failed to compress map data");
+              free(zipped_data);
+              client->writebufferlen = 0;
+              delete msg;
+              return(0);
+            }
 
-          zipped_data->data_count = count;
+            zipped_data->data_count = count;
 
-          // swap the payload pointer to point at the zipped version
-          payload = (void*)zipped_data;
+            // swap the payload pointer to point at the zipped version
+            payload = (void*)zipped_data;
 #else
           PLAYER_WARN("not compressing map data, because zlib was not found at compile time");
 #endif
@@ -648,6 +645,7 @@ PlayerUDP::WriteClient(int cli)
 #if HAVE_ZLIB_H
           if(zipped_data)
           {
+            free(zipped_data->data);
             free(zipped_data);
             zipped_data=NULL;
           }
@@ -669,6 +667,7 @@ PlayerUDP::WriteClient(int cli)
 #if HAVE_ZLIB_H
           if(zipped_data)
           {
+            free(zipped_data->data);
             free(zipped_data);
             zipped_data=NULL;
           }
@@ -684,6 +683,7 @@ PlayerUDP::WriteClient(int cli)
 #if HAVE_ZLIB_H
       if(zipped_data)
       {
+        free(zipped_data->data);
         free(zipped_data);
         zipped_data=NULL;
       }
@@ -848,7 +848,8 @@ PlayerUDP::ParseBuffer(int cli)
               raw_data->row = zipped_data->row;
               raw_data->width = zipped_data->width;
               raw_data->height = zipped_data->height;
-              uLongf count = PLAYER_MAP_MAX_TILE_SIZE;
+              uLongf count = 10*zipped_data->data_count;
+              raw_data->data = (int8_t*)calloc(count,sizeof(int8_t));
 
               // uncompress the tile
               if(uncompress((Bytef*)raw_data->data,&count,
@@ -862,6 +863,7 @@ PlayerUDP::ParseBuffer(int cli)
                 raw_data->data_count = count;
                 device->PutMsg(client->queue, &hdr, raw_data);
               }
+              free(raw_data->data);
               free(raw_data);
 #else
               PLAYER_WARN("not uncompressing map data, because zlib was not found at compile time");

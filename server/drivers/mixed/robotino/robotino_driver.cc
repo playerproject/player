@@ -446,6 +446,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
     memset(&geom, 0, sizeof(geom));
 
     geom.bumper_def_count = 1;
+    geom.bumper_def = new player_blobfinder_blob_t;
 
     geom.bumper_def[0].pose.px = -ROBOTINO_RADIUS/2;
     geom.bumper_def[0].pose.py = ROBOTINO_RADIUS;
@@ -458,6 +459,8 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
                   PLAYER_BUMPER_REQ_GET_GEOM,
                   (void*)&geom, sizeof(geom), NULL);
 
+    delete geom.bumper_def;
+    
     return(0);
    }
   // Interface - ir
@@ -468,6 +471,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
       player_ir_pose_t geom;
       memset(&geom, 0, sizeof(geom));
       geom.poses_count = com.numDistanceSensors();
+      geom.poses = new player_pose3d_t [geom.poses_count];
       
       for(unsigned int intCount = 0;intCount < geom.poses_count;intCount++)
 	{
@@ -482,6 +486,7 @@ ProcessMessage (QueuePointer &resp_queue,player_msghdr * hdr,void *data)
 		    (void *) &geom,
 		    sizeof(geom),
 		    NULL);
+      delete [] geom.poses;
       return (0);
     }
     
@@ -614,6 +619,7 @@ void RobotinoDriver::Main ()
       
       // Update bumper data
       bumperdata.bumpers_count = 1;
+      bumperdata.bumpers = new uint8_t;
       bumperdata.bumpers[0] = com.bumper();
       
       //PLAYER_MSG1(2,"Robotino(R) :: Bumper = %d",bumperdata.bumpers[0]);
@@ -621,10 +627,12 @@ void RobotinoDriver::Main ()
       this->Publish(this->bumper_addr,
 		    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
 		    (void*)&bumperdata, sizeof(bumperdata), NULL);
+      delete bumperdata.bumpers;
       
       // Update IR data
       // Number of IR sensors on Robotino(R)
       irdata.ranges_count = com.numDistanceSensors();
+      irdata.ranges = new double [irdata.ranges_count];
       // Collect distance measurements from all IR sensors on Robotino(R)
       for(unsigned int intCount = 0;intCount < irdata.ranges_count;intCount++)
 	{
@@ -644,6 +652,7 @@ void RobotinoDriver::Main ()
 		     (void *) &irdata,
 		     sizeof (irdata),
 		     NULL);
+      delete [] irdata.ranges;
       
       // To maintain connection due to RobotinoCom timeout  
       if((desiredVelocityX == 0) && (desiredVelocityY == 0) && (desiredVelocityA == 0))

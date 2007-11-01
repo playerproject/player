@@ -85,10 +85,8 @@ int playerc_graphics2d_draw_points(playerc_graphics2d_t *device,
 {
   player_graphics2d_cmd_points_t cmd;
 
-  /* limit the number of points we can draw */
-  count = MIN(count,PLAYER_GRAPHICS2D_MAX_POINTS);
   cmd.points_count = count;
-  memcpy( &cmd.points, pts, sizeof(player_point_2d_t)*count);
+  cmd.points= pts;
   cmd.color = device->color;
 
   return playerc_client_write(device->info.client, &device->info,
@@ -103,11 +101,9 @@ int playerc_graphics2d_draw_polyline(playerc_graphics2d_t *device,
 {
   player_graphics2d_cmd_polyline_t cmd;
   
-  /* limit the number of points we can draw */
-  count = MIN(count,PLAYER_GRAPHICS2D_MAX_POINTS);
   cmd.points_count = count;
-  memcpy( &cmd.points, pts, sizeof(player_point_2d_t)*count);
- cmd.color = device->color;
+  cmd.points = pts;
+  cmd.color = device->color;
    
   return playerc_client_write(device->info.client, &device->info,
                               PLAYER_GRAPHICS2D_CMD_POLYLINE,
@@ -122,10 +118,8 @@ int playerc_graphics2d_draw_polygon(playerc_graphics2d_t *device,
 {
   player_graphics2d_cmd_polygon_t cmd;
 
-  /* limit the number of points we can draw */
-  count = MIN(count,PLAYER_GRAPHICS2D_MAX_POINTS);
   cmd.points_count = count;
-  memcpy( &cmd.points, pts, sizeof(player_point_2d_t)*count);
+  cmd.points = pts;
   cmd.color = device->color;
   cmd.filled = filled;
 

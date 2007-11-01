@@ -238,8 +238,12 @@ int ImageSeq::LoadImage(const char *filename)
   this->data.height = image->height;
   this->data.compression = PLAYER_CAMERA_COMPRESS_RAW;
   
-
-  this->data.image_count = image->imageSize;
+  if (this->data.image_count != image->imageSize || this->data.image == NULL)
+  {
+    this->data.image_count = image->imageSize;
+    delete [] this->data.image;
+    this->data.image = new unsigned char [this->data.image_count];
+  }
   switch (image->depth)
   {
 	case IPL_DEPTH_8U:
@@ -267,12 +271,6 @@ int ImageSeq::LoadImage(const char *filename)
 	case IPL_DEPTH_64F:
 	default:
 	break;
-  }
-  // Check image size
-  if (this->data.image_count > PLAYER_CAMERA_IMAGE_SIZE)
-  {
-    PLAYER_ERROR1("image size is too large [%d]", this->data.image_count);
-    return -1;
   }
   // Copy the pixels
   if (image->nChannels == 1) {
@@ -304,10 +302,6 @@ int ImageSeq::LoadImage(const char *filename)
 // Write camera data
 void ImageSeq::WriteData()
 {
-  size_t size;
-  
-  size = sizeof(this->data) - sizeof(this->data.image) + this->data.image_count;
-  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data, size, NULL);
-      
+  Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, &this->data);
   return;
 }

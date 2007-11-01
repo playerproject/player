@@ -87,11 +87,9 @@ int  playerc_graphics3d_draw(playerc_graphics3d_t *device,
 {
   player_graphics3d_cmd_draw_t cmd;
 
-  /* limit the number of points we can draw */
   cmd.draw_mode = mode;
-  count = MIN(count,PLAYER_GRAPHICS3D_MAX_POINTS);
   cmd.points_count = count;
-  memcpy( &cmd.points, pts, sizeof(player_point_3d_t)*count);
+  cmd.points = pts;
   cmd.color = device->color;
 
   return playerc_client_write(device->info.client, &device->info,

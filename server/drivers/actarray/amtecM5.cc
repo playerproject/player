@@ -22,7 +22,7 @@
 /*
  * A driver for the Powercube Modules from Amtec Robotics, Berlin.
  * This driver uses the official C++ driver from Amtec (Called Powercube M5api).
- * You can download it from here after obtaining a password from the company: 
+ * You can download it from here after obtaining a password from the company:
  * http://www.powercube.de/files/PCube_M5api_Linux/M5DLL_SUSE_10.0.tar
  *
  * For precise timing, use a recent Linux kernel (2.6.19 should have the hrtimers code inside)
@@ -88,6 +88,7 @@ class AmtecM5 : public Driver {
 
 		// Constructor; need that
 		AmtecM5(ConfigFile* cf, int section);
+		~AmtecM5(void);
 
 		// Must implement the following methods.
 		virtual int Setup();
@@ -102,7 +103,7 @@ class AmtecM5 : public Driver {
 		int HandleCommand(player_msghdr * hdr, void * data);
                 int ModuleSyncMotion(int state);
                 float normalize_angle(float angle);
-                
+
 		//This class talks to the Bus with Powercubes (CAN or RS232 bus)
                 //Designed with the Factory Design Pattern:
                 //CDevice is an abstract class. There is a concrete class that inherits from it for each serial protocol
@@ -113,25 +114,25 @@ class AmtecM5 : public Driver {
 		//Sampling rate and alarm time
 		float samplingrate;
 		float alarmtime;
-                
+
                 //Normally this should be 1. Set to -1 if you want to invert the direction of rotation/movement of a specific joint
                 int directions[PLAYER_ACTARRAY_NUM_ACTUATORS];
-		
+
                 //Normally, this should be set to 0. Set to a value to add an offset to the position sent to the modules
                 float offsets[PLAYER_ACTARRAY_NUM_ACTUATORS];
-                
+
                 //If 1, it limits the values of the commands sent to -pi rads and pi rads. (-180-180deg) (Safer for most rotary joints).
                 int normalize_angles[PLAYER_ACTARRAY_NUM_ACTUATORS];
 
                 //Should we show some debug messages?
                 int debug_level;
-                
+
                 //if true, the modules have their synchro mode activated.
                 bool modsynchro;
-                
+
                 //0 if they are off (powercubes are all halted). 1 if they are on.
                 int motor_state;
-                
+
 		//Controls if we tell the scheduler to give us high priority
 		int highpriority;
 
@@ -156,9 +157,10 @@ class AmtecM5 : public Driver {
 		virtual void Main();
 
 		player_actarray_data_t actArray;
+		player_actarray_actuator_t *actuators;
+		player_actarray_actuatorgeom_t *actuatorsGeom;
 		player_actarray_position_cmd_t lastActArrayPosCmd;
 		player_actarray_home_cmd_t lastActArrayHomeCmd;
-
 
 		player_point_3d_t aaBasePos;
 		player_orientation_3d_t aaBaseOrient;
@@ -213,7 +215,7 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 	//Should we display some debugging messages?
 	debug_level = cf->ReadInt(section, "debug_level", 0);
 
-        
+
 	//Initial Speed and Acceleration
 	initSpeed = cf->ReadFloat(section, "initial_ramp_speed", 0.1);
 	initAccel = cf->ReadFloat(section, "initial_ramp_accel", 0.1);
@@ -225,18 +227,18 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 
        	//Initialize with false (modules move as soon as they get a command)
 	modsynchro=false;
-        
+
         //After power-on, the modules are ready to move.
         motor_state=1;
 
         if (PLAYER_ACTARRAY_NUM_ACTUATORS != 16) {
                 cout << "NUM_ACTUATORS is no longer 16. Remember to fix server/drivers/actarray/amtecM5.cc accordingly.\n";
         }
-        
+
 	//This needs to be changed if PLAYER_ACTARRAY_NUM_ACTUATORS changes (now it's 16)
 	int numbermatched_directions=sscanf(directionString,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",&directions[0],&directions[1],&directions[2],&directions[3],&directions[4],&directions[5],&directions[6],&directions[7],&directions[8],&directions[9],&directions[10],&directions[11],&directions[12],&directions[13],&directions[14],&directions[15]);
-	cout << "Found " << numbermatched_directions << " values for the direction vector." << endl;        
-        
+	cout << "Found " << numbermatched_directions << " values for the direction vector." << endl;
+
         //Checking if the values for directions are correct. Only accept 1 or -1.
         for (int i = 0 ; i != numbermatched_directions ; ++i) {
                 if ((directions[i]==-1) || (directions[i]==1)) {
@@ -247,7 +249,7 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
                 }
         }
 
-        
+
 	//Vector for the direction of the modules
 	const char * offsetString= cf->ReadString(section, "offsets", 0);
 	//Initialize with 1 (normal direction of rotation)
@@ -255,7 +257,7 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 
 	//This needs to be changed if PLAYER_ACTARRAY_NUM_ACTUATORS changes (now it's 16)
 	int numbermatched_offsets=sscanf(offsetString,"%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f",&offsets[0],&offsets[1],&offsets[2],&offsets[3],&offsets[4],&offsets[5],&offsets[6],&offsets[7],&offsets[8],&offsets[9],&offsets[10],&offsets[11],&offsets[12],&offsets[13],&offsets[14],&offsets[15]);
-	cout << "Found " << numbermatched_offsets << " values for the offset vector." << endl;        
+	cout << "Found " << numbermatched_offsets << " values for the offset vector." << endl;
 
 
 	//Vector for the normalization of the angles of the modules
@@ -265,9 +267,9 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 
 	//This needs to be changed if PLAYER_ACTARRAY_NUM_ACTUATORS changes (now it's 16)
 	int numbermatched_normalize=sscanf(normalizeString,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",&normalize_angles[0],&normalize_angles[1],&normalize_angles[2],&normalize_angles[3],&normalize_angles[4],&normalize_angles[5],&normalize_angles[6],&normalize_angles[7],&normalize_angles[8],&normalize_angles[9],&normalize_angles[10],&normalize_angles[11],&normalize_angles[12],&normalize_angles[13],&normalize_angles[14],&normalize_angles[15]);
-	cout << "Found " << numbermatched_normalize << " values for the angle normalization vector." << endl;        
+	cout << "Found " << numbermatched_normalize << " values for the angle normalization vector." << endl;
 
-        
+
 	//Ids of those modules. A mapping is done using this sequence to actuators[0], actuators[1], ...
 	const char * idString= cf->ReadString(section, "module_ids", 0);
 	int idlist[PLAYER_ACTARRAY_NUM_ACTUATORS];
@@ -297,11 +299,23 @@ AmtecM5::AmtecM5(ConfigFile* cf, int section)
 	}
 
 
-	
+
 	//Do we tell the scheduler that we need a very high priority?
 	highpriority = cf->ReadInt(section, "highpriority", 0);
 
+	actuators = NULL;
+	acuatorsGeom = NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Destructor.
+AmtecM5::~AmtecM5(void)
+{
+	if (actuators != NULL) {
+		delete[] actuators;
+	}
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
@@ -464,6 +478,18 @@ int AmtecM5::Setup() {
 		}
 	}
 
+	//Allocate some space to send actuator data and geometry
+	actuators = new player_actarray_actuator_t[module_count];
+	if (actuators == NULL) {
+		PLAYER_ERROR("amtecM5: Failed to allocate memory to store actuator data");
+		return(-1);
+	}
+	actuatorsGeom = new player_actarray_actuatorgeom_t[module_count];
+	if (actuatorsGeom == NULL) {
+		PLAYER_ERROR("amtecM5: Failed to allocate memory to store actuator geometry");
+		return(-1);
+	}
+
 	puts("Amtec M5 powercube driver ready.");
 
 	// Start the device thread; spawns a new thread and executes
@@ -481,7 +507,7 @@ int AmtecM5::Shutdown() {
 
         //Wait a little to let everything settle
         sleep(1);  //We've been getting some segfaults at disconnect from the last client without this
-        
+
 	// Stop and join the driver thread
 	StopThread();
 
@@ -490,6 +516,16 @@ int AmtecM5::Shutdown() {
         }
 	delete pclDevice;  //The destructor closes the can/rs232 port
 	pclDevice=0;
+
+	if (actuators != NULL) {
+		delete[] actuators;
+		actuators = NULL;
+	}
+
+	if (actuatorsGeom != NULL) {
+		delete[] actuatorsGeom;
+		actuatorsGeom = NULL;
+	}
 
 	puts("Amtec M5 Powercube driver has been shutdown");
 
@@ -516,7 +552,7 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
 	//puts("Asked to handle a Request.");
 
         bool handled(false);
-        
+
 	if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_ACTARRAY_REQ_POWER, device_addr))	{
 		//Got a Power-Request
 		int value =  ((reinterpret_cast<player_actarray_power_config_t*>(data))->value);
@@ -525,11 +561,11 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
                 if (debug_level) {
                         printf("Power-Request. Value: %d\n",value);
                 }
-                
+
                 //Since we cannot physically turn the modules off, this is what we do:
 		//If power==off  -> Halt all the modules
 		//If power==on   -> Reset all the modules
-                
+
 		if (value==1) {
 			//reset all the modules
 			printf("Resetting all the modules.\n");
@@ -569,6 +605,7 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
 		player_actarray_geom_t aaGeom;
 
 		aaGeom.actuators_count=module_count;
+		aaGeom.actuators=actuatorsGeom;
 
 		for (unsigned int i = 0; i < module_count; i++) {
 
@@ -637,7 +674,7 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
 		int joint=req->joint;
 		float speed=req->speed;
 
-		if (debug_level) 
+		if (debug_level)
                         cout << "Speed_config. joint: " << joint << "  speed: " << speed << endl;
 
 		if (joint == -1) {
@@ -657,7 +694,7 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
                 handled=true;
 
 	} else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_ACCEL,device_addr)) {
-		
+
                 //printf("Accel Request. (Configuration of the acceleration for the next movements)\n");
 
 		//All we get is a void pointer. Cast it to the right structure
@@ -695,13 +732,13 @@ int AmtecM5::HandleRequest(QueuePointer &resp_queue, player_msghdr * hdr, void* 
                 handled=true;
 	}
 
-	
+
         if (handled) {
                 return(0);
         } else {
                 return(-1);
         }
-        
+
 }
 
 
@@ -710,13 +747,13 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 	//printf(".\n");
 
         bool handled(false);
-        
+
 	//If the command matches any of the following, an action is taken. If not, -1 is returned
 	if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_POS,device_addr)) {
 		//All we get is a void pointer. Cast it to the right structure
 		player_actarray_position_cmd_t * cmd = reinterpret_cast<player_actarray_position_cmd_t*>(data);
 
-                
+
 		int jointnumber=cmd->joint;
                 //The command that we send to the module is: angleplayer/direction - offset
                 //Converting the angle taking into account the offset and direction vectors:
@@ -724,30 +761,30 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                 //anglepowercube = angleplayer/direction - offset
 
 		float newposition(0.0);
-                
+
                 //Do we have to limit the command to -180 and 180deg?
                 if (normalize_angles[jointnumber]) {
                         newposition=normalize_angle(cmd->position/directions[jointnumber]-offsets[jointnumber]);
                 } else {
                         newposition=cmd->position/directions[jointnumber]-offsets[jointnumber];
                 }
-                
+
                 if (debug_level) {
                         cout << "pos_cmd. Joint: " << cmd->joint << " pos: " << cmd->position << "Sent to module: " << newposition << endl;
                 }
-                
+
                 if (can && modsynchro) {
                         ModuleSyncMotion(0); //Deactivate the syncmotion bit
                 }
 
-                
+
 		int error=pclDevice->moveRamp(idModuleList[jointnumber],newposition,rampSpeed[jointnumber],rampAccel[jointnumber]); // module, pos, speed, accel
 
 		if (error!=0) {
 			std::cout<< "Error in position_cmd command. Number: " << error << std::endl;
 		}
                 handled=true;
-                
+
 	} else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_SPEED,device_addr)) {
 		//We received a speed-cmd
 
@@ -787,7 +824,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                 if (can && modsynchro) {
                         ModuleSyncMotion(0); //Deactivate the syncmotion bit
                 }
-                
+
 		if (joint == -1) {
 			for (unsigned int i=0 ; i != idModuleList.size() ; ++i ) {
 				int error=pclDevice->homeModule(idModuleList[i]);
@@ -841,14 +878,14 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                 if (debug_level) {
                         cout << "multi_current_cmd" << endl;
                 }
-                
+
                 if ((cmd->currents_count == idModuleList.size()) || (cmd->currents_count == PLAYER_ACTARRAY_NUM_ACTUATORS)) {
 
-                        
+
                         if (can && !modsynchro) {
                                 ModuleSyncMotion(1); //activate the syncmotion bit
                         }
-                        
+
                         for (unsigned int i=0 ; i != idModuleList.size() ; ++i ) {
                                 pclDevice->moveCur(idModuleList[i],cmd->currents[i]/directions[i]);
                         }
@@ -863,7 +900,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                 } else {
                         cout << "WARNING: multi_current_cmd: The # of current commands must equal the # of modules or to the maximum # of modules (PLAYER_ACTARRAY_NUM_ACTUATORS). Ignoring command.\n";
                 }
-                
+
 	}  else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_MULTI_POS,device_addr)) {
 		//We received a position-cmd for several joints
 
@@ -873,20 +910,20 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                 if (debug_level) {
                         cout << "multi_pos_cmd" << endl;
                 }
-                
+
                 if ( (cmd->positions_count == idModuleList.size()) || (cmd->positions_count == PLAYER_ACTARRAY_NUM_ACTUATORS)) {
-                        
+
                         if (can && !modsynchro) {
                                 ModuleSyncMotion(1); //activate the syncmotion bit
                         }
-                        
-                        
+
+
                         //transmit the commands to the modules. if modsynchro=1, they wait until they get StartMotionAll to move
                         for (unsigned int i=0 ; i != idModuleList.size() ; ++i ) {
 
 
                                 float newposition(0.0);
-                                  
+
 
                                 if (normalize_angles[i]) {
                                         newposition=normalize_angle(cmd->positions[i]/directions[i]-offsets[i]);
@@ -900,19 +937,19 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                                         cout << "Error in Multi-position cmd. Module:" << idModuleList[i] << ".\n";
                                 }
                         }
-                        
+
                         if (can) {
                                 pclDevice->startMotionAll(); //Tells the modules to start moving now (All together)
                         }
 
-                      
+
                         handled=true;
 
                 } else {
                         cout << "WARNING: multi_pos_cmd: The # of position commands must equal the # of modules, or to the maximum # of modules (PLAYER_ACTARRAY_NUM_ACTUATORS. Ignoring command.\n";
-                        
+
                 }
-                
+
 
 	}   else if (Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,PLAYER_ACTARRAY_CMD_MULTI_SPEED,device_addr)) {
 		//We received a position-cmd for several joints
@@ -920,11 +957,11 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 		//All we get is a void pointer. Cast it to the right structure
 		player_actarray_multi_speed_cmd_t * cmd = reinterpret_cast<player_actarray_multi_speed_cmd_t*>(data);
 
-                
+
                 if (debug_level) {
                         cout << "multi_speed_cmd" << endl;
                 }
-                
+
                 if ((cmd->speeds_count == idModuleList.size()) || (cmd->speeds_count == PLAYER_ACTARRAY_NUM_ACTUATORS)) {
 
                         if (can && !modsynchro) {
@@ -944,14 +981,14 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
                         if (can) {
                                 pclDevice->startMotionAll(); //Tells the modules to start moving now (All together)
                         }
-                                       
+
                         handled=true;
 
                 } else {
                         cout << "WARNING: multi_speed_cmd: The # of speed commands must equal the # of modules, or to the maximum number of modules (PLAYER_ACTARRAY_NUM_ACTUATORS). Ignoring command.\n";
-                        
+
                 }
-                
+
 
 	}
 
@@ -961,7 +998,7 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
         } else {
                 return(-1);
         }
-        
+
 }
 
 
@@ -971,14 +1008,14 @@ int AmtecM5::HandleCommand(player_msghdr * hdr, void * data) {
 // the majority of the joints. Only joints that can rotate indefinitely in a safe way
 // could want to have the behaviour without limits (set 0 in the normalize_angles vector in the config file)
 float AmtecM5::normalize_angle(float angle) {
-        
+
         return (atan2( sin(angle), cos(angle) ) );
 }
 
 int AmtecM5::ModuleSyncMotion(int state) {
 
         if (can) {
-                
+
                 if (state==1) {
                         //Activate the synchro bits in all modules
                         for (unsigned int i=0 ; i != idModuleList.size() ; ++i ) {
@@ -986,29 +1023,29 @@ int AmtecM5::ModuleSyncMotion(int state) {
                                 pclDevice->getConfig(idModuleList[i],&config);
                                 config |= CONFIGID_MOD_SYNC_MOTION;
                                 pclDevice->setConfig(idModuleList[i],config);
-                        
+
                                 pclDevice->getConfig(idModuleList[i],&config);
                                 if (config & CONFIGID_MOD_SYNC_MOTION) {
                                         printf("Sync-motion activated for module: %d\n",idModuleList[i]);
                                 }
                         }
                         modsynchro=true;
-                
+
                 } else {
-                        //deactivate the synchro bits on all modules       
+                        //deactivate the synchro bits on all modules
                         for (unsigned int i=0 ; i != idModuleList.size() ; ++i ) {
                                 unsigned long config(0);
                                 pclDevice->getConfig(idModuleList[i],&config);
                                 config &= ~(CONFIGID_MOD_SYNC_MOTION); // ~ is the binary NOT
                                 pclDevice->setConfig(idModuleList[i],config);
-                        
+
                                 pclDevice->getConfig(idModuleList[i],&config);
                                 if (!(config & CONFIGID_MOD_SYNC_MOTION)) {
                                         printf("Sync-motion de-activated for module: %d\n",idModuleList[i]);
                                 }
                         }
                         modsynchro=false;
-                        
+
                 }
         }
         return(0);
@@ -1053,7 +1090,7 @@ void AmtecM5::Main() {
 			cout << "Cycle took " << real_elapsed <<"mS instead of the desired " << samplingrate << "mS (Alarm at " <<alarmtime << "mS)" <<endl;
 			gavewarning=true;
 		}
-		
+
 		//cout << real_elapsed << "mS\n";
 
 		// Do the real work of the cycle:
@@ -1066,6 +1103,7 @@ void AmtecM5::Main() {
 		// Driver::Publish()
 		// Copy the data.
 		player_actarray_data_t data;
+		data.actuators = actuators;
 
 		// The number of actuators in the array.
 		data.actuators_count=module_count;
@@ -1073,22 +1111,22 @@ void AmtecM5::Main() {
 		//Report if the motors are all halted, or ready
 		data.motor_state=motor_state; // 0 or 1
 
-                
+
                 //Memory to record the old positions (for velocity and accel calculation)
                 static float oldpos[PLAYER_ACTARRAY_NUM_ACTUATORS];
                 static float oldspeed[PLAYER_ACTARRAY_NUM_ACTUATORS];
                 static bool init_oldposspeed(false);
                 static bool valid_deltapos(false); // true after the second run. (Valid velocity calculation)
                 static bool valid_deltaspeed(false); // true after the third run. (Valid accel calculation)
-                
+
                 if (!init_oldposspeed) {
                         //Initialize with zeros the first time.
                         memset(&oldpos,0,sizeof(oldpos));
                         memset(&oldspeed,0,sizeof(oldspeed));
                         init_oldposspeed=true;
                 }
-                
-                
+
+
                 //Temporary variables to hold the data that we read/calculate
                 float pos[module_count];
                 float speed[module_count];
@@ -1096,16 +1134,16 @@ void AmtecM5::Main() {
                 float current[module_count];
                 unsigned long state[module_count];
                 uint8_t report_state[module_count];
-                
+
                 //Zero those arrays
                 memset(&pos,0,sizeof(pos));
                 memset(&speed,0,sizeof(speed));
                 memset(&accel,0,sizeof(accel));
                 memset(&current,0,sizeof(current));
                 memset(&report_state,0,sizeof(report_state));
-                
-                
-                
+
+
+
                 //First read position (The most time critical)
                 if (can) {
                         pclDevice->savePosAll(); //Broadcast to save positions at the same time
@@ -1113,7 +1151,7 @@ void AmtecM5::Main() {
                         for (unsigned int i=0; i<module_count ; ++i ) {
                			pclDevice->getCur(idModuleList[i],&(current[i]));
                         }
-                        
+
                         //Now read the saved positions
                         for (unsigned int i=0; i<module_count ; ++i ) {
                                 pclDevice->getSavePos(idModuleList[i],&(pos[i]));  //read synchronised position from the powercube
@@ -1139,7 +1177,7 @@ void AmtecM5::Main() {
                 //Note that deltapos is only valid after the first cycle, and deltavel after the second
                 for (unsigned int i=0; i != module_count ; ++i ) {
                         pclDevice->getModuleState(idModuleList[i],&(state[i]));
-                        
+
                         float deltapos=pos[i]-oldpos[i];
                         if (valid_deltapos) {
                                 speed[i]=deltapos/(real_elapsed/1000.0); //real_elapsed is in mS
@@ -1150,7 +1188,7 @@ void AmtecM5::Main() {
 
                         float deltaspeed=speed[i]-oldspeed[i];
                         if (valid_deltaspeed) {
-                                accel[i]=deltaspeed/(real_elapsed/1000.0);       
+                                accel[i]=deltaspeed/(real_elapsed/1000.0);
                         } else {
                                 accel[i]=0.0;
                         }
@@ -1170,8 +1208,8 @@ void AmtecM5::Main() {
                         oldspeed[i]=speed[i];
 
                 }
-                
-                
+
+
                 //Prepare the data for publication
 		for (unsigned int i=0; i<module_count ; ++i ) {
 
@@ -1211,11 +1249,11 @@ void AmtecM5::Main() {
 			data.actuators[i].state=report_state[i];
 		}
                 //Data is now ready for publication.
-                
+
 		// Process incoming messages.  AmtecM5::ProcessMessage() is
 		// called on each message. (We do this after reading data, to avoid jitter on the acquisition rate)
 		ProcessMessages();
-                
+
 
 		//Tell the watchdog we are still alive:
 		if (can) {

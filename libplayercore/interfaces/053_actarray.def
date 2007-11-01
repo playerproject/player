@@ -21,17 +21,14 @@ message { CMD, MULTI_CURRENT, 7, player_actarray_multi_current_cmd_t };
 message { DATA, STATE, 1, player_actarray_data_t };
 
 
-/** Maximum number of actuators */
-#define PLAYER_ACTARRAY_NUM_ACTUATORS     16
-
 /** Idle state code */
 #define PLAYER_ACTARRAY_ACTSTATE_IDLE     1
 /** Moving state code */
 #define PLAYER_ACTARRAY_ACTSTATE_MOVING   2
 /** Braked state code */
-#define PLAYER_ACTARRAY_ACTSTATE_BRAKED   3
+#define PLAYER_ACTARRAY_ACTSTATE_BRAKED   4
 /** Stalled state code */
-#define PLAYER_ACTARRAY_ACTSTATE_STALLED  4
+#define PLAYER_ACTARRAY_ACTSTATE_STALLED  8
 
 /** Linear type code */
 #define PLAYER_ACTARRAY_TYPE_LINEAR       1
@@ -62,7 +59,7 @@ typedef struct player_actarray_data
   /** The number of actuators in the array. */
   uint32_t actuators_count;
   /** The actuator data. */
-  player_actarray_actuator_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  player_actarray_actuator_t *actuators;
   /** power state */
   uint8_t motor_state;
 } player_actarray_data_t;
@@ -106,7 +103,7 @@ typedef struct player_actarray_geom
   /** The number of actuators in the array. */
   uint32_t actuators_count;
   /** The geometry information for each actuator in the array. */
-  player_actarray_actuatorgeom_t actuators[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  player_actarray_actuatorgeom_t *actuators;
   /** The position of the base of the actarray. This should always be the
   position of the first actuator in the array. */
   player_point_3d_t base_pos;
@@ -135,7 +132,7 @@ typedef struct player_actarray_multi_position_cmd
   /** The number of actuators in the array. */
   uint32_t positions_count;
   /** The positions for each joint/actuator. */
-  float positions[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  float *positions;
 } player_actarray_multi_position_cmd_t;
 
 /** @brief Command: Joint speed control (@ref PLAYER_ACTARRAY_CMD_SPEED)
@@ -157,7 +154,7 @@ typedef struct player_actarray_multi_speed_cmd
   /** The number of actuators in the array. */
   uint32_t speeds_count;
   /** The speed to move with. */
-  float speeds[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  float *speeds;
 } player_actarray_multi_speed_cmd_t;
 
 /** @brief Command: Joint home (@ref PLAYER_CMD_ACTARRAY_HOME)
@@ -188,7 +185,7 @@ typedef struct player_actarray_multi_current_cmd
   /** The number of actuators in the array. */
   uint32_t currents_count;
   /** The current for the motors of the whole array */
-  float currents[PLAYER_ACTARRAY_NUM_ACTUATORS];
+  float *currents;
 } player_actarray_multi_current_cmd_t;
 
 

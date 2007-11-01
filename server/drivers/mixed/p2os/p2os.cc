@@ -325,6 +325,7 @@ driver
 #include <netdb.h>
 
 #include "p2os.h"
+#include <libplayerxdr/playerxdr.h>
 
 Driver*
 P2OS_Init(ConfigFile* cf, int section)
@@ -614,29 +615,29 @@ P2OS::P2OS(ConfigFile* cf, int section)
     aaOrients[ii] = cf->ReadTupleFloat(section, "aa_orients", ii, 0.0f);
   }
   // Joint 0 default: (0, 0, 1)
-    aaAxes[0] = cf->ReadTupleFloat(section, "aa_axes", 0, 0.0f);
-    aaAxes[1] = cf->ReadTupleFloat(section, "aa_axes", 1, 0.0f);
-    aaAxes[2] = cf->ReadTupleFloat(section, "aa_axes", 2, -1.0f);
+  aaAxes[0] = cf->ReadTupleFloat(section, "aa_axes", 0, 0.0f);
+  aaAxes[1] = cf->ReadTupleFloat(section, "aa_axes", 1, 0.0f);
+  aaAxes[2] = cf->ReadTupleFloat(section, "aa_axes", 2, -1.0f);
   // Joint 1 default: (0, 1, 0)
-    aaAxes[3] = cf->ReadTupleFloat(section, "aa_axes", 3, 0.0f);
-    aaAxes[4] = cf->ReadTupleFloat(section, "aa_axes", 4, -1.0f);
-    aaAxes[5] = cf->ReadTupleFloat(section, "aa_axes", 5, 0.0f);
+  aaAxes[3] = cf->ReadTupleFloat(section, "aa_axes", 3, 0.0f);
+  aaAxes[4] = cf->ReadTupleFloat(section, "aa_axes", 4, -1.0f);
+  aaAxes[5] = cf->ReadTupleFloat(section, "aa_axes", 5, 0.0f);
   // Joint 2 default: (0, 1, 0)
-    aaAxes[6] = cf->ReadTupleFloat(section, "aa_axes", 6, 0.0f);
-    aaAxes[7] = cf->ReadTupleFloat(section, "aa_axes", 7, -1.0f);
-    aaAxes[8] = cf->ReadTupleFloat(section, "aa_axes", 8, 0.0f);
+  aaAxes[6] = cf->ReadTupleFloat(section, "aa_axes", 6, 0.0f);
+  aaAxes[7] = cf->ReadTupleFloat(section, "aa_axes", 7, -1.0f);
+  aaAxes[8] = cf->ReadTupleFloat(section, "aa_axes", 8, 0.0f);
   // Joint 3 default: (1, 0, 0)
-    aaAxes[9] = cf->ReadTupleFloat(section, "aa_axes", 9, 1.0f);
-    aaAxes[10] = cf->ReadTupleFloat(section, "aa_axes", 10, 0.0f);
-    aaAxes[11] = cf->ReadTupleFloat(section, "aa_axes", 11, 0.0f);
+  aaAxes[9] = cf->ReadTupleFloat(section, "aa_axes", 9, 1.0f);
+  aaAxes[10] = cf->ReadTupleFloat(section, "aa_axes", 10, 0.0f);
+  aaAxes[11] = cf->ReadTupleFloat(section, "aa_axes", 11, 0.0f);
   // Joint 4 default: (0, 1, 0)
-    aaAxes[12] = cf->ReadTupleFloat(section, "aa_axes", 12, 0.0f);
-    aaAxes[13] = cf->ReadTupleFloat(section, "aa_axes", 13, 1.0f);
-    aaAxes[14] = cf->ReadTupleFloat(section, "aa_axes", 14, 0.0f);
+  aaAxes[12] = cf->ReadTupleFloat(section, "aa_axes", 12, 0.0f);
+  aaAxes[13] = cf->ReadTupleFloat(section, "aa_axes", 13, 1.0f);
+  aaAxes[14] = cf->ReadTupleFloat(section, "aa_axes", 14, 0.0f);
   // Joint 5 default: (0, 0, 1)
-    aaAxes[15] = cf->ReadTupleFloat(section, "aa_axes", 15, 0.0f);
-    aaAxes[16] = cf->ReadTupleFloat(section, "aa_axes", 16, 0.0f);
-    aaAxes[17] = cf->ReadTupleFloat(section, "aa_axes", 17, 1.0f);
+  aaAxes[15] = cf->ReadTupleFloat(section, "aa_axes", 15, 0.0f);
+  aaAxes[16] = cf->ReadTupleFloat(section, "aa_axes", 16, 0.0f);
+  aaAxes[17] = cf->ReadTupleFloat(section, "aa_axes", 17, 1.0f);
   // Joint base position, orientation
   aaBasePos.px = cf->ReadTupleFloat(section, "aa_basepos", 0, 0.105f);
   aaBasePos.py = cf->ReadTupleFloat(section, "aa_basepos", 1, 0.0f);
@@ -1301,6 +1302,20 @@ int P2OS::Shutdown()
 
 P2OS::~P2OS (void)
 {
+  player_position2d_data_t_cleanup(&p2os_data.position);
+  player_sonar_data_t_cleanup (&p2os_data.sonar);
+  player_gripper_data_t_cleanup (&p2os_data.gripper);
+  player_gripper_data_t_cleanup (&p2os_data.armGripper);
+  player_power_data_t_cleanup (&p2os_data.power);
+  player_bumper_data_t_cleanup (&p2os_data.bumper);
+  player_dio_data_t_cleanup (&p2os_data.dio);
+  player_aio_data_t_cleanup (&p2os_data.aio);
+  player_blobfinder_data_t_cleanup (&p2os_data.blobfinder);
+  player_position2d_data_t_cleanup (&p2os_data.compass);
+  player_position2d_data_t_cleanup (&p2os_data.gyro);
+  player_actarray_data_t_cleanup (&p2os_data.lift);
+  player_actarray_data_t_cleanup (&p2os_data.actArray);  
+
   if (kineCalc)
   {
     delete kineCalc;
@@ -1371,7 +1386,7 @@ P2OS::PutData(void)
   // TODO: something smarter about timestamping.
 
   // put odometry data
-  this->Publish(this->position_id, 
+  this->Publish(this->position_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.position),
@@ -1379,15 +1394,16 @@ P2OS::PutData(void)
                 NULL);
 
   // put sonar data
-  this->Publish(this->sonar_id, 
+  this->Publish(this->sonar_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_SONAR_DATA_RANGES,
                 (void*)&(this->p2os_data.sonar),
                 sizeof(player_sonar_data_t),
                 NULL);
+  delete this->p2os_data.sonar.ranges;
 
   // put aio data
-  this->Publish(this->aio_id, 
+  this->Publish(this->aio_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_AIO_DATA_STATE,
                 (void*)&(this->p2os_data.aio),
@@ -1395,7 +1411,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put dio data
-  this->Publish(this->dio_id, 
+  this->Publish(this->dio_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_DIO_DATA_VALUES,
                 (void*)&(this->p2os_data.dio),
@@ -1403,7 +1419,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put gripper data
-  this->Publish(this->gripper_id, 
+  this->Publish(this->gripper_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_GRIPPER_DATA_STATE,
                 (void*)&(this->p2os_data.gripper),
@@ -1419,7 +1435,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put bumper data
-  this->Publish(this->bumper_id, 
+  this->Publish(this->bumper_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BUMPER_DATA_STATE,
                 (void*)&(this->p2os_data.bumper),
@@ -1427,7 +1443,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put power data
-  this->Publish(this->power_id, 
+  this->Publish(this->power_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POWER_DATA_STATE,
                 (void*)&(this->p2os_data.power),
@@ -1435,7 +1451,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put compass data
-  this->Publish(this->compass_id, 
+  this->Publish(this->compass_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.compass),
@@ -1443,7 +1459,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put gyro data
-  this->Publish(this->gyro_id, 
+  this->Publish(this->gyro_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POSITION2D_DATA_STATE,
                 (void*)&(this->p2os_data.gyro),
@@ -1451,7 +1467,7 @@ P2OS::PutData(void)
                 NULL);
 
   // put blobfinder data
-  this->Publish(this->blobfinder_id, 
+  this->Publish(this->blobfinder_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_BLOBFINDER_DATA_BLOBS,
                 (void*)&(this->p2os_data.blobfinder),
@@ -1459,15 +1475,16 @@ P2OS::PutData(void)
                 NULL);
 
   // put actarray data
-  this->Publish(this->actarray_id, 
+  this->Publish(this->actarray_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_ACTARRAY_DATA_STATE,
                 (void*)&(this->p2os_data.actArray),
                 sizeof(player_actarray_data_t),
                 NULL);
+  delete[] this->p2os_data.actArray.actuators;
 
   // put limb data
-  this->Publish(this->limb_id, 
+  this->Publish(this->limb_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_LIMB_DATA_STATE,
                 (void*)&(this->limb_data),
@@ -2261,6 +2278,7 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     }
     player_sonar_geom_t geom;
     geom.poses_count = PlayerRobotParams[param_idx].SonarNum;
+    geom.poses = new player_pose3d_t[geom.poses_count];
     for(int i = 0; i < PlayerRobotParams[param_idx].SonarNum; i++)
     {
       sonar_pose_t pose = PlayerRobotParams[param_idx].sonar_pose[i];
@@ -2271,7 +2289,8 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
 
     this->Publish(this->sonar_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_SONAR_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
+                  (void*)&geom);
+    delete [] geom.poses;
     return(0);
   }
   // check for blobfinder requests
@@ -2383,8 +2402,16 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     SendReceive (&aaPacket);
 
     player_actarray_geom_t aaGeom;
+    player_actarray_actuatorgeom_t *actuators;
 
     aaGeom.actuators_count = sippacket->armNumJoints;
+    actuators = new player_actarray_actuatorgeom_t[sippacket->armNumJoints];
+    if (actuators == NULL)
+    {
+      PLAYER_ERROR ("Failed to allocate memory for actuator data");
+      return -1;
+    }
+    aaGeom.actuators = actuators;
 
     for (int ii = 0; ii < sippacket->armNumJoints; ii++)
     {
@@ -2412,6 +2439,7 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     aaGeom.base_orientation.pyaw = aaBaseOrient.pyaw;
 
     this->Publish(this->actarray_id, resp_queue, PLAYER_MSGTYPE_RESP_ACK, PLAYER_ACTARRAY_REQ_GET_GEOM, &aaGeom, sizeof (aaGeom), NULL);
+    delete[] actuators;
     return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_SPEED,this->actarray_id))
@@ -2470,6 +2498,7 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
     }
     player_bumper_geom_t geom;
     geom.bumper_def_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
+    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
     for(unsigned int ii = 0; ii < geom.bumper_def_count; ii++)
     {
       bumper_def_t def = PlayerRobotParams[param_idx].bumper_geom[ii];
@@ -2482,15 +2511,18 @@ P2OS::HandleConfig(QueuePointer & resp_queue,
 
     this->Publish(this->bumper_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_BUMPER_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
+                  (void*)&geom);
+    delete [] geom.bumper_def;
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,PLAYER_ACTARRAY_REQ_GET_GEOM,this->lift_id))
   {
     player_actarray_geom_t aaGeom;
+    player_actarray_actuatorgeom_t actuator;
+    aaGeom.actuators = &actuator;
 
     aaGeom.actuators_count = 1;
-    memset (aaGeom.actuators, 0, sizeof (player_actarray_actuator_t) * PLAYER_ACTARRAY_NUM_ACTUATORS);
+    memset (aaGeom.actuators, 0, sizeof (player_actarray_actuator_t));
 
     aaGeom.actuators[0].type = PLAYER_ACTARRAY_TYPE_LINEAR;
     aaGeom.actuators[0].min = 0.0f;

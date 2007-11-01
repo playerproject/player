@@ -151,6 +151,7 @@ class CMVisionBF: public Driver
     const char*      mColorFile;
 
     player_blobfinder_data_t   mData;
+    unsigned int     allocated_blobs;
 
     player_devaddr_t mCameraAddr;
     Device*          mCameraDev;
@@ -243,6 +244,7 @@ CMVisionBF::Setup()
   mVision = new CMVision();
   // clean our data
   memset(&mData,0,sizeof(mData));
+  allocated_blobs = 0;
   puts("done.");
 
   StartThread();
@@ -322,6 +324,7 @@ CMVisionBF::ProcessImageData()
       PLAYER_ERROR("Frame error.");
     }
 
+    
     mData.blobs_count = 0;
     for (int ch = 0; ch < CMV_MAX_COLORS; ++ch)
     {
@@ -333,8 +336,11 @@ CMVisionBF::ProcessImageData()
 
       for (r = mVision->getRegions(ch); r != NULL; r = r->next)
       {
-        if (mData.blobs_count >= PLAYER_BLOBFINDER_MAX_BLOBS)
-          break;
+        if (mData.blobs_count >= allocated_blobs)
+        {
+          mData.blobs = (player_blobfinder_blob_t*)realloc(mData.blobs,sizeof(mData.blobs[0])*mData.blobs_count+1);
+          allocated_blobs = mData.blobs_count+1;
+        }
 
         player_blobfinder_blob_t *blob;
         blob = mData.blobs + mData.blobs_count;
@@ -457,7 +463,7 @@ CMVisionBF::ProcessMessage(QueuePointer & resp_queue,
       {
 #if HAVE_JPEGLIB_H 
 	jpeg_decompress((unsigned char*)mTmp, 
-      			PLAYER_CAMERA_IMAGE_SIZE,
+			mWidth*mHeight*3,
                         camera_data->image,
                         camera_data->image_count
                        );

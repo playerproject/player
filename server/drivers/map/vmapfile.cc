@@ -161,6 +161,7 @@ VMapFile::Setup()
   assert(this->vmap);
 
   this->vmap->segments_count = 0;
+  this->vmap->segments = NULL;
   got_origin = got_width = got_height = 0;
   while(!feof(fp))
   {
@@ -199,16 +200,15 @@ VMapFile::Setup()
 
     if(sscanf(linebuf, "%d %d %d %d", &x0, &y0, &x1, &y1) == 4)
     {
+      this->vmap->segments = (player_segment_t*) realloc(
+        this->vmap->segments, 
+        (this->vmap->segments_count+1)*sizeof(this->vmap->segments[0])
+      );
       this->vmap->segments[this->vmap->segments_count].x0 = x0/1e3;
       this->vmap->segments[this->vmap->segments_count].y0 = y0/1e3;
       this->vmap->segments[this->vmap->segments_count].x1 = x1/1e3;
       this->vmap->segments[this->vmap->segments_count].y1 = y1/1e3;
       this->vmap->segments_count++;
-      if(this->vmap->segments_count == PLAYER_MAP_MAX_SEGMENTS)
-      {
-        PLAYER_WARN("too many segments in file; truncating");
-        break;
-      }
     }
     else
       PLAYER_WARN1("ignoring line:%s:", linebuf);
@@ -225,14 +225,6 @@ VMapFile::Setup()
   this->vmap->maxx = (w + ox)/1e3;
   this->vmap->maxy = (h + oy)/1e3;
 
-  // Resize
-  this->vmapsize = (sizeof(player_map_data_vector_t) - 
-                    ((PLAYER_MAP_MAX_SEGMENTS - 
-                      this->vmap->segments_count) * 
-                     sizeof(player_segment_t)));
-
-  this->vmap = (player_map_data_vector_t*)realloc(this->vmap,
-                                                  this->vmapsize);
   assert(this->vmap);
 
   puts("Done.");
@@ -243,6 +235,7 @@ VMapFile::Setup()
 int
 VMapFile::Shutdown()
 {
+  free(this->vmap->segments);
   free(this->vmap);
   return(0);
 }
@@ -262,7 +255,7 @@ int VMapFile::ProcessMessage(QueuePointer & resp_queue,
     this->Publish(this->device_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_MAP_REQ_GET_VECTOR,
-                  (void*)this->vmap, this->vmapsize, NULL);
+                  (void*)this->vmap);
     return(0);
   }
   else

@@ -90,6 +90,8 @@ value at that place will be written to standard out.
 
 #include <libplayerc/playerc.h>
 
+#define PLAYERCAM_MAX_BLOBS 256
+
 char g_hostname[255]       = "localhost";
 int32_t g_port             = 6665;
 int16_t g_camera_index     = 0;
@@ -101,7 +103,7 @@ playerc_client_t* g_client         = NULL;
 playerc_camera_t* g_camera         = NULL;
 playerc_blobfinder_t* g_blobfinder = NULL;
 
-player_blobfinder_blob_t g_blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
+player_blobfinder_blob_t g_blobs[PLAYERCAM_MAX_BLOBS];
 uint16_t g_blob_count             = 0;
 
 int32_t g_window_width  = 0;
@@ -110,7 +112,8 @@ int32_t g_window_height = 0;
 uint16_t    g_width = 0;
 uint16_t   g_height = 0;
 GdkPixbuf* g_pixbuf = NULL;
-guchar g_img[PLAYER_CAMERA_IMAGE_SIZE];
+size_t allocated_size = 0;
+guchar *g_img = NULL;
 
 int player_init(int argc, char *argv[]);
 int player_update();
@@ -414,17 +417,27 @@ player_init(int argc, char *argv[])
 
       g_width  = g_camera->width;
       g_height = g_camera->height;
+      if (allocated_size != usize)
+      {
+    	  g_img = realloc(g_img, usize);
+        allocated_size = usize;
+      }
     }
     else // try the blobfinder
     {
-      // set the image data to 0 since we don't have a camera
-      memset(g_img, 128, PLAYER_CAMERA_IMAGE_SIZE);
-
       g_print("blobfinder: [w %d h %d]\n",
               g_blobfinder->width, g_blobfinder->height);
 
       g_width  = g_blobfinder->width;
       g_height = g_blobfinder->height;
+      usize = g_width * g_height * 3;
+      if (allocated_size != usize)
+      {
+        g_img = realloc(g_img, usize);
+        allocated_size = usize;
+      }
+      // set the image data to 0 since we don't have a camera
+      memset(g_img, 128, usize);
     }
   }
 
@@ -452,27 +465,29 @@ player_update()
       // figure out the colorspace
       switch (g_camera->format)
       {
+        assert(allocated_size > g_camera->image_count*3);
         case PLAYER_CAMERA_FORMAT_MONO8:
           // we should try to use the alpha layer,
           // but for now we need to change
           // the image data
           for (i=0;i<g_camera->image_count;++i)
           {
+        
             memcpy(g_img+i*3, g_camera->image+i, 3);
           }
           break;
         case PLAYER_CAMERA_FORMAT_MONO16:
-	{
-	  int j = 0;
-	  // Transform to MONO8
-	  for (i = 0; i < g_camera->image_count; i++, j+=2)
-	  {
-	    g_img[i*3+1] = g_img[i*3+2] = g_img[i*3+3] = 
-		((unsigned char)(g_camera->image[j]) << 8) + 
-		 (unsigned char)(g_camera->image[j+1]);
-	  }
+    	{
+          int j = 0;
+          // Transform to MONO8
+          for (i = 0; i < g_camera->image_count; i++, j+=2)
+          {
+            g_img[i*3+1] = g_img[i*3+2] = g_img[i*3+3] = 
+          	  ((unsigned char)(g_camera->image[j]) << 8) + 
+          	  (unsigned char)(g_camera->image[j+1]);
+          }
           break;
-	}
+        }
         case PLAYER_CAMERA_FORMAT_RGB888:
           // do nothing
           memcpy(g_img, g_camera->image, g_camera->image_count);
@@ -484,19 +499,14 @@ player_update()
       g_width  = g_camera->width;
       g_height = g_camera->height;
     }
-    else
-    {
-      // set the image data to 0 since we don't have a camera
-      memset(g_img, 128, PLAYER_CAMERA_IMAGE_SIZE);
-    }
 
     if (NULL != g_blobfinder)
     {
+      g_blob_count = PLAYERCAM_MAX_BLOBS < g_blobfinder->blobs_count ? PLAYERCAM_MAX_BLOBS : g_blobfinder->blobs_count;
       memcpy(g_blobs,
              g_blobfinder->blobs,
-             g_blobfinder->blobs_count*sizeof(player_blobfinder_blob_t));
+             g_blob_count*sizeof(player_blobfinder_blob_t));
 
-      g_blob_count = g_blobfinder->blobs_count;
 
       if ((g_width  != g_blobfinder->width) ||
           (g_height != g_blobfinder->height))

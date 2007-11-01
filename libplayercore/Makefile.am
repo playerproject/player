@@ -9,7 +9,8 @@ dist_bin_SCRIPTS = playerinterfacegen.py
 EXTRA_DIST = playercore.pc.in playererror.pc.in playerutils.pc.in interfaces/ADDING_INTERFACES player_interfaces.h interface_table.c $(shell find $(srcdir)/interfaces -name "*.def")
 
 BUILT_SOURCES = playerconfig.h player_interfaces.h interface_table.c
-CLEANFILES = playerconfig.h playercore.pc playererror.pc playerutils.pc
+CLEANFILES = playercore.pc playererror.pc playerutils.pc
+DISTCLEANFIELS = playerconfig.h 
 
 lib_LTLIBRARIES = libplayererror.la libplayerutils.la libplayercore.la
 

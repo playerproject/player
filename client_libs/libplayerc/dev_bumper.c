@@ -78,6 +78,8 @@ playerc_bumper_t *playerc_bumper_create(playerc_client_t *client, int index)
 void playerc_bumper_destroy(playerc_bumper_t *device)
 {
   playerc_device_term(&device->info);
+  free(device->poses);
+  free(device->bumpers);
   free(device);
 }
 
@@ -106,6 +108,7 @@ void playerc_bumper_putmsg(playerc_bumper_t *device,
   {
   	player_bumper_data_t * bdata = (player_bumper_data_t *) data;
     device->bumper_count = bdata->bumpers_count;
+    device->bumpers = (uint8_t*)realloc(device->bumpers,sizeof(uint8_t)*device->bumper_count);
 
     // data is array of bytes, either as boolean or coded for bumper corner
     for (i = 0; i < device->bumper_count; i++)
@@ -117,6 +120,7 @@ void playerc_bumper_putmsg(playerc_bumper_t *device,
   	player_bumper_geom_t * bgeom = (player_bumper_geom_t *) data;
   	
     device->pose_count = bgeom->bumper_def_count;
+    device->poses = realloc(device->poses,sizeof(player_bumper_define_t)*device->pose_count);
     for (i = 0; i < device->pose_count; i++)
     {
       device->poses[i] = bgeom->bumper_def[i];
@@ -137,6 +141,7 @@ int playerc_bumper_get_geom(playerc_bumper_t *device)
                                NULL, (void**)&config) < 0)
     return -1;
   device->pose_count = config->bumper_def_count;
+  device->poses = realloc(device->poses,sizeof(player_bumper_define_t)*device->pose_count);
   for (i = 0; i < device->pose_count; i++)
   {
     device->poses[i] = config->bumper_def[i];
