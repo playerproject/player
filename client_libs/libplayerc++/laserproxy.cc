@@ -110,6 +110,14 @@ LaserProxy::RequestConfigure()
                                      &scan_res, &range_res, &temp_int, &scanning_frequency))
     throw PlayerError("LaserProxy::RequestConfigure()", "error getting config");
   intensity = temp_int == 0 ? false : true;
+
+  return;
+}
+
+void
+LaserProxy::RequestID()
+{
+  scoped_lock_t lock(mPc->mMutex);
   if (0 != playerc_laser_get_id(mDevice))
     throw PlayerError("LaserProxy::RequestConfigure()", "error getting id");
 
