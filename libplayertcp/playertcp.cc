@@ -1252,6 +1252,8 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
           assert(resp);
           client->queue->Push(*resp);
           delete resp;
+          // Remember that the user requested some
+          client->queue->SetDataRequested(true);
           client->queue->MarkAllReady ();
           break;
 

@@ -170,6 +170,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   /* this is the server's default */
   client->mode = PLAYER_DATAMODE_PULL;
   client->transport = PLAYERC_TRANSPORT_TCP;
+  client->data_requested = 0;
 
   client->request_timeout = 5.0;
 
@@ -503,10 +504,16 @@ int playerc_client_datamode(playerc_client_t *client, uint8_t mode)
 int
 playerc_client_requestdata(playerc_client_t* client)
 {
+  int ret;
   player_null_t req;
 
 //  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
-  return(playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL));
+  if(client->data_requested)
+    return(0);
+  ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL);
+  if(ret == 0)
+    client->data_requested = 1;
+  return(ret);
 }
 
 // Test to see if there is pending data.
@@ -531,7 +538,8 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
   }
 
   fd.fd = client->sock;
-  fd.events = POLLIN | POLLHUP;
+  //fd.events = POLLIN | POLLHUP;
+  fd.events = POLLIN | POLLPRI | POLLERR | POLLHUP | POLLNVAL;
   fd.revents = 0;
 
   // Wait for incoming data
@@ -565,6 +573,12 @@ void *playerc_client_read(playerc_client_t *client)
 
   for(;;)
   {
+    // If we're in a PULL mode, first request a round of data.
+    if((client->mode == PLAYER_DATAMODE_PULL))
+    {
+      if(playerc_client_requestdata(client) < 0)
+        return NULL;
+    }
     ret = playerc_client_read_nonblock(client);
     if(ret != NULL)
       break;
@@ -580,34 +594,26 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
   player_msghdr_t header;
   int got_data=0;
 
-  // If we're in a PULL mode, first request a round of data.
-  if (client->mode == PLAYER_DATAMODE_PULL)
+  // See if there is any queued data.
+  if (playerc_client_pop (client, &header, client->data) < 0)
   {
-    if (playerc_client_requestdata(client) < 0)
-      return NULL;
-  }
-  // Otherwise, peek at the socket
-  else
-  {
+    // If there is no queued data, peek at the socket
     if(playerc_client_peek(client,0) <= 0)
+      return NULL;
+    // There's data on the socket, so read a packet (blocking).
+    if (playerc_client_readpacket (client, &header, client->data) < 0)
       return NULL;
   }
 
   while (true)
   {
-    // See if there is any queued data.
-    if (playerc_client_pop (client, &header, client->data) < 0)
-    {
-      // If there is no queued data, read a packet (blocking).
-      if (playerc_client_readpacket (client, &header, client->data) < 0)
-        return NULL;
-    }
-
+    // One way or another, we got a new packet into (header,client->data), so process it
     switch(header.type)
     {
       case PLAYER_MSGTYPE_RESP_ACK:
         break;
       case PLAYER_MSGTYPE_SYNCH:
+        client->data_requested = 0;
         if(!got_data)
           return NULL;
         else
@@ -630,7 +636,7 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
           if (result == NULL)
             return NULL;
           got_data = 1;
-          continue;
+          break;
         }
       default:
         PLAYERC_WARN1 ("unexpected message type [%s]", msgtype_to_str(header.type));
@@ -640,6 +646,16 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
                interf_to_str(header.addr.interf),
                header.addr.index,
                header.size);
+        return NULL;
+    }
+    // See if there is any queued data.
+    if (playerc_client_pop (client, &header, client->data) < 0)
+    {
+      // If there is no queued data, peek at the socket
+      if(playerc_client_peek(client,0) <= 0)
+        return NULL;
+      // There's data on the socket, so read a packet (blocking).
+      if (playerc_client_readpacket (client, &header, client->data) < 0)
         return NULL;
     }
   }
@@ -979,7 +995,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   {
     nbytes = timed_recv(client->sock,
                         client->read_xdrdata + client->read_xdrdata_len,
-                        PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
+                        PLAYERXDR_MSGHDR_SIZE - client->read_xdrdata_len,
                         0, client->request_timeout * 1e3);
     if (nbytes <= 0)
     {
@@ -1024,7 +1040,7 @@ int playerc_client_readpacket(playerc_client_t *client,
   {
     nbytes = timed_recv(client->sock,
                         client->read_xdrdata + client->read_xdrdata_len,
-                        PLAYERXDR_MAX_MESSAGE_SIZE - client->read_xdrdata_len,
+                        header->size - client->read_xdrdata_len,
                         0, client->request_timeout*1e3);
     if (nbytes <= 0)
     {

@@ -464,6 +464,10 @@ typedef struct _playerc_client_t
   /** @internal Data delivery mode */
   uint8_t mode;
 
+  /** @internal Data request flag; if mode == PLAYER_DATAMODE_PULL, have we
+   * requested and not yet received a round of data? */
+  int data_requested;
+
   /** List of available (but not necessarily subscribed) devices.
       This list is filled in by playerc_client_get_devlist(). */
   playerc_device_info_t devinfos[PLAYER_MAX_DEVICES];

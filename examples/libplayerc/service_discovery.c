@@ -38,6 +38,8 @@ browse_cb(player_sd_t* sd, player_sd_dev_t* dev)
     if(0 != playerc_client_connect(clients[num_laserdevs]))
       exit(-1);
 
+    playerc_client_datamode(clients[num_laserdevs], PLAYERC_DATAMODE_PUSH);
+
     // Create and subscribe to a laser device.
     lasers[num_laserdevs] = playerc_laser_create(clients[num_laserdevs], 
                                                  dev->index);
@@ -87,7 +89,7 @@ main(int argc, const char **argv)
     player_sd_update(sd,0.0);
 
     // Wait for new data from server
-    //playerc_mclient_read(mclient,100);
+    playerc_mclient_read(mclient,10);
   }
 
   // Shutdown

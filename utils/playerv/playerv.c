@@ -342,6 +342,7 @@ int main(int argc, char **argv)
       {
         tv = tc;
         // this requests a round of data from the server to be read
+        playerc_client_requestdata(client);
         proxy = playerc_client_read_nonblock(client);
        }
        else

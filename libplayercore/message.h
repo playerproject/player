@@ -385,6 +385,9 @@ class MessageQueue
 
     /// @brief Get current length of queue, in elements.
     size_t GetLength(void);
+
+    /// @brief Set the data_requested flag
+    void SetDataRequested(bool d) { this->data_requested = d; }
   private:
     /// @brief Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(&lock);};
@@ -421,6 +424,9 @@ class MessageQueue
     /// @brief Flag for if in pull mode. If false, push mode. Push is default mode,
     /// but pull is the recommended method to avoid getting delays in data on the client.
     bool pull;
+    /// @brief Flag for data was requested (in PULL mode), but none has yet
+    /// been delivered
+    bool data_requested;
 };
 
 
