@@ -197,7 +197,7 @@ int main(int argc, char **argv)
   if (port < 0)
     port = opt_get_int(opt, "", "p", 6665);
 
-  pull = opt_get_int(opt, "", "pull", 0);
+  pull = opt_get_int(opt, "", "pull", 1);
 
   // Connect to the server
   printf("Connecting to [%s:%d]\n", host, port);
@@ -209,11 +209,11 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  if (0 != pull)
+  if (0 == pull)
   {
-    printf("Setting delivery mode to PLAYER_DATAMODE_PULL\n", host, port);
+    printf("Setting delivery mode to PLAYER_DATAMODE_PUSH\n", host, port);
     // Change the server's data delivery mode.
-    if (playerc_client_set_replace_rule(client, -1, -1, -1, -1, 1) != 0)
+    if (playerc_client_set_replace_rule(client, -1, -1, -1, -1, 0) != 0)
     {
       PRINT_ERR1("%s", playerc_error_str());
       return -1;
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 
     // Change the server's data delivery mode.
     // PLAYERC_DATAMODE_PUSH, PLAYERC_DATAMODE_PULL
-    if (playerc_client_datamode(client, PLAYERC_DATAMODE_PULL) != 0)
+    if (playerc_client_datamode(client, PLAYERC_DATAMODE_PUSH) != 0)
     {
       PRINT_ERR1("%s", playerc_error_str());
       return -1;
