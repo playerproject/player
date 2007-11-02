@@ -62,6 +62,7 @@
 #include <netdb.h>       // for gethostbyname()
 #include <errno.h>
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -167,7 +168,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->lasttime = 0;
 
   /* this is the server's default */
-  client->mode = PLAYER_DATAMODE_PUSH;
+  client->mode = PLAYER_DATAMODE_PULL;
   client->transport = PLAYERC_TRANSPORT_TCP;
 
   client->request_timeout = 5.0;
@@ -387,6 +388,10 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
   int retval;
   int i;
   int j;
+  struct timespec sleeptime;
+
+  sleeptime.tv_sec = client->retry_time;
+  sleeptime.tv_nsec = 0;
 
   /* Disconnect */
   if((retval = playerc_client_disconnect(client)) != 0)
@@ -431,8 +436,7 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
         break;
     }
 
-    puts("sleeping");
-    usleep((uint32_t)rint(client->retry_time * 1e6));
+    nanosleep(&sleeptime,NULL);
   }
 
   if((client->retry_limit < 0) || (j < client->retry_limit))
@@ -555,12 +559,37 @@ int playerc_client_peek(playerc_client_t *client, int timeout)
 // Read and process a packet (blocking)
 void *playerc_client_read(playerc_client_t *client)
 {
-  player_msghdr_t header;
+  void* ret;
+  // 10ms delay
+  struct timespec sleeptime = {0,10000000};
 
-    // If we're in a PULL mode, first request a round of data.
+  for(;;)
+  {
+    ret = playerc_client_read_nonblock(client);
+    if(ret != NULL)
+      break;
+    nanosleep(&sleeptime,NULL);
+  }
+
+  return(ret);
+}
+
+// Read and process a packet (nonblocking)
+void *playerc_client_read_nonblock(playerc_client_t *client)
+{
+  player_msghdr_t header;
+  int got_data=0;
+
+  // If we're in a PULL mode, first request a round of data.
   if (client->mode == PLAYER_DATAMODE_PULL)
   {
     if (playerc_client_requestdata(client) < 0)
+      return NULL;
+  }
+  // Otherwise, peek at the socket
+  else
+  {
+    if(playerc_client_peek(client,0) <= 0)
       return NULL;
   }
 
@@ -579,7 +608,10 @@ void *playerc_client_read(playerc_client_t *client)
       case PLAYER_MSGTYPE_RESP_ACK:
         break;
       case PLAYER_MSGTYPE_SYNCH:
-        return client->id;
+        if(!got_data)
+          return NULL;
+        else
+          return client->id;
       case PLAYER_MSGTYPE_DATA:
         client->lasttime = client->datatime;
         client->datatime = header.timestamp;
@@ -597,6 +629,7 @@ void *playerc_client_read(playerc_client_t *client)
           playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
           if (result == NULL)
             return NULL;
+          got_data = 1;
           continue;
         }
       default:

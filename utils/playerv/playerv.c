@@ -331,11 +331,7 @@ int main(int argc, char **argv)
       }
       if (count > 0)
       {
-        proxy = playerc_client_read(client);
-        // NULL return from playerc_client_read() means an error in the
-        // connection to the server (I think)
-        if(!proxy)
-          break;
+        proxy = playerc_client_read_nonblock(client);
       }
     }
     else // we're in pull mode
@@ -346,12 +342,7 @@ int main(int argc, char **argv)
       {
         tv = tc;
         // this requests a round of data from the server to be read
-        proxy = playerc_client_read(client);
-        // NULL return from playerc_client_read() means an error in the
-        // connection to the server (I think)
-        if(!proxy)
-          break;
-
+        proxy = playerc_client_read_nonblock(client);
        }
        else
        {
