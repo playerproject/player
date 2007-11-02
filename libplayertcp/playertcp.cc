@@ -251,7 +251,7 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 
   // Create an outgoing queue for this client
   this->clients[j].queue =
-          QueuePointer(0,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
+          QueuePointer(true,PLAYER_MSGQUEUE_DEFAULT_MAXLEN);
 
   // Create a buffer to hold incoming messages
   this->clients[j].readbuffersize = PLAYERTCP_READBUFFER_SIZE;

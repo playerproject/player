@@ -701,6 +701,8 @@ never return the ID of a proxy other than the client.
 */
 void *playerc_client_read(playerc_client_t *client);
 
+// Read and process a packet (nonblocking)
+void *playerc_client_read_nonblock(playerc_client_t *client);
 
 /** @brief Set the timeout for client requests.
 
