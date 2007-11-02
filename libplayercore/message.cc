@@ -191,6 +191,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   this->filter_on = false;
   this->replaceRules = NULL;
   this->pull = true;
+  this->data_requested = false;
 }
 
 MessageQueue::~MessageQueue()
@@ -366,6 +367,7 @@ MessageQueue::GetLength(void)
 void MessageQueue::MarkAllReady (void)
 {
   MessageQueueElement *current;
+  bool dataready=false;
 
   if (!pull)
     return;   // No need to mark ready if not in pull mode
@@ -374,20 +376,32 @@ void MessageQueue::MarkAllReady (void)
   // Mark all messages in the queue ready
   for (current = head; current != NULL; current = current->next)
   {
-    current->msg->SetReady ();
+    player_msghdr_t* hdr;
+    hdr = current->msg->GetHeader();
+    // Only need to mark data and command messages.  Requests and replies
+    // get marked as they are pushed in
+    if((hdr->type == PLAYER_MSGTYPE_DATA) || (hdr->type == PLAYER_MSGTYPE_CMD))
+    {
+      current->msg->SetReady ();
+      dataready=true;
+    }
   }
   Unlock ();
-  // Push a sync message onto the end
-  struct player_msghdr syncHeader;
-  syncHeader.addr.host = 0;
-  syncHeader.addr.robot = 0;
-  syncHeader.addr.interf = PLAYER_PLAYER_CODE;
-  syncHeader.addr.index = 0;
-  syncHeader.type = PLAYER_MSGTYPE_SYNCH;
-  syncHeader.subtype = 0;
-  Message syncMessage (syncHeader, 0, 0);
-  syncMessage.SetReady ();
-  Push (syncMessage, true);
+  // Only if there was at least one message, push a sync message onto the end
+  if(dataready)
+  {
+    struct player_msghdr syncHeader;
+    syncHeader.addr.host = 0;
+    syncHeader.addr.robot = 0;
+    syncHeader.addr.interf = PLAYER_PLAYER_CODE;
+    syncHeader.addr.index = 0;
+    syncHeader.type = PLAYER_MSGTYPE_SYNCH;
+    syncHeader.subtype = 0;
+    Message syncMessage (syncHeader, 0, 0);
+    syncMessage.SetReady ();
+    this->data_requested = false;
+    Push (syncMessage, true);
+  }
 }
 
 
@@ -457,7 +471,7 @@ MessageQueue::Push(Message & msg, bool UseReserved)
     if (!pull || (newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_DATA &&
 		  newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_CMD))
     {
-      // If not in pull mode, or message is not data, set ready to true immediatly
+      // If not in pull mode, or message is not data/cmd, set ready to true immediatly
       newelt->msg->SetReady ();
     }
     if(!this->tail)
@@ -476,6 +490,10 @@ MessageQueue::Push(Message & msg, bool UseReserved)
     this->Unlock();
     if(!this->filter_on || this->Filter(msg))
       this->DataAvailable();
+    
+    // If the client has a pending request for data, try to fulfill it
+    if(this->pull && this->data_requested)
+      this->MarkAllReady();
     return(true);
   }
 }
