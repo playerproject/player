@@ -87,7 +87,7 @@ main(int argc, const char **argv)
     player_sd_update(sd,0.0);
 
     // Wait for new data from server
-    playerc_mclient_read(mclient,100);
+    //playerc_mclient_read(mclient,100);
   }
 
   // Shutdown
