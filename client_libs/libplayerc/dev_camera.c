@@ -50,7 +50,6 @@
   #include "libplayerjpeg/playerjpeg.h"
 #endif
 
-#include <assert.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -117,8 +116,10 @@ void playerc_camera_putmsg(playerc_camera_t *device, player_msghdr_t *header,
     device->image_count  = data->image_count;
     device->image        = realloc(device->image, sizeof(device->image[0])*device->image_count);
 
-    assert(device->image_count <= sizeof(device->image));
-    memcpy(device->image, data->image, device->image_count);
+    if (device->image)
+      memcpy(device->image, data->image, device->image_count);
+    else
+      PLAYERC_ERR1("failed to allocate memory for image, needed %ld bytes\n", sizeof(device->image[0])*device->image_count);
   }
   else
     PLAYERC_WARN2("skipping camera message with unknown type/subtype: %s/%d\n",
@@ -147,8 +148,10 @@ void playerc_camera_decompress(playerc_camera_t *device)
   // Copy uncompress image
   device->image_count = dst_size;
   device->image = realloc(device->image, sizeof(device->image[0])*device->image_count);
-  assert(dst_size <= sizeof device->image);
-  memcpy(device->image, dst, dst_size);
+  if (device->image)
+    memcpy(device->image, dst, dst_size);
+  else
+    PLAYERC_ERR1("failed to allocate memory for image, needed %ld bytes\n", sizeof(device->image[0])*device->image_count);
   free(dst);
 
   // Pixels are now raw
