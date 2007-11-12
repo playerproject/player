@@ -74,7 +74,7 @@ bumper_t *bumper_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client
 void bumper_allocate_figures(bumper_t * bumper, int fig_count)
 {
   int i;
-  if (bumper->fig_count <= fig_count)
+  if (fig_count <= bumper->fig_count)
     return;
   bumper->scan_fig = realloc(bumper->scan_fig,fig_count*sizeof(bumper->scan_fig[0]));
   
