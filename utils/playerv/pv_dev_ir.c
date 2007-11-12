@@ -76,7 +76,7 @@ ir_t *ir_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
 void ir_allocate_figures(ir_t * ir, int fig_count)
 {
   int i;
-  if (ir->fig_count <= fig_count)
+  if (fig_count <= ir->fig_count)
     return;
   ir->scan_fig = realloc(ir->scan_fig,fig_count*sizeof(ir->scan_fig[0]));
   
