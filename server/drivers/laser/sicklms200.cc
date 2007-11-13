@@ -293,6 +293,7 @@ class SickLMS200 : public Driver
     int current_rate;  // Current rate
 
     int scan_id;
+    player_laser_data_t data;
 
 #ifdef HAVE_HI_SPEED_SERIAL
   struct serial_struct old_serial;
@@ -501,8 +502,8 @@ int SickLMS200::Setup()
 
   this->scan_id = 0;
 
+  memset(&data,0,sizeof(data));
   PLAYER_MSG0(2, "laser ready");
-  //memset(data, 0, sizeof(data));
   
   // Start the device thread
   StartThread();
@@ -524,8 +525,9 @@ int SickLMS200::Shutdown()
       PLAYER_WARN1("Cannot throttle back to %d bauds", this->connect_rate);
   
   CloseTerm();
-  //delete [] data.ranges;
-  //delete [] data.intensity;
+  
+  laser_data_t_cleanup(&data);
+
   
   PLAYER_MSG0(2, "laser shutdown");
   
@@ -664,7 +666,6 @@ void SickLMS200::Main()
     uint16_t mm_ranges[1024];
     if (ReadLaserData(mm_ranges, 1024) == 0)
     {
-      player_laser_data_t data;
       if (first)
       {
         PLAYER_MSG0(2, "receiving data");
@@ -730,9 +731,7 @@ void SickLMS200::Main()
       // Make data available
       this->Publish(this->device_addr,  
                     PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN,
-                    (void*)&data, sizeof(data), &time);
-      delete [] data.ranges;
-      delete [] data.intensity;
+                    (void*)&data, 0, &time);
     }
   }
 }
