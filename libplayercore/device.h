@@ -93,14 +93,14 @@ class Device
     /// @param type : Message type
     /// @param subtype : Message subtype
     /// @param src : Message payload
-    /// @param len : Length of the message payload
+    /// @param deprecated: Used to be the length of the message this is now calculated
     /// @param timestamp : If non-NULL, the timestamp to attach to the
     /// message; otherwise, the current time is filled in.
     void PutMsg(QueuePointer &resp_queue,
                 uint8_t type, 
                 uint8_t subtype,
                 void* src, 
-                size_t len,
+                size_t deprecated,
                 double* timestamp);
 
     /// @brief Send a message to this device (short form)
@@ -126,7 +126,7 @@ class Device
     /// @param type : Message type (usually PLAYER_MSGTYPE_REQ).
     /// @param subtype : Message subtype (interface-specific)
     /// @param src : Message body
-    /// @param len : Length of src.
+    /// @param deprecated: Used to be the length of the message this is now calculated
     /// @param timestamp : If non-NULL, the timestamp to attach to the
     /// request; otherwise, the current time is filled in.
     /// @param threaded : True if the caller is executing in its own
@@ -143,7 +143,7 @@ class Device
                      uint8_t type,
                      uint8_t subtype,
                      void* src,
-                     size_t len,
+                     size_t deprecated,
                      double* timestamp,
                      bool threaded = true);
 
