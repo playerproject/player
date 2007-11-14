@@ -158,6 +158,7 @@ driver
 #endif
 
 #include <libplayercore/playercore.h>
+#include <libplayerxdr/playerxdr.h>
 #include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 
@@ -526,7 +527,7 @@ int SickLMS200::Shutdown()
   
   CloseTerm();
   
-  laser_data_t_cleanup(&data);
+  player_laser_data_t_cleanup(&data);
 
   
   PLAYER_MSG0(2, "laser shutdown");
