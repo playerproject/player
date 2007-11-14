@@ -205,7 +205,7 @@ Device::PutMsg(QueuePointer &resp_queue,
                uint8_t type,
                uint8_t subtype,
                void* src,
-               size_t len,
+               size_t deprecated,
                double* timestamp)
 {
   struct timeval ts;
@@ -227,7 +227,7 @@ Device::PutMsg(QueuePointer &resp_queue,
   hdr.type = type;
   hdr.subtype = subtype;
   hdr.timestamp = t;
-  hdr.size = len;
+  //hdr.size = len;
 
   this->PutMsg(resp_queue, &hdr, src);
 }
@@ -237,14 +237,14 @@ Device::Request(QueuePointer &resp_queue,
                 uint8_t type,
                 uint8_t subtype,
                 void* src,
-                size_t len,
+                size_t deprecated,
                 double* timestamp,
                 bool threaded)
 {
   // Send the request message
   this->PutMsg(resp_queue,
                type, subtype,
-               src, len, timestamp);
+               src, 0, timestamp);
 
   // Set the message filter to look for the response
   resp_queue->SetFilter(this->addr.host,
