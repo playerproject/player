@@ -351,13 +351,7 @@
 
 %typemap(out) uint8_t [ANY]
 {
-  int i;
-  $result = PyList_New($1_dim0);
-  for (i = 0; i < $1_dim0; i++)
-  {
-    PyObject *o = PyInt_FromLong((long) (unsigned char) $1[i]);
-    PyList_SetItem($result,i,o);
-  }
+  $result = PyBuffer_FromMemory((void*)$1,sizeof(uint8_t)*$1_dim0);
 }
 
 // Provide array access doubly-dimensioned arrays
