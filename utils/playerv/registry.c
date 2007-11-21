@@ -136,6 +136,17 @@ void create_proxy(device_t *device, opt_t *opt, mainwnd_t *mainwnd, playerc_clie
       device->fnupdate = (fnupdate_t) blobfinder_update;
       break;
 
+    case PLAYER_CAMERA_CODE:
+      device->proxy = camera_create(mainwnd, opt, client,
+					device->addr.index,
+                                        device->drivername,
+					device->subscribe);
+      device->fndestroy = (fndestroy_t) camera_destroy;
+      device->fnupdate = (fnupdate_t) camera_update;
+      break;
+
+
+
     case PLAYER_FIDUCIAL_CODE:
       device->proxy = fiducial_create(mainwnd, opt, client,
                                       device->addr.index,
