@@ -585,6 +585,54 @@ void ranger_update(ranger_t *ranger);
 
 
 /***************************************************************************
+ * Camera device
+ ***************************************************************************/
+
+// Camera device info
+typedef struct
+{
+  // Driver name
+  char *drivername;
+
+  // Camera device proxy
+  playerc_camera_t *proxy;
+
+  // Menu stuff
+  rtk_menu_t *menu;
+  rtk_menuitem_t *subscribe_item;
+  rtk_menuitem_t *stats_item;
+  rtk_menuitem_t *scale_item;
+
+  // Figure for drawing the camera scan
+  rtk_fig_t *image_fig;
+  int image_init;
+
+  // Image scale (m/pixel)
+  double scale;
+
+  // Image buffer
+  int allocated_size;
+  char *img_buffer;
+
+  // Timestamp on most recent data
+  double datatime;
+
+} camera_t;
+
+
+// Create a camera device
+camera_t *camera_create(mainwnd_t *mainwnd, opt_t *opt, playerc_client_t *client,
+                                int index, const char *drivername, int subscribe);
+
+// Destroy a camera device
+void camera_destroy(camera_t *camera);
+
+// Update a camera device
+void camera_update(camera_t *camera);
+
+
+
+/***************************************************************************
  * Blobfinder device
  ***************************************************************************/
 

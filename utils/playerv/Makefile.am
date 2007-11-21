@@ -17,6 +17,7 @@ playerv_SOURCES = playerv.c \
                   opt.h \
                   pv_dev_aio.c \
                   pv_dev_blobfinder.c \
+                  pv_dev_camera.c \
                   pv_dev_bumper.c \
                   pv_dev_dio.c \
                   pv_dev_fiducial.c \
