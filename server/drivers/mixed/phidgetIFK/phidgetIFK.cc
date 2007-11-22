@@ -501,7 +501,7 @@ void PhidgetIFK::Main() {
         player_aio_data_t data_ai;
 
         data_ai.voltages_count=numsensors;
-        data_ai.voltages = new double[numsensors];
+        data_ai.voltages = new float[numsensors];
 
         for (int i=0; i!=numsensors; ++i) {
             data_ai.voltages[i]=values[i];
