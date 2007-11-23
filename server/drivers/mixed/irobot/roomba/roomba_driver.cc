@@ -77,6 +77,9 @@ The roomba driver provides the following device interfaces:
   - Default: 1
   - Nonzero to keep the robot in "safe" mode (the robot will stop if
     the wheeldrop or cliff sensors are triggered), zero for "full" mode
+- bumplock (integer)
+  - Default: 0
+  - If set to 1, the robot will stop whenever bumpers are closed
 
 @par Example
 
@@ -103,12 +106,16 @@ requires Player to be restarted
 
 
 #include <unistd.h>
-
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <pthread.h>
+#include <time.h>
 #include <libplayercore/playercore.h>
 
 #include "roomba_comms.h"
 
-#define CYCLE_TIME_US 200000
+#define CYCLE_TIME_NS 200000000
 
 class Roomba : public Driver
 {
@@ -133,6 +140,9 @@ class Roomba : public Driver
     // full control or not
     bool safe;
 
+    bool bumplock;
+    bool bumplocked;
+
     player_devaddr_t position_addr;
     player_devaddr_t power_addr;
     player_devaddr_t bumper_addr;
@@ -142,6 +152,12 @@ class Roomba : public Driver
 
     // The underlying roomba object
     roomba_comm_t* roomba_dev;
+
+    player_position2d_cmd_vel_t position_cmd;
+    player_position2d_geom_t pos_geom;
+    player_bumper_geom_t bump_geom;
+    player_ir_pose poses;
+    player_opaque_data_t opaque_data;
 };
 
 // a factory creation function
@@ -164,7 +180,7 @@ Roomba::Roomba(ConfigFile* cf, int section)
   memset(&this->bumper_addr,0,sizeof(player_devaddr_t));
   memset(&this->ir_addr,0,sizeof(player_devaddr_t));
   memset(&this->opaque_addr,0,sizeof(player_devaddr_t));
-  //memset(&this->gripper_addr,0,sizeof(player_devaddr_t));
+  memset(&this->gripper_addr,0,sizeof(player_devaddr_t));
 
   // Do we create a position interface?
   if(cf->ReadDeviceAddr(&(this->position_addr), section, "provides",
@@ -235,6 +251,8 @@ Roomba::Roomba(ConfigFile* cf, int section)
 
   this->serial_port = cf->ReadString(section, "port", "/dev/ttyS0");
   this->safe = cf->ReadInt(section, "safe", 1);
+  this->bumplock = cf->ReadInt(section, "bumplock", 0);
+  this->bumplocked = false;
   this->roomba_dev = NULL;
 }
 
@@ -251,7 +269,7 @@ Roomba::Setup()
     return(-1);
   }
 
-  /*printf("HERE\n");
+  /*
   roomba_set_leds(this->roomba_dev, 1, 0, 1, 0, 2, 128, 255);
   */
 
@@ -277,16 +295,27 @@ Roomba::Shutdown()
 void
 Roomba::Main()
 {
-  for(;;)
+  for (;;)
   {
+     pthread_testcancel();
+
      this->ProcessMessages();
 
-     if(roomba_get_sensors(this->roomba_dev, -1) < 0)
+     if (roomba_get_sensors(this->roomba_dev, -1) < 0)
      {
        PLAYER_ERROR("failed to get sensor data from roomba");
        roomba_close(this->roomba_dev);
        return;
      }
+     if ((this->bumplock) && ((this->roomba_dev->bumper_left) || (this->roomba_dev->bumper_right)))
+     {
+        this->bumplocked = true;
+	if (roomba_set_speeds(this->roomba_dev, 0.0, 0.0) < 0)
+        {
+          PLAYER_ERROR("failed to stop roomba");
+        }
+     }
+     else this->bumplocked = false;
 
      ////////////////////////////
      // Update position2d data
@@ -396,7 +425,10 @@ Roomba::Main()
          (void*)&cpdata);
      delete [] cpdata.data;
 
-     usleep(CYCLE_TIME_US);
+     struct timespec ts;
+     ts.tv_sec = 0;
+     ts.tv_nsec = CYCLE_TIME_NS;
+     nanosleep(&ts, NULL);
   }
 }
 
@@ -411,8 +443,17 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
                            this->position_addr))
   {
     // get and send the latest motor command
-    player_position2d_cmd_vel_t position_cmd;
-    position_cmd = *(player_position2d_cmd_vel_t*)data;
+    if (!data)
+    {
+      PLAYER_ERROR("NULL position command");
+      return -1;
+    }
+    memcpy(&position_cmd, data, sizeof position_cmd);
+    if (this->bumplocked)
+    {
+	if (position_cmd.vel.px > 0.0) position_cmd.vel.px = 0.0;
+	position_cmd.vel.pa = 0.0;
+    }
     PLAYER_MSG2(2,"sending motor commands %f:%f", 
                 position_cmd.vel.px,
                 position_cmd.vel.pa);
@@ -437,55 +478,66 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
                                 this->position_addr))
   {
     /* Return the robot geometry. */
-    player_position2d_geom_t geom={{0}};
+    memset(&pos_geom, 0, sizeof pos_geom);
     // Assume that it turns about its geometric center, so zeros are fine
 
-    geom.size.sl = ROOMBA_DIAMETER;
-    geom.size.sw = ROOMBA_DIAMETER;
+    pos_geom.size.sl = ROOMBA_DIAMETER;
+    pos_geom.size.sw = ROOMBA_DIAMETER;
 
     this->Publish(this->position_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_POSITION2D_REQ_GET_GEOM,
-                  (void*)&geom, sizeof(geom), NULL);
-    return(0);
+                  (void*)&pos_geom, sizeof pos_geom, NULL);
+    return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                 PLAYER_BUMPER_REQ_GET_GEOM,
                                 this->bumper_addr))
   {
-    player_bumper_geom_t geom;
+    memset(&bump_geom, 0, sizeof bump_geom);
 
-    geom.bumper_def_count = 2;
-    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
+    bump_geom.bumper_def_count = 2;
+    bump_geom.bumper_def = new player_bumper_define_t[bump_geom.bumper_def_count];
+    if (!(bump_geom.bumper_def))
+    {
+      PLAYER_ERROR("Out of memory");
+      return -1;
+    }
 
-    geom.bumper_def[0].pose.px = 0.0;
-    geom.bumper_def[0].pose.py = 0.0;
-    geom.bumper_def[0].pose.pyaw = 0.0;
-    geom.bumper_def[0].length = 0.0;
-    geom.bumper_def[0].radius = ROOMBA_DIAMETER/2.0;
+    bump_geom.bumper_def[0].pose.px = 0.12;
+    bump_geom.bumper_def[0].pose.py = 0.12;
+    bump_geom.bumper_def[0].pose.pyaw = 45.0;
+    bump_geom.bumper_def[0].length = 0.33;
+    bump_geom.bumper_def[0].radius = ROOMBA_DIAMETER / 2.0;
 
-    geom.bumper_def[1].pose.px = 0.0;
-    geom.bumper_def[1].pose.py = 0.0;
-    geom.bumper_def[1].pose.pyaw = 0.0;
-    geom.bumper_def[1].length = 0.0;
-    geom.bumper_def[1].radius = ROOMBA_DIAMETER/2.0;
+    bump_geom.bumper_def[1].pose.px = 0.12;
+    bump_geom.bumper_def[1].pose.py = -0.12;
+    bump_geom.bumper_def[1].pose.pyaw = -45.0;
+    bump_geom.bumper_def[1].length = 0.33;
+    bump_geom.bumper_def[1].radius = ROOMBA_DIAMETER / 2.0;
 
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_BUMPER_REQ_GET_GEOM,
-                  (void*)&geom);
-    delete [] geom.bumper_def;
+                  (void*)&bump_geom);
+    delete []bump_geom.bumper_def;
+    bump_geom.bumper_def = NULL;
 
-    return(0);
+    return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
                                     PLAYER_IR_REQ_POSE,
                                     this->ir_addr))
   {
-    player_ir_pose poses;
+    memset(&poses, 0, sizeof poses);
 
     poses.poses_count = 11;
     poses.poses = new player_pose3d_t[poses.poses_count];
+    if (!(poses.poses))
+    {
+      PLAYER_ERROR("Out of memory");
+      return -1;
+    }
 
     // TODO: Fill in proper values
     for (int i=0; i<11; i++)
@@ -499,21 +551,20 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
                   PLAYER_IR_REQ_POSE,
                   (void*)&poses);
-    delete [] poses.poses;
-    return(0);
+    delete []poses.poses;
+    poses.poses = NULL;
+    return 0;
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,
                                     PLAYER_OPAQUE_CMD,
                                     this->opaque_addr))
   {
-    printf("Opaque\n");
-    player_opaque_data_t opaque_data;
-
-    printf("1\n");
-    opaque_data = *(player_opaque_data_t*)data;
-
-    printf("2\n");
-    printf("Opaque Command\n");
+    if (!data)
+    {
+      PLAYER_ERROR("NULL opaque data");
+      return -1;
+    }
+    memcpy(&opaque_data, data, sizeof opaque_data);
 
     // Play Command
     if (opaque_data.data[0] == 0 )
@@ -582,6 +633,6 @@ Roomba::ProcessMessage(QueuePointer & resp_queue,
   }
   else
   {
-    return(-1);
+    return -1;
   }
 }
