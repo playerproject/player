@@ -59,6 +59,10 @@ void ARToolkitPlusDriver_Register(DriverTable *table);
 void BumperSafe_Register(DriverTable *table);
 #endif
 
+#ifdef INCLUDE_MRICP
+void MrIcp_Register(DriverTable *table);
+#endif
+
 #ifdef INCLUDE_ND
 void ND_Register(DriverTable *table);
 #endif
@@ -496,7 +500,11 @@ player_register_drivers()
   BumperSafe_Register(driverTable);
 #endif
 
-#ifdef INCLUDE_ND
+#ifdef INCLUDE_MRICP
+  MrIcp_Register(driverTable);
+#endif
+
+  #ifdef INCLUDE_ND
   ND_Register(driverTable);
 #endif
 

@@ -251,6 +251,9 @@ PLAYER_ADD_DRIVER([microstrain],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([mixer],[no],[sys/soundcard.h],[],[])
 
+PLAYER_ADD_DRIVER([mricp],[yes],[],[],[],[MRICP],[gtk+-2.0 gdk-pixbuf-2.0])
+PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $MRICP_LIBS"
+
 PLAYER_ADD_DRIVER([nomad],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([nimu],[yes],[usb.h],[],[-lusb])
