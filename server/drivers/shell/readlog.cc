@@ -1455,8 +1455,8 @@ int ReadLog::ParseLaser(player_devaddr_t id,
                         int linenum,
                         int token_count, char **tokens, double time)
 {
-  int i, count;
-
+  int i, count, ret;
+  ret = 0;
   switch(type)
   {
     case PLAYER_MSGTYPE_DATA:
@@ -1481,6 +1481,9 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             data.ranges_count = atoi(tokens[12]);
             data.intensity_count = data.ranges_count;
 
+            data.ranges = new float[ data.ranges_count ];
+            data.intensity = new uint8_t[ data.ranges_count ];
+            
             count = 0;
             for (i = 13; i < token_count; i += 2)
             {
@@ -1493,11 +1496,17 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             {
               PLAYER_ERROR2("range count mismatch at %s:%d",
                             this->filename, linenum);
-              return -1;
+              ret = -1;
             }
-            this->Publish(id, type, subtype,
+            else
+            {
+              this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
-            return(0);
+            }
+            delete [] data.ranges;
+            delete [] data.intensity;
+            
+            return ret;
           }
 
         case PLAYER_LASER_DATA_SCANPOSE:
@@ -1522,6 +1531,9 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             data.scan.ranges_count = atoi(tokens[15]);
             data.scan.intensity_count = data.scan.ranges_count;
 
+            data.ranges = new float[ data.ranges_count ];
+            data.intensity = new uint8_t[ data.ranges_count ];
+            
             count = 0;
             for (i = 16; i < token_count; i += 2)
             {
@@ -1534,12 +1546,16 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             {
               PLAYER_ERROR2("range count mismatch at %s:%d",
                             this->filename, linenum);
-              return -1;
+              ret = -1;
             }
-
-            this->Publish(id, type, subtype,
+            else
+            {
+              this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
-            return(0);
+              delete [] data.ranges;
+              delete [] data.intensity;
+            }
+            return ret;
           }
 
         default:
