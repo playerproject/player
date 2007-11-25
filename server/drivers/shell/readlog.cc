@@ -1531,8 +1531,8 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             data.scan.ranges_count = atoi(tokens[15]);
             data.scan.intensity_count = data.scan.ranges_count;
 
-            data.ranges = new float[ data.ranges_count ];
-            data.intensity = new uint8_t[ data.ranges_count ];
+            data.scan.ranges = new float[ data.scan.ranges_count ];
+            data.scan.intensity = new uint8_t[ data.scan.ranges_count ];
             
             count = 0;
             for (i = 16; i < token_count; i += 2)
@@ -1552,8 +1552,8 @@ int ReadLog::ParseLaser(player_devaddr_t id,
             {
               this->Publish(id, type, subtype,
                           (void*)&data, sizeof(data), &time);
-              delete [] data.ranges;
-              delete [] data.intensity;
+              delete [] data.scan.ranges;
+              delete [] data.scan.intensity;
             }
             return ret;
           }
