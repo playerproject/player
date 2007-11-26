@@ -198,6 +198,13 @@ void PlayerClient::Stop()
   mIsStop = true;
 }
 
+/*bool PlayerClient::Peek2(uint32_t aTimeout)
+{
+  ClientProxy::scoped_lock_t lock(mMutex);
+  //EVAL(playerc_client_peek(mClient, aTimeout));
+  return playerc_client_peek2(mClient, aTimeout);
+}*/
+
 bool PlayerClient::Peek(uint32_t aTimeout)
 {
   ClientProxy::scoped_lock_t lock(mMutex);

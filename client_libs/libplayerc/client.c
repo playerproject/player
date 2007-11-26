@@ -516,20 +516,29 @@ playerc_client_requestdata(playerc_client_t* client)
   return(ret);
 }
 
-// Test to see if there is pending data.
+// Test to see if there is pending data. Send a data request if one has
+// not been sent already.
 int playerc_client_peek(playerc_client_t *client, int timeout)
+{
+  if (!client->data_requested)
+  {
+	  playerc_client_requestdata(client);
+  }
+  return playerc_client_internal_peek(client, timeout);
+}
+
+// Test to see if there is pending data. Don't send a data request.
+int playerc_client_internal_peek(playerc_client_t *client, int timeout)
 {
   int count;
   struct pollfd fd;
-
   playerc_client_item_t *item;
-
+  
   if (client->sock < 0)
   {
     PLAYERC_WARN("no socket to write to");
     return -1;
   }
-
 
   if (client->qlen > 0)
   {
@@ -584,7 +593,6 @@ void *playerc_client_read(playerc_client_t *client)
       break;
     nanosleep(&sleeptime,NULL);
   }
-
   return(ret);
 }
 
@@ -598,13 +606,13 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
   if (playerc_client_pop (client, &header, client->data) < 0)
   {
     // If there is no queued data, peek at the socket
-    if(playerc_client_peek(client,0) <= 0)
+    if(playerc_client_internal_peek(client,0) <= 0)
       return NULL;
     // There's data on the socket, so read a packet (blocking).
     if (playerc_client_readpacket (client, &header, client->data) < 0)
       return NULL;
   }
-
+  
   while (true)
   {
     // One way or another, we got a new packet into (header,client->data), so process it
@@ -652,7 +660,7 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
     if (playerc_client_pop (client, &header, client->data) < 0)
     {
       // If there is no queued data, peek at the socket
-      if(playerc_client_peek(client,0) <= 0)
+      if(playerc_client_internal_peek(client,0) <= 0)
         return NULL;
       // There's data on the socket, so read a packet (blocking).
       if (playerc_client_readpacket (client, &header, client->data) < 0)
@@ -723,7 +731,7 @@ int playerc_client_request(playerc_client_t *client,
   {
     int peek;
     gettimeofday(&last,NULL);
-    peek = playerc_client_peek(client,10);
+    peek = playerc_client_internal_peek(client,10);
     gettimeofday(&curr,NULL);
     t -= ((curr.tv_sec + curr.tv_usec/1e6) -
           (last.tv_sec + last.tv_usec/1e6));

@@ -52,9 +52,7 @@
 #include "error.h"
 #include <libplayerxdr/playerxdr.h>
 
-void playerc_blackboard_putmsg(playerc_blackboard_t *device,
-                               player_msghdr_t *header,
-                               player_blackboard_entry_t *data, size_t len);
+void playerc_blackboard_putmsg(playerc_blackboard_t *device, player_msghdr_t *header, player_blackboard_entry_t *data, size_t len);
 
 // Create a new blackboard proxy
 playerc_blackboard_t *playerc_blackboard_create(playerc_client_t *client, int index)
@@ -89,19 +87,15 @@ int playerc_blackboard_unsubscribe(playerc_blackboard_t *device)
 }
 
 // Subscribe to a blackboard key
-int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char* key,
-		player_blackboard_entry_t** entry_out)
+int playerc_blackboard_subscribe_to_key(playerc_blackboard_t* device, const char* key, player_blackboard_entry_t** entry_out)
 {
 	player_blackboard_entry_t req;
 	memset(&req, 0, sizeof(req));
 	req.key = strdup(key);
 	req.key_count = strlen(key) + 1;
 
-	if (playerc_client_request(
-		device->info.client,
-		&device->info,
-		PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY,
-		&req, entry_out) < 0)
+	if (playerc_client_request(device->info.client, &device->info, 
+	PLAYER_BLACKBOARD_REQ_SUBSCRIBE_TO_KEY, &req, entry_out) < 0)
 	{
 		free(req.key);
 		PLAYERC_ERR("failed to subscribe to blackboard key");
@@ -120,12 +114,8 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t* device, const 
 	req.key = strdup(key);
 	req.key_count = strlen(key) + 1;
 
-	if (playerc_client_request(
-		device->info.client,
-		&device->info,
-		PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_KEY,
-		&req,
-		NULL) < 0)
+	if (playerc_client_request(device->info.client, &device->info, 
+	PLAYER_BLACKBOARD_REQ_UNSUBSCRIBE_FROM_KEY, &req, NULL) < 0)
 	{
 		free(req.key);
 		PLAYERC_ERR("failed to unsubscribe to blackboard key");
@@ -140,11 +130,8 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t* device, const 
 // Set a key
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry)
 {
-	if (playerc_client_request(
-		device->info.client,
-		&device->info,
-		PLAYER_BLACKBOARD_REQ_SET_ENTRY,
-		entry, NULL) < 0)
+	if (playerc_client_request(device->info.client, &device->info, 
+	PLAYER_BLACKBOARD_REQ_SET_ENTRY, entry, NULL) < 0)
 	{
 		PLAYERC_ERR("failed to set blackboard key");
 		return -1;
@@ -153,9 +140,8 @@ int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard
 	return 0;
 }
 
-void playerc_blackboard_putmsg(playerc_blackboard_t *device,
-                               player_msghdr_t *header,
-                               player_blackboard_entry_t *data, size_t len)
+// Execute callback function
+void playerc_blackboard_putmsg(playerc_blackboard_t *device, player_msghdr_t *header, player_blackboard_entry_t *data, size_t len)
 {
 	if (device->on_blackboard_event != NULL)
 	{

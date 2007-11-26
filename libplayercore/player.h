@@ -260,6 +260,25 @@ typedef struct player_bbox3d
   double sh;
 } player_bbox3d_t;
 
+/** @brief Vectormap feature data. */
+typedef struct player_blackboard_entry
+{
+  /** Length of key in bytes. */
+  uint32_t key_count;
+  /** Identifier for the entry. */
+  char* key;
+  /** Entry interface type. */
+  uint16_t interf;
+  /** Entry data type. */
+  uint8_t type;
+  /** Entry data subtype. */
+  uint8_t subtype;
+  /** Entry data length. */
+  uint32_t data_count;
+  /** Entry data. */
+  uint8_t* data;
+} player_blackboard_entry_t;
+
 /** @brief A line segment, used to construct vector-based maps */
 typedef struct player_segment
 {

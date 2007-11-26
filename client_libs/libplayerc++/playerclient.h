@@ -180,6 +180,7 @@ class PlayerClient
     /// - false if there is no data waiting
     /// - true if there is data waiting
     bool Peek(uint32_t timeout=0);
+    //bool Peek2(uint32_t timeout=0);
 
     /// @brief Set connection retry limit, which is the number of times
     /// that we'll try to reconnect to the server after a socket error.

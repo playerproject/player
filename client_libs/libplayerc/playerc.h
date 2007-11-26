@@ -680,7 +680,8 @@ int playerc_client_request(playerc_client_t *client,
 /*int playerc_client_getresponse(playerc_client_t *client, uint16_t device,
     uint16_t index, uint16_t sequence, uint8_t * resptype, uint8_t * resp_data, int resp_len);
 */
-/** @brief Test to see if there is pending data.
+/** @brief Test to see if there is pending data. Send a data request if one has not been sent already.
+ * A data request is necessary to provoke a response from the server.
 
 @param client Pointer to client object.
 
@@ -691,6 +692,20 @@ currently queued data.
 
 */
 int playerc_client_peek(playerc_client_t *client, int timeout);
+
+/** @brief Test to see if there is pending data. Don't send a request for data.
+ * This function is reliant on a call being made elsewhere to request data from
+ * the server.
+
+@param client Pointer to client object.
+
+@param timeout Timeout value (ms).  Set timeout to 0 to check for
+currently queued data.
+
+@returns Returns -1 on error, 0 or 1 otherwise.
+
+*/
+int playerc_client_internal_peek(playerc_client_t *client, int timeout);
 
 /** @brief Read data from the server (blocking).
 
@@ -1123,6 +1138,8 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const 
 
 /** @brief Set an entry value. */
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
+
+player_blackboard_entry_t playerc_blackboard_subscribe_to_key2(playerc_blackboard_t *device, const char* key);
 
 /** @} */
 
