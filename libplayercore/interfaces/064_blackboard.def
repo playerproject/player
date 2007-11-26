@@ -12,21 +12,3 @@ message { REQ, SET_ENTRY, 3, player_blackboard_entry_t };
 /** Data update reply */
 message { DATA, UPDATE, 1, player_blackboard_entry_t };
 
-/** @brief Vectormap feature data. */
-typedef struct player_blackboard_entry
-{
-  /** Length of key in bytes. */
-  uint32_t key_count;
-  /** Identifier for the entry. */
-  char* key;
-  /** Entry interface type. */
-  uint16_t interf;
-  /** Entry data type. */
-  uint8_t type;
-  /** Entry data subtype. */
-  uint8_t subtype;
-  /** Entry data length. */
-  uint32_t data_count;
-  /** Entry data. */
-  uint8_t* data;
-} player_blackboard_entry_t;

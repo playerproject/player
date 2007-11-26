@@ -364,7 +364,12 @@ int LocalBB::ProcessSetEntryMessage(QueuePointer &resp_queue, player_msghdr * hd
 BlackBoardEntry LocalBB::SubscribeKey(const string &key, const QueuePointer &resp_queue)
 {
 	listeners[key].push_back(resp_queue);
-	return entries[key];
+	BlackBoardEntry entry = entries[key];
+	if (entry.key == "")
+	{
+		entry.key = key;
+	}
+	return entry;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

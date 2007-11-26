@@ -35,7 +35,7 @@ class BlackBoardTester
 		bool UnsubscribeSecondDevice();
 		void Read();
 		bool Shutdown();
-		
+
 	private:
 		playerc_client_t* client_first;
 		playerc_client_t* client_second;
@@ -57,13 +57,16 @@ bool BlackBoardTester::Initialise()
 		printf("Error connecting first client\n");
 		return false;
 	}
-	
+	//playerc_client_datamode(client_first, PLAYERC_DATAMODE_PULL);
+
 	client_second = playerc_client_create(NULL, "localhost", 6665);
 	if (0 != playerc_client_connect(client_second))
 	{
 		printf("Error connecting second client\n");
 		return false;
 	}
+	//playerc_client_datamode(client_second, PLAYERC_DATAMODE_PULL);
+
 	return true;
 }
 
@@ -77,7 +80,7 @@ bool BlackBoardTester::CreateFirstDevice()
 	}
 	first->on_blackboard_event = On_First_Device_Event;
 	return true;
-	
+
 }
 
 bool BlackBoardTester::CreateSecondDevice()
@@ -117,7 +120,7 @@ bool BlackBoardTester::SubscribeFirstDeviceToKey()
 	player_blackboard_entry_t *t = new player_blackboard_entry_t;
 	memset(t, 0, sizeof(t));
 	const char* key = strdup(KEY);
-	if (playerc_blackboard_subscribe_to_key(first, key, t))
+	if (playerc_blackboard_subscribe_to_key(first, key, &t))
 	{
 		printf("Error subscribing to key '%s'\n", KEY);
 		return false;
@@ -142,7 +145,7 @@ bool BlackBoardTester::SubscribeSecondDeviceToKey()
 {
 	player_blackboard_entry_t *t = new player_blackboard_entry_t;
 	memset(t, 0, sizeof(t));
-	if (playerc_blackboard_subscribe_to_key(second, KEY, t))
+	if (playerc_blackboard_subscribe_to_key(second, KEY, &t))
 	{
 		printf("Error subscribing to key '%s'\n", KEY);
 		return false;
@@ -151,7 +154,8 @@ bool BlackBoardTester::SubscribeSecondDeviceToKey()
 	if (t->data_count == 0)
 	{
 		printf("Key '%s' does not exist (EMPTY)\n", KEY);
-	} else
+	}
+	else
 	{
 		printf("First subscribed to key '%s'\n", KEY);
 		printf("Key value = %d,%d,%d,%d\n", t->data[0], t->data[1], t->data[2], t->data[3]);
@@ -252,7 +256,7 @@ bool BlackBoardTester::UnsubscribeSecondDevice()
 		return false;
 	}
 	playerc_blackboard_destroy(second);
-	
+
 	return true;
 }
 
@@ -276,7 +280,7 @@ int main()
 	BlackBoardTester t;
 	printf("Initialise\n");
 	bool res = t.Initialise();
-	
+
 	if (res)
 	{
 		printf("CreateFirstDevice\n");

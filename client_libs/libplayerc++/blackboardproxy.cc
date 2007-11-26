@@ -93,15 +93,33 @@ void BlackBoardProxy::Unsubscribe()
 player_blackboard_entry_t *BlackBoardProxy::SubscribeToKey(const char *key)
 {
   scoped_lock_t lock(mPc->mMutex);
-  player_blackboard_entry_t **t;
-  *t = new player_blackboard_entry_t;
-  memset(*t, 0, sizeof(player_blackboard_entry_t));
-  if (0 != playerc_blackboard_subscribe_to_key(mDevice, key, t))
+  player_blackboard_entry_t *pointer;
+  if (0 != playerc_blackboard_subscribe_to_key(mDevice, key, &pointer))
   {
-  	delete *t;
   	throw PlayerError("BlackBoardProxy::SubscribeToKey(const string& key)", "could not subscribe to key");
   }
-  return *t;
+
+  // We don't want a mix of malloc and new, so make a copy using only new
+  player_blackboard_entry_t *result = new player_blackboard_entry_t;
+  memset(result, 0, sizeof(player_blackboard_entry_t));
+  result->interf = pointer->interf;
+  result->type = pointer->type;
+  result->subtype = pointer->subtype;
+
+  result->key_count = pointer->key_count;
+  result->key = new char[result->key_count];
+  memcpy(result->key, pointer->key, result->key_count);
+  
+  result->data_count = pointer->data_count;
+  result->data = new uint8_t[result->data_count];
+  memcpy(result->data, pointer->data, result->data_count);
+
+  // Get rid of the original
+  free(pointer->key);
+  free(pointer->data);
+  free(pointer);
+  
+  return result;
 }
 
 void BlackBoardProxy::UnsubscribeFromKey(const char *key)
