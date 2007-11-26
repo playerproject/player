@@ -101,6 +101,11 @@ std::ostream&
 std::operator << (std::ostream &os, const PlayerCc::WiFiProxy &c)
 {
   os << "#WiFi (" << c.GetInterface() << ":" << c.GetIndex() << ")" << std::endl;
-	return os;
+  os << c.GetLinkCount() << " links" << std::endl;
+  for(int i=0;i<c.GetLinkCount();i++)
+  {
+    os << "\tMAC: " << c.GetLinkMAC(i) << std::endl;
+  }
+  return os;
 }
 

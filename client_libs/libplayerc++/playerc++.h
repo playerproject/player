@@ -2430,18 +2430,18 @@ class WiFiProxy: public ClientProxy
 
     const playerc_wifi_link_t *GetLink(int aLink);
 
-			 int GetLinkCount(){ return mDevice->link_count; };
-			 char* GetOwnIP(){ return mDevice->ip; };
+			 int GetLinkCount() const { return mDevice->link_count; };
+			 char* GetOwnIP() const { return mDevice->ip; };
 
-			 char* GetLinkIP(int index) { return (char*) mDevice->links[index].ip; };
-			 char* GetLinkMAC(int index) { return (char*) mDevice->links[index].mac; };
-			 char* GetLinkESSID(int index) { return (char*)mDevice->links[index].essid; };
-			 double GetLinkFreq(int index) {return mDevice->links[index].freq;};
-			 int 	 GetLinkMode(int index) { return mDevice->links[index].mode; };
-			 int 	 GetLinkEncrypt(int index) {return mDevice->links[index].encrypt; };
-			 int   GetLinkQuality(int index) { return mDevice->links[index].qual; };
-			 int 	 GetLinkLevel(int index) {return mDevice->links[index].level; };
-			 int 	 GetLinkNoise(int index) {return mDevice->links[index].noise; }	;		 
+			 char* GetLinkIP(int index)  const { return (char*) mDevice->links[index].ip; };
+			 char* GetLinkMAC(int index)  const { return (char*) mDevice->links[index].mac; };
+			 char* GetLinkESSID(int index)  const { return (char*)mDevice->links[index].essid; };
+			 double GetLinkFreq(int index)  const {return mDevice->links[index].freq;};
+			 int 	 GetLinkMode(int index)  const { return mDevice->links[index].mode; };
+			 int 	 GetLinkEncrypt(int index)  const {return mDevice->links[index].encrypt; };
+			 int   GetLinkQuality(int index)  const { return mDevice->links[index].qual; };
+			 int 	 GetLinkLevel(int index)  const {return mDevice->links[index].level; };
+			 int 	 GetLinkNoise(int index)  const {return mDevice->links[index].noise; }	;		 
 
 			//player_wifi_link_t
 //     int GetLinkQuality(char/// ip = NULL);
