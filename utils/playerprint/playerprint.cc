@@ -268,9 +268,9 @@ main(int argc, char **argv)
 //    case PLAYER_TRUTH_CODE:
 //      cp = (ClientProxy*)new TruthProxy(&client,g_index);
 //      break;
-//    case PLAYER_WIFI_CODE:
-//      cp = (ClientProxy*)new WifiProxy(&client,g_index);
-//      break;
+    case PLAYER_WIFI_CODE:
+      cp = (ClientProxy*)new WiFiProxy(&client,g_index);
+      break;
     default:
       std::cout << "Unknown interface " << g_device << std::endl;
       exit(-1);
@@ -376,9 +376,9 @@ main(int argc, char **argv)
 //      case PLAYER_TRUTH_CODE:
 //        std::cout << *reinterpret_cast<TruthProxy *> (cp);
 //        break;
-//      case PLAYER_WIFI_CODE:
-//        std::cout << *reinterpret_cast<WifiProxy *> (cp);
-//        break;
+      case PLAYER_WIFI_CODE:
+        std::cout << *reinterpret_cast<WiFiProxy *> (cp);
+        break;
     }
 
     std::cout << std::endl;
