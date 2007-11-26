@@ -100,23 +100,26 @@ void playerc_wifi_putmsg(playerc_wifi_t *device, player_msghdr_t *header,
 
   if((header->type == PLAYER_MSGTYPE_DATA))
   {
-  	device->link_count = data->links_count;
-  	device->links = realloc(device->links, sizeof(*device->links)*device->link_count);
-		
-		// copy all available link information
-  	for (i = 0; i < device->link_count; i++)
-  	{
-		memcpy(device->links[i].mac, data->links[i].mac, sizeof(data->links[i].mac));    
-		memcpy(device->links[i].ip, data->links[i].ip, sizeof(device->links[i].ip));
-		memcpy(device->links[i].essid, data->links[i].essid, sizeof(device->links[i].essid));
+    device->link_count = data->links_count;
+    device->links = realloc(device->links, sizeof(*device->links)*device->link_count);
 
-    device->links[i].mode = data->links[i].mode;
-    device->links[i].encrypt = data->links[i].encrypt;
-    device->links[i].freq = data->links[i].freq;
-    device->links[i].qual = data->links[i].qual;
-    device->links[i].level = data->links[i].level;
-    device->links[i].noise = data->links[i].noise;
-  	}
+    // copy all available link information
+    for (i = 0; i < device->link_count; i++)
+    {
+      memset(device->links[i].mac,0,sizeof(device->links[i].mac));
+      memcpy(device->links[i].mac, data->links[i].mac, data->links[i].mac_count);    
+      memset(device->links[i].ip,0,sizeof(device->links[i].ip));
+      memcpy(device->links[i].ip, data->links[i].ip, data->links[i].ip_count);
+      memset(device->links[i].essid,0,sizeof(device->links[i].essid));
+      memcpy(device->links[i].essid, data->links[i].essid, data->links[i].essid_count);
+
+      device->links[i].mode = data->links[i].mode;
+      device->links[i].encrypt = data->links[i].encrypt;
+      device->links[i].freq = data->links[i].freq;
+      device->links[i].qual = data->links[i].qual;
+      device->links[i].level = data->links[i].level;
+      device->links[i].noise = data->links[i].noise;
+    }
   }
   return;
 }
