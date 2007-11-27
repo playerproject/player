@@ -87,7 +87,7 @@ void SIP::Fill(player_p2os_data_t* data)
   // sonar
   data->sonar.ranges_count = PlayerRobotParams[param_idx].SonarNum;
   data->sonar.ranges = new float[data->sonar.ranges_count];
-  for(int i=0;i<MIN(PlayerRobotParams[param_idx].SonarNum,ARRAYSIZE(sonars));i++)
+  for(int i=0;i<MIN(PlayerRobotParams[param_idx].SonarNum,sonarreadings);i++)
     data->sonar.ranges[i] = this->sonars[i] / 1e3;
 
   ///////////////////////////////////////////////////////////////
