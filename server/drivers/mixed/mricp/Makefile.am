@@ -7,7 +7,7 @@ AM_CPPFLAGS = -Wall -I$(top_srcdir) -I./include @MRICP_CFLAGS@
 
 libmricp_la_SOURCES = src/geometry2D.cpp src/icp.cpp src/lasermodel.cpp src/map.cpp \
   src/mricp_driver.cpp src/nn.cpp src/Timer.cpp \
-  include/geometry.h \
+  include/geometry2D.h \
   include/icp.h \
   include/lasermodel.h \
   include/map.h \
