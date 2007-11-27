@@ -1069,7 +1069,8 @@ Wavefront::GetMap(bool threaded)
                                         threaded)))
     {
       PLAYER_ERROR("failed to get map data");
-      free(this->plan->cells);
+      // dont free plan->cells this here as it is realloced above and free'd on shutdown
+      //free(this->plan->cells);
       return(-1);
     }
 
