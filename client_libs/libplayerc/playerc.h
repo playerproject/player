@@ -1139,8 +1139,6 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const 
 /** @brief Set an entry value. */
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
 
-player_blackboard_entry_t playerc_blackboard_subscribe_to_key2(playerc_blackboard_t *device, const char* key);
-
 /** @} */
 
 /***************************************************************************/
