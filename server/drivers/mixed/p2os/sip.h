@@ -121,8 +121,7 @@ class SIP
 
   ~SIP(void)
   {
-    if (sonars != NULL)
-      delete[] sonars;
+    delete[] sonars;
   }
 };
 
