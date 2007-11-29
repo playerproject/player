@@ -468,6 +468,11 @@ typedef struct _playerc_client_t
    * requested and not yet received a round of data? */
   int data_requested;
 
+  /** @internal Data request flag; if mode == PLAYER_DATAMODE_PULL, have we
+   * received any data in this round? */
+  int data_received;
+
+  
   /** List of available (but not necessarily subscribed) devices.
       This list is filled in by playerc_client_get_devlist(). */
   playerc_device_info_t devinfos[PLAYER_MAX_DEVICES];
@@ -655,7 +660,7 @@ int playerc_client_unsubscribe(playerc_client_t *client, int code, int index);
 
 /** @brief Issue a request to the server and await a reply (blocking). @internal
 
-The rep_data pointer is filled with a pointer to the response data recieved. It is
+The rep_data pointer is filled with a pointer to the response data received. It is
 the callers responisbility to free this memory with the approriate player _free method.
 
 If an error is returned then no data will have been stored in rep_data.
@@ -1138,6 +1143,8 @@ int playerc_blackboard_unsubscribe_from_key(playerc_blackboard_t *device, const 
 
 /** @brief Set an entry value. */
 int playerc_blackboard_set_entry(playerc_blackboard_t *device, player_blackboard_entry_t* entry);
+
+//player_blackboard_entry_t playerc_blackboard_subscribe_to_key2(playerc_blackboard_t *device, const char* key);
 
 /** @} */
 

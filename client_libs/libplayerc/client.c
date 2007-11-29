@@ -171,6 +171,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->mode = PLAYER_DATAMODE_PULL;
   client->transport = PLAYERC_TRANSPORT_TCP;
   client->data_requested = 0;
+  client->data_received = 0;
 
   client->request_timeout = 5.0;
 
@@ -512,7 +513,10 @@ playerc_client_requestdata(playerc_client_t* client)
     return(0);
   ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL);
   if(ret == 0)
+  {
     client->data_requested = 1;
+    client->data_received = 0;
+  }
   return(ret);
 }
 
@@ -576,7 +580,7 @@ int playerc_client_internal_peek(playerc_client_t *client, int timeout)
 // Read and process a packet (blocking)
 void *playerc_client_read(playerc_client_t *client)
 {
-  void* ret;
+  void* ret;  
   // 10ms delay
   struct timespec sleeptime = {0,10000000};
 
@@ -592,7 +596,7 @@ void *playerc_client_read(playerc_client_t *client)
     if(ret != NULL)
       break;
     nanosleep(&sleeptime,NULL);
-  }
+  }  
   return(ret);
 }
 
@@ -600,29 +604,29 @@ void *playerc_client_read(playerc_client_t *client)
 void *playerc_client_read_nonblock(playerc_client_t *client)
 {
   player_msghdr_t header;
-  int got_data=0;
 
-  // See if there is any queued data.
-  if (playerc_client_pop (client, &header, client->data) < 0)
-  {
-    // If there is no queued data, peek at the socket
-    if(playerc_client_internal_peek(client,0) <= 0)
-      return NULL;
-    // There's data on the socket, so read a packet (blocking).
-    if (playerc_client_readpacket (client, &header, client->data) < 0)
-      return NULL;
-  }
-  
   while (true)
   {
+    // See if there is any queued data.
+    if (playerc_client_pop (client, &header, client->data) < 0)
+	{
+	  // If there is no queued data, peek at the socket
+	  if(playerc_client_internal_peek(client,0) <= 0)
+	    return NULL;
+	  // There's data on the socket, so read a packet (blocking).
+	  if (playerc_client_readpacket (client, &header, client->data) < 0)
+	    return NULL;
+	}
+	  
     // One way or another, we got a new packet into (header,client->data), so process it
     switch(header.type)
     {
       case PLAYER_MSGTYPE_RESP_ACK:
+    	PLAYERC_WARN ("Discarding unclaimed ACK");
         break;
       case PLAYER_MSGTYPE_SYNCH:
         client->data_requested = 0;
-        if(!got_data)
+        if(!client->data_received)
           return NULL;
         else
           return client->id;
@@ -641,9 +645,12 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
         {
           void *result = playerc_client_dispatch (client, &header, client->data);
           playerxdr_cleanup_message(client->data, header.addr.interf, header.type, header.subtype);
+          client->data_received = 1;
           if (result == NULL)
-            return NULL;
-          got_data = 1;
+          {
+          	PLAYERC_WARN ("Failed to dispatch data message");
+            return NULL;        	  
+          }
           break;
         }
       default:
@@ -656,19 +663,8 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
                header.size);
         return NULL;
     }
-    // See if there is any queued data.
-    if (playerc_client_pop (client, &header, client->data) < 0)
-    {
-      // If there is no queued data, peek at the socket
-      if(playerc_client_internal_peek(client,0) <= 0)
-        return NULL;
-      // There's data on the socket, so read a packet (blocking).
-      if (playerc_client_readpacket (client, &header, client->data) < 0)
-        return NULL;
-    }
   }
 }
-
 
 // Write a command
 int playerc_client_write(playerc_client_t *client,
