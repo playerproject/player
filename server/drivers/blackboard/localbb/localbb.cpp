@@ -69,7 +69,7 @@
 #include <stdlib.h>
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <playererror.h>
+#include <libplayerc++/playererror.h>
 #include <vector>
 #include <map>
 #include <strings.h>
