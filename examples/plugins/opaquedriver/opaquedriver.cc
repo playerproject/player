@@ -68,7 +68,7 @@ class OpaqueDriver : public Driver
     virtual void RefreshData();
 
     // This is the structure we want to send
-    test_t* mTestStruct;
+    test_t mTestStruct;
 
     // This is the data we store and send
     player_opaque_data_t mData;
@@ -102,15 +102,15 @@ OpaqueDriver::OpaqueDriver(ConfigFile* cf, int section)
              PLAYER_OPAQUE_CODE)
 {
   mData.data_count = sizeof(test_t);
-  mTestStruct = reinterpret_cast<test_t*>(mData.data);
+  mData.data = reinterpret_cast<uint8_t*>(&mTestStruct);
 
-  mTestStruct->uint8 = 0;
-  mTestStruct->int8 = 0;
-  mTestStruct->uint16 = 0;
-  mTestStruct->int16 = 0;
-  mTestStruct->uint32 = 0;
-  mTestStruct->int32 = 0;
-  mTestStruct->doub = 0;
+  mTestStruct.uint8 = 0;
+  mTestStruct.int8 = 0;
+  mTestStruct.uint16 = 0;
+  mTestStruct.int16 = 0;
+  mTestStruct.uint32 = 0;
+  mTestStruct.int32 = 0;
+  mTestStruct.doub = 0;
 
   return;
 }
@@ -188,13 +188,13 @@ void OpaqueDriver::Main()
 
 void OpaqueDriver::RefreshData()
 {
-   mTestStruct->uint8 += 1;
-   mTestStruct->int8 += 1;
-   mTestStruct->uint16 += 5;
-   mTestStruct->int16 += 5;
-   mTestStruct->uint32 += 10;
-   mTestStruct->int32 += 10;
-   mTestStruct->doub = sin(mTestStruct->uint8/10.0);
+   mTestStruct.uint8 += 1;
+   mTestStruct.int8 += 1;
+   mTestStruct.uint16 += 5;
+   mTestStruct.int16 += 5;
+   mTestStruct.uint32 += 10;
+   mTestStruct.int32 += 10;
+   mTestStruct.doub = sin(mTestStruct.uint8/10.0);
 
   // only send the data we need to
   uint32_t size = sizeof(mData) - sizeof(mData.data) + mData.data_count;
