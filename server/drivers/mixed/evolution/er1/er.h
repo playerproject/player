@@ -78,10 +78,9 @@
 #define STOP		1
 
 
-#include <player.h>
-
-#include <driver.h>
-#include <drivertable.h>
+#include <libplayercore/player.h>
+#include <libplayercore/driver.h>
+#include <libplayercore/drivertable.h>
 
 
 typedef struct
