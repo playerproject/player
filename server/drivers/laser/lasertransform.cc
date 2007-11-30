@@ -91,7 +91,7 @@ int LaserTransform::ProcessMessage(QueuePointer & resp_queue,
   if(Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, 
                            this->laser_addr))
   {
-    assert(hdr->size == sizeof(player_laser_data_t));
+    assert(hdr->size != 0);
     player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
     this->UpdateLaser(l_data);
     return(0);
