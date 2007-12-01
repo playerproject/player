@@ -165,7 +165,6 @@ int main(int argc, char **argv)
   int device_count;
   device_t devices[PLAYER_MAX_DEVICES];
   device_t *device;
-  void *proxy;
   struct timeval tv, tc = {0, 0};
   struct timespec st = {0,0};
 
@@ -226,8 +225,6 @@ int main(int argc, char **argv)
       PRINT_ERR1("%s", playerc_error_str());
       return -1;
     }
-
-    gettimeofday(&tv, NULL);
   }
 
   // Get the available devices.
@@ -315,6 +312,10 @@ int main(int argc, char **argv)
   // its own updates.
   rtk_app_main_init(app);
 
+  // start out timer if in pull mode
+  if (0 != pull)
+    gettimeofday(&tv, NULL);
+  
   while (!quit)
   {
     // Let gui process messages
@@ -331,19 +332,19 @@ int main(int argc, char **argv)
       }
       if (count > 0)
       {
-        proxy = playerc_client_read_nonblock(client);
+        /*proxy = */playerc_client_read_nonblock(client);
       }
     }
     else // we're in pull mode
     {
       // we only want to request new data at roughly 20 Hz
       gettimeofday(&tc, NULL);
-      if ((tc.tv_sec > tv.tv_sec) || (tc.tv_usec > tv.tv_usec + 50000))
+      if (((tc.tv_sec - tv.tv_sec)*1e6 + tc.tv_usec - tv.tv_usec) > 50000)
       {
         tv = tc;
         // this requests a round of data from the server to be read
         playerc_client_requestdata(client);
-        proxy = playerc_client_read_nonblock(client);
+        playerc_client_read_nonblock(client);
        }
        else
        {
