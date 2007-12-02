@@ -149,7 +149,8 @@ int Aodv::Shutdown()
 // Get new data
 void Aodv::Update()
 {
-  int n, link_count;
+  int n;
+  unsigned int link_count;
   player_wifi_link_t *link;
   char ip[16], next_ip[16];
   int seq, hop;

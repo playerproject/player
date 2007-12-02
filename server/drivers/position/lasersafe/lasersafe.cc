@@ -342,7 +342,7 @@ int LaserSafe::ProcessMessage (QueuePointer & resp_queue, player_msghdr * hdr, v
     {
       Blocked = true;
       Unlock ();
-      player_position2d_cmd_vel_t NullCmd = {0};
+      player_position2d_cmd_vel_t NullCmd = {{0}};
 
       position->PutMsg (InQueue, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL, &NullCmd, sizeof (NullCmd), NULL);
     }

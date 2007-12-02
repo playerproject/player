@@ -7,13 +7,13 @@
 int main(int argc,char ** argv)
 {
   //Standby mode
-  PositionXY reflector;
+  //PositionXY reflector;
   Nav200 testing;
   testing.Initialise();
   if (!testing.EnterStandby())
   {
       fprintf(stderr,"unable to enter standby mode\n");
-      EXIT_FAILURE;
+      return EXIT_FAILURE;
   }
 
   PositionXY reflectordata[256];
@@ -36,7 +36,7 @@ int main(int argc,char ** argv)
   else
   {
     fprintf(stderr,"unable to enter mapping mode\n");
-    EXIT_FAILURE;
+    return EXIT_FAILURE;
   }
 
   // upload mode
@@ -77,7 +77,7 @@ int main(int argc,char ** argv)
   if (!testing.EnterStandby())
   {
       fprintf(stderr,"unable to enter standby mode\n");
-      EXIT_FAILURE;
+      return EXIT_FAILURE;
   }
   if(testing.EnterDownload())
   {
@@ -91,7 +91,7 @@ int main(int argc,char ** argv)
   else
   {
     fprintf(stderr,"unable to enter download mode\n");
-    EXIT_FAILURE;
+    return EXIT_FAILURE;
   }
 
   for(int i=0; i<max; i++)

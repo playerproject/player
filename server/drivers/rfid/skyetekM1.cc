@@ -123,7 +123,7 @@ class SkyetekM1 : public Driver
 
 		// RFID interface
 		player_rfid_data_t Data;
-		int allocated_tags;
+		unsigned int allocated_tags;
 		player_rfid_data_t  Cmd;
 		
 		const char*        portName;

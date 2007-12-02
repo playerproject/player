@@ -191,7 +191,6 @@ AMCLLaser::SetupMap(void)
 
   // now, get the map data
   player_map_data_t* data_req;
-  size_t reqlen;
   int i,j;
   int oi,oj;
   int sx,sy;
@@ -217,7 +216,7 @@ AMCLLaser::SetupMap(void)
     if(!(msg = mapdev->Request(AMCL.InQueue,
                                PLAYER_MSGTYPE_REQ,
                                PLAYER_MAP_REQ_GET_DATA,
-                               (void*)data_req,reqlen,NULL,false)))
+                               (void*)data_req,0,NULL,false)))
     {
       PLAYER_ERROR("failed to get map info");
       free(data_req);

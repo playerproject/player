@@ -1342,7 +1342,7 @@ void RFLEX::update_everything(player_rflex_data_t* d)
     rflex_update_ir(rflex_fd, a_num_ir, air_ranges);
 //    pthread_testcancel();
 
-    if (d->ir.ranges_count != a_num_ir)
+    if (d->ir.ranges_count != (unsigned int) a_num_ir)
     {
       d->ir.ranges_count = a_num_ir;
       d->ir.voltages_count = a_num_ir;

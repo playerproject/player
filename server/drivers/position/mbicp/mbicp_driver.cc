@@ -560,7 +560,7 @@ void mbicp::ProcessSubtypeLaser(player_msghdr_t* hdr,player_laser_data_scanpose_
 	currentScan.intensity_count	= data.scan.intensity_count;	
 	currentScan.id					= data.scan.id;
 	
-	for (int i=0; i < currentScan.ranges_count; i++){
+	for (unsigned int i=0; i < currentScan.ranges_count; i++){
 		currentScan.ranges[i] = data.scan.ranges[i];
 		currentScan.intensity[i] = data.scan.intensity[i];
 	}

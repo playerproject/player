@@ -622,14 +622,19 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
     switch(header.type)
     {
       case PLAYER_MSGTYPE_RESP_ACK:
-    	PLAYERC_WARN ("Discarding unclaimed ACK");
+        PLAYERC_WARN ("Discarding unclaimed ACK");
         break;
       case PLAYER_MSGTYPE_SYNCH:
         client->data_requested = 0;
         if(!client->data_received)
+        {
+          PLAYERC_WARN ("No Data recieved with SYNC");
           return NULL;
+        }
         else
+        {
           return client->id;
+        }
       case PLAYER_MSGTYPE_DATA:
         client->lasttime = client->datatime;
         client->datatime = header.timestamp;
