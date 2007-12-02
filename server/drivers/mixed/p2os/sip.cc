@@ -140,7 +140,7 @@ void SIP::Fill(player_p2os_data_t* data)
   ///////////////////////////////////////////////////////////////
   // bumper
   int bump_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
-  if (data->bumper.bumpers_count != bump_count)
+  if (data->bumper.bumpers_count != (unsigned int)bump_count)
   {
     data->bumper.bumpers_count = bump_count;
     delete [] data->bumper.bumpers;

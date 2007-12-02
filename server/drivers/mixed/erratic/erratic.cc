@@ -822,7 +822,7 @@ void Erratic::ReceiveThread() {
 					erratic_data.aio.voltages_count = packet.packet[4];
 					erratic_data.aio.voltages = new float[erratic_data.aio.voltages_count];
 				}
-				if (erratic_data.ir.voltages_count-4 != RobotParams[this->param_idx]->NumIR)
+				if (erratic_data.ir.voltages_count-4 != (unsigned int) RobotParams[this->param_idx]->NumIR)
 				{
 					erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
 					erratic_data.ir.voltages = new float[erratic_data.ir.voltages_count+4];
@@ -830,7 +830,7 @@ void Erratic::ReceiveThread() {
 				else
 					erratic_data.ir.voltages_count = RobotParams[this->param_idx]->NumIR;
 					
-				if (erratic_data.ir.ranges_count != RobotParams[this->param_idx]->NumIR)
+				if (erratic_data.ir.ranges_count != (unsigned int)RobotParams[this->param_idx]->NumIR)
 				{
 					erratic_data.ir.ranges_count = RobotParams[this->param_idx]->NumIR;
 					erratic_data.ir.ranges = new float[erratic_data.ir.ranges_count];

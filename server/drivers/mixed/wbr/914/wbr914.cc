@@ -1332,7 +1332,7 @@ int wbr914::WriteBuf(unsigned char* s, size_t len)
     }
   }
     
-  printf( "Write timeout; wrote %d bytes, tried to write %d\n",
+  printf( "Write timeout; wrote %ld bytes, tried to write %ld\n",
 	  numwritten, len );
 
   return numwritten;
