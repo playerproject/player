@@ -54,6 +54,7 @@ playerprint can print out data for the following kinds of devices:
 - @ref interface_localize
 - @ref interface_log
 - @ref interface_map
+- @ref interface_opaque
 - @ref interface_planner
 - @ref interface_position1d
 - @ref interface_position2d
@@ -229,6 +230,9 @@ main(int argc, char **argv)
     case PLAYER_MAP_CODE:
       cp = (ClientProxy*)new MapProxy(&client,g_index);
       break;
+    case PLAYER_OPAQUE_CODE:
+      cp = (ClientProxy*)new OpaqueProxy(&client,g_index);
+      break;
     case PLAYER_PLANNER_CODE:
       cp = (ClientProxy*)new PlannerProxy(&client,g_index);
       break;
@@ -337,6 +341,9 @@ main(int argc, char **argv)
         break;
       case PLAYER_MAP_CODE:
         std::cout << *reinterpret_cast<MapProxy *> (cp);
+        break;
+      case PLAYER_OPAQUE_CODE:
+        std::cout << *reinterpret_cast<OpaqueProxy *> (cp);
         break;
       case PLAYER_PLANNER_CODE:
         std::cout << *reinterpret_cast<PlannerProxy *> (cp);
