@@ -190,7 +190,7 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   this->ClearFilter();
   this->filter_on = false;
   this->replaceRules = NULL;
-  this->pull = true;
+  this->pull = false;
   this->data_requested = false;
 }
 

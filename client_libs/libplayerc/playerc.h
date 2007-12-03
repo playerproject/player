@@ -232,7 +232,7 @@ invalid and should be not be re-used.
 The server may send data to the client in one of two modes: PUSH and PULL. The
 current data mode is changed using the @ref playerc_client_datamode function.
 
-The default mode is PUSH.
+The default mode for clients is PULL.
 
 @section pushmode PUSH Mode
 
