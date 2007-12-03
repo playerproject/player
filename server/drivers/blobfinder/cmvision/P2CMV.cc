@@ -118,7 +118,6 @@ Ben Grocholsky, Brad Kratochvil
 
 #include <libplayercore/playercore.h>
 #include <libplayercore/error.h>
-#include <libplayerjpeg/playerjpeg.h>
 
 #if HAVE_JPEGLIB_H 
   #include <libplayerjpeg/playerjpeg.h>
