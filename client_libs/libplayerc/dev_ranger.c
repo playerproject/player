@@ -115,18 +115,22 @@ void playerc_ranger_copy_range_data(playerc_ranger_t *device, player_ranger_data
 // Copy intensity data to the device
 void playerc_ranger_copy_intns_data(playerc_ranger_t *device, player_ranger_data_intns_t *data)
 {
-  if(device->intensities != NULL)
-    free(device->ranges);
-  if((device->intensities = (double *) malloc(data->intensities_count * sizeof(double))) == NULL)
+  if (device->intensities_count != data->intensities_count || device->intensities == NULL)
   {
-    device->intensities_count = 0;
-    PLAYER_ERROR("Failed to allocate space to store intensity data");
+    // The number of data has changed, so delete any old data
+    if(device->intensities != NULL)
+      free(device->intensities);
+    // Allocate memory for the new data
+    if((device->intensities = (double *) malloc(data->intensities_count * sizeof(double))) == NULL)
+    {
+      device->intensities_count = 0;
+      PLAYER_ERROR("Failed to allocate space to store intensity data");
+      return;
+    }
   }
-  else
-  {
-    memcpy(device->intensities, data->intensities, data->intensities_count * sizeof(data->intensities[0]));
-    device->intensities_count = data->intensities_count;
-  }
+  // Copy the range data
+  memcpy(device->intensities, data->intensities, data->intensities_count * sizeof(data->intensities[0]));
+  device->intensities_count = data->intensities_count;
 }
 
 
