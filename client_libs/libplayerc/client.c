@@ -168,7 +168,7 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient, const char *
   client->lasttime = 0;
 
   /* this is the server's default */
-  client->mode = PLAYER_DATAMODE_PULL;
+  client->mode = PLAYER_DATAMODE_PUSH;
   client->transport = PLAYERC_TRANSPORT_TCP;
   client->data_requested = 0;
   client->data_received = 0;
@@ -380,6 +380,9 @@ int playerc_client_connect(playerc_client_t *client)
     return -1;
   }
 
+  //set the datamode to pull
+  playerc_client_datamode(client, PLAYER_DATAMODE_PULL);
+  
   PLAYER_MSG4(3,"[%s] connected on [%s:%d] with sock %d\n", banner, client->host, client->port, client->sock);
   return 0;
 }

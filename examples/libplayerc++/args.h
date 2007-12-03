@@ -79,14 +79,4 @@ void print_usage(int argc, char** argv)
        << PLAYER_DATAMODE_PUSH << endl;
   cerr << "                      PLAYER_DATAMODE_PULL = "
        << PLAYER_DATAMODE_PULL << endl;
-/*  cerr << "                      PLAYER_DATAMODE_PUSH_ALL = "
-       << PLAYER_DATAMODE_PUSH_ALL << endl;
-  cerr << "                      PLAYER_DATAMODE_PULL_ALL = "
-       << PLAYER_DATAMODE_PULL_ALL << endl;
-  cerr << "                      PLAYER_DATAMODE_PUSH_NEW = "
-       << PLAYER_DATAMODE_PUSH_NEW << endl;
-  cerr << "                      PLAYER_DATAMODE_PULL_NEW = "
-       << PLAYER_DATAMODE_PULL_NEW << endl;
-  cerr << "                      PLAYER_DATAMODE_ASYNC    = "
-       << PLAYER_DATAMODE_ASYNC << endl;*/
 } // end print_usage
