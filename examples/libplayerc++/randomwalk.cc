@@ -31,9 +31,23 @@ int main(int argc, char** argv)
     Position2dProxy pp(&robot, gIndex);
 
     if (gUseLaser)
+    {
       lp = new LaserProxy (&robot, gIndex);
+      // make sure we get some data
+      while(lp->GetCount() == 0)
+      {
+        robot.Read();
+      }
+    }
     else
+    {
       sp = new SonarProxy (&robot, gIndex);
+      // make sure we get some data
+      while(sp->GetCount() == 0)
+      {
+        robot.Read();
+      }
+    }
 
     std::cout << robot << std::endl;
 
