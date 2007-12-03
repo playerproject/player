@@ -27,8 +27,6 @@
 
 #include "libplayercore/player.h"
 
-void initialize_robot_params(void);
-
 #define PLAYER_NUM_ROBOT_TYPES 30
 
 

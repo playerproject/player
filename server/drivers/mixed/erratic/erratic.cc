@@ -255,9 +255,6 @@ Erratic::Erratic(ConfigFile* cf, int section) : Driver(cf,section,true,PLAYER_MS
 		}
 	}
 
-	// build the table of robot parameters.
-	initialize_robot_params();
-
 	// Read config file options
 	this->psos_serial_port = cf->ReadString(section,"port",DEFAULT_VIDERE_PORT);
 	this->direct_wheel_vel_control = cf->ReadInt(section, "direct_wheel_vel_control", 0);
