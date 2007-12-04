@@ -957,7 +957,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
             strncpy(devresp.driver_name,device->drivername,
                     sizeof(devresp.driver_name));
             devresp.driver_name[sizeof(devresp.driver_name)-1] = '\0';
-            devresp.driver_name_count = strlen(devresp.driver_name);
+            devresp.driver_name_count = strlen(devresp.driver_name) + 1;
             // (un)subscribe the client to the device
             switch(devreq->access)
             {
@@ -1104,7 +1104,7 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
             strncpy(inforesp.driver_name,device->drivername,
                     sizeof(inforesp.driver_name));
             inforesp.driver_name[sizeof(inforesp.driver_name)-1] = '\0';
-            inforesp.driver_name_count = strlen(device->drivername);
+            inforesp.driver_name_count = strlen(device->drivername) + 1;
 
             resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
             // Make up and push out the reply
