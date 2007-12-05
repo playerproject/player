@@ -1834,6 +1834,15 @@ typedef struct
   /** Laser IDentification information */
   int laser_id;
 
+  /** Minimum range, in meters, in the right half of the scan (those ranges
+   * from the first beam, counterclockwise, up to the middle of the scan,
+   * including the middle beam, if one exists). */
+  double min_right;
+
+  /** Minimum range, in meters, in the left half of the scan (those ranges
+   * from the first beam after the middle of the scan, counterclockwise, to
+   * the last beam). */
+  double min_left;
 } playerc_laser_t;
 
 
