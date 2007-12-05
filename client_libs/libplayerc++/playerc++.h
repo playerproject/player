@@ -887,9 +887,6 @@ class LaserProxy : public ClientProxy
     // libplayerc data structure
     playerc_laser_t *mDevice;
 
-    double aMinLeft;
-    double aMinRight;
-
     // local storage of config
     double min_angle, max_angle, scan_res, range_res;
     bool intensity;
@@ -1005,11 +1002,22 @@ class LaserProxy : public ClientProxy
       b.sw = mDevice->size[1];
       return(b);
     }
+    
+    /// Minimum range reading on the left side
+    double GetMinLeft() const
+      { return GetVar(mDevice->min_left); };
+    
+    /// Minimum range reading on the right side
+    double GetMinRight() const
+      { return GetVar(mDevice->min_right); };
+           
+    /// @deprecated Minimum range reading on the left side
+    double MinLeft () const 
+      { return GetMinLeft(); }
 
-    /// Min left
-    double MinLeft () { return aMinLeft; }
-    /// Min right
-    double MinRight () { return aMinRight; }
+    /// @deprecated Minimum range reading on the right side
+    double MinRight () const
+      { return GetMinRight(); }
 
     /// Range access operator.  This operator provides an alternate
     /// way of access the range data.  For example, given an @p

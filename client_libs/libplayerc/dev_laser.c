@@ -124,6 +124,8 @@ void playerc_laser_putmsg(playerc_laser_t *device,
     device->scan_start = b;
     device->scan_res = db;
     device->max_range = scan_data->max_range;
+    device->min_left = device->max_range;
+    device->min_right = device->max_range;
 
     for (i = 0; i < scan_data->ranges_count; i++)
     {
@@ -136,6 +138,11 @@ void playerc_laser_putmsg(playerc_laser_t *device,
       device->point[i].py = r * sin(b);
       device->intensity[i] = scan_data->intensity[i];
       b += db;
+
+      if((i <= scan_data->ranges_count/2) && (r < device->min_right))
+        device->min_right = r;
+      else if((i > scan_data->ranges_count/2) && (r < device->min_left))
+        device->min_left = r;
     }
 
     device->scan_count = scan_data->ranges_count;
