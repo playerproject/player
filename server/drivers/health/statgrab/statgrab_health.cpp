@@ -210,8 +210,8 @@ void StatGrabDriver::RefreshData()
 
    // Other data which should be retrieved here!
 
-    Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_HEALTH_DATA_STATE ,
-            reinterpret_cast<void*>(&mHealth), sizeof(mHealth), NULL);
+    Publish(device_addr, PLAYER_MSGTYPE_DATA, PLAYER_HEALTH_DATA_STATE  ,
+            reinterpret_cast<void*>(&mHealth));
 
 
 }
