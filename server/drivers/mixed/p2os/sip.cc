@@ -140,7 +140,7 @@ void SIP::Fill(player_p2os_data_t* data)
   ///////////////////////////////////////////////////////////////
   // bumper
   int bump_count = PlayerRobotParams[param_idx].NumFrontBumpers + PlayerRobotParams[param_idx].NumRearBumpers;
-  if (data->bumper.bumpers_count != (unsigned int)bump_count)
+  if (data->bumper.bumpers_count != bump_count)
   {
     data->bumper.bumpers_count = bump_count;
     delete [] data->bumper.bumpers;
@@ -417,39 +417,39 @@ void SIP::Parse( unsigned char *buffer )
     compass = (buffer[cnt]-1)*2;
   cnt += sizeof(unsigned char);
 
-  if (buffer[cnt] == 0 && sonars != NULL)
+  unsigned char numSonars=buffer[cnt];
+  cnt+=sizeof(unsigned char);  
+  
+  if(numSonars>0)
   {
-    // No sonar readings
-    delete[] sonars;
-    sonars = NULL;
-  }
-  else if (sonars == NULL)
-  {
-    // No space for sonar readings yet but need some
-    sonars = new unsigned short[buffer[cnt]];
-  }
-  else if (buffer[cnt] != sonarreadings)
-  {
-    // Sonar readings count has changed, reallocate the sonar readings array
-    if (sonars != NULL)
-      delete[] sonars;
-    sonars = new unsigned short[buffer[cnt]];
-  }
-  sonarreadings = buffer[cnt];
-  cnt += sizeof(unsigned char);
-
-  //printf("%hu sonar readings:\n", sonarreadings);
-  for(unsigned char i = 0;i < sonarreadings;i++) {
+    //find the largest sonar index supplied
+    unsigned char maxSonars=sonarreadings;
+    for(unsigned char i=0;i<numSonars;i++)
+    {
+      unsigned char sonarIndex=buffer[cnt+i*(sizeof(unsigned char)+sizeof(unsigned short))];
+      if((sonarIndex+1)>maxSonars) maxSonars=sonarIndex+1;
+    }
+    
+    //if necessary make more space in the array and preserve existing readings
+    if(maxSonars>sonarreadings)
+    {
+      unsigned short *newSonars=new unsigned short[maxSonars];
+      for(unsigned char i=0;i<sonarreadings;i++)
+        newSonars[i]=sonars[i];
+      if(sonars!=NULL) delete[] sonars;
+      sonars=newSonars;
+      sonarreadings=maxSonars;
+    }
+    
+    //update the sonar readings array with the new readings
+    for(unsigned char i=0;i<numSonars;i++)
+    {
     sonars[buffer[cnt]]=   (unsigned short)
       rint((buffer[cnt+1] | (buffer[cnt+2] << 8)) *
 	   PlayerRobotParams[param_idx].RangeConvFactor);
-    //printf("%d %hu:",buffer[cnt],*((unsigned short *)&buffer[cnt+1]));
-    //
-    //printf("%hu %hu %hu\n", buffer[cnt], buffer[cnt+1], buffer[cnt+2]);
-    //printf("index %d value %hu\n", buffer[cnt], sonars[buffer[cnt]]);
-    cnt += 3*sizeof(unsigned char);
+      cnt+=sizeof(unsigned char)+sizeof(unsigned short);
   }
-  //printf("\n");
+  }
 
   timer = (buffer[cnt] | (buffer[cnt+1] << 8));
   cnt += sizeof(short);
