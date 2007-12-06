@@ -79,7 +79,7 @@
 typedef struct EntryData
 {
 	/** Constructor. Sets all members to 0 or NULL. */
-  EntryData() { interf = 0; type = 0; subtype = 0; data_count = 0; data = NULL; }
+  EntryData() { interf = 0; type = 0; subtype = 0; data_count = 0; data = NULL; timestamp_sec = 0; timestamp_usec = 0; }
   //~EntryData() { if (data != NULL) delete [] data; } Why doesn't it like this?
   
   /** Player interface */
@@ -93,6 +93,9 @@ typedef struct EntryData
   uint32_t data_count;
   /** Data */
   uint8_t* data;
+  /** Time entry created */
+  uint32_t timestamp_sec;
+  uint32_t timestamp_usec;
 } EntryData;
 
 /**@brief Custom blackboard entry representation used internally by the driver.*/
@@ -129,6 +132,8 @@ player_blackboard_entry_t ToPlayerBlackBoardEntry(const BlackBoardEntry &entry)
   result.data_count = entry.data.data_count;
   result.data = new uint8_t[result.data_count];
   memcpy(result.data, entry.data.data, result.data_count);
+  result.timestamp_sec = entry.data.timestamp_sec;
+  result.timestamp_usec = entry.data.timestamp_usec;
   return result;
 }
 
@@ -144,6 +149,8 @@ BlackBoardEntry FromPlayerBlackBoardEntry(const player_blackboard_entry_t &entry
   result.data.data_count = entry.data_count;
   result.data.data = new uint8_t[result.data.data_count];
   memcpy(result.data.data, entry.data, result.data.data_count);
+  result.data.timestamp_sec = entry.timestamp_sec;
+  result.data.timestamp_usec = entry.timestamp_usec;
   return result;
 }
 
