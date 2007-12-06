@@ -313,9 +313,17 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, opaque_id))
   {
     player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
-    memmove(&rx_buffer[rx_count], recv->data, recv->data_count);
     rx_count += recv->data_count;
-    ProcessLaserData();
+    if (rx_count > rx_buffer_size)
+    {
+      PLAYER_WARN("S3000 Buffer Full");
+      rx_count = 0;
+    }
+    else
+    {
+      memmove(&rx_buffer[rx_count], recv->data, recv->data_count);
+      ProcessLaserData();
+    }
     return 0;
   }
   
