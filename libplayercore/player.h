@@ -46,6 +46,8 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <time.h>
+
 /* Include values from the configure script */
 #include "playerconfig.h"
 
@@ -277,6 +279,11 @@ typedef struct player_blackboard_entry
   uint32_t data_count;
   /** Entry data. */
   uint8_t* data;
+  /** Time of entry creation. Seconds since Epoch. */
+  uint32_t timestamp_sec;
+  /** Time of entry creation. Microseconds field. */
+  uint32_t timestamp_usec;
+  /** */
 } player_blackboard_entry_t;
 
 /** @brief A line segment, used to construct vector-based maps */
