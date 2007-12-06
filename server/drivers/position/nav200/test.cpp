@@ -1,4 +1,4 @@
-#include <stdlib.h>
+/*#include <stdlib.h>
 #include <time.h>
 #include "nav200.h"
 
@@ -8,7 +8,7 @@ int main(int argc,char ** argv)
   //Standby mode
   PositionXY reflector;
   Nav200 testing;
-  testing.Initialise("/dev/ttyS1");
+  testing.Initialise("/dev/ttyS0");
   if (testing.EnterStandby())
   {
     printf("\n\n\nEntered Standby\n\n");
@@ -219,3 +219,7 @@ int main(int argc,char ** argv)
 //not working list
 //   bool rotateDirection(uint8_t direction); //absolutely not working for some unknown reason
 //   bool DeleteReflectorPosition(uint8_t layer, uint8_t number, PositionXY & reflector); <-- return incorrect X value
+*/
+
+int main()
+{}

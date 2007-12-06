@@ -592,6 +592,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/irobot/roomba/Makefile
           server/drivers/mixed/irobot/create/Makefile
           server/drivers/mixed/sr3000/Makefile
+          server/drivers/opaque/Makefile
           server/drivers/health/Makefile
           server/drivers/health/statgrab/Makefile
           server/drivers/planner/Makefile

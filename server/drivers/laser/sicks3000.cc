@@ -48,7 +48,7 @@ It is also assumed that the laser is outputing its full 190 degree scan in a sin
 
 @par Requires
 
-- none
+- opaque
 
 @par Configuration requests
 
@@ -56,16 +56,6 @@ It is also assumed that the laser is outputing its full 190 degree scan in a sin
 - PLAYER_LASER_REQ_GET_CONFIG
   
 @par Configuration file options
-
-- port (string)
-  - Default: "/dev/ttyS0"
-  - Serial port to which laser is attached.  If you are using a
-    USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
-
-- transfer_rate (integer)
-  - Rate desired for data transfers, negotiated after connection
-  - Default: 38400
-  - Baud rate.  Valid values are 9600, 19200, 38400, 125k, 250k, 500k
 
 - pose (length tuple)
   - Default: [0.0 0.0 0.0]
@@ -83,8 +73,16 @@ driver
 (
   name "sicks3000"
   provides ["laser:0"]
+  requires ["opaque:0"]
+)
+
+driver
+(
+  name "serialstream"
+  provides ["opaque:0]
   port "/dev/ttyS0"
 )
+
 @endverbatim
 
 @author Toby Collett
@@ -112,22 +110,11 @@ driver
 #include <sys/ioctl.h>
 #include <arpa/inet.h> // for htons etc
 
-#undef HAVE_HI_SPEED_SERIAL
-#ifdef HAVE_LINUX_SERIAL_H
-  #ifndef DISABLE_HIGHSPEEDSICK
-    #include <linux/serial.h>
-    #define HAVE_HI_SPEED_SERIAL
-  #endif
-#endif
-
 #include <libplayercore/playercore.h>
-#include <replace/replace.h>
+//#include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 
-#define DEFAULT_LASER_PORT "/dev/ttyS0"
-#define DEFAULT_LASER_TRANSFER_RATE 38400
-
-#define RX_BUFFER_SIZE 4096
+#define DEFAULT_RX_BUFFER_SIZE 4096
 
 // The laser device class.
 class SickS3000 : public Driver
@@ -150,27 +137,6 @@ class SickS3000 : public Driver
     // Main function for device thread.
     virtual void Main();
 
-    // Open the terminal
-    // Returns 0 on success
-    int OpenTerm();
-
-    // Close the terminal
-    // Returns 0 on success
-    int CloseTerm();
-    
-    // Set the terminal speed
-	// can be any value valid for the s3000
-    // Returns 0 on success
-    int ChangeTermSpeed(int speed);
-
-    // Set the laser data rate
-    // Valid values are 9600 and 38400
-    // Returns 0 on success
-    int SetLaserSpeed(int speed);
-
-    // Read range data from laser
-    int ReadLaserData();
-
     // Process range data from laser
     int ProcessLaserData();
 
@@ -180,6 +146,7 @@ class SickS3000 : public Driver
 
     // Get the time (in ms)
     int64_t GetTime();
+    
 
   protected:
 
@@ -187,12 +154,6 @@ class SickS3000 : public Driver
     double pose[3];
     double size[2];
     
-    // Name of device used to communicate with the laser
-    const char *device_name;
-    
-    // laser device file descriptor
-    int laser_fd;           
-
     // Scan width and resolution.
     int scan_width, scan_res;
 
@@ -203,24 +164,11 @@ class SickS3000 : public Driver
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
-
-    // Range resolution (1 = 1mm, 10 = 1cm, 100 = 10cm).
-    int range_res;
-
-    // Turn intensity data on/off
-    bool intensity;
-
-    // Is the laser upside-down? (if so, we'll reverse the ordering of the
-    // readings)
-    int invert;
-
-    bool can_do_hi_speed;
-    int connect_rate;  // Desired rate for first connection
-    int transfer_rate; // Desired rate for operation
-    int current_rate;  // Current rate
-
-    int scan_id;
     
+    // Opaque Driver info
+    Device *opaque;
+    player_devaddr_t opaque_id;
+
     // rx buffer
     uint8_t * rx_buffer;
     unsigned int rx_buffer_size;
@@ -229,11 +177,6 @@ class SickS3000 : public Driver
     // storage for outgoing data
     player_laser_data_t data_packet;
     player_laser_config_t config_packet;
-    
-
-#ifdef HAVE_HI_SPEED_SERIAL
-  struct serial_struct old_serial;
-#endif
 };
 
 // a factory creation function
@@ -266,21 +209,23 @@ void SickS3000_Register(DriverTable* table)
 SickS3000::SickS3000(ConfigFile* cf, int section)
     : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
 {
+	  
+  rx_count = 0;
   // allocate our recieve buffer
-  rx_buffer_size = RX_BUFFER_SIZE;
+  rx_buffer_size = cf->ReadInt(section, "buffer_size", DEFAULT_RX_BUFFER_SIZE);
   rx_buffer = new uint8_t[rx_buffer_size];
   assert(rx_buffer);
   
   memset(&data_packet,0,sizeof(data_packet));
-  data_packet.min_angle = DTOR(-95);
-  data_packet.max_angle = DTOR(95);
-  data_packet.resolution = DTOR(0.25);
+  data_packet.min_angle = DTOR(-135);
+  data_packet.max_angle = DTOR(135);
+  data_packet.resolution = DTOR(0.5);
   data_packet.max_range = 49;
 
   memset(&config_packet,0,sizeof(config_packet));
-  config_packet.min_angle = DTOR(-95);
-  config_packet.max_angle = DTOR(95);
-  config_packet.resolution = DTOR(0.25);
+  config_packet.min_angle = DTOR(-135);
+  config_packet.max_angle = DTOR(135);
+  config_packet.resolution = DTOR(0.5);
   config_packet.max_range = 49;
   
   // Laser geometry.
@@ -290,25 +235,16 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
   this->size[0] = 0.15;
   this->size[1] = 0.15;
 
-  // Serial port
-  this->device_name = cf->ReadString(section, "port", DEFAULT_LASER_PORT);
-
-  // Serial rate
-  this->transfer_rate = cf->ReadInt(section, "transfer_rate", DEFAULT_LASER_TRANSFER_RATE);
-  this->current_rate = 0;
-
-#ifdef HAVE_HI_SPEED_SERIAL
-  this->can_do_hi_speed = true;
-#else
-  this->can_do_hi_speed = false;
-#endif
-
-  if (!this->can_do_hi_speed && this->transfer_rate > 38400)
+  this->opaque = NULL;
+  // Must have an opaque device
+  if (cf->ReadDeviceAddr(&this->opaque_id, section, "requires",
+                       PLAYER_OPAQUE_CODE, -1, NULL) != 0)
   {
-    PLAYER_ERROR1("sicklms200: requested hi speed serial, but no support compiled in. Defaulting to %d bps.",
-		    DEFAULT_LASER_TRANSFER_RATE);
-    this->connect_rate = DEFAULT_LASER_TRANSFER_RATE;
+	puts ("No Opaque driver specified");
+    this->SetError(-1);    
+    return;
   }
+
 
   return;
 }
@@ -323,22 +259,32 @@ SickS3000::~SickS3000()
 // Set up the device
 int SickS3000::Setup()
 {
-  PLAYER_MSG1(2, "Laser initialising (%s)", this->device_name);
-    
-  // Open the terminal
-  if (OpenTerm())
-    return 1;
-
-  if (ChangeTermSpeed(this->transfer_rate))
+  
+  PLAYER_MSG0(2, "Laser initialising");
+  // Subscribe to the opaque device.
+  if(Device::MatchDeviceAddress(this->opaque_id, this->device_addr))
   {
-    return 1;
+    PLAYER_ERROR("attempt to subscribe to self");
+    return(-1);
+  }
+  
+  if(!(this->opaque = deviceTable->GetDevice(this->opaque_id)))
+  {
+    PLAYER_ERROR("unable to locate suitable opaque device");
+    return(-1);
+  }
+   
+  if(this->opaque->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to opaque device");
+    return(-1);
   }
 
   PLAYER_MSG0(2, "laser ready");
 
   // Start the device thread
   StartThread();
-
+  
   return 0;
 }
 
@@ -350,8 +296,8 @@ int SickS3000::Shutdown()
   // shutdown laser device
   StopThread();
 
-  CloseTerm();
-
+  opaque->Unsubscribe(InQueue);
+  
   PLAYER_MSG0(2, "laser shutdown");
   
   return(0);
@@ -363,6 +309,16 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
                            player_msghdr * hdr,
                            void * data)
 {
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, opaque_id))
+  {
+    player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
+    memmove(&rx_buffer[rx_count], recv->data, recv->data_count);
+    rx_count += recv->data_count;
+    ProcessLaserData();
+    return 0;
+  }
+  
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_LASER_REQ_GET_CONFIG,
                                  this->device_addr))
@@ -393,7 +349,6 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
                   (void*)&geom, sizeof(geom), NULL);
     return(0);
   }
-
   // Don't know how to handle this message.
   return(-1);
 }
@@ -404,216 +359,18 @@ void SickS3000::Main()
 {
   for(;;)
   {
+	// Waits for the opaque driver to pass data onto this thread.
+	InQueue->Wait();
+	
     // test if we are supposed to cancel
     pthread_testcancel();
     
     // process any pending messages
     ProcessMessages();
     
-    // read data into our ring buffer and then process it
-    int ret = ReadLaserData();
-	if (ret < 0)
-	{
-		PLAYER_WARN("Error reading from S3000 device");
-	}
-	else if (ret > 0)
-    	ProcessLaserData();
-  }
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Open the terminal
-// Returns 0 on success
-int SickS3000::OpenTerm()
-{
-  this->laser_fd = ::open(this->device_name, O_RDWR | O_SYNC , S_IRUSR | S_IWUSR );
-  if (this->laser_fd < 0)
-  {
-    PLAYER_ERROR2("unable to open serial port [%s]; [%s]",
-                  (char*) this->device_name, strerror(errno));
-    return 1;
-  }
-
-  // set the serial port speed to 9600 to match the laser
-  // later we can ramp the speed up to the SICK's 38K
-  //
-  struct termios term;
-  if( tcgetattr( this->laser_fd, &term ) < 0 )
-    RETURN_ERROR(1, "Unable to get serial port attributes");
-  
-  cfmakeraw( &term );
-  cfsetispeed( &term, B9600 );
-  cfsetospeed( &term, B9600 );
-  
-  if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
-    RETURN_ERROR(1, "Unable to set serial port attributes");
-
-  // Make sure queue is empty
-  //
-  tcflush(this->laser_fd, TCIOFLUSH);
+    //usleep(1000);
     
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Close the terminal
-// Returns 0 on success
-//
-int SickS3000::CloseTerm()
-{
-  ::close(this->laser_fd);
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Set the terminal speed
-// Valid values are 9600 and 38400
-// Returns 0 on success
-//
-int SickS3000::ChangeTermSpeed(int speed)
-{
-  struct termios term;
-
-  current_rate = speed;
-
-#ifdef HAVE_HI_SPEED_SERIAL
-  struct serial_struct serial;
-
-  // we should check and reset the AYSNC_SPD_CUST flag
-  // since if it's set and we request 38400, we're likely
-  // to get another baud rate instead (based on custom_divisor)
-  // this way even if the previous player doesn't reset the
-  // port correctly, we'll end up with the right speed we want
-  if (ioctl(this->laser_fd, TIOCGSERIAL, &serial) < 0) 
-  {
-    //RETURN_ERROR(1, "error on TIOCGSERIAL in beginning");
-    PLAYER_WARN("ioctl() failed while trying to get serial port info");
   }
-  else
-  {
-    serial.flags &= ~ASYNC_SPD_CUST;
-    serial.custom_divisor = 0;
-    if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) 
-    {
-      //RETURN_ERROR(1, "error on TIOCSSERIAL in beginning");
-      PLAYER_WARN("ioctl() failed while trying to set serial port info");
-    }
-  }
-#endif  
-
-  //printf("LASER: change TERM speed: %d\n", speed);
-
-  int term_speed;
-  switch(speed)
-  {
-    case 9600:
-		term_speed = B9600;
-		break;
-	case 19200:
-		term_speed = B19200;
-		break;
-	case 38400:
-		term_speed = B38400;
-		break;
-	default:
-		term_speed = speed;
-  }
-
-  switch(term_speed)
-  {
-    case B9600:
-    case B19200:
-    case B38400:
-      //PLAYER_MSG0(2, "terminal speed to 9600");
-      if( tcgetattr( this->laser_fd, &term ) < 0 )
-        RETURN_ERROR(1, "unable to get device attributes");
-        
-      cfmakeraw( &term );
-	  cfsetispeed( &term, term_speed );
-	  cfsetospeed( &term, term_speed );
-        
-      if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
-        RETURN_ERROR(1, "unable to set device attributes");
-      break;
-
-    case 500000:
-      //PLAYER_MSG0(2, "terminal speed to 500000");
-
-#ifdef HAVE_HI_SPEED_SERIAL    
-      if (ioctl(this->laser_fd, TIOCGSERIAL, &this->old_serial) < 0) {
-        RETURN_ERROR(1, "error on TIOCGSERIAL ioctl");
-      }
-    
-      serial = this->old_serial;
-    
-      serial.flags |= ASYNC_SPD_CUST;
-      serial.custom_divisor = 48; // for FTDI USB/serial converter divisor is 240/5
-    
-      if (ioctl(this->laser_fd, TIOCSSERIAL, &serial) < 0) {
-        RETURN_ERROR(1, "error on TIOCSSERIAL ioctl");
-      }
-    
-#else
-      fprintf(stderr, "sicklms200: Trying to change to 500kbps, but no support compiled in, defaulting to 38.4kbps.\n");
-#endif
-
-      // even if we are doing 500kbps, we have to set the speed to 38400...
-      // the driver will know we want 500000 instead.
-
-      if( tcgetattr( this->laser_fd, &term ) < 0 )
-        RETURN_ERROR(1, "unable to get device attributes");    
-
-      cfmakeraw( &term );
-      cfsetispeed( &term, B38400 );
-      cfsetospeed( &term, B38400 );
-    
-      if( tcsetattr( this->laser_fd, TCSAFLUSH, &term ) < 0 )
-        RETURN_ERROR(1, "unable to set device attributes");
-    
-      break;
-    default:
-      PLAYER_ERROR1("unknown speed %d", speed);
-  }
-  return 0;
-}
-
-
-  
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Read range data from laser
-//
-int SickS3000::ReadLaserData()
-{
-  if (rx_count == rx_buffer_size)
-  {
-    PLAYER_WARN("S3000 RX buffer full\n");
-    return 0; 
-  }
-  // Read a packet from the laser
-  //
-  //int len = ReadFromLaser(&rx_buffer[rx_count], rx_buffer_size - rx_count);
-  int len = read(this->laser_fd, &rx_buffer[rx_count], rx_buffer_size - rx_count);
-  if (len == 0)
-  {
-    PLAYER_MSG0(2, "empty packet");
-    return 0;
-  }
-  if (len < 0)
-  {
-    PLAYER_ERROR2("error reading form s3000: %d %s", errno, strerror(errno));
-    return -1;
-  }
-
-  rx_count += len;
-   
-  return len;
 }
 
 
@@ -621,6 +378,7 @@ int SickS3000::ProcessLaserData()
 {
   while(rx_count >= 22)
   {
+	
     // find our continuous data header
     unsigned int ii;
     bool found = false;
@@ -645,6 +403,13 @@ int SickS3000::ProcessLaserData()
     // size includes all data from the data block number
     // through to the end of the packet including the checksum
     unsigned short size = 2*htons(*reinterpret_cast<unsigned short *> (&rx_buffer[6]));
+    //printf("size %d", size);
+    if (size > rx_buffer_size - 26)
+    {
+	PLAYER_WARN("Requested Size of data is larger than the buffer size");
+	memmove(rx_buffer, &rx_buffer[1], --rx_count);
+      	return 0;
+    }
     
     // check if we have enough data yet
     if (size > rx_count - 4)
@@ -702,7 +467,7 @@ int SickS3000::ProcessLaserData()
       }
     }
       
-    memmove(rx_buffer, &rx_buffer[size+4], size+4);
+    memmove(rx_buffer, &rx_buffer[size+4], rx_count - (size+4));
     rx_count -= (size + 4);
     continue;
   }
@@ -755,37 +520,5 @@ unsigned short SickS3000::CreateCRC(uint8_t *Data, ssize_t length)
   }
   return CRC_16;
 }
-           
-           
-           
-/*           
-////////////////////////////////////////////////////////////////////////////////
-// Create a CRC for the given packet
-//
-unsigned short SickS3000::CreateCRC(uint8_t* data, ssize_t len)
-{
-  uint16_t uCrc16;
-  uint8_t abData[2];
-  
-  uCrc16 = 0;
-  abData[0] = 0;
-  
-  while(len-- )
-  {
-    abData[1] = abData[0];
-    abData[0] = *data++;
-    
-    if( uCrc16 & 0x8000 )
-    {
-      uCrc16 = (uCrc16 & 0x7fff) << 1;
-      uCrc16 ^= CRC16_GEN_POL;
-    }
-    else
-    {    
-      uCrc16 <<= 1;
-    }
-    uCrc16 ^= MAKEUINT16(abData[0],abData[1]);
-  }
-  return (uCrc16); 
-}
-*/
+
+

@@ -1,4 +1,4 @@
-#include <stdlib.h>
+/*#include <stdlib.h>
 #include "nav200.h"
 
 #define XMIN 100
@@ -35,3 +35,7 @@ int main(int argc,char ** argv)
 
   return 0;
 }
+*/
+
+int main()
+{}

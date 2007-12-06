@@ -47,18 +47,13 @@ reflector layers.
 
 @par Requires
 
-- none
+- @ref opaque
 
 @par Configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
   
 @par Configuration file options
-
-- port (string)
-  - Default: "/dev/ttyS0"
-  - Serial port to which laser is attached.  If you are using a
-    USB/232 or USB/422 converter, this will be "/dev/ttyUSBx".
 
 - pose (length tuple)
   - Default: [0.0 0.0 0.0]
@@ -76,8 +71,15 @@ driver
 (
   name "sicknav200"
   provides ["position2d:0"]
-  port "/dev/ttyS0"
+  requires ["opaque:0"]
 )
+driver
+(
+	name "serialstream"
+	provides ["opaque:0"]
+	port "/dev/ttyS0"
+)
+
 @endverbatim
 
 @author Kathy Fung, Toby Collett, inro technologies
@@ -106,7 +108,7 @@ driver
 #include <arpa/inet.h> // for htons etc
 
 #include <libplayercore/playercore.h>
-#include <replace/replace.h>
+// #include <replace/replace.h>
 extern PlayerTime* GlobalTime;
 
 #include "nav200.h"
@@ -139,7 +141,9 @@ class SickNAV200 : public Driver
     double size[2];
     
     // Name of device used to communicate with the laser
-    char *device_name;
+    //char *device_name;
+    
+    bool nchanged;
     
     // storage for outgoing data
     player_position2d_data_t data_packet;
@@ -148,6 +152,9 @@ class SickNAV200 : public Driver
     Nav200 Laser;
     int min_radius, max_radius;
     
+    // Opaque Driver info
+    Device *opaque;
+    player_devaddr_t opaque_id;
 
 };
 
@@ -160,6 +167,7 @@ Driver* SickNAV200_Init(ConfigFile* cf, int section)
 // a driver registration function
 void SickNAV200_Register(DriverTable* table)
 {
+	puts("Registering driver");
   table->AddDriver("sicknav200", SickNAV200_Init);
 }
 
@@ -180,19 +188,33 @@ SickNAV200::SickNAV200(ConfigFile* cf, int section)
   this->size[0] = 0.15;
   this->size[1] = 0.15;
 
-  // Serial port
-  this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_PORT));
+  nchanged = true;
+  
+  // Serial port - done in the opaque driver
+  //this->device_name = strdup(cf->ReadString(section, "port", DEFAULT_PORT));
 
   // nav200 parameters, convert to cm
   this->min_radius = static_cast<int> (cf->ReadLength(section, "min_radius", 1) * 100);
   this->max_radius = static_cast<int> (cf->ReadLength(section, "max_radius", 30) * 100);
-
+  
+  this->opaque = NULL;
+  // Must have an opaque device
+  PLAYER_MSG0(2, "reading opaque id now");
+  if (cf->ReadDeviceAddr(&this->opaque_id, section, "requires",
+                       PLAYER_OPAQUE_CODE, -1, NULL) != 0)
+  {
+	PLAYER_MSG0(2, "No opaque driver specified");
+    this->SetError(-1);    
+    return;
+  }
+  PLAYER_MSG0(2, "reading opaque id now");
+  
   return;
 }
 
 SickNAV200::~SickNAV200()
 {
-  free(device_name);
+  //free(device_name);
 }
 
 
@@ -200,20 +222,31 @@ SickNAV200::~SickNAV200()
 // Set up the device
 int SickNAV200::Setup()
 {
-  PLAYER_MSG1(2, "NAV200 initialising (%s)", this->device_name);
-    
+  PLAYER_MSG0(2, "NAV200 initialising");
+  
+  // Subscribe to the opaque device.
+  if(Device::MatchDeviceAddress(this->opaque_id, this->device_addr))
+  {
+    PLAYER_ERROR("attempt to subscribe to self");
+    return(-1);
+  }
+  
+  if(!(this->opaque = deviceTable->GetDevice(this->opaque_id)))
+  {
+    PLAYER_ERROR("unable to locate suitable opaque device");
+    return(-1);
+  }
+   
+  if(this->opaque->Subscribe(this->InQueue) != 0)
+  {
+    PLAYER_ERROR("unable to subscribe to opaque device");
+    return(-1);
+  }
+  
   // Open the terminal
-  Laser.Initialise(this->device_name);
-  if (!Laser.EnterStandby() || !Laser.EnterPositioning())
-  {
-      PLAYER_ERROR("unable to enter standby or position mode\n");
-      return -1;;
-  }
-  if (!Laser.SetActionRadii(min_radius, max_radius))
-  {
-      PLAYER_ERROR("failed to set action radii\n");
-      return -1;;
-  }
+  Laser.Initialise(this, opaque, opaque_id);
+  puts("Laser initilised");
+
 
   PLAYER_MSG0(2, "NAV200 ready");
 
@@ -224,6 +257,7 @@ int SickNAV200::Setup()
 }
 
 
+
 ////////////////////////////////////////////////////////////////////////////////
 // Shutdown the device
 int SickNAV200::Shutdown()
@@ -231,6 +265,8 @@ int SickNAV200::Shutdown()
   // shutdown laser device
   StopThread();
 
+  opaque->Unsubscribe(InQueue);
+  
   PLAYER_MSG0(2, "laser shutdown");
   
   return(0);
@@ -242,6 +278,14 @@ SickNAV200::ProcessMessage(QueuePointer &resp_queue,
                            player_msghdr * hdr,
                            void * data)
 {
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, opaque_id))
+  {
+    player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
+    memmove(&Laser.receivedBuffer[Laser.bytesReceived], recv->data, recv->data_count);
+    Laser.bytesReceived += recv->data_count;
+    return 0;
+  }
+	
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_REQ,
                                  PLAYER_POSITION2D_REQ_GET_GEOM,
                                  this->device_addr))
@@ -278,6 +322,20 @@ void SickNAV200::Main()
     // process any pending messages
     ProcessMessages();
     
+    if (nchanged)
+    {
+    	  if (!Laser.EnterStandby() || !Laser.EnterPositioning())
+    	  {
+    	      PLAYER_ERROR("unable to enter standby or position mode\n");
+    	      return ;
+    	  }
+    	  if (!Laser.SetActionRadii(min_radius, max_radius))
+    	  {
+    	      PLAYER_ERROR("failed to set action radii\n");
+    	      return ;
+    	  }
+    	  nchanged = false;
+    }
     // get update and publish result
     if(Laser.GetPositionAuto(Reading))
     {
@@ -306,6 +364,5 @@ void SickNAV200::Main()
     }
   }
 }
-
 
 
