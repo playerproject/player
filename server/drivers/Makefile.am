@@ -9,6 +9,7 @@ gps \
 health \
 joystick \
 laser \
+opaque \
 localization \
 map \
 mcom \

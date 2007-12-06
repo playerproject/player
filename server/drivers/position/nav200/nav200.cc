@@ -10,63 +10,25 @@ Nav200::~Nav200()
 {
 }
 
-int Nav200::Initialise(const char * port, int rate)
+int Nav200::Initialise(Driver* sn2002, Device* opaque2, player_devaddr_t opaque_id2 )
 {
+  this->sn200 = sn2002;
+  this->opaque_id = opaque_id2;
+  this->opaque = opaque2;
   bytesReceived = 0;
-  fd = -1;
 
-  // open the serial port
-  fd = open(port, O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
-  if ( fd<0 )
-  {
-    fprintf(stderr, "Could not open serial device %s\n",port);
-    return -1;
-  }
-
-  // save the current io settings
-  tcgetattr(fd, &oldtio);
-
-  // set up new settings
-  struct termios newtio;
-  memset(&newtio, 0,sizeof(newtio));
-  newtio.c_cflag = CS8 | CREAD | PARENB;
-  newtio.c_iflag = INPCK;
-  newtio.c_oflag = 0;
-  newtio.c_lflag = 0;
-
-  // activate new settings
-  tcflush(fd, TCIFLUSH);
-  if (cfsetispeed(&newtio, rate) < 0 || cfsetospeed(&newtio, rate) < 0)
-  {
-    fprintf(stderr,"Failed to set serial baud rate: %d\n", rate);
-    tcsetattr(fd, TCSANOW, &oldtio);
-    close(fd);
-    fd = -1;
-    return -1;
-  }
-  tcsetattr(fd, TCSANOW, &newtio);
-  tcflush(fd, TCIOFLUSH);
-
-  // clear the input buffer in case junk data is on the port
-  usleep(10000);
-  tcflush(fd, TCIFLUSH);
   return 0;
 }
 
 int Nav200::Terminate()
 {
-  // restore old port settings
-  if (fd > 0)
-  {
-    tcsetattr(fd, TCSANOW, &oldtio);
-    close(fd);
-  }
   return 0;
 }
 
 /*****************
 * Standby mode
 *******************/
+
 bool Nav200::EnterStandby()
 {
   WriteCommand('S','A',0,NULL);
@@ -588,8 +550,8 @@ void Nav200::PrintErrorMsg(void)
 // Write a packet to Nav200
 int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * data)
 {
-  if (fd < 0)
-    return -1;
+/*  if (fd < 0)
+    return -1;*/
 
   int length = dataLength+5;
   uint8_t * buffer = new uint8_t[length];
@@ -606,10 +568,10 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
   // Create footer (CRC)
   buffer[length-1] = CreateCRC(buffer, 4 + dataLength);
 
-  // Make sure both input and output queues are empty
-  tcflush(fd, TCIOFLUSH);
+/*  // Make sure both input and output queues are empty
+  tcflush(fd, TCIOFLUSH);*/
 
-  // switch to blocking IO for the write
+/*  // switch to blocking IO for the write
   int flags = fcntl(fd, F_GETFL);
   if (flags < 0 || fcntl(fd,F_SETFL,flags &~O_NONBLOCK) < 0)
   {
@@ -619,17 +581,22 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
     delete [] buffer;
     return -1;
   }
-
-  if((length && (write(fd, buffer, length)) < length))
+*/
+  player_opaque_data_t mData;
+  mData.data_count = length;
+  mData.data = buffer;
+  opaque->PutMsg(sn200->InQueue, PLAYER_MSGTYPE_CMD, PLAYER_OPAQUE_CMD_DATA, reinterpret_cast<void*>(&mData), 0, NULL);
+  
+/*  if((length && (write(fd, buffer, length)) < length))
   {
     fprintf(stderr,"Error writing to FOB (%d - %s), disabling\n",errno,strerror(errno));
     tcsetattr(fd, TCSANOW, &oldtio);
     fd = -1;
     delete [] buffer;
     return -1;
-  }
+  }*/
 
-  // restore flags
+/*  // restore flags
   if (fcntl(fd,F_SETFL,flags) < 0)
   {
     fprintf(stderr,"Error restoring file mode (%d - %s), disabling\n",errno,strerror(errno));
@@ -637,7 +604,7 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
     fd = -1;
     delete [] buffer;
     return -1;
-  }
+  }*/
 
   delete [] buffer;
 
@@ -649,11 +616,13 @@ int Nav200::WriteCommand(char mode, char function, int dataLength, uint8_t * dat
 // Read a packet from the Nav200
 int Nav200::ReadFromNav200(int timeout_usec)
 {
-  int ret;
+  
   int dataLength = 0;
 
   struct timeval start, now;
   gettimeofday(&start,NULL);
+  
+  sn200->InQueue->SetFilter(opaque_id.host, opaque_id.robot, opaque_id.interf, opaque_id.index, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE);
   
   for (;;)
   {
@@ -663,27 +632,16 @@ int Nav200::ReadFromNav200(int timeout_usec)
       fprintf(stderr,"Timed out waiting for packet %d uSecs passed\n",static_cast<int>((now.tv_sec - start.tv_sec) * 1e6 + now.tv_usec - start.tv_usec));
       return -1;
     }
-
-    ret = read(fd, &receivedBuffer[bytesReceived], BUFFER_SIZE - bytesReceived);
-    if (ret < 0)
-    {
-      fprintf(stderr,"Got error while reading %d %s\n",errno, strerror(errno));
-      return ret;
-    }
-  
-    bytesReceived += ret;
-
-    if (ret == 0)
-    {
-      usleep(1000);
-      continue;
-    }
-  
+    //puts("waiting for data");
+    sn200->ProcessMessages();
+    
     // do we have enough for a header?
     while (bytesReceived > 4)
     {
+      //PLAYER_MSG4(2, "recieved STX %d data len %d mode %c fun %c", receivedBuffer[0], receivedBuffer[1], receivedBuffer[2], receivedBuffer[3]);
       if (receivedBuffer[0] != STX)
-      {
+      { 
+    	bool found = false;
         // bad thing, we dont have the correct start to a message
         for(int i=1; i<bytesReceived; i++)
         { // find where STX is
@@ -691,7 +649,14 @@ int Nav200::ReadFromNav200(int timeout_usec)
           { // move so STX is at start
             memmove(receivedBuffer, receivedBuffer+i, bytesReceived-i);
             bytesReceived-=i;
+            found = true;
+            break;
           }
+        }
+        // If none of the data points are STX then all are (essentially) removed
+        if (!found)
+        {
+        	bytesReceived = 0;
         }
         continue;
       }
@@ -710,13 +675,21 @@ int Nav200::ReadFromNav200(int timeout_usec)
       if (CreateCRC(receivedBuffer, dataLength)) // change that later!!
       {// bad thing, we dont have the correct start to a message
         fprintf(stderr,"bad CRC!!!\n");
+        bool found = false;
         for(int i=1; i<bytesReceived; i++)
         { // find where STX is
           if(receivedBuffer[i]==STX)
           { // move so STX is at start
             memmove(receivedBuffer, receivedBuffer+i, bytesReceived-i);
             bytesReceived-=i;
+            found = true;
+            break;
           }
+        }
+        // If none of the data points are STX then all are (essentially) removed
+        if (!found)
+        {
+        	bytesReceived = 0;
         }
         continue;
       }
@@ -731,7 +704,7 @@ int Nav200::ReadFromNav200(int timeout_usec)
   
           //check out what the error is and it out
           PrintErrorMsg();
-  
+          sn200->InQueue->ClearFilter();
           return -2;
         }
   
@@ -745,10 +718,12 @@ int Nav200::ReadFromNav200(int timeout_usec)
   
         memmove(receivedBuffer, receivedBuffer+dataLength, bytesReceived-dataLength);
         bytesReceived-=dataLength;
+        sn200->InQueue->ClearFilter();
         return 1;
       }
     }
   }
+  sn200->InQueue->ClearFilter();
   return 0;
 }
 

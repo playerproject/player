@@ -25,9 +25,6 @@ interfaces was later added by Toby Collett.
 #include <libplayercore/playercore.h>
 //#include <stdint.h>
 
-#define DEFAULT_PORT "/dev/ttyS0"
-#define DEFAULT_RATE B19200
-
 
 #define STX     0x02
 #define MAXLEN	255
@@ -90,10 +87,11 @@ class Nav200
 {
 public:
 
+  friend class SickNAV200;
   Nav200();
   ~Nav200();
 
-  int Initialise(const char * port = DEFAULT_PORT, int rate = DEFAULT_RATE);
+  int Initialise(Driver* device, Device* opaque, player_devaddr_t opaque_id);
   int Terminate();
 
   int ProcessData();
@@ -155,6 +153,14 @@ protected:
   int ReadFromNav200(int timeout_usec=5000000);
   int WriteCommand(char mode, char function, int dataLength, uint8_t * data);
   uint8_t CreateCRC(uint8_t* data, ssize_t len);
+  
+  // SickNav200 Driver info
+  Driver *sn200;
+  
+  // Opaque info - for setting filter
+  Device *opaque;
+  player_devaddr_t opaque_id;
+  
 };
 
 

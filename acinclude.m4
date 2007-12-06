@@ -321,6 +321,8 @@ PLAYER_ADD_DRIVER([amtecM5],[yes],
   [$AMTECM5_HEADER], [$AMTECM5_EXTRA_CPPFLAGS],
   [$AMTECM5_EXTRA_LDFLAGS])
 
+PLAYER_ADD_DRIVER([serialstream],[yes],[],[],[])
+
 dnl Service Discovery with libhowl (mdns/zeroconf/rendezvous implementation)
 PLAYER_ADD_DRIVER([service_adv_mdns],[no],
                   [],[],[],[HOWL],[howl >= 0.9.6])

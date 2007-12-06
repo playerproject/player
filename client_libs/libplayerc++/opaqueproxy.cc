@@ -113,5 +113,13 @@ OpaqueProxy::Unsubscribe()
 
 std::ostream& std::operator << (std::ostream& os, const PlayerCc::OpaqueProxy& c)
 {
-  return os << c.GetCount();
+	os << "Count is: "<< c.GetCount() << "Data:" << endl;
+	uint8_t * data;
+	data = new uint8_t[4096];
+	c.GetData(data);
+	for(int i = 0; i < c.GetCount(); i++)
+	{
+		os << hex << setw(2) << setfill('0') << data[i];
+	}
+  return os;
 }
