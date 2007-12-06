@@ -103,12 +103,13 @@ int VectorMapProxy::GetLayerCount() const
 
 vector<string> VectorMapProxy::GetLayerNames() const
 {
-  scoped_lock_t lock(mPc->mMutex);
   vector<string> names;
   int layerCount = GetLayerCount();
   if (layerCount < 1)
     return names;
 
+  // this lock needs to come after GetLayerCount which locks as well
+  scoped_lock_t lock(mPc->mMutex);
   for (int i=0; i<layerCount; ++i)
   {
     names.push_back(string(mDevice->layers_info[i]->name));
