@@ -77,7 +77,6 @@ static int init_done;
 
 void dummy(int sig)
 {
-  printf("got %d\n", sig);
 }
 
 // Local functions
@@ -322,10 +321,8 @@ int playerc_client_connect(playerc_client_t *client)
                   "unexpected exit may result");
   }
 
-  puts("calling connect");
   ret = connect(client->sock, (struct sockaddr*)&client->server,
                 sizeof(client->server));
-  puts("done");
 
   /* Turn off timer */
   timer.it_value.tv_sec = 0;
@@ -410,7 +407,6 @@ int playerc_client_disconnect_retry(playerc_client_t *client)
       PLAYER_WARN("playerc_client_connect() failed");
     else
     {
-      puts("playerc_client_connect() succeeded");
       /* Clean out buffers */
       client->read_xdrdata_len = 0;
 
@@ -511,10 +507,11 @@ playerc_client_requestdata(playerc_client_t* client)
   int ret;
   player_null_t req;
 
-//  req.subtype = htons(PLAYER_PLAYER_DATA_REQ);
-  if(client->data_requested)
+  if(client->mode != PLAYER_DATAMODE_PULL || client->data_requested)
     return(0);
-  ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, &req, NULL);
+
+  ret = playerc_client_request(client, NULL, PLAYER_PLAYER_REQ_DATA, 
+                               &req, NULL);
   if(ret == 0)
   {
     client->data_requested = 1;
@@ -527,10 +524,13 @@ playerc_client_requestdata(playerc_client_t* client)
 // not been sent already.
 int playerc_client_peek(playerc_client_t *client, int timeout)
 {
-  if (!client->data_requested)
-  {
-	  playerc_client_requestdata(client);
-  }
+  // First check the message queue
+  if (client->qlen > 0)
+    return(1);
+
+  // In case we're in PULL mode, first request a round of data.
+  playerc_client_requestdata(client);
+
   return playerc_client_internal_peek(client, timeout);
 }
 
@@ -539,18 +539,11 @@ int playerc_client_internal_peek(playerc_client_t *client, int timeout)
 {
   int count;
   struct pollfd fd;
-  playerc_client_item_t *item;
   
   if (client->sock < 0)
   {
-    PLAYERC_WARN("no socket to write to");
+    PLAYERC_WARN("no socket to peek at");
     return -1;
-  }
-
-  if (client->qlen > 0)
-  {
-    item = client->qitems + client->qfirst;
-    return(item->header.size);
   }
 
   fd.fd = client->sock;
@@ -589,14 +582,11 @@ void *playerc_client_read(playerc_client_t *client)
 
   for(;;)
   {
-    // If we're in a PULL mode, first request a round of data.
-    if((client->mode == PLAYER_DATAMODE_PULL))
-    {
-      if(playerc_client_requestdata(client) < 0)
-        return NULL;
-    }
+    // In case we're in PULL mode, first request a round of data.
+    if(playerc_client_requestdata(client) < 0)
+      return NULL;
     ret = playerc_client_read_nonblock(client);
-    if(ret != NULL)
+    if((ret != NULL) || (client->sock < 0))
       break;
     nanosleep(&sleeptime,NULL);
   }  
@@ -612,16 +602,17 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
   {
     // See if there is any queued data.
     if (playerc_client_pop (client, &header, client->data) < 0)
-	{
-	  // If there is no queued data, peek at the socket
-	  if(playerc_client_internal_peek(client,0) <= 0)
-	    return NULL;
-	  // There's data on the socket, so read a packet (blocking).
-	  if (playerc_client_readpacket (client, &header, client->data) < 0)
-	    return NULL;
-	}
+    {
+      // If there is no queued data, peek at the socket
+      if(playerc_client_internal_peek(client,0) <= 0)
+        return NULL;
+      // There's data on the socket, so read a packet (blocking).
+      if(playerc_client_readpacket (client, &header, client->data) < 0)
+        return NULL;
+    }
 	  
-    // One way or another, we got a new packet into (header,client->data), so process it
+    // One way or another, we got a new packet into (header,client->data), 
+    // so process it
     switch(header.type)
     {
       case PLAYER_MSGTYPE_RESP_ACK:
@@ -631,7 +622,7 @@ void *playerc_client_read_nonblock(playerc_client_t *client)
         client->data_requested = 0;
         if(!client->data_received)
         {
-          PLAYERC_WARN ("No Data recieved with SYNC");
+          PLAYERC_WARN ("No data recieved with SYNC");
           return NULL;
         }
         else
@@ -706,10 +697,12 @@ int playerc_client_request(playerc_client_t *client,
                            void *req_data, void **rep_data)
 {
   double t;
+  int peek;
   struct timeval last;
   struct timeval curr;
   player_msghdr_t req_header, rep_header;
   memset(&req_header, 0, sizeof(req_header));
+
 
   if(deviceinfo == NULL)
   {
@@ -733,20 +726,20 @@ int playerc_client_request(playerc_client_t *client,
   // for later processing.
   while(t >= 0)
   {
-    int peek;
     gettimeofday(&last,NULL);
-    peek = playerc_client_internal_peek(client,10);
-    gettimeofday(&curr,NULL);
-    t -= ((curr.tv_sec + curr.tv_usec/1e6) -
-          (last.tv_sec + last.tv_usec/1e6));
 
-    if(peek < 0)
+    // Peek at the socket
+    if((peek = playerc_client_internal_peek(client,10)) < 0)
       return -1;
     else if(peek == 0)
       continue;
 
-    if (playerc_client_readpacket(client, &rep_header, client->data) < 0)
+    // There's data on the socket, so read a packet (blocking).
+    if(playerc_client_readpacket(client, &rep_header, client->data) < 0)
       return -1;
+    gettimeofday(&curr,NULL);
+    t -= ((curr.tv_sec + curr.tv_usec/1e6) -
+          (last.tv_sec + last.tv_usec/1e6));
 
     if (rep_header.type == PLAYER_MSGTYPE_DATA || rep_header.type == PLAYER_MSGTYPE_SYNCH)
     {
@@ -999,7 +992,7 @@ int playerc_client_readpacket(playerc_client_t *client,
 
   if (client->sock < 0)
   {
-    PLAYERC_WARN("no socket to write to");
+    PLAYERC_WARN("no socket to read from");
     return -1;
   }
 

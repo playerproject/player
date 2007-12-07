@@ -41,7 +41,7 @@ playerv requires the GTK+-2.0 development libraries and headers.
 playerv is installed alongside player in $prefix/bin, so if player is
 in your PATH, then playerv should also be.  Command-line usage is:
 @verbatim
-$ playerv [-h <hostname>] [-p <port>] [-pull <0|1>] [--<device>:<index>] [--<device>:<index>] ...
+$ playerv [-h <hostname>] [-p <port>] [-rate <Hz>] [--<device>:<index>] [--<device>:<index>] ...
 @endverbatim
 For example, to connect to Player on localhost at the default port
 (6665), and subscribe to the 0th position and sonar devices:
@@ -54,9 +54,9 @@ To connect to Player on another machine (foo) at a non-default port
 $ playerv -h foo -p 7000
 @endverbatim
 
-If pull is set to 1, it will set the server's replace rule to true, and only
-deliver data when a read is requested.  This is sometimes useful on slow
-connections or with slow computers that cannot keep up.
+If rate is a positive value, playerv attempts to poll the server for data
+at the requested rate, in Hz.  If rate is 0, then playerv switches to PUSH
+mode, in which the server pushes all data, when it's ready.  The default rate is 5Hz.
 
 When playerv starts, a window will pop up.  Click and drag with the left
 mouse button to pan the window.  Click and drag with the right mouse
@@ -141,7 +141,7 @@ void print_usage()
 {
   printf("\nPlayerViewer %s, ", VERSION);
   printf("a visualization tool for the Player robot device server.\n");
-  printf("Usage  : playerv [-h <hostname>] [-p <port>] [-pull <0|1>]\n");
+  printf("Usage  : playerv [-h <hostname>] [-p <port>] [-rate <Hz>]\n");
   printf("                 [--<device>:<index>] [--<device>:<index>] ... \n");
   printf("Example: playerv -p 6665 --position:0 --sonar:0\n");
   printf("\n");
@@ -158,9 +158,8 @@ int main(int argc, char **argv)
   const char *host;
   int port;
   int i;
-  int rate;
   int count;
-  int pull;
+  double rate;
   char section[256];
   int device_count;
   device_t devices[PLAYER_MAX_DEVICES];
@@ -187,7 +186,6 @@ int main(int argc, char **argv)
   }
 
   // Pick out some important program options
-  rate = opt_get_int(opt, "gui", "rate", 10);
   host = opt_get_string(opt, "", "host", NULL);
   if (!host)
     host = opt_get_string(opt, "", "h", "localhost");
@@ -196,7 +194,9 @@ int main(int argc, char **argv)
   if (port < 0)
     port = opt_get_int(opt, "", "p", 6665);
 
-  pull = opt_get_int(opt, "", "pull", 1);
+  rate = opt_get_double(opt, "", "rate", 5.0);
+  if(rate < 0.0)
+    rate = 0.0;
 
   // Connect to the server
   printf("Connecting to [%s:%d]\n", host, port);
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  if (0 == pull)
+  if(rate == 0.0)
   {
     printf("Setting delivery mode to PLAYER_DATAMODE_PUSH\n", host, port);
     // Change the server's data delivery mode.
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
   rtk_app_main_init(app);
 
   // start out timer if in pull mode
-  if (0 != pull)
+  if(rate > 0.0)
     gettimeofday(&tv, NULL);
   
   while (!quit)
@@ -321,7 +321,7 @@ int main(int argc, char **argv)
     // Let gui process messages
     rtk_app_main_loop(app);
 
-    if (0 == pull)  // if we're in push mode
+    if(rate == 0.0)  // if we're in push mode
     {
       // see if there's data
       count = playerc_client_peek(client, 50);
@@ -337,9 +337,9 @@ int main(int argc, char **argv)
     }
     else // we're in pull mode
     {
-      // we only want to request new data at roughly 20 Hz
+      // we only want to request new data at the target rate
       gettimeofday(&tc, NULL);
-      if (((tc.tv_sec - tv.tv_sec)*1e6 + tc.tv_usec - tv.tv_usec) > 50000)
+      if(((tc.tv_sec - tv.tv_sec) + (tc.tv_usec - tv.tv_usec)/1e6) > 1.0/rate)
       {
         tv = tc;
         // this requests a round of data from the server to be read

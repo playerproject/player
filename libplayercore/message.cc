@@ -82,7 +82,6 @@ Message::Message(const Message & rhs)
   Queue = rhs.Queue;
   RefCount = rhs.RefCount;
   (*RefCount)++;
-  ready = false;
 
   pthread_mutex_unlock(rhs.Lock);
 }
@@ -192,14 +191,20 @@ MessageQueue::MessageQueue(bool _Replace, size_t _Maxlen)
   this->replaceRules = NULL;
   this->pull = false;
   this->data_requested = false;
+  this->data_delivered = false;
 }
 
 MessageQueue::~MessageQueue()
 {
   // clear the queue
-  Message* msg;
-  while((msg = this->Pop()))
-    delete msg;
+  MessageQueueElement *e, *n;
+  for(e = this->head; e;)
+  {
+    delete e->msg;
+    n = e->next
+    delete e;
+    e = n;
+  }
 
   // clear the list of replacement rules
   MessageReplaceRule* tmp;
@@ -277,13 +282,18 @@ MessageQueue::CheckReplace(player_msghdr_t* hdr)
   // Don't replace config requests or replies
   if((hdr->type == PLAYER_MSGTYPE_REQ) ||
      (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
-     (hdr->type == PLAYER_MSGTYPE_RESP_NACK) ||
-     (hdr->type == PLAYER_MSGTYPE_SYNCH))
+     (hdr->type == PLAYER_MSGTYPE_RESP_NACK))
     return(PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
   // Replace data and command according to the this->Replace flag
   else if((hdr->type == PLAYER_MSGTYPE_DATA) ||
           (hdr->type == PLAYER_MSGTYPE_CMD))
-    return(this->Replace ? PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE : PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
+  {
+    // If we're over the queue length limit, ignore the new data/cmd message
+    if(this->Length >= this->Maxlen)
+      return(PLAYER_PLAYER_MSG_REPLACE_RULE_IGNORE);
+    else
+      return(this->Replace ? PLAYER_PLAYER_MSG_REPLACE_RULE_REPLACE : PLAYER_PLAYER_MSG_REPLACE_RULE_ACCEPT);
+  }
   else
   {
     PLAYER_ERROR1("encountered unknown message type %u", hdr->type);
@@ -364,47 +374,6 @@ MessageQueue::GetLength(void)
   return(len);
 }
 
-void MessageQueue::MarkAllReady (void)
-{
-  MessageQueueElement *current;
-  bool dataready=false;
-
-  if (!pull)
-    return;   // No need to mark ready if not in pull mode
-
-  Lock();
-  // Mark all messages in the queue ready
-  for (current = head; current != NULL; current = current->next)
-  {
-    player_msghdr_t* hdr;
-    hdr = current->msg->GetHeader();
-    // Only need to mark data and command messages.  Requests and replies
-    // get marked as they are pushed in
-    if((hdr->type == PLAYER_MSGTYPE_DATA) || (hdr->type == PLAYER_MSGTYPE_CMD))
-    {
-      current->msg->SetReady ();
-      dataready=true;
-    }
-  }
-  Unlock ();
-  // Only if there was at least one message, push a sync message onto the end
-  if(dataready)
-  {
-    struct player_msghdr syncHeader;
-    syncHeader.addr.host = 0;
-    syncHeader.addr.robot = 0;
-    syncHeader.addr.interf = PLAYER_PLAYER_CODE;
-    syncHeader.addr.index = 0;
-    syncHeader.type = PLAYER_MSGTYPE_SYNCH;
-    syncHeader.subtype = 0;
-    Message syncMessage (syncHeader, 0, 0);
-    syncMessage.SetReady ();
-    this->data_requested = false;
-    Push (syncMessage, true);
-  }
-}
-
-
 void
 MessageQueue::ClearFilter(void)
 {
@@ -422,9 +391,77 @@ MessageQueue::DataAvailable(void)
   pthread_cond_broadcast(&this->cond);
   pthread_mutex_unlock(&this->condMutex);
 }
+    
+/// @brief Set the data_requested flag
+void 
+MessageQueue::SetDataRequested(bool d, bool haveLock)
+{ 
+  if(!haveLock)
+    this->Lock();
+  this->data_requested = d; 
+  this->data_delivered = false; 
+  if(!haveLock)
+    this->Unlock();
+}
+
+/// Put it at the front of the queue, without checking replacement rules
+/// or size limits.
+/// This method is used to insert responses to requests for data.
+/// The caller may have already called Lock() on this queue
+void
+MessageQueue::PushFront(Message & msg, bool haveLock)
+{
+  if(!haveLock)
+    this->Lock();
+  MessageQueueElement* newelt = new MessageQueueElement();
+  newelt->msg = new Message(msg);
+  if(!this->tail)
+  {
+    this->head = this->tail = newelt;
+    newelt->prev = newelt->next = NULL;
+  }
+  else
+  {
+    newelt->prev = NULL;
+    newelt->next = this->head;
+    this->head->prev = newelt;
+    this->head = newelt;
+  }
+  this->Length++;
+  if(!haveLock)
+    this->Unlock();
+}
+
+/// Push a message at the back of the queue, without checking replacement 
+/// rules or size limits.
+/// This method is used internally to insert most messages.
+/// The caller may have already called Lock() on this queue
+void
+MessageQueue::PushBack(Message & msg, bool haveLock)
+{
+  if(!haveLock)
+    this->Lock();
+  MessageQueueElement* newelt = new MessageQueueElement();
+  newelt->msg = new Message(msg);
+  if(!this->tail)
+  {
+    this->head = this->tail = newelt;
+    newelt->prev = newelt->next = NULL;
+  }
+  else
+  {
+    this->tail->next = newelt;
+    newelt->prev = this->tail;
+    newelt->next = NULL;
+    this->tail = newelt;
+  }
+  this->Length++;
+  if(!haveLock)
+    this->Unlock();
+}
 
 bool
-MessageQueue::Push(Message & msg, bool UseReserved)
+MessageQueue::Push(Message & msg)
 {
   player_msghdr_t* hdr;
 
@@ -444,9 +481,7 @@ MessageQueue::Push(Message & msg, bool UseReserved)
         el != NULL;
         el = el->prev)
     {
-      // Ignore ready flag outside pull mode - when a client goes to pull mode, only the client's
-      // queue is set to pull, so other queues will still ignore ready flag
-      if(el->msg->Compare(msg) && (!el->msg->Ready () || !pull))
+      if(el->msg->Compare(msg))
       {
         this->Remove(el);
         delete el->msg;
@@ -455,47 +490,20 @@ MessageQueue::Push(Message & msg, bool UseReserved)
       }
     }
   }
-  // Are we over the limit?
-  if(this->Length >= this->Maxlen - (UseReserved ? 0 : 1))
-  {
-    PLAYER_WARN("tried to push onto a full message queue");
-    this->Unlock();
-    if(!this->filter_on)
-      this->DataAvailable();
-    return(false);
-  }
-  else
-  {
-    MessageQueueElement* newelt = new MessageQueueElement();
-    newelt->msg = new Message(msg);
-    if (!pull || (newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_DATA &&
-		  newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_CMD))
-    {
-      // If not in pull mode, or message is not data/cmd, set ready to true immediatly
-      newelt->msg->SetReady ();
-    }
-    if(!this->tail)
-    {
-      this->head = this->tail = newelt;
-      newelt->prev = newelt->next = NULL;
-    }
-    else
-    {
-      this->tail->next = newelt;
-      newelt->prev = this->tail;
-      newelt->next = NULL;
-      this->tail = newelt;
-    }
-    this->Length++;
-    this->Unlock();
-    if(!this->filter_on || this->Filter(msg))
-      this->DataAvailable();
-    
-    // If the client has a pending request for data, try to fulfill it
-    if(this->pull && this->data_requested)
-      this->MarkAllReady();
-    return(true);
-  }
+
+  this->PushBack(msg,true);
+
+  // If it was a response, then mark it , to prompt
+  // processing of the queue.
+  if(!this->data_requested &&
+     (hdr->type == PLAYER_MSGTYPE_RESP_ACK) ||
+     (hdr->type == PLAYER_MSGTYPE_RESP_NACK))
+    this->SetDataRequested(true,true);
+
+  this->Unlock();
+  if(!this->filter_on || this->Filter(msg))
+    this->DataAvailable();
+  return(true);
 }
 
 Message*
@@ -503,18 +511,37 @@ MessageQueue::Pop()
 {
   MessageQueueElement* el;
   Lock();
-  if(this->Empty())
+
+  // Look for the last response in the queue, starting at the tail.
+  // If any responses are pending, we always send all messages up to and
+  // including the last response.
+  MessageQueueElement* resp_el=NULL;
+  if(!this->filter_on && !this->data_requested)
   {
-    Unlock();
-    return(NULL);
+    for(el = this->tail; el; el = el->prev)
+    {
+      if((el->msg->GetHeader()->type == PLAYER_MSGTYPE_RESP_NACK) ||
+         (el->msg->GetHeader()->type == PLAYER_MSGTYPE_RESP_ACK))
+      {
+        resp_el = el;
+        break;
+      }
+    }
   }
 
   // start at the head and traverse the queue until a filter-friendly
   // message is found
   for(el = this->head; el; el = el->next)
   {
-    if(!this->filter_on || this->Filter(*el->msg))
+    if(resp_el ||
+       ((!this->filter_on || this->Filter(*el->msg)) && 
+        (!this->pull || this->data_requested)))
     {
+      if(el == resp_el)
+        resp_el = NULL;
+      if(this->data_requested &&
+         (el->msg->GetHeader()->type == PLAYER_MSGTYPE_DATA))
+        this->data_delivered = true;
       this->Remove(el);
       Unlock();
       Message* retmsg = el->msg;
@@ -522,35 +549,29 @@ MessageQueue::Pop()
       return(retmsg);
     }
   }
-  Unlock();
-  return(NULL);
-}
 
-Message* MessageQueue::PopReady (void)
-{
-  MessageQueueElement* el;
-  Lock();
-  if(this->Empty())
+  // queue is empty.  if that data had been requested in pull mode, and
+  // some has been delivered, then mark the end of this frame with a 
+  // sync message
+  if(this->pull && this->data_requested && this->data_delivered)
+  {
+    struct player_msghdr syncHeader;
+    syncHeader.addr.host = 0;
+    syncHeader.addr.robot = 0;
+    syncHeader.addr.interf = PLAYER_PLAYER_CODE;
+    syncHeader.addr.index = 0;
+    syncHeader.type = PLAYER_MSGTYPE_SYNCH;
+    syncHeader.subtype = 0;
+    Message* syncMessage = new Message(syncHeader, 0, 0);
+    this->SetDataRequested(false,true);
+    Unlock();
+    return(syncMessage);
+  }
+  else
   {
     Unlock();
     return(NULL);
   }
-
-  // start at the head and traverse the queue until a filter-friendly
-  // message (that is marked ready if in pull mode) is found
-  for(el = this->head; el; el = el->next)
-  {
-    if((!this->filter_on || this->Filter(*el->msg)) && ((pull && el->msg->Ready ()) || !pull))
-    {
-      this->Remove(el);
-      Unlock();
-      Message* retmsg = el->msg;
-      delete el;
-      return(retmsg);
-    }
-  }
-  Unlock();
-  return(NULL);
 }
 
 void

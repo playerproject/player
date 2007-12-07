@@ -169,10 +169,6 @@ class Message
     bool Compare(Message &other);
     /// Decrement ref count
     void DecRef();
-    /// Set ready to send
-    void SetReady ()            { ready = true; }
-    /// Check if ready to send
-    bool Ready (void) const     { return ready; }
 
     /// queue to which any response to this message should be directed
     QueuePointer Queue;
@@ -191,8 +187,6 @@ class Message
     uint8_t * Data;
     /// Used to lock access to Data.
     pthread_mutex_t * Lock;
-    /// Marks if the message is ready to be sent to the client
-    bool ready;
 };
 
 /**
@@ -327,21 +321,25 @@ class MessageQueue
     /// Check whether a queue is empty
     bool Empty() { return(this->head == NULL); }
     /** Push a message onto the queue.  Returns the success state of the Push
-    operation (true if successful, false otherwise).
-    UseReserved should only be set true when pushing sync
-    messages on to the queue. If UseReserved is false then a single message slot
-    is reserved on the queue for a sync message */
-    bool Push(Message& msg, bool UseReserved = false);
+    operation (true if successful, false otherwise). */
+    bool Push(Message& msg);
+
+    /// Put it at the front of the queue, without checking replacement rules
+    /// or size limits.
+    /// This method is used to insert responses to requests for data.
+    /// The caller may have already called Lock() on this queue
+    void PushFront(Message & msg, bool haveLock);
+
+    /// Push a message at the back of the queue, without checking replacement 
+    /// rules or size limits.
+    /// This method is used internally to insert most messages.
+    /// The caller may have already called Lock() on this queue
+    void PushBack(Message & msg, bool haveLock);
 
     /** Pop a message off the queue.
     Pop the head (i.e., the first-inserted) message from the queue.
     Returns pointer to said message, or NULL if the queue is empty */
     Message* Pop();
-    /** Pop a ready message off the queue.
-    Pop the head (i.e., the first-inserted) message from the queue.
-    If pull_flag is true, only pop messages marked as ready.
-    Returns pointer to said message, or NULL if the queue is empty */
-    Message* PopReady (void);
     /** Set the @p Replace flag, which governs whether data and command
     messages of the same subtype from the same device are replaced in
     the queue. */
@@ -377,17 +375,15 @@ class MessageQueue
     /// @brief Set filter values
     void SetFilter(int host, int robot, int interf, int index,
                    int type, int subtype);
-    /** Set the @p pull flag, which if true then requires messages to be marked
-    as ready before they will be sent to the client. */
+    /** Set the @p pull flag */
     void SetPull (bool _pull) { this->pull = _pull; }
-    /// Mark all messages in the queue as ready to be sent
-    void MarkAllReady (void);
 
     /// @brief Get current length of queue, in elements.
     size_t GetLength(void);
 
     /// @brief Set the data_requested flag
-    void SetDataRequested(bool d) { this->data_requested = d; }
+    void SetDataRequested(bool d, bool haveLock);
+
   private:
     /// @brief Lock the mutex associated with this queue.
     void Lock() {pthread_mutex_lock(&lock);};
@@ -427,6 +423,8 @@ class MessageQueue
     /// @brief Flag for data was requested (in PULL mode), but none has yet
     /// been delivered
     bool data_requested;
+    /// @brief Flag that data was sent (in PULL mode)
+    bool data_delivered;
 };
 
 

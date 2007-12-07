@@ -324,6 +324,9 @@ Device::Request(QueuePointer &resp_queue,
   {
     // got something else
     resp_queue->ClearFilter();
+    printf("%d:%d:%d:%d\n",
+           hdr->addr.interf, hdr->addr.index,
+           hdr->type, hdr->subtype);
     PLAYER_ERROR("got unexpected message");
     delete msg;
     return(NULL);

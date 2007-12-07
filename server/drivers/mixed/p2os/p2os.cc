@@ -688,7 +688,7 @@ int P2OS::Setup()
   struct termios term;
   unsigned char command;
   P2OSPacket packet, receivedpacket;
-  int flags;
+  int flags=0;
   bool sent_close = false;
   enum
   {
