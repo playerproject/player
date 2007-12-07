@@ -201,7 +201,7 @@ MessageQueue::~MessageQueue()
   for(e = this->head; e;)
   {
     delete e->msg;
-    n = e->next
+    n = e->next;
     delete e;
     e = n;
   }
