@@ -303,6 +303,7 @@ changed to match your particular configuration.
 //#include "amcl_gps.h"
 //#include "amcl_imu.h"
 
+#define MAX_HYPS 8
 
 ////////////////////////////////////////////////////////////////////////////////
 // Create an instance of the driver
@@ -920,7 +921,8 @@ bool AdaptiveMCL::UpdateFilter(void)
     double max_weight = 0.0;
     pf_vector_t max_weight_pose={{0.0,0.0,0.0}};
     this->hyp_count = 0;
-    for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
+    //for (i = 0; (size_t) i < sizeof(this->hyps) / sizeof(this->hyps[0]); i++)
+    for (i = 0; MAX_HYPS; i++)
     {
       if (!pf_get_cluster_stats(this->pf, i, &weight, &pose_mean, &pose_cov))
         break;
