@@ -131,7 +131,7 @@ LayerDataHolder PostgresConn::GetLayerData(const char* layer_name)
   LayerDataHolder data;
 
   // need to get name count, name, wkb count, wkb
-  const char* template_data = "SELECT name, asbinary(geom) FROM %s;";
+  const char* template_data = "SELECT name, asbinary(geom), attrib FROM %s;";
   char query_data[MAX_PSQL_STRING];
   memset(query_data, 0, sizeof(MAX_PSQL_STRING));
   snprintf(query_data, MAX_PSQL_STRING, template_data, layer_name);
@@ -152,13 +152,17 @@ LayerDataHolder PostgresConn::GetLayerData(const char* layer_name)
   }
 
   int num_rows = PQntuples(res);
-
+  data.name = layer_name;
   for (int i=0; i<num_rows; ++i)
   {
     FeatureDataHolder fd(string(PQgetvalue(res, i, 0)));
+    
     uint8_t *wkb = reinterpret_cast<uint8_t *>(PQgetvalue(res, i, 1));
     uint32_t length = PQgetlength(res, i, 1);
     fd.wkb.assign(wkb, &wkb[length]);
+    
+    fd.attrib = string(PQgetvalue(res, i, 2));
+    
     data.features.push_back(fd);
   }
 
@@ -260,6 +264,8 @@ const player_vectormap_feature_data_t* FeatureDataHolder::Convert()
   feature_data.name_count = name.size() + 1;
   feature_data.wkb = new uint8_t[wkb.size()];
   feature_data.wkb_count = wkb.size();
+  feature_data.attrib = strdup(attrib.c_str());
+  feature_data.attrib_count = attrib.size() + 1;
   ///TODO: Make more efficient
   for (uint32_t ii=0; ii<wkb.size(); ++ii)
   {
@@ -278,12 +284,15 @@ FeatureDataHolder::~FeatureDataHolder()
 
 const player_vectormap_layer_data_t* LayerDataHolder::Convert()
 {
+  layer_data.name = strdup(name.c_str());
+  layer_data.name_count = name.size()+1;
   layer_data.features_count = features.size();
   layer_data.features = new player_vectormap_feature_data_t[features.size()];
   for (uint32_t ii=0; ii<features.size(); ++ii)
   {
     layer_data.features[ii] = *(features[ii].Convert());
   }
+  
   return &layer_data;
 }
 

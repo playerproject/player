@@ -31,6 +31,11 @@ typedef struct player_vectormap_feature_data
   uint32_t wkb_count;
   /** Well known binary describing the geometric shape. */
   uint8_t* wkb;
+
+  /** Length of data in bytes. */
+  uint32_t attrib_count;
+  /** Attrib data for the feature. */
+  char* attrib;
 } player_vectormap_feature_data_t;
 
 typedef struct player_vectormap_layer_info
