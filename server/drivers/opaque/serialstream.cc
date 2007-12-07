@@ -290,7 +290,6 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 	    PLAYER_MSG1(2, "%s", req.key);
 	    if (strcmp("transfer_rate", req.key))
 	    {
-	    	//puts("Message recieved");
 	    	res = ChangeTermSpeed(req.value);	    
 	   
 			// Check the error code
@@ -391,18 +390,13 @@ int SerialStream::OpenTerm()
   
   tcsetattr(opaque_fd, TCSANOW, &newtio);
   tcflush(opaque_fd, TCIOFLUSH);
-  puts("about to change term speed");
   if (ChangeTermSpeed(transfer_rate))
 	    return -1;
   
-  puts("about to fluch");
   // Make sure queue is empty
-  //
   tcflush(this->opaque_fd, TCIOFLUSH);
   usleep(1000);
   tcflush(opaque_fd, TCIFLUSH);
-   
-  puts("finished opening term");
   
   return 0;
 }
