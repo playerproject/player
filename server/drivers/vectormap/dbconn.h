@@ -30,6 +30,7 @@ class FeatureDataHolder
 
     string name;
     vector<uint8_t> wkb;
+    string attrib;
     player_vectormap_feature_data_t feature_data;
 };
 

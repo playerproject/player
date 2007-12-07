@@ -311,10 +311,9 @@ int PostGIS::ProcessMessage(QueuePointer &resp_queue,
                                       PLAYER_VECTORMAP_REQ_GET_LAYER_DATA,
                                       this->device_addr))
   {
-    player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
+	  player_vectormap_layer_data_t* request = reinterpret_cast<player_vectormap_layer_data_t*>(data);
     LayerDataHolder ldata = RequestLayerData(request->name);
     const player_vectormap_layer_data_t* response = ldata.Convert();
-
     this->Publish(this->device_addr,
                   resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
