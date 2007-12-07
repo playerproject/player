@@ -498,6 +498,5 @@ void SerialStream::ReadData()
   assert(len <  int(buffer_size));
   mData.data_count = len;
   mData.data = rx_buffer;
-  int fd = open("/home/inro/myopaque/temp" , O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);
   Publish(this->device_addr, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, reinterpret_cast<void*>(&mData));
 }
