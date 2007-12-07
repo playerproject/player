@@ -579,7 +579,7 @@ PlayerTCP::WriteClient(int cli)
       client->writebufferlen -= numwritten;
     }
     // try to pop a pending message
-    else if((msg = client->queue->PopReady()))
+    else if((msg = client->queue->Pop()))
     {
       // Note that we make a COPY of the header.  This is so that we can
       // edit the size field before sending it out, without affecting other
@@ -636,8 +636,10 @@ PlayerTCP::WriteClient(int cli)
           zipped_data->data = (int8_t*)malloc(count);
 
           // compress the tile
-          if(compress((Bytef*)zipped_data->data,&count,
-                      (const Bytef*)raw_data->data, raw_data->data_count) != Z_OK)
+          int ret;
+          ret = compress((Bytef*)zipped_data->data,&count,
+                         (const Bytef*)raw_data->data, raw_data->data_count);
+          if((ret != Z_OK) && (ret != Z_STREAM_END))
           {
             PLAYER_ERROR("failed to compress map data");
             free(zipped_data);
@@ -942,14 +944,18 @@ PlayerTCP::ParseBuffer(int cli)
               raw_data->row = zipped_data->row;
               raw_data->width = zipped_data->width;
               raw_data->height = zipped_data->height;
-              uLongf count = 10*zipped_data->data_count;
-              raw_data->data = (int8_t*)calloc(count,sizeof(int8_t));
+              //uLongf count = 10*zipped_data->data_count;
+              uLongf count = zipped_data->width * zipped_data->height;
+              raw_data->data = (int8_t*)calloc(2*count,sizeof(int8_t));
               // uncompress the tile
-              if(uncompress((Bytef*)raw_data->data,&count,
-                            (const Bytef*)zipped_data->data,
-                            (uLongf)zipped_data->data_count) != Z_OK)
+              int ret;
+              ret = uncompress((Bytef*)raw_data->data,&count,
+                               (const Bytef*)zipped_data->data,
+                               (uLongf)zipped_data->data_count);
+              if((ret != Z_OK) && (ret != Z_STREAM_END))
               {
                 PLAYER_ERROR("failed to uncompress map data");
+                printf("ret: %d\n", ret);
               }
               else
               {
@@ -1246,15 +1252,14 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
 
         // Request data
         case PLAYER_PLAYER_REQ_DATA:
-          // Make up and push out the reply
+          // Make up and push the reply onto the front of the queue
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           resp = new Message(resphdr, NULL);
           assert(resp);
-          client->queue->Push(*resp);
+          client->queue->PushFront(*resp,false);
           delete resp;
           // Remember that the user requested some
-          client->queue->SetDataRequested(true);
-          client->queue->MarkAllReady ();
+          client->queue->SetDataRequested(true,false);
           break;
 
 

@@ -284,7 +284,8 @@ class VFH_Class : public Driver
 
     // Laser range and bearing values
     int laser_count;
-    double (*laser_ranges)[2];
+    //double (*laser_ranges)[2];
+    double laser_ranges[361][2];
 
     // Control velocity
     double con_vel[3];
@@ -327,10 +328,6 @@ int VFH_Class::Setup()
     return -1;
   if (this->sonar_addr.interf && this->SetupSonar() != 0)
     return -1;
-
-  // FIXME
-  // Allocate and intialize
-  vfh_Algorithm->Init();
 
   // Start the driver thread.
   this->StartThread();
@@ -435,7 +432,7 @@ int VFH_Class::SetupLaser()
   }
 
   this->laser_count = 0;
-  this->laser_ranges = NULL;
+  //this->laser_ranges = NULL;
   return 0;
 }
 
@@ -479,7 +476,7 @@ int VFH_Class::SetupSonar()
   delete msg;
 
   this->laser_count = 0;
-  this->laser_ranges = NULL;
+  //this->laser_ranges = NULL;
   return 0;
 }
 
@@ -489,8 +486,8 @@ int VFH_Class::SetupSonar()
 int VFH_Class::ShutdownLaser()
 {
   this->laser->Unsubscribe(this->InQueue);
-  delete [] laser_ranges;
-  laser_ranges = NULL;
+  //delete [] laser_ranges;
+  //laser_ranges = NULL;
   return 0;
 }
 
@@ -499,8 +496,8 @@ int VFH_Class::ShutdownLaser()
 int VFH_Class::ShutdownSonar()
 {
   this->sonar->Unsubscribe(this->InQueue);
-  delete [] laser_ranges;
-  laser_ranges = NULL;
+  //delete [] laser_ranges;
+  //laser_ranges = NULL;
   delete [] sonar_poses;
   sonar_poses = NULL;
   return 0;
@@ -539,9 +536,9 @@ VFH_Class::ProcessLaser(player_laser_data_t &data)
   b = RTOD(data.min_angle);
   db = RTOD(data.resolution);
 
-  this->laser_count = 181;
-  if (!laser_ranges)
-	  this->laser_ranges = new double[laser_count][2];
+  this->laser_count = 361;
+  //if (!laser_ranges)
+	  //this->laser_ranges = new double[laser_count][2];
 
   for(i = 0; i < laser_count; i++)
     this->laser_ranges[i][0] = -1;
@@ -580,8 +577,8 @@ VFH_Class::ProcessSonar(player_sonar_data_t &data)
   float sonarDistToCenter = 0.0;
 
   this->laser_count = count;
-  if (!laser_ranges)
-	  this->laser_ranges = new double[laser_count][2];
+  //if (!laser_ranges)
+	  //this->laser_ranges = new double[laser_count][2];
   
   for(i = 0; i < laser_count; i++)
     this->laser_ranges[i][0] = -1;
@@ -1059,6 +1056,11 @@ VFH_Class::VFH_Class( ConfigFile* cf, int section)
 
   // Laser settings
   //TODO this->laser_max_samples = cf->ReadInt(section, "laser_max_samples", 10);
+  
+  // FIXME
+  // Allocate and intialize
+  vfh_Algorithm->Init();
+
 
   return;
 }

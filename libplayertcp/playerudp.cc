@@ -558,7 +558,7 @@ PlayerUDP::WriteClient(int cli)
       client->writebufferlen -= numwritten;
     }
     // try to pop a pending message
-    else if((msg = client->queue->PopReady()))
+    else if((msg = client->queue->Pop()))
     {
       // Note that we make a COPY of the header.  This is so that we can
       // edit the size field before sending it out, without affecting other
@@ -1157,9 +1157,10 @@ PlayerUDP::HandlePlayerMessage(int cli, Message* msg)
           resphdr.type = PLAYER_MSGTYPE_RESP_ACK;
           resp = new Message(resphdr, NULL);
           assert(resp);
-          client->queue->Push(*resp);
+          client->queue->PushFront(*resp,false);
           delete resp;
-          client->queue->MarkAllReady ();
+          // Remember that the user requested some
+          client->queue->SetDataRequested(true,false);
           break;
 
 

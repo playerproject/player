@@ -132,13 +132,11 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout)
     mclient->pollfd[i].fd = mclient->client[i]->sock;
     mclient->pollfd[i].events = POLLIN;
     mclient->pollfd[i].revents = 0;
-    // If the client is in a PULL mode, first request a round of data.
-    if(mclient->client[i]->mode == PLAYER_DATAMODE_PULL)
+    if(!mclient->client[i]->qlen)
     {
+      // In case the client is in a PULL mode, first request a round of data.
       if(playerc_client_requestdata(mclient->client[i]) < 0)
-      {
         PLAYERC_ERR("playerc_client_requestdata errored");
-      }
     }
   }
 
@@ -151,15 +149,18 @@ int playerc_mclient_read(playerc_mclient_t *mclient, int timeout)
   }
 
   // Now read from each of the waiting sockets 
+  count = 0;
   for (i = 0; i < mclient->client_count; i++)
   {
-    if ((mclient->pollfd[i].revents & POLLIN) > 0)
+    if(mclient->client[i]->qlen ||
+       (mclient->pollfd[i].revents & POLLIN) > 0)
     {
       if(playerc_client_read_nonblock(mclient->client[i]))
       {
         // cache the latest timestamp
         if(mclient->client[i]->datatime > mclient->time)
           mclient->time = mclient->client[i]->datatime;
+        count++;
       }
       else
       {

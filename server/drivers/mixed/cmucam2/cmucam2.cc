@@ -387,6 +387,7 @@ int Cmucam2::ProcessMessage (QueuePointer & resp_queue,
 		stop_tracking (fd);
 
 		imager_config ic;
+                memset(&ic,0,sizeof(imager_config));
 
 		ic.brightness = (int16_t)player_ic.brightness;
 		ic.contrast   = (int16_t)player_ic.contrast;
