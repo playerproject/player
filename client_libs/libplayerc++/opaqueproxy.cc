@@ -117,9 +117,9 @@ std::ostream& std::operator << (std::ostream& os, const PlayerCc::OpaqueProxy& c
 	uint8_t * data;
 	data = new uint8_t[4096];
 	c.GetData(data);
-	for(int i = 0; i < c.GetCount(); i++)
+	for(unsigned int i = 0; i < c.GetCount(); i++)
 	{
-		os << hex << setw(2) << setfill('0') << data[i];
+		os << hex << setw(2) << setfill('0') << static_cast<unsigned int> (data[i]);
 	}
   return os;
 }
