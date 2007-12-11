@@ -208,7 +208,6 @@ int CameraCompress::ProcessMessage(QueuePointer & resp_queue, player_msghdr * hd
   
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
-    assert(hdr->size >= sizeof(player_camera_data_t));
     player_camera_data_t * recv = reinterpret_cast<player_camera_data_t * > (data);
     ProcessImage(*recv);
     return 0;
@@ -299,6 +298,9 @@ void CameraCompress::ProcessImage(player_camera_data_t & rawdata)
     this->data.image_count = (this->data.image_count);
   } else
   {
+    if (this->data.image) delete []this->data.image;
+    this->data.image = new unsigned char[rawdata.image_count];
+    assert(this->data.image);
     memcpy(this->data.image, rawdata.image, rawdata.image_count);
     this->data.width = (rawdata.width);
     this->data.height = (rawdata.height);
