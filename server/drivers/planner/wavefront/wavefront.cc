@@ -1043,6 +1043,7 @@ Wavefront::GetMap(bool threaded)
 
   // now, get the map data
   player_map_data_t data_req;
+  memset(&data_req,0,sizeof(player_map_data_t));
   int i,j;
   int oi,oj;
   int sx,sy;

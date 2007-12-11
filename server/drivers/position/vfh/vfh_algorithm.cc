@@ -179,10 +179,10 @@ VFH_Algorithm::Get_Binary_Hist_High( int speed )
 int VFH_Algorithm::Init()
 {
   int x, y, i;
-  float plus_dir, neg_dir, plus_sector, neg_sector;
+  float plus_dir=0, neg_dir=0, plus_sector=0, neg_sector=0;
   bool plus_dir_bw, neg_dir_bw, dir_around_sector;
-  float neg_sector_to_neg_dir, neg_sector_to_plus_dir;
-  float plus_sector_to_neg_dir, plus_sector_to_plus_dir;
+  float neg_sector_to_neg_dir=0, neg_sector_to_plus_dir=0;
+  float plus_sector_to_neg_dir=0, plus_sector_to_plus_dir=0;
   int cell_sector_tablenum, max_speed_this_table;
   float r;
 

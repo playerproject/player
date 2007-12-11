@@ -205,15 +205,18 @@ PlayerTCP::Listen(int port)
   return(this->Listen(&p,1));
 }
 
-// should be called with client_mutex locked
 QueuePointer
 PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_host,
                      unsigned int local_port,
                      int newsock,
                      bool send_banner,
-                     int* kill_flag)
+                     int* kill_flag,
+                     bool have_lock)
 {
+  if(!have_lock)
+    Lock();
+
   unsigned char data[PLAYER_IDENT_STRLEN];
 
   int j = this->num_clients;
@@ -283,6 +286,9 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
   PLAYER_MSG3(1, "accepted TCP client %d on port %d, fd %d",
               j, this->clients[j].port, this->clients[j].fd);
 
+  if(!have_lock)
+    Unlock();
+
   return(this->clients[j].queue);
 }
 
@@ -290,10 +296,10 @@ int
 PlayerTCP::Update(int timeout)
 {
   int ret;
-  this->Write();
+  this->Write(false);
   if((ret = this->Accept(0)))
     return(ret);
-  return(this->Read(timeout));
+  return(this->Read(timeout,false));
 }
 
 int
@@ -357,7 +363,7 @@ PlayerTCP::Accept(int timeout)
       this->AddClient(&cliaddr,
                       this->host,
                       this->listeners[i].port,
-                      newsock, true, NULL);
+                      newsock, true, NULL, false);
 
       num_accepts--;
     }
@@ -395,7 +401,7 @@ PlayerTCP::Close(int cli)
 }
 
 int
-PlayerTCP::Read(int timeout)
+PlayerTCP::Read(int timeout, bool have_lock)
 {
   int num_available;
 
@@ -405,12 +411,14 @@ PlayerTCP::Read(int timeout)
     return(0);
   }
 
-  pthread_mutex_lock(&this->clients_mutex);
+  if(!have_lock)
+    Lock();
 
   // Poll for incoming messages
   if((num_available = poll(this->client_ufds, this->num_clients, timeout)) < 0)
   {
-    pthread_mutex_unlock(&this->clients_mutex);
+    if(!have_lock)
+      Unlock();
 
     // Got interrupted by a signal; no problem
     if(errno == EINTR)
@@ -423,7 +431,8 @@ PlayerTCP::Read(int timeout)
 
   if(!num_available)
   {
-    pthread_mutex_unlock(&this->clients_mutex);
+    if(!have_lock)
+      Unlock();
     return(0);
   }
 
@@ -450,7 +459,8 @@ PlayerTCP::Read(int timeout)
 
 
   this->DeleteClients();
-  pthread_mutex_unlock(&this->clients_mutex);
+  if(!have_lock)
+    Unlock();
 
   return(0);
 }
@@ -504,10 +514,11 @@ PlayerTCP::DeleteClients()
          (this->size_clients - this->num_clients) * sizeof(struct pollfd));
 }
 
-// Should be called with clients_mutex lock held
 void
-PlayerTCP::DeleteClient(QueuePointer &q)
+PlayerTCP::DeleteClient(QueuePointer &q, bool have_lock)
 {
+  if(!have_lock)
+    Lock();
   // Find the client and mark it for deletion.
   int i;
   for(i=0;i<this->num_clients;i++)
@@ -518,6 +529,8 @@ PlayerTCP::DeleteClient(QueuePointer &q)
       break;
     }
   }
+  if(!have_lock)
+    Unlock();
 }
 
 bool
@@ -723,9 +736,10 @@ PlayerTCP::WriteClient(int cli)
 }
 
 int
-PlayerTCP::Write()
+PlayerTCP::Write(bool have_lock)
 {
-  pthread_mutex_lock(&this->clients_mutex);
+  if(!have_lock)
+    Lock();
 
   for(int i=0;i<this->num_clients;i++)
   {
@@ -738,9 +752,21 @@ PlayerTCP::Write()
 
 
   this->DeleteClients();
-  pthread_mutex_unlock(&this->clients_mutex);
+  if(!have_lock)
+    Unlock();
 
   return(0);
+}
+
+int
+PlayerTCP::ReadClient(QueuePointer q)
+{
+  for(int cli=0; cli < this->num_clients; cli++)
+  {
+    if(this->clients[cli].queue == q)
+      return(ReadClient(cli));
+  }
+  return(-1);
 }
 
 int
@@ -953,10 +979,7 @@ PlayerTCP::ParseBuffer(int cli)
                                (const Bytef*)zipped_data->data,
                                (uLongf)zipped_data->data_count);
               if((ret != Z_OK) && (ret != Z_STREAM_END))
-              {
                 PLAYER_ERROR("failed to uncompress map data");
-                printf("ret: %d\n", ret);
-              }
               else
               {
                 raw_data->data_count = count;
@@ -1294,3 +1317,15 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
   return(0);
 }
 
+
+void 
+PlayerTCP::Lock()
+{
+  pthread_mutex_lock(&clients_mutex);
+}
+
+void 
+PlayerTCP::Unlock()
+{
+  pthread_mutex_unlock(&clients_mutex);
+}

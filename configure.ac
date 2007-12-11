@@ -373,12 +373,12 @@ fi
 
 dnl Look for the dns_sd header.  If it's present, we conclude that we can
 dnl build dns_sd code.
-AC_CHECK_HEADER(dns_sd.h,
+have_dnssd=no
+AC_ARG_ENABLE(playersd, [  --enable-playersd         Build libplayersd (service discovery)],
+[ AC_CHECK_HEADER(dns_sd.h,
                 have_dnssd=yes
                 AC_DEFINE(HAVE_PLAYERSD, 1, [Define to 1 if libplayersd is being built. ]),
                 have_dnssd=no)
-AM_CONDITIONAL(HAVE_DNS_SD_H, test "x$have_dnssd" = "xyes")
-AM_CONDITIONAL(HAVE_PLAYERSD, test "x$have_dnssd" = "xyes")
 dnl Also look for DNSServiceRefDeallocate in libdns_sd.  Some systems
 dnl require linking against this lib, others don't
 AC_CHECK_LIB(dns_sd,DNSServiceRefDeallocate,
@@ -386,7 +386,11 @@ AC_CHECK_LIB(dns_sd,DNSServiceRefDeallocate,
              AC_DEFINE(HAVE_LIBDNS_SD, 1, [Define to 1 if you have the dns_sd library (-ldns_sd). ])
              LIBS="$LIBS -ldns_sd",
              EXTRA_DNS_SD_LIBS="")
-AC_SUBST(EXTRA_DNS_SD_LIBS)
+AC_SUBST(EXTRA_DNS_SD_LIBS) ],
+enable_playersd=no)
+AM_CONDITIONAL(HAVE_DNS_SD_H, test "x$have_dnssd" = "xyes")
+AM_CONDITIONAL(HAVE_PLAYERSD, test "x$have_dnssd" = "xyes")
+
 
 dnl Look for compress2 and compressBound in libz
 AC_CHECK_LIB(geos_c,GEOSGeomFromWKB_buf,
