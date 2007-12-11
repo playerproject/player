@@ -45,6 +45,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <stddef.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 #if ENABLE_TCP_NODELAY
@@ -401,8 +403,11 @@ PlayerTCP::Read(int timeout, bool have_lock)
 
   if(!this->num_clients)
   {
-    usleep(timeout);
-    return(0);
+    struct timespec ts;
+    ts.tv_sec = timeout / 1000000;
+    ts.tv_nsec = (timeout % 1000000) * 1000;
+    nanosleep(&ts, NULL);
+    return 0;
   }
 
   if(!have_lock)
