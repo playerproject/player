@@ -317,9 +317,16 @@ else
   AMTECM5_EXTRA_LDFLAGS="$AMTECM5_DIR/lib/device.a $AMTECM5_DIR/lib/libntcan.a $AMTECM5_DIR/lib/util.a"
 fi
 
+AC_LANG_PUSH(C++)
 PLAYER_ADD_DRIVER([amtecM5],[yes],
   [$AMTECM5_HEADER], [$AMTECM5_EXTRA_CPPFLAGS],
-  [$AMTECM5_EXTRA_LDFLAGS])
+  [$AMTECM5_EXTRA_LDFLAGS], [], [],
+  [[
+  #define __LINUX__
+  #define UNIX
+  #define LINUX    
+  ]])
+AC_LANG_POP(C++)
 
 PLAYER_ADD_DRIVER([serialstream],[yes],[],[],[])
 
