@@ -93,7 +93,7 @@ void playerc_fiducial_putmsg(playerc_fiducial_t *device,
     player_fiducial_data_t* data = (player_fiducial_data_t*)generic;
 
     device->fiducials_count = data->fiducials_count;
-    device->fiducials = realloc(device->fiducials, sizeof(device->fiducials)*device->fiducials_count);
+    device->fiducials = realloc(device->fiducials, sizeof(*device->fiducials)*device->fiducials_count);
 
     for (i = 0; i < device->fiducials_count; i++)
     {
