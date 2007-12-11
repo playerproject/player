@@ -176,7 +176,8 @@ TCPRemoteDriver::Setup()
                                       this->device_addr.robot, 
                                       this->sock, 
                                       false,
-                                      &this->kill_flag);
+                                      &this->kill_flag,
+                                      (this->ptcp->thread == pthread_self()));
   PLAYER_MSG0(5,"Adding new TCPRemoteDriver to the PlayerTCP Client List...Success");
 
   return(0);
@@ -362,7 +363,8 @@ TCPRemoteDriver::Shutdown()
 
     // Set the delete flag, letting PlayerTCP close the connection and
     // clean up.
-    this->ptcp->DeleteClient(this->queue);
+    this->ptcp->DeleteClient(this->queue,
+                             (this->ptcp->thread == pthread_self()));
   }
   return(0); 
 }
@@ -371,10 +373,13 @@ void
 TCPRemoteDriver::Update()
 {
   if(this->ptcp->thread == pthread_self())
-    this->ptcp->Read(0);
+  {
+    //this->ptcp->Read(0,true);
+    this->ptcp->ReadClient(this->queue);
+  }
   this->ProcessMessages();
   if(this->ptcp->thread == pthread_self())
-    this->ptcp->Write();
+    this->ptcp->Write(true);
 }
 
 int 

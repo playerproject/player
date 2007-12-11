@@ -303,7 +303,7 @@ main(int argc, char** argv)
       break;
     }
 
-    if(ptcp->Read(100) < 0)
+    if(ptcp->Read(100,false) < 0)
     {
       PLAYER_ERROR("failed while reading from TCP clients");
       break;
@@ -317,7 +317,7 @@ main(int argc, char** argv)
 
     deviceTable->UpdateDevices();
 
-    if(ptcp->Write() < 0)
+    if(ptcp->Write(false) < 0)
     {
       PLAYER_ERROR("failed while writing to TCP clients");
       break;
