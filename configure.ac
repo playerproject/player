@@ -529,6 +529,7 @@ AC_OUTPUT(Makefile
           server/drivers/mixed/evolution/er1/Makefile
           server/drivers/mixed/irobot/Makefile
           server/drivers/mixed/irobot/roomba/Makefile
+          server/drivers/mixed/irobot/create/Makefile
           server/drivers/planner/Makefile
           server/drivers/planner/wavefront/Makefile
           server/drivers/position/isense/Makefile

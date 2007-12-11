@@ -68,7 +68,7 @@ The create driver provides the following device interfaces:
 @par Supported configuration requests
 
 - PLAYER_POSITION2D_REQ_GET_GEOM
-- PLAYER_BUMPER_REQ_GET_GEOM
+- PLAYER_BUMPER_GET_GEOM
 
 @par Configuration file options
 
@@ -123,7 +123,7 @@ class Create : public Driver
     int Shutdown();
 
     // MessageHandler
-    int ProcessMessage(QueuePointer &resp_queue, 
+    int ProcessMessage(MessageQueue * resp_queue,
 		       player_msghdr * hdr, 
 		       void * data);
 
@@ -306,7 +306,7 @@ Create::Main()
      posdata.pos.py = this->create_dev->oy;
      posdata.pos.pa = this->create_dev->oa;
 
-     this->Publish(this->position_addr,
+     this->Publish(this->position_addr, NULL,
                    PLAYER_MSGTYPE_DATA, PLAYER_POSITION2D_DATA_STATE,
                    (void*)&posdata, sizeof(posdata), NULL);
 
@@ -328,7 +328,7 @@ Create::Main()
                         PLAYER_POWER_MASK_PERCENT |
                         PLAYER_POWER_MASK_CHARGING);
 
-     this->Publish(this->power_addr,
+     this->Publish(this->power_addr, NULL,
                    PLAYER_MSGTYPE_DATA, PLAYER_POWER_DATA_STATE,
                    (void*)&powerdata, sizeof(powerdata), NULL);
 
@@ -338,14 +338,12 @@ Create::Main()
      memset(&bumperdata,0,sizeof(bumperdata));
 
      bumperdata.bumpers_count = 2;
-     bumperdata.bumpers = new uint8_t[bumperdata.bumpers_count];
      bumperdata.bumpers[0] = this->create_dev->bumper_left;
      bumperdata.bumpers[1] = this->create_dev->bumper_right;
 
-     this->Publish(this->bumper_addr,
+     this->Publish(this->bumper_addr, NULL,
                    PLAYER_MSGTYPE_DATA, PLAYER_BUMPER_DATA_STATE,
                    (void*)&bumperdata);
-     delete [] bumperdata.bumpers;
 
      ////////////////////////////
      // Update IR data
@@ -353,7 +351,6 @@ Create::Main()
      memset(&irdata,0,sizeof(irdata));
 
      irdata.ranges_count = 11;
-     irdata.ranges = new float [irdata.ranges_count];
      irdata.ranges[0] = (float)this->create_dev->wall;
      irdata.ranges[1] = (float)this->create_dev->cliff_left;
      irdata.ranges[2] = (float)this->create_dev->cliff_frontleft;
@@ -366,10 +363,9 @@ Create::Main()
      irdata.ranges[9] = (float)this->create_dev->wheeldrop_left;
      irdata.ranges[10] = (float)this->create_dev->wheeldrop_right;
 
-     this->Publish(this->ir_addr,
+     this->Publish(this->ir_addr,NULL,
          PLAYER_MSGTYPE_DATA, PLAYER_IR_DATA_RANGES,
          (void*)&irdata);
-     delete [] irdata.ranges;
 
 
      ////////////////////////////
@@ -379,9 +375,8 @@ Create::Main()
 
      gripperdata.state=this->create_dev->overcurrent_vacuum;
      gripperdata.beams=this->create_dev->dirtdetector_right+this->create_dev->dirtdetector_left;
-     gripperdata.stored=0;
 
-     this->Publish(this->gripper_addr,
+     this->Publish(this->gripper_addr, NULL,
          PLAYER_MSGTYPE_DATA,
          PLAYER_GRIPPER_DATA_STATE,
          (void*) &gripperdata, sizeof(gripperdata), NULL);
@@ -391,7 +386,6 @@ Create::Main()
      memset(this->cpdata,0,sizeof(cpdata));
 
      this->cpdata->data_count=5;
-     this->cpdata->data = new uint8_t [this->cpdata->data_count];
 
      this->cpdata->data[0] = this->create_dev->button_max;
      this->cpdata->data[1] = this->create_dev->button_clean;
@@ -399,17 +393,16 @@ Create::Main()
      this->cpdata->data[3] = this->create_dev->button_power;
      this->cpdata->data[4] = this->create_dev->remote_opcode;
 
-     this->Publish(this->opaque_addr,
+     this->Publish(this->opaque_addr,NULL,
          PLAYER_MSGTYPE_DATA,PLAYER_OPAQUE_DATA_STATE,
          (void*)this->cpdata, sizeof(*this->cpdata), NULL);
-     delete [] this->cpdata->data;
 
      usleep(CYCLE_TIME_US);
   }
 }
 
 int
-Create::ProcessMessage(QueuePointer &resp_queue, 
+Create::ProcessMessage(MessageQueue * resp_queue,
 		       player_msghdr * hdr, 
 		       void * data)
 {
@@ -458,56 +451,52 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                PLAYER_BUMPER_REQ_GET_GEOM,
+                                PLAYER_BUMPER_GET_GEOM,
                                 this->bumper_addr))
   {
     player_bumper_geom_t geom;
 
     geom.bumper_def_count = 2;
-    geom.bumper_def = new player_bumper_define_t[geom.bumper_def_count];
 
     geom.bumper_def[0].pose.px = 0.0;
     geom.bumper_def[0].pose.py = 0.0;
-    geom.bumper_def[0].pose.pyaw = 0.0;
+    geom.bumper_def[0].pose.pa = 0.0;
     geom.bumper_def[0].length = 0.0;
     geom.bumper_def[0].radius = CREATE_DIAMETER/2.0;
 
     geom.bumper_def[1].pose.px = 0.0;
     geom.bumper_def[1].pose.py = 0.0;
-    geom.bumper_def[1].pose.pyaw = 0.0;
+    geom.bumper_def[1].pose.pa = 0.0;
     geom.bumper_def[1].length = 0.0;
     geom.bumper_def[1].radius = CREATE_DIAMETER/2.0;
 
     this->Publish(this->bumper_addr, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_BUMPER_REQ_GET_GEOM,
+                  PLAYER_BUMPER_GET_GEOM,
                   (void*)&geom);
-    delete [] geom.bumper_def;
 
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
-                                    PLAYER_IR_REQ_POSE,
+                                    PLAYER_IR_POSE,
                                     this->ir_addr))
   {
     player_ir_pose poses;
 
     poses.poses_count = 11;
-    poses.poses = new player_pose3d_t[poses.poses_count];
 
     // TODO: Fill in proper values
     for (int i=0; i<11; i++)
     {
       poses.poses[i].px = 0.0;
       poses.poses[i].py = 0.0;
-      poses.poses[i].pyaw = 0.0;
+      poses.poses[i].pa = 0.0;
     }
 
     this->Publish(this->ir_addr, resp_queue, 
                   PLAYER_MSGTYPE_RESP_ACK,
-                  PLAYER_IR_REQ_POSE,
+                  PLAYER_IR_POSE,
                   (void*)&poses);
-    delete [] poses.poses;
     return(0);
   }
   else if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_CMD,
@@ -579,17 +568,15 @@ Create::ProcessMessage(QueuePointer &resp_queue,
     return 0;
   }
   else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
-                                 PLAYER_GRIPPER_CMD_OPEN,
+                                 PLAYER_GRIPPER_CMD_STATE,
                                  this->gripper_addr))
   {
-    create_vacuum(this->create_dev,7);
-    return 0;
-  }
-  else if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD,
-                                 PLAYER_GRIPPER_CMD_CLOSE,
-                                 this->gripper_addr))
-  {
-    create_vacuum(this->create_dev,0);
+    player_gripper_cmd_t* gcmd = (player_gripper_cmd_t*)data;
+
+    if(gcmd->cmd)
+      create_vacuum(this->create_dev,7);
+    else
+      create_vacuum(this->create_dev,0);
     return 0;
   }
   else

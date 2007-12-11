@@ -350,6 +350,8 @@ PLAYER_ADD_DRIVER([waveaudio],[no],[sys/soundcard.h],[],[])
 
 PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([create],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([yarpimage],[yes],["yarp/os/all.h yarp/sig/all.h"],[],["-lYARP_sig -lYARP_OS"])
