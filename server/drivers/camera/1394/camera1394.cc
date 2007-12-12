@@ -1018,7 +1018,8 @@ int Camera1394::Shutdown()
 
   // Stop transmitting camera data
 #if LIBDC1394_VERSION == 0200
-  if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_OFF))
+  if (DC1394_SUCCESS != dc1394_video_set_transmission(this->camera, DC1394_OFF)
+      || DC1394_SUCCESS != dc1394_capture_stop(this->camera))
 #else
   if (dc1394_stop_iso_transmission(this->handle, this->camera.node) != DC1394_SUCCESS) 
 #endif
