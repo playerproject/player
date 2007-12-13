@@ -27,15 +27,9 @@
 
 #include "libplayercore/player.h"
 
+void initialize_robot_params(void);
+
 #define PLAYER_NUM_ROBOT_TYPES 30
-
-
-typedef struct
-{
-  double x;
-  double y;
-  double th;
-} sonar_pose_t;
 
 
 typedef struct
@@ -77,7 +71,6 @@ typedef struct
   int RotVelMax; // 
   int SettableAccsDecs; // 
   int SettableVelMaxes; // 
-  int SonarNum; // 
   char* Subclass;
   int SwitchToBaudRate; // 
   int TableSensingIR; // 
@@ -87,7 +80,7 @@ typedef struct
   int Vel2Divisor; // 
   double VelConvFactor; // 
   int NumSonars;
-  sonar_pose_t sonar_pose[32];
+  player_pose3d_t sonar_pose[32];
   int NumIR;
   player_pose3d_t IRPose[8];
 } RobotParams_t;

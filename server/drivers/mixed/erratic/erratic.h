@@ -48,6 +48,11 @@
 
 #define CPU_VOLTAGE 3.5
 
+// angular constants, angular units are 4096 / rev
+#define ATOR(x) (M_PI * ((double)(x)) / 2048.0)
+#define ATOD(x) (180.0 * ((double)(x)) / 2048.0)
+#define RTOA(x) ((short)((x) * 2048.0) / M_PI)
+
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(100)
@@ -75,12 +80,14 @@ typedef enum command {
 	configuration =             18,
 	rot_vel =                   21,	// deg/s
 	set_max_rot_acc =           23,
+	set_sonar =                 28,
 	stop =                      29,
 	wheel_vel =                 32,	// mm/s
 	set_analog =                71,
 	save_config =               72,
 	set_pwm_freq =              73,
 	set_pwm_max_on =            74,
+	servo_pos      =            75,
 	set_pid_trans_p =           80,
 	set_pid_trans_v =           81,
 	set_pid_trans_i =           82,
@@ -105,7 +112,8 @@ typedef enum reply {
 	moving =  0x33,
 	motor =   0x80,
 	encoder = 0x90,
-	ain =     0x9a
+	ain =     0x9a,
+	sonar =   0x9b
 } reply_e;
 
 
@@ -117,6 +125,7 @@ typedef struct player_erratic_data
   player_power_data_t power;
   player_aio_data_t aio;
   player_ir_data ir;
+  player_sonar_data sonar;
 } __attribute__ ((packed)) player_erratic_data_t;
 
 // this is here because we need the above typedef's before including it.
@@ -136,9 +145,14 @@ private:
   player_devaddr_t power_id;
   player_devaddr_t aio_id;
   player_devaddr_t ir_id;
+  player_devaddr_t sonar_id;
+  player_devaddr_t ptz_id, ptz2_id;
 
   int position_subscriptions;
   int aio_ir_subscriptions;
+  int sonar_subscriptions;
+  int ptz_subscriptions;
+  int ptz2_subscriptions;
 
   //ErraticMotorPacket* sippacket;
   ErraticMotorPacket *motor_packet;
@@ -151,17 +165,20 @@ private:
   void ToggleMotorPower(unsigned char val);
 
   void ToggleAIn(unsigned char val);
+  void ToggleSonar(unsigned char val);
 
   int HandleConfig(QueuePointer &resp_queue, player_msghdr * hdr, void* data);
   int HandleCommand(player_msghdr * hdr, void * data);
   void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
   void HandleCarCommand(player_position2d_cmd_car_t position_cmd);
+  void HandlePtzCommand(player_ptz_cmd_t ptz_cmd, player_devaddr_t id);
 
   void PublishAllData();
   void PublishPosition2D();
   void PublishPower();
   void PublishAIn();
   void PublishIR();
+  void PublishSonar();
 		
   float IRRangeFromVoltage(float voltage);
   float IRFloorRange(float value);
@@ -220,7 +237,6 @@ private:
 public:
 
   Erratic(ConfigFile* cf, int section);
-  virtual ~Erratic();
 
   virtual int Subscribe(player_devaddr_t id);
   virtual int Unsubscribe(player_devaddr_t id);

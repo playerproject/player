@@ -6,7 +6,7 @@
 /**
 @mainpage The Player Robot Device Interface
 
-<p>Copyright Brian Gerkey and contributors 1999-2006, and beyond.
+<p>Copyright Brian Gerkey and contributors 1999-2007, and beyond.
 <p>Part of the Player/Stage/Gazebo Project [http://playerstage.sourceforge.net]
 
 \section Overview
@@ -78,18 +78,25 @@ platform and community code respository for such algorithms.
 
 \section Versions
 
-<p>This document describes Player version 2.x, which represents a
-significant change from the 1.6.x line.  The information contained
-herein does <b>not</b> apply to earlier versions of Player</p>
+<p>This document describes Player version 2.1.x, which represents minor
+changes from the 2.0.x line, and significant changes from the 1.6.x line.
+The information contained herein does <b>not</b> apply to earlier versions
+of Player.</p>
 
 \section License
 
-<p>Player source and documentation is released under the terms of the
-GNU General Public License v2. A copy of the license is included with the
-sourcecode in the file COPYING. Copying and redistribution is permitted
-only under the terms of the license.  Client libraries are simultaneously
-released under the terms of the GNU Lesser General Public License v2.1.</p>
+<p>All Player source code is distributed under the terms of the
+GNU General Public License v2 ("GPL").  A copy of this license is included with
+the sourcecode in the files COPYING.  
 
+With the exception of the @ref libplayerdrivers library, all Player source
+is simultaneously distributed under the terms of the GNU Lesser General
+Public License v2.1 ("LGPL"). A copy of this license is included with
+the sourcecode in the files COPYING.lib.  Users may use dual-licensed
+portions of Player under the GPL or the LGPL, at their choosing.
+
+Player documentation is distributed under the GNU Free Documentation
+License ("FDL").
 */
 
 /**
