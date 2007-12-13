@@ -1,98 +1,3 @@
-/*
- *  Player - One Hell of a Robot Server
- *  Copyright (C) 2004  
- *      Elena Lazkano' , Aitzol Astigarraga 
- *      ccplaore@si.ehu.es, ccbaspaa@si.ehu.es
- *                      
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- */
-
-/** @ingroup drivers */
-/** @{ */
-/** @defgroup driver_canonvcc4 canonvcc4
- * @brief Canon VC-C4 pan-tilt-zoom camera
-
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
-
-The canonvcc4 driver controls a Canon VC-C4 PTZ camera.
-
-The canonvcc4 driver operates over a direct serial link, not
-through the P2OS microcontroller's AUX port, as is the normal
-configuration for ActivMedia robots.  You may have to make or buy
-a cable to connect your camera to a normal serial port.  Look <a
-href="http://playerstage.sourceforge.net/faq.html#evid30_wiring">here</a>
-for more information and wiring instructions.
-
-The VC-C4 is a rather slow device. Actions and specially initialization
-steps need time to take effect.
-
-VC-C4 ranges:
-- Pan range in degrees: -98...98
-- Tilt in degrees: -30...88
-- Zoom units: 0..2000
-
-The canonvcc4 driver only support position control.
-
-There is a <a href="http://canondrv.sourceforge.net/">related project</a>
-that may be of interest to people hacking on this driver.
-
-@par Compile-time dependencies
-
-- none
-
-@par Provides
-
-- @ref interface_ptz
-
-@par Requires
-
-- none
-
-@par Configuration requests
-
-- none
-
-@par Configuration file options
-
-- port (string)
-  - Default: "/dev/ttyS1"
-  - The serial port where the camera is connected
-
-@par Example
-
-@verbatim
-driver 
-(
-  name "canonvcc4" 
-  provides ["ptz:0"]
-  port "/dev/ttyS1"
-)
-@endverbatim
-
-@todo
-Add more functionalities. Actually Only pan, tilt and zoom
-values can be set up.
-
-@author Elena Lazkano', Aitzol Astigarraga
-
-*/
-
-/** @} */
-
 #ifdef HAVE_CONFIG_H
   #include "config.h"
 #endif
@@ -107,21 +12,18 @@ values can be set up.
 #include <termios.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
+//#include <netinet/in.h>  /* for struct sockaddr_in, htons(3) */
 #include <math.h>
 
-#include "replace.h" /* for poll(2) and cfmakeraw(3) */
-#include "driver.h"
-#include "drivertable.h"
-#include "player.h"
-
+#include <libplayercore/playercore.h>
+#include <replace/replace.h>
 
 #define CAM_ERROR_NONE 0x30
 #define CAM_ERROR_BUSY 0x31
 #define CAM_ERROR_PARAM 0x35
 #define CAM_ERROR_MODE 0x39
 
-#define PTZ_SLEEP_TIME_USEC 300000
+#define PTZ_SLEEP_TIME_USEC 100000
 
 #define MAX_PTZ_COMMAND_LENGTH 16
 #define MAX_PTZ_REQUEST_LENGTH 14
@@ -130,7 +32,8 @@ values can be set up.
 #define PTZ_PAN_MAX 98.0   // 875 units 0x36B
 #define PTZ_TILT_MAX 88.0  // 790 units 0x316
 #define PTZ_TILT_MIN -30.0 // -267 units 0x10B
-#define MAX_ZOOM 2140
+#define MAX_ZOOM 1960 //1900
+#define ZOOM_CONV_FACTOR 17
 
 #define PT_BUFFER_INC       512
 #define PT_READ_TIMEOUT   10000
@@ -142,7 +45,6 @@ values can be set up.
 
 static unsigned int error_code;
 
-struct timeval substract_time(struct timeval *, struct timeval *);
 
 class canonvcc4:public Driver 
 {
@@ -150,7 +52,8 @@ class canonvcc4:public Driver
   bool ptz_fd_blocking;
 
   int SendCommand(unsigned char* str, int len);
-  int SendRequest(unsigned char* str, int len);
+  //  int SendRequest(unsigned char* str, int len);
+  int SendRequest(unsigned char* str, int len, unsigned char* reply, uint8_t camera = 1);
   int ReceiveCommandAnswer();
   int ReceiveRequestAnswer(unsigned char* reply);
   int setControlMode();
@@ -169,6 +72,7 @@ class canonvcc4:public Driver
 
 
  public:
+   int maxfov, minfov;
   //player_ptz_cmd_t* command;
   //player_ptz_data_t* data;
 
@@ -183,8 +87,9 @@ class canonvcc4:public Driver
   void ProcessCommand(player_ptz_cmd_t & command);
   int pandemand , tiltdemand , zoomdemand ;
 
-  // MessageHandler
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
+  // MessageHandler  
+int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+  // int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len);
 
   virtual int Setup();
   virtual int Shutdown();
@@ -208,12 +113,17 @@ canonvcc4_Register(DriverTable* table)
 
 /************************************************************************/
 
-canonvcc4::canonvcc4(ConfigFile* cf, int section) 
- : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_ALL_MODE)
+//canonvcc4::canonvcc4(ConfigFile* cf, int section) 
+// : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE, PLAYER_OPEN_MODE)
+
+canonvcc4::canonvcc4( ConfigFile* cf, int section)
+: Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_PTZ_CODE)
 {
   pandemand = 0; tiltdemand = 0; zoomdemand = 0;
   ptz_fd = -1;
 
+  this->minfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 0, DTOR(3)));
+  this->maxfov = (int) RTOD(cf->ReadTupleAngle(section, "fov", 1, DTOR(30)));
   ptz_serial_port = cf->ReadString(section, "port", DEFAULT_PTZ_PORT);
 }
 
@@ -252,7 +162,7 @@ canonvcc4::Setup()
       return -1;
     }
 
-  //ptz_fd_blocking = false;
+  //  ptz_fd_blocking = false;
   err = setPower(0);
   fprintf(stderr, "\nPowering off/on the camera!!!!!!!!!!!!!!\n");  
   err = setPower(1);  
@@ -329,17 +239,12 @@ canonvcc4::Setup()
   puts("Done.");
   
   // zero the command and data buffers
-  /*player_ptz_data_t data;
+  player_ptz_data_t data;
   player_ptz_cmd_t cmd;
 
   data.pan = data.tilt = data.zoom = 0;
   cmd.pan = cmd.tilt = cmd.zoom = 0;
 
-  PutData((void*)&data,sizeof(data),NULL);
-  PutCommand(this->device_id,(void*)&cmd,sizeof(cmd),NULL);*/
-  
-  //request_state = IDLE;
-  // start the thread to talk with the camera
   StartThread();
   
   return(0);
@@ -380,8 +285,6 @@ canonvcc4::configurePort()
 int 
 canonvcc4::Shutdown()
 {
-  puts("canonvcc4::Shutdown");
-  
   if(ptz_fd == -1)
     return(0);
   
@@ -422,8 +325,11 @@ canonvcc4::SendCommand(unsigned char *str, int len)
   return(0);
 }
 /************************************************************************/
-int
-canonvcc4::SendRequest(unsigned char* str, int len)
+//int
+//canonvcc4::SendRequest(unsigned char* str, int len)
+
+int canonvcc4::SendRequest(unsigned char* str, int len, unsigned char* reply, uint8_t camera)
+
 {
   int err = 0;
 
@@ -569,7 +475,7 @@ canonvcc4::GetAbsPanTilt(int* pan, int* tilt)
   command[4] = 0x63;
   command[5] = 0xEF;
 
-  if (SendRequest(command, 6))
+  if (SendRequest(command, 6, reply))
     return(-1);
   //  PrintPacket("getabspantilt: ", command, 6);
   reply_len = ReceiveRequestAnswer(reply);
@@ -629,7 +535,7 @@ canonvcc4::GetAbsZoom(int* zoom)
   command[4] = 0xA4;
   command[5] = 0xEF;
 
-  if (SendRequest(command, 6))
+  if (SendRequest(command, 6, reply))
     return(-1);
   //  PrintPacket( "getabszoom: ", command, 6);
 
@@ -653,7 +559,6 @@ canonvcc4::GetAbsZoom(int* zoom)
   u_zoom = 0;
   for (i = 0; i < 4; i++)
     u_zoom += buf[i] * (unsigned int) pow(16.0, (double)(3 - i));
-
   *zoom = u_zoom;  
   return(0);
 }
@@ -728,7 +633,7 @@ canonvcc4::ReceiveCommandAnswer()
   int len = 0;
   unsigned char byte;
   int err;
-
+  // puts("Receivecommandanswer begin\n");
   memset(reply, 0, COMMAND_RESPONSE_BYTES);
 
   for (num = 0; num <= COMMAND_RESPONSE_BYTES + 1; num++)
@@ -787,7 +692,7 @@ canonvcc4::ReceiveCommandAnswer()
     }
   // so far so good.  Set myError to the error byte
   error_code = reply[3];
-  //  PrintPacket("receivecommandasnwer: ", reply, 6);
+  //PrintPacket("receivecommandasnwer: ", reply, 6);
   if (error_code == CAM_ERROR_NONE)
       return 0;
 
@@ -887,7 +792,7 @@ canonvcc4::setControlMode()
 
   if (SendCommand(command, 7))
     return -1;
-  usleep(5000000);
+  //  usleep(5000000);
   return (ReceiveCommandAnswer());
 }
 /************************************************************************/
@@ -909,64 +814,11 @@ canonvcc4::setPower(int on)
 
   if (SendCommand(command, 7))
     return -1;
-  usleep(5000000);
+  //  usleep(5000000);
   return (ReceiveCommandAnswer());
 }
 
 /************************************************************************/
-
-void canonvcc4::ProcessCommand(player_ptz_cmd_t & command)
-{
-  bool newpantilt = true, newzoom = true;
-  int err;
-   
-      if(pandemand != (short)ntohs((unsigned short)(command.pan)))
-	{
-	  pandemand = (short)ntohs((unsigned short)(command.pan));
-	  newpantilt = true;
-	}
-      if(tiltdemand != (short)ntohs((unsigned short)(command.tilt)))
-	{
-	  tiltdemand = (short)ntohs((unsigned short)(command.tilt));
-	  newpantilt = true;
-	}
-      if(zoomdemand != (short)ntohs((unsigned short)(command.zoom)))
-	{
-	  zoomdemand = (short) ntohs((unsigned short)(command.zoom));
-	  newzoom = true;
-	}
-      
-      // Do some coordinate transformatiopns.  Pan value must be
-      // negated.  The zoom value must be converted from a field of view
-      // (in degrees) into arbitrary Sony PTZ units.
-      pandemand = -pandemand;
-      
-      if(newpantilt)
-	{
-	  err = SendAbsPanTilt(pandemand,tiltdemand);
-// 	  fprintf(stdout, "newpantilt: %d %d err: %d error_code= %d\n", 
-// 		  pandemand, tiltdemand, err, error_code);
-	  if ((error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_BUSY))
-	    {
-	      fputs("canonvcc4:Main():SendAbsPanTilt() errored. bailing.\n", 
-		    stderr);
-	      pthread_exit(NULL);
-	    }
-	}
-      if (newzoom)
-	{
-	  err = SendAbsZoom(zoomdemand);
-	  if ((error_code != CAM_ERROR_NONE) && (error_code != CAM_ERROR_BUSY))
-	    {
-	      fputs("canonvcc4:Main():SendAbsZoom() errored. bailing.\n", 
-		    stderr);
-	      pthread_exit(NULL);
-	    }
-	}
-      	
-	
-}
-
 
 // this function will be run in a separate thread
 void 
@@ -978,9 +830,7 @@ canonvcc4::Main()
   while(1) 
     {
       pthread_testcancel();
-      
       ProcessMessages();
-
       /* get current state */
       if(GetAbsPanTilt(&pan,&tilt) < 0)
 	{
@@ -989,6 +839,8 @@ canonvcc4::Main()
 	  pthread_exit(NULL);
 	}
       /* get current state */
+
+   
       if(GetAbsZoom(&zoom) < 0)
 	{
 	  fputs("canonvcc4:Main():GetAbsZoom() errored. bailing.\n", stderr);
@@ -1000,56 +852,118 @@ canonvcc4::Main()
       // we negate pan here.  Zoom values are converted from arbitrary
       // units to a field of view (in degrees).
       pan = -pan;
-      
-      
-      // Copy the data.
-      data.pan = htons((unsigned short)pan);
-      data.tilt = htons((unsigned short)tilt);
-      data.zoom = htons((unsigned short)zoom);
-      
-      /* test if we are supposed to cancel */
+
+      //zoom = this->maxfov + (zoom * (this->maxfov - this->minfov)) / 1960; 
+
+      data.pan = DTOR((unsigned short)pan);
+      data.tilt = DTOR((unsigned short)tilt);
+      data.zoom = (unsigned short) (zoom - 3056)/ZOOM_CONV_FACTOR; 
       pthread_testcancel();
-      PutMsg(device_id,NULL,PLAYER_MSGTYPE_DATA,0,(void*)&data, sizeof(player_ptz_data_t),NULL);
       
-     
+      Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, &data,sizeof(player_ptz_data_t),NULL);
+
       usleep(PTZ_SLEEP_TIME_USEC);
     }
 }
 
-int canonvcc4::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, int * resp_len) 
+int canonvcc4::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
-	assert(hdr);
-	assert(data);
-	assert(resp_data);
-	assert(resp_len);
+  assert(hdr);
+  assert(data);
 
-	if (MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 0, device_id))
-	{
-	  assert(hdr->size == sizeof(player_ptz_cmd_t));
-	  ProcessCommand(*reinterpret_cast<player_ptz_cmd_t *> (data));
-      *resp_len = 0;
+  if (Message::MatchMessage(hdr, 
+			    PLAYER_MSGTYPE_REQ, 
+			    PLAYER_PTZ_REQ_GENERIC, device_addr))
+  {
+    assert(hdr->size == sizeof(player_ptz_req_generic_t));
+
+    player_ptz_req_generic_t *cfg = (player_ptz_req_generic_t *)data;
+
+    // check whether command or inquiry...
+    if (cfg->config[0] == 0x01) 
+    {
+      if (SendCommand((uint8_t *)cfg->config, cfg->config_count) < 0) 
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, hdr->subtype);
+      else
+        Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
       return 0;
+    } 
+    else 
+    {
+      // this is an inquiry, so we have to send data back
+      cfg->config_count = SendRequest((uint8_t*)cfg->config, cfg->config_count, (uint8_t*)cfg->config);
+      Publish(device_addr, resp_queue, PLAYER_MSGTYPE_RESP_ACK, hdr->subtype);
+    }
+  }
+
+  if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, 
+			    PLAYER_PTZ_CMD_STATE, device_addr))
+    {
+      
+      short zoomdemand=0;
+      bool newpantilt=true, newzoom=true;
+      
+      assert (hdr->size == sizeof (player_ptz_cmd_t));
+      player_ptz_cmd_t command = *reinterpret_cast<player_ptz_cmd_t *> (data);
+      
+      if(pandemand != (int)rint(RTOD(command.pan)))
+	{
+	  pandemand = (int)rint(RTOD(command.pan));
+	  newpantilt = true;
 	}
-	
-	*resp_len = 0;
-	return -1;
+      if(tiltdemand != (int)rint(RTOD(command.tilt)))
+	{
+	  tiltdemand = (int)rint(RTOD(command.tilt));
+	  newpantilt = true;
+	}
+      
+      if(zoomdemand != command.zoom)
+	{
+	  zoomdemand = (int)command.zoom; //(int)rint(RTOD(command.zoom));
+	  newzoom = true;
+	}
+      ////////////////////////////////////////////////////////////   
+      //zoomdemand = (1960 * (this->maxfov - zoomdemand)) / 
+      //	(this->maxfov - this->minfov);
+      ////////////////////////////////////////////////////////////
+      
+      if(newzoom)
+	{
+	  if(SendAbsZoom(zoomdemand))
+	    {
+	      fputs("canonvcc4:Main():SendAbsZoom() errored. bailing.\n", stderr);
+	      pthread_exit(NULL);
+	    }
+	}
+      
+      if(newpantilt)
+	{
+	  pandemand = -pandemand;
+	  if(SendAbsPanTilt(pandemand,tiltdemand))
+	    {
+	      fputs("canonvcc4:Main():SendAbsPanTilt() errored. bailing.\n", stderr);
+	      pthread_exit(NULL);
+	    }
+	  //  }
+	} 
+      return 0;
+    }
+  
+  return -1;
 }
+
+
+
 
 /************************************************************************/
-struct timeval
-substract_time(struct timeval *now, struct timeval *before)
-{
-  struct timeval res;
-  int sec, usec;
 
-  sec = now->tv_sec - before->tv_sec;
-  usec = now->tv_usec - before->tv_usec;
-  if (usec < 0)
-    {
-      sec -= 1;
-      usec += 1000000;
-    }
-  res.tv_sec = sec;
-  res.tv_usec = usec;
-  return(res);  
-}
+
+// extern "C" {
+//   int player_driver_init(DriverTable* table)
+//   {
+//     puts("Canonvcc4 driver initializing");
+//     canonvcc4_Register(table);
+//     puts("Canonvcc4 driver done");
+//     return(0);
+//   }
+// }

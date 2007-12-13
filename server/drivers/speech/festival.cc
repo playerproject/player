@@ -98,8 +98,14 @@ driver
 /* don't change this unless you change the Festival init scripts as well*/
 #define DEFAULT_FESTIVAL_PORTNUM 1314
 /* change this if Festival is installed somewhere else*/
-#define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
+/* HHAA 14-02-2007 */
+//#define DEFAULT_FESTIVAL_LIBDIR "/usr/local/festival/lib"
+#define DEFAULT_FESTIVAL_LIBDIR "/usr/share/festival/"
 #define DEFAULT_QUEUE_LEN 4
+
+/* HHAA 13-02-2007 */
+#define DEFAULT_FESTIVAL_LANGUAGE "english"
+
 
 #include <deque>
 using namespace std;
@@ -111,6 +117,8 @@ class Festival:public Driver
 
     int portnum;  // port number where Festival will run (default 1314)
     char festival_libdir_value[MAX_FILENAME_SIZE]; // the libdir
+    /* HHAA 14-02-2007 */
+    char festival_language[10];
 
     /* a queue to hold incoming speech strings */
     deque<char *> queue;
@@ -183,7 +191,9 @@ Festival::Festival( ConfigFile* cf, int section) :
   strncpy(festival_libdir_value,
           cf->ReadString(section, "libdir", DEFAULT_FESTIVAL_LIBDIR),
           sizeof(festival_libdir_value));
-	
+  strncpy(festival_language,
+          cf->ReadString(section, "language", DEFAULT_FESTIVAL_LANGUAGE),
+          sizeof(festival_language));	
 
 /*  queuelen = cf->ReadInt(section, "queuelen", DEFAULT_QUEUE_LEN);
 
@@ -209,6 +219,10 @@ Festival::Setup()
   char festival_bin_name[] = "festival";
   char festival_server_flag[] = "--server";
   char festival_libdir_flag[] = "--libdir";
+  /* HHAA 12-02-2007 */
+  char festival_language_flag[] = "--language";
+  /* HHAA 12-02-2007 */ 
+  //char festival_language[] = "spanish";
   //char festival_libdir_value[] = DEFAULT_FESTIVAL_LIBDIR;
 
   int j;
@@ -234,6 +248,14 @@ Festival::Setup()
   {
     festival_args[i++] = festival_libdir_flag;
     festival_args[i++] = festival_libdir_value;
+  }
+
+  /* HHAA 13-02-2007 */
+  fprintf(stdout, "festival language %s\n", festival_language);
+  if(strcmp(DEFAULT_FESTIVAL_LANGUAGE,festival_language))
+  {
+  festival_args[i++] = festival_language_flag;
+  festival_args[i++] = festival_language;
   }
   festival_args[i] = (char*)NULL;
 

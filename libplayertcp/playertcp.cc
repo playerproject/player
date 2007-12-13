@@ -28,6 +28,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <stddef.h>
+#include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -99,13 +101,7 @@ PlayerTCP::PlayerTCP()
   this->clients = (playertcp_conn_t*)NULL;
   this->client_ufds = (struct pollfd*)NULL;
 
-  pthread_mutexattr_t mutex_attr;
-  pthread_mutexattr_init(&mutex_attr);
-  // TODO: see what happens if recursive mutexes are not available
-#ifdef PTHREAD_MUTEX_RECURSIVE
-  pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
-#endif
-  pthread_mutex_init(&this->clients_mutex,&mutex_attr);
+  pthread_mutex_init(&this->clients_mutex,NULL);
 
   this->num_listeners = 0;
   this->listeners = (playertcp_listener_t*)NULL;
@@ -175,11 +171,13 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
                      unsigned int local_port,
                      int newsock,
                      bool send_banner,
-                     int* kill_flag)
+                     int* kill_flag,
+                     bool have_lock)
 {
-  unsigned char data[PLAYER_IDENT_STRLEN];
+  if(!have_lock)
+    Lock();
 
-  pthread_mutex_lock(&this->clients_mutex);
+  unsigned char data[PLAYER_IDENT_STRLEN];
 
   int j = this->num_clients;
   // Do we need to allocate another spot?
@@ -235,8 +233,6 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 
   this->num_clients++;
 
-  pthread_mutex_unlock(&this->clients_mutex);
-
   if(send_banner)
   {
     memset(data,0,sizeof(data));
@@ -250,6 +246,9 @@ PlayerTCP::AddClient(struct sockaddr_in* cliaddr,
 
   PLAYER_MSG3(1, "accepted client %d on port %d, fd %d",
               j, this->clients[j].port, this->clients[j].fd);
+
+  if(!have_lock)
+    Unlock();
 
   return(this->clients[j].queue);
 }
@@ -304,7 +303,7 @@ PlayerTCP::Accept(int timeout)
       this->AddClient(&cliaddr,
                       this->host,
                       this->listeners[i].port,
-                      newsock, true, NULL);
+                      newsock, true, NULL, false);
 
       num_accepts--;
     }
@@ -351,22 +350,27 @@ PlayerTCP::Close(int cli)
 }
 
 int
-PlayerTCP::Read(int timeout)
+PlayerTCP::Read(int timeout, bool have_lock)
 {
   int num_available;
 
   if(!this->num_clients)
   {
-    usleep(timeout);
-    return(0);
+    struct timespec ts;
+    ts.tv_sec = timeout / 1000000;
+    ts.tv_nsec = (timeout % 1000000) * 1000;
+    nanosleep(&ts, NULL);
+    return 0;
   }
 
-  pthread_mutex_lock(&this->clients_mutex);
+  if(!have_lock)
+    Lock();
 
   // Poll for incoming messages
   if((num_available = poll(this->client_ufds, this->num_clients, timeout)) < 0)
   {
-    pthread_mutex_unlock(&this->clients_mutex);
+    if(!have_lock)
+      Unlock();
 
     // Got interrupted by a signal; no problem
     if(errno == EINTR)
@@ -379,7 +383,8 @@ PlayerTCP::Read(int timeout)
 
   if(!num_available)
   {
-    pthread_mutex_unlock(&this->clients_mutex);
+    if(!have_lock)
+      Unlock();
     return(0);
   }
 
@@ -406,11 +411,13 @@ PlayerTCP::Read(int timeout)
 
 
   this->DeleteClients();
-  pthread_mutex_unlock(&this->clients_mutex);
+  if(!have_lock)
+    Unlock();
 
   return(0);
 }
 
+// Should be called with clients_mutex lock held
 void
 PlayerTCP::DeleteClients()
 {
@@ -459,11 +466,12 @@ PlayerTCP::DeleteClients()
          (this->size_clients - this->num_clients) * sizeof(struct pollfd));
 }
 
+// Should be called with clients_mutex lock held
 void
-PlayerTCP::DeleteClient(MessageQueue* q)
+PlayerTCP::DeleteClient(MessageQueue* q, bool have_lock)
 {
-  pthread_mutex_lock(&this->clients_mutex);
-
+  if(!have_lock)
+    Lock();
   // Find the client and mark it for deletion.
   int i;
   for(i=0;i<this->num_clients;i++)
@@ -474,8 +482,8 @@ PlayerTCP::DeleteClient(MessageQueue* q)
       break;
     }
   }
-
-  pthread_mutex_unlock(&this->clients_mutex);
+  if(!have_lock)
+    Unlock();
 }
 
 bool
@@ -675,9 +683,10 @@ PlayerTCP::WriteClient(int cli)
 }
 
 int
-PlayerTCP::Write()
+PlayerTCP::Write(bool have_lock)
 {
-  pthread_mutex_lock(&this->clients_mutex);
+  if(!have_lock)
+    Lock();
 
   for(int i=0;i<this->num_clients;i++)
   {
@@ -690,9 +699,21 @@ PlayerTCP::Write()
 
 
   this->DeleteClients();
-  pthread_mutex_unlock(&this->clients_mutex);
+  if(!have_lock)
+    Unlock();
 
   return(0);
+}
+
+int
+PlayerTCP::ReadClient(MessageQueue* q)
+{
+  for(int cli=0; cli < this->num_clients; cli++)
+  {
+    if(this->clients[cli].queue == q)
+      return(ReadClient(cli));
+  }
+  return(-1);
 }
 
 int
@@ -1096,7 +1117,7 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
               PLAYER_WARN("truncating available device list");
               break;
             }
-            if((int)device->addr.robot == client->port)
+            if((int)device->addr.robot == client->port && (device->addr.host==host))
               devlist.devices[numdevices++] = device->addr;
           }
           devlist.devices_count = numdevices;
@@ -1236,3 +1257,15 @@ PlayerTCP::HandlePlayerMessage(int cli, Message* msg)
   return(0);
 }
 
+
+void 
+PlayerTCP::Lock()
+{
+  pthread_mutex_lock(&clients_mutex);
+}
+
+void 
+PlayerTCP::Unlock()
+{
+  pthread_mutex_unlock(&clients_mutex);
+}

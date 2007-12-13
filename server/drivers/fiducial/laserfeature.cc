@@ -54,11 +54,7 @@ the Player 2.0 API.
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "player.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-
+#include <libplayercore/playercore.h>
 
 // Driver for detecting features in laser scan.
 class LaserFeature : public Driver

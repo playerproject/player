@@ -48,6 +48,8 @@ client writers.
 #define PLAYERC_H
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 // Get the message structures from Player
 #include <libplayercore/player.h>
@@ -81,7 +83,9 @@ extern "C" {
 #define PLAYERC_DATAMODE_PUSH PLAYER_DATAMODE_PUSH
 #define PLAYERC_DATAMODE_PULL PLAYER_DATAMODE_PULL
 
-
+/** The valid transports */
+#define PLAYERC_TRANSPORT_TCP 1
+#define PLAYERC_TRANSPORT_UDP 2
 
 /***************************************************************************
  * Array sizes
@@ -443,6 +447,17 @@ typedef struct _playerc_client_t
   /** Server address. */
   char *host;
   int port;
+  int transport;
+  struct sockaddr_in server;
+
+  /** How many times we'll try to reconnect after a socket error.  Use @ref
+   * playerc_client_set_retry_limit() to set this value. Set to -1 for
+   * infinite retry. */
+  int retry_limit;
+
+  /** How long to sleep, in seconds, to sleep between reconnect attempts.
+   * Use @ref playerc_client_set_retry_time() to set this value. */
+  double retry_time;
 
   /** @internal Socket descriptor */
   int sock;
@@ -465,12 +480,17 @@ typedef struct _playerc_client_t
 
   /** @internal Temp buffers for incoming / outgoing packets. */
   char *data;
-  char *xdrdata;
+  char *write_xdrdata;
+  char *read_xdrdata;
+  size_t read_xdrdata_len;
+
 
   /** Server time stamp on the last packet. */
   double datatime;
   /** Server time stamp on the previous packet. */
   double lasttime;
+
+  double request_timeout;
 
 } playerc_client_t;
 
@@ -499,6 +519,13 @@ playerc_client_t *playerc_client_create(playerc_mclient_t *mclient,
 
 */
 void playerc_client_destroy(playerc_client_t *client);
+
+/** @brief Set the transport type.
+
+@param transport Either PLAYERC_TRANSPORT_UDP or PLAYERC_TRANSPORT_TCP
+*/
+void playerc_client_set_transport(playerc_client_t* client,
+                                  unsigned int transport);
 
 /** @brief Connect to the server.
 
@@ -663,6 +690,28 @@ never return the ID of a proxy other than the client.
 void *playerc_client_read(playerc_client_t *client);
 
 
+/** @brief Set the timeout for client requests.
+
+@param client Pointer to client object.
+@param seconds Seconds to wait for a reply.
+
+*/
+void playerc_client_set_request_timeout(playerc_client_t* client, uint seconds);
+
+/** @brief Set the connection retry limit.
+
+@param client Pointer to the client object
+@param limit The number of times to attempt to reconnect to the server.  Give -1 for 
+       infinite retry.
+*/
+void playerc_client_set_retry_limit(playerc_client_t* client, int limit);
+
+/** @brief Set the connection retry sleep time.
+
+@param client Pointer to the client object
+@param time The amount of time, in seconds, to sleep between reconnection attempts.
+*/
+void playerc_client_set_retry_time(playerc_client_t* client, double time);
 
 /** @brief Write data to the server.  @internal
 */
@@ -884,30 +933,7 @@ complete description of the drivers that support this interface.
 @{
 */
 
-/** @brief Description of a single blob. */
-typedef struct
-{
-  /** The blob id; e.g. the color class this blob belongs to. */
-  unsigned int id;
-
-  /** A descriptive color for the blob.  Stored as packed RGB 32, i.e.:
-      0x00RRGGBB. */
-  uint32_t color;
-
-  /** Blob centroid (image coordinates). */
-  unsigned int x, y;
-
-  /** Bounding box for blob (image coordinates). */
-  unsigned int left, top, right, bottom;
-
-  /** Blob area (pixels). */
-  unsigned int area;
-
-  /** Blob range (m). */
-  double range;
-
-} playerc_blobfinder_blob_t;
-
+typedef player_blobfinder_blob_t playerc_blobfinder_blob_t;
 
 /** @brief Blobfinder device data. */
 typedef struct
@@ -920,7 +946,7 @@ typedef struct
 
   /** A list of detected blobs. */
   unsigned int blobs_count;
-  playerc_blobfinder_blob_t blobs[PLAYERC_BLOBFINDER_MAX_BLOBS];
+  playerc_blobfinder_blob_t blobs[PLAYER_BLOBFINDER_MAX_BLOBS];
 
 } playerc_blobfinder_t;
 
@@ -1066,6 +1092,51 @@ void playerc_camera_save(playerc_camera_t *device, const char *filename);
 
 /** @} */
 /**************************************************************************/
+
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_dio dio
+
+The dio proxy provides an interface to the digital input/output sensors.
+
+@{
+*/
+
+/** Dio proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+    /// The number of valid digital inputs.
+    uint8_t count;
+
+    /// A bitfield of the current digital inputs.
+    uint32_t digin;
+
+} playerc_dio_t;
+
+
+/** Create a dio proxy. */
+playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
+
+/** Destroy a dio proxy. */
+void playerc_dio_destroy(playerc_dio_t *device);
+
+/** Subscribe to the dio device. */
+int playerc_dio_subscribe(playerc_dio_t *device, int access);
+
+/** Un-subscribe from the dio device. */
+int playerc_dio_unsubscribe(playerc_dio_t *device);
+
+/** Set the output for the dio device. */
+int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
+
+
+/** @} */
+/***************************************************************************/
+
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
@@ -1249,6 +1320,55 @@ int playerc_graphics2d_clear(playerc_graphics2d_t *device );
 
 /***************************************************************************/
 /** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_graphics3d graphics3d
+
+The graphics3d proxy provides an interface to the graphics3d
+
+@{
+*/
+
+/** @brief Graphics3d device data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  /** current drawing color */
+  player_color_t color;
+
+} playerc_graphics3d_t;
+
+
+/** @brief Create a graphics3d device proxy. */
+playerc_graphics3d_t *playerc_graphics3d_create(playerc_client_t *client, int index);
+
+/** @brief Destroy a graphics3d device proxy. */
+void playerc_graphics3d_destroy(playerc_graphics3d_t *device);
+
+/** @brief Subscribe to the graphics3d device */
+int playerc_graphics3d_subscribe(playerc_graphics3d_t *device, int access);
+
+/** @brief Un-subscribe from the graphics3d device */
+int playerc_graphics3d_unsubscribe(playerc_graphics3d_t *device);
+
+/** @brief Set the current drawing color */
+int playerc_graphics3d_setcolor(playerc_graphics3d_t *device,
+                                player_color_t col );
+
+/** @brief Draw some points in the given mode */
+int playerc_graphics3d_draw(playerc_graphics3d_t *device,
+           player_graphics3d_draw_mode_t mode,
+           player_point_3d_t pts[],
+           int count );
+
+/** @brief Clear the canvas */
+int playerc_graphics3d_clear(playerc_graphics3d_t *device );
+
+
+/** @} */
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
  * @defgroup playerc_proxy_gripper gripper
 
 The gripper proxy provides an interface to the gripper
@@ -1424,6 +1544,15 @@ typedef struct
   /** ID for this scan */
   int scan_id;
 
+  /** Minimum range, in meters, in the right half of the scan (those ranges
+   * from the first beam, counterclockwise, up to the middle of the scan,
+   * including the middle beam, if one exists). */
+  double min_right;
+
+  /** Minimum range, in meters, in the left half of the scan (those ranges
+   * from the first beam after the middle of the scan, counterclockwise, to
+   * the last beam). */
+  double min_left;
 } playerc_laser_t;
 
 
@@ -1650,7 +1779,7 @@ int playerc_localize_unsubscribe(playerc_localize_t *device);
 /** @brief Set the the robot pose (mean and covariance). */
 int playerc_localize_set_pose(playerc_localize_t *device, double pose[3], double cov[3]);
 
-/* @brief Get the particle set.  Caller must supply sufficient storage for
+/** @brief Request the particle set.  Caller must supply sufficient storage for
    the result. */
 int playerc_localize_get_particles(playerc_localize_t *device);
 
@@ -1783,7 +1912,8 @@ int playerc_map_get_vector(playerc_map_t* device);
  * @defgroup playerc_proxy_opaque opaque
 
 The opaque proxy provides an interface for generic messages to drivers.
-
+See examples/plugins/opaquedriver for an example of using this interface in
+combination with a custom plugin.
 @{
 */
 
@@ -1967,9 +2097,18 @@ int playerc_position1d_get_geom(playerc_position1d_t *device);
 int playerc_position1d_set_cmd_vel(playerc_position1d_t *device,
                                    double vel, int state);
 
-/** Set the target position. */
+/** @brief Set the target position.
+    -@arg pos The position to move to
+ */
 int playerc_position1d_set_cmd_pos(playerc_position1d_t *device,
                                    double pos, int state);
+
+/** @brief Set the target position with movement velocity
+    -@arg pos The position to move to
+    -@arg vel The speed at which to move to the position
+ */
+int playerc_position1d_set_cmd_pos_with_vel(playerc_position1d_t *device,
+                                            double pos, double vel, int state);
 
 /** Set the odometry offset */
 int playerc_position1d_set_odom(playerc_position1d_t *device,
@@ -2042,6 +2181,19 @@ int playerc_position2d_get_geom(playerc_position2d_t *device);
 int playerc_position2d_set_cmd_vel(playerc_position2d_t *device,
                                    double vx, double vy, double va, int state);
 
+/** Set the target speed and heading.  vx : forward speed (m/s).  vy : sideways
+    speed (m/s); this field is used by omni-drive robots only.  pa :
+    rotational heading (rad).  All speeds and angles are defined in the robot
+    coordinate system. */
+int playerc_position2d_set_cmd_vel_head(playerc_position2d_t *device,
+                                   double vx, double vy, double pa, int state);
+
+/** Set the target pose with given motion vel */
+int playerc_position2d_set_cmd_pose_with_vel(playerc_position2d_t *device,
+                                             player_pose_t pos,
+                                             player_pose_t vel,
+                                             int state);
+
 /** Set the target pose (gx, gy, ga) is the target pose in the
     odometric coordinate system. */
 int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
@@ -2049,7 +2201,7 @@ int playerc_position2d_set_cmd_pose(playerc_position2d_t *device,
 
 /** Set the target cmd for car like position */
 int playerc_position2d_set_cmd_car(playerc_position2d_t *device,
-                                    double vx,double a);
+                                    double vx, double a);
 
 /** Set the odometry offset */
 int playerc_position2d_set_odom(playerc_position2d_t *device,
@@ -2104,7 +2256,7 @@ typedef struct
 
 /** Create a position3d device proxy. */
 playerc_position3d_t *playerc_position3d_create(playerc_client_t *client,
-            int index);
+                                                int index);
 
 /** Destroy a position3d device proxy. */
 void playerc_position3d_destroy(playerc_position3d_t *device);
@@ -2128,7 +2280,8 @@ int playerc_position3d_get_geom(playerc_position3d_t *device);
     All speeds are defined in the robot coordinate system. */
 int playerc_position3d_set_velocity(playerc_position3d_t *device,
                                     double vx, double vy, double vz,
-                                    double vr, double vp, double vt, int state);
+                                    double vr, double vp, double vt,
+                                    int state);
 
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_speed(playerc_position3d_t *device,
@@ -2140,9 +2293,26 @@ int playerc_position3d_set_pose(playerc_position3d_t *device,
                                 double gx, double gy, double gz,
                                 double gr, double gp, double gt);
 
+
+/** Set the target pose (pos,vel) define desired position and motion speed */
+int playerc_position3d_set_pose_with_vel(playerc_position3d_t *device,
+                                         player_pose3d_t pos,
+                                         player_pose3d_t vel);
+
 /** For compatibility with old position3d interface */
 int playerc_position3d_set_cmd_pose(playerc_position3d_t *device,
                                     double gx, double gy, double gz);
+
+/** Set the velocity mode. This is driver dependent. */
+int playerc_position3d_set_vel_mode(playerc_position3d_t *device, int mode);
+
+/** Set the odometry offset */
+int playerc_position3d_set_odom(playerc_position3d_t *device,
+                                double ox, double oy, double oz,
+                                double oroll, double opitch, double oyaw);
+
+/** Reset the odometry offset */
+int playerc_position3d_reset_odom(playerc_position3d_t *device);
 
 /** @} */
 /**************************************************************************/
@@ -2267,6 +2437,14 @@ int playerc_ptz_set(playerc_ptz_t *device, double pan, double tilt, double zoom)
 int playerc_ptz_set_ws(playerc_ptz_t *device, double pan, double tilt, double zoom,
                        double panspeed, double tiltspeed);
 
+/** @brief Change control mode (select velocity or position control)
+
+  @param device Pointer to proxy object.
+  @param mode Desired mode (@ref PLAYER_PTZ_VELOCITY_CONTROL or @ref PLAYER_PTZ_POSITION_CONTROL)
+
+  @returns 0 on success, -1 on error, -2 on NACK.
+*/
+int playerc_ptz_set_control_mode(playerc_ptz_t *device, int mode);
 
 /** @} */
 /**************************************************************************/
@@ -2340,13 +2518,13 @@ access points or of other wireless NIC's on an ad-hoc network.
 typedef struct
 {
   /** Mac accress. */
-  char mac[32];
+  uint8_t mac[32];
 
   /** IP address. */
-  char ip[32];
+  uint8_t ip[32];
 
   /** ESSID id */
-  char essid[32];
+  uint8_t essid[32];
 
   /** Mode (master, ad-hoc, etc). */
   int mode;
@@ -2372,7 +2550,7 @@ typedef struct
   /** A list containing info for each link. */
   playerc_wifi_link_t links[PLAYERC_WIFI_MAX_LINKS];
   int link_count;
-
+  char ip[32];
 } playerc_wifi_t;
 
 
@@ -2391,6 +2569,20 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *device);
 /** @brief Get link state. */
 playerc_wifi_link_t *playerc_wifi_get_link(playerc_wifi_t *device, int link);
 
+
+/** @} */
+/**************************************************************************/
+
+/***************************************************************************/
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_simulation simulation
+
+The simulation proxy is used to interact with objects in a simulation.
+
+@todo write playerc_proxy_simulation description
+
+@{
+*/
 
 /** @brief Simulation device proxy. */
 typedef struct
@@ -2443,52 +2635,6 @@ int playerc_simulation_set_property_string(playerc_simulation_t *device,
 /***************************************************************************/
 
 
-
-
-/**************************************************************************/
-/** @ingroup playerc_proxies
- * @defgroup playerc_proxy_dio dio
-
-The dio proxy provides an interface to the digital input/output sensors.
-
-@{
-*/
-
-/** Dio proxy data. */
-typedef struct
-{
-  /** Device info; must be at the start of all device structures. */
-  playerc_device_t info;
-
-    /// The number of valid digital inputs.
-    uint8_t count;
-
-    /// A bitfield of the current digital inputs.
-    uint32_t digin;
-
-} playerc_dio_t;
-
-
-/** Create a dio proxy. */
-playerc_dio_t *playerc_dio_create(playerc_client_t *client, int index);
-
-/** Destroy a dio proxy. */
-void playerc_dio_destroy(playerc_dio_t *device);
-
-/** Subscribe to the dio device. */
-int playerc_dio_subscribe(playerc_dio_t *device, int access);
-
-/** Un-subscribe from the dio device. */
-int playerc_dio_unsubscribe(playerc_dio_t *device);
-
-/** Set the output for the dio device. */
-int playerc_dio_set_output(playerc_dio_t *device, uint8_t output_count, uint32_t digout);
-
-
-/** @} */
-/***************************************************************************/
-
-
 /**************************************************************************/
 /** @ingroup playerc_proxies
  * @defgroup playerc_proxy_speech speech
@@ -2526,7 +2672,46 @@ int playerc_speech_say (playerc_speech_t *device, const char *);
 /***************************************************************************/
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_rfid rfid
+/** @ingroup playerc_proxies
+ * @defgroup playerc_proxy_speech_recognition speech recognition
+
+The speech recognition proxy provides an interface to a speech recognition system.
+
+@{
+*/
+
+/** Speech recognition proxy data. */
+typedef struct
+{
+  /** Device info; must be at the start of all device structures. */
+  playerc_device_t info;
+
+  char rawText[PLAYER_SPEECH_RECOGNITION_TEXT_LEN];
+  // Just estimating that no more than 20 words will be spoken between updates.
+  // Assuming that the longest word is <= 30 characters.
+  char words[20][30];
+  int wordCount;
+} playerc_speechrecognition_t;
+
+
+/** Create a speech recognition proxy. */
+playerc_speechrecognition_t *playerc_speechrecognition_create(playerc_client_t *client, int index);
+
+/** Destroy a speech recognition proxy. */
+void playerc_speechrecognition_destroy(playerc_speechrecognition_t *device);
+
+/** Subscribe to the speech recognition device. */
+int playerc_speechrecognition_subscribe(playerc_speechrecognition_t *device, int access);
+
+/** Un-subscribe from the speech recognition device */
+int playerc_speechrecognition_unsubscribe(playerc_speechrecognition_t *device);
+  
+/** @} */
+/***************************************************************************/
+
+/**************************************************************************/
+/** @ingroup playerc_proxies
+    @defgroup playerc_proxy_rfid rfid
 
 The rfid proxy provides an interface to a RFID reader.
 
@@ -2574,14 +2759,15 @@ int playerc_rfid_unsubscribe(playerc_rfid_t *device);
 /***************************************************************************/
 
 /**************************************************************************/
-/** @defgroup playerc_proxy_wsn wsn
+/** @ingroup playerc_proxies
+    @defgroup playerc_proxy_wsn wsn
 
 The wsn proxy provides an interface to a Wireless Sensor Network.
 
 @{
 */
 
-/** Note: the structure describing the WSN node's data packet is declared in 
+/** Note: the structure describing the WSN node's data packet is declared in
           Player. */
 
 /** @brief WSN proxy data. */
@@ -2614,18 +2800,18 @@ int playerc_wsn_subscribe(playerc_wsn_t *device, int access);
 int playerc_wsn_unsubscribe(playerc_wsn_t *device);
 
 /** Set the device state. */
-int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id, 
+int playerc_wsn_set_devstate(playerc_wsn_t *device, int node_id,
                              int group_id, int devnr, int state);
-                             
+
 /** Put the node in sleep mode (0) or wake it up (1). */
-int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id, 
+int playerc_wsn_power(playerc_wsn_t *device, int node_id, int group_id,
                       int value);
 
 /** Change the data type to RAW or converted engineering units. */
 int playerc_wsn_datatype(playerc_wsn_t *device, int value);
 
 /** Change data delivery frequency. */
-int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id, 
+int playerc_wsn_datafreq(playerc_wsn_t *device, int node_id, int group_id,
                          double frequency);
 
 /** @} */

@@ -1,10 +1,10 @@
+noinst_LTLIBRARIES = 
+if INCLUDE_SEGWAYRMP
+noinst_LTLIBRARIES += libsegwayrmp.la
+endif
 
+AM_CPPFLAGS = -Wall -I$(top_srcdir) @SEGWAYRMP_EXTRA_CPPFLAGS@
 
-noinst_LIBRARIES = @SEGWAYRMP_LIB@
+libsegwayrmp_la_SOURCES = segwayrmp.h segwayrmp.cc rmp_frame.h \
+                      canio.h canio_kvaser.h canio_kvaser.cc 
 
-AM_CPPFLAGS = -Wall @SEGWAYRMP_EXTRA_CPPFLAGS@ -I$(top_srcdir)/server
-
-EXTRA_LIBRARIES = libsegwayrmp.a
-
-libsegwayrmp_a_SOURCES = segwayrmp.h segwayrmp.cc rmp_frame.h \
-													canio.h canio_kvaser.h canio_kvaser.cc 

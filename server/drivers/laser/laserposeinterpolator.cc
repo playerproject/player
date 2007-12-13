@@ -36,19 +36,42 @@ containing both scan and pose.
 
 @par Provides
 
-- @ref interface_laser
+- @ref interface_laser : Pose-stamped laser scans (subtype 
+PLAYER_LASER_DATA_SCANPOSE) are published via this interface
 
 @par Requires
 
-- @ref interface_laser
-- @ref interface_position2d
+- @ref interface_laser : Raw laser scans (subtype PLAYER_LASER_DATA_SCAN) are read from this device
+- @ref interface_position2d : Pose data (subtype PLAYER_POSITION2D_DATA_STATE) is read from this device
 
 @par Configuration requests
 
-- None (yet)
+- All configuration are forwarded to the underlying @ref interface_laser device for handling.
   
 @par Configuration file options
 
+- interpolate (integer)
+  - Default: 1
+  - Linearly interpolate between poses for each scan (1), or just attach the 
+    most recent pose to each scan (0).
+- max_scans (integer)
+  - Default: 100
+  - Maximum number of scans to buffer while waiting for a second pose in order 
+    to interpolate.
+- update_thresh ([length angle] tuple)
+  - Default: [-1.0 -1.0]
+  - Minimum change in pose (translation or rotation) required before
+    a new laser scan will be published.  Use this option to choke the data rate.
+    Set either value to -1.0 to indicate that no threshold should be applied in 
+    that dimension (i.e., every scan should be published).
+- update_interval (float, seconds)
+  - Default: -1.0
+  - Interval after which a new scan will be published, regardless of how far
+    the robot has moved.  Set to -1.0 to disable this threshold.
+- send_all_scans (integer)
+  - Default: 1
+  - Whether to stamp and publish every laser scan.  If set to 1, this option 
+    overrides update_thresh and update_interval.
       
 @par Example 
 

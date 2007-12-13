@@ -372,6 +372,7 @@ MessageQueue::Push(Message & msg, bool UseReserved)
       if(el->msg->Compare(msg) && (!el->msg->Ready () || !pull))
       {
         this->Remove(el);
+        delete el->msg;
         delete el;
         break;
       }
@@ -390,7 +391,8 @@ MessageQueue::Push(Message & msg, bool UseReserved)
   {
     MessageQueueElement* newelt = new MessageQueueElement();
     newelt->msg = new Message(msg);
-    if (!pull || newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_DATA)
+    if (!pull || (newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_DATA &&
+		  newelt->msg->GetHeader ()->type != PLAYER_MSGTYPE_CMD))
     {
       // If not in pull mode, or message is not data, set ready to true immediatly
       newelt->msg->SetReady ();

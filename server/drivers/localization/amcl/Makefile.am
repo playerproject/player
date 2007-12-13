@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -Wall -I$(top_srcdir)
+AM_CPPFLAGS = -Wall -I$(top_srcdir) -O3
 if INCLUDE_RTKGUI
 AM_CPPFLAGS += -I$(top_srcdir)/rtk2 @GTK_CFLAGS@
 endif

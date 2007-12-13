@@ -1,4 +1,4 @@
-/* 
+/*
  *  libplayerc : a Player client library
  *  Copyright (C) Andrew Howard 2002-2003
  *
@@ -20,7 +20,7 @@
 /*
  *  Player - One Hell of a Robot Server
  *  Copyright (C) Andrew Howard 2003
- *                      
+ *
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@
 /***************************************************************************
  * Desc: WiFi device proxy
  * Author: Andrew Howard
- * Date: 13 May 2002
+ * Date: 13 May 2002, updated July 2007
  * CVS: $Id$
  **************************************************************************/
 
@@ -66,7 +66,7 @@ playerc_wifi_t *playerc_wifi_create(playerc_client_t *client, int index)
   memset(self, 0, sizeof(playerc_wifi_t));
   playerc_device_init(&self->info, client, PLAYER_WIFI_CODE, index,
                       (playerc_putmsg_fn_t) playerc_wifi_putmsg);
-  
+
   return self;
 }
 
@@ -94,27 +94,29 @@ int playerc_wifi_unsubscribe(playerc_wifi_t *self)
 
 
 // Process incoming data
-void playerc_wifi_putmsg(playerc_wifi_t *self, player_msghdr_t *header,
+void playerc_wifi_putmsg(playerc_wifi_t *device, player_msghdr_t *header,
                           player_wifi_data_t *data, size_t len)
 {
   int i;
 
   if((header->type == PLAYER_MSGTYPE_DATA))
   {
-  self->link_count = data->links_count;
+  	device->link_count = data->links_count;
+		
+		// copy all available link information
+  	for (i = 0; i < device->link_count; i++)
+  	{
+		memcpy(device->links[i].mac, data->links[i].mac, sizeof(data->links[i].mac));    
+		memcpy(device->links[i].ip, data->links[i].ip, sizeof(device->links[i].ip));
+		memcpy(device->links[i].essid, data->links[i].essid, sizeof(device->links[i].essid));
 
-  for (i = 0; i < self->link_count; i++)
-  {
-    strncpy(self->links[i].mac, data->links[i].mac, sizeof(self->links[i].mac));
-    strncpy(self->links[i].ip, data->links[i].ip, sizeof(self->links[i].ip));
-    strncpy(self->links[i].essid, data->links[i].essid, sizeof(self->links[i].essid));
-    self->links[i].mode = data->links[i].mode;
-    self->links[i].encrypt = data->links[i].encrypt;
-    self->links[i].freq = data->links[i].freq;
-    self->links[i].qual = data->links[i].qual;
-    self->links[i].level = data->links[i].level;
-    self->links[i].noise = data->links[i].noise;
-  }
+    device->links[i].mode = data->links[i].mode;
+    device->links[i].encrypt = data->links[i].encrypt;
+    device->links[i].freq = data->links[i].freq;
+    device->links[i].qual = data->links[i].qual;
+    device->links[i].level = data->links[i].level;
+    device->links[i].noise = data->links[i].noise;
+  	}
   }
   return;
 }

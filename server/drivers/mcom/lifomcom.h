@@ -27,9 +27,7 @@
 #ifndef _MCOMDEVICE_HH_
 #define _MCOMDEVICE_HH_
 
-#include <player.h>
-#include <driver.h>
-#include <drivertable.h>
+#include <libplayercore/playercore.h>
 
 
 /*

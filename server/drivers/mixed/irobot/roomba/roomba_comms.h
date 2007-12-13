@@ -132,7 +132,17 @@ int roomba_parse_sensor_packet(roomba_comm_t* r,
 int roomba_get_sensors(roomba_comm_t* r, int timeout);
 void roomba_print(roomba_comm_t* r);
 int roomba_clean(roomba_comm_t* r);
+int roomba_forcedock(roomba_comm_t* r);
 
+int roomba_set_song(roomba_comm_t* r, unsigned char songNumber, 
+                    unsigned char songLength, unsigned char *notes, 
+                    unsigned char *noteLengths);
+int roomba_play_song(roomba_comm_t *r, unsigned char songNumber);
+
+int roomba_vacuum(roomba_comm_t *r, int state);
+int roomba_set_leds(roomba_comm_t *r, uint8_t dirt_detect, uint8_t max, 
+                    uint8_t clean, uint8_t spot, uint8_t status, 
+                    uint8_t power_color, uint8_t power_intensity );
 
 #ifdef __cplusplus
 }

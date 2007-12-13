@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -Wall -fPIC -I$(top_srcdir) @JNI_CFLAGS@
+AM_CPPFLAGS = -g -Wall -I$(top_srcdir) @JNI_CFLAGS@
 
 # files that must be built first
 BUILT_SOURCES =
@@ -41,12 +41,12 @@ playercore_java_wrap.cc: playercore_java.i playercore_casts.i \
 #	javac *.java
 
 libplayercore_java_la_SOURCES = playercore_java_wrap.cc playercore_java_wrap.h
-libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la -version-info 2:0:0 @PLAYER_DRIVER_EXTRA_LIBS@ -rpath $(libdir)
+libplayercore_java_la_LDFLAGS = $(top_builddir)/libplayercore/libplayererror.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(PLAYER_VERSION_INFO) @PLAYER_DRIVER_EXTRA_LIBS@ -rpath $(libdir)
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayercore
 java_DATA = 
 if ENABLE_JPLAYER
-java_DATA += net/sourceforge/playerstage/Jplayercore/*.java
+java_DATA += $(srcdir)/net/sourceforge/playerstage/Jplayercore/*.java
 endif
 
 dist-hook:

@@ -156,6 +156,7 @@ in the body.*/
 #define PLAYER_GRAPHICS2D_CODE     55  // Graphics2D interface
 #define PLAYER_RFID_CODE           56  // RFID reader interface
 #define PLAYER_WSN_CODE            57  // Wireless Sensor Networks interface
+#define PLAYER_GRAPHICS3D_CODE     58  // Graphics3D interface
 /** @} */
 
 /** @ingroup message_basics
@@ -211,6 +212,7 @@ in the body.*/
 #define PLAYER_WAVEFORM_STRING        "waveform"
 #define PLAYER_WIFI_STRING            "wifi"
 #define PLAYER_GRAPHICS2D_STRING       "graphics2d"
+#define PLAYER_GRAPHICS3D_STRING       "graphics3d"
 #define PLAYER_WSN_STRING             "wsn"
 /** @} */
 
@@ -357,6 +359,12 @@ typedef struct player_color
   uint8_t blue;
 } player_color_t;
 
+/** @brief A boolean variable, 0 for false anything else for true */
+typedef struct player_bool
+{
+  /** state */
+  uint8_t state;
+} player_bool_t;
 
 /** @} */
 
@@ -1585,7 +1593,71 @@ typedef struct player_graphics2d_cmd_polygon
 
 /** @} */
 
+////////////////////////////////////////////////////////////////////////////
+/** @ingroup interfaces
+ * @defgroup interface_graphics3d graphics3d
+ * @brief Three-dimensional graphics interface
 
+The @p graphics3d interface provides an interface to graphics
+devices. Drivers can implement this interface to provide clients and
+other drivers with graphics output. 
+
+The interface uses an openGL style of command where a type is specified along 
+with a series of verticies. The interpretation depends on the command type
+
+Graphics items should be accumulated until an explicit clear command is issued
+*/
+
+/** @ingroup interface_graphics3d
+ * @{ */
+
+/** The maximum number of points that can be described in a packet. */
+#define PLAYER_GRAPHICS3D_MAX_POINTS 64
+
+/** Command subtype: clear the drawing area (send an empty message) */
+#define PLAYER_GRAPHICS3D_CMD_CLEAR 1
+/** Command subtype: draw items */
+#define PLAYER_GRAPHICS3D_CMD_DRAW 2
+
+
+/** Drawmode: enumeration that defines the drawing mode */
+typedef enum player_graphics3d_draw_mode
+{
+	PLAYER_DRAW_POINTS,
+	PLAYER_DRAW_LINES,
+	PLAYER_DRAW_LINE_STRIP,
+	PLAYER_DRAW_LINE_LOOP,
+	PLAYER_DRAW_TRIANGLES,
+	PLAYER_DRAW_TRIANGLE_STRIP,
+	PLAYER_DRAW_TRIANGLE_FAN,
+	PLAYER_DRAW_QUADS,
+	PLAYER_DRAW_QUAD_STRIP,
+	PLAYER_DRAW_POLYGON
+} player_graphics3d_draw_mode_t;
+
+
+/** @brief Data: This interface produces no data. */
+
+/** @brief Requests: This interface accepts no requests. */
+
+/** @brief Command: Draw points (@ref PLAYER_GRAPHICS2D_CMD_POINTS)
+Draw some points.
+*/
+typedef struct player_graphics3d_cmd_draw
+{
+  /** The drawing mode defining how teh verticies should be interpreted */
+  uint32_t draw_mode;
+  /** Number of points in this packet. */
+  uint32_t points_count;
+  /** Array of points. */
+  player_point_3d_t points[PLAYER_GRAPHICS3D_MAX_POINTS];
+  /** Color in which the points should be drawn. */
+  player_color_t color;
+  
+} player_graphics3d_cmd_draw_t;
+
+
+/** @} */
 
 // /////////////////////////////////////////////////////////////////////////////
 /** @ingroup interfaces
@@ -2283,8 +2355,9 @@ maps are delivered in tiles, via a sequence of requests.
 
 /** The maximum size of a grid map tile, in cells
 
-2097152 - 30 (msg header) - 20 (meta-data to accompany the tile) = 2097102 */
-#define PLAYER_MAP_MAX_TILE_SIZE 2097102
+(max_payload - 12 (zlib header)) / 1.001 (zlib overhead) -  20 (tile meta-data)
+*/
+#define PLAYER_MAP_MAX_TILE_SIZE (((int)((PLAYER_MAX_PAYLOAD_SIZE-12)/1.001)) - 20 - 1)
 
 /** The maximum number of segments in a vector map
 
@@ -2469,7 +2542,7 @@ interface a user can send custom commands to their drivers/plugins.
 #define PLAYER_OPAQUE_REQ                    3
 
 /** Maximum message size is 1 MB */
-#define PLAYER_OPAQUE_MAX_SIZE            1024
+#define PLAYER_OPAQUE_MAX_SIZE            1048576
 
 /** @brief data */
 typedef struct player_opaque_data
@@ -3047,6 +3120,8 @@ The @p position2d interface is used to control mobile robot bases in 2D.
 #define PLAYER_POSITION2D_CMD_POS              2
 /** Command subtype: carlike command */
 #define PLAYER_POSITION2D_CMD_CAR              3
+/** Command subtype: velocity and heading command */
+#define PLAYER_POSITION2D_CMD_VEL_HEAD         4
 
 /** @brief Data: state (@ref PLAYER_POSITION2D_DATA_STATE)
 
@@ -3101,6 +3176,18 @@ typedef struct player_position2d_cmd_car
   /** turning angle (rad) */
   double angle;
 } player_position2d_cmd_car_t;
+
+/** @brief Command: vel/head (@ref PLAYER_POSITION2D_CMD_VEL_HEAD)
+
+The @p position interface accepts new velocity+heading commands (speed and angle position)
+for the robot's motors (only supported by some drivers). */
+typedef struct player_position2d_cmd_vel_head
+{
+  /** forward velocity (m/s) */
+  double velocity;
+  /** turning position (rad) */
+  double angle;
+} player_position2d_cmd_vel_head_t;
 
 
 /** @brief Data AND Request/reply: geometry.
@@ -3704,9 +3791,9 @@ typedef struct player_simulation_property_int_req
   /** The identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
+  uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** The value of the property */
   int32_t value;
 } player_simulation_property_int_req_t;
@@ -3723,9 +3810,9 @@ typedef struct player_simulation_property_float_req
   /** The identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
+  uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** The value of the property */
   double value;
 } player_simulation_property_float_req_t;
@@ -3741,9 +3828,9 @@ typedef struct player_simulation_property_string_req
   /** The identifier of the object we want to locate */
   char name[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of property identifier */
-  uint32_t property_count;
+  uint32_t prop_count;
   /** The identifier of the property we want to get/set */
-  char property[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
+  char prop[PLAYER_SIMULATION_IDENTIFIER_MAXLEN];
   /** Length of the data string. */
   uint32_t value_count;
   /** The data string. */

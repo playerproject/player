@@ -37,6 +37,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               fiducialproxy.cc \
                               gpsproxy.cc \
                               graphics2dproxy.cc \
+                              graphics3dproxy.cc \
                               gripperproxy.cc \
                               irproxy.cc \
                               laserproxy.cc \
@@ -44,6 +45,7 @@ libplayerc___la_SOURCES =     playerc++.h \
                               localizeproxy.cc \
                               logproxy.cc \
                               mapproxy.cc \
+                              opaqueproxy.cc \
                               plannerproxy.cc \
                               position1dproxy.cc \
                               position2dproxy.cc \
@@ -54,24 +56,19 @@ libplayerc___la_SOURCES =     playerc++.h \
                               simulationproxy.cc \
                               sonarproxy.cc \
                               speechproxy.cc \
+                              speechrecognitionproxy.cc \
                               wifiproxy.cc \
-			      wsnproxy.cc
+                              wsnproxy.cc
 
 # not in libplayerc yet \
-                              aioproxy.cc \
                               audioproxy.cc \
                               audiodspproxy.cc \
                               audiomixerproxy.cc \
                               blinkenlightproxy.cc \
                               energyproxy.cc \
                               mcomproxy.cc \
-                              motorproxy.cc \
-                              soundproxy.cc \
-                              speechrecognitionproxy.cc \
-                              truthproxy.cc \
                               waveformproxy.cc
 
-# motorproxy.cc
 
 #PLAYERCC_LIB_DIRS=-L${top_builddir}/libplayerxdr \
 #                  -L${top_builddir}/client_libs/libplayerc
@@ -82,4 +79,4 @@ libplayerc___la_LIBADD = $(PLAYERCC_LIB)
 libplayerc___la_DEPENDENCIES = $(top_builddir)/client_libs/libplayerc/libplayerc.la
 
 libplayerc___includedir = $(includedir)/player-2.0/libplayerc++
-libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h playerc++config.h
+libplayerc___include_HEADERS = playerc++.h playerclient.h playererror.h playerc++config.h clientproxy.h utility.h

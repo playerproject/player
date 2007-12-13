@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -fPIC -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir)
+AM_CPPFLAGS = -g -Wall -D PLAYER_INSTALL_PREFIX="\"@PREFIX@\"" -I$(top_srcdir)
 
 # create the pkg-config entry for the server headers
 pkgconfigdir = $(libdir)/pkgconfig
@@ -23,7 +23,7 @@ libplayercore_la_SOURCES = driver.cc driver.h \
                           plugins.cc plugins.h \
                           globals.cc globals.h \
                           addr_util.c addr_util.h
-libplayercore_la_LDFLAGS = -version-info 2:0:0 -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la
+libplayercore_la_LDFLAGS = $(PLAYER_VERSION_INFO) -rpath $(libdir) $(top_builddir)/libplayercore/libplayererror.la
 libplayercore_la_DEPENDENCIES = $(top_builddir)/libplayercore/libplayererror.la
 
 libplayererror_la_SOURCES = error.h error.c

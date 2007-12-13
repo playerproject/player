@@ -84,3 +84,20 @@ void SimulationProxy::GetPose2d(char* identifier, double& x, double& y, double& 
   playerc_simulation_get_pose2d(mDevice,identifier, &x,&y,&a);
 }
 
+void SimulationProxy::SetProperty(char * name, char * property, int value)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_set_property_int(mDevice, name, property, value);
+}
+    
+void SimulationProxy::SetProperty(char * name, char * property, double value)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_set_property_double(mDevice, name, property, value);
+}
+    
+void SimulationProxy::SetProperty(char * name, char * property, char * value)
+{
+  scoped_lock_t lock(mPc->mMutex);
+  playerc_simulation_set_property_string(mDevice, name, property, value);
+}

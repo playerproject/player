@@ -69,11 +69,14 @@ The writelog driver takes as input a list of devices to log data from.
 The driver with the <b>highest data rate</b> should be placed first in the list.
 The writelog driver can will log data from the following interfaces:
 
+- @ref interface_aio
 - @ref interface_laser
 - @ref interface_sonar
 - @ref interface_position2d
+- @ref interface_ptz
 - @ref interface_wifi
 - @ref interface_wsn
+- @ref interface_opaque
 
 The following interfaces are supported in principle but are currently
 disabled because they need to be updated:
@@ -94,10 +97,19 @@ disabled because they need to be updated:
 - PLAYER_LOG_SET_FILENAME
 
 @par Configuration file options
-
+- log_directory (string)
+  - Default: Directory player is run from.
+  - Name of the directory to store the log file in. Relative paths are 
+    taken from the directory player is run from. Absolute paths work
+    as expected.
+- basename (string)
+  - Default: writelog, produces the logfile: "writelog_YYYY_MM_DD_HH_MM.log", 
+    where YYYY is the year, MM is the month, etc.
+  - Base name of the logfile to attach the time stamp to. If specified the logfile
+    will be "(basename)_YYYY_MM_DD_HH_MM.log".
 - filename (string)
-  - Default: "writelog_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
-    MM is the month, etc.
+  - Default: "(basename)_YYYY_MM_DD_HH_MM.log", where YYYY is the year,
+    MM is the month, etc. If this parameter is specified it will NOT be time stamped.
   - Name of logfile.
 - autorecord (integer)
   - Default: 0
@@ -111,11 +123,12 @@ disabled because they need to be updated:
 @par Example
 
 @verbatim
-# Log data from laser:0 position2d:0 to "mydata.log"
+# Log data from laser:0 position2d:0 to "/home/data/logs/mydata_YYYY_MM_DD_HH_MM.log"
 driver
 (
   name "writelog"
-  filename "mydata.log"
+  log_directory "/home/user/logs"
+  basename "mydata"
   requires ["laser:0" "position2d:0"]
   provides ["log:0"]
   alwayson 1
@@ -190,11 +203,20 @@ class WriteLog: public Driver
   private: void Write(WriteLogDevice *device,
                       player_msghdr_t* hdr, void *data);
 
+  // Write aio data to file
+  private: int WriteAio(player_msghdr_t* hdr, void *data);
+
   // Write laser data to file
   private: int WriteLaser(player_msghdr_t* hdr, void *data);
 
+  // Write opaque data to file
+  private: int WriteOpaque(player_msghdr_t* hdr, void *data);
+
   // Write position data to file
   private: int WritePosition(player_msghdr_t* hdr, void *data);
+
+  // Write PTZ data to file
+  private: int WritePTZ(player_msghdr_t* hdr, void *data);
 
   // Write sonar data to file
   private: int WriteSonar(player_msghdr_t* hdr, void *data);
@@ -204,6 +226,16 @@ class WriteLog: public Driver
 
   // Write WSN data to file
   private: int WriteWSN(player_msghdr_t* hdr, void *data);
+
+  /* HHAA 15-02-2007 */
+  // Write bumper data to file
+  private: int WriteBumper(player_msghdr_t* hdr, void *data);
+
+  /* HHAA 15-02-2007 */
+  // Write fixed range IRs data to file
+  private: int WriteIR(player_msghdr_t* hdr, void *data);
+
+
 #if 0
   // Write blobfinder data to file
   private: void WriteBlobfinder(player_blobfinder_data_t *data);
@@ -232,8 +264,6 @@ class WriteLog: public Driver
 #endif
 
   // File to write data to
-  private: char default_basename[1024];
-  private: char default_filename[1024];
   private: char filename[1024];
   private: FILE *file;
 
@@ -284,21 +314,39 @@ WriteLog::WriteLog(ConfigFile* cf, int section)
   time_t t;
   struct tm *ts;
 
+  char time_stamp[32];
+  char basename[1024];
+  char default_filename[1024];
+  char complete_filename[1024];
+  char log_directory[1024];
+
   this->file = NULL;
 
-  // Construct default filename from date and time.  Note that we use
+  // Construct timestamp from date and time.  Note that we use
   // the system time, *not* the Player time.  I think that this is the
   // correct semantics for working with simulators.
   time(&t);
   ts = localtime(&t);
-  strftime(this->default_basename, sizeof(this->default_filename),
-           "writelog_%Y_%m_%d_%H_%M", ts);
-  snprintf(this->default_filename, sizeof(this->default_filename), "%s.log",
-           this->default_basename);
+  strftime(time_stamp, sizeof(time_stamp),
+           "_%Y_%m_%d_%H_%M", ts);
+ 
+  // Let user override default basename
+  strcpy(basename, cf->ReadString(section, "basename", "writelog"));
+
+  // Attach the time stamp
+  snprintf(default_filename, sizeof(default_filename), "%s%s.log",
+           basename, time_stamp);
 
   // Let user override default filename
-  strcpy(this->filename,
-         cf->ReadString(section, "filename", this->default_filename));
+  strcpy(complete_filename,
+         cf->ReadString(section, "filename", default_filename));
+
+  // Let user override log file directory
+  strcpy(log_directory, cf->ReadString(section, "log_directory", "."));
+
+  // Prepend the directory
+  snprintf(this->filename, sizeof(this->filename), "%s/%s",
+           log_directory, complete_filename);
 
   // Default enabled?
   if(cf->ReadInt(section, "autorecord", 1) > 0)
@@ -497,11 +545,51 @@ void WriteLog::WriteGeometries()
         delete msg;
       }
     }
+    /* HHAA 15-02-2007 */
+    else if (device->addr.interf == PLAYER_BUMPER_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_BUMPER_GET_GEOM,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get bumper geometry");
+      }      
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+    /* HHAA 15-02-2007 */
+    else if (device->addr.interf == PLAYER_IR_CODE)
+    {
+      // Get the laser geometry
+      Message* msg;
+      if(!(msg = device->device->Request(this->InQueue,
+                                         PLAYER_MSGTYPE_REQ,
+                                         PLAYER_IR_POSE,
+                                         NULL, 0, NULL, true)))
+      {
+        // oh well.
+        PLAYER_WARN("unable to get ir geometry");
+      }      
+      else
+      {
+        // log it
+        this->Write(device, msg->GetHeader(), msg->GetPayload());
+        delete msg;
+      }
+    }
+
   }
 }
 
-void
-WriteLog::CloseFile()
+void WriteLog::CloseFile()
 {
   if(this->file)
   {
@@ -685,11 +773,20 @@ void WriteLog::Write(WriteLogDevice *device,
   // Write the data
   switch (iface.interf)
   {
+    case PLAYER_AIO_CODE:
+      retval = this->WriteAio(hdr, data);
+      break;
     case PLAYER_LASER_CODE:
       retval = this->WriteLaser(hdr, data);
       break;
     case PLAYER_POSITION2D_CODE:
       retval = this->WritePosition(hdr, data);
+      break;
+    case PLAYER_PTZ_CODE:
+      retval = this->WritePTZ(hdr, data);
+      break;
+    case PLAYER_OPAQUE_CODE:
+      retval = this->WriteOpaque(hdr, data);
       break;
     case PLAYER_SONAR_CODE:
       retval = this->WriteSonar(hdr, data);
@@ -699,6 +796,13 @@ void WriteLog::Write(WriteLogDevice *device,
       break;
     case PLAYER_WSN_CODE:
       retval = this->WriteWSN(hdr, data);
+      break;
+    /* HHAA 15-02-2007 */
+    case PLAYER_BUMPER_CODE:
+      retval = this->WriteBumper(hdr, data);
+      break;
+    case PLAYER_IR_CODE:
+      retval = this->WriteIR(hdr, data);
       break;
 #if 0
     case PLAYER_BLOBFINDER_CODE:
@@ -746,6 +850,47 @@ void WriteLog::Write(WriteLogDevice *device,
 
   return;
 }
+
+/** @ingroup tutorial_datalog
+ * @defgroup player_driver_writelog_position aio format
+
+@brief position2d log format
+
+The following type:subtype  aio messages can be logged:
+- 1:1 (PLAYER_POSITION2D_DATA_STATE) Odometry information.  The format is:
+  - voltages_count (unint32_t): Number of valid samples to follow
+  - list of voltages; for each voltage
+    - voltage (float): in volts
+#endif
+*/
+int
+WriteLog::WriteAio(player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_AIO_DATA_STATE:
+          {
+            player_aio_data_t* adata = (player_aio_data_t*)data;
+            fprintf(this->file, "%04d ", adata->voltages_count);
+
+            for (unsigned int i = 0; i < adata->voltages_count; i++)
+               fprintf(this->file, "%10.4f ", adata->voltages[i]);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+
+    default:
+      return(-1);
+  }
+}
+
 
 /** @ingroup tutorial_datalog
  * @defgroup player_driver_writelog_laser laser format
@@ -933,6 +1078,119 @@ WriteLog::WritePosition(player_msghdr_t* hdr, void *data)
 }
 
 /** @ingroup tutorial_datalog
+ @defgroup player_driver_writelog_ptz ptz format
+ 
+@brief PTZ log format
+The format for each @ref interface_wsn message is:
+  - pan       (float): The pan angle/value
+  - tilt      (float): The tilt angle/value
+  - zoom      (float): The zoom factor
+  - panspeed  (float): The current panning speed
+  - tiltspeed (float): The current tilting speed
+ */
+int
+WriteLog::WritePTZ (player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_PTZ_DATA_STATE:
+          {
+            player_ptz_data_t* pdata =
+                    (player_ptz_data_t*)data;
+            fprintf(this->file,
+                    "%+07.3f %+07.3f %+04.3f %+07.3f %+07.3f",
+                    pdata->pan,
+                    pdata->tilt,
+                    pdata->zoom,
+                    pdata->panspeed,
+                    pdata->tiltspeed);
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+/** @ingroup tutorial_datalog
+ @defgroup player_driver_writelog_opaque opaque format
+
+ * @defgroup player_driver_writelog_position aio format
+
+@brief opaque log format
+
+The following type:subtype opaque messages can be logged:
+- 1:1 (PLAYER_OPAQUE_DATA_STATE) Data information.  The format is:
+  - data_count (uint32_t): Number of valid bytes to follow
+  - list of bytes; for each byte:
+    - data uint8_t: 
+
+- 2:2 (PLAYER_OPAQUE_CMD) Command information. The format is:
+  - data_count (uint32_t): Number of valid bytes to follow
+  - list of bytes; for each byte:
+    - data uint8_t:
+ */
+int
+WriteLog::WriteOpaque (player_msghdr_t* hdr, void *data)
+{
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      printf("Data State:\n");
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_OPAQUE_DATA_STATE:
+          {
+            player_opaque_data_t* odata =
+                    (player_opaque_data_t*)data;
+            fprintf(this->file, "%04d ", odata->data_count);
+
+            for (unsigned int i = 0; i < odata->data_count; i++)
+            {
+               fprintf(this->file, "%03d ", odata->data[i]);
+            }
+
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    case PLAYER_MSGTYPE_CMD:
+      printf("Data Command: \n");
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_OPAQUE_CMD:
+          {
+            player_opaque_data_t* odata =
+                    (player_opaque_data_t*)data;
+            fprintf(this->file, "%04d ", odata->data_count);
+
+            for (unsigned int i = 0; i < odata->data_count; i++)
+            {
+               fprintf(this->file, "%03d ", odata->data[i]);
+            }
+
+            return(0);
+          }
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+/** @ingroup tutorial_datalog
  @defgroup player_driver_writelog_sonar sonar format
 
 @brief sonar log format
@@ -1114,7 +1372,7 @@ The format for each @ref interface_wsn message is:
 int
 WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
 {
-    unsigned int i;
+    //unsigned int i;
     player_wsn_data_t* wdata;
 
   // Check the type
@@ -1150,6 +1408,139 @@ WriteLog::WriteWSN(player_msghdr_t* hdr, void *data)
             return(-1);
     }
 }
+
+int
+WriteLog::WriteIR(player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  player_ir_pose_t* geom;
+  player_ir_data_t* ir_data;
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+/*        case PLAYER_IR_DATA_GEOM:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_ir_pose_t*)data;
+          fprintf(this->file, "%u ", geom->poses_count);
+          for(i=0;i<geom->poses_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
+                    geom->poses[i].px,
+                    geom->poses[i].py,
+                    geom->poses[i].pa);
+          return(0);
+*/
+        case PLAYER_IR_DATA_RANGES:
+          // Format:
+          //   bumpers_count bumper0 bumper1 ...
+          ir_data = ( player_ir_data_t*)data;            
+          fprintf(this->file, "%u ", ir_data->ranges_count);
+          for(i=0;i<ir_data->ranges_count;i++)
+            // P2OS infrared lights are binary but I will use the %3.3f format 
+            fprintf(this->file, "%3.3f ", ir_data->ranges[i]);
+
+          return(0);
+        default:
+          return(-1);
+      }
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_IR_POSE:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_ir_pose_t*)data;
+          fprintf(this->file, "%u ", geom->poses_count);
+          for(i=0;i<geom->poses_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f ",
+                    geom->poses[i].px,
+                    geom->poses[i].py,
+                    geom->poses[i].pa);
+          return(0);
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
+
+
+int
+WriteLog::WriteBumper(player_msghdr_t* hdr, void *data)
+{
+  unsigned int i;
+  player_bumper_geom_t* geom;
+  player_bumper_data_t* bumper_data;
+
+  // Check the type
+  switch(hdr->type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+
+      // Check the subtype
+      switch(hdr->subtype)
+      {
+        case PLAYER_BUMPER_DATA_GEOM:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_bumper_geom_t*)data;
+          fprintf(this->file, "%u ", geom->bumper_def_count);
+          for(i=0;i<geom->bumper_def_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f %+07.4f %+07.4f ",
+                    geom->bumper_def[i].pose.px,
+                    geom->bumper_def[i].pose.py,
+                    geom->bumper_def[i].pose.pa,
+		    geom->bumper_def[i].length,
+		    geom->bumper_def[i].radius);
+          return(0);
+
+        case PLAYER_BUMPER_DATA_STATE:
+          // Format:
+          //   bumpers_count bumper0 bumper1 ...
+          bumper_data = ( player_bumper_data_t*)data;
+          fprintf(this->file, "%u ", bumper_data->bumpers_count);
+          for(i=0;i<bumper_data->bumpers_count;i++)
+            fprintf(this->file, "%u ", bumper_data->bumpers[i]);
+
+          return(0);
+        default:
+          return(-1);
+      }
+
+    case PLAYER_MSGTYPE_RESP_ACK:
+      switch(hdr->subtype)
+      {
+        case PLAYER_BUMPER_GET_GEOM:
+          // Format:
+          //   bumper_def_count x0 y0 a0 l0 r0 x1 y1 a1 l1 r1...
+          geom = (player_bumper_geom_t*)data;
+          fprintf(this->file, "%u ", geom->bumper_def_count);
+          for(i=0;i<geom->bumper_def_count;i++)
+            fprintf(this->file, "%+07.3f %+07.3f %+07.4f %+07.4f %+07.4f ",
+                    geom->bumper_def[i].pose.px,
+                    geom->bumper_def[i].pose.py,
+                    geom->bumper_def[i].pose.pa,
+		    geom->bumper_def[i].length,
+		    geom->bumper_def[i].radius);
+
+          return(0);
+        default:
+          return(-1);
+      }
+    default:
+      return(-1);
+  }
+}
+
 
 #if 0
 /** @ingroup tutorial_datalog

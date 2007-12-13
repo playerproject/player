@@ -78,7 +78,7 @@ roomba_open(roomba_comm_t* r, unsigned char fullcontrol)
 
   // Open it.  non-blocking at first, in case there's no roomba
   if((r->fd = open(r->serial_port, 
-                   O_RDWR | O_SYNC | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
+                    O_RDWR | O_NONBLOCK, S_IRUSR | S_IWUSR )) < 0 )
   {
     perror("roomba_open():open():");
     return(-1);
@@ -303,7 +303,9 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
   totalnumread = 0;
   while(totalnumread < sizeof(databuf))
   {
-    if((retval = poll(ufd,1,timeout)) < 0)
+    retval = poll(ufd,1,timeout);
+
+    if(retval < 0)
     {
       if(errno == EINTR)
         continue;
@@ -314,7 +316,10 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
       }
     }
     else if(retval == 0)
+    {
+      printf("roomba_get_sensors: poll timeout\n");
       return(-1);
+    }
     else
     {
       if((numread = read(r->fd,databuf+totalnumread,sizeof(databuf)-totalnumread)) < 0)
@@ -325,8 +330,7 @@ roomba_get_sensors(roomba_comm_t* r, int timeout)
       else
       {
         totalnumread += numread;
-        /*
-        printf("read %d bytes; buffer so far:\n", numread);
+        /*printf("read %d bytes; buffer so far:\n", numread);
         for(i=0;i<totalnumread;i++)
           printf("%x ", databuf[i]);
         puts("");
@@ -375,7 +379,7 @@ roomba_parse_sensor_packet(roomba_comm_t* r, unsigned char* buf, size_t buflen)
   r->overcurrent_vacuum = (flag >> 1) & 0x01;
   r->overcurrent_mainbrush = (flag >> 2) & 0x01;
   r->overcurrent_driveright = (flag >> 3) & 0x01;
-  r->overcurrent_driveleft = (flag >> 3) & 0x01;
+  r->overcurrent_driveleft = (flag >> 4) & 0x01;
 
   r->dirtdetector_left = buf[idx++];
   r->dirtdetector_right = buf[idx++];
@@ -445,6 +449,20 @@ roomba_clean(roomba_comm_t* r)
   return(0);
 }
 
+int
+roomba_forcedock(roomba_comm_t* r)
+{
+  unsigned char cmdbuf[1];
+
+  cmdbuf[0] = ROOMBA_OPCODE_FORCEDOCK;
+  if(write(r->fd, cmdbuf, 1) < 0)
+  {
+    perror("roomba_seek_home():write():");
+    return(-1);
+  }
+  return(0);
+}
+
 void
 roomba_print(roomba_comm_t* r)
 {
@@ -468,3 +486,82 @@ roomba_print(roomba_comm_t* r)
          r->voltage, r->current, r->temperature, r->charge, r->capacity);
 
 }
+
+int roomba_set_song(roomba_comm_t* r, unsigned char songNumber, unsigned char songLength, unsigned char *notes, unsigned char *noteLengths)
+{
+  int size = 2*songLength+3;
+  unsigned char cmdbuf[size];
+  unsigned char i;
+
+  cmdbuf[0] = ROOMBA_OPCODE_SONG;
+  cmdbuf[1] = songNumber;
+  cmdbuf[2] = songLength;
+
+  for (i=0; i < songLength; i++)
+  {
+    cmdbuf[3+(2*i)] = notes[i];
+    cmdbuf[3+(2*i)+1] = noteLengths[i];
+  }
+
+  if(write(r->fd, cmdbuf, size) < 0)
+  {
+    perror("roomba_set_song():write():");
+    return(-1);
+  }
+  else
+    return(0);
+}
+
+int 
+roomba_play_song(roomba_comm_t *r, unsigned char songNumber)
+{
+  unsigned char cmdbuf[2];
+
+  cmdbuf[0] = ROOMBA_OPCODE_PLAY;
+  cmdbuf[1] = songNumber;
+
+  if(write(r->fd, cmdbuf, 2) < 0)
+  {
+    perror("roomba_set_song():write():");
+    return(-1);
+  }
+  else
+    return(0);
+}
+
+int
+roomba_vacuum(roomba_comm_t *r, int state)
+{
+  unsigned char cmdbuf[2];
+
+  cmdbuf[0] = ROOMBA_OPCODE_MOTORS;
+  cmdbuf[1] = state;
+
+  if (write(r->fd, cmdbuf, 2) < 0)
+  {
+    perror("roomba_vacuum():write():");
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+roomba_set_leds(roomba_comm_t *r, uint8_t dirt_detect, uint8_t max, uint8_t clean, uint8_t spot, uint8_t status, uint8_t power_color, uint8_t power_intensity )
+{
+  unsigned char cmdbuf[5];
+  cmdbuf[0] = ROOMBA_OPCODE_LEDS;
+  cmdbuf[1] = dirt_detect | max<<1 | clean<<2 | spot<<3 | status<<4;
+  cmdbuf[2] = power_color;
+  cmdbuf[3] = power_intensity;
+
+  printf("Set LEDS[%d][%d][%d]\n",cmdbuf[1], cmdbuf[2], cmdbuf[3]);
+  if (write(r->fd, cmdbuf, 4) < 0)
+  {
+    perror("roomba_set_leds():write():");
+    return -1;
+  }
+
+  return 0;
+}
+

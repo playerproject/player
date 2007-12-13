@@ -1,4 +1,4 @@
-AM_CPPFLAGS = -g -Wall -fPIC -I$(top_srcdir) @JNI_CFLAGS@
+AM_CPPFLAGS = -g -Wall -I$(top_srcdir) @JNI_CFLAGS@
 
 # files that must be built first
 BUILT_SOURCES =
@@ -20,12 +20,12 @@ playertcp_java_wrap.cc: playertcp_java.i \
 	swig -v -java -package net.sourceforge.playerstage.Jplayertcp -outdir net/sourceforge/playerstage/Jplayertcp -c++ -o $@ -I$(srcdir)/../../.. $<
 
 libplayertcp_java_la_SOURCES = playertcp_java_wrap.cc
-libplayertcp_java_la_LDFLAGS = $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayererror.la -version-info 2:0:0 -rpath $(libdir)
+libplayertcp_java_la_LDFLAGS = $(top_builddir)/libplayertcp/libplayertcp.la $(top_builddir)/libplayerxdr/libplayerxdr.la $(top_builddir)/libplayercore/libplayercore.la $(top_builddir)/server/libplayerdrivers/libplayerdrivers.la $(top_builddir)/libplayercore/libplayererror.la $(PLAYER_VERSION_INFO) -rpath $(libdir)
 
 javadir = $(prefix)/share/player/java/net/sourceforge/playerstage/Jplayertcp
 java_DATA = 
 if ENABLE_JPLAYER
-java_DATA += net/sourceforge/playerstage/Jplayertcp/*.java
+java_DATA += $(srcdir)/net/sourceforge/playerstage/Jplayertcp/*.java
 endif
 
 dist-hook:

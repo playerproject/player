@@ -1,4 +1,5 @@
 SUBDIRS = \
+base \
 audio \
 audiodsp \
 audiomixer \

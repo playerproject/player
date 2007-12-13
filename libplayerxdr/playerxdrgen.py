@@ -150,8 +150,10 @@ if __name__ == '__main__':
         vars = variablepattern.findall(dstring)
   
         # Do some name mangling for common types
-        if type == 'int64_t':
-          xdr_proc = 'xdr_long'
+	if type == 'long long':
+	  xdr_proc = 'xdr_longlong_t'
+        elif type == 'int64_t':
+          xdr_proc = 'xdr_longlong_t'
         elif type == 'uint64_t':
           xdr_proc = 'xdr_u_long'
         elif type == 'int32_t':

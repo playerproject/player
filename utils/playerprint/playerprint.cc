@@ -40,6 +40,7 @@ For example:
 
 playerprint can print out data for the following kinds of devices:
 - @ref interface_actarray
+- @ref interface_aio
 - @ref interface_blobfinder
 - @ref interface_bumper
 - @ref interface_camera
@@ -53,6 +54,7 @@ playerprint can print out data for the following kinds of devices:
 - @ref interface_log
 - @ref interface_map
 - @ref interface_planner
+- @ref interface_position1d
 - @ref interface_position2d
 - @ref interface_position3d
 - @ref interface_power
@@ -169,6 +171,9 @@ main(int argc, char **argv)
     case PLAYER_ACTARRAY_CODE:
       cp = (ClientProxy*)new ActArrayProxy(&client,g_index);
       break;
+    case PLAYER_AIO_CODE:
+      cp = (ClientProxy*)new AioProxy(&client,g_index);
+      break;
     case PLAYER_BLOBFINDER_CODE:
       cp = (ClientProxy*)new BlobfinderProxy(&client,g_index);
       break;
@@ -207,6 +212,9 @@ main(int argc, char **argv)
       break;
     case PLAYER_PLANNER_CODE:
       cp = (ClientProxy*)new PlannerProxy(&client,g_index);
+      break;
+    case PLAYER_POSITION1D_CODE:
+      cp = (ClientProxy*)new Position1dProxy(&client,g_index);
       break;
     case PLAYER_POSITION2D_CODE:
       cp = (ClientProxy*)new Position2dProxy(&client,g_index);
@@ -251,6 +259,9 @@ main(int argc, char **argv)
       case PLAYER_ACTARRAY_CODE:
         std::cout << *reinterpret_cast<ActArrayProxy *> (cp);
         break;
+      case PLAYER_AIO_CODE:
+        std::cout << *reinterpret_cast<AioProxy *> (cp);
+        break;
       case PLAYER_BLOBFINDER_CODE:
         std::cout << *reinterpret_cast<BlobfinderProxy *> (cp);
         break;
@@ -289,6 +300,9 @@ main(int argc, char **argv)
         break;
       case PLAYER_PLANNER_CODE:
         std::cout << *reinterpret_cast<PlannerProxy *> (cp);
+        break;
+      case PLAYER_POSITION1D_CODE:
+        std::cout << *reinterpret_cast<Position1dProxy *> (cp);
         break;
       case PLAYER_POSITION2D_CODE:
         std::cout << *reinterpret_cast<Position2dProxy *> (cp);

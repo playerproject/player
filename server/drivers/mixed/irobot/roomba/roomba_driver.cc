@@ -48,11 +48,19 @@ has a howto on building an appropriate serial cable.
 The roomba driver provides the following device interfaces:
 
 - @ref interface_position2d
-  - This interface returns odometry data, and accepts velocity commands.
+  - This interface returns odometry data (PLAYER_POSITION2D_DATA_STATE), 
+    and accepts velocity commands (PLAYER_POSITION2D_CMD_VEL).
+
+- @ref interface_power
+  - This interface returns battery levels (PLAYER_POWER_DATA_STATE).
+
+- @ref interface_bumper
+  - This interface returns bumper data (PLAYER_BUMPER_DATA_STATE).
 
 @par Supported configuration requests
 
-- None
+- PLAYER_POSITION2D_REQ_GET_GEOM
+- PLAYER_BUMPER_GET_GEOM
 
 @par Configuration file options
 
@@ -70,18 +78,17 @@ The roomba driver provides the following device interfaces:
 driver
 (
   name "roomba"
-  provides ["position2d:0"]
+  provides ["position2d:0" "power:0" "bumper:0"]
   port "/dev/ttyS2"
   safe 1
 )
 @endverbatim
 
 @todo
-- Add power and bumper interfaces
+- Add support for IRs, vacuum motors, etc.
 - Recover from a cliff/wheeldrop sensor being triggered in safe mode;
 the robot goes into passive mode when this happens, which right now
 requires Player to be restarted
-- Add some config requests, like position geometry
 
 @author Brian Gerkey
 */

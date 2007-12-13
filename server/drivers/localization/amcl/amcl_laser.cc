@@ -44,7 +44,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 // Default constructor
-AMCLLaser::AMCLLaser(player_devaddr_t addr)
+AMCLLaser::AMCLLaser(AdaptiveMCL & aAMCL, player_devaddr_t addr) : AMCLSensor(aAMCL)
 {
   this->laser_dev = NULL;
   this->laser_addr = addr;
@@ -100,7 +100,7 @@ int AMCLLaser::Setup(void)
     PLAYER_ERROR("unable to locate suitable laser device");
     return -1;
   }
-  if (this->laser_dev->Subscribe(this->InQueue) != 0)
+  if (this->laser_dev->Subscribe(AMCL.InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to laser device");
     return -1;
@@ -108,7 +108,7 @@ int AMCLLaser::Setup(void)
 
   // Ask for the laser's geometry
   Message* msg;
-  if(!(msg = laser_dev->Request(this->InQueue,
+  if(!(msg = laser_dev->Request(AMCL.InQueue,
                                 PLAYER_MSGTYPE_REQ,
                                 PLAYER_LASER_REQ_GET_GEOM,
                                 NULL, 0, NULL,false)))
@@ -146,7 +146,7 @@ AMCLLaser::SetupMap(void)
     PLAYER_ERROR("unable to locate suitable map device");
     return -1;
   }
-  if(mapdev->Subscribe(this->InQueue) != 0)
+  if(mapdev->Subscribe(AMCL.InQueue) != 0)
   {
     PLAYER_ERROR("unable to subscribe to map device");
     return -1;
@@ -162,7 +162,7 @@ AMCLLaser::SetupMap(void)
 
   // first, get the map info
   Message* msg;
-  if(!(msg = mapdev->Request(this->InQueue,
+  if(!(msg = mapdev->Request(AMCL.InQueue,
                              PLAYER_MSGTYPE_REQ,
                              PLAYER_MAP_REQ_GET_INFO,
                              NULL, 0, NULL, false)))
@@ -171,6 +171,7 @@ AMCLLaser::SetupMap(void)
     return(-1);
   }
 
+  PLAYER_MSG1(2, "AMCL loading map from map:%d...Done", this->map_addr.index);
 
   player_map_info_t* info = (player_map_info_t*)msg->GetPayload();
   
@@ -214,7 +215,7 @@ AMCLLaser::SetupMap(void)
     data_req->height = sj;
     data_req->data_count = 0;
 
-    if(!(msg = mapdev->Request(this->InQueue,
+    if(!(msg = mapdev->Request(AMCL.InQueue,
                                PLAYER_MSGTYPE_REQ,
                                PLAYER_MAP_REQ_GET_DATA,
                                (void*)data_req,reqlen,NULL,false)))
@@ -251,7 +252,7 @@ AMCLLaser::SetupMap(void)
   free(data_req);
 
   // we're done with the map device now
-  if(mapdev->Unsubscribe(this->InQueue) != 0)
+  if(mapdev->Unsubscribe(AMCL.InQueue) != 0)
     PLAYER_WARN("unable to unsubscribe from map device");
 
   PLAYER_MSG0(2, "Done");
@@ -264,7 +265,7 @@ AMCLLaser::SetupMap(void)
 // Shut down the laser
 int AMCLLaser::Shutdown(void)
 {  
-  this->laser_dev->Unsubscribe(this->InQueue);
+  this->laser_dev->Unsubscribe(AMCL.InQueue);
   this->laser_dev = NULL;
   map_free(this->map);
 
@@ -274,40 +275,22 @@ int AMCLLaser::Shutdown(void)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Get the current laser reading
-AMCLSensorData *AMCLLaser::GetData(void)
+//AMCLSensorData *AMCLLaser::GetData(void)
+// Process message for this interface
+int AMCLLaser::ProcessMessage(MessageQueue * resp_queue, 
+                                     player_msghdr * hdr, 
+                                     void * idata)
 {
   int i;
-  player_laser_data_t* data;
   double r, b, db;
   AMCLLaserData *ndata;
 
-  player_msghdr_t* hdr;
-  Message* msg;
-  if(!(msg = this->InQueue->Pop()))
-    return NULL;
-
-  hdr = msg->GetHeader();
-
-  // TODO: I think the check can be removed, given the new messaging model.
-  //       I.e., two messages should not have the same timestamp.
-  //               - BPG
-  if(hdr->timestamp == this->time)
-  {
-    delete msg;
-    return NULL;
-  }
-
   if(!Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA,
                             PLAYER_LASER_DATA_SCAN, this->laser_addr))
-  {
-    PLAYER_WARN("got unexpected message");
-    delete msg;
-    return NULL;
-  }
+  	return -1;
 
   this->time = hdr->timestamp;
-
-  data = (player_laser_data_t*)msg->GetPayload();
+  player_laser_data_t* data = reinterpret_cast<player_laser_data_t*> (idata);
   
   b = data->min_angle;
   db = data->resolution;
@@ -329,8 +312,10 @@ AMCLSensorData *AMCLLaser::GetData(void)
     ndata->ranges[i][1] = b;
     b += db;
   }
+
+  AMCL.Push(ndata);
   
-  return ndata;
+  return 0;
 }
 
 

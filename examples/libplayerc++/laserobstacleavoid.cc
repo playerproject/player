@@ -36,24 +36,14 @@ main(int argc, char **argv)
     {
       double newspeed = 0;
       double newturnrate = 0;
-      double minR = 1e9;
-      double minL = 1e9;
 
       // this blocks until new data comes; 10Hz by default
       robot.Read();
 
+      double minR = lp.GetMinRight();
+      double minL = lp.GetMinLeft();
+
       // laser avoid (stolen from esben's java example)
-      uint count = lp.GetCount();
-      for (uint j=0; j < count/2; ++j)
-      {
-        if (minR > lp[j])
-          minR = lp[j];
-      }
-      for (uint j = count/2; j < count; ++j)
-      {
-        if (minL > lp[j])
-          minL = lp[j];
-      }
       std::cout << "minR: " << minR
                 << "minL: " << minL
                 << std::endl;

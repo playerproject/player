@@ -56,8 +56,11 @@ playback control.
 
 The readlog driver can provide the following device interfaces.
 
+- @ref interface_aio
 - @ref interface_laser
 - @ref interface_position2d
+- @ref interface_ptz
+- @ref interface_opaque
 - @ref interface_sonar
 - @ref interface_wifi
 - @ref interface_wsn
@@ -241,6 +244,12 @@ class ReadLog: public Driver
                         int token_count, char **tokens, double time);
 #endif
 
+  // Parse aio data
+  private: int ParseAio(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time);
+
   // Parse laser data
   private: int ParseLaser(player_devaddr_t id,
                           unsigned short type, unsigned short subtype,
@@ -258,6 +267,12 @@ class ReadLog: public Driver
                              int linenum,
                              int token_count, char **tokens, double time);
 
+  // Parse opaque data
+  private: int ParseOpaque(player_devaddr_t id,
+                             unsigned short type, unsigned short subtype,
+                             int linenum,
+                             int token_count, char **tokens, double time);
+
   // Parse wifi data
   private: int ParseWifi(player_devaddr_t id,
                          unsigned short type, unsigned short subtype,
@@ -268,6 +283,12 @@ class ReadLog: public Driver
                         unsigned short type, unsigned short subtype,
                         int linenum,
                         int token_count, char **tokens, double time);
+
+  // Parse PTZ data
+  private: int ParsePTZ (player_devaddr_t id,
+                         unsigned short type, unsigned short subtype,
+                         int linenum,
+                         int token_count, char **tokens, double time);
 #if 0
 
   // Parse position3d data
@@ -1079,7 +1100,10 @@ int ReadLog::ParseData(player_devaddr_t id,
     return this->ParseJoystick(id, type, subtype, linenum,
                                token_count, tokens, time);
 #endif
-  if (id.interf == PLAYER_LASER_CODE)
+  if (id.interf == PLAYER_AIO_CODE)
+    return this->ParseAio(id, type, subtype, linenum,
+                          token_count, tokens, time);
+  else if (id.interf == PLAYER_LASER_CODE)
     return this->ParseLaser(id, type, subtype, linenum,
                             token_count, tokens, time);
   else if (id.interf == PLAYER_SONAR_CODE)
@@ -1088,11 +1112,17 @@ int ReadLog::ParseData(player_devaddr_t id,
   else if (id.interf == PLAYER_POSITION2D_CODE)
     return this->ParsePosition(id, type, subtype, linenum,
                                token_count, tokens, time);
+  else if (id.interf == PLAYER_OPAQUE_CODE)
+    return this->ParseOpaque(id, type, subtype, linenum,
+                               token_count, tokens, time);
   else if (id.interf == PLAYER_WIFI_CODE)
     return this->ParseWifi(id, type, subtype, linenum,
                            token_count, tokens, time);
   else if (id.interf == PLAYER_WSN_CODE)
       return this->ParseWSN(id, type, subtype, linenum,
+                            token_count, tokens, time);
+  else if (id.interf == PLAYER_PTZ_CODE)
+      return this->ParsePTZ (id, type, subtype, linenum,
                             token_count, tokens, time);
 
 #if 0
@@ -1302,6 +1332,62 @@ int ReadLog::ParseJoystick(player_devaddr_t id, int linenum,
 }
 #endif
 
+////////////////////////////////////////////////////////////////////////////
+// Parse aio data
+int ReadLog::ParseAio(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
+{
+  int i, count;
+
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_AIO_DATA_STATE:
+          {
+            player_aio_data_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.voltages_count = atoi(tokens[7]);
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.voltages[count] = atof(tokens[i]);
+              count++;
+            }
+
+            if (count != (int)data.voltages_count)
+            {
+              PLAYER_ERROR2("voltage count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown aio data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown aio msg type %d\n", type);
+      return(-1);
+  }
+}
 ////////////////////////////////////////////////////////////////////////////
 // Parse laser data
 int ReadLog::ParseLaser(player_devaddr_t id,
@@ -1670,6 +1756,103 @@ ReadLog::ParsePosition(player_devaddr_t id,
 }
 
 ////////////////////////////////////////////////////////////////////////////
+// Parse opaque data
+int ReadLog::ParseOpaque(player_devaddr_t id,
+                        unsigned short type, unsigned short subtype,
+                        int linenum,
+                        int token_count, char **tokens, double time)
+{
+  int i, count;
+
+  switch(type)
+  {
+    case PLAYER_MSGTYPE_DATA:
+      switch(subtype)
+      {
+        case PLAYER_OPAQUE_DATA_STATE:
+          {
+            player_opaque_data_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.data_count = atoi(tokens[7]);
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.data[count] = atoi(tokens[i]);
+              count++;
+            }
+
+            if (count != (int)data.data_count)
+            {
+              PLAYER_ERROR2("data count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+           }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown opaque data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    case PLAYER_MSGTYPE_CMD:
+      switch(subtype)
+      {
+        case PLAYER_OPAQUE_CMD:
+          {
+            player_opaque_data_t data;
+
+            if (token_count < 8)
+            {
+              PLAYER_ERROR2("incomplete line at %s:%d",
+                            this->filename, linenum);
+              return -1;
+            }
+
+            data.data_count = atoi(tokens[7]);
+
+            count = 0;
+            for (i = 8; i < token_count; i++)
+            {
+              data.data[count] = atoi(tokens[i]);
+              count++;
+            }
+
+            if (count != (int)data.data_count)
+            {
+              PLAYER_ERROR2("data count mismatch at %s:%d",
+                            this->filename, linenum);
+              return -1;
+           }
+            this->Publish(id, NULL, type, subtype,
+                          (void*)&data, sizeof(data), &time);
+            return(0);
+          }
+
+        default:
+          PLAYER_ERROR1("unknown opaque data subtype %d\n", subtype);
+          return(-1);
+      }
+      break;
+
+    default:
+      PLAYER_ERROR1("unknown opaque msg type %d\n", type);
+      return(-1);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
 // Parse wifi data
 int ReadLog::ParseWifi(player_devaddr_t id, 
                        unsigned short type, unsigned short subtype,
@@ -1779,6 +1962,48 @@ int ReadLog::ParseWSN(player_devaddr_t id,
         default:
             PLAYER_ERROR1("unknown WSN message type %d\n", type);
             return(-1);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////
+// Parse PTZ data
+int ReadLog::ParsePTZ (player_devaddr_t id, 
+                      unsigned short type, unsigned short subtype,
+                      int linenum,
+                      int token_count, char **tokens, double time)
+{
+    switch(type)
+    {
+        case PLAYER_MSGTYPE_DATA:
+            switch(subtype)
+            {
+                case PLAYER_PTZ_DATA_STATE:
+                {
+                    if (token_count < 12)
+                    {
+                        PLAYER_ERROR2("invalid line at %s:%d", this->filename, linenum);
+                        return -1;
+                    }
+		    player_ptz_data_t data;
+		    
+		    data.pan  = atof (tokens[7]);
+		    data.tilt = atof (tokens[8]);
+		    data.zoom = atof (tokens[9]);
+		    data.panspeed  = atof (tokens[10]);
+		    data.tiltspeed = atof (tokens[11]);
+		    
+                    this->Publish (id, NULL, type, subtype,
+                                  (void*)&data, sizeof(data), &time);
+                    return (0);
+                }
+		
+                default:
+                    PLAYER_ERROR1 ("unknown PTZ data subtype %d\n", subtype);
+                    return (-1);
+            }
+        default:
+            PLAYER_ERROR1 ("unknown PTZ message type %d\n", type);
+            return (-1);
     }
 }
 

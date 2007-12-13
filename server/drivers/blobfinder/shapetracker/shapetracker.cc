@@ -47,21 +47,11 @@ the Player 2.0 API.
 */
 /** @} */
 
-#include "player.h"
-
-#include <errno.h>
-#include <string.h>
-#include <math.h>
-#include <stdlib.h>       // for atoi(3)
-#include <netinet/in.h>   // for htons(3)
-#include <unistd.h>
+#include <libplayercore/playercore.h>
+#include <base/imagebase.h>
 
 #include <opencv/cv.h>
 //#include <opencv/highgui.h>
-
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
 
 #define winName "ShapeTracker"
 
@@ -82,26 +72,13 @@ class Shape
 
 
 // Driver for detecting laser retro-reflectors.
-class ShapeTracker : public Driver
+class ShapeTracker : public ImageBase
 {
   // Constructor
   public: ShapeTracker( ConfigFile* cf, int section);
 
-  // Setup/shutdown routines.
-  public: virtual int Setup();
-  public: virtual int Shutdown();
-
-  // Main function for device thread.
-  private: virtual void Main();
-
-  // Process requests.  Returns 1 if the configuration has changed.
-  private: int HandleRequests();
-  
-  // Process any new camera data.
-  private: int UpdateCamera();
-
   // Look for barcodes in the image.  
-  private: void ProcessImage();
+  private: int ProcessFrame();
 
   private: void FindShapes();
   private: void KalmanFilter();
@@ -115,18 +92,6 @@ class ShapeTracker : public Driver
   private: double CalcAngle( CvPoint *pt1, CvPoint *pt2, CvPoint *pt0);
 
   private: void ContrastStretch( IplImage *src, IplImage *gray );
-
-  // Output devices
-  private: player_device_id_t blobfinder_id;
-  private: player_device_id_t out_camera_id;
-
-  // Input camera stuff
-  private: int cameraIndex;
-  private: player_device_id_t camera_id;
-  private: Driver *camera;
-  private: double cameraTime;
-  private: player_camera_data_t cameraData;
-
 
   private: IplImage *mainImage;
   private: IplImage *workImage;
@@ -173,49 +138,8 @@ void ShapeTracker_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 ShapeTracker::ShapeTracker( ConfigFile* cf, int section)
-    : Driver(cf, section)
+	: ImageBase(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_BLOBFINDER_CODE)
 {
-  player_device_id_t* ids;
-  int num_ids;
-
-  memset(&this->blobfinder_id.code, 0, sizeof(player_device_id_t));
-  memset(&this->out_camera_id.code, 0, sizeof(player_device_id_t));
-
-  // Parse devices section
-  if((num_ids = cf->ParseDeviceIds(section,&ids)) < 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
-  // Must have a blobfinder interface
-  if (cf->ReadDeviceId(&(this->blobfinder_id), ids, num_ids, PLAYER_BLOBFINDER_CODE, 0) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-  if (this->AddInterface(this->blobfinder_id, PLAYER_READ_MODE,
-                         sizeof(player_blobfinder_data_t), 0, 1, 1) != 0)
-  {
-    this->SetError(-1);    
-    return;
-  }
-
-  // Optionally have a camera interface
-  if (cf->ReadDeviceId(&(this->out_camera_id), ids, num_ids, PLAYER_CAMERA_CODE, 0) == 0)
-  {
-    if (this->AddInterface(this->out_camera_id, PLAYER_READ_MODE,
-                           sizeof(player_camera_data_t), 0, 1, 1) != 0)
-    {
-      this->SetError(-1);    
-      return;
-    }
-  }
-
-  this->cameraIndex = cf->ReadInt(section, "camera", 0);
-  this->camera = NULL;
-  this->cameraTime = 0;
-
   this->mainImage = NULL;
   this->workImage = NULL;
   this->hist = NULL;
@@ -224,131 +148,6 @@ ShapeTracker::ShapeTracker( ConfigFile* cf, int section)
   this->vertices = 8;
 
   this->shapeCount = 0;
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Set up the device (called by server thread).
-int ShapeTracker::Setup()
-{
-  // Subscribe to the camera.
-  this->camera_id.code = PLAYER_CAMERA_CODE;
-  this->camera_id.index = this->cameraIndex;
-  this->camera_id.port = this->device_id.port;
-  this->camera = deviceTable->GetDriver(this->camera_id);
-
-  if (!this->camera)
-  {
-    PLAYER_ERROR("unable to locate suitable camera device");
-    return(-1);
-  }
-  if (this->camera->Subscribe(this->camera_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to camera device");
-    return(-1);
-  }
-
-  // Start the driver thread.
-  this->StartThread();
-
-  //cvNamedWindow(winName,1);
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Shutdown the device (called by server thread).
-int ShapeTracker::Shutdown()
-{
-  // Stop the driver thread.
-  StopThread();
-  
-  // Unsubscribe from devices.
-  this->camera->Unsubscribe(this->camera_id);
-
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Main function for device thread
-void ShapeTracker::Main() 
-{
-
-  while (true)
-  {
-    // Let the camera drive update rate
-    this->camera->Wait();
-
-    // Test if we are supposed to cancel this thread.
-    pthread_testcancel();
-
-    // Process any new camera data.
-    if (this->UpdateCamera())
-    {
-      // Find all the shapes in the image
-      this->ProcessImage();
-
-      // Write the results to the client
-      this->WriteData();
-    }
-
-    // Process any pending requests.
-    this->HandleRequests();
-  }
-  return;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-int ShapeTracker::HandleRequests()
-{
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-  int len;
-  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
-  {
-    switch (request[0])
-    {
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-    }
-  }
-  return 0;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Process any new camera data.
-int ShapeTracker::UpdateCamera()
-{
-  size_t size;
-  struct timeval ts;
-  double time;
-
-  // Get the camera data.
-  size = this->camera->GetData(this->camera_id, (void*)&this->cameraData,
-                               sizeof(this->cameraData), &ts);
-  time = (double) ts.tv_sec + ((double) ts.tv_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  if (fabs(time - this->cameraTime) < 0.001)
-    return 0;
-  this->cameraTime = time;
-  
-  // Do some byte swapping
-  this->cameraData.width = ntohs(this->cameraData.width);
-  this->cameraData.height = ntohs(this->cameraData.height); 
-  this->cameraData.depth = ntohs(this->cameraData.depth);
-  this->cameraData.image_size = ntohl(this->cameraData.image_size);
-
-  printf("camera image %f\n", time);
-
-  return 1;
 }
 
 
@@ -599,7 +398,7 @@ void ShapeTracker::KalmanFilter()
 
 ////////////////////////////////////////////////////////////////////////////////
 // Look for stuff in the image.
-void ShapeTracker::ProcessImage()
+int ShapeTracker::ProcessFrame()
 {
 
   // Reset the shape count
@@ -607,13 +406,13 @@ void ShapeTracker::ProcessImage()
 
   // Create a new mainImage if it doesn't already exist
   //if (this->mainImage == NULL)
-    this->mainImage = cvCreateImage( cvSize(this->cameraData.width,
-          this->cameraData.height), IPL_DEPTH_8U, 3);
+    this->mainImage = cvCreateImage( cvSize(this->stored_data.width,
+          this->stored_data.height), IPL_DEPTH_8U, 3);
 
   // Create a work image if it doesn't already exist
   //if (this->workImage == NULL)
-    workImage = cvCreateImage( cvSize(this->cameraData.width,
-          this->cameraData.height), IPL_DEPTH_8U, 1);
+    workImage = cvCreateImage( cvSize(this->stored_data.width,
+          this->stored_data.height), IPL_DEPTH_8U, 1);
 
   if (this->hist == NULL)
   {
@@ -627,7 +426,7 @@ void ShapeTracker::ProcessImage()
   }
 
   // Initialize the main image
-  memcpy(this->mainImage->imageData, this->cameraData.image, 
+  memcpy(this->mainImage->imageData, this->stored_data.image, 
          this->mainImage->imageSize);
 
   // Make dest a gray scale image
@@ -659,7 +458,10 @@ void ShapeTracker::ProcessImage()
   this->workImage = NULL;
   cvReleaseImage(&(this->mainImage));
   this->mainImage = NULL;
-  return;
+  
+  WriteData();
+  
+  return 0;
 }
 
 
@@ -668,61 +470,36 @@ void ShapeTracker::ProcessImage()
 void ShapeTracker::WriteData()
 {
   unsigned int i;
-  int shapeCount, channelCount, channel;
-  struct timeval ts;
   Shape *shape;
   player_blobfinder_data_t data;
 
   // Se the image dimensions
-  data.width = htons(this->cameraData.width);
-  data.height = htons(this->cameraData.height);
+  data.width = (this->stored_data.width);
+  data.height = (this->stored_data.height);
 
-  // Reset the header data
-  for (i = 0; i < PLAYER_BLOBFINDER_MAX_CHANNELS; i++)
-  {
-    data.header[i].index = 0;
-    data.header[i].num = 0;
-  }
-  shapeCount = 0;
-
-  // Go through the blobs
-  for (channel = 0; channel < PLAYER_BLOBFINDER_MAX_CHANNELS; channel++)
-  {
-    // Set the offest of the first shape for this channel
-    data.header[channel].index = htons(shapeCount);
-    channelCount = 0;
-    
-    for (i = 0; i < this->shapeCount; i++)
-    {
-      shape = this->shapes + i;
-
-      // Make sure this shape belong to this channel
-      if (shape->id != channel)
-        continue;
-
-      // Set the data to pass back
-      data.blobs[shapeCount].color = 0;  // TODO
-      data.blobs[shapeCount].area = htonl((int) ((shape->bx - shape->ax) * (shape->by - shape->ay)));
-      data.blobs[shapeCount].x = htons((int) ((shape->bx + shape->ax) / 2));
-      data.blobs[shapeCount].y = htons((int) ((shape->by + shape->ay) / 2));
-      data.blobs[shapeCount].left = htons((int) (shape->ax));
-      data.blobs[shapeCount].top = htons((int) (shape->ay));
-      data.blobs[shapeCount].right = htons((int) (shape->bx));
-      data.blobs[shapeCount].bottom = htons((int) (shape->by));
-      data.blobs[shapeCount].range = htons(0);
-      channelCount++;
-      shapeCount++;
-    }
-
-    data.header[channel].num = htons(channelCount);
-  }
+  data.blobs_count = shapeCount;
   
-  // Compute the data timestamp (from camera).
-  ts.tv_sec = (uint32_t) this->cameraTime;
-  ts.tv_usec = (uint32_t) (fmod(this->cameraTime, 1.0) * 1e6);
- 
+  // Go through the blobs
+  for (i = 0; i < this->shapeCount; i++)
+  {
+    shape = this->shapes + i;
+
+    // Set the data to pass back
+    data.blobs[i].id = shape->id;
+    data.blobs[i].color = 0;  // TODO
+    data.blobs[i].area = ((int) ((shape->bx - shape->ax) * (shape->by - shape->ay)));
+    data.blobs[i].x = ((int) ((shape->bx + shape->ax) / 2));
+    data.blobs[i].y = ((int) ((shape->by + shape->ay) / 2));
+    data.blobs[i].left = ((int) (shape->ax));
+    data.blobs[i].top = ((int) (shape->ay));
+    data.blobs[i].right = ((int) (shape->bx));
+    data.blobs[i].bottom = ((int) (shape->by));
+    data.blobs[i].range = (0);
+  }
+
   // Copy data to server.
-  PutData((void*) &data, sizeof(data), &ts);
+  Publish(device_addr,NULL,PLAYER_MSGTYPE_DATA,PLAYER_BLOBFINDER_DATA_BLOBS,&data,sizeof(data));
+  
   
   return;
 }

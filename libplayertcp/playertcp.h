@@ -119,6 +119,9 @@ class PlayerTCP
     /** Total size of @p decode_readbuffer */
     int decode_readbuffersize;
 
+    void Lock();
+    void Unlock();
+
   public:
     PlayerTCP();
     ~PlayerTCP();
@@ -131,18 +134,21 @@ class PlayerTCP
                             unsigned int local_port,
                             int newsock,
                             bool send_banner,
-                            int* kill_flag);
+                            int* kill_flag,
+                            bool have_lock);
     int Accept(int timeout);
     void Close(int cli);
     int ReadClient(int cli);
-    int Read(int timeout);
-    int Write();
+    int ReadClient(MessageQueue* q);
+    int Read(int timeout, bool have_lock);
+    int Write(bool have_lock);
     int WriteClient(int cli);
     void DeleteClients();
     void ParseBuffer(int cli);
     int HandlePlayerMessage(int cli, Message* msg);
-    void DeleteClient(MessageQueue* q);
+    void DeleteClient(MessageQueue* q, bool have_lock);
     bool Listening(int port);
+    uint32_t GetHost() {return host;};
 };
 
 /** @} */

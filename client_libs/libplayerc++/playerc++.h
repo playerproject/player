@@ -37,10 +37,11 @@
 #include <list>
 
 #include "libplayerc/playerc.h"
+#include "libplayerc++/utility.h"
 #include "libplayerc++/playerc++config.h"
 #include "libplayerc++/playerclient.h"
 #include "libplayerc++/playererror.h"
-
+#include "libplayerc++/clientproxy.h"
 
 #ifdef HAVE_BOOST_SIGNALS
   #include <boost/signal.hpp>
@@ -55,307 +56,42 @@
 
 namespace PlayerCc
 {
-/** @ingroup clientlibs
-    @defgroup player_clientlib_cplusplus libplayerc++
-    @brief A C++ client library for the @ref util_player
 
-The C++ library is built on a "service proxy" model in which the client
-maintains local objects that are proxies for remote services.  This library
-wraps the functionality of @ref player_clientlib_libplayerc with a more
-friendly C++ API.
-
-Be sure to see @ref cplusplus_example "this example".
- */
-
-/** @ingroup player_clientlib_cplusplus
-   @defgroup player_clientlib_utility Utility and error-handling functions
-   @brief Helper functions when using the library.
-*/
-/** @{ */
-
-// Since they are inline, these functions are as efficient as DEFINES,
-// but now they have the benefit of type checking!
-
-/// Convert radians to degrees
-inline double rtod(double r)
-{
-  return r * 180.0 / M_PI;
-}
-
-/// Convert degrees to radians
-inline double dtor(double r)
-{
-  return r * M_PI / 180.0;
-}
-
-/// Normalize angle to domain -pi, pi
-inline double normalize(double z)
-{
-  return atan2(sin(z), cos(z));
-}
-
-/// Return the minimum of a, b
-template<typename T>
-inline T min(T a, T b)
-{
-  if (a < b)
-    return a;
-  else
-    return b;
-}
-
-/// Return the maximum of a, b
-template<typename T>
-inline T max(T a, T b)
-{
-  if (a > b)
-    return a;
-  else
-    return b;
-}
-
-/// Limit a value to the range of min, max
-template<typename T>
-inline T limit(T a, T min, T max)
-{
-  if (a < min)
-    return min;
-  else if (a > max)
-    return max;
-  else
-    return a;
-}
-
-/** @} (utility)*/
-
+// /**
+// * The @p SomethingProxy class is a template for adding new subclasses of
+// * ClientProxy.  You need to have at least all of the following:
+// */
+// class SomethingProxy : public ClientProxy
+// {
+//
+//   private:
+//
+//     // Subscribe
+//     void Subscribe(uint aIndex);
+//     // Unsubscribe
+//     void Unsubscribe();
+//
+//     // libplayerc data structure
+//     playerc_something_t *mDevice;
+//
+//   public:
+//     // Constructor
+//     SomethingProxy(PlayerClient *aPc, uint aIndex=0);
+//     // Destructor
+//     ~SomethingProxy();
+//
+// };
 
 /** @ingroup player_clientlib_cplusplus
- * @defgroup player_clientlib_cplusplus_core Core functionality
- * @brief Device-independent components
-
-  The core of libplayerc++ is based around the @p PlayerClient and
-  @p ClientProxy.
-  */
-/** @{ */
-
-/** @brief The client proxy base class
- *
- * Base class for all proxy devices. Access to a device is provided by a
- * device-specific proxy class.  These classes all inherit from the @p
- * ClientProxy class which defines an interface for device proxies.  As such,
- * a few methods are common to all devices and we explain them here.
- *
- * Since the ConnectReadSignal() and DisconnectReadSignal() member functions
- * are based on the Boost signals library, they are conditionally available
- * depending on Boost's presence in the system.  See the @em configure script
- * for more information.
-*/
-class ClientProxy
-{
-  friend class PlayerClient;
-
-  public:
-
-#ifdef HAVE_BOOST_SIGNALS
-    /// A connection type.  This is usefull when attaching signals to the
-    /// ClientProxy because it allows for detatching the signals.
-    typedef boost::signals::connection connection_t;
-
-    // A scoped lock
-    typedef boost::mutex::scoped_lock scoped_lock_t;
-
-    // the function pointer type for read signals signal
-    typedef boost::signal<void (void)> read_signal_t;
-#else
-    // if we're not using boost, just define them.
-    typedef int connection_t;
-    // we redefine boost::mustex::scoped_lock in playerclient.h
-    typedef boost::mutex::scoped_lock scoped_lock_t;
-    typedef int read_signal_t;
-#endif
-
-  protected:
-
-    // The ClientProxy constructor
-    // @attention Potected, so it can only be instantiated by other clients
-    //
-    // @throw PlayerError Throws a PlayerError if unable to connect to the client
-    ClientProxy(PlayerClient* aPc, uint aIndex);
-
-    // destructor will try to close access to the device
-    virtual ~ClientProxy();
-
-    // Subscribe to the proxy
-    // This needs to be defined for every proxy.
-    // @arg aIndex the index of the devce we want to connect to
-
-    // I wish these could be pure virtual,
-    // but they're used in the constructor/destructor
-    virtual void Subscribe(uint aIndex) {};
-
-    // Unsubscribe from the proxy
-    // This needs to be defined for every proxy.
-    virtual void Unsubscribe() {};
-
-    // The controlling client object.
-    PlayerClient* mPc;
-
-    // A reference to the C client
-    playerc_client_t* mClient;
-
-    // contains convenience information about the device
-    playerc_device_t *mInfo;
-
-    // if set to true, the current data is "fresh"
-    bool mFresh;
-
-    // @brief Get a variable from the client
-    // All Get functions need to use this when accessing data from the
-    // c library to make sure the data access is thread safe.
-    template<typename T>
-    T GetVar(const T &aV) const
-    { // these have to be defined here since they're templates
-      scoped_lock_t lock(mPc->mMutex);
-      T v = aV;
-      return v;
-    }
-
-    // @brief Get a variable from the client by reference
-    // All Get functions need to use this when accessing data from the
-    // c library to make sure the data access is thread safe.  In this
-    // case, a begin, end, and destination pointer must be given (similar
-    // to C++ copy).  It is up to the user to ensure there is memory
-    // allocated at aDest.
-    template<typename T>
-    void GetVarByRef(const T aBegin, const T aEnd, T aDest) const
-    { // these have to be defined here since they're templates
-      scoped_lock_t lock(mPc->mMutex);
-      std::copy(aBegin, aEnd, aDest);
-    }
-
-  private:
-
-    // The last time that data was read by this client in [s].
-    double mLastTime;
-
-    // A boost::signal which is used for our callbacks.
-    // The signal will normally be of a type such as:
-    // - boost::signal<void ()>
-    // - boost::signal<void (T)>
-    // where T can be any type.
-    //
-    // @attention we currently only use signals that return void because we
-    // don't have checks to make sure a signal is registered.  If an empty
-    // signal is called:
-    //
-    // @attention "Calling the function call operator may invoke undefined
-    // behavior if no slots are connected to the signal, depending on the
-    // combiner used. The default combiner is well-defined for zero slots when
-    // the return type is void but is undefined when the return type is any
-    // other type (because there is no way to synthesize a return value)."
-    //
-    read_signal_t mReadSignal;
-
-    // Outputs the signal if there is new data
-    void ReadSignal();
-
-  public:
-
-    ///  Returns true if we have received any data from the device.
-    bool IsValid() const { return 0!=GetVar(mInfo->datatime); };
-
-    /// Fresh is set to true on each new read.  It is up to the user to
-    /// set it to false if the data has already been read.  This is most
-    /// useful when used in conjunction with the PlayerMultiClient
-    bool IsFresh() const { return GetVar(mFresh); };
-
-    /// This states that the data in a client is currently not Fresh
-    void NotFresh();
-
-    ///  Returns the driver name
-    ///  @todo GetDriverName isn't guarded by locks yet
-    std::string GetDriverName() const { return mInfo->drivername; };
-
-    /// Returns the received timestamp [s]
-    double GetDataTime() const { return GetVar(mInfo->datatime); };
-
-    /// Returns the received timestamp [s]
-    double GetElapsedTime() const
-      { return GetVar(mInfo->datatime) - GetVar(mInfo->lasttime); };
-
-    /// Returns device index
-    uint GetIndex() const { return GetVar(mInfo->addr.index); };
-
-    /// Returns device interface
-    uint GetInterface() const { return GetVar(mInfo->addr.interf); };
-
-    /// Returns device interface
-    std::string GetInterfaceStr() const
-      { return playerc_lookup_name(GetVar(mInfo->addr.interf)); };
-
-    /// Connect a signal to this proxy
-    /// For more information check out @ref player_clientlib_multi
-    template<typename T>
-    connection_t ConnectReadSignal(T aSubscriber)
-      {
-#ifdef HAVE_BOOST_SIGNALS
-        scoped_lock_t lock(mPc->mMutex);
-        return mReadSignal.connect(aSubscriber);
-#else
-        return -1;
-#endif
-      }
-
-    /// Disconnect a signal to this proxy
-    void DisconnectReadSignal(connection_t aSubscriber)
-      {
-#ifdef HAVE_BOOST_SIGNALS
-        scoped_lock_t lock(mPc->mMutex);
-        aSubscriber.disconnect();
-#endif
-      }
-
-};
-
-/** @} (core) */
-
-#if 0
-
-/**
- * The @p SomethingProxy class is a template for adding new subclasses of
- * ClientProxy.  You need to have at least all of the following:
- */
-class SomethingProxy : public ClientProxy
-{
-
-  private:
-
-    // Subscribe
-    void Subscribe(uint aIndex);
-    // Unsubscribe
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_something_t *mDevice;
-
-  public:
-    // Constructor
-    SomethingProxy(PlayerClient *aPc, uint aIndex=0);
-    // Destructor
-    ~SomethingProxy();
-
-};
-
-#endif
-
-/** @ingroup player_clientlib_cplusplus
- * @defgroup player_clientlib_cplusplus_proxies Proxies
+ * @addtogroup player_clientlib_cplusplus_proxies Proxies
  * @brief A proxy class is associated with each kind of device
 
   The proxies all inherit from @p ClientProxy and implement the functions
   from @ref player_clientlib_libplayerc.
-*/
-/** @{ */
+
+ @{
+
+ */
 
 // ==============================================================
 //
@@ -449,7 +185,7 @@ class AioProxy : public ClientProxy
     ///    This operator provides an alternate way of access the actuator data.
     ///    For example, given a @p AioProxy named @p bp, the following
     ///    expressions are equivalent: @p ap.GetVoltage(0) and @p ap[0].
-    bool operator [](uint aIndex) const
+    double operator [](uint aIndex) const
       { return GetVoltage(aIndex); }
 
 };
@@ -725,6 +461,8 @@ class CameraProxy : public ClientProxy
     virtual ~CameraProxy();
 
     /// Save the frame
+    /// @arg aPrefix is the string prefix to name the image.
+    /// @arg aWidth is the number of 0s to pad the image numbering with.
     void SaveFrame(const std::string aPrefix, uint aWidth=4);
 
     /// decompress the image
@@ -739,13 +477,21 @@ class CameraProxy : public ClientProxy
     /// Image dimensions (pixels)
     uint GetHeight() const { return GetVar(mDevice->height); };
 
-    /// Image format (e.g., RGB888)
+    /// @brief Image format
+    /// Possible values include
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO8
+    /// - @ref PLAYER_CAMERA_FORMAT_MONO16
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB565
+    /// - @ref PLAYER_CAMERA_FORMAT_RGB888
     uint GetFormat() const { return GetVar(mDevice->format); };
 
     /// Size of the image (bytes)
     uint GetImageSize() const { return GetVar(mDevice->image_count); };
 
-    /// Image data
+    /// @brief Image data
+    /// This function copies the image data into the data buffer aImage.
+    /// The buffer should be allocated according to the width, height, and
+    /// depth of the image.  The size can be found by calling @ref GetImageSize().
     void GetImage(uint8_t* aImage) const
       {
         return GetVarByRef(mDevice->image,
@@ -753,7 +499,10 @@ class CameraProxy : public ClientProxy
                            aImage);
       };
 
-    /// What is the compression type
+    /// @brief What is the compression type?
+    /// Currently supported compression types are:
+    /// - @ref PLAYER_CAMERA_COMPRESS_RAW
+    /// - @ref PLAYER_CAMERA_COMPRESS_JPEG
     uint GetCompression() const { return GetVar(mDevice->compression); };
 
 };
@@ -786,44 +535,45 @@ class DioProxy : public ClientProxy
     uint32_t GetDigin() const { return GetVar(mDevice->digin); };
 
     /// Get a specific bit
-    bool GetInput(uint aIndex) const
-      { return (GetVar(mDevice->digin) & (1 << aIndex)) > 0; };
+    bool GetInput(uint aIndex) const;
 
     /// Set the output to the bitfield aDigout
     void SetOutput(uint aCount, uint32_t aDigout);
+
+    /// DioProxy data access operator.
+    ///    This operator provides an alternate way of access the dio data.
+    ///    For example, given a @p DioProxy named @p dp, the following
+    ///    expressions are equivalent: @p dp.GetInput(0) and @p dp[0].
+    uint operator [](uint aIndex) const
+      { return GetInput(aIndex); }
 };
 
-#if 0 // not libplayerc yet
-
-
-/**
-The @p EnergyProxy class is used to read from an @ref
-interface_energy device.
-*/
-class EnergyProxy : public ClientProxy
-{
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_energy_t *mDevice;
-
-public:
-
-    EnergyProxy(PlayerClient *aPc, uint aIndex=0);
-    ~EnergyProxy();
-
-    /** These members give the current amount of energy stored [Joules] */
-    uint GetJoules() const { return GetVar(mDevice->joules); };
-    /** the amount of energy current being consumed [Watts] */
-    uint GetWatts() const { return GetVar(mDevice->watts); };
-    /** The charging flag is true if we are currently charging, else false. */
-    bool GetCharging() const { return GetVar(mDevice->charging); };
-};
-
-#endif
+// /**
+// The @p EnergyProxy class is used to read from an @ref
+// interface_energy device.
+// */
+// class EnergyProxy : public ClientProxy
+// {
+//   private:
+//
+//     void Subscribe(uint aIndex);
+//     void Unsubscribe();
+//
+//     // libplayerc data structure
+//     playerc_energy_t *mDevice;
+//
+// public:
+//
+//     EnergyProxy(PlayerClient *aPc, uint aIndex=0);
+//     ~EnergyProxy();
+//
+//     /** These members give the current amount of energy stored [Joules] */
+//     uint GetJoules() const { return GetVar(mDevice->joules); };
+//     /** the amount of energy current being consumed [Watts] */
+//     uint GetWatts() const { return GetVar(mDevice->watts); };
+//     /** The charging flag is true if we are currently charging, else false. */
+//     bool GetCharging() const { return GetVar(mDevice->charging); };
+// };
 
 /**
 The @p FiducialProxy class is used to control @ref
@@ -976,6 +726,44 @@ class Graphics2dProxy : public ClientProxy
 };
 
 /**
+ * The @p Graphics3dProxy class is used to draw simple graphics into a
+ * rendering device provided by Player using the graphics3d
+ * interface.
+ */
+class Graphics3dProxy : public ClientProxy
+{
+
+  private:
+
+    // Subscribe
+    void Subscribe(uint aIndex);
+    // Unsubscribe
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_graphics3d_t *mDevice;
+
+  public:
+    // Constructor
+    Graphics3dProxy(PlayerClient *aPc, uint aIndex=0);
+    // Destructor
+    ~Graphics3dProxy();
+
+    /// Set the current pen color
+    void Color(player_color_t col);
+
+    /// Set the current pen color
+    void Color(uint8_t red,  uint8_t green,  uint8_t blue,  uint8_t alpha);
+
+    /// Clear the drawing area
+    void Clear(void);
+
+    /// Draw a set of verticies
+    void Draw(player_graphics3d_draw_mode_t mode, player_point_3d_t pts[], int count);
+
+};
+
+/**
 The @p GripperProxy class is used to control a @ref
 interface_gripper device.  The latest gripper data held in a
 handful of class attributes.  A single method provides user control.
@@ -1099,9 +887,6 @@ class LaserProxy : public ClientProxy
     // libplayerc data structure
     playerc_laser_t *mDevice;
 
-    double aMinLeft;
-    double aMinRight;
-
     // local storage of config
     double min_angle, max_angle, scan_res, range_res;
     bool intensity;
@@ -1115,6 +900,9 @@ class LaserProxy : public ClientProxy
 
     /// Number of points in scan
     uint GetCount() const { return GetVar(mDevice->scan_count); };
+    
+    /// Max range for the latest set of data (meters)
+    double GetMaxRange() const { return GetVar(mDevice->max_range); };
 
     /// Angular resolution of scan (radians)
     double GetScanRes() const { return GetVar(mDevice->scan_res); };
@@ -1124,21 +912,21 @@ class LaserProxy : public ClientProxy
 
 
     /// Scan range for the latest set of data (radians)
-    double GetMaxAngle() const { return GetVar(mDevice->scan_start); };
+    double GetMinAngle() const { return GetVar(mDevice->scan_start); };
     /// Scan range for the latest set of data (radians)
-    double GetMinAngle() const
+    double GetMaxAngle() const
     {
       scoped_lock_t lock(mPc->mMutex);
       return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
     };
 
-/*    /// Whether or not reflectance (i.e., intensity) values are being returned.
-    bool IsIntensity() const { return GetVar(mDevice->intensity); };
+    /// Whether or not reflectance (i.e., intensity) values are being returned.
+    bool IntensityOn() const { return GetVar(mDevice->intensity_on); };
 
-    /// Scan data (polar): range (m) and bearing (radians)
-    double GetScan(uint aIndex) const
-      { return GetVar(mDevice->scan[aIndex]); };
-*/
+//    /// Scan data (polar): range (m) and bearing (radians)
+//    double GetScan(uint aIndex) const
+//      { return GetVar(mDevice->scan[aIndex]); };
+
     /// Scan data (Cartesian): x,y (m)
     player_point_2d_t GetPoint(uint aIndex) const
       { return GetVar(mDevice->point[aIndex]); };
@@ -1159,9 +947,9 @@ class LaserProxy : public ClientProxy
 
     /// Configure the laser scan pattern.  Angles @p min_angle and
     /// @p max_angle are measured in radians.
-    /// @p scan_res is measured in units of @f$0.01^{\circ}@f$;
-    /// valid values are: 25 (@f$0.25^{\circ}@f$), 50 (@f$0.5^{\circ}@f$) and
-    /// @f$100 (1^{\circ}@f$).  @p range_res is measured in mm; valid values
+    /// @p scan_res is measured in units of 0.01 degrees;
+    /// valid values are: 25 (0.25 deg), 50 (0.5 deg) and
+    /// 100 (1 deg).  @p range_res is measured in mm; valid values
     /// are: 1, 10, 100.  Set @p intensity to @p true to
     /// enable intensity measurements, or @p false to disable.
     void Configure(double aMinAngle,
@@ -1178,7 +966,8 @@ class LaserProxy : public ClientProxy
     /// relevant class attributes.
     void RequestGeom();
 
-    /// Accessor for the pose (fill it in by calling RequestGeom)
+    /// Accessor for the pose of the laser with respect to its parent
+    /// object (e.g., a robot).  Fill it in by calling RequestGeom.
     player_pose_t GetPose()
     {
       player_pose_t p;
@@ -1187,6 +976,19 @@ class LaserProxy : public ClientProxy
       p.px = mDevice->pose[0];
       p.py = mDevice->pose[1];
       p.pa = mDevice->pose[2];
+      return(p);
+    }
+    
+    /// Accessor for the pose of the laser's parent object (e.g., a robot).
+    /// Filled in by some (but not all) laser data messages.
+    player_pose_t GetRobotPose()
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+
+      p.px = mDevice->robot_pose[0];
+      p.py = mDevice->robot_pose[1];
+      p.pa = mDevice->robot_pose[2];
       return(p);
     }
 
@@ -1200,11 +1002,22 @@ class LaserProxy : public ClientProxy
       b.sw = mDevice->size[1];
       return(b);
     }
+    
+    /// Minimum range reading on the left side
+    double GetMinLeft() const
+      { return GetVar(mDevice->min_left); };
+    
+    /// Minimum range reading on the right side
+    double GetMinRight() const
+      { return GetVar(mDevice->min_right); };
+           
+    /// @deprecated Minimum range reading on the left side
+    double MinLeft () const 
+      { return GetMinLeft(); }
 
-    ///
-    double MinLeft () { return aMinLeft; }
-    ///
-    double MinRight () { return aMinRight; }
+    /// @deprecated Minimum range reading on the right side
+    double MinRight () const
+      { return GetMinRight(); }
 
     /// Range access operator.  This operator provides an alternate
     /// way of access the range data.  For example, given an @p
@@ -1215,6 +1028,7 @@ class LaserProxy : public ClientProxy
       { return GetRange(index);}
 
 };
+
 
 /**
 The @p LimbProxy class is used to control a @ref interface_limb
@@ -1265,6 +1079,8 @@ class LimbProxy : public ClientProxy
     /// Same again for getting the limb's geometry
     player_limb_geom_req_t GetGeom(void) const;
 };
+
+
 
 /**
 The @p LocalizeProxy class is used to control a @ref
@@ -1338,6 +1154,7 @@ class LocalizeProxy : public ClientProxy
     uint GetNumParticles() const { return GetVar(mDevice->num_particles); };
 };
 
+
 /**
 The @p LogProxy proxy provides access to a @ref interface_log device.
 */
@@ -1406,7 +1223,7 @@ class MapProxy : public ClientProxy
     { return y*GetWidth() + x; };
 
     /// Get the (x,y) cell
-    unsigned char GetCell(int x, int y) const
+    int8_t GetCell(int x, int y) const
     { return GetVar(mDevice->cells[GetCellIndex(x,y)]); };
 
     /// Map resolution, m/cell
@@ -1431,80 +1248,11 @@ class MapProxy : public ClientProxy
     };
 };
 
-#if 0
-/**
-The @p McomProxy class is used to exchange data with other clients
-connected with the same server, through a set of named "channels" in
-a @ref interface_mcom device.  For some useful (but optional)
-type and constant definitions that you can use in your clients, see
-playermcomtypes.h.
-*/
-class McomProxy : public ClientProxy
-{
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_mcom_t *mDevice;
-
-    /** These members contain the results of the last command.
-        Note: It's better to use the LastData() method. */
-    player_mcom_data_t data;
-    int type;
-    char channel[MCOM_CHANNEL_LEN];
-
-public:
-    McomProxy(PlayerClient* pc, unsigned short index,
-              unsigned char access = 'c') :
-            ClientProxy(pc,PLAYER_MCOM_CODE,index,access){}
-
-    /** Read and remove the most recent buffer in 'channel' with type 'type'.
-        The result can be read with LastData() after the next call to
-        PlayerClient::Read().
-    */
-    int Pop(int type, char channel[MCOM_CHANNEL_LEN]);
-
-    /** Read the most recent buffer in 'channel' with type 'type'.
-        The result can be read with LastData() after the next call to
-        PlayerClient::Read().
-        @return 0 if no error
-        @return -1 on error, the channel does not exist, or the channel is empty.
-    */
-    int Read(int type, char channel[MCOM_CHANNEL_LEN]);
-
-    /** Push a message 'dat' into channel 'channel' with message type 'type'. */
-    int Push(int type, char channel[MCOM_CHANNEL_LEN], char dat[MCOM_DATA_LEN]);
-
-    /** Clear all messages of type 'type' on channel 'channel' */
-    int Clear(int type, char channel[MCOM_CHANNEL_LEN]);
-
-  /** Set the capacity of the buffer using 'type' and 'channel' to 'cap'.
-      Note that 'cap' is an unsigned char and must be < MCOM_N_BUFS */
-  int SetCapacity(int type, char channel[MCOM_CHANNEL_LEN], unsigned char cap);
-
-    /** Get the results of the last command (Pop or Read). Call
-        PlayerClient::Read() before using.  */
-    char* LastData() { return data.data; }
-
-    /** Get the results of the last command (Pop or Read). Call
-        PlayerClient::Read() before using.  */
-    int LastMsgType() { return type; }
-
-    /** Get the channel of the last command (Pop or Read). Call
-        PlayerClient::Read() before using.  */
-    char* LastChannel() { return channel; }
-
-    void FillData(player_msghdr_t hdr, const char* buffer);
-    void Print();
-};
-
-#endif
-
 /**
 The @p OpaqueProxy proxy provides an interface to a generic @ref
-interface_opaque. */
+interface_opaque. See examples/plugins/opaquedriver for an example of using
+this interface in combination with a custom plugin.
+*/
 class OpaqueProxy : public ClientProxy
 {
 
@@ -1577,48 +1325,107 @@ class PlannerProxy : public ClientProxy
     /// Have we arrived at the goal?
     uint GetPathDone() const { return GetVar(mDevice->path_done); };
 
-    /// Current pose (m)
+    /// @brief Current pose (m)
+    /// @deprecated use GetPose() instead
     double GetPx() const { return GetVar(mDevice->px); };
-    /// Current pose (m)
+    /// @brief Current pose (m)
+    /// @deprecated use GetPose() instead
     double GetPy() const { return GetVar(mDevice->py); };
-    /// Current pose (m)
+    /// @brief Current pose (radians)
+    /// @deprecated use GetPose() instead
     double GetPa() const { return GetVar(mDevice->pa); };
 
-    /// Goal location (radians)
+    /// Get the current pose
+    player_pose_t GetPose() const
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->px;
+      p.py = mDevice->py;
+      p.pa = mDevice->pa;
+      return(p);
+    }
+
+    /// @brief Goal location (m)
+    /// @deprecated use GetGoal() instead
     double GetGx() const { return GetVar(mDevice->gx); };
-    /// Goal location (radians)
+    /// @brief Goal location (m)
+    /// @deprecated use GetGoal() instead
     double GetGy() const { return GetVar(mDevice->gy); };
-    /// Goal location (radians)
+    /// @brief Goal location (radians)
+    /// @deprecated use GetGoal() instead
     double GetGa() const { return GetVar(mDevice->ga); };
 
-    /// Current waypoint location (m)
+    /// Get the goal
+    player_pose_t GetGoal() const
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->gx;
+      p.py = mDevice->gy;
+      p.pa = mDevice->ga;
+      return(p);
+    }
+
+    /// @brief Current waypoint location (m)
+    /// @deprecated use GetCurWaypoint() instead
     double GetWx() const { return GetVar(mDevice->wx); };
-    /// Current waypoint location (m)
+    /// @brief Current waypoint location (m)
+    /// @deprecated use GetCurWaypoint() instead
     double GetWy() const { return GetVar(mDevice->wy); };
-    /// Current waypoint location (m)
+    /// @brief Current waypoint location (rad)
+    /// @deprecated use GetCurWaypoint() instead
     double GetWa() const { return GetVar(mDevice->wa); };
 
-    /// Waypoint[i] location (m)
+    /// Get the current waypoint
+    player_pose_t GetCurrentWaypoint() const
+    {
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->wx;
+      p.py = mDevice->wy;
+      p.pa = mDevice->wa;
+      return(p);
+    }
+
+    /// @brief Grab a particular waypoint location (m)
+    /// @deprecated use GetWaypoint() instead
     double GetIx(int i) const;
-    /// Waypoint[i] location (m)
+    /// @brief Grab a particular waypoint location (m)
+    /// @deprecated use GetWaypoint() instead
     double GetIy(int i) const;
-    /// Waypoint[i] location (m)
+    /// @brief Grab a particular waypoint location (rad)
+    /// @deprecated use GetWaypoint() instead
     double GetIa(int i) const;
 
+    /// Get the waypoint
+    player_pose_t GetWaypoint(uint aIndex) const
+    {
+      assert(aIndex < GetWaypointCount());
+      player_pose_t p;
+      scoped_lock_t lock(mPc->mMutex);
+      p.px = mDevice->waypoints[aIndex][0];
+      p.py = mDevice->waypoints[aIndex][1];
+      p.pa = mDevice->waypoints[aIndex][2];
+      return(p);
+    }
 
     /// Current waypoint index (handy if you already have the list
     /// of waypoints). May be negative if there's no plan, or if
     /// the plan is done
-    uint GetCurrentWaypoint() const
+    int GetCurrentWaypointId() const
       { return GetVar(mDevice->curr_waypoint); };
 
     /// Number of waypoints in the plan
     uint GetWaypointCount() const
       { return GetVar(mDevice->waypoint_count); };
 
-    // Get a waypoints in the current plan (m,m,radians).
-    //uint GetWaypoint(uint aIndex) const
-      //{ return GetVar(mDevice->waypoints[aIndex]); };
+    /// Waypoint access operator
+    /// This operator provides an alternate way of access the waypoint data.
+    /// For example, given a @p PlannerProxy named @p pp, the following
+    /// expressions are equivalent: @p pp.GetWaypoint(0) and @p pp[0].
+    player_pose_t operator [](uint aIndex) const
+      { return GetWaypoint(aIndex); }
 
 };
 
@@ -1651,14 +1458,15 @@ class Position1dProxy : public ClientProxy
 
     /// Send a motor command for position control mode.  Specify the
     /// desired pose of the robot in [m] or [rad]
-    void GoTo(double aPos);
+    /// desired motion in [m/s] or [rad/s]
+    void GoTo(double aPos, double aVel);
 
     /// Get the device's geometry; it is read into the
     /// relevant class attributes.
     void RequestGeom();
 
     /// Accessor for the pose (fill it in by calling RequestGeom)
-    player_pose_t GetPose()
+    player_pose_t GetPose() const
     {
       player_pose_t p;
       scoped_lock_t lock(mPc->mMutex);
@@ -1669,7 +1477,7 @@ class Position1dProxy : public ClientProxy
     }
 
     /// Accessor for the size (fill it in by calling RequestGeom)
-    player_bbox_t GetSize()
+    player_bbox_t GetSize() const
     {
       player_bbox_t b;
       scoped_lock_t lock(mPc->mMutex);
@@ -1684,8 +1492,8 @@ class Position1dProxy : public ClientProxy
     /// room with the charger still attached.
     void SetMotorEnable(bool enable);
 
-    /// Sets the odometry to the pose @p (x, y, yaw).
-    /// Note that @p x and @p y are in m and @p yaw is in radians.
+    /// Sets the odometry to the pose @p aPos.
+    /// @note aPos is in either [m] or [rad] depending on the actuator type
     void SetOdometry(double aPos);
 
     /// Reset odometry to 0.
@@ -1777,9 +1585,34 @@ class Position2dProxy : public ClientProxy
     void SetSpeed(double aXSpeed, double aYawSpeed)
         { return SetSpeed(aXSpeed, 0, aYawSpeed);}
 
+    /// Overloaded SetSpeed that takes player_pose_t as an argument
+    void SetSpeed(player_pose_t vel)
+        { return SetSpeed(vel.px, vel.py, vel.pa);}
+
+    /// Send a motor command for velocity/heading control mode.
+    /// Specify the forward and sideways velocity (m/sec), and angular
+    /// heading (rads).
+    void SetVelHead(double aXSpeed, double aYSpeed, double aYawHead);
+
+    /// Same as the previous SetVelHead(), but doesn't take the yspeed speed
+    /// (so use this one for non-holonomic robots).
+    void SetVelHead(double aXSpeed, double aYawHead)
+        { return SetVelHead(aXSpeed, 0, aYawHead);}
+
+
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in m, m, radians.
-    void GoTo(double aX, double aY, double aYaw);
+    /// desired pose of the robot as a player_pose_t.
+    /// desired motion speed  as a player_pose_t.
+    void GoTo(player_pose_t pos, player_pose_t vel);
+
+    /// Same as the previous GoTo(), but doesn't take speed
+    void GoTo(player_pose_t pos)
+      {GoTo(pos,(player_pose_t) {0,0,0}); }
+
+    /// Same as the previous GoTo(), but only takes position arguments,
+    /// no motion speed setting
+    void GoTo(double aX, double aY, double aYaw)
+      {GoTo((player_pose_t) {aX,aY,aYaw},(player_pose_t) {0,0,0}); }
 
     /// Sets command for carlike robot
     void SetCarlike(double aXSpeed, double aDriveAngle);
@@ -1846,19 +1679,19 @@ class Position2dProxy : public ClientProxy
     /// spd rad/s, acc rad/s/s
     //void SetPositionSpeedProfile(double spd, double acc);
 
-    ///
+    //
     // void DoStraightLine(double m);
 
-    ///
+    //
     //void DoRotation(double yawspeed);
 
-    ///
+    //
     //void DoDesiredHeading(double yaw, double xspeed, double yawspeed);
 
-    ///
+    //
     //void SetStatus(uint8_t cmd, uint16_t value);
 
-    ///
+    //
     //void PlatformShutdown();
 
     /// Accessor method
@@ -1930,11 +1763,28 @@ class Position3dProxy : public ClientProxy
     void SetSpeed(double aXSpeed, double aYawSpeed)
       { SetSpeed(aXSpeed,0,0,0,0,aYawSpeed);}
 
+    /// Overloaded SetSpeed that takes player_pose3d_t as input
+    void SetSpeed(player_pose3d_t vel)
+      { SetSpeed(vel.px,vel.py,vel.pz,vel.proll,vel.ppitch,vel.pyaw);}
+
 
     /// Send a motor command for position control mode.  Specify the
-    /// desired pose of the robot in m, m, m, rad, rad, rad.
+    /// desired pose of the robot as a player_pose3d_t structure
+    /// desired motion speed as a player_pose3d_t structure
+    void GoTo(player_pose3d_t aPos, player_pose3d_t aVel);
+
+    /// Same as the previous GoTo(), but does'n take vel argument
+    void GoTo(player_pose3d_t aPos)
+      { GoTo(aPos, (player_pose3d_t) {0,0,0,0,0,0}); }
+
+
+    /// Same as the previous GoTo(), but only takes position arguments,
+    /// no motion speed setting
     void GoTo(double aX, double aY, double aZ,
-              double aRoll, double aPitch, double aYaw);
+              double aRoll, double aPitch, double aYaw)
+      { GoTo((player_pose3d_t) {aX,aY,aZ,aRoll,aPitch,aYaw},
+              (player_pose3d_t) {0,0,0,0,0,0});
+      }
 
     /// Enable/disable the motors.
     /// Set @p state to 0 to disable or 1 to enable.
@@ -1944,29 +1794,29 @@ class Position3dProxy : public ClientProxy
 
     /// Select velocity control mode.
     /// This is driver dependent.
-    //void SelectVelocityControl(unsigned char mode);
+    void SelectVelocityControl(int aMode);
 
-    /// Reset odometry to (0,0,0).
-//    void ResetOdometry() {SetOdometry(0,0,0);};
+    /// Reset odometry to (0,0,0,0,0,0).
+    void ResetOdometry();
 
     /// Sets the odometry to the pose @p (x, y, z, roll, pitch, yaw).
     /// Note that @p x, @p y, and @p z are in m and @p roll,
     /// @p pitch, and @p yaw are in radians.
-//    void SetOdometry(double aX, double aY, double aZ,
-//                     double aRoll, double aPitch, double aYaw);
+    void SetOdometry(double aX, double aY, double aZ,
+                     double aRoll, double aPitch, double aYaw);
 
-    /// Select position mode
-    /// Set @p mode for 0 for velocity mode, 1 for position mode.
+    // Select position mode
+    // Set @p mode for 0 for velocity mode, 1 for position mode.
     //void SelectPositionMode(unsigned char mode);
 
-    ///
+    //
     //void SetSpeedPID(double kp, double ki, double kd);
 
-    ///
+    //
     //void SetPositionPID(double kp, double ki, double kd);
 
-    /// Sets the ramp profile for position based control
-    /// spd rad/s, acc rad/s/s
+    // Sets the ramp profile for position based control
+    // spd rad/s, acc rad/s/s
     //void SetPositionSpeedProfile(double spd, double acc);
 
     /// Accessor method
@@ -2008,7 +1858,6 @@ class Position3dProxy : public ClientProxy
     /// Accessor method
     bool GetStall () const { return GetVar(mDevice->stall); };
 };
-
 /**
 The @p PowerProxy class controls a @ref interface_power device. */
 class PowerProxy : public ClientProxy
@@ -2065,9 +1914,9 @@ class PtzProxy : public ClientProxy
     /// Specify new target velocities
     void SetSpeed(double aPanSpeed=0, double aTiltSpeed=0, double aZoomSpeed=0);
 
-    /// Select new control mode.  Use either PLAYER_PTZ_POSITION_CONTROL
-    /// or PLAYER_PTZ_VELOCITY_CONTROL.
-    //void SelectControlMode(uint aMode);
+    /// Select new control mode.  Use either @ref PLAYER_PTZ_POSITION_CONTROL
+    /// or @ref PLAYER_PTZ_VELOCITY_CONTROL.
+    void SelectControlMode(uint aMode);
 
     /// Return Pan (rad)
     double GetPan() const { return GetVar(mDevice->pan); };
@@ -2076,6 +1925,39 @@ class PtzProxy : public ClientProxy
     /// Return Zoom
     double GetZoom() const { return GetVar(mDevice->zoom); };
 
+};
+
+/**
+The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
+class RFIDProxy : public ClientProxy
+{
+
+  private:
+
+    void Subscribe(uint aIndex);
+    void Unsubscribe();
+
+    // libplayerc data structure
+    playerc_rfid_t *mDevice;
+
+  public:
+    /// constructor
+    RFIDProxy(PlayerClient *aPc, uint aIndex=0);
+    /// destructor
+    ~RFIDProxy();
+
+    /// returns the number of RFID tags
+    uint GetTagsCount() const { return GetVar(mDevice->tags_count); };
+    /// returns a RFID tag
+    playerc_rfidtag_t GetRFIDTag(uint aIndex) const
+      { return GetVar(mDevice->tags[aIndex]);};
+
+    /// RFID data access operator.
+    ///    This operator provides an alternate way of access the actuator data.
+    ///    For example, given a @p RFIDProxy named @p rp, the following
+    ///    expressions are equivalent: @p rp.GetRFIDTag[0] and @p rp[0].
+    playerc_rfidtag_t operator [](uint aIndex) const
+      { return(GetRFIDTag(aIndex)); }
 };
 
 /**
@@ -2098,13 +1980,22 @@ class SimulationProxy : public ClientProxy
     /// destructor
     ~SimulationProxy();
 
-  /// set the 2D pose of an object in the simulator, identified by the
-  /// std::string. Returns 0 on success, else a non-zero error code.
-  void SetPose2d(char* identifier, double x, double y, double a);
+    /// set the 2D pose of an object in the simulator, identified by the
+    /// std::string. Returns 0 on success, else a non-zero error code.
+    void SetPose2d(char* identifier, double x, double y, double a);
 
-  /// get the pose of an object in the simulator, identified by the
-  /// std::string Returns 0 on success, else a non-zero error code.
-  void GetPose2d(char* identifier, double& x, double& y, double& a);
+    /// get the pose of an object in the simulator, identified by the
+    /// std::string Returns 0 on success, else a non-zero error code.
+    void GetPose2d(char* identifier, double& x, double& y, double& a);
+
+    /// set the integer property value    
+    void SetProperty(char * name, char * property, int value);
+    
+    /// set the double-precission property value    
+    void SetProperty(char * name, char * property, double value);
+    
+    /// set the string property value    
+    void SetProperty(char * name, char * property, char * value);
 };
 
 
@@ -2157,32 +2048,30 @@ class SonarProxy : public ClientProxy
     void RequestGeom();
 };
 
-#if 0
-/**
-The @p SoundProxy class is used to control a @ref interface_sound
-device, which allows you to play pre-recorded sound files on a robot.
-*/
-class SoundProxy : public ClientProxy
-{
-
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_sound_t *mDevice;
-
-  public:
-    // Constructor
-    SoundProxy(PlayerClient *aPc, uint aIndex=0);
-
-    ~SoundProxy();
-
-    /** Play the sound indicated by the index. */
-    void Play(int aIndex);
-};
-#endif
+// /**
+// The @p SoundProxy class is used to control a @ref interface_sound
+// device, which allows you to play pre-recorded sound files on a robot.
+// */
+// class SoundProxy : public ClientProxy
+// {
+//
+//   private:
+//
+//     void Subscribe(uint aIndex);
+//     void Unsubscribe();
+//
+//     // libplayerc data structure
+//     playerc_sound_t *mDevice;
+//
+//   public:
+//     // Constructor
+//     SoundProxy(PlayerClient *aPc, uint aIndex=0);
+//
+//     ~SoundProxy();
+//
+//     /** Play the sound indicated by the index. */
+//     void Play(int aIndex);
+// };
 
 /**
 The @p SpeechProxy class is used to control a @ref interface_speech
@@ -2210,147 +2099,84 @@ class SpeechProxy : public ClientProxy
     void Say(std::string aStr);
 };
 
-#if 0
 /**
-The @p SpeechRecognition proxy provides access to a @ref interface_speech_recognition device.
-*/
+ The @p SpeechRecognition proxy provides access to a @ref interface_speech_recognition device.
+ */
 class SpeechRecognitionProxy : public ClientProxy
 {
+   void Subscribe(uint aIndex);
+   void Unsubscribe();
 
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_speech_t *mDevice;
-
+   ///libplayerc data structure
+   playerc_speechrecognition_t *mDevice;
   public:
-    // Constructor
-    SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);
+   ///Constructor
+   SpeechRecognitionProxy(PlayerClient *aPc, uint aIndex=0);
+   ~SpeechRecognitionProxy();
+   /// Accessor method for getting speech recognition data i.e. words.
+   std::string GetWord(uint aWord) const{ 
+     scoped_lock_t lock(mPc->mMutex);
+     return std::string(mDevice->words[aWord]); 
+   }
 
-    ~SpeechRecognitionProxy();
+   /// Gets the number of words.
+   uint GetCount(void) const { return GetVar(mDevice->wordCount); }
 
-  std::string GetText();
-
+   /// Word access operator.
+   ///    This operator provides an alternate way of access the speech recognition data.
+   std::string operator [](uint aWord) { return(GetWord(aWord)); }
 };
-#endif
 
-#if 0
-/**
-The @p TruthProxy gets and sets the @e true pose of a @ref
-interface_truth device [worldfile tag: truth()]. This may be
-different from the pose returned by a device such as GPS or Position. If
-you want to log what happened in an experiment, this is the device to use.
-
-Setting the position of a truth device moves its parent, so you
-can put a truth device on robot and teleport it around the place.
-*/
-class TruthProxy : public ClientProxy
-{
-
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_truth_t *mDevice;
-
-  public:
-    /// constructor
-    TruthProxy(PlayerClient *aPc, uint aIndex=0);
-    /// destructor
-    ~TruthProxy();
-
-    /// Returns x (m)
-    double GetX() const { return GetVar(mDevice->pos[0]); };
-    /// Returns y (m)
-    double GetY() const { return GetVar(mDevice->pos[1]); };
-    /// Returns z (m)
-    double GetZ() const { return GetVar(mDevice->pos[2]); };
-    /// Returns roll (rad)
-    double GetRoll() const { return GetVar(mDevice->rot[0]); };
-    /// Returns pitch (rad)
-    double GetPitch() const { return GetVar(mDevice->rot[1]); };
-    /// Returns yaw (rad)
-    double GetYaw() const { return GetVar(mDevice->rot[2]); };
-
-    /// Query Player about the current pose - requests the pose from the
-    /// server, then fills in values for the arguments. Usually you'll
-    /// just read the class attributes but this function allows you
-    /// to get pose direct from the server if you need too.
-    void GetPose(double *px, double *py, double *pz,
-                 double *rx, double *ry, double *rz);
-
-    /// Request a change in pose.
-    void SetPose(double px, double py, double pz,
-                 double rx, double ry, double rz);
-
-    /// ???
-    void SetPoseOnRoot(double px, double py, double pz,
-                       double rx, double ry, double rz);
-
-    /// Request the value returned by a fiducialfinder (and possibly a
-    /// foofinser, depending on its mode), when detecting this
-    /// object.
-    uint GetFiducialID();
-
-    /// Set the value returned by a fiducialfinder (and possibly a
-    /// foofinser, depending on its mode), when detecting this
-    /// object.
-    void SetFiducialID(int16_t id);
-
-};
-/**
-The @p WaveformProxy class is used to read raw digital waveforms from
-a @ref interface_waveform device.  */
-class WaveformProxy : public ClientProxy
-{
-
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_waveform_t *mDevice;
-
-  public:
-    // Constructor
-    WaveformProxy(PlayerClient *aPc, uint aIndex=0);
-
-    ~WaveformProxy();
-
-    uint GetCount() const { return GetVar(mDevice->data_count); };
-
-    /// sample rate in bits per second
-    uint GetBitRate() const { return GetVar(mDevice->rate); };
-
-    /// sample depth in bits
-    uint GetDepth() const { return GetVar(mDevice->depth); };
-
-    /// the data is buffered here for playback
-    void GetImage(uint8_t* aBuffer) const
-    {
-      return GetVarByRef(mDevice->data,
-                         mDevice->data+GetCount(),
-                         aBuffer);
-    };
-
-    // dsp file descriptor
-    //uint GetFd() const { return GetVar(mDevice->fd); };
-
-    // set up the DSP to the current bitrate and depth
-    void ConfigureDSP(uint aBitRate, uint aDepth);
-
-    // open the sound device
-    void OpenDSPforWrite();
-
-    // Play the waveform through the DSP
-    void Play();
-};
-#endif
+// /**
+// The @p WaveformProxy class is used to read raw digital waveforms from
+// a @ref interface_waveform device.  */
+// class WaveformProxy : public ClientProxy
+// {
+//
+//   private:
+//
+//     void Subscribe(uint aIndex);
+//     void Unsubscribe();
+//
+//     // libplayerc data structure
+//     playerc_waveform_t *mDevice;
+//
+//   public:
+//     /// Constructor
+//     WaveformProxy(PlayerClient *aPc, uint aIndex=0);
+//
+//     /// Destructor
+//     ~WaveformProxy();
+//
+//     /// How many samples?
+//     uint GetCount() const { return GetVar(mDevice->data_count); };
+//
+//     /// sample rate in bits per second
+//     uint GetBitRate() const { return GetVar(mDevice->rate); };
+//
+//     /// sample depth in bits
+//     uint GetDepth() const { return GetVar(mDevice->depth); };
+//
+//     /// the data is buffered here for playback
+//     void GetImage(uint8_t* aBuffer) const
+//     {
+//       return GetVarByRef(mDevice->data,
+//                          mDevice->data+GetCount(),
+//                          aBuffer);
+//     };
+//
+//     // dsp file descriptor
+//     //uint GetFd() const { return GetVar(mDevice->fd); };
+//
+//     /// set up the DSP to the current bitrate and depth
+//     void ConfigureDSP(uint aBitRate, uint aDepth);
+//
+//     /// open the sound device
+//     void OpenDSPforWrite();
+//
+//     /// Play the waveform through the DSP
+//     void Play();
+// };
 
 /**
 The @p WiFiProxy class controls a @ref interface_wifi device.  */
@@ -2371,73 +2197,53 @@ class WiFiProxy: public ClientProxy
     /// destructor
     ~WiFiProxy();
 
-#if 0
+			 int GetLinkCount(){ return mDevice->link_count; };
+			 char* GetOwnIP(){ return mDevice->ip; };
 
-    int GetLinkQuality(char/// ip = NULL);
-    int GetLevel(char/// ip = NULL);
-    int GetLeveldBm(char/// ip = NULL) { return GetLevel(ip) - 0x100; }
-    int GetNoise(char/// ip = NULL);
-    int GetNoisedBm(char/// ip = NULL) { return GetNoise(ip) - 0x100; }
+			 char* GetLinkIP(int index) { return (char*) mDevice->links[index].ip; };
+			 char* GetLinkMAC(int index) { return (char*) mDevice->links[index].mac; };
+			 char* GetLinkESSID(int index) { return (char*)mDevice->links[index].essid; };
+			 double GetLinkFreq(int index) {return mDevice->links[index].freq;};
+			 int 	 GetLinkMode(int index) { return mDevice->links[index].mode; };
+			 int 	 GetLinkEncrypt(int index) {return mDevice->links[index].encrypt; };
+			 int   GetLinkQuality(int index) { return mDevice->links[index].qual; };
+			 int 	 GetLinkLevel(int index) {return mDevice->links[index].level; };
+			 int 	 GetLinkNoise(int index) {return mDevice->links[index].noise; }	;		 
 
-    uint16_t GetMaxLinkQuality() { return maxqual; }
-    uint8_t GetMode() { return op_mode; }
-
-    int GetBitrate();
-
-    char/// GetMAC(char *buf, int len);
-
-    char/// GetIP(char *buf, int len);
-    char/// GetAP(char *buf, int len);
-
-    int AddSpyHost(char *address);
-    int RemoveSpyHost(char *address);
-
-  private:
-    int GetLinkIndex(char *ip);
-
-    /// The current wifi data.
-    int link_count;
-    player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
-    uint32_t throughput;
-    uint8_t op_mode;
-    int32_t bitrate;
-    uint16_t qual_type, maxqual, maxlevel, maxnoise;
-
-    char access_point[32];
-#endif
+			//player_wifi_link_t
+//     int GetLinkQuality(char/// ip = NULL);
+//     int GetLevel(char/// ip = NULL);
+//     int GetLeveldBm(char/// ip = NULL) { return GetLevel(ip) - 0x100; }
+//     int GetNoise(char/// ip = NULL);
+//     int GetNoisedBm(char/// ip = NULL) { return GetNoise(ip) - 0x100; }
+//
+//     uint16_t GetMaxLinkQuality() { return maxqual; }
+//     uint8_t GetMode() { return op_mode; }
+//
+//     int GetBitrate();
+//
+//     char/// GetMAC(char *buf, int len);
+//
+//     char/// GetIP(char *buf, int len);
+//     char/// GetAP(char *buf, int len);
+//
+//     int AddSpyHost(char *address);
+//     int RemoveSpyHost(char *address);
+//
+//   private:
+//     int GetLinkIndex(char *ip);
+//
+//     /// The current wifi data.
+//     int link_count;
+//     player_wifi_link_t links[PLAYER_WIFI_MAX_LINKS];
+//     uint32_t throughput;
+//     uint8_t op_mode;
+//     int32_t bitrate;
+//     uint16_t qual_type, maxqual, maxlevel, maxnoise;
+//
+//     char access_point[32];
 };
-/**
-The @p RFIDProxy class is used to control a  @ref interface_rfid device. */
-class RFIDProxy : public ClientProxy
-{
 
-  private:
-
-    void Subscribe(uint aIndex);
-    void Unsubscribe();
-
-    // libplayerc data structure
-    playerc_rfid_t *mDevice;
-
-  public:
-    /// constructor
-    RFIDProxy(PlayerClient *aPc, uint aIndex=0);
-    /// destructor
-    ~RFIDProxy();
-
-    /// returns the number of RFID tags
-    uint GetTagsCount() const { return GetVar(mDevice->tags_count); };
-    /// returns a RFID tag
-    playerc_rfidtag_t GetRFIDTag(uint aIndex) const
-      { return GetVar(mDevice->tags[aIndex]);};
-
-    /// RFID data access operator.
-    ///    This operator provides an alternate way of access the actuator data.
-    ///    For example, given a @p RFIDProxy named @p rp, the following
-    ///    expressions are equivalent: @p rp.GetRFIDTag[0] and @p rp[0].
-    playerc_rfidtag_t operator [](uint aIndex) const
-      { return(GetRFIDTag(aIndex)); }
-};
 /**
 The @p WSNProxy class is used to control a @ref interface_wsn device. */
 class WSNProxy : public ClientProxy
@@ -2460,25 +2266,18 @@ class WSNProxy : public ClientProxy
     uint GetNodeType    () const { return GetVar(mDevice->node_type);      };
     uint GetNodeID      () const { return GetVar(mDevice->node_id);        };
     uint GetNodeParentID() const { return GetVar(mDevice->node_parent_id); };
-    
-    player_wsn_node_data_t 
+
+    player_wsn_node_data_t
        GetNodeDataPacket() const { return GetVar(mDevice->data_packet);    };
-    
+
     void SetDevState(int nodeID, int groupID, int devNr, int value);
     void Power(int nodeID, int groupID, int value);
     void DataType(int value);
     void DataFreq(int nodeID, int groupID, float frequency);
 };
+
 /** @} (proxies)*/
-
-} // namespace PlayerCc
-
-
-/** @addtogroup player_clientlib_utility Utility and error-handling functions
-
- @{
-
- */
+}
 
 namespace std
 {
@@ -2518,18 +2317,14 @@ namespace std
   std::ostream& operator << (std::ostream& os, const PlayerCc::PtzProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SimulationProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SonarProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SoundProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechProxy& c);
-  //std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
+  std::ostream& operator << (std::ostream& os, const PlayerCc::SpeechRecognitionProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::WafeformProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WiFiProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::RFIDProxy& c);
   std::ostream& operator << (std::ostream& os, const PlayerCc::WSNProxy& c);
   //std::ostream& operator << (std::ostream& os, const PlayerCc::TruthProxy& c);
 }
-/** @} (utility) */
-
-
 
 #endif
 

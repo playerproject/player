@@ -12,7 +12,6 @@ double minfrontdistance = 0.750;
 double speed = 0.200;
 double avoidspeed = 0; // -150;
 double turnrate = DTOR(40);
-bool gUseLaser = false;
 
 int main(int argc, char** argv)
 {
@@ -53,7 +52,7 @@ int main(int argc, char** argv)
         obs = false;
         for (uint i = 0; i < lp->GetCount (); i++)
         {
-          if(lp[i][0] < minfrontdistance)
+          if((*lp)[i] < minfrontdistance)
             obs = true;
         }
       }

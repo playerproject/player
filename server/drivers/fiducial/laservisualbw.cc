@@ -41,8 +41,7 @@
 /** @defgroup driver_laservisualbw laservisualbw
  * @brief Black & white laser/visual barcode detector
  
-@todo This driver is currently disabled because it needs to be updated to
-the Player 2.0 API.
+@todo This driver has not been tested with the player 2 API.
 
 Parses a laser scan to find the retro-reflective patches (lines or
 circles), then points the camera at the patch, zooms in, and attempts
@@ -114,8 +113,6 @@ driver
 */
 /** @} */
 
-#include "player.h"
-
 #include <errno.h>
 #include <string.h>
 #include <math.h>
@@ -123,11 +120,7 @@ driver
 #include <netinet/in.h>   // for htons(3)
 #include <unistd.h>
 
-#include "error.h"
-#include "driver.h"
-#include "devicetable.h"
-#include "drivertable.h"
-#include "clientdata.h"
+#include <libplayercore/playercore.h>
 
 // Driver for detecting laser retro-reflectors.
 class LaserVisualBW : public Driver
@@ -164,20 +157,11 @@ class LaserVisualBW : public Driver
   };
 
   // Process incoming messages from clients 
-  int ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len);
+  int ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data);
 
-  // Main function for device thread.
-  private: virtual void Main();
-
-  // Process requests.  Returns 1 if the configuration has changed.
-  //private: int HandleRequests();
-
-  // Handle geometry requests.
-  //private: void HandleGetGeom(void *client, void *req, int reqlen);
-  
   // Process laser data.
   // Returns non-zero if the laser data has been updated.
-  private: int UpdateLaser(player_laser_data_t * data, unsigned long timestamp_sec, unsigned long timestamp_usec);
+  private: int UpdateLaser(player_laser_data_t * data, double timestamp);
 
   // Analyze the laser data to find fidicuials (reflectors).
   private: void FindLaserFiducials(double time, player_laser_data_t *data);
@@ -194,7 +178,7 @@ class LaserVisualBW : public Driver
   private: void RetireLaserFiducials(double time, player_laser_data_t *data);
 
   // Update the PTZ to point at one of the laser reflectors.
-  private: int UpdatePtz(player_ptz_data_t * data, uint32_t tiemstamp_sec, uint32_t timestamp_usec);
+  private: int UpdatePtz(player_ptz_data_t * data, double timestamp);
 
   // Select a target fiducial for the PTZ to inspect.
   private: void SelectPtzTarget(double time, player_ptz_data_t *data);
@@ -203,10 +187,10 @@ class LaserVisualBW : public Driver
   private: void ServoPtz(double time, player_ptz_data_t *data);
 
   // Process any new camera data.
-  private: int UpdateCamera(player_camera_data_t * data, uint32_t timestamp_sec, uint32_t timestamp_usec);
+  private: int UpdateCamera(player_camera_data_t * data, double timestamp);
 
   // Extract a bit string from the image.  
-  private: int ExtractSymbols(int x, int symbol_max_count, int symbols[]);
+  private: int ExtractSymbols(int x, unsigned int symbol_max_count, int symbols[]);
 
   // Extract a code from a symbol string.
   private: int ExtractCode(int symbol_count, int symbols[]);
@@ -233,18 +217,18 @@ class LaserVisualBW : public Driver
   private: double max_dist;
 
   // Laser stuff
-  private: Driver *laser;
-  private: player_device_id_t laser_id;
+  private: Device *laser;
+  private: player_devaddr_t laser_id;
   private: double laser_time;
 
   // PTZ stuff
-  private: Driver *ptz;
-  private: player_device_id_t ptz_id;
+  private: Device *ptz;
+  private: player_devaddr_t ptz_id;
   private: double ptz_time;
 
   // Camera stuff
-  private: Driver *camera;
-  private: player_device_id_t camera_id;
+  private: Device *camera;
+  private: player_devaddr_t camera_id;
   private: double camera_time;
   private: player_camera_data_t camera_data;
 
@@ -281,10 +265,10 @@ void LaserVisualBW_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
-  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE, PLAYER_READ_MODE)
+  : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_FIDUCIAL_CODE)
 {
   // Must have an input laser
-  if (cf->ReadDeviceId(&this->laser_id, section, "requires",
+  if (cf->ReadDeviceAddr(&this->laser_id, section, "requires",
                        PLAYER_LASER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
@@ -294,7 +278,7 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
   this->laser_time = 0;
 
   // Must have a ptz
-  if (cf->ReadDeviceId(&this->ptz_id, section, "requires",
+  if (cf->ReadDeviceAddr(&this->ptz_id, section, "requires",
                        PLAYER_PTZ_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
@@ -304,7 +288,7 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
   this->ptz_time = 0;
 
   // Must have a camera
-  if (cf->ReadDeviceId(&this->camera_id, section, "requires",
+  if (cf->ReadDeviceAddr(&this->camera_id, section, "requires",
                        PLAYER_CAMERA_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);    
@@ -347,46 +331,40 @@ LaserVisualBW::LaserVisualBW( ConfigFile* cf, int section)
 int LaserVisualBW::Setup()
 {
   // Subscribe to the laser.
-  this->laser = SubscribeInternal(this->laser_id);
-  if (!this->laser)
+  if (!(laser = deviceTable->GetDevice (laser_id)))
   {
-    PLAYER_ERROR("unable to locate suitable laser device");
-    return(-1);
+    PLAYER_ERROR ("unable to locate suitable laser device");
+    return -1;
   }
-  /*if (this->laser->Subscribe(this->laser_id) != 0)
+  if (laser->Subscribe (InQueue) != 0)
   {
-    PLAYER_ERROR("unable to subscribe to laser device");
-    return(-1);
-  }*/
-
-  // Subscribe to the PTZ.
-  this->ptz = SubscribeInternal(this->ptz_id);
-  if (!this->ptz)
-  {
-    PLAYER_ERROR("unable to locate suitable PTZ device");
-    return(-1);
+    PLAYER_ERROR ("unable to subscribe to laser device");
+    return -1;
   }
-  /*if (this->ptz->Subscribe(this->ptz_id) != 0)
-  {
-    PLAYER_ERROR("unable to subscribe to PTZ device");
-    return(-1);
-  }*/
 
-  // Subscribe to the camera.
-  this->camera = SubscribeInternal(this->camera_id);
-  if (!this->camera)
+  // Subscribe to the ptz.
+  if (!(ptz = deviceTable->GetDevice (ptz_id)))
   {
-    PLAYER_ERROR("unable to locate suitable camera device");
-    return(-1);
+    PLAYER_ERROR ("unable to locate suitable ptz device");
+    return -1;
   }
-/*  if (this->camera->Subscribe(this->camera_id) != 0)
+  if (ptz->Subscribe (InQueue) != 0)
   {
-    PLAYER_ERROR("unable to subscribe to camera device");
-    return(-1);
-  }*/
+    PLAYER_ERROR ("unable to subscribe to ptz device");
+    return -1;
+  }
 
-  // Start the driver thread.
-  this->StartThread();
+  // Subscribe to the blobfinder.
+  if (!(camera = deviceTable->GetDevice (camera_id)))
+  {
+    PLAYER_ERROR ("unable to locate suitable camera device");
+    return -1;
+  }
+  if (camera->Subscribe (InQueue) != 0)
+  {
+    PLAYER_ERROR ("unable to subscribe to camera device");
+    return -1;
+  }
   
   return 0;
 }
@@ -396,90 +374,47 @@ int LaserVisualBW::Setup()
 // Shutdown the device (called by server thread).
 int LaserVisualBW::Shutdown()
 {
-  // Stop the driver thread.
-  StopThread();
-  
   // Unsubscribe from devices.
-  UnsubscribeInternal(this->camera_id);
-  UnsubscribeInternal(this->ptz_id);
-  UnsubscribeInternal(this->laser_id);
+  laser->Unsubscribe(InQueue);
+  ptz->Unsubscribe(InQueue);
+  camera->Unsubscribe(InQueue);
 
   return 0;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Main function for device thread
-void LaserVisualBW::Main() 
-{
-  while (true)
-  {
-    // Let the camera drive update rate
-    this->camera->Wait();
-
-    // Test if we are supposed to cancel this thread.
-    pthread_testcancel();
-
-    // Process any pending requests.
-    /*HandleRequests();
-
-    // Process any new laser data.
-    if (UpdateLaser())
-    {
-      // Update the device data (the data going back to the client).
-      WriteData();
-    }
-
-    // Process any new PTZ data.
-    UpdatePtz();
-
-    // Process any new camera data.
-    UpdateCamera();*/
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Process an incoming message
-int LaserVisualBW::ProcessMessage(ClientData * client, player_msghdr * hdr, uint8_t * data, uint8_t * resp_data, size_t * resp_len)
+int LaserVisualBW::ProcessMessage (MessageQueue * resp_queue, player_msghdr * hdr, void * data)
 {
   assert(hdr);
   assert(data);
-  assert(resp_data);
-  assert(resp_len);
   
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, laser_id))
+  if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_LASER_DATA_SCAN, laser_id))
   {
-  	assert(hdr->size == sizeof(player_laser_data_t));
-  	player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
-  	Lock();
+    assert(hdr->size == sizeof(player_laser_data_t));
+    player_laser_data_t * l_data = reinterpret_cast<player_laser_data_t * > (data);
 
-    UpdateLaser(l_data, hdr->timestamp_sec, hdr->timestamp_usec);
+    UpdateLaser(l_data, hdr->timestamp);
 
-  	Unlock();
-    *resp_len = 0;
-  	return 0;
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, ptz_id))
+  if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_PTZ_DATA_STATE, ptz_id))
   {
-  	assert(hdr->size == sizeof(player_ptz_data_t));
-  	Lock();
-    UpdatePtz(reinterpret_cast<player_ptz_data_t * > (data), hdr->timestamp_sec, hdr->timestamp_usec);
-  	Unlock();
-    *resp_len = 0;
-  	return 0;
+    assert(hdr->size == sizeof(player_ptz_data_t));
+    UpdatePtz(reinterpret_cast<player_ptz_data_t * > (data), hdr->timestamp);
+    return 0;
   }
 
-  if (MatchMessage(hdr, PLAYER_MSGTYPE_DATA, 0, camera_id))
+  if(Message::MatchMessage (hdr, PLAYER_MSGTYPE_DATA, PLAYER_CAMERA_DATA_STATE, camera_id))
   {
-  	assert(hdr->size == sizeof(player_camera_data_t));
-  	Lock();
-    UpdateCamera(reinterpret_cast<player_camera_data_t * > (data), hdr->timestamp_sec, hdr->timestamp_usec);
-  	Unlock();
-    *resp_len = 0;
-  	return 0;
+    assert(hdr->size == sizeof(player_camera_data_t));
+    UpdateCamera(reinterpret_cast<player_camera_data_t * > (data), hdr->timestamp);
+    return 0;
   }
 
+/*
  
   if (MatchMessage(hdr, PLAYER_MSGTYPE_REQ, PLAYER_FIDUCIAL_GET_GEOM, device_id))
   {
@@ -505,126 +440,39 @@ int LaserVisualBW::ProcessMessage(ClientData * client, player_msghdr * hdr, uint
   	*resp_len=sizeof(player_fiducial_geom_t);
   
     return ret;
-  }
+  }*/
   return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Process requests.  Returns 1 if the configuration has changed.
-/*int LaserVisualBW::HandleRequests()
-{
-  void *client;
-  char request[PLAYER_MAX_REQREP_SIZE];
-  int len;
-  
-  while ((len = GetConfig(&client, &request, sizeof(request),NULL)) > 0)
-  {
-    switch (request[0])
-    {
-      case PLAYER_FIDUCIAL_GET_GEOM:
-        HandleGetGeom(client, request, len);
-        break;
-
-      default:
-        if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-          PLAYER_ERROR("PutReply() failed");
-        break;
-    }
-  }
-  return 0;
-}*/
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Handle geometry requests.
-/*void LaserVisualBW::HandleGetGeom(void *client, void *request, int len)
-{
-  unsigned short reptype;
-  struct timeval ts;
-  int replen;
-  player_laser_geom_t lgeom;
-  player_fiducial_geom_t fgeom;
-    
-  // Get the geometry from the laser
-  replen = this->laser->Request(this->laser_id, this, 
-                                request, len, NULL,
-                                &reptype, &lgeom, sizeof(lgeom), &ts);
-  if (replen <= 0 || replen != sizeof(lgeom))
-  {
-    PLAYER_ERROR("unable to get geometry from laser device");
-    if (PutReply(client, PLAYER_MSGTYPE_RESP_NACK,NULL) != 0)
-      PLAYER_ERROR("PutReply() failed");
-  }
-
-  fgeom.pose[0] = lgeom.pose[0];
-  fgeom.pose[1] = lgeom.pose[1];
-  fgeom.pose[2] = lgeom.pose[2];
-  fgeom.size[0] = lgeom.size[0];
-  fgeom.size[1] = lgeom.size[1];
-  fgeom.fiducial_size[0] = ntohs((int) (this->barwidth * 1000));
-  fgeom.fiducial_size[1] = ntohs((int) (this->barwidth * 1000));
-    
-  if(PutReply(client, PLAYER_MSGTYPE_RESP_ACK, &fgeom, sizeof(fgeom), &ts) != 0)
-    PLAYER_ERROR("PutReply() failed");
-
-  return;
-}*/
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Process laser data.
-int LaserVisualBW::UpdateLaser(player_laser_data_t * data, unsigned long timestamp_sec, unsigned long timestamp_usec)
+int LaserVisualBW::UpdateLaser(player_laser_data_t * data, double timestamp)
 {
-  int i;
-  //player_laser_data_t data;
-  //size_t size;
-  //struct timeval timestamp;
-  double time;
+  this->laser_time = timestamp;
   
-  // Get the laser data.
-/*  size = this->laser->GetData(this->laser_id,(void*)&data, 
-                              sizeof(data), &timestamp);
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-*/  
-  time = (double) timestamp_sec + ((double) timestamp_usec) * 1e-6;
-  
-/*  // Dont do anything if this is old data.
-  if (time == this->laser_time)
-    return 0;
-  this->laser_time = time;*/
-  
-  // Do some byte swapping on the laser data.
-  data->resolution = ntohs(data->resolution);
-  data->min_angle = ntohs(data->min_angle);
-  data->max_angle = ntohs(data->max_angle);
-  data->range_count = ntohs(data->range_count);
-  for (i = 0; i < data->range_count; i++)
-    data->ranges[i] = ntohs(data->ranges[i]);
-
   // Find possible fiducials in this scan.
-  this->FindLaserFiducials(time, data);
+  this->FindLaserFiducials(timestamp, data);
 
   // Retire fiducials we havent seen for a while.
-  this->RetireLaserFiducials(time, data);
+  this->RetireLaserFiducials(timestamp, data);
 
   return 1;
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Analyze the laser data to find fidicuials (reflectors).
 void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
 {
-  int i, h;
+  unsigned int i;
+  int h;
   int valid;
   double r, b;
-  //double db, dr;
+  double db, dr;
   double mn, mr, mb, mrr, mbb;
   double pose[3];
 
   // Empty the fiducial list.
-  this->fdata.count = 0;
+  this->fdata.fiducials_count = 0;
   
   // Initialise patch statistics.
   mn = 0.0;
@@ -634,10 +482,10 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
   mbb = 0.0;
     
   // Look for a candidate patch in scan.
-  for (i = 0; i < data->range_count; i++)
+  for (i = 0; i < data->ranges_count; i++)
   {
-    r = (double) ((int) (uint32_t) data->ranges[i] * data->range_res) / 1000;
-    b = (double) (data->min_angle + i * data->resolution) / 100.0 * M_PI / 180;
+    r = (double) (data->ranges[i]);
+    b = (double) (data->min_angle + i * data->resolution);
     h = (int) (data->intensity[i]);
 
     // If there is a reflection...
@@ -662,14 +510,10 @@ void LaserVisualBW::FindLaserFiducials(double time, player_laser_data_t *data)
       // Test moments to see if they are valid.
       valid = 1;
       valid &= (mn >= 1.0);
-
-      // TODO: fix or remove
-      /*
       dr = this->barwidth / 2;
       db = atan2(this->barwidth / 2, mr);
       valid &= (mrr < (dr * dr));
       valid &= (mbb < (db * db));
-      */
       
       if (valid)
       {
@@ -707,7 +551,7 @@ void LaserVisualBW::FitLaserFiducial(player_laser_data_t *data,
 
   for (i = first; i <= last; i++)
   {
-    r = (double) ((int) (uint32_t) data->ranges[i] * data->range_res) / 1000;
+    r = (double) (data->ranges[i]) / 1000;
     b = (double) (data->min_angle + i * data->resolution) / 100.0 * M_PI / 180;
 
     if (r < mr)
@@ -816,36 +660,15 @@ void LaserVisualBW::RetireLaserFiducials(double time, player_laser_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the PTZ to point at one of the laser reflectors.
-int LaserVisualBW::UpdatePtz(player_ptz_data_t * data, uint32_t timestamp_sec, uint32_t timestamp_usec)
+int LaserVisualBW::UpdatePtz(player_ptz_data_t * data, double timestamp)
 {
-//  player_ptz_data_t data;
-//  size_t size;
-//  struct timeval timestamp;
-  double time;
+  this->ptz_time = timestamp;
   
-  // Get the ptz data.
-/*  size = this->ptz->GetData(this->ptz_id,(void*)&data, sizeof(data), 
-                            &timestamp);
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;
-*/
-  time = (double) timestamp_sec + ((double) timestamp_usec) * 1e-6;
-
-  
-  // Dont do anything if this is old data.
-/*  if (time == this->ptz_time)
-    return 0;
-  this->ptz_time = time;*/
-  
-  // Do some byte swapping on the ptz data.
-  data->pan = ntohs(data->pan);
-  data->tilt = ntohs(data->tilt);
-  data->zoom = ntohs(data->zoom);
-
   // Pick a fiducial to look at.
-  this->SelectPtzTarget(time, data);
+  this->SelectPtzTarget(timestamp, data);
 
   // Point the fiducial
-  this->ServoPtz(time, data);
+  this->ServoPtz(timestamp, data);
 
   return 1;
 }
@@ -861,13 +684,11 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
   fiducial_t *fiducial;
 
   // Consider the currently selected target for a while to
-  // give the camera time to identify it.  If the target has
-  // been identified, move on to another one.
+  // give the blobfinder time to identify it.
   if (this->ptz_fiducial != NULL)
   {
-    if (this->ptz_fiducial->id_time < 0)
-      if (time - this->ptz_fiducial->ptz_select_time < this->max_ptz_attention)
-        return;
+    if (time - this->ptz_fiducial->ptz_select_time < this->max_ptz_attention)
+      return;
   }
 
   // Find one we havent looked at for while.
@@ -890,7 +711,6 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
   {
     this->ptz_fiducial->ptz_select_time = time;
     this->ptz_fiducial->ptz_lockon_time = -1;
-    this->ptz_fiducial->id_time = -1;
   }
   
   return;
@@ -901,16 +721,12 @@ void LaserVisualBW::SelectPtzTarget(double time, player_ptz_data_t *data)
 // Servo the PTZ to a target fiducial.
 void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 {
-  int i;
   double dx, dy, r, pan, tilt, zoom;
   fiducial_t *fiducial;
   player_ptz_cmd_t cmd;
   double maxtilt;
   double deadpan, deadzoom;
 
-  // Tilt pattern
-  double pattern[] = {0, 0.5, 1.0, 0.5, 0, -0.5, -1.0, -0.5};
-  
   // Max tilt value.
   maxtilt = 5 * M_PI / 180;
 
@@ -938,32 +754,27 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 
     // See if we have locked on yet.
     if (fiducial->ptz_lockon_time < 0)
-    {
       if (fabs(pan * 180 / M_PI - data->pan) < deadpan &&
           fabs(zoom * 180 / M_PI - data->zoom) < deadzoom)
         fiducial->ptz_lockon_time = time;
-    }
 
     // If we havent locked on yet...
     if (fiducial->ptz_lockon_time < 0)
       tilt = 0;
     else
-    {
-      i = (int) floor((time - fiducial->ptz_lockon_time) / this->max_ptz_attention * 8);
-      tilt = maxtilt * pattern[i];        
-      //tilt = sin((time - fiducial->ptz_lockon_time) / this->max_ptz_attention * 2 * M_PI);
-    }
+      tilt = maxtilt * sin((time - fiducial->ptz_lockon_time) /
+                           this->max_ptz_attention * 2 * M_PI);
   }
   
   // Compose the command packet to send to the PTZ device.
-  cmd.pan = htons(((int16_t) (pan * 180 / M_PI)));
-  cmd.tilt = htons(((int16_t) (tilt * 180 / M_PI)));
-  cmd.zoom = htons(((int16_t) (zoom * 180 / M_PI)));
-//  this->ptz->PutCommand(this->ptz_id,(void*)&cmd, sizeof(cmd), NULL);
-  this->ptz->ProcessMessage(PLAYER_MSGTYPE_CMD, 0,this->ptz_id, sizeof(cmd),(uint8_t*) &cmd);
+  cmd.pan = pan;
+  cmd.tilt = tilt;
+  cmd.zoom = zoom;
+  
+  this->ptz->PutMsg(InQueue, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, &cmd, sizeof(cmd), NULL);
 
   // Compute the dimensions of the image at the range of the target fiducial.
-  this->zoomwidth = 2 * r * tan(data->zoom * M_PI / 180 / 2);
+  this->zoomwidth = 2 * r * tan(data->zoom/2);
   this->zoomheight = 3.0 / 4.0 * this->zoomwidth;
 
   return;
@@ -972,35 +783,15 @@ void LaserVisualBW::ServoPtz(double time, player_ptz_data_t *data)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Process any new camera data.
-int LaserVisualBW::UpdateCamera(player_camera_data_t * data, uint32_t timestamp_sec, uint32_t timestamp_usec)
+int LaserVisualBW::UpdateCamera(player_camera_data_t * data, double timestamp)
 {
-//  size_t size;
-//  struct timeval timestamp;
-  double time;
   int id, best_id;
-  int x;
+  unsigned int x;
   int symbol_count;
   int symbols[480];
 
-  // Get the camera data.
-/*  size = this->camera->GetData(this->camera_id, (void*) &this->camera_data,
-                               sizeof(this->camera_data), &timestamp);
-  time = (double) timestamp.tv_sec + ((double) timestamp.tv_usec) * 1e-6;*/
-
-  time = (double) timestamp_sec + ((double) timestamp_usec) * 1e-6;
-
-  // Dont do anything if this is old data.
-  /*if (fabs(time - this->camera_time) < 0.001)
-    return 0;
-  this->camera_time = time;*/
+  this->camera_time = timestamp;
   
-  
-  
-  // Do some byte swapping
-  this->camera_data.width = ntohs(data->width);
-  this->camera_data.height = ntohs(data->height); 
-  this->camera_data.bpp = data->bpp;
-
   best_id = -1;
   
   // Barcode may not be centered, so look across entire image
@@ -1034,7 +825,7 @@ int LaserVisualBW::UpdateCamera(player_camera_data_t * data, uint32_t timestamp_
     if (this->ptz_fiducial->ptz_lockon_time >= 0)
     {
       this->ptz_fiducial->id = best_id;
-      this->ptz_fiducial->id_time = time;
+      this->ptz_fiducial->id_time = timestamp;
     }
   }
   
@@ -1045,9 +836,10 @@ int LaserVisualBW::UpdateCamera(player_camera_data_t * data, uint32_t timestamp_
 ////////////////////////////////////////////////////////////////////////////////
 // Extract a bit string from the image.  Takes a vertical column in
 // the image and thresholds it.
-int LaserVisualBW::ExtractSymbols(int x, int symbol_max_count, int symbols[])
+int LaserVisualBW::ExtractSymbols(int x, unsigned int symbol_max_count, int symbols[])
 {
-  int i, j, off, inc, pix;
+  unsigned int i;
+  int j, off, inc, pix;
   double fn, fv;
   int state, start, symbol_count;
   double kernel[] = {+1, +2, 0, -2, -1};
@@ -1260,11 +1052,11 @@ void LaserVisualBW::WriteData()
 {
   int i;
   double r, b, o;
-  struct timeval timestamp;
+  double timestamp;
   fiducial_t *fiducial;
   player_fiducial_data_t data;
 
-  data.count = 0;
+  data.fiducials_count = 0;
   for (i = 0; i < this->fiducial_count; i++)
   {
     fiducial = this->fiducials + i;
@@ -1279,22 +1071,18 @@ void LaserVisualBW::WriteData()
     b = atan2(fiducial->pose[1], fiducial->pose[0]);
     o = fiducial->pose[2];
 
-    data.fiducials[data.count].id = htons(((int16_t) fiducial->id));
-    data.fiducials[data.count].pos[0] = htonl(((int32_t) (1000 * r * cos(b))));
-    data.fiducials[data.count].pos[1] = htonl(((int32_t) (1000 * r * sin(b))));
-    data.fiducials[data.count].rot[2] = htonl(((int32_t) (1000 * o)));
-    data.count++;
+    data.fiducials[data.fiducials_count].id = fiducial->id;
+    data.fiducials[data.fiducials_count].pose.px = r * cos(b);
+    data.fiducials[data.fiducials_count].pose.py = r * sin(b);
+    data.fiducials[data.fiducials_count].pose.pyaw = o;
+    data.fiducials_count++;
   }
-  data.count = htons(data.count);
   
   // Compute the data timestamp (from laser).
-  timestamp.tv_sec = (uint32_t) this->laser_time;
-  timestamp.tv_usec = (uint32_t) (fmod(this->laser_time, 1.0) * 1e6);
+  timestamp = this->laser_time;
   
   // Copy data to server.
-  PutMsg(device_id, NULL, PLAYER_MSGTYPE_DATA, 0, (void*) &data, sizeof(data), &timestamp);
-
-  return;
+  Publish(device_addr, NULL, PLAYER_MSGTYPE_DATA, PLAYER_FIDUCIAL_DATA_SCAN, (void*) &data, sizeof(data), &timestamp);
 }
 
 

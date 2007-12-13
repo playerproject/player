@@ -180,7 +180,8 @@ protected:
   int movement_mode;
   int pandemand;
   int tiltdemand;
-
+  short zoomdemand;
+  
 public:
 
   SonyEVID30( ConfigFile* cf, int section);
@@ -235,7 +236,7 @@ SonyEVID30::SonyEVID30( ConfigFile* cf, int section)
   movement_mode = 0;
   pandemand = 0;
   tiltdemand=0;
-
+  zoomdemand=0;
   read_pfd.events = POLLIN;
 
   // TODO: check field of view values.
@@ -433,6 +434,17 @@ SonyEVID30::Send(unsigned char* str, int len, unsigned char* reply, uint8_t came
     return(-1);
   }
 
+  /*
+  int zz = 0;
+  printf( "Sending: " );
+  while( command[zz] != 0xFF )
+  {
+    printf( "%02x ", command[zz] );
+    zz++;
+  }
+  printf( "%02x\n", command[zz] );
+  */
+  
   //puts("Send(): calling Receive()");
   return(Receive(reply));
 }
@@ -547,6 +559,17 @@ SonyEVID30::Receive(unsigned char* reply)
     else if((reply[1] & 0x0F) == 0x02)
       command_pending2 = false;
   }
+
+  /*
+  int zz = 0;
+  printf( "Receiving: " );
+  while( reply[zz] != 0xFF )
+  {
+    printf( "%02x ", reply[zz] );
+    zz++;
+  }
+  printf( "%02x\n", reply[zz] );
+  */
 
   return(bufptr+1-i);
 }
@@ -663,7 +686,7 @@ SonyEVID30::SendAbsPanTilt(short pan, short tilt)
   unsigned char command[MAX_PTZ_MESSAGE_LENGTH];
   short convpan,convtilt;
 
-  printf("Send abs pan/tilt: %d, %d\n", pan, tilt);
+  //printf("Send abs pan/tilt: %d, %d\n", pan, tilt);
 
   if (abs(pan)>(short)PTZ_PAN_MAX) 
   {
@@ -686,7 +709,8 @@ SonyEVID30::SendAbsPanTilt(short pan, short tilt)
   convpan = (short)(pan*ptz_pan_conv_factor);
   convtilt = (short)(tilt*ptz_tilt_conv_factor);
 
-  printf("[Conv] Send abs pan/tilt: %d, %d\n", convpan, convtilt);
+  //printf("[Conv] Send abs pan/tilt: %d, %d\n", convpan, convtilt);
+  //printf("[Conv] Send abs pan/tilt: %04x, %04x\n", convpan, convtilt);
 
   command[0] = 0x01;  // absolute position command
   command[1] = 0x06;  // absolute position command
@@ -786,6 +810,8 @@ SonyEVID30::GetAbsZoom(short* zoom)
   unsigned char reply[MAX_PTZ_PACKET_LENGTH];
   int reply_len;
 
+  //printf( "set zoom: %d\n", zoom );
+  
   command[0] = 0x09;
   command[1] = 0x04;
   command[2] = 0x47;
@@ -845,6 +871,8 @@ SonyEVID30::SendAbsZoom(short zoom)
     //puts("Camera zoom thresholded");
   }
 
+  //printf( "Send zoom: %d\n", zoom );
+  
   command[0] = 0x01;  // absolute position command
   command[1] = 0x04;  // absolute position command
   command[2] = 0x47;  // absolute position command
@@ -854,7 +882,7 @@ SonyEVID30::SendAbsZoom(short zoom)
   command[4] = (unsigned char)((zoom & 0x0F00) >> 8);
   command[5] = (unsigned char)((zoom & 0x00F0) >> 4);
   command[6] = (unsigned char)(zoom & 0x000F); 
-
+  
   return(SendCommand(command, 7));
 }
 
@@ -889,13 +917,13 @@ int SonyEVID30::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, v
 
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_CMD, PLAYER_PTZ_CMD_STATE, device_addr))
   {
-    short zoomdemand=0;
-    bool newpantilt=true, newzoom=true;
+    bool newpantilt=false, newzoom=false;
   	
   	assert (hdr->size == sizeof (player_ptz_cmd_t));
   	player_ptz_cmd_t command = *reinterpret_cast<player_ptz_cmd_t *> (data);
-    if(pandemand != (int)rint(RTOD(command.pan)))
+    if(-pandemand != (int)rint(RTOD(command.pan)))
     {
+ //     printf( "pandemand: %d command: %d\n", pandemand, (int)rint( RTOD(command.pan)) );
       pandemand = (int)rint(RTOD(command.pan));
       newpantilt = true;
     }
@@ -904,16 +932,24 @@ int SonyEVID30::ProcessMessage(MessageQueue * resp_queue, player_msghdr * hdr, v
       tiltdemand = (int)rint(RTOD(command.tilt));
       newpantilt = true;
     }
+     
+    short tzoomdemand = (1024 * ((int)rint(RTOD(command.zoom)) - this->maxfov)) / (this->minfov - this->maxfov);
+    if( zoomdemand != tzoomdemand)
+    {
+      zoomdemand = tzoomdemand;
+
+      newzoom = true;
+    }
     
-    zoomdemand = (1024 * (zoomdemand - this->maxfov)) / (this->minfov - this->maxfov);
-    
+
+
     if(newzoom)
     {
-	  if(SendAbsZoom(zoomdemand))
-	  {
-	    fputs("SonyEVID30:Main():SendAbsZoom() errored. bailing.\n", stderr);
-	    pthread_exit(NULL);
-	  }
+	    if(SendAbsZoom(zoomdemand))
+	    {
+	      fputs("SonyEVID30:Main():SendAbsZoom() errored. bailing.\n", stderr);
+	      pthread_exit(NULL);
+	    }
     }
     
     if(newpantilt)

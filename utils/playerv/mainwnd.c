@@ -79,7 +79,6 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   wnd->view_item_10m = rtk_menuitem_create(wnd->view_menu, "Grid 10 m", 1);
   wnd->view_item_2f = rtk_menuitem_create(wnd->view_menu, "Grid 2 feet", 1);
   wnd->view_item_ego = rtk_menuitem_create(wnd->view_menu, "Frame egocentric", 1); 
-  
   // Create device menu
   wnd->device_menu = rtk_menu_create(wnd->canvas, "Devices");
 
@@ -98,9 +97,9 @@ mainwnd_t *mainwnd_create(rtk_app_t *app, const char *host, int port)
   rtk_menuitem_check(wnd->view_item_ego, 1);
   
   rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
-  rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
+  rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 1);
   rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
-  rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 1);
+  rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 10);
       
   return wnd;
 }
@@ -166,9 +165,9 @@ int mainwnd_update(mainwnd_t *wnd)
     if (rtk_menuitem_ischecked(wnd->view_item_1m))
     {
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
-      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 0.2);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 1);
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
-      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 1);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 10);
       rtk_menuitem_check(wnd->view_item_10m, 0);
       rtk_menuitem_check(wnd->view_item_2f, 0);
     }
@@ -181,9 +180,9 @@ int mainwnd_update(mainwnd_t *wnd)
     if (rtk_menuitem_ischecked(wnd->view_item_10m))
     {
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
-      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 2);
-      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
       rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 10);
+      rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 100);
       rtk_menuitem_check(wnd->view_item_1m, 0);
       rtk_menuitem_check(wnd->view_item_2f, 0);
     }
@@ -196,14 +195,13 @@ int mainwnd_update(mainwnd_t *wnd)
     if (rtk_menuitem_ischecked(wnd->view_item_2f))
     {
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MINOR);
-      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 4 * 0.0254);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 4 * 0.0254);
       rtk_fig_color_rgb32(wnd->grid_fig, COLOR_GRID_MAJOR);
-      rtk_fig_grid(wnd->grid_fig, 0, 0, 50, 50, 2 * 12 * 0.0254);
+      rtk_fig_grid(wnd->grid_fig, 0, 0, 500, 500, 2 * 12 * 0.0254);
       rtk_menuitem_check(wnd->view_item_10m, 0);
       rtk_menuitem_check(wnd->view_item_1m, 0);
     }
   }
-
   // Render the canvas
   rtk_canvas_render(wnd->canvas);
         
