@@ -42,11 +42,17 @@ typedef struct player_position2d_cmd_car
 {
   /** forward velocity (m/s) */
   double velocity;
-  /** turning angle (rad) */
+  /** relative turning angle (rad) */
   double angle;
 } player_position2d_cmd_car_t;
 
-
+typedef struct player_position2d_cmd_vel_head
+{
+  /** forward velocity (m/s) */
+  double velocity;
+  /** absolute turning angle (rad) */
+  double angle;
+} player_position2d_cmd_vel_head_t;
 
 typedef struct player_position2d_geom
 {
@@ -233,7 +239,12 @@ The @ref driver_p2os driver offers two modes of velocity control:
 
   /** @brief Command: carlike (@ref PLAYER_POSITION2D_CMD_CAR)
 
-  The @p position interface accepts new carlike velocity commands (speed and turning angle)
+  The @p position interface accepts carlike translational velocity + constant turn commands (speed and turning angle)
   for the robot's motors (only supported by some drivers). */
   message { CMD, CAR, 2, player_position2d_cmd_car_t };
 
+
+  /** @brief Command: vel/head (@ref PLAYER_POSITION2D_CMD_VEL_HEAD)
+
+  The @p position interface accepts translational velocity + absolute heading commands (speed and angular position) for the robot's motors (only supported by some drivers). */
+  message { CMD, VEL_HEAD , 3, player_position2d_cmd_vel_head_t };

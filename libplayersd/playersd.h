@@ -49,7 +49,7 @@
 /** @defgroup libplayersd libplayersd
  * @brief Player service discovery library
 
-This library provides service discovery capabilities for Player devices.
+This library provides service discovery capabilities for Player devices.  This library is currently in an alpha state, and is not ready for regular use.
 */
 
 /** @ingroup libplayersd
