@@ -172,6 +172,9 @@ int main (int argc, char *argv[])
 	case PLAYER_SPEECH_CODE:
 		deviceProxy = (ClientProxy*) new SpeechProxy (&client, devIndex);
 		break;
+	case PLAYER_VECTORMAP_CODE:
+		deviceProxy = (ClientProxy*) new VectorMapProxy (&client, devIndex);
+		break;
 	default:
 		cout << "Unknown interface " << device << endl;
 		exit (-1);
