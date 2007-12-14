@@ -119,6 +119,7 @@ driver
 #define DEFAULT_OPAQUE_BUFFER_SIZE 4096
 #define DEFAULT_OPAQUE_PORT "/dev/ttyS0"
 #define DEFAULT_OPAQUE_TRANSFER_RATE 38400
+#define DEFAULT_OPAQUE_PARITY "none"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Device codes
@@ -167,6 +168,10 @@ class SerialStream : public Driver
     // Returns 0 on success
     virtual int CloseTerm();
     
+    // Set the io flags.
+    // Just a little helper function that sets the parity and so on.
+    void UpdateFlags();
+    
     // Set the terminal speed
     // Valid values are 9600, 19200, 38400, 115200
     // Returns 0 on success
@@ -189,7 +194,7 @@ class SerialStream : public Driver
     
     // Properties
     IntProperty buffer_size, transfer_rate;
-    StringProperty port;
+    StringProperty port, parity;
     
     // This is the data we store and send
     player_opaque_data_t mData;
@@ -222,11 +227,15 @@ void SerialStream_Register(DriverTable* table)
 SerialStream::SerialStream(ConfigFile* cf, int section)
     : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN,
              PLAYER_OPAQUE_CODE),
-             buffer_size ("buffer_size", DEFAULT_OPAQUE_BUFFER_SIZE, 0), port ("port", DEFAULT_OPAQUE_PORT, 0), transfer_rate ("transfer_rate", DEFAULT_OPAQUE_TRANSFER_RATE, 0)
+             buffer_size ("buffer_size", DEFAULT_OPAQUE_BUFFER_SIZE, 0),
+             transfer_rate ("transfer_rate", DEFAULT_OPAQUE_TRANSFER_RATE, 0),
+             port ("port", DEFAULT_OPAQUE_PORT, 0),
+             parity ("parity", DEFAULT_OPAQUE_PARITY, 0)
 {
 	  this->RegisterProperty ("buffer_size", &this->buffer_size, cf, section);
 	  this->RegisterProperty ("port", &this->port, cf, section);
 	  this->RegisterProperty ("transfer_rate", &this->transfer_rate, cf, section);
+	  this->RegisterProperty ("parity", &this->parity, cf, section);
 	
 	  rx_buffer = new uint8_t[buffer_size];
 	  assert(rx_buffer);
@@ -288,7 +297,7 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 	{
 	    player_intprop_req_t req = *reinterpret_cast<player_intprop_req_t*> (data);
 	    PLAYER_MSG1(2, "%s", req.key);
-	    if (strcmp("transfer_rate", req.key))
+	    if (strcmp("transfer_rate", req.key) == 0)
 	    {
 	    	res = ChangeTermSpeed(req.value);	    
 	   
@@ -303,6 +312,17 @@ int SerialStream::ProcessMessage(QueuePointer & resp_queue,
 			  Publish(this->device_addr, resp_queue, PLAYER_MSGTYPE_RESP_NACK, PLAYER_SET_INTPROP_REQ, NULL, 0, NULL);
 			}
 			return (0);
+	    }
+	}
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_SET_STRPROP_REQ, this->device_addr))
+	{
+	    player_strprop_req_t req = *reinterpret_cast<player_strprop_req_t*> (data);
+	    PLAYER_MSG1(2, "%s", req.key);
+		if (strcmp("parity", req.key) == 0)
+	    {
+	    	parity.SetValueFromMessage(reinterpret_cast<void*> (&req));
+	    	UpdateFlags();
+	    	return 0;
 	    }
 	}
 	//else if it is a opaque data message then I want to flush the current serial port and write to whatever is connected to the serial port
@@ -381,15 +401,7 @@ int SerialStream::OpenTerm()
   tcgetattr(opaque_fd, &oldtio);
   
   // set up new settings
-  struct termios newtio;
-  memset(&newtio, 0,sizeof(newtio));
-  newtio.c_cflag = CS8 | CREAD | PARENB;
-  newtio.c_iflag = INPCK;
-  newtio.c_oflag = 0;
-  newtio.c_lflag = 0;
-  
-  tcsetattr(opaque_fd, TCSANOW, &newtio);
-  tcflush(opaque_fd, TCIOFLUSH);
+  UpdateFlags();
   if (ChangeTermSpeed(transfer_rate))
 	    return -1;
   
@@ -401,6 +413,31 @@ int SerialStream::OpenTerm()
   return 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Update io flags
+// Parity is set to whatever the parity property contains.
+//
+void SerialStream::UpdateFlags()
+{
+	// set up new settings
+	struct termios newtio;
+	memset(&newtio, 0,sizeof(newtio));
+	newtio.c_cflag = CS8 | CREAD;
+	newtio.c_iflag = INPCK;
+	newtio.c_oflag = 0;
+	newtio.c_lflag = 0;
+	if (strncmp(parity, "none", 4) == 0)
+		; // Do nothing.
+	else if (strncmp(parity, "even", 4) == 0)
+		newtio.c_cflag |= PARENB;
+	else if (strncmp(parity, "odd", 3) == 0)
+		newtio.c_cflag |= PARENB | PARODD;
+	else
+		PLAYER_WARN("Invalid parity. Defaulting to none.");
+	
+	tcsetattr(opaque_fd, TCSANOW, &newtio);
+	tcflush(opaque_fd, TCIOFLUSH);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set the terminal speed

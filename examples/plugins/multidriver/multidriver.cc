@@ -117,7 +117,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
 {
   // Create my position interface
   if (cf->ReadDeviceAddr(&(this->m_position_addr), section, 
-                         "provides", PLAYER_POSITION2D_CODE, 0, NULL) != 0)
+                         "provides", PLAYER_POSITION2D_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -130,7 +130,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
 
   // Create my laser interface
   if (cf->ReadDeviceAddr(&(this->m_laser_addr), section, 
-                         "provides", PLAYER_LASER_CODE, 0, NULL) != 0)
+                         "provides", PLAYER_LASER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;
@@ -143,7 +143,7 @@ MultiDriver::MultiDriver(ConfigFile* cf, int section)
 
   // Find out which laser I'll subscribe to
   if (cf->ReadDeviceAddr(&(this->laser_addr), section, 
-                         "requires", PLAYER_LASER_CODE, 0, NULL) != 0)
+                         "requires", PLAYER_LASER_CODE, -1, NULL) != 0)
   {
     this->SetError(-1);
     return;

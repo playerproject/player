@@ -696,29 +696,29 @@ int Nav200::ReadFromNav200(int timeout_usec)
       // if good CRC we actually have a packet so assemble our NAV200 message and return it to the application
       else
       {
-        if(receivedBuffer[3]=='E'){
-          error.F0 = receivedBuffer[4];
-          error.F1 = receivedBuffer[5];
-          error.F2 = receivedBuffer[6];
-          error.F3 = receivedBuffer[7];
-  
-          //check out what the error is and it out
-          PrintErrorMsg();
+          packet.header = receivedBuffer[0];
+          packet.length = receivedBuffer[1];
+          packet.mode = receivedBuffer[2];
+          packet.function = receivedBuffer[3];
+          packet.dataLength = packet.length-HEADER_SIZE-FOOTER_SIZE;
+          memcpy(packet.data, receivedBuffer+4, packet.dataLength);
+          packet.BCC = receivedBuffer[4+packet.dataLength];
+    
+          memmove(receivedBuffer, receivedBuffer+dataLength, bytesReceived-dataLength);
+          bytesReceived-=dataLength;
           sn200->InQueue->ClearFilter();
-          return -2;
+          
+          if(receivedBuffer[3]=='E'){
+	          error.F0 = receivedBuffer[4];
+	          error.F1 = receivedBuffer[5];
+	          error.F2 = receivedBuffer[6];
+	          error.F3 = receivedBuffer[7];
+	  
+	          //check out what the error is and it out
+	          PrintErrorMsg();
+	          return -2;
         }
-  
-        packet.header = receivedBuffer[0];
-        packet.length = receivedBuffer[1];
-        packet.mode = receivedBuffer[2];
-        packet.function = receivedBuffer[3];
-        packet.dataLength = packet.length-HEADER_SIZE-FOOTER_SIZE;
-        memcpy(packet.data, receivedBuffer+4, packet.dataLength);
-        packet.BCC = receivedBuffer[4+packet.dataLength];
-  
-        memmove(receivedBuffer, receivedBuffer+dataLength, bytesReceived-dataLength);
-        bytesReceived-=dataLength;
-        sn200->InQueue->ClearFilter();
+
         return 1;
       }
     }
