@@ -219,16 +219,15 @@ playerc_laser_set_config(playerc_laser_t *device,
 
   if(playerc_client_request(device->info.client, &device->info,
                             PLAYER_LASER_REQ_SET_CONFIG,
-                            (void*)&config, (void**)&resp) < 0)
+                            (void*)&config, NULL) < 0)
     return -1;
 
-  // copy them locally
-  device->scan_start = resp->min_angle;
-  device->scan_res = resp->resolution;
-  device->range_res = resp->range_res;
-  device->intensity_on = resp->intensity;
-  device->scanning_frequency = resp->scanning_frequency;
-  player_laser_config_t_free(resp);
+  // if the set suceeded copy them locally
+  device->scan_start = config.min_angle;
+  device->scan_res = config.resolution;
+  device->range_res = config.range_res;
+  device->intensity_on = config.intensity;
+  device->scanning_frequency = config.scanning_frequency;
 
   return 0;
 }
