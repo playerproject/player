@@ -152,32 +152,31 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if(cfgdir[0] != '/' && cfgdir[0] != '~')
     {
       getcwd(fullpath, PATH_MAX);
-      strcat(fullpath,"/");
+      strncat(fullpath,"/", PATH_MAX);
     }
-    strcat(fullpath,cfgdir);
-    strcat(fullpath,"/");
-    strcat(fullpath,pluginname);
-    free(tmp);
+    strncat(fullpath,cfgdir, PATH_MAX);
+    strncat(fullpath,"/", PATH_MAX);
+    strncat(fullpath,pluginname, PATH_MAX);
     PLAYER_MSG1(1, "trying to load %s...", fullpath);
     if((handle = lt_dlopenext(fullpath)))//, RTLD_NOW)))
       PLAYER_MSG0(1, "success");
     else
-      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror());
+      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror());
+    free(tmp); // this should ha
   }
 
   // try to load it from prefix/lib
   if(!handle)
   {
     memset(fullpath,0,PATH_MAX);
-    strcpy(fullpath,PLAYER_INSTALL_PREFIX);
-    strcat(fullpath,"/lib/");
-    strcat(fullpath,pluginname);
+    strncpy(fullpath,PLAYER_INSTALL_PREFIX, PATH_MAX);
+    strncat(fullpath,"/lib/", PATH_MAX);
+    strncat(fullpath,pluginname, PATH_MAX);
     PLAYER_MSG1(1, "trying to load %s...", fullpath);
-    fflush(stdout);
     if((handle = lt_dlopenext(fullpath)))
       PLAYER_MSG0(1, "success");
     else
-      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror() );
+      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror() );
   }
 
   // just pass the libname to lt_dlopenext, to see if it can handle it
@@ -189,7 +188,7 @@ LoadPlugin(const char* pluginname, const char* cfgfile)
     if((handle = lt_dlopenext(pluginname)))
       PLAYER_MSG0(1, "success");
     else
-      PLAYER_MSG1(2, "failed (%s)\n", lt_dlerror());
+      PLAYER_MSG1(1, "failed (%s)\n", lt_dlerror());
   }
 
   if (handle == NULL)

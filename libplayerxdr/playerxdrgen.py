@@ -8,6 +8,7 @@
 import re
 import string
 import sys
+import os
 
 USAGE = 'USAGE: playerxdrgen.y [-distro] <interface-spec.h> [<extra_interface-spec.h>] <pack.c> <pack.h>'
 
@@ -523,17 +524,16 @@ if __name__ == '__main__':
 #include <stdlib.h>
 """ % {"headerfilename":headerfilename})
   else:
-    ifndefsymbol = '_'
-    for i in range(0,len(string.split(infilenames[0],'.')[0])):
-      ifndefsymbol += string.capitalize(infilenames[0][i])
-    ifndefsymbol += '_'
-    headerfile.write('#ifndef ' + ifndefsymbol + '\n\n')
+    ifndefsymbol = '_' + infilenames[0].replace('.','_').replace('/','_').upper() + '_XDR_'
+    headerfile.write('#ifndef ' + ifndefsymbol + '\n')
+    headerfile.write('#define ' + ifndefsymbol + '\n\n')
     headerfile.write('#include <libplayerxdr/playerxdr.h>\n\n')
-    headerfile.write('#include "' + infilenames[0] + '"\n\n')
+    headerfile.write('#include "' + os.path.split(infilenames[0])[-1] + '"\n\n')
     headerfile.write('#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
+    
     sourcefile.write('#include <rpc/types.h>\n')
     sourcefile.write('#include <rpc/xdr.h>\n\n')
-    sourcefile.write('#include "' + headerfilename + '"\n')
+    sourcefile.write('#include "' + os.path.split(headerfilename)[-1] + '"\n')
     sourcefile.write('#include <string.h>\n')
     sourcefile.write('#include <stdlib.h>\n\n')
 
