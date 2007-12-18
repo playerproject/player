@@ -184,7 +184,8 @@ void vectormap_draw_feature(vectormap_t *map, GEOSGeom geom)
       seq = GEOSGeom_getCoordSeq(geom);
       GEOSCoordSeq_getX(seq, 00, &x);
       GEOSCoordSeq_getY(seq, 00, &y);
-      rtk_fig_point( map->fig, x, y );
+      rtk_fig_line( map->fig, x-0.1, y ,x+0.1, y);
+      rtk_fig_line( map->fig, x, y-0.1 ,x, y+0.1);
       break;
     case GEOS_LINESTRING:
     case GEOS_LINEARRING:

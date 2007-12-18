@@ -116,6 +116,7 @@ if test "x$disable_playerclient_thread" = "xno"; then
 fi
 
 
+PLAYER_ADD_DRIVER([accel_calib],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([acts],[yes],[],[],[])
 
@@ -128,18 +129,38 @@ dnl                   found_gsl=yes,
 dnl                  found_gsl=no)
 PLAYER_ADD_DRIVER([amcl], [yes],[gsl/gsl_version.h],[],["-lgsl -lgslcblas"])
 
+dnl Where's AMTECM5?
+AC_ARG_WITH(amtecM5, [  --with-amtecM5=dir      Location of the AMTEC M5 headers and libraries],
+AMTECM5_DIR=$with_amtecM5,AMTECM5_DIR=NONE)
+if test "x$AMTECM5_DIR" = "xNONE" -o "x$AMTECM5_DIR" = "xno"; then
+  AMTECM5_HEADER="Device.h"
+  AMTECM5_EXTRA_CPPFLAGS=
+  AMTECM5_EXTRA_LDFLAGS="device.a ntcan.a util.a"
+else
+  AMTECM5_HEADER="$AMTECM5_DIR/Device/Device.h"
+  AMTECM5_EXTRA_CPPFLAGS="-I$AMTECM5_DIR/include -I$AMTECM5_DIR/Device"
+  AMTECM5_EXTRA_LDFLAGS="$AMTECM5_DIR/lib/device.a $AMTECM5_DIR/lib/libntcan.a $AMTECM5_DIR/lib/util.a"
+fi
+
+AC_LANG_PUSH(C++)
+PLAYER_ADD_DRIVER([amtecM5],[yes],
+  [$AMTECM5_HEADER], [$AMTECM5_EXTRA_CPPFLAGS],
+  [$AMTECM5_EXTRA_LDFLAGS], [], [],
+  [[
+  #define __LINUX__
+  #define UNIX
+  #define LINUX    
+  ]])
+AC_LANG_POP(C++)
+
 PLAYER_ADD_DRIVER([amtecpowercube],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([artoolkitplus],[yes],[],[],[],[ARTOOLKITPLUS],[artoolkitplus >= 2.1])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $ARTOOLKITPLUS_LIBS"
 
-PLAYER_ADD_DRIVER([aodv],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([localbb],[yes],[],[],[])
-
 PLAYER_ADD_DRIVER([bumpersafe],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([nd],[yes],[],[],[])
 
 dnl Check to see if we have version 1 or 2 API for dc1394
 AC_CHECK_HEADER(dc1394/control.h,[PLAYER_ADD_DRIVER([camera1394],[yes],["libraw1394/raw1394.h dc1394/control.h"],[],["-lraw1394 -ldc1394"])],
@@ -184,9 +205,13 @@ PLAYER_ADD_DRIVER([cmucam2],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([cmvision],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([create],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([dummy],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([er1],[yes],[asm/ioctls.h],[],[])
+
+PLAYER_ADD_DRIVER([erratic],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([fakelocalize], [yes],[],[],[])
 
@@ -203,10 +228,14 @@ PLAYER_ADD_DRIVER([garminnmea],[yes],[],[],[])
 PLAYER_ADD_DRIVER([imageseq],[yes],[],[],[],[OPENCV],[opencv])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
+PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([isense],[yes],[isense/isense.h],
                   [],["-lisense"])
 
 PLAYER_ADD_DRIVER([iwspy],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([kartowriter],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([khepera],[yes],[],[],[])
 
@@ -216,25 +245,30 @@ PLAYER_ADD_DRIVER([laserbarcode],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([lasercspace],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
 PLAYER_ADD_DRIVER([lasercutter],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([laserptzcloud],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([laserrescan],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([lasersafe],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([lasertoranger],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([laservisualbarcode],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([laservisualbw],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([lifomcom],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([linuxjoystick],[yes],[linux/joystick.h],[],[])
 
 PLAYER_ADD_DRIVER([linuxwifi],[yes],[linux/wireless.h],
                   [],[],[],[],[[#include <netinet/in.h>]])
 
-PLAYER_ADD_DRIVER([lifomcom],[no],[],[],[])
-
-PLAYER_ADD_DRIVER([laserposeinterpolator],[yes],[],[],[])
+PLAYER_ADD_DRIVER([localbb],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([logfile],[yes],[],[],[])
 
@@ -247,6 +281,10 @@ PLAYER_ADD_DRIVER([mapscale],[yes],[],
                   [],[],[GDK_PIXBUF],[gdk-pixbuf-2.0])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $GDK_PIXBUF_LIBS"
 
+PLAYER_ADD_DRIVER([mbicp],[yes],)
+
+PLAYER_ADD_DRIVER([mica2],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([microstrain],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([mixer],[no],[sys/soundcard.h],[],[])
@@ -254,19 +292,38 @@ PLAYER_ADD_DRIVER([mixer],[no],[sys/soundcard.h],[],[])
 PLAYER_ADD_DRIVER([mricp],[yes],[],[],[],[MRICP],[gtk+-2.0 gdk-pixbuf-2.0])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $MRICP_LIBS"
 
-PLAYER_ADD_DRIVER([nomad],[no],[],[],[])
+PLAYER_ADD_DRIVER([nd],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([nimu],[yes],[usb.h],[],[-lusb])
+
+PLAYER_ADD_DRIVER([nomad],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([obot],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([p2os],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([erratic],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([wbr914],[yes],[linux/serial.h],[],[])
-
 PLAYER_ADD_DRIVER([passthrough],[yes],[],[],[])
+
+dnl Where's libphidget?
+AC_ARG_WITH(phidgetRFID, [  --with-libphidget=dir      Location of the Phidget (from www.phidgets.com) headers and libraries],
+LIBPHIDGET_DIR=$with_libphidget,LIBPHIDGET_DIR=NONE)
+if test "x$LIBPHIDGET_DIR" = "xNONE" -o "x$LIBPHIDGET_DIR" = "xno"; then
+  LIBPHIDGET_HEADER="phidget21.h"
+  LIBPHIDGET_EXTRA_CPPFLAGS=
+  LIBPHIDGET_EXTRA_LDFLAGS="-lphidget21"
+else
+  LIBPHIDGET_HEADER="$LIBPHIDGET_DIR/phidget21.h"
+  LIBPHIDGET_EXTRA_CPPFLAGS="-I$LIBPHIDGET_DIR/include"
+  LIBPHIDGET_EXTRA_LDFLAGS="-L$LIBPHIDGET_DIR/lib -lphidget21"
+fi
+
+PLAYER_ADD_DRIVER([phidgetRFID],[yes],
+  [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
+  [$LIBPHIDGET_EXTRA_LDFLAGS])
+
+PLAYER_ADD_DRIVER([phidgetIFK],[yes],
+  [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
+  [$LIBPHIDGET_EXTRA_LDFLAGS])
 
 PLAYER_ADD_DRIVER([postgis],[yes],[],[],["-lgeos"],[LIBPQXX],[libpqxx])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $LIBPQXX_LIBS"
@@ -275,17 +332,21 @@ PLAYER_ADD_DRIVER([pbslaser],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([ptu46],[yes],[],[],[])
 
+PLAYER_ADD_DRIVER([rcore_xbridge],[yes],[libparticle.h],[],["-lparticle"])
+
 PLAYER_ADD_DRIVER([reb],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([relay],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([kartowriter],[no],[],[],[])
 
 PLAYER_ADD_DRIVER([rflex],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([roboteq],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([robotino],[yes],["robotinocom.h xtimer.h xthread.h"],[],["-lxtimer -lrobotinocom -lxthread -lpthread"])
+
+PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([rs4leuze],[yes],[],[],[])
 
 dnl Where's CANLIB?
 AC_ARG_WITH(canlib, [  --with-canlib=dir       Location of CANLIB],
@@ -303,30 +364,6 @@ fi
 PLAYER_ADD_DRIVER([segwayrmp],[no],
   [$SEGWAYRMP_HEADER], [$SEGWAYRMP_EXTRA_CPPFLAGS],
   [$SEGWAYRMP_EXTRA_LDFLAGS])
-
-dnl Where's AMTECM5?
-AC_ARG_WITH(amtecM5, [  --with-amtecM5=dir      Location of the AMTEC M5 headers and libraries],
-AMTECM5_DIR=$with_amtecM5,AMTECM5_DIR=NONE)
-if test "x$AMTECM5_DIR" = "xNONE" -o "x$AMTECM5_DIR" = "xno"; then
-  AMTECM5_HEADER="Device.h"
-  AMTECM5_EXTRA_CPPFLAGS=
-  AMTECM5_EXTRA_LDFLAGS="device.a ntcan.a util.a"
-else
-  AMTECM5_HEADER="$AMTECM5_DIR/Device/Device.h"
-  AMTECM5_EXTRA_CPPFLAGS="-I$AMTECM5_DIR/include -I$AMTECM5_DIR/Device"
-  AMTECM5_EXTRA_LDFLAGS="$AMTECM5_DIR/lib/device.a $AMTECM5_DIR/lib/libntcan.a $AMTECM5_DIR/lib/util.a"
-fi
-
-AC_LANG_PUSH(C++)
-PLAYER_ADD_DRIVER([amtecM5],[yes],
-  [$AMTECM5_HEADER], [$AMTECM5_EXTRA_CPPFLAGS],
-  [$AMTECM5_EXTRA_LDFLAGS], [], [],
-  [[
-  #define __LINUX__
-  #define UNIX
-  #define LINUX    
-  ]])
-AC_LANG_POP(C++)
 
 PLAYER_ADD_DRIVER([serialstream],[yes],[],[],[])
 
@@ -352,6 +389,8 @@ if  test "x$enable_sickpls" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
+PLAYER_ADD_DRIVER([sickrfi341],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([sicks3000],[yes],[],[],[])
 if  test "x$enable_sicks3000" = "xyes"; then
         AC_CHECK_HEADERS(linux/serial.h, [], [], [])
@@ -366,16 +405,24 @@ PLAYER_ADD_DRIVER([simpleshape],[yes],
                   [],[],[],[OPENCV],[opencv])
 PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $OPENCV_LIBS"
 
+PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
+
 PLAYER_ADD_DRIVER([sphere],[yes],[linux/videodev.h],[],[])
 
 PLAYER_ADD_DRIVER([sphinx2],[no],["sphinx2/ckd_alloc.h"],
                   [],["-lsphinx2 -lsphinx2fe -lsphinx2ad"])
 
+PLAYER_ADD_DRIVER([sonartoranger],[no],[],[],[])
+
 PLAYER_ADD_DRIVER([sonyevid30],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([sr3000],[yes],[libusbSR.h],[],["-lusbSR"])
 
 PLAYER_ADD_DRIVER([statgrab],[yes],
                   [],[],[],[STATGRAB],[libstatgrab])
 		  PLAYER_DRIVER_EXTRA_LIBS="$PLAYER_DRIVER_EXTRA_LIBS $STATGRAB_LIBS"
+
+PLAYER_ADD_DRIVER([tcpstream],[yes],[],[],[])
 
 PLAYER_ADD_DRIVER([upcbarcode],[yes],[],[],[],
                   [OPENCV],[opencv])
@@ -386,67 +433,26 @@ if  test "x$enable_urglaser" = "xyes"; then
   AC_CHECK_HEADERS(linux/serial.h, [], [], [])
 fi
 
-PLAYER_ADD_DRIVER([rs4leuze],[yes],[],[],[])
-
 PLAYER_ADD_DRIVER([vfh],[yes],)
-
-PLAYER_ADD_DRIVER([mbicp],[yes],)
 
 PLAYER_ADD_DRIVER([vmapfile],[yes],[],[],[])
 
-PLAYER_ADD_DRIVER([roomba],[yes],[],[],[])
-
-PLAYER_ADD_DRIVER([create],[yes],[],[],[])
-
 PLAYER_ADD_DRIVER([wavefront],[yes],[],[],[])
+
+PLAYER_ADD_DRIVER([wbr914],[yes],[linux/serial.h],[],[])
+
+PLAYER_ADD_DRIVER([xsensmt],[yes],[],[],[])
 
 save_ac_ext=$ac_ext
 ac_ext=cc # otherwise only C (and not C++) header files will work
 PLAYER_ADD_DRIVER([yarpimage],[yes],["yarp/os/all.h yarp/sig/all.h"],[],["-lYARP_sig -lYARP_OS -lACE"])
 ac_ext=$save_ac_ext
 
-dnl RFID support
-PLAYER_ADD_DRIVER([insideM300],[yes],[],[],[])
-PLAYER_ADD_DRIVER([skyetekM1],[yes],[],[],[])
-PLAYER_ADD_DRIVER([sickrfi341],[yes],[],[],[])
-
-dnl Where's libphidget?
-AC_ARG_WITH(phidgetRFID, [  --with-libphidget=dir      Location of the Phidget (from www.phidgets.com) headers and libraries],
-LIBPHIDGET_DIR=$with_libphidget,LIBPHIDGET_DIR=NONE)
-if test "x$LIBPHIDGET_DIR" = "xNONE" -o "x$LIBPHIDGET_DIR" = "xno"; then
-  LIBPHIDGET_HEADER="phidget21.h"
-  LIBPHIDGET_EXTRA_CPPFLAGS=
-  LIBPHIDGET_EXTRA_LDFLAGS="-lphidget21"
-else
-  LIBPHIDGET_HEADER="$LIBPHIDGET_DIR/phidget21.h"
-  LIBPHIDGET_EXTRA_CPPFLAGS="-I$LIBPHIDGET_DIR/include"
-  LIBPHIDGET_EXTRA_LDFLAGS="-L$LIBPHIDGET_DIR/lib -lphidget21"
-fi
-
-PLAYER_ADD_DRIVER([phidgetRFID],[yes],
-  [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
-  [$LIBPHIDGET_EXTRA_LDFLAGS])
-
-PLAYER_ADD_DRIVER([phidgetIFK],[yes],
-  [$LIBPHIDGET_HEADER], [$LIBPHIDGET_EXTRA_CPPFLAGS],
-  [$LIBPHIDGET_EXTRA_LDFLAGS])
 
 
-dnl WSN support
-PLAYER_ADD_DRIVER([mica2],[yes],[],[],[])
-PLAYER_ADD_DRIVER([rcore_xbridge],[yes],[libparticle.h],[],["-lparticle"])
-PLAYER_ADD_DRIVER([accel_calib],[yes],[],[],[])
 
-dnl IMU support
-PLAYER_ADD_DRIVER([xsensmt],[yes],[],[],[])
 
-dnl POINTCLOUD3D support
-PLAYER_ADD_DRIVER([laserptzcloud],[yes],[],[],[])
-PLAYER_ADD_DRIVER([sr3000],[yes],[libusbSR.h],[],["-lusbSR"])
 
-dnl Ranger support
-PLAYER_ADD_DRIVER([lasertoranger],[no],[],[],[])
-PLAYER_ADD_DRIVER([sonartoranger],[no],[],[],[])
 
 dnl The wavefront driver can make use of MD5 hash functions, if present
 AC_ARG_ENABLE(md5, [  --disable-md5      Don't use MD5 hashing functions],,

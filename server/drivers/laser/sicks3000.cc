@@ -147,6 +147,7 @@ class SickS3000 : public Driver
     // Get the time (in ms)
     int64_t GetTime();
     
+    void SetScannerParams(int data_count);
 
   protected:
 
@@ -164,6 +165,8 @@ class SickS3000 : public Driver
     // Start and end scan segments (for restricted scan).  These are
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
+    
+    bool recognisedScanner;
     
     // Opaque Driver info
     Device *opaque;
@@ -216,6 +219,9 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
   rx_buffer = new uint8_t[rx_buffer_size];
   assert(rx_buffer);
   
+  recognisedScanner = false;
+  
+  // Assume s300
   memset(&data_packet,0,sizeof(data_packet));
   data_packet.min_angle = DTOR(-135);
   data_packet.max_angle = DTOR(135);
@@ -254,6 +260,25 @@ SickS3000::~SickS3000()
   delete [] rx_buffer; 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Set up scanner parameters based on number of results per scan
+void SickS3000::SetScannerParams(int data_count)
+{
+	if (data_count == 761) // sicks3000
+	{
+		data_packet.min_angle = DTOR(-95);
+		data_packet.max_angle = DTOR(95);
+		data_packet.resolution = DTOR(0.25);
+		data_packet.max_range = 49;
+		
+		config_packet.min_angle = DTOR(-95);
+		config_packet.max_angle = DTOR(95);
+		config_packet.resolution = DTOR(0.25);
+		config_packet.max_range = 49;
+		
+		recognisedScanner = true;
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device
@@ -313,6 +338,7 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
   if (Message::MatchMessage(hdr, PLAYER_MSGTYPE_DATA, PLAYER_OPAQUE_DATA_STATE, opaque_id))
   {
     player_opaque_data_t * recv = reinterpret_cast<player_opaque_data_t * > (data);
+    unsigned int messageOffset = rx_count;
     rx_count += recv->data_count;
     if (rx_count > rx_buffer_size)
     {
@@ -321,7 +347,7 @@ SickS3000::ProcessMessage(QueuePointer &resp_queue,
     }
     else
     {
-      memmove(&rx_buffer[rx_count], recv->data, recv->data_count);
+      memcpy(&rx_buffer[messageOffset], recv->data, recv->data_count);
       ProcessLaserData();
     }
     return 0;
@@ -447,6 +473,8 @@ int SickS3000::ProcessLaserData()
         else if (data[0] == 0xBB)
         {
           int data_count = (size - 22) / 2;
+          if (!recognisedScanner)
+        	  SetScannerParams(data_count); // Set up parameters based on number of results.
           data_packet.ranges_count = data_count;
           data_packet.ranges = new float [data_count];
           for (int ii = 0; ii < data_count; ++ii)
