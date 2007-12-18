@@ -1043,7 +1043,7 @@ class LaserProxy : public ClientProxy
     double GetMaxAngle() const
     {
       scoped_lock_t lock(mPc->mMutex);
-      return mDevice->scan_start + mDevice->scan_count*mDevice->scan_res;
+      return mDevice->scan_start + (mDevice->scan_count - 1)*mDevice->scan_res;
     };
 
     /// Scan range from the laser config (call RequestConfigure first) (radians)

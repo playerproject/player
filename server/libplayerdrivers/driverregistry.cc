@@ -164,6 +164,11 @@ void SickS3000_Register(DriverTable* table);
 void SerialStream_Register(DriverTable* table);
 #endif
 
+#ifdef INCLUDE_TCPSTREAM
+void TCPStream_Register(DriverTable* table);
+#endif
+
+
 #ifdef INCLUDE_WBR914
 void wbr914_Register(DriverTable* table);
 #endif
@@ -614,6 +619,10 @@ player_register_drivers()
 
 #ifdef INCLUDE_SERIALSTREAM
   SerialStream_Register(driverTable);
+#endif
+
+#ifdef INCLUDE_TCPSTREAM
+  TCPStream_Register(driverTable);
 #endif
   
 #ifdef INCLUDE_WBR914

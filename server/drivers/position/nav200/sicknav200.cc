@@ -460,8 +460,15 @@ SickNAV200::ProcessMessage(QueuePointer &resp_queue,
 	    	else
 	    	{
 	    		PLAYER_ERROR1("Unrecognised mode: %s", mode.GetValue());
+		  	    this->Publish(hdr->addr,
+		  	                resp_queue,
+		  	                PLAYER_MSGTYPE_RESP_NACK,
+		  	                PLAYER_SET_STRPROP_REQ);
 	    	}
-	    	
+	  	    this->Publish(hdr->addr,
+	  	                resp_queue,
+	  	                PLAYER_MSGTYPE_RESP_ACK,
+	  	                PLAYER_SET_STRPROP_REQ);
 	    	return 0;
 	    }
 	}
