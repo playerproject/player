@@ -79,6 +79,7 @@ Driver::Driver(ConfigFile *cf, int section,
   if(cf->ReadDeviceAddr(&this->device_addr, section, "provides",
                         interf, -1, NULL) != 0)
   {
+    PLAYER_ERROR1("Failed to find provides block for interface %d",interf);
     this->SetError(-1);
     return;
   }

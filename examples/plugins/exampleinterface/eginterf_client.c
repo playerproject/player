@@ -16,8 +16,8 @@
 #include <libplayerc/playerc.h>
 #include <libplayercore/error.h>
 
-#include "eginterf.h"
-#include "eginterf_xdr.h"
+#include "example_interface.h"
+#include "example_xdr.h"
 #include "eginterf_client.h"
 
 void eginterf_putmsg (eginterf_t *device, player_msghdr_t *header, uint8_t *data, size_t len);
@@ -28,7 +28,7 @@ eginterf_t *eginterf_create (playerc_client_t *client, int index)
 
 	device = (eginterf_t*) malloc (sizeof (eginterf_t));
 	memset (device, 0, sizeof (eginterf_t));
-	playerc_device_init (&device->info, client, PLAYER_EGINTERF_CODE, index, (playerc_putmsg_fn_t) eginterf_putmsg);
+	playerc_device_init (&device->info, client, PLAYER_EXAMPLE_CODE, index, (playerc_putmsg_fn_t) eginterf_putmsg);
 
 	device->stuff_count = 0;
 	device->stuff = NULL;
@@ -54,10 +54,10 @@ int eginterf_unsubscribe (eginterf_t *device)
 
 void eginterf_putmsg (eginterf_t *device, player_msghdr_t *header, uint8_t *data, size_t len)
 {
-	if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == EGINTERF_DATA))
+	if((header->type == PLAYER_MSGTYPE_DATA) && (header->subtype == PLAYER_EXAMPLE_DATA_EXAMPLE))
 	{
 		assert(header->size > 0);
-		player_eginterf_data *stuffData = (player_eginterf_data *) data;
+		player_eginterf_data_t *stuffData = (player_eginterf_data_t *) data;
 		if (device->stuff != NULL)
 			free (device->stuff);
 		if ((device->stuff = (double*) malloc (stuffData->stuff_count)) == NULL)
@@ -72,24 +72,24 @@ void eginterf_putmsg (eginterf_t *device, player_msghdr_t *header, uint8_t *data
 
 int eginterf_cmd (eginterf_t *device, char value)
 {
-	player_eginterf_cmd cmd;
-	memset (&cmd, 0, sizeof (player_eginterf_cmd));
+	player_eginterf_cmd_t cmd;
+	memset (&cmd, 0, sizeof (player_eginterf_cmd_t));
 	cmd.doStuff = value;
 
-	return playerc_client_write (device->info.client, &device->info, EGINTERF_CMD, &cmd, NULL);
+	return playerc_client_write (device->info.client, &device->info, PLAYER_EXAMPLE_CMD_EXAMPLE, &cmd, NULL);
 }
 
 int eginterf_req (eginterf_t *device, int blah)
 {
 	int result = 0;
-	player_eginterf_req req;
-	player_eginterf_req *rep;
-	memset (&rep, 0, sizeof (player_eginterf_req));
+	player_eginterf_req_t req;
+	player_eginterf_req_t *rep;
+	memset (&rep, 0, sizeof (player_eginterf_req_t));
 	req.value = blah;
-	if ((result = playerc_client_request (device->info.client, &device->info, EGINTERF_REQ, &req, (void**)&rep)) < 0)
+	if ((result = playerc_client_request (device->info.client, &device->info, PLAYER_EXAMPLE_REQ_EXAMPLE, &req, (void**)&rep)) < 0)
 		return result;
 
 	device->value = rep->value;
-	player_eginterf_req_free(rep);
+	player_eginterf_req_t_free(rep);
 	return 0;
 }

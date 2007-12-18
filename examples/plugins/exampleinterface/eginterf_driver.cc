@@ -9,7 +9,7 @@
 #include <time.h>
 #include <libplayercore/playercore.h>
 
-#include "eginterf.h"
+#include "example_interface.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
@@ -25,7 +25,7 @@ class EgInterfDriver : public Driver
 		virtual int Shutdown();
 
 		// This method will be invoked on each incoming message
-		virtual int ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data);
+		virtual int ProcessMessage(QueuePointer & resp_queue, player_msghdr * hdr, void * data);
 };
 
 // A factory creation function, declared outside of the class so that it
@@ -51,7 +51,7 @@ void EgInterfDriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 EgInterfDriver::EgInterfDriver(ConfigFile* cf, int section)
-    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_EGINTERF_CODE)
+    : Driver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_EXAMPLE_CODE)
 {
 	return;
 }
@@ -81,12 +81,12 @@ int EgInterfDriver::Shutdown()
 	return(0);
 }
 
-int EgInterfDriver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr, void * data)
+int EgInterfDriver::ProcessMessage(QueuePointer &resp_queue, player_msghdr * hdr, void * data)
 {
 	player_eginterf_data resp;
 	player_eginterf_req reqResp;
 
-	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, EGINTERF_CMD, device_addr))
+	if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_CMD, PLAYER_EXAMPLE_CMD_EXAMPLE, device_addr))
 	{
 		printf ("EgInterfDriver: Received command: %d\n", reinterpret_cast<player_eginterf_cmd*> (data)->doStuff);
 		if (reinterpret_cast<player_eginterf_cmd*> (data)->doStuff)
@@ -100,19 +100,21 @@ int EgInterfDriver::ProcessMessage(MessageQueue* resp_queue, player_msghdr * hdr
 				resp.stuff[ii] = temp;
 				printf ("\t%f\n", resp.stuff[ii]);
 			}
-			Publish (device_addr, PLAYER_MSGTYPE_DATA, EGINTERF_DATA, &resp, sizeof (resp), NULL);
+			Publish (device_addr, PLAYER_MSGTYPE_DATA, PLAYER_EXAMPLE_DATA_EXAMPLE, &resp, sizeof (resp), NULL);
 		}
 		delete[] resp.stuff;
+		return 0;
 	}
-	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, EGINTERF_REQ, device_addr))
+	else if (Message::MatchMessage (hdr, PLAYER_MSGTYPE_REQ, PLAYER_EXAMPLE_REQ_EXAMPLE, device_addr))
 	{
 		printf ("EgInterfDriver: Got request: %d\n", reinterpret_cast<player_eginterf_req*> (data)->value);
 		reqResp.value = RAND_MAX;
 		printf ("EgInterfDriver: Sending response: %d\n", reqResp.value);
-		Publish (device_addr,  PLAYER_MSGTYPE_RESP_ACK, EGINTERF_REQ, &reqResp, sizeof (reqResp), NULL);
+		Publish (device_addr,  PLAYER_MSGTYPE_RESP_ACK, PLAYER_EXAMPLE_REQ_EXAMPLE, &reqResp, sizeof (reqResp), NULL);
+		return 0;
 	}
 
-	return(0);
+	return(-1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

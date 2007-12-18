@@ -12,7 +12,8 @@
 #include <libplayerc/playerc.h>
 
 #include "eginterf_client.h"
-#include "eginterf.h"
+
+playerxdr_function_t* player_plugininterf_gettable (void);
 
 int main(int argc, const char **argv)
 {
@@ -40,6 +41,7 @@ int main(int argc, const char **argv)
 	}
 
 	// Send a command, get back a data message
+	printf("sending a command\n");
 	eginterf_cmd (device, 5);
 	playerc_client_read (client);
 	for (i = 0; i < device->stuff_count; i++)
