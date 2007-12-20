@@ -517,10 +517,14 @@ void SickNAV200::Main()
     // get update and publish result
     if(Laser.GetPositionAuto(Reading))
     {
-      data_packet.pos.px = static_cast<double> (Reading.pos.x)/1000;
-      data_packet.pos.py = static_cast<double> (Reading.pos.y)/1000;
-      double angle = M_PI + Reading.orientation/32768.0*M_PI;
-      data_packet.pos.pa = atan2(sin(angle), cos(angle));
+      double angle = M_PI + Reading.orientation/32768.0*M_PI - pose[2];
+      double dx = sin(angle);
+      double dy = cos(angle);
+      double rx = sin(angle + M_PI/2.0);
+      double ry = cos(angle + M_PI/2.0);
+      data_packet.pos.pa = atan2(dx, dy);
+      data_packet.pos.px = static_cast<double> (Reading.pos.x)/1000 - dx * pose[1] - rx * pose[0];
+      data_packet.pos.py = static_cast<double> (Reading.pos.y)/1000 - dy * pose[1] - ry * pose[0];
       if(Reading.quality==0xFF || Reading.quality==0xFE || Reading.quality==0x00)
       {
 	data_packet.stall = 1;

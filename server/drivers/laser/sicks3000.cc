@@ -166,6 +166,8 @@ class SickS3000 : public Driver
     // the values used by the laser.
     int scan_min_segment, scan_max_segment;
     
+    IntProperty mirror;
+    
     bool recognisedScanner;
     
     // Opaque Driver info
@@ -210,7 +212,7 @@ void SickS3000_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor
 SickS3000::SickS3000(ConfigFile* cf, int section)
-    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE)
+    : Driver(cf, section, true, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_LASER_CODE), mirror("mirror", 0, 0)
 {
 	  
   rx_count = 0;
@@ -219,9 +221,10 @@ SickS3000::SickS3000(ConfigFile* cf, int section)
   rx_buffer = new uint8_t[rx_buffer_size];
   assert(rx_buffer);
   
+  this->RegisterProperty ("mirror", &this->mirror, cf, section);
+  
   recognisedScanner = false;
   
-  // Assume s300
   memset(&data_packet,0,sizeof(data_packet));
   data_packet.min_angle = DTOR(-135);
   data_packet.max_angle = DTOR(135);
@@ -482,7 +485,10 @@ int SickS3000::ProcessLaserData()
             unsigned short Distance_CM = (*reinterpret_cast<unsigned short *> (&data[4 + 2*ii]));
             Distance_CM &= 0x1fff; // remove status bits
             double distance_m = static_cast<double>(Distance_CM)/100.0;
-            data_packet.ranges[ii] = distance_m;
+            if (mirror == 1)
+            	data_packet.ranges[data_count - ii - 1] = distance_m; // Reverse order.
+            else
+            	data_packet.ranges[ii] = distance_m;
           }
           
           this->Publish(this->device_addr,
